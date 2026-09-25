@@ -1,7 +1,12 @@
 // @vitest-environment jsdom
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import { act, waitFor } from "@testing-library/react";
+import { hydrateRoot, type Root } from "react-dom/client";
+import { renderToString } from "react-dom/server";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { TableOfContents } from "@/components/blog/TableOfContents";
+import { RichNarrative } from "@/components/RichNarrative";
+import { extractAndInjectHeadings } from "@/lib/blog/headings";
 import type { HeadingItem } from "@/lib/blog/headings";
 
 describe("TableOfContents Component (Ticket #1058)", () => {
@@ -30,6 +35,7 @@ describe("TableOfContents Component (Ticket #1058)", () => {
   afterEach(() => {
     cleanup();
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
   });
 
   it("renders navigation list with heading links", () => {
@@ -59,14 +65,147 @@ describe("TableOfContents Component (Ticket #1058)", () => {
   });
 
   it("allows toggling mobile collapsible menu", () => {
-    render(<TableOfContents headings={headings} />);
+    const { container } = render(<TableOfContents headings={headings} />);
 
-    const toggleButton = screen.queryByRole("button", {
+    const toggleButton = screen.getByRole("button", {
       name: /toggle table of contents/i,
     });
-    if (toggleButton) {
-      fireEvent.click(toggleButton);
-      expect(toggleButton.getAttribute("aria-expanded")).toBe("true");
+    const linkGroup = container.querySelector("#blog-toc-links");
+
+    expect(toggleButton.getAttribute("aria-expanded")).toBe("false");
+    expect(toggleButton.getAttribute("aria-controls")).toBe("blog-toc-links");
+    expect(linkGroup?.className).toContain("hidden");
+
+    fireEvent.click(toggleButton);
+    expect(toggleButton.getAttribute("aria-expanded")).toBe("true");
+    expect(linkGroup?.className).toContain("block");
+
+    fireEvent.click(toggleButton);
+    expect(toggleButton.getAttribute("aria-expanded")).toBe("false");
+    expect(linkGroup?.className).toContain("hidden");
+  });
+
+  it("tracks and navigates live headings after RichNarrative replaces server HTML", async () => {
+    const source = `
+      <h2>Audit trail</h2>
+      <p>Preserve the sequence of evidence.</p>
+      <h3>Evidence retention</h3>
+      <ol><li>Keep the original record.</li></ol>
+      <h2>Audit trail</h2>
+      <pre><code class="language-typescript">const retained = true;</code></pre>
+    `;
+    const processed = extractAndInjectHeadings(source);
+    const renderReader = () => (
+      <>
+        <TableOfContents headings={processed.headings} />
+        <article>
+          <RichNarrative html={processed.html} />
+        </article>
+      </>
+    );
+    const host = document.createElement("div");
+    host.innerHTML = renderToString(renderReader());
+    document.body.appendChild(host);
+
+    const firstId = processed.headings[0].id;
+    const secondId = processed.headings[1].id;
+    const duplicateId = processed.headings[2].id;
+    const serverHeading = host.querySelector<HTMLElement>(`[id="${firstId}"]`);
+    const pendingFrames: FrameRequestCallback[] = [];
+    const requestAnimationFrame = vi.fn((callback: FrameRequestCallback) => {
+      pendingFrames.push(callback);
+      return pendingFrames.length;
+    });
+    vi.stubGlobal("requestAnimationFrame", requestAnimationFrame);
+    vi.stubGlobal("cancelAnimationFrame", vi.fn());
+
+    let root: Root | undefined;
+    try {
+      await act(async () => {
+        root = hydrateRoot(host, renderReader());
+      });
+
+      await waitFor(() => {
+        expect(
+          host.querySelector('button[aria-label="Copy code to clipboard"]')
+        ).not.toBeNull();
+      });
+
+      const firstHeading = host.querySelector<HTMLElement>(`[id="${firstId}"]`);
+      const secondHeading = host.querySelector<HTMLElement>(
+        `[id="${secondId}"]`
+      );
+      const duplicateHeading = host.querySelector<HTMLElement>(
+        `[id="${duplicateId}"]`
+      );
+
+      expect(serverHeading).not.toBeNull();
+      expect(firstHeading).not.toBe(serverHeading);
+      expect(serverHeading?.isConnected).toBe(false);
+      expect(host.querySelectorAll(`[id="${firstId}"]`)).toHaveLength(1);
+      expect(host.querySelectorAll(`[id="${secondId}"]`)).toHaveLength(1);
+      expect(host.querySelectorAll(`[id="${duplicateId}"]`)).toHaveLength(1);
+      expect(host.querySelectorAll("article h2")).toHaveLength(2);
+      expect(host.querySelectorAll("article h3")).toHaveLength(1);
+      expect(host.querySelector("article ol > li")?.textContent).toBe(
+        "Keep the original record."
+      );
+
+      const links = host.querySelectorAll<HTMLAnchorElement>(
+        'nav[aria-label="Table of contents"] a'
+      );
+      expect(Array.from(links, (link) => link.getAttribute("href"))).toEqual([
+        `#${firstId}`,
+        `#${secondId}`,
+        `#${duplicateId}`,
+      ]);
+
+      pendingFrames.splice(0).forEach((callback) => callback(0));
+      vi.spyOn(firstHeading!, "getBoundingClientRect").mockReturnValue(
+        new DOMRect(0, 500, 600, 32)
+      );
+      vi.spyOn(secondHeading!, "getBoundingClientRect").mockReturnValue(
+        new DOMRect(0, 100, 600, 32)
+      );
+      vi.spyOn(duplicateHeading!, "getBoundingClientRect").mockReturnValue(
+        new DOMRect(0, 600, 600, 32)
+      );
+
+      window.dispatchEvent(new Event("scroll"));
+      pendingFrames.splice(0).forEach((callback) => callback(0));
+
+      await waitFor(() => {
+        expect(
+          host
+            .querySelector<HTMLAnchorElement>(`a[href="#${secondId}"]`)
+            ?.getAttribute("aria-current")
+        ).toBe("location");
+      });
+
+      const scrollIntoView = vi.fn();
+      Object.defineProperty(secondHeading, "scrollIntoView", {
+        configurable: true,
+        value: scrollIntoView,
+      });
+      fireEvent.click(
+        host.querySelector<HTMLAnchorElement>(`a[href="#${secondId}"]`)!
+      );
+
+      expect(scrollIntoView).toHaveBeenCalledWith({
+        behavior: "smooth",
+        block: "start",
+      });
+      expect(window.location.hash).toBe(`#${secondId}`);
+    } finally {
+      if (root) {
+        await act(async () => root?.unmount());
+      }
+      host.remove();
+      window.history.replaceState(
+        null,
+        "",
+        `${window.location.pathname}${window.location.search}`
+      );
     }
   });
 });

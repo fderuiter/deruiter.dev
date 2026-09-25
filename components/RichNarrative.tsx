@@ -24,6 +24,7 @@ import { usePersistentState } from "@/hooks/usePersistentState"; // Imported for
 import { useTerminology } from "@/components/providers/TerminologyProvider";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
+import { highlightCodeBlocks } from "@/lib/blog/syntax-highlighter";
 
 const emptySubscribe = () => () => {};
 
@@ -173,11 +174,13 @@ export function RichNarrative({ html, className }: RichNarrativeProps) {
     // ALLOWED_ATTR, so this cannot reintroduce anything the allowlist rejected.
     // Blocks that already carry a tabindex are left alone.
     let codeSampleIndex = 0;
-    return sanitized.replace(
+    const withFocusableCode = sanitized.replace(
       /<pre(?![^>]*\btabindex=)([^>]*)>/gi,
       (_match, attributes: string) =>
         `<pre${attributes} tabindex="0" role="region" aria-label="Code sample ${++codeSampleIndex}">`
     );
+
+    return highlightCodeBlocks(withFocusableCode);
   }, [html]);
 
   // Synchronously swap terms according to the active simplified preference for pre-hydration rendering

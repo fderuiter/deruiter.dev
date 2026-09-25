@@ -139,7 +139,7 @@ export default async function BlogPostPage({ params }: PageProps) {
   return (
     <PageLayout
       variant="standard"
-      className="py-24 md:py-32 px-6 md:px-12 lg:px-24 bg-zinc-950 text-foreground flex flex-col items-center relative overflow-hidden outline-none"
+      className="py-24 md:py-32 px-6 md:px-12 lg:px-24 bg-zinc-950 text-foreground flex flex-col items-center relative overflow-x-clip outline-none"
     >
       <ReadingProgressBar />
 
@@ -163,7 +163,7 @@ export default async function BlogPostPage({ params }: PageProps) {
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full bg-brand-cyan/5 blur-[120px] pointer-events-none hidden sm:block" />
       <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 w-80 h-80 rounded-full bg-brand-blue/5 blur-[120px] pointer-events-none hidden sm:block" />
 
-      <div className="relative z-10 w-full max-w-3xl">
+      <div className="relative z-10 w-full max-w-5xl">
         {/* Breadcrumbs Navigation */}
         <div className="mb-6">
           <Breadcrumbs
@@ -182,114 +182,126 @@ export default async function BlogPostPage({ params }: PageProps) {
           </span>
         </div>
 
-        {/* Title */}
-        <h1 className="text-4xl md:text-5xl font-black tracking-tight text-neutral-100 mb-4 leading-tight">
-          {post.title}
-        </h1>
+        {/* Article Header */}
+        <header className="w-full max-w-3xl">
+          <h1 className="text-4xl md:text-5xl font-black tracking-tight text-neutral-100 mb-4 leading-tight">
+            {post.title}
+          </h1>
 
-        <p className="text-lg text-muted-strong font-medium mb-6 leading-relaxed">
-          {post.dek}
-        </p>
+          <p className="text-lg text-muted-strong font-medium mb-6 leading-relaxed">
+            {post.dek}
+          </p>
 
-        {/* Article Metadata Row */}
-        <div className="flex flex-wrap items-center gap-y-2 gap-x-4 text-xs font-mono text-zinc-400 pb-6 border-b border-zinc-900/80">
-          <span className="text-zinc-200 font-semibold">
-            By Frederick de Ruiter
-          </span>
-          <span className="text-zinc-600" aria-hidden="true">
-            •
-          </span>
-          <time dateTime={post.publishedAt.toISOString()}>{formattedDate}</time>
-          {formattedUpdatedDate && (
-            <>
-              <span className="text-zinc-600" aria-hidden="true">
-                •
-              </span>
-              <span>Updated {formattedUpdatedDate}</span>
-            </>
-          )}
-          {typeof post.readingTimeMinutes === "number" &&
-            post.readingTimeMinutes > 0 && (
+          {/* Article Metadata Row */}
+          <div className="flex flex-wrap items-center gap-y-2 gap-x-4 text-xs font-mono text-zinc-400 pb-6 border-b border-zinc-900/80">
+            <span className="text-zinc-200 font-semibold">
+              By Frederick de Ruiter
+            </span>
+            <span className="text-zinc-600" aria-hidden="true">
+              •
+            </span>
+            <time dateTime={post.publishedAt.toISOString()}>
+              {formattedDate}
+            </time>
+            {formattedUpdatedDate && (
               <>
                 <span className="text-zinc-600" aria-hidden="true">
                   •
                 </span>
-                <span className="inline-flex items-center gap-1.5 text-zinc-300">
-                  <svg
-                    className="w-3.5 h-3.5 text-zinc-400"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                    aria-hidden="true"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                  {post.readingTimeMinutes} min read
-                </span>
+                <span>Updated {formattedUpdatedDate}</span>
               </>
             )}
-        </div>
+            {typeof post.readingTimeMinutes === "number" &&
+              post.readingTimeMinutes > 0 && (
+                <>
+                  <span className="text-zinc-600" aria-hidden="true">
+                    •
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 text-zinc-300">
+                    <svg
+                      className="w-3.5 h-3.5 text-zinc-400"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                      aria-hidden="true"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                    {post.readingTimeMinutes} min read
+                  </span>
+                </>
+              )}
+          </div>
+        </header>
 
-        {/* Tags list row */}
-        <div className="flex flex-wrap gap-2 py-4 border-b border-zinc-900">
-          {post.tags.map((tag) => (
-            <span
-              key={tag}
-              className="px-2.5 py-0.5 text-xs font-mono font-medium bg-zinc-900/60 border border-zinc-800/80 text-muted-strong rounded"
+        <div className="mt-8 grid w-full grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,1fr)_14rem] lg:gap-8">
+          <aside className="blog-reader-toc-rail lg:col-start-2 lg:row-start-1">
+            <TableOfContents headings={headings} />
+          </aside>
+
+          {/* Long-form Article Narrative */}
+          <article className="prose prose-invert blog-prose min-w-0 max-w-none text-neutral-300 leading-relaxed lg:col-start-1 lg:row-start-1">
+            <RichNarrative html={processedHtml} />
+
+            <footer
+              aria-label="Article topics"
+              className="mt-10 flex flex-wrap gap-2 border-t border-zinc-800/80 pt-5"
             >
-              #{tag}
-            </span>
-          ))}
+              <span className="sr-only">Topics:</span>
+              {post.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="rounded border border-zinc-800/80 bg-zinc-900/60 px-2.5 py-1 font-mono text-xs font-medium text-muted-strong"
+                >
+                  #{tag}
+                </span>
+              ))}
+            </footer>
+          </article>
         </div>
-
-        {/* Table of Contents */}
-        <TableOfContents headings={headings} />
-
-        {/* Long-form Article Narrative */}
-        <article className="prose prose-invert max-w-none text-neutral-300 leading-relaxed space-y-8 mt-8">
-          <RichNarrative html={processedHtml} />
-        </article>
 
         {/* Reader Reactions Control */}
-        <BlogPostReactions slug={post.slug} />
+        <div className="mt-8 w-full max-w-3xl">
+          <BlogPostReactions slug={post.slug} />
 
-        {/* Contextual Related Dispatches & Case Studies */}
-        <RelatedReading items={relatedItems} />
+          {/* Contextual Related Dispatches & Case Studies */}
+          <RelatedReading items={relatedItems} />
 
-        {/* Sequential Next / Previous Dispatch Navigation */}
-        {prevPost && nextPost && (
-          <NextPrevNav
-            prev={
-              prevPost.slug !== slug
-                ? {
-                    title: prevPost.title,
-                    href: `/blog/${prevPost.slug}`,
-                    label: "Previous Dispatch",
-                    tag: prevPost.pillar,
-                  }
-                : null
-            }
-            next={
-              nextPost.slug !== slug
-                ? {
-                    title: nextPost.title,
-                    href: `/blog/${nextPost.slug}`,
-                    label: "Next Dispatch",
-                    tag: nextPost.pillar,
-                  }
-                : null
-            }
-            backToHub={{
-              title: "View All Dispatches",
-              href: "/blog",
-            }}
-          />
-        )}
+          {/* Sequential Next / Previous Dispatch Navigation */}
+          {prevPost && nextPost && (
+            <NextPrevNav
+              prev={
+                prevPost.slug !== slug
+                  ? {
+                      title: prevPost.title,
+                      href: `/blog/${prevPost.slug}`,
+                      label: "Previous Dispatch",
+                      tag: prevPost.pillar,
+                    }
+                  : null
+              }
+              next={
+                nextPost.slug !== slug
+                  ? {
+                      title: nextPost.title,
+                      href: `/blog/${nextPost.slug}`,
+                      label: "Next Dispatch",
+                      tag: nextPost.pillar,
+                    }
+                  : null
+              }
+              backToHub={{
+                title: "View All Dispatches",
+                href: "/blog",
+              }}
+            />
+          )}
+        </div>
       </div>
     </PageLayout>
   );

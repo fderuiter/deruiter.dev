@@ -53,7 +53,7 @@ describe("Blog Reader Metadata Display (Ticket #1056)", () => {
       params: Promise.resolve({ slug: "test-metadata-slug" }),
     });
 
-    render(pageElement);
+    const { container } = render(pageElement);
 
     // Author byline
     expect(screen.getByText("By Frederick de Ruiter")).toBeDefined();
@@ -75,5 +75,39 @@ describe("Blog Reader Metadata Display (Ticket #1056)", () => {
     // Tags
     expect(screen.getByText("#cdisc")).toBeDefined();
     expect(screen.getByText("#odm")).toBeDefined();
+
+    const article = container.querySelector("article");
+    const topicsFooter = article?.querySelector(
+      'footer[aria-label="Article topics"]'
+    );
+    const reactions = container.querySelector(
+      '[data-testid="blog-post-reactions"]'
+    );
+
+    expect(article).not.toBeNull();
+    expect(topicsFooter).not.toBeNull();
+    expect(topicsFooter?.textContent).toContain("#cdisc");
+    expect(topicsFooter?.textContent).toContain("#odm");
+    expect(topicsFooter?.parentElement).toBe(article);
+    expect(article?.lastElementChild).toBe(topicsFooter);
+    expect(reactions).not.toBeNull();
+    expect(
+      (article!.compareDocumentPosition(reactions!) &
+        Node.DOCUMENT_POSITION_FOLLOWING) !==
+        0
+    ).toBe(true);
+
+    for (const metadata of [
+      screen.getByText("Clinical Data Engineering & CDISC Standards"),
+      screen.getByText("By Frederick de Ruiter"),
+      screen.getByText("March 1, 2026"),
+      screen.getByText("7 min read"),
+    ]) {
+      expect(
+        (metadata.compareDocumentPosition(article!) &
+          Node.DOCUMENT_POSITION_FOLLOWING) !==
+          0
+      ).toBe(true);
+    }
   });
 });

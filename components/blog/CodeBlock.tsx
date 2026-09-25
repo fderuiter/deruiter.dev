@@ -16,7 +16,7 @@ export const CODE_BLOCK_LABEL_CLASS =
 export const CODE_BLOCK_BUTTON_CLASS =
   "inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-zinc-800/60 hover:bg-zinc-800 text-zinc-300 hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-brand-cyan/50 text-xs";
 export const CODE_BLOCK_PRE_CLASS =
-  "p-4 overflow-x-auto text-sm font-mono text-zinc-200 leading-relaxed outline-none focus:ring-1 focus:ring-brand-cyan/40";
+  "p-4 overflow-x-auto text-sm font-mono text-zinc-200 leading-relaxed outline-none focus-visible:ring-2 focus-visible:ring-brand-cyan/70 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950";
 
 interface CodeBlockProps {
   language?: string;

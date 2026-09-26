@@ -17,6 +17,7 @@ import { beforeAll, describe, it, expect } from "vitest";
 import {
   ACT_I,
   ACT_II,
+  ACT_III,
   DMC_MILESTONE_SCENARIO,
   FDA_IR_SCENARIO,
   advanceRun,
@@ -77,6 +78,24 @@ const BANDS: Record<string, Record<BotStyle, Band>> = {
     PERFECT: "ALL",
   },
   "dmc-open-session-big-blind": {
+    SLOPPY: "FEW",
+    HASTY: "FEW",
+    MEDIAN: "MOST",
+    PERFECT: "ALL",
+  },
+  "blinded-data-review-small-blind": {
+    SLOPPY: "FEW",
+    HASTY: "FEW",
+    MEDIAN: "MOST",
+    PERFECT: "ALL",
+  },
+  "sponsor-topline-big-blind": {
+    SLOPPY: "FEW",
+    HASTY: "FEW",
+    MEDIAN: "MOST",
+    PERFECT: "ALL",
+  },
+  "csr-lock-placeholder-boss-blind": {
     SLOPPY: "FEW",
     HASTY: "FEW",
     MEDIAN: "MOST",
@@ -210,6 +229,7 @@ describe("balance harness", () => {
     SAMPLES = [
       ...SEEDS.flatMap((seed) => sampleAct(ACT_I, seed)),
       ...SEEDS.flatMap((seed) => sampleAct(ACT_II, seed)),
+      ...SEEDS.flatMap((seed) => sampleAct(ACT_III, seed)),
       ...measure(
         DMC_MILESTONE_SCENARIO,
         createTableState(DMC_MILESTONE_SCENARIO),
@@ -224,9 +244,9 @@ describe("balance harness", () => {
     if (process.env.TE_BALANCE_REPORT) {
       writeFileSync(process.env.TE_BALANCE_REPORT, `${report()}\n`);
     }
-  }, 300_000);
+  }, 600_000);
 
-  it("reaches every Blind in Acts I and II on every seed, and both bosses", () => {
+  it("reaches every Blind in Acts I to III on every seed, and every boss", () => {
     for (const blindId of Object.keys(BANDS)) {
       expect(SAMPLES.some((s) => s.blindId === blindId)).toBe(true);
     }
@@ -234,6 +254,7 @@ describe("balance harness", () => {
       new Set(SAMPLES.filter((s) => s.blindId === id).map((s) => s.seed)).size;
     expect(reached("dose-escalation-boss-blind")).toBe(SEEDS.length);
     expect(reached("dmc-open-session-big-blind")).toBe(SEEDS.length);
+    expect(reached("csr-lock-placeholder-boss-blind")).toBe(SEEDS.length);
     // Act II's pool draws each boss on some seeds; both are also measured
     // on their own.
     expect(reached("dmc-milestone-boss-blind")).toBeGreaterThan(1);
@@ -272,10 +293,11 @@ describe("balance harness", () => {
     }
   });
 
-  it("is deterministic from seed", { timeout: 150_000 }, () => {
+  it("is deterministic from seed", { timeout: 300_000 }, () => {
     const again = [
       ...sampleAct(ACT_I, SEEDS[0]),
       ...sampleAct(ACT_II, SEEDS[0]),
+      ...sampleAct(ACT_III, SEEDS[0]),
     ];
     expect(again).toEqual(SAMPLES.filter((s) => s.seed === SEEDS[0]));
   });

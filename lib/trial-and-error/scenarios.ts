@@ -8,7 +8,9 @@
  * the act's Boss pool, and every Blind after the first opens on a card from
  * the crisis deck (T&E-05). Act II, the Phase II proof of concept, plays
  * internal QC and the DMC's open session under a new SAP, then draws its
- * Boss from a pool of two (#1084). All subjects, events, values and
+ * Boss from a pool of two (#1084). Act III, the Phase III blinded pivotal
+ * study, deals the first efficacy outputs and ends on CSR Lock (#1085).
+ * All subjects, events, values and
  * rules are fictional teaching material. They supply game context only and
  * are not clinical or regulatory advice.
  */
@@ -1086,6 +1088,27 @@ export const SPONSOR_SAFETY_SCENARIO: Scenario = {
   ],
 };
 
+/** The signed-off demographics table, as a face-only card. */
+const DEMOGRAPHICS_FINAL = card({
+  id: "C-T14.1.1",
+  cardType: "TABLE",
+  number: "Table 14.1.1",
+  title: "Demographics (Final)",
+  population: "ITT",
+  chips: 30,
+  mult: 1,
+  topic: "DM",
+  csrStage: "BASELINE",
+  face: {
+    kind: "TABLE",
+    columns: ["Placebo", "Active", "Total"],
+    rows: demographicsRows.map((r, i) => ({
+      label: r.label,
+      values: DEMOGRAPHICS_CLEAN[i],
+    })),
+  },
+});
+
 // ---------------------------------------------------------------------------
 // Boss Blind: Dose Escalation Committee.
 // ---------------------------------------------------------------------------
@@ -1168,25 +1191,7 @@ export const DOSE_ESCALATION_SCENARIO: Scenario = {
     pick(COMMITTEE.cards, "cardiac-B"),
     AE_LISTING,
     pick(COMMITTEE.cards, "gi-B"),
-    card({
-      id: "C-T14.1.1",
-      cardType: "TABLE",
-      number: "Table 14.1.1",
-      title: "Demographics (Final)",
-      population: "ITT",
-      chips: 30,
-      mult: 1,
-      topic: "DM",
-      csrStage: "BASELINE",
-      face: {
-        kind: "TABLE",
-        columns: ["Placebo", "Active", "Total"],
-        rows: demographicsRows.map((r, i) => ({
-          label: r.label,
-          values: DEMOGRAPHICS_CLEAN[i],
-        })),
-      },
-    }),
+    DEMOGRAPHICS_FINAL,
     pick(COMMITTEE.cards, "general-A"),
     SAE_LISTING,
     DEMOGRAPHICS_BLANK,
@@ -1571,11 +1576,19 @@ const DMC = safetyDrafts(DMC_RULEBOOK.id, [
 
 const DMC_SHELLS = DMC.shells.map((shell) => ({ ...shell, isBlinded: true }));
 
-/** Time-to-event records: `events` maps a subject to its event week. */
-const kmRecords = (events: Record<string, number>, censoredAt: number) =>
+/**
+ * Time-to-event records: `events` maps a subject to its event week, and
+ * `censored` to an early censoring week; everyone else is censored at
+ * `censoredAt`.
+ */
+const kmRecords = (
+  events: Record<string, number>,
+  censoredAt: number,
+  censored: Record<string, number> = {}
+) =>
   POPULATION_SNAPSHOT.subjects.map((s) => ({
     subjectId: s.id,
-    time: events[s.id] ?? censoredAt,
+    time: events[s.id] ?? censored[s.id] ?? censoredAt,
     event: s.id in events,
   }));
 
@@ -1759,25 +1772,7 @@ export const DMC_MILESTONE_SCENARIO: Scenario & { encounter: DmcDefense } = {
   startingCpu: 6,
   table: { startingCpu: 16, handSize: 8, maxSelection: 5 },
   deck: [
-    card({
-      id: "C-T14.1.1",
-      cardType: "TABLE",
-      number: "Table 14.1.1",
-      title: "Demographics (Final)",
-      population: "ITT",
-      chips: 30,
-      mult: 1,
-      topic: "DM",
-      csrStage: "BASELINE",
-      face: {
-        kind: "TABLE",
-        columns: ["Placebo", "Active", "Total"],
-        rows: demographicsRows.map((r, i) => ({
-          label: r.label,
-          values: DEMOGRAPHICS_CLEAN[i],
-        })),
-      },
-    }),
+    DEMOGRAPHICS_FINAL,
     DM_LISTING,
     pick(DMC.cards, "overview-D"),
     DISPOSITION,
@@ -2262,6 +2257,516 @@ export const ACT_II: Act = {
   shop: ACT_I_SHOP,
 };
 
+// ---------------------------------------------------------------------------
+// Act III: Phase III Blinded Pivotal (#1085).
+// ---------------------------------------------------------------------------
+
+/**
+ * Act III's SAP: the pivotal study's own version. Incidence percentages stay
+ * whole numbers, as in Phase II.
+ */
+const PHASE_III_RULEBOOK = safetyRulebook(
+  "SAP-P3-001",
+  "Phase III SAP §11 Safety Outputs",
+  "SAP-P3",
+  3,
+  0
+);
+
+const P3 = { percentPrecision: 0 };
+
+/**
+ * The primary efficacy table: time to symptom resolution (ITT). Two Placebo
+ * subjects resolve (S-002 at week 10, S-005 at week 11); five Active
+ * subjects do (weeks 3 to 8), and S-008 is censored at week 2 when it
+ * discontinued.
+ */
+const efficacyPrimary = (id: string, title: string): TlfCard =>
+  card({
+    id,
+    cardType: "TABLE",
+    number: "Table 14.2.1",
+    title,
+    population: "ITT",
+    chips: 40,
+    mult: 1,
+    topic: "EFF-PRIMARY",
+    csrStage: "EFFICACY",
+    face: {
+      kind: "TABLE",
+      columns: ["Placebo", "Active"],
+      rows: [
+        { label: "Subjects, N", values: ["6", "6"] },
+        { label: "Resolved", values: ["2 (33)", "5 (83)"] },
+        { label: "Median, weeks", values: ["NE", "5"] },
+      ],
+    },
+  });
+
+/** The week-12 responder table, a secondary endpoint (ITT). */
+const efficacyResponders = (id: string, title: string): TlfCard =>
+  card({
+    id,
+    cardType: "TABLE",
+    number: "Table 14.2.2",
+    title,
+    population: "ITT",
+    chips: 35,
+    mult: 1,
+    topic: "EFF-SECONDARY",
+    csrStage: "EFFICACY",
+    face: {
+      kind: "TABLE",
+      columns: ["Placebo", "Active"],
+      rows: [
+        { label: "Subjects, N", values: ["6", "6"] },
+        { label: "Responders", values: ["2 (33)", "5 (83)"] },
+        { label: "Difference, %", values: ["Ref", "50"] },
+      ],
+    },
+  });
+
+/** Change from baseline in symptom score at week 12 (ITT). */
+const efficacyChange = (id: string, title: string): TlfCard =>
+  card({
+    id,
+    cardType: "TABLE",
+    number: "Table 14.2.3",
+    title,
+    population: "ITT",
+    chips: 35,
+    mult: 1,
+    topic: "EFF-SECONDARY",
+    csrStage: "EFFICACY",
+    face: {
+      kind: "TABLE",
+      columns: ["Placebo", "Active"],
+      rows: [
+        { label: "Subjects, N", values: ["6", "6"] },
+        { label: "Mean change", values: ["-1.2", "-4.6"] },
+        { label: "LS mean diff.", values: ["Ref", "-3.4"] },
+      ],
+    },
+  });
+
+/**
+ * Time to symptom resolution (KM), drawn from the primary efficacy table
+ * (`parentId`). With `draft`, the Active at-risk row still counts S-008 at
+ * week 4, after it was censored at week 2.
+ */
+const kmResolution = (parentId: string, draft: boolean): TlfCard => ({
+  id: "C-F14.2.1",
+  cardType: "FIGURE",
+  number: "Figure 14.2.1",
+  title: "Time to Symptom Resolution (KM)",
+  population: "ITT",
+  chips: 30,
+  mult: 1,
+  topic: "EFF-PRIMARY",
+  csrStage: "EFFICACY",
+  km: {
+    endpoint: "Time to symptom resolution",
+    timeUnit: "weeks",
+    populationSnapshotId: snapshotId,
+    parent: {
+      cardId: parentId,
+      atRiskRow: "Subjects, N",
+      eventsRow: "Resolved",
+    },
+    timeOrigin: 0,
+    milestones: [0, 4, 8, 12],
+    records: kmRecords(
+      {
+        "S-002": 10,
+        "S-005": 11,
+        "S-007": 4,
+        "S-009": 3,
+        "S-010": 8,
+        "S-011": 6,
+        "S-012": 5,
+      },
+      12,
+      { "S-008": 2 }
+    ),
+    displayed: [
+      {
+        arm: "PLACEBO",
+        curve: [
+          [0, 1],
+          [10, 0.833],
+          [11, 0.667],
+          [12, 0.667],
+        ],
+        censorTicks: [12],
+        atRisk: [6, 6, 6, 4],
+      },
+      {
+        arm: "ACTIVE",
+        curve: [
+          [0, 1],
+          [3, 0.8],
+          [4, 0.6],
+          [5, 0.4],
+          [6, 0.2],
+          [8, 0],
+          [12, 0],
+        ],
+        censorTicks: [2],
+        atRisk: draft ? [6, 5, 1, 0] : [6, 4, 1, 0],
+      },
+    ],
+  },
+});
+
+/** The primary endpoint's treatment difference by subgroup (forest plot). */
+const FOREST_PRIMARY = card({
+  id: "C-F14.2.4",
+  cardType: "FIGURE",
+  number: "Figure 14.2.4",
+  title: "Primary Endpoint by Subgroup (Forest)",
+  population: "ITT",
+  chips: 30,
+  mult: 1,
+  topic: "EFF-PRIMARY",
+  csrStage: "EFFICACY",
+  face: {
+    kind: "FIGURE",
+    plot: {
+      type: "FOREST",
+      reference: 0,
+      intervals: [
+        { label: "Overall", estimate: 50, lower: 4, upper: 96 },
+        { label: "Age < 65", estimate: 60, lower: 8, upper: 100 },
+        { label: "Age ≥ 65", estimate: 33, lower: -41, upper: 100 },
+        { label: "Female", estimate: 58, lower: 2, upper: 100 },
+        { label: "Male", estimate: 33, lower: -50, upper: 100 },
+      ],
+    },
+    source: "Table 14.2.1",
+  },
+});
+
+// Blinded data review: pooled safety outputs, Total column only.
+const BLINDED_REVIEW = safetyDrafts(
+  PHASE_III_RULEBOOK.id,
+  [
+    { output: "overview", version: "F", label: "Blinded review (v0.5)" },
+    // One SAE too many.
+    {
+      output: "sae",
+      version: "F",
+      label: "Blinded review (v0.5)",
+      defects: { "1:0": "4 (33)" },
+    },
+    // S-010's syncope and dizziness counted as two subjects.
+    {
+      output: "nervous",
+      version: "F",
+      label: "Blinded review (v0.5)",
+      defects: { "1:0": "4 (33)" },
+    },
+    { output: "gi", version: "F", label: "Blinded review (v0.5)" },
+  ],
+  { ...P3, pooled: true }
+);
+
+/**
+ * Small Blind. Before database lock the study team reviews the data blind:
+ * safety outputs pooled across arms, and the efficacy programs run as a dry
+ * run so the tables, the KM figure and the forest plot are validated before
+ * the real treatment codes arrive. This is the first place the game deals
+ * efficacy outputs.
+ */
+export const BLINDED_DATA_REVIEW_SCENARIO: Scenario = {
+  id: "blinded-data-review-small-blind",
+  title: "Blinded Data Review",
+  summary:
+    "Before database lock, the study team reviews pooled safety outputs and dry-runs the efficacy tables and figures.",
+  intro:
+    "The pivotal study's data are still blind. Safety outputs are pooled; the efficacy programs are dry-run so the tables and figures are ready for unblinding. Three Tables and two Figures drawn from them make an Efficacy Full House.",
+  blind: {
+    tier: "SMALL_BLIND",
+    name: "Small Blind: Blinded Data Review",
+    quota: 15000,
+  },
+  handType: "HIGH_TABLE",
+  startingCpu: 6,
+  table: { startingCpu: 10, handSize: 8, maxSelection: 5 },
+  deck: [
+    pick(BLINDED_REVIEW.cards, "overview-F"),
+    AE_LISTING,
+    efficacyPrimary("C-T14.2.1-DRY", "Time to Symptom Resolution (dry run)"),
+    kmResolution("C-T14.2.1-DRY", true),
+    DISPOSITION,
+    FOREST_PRIMARY,
+    pick(BLINDED_REVIEW.cards, "sae-F"),
+    SAE_LISTING,
+    efficacyResponders("C-T14.2.2-DRY", "Responders at Week 12 (dry run)"),
+    DM_LISTING,
+    pick(BLINDED_REVIEW.cards, "nervous-F"),
+    DEMOGRAPHICS_FINAL,
+    DISCONTINUED_LISTING,
+    pick(BLINDED_REVIEW.cards, "gi-F"),
+  ],
+  rulebook: PHASE_III_RULEBOOK,
+  populationSnapshot: POPULATION_SNAPSHOT,
+  shells: BLINDED_REVIEW.shells,
+  drawPile: BLINDED_REVIEW.drawPile,
+};
+
+// Topline: the unblinded, by-arm safety outputs.
+const TOPLINE = safetyDrafts(
+  PHASE_III_RULEBOOK.id,
+  [
+    // A 1-dp slip in the Active column.
+    {
+      output: "overview",
+      version: "G",
+      label: "Topline (v1.0)",
+      defects: { "1:1": "5 (83.3)" },
+    },
+    { output: "sae", version: "G", label: "Topline (v1.0)" },
+    // S-007's nausea and vomiting counted as two subjects.
+    {
+      output: "gi",
+      version: "G",
+      label: "Topline (v1.0)",
+      defects: { "1:1": "2 (33)", "1:2": "3 (25)" },
+    },
+    { output: "cardiac", version: "G", label: "Topline (v1.0)" },
+  ],
+  P3
+);
+
+/**
+ * Big Blind. After database lock and unblinding, the sponsor reads the
+ * topline results: the efficacy tables by arm, their figures, and the key
+ * safety tables. Act III's Big Blind is the sponsor topline review rather
+ * than a DMC open session, which Act II already plays.
+ */
+export const SPONSOR_TOPLINE_SCENARIO: Scenario = {
+  id: "sponsor-topline-big-blind",
+  title: "Sponsor Topline Review",
+  summary:
+    "After unblinding, the sponsor reads the topline: efficacy by arm, its figures, and the key safety tables.",
+  intro:
+    "The database is locked and the codes are broken. The sponsor wants the topline by arm: the primary endpoint, its KM figure and forest plot, the secondary endpoints, and the safety tables. Every number here goes into the press release, so check the figures against their tables.",
+  blind: {
+    tier: "BIG_BLIND",
+    name: "Big Blind: Sponsor Topline Review",
+    quota: 17000,
+  },
+  handType: "HIGH_TABLE",
+  startingCpu: 6,
+  table: { startingCpu: 12, handSize: 8, maxSelection: 5 },
+  deck: [
+    efficacyPrimary("C-T14.2.1", "Time to Symptom Resolution"),
+    pick(TOPLINE.cards, "overview-G"),
+    AE_LISTING,
+    kmResolution("C-T14.2.1", false),
+    efficacyResponders("C-T14.2.2", "Responders at Week 12"),
+    FOREST_PRIMARY,
+    DISPOSITION,
+    pick(TOPLINE.cards, "sae-G"),
+    SAE_LISTING,
+    efficacyChange("C-T14.2.3", "Change in Symptom Score"),
+    DEMOGRAPHICS_FINAL,
+    DM_LISTING,
+    pick(TOPLINE.cards, "gi-G"),
+    pick(TOPLINE.cards, "cardiac-G"),
+    DISCONTINUED_LISTING,
+  ],
+  rulebook: PHASE_III_RULEBOOK,
+  populationSnapshot: POPULATION_SNAPSHOT,
+  shells: TOPLINE.shells,
+  drawPile: TOPLINE.drawPile,
+};
+
+// The locked package's safety outputs.
+const LOCK_PACKAGE = safetyDrafts(
+  PHASE_III_RULEBOOK.id,
+  [
+    { output: "overview", version: "H", label: "CSR final (v2.0)" },
+    { output: "sae", version: "H", label: "CSR final (v2.0)" },
+    {
+      output: "nervous",
+      version: "H",
+      label: "CSR final (v2.0)",
+      defects: { "1:2": "4 (33)" },
+    },
+  ],
+  P3
+);
+
+/**
+ * PLACEHOLDER Boss (#922 replaces it). Act III's Boss is always CSR Lock.
+ * Until #922 delivers the lock and its reconciliation, this stand-in deals
+ * the final CSR package, one card for every CSR stage, under a three-hand
+ * limit, so the act can be played through.
+ */
+export const CSR_LOCK_PLACEHOLDER_SCENARIO: Scenario = {
+  id: "csr-lock-placeholder-boss-blind",
+  title: "CSR Lock (placeholder)",
+  summary:
+    "The final Clinical Study Report package. A stand-in for the CSR Lock boss until it is built.",
+  intro:
+    "The Clinical Study Report is ready to lock: disposition, baseline, efficacy, safety and the patient listings. Five outputs, one from each stage, make a CSR Straight. The lock itself arrives in a later build.",
+  blind: {
+    tier: "BOSS_BLIND",
+    name: "Boss Blind: CSR Lock (placeholder)",
+    quota: 15000,
+  },
+  boss: {
+    id: "CSR-LOCK-PLACEHOLDER",
+    name: "Lock Deadline",
+    description:
+      "The CSR package locks after 3 submissions. A placeholder until the CSR Lock boss is built.",
+    debuffType: "HAND_LIMIT",
+    maxHandsAllowed: 3,
+  },
+  handType: "HIGH_TABLE",
+  startingCpu: 6,
+  table: { startingCpu: 12, handSize: 8, maxSelection: 5 },
+  deck: [
+    DISPOSITION,
+    DEMOGRAPHICS_FINAL,
+    efficacyPrimary("C-T14.2.1", "Time to Symptom Resolution"),
+    pick(LOCK_PACKAGE.cards, "overview-H"),
+    AE_LISTING,
+    kmResolution("C-T14.2.1", false),
+    FOREST_PRIMARY,
+    efficacyResponders("C-T14.2.2", "Responders at Week 12"),
+    pick(LOCK_PACKAGE.cards, "sae-H"),
+    SAE_LISTING,
+    DM_LISTING,
+    efficacyChange("C-T14.2.3", "Change in Symptom Score"),
+    pick(LOCK_PACKAGE.cards, "nervous-H"),
+    DISCONTINUED_LISTING,
+  ],
+  rulebook: PHASE_III_RULEBOOK,
+  populationSnapshot: POPULATION_SNAPSHOT,
+  shells: LOCK_PACKAGE.shells,
+  drawPile: LOCK_PACKAGE.drawPile,
+};
+
+/** Act III's crisis deck. Every card has one choice that costs nothing. */
+export const ACT_III_CRISES: CrisisCard[] = [
+  {
+    id: "CR-P3-LOCK-SLIP",
+    name: "Database Lock Slip",
+    description:
+      "Three sites still have open queries on the primary endpoint. Lock can wait, or the queries can be closed as they stand.",
+    choices: [
+      {
+        id: "wait",
+        label: "Wait for the sites",
+        consequence: "Discard costs +1 CPU for this Blind.",
+        effect: {
+          modifier: {
+            id: "CR-P3-LOCK-DISCARD",
+            name: "Lock Slip",
+            description: "Every rerun waits on a query: +1 CPU.",
+            debuffType: "DISCARD_PENALTY",
+            discardCpuPenalty: 1,
+          },
+        },
+      },
+      {
+        id: "close",
+        label: "Close the queries as they stand",
+        consequence: "The medical monitor wants a memo: −1 CPU.",
+        effect: { cpu: -1 },
+      },
+    ],
+  },
+  {
+    id: "CR-P3-SAE-RECON",
+    name: "Late SAE Reconciliation",
+    description:
+      "The safety database and the clinical database disagree on one SAE's onset date, a week before lock.",
+    choices: [
+      {
+        id: "reconcile",
+        label: "Reconcile it now",
+        consequence: "A pharmacovigilance review: −2 CPU.",
+        effect: { cpu: -2 },
+      },
+      {
+        id: "footnote",
+        label: "Footnote the discrepancy",
+        consequence:
+          "Gain an AE Not Mutually Exclusive seal, but this Blind allows only 3 hands.",
+        effect: {
+          grantSeal: AE_NOT_EXCLUSIVE,
+          modifier: {
+            id: "CR-P3-SAE-HANDS",
+            name: "SAE Reconciliation",
+            description: "Review time goes to the SAE: 3 submissions only.",
+            debuffType: "HAND_LIMIT",
+            maxHandsAllowed: 3,
+          },
+        },
+      },
+    ],
+  },
+  {
+    id: "CR-P3-EMERGENCY-UNBLINDING",
+    name: "Emergency Unblinding",
+    description:
+      "An investigator requests one subject's treatment code for an emergency. The unblinding must be documented before lock.",
+    choices: [
+      {
+        id: "document",
+        label: "Document it in the TMF",
+        consequence: "Earn $1k of study budget for the audit trail.",
+        effect: { budget: 1 },
+      },
+      {
+        id: "footnote",
+        label: "Document it in a footnote",
+        consequence: "Spends the first footnote seal in your tray.",
+        effect: { spendSeal: true },
+      },
+    ],
+  },
+  {
+    id: "CR-P3-PRE-NDA",
+    name: "Pre-NDA Meeting",
+    description:
+      "The agency grants a pre-NDA meeting and wants the key tables in its briefing book. The sponsor will fund the rush.",
+    choices: [
+      {
+        id: "brief",
+        label: "Write the briefing book",
+        consequence: "Earn $2k of study budget, but −1 CPU.",
+        effect: { budget: 2, cpu: -1 },
+      },
+      {
+        id: "decline",
+        label: "Ask for a later date",
+        consequence: "Nothing changes this Blind.",
+        effect: {},
+      },
+    ],
+  },
+];
+
+/**
+ * Act III: the Phase III blinded pivotal study. A blinded data review, then
+ * the sponsor's topline review after unblinding; the Boss is always CSR
+ * Lock, played as a placeholder until #922 builds it. It reads the same
+ * fictional study data as Acts I and II and shares their Procurement Shop.
+ * Until the campaign links the acts (#924) it is played on its own.
+ */
+export const ACT_III: Act = {
+  id: "act-3-phase-3",
+  title: "Act III: Phase III Blinded Pivotal",
+  blinds: [BLINDED_DATA_REVIEW_SCENARIO, SPONSOR_TOPLINE_SCENARIO],
+  bossPool: [CSR_LOCK_PLACEHOLDER_SCENARIO],
+  crisisDeck: ACT_III_CRISES,
+  shop: ACT_I_SHOP,
+};
+
 /** Every playable scenario, keyed by id. */
 export const SCENARIOS: Readonly<Record<string, Scenario>> = Object.freeze(
   Object.fromEntries(
@@ -2270,6 +2775,8 @@ export const SCENARIOS: Readonly<Record<string, Scenario>> = Object.freeze(
       ...(ACT_I.bossPool ?? []),
       ...ACT_II.blinds,
       ...(ACT_II.bossPool ?? []),
+      ...ACT_III.blinds,
+      ...(ACT_III.bossPool ?? []),
     ].map((scenario) => [scenario.id, scenario])
   )
 );

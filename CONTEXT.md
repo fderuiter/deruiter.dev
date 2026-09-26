@@ -462,6 +462,8 @@ Fictional teaching material; nothing in the game is clinical or regulatory advic
 - **FDA Information Request (IR)**: The End-of-Phase-2 boss. Each targeted question names the output that answers it, and a scored hand containing that output answers it once the hand's score covers the question's share of the quota. The response goes in at most two hands, against a deterministic 48-hour clock that every move spends.
 - **Clinical Hold**: The loss of an FDA Information Request: the clock no longer leaves time to play a hand while questions are open. It ends the run.
 - **Rulebook drift**: A later act's SAP changing a rule an earlier act's outputs were built to. Act II's Phase II SAP reports incidence percentages as whole numbers, so a Phase I output printed to 1 dp is a precision redline until it is recompiled.
+- **Blinded data review**: Act III's Small Blind. Before database lock the study team reviews pooled safety outputs and dry-runs the efficacy tables and figures, so they are validated before the treatment codes arrive.
+- **Topline review**: Act III's Big Blind. After unblinding, the sponsor reads the primary and secondary efficacy results by arm, their figures, and the key safety tables.
 - **Pooled output**: An open-session DMC output that shows only the Total column, so no treatment arm can be read from it. Its by-arm counterpart is a closed-session output, dealt face down.
 - **Relic (SOP Relic)**: A passive modifier that is a person or a tool on the player's team, such as a lead programmer, a validated macro suite or a double-programming SOP.
 - **Site Activation Pack**: A booster pack that enrolls new subjects into the current study, adding Chips and creating a new population snapshot that stales dependent outputs.

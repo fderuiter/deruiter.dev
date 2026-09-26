@@ -56,6 +56,18 @@ Re-exports [ACT_II_CRISES](scenarios/variables/ACT_II_CRISES.md)
 
 ***
 
+### ACT\_III
+
+Re-exports [ACT_III](scenarios/variables/ACT_III.md)
+
+***
+
+### ACT\_III\_CRISES
+
+Re-exports [ACT_III_CRISES](scenarios/variables/ACT_III_CRISES.md)
+
+***
+
 ### ActSchema
 
 Re-exports [ActSchema](types/variables/ActSchema.md)
@@ -119,6 +131,12 @@ Re-exports [ArmSchema](types/variables/ArmSchema.md)
 ### Blind
 
 Re-exports [Blind](types/type-aliases/Blind.md)
+
+***
+
+### BLINDED\_DATA\_REVIEW\_SCENARIO
+
+Re-exports [BLINDED_DATA_REVIEW_SCENARIO](scenarios/variables/BLINDED_DATA_REVIEW_SCENARIO.md)
 
 ***
 
@@ -461,6 +479,12 @@ Re-exports [CrisisEffectSchema](types/variables/CrisisEffectSchema.md)
 ### CrisisView
 
 Re-exports [CrisisView](internal/table/interfaces/CrisisView.md)
+
+***
+
+### CSR\_LOCK\_PLACEHOLDER\_SCENARIO
+
+Re-exports [CSR_LOCK_PLACEHOLDER_SCENARIO](scenarios/variables/CSR_LOCK_PLACEHOLDER_SCENARIO.md)
 
 ***
 
@@ -1643,6 +1667,12 @@ Re-exports [SnapshotRefSchema](types/variables/SnapshotRefSchema.md)
 ### SPONSOR\_SAFETY\_SCENARIO
 
 Re-exports [SPONSOR_SAFETY_SCENARIO](scenarios/variables/SPONSOR_SAFETY_SCENARIO.md)
+
+***
+
+### SPONSOR\_TOPLINE\_SCENARIO
+
+Re-exports [SPONSOR_TOPLINE_SCENARIO](scenarios/variables/SPONSOR_TOPLINE_SCENARIO.md)
 
 ***
 

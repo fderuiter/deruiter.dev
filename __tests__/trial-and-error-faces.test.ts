@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   ACT_I,
+  ACT_III,
   SCENARIOS,
   CardFaceSchema,
   DEMOGRAPHICS_SCENARIO,
@@ -90,6 +91,34 @@ describe("card faces", () => {
         expect(card.cardType).not.toBe("FIGURE");
         expect(card.topic).not.toBe("EFF");
         expect(card.csrStage).not.toBe("EFFICACY");
+      }
+    }
+  });
+});
+
+describe("Act III efficacy faces (#1085)", () => {
+  it("deals efficacy Tables and a forest plot with valid faces in every Act III Blind", () => {
+    for (const blind of [...ACT_III.blinds, ...(ACT_III.bossPool ?? [])]) {
+      const view = deriveTableView(blind, {
+        ...createTableState(blind),
+        hand: blind.deck.map((c) => c.id),
+      });
+      const efficacy = view.hand.filter(
+        (h) => h.card.csrStage === "EFFICACY" && h.card.cardType === "TABLE"
+      );
+      expect(efficacy.length, blind.id).toBeGreaterThanOrEqual(2);
+      const forest = view.hand.filter(
+        (h) => h.face.kind === "FIGURE" && h.face.plot.type === "FOREST"
+      );
+      expect(forest, blind.id).toHaveLength(1);
+      for (const h of [...efficacy, ...forest]) {
+        expect(CardFaceSchema.safeParse(h.face).success, h.card.id).toBe(true);
+      }
+      const plot = forest[0].face.kind === "FIGURE" && forest[0].face.plot;
+      if (!plot || plot.type !== "FOREST") throw new Error("expected a forest");
+      for (const i of plot.intervals) {
+        expect(i.lower).toBeLessThanOrEqual(i.estimate);
+        expect(i.estimate).toBeLessThanOrEqual(i.upper);
       }
     }
   });

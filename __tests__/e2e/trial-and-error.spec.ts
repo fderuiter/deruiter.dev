@@ -723,12 +723,19 @@ test.describe("Trial & Error: Biostat Ops Card Table", () => {
       const first = (await order(page))[0]!;
       const grip = page.getByTestId("drag-grip").first();
       const target = await page.locator("[data-card-id]").nth(2).boundingBox();
+      // The hand overlaps to fit (#1181): aim at the part of the third card
+      // that the fourth leaves in view.
+      const next = await page.locator("[data-card-id]").nth(3).boundingBox();
       const box = await grip.boundingBox();
       await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
       await page.mouse.down();
-      await page.mouse.move(target!.x + target!.width * 0.75, box!.y + 4, {
-        steps: 20,
-      });
+      await page.mouse.move(
+        target!.x + (next!.x - target!.x) * 0.75,
+        box!.y + 4,
+        {
+          steps: 20,
+        }
+      );
       await page.mouse.up();
       await expect.poll(async () => (await order(page)).indexOf(first)).toBe(2);
     });
@@ -768,6 +775,46 @@ test.describe("Trial & Error: Biostat Ops Card Table", () => {
         "true"
       );
     });
+
+    for (const [width, height, reducedMotion] of [
+      [1280, 720, "no-preference"],
+      [1440, 900, "no-preference"],
+      [1440, 900, "reduce"],
+    ] as const) {
+      test(`shows the whole hand without scrolling at ${width}px, motion ${reducedMotion} (#1181)`, async ({
+        page,
+      }) => {
+        await page.emulateMedia({ reducedMotion });
+        await page.setViewportSize({ width, height });
+        await launch(page);
+        const hand = page.getByTestId("hand");
+        // The row fits once it has been measured, as the deal settles.
+        await expect(async () => {
+          const fit = await hand.evaluate((el) => {
+            const row = el.getBoundingClientRect();
+            // Each card's slot: the fan's tilt may tip a corner past it.
+            const cards = Array.from(el.children).map((c) =>
+              c.getBoundingClientRect()
+            );
+            return {
+              scroll: el.scrollWidth,
+              client: el.clientWidth,
+              count: cards.length,
+              inside: cards.every(
+                (c) => c.left >= row.left - 1 && c.right <= row.right + 1
+              ),
+            };
+          });
+          expect(fit.count).toBe(8);
+          expect(fit.scroll).toBeLessThanOrEqual(fit.client);
+          expect(fit.inside).toBe(true);
+        }).toPass({ timeout: 10000 });
+        const last = hand.locator("[data-card-id]").last();
+        await last.click();
+        await expect(last).toHaveAttribute("aria-pressed", "true");
+        await expectNoHorizontalOverflow(page);
+      });
+    }
 
     test("keeps the card detail readable at 200% zoom", async ({ page }) => {
       await page.setViewportSize({ width: 1280, height: 800 });

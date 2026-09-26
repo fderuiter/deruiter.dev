@@ -30,6 +30,8 @@ interface HandCardProps {
   view: TableCardView;
   index: number;
   count: number;
+  /** Rem this card slides under its left neighbour (see `handOverlap`). */
+  overlap: number;
   /** Fan, tilt, deal and flip motion may run (≥768px, no reduced motion). */
   physical: boolean;
   /** Deal and flip motion may run (no reduced motion). */
@@ -57,6 +59,7 @@ export function HandCard({
   view,
   index,
   count,
+  overlap,
   physical,
   animate,
   tabIndex,
@@ -83,9 +86,6 @@ export function HandCard({
   const longPressed = useRef(false);
 
   const offset = index - (count - 1) / 2;
-  // Overlap tightens as the hand grows past five cards.
-  const overlap =
-    physical && count > 5 ? Math.min(30, (count - 5) * 6) / 10 : 0;
   const lift = (view.selected ? -14 : 0) + (raised && physical ? -8 : 0);
 
   const cancelPress = () => {

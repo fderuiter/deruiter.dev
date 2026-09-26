@@ -72,6 +72,8 @@ import {
   HandCard,
   SEAL_DRAG_TYPE,
 } from "@/components/trial-and-error/cards/HandCard";
+import { handOverlap } from "@/components/trial-and-error/cards/hand-fit";
+import { useResizeObserver } from "@/hooks/useResizeObserver";
 import { STAMP_LABELS } from "@/components/trial-and-error/cards/Stamp";
 import {
   ScoreBreakdown,
@@ -426,6 +428,12 @@ export function CardTable({
   } = useTeMotion();
   const animateCards = !reducedMotion;
   const physical = !reducedMotion && !isCompactViewport;
+  const [handWidthRem, setHandWidthRem] = useState(0);
+  const handRef = useResizeObserver<HTMLDivElement>((entry) => {
+    const rem =
+      parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    setHandWidthRem(entry.contentRect.width / rem);
+  });
   const timeline = view.lastTimeline;
   const sound = useTeSound();
   const playback = useScorePlayback(timeline, state.lastPlay, {
@@ -820,6 +828,13 @@ export function CardTable({
     }
   };
 
+  // A desktop hand overlaps to fit its row; phones keep the scroll strip.
+  const overlap = handOverlap({
+    count: handOrder.length,
+    cardRem: isCompactViewport ? 9 : 10,
+    widthRem: isCompactViewport ? 0 : handWidthRem,
+    fan: physical,
+  });
   const handCards = handOrder.map((id, index) => {
     const h = view.hand.find((c) => c.card.id === id);
     if (!h) return null;
@@ -830,6 +845,7 @@ export function CardTable({
         view={h}
         index={index}
         count={handOrder.length}
+        overlap={overlap}
         physical={physical}
         animate={animateCards}
         tabIndex={viewIndex === activeIndex ? 0 : -1}
@@ -1671,6 +1687,7 @@ export function CardTable({
                 onReorder={setDragOrder}
                 role="group"
                 aria-label={`Hand of ${view.hand.length}. Arrow keys move, Space selects, Enter plays, D discards, I inspects, R recompiles a stale card, S runs structural QC on a face-down card, A allocates a blank shell, question mark reads the card, Alt with arrows reorders. With a footnote seal picked up, Enter affixes it and Escape puts it back. Shift+R opens Run Info, and H lists every hand.`}
+                ref={handRef}
                 className="-mx-3 mt-1 flex overflow-x-auto px-3 pb-3 pt-7 [scrollbar-width:thin]"
                 data-testid="hand"
               >

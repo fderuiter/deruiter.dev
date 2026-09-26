@@ -19,8 +19,6 @@ import {
   IconArrowRight,
   IconCheck,
   IconFileText,
-  IconMaximize,
-  IconMinimize,
   IconTerminal2,
   IconShoppingCart,
   IconDeviceTv,
@@ -200,7 +198,6 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     | "class_select"
   >("playing");
   const [isFocused, setIsFocused] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
 
   // Hacking Minigame State
   const [hexPuzzle, setHexPuzzle] = useState<HexMatrixPuzzle | null>(null);
@@ -1719,17 +1716,6 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
               >
                 Subnet 02 (Firewall)
               </button>
-              <button
-                onClick={() => setIsExpanded((prev) => !prev)}
-                title="Toggle Expanded View"
-                className="px-1.5 py-0.5 rounded text-neutral-400 hover:text-white hover:bg-neutral-800 cursor-pointer"
-              >
-                {isExpanded ? (
-                  <IconMinimize className="w-3 h-3" />
-                ) : (
-                  <IconMaximize className="w-3 h-3" />
-                )}
-              </button>
             </div>
           </div>
         </div>
@@ -1842,9 +1828,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
           className={`arcade-labyrinth-canvas relative ${
             isFullscreen
               ? "w-full flex-1 max-h-[var(--layout-viewport-budget,calc(100vh-var(--header-height,80px)-var(--footer-height,48px)))] max-h-[var(--layout-viewport-budget,calc(100dvh-var(--header-height,80px)-var(--footer-height,48px)))] max-h-[calc(100vh-var(--header-height,80px)-var(--footer-height,48px))] max-h-[calc(100dvh-var(--header-height,80px)-var(--footer-height,48px))] aspect-[240/144] min-h-0"
-              : isExpanded
-                ? "w-full max-w-[360px] aspect-[240/144] h-auto max-h-[100vh] max-h-[100dvh]"
-                : "w-full max-w-[240px] aspect-[240/144] h-auto max-h-[100vh] max-h-[100dvh]"
+              : "w-[min(100%,calc((100dvh-16rem)*5/3))] min-w-[240px] aspect-[240/144] h-auto"
           } flex items-center justify-center transition-all duration-300 my-auto`}
           style={
             crtCalibration.curvature > 0.05
@@ -1869,10 +1853,8 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
             className={`block ${
               isFullscreen
                 ? "max-w-full max-h-full aspect-[240/144] object-contain"
-                : isExpanded
-                  ? "w-full max-w-[360px] aspect-[240/144] h-auto"
-                  : "w-full max-w-[240px] aspect-[240/144] h-auto"
-            } rounded-lg border border-neutral-900/60 bg-neutral-950 cursor-crosshair focus:outline-none focus:ring-2 focus:ring-emerald-500/50`}
+                : "w-full aspect-[240/144] h-auto"
+            } [image-rendering:pixelated] rounded-lg border border-neutral-900/60 bg-neutral-950 cursor-crosshair focus:outline-none focus:ring-2 focus:ring-emerald-500/50`}
           />
 
           {/* Off-screen Accessible DOM Fallback Subtree */}

@@ -28,6 +28,11 @@ import { CardFlip } from "@/components/trial-and-error/cards/CardFlip";
 import { MiniFigure } from "@/components/trial-and-error/cards/MiniFigure";
 import { MiniTable } from "@/components/trial-and-error/cards/MiniTable";
 import { StampSlot } from "@/components/trial-and-error/cards/Stamp";
+import {
+  CENTER_CLEARANCE_REM,
+  FAN_ALLOWANCE_REM,
+  handOverlap,
+} from "@/components/trial-and-error/cards/hand-fit";
 
 const announce = vi.fn();
 vi.mock("@/hooks/useAnnouncer", () => ({
@@ -544,5 +549,49 @@ describe("hand physicality on the Card Table", () => {
       screen.getByTestId("hand").children
     ) as HTMLElement[];
     expect(compact[1].style.marginLeft).toBe("");
+  });
+});
+
+describe("fitting the hand to its row (#1181)", () => {
+  it("keeps the fan's overlap when the hand already fits", () => {
+    expect(
+      handOverlap({ count: 8, cardRem: 10, widthRem: 90, fan: true })
+    ).toBe(1.8);
+    expect(
+      handOverlap({ count: 5, cardRem: 10, widthRem: 90, fan: true })
+    ).toBe(0);
+    expect(handOverlap({ count: 1, cardRem: 10, widthRem: 5, fan: true })).toBe(
+      0
+    );
+  });
+
+  it("overlaps just enough for eight cards to fit a 1440px cabinet", () => {
+    // The playtest's row: 887px of content at 16px per rem.
+    const widthRem = 887 / 16;
+    const still = handOverlap({ count: 8, cardRem: 10, widthRem, fan: false });
+    expect(still).toBe(3.6);
+    expect(8 * 10 - 7 * still).toBeLessThanOrEqual(widthRem);
+    // The fan's tilt needs room at the ends as well.
+    const fanned = handOverlap({ count: 8, cardRem: 10, widthRem, fan: true });
+    expect(fanned).toBe(3.8);
+    expect(8 * 10 - 7 * fanned).toBeLessThanOrEqual(
+      widthRem - FAN_ALLOWANCE_REM
+    );
+  });
+
+  it("keeps every card's middle in view, and scrolls past that", () => {
+    const overlap = handOverlap({
+      count: 12,
+      cardRem: 10,
+      widthRem: 30,
+      fan: false,
+    });
+    expect(overlap).toBe(5 - CENTER_CLEARANCE_REM);
+  });
+
+  it("leaves an unmeasured row to the fan alone", () => {
+    expect(
+      handOverlap({ count: 8, cardRem: 10, widthRem: 0, fan: false })
+    ).toBe(0);
   });
 });

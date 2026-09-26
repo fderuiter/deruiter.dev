@@ -2,7 +2,9 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+(
+  globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true;
 
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -41,7 +43,10 @@ const mockPlaySuccess = vi.fn();
 const mockPlayNote = vi.fn();
 
 vi.mock("@/components/providers/AudioProvider", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/components/providers/AudioProvider")>();
+  const actual =
+    await importOriginal<
+      typeof import("@/components/providers/AudioProvider")
+    >();
   return {
     ...actual,
     useAudio: () => ({
@@ -142,13 +147,35 @@ describe("RetroLabyrinth React Component UI Suite", () => {
     expect(container.textContent).toContain("[3] EMP");
   });
 
+  it("states the objective and marks the player and the fogged exit (#1187)", async () => {
+    await act(async () => {
+      root.render(<RetroLabyrinth isMounted={true} />);
+    });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    });
+
+    expect(container.textContent).toContain("OBJECTIVE");
+    expect(container.textContent).toContain("to the EXIT");
+
+    const ctx = HTMLCanvasElement.prototype.getContext("2d") as unknown as {
+      fillText: ReturnType<typeof vi.fn>;
+    };
+    const drawn = ctx.fillText.mock.calls.map((call) => call[0]);
+    expect(drawn).toContain("@");
+    expect(drawn).toContain("EXIT");
+    expect(drawn).toContain("REACH THE EXIT >>");
+  });
+
   it("should render ASCII fallback when isMounted is false", async () => {
     await act(async () => {
       root.render(<RetroLabyrinth isMounted={false} />);
     });
 
     expect(container.textContent).toContain("SYSTEM_LABYRINTH.EXE");
-    expect(container.textContent).toContain("[INITIALIZING LABYRINTH ENGINE...]");
+    expect(container.textContent).toContain(
+      "[INITIALIZING LABYRINTH ENGINE...]"
+    );
   });
 
   it("should enforce keyboard boundary with data-keyboard-boundary='true'", async () => {
@@ -166,17 +193,23 @@ describe("RetroLabyrinth React Component UI Suite", () => {
       root.render(<RetroLabyrinth isMounted={true} />);
     });
 
-    const boundary = container.querySelector('[data-keyboard-boundary="true"]') as HTMLElement;
+    const boundary = container.querySelector(
+      '[data-keyboard-boundary="true"]'
+    ) as HTMLElement;
 
     // Press '2' to switch to slot 2 (Port Scan for Script Kiddie)
     await act(async () => {
       boundary.dispatchEvent(
-        new KeyboardEvent("keydown", { key: "2", bubbles: true, cancelable: true })
+        new KeyboardEvent("keydown", {
+          key: "2",
+          bubbles: true,
+          cancelable: true,
+        })
       );
     });
 
-    const portScanBtn = Array.from(container.querySelectorAll("button")).find((b) =>
-      b.textContent?.includes("Port Scan")
+    const portScanBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.includes("Port Scan")
     );
     expect(portScanBtn?.className).toContain("bg-amber-500/20");
   });
@@ -187,17 +220,17 @@ describe("RetroLabyrinth React Component UI Suite", () => {
     });
 
     // Open class select modal
-    const classBadge = Array.from(container.querySelectorAll("button")).find((b) =>
-      b.textContent?.includes("Script Kiddie")
+    const classBadge = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.includes("Script Kiddie")
     );
     await act(async () => {
       classBadge?.click();
     });
 
     // Select Cryptanalyst class
-    const cryptanalystBtn = Array.from(container.querySelectorAll("button")).find((b) =>
-      b.textContent?.includes("Cryptanalyst")
-    );
+    const cryptanalystBtn = Array.from(
+      container.querySelectorAll("button")
+    ).find((b) => b.textContent?.includes("Cryptanalyst"));
     await act(async () => {
       cryptanalystBtn?.click();
     });
@@ -215,8 +248,8 @@ describe("RetroLabyrinth React Component UI Suite", () => {
       root.render(<RetroLabyrinth isMounted={true} />);
     });
 
-    const portScanBtn = Array.from(container.querySelectorAll("button")).find((b) =>
-      b.textContent?.includes("[2] Port Scan")
+    const portScanBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.includes("[2] Port Scan")
     );
     expect(portScanBtn).toBeTruthy();
 
@@ -232,12 +265,18 @@ describe("RetroLabyrinth React Component UI Suite", () => {
       root.render(<RetroLabyrinth isMounted={true} />);
     });
 
-    const boundary = container.querySelector('[data-keyboard-boundary="true"]') as HTMLElement;
+    const boundary = container.querySelector(
+      '[data-keyboard-boundary="true"]'
+    ) as HTMLElement;
 
     // Press '4' (unassigned in Script Kiddie loadout)
     await act(async () => {
       boundary.dispatchEvent(
-        new KeyboardEvent("keydown", { key: "4", bubbles: true, cancelable: true })
+        new KeyboardEvent("keydown", {
+          key: "4",
+          bubbles: true,
+          cancelable: true,
+        })
       );
     });
 
@@ -253,11 +292,17 @@ describe("RetroLabyrinth React Component UI Suite", () => {
       root.render(<RetroLabyrinth isMounted={true} />);
     });
 
-    const boundary = container.querySelector('[data-keyboard-boundary="true"]') as HTMLElement;
+    const boundary = container.querySelector(
+      '[data-keyboard-boundary="true"]'
+    ) as HTMLElement;
 
     await act(async () => {
       boundary.dispatchEvent(
-        new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true, cancelable: true })
+        new KeyboardEvent("keydown", {
+          key: "ArrowRight",
+          bubbles: true,
+          cancelable: true,
+        })
       );
     });
 
@@ -284,14 +329,16 @@ describe("RetroLabyrinth React Component UI Suite", () => {
     expect(container.textContent).toContain("Chips");
 
     // Click class badge to open class selector modal
-    const classBtn = Array.from(container.querySelectorAll("button")).find((b) =>
-      b.textContent?.includes("Script Kiddie")
+    const classBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.includes("Script Kiddie")
     );
     await act(async () => {
       classBtn?.click();
     });
 
-    expect(container.textContent).toContain("SELECT CYBERDECK FIRMWARE ARCHETYPE");
+    expect(container.textContent).toContain(
+      "SELECT CYBERDECK FIRMWARE ARCHETYPE"
+    );
     expect(container.textContent).toContain("Cryptanalyst");
     expect(container.textContent).toContain("APT Specialist");
   });
@@ -301,8 +348,8 @@ describe("RetroLabyrinth React Component UI Suite", () => {
       root.render(<RetroLabyrinth isMounted={true} />);
     });
 
-    const marketBtn = Array.from(container.querySelectorAll("button")).find((b) =>
-      b.textContent?.includes("Market")
+    const marketBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.includes("Market")
     );
     await act(async () => {
       marketBtn?.click();
@@ -318,7 +365,9 @@ describe("RetroLabyrinth React Component UI Suite", () => {
       root.render(<RetroLabyrinth isMounted={true} />);
     });
 
-    const crtBtn = container.querySelector("button[aria-label='Calibrate CRT Display & Phosphor Shaders']");
+    const crtBtn = container.querySelector(
+      "button[aria-label='Calibrate CRT Display & Phosphor Shaders']"
+    );
     expect(crtBtn).toBeTruthy();
 
     await act(async () => {
@@ -331,8 +380,8 @@ describe("RetroLabyrinth React Component UI Suite", () => {
     expect(container.textContent).toContain("Amber Mainframe Terminal");
 
     // Click Trinitron preset
-    const trinitronBtn = Array.from(container.querySelectorAll("button")).find((b) =>
-      b.textContent?.includes("Trinitron PVM Pro")
+    const trinitronBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.includes("Trinitron PVM Pro")
     );
     expect(trinitronBtn).toBeTruthy();
     await act(async () => {
@@ -346,8 +395,8 @@ describe("RetroLabyrinth React Component UI Suite", () => {
     expect(savedConfig.scanlinesEnabled).toBe(true);
 
     // Close modal
-    const closeBtn = Array.from(container.querySelectorAll("button")).find((b) =>
-      b.textContent?.includes("Apply & Close")
+    const closeBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.includes("Apply & Close")
     );
     await act(async () => {
       closeBtn?.click();
@@ -367,8 +416,8 @@ describe("RetroLabyrinth React Component UI Suite", () => {
     expect(initialCallCount).toBeGreaterThan(0);
 
     // Trigger a non-coordinate state update, e.g. switching CRT phosphor theme
-    const amberThemeBtn = Array.from(container.querySelectorAll("button")).find((b) =>
-      b.getAttribute("title")?.includes("Amber Hacker")
+    const amberThemeBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.getAttribute("title")?.includes("Amber Hacker")
     );
     expect(amberThemeBtn).toBeTruthy();
 
@@ -380,10 +429,16 @@ describe("RetroLabyrinth React Component UI Suite", () => {
     expect(tourSpy.mock.calls.length).toBe(initialCallCount);
 
     // Trigger a coordinate change by moving right
-    const boundary = container.querySelector('[data-keyboard-boundary="true"]') as HTMLElement;
+    const boundary = container.querySelector(
+      '[data-keyboard-boundary="true"]'
+    ) as HTMLElement;
     await act(async () => {
       boundary.dispatchEvent(
-        new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true, cancelable: true })
+        new KeyboardEvent("keydown", {
+          key: "ArrowRight",
+          bubbles: true,
+          cancelable: true,
+        })
       );
     });
 
@@ -393,5 +448,3 @@ describe("RetroLabyrinth React Component UI Suite", () => {
     tourSpy.mockRestore();
   });
 });
-
-

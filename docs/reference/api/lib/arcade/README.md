@@ -104,6 +104,12 @@ Re-exports [DEFAULT_CRT_CALIBRATION](crt-pipeline/variables/DEFAULT_CRT_CALIBRAT
 
 ***
 
+### DEFAULT\_CRT\_PRESET\_ID
+
+Re-exports [DEFAULT_CRT_PRESET_ID](crt-pipeline/variables/DEFAULT_CRT_PRESET_ID.md)
+
+***
+
 ### GamePoint
 
 Re-exports [GamePoint](core/viewport/interfaces/GamePoint.md)

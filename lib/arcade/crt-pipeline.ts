@@ -161,8 +161,14 @@ export const CRT_PRESETS: Record<CRTPresetId, CRTPreset> = {
   },
 };
 
+/**
+ * Preset a first-time player gets. Trinitron PVM Pro keeps the CRT look with
+ * the lightest scanlines and vignette, so the maze stays readable.
+ */
+export const DEFAULT_CRT_PRESET_ID: CRTPresetId = "trinitron-pro";
+
 export const DEFAULT_CRT_CALIBRATION: CRTCalibrationConfig =
-  CRT_PRESETS["authentic-arcade"].config;
+  CRT_PRESETS[DEFAULT_CRT_PRESET_ID].config;
 
 export const CRT_CALIBRATION_STORAGE_KEY = "retro_labyrinth_crt_calibration";
 

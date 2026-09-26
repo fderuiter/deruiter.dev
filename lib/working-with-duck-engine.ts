@@ -267,6 +267,9 @@ export const DUCK_FACTS: DuckFact[] = [
   },
 ];
 
+/** Good Boy points lost per tick while an emergency goes unhandled. */
+const NEGLECT_DRAIN_PER_TICK = 0.04;
+
 export const SPRINTS: GameSprint[] = [
   {
     level: 1,
@@ -771,7 +774,7 @@ export function stepDuckGame(
   let nextScore = state.totalScore;
 
   if (!isEmergency && state.duck.state !== "NAP_TIME") {
-    const workIncrement = 0.08 * effectiveMultiplier * puddlePenalty;
+    const workIncrement = 0.04 * effectiveMultiplier * puddlePenalty;
     nextWorkProgress = Math.min(
       state.targetWorkProgress,
       state.workProgress + workIncrement
@@ -809,7 +812,11 @@ export function stepDuckGame(
   let nextBladder = clamp(state.bladder + bladderRate, 0, 100);
   let nextThirst = clamp(state.thirst + thirstRate, 0, 100);
   let nextHunger = clamp(state.hunger + hungerRate, 0, 100);
-  let nextNaughtyVsGood = state.naughtyVsGood;
+  // An unhandled emergency (potty sniffing, sneaky chewing, zoomies) slowly
+  // erodes the Good Boy scale, so ignoring Duck is never a winning strategy.
+  let nextNaughtyVsGood = isEmergency
+    ? Math.max(-100, state.naughtyVsGood - NEGLECT_DRAIN_PER_TICK)
+    : state.naughtyVsGood;
   let nextLastImpulseTick = state.lastImpulseTick;
   const nextIndoorPuddles = state.indoorPuddles ? [...state.indoorPuddles] : [];
   let nextPuddleId = state.nextPuddleId || nextIndoorPuddles.length + 1;
@@ -1087,7 +1094,7 @@ export function stepDuckGame(
           duck.state = "IDLE_ROAM";
           duck.stateTimer = 100;
           duck.maxStateTimer = 100;
-          nextNaughtyVsGood = Math.min(100, nextNaughtyVsGood + 10);
+          nextNaughtyVsGood = Math.min(100, nextNaughtyVsGood + 2);
         }
       }
       break;
@@ -1119,7 +1126,7 @@ export function stepDuckGame(
           duck.state = "IDLE_ROAM";
           duck.stateTimer = 100;
           duck.maxStateTimer = 100;
-          nextNaughtyVsGood = Math.min(100, nextNaughtyVsGood + 10);
+          nextNaughtyVsGood = Math.min(100, nextNaughtyVsGood + 2);
         }
       }
       break;

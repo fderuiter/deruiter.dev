@@ -124,7 +124,7 @@ describe("Working With Duck Engine: Deterministic Scenario Replay Suite", () => 
     it("advances work progress and triggers victory when target work is reached", () => {
       let state = createInitialDuckGameState(1, "campaign");
       state.status = "running";
-      state.workProgress = state.targetWorkProgress - 0.05;
+      state.workProgress = state.targetWorkProgress - 0.01;
 
       state = stepDuckGame(state);
       expect(state.status).toBe("won");
@@ -156,11 +156,17 @@ describe("Working With Duck Engine: Deterministic Scenario Replay Suite", () => 
     });
 
     it("applies Bowtie accessory work multiplier bonus during active coding", () => {
-      const stateWithout = createInitialDuckGameState(1, "campaign", ["none", "bowtie"]);
+      const stateWithout = createInitialDuckGameState(1, "campaign", [
+        "none",
+        "bowtie",
+      ]);
       stateWithout.status = "running";
       const step1 = stepDuckGame(stateWithout);
 
-      let stateWith = createInitialDuckGameState(1, "campaign", ["none", "bowtie"]);
+      let stateWith = createInitialDuckGameState(1, "campaign", [
+        "none",
+        "bowtie",
+      ]);
       stateWith = equipAccessory(stateWith, "bowtie");
       stateWith.status = "running";
       const step2 = stepDuckGame(stateWith);

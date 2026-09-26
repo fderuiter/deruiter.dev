@@ -188,6 +188,24 @@ Re-exports [BossIntroView](internal/table/interfaces/BossIntroView.md)
 
 ***
 
+### CampaignRecord
+
+Re-exports [CampaignRecord](internal/package/interfaces/CampaignRecord.md)
+
+***
+
+### campaignScore
+
+Re-exports [campaignScore](internal/package/functions/campaignScore.md)
+
+***
+
+### CampaignScore
+
+Re-exports [CampaignScore](internal/package/interfaces/CampaignScore.md)
+
+***
+
 ### canAfford
 
 Re-exports [canAfford](internal/cpu/functions/canAfford.md)
@@ -482,9 +500,39 @@ Re-exports [CrisisView](internal/table/interfaces/CrisisView.md)
 
 ***
 
-### CSR\_LOCK\_PLACEHOLDER\_SCENARIO
+### CSR\_LOCK\_SCENARIO
 
-Re-exports [CSR_LOCK_PLACEHOLDER_SCENARIO](scenarios/variables/CSR_LOCK_PLACEHOLDER_SCENARIO.md)
+Re-exports [CSR_LOCK_SCENARIO](scenarios/variables/CSR_LOCK_SCENARIO.md)
+
+***
+
+### CSR\_ORDER
+
+Re-exports [CSR_ORDER](internal/package/variables/CSR_ORDER.md)
+
+***
+
+### CSR\_STAGE\_LABELS
+
+Re-exports [CSR_STAGE_LABELS](internal/package/variables/CSR_STAGE_LABELS.md)
+
+***
+
+### CsrLock
+
+Re-exports [CsrLock](types/type-aliases/CsrLock.md)
+
+***
+
+### CsrLockSchema
+
+Re-exports [CsrLockSchema](types/variables/CsrLockSchema.md)
+
+***
+
+### CsrLockView
+
+Re-exports [CsrLockView](internal/table/interfaces/CsrLockView.md)
 
 ***
 
@@ -1052,6 +1100,18 @@ Re-exports [ListingRow](internal/listing/interfaces/ListingRow.md)
 
 ***
 
+### LOCKED\_ALERT
+
+Re-exports [LOCKED_ALERT](internal/table/variables/LOCKED_ALERT.md)
+
+***
+
+### LockedOutput
+
+Re-exports [LockedOutput](internal/table/interfaces/LockedOutput.md)
+
+***
+
 ### LoggedAction
 
 Re-exports [LoggedAction](internal/save/type-aliases/LoggedAction.md)
@@ -1061,6 +1121,18 @@ Re-exports [LoggedAction](internal/save/type-aliases/LoggedAction.md)
 ### membership
 
 Re-exports [membership](internal/snapshots/functions/membership.md)
+
+***
+
+### MILESTONE\_WEIGHTS
+
+Re-exports [MILESTONE_WEIGHTS](internal/package/variables/MILESTONE_WEIGHTS.md)
+
+***
+
+### MilestoneKind
+
+Re-exports [MilestoneKind](internal/package/type-aliases/MilestoneKind.md)
 
 ***
 
@@ -1079,6 +1151,36 @@ Re-exports [Pack](types/type-aliases/Pack.md)
 ### PACK\_SLOTS
 
 Re-exports [PACK_SLOTS](internal/shop/variables/PACK_SLOTS.md)
+
+***
+
+### PackageEvidence
+
+Re-exports [PackageEvidence](internal/package/interfaces/PackageEvidence.md)
+
+***
+
+### PackageFinding
+
+Re-exports [PackageFinding](internal/package/interfaces/PackageFinding.md)
+
+***
+
+### PackageLock
+
+Re-exports [PackageLock](internal/table/interfaces/PackageLock.md)
+
+***
+
+### PackageReport
+
+Re-exports [PackageReport](internal/package/interfaces/PackageReport.md)
+
+***
+
+### PackageSlot
+
+Re-exports [PackageSlot](internal/package/interfaces/PackageSlot.md)
 
 ***
 
@@ -1253,6 +1355,12 @@ Re-exports [QcSeverity](types/type-aliases/QcSeverity.md)
 ### QcSeveritySchema
 
 Re-exports [QcSeveritySchema](types/variables/QcSeveritySchema.md)
+
+***
+
+### reconcilePackage
+
+Re-exports [reconcilePackage](internal/package/functions/reconcilePackage.md)
 
 ***
 
@@ -1637,6 +1745,12 @@ Re-exports [siteEnrollments](internal/shop/functions/siteEnrollments.md)
 ### SiteSchema
 
 Re-exports [SiteSchema](types/variables/SiteSchema.md)
+
+***
+
+### SlotStatus
+
+Re-exports [SlotStatus](internal/package/type-aliases/SlotStatus.md)
 
 ***
 

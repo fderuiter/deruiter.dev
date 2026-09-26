@@ -18,6 +18,14 @@ spends and fills it. Absent hand levels mean a fresh run's.
 
 ***
 
+### campaign?
+
+> `optional` **campaign?**: [`CampaignRecord`](../../package/interfaces/CampaignRecord.md)[]
+
+The Blinds the campaign has cleared so far, oldest first.
+
+***
+
 ### consumables
 
 > **consumables**: [`Consumable`](../type-aliases/Consumable.md)[]

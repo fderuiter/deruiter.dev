@@ -712,10 +712,27 @@ export const FdaIrSchema = z.object({
 /** The FDA Information Request encounter. */
 export type FdaIr = z.infer<typeof FdaIrSchema>;
 
-/** A Boss encounter: the DMC milestone defense or an FDA Information Request. */
+/**
+ * CSR Lock (T&E-11, #922): the final release gate. It accepts only a CSR
+ * Straight (ADR 0046), and the Blind is won only by locking the Clinical
+ * Study Report package: a Straight played in pipeline order whose five
+ * outputs reconcile (current, validated, no open findings, compiled under
+ * the active SAP) and that reaches the quota. Changing a locked package
+ * needs a formal protocol amendment.
+ */
+export const CsrLockSchema = z.object({
+  kind: z.literal("CSR_LOCK"),
+  /** The package's name on the lock stamp and audit summary. */
+  packageName: z.string().min(1).max(60),
+});
+/** The CSR Lock encounter. */
+export type CsrLock = z.infer<typeof CsrLockSchema>;
+
+/** A Boss encounter: the DMC milestone defense, an FDA IR, or CSR Lock. */
 export const EncounterSchema = z.discriminatedUnion("kind", [
   DmcDefenseSchema,
   FdaIrSchema,
+  CsrLockSchema,
 ]);
 /** A Boss encounter. */
 export type Encounter = z.infer<typeof EncounterSchema>;
@@ -1356,6 +1373,17 @@ export const ScenarioSchema = z
         });
       }
     }
+    if (scenario.encounter?.kind === "CSR_LOCK") {
+      const staged = new Set(scenario.deck.map((c) => c.csrStage));
+      const missing = CsrStageSchema.options.filter((s) => !staged.has(s));
+      if (missing.length > 0) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["encounter"],
+          message: `CSR Lock must deal a card for every CSR stage; missing ${missing.join(", ")}`,
+        });
+      }
+    }
     if (scenario.encounter?.kind === "DMC_DEFENSE") {
       const [open, closed] = scenario.encounter.stages;
       if (open.session !== "OPEN" || closed.session !== "CLOSED") {
@@ -1701,6 +1729,7 @@ export const RunActionSchema = z.discriminatedUnion("type", [
     session: z.enum(["OPEN", "CLOSED"]),
   }),
   z.object({ type: z.literal("CLAIM_RELIC"), relicId: id }),
+  z.object({ type: z.literal("AMEND_PROTOCOL") }),
   z.object({ type: z.literal("NEXT_BLIND") }),
   z.object({ type: z.literal("CASH_OUT") }),
   z.object({ type: z.literal("REROLL") }),

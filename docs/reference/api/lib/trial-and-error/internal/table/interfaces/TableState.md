@@ -26,6 +26,14 @@ The analysis set allocated to each blank shell in hand. Final once set.
 
 ***
 
+### amendments
+
+> **amendments**: `number`
+
+Protocol amendments filed against a locked package this Blind.
+
+***
+
 ### answered
 
 > **answered**: `string`[]
@@ -47,6 +55,14 @@ Every table cell traced to its Listing this Blind, in trace order.
 > **budget**: `number`
 
 The study budget: the shop's money.
+
+***
+
+### campaign
+
+> **campaign**: [`CampaignRecord`](../../package/interfaces/CampaignRecord.md)[]
+
+The Blinds the campaign has cleared, oldest first; this one once cleared.
 
 ***
 
@@ -237,6 +253,14 @@ One record per population transition so far this study.
 ### lastPlay
 
 > **lastPlay**: [`PlayedHand`](PlayedHand.md) \| `null`
+
+***
+
+### lock
+
+> **lock**: [`PackageLock`](PackageLock.md) \| `null`
+
+The locked CSR package, once a CSR Lock Blind is won.
 
 ***
 

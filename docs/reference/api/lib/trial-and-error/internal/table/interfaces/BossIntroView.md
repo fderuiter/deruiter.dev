@@ -20,6 +20,14 @@ The boss debuff's name, e.g. "Safety Set Only".
 
 ***
 
+### csrSlots
+
+> **csrSlots**: `string`[]
+
+CSR Lock's sequence slot labels, left to right; empty otherwise.
+
+***
+
 ### debuff
 
 > **debuff**: `string`

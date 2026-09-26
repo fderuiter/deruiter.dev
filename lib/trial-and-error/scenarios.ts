@@ -2582,12 +2582,25 @@ export const SPONSOR_TOPLINE_SCENARIO: Scenario = {
   drawPile: TOPLINE.drawPile,
 };
 
-// The locked package's safety outputs.
+// The package's safety outputs. Draft H of the SAE table is carried over
+// from the interim CSR and still prints 1 dp, which the Phase III SAP
+// forbids; the nervous system table miscounts S-010.
 const LOCK_PACKAGE = safetyDrafts(
   PHASE_III_RULEBOOK.id,
   [
     { output: "overview", version: "H", label: "CSR final (v2.0)" },
-    { output: "sae", version: "H", label: "CSR final (v2.0)" },
+    {
+      output: "sae",
+      version: "H",
+      label: "Interim CSR carry-over (v1.2)",
+      defects: {
+        "1:0": "1 (16.7)",
+        "1:1": "2 (33.3)",
+        "1:2": "3 (25.0)",
+        "2:0": "1 (16.7)",
+        "2:2": "1 (8.3)",
+      },
+    },
     {
       output: "nervous",
       version: "H",
@@ -2599,44 +2612,46 @@ const LOCK_PACKAGE = safetyDrafts(
 );
 
 /**
- * PLACEHOLDER Boss (#922 replaces it). Act III's Boss is always CSR Lock.
- * Until #922 delivers the lock and its reconciliation, this stand-in deals
- * the final CSR package, one card for every CSR stage, under a three-hand
- * limit, so the act can be played through.
+ * Boss Blind, and the run's final boss (T&E-11, #922). CSR Lock accepts
+ * only a CSR Straight in pipeline order (Disposition, Baseline, Efficacy,
+ * Safety AE, Listing) whose five outputs reconcile: current, validated,
+ * compiled under the Phase III SAP and with no finding open. The package
+ * locks once, so the one Straight must reach the quota. After the lock, any
+ * change needs a protocol amendment.
  */
-export const CSR_LOCK_PLACEHOLDER_SCENARIO: Scenario = {
-  id: "csr-lock-placeholder-boss-blind",
-  title: "CSR Lock (placeholder)",
+export const CSR_LOCK_SCENARIO: Scenario = {
+  id: "csr-lock-boss-blind",
+  title: "CSR Lock",
   summary:
-    "The final Clinical Study Report package. A stand-in for the CSR Lock boss until it is built.",
+    "Lock the Clinical Study Report: a reconciled CSR Straight, in pipeline order, is the release.",
   intro:
-    "The Clinical Study Report is ready to lock: disposition, baseline, efficacy, safety and the patient listings. Five outputs, one from each stage, make a CSR Straight. The lock itself arrives in a later build.",
+    "The Clinical Study Report locks once. Fill the five slots in order: Disposition, Baseline, Efficacy, Safety AE, Listing. Every output must be current, validated and printed under the Phase III SAP; one stale card or open finding breaks the Straight.",
   blind: {
     tier: "BOSS_BLIND",
-    name: "Boss Blind: CSR Lock (placeholder)",
-    quota: 15000,
+    name: "Boss Blind: CSR Lock",
+    quota: 4000,
   },
   boss: {
-    id: "CSR-LOCK-PLACEHOLDER",
+    id: "CSR-LOCK",
     name: "Lock Deadline",
     description:
-      "The CSR package locks after 3 submissions. A placeholder until the CSR Lock boss is built.",
+      "The package locks once: one submission, and only a reconciled CSR Straight locks it.",
     debuffType: "HAND_LIMIT",
-    maxHandsAllowed: 3,
+    maxHandsAllowed: 1,
   },
-  handType: "HIGH_TABLE",
+  handType: "CSR_STRAIGHT",
   startingCpu: 6,
   table: { startingCpu: 12, handSize: 8, maxSelection: 5 },
   deck: [
     DISPOSITION,
     DEMOGRAPHICS_FINAL,
     efficacyPrimary("C-T14.2.1", "Time to Symptom Resolution"),
-    pick(LOCK_PACKAGE.cards, "overview-H"),
+    pick(LOCK_PACKAGE.cards, "sae-H"),
     AE_LISTING,
     kmResolution("C-T14.2.1", false),
     FOREST_PRIMARY,
+    pick(LOCK_PACKAGE.cards, "overview-H"),
     efficacyResponders("C-T14.2.2", "Responders at Week 12"),
-    pick(LOCK_PACKAGE.cards, "sae-H"),
     SAE_LISTING,
     DM_LISTING,
     efficacyChange("C-T14.2.3", "Change in Symptom Score"),
@@ -2647,6 +2662,7 @@ export const CSR_LOCK_PLACEHOLDER_SCENARIO: Scenario = {
   populationSnapshot: POPULATION_SNAPSHOT,
   shells: LOCK_PACKAGE.shells,
   drawPile: LOCK_PACKAGE.drawPile,
+  encounter: { kind: "CSR_LOCK", packageName: "CSR v2.0" },
 };
 
 /** Act III's crisis deck. Every card has one choice that costs nothing. */
@@ -2754,7 +2770,7 @@ export const ACT_III_CRISES: CrisisCard[] = [
 /**
  * Act III: the Phase III blinded pivotal study. A blinded data review, then
  * the sponsor's topline review after unblinding; the Boss is always CSR
- * Lock, played as a placeholder until #922 builds it. It reads the same
+ * Lock, the run's final release gate (#922). It reads the same
  * fictional study data as Acts I and II and shares their Procurement Shop.
  * Until the campaign links the acts (#924) it is played on its own.
  */
@@ -2762,7 +2778,7 @@ export const ACT_III: Act = {
   id: "act-3-phase-3",
   title: "Act III: Phase III Blinded Pivotal",
   blinds: [BLINDED_DATA_REVIEW_SCENARIO, SPONSOR_TOPLINE_SCENARIO],
-  bossPool: [CSR_LOCK_PLACEHOLDER_SCENARIO],
+  bossPool: [CSR_LOCK_SCENARIO],
   crisisDeck: ACT_III_CRISES,
   shop: ACT_I_SHOP,
 };

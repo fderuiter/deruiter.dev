@@ -14,8 +14,8 @@ interface BossIntroProps {
 /**
  * The boss intro card (T&E-09, #1083): entering any Boss Blind names the
  * boss, its debuff, the quota and CPU, and each stage when the encounter is
- * staged, or the deadline and questions of an FDA Information Request (#921),
- * before the first card is played. It renders the view's fields
+ * staged, the deadline and questions of an FDA Information Request (#921),
+ * or CSR Lock's five sequence slots (#922), before the first card is played. It renders the view's fields
  * only. Enter, Escape or the button dismisses it; the table then focuses the
  * hand.
  */
@@ -75,6 +75,19 @@ export function BossIntro({ intro, onDismiss }: BossIntroProps) {
             {intro.questions.map((question) => (
               <li key={question} className="break-words">
                 {question}
+              </li>
+            ))}
+          </ol>
+        )}
+        {intro.csrSlots.length > 0 && (
+          <ol
+            aria-label="The CSR Straight's slots, in order"
+            className="mt-2 flex flex-wrap gap-1 text-[10px] uppercase tracking-wider text-zinc-300"
+            data-testid="boss-intro-slots"
+          >
+            {intro.csrSlots.map((slot, i) => (
+              <li key={slot} className="border border-zinc-600 px-1.5 py-0.5">
+                {i + 1}. {slot}
               </li>
             ))}
           </ol>

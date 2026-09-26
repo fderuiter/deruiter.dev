@@ -1,7 +1,9 @@
 import {
+  CSR_ORDER,
   advanceTable,
   classifyHand,
   deriveTableView,
+  type CsrStage,
   type Scenario,
   type TableAction,
   type TableCardView,
@@ -161,7 +163,38 @@ function previewScore(d: Driver, ids: readonly string[]): number {
   return probe.view().preview?.score ?? 0;
 }
 
-function chooseHand(d: Driver, plan: Plan): string[] | null {
+/**
+ * CSR Lock (#922): the best-previewed CSR Straight in the hand, its cards in
+ * pipeline order so they fill the sequence slots, or null. Its cards may
+ * still need validating; `playTurn` fixes them before the lock.
+ */
+function bestStraight(d: Driver): string[] | null {
+  const view = d.view();
+  if (!view.csrLock) return null;
+  const order = CSR_ORDER;
+  const stageOf = new Map(view.hand.map((h) => [h.card.id, h.card.csrStage]));
+  const straights = candidateHands(view.hand)
+    .filter((ids) => ids.length === 5)
+    .map((ids) =>
+      [...ids].sort(
+        (a, b) =>
+          order.indexOf(stageOf.get(a) as CsrStage) -
+          order.indexOf(stageOf.get(b) as CsrStage)
+      )
+    )
+    .filter((ids) => ids.every((id, i) => stageOf.get(id) === order[i]));
+  return (
+    straights
+      .map((ids) => ({ ids, score: previewScore(d, ids) }))
+      .sort((a, b) => b.score - a.score)[0]?.ids ?? null
+  );
+}
+
+function chooseHand(
+  d: Driver,
+  plan: Plan,
+  keep: readonly string[] = []
+): string[] | null {
   const hand = d.view().hand;
   if (plan.pick === "FIRST") {
     const first = hand
@@ -180,7 +213,13 @@ function chooseHand(d: Driver, plan: Plan): string[] | null {
       asks: questions.filter((q) => ids.includes(q.cardId)).length,
     }))
     .sort((a, b) => b.asks - a.asks || b.score - a.score);
-  return ranked.find((c) => legal(d, c.ids))?.ids ?? null;
+  // Keep a CSR Straight's cards back for the lock when another hand plays.
+  const spare = ranked.filter((c) => !c.ids.some((id) => keep.includes(id)));
+  return (
+    spare.find((c) => legal(d, c.ids))?.ids ??
+    ranked.find((c) => legal(d, c.ids))?.ids ??
+    null
+  );
 }
 
 function resolveCrisis(d: Driver, plan: Plan) {
@@ -314,9 +353,15 @@ function applyConsumables(d: Driver, ids: readonly string[]) {
 function playTurn(d: Driver, plan: Plan): boolean {
   if (plan.recompile) recompileStale(d);
   if (plan.structural) structuralQc(d);
+  // Only a player who validates can ever lock, so only one holds a Straight.
+  const straight =
+    plan.pick === "BEST" && plan.fixScope !== "NONE" ? bestStraight(d) : null;
   let ids = chooseHand(d, plan);
-  fixCards(d, plan, ids);
-  ids = chooseHand(d, plan);
+  fixCards(d, plan, straight ?? ids);
+  ids =
+    straight && legal(d, straight)
+      ? straight
+      : chooseHand(d, plan, straight ?? []);
   if (ids === null) {
     // Nothing legal to play: draw fresh cards if a discard is possible.
     const view = d.view();
@@ -431,7 +476,17 @@ export function playBlind(
   let best: Driver | null = null;
   for (const plan of perfectPlans(start)) {
     const run = playOut(start.fork(), plan);
-    if (!best || run.state.roundScore > best.state.roundScore) best = run;
+    // A cleared Blind beats a higher score that did not clear: CSR Lock is
+    // won by the lock, not the round score.
+    const cleared = (x: Driver) => Number(x.state.status === "CLEARED");
+    if (
+      !best ||
+      cleared(run) > cleared(best) ||
+      (cleared(run) === cleared(best) &&
+        run.state.roundScore > best.state.roundScore)
+    ) {
+      best = run;
+    }
   }
   return finish(best!);
 }

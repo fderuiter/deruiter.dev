@@ -52,6 +52,8 @@ import { ScoreLog } from "@/components/trial-and-error/ScoreLog";
 import { HandCheatSheet } from "@/components/trial-and-error/HandCheatSheet";
 import { BossIntro } from "@/components/trial-and-error/BossIntro";
 import { FdaClock } from "@/components/trial-and-error/FdaClock";
+import { CsrSlots } from "@/components/trial-and-error/CsrSlots";
+import { CsrLockSummary } from "@/components/trial-and-error/CsrLockSummary";
 import { FirewallDialog } from "@/components/trial-and-error/FirewallDialog";
 import { CashOut } from "@/components/trial-and-error/CashOut";
 import { Shop } from "@/components/trial-and-error/Shop";
@@ -534,10 +536,15 @@ export function CardTable({
         SOLD: ["sell"],
         LEVELED_UP: ["chipTick", "multThunk"],
         CRISIS_RESOLVED: ["cardFlip"],
+        AMENDED: ["cardFlip"],
       };
       cues[kind]?.forEach((cue) => sound.play(cue));
       if (kind === "PLAYED" || kind === "DISCARDED") {
-        if (state.status === "CLEARED") sound.play("blindCleared");
+        // The lock is the run's victory: it gets its own cue and the flame.
+        if (state.lock) {
+          sound.play("csrLocked");
+          sound.play("fireIgnite");
+        } else if (state.status === "CLEARED") sound.play("blindCleared");
         if (state.status === "FAILED") sound.play("blindFailed");
       }
     }
@@ -1599,6 +1606,14 @@ export function CardTable({
                   </span>
                 </div>
               </div>
+              {view.csrLock && state.status === "REVIEWING" && (
+                <CsrSlots
+                  slots={view.csrLock.report.slots}
+                  names={Object.fromEntries(
+                    view.hand.map((h) => [h.card.id, h.card.number])
+                  )}
+                />
+              )}
               <Reorder.Group
                 as="div"
                 axis="x"
@@ -1800,14 +1815,16 @@ export function CardTable({
               <p
                 className={`text-lg font-bold uppercase ${state.status === "CLEARED" ? "text-emerald-300" : "text-rose-300"}`}
               >
-                {runView.phase === "ACT_COMPLETE"
-                  ? `${act.title} complete`
-                  : runView.phase === "BLIND_CLEARED" ||
-                      runView.phase === "SHOP"
-                    ? "Blind cleared"
-                    : clock?.hold
-                      ? `${CLINICAL_HOLD} · run over`
-                      : "Blind failed · run over"}
+                {runView.phase === "ACT_COMPLETE" && view.csrLock?.lock
+                  ? `CSR locked · ${act.title} complete`
+                  : runView.phase === "ACT_COMPLETE"
+                    ? `${act.title} complete`
+                    : runView.phase === "BLIND_CLEARED" ||
+                        runView.phase === "SHOP"
+                      ? "Blind cleared"
+                      : clock?.hold
+                        ? `${CLINICAL_HOLD} · run over`
+                        : "Blind failed · run over"}
               </p>
               {clock?.hold && (
                 <section
@@ -1848,6 +1865,23 @@ export function CardTable({
                 discard
                 {state.discards === 1 ? "" : "s"} · {state.cpu.spent} CPU spent
               </p>
+              {view.csrLock?.lock && (
+                <CsrLockSummary
+                  lock={view.csrLock.lock}
+                  amendRefusal={view.csrLock.amendRefusal}
+                  seed={runView.seed}
+                  handsPlayed={state.handsPlayed}
+                  cpuSpent={state.cpu.spent}
+                  loud={loudEffectsEnabled}
+                  onAmend={() => {
+                    setFocusIndex(0);
+                    send(
+                      { type: "AMEND_PROTOCOL" },
+                      { kind: "hand", index: 0 }
+                    );
+                  }}
+                />
+              )}
               {view.reward && (
                 <PackOpening
                   title={

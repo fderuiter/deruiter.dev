@@ -221,16 +221,28 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
       block: "start",
       behavior: prefersReducedMotion ? "auto" : "smooth",
     });
-    // The game component can render a loading shell first, so retry briefly
-    // until its keyboard boundary exists.
+    // Focus the cabinet so keys reach the game, then, since the game can
+    // render a loading shell first, retry briefly until its keyboard boundary
+    // exists. Stop as soon as the game has moved focus somewhere itself, such
+    // as a dialog's primary button.
     let attempts = 0;
     const timer = setInterval(() => {
       attempts += 1;
-      const boundary = getKeyboardBoundary(cabinet);
-      if (boundary || attempts >= 20) {
+      const active = document.activeElement;
+      const gameOwnsFocus =
+        !!active && active !== cabinet && cabinet.contains(active);
+      if (gameOwnsFocus && attempts > 1) {
         clearInterval(timer);
-        (boundary ?? cabinet).focus({ preventScroll: true });
+        return;
       }
+      const boundary = getKeyboardBoundary(cabinet);
+      if (boundary) {
+        clearInterval(timer);
+        boundary.focus({ preventScroll: true });
+      } else if (attempts === 1) {
+        cabinet.focus({ preventScroll: true });
+      }
+      if (attempts >= 20) clearInterval(timer);
     }, 50);
     return () => clearInterval(timer);
   }, [isLaunched]);
@@ -249,10 +261,12 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
     const handlePointerDown = (event: PointerEvent) => {
       ownsFocus = cabinet.contains(event.target as Node);
     };
+    // Only games that mark a keyboard boundary opt in; others, such as
+    // Trial & Error, manage focus themselves.
     const observer = new MutationObserver(() => {
       const active = document.activeElement;
       if (!ownsFocus || (active && active !== document.body)) return;
-      (getKeyboardBoundary(cabinet) ?? cabinet).focus({ preventScroll: true });
+      getKeyboardBoundary(cabinet)?.focus({ preventScroll: true });
     });
     observer.observe(cabinet, { childList: true, subtree: true });
     document.addEventListener("focusin", handleFocusIn);

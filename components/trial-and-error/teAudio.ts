@@ -14,6 +14,7 @@ export const TE_CUES = [
   "discardWhoosh",
   "blindCleared",
   "blindFailed",
+  "csrLocked",
   "fireIgnite",
   "shopBell",
   "packTear",
@@ -152,6 +153,24 @@ export const CUE_RECIPES: Record<
     }),
   blindCleared: (engine) =>
     arpeggio(engine, [523.25, 659.25, 783.99, 1046.5], 0.09, "square"),
+  // The victory cue: the cleared arpeggio an octave up, landing on a chord.
+  csrLocked: (engine) => {
+    arpeggio(
+      engine,
+      [523.25, 659.25, 783.99, 1046.5, 1318.51, 1567.98],
+      0.08,
+      "square"
+    );
+    for (const frequency of [1046.5, 1318.51, 1567.98]) {
+      engine.playTone({
+        frequency,
+        duration: 0.6,
+        delay: 0.5,
+        type: "triangle",
+        volume: 0.2,
+      });
+    }
+  },
   blindFailed: (engine) =>
     arpeggio(engine, [392, 329.63, 261.63, 220], 0.14, "triangle", 0.22),
   fireIgnite: (engine) => {

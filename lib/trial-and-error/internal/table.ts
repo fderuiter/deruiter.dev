@@ -27,6 +27,8 @@ import type {
   RedactedCard,
   Relic,
   ClockAction,
+  CsrLock,
+  CsrStage,
   DmcDefense,
   EncounterStage,
   FdaIr,
@@ -72,6 +74,17 @@ import {
 } from "./blinding";
 import { traceCell, type CellTrace } from "./listing";
 import { validateKm, type KmFinding, type KmReport } from "./km";
+import {
+  CSR_ORDER,
+  CSR_STAGE_LABELS,
+  campaignScore,
+  reconcilePackage,
+  type CampaignRecord,
+  type CampaignScore,
+  type PackageEvidence,
+  type PackageReport,
+  type PackageSlot,
+} from "./package";
 import { evaluateHand, ruleResultsFor } from "./scoring";
 import {
   applyTransition,
@@ -113,6 +126,7 @@ export interface TableEvent {
     | "UNBLINDED"
     | "SESSION_CHANGED"
     | "RELIC_CLAIMED"
+    | "AMENDED"
     | "CASHED_OUT"
     | "SHOP";
   message: string;
@@ -205,6 +219,42 @@ export interface Inventory {
   sites?: Site[];
   /** Site enrollments waiting for the next Blind's first hand. */
   enrollments?: PopulationTransition[];
+  /** The Blinds the campaign has cleared so far, oldest first. */
+  campaign?: CampaignRecord[];
+}
+
+/** One output in a locked package, as the audit summary records it. */
+export interface LockedOutput {
+  stage: CsrStage;
+  cardId: string;
+  /** The output's short name, e.g. "Table 14.3.1". */
+  name: string;
+  title: string;
+  /** The population snapshot the output was compiled against. */
+  snapshotId: string;
+  /** The SAP rulebook it was validated under. */
+  rulebookId: string;
+}
+
+/**
+ * A locked CSR package (#922): the immutable audit summary of the release,
+ * and the table as it stood before the lock, which a protocol amendment
+ * reopens.
+ */
+export interface PackageLock {
+  packageName: string;
+  outputs: LockedOutput[];
+  /** The lock hand's score. */
+  handScore: number;
+  /** The Blind's round score with the lock hand. */
+  roundScore: number;
+  /** Every Blind the campaign cleared, this one last. */
+  campaign: CampaignRecord[];
+  final: CampaignScore;
+  /** Protocol amendments filed before this lock. */
+  amendment: number;
+  /** The table just before the lock hand was played. */
+  before: TableState;
 }
 
 /**
@@ -333,6 +383,12 @@ export interface TableState {
   stageScores: number[];
   /** Hours left on an FDA Information Request's clock; null outside one. */
   clock: number | null;
+  /** The Blinds the campaign has cleared, oldest first; this one once cleared. */
+  campaign: CampaignRecord[];
+  /** The locked CSR package, once a CSR Lock Blind is won. */
+  lock: PackageLock | null;
+  /** Protocol amendments filed against a locked package this Blind. */
+  amendments: number;
   /** The FDA Information Request's questions answered so far, in order. */
   answered: string[];
   /** SOP relics the run has earned; each scores in every hand. */
@@ -392,6 +448,12 @@ export type TableAction =
   | { type: "SET_SESSION"; session: DmcSession }
   /** Takes one relic from a defended encounter's reward. */
   | { type: "CLAIM_RELIC"; relicId: string }
+  /**
+   * Files a formal protocol amendment against a locked CSR package: the lock
+   * breaks, the lock hand is withdrawn and its outputs' reviews are
+   * invalidated until they are validated again.
+   */
+  | { type: "AMEND_PROTOCOL" }
   | { type: "RESET" };
 
 /** One card in hand as the table should render it. */
@@ -602,6 +664,8 @@ export interface TableView {
   clock: ClockView | null;
   /** An FDA Information Request's targeted questions; empty outside one. */
   questions: IrQuestionView[];
+  /** CSR Lock's sequence slots and lock, or null outside it. */
+  csrLock: CsrLockView | null;
   /** The intro card for a Boss Blind; null for every other Blind. */
   bossIntro: BossIntroView | null;
   /**
@@ -625,6 +689,22 @@ export interface TableView {
   sites: Site[];
   /** Site enrollments that land after this Blind's first hand. */
   enrollments: PopulationTransition[];
+}
+
+/**
+ * CSR Lock as the table shows it (#922): the five sequence slots filled by
+ * the selection in order, and the locked package's audit summary once won.
+ */
+export interface CsrLockView {
+  packageName: string;
+  /** The selection reconciled slot by slot. */
+  report: PackageReport;
+  /** The audit summary once the package is locked, else null. */
+  lock: Omit<PackageLock, "before"> | null;
+  /** Why a protocol amendment cannot be filed now, or null. */
+  amendRefusal: string | null;
+  /** Protocol amendments filed this Blind. */
+  amendments: number;
 }
 
 /** One stage of a staged encounter, as the Blind panel shows it. */
@@ -660,6 +740,8 @@ export interface BossIntroView {
   dueHours: number | null;
   /** An FDA Information Request's questions, in order; empty otherwise. */
   questions: string[];
+  /** CSR Lock's sequence slot labels, left to right; empty otherwise. */
+  csrSlots: string[];
 }
 
 /**
@@ -897,6 +979,12 @@ export const dmcDefenseOf = (scenario: Scenario): DmcDefense | undefined =>
 /** The scenario's FDA Information Request, if it is one. */
 const fdaIrOf = (scenario: Scenario): FdaIr | undefined =>
   scenario.encounter?.kind === "FDA_IR" ? scenario.encounter : undefined;
+
+/** CSR Lock accepts only the Straight (ADR 0046): the package is the hand. */
+const CSR_LOCK_HANDS: readonly HandType[] = ["CSR_STRAIGHT"];
+
+const csrLockOf = (scenario: Scenario): CsrLock | undefined =>
+  scenario.encounter?.kind === "CSR_LOCK" ? scenario.encounter : undefined;
 
 /** Hours an action takes on the clock; 0 outside an FDA Information Request. */
 const hoursFor = (scenario: Scenario, action: ClockAction): number =>
@@ -1169,7 +1257,8 @@ function stageHands(
 ): readonly HandType[] | undefined {
   return (
     fdaIrOf(scenario)?.hands ??
-    dmcDefenseOf(scenario)?.stages[state.stage]?.hands
+    dmcDefenseOf(scenario)?.stages[state.stage]?.hands ??
+    (csrLockOf(scenario) ? CSR_LOCK_HANDS : undefined)
   );
 }
 
@@ -1279,6 +1368,14 @@ function playBlocker(
       `Select a ${ir.hands.map(handName).join(" or ")}`
     );
   }
+  if (csrLockOf(scenario) && classification.handType !== "CSR_STRAIGHT") {
+    return blocker(
+      `CSR Lock accepts only a CSR Straight; this is ${handName(classification.handType)}.`,
+      "Select one output per CSR stage, in pipeline order"
+    );
+  }
+  const lock = lockRefusal(scenario, state, classification);
+  if (lock) return lock;
   if (!canAfford(state.cpu, "PLAY_HAND")) {
     return blocker(
       `Play Hand needs ${CPU_COSTS.PLAY_HAND} CPU; ${state.cpu.available} left.`
@@ -1288,6 +1385,193 @@ function playBlocker(
   if (late) return blocker(late);
   return null;
 }
+
+/** What reconciliation knows about one output in the CSR package. */
+function packageEvidence(
+  scenario: Scenario,
+  state: TableState,
+  cardId: string
+): PackageEvidence {
+  const card = cardById(scenario, state, cardId) as TlfCard;
+  const draft = draftFor(scenario, state, card);
+  const inspection = state.inspections[card.id];
+  const review =
+    draft && inspection
+      ? deriveInspectionView(
+          draft,
+          reportFor(scenario, state, card, draft),
+          inspection
+        )
+      : null;
+  const figure = figureStatus(scenario, state, card);
+  const validation = isBlank(state, card)
+    ? "its shell is empty; allocate an analysis set."
+    : isFaceDown(scenario, state, card)
+      ? "it is face down in the open session."
+      : draft && !inspection
+        ? "inspect it."
+        : review && review.reviewedCells < review.totalCells
+          ? `${review.reviewedCells} of ${review.totalCells} cells reviewed; review every cell.`
+          : (figure?.reason ?? null);
+  return {
+    cardId: card.id,
+    name: cardShortName(card),
+    csrStage: card.csrStage,
+    stale: isStale(scenario, state, card),
+    validation,
+    openFindings: (review?.openFindings ?? []).map((f) => ({
+      category: f.category,
+      evidence: f.evidence,
+    })),
+  };
+}
+
+/** The selection as a CSR package, reconciled slot by slot in selection order. */
+const packageReport = (scenario: Scenario, state: TableState): PackageReport =>
+  reconcilePackage(
+    state.selected.map((id) => packageEvidence(scenario, state, id))
+  );
+
+/** How a broken slot is cleared, and its shortcut on a focused card. */
+function slotFix(
+  scenario: Scenario,
+  state: TableState,
+  slot: PackageSlot
+): PlayBlocker {
+  const card = slot.cardId ? cardById(scenario, state, slot.cardId) : null;
+  const number = card?.number ?? "";
+  switch (slot.status) {
+    case "STALE":
+      return blocker(slot.reason as string, `Recompile ${number}`, "R");
+    case "UNVALIDATED":
+      return blocker(
+        slot.reason as string,
+        card && isBlank(state, card)
+          ? `Allocate ${number}`
+          : `Inspect ${number}`,
+        card && isBlank(state, card) ? "A" : "I"
+      );
+    case "RULEBOOK":
+    case "OPEN_FINDING":
+      return blocker(
+        slot.reason as string,
+        `Correct ${number} in the Inspect view`,
+        "I"
+      );
+    default:
+      return blocker(
+        slot.reason as string,
+        `Select the ${slot.label} output ${ordinal(CSR_ORDER.indexOf(slot.stage) + 1)}`
+      );
+  }
+}
+
+const ordinal = (n: number) =>
+  ["first", "second", "third", "fourth", "fifth"][n - 1] ?? `${n}th`;
+
+/**
+ * A CSR Lock's lock hand: why the package cannot lock now, or null. The
+ * Straight must reconcile, and it must reach the quota, since the package
+ * locks once. A reconciled package's findings are all revealed, so its true
+ * score is the score the player previews.
+ */
+function lockRefusal(
+  scenario: Scenario,
+  state: TableState,
+  classification: HandClassification
+): PlayBlocker | null {
+  if (!csrLockOf(scenario) || classification.handType !== "CSR_STRAIGHT") {
+    return null;
+  }
+  const report = packageReport(scenario, state);
+  if (report.firstBreak) return slotFix(scenario, state, report.firstBreak);
+  const score = scoreCards(
+    scenario,
+    state,
+    classification.scoringCardIds.map(
+      (id) => cardById(scenario, state, id) as TlfCard
+    ),
+    "CSR_STRAIGHT",
+    false
+  ).score;
+  const short = scenario.blind.quota - state.roundScore - score;
+  if (short > 0) {
+    return blocker(
+      `The package would lock at ${state.roundScore + score} of ${scenario.blind.quota}: ${short} short.`,
+      "Strengthen the Straight: a Guidance card, a seal or a stronger output"
+    );
+  }
+  return null;
+}
+
+/** This Blind as a campaign record, for the next Blind and the final score. */
+function campaignRecord(scenario: Scenario, state: TableState): CampaignRecord {
+  const milestone = dmcDefenseOf(scenario)
+    ? "DMC_DEFENSE"
+    : fdaIrOf(scenario)
+      ? "FDA_IR"
+      : null;
+  return {
+    scenarioId: scenario.id,
+    blindName: scenario.blind.name,
+    score: state.roundScore,
+    milestone,
+    hoursToSpare: milestone === "FDA_IR" ? state.clock : null,
+  };
+}
+
+/** The immutable audit summary of a package locked by the hand just played. */
+function packageLock(
+  scenario: Scenario,
+  before: TableState,
+  after: TableState,
+  lockHand: PlayedHand
+): PackageLock {
+  const campaign = [...after.campaign, campaignRecord(scenario, after)];
+  return {
+    packageName: (csrLockOf(scenario) as CsrLock).packageName,
+    outputs: lockHand.cardIds.map((id, i) => {
+      const card = cardById(scenario, before, id) as TlfCard;
+      return {
+        stage: CSR_ORDER[i],
+        cardId: id,
+        name: cardShortName(card),
+        title: card.title,
+        snapshotId: provenanceOf(before, card).id,
+        rulebookId: rulebookFor(scenario, before, card).id,
+      };
+    }),
+    handScore: lockHand.evaluation.score,
+    roundScore: after.roundScore,
+    campaign,
+    final: campaignScore(campaign),
+    amendment: before.amendments,
+    before,
+  };
+}
+
+/** Why a protocol amendment cannot be filed now, or null. */
+function amendRefusal(scenario: Scenario, state: TableState): string | null {
+  const lock = state.lock;
+  if (!lock)
+    return "Nothing is locked: a protocol amendment amends a locked package.";
+  const reviews = lock.outputs.filter((o) =>
+    draftFor(
+      scenario,
+      lock.before,
+      cardById(scenario, lock.before, o.cardId) as TlfCard
+    )
+  ).length;
+  const needed = reviews * CPU_COSTS.INSPECT + CPU_COSTS.PLAY_HAND;
+  if (lock.before.cpu.available < needed) {
+    return `Re-validating the package needs ${needed} CPU (${reviews} re-inspection${reviews === 1 ? "" : "s"} and the lock hand); reopening leaves ${lock.before.cpu.available}.`;
+  }
+  return null;
+}
+
+/** Changing a locked package needs a formal protocol amendment. */
+export const LOCKED_ALERT =
+  "The CSR package is locked. Changing it needs a formal protocol amendment.";
 
 /** An encounter's stage scores after a hand, moving on once a stage is defended. */
 function advanceStage(
@@ -2018,6 +2302,9 @@ export function createTableState(
     stageScores: dmcDefenseOf(scenario)?.stages.map(() => 0) ?? [],
     clock: fdaIrOf(scenario)?.clockHours ?? null,
     answered: [],
+    campaign: [...(inventory.campaign ?? [])],
+    lock: null,
+    amendments: 0,
     relics: [...(inventory.relics ?? [])],
     rewardClaimed: null,
     sites: [...(inventory.sites ?? [])],
@@ -2045,6 +2332,7 @@ export function carriedInventory(state: TableState): Inventory {
     relics: state.relics,
     sites: state.sites,
     enrollments: state.enrollments,
+    campaign: state.campaign,
   };
 }
 
@@ -2182,21 +2470,30 @@ function settle(
 ): { state: TableState; outcome: string } {
   const encounter = dmcDefenseOf(scenario);
   const ir = fdaIrOf(scenario);
-  const defended = ir
-    ? ir.questions.every((q) => state.answered.includes(q.id))
-    : encounter
-      ? encounter.stages.every(
-          (stage, i) => state.stageScores[i] >= stage.quota
-        )
-      : state.roundScore >= scenario.blind.quota;
+  const csr = csrLockOf(scenario);
+  const defended = csr
+    ? state.lock !== null
+    : ir
+      ? ir.questions.every((q) => state.answered.includes(q.id))
+      : encounter
+        ? encounter.stages.every(
+            (stage, i) => state.stageScores[i] >= stage.quota
+          )
+        : state.roundScore >= scenario.blind.quota;
   if (defended) {
     return {
-      state: { ...state, status: "CLEARED" },
-      outcome: encounter
-        ? `${scenario.blind.name} defended. Choose an SOP relic.`
-        : ir
-          ? `${scenario.blind.name} answered with ${hoursText(state.clock ?? 0)} to spare.`
-          : `${scenario.blind.name} cleared.`,
+      state: {
+        ...state,
+        status: "CLEARED",
+        campaign: [...state.campaign, campaignRecord(scenario, state)],
+      },
+      outcome: state.lock
+        ? `${state.lock.packageName} LOCKED. The CSR is released: final campaign score ${state.lock.final.score}.`
+        : encounter
+          ? `${scenario.blind.name} defended. Choose an SOP relic.`
+          : ir
+            ? `${scenario.blind.name} answered with ${hoursText(state.clock ?? 0)} to spare.`
+            : `${scenario.blind.name} cleared.`,
     };
   }
   const hold = clinicalHold(scenario, state);
@@ -2205,7 +2502,7 @@ function settle(
   if (limit !== null && state.handsPlayed >= limit) {
     return {
       state: { ...state, status: "FAILED" },
-      outcome: `${scenario.blind.name} failed: the ${limit}-hand limit is used up.`,
+      outcome: `${scenario.blind.name} failed: the ${limit}-hand limit is used up${csr ? " and the CSR package never locked" : ""}.`,
     };
   }
   if (!canAfford(state.cpu, "PLAY_HAND") || state.hand.length === 0) {
@@ -2409,6 +2706,31 @@ function applyTableAction(
       ),
     };
   }
+  if (action.type === "AMEND_PROTOCOL") {
+    const refusal = amendRefusal(scenario, state);
+    const lock = state.lock;
+    if (refusal || !lock) return refuse(state, refusal as string);
+    const reopened = new Set(lock.outputs.map((o) => o.cardId));
+    const inspections = Object.fromEntries(
+      Object.entries(lock.before.inspections).filter(
+        ([id]) => !reopened.has(id)
+      )
+    );
+    const amendments = state.amendments + 1;
+    return {
+      ...lock.before,
+      selected: [],
+      inspecting: null,
+      inspections,
+      amendments,
+      lastEvent: nextEvent(
+        state,
+        "AMENDED",
+        `Protocol Amendment ${amendments} filed: ${lock.packageName} is unlocked and the lock hand withdrawn. ${lock.outputs.map((o) => o.name).join(", ")} must be validated again before the package can lock.`
+      ),
+    };
+  }
+  if (state.lock) return refuse(state, LOCKED_ALERT);
   if (state.status !== "REVIEWING") {
     return refuse(state, "The Blind is over. Restart to play again.");
   }
@@ -2546,9 +2868,18 @@ function applyTableAction(
           "PLAY_HAND"
         )
       );
+      const refilled = refill(scenario, changed);
+      const locking =
+        csrLockOf(scenario) !== undefined &&
+        classification.handType === "CSR_STRAIGHT";
       const { state: settled, outcome } = settle(
         scenario,
-        refill(scenario, changed)
+        locking
+          ? {
+              ...refilled,
+              lock: packageLock(scenario, state, refilled, played),
+            }
+          : refilled
       );
       const zero = evaluation.zeroRule.triggered
         ? " Zero-score rule triggered."
@@ -3355,6 +3686,7 @@ export function deriveTableView(
   const accepts = stageHands(scenario, state);
   const dmc = dmcDefenseOf(scenario);
   const ir = fdaIrOf(scenario);
+  const csr = csrLockOf(scenario);
   const classification = classifyHand(selectedCards, accepts);
   const blocked = playBlocker(scenario, state, classification);
   const preview = classification
@@ -3594,6 +3926,20 @@ export function deriveTableView(
           })),
           dueHours: ir?.clockHours ?? null,
           questions: (ir?.questions ?? []).map((q) => q.question),
+          csrSlots: csr
+            ? CSR_ORDER.map((stage) => CSR_STAGE_LABELS[stage])
+            : [],
+        }
+      : null,
+    csrLock: csr
+      ? {
+          packageName: csr.packageName,
+          report: packageReport(scenario, state),
+          lock: state.lock
+            ? (({ before: _before, ...summary }) => summary)(state.lock)
+            : null,
+          amendRefusal: amendRefusal(scenario, state),
+          amendments: state.amendments,
         }
       : null,
     clock:

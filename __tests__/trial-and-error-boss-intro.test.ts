@@ -48,6 +48,7 @@ describe("boss intro view (#1083)", () => {
       stages: [],
       dueHours: null,
       questions: [],
+      csrSlots: [],
     });
   });
 

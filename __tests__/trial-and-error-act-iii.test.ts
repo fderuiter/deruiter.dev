@@ -6,7 +6,7 @@ import {
   ACT_III_CRISES,
   ActSchema,
   BLINDED_DATA_REVIEW_SCENARIO,
-  CSR_LOCK_PLACEHOLDER_SCENARIO,
+  CSR_LOCK_SCENARIO,
   CsrStageSchema,
   SCENARIOS,
   SPONSOR_TOPLINE_SCENARIO,
@@ -28,7 +28,7 @@ import { playBlind } from "./utils/trial-and-error-bot";
 
 const REVIEW = BLINDED_DATA_REVIEW_SCENARIO;
 const TOPLINE = SPONSOR_TOPLINE_SCENARIO;
-const LOCK = CSR_LOCK_PLACEHOLDER_SCENARIO;
+const LOCK = CSR_LOCK_SCENARIO;
 const ALL = [REVIEW, TOPLINE, LOCK];
 
 const deckCard = (scenario: Scenario, id: string) =>

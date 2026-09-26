@@ -18,6 +18,7 @@ import {
   ACT_I,
   ACT_II,
   ACT_III,
+  CSR_LOCK_SCENARIO,
   DMC_MILESTONE_SCENARIO,
   FDA_IR_SCENARIO,
   advanceRun,
@@ -95,7 +96,7 @@ const BANDS: Record<string, Record<BotStyle, Band>> = {
     MEDIAN: "MOST",
     PERFECT: "ALL",
   },
-  "csr-lock-placeholder-boss-blind": {
+  "csr-lock-boss-blind": {
     SLOPPY: "FEW",
     HASTY: "FEW",
     MEDIAN: "MOST",
@@ -119,8 +120,11 @@ const BANDS: Record<string, Record<BotStyle, Band>> = {
 function lifted(scenario: Scenario): Scenario {
   const LIMIT = 1_000_000_000;
   const encounter = scenario.encounter;
-  // An FDA Information Request clears on its questions, not the round score.
-  if (encounter?.kind === "FDA_IR") return scenario;
+  // An FDA Information Request clears on its questions, and CSR Lock on the
+  // lock, not on the round score alone.
+  if (encounter?.kind === "FDA_IR" || encounter?.kind === "CSR_LOCK") {
+    return scenario;
+  }
   return {
     ...scenario,
     blind: { ...scenario.blind, quota: LIMIT },
@@ -254,7 +258,7 @@ describe("balance harness", () => {
       new Set(SAMPLES.filter((s) => s.blindId === id).map((s) => s.seed)).size;
     expect(reached("dose-escalation-boss-blind")).toBe(SEEDS.length);
     expect(reached("dmc-open-session-big-blind")).toBe(SEEDS.length);
-    expect(reached("csr-lock-placeholder-boss-blind")).toBe(SEEDS.length);
+    expect(reached("csr-lock-boss-blind")).toBe(SEEDS.length);
     // Act II's pool draws each boss on some seeds; both are also measured
     // on their own.
     expect(reached("dmc-milestone-boss-blind")).toBeGreaterThan(1);
@@ -281,6 +285,19 @@ describe("balance harness", () => {
 
   it("orders the styles: more care never scores less", () => {
     for (const blindId of Object.keys(BANDS)) {
+      if (blindId === CSR_LOCK_SCENARIO.id) {
+        // CSR Lock is won by the lock, not the round score: a hasty player
+        // can outscore a careful one and still never lock. More care never
+        // locks less often.
+        const clears = (style: BotStyle) =>
+          SAMPLES.filter(
+            (s) => s.blindId === blindId && s.style === style && s.cleared
+          ).length;
+        expect(clears("SLOPPY")).toBeLessThanOrEqual(clears("HASTY"));
+        expect(clears("HASTY")).toBeLessThan(clears("MEDIAN"));
+        expect(clears("MEDIAN")).toBeLessThanOrEqual(clears("PERFECT"));
+        continue;
+      }
       const med = (style: BotStyle) =>
         median(
           SAMPLES.filter((s) => s.blindId === blindId && s.style === style).map(

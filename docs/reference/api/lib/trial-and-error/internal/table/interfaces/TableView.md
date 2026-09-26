@@ -100,6 +100,14 @@ The crisis to answer before the Blind can be played, if any.
 
 ***
 
+### csrLock
+
+> **csrLock**: [`CsrLockView`](CsrLockView.md) \| `null`
+
+CSR Lock's sequence slots and lock, or null outside it.
+
+***
+
 ### deckRemaining
 
 > **deckRemaining**: `number`

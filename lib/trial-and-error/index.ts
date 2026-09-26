@@ -15,7 +15,7 @@ export {
   ACT_III,
   ACT_III_CRISES,
   BLINDED_DATA_REVIEW_SCENARIO,
-  CSR_LOCK_PLACEHOLDER_SCENARIO,
+  CSR_LOCK_SCENARIO,
   DEMOGRAPHICS_SCENARIO,
   DMC_MILESTONE_SCENARIO,
   DMC_OPEN_SESSION_SCENARIO,
@@ -41,6 +41,21 @@ export {
   type HandLevelRow,
 } from "./internal/hands";
 export { GUIDANCE_CARDS } from "./internal/guidance";
+export {
+  CSR_ORDER,
+  CSR_STAGE_LABELS,
+  MILESTONE_WEIGHTS,
+  campaignScore,
+  reconcilePackage,
+  type CampaignRecord,
+  type CampaignScore,
+  type MilestoneKind,
+  type PackageEvidence,
+  type PackageFinding,
+  type PackageReport,
+  type PackageSlot,
+  type SlotStatus,
+} from "./internal/package";
 export { validate } from "./internal/validator";
 export { traceCell, type CellTrace, type ListingRow } from "./internal/listing";
 export {
@@ -128,6 +143,10 @@ export {
   type BossIntroView,
   type ClockView,
   type IrQuestionView,
+  type CsrLockView,
+  type LockedOutput,
+  type PackageLock,
+  LOCKED_ALERT,
   CLINICAL_HOLD,
   CLOCK_URGENT_HOURS,
   type EncounterView,

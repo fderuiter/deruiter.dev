@@ -12,7 +12,7 @@ The most recent Card Table outcome, phrased for a polite announcement.
 
 ### kind
 
-> **kind**: `"RESET"` \| `"STRUCTURAL_QC"` \| `"INSPECTED"` \| `"CORRECTED"` \| `"PLAYED"` \| `"DISCARDED"` \| `"REFUSED"` \| `"SHOP"` \| `"SELECTED"` \| `"DESELECTED"` \| `"INSPECT_OPENED"` \| `"INSPECT_CLOSED"` \| `"MOVED"` \| `"BLIND_STARTED"` \| `"RECOMPILED"` \| `"ALLOCATED"` \| `"SEALED"` \| `"SOLD"` \| `"LEVELED_UP"` \| `"CRISIS_RESOLVED"` \| `"TRACED"` \| `"UNBLINDED"` \| `"SESSION_CHANGED"` \| `"RELIC_CLAIMED"` \| `"CASHED_OUT"`
+> **kind**: `"RESET"` \| `"STRUCTURAL_QC"` \| `"INSPECTED"` \| `"CORRECTED"` \| `"PLAYED"` \| `"DISCARDED"` \| `"REFUSED"` \| `"SHOP"` \| `"SELECTED"` \| `"DESELECTED"` \| `"INSPECT_OPENED"` \| `"INSPECT_CLOSED"` \| `"MOVED"` \| `"BLIND_STARTED"` \| `"RECOMPILED"` \| `"ALLOCATED"` \| `"SEALED"` \| `"SOLD"` \| `"LEVELED_UP"` \| `"CRISIS_RESOLVED"` \| `"TRACED"` \| `"UNBLINDED"` \| `"SESSION_CHANGED"` \| `"RELIC_CLAIMED"` \| `"AMENDED"` \| `"CASHED_OUT"`
 
 ***
 

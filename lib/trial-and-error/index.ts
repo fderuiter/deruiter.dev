@@ -15,6 +15,9 @@ export {
   ACT_III,
   ACT_III_CRISES,
   BIOSTAT_OPS_CAMPAIGN,
+  POST_MARKETING,
+  SAFETY_SURVEILLANCE_STUDY,
+  PASS_STUDY,
   BLINDED_DATA_REVIEW_SCENARIO,
   CSR_LOCK_SCENARIO,
   DEMOGRAPHICS_SCENARIO,
@@ -197,8 +200,10 @@ export {
   deriveRunView,
   planActs,
   runBlinds,
+  endlessAct,
   DEFAULT_SEED,
   type ActIntroView,
+  type EndlessView,
   type OpenedPack,
   type PackCardView,
   type PackSlot,
@@ -214,6 +219,7 @@ export {
   type ShopState,
   type ShopView,
 } from "./internal/run";
+export { raiseQuotas } from "./internal/quotas";
 export {
   CASH_OUT_BASE,
   INTEREST_CAP,

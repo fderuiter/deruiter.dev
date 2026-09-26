@@ -69,6 +69,22 @@ Every seeded draw so far, in order.
 
 ***
 
+### ended
+
+> **ended**: `boolean`
+
+The won run was submitted and ended; nothing follows (#1088).
+
+***
+
+### endless
+
+> **endless**: `boolean`
+
+The run went on into endless post-marketing rounds after winning (#1088).
+
+***
+
 ### seed
 
 > **seed**: `string`

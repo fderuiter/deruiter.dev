@@ -1170,60 +1170,62 @@ test.describe("Trial & Error boss intro on the Act I Boss (#1083)", () => {
   });
 });
 
-test.describe("Trial & Error campaign across studies (#924)", () => {
-  /**
-   * A saved campaign run, played by the balance bot Blind after Blind until
-   * `stop` says it has arrived: it claims the first relic a defended DMC
-   * offers and skips the shop.
-   */
-  function saveWhen(stop: (run: RunState) => boolean): string {
-    let run: RunState = createRunState(CAMPAIGN, SEED);
-    const actions: LoggedAction[] = [];
-    const step = (action: LoggedAction) => {
-      run = advanceRun(CAMPAIGN, run, action);
-      actions.push(action);
-    };
-    while (!stop(run)) {
-      const blind = runBlinds(CAMPAIGN, run)[run.blindIndex];
-      for (const action of playBlind(blind, run.table, "PERFECT").actions) {
-        if (run.table.status !== "REVIEWING") break;
-        if (action.type === "RESET") continue;
-        step(action);
-      }
-      expect(run.table.status).toBe("CLEARED");
-      const reward = deriveRunView(CAMPAIGN, run).table.reward;
-      if (reward && reward.claimed === null) {
-        step({ type: "CLAIM_RELIC", relicId: reward.choices[0].id });
-      }
-      step({ type: "NEXT_BLIND" });
+/**
+ * A saved campaign run, played by the balance bot Blind after Blind until
+ * `stop` says it has arrived or the campaign is won: it claims the first
+ * relic a defended DMC offers and skips the shop. `after` is logged last.
+ */
+function saveWhen(
+  stop: (run: RunState) => boolean,
+  after: LoggedAction[] = []
+): string {
+  let run: RunState = createRunState(CAMPAIGN, SEED);
+  const actions: LoggedAction[] = [];
+  const step = (action: LoggedAction) => {
+    run = advanceRun(CAMPAIGN, run, action);
+    actions.push(action);
+  };
+  while (!stop(run)) {
+    const blind = runBlinds(CAMPAIGN, run)[run.blindIndex];
+    for (const action of playBlind(blind, run.table, "PERFECT").actions) {
+      if (run.table.status !== "REVIEWING") break;
+      if (action.type === "RESET") continue;
+      step(action);
     }
-    return serializeRun(
-      { actId: CAMPAIGN.id, seed: SEED, actions },
-      new Date()
-    );
+    expect(run.table.status).toBe("CLEARED");
+    const reward = deriveRunView(CAMPAIGN, run).table.reward;
+    if (reward && reward.claimed === null) {
+      step({ type: "CLAIM_RELIC", relicId: reward.choices[0].id });
+    }
+    if (deriveRunView(CAMPAIGN, run).phase === "RUN_WON") break;
+    step({ type: "NEXT_BLIND" });
   }
+  after.forEach(step);
+  return serializeRun({ actId: CAMPAIGN.id, seed: SEED, actions }, new Date());
+}
 
-  async function resume(page: Page, save: string) {
-    await page.emulateMedia({ reducedMotion: "reduce" });
-    await page.addInitScript(
-      ([key, value]) => {
-        if (!window.localStorage.getItem(key)) {
-          window.localStorage.setItem(key, value);
-        }
-      },
-      [`te:run-save:${CAMPAIGN.id}`, save] as const
-    );
-    await page.goto(ROUTE, { waitUntil: "domcontentloaded" });
-    await expect(async () => {
-      const launchBtn = page.getByRole("button", { name: /Launch Cabinet/i });
-      if (await launchBtn.isVisible()) await launchBtn.click();
-      await expect(page.getByTestId("resume-run")).toBeVisible({
-        timeout: 3000,
-      });
-    }).toPass({ timeout: 30000 });
-    await page.getByRole("button", { name: "Resume run" }).click();
-  }
+async function resume(page: Page, save: string) {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.addInitScript(
+    ([key, value]) => {
+      if (!window.localStorage.getItem(key)) {
+        window.localStorage.setItem(key, value);
+      }
+    },
+    [`te:run-save:${CAMPAIGN.id}`, save] as const
+  );
+  await page.goto(ROUTE, { waitUntil: "domcontentloaded" });
+  await expect(async () => {
+    const launchBtn = page.getByRole("button", { name: /Launch Cabinet/i });
+    if (await launchBtn.isVisible()) await launchBtn.click();
+    await expect(page.getByTestId("resume-run")).toBeVisible({
+      timeout: 3000,
+    });
+  }).toPass({ timeout: 30000 });
+  await page.getByRole("button", { name: "Resume run" }).click();
+}
 
+test.describe("Trial & Error campaign across studies (#924)", () => {
   for (const width of [320, 1440]) {
     test(`opens Act II on its act card at ${width}px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 800 });
@@ -1275,6 +1277,68 @@ test.describe("Trial & Error campaign across studies (#924)", () => {
       await expect(page.getByTestId("csr-slots")).toBeVisible();
       await expectNoHorizontalOverflow(page);
       await expectNoBlockingViolations(page, `CSR Lock table at ${width}px`);
+    });
+  }
+});
+
+test.describe("Trial & Error post-marketing rounds (#1088)", () => {
+  for (const width of [320, 1440]) {
+    test(`offers post-marketing after CSR Lock at ${width}px`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 800 });
+      await resume(
+        page,
+        saveWhen(() => false)
+      );
+      const choice = page.getByTestId("endless-choice");
+      await expect(choice).toBeVisible();
+      await expect(page.getByTestId("blind-result")).toContainText(
+        "Campaign won"
+      );
+      await expect(
+        choice.getByRole("button", { name: "Submit and end run" })
+      ).toBeFocused();
+      await expectNoHorizontalOverflow(page);
+      await expectNoBlockingViolations(page, `endless choice at ${width}px`);
+
+      await choice
+        .getByRole("button", { name: "Continue into post-marketing" })
+        .click();
+      await expect(page.getByTestId("next-blind")).toContainText(
+        "Post-marketing round 1"
+      );
+    });
+
+    test(`opens post-marketing round 1 on its act card at ${width}px`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 800 });
+      await resume(
+        page,
+        saveWhen(
+          () => false,
+          [{ type: "CONTINUE_ENDLESS" }, { type: "NEXT_BLIND" }]
+        )
+      );
+      const intro = page.getByTestId("act-intro");
+      await expect(intro).toBeVisible();
+      await expect(intro).toContainText("Post-marketing round 1 · a new study");
+      await expect(page.getByTestId("act-intro-start")).toBeFocused();
+      await expectNoHorizontalOverflow(page);
+      await expectNoBlockingViolations(
+        page,
+        `post-marketing act card at ${width}px`
+      );
+
+      await page.keyboard.press("Enter");
+      await expect(intro).toBeHidden();
+      await expect(page.getByTestId("blind-name")).toBeVisible();
+      await expectNoHorizontalOverflow(page);
+      await expectNoBlockingViolations(
+        page,
+        `post-marketing table at ${width}px`
+      );
     });
   }
 });

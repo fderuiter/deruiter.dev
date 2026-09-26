@@ -746,6 +746,30 @@ Re-exports [EncounterView](internal/table/interfaces/EncounterView.md)
 
 ***
 
+### Endless
+
+Re-exports [Endless](types/type-aliases/Endless.md)
+
+***
+
+### endlessAct
+
+Re-exports [endlessAct](internal/run/functions/endlessAct.md)
+
+***
+
+### EndlessSchema
+
+Re-exports [EndlessSchema](types/variables/EndlessSchema.md)
+
+***
+
+### EndlessView
+
+Re-exports [EndlessView](internal/run/interfaces/EndlessView.md)
+
+***
+
 ### ENROLLMENT\_AFTER\_HANDS
 
 Re-exports [ENROLLMENT_AFTER_HANDS](internal/table/variables/ENROLLMENT_AFTER_HANDS.md)
@@ -1262,6 +1286,12 @@ Re-exports [parseRunSave](internal/save/functions/parseRunSave.md)
 
 ***
 
+### PASS\_STUDY
+
+Re-exports [PASS_STUDY](scenarios/variables/PASS_STUDY.md)
+
+***
+
 ### PHASE\_II\_QC\_SCENARIO
 
 Re-exports [PHASE_II_QC_SCENARIO](scenarios/variables/PHASE_II_QC_SCENARIO.md)
@@ -1340,6 +1370,12 @@ Re-exports [PopulationTypeSchema](types/variables/PopulationTypeSchema.md)
 
 ***
 
+### POST\_MARKETING
+
+Re-exports [POST_MARKETING](scenarios/variables/POST_MARKETING.md)
+
+***
+
 ### previewAllocation
 
 Re-exports [previewAllocation](internal/table/functions/previewAllocation.md)
@@ -1397,6 +1433,12 @@ Re-exports [QcSeverity](types/type-aliases/QcSeverity.md)
 ### QcSeveritySchema
 
 Re-exports [QcSeveritySchema](types/variables/QcSeveritySchema.md)
+
+***
+
+### raiseQuotas
+
+Re-exports [raiseQuotas](internal/quotas/functions/raiseQuotas.md)
 
 ***
 
@@ -1655,6 +1697,12 @@ Re-exports [RunState](internal/run/interfaces/RunState.md)
 ### RunView
 
 Re-exports [RunView](internal/run/interfaces/RunView.md)
+
+***
+
+### SAFETY\_SURVEILLANCE\_STUDY
+
+Re-exports [SAFETY_SURVEILLANCE_STUDY](scenarios/variables/SAFETY_SURVEILLANCE_STUDY.md)
 
 ***
 

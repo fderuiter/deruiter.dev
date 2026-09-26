@@ -14,6 +14,8 @@ An act as the run shows it: where it sits in the campaign.
 
 > **count**: `number`
 
+The campaign's act count.
+
 ***
 
 ### id
@@ -25,6 +27,14 @@ An act as the run shows it: where it sits in the campaign.
 ### index
 
 > **index**: `number`
+
+***
+
+### round
+
+> **round**: `number` \| `null`
+
+The post-marketing round this act is, or null for a campaign act.
 
 ***
 

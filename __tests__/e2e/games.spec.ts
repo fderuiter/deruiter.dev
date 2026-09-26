@@ -36,6 +36,14 @@ test.describe("Arcade Games & Simulators Suite", () => {
     await expect(
       page.getByRole("heading", { name: /Working With Duck/i }).first()
     ).toBeVisible();
+
+    // 7. Trial & Error: Biostat Ops
+    await expect(
+      page.getByRole("heading", { name: /Trial & Error/i }).first()
+    ).toBeVisible();
+    await expect(
+      page.locator('main a[href="/arcade/trial-and-error"]').first()
+    ).toBeVisible();
   });
 
   test("Laser Loon dedicated game starts and switches weapon modes", async ({

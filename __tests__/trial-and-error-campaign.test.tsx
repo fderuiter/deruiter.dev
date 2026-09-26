@@ -47,6 +47,7 @@ const INTRO: ActIntroView = {
     title: "Act II: Phase II Proof of Concept",
     index: 1,
     count: 3,
+    round: null,
   },
   bossTitle: "FDA Information Request",
   bossIntro: "The agency has questions.",

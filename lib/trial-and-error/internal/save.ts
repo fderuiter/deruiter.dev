@@ -78,9 +78,10 @@ export function replayRun(act: RunPlan, log: RunLog): RunState {
 /**
  * Rebuilds a saved run, or returns null when there is nothing to resume:
  * corrupt JSON, an unknown version, a schema mismatch, a plan (an act or the
- * campaign) that no longer exists, a replay that fails, or a run that has already ended. Never
- * throws. Any selection is cleared as recorded moves, so the resumed run and
- * its log stay in step.
+ * campaign) that no longer exists, a replay that fails, or a run that has
+ * already ended (a won campaign still offering post-marketing has not).
+ * Never throws. Any selection is cleared as recorded moves, so the resumed
+ * run and its log stay in step.
  */
 export function parseRunSave(
   json: string | null,
@@ -107,8 +108,11 @@ export function parseRunSave(
       (r, action) => advanceRun(act, r, action),
       replayed
     );
-    const phase = deriveRunView(act, run).phase;
-    if (phase === "RUN_FAILED" || phase === "RUN_WON") return null;
+    const view = deriveRunView(act, run);
+    // A won campaign still offering post-marketing waits on the player's
+    // choice, so it resumes; any other ended run does not.
+    if (view.phase === "RUN_FAILED") return null;
+    if (view.phase === "RUN_WON" && !view.endless?.canContinue) return null;
     return { act, log, run };
   } catch {
     return null;

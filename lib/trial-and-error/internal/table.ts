@@ -122,6 +122,8 @@ export interface TableEvent {
     | "RESET"
     | "BLIND_STARTED"
     | "ACT_STARTED"
+    | "RUN_CONTINUED"
+    | "RUN_ENDED"
     | "RECOMPILED"
     | "ALLOCATED"
     | "SEALED"

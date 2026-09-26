@@ -264,6 +264,7 @@
 - [lib/trial-and-error/internal/km](lib/trial-and-error/internal/km/README.md)
 - [lib/trial-and-error/internal/listing](lib/trial-and-error/internal/listing/README.md)
 - [lib/trial-and-error/internal/package](lib/trial-and-error/internal/package/README.md)
+- [lib/trial-and-error/internal/quotas](lib/trial-and-error/internal/quotas/README.md)
 - [lib/trial-and-error/internal/relics](lib/trial-and-error/internal/relics/README.md)
 - [lib/trial-and-error/internal/rng](lib/trial-and-error/internal/rng/README.md)
 - [lib/trial-and-error/internal/rounding](lib/trial-and-error/internal/rounding/README.md)

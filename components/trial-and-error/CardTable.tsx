@@ -382,11 +382,19 @@ export function CardTable({
     resumeChoice !== "DONE" &&
     log.actions.length === 0;
   const runView = deriveRunView(act, run);
-  const runOver = runView.phase === "RUN_FAILED" || runView.phase === "RUN_WON";
+  // A won campaign that can still go on into post-marketing is not over
+  // until the player chooses.
+  const runOver =
+    runView.phase === "RUN_FAILED" ||
+    (runView.phase === "RUN_WON" && !runView.endless?.canContinue);
+  const endlessRound = runView.endless?.round ?? null;
   // The act being played: its shop runs between its Blinds.
   const currentAct = planActs(act)[run.actIndex];
+  // A campaign with post-marketing rounds is won once, whatever act shows.
   const wonLabel =
-    runView.act.count > 1 ? "Campaign won" : `${runView.act.title} complete`;
+    runView.act.count > 1 || runView.endless
+      ? "Campaign won"
+      : `${runView.act.title} complete`;
   // Keep this browser's save in step with the run: written after each move,
   // removed when the run ends or a new one starts. Never while a found save
   // still waits for the player's choice.
@@ -2070,21 +2078,62 @@ export function CardTable({
                     </p>
                   )}
                 </>
-              ) : (
-                <button
-                  ref={restartRef}
-                  type="button"
-                  onClick={() => {
-                    setFocusIndex(0);
-                    send(
-                      { type: "RESTART_RUN", seed: freshSeed() },
-                      { kind: "hand", index: 0 }
-                    );
-                  }}
-                  className={`${BUTTON_BASE} mt-4 border-amber-500 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20`}
+              ) : runView.endless?.canContinue ? (
+                <div
+                  className="mt-4 flex flex-wrap justify-center gap-2"
+                  data-testid="endless-choice"
                 >
-                  {runView.phase === "RUN_WON" ? "Play again" : "Restart run"}
-                </button>
+                  <button
+                    ref={restartRef}
+                    type="button"
+                    onClick={() => send({ type: "END_RUN" })}
+                    className={`${BUTTON_BASE} border-emerald-500 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20`}
+                  >
+                    Submit and end run
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => send({ type: "CONTINUE_ENDLESS" })}
+                    aria-describedby="endless-note"
+                    className={`${BUTTON_BASE} border-slate-400 text-slate-300 hover:bg-slate-400/10`}
+                  >
+                    Continue into post-marketing
+                  </button>
+                  <p
+                    id="endless-note"
+                    className="basis-full text-[11px] text-zinc-400 break-words"
+                  >
+                    The win is recorded either way. Post-marketing rounds raise
+                    every quota each round, until a Blind fails.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {runView.phase === "RUN_FAILED" &&
+                    runView.endless?.campaignWon && (
+                      <p
+                        className="mt-2 text-xs text-emerald-300 break-words"
+                        data-testid="endless-record"
+                      >
+                        {wonLabel} · {runView.endless.title} round{" "}
+                        {endlessRound ?? 0} reached
+                      </p>
+                    )}
+                  <button
+                    ref={restartRef}
+                    type="button"
+                    onClick={() => {
+                      setFocusIndex(0);
+                      send(
+                        { type: "RESTART_RUN", seed: freshSeed() },
+                        { kind: "hand", index: 0 }
+                      );
+                    }}
+                    className={`${BUTTON_BASE} mt-4 border-amber-500 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20`}
+                  >
+                    {runView.phase === "RUN_WON" ? "Play again" : "Restart run"}
+                  </button>
+                </>
               )}
             </div>
           )}

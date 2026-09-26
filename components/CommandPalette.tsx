@@ -693,14 +693,14 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         url: "/arcade/trial-and-error",
         icon: <IconTerminal className="w-4 h-4 text-brand-cyan" />,
         badge: "Deckbuilder",
-        status: "QC Desk Slice",
+        status: "Campaign",
         description:
-          "A deterministic, SAP-driven QC Desk: inspect Table 14.1.1, correct redlines, and score a hand.",
-        techStack: ["Zod", "Pure Reducers", "Exact Rounding"],
+          "Carry one fictional compound through three studies to CSR Lock, QCing outputs against the SAP, then continue into post-marketing rounds.",
+        techStack: ["Zod", "Pure Reducers", "Seeded Runs"],
         highlights: [
-          "Half-even vs half-away tie detection",
-          "FAS ≠ ITT denominator checks",
-          "Zero-score rule for fatal errors",
+          "Three studies, each ending at a Boss",
+          "Relics, packs and a Procurement Shop",
+          "Endless post-marketing rounds",
         ],
       },
       {

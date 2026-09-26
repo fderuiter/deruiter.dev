@@ -6,7 +6,7 @@
 
 # Type Alias: RunAction
 
-> **RunAction** = `Exclude`\<[`TableAction`](../../table/type-aliases/TableAction.md), \{ `type`: `"RESET"`; \}\> \| \{ `type`: `"NEXT_BLIND"`; \} \| \{ `type`: `"CASH_OUT"`; \} \| \{ `type`: `"REROLL"`; \} \| \{ `slot`: `number`; `type`: `"BUY"`; \} \| \{ `slot`: `number`; `type`: `"BUY_PACK"`; \} \| \{ `cardId`: `string`; `type`: `"PICK_PACK_CARD"`; \} \| \{ `type`: `"SKIP_PACK"`; \} \| \{ `relicId`: `string`; `type`: `"SELL_RELIC"`; \} \| \{ `seed?`: `string`; `type`: `"RESTART_RUN"`; \}
+> **RunAction** = `Exclude`\<[`TableAction`](../../table/type-aliases/TableAction.md), \{ `type`: `"RESET"`; \}\> \| \{ `type`: `"NEXT_BLIND"`; \} \| \{ `type`: `"CASH_OUT"`; \} \| \{ `type`: `"REROLL"`; \} \| \{ `slot`: `number`; `type`: `"BUY"`; \} \| \{ `slot`: `number`; `type`: `"BUY_PACK"`; \} \| \{ `cardId`: `string`; `type`: `"PICK_PACK_CARD"`; \} \| \{ `type`: `"SKIP_PACK"`; \} \| \{ `relicId`: `string`; `type`: `"SELL_RELIC"`; \} \| \{ `type`: `"CONTINUE_ENDLESS"`; \} \| \{ `type`: `"END_RUN"`; \} \| \{ `seed?`: `string`; `type`: `"RESTART_RUN"`; \}
 
 Player intents the run reducer accepts. Every Card Table action except
 RESET passes through to the current Blind; a lost Blind ends the run, so
@@ -77,6 +77,22 @@ Leaves the pack being opened; its remaining picks are forfeit.
 \{ `relicId`: `string`; `type`: `"SELL_RELIC"`; \}
 
 Sells a relic for half its price, rounded down.
+
+***
+
+### Type Literal
+
+\{ `type`: `"CONTINUE_ENDLESS"`; \}
+
+After the campaign is won, goes on into post-marketing rounds (#1088).
+
+***
+
+### Type Literal
+
+\{ `type`: `"END_RUN"`; \}
+
+After the campaign is won, submits the package and ends the run.
 
 ***
 

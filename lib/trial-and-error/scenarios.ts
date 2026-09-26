@@ -19,6 +19,7 @@ import type {
   Campaign,
   CrisisCard,
   DmcDefense,
+  Endless,
   FdaIr,
   AdverseEvent,
   FootnoteSeal,
@@ -35,6 +36,7 @@ import type {
   TlfCard,
 } from "./types";
 import { GUIDANCE_CARDS } from "./internal/guidance";
+import { raiseQuotas } from "./internal/quotas";
 import { roundRatio } from "./internal/rounding";
 
 const snapshotId = "SNAP-P1-v1";
@@ -2835,6 +2837,126 @@ export const ACT_III: Act = {
   shop: ACT_I_SHOP,
 };
 
+// ---------------------------------------------------------------------------
+// Endless post-marketing mode (#1088). The compound is approved; the work
+// goes on. Each round is a new post-marketing study built from an earlier
+// study's table, cards and Boss, renamed for life after approval, with its
+// quotas raised round by round.
+// ---------------------------------------------------------------------------
+
+/**
+ * Round 0 quotas for each post-marketing Blind, before growth: a round's
+ * quota is this × POST_MARKETING_GROWTH ^ round, rounded up to 100.
+ */
+const POST_MARKETING_QUOTAS = {
+  psur: 6000,
+  labelUpdate: 9000,
+  safetyBoss: 9000,
+  passQc: 14000,
+  passDmc: 12000,
+  irBoss: 16000,
+};
+
+/** How much every post-marketing quota grows per round. */
+const POST_MARKETING_GROWTH = 1.25;
+
+/** An earlier study's Blind, renamed for post-marketing, with its own quota. */
+const postMarketing = (
+  scenario: Scenario,
+  patch: Pick<Scenario, "id" | "title" | "summary" | "intro"> & {
+    name: string;
+    quota: number;
+  }
+): Scenario => ({
+  ...scenario,
+  id: patch.id,
+  title: patch.title,
+  summary: patch.summary,
+  intro: patch.intro,
+  blind: { ...scenario.blind, name: patch.name, quota: patch.quota },
+});
+
+/** A post-marketing Boss: an earlier Boss, its quotas raised to `quota`. */
+const postMarketingBoss = (scenario: Scenario, quota: number): Scenario =>
+  raiseQuotas(scenario, quota / scenario.blind.quota);
+
+/** Post-marketing study: periodic safety reporting on the approved label. */
+export const SAFETY_SURVEILLANCE_STUDY: Act = {
+  id: "post-marketing-safety-surveillance",
+  title: "Safety surveillance",
+  blinds: [
+    postMarketing(DEMOGRAPHICS_SCENARIO, {
+      id: "psur-small-blind",
+      title: "Periodic Safety Update Report",
+      summary:
+        "The PSUR re-cuts the safety tables for the reporting interval since approval.",
+      intro:
+        "The Periodic Safety Update Report re-cuts the safety tables for the reporting interval. The tables are familiar; the bar is not.",
+      name: "Small Blind: PSUR",
+      quota: POST_MARKETING_QUOTAS.psur,
+    }),
+    postMarketing(SPONSOR_SAFETY_SCENARIO, {
+      id: "label-update-big-blind",
+      title: "Label Update",
+      summary:
+        "A safety signal means a label update, and the sponsor wants the tables behind it.",
+      intro:
+        "A new safety signal means a label update. The sponsor reviews every table behind the proposed wording before it goes to the agency.",
+      name: "Big Blind: Label Update",
+      quota: POST_MARKETING_QUOTAS.labelUpdate,
+    }),
+  ],
+  bossPool: [
+    postMarketingBoss(
+      DOSE_ESCALATION_SCENARIO,
+      POST_MARKETING_QUOTAS.safetyBoss
+    ),
+  ],
+  shop: ACT_I_SHOP,
+};
+
+/** Post-marketing study: a post-authorisation safety study (PASS). */
+export const PASS_STUDY: Act = {
+  id: "post-marketing-pass",
+  title: "Post-authorisation safety study",
+  blinds: [
+    postMarketing(PHASE_II_QC_SCENARIO, {
+      id: "pass-interim-qc-small-blind",
+      title: "PASS Interim QC",
+      summary:
+        "The post-authorisation safety study's interim outputs go through internal QC.",
+      intro:
+        "The agency asked for a post-authorisation safety study as a condition of approval. Its interim outputs go through internal QC first.",
+      name: "Small Blind: PASS Interim QC",
+      quota: POST_MARKETING_QUOTAS.passQc,
+    }),
+    postMarketing(DMC_OPEN_SESSION_SCENARIO, {
+      id: "pass-dmc-open-session-big-blind",
+      title: "PASS DMC Open Session",
+      summary:
+        "The PASS data monitoring committee reviews pooled outputs in open session.",
+      intro:
+        "The post-authorisation safety study has its own data monitoring committee. The open session sees pooled outputs only, as before.",
+      name: "Big Blind: PASS DMC Open Session",
+      quota: POST_MARKETING_QUOTAS.passDmc,
+    }),
+  ],
+  bossPool: [postMarketingBoss(FDA_IR_SCENARIO, POST_MARKETING_QUOTAS.irBoss)],
+  shop: ACT_I_SHOP,
+};
+
+/**
+ * Endless post-marketing mode (#1088): offered once CSR Lock is won. Each
+ * round draws its study with its Boss, and every quota grows by
+ * `quotaGrowth` per round; the values come from the balance harness.
+ */
+export const POST_MARKETING: Endless = {
+  id: "post-marketing",
+  title: "Post-marketing",
+  studies: [SAFETY_SURVEILLANCE_STUDY, PASS_STUDY],
+  quotaGrowth: POST_MARKETING_GROWTH,
+};
+
 /**
  * The campaign (#924): one sponsor's compound carried through three studies
  * as one run. Act I's Boss is the Dose Escalation Committee, Act II's is
@@ -2845,6 +2967,7 @@ export const BIOSTAT_OPS_CAMPAIGN: Campaign = {
   id: "biostat-ops-campaign",
   title: "Biostat Ops campaign",
   acts: [ACT_I, ACT_II, ACT_III],
+  endless: POST_MARKETING,
 };
 
 /** Every playable scenario, keyed by id. */

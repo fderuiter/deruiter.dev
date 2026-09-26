@@ -28,6 +28,7 @@ import {
   IconBriefcase,
   IconFlame,
   IconActivity,
+  IconCards,
 } from "@tabler/icons-react";
 
 interface SubNavItem {
@@ -68,6 +69,12 @@ const ARCADE_ITEMS: SubNavItem[] = [
     subtitle: "Fast-paced medical trial simulator",
     href: "/arcade/clinical-chaos",
     icon: <IconShieldCheck className="w-4 h-4 text-brand-cyan" />,
+  },
+  {
+    title: "Trial & Error: Biostat Ops",
+    subtitle: "Clinical-output roguelike deckbuilder",
+    href: "/arcade/trial-and-error",
+    icon: <IconCards className="w-4 h-4 text-brand-cyan" />,
   },
   {
     title: "Retro Labyrinth",

@@ -1231,6 +1231,28 @@ describe("Defect Remediation & Regression Verification Suite (Invariant #11)", (
     });
   });
 
+  describe("Working With Duck - idle play cannot win a sprint (#1176)", () => {
+    it("fails or stalls Sprint 1 when the player never touches Duck", () => {
+      let seed = 42;
+      const random = vi.spyOn(Math, "random").mockImplementation(() => {
+        seed = (seed * 1664525 + 1013904223) % 4294967296;
+        return seed / 4294967296;
+      });
+      try {
+        let state: ReturnType<typeof createInitialDuckGameState> = {
+          ...createInitialDuckGameState(1),
+          status: "running",
+        };
+        for (let t = 0; t < 60 * 300 && state.status === "running"; t++) {
+          state = stepDuckGame(state);
+        }
+        expect(state.status).not.toBe("won");
+      } finally {
+        random.mockRestore();
+      }
+    });
+  });
+
   describe("CRF PDF section page-break regression (#1101)", () => {
     it("allocates a new page before a section heading that lacks footer clearance", async () => {
       const study = createNearFooterSectionStudy();

@@ -6,55 +6,22 @@
 
 # Function: advanceRun()
 
-> **advanceRun**(`act`, `run`, `action`): [`RunState`](../interfaces/RunState.md)
+> **advanceRun**(`plan`, `run`, `action`): [`RunState`](../interfaces/RunState.md)
 
 Pure run reducer. It composes the Card Table reducer for the current Blind
 and moves between Blinds, drawing each later Blind's crisis from the
-seeded event draw. The draw piles are fixed and every draw is a function
-of the seed and draw index, so the same act, seed and action sequence
-always yields the same state.
+seeded event draw. After an act's Boss, the next Blind starts the next
+act's study (#924): its subjects, snapshots, rulebook and outputs are its
+own, and the run's relics, hand levels, tray, budget and cleared Blinds
+come along. The draw piles are fixed and every draw is a function of the
+seed and draw index, so the same plan, seed and action sequence always
+yields the same state.
 
 ## Parameters
 
-### act
+### plan
 
-#### blinds
-
-`object`[] = `...`
-
-#### bossPool?
-
-`object`[] = `...`
-
-#### crisisDeck?
-
-`object`[] = `...`
-
-#### id
-
-`string` = `identifier`
-
-#### shop?
-
-\{ `entries`: (\{ `kind`: `"RELIC"`; `price`: `number`; `relic`: \{ `description`: `string`; `id`: `string`; `modifier`: \{ `chips`: `number`; `label`: `string`; `plusMult`: `number`; `sourceId`: `string`; `xMult`: `number`; \}; `name`: `string`; \}; \} \| \{ `guidance`: \{ `document`: `string`; `flavor`: `string`; `handType`: `"HIGH_TABLE"` \| `"TLF_PAIR"` \| `"TLF_TWO_PAIR"` \| `"POPULATION_FLUSH"` \| `"CSR_STRAIGHT"` \| `"EFFICACY_FULL_HOUSE"` \| `"MEDDRA_FIVE_OF_A_KIND"`; `id`: `string`; `name`: `string`; `sellValue`: `number`; \}; `kind`: `"GUIDANCE"`; `price`: `number`; \} \| \{ `kind`: `"SEAL"`; `price`: `number`; `seal`: \{ `effect`: \{ `kind`: `"PLUS_CHIPS"`; `value`: `number`; \} \| \{ `kind`: `"PLUS_MULT"`; `value`: `number`; \} \| \{ `kind`: `"WAIVE"`; \}; `eligible`: \{ `cardTypes?`: (... \| ... \| ... \| ...)[]; `populations?`: (... \| ... \| ... \| ... \| ...)[]; `topics?`: `string`[]; \}; `footnote`: `string`; `id`: `string`; `name`: `string`; `sellValue`: `number`; \}; \})[]; `packs`: `object`[]; `sites`: `object`[]; \} = `...`
-
-The Procurement Shop between Blinds. Without it there is no shop.
-
-#### shop.entries
-
-(\{ `kind`: `"RELIC"`; `price`: `number`; `relic`: \{ `description`: `string`; `id`: `string`; `modifier`: \{ `chips`: `number`; `label`: `string`; `plusMult`: `number`; `sourceId`: `string`; `xMult`: `number`; \}; `name`: `string`; \}; \} \| \{ `guidance`: \{ `document`: `string`; `flavor`: `string`; `handType`: `"HIGH_TABLE"` \| `"TLF_PAIR"` \| `"TLF_TWO_PAIR"` \| `"POPULATION_FLUSH"` \| `"CSR_STRAIGHT"` \| `"EFFICACY_FULL_HOUSE"` \| `"MEDDRA_FIVE_OF_A_KIND"`; `id`: `string`; `name`: `string`; `sellValue`: `number`; \}; `kind`: `"GUIDANCE"`; `price`: `number`; \} \| \{ `kind`: `"SEAL"`; `price`: `number`; `seal`: \{ `effect`: \{ `kind`: `"PLUS_CHIPS"`; `value`: `number`; \} \| \{ `kind`: `"PLUS_MULT"`; `value`: `number`; \} \| \{ `kind`: `"WAIVE"`; \}; `eligible`: \{ `cardTypes?`: (... \| ... \| ... \| ...)[]; `populations?`: (... \| ... \| ... \| ... \| ...)[]; `topics?`: `string`[]; \}; `footnote`: `string`; `id`: `string`; `name`: `string`; `sellValue`: `number`; \}; \})[] = `...`
-
-#### shop.packs
-
-`object`[] = `...`
-
-#### shop.sites
-
-`object`[] = `...`
-
-#### title
-
-`string` = `...`
+[`RunPlan`](../type-aliases/RunPlan.md)
 
 ### run
 

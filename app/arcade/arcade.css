@@ -254,6 +254,27 @@
   animation: te-lock-slam 520ms cubic-bezier(0.2, 0.9, 0.3, 1.2) 1 both;
 }
 
+/* Act card (#924): a new study's title slams onto the table.
+ * Loud cabinets only, transform and opacity only. */
+@keyframes te-act-slam {
+  0% {
+    opacity: 0;
+    transform: scale(1.8);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(0.94);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+[data-te-cabinet][data-te-loud="on"] .te-loud-act {
+  animation: te-act-slam 480ms cubic-bezier(0.2, 0.9, 0.3, 1.2) 1 both;
+}
+
 /* Level up (T&E-UX-05): a Guidance card lifts the hand's plate a step.
  * Loud cabinets only, transform and opacity only. */
 @keyframes te-level-up {

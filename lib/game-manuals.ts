@@ -669,7 +669,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
     accentColor: "from-amber-500/20 via-amber-500/5 to-transparent",
     badgeBg: "bg-amber-500/10 text-amber-300 border-amber-500/30",
     objective:
-      "Get a fictional study's reporting through its Blinds, one review at a time. The act on the table today, Act I (a Phase I safety study), runs three: Internal QC (450), the Sponsor Safety Review (7,500) and the Dose Escalation Committee (8,500). Inspect suspect cards on the QC Desk before you trust them: an uncorrected fatal defect zeroes the whole hand, and losing a Blind ends the run.",
+      "Carry one fictional compound through three studies, one review at a time, and lock its Clinical Study Report. Each act is a study with three Blinds: Act I (Phase I safety) ends at the Dose Escalation Committee, Act II (Phase II proof of concept) at a DMC milestone or an FDA Information Request, and Act III (Phase III pivotal) at CSR Lock, the final boss. Inspect suspect cards on the QC Desk before you trust them: an uncorrected fatal defect zeroes the whole hand, and losing any Blind ends the run.",
     quickSummary:
       "Move across the hand with ← →, select up to five cards with Space, and press Enter to play the best hand they make (2 CPU). D discards the selection (1 CPU). I opens the focused card's QC Desk (1 CPU): inspect cells with Enter or Space, correct with C, trace a flagged cell to its Listing with T, and close with Esc. R recompiles a stale card (2 CPU), S runs structural QC on a face-down card (1 CPU), and A jumps to a blank shell's analysis sets. Between Blinds, spend the Study Budget in the shop. The run saves as you play, so a reload offers Resume run.",
     controls: [
@@ -808,10 +808,16 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
     ],
     rules: [
       {
-        title: "Three Blinds, one run",
+        title: "Three acts, nine Blinds, one run",
         detail:
-          "Each Blind has its own SAP, deck and target, and its CPU refills at the start of each Blind (unspent CPU does not carry over). Clearing a Blind moves you to the next; failing one ends the run, and Restart run starts again from the Small Blind.",
-        badge: "Act I",
+          "Each Blind has its own SAP, deck and target, and its CPU refills at the start of each Blind (unspent CPU does not carry over). Clearing a Blind moves you to the next; failing one ends the run, and Restart run starts again from Act I's Small Blind.",
+        badge: "Campaign",
+      },
+      {
+        title: "A new study each act",
+        detail:
+          "After an act's Boss, Next study starts the next act. Its act card names the Boss waiting at its end. The new study brings its own subjects, snapshots, SAP and outputs, and the last study's trial sites close out with it. Your relics, hand levels, tray, study budget and cleared Blinds come along. The shop between acts sells no site packs, because the next study has no sites yet.",
+        badge: "Act card",
       },
       {
         title: "Scoring pipeline",
@@ -882,13 +888,13 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         title: "Kaplan–Meier figures",
         detail:
-          "A Figure is drawn from a parent Table. Its QC checks the curve against the data: a fixed time origin, a curve that never rises, censoring ticks and the number at risk at every milestone, which must reconcile with the parent's subjects and events. Each open discrepancy costs 1 Mult. With the parent in hand, current and validated, and every finding reconciled, the Figure scores ×2 Mult; without a valid parent it scores 0 Chips. No Act I Blind deals a Figure yet.",
+          "A Figure is drawn from a parent Table. Its QC checks the curve against the data: a fixed time origin, a curve that never rises, censoring ticks and the number at risk at every milestone, which must reconcile with the parent's subjects and events. Each open discrepancy costs 1 Mult. With the parent in hand, current and validated, and every finding reconciled, the Figure scores ×2 Mult; without a valid parent it scores 0 Chips. Act I deals no Figures; Acts II and III do.",
         badge: "KM",
       },
       {
         title: "The DMC firewall",
         detail:
-          "Outputs that would show treatment arms before the committee meets are dealt face down in the open session: you see their structure, never their values. Structural QC checks them without unblinding. Inspecting one anyway is an unauthorized unblinding: it is logged, and the next hand played scores ×0 Mult. The closed session turns them face up, but it needs structural QC of every blinded output in hand first. No Act I Blind is blinded yet.",
+          "Outputs that would show treatment arms before the committee meets are dealt face down in the open session: you see their structure, never their values. Structural QC checks them without unblinding. Inspecting one anyway is an unauthorized unblinding: it is logged, and the next hand played scores ×0 Mult. The closed session turns them face up, but it needs structural QC of every blinded output in hand first. Act I blinds nothing; Acts II and III do.",
         badge: "Firewall",
       },
       {

@@ -1694,6 +1694,45 @@ export const ActSchema = z
 /** One act of a run. */
 export type Act = z.infer<typeof ActSchema>;
 
+/**
+ * The campaign (#924): one compound carried through up to three studies,
+ * played as one run, act after act. Moving to the next act starts a new
+ * study, whose subjects, snapshots, SAP rulebook and compiled outputs are
+ * its own; the run's relics, hand levels, tray and budget come along.
+ */
+export const CampaignSchema = z
+  .object({
+    id: identifier,
+    title: z.string().min(1),
+    acts: z.array(ActSchema).min(1).max(3),
+  })
+  .superRefine((campaign, ctx) => {
+    const actIds = new Set<string>();
+    const blindIds = new Set<string>();
+    campaign.acts.forEach((act, index) => {
+      if (actIds.has(act.id)) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["acts", index, "id"],
+          message: "Act ids must be unique",
+        });
+      }
+      actIds.add(act.id);
+      for (const blind of [...act.blinds, ...(act.bossPool ?? [])]) {
+        if (blindIds.has(blind.id)) {
+          ctx.addIssue({
+            code: "custom",
+            path: ["acts", index],
+            message: `Blind ${blind.id} appears in more than one act`,
+          });
+        }
+        blindIds.add(blind.id);
+      }
+    });
+  });
+/** The three-act campaign. */
+export type Campaign = z.infer<typeof CampaignSchema>;
+
 const id = z.string().min(1).max(128);
 const index = z.number().int().min(0).max(1000);
 

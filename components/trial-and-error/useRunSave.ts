@@ -4,9 +4,9 @@ import { useMemo, useSyncExternalStore } from "react";
 import {
   parseRunSave,
   serializeRun,
-  type Act,
   type RestoredRun,
   type RunLog,
+  type RunPlan,
 } from "@/lib/trial-and-error";
 
 /**
@@ -85,11 +85,14 @@ function subscribe(callback: () => void): () => void {
 }
 
 /**
- * The act's resumable saved run, or null: none saved, storage unavailable,
+ * The plan's resumable saved run, or null: none saved, storage unavailable,
  * or a save that no longer rebuilds. Hydration-safe (`useSyncExternalStore`,
  * with no save on the server), per AGENTS.md §4.
  */
-export function useSavedRun(act: Act, enabled: boolean): RestoredRun | null {
+export function useSavedRun(
+  act: RunPlan,
+  enabled: boolean
+): RestoredRun | null {
   const json = useSyncExternalStore(
     subscribe,
     () => (enabled ? readSave(act.id) : null),

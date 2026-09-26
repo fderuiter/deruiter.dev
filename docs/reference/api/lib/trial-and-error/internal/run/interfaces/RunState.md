@@ -16,21 +16,32 @@ Table. Contains no derived or browser data.
 
 > **actId**: `string`
 
+The plan's id: the act played on its own, or the campaign.
+
+***
+
+### actIndex
+
+> **actIndex**: `number`
+
+Index into the plan's acts.
+
 ***
 
 ### blindIndex
 
 > **blindIndex**: `number`
 
-Index into the run's Blinds, Small first.
+Index into the current act's Blinds, Small first.
 
 ***
 
-### bossId
+### bossIds
 
-> **bossId**: `string` \| `null`
+> **bossIds**: (`string` \| `null`)[]
 
-The Boss this run faces: drawn from the act's pool, or its fixed Boss.
+The Boss of each act reached so far, in act order: drawn from the act's
+pool as its study starts, or its fixed Boss.
 
 ***
 

@@ -115,6 +115,7 @@ export interface TableEvent {
     | "REFUSED"
     | "RESET"
     | "BLIND_STARTED"
+    | "ACT_STARTED"
     | "RECOMPILED"
     | "ALLOCATED"
     | "SEALED"

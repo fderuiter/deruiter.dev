@@ -2,8 +2,9 @@ import { test, expect, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { settleFooterTicker } from "./helpers/footer-ticker";
 import {
-  ACT_I,
+  BIOSTAT_OPS_CAMPAIGN,
   advanceRun,
+  deriveRunView,
   createRunState,
   runBlinds,
   serializeRun,
@@ -17,6 +18,8 @@ import { playBlind } from "../utils/trial-and-error-bot";
  * Site Audit at the start of the Big Blind.
  */
 const SEED = "e2e-4";
+/** The route plays the three-act campaign (#924). */
+const CAMPAIGN = BIOSTAT_OPS_CAMPAIGN;
 const ROUTE = `/arcade/trial-and-error?seed=${SEED}`;
 const WCAG_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"];
 const BLOCKING = new Set(["critical", "serious", "moderate"]);
@@ -1064,14 +1067,14 @@ test.describe("Trial & Error boss intro on the Act I Boss (#1083)", () => {
    * Small and Big Blinds for this seed, so resuming lands on the Boss.
    */
   function saveAtBoss(): string {
-    let run: RunState = createRunState(ACT_I, SEED);
+    let run: RunState = createRunState(CAMPAIGN, SEED);
     const actions: LoggedAction[] = [];
     const step = (action: LoggedAction) => {
-      run = advanceRun(ACT_I, run, action);
+      run = advanceRun(CAMPAIGN, run, action);
       actions.push(action);
     };
     for (let i = 0; i < 2; i++) {
-      const blind = runBlinds(ACT_I, run)[run.blindIndex];
+      const blind = runBlinds(CAMPAIGN, run)[run.blindIndex];
       for (const action of playBlind(blind, run.table, "MEDIAN").actions) {
         if (run.table.status !== "REVIEWING") break;
         if (action.type === "RESET") continue;
@@ -1080,8 +1083,13 @@ test.describe("Trial & Error boss intro on the Act I Boss (#1083)", () => {
       expect(run.table.status).toBe("CLEARED");
       step({ type: "NEXT_BLIND" });
     }
-    expect(runBlinds(ACT_I, run)[run.blindIndex].blind.tier).toBe("BOSS_BLIND");
-    return serializeRun({ actId: ACT_I.id, seed: SEED, actions }, new Date());
+    expect(runBlinds(CAMPAIGN, run)[run.blindIndex].blind.tier).toBe(
+      "BOSS_BLIND"
+    );
+    return serializeRun(
+      { actId: CAMPAIGN.id, seed: SEED, actions },
+      new Date()
+    );
   }
 
   async function resumeAtBoss(page: Page) {
@@ -1093,7 +1101,7 @@ test.describe("Trial & Error boss intro on the Act I Boss (#1083)", () => {
           window.localStorage.setItem(key, value);
         }
       },
-      [`te:run-save:${ACT_I.id}`, save] as const
+      [`te:run-save:${CAMPAIGN.id}`, save] as const
     );
     await page.goto(ROUTE, { waitUntil: "domcontentloaded" });
     await expect(async () => {
@@ -1160,4 +1168,113 @@ test.describe("Trial & Error boss intro on the Act I Boss (#1083)", () => {
     await page.keyboard.press("Escape");
     await expect(page.getByTestId("boss-intro")).toBeHidden();
   });
+});
+
+test.describe("Trial & Error campaign across studies (#924)", () => {
+  /**
+   * A saved campaign run, played by the balance bot Blind after Blind until
+   * `stop` says it has arrived: it claims the first relic a defended DMC
+   * offers and skips the shop.
+   */
+  function saveWhen(stop: (run: RunState) => boolean): string {
+    let run: RunState = createRunState(CAMPAIGN, SEED);
+    const actions: LoggedAction[] = [];
+    const step = (action: LoggedAction) => {
+      run = advanceRun(CAMPAIGN, run, action);
+      actions.push(action);
+    };
+    while (!stop(run)) {
+      const blind = runBlinds(CAMPAIGN, run)[run.blindIndex];
+      for (const action of playBlind(blind, run.table, "PERFECT").actions) {
+        if (run.table.status !== "REVIEWING") break;
+        if (action.type === "RESET") continue;
+        step(action);
+      }
+      expect(run.table.status).toBe("CLEARED");
+      const reward = deriveRunView(CAMPAIGN, run).table.reward;
+      if (reward && reward.claimed === null) {
+        step({ type: "CLAIM_RELIC", relicId: reward.choices[0].id });
+      }
+      step({ type: "NEXT_BLIND" });
+    }
+    return serializeRun(
+      { actId: CAMPAIGN.id, seed: SEED, actions },
+      new Date()
+    );
+  }
+
+  async function resume(page: Page, save: string) {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.addInitScript(
+      ([key, value]) => {
+        if (!window.localStorage.getItem(key)) {
+          window.localStorage.setItem(key, value);
+        }
+      },
+      [`te:run-save:${CAMPAIGN.id}`, save] as const
+    );
+    await page.goto(ROUTE, { waitUntil: "domcontentloaded" });
+    await expect(async () => {
+      const launchBtn = page.getByRole("button", { name: /Launch Cabinet/i });
+      if (await launchBtn.isVisible()) await launchBtn.click();
+      await expect(page.getByTestId("resume-run")).toBeVisible({
+        timeout: 3000,
+      });
+    }).toPass({ timeout: 30000 });
+    await page.getByRole("button", { name: "Resume run" }).click();
+  }
+
+  for (const width of [320, 1440]) {
+    test(`opens Act II on its act card at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 800 });
+      await resume(
+        page,
+        saveWhen((run) => run.actIndex === 1)
+      );
+      const intro = page.getByTestId("act-intro");
+      await expect(intro).toBeVisible();
+      await expect(
+        intro.getByRole("heading", {
+          name: "Act II: Phase II Proof of Concept",
+        })
+      ).toBeVisible();
+      await expect(page.getByTestId("act-intro-boss")).toContainText(
+        "Boss waiting:"
+      );
+      await expect(page.getByTestId("act-intro-start")).toBeFocused();
+      await expectNoHorizontalOverflow(page);
+      await expectNoBlockingViolations(page, `Act II act card at ${width}px`);
+
+      await page.keyboard.press("Enter");
+      await expect(intro).toBeHidden();
+      await expect(page.getByTestId("blind-name")).toContainText(
+        "Phase II Internal QC"
+      );
+    });
+
+    test(`reaches CSR Lock, the final boss, at ${width}px`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 800 });
+      await resume(
+        page,
+        saveWhen(
+          (run) =>
+            run.actIndex === 2 &&
+            runBlinds(CAMPAIGN, run)[run.blindIndex].blind.tier === "BOSS_BLIND"
+        )
+      );
+      await expect(page.getByTestId("boss-intro")).toBeVisible();
+      await expect(page.getByTestId("boss-intro-slots")).toContainText(
+        "5. Listing"
+      );
+      await expectNoHorizontalOverflow(page);
+      await expectNoBlockingViolations(page, `CSR Lock intro at ${width}px`);
+      await page.keyboard.press("Enter");
+      await expect(page.getByTestId("boss-intro")).toBeHidden();
+      await expect(page.getByTestId("csr-slots")).toBeVisible();
+      await expectNoHorizontalOverflow(page);
+      await expectNoBlockingViolations(page, `CSR Lock table at ${width}px`);
+    });
+  }
 });

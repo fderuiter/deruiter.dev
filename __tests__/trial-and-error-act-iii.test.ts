@@ -87,7 +87,7 @@ describe("Act III: Phase III Blinded Pivotal (#1085)", () => {
     expect(TOPLINE.title).toBe("Sponsor Topline Review");
     for (const seed of ["alpha", "bravo", "e2e-4"]) {
       const run = createRunState(ACT_III, seed);
-      expect(run.bossId).toBe(LOCK.id);
+      expect(run.bossIds[0]).toBe(LOCK.id);
       expect(run.draws).toEqual([]);
     }
   });

@@ -10,6 +10,20 @@ Everything a run renders, derived purely from act and state.
 
 ## Properties
 
+### act
+
+> **act**: [`RunActView`](RunActView.md)
+
+***
+
+### actIntro
+
+> **actIntro**: [`ActIntroView`](ActIntroView.md) \| `null`
+
+The act card, while a new study's first Blind has not started.
+
+***
+
 ### blind
 
 > **blind**: `object`
@@ -311,6 +325,14 @@ The cash-out paid for this Blind, once paid.
 ### isFinalBlind
 
 > **isFinalBlind**: `boolean`
+
+***
+
+### nextAct
+
+> **nextAct**: [`RunActView`](RunActView.md) \| `null`
+
+The act that follows, when the next Blind starts a new study.
 
 ***
 

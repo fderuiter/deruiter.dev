@@ -157,7 +157,7 @@ describe("boss pools", () => {
       seed: "any",
       drawIndex: 0,
       draws: [],
-      bossId: BOSS.id,
+      bossIds: [BOSS.id],
     });
     expect(runBlinds(ACT_I, run).map((b) => b.id)).toEqual([
       SMALL.id,
@@ -180,11 +180,17 @@ describe("boss pools", () => {
       const run = createRunState(act, seed);
       expect(run.drawIndex).toBe(1);
       expect(run.draws).toEqual([
-        { drawIndex: 0, kind: "BOSS", id: run.bossId, blindIndex: 2 },
+        {
+          drawIndex: 0,
+          kind: "BOSS",
+          id: run.bossIds[0],
+          actIndex: 0,
+          blindIndex: 2,
+        },
       ]);
-      expect(run.bossId).toBe([BOSS, other][drawInt(seed, 0, 2)].id);
-      expect(runBlinds(act, run)[2].id).toBe(run.bossId);
-      seen.add(run.bossId as string);
+      expect(run.bossIds[0]).toBe([BOSS, other][drawInt(seed, 0, 2)].id);
+      expect(runBlinds(act, run)[2].id).toBe(run.bossIds[0]);
+      seen.add(run.bossIds[0] as string);
     }
     expect(seen).toEqual(new Set([BOSS.id, other.id]));
   });
@@ -196,7 +202,7 @@ describe("boss pools", () => {
       fc.property(fc.string({ maxLength: 24 }), (seed) => {
         const a = createRunState(act, seed);
         expect(createRunState(act, seed)).toEqual(a);
-        expect(pool.map((b) => b.id)).toContain(a.bossId);
+        expect(pool.map((b) => b.id)).toContain(a.bossIds[0]);
       })
     );
   });
@@ -235,7 +241,13 @@ describe("crisis draws", () => {
     expect(run.blindIndex).toBe(1);
     expect(run.table.crisis?.id).toBe(AMENDMENT.id);
     expect(run.draws).toEqual([
-      { drawIndex: 0, kind: "CRISIS", id: AMENDMENT.id, blindIndex: 1 },
+      {
+        drawIndex: 0,
+        kind: "CRISIS",
+        id: AMENDMENT.id,
+        actIndex: 0,
+        blindIndex: 1,
+      },
     ]);
     expect(run.table.lastEvent?.message).toBe(
       `Big Blind: Sponsor Safety Review. Target 1. Crisis: ${AMENDMENT.name}. ${AMENDMENT.description}`

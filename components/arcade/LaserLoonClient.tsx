@@ -88,9 +88,9 @@ export const LaserLoonClient: React.FC = () => {
               instructions="Fly Laser Loon toward the State Capitol, take on rival flags, and blast through red tape. There are ice weapons and boss battles. The flag committee did not request these features."
               controls={[
                 { key: "WASD / Arrows", action: "Glide Loon" },
-                { key: "Click / Touch", action: "Aim & Shoot" },
+                { key: "Click / Space", action: "Aim & Shoot" },
                 { key: "1 - 4", action: "Optic Arsenal" },
-                { key: "Space / U", action: "Loon Tremolo" },
+                { key: "U", action: "Loon Tremolo" },
                 { key: "P", action: "Pause Game" },
               ]}
               importComponent={LaserLoonLoader}
@@ -119,8 +119,8 @@ export const LaserLoonClient: React.FC = () => {
               <span>Haunting Loon Tremolo</span>
             </div>
             <p className="text-zinc-400 text-[11px] leading-relaxed">
-              Charge energy meter to 100% by scoring hits. Press Space to
-              unleash a screen-wide synthesized cryogenic loon cry shockwave!
+              Charge energy meter to 100% by scoring hits. Press U to unleash a
+              screen-wide synthesized cryogenic loon cry shockwave!
             </p>
           </div>
 

@@ -336,14 +336,14 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         action: "Aim & Fire Laser Arsenal",
         description:
-          "Aim crosshair with cursor or touch; left-click or drag to fire active laser beam (Ruby Laser, Cyan Pulse, Aurora Wave, or Cryo Mortar).",
-        key: "Left Click / Drag",
+          "Aim crosshair with cursor or touch; left-click, drag or hold Space to fire the active laser beam (Ruby Laser, Cyan Pulse, Aurora Wave, or Cryo Mortar).",
+        key: "Left Click / Drag / Space",
       },
       {
         action: "The Haunting Loon Tremolo (Ultimate)",
         description:
           "When the energy meter hits 100%, trigger a screen-wide synthesized cryogenic loon screech that freezes and shatters all obstacles!",
-        key: "Spacebar / Ultimate Button",
+        key: "U / Ultimate Button",
       },
       {
         action: "Cycle Laser Modes",

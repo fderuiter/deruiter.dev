@@ -11,7 +11,7 @@ import React, {
 import { createPortal } from "react-dom";
 import { AnimatePresence, Reorder } from "framer-motion";
 import {
-  ACT_I,
+  BIOSTAT_OPS_CAMPAIGN,
   CLINICAL_HOLD,
   CPU_COSTS,
   HAND_LEVEL_BONUS,
@@ -21,14 +21,15 @@ import {
   cardShortName,
   costOf,
   createRunState,
+  planActs,
   deriveRunView,
   previewAllocation,
-  type Act,
   type ClockAction,
   type CpuAction,
   type FootnoteSeal,
   type RestoredRun,
   type RunAction,
+  type RunPlan,
   type RunLog,
   type RunState,
   type Scenario,
@@ -50,6 +51,7 @@ import {
 import { RunInfo } from "@/components/trial-and-error/RunInfo";
 import { ScoreLog } from "@/components/trial-and-error/ScoreLog";
 import { HandCheatSheet } from "@/components/trial-and-error/HandCheatSheet";
+import { ActIntro } from "@/components/trial-and-error/ActIntro";
 import { BossIntro } from "@/components/trial-and-error/BossIntro";
 import { FdaClock } from "@/components/trial-and-error/FdaClock";
 import { CsrSlots } from "@/components/trial-and-error/CsrSlots";
@@ -86,8 +88,11 @@ import {
 } from "@/components/trial-and-error/useTeSound";
 
 interface CardTableProps {
-  /** The act to play, Small Blind first. Defaults to Act I. */
-  act?: Act;
+  /**
+   * The act to play on its own, or the campaign whose acts are played in
+   * order (#924). Defaults to the three-act campaign.
+   */
+  act?: RunPlan;
   /** Plays a single Blind instead of an act. */
   scenario?: Scenario;
   /**
@@ -112,7 +117,11 @@ interface LoggedRun {
 /** A move, or a saved run replacing the fresh one on resume. */
 type TableIntent = RunAction | { type: "LOAD_SAVED"; saved: RestoredRun };
 
-function logRun(act: Act, current: LoggedRun, intent: TableIntent): LoggedRun {
+function logRun(
+  act: RunPlan,
+  current: LoggedRun,
+  intent: TableIntent
+): LoggedRun {
   if (intent.type === "LOAD_SAVED") {
     return { run: intent.saved.run, log: intent.saved.log };
   }
@@ -225,6 +234,12 @@ function cardLabel(view: TableCardView, partners: string[] = []): string {
 const PROMPT_BUTTON =
   "min-h-[44px] border px-4 text-xs font-bold uppercase touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 active:scale-[0.98]";
 
+/** A saved run's act and Blind, e.g. "Act II: ... · Internal QC". */
+function resumedView(saved: RestoredRun): string {
+  const view = deriveRunView(saved.act, saved.run);
+  return `${view.act.title}: ${view.blind.blind.name}`;
+}
+
 /**
  * The start view when this browser holds a saved run (#1079): Resume run,
  * or New run after a confirmation, since starting over discards the save.
@@ -264,7 +279,7 @@ function ResumePrompt({
       </h2>
       <dl className="mt-3 grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1 text-xs">
         <dt className="text-zinc-400">Act</dt>
-        <dd className="min-w-0 text-zinc-200 break-words">{saved.act.title}</dd>
+        <dd className="min-w-0 text-zinc-200 break-words">{view.act.title}</dd>
         <dt className="text-zinc-400">Blind</dt>
         <dd className="min-w-0 text-zinc-200 break-words">
           {view.blind.blind.name}
@@ -337,18 +352,18 @@ export function CardTable({
   seed,
   persist = false,
 }: CardTableProps) {
-  const act = useMemo<Act>(
+  const act = useMemo<RunPlan>(
     () =>
       actProp ??
       (single
         ? { id: single.id, title: single.title, blinds: [single] }
-        : ACT_I),
+        : BIOSTAT_OPS_CAMPAIGN),
     [actProp, single]
   );
   const [{ run, log }, dispatch] = useReducer(
     (current: LoggedRun, intent: TableIntent) => logRun(act, current, intent),
     act,
-    (a: Act): LoggedRun => {
+    (a: RunPlan): LoggedRun => {
       const run = createRunState(a, seed ?? initialSeed());
       return { run, log: { actId: a.id, seed: run.seed, actions: [] } };
     }
@@ -365,8 +380,11 @@ export function CardTable({
     resumeChoice !== "DONE" &&
     log.actions.length === 0;
   const runView = deriveRunView(act, run);
-  const runOver =
-    runView.phase === "RUN_FAILED" || runView.phase === "ACT_COMPLETE";
+  const runOver = runView.phase === "RUN_FAILED" || runView.phase === "RUN_WON";
+  // The act being played: its shop runs between its Blinds.
+  const currentAct = planActs(act)[run.actIndex];
+  const wonLabel =
+    runView.act.count > 1 ? "Campaign won" : `${runView.act.title} complete`;
   // Keep this browser's save in step with the run: written after each move,
   // removed when the run ends or a new one starts. Never while a found save
   // still waits for the player's choice.
@@ -447,7 +465,7 @@ export function CardTable({
   /** The face-down output the firewall dialog is asking about. */
   const [peekId, setPeekId] = useState<string | null>(null);
   // Every Boss Blind opens on its intro card until it is dismissed.
-  const bossIntroKey = `${runView.seed}:${runView.blindIndex}:${scenario.id}`;
+  const bossIntroKey = `${runView.seed}:${run.actIndex}:${runView.blindIndex}:${scenario.id}`;
   const [bossIntroSeen, setBossIntroSeen] = useState<string | null>(null);
   const showBossIntro =
     view.bossIntro !== null &&
@@ -455,6 +473,13 @@ export function CardTable({
     state.handsPlayed === 0 &&
     state.cpu.spent === 0 &&
     bossIntroSeen !== bossIntroKey;
+  // A new study opens on its act card until it is dismissed (#924).
+  const actIntroKey = `${runView.seed}:${run.actIndex}`;
+  const [actIntroSeen, setActIntroSeen] = useState<string | null>(null);
+  const showActIntro =
+    runView.actIntro !== null &&
+    state.cpu.spent === 0 &&
+    actIntroSeen !== actIntroKey;
   const playBossStinger = useEffectEvent(() => sound.play("bossStinger"));
   // Dismissing the intro hands focus to the table: a crisis's first choice
   // when one must be answered first, otherwise the first card in hand.
@@ -466,16 +491,20 @@ export function CardTable({
     const first = state.hand[0];
     if (first) cardRefs.current.get(first)?.focus();
   });
+  const playActCue = useEffectEvent(() => sound.play("cardDeal"));
   const bossIntroOpen = useRef(false);
   useEffect(() => {
     if (showBossIntro) {
       bossIntroOpen.current = true;
       playBossStinger();
+    } else if (showActIntro) {
+      bossIntroOpen.current = true;
+      playActCue();
     } else if (bossIntroOpen.current) {
       bossIntroOpen.current = false;
       focusTable();
     }
-  }, [showBossIntro]);
+  }, [showBossIntro, showActIntro]);
   const detailView = view.hand.find((h) => h.card.id === detailId);
   const activeIndex = Math.min(focusIndex, Math.max(0, view.hand.length - 1));
   const focusedCard = view.hand[activeIndex];
@@ -885,9 +914,7 @@ export function CardTable({
         onResume={() => {
           setResumeChoice("DONE");
           dispatch({ type: "LOAD_SAVED", saved });
-          announce(
-            `Resumed ${saved.act.title}: ${deriveRunView(saved.act, saved.run).blind.blind.name}.`
-          );
+          announce(`Resumed ${resumedView(saved)}.`);
         }}
         onNew={() => setResumeChoice("CONFIRM_NEW")}
         onConfirmNew={() => {
@@ -985,7 +1012,8 @@ export function CardTable({
           className="min-w-0 bg-[color:var(--te-surface-1)] p-3 text-xs"
         >
           <p className="text-[10px] uppercase tracking-wider text-zinc-400 tabular-nums">
-            {act.title} · Blind {runView.blindIndex + 1} of {runView.blindCount}
+            {runView.act.title} · Blind {runView.blindIndex + 1} of{" "}
+            {runView.blindCount}
           </p>
           <p
             className="font-bold uppercase tracking-wider text-zinc-300 break-words"
@@ -1815,10 +1843,10 @@ export function CardTable({
               <p
                 className={`text-lg font-bold uppercase ${state.status === "CLEARED" ? "text-emerald-300" : "text-rose-300"}`}
               >
-                {runView.phase === "ACT_COMPLETE" && view.csrLock?.lock
-                  ? `CSR locked · ${act.title} complete`
-                  : runView.phase === "ACT_COMPLETE"
-                    ? `${act.title} complete`
+                {runView.phase === "RUN_WON" && view.csrLock?.lock
+                  ? `CSR locked · ${wonLabel}`
+                  : runView.phase === "RUN_WON"
+                    ? wonLabel
                     : runView.phase === "BLIND_CLEARED" ||
                         runView.phase === "SHOP"
                       ? "Blind cleared"
@@ -1964,14 +1992,21 @@ export function CardTable({
               (runView.phase === "BLIND_CLEARED" ||
                 runView.phase === "SHOP") ? (
                 <>
-                  <p className="mt-2 text-xs text-zinc-400 break-words">
-                    Next: {runView.nextBlind.blind.name} · target{" "}
+                  <p
+                    className="mt-2 text-xs text-zinc-400 break-words"
+                    data-testid="next-blind"
+                  >
+                    Next:{" "}
+                    {runView.nextAct && (
+                      <>{runView.nextAct.title}, a new study · </>
+                    )}
+                    {runView.nextBlind.blind.name} · target{" "}
                     {runView.nextBlind.blind.quota}
                   </p>
                   <div className="mt-4 flex flex-wrap justify-center gap-2">
                     {runView.phase === "BLIND_CLEARED" &&
                       runView.pendingCashOut &&
-                      act.shop && (
+                      currentAct.shop && (
                         <button
                           ref={restartRef}
                           type="button"
@@ -1984,7 +2019,7 @@ export function CardTable({
                       )}
                     <button
                       ref={
-                        runView.phase === "BLIND_CLEARED" && act.shop
+                        runView.phase === "BLIND_CLEARED" && currentAct.shop
                           ? undefined
                           : restartRef
                       }
@@ -2002,21 +2037,22 @@ export function CardTable({
                       }
                       aria-disabled={shopView?.opened ? true : undefined}
                       aria-describedby={
-                        runView.phase === "BLIND_CLEARED" && act.shop
+                        runView.phase === "BLIND_CLEARED" && currentAct.shop
                           ? "skip-shop-note"
                           : undefined
                       }
                       className={`${BUTTON_BASE} border-emerald-500 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20`}
                     >
-                      Next Blind
+                      {runView.nextAct ? "Next study" : "Next Blind"}
                     </button>
                   </div>
-                  {runView.phase === "BLIND_CLEARED" && act.shop && (
+                  {runView.phase === "BLIND_CLEARED" && currentAct.shop && (
                     <p
                       id="skip-shop-note"
                       className="mt-2 text-[11px] text-zinc-400 break-words"
                     >
-                      Next Blind skips the shop; the sponsor still pays.
+                      {runView.nextAct ? "Next study" : "Next Blind"} skips the
+                      shop; the sponsor still pays.
                     </p>
                   )}
                 </>
@@ -2033,9 +2069,7 @@ export function CardTable({
                   }}
                   className={`${BUTTON_BASE} mt-4 border-amber-500 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20`}
                 >
-                  {runView.phase === "ACT_COMPLETE"
-                    ? "Play again"
-                    : "Restart run"}
+                  {runView.phase === "RUN_WON" ? "Play again" : "Restart run"}
                 </button>
               )}
             </div>
@@ -2154,6 +2188,14 @@ export function CardTable({
           refused={view.refusedHands}
           selected={view.classification?.handType ?? null}
           onClose={() => setHandSheetOpen(false)}
+        />
+      )}
+
+      {showActIntro && runView.actIntro && (
+        <ActIntro
+          intro={runView.actIntro}
+          loud={loudEffectsEnabled}
+          onDismiss={() => setActIntroSeen(actIntroKey)}
         />
       )}
 

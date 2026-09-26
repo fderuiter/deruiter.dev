@@ -455,7 +455,7 @@ describe("run progression", () => {
     run = clearCurrent(run);
     const done = deriveRunView(QUIET_ACT, run);
     expect(done).toMatchObject({
-      phase: "ACT_COMPLETE",
+      phase: "RUN_WON",
       isFinalBlind: true,
       nextBlind: null,
     });

@@ -99,23 +99,29 @@ describe("Act II boss draw", () => {
   it("draws the Boss from the pool by seed, the same Boss for the same seed", () => {
     for (const seed of SEEDS) {
       const run = createRunState(ACT_II, seed);
-      expect(run.bossId).not.toBeNull();
-      expect(ACT_II.bossPool?.some((b) => b.id === run.bossId)).toBe(true);
-      expect(createRunState(ACT_II, seed).bossId).toBe(run.bossId);
+      expect(run.bossIds[0]).not.toBeNull();
+      expect(ACT_II.bossPool?.some((b) => b.id === run.bossIds[0])).toBe(true);
+      expect(createRunState(ACT_II, seed).bossIds[0]).toBe(run.bossIds[0]);
       expect(run.draws).toEqual([
-        { drawIndex: 0, kind: "BOSS", id: run.bossId, blindIndex: 2 },
+        {
+          drawIndex: 0,
+          kind: "BOSS",
+          id: run.bossIds[0],
+          actIndex: 0,
+          blindIndex: 2,
+        },
       ]);
       expect(runBlinds(ACT_II, run).map((b) => b.id)).toEqual([
         QC.id,
         OPEN.id,
-        run.bossId,
+        run.bossIds[0],
       ]);
     }
   });
 
   it("draws both Bosses across seeds", () => {
     const drawn = new Set(
-      SEEDS.map((seed) => createRunState(ACT_II, seed).bossId)
+      SEEDS.map((seed) => createRunState(ACT_II, seed).bossIds[0])
     );
     expect(drawn).toEqual(
       new Set([DMC_MILESTONE_SCENARIO.id, FDA_IR_SCENARIO.id])
@@ -135,7 +141,7 @@ describe("Act II boss draw", () => {
       run = clearBlind(run);
       expect(run.table.status).toBe("CLEARED");
       run = advanceRun(ACT_II, run, { type: "NEXT_BLIND" });
-      expect(deriveRunView(ACT_II, run).blind.id).toBe(run.bossId);
+      expect(deriveRunView(ACT_II, run).blind.id).toBe(run.bossIds[0]);
     }
   });
 });

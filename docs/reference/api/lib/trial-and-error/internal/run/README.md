@@ -8,9 +8,11 @@
 
 ## Interfaces
 
+- [ActIntroView](interfaces/ActIntroView.md)
 - [OpenedPack](interfaces/OpenedPack.md)
 - [PackCardView](interfaces/PackCardView.md)
 - [PackSlot](interfaces/PackSlot.md)
+- [RunActView](interfaces/RunActView.md)
 - [RunDraw](interfaces/RunDraw.md)
 - [RunState](interfaces/RunState.md)
 - [RunView](interfaces/RunView.md)
@@ -23,6 +25,7 @@
 
 - [RunAction](type-aliases/RunAction.md)
 - [RunPhase](type-aliases/RunPhase.md)
+- [RunPlan](type-aliases/RunPlan.md)
 
 ## Variables
 
@@ -33,4 +36,5 @@
 - [advanceRun](functions/advanceRun.md)
 - [createRunState](functions/createRunState.md)
 - [deriveRunView](functions/deriveRunView.md)
+- [planActs](functions/planActs.md)
 - [runBlinds](functions/runBlinds.md)

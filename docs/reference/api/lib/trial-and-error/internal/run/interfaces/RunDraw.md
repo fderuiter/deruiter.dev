@@ -10,11 +10,19 @@ One seeded draw, as the run log records it.
 
 ## Properties
 
+### actIndex
+
+> **actIndex**: `number`
+
+The act it was drawn for.
+
+***
+
 ### blindIndex
 
 > **blindIndex**: `number`
 
-The Blind it was drawn for.
+The Blind of that act it was drawn for.
 
 ***
 

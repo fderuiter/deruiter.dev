@@ -197,7 +197,7 @@ describe("run saves", () => {
           expect(RunSaveSchema.safeParse(JSON.parse(json)).success).toBe(true);
           const restored = parseRunSave(json, [ACT_I]);
           const phase = deriveRunView(ACT_I, run).phase;
-          if (phase === "RUN_FAILED" || phase === "ACT_COMPLETE") {
+          if (phase === "RUN_FAILED" || phase === "RUN_WON") {
             expect(restored).toBeNull();
             return;
           }

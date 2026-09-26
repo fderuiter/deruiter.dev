@@ -6,6 +6,7 @@
 
 # Type Alias: RunPhase
 
-> **RunPhase** = `"PLAYING"` \| `"BLIND_CLEARED"` \| `"SHOP"` \| `"RUN_FAILED"` \| `"ACT_COMPLETE"`
+> **RunPhase** = `"PLAYING"` \| `"BLIND_CLEARED"` \| `"SHOP"` \| `"RUN_FAILED"` \| `"RUN_WON"`
 
-Where the run stands.
+Where the run stands. RUN_WON is the plan's last Blind cleared: CSR Lock,
+in the campaign.

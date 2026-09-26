@@ -14,6 +14,8 @@ A run as the save keeps it: where it started and every move since.
 
 > **actId**: `string`
 
+The plan's id: the act played on its own, or the campaign.
+
 ***
 
 ### actions

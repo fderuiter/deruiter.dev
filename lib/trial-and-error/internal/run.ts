@@ -1,4 +1,11 @@
-import type { Act, CrisisCard, Pack, Scenario, ShopEntry } from "../types";
+import type {
+  Act,
+  Campaign,
+  CrisisCard,
+  Pack,
+  Scenario,
+  ShopEntry,
+} from "../types";
 import { POPULATION_LABELS, shopEntryId } from "../types";
 import { drawInt } from "./rng";
 import {
@@ -42,7 +49,9 @@ export interface RunDraw {
   kind: "BOSS" | "CRISIS";
   /** The boss scenario or crisis card drawn. */
   id: string;
-  /** The Blind it was drawn for. */
+  /** The act it was drawn for. */
+  actIndex: number;
+  /** The Blind of that act it was drawn for. */
   blindIndex: number;
 }
 
@@ -83,6 +92,7 @@ export interface ShopState {
  * Table. Contains no derived or browser data.
  */
 export interface RunState {
+  /** The plan's id: the act played on its own, or the campaign. */
   actId: string;
   /** The run seed. The same seed and the same moves replay identically. */
   seed: string;
@@ -90,9 +100,14 @@ export interface RunState {
   drawIndex: number;
   /** Every seeded draw so far, in order. */
   draws: RunDraw[];
-  /** The Boss this run faces: drawn from the act's pool, or its fixed Boss. */
-  bossId: string | null;
-  /** Index into the run's Blinds, Small first. */
+  /**
+   * The Boss of each act reached so far, in act order: drawn from the act's
+   * pool as its study starts, or its fixed Boss.
+   */
+  bossIds: (string | null)[];
+  /** Index into the plan's acts. */
+  actIndex: number;
+  /** Index into the current act's Blinds, Small first. */
   blindIndex: number;
   table: TableState;
   /** The cleared Blind's cash-out, once the sponsor has paid it. */
@@ -131,9 +146,36 @@ export type RunAction =
   /** A new run: with `seed`, a new seed; without, a replay of this one. */
   | { type: "RESTART_RUN"; seed?: string };
 
-/** Where the run stands. */
+/**
+ * Where the run stands. RUN_WON is the plan's last Blind cleared: CSR Lock,
+ * in the campaign.
+ */
 export type RunPhase =
-  "PLAYING" | "BLIND_CLEARED" | "SHOP" | "RUN_FAILED" | "ACT_COMPLETE";
+  "PLAYING" | "BLIND_CLEARED" | "SHOP" | "RUN_FAILED" | "RUN_WON";
+
+/** An act as the run shows it: where it sits in the campaign. */
+export interface RunActView {
+  id: string;
+  title: string;
+  index: number;
+  count: number;
+}
+
+/**
+ * The act card shown as a new study starts (#924): the act, the Boss it has
+ * drawn, and what the new study reset and what the run kept.
+ */
+export interface ActIntroView {
+  act: RunActView;
+  /** The Boss waiting at the end of this act, e.g. "CSR Lock". */
+  bossTitle: string;
+  /** The Boss's intro card text. */
+  bossIntro: string;
+  /** What the new study started over. */
+  reset: string[];
+  /** What the run carried into it. */
+  kept: string[];
+}
 
 /** A shop item as the shop screen shows it. */
 export interface ShopItemView {
@@ -178,12 +220,17 @@ export interface ShopView {
 
 /** Everything a run renders, derived purely from act and state. */
 export interface RunView {
+  act: RunActView;
   blind: Scenario;
   blindIndex: number;
   blindCount: number;
   isFinalBlind: boolean;
   /** The Blind that follows this one, if any. */
   nextBlind: Scenario | null;
+  /** The act that follows, when the next Blind starts a new study. */
+  nextAct: RunActView | null;
+  /** The act card, while a new study's first Blind has not started. */
+  actIntro: ActIntroView | null;
   phase: RunPhase;
   /** The Blind has just started: nothing has been played or discarded. */
   showIntro: boolean;
@@ -198,15 +245,87 @@ export interface RunView {
   shop: ShopView | null;
 }
 
+/** What a run plays: one act on its own, or a campaign's acts in order. */
+export type RunPlan = Act | Campaign;
+
+/** A plan's acts, in play order. */
+export function planActs(plan: RunPlan): readonly Act[] {
+  return "acts" in plan ? plan.acts : [plan];
+}
+
 /**
- * The Blinds this run plays, in order. An act with a boss pool contributes
- * its Small and Big Blinds and the Boss the run drew.
+ * The Blinds the current act plays, in order. An act with a boss pool
+ * contributes its Small and Big Blinds and the Boss the run drew.
  */
-export function runBlinds(act: Act, run: Pick<RunState, "bossId">): Scenario[] {
+export function runBlinds(
+  plan: RunPlan,
+  run: Pick<RunState, "bossIds" | "actIndex">
+): Scenario[] {
+  const act = planActs(plan)[run.actIndex];
   if (!act.bossPool) return act.blinds;
-  const boss = act.bossPool.find((b) => b.id === run.bossId) ?? act.bossPool[0];
+  const bossId = run.bossIds[run.actIndex];
+  const boss = act.bossPool.find((b) => b.id === bossId) ?? act.bossPool[0];
   return [...act.blinds, boss];
 }
+
+/** Where the next Blind is: later in this act, or the next act's first. */
+interface Stop {
+  actIndex: number;
+  blindIndex: number;
+  blind: Scenario;
+}
+
+function nextStop(plan: RunPlan, run: RunState): Stop | null {
+  const blinds = runBlinds(plan, run);
+  if (run.blindIndex + 1 < blinds.length) {
+    return {
+      actIndex: run.actIndex,
+      blindIndex: run.blindIndex + 1,
+      blind: blinds[run.blindIndex + 1],
+    };
+  }
+  const acts = planActs(plan);
+  const actIndex = run.actIndex + 1;
+  if (actIndex >= acts.length) return null;
+  return { actIndex, blindIndex: 0, blind: acts[actIndex].blinds[0] };
+}
+
+/** The Blind's number across the whole run, from 0, e.g. for tray ids. */
+function runBlindNumber(plan: RunPlan, run: RunState): number {
+  return planActs(plan)
+    .slice(0, run.actIndex)
+    .reduce(
+      (n, act) => n + act.blinds.length + (act.bossPool ? 1 : 0),
+      run.blindIndex
+    );
+}
+
+function actView(plan: RunPlan, index: number): RunActView {
+  const acts = planActs(plan);
+  return {
+    id: acts[index].id,
+    title: acts[index].title,
+    index,
+    count: acts.length,
+  };
+}
+
+/** What a new study starts over, as the act card lists it. */
+const STUDY_RESET = [
+  "Subjects, populations and snapshots",
+  "The SAP rulebook",
+  "Every compiled output: the new study deals its own",
+  "Trial sites: the last study's sites closed out",
+];
+
+/** What the run carries into a new study, as the act card lists it. */
+const RUN_KEPT = [
+  "SOP relics",
+  "Hand levels",
+  "Guidance and seals in the tray",
+  "Study budget",
+  "Cleared Blinds, for the final campaign score",
+];
 
 /**
  * Draws the next crisis for a Blind, without replacement across the run.
@@ -215,6 +334,7 @@ export function runBlinds(act: Act, run: Pick<RunState, "bossId">): Scenario[] {
 function drawCrisis(
   act: Act,
   run: Pick<RunState, "seed" | "drawIndex" | "draws">,
+  actIndex: number,
   blindIndex: number
 ): { crisis: CrisisCard | null; drawIndex: number; draws: RunDraw[] } {
   const drawn = new Set(
@@ -230,7 +350,13 @@ function drawCrisis(
     drawIndex: run.drawIndex + 1,
     draws: [
       ...run.draws,
-      { drawIndex: run.drawIndex, kind: "CRISIS", id: crisis.id, blindIndex },
+      {
+        drawIndex: run.drawIndex,
+        kind: "CRISIS",
+        id: crisis.id,
+        actIndex,
+        blindIndex,
+      },
     ],
   };
 }
@@ -264,23 +390,22 @@ function announce(
 }
 
 /** The SAP rulebook the shop stocks for: the next Blind's. */
-function shopRulebook(act: Act, run: RunState) {
-  const blinds = runBlinds(act, run);
-  return (blinds[run.blindIndex + 1] ?? blinds[run.blindIndex]).rulebook;
+function shopRulebook(plan: RunPlan, run: RunState) {
+  return (nextStop(plan, run)?.blind ?? runBlinds(plan, run)[run.blindIndex])
+    .rulebook;
 }
 
 /** The payout the cleared Blind earns, before it is paid. */
-function payoutFor(act: Act, run: RunState): CashOutReport {
-  const blind = runBlinds(act, run)[run.blindIndex];
+function payoutFor(plan: RunPlan, run: RunState): CashOutReport {
+  const blind = runBlinds(plan, run)[run.blindIndex];
   return cashOut(blind.blind.tier, run.table.cpu.available, run.table.budget);
 }
 
 /** Why the cleared Blind cannot be cashed out, or null. */
-function cashOutRefusal(act: Act, run: RunState): string | null {
-  const blinds = runBlinds(act, run);
-  const blind = blinds[run.blindIndex];
+function cashOutRefusal(plan: RunPlan, run: RunState): string | null {
+  const blind = runBlinds(plan, run)[run.blindIndex];
   if (run.table.status !== "CLEARED") return `Clear ${blind.blind.name} first.`;
-  if (run.blindIndex >= blinds.length - 1) return `${act.title} is complete.`;
+  if (!nextStop(plan, run)) return `${plan.title} is complete.`;
   if (dmcDefenseOf(blind) && !run.table.rewardClaimed) {
     return "Choose an SOP relic first.";
   }
@@ -290,15 +415,15 @@ function cashOutRefusal(act: Act, run: RunState): string | null {
 
 /** Draws the shop's single slots on the shop stream. */
 function drawSlots(
-  act: Act,
+  plan: RunPlan,
   run: RunState,
   drawIndex: number
 ): { slots: ShopSlot[]; next: number } {
-  const catalog = act.shop;
+  const catalog = planActs(plan)[run.actIndex].shop;
   if (!catalog) return { slots: [], next: drawIndex };
   const pool = stockPool(
     catalog,
-    shopRulebook(act, run),
+    shopRulebook(plan, run),
     run.table.relics.map((r) => r.id)
   );
   const { items, next } = drawDistinct(run.seed, drawIndex, pool, SHOP_SLOTS);
@@ -361,22 +486,28 @@ function goLiveAt(table: TableState): string {
 }
 
 /** Shop actions a run in the shop routes to the shop reducer. */
-function shopAction(act: Act, run: RunState, action: RunAction): RunState {
+function shopAction(plan: RunPlan, run: RunState, action: RunAction): RunState {
+  const act = planActs(plan)[run.actIndex];
   const shop = run.shop;
   const refuse = (message: string) => announce(run, "REFUSED", message);
   switch (action.type) {
     case "CASH_OUT": {
-      const refusal = cashOutRefusal(act, run);
+      const refusal = cashOutRefusal(plan, run);
       if (refusal) return refuse(refusal);
-      const report = payoutFor(act, run);
+      const report = payoutFor(plan, run);
       const table = { ...run.table, budget: run.table.budget + report.total };
       let next: RunState = { ...run, table, cashOut: report };
       if (act.shop) {
-        const slots = drawSlots(act, next, run.shopDraws);
+        const slots = drawSlots(plan, next, run.shopDraws);
+        // Between acts there is no study to enroll sites into yet: the next
+        // study opens with its own.
+        const newStudy = nextStop(plan, run)?.actIndex !== run.actIndex;
         const packs = drawDistinct(
           run.seed,
           slots.next,
-          act.shop.packs,
+          act.shop.packs.filter(
+            (p) => !(newStudy && p.kind === "SITE_ACTIVATION")
+          ),
           PACK_SLOTS
         );
         next = {
@@ -407,7 +538,7 @@ function shopAction(act: Act, run: RunState, action: RunAction): RunState {
         return refuse(`Reroll needs $${price}k; $${run.table.budget}k left.`);
       }
       const table = { ...run.table, budget: run.table.budget - price };
-      const slots = drawSlots(act, { ...run, table }, run.shopDraws);
+      const slots = drawSlots(plan, { ...run, table }, run.shopDraws);
       return announce(
         run,
         "SHOP",
@@ -435,7 +566,7 @@ function shopAction(act: Act, run: RunState, action: RunAction): RunState {
       const table = take(
         { ...run.table, budget: run.table.budget - slot.entry.price },
         slot.entry,
-        `${shopEntryId(slot.entry)}@shop-${run.blindIndex}-${shop.purchases}`
+        `${shopEntryId(slot.entry)}@shop-${runBlindNumber(plan, run)}-${shop.purchases}`
       );
       return announce(
         run,
@@ -467,7 +598,7 @@ function shopAction(act: Act, run: RunState, action: RunAction): RunState {
       const pool = packPool(
         act.shop!,
         pack,
-        shopRulebook(act, run),
+        shopRulebook(plan, run),
         run.table.relics.map((r) => r.id),
         run.table.sites.map((s) => s.id)
       );
@@ -523,7 +654,7 @@ function shopAction(act: Act, run: RunState, action: RunAction): RunState {
         table = take(
           run.table,
           card.entry,
-          `${card.id}@pack-${run.blindIndex}-${shop.purchases}`
+          `${card.id}@pack-${runBlindNumber(plan, run)}-${shop.purchases}`
         );
       }
       const picked = [...opened.picked, card.id];
@@ -595,7 +726,8 @@ function shopAction(act: Act, run: RunState, action: RunAction): RunState {
 }
 
 /** The shop as the shop screen renders it. */
-function deriveShopView(act: Act, run: RunState): ShopView | null {
+function deriveShopView(plan: RunPlan, run: RunState): ShopView | null {
+  const act = planActs(plan)[run.actIndex];
   const shop = run.shop;
   if (!shop) return null;
   const budget = run.table.budget;
@@ -700,41 +832,68 @@ function startBlind(
 }
 
 /**
- * A fresh run for `seed`: the Boss drawn from the act's pool (a pool of one
- * is fixed and consumes no draw), and the first Blind dealt with full CPU.
- * The first Blind draws no crisis.
+ * An act's Boss: its fixed Boss, or one drawn from its pool with the run's
+ * next draw index (a pool of one is fixed and consumes no draw).
  */
-export function createRunState(
+function drawBoss(
   act: Act,
-  seed: string = DEFAULT_SEED
-): RunState {
-  let drawIndex = 0;
-  const draws: RunDraw[] = [];
-  let bossId: string | null =
-    act.blinds.find((b) => b.blind.tier === "BOSS_BLIND")?.id ?? null;
-  if (act.bossPool) {
-    const pool = act.bossPool;
-    if (pool.length === 1) {
-      bossId = pool[0].id;
-    } else {
-      bossId = pool[drawInt(seed, drawIndex, pool.length)].id;
-      draws.push({
-        drawIndex,
+  actIndex: number,
+  run: Pick<RunState, "seed" | "drawIndex" | "draws">
+): { bossId: string | null; drawIndex: number; draws: RunDraw[] } {
+  const pool = act.bossPool;
+  const fixed = (bossId: string | null) => ({
+    bossId,
+    drawIndex: run.drawIndex,
+    draws: run.draws,
+  });
+  if (!pool) {
+    return fixed(
+      act.blinds.find((b) => b.blind.tier === "BOSS_BLIND")?.id ?? null
+    );
+  }
+  if (pool.length === 1) return fixed(pool[0].id);
+  const bossId = pool[drawInt(run.seed, run.drawIndex, pool.length)].id;
+  return {
+    bossId,
+    drawIndex: run.drawIndex + 1,
+    draws: [
+      ...run.draws,
+      {
+        drawIndex: run.drawIndex,
         kind: "BOSS",
         id: bossId,
+        actIndex,
         blindIndex: act.blinds.length,
-      });
-      drawIndex += 1;
-    }
-  }
+      },
+    ],
+  };
+}
+
+/**
+ * A fresh run for `seed`: the first act's Boss drawn from its pool, and the
+ * first Blind dealt with full CPU. The first Blind draws no crisis. A later
+ * act draws its Boss as its study starts, so a campaign's first act plays
+ * exactly as the act does on its own.
+ */
+export function createRunState(
+  plan: RunPlan,
+  seed: string = DEFAULT_SEED
+): RunState {
+  const first = planActs(plan)[0];
+  const { bossId, drawIndex, draws } = drawBoss(first, 0, {
+    seed,
+    drawIndex: 0,
+    draws: [],
+  });
   return {
-    actId: act.id,
+    actId: plan.id,
     seed,
     drawIndex,
     draws,
-    bossId,
+    bossIds: [bossId],
+    actIndex: 0,
     blindIndex: 0,
-    table: createTableState(act.blinds[0]),
+    table: createTableState(first.blinds[0]),
     cashOut: null,
     shop: null,
     shopDraws: 0,
@@ -744,16 +903,21 @@ export function createRunState(
 /**
  * Pure run reducer. It composes the Card Table reducer for the current Blind
  * and moves between Blinds, drawing each later Blind's crisis from the
- * seeded event draw. The draw piles are fixed and every draw is a function
- * of the seed and draw index, so the same act, seed and action sequence
- * always yields the same state.
+ * seeded event draw. After an act's Boss, the next Blind starts the next
+ * act's study (#924): its subjects, snapshots, rulebook and outputs are its
+ * own, and the run's relics, hand levels, tray, budget and cleared Blinds
+ * come along. The draw piles are fixed and every draw is a function of the
+ * seed and draw index, so the same plan, seed and action sequence always
+ * yields the same state.
  */
 export function advanceRun(
-  act: Act,
+  plan: RunPlan,
   run: RunState,
   action: RunAction
 ): RunState {
-  const blinds = runBlinds(act, run);
+  const acts = planActs(plan);
+  const act = acts[run.actIndex];
+  const blinds = runBlinds(plan, run);
   const blind = blinds[run.blindIndex];
   const refuse = (message: string): RunState => ({
     ...run,
@@ -771,9 +935,9 @@ export function advanceRun(
     case "RESTART_RUN": {
       // A new run is a new study: its population history starts over, and
       // the tray and budget are empty again. The same seed replays the same
-      // Boss and crises.
-      const fresh = createRunState(act, action.seed ?? run.seed);
-      const first = act.blinds[0];
+      // Bosses and crises.
+      const fresh = createRunState(plan, action.seed ?? run.seed);
+      const first = acts[0].blinds[0];
       return {
         ...fresh,
         table: startBlind(
@@ -794,7 +958,7 @@ export function advanceRun(
     case "PICK_PACK_CARD":
     case "SKIP_PACK":
     case "SELL_RELIC":
-      return shopAction(act, run, action);
+      return shopAction(plan, run, action);
     case "NEXT_BLIND": {
       if (run.table.status !== "CLEARED") {
         return refuse(`Clear ${blind.blind.name} first.`);
@@ -802,10 +966,8 @@ export function advanceRun(
       if (dmcDefenseOf(blind) && !run.table.rewardClaimed) {
         return refuse("Choose an SOP relic first.");
       }
-      const index = run.blindIndex + 1;
-      if (index >= blinds.length) {
-        return refuse(`${act.title} is complete.`);
-      }
+      const stop = nextStop(plan, run);
+      if (!stop) return refuse(`${plan.title} is complete.`);
       if (run.shop?.opened) {
         return refuse("Keep a card from the pack or skip it first.");
       }
@@ -814,15 +976,46 @@ export function advanceRun(
         ? run.table
         : {
             ...run.table,
-            budget: run.table.budget + payoutFor(act, run).total,
+            budget: run.table.budget + payoutFor(plan, run).total,
           };
-      const next = blinds[index];
-      const { crisis, drawIndex, draws } = drawCrisis(act, run, index);
+      const next = stop.blind;
+      if (stop.actIndex !== run.actIndex) {
+        // A new study: its own subjects, snapshots, rulebook and outputs.
+        // The last study's sites closed out with it; everything else the
+        // run earned comes along. Its first Blind draws no crisis.
+        const nextAct = acts[stop.actIndex];
+        const boss = drawBoss(nextAct, stop.actIndex, run);
+        return {
+          ...run,
+          drawIndex: boss.drawIndex,
+          draws: boss.draws,
+          bossIds: [...run.bossIds, boss.bossId],
+          actIndex: stop.actIndex,
+          blindIndex: 0,
+          cashOut: null,
+          shop: null,
+          table: startBlind(
+            next,
+            undefined,
+            { ...carriedInventory(paid), sites: [], enrollments: [] },
+            null,
+            run.table.lastEvent,
+            "ACT_STARTED",
+            `${nextAct.title}. A new study: subjects, snapshots, the SAP and every output start over. ${next.blind.name}. Target ${next.blind.quota}.`
+          ),
+        };
+      }
+      const { crisis, drawIndex, draws } = drawCrisis(
+        act,
+        run,
+        run.actIndex,
+        stop.blindIndex
+      );
       return {
         ...run,
         drawIndex,
         draws,
-        blindIndex: index,
+        blindIndex: stop.blindIndex,
         // The study goes on: later Blinds see every snapshot change so far,
         // and the tray and budget come along.
         cashOut: null,
@@ -840,7 +1033,7 @@ export function advanceRun(
     }
     case "SELL_CONSUMABLE":
       // Between Blinds the table is closed; the shop takes the sale.
-      if (run.table.status === "CLEARED") return shopAction(act, run, action);
+      if (run.table.status === "CLEARED") return shopAction(plan, run, action);
       return { ...run, table: advanceTable(blind, run.table, action) };
     default:
       return { ...run, table: advanceTable(blind, run.table, action) };
@@ -848,38 +1041,57 @@ export function advanceRun(
 }
 
 /** Derives everything a run renders. Pure; safe to call on every render. */
-export function deriveRunView(act: Act, run: RunState): RunView {
+export function deriveRunView(plan: RunPlan, run: RunState): RunView {
   const { blindIndex } = run;
-  const blinds = runBlinds(act, run);
+  const blinds = runBlinds(plan, run);
   const blind = blinds[blindIndex];
-  const isFinalBlind = blindIndex === blinds.length - 1;
+  const stop = nextStop(plan, run);
+  const isFinalBlind = stop === null;
   const phase: RunPhase =
     run.table.status === "CLEARED"
       ? isFinalBlind
-        ? "ACT_COMPLETE"
+        ? "RUN_WON"
         : run.shop
           ? "SHOP"
           : "BLIND_CLEARED"
       : run.table.status === "FAILED"
         ? "RUN_FAILED"
         : "PLAYING";
+  const showIntro =
+    phase === "PLAYING" &&
+    run.table.handsPlayed === 0 &&
+    run.table.discards === 0;
+  const act = actView(plan, run.actIndex);
+  const boss = blinds[blinds.length - 1];
   return {
+    act,
     blind,
     blindIndex,
     blindCount: blinds.length,
     isFinalBlind,
-    nextBlind: isFinalBlind ? null : blinds[blindIndex + 1],
+    nextBlind: stop?.blind ?? null,
+    nextAct:
+      stop && stop.actIndex !== run.actIndex
+        ? actView(plan, stop.actIndex)
+        : null,
+    actIntro:
+      showIntro && run.actIndex > 0 && blindIndex === 0
+        ? {
+            act,
+            bossTitle: boss.title,
+            bossIntro: boss.intro,
+            reset: STUDY_RESET,
+            kept: RUN_KEPT,
+          }
+        : null,
     phase,
-    showIntro:
-      phase === "PLAYING" &&
-      run.table.handsPlayed === 0 &&
-      run.table.discards === 0,
+    showIntro,
     table: deriveTableView(blind, run.table),
     seed: run.seed,
     draws: run.draws,
     pendingCashOut:
-      cashOutRefusal(act, run) === null ? payoutFor(act, run) : null,
+      cashOutRefusal(plan, run) === null ? payoutFor(plan, run) : null,
     cashOut: run.cashOut,
-    shop: deriveShopView(act, run),
+    shop: deriveShopView(plan, run),
   };
 }

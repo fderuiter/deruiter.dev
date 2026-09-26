@@ -404,7 +404,7 @@ function irAct(boss: Scenario): Act {
 
 /** The first seed whose boss draw is the IR. */
 const SEED = Array.from({ length: 50 }, (_, i) => `ir-${i}`).find(
-  (seed) => createRunState(irAct(ROOMY), seed).bossId === IR.id
+  (seed) => createRunState(irAct(ROOMY), seed).bossIds[0] === IR.id
 ) as string;
 
 /** Clears the one-point Small Blind and deals the Boss. */
@@ -424,7 +424,7 @@ describe("FDA Information Request in a run (#921)", () => {
     const second = runToBoss(act, SEED);
     expect(first).toEqual(second);
     expect(first.draws.filter((d) => d.kind === "BOSS")).toEqual([
-      { drawIndex: 0, kind: "BOSS", id: IR.id, blindIndex: 1 },
+      { drawIndex: 0, kind: "BOSS", id: IR.id, actIndex: 0, blindIndex: 1 },
     ]);
     expect(first.table.clock).toBe(48);
   });
@@ -435,7 +435,7 @@ describe("FDA Information Request in a run (#921)", () => {
     const { actions } = playBlind(IR, state.table, "MEDIAN");
     for (const action of actions) state = advanceRun(act, state, inRun(action));
     expect(state.table.status).toBe("CLEARED");
-    expect(deriveRunView(act, state).phase).toBe("ACT_COMPLETE");
+    expect(deriveRunView(act, state).phase).toBe("RUN_WON");
     expect(deriveRunView(act, state).table.reward).toBeNull();
   });
 });

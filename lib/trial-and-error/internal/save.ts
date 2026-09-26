@@ -1,7 +1,6 @@
-import type { Act } from "../types";
 import { RUN_SAVE_VERSION, RunActionSchema, RunSaveSchema } from "../types";
 import type { z } from "zod";
-import type { RunAction, RunState } from "./run";
+import type { RunAction, RunPlan, RunState } from "./run";
 import { advanceRun, createRunState, deriveRunView } from "./run";
 
 /**
@@ -20,6 +19,7 @@ void schemaMatchesReducer;
 
 /** A run as the save keeps it: where it started and every move since. */
 export interface RunLog {
+  /** The plan's id: the act played on its own, or the campaign. */
   actId: string;
   seed: string;
   actions: LoggedAction[];
@@ -27,7 +27,7 @@ export interface RunLog {
 
 /** A resumable run rebuilt from a save. */
 export interface RestoredRun {
-  act: Act;
+  act: RunPlan;
   log: RunLog;
   run: RunState;
 }
@@ -68,7 +68,7 @@ export function serializeRun(log: RunLog, savedAt: Date): string {
 }
 
 /** Replays a log from its seed. The same seed and moves give the same run. */
-export function replayRun(act: Act, log: RunLog): RunState {
+export function replayRun(act: RunPlan, log: RunLog): RunState {
   return log.actions.reduce(
     (run, action) => advanceRun(act, run, action),
     createRunState(act, log.seed)
@@ -77,14 +77,14 @@ export function replayRun(act: Act, log: RunLog): RunState {
 
 /**
  * Rebuilds a saved run, or returns null when there is nothing to resume:
- * corrupt JSON, an unknown version, a schema mismatch, an act that no longer
- * exists, a replay that fails, or a run that has already ended. Never
+ * corrupt JSON, an unknown version, a schema mismatch, a plan (an act or the
+ * campaign) that no longer exists, a replay that fails, or a run that has already ended. Never
  * throws. Any selection is cleared as recorded moves, so the resumed run and
  * its log stay in step.
  */
 export function parseRunSave(
   json: string | null,
-  acts: readonly Act[]
+  acts: readonly RunPlan[]
 ): RestoredRun | null {
   if (!json) return null;
   try {
@@ -108,7 +108,7 @@ export function parseRunSave(
       replayed
     );
     const phase = deriveRunView(act, run).phase;
-    if (phase === "RUN_FAILED" || phase === "ACT_COMPLETE") return null;
+    if (phase === "RUN_FAILED" || phase === "RUN_WON") return null;
     return { act, log, run };
   } catch {
     return null;

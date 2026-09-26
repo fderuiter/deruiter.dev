@@ -16,6 +16,7 @@
  */
 import type {
   Act,
+  Campaign,
   CrisisCard,
   DmcDefense,
   FdaIr,
@@ -2245,8 +2246,7 @@ export const ACT_II_CRISES: CrisisCard[] = [
  * SAP, then the DMC's open session; the Boss is drawn by the run's seed
  * from a pool of two: the DMC milestone review or the FDA's End-of-Phase-2
  * Information Request. It reads the same fictional study data as Act I and
- * shares its Procurement Shop. Until the campaign links the acts (#924) it
- * is played on its own.
+ * shares its Procurement Shop. The campaign plays it after Act I.
  */
 export const ACT_II: Act = {
   id: "act-2-phase-2",
@@ -2772,7 +2772,7 @@ export const ACT_III_CRISES: CrisisCard[] = [
  * the sponsor's topline review after unblinding; the Boss is always CSR
  * Lock, the run's final release gate (#922). It reads the same
  * fictional study data as Acts I and II and shares their Procurement Shop.
- * Until the campaign links the acts (#924) it is played on its own.
+ * The campaign plays it last.
  */
 export const ACT_III: Act = {
   id: "act-3-phase-3",
@@ -2781,6 +2781,18 @@ export const ACT_III: Act = {
   bossPool: [CSR_LOCK_SCENARIO],
   crisisDeck: ACT_III_CRISES,
   shop: ACT_I_SHOP,
+};
+
+/**
+ * The campaign (#924): one sponsor's compound carried through three studies
+ * as one run. Act I's Boss is the Dose Escalation Committee, Act II's is
+ * drawn from the DMC closed session and the FDA Information Request, and
+ * Act III's is always CSR Lock, the final boss (ADR 0046).
+ */
+export const BIOSTAT_OPS_CAMPAIGN: Campaign = {
+  id: "biostat-ops-campaign",
+  title: "Biostat Ops campaign",
+  acts: [ACT_I, ACT_II, ACT_III],
 };
 
 /** Every playable scenario, keyed by id. */

@@ -484,7 +484,7 @@ describe("CSR Lock in an Act III run (#922)", () => {
       run = advanceRun(ACT_III, run, action);
     }
     const view = deriveRunView(ACT_III, run);
-    expect(view.phase).toBe("ACT_COMPLETE");
+    expect(view.phase).toBe("RUN_WON");
     const lock = view.table.csrLock?.lock;
     expect(lock?.campaign.map((r) => r.scenarioId)).toEqual([
       ...ACT_III.blinds.map((b) => b.id),

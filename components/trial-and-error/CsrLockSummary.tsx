@@ -54,7 +54,13 @@ export function CsrLockSummary({
           Locked after Protocol Amendment {lock.amendment}.
         </p>
       )}
-      <div className="mt-2 overflow-x-auto">
+      {/* Scrolls sideways at 320px, so it takes focus for keyboard users. */}
+      <div
+        className="mt-2 overflow-x-auto"
+        role="region"
+        aria-label="Audit summary"
+        tabIndex={0}
+      >
         <table className="w-full min-w-[18rem] border-collapse text-left tabular-nums">
           <caption className="sr-only">
             Audit summary: the outputs locked, in pipeline order

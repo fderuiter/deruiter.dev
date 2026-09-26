@@ -2,11 +2,13 @@ import type {
   Act,
   Campaign,
   CrisisCard,
+  Endless,
   Pack,
   Scenario,
   ShopEntry,
 } from "../types";
 import { POPULATION_LABELS, shopEntryId } from "../types";
+import { raiseQuotas } from "./quotas";
 import { blindStartCpu } from "./relics";
 import { drawInt } from "./rng";
 import {
@@ -117,6 +119,10 @@ export interface RunState {
   shop: ShopState | null;
   /** The next unused draw index on the shop's own seeded stream. */
   shopDraws: number;
+  /** The run went on into endless post-marketing rounds after winning (#1088). */
+  endless: boolean;
+  /** The won run was submitted and ended; nothing follows (#1088). */
+  ended: boolean;
 }
 
 /** The seed a run uses when none is given. */
@@ -144,12 +150,17 @@ export type RunAction =
   | { type: "SKIP_PACK" }
   /** Sells a relic for half its price, rounded down. */
   | { type: "SELL_RELIC"; relicId: string }
+  /** After the campaign is won, goes on into post-marketing rounds (#1088). */
+  | { type: "CONTINUE_ENDLESS" }
+  /** After the campaign is won, submits the package and ends the run. */
+  | { type: "END_RUN" }
   /** A new run: with `seed`, a new seed; without, a replay of this one. */
   | { type: "RESTART_RUN"; seed?: string };
 
 /**
  * Where the run stands. RUN_WON is the plan's last Blind cleared: CSR Lock,
- * in the campaign.
+ * in the campaign. A run that goes on into post-marketing rounds never wins
+ * again; it plays until a Blind fails.
  */
 export type RunPhase =
   "PLAYING" | "BLIND_CLEARED" | "SHOP" | "RUN_FAILED" | "RUN_WON";
@@ -159,7 +170,21 @@ export interface RunActView {
   id: string;
   title: string;
   index: number;
+  /** The campaign's act count. */
   count: number;
+  /** The post-marketing round this act is, or null for a campaign act. */
+  round: number | null;
+}
+
+/** Endless post-marketing mode as the run shows it (#1088). */
+export interface EndlessView {
+  title: string;
+  /** The won campaign can still go on into post-marketing rounds. */
+  canContinue: boolean;
+  /** The post-marketing round being played, or null before any. */
+  round: number | null;
+  /** The campaign was won: the CSR locked, whatever followed. */
+  campaignWon: boolean;
 }
 
 /**
@@ -244,6 +269,8 @@ export interface RunView {
   cashOut: CashOutReport | null;
   /** The shop visit, while the run is in it. */
   shop: ShopView | null;
+  /** Endless post-marketing mode, when the plan offers it. */
+  endless: EndlessView | null;
 }
 
 /** What a run plays: one act on its own, or a campaign's acts in order. */
@@ -254,6 +281,52 @@ export function planActs(plan: RunPlan): readonly Act[] {
   return "acts" in plan ? plan.acts : [plan];
 }
 
+/** The plan's endless post-marketing mode, if it has one. */
+function endlessOf(plan: RunPlan): Endless | undefined {
+  return "acts" in plan ? plan.endless : undefined;
+}
+
+/** The post-marketing round an act index is, or null for a campaign act. */
+function endlessRound(plan: RunPlan, actIndex: number): number | null {
+  const count = planActs(plan).length;
+  return actIndex >= count ? actIndex - count + 1 : null;
+}
+
+/**
+ * Round `round`'s post-marketing study: the study whose pool holds the
+ * drawn Boss, with every quota raised by quotaGrowth ^ round.
+ */
+export function endlessAct(
+  endless: Endless,
+  bossId: string | null,
+  round: number
+): Act {
+  const study =
+    endless.studies.find((s) => s.bossPool?.some((b) => b.id === bossId)) ??
+    endless.studies[0];
+  const factor = endless.quotaGrowth ** round;
+  return {
+    ...study,
+    id: `${study.id}-round-${round}`,
+    title: `${endless.title} round ${round}: ${study.title}`,
+    blinds: study.blinds.map((b) => raiseQuotas(b, factor)),
+    bossPool: study.bossPool?.map((b) => raiseQuotas(b, factor)),
+  };
+}
+
+/** The act at `index`: a campaign act, or a post-marketing round. */
+function actAt(
+  plan: RunPlan,
+  run: Pick<RunState, "bossIds">,
+  index: number
+): Act {
+  const acts = planActs(plan);
+  const endless = endlessOf(plan);
+  const round = endlessRound(plan, index);
+  if (round === null || !endless) return acts[Math.min(index, acts.length - 1)];
+  return endlessAct(endless, run.bossIds[index] ?? null, round);
+}
+
 /**
  * The Blinds the current act plays, in order. An act with a boss pool
  * contributes its Small and Big Blinds and the Boss the run drew.
@@ -262,7 +335,7 @@ export function runBlinds(
   plan: RunPlan,
   run: Pick<RunState, "bossIds" | "actIndex">
 ): Scenario[] {
-  const act = planActs(plan)[run.actIndex];
+  const act = actAt(plan, run, run.actIndex);
   if (!act.bossPool) return act.blinds;
   const bossId = run.bossIds[run.actIndex];
   const boss = act.bossPool.find((b) => b.id === bossId) ?? act.bossPool[0];
@@ -287,27 +360,40 @@ function nextStop(plan: RunPlan, run: RunState): Stop | null {
   }
   const acts = planActs(plan);
   const actIndex = run.actIndex + 1;
-  if (actIndex >= acts.length) return null;
-  return { actIndex, blindIndex: 0, blind: acts[actIndex].blinds[0] };
+  if (actIndex < acts.length) {
+    return { actIndex, blindIndex: 0, blind: acts[actIndex].blinds[0] };
+  }
+  // In post-marketing the next round's study is drawn as a round starts.
+  if (!run.endless || run.bossIds.length <= actIndex) return null;
+  return {
+    actIndex,
+    blindIndex: 0,
+    blind: actAt(plan, run, actIndex).blinds[0],
+  };
 }
 
 /** The Blind's number across the whole run, from 0, e.g. for tray ids. */
 function runBlindNumber(plan: RunPlan, run: RunState): number {
-  return planActs(plan)
-    .slice(0, run.actIndex)
-    .reduce(
-      (n, act) => n + act.blinds.length + (act.bossPool ? 1 : 0),
-      run.blindIndex
-    );
+  let n = run.blindIndex;
+  for (let i = 0; i < run.actIndex; i++) {
+    const act = actAt(plan, run, i);
+    n += act.blinds.length + (act.bossPool ? 1 : 0);
+  }
+  return n;
 }
 
-function actView(plan: RunPlan, index: number): RunActView {
-  const acts = planActs(plan);
+function actView(
+  plan: RunPlan,
+  run: Pick<RunState, "bossIds">,
+  index: number
+): RunActView {
+  const act = actAt(plan, run, index);
   return {
-    id: acts[index].id,
-    title: acts[index].title,
+    id: act.id,
+    title: act.title,
     index,
-    count: acts.length,
+    count: planActs(plan).length,
+    round: endlessRound(plan, index),
   };
 }
 
@@ -420,7 +506,7 @@ function drawSlots(
   run: RunState,
   drawIndex: number
 ): { slots: ShopSlot[]; next: number } {
-  const catalog = planActs(plan)[run.actIndex].shop;
+  const catalog = actAt(plan, run, run.actIndex).shop;
   if (!catalog) return { slots: [], next: drawIndex };
   const pool = stockPool(
     catalog,
@@ -488,7 +574,7 @@ function goLiveAt(table: TableState): string {
 
 /** Shop actions a run in the shop routes to the shop reducer. */
 function shopAction(plan: RunPlan, run: RunState, action: RunAction): RunState {
-  const act = planActs(plan)[run.actIndex];
+  const act = actAt(plan, run, run.actIndex);
   const shop = run.shop;
   const refuse = (message: string) => announce(run, "REFUSED", message);
   switch (action.type) {
@@ -728,7 +814,7 @@ function shopAction(plan: RunPlan, run: RunState, action: RunAction): RunState {
 
 /** The shop as the shop screen renders it. */
 function deriveShopView(plan: RunPlan, run: RunState): ShopView | null {
-  const act = planActs(plan)[run.actIndex];
+  const act = actAt(plan, run, run.actIndex);
   const shop = run.shop;
   if (!shop) return null;
   const budget = run.table.budget;
@@ -879,6 +965,36 @@ function drawBoss(
 }
 
 /**
+ * A post-marketing round's Boss (#1088), and with it the round's study:
+ * drawn from every study's boss pool with the run's next draw index.
+ */
+function drawEndlessBoss(
+  endless: Endless,
+  actIndex: number,
+  run: Pick<RunState, "seed" | "drawIndex" | "draws">
+): { bossId: string | null; drawIndex: number; draws: RunDraw[] } {
+  return drawBoss(
+    {
+      ...endless.studies[0],
+      bossPool: endless.studies.flatMap((s) => s.bossPool ?? []),
+    },
+    actIndex,
+    run
+  );
+}
+
+/** Why the won run cannot go on into post-marketing or end, or null. */
+function endlessRefusal(plan: RunPlan, run: RunState): string | null {
+  if (!endlessOf(plan)) return `${plan.title} has no post-marketing mode.`;
+  if (run.ended) return "The run has ended.";
+  if (run.endless) return "The run is already in post-marketing.";
+  if (run.table.status !== "CLEARED" || nextStop(plan, run) !== null) {
+    return `Win ${plan.title} first.`;
+  }
+  return null;
+}
+
+/**
  * A fresh run for `seed`: the first act's Boss drawn from its pool, and the
  * first Blind dealt with full CPU. The first Blind draws no crisis. A later
  * act draws its Boss as its study starts, so a campaign's first act plays
@@ -906,6 +1022,8 @@ export function createRunState(
     cashOut: null,
     shop: null,
     shopDraws: 0,
+    endless: false,
+    ended: false,
   };
 }
 
@@ -925,7 +1043,7 @@ export function advanceRun(
   action: RunAction
 ): RunState {
   const acts = planActs(plan);
-  const act = acts[run.actIndex];
+  const act = actAt(plan, run, run.actIndex);
   const blinds = runBlinds(plan, run);
   const blind = blinds[run.blindIndex];
   const refuse = (message: string): RunState => ({
@@ -960,6 +1078,37 @@ export function advanceRun(
         ),
       };
     }
+    case "CONTINUE_ENDLESS": {
+      const refusal = endlessRefusal(plan, run);
+      if (refusal) return refuse(refusal);
+      const endless = endlessOf(plan) as Endless;
+      // Round 1's study, and with it its Boss, is drawn now, so the shop
+      // and the cleared Blind can name the study that follows.
+      const round = drawEndlessBoss(endless, acts.length, run);
+      const next: RunState = {
+        ...run,
+        endless: true,
+        drawIndex: round.drawIndex,
+        draws: round.draws,
+        bossIds: [...run.bossIds, round.bossId],
+      };
+      const study = actAt(plan, next, acts.length);
+      return announce(
+        next,
+        "RUN_CONTINUED",
+        `The package is submitted and the compound is on the market. ${endless.title} begins: ${study.title}. Quotas rise each round; the first failed Blind ends the run.`
+      );
+    }
+    case "END_RUN": {
+      const refusal = endlessRefusal(plan, run);
+      if (refusal) return refuse(refusal);
+      return announce(
+        run,
+        "RUN_ENDED",
+        `Package submitted. ${plan.title} won.`,
+        { ended: true }
+      );
+    }
     case "CASH_OUT":
     case "REROLL":
     case "BUY":
@@ -992,8 +1141,16 @@ export function advanceRun(
         // A new study: its own subjects, snapshots, rulebook and outputs.
         // The last study's sites closed out with it; everything else the
         // run earned comes along. Its first Blind draws no crisis.
-        const nextAct = acts[stop.actIndex];
-        const boss = drawBoss(nextAct, stop.actIndex, run);
+        const nextAct = actAt(plan, run, stop.actIndex);
+        const round = endlessRound(plan, stop.actIndex);
+        const endless = endlessOf(plan);
+        // A campaign act draws its Boss as its study starts. A
+        // post-marketing round's was drawn before it, so the round draws
+        // the one after it instead.
+        const boss =
+          round !== null && endless
+            ? drawEndlessBoss(endless, stop.actIndex + 1, run)
+            : drawBoss(nextAct, stop.actIndex, run);
         return {
           ...run,
           drawIndex: boss.drawIndex,
@@ -1010,7 +1167,7 @@ export function advanceRun(
             null,
             run.table.lastEvent,
             "ACT_STARTED",
-            `${nextAct.title}. A new study: subjects, snapshots, the SAP and every output start over. ${next.blind.name}. Target ${next.blind.quota}.`
+            `${nextAct.title}. A new ${round === null ? "study" : "post-marketing study"}: subjects, snapshots, the SAP and every output start over. ${next.blind.name}. Target ${next.blind.quota}.`
           ),
         };
       }
@@ -1070,8 +1227,9 @@ export function deriveRunView(plan: RunPlan, run: RunState): RunView {
     phase === "PLAYING" &&
     run.table.handsPlayed === 0 &&
     run.table.discards === 0;
-  const act = actView(plan, run.actIndex);
+  const act = actView(plan, run, run.actIndex);
   const boss = blinds[blinds.length - 1];
+  const endless = endlessOf(plan);
   return {
     act,
     blind,
@@ -1081,7 +1239,7 @@ export function deriveRunView(plan: RunPlan, run: RunState): RunView {
     nextBlind: stop?.blind ?? null,
     nextAct:
       stop && stop.actIndex !== run.actIndex
-        ? actView(plan, stop.actIndex)
+        ? actView(plan, run, stop.actIndex)
         : null,
     actIntro:
       showIntro && run.actIndex > 0 && blindIndex === 0
@@ -1102,5 +1260,13 @@ export function deriveRunView(plan: RunPlan, run: RunState): RunView {
       cashOutRefusal(plan, run) === null ? payoutFor(plan, run) : null,
     cashOut: run.cashOut,
     shop: deriveShopView(plan, run),
+    endless: endless
+      ? {
+          title: endless.title,
+          canContinue: phase === "RUN_WON" && !run.ended,
+          round: act.round,
+          campaignWon: run.endless || phase === "RUN_WON",
+        }
+      : null,
   };
 }

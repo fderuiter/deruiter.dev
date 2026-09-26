@@ -1743,6 +1743,47 @@ export const ActSchema = z
 export type Act = z.infer<typeof ActSchema>;
 
 /**
+ * Endless post-marketing mode (#1088): after CSR Lock the run may go on,
+ * round after round, each round a new post-marketing study. A round's study
+ * and its Boss are drawn by the run's seeded draw from the studies' boss
+ * pools, and every quota is the study's authored quota scaled by
+ * `quotaGrowth` to the power of the round number.
+ */
+export const EndlessSchema = z
+  .object({
+    id: identifier,
+    title: z.string().min(1).max(60),
+    /** The post-marketing studies a round can be; each has a boss pool. */
+    studies: z.array(ActSchema).min(1).max(4),
+    /** Each round's quotas: authored quota × quotaGrowth ^ round. */
+    quotaGrowth: z.number().gt(1).max(4),
+  })
+  .superRefine((endless, ctx) => {
+    const bossIds = new Set<string>();
+    endless.studies.forEach((study, index) => {
+      if (!study.bossPool) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["studies", index, "bossPool"],
+          message: "A post-marketing study draws its Boss from a pool",
+        });
+      }
+      for (const boss of study.bossPool ?? []) {
+        if (bossIds.has(boss.id)) {
+          ctx.addIssue({
+            code: "custom",
+            path: ["studies", index, "bossPool"],
+            message: `Boss ${boss.id} is in more than one study's pool`,
+          });
+        }
+        bossIds.add(boss.id);
+      }
+    });
+  });
+/** Endless post-marketing mode. */
+export type Endless = z.infer<typeof EndlessSchema>;
+
+/**
  * The campaign (#924): one compound carried through up to three studies,
  * played as one run, act after act. Moving to the next act starts a new
  * study, whose subjects, snapshots, SAP rulebook and compiled outputs are
@@ -1753,6 +1794,8 @@ export const CampaignSchema = z
     id: identifier,
     title: z.string().min(1),
     acts: z.array(ActSchema).min(1).max(3),
+    /** Endless post-marketing rounds, offered once the last act is won. */
+    endless: EndlessSchema.optional(),
   })
   .superRefine((campaign, ctx) => {
     const actIds = new Set<string>();
@@ -1818,6 +1861,8 @@ export const RunActionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("CLAIM_RELIC"), relicId: id }),
   z.object({ type: z.literal("AMEND_PROTOCOL") }),
   z.object({ type: z.literal("NEXT_BLIND") }),
+  z.object({ type: z.literal("CONTINUE_ENDLESS") }),
+  z.object({ type: z.literal("END_RUN") }),
   z.object({ type: z.literal("CASH_OUT") }),
   z.object({ type: z.literal("REROLL") }),
   z.object({ type: z.literal("BUY"), slot: index }),

@@ -9,6 +9,7 @@
 ## Interfaces
 
 - [ActIntroView](interfaces/ActIntroView.md)
+- [EndlessView](interfaces/EndlessView.md)
 - [OpenedPack](interfaces/OpenedPack.md)
 - [PackCardView](interfaces/PackCardView.md)
 - [PackSlot](interfaces/PackSlot.md)
@@ -36,5 +37,6 @@
 - [advanceRun](functions/advanceRun.md)
 - [createRunState](functions/createRunState.md)
 - [deriveRunView](functions/deriveRunView.md)
+- [endlessAct](functions/endlessAct.md)
 - [planActs](functions/planActs.md)
 - [runBlinds](functions/runBlinds.md)

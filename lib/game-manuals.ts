@@ -820,6 +820,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         badge: "Act card",
       },
       {
+        title: "Post-marketing rounds",
+        detail:
+          "Winning at CSR Lock offers a choice: Submit and end run, or Continue into post-marketing. The win is recorded either way. Each post-marketing round is a new study drawn by the seed, either Safety surveillance (a PSUR, a Label Update, then the Dose Escalation Committee) or a Post-authorisation safety study (an interim QC, a DMC open session, then an FDA Information Request). Every quota rises by a quarter each round, rounded up to the next 100, and your relics, hand levels, tray and budget carry on. The first failed Blind ends the run, and the result names the round you reached.",
+        badge: "Endless",
+      },
+      {
         title: "Scoring pipeline",
         detail:
           "Hand Score = (base hand Chips + output Chips + relic Chips) × (base hand Mult + card and rule +Mult + relic +Mult) × every ×Mult. A High Table is 15 Chips / +1 Mult; the Demographics table adds 30 Chips / +1 Mult, and 12 verified subject records add 12 Chips.",

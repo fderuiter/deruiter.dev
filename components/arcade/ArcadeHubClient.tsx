@@ -14,6 +14,7 @@ import {
   IconPlayerPlay,
   IconBone,
   IconSparkles,
+  IconCards,
 } from "@tabler/icons-react";
 import { FieldManualButton } from "@/components/FieldManualButton";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
@@ -188,6 +189,31 @@ const ARCADE_GAMES: ArcadeGameCard[] = [
     badgeBg: "bg-emerald-500/10 text-emerald-300 border-emerald-500/30",
     storageKey: "clinical_chaos_highscore",
     route: "/arcade/clinical-chaos",
+  },
+  {
+    id: "trial-and-error",
+    slug: "trial-and-error",
+    title: "Trial & Error: Biostat Ops",
+    subtitle: "Three Studies, One Compound",
+    genre: "Roguelike Deckbuilder",
+    description:
+      "Clinical outputs are the cards. QC tables against the SAP, play Chips × Mult hands to beat each review, and carry one fictional compound through three studies to CSR Lock, then on into post-marketing.",
+    mechanics: [
+      "SAP Rulebook QC",
+      "Chips × Mult Hands",
+      "Relics & Procurement Shop",
+      "Post-Marketing Rounds",
+    ],
+    techStack: [
+      "Pure Deterministic Reducers",
+      "Seeded Replayable Runs",
+      "Zod Scenario Contracts",
+    ],
+    icon: <IconCards className="w-6 h-6 text-amber-400" />,
+    accentColor: "from-amber-500/20 via-amber-500/5 to-transparent",
+    borderHover: "hover:border-amber-400/50",
+    badgeBg: "bg-amber-500/10 text-amber-300 border-amber-500/30",
+    route: "/arcade/trial-and-error",
   },
   {
     id: "retro-labyrinth",

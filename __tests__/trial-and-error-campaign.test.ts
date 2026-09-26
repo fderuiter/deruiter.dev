@@ -126,6 +126,7 @@ describe("the campaign (#924)", () => {
         title: ACT_I.title,
         index: 0,
         count: 3,
+        round: null,
       });
     }
   });
@@ -181,6 +182,7 @@ describe("moving to the next act (#924)", () => {
       title: ACT_II.title,
       index: 1,
       count: 3,
+      round: null,
     });
     expect(view.pendingCashOut).not.toBeNull();
   });
@@ -248,6 +250,7 @@ describe("moving to the next act (#924)", () => {
       title: ACT_II.title,
       index: 1,
       count: 3,
+      round: null,
     });
     const boss2 = pool.find((b) => b.id === drawn)!;
     expect(view.actIntro).toEqual({
@@ -417,8 +420,17 @@ describe("a whole campaign, played (#924)", () => {
   it("replays from its seed and moves, and resumes from a save mid-campaign", () => {
     const log = { actId: C.id, seed: "alpha", actions: won.actions };
     expect(replayRun(C, log)).toEqual(won.run);
-    // A won run has nothing to resume.
-    expect(parseRunSave(serializeRun(log, new Date(0)), [C])).toBeNull();
+    // A won run still offering post-marketing resumes at the choice; once
+    // submitted and ended, it has nothing to resume.
+    expect(
+      deriveRunView(C, parseRunSave(serializeRun(log, new Date(0)), [C])!.run)
+        .endless?.canContinue
+    ).toBe(true);
+    const ended = {
+      ...log,
+      actions: [...won.actions, { type: "END_RUN" as const }],
+    };
+    expect(parseRunSave(serializeRun(ended, new Date(0)), [C])).toBeNull();
     const cut = won.actions.findIndex(
       (a, i) =>
         a.type === "NEXT_BLIND" &&

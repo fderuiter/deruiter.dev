@@ -322,6 +322,14 @@ The cash-out paid for this Blind, once paid.
 
 ***
 
+### endless
+
+> **endless**: [`EndlessView`](EndlessView.md) \| `null`
+
+Endless post-marketing mode, when the plan offers it.
+
+***
+
 ### isFinalBlind
 
 > **isFinalBlind**: `boolean`

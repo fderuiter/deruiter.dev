@@ -41,7 +41,9 @@ export function ActIntro({ intro, loud, onDismiss }: ActIntroProps) {
         data-testid="act-intro"
       >
         <p className="text-[10px] uppercase tracking-wider text-amber-300 tabular-nums">
-          Study {intro.act.index + 1} of {intro.act.count} · a new study
+          {intro.act.round === null
+            ? `Study ${intro.act.index + 1} of ${intro.act.count} · a new study`
+            : `Post-marketing round ${intro.act.round} · a new study`}
         </p>
         <h2
           id="act-intro-heading"

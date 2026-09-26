@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useResizeObserver } from "@/hooks/useResizeObserver";
 import {
   IconArrowUp,
+  IconCards,
   IconBrandGithub,
   IconBrandLinkedin,
   IconCalendar,
@@ -183,6 +184,16 @@ export const Footer: React.FC = () => {
                   >
                     <IconShieldCheck className="w-3 h-3 text-cyan-400" />
                     Clinical Trial Chaos
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/arcade/trial-and-error"
+                    onMouseEnter={handleHover}
+                    className="text-zinc-400 hover:text-brand-cyan transition-colors flex items-center gap-1.5"
+                  >
+                    <IconCards className="w-3 h-3 text-cyan-400" />
+                    Trial &amp; Error
                   </Link>
                 </li>
                 <li>

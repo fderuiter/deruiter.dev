@@ -196,4 +196,73 @@ describe("PlayCabinet - Viewport Budgeting & Responsive Container Suite", () => 
     ).toBeDefined();
     expect(document.body.style.overflow).not.toBe("hidden");
   });
+  describe("keyboard focus", () => {
+    function GameWithStartButton() {
+      const [started, setStarted] = React.useState(false);
+      return (
+        <div data-keyboard-boundary="true" tabIndex={0} data-testid="game">
+          {started ? (
+            <span>Running</span>
+          ) : (
+            <button type="button" onClick={() => setStarted(true)}>
+              Start
+            </button>
+          )}
+        </div>
+      );
+    }
+
+    async function launch() {
+      render(
+        <PlayCabinet
+          gameId="focus-game"
+          title="Focus Game"
+          accentColor="emerald"
+          icon={<span>🎮</span>}
+          instructions="Test instructions"
+          controls={[{ key: "Space", action: "Jump" }]}
+          importComponent={() => Promise.resolve({})}
+        >
+          <GameWithStartButton />
+        </PlayCabinet>
+      );
+      const launchBtn = screen.getByRole("button", { name: /Launch Cabinet/i });
+      await act(async () => {
+        fireEvent.mouseEnter(launchBtn);
+        await Promise.resolve();
+      });
+      await act(async () => {
+        fireEvent.click(launchBtn);
+        await Promise.resolve();
+      });
+      act(() => {
+        vi.advanceTimersByTime(2000);
+      });
+      act(() => {
+        vi.advanceTimersByTime(200);
+      });
+    }
+
+    it("focuses the game's keyboard boundary when the cabinet launches", async () => {
+      await launch();
+      expect(document.activeElement).toBe(screen.getByTestId("game"));
+    });
+
+    it("returns focus to the game when a focused start button unmounts", async () => {
+      await launch();
+      const start = screen.getByRole("button", { name: "Start" });
+      act(() => {
+        start.focus();
+      });
+      await act(async () => {
+        fireEvent.click(start);
+        await Promise.resolve();
+      });
+      // jsdom, like Chromium, leaves focus on <body> when the focused node is removed.
+      await act(async () => {
+        await Promise.resolve();
+      });
+      expect(document.activeElement).toBe(screen.getByTestId("game"));
+    });
+  });
 });

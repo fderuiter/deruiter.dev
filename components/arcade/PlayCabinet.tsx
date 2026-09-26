@@ -39,6 +39,10 @@ interface PlayCabinetProps {
   children: React.ReactNode;
 }
 
+function getKeyboardBoundary(cabinet: HTMLElement): HTMLElement | null {
+  return cabinet.querySelector<HTMLElement>('[data-keyboard-boundary="true"]');
+}
+
 export const PlayCabinet: React.FC<PlayCabinetProps> = ({
   gameId: rawGameId,
   title,
@@ -204,13 +208,74 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
     return () => clearInterval(timer);
   }, [isWarmingUp, isLoaded]);
 
+  // On launch, bring the cabinet into view and hand keyboard focus to the
+  // game's own key-handling container, so the first key press reaches it.
   useEffect(() => {
-    if (isLaunched && cabinetRef.current) {
-      const timer = setTimeout(() => {
-        cabinetRef.current?.focus({ preventScroll: true });
-      }, 50);
-      return () => clearTimeout(timer);
-    }
+    if (!isLaunched) return;
+    const cabinet = cabinetRef.current;
+    if (!cabinet) return;
+    const prefersReducedMotion =
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    cabinet.scrollIntoView?.({
+      block: "start",
+      behavior: prefersReducedMotion ? "auto" : "smooth",
+    });
+    // Focus the cabinet so keys reach the game, then, since the game can
+    // render a loading shell first, retry briefly until its keyboard boundary
+    // exists. Stop as soon as the game has moved focus somewhere itself, such
+    // as a dialog's primary button.
+    let attempts = 0;
+    const timer = setInterval(() => {
+      attempts += 1;
+      const active = document.activeElement;
+      const gameOwnsFocus =
+        !!active && active !== cabinet && cabinet.contains(active);
+      if (gameOwnsFocus && attempts > 1) {
+        clearInterval(timer);
+        return;
+      }
+      const boundary = getKeyboardBoundary(cabinet);
+      if (boundary) {
+        clearInterval(timer);
+        boundary.focus({ preventScroll: true });
+      } else if (attempts === 1) {
+        cabinet.focus({ preventScroll: true });
+      }
+      if (attempts >= 20) clearInterval(timer);
+    }, 50);
+    return () => clearInterval(timer);
+  }, [isLaunched]);
+
+  // Start buttons and game-over overlays unmount while focused, which drops
+  // focus to <body> where the game no longer hears its keys. While the player
+  // is inside the cabinet, return focus to the game when that happens.
+  useEffect(() => {
+    if (!isLaunched) return;
+    const cabinet = cabinetRef.current;
+    if (!cabinet || typeof MutationObserver === "undefined") return;
+    let ownsFocus = cabinet.contains(document.activeElement);
+    const handleFocusIn = (event: FocusEvent) => {
+      ownsFocus = cabinet.contains(event.target as Node);
+    };
+    const handlePointerDown = (event: PointerEvent) => {
+      ownsFocus = cabinet.contains(event.target as Node);
+    };
+    // Only games that mark a keyboard boundary opt in; others, such as
+    // Trial & Error, manage focus themselves.
+    const observer = new MutationObserver(() => {
+      const active = document.activeElement;
+      if (!ownsFocus || (active && active !== document.body)) return;
+      getKeyboardBoundary(cabinet)?.focus({ preventScroll: true });
+    });
+    observer.observe(cabinet, { childList: true, subtree: true });
+    document.addEventListener("focusin", handleFocusIn);
+    document.addEventListener("pointerdown", handlePointerDown, true);
+    return () => {
+      observer.disconnect();
+      document.removeEventListener("focusin", handleFocusIn);
+      document.removeEventListener("pointerdown", handlePointerDown, true);
+    };
   }, [isLaunched]);
 
   const handleExit = () => {
@@ -263,7 +328,7 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
         className={`arcade-cabinet w-full flex flex-col items-center max-w-full min-w-0 @container ${
           isFullscreen
             ? "fixed inset-0 z-50 h-dvh max-w-none bg-black overflow-hidden select-none"
-            : "relative"
+            : "relative scroll-mt-24"
         }`}
         style={
           {

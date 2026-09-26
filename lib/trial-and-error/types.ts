@@ -626,15 +626,63 @@ export const BossBlindModifierSchema = z
 /** A Boss Blind's rule twist. */
 export type BossBlindModifier = z.infer<typeof BossBlindModifierSchema>;
 
+/** The moments an SOP relic can fire (#924), in the order a Blind meets them. */
+export const RelicPhaseSchema = z.enum([
+  "ON_BLIND_START",
+  "ON_DISCARD",
+  "ON_CARD_SCORED",
+  "ON_HAND_PLAYED",
+]);
+/** When an SOP relic fires. */
+export type RelicPhase = z.infer<typeof RelicPhaseSchema>;
+
 /**
- * An SOP relic: a standing score modifier the run keeps once earned. It
- * joins every later hand's scoring as a `ScoreModifier`.
+ * When and on what an SOP relic fires (#924). A relic never overrides the
+ * SAP: it adds to a hand's score, or eases an action's CPU cost, and every
+ * rule result, redline and zero-score rule still stands.
+ *
+ * - ON_HAND_PLAYED: its modifier joins the hand, optionally only when the
+ *   hand holds a Figure or carries no redline.
+ * - ON_CARD_SCORED: its modifier joins once for each scored card that
+ *   matches, or, with `retrigger`, the card's own Chips and +Mult score again.
+ * - ON_DISCARD: the Blind's first `freeDiscards` discards cost no base CPU.
+ * - ON_BLIND_START: each Blind starts with `cpu` more CPU.
+ */
+export const RelicTriggerSchema = z.discriminatedUnion("phase", [
+  z.object({
+    phase: z.literal("ON_HAND_PLAYED"),
+    requires: z.enum(["FIGURE_IN_HAND", "NO_REDLINES"]).optional(),
+  }),
+  z.object({
+    phase: z.literal("ON_CARD_SCORED"),
+    cardType: CardTypeSchema.optional(),
+    population: PopulationTypeSchema.optional(),
+    /** Only cards stamped QC ✓: every cell reviewed, no open redline. */
+    qcPassedOnly: z.boolean().optional(),
+    retrigger: z.boolean().optional(),
+  }),
+  z.object({
+    phase: z.literal("ON_DISCARD"),
+    freeDiscards: z.number().int().positive(),
+  }),
+  z.object({
+    phase: z.literal("ON_BLIND_START"),
+    cpu: z.number().int().positive(),
+  }),
+]);
+/** When and on what an SOP relic fires. */
+export type RelicTrigger = z.infer<typeof RelicTriggerSchema>;
+
+/**
+ * An SOP relic: a person or tool on the team that the run keeps once
+ * earned. Without a trigger its modifier joins every later hand's scoring.
  */
 export const RelicSchema = z.object({
   id: identifier,
   name: z.string().min(1).max(60),
   description: z.string().min(1).max(200),
   modifier: ScoreModifierSchema,
+  trigger: RelicTriggerSchema.optional(),
 });
 /** An SOP relic. */
 export type Relic = z.infer<typeof RelicSchema>;

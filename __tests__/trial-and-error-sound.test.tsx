@@ -301,19 +301,17 @@ describe("cueForStep", () => {
     expect(relicCue("RELIC-X")).toEqual({ cue: "xMultFlare" });
     expect(relicCue("RELIC-M")).toEqual({ cue: "multThunk" });
     expect(relicCue("RELIC-C")).toMatchObject({ cue: "chipTick" });
-    // ×2 and ×1.5 flare; the relics' ×1 factors stay quiet.
+    // ×2 and ×1.5 flare; the relics' ×1 factors are no step at all.
     expect(byKind("X_MULT")).toEqual([
       { cue: "xMultFlare" },
       { cue: "xMultFlare" },
-      null,
-      null,
     ]);
     expect(byKind("TOTAL")).toEqual([null]);
     expect(byKind("BLIND_PROGRESS")).toEqual([{ cue: "fireIgnite" }]);
     expect(cueForStep(steps, 999)).toBeNull();
   });
 
-  it("slams on a zero rule, stays quiet for ×1, and for a Blind not crossed", () => {
+  it("slams on a zero rule, shows no ×1 step, and is quiet for a Blind not crossed", () => {
     const zeroed = scoreTimeline(
       evaluateHand({
         handType: "HIGH_TABLE",
@@ -339,7 +337,7 @@ describe("cueForStep", () => {
       cueForStep(zeroed, i)?.cue ?? null,
     ]);
     expect(mapped).toContainEqual(["ZERO_RULE", "zeroSlam"]);
-    expect(mapped).toContainEqual(["X_MULT", null]);
+    expect(mapped.map(([kind]) => kind)).not.toContain("X_MULT");
     expect(mapped).toContainEqual(["BLIND_PROGRESS", null]);
   });
 });

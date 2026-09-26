@@ -92,6 +92,14 @@ The consumable tray.
 
 ***
 
+### cpuAllocation
+
+> **cpuAllocation**: `number`
+
+The CPU the Blind started with: its allocation plus ON_BLIND_START relics.
+
+***
+
 ### crisis
 
 > **crisis**: [`CrisisView`](CrisisView.md) \| `null`
@@ -119,6 +127,14 @@ CSR Lock's sequence slots and lock, or null outside it.
 > **discardCost**: `number`
 
 What one discard costs, with any penalty.
+
+***
+
+### discardFree
+
+> **discardFree**: `boolean`
+
+The next discard is one of the Blind's free discards (#924).
 
 ***
 
@@ -597,6 +613,56 @@ SOP relics the run has earned.
 #### name
 
 > **name**: `string`
+
+#### trigger?
+
+> `optional` **trigger?**: \{ `phase`: `"ON_HAND_PLAYED"`; `requires?`: `"FIGURE_IN_HAND"` \| `"NO_REDLINES"`; \} \| \{ `cardType?`: `"TABLE"` \| `"LISTING"` \| `"FIGURE"` \| `"SUBJECT_TOKEN"`; `phase`: `"ON_CARD_SCORED"`; `population?`: `"SCREENED"` \| `"ITT"` \| `"SAFETY"` \| `"PER_PROTOCOL"` \| `"FAS"`; `qcPassedOnly?`: `boolean`; `retrigger?`: `boolean`; \} \| \{ `freeDiscards`: `number`; `phase`: `"ON_DISCARD"`; \} \| \{ `cpu`: `number`; `phase`: `"ON_BLIND_START"`; \}
+
+##### Union Members
+
+###### Type Literal
+
+\{ `phase`: `"ON_HAND_PLAYED"`; `requires?`: `"FIGURE_IN_HAND"` \| `"NO_REDLINES"`; \}
+
+***
+
+###### Type Literal
+
+\{ `cardType?`: `"TABLE"` \| `"LISTING"` \| `"FIGURE"` \| `"SUBJECT_TOKEN"`; `phase`: `"ON_CARD_SCORED"`; `population?`: `"SCREENED"` \| `"ITT"` \| `"SAFETY"` \| `"PER_PROTOCOL"` \| `"FAS"`; `qcPassedOnly?`: `boolean`; `retrigger?`: `boolean`; \}
+
+###### cardType?
+
+> `optional` **cardType?**: `"TABLE"` \| `"LISTING"` \| `"FIGURE"` \| `"SUBJECT_TOKEN"`
+
+###### phase
+
+> **phase**: `"ON_CARD_SCORED"`
+
+###### population?
+
+> `optional` **population?**: `"SCREENED"` \| `"ITT"` \| `"SAFETY"` \| `"PER_PROTOCOL"` \| `"FAS"`
+
+###### qcPassedOnly?
+
+> `optional` **qcPassedOnly?**: `boolean`
+
+Only cards stamped QC ✓: every cell reviewed, no open redline.
+
+###### retrigger?
+
+> `optional` **retrigger?**: `boolean`
+
+***
+
+###### Type Literal
+
+\{ `freeDiscards`: `number`; `phase`: `"ON_DISCARD"`; \}
+
+***
+
+###### Type Literal
+
+\{ `cpu`: `number`; `phase`: `"ON_BLIND_START"`; \}
 
 ***
 

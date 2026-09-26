@@ -2,7 +2,13 @@
 
 import React from "react";
 import { createPortal } from "react-dom";
-import type { AccessRecord, HandLevelRow, Relic } from "@/lib/trial-and-error";
+import {
+  RELIC_PHASE_LABELS,
+  relicPhase,
+  type AccessRecord,
+  type HandLevelRow,
+  type Relic,
+} from "@/lib/trial-and-error";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 
 interface RunInfoProps {
@@ -130,7 +136,10 @@ export function RunInfo({
             </li>
             {relics.map((relic) => (
               <li key={relic.id} className="break-words">
-                <span className="font-bold text-emerald-300">{relic.name}</span>
+                <span className="font-bold text-emerald-300">{relic.name}</span>{" "}
+                <span className="text-zinc-400">
+                  ({RELIC_PHASE_LABELS[relicPhase(relic)]})
+                </span>
                 : {relic.description}
               </li>
             ))}

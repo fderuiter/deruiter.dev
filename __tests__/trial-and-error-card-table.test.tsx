@@ -1082,7 +1082,12 @@ describe("CardTable DMC milestone Boss", () => {
     ).toBe(true);
     expect(choices[1].getAttribute("aria-pressed")).toBe("true");
     const rack = screen.getByTestId("relic-rack");
-    expect(within(rack).getByTestId("relic").textContent).toBe("SOP-QC-12");
+    expect(within(rack).getByTestId("relic").textContent).toBe(
+      "SOP-QC-12Hand played"
+    );
+    expect(within(rack).getByTestId("relic-phase").textContent).toBe(
+      "Hand played"
+    );
     expect(within(rack).getAllByText("Empty")).toHaveLength(4);
 
     fireEvent.click(screen.getByTestId("run-info-button"));

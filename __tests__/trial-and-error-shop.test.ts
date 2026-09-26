@@ -220,7 +220,8 @@ describe("shop transactions", () => {
         ...run.table,
         relics: ACT_I_SHOP.entries
           .filter((e) => e.kind === "RELIC")
-          .map((e) => (e as Extract<ShopEntry, { kind: "RELIC" }>).relic),
+          .map((e) => (e as Extract<ShopEntry, { kind: "RELIC" }>).relic)
+          .slice(0, RELIC_SLOTS),
       },
     };
     expect(full.table.relics).toHaveLength(RELIC_SLOTS);

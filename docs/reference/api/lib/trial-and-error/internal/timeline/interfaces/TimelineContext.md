@@ -18,6 +18,14 @@ Display names for card ids (falls back to the id).
 
 ***
 
+### relicNames?
+
+> `optional` **relicNames?**: `Readonly`\<`Record`\<`string`, `string`\>\>
+
+Display names for relic ids (falls back to the id).
+
+***
+
 ### roundScoreBefore
 
 > **roundScoreBefore**: `number`

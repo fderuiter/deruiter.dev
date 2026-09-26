@@ -125,6 +125,9 @@ export function ScorePlayer({
   const scored = new Set(
     revealed.flatMap((s) => (s.kind === "CARD_SCORED" ? [s.cardId] : []))
   );
+  // An ON_CARD_SCORED relic firing on a card: that card shakes and pops.
+  const fired =
+    current?.kind === "RELIC" && current.cardId ? current.cardId : null;
   const intensity = shakeIntensity(current);
   const loud = loudEffectsEnabled && intensity > 0;
   const fire = loudEffectsEnabled && progress?.crossed;
@@ -152,12 +155,22 @@ export function ScorePlayer({
         <ul className="mt-1 flex flex-wrap gap-1" aria-hidden="true">
           {cards.map((card) => (
             <li
-              key={card.id}
+              key={fired === card.id ? `${card.id}@${shown}` : card.id}
+              data-relic-fired={fired === card.id ? "" : undefined}
               className={`border px-1 text-[10px] transition-transform duration-150 ${
-                scored.has(card.id)
-                  ? "-translate-y-1 border-[color:var(--te-chips)] text-[color:var(--te-chips)]"
-                  : "border-zinc-700 text-zinc-400"
+                fired === card.id
+                  ? `-translate-y-1 motion-safe:scale-110 border-[color:var(--te-plus-mult)] text-[color:var(--te-plus-mult)] ${loudEffectsEnabled ? "te-loud-shake" : ""}`
+                  : scored.has(card.id)
+                    ? "-translate-y-1 border-[color:var(--te-chips)] text-[color:var(--te-chips)]"
+                    : "border-zinc-700 text-zinc-400"
               }`}
+              style={
+                fired === card.id && loudEffectsEnabled
+                  ? ({
+                      "--te-shake-amp": shakeAmplitude(3),
+                    } as React.CSSProperties)
+                  : undefined
+              }
             >
               {card.number}
             </li>

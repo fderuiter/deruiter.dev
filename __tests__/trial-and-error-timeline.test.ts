@@ -133,7 +133,6 @@ describe("scoreTimeline", () => {
       "RELIC",
       "X_MULT",
       "X_MULT",
-      "X_MULT",
       "TOTAL",
       "BLIND_PROGRESS",
     ]);
@@ -154,7 +153,8 @@ describe("scoreTimeline", () => {
         text: "RELIC-B: no effect.",
       }),
     ]);
-    expect(byKind(steps, "X_MULT").map((s) => s.factor)).toEqual([2, 1.5, 1]);
+    // A relic's ×1 is no factor, so it plays no X_MULT step.
+    expect(byKind(steps, "X_MULT").map((s) => s.factor)).toEqual([2, 1.5]);
     const total = byKind(steps, "TOTAL")[0];
     expect(total).toMatchObject({
       chips: evaluation.chips.total,

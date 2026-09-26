@@ -158,6 +158,12 @@ Re-exports [BlindSchema](types/variables/BlindSchema.md)
 
 ***
 
+### blindStartCpu
+
+Re-exports [blindStartCpu](internal/relics/functions/blindStartCpu.md)
+
+***
+
 ### BlindTier
 
 Re-exports [BlindTier](types/type-aliases/BlindTier.md)
@@ -830,6 +836,12 @@ Re-exports [FootnoteSealSchema](types/variables/FootnoteSealSchema.md)
 
 ***
 
+### freeDiscards
+
+Re-exports [freeDiscards](internal/relics/functions/freeDiscards.md)
+
+***
+
 ### GUIDANCE\_CARDS
 
 Re-exports [GUIDANCE_CARDS](internal/guidance/variables/GUIDANCE_CARDS.md)
@@ -1412,6 +1424,12 @@ Re-exports [Relic](types/type-aliases/Relic.md)
 
 ***
 
+### RELIC\_PHASE\_LABELS
+
+Re-exports [RELIC_PHASE_LABELS](internal/relics/variables/RELIC_PHASE_LABELS.md)
+
+***
+
 ### RELIC\_RACK\_FULL
 
 Re-exports [RELIC_RACK_FULL](internal/table/variables/RELIC_RACK_FULL.md)
@@ -1424,9 +1442,63 @@ Re-exports [RELIC_SLOTS](internal/table/variables/RELIC_SLOTS.md)
 
 ***
 
+### RelicCard
+
+Re-exports [RelicCard](internal/relics/interfaces/RelicCard.md)
+
+***
+
+### relicCardSourceId
+
+Re-exports [relicCardSourceId](internal/relics/functions/relicCardSourceId.md)
+
+***
+
+### RelicHand
+
+Re-exports [RelicHand](internal/relics/interfaces/RelicHand.md)
+
+***
+
+### relicModifiers
+
+Re-exports [relicModifiers](internal/relics/functions/relicModifiers.md)
+
+***
+
+### relicPhase
+
+Re-exports [relicPhase](internal/relics/functions/relicPhase.md)
+
+***
+
+### RelicPhase
+
+Re-exports [RelicPhase](types/type-aliases/RelicPhase.md)
+
+***
+
+### RelicPhaseSchema
+
+Re-exports [RelicPhaseSchema](types/variables/RelicPhaseSchema.md)
+
+***
+
 ### RelicSchema
 
 Re-exports [RelicSchema](types/variables/RelicSchema.md)
+
+***
+
+### RelicTrigger
+
+Re-exports [RelicTrigger](types/type-aliases/RelicTrigger.md)
+
+***
+
+### RelicTriggerSchema
+
+Re-exports [RelicTriggerSchema](types/variables/RelicTriggerSchema.md)
 
 ***
 

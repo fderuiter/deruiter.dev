@@ -38,7 +38,39 @@ import {
   JUMP_FORCE,
   CANVAS_SIZE,
   GameEngineState,
+  CrashReport,
 } from "@/lib/garmin-engine";
+
+/** What the crash overlay says for each cause, and how to avoid it next run. */
+const CRASH_LABELS: Record<
+  CrashReport["errorType"],
+  { title: string; hint: string }
+> = {
+  "Out Of Memory": {
+    title: "OUT OF MEMORY",
+    hint: "The heap filled up. Pop variables (Down) or force GC (Back) sooner.",
+  },
+  "Out Of Storage": {
+    title: "OUT OF FLASH STORAGE",
+    hint: "Flash filled up. Jump over flash tokens when storage runs high.",
+  },
+  "Watchdog Tripped": {
+    title: "WATCHDOG TRIPPED",
+    hint: "A watchdog timer caught you. Jump (Up) over it.",
+  },
+  "Null Pointer": {
+    title: "NULL POINTER",
+    hint: "You ran into a null reference. Jump (Up) over bugs.",
+  },
+  "Symbol Not Found": {
+    title: "SYMBOL NOT FOUND",
+    hint: "You ran into a missing symbol. Jump (Up) over bugs.",
+  },
+  "Power Loss": {
+    title: "POWER LOSS",
+    hint: "The battery ran out. Keep the backlight off to save power.",
+  },
+};
 
 type WatchBezelTheme = "slate" | "solar" | "cyan" | "neon";
 
@@ -885,11 +917,18 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
                 {gameState.gameState === "shutdown"
                   ? "⚡ BROWNOUT SHUTDOWN"
                   : gameState.gameState === "crashed"
-                    ? gameState.crashReport?.errorType === "Out Of Storage"
-                      ? "OUT OF FLASH STORAGE"
-                      : "CRASH / OOM"
+                    ? (CRASH_LABELS[
+                        gameState.crashReport?.errorType ?? "Out Of Memory"
+                      ]?.title ?? "APP CRASHED")
                     : "RUN COMPLETE"}
               </span>
+              {gameState.gameState === "crashed" && (
+                <div className="text-[8px] text-zinc-300 max-w-[180px] leading-tight">
+                  {CRASH_LABELS[
+                    gameState.crashReport?.errorType ?? "Out Of Memory"
+                  ]?.hint ?? "Reboot and try again."}
+                </div>
+              )}
               <div className="text-[10px] text-zinc-300">
                 SCORE:{" "}
                 <strong className="text-amber-400">{gameState.score}</strong>

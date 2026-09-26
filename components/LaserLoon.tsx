@@ -27,6 +27,8 @@ import {
   IconVolumeOff,
   IconChevronRight,
   IconTarget,
+  IconHeart,
+  IconHeartBroken,
 } from "@tabler/icons-react";
 import { FieldManualButton } from "@/components/FieldManualButton";
 import { FullscreenButton } from "@/components/arcade/FullscreenButton";
@@ -67,6 +69,8 @@ import {
   POWER_UP_CONFIGS,
   DEFAULT_CANVAS_WIDTH,
   DEFAULT_CANVAS_HEIGHT,
+  LOON_MAX_HITS,
+  resolveLoonCollision,
 } from "@/lib/laser-loon";
 
 const emptySubscribe = () => () => {};
@@ -108,11 +112,13 @@ export const LaserLoon: React.FC = () => {
     | "playing"
     | "act-intro"
     | "act-victory"
+    | "act-failed"
     | "gameover"
     | "campaign-victory"
   >("idle");
   const [currentActNum, setCurrentActNum] = useState(1);
   const [actKills, setActKills] = useState(0);
+  const [hitsLeft, setHitsLeft] = useState(LOON_MAX_HITS);
   const [bossActive, setBossActive] = useState(false);
   const [bossHp, setBossHp] = useState(100);
   const [bossMaxHp, setBossMaxHp] = useState(100);
@@ -197,6 +203,8 @@ export const LaserLoon: React.FC = () => {
   const animFrameIdRef = useRef<number | null>(null);
   const shakeIntensityRef = useRef(0);
   const actKillsRef = useRef(0);
+  const hitsLeftRef = useRef(LOON_MAX_HITS);
+  const invulnerableUntilRef = useRef(0);
   const bossSpawnedRef = useRef(false);
   const activePowerUpRef = useRef<{
     type: PowerUpType;
@@ -308,6 +316,15 @@ export const LaserLoon: React.FC = () => {
     try {
       [523.25, 659.25, 783.99, 1046.5].forEach((f, idx) => {
         setTimeout(() => playNote(f, 0.06), idx * 35);
+      });
+    } catch {}
+  }, [soundEnabled, playNote]);
+
+  const playLoonHitSound = useCallback(() => {
+    if (!soundEnabled) return;
+    try {
+      [330, 247, 185].forEach((f, idx) => {
+        setTimeout(() => playNote(f, 0.07), idx * 60);
       });
     } catch {}
   }, [soundEnabled, playNote]);
@@ -517,6 +534,11 @@ export const LaserLoon: React.FC = () => {
     setCurrentActNum(actNum);
     setActKills(0);
     actKillsRef.current = 0;
+    setHitsLeft(LOON_MAX_HITS);
+    hitsLeftRef.current = LOON_MAX_HITS;
+    invulnerableUntilRef.current = 0;
+    activePowerUpRef.current = null;
+    setActivePowerUpType(null);
     bossSpawnedRef.current = false;
     setBossActive(false);
     setIsPaused(false);
@@ -594,6 +616,11 @@ export const LaserLoon: React.FC = () => {
         announce(`Game over. Final score is ${score}.`, "assertive");
       } else if (gameState === "act-victory") {
         announce(`Act ${currentActNum} completed successfully!`, "assertive");
+      } else if (gameState === "act-failed") {
+        announce(
+          `The loon is out of hits. Act ${currentActNum} failed. Press Space to try the act again.`,
+          "assertive"
+        );
       } else if (gameState === "campaign-victory") {
         announce(
           "Campaign victory! You successfully completed all acts.",
@@ -961,6 +988,48 @@ export const LaserLoon: React.FC = () => {
         addUltimateMeter(15);
       }
 
+      // Enemy contact costs the loon a hit in campaign play
+      if (gameState === "playing" && mode === "campaign") {
+        const now = Date.now();
+        const contact = resolveLoonCollision({
+          targets: targetsRef.current,
+          loonX: loon.x,
+          loonY: loon.y,
+          hitsLeft: hitsLeftRef.current,
+          invulnerableUntil: invulnerableUntilRef.current,
+          now,
+          shielded:
+            activePowerUpRef.current?.type === "pronto-pup" &&
+            activePowerUpRef.current.expiresAt > now,
+        });
+        targetsRef.current = contact.targets;
+
+        if (contact.outcome === "blocked" && contact.contact) {
+          spawnExplosion(contact.contact.x, contact.contact.y, "#eab308", 16);
+          addFloatingText(loon.x, loon.y - 40, "SHIELD BLOCKED!", "#facc15");
+        } else if (contact.outcome === "hit") {
+          hitsLeftRef.current = contact.hitsLeft;
+          invulnerableUntilRef.current = contact.invulnerableUntil;
+          setHitsLeft(contact.hitsLeft);
+          playLoonHitSound();
+          if (screenShakeEnabled) shakeIntensityRef.current = 10;
+          if (contact.contact) {
+            spawnExplosion(contact.contact.x, contact.contact.y, "#f43f5e", 18);
+          }
+          if (contact.hitsLeft <= 0) {
+            isFiringRef.current = false;
+            setGameState("act-failed");
+          } else {
+            addFloatingText(
+              loon.x,
+              loon.y - 40,
+              `OUCH! ${contact.hitsLeft} ${contact.hitsLeft === 1 ? "HIT" : "HITS"} LEFT`,
+              "#f43f5e"
+            );
+          }
+        }
+      }
+
       // Render Floating Power-Ups
       powerUpsRef.current.forEach((p) => {
         ctx.save();
@@ -1270,6 +1339,16 @@ export const LaserLoon: React.FC = () => {
       ctx.save();
       ctx.translate(loon.x, loon.y);
 
+      // Blink after a hit; hold a steady fade when motion is reduced
+      const blinkMsLeft = invulnerableUntilRef.current - Date.now();
+      if (blinkMsLeft > 0) {
+        ctx.globalAlpha = !screenShakeEnabled
+          ? 0.5
+          : Math.floor(blinkMsLeft / 120) % 2 === 0
+            ? 0.25
+            : 0.9;
+      }
+
       // Invulnerability shield bubble (Pronto Pup power-up)
       if (activePowerUpRef.current?.type === "pronto-pup") {
         ctx.save();
@@ -1419,6 +1498,7 @@ export const LaserLoon: React.FC = () => {
     fireWeapon,
     playIceShatterSound,
     playPowerUpSound,
+    playLoonHitSound,
     spawnExplosion,
     addFloatingText,
     addScore,
@@ -1629,7 +1709,7 @@ export const LaserLoon: React.FC = () => {
         gameState === "campaign-victory"
       ) {
         startGame();
-      } else if (gameState === "act-intro") {
+      } else if (gameState === "act-intro" || gameState === "act-failed") {
         startAct(currentActNum);
       } else if (gameState === "act-victory") {
         setCurrentActNum((prev) => prev + 1);
@@ -1910,6 +1990,24 @@ export const LaserLoon: React.FC = () => {
                   {bossActive
                     ? "BOSS BATTLE"
                     : `Kills: ${actKills}/${currentAct.requiredMinionKills}`}
+                </span>
+                <span className="text-neutral-500">|</span>
+                <span
+                  className="flex items-center gap-0.5"
+                  role="img"
+                  aria-label={`Hits left: ${hitsLeft} of ${LOON_MAX_HITS}`}
+                >
+                  {Array.from({ length: LOON_MAX_HITS }, (_, i) => (
+                    <IconHeart
+                      key={i}
+                      aria-hidden="true"
+                      className={`w-3.5 h-3.5 ${
+                        i < hitsLeft
+                          ? "text-rose-400 fill-rose-400"
+                          : "text-neutral-600"
+                      }`}
+                    />
+                  ))}
                 </span>
               </div>
             )}
@@ -2404,6 +2502,52 @@ export const LaserLoon: React.FC = () => {
             >
               <span>ADVANCE TO ACT {currentActNum + 1} [SPACE]</span>
               <IconChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        {/* Act Failed Screen */}
+        {gameState === "act-failed" && (
+          <div className="absolute inset-0 bg-neutral-950/90 backdrop-blur-md z-30 flex flex-col items-center justify-center text-center p-6 select-none animate-in fade-in zoom-in duration-200">
+            <div className="w-14 h-14 rounded-full bg-rose-500/10 border border-rose-500/30 flex items-center justify-center mb-3 text-rose-400">
+              <IconHeartBroken className="w-7 h-7" />
+            </div>
+            <h3 className="text-2xl font-bold text-rose-400 font-mono tracking-tight mb-1">
+              THE LOON IS DOWN
+            </h3>
+            <p className="text-xs text-neutral-300 max-w-md mb-4 leading-relaxed font-sans">
+              Three hits and the loon splashes down. Dodge with W/S or the arrow
+              keys, freeze enemies with the Glacial Cryo-Mortar [4], and grab a
+              Pronto Pup to shield a hit.
+            </p>
+            <div className="grid grid-cols-2 gap-4 bg-neutral-900/80 border border-neutral-800 rounded-2xl p-4 mb-6 min-w-[240px]">
+              <div>
+                <span className="text-[10px] font-mono text-neutral-500 uppercase block">
+                  Score
+                </span>
+                <span className="text-xl font-mono font-bold text-red-400">
+                  {score}
+                </span>
+              </div>
+              <div>
+                <span className="text-[10px] font-mono text-neutral-500 uppercase block">
+                  Act Kills
+                </span>
+                <span className="text-xl font-mono font-bold text-amber-400">
+                  {actKills}/{currentAct.requiredMinionKills}
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                startAct(currentActNum);
+                containerRef.current?.focus({ preventScroll: true });
+              }}
+              className="inline-flex items-center justify-center gap-2 min-h-[44px] min-w-[44px] px-6 py-2.5 bg-rose-500 hover:bg-rose-400 text-white font-mono font-bold text-sm rounded-xl transition-all transform hover:scale-105 active:scale-95 cursor-pointer touch-manipulation select-none"
+            >
+              <IconRefresh className="w-4 h-4" />
+              TRY ACT {currentActNum} AGAIN [SPACE]
             </button>
           </div>
         )}

@@ -16,6 +16,8 @@
 - [LaserHitResult](interfaces/LaserHitResult.md)
 - [LaserLoonEngineConfig](interfaces/LaserLoonEngineConfig.md)
 - [LaserLoonSnapshot](interfaces/LaserLoonSnapshot.md)
+- [LoonCollisionInput](interfaces/LoonCollisionInput.md)
+- [LoonCollisionResult](interfaces/LoonCollisionResult.md)
 
 ## Functions
 
@@ -25,6 +27,7 @@
 - [createIceBlock](functions/createIceBlock.md)
 - [createInitialState](functions/createInitialState.md)
 - [getActAvailableEnemies](functions/getActAvailableEnemies.md)
+- [resolveLoonCollision](functions/resolveLoonCollision.md)
 - [spawnBossForAct](functions/spawnBossForAct.md)
 - [spawnPowerUp](functions/spawnPowerUp.md)
 - [spawnTarget](functions/spawnTarget.md)

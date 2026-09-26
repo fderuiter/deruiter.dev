@@ -28,6 +28,8 @@ import {
   COMBO_TIMEOUT_MS,
   MAX_MULTIPLIER,
   ULTIMATE_CHARGE_PER_KILL,
+  LOON_HIT_RADIUS,
+  LOON_INVULNERABLE_MS,
 } from "./constants";
 
 export function createInitialState(
@@ -282,6 +284,88 @@ export function createIceBlock(
   return {
     iceBlock,
     nextId: nextId + 1,
+  };
+}
+
+export interface LoonCollisionInput {
+  targets: Target[];
+  loonX: number;
+  loonY: number;
+  hitsLeft: number;
+  invulnerableUntil: number;
+  now: number;
+  shielded: boolean;
+}
+
+export interface LoonCollisionResult {
+  /** Targets after contact: a regular enemy that touches the loon is knocked out. */
+  targets: Target[];
+  hitsLeft: number;
+  invulnerableUntil: number;
+  /** "hit" costs a hit, "blocked" was absorbed by the Pronto Pup shield. */
+  outcome: "none" | "hit" | "blocked";
+  /** Where the contact happened, for effects. */
+  contact: { x: number; y: number } | null;
+}
+
+/**
+ * Resolves contact between the loon and live, unfrozen enemies.
+ *
+ * Frozen enemies are harmless ice. A regular enemy that touches the loon is
+ * knocked out without scoring; a boss stays. The Pronto Pup shield absorbs
+ * contact, and after a hit enemies pass through the loon until the
+ * invulnerability window ends.
+ */
+export function resolveLoonCollision(
+  input: LoonCollisionInput
+): LoonCollisionResult {
+  const { targets, loonX, loonY, hitsLeft, invulnerableUntil, now, shielded } =
+    input;
+  const unchanged: LoonCollisionResult = {
+    targets,
+    hitsLeft,
+    invulnerableUntil,
+    outcome: "none",
+    contact: null,
+  };
+
+  if (hitsLeft <= 0) return unchanged;
+
+  const index = targets.findIndex(
+    (t) =>
+      t.hp > 0 &&
+      t.frozenTimer <= 0 &&
+      Math.hypot(t.x - loonX, t.y - loonY) < t.radius + LOON_HIT_RADIUS
+  );
+  if (index === -1) return unchanged;
+
+  const target = targets[index];
+
+  if (shielded) {
+    // The shield pops a regular enemy and simply holds off a boss.
+    if (target.isBoss) return unchanged;
+    return {
+      ...unchanged,
+      targets: targets.filter((_, i) => i !== index),
+      outcome: "blocked",
+      contact: { x: target.x, y: target.y },
+    };
+  }
+
+  // While blinking after a hit, enemies pass through the loon.
+  if (now < invulnerableUntil) return unchanged;
+
+  const nextTargets = target.isBoss
+    ? targets
+    : targets.filter((_, i) => i !== index);
+  const contact = { x: target.x, y: target.y };
+
+  return {
+    targets: nextTargets,
+    hitsLeft: hitsLeft - 1,
+    invulnerableUntil: now + LOON_INVULNERABLE_MS,
+    outcome: "hit",
+    contact,
   };
 }
 

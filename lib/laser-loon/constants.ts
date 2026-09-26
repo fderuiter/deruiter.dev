@@ -432,3 +432,10 @@ export const MAX_MULTIPLIER = 5;
 export const ULTIMATE_CHARGE_PER_KILL = 12;
 export const ULTIMATE_CHARGE_PER_BOSS_HIT = 4;
 export const ULTIMATE_DURATION_MS = 2400;
+
+/** Hits the loon can take in one campaign act before the act is failed. */
+export const LOON_MAX_HITS = 3;
+/** Collision radius of the loon's body, in canvas pixels. */
+export const LOON_HIT_RADIUS = 22;
+/** Invulnerability window after the loon takes a hit, in milliseconds. */
+export const LOON_INVULNERABLE_MS = 1500;

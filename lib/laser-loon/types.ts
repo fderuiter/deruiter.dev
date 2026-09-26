@@ -5,7 +5,8 @@
 
 export type LaserMode = "campaign" | "arcade" | "sandbox";
 
-export type LaserType = "ruby-laser" | "cyan-pulse" | "aurora-wave" | "ice-cannon";
+export type LaserType =
+  "ruby-laser" | "cyan-pulse" | "aurora-wave" | "ice-cannon";
 
 export type CivicEnemyType =
   // Act 1: Lake Minnetonka

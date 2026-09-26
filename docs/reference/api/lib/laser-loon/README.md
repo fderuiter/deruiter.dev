@@ -182,6 +182,36 @@ Re-exports [LaserType](types/type-aliases/LaserType.md)
 
 ***
 
+### LOON\_HIT\_RADIUS
+
+Re-exports [LOON_HIT_RADIUS](constants/variables/LOON_HIT_RADIUS.md)
+
+***
+
+### LOON\_INVULNERABLE\_MS
+
+Re-exports [LOON_INVULNERABLE_MS](constants/variables/LOON_INVULNERABLE_MS.md)
+
+***
+
+### LOON\_MAX\_HITS
+
+Re-exports [LOON_MAX_HITS](constants/variables/LOON_MAX_HITS.md)
+
+***
+
+### LoonCollisionInput
+
+Re-exports [LoonCollisionInput](engine/interfaces/LoonCollisionInput.md)
+
+***
+
+### LoonCollisionResult
+
+Re-exports [LoonCollisionResult](engine/interfaces/LoonCollisionResult.md)
+
+***
+
 ### LoonPosition
 
 Re-exports [LoonPosition](types/interfaces/LoonPosition.md)
@@ -215,6 +245,12 @@ Re-exports [PowerUp](types/interfaces/PowerUp.md)
 ### PowerUpType
 
 Re-exports [PowerUpType](types/type-aliases/PowerUpType.md)
+
+***
+
+### resolveLoonCollision
+
+Re-exports [resolveLoonCollision](engine/functions/resolveLoonCollision.md)
 
 ***
 

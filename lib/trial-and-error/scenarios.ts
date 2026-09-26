@@ -23,6 +23,7 @@ import type {
   AdverseEvent,
   FootnoteSeal,
   Relic,
+  RelicTrigger,
   RowStatistic,
   SapRulebook,
   Scenario,
@@ -1368,7 +1369,8 @@ const shopRelic = (
   name: string,
   description: string,
   price: number,
-  bonus: { chips?: number; plusMult?: number; xMult?: number }
+  bonus: { chips?: number; plusMult?: number; xMult?: number },
+  trigger?: RelicTrigger
 ): ShopEntry => ({
   kind: "RELIC",
   price,
@@ -1376,6 +1378,7 @@ const shopRelic = (
     id,
     name,
     description,
+    ...(trigger ? { trigger } : {}),
     modifier: {
       sourceId: id,
       label: name,
@@ -1429,6 +1432,55 @@ export const ACT_I_SHOP: ShopCatalog = {
       "Signs the SAP and means it: ×1.25 Mult on every hand.",
       8,
       { xMult: 1.25 }
+    ),
+    // Triggered relics (#924): each fires only in its phase.
+    shopRelic(
+      "REL-LEAD-PROGRAMMER-MACRO",
+      "Lead Programmer Macro",
+      "One macro, every validated table: +4 Mult for each QC ✓ Table scored.",
+      6,
+      { plusMult: 4 },
+      { phase: "ON_CARD_SCORED", cardType: "TABLE", qcPassedOnly: true }
+    ),
+    shopRelic(
+      "REL-ITT-PURIST",
+      "The ITT Purist",
+      "Randomized is analyzed: retriggers every ITT output scored.",
+      8,
+      {},
+      { phase: "ON_CARD_SCORED", population: "ITT", retrigger: true }
+    ),
+    shopRelic(
+      "REL-SENIOR-MEDICAL-WRITER",
+      "Senior Medical Writer",
+      "A figure is worth a thousand words: +50 Chips if the hand holds a Figure.",
+      5,
+      { chips: 50 },
+      { phase: "ON_HAND_PLAYED", requires: "FIGURE_IN_HAND" }
+    ),
+    shopRelic(
+      "REL-DOUBLE-PROGRAMMING",
+      "Double-Programming Pipeline",
+      "Two programmers, one answer: ×1.5 Mult if the hand has no redline.",
+      8,
+      { xMult: 1.5 },
+      { phase: "ON_HAND_PLAYED", requires: "NO_REDLINES" }
+    ),
+    shopRelic(
+      "REL-PROTOCOL-OPTIMIZATION-SOP",
+      "Protocol Optimization SOP",
+      "Streamlined triage: the first discard of every Blind costs no base CPU.",
+      5,
+      {},
+      { phase: "ON_DISCARD", freeDiscards: 1 }
+    ),
+    shopRelic(
+      "REL-GRID-ALLOCATION",
+      "Reserved Grid Allocation",
+      "A standing reservation on the compute grid: +1 CPU at every Blind start.",
+      6,
+      {},
+      { phase: "ON_BLIND_START", cpu: 1 }
     ),
     ...Object.values(GUIDANCE_CARDS).map((guidance): ShopEntry => ({
       kind: "GUIDANCE",

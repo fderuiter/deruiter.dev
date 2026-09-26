@@ -174,6 +174,16 @@ export {
   type TransitionOutcome,
 } from "./internal/snapshots";
 export { compileDraft, compileShell } from "./internal/compile";
+export {
+  RELIC_PHASE_LABELS,
+  blindStartCpu,
+  freeDiscards,
+  relicCardSourceId,
+  relicModifiers,
+  relicPhase,
+  type RelicCard,
+  type RelicHand,
+} from "./internal/relics";
 export { drawInt, uniformAt } from "./internal/rng";
 export {
   scoreTimeline,

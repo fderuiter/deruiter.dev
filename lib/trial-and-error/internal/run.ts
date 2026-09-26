@@ -7,6 +7,7 @@ import type {
   ShopEntry,
 } from "../types";
 import { POPULATION_LABELS, shopEntryId } from "../types";
+import { blindStartCpu } from "./relics";
 import { drawInt } from "./rng";
 import {
   PACK_SLOTS,
@@ -821,11 +822,19 @@ function startBlind(
 ): TableState {
   const table = createTableState(scenario, history, inventory, crisis);
   const drawn = crisis ? ` Crisis: ${crisis.name}. ${crisis.description}` : "";
+  const cpu = blindStartCpu(table.relics);
+  const bonus =
+    cpu > 0
+      ? ` ${table.relics
+          .filter((r) => r.trigger?.phase === "ON_BLIND_START")
+          .map((r) => r.name)
+          .join(", ")}: +${cpu} CPU.`
+      : "";
   return {
     ...table,
     lastEvent: {
       kind,
-      message: `${message}${drawn}`,
+      message: `${message}${bonus}${drawn}`,
       sequence: (after?.sequence ?? 0) + 1,
     },
   };

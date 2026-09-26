@@ -6,9 +6,9 @@
 
 # Function: costOf()
 
-> **costOf**(`action`, `surcharge?`): `number`
+> **costOf**(`action`, `surcharge?`, `free?`): `number`
 
-What an action costs with a modifier's surcharge.
+What an action costs with a modifier's surcharge, or only the surcharge when free.
 
 ## Parameters
 
@@ -19,6 +19,10 @@ What an action costs with a modifier's surcharge.
 ### surcharge?
 
 `number` = `0`
+
+### free?
+
+`boolean` = `false`
 
 ## Returns
 

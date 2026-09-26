@@ -18,28 +18,31 @@ export interface CpuLedger {
 
 /**
  * Events the CPU reducer understands. `SPEND` pays for one action, plus any
- * `surcharge` a Blind modifier adds (a site audit's discard penalty);
+ * `surcharge` a Blind modifier adds (a site audit's discard penalty); a
+ * `free` spend waives the action's own cost but not the surcharge (an SOP
+ * relic's free discard, #924);
  * `REPLENISH` refills the ledger to the Blind's allocation, which happens
  * once, deterministically, when each Blind starts; `ADJUST` applies a crisis
  * choice's CPU change, never below zero.
  */
 export type CpuEvent =
-  | { type: "SPEND"; action: CpuAction; surcharge?: number }
+  | { type: "SPEND"; action: CpuAction; surcharge?: number; free?: boolean }
   | { type: "REPLENISH"; available: number }
   | { type: "ADJUST"; delta: number };
 
-/** What an action costs with a modifier's surcharge. */
-export function costOf(action: CpuAction, surcharge = 0): number {
-  return CPU_COSTS[action] + Math.max(0, Math.trunc(surcharge));
+/** What an action costs with a modifier's surcharge, or only the surcharge when free. */
+export function costOf(action: CpuAction, surcharge = 0, free = false): number {
+  return (free ? 0 : CPU_COSTS[action]) + Math.max(0, Math.trunc(surcharge));
 }
 
 /** Whether the ledger can pay for an action and its surcharge. */
 export function canAfford(
   ledger: CpuLedger,
   action: CpuAction,
-  surcharge = 0
+  surcharge = 0,
+  free = false
 ): boolean {
-  return ledger.available >= costOf(action, surcharge);
+  return ledger.available >= costOf(action, surcharge, free);
 }
 
 /**
@@ -57,7 +60,9 @@ export function cpuReducer(ledger: CpuLedger, event: CpuEvent): CpuLedger {
       spent: ledger.spent + Math.max(0, ledger.available - available),
     };
   }
-  if (!canAfford(ledger, event.action, event.surcharge)) return ledger;
-  const cost = costOf(event.action, event.surcharge);
+  if (!canAfford(ledger, event.action, event.surcharge, event.free)) {
+    return ledger;
+  }
+  const cost = costOf(event.action, event.surcharge, event.free);
   return { available: ledger.available - cost, spent: ledger.spent + cost };
 }

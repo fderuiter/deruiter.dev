@@ -35,6 +35,8 @@ import {
   type Scenario,
   type TableCardView,
   type TableState,
+  RELIC_PHASE_LABELS,
+  relicPhase,
 } from "@/lib/trial-and-error";
 import { useAnnouncer } from "@/hooks/useAnnouncer";
 import { isAnyFocusTrapActive, useFocusTrap } from "@/hooks/useFocusTrap";
@@ -855,7 +857,7 @@ export function CardTable({
     view.classification !== null &&
     !view.stageAccepts.includes(view.classification.handType);
   const cpuPips = Array.from(
-    { length: scenario.table.startingCpu },
+    { length: view.cpuAllocation },
     (_, i) => i < state.cpu.available
   );
   const allocation =
@@ -1166,7 +1168,7 @@ export function CardTable({
             )}
             <dt className="text-zinc-400">CPU</dt>
             <dd className="text-right" data-testid="cpu-counter">
-              {state.cpu.available}/{scenario.table.startingCpu}
+              {state.cpu.available}/{view.cpuAllocation}
             </dd>
             <dt className="text-zinc-400">Hands</dt>
             <dd className="text-right" data-testid="hands-affordable">
@@ -1265,18 +1267,30 @@ export function CardTable({
                 );
               }
               const chip =
-                "flex h-12 min-w-0 max-w-[10rem] items-center justify-center border border-emerald-500/60 px-2 text-center text-[10px] font-bold uppercase text-emerald-300 break-words";
+                "flex h-12 min-w-0 max-w-[10rem] flex-col items-center justify-center border border-emerald-500/60 px-2 text-center text-[10px] font-bold uppercase text-emerald-300 break-words";
+              const phase = RELIC_PHASE_LABELS[relicPhase(relic)];
+              const face = (
+                <>
+                  <span className="min-w-0 break-words">{relic.id}</span>
+                  <span
+                    className="font-normal normal-case text-zinc-400"
+                    data-testid="relic-phase"
+                  >
+                    {phase}
+                  </span>
+                </>
+              );
               return (
                 <li
                   key={relic.id}
-                  title={`${relic.name}: ${relic.description}`}
+                  title={`${relic.name} (${phase}): ${relic.description}`}
                   className="min-w-0"
                   data-testid="relic"
                 >
                   {shopView ? (
                     <button
                       type="button"
-                      aria-label={`${relic.name}: ${relic.description} Sells for $${shopView.relicSellValues[relic.id]}k. Press S or Enter to sell.`}
+                      aria-label={`${relic.name}, ${phase}: ${relic.description} Sells for $${shopView.relicSellValues[relic.id]}k. Press S or Enter to sell.`}
                       onClick={() => setSellRelicId(relic.id)}
                       onKeyDown={(e) => {
                         if (e.key === "s" || e.key === "S") {
@@ -1287,10 +1301,10 @@ export function CardTable({
                       className={`${chip} touch-manipulation hover:bg-emerald-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 active:scale-[0.98]`}
                       data-testid="relic-sell"
                     >
-                      {relic.id}
+                      {face}
                     </button>
                   ) : (
-                    <span className={chip}>{relic.id}</span>
+                    <span className={chip}>{face}</span>
                   )}
                 </li>
               );

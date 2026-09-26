@@ -472,6 +472,7 @@ Fictional teaching material; nothing in the game is clinical or regulatory advic
 - **Campaign score**: The final score a CSR lock computes: every cleared Blind's score, weighted up by each DMC defense and FDA Information Request the run resolved.
 - **Pooled output**: An open-session DMC output that shows only the Total column, so no treatment arm can be read from it. Its by-arm counterpart is a closed-session output, dealt face down.
 - **Relic (SOP Relic)**: A passive modifier that is a person or a tool on the player's team, such as a lead programmer, a validated macro suite or a double-programming SOP.
+- **Relic phase**: When a relic fires: Hand played (every hand, or when its condition holds), Card scored (once per matching output, or a retrigger of it), On discard (free discards each Blind) or Blind start (extra CPU each Blind). A relic without a trigger fires on Hand played. Relic effects add to the score, so their order never changes the total.
 - **Site Activation Pack**: A booster pack that enrolls new subjects into the current study, adding Chips and creating a new population snapshot that stales dependent outputs.
 - **Blinding Firewall**: The CRO's separation between its blinded study team and its independent DMC statisticians. The player works both seats; peeking across triggers the zero-score rule.
 - **Stake (GCP Audit Level)**: A cumulative difficulty tier for a run, from Routine Monitoring to Warning Letter.

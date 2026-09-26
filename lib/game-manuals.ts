@@ -906,7 +906,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         title: "SOP relics",
         detail:
-          "A relic is a standard operating procedure with a name, a description and one score modifier. Once you hold it, it scores in every later hand of the run. The shop sells relics, and defending a staged Boss offers a choice of one, which you must claim before the next Blind.",
+          "A relic is a person or tool on your team with a name, a description and one score modifier. The rack holds five, and each shows the phase it fires in. Hand played: it adds its modifier to every hand, or only when its condition holds, such as a Figure in the hand or no redline. Card scored: it fires on each matching output as that output scores, and the card pops; the ITT Purist scores every ITT output twice. On discard: the Blind's first discard costs no base CPU. Blind start: each Blind starts with extra CPU. Relics add to the score and never change what the SAP checks, and their order never changes the total. The shop sells relics, and defending a staged Boss offers a choice of one, which you must claim before the next Blind.",
         badge: "Relic",
       },
       {

@@ -87,6 +87,12 @@ import {
 } from "./package";
 import { evaluateHand, ruleResultsFor } from "./scoring";
 import {
+  blindStartCpu,
+  freeDiscards,
+  relicModifiers,
+  type RelicCard,
+} from "./relics";
+import {
   applyTransition,
   membership,
   sameMembership,
@@ -643,6 +649,10 @@ export interface TableView {
   handsLeft: number | null;
   /** What one discard costs, with any penalty. */
   discardCost: number;
+  /** The next discard is one of the Blind's free discards (#924). */
+  discardFree: boolean;
+  /** The CPU the Blind started with: its allocation plus ON_BLIND_START relics. */
+  cpuAllocation: number;
   /** Treatment-arm values are face down (a DMC firewall). */
   firewall: boolean;
   /** The Blind's inspection audit log, for end-of-Blind grading. */
@@ -2042,6 +2052,50 @@ function withSeals(
   return next;
 }
 
+/**
+ * QC ✓ only once every cell is reviewed, so it never vouches for a defect
+ * the player has not looked for. An inspected KM figure shows all of its
+ * findings at once.
+ */
+function qcPassed(
+  review: { reviewedCells: number; totalCells: number } | null,
+  kmInspected: boolean,
+  openRedlines: number
+): boolean {
+  return (
+    openRedlines === 0 &&
+    ((review !== null && review.reviewedCells === review.totalCells) ||
+      kmInspected)
+  );
+}
+
+/** Whether a card carries the QC ✓ stamp, as the hand view shows it. */
+function isQcPassed(
+  scenario: Scenario,
+  state: TableState,
+  card: TlfCard
+): boolean {
+  const inspection = state.inspections[card.id];
+  if (!inspection) return false;
+  const km = kmReportFor(scenario, state, card);
+  if (km) {
+    return qcPassed(
+      null,
+      true,
+      km.findings.filter((f) => !inspection.resolvedFindingIds.includes(f.id))
+        .length
+    );
+  }
+  const draft = draftFor(scenario, state, card);
+  if (!draft) return false;
+  const review = deriveInspectionView(
+    draft,
+    reportFor(scenario, state, card, draft),
+    inspection
+  );
+  return qcPassed(review, false, review.openFindings.length);
+}
+
 function scoreCards(
   scenario: Scenario,
   state: TableState,
@@ -2050,6 +2104,7 @@ function scoreCards(
   revealedOnly: boolean
 ): HandEvaluation {
   const ruleResults: RuleCheckResult[] = [];
+  const relicCards: RelicCard[] = [];
   for (const card of cards) {
     const first = ruleResults.length;
     const draft = draftFor(scenario, state, card);
@@ -2101,6 +2156,15 @@ function scoreCards(
           }
         : null);
     if (cancelled) ruleResults.push(cancelled);
+    relicCards.push({
+      id: card.id,
+      cardType: card.cardType,
+      population: card.population,
+      chips: card.chips,
+      mult: card.mult,
+      qcPassed: isQcPassed(scenario, state, card),
+      cancelled: cancelled !== null,
+    });
     if (km && figureStatus(scenario, state, card)?.active) {
       ruleResults.push({
         ruleId: `KM-RECONCILED@${card.id}`,
@@ -2159,7 +2223,10 @@ function scoreCards(
     handType,
     cards: cards.map((c) => ({ id: c.id, chips: c.chips, mult: c.mult })),
     ruleResults,
-    modifiers: [...state.relics, ...state.sites].map((r) => r.modifier),
+    modifiers: [
+      ...relicModifiers(state.relics, { cards: relicCards, ruleResults }),
+      ...state.sites.map((s) => s.modifier),
+    ],
     level: state.handLevels[handType].level,
   });
 }
@@ -2272,7 +2339,11 @@ export function createTableState(
     inspecting: null,
     cpu: cpuReducer(
       { available: 0, spent: 0 },
-      { type: "REPLENISH", available: scenario.table.startingCpu }
+      {
+        type: "REPLENISH",
+        available:
+          scenario.table.startingCpu + blindStartCpu(inventory.relics ?? []),
+      }
     ),
     roundScore: 0,
     handsPlayed: 0,
@@ -2337,11 +2408,38 @@ export function carriedInventory(state: TableState): Inventory {
   };
 }
 
+/** Whether the next discard is one of the Blind's free discards (#924). */
+function freeDiscardNow(state: TableState): boolean {
+  return state.discards < freeDiscards(state.relics);
+}
+
+/** The ON_DISCARD relics that make a discard free, by name. */
+function freeDiscardSources(state: TableState): string {
+  return state.relics
+    .filter((r) => r.trigger?.phase === "ON_DISCARD")
+    .map((r) => r.name)
+    .join(", ");
+}
+
+/** How many discards the CPU left pays for: the free ones first. */
+function discardsAffordable(state: TableState, surcharge: number): number {
+  let available = state.cpu.available;
+  let count = 0;
+  const free = Math.max(0, freeDiscards(state.relics) - state.discards);
+  const freeCost = costOf("DISCARD", surcharge, true);
+  for (let i = 0; i < free && available >= freeCost; i++) {
+    available -= freeCost;
+    count += 1;
+  }
+  return count + Math.floor(available / costOf("DISCARD", surcharge));
+}
+
 /** Removes the selected cards and pays for the action. Does not refill. */
 function spendSelection(
   state: TableState,
   action: CpuAction,
-  surcharge = 0
+  surcharge = 0,
+  free = false
 ): TableState {
   const removed = new Set(state.selected);
   const keep = <T>(record: Record<string, T>) =>
@@ -2350,7 +2448,7 @@ function spendSelection(
     );
   return {
     ...state,
-    cpu: cpuReducer(state.cpu, { type: "SPEND", action, surcharge }),
+    cpu: cpuReducer(state.cpu, { type: "SPEND", action, surcharge, free }),
     hand: state.hand.filter((id) => !removed.has(id)),
     selected: [],
     inspections: keep(state.inspections),
@@ -2912,10 +3010,11 @@ function applyTableAction(
         return refuse(state, "Select at least one card to discard.");
       }
       const surcharge = discardSurcharge(scenario, state);
-      if (!canAfford(state.cpu, "DISCARD", surcharge)) {
+      const free = freeDiscardNow(state);
+      if (!canAfford(state.cpu, "DISCARD", surcharge, free)) {
         return refuse(
           state,
-          `Discard needs ${costOf("DISCARD", surcharge)} CPU.`
+          `Discard needs ${costOf("DISCARD", surcharge, free)} CPU.`
         );
       }
       const late = clockRefusal(scenario, state, "DISCARD", "Discard");
@@ -2932,7 +3031,8 @@ function applyTableAction(
               "DISCARD"
             ),
             "DISCARD",
-            surcharge
+            surcharge,
+            free
           )
         )
       );
@@ -2941,7 +3041,7 @@ function applyTableAction(
         lastEvent: nextEvent(
           state,
           "DISCARDED",
-          `Discarded ${count} card${count === 1 ? "" : "s"}.${settled.clock !== null && settled.status === "REVIEWING" ? ` ${hoursText(settled.clock)} left.` : ""}${outcome ? ` ${outcome}` : ""}`
+          `Discarded ${count} card${count === 1 ? "" : "s"}.${free ? ` ${freeDiscardSources(state)}: a free discard.` : ""}${settled.clock !== null && settled.status === "REVIEWING" ? ` ${hoursText(settled.clock)} left.` : ""}${outcome ? ` ${outcome}` : ""}`
         ),
       };
     }
@@ -3497,12 +3597,16 @@ function applyTableAction(
 /** What the score timeline needs from the scenario to narrate a hand. */
 function timelineContext(
   scenario: Scenario,
+  state: TableState,
   roundScoreBefore: number
 ): TimelineContext {
   return {
     roundScoreBefore,
     target: scenario.blind.quota,
     cardNames: Object.fromEntries(scenario.deck.map((c) => [c.id, c.number])),
+    relicNames: Object.fromEntries(
+      [...state.relics, ...state.sites].map((r) => [r.id, r.name])
+    ),
     zeroRuleLabels: Object.fromEntries(
       scenario.rulebook.rules
         .filter((r) => r.severity === "FATAL")
@@ -3536,7 +3640,9 @@ function firedEffects(steps: readonly TimelineStep[]): ScoreLogEffect[] {
         return [
           {
             kind: "RELIC",
-            label: step.relicId,
+            label: step.cardId
+              ? `${step.relicId} · ${step.cardId}`
+              : step.relicId,
             effect:
               [
                 signedPart(step.chips, "Chips"),
@@ -3568,13 +3674,13 @@ function firedEffects(steps: readonly TimelineStep[]): ScoreLogEffect[] {
  * playback shows, so the two cannot disagree. Rule evidence is left out, so
  * no closed-session value reaches the log.
  */
-function scoreLogOf(
-  scenario: Scenario,
-  plays: readonly PlayedHand[]
-): ScoreLogEntry[] {
+function scoreLogOf(scenario: Scenario, state: TableState): ScoreLogEntry[] {
   let before = 0;
-  return plays.map(({ evaluation }) => {
-    const steps = scoreTimeline(evaluation, timelineContext(scenario, before));
+  return state.plays.map(({ evaluation }) => {
+    const steps = scoreTimeline(
+      evaluation,
+      timelineContext(scenario, state, before)
+    );
     before += evaluation.score;
     const zero = steps.find((step) => step.kind === "ZERO_RULE");
     return {
@@ -3626,11 +3732,8 @@ export function deriveTableView(
     if (faceDown) stamps.push("BLINDED");
     if (stale) stamps.push("STALE");
     if (openRedlines > 0) stamps.push("REDLINE");
-    // QC ✓ only once every cell is reviewed, so it never vouches for a
-    // defect the player has not looked for.
     if (
-      (review && review.reviewedCells === review.totalCells && !openRedlines) ||
-      (km && inspection && !openRedlines)
+      qcPassed(review, km !== null && inspection !== undefined, openRedlines)
     ) {
       stamps.push("QC_PASS");
     }
@@ -3819,13 +3922,15 @@ export function deriveTableView(
   const handsLeft =
     limit === null ? null : Math.max(0, limit - state.handsPlayed);
   const surcharge = discardSurcharge(scenario, state);
-  const discardCost = costOf("DISCARD", surcharge);
+  const discardFree = freeDiscardNow(state);
+  const discardCost = costOf("DISCARD", surcharge, discardFree);
   const cpuHands = Math.floor(state.cpu.available / CPU_COSTS.PLAY_HAND);
   const lastTimeline = state.lastPlay
     ? scoreTimeline(
         state.lastPlay.evaluation,
         timelineContext(
           scenario,
+          state,
           state.roundScore - state.lastPlay.evaluation.score
         )
       )
@@ -3848,13 +3953,13 @@ export function deriveTableView(
     ),
     handsAffordable:
       handsLeft === null ? cpuHands : Math.min(cpuHands, handsLeft),
-    discardsAffordable: Math.floor(state.cpu.available / discardCost),
+    discardsAffordable: discardsAffordable(state, surcharge),
     canPlay: blocked === null,
     playBlocker: blocked,
     canDiscard:
       reviewing &&
       state.selected.length > 0 &&
-      canAfford(state.cpu, "DISCARD", surcharge) &&
+      canAfford(state.cpu, "DISCARD", surcharge, discardFree) &&
       clockRefusal(scenario, state, "DISCARD", "Discard") === null,
     canInspect:
       reviewing &&
@@ -3863,7 +3968,7 @@ export function deriveTableView(
       clockRefusal(scenario, state, "INSPECT", "Inspect") === null,
     inspection,
     lastTimeline,
-    scoreLog: scoreLogOf(scenario, state.plays),
+    scoreLog: scoreLogOf(scenario, state),
     snapshot: snapshotRef(currentSnapshot(state)),
     staleSelected,
     playBlockedReason:
@@ -3893,6 +3998,10 @@ export function deriveTableView(
     modifiers: activeModifiers(scenario, state),
     handsLeft,
     discardCost,
+    discardFree,
+    cpuAllocation:
+      scenario.table.startingCpu +
+      blindStartCpu(state.opening.inventory.relics ?? []),
     firewall,
     auditLog: state.auditLog,
     figureInspection,

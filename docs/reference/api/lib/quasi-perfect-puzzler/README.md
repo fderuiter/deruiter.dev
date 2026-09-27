@@ -64,6 +64,12 @@ Re-exports [CompilerLogEntry](../quasi-perfect/types/interfaces/CompilerLogEntry
 
 ***
 
+### computeLevelStars
+
+Re-exports [computeLevelStars](../quasi-perfect/ram/functions/computeLevelStars.md)
+
+***
+
 ### EducationalConcept
 
 Re-exports [EducationalConcept](../quasi-perfect/types/interfaces/EducationalConcept.md)
@@ -103,6 +109,12 @@ Re-exports [GameProgressState](../quasi-perfect/types/interfaces/GameProgressSta
 ### generateLeanProofScript
 
 Re-exports [generateLeanProofScript](../quasi-perfect/engine/functions/generateLeanProofScript.md)
+
+***
+
+### getStartingRam
+
+Re-exports [getStartingRam](../quasi-perfect/ram/functions/getStartingRam.md)
 
 ***
 
@@ -175,6 +187,12 @@ Re-exports [resolveHypothesis](../quasi-perfect/tactics/functions/resolveHypothe
 ### simplifyNode
 
 Re-exports [simplifyNode](../quasi-perfect/engine/functions/simplifyNode.md)
+
+***
+
+### STORY\_RAM\_MULTIPLIER
+
+Re-exports [STORY_RAM_MULTIPLIER](../quasi-perfect/ram/variables/STORY_RAM_MULTIPLIER.md)
 
 ***
 

@@ -13,6 +13,11 @@ import { useAnnouncer } from "@/hooks/useAnnouncer";
 import { puzzleLevels } from "@/lib/quasi-perfect/levels";
 import { tacticDefs } from "@/lib/quasi-perfect/tactics";
 import {
+  STORY_RAM_MULTIPLIER,
+  computeLevelStars,
+  getStartingRam,
+} from "@/lib/quasi-perfect";
+import {
   CompilerLogEntry,
   GameMode,
   GameProgressState,
@@ -130,7 +135,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
   const activeHypotheses = activeSubgoal.hypotheses;
 
   const [currentRam, setCurrentRam] = useState<number>(
-    gameMode === "story" ? 99 : currentLevel.initialRam
+    getStartingRam(currentLevel, gameMode)
   );
   const [proofSteps, setProofSteps] = useState<LeanProofStep[]>([]);
   const [history, setHistory] = useState<StepHistory[]>([]);
@@ -157,11 +162,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
   const handleToggleMode = useCallback(
     (mode: GameMode) => {
       setGameMode(mode);
-      if (mode === "hacker") {
-        setCurrentRam(currentLevel.initialRam);
-      } else {
-        setCurrentRam(99);
-      }
+      setCurrentRam(getStartingRam(currentLevel, mode));
       if (typeof window !== "undefined") {
         try {
           localStorage.setItem(MODE_STORAGE_KEY, mode);
@@ -170,7 +171,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
         }
       }
     },
-    [currentLevel.initialRam]
+    [currentLevel]
   );
 
   // SSR-Safe progress state
@@ -235,7 +236,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
         },
       ]);
       setActiveGoalIndex(0);
-      setCurrentRam(gameMode === "story" ? 99 : targetLvl.initialRam);
+      setCurrentRam(getStartingRam(targetLvl, gameMode));
       setProofSteps([]);
       setHistory([]);
       setRedoHistory([]);
@@ -280,12 +281,8 @@ export const QuasiPerfectPuzzler: React.FC = () => {
 
       if (!tactic) return;
 
-      // Check RAM availability (enforced strictly in Hacker mode)
-      if (
-        gameMode === "hacker" &&
-        currentRam < tactic.baseRamCost &&
-        tactic.id !== "sorry"
-      ) {
+      // Check RAM availability
+      if (currentRam < tactic.baseRamCost && tactic.id !== "sorry") {
         addLog(
           `FATAL ERROR: Insufficient RAM for tactic '${tactic.name}'. Required: ${tactic.baseRamCost} GB, Available: ${currentRam.toFixed(1)} GB.`,
           "error"
@@ -320,10 +317,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
       );
 
       if (result.success) {
-        const nextRam =
-          gameMode === "story"
-            ? 99
-            : Math.max(0, currentRam - result.ramConsumed);
+        const nextRam = Math.max(0, currentRam - result.ramConsumed);
 
         // Record history snapshot
         setHistory((prev) => [
@@ -402,17 +396,12 @@ export const QuasiPerfectPuzzler: React.FC = () => {
             tactic.id === "sorry" ||
             updatedSteps.some((s) => s.tacticId === "sorry");
 
-          let stars = 1;
-          if (!usedSorry) {
-            if (gameMode === "story") {
-              stars = 3;
-            } else {
-              if (nextRam >= currentLevel.goldRamTarget) stars = 3;
-              else if (nextRam >= currentLevel.silverRamTarget) stars = 2;
-            }
-          } else {
-            stars = 0;
-          }
+          const stars = computeLevelStars(
+            currentLevel,
+            gameMode,
+            nextRam,
+            usedSorry
+          );
 
           const score: LevelScore = {
             levelId: currentLevel.id,
@@ -434,9 +423,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
               "assertive"
             );
             addLog(
-              `✔ Q.E.D. All goals closed! Theorem verified${
-                gameMode === "hacker" ? ` in ${nextRam.toFixed(1)} GB.` : "!"
-              }`,
+              `✔ Q.E.D. All goals closed! Theorem verified with ${nextRam.toFixed(1)} GB to spare.`,
               "success"
             );
           } else {
@@ -466,15 +453,12 @@ export const QuasiPerfectPuzzler: React.FC = () => {
         }
       } else {
         // Failed step: deduct failure penalty in hacker mode
-        const nextRam =
-          gameMode === "story"
-            ? 99
-            : Math.max(0, currentRam - result.ramConsumed);
+        const nextRam = Math.max(0, currentRam - result.ramConsumed);
         setCurrentRam(nextRam);
         addLog(result.message, "error");
         playNote(130.81, 0.2); // Low error buzz
 
-        if (gameMode === "hacker" && nextRam <= 0) {
+        if (nextRam <= 0) {
           addLog(
             "FATAL ERROR: Lean Language Server crashed (OOM). Garbage collector exhausted.",
             "error"
@@ -641,7 +625,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
     }
   };
 
-  const isOOM = gameMode === "hacker" && currentRam <= 0 && !levelSolved;
+  const isOOM = currentRam <= 0 && !levelSolved;
 
   // Filtered levels based on chapter tab
   const filteredLevels = useMemo(() => {
@@ -885,7 +869,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
                 </span>
                 {gameMode === "story" && (
                   <span className="text-[9px] font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-500/30 px-1.5 py-0.2 rounded">
-                    STORY MODE
+                    STORY MODE · {STORY_RAM_MULTIPLIER}× RAM
                   </span>
                 )}
               </div>
@@ -937,15 +921,13 @@ export const QuasiPerfectPuzzler: React.FC = () => {
             </div>
           )}
 
-          {/* Lean Server RAM Gauge (Hacker Mode Only) */}
-          {gameMode === "hacker" && (
-            <div className="mt-4">
-              <RAMGauge
-                currentRam={currentRam}
-                initialRam={currentLevel.initialRam}
-              />
-            </div>
-          )}
+          {/* Lean Server RAM Gauge (Story Mode gets a double budget) */}
+          <div className="mt-4">
+            <RAMGauge
+              currentRam={currentRam}
+              initialRam={getStartingRam(currentLevel, gameMode)}
+            />
+          </div>
 
           {/* OOM Server Crash Alert */}
           {isOOM && (

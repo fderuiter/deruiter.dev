@@ -50,6 +50,12 @@ Re-exports [CompilerLogEntry](types/interfaces/CompilerLogEntry.md)
 
 ***
 
+### computeLevelStars
+
+Re-exports [computeLevelStars](ram/functions/computeLevelStars.md)
+
+***
+
 ### EducationalConcept
 
 Re-exports [EducationalConcept](types/interfaces/EducationalConcept.md)
@@ -89,6 +95,12 @@ Re-exports [GameProgressState](types/interfaces/GameProgressState.md)
 ### generateLeanProofScript
 
 Re-exports [generateLeanProofScript](engine/functions/generateLeanProofScript.md)
+
+***
+
+### getStartingRam
+
+Re-exports [getStartingRam](ram/functions/getStartingRam.md)
 
 ***
 
@@ -161,6 +173,12 @@ Re-exports [resolveHypothesis](tactics/functions/resolveHypothesis.md)
 ### simplifyNode
 
 Re-exports [simplifyNode](engine/functions/simplifyNode.md)
+
+***
+
+### STORY\_RAM\_MULTIPLIER
+
+Re-exports [STORY_RAM_MULTIPLIER](ram/variables/STORY_RAM_MULTIPLIER.md)
 
 ***
 

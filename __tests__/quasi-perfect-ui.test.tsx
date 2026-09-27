@@ -178,15 +178,16 @@ describe("QuasiPerfectPuzzler UI Component Suite", () => {
     expect(container.textContent).not.toContain("1. Mathematical Intuition");
   });
 
-  it("switches between Story Mode and Hacker Mode with RAM gauge visibility", async () => {
+  it("switches between Story Mode and Hacker Mode RAM budgets", async () => {
     await act(async () => {
       root = createRoot(container);
       root.render(<QuasiPerfectPuzzler />);
     });
 
-    // Initially in Story Mode, RAM gauge is hidden
+    // Story Mode shows a real RAM budget, double the Hacker Mode one
     expect(container.textContent).toContain("STORY MODE");
-    expect(container.textContent).not.toContain("16.0 / 16 GB");
+    expect(container.textContent).toContain("32.0 / 32 GB");
+    expect(container.textContent).not.toContain("99");
 
     // Switch to Hacker Mode
     const hackerBtn = Array.from(container.querySelectorAll("button")).find(

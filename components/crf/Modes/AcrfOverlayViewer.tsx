@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { StudyProtocol } from "@/lib/crf/types";
 import type { SdtmMappingRow } from "@/lib/crf/export-acrf";
@@ -29,7 +29,9 @@ export const AcrfOverlayViewer: React.FC<AcrfOverlayViewerProps> = ({
   onOpenExportModal,
   onOpenBranding,
 }) => {
-  const branding = getStudyBranding(study);
+  // getStudyBranding builds a new object per call; memoizing keeps the
+  // regeneration effect below from re-running on every render (#1199).
+  const branding = useMemo(() => getStudyBranding(study), [study]);
   const [viewMode, setViewMode] = useState<AcrfViewMode>("single_form");
   const [selectedFormId, setSelectedFormId] = useState(
     activeFormId || study.forms[0]?.id || ""

@@ -28,6 +28,11 @@ import {
 } from "@/lib/crf/ast-evaluator";
 import { CRFField, CRFForm, StudyProtocol } from "@/lib/crf/types";
 import { computeFormHealthMetrics } from "@/lib/crf/form-health";
+import {
+  LOON_MAX_HITS,
+  resolveLoonCollision,
+  type Target as LoonTarget,
+} from "@/lib/laser-loon";
 import { autoFixAllViolations } from "@/lib/crf/cdisc-conformance-linter";
 import {
   createInitialState,
@@ -1267,6 +1272,35 @@ describe("Defect Remediation & Regression Verification Suite (Invariant #11)", (
       const pageCount = Number(pdfSource.match(/\/Count\s+(\d+)\b/)?.[1]);
 
       expect(pageCount).toBe(3);
+    });
+  });
+
+  describe("Laser Loon - enemy contact costs the loon a hit (#1186)", () => {
+    it("an enemy touching the loon takes a hit, and the shield absorbs it", () => {
+      const enemy = fromPartial<LoonTarget>({
+        x: 120,
+        y: 180,
+        radius: 20,
+        hp: 1,
+        frozenTimer: 0,
+      });
+      const input = {
+        targets: [enemy],
+        loonX: 120,
+        loonY: 180,
+        hitsLeft: LOON_MAX_HITS,
+        invulnerableUntil: 0,
+        now: 1000,
+        shielded: false,
+      };
+
+      const hit = resolveLoonCollision(input);
+      expect(hit.outcome).toBe("hit");
+      expect(hit.hitsLeft).toBe(LOON_MAX_HITS - 1);
+
+      const blocked = resolveLoonCollision({ ...input, shielded: true });
+      expect(blocked.outcome).toBe("blocked");
+      expect(blocked.hitsLeft).toBe(LOON_MAX_HITS);
     });
   });
 });

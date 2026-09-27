@@ -8,6 +8,12 @@
 
 ## References
 
+### applyCanvasScale
+
+Re-exports [applyCanvasScale](core/viewport/functions/applyCanvasScale.md)
+
+***
+
 ### ArcadeEngine
 
 Re-exports [ArcadeEngine](core/engine/classes/ArcadeEngine.md)
@@ -56,9 +62,21 @@ Re-exports [calculateScoreMultiplier](utils/functions/calculateScoreMultiplier.m
 
 ***
 
+### CanvasResolution
+
+Re-exports [CanvasResolution](core/viewport/interfaces/CanvasResolution.md)
+
+***
+
 ### clamp
 
 Re-exports [clamp](utils/functions/clamp.md)
+
+***
+
+### computeCanvasResolution
+
+Re-exports [computeCanvasResolution](core/viewport/functions/computeCanvasResolution.md)
 
 ***
 
@@ -143,6 +161,12 @@ Re-exports [lerp](utils/functions/lerp.md)
 ### loadCRTCalibration
 
 Re-exports [loadCRTCalibration](crt-pipeline/functions/loadCRTCalibration.md)
+
+***
+
+### MAX\_CANVAS\_DPR
+
+Re-exports [MAX_CANVAS_DPR](core/viewport/variables/MAX_CANVAS_DPR.md)
 
 ***
 

@@ -462,7 +462,49 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
         }
       }
 
-      // 2. Date validation (Precision dates & future date checks)
+      // 2. Range checks (#1200). An out-of-range value follows the same tier
+      // as a missing one: Hard Stop blocks the save, anything else saves and
+      // raises a discrepancy query for the site to confirm or correct.
+      if (
+        !isEmpty &&
+        !hasNullFlavor &&
+        (field.dataType === "number" || field.dataType === "integer")
+      ) {
+        const num = Number(val);
+        const belowMin = field.minValue !== undefined && num < field.minValue;
+        const aboveMax = field.maxValue !== undefined && num > field.maxValue;
+        if (Number.isFinite(num) && (belowMin || aboveMax)) {
+          const expected =
+            field.minValue !== undefined && field.maxValue !== undefined
+              ? `between ${field.minValue} and ${field.maxValue}`
+              : field.minValue !== undefined
+                ? `at least ${field.minValue}`
+                : `at most ${field.maxValue}`;
+          const rangeMsg = `${field.variableName} is ${num}; expected ${expected}${field.unit ? ` ${field.unit}` : ""}.`;
+          if (isHardStop) {
+            newErrors[field.id] = `${rangeMsg} Correct it to save (Hard Stop).`;
+            hardStopVars.push(field.variableName);
+          } else {
+            autoQueryVars.push(field.variableName);
+            newQueriesToRaise.push({
+              id: generateQueryId(),
+              fieldId: field.id,
+              fieldName: field.variableName,
+              ruleId: `rule_range_${field.id}`,
+              formId: activeForm.id,
+              visitId: activeVisitId,
+              subjectId,
+              status: "Open",
+              severity: "warning",
+              message: `Range check: ${rangeMsg} Please confirm or correct.`,
+              raisedBy: "Range Check Engine",
+              raisedAt: new Date().toISOString(),
+            });
+          }
+        }
+      }
+
+      // 3. Date validation (Precision dates & future date checks)
       if (
         !isEmpty &&
         !hasNullFlavor &&
@@ -505,7 +547,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
     }
 
     if (hardStopVars.length > 0) {
-      const errMsg = `Form submission blocked! ${hardStopVars.length} mandatory field(s) failed hard-stop validation.`;
+      const errMsg = `Form submission blocked! ${hardStopVars.length} field(s) failed hard-stop validation.`;
       setSaveStatus({
         type: "error",
         message: errMsg,
@@ -1375,6 +1417,11 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                                 <input
                                   id={inputId}
                                   type="number"
+                                  min={field.minValue}
+                                  max={field.maxValue}
+                                  step={
+                                    field.dataType === "integer" ? 1 : "any"
+                                  }
                                   aria-invalid={fieldError ? "true" : undefined}
                                   aria-describedby={
                                     fieldError ? errorId : undefined

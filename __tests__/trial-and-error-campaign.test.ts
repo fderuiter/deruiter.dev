@@ -237,7 +237,7 @@ describe("moving to the next act (#924)", () => {
     const pool = ACT_II.bossPool!;
     const drawn = pool[drawInt(SEED, shopped.drawIndex, pool.length)].id;
     expect(next.bossIds).toEqual([DOSE_ESCALATION_SCENARIO.id, drawn]);
-    expect(next.draws.at(-1)).toEqual({
+    expect(next.draws.findLast((d) => d.kind === "BOSS")).toEqual({
       drawIndex: shopped.drawIndex,
       kind: "BOSS",
       id: drawn,
@@ -267,7 +267,7 @@ describe("moving to the next act (#924)", () => {
     expect(view.actIntro).not.toBeNull();
     const big = advanceRun(C, cleared(next), { type: "NEXT_BLIND" });
     expect(ACT_II_CRISES.map((c) => c.id)).toContain(big.table.crisis?.id);
-    expect(big.draws.at(-1)).toMatchObject({
+    expect(big.draws.findLast((d) => d.kind === "CRISIS")).toMatchObject({
       kind: "CRISIS",
       actIndex: 1,
       blindIndex: 1,

@@ -46,6 +46,8 @@ function storeOpen(open: boolean): void {
 interface ScoreLogProps {
   /** The Blind's hands, oldest first, from the view. */
   entries: readonly ScoreLogEntry[];
+  /** The protocol deviation that landed this Blind, after which hand (#1087). */
+  deviation?: { name: string; afterHands: number } | null;
 }
 
 /**
@@ -54,7 +56,7 @@ interface ScoreLogProps {
  * hand. Collapsed by default; the choice is remembered per viewer when
  * storage allows. Entries appear without animation.
  */
-export function ScoreLog({ entries }: ScoreLogProps) {
+export function ScoreLog({ entries, deviation = null }: ScoreLogProps) {
   const stored = useSyncExternalStore(subscribeOpen, readOpen, getServerOpen);
   // The toggle works without storage: this visit's choice wins over it.
   const [choice, setChoice] = useState<boolean | null>(null);
@@ -121,6 +123,14 @@ export function ScoreLog({ entries }: ScoreLogProps) {
                         </li>
                       ))}
                     </ul>
+                  )}
+                  {deviation?.afterHands === i + 1 && (
+                    <p
+                      className="mt-1 text-amber-300"
+                      data-testid="score-log-deviation"
+                    >
+                      Then a protocol deviation: {deviation.name}.
+                    </p>
                   )}
                 </li>
               );

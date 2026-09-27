@@ -145,6 +145,8 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
     label: string;
     shortLabel: string;
     shortcut: string;
+    /** Plain-language tooltip for visitors who don't know the CDISC terms. */
+    description: string;
     icon: React.ReactNode;
   }[] = [
     {
@@ -152,6 +154,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
       label: "Form Designer",
       shortLabel: "Canvas",
       shortcut: "1",
+      description: "Build the open form: add, arrange and configure fields",
       icon: <IconLayoutGrid className="w-3.5 h-3.5" />,
     },
     {
@@ -159,6 +162,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
       label: "Active Form Grid",
       shortLabel: "Form Grid",
       shortcut: "2",
+      description: "Edit every field of the open form in one table",
       icon: <IconFileSpreadsheet className="w-3.5 h-3.5" />,
     },
     {
@@ -166,6 +170,8 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
       label: "Visit Matrix (SoA)",
       shortLabel: "Matrix (SoA)",
       shortcut: "3",
+      description:
+        "Schedule of Assessments: which forms are collected at which visit",
       icon: <IconCalendar className="w-3.5 h-3.5" />,
     },
     {
@@ -173,6 +179,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
       label: "Logic & AST Rules",
       shortLabel: "AST Rules",
       shortcut: "4",
+      description: "Edit checks and show/hide logic, drawn as a graph",
       icon: <IconMathFunction className="w-3.5 h-3.5" />,
     },
     {
@@ -180,6 +187,8 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
       label: "Live 21 CFR EDC",
       shortLabel: "Live EDC",
       shortcut: "5",
+      description:
+        "Enter test data as a clinical site would and see the checks fire",
       icon: <IconShieldCheck className="w-3.5 h-3.5" />,
     },
     {
@@ -187,6 +196,8 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
       label: "Annotated aCRF",
       shortLabel: "aCRF Viewer",
       shortcut: "6",
+      description:
+        "The annotated CRF: each question tagged with its SDTM variable",
       icon: <IconFileCode className="w-3.5 h-3.5" />,
     },
     {
@@ -194,6 +205,8 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
       label: "CDISC / Exports",
       shortLabel: "Exports",
       shortcut: "7",
+      description:
+        "Download the study as JSON, ODM-XML, SAS, R, FHIR, Word or PDF",
       icon: <IconCode className="w-3.5 h-3.5" />,
     },
   ];
@@ -298,6 +311,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
           {/* Conformance Diagnostics Badge */}
           <button
             onClick={onOpenDiagnostics}
+            data-tour="conformance"
             className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono transition-all border shrink-0 ${
               totalIssues > 0
                 ? "bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/20"
@@ -319,7 +333,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
           <button
             onClick={onOpenCdashScaffolder}
             className="inline-flex items-center gap-1 px-2.5 py-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-200 hover:text-white font-mono text-xs font-bold rounded-lg border border-zinc-700 transition-all shrink-0 whitespace-nowrap shadow-xs"
-            title="1-Click CDASH Domain Scaffolder (⌘K)"
+            title="Add a standard CDASH form (Demographics, Vital Signs, Adverse Events and more)"
           >
             <IconSparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
             <span className="hidden sm:inline">+ CDASH Form</span>
@@ -595,6 +609,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
         <nav
           role="tablist"
           aria-label="Studio Mode Navigation"
+          data-tour="modes"
           className="flex items-center gap-1 overflow-x-auto scrollbar-none py-0.5 min-w-0"
         >
           {MODES.map((item) => {
@@ -610,6 +625,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
                 tabIndex={isActive ? 0 : -1}
                 onClick={() => onChangeMode(item.mode)}
                 onKeyDown={(e) => handleModeKeyDown(e, item.mode)}
+                title={`${item.description} (${item.shortcut})`}
                 className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-mono font-semibold transition-all rounded-lg whitespace-nowrap outline-none shrink-0 ${
                   isActive
                     ? "bg-brand-cyan/15 text-brand-cyan font-bold border border-brand-cyan/30 shadow-xs"

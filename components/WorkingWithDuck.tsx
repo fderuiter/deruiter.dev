@@ -20,6 +20,8 @@ import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useAnnouncer } from "@/hooks/useAnnouncer";
 import { useDuckService } from "@/hooks/useDuckService";
 import { useResponsiveCanvas } from "@/hooks/useResponsiveCanvas";
+import { useCanvasResolution } from "@/hooks/useCanvasResolution";
+import { applyCanvasScale } from "@/lib/arcade";
 import {
   IconPlayerPlay,
   IconPlayerPause,
@@ -1929,6 +1931,19 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
     internalHeight: CANVAS_HEIGHT,
     maxDpr: 2.0,
   });
+  // Sharp on HiDPI screens; drawing stays in the 800x500 logical space.
+  const canvasScaleRef = useCanvasResolution({
+    canvasRef,
+    logicalWidth: CANVAS_WIDTH,
+    logicalHeight: CANVAS_HEIGHT,
+    // Resizing clears the bitmap; repaint in case the loop is idle.
+    onResize: (scale) => {
+      const ctx = canvasRef.current?.getContext("2d");
+      if (!ctx) return;
+      applyCanvasScale(ctx, scale);
+      drawCanvas(ctx, gameStateRef.current, aimParkStartRef.current);
+    },
+  });
   const containerRef = useRef<HTMLDivElement>(null);
 
   const [_isNearViewport, setIsNearViewport] = useState<boolean>(() => {
@@ -2189,6 +2204,8 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
       if (canvas) {
         const ctx = canvas.getContext("2d");
         if (ctx) {
+          const scale = canvasScaleRef.current;
+          applyCanvasScale(ctx, scale);
           drawCanvas(ctx, gameStateRef.current, aimParkStartRef.current);
         }
       }
@@ -2208,7 +2225,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
         cancelAnimationFrame(animFrameIdRef.current);
       }
     };
-  }, [applyTransition]);
+  }, [applyTransition, canvasScaleRef]);
 
   // Keyboard Shortcuts (1-4 for hotbar items, Q-W-E-R for tricks, Space for coding/jumping)
   useEffect(() => {

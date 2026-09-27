@@ -32,7 +32,8 @@ test("desktop start keeps the Next instruction in view", async ({
     ratio: 1,
   });
   const canvas = page.locator("canvas[role='application']");
-  await expect(canvas).toHaveAttribute("height", "150");
+  // The desktop layout; the bitmap itself is scaled for the screen (#1180).
+  await expect(canvas).toHaveAttribute("data-logical-height", "150");
   // #834: the first-shift walkthrough sits below the Next instruction.
   await expect(
     page.getByRole("region", { name: "First-shift calibration" })
@@ -122,19 +123,19 @@ test("phone fallback keeps a visible compact and selectable canvas", async ({
     [390, 60, "SUBJ-1001"],
   ] as const) {
     await page.setViewportSize({ width, height: 844 });
-    // Wait for the ResizeObserver to size the bitmap for this width
+    // Wait for the ResizeObserver to size the layout for this width
     await expect
       .poll(() =>
         canvas.evaluate(
           (element: HTMLCanvasElement) =>
-            element.height ===
+            Number(element.dataset.logicalHeight) ===
             Math.round((element.getBoundingClientRect().width * 5) / 13)
         )
       )
       .toBe(true);
     const canvasSize = await canvas.evaluate((element: HTMLCanvasElement) => ({
-      width: element.width,
-      height: element.height,
+      width: Number(element.dataset.logicalWidth),
+      height: Number(element.dataset.logicalHeight),
     }));
     expect(canvasSize.width).toBeLessThanOrEqual(500);
     expect(canvasSize.width).toBeGreaterThanOrEqual(200);

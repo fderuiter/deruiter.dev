@@ -88,7 +88,8 @@ describe("Act III: Phase III Blinded Pivotal (#1085)", () => {
     for (const seed of ["alpha", "bravo", "e2e-4"]) {
       const run = createRunState(ACT_III, seed);
       expect(run.bossIds[0]).toBe(LOCK.id);
-      expect(run.draws).toEqual([]);
+      // A pool of one is fixed, not drawn; only a deviation may be (#1087).
+      expect(run.draws.filter((d) => d.kind !== "DEVIATION")).toEqual([]);
     }
   });
 

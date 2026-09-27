@@ -43,6 +43,7 @@ import { FieldManualButton } from "@/components/FieldManualButton";
 import { FullscreenButton } from "@/components/arcade/FullscreenButton";
 import { DynamicTabletOrientationHint as TabletOrientationHint } from "@/components/arcade/DynamicTabletOrientationHint";
 import { useGameFullscreen as useFullscreen } from "@/components/arcade/CabinetFullscreen";
+import { applyCanvasScale, computeCanvasResolution } from "@/lib/arcade";
 
 import {
   CDISCDomain,
@@ -395,6 +396,9 @@ export const ClinicalTrialChaos: React.FC = () => {
   // 4. DOM & Canvas references
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  // Logical conveyor size the renderer and hit-testing work in; the backing
+  // store is this times the device pixel ratio so it stays sharp on HiDPI.
+  const conveyorViewRef = useRef({ width: 760, height: 150, scale: 1 });
   const lastPointerTimeRef = useRef(0);
   const lastTouchTimeRef = useRef(0);
   const isPointerDownRef = useRef(false);
@@ -1122,15 +1126,12 @@ export const ClinicalTrialChaos: React.FC = () => {
         submittedSubjectIdsRef.current.add(subj.id);
         triggerSound("sign");
         triggerSound("chute");
-        const sparkleCanvas = canvasRef.current;
-        if (sparkleCanvas) {
-          spawnSparkles(
-            sparkleCanvas.width / 2,
-            getConveyorGeometry(sparkleCanvas.width, sparkleCanvas.height)
-              .beltY,
-            "#38bdf8"
-          );
-        }
+        const view = conveyorViewRef.current;
+        spawnSparkles(
+          view.width / 2,
+          getConveyorGeometry(view.width, view.height).beltY,
+          "#38bdf8"
+        );
         setFlashStationId(domain);
         setTimeout(() => setFlashStationId(null), 700);
         addAuditLog(
@@ -1490,11 +1491,28 @@ export const ClinicalTrialChaos: React.FC = () => {
       const logicalWidth = displayWidth < 768 ? displayWidth : 760;
       const logicalHeight =
         displayWidth < 768 ? Math.round((displayWidth * 5) / 13) : 150;
-      if (canvas.width !== logicalWidth || canvas.height !== logicalHeight) {
-        canvas.width = logicalWidth;
-        canvas.height = logicalHeight;
+      const resolution = computeCanvasResolution(
+        logicalWidth,
+        logicalHeight,
+        displayWidth,
+        window.devicePixelRatio
+      );
+      conveyorViewRef.current = {
+        width: logicalWidth,
+        height: logicalHeight,
+        scale: resolution.scale,
+      };
+      // The bitmap is device pixels; expose the logical layout for tests.
+      canvas.dataset.logicalWidth = String(logicalWidth);
+      canvas.dataset.logicalHeight = String(logicalHeight);
+      if (
+        canvas.width !== resolution.width ||
+        canvas.height !== resolution.height
+      ) {
+        canvas.width = resolution.width;
+        canvas.height = resolution.height;
         // Resizing clears the bitmap; let the static-frame effect redraw it.
-        setCanvasSize(`${logicalWidth}x${logicalHeight}`);
+        setCanvasSize(`${resolution.width}x${resolution.height}`);
       }
       // The CSS box follows the bitmap chosen from the canvas's own width,
       // not a viewport breakpoint, so the drawing is never stretched. Set it
@@ -1922,10 +1940,12 @@ export const ClinicalTrialChaos: React.FC = () => {
       if (canvas) {
         const ctx = canvas.getContext("2d");
         if (ctx) {
+          const view = conveyorViewRef.current;
+          applyCanvasScale(ctx, view.scale);
           renderConveyorCanvasRef.current(
             ctx,
-            canvas.width,
-            canvas.height,
+            view.width,
+            view.height,
             auditorRef.current,
             conveyorSubjectsRef.current,
             particlesRef.current
@@ -1968,10 +1988,12 @@ export const ClinicalTrialChaos: React.FC = () => {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
     if (canvas && ctx) {
+      const view = conveyorViewRef.current;
+      applyCanvasScale(ctx, view.scale);
       renderConveyorCanvas(
         ctx,
-        canvas.width,
-        canvas.height,
+        view.width,
+        view.height,
         auditor,
         conveyorSubjects,
         particlesRef.current
@@ -2159,10 +2181,11 @@ export const ClinicalTrialChaos: React.FC = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
-    const x = (clientX - rect.left) * (canvas.width / rect.width);
-    const y = (clientY - rect.top) * (canvas.height / rect.height);
+    const view = conveyorViewRef.current;
+    const x = (clientX - rect.left) * (view.width / rect.width);
+    const y = (clientY - rect.top) * (view.height / rect.height);
     const { subjectTop, subjectHeight, visibleSlots, slotWidth } =
-      getConveyorGeometry(canvas.width, canvas.height);
+      getConveyorGeometry(view.width, view.height);
 
     if (y >= subjectTop && y <= subjectTop + subjectHeight) {
       getVisibleSubjects(

@@ -130,6 +130,14 @@ CSR Lock's sequence slots and lock, or null outside it.
 
 ***
 
+### deviation
+
+> **deviation**: [`DeviationView`](DeviationView.md) \| `null`
+
+The protocol deviation that landed this Blind (#1087), or null.
+
+***
+
 ### discardCost
 
 > **discardCost**: `number`

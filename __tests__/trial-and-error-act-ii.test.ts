@@ -102,7 +102,8 @@ describe("Act II boss draw", () => {
       expect(run.bossIds[0]).not.toBeNull();
       expect(ACT_II.bossPool?.some((b) => b.id === run.bossIds[0])).toBe(true);
       expect(createRunState(ACT_II, seed).bossIds[0]).toBe(run.bossIds[0]);
-      expect(run.draws).toEqual([
+      // The Small Blind may also draw a protocol deviation (#1087).
+      expect(run.draws.filter((d) => d.kind === "BOSS")).toEqual([
         {
           drawIndex: 0,
           kind: "BOSS",

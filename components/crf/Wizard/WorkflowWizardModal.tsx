@@ -20,6 +20,7 @@ import {
   IconAlertTriangle,
 } from "@tabler/icons-react";
 import { StudyProtocol, StudioMode, StudyVisit } from "@/lib/crf/types";
+import { formatVisitWindow } from "@/lib/crf/visit-window";
 import {
   StudyProtocolEngine,
   CDASH_DOMAIN_CATALOG,
@@ -655,7 +656,7 @@ export const WorkflowWizardModal: React.FC<WorkflowWizardModalProps> = ({
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2">
                         <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                          Day {visit.targetDay} (±{visit.windowBefore || 0}d)
+                          Day {visit.targetDay} ({formatVisitWindow(visit)})
                         </span>
                         <span className="text-xs font-bold text-white">
                           {visit.name}

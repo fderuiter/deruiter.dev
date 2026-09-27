@@ -17,6 +17,7 @@ import {
   IconX,
 } from "@tabler/icons-react";
 import { StudyProtocol, CRFForm } from "@/lib/crf/types";
+import { formatVisitWindow } from "@/lib/crf/visit-window";
 import {
   CDASH_DOMAIN_CATALOG,
   StudyProtocolEngine,
@@ -462,8 +463,8 @@ export const StudySpine: React.FC<StudySpineProps> = ({
                                     </div>
                                     <div className="flex items-center gap-2 mt-0.5">
                                       <span className="text-[10px] text-zinc-400 font-mono">
-                                        Day {visit.targetDay} (±
-                                        {visit.windowBefore || 3}d)
+                                        Day {visit.targetDay} (
+                                        {formatVisitWindow(visit)})
                                       </span>
                                       <span className="text-[9px] font-mono px-1 rounded bg-zinc-800 text-zinc-400 border border-zinc-700">
                                         {assignedForms.length}{" "}

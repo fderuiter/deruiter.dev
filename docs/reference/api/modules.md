@@ -110,6 +110,7 @@
 - [lib/crf/types](lib/crf/types/README.md)
 - [lib/crf/universal-schema](lib/crf/universal-schema/README.md)
 - [lib/crf/usdm-adapter](lib/crf/usdm-adapter/README.md)
+- [lib/crf/visit-window](lib/crf/visit-window/README.md)
 - [lib/db](lib/db/README.md)
 - [lib/design-manifest](lib/design-manifest/README.md)
 - [lib/domain](lib/domain/README.md)

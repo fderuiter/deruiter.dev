@@ -2053,7 +2053,7 @@ export const LaserLoon: React.FC = () => {
             <div className="flex justify-between items-center text-[10px] font-mono font-bold text-neutral-300 mb-1">
               <span className="text-red-400">{bossName.toUpperCase()}</span>
               <span>
-                {Math.max(0, bossHp)} / {bossMaxHp} HP
+                {Math.max(0, Math.ceil(bossHp))} / {bossMaxHp} HP
               </span>
             </div>
             <div
@@ -2097,7 +2097,7 @@ export const LaserLoon: React.FC = () => {
               }`}
             >
               <IconSparkles className="w-4 h-4" />
-              <span>LOON TREMOLO [SPACE/U] ({ultimateMeter}%)</span>
+              <span>LOON TREMOLO [U] ({ultimateMeter}%)</span>
             </button>
           </div>
         )}
@@ -2220,7 +2220,8 @@ export const LaserLoon: React.FC = () => {
               </output>
               {bossActive && (
                 <output htmlFor="laser-loon-boss">
-                  Boss {bossName}: {Math.max(0, bossHp)} / {bossMaxHp} HP
+                  Boss {bossName}: {Math.max(0, Math.ceil(bossHp))} /{" "}
+                  {bossMaxHp} HP
                 </output>
               )}
             </div>
@@ -2417,9 +2418,9 @@ export const LaserLoon: React.FC = () => {
             </div>
             <div className="flex flex-wrap justify-center gap-4 mt-6 text-[10px] font-mono text-neutral-500">
               <span>MOUSE / WASD: AIM & GLIDE</span>
-              <span>CLICK / DRAG: FIRE LASERS</span>
+              <span>CLICK / DRAG / SPACE: FIRE LASERS</span>
               <span>KEYS 1-4: OPTICS</span>
-              <span>SPACE / U: LOON TREMOLO ULTIMATE</span>
+              <span>U: LOON TREMOLO ULTIMATE</span>
             </div>
           </div>
         )}
@@ -2767,8 +2768,8 @@ export const LaserLoon: React.FC = () => {
       {/* Footer Controls & Toggles */}
       <div className="arcade-shooter-footer w-full max-w-3xl flex flex-wrap gap-2 justify-between items-center px-4 mt-2 text-[10px] font-mono text-neutral-500">
         <span>
-          Controls: Aim &amp; Click / Space to fire · Keys 1-4 for Optics ·
-          Space / U for Tremolo
+          Controls: Aim &amp; Click / Space to fire · Keys 1-4 for Optics · U
+          for Tremolo
         </span>
         <div className="flex items-center gap-4">
           <button

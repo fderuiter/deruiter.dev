@@ -339,6 +339,50 @@ export const StudyEventSchema = z.object({
 /** A scripted study event. */
 export type StudyEvent = z.infer<typeof StudyEventSchema>;
 
+/**
+ * A protocol deviation (#1087): a seeded mid-Blind event that finds a
+ * subject out of line with the protocol and removes them from (or returns
+ * them to) analysis populations. The run's draw decides whether one fires in
+ * a Blind and after which of `afterHands` it lands. The transition's
+ * `effectiveAt` is replaced when it fires: it lands a day after the current
+ * snapshot, so study time only moves forward.
+ */
+export const DeviationEventSchema = z
+  .object({
+    id: identifier,
+    name: z.string().min(1).max(32),
+    /** One line of what the monitor found, in the study's words. */
+    flavor: z.string().min(1).max(200),
+    /** The hands it may land after; the draw picks one. */
+    afterHands: z.array(z.number().int().min(1).max(3)).min(1).max(3),
+    transition: PopulationTransitionSchema,
+  })
+  .superRefine((event, ctx) => {
+    if (event.transition.change === "ENROLL") {
+      ctx.addIssue({
+        code: "custom",
+        path: ["transition", "change"],
+        message: "A deviation moves a subject already in the study",
+      });
+    }
+    if (event.transition.reason !== "PROTOCOL_DEVIATION") {
+      ctx.addIssue({
+        code: "custom",
+        path: ["transition", "reason"],
+        message: "A deviation's transition is a PROTOCOL_DEVIATION",
+      });
+    }
+    if (new Set(event.afterHands).size !== event.afterHands.length) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["afterHands"],
+        message: "A deviation's hands must be distinct",
+      });
+    }
+  });
+/** A seeded protocol deviation. */
+export type DeviationEvent = z.infer<typeof DeviationEventSchema>;
+
 /** Which subjects a column summarises. */
 export const ColumnArmSchema = z.enum(["PLACEBO", "ACTIVE", "TOTAL"]);
 /** A column's arm filter. */
@@ -1665,6 +1709,17 @@ export const ActSchema = z
     blinds: z.array(ScenarioSchema).min(1).max(3),
     bossPool: z.array(ScenarioSchema).min(1).optional(),
     crisisDeck: z.array(CrisisCardSchema).optional(),
+    /**
+     * Protocol deviations (#1087): as each Small or Big Blind starts, the
+     * run's draw fires one with `chancePercent` odds, drawn from `deck`
+     * without replacement across the run.
+     */
+    deviations: z
+      .object({
+        chancePercent: z.number().int().min(1).max(100),
+        deck: z.array(DeviationEventSchema).min(1),
+      })
+      .optional(),
     /** The Procurement Shop between Blinds. Without it there is no shop. */
     shop: ShopCatalogSchema.optional(),
   })
@@ -1738,6 +1793,24 @@ export const ActSchema = z
           });
         }
       });
+    });
+    const deviationIds = new Set<string>();
+    (act.deviations?.deck ?? []).forEach((event, index) => {
+      if (deviationIds.has(event.id)) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["deviations", "deck", index, "id"],
+          message: "Deviation ids must be unique",
+        });
+      }
+      deviationIds.add(event.id);
+      if (!subjectIds.has(event.transition.subjectId)) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["deviations", "deck", index, "transition", "subjectId"],
+          message: "A deviation must name a subject in the snapshot",
+        });
+      }
     });
     (act.shop?.sites ?? []).forEach((site, index) =>
       site.subjects.forEach((subject, j) => {

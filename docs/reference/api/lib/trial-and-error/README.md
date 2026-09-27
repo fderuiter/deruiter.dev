@@ -56,6 +56,12 @@ Re-exports [ACT_II_CRISES](scenarios/variables/ACT_II_CRISES.md)
 
 ***
 
+### ACT\_II\_DEVIATIONS
+
+Re-exports [ACT_II_DEVIATIONS](scenarios/variables/ACT_II_DEVIATIONS.md)
+
+***
+
 ### ACT\_III
 
 Re-exports [ACT_III](scenarios/variables/ACT_III.md)
@@ -65,6 +71,12 @@ Re-exports [ACT_III](scenarios/variables/ACT_III.md)
 ### ACT\_III\_CRISES
 
 Re-exports [ACT_III_CRISES](scenarios/variables/ACT_III_CRISES.md)
+
+***
+
+### ACT\_III\_DEVIATIONS
+
+Re-exports [ACT_III_DEVIATIONS](scenarios/variables/ACT_III_DEVIATIONS.md)
 
 ***
 
@@ -683,6 +695,24 @@ Re-exports [DeskStatus](internal/desk/type-aliases/DeskStatus.md)
 ### DeskView
 
 Re-exports [DeskView](internal/desk/interfaces/DeskView.md)
+
+***
+
+### DeviationEvent
+
+Re-exports [DeviationEvent](types/type-aliases/DeviationEvent.md)
+
+***
+
+### DeviationEventSchema
+
+Re-exports [DeviationEventSchema](types/variables/DeviationEventSchema.md)
+
+***
+
+### DeviationView
+
+Re-exports [DeviationView](internal/table/interfaces/DeviationView.md)
 
 ***
 
@@ -1799,6 +1829,12 @@ Re-exports [SCENARIOS](scenarios/variables/SCENARIOS.md)
 ### ScenarioSchema
 
 Re-exports [ScenarioSchema](types/variables/ScenarioSchema.md)
+
+***
+
+### ScheduledDeviation
+
+Re-exports [ScheduledDeviation](internal/table/interfaces/ScheduledDeviation.md)
 
 ***
 

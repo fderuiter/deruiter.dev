@@ -61,6 +61,7 @@ import { CsrSlots } from "@/components/trial-and-error/CsrSlots";
 import { CsrLockSummary } from "@/components/trial-and-error/CsrLockSummary";
 import { FirewallDialog } from "@/components/trial-and-error/FirewallDialog";
 import { AmendmentDialog } from "@/components/trial-and-error/AmendmentDialog";
+import { DeviationCard } from "@/components/trial-and-error/DeviationCard";
 import { CashOut } from "@/components/trial-and-error/CashOut";
 import { Shop } from "@/components/trial-and-error/Shop";
 import {
@@ -75,7 +76,7 @@ import {
   SEAL_DRAG_TYPE,
 } from "@/components/trial-and-error/cards/HandCard";
 import { handOverlap } from "@/components/trial-and-error/cards/hand-fit";
-import { useResizeObserver } from "@/hooks/useResizeObserver";
+import { useRowWidthRem } from "@/components/trial-and-error/cards/useRowWidthRem";
 import { STAMP_LABELS } from "@/components/trial-and-error/cards/Stamp";
 import {
   ScoreBreakdown,
@@ -430,12 +431,7 @@ export function CardTable({
   } = useTeMotion();
   const animateCards = !reducedMotion;
   const physical = !reducedMotion && !isCompactViewport;
-  const [handWidthRem, setHandWidthRem] = useState(0);
-  const handRef = useResizeObserver<HTMLDivElement>((entry) => {
-    const rem =
-      parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-    setHandWidthRem(entry.contentRect.width / rem);
-  });
+  const [handWidthRem, handRef] = useRowWidthRem();
   const timeline = view.lastTimeline;
   const sound = useTeSound();
   const playback = useScorePlayback(timeline, state.lastPlay, {
@@ -1070,6 +1066,25 @@ export function CardTable({
               </p>
             );
           })}
+          {view.deviation && (
+            <p
+              className="mt-2 border border-amber-400/60 p-2 text-amber-200 break-words"
+              data-testid="deviation-note"
+            >
+              <span className="block font-bold uppercase tracking-wider">
+                Deviation: {view.deviation.name}
+              </span>
+              After hand {view.deviation.afterHands}, {view.deviation.subjectId}{" "}
+              left{" "}
+              {view.deviation.populations
+                .map((p) => POPULATION_LABEL[p])
+                .join(", ")}
+              .{" "}
+              {view.deviation.staled.length === 1
+                ? "1 output went stale."
+                : `${view.deviation.staled.length} outputs went stale.`}
+            </p>
+          )}
           {view.dmcCharter !== null && (
             <div
               className="mt-2 border border-zinc-700 p-2"
@@ -1276,6 +1291,7 @@ export function CardTable({
           <ScoreLog
             // The hand being played joins the log once its playback ends.
             entries={playing ? view.scoreLog.slice(0, -1) : view.scoreLog}
+            deviation={view.deviation}
           />
         </aside>
 
@@ -1679,6 +1695,9 @@ export function CardTable({
                     )
                   }
                 />
+              )}
+              {view.deviation?.fresh && (
+                <DeviationCard deviation={view.deviation} />
               )}
               <div className="mt-3 flex items-end justify-between gap-2 text-[10px] uppercase tracking-wider text-zinc-400">
                 <div

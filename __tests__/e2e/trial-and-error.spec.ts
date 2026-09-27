@@ -13,6 +13,7 @@ import {
 } from "../../lib/trial-and-error";
 import { playBlind } from "../utils/trial-and-error-bot";
 import { amendmentInTray } from "../utils/trial-and-error-amendment-run";
+import { deviationLanded } from "../utils/trial-and-error-deviation-run";
 
 /**
  * A fixed seed makes the crisis draw repeatable (T&E-05): this one deals the
@@ -1438,4 +1439,64 @@ test.describe("Trial & Error SAP Amendments (#1086)", () => {
       await expectNoBlockingViolations(page, `amended table at ${label}`);
     });
   }
+});
+
+test.describe("Trial & Error protocol deviations (#1087)", () => {
+  const save = () => {
+    const { run, actions } = deviationLanded(CAMPAIGN);
+    return serializeRun(
+      { actId: CAMPAIGN.id, seed: run.seed, actions },
+      new Date()
+    );
+  };
+
+  for (const [label, width, fontSize] of [
+    ["320px", 320, "100%"],
+    ["1440px", 1440, "100%"],
+    ["200% zoom", 1280, "200%"],
+  ] as const) {
+    test(`explains a landed deviation and what to do next at ${label}`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await resume(page, save());
+      await page.evaluate((size) => {
+        document.documentElement.style.fontSize = size;
+      }, fontSize);
+      const deviation = page.getByTestId("deviation-card");
+      await expect(deviation).toBeVisible();
+      await expect(
+        deviation.getByRole("heading", { name: /Protocol deviation:/ })
+      ).toBeVisible();
+      await expect(page.getByTestId("deviation-staled")).toContainText(
+        "went stale"
+      );
+      await expect(page.getByTestId("deviation-next")).toContainText(
+        "recompile"
+      );
+      await expect(page.getByTestId("deviation-note")).toContainText(
+        "After hand 1"
+      );
+      await expect(page.getByTestId("score-log-deviation")).toHaveCount(1);
+      await expectNoHorizontalOverflow(page);
+      await expectNoBlockingViolations(page, `deviation at ${label}`);
+    });
+  }
+
+  test("fits a resumed run's hand to its row at 1440px", async ({ page }) => {
+    // The row is not in the DOM while the Resume prompt shows, so it must be
+    // measured when it attaches, not when the table mounts.
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await resume(page, save());
+    const hand = page.getByTestId("hand");
+    await expect(async () => {
+      const fit = await hand.evaluate((el) => ({
+        scroll: el.scrollWidth,
+        client: el.clientWidth,
+        count: el.children.length,
+      }));
+      expect(fit.count).toBe(8);
+      expect(fit.scroll).toBeLessThanOrEqual(fit.client);
+    }).toPass({ timeout: 10000 });
+  });
 });

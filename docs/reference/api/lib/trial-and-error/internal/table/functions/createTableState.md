@@ -6,7 +6,7 @@
 
 # Function: createTableState()
 
-> **createTableState**(`scenario`, `history?`, `inventory?`, `crisis?`): [`TableState`](../interfaces/TableState.md)
+> **createTableState**(`scenario`, `history?`, `inventory?`, `crisis?`, `deviation?`): [`TableState`](../interfaces/TableState.md)
 
 Fresh Card Table state: the first hand dealt against the study's current
 snapshot, CPU replenished to the Blind's allocation. `history` carries
@@ -228,6 +228,10 @@ The short intro card shown when the Blind starts.
 ### crisis?
 
 \{ `choices`: `object`[]; `description`: `string`; `id`: `string`; `name`: `string`; \} \| `null`
+
+### deviation?
+
+[`ScheduledDeviation`](../interfaces/ScheduledDeviation.md) \| `null`
 
 ## Returns
 

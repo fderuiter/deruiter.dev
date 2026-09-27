@@ -240,7 +240,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
           <div className="h-3.5 w-px bg-zinc-800 hidden sm:block shrink-0" />
 
           {/* Protocol Preset Selector */}
-          <div className="flex items-center min-w-0 max-w-[160px] xs:max-w-[200px] sm:max-w-[240px] md:max-w-[280px] shrink">
+          <div className="hidden sm:flex items-center min-w-0 sm:max-w-[240px] md:max-w-[280px] shrink">
             <select
               onChange={(e) => onSelectPreset(e.target.value)}
               value={currentPreset?.id || "custom"}
@@ -263,7 +263,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
         {/* Right Side: Undo/Redo, Diagnostics, Theme & Global Action Buttons */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           {/* Undo / Redo */}
-          <div className="flex items-center gap-0.5 bg-zinc-900 border border-zinc-800 rounded-lg p-0.5 shrink-0">
+          <div className="hidden sm:flex items-center gap-0.5 bg-zinc-900 border border-zinc-800 rounded-lg p-0.5 shrink-0">
             <button
               onClick={onUndo}
               disabled={!canUndo}
@@ -288,7 +288,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
           {onToggleTheme && (
             <button
               onClick={onToggleTheme}
-              className="p-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 transition-colors inline-flex items-center gap-1 text-[11px] font-mono shrink-0"
+              className="p-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 transition-colors hidden sm:inline-flex items-center gap-1 text-[11px] font-mono shrink-0"
               title={
                 theme === "light"
                   ? "Switch to Dark Studio Mode"
@@ -312,7 +312,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
           <button
             onClick={onOpenDiagnostics}
             data-tour="conformance"
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono transition-all border shrink-0 ${
+            className={`hidden lg:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono transition-all border shrink-0 ${
               totalIssues > 0
                 ? "bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/20"
                 : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white"
@@ -332,7 +332,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
           {/* Primary 1-Click CDASH Quick Scaffolder Button */}
           <button
             onClick={onOpenCdashScaffolder}
-            className="inline-flex items-center gap-1 px-2.5 py-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-200 hover:text-white font-mono text-xs font-bold rounded-lg border border-zinc-700 transition-all shrink-0 whitespace-nowrap shadow-xs"
+            className="hidden xl:inline-flex items-center gap-1 px-2.5 py-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-200 hover:text-white font-mono text-xs font-bold rounded-lg border border-zinc-700 transition-all shrink-0 whitespace-nowrap shadow-xs"
             title="Add a standard CDASH form (Demographics, Vital Signs, Adverse Events and more)"
           >
             <IconSparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
@@ -416,7 +416,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
                   className="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs 2xl:hidden"
                   onClick={() => setIsMoreMenuOpen(false)}
                 />
-                <div className="absolute right-0 top-full mt-2 w-72 bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl p-3 z-50 2xl:hidden space-y-1 animate-in fade-in zoom-in-95 duration-150">
+                <div className="absolute right-0 top-full mt-2 w-[min(18rem,calc(100vw-5rem))] max-h-[75dvh] overflow-y-auto bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl p-3 z-50 2xl:hidden space-y-1 animate-in fade-in zoom-in-95 duration-150">
                   <div className="flex items-center justify-between pb-2 mb-2 border-b border-zinc-800 px-1">
                     <span className="text-xs font-bold font-mono text-zinc-300 uppercase">
                       Studio Actions
@@ -428,6 +428,77 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
                       <IconX className="w-3.5 h-3.5" />
                     </button>
                   </div>
+
+                  <div className="sm:hidden grid grid-cols-2 gap-2 pb-2 border-b border-zinc-800">
+                    <button
+                      onClick={() => {
+                        setIsMoreMenuOpen(false);
+                        onUndo();
+                      }}
+                      disabled={!canUndo}
+                      className="rounded-lg bg-zinc-950 px-3 py-2 text-xs text-zinc-200 disabled:opacity-40 active:scale-[0.98]"
+                    >
+                      Undo
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsMoreMenuOpen(false);
+                        onRedo();
+                      }}
+                      disabled={!canRedo}
+                      className="rounded-lg bg-zinc-950 px-3 py-2 text-xs text-zinc-200 disabled:opacity-40 active:scale-[0.98]"
+                    >
+                      Redo
+                    </button>
+                    {onToggleTheme && (
+                      <button
+                        onClick={() => {
+                          setIsMoreMenuOpen(false);
+                          onToggleTheme();
+                        }}
+                        className="rounded-lg bg-zinc-950 px-3 py-2 text-xs text-zinc-200 active:scale-[0.98]"
+                      >
+                        {theme === "light" ? "Dark mode" : "Light mode"}
+                      </button>
+                    )}
+                    <button
+                      onClick={() => {
+                        setIsMoreMenuOpen(false);
+                        onOpenDiagnostics();
+                      }}
+                      className="rounded-lg bg-zinc-950 px-3 py-2 text-xs text-zinc-200 active:scale-[0.98]"
+                    >
+                      Diagnostics
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsMoreMenuOpen(false);
+                        onOpenCdashScaffolder();
+                      }}
+                      className="col-span-2 rounded-lg bg-zinc-950 px-3 py-2 text-xs text-zinc-200 active:scale-[0.98]"
+                    >
+                      Add CDASH form
+                    </button>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setIsMoreMenuOpen(false);
+                      onOpenDiagnostics();
+                    }}
+                    className="hidden sm:block lg:hidden w-full rounded-lg bg-zinc-950 px-3 py-2 text-left text-xs text-zinc-200 active:scale-[0.98]"
+                  >
+                    Conformance diagnostics
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsMoreMenuOpen(false);
+                      onOpenCdashScaffolder();
+                    }}
+                    className="hidden sm:block xl:hidden w-full rounded-lg bg-zinc-950 px-3 py-2 text-left text-xs text-zinc-200 active:scale-[0.98]"
+                  >
+                    Add CDASH form
+                  </button>
 
                   <button
                     onClick={() => {
@@ -603,14 +674,41 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
         </div>
       </div>
 
+      <div className="sm:hidden px-3 pb-2">
+        <select
+          value={currentPreset?.id || "custom"}
+          onChange={(event) => onSelectPreset(event.target.value)}
+          aria-label="Select Clinical Protocol Preset"
+          className="w-full min-w-0 rounded-lg border border-zinc-800 bg-zinc-900 px-2.5 py-2 text-xs font-mono text-zinc-200 focus:border-brand-cyan focus:outline-none focus:ring-1 focus:ring-brand-cyan"
+        >
+          {presets.map((preset) => (
+            <option key={preset.id} value={preset.id}>
+              {preset.name} ({preset.study.protocolNumber})
+            </option>
+          ))}
+        </select>
+      </div>
+
       {/* TIER 2: Segmented Mode Navigation Rail & Workspace Visibility Toggles */}
       <div className="flex items-center justify-between px-3 sm:px-4 py-1.5 bg-zinc-950/90 gap-2 border-t border-zinc-900/50">
+        <select
+          value={activeMode}
+          onChange={(event) => onChangeMode(event.target.value as StudioMode)}
+          aria-label="Studio mode"
+          className="sm:hidden min-w-0 w-full rounded-lg border border-zinc-800 bg-zinc-900 px-2.5 py-2 text-xs font-mono text-zinc-200 focus:border-brand-cyan focus:outline-none focus:ring-1 focus:ring-brand-cyan"
+        >
+          {MODES.map((item) => (
+            <option key={item.mode} value={item.mode}>
+              {item.shortLabel}
+            </option>
+          ))}
+        </select>
         {/* Left Side: 6 Segmented Mode Navigation Pills */}
         <nav
           role="tablist"
           aria-label="Studio Mode Navigation"
           data-tour="modes"
-          className="flex items-center gap-1 overflow-x-auto scrollbar-none py-0.5 min-w-0"
+          className="hidden sm:flex items-center gap-1 overflow-x-auto scrollbar-none py-0.5 min-w-0"
         >
           {MODES.map((item) => {
             const isActive = activeMode === item.mode;
@@ -653,7 +751,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
         </nav>
 
         {/* Right Side: In-Studio Terminal Toggle & Workspace Sidebar Toggles */}
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="hidden sm:flex items-center gap-1.5 shrink-0">
           {/* Form Test Dock Toggle (#541) */}
           {onToggleTestDock && (
             <button

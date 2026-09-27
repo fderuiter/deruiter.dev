@@ -144,13 +144,15 @@ describe("Dynamic Viewport Heights & CSS Custom Variable Space Contract", () => 
       vi.useRealTimers();
     });
 
-    it("CRFStudioContainer utilizes variable-backed viewport height formula", () => {
+    it("CRFStudioContainer grows on phones and uses the viewport budget on desktop", () => {
       const { container } = render(<CRFStudioContainer />);
 
-      const studioWrapper = container.querySelector(
-        ".h-\\[calc\\(100dvh-var\\(--header-height\\,80px\\)\\)\\]"
-      );
+      const studioWrapper = container.querySelector("[data-studio-theme]");
       expect(studioWrapper).not.toBeNull();
+      expect(studioWrapper?.className).toContain("min-h-dvh");
+      expect(studioWrapper?.className).toContain(
+        "md:h-[var(--layout-studio-budget,calc(100dvh-var(--header-height,80px)))]"
+      );
     });
   });
 });

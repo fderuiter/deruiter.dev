@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   IconFolderPlus,
   IconTrash,
@@ -69,6 +69,28 @@ export const FormCanvas: React.FC<FormCanvasProps> = ({
   onOpenSlashPalette,
   onSwitchMode,
 }) => {
+  // Bring the selected field into view, so a field added from the Palette
+  // doesn't land below the fold unnoticed (#1205). Only the visible canvas
+  // (desktop or mobile) scrolls, and "nearest" leaves on-screen fields alone.
+  useEffect(() => {
+    if (!selectedFieldId) return;
+    const frame = requestAnimationFrame(() => {
+      const target = Array.from(
+        document.querySelectorAll<HTMLElement>(
+          `[data-field-id="${selectedFieldId}"]`
+        )
+      ).find((el) => el.offsetParent !== null);
+      const reduceMotion = window.matchMedia?.(
+        "(prefers-reduced-motion: reduce)"
+      )?.matches;
+      target?.scrollIntoView?.({
+        block: "nearest",
+        behavior: reduceMotion ? "auto" : "smooth",
+      });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [selectedFieldId]);
+
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState(form.name);
   const [descInput, setDescInput] = useState(form.description);
@@ -222,7 +244,7 @@ export const FormCanvas: React.FC<FormCanvasProps> = ({
   return (
     <div
       onClick={() => onSelectField(null)}
-      className="flex-1 flex flex-col h-full bg-zinc-950/80 crf-canvas-area overflow-y-auto p-3 sm:p-6 transition-all relative"
+      className="@container flex-1 flex flex-col h-full bg-zinc-950/80 crf-canvas-area overflow-y-auto p-3 sm:p-6 transition-all relative"
     >
       {/* Top Canvas Controls Bar */}
       <div className="flex flex-wrap items-center justify-between gap-2.5 mb-4 sm:mb-6 pb-3 sm:pb-4 border-b border-zinc-800/80">
@@ -230,12 +252,12 @@ export const FormCanvas: React.FC<FormCanvasProps> = ({
           <span className="font-mono text-xs font-bold text-zinc-300">
             Layout Canvas
           </span>
-          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-900 text-brand-cyan border border-zinc-800 hidden sm:inline-block">
+          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-900 text-brand-cyan border border-zinc-800 hidden @4xl:inline-block whitespace-nowrap">
             12-Column Responsive Grid
           </span>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3 min-w-0">
           <ViewportSwitcher
             viewport={viewport}
             onChangeViewport={onChangeViewport}
@@ -247,11 +269,12 @@ export const FormCanvas: React.FC<FormCanvasProps> = ({
                 e.stopPropagation();
                 onSwitchMode("grid");
               }}
-              className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/80 text-zinc-300 text-xs font-mono transition-all shadow-sm"
-              title="Switch to Active Form Grid Metadata Editor"
+              className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/80 text-zinc-300 text-xs font-mono transition-all shadow-sm whitespace-nowrap"
+              title="Edit this form's fields as a table (Form Grid)"
+              aria-label="Grid View"
             >
               <IconFileSpreadsheet className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-brand-cyan" />
-              <span className="hidden sm:inline">Grid View</span>
+              <span className="hidden @2xl:inline">Grid View</span>
             </button>
           )}
           <button
@@ -263,12 +286,12 @@ export const FormCanvas: React.FC<FormCanvasProps> = ({
                 onOpenPalette();
               }
             }}
-            className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-brand-cyan/10 hover:bg-brand-cyan/20 border border-brand-cyan/40 text-brand-cyan text-xs font-mono transition-all shadow-sm"
+            className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-brand-cyan/10 hover:bg-brand-cyan/20 border border-brand-cyan/40 text-brand-cyan text-xs font-mono transition-all shadow-sm whitespace-nowrap"
             title="Open Slash Command Palette (/)"
+            aria-label="Slash Commands"
           >
             <IconSparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            <span className="hidden sm:inline">Slash Commands</span>
-            <span className="sm:hidden">/</span>
+            <span className="hidden @2xl:inline">Slash Commands</span>
             <kbd className="hidden md:inline-block text-[9px] px-1 py-0.2 rounded bg-zinc-900 border border-zinc-700 text-zinc-400">
               /
             </kbd>

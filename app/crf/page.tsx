@@ -38,7 +38,9 @@ export default function CRFStudioPage() {
         />
       </div>
 
-      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 w-full">
+      {/* The studio has three panes, so it takes the full width up to a
+          comfortable maximum instead of the 1280px reading column (#1205). */}
+      <div className="max-w-[1920px] mx-auto w-full">
         <div className="rounded-3xl border border-zinc-800 bg-zinc-950 overflow-hidden shadow-2xl">
           <CRFStudioContainer />
         </div>

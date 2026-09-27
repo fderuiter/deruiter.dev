@@ -140,7 +140,9 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
             <IconGripVertical className="w-3.5 h-3.5" />
           </div>
 
-          <span className="font-mono text-[10px] font-bold text-brand-cyan bg-brand-cyan/10 px-1.5 py-0.5 rounded border border-brand-cyan/20 truncate">
+          {/* CDASH names are at most 8 characters, so the chip keeps its
+              full width and the badges wrap instead (#1205). */}
+          <span className="font-mono text-[10px] font-bold text-brand-cyan bg-brand-cyan/10 px-1.5 py-0.5 rounded border border-brand-cyan/20 shrink-0 whitespace-nowrap">
             {field.variableName}
           </span>
           <span className="font-mono text-[10px] text-zinc-500 bg-zinc-900 px-1.5 py-0.5 rounded border border-zinc-800">
@@ -163,7 +165,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                 required: nextTier !== "optional",
               });
             }}
-            className={`px-1.5 py-0.5 rounded text-[9px] font-mono transition-colors border ${
+            className={`px-1.5 py-0.5 rounded text-[9px] font-mono whitespace-nowrap transition-colors border ${
               field.requirementTier === "auto_query"
                 ? "bg-amber-500/15 text-amber-400 border-amber-500/30 font-bold"
                 : field.requirementTier === "hard_stop" ||

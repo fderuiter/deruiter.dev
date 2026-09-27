@@ -268,14 +268,14 @@ export const StudySpine: React.FC<StudySpineProps> = ({
           tabIndex={activeTab === "spine" ? 0 : -1}
           onClick={() => onChangeTab("spine")}
           onKeyDown={(e) => handleTabKeyDown(e, "spine")}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-mono transition-all ${
+          className={`flex-1 min-w-0 flex items-center justify-center gap-1.5 py-1.5 px-1.5 rounded-lg text-xs font-mono whitespace-nowrap transition-all ${
             activeTab === "spine"
               ? "bg-brand-cyan/20 text-brand-cyan font-bold border border-brand-cyan/40 shadow-sm"
               : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-850 border border-transparent"
           }`}
           title="Study Spine (Longitudinal Timeline)"
         >
-          <IconTimeline className="w-3.5 h-3.5 shrink-0" />
+          <IconTimeline className="w-3.5 h-3.5 shrink-0 hidden 2xl:inline" />
           <span className="truncate">Spine</span>
         </button>
 
@@ -291,14 +291,14 @@ export const StudySpine: React.FC<StudySpineProps> = ({
           tabIndex={activeTab === "forms" ? 0 : -1}
           onClick={() => onChangeTab("forms")}
           onKeyDown={(e) => handleTabKeyDown(e, "forms")}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-mono transition-all ${
+          className={`flex-1 min-w-0 flex items-center justify-center gap-1.5 py-1.5 px-1.5 rounded-lg text-xs font-mono whitespace-nowrap transition-all ${
             activeTab === "forms"
               ? "bg-brand-cyan/20 text-brand-cyan font-bold border border-brand-cyan/40 shadow-sm"
               : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-850 border border-transparent"
           }`}
           title="Protocol Forms & Global Library"
         >
-          <IconBook2 className="w-3.5 h-3.5 shrink-0" />
+          <IconBook2 className="w-3.5 h-3.5 shrink-0 hidden 2xl:inline" />
           <span className="truncate">Forms ({study.forms.length})</span>
         </button>
 
@@ -314,14 +314,14 @@ export const StudySpine: React.FC<StudySpineProps> = ({
           tabIndex={activeTab === "palette" ? 0 : -1}
           onClick={() => onChangeTab("palette")}
           onKeyDown={(e) => handleTabKeyDown(e, "palette")}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-mono transition-all ${
+          className={`flex-1 min-w-0 flex items-center justify-center gap-1.5 py-1.5 px-1.5 rounded-lg text-xs font-mono whitespace-nowrap transition-all ${
             activeTab === "palette"
               ? "bg-brand-cyan/20 text-brand-cyan font-bold border border-brand-cyan/40 shadow-sm"
               : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-850 border border-transparent"
           }`}
           title="Widget Palette"
         >
-          <IconComponents className="w-3.5 h-3.5 shrink-0" />
+          <IconComponents className="w-3.5 h-3.5 shrink-0 hidden 2xl:inline" />
           <span className="truncate">Palette</span>
         </button>
       </div>

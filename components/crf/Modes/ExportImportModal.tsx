@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { CopyButton } from "@/components/ui/CopyButton";
-import { StudyProtocol } from "@/lib/crf/types";
+import type { CRFField, CRFForm, StudyProtocol } from "@/lib/crf/types";
 import { useTelemetry } from "@/hooks/useTelemetry";
 import {
   IconDownload,
@@ -30,6 +30,41 @@ interface ExportImportModalProps {
 
 type ExportTab =
   "universal" | "usdm" | "odm" | "sas" | "r" | "json" | "fhir" | "sdtm_spec";
+
+/** Formats that always describe the whole study, so the scope selector is off. */
+const WHOLE_STUDY_TABS: ReadonlySet<ExportTab> = new Set([
+  "universal",
+  "usdm",
+  "odm",
+  "json",
+]);
+
+const SPEC_COLUMNS = [
+  "Domain",
+  "Form",
+  "Variable (CDASH)",
+  "Label",
+  "Data Type",
+  "Core",
+  "aCRF Overlay Tag",
+];
+
+function csvCell(value: string): string {
+  return /[",\n\r]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
+}
+
+function specRow(field: CRFField, form: CRFForm): string[] {
+  return [
+    form.domain,
+    form.name,
+    field.variableName,
+    field.label,
+    field.dataType,
+    field.cdashMetadata?.core || (field.required ? "R" : "O"),
+    field.cdashMetadata?.acrfAnnotation ||
+      `${form.domain}.${field.variableName}`,
+  ];
+}
 
 const EXPORT_TABS: ExportTab[] = [
   "universal",
@@ -92,10 +127,23 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
     tabRefs.current[nextTab]?.focus();
   };
 
+  const isWholeStudyTab = WHOLE_STUDY_TABS.has(activeTab);
+  const scopeFormId = isWholeStudyTab ? "all" : selectedFormId;
   const selectedForm =
-    selectedFormId === "all"
+    scopeFormId === "all"
       ? undefined
-      : study.forms.find((f) => f.id === selectedFormId);
+      : study.forms.find((f) => f.id === scopeFormId);
+
+  // Compile SDTM variables for specification table, filtered by scope
+  // Memoized: it feeds the content effect's deps, and a fresh array each
+  // render would re-run that effect forever (see #1199).
+  const specFields = useMemo(
+    () =>
+      (selectedForm ? [selectedForm] : study.forms).flatMap((f) =>
+        f.sections.flatMap((s) => s.fields.map((field) => ({ field, form: f })))
+      ),
+    [selectedForm, study.forms]
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -116,7 +164,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
       } else if (activeTab === "sas") {
         const { exportStudyToSas } = await import("@/lib/crf/export-sas");
         content = exportStudyToSas(study, {
-          selectedFormId: selectedFormId === "all" ? undefined : selectedFormId,
+          selectedFormId: selectedForm?.id,
           includeSampleData: true,
           includeProcContents: true,
           includeProcFreq: true,
@@ -124,29 +172,34 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
       } else if (activeTab === "r") {
         const { exportStudyToR } = await import("@/lib/crf/export-r");
         content = exportStudyToR(study, {
-          selectedFormId: selectedFormId === "all" ? undefined : selectedFormId,
+          selectedFormId: selectedForm?.id,
           includeSampleData: true,
           includeGlimpse: true,
           useLabelledPackage: true,
         });
       } else if (activeTab === "fhir") {
-        const { exportFormToFhirQuestionnaire } =
-          await import("@/lib/crf/fhir-questionnaire");
-        const targetFormForFhir = selectedForm ||
-          study.forms[0] || {
-            id: "crf-1",
-            name: "General Form",
-            domain: "DM",
-            description: "",
-            version: "1.0",
-            sections: [],
-            rules: [],
-          };
+        const {
+          exportFormToFhirQuestionnaire,
+          exportStudyToFhirQuestionnaire,
+        } = await import("@/lib/crf/fhir-questionnaire");
+        // One Questionnaire for a single form, a Bundle of all of them for
+        // the whole study (#1202).
         content = JSON.stringify(
-          exportFormToFhirQuestionnaire(targetFormForFhir, study),
+          selectedForm
+            ? exportFormToFhirQuestionnaire(selectedForm, study)
+            : exportStudyToFhirQuestionnaire(study),
           null,
           2
         );
+      } else if (activeTab === "sdtm_spec") {
+        content = [
+          SPEC_COLUMNS,
+          ...specFields.map(({ field, form }) => specRow(field, form)),
+        ]
+          .map((row) =>
+            row.map((cell) => csvCell(String(cell ?? ""))).join(",")
+          )
+          .join("\n");
       } else {
         content = JSON.stringify(study, null, 2);
       }
@@ -161,11 +214,11 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
     return () => {
       isMounted = false;
     };
-  }, [activeTab, selectedFormId, study, selectedForm]);
+  }, [activeTab, study, selectedForm, specFields]);
 
   const handleDownload = () => {
     recordEvent("crf", "project_click");
-    let filename = `study-${study.protocolNumber}.crf.json`;
+    let filename = `${study.protocolNumber}.study-bundle.json`;
     let mimeType = "application/json";
     const content = activeContent;
     const domainSuffix = selectedForm
@@ -188,8 +241,13 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
       filename = `study-${study.protocolNumber}${domainSuffix}.R`;
       mimeType = "text/x-r";
     } else if (activeTab === "fhir") {
-      filename = `fhir-questionnaire-${study.protocolNumber}${domainSuffix}.json`;
-      mimeType = "application/json";
+      filename = selectedForm
+        ? `fhir-questionnaire-${study.protocolNumber}${domainSuffix}.json`
+        : `fhir-bundle-${study.protocolNumber}.json`;
+      mimeType = "application/fhir+json";
+    } else if (activeTab === "sdtm_spec") {
+      filename = `${study.protocolNumber}${domainSuffix}-sdtm-spec.csv`;
+      mimeType = "text/csv";
     }
 
     const blob = new Blob([content], { type: mimeType });
@@ -216,16 +274,6 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
       );
     }
   };
-
-  // Compile SDTM variables for specification table, filtered by selectedFormId if applicable
-  const formsForSpec =
-    selectedFormId === "all"
-      ? study.forms
-      : study.forms.filter((f) => f.id === selectedFormId);
-
-  const specFields = formsForSpec.flatMap((f) =>
-    f.sections.flatMap((s) => s.fields.map((field) => ({ field, form: f })))
-  );
 
   return (
     <div className="flex-1 flex flex-col h-full bg-zinc-950 p-4 sm:p-6 overflow-y-auto space-y-6">
@@ -303,10 +351,20 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
           <span className="font-bold">Domain &amp; Form Scope:</span>
         </div>
         <div className="flex items-center gap-2">
+          {isWholeStudyTab && (
+            <span
+              id="export-scope-note"
+              className="text-[11px] font-sans text-zinc-400"
+            >
+              This format always exports the whole study.
+            </span>
+          )}
           <select
-            value={selectedFormId}
+            value={scopeFormId}
             onChange={(e) => setSelectedFormId(e.target.value)}
-            className="px-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs font-mono text-zinc-200 focus:border-brand-cyan focus:outline-none"
+            disabled={isWholeStudyTab}
+            aria-describedby={isWholeStudyTab ? "export-scope-note" : undefined}
+            className="px-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs font-mono text-zinc-200 focus:border-brand-cyan focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
             aria-label="Filter export domain scope"
           >
             <option value="all">All Study Domains (Full Protocol Suite)</option>
@@ -317,7 +375,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
               </option>
             ))}
           </select>
-          {selectedFormId !== "all" && (
+          {scopeFormId !== "all" && (
             <button
               onClick={() => setSelectedFormId("all")}
               className="text-[11px] font-mono text-zinc-400 hover:text-brand-cyan underline"

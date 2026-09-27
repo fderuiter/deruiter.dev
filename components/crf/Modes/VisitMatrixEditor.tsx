@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { StudyProtocol, StudyVisit } from "@/lib/crf/types";
+import { formatVisitWindow } from "@/lib/crf/visit-window";
 import {
   IconCalendar,
   IconPlus,
@@ -117,7 +118,8 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
           </div>
           <p className="text-xs text-zinc-400 font-sans mt-1">
             Map clinical forms to protocol visits and configure allowable window
-            tolerances (± days) across study arms and epochs.
+            tolerances before and after each target day across study arms and
+            epochs.
           </p>
         </div>
 
@@ -227,8 +229,8 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
                     {currentCardVisit.name}
                   </h2>
                   <div className="text-xs text-brand-cyan font-mono mt-0.5">
-                    Target Day {currentCardVisit.targetDay} (±
-                    {currentCardVisit.windowBefore}d window)
+                    Target Day {currentCardVisit.targetDay} (
+                    {formatVisitWindow(currentCardVisit)} window)
                     {currentCardVisit.epochId &&
                       epochMap.has(currentCardVisit.epochId) && (
                         <span className="ml-2 text-purple-400 bg-purple-500/10 px-1.5 py-0.5 rounded border border-purple-500/30">
@@ -352,7 +354,7 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
                         {visit.name}
                       </div>
                       <div className="text-[10px] font-mono text-brand-cyan">
-                        Day {visit.targetDay} (±{visit.windowBefore}d)
+                        Day {visit.targetDay} ({formatVisitWindow(visit)})
                       </div>
                       {visit.epochId && epochMap.has(visit.epochId) && (
                         <div className="text-[9px] font-mono text-purple-400">

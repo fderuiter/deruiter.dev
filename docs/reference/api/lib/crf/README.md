@@ -956,6 +956,12 @@ Re-exports [formatPrecisionDate](precision-date/functions/formatPrecisionDate.md
 
 ***
 
+### formatVisitWindow
+
+Re-exports [formatVisitWindow](visit-window/functions/formatVisitWindow.md)
+
+***
+
 ### FormAuditReport
 
 Re-exports [FormAuditReport](study-auditor/interfaces/FormAuditReport.md)

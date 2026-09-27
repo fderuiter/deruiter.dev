@@ -36,6 +36,7 @@ export * from "./fhir-questionnaire";
 export * from "./odm-xml-serializer";
 export * from "./usdm-adapter";
 export * from "./precision-date";
+export * from "./visit-window";
 export {
   computeFormHealthMetrics,
   CDASH_CORE_DOMAIN_VARIABLES,

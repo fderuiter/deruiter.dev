@@ -1,3 +1,4 @@
+import { fromPartial } from "@total-typescript/shoehorn";
 import { describe, expect, it, vi } from "vitest";
 import {
   applyCanvasScale,
@@ -47,17 +48,17 @@ describe("applyCanvasScale", () => {
   it("sets a uniform scale and ignores contexts without setTransform", () => {
     const setTransform = vi.fn();
     applyCanvasScale(
-      { setTransform } as unknown as CanvasRenderingContext2D,
+      fromPartial<CanvasRenderingContext2D>({ setTransform }),
       2
     );
     expect(setTransform).toHaveBeenCalledWith(2, 0, 0, 2, 0, 0);
     applyCanvasScale(
-      { setTransform } as unknown as CanvasRenderingContext2D,
+      fromPartial<CanvasRenderingContext2D>({ setTransform }),
       Number.NaN
     );
     expect(setTransform).toHaveBeenLastCalledWith(1, 0, 0, 1, 0, 0);
     expect(() =>
-      applyCanvasScale({} as CanvasRenderingContext2D, 2)
+      applyCanvasScale(fromPartial<CanvasRenderingContext2D>({}), 2)
     ).not.toThrow();
   });
 });

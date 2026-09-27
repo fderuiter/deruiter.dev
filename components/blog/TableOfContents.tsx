@@ -60,11 +60,20 @@ export function TableOfContents({ headings }: TableOfContentsProps) {
     e.preventDefault();
     setActiveId(id);
     setIsOpen(false);
-    const target = document.getElementById(id);
-    if (target) {
-      target.scrollIntoView({ behavior: "smooth", block: "start" });
-      window.history.pushState(null, "", `#${id}`);
-    }
+    window.history.pushState(null, "", `#${id}`);
+    // The mobile list collapses on selection. Scroll after that layout change
+    // so the heading remains below the fixed navbar at every width.
+    window.requestAnimationFrame(() => {
+      const target = document.getElementById(id);
+      if (!target) return;
+      const reduceMotion =
+        typeof window.matchMedia === "function" &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      target.scrollIntoView({
+        behavior: reduceMotion ? "auto" : "smooth",
+        block: "start",
+      });
+    });
   };
 
   return (
@@ -87,15 +96,19 @@ export function TableOfContents({ headings }: TableOfContentsProps) {
           type="button"
           onClick={() => setIsOpen((prev) => !prev)}
           aria-expanded={isOpen}
+          aria-controls="blog-toc-links"
           aria-label="Toggle table of contents"
-          className="md:hidden text-xs font-mono text-zinc-400 hover:text-zinc-200 px-2 py-1 rounded bg-zinc-800/60"
+          className="lg:hidden text-xs font-mono text-zinc-400 hover:text-zinc-200 px-2 py-1 rounded bg-zinc-800/60"
         >
           {isOpen ? "Hide" : "Show"}
         </button>
       </div>
 
-      {/* Heading links list (always visible on desktop, toggleable on mobile) */}
-      <div className={`mt-4 ${isOpen ? "block" : "hidden md:block"}`}>
+      {/* Heading links list (always visible on desktop, toggleable on mobile/tablet) */}
+      <div
+        id="blog-toc-links"
+        className={`mt-4 ${isOpen ? "block" : "hidden lg:block"}`}
+      >
         <ul className="space-y-1.5 border-l border-zinc-800 text-sm">
           {headings.map((heading) => {
             const isActive = activeId === heading.id;
@@ -104,6 +117,7 @@ export function TableOfContents({ headings }: TableOfContentsProps) {
                 <a
                   href={`#${heading.id}`}
                   onClick={(e) => handleLinkClick(e, heading.id)}
+                  aria-current={isActive ? "location" : undefined}
                   className={`block py-1 transition-colors border-l -ml-[1px] ${
                     heading.level === 3
                       ? "pl-4 text-xs"

@@ -8,6 +8,7 @@ import {
 } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { CodeBlock } from "@/components/blog/CodeBlock";
+import { RichNarrative } from "@/components/RichNarrative";
 
 describe("CodeBlock Component (Ticket #1059)", () => {
   beforeEach(() => {
@@ -85,5 +86,29 @@ describe("CodeBlock Component (Ticket #1059)", () => {
     await waitFor(() => {
       expect(liveRegion.textContent).toBe("Code copied to clipboard");
     });
+  });
+
+  it("copies the original source after syntax tokens are rendered", async () => {
+    const source = "const answer: number = 42;";
+    const { container } = render(
+      <RichNarrative
+        html={`<pre><code class="language-typescript">${source}</code></pre>`}
+      />
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: "Copy code to clipboard" })
+      ).toBeDefined();
+    });
+
+    expect(
+      container.querySelector(".blog-code-token--keyword")?.textContent
+    ).toBe("const");
+    fireEvent.click(
+      screen.getByRole("button", { name: "Copy code to clipboard" })
+    );
+
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(source);
   });
 });

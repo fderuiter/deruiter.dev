@@ -50,6 +50,7 @@
 - [lib/blog/headings](lib/blog/headings/README.md)
 - [lib/blog/presets](lib/blog/presets/README.md)
 - [lib/blog/related](lib/blog/related/README.md)
+- [lib/blog/syntax-highlighter](lib/blog/syntax-highlighter/README.md)
 - [lib/blog/types](lib/blog/types/README.md)
 - [lib/build-integrity](lib/build-integrity/README.md)
 - [lib/case-studies-data](lib/case-studies-data/README.md)

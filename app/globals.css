@@ -413,6 +413,157 @@ body {
   outline-offset: 2px;
 }
 
+/* Dispatch articles use authored semantic HTML, so restore its editorial
+ * hierarchy explicitly instead of relying on the uninstalled typography
+ * plugin's `.prose` defaults. Keep this contract local to the blog reader. */
+.blog-prose {
+  color: #d4d4d8;
+  font-family: var(--font-sans);
+  font-size: 1.0625rem;
+  line-height: 1.8;
+  overflow-wrap: break-word;
+}
+
+.blog-prose > div {
+  max-width: 66ch;
+}
+
+.blog-prose :is(h2, h3, h4) {
+  color: #f4f4f6;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.25;
+  scroll-margin-top: calc(max(var(--navbar-height), 5.5rem) + 1.5rem);
+  text-wrap: balance;
+}
+
+.blog-prose h2 {
+  margin-block: 2.75em 0.8em;
+  font-size: clamp(1.65rem, 1.25rem + 1.2vw, 2rem);
+}
+
+.blog-prose h3 {
+  margin-block: 2.1em 0.65em;
+  font-size: clamp(1.35rem, 1.15rem + 0.6vw, 1.625rem);
+}
+
+.blog-prose h4 {
+  margin-block: 1.8em 0.6em;
+  font-size: 1.2rem;
+}
+
+.blog-prose p {
+  margin-block: 1.35em;
+  text-wrap: pretty;
+}
+
+.blog-prose ul,
+.blog-prose ol {
+  margin-block: 1.25em;
+  padding-inline-start: 1.65em;
+}
+
+.blog-prose ul {
+  list-style-type: disc;
+}
+
+.blog-prose ol {
+  list-style-type: decimal;
+}
+
+.blog-prose li {
+  margin-block: 0.55em;
+  padding-inline-start: 0.25em;
+}
+
+.blog-prose li::marker {
+  color: #94a3b8;
+  font-family: var(--font-geist-mono);
+  font-size: 0.9em;
+}
+
+.blog-prose li > ul {
+  list-style-type: circle;
+}
+
+.blog-prose li > ol {
+  list-style-type: lower-alpha;
+}
+
+.blog-prose strong {
+  color: #f4f4f6;
+  font-weight: 700;
+}
+
+.blog-prose a {
+  color: #67e8f9;
+  text-decoration: underline;
+  text-decoration-color: rgb(103 232 249 / 55%);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+.blog-prose a:hover {
+  color: #a5f3fc;
+  text-decoration-color: currentColor;
+}
+
+.blog-prose a:focus-visible {
+  border-radius: 0.15rem;
+  outline: 2px solid #67e8f9;
+  outline-offset: 3px;
+}
+
+.blog-prose :not(pre) > code {
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 0.3rem;
+  background: #13151a;
+  color: #e2e8f0;
+  font-family: var(--font-geist-mono);
+  font-size: 0.88em;
+  padding: 0.12em 0.35em;
+}
+
+.blog-prose pre {
+  color: #e2e8f0;
+  font-family: var(--font-geist-mono);
+  font-size: 0.875rem;
+  line-height: 1.7;
+  tab-size: 2;
+}
+
+.blog-prose .blog-code-token--keyword {
+  color: #fbbf24;
+  font-weight: 600;
+}
+
+.blog-prose .blog-code-token--literal,
+.blog-prose .blog-code-token--number {
+  color: #a5b4fc;
+}
+
+.blog-prose .blog-code-token--string {
+  color: #86efac;
+}
+
+.blog-prose .blog-code-token--comment {
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.blog-prose .blog-code-token--operator {
+  color: #67e8f9;
+}
+
+@media (min-width: 1024px) {
+  .blog-reader-toc-rail {
+    position: sticky;
+    top: calc(max(var(--navbar-height), 5.5rem) + 1.5rem);
+    align-self: start;
+  }
+}
+
 /* Portfolio editorial rhythm: readable prose, quiet labels, stable anchors. */
 .portfolio-home :is(#case-studies, #about, #contact) {
   scroll-margin-top: calc(var(--navbar-height) + 2rem);

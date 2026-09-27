@@ -155,7 +155,7 @@ export function BlogPostReactions({ slug }: BlogPostReactionsProps) {
             Signal what resonated in this dispatch.
           </p>
         </div>
-        <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest bg-zinc-900/60 px-2.5 py-1 rounded border border-zinc-800 self-start sm:self-center">
+        <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest bg-zinc-900/60 px-2.5 py-1 rounded border border-zinc-800 self-start sm:self-center">
           Anonymous • Rate-Limited
         </span>
       </div>

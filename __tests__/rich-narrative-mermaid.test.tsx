@@ -1,5 +1,6 @@
 import { StrictMode } from "react";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { RichNarrative } from "@/components/RichNarrative";
 
@@ -43,7 +44,9 @@ describe("RichNarrative Mermaid diagrams", () => {
     });
 
     expect(document.querySelector("code.language-mermaid")).toBeNull();
-    expect(screen.getByText("const result = map(data);")).not.toBeNull();
+    expect(
+      document.querySelector("code.language-typescript")?.textContent
+    ).toBe("const result = map(data);");
   });
 
   it("renders each Mermaid block independently", async () => {
@@ -92,5 +95,143 @@ describe("RichNarrative Mermaid diagrams", () => {
 
     expect(screen.getByText("Architecture diagram unavailable")).not.toBeNull();
     expect(screen.getByText("View diagram source")).not.toBeNull();
+  });
+
+  it("preserves sanitized heading, paragraph, emphasis, and list semantics after rehydration", async () => {
+    const html = `
+      <h2>Three properties that must be structural</h2>
+      <p>Auditable systems need <strong>explicit boundaries</strong>.</p>
+      <ul>
+        <li>Keep the source record.
+          <ul><li>Keep its provenance.</li></ul>
+        </li>
+      </ul>
+      <h3>Validation sequence</h3>
+      <ol><li>Validate the input.</li><li>Record the result.</li></ol>
+      <span data-key="audit-term" data-term="audit terminology" data-definition="A test term">audit trail</span>
+      <script>window.compromised = true</script>
+    `;
+    const { container } = render(<RichNarrative html={html} />);
+
+    await waitFor(() => {
+      expect(container.querySelector('[data-key="audit-term"]')).toBeNull();
+    });
+
+    expect(
+      screen.getByRole("heading", {
+        level: 2,
+        name: "Three properties that must be structural",
+      })
+    ).not.toBeNull();
+    expect(
+      screen.getByRole("heading", { level: 3, name: "Validation sequence" })
+    ).not.toBeNull();
+    expect(screen.getByText("explicit boundaries").tagName).toBe("STRONG");
+    expect(container.querySelector("ul > li > ul > li")?.textContent).toBe(
+      "Keep its provenance."
+    );
+    expect(container.querySelectorAll("ol > li")).toHaveLength(2);
+    expect(container.querySelector("script")).toBeNull();
+    expect(container.textContent).not.toContain("window.compromised");
+  });
+
+  it("tokenizes supported JS, TypeScript, and Rust while keeping unknown code literal", async () => {
+    const sources = [
+      {
+        language: "typescript",
+        source: 'const fn: string = "<img src=x onerror=alert(1)>";',
+      },
+      { language: "javascript", source: 'const fn = "ready";' },
+      { language: "rust", source: "fn main() { let ready = true; }" },
+      { language: null, source: "const plain = true;" },
+      { language: "python", source: 'def launch(): return "plain"' },
+    ];
+    const escapeCode = (source: string) =>
+      source.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const html = sources
+      .map(({ language, source }) => {
+        const languageClass = language ? ` class="language-${language}"` : "";
+        return `<pre><code${languageClass}>${escapeCode(source)}</code></pre>`;
+      })
+      .join("");
+    const serverMarkup = renderToString(<RichNarrative html={html} />);
+    const serverContainer = document.createElement("div");
+    serverContainer.innerHTML = serverMarkup;
+
+    expect(
+      Array.from(
+        serverContainer.querySelectorAll("pre code"),
+        (code) => code.textContent
+      )
+    ).toEqual(sources.map(({ source }) => source));
+    expect(
+      serverContainer.querySelectorAll(".blog-code-token--keyword").length
+    ).toBeGreaterThan(0);
+    expect(
+      serverContainer.querySelectorAll(".blog-code-token--string").length
+    ).toBeGreaterThan(0);
+    expect(
+      serverContainer.querySelectorAll(".blog-code-token--literal").length
+    ).toBeGreaterThan(0);
+    const rustCode = serverContainer.querySelectorAll("pre code")[2];
+    const rustKeywordTexts = Array.from(
+      rustCode.querySelectorAll(".blog-code-token--keyword"),
+      (token) => token.textContent
+    );
+    expect(rustKeywordTexts).toContain("fn");
+    expect(rustKeywordTexts).toContain("let");
+    expect(rustCode.textContent).toBe(sources[2].source);
+    for (const plainFnSource of [
+      serverContainer.querySelectorAll("pre code")[0],
+      serverContainer.querySelectorAll("pre code")[1],
+    ]) {
+      expect(
+        Array.from(
+          plainFnSource.querySelectorAll(".blog-code-token--keyword"),
+          (token) => token.textContent
+        )
+      ).not.toContain("fn");
+    }
+    expect(
+      serverContainer
+        .querySelectorAll("pre code")[3]
+        .querySelector(".blog-code-token--keyword")
+    ).toBeNull();
+    expect(
+      serverContainer
+        .querySelectorAll("pre code")[4]
+        .querySelector(".blog-code-token--keyword")
+    ).toBeNull();
+    expect(serverContainer.querySelector("img")).toBeNull();
+
+    const { container } = render(<RichNarrative html={html} />);
+    await waitFor(() => {
+      expect(
+        screen.getAllByRole("button", { name: "Copy code to clipboard" })
+      ).toHaveLength(sources.length);
+    });
+
+    expect(
+      Array.from(
+        container.querySelectorAll("pre code"),
+        (code) => code.textContent
+      )
+    ).toEqual(sources.map(({ source }) => source));
+    expect(screen.getByText("TYPESCRIPT")).not.toBeNull();
+    expect(screen.getByText("JAVASCRIPT")).not.toBeNull();
+    expect(screen.getByText("RUST")).not.toBeNull();
+    expect(screen.getAllByText("CODE")).toHaveLength(1);
+    expect(screen.getByText("PYTHON")).not.toBeNull();
+    expect(container.querySelector("img")).toBeNull();
+    expect(
+      container
+        .querySelectorAll("pre code")[3]
+        .querySelector(".blog-code-token--keyword")
+    ).toBeNull();
+    expect(
+      container
+        .querySelectorAll("pre code")[4]
+        .querySelector(".blog-code-token--keyword")
+    ).toBeNull();
   });
 });

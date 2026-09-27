@@ -56,6 +56,10 @@ describe("narrative code blocks are reachable, not clipped", () => {
       expect(pre!.getAttribute("tabindex")).toBe("0");
       expect(pre!.getAttribute("role")).toBe("region");
       expect(pre!.getAttribute("aria-label")).toBe("Code sample 1");
+      expect(pre!.className).toContain("overflow-x-auto");
+      expect(pre!.className).toContain("focus-visible:ring-2");
+      pre!.focus();
+      expect(document.activeElement).toBe(pre);
     });
   });
 

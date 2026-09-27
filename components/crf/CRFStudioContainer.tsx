@@ -1495,10 +1495,10 @@ export const CRFStudioContainer: React.FC = () => {
         data-testid="draft-save-status"
         role="status"
         aria-live="polite"
-        className={`absolute bottom-2 left-2 z-40 flex items-center gap-2 text-[10px] font-mono px-2.5 py-1 rounded-lg border backdrop-blur-md ${
+        className={`absolute bottom-2 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 text-[10px] font-mono px-2.5 py-1 rounded-lg border backdrop-blur-md whitespace-nowrap ${
           draftSaveStatus === "error"
             ? "bg-rose-950/80 border-rose-500/40 text-rose-200"
-            : "bg-zinc-900/80 border-zinc-800 text-zinc-400"
+            : "bg-zinc-900/80 border-zinc-800 text-zinc-400 pointer-events-none"
         }`}
       >
         {recoveredDraftSavedAt && draftSaveStatus !== "error" && (
@@ -1531,7 +1531,7 @@ export const CRFStudioContainer: React.FC = () => {
               <aside
                 aria-label="Study navigator"
                 data-tour="navigator"
-                className="hidden md:flex w-64 lg:w-72 bg-zinc-950 border-r border-zinc-850 flex-col shrink-0 transition-all"
+                className="hidden md:flex w-60 lg:w-64 2xl:w-72 bg-zinc-950 border-r border-zinc-850 flex-col shrink-0 transition-all"
               >
                 <StudySpine
                   study={study}
@@ -1700,7 +1700,7 @@ export const CRFStudioContainer: React.FC = () => {
               <aside
                 aria-label="Field inspector"
                 data-tour="inspector"
-                className="hidden md:flex w-72 lg:w-96 bg-zinc-950 shrink-0 flex-col transition-all"
+                className="hidden md:flex w-72 lg:w-80 xl:w-96 bg-zinc-950 shrink-0 flex-col transition-all"
               >
                 <InspectorPanel
                   form={activeForm}

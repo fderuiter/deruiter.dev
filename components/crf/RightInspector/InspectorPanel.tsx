@@ -17,8 +17,6 @@ import { CdiscMetadataTab } from "./CdiscMetadataTab";
 import { ReviewThreadsTab } from "./ReviewThreadsTab";
 import {
   IconAdjustments,
-  IconMathFunction,
-  IconDatabase,
   IconX,
   IconFileSpreadsheet,
   IconTerminal2,
@@ -181,43 +179,40 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
       <div className="flex border-b border-zinc-800 bg-zinc-950/60">
         <button
           onClick={() => setActiveTab("properties")}
-          className={`flex-1 py-2 text-center text-xs font-mono transition-colors border-b-2 flex items-center justify-center gap-1.5 ${
+          className={`flex-1 min-w-0 px-1 py-2 text-center text-xs font-mono whitespace-nowrap transition-colors border-b-2 flex items-center justify-center gap-1.5 ${
             activeTab === "properties"
               ? "border-brand-cyan text-brand-cyan font-bold bg-zinc-900/40"
               : "border-transparent text-zinc-400 hover:text-zinc-200"
           }`}
         >
-          <IconAdjustments className="w-3.5 h-3.5" />
           <span>Properties</span>
         </button>
 
         <button
           onClick={() => setActiveTab("logic")}
-          className={`flex-1 py-2 text-center text-xs font-mono transition-colors border-b-2 flex items-center justify-center gap-1.5 ${
+          className={`flex-1 min-w-0 px-1 py-2 text-center text-xs font-mono whitespace-nowrap transition-colors border-b-2 flex items-center justify-center gap-1.5 ${
             activeTab === "logic"
               ? "border-brand-cyan text-brand-cyan font-bold bg-zinc-900/40"
               : "border-transparent text-zinc-400 hover:text-zinc-200"
           }`}
         >
-          <IconMathFunction className="w-3.5 h-3.5" />
           <span>Edit Checks</span>
         </button>
 
         <button
           onClick={() => setActiveTab("cdash")}
-          className={`flex-1 py-2 text-center text-xs font-mono transition-colors border-b-2 flex items-center justify-center gap-1.5 ${
+          className={`flex-1 min-w-0 px-1 py-2 text-center text-xs font-mono whitespace-nowrap transition-colors border-b-2 flex items-center justify-center gap-1.5 ${
             activeTab === "cdash"
               ? "border-brand-cyan text-brand-cyan font-bold bg-zinc-900/40"
               : "border-transparent text-zinc-400 hover:text-zinc-200"
           }`}
         >
-          <IconDatabase className="w-3.5 h-3.5" />
           <span>CDASH / aCRF</span>
         </button>
         <button
           onClick={() => setActiveTab("review")}
           aria-label={`Review threads (${openReviewThreadCount} open in study)`}
-          className={`flex-1 py-2 text-center text-xs font-mono transition-colors border-b-2 flex items-center justify-center gap-1.5 ${
+          className={`flex-1 min-w-0 px-1 py-2 text-center text-xs font-mono whitespace-nowrap transition-colors border-b-2 flex items-center justify-center gap-1.5 ${
             activeTab === "review"
               ? "border-amber-400 text-amber-300 font-bold bg-zinc-900/40"
               : "border-transparent text-zinc-400 hover:text-zinc-200"

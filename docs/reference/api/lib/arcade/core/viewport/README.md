@@ -12,6 +12,7 @@
 
 ## Interfaces
 
+- [CanvasResolution](interfaces/CanvasResolution.md)
 - [GamePoint](interfaces/GamePoint.md)
 - [ViewportConfig](interfaces/ViewportConfig.md)
 - [ViewportMetrics](interfaces/ViewportMetrics.md)
@@ -20,6 +21,12 @@
 
 - [ViewportMode](type-aliases/ViewportMode.md)
 
+## Variables
+
+- [MAX\_CANVAS\_DPR](variables/MAX_CANVAS_DPR.md)
+
 ## Functions
 
+- [applyCanvasScale](functions/applyCanvasScale.md)
+- [computeCanvasResolution](functions/computeCanvasResolution.md)
 - [screenToGameCoords](functions/screenToGameCoords.md)

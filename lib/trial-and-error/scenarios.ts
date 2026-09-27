@@ -18,6 +18,7 @@ import type {
   Act,
   Campaign,
   CrisisCard,
+  DeviationEvent,
   DmcDefense,
   Endless,
   FdaIr,
@@ -2332,6 +2333,62 @@ export const ACT_II_CRISES: CrisisCard[] = [
 ];
 
 /**
+ * A protocol deviation (#1087) that removes `subjectId` from `populations`.
+ * Its `effectiveAt` is a placeholder: it lands a day after the snapshot in
+ * force when it fires.
+ */
+const deviation = (
+  id: string,
+  name: string,
+  flavor: string,
+  subjectId: string,
+  populations: DeviationEvent["transition"]["populations"],
+  description: string
+): DeviationEvent => ({
+  id,
+  name,
+  flavor,
+  afterHands: [1, 2],
+  transition: {
+    id: `TR-${id}`,
+    subjectId,
+    reason: "PROTOCOL_DEVIATION",
+    change: "LEAVE",
+    populations,
+    effectiveAt: "2026-01-16T09:00:00Z",
+    description,
+  },
+});
+
+/** Act II's protocol deviations: monitoring finds them mid-Blind. */
+export const ACT_II_DEVIATIONS: DeviationEvent[] = [
+  deviation(
+    "DV-P2-NEVER-DOSED",
+    "Ineligible, Never Dosed",
+    "Source data verification: S-006 failed inclusion criterion 4 and the site never dispensed a kit.",
+    "S-006",
+    ["SAFETY", "PER_PROTOCOL"],
+    "S-006 was randomized but never dosed: S-006 stays in ITT and leaves the Safety and Per-Protocol populations."
+  ),
+  deviation(
+    "DV-P2-DOSED-BEFORE-CONSENT",
+    "Dosed Before Consent",
+    "The monitor found S-009's consent form signed the day after first dose. None of S-009's data can be used.",
+    "S-009",
+    ["ITT", "SAFETY", "FAS", "PER_PROTOCOL"],
+    "S-009 was dosed before giving consent: every S-009 record leaves the analysis populations."
+  ),
+  deviation(
+    "DV-P2-ENROLLED-TWICE",
+    "Enrolled Twice",
+    "IRT reconciliation: S-003 screened at a second site under a new number. The later enrollment is void.",
+    "S-003",
+    ["ITT", "SAFETY", "FAS", "PER_PROTOCOL"],
+    "S-003's duplicate enrollment is voided: the record leaves the analysis populations."
+  ),
+];
+
+/**
  * Act II: the Phase II proof-of-concept study. Internal QC under the new
  * SAP, then the DMC's open session; the Boss is drawn by the run's seed
  * from a pool of two: the DMC milestone review or the FDA's End-of-Phase-2
@@ -2344,6 +2401,7 @@ export const ACT_II: Act = {
   blinds: [PHASE_II_QC_SCENARIO, DMC_OPEN_SESSION_SCENARIO],
   bossPool: [DMC_MILESTONE_SCENARIO, FDA_IR_SCENARIO],
   crisisDeck: ACT_II_CRISES,
+  deviations: { chancePercent: 50, deck: ACT_II_DEVIATIONS },
   shop: ACT_I_SHOP,
 };
 
@@ -2858,6 +2916,38 @@ export const ACT_III_CRISES: CrisisCard[] = [
 ];
 
 /**
+ * Act III's protocol deviations. The pivotal study analyses ITT as
+ * randomized, so no deviation takes a subject out of ITT: each one moves a
+ * subject out of the Safety population, and the FAS or Per-Protocol set.
+ */
+export const ACT_III_DEVIATIONS: DeviationEvent[] = [
+  deviation(
+    "DV-P3-RANDOMIZED-IN-ERROR",
+    "Randomized in Error",
+    "S-001 was randomized before the screening labs came back out of range, and never dosed.",
+    "S-001",
+    ["SAFETY", "FAS", "PER_PROTOCOL"],
+    "S-001 was randomized in error and never dosed: S-001 stays in ITT and leaves the Safety, FAS and Per-Protocol populations."
+  ),
+  deviation(
+    "DV-P3-KIT-UNOPENED",
+    "Kit Returned Unopened",
+    "Drug accountability: S-004's kit came back sealed. The diary entries were filled in at the visit.",
+    "S-004",
+    ["SAFETY", "FAS"],
+    "S-004 never took study drug: S-004 stays in ITT and leaves the Safety and FAS populations."
+  ),
+  deviation(
+    "DV-P3-DOSING-UNVERIFIED",
+    "Dosing Unverified",
+    "S-012's site lost its dispensing log in a flood. No dose can be confirmed from source.",
+    "S-012",
+    ["SAFETY", "FAS"],
+    "No dose can be verified for S-012: S-012 stays in ITT and leaves the Safety and FAS populations."
+  ),
+];
+
+/**
  * Act III: the Phase III blinded pivotal study. A blinded data review, then
  * the sponsor's topline review after unblinding; the Boss is always CSR
  * Lock, the run's final release gate (#922). It reads the same
@@ -2870,6 +2960,7 @@ export const ACT_III: Act = {
   blinds: [BLINDED_DATA_REVIEW_SCENARIO, SPONSOR_TOPLINE_SCENARIO],
   bossPool: [CSR_LOCK_SCENARIO],
   crisisDeck: ACT_III_CRISES,
+  deviations: { chancePercent: 50, deck: ACT_III_DEVIATIONS },
   shop: ACT_I_SHOP,
 };
 

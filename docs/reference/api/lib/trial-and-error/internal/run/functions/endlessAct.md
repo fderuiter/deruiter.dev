@@ -57,6 +57,22 @@ The post-marketing studies a round can be; each has a boss pool.
 
 > `optional` **crisisDeck?**: `object`[]
 
+### deviations?
+
+> `optional` **deviations?**: `object`
+
+Protocol deviations (#1087): as each Small or Big Blind starts, the
+run's draw fires one with `chancePercent` odds, drawn from `deck`
+without replacement across the run.
+
+#### deviations.chancePercent
+
+> **chancePercent**: `number`
+
+#### deviations.deck
+
+> **deck**: `object`[]
+
 ### id
 
 > **id**: `string` = `identifier`

@@ -850,6 +850,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         badge: "Amendment",
       },
       {
+        title: "Protocol deviations",
+        detail:
+          "In Phase II and Phase III, a Small or Big Blind may open with a deviation scheduled by the seed. After hand 1 or 2 a subject leaves some populations, the snapshot moves on, and outputs in hand built on those populations go stale. The card that appears names the subject and the stale outputs: recompile them (R) or discard them, since fresh draws compile against the new snapshot. Phase III deviations never touch ITT, which is analysed as randomized. Boss Blinds never draw one.",
+        badge: "Deviation",
+      },
+      {
         title: "Zero-score rule",
         detail:
           "A percentage divided by the wrong population's N (FAS instead of ITT) is a fatal denominator error. While it stands, the hand's final Mult is 0, whether or not you found it.",

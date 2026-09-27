@@ -21,6 +21,7 @@ import type {
   StagedTable,
   PopulationTransition,
   StudyEvent,
+  DeviationEvent,
   TlfCard,
   CardFace,
   CardStamp,
@@ -385,6 +386,12 @@ export interface TableState {
   crisis: CrisisCard | null;
   /** How this Blind's crisis was answered, once it has been. */
   crisisResolution: { crisisId: string; choiceId: string } | null;
+  /**
+   * The protocol deviation the run's draw scheduled for this Blind (#1087),
+   * or null. It lands after `afterHands` hands; until then the view does
+   * not show it.
+   */
+  deviation?: ScheduledDeviation | null;
   /** Modifiers crisis choices imposed on this Blind, besides its boss. */
   modifiers: BossBlindModifier[];
   /** Every table cell traced to its Listing this Blind, in trace order. */
@@ -439,7 +446,31 @@ export interface TableState {
     invalidations: number;
     inventory: Inventory;
     crisis: CrisisCard | null;
+    deviation?: ScheduledDeviation | null;
   };
+}
+
+/** A protocol deviation drawn for a Blind, and the hand it lands after. */
+export interface ScheduledDeviation {
+  event: DeviationEvent;
+  afterHands: number;
+}
+
+/** A protocol deviation that has landed this Blind, as the table shows it. */
+export interface DeviationView {
+  name: string;
+  flavor: string;
+  /** The hands played when it landed. */
+  afterHands: number;
+  /** The subject it moved and the populations it changed. */
+  subjectId: string;
+  populations: PopulationType[];
+  /** The snapshot version it produced. */
+  snapshot: SnapshotRef;
+  /** The outputs in hand it staled, by name, in hand order. */
+  staled: string[];
+  /** It landed after the latest hand, so the event card is showing. */
+  fresh: boolean;
 }
 
 /** Player intents the Card Table reducer accepts. */
@@ -649,6 +680,8 @@ export interface TableView {
   scoreLog: ScoreLogEntry[];
   /** The current population snapshot. */
   snapshot: SnapshotRef;
+  /** The protocol deviation that landed this Blind (#1087), or null. */
+  deviation: DeviationView | null;
   /** Selected cards that are stale, in selection order. */
   staleSelected: string[];
   /**
@@ -2398,7 +2431,8 @@ export function createTableState(
     invalidations: [],
   },
   inventory: Inventory = EMPTY_INVENTORY,
-  crisis: CrisisCard | null = null
+  crisis: CrisisCard | null = null,
+  deviation: ScheduledDeviation | null = null
 ): TableState {
   const consumables = [...inventory.consumables];
   const grants: Consumable[] = [
@@ -2450,6 +2484,7 @@ export function createTableState(
     handLevels: inventory.handLevels ?? initialHandLevels(),
     crisis,
     crisisResolution: null,
+    deviation,
     modifiers: [],
     auditLog: [],
     session: "OPEN",
@@ -2475,6 +2510,7 @@ export function createTableState(
       invalidations: history.invalidations.length,
       inventory,
       crisis,
+      deviation,
     },
   });
 }
@@ -2578,6 +2614,76 @@ function applyStudyEvents(
     messages.push(applied.message);
   }
   return { state: next, message: messages.join(" ") };
+}
+
+/**
+ * Lands the Blind's protocol deviation once its hand has been played and
+ * the inbox refilled (#1087). It lands mid-Blind only: a Blind that hand
+ * cleared or failed never sees it. Null when nothing lands.
+ */
+function landDeviation(
+  scenario: Scenario,
+  state: TableState
+): { state: TableState; message: string } | null {
+  const deviation = state.deviation;
+  if (
+    !deviation ||
+    deviation.afterHands !== state.handsPlayed ||
+    state.status !== "REVIEWING"
+  ) {
+    return null;
+  }
+  const applied = transitionTable(
+    scenario,
+    state,
+    deviationTransition(state, deviation.event)
+  );
+  if (!applied) return null;
+  return {
+    state: applied.state,
+    message: `Protocol deviation: ${deviation.event.name}. ${applied.message}`,
+  };
+}
+
+/**
+ * A deviation's transition as it lands: a day after the current snapshot,
+ * so study time only moves forward whichever Blind it lands in.
+ */
+function deviationTransition(
+  state: TableState,
+  event: DeviationEvent
+): PopulationTransition {
+  const effectiveAt = new Date(
+    Date.parse(currentSnapshot(state).capturedAt) + 86_400_000
+  )
+    .toISOString()
+    .replace(/\.\d{3}Z$/, "Z");
+  return { ...event.transition, effectiveAt };
+}
+
+/** The deviation that landed this Blind, as the table shows it, or null. */
+function deviationView(
+  scenario: Scenario,
+  state: TableState
+): DeviationView | null {
+  const deviation = state.deviation;
+  if (!deviation) return null;
+  const record = state.invalidations
+    .slice(state.opening.invalidations)
+    .find((i) => i.transitionId === deviation.event.transition.id);
+  if (!record) return null;
+  return {
+    name: deviation.event.name,
+    flavor: deviation.event.flavor,
+    afterHands: deviation.afterHands,
+    subjectId: record.subjectId,
+    populations: record.populations,
+    snapshot: record.to,
+    staled: record.staleCardIds.map((id) =>
+      cardShortName(cardById(scenario, state, id) as TlfCard)
+    ),
+    fresh: state.handsPlayed === deviation.afterHands,
+  };
 }
 
 /**
@@ -2868,7 +2974,8 @@ function applyTableAction(
           ),
         },
         state.opening.inventory,
-        state.opening.crisis
+        state.opening.crisis,
+        state.opening.deviation ?? null
       ),
       lastEvent: nextEvent(state, "RESET", `${scenario.blind.name} restarted.`),
     };
@@ -3064,7 +3171,7 @@ function applyTableAction(
       const locking =
         csrLockOf(scenario) !== undefined &&
         classification.handType === "CSR_STRAIGHT";
-      const { state: settled, outcome } = settle(
+      const hand = settle(
         scenario,
         locking
           ? {
@@ -3073,6 +3180,11 @@ function applyTableAction(
             }
           : refilled
       );
+      // Staled outputs can leave nothing playable, so the table settles again.
+      const deviation = landDeviation(scenario, hand.state);
+      const { state: settled, outcome } = deviation
+        ? settle(scenario, deviation.state)
+        : hand;
       const zero = evaluation.zeroRule.triggered
         ? " Zero-score rule triggered."
         : "";
@@ -3093,7 +3205,7 @@ function applyTableAction(
         lastEvent: nextEvent(
           state,
           "PLAYED",
-          `${handName(classification.handType)} scored ${evaluation.score} (${evaluation.chips.total} Chips × ${evaluation.finalMult} Mult).${zero} Round ${settled.roundScore} of ${scenario.blind.quota}.${defended}${answeredText}${clockText}${outcome ? ` ${outcome}` : ""}${news ? ` ${news}` : ""}`
+          `${handName(classification.handType)} scored ${evaluation.score} (${evaluation.chips.total} Chips × ${evaluation.finalMult} Mult).${zero} Round ${settled.roundScore} of ${scenario.blind.quota}.${defended}${answeredText}${clockText}${outcome ? ` ${outcome}` : ""}${news ? ` ${news}` : ""}${deviation ? ` ${deviation.message}` : ""}`
         ),
       };
     }
@@ -4181,6 +4293,7 @@ export function deriveTableView(
     lastTimeline,
     scoreLog: scoreLogOf(scenario, state),
     snapshot: snapshotRef(currentSnapshot(state)),
+    deviation: deviationView(scenario, state),
     staleSelected,
     playBlockedReason:
       staleSelected.length > 0

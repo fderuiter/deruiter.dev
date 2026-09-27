@@ -18,6 +18,14 @@ The act it was drawn for.
 
 ***
 
+### afterHands?
+
+> `optional` **afterHands?**: `number`
+
+For a deviation, the hands played when it lands.
+
+***
+
 ### blindIndex
 
 > **blindIndex**: `number`
@@ -38,10 +46,10 @@ The draw index this draw consumed.
 
 > **id**: `string`
 
-The boss scenario or crisis card drawn.
+The boss scenario, crisis card or protocol deviation drawn.
 
 ***
 
 ### kind
 
-> **kind**: `"BOSS"` \| `"CRISIS"`
+> **kind**: `"BOSS"` \| `"CRISIS"` \| `"DEVIATION"`

@@ -43,15 +43,18 @@ import {
   type TableEvent,
   type TableState,
   type TableView,
+  type ScheduledDeviation,
 } from "./table";
 
 /** One seeded draw, as the run log records it. */
 export interface RunDraw {
   /** The draw index this draw consumed. */
   drawIndex: number;
-  kind: "BOSS" | "CRISIS";
-  /** The boss scenario or crisis card drawn. */
+  kind: "BOSS" | "CRISIS" | "DEVIATION";
+  /** The boss scenario, crisis card or protocol deviation drawn. */
   id: string;
+  /** For a deviation, the hands played when it lands. */
+  afterHands?: number;
   /** The act it was drawn for. */
   actIndex: number;
   /** The Blind of that act it was drawn for. */
@@ -916,6 +919,59 @@ function deriveShopView(plan: RunPlan, run: RunState): ShopView | null {
   };
 }
 
+/**
+ * Draws a Blind's protocol deviation (#1087): whether one fires, which one
+ * (without replacement across the run) and after which hand. Only a Small or
+ * Big Blind of an act with a deviation deck draws, consuming three draws
+ * whether or not one fires, so the rest of the run's draws never depend on
+ * the roll; one that fires is logged in `draws`.
+ */
+function drawDeviation(
+  act: Act,
+  run: Pick<RunState, "seed" | "drawIndex" | "draws">,
+  actIndex: number,
+  blindIndex: number
+): {
+  deviation: ScheduledDeviation | null;
+  drawIndex: number;
+  draws: RunDraw[];
+} {
+  const scenario = act.blinds[blindIndex];
+  const deviations = act.deviations;
+  if (!deviations || !scenario || scenario.blind.tier === "BOSS_BLIND") {
+    return { deviation: null, drawIndex: run.drawIndex, draws: run.draws };
+  }
+  const drawn = new Set(
+    run.draws.filter((d) => d.kind === "DEVIATION").map((d) => d.id)
+  );
+  const remaining = deviations.deck.filter((e) => !drawn.has(e.id));
+  const at = run.drawIndex;
+  const fires =
+    remaining.length > 0 &&
+    drawInt(run.seed, at, 100) < deviations.chancePercent;
+  if (!fires) {
+    return { deviation: null, drawIndex: at + 3, draws: run.draws };
+  }
+  const event = remaining[drawInt(run.seed, at + 1, remaining.length)];
+  const afterHands =
+    event.afterHands[drawInt(run.seed, at + 2, event.afterHands.length)];
+  return {
+    deviation: { event, afterHands },
+    drawIndex: at + 3,
+    draws: [
+      ...run.draws,
+      {
+        drawIndex: at + 1,
+        kind: "DEVIATION",
+        id: event.id,
+        afterHands,
+        actIndex,
+        blindIndex,
+      },
+    ],
+  };
+}
+
 /** A fresh table for a Blind, announcing it with a sequence that follows `after`. */
 function startBlind(
   scenario: Scenario,
@@ -924,9 +980,16 @@ function startBlind(
   crisis: CrisisCard | null,
   after: TableEvent | null,
   kind: TableEvent["kind"],
-  message: string
+  message: string,
+  deviation: ScheduledDeviation | null = null
 ): TableState {
-  const table = createTableState(scenario, history, inventory, crisis);
+  const table = createTableState(
+    scenario,
+    history,
+    inventory,
+    crisis,
+    deviation
+  );
   const drawn = crisis ? ` Crisis: ${crisis.name}. ${crisis.description}` : "";
   const cpu = blindStartCpu(table.relics);
   const bonus =
@@ -1025,20 +1088,32 @@ export function createRunState(
   seed: string = DEFAULT_SEED
 ): RunState {
   const first = planActs(plan)[0];
-  const { bossId, drawIndex, draws } = drawBoss(first, 0, {
+  const boss = drawBoss(first, 0, {
     seed,
     drawIndex: 0,
     draws: [],
   });
+  const { deviation, drawIndex, draws } = drawDeviation(
+    first,
+    { seed, ...boss },
+    0,
+    0
+  );
   return {
     actId: plan.id,
     seed,
     drawIndex,
     draws,
-    bossIds: [bossId],
+    bossIds: [boss.bossId],
     actIndex: 0,
     blindIndex: 0,
-    table: createTableState(first.blinds[0]),
+    table: createTableState(
+      first.blinds[0],
+      undefined,
+      undefined,
+      null,
+      deviation
+    ),
     cashOut: null,
     shop: null,
     shopDraws: 0,
@@ -1171,10 +1246,16 @@ export function advanceRun(
           round !== null && endless
             ? drawEndlessBoss(endless, stop.actIndex + 1, run)
             : drawBoss(nextAct, stop.actIndex, run);
+        const opening = drawDeviation(
+          nextAct,
+          { seed: run.seed, ...boss },
+          stop.actIndex,
+          0
+        );
         return {
           ...run,
-          drawIndex: boss.drawIndex,
-          draws: boss.draws,
+          drawIndex: opening.drawIndex,
+          draws: opening.draws,
           bossIds: [...run.bossIds, boss.bossId],
           actIndex: stop.actIndex,
           blindIndex: 0,
@@ -1187,13 +1268,16 @@ export function advanceRun(
             null,
             run.table.lastEvent,
             "ACT_STARTED",
-            `${nextAct.title}. A new ${round === null ? "study" : "post-marketing study"}: subjects, snapshots, the SAP and every output start over. ${next.blind.name}. Target ${next.blind.quota}.`
+            `${nextAct.title}. A new ${round === null ? "study" : "post-marketing study"}: subjects, snapshots, the SAP and every output start over. ${next.blind.name}. Target ${next.blind.quota}.`,
+            opening.deviation
           ),
         };
       }
-      const { crisis, drawIndex, draws } = drawCrisis(
+      const drawnCrisis = drawCrisis(act, run, run.actIndex, stop.blindIndex);
+      const { crisis } = drawnCrisis;
+      const { deviation, drawIndex, draws } = drawDeviation(
         act,
-        run,
+        { seed: run.seed, ...drawnCrisis },
         run.actIndex,
         stop.blindIndex
       );
@@ -1213,7 +1297,8 @@ export function advanceRun(
           crisis,
           run.table.lastEvent,
           "BLIND_STARTED",
-          `${next.blind.name}. Target ${next.blind.quota}.`
+          `${next.blind.name}. Target ${next.blind.quota}.`,
+          deviation
         ),
       };
     }

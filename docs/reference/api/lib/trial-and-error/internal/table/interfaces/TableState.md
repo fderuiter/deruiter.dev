@@ -122,6 +122,16 @@ Index of the next undealt card in the scenario deck.
 
 ***
 
+### deviation?
+
+> `optional` **deviation?**: [`ScheduledDeviation`](ScheduledDeviation.md) \| `null`
+
+The protocol deviation the run's draw scheduled for this Blind (#1087),
+or null. It lands after `afterHands` hands; until then the view does
+not show it.
+
+***
+
 ### discards
 
 > **discards**: `number`
@@ -321,6 +331,10 @@ exactly that.
 #### crisis
 
 > **crisis**: \{ `choices`: `object`[]; `description`: `string`; `id`: `string`; `name`: `string`; \} \| `null`
+
+#### deviation?
+
+> `optional` **deviation?**: [`ScheduledDeviation`](ScheduledDeviation.md) \| `null`
 
 #### invalidations
 

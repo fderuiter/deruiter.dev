@@ -1858,8 +1858,10 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
           </div>
         </div>
 
-        {/* Objective: always say what winning looks like */}
-        <p className="w-full px-2 py-0.5 text-[9px] font-bold text-neutral-400 truncate">
+        {/* Objective: always say what winning looks like. Short landscape
+            screens need every row for the maze, and the in-maze
+            "REACH THE EXIT" prompt already carries the goal there. */}
+        <p className="w-full px-2 py-0.5 text-[9px] font-bold text-neutral-400 truncate [@media(max-height:500px)]:hidden">
           <span className="text-amber-400">OBJECTIVE</span> · Guide the{" "}
           <span className="text-amber-400">@</span> to the{" "}
           <span className="text-amber-400">EXIT</span> (bottom right). Bugs and

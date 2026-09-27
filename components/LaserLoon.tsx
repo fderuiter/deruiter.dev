@@ -37,6 +37,8 @@ import { useGameFullscreen as useFullscreen } from "@/components/arcade/CabinetF
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useAnnouncer } from "@/hooks/useAnnouncer";
 import { useResponsiveCanvas } from "@/hooks/useResponsiveCanvas";
+import { useCanvasResolution } from "@/hooks/useCanvasResolution";
+import { applyCanvasScale } from "@/lib/arcade";
 import { TwinStickAimDock } from "@/components/arcade/ControlDocks";
 import {
   LaserMode,
@@ -173,6 +175,13 @@ export const LaserLoon: React.FC = () => {
     internalWidth: DEFAULT_CANVAS_WIDTH,
     internalHeight: DEFAULT_CANVAS_HEIGHT,
     maxDpr: 2.0,
+  });
+  // Sharp on HiDPI screens; drawing stays in the 768x420 logical space.
+  const canvasScaleRef = useCanvasResolution({
+    canvasRef,
+    logicalWidth: DEFAULT_CANVAS_WIDTH,
+    logicalHeight: DEFAULT_CANVAS_HEIGHT,
+    active: isMounted,
   });
   const { isFullscreen, toggleFullscreen } = useFullscreen(containerRef);
 
@@ -488,9 +497,8 @@ export const LaserLoon: React.FC = () => {
     if (screenShakeEnabled) shakeIntensityRef.current = 14;
 
     const loon = loonPosRef.current;
-    const canvas = canvasRef.current;
-    const w = canvas?.width || DEFAULT_CANVAS_WIDTH;
-    const h = canvas?.height || DEFAULT_CANVAS_HEIGHT;
+    const w = DEFAULT_CANVAS_WIDTH;
+    const h = DEFAULT_CANVAS_HEIGHT;
 
     const result = triggerUltimateTremolo(
       targetsRef.current,
@@ -846,8 +854,10 @@ export const LaserLoon: React.FC = () => {
       const dt = Math.min(32, time - lastFrameTime) / 16.666;
       lastFrameTime = time;
 
-      const width = canvas.width || DEFAULT_CANVAS_WIDTH;
-      const height = canvas.height || DEFAULT_CANVAS_HEIGHT;
+      const width = DEFAULT_CANVAS_WIDTH;
+      const height = DEFAULT_CANVAS_HEIGHT;
+      const scale = canvasScaleRef.current;
+      applyCanvasScale(ctx, scale);
 
       // Screen shake calculation
       let shakeOffsetX = 0;
@@ -1486,6 +1496,7 @@ export const LaserLoon: React.FC = () => {
     };
   }, [
     isMounted,
+    canvasScaleRef,
     gameState,
     mode,
     currentActNum,
@@ -1521,7 +1532,7 @@ export const LaserLoon: React.FC = () => {
       loonPosRef.current.targetY = clamp(
         mouseY,
         40,
-        (canvasRef.current?.height || DEFAULT_CANVAS_HEIGHT) - 40
+        DEFAULT_CANVAS_HEIGHT - 40
       );
     }
   };
@@ -1543,10 +1554,8 @@ export const LaserLoon: React.FC = () => {
     updatePointerAim(e.clientX, e.clientY);
 
     const rect = canvasRef.current.getBoundingClientRect();
-    const scaleX =
-      (canvasRef.current.width || DEFAULT_CANVAS_WIDTH) / (rect.width || 1);
-    const scaleY =
-      (canvasRef.current.height || DEFAULT_CANVAS_HEIGHT) / (rect.height || 1);
+    const scaleX = DEFAULT_CANVAS_WIDTH / (rect.width || 1);
+    const scaleY = DEFAULT_CANVAS_HEIGHT / (rect.height || 1);
     const mouseX = (e.clientX - rect.left) * scaleX;
     const mouseY = (e.clientY - rect.top) * scaleY;
 
@@ -1605,10 +1614,8 @@ export const LaserLoon: React.FC = () => {
     containerRef.current?.focus({ preventScroll: true });
 
     const rect = canvasRef.current.getBoundingClientRect();
-    const scaleX =
-      (canvasRef.current.width || DEFAULT_CANVAS_WIDTH) / (rect.width || 1);
-    const scaleY =
-      (canvasRef.current.height || DEFAULT_CANVAS_HEIGHT) / (rect.height || 1);
+    const scaleX = DEFAULT_CANVAS_WIDTH / (rect.width || 1);
+    const scaleY = DEFAULT_CANVAS_HEIGHT / (rect.height || 1);
     const mouseX = (e.clientX - rect.left) * scaleX;
     const mouseY = (e.clientY - rect.top) * scaleY;
 
@@ -2698,10 +2705,7 @@ export const LaserLoon: React.FC = () => {
               <button
                 onClick={() => {
                   if (canvasRef.current) {
-                    spawnTarget(
-                      canvasRef.current.width,
-                      canvasRef.current.height
-                    );
+                    spawnTarget(DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT);
                   }
                 }}
                 className="min-h-[44px] min-w-[44px] px-3 py-1 bg-neutral-800 hover:bg-neutral-700 text-red-400 text-[10px] font-mono font-bold rounded-lg border border-neutral-700 cursor-pointer touch-manipulation select-none active:scale-95 flex items-center justify-center"
@@ -2712,8 +2716,8 @@ export const LaserLoon: React.FC = () => {
                 onClick={() => {
                   if (canvasRef.current) {
                     triggerBossEncounter(
-                      canvasRef.current.width,
-                      canvasRef.current.height
+                      DEFAULT_CANVAS_WIDTH,
+                      DEFAULT_CANVAS_HEIGHT
                     );
                   }
                 }}

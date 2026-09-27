@@ -8,6 +8,12 @@
 
 ## References
 
+### applyCanvasScale
+
+Re-exports [applyCanvasScale](viewport/functions/applyCanvasScale.md)
+
+***
+
 ### ArcadeEngine
 
 Re-exports [ArcadeEngine](engine/classes/ArcadeEngine.md)
@@ -38,6 +44,18 @@ Re-exports [ArcadeViewport](viewport/classes/ArcadeViewport.md)
 
 ***
 
+### CanvasResolution
+
+Re-exports [CanvasResolution](viewport/interfaces/CanvasResolution.md)
+
+***
+
+### computeCanvasResolution
+
+Re-exports [computeCanvasResolution](viewport/functions/computeCanvasResolution.md)
+
+***
+
 ### GamePoint
 
 Re-exports [GamePoint](viewport/interfaces/GamePoint.md)
@@ -47,6 +65,12 @@ Re-exports [GamePoint](viewport/interfaces/GamePoint.md)
 ### InputSnapshot
 
 Re-exports [InputSnapshot](input/interfaces/InputSnapshot.md)
+
+***
+
+### MAX\_CANVAS\_DPR
+
+Re-exports [MAX_CANVAS_DPR](viewport/variables/MAX_CANVAS_DPR.md)
 
 ***
 

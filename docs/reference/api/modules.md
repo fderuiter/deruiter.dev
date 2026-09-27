@@ -7,6 +7,7 @@
 ## Modules
 
 - [hooks/useAnnouncer](hooks/useAnnouncer/README.md)
+- [hooks/useCanvasResolution](hooks/useCanvasResolution/README.md)
 - [hooks/useClipboard](hooks/useClipboard/README.md)
 - [hooks/useConsoleArt](hooks/useConsoleArt/README.md)
 - [hooks/useCrfService](hooks/useCrfService/README.md)

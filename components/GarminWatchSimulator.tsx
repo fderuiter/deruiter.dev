@@ -22,6 +22,8 @@ import { useGameFullscreen as useFullscreen } from "@/components/arcade/CabinetF
 import { useAudio } from "@/components/providers/AudioProvider";
 import { useTelemetry } from "@/hooks/useTelemetry";
 import { useResponsiveCanvas } from "@/hooks/useResponsiveCanvas";
+import { useCanvasResolution } from "@/hooks/useCanvasResolution";
+import { applyCanvasScale } from "@/lib/arcade";
 import { useAnnouncer } from "@/hooks/useAnnouncer";
 import { useGarminService } from "@/hooks/useGarminService";
 import { triggerHaptic } from "@/lib/haptics";
@@ -108,6 +110,19 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     internalWidth: CANVAS_SIZE,
     internalHeight: CANVAS_SIZE,
     maxDpr: 1.5,
+  });
+  // Sharp on HiDPI screens; drawing stays in the 280x280 logical space.
+  const canvasScaleRef = useCanvasResolution({
+    canvasRef,
+    logicalWidth: CANVAS_SIZE,
+    logicalHeight: CANVAS_SIZE,
+    // Resizing clears the bitmap; repaint in case the loop is idle.
+    onResize: (scale) => {
+      const ctx = canvasRef.current?.getContext("2d");
+      if (!ctx) return;
+      applyCanvasScale(ctx, scale);
+      renderCanvasFrame(ctx, stateRef.current);
+    },
   });
   const containerRef = useRef<HTMLDivElement | null>(null);
   const outerContainerRef = useRef<HTMLDivElement | null>(null);
@@ -569,6 +584,8 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       if (canvas) {
         const ctx = canvas.getContext("2d");
         if (ctx) {
+          const scale = canvasScaleRef.current;
+          applyCanvasScale(ctx, scale);
           renderCanvasFrame(ctx, stateRef.current);
         }
       }
@@ -588,7 +605,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
         cancelAnimationFrame(animationFrameId);
       }
     };
-  }, [applyTransition]);
+  }, [applyTransition, canvasScaleRef]);
 
   // Theme styling helpers
   const getThemeChassis = () => {

@@ -47,13 +47,20 @@ export class ArcadeViewport {
   /**
    * Calculates viewport metrics based on container dimensions and physical pixel ratio.
    */
-  public calculateMetrics(containerWidth: number, containerHeight: number, rawDpr = 1.0): ViewportMetrics {
+  public calculateMetrics(
+    containerWidth: number,
+    containerHeight: number,
+    rawDpr = 1.0
+  ): ViewportMetrics {
     const dpr = Math.max(1.0, Math.min(rawDpr || 1.0, this.maxDpr));
     const width = Math.max(1, containerWidth);
     const height = Math.max(1, containerHeight);
 
     if (this.mode === "integer-letterbox") {
-      const scale = Math.max(1, Math.floor(Math.min(width / this.baseWidth, height / this.baseHeight)));
+      const scale = Math.max(
+        1,
+        Math.floor(Math.min(width / this.baseWidth, height / this.baseHeight))
+      );
       const canvasWidth = this.baseWidth * scale;
       const canvasHeight = this.baseHeight * scale;
       const offsetX = Math.max(0, (width - canvasWidth) / 2);
@@ -98,7 +105,10 @@ export class ArcadeViewport {
   /**
    * Applies the transformation matrix to a 2D canvas context.
    */
-  public applyTransform(ctx: CanvasRenderingContext2D, metrics: ViewportMetrics): void {
+  public applyTransform(
+    ctx: CanvasRenderingContext2D,
+    metrics: ViewportMetrics
+  ): void {
     if (!ctx || typeof ctx.setTransform !== "function") return;
 
     if (this.mode === "integer-letterbox") {
@@ -137,4 +147,64 @@ export function screenToGameCoords(
     x: Number.isFinite(gameX) ? gameX : 0,
     y: Number.isFinite(gameY) ? gameY : 0,
   };
+}
+
+/** Highest device pixel ratio a game canvas renders at; beyond 2x the GPU cost outweighs the visible gain. */
+export const MAX_CANVAS_DPR = 2;
+
+/** Backing-store size for a canvas that draws in fixed logical units. */
+export interface CanvasResolution {
+  /** Backing-store pixels per logical unit; the drawing context is scaled by this once per frame. */
+  scale: number;
+  /** Backing-store width in device pixels. */
+  width: number;
+  /** Backing-store height in device pixels. */
+  height: number;
+}
+
+/**
+ * Sizes a canvas backing store to the device pixels it is displayed at, so
+ * text and vector art stay sharp on HiDPI screens while game logic keeps
+ * working in logical units. The scale never drops below 1, so a canvas
+ * shown smaller than its logical size keeps its full detail, and the device
+ * pixel ratio is capped at `maxDpr`. Degenerate inputs fall back to the
+ * logical size.
+ */
+export function computeCanvasResolution(
+  logicalWidth: number,
+  logicalHeight: number,
+  cssWidth: number,
+  devicePixelRatio: number,
+  maxDpr: number = MAX_CANVAS_DPR
+): CanvasResolution {
+  const baseWidth =
+    Number.isFinite(logicalWidth) && logicalWidth >= 1
+      ? Math.round(logicalWidth)
+      : 1;
+  const baseHeight =
+    Number.isFinite(logicalHeight) && logicalHeight >= 1
+      ? Math.round(logicalHeight)
+      : 1;
+  const cap = Number.isFinite(maxDpr) && maxDpr >= 1 ? maxDpr : 1;
+  const dpr = Number.isFinite(devicePixelRatio)
+    ? Math.min(cap, Math.max(1, devicePixelRatio))
+    : 1;
+  const displayWidth = Number.isFinite(cssWidth) && cssWidth > 0 ? cssWidth : 0;
+  const width = Math.max(baseWidth, Math.round(displayWidth * dpr));
+  const scale = width / baseWidth;
+  return { scale, width, height: Math.max(1, Math.round(baseHeight * scale)) };
+}
+
+/**
+ * Scales a 2D context so drawing in logical units fills a backing store sized
+ * by `computeCanvasResolution`. Replaces any earlier transform; a context
+ * without `setTransform` (a minimal test double) is left untouched.
+ */
+export function applyCanvasScale(
+  ctx: CanvasRenderingContext2D,
+  scale: number
+): void {
+  if (typeof ctx.setTransform !== "function") return;
+  const s = Number.isFinite(scale) && scale > 0 ? scale : 1;
+  ctx.setTransform(s, 0, 0, s, 0, 0);
 }

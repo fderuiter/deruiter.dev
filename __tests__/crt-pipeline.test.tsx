@@ -12,6 +12,7 @@ import { createRoot } from "react-dom/client";
 import {
   CRT_PRESETS,
   DEFAULT_CRT_CALIBRATION,
+  DEFAULT_CRT_PRESET_ID,
   loadCRTCalibration,
   saveCRTCalibration,
   getOrCreatePhosphorPattern,
@@ -78,7 +79,14 @@ describe("CRT Post-Processing Pipeline & Phosphor Mask Engine", () => {
 
     it("should have authentic arcade as default calibration", () => {
       expect(DEFAULT_CRT_CALIBRATION.scanlinesEnabled).toBe(true);
-      expect(DEFAULT_CRT_CALIBRATION.phosphorMask).toBe("shadow-mask");
+      expect(DEFAULT_CRT_CALIBRATION).toEqual(
+        CRT_PRESETS[DEFAULT_CRT_PRESET_ID].config
+      );
+      // #1187: the default keeps the maze readable under the CRT effects
+      expect(DEFAULT_CRT_PRESET_ID).toBe("trinitron-pro");
+      expect(DEFAULT_CRT_CALIBRATION.scanlineIntensity).toBeLessThanOrEqual(
+        0.2
+      );
     });
   });
 
@@ -86,7 +94,7 @@ describe("CRT Post-Processing Pipeline & Phosphor Mask Engine", () => {
     it("should return default calibration when storage is empty", () => {
       const config = loadCRTCalibration();
       expect(config.scanlinesEnabled).toBe(true);
-      expect(config.phosphorMask).toBe("shadow-mask");
+      expect(config).toEqual(DEFAULT_CRT_CALIBRATION);
     });
 
     it("should return default calibration when storage contains invalid JSON", () => {

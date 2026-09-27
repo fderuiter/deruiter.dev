@@ -265,6 +265,17 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   const loadRoom = useCallback(
     (mode: "roguelike" | "classic", targetStageOrIndex: number) => {
       setGameMode(mode);
+      floatingTextsRef.current = [
+        {
+          id: `objective-${Date.now()}`,
+          x: 7,
+          y: 8,
+          text: "REACH THE EXIT >>",
+          color: "#f59e0b",
+          alpha: 3,
+          vy: 0,
+        },
+      ];
       setMovesCount(0);
       setDronesStunned(false);
       setActiveSideEffect(null);
@@ -334,6 +345,12 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     },
     [loadRoom]
   );
+
+  // Load the opening room on mount so the maze, fog and HUD match the room
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadRoom("roguelike", 0);
+  }, [loadRoom]);
 
   // Restart current stage
   const handleRestart = useCallback(() => {
@@ -1248,12 +1265,12 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
               }
 
               if (cell === "#") {
-                ctx.fillStyle = isVis ? "#111817" : "#080c0b";
+                ctx.fillStyle = isVis ? "#1b2a24" : "#101714";
                 ctx.fillRect(px, py, cellW, cellH);
 
                 ctx.strokeStyle = isVis
-                  ? currentTheme.glowColor
-                  : "rgba(255, 255, 255, 0.05)";
+                  ? currentTheme.primaryColor
+                  : "rgba(255, 255, 255, 0.14)";
                 ctx.lineWidth = 1;
                 ctx.strokeRect(px + 0.5, py + 0.5, cellW - 1, cellH - 1);
               } else if (cell === "W") {
@@ -1293,12 +1310,32 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
               } else {
                 ctx.fillStyle = isVis
                   ? currentTheme.glowColor
-                  : "rgba(255, 255, 255, 0.03)";
+                  : "rgba(255, 255, 255, 0.08)";
                 ctx.beginPath();
                 ctx.arc(px + cellW / 2, py + cellH / 2, 1.2, 0, Math.PI * 2);
                 ctx.fill();
               }
             }
+          }
+
+          // C: the exit stays marked through the fog so there is always a goal
+          if (
+            gameMode === "roguelike" &&
+            !(exploredMap[EXIT_Y]?.[EXIT_X] ?? true)
+          ) {
+            const ex = EXIT_X * cellW;
+            const ey = EXIT_Y * cellH;
+            ctx.save();
+            ctx.setLineDash([2, 2]);
+            ctx.strokeStyle = "#f59e0b";
+            ctx.lineWidth = 1;
+            ctx.strokeRect(ex + 1.5, ey + 1.5, cellW - 3, cellH - 3);
+            ctx.fillStyle = "#f59e0b";
+            ctx.font = "bold 6px monospace";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText("EXIT", ex + cellW / 2, ey + cellH / 2);
+            ctx.restore();
           }
 
           // TSP Route Line in Room 1/3
@@ -1418,18 +1455,26 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
           const pX = playerPosition.x * cellW + cellW / 2;
           const pY = playerPosition.y * cellH + cellH / 2;
 
-          const glowGradient = ctx.createRadialGradient(pX, pY, 2, pX, pY, 14);
-          glowGradient.addColorStop(0, currentTheme.glowColor);
-          glowGradient.addColorStop(1, "rgba(0, 0, 0, 0)");
-          ctx.fillStyle = glowGradient;
-          ctx.beginPath();
-          ctx.arc(pX, pY, 14, 0, Math.PI * 2);
-          ctx.fill();
-
-          ctx.fillStyle = currentTheme.primaryColor;
-          ctx.beginPath();
-          ctx.arc(pX, pY, 4.5, 0, Math.PI * 2);
-          ctx.fill();
+          // An amber "@" cursor block, unlike any node, enemy or pickup
+          const blockW = cellW * 0.72;
+          const blockH = cellH * 0.72;
+          ctx.save();
+          ctx.fillStyle = "#f59e0b";
+          ctx.fillRect(pX - blockW / 2, pY - blockH / 2, blockW, blockH);
+          ctx.strokeStyle = "#fde68a";
+          ctx.lineWidth = 1;
+          ctx.strokeRect(
+            pX - blockW / 2 - 0.5,
+            pY - blockH / 2 - 0.5,
+            blockW + 1,
+            blockH + 1
+          );
+          ctx.fillStyle = "#0d0e11";
+          ctx.font = "bold 10px monospace";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText("@", pX, pY + 0.5);
+          ctx.restore();
 
           // Draw Particles
           particlesRef.current = particlesRef.current.filter((p) => {
@@ -1812,6 +1857,16 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
             </div>
           </div>
         </div>
+
+        {/* Objective: always say what winning looks like. Short landscape
+            screens need every row for the maze, and the in-maze
+            "REACH THE EXIT" prompt already carries the goal there. */}
+        <p className="w-full px-2 py-0.5 text-[9px] font-bold text-neutral-400 truncate [@media(max-height:500px)]:hidden">
+          <span className="text-amber-400">OBJECTIVE</span> · Guide the{" "}
+          <span className="text-amber-400">@</span> to the{" "}
+          <span className="text-amber-400">EXIT</span> (bottom right). Bugs and
+          drones cost HP.
+        </p>
 
         {/* Active Side-Effect Warning Banner */}
         {activeSideEffect && (

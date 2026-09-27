@@ -5,6 +5,7 @@ import {
   CRTCalibrationConfig,
   CRTPresetId,
   CRT_PRESETS,
+  DEFAULT_CRT_PRESET_ID,
   PhosphorMaskType,
   saveCRTCalibration,
 } from "@/lib/arcade/crt-pipeline";
@@ -82,7 +83,7 @@ export const CRTCalibrationModal: React.FC<CRTCalibrationModalProps> = ({
   );
 
   const handleResetDefaults = useCallback(() => {
-    handlePresetSelect("authentic-arcade");
+    handlePresetSelect(DEFAULT_CRT_PRESET_ID);
   }, [handlePresetSelect]);
 
   if (!isOpen) return null;

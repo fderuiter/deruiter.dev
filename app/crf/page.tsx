@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { NextPrevNav } from "@/components/ui/NextPrevNav";
 import { PageLayout } from "@/components/PageLayout";
+import { FieldManualButton } from "@/components/FieldManualButton";
 import { CRFStudioSkeleton } from "@/components/crf/Skeletons";
 
 const CRFStudioContainer = dynamic(
@@ -29,13 +30,16 @@ export default function CRFStudioPage() {
           duplicating a title the layout does not have room for. */}
       <h1 className="sr-only">CRF Studio</h1>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4 w-full">
-        <Breadcrumbs
-          items={[
-            { label: "Systems", href: "/#about" },
-            { label: "CRF Studio", href: "/crf" },
-          ]}
-        />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4 w-full flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
+          <Breadcrumbs
+            items={[
+              { label: "Systems", href: "/#about" },
+              { label: "CRF Studio", href: "/crf" },
+            ]}
+          />
+        </div>
+        <FieldManualButton manualId="crf" label="Studio Guide" />
       </div>
 
       <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 w-full">

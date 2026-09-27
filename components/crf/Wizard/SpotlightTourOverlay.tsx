@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import {
   IconX,
@@ -20,70 +20,130 @@ interface TourStep {
   id: string;
   stepNumber: number;
   title: string;
+  /** `data-tour` value of the element this step points at. */
+  target: string;
   targetDescription: string;
   details: string;
   actionHint: string;
-  position: "bottom-left" | "center" | "bottom-right" | "top-center";
 }
 
 const TOUR_STEPS: TourStep[] = [
   {
-    id: "step_palette",
+    id: "step_navigator",
     stepNumber: 1,
-    title: "1. Left Palette & 1-Click CDASH Scaffolder",
-    targetDescription: "Left Sidebar: Forms Navigator & Clinical Field Palette",
+    title: "1. Study navigator",
+    target: "navigator",
+    targetDescription: "Left panel: Spine, Forms and Palette",
     details:
-      "Explore clinical forms across your protocol or scaffold full CDASH 2.2 domains (DM, VS, AE, CM, LB, RECIST, DI, DU, DE, DA, EX, MH, DS) in 1-click. Drag or click widgets to add them to your form.",
+      "Spine lists the study's visits and the forms collected at each one. Forms lists every form in the study. Palette holds the field types: click one to add it to the open form.",
     actionHint:
-      "Tip: Press ⌘K or click 'Scaffold CDASH Domain' to inject pre-configured regulatory forms.",
-    position: "bottom-left",
+      "Tip: the '+ CDASH Form' button in the header adds a standard form such as Demographics or Adverse Events in one click.",
   },
   {
     id: "step_canvas",
     stepNumber: 2,
-    title: "2. Center 12-Column Responsive Canvas",
-    targetDescription: "Center Workspace: Form Canvas & Field Grid",
+    title: "2. Form canvas",
+    target: "canvas",
+    targetDescription: "Center: the form you are building",
     details:
-      "Design your Case Report Form on a flexible 12-column grid. Hover over any field to reveal quick width span steppers (3, 4, 6, 12 cols), click labels to edit directly, duplicate, or reorder sections.",
+      "The form is laid out on a 12-column grid. Click a field to select it, use - and + to change its width, and use the section arrows to reorder sections.",
     actionHint:
-      "Tip: Switch between Desktop, Tablet, and Mobile viewport modes at the top of the canvas.",
-    position: "center",
+      "Tip: switch between Desktop, Tablet and ePRO Mobile at the top of the canvas to preview each layout.",
   },
   {
     id: "step_inspector",
     stepNumber: 3,
-    title: "3. Right Inspector & Custom Options Builder",
-    targetDescription:
-      "Right Sidebar: Field Properties, Logic Rules & CDASH Metadata",
+    title: "3. Inspector",
+    target: "inspector",
+    targetDescription: "Right panel: settings for the selected field or form",
     details:
-      "Configure data types, custom multiple-choice options with Quick Templates (Yes/No, Likert 5-Pt), promote options to study codelists, write AST validation formulas, and inspect SDTM variable annotations.",
+      "Set the question text, data type, width, required behavior and allowed range. Edit Checks holds validation and show/hide rules, and CDASH / aCRF holds the SDTM mapping.",
     actionHint:
-      "Tip: Select any field to instantly load its properties in the inspector tabs.",
-    position: "bottom-right",
+      "Tip: select any field on the canvas to load its settings here.",
   },
   {
     id: "step_modes",
     stepNumber: 4,
-    title: "4. Workspace Mode Navigation",
-    targetDescription: "Top Header: Studio View Modes (1-5)",
+    title: "4. Studio modes",
+    target: "modes",
+    targetDescription: "Mode bar: other views of the same study",
     details:
-      "Seamlessly transition between the Form Canvas, Schedule of Activities (SoA Visit Matrix), AST Rule Graph Visualizer, Live 21 CFR Part 11 EDC Simulator, and Annotated CRF (aCRF) viewer.",
+      "Form Grid edits the open form as a table. Matrix (SoA) shows which forms are collected at which visit. AST Rules shows the edit checks as a graph. Live EDC lets you enter test data as a site would. aCRF Viewer shows the annotated CRF, and Exports downloads the study.",
     actionHint:
-      "Tip: Use hotkeys 1, 2, 3, 4, and 5 to rapidly switch between workspace views.",
-    position: "top-center",
+      "Tip: press 1 to 7 to jump between the modes in the order shown.",
   },
   {
-    id: "step_diagnostics",
+    id: "step_conformance",
     stepNumber: 5,
-    title: "5. CDISC Conformance & Regulatory Exports",
-    targetDescription: "Header Badges & Action Dropdowns",
+    title: "5. CDISC conformance",
+    target: "conformance",
+    targetDescription: "Header: conformance check",
     details:
-      "Monitor CDISC SDTM/CDASH compliance in real-time with 1-click Auto-Fix remediation. Export production CDISC ODM-XML v1.3.2, Blank / Annotated PDF CRFs, Microsoft Word (.docx) protocol books, and FHIR Questionnaires.",
+      "The studio checks the study against CDISC CDASH and SDTM rules as you edit. It reads 'Verified' when nothing is wrong, or shows the number of issues found.",
     actionHint:
-      "Tip: Click the CDISC Conformance badge to open the real-time Diagnostics Drawer.",
-    position: "top-center",
+      "Tip: click it to open the diagnostics drawer, where most issues have a one-click fix.",
   },
 ];
+
+interface TargetRect {
+  top: number;
+  left: number;
+  width: number;
+  height: number;
+}
+
+const CARD_WIDTH = 420;
+const GAP = 12;
+
+function measureTarget(target: string): TargetRect | null {
+  const el = document.querySelector<HTMLElement>(`[data-tour="${target}"]`);
+  if (!el) return null;
+  const rect = el.getBoundingClientRect();
+  if (rect.width === 0 || rect.height === 0) return null;
+  return {
+    top: rect.top,
+    left: rect.left,
+    width: rect.width,
+    height: rect.height,
+  };
+}
+
+/**
+ * Places the step card beside its target: below it when there is room,
+ * otherwise above, otherwise to whichever side is wider. Without a target
+ * (mobile, collapsed panel) the card is centered.
+ */
+function cardPosition(rect: TargetRect | null): React.CSSProperties {
+  if (!rect || typeof window === "undefined") return {};
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  if (vw < 768) return {};
+  const width = Math.min(CARD_WIDTH, vw - 2 * GAP);
+  const clampLeft = (x: number) => Math.min(Math.max(x, GAP), vw - width - GAP);
+  const below = rect.top + rect.height + GAP;
+  if (vh - below >= 300) {
+    return { position: "fixed", top: below, left: clampLeft(rect.left), width };
+  }
+  if (rect.top - GAP >= 300) {
+    return {
+      position: "fixed",
+      bottom: vh - rect.top + GAP,
+      left: clampLeft(rect.left),
+      width,
+    };
+  }
+  const rightRoom = vw - (rect.left + rect.width);
+  const left =
+    rightRoom >= width + 2 * GAP
+      ? rect.left + rect.width + GAP
+      : rect.left - width - GAP;
+  return {
+    position: "fixed",
+    top: Math.min(Math.max(rect.top, GAP), vh - 320),
+    left: clampLeft(left),
+    width,
+  };
+}
 
 export const SpotlightTourOverlay: React.FC<SpotlightTourOverlayProps> = ({
   isOpen,
@@ -107,9 +167,35 @@ export const SpotlightTourOverlay: React.FC<SpotlightTourOverlayProps> = ({
     returnFocus: true,
   });
 
+  const currentStep = TOUR_STEPS[currentStepIdx];
+  const [targetRect, setTargetRect] = useState<TargetRect | null>(null);
+
+  // Follow the highlighted element through scrolling and resizing. Measuring
+  // happens in an animation frame so the overlay reads settled layout.
+  useEffect(() => {
+    if (!isOpen) return;
+    const target = currentStep.target;
+    const el = document.querySelector<HTMLElement>(`[data-tour="${target}"]`);
+    el?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
+    let frame = 0;
+    const update = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => setTargetRect(measureTarget(target)));
+    };
+    update();
+    window.addEventListener("resize", update);
+    window.addEventListener("scroll", update, true);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", update, true);
+    };
+  }, [isOpen, currentStep.target]);
+
   if (!isOpen) return null;
 
-  const currentStep = TOUR_STEPS[currentStepIdx];
+  const placement = cardPosition(targetRect);
+  const isAnchored = Object.keys(placement).length > 0;
 
   const handleNext = () => {
     if (currentStepIdx < TOUR_STEPS.length - 1) {
@@ -128,10 +214,29 @@ export const SpotlightTourOverlay: React.FC<SpotlightTourOverlayProps> = ({
   return (
     <div
       ref={containerRef}
-      className="fixed inset-0 z-50 pointer-events-auto flex items-end justify-center sm:items-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
+      className={`fixed inset-0 z-50 pointer-events-auto flex items-end justify-center sm:items-center p-4 animate-fade-in ${
+        targetRect ? "" : "bg-black/60"
+      }`}
     >
+      {/* Spotlight: a ring around the target whose huge shadow dims the rest
+          of the page, so the described control stays visible and unblurred. */}
+      {targetRect && (
+        <div
+          aria-hidden="true"
+          data-testid="tour-spotlight"
+          className="fixed rounded-xl ring-2 ring-brand-cyan pointer-events-none transition-all duration-200 motion-reduce:transition-none"
+          style={{
+            top: targetRect.top - 4,
+            left: targetRect.left - 4,
+            width: targetRect.width + 8,
+            height: targetRect.height + 8,
+            boxShadow: "0 0 0 9999px rgba(0, 0, 0, 0.6)",
+          }}
+        />
+      )}
       <div
-        className="w-full max-w-lg bg-zinc-950 border border-brand-cyan/40 rounded-3xl shadow-2xl overflow-hidden ring-1 ring-brand-cyan/30 animate-scale-in"
+        style={placement}
+        className={`${isAnchored ? "" : "w-full max-w-lg "}relative bg-zinc-950 border border-brand-cyan/40 rounded-3xl shadow-2xl overflow-hidden ring-1 ring-brand-cyan/30 animate-scale-in`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="tour-step-title"

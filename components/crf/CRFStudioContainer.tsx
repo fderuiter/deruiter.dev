@@ -687,6 +687,14 @@ export const CRFStudioContainer: React.FC = () => {
   }, [future, study]);
 
   // Global Keyboard Shortcuts (Undo, Redo, Sidebar Toggles, Mode Switching, Hotkeys)
+  // The tour points at the designer's panes, so show them before it starts.
+  const startSpotlightTour = () => {
+    setActiveMode("designer");
+    setIsLeftSidebarOpen(true);
+    setIsRightInspectorOpen(true);
+    setIsSpotlightTourOpen(true);
+  };
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
@@ -737,12 +745,9 @@ export const CRFStudioContainer: React.FC = () => {
         return;
       }
 
-      // Quick Scaffolder (⌘K / Ctrl+K)
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        setIsScaffolderOpen(true);
-        return;
-      }
+      // ⌘K / Ctrl+K stays with the site-wide search palette so the shortcut
+      // means the same thing on every page (#1208); the scaffolder has its
+      // own "+ CDASH Form" button in the studio header.
 
       // Toggle Left Sidebar (⌘B / Ctrl+B)
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "b") {
@@ -777,21 +782,24 @@ export const CRFStudioContainer: React.FC = () => {
         setIsTerminalOpen((prev) => !prev);
         return;
       }
-      if (e.key === "?" || e.key === "F1") {
+      // "?" belongs to the page's Studio Guide (FieldManualButton), which
+      // listens site-wide; F1 alone opens the protocol wizard (#1208).
+      if (e.key === "F1") {
         e.preventDefault();
         setIsWizardOpen((prev) => !prev);
-      } else if (e.key === "1") {
-        setActiveMode("designer");
-      } else if (e.key === "2") {
-        setActiveMode("matrix");
-      } else if (e.key === "3") {
-        setActiveMode("rules");
-      } else if (e.key === "4") {
-        setActiveMode("edc");
-      } else if (e.key === "5") {
-        setActiveMode("acrf");
-      } else if (e.key === "6") {
-        setActiveMode("export");
+      } else if (!e.metaKey && !e.ctrlKey && !e.altKey) {
+        // Same order and numbers as the mode bar's shortcut badges.
+        const modeByKey: Record<string, StudioMode> = {
+          "1": "designer",
+          "2": "grid",
+          "3": "matrix",
+          "4": "rules",
+          "5": "edc",
+          "6": "acrf",
+          "7": "export",
+        };
+        const mode = modeByKey[e.key];
+        if (mode) setActiveMode(mode);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -1466,7 +1474,7 @@ export const CRFStudioContainer: React.FC = () => {
         onOpenBaselines={() => setIsBaselinesModalOpen(true)}
         onOpenCompareBaseline={() => setIsCompareModalOpen(true)}
         onOpenWizard={() => setIsWizardOpen(true)}
-        onStartSpotlightTour={() => setIsSpotlightTourOpen(true)}
+        onStartSpotlightTour={startSpotlightTour}
         onCopyShareLink={handleCopyShareLink}
       />
 
@@ -1522,6 +1530,7 @@ export const CRFStudioContainer: React.FC = () => {
             {isLeftSidebarOpen && (
               <aside
                 aria-label="Study navigator"
+                data-tour="navigator"
                 className="hidden md:flex w-64 lg:w-72 bg-zinc-950 border-r border-zinc-850 flex-col shrink-0 transition-all"
               >
                 <StudySpine
@@ -1656,7 +1665,10 @@ export const CRFStudioContainer: React.FC = () => {
             </div>
 
             {/* Center Canvas for Desktop/Tablet (Visible on md+ screens) */}
-            <div className="hidden md:flex flex-1 flex-col overflow-hidden">
+            <div
+              data-tour="canvas"
+              className="hidden md:flex flex-1 flex-col overflow-hidden"
+            >
               <FormCanvas
                 form={activeForm}
                 selectedFieldId={selectedFieldId}
@@ -1687,6 +1699,7 @@ export const CRFStudioContainer: React.FC = () => {
             {isRightInspectorOpen && (
               <aside
                 aria-label="Field inspector"
+                data-tour="inspector"
                 className="hidden md:flex w-72 lg:w-96 bg-zinc-950 shrink-0 flex-col transition-all"
               >
                 <InspectorPanel
@@ -1986,7 +1999,7 @@ export const CRFStudioContainer: React.FC = () => {
           requestStudyReplacement(updated, "Wizard Protocol");
           playSuccess();
         }}
-        onStartSpotlightTour={() => setIsSpotlightTourOpen(true)}
+        onStartSpotlightTour={startSpotlightTour}
       />
 
       {/* Interactive UI Spotlight Tour */}

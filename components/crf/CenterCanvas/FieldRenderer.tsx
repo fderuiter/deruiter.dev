@@ -145,7 +145,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
           <span className="font-mono text-[10px] font-bold text-brand-cyan bg-brand-cyan/10 px-1.5 py-0.5 rounded border border-brand-cyan/20 shrink-0 whitespace-nowrap">
             {field.variableName}
           </span>
-          <span className="font-mono text-[10px] text-zinc-500 bg-zinc-900 px-1.5 py-0.5 rounded border border-zinc-800">
+          <span className="font-mono text-[10px] text-zinc-400 bg-zinc-900 px-1.5 py-0.5 rounded border border-zinc-800 whitespace-nowrap">
             {field.dataType}
           </span>
 
@@ -171,7 +171,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                 : field.requirementTier === "hard_stop" ||
                     (!field.requirementTier && field.required)
                   ? "bg-red-500/15 text-red-400 border-red-500/30 font-bold"
-                  : "bg-zinc-900 text-zinc-600 border-zinc-800 hover:text-zinc-400"
+                  : "bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-zinc-200"
             }`}
             title={`Requirement Tier: ${
               field.requirementTier === "auto_query"

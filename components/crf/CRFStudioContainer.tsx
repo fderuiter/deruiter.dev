@@ -1441,11 +1441,11 @@ export const CRFStudioContainer: React.FC = () => {
           "--brand-accent": activeBranding.accentColor || "#0ea5e9",
         } as React.CSSProperties
       }
-      className={`flex flex-col h-[var(--layout-studio-budget,calc(100dvh-var(--header-height,80px)))] h-[calc(100dvh-var(--header-height,80px))] max-h-[var(--layout-studio-budget,calc(100dvh-var(--header-height,80px)))] ${
+      className={`flex flex-col min-h-dvh md:min-h-0 md:h-[var(--layout-studio-budget,calc(100dvh-var(--header-height,80px)))] md:max-h-[var(--layout-studio-budget,calc(100dvh-var(--header-height,80px)))] ${
         theme === "light"
           ? "bg-slate-50 text-slate-900"
           : "bg-zinc-950 text-foreground"
-      } overflow-hidden relative`}
+      } overflow-visible md:overflow-hidden relative`}
     >
       {/* Studio Header Bar */}
       <StudioHeader
@@ -1523,7 +1523,7 @@ export const CRFStudioContainer: React.FC = () => {
       </div>
 
       {/* Main Workspace Body based on Mode */}
-      <div className="flex-1 flex overflow-hidden relative">
+      <div className="flex-1 flex min-h-0 overflow-visible md:overflow-hidden relative">
         {activeMode === "designer" && activeForm && (
           <>
             {/* Desktop / Tablet Left Sidebar: Study Spine, Forms & Global Library */}
@@ -1564,7 +1564,7 @@ export const CRFStudioContainer: React.FC = () => {
             )}
 
             {/* Mobile Stack Views (Visible only on < md screens) */}
-            <div className="md:hidden flex-1 flex flex-col overflow-hidden">
+            <div className="md:hidden flex-1 flex flex-col min-w-0">
               {mobileActiveView === "forms" && (
                 <div className="flex-1 overflow-y-auto bg-zinc-950">
                   <StudySpine
@@ -1600,7 +1600,7 @@ export const CRFStudioContainer: React.FC = () => {
               )}
 
               {mobileActiveView === "canvas" && (
-                <div className="flex-1 flex flex-col overflow-hidden">
+                <div className="flex-1 flex flex-col min-w-0">
                   <FormCanvas
                     form={activeForm}
                     selectedFieldId={selectedFieldId}

@@ -222,7 +222,7 @@ export const FormCanvas: React.FC<FormCanvasProps> = ({
   return (
     <div
       onClick={() => onSelectField(null)}
-      className="flex-1 flex flex-col h-full bg-zinc-950/80 crf-canvas-area overflow-y-auto p-3 sm:p-6 transition-all relative"
+      className="flex-1 flex flex-col min-w-0 h-auto md:h-full bg-zinc-950/80 crf-canvas-area overflow-visible md:overflow-y-auto p-3 sm:p-6 transition-all relative"
     >
       {/* Top Canvas Controls Bar */}
       <div className="flex flex-wrap items-center justify-between gap-2.5 mb-4 sm:mb-6 pb-3 sm:pb-4 border-b border-zinc-800/80">
@@ -630,7 +630,7 @@ export const FormCanvas: React.FC<FormCanvasProps> = ({
           e.stopPropagation();
           onOpenPalette();
         }}
-        className="fixed sm:hidden bottom-20 right-4 z-30 flex items-center gap-1.5 px-3.5 py-2.5 rounded-full bg-brand-cyan text-black font-mono text-xs font-extrabold shadow-2xl hover:bg-white transition-all active:scale-95"
+        className="sm:hidden self-end mt-5 flex items-center gap-1.5 px-3.5 py-2.5 rounded-full bg-brand-cyan text-black font-mono text-xs font-extrabold shadow-lg hover:bg-white transition-all active:scale-[0.98]"
         title="Add Field / Open Widget Palette"
         aria-label="Add Field Widget"
       >

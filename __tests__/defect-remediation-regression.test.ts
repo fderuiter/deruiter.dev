@@ -16,6 +16,7 @@ import {
   formatFormula,
   extractVariables,
   areAstsEqual,
+  exportWorkspaceProof,
   PropAst,
 } from "@/lib/proof-utils";
 import {
@@ -62,6 +63,13 @@ import { ClinicalSubject } from "@/lib/clinical-trial-chaos/types";
 import { exportStudyToCdiscOdmXml } from "@/lib/crf";
 import { generateStudyPdf } from "@/lib/crf";
 import { ONCOLOGY_RECIST_PRESET } from "@/lib/crf/presets";
+import { exportStudyToSas } from "@/lib/crf/export-sas";
+import { evaluateQAMetrics } from "@/lib/neuro/qa-engine";
+import { SCENARIOS } from "@/lib/neuro/scenarios";
+import {
+  generateSyntheticVolume,
+  getIndex,
+} from "@/lib/neuro/volume-generator";
 import { createNearFooterSectionStudy } from "./crf/pdf-export-fixtures";
 import { resolveSnippetTerminology } from "@/components/ProjectTeaserGrid";
 import { TelemetryService, _testCache } from "@/lib/services/telemetry-service";
@@ -1255,6 +1263,65 @@ describe("Defect Remediation & Regression Verification Suite (Invariant #11)", (
       } finally {
         random.mockRestore();
       }
+    });
+  });
+
+  describe("CRF SAS codelist comments regression (#1201)", () => {
+    it("keeps the Yes/No format definition active after its NCI metadata", () => {
+      const sas = exportStudyToSas(ONCOLOGY_RECIST_PRESET);
+
+      expect(sas).toContain(
+        "/* Codelist: No Yes Response (NY) | NCI Codelist: C66741 */\n  VALUE $NYF"
+      );
+      expect(sas).not.toContain("*/ */");
+    });
+  });
+
+  describe("Neuro QA duplicate-edit regression (#1217)", () => {
+    it("does not award a resolved case for repeated edits to one defect voxel", () => {
+      const scenario = SCENARIOS.dura_inclusion;
+      const volume = generateSyntheticVolume("dura_inclusion");
+      const { min, max } = volume.defectRegion;
+      let location: { x: number; y: number; z: number } | undefined;
+      for (let z = min.z; z <= max.z && !location; z++) {
+        for (let y = min.y; y <= max.y && !location; y++) {
+          for (let x = min.x; x <= max.x; x++) {
+            if (volume.labels[getIndex(x, y, z)] === 5) {
+              location = { x, y, z };
+              break;
+            }
+          }
+        }
+      }
+      expect(location).toBeDefined();
+      const edits = Array.from({ length: scenario.initialDefects }, () => ({
+        ...location!,
+        layer: "brainmask" as const,
+        originalValue: 1,
+        newValue: 0,
+      }));
+
+      const metrics = evaluateQAMetrics(scenario, volume, [], edits);
+      expect(metrics.isResolved).toBe(false);
+      expect(metrics.defectCount).toBeGreaterThan(0);
+    });
+  });
+
+  describe("Proof workspace export regression (#1227)", () => {
+    it("removes the generated Lean theorem when a completed graph is pruned", () => {
+      const edges = [
+        { source: "A", target: "C" },
+        { source: "B", target: "C" },
+        { source: "C", target: "E" },
+        { source: "D", target: "E" },
+      ];
+
+      expect(exportWorkspaceProof("lean", edges, "modus-ponens")).toContain(
+        "theorem modus_ponens_pipeline"
+      );
+      expect(
+        exportWorkspaceProof("lean", edges.slice(0, -1), "modus-ponens")
+      ).not.toContain("theorem modus_ponens_pipeline");
     });
   });
 

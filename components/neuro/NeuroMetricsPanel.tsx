@@ -29,7 +29,7 @@ export const NeuroMetricsPanel: React.FC<NeuroMetricsPanelProps> = ({
       {/* 1. Euler Characteristic χ */}
       <div className="bg-zinc-900/80 border border-zinc-800/80 p-3 rounded-2xl flex flex-col justify-between">
         <div className="flex items-center justify-between text-xs font-mono text-zinc-400">
-          <span>EULER (χ)</span>
+          <span>EULER ESTIMATE (χ)</span>
           <span className="text-[10px] text-zinc-400">
             TARGET: {scenario.targetEuler}
           </span>
@@ -49,16 +49,14 @@ export const NeuroMetricsPanel: React.FC<NeuroMetricsPanelProps> = ({
           )}
         </div>
         <div className="text-[10px] font-mono text-zinc-400 mt-1">
-          {isEulerOk
-            ? "Topological 2-Sphere ($S^2$)"
-            : "Genus $g \\ge 1$ Handle"}
+          Scenario-based topology estimate
         </div>
       </div>
 
       {/* 2. Defect Count */}
       <div className="bg-zinc-900/80 border border-zinc-800/80 p-3 rounded-2xl flex flex-col justify-between">
         <div className="flex items-center justify-between text-xs font-mono text-zinc-400">
-          <span>DEFECT VOXELS</span>
+          <span>DEFECT UNITS (EST.)</span>
           <span className="text-[10px] text-zinc-400">
             INITIAL: {scenario.initialDefects}
           </span>
@@ -96,7 +94,7 @@ export const NeuroMetricsPanel: React.FC<NeuroMetricsPanelProps> = ({
       {/* 3. Dice Similarity Coefficient */}
       <div className="bg-zinc-900/80 border border-zinc-800/80 p-3 rounded-2xl flex flex-col justify-between">
         <div className="flex items-center justify-between text-xs font-mono text-zinc-400">
-          <span>DICE SCORE</span>
+          <span>DICE ESTIMATE</span>
           <span className="text-[10px] text-zinc-400">
             GOAL: ≥{(scenario.targetDice * 100).toFixed(0)}%
           </span>
@@ -113,14 +111,14 @@ export const NeuroMetricsPanel: React.FC<NeuroMetricsPanelProps> = ({
           </span>
         </div>
         <div className="text-[10px] font-mono text-zinc-400 mt-1">
-          Ground Truth Concordance
+          Simulated trend; no reference mask
         </div>
       </div>
 
       {/* 4. Cortical Thickness Estimate */}
       <div className="bg-zinc-900/80 border border-zinc-800/80 p-3 rounded-2xl flex flex-col justify-between">
         <div className="flex items-center justify-between text-xs font-mono text-zinc-400">
-          <span>CORTICAL THICKNESS</span>
+          <span>THICKNESS ESTIMATE</span>
           <span className="text-[10px] text-zinc-400">MEAN</span>
         </div>
         <div className="flex items-center gap-1.5 mt-1">
@@ -130,7 +128,7 @@ export const NeuroMetricsPanel: React.FC<NeuroMetricsPanelProps> = ({
           <span className="text-xs font-mono text-zinc-400">mm</span>
         </div>
         <div className="text-[10px] font-mono text-zinc-400 mt-1">
-          Pial $\leftrightarrow$ WM distance
+          Scenario interpolation, not measured
         </div>
       </div>
 
@@ -178,12 +176,12 @@ export const NeuroMetricsPanel: React.FC<NeuroMetricsPanelProps> = ({
               metrics.isResolved ? "text-emerald-400" : "text-zinc-300"
             }`}
           >
-            {metrics.isResolved ? "PASS · VERIFIED" : "INSPECTION ACTIVE"}
+            {metrics.isResolved ? "SIMULATION PASS" : "INSPECTION ACTIVE"}
           </span>
         </div>
         <div className="text-[10px] font-mono mt-1">
           {metrics.isResolved
-            ? "Ready for recon-all stage 3"
+            ? "Scenario target reached"
             : "Apply manual edits & re-run"}
         </div>
       </div>

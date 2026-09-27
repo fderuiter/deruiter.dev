@@ -95,6 +95,18 @@ describe("CRF Studio - Automated SAS Statistical Exporter", () => {
   });
 
   describe("PROC FORMAT Generation", () => {
+    it("keeps NCI metadata inside one closed SAS comment before each format", () => {
+      const procFormatCode = generateSasProcFormat(
+        ONCOLOGY_RECIST_PRESET,
+        ONCOLOGY_RECIST_PRESET.forms
+      );
+
+      expect(procFormatCode).toContain(
+        "/* Codelist: No Yes Response (NY) | NCI Codelist: C66741 */\n  VALUE $NYF"
+      );
+      expect(procFormatCode).not.toMatch(/\/\*[^\n]*\/\*/);
+    });
+
     it("generates PROC FORMAT block for study codelists", () => {
       const procFormatCode = generateSasProcFormat(
         ONCOLOGY_RECIST_PRESET,

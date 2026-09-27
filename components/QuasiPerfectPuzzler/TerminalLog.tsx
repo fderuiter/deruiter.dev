@@ -24,7 +24,9 @@ export const TerminalLog: React.FC<TerminalLogProps> = ({ logs }) => {
           <span className="w-2 h-2 rounded-full bg-rose-500/70" />
           <span className="w-2 h-2 rounded-full bg-amber-500/70" />
           <span className="w-2 h-2 rounded-full bg-emerald-500/70" />
-          <span className="ml-2 font-bold text-zinc-400">Lean 4 Diagnostic Server</span>
+          <span className="ml-2 font-bold text-zinc-400">
+            Local Tactic Simulator
+          </span>
         </div>
         <span>Interactive Proof TTY</span>
       </div>
@@ -53,11 +55,16 @@ export const TerminalLog: React.FC<TerminalLogProps> = ({ logs }) => {
           }
 
           return (
-            <div key={log.id} className="flex items-start gap-2 leading-relaxed">
+            <div
+              key={log.id}
+              className="flex items-start gap-2 leading-relaxed"
+            >
               <span className="text-zinc-600 shrink-0 select-none text-[10px]">
                 {log.timestamp}
               </span>
-              <span className={`${textStyle} shrink-0 select-none`}>{prefix}</span>
+              <span className={`${textStyle} shrink-0 select-none`}>
+                {prefix}
+              </span>
               <span className={`${textStyle} break-words`}>{log.text}</span>
             </div>
           );

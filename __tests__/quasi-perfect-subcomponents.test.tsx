@@ -360,8 +360,8 @@ describe("Quasi-Perfect Puzzler Subcomponents Test Suite", () => {
 
       expect(screen.getByText("12.0")).toBeDefined();
       expect(screen.getByText("/ 16 GB")).toBeDefined();
-      expect(screen.getByText("Server Memory:")).toBeDefined();
-      expect(screen.getByText("LEAN RAM NOMINAL")).toBeDefined();
+      expect(screen.getByText("Simulated Memory:")).toBeDefined();
+      expect(screen.getByText("SIMULATED RAM NOMINAL")).toBeDefined();
     });
 
     it("renders TerminalLog and displays compiler outputs", () => {
@@ -447,7 +447,9 @@ describe("Quasi-Perfect Puzzler Subcomponents Test Suite", () => {
         />
       );
 
-      expect(screen.getByText(/Q.E.D. · THEOREM VERIFIED/i)).toBeDefined();
+      expect(
+        screen.getByText(/AST GOAL DISCHARGED · SIMULATED/i)
+      ).toBeDefined();
       expect(screen.getByText(/The Identity Crisis/i)).toBeDefined();
       expect(screen.getAllByText(/by rfl/i).length).toBeGreaterThan(0);
     });

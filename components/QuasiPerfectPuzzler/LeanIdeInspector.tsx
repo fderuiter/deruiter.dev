@@ -28,6 +28,7 @@ export const LeanIdeInspector: React.FC<LeanIdeInspectorProps> = ({
   const [selectedTactic, setSelectedTactic] = useState<string>("rfl");
 
   const leanCode = generateLeanProofScript(level, steps, isComplete);
+  const hasAdmittedStep = steps.some((step) => step.tacticId === "sorry");
 
   return (
     <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 font-mono shadow-lg">
@@ -44,7 +45,7 @@ export const LeanIdeInspector: React.FC<LeanIdeInspectorProps> = ({
             }`}
           >
             <IconCode className="w-3.5 h-3.5" />
-            <span>Lean 4 Proof Script</span>
+            <span>Generated Lean 4 Text · Uncompiled</span>
           </button>
           <button
             type="button"
@@ -63,13 +64,13 @@ export const LeanIdeInspector: React.FC<LeanIdeInspectorProps> = ({
         {activeTab === "code" && (
           <CopyButton
             text={leanCode}
-            label="Copy Lean 4 Code"
+            label="Copy Generated Lean Text"
             copiedLabel="Copied to Clipboard!"
             icon={<IconCopy className="w-3.5 h-3.5" />}
             copiedIcon={<IconCheck className="w-3.5 h-3.5 text-emerald-400" />}
             className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-lg border border-zinc-700 bg-zinc-900 text-zinc-300 hover:bg-zinc-800 hover:text-white transition-all cursor-pointer"
-            aria-label="Copy Lean 4 Code"
-            successMessage="Lean 4 proof script copied to clipboard"
+            aria-label="Copy Generated Lean Text"
+            successMessage="Generated Lean text copied to clipboard"
           />
         )}
       </div>
@@ -104,9 +105,13 @@ export const LeanIdeInspector: React.FC<LeanIdeInspectorProps> = ({
           {/* Syntax Highlighted Lean 4 Script */}
           <div className="relative rounded-xl border border-zinc-800 bg-zinc-900/90 p-3.5 overflow-x-auto">
             <div className="flex items-center justify-between text-[10px] text-zinc-500 mb-2 border-b border-zinc-800/80 pb-1.5">
-              <span>Main.lean · Real-Time Interactive Synthesizer</span>
+              <span>Main.lean · Local Text Generator</span>
               <span>
-                {isComplete ? "Status: Verified ✔" : "Status: Proving..."}
+                {hasAdmittedStep
+                  ? "Status: Goal admitted with sorry"
+                  : isComplete
+                    ? "Status: Simulated goal closed ✔"
+                    : "Status: Simulating..."}
               </span>
             </div>
             <pre className="text-xs text-zinc-300 font-mono leading-relaxed whitespace-pre">

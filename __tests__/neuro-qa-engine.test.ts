@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   generateSyntheticVolume,
   extractSlice,
+  getIndex,
   VOLUME_SIZE,
 } from "@/lib/neuro/volume-generator";
 import { evaluateQAMetrics } from "@/lib/neuro/qa-engine";
@@ -15,7 +16,9 @@ describe("NeuroRecon: Volume Generator & Slice Extractor Suite", () => {
     expect(volume.dimensions.height).toBe(VOLUME_SIZE);
     expect(volume.dimensions.depth).toBe(VOLUME_SIZE);
     expect(volume.rawT1.length).toBe(VOLUME_SIZE * VOLUME_SIZE * VOLUME_SIZE);
-    expect(volume.brainmask.length).toBe(VOLUME_SIZE * VOLUME_SIZE * VOLUME_SIZE);
+    expect(volume.brainmask.length).toBe(
+      VOLUME_SIZE * VOLUME_SIZE * VOLUME_SIZE
+    );
     expect(volume.wmMask.length).toBe(VOLUME_SIZE * VOLUME_SIZE * VOLUME_SIZE);
     expect(volume.labels.length).toBe(VOLUME_SIZE * VOLUME_SIZE * VOLUME_SIZE);
   });
@@ -41,6 +44,187 @@ describe("NeuroRecon: Volume Generator & Slice Extractor Suite", () => {
 });
 
 describe("NeuroRecon: QA Evaluation Engine Suite", () => {
+  it("counts only distinct, valid dura voxel corrections in the final edit state", () => {
+    const scenario = SCENARIOS.dura_inclusion;
+    const volume = generateSyntheticVolume("dura_inclusion");
+    const { min, max } = volume.defectRegion;
+    const defectVoxels: VoxelEdit[] = [];
+
+    for (let z = min.z; z <= max.z; z++) {
+      for (let y = min.y; y <= max.y; y++) {
+        for (let x = min.x; x <= max.x; x++) {
+          if (volume.labels[getIndex(x, y, z)] === 5) {
+            defectVoxels.push({
+              x,
+              y,
+              z,
+              layer: "brainmask",
+              originalValue: 1,
+              newValue: 0,
+            });
+          }
+        }
+      }
+    }
+
+    expect(defectVoxels.length).toBeGreaterThan(1);
+    const first = defectVoxels[0];
+    const repeated = Array.from({ length: scenario.initialDefects }, () => ({
+      ...first,
+    }));
+    const duplicateMetrics = evaluateQAMetrics(scenario, volume, [], repeated);
+    expect(duplicateMetrics.defectCount).toBeGreaterThan(0);
+    expect(duplicateMetrics.isResolved).toBe(false);
+
+    const undone = evaluateQAMetrics(
+      scenario,
+      volume,
+      [],
+      [first, { ...first, originalValue: 0, newValue: 1 }]
+    );
+    expect(undone.defectCount).toBe(scenario.initialDefects);
+
+    const offRegion = { ...first, x: 0, y: 0, z: 0 };
+    const noOp = {
+      ...first,
+      x: min.x,
+      y: min.y,
+      z: min.z,
+      originalValue: 0,
+      newValue: 0,
+    };
+    const invalidMetrics = evaluateQAMetrics(
+      scenario,
+      volume,
+      [],
+      [offRegion, noOp]
+    );
+    expect(invalidMetrics.defectCount).toBe(scenario.initialDefects);
+
+    const partial = evaluateQAMetrics(
+      scenario,
+      volume,
+      [],
+      defectVoxels.slice(0, -1)
+    );
+    expect(partial.defectCount).toBeGreaterThan(0);
+    expect(partial.isResolved).toBe(false);
+
+    const resolved = evaluateQAMetrics(scenario, volume, [], defectVoxels);
+    expect(resolved.defectCount).toBe(0);
+    expect(resolved.isResolved).toBe(true);
+  });
+
+  it("does not resolve skull erosion from repeated painting of one voxel", () => {
+    const scenario = SCENARIOS.skull_strip_erosion;
+    const volume = generateSyntheticVolume("skull_strip_erosion");
+    const { min, max } = volume.defectRegion;
+    let edit: VoxelEdit | undefined;
+    for (let z = min.z; z <= max.z && !edit; z++) {
+      for (let y = min.y; y <= max.y && !edit; y++) {
+        for (let x = min.x; x <= max.x; x++) {
+          const index = getIndex(x, y, z);
+          if (
+            volume.labels[index] === 2 &&
+            volume.initialBrainmask[index] === 0
+          ) {
+            edit = {
+              x,
+              y,
+              z,
+              layer: "brainmask",
+              originalValue: 0,
+              newValue: 1,
+            };
+            break;
+          }
+        }
+      }
+    }
+    expect(edit).toBeDefined();
+    const repeated = Array.from({ length: scenario.initialDefects }, () => ({
+      ...edit!,
+    }));
+    const metrics = evaluateQAMetrics(scenario, volume, [], repeated);
+
+    expect(metrics.defectCount).toBeGreaterThan(0);
+    expect(metrics.isResolved).toBe(false);
+  });
+
+  it("does not resolve a topological handle from repeated cuts at one voxel", () => {
+    const scenario = SCENARIOS.topological_handle;
+    const volume = generateSyntheticVolume("topological_handle");
+    const { min, max } = volume.defectRegion;
+    let edit: VoxelEdit | undefined;
+    for (let z = min.z; z <= max.z && !edit; z++) {
+      for (let y = min.y; y <= max.y && !edit; y++) {
+        for (let x = min.x; x <= max.x; x++) {
+          const index = getIndex(x, y, z);
+          if (volume.labels[index] === 3 && volume.initialWmMask[index] === 1) {
+            edit = { x, y, z, layer: "wm", originalValue: 1, newValue: 0 };
+            break;
+          }
+        }
+      }
+    }
+    expect(edit).toBeDefined();
+    const repeated = Array.from({ length: scenario.initialDefects }, () => ({
+      ...edit!,
+    }));
+    const metrics = evaluateQAMetrics(scenario, volume, [], repeated);
+
+    expect(metrics.defectCount).toBeGreaterThan(0);
+    expect(metrics.isResolved).toBe(false);
+  });
+
+  it("does not resolve white matter dropout from repeated paint at one voxel", () => {
+    const scenario = SCENARIOS.wm_hypointensity;
+    const volume = generateSyntheticVolume("wm_hypointensity");
+    const { min, max } = volume.defectRegion;
+    let edit: VoxelEdit | undefined;
+    for (let z = min.z; z <= max.z && !edit; z++) {
+      for (let y = min.y; y <= max.y && !edit; y++) {
+        for (let x = min.x; x <= max.x; x++) {
+          const index = getIndex(x, y, z);
+          if (volume.labels[index] === 3 && volume.initialWmMask[index] === 0) {
+            edit = { x, y, z, layer: "wm", originalValue: 0, newValue: 1 };
+            break;
+          }
+        }
+      }
+    }
+    expect(edit).toBeDefined();
+    const repeated = Array.from({ length: scenario.initialDefects }, () => ({
+      ...edit!,
+    }));
+    const metrics = evaluateQAMetrics(scenario, volume, [], repeated);
+
+    expect(metrics.defectCount).toBeGreaterThan(0);
+    expect(metrics.isResolved).toBe(false);
+  });
+
+  it("counts a repeated white matter control point only once", () => {
+    const scenario = SCENARIOS.wm_hypointensity;
+    const volume = generateSyntheticVolume("wm_hypointensity");
+    const { min, max } = volume.defectRegion;
+    const point: ControlPoint = {
+      id: "cp-1",
+      x: Math.floor((min.x + max.x) / 2),
+      y: Math.floor((min.y + max.y) / 2),
+      z: Math.floor((min.z + max.z) / 2),
+      intensity: 110,
+      timestamp: 1,
+    };
+    const repeated = Array.from({ length: 3 }, (_, index) => ({
+      ...point,
+      id: `cp-${index}`,
+    }));
+
+    const metrics = evaluateQAMetrics(scenario, volume, repeated, []);
+    expect(metrics.defectCount).toBeGreaterThan(0);
+    expect(metrics.isResolved).toBe(false);
+  });
+
   it("evaluates Dura Over-Inclusion scenario and resolves on mask voxel erasure", () => {
     const scenario = SCENARIOS.dura_inclusion;
     const volume = generateSyntheticVolume("dura_inclusion");
@@ -72,7 +256,9 @@ describe("NeuroRecon: QA Evaluation Engine Suite", () => {
     const resolvedMetrics = evaluateQAMetrics(scenario, volume, [], edits);
     expect(resolvedMetrics.defectCount).toBe(0);
     expect(resolvedMetrics.isResolved).toBe(true);
-    expect(resolvedMetrics.diceScore).toBeGreaterThanOrEqual(scenario.targetDice);
+    expect(resolvedMetrics.diceScore).toBeGreaterThanOrEqual(
+      scenario.targetDice
+    );
     expect(resolvedMetrics.meanCorticalThicknessMm).toBeCloseTo(2.45, 1);
   });
 
@@ -91,12 +277,38 @@ describe("NeuroRecon: QA Evaluation Engine Suite", () => {
     const midZ = Math.floor((min.z + max.z) / 2);
 
     const controlPoints: ControlPoint[] = [
-      { id: "cp-1", x: midX, y: midY, z: midZ, intensity: 110, timestamp: Date.now() },
-      { id: "cp-2", x: midX + 2, y: midY + 1, z: midZ, intensity: 110, timestamp: Date.now() },
-      { id: "cp-3", x: midX - 2, y: midY - 1, z: midZ, intensity: 110, timestamp: Date.now() },
+      {
+        id: "cp-1",
+        x: midX,
+        y: midY,
+        z: midZ,
+        intensity: 110,
+        timestamp: Date.now(),
+      },
+      {
+        id: "cp-2",
+        x: midX + 2,
+        y: midY + 1,
+        z: midZ,
+        intensity: 110,
+        timestamp: Date.now(),
+      },
+      {
+        id: "cp-3",
+        x: midX - 2,
+        y: midY - 1,
+        z: midZ,
+        intensity: 110,
+        timestamp: Date.now(),
+      },
     ];
 
-    const resolvedMetrics = evaluateQAMetrics(scenario, volume, controlPoints, []);
+    const resolvedMetrics = evaluateQAMetrics(
+      scenario,
+      volume,
+      controlPoints,
+      []
+    );
     expect(resolvedMetrics.defectCount).toBe(0);
     expect(resolvedMetrics.isResolved).toBe(true);
     expect(resolvedMetrics.eulerCharacteristic).toBe(2);

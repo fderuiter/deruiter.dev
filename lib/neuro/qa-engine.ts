@@ -5,7 +5,7 @@
  */
 
 import { ControlPoint, QAMetrics, ScenarioConfig, VoxelEdit } from "./types";
-import { SyntheticVolume } from "./volume-generator";
+import { getIndex, SyntheticVolume } from "./volume-generator";
 
 /**
  * Evaluate the live QA status of the current workspace state.
@@ -19,83 +19,158 @@ export function evaluateQAMetrics(
   const { min, max } = volume.defectRegion;
   const initialDefects = scenario.initialDefects;
 
-  // Count how many relevant edits have been placed in the defect region
+  // Estimate repair from unique final corrections to the initial defect state.
   let correctedDefects = 0;
 
   if (scenario.id === "dura_inclusion") {
-    // Corrected by erasing brainmask in the defect zone
-    const erasedInDefect = voxelEdits.filter(
-      (e) =>
-        e.layer === "brainmask" &&
-        e.newValue === 0 &&
-        e.x >= min.x &&
-        e.x <= max.x &&
-        e.y >= min.y &&
-        e.y <= max.y &&
-        e.z >= min.z &&
-        e.z <= max.z
-    ).length;
-    correctedDefects = Math.min(initialDefects, erasedInDefect);
+    const finalEdits = new Map<number, number>();
+    for (const edit of voxelEdits) {
+      if (
+        edit.layer !== "brainmask" ||
+        !Number.isInteger(edit.x) ||
+        !Number.isInteger(edit.y) ||
+        !Number.isInteger(edit.z) ||
+        edit.x < min.x ||
+        edit.x > max.x ||
+        edit.y < min.y ||
+        edit.y > max.y ||
+        edit.z < min.z ||
+        edit.z > max.z
+      )
+        continue;
+      const index = getIndex(edit.x, edit.y, edit.z, volume.dimensions.width);
+      if (volume.labels[index] === 5 && volume.initialBrainmask[index] === 1) {
+        finalEdits.set(index, edit.newValue);
+      }
+    }
+    let eligible = 0;
+    let corrected = 0;
+    for (let z = min.z; z <= max.z; z++) {
+      for (let y = min.y; y <= max.y; y++) {
+        for (let x = min.x; x <= max.x; x++) {
+          const index = getIndex(x, y, z, volume.dimensions.width);
+          if (
+            volume.labels[index] !== 5 ||
+            volume.initialBrainmask[index] !== 1
+          )
+            continue;
+          eligible++;
+          if (finalEdits.get(index) === 0) corrected++;
+        }
+      }
+    }
+    correctedDefects =
+      eligible > 0 ? Math.floor((initialDefects * corrected) / eligible) : 0;
   } else if (scenario.id === "wm_hypointensity") {
     // Corrected by placing control points OR painting wm in the defect zone
-    const cpsInDefect = controlPoints.filter(
-      (cp) =>
-        cp.x >= min.x - 3 &&
-        cp.x <= max.x + 3 &&
-        cp.y >= min.y - 3 &&
-        cp.y <= max.y + 3 &&
-        cp.z >= min.z - 3 &&
-        cp.z <= max.z + 3
-    ).length;
+    const uniqueControlPoints = new Set<number>();
+    for (const cp of controlPoints) {
+      if (
+        !Number.isInteger(cp.x) ||
+        !Number.isInteger(cp.y) ||
+        !Number.isInteger(cp.z) ||
+        cp.x < min.x ||
+        cp.x > max.x ||
+        cp.y < min.y ||
+        cp.y > max.y ||
+        cp.z < min.z ||
+        cp.z > max.z
+      )
+        continue;
+      const index = getIndex(cp.x, cp.y, cp.z, volume.dimensions.width);
+      if (volume.labels[index] === 3 && volume.initialWmMask[index] === 0) {
+        uniqueControlPoints.add(index);
+      }
+    }
+    const cpsInDefect = uniqueControlPoints.size;
 
-    const paintedWm = voxelEdits.filter(
-      (e) =>
-        e.layer === "wm" &&
-        e.newValue === 1 &&
-        e.x >= min.x &&
-        e.x <= max.x &&
-        e.y >= min.y &&
-        e.y <= max.y &&
-        e.z >= min.z &&
-        e.z <= max.z
+    const finalEdits = new Map<number, number>();
+    for (const edit of voxelEdits) {
+      if (
+        edit.layer !== "wm" ||
+        !Number.isInteger(edit.x) ||
+        !Number.isInteger(edit.y) ||
+        !Number.isInteger(edit.z) ||
+        edit.x < min.x ||
+        edit.x > max.x ||
+        edit.y < min.y ||
+        edit.y > max.y ||
+        edit.z < min.z ||
+        edit.z > max.z
+      )
+        continue;
+      const index = getIndex(edit.x, edit.y, edit.z, volume.dimensions.width);
+      if (volume.labels[index] === 3 && volume.initialWmMask[index] === 0) {
+        finalEdits.set(index, edit.newValue);
+      }
+    }
+    const paintedWm = [...finalEdits.values()].filter(
+      (value) => value === 1
     ).length;
 
     correctedDefects = Math.min(initialDefects, cpsInDefect * 18 + paintedWm);
   } else if (scenario.id === "skull_strip_erosion") {
-    // Corrected by painting brainmask back in the defect zone
-    const paintedMask = voxelEdits.filter(
-      (e) =>
-        e.layer === "brainmask" &&
-        e.newValue === 1 &&
-        e.x >= min.x &&
-        e.x <= max.x &&
-        e.y >= min.y &&
-        e.y <= max.y &&
-        e.z >= min.z &&
-        e.z <= max.z
-    ).length;
-    correctedDefects = Math.min(initialDefects, paintedMask);
+    const finalEdits = new Map<number, number>();
+    for (const edit of voxelEdits) {
+      if (
+        edit.layer !== "brainmask" ||
+        !Number.isInteger(edit.x) ||
+        !Number.isInteger(edit.y) ||
+        !Number.isInteger(edit.z) ||
+        edit.x < min.x ||
+        edit.x > max.x ||
+        edit.y < min.y ||
+        edit.y > max.y ||
+        edit.z < min.z ||
+        edit.z > max.z
+      )
+        continue;
+      const index = getIndex(edit.x, edit.y, edit.z, volume.dimensions.width);
+      if (volume.labels[index] === 2 && volume.initialBrainmask[index] === 0) {
+        finalEdits.set(index, edit.newValue);
+      }
+    }
+    correctedDefects = Math.min(
+      initialDefects,
+      [...finalEdits.values()].filter((value) => value === 1).length
+    );
   } else if (scenario.id === "topological_handle") {
-    // Corrected by erasing white matter bridge in the defect zone
-    const cutBridge = voxelEdits.filter(
-      (e) =>
-        (e.layer === "wm" || e.layer === "brainmask") &&
-        e.newValue === 0 &&
-        e.x >= min.x &&
-        e.x <= max.x &&
-        e.y >= min.y &&
-        e.y <= max.y &&
-        e.z >= min.z &&
-        e.z <= max.z
-    ).length;
-    correctedDefects = Math.min(initialDefects, cutBridge * 2);
+    const finalEdits = new Map<string, number>();
+    for (const edit of voxelEdits) {
+      if (
+        !Number.isInteger(edit.x) ||
+        !Number.isInteger(edit.y) ||
+        !Number.isInteger(edit.z) ||
+        edit.x < min.x ||
+        edit.x > max.x ||
+        edit.y < min.y ||
+        edit.y > max.y ||
+        edit.z < min.z ||
+        edit.z > max.z
+      )
+        continue;
+      const index = getIndex(edit.x, edit.y, edit.z, volume.dimensions.width);
+      const initialMask =
+        edit.layer === "wm" ? volume.initialWmMask : volume.initialBrainmask;
+      if (volume.labels[index] === 3 && initialMask[index] === 1) {
+        finalEdits.set(`${edit.layer}:${index}`, edit.newValue);
+      }
+    }
+    const cutVoxels = new Set<number>();
+    for (const [key, value] of finalEdits) {
+      if (value === 0) cutVoxels.add(Number(key.split(":")[1]));
+    }
+    correctedDefects = Math.min(initialDefects, cutVoxels.size * 2);
   } else {
     // Sandbox
     correctedDefects = initialDefects;
   }
 
   const remainingDefects = Math.max(0, initialDefects - correctedDefects);
-  const completionRatio = initialDefects > 0 ? (initialDefects - remainingDefects) / initialDefects : 1.0;
+  const completionRatio =
+    initialDefects > 0
+      ? (initialDefects - remainingDefects) / initialDefects
+      : 1.0;
 
   // Compute live Euler Characteristic χ
   // S2 sphere = 2; genus g handle: χ = 2 - 2g
@@ -103,12 +178,17 @@ export function evaluateQAMetrics(
   if (completionRatio >= 0.85) {
     liveEuler = scenario.targetEuler;
   } else if (completionRatio > 0.4) {
-    liveEuler = Math.round(scenario.initialEuler + (scenario.targetEuler - scenario.initialEuler) * 0.5);
+    liveEuler = Math.round(
+      scenario.initialEuler +
+        (scenario.targetEuler - scenario.initialEuler) * 0.5
+    );
   }
 
   // Compute live Dice Similarity
   const baseDice = scenario.id === "sandbox" ? 0.98 : 0.88;
-  const liveDice = Number((baseDice + (scenario.targetDice - baseDice) * completionRatio).toFixed(3));
+  const liveDice = Number(
+    (baseDice + (scenario.targetDice - baseDice) * completionRatio).toFixed(3)
+  );
 
   // Compute Mean Cortical Thickness (mm)
   let thickness = 2.45;
@@ -120,7 +200,10 @@ export function evaluateQAMetrics(
     thickness = Number((1.65 + 0.8 * completionRatio).toFixed(2));
   }
 
-  const isResolved = remainingDefects <= 2 && liveDice >= scenario.targetDice && liveEuler === scenario.targetEuler;
+  const isResolved =
+    remainingDefects === 0 &&
+    liveDice >= scenario.targetDice &&
+    liveEuler === scenario.targetEuler;
   const accuracyScore = Math.round(completionRatio * 100);
 
   return {

@@ -12,6 +12,8 @@ export interface SyntheticVolume {
   rawT1: Uint8Array; // Original anatomical T1 intensities [0-255]
   brainmask: Uint8Array; // Binary/tissue mask [0 or 1]
   wmMask: Uint8Array; // White matter segmentation [0 or 1]
+  initialBrainmask: Uint8Array; // Unedited mask for QA comparisons
+  initialWmMask: Uint8Array; // Unedited white matter mask for QA comparisons
   labels: Uint8Array; // Tissue segment classifications
   scenarioId: ScenarioId;
   defectRegion: { min: VoxelCoord; max: VoxelCoord };
@@ -22,14 +24,21 @@ export const VOLUME_SIZE = 96;
 /**
  * Get 1D flat index from 3D coordinates (x, y, z)
  */
-export function getIndex(x: number, y: number, z: number, size = VOLUME_SIZE): number {
+export function getIndex(
+  x: number,
+  y: number,
+  z: number,
+  size = VOLUME_SIZE
+): number {
   return z * size * size + y * size + x;
 }
 
 /**
  * Procedural generation of a 3D MRI brain volume for a given scenario.
  */
-export function generateSyntheticVolume(scenario: ScenarioId = "sandbox"): SyntheticVolume {
+export function generateSyntheticVolume(
+  scenario: ScenarioId = "sandbox"
+): SyntheticVolume {
   const size = VOLUME_SIZE;
   const totalVoxels = size * size * size;
 
@@ -57,17 +66,49 @@ export function generateSyntheticVolume(scenario: ScenarioId = "sandbox"): Synth
 
   // Set scenario-specific defect bounding boxes
   if (scenario === "dura_inclusion") {
-    defectMin = { x: Math.round(cx + rx * 0.65), y: Math.round(cy - ry * 0.2), z: Math.round(cz - rz * 0.1) };
-    defectMax = { x: Math.round(cx + rx * 0.95), y: Math.round(cy + ry * 0.2), z: Math.round(cz + rz * 0.25) };
+    defectMin = {
+      x: Math.round(cx + rx * 0.65),
+      y: Math.round(cy - ry * 0.2),
+      z: Math.round(cz - rz * 0.1),
+    };
+    defectMax = {
+      x: Math.round(cx + rx * 0.95),
+      y: Math.round(cy + ry * 0.2),
+      z: Math.round(cz + rz * 0.25),
+    };
   } else if (scenario === "wm_hypointensity") {
-    defectMin = { x: Math.round(cx - rx * 0.6), y: Math.round(cy - ry * 0.35), z: Math.round(cz - rz * 0.3) };
-    defectMax = { x: Math.round(cx - rx * 0.25), y: Math.round(cy - ry * 0.05), z: Math.round(cz - rz * 0.05) };
+    defectMin = {
+      x: Math.round(cx - rx * 0.6),
+      y: Math.round(cy - ry * 0.35),
+      z: Math.round(cz - rz * 0.3),
+    };
+    defectMax = {
+      x: Math.round(cx - rx * 0.25),
+      y: Math.round(cy - ry * 0.05),
+      z: Math.round(cz - rz * 0.05),
+    };
   } else if (scenario === "skull_strip_erosion") {
-    defectMin = { x: Math.round(cx - rx * 0.4), y: Math.round(cy + ry * 0.65), z: Math.round(cz - rz * 0.2) };
-    defectMax = { x: Math.round(cx + rx * 0.4), y: Math.round(cy + ry * 0.95), z: Math.round(cz + rz * 0.2) };
+    defectMin = {
+      x: Math.round(cx - rx * 0.4),
+      y: Math.round(cy + ry * 0.65),
+      z: Math.round(cz - rz * 0.2),
+    };
+    defectMax = {
+      x: Math.round(cx + rx * 0.4),
+      y: Math.round(cy + ry * 0.95),
+      z: Math.round(cz + rz * 0.2),
+    };
   } else if (scenario === "topological_handle") {
-    defectMin = { x: Math.round(cx + rx * 0.3), y: Math.round(cy + ry * 0.1), z: Math.round(cz + rz * 0.4) };
-    defectMax = { x: Math.round(cx + rx * 0.55), y: Math.round(cy + ry * 0.35), z: Math.round(cz + rz * 0.65) };
+    defectMin = {
+      x: Math.round(cx + rx * 0.3),
+      y: Math.round(cy + ry * 0.1),
+      z: Math.round(cz + rz * 0.4),
+    };
+    defectMax = {
+      x: Math.round(cx + rx * 0.55),
+      y: Math.round(cy + ry * 0.35),
+      z: Math.round(cz + rz * 0.65),
+    };
   }
 
   for (let z = 0; z < size; z++) {
@@ -89,10 +130,13 @@ export function generateSyntheticVolume(scenario: ScenarioId = "sandbox"): Synth
           0.06 * Math.sin(y * 0.45 + z * 0.3) +
           0.04 * Math.cos(x * 0.6 - z * 0.4);
 
-        const rDist = Math.sqrt(dx * dx + dy * dy + dz * dz) * fissure + folding;
+        const rDist =
+          Math.sqrt(dx * dx + dy * dy + dz * dz) * fissure + folding;
 
         // Skull / Head exterior
-        const headDist = Math.sqrt((dx * 0.85) ** 2 + (dy * 0.85) ** 2 + (dz * 0.85) ** 2);
+        const headDist = Math.sqrt(
+          (dx * 0.85) ** 2 + (dy * 0.85) ** 2 + (dz * 0.85) ** 2
+        );
         if (headDist > 1.25 && headDist < 1.4) {
           rawT1[idx] = Math.round(45 + Math.random() * 15); // Bone/Scalp
           labels[idx] = 6;
@@ -156,7 +200,9 @@ export function generateSyntheticVolume(scenario: ScenarioId = "sandbox"): Synth
         }
 
         // Subcortical Structures (Deep Gray Matter Nuclei)
-        const subDist = Math.sqrt(((x - cx) / 8) ** 2 + ((y - cy) / 12) ** 2 + ((z - cz) / 8) ** 2);
+        const subDist = Math.sqrt(
+          ((x - cx) / 8) ** 2 + ((y - cy) / 12) ** 2 + ((z - cz) / 8) ** 2
+        );
         if (subDist < 1.0) {
           rawT1[idx] = Math.round(85 + Math.random() * 8); // Thalamus/Basal Ganglia
           labels[idx] = 4;
@@ -213,6 +259,8 @@ export function generateSyntheticVolume(scenario: ScenarioId = "sandbox"): Synth
     rawT1,
     brainmask,
     wmMask,
+    initialBrainmask: brainmask.slice(),
+    initialWmMask: wmMask.slice(),
     labels,
     scenarioId: scenario,
     defectRegion: { min: defectMin, max: defectMax },
@@ -226,7 +274,13 @@ export function extractSlice(
   volume: SyntheticVolume,
   plane: "axial" | "coronal" | "sagittal",
   sliceIndex: number
-): { width: number; height: number; pixels: Uint8Array; mask: Uint8Array; wm: Uint8Array } {
+): {
+  width: number;
+  height: number;
+  pixels: Uint8Array;
+  mask: Uint8Array;
+  wm: Uint8Array;
+} {
   const { width, height, depth } = volume.dimensions;
   let sliceW = 0;
   let sliceH = 0;

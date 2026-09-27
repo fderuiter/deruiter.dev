@@ -104,10 +104,10 @@ describe("NeuroRecon Workspace UI Suite", () => {
     expect(container.textContent).toContain(
       "Case 01: Dura Over-Inclusion in Temporal Lobe"
     );
-    expect(container.textContent).toContain("EULER (χ)");
-    expect(container.textContent).toContain("DEFECT VOXELS");
-    expect(container.textContent).toContain("DICE SCORE");
-    expect(container.textContent).toContain("CORTICAL THICKNESS");
+    expect(container.textContent).toContain("EULER ESTIMATE (χ)");
+    expect(container.textContent).toContain("DEFECT UNITS (EST.)");
+    expect(container.textContent).toContain("DICE ESTIMATE");
+    expect(container.textContent).toContain("THICKNESS ESTIMATE");
     expect(container.textContent).toContain("FreeSurfer 7.4.1 CLI Terminal");
     expect(container.textContent).toContain("RUN RECON-ALL");
     expect(container.textContent).toContain("FIELD MANUAL");
@@ -189,9 +189,11 @@ describe("NeuroRecon Workspace UI Suite", () => {
     });
 
     expect(container.textContent).toContain(
-      "Morphometric Stats (aseg.stats / aparc.stats)"
+      "Morphometric Stats (simulated; not aseg.stats / aparc.stats)"
     );
-    expect(container.textContent).toContain("Total Intracranial Volume (eTIV)");
+    expect(container.textContent).toContain(
+      "Example Intracranial Volume (eTIV)"
+    );
   });
 
   it("switches datasets using the dataset selector buttons", async () => {

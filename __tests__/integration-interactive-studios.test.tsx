@@ -17,11 +17,19 @@ import {
   calculateBMI,
   calculateMostellerBSA,
 } from "@/lib/crf/ast-evaluator";
-import type { CRFForm, CRFField, EditCheckRule, StudyProtocol } from "@/lib/crf/types";
+import type {
+  CRFForm,
+  CRFField,
+  EditCheckRule,
+  StudyProtocol,
+} from "@/lib/crf/types";
 import { exportStudyToCdiscOdmXml } from "@/lib/crf/odm-xml-serializer";
 import { exportStudyToSas } from "@/lib/crf/export-sas";
 import { SCENARIOS } from "@/lib/neuro/scenarios";
-import { generateSyntheticVolume } from "@/lib/neuro/volume-generator";
+import {
+  generateSyntheticVolume,
+  getIndex,
+} from "@/lib/neuro/volume-generator";
 import { evaluateQAMetrics } from "@/lib/neuro/qa-engine";
 import type { VoxelEdit } from "@/lib/neuro/types";
 
@@ -76,7 +84,9 @@ describe("Interactive Studios Domain Integration Suite", () => {
       expect(lean4Output).toContain("modus_ponens");
 
       const markdownOutput = exportProofToMarkdown(fullEdges, "modus-ponens");
-      expect(markdownOutput).toContain("# Formal Proof Certificate: Modus Ponens");
+      expect(markdownOutput).toContain(
+        "# Proof Workspace Export: Modus Ponens"
+      );
 
       const mermaidOutput = exportProofToMermaid(fullEdges, "modus-ponens");
       expect(mermaidOutput).toContain("graph LR");
@@ -155,7 +165,11 @@ describe("Interactive Studios Domain Integration Suite", () => {
       // 1. AST formula evaluation & helper math
       const fieldValues = { WEIGHT: 70, HEIGHT: 175 };
       const allFields = form.sections[0].fields;
-      const bmiResult = evaluateFormula(bmiField.calculationFormula!, fieldValues, allFields);
+      const bmiResult = evaluateFormula(
+        bmiField.calculationFormula!,
+        fieldValues,
+        allFields
+      );
       expect(bmiResult).toBeCloseTo(22.86, 1);
       expect(calculateBMI(70, 175)).toBeCloseTo(22.86, 1);
       expect(calculateMostellerBSA(175, 70)).toBeGreaterThan(1.8);
@@ -183,10 +197,18 @@ describe("Interactive Studios Domain Integration Suite", () => {
         ],
       };
 
-      const ruleFemaleTriggered = evaluateRule(pregnancyRule, { DM_SEX: "F" }, allFields);
+      const ruleFemaleTriggered = evaluateRule(
+        pregnancyRule,
+        { DM_SEX: "F" },
+        allFields
+      );
       expect(ruleFemaleTriggered).toBe(true);
 
-      const ruleMaleNotTriggered = evaluateRule(pregnancyRule, { DM_SEX: "M" }, allFields);
+      const ruleMaleNotTriggered = evaluateRule(
+        pregnancyRule,
+        { DM_SEX: "M" },
+        allFields
+      );
       expect(ruleMaleNotTriggered).toBe(false);
 
       // 4. CDISC ODM-XML Generation
@@ -216,8 +238,8 @@ describe("Interactive Studios Domain Integration Suite", () => {
       };
 
       const odmXml = exportStudyToCdiscOdmXml(study);
-      expect(odmXml).toContain("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-      expect(odmXml).toContain("ODMVersion=\"1.3.2\"");
+      expect(odmXml).toContain('<?xml version="1.0" encoding="UTF-8"?>');
+      expect(odmXml).toContain('ODMVersion="1.3.2"');
       expect(odmXml).toContain("IT.WEIGHT");
 
       // 5. SAS Code Generation
@@ -247,14 +269,27 @@ describe("Interactive Studios Domain Integration Suite", () => {
 
       // Simulate correcting voxel edits inside defect region
       const { min, max } = volume.defectRegion;
-      const edits: VoxelEdit[] = Array.from({ length: scenario.initialDefects }, () => ({
-        layer: "brainmask",
-        x: Math.round((min.x + max.x) / 2),
-        y: Math.round((min.y + max.y) / 2),
-        z: Math.round((min.z + max.z) / 2),
-        originalValue: 120,
-        newValue: 0,
-      }));
+      const edits: VoxelEdit[] = [];
+      for (let z = min.z; z <= max.z; z++) {
+        for (let y = min.y; y <= max.y; y++) {
+          for (let x = min.x; x <= max.x; x++) {
+            const index = getIndex(x, y, z);
+            if (
+              volume.labels[index] === 5 &&
+              volume.initialBrainmask[index] === 1
+            ) {
+              edits.push({
+                layer: "brainmask",
+                x,
+                y,
+                z,
+                originalValue: 1,
+                newValue: 0,
+              });
+            }
+          }
+        }
+      }
 
       const resolvedMetrics = evaluateQAMetrics(scenario, volume, [], edits);
       expect(resolvedMetrics.defectCount).toBe(0);

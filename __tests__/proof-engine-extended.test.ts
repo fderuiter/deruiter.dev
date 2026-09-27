@@ -136,14 +136,19 @@ describe("Proof Engine: Extended AST Inference & Propositional Logic Suite", () 
         expect(res1.success).toBe(true);
         expect(res1.resultAst).toEqual({ type: "implies", left: P, right: R });
 
-        const res2 = applyRuleToAsts("hypothetical-syllogism", [Q_implies_R, P_implies_Q]);
+        const res2 = applyRuleToAsts("hypothetical-syllogism", [
+          Q_implies_R,
+          P_implies_Q,
+        ]);
         expect(res2.success).toBe(true);
         expect(res2.resultAst).toEqual({ type: "implies", left: P, right: R });
       });
 
       it("fails when premises cannot chain transitively", () => {
         const nonChaining: PropAst = { type: "implies", left: R, right: S };
-        expect(applyRuleToAsts("hs", [P_implies_Q, nonChaining]).success).toBe(false);
+        expect(applyRuleToAsts("hs", [P_implies_Q, nonChaining]).success).toBe(
+          false
+        );
       });
     });
 
@@ -247,7 +252,9 @@ describe("Proof Engine: Extended AST Inference & Propositional Logic Suite", () 
 
       const diagCircular = getFallacyDiagnosis("A", "A", []);
       expect(diagCircular).toBeDefined();
-      expect(diagCircular.truthTable.some((row) => row.isCounterexample)).toBe(true);
+      expect(diagCircular.truthTable.some((row) => row.isCounterexample)).toBe(
+        true
+      );
     });
   });
 
@@ -272,10 +279,12 @@ describe("Proof Engine: Extended AST Inference & Propositional Logic Suite", () 
       expect(latex).toContain("AxiomC");
     });
 
-    it("exports markdown certificate with deduction ledger table", () => {
+    it("exports a markdown workspace snapshot with deduction ledger table", () => {
       const md = exportProofToMarkdown(edges, thId);
-      expect(md).toContain("# Formal Proof Certificate");
-      expect(md).toContain("✔ Q.E.D. DISCHARGED");
+      expect(md).toContain("# Proof Workspace Export");
+      expect(md).toContain(
+        "GRAPH COMPLETE (local simulation; not Lean-verified)"
+      );
       expect(md).toContain("| Step | Proposition |");
     });
 

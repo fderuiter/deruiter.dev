@@ -968,7 +968,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
     objective:
       "Infiltrate fortified corporate mainframe subnets as an autonomous Red Team Netrunner. Manage Cyberdeck RAM, weaponize zero-days and offensive exploits, bypass EDR sentinels, solve tactile Hex Matrix buffer puzzles, and defeat the 3D Wireframe Sovereign Boss.",
     quickSummary:
-      "Navigate procedural subnets with WASD/Arrows. Deploy cyber tools ([1] Nmap / npm install, [2] Buffer Overflow / git push -f, [3] 0-Day / Stack Overflow, [4] MitM Spoof, [5] Ransomware, [SPACE] EMP) to exploit daemon CVEs and extract encrypted payloads.",
+      "Navigate procedural subnets with WASD/Arrows and reach each room's EXIT. Keys 1 to 3 fire your Cyberdeck class's tools (the default Script Kiddie carries npm install, Nmap Port Recon and EMP), and Space fires an EMP, to exploit daemon CVEs and extract encrypted payloads.",
     controls: [
       {
         action: "Move Netrunner Avatar",
@@ -979,8 +979,8 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         action: "Deploy Cyber Exploits",
         description:
-          "Execute exploits: [1] Nmap / npm i (Recon / AoE), [2] Buffer Overflow (Burst / Crit), [3] Zero-Day (Piercer / Snippet), [4] MitM Spoof (Confuse), [5] Ransomware (Freeze & Bounty).",
-        key: "1, 2, 3, 4, 5 Keys",
+          "Fire the three tools your Cyberdeck class starts with, in hotbar order. Script Kiddie: npm install (AoE), Nmap Port Recon (expose CVEs), EMP. Other classes carry Buffer Overflow (burst crit), Airgap 0-Day (piercer), MitM Spoof (confuse) or Ransomware (freeze and bounty).",
+        key: "1, 2, 3 Keys",
       },
       {
         action: "EMP Kernel Surge",

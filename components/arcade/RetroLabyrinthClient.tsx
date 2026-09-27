@@ -88,9 +88,10 @@ export const RetroLabyrinthClient: React.FC = () => {
               icon={<IconDeviceGamepad2 className="w-8 h-8 text-rose-400" />}
               instructions="Explore a shifting dungeon made from abandoned codebases. Fight bugs, find your way through the fog, and face a wireframe boss with an unreasonable number of angles."
               controls={[
-                { key: "WASD", action: "Move Developer" },
-                { key: "Space", action: "Wield Weapon" },
-                { key: "1-4", action: "Switch Tool" },
+                { key: "WASD / Arrows", action: "Move" },
+                { key: "1-3", action: "Fire Class Tools" },
+                { key: "Space", action: "EMP Burst" },
+                { key: "C", action: "CRT Scanlines" },
               ]}
               importComponent={RetroLabyrinthLoader}
             >
@@ -109,9 +110,10 @@ export const RetroLabyrinthClient: React.FC = () => {
               <span>TSP Shifting Walls</span>
             </div>
             <p className="text-zinc-400 text-[11px] leading-relaxed">
-              In Room 1, maze walls calculate and recalculate the Traveling
-              Salesperson tour as you move. Time your steps through purple
-              barrier shifts to reach landmarks.
+              The first room, Tier 03 :: Airgap Enclave, recalculates the
+              Traveling Salesperson tour as you move. Time your steps through
+              the purple airgap walls, which shift every step, to reach the
+              EXIT.
             </p>
           </div>
 
@@ -121,9 +123,11 @@ export const RetroLabyrinthClient: React.FC = () => {
               <span>Developer Weapons</span>
             </div>
             <p className="text-zinc-400 text-[11px] leading-relaxed">
-              Press <strong>1</strong> for npm install (AoE node_modules bomb),{" "}
-              <strong>2</strong> for git push --force (clears all nearby bugs),
-              or <strong>3</strong> for Stack Overflow (wildcard effects).
+              Keys <strong>1</strong> to <strong>3</strong> fire your
+              class&apos;s tools. The default Script Kiddie carries npm install
+              (AoE blast), Nmap Port Recon (exposes CVEs) and EMP. Other classes
+              swap in Buffer Overflow, Zero-Day, MitM Spoof or Ransomware.{" "}
+              <strong>Space</strong> always fires an EMP.
             </p>
           </div>
 
@@ -133,7 +137,7 @@ export const RetroLabyrinthClient: React.FC = () => {
               <span>3D Wireframe Boss</span>
             </div>
             <p className="text-zinc-400 text-[11px] leading-relaxed">
-              FaceForge in Room 3 projects real-time rotating 3D wireframe
+              FaceForge in Room 2 projects real-time rotating 3D wireframe
               polyhedra. Evade projecting face-normals and utilize EMP bursts to
               stun rogue drones.
             </p>

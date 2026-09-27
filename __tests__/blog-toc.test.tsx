@@ -191,6 +191,15 @@ describe("TableOfContents Component (Ticket #1058)", () => {
         host.querySelector<HTMLAnchorElement>(`a[href="#${secondId}"]`)!
       );
 
+      expect(scrollIntoView).not.toHaveBeenCalled();
+      expect(
+        host
+          .querySelector<HTMLButtonElement>(
+            'button[aria-label="Toggle table of contents"]'
+          )
+          ?.getAttribute("aria-expanded")
+      ).toBe("false");
+      pendingFrames.splice(0).forEach((callback) => callback(0));
       expect(scrollIntoView).toHaveBeenCalledWith({
         behavior: "smooth",
         block: "start",

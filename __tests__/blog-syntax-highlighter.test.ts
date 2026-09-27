@@ -121,6 +121,24 @@ describe("Blog Syntax Highlighter (Ticket #1146)", () => {
       expect(output).toBe(input);
     });
 
+    it("only reads a language from class attributes", () => {
+      const input =
+        '<pre id="language-typescript"><code aria-label="language-rust">const x = 1;</code></pre>';
+      expect(highlightCodeBlocks(input)).toBe(input);
+    });
+
+    it("keeps escaped markup as code text after highlighting", () => {
+      const input =
+        '<pre><code class="language-typescript">const x = &lt;img src=x onerror=alert(1)&gt;;</code></pre>';
+      const output = highlightCodeBlocks(input);
+      const host = document.createElement("div");
+      host.innerHTML = output;
+      expect(host.querySelector("img")).toBeNull();
+      expect(host.querySelector("code")?.textContent).toBe(
+        "const x = <img src=x onerror=alert(1)>;"
+      );
+    });
+
     it("leaves already-structured nested HTML inside code untouched", () => {
       const input =
         '<pre><code class="language-typescript"><span>nested</span></code></pre>';

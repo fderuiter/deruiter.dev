@@ -166,9 +166,11 @@ export function highlightCodeBlocks(html: string): string {
       return preBlock;
     }
 
-    const codeClasses = codeMatch[2];
-    const preClasses = /<pre\b([^>]*)>/i.exec(preBlock)?.[1] || "";
-    const languageMatch = /\blanguage-([a-zA-Z0-9_-]+)/i.exec(
+    const classValue = (attributes: string) =>
+      /(?:^|\s)class\s*=\s*(["'])(.*?)\1/i.exec(attributes)?.[2] || "";
+    const codeClasses = classValue(codeMatch[2]);
+    const preClasses = classValue(/<pre\b([^>]*)>/i.exec(preBlock)?.[1] || "");
+    const languageMatch = /(?:^|\s)language-([a-zA-Z0-9_-]+)(?:\s|$)/i.exec(
       `${codeClasses} ${preClasses}`
     );
     const language = languageMatch?.[1].toLowerCase();

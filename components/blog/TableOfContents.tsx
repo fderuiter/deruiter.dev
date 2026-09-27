@@ -60,8 +60,12 @@ export function TableOfContents({ headings }: TableOfContentsProps) {
     e.preventDefault();
     setActiveId(id);
     setIsOpen(false);
-    const target = document.getElementById(id);
-    if (target) {
+    window.history.pushState(null, "", `#${id}`);
+    // The mobile list collapses on selection. Scroll after that layout change
+    // so the heading remains below the fixed navbar at every width.
+    window.requestAnimationFrame(() => {
+      const target = document.getElementById(id);
+      if (!target) return;
       const reduceMotion =
         typeof window.matchMedia === "function" &&
         window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -69,8 +73,7 @@ export function TableOfContents({ headings }: TableOfContentsProps) {
         behavior: reduceMotion ? "auto" : "smooth",
         block: "start",
       });
-      window.history.pushState(null, "", `#${id}`);
-    }
+    });
   };
 
   return (

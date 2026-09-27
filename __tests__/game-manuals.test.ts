@@ -13,9 +13,10 @@ describe("Game Manuals Registry", () => {
     "clinical-chaos",
     "retro-labyrinth",
     "simulator",
+    "crf",
   ];
 
-  it("registers all 8 required interactive games and modules", () => {
+  it("registers every required interactive game and module", () => {
     expectedModules.forEach((modId) => {
       expect(GAME_MANUALS[modId]).toBeDefined();
       expect(GAME_MANUALS[modId].id).toBe(modId);

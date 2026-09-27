@@ -8,6 +8,7 @@ import type {
   Site,
 } from "../types";
 import { POPULATION_LABELS, shopEntryId } from "../types";
+import { amendedRule } from "./amendments";
 import { drawInt } from "./rng";
 
 /**
@@ -102,6 +103,9 @@ export function sellValue(price: number): number {
  * whose population suit, or an alias of it, is one of them.
  */
 export function fitsRulebook(entry: ShopEntry, rulebook: SapRulebook): boolean {
+  if (entry.kind === "AMENDMENT") {
+    return amendedRule(rulebook, entry.amendment) !== null;
+  }
   if (entry.kind !== "SEAL") return true;
   const { seal } = entry;
   if (
@@ -155,17 +159,23 @@ export function drawDistinct<T>(
   return { items, next };
 }
 
-/** The single-slot stock that fits the rulebook and is not already owned. */
+/**
+ * The single-slot stock that fits the rulebook and is not already owned:
+ * relics in the rack, and amendments in force or waiting in the tray.
+ */
 export function stockPool(
   catalog: ShopCatalog,
   rulebook: SapRulebook,
-  ownedRelicIds: readonly string[]
+  ownedRelicIds: readonly string[],
+  ownedAmendmentIds: readonly string[] = []
 ): ShopEntry[] {
   const owned = new Set(ownedRelicIds);
+  const amended = new Set(ownedAmendmentIds);
   return catalog.entries.filter(
     (entry) =>
       fitsRulebook(entry, rulebook) &&
-      !(entry.kind === "RELIC" && owned.has(entry.relic.id))
+      !(entry.kind === "RELIC" && owned.has(entry.relic.id)) &&
+      !(entry.kind === "AMENDMENT" && amended.has(entry.amendment.id))
   );
 }
 
@@ -176,14 +186,16 @@ export type PackCard =
 
 /**
  * What a pack draws from: Site Activation packs the sites not yet active;
- * Guidance and Relic packs the matching stock that fits and is not owned.
+ * Relic packs the relics that fit and are not owned; Guidance packs the
+ * Guidance cards and the SAP Amendments not already owned.
  */
 export function packPool(
   catalog: ShopCatalog,
   pack: Pack,
   rulebook: SapRulebook,
   ownedRelicIds: readonly string[],
-  activeSiteIds: readonly string[]
+  activeSiteIds: readonly string[],
+  ownedAmendmentIds: readonly string[] = []
 ): PackCard[] {
   if (pack.kind === "SITE_ACTIVATION") {
     const active = new Set(activeSiteIds);
@@ -191,9 +203,10 @@ export function packPool(
       .filter((site) => !active.has(site.id))
       .map((site) => ({ id: site.id, kind: "SITE", site }));
   }
-  const kind = pack.kind === "GUIDANCE" ? "GUIDANCE" : "RELIC";
-  return stockPool(catalog, rulebook, ownedRelicIds)
-    .filter((entry) => entry.kind === kind)
+  const kinds: ShopEntry["kind"][] =
+    pack.kind === "GUIDANCE" ? ["GUIDANCE", "AMENDMENT"] : ["RELIC"];
+  return stockPool(catalog, rulebook, ownedRelicIds, ownedAmendmentIds)
+    .filter((entry) => kinds.includes(entry.kind))
     .map((entry) => ({ id: shopEntryId(entry), kind: "ENTRY", entry }));
 }
 

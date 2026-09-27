@@ -18,6 +18,14 @@ The Blind's DMC access history, oldest first.
 
 ***
 
+### amendmentPreviews
+
+> **amendmentPreviews**: [`AmendmentPreview`](AmendmentPreview.md)[]
+
+What each SAP Amendment in the tray would do if used, in tray order.
+
+***
+
 ### auditLog
 
 > **auditLog**: [`TraceRecord`](TraceRecord.md)[]
@@ -677,6 +685,46 @@ Only cards stamped QC ✓: every cell reviewed, no open redline.
 > **reward**: \{ `choices`: `object`[]; `claimed`: `string` \| `null`; \} \| `null`
 
 A defended encounter's relic offer, or null.
+
+***
+
+### rulebook
+
+> **rulebook**: `object`
+
+The SAP rulebook in force, amendments applied.
+
+#### id
+
+> **id**: `string` = `identifier`
+
+#### meanPrecision
+
+> **meanPrecision**: `number`
+
+#### percentPrecision
+
+> **percentPrecision**: `number`
+
+#### populationAliases
+
+> **populationAliases**: `object`[]
+
+#### populationSuit
+
+> **populationSuit**: `"SCREENED"` \| `"ITT"` \| `"SAFETY"` \| `"PER_PROTOCOL"` \| `"FAS"` = `PopulationTypeSchema`
+
+#### roundingMode
+
+> **roundingMode**: `"HALF_EVEN"` \| `"HALF_AWAY_FROM_ZERO"` \| `"TRUNCATE"` = `RoundingModeSchema`
+
+#### rules
+
+> **rules**: `object`[]
+
+#### title
+
+> **title**: `string`
 
 ***
 

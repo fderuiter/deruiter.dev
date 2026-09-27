@@ -74,6 +74,16 @@ Hours left on an FDA Information Request's clock; null outside one.
 
 ***
 
+### compiledUnder
+
+> **compiledUnder**: `Record`\<`string`, `string`\>
+
+Outputs in hand compiled under an earlier SAP rulebook than the one in
+force, by the rulebook id they were compiled under. They are stale until
+recompiled; an output with no entry was compiled under the one in force.
+
+***
+
 ### consumables
 
 > **consumables**: [`Consumable`](../type-aliases/Consumable.md)[]
@@ -455,6 +465,58 @@ The relic taken as this Blind's encounter reward, once taken.
 ### roundScore
 
 > **roundScore**: `number`
+
+***
+
+### sapAmendments
+
+> **sapAmendments**: `object`[]
+
+SAP Amendments the run has used, in order (#1086).
+
+#### bonusDelta
+
+> **bonusDelta**: `number`
+
++Mult added to a correction against the amended rule.
+
+#### category
+
+> **category**: `"PRECISION"` \| `"ROUNDING"` \| `"VALUE"`
+
+The rule category it amends. Fatal rules are never amended.
+
+#### code
+
+> **code**: `string`
+
+The suffix the amended rulebook's id takes, e.g. "AR".
+
+#### description
+
+> **description**: `string`
+
+#### id
+
+> **id**: `string` = `identifier`
+
+#### name
+
+> **name**: `string`
+
+The short name printed on the card.
+
+#### penaltyDelta
+
+> **penaltyDelta**: `number`
+
++Mult added to what a standing redline against it costs.
+
+#### sellValue
+
+> **sellValue**: `number` = `nonNegativeInt`
+
+What selling it adds to the study budget.
 
 ***
 

@@ -6,7 +6,7 @@
 
 # Type Alias: TableAction
 
-> **TableAction** = \{ `cardId`: `string`; `type`: `"TOGGLE_SELECT"`; \} \| \{ `type`: `"PLAY_HAND"`; \} \| \{ `type`: `"DISCARD"`; \} \| \{ `cardId`: `string`; `type`: `"INSPECT_CARD"`; \} \| \{ `type`: `"CLOSE_INSPECT"`; \} \| \{ `col`: `number`; `row`: `number`; `type`: `"INSPECT_CELL"`; \} \| \{ `findingId`: `string`; `type`: `"CORRECT_FINDING"`; \} \| \{ `col`: `number`; `row`: `number`; `type`: `"TRACE_CELL"`; \} \| \{ `cardId`: `string`; `toIndex`: `number`; `type`: `"MOVE_CARD"`; \} \| \{ `cardId`: `string`; `type`: `"RECOMPILE"`; \} \| \{ `cardId`: `string`; `population`: [`PopulationType`](../../../types/type-aliases/PopulationType.md); `type`: `"ALLOCATE"`; \} \| \{ `cardId`: `string`; `consumableId`: `string`; `type`: `"APPLY_SEAL"`; \} \| \{ `consumableId`: `string`; `type`: `"SELL_CONSUMABLE"`; \} \| \{ `consumableId`: `string`; `type`: `"USE_GUIDANCE"`; \} \| \{ `choiceId`: `string`; `type`: `"RESOLVE_CRISIS"`; \} \| \{ `cardId`: `string`; `type`: `"STRUCTURAL_QC"`; \} \| \{ `cardId`: `string`; `type`: `"PEEK_BLINDED"`; \} \| \{ `session`: [`DmcSession`](../../blinding/type-aliases/DmcSession.md); `type`: `"SET_SESSION"`; \} \| \{ `relicId`: `string`; `type`: `"CLAIM_RELIC"`; \} \| \{ `type`: `"AMEND_PROTOCOL"`; \} \| \{ `type`: `"RESET"`; \}
+> **TableAction** = \{ `cardId`: `string`; `type`: `"TOGGLE_SELECT"`; \} \| \{ `type`: `"PLAY_HAND"`; \} \| \{ `type`: `"DISCARD"`; \} \| \{ `cardId`: `string`; `type`: `"INSPECT_CARD"`; \} \| \{ `type`: `"CLOSE_INSPECT"`; \} \| \{ `col`: `number`; `row`: `number`; `type`: `"INSPECT_CELL"`; \} \| \{ `findingId`: `string`; `type`: `"CORRECT_FINDING"`; \} \| \{ `col`: `number`; `row`: `number`; `type`: `"TRACE_CELL"`; \} \| \{ `cardId`: `string`; `toIndex`: `number`; `type`: `"MOVE_CARD"`; \} \| \{ `cardId`: `string`; `type`: `"RECOMPILE"`; \} \| \{ `cardId`: `string`; `population`: [`PopulationType`](../../../types/type-aliases/PopulationType.md); `type`: `"ALLOCATE"`; \} \| \{ `cardId`: `string`; `consumableId`: `string`; `type`: `"APPLY_SEAL"`; \} \| \{ `consumableId`: `string`; `type`: `"SELL_CONSUMABLE"`; \} \| \{ `consumableId`: `string`; `type`: `"USE_GUIDANCE"`; \} \| \{ `consumableId`: `string`; `type`: `"USE_AMENDMENT"`; \} \| \{ `choiceId`: `string`; `type`: `"RESOLVE_CRISIS"`; \} \| \{ `cardId`: `string`; `type`: `"STRUCTURAL_QC"`; \} \| \{ `cardId`: `string`; `type`: `"PEEK_BLINDED"`; \} \| \{ `session`: [`DmcSession`](../../blinding/type-aliases/DmcSession.md); `type`: `"SET_SESSION"`; \} \| \{ `relicId`: `string`; `type`: `"CLAIM_RELIC"`; \} \| \{ `type`: `"AMEND_PROTOCOL"`; \} \| \{ `type`: `"RESET"`; \}
 
 Player intents the Card Table reducer accepts.
 
@@ -107,6 +107,15 @@ Sells a tray consumable for its sell value.
 \{ `consumableId`: `string`; `type`: `"USE_GUIDANCE"`; \}
 
 Uses a Guidance card from the tray: its hand levels up for the run.
+
+***
+
+### Type Literal
+
+\{ `consumableId`: `string`; `type`: `"USE_AMENDMENT"`; \}
+
+Uses a SAP Amendment from the tray: the rulebook in force is amended for
+the rest of the run, and outputs in hand compiled under it go stale.
 
 ***
 

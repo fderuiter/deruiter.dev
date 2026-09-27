@@ -19,6 +19,7 @@ import {
   STALE_ALERT,
   advanceRun,
   cardShortName,
+  consumableSellValue,
   costOf,
   createRunState,
   planActs,
@@ -59,6 +60,7 @@ import { FdaClock } from "@/components/trial-and-error/FdaClock";
 import { CsrSlots } from "@/components/trial-and-error/CsrSlots";
 import { CsrLockSummary } from "@/components/trial-and-error/CsrLockSummary";
 import { FirewallDialog } from "@/components/trial-and-error/FirewallDialog";
+import { AmendmentDialog } from "@/components/trial-and-error/AmendmentDialog";
 import { CashOut } from "@/components/trial-and-error/CashOut";
 import { Shop } from "@/components/trial-and-error/Shop";
 import {
@@ -482,6 +484,7 @@ export function CardTable({
     : null;
   /** The face-down output the firewall dialog is asking about. */
   const [peekId, setPeekId] = useState<string | null>(null);
+  const [amendingId, setAmendingId] = useState<string | null>(null);
   // Every Boss Blind opens on its intro card until it is dismissed.
   const bossIntroKey = `${runView.seed}:${run.actIndex}:${runView.blindIndex}:${scenario.id}`;
   const [bossIntroSeen, setBossIntroSeen] = useState<string | null>(null);
@@ -677,6 +680,11 @@ export function CardTable({
     // The resume prompt renders in place of the table, so attach once it goes.
   }, [offerResume]);
 
+  const amending = amendingId
+    ? (view.amendmentPreviews.find(
+        (p) => p.consumableId === amendingId && p.refusal === null
+      ) ?? null)
+    : null;
   const peekCard = peekId
     ? (view.hand.find((h) => h.card.id === peekId && h.faceDown) ?? null)
     : null;
@@ -1396,13 +1404,55 @@ export function CardTable({
                   }
                   className="min-h-[44px] border-t border-zinc-800 px-2 text-left uppercase tracking-wider text-zinc-300 touch-manipulation hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 disabled:text-zinc-500"
                 >
-                  Sell · $
-                  {item.kind === "SEAL"
-                    ? item.seal.sellValue
-                    : item.guidance.sellValue}
-                  k
+                  Sell · ${consumableSellValue(item)}k
                 </button>
               );
+              if (item.kind === "AMENDMENT") {
+                const { amendment } = item;
+                const preview = view.amendmentPreviews.find(
+                  (p) => p.consumableId === item.id
+                );
+                return (
+                  <span
+                    key={item.id}
+                    className="flex w-44 min-w-0 flex-col border border-amber-400/60 text-[10px]"
+                    data-testid="consumable"
+                    data-kind="amendment"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setAmendingId(item.id)}
+                      disabled={
+                        state.status !== "REVIEWING" ||
+                        playing ||
+                        !preview ||
+                        preview.refusal !== null
+                      }
+                      title={preview?.refusal ?? amendment.description}
+                      aria-label={`Use ${amendment.name}: ${amendment.description}${preview?.refusal ? ` ${preview.refusal}` : ""}`}
+                      className="min-h-[44px] min-w-0 px-2 py-1 text-left touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 disabled:text-zinc-400"
+                    >
+                      <span className="flex items-start gap-1 font-bold uppercase tracking-wider text-amber-300">
+                        <span
+                          aria-hidden="true"
+                          className="flex h-4 w-4 shrink-0 items-center justify-center border border-amber-400 bg-amber-950 text-[7px]"
+                        >
+                          {amendment.code}
+                        </span>
+                        <span className="min-w-0 break-words">
+                          {amendment.name}
+                        </span>
+                      </span>
+                      <span className="block text-zinc-300 break-words">
+                        {preview && preview.refusal === null
+                          ? `Use: ${preview.ruleLabel} +${preview.bonus.to} Mult · stales ${preview.staled.length}`
+                          : (preview?.refusal ?? amendment.description)}
+                      </span>
+                    </button>
+                    {sellButton}
+                  </span>
+                );
+              }
               if (item.kind === "GUIDANCE") {
                 const { guidance } = item;
                 const bonus = HAND_LEVEL_BONUS[guidance.handType];
@@ -2009,7 +2059,9 @@ export function CardTable({
                           ? "Relic"
                           : card.kind === "GUIDANCE"
                             ? "Guidance"
-                            : "Seal",
+                            : card.kind === "AMENDMENT"
+                              ? "SAP Amendment"
+                              : "Seal",
                   }))}
                   onPick={(cardId) => send({ type: "PICK_PACK_CARD", cardId })}
                   onSkip={() => send({ type: "SKIP_PACK" })}
@@ -2199,14 +2251,19 @@ export function CardTable({
                 {inspected.provenance.version} · captured{" "}
                 {inspected.provenance.capturedAt.slice(0, 10)}
                 {inspected.stale && (
-                  <span className="text-rose-300"> · stale: {STALE_ALERT}</span>
+                  <span className="text-rose-300">
+                    {" "}
+                    · stale:{" "}
+                    {view.hand.find((h) => h.card.id === inspected.card.id)
+                      ?.staleAlert ?? STALE_ALERT}
+                  </span>
                 )}
               </p>
               {view.inspection ? (
                 <QcDesk
                   card={view.inspection.card}
                   table={view.inspection.table}
-                  rulebook={scenario.rulebook}
+                  rulebook={view.rulebook}
                   view={view.inspection}
                   expected={view.inspection.expected}
                   unpenalizedMult={view.inspection.unpenalizedMult}
@@ -2283,6 +2340,21 @@ export function CardTable({
         <BossIntro
           intro={view.bossIntro}
           onDismiss={() => setBossIntroSeen(bossIntroKey)}
+        />
+      )}
+
+      {amending && (
+        <AmendmentDialog
+          preview={amending}
+          onCancel={() => setAmendingId(null)}
+          onConfirm={() => {
+            const consumableId = amending.consumableId;
+            setAmendingId(null);
+            send(
+              { type: "USE_AMENDMENT", consumableId },
+              { kind: "hand", index: activeIndex }
+            );
+          }}
         />
       )}
 

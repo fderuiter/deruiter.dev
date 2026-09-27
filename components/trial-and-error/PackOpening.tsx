@@ -7,7 +7,7 @@ import { CardBack } from "@/components/trial-and-error/cards/CardBack";
 /** One card in a pack reveal. */
 export interface RevealCard {
   id: string;
-  /** A short kind label: Relic, Guidance, Seal or Site. */
+  /** A short kind label: Relic, Guidance, SAP Amendment, Seal or Site. */
   kind: string;
   name: string;
   description: string;
@@ -39,6 +39,7 @@ const KIND_ACCENT: Record<string, string> = {
   Site: "border-sky-500/60 text-sky-300",
   Guidance: "border-amber-500/60 text-amber-300",
   Seal: "border-zinc-500 text-zinc-200",
+  "SAP Amendment": "border-amber-300 text-amber-200",
 };
 
 /**

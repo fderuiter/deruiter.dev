@@ -74,6 +74,12 @@ Re-exports [ActIntroView](internal/run/interfaces/ActIntroView.md)
 
 ***
 
+### activeRulebook
+
+Re-exports [activeRulebook](internal/table/functions/activeRulebook.md)
+
+***
+
 ### ActSchema
 
 Re-exports [ActSchema](types/variables/ActSchema.md)
@@ -113,6 +119,30 @@ Re-exports [AdverseEventSchema](types/variables/AdverseEventSchema.md)
 ### AllocationOption
 
 Re-exports [AllocationOption](internal/table/interfaces/AllocationOption.md)
+
+***
+
+### amendedRule
+
+Re-exports [amendedRule](internal/amendments/functions/amendedRule.md)
+
+***
+
+### AMENDMENT\_STALE\_ALERT
+
+Re-exports [AMENDMENT_STALE_ALERT](internal/table/variables/AMENDMENT_STALE_ALERT.md)
+
+***
+
+### AmendmentPreview
+
+Re-exports [AmendmentPreview](internal/table/interfaces/AmendmentPreview.md)
+
+***
+
+### amendRulebook
+
+Re-exports [amendRulebook](internal/amendments/functions/amendRulebook.md)
 
 ***
 
@@ -1709,6 +1739,24 @@ Re-exports [SAFETY_SURVEILLANCE_STUDY](scenarios/variables/SAFETY_SURVEILLANCE_S
 ### sameMembership
 
 Re-exports [sameMembership](internal/snapshots/functions/sameMembership.md)
+
+***
+
+### SAP\_AMENDMENTS
+
+Re-exports [SAP_AMENDMENTS](scenarios/variables/SAP_AMENDMENTS.md)
+
+***
+
+### SapAmendment
+
+Re-exports [SapAmendment](types/type-aliases/SapAmendment.md)
+
+***
+
+### SapAmendmentSchema
+
+Re-exports [SapAmendmentSchema](types/variables/SapAmendmentSchema.md)
 
 ***
 

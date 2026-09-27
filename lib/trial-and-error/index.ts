@@ -27,6 +27,7 @@ export {
   DOSE_ESCALATION_SCENARIO,
   FDA_IR_SCENARIO,
   PHASE_II_QC_SCENARIO,
+  SAP_AMENDMENTS,
   SCENARIOS,
   SPONSOR_SAFETY_SCENARIO,
   SPONSOR_TOPLINE_SCENARIO,
@@ -45,6 +46,7 @@ export {
   type HandLevelRow,
 } from "./internal/hands";
 export { GUIDANCE_CARDS } from "./internal/guidance";
+export { amendRulebook, amendedRule } from "./internal/amendments";
 export {
   CSR_ORDER,
   CSR_STAGE_LABELS,
@@ -129,6 +131,9 @@ export {
   type TableView,
   type PlayBlocker,
   STALE_ALERT,
+  AMENDMENT_STALE_ALERT,
+  activeRulebook,
+  type AmendmentPreview,
   EMPTY_SHELL_ALERT,
   CONSUMABLE_SLOTS,
   ENROLLMENT_AFTER_HANDS,

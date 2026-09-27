@@ -204,6 +204,58 @@ Only cards stamped QC ✓: every cell reviewed, no open redline.
 
 ***
 
+### sapAmendments?
+
+> `optional` **sapAmendments?**: `object`[]
+
+SAP Amendments the run has used, in order (#1086).
+
+#### bonusDelta
+
+> **bonusDelta**: `number`
+
++Mult added to a correction against the amended rule.
+
+#### category
+
+> **category**: `"PRECISION"` \| `"ROUNDING"` \| `"VALUE"`
+
+The rule category it amends. Fatal rules are never amended.
+
+#### code
+
+> **code**: `string`
+
+The suffix the amended rulebook's id takes, e.g. "AR".
+
+#### description
+
+> **description**: `string`
+
+#### id
+
+> **id**: `string` = `identifier`
+
+#### name
+
+> **name**: `string`
+
+The short name printed on the card.
+
+#### penaltyDelta
+
+> **penaltyDelta**: `number`
+
++Mult added to what a standing redline against it costs.
+
+#### sellValue
+
+> **sellValue**: `number` = `nonNegativeInt`
+
+What selling it adds to the study budget.
+
+***
+
 ### sites?
 
 > `optional` **sites?**: `object`[]

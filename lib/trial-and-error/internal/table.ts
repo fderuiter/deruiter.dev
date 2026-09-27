@@ -11,6 +11,7 @@ import type {
   HandType,
   PopulationSnapshot,
   PopulationType,
+  SapAmendment,
   SapRulebook,
   TableShellSpec,
   QcReport,
@@ -36,6 +37,7 @@ import type {
   Site,
 } from "../types";
 import { HandTypeSchema, POPULATION_LABELS } from "../types";
+import { amendRulebook, amendedRule } from "./amendments";
 import { compileDraft, compileShell } from "./compile";
 import {
   CPU_COSTS,
@@ -129,6 +131,7 @@ export interface TableEvent {
     | "SEALED"
     | "SOLD"
     | "LEVELED_UP"
+    | "SAP_AMENDED"
     | "CRISIS_RESOLVED"
     | "TRACED"
     | "STRUCTURAL_QC"
@@ -196,21 +199,26 @@ export interface LevelUp {
 }
 
 /**
- * A consumable in the tray: a footnote seal or a Guidance card. `id` is
- * unique within the tray.
+ * A consumable in the tray: a footnote seal, a Guidance card or a SAP
+ * Amendment. `id` is unique within the tray.
  */
 export type Consumable =
   | { id: string; kind: "SEAL"; seal: FootnoteSeal }
-  | { id: string; kind: "GUIDANCE"; guidance: GuidanceCard };
+  | { id: string; kind: "GUIDANCE"; guidance: GuidanceCard }
+  | { id: string; kind: "AMENDMENT"; amendment: SapAmendment };
 
 /** A consumable's printed name. */
 export function consumableName(item: Consumable): string {
-  return item.kind === "SEAL" ? item.seal.name : item.guidance.name;
+  if (item.kind === "SEAL") return item.seal.name;
+  if (item.kind === "GUIDANCE") return item.guidance.name;
+  return item.amendment.name;
 }
 
 /** What selling a consumable adds to the study budget. */
 export function consumableSellValue(item: Consumable): number {
-  return item.kind === "SEAL" ? item.seal.sellValue : item.guidance.sellValue;
+  if (item.kind === "SEAL") return item.seal.sellValue;
+  if (item.kind === "GUIDANCE") return item.guidance.sellValue;
+  return item.amendment.sellValue;
 }
 
 /**
@@ -230,6 +238,8 @@ export interface Inventory {
   enrollments?: PopulationTransition[];
   /** The Blinds the campaign has cleared so far, oldest first. */
   campaign?: CampaignRecord[];
+  /** SAP Amendments the run has used, in order (#1086). */
+  sapAmendments?: SapAmendment[];
 }
 
 /** One output in a locked package, as the audit summary records it. */
@@ -328,6 +338,9 @@ export const EMPTY_SHELL_ALERT =
 /** The alert shown when a hand holds an output compiled on an old snapshot. */
 export const STALE_ALERT = `Output compiled against obsolete population snapshot; recompile required (${CPU_COSTS.RECOMPILE} CPU).`;
 
+/** The alert for an output compiled under a SAP rulebook since amended (#1086). */
+export const AMENDMENT_STALE_ALERT = `Output compiled under a superseded SAP rulebook; recompile required (${CPU_COSTS.RECOMPILE} CPU).`;
+
 /** Serializable Card Table state. Contains no derived or browser data. */
 export interface TableState {
   scenarioId: string;
@@ -398,6 +411,14 @@ export interface TableState {
   lock: PackageLock | null;
   /** Protocol amendments filed against a locked package this Blind. */
   amendments: number;
+  /** SAP Amendments the run has used, in order (#1086). */
+  sapAmendments: SapAmendment[];
+  /**
+   * Outputs in hand compiled under an earlier SAP rulebook than the one in
+   * force, by the rulebook id they were compiled under. They are stale until
+   * recompiled; an output with no entry was compiled under the one in force.
+   */
+  compiledUnder: Record<string, string>;
   /** The FDA Information Request's questions answered so far, in order. */
   answered: string[];
   /** SOP relics the run has earned; each scores in every hand. */
@@ -444,6 +465,11 @@ export type TableAction =
   | { type: "SELL_CONSUMABLE"; consumableId: string }
   /** Uses a Guidance card from the tray: its hand levels up for the run. */
   | { type: "USE_GUIDANCE"; consumableId: string }
+  /**
+   * Uses a SAP Amendment from the tray: the rulebook in force is amended for
+   * the rest of the run, and outputs in hand compiled under it go stale.
+   */
+  | { type: "USE_AMENDMENT"; consumableId: string }
   /** Answers the Blind's crisis with one of its choices. */
   | { type: "RESOLVE_CRISIS"; choiceId: string }
   /** Structural QC of a face-down output: shape and format, no values. */
@@ -483,8 +509,13 @@ export interface TableCardView {
   stamps: CardStamp[];
   /** The Boss Blind's debuff cancels this card's Chips. */
   debuffed: boolean;
-  /** Compiled against a snapshot whose membership of this card's suit has since changed. */
+  /**
+   * Compiled against a snapshot whose membership of this card's suit has
+   * since changed, or under a rulebook an SAP Amendment has since superseded.
+   */
   stale: boolean;
+  /** The alert naming why the card is stale, or null when it is current. */
+  staleAlert: string | null;
   /** The snapshot this card was compiled against. */
   provenance: SnapshotRef;
   /** A blank shell with no analysis set allocated: it cannot be played yet. */
@@ -638,6 +669,10 @@ export interface TableView {
   /** The consumable tray. */
   consumables: Consumable[];
   consumableSlots: number;
+  /** What each SAP Amendment in the tray would do if used, in tray order. */
+  amendmentPreviews: AmendmentPreview[];
+  /** The SAP rulebook in force, amendments applied. */
+  rulebook: SapRulebook;
   budget: number;
   /** The run's hand levels. */
   handLevels: HandLevels;
@@ -869,10 +904,20 @@ function rulebookFor(
   state: TableState,
   card: TlfCard
 ): SapRulebook {
+  const rulebook = activeRulebook(scenario, state);
   const allocated = state.allocations[card.id];
-  return allocated
-    ? { ...scenario.rulebook, populationSuit: allocated }
-    : scenario.rulebook;
+  return allocated ? { ...rulebook, populationSuit: allocated } : rulebook;
+}
+
+/**
+ * The SAP rulebook in force: the scenario's, with every SAP Amendment the
+ * run has used applied in order (#1086).
+ */
+export function activeRulebook(
+  scenario: Scenario,
+  state: TableState
+): SapRulebook {
+  return amendRulebook(scenario.rulebook, state.sapAmendments ?? []);
 }
 
 /** The draft as authored in the scenario, compiled against its own snapshot. */
@@ -924,8 +969,38 @@ const reportFor = (
 const provenanceOf = (state: TableState, card: TlfCard): SnapshotRef =>
   state.provenance[card.id] ?? snapshotRef(currentSnapshot(state));
 
-/** Whether its suit's membership has changed since the card was compiled. */
+/**
+ * Whether the card must be recompiled before it scores: its suit's
+ * membership has changed since it was compiled, or the SAP rulebook it was
+ * compiled under has since been amended.
+ */
 function isStale(
+  scenario: Scenario,
+  state: TableState,
+  card: TlfCard
+): boolean {
+  return (
+    isSnapshotStale(scenario, state, card) ||
+    compiledUnderOf(state, card) !== null
+  );
+}
+
+/** Why a card is stale, as the alert names it, or null when it is current. */
+function staleAlertOf(
+  scenario: Scenario,
+  state: TableState,
+  card: TlfCard
+): string | null {
+  if (isSnapshotStale(scenario, state, card)) return STALE_ALERT;
+  return compiledUnderOf(state, card) !== null ? AMENDMENT_STALE_ALERT : null;
+}
+
+/** The superseded rulebook a card was compiled under, or null when current. */
+const compiledUnderOf = (state: TableState, card: TlfCard): string | null =>
+  state.compiledUnder?.[card.id] ?? null;
+
+/** Whether its suit's membership has changed since the card was compiled. */
+function isSnapshotStale(
   scenario: Scenario,
   state: TableState,
   card: TlfCard
@@ -1356,7 +1431,7 @@ function playBlocker(
   const stale = selected.filter((card) => isStale(scenario, state, card));
   if (stale.length > 0) {
     return blocker(
-      `${STALE_ALERT} Stale: ${stale.map(cardShortName).join(", ")}.`,
+      `${staleAlertOf(scenario, state, stale[0])} Stale: ${stale.map(cardShortName).join(", ")}.`,
       `Recompile ${stale[0].number}`,
       "R"
     );
@@ -1920,6 +1995,16 @@ function staleFor(
   const compiled = provenanceOf(state, card);
   const current = currentSnapshot(state);
   const chips = card.chips + results.reduce((sum, r) => sum + r.chipsDelta, 0);
+  const under = compiledUnderOf(state, card);
+  if (under !== null && !isSnapshotStale(scenario, state, card)) {
+    return {
+      ruleId: "STALE-RULEBOOK",
+      passed: false,
+      chipsDelta: -chips,
+      multDelta: 0,
+      evidence: `${card.number} was compiled under ${under}, and ${activeRulebook(scenario, state).id} has amended it since, so it scores 0 Chips (${chips} cancelled). ${AMENDMENT_STALE_ALERT}`,
+    };
+  }
   return {
     ruleId: "STALE-SNAPSHOT",
     passed: false,
@@ -2379,6 +2464,8 @@ export function createTableState(
     campaign: [...(inventory.campaign ?? [])],
     lock: null,
     amendments: 0,
+    sapAmendments: [...(inventory.sapAmendments ?? [])],
+    compiledUnder: {},
     relics: [...(inventory.relics ?? [])],
     rewardClaimed: null,
     sites: [...(inventory.sites ?? [])],
@@ -2407,6 +2494,7 @@ export function carriedInventory(state: TableState): Inventory {
     sites: state.sites,
     enrollments: state.enrollments,
     campaign: state.campaign,
+    sapAmendments: state.sapAmendments,
   };
 }
 
@@ -2455,6 +2543,7 @@ function spendSelection(
     selected: [],
     inspections: keep(state.inspections),
     provenance: keep(state.provenance),
+    compiledUnder: keep(state.compiledUnder ?? {}),
     drafts: keep(state.drafts),
     allocations: keep(state.allocations),
     seals: keep(state.seals),
@@ -2511,7 +2600,8 @@ function transitionTable(
   const staleCardIds = next.hand.filter((id) => {
     const card = cardById(scenario, next, id) as TlfCard;
     return (
-      outcome.changed.includes(card.population) && isStale(scenario, next, card)
+      outcome.changed.includes(card.population) &&
+      isSnapshotStale(scenario, next, card)
     );
   });
   next = {
@@ -2631,6 +2721,7 @@ const CRISIS_SAFE_ACTIONS = new Set<TableAction["type"]>([
   "MOVE_CARD",
   "SELL_CONSUMABLE",
   "USE_GUIDANCE",
+  "USE_AMENDMENT",
   "CLOSE_INSPECT",
 ]);
 
@@ -3268,10 +3359,16 @@ function applyTableAction(
       }
       const draft = draftFor(scenario, state, card);
       const { [card.id]: _review, ...inspections } = state.inspections;
+      const { [card.id]: _under, ...compiledUnder } = state.compiledUnder ?? {};
+      const amended =
+        compiledUnderOf(state, card) !== null
+          ? ` under ${activeRulebook(scenario, state).id}`
+          : "";
       return {
         ...state,
         cpu: cpuReducer(state.cpu, { type: "SPEND", action: "RECOMPILE" }),
         provenance: { ...state.provenance, [card.id]: snapshotRef(current) },
+        compiledUnder,
         drafts: draft
           ? {
               ...state.drafts,
@@ -3294,7 +3391,7 @@ function applyTableAction(
         lastEvent: nextEvent(
           state,
           "RECOMPILED",
-          `Recompiled ${label(card)} against ${current.id} for ${CPU_COSTS.RECOMPILE} CPU.${draft ? " Inspect it again to verify the rerun." : ""}`
+          `Recompiled ${label(card)} against ${current.id}${amended} for ${CPU_COSTS.RECOMPILE} CPU.${draft ? " Inspect it again to verify the rerun." : ""}`
         ),
       };
     }
@@ -3338,7 +3435,10 @@ function applyTableAction(
         { ...shell, layout: shell.layout },
         `${shell.id}@${card.id}`,
         current,
-        { ...scenario.rulebook, populationSuit: action.population }
+        {
+          ...activeRulebook(scenario, state),
+          populationSuit: action.population,
+        }
       );
       return {
         ...state,
@@ -3357,10 +3457,16 @@ function applyTableAction(
       const item = state.consumables.find((c) => c.id === action.consumableId);
       if (!item)
         return refuse(state, "That footnote seal is not in your tray.");
-      if (item.kind !== "SEAL") {
+      if (item.kind === "GUIDANCE") {
         return refuse(
           state,
           `${item.guidance.name} is a Guidance card: use it to level up ${handName(item.guidance.handType)}.`
+        );
+      }
+      if (item.kind === "AMENDMENT") {
+        return refuse(
+          state,
+          `${item.amendment.name} is a SAP Amendment: file it to amend the rulebook.`
         );
       }
       const card = cardById(scenario, state, action.cardId);
@@ -3442,6 +3548,36 @@ function applyTableAction(
           ),
           levelUp,
         },
+      };
+    }
+
+    case "USE_AMENDMENT": {
+      const item = state.consumables.find((c) => c.id === action.consumableId);
+      if (!item || item.kind !== "AMENDMENT") {
+        return refuse(state, "That SAP Amendment is not in your tray.");
+      }
+      const preview = amendmentPreview(scenario, state, item);
+      if (preview.refusal) return refuse(state, preview.refusal);
+      const { amendment } = item;
+      const staled = preview.staled.map((c) => c.cardId);
+      const names = preview.staled.map((c) => c.name);
+      return {
+        ...state,
+        consumables: state.consumables.filter((c) => c.id !== item.id),
+        sapAmendments: [...(state.sapAmendments ?? []), amendment],
+        compiledUnder: {
+          ...(state.compiledUnder ?? {}),
+          ...Object.fromEntries(staled.map((id) => [id, preview.fromId])),
+        },
+        lastEvent: nextEvent(
+          state,
+          "SAP_AMENDED",
+          `${amendment.name} filed: ${preview.toId} is in force. ${preview.ruleLabel} corrections now earn +${preview.bonus.to} Mult, and a standing redline costs −${preview.penalty.to}. ${
+            names.length > 0
+              ? `${names.length} output${names.length === 1 ? "" : "s"} compiled under ${preview.fromId} went stale: ${names.join(", ")}. Recompile before playing ${names.length === 1 ? "it" : "them"}.`
+              : `No output in hand was compiled under ${preview.fromId}.`
+          }`
+        ),
       };
     }
 
@@ -3610,8 +3746,8 @@ function timelineContext(
       [...state.relics, ...state.sites].map((r) => [r.id, r.name])
     ),
     zeroRuleLabels: Object.fromEntries(
-      scenario.rulebook.rules
-        .filter((r) => r.severity === "FATAL")
+      activeRulebook(scenario, state)
+        .rules.filter((r) => r.severity === "FATAL")
         .map((r): [string, string] => [r.id, `${r.category} ERROR`])
         .concat([[UNBLINDING_RULE_ID, "UNBLINDING"]])
     ),
@@ -3699,6 +3835,78 @@ function scoreLogOf(scenario: Scenario, state: TableState): ScoreLogEntry[] {
 }
 
 /** Derives everything the Card Table renders. Pure; safe on every render. */
+/** What using a SAP Amendment would do, for the confirm step (#1086). */
+export interface AmendmentPreview {
+  consumableId: string;
+  name: string;
+  description: string;
+  /** The rulebook in force now, and the one using it puts in force. */
+  fromId: string;
+  toId: string;
+  /** The rule it amends, e.g. "SAP-DM-03", and its category's label. */
+  ruleId: string | null;
+  ruleLabel: string;
+  /** +Mult a correction against the rule earns, before and after. */
+  bonus: { from: number; to: number };
+  /** +Mult a standing redline against the rule costs, before and after. */
+  penalty: { from: number; to: number };
+  /** The outputs in hand compiled under `fromId`, which go stale, in hand order. */
+  staled: { cardId: string; name: string }[];
+  /** Why it cannot be used now, or null. */
+  refusal: string | null;
+}
+
+const RULE_CATEGORY_LABELS: Readonly<Record<SapAmendment["category"], string>> =
+  { PRECISION: "Precision", ROUNDING: "Rounding", VALUE: "Value" };
+
+/**
+ * What using an amendment would do: the rule it changes and the outputs in
+ * hand it stales. The reducer applies exactly this.
+ */
+function amendmentPreview(
+  scenario: Scenario,
+  state: TableState,
+  item: Extract<Consumable, { kind: "AMENDMENT" }>
+): AmendmentPreview {
+  const { amendment } = item;
+  const before = activeRulebook(scenario, state);
+  const rule = amendedRule(before, amendment);
+  const after = amendRulebook(before, [amendment]);
+  const amended = rule ? after.rules.find((r) => r.id === rule.id) : undefined;
+  const staled = state.hand
+    .map((id) => cardById(scenario, state, id) as TlfCard)
+    .filter(
+      (card) =>
+        draftFor(scenario, state, card) !== undefined &&
+        compiledUnderOf(state, card) === null
+    )
+    .map((card) => ({ cardId: card.id, name: cardShortName(card) }));
+  const used = (state.sapAmendments ?? []).some((a) => a.id === amendment.id);
+  return {
+    consumableId: item.id,
+    name: amendment.name,
+    description: amendment.description,
+    fromId: before.id,
+    toId: after.id,
+    ruleId: rule?.id ?? null,
+    ruleLabel: RULE_CATEGORY_LABELS[amendment.category],
+    bonus: {
+      from: rule?.correctionMultBonus ?? 0,
+      to: amended?.correctionMultBonus ?? 0,
+    },
+    penalty: {
+      from: rule?.redlineMultPenalty ?? 0,
+      to: amended?.redlineMultPenalty ?? 0,
+    },
+    staled,
+    refusal: used
+      ? `${amendment.name} is already in force.`
+      : rule === null
+        ? `${before.id} has no ${RULE_CATEGORY_LABELS[amendment.category].toLowerCase()} rule to amend.`
+        : null,
+  };
+}
+
 export function deriveTableView(
   scenario: Scenario,
   state: TableState
@@ -3770,6 +3978,7 @@ export function deriveTableView(
       stamps,
       debuffed: disablingModifier(scenario, state, card) !== undefined,
       stale,
+      staleAlert: staleAlertOf(scenario, state, card),
       provenance: provenanceOf(state, card),
       blank: isBlank(state, card),
       compatiblePopulations: shell ? compatibleWith(shell) : [],
@@ -3975,7 +4184,11 @@ export function deriveTableView(
     staleSelected,
     playBlockedReason:
       staleSelected.length > 0
-        ? STALE_ALERT
+        ? (staleAlertOf(
+            scenario,
+            state,
+            cardById(scenario, state, staleSelected[0]) as TlfCard
+          ) ?? STALE_ALERT)
         : emptySelected.length > 0
           ? EMPTY_SHELL_ALERT
           : null,
@@ -3985,6 +4198,13 @@ export function deriveTableView(
     emptySelected,
     consumables: state.consumables,
     consumableSlots: CONSUMABLE_SLOTS,
+    amendmentPreviews: state.consumables
+      .filter(
+        (c): c is Extract<Consumable, { kind: "AMENDMENT" }> =>
+          c.kind === "AMENDMENT"
+      )
+      .map((c) => amendmentPreview(scenario, state, c)),
+    rulebook: activeRulebook(scenario, state),
     handLevels: state.handLevels,
     handTable: handLevelTable(state.handLevels),
     budget: state.budget,

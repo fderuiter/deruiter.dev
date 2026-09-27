@@ -437,13 +437,22 @@ What selling it adds to the study budget.
 
 > **stale**: `boolean`
 
-Compiled against a snapshot whose membership of this card's suit has since changed.
+Compiled against a snapshot whose membership of this card's suit has
+since changed, or under a rulebook an SAP Amendment has since superseded.
+
+***
+
+### staleAlert
+
+> **staleAlert**: `string` \| `null`
+
+The alert naming why the card is stale, or null when it is current.
 
 ***
 
 ### stamps
 
-> **stamps**: (`"REDLINE"` \| `"SEALED"` \| `"QC_PASS"` \| `"STALE"` \| `"BLINDED"`)[]
+> **stamps**: (`"REDLINE"` \| `"STALE"` \| `"SEALED"` \| `"QC_PASS"` \| `"BLINDED"`)[]
 
 Marks stamped on the face, in display order.
 

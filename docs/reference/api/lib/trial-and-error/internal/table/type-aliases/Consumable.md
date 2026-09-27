@@ -6,7 +6,7 @@
 
 # Type Alias: Consumable
 
-> **Consumable** = \{ `id`: `string`; `kind`: `"SEAL"`; `seal`: [`FootnoteSeal`](../../../types/type-aliases/FootnoteSeal.md); \} \| \{ `guidance`: [`GuidanceCard`](../../../types/type-aliases/GuidanceCard.md); `id`: `string`; `kind`: `"GUIDANCE"`; \}
+> **Consumable** = \{ `id`: `string`; `kind`: `"SEAL"`; `seal`: [`FootnoteSeal`](../../../types/type-aliases/FootnoteSeal.md); \} \| \{ `guidance`: [`GuidanceCard`](../../../types/type-aliases/GuidanceCard.md); `id`: `string`; `kind`: `"GUIDANCE"`; \} \| \{ `amendment`: [`SapAmendment`](../../../types/type-aliases/SapAmendment.md); `id`: `string`; `kind`: `"AMENDMENT"`; \}
 
-A consumable in the tray: a footnote seal or a Guidance card. `id` is
-unique within the tray.
+A consumable in the tray: a footnote seal, a Guidance card or a SAP
+Amendment. `id` is unique within the tray.

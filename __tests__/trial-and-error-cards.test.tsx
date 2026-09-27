@@ -197,6 +197,7 @@ const deckView = (): TableCardView[] =>
           stamps: [],
           debuffed: false,
           stale: false,
+          staleAlert: null,
           provenance: snapshotRef(DEMOGRAPHICS_SCENARIO.populationSnapshot),
           blank: false,
           compatiblePopulations: [],

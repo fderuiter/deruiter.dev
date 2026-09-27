@@ -9,6 +9,7 @@
 ## Interfaces
 
 - [AllocationOption](interfaces/AllocationOption.md)
+- [AmendmentPreview](interfaces/AmendmentPreview.md)
 - [BossIntroView](interfaces/BossIntroView.md)
 - [ClockView](interfaces/ClockView.md)
 - [CrisisChoiceView](interfaces/CrisisChoiceView.md)
@@ -43,6 +44,7 @@
 
 ## Variables
 
+- [AMENDMENT\_STALE\_ALERT](variables/AMENDMENT_STALE_ALERT.md)
 - [CLINICAL\_HOLD](variables/CLINICAL_HOLD.md)
 - [CLOCK\_URGENT\_HOURS](variables/CLOCK_URGENT_HOURS.md)
 - [CONSUMABLE\_SLOTS](variables/CONSUMABLE_SLOTS.md)
@@ -61,6 +63,7 @@
 
 ## Functions
 
+- [activeRulebook](functions/activeRulebook.md)
 - [advanceTable](functions/advanceTable.md)
 - [cardShortName](functions/cardShortName.md)
 - [carriedInventory](functions/carriedInventory.md)

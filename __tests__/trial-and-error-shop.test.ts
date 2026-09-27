@@ -147,7 +147,9 @@ describe("shop catalog", () => {
       const item = (
         entry.kind === "SEAL"
           ? { id: "x", kind: "SEAL", seal: entry.seal }
-          : { id: "x", kind: "GUIDANCE", guidance: entry.guidance }
+          : entry.kind === "AMENDMENT"
+            ? { id: "x", kind: "AMENDMENT", amendment: entry.amendment }
+            : { id: "x", kind: "GUIDANCE", guidance: entry.guidance }
       ) as Consumable;
       expect(consumableSellValue(item)).toBe(sellValue(entry.price));
     }

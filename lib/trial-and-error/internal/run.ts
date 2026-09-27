@@ -217,7 +217,7 @@ export interface ShopItemView {
 /** A pack card as the reveal shows it. */
 export interface PackCardView {
   id: string;
-  kind: "RELIC" | "GUIDANCE" | "SEAL" | "SITE";
+  kind: "RELIC" | "GUIDANCE" | "SEAL" | "AMENDMENT" | "SITE";
   name: string;
   description: string;
   picked: boolean;
@@ -511,7 +511,8 @@ function drawSlots(
   const pool = stockPool(
     catalog,
     shopRulebook(plan, run),
-    run.table.relics.map((r) => r.id)
+    run.table.relics.map((r) => r.id),
+    ownedAmendmentIds(run.table)
   );
   const { items, next } = drawDistinct(run.seed, drawIndex, pool, SHOP_SLOTS);
   return { slots: items.map((entry) => ({ entry, sold: false })), next };
@@ -541,7 +542,9 @@ function take(table: TableState, entry: ShopEntry, trayId: string): TableState {
   const item: Consumable =
     entry.kind === "SEAL"
       ? { id: trayId, kind: "SEAL", seal: entry.seal }
-      : { id: trayId, kind: "GUIDANCE", guidance: entry.guidance };
+      : entry.kind === "AMENDMENT"
+        ? { id: trayId, kind: "AMENDMENT", amendment: entry.amendment }
+        : { id: trayId, kind: "GUIDANCE", guidance: entry.guidance };
   return { ...table, consumables: [...table.consumables, item] };
 }
 
@@ -561,7 +564,23 @@ function describeEntry(entry: ShopEntry): {
         .replace(/_/g, " ")}. ${entry.guidance.flavor}`,
     };
   }
+  if (entry.kind === "AMENDMENT") {
+    return {
+      name: entry.amendment.name,
+      description: entry.amendment.description,
+    };
+  }
   return { name: entry.seal.name, description: entry.seal.footnote };
+}
+
+/** Amendments the run owns: in force, or waiting in the tray. */
+function ownedAmendmentIds(table: TableState): string[] {
+  return [
+    ...(table.sapAmendments ?? []).map((a) => a.id),
+    ...table.consumables.flatMap((c) =>
+      c.kind === "AMENDMENT" ? [c.amendment.id] : []
+    ),
+  ];
 }
 
 /** The study time a site goes live: a day after the current snapshot. */
@@ -687,7 +706,8 @@ function shopAction(plan: RunPlan, run: RunState, action: RunAction): RunState {
         pack,
         shopRulebook(plan, run),
         run.table.relics.map((r) => r.id),
-        run.table.sites.map((s) => s.id)
+        run.table.sites.map((s) => s.id),
+        ownedAmendmentIds(run.table)
       );
       if (pool.length === 0)
         return refuse(`${pack.name} has nothing left to draw.`);

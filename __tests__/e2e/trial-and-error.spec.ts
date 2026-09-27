@@ -12,6 +12,7 @@ import {
   type RunState,
 } from "../../lib/trial-and-error";
 import { playBlind } from "../utils/trial-and-error-bot";
+import { amendmentInTray } from "../utils/trial-and-error-amendment-run";
 
 /**
  * A fixed seed makes the crisis draw repeatable (T&E-05): this one deals the
@@ -1386,6 +1387,55 @@ test.describe("Trial & Error post-marketing rounds (#1088)", () => {
         page,
         `post-marketing table at ${width}px`
       );
+    });
+  }
+});
+
+test.describe("Trial & Error SAP Amendments (#1086)", () => {
+  const save = () => {
+    const { run, actions } = amendmentInTray(CAMPAIGN);
+    return serializeRun(
+      { actId: CAMPAIGN.id, seed: run.seed, actions },
+      new Date()
+    );
+  };
+
+  for (const [label, width, fontSize] of [
+    ["320px", 320, "100%"],
+    ["200% zoom", 1280, "200%"],
+  ] as const) {
+    test(`confirms and files an amendment from the tray at ${label}`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 800 });
+      await resume(page, save());
+      await page.evaluate((size) => {
+        document.documentElement.style.fontSize = size;
+      }, fontSize);
+      const tile = page.locator(
+        '[data-testid="consumable"][data-kind="amendment"]'
+      );
+      const use = tile.getByRole("button", { name: /^Use / });
+      await use.click();
+      const dialog = page.getByTestId("amendment-dialog");
+      await expect(dialog).toBeVisible();
+      await expect(
+        dialog.getByRole("button", { name: /Keep in tray/ })
+      ).toBeFocused();
+      await expect(page.getByTestId("amendment-staled")).toBeVisible();
+      await expectNoHorizontalOverflow(page);
+      await expectNoBlockingViolations(page, `amendment dialog at ${label}`);
+
+      await page.keyboard.press("Escape");
+      await expect(dialog).toBeHidden();
+      await expect(use).toBeFocused();
+
+      await use.click();
+      await dialog.getByTestId("amendment-confirm").click();
+      await expect(dialog).toBeHidden();
+      await expect(tile).toHaveCount(0);
+      await expectNoHorizontalOverflow(page);
+      await expectNoBlockingViolations(page, `amended table at ${label}`);
     });
   }
 });

@@ -810,6 +810,7 @@ describe("Footnote seals", () => {
       sites: [],
       enrollments: [],
       campaign: [],
+      sapAmendments: [],
     });
   });
 

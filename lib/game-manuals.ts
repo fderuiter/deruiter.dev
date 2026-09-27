@@ -782,6 +782,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         key: "Use",
       },
       {
+        action: "File a SAP Amendment",
+        description:
+          "Amendments in the tray raise one non-fatal SAP rule's stakes for the rest of the run: its correction earns more +Mult, and a standing redline costs more. Use opens a confirm that lists every output in hand compiled under the old rulebook, which goes stale until you recompile it. Esc keeps the amendment.",
+        key: "Use / Esc",
+      },
+      {
         action: "Sell a relic",
         description:
           "In the shop, S or Enter on a relic in the rack offers to sell it for half what it cost.",
@@ -836,6 +842,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         detail:
           "Every hand starts the run at level 1. A Guidance card raises its hand one level for the rest of the run, and the preview shows the hand's Lv. The Sponsor Safety Review deals ICH E2A, which levels MedDRA Five of a Kind by +35 Chips and +3 Mult. The flavour text is a joke, not regulatory advice.",
         badge: "Guidance",
+      },
+      {
+        title: "SAP Amendments",
+        detail:
+          "The Rounding and Precision Amendments are sold in the shop and turn up in Guidance Packs. Filing one puts an amended rulebook in force, e.g. SAP-DM-001 becomes SAP-DM-001-AR, and it carries into every later Blind and study. Outputs already in hand were compiled under the old rulebook: they score 0 Chips until recompiled.",
+        badge: "Amendment",
       },
       {
         title: "Zero-score rule",

@@ -24,7 +24,7 @@ A pack card as the reveal shows it.
 
 ### kind
 
-> **kind**: `"RELIC"` \| `"GUIDANCE"` \| `"SEAL"` \| `"SITE"`
+> **kind**: `"RELIC"` \| `"GUIDANCE"` \| `"SEAL"` \| `"AMENDMENT"` \| `"SITE"`
 
 ***
 

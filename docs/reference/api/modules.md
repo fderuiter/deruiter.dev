@@ -255,6 +255,7 @@
 - [lib/term-compiler](lib/term-compiler/README.md)
 - [lib/term-glossary](lib/term-glossary/README.md)
 - [lib/trial-and-error](lib/trial-and-error/README.md)
+- [lib/trial-and-error/internal/amendments](lib/trial-and-error/internal/amendments/README.md)
 - [lib/trial-and-error/internal/blinding](lib/trial-and-error/internal/blinding/README.md)
 - [lib/trial-and-error/internal/compile](lib/trial-and-error/internal/compile/README.md)
 - [lib/trial-and-error/internal/cpu](lib/trial-and-error/internal/cpu/README.md)

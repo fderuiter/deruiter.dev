@@ -1124,6 +1124,33 @@ export const GuidanceCardSchema = z.object({
 export type GuidanceCard = z.infer<typeof GuidanceCardSchema>;
 
 /**
+ * A SAP Amendment (#1086): a consumable the player chooses to use. It amends
+ * one non-fatal rule category of the rulebook in force for the rest of the
+ * run: correcting a discrepancy against it pays `bonusDelta` more +Mult, and
+ * a standing redline costs `penaltyDelta` more. The amended rulebook takes
+ * `code` as a suffix to its id, and every output in hand compiled under the
+ * old rulebook goes stale.
+ */
+export const SapAmendmentSchema = z.object({
+  id: identifier,
+  /** The short name printed on the card. */
+  name: z.string().min(1).max(32),
+  description: z.string().min(1).max(200),
+  /** The suffix the amended rulebook's id takes, e.g. "AR". */
+  code: z.string().regex(/^[A-Z0-9]{1,4}$/),
+  /** The rule category it amends. Fatal rules are never amended. */
+  category: z.enum(["PRECISION", "ROUNDING", "VALUE"]),
+  /** +Mult added to a correction against the amended rule. */
+  bonusDelta: z.number().int().min(1).max(10),
+  /** +Mult added to what a standing redline against it costs. */
+  penaltyDelta: z.number().int().min(0).max(10),
+  /** What selling it adds to the study budget. */
+  sellValue: nonNegativeInt,
+});
+/** A SAP Amendment. */
+export type SapAmendment = z.infer<typeof SapAmendmentSchema>;
+
+/**
  * A trial site a Site Activation pack can activate (#948). Activating
  * it adds its standing Chips to every later hand and enrolls its subjects
  * into the study after the next Blind's first hand, which versions the
@@ -1156,6 +1183,11 @@ export const ShopEntrySchema = z.discriminatedUnion("kind", [
     kind: z.literal("SEAL"),
     price: z.number().int().positive(),
     seal: FootnoteSealSchema,
+  }),
+  z.object({
+    kind: z.literal("AMENDMENT"),
+    price: z.number().int().positive(),
+    amendment: SapAmendmentSchema,
   }),
 ]);
 /** One item the Procurement Shop can stock. */
@@ -1239,6 +1271,7 @@ export type ShopCatalog = z.infer<typeof ShopCatalogSchema>;
 export function shopEntryId(entry: ShopEntry): string {
   if (entry.kind === "RELIC") return entry.relic.id;
   if (entry.kind === "GUIDANCE") return entry.guidance.id;
+  if (entry.kind === "AMENDMENT") return entry.amendment.id;
   return entry.seal.id;
 }
 
@@ -1851,6 +1884,7 @@ export const RunActionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("APPLY_SEAL"), consumableId: id, cardId: id }),
   z.object({ type: z.literal("SELL_CONSUMABLE"), consumableId: id }),
   z.object({ type: z.literal("USE_GUIDANCE"), consumableId: id }),
+  z.object({ type: z.literal("USE_AMENDMENT"), consumableId: id }),
   z.object({ type: z.literal("RESOLVE_CRISIS"), choiceId: id }),
   z.object({ type: z.literal("STRUCTURAL_QC"), cardId: id }),
   z.object({ type: z.literal("PEEK_BLINDED"), cardId: id }),

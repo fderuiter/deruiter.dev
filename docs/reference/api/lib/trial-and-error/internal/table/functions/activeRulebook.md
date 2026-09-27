@@ -2,11 +2,14 @@
 
 ***
 
-[fderuiter-portfolio](../../../../../modules.md) / [lib/trial-and-error/internal/table](../README.md) / deriveTableView
+[fderuiter-portfolio](../../../../../modules.md) / [lib/trial-and-error/internal/table](../README.md) / activeRulebook
 
-# Function: deriveTableView()
+# Function: activeRulebook()
 
-> **deriveTableView**(`scenario`, `state`): [`TableView`](../interfaces/TableView.md)
+> **activeRulebook**(`scenario`, `state`): `object`
+
+The SAP rulebook in force: the scenario's, with every SAP Amendment the
+run has used applied in order (#1086).
 
 ## Parameters
 
@@ -216,4 +219,36 @@ The short intro card shown when the Blind starts.
 
 ## Returns
 
-[`TableView`](../interfaces/TableView.md)
+`object`
+
+### id
+
+> **id**: `string` = `identifier`
+
+### meanPrecision
+
+> **meanPrecision**: `number`
+
+### percentPrecision
+
+> **percentPrecision**: `number`
+
+### populationAliases
+
+> **populationAliases**: `object`[]
+
+### populationSuit
+
+> **populationSuit**: `"SCREENED"` \| `"ITT"` \| `"SAFETY"` \| `"PER_PROTOCOL"` \| `"FAS"` = `PopulationTypeSchema`
+
+### roundingMode
+
+> **roundingMode**: `"HALF_EVEN"` \| `"HALF_AWAY_FROM_ZERO"` \| `"TRUNCATE"` = `RoundingModeSchema`
+
+### rules
+
+> **rules**: `object`[]
+
+### title
+
+> **title**: `string`

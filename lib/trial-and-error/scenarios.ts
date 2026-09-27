@@ -26,6 +26,7 @@ import type {
   Relic,
   RelicTrigger,
   RowStatistic,
+  SapAmendment,
   SapRulebook,
   Scenario,
   ShopCatalog,
@@ -1397,6 +1398,36 @@ const shopSeal = (seal: FootnoteSeal): ShopEntry => ({
   seal,
 });
 
+/**
+ * SAP Amendments (#1086): the shop's rulebook tier. Filing one raises a
+ * non-fatal rule's stakes for the rest of the run, and stales every output
+ * in hand compiled under the rulebook it supersedes.
+ */
+export const SAP_AMENDMENTS = {
+  ROUNDING: {
+    id: "AMD-ROUNDING-TIES",
+    name: "Rounding Amendment",
+    description:
+      "Sponsor and CRO agree on tie handling in writing. Rounding corrections earn +3 Mult more, and a standing rounding redline costs 1 Mult more.",
+    code: "AR",
+    category: "ROUNDING",
+    bonusDelta: 3,
+    penaltyDelta: 1,
+    sellValue: 3,
+  },
+  PRECISION: {
+    id: "AMD-PRECISION-TABLE",
+    name: "Precision Amendment",
+    description:
+      "A decimal-places table for every statistic. Precision corrections earn +2 Mult more, and a standing precision redline costs 1 Mult more.",
+    code: "AP",
+    category: "PRECISION",
+    bonusDelta: 2,
+    penaltyDelta: 1,
+    sellValue: 3,
+  },
+} as const satisfies Record<string, SapAmendment>;
+
 /** Act I's Procurement Shop: its stock, its booster packs and its sites. */
 export const ACT_I_SHOP: ShopCatalog = {
   entries: [
@@ -1488,6 +1519,11 @@ export const ACT_I_SHOP: ShopCatalog = {
       kind: "GUIDANCE",
       price: guidance.sellValue * 2 + 1,
       guidance,
+    })),
+    ...Object.values(SAP_AMENDMENTS).map((amendment): ShopEntry => ({
+      kind: "AMENDMENT",
+      price: amendment.sellValue * 2,
+      amendment,
     })),
     shopSeal(ADJUDICATED),
     shopSeal(AE_NOT_EXCLUSIVE),

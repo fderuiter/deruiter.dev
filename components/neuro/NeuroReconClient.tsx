@@ -465,12 +465,15 @@ export const NeuroReconClient: React.FC = () => {
 
   // Apply Voxel Edits Handler
   const handleApplyVoxelEdits = (edits: VoxelEdit[]) => {
-    setVoxelEdits((prev) => [...prev, ...edits]);
-
     // Mutate live volume buffers for instant rendering
     const size = VOLUME_SIZE;
+    const appliedEdits: VoxelEdit[] = [];
     edits.forEach((e) => {
       const idx = e.z * size * size + e.y * size + e.x;
+      const mask = e.layer === "brainmask" ? volume.brainmask : volume.wmMask;
+      const originalValue = mask[idx];
+      if (originalValue === e.newValue) return;
+      appliedEdits.push({ ...e, originalValue });
       if (e.layer === "brainmask") {
         volume.brainmask[idx] = e.newValue;
       } else if (e.layer === "wm") {
@@ -478,6 +481,9 @@ export const NeuroReconClient: React.FC = () => {
         volume.rawT1[idx] = e.newValue === 1 ? 110 : 70;
       }
     });
+
+    if (appliedEdits.length === 0) return;
+    setVoxelEdits((prev) => [...prev, ...appliedEdits]);
 
     playNote(toolMode === "paint" ? 480 : 340, 0.05);
   };
@@ -571,7 +577,7 @@ export const NeuroReconClient: React.FC = () => {
           {
             id: `log-res-succ-${Date.now()}`,
             type: "success",
-            text: `[PASSED] ${currentScenario.successMessage} Euler χ = ${metrics.eulerCharacteristic}, Dice = ${(metrics.diceScore * 100).toFixed(1)}%. +500 PTS`,
+            text: `[SIMULATION PASSED] ${currentScenario.successMessage} Estimated Euler χ = ${metrics.eulerCharacteristic}, estimated Dice = ${(metrics.diceScore * 100).toFixed(1)}%. +500 PTS`,
             timestamp: new Date().toLocaleTimeString(),
           },
         ]);
@@ -584,7 +590,7 @@ export const NeuroReconClient: React.FC = () => {
           {
             id: `log-res-prog-${Date.now()}`,
             type: "info",
-            text: `[INCOMPLETE] Recon executed. Remaining defects: ${metrics.defectCount}. Euler χ = ${metrics.eulerCharacteristic}. Continue manual correction.`,
+            text: `[INCOMPLETE] Simulated recon executed. Estimated remaining defect units: ${metrics.defectCount}. Estimated Euler χ = ${metrics.eulerCharacteristic}. Continue manual correction.`,
             timestamp: new Date().toLocaleTimeString(),
           },
         ]);
@@ -632,7 +638,7 @@ export const NeuroReconClient: React.FC = () => {
           {
             id: `out-stats-${Date.now()}`,
             type: "output",
-            text: `Morphometric Stats (aseg.stats / aparc.stats):\n  Total Intracranial Volume (eTIV): 1,482,910 mm³\n  Total Gray Matter Volume: 712,450 mm³\n  Total White Matter Volume: 489,120 mm³\n  Mean Cortical Thickness: ${qaMetrics.meanCorticalThicknessMm} mm\n  Dice Ground Truth Similarity: ${(qaMetrics.diceScore * 100).toFixed(1)}%\n  Topological Defect Count: ${qaMetrics.defectCount}`,
+            text: `Morphometric Stats (simulated; not aseg.stats / aparc.stats):\n  Example Intracranial Volume (eTIV): 1,482,910 mm³\n  Example Gray Matter Volume: 712,450 mm³\n  Example White Matter Volume: 489,120 mm³\n  Estimated Mean Cortical Thickness: ${qaMetrics.meanCorticalThicknessMm} mm\n  Estimated Dice Trend (no reference mask): ${(qaMetrics.diceScore * 100).toFixed(1)}%\n  Estimated Defect Units: ${qaMetrics.defectCount}`,
             timestamp,
           },
         ]);
@@ -644,10 +650,10 @@ export const NeuroReconClient: React.FC = () => {
           {
             id: `out-euler-${Date.now()}`,
             type: "output",
-            text: `Euler Characteristic: χ = ${qaMetrics.eulerCharacteristic} (Target = ${currentScenario.targetEuler})\nFormula: χ = V - E + F = 2 - 2g (g = genus / handles)\nStatus: ${
+            text: `Estimated Euler Characteristic: χ = ${qaMetrics.eulerCharacteristic} (Scenario target = ${currentScenario.targetEuler})\nThis value is interpolated from simulated repair progress, not measured from a surface mesh.\nStatus: ${
               qaMetrics.eulerCharacteristic === currentScenario.targetEuler
-                ? "Valid 2-Sphere Topology ($S^2$)"
-                : "Defect present (Genus g >= 1)"
+                ? "Scenario target reached"
+                : "Scenario repair in progress"
             }`,
             timestamp,
           },
@@ -848,8 +854,8 @@ export const NeuroReconClient: React.FC = () => {
               <p className="text-[11px] text-zinc-400 leading-snug">
                 Click{" "}
                 <strong className="text-brand-cyan">[RUN RECON-ALL]</strong> or
-                press <kbd>[Space]</kbd> to verify Euler characteristic χ = 2
-                ($S^2$).
+                press <kbd>[Space]</kbd> to check the simulated Euler target χ =
+                2.
               </p>
             </div>
           </div>
@@ -1133,10 +1139,10 @@ export const NeuroReconClient: React.FC = () => {
 
               <div className="space-y-2">
                 <span className="text-xs font-mono font-bold uppercase tracking-widest text-emerald-400">
-                  RECON-ALL PIPELINE PASS
+                  SIMULATED RECON PASS
                 </span>
                 <h3 className="text-xl font-bold text-white font-mono">
-                  Defect Corrected & Verified!
+                  Scenario Target Reached
                 </h3>
                 <p className="text-xs text-zinc-300 leading-relaxed font-sans">
                   {currentScenario.successMessage}
@@ -1146,13 +1152,13 @@ export const NeuroReconClient: React.FC = () => {
               {/* Stats pill */}
               <div className="grid grid-cols-3 gap-2 bg-zinc-950 p-3 rounded-2xl border border-zinc-800 text-xs font-mono">
                 <div>
-                  <div className="text-zinc-400">EULER</div>
+                  <div className="text-zinc-400">EULER EST.</div>
                   <div className="font-bold text-emerald-400">
                     χ = {qaMetrics.eulerCharacteristic}
                   </div>
                 </div>
                 <div>
-                  <div className="text-zinc-400">DICE</div>
+                  <div className="text-zinc-400">DICE EST.</div>
                   <div className="font-bold text-brand-cyan">
                     {(qaMetrics.diceScore * 100).toFixed(1)}%
                   </div>

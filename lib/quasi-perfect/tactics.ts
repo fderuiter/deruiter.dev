@@ -26,7 +26,9 @@ export function resolveHypothesis(
 
   if (arg) {
     const nameMatched = reversed.find(
-      (h) => (h.metadata?.name as string)?.toLowerCase() === arg.toLowerCase() || h.id === arg
+      (h) =>
+        (h.metadata?.name as string)?.toLowerCase() === arg.toLowerCase() ||
+        h.id === arg
     );
     if (nameMatched) return nameMatched;
   }
@@ -43,17 +45,24 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
     id: "rfl",
     name: "rfl",
     label: "rfl",
-    description: "Close goal by reflexivity if Left-Hand Side exactly equals Right-Hand Side.",
+    description:
+      "Close goal by reflexivity if Left-Hand Side exactly equals Right-Hand Side.",
     baseRamCost: 1,
     failureCost: 1,
     execute: (targetNode, globalAST) => {
-      const nodeToTest = targetNode.type === "Equality" ? targetNode : globalAST;
+      const nodeToTest =
+        targetNode.type === "Equality" ? targetNode : globalAST;
 
-      if (nodeToTest.type !== "Equality" || !nodeToTest.children || nodeToTest.children.length !== 2) {
+      if (
+        nodeToTest.type !== "Equality" ||
+        !nodeToTest.children ||
+        nodeToTest.children.length !== 2
+      ) {
         return {
           success: false,
           ramConsumed: 1,
-          message: "error: 'rfl' failed: target is not an equality (lhs = rhs).",
+          message:
+            "error: 'rfl' failed: target is not an equality (lhs = rhs).",
         };
       }
 
@@ -87,7 +96,8 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
     id: "rw",
     name: "rw",
     label: "rw",
-    description: "Rewrite a sub-expression using an active equality hypothesis.",
+    description:
+      "Rewrite a sub-expression using an active equality hypothesis.",
     baseRamCost: 2,
     failureCost: 1,
     execute: (targetNode, globalAST, hypotheses, arg) => {
@@ -95,7 +105,8 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
         return {
           success: false,
           ramConsumed: 1,
-          message: "error: tactic 'rw' failed. No hypotheses available in context.",
+          message:
+            "error: tactic 'rw' failed. No hypotheses available in context.",
         };
       }
 
@@ -106,7 +117,8 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
         (h) =>
           h.type === "Equality" &&
           h.children?.length === 2 &&
-          (areNodesEqual(h.children[0], targetNode) || areNodesEqual(h.children[1], targetNode))
+          (areNodesEqual(h.children[0], targetNode) ||
+            areNodesEqual(h.children[1], targetNode))
       );
 
       if (
@@ -158,18 +170,23 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
     id: "simp",
     name: "simp",
     label: "simp",
-    description: "Aggressively simplify arithmetic identities, identity operations, and constants.",
+    description:
+      "Aggressively simplify arithmetic identities, identity operations, and constants.",
     baseRamCost: 6,
     failureCost: 1,
     execute: (targetNode, globalAST) => {
-      const target = targetNode.id === globalAST.id ? globalAST : findNodeById(globalAST, targetNode.id) || targetNode;
+      const target =
+        targetNode.id === globalAST.id
+          ? globalAST
+          : findNodeById(globalAST, targetNode.id) || targetNode;
       const { node: simplifiedSubtree, changed } = simplifyNode(target);
 
       if (!changed) {
         return {
           success: false,
           ramConsumed: 1,
-          message: "warning: 'simp' made no progress. 6 GB of RAM was consumed with no reduction.",
+          message:
+            "warning: 'simp' made no progress. 6 GB of RAM was consumed with no reduction.",
         };
       }
 
@@ -191,17 +208,24 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
     id: "ring",
     name: "ring",
     label: "ring",
-    description: "Solve algebraic identities in commutative rings & polynomials (e.g. (a+b)² = a² + 2ab + b²).",
+    description:
+      "Solve algebraic identities in commutative rings & polynomials (e.g. (a+b)² = a² + 2ab + b²).",
     baseRamCost: 4,
     failureCost: 1,
     execute: (targetNode, globalAST) => {
-      const nodeToTest = targetNode.type === "Equality" ? targetNode : globalAST;
+      const nodeToTest =
+        targetNode.type === "Equality" ? targetNode : globalAST;
 
-      if (nodeToTest.type !== "Equality" || !nodeToTest.children || nodeToTest.children.length !== 2) {
+      if (
+        nodeToTest.type !== "Equality" ||
+        !nodeToTest.children ||
+        nodeToTest.children.length !== 2
+      ) {
         return {
           success: false,
           ramConsumed: 1,
-          message: "error: 'ring' failed: target must be an algebraic equality (A = B).",
+          message:
+            "error: 'ring' failed: target must be an algebraic equality (A = B).",
         };
       }
 
@@ -218,7 +242,7 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
           newAST,
           ramConsumed: 4,
           leanProofStep: "ring",
-          message: `tactic 'ring' verified polynomial ring equivalence: '${renderASTString(left)}' = '${renderASTString(right)}'.`,
+          message: `local 'ring' check confirmed polynomial ring equivalence: '${renderASTString(left)}' = '${renderASTString(right)}'.`,
           isProofComplete: newAST.type === "Boolean" && newAST.value === true,
         };
       }
@@ -235,17 +259,24 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
     id: "intro",
     name: "intro",
     label: "intro",
-    description: "Introduce the antecedent of an implication (P → Q) as a local hypothesis 'h : P'.",
+    description:
+      "Introduce the antecedent of an implication (P → Q) as a local hypothesis 'h : P'.",
     baseRamCost: 2,
     failureCost: 1,
     execute: (targetNode, globalAST, hypotheses, arg) => {
-      const nodeToTest = targetNode.type === "Implication" ? targetNode : globalAST;
+      const nodeToTest =
+        targetNode.type === "Implication" ? targetNode : globalAST;
 
-      if (nodeToTest.type !== "Implication" || !nodeToTest.children || nodeToTest.children.length !== 2) {
+      if (
+        nodeToTest.type !== "Implication" ||
+        !nodeToTest.children ||
+        nodeToTest.children.length !== 2
+      ) {
         return {
           success: false,
           ramConsumed: 1,
-          message: "error: tactic 'intro' failed: goal is not an implication (P → Q).",
+          message:
+            "error: tactic 'intro' failed: goal is not an implication (P → Q).",
         };
       }
 
@@ -276,7 +307,8 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
     id: "apply",
     name: "apply",
     label: "apply",
-    description: "Backwards reasoning: given goal Q and hypothesis h : P → Q, transform goal into P.",
+    description:
+      "Backwards reasoning: given goal Q and hypothesis h : P → Q, transform goal into P.",
     baseRamCost: 3,
     failureCost: 1,
     execute: (targetNode, globalAST, hypotheses, arg) => {
@@ -284,17 +316,26 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
         return {
           success: false,
           ramConsumed: 1,
-          message: "error: tactic 'apply' failed. No implication hypotheses in context.",
+          message:
+            "error: tactic 'apply' failed. No implication hypotheses in context.",
         };
       }
 
       const matchedHyp = resolveHypothesis(
         hypotheses,
         arg,
-        (h) => h.type === "Implication" && h.children?.length === 2 && areNodesEqual(h.children[1], targetNode)
+        (h) =>
+          h.type === "Implication" &&
+          h.children?.length === 2 &&
+          areNodesEqual(h.children[1], targetNode)
       );
 
-      if (!matchedHyp || matchedHyp.type !== "Implication" || !matchedHyp.children || matchedHyp.children.length !== 2) {
+      if (
+        !matchedHyp ||
+        matchedHyp.type !== "Implication" ||
+        !matchedHyp.children ||
+        matchedHyp.children.length !== 2
+      ) {
         return {
           success: false,
           ramConsumed: 1,
@@ -329,14 +370,13 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
     id: "exact",
     name: "exact",
     label: "exact",
-    description: "Close goal immediately if a known hypothesis matches the goal precisely.",
+    description:
+      "Close goal immediately if a known hypothesis matches the goal precisely.",
     baseRamCost: 1,
     failureCost: 1,
     execute: (targetNode, globalAST, hypotheses, arg) => {
-      const matchedHyp = resolveHypothesis(
-        hypotheses,
-        arg,
-        (h) => areNodesEqual(h, targetNode)
+      const matchedHyp = resolveHypothesis(hypotheses, arg, (h) =>
+        areNodesEqual(h, targetNode)
       );
 
       if (!matchedHyp || !areNodesEqual(matchedHyp, targetNode)) {
@@ -370,7 +410,8 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
     id: "cases",
     name: "cases",
     label: "cases",
-    description: "Perform case analysis on a disjunction (P ∨ Q), splitting the goal into 2 subgoals.",
+    description:
+      "Perform case analysis on a disjunction (P ∨ Q), splitting the goal into 2 subgoals.",
     baseRamCost: 4,
     failureCost: 1,
     execute: (_targetNode, globalAST, hypotheses, arg) => {
@@ -380,17 +421,25 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
         (h) => h.type === "Disjunction" && h.children?.length === 2
       );
 
-      if (!matchedHyp || matchedHyp.type !== "Disjunction" || !matchedHyp.children || matchedHyp.children.length !== 2) {
+      if (
+        !matchedHyp ||
+        matchedHyp.type !== "Disjunction" ||
+        !matchedHyp.children ||
+        matchedHyp.children.length !== 2
+      ) {
         return {
           success: false,
           ramConsumed: 1,
-          message: "error: tactic 'cases' requires a disjunctive hypothesis (P ∨ Q).",
+          message:
+            "error: tactic 'cases' requires a disjunctive hypothesis (P ∨ Q).",
         };
       }
 
       const [leftDisj, rightDisj] = matchedHyp.children;
       const hypName = (matchedHyp.metadata?.name as string) || "h_or";
-      const remainingHypotheses = hypotheses.filter((h) => h.id !== matchedHyp!.id);
+      const remainingHypotheses = hypotheses.filter(
+        (h) => h.id !== matchedHyp!.id
+      );
 
       const subGoal1: SubGoal = {
         id: `subgoal-1-${Date.now()}`,
@@ -437,7 +486,8 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
     id: "norm_num",
     name: "norm_num",
     label: "norm_num",
-    description: "Normalize and compute numerical arithmetic expressions and compound boolean assertions.",
+    description:
+      "Normalize and compute numerical arithmetic expressions and compound boolean assertions.",
     baseRamCost: 3,
     failureCost: 1,
     execute: (targetNode, globalAST) => {
@@ -480,7 +530,8 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
       return {
         success: false,
         ramConsumed: 1,
-        message: "error: tactic 'norm_num' could not evaluate non-concrete expression.",
+        message:
+          "error: tactic 'norm_num' could not evaluate non-concrete expression.",
       };
     },
   },
@@ -489,12 +540,15 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
     id: "decide",
     name: "decide",
     label: "decide",
-    description: "Evaluate a decidable, concrete arithmetic proposition to True.",
+    description:
+      "Evaluate a decidable, concrete arithmetic proposition to True.",
     baseRamCost: 4,
     failureCost: 1,
     execute: (targetNode, globalAST) => {
       const nodeToTest =
-        targetNode.type === "Equality" || targetNode.type === "Inequality" || targetNode.type === "Conjunction"
+        targetNode.type === "Equality" ||
+        targetNode.type === "Inequality" ||
+        targetNode.type === "Conjunction"
           ? targetNode
           : globalAST;
 
@@ -502,7 +556,8 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
         return {
           success: false,
           ramConsumed: 1,
-          message: "error: tactic 'decide' failed. Expression contains free variables and is not decidable by finite computation.",
+          message:
+            "error: tactic 'decide' failed. Expression contains free variables and is not decidable by finite computation.",
         };
       }
 
@@ -519,7 +574,7 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
           newAST,
           ramConsumed: 4,
           leanProofStep: "decide",
-          message: `tactic 'decide' succeeded: '${renderASTString(nodeToTest)}' computationally verified.`,
+          message: `local 'decide' evaluation succeeded for '${renderASTString(nodeToTest)}'.`,
           isProofComplete: newAST.type === "Boolean" && newAST.value === true,
         };
       }
@@ -536,18 +591,27 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
     id: "omega",
     name: "omega",
     label: "omega",
-    description: "Solve linear integer arithmetic inequalities over Presburger arithmetic.",
+    description:
+      "Solve linear integer arithmetic inequalities over Presburger arithmetic.",
     baseRamCost: 10,
     failureCost: 1,
     execute: (targetNode, globalAST) => {
-      const nodeToTest = targetNode.type === "Inequality" || targetNode.type === "Equality" ? targetNode : globalAST;
+      const nodeToTest =
+        targetNode.type === "Inequality" || targetNode.type === "Equality"
+          ? targetNode
+          : globalAST;
 
       const rendered = renderASTString(nodeToTest);
-      if (rendered.includes("σ") || rendered.includes("^") || rendered.includes("x * x")) {
+      if (
+        rendered.includes("σ") ||
+        rendered.includes("^") ||
+        rendered.includes("x * x")
+      ) {
         return {
           success: false,
           ramConsumed: 1,
-          message: "error: omega cannot evaluate non-linear arithmetic (e.g. x * x or σ(n)). Presburger arithmetic is strictly linear.",
+          message:
+            "error: omega cannot evaluate non-linear arithmetic (e.g. x * x or σ(n)). Presburger arithmetic is strictly linear.",
         };
       }
 
@@ -562,7 +626,8 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
         newAST,
         ramConsumed: 10,
         leanProofStep: "omega",
-        message: "tactic 'omega' closed linear integer arithmetic goal via Presburger elimination.",
+        message:
+          "tactic 'omega' closed linear integer arithmetic goal via Presburger elimination.",
         isProofComplete: newAST.type === "Boolean" && newAST.value === true,
       };
     },
@@ -572,11 +637,15 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
     id: "linarith",
     name: "linarith",
     label: "linarith",
-    description: "Linear arithmetic solver for linear combinations of hypotheses.",
+    description:
+      "Linear arithmetic solver for linear combinations of hypotheses.",
     baseRamCost: 8,
     failureCost: 1,
     execute: (targetNode, globalAST) => {
-      const nodeToTest = targetNode.type === "Inequality" || targetNode.type === "Equality" ? targetNode : globalAST;
+      const nodeToTest =
+        targetNode.type === "Inequality" || targetNode.type === "Equality"
+          ? targetNode
+          : globalAST;
       const trueNode: ASTNode = {
         id: `linarith-${Date.now()}`,
         type: "Boolean",
@@ -598,17 +667,24 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
     id: "symm",
     name: "symm",
     label: "symm",
-    description: "Symmetry of equality: transpose goal from (A = B) to (B = A).",
+    description:
+      "Symmetry of equality: transpose goal from (A = B) to (B = A).",
     baseRamCost: 1,
     failureCost: 1,
     execute: (targetNode, globalAST) => {
-      const nodeToTest = targetNode.type === "Equality" ? targetNode : globalAST;
+      const nodeToTest =
+        targetNode.type === "Equality" ? targetNode : globalAST;
 
-      if (nodeToTest.type !== "Equality" || !nodeToTest.children || nodeToTest.children.length !== 2) {
+      if (
+        nodeToTest.type !== "Equality" ||
+        !nodeToTest.children ||
+        nodeToTest.children.length !== 2
+      ) {
         return {
           success: false,
           ramConsumed: 1,
-          message: "error: 'symm' failed: target must be an equality (LHS = RHS).",
+          message:
+            "error: 'symm' failed: target must be an equality (LHS = RHS).",
         };
       }
 
@@ -634,13 +710,19 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
     id: "split",
     name: "split",
     label: "split",
-    description: "Decompose a conjunction goal (A ∧ B) into 2 subgoals (constructor / split).",
+    description:
+      "Decompose a conjunction goal (A ∧ B) into 2 subgoals (constructor / split).",
     baseRamCost: 2,
     failureCost: 1,
     execute: (targetNode, globalAST, hypotheses) => {
-      const nodeToTest = targetNode.type === "Conjunction" ? targetNode : globalAST;
+      const nodeToTest =
+        targetNode.type === "Conjunction" ? targetNode : globalAST;
 
-      if (nodeToTest.type !== "Conjunction" || !nodeToTest.children || nodeToTest.children.length !== 2) {
+      if (
+        nodeToTest.type !== "Conjunction" ||
+        !nodeToTest.children ||
+        nodeToTest.children.length !== 2
+      ) {
         return {
           success: false,
           ramConsumed: 1,
@@ -683,13 +765,19 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
     baseRamCost: 1,
     failureCost: 1,
     execute: (targetNode, globalAST) => {
-      const nodeToTest = targetNode.type === "Disjunction" ? targetNode : globalAST;
+      const nodeToTest =
+        targetNode.type === "Disjunction" ? targetNode : globalAST;
 
-      if (nodeToTest.type !== "Disjunction" || !nodeToTest.children || nodeToTest.children.length !== 2) {
+      if (
+        nodeToTest.type !== "Disjunction" ||
+        !nodeToTest.children ||
+        nodeToTest.children.length !== 2
+      ) {
         return {
           success: false,
           ramConsumed: 1,
-          message: "error: tactic 'left' failed: goal is not a disjunction (A ∨ B).",
+          message:
+            "error: tactic 'left' failed: goal is not a disjunction (A ∨ B).",
         };
       }
 
@@ -715,13 +803,19 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
     baseRamCost: 1,
     failureCost: 1,
     execute: (targetNode, globalAST) => {
-      const nodeToTest = targetNode.type === "Disjunction" ? targetNode : globalAST;
+      const nodeToTest =
+        targetNode.type === "Disjunction" ? targetNode : globalAST;
 
-      if (nodeToTest.type !== "Disjunction" || !nodeToTest.children || nodeToTest.children.length !== 2) {
+      if (
+        nodeToTest.type !== "Disjunction" ||
+        !nodeToTest.children ||
+        nodeToTest.children.length !== 2
+      ) {
         return {
           success: false,
           ramConsumed: 1,
-          message: "error: tactic 'right' failed: goal is not a disjunction (A ∨ B).",
+          message:
+            "error: tactic 'right' failed: goal is not a disjunction (A ∨ B).",
         };
       }
 
@@ -743,7 +837,8 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
     id: "sorry",
     name: "sorry",
     label: "Use sorry",
-    description: "Admit the theorem without proof. Warning: Causes catastrophic mathematical morality loss.",
+    description:
+      "Admit the theorem without proof. Warning: Causes catastrophic mathematical morality loss.",
     baseRamCost: 0,
     failureCost: 0,
     execute: () => {
@@ -758,7 +853,8 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
         newAST: qedNode,
         ramConsumed: 0,
         leanProofStep: "sorry",
-        message: "WARNING: Morality exception. Proof accepted via 'sorry'. A single tear falls from the eye of a distant mathematician.",
+        message:
+          "WARNING: Morality exception. Proof accepted via 'sorry'. A single tear falls from the eye of a distant mathematician.",
         isProofComplete: true,
       };
     },

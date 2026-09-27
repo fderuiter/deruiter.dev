@@ -11,10 +11,7 @@ import {
   getFallacyDiagnosis,
   getDeductionLedger,
   pruneStepOrNode,
-  exportProofToLean4,
-  exportProofToLatex,
-  exportProofToMarkdown,
-  exportProofToMermaid,
+  exportWorkspaceProof,
   applyRuleToAsts,
   parseFormula,
   formatFormula,
@@ -33,7 +30,10 @@ import { NextPrevNav } from "@/components/ui/NextPrevNav";
 import { ProofHeader } from "@/components/proof/ProofHeader";
 import { ProofCanvas } from "@/components/proof/ProofCanvas";
 import { ProofLedger } from "@/components/proof/ProofLedger";
-import { ProofTerminalConsole, TerminalLog } from "@/components/proof/ProofTerminalConsole";
+import {
+  ProofTerminalConsole,
+  TerminalLog,
+} from "@/components/proof/ProofTerminalConsole";
 import { ProofExportModal } from "@/components/proof/ProofExportModal";
 import { ProofCustomModal } from "@/components/proof/ProofCustomModal";
 
@@ -42,7 +42,9 @@ export function ProofWorkspaceClient() {
 
   const [activeTheoremId, setActiveTheoremId] = useState<TheoremId>(() => {
     if (typeof window !== "undefined") {
-      const rawTh = new URLSearchParams(window.location.hash.slice(1)).get("theorem") as TheoremId;
+      const rawTh = new URLSearchParams(window.location.hash.slice(1)).get(
+        "theorem"
+      ) as TheoremId;
       if (rawTh && THEOREMS[rawTh]) {
         return rawTh;
       }
@@ -55,26 +57,41 @@ export function ProofWorkspaceClient() {
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
   const [inspectedNodeId, setInspectedNodeIdState] = useState<string>(() => {
     if (typeof window !== "undefined") {
-      const rawNode = new URLSearchParams(window.location.hash.slice(1)).get("inspect");
+      const rawNode = new URLSearchParams(window.location.hash.slice(1)).get(
+        "inspect"
+      );
       if (rawNode) return rawNode;
     }
     return activeTheorem.targetNodeId || "E";
   });
-  const [activeTab, setActiveTabState] = useState<"ledger" | "systems" | "fallacy">(() => {
+  const [activeTab, setActiveTabState] = useState<
+    "ledger" | "systems" | "fallacy"
+  >(() => {
     if (typeof window !== "undefined") {
-      const rawTab = new URLSearchParams(window.location.hash.slice(1)).get("tab") as "ledger" | "systems" | "fallacy";
+      const rawTab = new URLSearchParams(window.location.hash.slice(1)).get(
+        "tab"
+      ) as "ledger" | "systems" | "fallacy";
       if (rawTab && ["ledger", "systems", "fallacy"].includes(rawTab)) {
         return rawTab;
       }
     }
     return "ledger";
   });
-  const [mobileActiveView, setMobileActiveView] = useState<"canvas" | "ledger" | "systems" | "fallacy" | "terminal">("canvas");
-  const [feedbackToast, setFeedbackToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
-  const [currentFallacy, setCurrentFallacy] = useState<FallacyDiagnosis | null>(null);
+  const [mobileActiveView, setMobileActiveView] = useState<
+    "canvas" | "ledger" | "systems" | "fallacy" | "terminal"
+  >("canvas");
+  const [feedbackToast, setFeedbackToast] = useState<{
+    message: string;
+    type: "success" | "error" | "info";
+  } | null>(null);
+  const [currentFallacy, setCurrentFallacy] = useState<FallacyDiagnosis | null>(
+    null
+  );
 
   // Custom Node drag offsets
-  const [nodeOffsets, setNodeOffsets] = useState<Record<string, { x: number; y: number }>>({});
+  const [nodeOffsets, setNodeOffsets] = useState<
+    Record<string, { x: number; y: number }>
+  >({});
   const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null);
 
   // Magnetic Snapping & Drag Guides state
@@ -115,10 +132,19 @@ export function ProofWorkspaceClient() {
   const [historyIdx, setHistoryIdx] = useState(-1);
   const [liveAnnouncement, setLiveAnnouncement] = useState("");
   const [isSimulating, setIsSimulating] = useState(false);
-  const [simulationProgress, setSimulationProgress] = useState<{ step: number; total: number; log: string } | null>(null);
+  const [simulationProgress, setSimulationProgress] = useState<{
+    step: number;
+    total: number;
+    log: string;
+  } | null>(null);
 
   // Refs
-  const dragStartRef = useRef<{ startX: number; startY: number; initOffsetX: number; initOffsetY: number } | null>(null);
+  const dragStartRef = useRef<{
+    startX: number;
+    startY: number;
+    initOffsetX: number;
+    initOffsetY: number;
+  } | null>(null);
   const canvasWrapperRef = useRef<HTMLDivElement>(null);
   const lastSnapAudioTimeRef = useRef(0);
   const workerRef = useRef<Worker | null>(null);
@@ -134,9 +160,16 @@ export function ProofWorkspaceClient() {
 
   // Frame Throttling Refs for Node & Connection Dragging
   const nodeDragRafIdRef = useRef<number | null>(null);
-  const pendingNodeDragRef = useRef<{ clientX: number; clientY: number; nodeId: string } | null>(null);
+  const pendingNodeDragRef = useRef<{
+    clientX: number;
+    clientY: number;
+    nodeId: string;
+  } | null>(null);
   const connDragRafIdRef = useRef<number | null>(null);
-  const pendingConnDragRef = useRef<{ clientX: number; clientY: number } | null>(null);
+  const pendingConnDragRef = useRef<{
+    clientX: number;
+    clientY: number;
+  } | null>(null);
 
   const activeTheoremRef = useRef(activeTheorem);
   const nodeOffsetsRef = useRef(nodeOffsets);
@@ -182,16 +215,20 @@ export function ProofWorkspaceClient() {
     }, 10);
   }, []);
 
-  const showToast = React.useCallback((message: string, type: "success" | "error" | "info" = "info") => {
-    setFeedbackToast({ message, type });
-    setTimeout(() => {
-      setFeedbackToast((prev) => (prev?.message === message ? null : prev));
-    }, 4000);
-  }, []);
+  const showToast = React.useCallback(
+    (message: string, type: "success" | "error" | "info" = "info") => {
+      setFeedbackToast({ message, type });
+      setTimeout(() => {
+        setFeedbackToast((prev) => (prev?.message === message ? null : prev));
+      }, 4000);
+    },
+    []
+  );
 
   // Synchronize incoming hash state on mount or browser Back/Forward navigation
   useEffect(() => {
-    const targetTh = (params.theorem as TheoremId | undefined) || "modus-ponens";
+    const targetTh =
+      (params.theorem as TheoremId | undefined) || "modus-ponens";
     if (THEOREMS[targetTh] && targetTh !== activeTheoremId) {
       const nextTh = THEOREMS[targetTh];
       // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -203,8 +240,12 @@ export function ProofWorkspaceClient() {
       setCurrentFallacy(null);
     }
 
-    const targetTab = (params.tab as "ledger" | "systems" | "fallacy" | undefined) || "ledger";
-    if (["ledger", "systems", "fallacy"].includes(targetTab) && targetTab !== activeTab) {
+    const targetTab =
+      (params.tab as "ledger" | "systems" | "fallacy" | undefined) || "ledger";
+    if (
+      ["ledger", "systems", "fallacy"].includes(targetTab) &&
+      targetTab !== activeTab
+    ) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setActiveTabState(targetTab);
     }
@@ -217,23 +258,37 @@ export function ProofWorkspaceClient() {
     }
   }, [params, activeTheoremId, activeTab, inspectedNodeId, activeTheorem]);
 
-  const setActiveTab = React.useCallback((tab: "ledger" | "systems" | "fallacy") => {
-    setActiveTabState(tab);
-    setParam("tab", tab === "ledger" ? null : tab, { replace: true });
-  }, [setParam]);
+  const setActiveTab = React.useCallback(
+    (tab: "ledger" | "systems" | "fallacy") => {
+      setActiveTabState(tab);
+      setParam("tab", tab === "ledger" ? null : tab, { replace: true });
+    },
+    [setParam]
+  );
 
-  const setInspectedNodeId = React.useCallback((nodeId: string) => {
-    setInspectedNodeIdState(nodeId);
-    setParam("inspect", nodeId === activeTheorem.targetNodeId ? null : nodeId, { replace: true });
-  }, [activeTheorem.targetNodeId, setParam]);
+  const setInspectedNodeId = React.useCallback(
+    (nodeId: string) => {
+      setInspectedNodeIdState(nodeId);
+      setParam(
+        "inspect",
+        nodeId === activeTheorem.targetNodeId ? null : nodeId,
+        { replace: true }
+      );
+    },
+    [activeTheorem.targetNodeId, setParam]
+  );
 
   const { copy: copyShareLink } = useClipboard({
-    successMessage: "Proof Studio link copied to clipboard with current theorem & tab!",
+    successMessage:
+      "Proof Studio link copied to clipboard with current theorem & tab!",
     onSuccess: () => {
       try {
         playSuccess();
       } catch {}
-      showToast("Proof Studio link copied to clipboard with current theorem & tab!", "success");
+      showToast(
+        "Proof Studio link copied to clipboard with current theorem & tab!",
+        "success"
+      );
     },
   });
 
@@ -271,7 +326,9 @@ export function ProofWorkspaceClient() {
         "info"
       );
       announceToScreenReader(
-        next ? "Magnetic snapping and alignment guides enabled." : "Magnetic snapping disabled."
+        next
+          ? "Magnetic snapping and alignment guides enabled."
+          : "Magnetic snapping disabled."
       );
       return next;
     });
@@ -304,12 +361,16 @@ export function ProofWorkspaceClient() {
       const next = !prev;
       if (next) {
         lastActiveElementRef.current = document.activeElement as HTMLElement;
-        announceToScreenReader("Command console opened split-view alongside proof workspace. Input focused.");
+        announceToScreenReader(
+          "Command console opened split-view alongside proof workspace. Input focused."
+        );
         setTimeout(() => {
           consoleInputRef.current?.focus({ preventScroll: true });
         }, 50);
       } else {
-        announceToScreenReader("Command console closed. Focus returned to workspace.");
+        announceToScreenReader(
+          "Command console closed. Focus returned to workspace."
+        );
         setTimeout(() => {
           toggleBtnRef.current?.focus({ preventScroll: true });
         }, 50);
@@ -346,7 +407,9 @@ export function ProofWorkspaceClient() {
         text: "Background calculation terminated by watchdog: execution exceeded 5-second limit (potential infinite loop detected)",
       },
     ]);
-    announceToScreenReader("Background calculation terminated by watchdog: execution exceeded 5-second limit.");
+    announceToScreenReader(
+      "Background calculation terminated by watchdog: execution exceeded 5-second limit."
+    );
   }, [clearWatchdog, announceToScreenReader]);
 
   const resetWatchdog = React.useCallback(() => {
@@ -369,7 +432,10 @@ export function ProofWorkspaceClient() {
         if (!message) return;
 
         // Discard stale in-flight messages from previous request IDs
-        if (message.requestId && message.requestId !== currentRequestIdRef.current) {
+        if (
+          message.requestId &&
+          message.requestId !== currentRequestIdRef.current
+        ) {
           return;
         }
 
@@ -395,7 +461,9 @@ export function ProofWorkspaceClient() {
               text: `✔ Background Simulation completed successfully with ${message.stepsCompleted} steps.`,
             },
           ]);
-          announceToScreenReader("Background proof simulation completed successfully.");
+          announceToScreenReader(
+            "Background proof simulation completed successfully."
+          );
         } else if (message.type === "error") {
           setIsSimulating(false);
           setSimulationProgress(null);
@@ -409,7 +477,9 @@ export function ProofWorkspaceClient() {
               text: `Background Simulation error: ${message.message}`,
             },
           ]);
-          announceToScreenReader(`Background proof simulation error: ${message.message}`);
+          announceToScreenReader(
+            `Background proof simulation error: ${message.message}`
+          );
         }
       };
 
@@ -459,7 +529,8 @@ export function ProofWorkspaceClient() {
 
   useEffect(() => {
     if (terminalLogsContainerRef.current) {
-      terminalLogsContainerRef.current.scrollTop = terminalLogsContainerRef.current.scrollHeight;
+      terminalLogsContainerRef.current.scrollTop =
+        terminalLogsContainerRef.current.scrollHeight;
     }
   }, [consoleLogs]);
 
@@ -528,122 +599,147 @@ export function ProofWorkspaceClient() {
     ]);
   };
 
-  const handleNodePointerDown = React.useCallback((e: React.PointerEvent, nodeId: string) => {
-    e.stopPropagation();
-    setDraggingNodeId(nodeId);
-    const currentOffset = nodeOffsets[nodeId] || { x: 0, y: 0 };
-    dragStartRef.current = {
-      startX: e.clientX,
-      startY: e.clientY,
-      initOffsetX: currentOffset.x,
-      initOffsetY: currentOffset.y,
-    };
-    try {
-      (e.target as Element).setPointerCapture(e.pointerId);
-    } catch {}
-  }, [nodeOffsets]);
+  const handleNodePointerDown = React.useCallback(
+    (e: React.PointerEvent, nodeId: string) => {
+      e.stopPropagation();
+      setDraggingNodeId(nodeId);
+      const currentOffset = nodeOffsets[nodeId] || { x: 0, y: 0 };
+      dragStartRef.current = {
+        startX: e.clientX,
+        startY: e.clientY,
+        initOffsetX: currentOffset.x,
+        initOffsetY: currentOffset.y,
+      };
+      try {
+        (e.target as Element).setPointerCapture(e.pointerId);
+      } catch {}
+    },
+    [nodeOffsets]
+  );
 
-  const processNodePointerMove = React.useCallback((clientX: number, clientY: number, nodeId: string) => {
-    if (!dragStartRef.current) return;
-    const currentActiveTheorem = activeTheoremRef.current;
-    const currentOffsets = nodeOffsetsRef.current;
-    const currentSnapping = isSnappingEnabledRef.current;
+  const processNodePointerMove = React.useCallback(
+    (clientX: number, clientY: number, nodeId: string) => {
+      if (!dragStartRef.current) return;
+      const currentActiveTheorem = activeTheoremRef.current;
+      const currentOffsets = nodeOffsetsRef.current;
+      const currentSnapping = isSnappingEnabledRef.current;
 
-    const sNode = currentActiveTheorem.nodes.find((n) => n.id === nodeId);
-    if (!sNode) return;
+      const sNode = currentActiveTheorem.nodes.find((n) => n.id === nodeId);
+      if (!sNode) return;
 
-    const dx = clientX - dragStartRef.current.startX;
-    const dy = clientY - dragStartRef.current.startY;
-    const rawX = sNode.x + dragStartRef.current.initOffsetX + dx;
-    const rawY = sNode.y + dragStartRef.current.initOffsetY + dy;
+      const dx = clientX - dragStartRef.current.startX;
+      const dy = clientY - dragStartRef.current.startY;
+      const rawX = sNode.x + dragStartRef.current.initOffsetX + dx;
+      const rawY = sNode.y + dragStartRef.current.initOffsetY + dy;
 
-    if (currentSnapping) {
-      const peerNodes = currentActiveTheorem.nodes
-        .filter((n) => n.id !== nodeId)
-        .map((n) => {
-          const off = currentOffsets[n.id] || { x: 0, y: 0 };
-          return {
-            id: n.id,
-            x: n.x + off.x,
-            y: n.y + off.y,
-            width: 160,
-            height: 70,
-          };
+      if (currentSnapping) {
+        const peerNodes = currentActiveTheorem.nodes
+          .filter((n) => n.id !== nodeId)
+          .map((n) => {
+            const off = currentOffsets[n.id] || { x: 0, y: 0 };
+            return {
+              id: n.id,
+              x: n.x + off.x,
+              y: n.y + off.y,
+              width: 160,
+              height: 70,
+            };
+          });
+
+        const snap = computeMagneticSnap(rawX, rawY, 160, 70, peerNodes, {
+          gridSize: 20,
+          threshold: 12,
+          enableGrid: true,
+          enableAlignment: true,
         });
 
-      const snap = computeMagneticSnap(rawX, rawY, 160, 70, peerNodes, {
-        gridSize: 20,
-        threshold: 12,
-        enableGrid: true,
-        enableAlignment: true,
-      });
+        setActiveGuides(snap.guides);
 
-      setActiveGuides(snap.guides);
-
-      if (snap.snappedX || snap.snappedY) {
-        const now = typeof performance !== "undefined" ? performance.now() : 0;
-        if (now - lastSnapAudioTimeRef.current > 350) {
-          lastSnapAudioTimeRef.current = now;
-          try {
-            playHover();
-          } catch {}
+        if (snap.snappedX || snap.snappedY) {
+          const now =
+            typeof performance !== "undefined" ? performance.now() : 0;
+          if (now - lastSnapAudioTimeRef.current > 350) {
+            lastSnapAudioTimeRef.current = now;
+            try {
+              playHover();
+            } catch {}
+          }
         }
+
+        setNodeOffsets((prev) => ({
+          ...prev,
+          [nodeId]: {
+            x: snap.x - sNode.x,
+            y: snap.y - sNode.y,
+          },
+        }));
+      } else {
+        setActiveGuides([]);
+        setNodeOffsets((prev) => ({
+          ...prev,
+          [nodeId]: {
+            x: dragStartRef.current!.initOffsetX + dx,
+            y: dragStartRef.current!.initOffsetY + dy,
+          },
+        }));
       }
+    },
+    [playHover]
+  );
 
-      setNodeOffsets((prev) => ({
-        ...prev,
-        [nodeId]: {
-          x: snap.x - sNode.x,
-          y: snap.y - sNode.y,
-        },
-      }));
-    } else {
-      setActiveGuides([]);
-      setNodeOffsets((prev) => ({
-        ...prev,
-        [nodeId]: {
-          x: dragStartRef.current!.initOffsetX + dx,
-          y: dragStartRef.current!.initOffsetY + dy,
-        },
-      }));
-    }
-  }, [playHover]);
+  const handleNodePointerMove = React.useCallback(
+    (e: React.PointerEvent, nodeId: string) => {
+      if (draggingNodeId !== nodeId || !dragStartRef.current) return;
+      pendingNodeDragRef.current = {
+        clientX: e.clientX,
+        clientY: e.clientY,
+        nodeId,
+      };
 
-  const handleNodePointerMove = React.useCallback((e: React.PointerEvent, nodeId: string) => {
-    if (draggingNodeId !== nodeId || !dragStartRef.current) return;
-    pendingNodeDragRef.current = { clientX: e.clientX, clientY: e.clientY, nodeId };
+      if (nodeDragRafIdRef.current === null) {
+        nodeDragRafIdRef.current = requestAnimationFrame(() => {
+          nodeDragRafIdRef.current = null;
+          if (pendingNodeDragRef.current) {
+            const {
+              clientX,
+              clientY,
+              nodeId: pNodeId,
+            } = pendingNodeDragRef.current;
+            pendingNodeDragRef.current = null;
+            processNodePointerMove(clientX, clientY, pNodeId);
+          }
+        });
+      }
+    },
+    [draggingNodeId, processNodePointerMove]
+  );
 
-    if (nodeDragRafIdRef.current === null) {
-      nodeDragRafIdRef.current = requestAnimationFrame(() => {
-        nodeDragRafIdRef.current = null;
+  const handleNodePointerUp = React.useCallback(
+    (e: React.PointerEvent, nodeId: string) => {
+      if (draggingNodeId === nodeId) {
+        if (nodeDragRafIdRef.current !== null) {
+          cancelAnimationFrame(nodeDragRafIdRef.current);
+          nodeDragRafIdRef.current = null;
+        }
         if (pendingNodeDragRef.current) {
-          const { clientX, clientY, nodeId: pNodeId } = pendingNodeDragRef.current;
+          const {
+            clientX,
+            clientY,
+            nodeId: pNodeId,
+          } = pendingNodeDragRef.current;
           pendingNodeDragRef.current = null;
           processNodePointerMove(clientX, clientY, pNodeId);
         }
-      });
-    }
-  }, [draggingNodeId, processNodePointerMove]);
-
-  const handleNodePointerUp = React.useCallback((e: React.PointerEvent, nodeId: string) => {
-    if (draggingNodeId === nodeId) {
-      if (nodeDragRafIdRef.current !== null) {
-        cancelAnimationFrame(nodeDragRafIdRef.current);
-        nodeDragRafIdRef.current = null;
+        setDraggingNodeId(null);
+        dragStartRef.current = null;
+        setActiveGuides([]);
+        try {
+          (e.target as Element).releasePointerCapture(e.pointerId);
+        } catch {}
       }
-      if (pendingNodeDragRef.current) {
-        const { clientX, clientY, nodeId: pNodeId } = pendingNodeDragRef.current;
-        pendingNodeDragRef.current = null;
-        processNodePointerMove(clientX, clientY, pNodeId);
-      }
-      setDraggingNodeId(null);
-      dragStartRef.current = null;
-      setActiveGuides([]);
-      try {
-        (e.target as Element).releasePointerCapture(e.pointerId);
-      } catch {}
-    }
-  }, [draggingNodeId, processNodePointerMove]);
+    },
+    [draggingNodeId, processNodePointerMove]
+  );
 
   const handleHandlePointerDown = (e: React.PointerEvent, nodeId: string) => {
     e.stopPropagation();
@@ -668,121 +764,160 @@ export function ProofWorkspaceClient() {
       playHover();
     } catch {}
 
-    announceToScreenReader(`Started connection drag from Node ${nodeId}. Drag to a compatible target node.`);
+    announceToScreenReader(
+      `Started connection drag from Node ${nodeId}. Drag to a compatible target node.`
+    );
   };
 
-  const processCanvasPointerMove = React.useCallback((clientX: number, clientY: number) => {
-    const currentDragConnection = dragConnectionRef.current;
-    if (!currentDragConnection) return;
-    const rect = canvasWrapperRef.current?.getBoundingClientRect();
-    if (!rect) return;
+  const processCanvasPointerMove = React.useCallback(
+    (clientX: number, clientY: number) => {
+      const currentDragConnection = dragConnectionRef.current;
+      if (!currentDragConnection) return;
+      const rect = canvasWrapperRef.current?.getBoundingClientRect();
+      if (!rect) return;
 
-    const currentX = clientX - rect.left;
-    const currentY = clientY - rect.top;
+      const currentX = clientX - rect.left;
+      const currentY = clientY - rect.top;
 
-    let hoveredTarget: ProofNode | null = null;
-    const currentTheorem = activeTheoremRef.current;
-    const currentOffsets = nodeOffsetsRef.current;
+      let hoveredTarget: ProofNode | null = null;
+      const currentTheorem = activeTheoremRef.current;
+      const currentOffsets = nodeOffsetsRef.current;
 
-    for (const node of currentTheorem.nodes) {
-      if (node.id === currentDragConnection.sourceId) continue;
-      const off = currentOffsets[node.id] || { x: 0, y: 0 };
-      const nX = node.x + off.x;
-      const nY = node.y + off.y;
-      if (currentX >= nX - 10 && currentX <= nX + 170 && currentY >= nY - 10 && currentY <= nY + 85) {
-        hoveredTarget = node;
-        break;
-      }
-    }
-
-    const hoveredTargetId = hoveredTarget ? hoveredTarget.id : null;
-    let isValid = false;
-    let ruleBadge = "";
-
-    if (hoveredTargetId) {
-      const validation = canConnect(currentDragConnection.sourceId, hoveredTargetId, edges, activeTheoremId);
-      isValid = validation.allowed;
-      if (isValid) {
-        const targets = getCompatibleTargets(currentDragConnection.sourceId, activeTheoremId, edges);
-        const found = targets.find((c) => c.targetId === hoveredTargetId);
-        ruleBadge = found?.badgeLabel || "Valid Inferred Target";
-      }
-    }
-
-    setDragConnection((prev) =>
-      prev
-        ? {
-            ...prev,
-            currentX,
-            currentY,
-            hoveredTargetId,
-            isValid,
-            ruleBadge,
-          }
-        : null
-    );
-  }, [edges, activeTheoremId]);
-
-  const handleCanvasPointerMove = React.useCallback((e: React.PointerEvent) => {
-    if (!dragConnection) return;
-    pendingConnDragRef.current = { clientX: e.clientX, clientY: e.clientY };
-
-    if (connDragRafIdRef.current === null) {
-      connDragRafIdRef.current = requestAnimationFrame(() => {
-        connDragRafIdRef.current = null;
-        if (pendingConnDragRef.current) {
-          const { clientX, clientY } = pendingConnDragRef.current;
-          pendingConnDragRef.current = null;
-          processCanvasPointerMove(clientX, clientY);
+      for (const node of currentTheorem.nodes) {
+        if (node.id === currentDragConnection.sourceId) continue;
+        const off = currentOffsets[node.id] || { x: 0, y: 0 };
+        const nX = node.x + off.x;
+        const nY = node.y + off.y;
+        if (
+          currentX >= nX - 10 &&
+          currentX <= nX + 170 &&
+          currentY >= nY - 10 &&
+          currentY <= nY + 85
+        ) {
+          hoveredTarget = node;
+          break;
         }
-      });
-    }
-  }, [dragConnection, processCanvasPointerMove]);
+      }
 
-  const handleCanvasPointerUp = React.useCallback((e: React.PointerEvent) => {
-    if (connDragRafIdRef.current !== null) {
-      cancelAnimationFrame(connDragRafIdRef.current);
-      connDragRafIdRef.current = null;
-    }
-    if (pendingConnDragRef.current) {
-      const { clientX, clientY } = pendingConnDragRef.current;
-      pendingConnDragRef.current = null;
-      processCanvasPointerMove(clientX, clientY);
-    }
-    if (!dragConnection) return;
-    try {
-      (e.target as Element).releasePointerCapture(e.pointerId);
-    } catch {}
+      const hoveredTargetId = hoveredTarget ? hoveredTarget.id : null;
+      let isValid = false;
+      let ruleBadge = "";
 
-    if (dragConnection.hoveredTargetId && dragConnection.isValid) {
-      const sId = dragConnection.sourceId;
-      const tId = dragConnection.hoveredTargetId;
-      setEdges((prev) => [...prev, { source: sId, target: tId }]);
+      if (hoveredTargetId) {
+        const validation = canConnect(
+          currentDragConnection.sourceId,
+          hoveredTargetId,
+          edges,
+          activeTheoremId
+        );
+        isValid = validation.allowed;
+        if (isValid) {
+          const targets = getCompatibleTargets(
+            currentDragConnection.sourceId,
+            activeTheoremId,
+            edges
+          );
+          const found = targets.find((c) => c.targetId === hoveredTargetId);
+          ruleBadge = found?.badgeLabel || "Valid Inferred Target";
+        }
+      }
+
+      setDragConnection((prev) =>
+        prev
+          ? {
+              ...prev,
+              currentX,
+              currentY,
+              hoveredTargetId,
+              isValid,
+              ruleBadge,
+            }
+          : null
+      );
+    },
+    [edges, activeTheoremId]
+  );
+
+  const handleCanvasPointerMove = React.useCallback(
+    (e: React.PointerEvent) => {
+      if (!dragConnection) return;
+      pendingConnDragRef.current = { clientX: e.clientX, clientY: e.clientY };
+
+      if (connDragRafIdRef.current === null) {
+        connDragRafIdRef.current = requestAnimationFrame(() => {
+          connDragRafIdRef.current = null;
+          if (pendingConnDragRef.current) {
+            const { clientX, clientY } = pendingConnDragRef.current;
+            pendingConnDragRef.current = null;
+            processCanvasPointerMove(clientX, clientY);
+          }
+        });
+      }
+    },
+    [dragConnection, processCanvasPointerMove]
+  );
+
+  const handleCanvasPointerUp = React.useCallback(
+    (e: React.PointerEvent) => {
+      if (connDragRafIdRef.current !== null) {
+        cancelAnimationFrame(connDragRafIdRef.current);
+        connDragRafIdRef.current = null;
+      }
+      if (pendingConnDragRef.current) {
+        const { clientX, clientY } = pendingConnDragRef.current;
+        pendingConnDragRef.current = null;
+        processCanvasPointerMove(clientX, clientY);
+      }
+      if (!dragConnection) return;
       try {
-        playSuccess();
+        (e.target as Element).releasePointerCapture(e.pointerId);
       } catch {}
-      showToast(`Connected Node ${sId} to Node ${tId} (${dragConnection.ruleBadge || "Inference"})`, "success");
-      announceToScreenReader(`Connected Node ${sId} to Node ${tId} via ${dragConnection.ruleBadge || "deductive rule"}.`);
-      setConsoleLogs((prev) => [
-        ...prev,
-        {
-          id: `drag-conn-${Date.now()}`,
-          type: "success",
-          text: `Connected Node ${sId} → Node ${tId} via interactive drag cord. Rule: ${dragConnection.ruleBadge || "Inference"}`,
-        },
-      ]);
-    } else if (dragConnection.hoveredTargetId && !dragConnection.isValid) {
-      const sId = dragConnection.sourceId;
-      const tId = dragConnection.hoveredTargetId;
-      const fallacy = getFallacyDiagnosis(sId, tId, edges, activeTheoremId);
-      setCurrentFallacy(fallacy);
-      setActiveTab("fallacy");
-      showToast(`Invalid Connection: ${fallacy.fallacyName}`, "error");
-      announceToScreenReader(`Connection rejected: ${fallacy.fallacyName}`);
-    }
 
-    setDragConnection(null);
-  }, [dragConnection, edges, activeTheoremId, playSuccess, processCanvasPointerMove, announceToScreenReader, setActiveTab, showToast]);
+      if (dragConnection.hoveredTargetId && dragConnection.isValid) {
+        const sId = dragConnection.sourceId;
+        const tId = dragConnection.hoveredTargetId;
+        setEdges((prev) => [...prev, { source: sId, target: tId }]);
+        try {
+          playSuccess();
+        } catch {}
+        showToast(
+          `Connected Node ${sId} to Node ${tId} (${dragConnection.ruleBadge || "Inference"})`,
+          "success"
+        );
+        announceToScreenReader(
+          `Connected Node ${sId} to Node ${tId} via ${dragConnection.ruleBadge || "deductive rule"}.`
+        );
+        setConsoleLogs((prev) => [
+          ...prev,
+          {
+            id: `drag-conn-${Date.now()}`,
+            type: "success",
+            text: `Connected Node ${sId} → Node ${tId} via interactive drag cord. Rule: ${dragConnection.ruleBadge || "Inference"}`,
+          },
+        ]);
+      } else if (dragConnection.hoveredTargetId && !dragConnection.isValid) {
+        const sId = dragConnection.sourceId;
+        const tId = dragConnection.hoveredTargetId;
+        const fallacy = getFallacyDiagnosis(sId, tId, edges, activeTheoremId);
+        setCurrentFallacy(fallacy);
+        setActiveTab("fallacy");
+        showToast(`Invalid Connection: ${fallacy.fallacyName}`, "error");
+        announceToScreenReader(`Connection rejected: ${fallacy.fallacyName}`);
+      }
+
+      setDragConnection(null);
+    },
+    [
+      dragConnection,
+      edges,
+      activeTheoremId,
+      playSuccess,
+      processCanvasPointerMove,
+      announceToScreenReader,
+      setActiveTab,
+      showToast,
+    ]
+  );
 
   const handleResetLayout = () => {
     setNodeOffsets({});
@@ -807,7 +942,10 @@ export function ProofWorkspaceClient() {
 
     if (selectedNodeIds.length === 0) {
       setSelectedNodeIds([nodeId]);
-      showToast(`Selected Node ${nodeId}. Pick another node or choose an Inference Rule.`, "info");
+      showToast(
+        `Selected Node ${nodeId}. Pick another node or choose an Inference Rule.`,
+        "info"
+      );
       announceToScreenReader(`Selected Node ${nodeId}.`);
       return;
     }
@@ -823,12 +961,19 @@ export function ProofWorkspaceClient() {
       const sourceId = selectedNodeIds[0];
       const validation = canConnect(sourceId, nodeId, edges, activeTheoremId);
       if (!validation.allowed) {
-        const fallacy = getFallacyDiagnosis(sourceId, nodeId, edges, activeTheoremId);
+        const fallacy = getFallacyDiagnosis(
+          sourceId,
+          nodeId,
+          edges,
+          activeTheoremId
+        );
         setCurrentFallacy(fallacy);
         setActiveTab("fallacy");
 
         showToast(`Invalid Connection: ${fallacy.fallacyName}`, "error");
-        announceToScreenReader(`Connection rejected: ${fallacy.fallacyName}. ${validation.reason}`);
+        announceToScreenReader(
+          `Connection rejected: ${fallacy.fallacyName}. ${validation.reason}`
+        );
         setConsoleLogs((prev) => [
           ...prev,
           {
@@ -850,8 +995,13 @@ export function ProofWorkspaceClient() {
         playSuccess();
       } catch {}
 
-      showToast(`✔ Connected Node ${newEdge.source} → Node ${newEdge.target}!`, "success");
-      announceToScreenReader(`Successfully connected Node ${newEdge.source} to Node ${newEdge.target}.`);
+      showToast(
+        `✔ Connected Node ${newEdge.source} → Node ${newEdge.target}!`,
+        "success"
+      );
+      announceToScreenReader(
+        `Successfully connected Node ${newEdge.source} to Node ${newEdge.target}.`
+      );
 
       const sNode = activeTheorem.nodes.find((n) => n.id === newEdge.source);
       const tNode = activeTheorem.nodes.find((n) => n.id === newEdge.target);
@@ -877,7 +1027,10 @@ export function ProofWorkspaceClient() {
 
   const handleApplyRule = (ruleId: string) => {
     if (selectedNodeIds.length === 0) {
-      showToast("Select at least 1 premise/lemma node before applying a rule.", "info");
+      showToast(
+        "Select at least 1 premise/lemma node before applying a rule.",
+        "info"
+      );
       return;
     }
 
@@ -897,7 +1050,10 @@ export function ProofWorkspaceClient() {
       } catch {}
 
       const autoTarget = activeTheorem.nodes.find(
-        (n) => n.label === formatFormula(ruleResult.resultAst!) || n.id === activeTheorem.intermediateNodeId || n.id === activeTheorem.targetNodeId
+        (n) =>
+          n.label === formatFormula(ruleResult.resultAst!) ||
+          n.id === activeTheorem.intermediateNodeId ||
+          n.id === activeTheorem.targetNodeId
       );
 
       if (autoTarget) {
@@ -912,7 +1068,9 @@ export function ProofWorkspaceClient() {
       setSelectedNodeIds([]);
       setCurrentFallacy(null);
       showToast(`✔ ${ruleResult.explanation}`, "success");
-      announceToScreenReader(`Applied rule ${ruleId.toUpperCase()}: ${ruleResult.explanation}`);
+      announceToScreenReader(
+        `Applied rule ${ruleId.toUpperCase()}: ${ruleResult.explanation}`
+      );
 
       setConsoleLogs((prev) => [
         ...prev,
@@ -934,8 +1092,13 @@ export function ProofWorkspaceClient() {
       setCurrentFallacy(fallacy);
       setActiveTab("fallacy");
 
-      showToast(`Rule Application Failed: ${ruleResult.explanation || fallacy.fallacyName}`, "error");
-      announceToScreenReader(`Rule failed: ${ruleResult.explanation || fallacy.fallacyName}`);
+      showToast(
+        `Rule Application Failed: ${ruleResult.explanation || fallacy.fallacyName}`,
+        "error"
+      );
+      announceToScreenReader(
+        `Rule failed: ${ruleResult.explanation || fallacy.fallacyName}`
+      );
 
       setConsoleLogs((prev) => [
         ...prev,
@@ -961,7 +1124,10 @@ export function ProofWorkspaceClient() {
         { source: r2, target: activeTheorem.intermediateNodeId },
       ];
       setEdges((prev) => [...prev, ...newEdges]);
-      showToast(`Auto-Step: Connected premises to intermediate Node ${activeTheorem.intermediateNodeId}`, "success");
+      showToast(
+        `Auto-Step: Connected premises to intermediate Node ${activeTheorem.intermediateNodeId}`,
+        "success"
+      );
     } else {
       const [cr1, cr2] = activeTheorem.conclusionRequires;
       const newEdges: Edge[] = [
@@ -969,7 +1135,10 @@ export function ProofWorkspaceClient() {
         { source: cr2, target: activeTheorem.targetNodeId },
       ];
       setEdges((prev) => [...prev, ...newEdges]);
-      showToast(`Auto-Step: Connected intermediate and premise to Target Node ${activeTheorem.targetNodeId}`, "success");
+      showToast(
+        `Auto-Step: Connected intermediate and premise to Target Node ${activeTheorem.targetNodeId}`,
+        "success"
+      );
     }
 
     try {
@@ -1014,12 +1183,27 @@ export function ProofWorkspaceClient() {
 
   const handleStartSimulation = (mode: "normal" | "loop" = "normal") => {
     if (isSimulating) return;
+    if (activeTheoremId === "custom") {
+      setConsoleLogs((prev) => [
+        ...prev,
+        {
+          id: `sim-unavailable-${Date.now()}`,
+          type: "info",
+          text: "Custom simulation unavailable: entered formulas are not yet loaded into the graph.",
+        },
+      ]);
+      return;
+    }
 
     currentRequestIdRef.current += 1;
     const reqId = currentRequestIdRef.current;
 
     setIsSimulating(true);
-    setSimulationProgress({ step: 1, total: 10, log: "Booting Proof Simulation Engine..." });
+    setSimulationProgress({
+      step: 1,
+      total: 10,
+      log: "Booting Proof Simulation Engine...",
+    });
     resetWatchdog();
 
     setConsoleLogs((prev) => [
@@ -1097,11 +1281,18 @@ export function ProofWorkspaceClient() {
 
     if (op === "list") {
       const nodeListStr = activeTheorem.nodes
-        .map((n) => `  [Node ${n.id}] ${n.label} (${n.type}) - ${n.description}`)
+        .map(
+          (n) => `  [Node ${n.id}] ${n.label} (${n.type}) - ${n.description}`
+        )
         .join("\n");
       const edgeListStr =
         edges.length > 0
-          ? edges.map((e) => `  ${e.source} -> ${e.target}${e.ruleApplied ? ` [${e.ruleApplied}]` : ""}`).join("\n")
+          ? edges
+              .map(
+                (e) =>
+                  `  ${e.source} -> ${e.target}${e.ruleApplied ? ` [${e.ruleApplied}]` : ""}`
+              )
+              .join("\n")
           : "  (None)";
 
       setConsoleLogs((prev) => [
@@ -1150,7 +1341,11 @@ export function ProofWorkspaceClient() {
         return;
       }
       setEdges((prev) =>
-        prev.filter((e) => !(e.source === s && e.target === t) && !(e.source === t && e.target === s))
+        prev.filter(
+          (e) =>
+            !(e.source === s && e.target === t) &&
+            !(e.source === t && e.target === s)
+        )
       );
       setConsoleLogs((prev) => [
         ...prev,
@@ -1294,25 +1489,19 @@ export function ProofWorkspaceClient() {
 
     if (op === "export") {
       const fmt = tokens[1]?.toLowerCase();
-      if (fmt === "lean") {
+      if (
+        fmt === "lean" ||
+        fmt === "latex" ||
+        fmt === "markdown" ||
+        fmt === "mermaid"
+      ) {
         setConsoleLogs((prev) => [
           ...prev,
-          { id: `exp-${Date.now()}`, type: "info", text: exportProofToLean4(activeTheoremId) },
-        ]);
-      } else if (fmt === "latex") {
-        setConsoleLogs((prev) => [
-          ...prev,
-          { id: `exp-${Date.now()}`, type: "info", text: exportProofToLatex(activeTheoremId) },
-        ]);
-      } else if (fmt === "markdown") {
-        setConsoleLogs((prev) => [
-          ...prev,
-          { id: `exp-${Date.now()}`, type: "info", text: exportProofToMarkdown(edges, activeTheoremId) },
-        ]);
-      } else if (fmt === "mermaid") {
-        setConsoleLogs((prev) => [
-          ...prev,
-          { id: `exp-${Date.now()}`, type: "info", text: exportProofToMermaid(edges, activeTheoremId) },
+          {
+            id: `exp-${Date.now()}`,
+            type: "info",
+            text: exportWorkspaceProof(fmt, edges, activeTheoremId),
+          },
         ]);
       } else {
         setIsExportModalOpen(true);
@@ -1463,8 +1652,8 @@ export function ProofWorkspaceClient() {
                 feedbackToast.type === "success"
                   ? "bg-emerald-950 border-emerald-700 text-emerald-200"
                   : feedbackToast.type === "error"
-                  ? "bg-red-950 border-red-700 text-red-200"
-                  : "bg-slate-900 border-slate-700 text-slate-200"
+                    ? "bg-red-950 border-red-700 text-red-200"
+                    : "bg-slate-900 border-slate-700 text-slate-200"
               }`}
             >
               <span>{feedbackToast.message}</span>

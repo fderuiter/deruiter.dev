@@ -8,7 +8,14 @@
  * 5. Diagnostic PROC CONTENTS, PROC FREQ, and PROC PRINT steps
  */
 
-import { StudyProtocol, CRFForm, CRFField, CodelistDefinition, ExportSasOptions, CodelistOption } from "./types";
+import {
+  StudyProtocol,
+  CRFForm,
+  CRFField,
+  CodelistDefinition,
+  ExportSasOptions,
+  CodelistOption,
+} from "./types";
 import { STANDARD_CODELISTS } from "./cdisc-controlled-terminology";
 
 /**
@@ -31,7 +38,10 @@ export function sanitizeSasName(name: string, maxLength = 32): string {
  * Formats a format name for PROC FORMAT.
  * Character formats start with $, numeric do not.
  */
-export function getSasFormatName(codelistIdOrName: string, isCharacter: boolean): string {
+export function getSasFormatName(
+  codelistIdOrName: string,
+  isCharacter: boolean
+): string {
   const base = sanitizeSasName(codelistIdOrName.replace(/^CL_/, ""), 28);
   const suffix = "F";
   const name = `${base}${suffix}`;
@@ -49,13 +59,17 @@ export function escapeSasString(text: string): string {
 /**
  * Retrieves field options from custom options or referenced codelists.
  */
-export function getFieldOptions(field: CRFField, study: StudyProtocol): CodelistOption[] {
+export function getFieldOptions(
+  field: CRFField,
+  study: StudyProtocol
+): CodelistOption[] {
   if (field.customOptions && field.customOptions.length > 0) {
     return field.customOptions;
   }
   if (field.codelistId) {
-    const cl = study.codelists?.find((c) => c.id === field.codelistId) ||
-               STANDARD_CODELISTS.find((c) => c.id === field.codelistId);
+    const cl =
+      study.codelists?.find((c) => c.id === field.codelistId) ||
+      STANDARD_CODELISTS.find((c) => c.id === field.codelistId);
     if (cl && cl.options && cl.options.length > 0) {
       return cl.options;
     }
@@ -76,16 +90,27 @@ export function parseMultiSelectValue(
   edcValue: string | string[] | boolean | null | undefined,
   optionCode: string
 ): "Y" | "N" {
-  if (edcValue === null || edcValue === undefined || edcValue === false) return "N";
+  if (edcValue === null || edcValue === undefined || edcValue === false)
+    return "N";
   if (edcValue === true) return "Y";
   let selectedCodes: string[] = [];
   if (Array.isArray(edcValue)) {
     selectedCodes = edcValue.map((s) => String(s).trim().toUpperCase());
   } else if (typeof edcValue === "string") {
     const trimmed = edcValue.trim().toUpperCase();
-    if (trimmed === "TRUE" || trimmed === "1" || trimmed === "Y" || trimmed === "YES") {
+    if (
+      trimmed === "TRUE" ||
+      trimmed === "1" ||
+      trimmed === "Y" ||
+      trimmed === "YES"
+    ) {
       const targetUpper = String(optionCode).trim().toUpperCase();
-      if (targetUpper === "Y" || targetUpper === "1" || targetUpper === "YES" || targetUpper === "TRUE") {
+      if (
+        targetUpper === "Y" ||
+        targetUpper === "1" ||
+        targetUpper === "YES" ||
+        targetUpper === "TRUE"
+      ) {
         return "Y";
       }
     }
@@ -101,7 +126,11 @@ export function parseMultiSelectValue(
 /**
  * Generates a unique SAS variable name guaranteed not to collide with usedNames and within maxLength.
  */
-function generateUniqueSasName(baseName: string, usedNames: Set<string>, maxLength = 32): string {
+function generateUniqueSasName(
+  baseName: string,
+  usedNames: Set<string>,
+  maxLength = 32
+): string {
   let counter = 1;
   const sanitizedBase = sanitizeSasName(baseName, maxLength);
   let candidate = sanitizedBase;
@@ -119,7 +148,9 @@ function generateUniqueSasName(baseName: string, usedNames: Set<string>, maxLeng
  */
 function isNumericCodelist(codelist: CodelistDefinition): boolean {
   if (!codelist.options || codelist.options.length === 0) return false;
-  return codelist.options.every((opt) => !isNaN(Number(opt.code)) && opt.code.trim() !== "");
+  return codelist.options.every(
+    (opt) => !isNaN(Number(opt.code)) && opt.code.trim() !== ""
+  );
 }
 
 /**
@@ -141,9 +172,14 @@ export interface ExpandedSasField {
   optionCode?: string;
 }
 
-export function getFieldSasAttributes(field: CRFField, study: StudyProtocol): SasFieldAttributes {
+export function getFieldSasAttributes(
+  field: CRFField,
+  study: StudyProtocol
+): SasFieldAttributes {
   const sasVarName = sanitizeSasName(field.variableName || field.id);
-  const label = escapeSasString(field.cdashMetadata?.cdashLabel || field.label || sasVarName);
+  const label = escapeSasString(
+    field.cdashMetadata?.cdashLabel || field.label || sasVarName
+  );
 
   // Check for codelist
   const codelist = study.codelists?.find((c) => c.id === field.codelistId);
@@ -220,7 +256,10 @@ export function getFieldSasAttributes(field: CRFField, study: StudyProtocol): Sa
     case "radio":
       if (hasCodelist) {
         const isNum = isNumericCodelist(codelist!);
-        const formatName = getSasFormatName(codelist!.id || codelist!.name, !isNum);
+        const formatName = getSasFormatName(
+          codelist!.id || codelist!.name,
+          !isNum
+        );
         return {
           sasVarName,
           isNumeric: isNum,
@@ -370,7 +409,10 @@ TITLE1 "Study ${escapeSasString(study.protocolNumber)} - Clinical Data Acquisiti
 /**
  * Generates PROC FORMAT library for study codelists.
  */
-export function generateSasProcFormat(study: StudyProtocol, formsToInclude: CRFForm[]): string {
+export function generateSasProcFormat(
+  study: StudyProtocol,
+  formsToInclude: CRFForm[]
+): string {
   // Collect all unique codelists referenced in the included forms or defined in the study
   const referencedCodelistIds = new Set<string>();
   let hasMultiOrCheckbox = false;
@@ -392,13 +434,19 @@ export function generateSasProcFormat(study: StudyProtocol, formsToInclude: CRFF
   }
 
   const allAvailableCodelists = [...userCodelists];
-  if (hasMultiOrCheckbox && !allAvailableCodelists.some((c) => c.id === "CL_NY")) {
+  if (
+    hasMultiOrCheckbox &&
+    !allAvailableCodelists.some((c) => c.id === "CL_NY")
+  ) {
     const ny = STANDARD_CODELISTS.find((c) => c.id === "CL_NY");
     if (ny) allAvailableCodelists.push(ny);
   }
 
   const relevantCodelists = allAvailableCodelists.filter(
-    (cl) => referencedCodelistIds.has(cl.id) || (hasMultiOrCheckbox && cl.id === "CL_NY") || cl.isStandard
+    (cl) =>
+      referencedCodelistIds.has(cl.id) ||
+      (hasMultiOrCheckbox && cl.id === "CL_NY") ||
+      cl.isStandard
   );
 
   if (relevantCodelists.length === 0) {
@@ -414,7 +462,9 @@ export function generateSasProcFormat(study: StudyProtocol, formsToInclude: CRFF
     if (!cl.options || cl.options.length === 0) return;
     const isNum = isNumericCodelist(cl);
     const fmtName = getSasFormatName(cl.id || cl.name, !isNum);
-    const nciComment = cl.nciCodelistCode ? ` /* NCI Codelist: ${cl.nciCodelistCode} */` : "";
+    const nciComment = cl.nciCodelistCode
+      ? ` | NCI Codelist: ${cl.nciCodelistCode}`
+      : "";
 
     output += `  /* Codelist: ${escapeSasString(cl.name)}${nciComment} */\n`;
     output += `  VALUE ${fmtName}\n`;
@@ -453,9 +503,10 @@ function generateSyntheticMockData(
 ): string {
   const rows: string[][] = [];
 
-  const visitNames = study.visits && study.visits.length > 0
-    ? study.visits.map((v) => v.name)
-    : ["Screening", "Visit 1 (Day 1)", "Visit 2 (Day 28)"];
+  const visitNames =
+    study.visits && study.visits.length > 0
+      ? study.visits.map((v) => v.name)
+      : ["Screening", "Visit 1 (Day 1)", "Visit 2 (Day 28)"];
 
   for (let i = 1; i <= rowCount; i++) {
     const subjid = `101-${1000 + i}`;
@@ -476,31 +527,58 @@ function generateSyntheticMockData(
         const charVal = optionCode ? optionCode.charCodeAt(0) : idx;
         const isYes = (i + charVal) % 2 === 1;
         rowValues.push(isYes ? "Y" : "N");
-      } else if (field.dataType === "number" || field.dataType === "integer" || field.dataType === "calculated") {
+      } else if (
+        field.dataType === "number" ||
+        field.dataType === "integer" ||
+        field.dataType === "calculated"
+      ) {
         if (field.minValue !== undefined && field.maxValue !== undefined) {
-          const val = Math.round(field.minValue + ((field.maxValue - field.minValue) * i) / (rowCount + 1));
+          const val = Math.round(
+            field.minValue +
+              ((field.maxValue - field.minValue) * i) / (rowCount + 1)
+          );
           rowValues.push(String(val));
-        } else if (attrs.sasVarName.includes("AGE") || attrs.sasVarName.includes("YEAR")) {
+        } else if (
+          attrs.sasVarName.includes("AGE") ||
+          attrs.sasVarName.includes("YEAR")
+        ) {
           rowValues.push(String(45 + i * 5));
-        } else if (attrs.sasVarName.includes("WEIGHT") || attrs.sasVarName.includes("WT")) {
+        } else if (
+          attrs.sasVarName.includes("WEIGHT") ||
+          attrs.sasVarName.includes("WT")
+        ) {
           rowValues.push(String(70 + i * 3));
-        } else if (attrs.sasVarName.includes("HEIGHT") || attrs.sasVarName.includes("HT")) {
+        } else if (
+          attrs.sasVarName.includes("HEIGHT") ||
+          attrs.sasVarName.includes("HT")
+        ) {
           rowValues.push(String(170 + i));
-        } else if (attrs.sasVarName.includes("SYS") || attrs.sasVarName.includes("DIAS")) {
+        } else if (
+          attrs.sasVarName.includes("SYS") ||
+          attrs.sasVarName.includes("DIAS")
+        ) {
           rowValues.push(String(120 + i * 2));
         } else {
           rowValues.push(String(10 * i));
         }
-      } else if (field.dataType === "date" || field.dataType === "partial_date" || field.dataType === "precision_date") {
+      } else if (
+        field.dataType === "date" ||
+        field.dataType === "partial_date" ||
+        field.dataType === "precision_date"
+      ) {
         rowValues.push(`2026-03-0${i}`);
       } else if (field.dataType === "time") {
         rowValues.push(`08:3${i}:00`);
       } else if (field.dataType === "datetime") {
         rowValues.push(`2026-03-0${i}T08:30:00`);
       } else if (attrs.codelistRef && attrs.codelistRef.options.length > 0) {
-        const opt = attrs.codelistRef.options[(i - 1) % attrs.codelistRef.options.length];
+        const opt =
+          attrs.codelistRef.options[(i - 1) % attrs.codelistRef.options.length];
         rowValues.push(opt.code);
-      } else if (field.dataType === "vas_scale" || field.dataType === "nrs_scale") {
+      } else if (
+        field.dataType === "vas_scale" ||
+        field.dataType === "nrs_scale"
+      ) {
         rowValues.push(String(i * 2));
       } else {
         rowValues.push(`TEST_${attrs.sasVarName}_${i}`);
@@ -516,7 +594,11 @@ function generateSyntheticMockData(
     const formattedRow = row
       .map((val) => {
         const strVal = String(val ?? "");
-        if (strVal.includes(",") || strVal.includes(" ") || strVal.includes("'")) {
+        if (
+          strVal.includes(",") ||
+          strVal.includes(" ") ||
+          strVal.includes("'")
+        ) {
           return `"${strVal.replace(/"/g, '""')}"`;
         }
         return strVal;
@@ -626,7 +708,10 @@ export function generateSasDataStepForForm(
 
   if (includeProcFreq) {
     const categoricalVars = fieldsWithAttrs
-      .filter(({ attrs }) => attrs.codelistRef || (attrs.format && attrs.format.includes("F.")))
+      .filter(
+        ({ attrs }) =>
+          attrs.codelistRef || (attrs.format && attrs.format.includes("F."))
+      )
       .map(({ attrs }) => attrs.sasVarName);
 
     if (categoricalVars.length > 0) {
@@ -668,12 +753,17 @@ export function exportStudyToSas(
     : study.forms;
 
   if (formsToExport.length === 0) {
-    return generateSasHeader(study) + `/* No forms selected or available in study */\n/* Schedule Consultation: /schedule */\n`;
+    return (
+      generateSasHeader(study) +
+      `/* No forms selected or available in study */\n/* Schedule Consultation: /schedule */\n`
+    );
   }
 
   let output = generateSasHeader(
     study,
-    options?.selectedFormId ? formsToExport[0]?.domain || formsToExport[0]?.id : "suite"
+    options?.selectedFormId
+      ? formsToExport[0]?.domain || formsToExport[0]?.id
+      : "suite"
   );
   output += generateSasProcFormat(study, formsToExport);
 

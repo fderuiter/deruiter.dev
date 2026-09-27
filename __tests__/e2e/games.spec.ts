@@ -171,7 +171,9 @@ test.describe("Arcade Games & Simulators Suite", () => {
     // once the level is solved, so retrying this click is safe.
     await expect(async () => {
       await goalNode.click();
-      await expect(page.getByText("Q.E.D. · THEOREM VERIFIED")).toBeVisible({
+      await expect(
+        page.getByText("AST GOAL DISCHARGED · SIMULATED")
+      ).toBeVisible({
         timeout: 2000,
       });
     }).toPass({ timeout: 15000 });

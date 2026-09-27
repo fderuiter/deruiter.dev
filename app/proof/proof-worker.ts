@@ -9,8 +9,13 @@ type TheoremId =
   | "cache-consistency"
   | "custom";
 
-type WorkerAction = 
-  | { type: "START_SIMULATION"; requestId?: number; mode: "normal" | "loop"; theoremId?: TheoremId }
+type WorkerAction =
+  | {
+      type: "START_SIMULATION";
+      requestId?: number;
+      mode: "normal" | "loop";
+      theoremId?: TheoremId;
+    }
   | { type: "ABORT"; requestId?: number };
 
 const THEOREM_SIMULATION_STEPS: Record<TheoremId, string[]> = {
@@ -19,12 +24,12 @@ const THEOREM_SIMULATION_STEPS: Record<TheoremId, string[]> = {
     "Traversing proof tree starting with premise nodes: Node A (P) and Node B (P → Q)...",
     "Validating Node A and Node B connection requirements...",
     "Applying Modus Ponens tactic to establish intermediate Node C (Q)...",
-    "Goal C verified! Node C is now logically proven.",
+    "Local graph established intermediate Node C.",
     "Traversing next branch: Premise Node D (Q → R)...",
     "Validating Node C and Node D connection requirements to target Node E (R)...",
     "Applying Modus Ponens tactic to establish conclusion Node E (R)...",
-    "Re-verifying entire proof graph structure...",
-    "Proof graph verification completed successfully! Target R proven.",
+    "Checking local proof graph structure...",
+    "Local graph simulation completed; target R connected.",
   ],
   "modus-tollens": [
     "Initializing Modus Tollens Tactic Engine...",
@@ -35,8 +40,8 @@ const THEOREM_SIMULATION_STEPS: Record<TheoremId, string[]> = {
     "Linking with Premise Node D (¬P → R: Bounded memory prevents RCE)...",
     "Applying Modus Ponens on derived ¬P and Premise D...",
     "Discharging final Conclusion Node E (R: Exploit impossible)...",
-    "Re-verifying entire contrapositive AST graph...",
-    "Memory safety invariant formally proven (Q.E.D.)",
+    "Checking local contrapositive AST graph...",
+    "Local deduction reached R; no runtime memory-safety guarantee was checked.",
   ],
   "hypothetical-syllogism": [
     "Initializing Hypothetical Syllogism Tactic Engine...",
@@ -47,8 +52,8 @@ const THEOREM_SIMULATION_STEPS: Record<TheoremId, string[]> = {
     "Connecting derived contract with SLA gatekeeper Node D ((P → R) → S)...",
     "Applying Modus Ponens on intermediate Node C and Premise Node D...",
     "Discharging Conclusion Node E (S: Global SLA Met)...",
-    "Verifying zero cyclical latency dependencies in service mesh...",
-    "Distributed microservice SLA theorem verified (Q.E.D.)",
+    "Simulating latency dependencies in the example service mesh...",
+    "Local implication graph reached S; no live service SLA was checked.",
   ],
   "disjunctive-syllogism": [
     "Initializing Disjunctive Syllogism Tactic Engine...",
@@ -59,10 +64,10 @@ const THEOREM_SIMULATION_STEPS: Record<TheoremId, string[]> = {
     "Linking standby quorum with uptime guarantee: Node D (Q → R)...",
     "Applying Modus Ponens on derived Node C and Node D...",
     "Discharging final Conclusion Node E (R: Zero Downtime)...",
-    "Verifying absence of split-brain edge cases in Raft term...",
-    "Distributed consensus failover theorem verified (Q.E.D.)",
+    "Simulating split-brain edge cases in the example Raft term...",
+    "Local failover deduction completed; no distributed system was verified.",
   ],
-  "resolution": [
+  resolution: [
     "Initializing Resolution Refutation Tactic Engine...",
     "Inspecting Clause 1: Node A (P ∨ Q: Lock acquired or Enqueued)...",
     "Inspecting Clause 2: Node B (¬P ∨ R: Lock revoked or Rollback)...",
@@ -72,18 +77,18 @@ const THEOREM_SIMULATION_STEPS: Record<TheoremId, string[]> = {
     "Applying Unit Resolution on derived Node C and Node D...",
     "Discharging unit resolvent Conclusion Node E (R: Deadlock Rollback)...",
     "Checking empty clause refutation and cycle-free wait graph...",
-    "Database concurrency safety invariant verified (Q.E.D.)",
+    "Local concurrency deduction completed; no database was verified.",
   ],
   "two-phase-commit": [
     "Initializing Two-Phase Commit Verification...",
     "Gathering Phase-1 votes: Shard A (PrepA)...",
     "Gathering Phase-1 votes: Shard B (PrepB)...",
     "Applying Conjunction Introduction to establish (PrepA ∧ PrepB)...",
-    "Unanimous prepare quorum verified.",
+    "Unanimous prepare quorum established in the example graph.",
     "Linking with Coordinator Commit Rule Node D...",
     "Applying Modus Ponens to derive Global Commit...",
-    "Verifying zero abort conditions across network partitions...",
-    "Distributed 2PC Atomicity theorem verified (Q.E.D.)",
+    "Simulating abort conditions across example network partitions...",
+    "Local 2PC deduction completed; no production transaction was checked.",
   ],
   "quorum-overlap": [
     "Initializing Quorum Intersection Verification...",
@@ -92,8 +97,8 @@ const THEOREM_SIMULATION_STEPS: Record<TheoremId, string[]> = {
     "Applying Majority Intersection Theorem to derive Overlap node...",
     "Inspecting overlapping voter term constraint Node D...",
     "Applying Modus Ponens to establish SingleLeader invariant...",
-    "Verifying zero split-brain states across network splits...",
-    "Raft Quorum Safety formally proven (Q.E.D.)",
+    "Simulating split-brain states across example network splits...",
+    "Local quorum deduction completed; no Raft implementation was checked.",
   ],
   "cache-consistency": [
     "Initializing Cache Coherence Verification...",
@@ -102,14 +107,14 @@ const THEOREM_SIMULATION_STEPS: Record<TheoremId, string[]> = {
     "Applying Modus Ponens to establish Cache Invalidation...",
     "Evaluating Edge Read Router Policy (Invalidate → FreshRead)...",
     "Applying Modus Ponens to discharge FreshRead invariant...",
-    "Verifying absence of race conditions between CDC stream and read replica...",
-    "Cache consistency theorem verified (Q.E.D.)",
+    "Simulating race conditions between CDC stream and read replica...",
+    "Local cache-consistency deduction completed; no live cache was checked.",
   ],
-  "custom": [
-    "Parsing custom proposition AST...",
-    "Evaluating premise consistency via SAT table...",
-    "Applying natural deduction inference tactics...",
-    "Custom goal discharged successfully (Q.E.D.)",
+  custom: [
+    "Custom workspace placeholder: entered formulas are not loaded yet.",
+    "No custom SAT evaluation has been run.",
+    "No custom inference tactic has been applied.",
+    "Custom proof unavailable until the entered formulas populate the graph.",
   ],
 };
 
@@ -123,10 +128,15 @@ function cancelCurrentSimulation() {
   }
 }
 
-function runNormalSimulation(requestId: number, theoremId: TheoremId = "modus-ponens") {
+function runNormalSimulation(
+  requestId: number,
+  theoremId: TheoremId = "modus-ponens"
+) {
   cancelCurrentSimulation();
   activeRequestId = requestId;
-  const steps = THEOREM_SIMULATION_STEPS[theoremId] || THEOREM_SIMULATION_STEPS["modus-ponens"];
+  const steps =
+    THEOREM_SIMULATION_STEPS[theoremId] ||
+    THEOREM_SIMULATION_STEPS["modus-ponens"];
   let currentStep = 0;
 
   function next() {
@@ -137,7 +147,7 @@ function runNormalSimulation(requestId: number, theoremId: TheoremId = "modus-po
         type: "progress",
         requestId,
         step: currentStep + 1,
-        log: `[Step ${currentStep + 1}/${steps.length}] ${steps[currentStep]}`
+        log: `[Step ${currentStep + 1}/${steps.length}] ${steps[currentStep]}`,
       });
       currentStep++;
       currentSimulationTimer = setTimeout(next, 200); // 200ms delay between steps
@@ -146,7 +156,7 @@ function runNormalSimulation(requestId: number, theoremId: TheoremId = "modus-po
         type: "done",
         requestId,
         stepsCompleted: steps.length,
-        finalStatus: "success"
+        finalStatus: "success",
       });
       currentSimulationTimer = null;
     }
@@ -175,9 +185,9 @@ self.addEventListener("message", (event: MessageEvent<WorkerAction>) => {
         type: "progress",
         requestId: reqId,
         step: 0,
-        log: "Starting loop simulation: this will enter an infinite loop to test the 5s watchdog..."
+        log: "Starting loop simulation: this will enter an infinite loop to test the 5s watchdog...",
       });
-      
+
       // Infinite synchronous loop to block the worker thread completely
       while (true) {
         // block

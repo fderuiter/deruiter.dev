@@ -155,7 +155,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
       id: "init-1",
       timestamp: "00:00:01",
       type: "info",
-      text: `Lean 4 server initialized. Loaded [Ch ${currentLevel.chapter} · ${currentLevel.chapterTitle}]: ${currentLevel.title}. Mode: ${gameMode.toUpperCase()}.`,
+      text: `Local tactic simulator initialized. Loaded [Ch ${currentLevel.chapter} · ${currentLevel.chapterTitle}]: ${currentLevel.title}. Mode: ${gameMode.toUpperCase()}.`,
     },
   ]);
 
@@ -419,11 +419,11 @@ export const QuasiPerfectPuzzler: React.FC = () => {
           if (!usedSorry) {
             playSuccess();
             announce(
-              `Theorem verified! All goals closed for Level ${currentLevel.id}.`,
+              `Simulated AST goal discharged for Level ${currentLevel.id}.`,
               "assertive"
             );
             addLog(
-              `✔ Q.E.D. All goals closed! Theorem verified with ${nextRam.toFixed(1)} GB to spare.`,
+              `✔ Local AST goal discharged with ${nextRam.toFixed(1)} GB to spare. Generated Lean text is not compiler-checked.`,
               "success"
             );
           } else {
@@ -460,7 +460,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
 
         if (nextRam <= 0) {
           addLog(
-            "FATAL ERROR: Lean Language Server crashed (OOM). Garbage collector exhausted.",
+            "Simulated RAM exhausted; the local tactic session has stopped.",
             "error"
           );
           playNote(98, 0.4);
@@ -933,7 +933,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
           {isOOM && (
             <div className="mt-4 rounded-xl border border-rose-500/50 bg-rose-950/40 p-4 text-center">
               <p className="text-sm font-bold text-rose-300">
-                💥 FATAL ERROR: Lean Language Server Crashed (OOM)
+                💥 SIMULATED RAM EXHAUSTED
               </p>
               <p className="mt-1 text-xs text-zinc-400">
                 Available RAM was completely exhausted before discharging the
@@ -944,7 +944,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
                 onClick={handleResetLevel}
                 className="mt-3 rounded-lg bg-rose-600 px-4 py-1.5 text-xs font-bold text-white hover:bg-rose-500 transition-colors"
               >
-                Reboot Server &amp; Retry Level
+                Reset Simulation &amp; Retry Level
               </button>
             </div>
           )}

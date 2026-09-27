@@ -51,12 +51,12 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
         ) : (
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold mb-3">
             <IconSparkles className="w-3.5 h-3.5" />
-            <span>Q.E.D. · THEOREM VERIFIED</span>
+            <span>AST GOAL DISCHARGED · SIMULATED</span>
           </div>
         )}
 
         <h3 className="text-xl font-extrabold text-white tracking-tight">
-          {isSorry ? "PROVED VIA SORRY" : level.title}
+          {isSorry ? "GOAL ADMITTED VIA SORRY" : level.title}
         </h3>
         <p className="text-[11px] text-zinc-400 font-semibold mt-0.5">
           Chapter {level.chapter}: {level.chapterTitle}
@@ -64,8 +64,8 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
 
         <p className="mt-2 text-xs text-zinc-400 leading-relaxed">
           {isSorry
-            ? "You bypassed the formal kernel using 'sorry'. The proof is admitted, but your verification morality has been penalized."
-            : "The AST goal was successfully discharged to True without exhausting simulated Lean Server RAM."}
+            ? "The local simulator admitted this goal using 'sorry'. No Lean kernel check was run, and your score was penalized."
+            : "The local AST goal was discharged without exhausting simulated RAM. The generated Lean text has not been compiled or kernel-checked."}
         </p>
 
         {/* Stars Display */}
@@ -108,7 +108,7 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
         {leanCode && !isSorry && (
           <div className="mb-4 text-left rounded-xl border border-zinc-800 bg-zinc-900/80 p-2.5">
             <div className="flex items-center justify-between text-[10px] text-zinc-400 mb-1 border-b border-zinc-800 pb-1">
-              <span>Verified Lean 4 Script</span>
+              <span>Generated Lean 4 Text · Not Compiled</span>
               <CopyButton
                 text={leanCode}
                 label="Copy"
@@ -117,7 +117,7 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
                 copiedIcon={<IconCheck className="w-3 h-3 text-emerald-400" />}
                 className="flex items-center gap-1 text-purple-400 hover:text-purple-300 font-bold cursor-pointer"
                 aria-label="Copy Lean 4 Script"
-                successMessage="Lean 4 proof script copied to clipboard"
+                successMessage="Generated Lean text copied to clipboard"
               />
             </div>
             <pre className="text-[10px] text-zinc-300 font-mono whitespace-pre overflow-x-auto max-h-24">

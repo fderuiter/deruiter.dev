@@ -183,7 +183,7 @@ export const ProofLedger: React.FC<ProofLedgerProps> = ({
               </div>
               <div className="p-3 rounded-lg bg-slate-950 border border-slate-800 space-y-2">
                 <span className="font-mono text-brand-cyan font-semibold block">
-                  Lean 4 Invariant Model
+                  Local Invariant Model
                 </span>
                 <pre className="font-mono text-[11px] text-slate-300 whitespace-pre-wrap">
                   {activeTheorem.leanCode}

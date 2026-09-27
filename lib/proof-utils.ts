@@ -770,7 +770,7 @@ export const THEOREMS: Record<TheoremId, TheoremDefinition> = {
         type: "conclusion",
         description: "Conclusion R: Production reliability is guaranteed.",
         meaning:
-          "The target theorem: 100% formal confidence in deployment reliability.",
+          "The target proposition in this teaching graph; it does not certify a deployment.",
         x: 600,
         y: 285,
         ast: { type: "var", name: "R" },
@@ -795,14 +795,14 @@ export const THEOREMS: Record<TheoremId, TheoremDefinition> = {
       "Traversing proof tree starting with premise nodes: Node A (P) and Node B (P → Q)...",
       "Validating Node A and Node B connection requirements...",
       "Applying Modus Ponens tactic to establish intermediate Node C (Q)...",
-      "Goal C verified! Node C is now logically proven.",
+      "Local graph established intermediate Node C.",
       "Traversing next branch: Premise Node D (Q → R)...",
       "Validating Node C and Node D connection requirements to target Node E (R)...",
       "Applying Modus Ponens tactic to establish conclusion Node E (R)...",
       "Re-verifying entire proof graph structure...",
       "Proof graph verification completed successfully! Target R proven.",
     ],
-    leanCode: `-- Formal Proof in Lean 4
+    leanCode: `-- Generated Lean 4 draft; not compiler-checked
 theorem modus_ponens_pipeline (P Q R : Prop)
   (hA : P)
   (hB : P → Q)
@@ -856,7 +856,7 @@ theorem modus_ponens_pipeline (P Q R : Prop)
         label: "¬Q",
         type: "premise",
         description:
-          "Premise ¬Q: Heap overflow did not occur (verified by AddressSanitizer).",
+          "Premise ¬Q: assume heap overflow did not occur in this example.",
         meaning:
           "AddressSanitizer proves the absence of heap corruption across all executions.",
         x: 120,
@@ -928,9 +928,9 @@ theorem modus_ponens_pipeline (P Q R : Prop)
       "Applying Modus Ponens on derived ¬P and Premise D...",
       "Discharging final Conclusion Node E (R: Exploit impossible)...",
       "Re-verifying entire contrapositive AST graph...",
-      "Memory safety invariant formally proven (Q.E.D.)",
+      "Local deduction reached the memory-safety proposition; no runtime system was checked.",
     ],
-    leanCode: `-- Formal Proof in Lean 4
+    leanCode: `-- Generated Lean 4 draft; not compiler-checked
 theorem modus_tollens_memory_safety (P Q R : Prop)
   (hA : P → Q)
   (hB : ¬Q)
@@ -1035,9 +1035,9 @@ theorem modus_tollens_memory_safety (P Q R : Prop)
         label: "S",
         type: "conclusion",
         description:
-          "Conclusion S: Global 99.99% Availability SLA is formally verified.",
+          "Conclusion S: the example graph derives an SLA proposition.",
         meaning:
-          "The target theorem: End-to-end distributed SLA verified without bottlenecks.",
+          "The example target proposition; no live SLA or bottleneck was measured.",
         x: 600,
         y: 285,
         ast: { type: "var", name: "S" },
@@ -1067,9 +1067,9 @@ theorem modus_tollens_memory_safety (P Q R : Prop)
       "Applying Modus Ponens on intermediate Node C and Premise Node D...",
       "Discharging Conclusion Node E (S: Global SLA Met)...",
       "Verifying zero cyclical latency dependencies in service mesh...",
-      "Distributed microservice SLA theorem verified (Q.E.D.)",
+      "Local implication graph reached the SLA proposition; no live service was checked.",
     ],
-    leanCode: `-- Formal Proof in Lean 4
+    leanCode: `-- Generated Lean 4 draft; not compiler-checked
 theorem hypothetical_syllogism_sla (P Q R S : Prop)
   (hA : P → Q)
   (hB : Q → R)
@@ -1192,9 +1192,9 @@ theorem hypothetical_syllogism_sla (P Q R S : Prop)
       "Applying Modus Ponens on derived Node C and Node D...",
       "Discharging final Conclusion Node E (R: Zero Downtime)...",
       "Verifying absence of split-brain edge cases in Raft term...",
-      "Distributed consensus failover theorem verified (Q.E.D.)",
+      "Local failover deduction completed; no distributed implementation was checked.",
     ],
-    leanCode: `-- Formal Proof in Lean 4
+    leanCode: `-- Generated Lean 4 draft; not compiler-checked
 theorem disjunctive_syllogism_raft (P Q R : Prop)
   (hA : P ∨ Q)
   (hB : ¬P)
@@ -1323,9 +1323,9 @@ theorem disjunctive_syllogism_raft (P Q R : Prop)
       "Applying Unit Resolution on derived Node C and Node D...",
       "Discharging unit resolvent Conclusion Node E (R: Deadlock Rollback)...",
       "Checking empty clause refutation and cycle-free wait graph...",
-      "Database concurrency safety invariant verified (Q.E.D.)",
+      "Local concurrency deduction completed; no database was checked.",
     ],
-    leanCode: `-- Formal Proof in Lean 4
+    leanCode: `-- Generated Lean 4 draft; not compiler-checked
 theorem resolution_deadlock_safety (P Q R : Prop)
   (hA : P ∨ Q)
   (hB : ¬P ∨ R)
@@ -1450,13 +1450,13 @@ theorem resolution_deadlock_safety (P Q R : Prop)
       "Gathering Phase-1 votes: Shard A (PrepA)...",
       "Gathering Phase-1 votes: Shard B (PrepB)...",
       "Applying Conjunction Introduction to establish (PrepA ∧ PrepB)...",
-      "Unanimous prepare quorum verified.",
+      "Unanimous prepare quorum established in the example graph.",
       "Linking with Coordinator Commit Rule Node D...",
       "Applying Modus Ponens to derive Global Commit...",
       "Verifying zero abort conditions across network partitions...",
-      "Distributed 2PC Atomicity theorem verified (Q.E.D.)",
+      "Local 2PC deduction completed; no production transaction was checked.",
     ],
-    leanCode: `-- Formal Proof in Lean 4
+    leanCode: `-- Generated Lean 4 draft; not compiler-checked
 theorem two_phase_commit (PrepA PrepB Commit : Prop)
   (hA : PrepA)
   (hB : PrepB)
@@ -1496,7 +1496,8 @@ theorem two_phase_commit (PrepA PrepB Commit : Prop)
         type: "premise",
         description:
           "Premise MajA: Leader A collected a strict majority quorum of votes (N/2 + 1).",
-        meaning: "Majority partition verified for Candidate A in term T.",
+        meaning:
+          "Majority partition assumed for Candidate A in this example term.",
         x: 120,
         y: 130,
         ast: { type: "var", name: "MajA" },
@@ -1545,7 +1546,7 @@ theorem two_phase_commit (PrepA PrepB Commit : Prop)
         type: "conclusion",
         description:
           "Conclusion SingleLeader: Exactly one legitimate leader elected per term.",
-        meaning: "Split-brain impossibility formally proven.",
+        meaning: "Split-brain exclusion derived inside the example graph.",
         x: 600,
         y: 285,
         ast: { type: "var", name: "SingleLeader" },
@@ -1573,9 +1574,9 @@ theorem two_phase_commit (PrepA PrepB Commit : Prop)
       "Inspecting overlapping voter term constraint Node D...",
       "Applying Modus Ponens to establish SingleLeader invariant...",
       "Verifying zero split-brain states across network splits...",
-      "Raft Quorum Safety formally proven (Q.E.D.)",
+      "Local quorum deduction completed; no Raft implementation was checked.",
     ],
-    leanCode: `-- Formal Proof in Lean 4
+    leanCode: `-- Generated Lean 4 draft; not compiler-checked
 theorem quorum_overlap_safety (MajA MajB Overlap SingleLeader : Prop)
   (hA : MajA)
   (hB : MajB)
@@ -1668,7 +1669,7 @@ theorem quorum_overlap_safety (MajA MajB Overlap SingleLeader : Prop)
         type: "conclusion",
         description:
           "Conclusion FreshRead: Guaranteed zero stale data read anomalies.",
-        meaning: "Sequential cache consistency verified.",
+        meaning: "Sequential cache consistency derived in the example graph.",
         x: 600,
         y: 285,
         ast: { type: "var", name: "FreshRead" },
@@ -1696,9 +1697,9 @@ theorem quorum_overlap_safety (MajA MajB Overlap SingleLeader : Prop)
       "Evaluating Edge Read Router Policy (Invalidate → FreshRead)...",
       "Applying Modus Ponens to discharge FreshRead invariant...",
       "Verifying absence of race conditions between CDC stream and read replica...",
-      "Cache consistency theorem verified (Q.E.D.)",
+      "Local cache-consistency deduction completed; no live cache was checked.",
     ],
-    leanCode: `-- Formal Proof in Lean 4
+    leanCode: `-- Generated Lean 4 draft; not compiler-checked
 theorem cache_consistency_safety (Write Invalidate FreshRead : Prop)
   (hA : Write)
   (hB : Write → Invalidate)
@@ -1824,9 +1825,9 @@ theorem cache_consistency_safety (Write Invalidate FreshRead : Prop)
       "Applying Modus Ponens on derived Node C and Premise Node D...",
       "Discharging Conclusion Node E (SynodAgreement)...",
       "Verifying inductive hypothesis across all subsequent ballot epochs...",
-      "Paxos Synod Consensus Safety formally verified (Q.E.D.)",
+      "Local Paxos deduction completed; no consensus implementation was checked.",
     ],
-    leanCode: `-- Formal Proof in Lean 4
+    leanCode: `-- Generated Lean 4 draft; not compiler-checked
 theorem paxos_synod_safety (MajQ1 MaxVal SynodAgreement : Prop)
   (hA : MajQ1)
   (hB : MajQ1 → MaxVal)
@@ -1889,7 +1890,7 @@ theorem paxos_synod_safety (MajQ1 MaxVal SynodAgreement : Prop)
         label: "PromiseB ∧ AcceptReqB",
         type: "intermediate",
         description:
-          "Intermediate Conclusion: Ballot compatibility verified, triggering Phase 2b Accepted(B, V).",
+          "Intermediate Conclusion: ballot compatibility derived in the example, triggering Phase 2b Accepted(B, V).",
         meaning:
           "Acceptors register accept vote and emit Phase 2b acknowledgement.",
         x: 360,
@@ -1951,14 +1952,14 @@ theorem paxos_synod_safety (MajQ1 MaxVal SynodAgreement : Prop)
       "Checking Acceptor Promise state for ballot B (PromiseB)...",
       "Checking Phase 2a Accept Request for ballot B (AcceptReqB)...",
       "Applying Conjunction Introduction to derive (PromiseB ∧ AcceptReqB)...",
-      "Acceptor ballot compatibility verified: Phase 2b votes emitted.",
+      "Acceptor ballot compatibility derived in the example: Phase 2b votes emitted.",
       "Linking quorum aggregation with Commit Rule Node D...",
       "Applying Modus Ponens on derived Node C and Premise Node D...",
       "Discharging final Conclusion Node E (ValueChosen)...",
       "Verifying zero uncommitted transitions across network drops...",
-      "Paxos Phase 2B Quorum Commitment formally proven (Q.E.D.)",
+      "Local Phase 2B deduction completed; no consensus implementation was checked.",
     ],
-    leanCode: `-- Formal Proof in Lean 4
+    leanCode: `-- Generated Lean 4 draft; not compiler-checked
 theorem paxos_phase2b_quorum (PromiseB AcceptReqB ValueChosen : Prop)
   (hA : PromiseB)
   (hB : AcceptReqB)
@@ -2080,9 +2081,9 @@ theorem paxos_phase2b_quorum (PromiseB AcceptReqB ValueChosen : Prop)
       "Applying Modus Ponens on derived Node C and Premise Node D...",
       "Discharging final Conclusion Node E (ByzantineSafety)...",
       "Verifying complete fork-freedom and equivocation resistance...",
-      "Byzantine Fault Tolerance 3f+1 Quorum Safety formally proven (Q.E.D.)",
+      "Local 3f+1 quorum deduction completed; no BFT implementation was checked.",
     ],
-    leanCode: `-- Formal Proof in Lean 4
+    leanCode: `-- Generated Lean 4 draft; not compiler-checked
 theorem bft_3f_plus_1_quorum_safety (Quorum1 Quorum2 HonestOverlap ByzantineSafety : Prop)
   (hA : Quorum1)
   (hB : Quorum2)
@@ -2195,7 +2196,7 @@ theorem bft_3f_plus_1_quorum_safety (Quorum1 Quorum2 HonestOverlap ByzantineSafe
       "Applying natural deduction inference tactics...",
       "Custom goal discharged successfully (Q.E.D.)",
     ],
-    leanCode: `-- Formal Proof in Lean 4
+    leanCode: `-- Generated Lean 4 draft; not compiler-checked
 theorem custom_proof (P Q R : Prop)
   (hA : P)
   (hB : P → Q)
@@ -2742,7 +2743,7 @@ export function getNextTacticHint(
 
   return {
     stepNumber: 3,
-    title: "Proof Verified",
+    title: "Graph Complete (Local Simulation)",
     hint: `Conclusion ${targetNode?.label} is established.`,
     suggestedRule: "Q.E.D.",
     isCompleted: true,
@@ -3165,6 +3166,35 @@ export function exportProofToLatex(
 }
 
 /**
+ * Export the current graph state without representing an unfinished or custom
+ * workspace as a completed proof certificate.
+ */
+export function exportWorkspaceProof(
+  format: "lean" | "latex" | "markdown" | "mermaid",
+  edges: Edge[],
+  theoremId: TheoremId = "modus-ponens"
+): string {
+  if (theoremId === "custom") {
+    return "CUSTOM WORKSPACE UNAVAILABLE: Entered formulas are not yet loaded into the proof graph, so no faithful export can be generated.";
+  }
+
+  const complete = evaluateProofStatus(edges, theoremId).isE_Proven;
+  if (format === "lean") {
+    return complete
+      ? `-- Graph complete in the local simulator; generated script is not checked by the Lean kernel.\n${exportProofToLean4(theoremId)}`
+      : "-- INCOMPLETE: Finish the current graph before exporting a Lean proof template.";
+  }
+  if (format === "latex") {
+    return complete
+      ? `% Graph complete in the local simulator; generated derivation has not been independently checked.\n${exportProofToLatex(theoremId)}`
+      : "% INCOMPLETE: Finish the current graph before exporting a LaTeX proof template.";
+  }
+  return format === "markdown"
+    ? exportProofToMarkdown(edges, theoremId)
+    : exportProofToMermaid(edges, theoremId);
+}
+
+/**
  * Exports the active theorem proof ledger into Markdown table format.
  */
 export function exportProofToMarkdown(
@@ -3182,9 +3212,9 @@ export function exportProofToMarkdown(
     )
     .join("\n");
 
-  return `# Formal Proof Certificate: ${th.title}
+  return `# Proof Workspace Export: ${th.title}
 **Scenario**: ${th.scenario}  
-**Status**: ${isE_Proven ? "✔ Q.E.D. DISCHARGED (100% Sound)" : "⏳ INCOMPLETE"}  
+**Status**: ${isE_Proven ? "✔ GRAPH COMPLETE (local simulation; not Lean-verified)" : "⏳ INCOMPLETE"}
 **Inference Rule**: ${th.ruleName}  
 
 | Step | Proposition | Inference Rule | Premises | Status | Plain English Meaning |
@@ -3221,6 +3251,7 @@ export function exportProofToMermaid(
     .join("\n");
 
   return `graph LR
+    %% Workspace status: ${isE_Proven ? "GRAPH COMPLETE (local simulation)" : "INCOMPLETE"}
     %% Formal Logic Proof Graph: ${th.title}
 ${nodeDefs}
 ${edgeDefs}

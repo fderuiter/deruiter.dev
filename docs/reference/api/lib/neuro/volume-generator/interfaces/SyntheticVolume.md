@@ -46,6 +46,18 @@
 
 ***
 
+### initialBrainmask
+
+> **initialBrainmask**: `Uint8Array`
+
+***
+
+### initialWmMask
+
+> **initialWmMask**: `Uint8Array`
+
+***
+
 ### labels
 
 > **labels**: `Uint8Array`

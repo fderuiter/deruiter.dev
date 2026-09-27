@@ -91,7 +91,7 @@ describe("QuasiPerfectPuzzler UI Component Suite", () => {
     expect(container.textContent).toContain("Chapter 1 · Equational Reasoning");
     expect(container.textContent).toContain("18-Level 3-Chapter Curriculum");
     expect(container.textContent).toContain("rfl");
-    expect(container.textContent).toContain("Lean 4 Proof Script");
+    expect(container.textContent).toContain("Generated Lean 4 Text");
     expect(container.textContent).toContain("Story Mode");
     expect(container.textContent).toContain("Hacker Mode");
   });
@@ -136,7 +136,7 @@ describe("QuasiPerfectPuzzler UI Component Suite", () => {
     });
 
     // Check Victory Modal is displayed
-    expect(container.textContent).toContain("Q.E.D. · THEOREM VERIFIED");
+    expect(container.textContent).toContain("AST GOAL DISCHARGED · SIMULATED");
     expect(container.textContent).toContain("The Identity Crisis");
   });
 
@@ -201,8 +201,8 @@ describe("QuasiPerfectPuzzler UI Component Suite", () => {
 
     // Hacker mode displays RAM Gauge
     expect(container.textContent).toContain("16.0 / 16 GB");
-    expect(container.textContent).toContain("Server Memory:");
-    expect(container.textContent).toContain("LEAN RAM NOMINAL");
+    expect(container.textContent).toContain("Simulated Memory:");
+    expect(container.textContent).toContain("SIMULATED RAM NOMINAL");
   });
 
   it("toggles and interacts with the Progressive Hints system", async () => {
@@ -449,7 +449,7 @@ describe("QuasiPerfectPuzzler UI Component Suite", () => {
     });
 
     // 5. Check Victory Modal
-    expect(container.textContent).toContain("Q.E.D. · THEOREM VERIFIED");
+    expect(container.textContent).toContain("AST GOAL DISCHARGED · SIMULATED");
     expect(container.textContent).toContain("Disjunction Splitting");
   });
 });

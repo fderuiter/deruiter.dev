@@ -4,9 +4,55 @@ import {
   exportProofToLatex,
   exportProofToMarkdown,
   exportProofToMermaid,
+  exportWorkspaceProof,
 } from "../lib/proof-utils";
 
 describe("Proof Export Generators (Lean 4, LaTeX, Markdown, Mermaid)", () => {
+  it("withholds a Lean proof template until the current graph is complete", () => {
+    const solvedEdges = [
+      { source: "A", target: "C" },
+      { source: "B", target: "C" },
+      { source: "C", target: "E" },
+      { source: "D", target: "E" },
+    ];
+
+    const before = exportWorkspaceProof("lean", [], "modus-ponens");
+    expect(before).toContain("INCOMPLETE");
+    expect(before).not.toContain("theorem modus_ponens_pipeline");
+
+    const solved = exportWorkspaceProof("lean", solvedEdges, "modus-ponens");
+    expect(solved).toContain("theorem modus_ponens_pipeline");
+    expect(solved).toContain("not checked by the Lean kernel");
+
+    const pruned = exportWorkspaceProof(
+      "lean",
+      solvedEdges.slice(0, -1),
+      "modus-ponens"
+    );
+    expect(pruned).toContain("INCOMPLETE");
+    expect(pruned).not.toContain("theorem modus_ponens_pipeline");
+  });
+
+  it("labels incomplete workspace snapshots consistently across export formats", () => {
+    const latex = exportWorkspaceProof("latex", [], "modus-ponens");
+    expect(latex).toContain("INCOMPLETE");
+    expect(latex).not.toContain("\\begin{prooftree}");
+
+    const markdown = exportWorkspaceProof("markdown", [], "modus-ponens");
+    expect(markdown).toContain("# Proof Workspace Export:");
+    expect(markdown).toContain("INCOMPLETE");
+    expect(markdown).not.toContain("Proof Certificate");
+
+    const mermaid = exportWorkspaceProof("mermaid", [], "modus-ponens");
+    expect(mermaid).toContain("Workspace status: INCOMPLETE");
+
+    for (const format of ["lean", "latex", "markdown", "mermaid"] as const) {
+      expect(exportWorkspaceProof(format, [], "custom")).toContain(
+        "CUSTOM WORKSPACE UNAVAILABLE"
+      );
+    }
+  });
+
   it("exports valid Lean 4 code across theorems", () => {
     const leanMP = exportProofToLean4("modus-ponens");
     expect(leanMP).toContain("theorem modus_ponens_pipeline");
@@ -23,15 +69,18 @@ describe("Proof Export Generators (Lean 4, LaTeX, Markdown, Mermaid)", () => {
     expect(latexMP).toContain("MP");
   });
 
-  it("exports formatted Markdown certificate with ledger table", () => {
+  it("exports a Markdown workspace snapshot with ledger table", () => {
     const md = exportProofToMarkdown([], "modus-ponens");
-    expect(md).toContain("# Formal Proof Certificate: Modus Ponens");
+    expect(md).toContain("# Proof Workspace Export: Modus Ponens");
     expect(md).toContain("| Step | Proposition | Inference Rule |");
     expect(md).toContain("PENDING");
   });
 
   it("exports valid Mermaid flowchart graph syntax", () => {
-    const mermaid = exportProofToMermaid([{ source: "A", target: "C" }], "modus-ponens");
+    const mermaid = exportProofToMermaid(
+      [{ source: "A", target: "C" }],
+      "modus-ponens"
+    );
     expect(mermaid).toContain("graph LR");
     expect(mermaid).toContain("Node_A --> Node_C");
     expect(mermaid).toContain("classDef proven");

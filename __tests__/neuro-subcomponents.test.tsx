@@ -314,13 +314,15 @@ describe("NeuroRecon Subcomponents Suite", () => {
       );
 
       // 1. Euler Characteristic χ
-      expect(screen.getByText("EULER (χ)")).not.toBeNull();
+      expect(screen.getByText("EULER ESTIMATE (χ)")).not.toBeNull();
       expect(screen.getByText("TARGET: 2")).not.toBeNull();
       expect(screen.getByText("χ = -2")).not.toBeNull();
-      expect(screen.getByText("Genus $g \\ge 1$ Handle")).not.toBeNull();
+      expect(
+        screen.getByText("Scenario-based topology estimate")
+      ).not.toBeNull();
 
       // 2. Defect Count
-      expect(screen.getByText("DEFECT VOXELS")).not.toBeNull();
+      expect(screen.getByText("DEFECT UNITS (EST.)")).not.toBeNull();
       expect(screen.getByText("INITIAL: 12")).not.toBeNull();
       expect(screen.getByText("6")).not.toBeNull();
       expect(screen.getByText("remaining")).not.toBeNull();
@@ -328,13 +330,15 @@ describe("NeuroRecon Subcomponents Suite", () => {
       expect(activeProgressBar.style.transform).toBe("scaleX(0.5)");
 
       // 3. Dice Score
-      expect(screen.getByText("DICE SCORE")).not.toBeNull();
+      expect(screen.getByText("DICE ESTIMATE")).not.toBeNull();
       expect(screen.getByText("GOAL: ≥95%")).not.toBeNull();
       expect(screen.getByText("88.5%")).not.toBeNull();
-      expect(screen.getByText("Ground Truth Concordance")).not.toBeNull();
+      expect(
+        screen.getByText("Simulated trend; no reference mask")
+      ).not.toBeNull();
 
       // 4. Cortical Thickness
-      expect(screen.getByText("CORTICAL THICKNESS")).not.toBeNull();
+      expect(screen.getByText("THICKNESS ESTIMATE")).not.toBeNull();
       expect(screen.getByText("2.46")).not.toBeNull();
       expect(screen.getByText("mm")).not.toBeNull();
 
@@ -361,7 +365,9 @@ describe("NeuroRecon Subcomponents Suite", () => {
 
       // Euler Characteristic matches target
       expect(screen.getByText("χ = 2")).not.toBeNull();
-      expect(screen.getByText("Topological 2-Sphere ($S^2$)")).not.toBeNull();
+      expect(
+        screen.getByText("Scenario-based topology estimate")
+      ).not.toBeNull();
 
       // 0 defects remaining
       expect(screen.getByText("0")).not.toBeNull();
@@ -373,8 +379,8 @@ describe("NeuroRecon Subcomponents Suite", () => {
       expect(screen.getByText("2.38")).not.toBeNull();
 
       // Resolution status
-      expect(screen.getByText("PASS · VERIFIED")).not.toBeNull();
-      expect(screen.getByText("Ready for recon-all stage 3")).not.toBeNull();
+      expect(screen.getByText("SIMULATION PASS")).not.toBeNull();
+      expect(screen.getByText("Scenario target reached")).not.toBeNull();
     });
 
     it("handles scenario with 0 initial defects cleanly for progress bar calculations", () => {
@@ -423,7 +429,7 @@ describe("NeuroRecon Subcomponents Suite", () => {
         />
       );
 
-      expect(screen.getByText("PASS · VERIFIED")).not.toBeNull();
+      expect(screen.getByText("SIMULATION PASS")).not.toBeNull();
       expect(screen.getByText("3x")).not.toBeNull();
       expect(screen.getByText("2,500")).not.toBeNull();
       expect(screen.getByText("Streak: 4 clean cases")).not.toBeNull();

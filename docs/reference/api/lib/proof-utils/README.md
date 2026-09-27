@@ -49,6 +49,7 @@
 - [exportProofToLean4](functions/exportProofToLean4.md)
 - [exportProofToMarkdown](functions/exportProofToMarkdown.md)
 - [exportProofToMermaid](functions/exportProofToMermaid.md)
+- [exportWorkspaceProof](functions/exportWorkspaceProof.md)
 - [extractVariables](functions/extractVariables.md)
 - [formatFormula](functions/formatFormula.md)
 - [generateTruthTable](functions/generateTruthTable.md)

@@ -1502,6 +1502,9 @@ export const ClinicalTrialChaos: React.FC = () => {
         height: logicalHeight,
         scale: resolution.scale,
       };
+      // The bitmap is device pixels; expose the logical layout for tests.
+      canvas.dataset.logicalWidth = String(logicalWidth);
+      canvas.dataset.logicalHeight = String(logicalHeight);
       if (
         canvas.width !== resolution.width ||
         canvas.height !== resolution.height

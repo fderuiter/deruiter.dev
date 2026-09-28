@@ -59,9 +59,36 @@ In the Vercel dashboard for the `portfolio` project:
    Production. The build itself needs only the two Neon URLs, to migrate and
    to prerender real content; the rest are read by the running site.
 
-Recommended repository settings, available now that the repository is public:
-a ruleset on `main` that requires pull requests and the **Merge Gate**
-status check.
+### Main Branch Protection
+
+Verified through the GitHub API on 2026-09-28 for `fderuiter/portfolio`:
+
+- Pull requests are required, including for administrators. No approving
+  reviewer is required for this solo repository.
+- The exact required check is **Merge Gate (Required Checks Summary)**,
+  bound to the GitHub Actions app (ID `15368`). It summarizes every required
+  CI job; a pending or failed summary blocks merging.
+- Linear history and conversation resolution are required. Force pushes and
+  deletion of `main` are disabled. Squash merging remains the normal path;
+  GitHub automatically deletes merged feature branches.
+- The up-to-date branch requirement is disabled (`strict: false`) to avoid
+  repeating the full browser pipeline after every unrelated `main` merge.
+  Resolve conflicts and revalidate when base changes affect the work.
+
+Audit these settings monthly and whenever the CI workflow or Merge Gate name
+changes. Use **Settings → Branches → Branch protection rules → main**, or:
+
+```bash
+gh api repos/fderuiter/portfolio/branches/main/protection \
+  --jq '{checks: .required_status_checks.checks, strict: .required_status_checks.strict, admins: .enforce_admins.enabled, reviews: .required_pull_request_reviews.required_approving_review_count, linear: .required_linear_history.enabled, force: .allow_force_pushes.enabled, deletion: .allow_deletions.enabled, conversations: .required_conversation_resolution.enabled}'
+```
+
+Compare the configured check name and app ID with a recent successful PR's
+check runs. Do not use `gh pr merge --admin` to bypass pending CI. When using
+`gh pr merge --auto --squash`, verify that the PR remains open with auto merge
+enabled while Merge Gate is pending, then confirm it merges after success.
+Issue [#1247](https://github.com/fderuiter/portfolio/issues/1247) tracks the
+pending-CI verification.
 
 ## Environments
 

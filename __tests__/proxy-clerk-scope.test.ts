@@ -59,11 +59,19 @@ describe("Proxy Clerk Scope", () => {
     }
   );
 
-  const ADMIN_ROUTES = ["/admin", "/admin/login", "/api/admin/case-studies"];
+  const ADMIN_ROUTES = [
+    "/admin",
+    "/admin/login",
+    "/api/admin/case-studies",
+    "/api/case-studies",
+  ];
 
-  it.each(ADMIN_ROUTES)("admin route %s is guarded by Clerk", async (route) => {
-    expect(await call(route)).toEqual([route]);
-  });
+  it.each(ADMIN_ROUTES)(
+    "admin or clerk_admin route %s reaches Clerk middleware",
+    async (route) => {
+      expect(await call(route)).toEqual([route]);
+    }
+  );
 
   it("still attaches a connection hash to public API requests", async () => {
     const res = await proxy(

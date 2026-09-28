@@ -1,10 +1,7 @@
 import { NextResponse } from "next/server";
 import { createApiHandler } from "@/lib/route-wrapper";
 import { SyncParamsSchema } from "@/lib/schemas";
-import {
-  validateRouteInitialization,
-  validateSyncRequest,
-} from "@/lib/security";
+import { validateRouteInitialization } from "@/lib/security";
 import { MaintenanceService } from "@/lib/services/maintenance-service";
 import { logger } from "@/lib/logger";
 
@@ -27,12 +24,7 @@ const PLATFORM_HEADROOM_MS = 1000;
 validateRouteInitialization();
 
 export const GET = createApiHandler(
-  async (req, { data }) => {
-    const authResult = validateSyncRequest(req);
-    if (!authResult.isValid && authResult.errorResponse) {
-      return authResult.errorResponse;
-    }
-
+  async (_req, { data }) => {
     const summary = await MaintenanceService.run({
       batchSize: data.batch,
       deadlineMs: maxDuration * 1000 - PLATFORM_HEADROOM_MS,

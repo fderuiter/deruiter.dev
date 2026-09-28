@@ -6,8 +6,16 @@ import {
   extractClientIp,
 } from "@/lib/services/privacy-service";
 
-/** Routes that need Clerk's auth context: the admin area and its API. */
-const isClerkRoute = createRouteMatcher(["/admin(.*)", "/api/admin(.*)"]);
+/** Routes that need Clerk's auth context: the admin area and its API, plus non-admin clerk_admin endpoints. */
+const isClerkRoute = createRouteMatcher([
+  "/admin(.*)",
+  "/api/admin(.*)",
+  "/api/case-studies(.*)",
+]);
+const isProtectedAdminRoute = createRouteMatcher([
+  "/admin(.*)",
+  "/api/admin(.*)",
+]);
 const isPublicAuthRoute = createRouteMatcher(["/admin/login(.*)"]);
 
 /**
@@ -37,7 +45,7 @@ async function decorateRequest(req: NextRequest): Promise<NextResponse> {
 }
 
 const authMiddleware = clerkMiddleware(async (auth, req: NextRequest) => {
-  if (!isPublicAuthRoute(req)) {
+  if (isProtectedAdminRoute(req) && !isPublicAuthRoute(req)) {
     await auth.protect();
   }
 

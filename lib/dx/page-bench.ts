@@ -301,39 +301,45 @@ export async function runPageBenchmarks(
 
     for (const route of routes) {
       const pageUrl = `${baseUrl.replace(/\/$/, "")}${route.path}`;
-      const page = await context.newPage();
 
-      if (throttled) {
-        try {
-          const client = await context.newCDPSession(page);
-          await client.send("Emulation.setCPUThrottlingRate", {
-            rate: THROTTLED_MOBILE_PROFILE.cpuSlowdownMultiplier,
-          });
-          await client.send("Network.enable");
-          await client.send("Network.emulateNetworkConditions", {
-            offline: false,
-            latency: THROTTLED_MOBILE_PROFILE.latency,
-            downloadThroughput: THROTTLED_MOBILE_PROFILE.downloadThroughput,
-            uploadThroughput: THROTTLED_MOBILE_PROFILE.uploadThroughput,
-          });
-        } catch (error) {
-          // The evidence records throttled: true, so an unthrottled run must
-          // not be reported as throttled.
-          await page.close();
-          throw new Error(
-            `Throttled benchmark requested but CDP throttling failed: ${
-              error instanceof Error ? error.message : String(error)
-            }`
-          );
+      const createAndConfigurePage = async (): Promise<Page> => {
+        const page = await context.newPage();
+        if (throttled) {
+          try {
+            const client = await context.newCDPSession(page);
+            await client.send("Emulation.setCPUThrottlingRate", {
+              rate: THROTTLED_MOBILE_PROFILE.cpuSlowdownMultiplier,
+            });
+            await client.send("Network.enable");
+            await client.send("Network.emulateNetworkConditions", {
+              offline: false,
+              latency: THROTTLED_MOBILE_PROFILE.latency,
+              downloadThroughput: THROTTLED_MOBILE_PROFILE.downloadThroughput,
+              uploadThroughput: THROTTLED_MOBILE_PROFILE.uploadThroughput,
+            });
+          } catch (error) {
+            await page.close();
+            throw new Error(
+              `Throttled benchmark requested but CDP throttling failed: ${
+                error instanceof Error ? error.message : String(error)
+              }`
+            );
+          }
         }
-      }
+        return page;
+      };
 
       // Warmup run
       if (options.onProgress) {
         options.onProgress({ route, currentRun: 0, totalRuns: runs });
       }
       try {
-        await measurePageRoute(page, pageUrl);
+        const warmupPage = await createAndConfigurePage();
+        try {
+          await measurePageRoute(warmupPage, pageUrl);
+        } finally {
+          await warmupPage.close();
+        }
       } catch {
         // Ignore warmup error
       }
@@ -341,19 +347,22 @@ export async function runPageBenchmarks(
       // Measured runs
       const samples: SingleRunMetrics[] = [];
       for (let run = 1; run <= runs; run++) {
-        const metrics = await measurePageRoute(page, pageUrl);
-        samples.push(metrics);
-        if (options.onProgress) {
-          options.onProgress({
-            route,
-            currentRun: run,
-            totalRuns: runs,
-            metrics,
-          });
+        const runPage = await createAndConfigurePage();
+        try {
+          const metrics = await measurePageRoute(runPage, pageUrl);
+          samples.push(metrics);
+          if (options.onProgress) {
+            options.onProgress({
+              route,
+              currentRun: run,
+              totalRuns: runs,
+              metrics,
+            });
+          }
+        } finally {
+          await runPage.close();
         }
       }
-
-      await page.close();
 
       const ttfbSummary = calculateSummary(samples.map((s) => s.ttfb));
       const fcpSummary = calculateSummary(samples.map((s) => s.fcp));

@@ -332,6 +332,11 @@ export interface StudyProtocol {
   testScenarios?: TestScenario[];
   /** Local authoring discussion and lifecycle history, separate from EDC audit data. */
   reviewThreads?: StudyReviewThread[];
+  /** Document-level EDC simulation state (audit trail entries, electronic signatures, form values). */
+  simulationState?: EdcSimulationState;
+  /** Protocol-level audit trail history across authoring and review lifecycle. */
+  auditTrail?: AuditTrailEntry[];
+  auditLog?: AuditTrailEntry[];
 }
 
 /** Local authoring-review roles, unrelated to EDC permissions or audit roles. */
@@ -459,19 +464,43 @@ export interface EDCQuery {
 export interface AuditTrailEntry {
   id: string;
   timestamp: string; // ISO Date
-  subjectId: string;
-  formId: string;
-  fieldId: string;
-  fieldName: string;
-  previousValue: string | number | boolean | null;
-  newValue: string | number | boolean | null;
   changedBy: string;
-  userRole:
+  subjectId?: string;
+  formId?: string;
+  fieldId?: string;
+  fieldName?: string;
+  previousValue?:
+    | string
+    | number
+    | boolean
+    | Record<string, unknown>
+    | unknown[]
+    | null
+    | unknown;
+  newValue?:
+    | string
+    | number
+    | boolean
+    | Record<string, unknown>
+    | unknown[]
+    | null
+    | unknown;
+  userRole?:
     | "Site Coordinator"
     | "Principal Investigator"
     | "CRA Monitor"
-    | "Data Manager";
-  reasonForChange: string;
+    | "Data Manager"
+    | "Medical Monitor"
+    | "Biostatistician"
+    | "Clinical Reviewer"
+    | string;
+  reasonForChange?: string;
+  action?: string;
+  actionType?: string;
+  diagnosticId?: string;
+  details?: string | Record<string, unknown> | unknown;
+  targetId?: string;
+  targetType?: string;
 }
 
 export interface ElectronicSignature {
@@ -485,6 +514,22 @@ export interface ElectronicSignature {
   meaning:
     "Author" | "Investigator Approval" | "Data Lock" | "Monitor Verification";
   digest: string; // Cryptographic SHA-256 simulated signature hash
+}
+
+export interface EdcSimulationState {
+  auditLog?: AuditTrailEntry[];
+  signatures?: ElectronicSignature[];
+  formValues?: Record<string, string | number | boolean | null>;
+  sdvMap?: Record<
+    string,
+    { verified: boolean; timestamp: string; auditedBy: string }
+  >;
+  lockedForms?: Record<
+    string,
+    { locked: boolean; lockedBy: string; timestamp: string }
+  >;
+  queries?: EDCQuery[];
+  availableSubjects?: string[];
 }
 
 export type ComplianceSeverity = "error" | "warning" | "notice";

@@ -8,27 +8,51 @@
 
 ## Properties
 
+### action?
+
+> `optional` **action?**: `string`
+
+***
+
+### actionType?
+
+> `optional` **actionType?**: `string`
+
+***
+
 ### changedBy
 
 > **changedBy**: `string`
 
 ***
 
-### fieldId
+### details?
 
-> **fieldId**: `string`
-
-***
-
-### fieldName
-
-> **fieldName**: `string`
+> `optional` **details?**: `unknown`
 
 ***
 
-### formId
+### diagnosticId?
 
-> **formId**: `string`
+> `optional` **diagnosticId?**: `string`
+
+***
+
+### fieldId?
+
+> `optional` **fieldId?**: `string`
+
+***
+
+### fieldName?
+
+> `optional` **fieldName?**: `string`
+
+***
+
+### formId?
+
+> `optional` **formId?**: `string`
 
 ***
 
@@ -38,27 +62,39 @@
 
 ***
 
-### newValue
+### newValue?
 
-> **newValue**: `string` \| `number` \| `boolean` \| `null`
-
-***
-
-### previousValue
-
-> **previousValue**: `string` \| `number` \| `boolean` \| `null`
+> `optional` **newValue?**: `unknown`
 
 ***
 
-### reasonForChange
+### previousValue?
 
-> **reasonForChange**: `string`
+> `optional` **previousValue?**: `unknown`
 
 ***
 
-### subjectId
+### reasonForChange?
 
-> **subjectId**: `string`
+> `optional` **reasonForChange?**: `string`
+
+***
+
+### subjectId?
+
+> `optional` **subjectId?**: `string`
+
+***
+
+### targetId?
+
+> `optional` **targetId?**: `string`
+
+***
+
+### targetType?
+
+> `optional` **targetType?**: `string`
 
 ***
 
@@ -68,6 +104,6 @@
 
 ***
 
-### userRole
+### userRole?
 
-> **userRole**: `"Data Manager"` \| `"Site Coordinator"` \| `"Principal Investigator"` \| `"CRA Monitor"`
+> `optional` **userRole?**: `string`

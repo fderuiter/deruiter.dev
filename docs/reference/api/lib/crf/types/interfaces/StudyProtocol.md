@@ -20,6 +20,20 @@
 
 ***
 
+### auditLog?
+
+> `optional` **auditLog?**: [`AuditTrailEntry`](AuditTrailEntry.md)[]
+
+***
+
+### auditTrail?
+
+> `optional` **auditTrail?**: [`AuditTrailEntry`](AuditTrailEntry.md)[]
+
+Protocol-level audit trail history across authoring and review lifecycle.
+
+***
+
 ### biomedicalConcepts?
 
 > `optional` **biomedicalConcepts?**: [`BiomedicalConcept`](BiomedicalConcept.md)[]
@@ -109,6 +123,14 @@ Local authoring discussion and lifecycle history, separate from EDC audit data.
 ### schemaVersion?
 
 > `optional` **schemaVersion?**: `string`
+
+***
+
+### simulationState?
+
+> `optional` **simulationState?**: [`EdcSimulationState`](EdcSimulationState.md)
+
+Document-level EDC simulation state (audit trail entries, electronic signatures, form values).
 
 ***
 

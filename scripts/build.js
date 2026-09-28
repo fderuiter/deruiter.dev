@@ -89,10 +89,14 @@ async function runBuildPipeline() {
   }
   if (
     !process.env.NODE_OPTIONS ||
-    !process.env.NODE_OPTIONS.includes("--no-warnings")
+    !process.env.NODE_OPTIONS.includes("--max-old-space-size")
   ) {
     process.env.NODE_OPTIONS =
-      `${process.env.NODE_OPTIONS || ""} --no-warnings`.trim();
+      `${process.env.NODE_OPTIONS || ""} --max-old-space-size=4096`.trim();
+  }
+  if (!process.env.NODE_OPTIONS.includes("--no-warnings")) {
+    process.env.NODE_OPTIONS =
+      `${process.env.NODE_OPTIONS} --no-warnings`.trim();
   }
   process.env.SERWIST_SUPPRESS_TURBOPACK_WARNING = "1";
   process.env.WS_NO_BUFFER_UTIL = "1";

@@ -406,6 +406,97 @@ const StudyReviewThreadSchema = z.object({
   events: z.array(StudyReviewEventSchema).min(1),
 });
 
+export const AuditTrailEntrySchema = z.object({
+  id: z.string().min(1),
+  timestamp: z.string(),
+  changedBy: z.string(),
+  subjectId: z.string().optional(),
+  formId: z.string().optional(),
+  fieldId: z.string().optional(),
+  fieldName: z.string().optional(),
+  previousValue: z.unknown().optional(),
+  newValue: z.unknown().optional(),
+  userRole: z.string().optional(),
+  reasonForChange: z.string().optional(),
+  action: z.string().optional(),
+  actionType: z.string().optional(),
+  diagnosticId: z.string().optional(),
+  details: z.unknown().optional(),
+  targetId: z.string().optional(),
+  targetType: z.string().optional(),
+});
+
+export const ElectronicSignatureSchema = z.object({
+  id: z.string().min(1),
+  subjectId: z.string().min(1),
+  formId: z.string().min(1),
+  visitId: z.string().min(1),
+  signedBy: z.string(),
+  userRole: z.string(),
+  timestamp: z.string(),
+  meaning: z.enum([
+    "Author",
+    "Investigator Approval",
+    "Data Lock",
+    "Monitor Verification",
+  ]),
+  digest: z.string(),
+});
+
+export const EDCQuerySchema = z.object({
+  id: z.string().min(1),
+  fieldId: z.string().min(1),
+  fieldName: z.string(),
+  ruleId: z.string().optional(),
+  formId: z.string().min(1),
+  visitId: z.string().min(1),
+  subjectId: z.string().min(1),
+  status: z.enum(["Open", "Answered", "Closed", "Cancelled"]),
+  severity: z.enum(["info", "warning", "error"]),
+  message: z.string(),
+  raisedBy: z.string(),
+  raisedAt: z.string(),
+  response: z.string().optional(),
+  respondedBy: z.string().optional(),
+  respondedAt: z.string().optional(),
+});
+
+export const EdcSimulationStateSchema = z.object({
+  auditLog: z.array(AuditTrailEntrySchema).optional(),
+  signatures: z.array(ElectronicSignatureSchema).optional(),
+  formValues: z
+    .record(
+      z.string(),
+      z.union([z.string(), z.number(), z.boolean(), z.null()])
+    )
+    .optional(),
+  sdvMap: z
+    .record(
+      z.string(),
+      z.object({
+        verified: z.boolean(),
+        timestamp: z.string(),
+        auditedBy: z.string(),
+      })
+    )
+    .optional(),
+  lockedForms: z
+    .record(
+      z.string(),
+      z.object({
+        locked: z.boolean(),
+        lockedBy: z.string(),
+        timestamp: z.string(),
+      })
+    )
+    .optional(),
+  queries: z.array(EDCQuerySchema).optional(),
+  availableSubjects: z.array(z.string()).optional(),
+});
+export type UniversalEdcSimulationState = z.infer<
+  typeof EdcSimulationStateSchema
+>;
+
 // 9. Root Universal Study Protocol Schema
 export const UniversalCrfProtocolSchema = z.object({
   $schema: z.string().optional(),
@@ -431,6 +522,9 @@ export const UniversalCrfProtocolSchema = z.object({
   biomedicalConcepts: z.array(BiomedicalConceptSchema).default([]),
   testScenarios: z.array(TestScenarioSchema).default([]),
   reviewThreads: z.array(StudyReviewThreadSchema).optional(),
+  simulationState: EdcSimulationStateSchema.optional(),
+  auditTrail: z.array(AuditTrailEntrySchema).optional(),
+  auditLog: z.array(AuditTrailEntrySchema).optional(),
 });
 export type UniversalCrfProtocol = z.infer<typeof UniversalCrfProtocolSchema>;
 export const UniversalStudyProtocolSchema = UniversalCrfProtocolSchema;

@@ -36,7 +36,7 @@ describe("Mobile & Desktop Route Groups Architecture", () => {
 
   describe("Proxy User-Agent Route Rewriting", () => {
     it("rewrites mobile requests to mobile route group", async () => {
-      const req = new NextRequest("https://fderuiter.com/proof", {
+      const req = new NextRequest("https://fderuiter.com/case-studies", {
         headers: {
           "user-agent":
             "Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148",
@@ -46,7 +46,7 @@ describe("Mobile & Desktop Route Groups Architecture", () => {
       const res = await proxy(req, fromPartial<NextFetchEvent>({}));
       expect(res).toBeDefined();
       const rewriteUrl = res?.headers.get("x-middleware-rewrite");
-      expect(rewriteUrl).toContain("/mobile/proof");
+      expect(rewriteUrl).toContain("/mobile/case-studies");
     });
 
     it("rewrites desktop requests to desktop route group", async () => {

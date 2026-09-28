@@ -6,12 +6,8 @@ import {
   extractClientIp,
 } from "@/lib/services/privacy-service";
 
-/** Routes that need Clerk's auth context: the admin area and its API, plus non-admin clerk_admin endpoints. */
-const isClerkRoute = createRouteMatcher([
-  "/admin(.*)",
-  "/api/admin(.*)",
-  "/api/case-studies(.*)",
-]);
+/** Routes that need Clerk's auth context: the admin area and its API. */
+const isClerkRoute = createRouteMatcher(["/admin(.*)", "/api/admin(.*)"]);
 const isProtectedAdminRoute = createRouteMatcher([
   "/admin(.*)",
   "/api/admin(.*)",

@@ -50,6 +50,7 @@ describe("Proxy Clerk Scope", () => {
     "/proof",
     "/offline",
     "/api/telemetry",
+    "/api/case-studies",
   ];
 
   it.each(PUBLIC_ROUTES)(
@@ -59,12 +60,7 @@ describe("Proxy Clerk Scope", () => {
     }
   );
 
-  const ADMIN_ROUTES = [
-    "/admin",
-    "/admin/login",
-    "/api/admin/case-studies",
-    "/api/case-studies",
-  ];
+  const ADMIN_ROUTES = ["/admin", "/admin/login", "/api/admin/case-studies"];
 
   it.each(ADMIN_ROUTES)(
     "admin or clerk_admin route %s reaches Clerk middleware",

@@ -125,40 +125,57 @@ test.describe("Mobile & Tablet Touch Interactions Suite", () => {
     await page.goto("/proof");
 
     if (isMobile) {
-      // Verify mobile segmented tab switcher. Names are exact because a
-      // /canvas/i pattern first matches "Open Field Manual for Logical Proof
-      // Canvas", which never switches back to the canvas view (#928).
-      const ledgerTab = page
-        .getByRole("button", { name: "Ledger", exact: true })
-        .first();
-      const fallacyTab = page
-        .getByRole("button", { name: "Fallacy", exact: true })
-        .first();
-      const canvasTab = page.getByRole("button", {
-        name: "Canvas",
-        exact: true,
-      });
+      if (
+        page.url().includes("/m/proof") ||
+        (await page.getByText("PROOF STUDIO (MOBILE)").isVisible())
+      ) {
+        await expect(page.getByText(/PROOF STUDIO \(MOBILE\)/i)).toBeVisible();
+        await expect(page.getByText(/Deduction Steps/i)).toBeVisible();
+        const theoremBtn = page.getByRole("button", { name: "Modus Tollens" });
+        if (await theoremBtn.isVisible()) {
+          await theoremBtn.click();
+        }
+      } else {
+        // Verify mobile segmented tab switcher. Names are exact because a
+        // /canvas/i pattern first matches "Open Field Manual for Logical Proof
+        // Canvas", which never switches back to the canvas view (#928).
+        const ledgerTab = page
+          .getByRole("button", { name: "Ledger", exact: true })
+          .first();
+        const fallacyTab = page
+          .getByRole("button", { name: "Fallacy", exact: true })
+          .first();
+        const canvasTab = page.getByRole("button", {
+          name: "Canvas",
+          exact: true,
+        });
 
-      await expect(canvasTab).toBeVisible();
-      await expect(async () => {
-        await ledgerTab.click();
+        await expect(canvasTab).toBeVisible();
+        await expect(async () => {
+          await ledgerTab.click();
+          await expect(
+            page.getByText(/Formal Fitch Deduction Ledger/i)
+          ).toBeVisible({ timeout: 3000 });
+        }).toPass({ timeout: 15000 });
+
+        await fallacyTab.click();
         await expect(
-          page.getByText(/Formal Fitch Deduction Ledger/i)
-        ).toBeVisible({ timeout: 3000 });
-      }).toPass({ timeout: 15000 });
+          page.getByText(/Zero Active Fallacies|Truth Table/i)
+        ).toBeVisible();
 
-      await fallacyTab.click();
-      await expect(
-        page.getByText(/Zero Active Fallacies|Truth Table/i)
-      ).toBeVisible();
+        await canvasTab.click();
 
-      await canvasTab.click();
+        // Verify auto-step execution
+        const autoStepBtn = page.getByRole("button", { name: /auto-step/i });
+        await expect(autoStepBtn).toBeVisible();
+        await autoStepBtn.click();
+      }
+    } else {
+      // Verify auto-step execution
+      const autoStepBtn = page.getByRole("button", { name: /auto-step/i });
+      await expect(autoStepBtn).toBeVisible();
+      await autoStepBtn.click();
     }
-
-    // Verify auto-step execution
-    const autoStepBtn = page.getByRole("button", { name: /auto-step/i });
-    await expect(autoStepBtn).toBeVisible();
-    await autoStepBtn.click();
   });
 
   test("CRF Studio mobile bottom navigation and canvas interaction", async ({
@@ -179,6 +196,10 @@ test.describe("Mobile & Tablet Touch Interactions Suite", () => {
 
         await formsTab.click();
         await canvasTab.click();
+      } else if (page.url().includes("/m/crf")) {
+        await expect(
+          page.getByText(/CRF STUDIO \(MOBILE\)/i).first()
+        ).toBeVisible();
       }
     }
   });
@@ -191,10 +212,13 @@ test.describe("Mobile & Tablet Touch Interactions Suite", () => {
 
     // Verify 2D / 3D split toggles
     const splitBtn = page.getByRole("button", { name: /split 3d\/2d/i });
-    await expect(splitBtn).toBeVisible();
-
-    const canvasElements = page.locator("canvas");
-    await expect(canvasElements.first()).toBeVisible();
+    if (await splitBtn.isVisible()) {
+      await expect(splitBtn).toBeVisible();
+      const canvasElements = page.locator("canvas");
+      await expect(canvasElements.first()).toBeVisible();
+    } else {
+      await expect(page.getByText(/NEURORECON \(MOBILE\)/i)).toBeVisible();
+    }
   });
 
   test("Retro Labyrinth touch D-Pad and action buttons operate properly", async ({

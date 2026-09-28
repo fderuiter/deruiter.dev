@@ -70,7 +70,10 @@ export function MobilePatrolClient() {
   };
 
   return (
-    <div className="w-full min-h-screen bg-zinc-950 text-white pb-12 flex flex-col gap-4">
+    <div
+      data-testid="patrol-shift-container"
+      className="w-full min-h-screen bg-zinc-950 text-white pb-12 flex flex-col gap-4"
+    >
       {/* Mobile Patrol Header */}
       <div className="bg-zinc-900/90 border-b border-zinc-800 p-4 sticky top-16 z-20 backdrop-blur-lg">
         <div className="flex items-center justify-between mb-2">

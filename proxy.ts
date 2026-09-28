@@ -82,9 +82,31 @@ const authMiddleware = clerkMiddleware(async (auth, req: NextRequest) => {
  * and `lib/auth/admin.ts` is admin-only -- so the rest of the site has no
  * reason to pay that cost or carry that risk.
  */
+const MOBILE_DECOUPLED_ROUTES = ["/proof", "/crf", "/neuro", "/patrol"];
+
 export function proxy(req: NextRequest, event: NextFetchEvent) {
   if (isClerkRoute(req)) {
     return authMiddleware(req, event);
+  }
+
+  const pathname = req.nextUrl.pathname;
+  if (
+    MOBILE_DECOUPLED_ROUTES.some(
+      (route) => pathname === route || pathname.startsWith(`${route}/`)
+    )
+  ) {
+    const userAgentHeader = req.headers.get("user-agent") || "";
+    const isMobileUa =
+      /android|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile/i.test(
+        userAgentHeader
+      ) || req.headers.get("sec-ch-ua-mobile") === "?1";
+
+    if (isMobileUa) {
+      const redirectUrl = req.nextUrl.clone();
+      redirectUrl.pathname = `/m${pathname}`;
+      const response = NextResponse.redirect(redirectUrl);
+      return applySecurityHeaders(response, req);
+    }
   }
 
   return decorateRequest(req);

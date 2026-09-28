@@ -317,8 +317,22 @@ export async function runPageBenchmarks(
     let routeIndex = 0;
 
     for (const route of routes) {
-      if (routeIndex > 0 && routeIndex % 5 === 0) {
+      if (routeIndex > 0 && routeIndex % 10 === 0) {
         await currentContext.close().catch(() => {});
+        if (browser) {
+          await browser.close().catch(() => {});
+        }
+        browser = await launchChromiumWithFallback({
+          headless: true,
+          args: [
+            "--no-sandbox",
+            "--disable-setuid-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-gpu",
+            "--disable-software-rasterizer",
+            "--js-flags=--max-old-space-size=4096",
+          ],
+        });
         currentContext = await browser.newContext(contextOptions);
       }
       routeIndex++;

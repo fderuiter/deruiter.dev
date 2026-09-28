@@ -59,8 +59,8 @@ GIT_PATTERNS=(
   "^git[[:space:]]+restore[[:space:]]+(\.[[:space:]]*$|--staged[[:space:]]+\.[[:space:]]*$)"
 )
 
-# Until 2026-10-01, Production deployment must be started in the Vercel
-# Dashboard. Keep the CLI guard active under CI too; no repository workflow
+# Until an approved replacement release policy is verified, Production must
+# start in the Vercel Dashboard. Keep the CLI guard active under CI too; no repository workflow
 # owns the manual Production button action (ADR 0051).
 DEPLOY_PATTERNS=(
   "^vercel[[:space:]]+.*deploy.*[[:space:]]--prebuilt([[:space:]]|$)"
@@ -69,8 +69,8 @@ DEPLOY_PATTERNS=(
 )
 DEPLOY_REASONS=(
   "--prebuilt ships a locally built artifact without rebuilding. A build whose data source was unreachable still exits 0 and bakes fallback content into every page. For Preview, run an ordinary remote build with npx vercel deploy; during the manual-release hold, start Production in Vercel Dashboard → Deployments → Create Deployment from the current main SHA."
-  "Production deployments are Dashboard-only until 2026-10-01 (ADR 0051). After CI passes, use Vercel Dashboard → Deployments → Create Deployment and select the current main SHA."
-  "Production promotion is Dashboard-only until 2026-10-01 (ADR 0051). Use Vercel Dashboard → Deployments → Create Deployment and select the current main SHA."
+  "Production deployments are Dashboard-only until an approved replacement release policy is verified (ADR 0051; issue #1168). After CI passes, use Vercel Dashboard → Deployments → Create Deployment and select the current main SHA."
+  "Production promotion is Dashboard-only until an approved replacement release policy is verified (ADR 0051; issue #1168). Use Vercel Dashboard → Deployments → Create Deployment and select the current main SHA."
 )
 
 # Other consequential provider operations are skipped under CI, where

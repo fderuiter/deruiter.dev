@@ -1,10 +1,10 @@
 # Production Deployment, Rollback & Synthetic Monitoring
 
-Until 2026-10-01, a person starts each Production deployment from the Vercel
-Dashboard after CI passes ([ADR 0051](adr/0051-manual-production-releases.md)).
-On 2026-10-01, restore automatic `main` deployment under
-[ADR 0049](adr/0049-deploy-main-on-green-ci.md) unless a new decision is
-recorded. The canonical, step-by-step release procedure is
+During the manual hold, a person starts each Production deployment from the
+Vercel Dashboard after CI passes ([ADR 0051](adr/0051-manual-production-releases.md)).
+Keep the hold until a replacement release policy is approved and verified.
+The nightly-train proposal is tracked in
+[issue #1168](https://github.com/fderuiter/portfolio/issues/1168). The canonical, step-by-step release procedure is
 [`docs/how-to/release-and-deploy.md`](docs/how-to/release-and-deploy.md). This
 guide describes the controls around that flow, the manual canary-analysis
 tooling, and the triage runbooks for the scheduled synthetic probes.

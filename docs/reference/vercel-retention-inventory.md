@@ -106,10 +106,10 @@ deployments, aliases, projects, integrations, or provider resources.
 
 ## Prevention Policy
 
-- Until 2026-10-01, all Git-triggered Vercel deployments are disabled and an
-  operator starts Production from the Dashboard after CI passes (ADR 0051).
-- On 2026-10-01, restore `main`-only automatic Production deployment under
-  ADR 0049 unless a new decision is recorded.
+- During the manual hold, all Git-triggered Vercel deployments are disabled
+  and an operator starts Production from the Dashboard after CI passes (ADR 0051).
+- Keep the hold until a replacement release policy is approved and verified;
+  the nightly-train proposal is tracked in issue #1168.
 - Retention remains one day for production and canceled deployments and seven
   days for preview and error deployments, subject to Vercel exceptions.
 - One operator-created preview may be used for a high-risk review, then its

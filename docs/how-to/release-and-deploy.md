@@ -1,12 +1,12 @@
 # Release and Deployment Workflow
 
-Last reconciled: 2026-09-24. Manual Production releases are required until
-2026-10-01 under [ADR 0051](../../adr/0051-manual-production-releases.md);
-automatic `main` deployment resumes on that date under
-[ADR 0049](../../adr/0049-deploy-main-on-green-ci.md), unless a new decision
-is recorded.
+Last reconciled: 2026-09-28. Manual Production releases remain required under
+[ADR 0051](../../adr/0051-manual-production-releases.md) until a replacement
+release policy is approved and verified. The nightly-train proposal in
+[issue #1168](https://github.com/fderuiter/portfolio/issues/1168) is scheduled
+for implementation on 2026-10-05; that date does not activate a release workflow.
 
-**In one line until October 1:** open a PR, let CI go green, squash-merge
+**During the manual hold:** open a PR, let CI go green, squash-merge
 it, then have an operator create a Production deployment from the current
 `main` commit in the Vercel Dashboard.
 
@@ -29,8 +29,10 @@ it, then have an operator create a Production deployment from the current
    Check before verifying that `deruiter.dev` points to it.
 
 Everything about production lives in Vercel. GitHub holds no deploy secrets.
-On 2026-10-01, restore automatic `main` deployments under ADR 0049 unless a
-new decision is recorded.
+Keep Git deployment triggers disabled until the approved replacement is
+implemented and verified. The manual hold has no automatic calendar expiry.
+[ADR 0049](../../adr/0049-deploy-main-on-green-ci.md) records the superseded
+automatic trigger.
 
 ## Buttons
 
@@ -98,7 +100,7 @@ the owner's audit of the live Vercel settings against it.
 | | Production | Preview | Development |
 | --- | --- | --- | --- |
 | **Purpose** | The public site | Checking one PR on real infrastructure before merge | Local work |
-| **Created by** | An operator in the Vercel Dashboard after a green `main` merge, until 2026-10-01 | An operator, deliberately, for one PR (below) | `npm run dev` or a local `npm run build` |
+| **Created by** | An operator in the Vercel Dashboard after a green `main` merge, during the manual hold | An operator, deliberately, for one PR (below) | `npm run dev` or a local `npm run build` |
 | **Domain** | `deruiter.dev`; `www` redirects to the apex (AGENTS.md section 18) | Its own `*.vercel.app` URL only, never a production alias | `localhost` |
 | **Access** | Public | Vercel Deployment Protection where the plan provides it; otherwise the URL is unlisted, not private | Local machine |
 | **Database** | Production Neon branch; migrations run during the build | A non-production Neon branch (#622); Preview builds never migrate | A local or personal Neon branch |
@@ -113,7 +115,7 @@ rendering runs.
 
 ### Using a Preview
 
-Git deployments are off for every branch until 2026-10-01 (`vercel.json`),
+Git deployments are off for every branch throughout the manual hold (`vercel.json`),
 so a Preview exists only when someone asks for one.
 
 1. **Request:** in the Vercel Dashboard, create a deployment of the PR's
@@ -139,10 +141,11 @@ A fresh Production deployment of `main` is correct when:
   "Upstash REST authentication passed." check before the migration step;
 - its Deployment Check passed on **Merge Gate** before the domains moved.
 
-On 2026-10-01, restore the `main`-only Git trigger
-(`"*": false, "main": true`) in `vercel.json` and verify automatic
-Production deployment under ADR 0049. Vercel does not automatically expire
-this temporary setting.
+End the hold only after a replacement ADR is approved, its implementation
+passes required CI, and an operator verifies its release trigger. Update the
+runbooks, agent instructions and guardrail together. Keep
+`git.deploymentEnabled: false` until those conditions are met; see ADR 0051
+and issue #1168. Vercel does not automatically expire this setting.
 
 ## Environment Variables
 
@@ -278,16 +281,16 @@ The QStash integration provisions `QSTASH_*`. No code reads them yet.
 
 ## Rules That Keep This Safe
 
-- **Until 2026-10-01, migrations start only after the operator creates a
-  Production deployment from the current green `main` SHA.** On October 1,
-  automatic `main` builds and migrations resume under ADR 0049 unless a new
-  decision is recorded. Every migration must be expand/contract: the live app
+- **During the manual hold, migrations start only after the operator creates a
+  Production deployment from the current green `main` SHA.** A replacement
+  release policy requires approval and verification before it takes effect.
+  Every migration must be expand/contract: the live app
   and the new app must both work against the migrated schema. Never drop or
   rename a column in the same PR that stops using it.
 - **Hold work back with a flag, not by leaving it unmerged for days.**
 - **Database recovery is roll-forward.** Add a new migration through a normal
   PR. Restore from a Neon backup only for confirmed data loss.
-- **Git-triggered deployments are paused.** Until October 1,
+- **Git-triggered deployments are paused.** Throughout the manual hold,
   `vercel.json` disables Git deployments for every branch. Preview builds
   never migrate even if an operator starts one by hand.
 
@@ -392,5 +395,5 @@ The preflight prints variable names and reasons, never values.
 
 Vercel Hobby limits build hours and Functions storage. The last readings
 (2026-09-12) were 87/100 build hours and 9.68/10 GB Functions Storage. Each
-merge to `main` costs one Vercel build. If a build fails with a quota error,
+operator-created Production release costs one Vercel build during the hold. If a build fails with a quota error,
 check Vercel Usage before retrying.

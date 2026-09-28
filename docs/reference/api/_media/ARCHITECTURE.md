@@ -562,7 +562,7 @@ To guarantee that layouts remain resilient across all devices, viewports, and ed
 
 ## Standalone Deployment Operations & Synthetic Monitoring
 
-Until 2026-10-01, an operator starts Production from Vercel Dashboard → Deployments → Create Deployment after CI passes; automatic `main` Git deployment resumes on that date under ADR 0049 unless a new decision is recorded ([temporary hold: ADR 0051](adr/0051-manual-production-releases.md); procedure in [`docs/how-to/release-and-deploy.md`](docs/how-to/release-and-deploy.md)). Around that flow:
+During the manual hold, an operator starts Production from Vercel Dashboard → Deployments → Create Deployment after CI passes; keep the hold until a replacement release policy is approved and verified ([temporary hold: ADR 0051](adr/0051-manual-production-releases.md); procedure in [`docs/how-to/release-and-deploy.md`](docs/how-to/release-and-deploy.md)). Around that flow:
 
 - **Manual Canary Analysis (`scripts/canary-analyzer.ts`)**: A library and demo command that compares caller-supplied metric windows against 0.5% 5xx error limits, 800ms p95 latency ceilings, 25% relative latency regression limits, and 2.0x Sentry exception spike ratios. No workflow or build step invokes it, and it has no live metrics source.
 - **Rollback**: A person uses Vercel's Instant Rollback. The `executeAutomatedRollback` helper only builds a webhook payload and has no caller; nothing rolls back automatically.

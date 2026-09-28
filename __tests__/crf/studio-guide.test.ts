@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { GAME_MANUALS } from "@/lib/game-manuals";
+import { getRouteSourceFilePath } from "@/lib/fs-stat-mapping";
 
 const read = (file: string) =>
   readFileSync(path.join(process.cwd(), file), "utf8");
@@ -41,6 +42,6 @@ describe("CRF Studio guide and tour (#1208)", () => {
 
   it("registers a Studio Guide manual that the page renders", () => {
     expect(GAME_MANUALS.crf.route).toBe("/crf");
-    expect(read("app/crf/page.tsx")).toContain('manualId="crf"');
+    expect(readFileSync(getRouteSourceFilePath("crf"), "utf8")).toContain('manualId="crf"');
   });
 });

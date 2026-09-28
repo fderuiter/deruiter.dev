@@ -7,8 +7,18 @@ import path from "path";
  * app/arcade/arcade.css under `[data-te-cabinet]` (ADR 0052, #817). This
  * suite reads that declaration directly, so the CSS itself is what is audited.
  */
+const cssCandidates = [
+  "app/arcade/arcade.css",
+  "app/(desktop)/arcade/arcade.css",
+  "app/(mobile)/arcade/arcade.css",
+];
+const cssRelativePath =
+  cssCandidates.find((p) =>
+    fs.existsSync(path.resolve(process.cwd(), p))
+  ) ?? "app/arcade/arcade.css";
+
 const css = fs.readFileSync(
-  path.resolve(process.cwd(), "app/arcade/arcade.css"),
+  path.resolve(process.cwd(), cssRelativePath),
   "utf-8"
 );
 

@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "fs";
 import { join } from "path";
 import { ROUTE_METADATA_CONFIGS, buildRouteMetadata } from "@/lib/seo-metadata";
+import { getRouteSourceFilePath } from "@/lib/fs-stat-mapping";
 
 /**
  * Page titles carried the site name twice.
@@ -89,12 +90,12 @@ describe("routes with inline metadata observe the same SERP bound", () => {
   const TEMPLATE_COST = " | Frederick de Ruiter".length;
 
   const inlineRoutes = [
-    { path: "app/work/laser-loon/page.tsx", label: "/work/laser-loon" },
+    { path: getRouteSourceFilePath("work/laser-loon"), label: "/work/laser-loon" },
   ];
 
-  inlineRoutes.forEach(({ path: relativePath, label }) => {
+  inlineRoutes.forEach(({ path: absolutePath, label }) => {
     it(`keeps ${label} within the 60-character SERP limit`, () => {
-      const source = readFileSync(join(process.cwd(), relativePath), "utf8");
+      const source = readFileSync(absolutePath, "utf8");
       const titles = [...source.matchAll(/title:\s*"([^"]+)"/gu)].map(
         (match) => match[1]
       );
@@ -113,7 +114,7 @@ describe("routes with inline metadata observe the same SERP bound", () => {
 
   it("brands inline titles exactly once, like the templated routes", () => {
     const source = readFileSync(
-      join(process.cwd(), "app/work/laser-loon/page.tsx"),
+      getRouteSourceFilePath("work/laser-loon"),
       "utf8"
     );
     const titles = [...source.matchAll(/title:\s*"([^"]+)"/gu)].map(

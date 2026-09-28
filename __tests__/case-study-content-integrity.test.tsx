@@ -8,10 +8,10 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { readFileSync } from "fs";
-import { join } from "path";
 import { InlineMarkdown } from "@/components/ui/InlineMarkdown";
 import { TerminologyProvider } from "@/components/providers/TerminologyProvider";
 import { FALLBACK_CASE_STUDIES } from "@/lib/case-studies-data";
+import { getRouteSourceFilePath } from "@/lib/fs-stat-mapping";
 
 /**
  * Two defects found by rendering the site locally on 2026-09-19. Both were live
@@ -137,7 +137,7 @@ describe("InlineMarkdown renders the editorial_content subset", () => {
  */
 describe("the case study detail page renders each field with the right renderer", () => {
   const source = readFileSync(
-    join(process.cwd(), "app/case-studies/[slug]/page.tsx"),
+    getRouteSourceFilePath("case-studies/[slug]"),
     "utf-8"
   );
 

@@ -105,6 +105,7 @@ export function checkRouteIndexing(
   const pageFiles = findFiles(appDir, /^page\.tsx?$/);
 
   const missingRoutes: { routePath: string; url: string }[] = [];
+  const seenUrls = new Set<string>();
 
   for (const pageFile of pageFiles) {
     const relative = path.relative(appDir, pageFile);
@@ -117,8 +118,17 @@ export function checkRouteIndexing(
       continue;
     }
 
-    let routeUrl = "/" + path.dirname(relative).replace(/\\/g, "/");
-    if (routeUrl === "/.") routeUrl = "/";
+    let relativeDir = path.dirname(relative).replace(/\\/g, "/");
+    relativeDir = relativeDir
+      .split("/")
+      .filter((s) => !(s.startsWith("(") && s.endsWith(")")))
+      .join("/");
+
+    let routeUrl = "/" + relativeDir;
+    if (routeUrl === "/." || routeUrl === "/") routeUrl = "/";
+
+    if (seenUrls.has(routeUrl)) continue;
+    seenUrls.add(routeUrl);
 
     // Skip root '/' if already handled by #case-studies or nav-work
     if (routeUrl === "/") continue;

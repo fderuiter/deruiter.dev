@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import fs from "fs";
 import path from "path";
+import { getRouteSourceFilePath } from "../lib/fs-stat-mapping";
 
 const workspaceRoot = path.resolve(__dirname, "..");
 
@@ -27,7 +28,7 @@ const countH1 = (source: string): number =>
 describe("Page heading hierarchy", () => {
   it("gives the CRF studio route exactly one page-level heading", () => {
     const source = fs.readFileSync(
-      path.join(workspaceRoot, "app/crf/page.tsx"),
+      getRouteSourceFilePath("crf"),
       "utf8"
     );
     expect(countH1(source)).toBe(1);
@@ -48,12 +49,12 @@ describe("Page heading hierarchy", () => {
   it("keeps the studio routes' page headings stable", () => {
     // The sibling studios were fixed the same way; they must not regress.
     for (const route of [
-      "app/neuro/page.tsx",
-      "app/patrol/page.tsx",
-      "app/simulator/page.tsx",
-      "app/crf/page.tsx",
+      "neuro",
+      "patrol",
+      "simulator",
+      "crf",
     ]) {
-      const source = fs.readFileSync(path.join(workspaceRoot, route), "utf8");
+      const source = fs.readFileSync(getRouteSourceFilePath(route), "utf8");
       expect(countH1(source), `${route} must declare exactly one h1`).toBe(1);
     }
   });

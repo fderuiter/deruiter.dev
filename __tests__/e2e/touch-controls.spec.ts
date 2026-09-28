@@ -206,18 +206,18 @@ test.describe("Mobile & Tablet Touch Interactions Suite", () => {
 
   test("Neuro Simulator view mode toggles and slice canvas rendering", async ({
     page,
+    isMobile,
   }) => {
     await page.goto("/neuro");
-    await page.waitForTimeout(400);
 
-    // Verify 2D / 3D split toggles
-    const splitBtn = page.getByRole("button", { name: /split 3d\/2d/i });
-    if (await splitBtn.isVisible()) {
+    if (isMobile || page.url().includes("/m/neuro")) {
+      await expect(page.getByText(/NEURORECON \(MOBILE\)/i)).toBeVisible();
+    } else {
+      // Verify 2D / 3D split toggles
+      const splitBtn = page.getByRole("button", { name: /split 3d\/2d/i });
       await expect(splitBtn).toBeVisible();
       const canvasElements = page.locator("canvas");
       await expect(canvasElements.first()).toBeVisible();
-    } else {
-      await expect(page.getByText(/NEURORECON \(MOBILE\)/i)).toBeVisible();
     }
   });
 

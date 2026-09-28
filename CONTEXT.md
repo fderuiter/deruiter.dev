@@ -325,27 +325,27 @@ Formal inference rules used to derive logical steps from valid premises:
 
 - **Omni-Channel Tiered Search Funnel**: A three-tier organic discovery architecture that captures broad top-of-funnel traffic via viral cultural asset hubs (Laser Loon vector distribution) and interactive browser utilities (CRF Studio, Proof Workspace, NeuroRecon), seamlessly channeling high-intent visitors toward high-assurance systems case studies, technical dossiers, and direct 1:1 consultation scheduling (`/schedule`).
 - **Target Search Intent Hierarchy**: The structured segmentation of search queries into three distinct intent classes: 1. High-Intent Systems & Recruiter Discovery (clinical software architecture, formal verification, embedded systems), 2. Open Creative Commons Asset Distribution (Laser Loon vector downloads, Minnesota state flag submission F277), and 3. Public Web Utility Tooling (online CDASH/ODM-XML validators, deductive logic solvers, FreeSurfer mesh repair).
-- **Generative Engine Optimization (GEO) & AEO**: The dual-track search strategy complementing traditional search engine indexation with machine-readable LLM retrieval surfaces (`/llms.txt`, `/llms-full.txt`, and clean markdown endpoints) alongside entity authority bindings (`sameAs` links to Wikidata, GitHub, and ArXiv) for AI answer engines.
-- **Contextual Engineering Bridge**: An architectural callout or drawer embedded within interactive games, utilities, and cultural asset hubs linking runtime mechanics to technical case studies and architectural decision records (ADRs) to distribute internal PageRank and convert casual visitors into technical readers.
+- **Generative Engine Optimization (GEO) & AEO**: The dual-track search strategy complementing traditional search engine indexation with machine-readable LLM retrieval surfaces (`/llms.txt`, `/llms-full.txt`, and clean markdown endpoints) alongside structured entity authority bindings (`sameAs` profiles) for AI answer engines.
+- **Contextual Engineering Bridge**: An accessible in-DOM semantic section embedded beneath interactive games, utilities, and cultural asset hubs linking runtime mechanics to technical case studies and architectural decision records (ADRs) to distribute internal PageRank and convert casual visitors into technical readers.
 
 ### Structured Data & Entity Graph Architecture
 
 - **Unified Schema.org `@graph` Engine**: A centralized structured data generator (`lib/seo.ts`) linking all page-level entities (`Person`, `WebSite`, `WebPage`, `BreadcrumbList`, `SoftwareApplication`, `TechArticle`, `VisualArtwork`) into a single interconnected JSON-LD `@graph` with deterministic `@id` URI nodes (`#person`, `#website`).
 - **Specialized Schema Dispatcher**: A tier-aware schema generator routing page types to optimal Schema.org definitions (e.g. `VisualArtwork` & `MediaObject` with Creative Commons licensing for graphic design assets like Laser Loon, `WebApplication` for browser-based interactive studios, and `SoftwareSourceCode` / `TechArticle` for deep-dive systems case studies).
-- **Expanded Rich Result Suite**: The structured data extension integrating `FAQPage`, `Dataset`, and `HowTo` schemas into high-value utilities and consultation surfaces to qualify for Google rich snippet accordion expanders and dataset indexes.
+- **Expanded Rich Result Suite**: The structured data extension integrating Schema.org `FAQPage` entities into high-value utilities and consultation surfaces to qualify for Google rich snippet accordion expanders.
 - **Visible FAQ Accordion Standard**: The accessibility and search governance rule requiring that all `FAQPage` Schema.org structured entities correspond to an accessible, visible `<FAQAccordion />` component rendered in the DOM to comply with Google anti-cloaking guidelines.
 
 ### Visual & Media Discovery
 
 - **Tiered Dynamic Social Preview Generator**: The Satori-based OpenGraph and Twitter card rendering pipeline (`lib/og-image.tsx`) providing tier-specific visual presets (`CLINICAL_SYSTEMS`, `FORMAL_VERIFICATION`, `VECTOR_ARTWORK`, `EMBEDDED_SIMULATOR`) with live GitHub telemetry badges and 1200x630 dimension compliance.
-- **Multi-Platform Social Preview Standard**: The cross-platform metadata specification guaranteeing high-fidelity rich link previews across iMessage, Slack, LinkedIn, Discord, and WhatsApp, enforcing strict sub-300KB image payloads, branded `theme-color` meta tags, and platform-specific truncation boundaries.
+- **Multi-Platform Social Preview Standard**: The cross-platform metadata specification guaranteeing high-fidelity rich link previews across iMessage, Slack, LinkedIn, Discord, and WhatsApp, enforcing strict sub-250KB image payloads, branded `theme-color` meta tags, and platform-specific truncation boundaries.
 - **Satori Brand Font Cache**: In-memory caching of local TTF font buffers (`Lexend`, `Geist Mono`) within the Satori OpenGraph rendering pipeline (`lib/og-image.tsx`) to guarantee typographic parity with the live site across social platforms.
 - **Technical Dossier Social Chip**: Standardized social preview card metadata elements displaying estimated reading time, publication date, primary language/technology badge, and architecture verification status for deep-dive case studies and blog posts.
 - **Google Image Sitemap Extension**: XML image metadata integration in `app/sitemap.ts` attaching image locations, captions, titles, and Creative Commons licensing tags directly to canonical route entries for Google Image Search crawling.
 
 ### Semantic Metadata & Search Copy Standards
 
-- **Front-Loaded SERP Optimization Standard**: The metadata authoring rule in `lib/seo-metadata.ts` restricting page titles to 50–60 characters with high-intent primary capability keywords front-loaded before brand suffixes, pairing 145–155 character action-oriented descriptions with active CTR verbs (_Explore_, _Download_, _Simulate_, _Verify_).
+- **Front-Loaded SERP Optimization Standard**: The metadata authoring rule in `lib/seo-metadata.ts` restricting page titles to 50–60 characters with high-intent primary capability keywords front-loaded before brand suffixes, pairing 140–160 character action-oriented descriptions with active CTR verbs (_Explore_, _Download_, _Simulate_, _Verify_).
 - **Long-Tail Semantic Tagging**: The practice of replacing generic single-word tags (`"React"`, `"TypeScript"`) with specialized multi-word domain search phrases (`"CDISC ODM-XML validator"`, `"Laser Loon vector download"`, `"Lean formal proof simulator"`).
 - **Structured Architectural Dossier**: The curation standard for `/llms-full.txt` providing token-efficient multi-paragraph technical abstracts, architectural trade-offs, and direct canonical links to raw markdown endpoints.
 
@@ -353,7 +353,7 @@ Formal inference rules used to derive logical steps from valid premises:
 
 - **Dynamic Sitemap Registry**: The automated route compilation architecture in `app/sitemap.ts` dynamically aggregating routes from `ROUTE_METADATA_CONFIGS` in `lib/seo-metadata.ts` and dynamic database records in `CaseStudyService` to guarantee 100% route indexing coverage with zero manual drift.
 - **Robots Crawl Boundary Invariant**: The robots governance policy in `app/robots.ts` ensuring private routes (`/admin`, `/api/`, `/_next/`) remain strictly excluded from search crawler indexing while publishing canonical sitemap endpoints.
-- **SEO & Social Integrity Invariant Audit**: Automated DX Doctor check and Vitest test suite (`__tests__/seo-social-integrity.test.ts`) asserting that all routes possess valid social preview configurations, bounded metadata lengths, non-duplicated brand suffixes, root viewport `themeColor`, and synchronized `/llms.txt` manifests.
+- **SEO & Social Integrity Invariant Audit**: The continuous verification and diagnostics suite asserting that all application routes possess valid social preview configurations, bounded metadata lengths, non-duplicated brand suffixes, root viewport theme coloring, and synchronized `/llms.txt` manifests.
 
 ## Transactional Communication & Outbound Notification Architecture
 

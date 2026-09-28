@@ -795,25 +795,6 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         ],
       },
       {
-        id: "nav-m-proof",
-        title: "Mobile Logical Proof Workspace",
-        subtitle:
-          "Touch-optimized formal logic proof workspace for mobile devices.",
-        category: "navigation",
-        url: "/m/proof",
-        icon: <IconTerminal className="w-4 h-4 text-brand-cyan" />,
-        badge: "Mobile Proof",
-        status: "Touch Optimized",
-        description:
-          "Touch-optimized formal logic proof workspace for mobile devices.",
-        techStack: ["Next.js 16", "React 19", "Propositional AST"],
-        highlights: [
-          "Touch deduction list",
-          "Fallacy diagnostics",
-          "No heavy WebGL/canvas",
-        ],
-      },
-      {
         id: "nav-neuro",
         title: "NeuroRecon: FreeSurfer Pipeline Simulator",
         subtitle:
@@ -831,20 +812,6 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           "Automated 3D surface mesh generation",
           "Context loss auto-recovery handler",
         ],
-      },
-      {
-        id: "nav-m-neuro",
-        title: "Mobile NeuroRecon Studio",
-        subtitle: "Touch-optimized neuroimaging structural morphometry viewer.",
-        category: "navigation",
-        url: "/m/neuro",
-        icon: <IconBrain className="w-4 h-4 text-brand-cyan" />,
-        badge: "Mobile Neuro",
-        status: "Touch Optimized",
-        description:
-          "Touch-optimized neuroimaging structural morphometry viewer.",
-        techStack: ["Next.js 16", "FreeSurfer Metrics"],
-        highlights: ["Subcortical volume cards", "Pipeline status history"],
       },
       {
         id: "nav-crf",
@@ -871,19 +838,6 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         ],
       },
       {
-        id: "nav-m-crf",
-        title: "Mobile CRF Studio",
-        subtitle: "Touch-optimized clinical research form studio.",
-        category: "navigation",
-        url: "/m/crf",
-        icon: <IconFileSpreadsheet className="w-4 h-4 text-brand-cyan" />,
-        badge: "Mobile EDC",
-        status: "Touch Optimized",
-        description: "Touch-optimized clinical research form studio.",
-        techStack: ["CDISC CDASH", "Next.js 16"],
-        highlights: ["Section & field cards", "CDASH metadata inspector"],
-      },
-      {
         id: "nav-patrol-shift",
         title: "Patrol Shift Studio: Midwest Ski Patrol Simulator",
         subtitle:
@@ -897,20 +851,6 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           "Midwest ski-patrol operational judgment simulation and state machine foundation.",
         techStack: ["Next.js 16", "Canvas 2D"],
         highlights: ["Triage simulation", "OET physics engine"],
-      },
-      {
-        id: "nav-m-patrol",
-        title: "Mobile Ski Patrol Shift Studio",
-        subtitle: "Touch-optimized ski patrol operational judgment simulator.",
-        category: "navigation",
-        url: "/m/patrol",
-        icon: <IconShieldCheck className="w-4 h-4 text-brand-cyan" />,
-        badge: "Mobile Patrol",
-        status: "Touch Optimized",
-        description:
-          "Touch-optimized ski patrol operational judgment simulator.",
-        techStack: ["Next.js 16", "Operational FSM"],
-        highlights: ["Triage cards", "Intervention touch choices"],
       },
       {
         id: "nav-stack",

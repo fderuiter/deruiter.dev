@@ -9,6 +9,11 @@ import MobileProofPage from "@/app/m/proof/page";
 import MobileCrfPage from "@/app/m/crf/page";
 import MobileNeuroPage from "@/app/m/neuro/page";
 import MobilePatrolPage from "@/app/m/patrol/page";
+import { metadata as mobileProofMetadata } from "@/app/m/proof/layout";
+import { metadata as mobileCrfMetadata } from "@/app/m/crf/layout";
+import { metadata as mobileNeuroMetadata } from "@/app/m/neuro/layout";
+import { metadata as mobilePatrolMetadata } from "@/app/m/patrol/layout";
+import { PUBLIC_ROUTE_REGISTRY } from "@/lib/public-routes";
 
 (
   globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }
@@ -115,6 +120,30 @@ describe("Route-Level Mobile Decoupling & Dedicated Mobile Views", () => {
       expect(typeof MobileCrfPage).toBe("function");
       expect(typeof MobileNeuroPage).toBe("function");
       expect(typeof MobilePatrolPage).toBe("function");
+    });
+
+    it("exports metadata for mobile routes canonicalizing to primary studio URLs", () => {
+      expect(mobileProofMetadata.alternates?.canonical).toBe("/proof");
+      expect(mobileCrfMetadata.alternates?.canonical).toBe("/crf");
+      expect(mobileNeuroMetadata.alternates?.canonical).toBe("/neuro");
+      expect(mobilePatrolMetadata.alternates?.canonical).toBe("/patrol");
+
+      expect(mobileProofMetadata.title).toContain(
+        "Mobile Logical Proof Workspace"
+      );
+      expect(mobileCrfMetadata.title).toContain("Mobile CRF Studio");
+      expect(mobileNeuroMetadata.title).toContain("Mobile NeuroRecon Studio");
+      expect(mobilePatrolMetadata.title).toContain(
+        "Mobile Ski Patrol Shift Studio"
+      );
+    });
+
+    it("registers mobile routes in PUBLIC_ROUTE_REGISTRY", () => {
+      const paths = PUBLIC_ROUTE_REGISTRY.map((r) => r.path);
+      expect(paths).toContain("/m/proof");
+      expect(paths).toContain("/m/crf");
+      expect(paths).toContain("/m/neuro");
+      expect(paths).toContain("/m/patrol");
     });
   });
 });

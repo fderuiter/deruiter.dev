@@ -291,8 +291,6 @@ export async function runPageBenchmarks(
         "--no-sandbox",
         "--disable-setuid-sandbox",
         "--disable-dev-shm-usage",
-        "--disable-gpu",
-        "--disable-software-rasterizer",
         "--js-flags=--max-old-space-size=4096",
       ],
     });
@@ -328,8 +326,6 @@ export async function runPageBenchmarks(
             "--no-sandbox",
             "--disable-setuid-sandbox",
             "--disable-dev-shm-usage",
-            "--disable-gpu",
-            "--disable-software-rasterizer",
             "--js-flags=--max-old-space-size=4096",
           ],
         });

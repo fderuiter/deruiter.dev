@@ -5,6 +5,7 @@ export interface RouteMetaConfig {
   title: string;
   description: string;
   path: string;
+  canonicalPath?: string;
   keywords?: string[];
   ogType?: "website" | "article";
   inLanguage?: string;
@@ -54,6 +55,7 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     description:
       "Touch-optimized clinical research form studio designed for mobile viewports, enabling interactive section and field inspection on mobile devices.",
     path: "/m/crf",
+    canonicalPath: "/crf",
     keywords: [
       "Mobile CRF Studio",
       "CDASH Mobile Forms",
@@ -86,6 +88,7 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     description:
       "Touch-optimized ski patrol operational judgment simulator built for mobile screens, allowing real-time triage and emergency intervention decisions.",
     path: "/m/patrol",
+    canonicalPath: "/patrol",
     keywords: [
       "Mobile Patrol Studio",
       "Ski Patrol Touch Triage",
@@ -101,6 +104,7 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     description:
       "Touch-optimized formal logic proof workspace tailored for handheld devices, offering interactive deduction step ledgers and fallacy diagnostics.",
     path: "/m/proof",
+    canonicalPath: "/proof",
     keywords: [
       "Mobile Proof Workspace",
       "Formal Logic Touch Ledger",
@@ -116,6 +120,7 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     description:
       "Touch-optimized neuroimaging structural morphometry viewer for mobile screens, providing subcortical volumetric metrics and FreeSurfer recon status.",
     path: "/m/neuro",
+    canonicalPath: "/neuro",
     keywords: [
       "Mobile NeuroRecon Studio",
       "Subcortical Volumetric Touch",
@@ -636,7 +641,7 @@ export function buildRouteMetadata(config: RouteMetaConfig): Metadata {
     description: config.description,
     keywords: config.keywords,
     alternates: {
-      canonical: config.path,
+      canonical: config.canonicalPath || config.path,
     },
     openGraph: {
       type: config.ogType || "website",

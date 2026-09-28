@@ -108,10 +108,12 @@ export function checkRouteIndexing(
 
   for (const pageFile of pageFiles) {
     const relative = path.relative(appDir, pageFile);
-    // Ignore internal routes, group routes, admin, or api
+    // Ignore internal routes, group routes, mobile touch aliases, admin, or api
     if (
       relative.startsWith("api") ||
       relative.startsWith("admin") ||
+      relative.startsWith("m/") ||
+      relative.startsWith("m\\") ||
       relative.includes("[")
     ) {
       continue;

@@ -17,6 +17,7 @@ import {
   CRFForm,
   CRFField,
   StudyProtocolEngine,
+  StudyReviewActor,
 } from "@/lib/crf";
 
 (
@@ -141,7 +142,8 @@ describe("ActiveFormGrid - Integration, Atomicity, Validation & Accessibility", 
         />
       );
       const field = activeForm.sections[0].fields[0];
-      const labelCell = container.querySelectorAll("tbody tr")[0]
+      const labelCell = container
+        .querySelectorAll("tbody tr")[0]
         ?.querySelectorAll("td")[3];
       expect(labelCell).toBeDefined();
       if (!labelCell) throw new Error("The first row needs a label cell");
@@ -521,6 +523,229 @@ describe("ActiveFormGrid - Integration, Atomicity, Validation & Accessibility", 
       // Press Escape to dismiss
       fireEvent.keyDown(window, { key: "Escape" });
       expect(screen.queryByRole("dialog")).toBeNull();
+    });
+  });
+
+  describe("7. Engine-Mediated Spreadsheet Mutators & Review Target Tracking", () => {
+    it("moves field to a new section using StudyProtocolEngine.moveFieldToSection", () => {
+      const field = activeForm.sections[0].fields[0];
+      const targetSec = activeForm.sections[1] || {
+        id: "sec_target",
+        title: "Target Section",
+        fields: [],
+      };
+      let testStudy = sampleStudy;
+      if (!activeForm.sections[1]) {
+        const secRes = StudyProtocolEngine.addSection(
+          sampleStudy,
+          activeForm.id,
+          targetSec
+        );
+        testStudy = secRes.study;
+      }
+
+      const res = StudyProtocolEngine.moveFieldToSection(
+        testStudy,
+        activeForm.id,
+        field.id,
+        targetSec.id
+      );
+
+      expect(res.error).toBeUndefined();
+      expect(res.study).toBeDefined();
+
+      const updatedForm = res.study.forms.find((f) => f.id === activeForm.id)!;
+      const sec0Fields = updatedForm.sections[0].fields;
+      const targetSecFields = updatedForm.sections.find(
+        (s) => s.id === targetSec.id
+      )!.fields;
+
+      expect(sec0Fields.some((f) => f.id === field.id)).toBe(false);
+      expect(targetSecFields.some((f) => f.id === field.id)).toBe(true);
+    });
+
+    it("single-cell section edit uses StudyProtocolEngine.moveFieldToSection and calls onUpdateStudy", () => {
+      let testForm = activeForm;
+      let testStudy = sampleStudy;
+      if (testForm.sections.length < 2) {
+        const secRes = StudyProtocolEngine.addSection(
+          sampleStudy,
+          activeForm.id,
+          "Section Two"
+        );
+        testStudy = secRes.study;
+        testForm = secRes.form!;
+      }
+      const targetSec = testForm.sections[1];
+      const field = testForm.sections[0].fields[0];
+
+      const { container } = render(
+        <ActiveFormGrid
+          form={testForm}
+          study={testStudy}
+          selectedFieldId={null}
+          onSelectField={onSelectFieldMock}
+          onUpdateField={onUpdateFieldMock}
+          onUpdateStudy={onUpdateStudyMock}
+        />
+      );
+
+      // Double-click section cell in row 0
+      const row0Cells = container
+        .querySelectorAll("tbody tr")[0]
+        .querySelectorAll("td");
+      // colIndex 4 is sectionId
+      const secCell = row0Cells[5];
+      fireEvent.doubleClick(secCell);
+
+      const select = container.querySelector("tbody select");
+      expect(select).not.toBeNull();
+      if (select) {
+        fireEvent.change(select, { target: { value: targetSec.id } });
+        fireEvent.blur(select);
+      }
+
+      expect(onUpdateStudyMock).toHaveBeenCalledTimes(1);
+      const updatedStudy: StudyProtocol = onUpdateStudyMock.mock.calls[0][0];
+      const updatedForm = updatedStudy.forms.find((f) => f.id === testForm.id)!;
+      const targetFields = updatedForm.sections.find(
+        (s) => s.id === targetSec.id
+      )!.fields;
+      expect(targetFields.some((f) => f.id === field.id)).toBe(true);
+    });
+
+    it("records target-renamed review event when single-cell label edit is committed", () => {
+      const field = activeForm.sections[0].fields[0];
+      const author: StudyReviewActor = {
+        name: "Audit Inspector",
+        role: "Data Manager",
+      };
+
+      // Initialize a review thread on the field
+      const threadRes = StudyProtocolEngine.addReviewComment(
+        sampleStudy,
+        field.id,
+        "Initial review comment",
+        author
+      );
+      const studyWithThread = threadRes.study;
+
+      const { container } = render(
+        <ActiveFormGrid
+          form={activeForm}
+          study={studyWithThread}
+          selectedFieldId={null}
+          onSelectField={onSelectFieldMock}
+          onUpdateField={onUpdateFieldMock}
+          onUpdateStudy={onUpdateStudyMock}
+          reviewAuthor={author}
+        />
+      );
+
+      const row0Cells = container
+        .querySelectorAll("tbody tr")[0]
+        .querySelectorAll("td");
+      const labelCell = row0Cells[3]; // label column
+      fireEvent.doubleClick(labelCell);
+
+      const input = container.querySelector("tbody input");
+      expect(input).not.toBeNull();
+      if (input) {
+        fireEvent.change(input, { target: { value: "New Audited Label" } });
+        fireEvent.blur(input);
+      }
+
+      expect(onUpdateStudyMock).toHaveBeenCalledTimes(1);
+      const updatedStudy: StudyProtocol = onUpdateStudyMock.mock.calls[0][0];
+      const thread = updatedStudy.reviewThreads?.find(
+        (t) => t.target.fieldId === field.id
+      );
+
+      expect(thread).toBeDefined();
+      const renameEvent = thread?.events.find(
+        (e) => e.type === "target-renamed"
+      );
+      expect(renameEvent).toBeDefined();
+      expect(renameEvent?.nextLabel).toBe("New Audited Label");
+      expect(renameEvent?.author.name).toBe("Audit Inspector");
+    });
+
+    it("batch paste commit records review target change events for modified fields with author metadata", async () => {
+      const field1 = activeForm.sections[0].fields[0];
+      const field2 = activeForm.sections[0].fields[1];
+      const author: StudyReviewActor = {
+        name: "Batch Builder",
+        role: "Data Manager",
+      };
+
+      // Add review threads to both fields
+      let testStudy = StudyProtocolEngine.addReviewComment(
+        sampleStudy,
+        field1.id,
+        "Comment 1",
+        author
+      ).study;
+      testStudy = StudyProtocolEngine.addReviewComment(
+        testStudy,
+        field2.id,
+        "Comment 2",
+        author
+      ).study;
+
+      render(
+        <ActiveFormGrid
+          form={activeForm}
+          study={testStudy}
+          selectedFieldId={null}
+          onSelectField={onSelectFieldMock}
+          onUpdateField={onUpdateFieldMock}
+          onUpdateStudy={onUpdateStudyMock}
+          reviewAuthor={author}
+        />
+      );
+
+      // Open paste modal
+      fireEvent.click(screen.getByRole("button", { name: /Paste \/ Fill/i }));
+
+      const textarea = screen.getByPlaceholderText(/Paste TSV\/CSV text here/i);
+      // Update field1 variable name and label, and field2 label
+      const tsvData = "VAR1_NEW\tLabel 1 New\nVAR2_OLD\tLabel 2 New";
+      fireEvent.change(textarea, { target: { value: tsvData } });
+
+      const commitBtn = screen.getByRole("button", { name: /Commit Batch/i });
+      await waitFor(() => {
+        expect((commitBtn as HTMLButtonElement).disabled).toBe(false);
+      });
+
+      fireEvent.click(commitBtn);
+
+      expect(onUpdateStudyMock).toHaveBeenCalledTimes(1);
+      const updatedStudy: StudyProtocol = onUpdateStudyMock.mock.calls[0][0];
+
+      // Verify review thread 1
+      const thread1 = updatedStudy.reviewThreads?.find(
+        (t) => t.target.fieldId === field1.id
+      );
+      expect(thread1).toBeDefined();
+      const event1 = thread1?.events.find((e) => e.type === "target-renamed");
+      expect(event1).toBeDefined();
+      expect(event1?.nextVariableName).toBe("VAR1_NEW");
+      expect(event1?.nextLabel).toBe("Label 1 New");
+      expect(event1?.author.name).toBe("Batch Builder");
+
+      // Verify review thread 2
+      const thread2 = updatedStudy.reviewThreads?.find(
+        (t) => t.target.fieldId === field2.id
+      );
+      expect(thread2).toBeDefined();
+      const event2 = thread2?.events.find((e) => e.type === "target-renamed");
+      expect(event2).toBeDefined();
+      expect(event2?.nextLabel).toBe("Label 2 New");
+      expect(event2?.author.name).toBe("Batch Builder");
+
+      // Verify protocol validation passes
+      const valResult = StudyProtocolEngine.validateProtocol(updatedStudy);
+      expect(valResult.isCompliant).toBe(true);
     });
   });
 });

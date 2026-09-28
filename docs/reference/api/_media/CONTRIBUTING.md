@@ -160,10 +160,11 @@ branches must follow conventional prefixes:
 - `jules/*` - Reserved for branches opened by the Jules agent
 
 Open pull requests against `main` and squash-merge them using a Conventional
-Commit PR title. Until 2026-10-01, an operator creates a Production
-deployment from the merged `main` SHA in the Vercel Dashboard; on October 1,
-restore automatic `main` deployment under [ADR 0049](./adr/0049-deploy-main-on-green-ci.md)
-unless a new decision is recorded. Feature branches do not deploy
+Commit PR title. During the manual hold, an operator creates a Production
+deployment from the merged `main` SHA in the Vercel Dashboard. Keep this hold
+until a replacement release policy is approved and verified under
+[ADR 0051](./adr/0051-manual-production-releases.md); the nightly-train
+proposal is tracked in [#1168](https://github.com/fderuiter/portfolio/issues/1168). Feature branches do not deploy
 automatically. See
 [Release and deployment workflow](./docs/how-to/release-and-deploy.md).
 

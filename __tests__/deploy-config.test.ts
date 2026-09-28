@@ -127,7 +127,7 @@ describe("production deploy configuration", () => {
     expect(migrationGuide).toContain("DATABASE_URL_UNPOOLED");
   });
 
-  it("documents the manual release hold and October 1 return to automation", () => {
+  it("keeps the manual release hold until an approved and verified replacement", () => {
     const runbook = read("docs/how-to/release-and-deploy.md");
     for (const step of [
       "adr/0049-deploy-main-on-green-ci.md",
@@ -138,7 +138,6 @@ describe("production deploy configuration", () => {
       "Instant Rollback",
       "vercel.json",
       "Create Deployment",
-      "2026-10-01",
     ]) {
       expect(runbook).toContain(step);
     }
@@ -148,12 +147,34 @@ describe("production deploy configuration", () => {
     expect(adr).toMatch(/"\*": false,\s*"main": true/);
 
     const temporaryAdr = read("adr/0051-manual-production-releases.md");
-    expect(temporaryAdr).toContain("2026-10-01");
+    expect(temporaryAdr).toContain("approved and verified");
+    expect(temporaryAdr).toContain("1168");
     expect(temporaryAdr).toMatch(/Deployments → Create\s+Deployment/);
 
     expect(read("AGENTS.md")).toMatch(
       /GitHub Actions runs CI and never deploys/
     );
+
+    for (const file of [
+      "AGENTS.md",
+      "ARCHITECTURE.md",
+      "CONTRIBUTING.md",
+      "DEPLOYMENT.md",
+      "adr/0008-proactive-defect-interception-strategy.md",
+      "adr/0049-deploy-main-on-green-ci.md",
+      "adr/0050-jules-consolidation-release.md",
+      "adr/0051-manual-production-releases.md",
+      "docs/how-to/release-and-deploy.md",
+      "docs/how-to/configure-integrations.md",
+      "docs/how-to/monitor-github-actions-minutes.md",
+      "docs/how-to/monitor-vercel-headroom.md",
+      "docs/how-to/restore-the-production-database.md",
+      "docs/reference/integrations-catalog.md",
+      "docs/reference/vercel-retention-inventory.md",
+      "scripts/git-guardrail.sh",
+    ]) {
+      expect(read(file), file).not.toMatch(/2026-10-01|October 1/);
+    }
   });
 
   // ADR 0049 records the removal of the GitHub release path, so it may name

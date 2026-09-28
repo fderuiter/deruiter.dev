@@ -3,9 +3,10 @@
 ## Status
 
 Accepted on 2026-09-24. Temporarily superseded for the manual-release period
-by [ADR 0051](0051-manual-production-releases.md), until 2026-10-01. On
-2026-10-01, restore this ADR's automatic `main` deployment policy unless the
-operator records a new decision. Supersedes
+by [ADR 0051](0051-manual-production-releases.md) until a replacement release
+policy is approved and verified. The nightly-train proposal is tracked in
+[issue #1168](https://github.com/fderuiter/portfolio/issues/1168); its scheduled
+implementation date does not restore this ADR's trigger. Supersedes
 [ADR 0038](0038-protected-build-once-production-releases.md) and, for
 production builds only, the migration placement in
 [ADR 0001](0001-pre-build-database-migrations.md).
@@ -42,7 +43,7 @@ deploys.
 
 - Outside the temporary manual-release period in ADR 0051, `vercel.json`
   enables Vercel's Git integration for `main` only (`"*": false,
-  "main": true`). Every other branch still builds nothing.
+"main": true`). Every other branch still builds nothing.
 - `scripts/build.js` runs `prisma migrate deploy` before `next build` when,
   and only when, the build runs on Vercel for the production environment
   (`VERCEL=1` and `VERCEL_ENV=production`). It migrates through

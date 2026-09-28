@@ -2,18 +2,25 @@
 
 ## Status
 
-Accepted on 2026-09-24. This temporarily supersedes the automatic Production
-trigger in [ADR 0049](0049-deploy-main-on-green-ci.md) until 2026-10-01.
-Automatic `main` deployment resumes on 2026-10-01 unless a new decision is
-recorded.
+Accepted on 2026-09-24; amended on 2026-09-28. This temporarily supersedes
+the automatic Production trigger in [ADR 0049](0049-deploy-main-on-green-ci.md)
+until a replacement release policy is approved and verified. The hold has
+no automatic calendar expiry.
 
 ## Context
 
 Recent automated changes caused avoidable release mistakes. The operator is
-keeping Production deployment under direct Dashboard control for a short,
-defined period while PR review and CI continue normally. The Production
+keeping Production deployment under direct Dashboard control while a
+replacement release policy is prepared and verified, with PR review and CI
+continuing normally. The Production
 Upstash REST credentials also need a verified URL/token pair before another
 build can safely run its telemetry and rate limiting paths.
+
+The operator selected a nightly release train, with implementation scheduled
+for 2026-10-05 in [issue #1168](https://github.com/fderuiter/portfolio/issues/1168).
+The original restoration deadline preceded that implementation. Keep the
+manual hold in force across this gap; the scheduled implementation date
+does not itself activate a release workflow.
 
 ## Decision
 
@@ -29,17 +36,18 @@ build can safely run its telemetry and rate limiting paths.
   local deploy command. Production builds authenticate Upstash with a REST
   `PING` and require `PONG` before running migrations; failures name the
   variable and never print credential values.
-- On 2026-10-01, restore `git.deploymentEnabled` to
-  `{ "*": false, "main": true }`, remove the temporary Dashboard-only CLI
-  guard, reconcile the release runbooks and agent instructions with ADR 0049,
-  and verify that a `main` merge is again the automatic Production trigger.
+- End the hold only after a replacement ADR is approved, its implementation
+  passes the required CI gates, and an operator verifies its release trigger.
+  Reconcile the runbooks, agent instructions and guardrail with that decision
+  in the same change. Until then, retain `git.deploymentEnabled: false` and
+  the Dashboard-only CLI guard. The nightly-train draft remains unactivated.
 
 ## Invariant Compliance
 
 - GitHub Actions remains CI-only, and Production secrets remain in Vercel.
 - PR checks and the Vercel Deployment Check continue to gate release.
-- The temporary hold is date-bounded; it does not establish manual releases as
-  the long-term policy.
+- The temporary hold ends on verified replacement readiness; it does not
+  establish manual releases as the long-term policy.
 - `npm run quality` and `npm test` are the required repository gates before
   publishing the pull request.
 
@@ -51,5 +59,5 @@ build can safely run its telemetry and rate limiting paths.
 - A Production build and its migrations happen only after that manual action.
   A rejected Upstash token stops the build before migrations and leaves the
   current live deployment serving traffic.
-- The manual gate depends on remembering the October 1 policy restoration;
-  Vercel does not automatically expire this repository setting.
+- A calendar date cannot silently restore automatic deployments. The operator
+  must approve and verify the replacement before this hold ends.

@@ -193,7 +193,7 @@ curl -X POST http://localhost:3000/api/telemetry \
 - **Credential rotation**: Generate a new REST token in the Upstash console.
   Update the Production URL and token together in Vercel project environment
   variables, then create a Production deployment from the current green `main`
-  SHA in the Dashboard. Until 2026-10-01, all Production releases are
+  SHA in the Dashboard. During the manual hold, all Production releases are
   Dashboard-only (ADR 0051). There is no dual-secret overlap window in the
   Upstash REST API, so the deployment constitutes the atomic switch.
 - **Preview namespace cleanup**: Ephemeral preview keys prefixed with `preview:`

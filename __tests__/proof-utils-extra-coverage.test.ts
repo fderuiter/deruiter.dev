@@ -114,6 +114,15 @@ describe("proof-utils extra coverage suite", () => {
 
       const iff = parseFormula("P <-> Q");
       expect(iff?.type).toBe("iff");
+
+      expect(parseFormula("P <-> ")).toEqual({ type: "var", name: "P" });
+      expect(parseFormula("P -> ")).toEqual({ type: "var", name: "P" });
+      expect(parseFormula("P || ")).toEqual({ type: "var", name: "P" });
+      expect(parseFormula("P && ")).toEqual({ type: "var", name: "P" });
+      expect(parseFormula("! ")).toBeNull();
+      expect(parseFormula("")).toBeNull();
+      expect(parseFormula("   ")).toBeNull();
+      expect(parseFormula("()")).toBeNull();
     });
 
     it("generates truth table for 0, 1, and 2 variable sets", () => {

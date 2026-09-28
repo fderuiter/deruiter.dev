@@ -1,11 +1,14 @@
 import { defineConfig } from "vitest/config";
 import path from "path";
+import os from "os";
 
 export default defineConfig({
   test: {
     environment: "jsdom",
     setupFiles: ["./vitest.setup.ts"],
     testTimeout: 30000,
+    execArgv: ["--max-old-space-size=4096", "--no-warnings"],
+    maxWorkers: Math.max(1, Math.floor(os.cpus().length / 2)),
     include: [
       "**/__tests__/proof-*.test.ts*",
       "**/__tests__/integration-*.test.tsx",

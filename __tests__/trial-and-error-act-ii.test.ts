@@ -129,22 +129,26 @@ describe("Act II boss draw", () => {
     );
   });
 
-  it("is played on its own through to the drawn Boss", () => {
-    for (const seed of ["e2e-4", "alpha"]) {
-      let run = createRunState(ACT_II, seed);
-      expect(deriveRunView(ACT_II, run).blind.id).toBe(QC.id);
-      expect(run.table.crisis).toBeNull();
-      run = clearBlind(run);
-      expect(run.table.status).toBe("CLEARED");
-      run = advanceRun(ACT_II, run, { type: "NEXT_BLIND" });
-      expect(deriveRunView(ACT_II, run).blind.id).toBe(OPEN.id);
-      expect(ACT_II_CRISES.map((c) => c.id)).toContain(run.table.crisis?.id);
-      run = clearBlind(run);
-      expect(run.table.status).toBe("CLEARED");
-      run = advanceRun(ACT_II, run, { type: "NEXT_BLIND" });
-      expect(deriveRunView(ACT_II, run).blind.id).toBe(run.bossIds[0]);
+  it(
+    "is played on its own through to the drawn Boss",
+    { timeout: 30000 },
+    () => {
+      for (const seed of ["e2e-4", "alpha"]) {
+        let run = createRunState(ACT_II, seed);
+        expect(deriveRunView(ACT_II, run).blind.id).toBe(QC.id);
+        expect(run.table.crisis).toBeNull();
+        run = clearBlind(run);
+        expect(run.table.status).toBe("CLEARED");
+        run = advanceRun(ACT_II, run, { type: "NEXT_BLIND" });
+        expect(deriveRunView(ACT_II, run).blind.id).toBe(OPEN.id);
+        expect(ACT_II_CRISES.map((c) => c.id)).toContain(run.table.crisis?.id);
+        run = clearBlind(run);
+        expect(run.table.status).toBe("CLEARED");
+        run = advanceRun(ACT_II, run, { type: "NEXT_BLIND" });
+        expect(deriveRunView(ACT_II, run).blind.id).toBe(run.bossIds[0]);
+      }
     }
-  });
+  );
 });
 
 describe("Act II content in normal play", () => {

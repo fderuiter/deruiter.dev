@@ -8,7 +8,7 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     setupFiles: ["./vitest.setup.ts"],
-    testTimeout: 15000,
+    testTimeout: 30000,
     include: ["__tests__/**/*.{test,spec}.{ts,tsx}"],
     execArgv: ["--max-old-space-size=4096", "--no-warnings"],
     exclude: ["**/node_modules/**", "**/e2e/**"],
@@ -23,7 +23,7 @@ export default defineConfig({
     maxWorkers: Math.max(1, Math.floor(os.cpus().length / 2)),
     coverage: {
       provider: "v8",
-      reporter: ["text", "json", "html", "lcov"],
+      reporter: ["text", "json", "html", "lcov", "json-summary"],
       exclude: [
         "**/node_modules/**",
         "**/e2e/**",

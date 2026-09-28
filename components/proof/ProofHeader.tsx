@@ -74,14 +74,22 @@ export const ProofHeader: React.FC<ProofHeaderProps> = ({
             Share
           </button>
           <button
-            onClick={() => setIsCustomStudioOpen(true)}
+            onClick={(event) => {
+              // Safari pointer clicks do not focus buttons automatically.
+              event.currentTarget.focus();
+              setIsCustomStudioOpen(true);
+            }}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-brand-purple/40 bg-brand-purple/10 text-brand-purple hover:bg-brand-purple/20 text-xs font-semibold transition cursor-pointer active:scale-[0.98]"
           >
             <IconPlus className="w-4 h-4" />
             Custom Studio
           </button>
           <button
-            onClick={() => setIsExportModalOpen(true)}
+            onClick={(event) => {
+              // Safari pointer clicks do not focus buttons automatically.
+              event.currentTarget.focus();
+              setIsExportModalOpen(true);
+            }}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800/80 text-slate-200 hover:bg-slate-700 text-xs font-semibold transition cursor-pointer active:scale-[0.98]"
           >
             <IconDownload className="w-4 h-4" />

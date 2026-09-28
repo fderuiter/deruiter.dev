@@ -297,16 +297,23 @@ export async function runPageBenchmarks(
             hasTouch: false,
           });
 
-    const context = await browser.newContext(contextOptions);
+    let currentContext = await browser.newContext(contextOptions);
+    let routeIndex = 0;
 
     for (const route of routes) {
+      if (routeIndex > 0 && routeIndex % 5 === 0) {
+        await currentContext.close().catch(() => {});
+        currentContext = await browser.newContext(contextOptions);
+      }
+      routeIndex++;
+
       const pageUrl = `${baseUrl.replace(/\/$/, "")}${route.path}`;
 
       const createAndConfigurePage = async (): Promise<Page> => {
-        const page = await context.newPage();
+        const page = await currentContext.newPage();
         if (throttled) {
           try {
-            const client = await context.newCDPSession(page);
+            const client = await currentContext.newCDPSession(page);
             await client.send("Emulation.setCPUThrottlingRate", {
               rate: THROTTLED_MOBILE_PROFILE.cpuSlowdownMultiplier,
             });
@@ -404,7 +411,7 @@ export async function runPageBenchmarks(
       });
     }
 
-    await context.close();
+    await currentContext.close();
   } finally {
     if (browser) {
       await browser.close();

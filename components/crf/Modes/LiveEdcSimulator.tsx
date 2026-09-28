@@ -52,7 +52,7 @@ function generateQueryId(): string {
   return generateId("qry_");
 }
 
-export interface LiveEdcSimulatorProps {
+interface LiveEdcSimulatorProps {
   study: StudyProtocol;
   simulationState?: EdcSimulationState;
   onUpdateSimulationState?: (nextState: EdcSimulationState) => void;

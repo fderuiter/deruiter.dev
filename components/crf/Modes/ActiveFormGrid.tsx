@@ -8,6 +8,7 @@ import {
   StudioMode,
   ClinicalDataType,
   StudyProtocolEngine,
+  StudyReviewActor,
   validateCdashVariableName,
 } from "@/lib/crf";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
@@ -36,6 +37,7 @@ interface ActiveFormGridProps {
   onUpdateStudy: (updatedStudy: StudyProtocol) => void;
   onSwitchMode?: (mode: StudioMode) => void;
   onAddField?: (sectionId?: string) => void;
+  reviewAuthor?: StudyReviewActor;
 }
 
 type GridColumnKey =
@@ -108,6 +110,7 @@ export const ActiveFormGrid: React.FC<ActiveFormGridProps> = ({
   onUpdateStudy,
   onSwitchMode,
   onAddField,
+  reviewAuthor,
 }) => {
   // Flatten form sections into rows
   const rows: GridRowData[] = React.useMemo(() => {
@@ -320,13 +323,28 @@ export const ActiveFormGrid: React.FC<ActiveFormGridProps> = ({
     }
 
     const trimmed = val.trim();
+    const reviewActor = reviewAuthor || {
+      name: "Study author",
+      role: "Data Manager",
+    };
+
     if (col.key === "variableName") {
       const upperVar = trimmed.toUpperCase();
       if (upperVar !== row.field.variableName) {
         if (onRenameEverywhere) {
           onRenameEverywhere(row.field.id, upperVar);
         } else {
-          onUpdateField(row.field.id, { variableName: upperVar });
+          const res = StudyProtocolEngine.renameFieldEverywhere(
+            study,
+            form.id,
+            row.field.id,
+            upperVar,
+            undefined,
+            reviewActor
+          );
+          if (!res.error && res.study) {
+            onUpdateStudy(res.study);
+          }
         }
       }
     } else if (col.key === "label") {
@@ -334,42 +352,98 @@ export const ActiveFormGrid: React.FC<ActiveFormGridProps> = ({
         if (onCommitReviewTargetChange) {
           onCommitReviewTargetChange(row.field.id, { label: trimmed });
         } else {
-          onUpdateField(row.field.id, { label: trimmed });
+          const editRes = StudyProtocolEngine.updateField(
+            study,
+            form.id,
+            row.field.id,
+            { label: trimmed }
+          );
+          if (!editRes.error && editRes.study) {
+            const auditStudy = StudyProtocolEngine.recordReviewTargetChange(
+              editRes.study,
+              row.field.id,
+              reviewActor
+            );
+            onUpdateStudy(auditStudy);
+          }
         }
       }
     } else if (col.key === "dataType") {
-      onUpdateField(row.field.id, { dataType: trimmed as ClinicalDataType });
+      const editRes = StudyProtocolEngine.updateField(
+        study,
+        form.id,
+        row.field.id,
+        { dataType: trimmed as ClinicalDataType }
+      );
+      if (!editRes.error && editRes.study) {
+        onUpdateStudy(editRes.study);
+      } else {
+        onUpdateField(row.field.id, { dataType: trimmed as ClinicalDataType });
+      }
     } else if (col.key === "sectionId") {
       if (trimmed && trimmed !== row.sectionId) {
-        // Move field to new section
-        const updatedForms = study.forms.map((f) => {
-          if (f.id !== form.id) return f;
-          const sections = f.sections.map((sec) => {
-            // Remove field if present
-            const filtered = sec.fields.filter(
-              (fld) => fld.id !== row.field.id
-            );
-            if (sec.id === trimmed) {
-              return { ...sec, fields: [...filtered, row.field] };
-            }
-            return { ...sec, fields: filtered };
-          });
-          return { ...f, sections };
-        });
-        onUpdateStudy({ ...study, forms: updatedForms });
+        const moveRes = StudyProtocolEngine.moveFieldToSection(
+          study,
+          form.id,
+          row.field.id,
+          trimmed
+        );
+        if (!moveRes.error && moveRes.study) {
+          onUpdateStudy(moveRes.study);
+        }
       }
     } else if (col.key === "required") {
       const isReq = trimmed === "true" || trimmed === "1" || trimmed === "yes";
-      onUpdateField(row.field.id, { required: isReq });
+      const editRes = StudyProtocolEngine.updateField(
+        study,
+        form.id,
+        row.field.id,
+        { required: isReq }
+      );
+      if (!editRes.error && editRes.study) {
+        onUpdateStudy(editRes.study);
+      } else {
+        onUpdateField(row.field.id, { required: isReq });
+      }
     } else if (col.key === "unit") {
-      onUpdateField(row.field.id, { unit: trimmed });
+      const editRes = StudyProtocolEngine.updateField(
+        study,
+        form.id,
+        row.field.id,
+        { unit: trimmed }
+      );
+      if (!editRes.error && editRes.study) {
+        onUpdateStudy(editRes.study);
+      } else {
+        onUpdateField(row.field.id, { unit: trimmed });
+      }
     } else if (col.key === "columnSpan") {
       const num = parseInt(trimmed, 10);
       if (!isNaN(num) && num >= 1 && num <= 12) {
-        onUpdateField(row.field.id, { columnSpan: num });
+        const editRes = StudyProtocolEngine.updateField(
+          study,
+          form.id,
+          row.field.id,
+          { columnSpan: num }
+        );
+        if (!editRes.error && editRes.study) {
+          onUpdateStudy(editRes.study);
+        } else {
+          onUpdateField(row.field.id, { columnSpan: num });
+        }
       }
     } else if (col.key === "codelistId") {
-      onUpdateField(row.field.id, { codelistId: trimmed || undefined });
+      const editRes = StudyProtocolEngine.updateField(
+        study,
+        form.id,
+        row.field.id,
+        { codelistId: trimmed || undefined }
+      );
+      if (!editRes.error && editRes.study) {
+        onUpdateStudy(editRes.study);
+      } else {
+        onUpdateField(row.field.id, { codelistId: trimmed || undefined });
+      }
     } else if (col.key === "acrfAnnotation") {
       const meta = row.field.cdashMetadata || {
         domain: form.domain,
@@ -378,9 +452,19 @@ export const ActiveFormGrid: React.FC<ActiveFormGridProps> = ({
         core: "O",
         acrfAnnotation: trimmed,
       };
-      onUpdateField(row.field.id, {
-        cdashMetadata: { ...meta, acrfAnnotation: trimmed },
-      });
+      const editRes = StudyProtocolEngine.updateField(
+        study,
+        form.id,
+        row.field.id,
+        { cdashMetadata: { ...meta, acrfAnnotation: trimmed } }
+      );
+      if (!editRes.error && editRes.study) {
+        onUpdateStudy(editRes.study);
+      } else {
+        onUpdateField(row.field.id, {
+          cdashMetadata: { ...meta, acrfAnnotation: trimmed },
+        });
+      }
     }
 
     setEditingCell(null);
@@ -634,118 +718,117 @@ export const ActiveFormGrid: React.FC<ActiveFormGridProps> = ({
     }
 
     let currentStudy = study;
-
-    // Apply variable renames first via Sentinel / renameFieldEverywhere
-    for (const upd of pendingBatchUpdates) {
-      if (upd.colKey === "variableName") {
-        const res = StudyProtocolEngine.renameFieldEverywhere(
-          currentStudy,
-          form.id,
-          upd.fieldId,
-          upd.newValue
-        );
-        if (res.error) {
-          // Sentinel rename failed: abort batch atomically with zero mutations!
-          return;
-        }
-        currentStudy = res.study;
-      }
-    }
-
-    // Apply other property updates and sectionId movements
-    const targetForm = currentStudy.forms.find((f) => f.id === form.id);
-    if (!targetForm) return;
+    const reviewActor = reviewAuthor || {
+      name: "Study author",
+      role: "Data Manager",
+    };
 
     // Group updates by fieldId
     const updatesByFieldId = new Map<string, CellUpdate[]>();
     for (const upd of pendingBatchUpdates) {
-      if (upd.colKey !== "variableName") {
-        const list = updatesByFieldId.get(upd.fieldId) || [];
-        list.push(upd);
-        updatesByFieldId.set(upd.fieldId, list);
-      }
+      const list = updatesByFieldId.get(upd.fieldId) || [];
+      list.push(upd);
+      updatesByFieldId.set(upd.fieldId, list);
     }
 
-    // Map every field in targetForm and track its target sectionId
-    const fieldMap = new Map<
-      string,
-      { field: CRFField; targetSectionId: string }
-    >();
+    for (const [fieldId, updates] of updatesByFieldId.entries()) {
+      const varUpdate = updates.find((u) => u.colKey === "variableName");
+      const labelUpdate = updates.find((u) => u.colKey === "label");
+      const secUpdate = updates.find((u) => u.colKey === "sectionId");
 
-    for (const sec of targetForm.sections) {
-      for (const fld of sec.fields) {
-        const updatedField = { ...fld };
-        let targetSecId = sec.id;
+      // 1. If variableName is updated, call renameFieldEverywhere
+      if (varUpdate) {
+        const renameRes = StudyProtocolEngine.renameFieldEverywhere(
+          currentStudy,
+          form.id,
+          fieldId,
+          varUpdate.newValue,
+          labelUpdate ? labelUpdate.newValue : undefined,
+          reviewActor
+        );
+        if (renameRes.error) return; // abort batch
+        currentStudy = renameRes.study;
+      }
 
-        const fieldUpdates = updatesByFieldId.get(fld.id);
-        if (fieldUpdates) {
-          for (const upd of fieldUpdates) {
-            if (upd.colKey === "label") {
-              updatedField.label = upd.newValue;
-            } else if (upd.colKey === "dataType") {
-              updatedField.dataType = upd.newValue as ClinicalDataType;
-            } else if (upd.colKey === "required") {
-              const lower = upd.newValue.toLowerCase();
-              updatedField.required =
-                lower === "true" || lower === "1" || lower === "yes";
-            } else if (upd.colKey === "unit") {
-              updatedField.unit = upd.newValue;
-            } else if (upd.colKey === "columnSpan") {
-              updatedField.columnSpan = parseInt(upd.newValue, 10);
-            } else if (upd.colKey === "codelistId") {
-              updatedField.codelistId = upd.newValue || undefined;
-            } else if (upd.colKey === "acrfAnnotation") {
-              const meta = updatedField.cdashMetadata || {
-                domain: targetForm.domain,
-                sdtmVariable: updatedField.variableName,
-                cdashLabel: updatedField.label,
-                core: "O",
-                acrfAnnotation: upd.newValue,
-              };
-              updatedField.cdashMetadata = {
-                ...meta,
-                acrfAnnotation: upd.newValue,
-              };
-            } else if (upd.colKey === "sectionId") {
-              const matchedSec = targetForm.sections.find(
-                (s) =>
-                  s.id === upd.newValue ||
-                  s.title.trim().toLowerCase() ===
-                    upd.newValue.trim().toLowerCase()
-              );
-              if (!matchedSec) {
-                // Section invalid: abort batch atomically with zero changes!
-                return;
-              }
-              targetSecId = matchedSec.id;
-            }
+      // 2. If sectionId is updated, call moveFieldToSection
+      if (secUpdate) {
+        const moveRes = StudyProtocolEngine.moveFieldToSection(
+          currentStudy,
+          form.id,
+          fieldId,
+          secUpdate.newValue
+        );
+        if (moveRes.error) return; // abort batch
+        currentStudy = moveRes.study;
+      }
+
+      // 3. Process remaining property updates via updateField
+      const otherUpdates = updates.filter(
+        (u) =>
+          u.colKey !== "variableName" &&
+          u.colKey !== "sectionId" &&
+          !(u.colKey === "label" && varUpdate)
+      );
+
+      if (otherUpdates.length > 0) {
+        const currentField = StudyProtocolEngine.getField(
+          currentStudy,
+          form.id,
+          fieldId
+        )?.field;
+
+        const fieldPartial: Partial<CRFField> = {};
+        for (const upd of otherUpdates) {
+          if (upd.colKey === "label") {
+            fieldPartial.label = upd.newValue;
+          } else if (upd.colKey === "dataType") {
+            fieldPartial.dataType = upd.newValue as ClinicalDataType;
+          } else if (upd.colKey === "required") {
+            const lower = upd.newValue.toLowerCase();
+            fieldPartial.required =
+              lower === "true" || lower === "1" || lower === "yes";
+          } else if (upd.colKey === "unit") {
+            fieldPartial.unit = upd.newValue;
+          } else if (upd.colKey === "columnSpan") {
+            fieldPartial.columnSpan = parseInt(upd.newValue, 10);
+          } else if (upd.colKey === "codelistId") {
+            fieldPartial.codelistId = upd.newValue || undefined;
+          } else if (upd.colKey === "acrfAnnotation") {
+            const meta = currentField?.cdashMetadata || {
+              domain: form.domain,
+              sdtmVariable: currentField?.variableName || upd.fieldVar,
+              cdashLabel: currentField?.label || upd.newValue,
+              core: "O",
+              acrfAnnotation: upd.newValue,
+            };
+            fieldPartial.cdashMetadata = {
+              ...meta,
+              acrfAnnotation: upd.newValue,
+            };
           }
         }
 
-        fieldMap.set(fld.id, {
-          field: updatedField,
-          targetSectionId: targetSecId,
-        });
+        const editRes = StudyProtocolEngine.updateField(
+          currentStudy,
+          form.id,
+          fieldId,
+          fieldPartial
+        );
+        if (editRes.error) return; // abort batch
+        currentStudy = editRes.study;
+
+        if (fieldPartial.label !== undefined) {
+          currentStudy = StudyProtocolEngine.recordReviewTargetChange(
+            currentStudy,
+            fieldId,
+            reviewActor
+          );
+        }
       }
     }
 
-    // Rebuild sections with fields placed in targetSectionId
-    const nextSections = targetForm.sections.map((sec) => {
-      const secFields: CRFField[] = [];
-      for (const [_, item] of fieldMap.entries()) {
-        if (item.targetSectionId === sec.id) {
-          secFields.push(item.field);
-        }
-      }
-      return { ...sec, fields: secFields };
-    });
-
-    const nextForms = currentStudy.forms.map((f) =>
-      f.id === form.id ? { ...f, sections: nextSections } : f
-    );
-
-    // Commit whole study atomically
-    onUpdateStudy({ ...currentStudy, forms: nextForms });
+    // Commit whole study state transition atomically
+    onUpdateStudy(currentStudy);
     setPasteModalOpen(false);
     setPendingBatchUpdates([]);
     setRawPasteText("");

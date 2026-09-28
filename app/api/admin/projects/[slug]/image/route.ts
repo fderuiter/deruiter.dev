@@ -1,6 +1,4 @@
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
-import { isCurrentUserAdmin } from "@/lib/auth/admin";
 import {
   ProjectImageService,
   MAX_PROJECT_IMAGE_SIZE_BYTES,
@@ -35,26 +33,7 @@ export const POST = createApiHandler(
       return applySecurityHeaders(res, req);
     }
 
-    // 1. Enforce Server-Side Administrator Authorization
-    const { userId } = await auth();
-    if (!userId) {
-      const res = NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
-      return applySecurityHeaders(res, req);
-    }
-
-    const isAdmin = await isCurrentUserAdmin();
-    if (!isAdmin) {
-      const res = NextResponse.json(
-        { error: "Administrator access required" },
-        { status: 403 }
-      );
-      return applySecurityHeaders(res, req);
-    }
-
-    // 2. Parse Multipart Form Data Payload
+    // Parse Multipart Form Data Payload
     try {
       const contentLength = req.headers.get("content-length");
       if (
@@ -167,24 +146,6 @@ export const DELETE = createApiHandler(
       const res = NextResponse.json(
         { error: "Project slug parameter is required" },
         { status: 400 }
-      );
-      return applySecurityHeaders(res, req);
-    }
-
-    const { userId } = await auth();
-    if (!userId) {
-      const res = NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
-      return applySecurityHeaders(res, req);
-    }
-
-    const isAdmin = await isCurrentUserAdmin();
-    if (!isAdmin) {
-      const res = NextResponse.json(
-        { error: "Administrator access required" },
-        { status: 403 }
       );
       return applySecurityHeaders(res, req);
     }

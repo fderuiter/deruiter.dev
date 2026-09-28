@@ -124,8 +124,9 @@ describe("API Admin Project Image Upload Route", () => {
     vi.restoreAllMocks();
   });
 
-  it("returns 401 Unauthorized when request is unauthenticated (no userId)", async () => {
+  it("returns 403 Forbidden when request is unauthenticated (no userId)", async () => {
     vi.mocked(auth).mockResolvedValue(fromPartial({ userId: null }));
+    vi.mocked(isCurrentUserAdmin).mockResolvedValue(false);
 
     const req = createMultipartRequest(
       "http://localhost:3000/api/admin/projects/laser-loon/image",
@@ -141,10 +142,10 @@ describe("API Admin Project Image Upload Route", () => {
     const res = await POST(req, {
       params: Promise.resolve({ slug: "laser-loon" }),
     });
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(403);
 
     const data = await res.json();
-    expect(data.error).toMatch(/Authentication required/i);
+    expect(data.error).toMatch(/Administrator access required/i);
   });
 
   it("returns 403 Forbidden when user is authenticated but not an admin", async () => {

@@ -4,7 +4,6 @@ import { CaseStudyService } from "@/lib/services/case-study-service";
 import { createApiHandler } from "@/lib/route-wrapper";
 import { sanitizeError } from "@/lib/error-sanitization";
 import { checkRequestSubmissionRateLimit } from "@/lib/moderation";
-import { isCurrentUserAdmin } from "@/lib/auth/admin";
 import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
@@ -31,13 +30,6 @@ export const GET = createApiHandler(
 
 export const POST = createApiHandler(
   async (req: NextRequest, { data }) => {
-    if (!(await isCurrentUserAdmin())) {
-      return NextResponse.json(
-        { error: "Administrator access required" },
-        { status: 403 }
-      );
-    }
-
     try {
       const rateLimitCheck = checkRequestSubmissionRateLimit(req);
       if (rateLimitCheck.isRateLimited) {

@@ -8,6 +8,7 @@ import {
   AuditTrailEntry,
   ElectronicSignature,
   SubjectFormStatus,
+  EdcSimulationState,
 } from "@/lib/crf/types";
 import { evaluateRule } from "@/lib/crf/ast-evaluator";
 import {
@@ -51,8 +52,10 @@ function generateQueryId(): string {
   return generateId("qry_");
 }
 
-interface LiveEdcSimulatorProps {
+export interface LiveEdcSimulatorProps {
   study: StudyProtocol;
+  simulationState?: EdcSimulationState;
+  onUpdateSimulationState?: (nextState: EdcSimulationState) => void;
 }
 
 type UserRole =
@@ -64,18 +67,22 @@ type EdcSubView = "form_entry" | "subject_matrix" | "audit_trail" | "queries";
 
 export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
   study,
+  simulationState,
+  onUpdateSimulationState,
 }) => {
   const { evaluateFormula } = useCrfService();
   const { announce } = useAnnouncer();
   const [subView, setSubView] = useState<EdcSubView>("form_entry");
   const [subjectId, setSubjectId] = useState("001-101");
-  const [availableSubjects, setAvailableSubjects] = useState<string[]>([
-    "001-101",
-    "001-102",
-    "001-103",
-  ]);
   const [newSubjectInput, setNewSubjectInput] = useState("");
   const [isAddingSubject, setIsAddingSubject] = useState(false);
+
+  const initialSimState = simulationState ?? study.simulationState;
+
+  const [availableSubjects, setAvailableSubjects] = useState<string[]>(
+    () =>
+      initialSimState?.availableSubjects ?? ["001-101", "001-102", "001-103"]
+  );
 
   const [activeVisitId, setActiveVisitId] = useState<string>(
     study.visits[0]?.id || ""
@@ -88,50 +95,107 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
   // Subject Form Values State: Map<subjectId_visitId_fieldId, value>
   const [formValues, setFormValues] = useState<
     Record<string, string | number | boolean | null>
-  >({
-    "001-101_v_screen_f_brthyr": 1982,
-    "001-101_v_screen_f_age": 44,
-    "001-101_v_screen_f_sex": "M",
-    "001-101_v_screen_f_height": 178,
-    "001-101_v_screen_f_weight": 78,
-    "001-101_v_screen_f_sysbp": 132,
-    "001-101_v_screen_f_diabp": 84,
-    "001-101_v_screen_f_pulse": 72,
-    "001-101_v_screen_f_temp": 36.8,
-  });
+  >(
+    () =>
+      initialSimState?.formValues ?? {
+        "001-101_v_screen_f_brthyr": 1982,
+        "001-101_v_screen_f_age": 44,
+        "001-101_v_screen_f_sex": "M",
+        "001-101_v_screen_f_height": 178,
+        "001-101_v_screen_f_weight": 78,
+        "001-101_v_screen_f_sysbp": 132,
+        "001-101_v_screen_f_diabp": 84,
+        "001-101_v_screen_f_pulse": 72,
+        "001-101_v_screen_f_temp": 36.8,
+      }
+  );
 
   // CRA SDV Verification State: Map<subjectId_visitId_fieldId, { verified: boolean; timestamp: string }>
   const [sdvMap, setSdvMap] = useState<
     Record<string, { verified: boolean; timestamp: string; auditedBy: string }>
-  >({});
+  >(() => initialSimState?.sdvMap ?? {});
 
   // PI Form Lock State: Map<subjectId_visitId_formId, { locked: boolean; lockedBy: string; timestamp: string }>
   const [lockedForms, setLockedForms] = useState<
     Record<string, { locked: boolean; lockedBy: string; timestamp: string }>
-  >({});
+  >(() => initialSimState?.lockedForms ?? {});
 
   // Queries State
-  const [queries, setQueries] = useState<EDCQuery[]>([]);
+  const [queries, setQueries] = useState<EDCQuery[]>(
+    () => initialSimState?.queries ?? []
+  );
 
   // Audit Trail State
-  const [auditLog, setAuditLog] = useState<AuditTrailEntry[]>([
-    {
-      id: "aud_init_1",
-      timestamp: "2026-08-15T08:30:00Z",
-      subjectId: "001-101",
-      formId: study.forms[0]?.id || "form_dm",
-      fieldId: "f_brthyr",
-      fieldName: "BRTHYR",
-      previousValue: null,
-      newValue: 1982,
-      changedBy: "Dr. Sarah Jenkins (Site CRC)",
-      userRole: "Site Coordinator",
-      reasonForChange: "Initial baseline data entry from hospital records",
-    },
-  ]);
+  const [auditLog, setAuditLog] = useState<AuditTrailEntry[]>(
+    () =>
+      initialSimState?.auditLog ?? [
+        {
+          id: "aud_init_1",
+          timestamp: "2026-08-15T08:30:00Z",
+          subjectId: "001-101",
+          formId: study.forms[0]?.id || "form_dm",
+          fieldId: "f_brthyr",
+          fieldName: "BRTHYR",
+          previousValue: null,
+          newValue: 1982,
+          changedBy: "Dr. Sarah Jenkins (Site CRC)",
+          userRole: "Site Coordinator",
+          reasonForChange: "Initial baseline data entry from hospital records",
+        },
+      ]
+  );
 
   // Signatures State
-  const [signatures, setSignatures] = useState<ElectronicSignature[]>([]);
+  const [signatures, setSignatures] = useState<ElectronicSignature[]>(
+    () => initialSimState?.signatures ?? []
+  );
+
+  const lastEmittedStateRef = React.useRef<EdcSimulationState | null>(null);
+  const activeSimState = simulationState ?? study.simulationState;
+
+  useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
+    if (activeSimState && activeSimState !== lastEmittedStateRef.current) {
+      if (activeSimState.formValues !== undefined)
+        setFormValues(activeSimState.formValues);
+      if (activeSimState.sdvMap !== undefined) setSdvMap(activeSimState.sdvMap);
+      if (activeSimState.lockedForms !== undefined)
+        setLockedForms(activeSimState.lockedForms);
+      if (activeSimState.queries !== undefined)
+        setQueries(activeSimState.queries);
+      if (activeSimState.auditLog !== undefined)
+        setAuditLog(activeSimState.auditLog);
+      if (activeSimState.signatures !== undefined)
+        setSignatures(activeSimState.signatures);
+      if (activeSimState.availableSubjects !== undefined)
+        setAvailableSubjects(activeSimState.availableSubjects);
+    }
+  }, [activeSimState]);
+
+  useEffect(() => {
+    if (onUpdateSimulationState) {
+      const nextState: EdcSimulationState = {
+        formValues,
+        sdvMap,
+        lockedForms,
+        queries,
+        auditLog,
+        signatures,
+        availableSubjects,
+      };
+      lastEmittedStateRef.current = nextState;
+      onUpdateSimulationState(nextState);
+    }
+  }, [
+    formValues,
+    sdvMap,
+    lockedForms,
+    queries,
+    auditLog,
+    signatures,
+    availableSubjects,
+    onUpdateSimulationState,
+  ]);
 
   // Reason For Change Modal State
   const [pendingChange, setPendingChange] = useState<{

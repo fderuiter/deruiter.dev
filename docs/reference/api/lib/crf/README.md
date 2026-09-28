@@ -80,6 +80,12 @@ Re-exports [AuditTrailEntry](types/interfaces/AuditTrailEntry.md)
 
 ***
 
+### AuditTrailEntrySchema
+
+Re-exports [AuditTrailEntrySchema](universal-schema/variables/AuditTrailEntrySchema.md)
+
+***
+
 ### autoFixAllViolations
 
 Re-exports [autoFixAllViolations](cdisc-conformance-linter/functions/autoFixAllViolations.md)
@@ -614,6 +620,24 @@ Re-exports [EDCQuery](types/interfaces/EDCQuery.md)
 
 ***
 
+### EDCQuerySchema
+
+Re-exports [EDCQuerySchema](universal-schema/variables/EDCQuerySchema.md)
+
+***
+
+### EdcSimulationState
+
+Re-exports [EdcSimulationState](types/interfaces/EdcSimulationState.md)
+
+***
+
+### EdcSimulationStateSchema
+
+Re-exports [EdcSimulationStateSchema](universal-schema/variables/EdcSimulationStateSchema.md)
+
+***
+
 ### EditCheckRule
 
 Re-exports [EditCheckRule](types/interfaces/EditCheckRule.md)
@@ -629,6 +653,12 @@ Re-exports [EditCheckRuleSchema](universal-schema/variables/EditCheckRuleSchema.
 ### ElectronicSignature
 
 Re-exports [ElectronicSignature](types/interfaces/ElectronicSignature.md)
+
+***
+
+### ElectronicSignatureSchema
+
+Re-exports [ElectronicSignatureSchema](universal-schema/variables/ElectronicSignatureSchema.md)
 
 ***
 
@@ -2255,6 +2285,12 @@ Re-exports [UniversalCrfVisit](universal-schema/type-aliases/UniversalCrfVisit.m
 ### UniversalCrfVisitSchema
 
 Re-exports [UniversalCrfVisitSchema](universal-schema/variables/UniversalCrfVisitSchema.md)
+
+***
+
+### UniversalEdcSimulationState
+
+Re-exports [UniversalEdcSimulationState](universal-schema/type-aliases/UniversalEdcSimulationState.md)
 
 ***
 

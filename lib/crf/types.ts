@@ -332,6 +332,8 @@ export interface StudyProtocol {
   testScenarios?: TestScenario[];
   /** Local authoring discussion and lifecycle history, separate from EDC audit data. */
   reviewThreads?: StudyReviewThread[];
+  /** Document-level EDC simulation state (audit trail entries, electronic signatures, form values). */
+  simulationState?: EdcSimulationState;
 }
 
 /** Local authoring-review roles, unrelated to EDC permissions or audit roles. */
@@ -485,6 +487,22 @@ export interface ElectronicSignature {
   meaning:
     "Author" | "Investigator Approval" | "Data Lock" | "Monitor Verification";
   digest: string; // Cryptographic SHA-256 simulated signature hash
+}
+
+export interface EdcSimulationState {
+  auditLog?: AuditTrailEntry[];
+  signatures?: ElectronicSignature[];
+  formValues?: Record<string, string | number | boolean | null>;
+  sdvMap?: Record<
+    string,
+    { verified: boolean; timestamp: string; auditedBy: string }
+  >;
+  lockedForms?: Record<
+    string,
+    { locked: boolean; lockedBy: string; timestamp: string }
+  >;
+  queries?: EDCQuery[];
+  availableSubjects?: string[];
 }
 
 export type ComplianceSeverity = "error" | "warning" | "notice";

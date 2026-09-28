@@ -112,6 +112,14 @@ Local authoring discussion and lifecycle history, separate from EDC audit data.
 
 ***
 
+### simulationState?
+
+> `optional` **simulationState?**: [`EdcSimulationState`](EdcSimulationState.md)
+
+Document-level EDC simulation state (audit trail entries, electronic signatures, form values).
+
+***
+
 ### sponsor
 
 > **sponsor**: `string`

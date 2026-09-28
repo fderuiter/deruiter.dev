@@ -21,6 +21,7 @@
 - [CRFForm](interfaces/CRFForm.md)
 - [CRFSection](interfaces/CRFSection.md)
 - [EDCQuery](interfaces/EDCQuery.md)
+- [EdcSimulationState](interfaces/EdcSimulationState.md)
 - [EditCheckRule](interfaces/EditCheckRule.md)
 - [ElectronicSignature](interfaces/ElectronicSignature.md)
 - [ExportDocxOptions](interfaces/ExportDocxOptions.md)

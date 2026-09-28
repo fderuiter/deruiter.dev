@@ -31,6 +31,7 @@ import {
   SectionImpactPreview,
   SlashCommandItem,
   getStudyBranding,
+  EdcSimulationState,
 } from "@/lib/crf";
 import { useStudyAutosave } from "@/hooks/useStudyAutosave";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
@@ -589,6 +590,19 @@ export const CRFStudioContainer: React.FC = () => {
       setStudy(newStudy);
     },
     [study]
+  );
+
+  const handleUpdateSimulationState = useCallback(
+    (nextSimulationState: EdcSimulationState) => {
+      setStudy((prev) => {
+        if (prev.simulationState === nextSimulationState) return prev;
+        return {
+          ...prev,
+          simulationState: nextSimulationState,
+        };
+      });
+    },
+    []
   );
 
   const handleAddReviewComment = useCallback(
@@ -1798,7 +1812,13 @@ export const CRFStudioContainer: React.FC = () => {
 
         {activeMode === "rules" && <RuleGraphStudio study={study} />}
 
-        {activeMode === "edc" && <LiveEdcSimulator study={study} />}
+        {activeMode === "edc" && (
+          <LiveEdcSimulator
+            study={study}
+            simulationState={study.simulationState}
+            onUpdateSimulationState={handleUpdateSimulationState}
+          />
+        )}
 
         {activeMode === "acrf" && (
           <AcrfOverlayViewer

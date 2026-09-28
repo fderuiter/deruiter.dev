@@ -1,8 +1,5 @@
 import { NextResponse } from "next/server";
-import {
-  validateRouteInitialization,
-  validateSyncRequest,
-} from "@/lib/security";
+import { validateRouteInitialization } from "@/lib/security";
 import { SyncParamsSchema } from "@/lib/schemas";
 import { MaintenanceService } from "@/lib/services/maintenance-service";
 import { createApiHandler } from "@/lib/route-wrapper";
@@ -14,11 +11,6 @@ validateRouteInitialization();
 
 export const GET = createApiHandler(
   async (req) => {
-    const authResult = validateSyncRequest(req);
-    if (!authResult.isValid && authResult.errorResponse) {
-      return authResult.errorResponse;
-    }
-
     try {
       const url = new URL(req.url);
       const batchParam = url.searchParams.get("batch");

@@ -31,9 +31,12 @@ const { proxy } = await import("@/proxy");
 
 const event = fromPartial<NextFetchEvent>({});
 
-const call = async (pathname: string) => {
+const call = async (pathname: string, method = "GET") => {
   clerkInvocations.length = 0;
-  await proxy(new NextRequest(`http://localhost:3000${pathname}`), event);
+  await proxy(
+    new NextRequest(`http://localhost:3000${pathname}`, { method }),
+    event
+  );
   return clerkInvocations;
 };
 
@@ -42,7 +45,7 @@ describe("Proxy Clerk Scope", () => {
     clerkInvocations.length = 0;
   });
 
-  const PUBLIC_ROUTES = [
+  const PUBLIC_GET_ROUTES = [
     "/",
     "/arcade",
     "/arcade/working-with-duck",
@@ -50,20 +53,36 @@ describe("Proxy Clerk Scope", () => {
     "/proof",
     "/offline",
     "/api/telemetry",
+    "/api/case-studies",
   ];
 
-  it.each(PUBLIC_ROUTES)(
-    "public route %s never reaches Clerk",
+  it.each(PUBLIC_GET_ROUTES)(
+    "public GET route %s never reaches Clerk",
     async (route) => {
-      expect(await call(route)).toEqual([]);
+      expect(await call(route, "GET")).toEqual([]);
+    }
+  );
+
+  const MUTATING_CASE_STUDIES_METHODS = ["POST", "PUT", "DELETE", "PATCH"];
+
+  it.each(MUTATING_CASE_STUDIES_METHODS)(
+    "method-aware route /api/case-studies with %s reaches Clerk middleware",
+    async (method) => {
+      expect(await call("/api/case-studies", method)).toEqual([
+        "/api/case-studies",
+      ]);
     }
   );
 
   const ADMIN_ROUTES = ["/admin", "/admin/login", "/api/admin/case-studies"];
 
-  it.each(ADMIN_ROUTES)("admin route %s is guarded by Clerk", async (route) => {
-    expect(await call(route)).toEqual([route]);
-  });
+  it.each(ADMIN_ROUTES)(
+    "admin route %s reaches Clerk middleware for GET and POST",
+    async (route) => {
+      expect(await call(route, "GET")).toEqual([route]);
+      expect(await call(route, "POST")).toEqual([route]);
+    }
+  );
 
   it("still attaches a connection hash to public API requests", async () => {
     const res = await proxy(

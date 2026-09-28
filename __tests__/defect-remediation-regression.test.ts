@@ -1371,3 +1371,27 @@ describe("Defect Remediation & Regression Verification Suite (Invariant #11)", (
     });
   });
 });
+
+describe("Sandbox target regression (#1234)", () => {
+  it("does not discharge a root goal when ring targets a child variable", async () => {
+    const { SandboxMode } =
+      await import("@/components/QuasiPerfectPuzzler/SandboxMode");
+    const { render, screen, fireEvent, cleanup } =
+      await import("@testing-library/react/pure");
+    try {
+      render(React.createElement(SandboxMode));
+      fireEvent.click(screen.getByRole("button", { name: /^Tactic ring\./ }));
+      fireEvent.click(
+        screen.getAllByRole("button", {
+          name: "Variable node with value a. Expression: a",
+        })[0]
+      );
+      expect(screen.queryByText("Q.E.D. (Proof Complete)")).toBeNull();
+      expect(
+        screen.getByRole("button", { name: /^Equality node/ })
+      ).toBeDefined();
+    } finally {
+      cleanup();
+    }
+  });
+});

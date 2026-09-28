@@ -1,13 +1,17 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { ASTNode } from "@/lib/quasi-perfect/types";
 import { tacticDefs } from "@/lib/quasi-perfect/tactics";
-import { cloneAST, isProofComplete } from "@/lib/quasi-perfect/engine";
+import {
+  cloneAST,
+  findNodeById,
+  isProofComplete,
+} from "@/lib/quasi-perfect/engine";
 import { ExpressionTree } from "./ExpressionTree";
 import { TacticHand } from "./TacticHand";
 import { TerminalLog } from "./TerminalLog";
-import { CompilerLogEntry } from "@/lib/quasi-perfect/types";
+import { CompilerLogEntry, TacticResult } from "@/lib/quasi-perfect/types";
 import { IconFlask, IconRotate, IconSparkles } from "@tabler/icons-react";
 
 const SANDBOX_PRESETS: {
@@ -133,6 +137,7 @@ const SANDBOX_PRESETS: {
 ];
 
 export const SandboxMode: React.FC = () => {
+  const sandboxRef = useRef<HTMLDivElement>(null);
   const [selectedPresetIdx, setSelectedPresetIdx] = useState<number>(0);
   const currentPreset = SANDBOX_PRESETS[selectedPresetIdx];
 
@@ -182,8 +187,33 @@ export const SandboxMode: React.FC = () => {
     const tactic = tacticDefs[tacticKey];
     if (!tactic) return;
 
-    const targetNode = targetId ? currentGoal : currentGoal;
-    const result = tactic.execute(targetNode, currentGoal, currentHypotheses);
+    const targetNode = targetId ? findNodeById(currentGoal, targetId) : null;
+    // Only local rewrites preserve the surrounding goal when applied to a child.
+    // Goal tactics may fall back to the root or change the hypothesis scope.
+    const supportsChildTarget = ["rw", "simp", "norm_num"].includes(tacticKey);
+    let result: TacticResult;
+    if (!targetNode) {
+      result = {
+        success: false,
+        ramConsumed: 0,
+        message:
+          "Select a node in the current goal. Hypotheses and empty space are not tactic targets in Sandbox.",
+      };
+    } else if (targetNode.id !== currentGoal.id && !supportsChildTarget) {
+      result = {
+        success: false,
+        ramConsumed: 0,
+        message: `'${tacticKey}' requires the root goal in Sandbox. Select the GOAL node; use rw, simp or norm_num for child rewrites.`,
+      };
+    } else if (tacticKey === "cases" || tacticKey === "split") {
+      result = {
+        success: false,
+        ramConsumed: 0,
+        message: `'${tacticKey}' requires multiple proof goals, which Sandbox does not support. The current goal is unchanged.`,
+      };
+    } else {
+      result = tactic.execute(targetNode, currentGoal, currentHypotheses);
+    }
 
     if (result.success && result.newAST) {
       setCurrentGoal(result.newAST);
@@ -219,7 +249,7 @@ export const SandboxMode: React.FC = () => {
   const allTacticIds = Object.keys(tacticDefs) as (keyof typeof tacticDefs)[];
 
   return (
-    <div className="space-y-4 font-mono">
+    <div ref={sandboxRef} className="space-y-4 font-mono">
       {/* Sandbox Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 bg-zinc-900/60 border border-zinc-800 rounded-xl p-3.5">
         <div className="flex items-center gap-2.5">
@@ -234,8 +264,10 @@ export const SandboxMode: React.FC = () => {
               </span>
             </h3>
             <p className="text-xs text-zinc-400">
-              Select a preset or experiment with formal tactics freely on AST
-              expressions.
+              Local tactic simulation only: no Lean verification or campaign
+              score. Use rw, simp or norm_num on child expressions; other
+              tactics require the GOAL node. Multiple proof goals are
+              unsupported.
             </p>
           </div>
         </div>
@@ -276,7 +308,7 @@ export const SandboxMode: React.FC = () => {
         {isComplete && (
           <span className="text-emerald-400 font-bold flex items-center gap-1">
             <IconSparkles className="w-3.5 h-3.5" />
-            Proof Discharged!
+            Sandbox simulation complete
           </span>
         )}
       </div>
@@ -328,6 +360,7 @@ export const SandboxMode: React.FC = () => {
             );
             let targetNodeId: string | null = null;
             for (const el of elementsUnderPoint) {
+              if (!sandboxRef.current?.contains(el)) continue;
               const nodeId =
                 el.getAttribute("data-node-id") ||
                 el.closest("[data-node-id]")?.getAttribute("data-node-id");

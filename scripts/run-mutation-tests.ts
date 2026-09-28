@@ -143,10 +143,7 @@ export function runMutationGate(argsOverride?: string[]): void {
   );
   console.log(`🎯 Targets: ${targets.join(", ")}\n`);
 
-  const strykerArgs = ["run"];
-  for (const target of targets) {
-    strykerArgs.push("--mutate", target);
-  }
+  const strykerArgs = ["run", "--mutate", targets.join(",")];
 
   try {
     execFileSync(process.execPath, [strykerCli, ...strykerArgs], {

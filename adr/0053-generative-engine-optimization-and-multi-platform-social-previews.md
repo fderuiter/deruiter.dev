@@ -51,8 +51,8 @@ The portfolio previously optimized for traditional search engine indexation thro
 ## Invariant Compliance
 
 - **Zero-Neon-Wake ([ADR 0043](0043-provider-backed-media-storage-and-zero-wake-telemetry.md))**: Compile-time static generation ensures AI crawler traffic incurs zero database compute wake.
-- **Free-Tier Quota Bounds ([AGENTS.md](AGENTS.md) Section 22)**: Edge-cached social images under 250 KB and static manifests eliminate compute bandwidth bloat.
-- **Continuous Accessibility ([AGENTS.md](AGENTS.md) Section 10)**: In-DOM engineering bridges and FAQ accordions adhere strictly to WCAG 2.1 Level AA keyboard navigation and ARIA landmarks.
+- **Free-Tier Quota Bounds ([AGENTS.md](../AGENTS.md) Section 22)**: Edge-cached social images under 250 KB and static manifests eliminate compute bandwidth bloat.
+- **Continuous Accessibility ([AGENTS.md](../AGENTS.md) Section 10)**: In-DOM engineering bridges and FAQ accordions adhere strictly to WCAG 2.1 Level AA keyboard navigation and ARIA landmarks.
 
 ## Consequences
 

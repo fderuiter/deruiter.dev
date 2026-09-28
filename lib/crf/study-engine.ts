@@ -364,14 +364,16 @@ export function appendProtocolAuditEntry(
     fieldId: input.fieldId || "",
     fieldName: input.fieldName || "",
     previousValue:
-      input.previousValue !== undefined ? input.previousValue : null,
-    newValue: input.newValue !== undefined ? input.newValue : null,
+      input.previousValue !== undefined ? cloneDeep(input.previousValue) : null,
+    newValue: input.newValue !== undefined ? cloneDeep(input.newValue) : null,
     changedBy,
     userRole,
     reasonForChange:
       input.reasonForChange || `Protocol mutation: ${input.actionType}`,
     ...(input.diagnosticId ? { diagnosticId: input.diagnosticId } : {}),
-    ...(input.details !== undefined ? { details: input.details } : {}),
+    ...(input.details !== undefined
+      ? { details: cloneDeep(input.details) }
+      : {}),
   };
 
   const currentTrail = study.auditTrail ? [...study.auditTrail] : [];

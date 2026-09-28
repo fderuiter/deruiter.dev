@@ -207,8 +207,32 @@ export function exportStudyToCdiscOdmXml(study: StudyProtocol): string {
       if (entry.fieldId) {
         xml += `          <ItemOID>${escapeXml(entry.fieldId)}</ItemOID>\n`;
       }
+      if (entry.previousValue !== undefined && entry.previousValue !== null) {
+        const prevStr =
+          typeof entry.previousValue === "object"
+            ? JSON.stringify(entry.previousValue)
+            : String(entry.previousValue);
+        xml += `          <PreviousValue>${escapeXml(prevStr)}</PreviousValue>\n`;
+      }
+      if (entry.newValue !== undefined && entry.newValue !== null) {
+        const newStr =
+          typeof entry.newValue === "object"
+            ? JSON.stringify(entry.newValue)
+            : String(entry.newValue);
+        xml += `          <NewValue>${escapeXml(newStr)}</NewValue>\n`;
+      }
       if (entry.reasonForChange) {
         xml += `          <ReasonForChange>${escapeXml(entry.reasonForChange)}</ReasonForChange>\n`;
+      }
+      if (entry.diagnosticId) {
+        xml += `          <DiagnosticID>${escapeXml(entry.diagnosticId)}</DiagnosticID>\n`;
+      }
+      if (entry.details !== undefined && entry.details !== null) {
+        const detailsStr =
+          typeof entry.details === "object"
+            ? JSON.stringify(entry.details)
+            : String(entry.details);
+        xml += `          <Details>${escapeXml(detailsStr)}</Details>\n`;
       }
       xml += `        </AuditRecord>\n`;
     });

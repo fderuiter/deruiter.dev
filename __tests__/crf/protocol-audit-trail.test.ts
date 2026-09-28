@@ -1,9 +1,13 @@
 import { describe, it, expect } from "vitest";
-import { StudyProtocolEngine } from "@/lib/crf/study-engine";
+import {
+  StudyProtocolEngine,
+  appendProtocolAuditEntry,
+} from "@/lib/crf/study-engine";
 import { StudyAuditor } from "@/lib/crf/study-auditor";
 import {
   exportUniversalCrfJson,
   exportUniversalCrfYaml,
+  validateUniversalCrf,
   parseUniversalCrf,
 } from "@/lib/crf/universal-schema";
 import { exportStudyToCdiscOdmXml } from "@/lib/crf/odm-xml-serializer";
@@ -237,6 +241,156 @@ describe("Functional Audit Middleware and Protocol Audit Log Integration", () =>
     expect(xmlOutput).toContain("<AuditRecord");
     expect(xmlOutput).toContain("FORM_CREATE");
     expect(xmlOutput).toContain("User A");
+    expect(xmlOutput).toContain("<PreviousValue>");
+    expect(xmlOutput).toContain("<NewValue>");
+  });
+
+  it("Regression: prevents reference retention and historical entry mutation when caller objects or live fields are mutated later", () => {
+    let study = createMockStudy();
+
+    const callerPrevious = { nested: { value: "original_previous" } };
+    const callerNew = { nested: { value: "original_new" } };
+    const callerDetails = { note: "original_note" };
+
+    // 1. Direct appendProtocolAuditEntry with nested objects
+    study = appendProtocolAuditEntry(study, {
+      actionType: "CUSTOM_TEST",
+      previousValue: callerPrevious,
+      newValue: callerNew,
+      details: callerDetails,
+    });
+
+    // Mutate caller input objects
+    callerPrevious.nested.value = "changed_later_previous";
+    callerNew.nested.value = "changed_later_new";
+    callerDetails.note = "changed_later_note";
+
+    // Historical entry in auditTrail must NOT reflect the post-mutation changes
+    const customEntry = study.auditTrail![study.auditTrail!.length - 1];
+    const prevObj = customEntry.previousValue as Record<
+      string,
+      Record<string, unknown>
+    >;
+    const newObj = customEntry.newValue as Record<
+      string,
+      Record<string, unknown>
+    >;
+    const detailsObj = customEntry.details as Record<string, unknown>;
+
+    expect(prevObj.nested.value).toBe("original_previous");
+    expect(newObj.nested.value).toBe("original_new");
+    expect(detailsObj.note).toBe("original_note");
+
+    // 2. Engine updateField mutation test
+    const { study: updatedStudy, field: liveField } =
+      StudyProtocolEngine.updateField(
+        study,
+        "form_dm",
+        "fld_age",
+        { label: "Label Before Mutation" },
+        "Investigator"
+      );
+
+    expect(liveField).toBeDefined();
+
+    // Mutate the live returned field object
+    liveField!.label = "MUTATED_AFTER_UPDATE";
+    liveField!.variableName = "MUTATED_VAR";
+
+    const updateEntry =
+      updatedStudy.auditTrail![updatedStudy.auditTrail!.length - 1];
+    const updateNewValue = updateEntry.newValue as Record<string, unknown>;
+    expect(updateNewValue.label).toBe("Label Before Mutation");
+    expect(updateNewValue.variableName).toBe("AGE");
+  });
+
+  it("Lossless ODM XML export preserves PreviousValue, NewValue, DiagnosticID, and Details elements", () => {
+    let study = createMockStudy();
+
+    study = appendProtocolAuditEntry(study, {
+      actionType: "AUTO_FIX",
+      diagnosticId: "DIAG-1001",
+      previousValue: { state: "old_val" },
+      newValue: { state: "new_val" },
+      reasonForChange: "Auto fix unassigned form",
+      details: { resolution: "Assigned to Screening visit" },
+    });
+
+    const xmlOutput = exportStudyToCdiscOdmXml(study);
+    expect(xmlOutput).toContain("<DiagnosticID>DIAG-1001</DiagnosticID>");
+    expect(xmlOutput).toContain(
+      "<PreviousValue>{&quot;state&quot;:&quot;old_val&quot;}</PreviousValue>"
+    );
+    expect(xmlOutput).toContain(
+      "<NewValue>{&quot;state&quot;:&quot;new_val&quot;}</NewValue>"
+    );
+    expect(xmlOutput).toContain(
+      "<Details>{&quot;resolution&quot;:&quot;Assigned to Screening visit&quot;}</Details>"
+    );
+  });
+
+  it("Reconciles audit contract to support both scalar-valued (EDC simulation) and object snapshot audit entries", () => {
+    // 1. Scalar-valued EDC simulation style audit entry
+    const scalarEntry = {
+      id: "aud_edc_1",
+      timestamp: new Date().toISOString(),
+      subjectId: "SUBJ-001",
+      formId: "form_dm",
+      fieldId: "fld_age",
+      fieldName: "AGE",
+      previousValue: 25,
+      newValue: 26,
+      changedBy: "Dr. Smith",
+      userRole: "Site Coordinator",
+      reasonForChange: "Subject birthday correction",
+    };
+
+    // 2. Object snapshot protocol engine audit entry
+    const objectEntry = {
+      id: "aud_engine_1",
+      timestamp: new Date().toISOString(),
+      actionType: "FIELD_UPDATE",
+      targetId: "fld_age",
+      subjectId: "PROTOCOL",
+      formId: "form_dm",
+      fieldId: "fld_age",
+      fieldName: "AGE",
+      previousValue: { label: "Old Age Label", required: true },
+      newValue: { label: "New Age Label", required: false },
+      changedBy: "System Auditor",
+      reasonForChange: "Label update",
+      diagnosticId: "DIAG-999",
+      details: { automated: true },
+    };
+
+    const studyWithBoth = {
+      ...createMockStudy(),
+      auditTrail: [scalarEntry, objectEntry],
+    };
+
+    const validation = validateUniversalCrf(studyWithBoth);
+    expect(validation.success).toBe(true);
+
+    const parsed = parseUniversalCrf(studyWithBoth);
+    expect(parsed.auditTrail).toHaveLength(2);
+
+    expect(parsed.auditTrail![0].previousValue).toBe(25);
+    expect(parsed.auditTrail![0].newValue).toBe(26);
+
+    const parsedPrev = parsed.auditTrail![1].previousValue as Record<
+      string,
+      unknown
+    >;
+    const parsedNew = parsed.auditTrail![1].newValue as Record<string, unknown>;
+    const parsedDetails = parsed.auditTrail![1].details as Record<
+      string,
+      unknown
+    >;
+
+    expect(parsedPrev.label).toBe("Old Age Label");
+    expect(parsedNew.label).toBe("New Age Label");
+    expect(parsed.auditTrail![1].diagnosticId).toBe("DIAG-999");
+    expect(parsedDetails.automated).toBe(true);
   });
 
   it("Enforces strict append-only semantics across multiple mutations", () => {

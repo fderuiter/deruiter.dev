@@ -563,7 +563,8 @@ export function checkPageTopPadding(root: string): DiagnosticCheckResult {
     const hasTopPadding =
       /\bpt-(20|24|28|32|36|40|44|48|\[\d+px\])\b/.test(content) ||
       /min-h-(screen|dvh)/.test(content) ||
-      /<PageLayout\b/.test(content);
+      /<PageLayout\b/.test(content) ||
+      /export\s+\{[^}]*default[^}]*\}\s+from/.test(content);
 
     if (!hasTopPadding) {
       warnings.push(relative);

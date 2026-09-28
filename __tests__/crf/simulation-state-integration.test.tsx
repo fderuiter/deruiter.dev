@@ -228,28 +228,189 @@ describe("EDC Simulation State Integration", () => {
     window.location.hash = "#mode=edc";
     render(<CRFStudioContainer />);
 
-    // Add a custom subject or value in active EDC simulation
-    const initialAuditTab = await screen.findByRole("button", {
-      name: /Part 11 Audit Trail/i,
-    });
-    fireEvent.click(initialAuditTab);
-    expect(
-      await screen.findByText(/Initial baseline data entry/i)
-    ).toBeDefined();
+    // Enroll a custom subject in active EDC simulation
+    const enrollBtn = await screen.findByTitle(/Enroll New Simulated Subject/i);
+    fireEvent.click(enrollBtn);
 
-    // Select a preset study (which replaces the study with one without simulationState)
+    const subjectInput = await screen.findByPlaceholderText(/e.g. 001-104/i);
+    fireEvent.change(subjectInput, { target: { value: "001-CUSTOM-999" } });
+
+    // Click confirm button (IconCheck)
+    const confirmBtn = subjectInput.nextElementSibling;
+    if (confirmBtn) fireEvent.click(confirmBtn);
+
+    // Verify custom subject is present before replacement
+    expect(await screen.findByText(/001-CUSTOM-999/i)).toBeDefined();
+
+    // Wait for autosave debounce to ensure simulationState is persisted to draft
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    });
+    const draftBefore = loadStudyDraft();
+    expect(draftBefore.status).toBe("recovered");
+    if (draftBefore.status === "recovered") {
+      expect(draftBefore.study.simulationState?.availableSubjects).toContain(
+        "001-CUSTOM-999"
+      );
+    }
+
+    // 1. Switch to a preset study without simulationState (different study ID)
     const presetSelect = screen.getAllByRole("combobox", {
       name: /Select Clinical Protocol Preset/i,
     })[0];
     fireEvent.change(presetSelect, { target: { value: "cns_neuro" } });
 
-    // Confirm that EDC simulator updates and does NOT retain old custom simulationState
-    const auditTabAfterPreset = await screen.findByRole("button", {
-      name: /Part 11 Audit Trail/i,
+    // If dirty draft confirmation modal appears, confirm replacement
+    const confirmReplacementBtn = screen.queryByRole("button", {
+      name: /Discard & Replace/i,
     });
-    fireEvent.click(auditTabAfterPreset);
+    if (confirmReplacementBtn) {
+      fireEvent.click(confirmReplacementBtn);
+    }
 
-    // Old specific audit log entries from oncology study are cleared/reset for cardiology
-    expect(screen.queryByText(/001-101_v_screen_f_brthyr/i)).toBeNull();
+    // Confirm that custom subject is NOT present in new study UI or autosaved simulationState
+    expect(screen.queryByText(/001-CUSTOM-999/i)).toBeNull();
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    });
+    const draftAfterPreset = loadStudyDraft();
+    if (draftAfterPreset.status === "recovered") {
+      expect(
+        draftAfterPreset.study.simulationState?.availableSubjects
+      ).not.toContain("001-CUSTOM-999");
+    }
+
+    // 2. Same-ID JSON Replacement
+    // Enroll another custom subject on the new active study
+    const enrollBtn2 = await screen.findByTitle(
+      /Enroll New Simulated Subject/i
+    );
+    fireEvent.click(enrollBtn2);
+
+    const subjectInput2 = await screen.findByPlaceholderText(/e.g. 001-104/i);
+    fireEvent.change(subjectInput2, {
+      target: { value: "001-SAME-ID-CUSTOM" },
+    });
+    const confirmBtn2 = subjectInput2.nextElementSibling;
+    if (confirmBtn2) fireEvent.click(confirmBtn2);
+
+    expect(await screen.findByText(/001-SAME-ID-CUSTOM/i)).toBeDefined();
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    });
+    const draftBeforeSameId = loadStudyDraft();
+    expect(draftBeforeSameId.status).toBe("recovered");
+
+    if (draftBeforeSameId.status === "recovered") {
+      const currentStudy = draftBeforeSameId.study;
+      // Construct a same-ID study import JSON with no simulationState
+      const sameIdStudyWithoutSim: StudyProtocol = {
+        ...currentStudy,
+        simulationState: undefined,
+      };
+
+      // Navigate to Export/Import mode
+      act(() => {
+        window.location.hash = "#mode=export";
+        window.dispatchEvent(new HashChangeEvent("hashchange"));
+      });
+
+      const importTextarea = await screen.findByPlaceholderText(
+        /Paste exported StudyProtocol JSON here to load\.\.\./i
+      );
+      fireEvent.change(importTextarea, {
+        target: { value: exportUniversalCrfJson(sameIdStudyWithoutSim) },
+      });
+
+      const importBtn = await screen.findByRole("button", {
+        name: /Import Protocol into Studio/i,
+      });
+      await act(async () => {
+        fireEvent.click(importBtn);
+      });
+
+      const confirmReplacementBtn2 = await screen.findByRole("button", {
+        name: /Discard & Replace/i,
+      });
+      fireEvent.click(confirmReplacementBtn2);
+
+      // Return to EDC Simulator mode
+      act(() => {
+        window.location.hash = "#mode=edc";
+        window.dispatchEvent(new HashChangeEvent("hashchange"));
+      });
+
+      // Verify custom subject is gone and state is isolated even for same-ID study replacement
+      expect(screen.queryByText(/001-SAME-ID-CUSTOM/i)).toBeNull();
+
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      });
+      const draftAfterSameId = loadStudyDraft();
+      if (draftAfterSameId.status === "recovered") {
+        expect(
+          draftAfterSameId.study.simulationState?.availableSubjects
+        ).not.toContain("001-SAME-ID-CUSTOM");
+      }
+    }
+  });
+
+  it("6. UniversalCrfProtocolSchema validates AuditTrailEntry with object values, actionType, diagnosticId, and details without stripping", () => {
+    const studyWithComplexAudit: StudyProtocol = {
+      ...getOncologyPresetSync(),
+      auditTrail: [
+        {
+          id: "aud_fu_1",
+          timestamp: "2026-09-28T12:00:00Z",
+          changedBy: "System Auditor",
+          actionType: "FIELD_UPDATE",
+          diagnosticId: "diag_rule_404",
+          previousValue: { val: 70, unit: "kg" },
+          newValue: { val: 72, unit: "kg" },
+          details: { reason: "Recalibration", source: "automated_scale" },
+          subjectId: "001-101",
+          formId: "form_vitals",
+          fieldId: "f_weight",
+        },
+      ],
+      simulationState: {
+        auditLog: [
+          {
+            id: "aud_fu_sim_1",
+            timestamp: "2026-09-28T12:05:00Z",
+            changedBy: "Dr. Investigator",
+            actionType: "FIELD_UPDATE",
+            diagnosticId: "diag_sim_101",
+            previousValue: { sys: 120, dia: 80 },
+            newValue: { sys: 130, dia: 85 },
+            details: "Manual adjustment",
+            subjectId: "001-101",
+          },
+        ],
+      },
+    };
+
+    const jsonStr = exportUniversalCrfJson(studyWithComplexAudit);
+    const parsedStudy = parseUniversalCrf(jsonStr);
+
+    expect(parsedStudy.auditTrail).toHaveLength(1);
+    const entry = parsedStudy.auditTrail?.[0];
+    expect(entry?.actionType).toBe("FIELD_UPDATE");
+    expect(entry?.diagnosticId).toBe("diag_rule_404");
+    expect(entry?.previousValue).toEqual({ val: 70, unit: "kg" });
+    expect(entry?.newValue).toEqual({ val: 72, unit: "kg" });
+    expect(entry?.details).toEqual({
+      reason: "Recalibration",
+      source: "automated_scale",
+    });
+
+    const simEntry = parsedStudy.simulationState?.auditLog?.[0];
+    expect(simEntry?.actionType).toBe("FIELD_UPDATE");
+    expect(simEntry?.diagnosticId).toBe("diag_sim_101");
+    expect(simEntry?.previousValue).toEqual({ sys: 120, dia: 80 });
+    expect(simEntry?.newValue).toEqual({ sys: 130, dia: 85 });
+    expect(simEntry?.details).toBe("Manual adjustment");
   });
 });

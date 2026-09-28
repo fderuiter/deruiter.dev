@@ -469,8 +469,22 @@ export interface AuditTrailEntry {
   formId?: string;
   fieldId?: string;
   fieldName?: string;
-  previousValue?: string | number | boolean | null;
-  newValue?: string | number | boolean | null;
+  previousValue?:
+    | string
+    | number
+    | boolean
+    | Record<string, unknown>
+    | unknown[]
+    | null
+    | unknown;
+  newValue?:
+    | string
+    | number
+    | boolean
+    | Record<string, unknown>
+    | unknown[]
+    | null
+    | unknown;
   userRole?:
     | "Site Coordinator"
     | "Principal Investigator"
@@ -482,6 +496,9 @@ export interface AuditTrailEntry {
     | string;
   reasonForChange?: string;
   action?: string;
+  actionType?: string;
+  diagnosticId?: string;
+  details?: string | Record<string, unknown> | unknown;
   targetId?: string;
   targetType?: string;
 }

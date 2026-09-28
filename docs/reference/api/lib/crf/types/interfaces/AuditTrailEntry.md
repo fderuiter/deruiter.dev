@@ -14,9 +14,27 @@
 
 ***
 
+### actionType?
+
+> `optional` **actionType?**: `string`
+
+***
+
 ### changedBy
 
 > **changedBy**: `string`
+
+***
+
+### details?
+
+> `optional` **details?**: `unknown`
+
+***
+
+### diagnosticId?
+
+> `optional` **diagnosticId?**: `string`
 
 ***
 
@@ -46,13 +64,13 @@
 
 ### newValue?
 
-> `optional` **newValue?**: `string` \| `number` \| `boolean` \| `null`
+> `optional` **newValue?**: `unknown`
 
 ***
 
 ### previousValue?
 
-> `optional` **previousValue?**: `string` \| `number` \| `boolean` \| `null`
+> `optional` **previousValue?**: `unknown`
 
 ***
 

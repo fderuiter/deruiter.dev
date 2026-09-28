@@ -151,11 +151,18 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
   );
 
   const lastEmittedStateRef = React.useRef<EdcSimulationState | null>(null);
+  const prevStudyRef = React.useRef<StudyProtocol>(study);
   const activeSimState = simulationState ?? study.simulationState;
 
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect */
-    if (activeSimState && activeSimState !== lastEmittedStateRef.current) {
+    const studyChanged = prevStudyRef.current !== study;
+    prevStudyRef.current = study;
+
+    if (
+      activeSimState &&
+      (activeSimState !== lastEmittedStateRef.current || studyChanged)
+    ) {
       if (activeSimState.formValues !== undefined)
         setFormValues(activeSimState.formValues);
       if (activeSimState.sdvMap !== undefined) setSdvMap(activeSimState.sdvMap);
@@ -169,7 +176,10 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
         setSignatures(activeSimState.signatures);
       if (activeSimState.availableSubjects !== undefined)
         setAvailableSubjects(activeSimState.availableSubjects);
-    } else if (!activeSimState && lastEmittedStateRef.current !== null) {
+    } else if (
+      !activeSimState &&
+      (lastEmittedStateRef.current !== null || studyChanged)
+    ) {
       // Cleanly reset state if incoming study/props have no simulationState
       setFormValues({});
       setSdvMap({});
@@ -178,8 +188,9 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
       setAuditLog([]);
       setSignatures([]);
       setAvailableSubjects(["001-101", "001-102", "001-103"]);
+      lastEmittedStateRef.current = null;
     }
-  }, [activeSimState, study.id]);
+  }, [activeSimState, study]);
 
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect */

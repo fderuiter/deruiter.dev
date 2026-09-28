@@ -414,13 +414,14 @@ export const AuditTrailEntrySchema = z.object({
   formId: z.string().optional(),
   fieldId: z.string().optional(),
   fieldName: z.string().optional(),
-  previousValue: z
-    .union([z.string(), z.number(), z.boolean(), z.null()])
-    .optional(),
-  newValue: z.union([z.string(), z.number(), z.boolean(), z.null()]).optional(),
+  previousValue: z.unknown().optional(),
+  newValue: z.unknown().optional(),
   userRole: z.string().optional(),
   reasonForChange: z.string().optional(),
   action: z.string().optional(),
+  actionType: z.string().optional(),
+  diagnosticId: z.string().optional(),
+  details: z.unknown().optional(),
   targetId: z.string().optional(),
   targetType: z.string().optional(),
 });

@@ -10,11 +10,11 @@ export function getRouteSourceFilePath(routePath: string): string {
   const cleanPath = routePath.replace(/^\/+|\/+$/g, "");
   const candidates =
     cleanPath === ""
-      ? ["app/page.tsx", "app/(desktop)/page.tsx", "app/(mobile)/page.tsx"]
+      ? ["app/page.tsx", "app/desktop/page.tsx", "app/mobile/page.tsx"]
       : [
           `app/${cleanPath}/page.tsx`,
-          `app/(desktop)/${cleanPath}/page.tsx`,
-          `app/(mobile)/${cleanPath}/page.tsx`,
+          `app/desktop/${cleanPath}/page.tsx`,
+          `app/mobile/${cleanPath}/page.tsx`,
         ];
 
   for (const rel of candidates) {

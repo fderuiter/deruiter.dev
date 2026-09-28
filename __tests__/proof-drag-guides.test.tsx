@@ -3,7 +3,7 @@ import React from "react";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { getCompatibleTargets, computeMagneticSnap } from "@/lib/proof-utils";
-import { ProofWorkspaceClient as ProofWorkspacePage } from "@/app/(desktop)/proof/ProofWorkspaceClient";
+import { ProofWorkspaceClient as ProofWorkspacePage } from "@/app/desktop/proof/ProofWorkspaceClient";
 
 describe("Magnetic Snapping & Drag Guides Suite", () => {
   beforeEach(() => {

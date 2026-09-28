@@ -60,8 +60,8 @@ async function decorateRequest(req: NextRequest): Promise<NextResponse> {
     pathname.startsWith("/api") ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/admin") ||
-    pathname.startsWith("/(desktop)") ||
-    pathname.startsWith("/(mobile)") ||
+    pathname.startsWith("/desktop") ||
+    pathname.startsWith("/mobile") ||
     pathname === "/sitemap.xml" ||
     pathname === "/robots.txt" ||
     pathname === "/feed.xml" ||
@@ -72,7 +72,7 @@ async function decorateRequest(req: NextRequest): Promise<NextResponse> {
   if (!isSkipRewrite) {
     const userAgent = req.headers.get("user-agent") || "";
     const isMobile = isMobileUserAgent(userAgent);
-    const group = isMobile ? "(mobile)" : "(desktop)";
+    const group = isMobile ? "mobile" : "desktop";
     const targetPath = `/${group}${pathname === "/" ? "" : pathname}`;
     const rewriteUrl = new URL(targetPath, req.url);
 

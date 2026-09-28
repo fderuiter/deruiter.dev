@@ -12,7 +12,7 @@ import { prisma } from "@/lib/db";
 import CaseStudyPage, {
   generateMetadata,
   generateStaticParams,
-} from "@/app/(desktop)/case-studies/[slug]/page";
+} from "@/app/desktop/case-studies/[slug]/page";
 
 vi.mock("@/lib/db", () => ({
   prisma: {

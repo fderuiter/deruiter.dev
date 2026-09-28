@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 
 describe("Integrated Command Console Split-View Accessibility & Interactive Controls", () => {
-  const pagePath = path.resolve(__dirname, "../app/(desktop)/proof/page.tsx");
+  const pagePath = path.resolve(__dirname, "../app/desktop/proof/page.tsx");
   const content = fs.readFileSync(pagePath, "utf-8");
 
   it("should display a text-based terminal split-view alongside the workspace", () => {

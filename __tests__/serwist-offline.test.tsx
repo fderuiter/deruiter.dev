@@ -3,7 +3,7 @@ import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 import { cleanup, render, screen, fireEvent } from "@testing-library/react";
-import OfflineFallbackPage from "@/app/(desktop)/offline/page";
+import OfflineFallbackPage from "@/app/desktop/offline/page";
 import { SerwistRegister } from "@/components/providers/SerwistRegister";
 import { loadExternalBrainMesh } from "@/lib/neuro/asset-loader";
 import { fromAny } from "@total-typescript/shoehorn";

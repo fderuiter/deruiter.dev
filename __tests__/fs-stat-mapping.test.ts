@@ -10,29 +10,29 @@ describe("Runtime File System Stat Mapping Utilities", () => {
   it("maps configured static route paths to corresponding page source files on disk", () => {
     const rootPath = getRouteSourceFilePath("/");
     expect(rootPath).toBe(
-      path.resolve(process.cwd(), "app/(desktop)/page.tsx")
+      path.resolve(process.cwd(), "app/desktop/page.tsx")
     );
 
     const arcadePath = getRouteSourceFilePath("/arcade");
     expect(arcadePath).toBe(
-      path.resolve(process.cwd(), "app/(desktop)/arcade/page.tsx")
+      path.resolve(process.cwd(), "app/desktop/arcade/page.tsx")
     );
 
     const laserLoonPath = getRouteSourceFilePath("/work/laser-loon");
     expect(laserLoonPath).toBe(
-      path.resolve(process.cwd(), "app/(desktop)/work/laser-loon/page.tsx")
+      path.resolve(process.cwd(), "app/desktop/work/laser-loon/page.tsx")
     );
   });
 
   it("inspects source file modification times dynamically during sitemap generation", () => {
     const rootStat = fs.statSync(
-      path.resolve(process.cwd(), "app/(desktop)/page.tsx")
+      path.resolve(process.cwd(), "app/desktop/page.tsx")
     );
     const rootLastModified = getRouteLastModified("/");
     expect(rootLastModified.getTime()).toBe(rootStat.mtime.getTime());
 
     const arcadeStat = fs.statSync(
-      path.resolve(process.cwd(), "app/(desktop)/arcade/page.tsx")
+      path.resolve(process.cwd(), "app/desktop/arcade/page.tsx")
     );
     const arcadeLastModified = getRouteLastModified("/arcade");
     expect(arcadeLastModified.getTime()).toBe(arcadeStat.mtime.getTime());

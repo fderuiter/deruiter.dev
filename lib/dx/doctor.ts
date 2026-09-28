@@ -121,7 +121,12 @@ export function checkRouteIndexing(
     let relativeDir = path.dirname(relative).replace(/\\/g, "/");
     relativeDir = relativeDir
       .split("/")
-      .filter((s) => !(s.startsWith("(") && s.endsWith(")")))
+      .filter(
+        (s) =>
+          s !== "desktop" &&
+          s !== "mobile" &&
+          !(s.startsWith("(") && s.endsWith(")"))
+      )
       .join("/");
 
     let routeUrl = "/" + relativeDir;
@@ -203,9 +208,9 @@ const PAGE_FILENAMES = ["page.tsx", "page.ts", "page.jsx", "page.js"] as const;
 
 function hasPageFile(dir: string): boolean {
   if (PAGE_FILENAMES.some((f) => fs.existsSync(path.join(dir, f)))) return true;
-  if (PAGE_FILENAMES.some((f) => fs.existsSync(path.join(dir, "(desktop)", f))))
+  if (PAGE_FILENAMES.some((f) => fs.existsSync(path.join(dir, "desktop", f))))
     return true;
-  if (PAGE_FILENAMES.some((f) => fs.existsSync(path.join(dir, "(mobile)", f))))
+  if (PAGE_FILENAMES.some((f) => fs.existsSync(path.join(dir, "mobile", f))))
     return true;
   return false;
 }
@@ -234,11 +239,11 @@ export function routeExistsOnDisk(routePath: string, appDir: string): boolean {
     if (fs.existsSync(directPath) && fs.statSync(directPath).isDirectory()) {
       if (checkSegments(directPath, segIndex + 1)) return true;
     }
-    const desktopPath = path.join(currentDir, "(desktop)", target);
+    const desktopPath = path.join(currentDir, "desktop", target);
     if (fs.existsSync(desktopPath) && fs.statSync(desktopPath).isDirectory()) {
       if (checkSegments(desktopPath, segIndex + 1)) return true;
     }
-    const mobilePath = path.join(currentDir, "(mobile)", target);
+    const mobilePath = path.join(currentDir, "mobile", target);
     if (fs.existsSync(mobilePath) && fs.statSync(mobilePath).isDirectory()) {
       if (checkSegments(mobilePath, segIndex + 1)) return true;
     }
@@ -246,8 +251,8 @@ export function routeExistsOnDisk(routePath: string, appDir: string): boolean {
     // 2. Dynamic parameter match (e.g., [slug], [...rest], [[...rest]])
     const searchDirs = [
       currentDir,
-      path.join(currentDir, "(desktop)"),
-      path.join(currentDir, "(mobile)"),
+      path.join(currentDir, "desktop"),
+      path.join(currentDir, "mobile"),
     ];
 
     for (const searchDir of searchDirs) {
@@ -366,7 +371,12 @@ export function checkPublicRouteRegistryDrift(
     let relativeDir = path.dirname(relative).replace(/\\/g, "/");
     relativeDir = relativeDir
       .split("/")
-      .filter((s) => !(s.startsWith("(") && s.endsWith(")")))
+      .filter(
+        (s) =>
+          s !== "desktop" &&
+          s !== "mobile" &&
+          !(s.startsWith("(") && s.endsWith(")"))
+      )
       .join("/");
 
     let routeUrl = "/" + relativeDir;
@@ -507,8 +517,8 @@ export function checkNavbarHierarchy(root: string): DiagnosticCheckResult {
     const relative = path.relative(root, file);
     if (
       relative === path.join("app", "layout.tsx") ||
-      relative === path.join("app", "(desktop)", "layout.tsx") ||
-      relative === path.join("app", "(mobile)", "layout.tsx")
+      relative === path.join("app", "desktop", "layout.tsx") ||
+      relative === path.join("app", "mobile", "layout.tsx")
     ) {
       continue;
     }

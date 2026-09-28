@@ -9,8 +9,8 @@ import path from "path";
  */
 const cssCandidates = [
   "app/arcade/arcade.css",
-  "app/(desktop)/arcade/arcade.css",
-  "app/(mobile)/arcade/arcade.css",
+  "app/desktop/arcade/arcade.css",
+  "app/mobile/arcade/arcade.css",
 ];
 const cssRelativePath =
   cssCandidates.find((p) =>

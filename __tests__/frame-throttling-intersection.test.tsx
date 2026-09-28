@@ -9,7 +9,7 @@ import {
   act,
 } from "@testing-library/react";
 import { Brain3DViewer } from "@/components/neuro/Brain3DViewer";
-import { ProofWorkspaceClient as ProofWorkspacePage } from "@/app/(desktop)/proof/ProofWorkspaceClient";
+import { ProofWorkspaceClient as ProofWorkspacePage } from "@/app/desktop/proof/ProofWorkspaceClient";
 
 describe("Frame-Bound Throttling & Intersection Guard Suite", () => {
   let intersectionCallbacks: ((

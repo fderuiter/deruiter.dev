@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 
 describe("Background Web Worker & Watchdog Implementations", () => {
-  const pagePath = path.resolve(__dirname, "../app/(desktop)/proof/page.tsx");
+  const pagePath = path.resolve(__dirname, "../app/desktop/proof/page.tsx");
   const content = fs.readFileSync(pagePath, "utf-8");
 
   it("should lazy-initialize Web Worker using native Next.js import.meta.url pattern", () => {

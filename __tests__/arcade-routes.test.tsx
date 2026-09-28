@@ -158,14 +158,14 @@ vi.mock("next/navigation", () => ({
   }),
 }));
 
-import ArcadePage from "@/app/(desktop)/arcade/page";
-import LaserLoonPage from "@/app/(desktop)/arcade/laser-loon/page";
-import QuasiPuzzlerPage from "@/app/(desktop)/arcade/quasi-puzzler/page";
-import GarminWatchPage from "@/app/(desktop)/arcade/garmin-watch/page";
-import ClinicalChaosPage from "@/app/(desktop)/arcade/clinical-chaos/page";
-import RetroLabyrinthPage from "@/app/(desktop)/arcade/retro-labyrinth/page";
-import WorkingWithDuckPage from "@/app/(desktop)/arcade/working-with-duck/page";
-import MemeVaultPage from "@/app/(desktop)/arcade/meme-vault/page";
+import ArcadePage from "@/app/desktop/arcade/page";
+import LaserLoonPage from "@/app/desktop/arcade/laser-loon/page";
+import QuasiPuzzlerPage from "@/app/desktop/arcade/quasi-puzzler/page";
+import GarminWatchPage from "@/app/desktop/arcade/garmin-watch/page";
+import ClinicalChaosPage from "@/app/desktop/arcade/clinical-chaos/page";
+import RetroLabyrinthPage from "@/app/desktop/arcade/retro-labyrinth/page";
+import WorkingWithDuckPage from "@/app/desktop/arcade/working-with-duck/page";
+import MemeVaultPage from "@/app/desktop/arcade/meme-vault/page";
 import { ROUTE_METADATA_CONFIGS } from "@/lib/seo-metadata";
 
 const storageStore: Record<string, string> = {};

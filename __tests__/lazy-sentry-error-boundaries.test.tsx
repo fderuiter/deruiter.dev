@@ -42,7 +42,7 @@ vi.mock("@sentry/nextjs", async (importOriginal) => {
 
 import ErrorBoundaryApp from "../app/error";
 import GlobalErrorApp from "../app/global-error";
-import CaseStudyErrorApp from "../app/(desktop)/case-studies/[slug]/error";
+import CaseStudyErrorApp from "../app/desktop/case-studies/[slug]/error";
 import {
   isDummyOrMissingDsn,
   initClientSentry,

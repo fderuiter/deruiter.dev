@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { isMobileUserAgent } from "@/lib/is-mobile";
 import { NextFetchEvent, NextRequest } from "next/server";
 import { proxy } from "@/proxy";
-import mobileManifest from "@/app/(mobile)/manifest";
+import mobileManifest from "@/app/mobile/manifest";
 import { fromPartial } from "@total-typescript/shoehorn";
 
 describe("Mobile & Desktop Route Groups Architecture", () => {
@@ -35,7 +35,7 @@ describe("Mobile & Desktop Route Groups Architecture", () => {
   });
 
   describe("Proxy User-Agent Route Rewriting", () => {
-    it("rewrites mobile requests to (mobile) route group", async () => {
+    it("rewrites mobile requests to mobile route group", async () => {
       const req = new NextRequest("https://fderuiter.com/proof", {
         headers: {
           "user-agent":
@@ -46,10 +46,10 @@ describe("Mobile & Desktop Route Groups Architecture", () => {
       const res = await proxy(req, fromPartial<NextFetchEvent>({}));
       expect(res).toBeDefined();
       const rewriteUrl = res?.headers.get("x-middleware-rewrite");
-      expect(rewriteUrl).toContain("/(mobile)/proof");
+      expect(rewriteUrl).toContain("/mobile/proof");
     });
 
-    it("rewrites desktop requests to (desktop) route group", async () => {
+    it("rewrites desktop requests to desktop route group", async () => {
       const req = new NextRequest("https://fderuiter.com/proof", {
         headers: {
           "user-agent":
@@ -60,7 +60,7 @@ describe("Mobile & Desktop Route Groups Architecture", () => {
       const res = await proxy(req, fromPartial<NextFetchEvent>({}));
       expect(res).toBeDefined();
       const rewriteUrl = res?.headers.get("x-middleware-rewrite");
-      expect(rewriteUrl).toContain("/(desktop)/proof");
+      expect(rewriteUrl).toContain("/desktop/proof");
     });
 
     it("rewrites root path correctly for mobile and desktop", async () => {
@@ -73,7 +73,7 @@ describe("Mobile & Desktop Route Groups Architecture", () => {
       const mobileRes = await proxy(mobileReq, fromPartial<NextFetchEvent>({}));
       expect(mobileRes).toBeDefined();
       expect(mobileRes?.headers.get("x-middleware-rewrite")).toContain(
-        "/(mobile)"
+        "/mobile"
       );
 
       const desktopReq = new NextRequest("https://fderuiter.com/", {
@@ -87,7 +87,7 @@ describe("Mobile & Desktop Route Groups Architecture", () => {
       );
       expect(desktopRes).toBeDefined();
       expect(desktopRes?.headers.get("x-middleware-rewrite")).toContain(
-        "/(desktop)"
+        "/desktop"
       );
     });
 
@@ -105,7 +105,7 @@ describe("Mobile & Desktop Route Groups Architecture", () => {
     });
   });
 
-  describe("Mobile Web Manifest (app/(mobile)/manifest.ts)", () => {
+  describe("Mobile Web Manifest (app/mobile/manifest.ts)", () => {
     it("returns touch-optimized metadata", () => {
       const manifestData = mobileManifest();
       expect(manifestData.name).toContain("Mobile");

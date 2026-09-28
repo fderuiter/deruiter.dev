@@ -49,6 +49,21 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     locale: "en-US",
     isAccessibleForFree: true,
   },
+  mCrf: {
+    title: "Mobile CRF Studio",
+    description:
+      "Touch-optimized clinical research form studio designed for mobile viewports, enabling interactive section and field inspection on mobile devices.",
+    path: "/m/crf",
+    keywords: [
+      "Mobile CRF Studio",
+      "CDASH Mobile Forms",
+      "Clinical Trial eCRF Touch",
+      "eCRF Field Inspector",
+    ],
+    inLanguage: "en-US",
+    locale: "en-US",
+    isAccessibleForFree: true,
+  },
   patrol: {
     title: "Ski Patrol Shift Studio",
     description:
@@ -61,6 +76,51 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
       "Operational Judgment",
       "Finite State Machine",
       "Winter Operations",
+    ],
+    inLanguage: "en-US",
+    locale: "en-US",
+    isAccessibleForFree: true,
+  },
+  mPatrol: {
+    title: "Mobile Ski Patrol Shift Studio",
+    description:
+      "Touch-optimized ski patrol operational judgment simulator built for mobile screens, allowing real-time triage and emergency intervention decisions.",
+    path: "/m/patrol",
+    keywords: [
+      "Mobile Patrol Studio",
+      "Ski Patrol Touch Triage",
+      "Emergency Operations Dispatch",
+      "Mountain Judgment Engine",
+    ],
+    inLanguage: "en-US",
+    locale: "en-US",
+    isAccessibleForFree: true,
+  },
+  mProof: {
+    title: "Mobile Logical Proof Workspace",
+    description:
+      "Touch-optimized formal logic proof workspace tailored for handheld devices, offering interactive deduction step ledgers and fallacy diagnostics.",
+    path: "/m/proof",
+    keywords: [
+      "Mobile Proof Workspace",
+      "Formal Logic Touch Ledger",
+      "Fallacy Diagnostics Mobile",
+      "Interactive Theorem Prover",
+    ],
+    inLanguage: "en-US",
+    locale: "en-US",
+    isAccessibleForFree: true,
+  },
+  mNeuro: {
+    title: "Mobile NeuroRecon Studio",
+    description:
+      "Touch-optimized neuroimaging structural morphometry viewer for mobile screens, providing subcortical volumetric metrics and FreeSurfer recon status.",
+    path: "/m/neuro",
+    keywords: [
+      "Mobile NeuroRecon Studio",
+      "Subcortical Volumetric Touch",
+      "FreeSurfer Morphometry Mobile",
+      "Neuroimaging Structural Metrics",
     ],
     inLanguage: "en-US",
     locale: "en-US",

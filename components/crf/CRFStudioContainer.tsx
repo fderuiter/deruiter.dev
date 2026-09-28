@@ -1253,13 +1253,15 @@ export const CRFStudioContainer: React.FC = () => {
 
   const handleUpdateField = (fieldId: string, updates: Partial<CRFField>) => {
     if (!activeForm) return;
-    const updatedSections = activeForm.sections.map((s) => ({
-      ...s,
-      fields: s.fields.map((f) =>
-        f.id === fieldId ? { ...f, ...updates } : f
-      ),
-    }));
-    handleUpdateFormMeta({ sections: updatedSections });
+    const res = StudyProtocolEngine.updateField(
+      study,
+      activeForm.id,
+      fieldId,
+      updates
+    );
+    if (!res.error && res.study) {
+      updateStudyWithHistory(res.study);
+    }
   };
 
   const handleDuplicateField = (sectionId: string, fieldId: string) => {
@@ -1752,6 +1754,7 @@ export const CRFStudioContainer: React.FC = () => {
                 setIsLeftSidebarOpen(true);
                 setLeftTab("palette");
               }}
+              reviewAuthor={reviewAuthor}
             />
             {isRightInspectorOpen && (
               <aside

@@ -1737,6 +1737,69 @@ export class StudyProtocolEngine {
   }
 
   /**
+   * Move Field to Target Section within Form
+   */
+  static moveFieldToSection(
+    study: StudyProtocol,
+    domainOrFormId: string,
+    fieldIdOrVar: string,
+    targetSectionIdOrTitle: string
+  ): {
+    study: StudyProtocol;
+    field?: CRFField;
+    form?: CRFForm;
+    error?: string;
+  } {
+    const found = this.getField(study, domainOrFormId, fieldIdOrVar);
+    if (!found) {
+      return {
+        study,
+        error: `Field '${fieldIdOrVar}' not found in form '${domainOrFormId}'.`,
+      };
+    }
+
+    const { form, field, sectionIndex } = found;
+    const targetSec = form.sections.find(
+      (s) =>
+        s.id === targetSectionIdOrTitle ||
+        s.title.trim().toLowerCase() ===
+          targetSectionIdOrTitle.trim().toLowerCase()
+    );
+
+    if (!targetSec) {
+      return {
+        study,
+        error: `Target section '${targetSectionIdOrTitle}' not found in form '${form.name}'.`,
+      };
+    }
+
+    if (targetSec.id === form.sections[sectionIndex].id) {
+      return { study, field, form };
+    }
+
+    const updatedSections = form.sections.map((sec) => {
+      const filteredFields = sec.fields.filter((f) => f.id !== field.id);
+      if (sec.id === targetSec.id) {
+        return { ...sec, fields: [...filteredFields, field] };
+      }
+      return { ...sec, fields: filteredFields };
+    });
+
+    const updatedForm: CRFForm = {
+      ...form,
+      sections: updatedSections,
+    };
+
+    const updatedStudy: StudyProtocol = {
+      ...study,
+      lastModified: new Date().toISOString(),
+      forms: study.forms.map((f) => (f.id === form.id ? updatedForm : f)),
+    };
+
+    return { study: updatedStudy, field, form: updatedForm };
+  }
+
+  /**
    * Find All References to a Field Across Rules, Conditions, Formulas, Calculations, and Grids (#542)
    */
   static findFieldReferences(

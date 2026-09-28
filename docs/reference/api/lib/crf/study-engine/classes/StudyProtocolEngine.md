@@ -1105,6 +1105,52 @@ Load Preset by ID
 
 ***
 
+### moveFieldToSection()
+
+> `static` **moveFieldToSection**(`study`, `domainOrFormId`, `fieldIdOrVar`, `targetSectionIdOrTitle`): `object`
+
+Move Field to Target Section within Form
+
+#### Parameters
+
+##### study
+
+[`StudyProtocol`](../../types/interfaces/StudyProtocol.md)
+
+##### domainOrFormId
+
+`string`
+
+##### fieldIdOrVar
+
+`string`
+
+##### targetSectionIdOrTitle
+
+`string`
+
+#### Returns
+
+`object`
+
+##### error?
+
+> `optional` **error?**: `string`
+
+##### field?
+
+> `optional` **field?**: [`CRFField`](../../types/interfaces/CRFField.md)
+
+##### form?
+
+> `optional` **form?**: [`CRFForm`](../../types/interfaces/CRFForm.md)
+
+##### study
+
+> **study**: [`StudyProtocol`](../../types/interfaces/StudyProtocol.md)
+
+***
+
 ### previewFieldRemoval()
 
 > `static` **previewFieldRemoval**(`study`, `domainOrFormId`, `fieldIdOrVar`): [`FieldImpactPreview`](../interfaces/FieldImpactPreview.md)

@@ -144,7 +144,20 @@ export async function measurePageRoute(
   url: string
 ): Promise<SingleRunMetrics> {
   // Navigate and wait for page to reach load state
-  await page.goto(url, { waitUntil: "load", timeout: 30000 });
+  try {
+    await page.goto(url, { waitUntil: "load", timeout: 30000 });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (
+      message.includes("ERR_ABORTED") ||
+      message.includes("ERR_CONNECTION_RESET")
+    ) {
+      await page.waitForTimeout(300);
+      await page.goto(url, { waitUntil: "load", timeout: 30000 });
+    } else {
+      throw error;
+    }
+  }
 
   // Give a brief window for layout shifts & LCP observers to settle
   await page.waitForTimeout(200);

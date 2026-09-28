@@ -17,6 +17,7 @@ import robots from "@/app/robots";
 import sitemap, { revalidate } from "@/app/sitemap";
 import manifest from "@/app/manifest";
 import { FALLBACK_CASE_STUDIES } from "@/lib/case-studies-data";
+import { getRouteSourceFilePath } from "@/lib/fs-stat-mapping";
 
 vi.mock("next/font/google", () => ({
   Inter: () => ({ variable: "--font-inter" }),
@@ -253,7 +254,7 @@ describe("SEO Architecture & JSON-LD Schemas", () => {
   });
 
   it("contact route layout exports dedicated page metadata with title, description, and social images", async () => {
-    const { metadata } = await import("@/app/contact/layout");
+    const { metadata } = await import("@/app/(desktop)/contact/layout");
     // No site name: app/layout.tsx templates it on as "%s | Frederick de
     // Ruiter". This previously asserted the branded string, which is what let
     // ten routes ship with the name rendered twice in the browser tab.
@@ -419,7 +420,7 @@ describe("SEO Architecture & JSON-LD Schemas", () => {
     // Verify root static route matches source file mtime
     const rootEntry = map1.find((e) => e.url === resolveBaseUrl());
     expect(rootEntry).toBeDefined();
-    const rootStat = fs.statSync(path.resolve(process.cwd(), "app/page.tsx"));
+    const rootStat = fs.statSync(getRouteSourceFilePath("/"));
     const rootEntryDate =
       rootEntry?.lastModified instanceof Date
         ? rootEntry.lastModified
@@ -596,15 +597,18 @@ describe("SEO Architecture & JSON-LD Schemas", () => {
   });
 
   it("interactive hub opengraph-image generators return valid responses", async () => {
-    const { default: arcadeOg } = await import("@/app/arcade/opengraph-image");
-    const { default: proofOg } = await import("@/app/proof/opengraph-image");
+    const { default: arcadeOg } =
+      await import("@/app/(desktop)/arcade/opengraph-image");
+    const { default: proofOg } =
+      await import("@/app/(desktop)/proof/opengraph-image");
     const { default: simulatorOg } =
-      await import("@/app/simulator/opengraph-image");
-    const { default: stackOg } = await import("@/app/stack/opengraph-image");
+      await import("@/app/(desktop)/simulator/opengraph-image");
+    const { default: stackOg } =
+      await import("@/app/(desktop)/stack/opengraph-image");
     const { default: scheduleOg } =
-      await import("@/app/schedule/opengraph-image");
+      await import("@/app/(desktop)/schedule/opengraph-image");
     const { default: caseStudiesOg } =
-      await import("@/app/case-studies/opengraph-image");
+      await import("@/app/(desktop)/case-studies/opengraph-image");
 
     for (const generator of [
       arcadeOg,
@@ -622,22 +626,24 @@ describe("SEO Architecture & JSON-LD Schemas", () => {
   });
 
   it("all 9 targeted showcase, asset hub, and arcade route social preview cards exist and return edge-cached image responses", async () => {
-    const { default: crfOg } = await import("@/app/crf/opengraph-image");
-    const { default: neuroOg } = await import("@/app/neuro/opengraph-image");
+    const { default: crfOg } =
+      await import("@/app/(desktop)/crf/opengraph-image");
+    const { default: neuroOg } =
+      await import("@/app/(desktop)/neuro/opengraph-image");
     const { default: clinicalChaosOg } =
-      await import("@/app/arcade/clinical-chaos/opengraph-image");
+      await import("@/app/(desktop)/arcade/clinical-chaos/opengraph-image");
     const { default: garminWatchOg } =
-      await import("@/app/arcade/garmin-watch/opengraph-image");
+      await import("@/app/(desktop)/arcade/garmin-watch/opengraph-image");
     const { default: laserLoonOg } =
-      await import("@/app/arcade/laser-loon/opengraph-image");
+      await import("@/app/(desktop)/arcade/laser-loon/opengraph-image");
     const { default: laserLoonWorkOg } =
-      await import("@/app/work/laser-loon/opengraph-image");
+      await import("@/app/(desktop)/work/laser-loon/opengraph-image");
     const { default: quasiPuzzlerOg } =
-      await import("@/app/arcade/quasi-puzzler/opengraph-image");
+      await import("@/app/(desktop)/arcade/quasi-puzzler/opengraph-image");
     const { default: retroLabyrinthOg } =
-      await import("@/app/arcade/retro-labyrinth/opengraph-image");
+      await import("@/app/(desktop)/arcade/retro-labyrinth/opengraph-image");
     const { default: workingWithDuckOg } =
-      await import("@/app/arcade/working-with-duck/opengraph-image");
+      await import("@/app/(desktop)/arcade/working-with-duck/opengraph-image");
 
     const targetedGenerators = [
       { name: "/crf", generator: crfOg, routeKey: "crf" },

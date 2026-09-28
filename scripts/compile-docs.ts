@@ -69,7 +69,10 @@ export function regenerateDocumentation(workspaceRoot: string): string[] {
   }
 }
 
-if (require.main === module) {
+if (
+  require.main === module ||
+  process.argv.some((arg) => arg.includes("compile-docs"))
+) {
   const written = regenerateDocumentation(process.cwd());
   console.log(
     `Updated ${written.length} reference page${written.length === 1 ? "" : "s"} in ${API_REFERENCE_RELATIVE_PATH}.`

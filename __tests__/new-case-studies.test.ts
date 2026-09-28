@@ -6,7 +6,7 @@ import { prisma } from "@/lib/db";
 import {
   generateMetadata,
   generateStaticParams,
-} from "@/app/case-studies/[slug]/page";
+} from "@/app/(desktop)/case-studies/[slug]/page";
 import { ROUTE_METADATA_CONFIGS } from "@/lib/seo-metadata";
 import { CANONICAL_ROUTES } from "@/lib/dx/page-bench";
 import { scanText } from "@/lib/security-scan";

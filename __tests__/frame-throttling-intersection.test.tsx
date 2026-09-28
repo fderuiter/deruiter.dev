@@ -1,12 +1,20 @@
 // @vitest-environment jsdom
 import React from "react";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { render, screen, fireEvent, cleanup, act } from "@testing-library/react";
+import {
+  render,
+  screen,
+  fireEvent,
+  cleanup,
+  act,
+} from "@testing-library/react";
 import { Brain3DViewer } from "@/components/neuro/Brain3DViewer";
-import { ProofWorkspaceClient as ProofWorkspacePage } from "@/app/proof/ProofWorkspaceClient";
+import { ProofWorkspaceClient as ProofWorkspacePage } from "@/app/(desktop)/proof/ProofWorkspaceClient";
 
 describe("Frame-Bound Throttling & Intersection Guard Suite", () => {
-  let intersectionCallbacks: ((entries: IntersectionObserverEntry[]) => void)[] = [];
+  let intersectionCallbacks: ((
+    entries: IntersectionObserverEntry[]
+  ) => void)[] = [];
   let observedElements: Element[] = [];
 
   beforeEach(() => {
@@ -49,7 +57,9 @@ describe("Frame-Bound Throttling & Intersection Guard Suite", () => {
     it("batches rapid diagram node pointermove updates to execute at frame refresh boundaries", () => {
       render(<ProofWorkspacePage />);
 
-      const nodeHandleA = screen.getByRole("button", { name: /Drag connection handle from Node A/i });
+      const nodeHandleA = screen.getByRole("button", {
+        name: /Drag connection handle from Node A/i,
+      });
       const nodeA = nodeHandleA.parentElement;
       expect(nodeA).not.toBeNull();
 
@@ -58,11 +68,19 @@ describe("Frame-Bound Throttling & Intersection Guard Suite", () => {
       const rafSpy = vi.spyOn(window, "requestAnimationFrame");
 
       // Start drag on Node A
-      fireEvent.pointerDown(nodeA, { clientX: 100, clientY: 100, pointerId: 1 });
+      fireEvent.pointerDown(nodeA, {
+        clientX: 100,
+        clientY: 100,
+        pointerId: 1,
+      });
 
       // Dispatch 10 high-frequency pointermove events in rapid succession
       for (let i = 1; i <= 10; i++) {
-        fireEvent.pointerMove(nodeA, { clientX: 100 + i * 5, clientY: 100 + i * 5, pointerId: 1 });
+        fireEvent.pointerMove(nodeA, {
+          clientX: 100 + i * 5,
+          clientY: 100 + i * 5,
+          pointerId: 1,
+        });
       }
 
       // RAF should have been requested to batch updates at frame boundary
@@ -76,14 +94,24 @@ describe("Frame-Bound Throttling & Intersection Guard Suite", () => {
       const cancelRafSpy = vi.spyOn(window, "cancelAnimationFrame");
       const { unmount } = render(<ProofWorkspacePage />);
 
-      const nodeHandleA = screen.getByRole("button", { name: /Drag connection handle from Node A/i });
+      const nodeHandleA = screen.getByRole("button", {
+        name: /Drag connection handle from Node A/i,
+      });
       const nodeA = nodeHandleA.parentElement;
       expect(nodeA).not.toBeNull();
 
       if (!nodeA) return;
 
-      fireEvent.pointerDown(nodeA, { clientX: 100, clientY: 100, pointerId: 1 });
-      fireEvent.pointerMove(nodeA, { clientX: 120, clientY: 120, pointerId: 1 });
+      fireEvent.pointerDown(nodeA, {
+        clientX: 100,
+        clientY: 100,
+        pointerId: 1,
+      });
+      fireEvent.pointerMove(nodeA, {
+        clientX: 120,
+        clientY: 120,
+        pointerId: 1,
+      });
 
       unmount();
       expect(cancelRafSpy).toHaveBeenCalled();
@@ -149,7 +177,10 @@ describe("Frame-Bound Throttling & Intersection Guard Suite", () => {
       if (canvasContainer) {
         // Dispatch rapid mousemove events
         for (let i = 0; i < 15; i++) {
-          fireEvent.mouseMove(canvasContainer, { clientX: 100 + i * 2, clientY: 100 + i * 2 });
+          fireEvent.mouseMove(canvasContainer, {
+            clientX: 100 + i * 2,
+            clientY: 100 + i * 2,
+          });
         }
       }
 

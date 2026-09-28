@@ -8,7 +8,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import ContactPage from "@/app/contact/page";
+import ContactPage from "@/app/(desktop)/contact/page";
 
 describe("ContactPage Component", () => {
   let container: HTMLDivElement | null = null;

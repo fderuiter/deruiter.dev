@@ -192,7 +192,12 @@ export function checkRouteIndexing(
 const PAGE_FILENAMES = ["page.tsx", "page.ts", "page.jsx", "page.js"] as const;
 
 function hasPageFile(dir: string): boolean {
-  return PAGE_FILENAMES.some((f) => fs.existsSync(path.join(dir, f)));
+  if (PAGE_FILENAMES.some((f) => fs.existsSync(path.join(dir, f)))) return true;
+  if (PAGE_FILENAMES.some((f) => fs.existsSync(path.join(dir, "(desktop)", f))))
+    return true;
+  if (PAGE_FILENAMES.some((f) => fs.existsSync(path.join(dir, "(mobile)", f))))
+    return true;
+  return false;
 }
 
 /**
@@ -219,51 +224,68 @@ export function routeExistsOnDisk(routePath: string, appDir: string): boolean {
     if (fs.existsSync(directPath) && fs.statSync(directPath).isDirectory()) {
       if (checkSegments(directPath, segIndex + 1)) return true;
     }
+    const desktopPath = path.join(currentDir, "(desktop)", target);
+    if (fs.existsSync(desktopPath) && fs.statSync(desktopPath).isDirectory()) {
+      if (checkSegments(desktopPath, segIndex + 1)) return true;
+    }
+    const mobilePath = path.join(currentDir, "(mobile)", target);
+    if (fs.existsSync(mobilePath) && fs.statSync(mobilePath).isDirectory()) {
+      if (checkSegments(mobilePath, segIndex + 1)) return true;
+    }
 
     // 2. Dynamic parameter match (e.g., [slug], [...rest], [[...rest]])
-    try {
-      const entries = fs.readdirSync(currentDir, { withFileTypes: true });
-      for (const entry of entries) {
-        if (
-          entry.isDirectory() &&
-          entry.name.startsWith("[") &&
-          entry.name.endsWith("]")
-        ) {
-          const parentDirName = path.basename(currentDir);
+    const searchDirs = [
+      currentDir,
+      path.join(currentDir, "(desktop)"),
+      path.join(currentDir, "(mobile)"),
+    ];
 
-          // Verify dynamic case study slugs
+    for (const searchDir of searchDirs) {
+      if (!fs.existsSync(searchDir)) continue;
+      try {
+        const entries = fs.readdirSync(searchDir, { withFileTypes: true });
+        for (const entry of entries) {
           if (
-            parentDirName === "case-studies" &&
-            (entry.name === "[slug]" || entry.name.includes("slug"))
+            entry.isDirectory() &&
+            entry.name.startsWith("[") &&
+            entry.name.endsWith("]")
           ) {
-            const isValidCaseStudy = FALLBACK_CASE_STUDIES.some(
-              (cs) => cs.slug === target && cs.published !== false
-            );
-            if (!isValidCaseStudy) {
-              continue;
-            }
-          }
+            const parentDirName = path.basename(searchDir);
 
-          // Verify dynamic blog post slugs
-          if (
-            parentDirName === "blog" &&
-            (entry.name === "[slug]" || entry.name.includes("slug"))
-          ) {
-            const isValidBlogPost = FALLBACK_BLOG_POSTS.some(
-              (post) => post.slug === target && post.published !== false
-            );
-            if (!isValidBlogPost) {
-              continue;
+            // Verify dynamic case study slugs
+            if (
+              parentDirName === "case-studies" &&
+              (entry.name === "[slug]" || entry.name.includes("slug"))
+            ) {
+              const isValidCaseStudy = FALLBACK_CASE_STUDIES.some(
+                (cs) => cs.slug === target && cs.published !== false
+              );
+              if (!isValidCaseStudy) {
+                continue;
+              }
             }
-          }
 
-          if (checkSegments(path.join(currentDir, entry.name), segIndex + 1)) {
-            return true;
+            // Verify dynamic blog post slugs
+            if (
+              parentDirName === "blog" &&
+              (entry.name === "[slug]" || entry.name.includes("slug"))
+            ) {
+              const isValidBlogPost = FALLBACK_BLOG_POSTS.some(
+                (post) => post.slug === target && post.published !== false
+              );
+              if (!isValidBlogPost) {
+                continue;
+              }
+            }
+
+            if (checkSegments(path.join(searchDir, entry.name), segIndex + 1)) {
+              return true;
+            }
           }
         }
+      } catch {
+        // Ignore reading errors
       }
-    } catch {
-      // Ignore reading errors
     }
 
     return false;
@@ -331,8 +353,14 @@ export function checkPublicRouteRegistryDrift(
       continue;
     }
 
-    let routeUrl = "/" + path.dirname(relative);
-    if (routeUrl === "/.") routeUrl = "/";
+    let relativeDir = path.dirname(relative).replace(/\\/g, "/");
+    relativeDir = relativeDir
+      .split("/")
+      .filter((s) => !(s.startsWith("(") && s.endsWith(")")))
+      .join("/");
+
+    let routeUrl = "/" + relativeDir;
+    if (routeUrl === "/." || routeUrl === "/") routeUrl = "/";
     staticPublicRoutes.push(routeUrl);
   }
 
@@ -467,7 +495,11 @@ export function checkNavbarHierarchy(root: string): DiagnosticCheckResult {
 
   for (const file of tsxFiles) {
     const relative = path.relative(root, file);
-    if (relative === path.join("app", "layout.tsx")) {
+    if (
+      relative === path.join("app", "layout.tsx") ||
+      relative === path.join("app", "(desktop)", "layout.tsx") ||
+      relative === path.join("app", "(mobile)", "layout.tsx")
+    ) {
       continue;
     }
     const content = fs.readFileSync(file, "utf-8");
@@ -2248,7 +2280,9 @@ export function checkSectionStructures(
 
       const content = fs.readFileSync(pageFile, "utf-8");
       const hasSectionStructure =
-        /<PageLayout\b|<main\b|<section\b|<div\b/.test(content);
+        /<PageLayout\b|<main\b|<section\b|<div\b|export\s+\{[\s\S]*?\}\s+from/.test(
+          content
+        );
 
       if (!hasSectionStructure) {
         failures.push({

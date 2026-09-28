@@ -11,7 +11,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { SearchProvider } from "@/components/providers/SearchProvider";
 import { AudioProvider } from "@/components/providers/AudioProvider";
 import NotFound from "@/app/not-found";
-import CaseStudyNotFound from "@/app/case-studies/[slug]/not-found";
+import CaseStudyNotFound from "@/app/(desktop)/case-studies/[slug]/not-found";
 
 const MockRetroLabyrinth = () => <div>SYSTEM_LABYRINTH.EXE</div>;
 

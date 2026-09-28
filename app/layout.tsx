@@ -3,24 +3,18 @@ import { Lexend, Atkinson_Hyperlegible, Geist_Mono } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
 import { SkipToContent } from "@/components/SkipToContent";
-import { Navbar } from "@/components/Navbar";
-import { Footer } from "@/components/Footer";
 import {
   getUnifiedGraphSchema,
   getPersonNode,
   getWebsiteNode,
 } from "@/lib/seo";
 import { A11yProvider } from "@/components/providers/A11yProvider";
-import { AudioProvider } from "@/components/providers/AudioProvider";
 import { SearchProvider } from "@/components/providers/SearchProvider";
 import { TerminologyProvider } from "@/components/providers/TerminologyProvider";
 import { PersonaProvider } from "@/components/providers/PersonaProvider";
-import { RetroChaosOverlayWrapper } from "@/components/RetroChaosOverlayWrapper";
 
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import { SearchWrapper } from "@/components/SearchWrapper";
-import { GlobalPhotoGallery } from "@/components/GlobalPhotoGallery";
 import { resolveBaseUrl } from "@/lib/domain";
 
 import { SerwistRegister } from "@/components/providers/SerwistRegister";
@@ -163,23 +157,16 @@ export default function RootLayout({
           <TerminologyProvider>
             <SearchProvider>
               <A11yProvider>
-                <AudioProvider>
-                  <Navbar />
-                  <main
-                    id="main-content"
-                    tabIndex={-1}
-                    className="flex-grow flex flex-col focus:outline-none"
-                  >
-                    {children}
-                  </main>
-                  <Footer />
-                  <RetroChaosOverlayWrapper />
-                  <Analytics />
-                  <SpeedInsights />
-                  <SearchWrapper />
-                  <GlobalPhotoGallery />
-                  <SerwistRegister />
-                </AudioProvider>
+                <main
+                  id="main-content"
+                  tabIndex={-1}
+                  className="flex-grow flex flex-col focus:outline-none"
+                >
+                  {children}
+                </main>
+                <Analytics />
+                <SpeedInsights />
+                <SerwistRegister />
               </A11yProvider>
             </SearchProvider>
           </TerminologyProvider>

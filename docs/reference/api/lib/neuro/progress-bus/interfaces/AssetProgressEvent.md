@@ -28,7 +28,7 @@
 
 ### status
 
-> **status**: `"error"` \| `"loading"` \| `"complete"`
+> **status**: `"error"` \| `"complete"` \| `"loading"`
 
 ***
 

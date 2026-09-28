@@ -8,7 +8,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import SchedulePage from "@/app/schedule/page";
+import SchedulePage from "@/app/(desktop)/schedule/page";
 
 describe("SchedulePage Component", () => {
   let container: HTMLDivElement | null = null;

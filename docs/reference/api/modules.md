@@ -158,6 +158,7 @@
 - [lib/graphics-math](lib/graphics-math/README.md)
 - [lib/haptics](lib/haptics/README.md)
 - [lib/i18n-dictionary](lib/i18n-dictionary/README.md)
+- [lib/is-mobile](lib/is-mobile/README.md)
 - [lib/laser-loon](lib/laser-loon/README.md)
 - [lib/laser-loon/constants](lib/laser-loon/constants/README.md)
 - [lib/laser-loon/engine](lib/laser-loon/engine/README.md)

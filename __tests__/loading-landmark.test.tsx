@@ -2,7 +2,7 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { render, cleanup } from "@testing-library/react";
 import RootLoading from "../app/loading";
-import CaseStudyLoading from "../app/case-studies/[slug]/loading";
+import CaseStudyLoading from "../app/(desktop)/case-studies/[slug]/loading";
 
 describe("Route loading skeletons: single main landmark", () => {
   afterEach(() => {

@@ -8,8 +8,23 @@ import path from "path";
  */
 export function getRouteSourceFilePath(routePath: string): string {
   const cleanPath = routePath.replace(/^\/+|\/+$/g, "");
-  const relativePath = cleanPath === "" ? "app/page.tsx" : `app/${cleanPath}/page.tsx`;
-  return path.resolve(process.cwd(), relativePath);
+  const candidates =
+    cleanPath === ""
+      ? ["app/page.tsx", "app/(desktop)/page.tsx", "app/(mobile)/page.tsx"]
+      : [
+          `app/${cleanPath}/page.tsx`,
+          `app/(desktop)/${cleanPath}/page.tsx`,
+          `app/(mobile)/${cleanPath}/page.tsx`,
+        ];
+
+  for (const rel of candidates) {
+    const absPath = path.resolve(process.cwd(), rel);
+    if (fs.existsSync(absPath)) {
+      return absPath;
+    }
+  }
+
+  return path.resolve(process.cwd(), candidates[0]);
 }
 
 /**

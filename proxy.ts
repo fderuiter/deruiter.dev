@@ -5,6 +5,7 @@ import {
   generateClientConnectionHash,
   extractClientIp,
 } from "@/lib/services/privacy-service";
+import { isMobileUserAgent } from "@/lib/is-mobile";
 
 /** Matchers for routes that require Clerk middleware protection or hydration. */
 const isAdminRoute = createRouteMatcher(["/admin(.*)", "/api/admin(.*)"]);
@@ -39,13 +40,14 @@ export function isClerkRoute(req: NextRequest): boolean {
 
 /**
  * Privacy-preserving client connection token for API telemetry/rate limiting,
- * plus the standard HTTP security headers. Applies to every request, whether
- * or not Clerk is in the chain.
+ * plus the standard HTTP security headers. Rewrites incoming requests to
+ * parallel (mobile) or (desktop) route groups based on user-agent detection.
  */
 async function decorateRequest(req: NextRequest): Promise<NextResponse> {
   const requestHeaders = new Headers(req.headers);
+  const pathname = req.nextUrl.pathname;
 
-  if (req.nextUrl.pathname.startsWith("/api")) {
+  if (pathname.startsWith("/api")) {
     const ip = extractClientIp(req);
     const userAgent = req.headers.get("user-agent") || "";
     const connectionHash = await generateClientConnectionHash(
@@ -54,11 +56,38 @@ async function decorateRequest(req: NextRequest): Promise<NextResponse> {
     requestHeaders.set("x-connection-hash", connectionHash);
   }
 
-  const response = NextResponse.next({
-    request: {
-      headers: requestHeaders,
-    },
-  });
+  const isSkipRewrite =
+    pathname.startsWith("/api") ||
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/(desktop)") ||
+    pathname.startsWith("/(mobile)") ||
+    pathname === "/sitemap.xml" ||
+    pathname === "/robots.txt" ||
+    pathname === "/feed.xml" ||
+    /\.(svg|png|ico|jpg|jpeg|css|js|json|xml|webmanifest)$/.test(pathname);
+
+  let response: NextResponse;
+
+  if (!isSkipRewrite) {
+    const userAgent = req.headers.get("user-agent") || "";
+    const isMobile = isMobileUserAgent(userAgent);
+    const group = isMobile ? "(mobile)" : "(desktop)";
+    const targetPath = `/${group}${pathname === "/" ? "" : pathname}`;
+    const rewriteUrl = new URL(targetPath, req.url);
+
+    response = NextResponse.rewrite(rewriteUrl, {
+      request: {
+        headers: requestHeaders,
+      },
+    });
+  } else {
+    response = NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    });
+  }
 
   return applySecurityHeaders(response, req);
 }

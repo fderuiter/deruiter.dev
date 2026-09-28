@@ -2,7 +2,9 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+(
+  globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true;
 
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -40,7 +42,11 @@ const mockCtx = {
   roundRect: vi.fn(),
   quadraticCurveTo: vi.fn(),
   bezierCurveTo: vi.fn(),
-  measureText: vi.fn(() => ({ width: 50, actualBoundingBoxAscent: 10, actualBoundingBoxDescent: 2 })),
+  measureText: vi.fn(() => ({
+    width: 50,
+    actualBoundingBoxAscent: 10,
+    actualBoundingBoxDescent: 2,
+  })),
   rect: vi.fn(),
   clip: vi.fn(),
   fill: vi.fn(),
@@ -67,13 +73,32 @@ HTMLCanvasElement.prototype.getBoundingClientRect = vi.fn(() => ({
 // Mock framer-motion with full proxy and hooks support
 vi.mock("framer-motion", async (importOriginal) => {
   const actual = await importOriginal<typeof import("framer-motion")>();
-  const Component = ({ children, className, style, onClick, ...props }: any) => (
+  const Component = ({
+    children,
+    className,
+    style,
+    onClick,
+    ...props
+  }: any) => (
     <div className={className} style={style} onClick={onClick} {...props}>
       {children}
     </div>
   );
-  const Button = ({ children, className, style, onClick, type, ...props }: any) => (
-    <button type={type || "button"} className={className} style={style} onClick={onClick} {...props}>
+  const Button = ({
+    children,
+    className,
+    style,
+    onClick,
+    type,
+    ...props
+  }: any) => (
+    <button
+      type={type || "button"}
+      className={className}
+      style={style}
+      onClick={onClick}
+      {...props}
+    >
       {children}
     </button>
   );
@@ -97,7 +122,10 @@ vi.mock("framer-motion", async (importOriginal) => {
 
 // Mock AudioProvider
 vi.mock("@/components/providers/AudioProvider", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/components/providers/AudioProvider")>();
+  const actual =
+    await importOriginal<
+      typeof import("@/components/providers/AudioProvider")
+    >();
   return {
     ...actual,
     useAudio: () => ({
@@ -130,23 +158,29 @@ vi.mock("next/navigation", () => ({
   }),
 }));
 
-import ArcadePage from "@/app/arcade/page";
-import LaserLoonPage from "@/app/arcade/laser-loon/page";
-import QuasiPuzzlerPage from "@/app/arcade/quasi-puzzler/page";
-import GarminWatchPage from "@/app/arcade/garmin-watch/page";
-import ClinicalChaosPage from "@/app/arcade/clinical-chaos/page";
-import RetroLabyrinthPage from "@/app/arcade/retro-labyrinth/page";
-import WorkingWithDuckPage from "@/app/arcade/working-with-duck/page";
-import MemeVaultPage from "@/app/arcade/meme-vault/page";
+import ArcadePage from "@/app/(desktop)/arcade/page";
+import LaserLoonPage from "@/app/(desktop)/arcade/laser-loon/page";
+import QuasiPuzzlerPage from "@/app/(desktop)/arcade/quasi-puzzler/page";
+import GarminWatchPage from "@/app/(desktop)/arcade/garmin-watch/page";
+import ClinicalChaosPage from "@/app/(desktop)/arcade/clinical-chaos/page";
+import RetroLabyrinthPage from "@/app/(desktop)/arcade/retro-labyrinth/page";
+import WorkingWithDuckPage from "@/app/(desktop)/arcade/working-with-duck/page";
+import MemeVaultPage from "@/app/(desktop)/arcade/meme-vault/page";
 import { ROUTE_METADATA_CONFIGS } from "@/lib/seo-metadata";
 
 const storageStore: Record<string, string> = {};
 Object.defineProperty(globalThis, "localStorage", {
   value: {
     getItem: (k: string) => storageStore[k] || null,
-    setItem: (k: string, v: string) => { storageStore[k] = String(v); },
-    removeItem: (k: string) => { delete storageStore[k]; },
-    clear: () => { Object.keys(storageStore).forEach((k) => delete storageStore[k]); },
+    setItem: (k: string, v: string) => {
+      storageStore[k] = String(v);
+    },
+    removeItem: (k: string) => {
+      delete storageStore[k];
+    },
+    clear: () => {
+      Object.keys(storageStore).forEach((k) => delete storageStore[k]);
+    },
     key: () => null,
     length: 0,
   },
@@ -179,13 +213,23 @@ describe("Arcade Dedicated Routes Suite", () => {
     expect(container.textContent).toContain("Engineering");
     expect(container.textContent).toContain("Arcade Hub");
     expect(container.textContent).toContain("Working With Duck");
-    expect(container.textContent).toContain("Laser Loon: Quest for the State Flag");
+    expect(container.textContent).toContain(
+      "Laser Loon: Quest for the State Flag"
+    );
     expect(container.textContent).toContain("Quasi-Perfect Puzzler");
-    expect(container.textContent).toContain("Monkey C Mayhem: Garmin Schvitz App");
-    expect(container.textContent).toContain("Clinical Trial Chaos: CDISC Compliance");
-    expect(container.textContent).toContain("Retro Labyrinth: Graveyard Roguelike");
+    expect(container.textContent).toContain(
+      "Monkey C Mayhem: Garmin Schvitz App"
+    );
+    expect(container.textContent).toContain(
+      "Clinical Trial Chaos: CDISC Compliance"
+    );
+    expect(container.textContent).toContain(
+      "Retro Labyrinth: Graveyard Roguelike"
+    );
 
-    const script = container.querySelector("script[type='application/ld+json']");
+    const script = container.querySelector(
+      "script[type='application/ld+json']"
+    );
     expect(script).not.toBeNull();
     const ldJson = JSON.parse(script!.innerHTML);
     expect(ldJson["@type"]).toBe("CollectionPage");
@@ -201,14 +245,20 @@ describe("Arcade Dedicated Routes Suite", () => {
     expect(container.textContent).toContain("Arcade Hub");
     expect(container.textContent).toContain("Working With");
     expect(container.textContent).toContain("Duck");
-    expect(container.textContent).toContain("Pet Simulation / Multitasking Arcade");
+    expect(container.textContent).toContain(
+      "Pet Simulation / Multitasking Arcade"
+    );
 
-    const script = container.querySelector("script[type='application/ld+json']");
+    const script = container.querySelector(
+      "script[type='application/ld+json']"
+    );
     expect(script).not.toBeNull();
     const ldJson = JSON.parse(script!.innerHTML);
     expect(ldJson["@type"]).toBe("WebApplication");
     expect(ldJson.name).toBe(ROUTE_METADATA_CONFIGS.workingWithDuck.title);
-    expect(ldJson.description).toBe(ROUTE_METADATA_CONFIGS.workingWithDuck.description);
+    expect(ldJson.description).toBe(
+      ROUTE_METADATA_CONFIGS.workingWithDuck.description
+    );
     expect(ldJson.description).toContain("Duck the puppy");
     expect(ldJson.description).not.toContain("conversational debugging");
   });
@@ -221,12 +271,16 @@ describe("Arcade Dedicated Routes Suite", () => {
     expect(container.textContent).toContain("Laser Loon:");
     expect(container.textContent).toContain("Quest for the State Flag");
 
-    const script = container.querySelector("script[type='application/ld+json']");
+    const script = container.querySelector(
+      "script[type='application/ld+json']"
+    );
     expect(script).not.toBeNull();
     const ldJson = JSON.parse(script!.innerHTML);
     expect(ldJson["@type"]).toBe("WebApplication");
     expect(ldJson.name).toBe(ROUTE_METADATA_CONFIGS.laserLoon.title);
-    expect(ldJson.description).toBe(ROUTE_METADATA_CONFIGS.laserLoon.description);
+    expect(ldJson.description).toBe(
+      ROUTE_METADATA_CONFIGS.laserLoon.description
+    );
     expect(ldJson.description).toContain("F277 Laser Loon");
     expect(ldJson.description).not.toContain("stratospheric relay");
   });
@@ -239,12 +293,16 @@ describe("Arcade Dedicated Routes Suite", () => {
     expect(container.textContent).toContain("Quasi-Perfect");
     expect(container.textContent).toContain("Puzzler");
 
-    const script = container.querySelector("script[type='application/ld+json']");
+    const script = container.querySelector(
+      "script[type='application/ld+json']"
+    );
     expect(script).not.toBeNull();
     const ldJson = JSON.parse(script!.innerHTML);
     expect(ldJson["@type"]).toBe("WebApplication");
     expect(ldJson.name).toBe(ROUTE_METADATA_CONFIGS.quasiPuzzler.title);
-    expect(ldJson.description).toBe(ROUTE_METADATA_CONFIGS.quasiPuzzler.description);
+    expect(ldJson.description).toBe(
+      ROUTE_METADATA_CONFIGS.quasiPuzzler.description
+    );
     expect(ldJson.description).toContain("Lean-inspired");
     expect(ldJson.description).toContain("deductive proof tactics");
     expect(ldJson.description).not.toContain("crystallographic");
@@ -259,12 +317,16 @@ describe("Arcade Dedicated Routes Suite", () => {
     expect(container.textContent).toContain("Monkey C Mayhem");
     expect(container.textContent).toContain("Garmin Schvitz App");
 
-    const script = container.querySelector("script[type='application/ld+json']");
+    const script = container.querySelector(
+      "script[type='application/ld+json']"
+    );
     expect(script).not.toBeNull();
     const ldJson = JSON.parse(script!.innerHTML);
     expect(ldJson["@type"]).toBe("WebApplication");
     expect(ldJson.name).toBe(ROUTE_METADATA_CONFIGS.garminWatch.title);
-    expect(ldJson.description).toBe(ROUTE_METADATA_CONFIGS.garminWatch.description);
+    expect(ldJson.description).toBe(
+      ROUTE_METADATA_CONFIGS.garminWatch.description
+    );
   });
 
   it("renders Clinical Trial Chaos dedicated game page and aligned WebApplication JSON-LD", async () => {
@@ -275,12 +337,16 @@ describe("Arcade Dedicated Routes Suite", () => {
     expect(container.textContent).toContain("Clinical Trial Chaos:");
     expect(container.textContent).toContain("CDISC Compliance");
 
-    const script = container.querySelector("script[type='application/ld+json']");
+    const script = container.querySelector(
+      "script[type='application/ld+json']"
+    );
     expect(script).not.toBeNull();
     const ldJson = JSON.parse(script!.innerHTML);
     expect(ldJson["@type"]).toBe("WebApplication");
     expect(ldJson.name).toBe(ROUTE_METADATA_CONFIGS.clinicalChaos.title);
-    expect(ldJson.description).toBe(ROUTE_METADATA_CONFIGS.clinicalChaos.description);
+    expect(ldJson.description).toBe(
+      ROUTE_METADATA_CONFIGS.clinicalChaos.description
+    );
   });
 
   it("renders Retro Labyrinth dedicated game page and aligned WebApplication JSON-LD", async () => {
@@ -291,12 +357,16 @@ describe("Arcade Dedicated Routes Suite", () => {
     expect(container.textContent).toContain("Retro Labyrinth:");
     expect(container.textContent).toContain("Graveyard Roguelike");
 
-    const script = container.querySelector("script[type='application/ld+json']");
+    const script = container.querySelector(
+      "script[type='application/ld+json']"
+    );
     expect(script).not.toBeNull();
     const ldJson = JSON.parse(script!.innerHTML);
     expect(ldJson["@type"]).toBe("WebApplication");
     expect(ldJson.name).toBe(ROUTE_METADATA_CONFIGS.retroLabyrinth.title);
-    expect(ldJson.description).toBe(ROUTE_METADATA_CONFIGS.retroLabyrinth.description);
+    expect(ldJson.description).toBe(
+      ROUTE_METADATA_CONFIGS.retroLabyrinth.description
+    );
   });
 
   it("renders Meme Vault dedicated game page and aligned WebApplication JSON-LD", async () => {
@@ -305,11 +375,15 @@ describe("Arcade Dedicated Routes Suite", () => {
     });
     expect(container.textContent).toContain("Arcade Hub");
 
-    const script = container.querySelector("script[type='application/ld+json']");
+    const script = container.querySelector(
+      "script[type='application/ld+json']"
+    );
     expect(script).not.toBeNull();
     const ldJson = JSON.parse(script!.innerHTML);
     expect(ldJson["@type"]).toBe("WebApplication");
     expect(ldJson.name).toBe(ROUTE_METADATA_CONFIGS.memeVault.title);
-    expect(ldJson.description).toBe(ROUTE_METADATA_CONFIGS.memeVault.description);
+    expect(ldJson.description).toBe(
+      ROUTE_METADATA_CONFIGS.memeVault.description
+    );
   });
 });

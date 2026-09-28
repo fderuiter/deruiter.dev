@@ -8,8 +8,8 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import SchedulePage from "@/app/schedule/page";
-import ContactPage from "@/app/contact/page";
+import SchedulePage from "@/app/(desktop)/schedule/page";
+import ContactPage from "@/app/(desktop)/contact/page";
 import { Footer } from "@/components/Footer";
 import { getPersonNode } from "@/lib/seo";
 

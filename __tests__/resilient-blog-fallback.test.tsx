@@ -9,11 +9,11 @@ import { prisma } from "@/lib/db";
 import { redis, isRedisConfigured } from "@/lib/redis";
 import { revalidateTag, revalidatePath } from "next/cache";
 import { BlogPostService } from "@/lib/services/blog-service";
-import BlogIndexPage from "@/app/blog/page";
+import BlogIndexPage from "@/app/(desktop)/blog/page";
 import BlogPostPage, {
   generateMetadata,
   generateStaticParams,
-} from "@/app/blog/[slug]/page";
+} from "@/app/(desktop)/blog/[slug]/page";
 
 vi.mock("@/lib/db", () => ({
   prisma: {

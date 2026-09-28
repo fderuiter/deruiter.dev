@@ -2,7 +2,7 @@
 import { render, screen, cleanup, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { FALLBACK_BLOG_POSTS } from "@/lib/fallback-blog-posts";
-import BlogPostPage from "@/app/blog/[slug]/page";
+import BlogPostPage from "@/app/(desktop)/blog/[slug]/page";
 
 vi.mock("@/lib/blog", async () => {
   const actual =

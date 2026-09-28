@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
-import { ProofWorkspaceSkeleton } from "../app/proof/ProofWorkspaceSkeleton";
+import { ProofWorkspaceSkeleton } from "../app/(desktop)/proof/ProofWorkspaceSkeleton";
 
 describe("ProofWorkspaceSkeleton (#589)", () => {
   afterEach(() => {

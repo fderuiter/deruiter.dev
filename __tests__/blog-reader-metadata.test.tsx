@@ -13,7 +13,7 @@ vi.mock("@/lib/blog", async () => {
 });
 
 import { getAllPublishedBlogPosts, getBlogPostBySlug } from "@/lib/blog";
-import BlogPostPage from "@/app/blog/[slug]/page";
+import BlogPostPage from "@/app/(desktop)/blog/[slug]/page";
 
 describe("Blog Reader Metadata Display (Ticket #1056)", () => {
   beforeEach(() => {

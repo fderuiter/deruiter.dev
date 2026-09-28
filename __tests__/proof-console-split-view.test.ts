@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 
 describe("Integrated Command Console Split-View Accessibility & Interactive Controls", () => {
-  const pagePath = path.resolve(__dirname, "../app/proof/page.tsx");
+  const pagePath = path.resolve(__dirname, "../app/(desktop)/proof/page.tsx");
   const content = fs.readFileSync(pagePath, "utf-8");
 
   it("should display a text-based terminal split-view alongside the workspace", () => {
@@ -12,17 +12,19 @@ describe("Integrated Command Console Split-View Accessibility & Interactive Cont
   });
 
   it("should support connect, disconnect, prune, delete-step, and list active logic nodes on the canvas", () => {
-    expect(content).toContain("op === \"connect\"");
-    expect(content).toContain("op === \"disconnect\"");
-    expect(content).toContain("op === \"prune\" || op === \"delete-step\"");
-    expect(content).toContain("op === \"list\"");
+    expect(content).toContain('op === "connect"');
+    expect(content).toContain('op === "disconnect"');
+    expect(content).toContain('op === "prune" || op === "delete-step"');
+    expect(content).toContain('op === "list"');
     expect(content).toContain("handleDeleteStep");
   });
 
   it("should render accessible step deletion (×) button on proven derived ledger rows", () => {
     expect(content).toContain("step.isDeletable");
     expect(content).toContain("handleDeleteStep(step.stepNumber)");
-    expect(content).toContain("aria-label={`Delete Step ${step.stepNumber} and prune downstream dependencies`}");
+    expect(content).toContain(
+      "aria-label={`Delete Step ${step.stepNumber} and prune downstream dependencies`}"
+    );
   });
 
   it("should support sequential command history navigation using Up and Down arrow keys", () => {
@@ -56,7 +58,9 @@ describe("Integrated Command Console Split-View Accessibility & Interactive Cont
   });
 
   it("should toggle console open/close and focus input with standard global keyboard shortcuts", () => {
-    expect(content).toContain('(e.ctrlKey && e.key === "\\\\") || (e.ctrlKey && e.key === "`")');
+    expect(content).toContain(
+      '(e.ctrlKey && e.key === "\\\\") || (e.ctrlKey && e.key === "`")'
+    );
     expect(content).toContain("toggleConsole()");
   });
 });

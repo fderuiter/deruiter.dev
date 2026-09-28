@@ -2,11 +2,8 @@
 import React from "react";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
-import {
-  getCompatibleTargets,
-  computeMagneticSnap,
-} from "@/lib/proof-utils";
-import { ProofWorkspaceClient as ProofWorkspacePage } from "@/app/proof/ProofWorkspaceClient";
+import { getCompatibleTargets, computeMagneticSnap } from "@/lib/proof-utils";
+import { ProofWorkspaceClient as ProofWorkspacePage } from "@/app/(desktop)/proof/ProofWorkspaceClient";
 
 describe("Magnetic Snapping & Drag Guides Suite", () => {
   beforeEach(() => {
@@ -48,12 +45,18 @@ describe("Magnetic Snapping & Drag Guides Suite", () => {
     });
 
     it("returns empty list if edge is already established", () => {
-      const targets = getCompatibleTargets("A", "modus-ponens", [{ source: "A", target: "C" }]);
+      const targets = getCompatibleTargets("A", "modus-ponens", [
+        { source: "A", target: "C" },
+      ]);
       expect(targets).toHaveLength(0);
     });
 
     it("identifies valid transitive chaining targets for Hypothetical Syllogism", () => {
-      const targetsFromA = getCompatibleTargets("A", "hypothetical-syllogism", []);
+      const targetsFromA = getCompatibleTargets(
+        "A",
+        "hypothetical-syllogism",
+        []
+      );
       expect(targetsFromA.length).toBe(1);
       expect(targetsFromA[0].targetId).toBe("C");
       expect(targetsFromA[0].ruleSymbol).toBe("HS");
@@ -84,7 +87,9 @@ describe("Magnetic Snapping & Drag Guides Suite", () => {
 
       expect(result.snappedX).toBe(true);
       expect(result.x).toBe(100);
-      expect(result.guides.some((g) => g.type === "vertical" && g.pos === 180)).toBe(true);
+      expect(
+        result.guides.some((g) => g.type === "vertical" && g.pos === 180)
+      ).toBe(true);
     });
 
     it("snaps to peer node Y axis within threshold and generates horizontal alignment guide", () => {
@@ -132,7 +137,9 @@ describe("Magnetic Snapping & Drag Guides Suite", () => {
     it("renders Snap toggle button with active initial status in the canvas header", () => {
       render(<ProofWorkspacePage />);
 
-      const snapBtn = screen.getByRole("button", { name: /Magnetic Snapping: Enabled/i });
+      const snapBtn = screen.getByRole("button", {
+        name: /Magnetic Snapping: Enabled/i,
+      });
       expect(snapBtn).toBeDefined();
       expect(snapBtn.getAttribute("aria-pressed")).toBe("true");
     });
@@ -140,10 +147,14 @@ describe("Magnetic Snapping & Drag Guides Suite", () => {
     it("toggles snapping on/off when clicking the Snap button", () => {
       render(<ProofWorkspacePage />);
 
-      const snapBtn = screen.getByRole("button", { name: /Magnetic Snapping: Enabled/i });
+      const snapBtn = screen.getByRole("button", {
+        name: /Magnetic Snapping: Enabled/i,
+      });
       fireEvent.click(snapBtn);
 
-      const disabledSnapBtn = screen.getByRole("button", { name: /Magnetic Snapping: Disabled/i });
+      const disabledSnapBtn = screen.getByRole("button", {
+        name: /Magnetic Snapping: Disabled/i,
+      });
       expect(disabledSnapBtn.getAttribute("aria-pressed")).toBe("false");
 
       // Click again to re-enable
@@ -154,23 +165,33 @@ describe("Magnetic Snapping & Drag Guides Suite", () => {
     it("toggles snapping mode when pressing keyboard shortcut 'g'", () => {
       render(<ProofWorkspacePage />);
 
-      const snapBtn = screen.getByRole("button", { name: /Magnetic Snapping: Enabled/i });
+      const snapBtn = screen.getByRole("button", {
+        name: /Magnetic Snapping: Enabled/i,
+      });
       expect(snapBtn.getAttribute("aria-pressed")).toBe("true");
 
       // Press G key
       fireEvent.keyDown(window, { key: "g" });
-      expect(screen.getByRole("button", { name: /Magnetic Snapping: Disabled/i })).toBeDefined();
+      expect(
+        screen.getByRole("button", { name: /Magnetic Snapping: Disabled/i })
+      ).toBeDefined();
 
       // Press G key again
       fireEvent.keyDown(window, { key: "G" });
-      expect(screen.getByRole("button", { name: /Magnetic Snapping: Enabled/i })).toBeDefined();
+      expect(
+        screen.getByRole("button", { name: /Magnetic Snapping: Enabled/i })
+      ).toBeDefined();
     });
 
     it("renders connection anchor handles on node cards", () => {
       render(<ProofWorkspacePage />);
 
-      const handleA = screen.getByRole("button", { name: /Drag connection handle from Node A/i });
-      const handleB = screen.getByRole("button", { name: /Drag connection handle from Node B/i });
+      const handleA = screen.getByRole("button", {
+        name: /Drag connection handle from Node A/i,
+      });
+      const handleB = screen.getByRole("button", {
+        name: /Drag connection handle from Node B/i,
+      });
       expect(handleA).toBeDefined();
       expect(handleB).toBeDefined();
     });

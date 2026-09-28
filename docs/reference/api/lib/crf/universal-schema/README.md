@@ -14,6 +14,7 @@
 ## Type Aliases
 
 - [UniversalAstCondition](type-aliases/UniversalAstCondition.md)
+- [UniversalAuditTrailEntry](type-aliases/UniversalAuditTrailEntry.md)
 - [UniversalBiomedicalConcept](type-aliases/UniversalBiomedicalConcept.md)
 - [UniversalBiomedicalConceptProperty](type-aliases/UniversalBiomedicalConceptProperty.md)
 - [UniversalCdashMetadata](type-aliases/UniversalCdashMetadata.md)

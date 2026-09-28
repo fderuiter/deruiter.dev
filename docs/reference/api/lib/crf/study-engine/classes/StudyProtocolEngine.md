@@ -142,7 +142,7 @@ Add Study Epoch to Protocol Graph
 
 ### addField()
 
-> `static` **addField**(`study`, `domainOrFormId`, `fieldData`, `sectionIndexOrOptions?`): `object`
+> `static` **addField**(`study`, `domainOrFormId`, `fieldData`, `sectionIndexOrOptions?`, `actor?`): `object`
 
 Add Clinical Field to Form (Appends or Inserts at Target Index)
 
@@ -162,7 +162,11 @@ Add Clinical Field to Form (Appends or Inserts at Target Index)
 
 ##### sectionIndexOrOptions?
 
-`number` \| \{ `sectionId?`: `string`; `sectionIndex?`: `number`; `targetIndex?`: `number`; \}
+`number` \| \{ `actor?`: [`ActorContext`](../type-aliases/ActorContext.md); `sectionId?`: `string`; `sectionIndex?`: `number`; `targetIndex?`: `number`; \}
+
+##### actor?
+
+[`ActorContext`](../type-aliases/ActorContext.md)
 
 #### Returns
 
@@ -188,7 +192,7 @@ Add Clinical Field to Form (Appends or Inserts at Target Index)
 
 ### addForm()
 
-> `static` **addForm**(`study`, `domain`, `customName?`): `object`
+> `static` **addForm**(`study`, `domain`, `customName?`, `actor?`): `object`
 
 Add / Scaffold CDASH Domain Form
 
@@ -205,6 +209,10 @@ Add / Scaffold CDASH Domain Form
 ##### customName?
 
 `string`
+
+##### actor?
+
+[`ActorContext`](../type-aliases/ActorContext.md)
 
 #### Returns
 
@@ -888,7 +896,7 @@ Inserts an atomic field from a slash command into the specified form/section
 
 ### insertField()
 
-> `static` **insertField**(`study`, `domainOrFormId`, `fieldData`, `options?`): `object`
+> `static` **insertField**(`study`, `domainOrFormId`, `fieldData`, `options?`, `actor?`): `object`
 
 Insert Clinical Field into Specified Section and Position
 
@@ -908,6 +916,10 @@ Insert Clinical Field into Specified Section and Position
 
 ##### options?
 
+###### actor?
+
+[`ActorContext`](../type-aliases/ActorContext.md)
+
 ###### sectionId?
 
 `string`
@@ -919,6 +931,10 @@ Insert Clinical Field into Specified Section and Position
 ###### targetIndex?
 
 `number`
+
+##### actor?
+
+[`ActorContext`](../type-aliases/ActorContext.md)
 
 #### Returns
 
@@ -1449,6 +1465,10 @@ Remove Field with Cascade: Prunes referencing rules/conditions with 1-operation 
 
 ##### options?
 
+###### actor?
+
+[`ActorContext`](../type-aliases/ActorContext.md)
+
 ###### purgeReferencingRules?
 
 `boolean`
@@ -1507,7 +1527,7 @@ Remove Field with Cascade: Prunes referencing rules/conditions with 1-operation 
 
 ### removeForm()
 
-> `static` **removeForm**(`study`, `formIdOrDomain`): `object`
+> `static` **removeForm**(`study`, `formIdOrDomain`, `actor?`): `object`
 
 Remove Form & Automatically Prune Visit and Arm Assignments
 
@@ -1520,6 +1540,10 @@ Remove Form & Automatically Prune Visit and Arm Assignments
 ##### formIdOrDomain
 
 `string`
+
+##### actor?
+
+[`ActorContext`](../type-aliases/ActorContext.md)
 
 #### Returns
 
@@ -1913,7 +1937,7 @@ Appends a resolve or reopen event without rewriting previous review history.
 
 ### updateField()
 
-> `static` **updateField**(`study`, `domainOrFormId`, `fieldIdOrVar`, `updates`): `object`
+> `static` **updateField**(`study`, `domainOrFormId`, `fieldIdOrVar`, `updates`, `actor?`): `object`
 
 Update Existing Clinical Field in Form
 
@@ -1934,6 +1958,10 @@ Update Existing Clinical Field in Form
 ##### updates
 
 `Partial`\<[`CRFField`](../../types/interfaces/CRFField.md)\>
+
+##### actor?
+
+[`ActorContext`](../type-aliases/ActorContext.md)
 
 #### Returns
 

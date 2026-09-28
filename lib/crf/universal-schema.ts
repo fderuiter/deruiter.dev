@@ -409,7 +409,11 @@ const StudyReviewThreadSchema = z.object({
 export const AuditTrailEntrySchema = z.object({
   id: z.string().min(1),
   timestamp: z.string(),
-  changedBy: z.string(),
+  changedBy: z.string().default("System Auditor"),
+  actionType: z.string().optional(),
+  action: z.string().optional(),
+  targetId: z.string().optional(),
+  targetType: z.string().optional(),
   subjectId: z.string().optional(),
   formId: z.string().optional(),
   fieldId: z.string().optional(),
@@ -418,13 +422,10 @@ export const AuditTrailEntrySchema = z.object({
   newValue: z.unknown().optional(),
   userRole: z.string().optional(),
   reasonForChange: z.string().optional(),
-  action: z.string().optional(),
-  actionType: z.string().optional(),
   diagnosticId: z.string().optional(),
   details: z.unknown().optional(),
-  targetId: z.string().optional(),
-  targetType: z.string().optional(),
 });
+export type UniversalAuditTrailEntry = z.infer<typeof AuditTrailEntrySchema>;
 
 export const ElectronicSignatureSchema = z.object({
   id: z.string().min(1),

@@ -465,6 +465,10 @@ export interface AuditTrailEntry {
   id: string;
   timestamp: string; // ISO Date
   changedBy: string;
+  actionType?: string; // e.g. "FORM_CREATE", "FORM_REMOVE", "FIELD_INSERT", "FIELD_UPDATE", "AUTO_FIX"
+  action?: string;
+  targetId?: string; // Form ID, Field ID, or Diagnostic ID
+  targetType?: string;
   subjectId?: string;
   formId?: string;
   fieldId?: string;
@@ -493,14 +497,11 @@ export interface AuditTrailEntry {
     | "Medical Monitor"
     | "Biostatistician"
     | "Clinical Reviewer"
+    | "System Auditor"
     | string;
   reasonForChange?: string;
-  action?: string;
-  actionType?: string;
   diagnosticId?: string;
   details?: string | Record<string, unknown> | unknown;
-  targetId?: string;
-  targetType?: string;
 }
 
 export interface ElectronicSignature {

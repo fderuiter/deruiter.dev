@@ -157,7 +157,7 @@ branches must follow conventional prefixes:
 - `perf/*` - Performance optimizations
 - `chore/*` - Dependencies and repository maintenance
 - `test/*` - Test additions without behavior changes
-- `jules/*` - Reserved for branches opened by the Jules agent
+- `jules/*` or `stitch/*` - Reserved for branches opened by automated agents
 
 Open pull requests against `main` and squash-merge them using a Conventional
 Commit PR title. During the manual hold, an operator creates a Production

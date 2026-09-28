@@ -167,7 +167,14 @@ describe("Developer Experience (DX) Tooling Suite", () => {
       expect(validateBranchName("feat/add-dx-suite").valid).toBe(true);
       expect(validateBranchName("fix/proof-ast-bug").valid).toBe(true);
       expect(validateBranchName("dx/commit-wizard").valid).toBe(true);
-      expect(validateBranchName("jules/add-anthropic-google-secret-detectors").valid).toBe(true);
+      expect(
+        validateBranchName("jules/add-anthropic-google-secret-detectors").valid
+      ).toBe(true);
+      expect(
+        validateBranchName(
+          "stitch/inline-auth-create-api-handler-jm1-98c3487c-9fe7-4278-916a-0ca544a8b95f"
+        ).valid
+      ).toBe(true);
 
       const invalidBranch = validateBranchName("random_branch_name");
       expect(invalidBranch.valid).toBe(false);

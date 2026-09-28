@@ -6,13 +6,36 @@ import {
   extractClientIp,
 } from "@/lib/services/privacy-service";
 
-/** Routes that need Clerk's auth context: the admin area and its API. */
-const isClerkRoute = createRouteMatcher(["/admin(.*)", "/api/admin(.*)"]);
+/** Matchers for routes that require Clerk middleware protection or hydration. */
+const isAdminRoute = createRouteMatcher(["/admin(.*)", "/api/admin(.*)"]);
 const isProtectedAdminRoute = createRouteMatcher([
   "/admin(.*)",
   "/api/admin(.*)",
 ]);
 const isPublicAuthRoute = createRouteMatcher(["/admin/login(.*)"]);
+
+/**
+ * Determines whether a request requires Clerk session hydration.
+ * Method-aware:
+ * - Admin routes (/admin, /api/admin) always require Clerk.
+ * - Non-admin endpoints requiring clerk_admin auth (e.g. POST /api/case-studies)
+ *   hydrate Clerk on mutating methods (POST, PUT, DELETE, PATCH) while keeping public
+ *   read requests (GET) independent of Clerk middleware.
+ */
+export function isClerkRoute(req: NextRequest): boolean {
+  if (isAdminRoute(req)) {
+    return true;
+  }
+  if (
+    req.nextUrl.pathname.startsWith("/api/case-studies") &&
+    req.method !== "GET" &&
+    req.method !== "HEAD" &&
+    req.method !== "OPTIONS"
+  ) {
+    return true;
+  }
+  return false;
+}
 
 /**
  * Privacy-preserving client connection token for API telemetry/rate limiting,

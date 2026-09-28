@@ -409,20 +409,20 @@ const StudyReviewThreadSchema = z.object({
 export const AuditTrailEntrySchema = z.object({
   id: z.string().min(1),
   timestamp: z.string(),
-  subjectId: z.string().min(1),
-  formId: z.string().min(1),
-  fieldId: z.string().min(1),
-  fieldName: z.string().min(1),
-  previousValue: z.union([z.string(), z.number(), z.boolean(), z.null()]),
-  newValue: z.union([z.string(), z.number(), z.boolean(), z.null()]),
   changedBy: z.string(),
-  userRole: z.enum([
-    "Site Coordinator",
-    "Principal Investigator",
-    "CRA Monitor",
-    "Data Manager",
-  ]),
-  reasonForChange: z.string(),
+  subjectId: z.string().optional(),
+  formId: z.string().optional(),
+  fieldId: z.string().optional(),
+  fieldName: z.string().optional(),
+  previousValue: z
+    .union([z.string(), z.number(), z.boolean(), z.null()])
+    .optional(),
+  newValue: z.union([z.string(), z.number(), z.boolean(), z.null()]).optional(),
+  userRole: z.string().optional(),
+  reasonForChange: z.string().optional(),
+  action: z.string().optional(),
+  targetId: z.string().optional(),
+  targetType: z.string().optional(),
 });
 
 export const ElectronicSignatureSchema = z.object({
@@ -522,6 +522,8 @@ export const UniversalCrfProtocolSchema = z.object({
   testScenarios: z.array(TestScenarioSchema).default([]),
   reviewThreads: z.array(StudyReviewThreadSchema).optional(),
   simulationState: EdcSimulationStateSchema.optional(),
+  auditTrail: z.array(AuditTrailEntrySchema).optional(),
+  auditLog: z.array(AuditTrailEntrySchema).optional(),
 });
 export type UniversalCrfProtocol = z.infer<typeof UniversalCrfProtocolSchema>;
 export const UniversalStudyProtocolSchema = UniversalCrfProtocolSchema;

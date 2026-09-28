@@ -8,27 +8,33 @@
 
 ## Properties
 
+### action?
+
+> `optional` **action?**: `string`
+
+***
+
 ### changedBy
 
 > **changedBy**: `string`
 
 ***
 
-### fieldId
+### fieldId?
 
-> **fieldId**: `string`
-
-***
-
-### fieldName
-
-> **fieldName**: `string`
+> `optional` **fieldId?**: `string`
 
 ***
 
-### formId
+### fieldName?
 
-> **formId**: `string`
+> `optional` **fieldName?**: `string`
+
+***
+
+### formId?
+
+> `optional` **formId?**: `string`
 
 ***
 
@@ -38,27 +44,39 @@
 
 ***
 
-### newValue
+### newValue?
 
-> **newValue**: `string` \| `number` \| `boolean` \| `null`
-
-***
-
-### previousValue
-
-> **previousValue**: `string` \| `number` \| `boolean` \| `null`
+> `optional` **newValue?**: `string` \| `number` \| `boolean` \| `null`
 
 ***
 
-### reasonForChange
+### previousValue?
 
-> **reasonForChange**: `string`
+> `optional` **previousValue?**: `string` \| `number` \| `boolean` \| `null`
 
 ***
 
-### subjectId
+### reasonForChange?
 
-> **subjectId**: `string`
+> `optional` **reasonForChange?**: `string`
+
+***
+
+### subjectId?
+
+> `optional` **subjectId?**: `string`
+
+***
+
+### targetId?
+
+> `optional` **targetId?**: `string`
+
+***
+
+### targetType?
+
+> `optional` **targetType?**: `string`
 
 ***
 
@@ -68,6 +86,6 @@
 
 ***
 
-### userRole
+### userRole?
 
-> **userRole**: `"Data Manager"` \| `"Site Coordinator"` \| `"Principal Investigator"` \| `"CRA Monitor"`
+> `optional` **userRole?**: `string`

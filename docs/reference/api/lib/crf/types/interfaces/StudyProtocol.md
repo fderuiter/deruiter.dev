@@ -20,6 +20,20 @@
 
 ***
 
+### auditLog?
+
+> `optional` **auditLog?**: [`AuditTrailEntry`](AuditTrailEntry.md)[]
+
+***
+
+### auditTrail?
+
+> `optional` **auditTrail?**: [`AuditTrailEntry`](AuditTrailEntry.md)[]
+
+Protocol-level audit trail history across authoring and review lifecycle.
+
+***
+
 ### biomedicalConcepts?
 
 > `optional` **biomedicalConcepts?**: [`BiomedicalConcept`](BiomedicalConcept.md)[]

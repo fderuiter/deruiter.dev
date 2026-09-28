@@ -223,4 +223,33 @@ describe("EDC Simulation State Integration", () => {
     );
     expect(parsedStudy.simulationState?.availableSubjects).toEqual(["001-201"]);
   });
+
+  it("5. Replacing or importing a study without simulationState while EDC view remains mounted isolates state and prevents old values from leaking", async () => {
+    window.location.hash = "#mode=edc";
+    render(<CRFStudioContainer />);
+
+    // Add a custom subject or value in active EDC simulation
+    const initialAuditTab = await screen.findByRole("button", {
+      name: /Part 11 Audit Trail/i,
+    });
+    fireEvent.click(initialAuditTab);
+    expect(
+      await screen.findByText(/Initial baseline data entry/i)
+    ).toBeDefined();
+
+    // Select a preset study (which replaces the study with one without simulationState)
+    const presetSelect = screen.getAllByRole("combobox", {
+      name: /Select Clinical Protocol Preset/i,
+    })[0];
+    fireEvent.change(presetSelect, { target: { value: "cns_neuro" } });
+
+    // Confirm that EDC simulator updates and does NOT retain old custom simulationState
+    const auditTabAfterPreset = await screen.findByRole("button", {
+      name: /Part 11 Audit Trail/i,
+    });
+    fireEvent.click(auditTabAfterPreset);
+
+    // Old specific audit log entries from oncology study are cleared/reset for cardiology
+    expect(screen.queryByText(/001-101_v_screen_f_brthyr/i)).toBeNull();
+  });
 });

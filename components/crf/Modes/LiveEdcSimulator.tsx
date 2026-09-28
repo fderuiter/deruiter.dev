@@ -169,8 +169,33 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
         setSignatures(activeSimState.signatures);
       if (activeSimState.availableSubjects !== undefined)
         setAvailableSubjects(activeSimState.availableSubjects);
+    } else if (!activeSimState && lastEmittedStateRef.current !== null) {
+      // Cleanly reset state if incoming study/props have no simulationState
+      setFormValues({});
+      setSdvMap({});
+      setLockedForms({});
+      setQueries([]);
+      setAuditLog([]);
+      setSignatures([]);
+      setAvailableSubjects(["001-101", "001-102", "001-103"]);
     }
-  }, [activeSimState]);
+  }, [activeSimState, study.id]);
+
+  useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
+    if (
+      study.forms.length > 0 &&
+      !study.forms.some((f) => f.id === activeFormId)
+    ) {
+      setActiveFormId(study.forms[0].id);
+    }
+    if (
+      study.visits.length > 0 &&
+      !study.visits.some((v) => v.id === activeVisitId)
+    ) {
+      setActiveVisitId(study.visits[0].id);
+    }
+  }, [study, activeFormId, activeVisitId]);
 
   useEffect(() => {
     if (onUpdateSimulationState) {

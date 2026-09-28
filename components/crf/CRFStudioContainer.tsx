@@ -1817,6 +1817,7 @@ export const CRFStudioContainer: React.FC = () => {
 
         {activeMode === "edc" && (
           <LiveEdcSimulator
+            key={study.id}
             study={study}
             simulationState={study.simulationState}
             onUpdateSimulationState={handleUpdateSimulationState}

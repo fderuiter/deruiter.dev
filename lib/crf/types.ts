@@ -334,6 +334,9 @@ export interface StudyProtocol {
   reviewThreads?: StudyReviewThread[];
   /** Document-level EDC simulation state (audit trail entries, electronic signatures, form values). */
   simulationState?: EdcSimulationState;
+  /** Protocol-level audit trail history across authoring and review lifecycle. */
+  auditTrail?: AuditTrailEntry[];
+  auditLog?: AuditTrailEntry[];
 }
 
 /** Local authoring-review roles, unrelated to EDC permissions or audit roles. */
@@ -461,19 +464,26 @@ export interface EDCQuery {
 export interface AuditTrailEntry {
   id: string;
   timestamp: string; // ISO Date
-  subjectId: string;
-  formId: string;
-  fieldId: string;
-  fieldName: string;
-  previousValue: string | number | boolean | null;
-  newValue: string | number | boolean | null;
   changedBy: string;
-  userRole:
+  subjectId?: string;
+  formId?: string;
+  fieldId?: string;
+  fieldName?: string;
+  previousValue?: string | number | boolean | null;
+  newValue?: string | number | boolean | null;
+  userRole?:
     | "Site Coordinator"
     | "Principal Investigator"
     | "CRA Monitor"
-    | "Data Manager";
-  reasonForChange: string;
+    | "Data Manager"
+    | "Medical Monitor"
+    | "Biostatistician"
+    | "Clinical Reviewer"
+    | string;
+  reasonForChange?: string;
+  action?: string;
+  targetId?: string;
+  targetType?: string;
 }
 
 export interface ElectronicSignature {

@@ -611,7 +611,7 @@ export default function SchemaFlowWorkspace() {
 
             {/* Floating click prompt guidance label */}
             <div className="absolute bottom-3 left-3 right-3 bg-zinc-950/80 border border-zinc-900 rounded-xl p-2.5 flex items-center justify-between select-none">
-              <span className="text-[10px] font-mono text-zinc-500 leading-none">
+              <span className="text-[10px] font-mono text-muted leading-none">
                 {selectedNodeId 
                   ? `👉 Selected NODE ${selectedNodeId}. Click target node to draw directed branch.` 
                   : "💡 Click a node, then click another node to connect them dynamically."}
@@ -631,7 +631,7 @@ export default function SchemaFlowWorkspace() {
                 <div className={`w-8 h-8 rounded-xl flex items-center justify-center border ${
                   isE_Proven 
                     ? "bg-emerald-950/40 text-emerald-400 border-emerald-900/60" 
-                    : "bg-zinc-900/50 text-zinc-500 border-zinc-850"
+                    : "bg-zinc-900/50 text-muted border-zinc-850"
                 }`}>
                   {isE_Proven ? <IconCheck className="w-4 h-4" /> : <IconCircleDot className="w-4 h-4 animate-pulse" />}
                 </div>
@@ -639,7 +639,7 @@ export default function SchemaFlowWorkspace() {
                   <h4 className="text-xs font-black uppercase text-zinc-300 tracking-wider">
                     Goal R Verification
                   </h4>
-                  <p className="text-[11px] text-zinc-500 mt-0.5 leading-relaxed">
+                  <p className="text-[11px] text-muted mt-0.5 leading-relaxed">
                     {isE_Proven
                       ? "Success: Conclusion verified successfully on GPU."
                       : isC_Proven
@@ -648,7 +648,7 @@ export default function SchemaFlowWorkspace() {
                   </p>
                 </div>
               </div>
-              <div className="mt-3 pt-3 border-t border-zinc-900 flex justify-between text-[10px] font-mono text-zinc-500">
+              <div className="mt-3 pt-3 border-t border-zinc-900 flex justify-between text-[10px] font-mono text-muted">
                 <span>PATHWAYS ACTIVE:</span>
                 <span className="text-brand-cyan font-extrabold">{edges.length}</span>
               </div>
@@ -700,7 +700,7 @@ export default function SchemaFlowWorkspace() {
                     <IconCpu className="w-3.5 h-3.5 text-brand-cyan" />
                     Solver RAM Telemetry
                   </h4>
-                  <p className="text-[10px] text-zinc-500 mt-0.5 leading-relaxed">
+                  <p className="text-[10px] text-muted mt-0.5 leading-relaxed">
                     Compositor thread updates. Zero main-thread layout thrashing.
                   </p>
                 </div>
@@ -716,7 +716,7 @@ export default function SchemaFlowWorkspace() {
                   >
                     {isSolverLoopActive ? "■ Stop Solver Loop" : "▶ Start Solver Loop"}
                   </button>
-                  <span className="text-[9px] font-mono text-zinc-500">
+                  <span className="text-[9px] font-mono text-muted">
                     60FPS SECURE
                   </span>
                 </div>
@@ -739,7 +739,7 @@ export default function SchemaFlowWorkspace() {
               <span className="w-2.5 h-2.5 rounded-full bg-red-500/80 shrink-0"></span>
               <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/80 shrink-0"></span>
               <span className="w-2.5 h-2.5 rounded-full bg-green-500/80 shrink-0"></span>
-              <span className="text-[10px] font-mono text-zinc-500 font-bold ml-2 truncate min-w-0">
+              <span className="text-[10px] font-mono text-muted font-bold ml-2 truncate min-w-0">
                 PROOF-TACTIC-SHELL
               </span>
             </div>
@@ -756,14 +756,14 @@ export default function SchemaFlowWorkspace() {
             {consoleLogs.map((log) => (
               <div key={log.id} className="space-y-0.5 min-w-0">
                 {log.type === "command" && (
-                  <div className="flex items-center gap-1.5 text-zinc-500 font-bold select-none min-w-0">
+                  <div className="flex items-center gap-1.5 text-muted font-bold select-none min-w-0">
                     <span className="text-zinc-700 font-bold shrink-0">~</span>
-                    <span className="text-zinc-500 shrink-0">tactic-cli $</span>
+                    <span className="text-muted shrink-0">tactic-cli $</span>
                     <span className="text-zinc-100 font-bold select-text min-w-0 break-all">{log.text}</span>
                   </div>
                 )}
                 {log.type === "info" && (
-                  <div className="text-zinc-500 whitespace-pre-wrap leading-relaxed select-text min-w-0 break-all">
+                  <div className="text-muted whitespace-pre-wrap leading-relaxed select-text min-w-0 break-all">
                     {log.text}
                   </div>
                 )}
@@ -790,7 +790,7 @@ export default function SchemaFlowWorkspace() {
           <div className="border-t border-zinc-900 bg-zinc-950 px-4 py-3 flex flex-col gap-1.5 min-w-0">
             <div className="flex items-center gap-2 relative min-w-0">
               <span className="text-zinc-700 font-bold font-mono text-[10px] select-none shrink-0">~</span>
-              <span className="text-zinc-500 font-bold font-mono text-[10px] select-none shrink-0 truncate max-w-[90px] xs:max-w-none">tactic-cli $</span>
+              <span className="text-muted font-bold font-mono text-[10px] select-none shrink-0 truncate max-w-[90px] xs:max-w-none">tactic-cli $</span>
               
               <div className="flex-1 relative flex items-center min-h-[1.5rem] min-w-0">
                 {suggestion && (

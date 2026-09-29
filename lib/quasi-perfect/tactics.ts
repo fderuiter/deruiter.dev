@@ -130,9 +130,9 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
         return {
           success: false,
           ramConsumed: 1,
-          message: `error: tactic 'rw' failed. Target '${renderASTString(targetNode)}' does not match hypothesis ${
-            arg ? `[${arg}]` : "context"
-          }.`,
+          message: `error: tactic 'rw' failed. You selected '${renderASTString(targetNode)}', which matches no side of hypothesis ${
+            arg ? `[${arg}]` : "in context"
+          }. Select a sub-term equal to one side of the equality and apply rw again (a wrong target costs 1 GB).`,
         };
       }
 
@@ -149,7 +149,9 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
         return {
           success: false,
           ramConsumed: 1,
-          message: `error: tactic 'rw' failed. Sub-expression '${renderASTString(targetNode)}' does not match '${renderASTString(hypLHS)} = ${renderASTString(hypRHS)}'.`,
+          message: `error: tactic 'rw' failed. You selected '${renderASTString(targetNode)}', but rw [${
+            (matchedHypothesis.metadata?.name as string) || "h"
+          }] rewrites a selected sub-term equal to '${renderASTString(hypLHS)}' or '${renderASTString(hypRHS)}', not a whole larger expression. Tap one of those sub-terms inside the goal and apply rw again (a wrong target costs 1 GB).`,
         };
       }
 

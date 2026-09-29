@@ -1,10 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // @vitest-environment jsdom
 //
-// #1317: "Write NV Flash (+8KB)" added a float to RAM instead of 8 KB to
-// flash, "Clear Flash Storage" wrote a field the engine never reads and the
-// next boot re-seeded sys_log.dat, and "Drain Battery" worked while idle
-// only for the next start to refill the battery.
+// #1317: "Drain Battery" worked while idle, only for the next start to
+// refill the battery. The flash buttons in the same issue are fixed with
+// #1210 and covered by garmin-flash-nvram.test.tsx.
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 (
@@ -13,13 +12,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import {
-  createInitialState,
-  startGame,
-  clearFlashStorage,
-  FLASH_STORAGE_KEY,
-} from "@/lib/garmin-engine";
-import { SyncFlashStorageHandler } from "@/lib/services";
+import { createInitialState, startGame } from "@/lib/garmin-engine";
 
 global.ResizeObserver = class {
   observe = vi.fn();
@@ -114,30 +107,7 @@ beforeEach(() => {
   });
 });
 
-describe("Garmin flash storage boot (#1317)", () => {
-  it("seeds sys_log.dat on a first boot with nothing saved", () => {
-    const state = createInitialState("fenix");
-    expect(state.flashVariables.map((v) => v.name)).toEqual(["sys_log.dat"]);
-    expect(state.allocatedFlashKb).toBe(4);
-  });
-
-  it("keeps a cleared store empty on the next boot and the next run", () => {
-    clearFlashStorage(createInitialState("fenix"));
-    expect(createInitialState("fenix").allocatedFlashKb).toBe(0);
-    expect(startGame(createInitialState("fenix")).flashVariables).toEqual([]);
-  });
-
-  it("the service's clear action also keeps the store empty", async () => {
-    const result = await new SyncFlashStorageHandler().execute({
-      action: "clear",
-    });
-    expect(result.success).toBe(true);
-    expect(store[FLASH_STORAGE_KEY]).toBe("[]");
-    expect(createInitialState("fenix").allocatedFlashKb).toBe(0);
-  });
-});
-
-describe("Garmin debug buttons (#1317)", () => {
+describe("Garmin Drain Battery button (#1317)", () => {
   let container: HTMLDivElement;
   let root: Root;
 
@@ -164,49 +134,11 @@ describe("Garmin debug buttons (#1317)", () => {
     return found!;
   }
 
-  function reading(label: "RAM" | "FLASH"): string {
-    const span = Array.from(container.querySelectorAll("span")).find((s) =>
-      s.textContent?.startsWith(`${label}:`)
-    );
-    return span?.querySelector("strong")?.textContent ?? "";
-  }
-
   async function render() {
     await act(async () => {
       root.render(<GarminWatchSimulator />);
     });
   }
-
-  it("Write NV Flash adds 8 KB to flash and leaves RAM alone", async () => {
-    await render();
-    expect(reading("RAM")).toMatch(/^1\.8 /);
-    expect(reading("FLASH")).toMatch(/^4\.0 /);
-
-    await act(async () => {
-      button(/Write NV Flash/).click();
-    });
-
-    expect(reading("RAM")).toMatch(/^1\.8 /);
-    expect(reading("FLASH")).toMatch(/^12\.0 /);
-    expect(JSON.parse(store[FLASH_STORAGE_KEY])).toHaveLength(2);
-  });
-
-  it("Clear Flash Storage empties flash and it stays empty after Start", async () => {
-    await render();
-    await act(async () => {
-      button(/Clear Flash Storage/).click();
-    });
-    expect(reading("FLASH")).toMatch(/^0\.0 /);
-
-    await act(async () => {
-      window.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter" }));
-    });
-    await act(async () => {
-      vi.advanceTimersByTime(100);
-    });
-    expect(createInitialState("fenix").allocatedFlashKb).toBe(0);
-    expect(reading("FLASH")).toMatch(/^0\.0 /);
-  });
 
   it("Drain Battery is disabled until a run starts", async () => {
     await render();

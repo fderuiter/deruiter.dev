@@ -6,6 +6,7 @@ import {
 import {
   loadPersistedFlashStorage,
   savePersistedFlashStorage,
+  FLASH_STORAGE_KEY,
 } from "@/lib/garmin-engine";
 import { createSuccess, createFailure } from "@/lib/services/service-result";
 
@@ -43,9 +44,12 @@ export class SyncFlashStorageHandler implements SyncFlashStorageSpec {
       }
 
       if (input.action === "clear") {
-        // Store an empty list rather than removing the key, so the next
-        // boot keeps the storage empty instead of re-seeding sys_log.dat.
-        savePersistedFlashStorage([]);
+        if (
+          typeof window !== "undefined" &&
+          typeof window.localStorage?.removeItem === "function"
+        ) {
+          window.localStorage.removeItem(FLASH_STORAGE_KEY);
+        }
         return createSuccess({
           variables: [],
           totalAllocatedKb: 0,

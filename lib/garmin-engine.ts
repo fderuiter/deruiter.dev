@@ -91,13 +91,7 @@ export interface FlashVariable {
 export const FLASH_STORAGE_KEY = "garmin_simulator_flash_storage";
 
 export function loadPersistedFlashStorage(): FlashVariable[] {
-  return readPersistedFlashStorage() ?? [];
-}
-
-// Returns null when nothing has been saved yet, so a first boot can seed the
-// default log file while a deliberately cleared store stays empty (#1317).
-function readPersistedFlashStorage(): FlashVariable[] | null {
-  if (typeof window === "undefined") return null;
+  if (typeof window === "undefined") return [];
   try {
     if (typeof window.localStorage?.getItem === "function") {
       const raw = window.localStorage.getItem(FLASH_STORAGE_KEY);
@@ -111,7 +105,7 @@ function readPersistedFlashStorage(): FlashVariable[] | null {
   } catch {
     // Fall back safely when browser local storage is unavailable
   }
-  return null;
+  return [];
 }
 
 export function savePersistedFlashStorage(flashVars: FlashVariable[]): void {
@@ -291,10 +285,11 @@ export function createInitialState(
   highScore = 0,
   initialFlash?: FlashVariable[]
 ): GameEngineState {
-  const defaultFlashVars: FlashVariable[] = initialFlash ??
-    readPersistedFlashStorage() ?? [
-      { id: 1, name: "sys_log.dat", sizeKb: 4.0, allocatedAt: 0 },
-    ];
+  const flashVars = initialFlash || loadPersistedFlashStorage();
+  const defaultFlashVars: FlashVariable[] =
+    flashVars.length > 0
+      ? flashVars
+      : [{ id: 1, name: "sys_log.dat", sizeKb: 4.0, allocatedAt: 0 }];
   const allocatedFlashKb = Number(
     defaultFlashVars.reduce((acc, v) => acc + v.sizeKb, 0).toFixed(2)
   );

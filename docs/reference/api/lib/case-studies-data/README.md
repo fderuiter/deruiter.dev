@@ -8,14 +8,7 @@
 
 ## Interfaces
 
-- [CaseStudyCommandDefinition](interfaces/CaseStudyCommandDefinition.md)
 - [CaseStudyData](interfaces/CaseStudyData.md)
-- [CaseStudyPlaybackStep](interfaces/CaseStudyPlaybackStep.md)
-
-## Type Aliases
-
-- [CaseStudyCommands](type-aliases/CaseStudyCommands.md)
-- [CaseStudyPlayback](type-aliases/CaseStudyPlayback.md)
 
 ## Variables
 
@@ -23,8 +16,6 @@
 - [CARDIAC\_RISK\_PLAYBACK\_OBJ](variables/CARDIAC_RISK_PLAYBACK_OBJ.md)
 - [CRF\_XL\_COMMANDS\_OBJ](variables/CRF_XL_COMMANDS_OBJ.md)
 - [CRF\_XL\_PLAYBACK\_OBJ](variables/CRF_XL_PLAYBACK_OBJ.md)
-- [DESIGNING\_FOR\_MY\_BROTHER\_COMMANDS\_OBJ](variables/DESIGNING_FOR_MY_BROTHER_COMMANDS_OBJ.md)
-- [DESIGNING\_FOR\_MY\_BROTHER\_PLAYBACK\_OBJ](variables/DESIGNING_FOR_MY_BROTHER_PLAYBACK_OBJ.md)
 - [DUCKDEPLOY\_COMMANDS\_OBJ](variables/DUCKDEPLOY_COMMANDS_OBJ.md)
 - [DUCKDEPLOY\_PLAYBACK\_OBJ](variables/DUCKDEPLOY_PLAYBACK_OBJ.md)
 - [FALLBACK\_CASE\_STUDIES](variables/FALLBACK_CASE_STUDIES.md)

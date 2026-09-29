@@ -6,4 +6,4 @@
 
 # Variable: PROMPTOPS\_COMMANDS\_OBJ
 
-> `const` **PROMPTOPS\_COMMANDS\_OBJ**: [`CaseStudyCommands`](../type-aliases/CaseStudyCommands.md)
+> `const` **PROMPTOPS\_COMMANDS\_OBJ**: `CaseStudyCommands`

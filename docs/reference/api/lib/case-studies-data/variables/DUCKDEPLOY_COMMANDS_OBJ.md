@@ -6,4 +6,4 @@
 
 # Variable: DUCKDEPLOY\_COMMANDS\_OBJ
 
-> `const` **DUCKDEPLOY\_COMMANDS\_OBJ**: [`CaseStudyCommands`](../type-aliases/CaseStudyCommands.md)
+> `const` **DUCKDEPLOY\_COMMANDS\_OBJ**: `CaseStudyCommands`

@@ -6,4 +6,4 @@
 
 # Variable: CRF\_XL\_COMMANDS\_OBJ
 
-> `const` **CRF\_XL\_COMMANDS\_OBJ**: [`CaseStudyCommands`](../type-aliases/CaseStudyCommands.md)
+> `const` **CRF\_XL\_COMMANDS\_OBJ**: `CaseStudyCommands`

@@ -6,4 +6,4 @@
 
 # Variable: CARDIAC\_RISK\_COMMANDS\_OBJ
 
-> `const` **CARDIAC\_RISK\_COMMANDS\_OBJ**: [`CaseStudyCommands`](../type-aliases/CaseStudyCommands.md)
+> `const` **CARDIAC\_RISK\_COMMANDS\_OBJ**: `CaseStudyCommands`

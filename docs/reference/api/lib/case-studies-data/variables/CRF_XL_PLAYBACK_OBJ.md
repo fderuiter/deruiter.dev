@@ -6,4 +6,4 @@
 
 # Variable: CRF\_XL\_PLAYBACK\_OBJ
 
-> `const` **CRF\_XL\_PLAYBACK\_OBJ**: [`CaseStudyPlayback`](../type-aliases/CaseStudyPlayback.md)
+> `const` **CRF\_XL\_PLAYBACK\_OBJ**: `CaseStudyPlayback`

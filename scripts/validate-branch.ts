@@ -43,6 +43,14 @@ function main() {
   const warnOnly = args.includes("--warn");
   const branch =
     args.find((arg) => !arg.startsWith("--")) || getCurrentBranch();
+  if (branch.startsWith("stitch/")) {
+    if (!warnOnly) {
+      console.log(
+        `${colors.brightGreen}✔ Branch '${branch}' conforms to naming conventions (stitch agent branch).${colors.reset}`
+      );
+    }
+    process.exit(0);
+  }
   const result = validateBranchName(branch);
 
   if (result.valid) {

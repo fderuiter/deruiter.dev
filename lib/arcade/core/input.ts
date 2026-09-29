@@ -1,4 +1,5 @@
 import { ViewportMetrics, screenToGameCoords } from "./viewport";
+import { clamp } from "../utils";
 
 export interface PrimaryPointerState {
   x: number;
@@ -175,8 +176,8 @@ export class ArcadeInputManager {
   }
 
   public setVirtualStick(x: number, y: number): void {
-    this.virtualMoveX = Math.max(-1, Math.min(1, x));
-    this.virtualMoveY = Math.max(-1, Math.min(1, y));
+    this.virtualMoveX = clamp(x, -1, 1);
+    this.virtualMoveY = clamp(y, -1, 1);
   }
 
   public setVirtualAction(action: VirtualAction, pressed: boolean): void {
@@ -205,8 +206,8 @@ export class ArcadeInputManager {
     if (this.virtualDirState.up) dpadY -= 1;
     if (this.virtualDirState.down) dpadY += 1;
 
-    const moveX = Math.max(-1, Math.min(1, keyX + dpadX + this.virtualMoveX));
-    const moveY = Math.max(-1, Math.min(1, keyY + dpadY + this.virtualMoveY));
+    const moveX = clamp(keyX + dpadX + this.virtualMoveX, -1, 1);
+    const moveY = clamp(keyY + dpadY + this.virtualMoveY, -1, 1);
 
     // Action keys
     const keyActionA =

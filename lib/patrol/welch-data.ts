@@ -6,6 +6,7 @@
  * and Catmull-Rom spline / elevation profile math utilities.
  * Governs Issue #835 and implements ADR 0044.
  */
+import { clamp } from "@/lib/game-utils";
 
 export type WelchTrailDifficulty =
   "green" | "blue" | "black" | "double-black" | "terrain-park";
@@ -1636,13 +1637,13 @@ export function calculateElevationAt(
   if (zone === "back-bowl") {
     const topY = 140;
     const bottomY = 780;
-    const t = Math.min(Math.max((y - topY) / (bottomY - topY), 0), 1);
+    const t = clamp((y - topY) / (bottomY - topY), 0, 1);
     return Math.round(SUMMIT_ELEVATION_FT - t * VERTICAL_DROP_FT);
   }
 
   const topY = 180;
   const bottomY = 1160;
-  const t = Math.min(Math.max((y - topY) / (bottomY - topY), 0), 1);
+  const t = clamp((y - topY) / (bottomY - topY), 0, 1);
   return Math.round(SUMMIT_ELEVATION_FT - t * VERTICAL_DROP_FT);
 }
 
@@ -1680,7 +1681,7 @@ export function interpolateSkierPosition(
   }
 
   const clampedProgress = Number.isFinite(progress)
-    ? Math.min(Math.max(progress, 0), 1)
+    ? clamp(progress, 0, 1)
     : 0;
 
   // Segment distances

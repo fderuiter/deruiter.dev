@@ -1,4 +1,5 @@
 import { AuditorState, ClinicalSubject } from "./types";
+import { clamp } from "../game-utils";
 
 export type OfficeId =
   | "cro-cubicle-farm"
@@ -245,10 +246,7 @@ export function applyOfficeErrorChance(
   baseChance: number,
   office: OfficeConfig
 ): number {
-  return Math.min(
-    0.95,
-    Math.max(0.05, baseChance + office.modifiers.errorChanceDelta)
-  );
+  return clamp(baseChance + office.modifiers.errorChanceDelta, 0.05, 0.95);
 }
 
 /**
@@ -313,7 +311,7 @@ export function applyOfficeToAuditor(
 ): AuditorState {
   return {
     ...auditor,
-    suspicion: Math.min(100, Math.max(0, office.modifiers.startingSuspicion)),
+    suspicion: clamp(office.modifiers.startingSuspicion, 0, 100),
     suspicionDecayRate:
       auditor.suspicionDecayRate * office.modifiers.suspicionDecayMultiplier,
   };
@@ -328,6 +326,6 @@ export function pickOfficeAmbientEvent(
 ): string {
   const idx = Math.floor(rand() * office.ambientEvents.length);
   return office.ambientEvents[
-    Math.min(office.ambientEvents.length - 1, Math.max(0, idx))
+    clamp(idx, 0, office.ambientEvents.length - 1)
   ];
 }

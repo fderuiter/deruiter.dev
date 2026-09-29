@@ -4,6 +4,8 @@
  * and defensive coordinate inverse math with zero division-by-zero risk.
  */
 
+import { clamp } from "../utils";
+
 export type ViewportMode = "safe-zone" | "integer-letterbox";
 
 export interface ViewportConfig {
@@ -52,15 +54,17 @@ export class ArcadeViewport {
     containerHeight: number,
     rawDpr = 1.0
   ): ViewportMetrics {
-    const dpr = Math.max(1.0, Math.min(rawDpr || 1.0, this.maxDpr));
+    // The 1x floor wins over a configured maxDpr below 1, as it always has.
+    const dpr = clamp(rawDpr || 1.0, 1.0, Math.max(1.0, this.maxDpr));
     const width = Math.max(1, containerWidth);
     const height = Math.max(1, containerHeight);
 
     if (this.mode === "integer-letterbox") {
-      const scale = Math.max(
-        1,
-        Math.floor(Math.min(width / this.baseWidth, height / this.baseHeight))
+      const fitRatio = Math.min(
+        width / this.baseWidth,
+        height / this.baseHeight
       );
+      const scale = Math.max(1, Math.floor(fitRatio));
       const canvasWidth = this.baseWidth * scale;
       const canvasHeight = this.baseHeight * scale;
       const offsetX = Math.max(0, (width - canvasWidth) / 2);
@@ -187,7 +191,7 @@ export function computeCanvasResolution(
       : 1;
   const cap = Number.isFinite(maxDpr) && maxDpr >= 1 ? maxDpr : 1;
   const dpr = Number.isFinite(devicePixelRatio)
-    ? Math.min(cap, Math.max(1, devicePixelRatio))
+    ? clamp(devicePixelRatio, 1, cap)
     : 1;
   const displayWidth = Number.isFinite(cssWidth) && cssWidth > 0 ? cssWidth : 0;
   const width = Math.max(baseWidth, Math.round(displayWidth * dpr));

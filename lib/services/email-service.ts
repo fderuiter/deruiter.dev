@@ -1,6 +1,7 @@
 import { Resend } from "resend";
 import crypto from "crypto";
 import { logger } from "@/lib/logger";
+import { clamp } from "@/lib/game-utils";
 import { env, getEnv } from "@/lib/env";
 import { scheduleEmailRetry } from "@/lib/qstash-retry";
 import { prisma, SuppressionReason, OutboundEmailStatus } from "@/lib/db";
@@ -417,9 +418,10 @@ export class EmailService {
     /** Restrict the run to one queue row (QStash-targeted retry). */
     queueId?: string;
   }): Promise<{ processed: number; succeeded: number; failed: number }> {
-    const limit = Math.min(
-      MAX_RETRY_BATCH_SIZE,
-      Math.max(1, options?.maxBatchSize || MAX_RETRY_BATCH_SIZE)
+    const limit = clamp(
+      options?.maxBatchSize || MAX_RETRY_BATCH_SIZE,
+      1,
+      MAX_RETRY_BATCH_SIZE
     );
     const now = options?.now || new Date();
     const leaseUntil = new Date(now.getTime() + RETRY_LEASE_MS);

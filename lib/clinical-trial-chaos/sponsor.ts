@@ -1,4 +1,5 @@
 import { BIMOFinding, BIMOInspectionReport } from "./types";
+import { clamp } from "../game-utils";
 
 /**
  * A shortcut the player took to keep the sponsor happy. Skeletons stay hidden
@@ -491,10 +492,7 @@ export function pickSponsorRequest(
     SPONSOR_REQUESTS.length > 1
       ? SPONSOR_REQUESTS.filter((r) => r.id !== lastRequestId)
       : SPONSOR_REQUESTS;
-  const idx = Math.min(
-    pool.length - 1,
-    Math.max(0, Math.floor(rand() * pool.length))
-  );
+  const idx = clamp(Math.floor(rand() * pool.length), 0, pool.length - 1);
   return pool[idx];
 }
 
@@ -526,7 +524,7 @@ function nextRequestDelay(rand: () => number): number {
 }
 
 function clampMood(mood: number): number {
-  return Math.min(100, Math.max(0, mood));
+  return clamp(mood, 0, 100);
 }
 
 /**

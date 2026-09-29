@@ -3,6 +3,7 @@
 import "./studio-theme.css";
 import React, { useState, useCallback, useEffect, useMemo } from "react";
 import { logger } from "@/lib/logger";
+import { clamp } from "@/lib/game-utils";
 import { useClipboard } from "@/hooks/useClipboard";
 import {
   StudyProtocol,
@@ -1164,7 +1165,7 @@ export const CRFStudioContainer: React.FC = () => {
         const fields = [...sec.fields];
         const insertAt =
           targetIndex !== undefined
-            ? Math.max(0, Math.min(targetIndex, fields.length))
+            ? clamp(targetIndex, 0, fields.length)
             : fields.length;
         fields.splice(insertAt, 0, fieldToInsert);
         return { ...sec, fields };

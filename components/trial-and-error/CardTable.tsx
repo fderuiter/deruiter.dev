@@ -544,6 +544,7 @@ export function CardTable({
     }
   }, [showBossIntro, showActIntro]);
   const detailView = view.hand.find((h) => h.card.id === detailId);
+  // eslint-disable-next-line no-restricted-syntax -- #1119: file has open-PR/branch changes in flight; swap to clamp() after they land
   const activeIndex = Math.min(focusIndex, Math.max(0, view.hand.length - 1));
   const focusedCard = view.hand[activeIndex];
 
@@ -794,6 +795,7 @@ export function CardTable({
       event.preventDefault();
       if (playing) return;
       const to = event.key === "ArrowLeft" ? index - 1 : index + 1;
+      // eslint-disable-next-line no-restricted-syntax -- #1119: file has open-PR/branch changes in flight; swap to clamp() after they land
       setFocusIndex(Math.max(0, Math.min(last, to)));
       send(
         { type: "MOVE_CARD", cardId, toIndex: to },

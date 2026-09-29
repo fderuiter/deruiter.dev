@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useResizeObserver } from "@/hooks/useResizeObserver";
 import { StudyProtocol, StudioMode, StudioTheme } from "@/lib/crf/types";
 import { getStudyPresetsSync } from "@/lib/crf/presets";
@@ -96,6 +97,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
   onStartSpotlightTour,
   onCopyShareLink,
 }) => {
+  const router = useRouter();
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
   const [presets] = useState<
     Array<{
@@ -350,7 +352,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
                     JSON.stringify(study)
                   );
                 } catch {}
-                window.location.href = "/arcade/clinical-chaos";
+                router.push("/arcade/clinical-chaos");
               }
             }}
             className="hidden 2xl:inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white font-mono text-xs font-bold rounded-lg border border-emerald-500/40 transition-all shadow-xs shrink-0 whitespace-nowrap"
@@ -510,7 +512,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
                             JSON.stringify(study)
                           );
                         } catch {}
-                        window.location.href = "/arcade/clinical-chaos";
+                        router.push("/arcade/clinical-chaos");
                       }
                     }}
                     className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-xs font-mono rounded-xl bg-emerald-950/40 hover:bg-emerald-900/40 text-emerald-200 border border-emerald-800/40 transition-colors"

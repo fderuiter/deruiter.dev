@@ -1,29 +1,22 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const {
-  mockCreate,
-  mockFindMany,
-  mockUpdateMany,
-  mockUpdate,
-  mockSuppressionFind,
-  mockSend,
-} = vi.hoisted(() => ({
-  mockCreate: vi.fn(),
-  mockFindMany: vi.fn().mockResolvedValue([]),
-  mockUpdateMany: vi.fn().mockResolvedValue({ count: 1 }),
-  mockUpdate: vi.fn().mockResolvedValue({}),
-  mockSuppressionFind: vi.fn().mockResolvedValue(null),
-  mockSend: vi
-    .fn()
-    .mockResolvedValue({ data: { id: "msg_live" }, error: null }),
-}));
+const { mockCreate, mockQueryRaw, mockUpdate, mockSuppressionFind, mockSend } =
+  vi.hoisted(() => ({
+    mockCreate: vi.fn(),
+    mockQueryRaw: vi.fn().mockResolvedValue([]),
+    mockUpdate: vi.fn().mockResolvedValue({}),
+    mockSuppressionFind: vi.fn().mockResolvedValue(null),
+    mockSend: vi
+      .fn()
+      .mockResolvedValue({ data: { id: "msg_live" }, error: null }),
+  }));
 
 vi.mock("@/lib/db", () => ({
   prisma: {
+    // Leasing is one FOR UPDATE SKIP LOCKED statement (#1116).
+    $queryRaw: mockQueryRaw,
     outboundEmailQueue: {
       create: mockCreate,
-      findMany: mockFindMany,
-      updateMany: mockUpdateMany,
       update: mockUpdate,
     },
     suppressionList: {
@@ -61,8 +54,7 @@ describe("Outbound email queue tag fidelity and honest queueing (#689)", () => {
     vi.clearAllMocks();
     process.env.RESEND_API_KEY = "re_test_key";
     process.env.VITEST = "0";
-    mockFindMany.mockResolvedValue([]);
-    mockUpdateMany.mockResolvedValue({ count: 1 });
+    mockQueryRaw.mockResolvedValue([]);
     mockUpdate.mockResolvedValue({});
     mockSuppressionFind.mockResolvedValue(null);
     mockCreate.mockResolvedValue({ id: "queue-1" });
@@ -84,7 +76,7 @@ describe("Outbound email queue tag fidelity and honest queueing (#689)", () => {
     });
 
     it("carries persisted tags through to the retry dispatch", async () => {
-      mockFindMany.mockResolvedValueOnce([
+      mockQueryRaw.mockResolvedValueOnce([
         {
           id: "queue-1",
           to: "visitor@example.com",
@@ -110,7 +102,7 @@ describe("Outbound email queue tag fidelity and honest queueing (#689)", () => {
     });
 
     it("still reads legacy rows whose tags were stored as a JSON string", async () => {
-      mockFindMany.mockResolvedValueOnce([
+      mockQueryRaw.mockResolvedValueOnce([
         {
           id: "queue-legacy",
           to: "visitor@example.com",
@@ -134,7 +126,7 @@ describe("Outbound email queue tag fidelity and honest queueing (#689)", () => {
     });
 
     it("omits tags rather than sending a malformed value", async () => {
-      mockFindMany.mockResolvedValueOnce([
+      mockQueryRaw.mockResolvedValueOnce([
         {
           id: "queue-bad",
           to: "visitor@example.com",

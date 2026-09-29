@@ -43,6 +43,7 @@
 
 - [Consumable](type-aliases/Consumable.md)
 - [TableAction](type-aliases/TableAction.md)
+- [TableOutcome](type-aliases/TableOutcome.md)
 
 ## Variables
 

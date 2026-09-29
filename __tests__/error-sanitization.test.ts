@@ -108,5 +108,41 @@ describe("Error Sanitization Utility", () => {
       expect(result.traceFrames).toBeUndefined();
       expect(result.customProp).toBe("Info inside [scrubbed]");
     });
+
+    it("handles null, undefined, primitives, non-string messages/names, causes, and circular references", () => {
+      expect(sanitizeError(null)).toBeNull();
+      expect(sanitizeError(undefined)).toBeUndefined();
+      expect(sanitizeError(0)).toBe(0);
+      expect(sanitizeError(false)).toBe(false);
+
+      // Non-string message & name
+      const nonStrErr: any = { message: 12345, name: true, code: 500 };
+      const resNonStr = sanitizeError(nonStrErr) as any;
+      expect(resNonStr.message).toBe("");
+      expect(resNonStr.name).toBe("Error");
+      expect(resNonStr.code).toBe(500);
+      expect(resNonStr.stack).toBeUndefined();
+
+      // Error with cause
+      const parentErr = new Error("Parent error at /app/main.ts");
+      parentErr.cause = new Error("Child cause at /app/child.ts");
+      const resCause = sanitizeError(parentErr) as any;
+      expect(resCause.message).toBe("Parent error at [scrubbed]");
+      expect(resCause.cause.message).toBe("Child cause at [scrubbed]");
+
+      // Circular reference object property
+      const circularObj: any = { info: "path /app/test.ts" };
+      circularObj.self = circularObj;
+      const errWithCircular: any = {
+        message: "Circular test",
+        details: circularObj,
+      };
+
+      let resCircular: any;
+      expect(() => {
+        resCircular = sanitizeError(errWithCircular);
+      }).not.toThrow();
+      expect(resCircular.details).toBeUndefined();
+    });
   });
 });

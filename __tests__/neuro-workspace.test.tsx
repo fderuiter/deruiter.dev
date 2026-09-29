@@ -136,6 +136,30 @@ describe("NeuroRecon Workspace UI Suite", () => {
     expect(container.textContent).toContain("Intensity Defect");
   });
 
+  it("shows provenance and disables defect cases under a real dataset", async () => {
+    await act(async () => {
+      root = createRoot(container);
+      root.render(<NeuroReconClient />);
+    });
+    const prov = container.querySelector('[data-testid="neuro-provenance"]');
+    expect(prov?.textContent).toMatch(/Synthetic phantom volume/);
+
+    const buttons = () => Array.from(container.querySelectorAll("button"));
+    await act(async () => {
+      buttons()
+        .find((b) => b.textContent?.includes("MNI152 (GLB)"))
+        ?.click();
+    });
+    expect(
+      container.querySelector('[data-testid="neuro-provenance"]')?.textContent
+    ).toMatch(/MNI152.*3D reference mesh/);
+    const case1 = buttons().find((b) => b.textContent?.includes("Case 01"));
+    expect(case1?.disabled).toBe(true);
+    expect(
+      buttons().find((b) => b.textContent?.includes("Sandbox"))?.disabled
+    ).toBe(false);
+  });
+
   it("opens and closes the Field Manual modal", async () => {
     await act(async () => {
       root = createRoot(container);

@@ -9,7 +9,9 @@ import { PlayCabinet } from "@/components/arcade/PlayCabinet";
 import { useTeMotion } from "@/components/trial-and-error/useTeMotion";
 
 const CardTableLoader = () =>
-  import("@/components/trial-and-error/CardTable").then((mod) => mod.CardTable);
+  import("@/components/trial-and-error/Tutorial").then(
+    (mod) => mod.TrialAndErrorTable
+  );
 
 const DynamicCardTable = dynamic(CardTableLoader, {
   ssr: false,
@@ -83,7 +85,7 @@ export const TrialAndErrorClient: React.FC = () => {
             ]}
             importComponent={CardTableLoader}
           >
-            <DynamicCardTable persist />
+            <DynamicCardTable />
           </PlayCabinet>
         </div>
       </div>

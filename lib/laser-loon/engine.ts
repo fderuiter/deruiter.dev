@@ -30,6 +30,13 @@ import {
   ULTIMATE_CHARGE_PER_KILL,
   LOON_HIT_RADIUS,
   LOON_INVULNERABLE_MS,
+  BOSS_ATTACK_BASE_FRAMES,
+  BOSS_ATTACK_FRAMES_PER_ACT,
+  BOSS_ATTACK_MIN_FRAMES,
+  BOSS_PHASE_TWO_INTERVAL_SCALE,
+  BOSS_TELEGRAPH_FRAMES,
+  BOSS_PROJECTILE_RADIUS,
+  BOSS_FIRST_VOLLEY_FRAMES,
 } from "./constants";
 
 export function createInitialState(
@@ -193,7 +200,12 @@ export function spawnBossForAct(
     isBoss: true,
     bossPhase: 1,
     shieldAngle: 0,
-    specialAttackTimer: 0,
+    // The first volley comes about a second and a half after the boss
+    // arrives, so even a quick fight has one.
+    specialAttackTimer: Math.max(
+      0,
+      getBossAttackInterval(actNumber) - BOSS_FIRST_VOLLEY_FRAMES
+    ),
   };
 
   return { boss, nextId: nextId + 1 };
@@ -461,7 +473,13 @@ export function updateTargetsPosition(
   width = DEFAULT_CANVAS_WIDTH
 ): Target[] {
   return targets
-    .filter((t) => t.hp > 0 && (t.isBoss || t.x > -60))
+    .filter(
+      (t) =>
+        t.hp > 0 &&
+        (t.isBoss || t.x > -60) &&
+        (!t.isProjectile ||
+          (t.x < width + 60 && t.y > -60 && t.y < height + 60))
+    )
     .map((t) => {
       const nextT = { ...t };
 
@@ -471,6 +489,12 @@ export function updateTargetsPosition(
       }
 
       nextT.pulsePhase += 0.05 * dt;
+
+      if (nextT.isProjectile) {
+        nextT.x += nextT.vx * dt;
+        nextT.y += nextT.vy * dt;
+        return nextT;
+      }
 
       if (nextT.isBoss) {
         // Boss flight pattern
@@ -999,7 +1023,7 @@ export class LaserLoonEngine extends ArcadeEngine<
 
 /** What a kill means for campaign progress. */
 export type CampaignKillOutcome =
-  "act-kill" | "act-victory" | "campaign-victory";
+  "act-kill" | "act-victory" | "campaign-victory" | "no-credit";
 
 /**
  * Classifies a campaign kill. Every weapon (lasers, the Cryo-Mortar and the
@@ -1009,13 +1033,142 @@ export type CampaignKillOutcome =
  * @param target - The target that was just destroyed.
  * @param actNumber - The act being played.
  * @returns `act-kill` for a regular enemy, `act-victory` for a boss before
- *   the final act, and `campaign-victory` for the final act's boss.
+ *   the final act, `campaign-victory` for the final act's boss, and
+ *   `no-credit` for a boss volley shot, which doesn't count toward the act.
  */
 export function classifyCampaignKill(
-  target: Pick<Target, "isBoss">,
+  target: Pick<Target, "isBoss" | "isProjectile">,
   actNumber: number
 ): CampaignKillOutcome {
+  if (target.isProjectile) return "no-credit";
   if (!target.isBoss) return "act-kill";
   const finalAct = CAMPAIGN_ACTS[CAMPAIGN_ACTS.length - 1]?.actNumber ?? 4;
   return actNumber >= finalAct ? "campaign-victory" : "act-victory";
+}
+
+/**
+ * Frames between a boss's volleys: shorter in later acts, and shorter again
+ * once the boss drops below half HP.
+ *
+ * @param actNumber - The act being played.
+ * @param bossPhase - 1 above half HP, 2 at or below it.
+ */
+export function getBossAttackInterval(
+  actNumber: number,
+  bossPhase = 1
+): number {
+  const base =
+    BOSS_ATTACK_BASE_FRAMES -
+    BOSS_ATTACK_FRAMES_PER_ACT * (Math.max(1, actNumber) - 1);
+  const scaled = bossPhase >= 2 ? base * BOSS_PHASE_TWO_INTERVAL_SCALE : base;
+  return Math.max(BOSS_ATTACK_MIN_FRAMES, Math.round(scaled));
+}
+
+/**
+ * True while a boss is winding up its next volley, so the game can warn the
+ * player before the shots leave.
+ *
+ * @param boss - The boss target.
+ * @param actNumber - The act being played.
+ */
+export function isBossTelegraphing(
+  boss: Pick<Target, "isBoss" | "bossPhase" | "specialAttackTimer">,
+  actNumber: number
+): boolean {
+  if (!boss.isBoss) return false;
+  const interval = getBossAttackInterval(actNumber, boss.bossPhase ?? 1);
+  return (boss.specialAttackTimer ?? 0) >= interval - BOSS_TELEGRAPH_FRAMES;
+}
+
+/** The result of advancing a boss's attack pattern by one frame. */
+export interface BossAttackResult {
+  /** The targets with the boss updated and any volley shots appended. */
+  targets: Target[];
+  /** The next free target id. */
+  nextId: number;
+  /** True on the frame a volley leaves the boss. */
+  fired: boolean;
+  /** True on the frame the boss enters phase 2. */
+  enteredPhaseTwo: boolean;
+}
+
+/**
+ * Advances the live boss's attack timer and fires a volley aimed at the loon
+ * when it runs out. Later acts and phase 2 (at or below half HP) fire more
+ * often and add shots; phase 2 also speeds up the boss's flight. A frozen
+ * boss neither winds up nor fires.
+ *
+ * @param targets - All live targets, including the boss.
+ * @param dt - Frame delta, in 60 fps frames.
+ * @param loonX - The loon's x position.
+ * @param loonY - The loon's y position.
+ * @param actNumber - The act being played.
+ * @param nextId - The next free target id.
+ */
+export function updateBossAttack(
+  targets: Target[],
+  dt: number,
+  loonX: number,
+  loonY: number,
+  actNumber: number,
+  nextId: number
+): BossAttackResult {
+  const index = targets.findIndex((t) => t.isBoss && t.hp > 0);
+  const idle: BossAttackResult = {
+    targets,
+    nextId,
+    fired: false,
+    enteredPhaseTwo: false,
+  };
+  if (index === -1) return idle;
+
+  const boss = { ...targets[index] };
+  let enteredPhaseTwo = false;
+  if ((boss.bossPhase ?? 1) < 2 && boss.hp <= boss.maxHp / 2) {
+    boss.bossPhase = 2;
+    boss.vy *= 1.5;
+    enteredPhaseTwo = true;
+  }
+
+  const nextTargets = [...targets];
+  nextTargets[index] = boss;
+  if (boss.frozenTimer > 0) {
+    return { ...idle, targets: nextTargets, enteredPhaseTwo };
+  }
+
+  boss.specialAttackTimer = (boss.specialAttackTimer ?? 0) + dt;
+  const interval = getBossAttackInterval(actNumber, boss.bossPhase ?? 1);
+  if (boss.specialAttackTimer < interval) {
+    return { ...idle, targets: nextTargets, enteredPhaseTwo };
+  }
+  boss.specialAttackTimer = 0;
+
+  const shots =
+    1 + (actNumber >= 3 ? 1 : 0) + ((boss.bossPhase ?? 1) >= 2 ? 1 : 0);
+  const speed = 3.5 + 0.5 * Math.max(1, actNumber);
+  const aim = Math.atan2(loonY - boss.y, loonX - boss.x);
+  const spread = 0.22;
+  let id = nextId;
+  for (let i = 0; i < shots; i++) {
+    const angle = aim + (i - (shots - 1) / 2) * spread;
+    nextTargets.push({
+      id: id++,
+      x: boss.x - boss.radius,
+      y: boss.y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      radius: BOSS_PROJECTILE_RADIUS,
+      type: boss.type,
+      label: "",
+      color: boss.color,
+      hp: 1,
+      maxHp: 1,
+      points: 5,
+      pulsePhase: 0,
+      frozenTimer: 0,
+      isProjectile: true,
+    });
+  }
+
+  return { targets: nextTargets, nextId: id, fired: true, enteredPhaseTwo };
 }

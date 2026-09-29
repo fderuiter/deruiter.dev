@@ -23,6 +23,7 @@ export {
   BLINDED_DATA_REVIEW_SCENARIO,
   CSR_LOCK_SCENARIO,
   DEMOGRAPHICS_SCENARIO,
+  GUIDED_BLIND_SCENARIO,
   DMC_MILESTONE_SCENARIO,
   DMC_OPEN_SESSION_SCENARIO,
   DMC_RELICS,
@@ -185,6 +186,15 @@ export {
   type SnapshotInvalidation,
   type TransitionOutcome,
 } from "./internal/snapshots";
+export {
+  TUTORIAL_STEPS,
+  nextTutorialStep,
+  tutorialStepAfter,
+  tutorialStepDone,
+  type TutorialStep,
+  type TutorialTarget,
+  type TutorialWait,
+} from "./internal/tutorial";
 export { compileDraft, compileShell } from "./internal/compile";
 export {
   RELIC_PHASE_LABELS,

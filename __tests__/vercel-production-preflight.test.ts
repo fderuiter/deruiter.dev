@@ -393,4 +393,18 @@ describe("Vercel Headroom Capacity Preflight Check", () => {
     expect(result).toBe(false);
     expect(loggedText(logger)).toContain("VERCEL_TOKEN is not set");
   });
+
+  it("executes headroom script via subprocess when VERCEL_HEADROOM_TEST=1 and fails on critical snapshot", async () => {
+    const logger = silentLogger();
+    const env: Env = {
+      ...validProductionEnv(),
+      VERCEL_TOKEN: "test_token_123",
+      VERCEL_HEADROOM_TEST: "1",
+    };
+    const result = await verifyVercelHeadroomCapacity(env, logger);
+    expect(result).toBe(false);
+    expect(loggedText(logger)).toContain(
+      "Critical Vercel storage or build time headroom threshold breached"
+    );
+  });
 });

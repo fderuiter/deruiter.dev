@@ -505,5 +505,83 @@ describe("Vercel Hobby Storage & Build Headroom Tracker", () => {
       expect(result.data.meters.functionsStorage.severity).toBe("healthy");
       expect(result.data.meters.functionsStorage.used).toBe(2.0);
     });
+
+    it("handles malformed or nonfinite provider values by keeping meters unreadable", async () => {
+      const mockFetch = vi.fn().mockImplementation((url: string) => {
+        if (url.includes("/v2/usage")) {
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                functionsStorage: { used: "invalid_string" },
+                deploymentStorage: { used: -50.0 },
+                builds: { used: NaN },
+              }),
+          });
+        }
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+      });
+
+      const liveResult = await fetchVercelLiveMetrics({
+        token: "live_test_token",
+        fetchImpl: mockFetch as unknown as typeof fetch,
+      });
+
+      expect(liveResult).toBeNull(); // No valid meters produced from malformed response
+
+      // Evaluate null live samples to verify unreadable severity
+      const evalNull = evaluateMeter({
+        resource: "Functions Storage",
+        used: null,
+        limit: 10.0,
+        unit: "GB",
+        timestamp: new Date().toISOString(),
+      });
+      expect(evalNull.severity).toBe("unreadable");
+      expect(evalNull.isUnreadable).toBe(true);
+    });
+
+    it("normalizes byte counts to GB and seconds to hours explicitly", async () => {
+      const mockFetch = vi.fn().mockImplementation((url: string) => {
+        if (url.includes("/v2/usage")) {
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                functionsStorage: { usedBytes: 5368709120 }, // 5 GB in bytes
+                deploymentStorage: { usedBytes: 2147483648 }, // 2 GB in bytes
+                builds: { usedSeconds: 7200 }, // 2 hours in seconds
+              }),
+          });
+        }
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+      });
+
+      const liveResult = await fetchVercelLiveMetrics({
+        token: "live_test_token",
+        fetchImpl: mockFetch as unknown as typeof fetch,
+      });
+
+      expect(liveResult).not.toBeNull();
+      expect(liveResult?.meters.functionsStorage?.used).toBe(5.0);
+      expect(liveResult?.meters.deploymentStorage?.used).toBe(2.0);
+      expect(liveResult?.meters.buildTime?.used).toBe(2.0);
+    });
+
+    it("preserves static inventory timestamp on fallback and flags stale data when evalTime > 30 days", () => {
+      const futureEvalTime = new Date("2026-11-01T00:00:00.000Z"); // >30 days after snapshot
+      const result = evaluateVercelHeadroom(
+        DEFAULT_THRESHOLDS,
+        {},
+        new HeadroomAlertManager(),
+        undefined,
+        futureEvalTime,
+        null // No live samples
+      );
+
+      expect(result.timestamp).toBe("2026-09-12T23:31:22.151Z"); // Preserves static fallback timestamp
+      expect(result.meters.functionsStorage.severity).toBe("stale");
+      expect(result.meters.functionsStorage.isStale).toBe(true);
+    });
   });
 });

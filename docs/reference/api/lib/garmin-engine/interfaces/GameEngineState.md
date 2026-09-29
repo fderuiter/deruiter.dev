@@ -48,6 +48,8 @@
 
 > **distanceMeters**: `number`
 
+Unrounded distance; round only when displaying.
+
 ***
 
 ### flashFiles?
@@ -155,6 +157,14 @@
 ### score
 
 > **score**: `number`
+
+***
+
+### scoreRemainder?
+
+> `optional` **scoreRemainder?**: `number`
+
+Fractional score (0 to under 1) carried between ticks.
 
 ***
 

@@ -76,7 +76,7 @@ const STACK_LAYERS: StackLayer[] = [
     borderColor: "hover:border-emerald-400/40",
     glowColor: "bg-emerald-500/5",
     technologies: [
-      { name: "@chenglou/pretext", version: "v0.0.5", role: "Userland multiline canvas text measurement", link: "https://github.com/chenglou/pretext" },
+      { name: "@chenglou/pretext", version: "v0.0.9", role: "Userland multiline canvas text measurement", link: "https://github.com/chenglou/pretext" },
       { name: "Greedy LPT Scheduler", version: "Custom", role: "Zero-whitespace masonry bento grid packing" },
       { name: "ResizeObserver", version: "Native", role: "Asynchronous element boundary surveillance" },
     ],

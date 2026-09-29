@@ -2,6 +2,7 @@
 
 import React, { useCallback } from "react";
 import { GameMode, PuzzlerLevelDef } from "@/lib/quasi-perfect/types";
+import { describeModeRules } from "@/lib/quasi-perfect/ram";
 import { ModalContainer } from "@/components/ui/ModalContainer";
 import {
   IconSparkles,
@@ -27,6 +28,8 @@ export const TheoryBriefingModal: React.FC<TheoryBriefingModalProps> = ({
   onClose,
   onToggleMode,
 }) => {
+  const modeRules = describeModeRules(gameMode, level);
+
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === "b" || e.key === "B") {
@@ -91,9 +94,10 @@ export const TheoryBriefingModal: React.FC<TheoryBriefingModalProps> = ({
             <span>Current Simulation Mode</span>
           </div>
           <p className="text-[11px] text-zinc-400">
-            {gameMode === "story"
-              ? "Story Mode: Infinite RAM, stress-free exploration & learning."
-              : "Hacker Mode: Strict RAM limits, leaderboard stars, OOM risk."}
+            <span data-testid="briefing-mode-rules">
+              {modeRules.heading} {modeRules.budget} {modeRules.failure}{" "}
+              {modeRules.exhaustion} {modeRules.scoring}
+            </span>
           </p>
         </div>
         <div className="flex items-center gap-1.5 bg-zinc-950 p-1 rounded-lg border border-zinc-800">

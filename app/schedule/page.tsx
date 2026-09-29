@@ -20,6 +20,8 @@ import { NextPrevNav } from "@/components/ui/NextPrevNav";
 import { PageLayout } from "@/components/PageLayout";
 import { ContactForm } from "@/components/ContactForm";
 import { ARCADE_GAME_COUNT } from "@/lib/arcade";
+import { FAQAccordion } from "@/components/ui/FAQAccordion";
+import { SCHEDULE_FAQ } from "@/lib/faq-content";
 
 const GOOGLE_CALENDAR_URL = "https://calendar.app.google/YnR5oxos7ZTLyvUp8";
 
@@ -213,6 +215,12 @@ export default function SchedulePage() {
             <ContactForm initialIntent="consulting" />
           </div>
         </div>
+
+        <FAQAccordion
+          items={SCHEDULE_FAQ}
+          pageUrl="/schedule"
+          className="mt-12 mb-4"
+        />
 
         {/* Sequential Next / Prev Flow */}
         <NextPrevNav

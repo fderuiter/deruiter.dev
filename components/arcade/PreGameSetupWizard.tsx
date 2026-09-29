@@ -384,7 +384,6 @@ interface PreGameSetupWizardProps {
   isOpen: boolean;
   onComplete: (config: GameSetupConfig) => void;
   onCancel?: () => void;
-  isCircularDisplay?: boolean;
 }
 
 export const PreGameSetupWizard: React.FC<PreGameSetupWizardProps> = ({
@@ -393,7 +392,6 @@ export const PreGameSetupWizard: React.FC<PreGameSetupWizardProps> = ({
   isOpen,
   onComplete,
   onCancel,
-  isCircularDisplay = false,
 }) => {
   const { playNote, playHover, playSubmit, playKeystroke } = useAudio();
   const { announce } = useAnnouncer();
@@ -524,11 +522,9 @@ export const PreGameSetupWizard: React.FC<PreGameSetupWizardProps> = ({
       <div
         ref={modalRef}
         tabIndex={-1}
-        className={`w-full max-w-xl max-h-[92%] bg-zinc-950 border-2 border-amber-500/40 rounded-2xl p-4 sm:p-6 shadow-[0_0_50px_rgba(245,158,11,0.2)] flex flex-col justify-between overflow-y-auto text-white font-mono ${
-          isCircularDisplay
-            ? "rounded-full aspect-square justify-center p-6 text-[11px]"
-            : ""
-        }`}
+        // Always a rectangle, even over the round Garmin face: a circular
+        // panel clipped the title, step dots and Next Step button.
+        className="w-full max-w-xl max-h-[92%] bg-zinc-950 border-2 border-amber-500/40 rounded-2xl p-4 sm:p-6 shadow-[0_0_50px_rgba(245,158,11,0.2)] flex flex-col justify-between overflow-y-auto text-white font-mono"
       >
         {/* Header with Step Progress Indicator */}
         <div>

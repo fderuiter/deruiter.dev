@@ -79,10 +79,10 @@ jobs:
   fast-gate:
     name: Fast Gate (Typecheck, Lint, Docs, Unit, Fuzz)
     runs-on: ubuntu-latest
-    # Provisional: the pre-split job's fast slice measured ~10.5 minutes.
-    # Revisit once a clean run confirms the honest post-#731 runtime (#733
-    # acceptance criterion) rather than guessing further.
-    timeout-minutes: 20
+    # Main run 36542102062 passed every check, including mutation testing,
+    # but hit the 20-minute cap during cleanup. Allow bounded cleanup
+    # headroom without changing the runner, checks, or concurrency.
+    timeout-minutes: 25
 
     services:
       postgres:

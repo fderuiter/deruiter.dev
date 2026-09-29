@@ -137,6 +137,7 @@ export interface CrashReport {
     | "Symbol Not Found"
     | "Watchdog Tripped"
     | "Null Pointer"
+    | "Stack Overflow"
     | "Out Of Storage"
     | "Power Loss";
   file: string;
@@ -980,16 +981,29 @@ export function updateGameSimulation(
           heapLimitKb: DEVICE_PROFILES[updatedState.device].ramLimitKb,
         };
         break;
-      } else if (obs.type === "null_pointer" || obs.type === "stack_overflow") {
+      } else if (obs.type === "null_pointer") {
         crashTriggered = {
-          errorType:
-            obs.type === "null_pointer" ? "Null Pointer" : "Symbol Not Found",
+          errorType: "Null Pointer",
           file: "Garmin_Schvitz_App.mc",
           line: 77,
           stackTrace: [
-            `Symbol Not Found Error in Garmin_Schvitz_App.mc:77`,
-            `Failed symbol: :${obs.label.toLowerCase()}`,
+            "Null Pointer Exception in Garmin_Schvitz_App.mc:77",
+            "Attempted to access a member of null: :activeView",
             "at Ui.View.findDrawableById() [Ui.mc:104]",
+          ],
+          heapUsedKb: updatedState.allocatedRamKb,
+          heapLimitKb: DEVICE_PROFILES[updatedState.device].ramLimitKb,
+        };
+        break;
+      } else if (obs.type === "stack_overflow") {
+        crashTriggered = {
+          errorType: "Stack Overflow",
+          file: "Garmin_Schvitz_App.mc",
+          line: 118,
+          stackTrace: [
+            "Stack Overflow Error in Garmin_Schvitz_App.mc:118",
+            "Call depth exceeded: recursive onUpdate()",
+            "at Garmin_Schvitz_App.onUpdate() [App.mc:118]",
           ],
           heapUsedKb: updatedState.allocatedRamKb,
           heapLimitKb: DEVICE_PROFILES[updatedState.device].ramLimitKb,
@@ -1197,8 +1211,32 @@ export function renderCanvasFrame(
     drawOverheatFog(ctx, state);
   }
 
+  // 7. Paused: dim the frozen frame so it can't be mistaken for live play
+  if (state.gameState === "paused") {
+    drawPausedOverlay(ctx);
+  }
+
   ctx.restore();
 }
+
+function drawPausedOverlay(ctx: CanvasRenderingContext2D) {
+  ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+  ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+  ctx.textAlign = "center";
+  ctx.fillStyle = CIQ_PALETTE.white;
+  ctx.font = "bold 16px monospace";
+  ctx.fillText("PAUSED", CANVAS_SIZE / 2, CANVAS_SIZE / 2 - 4);
+  ctx.fillStyle = CIQ_PALETTE.lightGray;
+  ctx.font = "8px monospace";
+  ctx.fillText("PRESS START / ENTER", CANVAS_SIZE / 2, CANVAS_SIZE / 2 + 12);
+}
+
+// The top HUD row sits inside the round display's safe area: at the side
+// labels' cap height (y≈50) the display is visible from about x=35 to x=245,
+// so labels inset 60 px from either edge keep clear of the bezel (#1318).
+const HUD_SIDE_INSET_X = 60;
+const HUD_SIDE_Y = 58;
+const HUD_SCORE_Y = 40;
 
 /**
  * Draws HUD elements inside the circular screen
@@ -1218,27 +1256,35 @@ function drawHud(ctx: CanvasRenderingContext2D, state: GameEngineState) {
       : state.battery < 30
         ? CIQ_PALETTE.yellow
         : CIQ_PALETTE.green;
-  ctx.fillText(`BAT: ${Math.round(state.battery)}%`, 45, 40);
+  ctx.fillText(
+    `BAT: ${Math.round(state.battery)}%`,
+    HUD_SIDE_INSET_X,
+    HUD_SIDE_Y
+  );
 
   // Low power alarm badge
   if (state.battery < 15 && state.battery > 0) {
     ctx.fillStyle = CIQ_PALETTE.red;
-    ctx.fillRect(45, 43, 62, 10);
+    ctx.fillRect(HUD_SIDE_INSET_X, HUD_SIDE_Y + 3, 62, 10);
     ctx.fillStyle = CIQ_PALETTE.white;
     ctx.font = "bold 7px monospace";
-    ctx.fillText("⚠️ LOW POWER", 47, 51);
+    ctx.fillText("⚠️ LOW POWER", HUD_SIDE_INSET_X + 2, HUD_SIDE_Y + 11);
   }
 
   ctx.textAlign = "right";
   ctx.fillStyle = CIQ_PALETTE.lightGray;
   ctx.font = "bold 9px monospace";
-  ctx.fillText(state.device.toUpperCase(), CANVAS_SIZE - 45, 40);
+  ctx.fillText(
+    state.device.toUpperCase(),
+    CANVAS_SIZE - HUD_SIDE_INSET_X,
+    HUD_SIDE_Y
+  );
 
   // Top Center: Score & Heart Rate
   ctx.textAlign = "center";
   ctx.fillStyle = CIQ_PALETTE.white;
   ctx.font = "bold 11px monospace";
-  ctx.fillText(`${state.score} PTS`, CANVAS_SIZE / 2, 52);
+  ctx.fillText(`${state.score} PTS`, CANVAS_SIZE / 2, HUD_SCORE_Y);
 
   // Bottom HUD Box (RAM & Flash Meter Gauges)
   const ramY = 214;

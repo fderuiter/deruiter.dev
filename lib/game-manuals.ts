@@ -525,7 +525,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         action: "Force Garbage Collection",
         description:
           "Execute manual memory compaction to reclaim abandoned object references before hitting the 32KB heap ceiling.",
-        key: "GC Button",
+        key: "G / Backspace / BACK",
       },
     ],
     rules: [

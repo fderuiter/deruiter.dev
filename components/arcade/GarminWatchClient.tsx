@@ -126,9 +126,9 @@ export const GarminWatchClient: React.FC = () => {
               <span>Garbage Collector [GC] Freeze</span>
             </div>
             <p className="text-zinc-400 text-[11px] leading-relaxed">
-              Press <strong>BACK / GC</strong> to trigger the garbage collector.
-              GC clears unused memory but pauses the game for a simulated 500ms.
-              Time it carefully.
+              Press <strong>BACK</strong> (or <strong>G</strong>) to trigger the
+              garbage collector. GC clears unused memory but pauses the game for
+              a simulated 500ms. Time it carefully.
             </p>
           </div>
 

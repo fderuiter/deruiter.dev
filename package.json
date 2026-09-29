@@ -67,6 +67,8 @@
     "test:mutation": "npx tsx scripts/run-mutation-tests.ts",
     "audit:security": "npx tsx scripts/security-audit.ts",
     "audit:secrets": "npx tsx scripts/audit-secret-history.ts",
+    "audit:a11y": "node scripts/generate-accessibility-report.js",
+    "db:sync-blog": "npx tsx scripts/sync-blog-posts.ts",
     "probe:synthetic": "playwright test __tests__/e2e/synthetic-probes.spec.ts",
     "canary:eval": "npx tsx scripts/canary-analyzer.ts"
   },

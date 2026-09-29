@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { scanText, scanFile } from "../lib/security-scan";
-import { shouldScanFile } from "../scripts/validate-commit";
+import { scanText, scanFile, shouldScanFile } from "../lib/security-scan";
 
 describe("Static Regex Guards - scanText", () => {
   it("detects database connection string pattern with credentials", () => {

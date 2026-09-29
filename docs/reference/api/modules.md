@@ -6,6 +6,7 @@
 
 ## Modules
 
+- [hooks/useAnimationFrame](hooks/useAnimationFrame/README.md)
 - [hooks/useAnnouncer](hooks/useAnnouncer/README.md)
 - [hooks/useCanvasResolution](hooks/useCanvasResolution/README.md)
 - [hooks/useClipboard](hooks/useClipboard/README.md)

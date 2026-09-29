@@ -39,6 +39,8 @@ import {
   DEFAULT_RUN_TUNING,
   startGame,
   jettisonOldestVariable,
+  allocateFlashVariable,
+  clearFlashStorage,
   wipeScreenFog,
   updateGameSimulation,
   renderCanvasFrame,
@@ -118,8 +120,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
   const { playNote, playSuccess } = useAudio();
   const { recordEvent } = useTelemetry();
   const { announce } = useAnnouncer();
-  const { allocateMemory, garbageCollect, syncFlashStorage } =
-    useGarminService();
+  const { garbageCollect } = useGarminService();
   const [alertMessage, setAlertMessage] = useState<string>("");
 
   // Pre-Game Setup Wizard choices from the hosting cabinet (null standalone).
@@ -275,58 +276,24 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     }
   }, [playBeep, applyTransition, garbageCollect]);
 
-  // Save Persistent Variable to Flash NVRAM
+  // Save Persistent Variable to Flash NVRAM (+8 KB, persisted across runs)
   const handleSaveFlash = useCallback(() => {
     playBeep(800, 0.03);
-    const current = stateRef.current;
-    const result = allocateMemory({
-      state: current,
-      type: "float",
-      name: `nvram_${Date.now()}`,
-    });
-    if (result.success) {
-      applyTransition(() => result.data.state);
-    } else {
-      syncFlashStorage({
-        action: "save",
-        variables: [
-          ...current.flashVariables,
-          {
-            id: Date.now(),
-            name: `nvram_${current.flashVariables.length + 1}`,
-            sizeKb: 8.0,
-            allocatedAt: Date.now(),
-          },
-        ],
-      }).then((res) => {
-        if (res.success) {
-          applyTransition((state) => ({
-            ...state,
-            flashVariables: res.data.variables,
-            allocatedFlashKb: res.data.totalAllocatedKb,
-          }));
-        } else if (res.error?.message) {
-          setAlertMessage(res.error.message);
-        }
-      });
-    }
-  }, [playBeep, applyTransition, allocateMemory, syncFlashStorage]);
+    applyTransition(
+      (state) =>
+        allocateFlashVariable(
+          state,
+          8,
+          `nvram_${state.flashVariables.length + 1}.dat`
+        ).state
+    );
+  }, [playBeep, applyTransition]);
 
-  // Clear NVRAM Flash Storage
+  // Clear NVRAM Flash Storage (stays empty on the next run)
   const handleClearFlash = useCallback(() => {
     playBeep(500, 0.04);
-    syncFlashStorage({ action: "clear" }).then((res) => {
-      if (res.success) {
-        applyTransition((state) => ({
-          ...state,
-          flashStorage: [],
-          allocatedFlashKb: 0,
-        }));
-      } else if (res.error?.message) {
-        setAlertMessage(res.error.message);
-      }
-    });
-  }, [playBeep, applyTransition, syncFlashStorage]);
+    applyTransition(clearFlashStorage);
+  }, [playBeep, applyTransition]);
 
   // Drain Battery for Power Loss Testing
   const handleDrainBattery = useCallback(() => {
@@ -1270,7 +1237,13 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
         </button>
         <button
           onClick={handleDrainBattery}
-          className="px-2.5 py-1 bg-rose-950/40 hover:bg-rose-900/50 text-rose-300 border border-rose-800/50 rounded shadow cursor-pointer transition-all active:scale-95"
+          disabled={gameState.gameState !== "playing"}
+          title={
+            gameState.gameState === "playing"
+              ? undefined
+              : "Start a run first: each run begins on a full battery"
+          }
+          className="px-2.5 py-1 bg-rose-950/40 hover:bg-rose-900/50 text-rose-300 border border-rose-800/50 rounded shadow cursor-pointer transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100"
         >
           ⚡ Drain Battery (-20%)
         </button>

@@ -1757,3 +1757,23 @@ describe("Garmin progression is refresh-rate independent (#1212)", () => {
     expect(state.thermalStress).toBeLessThan(0.3);
   });
 });
+
+describe("Garmin cleared flash stays cleared (#1317)", () => {
+  it("does not re-seed sys_log.dat after flash storage is cleared", async () => {
+    const { createInitialState, clearFlashStorage, FLASH_STORAGE_KEY } =
+      await import("@/lib/garmin-engine");
+    const previous = globalThis.localStorage?.getItem?.(FLASH_STORAGE_KEY);
+    try {
+      clearFlashStorage(createInitialState("fenix"));
+      const next = createInitialState("fenix");
+      expect(next.flashVariables).toEqual([]);
+      expect(next.allocatedFlashKb).toBe(0);
+    } finally {
+      if (previous == null) {
+        globalThis.localStorage?.removeItem?.(FLASH_STORAGE_KEY);
+      } else {
+        globalThis.localStorage?.setItem?.(FLASH_STORAGE_KEY, previous);
+      }
+    }
+  });
+});

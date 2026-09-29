@@ -68,6 +68,8 @@ export interface Target {
   bossPhase?: number;
   shieldAngle?: number;
   specialAttackTimer?: number;
+  /** A boss volley shot: flies straight, costs a hit on contact, scores no act kill. */
+  isProjectile?: boolean;
 }
 
 export interface IceBlock {

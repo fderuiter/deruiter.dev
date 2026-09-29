@@ -74,6 +74,9 @@ import {
   DEFAULT_CANVAS_HEIGHT,
   LOON_MAX_HITS,
   resolveLoonCollision,
+  updateBossAttack,
+  isBossTelegraphing,
+  BOSS_MINION_SPAWN_RATE,
 } from "@/lib/laser-loon";
 
 const emptySubscribe = () => () => {};
@@ -520,6 +523,7 @@ export const LaserLoon: React.FC = () => {
     (t: Target) => {
       if (mode !== "campaign") return;
       const outcome = classifyCampaignKill(t, currentActNum);
+      if (outcome === "no-credit") return;
       if (outcome === "act-kill") {
         actKillsRef.current += 1;
         setActKills(actKillsRef.current);
@@ -969,6 +973,20 @@ export const LaserLoon: React.FC = () => {
 
           if (actKillsRef.current >= reqKills && !bossSpawnedRef.current) {
             triggerBossEncounter(width, height);
+          } else if (bossSpawnedRef.current) {
+            // A thin trickle of minions keeps the boss fight busy.
+            const boss = targetsRef.current.find((t) => t.isBoss);
+            const minions = targetsRef.current.filter(
+              (t) => !t.isBoss && !t.isProjectile
+            ).length;
+            const cap = (boss?.bossPhase ?? 1) >= 2 ? 3 : 2;
+            if (
+              boss &&
+              minions < cap &&
+              Math.random() < BOSS_MINION_SPAWN_RATE * dt
+            ) {
+              spawnTarget(width, height);
+            }
           } else if (
             !bossSpawnedRef.current &&
             targetsRef.current.length < 5 &&
@@ -1175,6 +1193,27 @@ export const LaserLoon: React.FC = () => {
         ctx.restore();
       });
 
+      // Boss volleys, telegraphed by a wind-up ring, can cost the loon a hit
+      if (gameState === "playing" && mode === "campaign") {
+        const attack = updateBossAttack(
+          targetsRef.current,
+          dt,
+          loon.x,
+          loon.y,
+          currentActNum,
+          nextTargetIdRef.current
+        );
+        targetsRef.current = attack.targets;
+        nextTargetIdRef.current = attack.nextId;
+        if (attack.enteredPhaseTwo) {
+          const boss = attack.targets.find((t) => t.isBoss);
+          if (boss) {
+            addFloatingText(boss.x, boss.y - 70, "BOSS ENRAGED!", "#f59e0b");
+          }
+        }
+        if (attack.fired) playLaserSound("ruby-laser");
+      }
+
       // 6. Update & Render Targets / Enemies / Bosses
       targetsRef.current = updateTargetsPosition(
         targetsRef.current,
@@ -1212,6 +1251,17 @@ export const LaserLoon: React.FC = () => {
         ctx.strokeStyle = t.frozenTimer > 0 ? "#38bdf8" : t.color;
         ctx.lineWidth = t.isBoss ? 3.5 : 2;
         ctx.stroke();
+
+        // Wind-up ring before a boss volley
+        if (t.isBoss && isBossTelegraphing(t, currentActNum)) {
+          ctx.strokeStyle = "#f59e0b";
+          ctx.lineWidth = 2;
+          ctx.setLineDash([6, 6]);
+          ctx.beginPath();
+          ctx.arc(t.x, t.y, t.radius + 26 + pulse, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
 
         // Boss rotating energy shields
         if (t.isBoss && t.shieldAngle !== undefined) {
@@ -1535,6 +1585,7 @@ export const LaserLoon: React.FC = () => {
     playIceShatterSound,
     playPowerUpSound,
     playLoonHitSound,
+    playLaserSound,
     spawnExplosion,
     addFloatingText,
     addScore,

@@ -27,6 +27,8 @@ model CaseStudy {
   hero_image_url          String?
   created_at              DateTime @default(now())
   updated_at              DateTime @updatedAt
+
+  @@index([published, created_at])
 }
 ```
 
@@ -47,6 +49,8 @@ model CaseStudyFeedback {
 
   @@index([caseStudySlug])
   @@index([connectionHash])
+  @@index([caseStudySlug, createdAt])
+  @@index([caseStudySlug, connectionHash, createdAt])
 }
 
 model CaseStudyReaction {
@@ -104,6 +108,9 @@ model BlogPost {
   created_at           DateTime            @default(now())
   updated_at           DateTime            @updatedAt
   newsletterDispatch   NewsletterDispatch?
+
+  @@index([published, created_at])
+  @@index([published, updated_at])
 }
 ```
 

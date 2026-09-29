@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { env } from "@/lib/env";
+import { logger } from "@/lib/logger";
 
 declare global {
   interface Window {
@@ -30,7 +31,13 @@ export function SerwistRegister(): null {
         }
       } catch (err) {
         if (env.NODE_ENV !== "production") {
-          console.debug("Service worker registration non-critical notice:", err);
+          // logger.debug takes no error argument; log() routes err through
+          // sanitizeError. Debug entries are never sent to Sentry.
+          logger.log(
+            "debug",
+            "Service worker registration non-critical notice:",
+            err
+          );
         }
       }
     };

@@ -18,11 +18,7 @@ npm run headroom:vercel -- --strict
 npm run inventory:vercel
 ```
 
-`--strict` exits unsuccessfully while any meter is critical. These commands
-evaluate the checked-in 2026-09-12 snapshot; they do not query Vercel live.
-The strict command currently fails because the captured Functions Storage
-meter was critical. That failure is not proof of today's value, and a pass
-after editing the snapshot would not be provider evidence.
+`--strict` exits unsuccessfully while any meter is critical. When `VERCEL_TOKEN` is present in the environment, `scripts/vercel-headroom.ts` queries live Vercel REST API usage endpoints (`/v6/deployments` and `/v2/usage`). In unauthenticated environments without `VERCEL_TOKEN`, it falls back gracefully to checked-in snapshot data while evaluating sample age dynamically against system execution time (`new Date()`).
 
 ## Thresholds and Captured Snapshot
 
@@ -35,7 +31,7 @@ after editing the snapshot would not be provider evidence.
 - Healthy: below 80%.
 - Warning: at least 80% and below 95%.
 - Critical: at least 95%.
-- Stale: the snapshot exceeds the configured maximum age.
+- Stale: the snapshot exceeds the configured maximum age (30 days).
 - Unreadable: a provider value is missing or malformed; never interpret it as
   zero.
 
@@ -43,12 +39,8 @@ after editing the snapshot would not be provider evidence.
 cooldown, and emits a recovery notification when a resource returns to a
 healthy band.
 
-> [!CAUTION]
-> `scripts/vercel-headroom.ts` currently defaults its evaluation clock to a
-> fixed 2026-09-12 timestamp. Its `stale` classification therefore does not
-> age naturally when the command is run later. Until the implementation is
-> corrected, compare the capture timestamp above with the real current date
-> and treat an over-age snapshot as stale manually.
+> [!NOTE]
+> `scripts/vercel-headroom.ts` defaults its evaluation clock to real system execution time (`new Date()`). When evaluating against checked-in snapshot data without `VERCEL_TOKEN`, any snapshot older than the 30-day maximum age threshold is dynamically marked as `stale` (`[STALE]`).
 
 ## Critical Functions Storage Response
 

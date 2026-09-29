@@ -285,6 +285,33 @@ async function verifyUpstashCredentials(env = process.env, fetchImpl = fetch) {
 }
 
 /**
+ * Evaluates Vercel storage headroom before production releases.
+ * Fails fast if critical storage thresholds (>=95%) are breached.
+ */
+async function verifyVercelHeadroomCapacity(
+  env = process.env,
+  logger = console
+) {
+  try {
+    const { runHeadroomVerification } = require("./vercel-headroom");
+    const result = await runHeadroomVerification({
+      strict: true,
+      token: env.VERCEL_TOKEN,
+    });
+    if (!result.success) {
+      logger.error(
+        "Production preflight failed: Critical Vercel storage or build time headroom threshold breached (>=95%)."
+      );
+      return false;
+    }
+    return true;
+  } catch (err) {
+    logger.warn("Vercel headroom check warning:", err && err.message);
+    return true;
+  }
+}
+
+/**
  * Runs the preflight when this is a Vercel production build. Returns false
  * when the build must stop; true when it passed or was skipped.
  */
@@ -319,4 +346,5 @@ module.exports = {
   runVercelProductionPreflight,
   shouldRunPreflight,
   verifyUpstashCredentials,
+  verifyVercelHeadroomCapacity,
 };

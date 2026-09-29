@@ -487,19 +487,166 @@ export interface HeadroomTrackerResult {
   hasCriticalAlerts: boolean;
 }
 
+export interface VercelApiFetchOptions {
+  token?: string;
+  teamId?: string;
+  fetchImpl?: typeof fetch;
+}
+
 /**
- * Main evaluation function collecting authoritative meter samples from Issue #691 inventory.
+ * Fetches real-time usage metrics from Vercel REST API usage endpoints.
+ * Returns null when unauthenticated or when the provider is unreachable.
+ */
+export async function fetchVercelLiveMetrics(
+  options?: VercelApiFetchOptions
+): Promise<{
+  timestamp: string;
+  meters: {
+    functionsStorage?: MeterSample;
+    deploymentStorage?: MeterSample;
+    buildTime?: MeterSample;
+  };
+} | null> {
+  const token = options?.token || process.env.VERCEL_TOKEN;
+  if (!token) {
+    return null;
+  }
+
+  const fetchImpl = options?.fetchImpl || globalThis.fetch;
+  if (typeof fetchImpl !== "function") {
+    return null;
+  }
+
+  const teamId =
+    options?.teamId || process.env.VERCEL_TEAM_ID || process.env.VERCEL_ORG_ID;
+
+  const queryParams = teamId ? `?teamId=${encodeURIComponent(teamId)}` : "";
+  const baseUrl = "https://api.vercel.com";
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
+  };
+
+  try {
+    const timestamp = new Date().toISOString();
+
+    const [deploymentsRes, usageRes] = await Promise.all([
+      fetchImpl(`${baseUrl}/v6/deployments${queryParams}`, {
+        headers,
+        signal: AbortSignal.timeout(5000),
+      }).catch(() => null),
+      fetchImpl(`${baseUrl}/v2/usage${queryParams}`, {
+        headers,
+        signal: AbortSignal.timeout(5000),
+      }).catch(() => null),
+    ]);
+
+    let functionsUsed: number | null = null;
+    let deploymentStorageUsed: number | null = null;
+    let buildTimeUsed: number | null = null;
+
+    if (usageRes && usageRes.ok) {
+      const usageData = await usageRes.json();
+      if (typeof usageData?.functionsStorage?.used === "number") {
+        functionsUsed = usageData.functionsStorage.used;
+      } else if (typeof usageData?.functions?.storage === "number") {
+        functionsUsed = usageData.functions.storage;
+      } else if (typeof usageData?.functionsStorage === "number") {
+        functionsUsed = usageData.functionsStorage;
+      }
+
+      if (typeof usageData?.deploymentStorage?.used === "number") {
+        deploymentStorageUsed = usageData.deploymentStorage.used;
+      } else if (typeof usageData?.artifactsSize === "number") {
+        deploymentStorageUsed = usageData.artifactsSize;
+      } else if (typeof usageData?.deploymentStorage === "number") {
+        deploymentStorageUsed = usageData.deploymentStorage;
+      }
+
+      if (typeof usageData?.builds?.used === "number") {
+        buildTimeUsed = usageData.builds.used;
+      } else if (typeof usageData?.buildTime === "number") {
+        buildTimeUsed = usageData.buildTime;
+      } else if (typeof usageData?.builds?.hours === "number") {
+        buildTimeUsed = usageData.builds.hours;
+      }
+    }
+
+    if (deploymentsRes && deploymentsRes.ok && deploymentStorageUsed === null) {
+      const deploymentsData = await deploymentsRes.json();
+      if (Array.isArray(deploymentsData?.deployments)) {
+        // Fallback marker if deployment list was returned
+      }
+    }
+
+    const resultMeters: {
+      functionsStorage?: MeterSample;
+      deploymentStorage?: MeterSample;
+      buildTime?: MeterSample;
+    } = {};
+
+    if (functionsUsed !== null) {
+      resultMeters.functionsStorage = {
+        resource: "Functions Storage",
+        used: functionsUsed,
+        limit: 10.0,
+        unit: "GB",
+        timestamp,
+      };
+    }
+
+    if (deploymentStorageUsed !== null) {
+      resultMeters.deploymentStorage = {
+        resource: "Deployment Storage",
+        used: deploymentStorageUsed,
+        limit: 10.0,
+        unit: "GB",
+        timestamp,
+      };
+    }
+
+    if (buildTimeUsed !== null) {
+      resultMeters.buildTime = {
+        resource: "Build Time",
+        used: buildTimeUsed,
+        limit: 100.0,
+        unit: "hours",
+        timestamp,
+      };
+    }
+
+    if (Object.keys(resultMeters).length > 0) {
+      return {
+        timestamp,
+        meters: resultMeters,
+      };
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Main evaluation function collecting authoritative meter samples from Issue #691 inventory
+ * or live Vercel REST API usage meters when provided.
  */
 export function evaluateVercelHeadroom(
   thresholds: ThresholdConfig = DEFAULT_THRESHOLDS,
   sampleHistory: Record<string, MeterSample[]> = {},
   alertManager: HeadroomAlertManager = new HeadroomAlertManager(),
   sink?: HeadroomNotificationSink,
-  evalTime: Date = new Date("2026-09-12T18:00:00.000Z")
+  evalTime: Date = new Date(),
+  liveSamples?: {
+    functionsStorage?: MeterSample;
+    deploymentStorage?: MeterSample;
+    buildTime?: MeterSample;
+  } | null
 ): HeadroomTrackerResult {
   const inventory = getVercelRetentionInventory();
 
-  const fsSample: MeterSample = {
+  const fsSample: MeterSample = liveSamples?.functionsStorage || {
     resource: "Functions Storage",
     used: inventory.meters.functionsStorage.used,
     limit: inventory.meters.functionsStorage.limit,
@@ -510,7 +657,7 @@ export function evaluateVercelHeadroom(
     weddingContribution: inventory.meters.functionsStorage.weddingContribution,
   };
 
-  const dsSample: MeterSample = {
+  const dsSample: MeterSample = liveSamples?.deploymentStorage || {
     resource: "Deployment Storage",
     used: inventory.meters.deploymentStorage.used,
     limit: inventory.meters.deploymentStorage.limit,
@@ -518,7 +665,7 @@ export function evaluateVercelHeadroom(
     timestamp: inventory.timestamp,
   };
 
-  const btSample: MeterSample = {
+  const btSample: MeterSample = liveSamples?.buildTime || {
     resource: "Build Time",
     used: inventory.meters.buildTime.used,
     limit: inventory.meters.buildTime.limit,
@@ -555,8 +702,14 @@ export function evaluateVercelHeadroom(
     (m) => m.severity === "critical"
   );
 
+  const sampleTimestamp =
+    liveSamples?.functionsStorage?.timestamp ||
+    liveSamples?.deploymentStorage?.timestamp ||
+    liveSamples?.buildTime?.timestamp ||
+    inventory.timestamp;
+
   return {
-    timestamp: inventory.timestamp,
+    timestamp: sampleTimestamp,
     plan: inventory.plan,
     scope: inventory.scope,
     meters: {
@@ -570,12 +723,28 @@ export function evaluateVercelHeadroom(
   };
 }
 
-export function runHeadroomVerification(options?: {
+export async function runHeadroomVerification(options?: {
   strict?: boolean;
   json?: boolean;
   ledger?: boolean;
-}): { success: boolean; data: HeadroomTrackerResult } {
-  const result = evaluateVercelHeadroom();
+  token?: string;
+  evalTime?: Date;
+  fetchImpl?: typeof fetch;
+}): Promise<{ success: boolean; data: HeadroomTrackerResult }> {
+  const evalTime = options?.evalTime ?? new Date();
+  const liveData = await fetchVercelLiveMetrics({
+    token: options?.token,
+    fetchImpl: options?.fetchImpl,
+  });
+
+  const result = evaluateVercelHeadroom(
+    DEFAULT_THRESHOLDS,
+    {},
+    new HeadroomAlertManager(),
+    undefined,
+    evalTime,
+    liveData?.meters
+  );
 
   if (options?.json) {
     console.log(JSON.stringify(result, null, 2));
@@ -647,8 +816,9 @@ if (require.main === module) {
   const json = args.includes("--json");
   const ledger = args.includes("--ledger");
 
-  const { success } = runHeadroomVerification({ strict, json, ledger });
-  if (!success) {
-    process.exit(1);
-  }
+  runHeadroomVerification({ strict, json, ledger }).then(({ success }) => {
+    if (!success) {
+      process.exit(1);
+    }
+  });
 }

@@ -8,6 +8,7 @@ import {
 } from "react";
 import { sanitizeError } from "@/lib/error-sanitization";
 import { logger } from "@/lib/logger";
+import { generateId } from "@/lib/utils";
 import {
   TelemetryOutbox,
   DEFAULT_OUTBOX_CAPACITY,
@@ -550,7 +551,9 @@ export function useTelemetry(options?: UseTelemetryOptions) {
       };
 
       if (opts?.defer) {
-        const taskId = `${projectSlug}:${eventType}:${Date.now()}:${Math.random()}`;
+        const taskId = generateId(`${projectSlug}:${eventType}`, {
+          timestamp: true,
+        });
         let cancel: (() => void) | null = null;
         cancel = scheduleIdleTask(async () => {
           pendingDeferred = pendingDeferred.filter((t) => t.id !== taskId);

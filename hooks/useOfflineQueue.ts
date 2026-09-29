@@ -2,6 +2,7 @@
 
 import { useSyncExternalStore, useCallback, useEffect } from "react";
 import { logger } from "@/lib/logger";
+import { generateId } from "@/lib/utils";
 
 export type QueueItemType = "telemetry" | "reaction" | "feedback" | string;
 
@@ -137,11 +138,7 @@ export function enqueueOfflineRequest<T = unknown>(
 ): QueuedRequest<T> {
   const current = readStorage();
 
-  const id =
-    request.id ||
-    (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-      ? crypto.randomUUID()
-      : `offline_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`);
+  const id = request.id || generateId("offline_", { timestamp: true });
 
   const newEntry: QueuedRequest<T> = {
     id,

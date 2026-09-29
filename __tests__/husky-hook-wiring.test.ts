@@ -164,30 +164,87 @@ describe("Husky hook wiring", () => {
   });
 
   describe("pre-commit ordering and guardrails", () => {
+    const runPreCommitHook = (
+      options: {
+        npmExitCode?: number;
+        npxExitCode?: number;
+      } = {}
+    ) => {
+      const shimDir = fs.mkdtempSync(
+        path.join(os.tmpdir(), "hook-precommit-shim-")
+      );
+      fs.writeFileSync(
+        path.join(shimDir, "npm"),
+        `#!/bin/sh\nexit ${options.npmExitCode ?? 0}\n`,
+        { mode: 0o755 }
+      );
+      fs.writeFileSync(
+        path.join(shimDir, "npx"),
+        `#!/bin/sh\nexit ${options.npxExitCode ?? 0}\n`,
+        { mode: 0o755 }
+      );
+
+      const env: NodeJS.ProcessEnv = {
+        ...process.env,
+        PATH: `${shimDir}:${process.env.PATH ?? ""}`,
+      };
+
+      try {
+        return spawnSync(
+          "bash",
+          [path.join(workspaceRoot, ".husky/pre-commit")],
+          {
+            cwd: workspaceRoot,
+            encoding: "utf-8",
+            env,
+          }
+        );
+      } finally {
+        fs.rmSync(shimDir, { recursive: true, force: true });
+      }
+    };
+
     it("runs validate-commit first as the primary security guardrail", () => {
       const hook = readHook("pre-commit");
       expect(hook.indexOf("scripts/validate-commit.ts")).toBeGreaterThan(-1);
       expect(hook.indexOf("scripts/validate-commit.ts")).toBeLessThan(
         hook.indexOf("lint-staged")
       );
-      expect(hook.indexOf("scripts/validate-commit.ts")).toBeLessThan(
-        hook.indexOf("check-docs-drift")
-      );
     });
 
-    it("fails fast on drift before the slower staged test suite", () => {
+    it("runs early fail-fast checks in order before test:staged and audit:security", () => {
       const hook = readHook("pre-commit");
+      expect(hook.indexOf("typecheck")).toBeGreaterThan(-1);
+      expect(hook.indexOf("lint:boundaries")).toBeGreaterThan(-1);
       expect(hook.indexOf("check-docs-drift")).toBeGreaterThan(-1);
+      expect(hook.indexOf("test:staged")).toBeGreaterThan(-1);
+      expect(hook.indexOf("audit:security")).toBeGreaterThan(-1);
+
+      expect(hook.indexOf("lint-staged")).toBeLessThan(
+        hook.indexOf("typecheck")
+      );
+      expect(hook.indexOf("typecheck")).toBeLessThan(
+        hook.indexOf("lint:boundaries")
+      );
+      expect(hook.indexOf("lint:boundaries")).toBeLessThan(
+        hook.indexOf("check-docs-drift")
+      );
       expect(hook.indexOf("check-docs-drift")).toBeLessThan(
         hook.indexOf("test:staged")
       );
+      expect(hook.indexOf("test:staged")).toBeLessThan(
+        hook.indexOf("audit:security")
+      );
     });
 
-    it("excludes heavy whole-project commands from pre-commit", () => {
-      const hook = readHook("pre-commit");
-      expect(hook).not.toContain("typecheck");
-      expect(hook).not.toContain("lint:boundaries");
-      expect(hook).not.toContain("audit:security");
+    it("propagates failure when npm quality or audit commands fail", () => {
+      const result = runPreCommitHook({ npmExitCode: 1 });
+      expect(result.status).toBe(1);
+    });
+
+    it("propagates failure when npx validator commands fail", () => {
+      const result = runPreCommitHook({ npxExitCode: 1 });
+      expect(result.status).toBe(1);
     });
   });
 

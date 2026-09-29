@@ -13,6 +13,7 @@ function runPrePush(
   options: {
     julesSession?: boolean;
     npxExitCode?: number;
+    npmExitCode?: number;
     mergeBaseExitCode?: number;
   } = {}
 ) {
@@ -34,7 +35,11 @@ function runPrePush(
     '#!/bin/sh\nprintf "called\\n" >> "$PRE_PUSH_NPX_LOG"\nexit "${PRE_PUSH_NPX_EXIT_CODE:-0}"\n',
     { mode: 0o755 }
   );
-  fs.writeFileSync(npmShim, "#!/bin/sh\nexit 0\n", { mode: 0o755 });
+  fs.writeFileSync(
+    npmShim,
+    '#!/bin/sh\nexit "${PRE_PUSH_NPM_EXIT_CODE:-0}"\n',
+    { mode: 0o755 }
+  );
 
   const env: NodeJS.ProcessEnv = {
     ...process.env,
@@ -42,6 +47,7 @@ function runPrePush(
     PRE_PUSH_TEST_BRANCH: branch,
     PRE_PUSH_NPX_LOG: npxLog,
     PRE_PUSH_NPX_EXIT_CODE: String(options.npxExitCode ?? 0),
+    PRE_PUSH_NPM_EXIT_CODE: String(options.npmExitCode ?? 0),
     PRE_PUSH_MERGE_BASE_EXIT_CODE: String(options.mergeBaseExitCode ?? 0),
   };
   delete env.ALLOW_DANGEROUS_GIT;
@@ -122,5 +128,15 @@ describe("pre-push branch protection", () => {
     expect(result.stderr).toContain(
       "BLOCKED: Deleting remote branch 'refs/heads/dev' is prohibited."
     );
+  });
+
+  it("propagates failure when npm verification commands fail", () => {
+    const result = runPrePush(
+      "fix/a-real-branch",
+      "refs/heads/fix/a-real-branch 2222222222222222222222222222222222222222 refs/heads/fix/a-real-branch 1111111111111111111111111111111111111111\n",
+      { npmExitCode: 1 }
+    );
+
+    expect(result.status).toBe(1);
   });
 });

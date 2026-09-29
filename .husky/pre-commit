@@ -1,4 +1,10 @@
+#!/usr/bin/env bash
+set -eu
+
 npx tsx scripts/validate-commit.ts
 npx lint-staged
+npm run typecheck
+npm run lint:boundaries
 npm run check-docs-drift
 npm run test:staged
+npm run audit:security

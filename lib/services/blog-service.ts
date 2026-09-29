@@ -4,9 +4,8 @@ import { failBuildOnDataSourceError } from "@/lib/build-integrity";
 import { FALLBACK_BLOG_POSTS, BlogPostData } from "@/lib/fallback-blog-posts";
 import { redis, getScopedRedisKey, isRedisConfigured } from "@/lib/redis";
 import { CONTENT_PILLARS, type ContentPillar } from "@/lib/blog/types";
-import { sanitizeContentHtml } from "@/lib/content-sanitizer";
+import { sanitizeContentHtmlLazy } from "@/lib/content-sanitizer-lazy";
 import { ALLOWED_REACTIONS } from "@/lib/schemas";
-import { NewsletterService } from "@/lib/services/newsletter-service";
 import { logger } from "@/lib/logger";
 
 export type { BlogPostData };
@@ -466,7 +465,7 @@ export class BlogPostService {
    * The existing public cache is evicted only after Prisma confirms creation.
    */
   static async createDraftBlogPost(input: CreateBlogDraftInput) {
-    const sanitizedBody = sanitizeContentHtml(input.body);
+    const sanitizedBody = await sanitizeContentHtmlLazy(input.body);
     const wordCount = sanitizedBody
       .replace(/<[^>]*>/g, " ")
       .trim()
@@ -545,7 +544,7 @@ export class BlogPostService {
       data.hero_image_url = input.heroImageUrl;
     }
     if (input.body !== undefined) {
-      const sanitizedBody = sanitizeContentHtml(input.body);
+      const sanitizedBody = await sanitizeContentHtmlLazy(input.body);
       const wordCount = sanitizedBody
         .replace(/<[^>]*>/g, " ")
         .trim()
@@ -579,6 +578,9 @@ export class BlogPostService {
     // maintenance run; nothing is sent synchronously on publish (#841).
     if (!existing.published && updated.published) {
       try {
+        // Lazy: newsletter-service pulls in the DOM sanitizer chain (#1340).
+        const { NewsletterService } =
+          await import("@/lib/services/newsletter-service");
         await NewsletterService.queuePostAnnouncement(updated.id);
       } catch (err) {
         logger.error("Failed to queue the newsletter announcement:", err);

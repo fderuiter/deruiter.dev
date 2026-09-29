@@ -996,3 +996,26 @@ export class LaserLoonEngine extends ArcadeEngine<
     };
   }
 }
+
+/** What a kill means for campaign progress. */
+export type CampaignKillOutcome =
+  "act-kill" | "act-victory" | "campaign-victory";
+
+/**
+ * Classifies a campaign kill. Every weapon (lasers, the Cryo-Mortar and the
+ * Tremolo ultimate) routes its kills through this, so a boss kill ends the
+ * act whichever weapon landed it.
+ *
+ * @param target - The target that was just destroyed.
+ * @param actNumber - The act being played.
+ * @returns `act-kill` for a regular enemy, `act-victory` for a boss before
+ *   the final act, and `campaign-victory` for the final act's boss.
+ */
+export function classifyCampaignKill(
+  target: Pick<Target, "isBoss">,
+  actNumber: number
+): CampaignKillOutcome {
+  if (!target.isBoss) return "act-kill";
+  const finalAct = CAMPAIGN_ACTS[CAMPAIGN_ACTS.length - 1]?.actNumber ?? 4;
+  return actNumber >= finalAct ? "campaign-victory" : "act-victory";
+}

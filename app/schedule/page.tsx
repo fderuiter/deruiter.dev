@@ -19,6 +19,7 @@ import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { NextPrevNav } from "@/components/ui/NextPrevNav";
 import { PageLayout } from "@/components/PageLayout";
 import { ContactForm } from "@/components/ContactForm";
+import { ARCADE_GAME_COUNT } from "@/lib/arcade";
 
 const GOOGLE_CALENDAR_URL = "https://calendar.app.google/YnR5oxos7ZTLyvUp8";
 
@@ -225,7 +226,7 @@ export default function SchedulePage() {
             title: "Arcade Games Hub",
             href: "/arcade",
             label: "Interactive Labs",
-            tag: "6 Playable Games",
+            tag: `${ARCADE_GAME_COUNT} Playable Games`,
           }}
           backToHub={{
             title: "Return to Portfolio",

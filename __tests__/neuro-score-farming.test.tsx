@@ -75,7 +75,7 @@ describe("NeuroRecon reward policy (#1218)", () => {
   });
 
   const clickButton = async (match: (t: string) => boolean) => {
-    const btn = Array.from(container.querySelectorAll("button")).find((b) =>
+    const btn = Array.from(document.body.querySelectorAll("button")).find((b) =>
       match(b.textContent ?? "")
     );
     expect(btn).toBeDefined();
@@ -115,8 +115,8 @@ describe("NeuroRecon reward policy (#1218)", () => {
     await mount();
     await clickButton((t) => t.includes("Case 01"));
     await runRecon();
-    expect(container.textContent).toContain("Scenario Target Reached");
-    expect(container.textContent).toContain("+500 PTS");
+    expect(document.body.textContent).toContain("Scenario Target Reached");
+    expect(document.body.textContent).toContain("+500 PTS");
     expect(container.textContent).toContain("1,700");
     expect(container.textContent).toContain("Streak: 1");
 

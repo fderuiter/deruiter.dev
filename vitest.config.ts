@@ -27,12 +27,8 @@ export default defineConfig({
       exclude: [
         "**/node_modules/**",
         "**/e2e/**",
-        "app/**/page.tsx",
-        "app/**/layout.tsx",
-        "app/not-found.tsx",
-        "app/**/not-found.tsx",
+        "components/neuro/Brain3DViewer.tsx",
         "app/instrumentation.ts",
-        "components/**",
         "app/globals.css",
         "lib/dx/utils.ts",
         "sentry.*.config.ts",
@@ -60,10 +56,18 @@ export default defineConfig({
         "lib/trial-and-error/index.ts",
       ],
       thresholds: {
-        lines: 80,
-        functions: 80,
-        branches: 70,
-        statements: 80,
+        "lib/**": {
+          lines: 80,
+          functions: 80,
+          statements: 80,
+          branches: 70,
+        },
+        "components/**": {
+          statements: 60,
+        },
+        "app/**": {
+          statements: 50,
+        },
         // Trial & Error validation and scoring carry a stricter gate (#890, #909).
         "lib/trial-and-error/**": {
           statements: 95,

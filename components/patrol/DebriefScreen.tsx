@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import type { PatrolScenario, IncidentDebriefResult } from "@/lib/patrol";
 import { DEBRIEF_DIMENSION_ORDER } from "@/lib/patrol";
 import {
@@ -14,6 +14,7 @@ import {
   IconInfoCircle,
 } from "@tabler/icons-react";
 import { DebriefDimensionMeter } from "./DebriefDimensionMeter";
+import { useAnnouncer } from "@/hooks/useAnnouncer";
 
 /**
  * Props for the DebriefScreen component.
@@ -70,16 +71,24 @@ export const DebriefScreen: React.FC<DebriefScreenProps> = ({
   onReplayIncident,
 }) => {
   const highlightedObservations = result.observations.slice(0, 3);
+  const { announce } = useAnnouncer();
+  const lastAnnouncedRef = useRef<string | null>(null);
+
+  // Announce through the root A11yProvider regions: a live region mounted
+  // with its text already present is skipped by most screen readers. The ref
+  // keeps StrictMode's double effect pass from speaking the summary twice.
+  useEffect(() => {
+    const message = `Incident debrief complete. Overall rating: ${result.overallRating}.`;
+    if (lastAnnouncedRef.current === message) return;
+    lastAnnouncedRef.current = message;
+    announce(message, "polite");
+  }, [announce, result.overallRating]);
 
   return (
     <div
       className="flex flex-col gap-6 p-4 sm:p-8 bg-zinc-900/40 rounded-2xl border border-zinc-800/80"
       data-testid="patrol-debrief-screen"
     >
-      <div className="sr-only" role="status" aria-live="polite">
-        Incident debrief complete. Overall rating: {result.overallRating}.
-      </div>
-
       {/* Debrief Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-zinc-800/80">
         <div className="space-y-1 min-w-0">

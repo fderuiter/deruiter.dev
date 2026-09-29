@@ -9,10 +9,11 @@ import {
   type AnnounceItem,
   type AnnouncerState,
   LiveAnnouncer,
+  sanitizePII,
 } from "@/lib/a11y/announcer";
 
 export type { Priority, AnnounceItem, AnnouncerState };
-export { sanitizePII, initialAnnouncerState, liveAnnouncer, LiveAnnouncer } from "@/lib/a11y/announcer";
+export { sanitizePII, initialAnnouncerState, liveAnnouncer, LiveAnnouncer };
 
 export interface AnnouncerContextType {
   announce: (message: string, priority?: Priority) => void;

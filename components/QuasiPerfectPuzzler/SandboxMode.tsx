@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef, useState } from "react";
-import { ASTNode } from "@/lib/quasi-perfect/types";
+import { type ASTNode, type CompilerLogEntry, type TacticResult } from "@/lib/quasi-perfect/types";
 import { tacticDefs } from "@/lib/quasi-perfect/tactics";
 import {
   cloneAST,
@@ -11,7 +11,6 @@ import {
 import { ExpressionTree } from "./ExpressionTree";
 import { TacticHand } from "./TacticHand";
 import { TerminalLog } from "./TerminalLog";
-import { CompilerLogEntry, TacticResult } from "@/lib/quasi-perfect/types";
 import { IconFlask, IconRotate, IconSparkles } from "@tabler/icons-react";
 
 const SANDBOX_PRESETS: {

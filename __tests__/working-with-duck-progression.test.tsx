@@ -20,7 +20,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import type { WorkingWithDuckState } from "@/lib/working-with-duck-engine";
+import {
+  createInitialDuckGameState as realCreateInitialDuckGameState,
+  type WorkingWithDuckState,
+} from "@/lib/working-with-duck-engine";
 
 global.ResizeObserver = class {
   observe = vi.fn();
@@ -129,7 +132,6 @@ vi.mock("@/lib/working-with-duck-engine", async (importOriginal) => {
 });
 
 import { WorkingWithDuck } from "@/components/WorkingWithDuck";
-import { createInitialDuckGameState as realCreateInitialDuckGameState } from "@/lib/working-with-duck-engine";
 
 const storageStore: Record<string, string> = {};
 Object.defineProperty(globalThis, "localStorage", {

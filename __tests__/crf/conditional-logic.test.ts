@@ -7,8 +7,10 @@ import {
   describeFieldConditionalState,
   CONDITIONAL_PRECEDENCE_NOTES,
   type ConditionalFieldValues,
+  type CRFField,
+  type CRFForm,
+  type EditCheckRule,
 } from "@/lib/crf";
-import type { CRFField, CRFForm, EditCheckRule } from "@/lib/crf";
 
 /**
  * #670 — show, hide and require actions resolved at runtime.

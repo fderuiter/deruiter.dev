@@ -1,11 +1,11 @@
-import type {
-  HandBaseScore,
-  HandClassification,
-  HandLevels,
-  HandType,
-  TlfCard,
+import {
+  HandTypeSchema,
+  type HandBaseScore,
+  type HandClassification,
+  type HandLevels,
+  type HandType,
+  type TlfCard,
 } from "../types";
-import { HandTypeSchema } from "../types";
 
 /** Base Chips and +Mult per hand, as pinned by the governing map (#890). */
 export const HAND_BASE_SCORES: Readonly<Record<HandType, HandBaseScore>> =

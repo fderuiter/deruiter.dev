@@ -10,8 +10,10 @@ import {
   buildScopedKey,
   fillSampleValues,
   type ConditionalFieldValues,
+  type CRFField,
+  type CRFForm,
+  type EditCheckRule,
 } from "@/lib/crf";
-import type { CRFField, CRFForm, EditCheckRule } from "@/lib/crf";
 
 /**
  * #541 — the dock's user-facing contract.

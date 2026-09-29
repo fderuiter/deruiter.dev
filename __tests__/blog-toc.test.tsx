@@ -1,13 +1,11 @@
 // @vitest-environment jsdom
-import { render, screen, fireEvent, cleanup } from "@testing-library/react";
-import { act, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, cleanup, act, waitFor } from "@testing-library/react";
 import { hydrateRoot, type Root } from "react-dom/client";
 import { renderToString } from "react-dom/server";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { TableOfContents } from "@/components/blog/TableOfContents";
 import { RichNarrative } from "@/components/RichNarrative";
-import { extractAndInjectHeadings } from "@/lib/blog/headings";
-import type { HeadingItem } from "@/lib/blog/headings";
+import { extractAndInjectHeadings, type HeadingItem } from "@/lib/blog/headings";
 
 describe("TableOfContents Component (Ticket #1058)", () => {
   const headings: HeadingItem[] = [

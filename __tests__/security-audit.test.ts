@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import type { MockInstance } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach, type MockInstance } from "vitest";
 import { spawnSync, type SpawnSyncReturns } from "child_process";
 import fs from "fs";
 import { fromPartial } from "@total-typescript/shoehorn";
@@ -22,11 +21,9 @@ import {
   runSecurityAudit,
   collectAdvisoriesForVulnerability,
   matchAdvisoryRule,
-} from "../scripts/security-audit";
-import type {
-  VulnerabilityInfo,
-  ParsedIgnoreRule,
-  Advisory,
+  type VulnerabilityInfo,
+  type ParsedIgnoreRule,
+  type Advisory,
 } from "../scripts/security-audit";
 
 describe("Security Audit Script", () => {

@@ -19,13 +19,11 @@ import {
   UniversalCrfProtocolSchema,
   exportUniversalCrfJson,
   parseUniversalCrf,
-} from "@/lib/crf";
-import type {
-  CRFField,
-  CRFForm,
-  EditCheckRule,
-  ScenarioExpectation,
-  StudyProtocol,
+  type CRFField,
+  type CRFForm,
+  type EditCheckRule,
+  type ScenarioExpectation,
+  type StudyProtocol,
 } from "@/lib/crf";
 
 /**

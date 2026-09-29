@@ -60,6 +60,14 @@ module.exports = {
       to: { path: `^${R}/[^/]+/tests/` },
     },
     {
+      name: "ui-primitives-boundary",
+      comment:
+        "UI primitive components in components/ui/ must remain domain-agnostic and cannot import domain components.",
+      severity: "error",
+      from: { path: "^components/ui/" },
+      to: { path: "^components/(crf|patrol|neuro|arcade|admin|blog|proof)/" },
+    },
+    {
       name: "no-circular",
       comment: "Zero circular dependency cycles allowed across the codebase.",
       severity: "error",

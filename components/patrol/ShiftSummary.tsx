@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import type { ShiftState, PatrolEvent } from "@/lib/patrol";
-import { compileShiftSummary, DEBRIEF_DIMENSION_ORDER } from "@/lib/patrol";
+import { compileShiftSummary, DEBRIEF_DIMENSION_ORDER, type ShiftState, type PatrolEvent } from "@/lib/patrol";
 import {
   IconClock,
   IconRefresh,

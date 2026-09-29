@@ -164,6 +164,9 @@ jobs:
           npm run typecheck
           npm run lint
 
+      - name: Detect Code Clones (jscpd)
+        run: npm run lint:clones
+
       - name: Run Logic Tests (Vitest)
         id: vitest
         run: npm run test:ci

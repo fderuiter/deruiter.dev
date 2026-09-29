@@ -60,8 +60,7 @@ import {
   generateSDTMDataset,
 } from "@/lib/clinical-trial-chaos/engine";
 import { ClinicalSubject } from "@/lib/clinical-trial-chaos/types";
-import { exportStudyToCdiscOdmXml } from "@/lib/crf";
-import { generateStudyPdf } from "@/lib/crf";
+import { exportStudyToCdiscOdmXml, generateStudyPdf } from "@/lib/crf";
 import { ONCOLOGY_RECIST_PRESET } from "@/lib/crf/presets";
 import { exportStudyToSas } from "@/lib/crf/export-sas";
 import { evaluateQAMetrics } from "@/lib/neuro/qa-engine";

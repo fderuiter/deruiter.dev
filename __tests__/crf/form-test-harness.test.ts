@@ -12,12 +12,10 @@ import {
   DEFAULT_TEST_SCOPE,
   type FormTestScope,
   type ConditionalFieldValues,
-} from "@/lib/crf";
-import type {
-  CRFField,
-  CRFForm,
-  CodelistDefinition,
-  EditCheckRule,
+  type CRFField,
+  type CRFForm,
+  type CodelistDefinition,
+  type EditCheckRule,
 } from "@/lib/crf";
 
 /**

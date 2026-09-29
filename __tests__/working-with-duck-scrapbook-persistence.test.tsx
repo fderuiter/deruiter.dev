@@ -11,8 +11,9 @@ import {
   createInitialDuckGameState,
   advanceToNextLevel,
   DUCK_FACTS,
+  createInitialDuckGameState as realCreateInitialDuckGameState,
+  type WorkingWithDuckState,
 } from "@/lib/working-with-duck-engine";
-import type { WorkingWithDuckState } from "@/lib/working-with-duck-engine";
 
 describe("Working With Duck engine - scrapbook unlock preservation (#599)", () => {
   it("seeds unlockedFacts from preservedFacts, always including the baseline id 1", () => {
@@ -185,7 +186,6 @@ vi.mock("@/lib/working-with-duck-engine", async (importOriginal) => {
 });
 
 import { WorkingWithDuck } from "@/components/WorkingWithDuck";
-import { createInitialDuckGameState as realCreateInitialDuckGameState } from "@/lib/working-with-duck-engine";
 
 const STORAGE_KEY = "working_with_duck_unlocked_facts";
 

@@ -15,13 +15,11 @@ import {
   PERSONAL_LIBRARY_STORAGE_KEY,
   PERSONAL_LIBRARY_CORRUPT_BACKUP_KEY,
   type PersonalLibraryEntry,
-} from "@/lib/crf";
-import type {
-  CRFField,
-  CRFForm,
-  CodelistDefinition,
-  EditCheckRule,
-  StudyProtocol,
+  type CRFField,
+  type CRFForm,
+  type CodelistDefinition,
+  type EditCheckRule,
+  type StudyProtocol,
 } from "@/lib/crf";
 
 /**

@@ -314,7 +314,7 @@ export const CDASH_DOMAIN_CATALOG: DomainMetadata[] = [
   },
 ];
 
-export { generateEngineId, generateCdashVariableName } from "./precision-date";
+export { generateEngineId, generateCdashVariableName };
 
 export type ActorContext =
   string | { name?: string; role?: string } | StudyReviewActor;

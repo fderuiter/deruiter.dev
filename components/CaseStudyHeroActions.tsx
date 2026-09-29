@@ -7,8 +7,7 @@ import {
   IconStar,
   IconGitCommit,
 } from "@tabler/icons-react";
-import type { GitHubStats } from "@/lib/github";
-import { parseGitHubUrl } from "@/lib/github";
+import { parseGitHubUrl, type GitHubStats } from "@/lib/github";
 
 interface CaseStudyHeroActionsProps {
   slug?: string;

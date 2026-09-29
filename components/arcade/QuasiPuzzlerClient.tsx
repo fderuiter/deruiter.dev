@@ -124,9 +124,11 @@ export const QuasiPuzzlerClient: React.FC = () => {
               <span>Lean Server RAM Limits</span>
             </div>
             <p className="text-zinc-400 text-[11px] leading-relaxed">
-              Each tactic consumes language server memory. If RAM hits 0 GB, the
-              Lean runtime crashes (OOM). Close the theorem before running out
-              of memory.
+              Each tactic, including a failed one, consumes simulated memory.
+              Story Mode starts with twice the Hacker Mode budget. In either
+              mode, if RAM hits 0 GB the simulated tactic session stops and the
+              level must be reset. Close the theorem before running out of
+              memory.
             </p>
           </div>
 

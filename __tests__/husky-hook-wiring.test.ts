@@ -295,11 +295,12 @@ describe("Husky hook wiring", () => {
       fs.rmSync(repo, { recursive: true, force: true });
     });
 
-    const runValidateCommit = () => {
+    const runValidateCommit = (customEnv: Record<string, string> = {}) => {
       const env: NodeJS.ProcessEnv = {
         ...process.env,
         GIT_DIR: path.join(repo, ".git"),
         GIT_WORK_TREE: repo,
+        ...customEnv,
       };
       delete env.GIT_INDEX_FILE;
       delete env.GIT_PREFIX;
@@ -336,6 +337,63 @@ describe("Husky hook wiring", () => {
         "Sensitive information or credential pattern detected"
       );
       spawnSync("git", ["rm", "-f", "config.ts"], { cwd: repo });
+    });
+
+    it("blocks when credential is staged but worktree file has placeholder (partial staging)", () => {
+      fs.writeFileSync(
+        path.join(repo, "config.ts"),
+        'const dbUrl = "postgresql://user:pass@ep-cool-pooler.us-east-2.aws.neon.tech/portfolio_prod";\n'
+      );
+      spawnSync("git", ["add", "config.ts"], { cwd: repo });
+      fs.writeFileSync(
+        path.join(repo, "config.ts"),
+        'const dbUrl = "placeholder";\n'
+      );
+      const result = runValidateCommit();
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain(
+        "Sensitive information or credential pattern detected"
+      );
+      spawnSync("git", ["rm", "-f", "config.ts"], { cwd: repo });
+    });
+
+    it("blocks when credential is staged but worktree file is deleted (missing worktree file)", () => {
+      fs.writeFileSync(
+        path.join(repo, "config.ts"),
+        'const dbUrl = "postgresql://user:pass@ep-cool-pooler.us-east-2.aws.neon.tech/portfolio_prod";\n'
+      );
+      spawnSync("git", ["add", "config.ts"], { cwd: repo });
+      fs.rmSync(path.join(repo, "config.ts"));
+      const result = runValidateCommit();
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain(
+        "Sensitive information or credential pattern detected"
+      );
+      spawnSync("git", ["rm", "-f", "config.ts"], { cwd: repo });
+    });
+
+    it("passes when clean content is staged even if worktree file has unstaged credentials", () => {
+      fs.writeFileSync(
+        path.join(repo, "config.ts"),
+        'const dbUrl = "placeholder";\n'
+      );
+      spawnSync("git", ["add", "config.ts"], { cwd: repo });
+      fs.writeFileSync(
+        path.join(repo, "config.ts"),
+        'const dbUrl = "postgresql://user:pass@ep-cool-pooler.us-east-2.aws.neon.tech/portfolio_prod";\n'
+      );
+      const result = runValidateCommit();
+      expect(result.status).toBe(0);
+      expect(result.stdout).toContain("Pre-Commit validation passed");
+      spawnSync("git", ["rm", "-f", "config.ts"], { cwd: repo });
+    });
+
+    it("fails closed if index enumeration or index read fails", () => {
+      const result = runValidateCommit({
+        GIT_DIR: path.join(repo, ".invalid_git_dir"),
+      });
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain("Failed to enumerate staged files");
     });
   });
 });

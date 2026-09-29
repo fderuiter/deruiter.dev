@@ -1,20 +1,24 @@
-import { execSync } from "child_process";
+import { execFileSync } from "child_process";
 import path from "path";
-import { formatFinding, scanFile } from "../lib/security-scan";
+import { formatFinding, scanText } from "../lib/security-scan";
 
-function getStagedFiles(): string[] {
-  try {
-    const output = execSync("git diff --cached --name-only --diff-filter=d", {
-      encoding: "utf-8",
-    });
-    return output
-      .split("\n")
-      .map((f) => f.trim())
-      .filter((f) => f.length > 0);
-  } catch (error) {
-    console.error("Error executing git command:", error);
-    return [];
-  }
+export function getStagedFiles(): string[] {
+  const output = execFileSync(
+    "git",
+    ["diff", "--cached", "--name-only", "--diff-filter=d"],
+    { encoding: "utf-8" }
+  );
+  return output
+    .split("\n")
+    .map((f) => f.trim())
+    .filter((f) => f.length > 0);
+}
+
+export function getStagedFileContent(filePath: string): string {
+  return execFileSync("git", ["show", `:${filePath}`], {
+    encoding: "utf-8",
+    maxBuffer: 10 * 1024 * 1024,
+  });
 }
 
 export function shouldScanFile(filePath: string): boolean {
@@ -77,7 +81,16 @@ function main() {
   const startTime = Date.now();
   console.log("Starting Pre-Commit Regex Guards validation...");
 
-  const stagedFiles = getStagedFiles();
+  let stagedFiles: string[];
+  try {
+    stagedFiles = getStagedFiles();
+  } catch (error) {
+    console.error(
+      "❌ [BLOCKER] Failed to enumerate staged files from Git index:",
+      error
+    );
+    process.exit(1);
+  }
 
   // Block the inclusion of alternative lockfiles
   const alternativeLockfiles = [
@@ -104,9 +117,19 @@ function main() {
       continue;
     }
 
-    const rootDir = process.env.GIT_WORK_TREE || process.cwd();
-    const absolutePath = path.resolve(rootDir, file);
-    const findings = scanFile(absolutePath, file);
+    let stagedContent: string;
+    try {
+      stagedContent = getStagedFileContent(file);
+    } catch (error) {
+      console.error(
+        `\n❌ [BLOCKER] Failed to read staged content from Git index for file: ${file}`,
+        error
+      );
+      hasViolation = true;
+      break;
+    }
+
+    const findings = scanText(stagedContent, file);
 
     if (findings.length > 0) {
       hasViolation = true;

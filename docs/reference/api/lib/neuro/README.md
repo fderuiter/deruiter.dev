@@ -200,6 +200,12 @@ Re-exports [getNeuroDatasetConfigsSync](loader/functions/getNeuroDatasetConfigsS
 
 ***
 
+### getNeuroProvenance
+
+Re-exports [getNeuroProvenance](provenance/functions/getNeuroProvenance.md)
+
+***
+
 ### getNeuroScenarioList
 
 Re-exports [getNeuroScenarioList](loader/functions/getNeuroScenarioList.md)
@@ -239,6 +245,12 @@ Re-exports [HemisphereBufferTransfer](types/interfaces/HemisphereBufferTransfer.
 ### HemisphereFilter
 
 Re-exports [HemisphereFilter](types/type-aliases/HemisphereFilter.md)
+
+***
+
+### isNeuroSelectionValid
+
+Re-exports [isNeuroSelectionValid](provenance/functions/isNeuroSelectionValid.md)
 
 ***
 
@@ -299,6 +311,12 @@ Re-exports [NeuroHotkeyAction](hotkeys/type-aliases/NeuroHotkeyAction.md)
 ### NeuroHotkeyEventLike
 
 Re-exports [NeuroHotkeyEventLike](hotkeys/interfaces/NeuroHotkeyEventLike.md)
+
+***
+
+### NeuroProvenance
+
+Re-exports [NeuroProvenance](provenance/interfaces/NeuroProvenance.md)
 
 ***
 

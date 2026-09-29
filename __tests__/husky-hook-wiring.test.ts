@@ -243,7 +243,7 @@ describe("Husky hook wiring", () => {
     it("blocks staged files containing secret credentials", () => {
       fs.writeFileSync(
         path.join(repo, "config.ts"),
-        'const dbUrl = "postgresql://user:npg_SecretPass1234@ep-cool-lake-123456.us-east-2.aws.neon.tech/neondb";\n'
+        'const dbUrl = "postgresql://user:pass@ep-cool-pooler.us-east-2.aws.neon.tech/portfolio_prod";\n'
       );
       spawnSync("git", ["add", "config.ts"], { cwd: repo });
       const result = runValidateCommit();

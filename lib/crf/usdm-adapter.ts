@@ -152,6 +152,28 @@ export interface UsdmDocument {
   rules?: EditCheckRule[];
 }
 
+function toSafeString(val: unknown, fallback: string = ""): string {
+  if (val === null || val === undefined) return fallback;
+  if (typeof val === "string") return val;
+  if (
+    typeof val === "number" ||
+    typeof val === "boolean" ||
+    typeof val === "bigint" ||
+    typeof val === "symbol"
+  ) {
+    return String(val);
+  }
+  try {
+    if (typeof val === "object") {
+      const str = String(val);
+      if (str !== "[object Object]") return str;
+    }
+  } catch {
+    // Ignore conversion error when obj.toString() throws
+  }
+  return fallback;
+}
+
 /**
  * Normalizes USDM graph ValueSet or CodeList objects/references into a CRF Studio CodelistDefinition.
  */
@@ -170,23 +192,28 @@ export function extractCodelistFromUsdmObject(
   if (!rawTarget || typeof rawTarget !== "object") return null;
   const target = rawTarget as Record<string, unknown>;
 
-  const id =
-    target.id ||
-    target.codeListId ||
-    target.valueSetId ||
-    target.nciCodelistCode ||
-    target.code ||
+  const rawId =
+    target.id ??
+    target.codeListId ??
+    target.valueSetId ??
+    target.nciCodelistCode ??
+    target.code ??
     (target.name
-      ? `cl_${String(target.name)
+      ? `cl_${toSafeString(target.name)
           .toLowerCase()
           .replace(/[^a-z0-9]/g, "_")}`
       : null);
 
+  const id = toSafeString(rawId);
+
   if (!id) return null;
 
-  const name = target.name || target.label || target.title || id;
-  const nciCodelistCode =
-    target.nciCodelistCode || target.nciCode || target.cCode;
+  const name = toSafeString(
+    target.name ?? target.label ?? target.title ?? id,
+    id
+  );
+  const nciCodeRaw = target.nciCodelistCode ?? target.nciCode ?? target.cCode;
+  const nciCodelistCode = toSafeString(nciCodeRaw, "") || undefined;
 
   const rawOpts =
     target.options ||
@@ -202,28 +229,30 @@ export function extractCodelistFromUsdmObject(
   const options: CodelistOption[] = Array.isArray(rawOpts)
     ? rawOpts.map((opt: unknown, idx: number) => {
         if (typeof opt === "string" || typeof opt === "number") {
+          const val = toSafeString(opt, String(idx + 1));
           return {
-            code: String(opt),
-            label: String(opt),
+            code: val,
+            label: val,
             order: idx + 1,
           };
         }
         if (!opt || typeof opt !== "object") {
+          const val = toSafeString(opt, String(idx + 1));
           return {
-            code: String(opt ?? idx + 1),
-            label: String(opt ?? idx + 1),
+            code: val,
+            label: val,
             order: idx + 1,
           };
         }
         const o = opt as Record<string, unknown>;
         const rawCode =
           o.code ?? o.value ?? o.id ?? o.name ?? o.term ?? idx + 1;
-        const code = String(rawCode);
+        const code = toSafeString(rawCode, String(idx + 1));
         const rawLabel =
           o.label ?? o.decode ?? o.name ?? o.text ?? o.description ?? code;
-        const label = String(rawLabel);
-        const nciCode = (o.nciCode || o.cCode || o.conceptId) as
-          string | undefined;
+        const label = toSafeString(rawLabel, code);
+        const rawNci = o.nciCode ?? o.cCode ?? o.conceptId;
+        const nciCode = toSafeString(rawNci, "") || undefined;
         const order =
           typeof o.order === "number"
             ? o.order
@@ -240,9 +269,9 @@ export function extractCodelistFromUsdmObject(
     : [];
 
   return {
-    id: String(id),
-    name: String(name),
-    nciCodelistCode: nciCodelistCode ? String(nciCodelistCode) : undefined,
+    id,
+    name,
+    nciCodelistCode,
     isStandard: Boolean(target.isStandard),
     options,
   };
@@ -293,6 +322,8 @@ export function exportStudyToUsdmObject(study: StudyProtocol): UsdmDocument {
     unit: bc.unit,
   }));
   const conceptIdSet = new Set(biomedicalConcepts.map((bc) => bc.id));
+  const conceptMap = new Map<string, UsdmBiomedicalConcept>();
+  biomedicalConcepts.forEach((bc) => conceptMap.set(bc.id, bc));
 
   const domainVarMap = new Map<string, UsdmBiomedicalConcept>();
   biomedicalConcepts.forEach((bc) => {
@@ -348,12 +379,27 @@ export function exportStudyToUsdmObject(study: StudyProtocol): UsdmDocument {
             unit: field.unit,
           };
           biomedicalConcepts.push(newConcept);
+          conceptMap.set(conceptId, newConcept);
           if (form.domain && field.variableName) {
             domainVarMap.set(
               `${form.domain.toUpperCase()}_${field.variableName.toUpperCase()}`,
               newConcept
             );
           }
+        }
+
+        const matchingConcept = conceptMap.get(conceptId);
+        if (matchingConcept) {
+          field.variableName =
+            field.variableName || matchingConcept.variableName || field.id;
+          field.label =
+            field.label ||
+            matchingConcept.label ||
+            matchingConcept.name ||
+            field.variableName ||
+            field.id;
+          field.dataType = field.dataType || matchingConcept.dataType || "text";
+          field.unit = field.unit || matchingConcept.unit;
         }
       });
     });

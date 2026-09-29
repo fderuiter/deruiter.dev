@@ -127,13 +127,16 @@ Fetches user feedback for a given case study slug.
 
 ### getPublishedCaseStudies()
 
-> `static` **getPublishedCaseStudies**(): `Promise`\<`object`[]\>
+> `static` **getPublishedCaseStudies**(): `Promise`\<[`CaseStudySearchSummary`](../type-aliases/CaseStudySearchSummary.md)[]\>
 
 Retrieves all published case studies for public search/discovery.
+Reads the `cs:search_index` Upstash cache (3600s TTL) first; on a miss it
+queries only the five summary columns from Postgres, appends static
+fallbacks for slugs absent from the database, and caches the result.
 
 #### Returns
 
-`Promise`\<`object`[]\>
+`Promise`\<[`CaseStudySearchSummary`](../type-aliases/CaseStudySearchSummary.md)[]\>
 
 ***
 

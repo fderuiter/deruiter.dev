@@ -9,3 +9,4 @@ export * from "./hacking";
 export * from "./metaprogression";
 export * from "./audio";
 export * from "./objective";
+export * from "./room-label";

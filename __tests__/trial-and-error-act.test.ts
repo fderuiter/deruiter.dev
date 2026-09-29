@@ -464,6 +464,46 @@ describe("run progression", () => {
     );
   });
 
+  it("derives the table's render facts as Blinds clear and move on (#996)", () => {
+    let run = createRunState(QUIET_ACT);
+    let view = deriveRunView(QUIET_ACT, run);
+    expect(view.actIndex).toBe(0);
+    expect(view.table).toMatchObject({
+      status: "REVIEWING",
+      outcome: null,
+      untouched: true,
+      handsPlayed: 0,
+      roundScore: 0,
+      cpu: { available: 10, spent: 0 },
+      selected: [],
+      inspecting: null,
+    });
+    expect(view.table.handIds).toEqual(view.table.hand.map((h) => h.card.id));
+
+    run = clearCurrent(run);
+    view = deriveRunView(QUIET_ACT, run);
+    expect(view.phase).toBe("BLIND_CLEARED");
+    expect(view.table).toMatchObject({
+      status: "CLEARED",
+      outcome: "CLEARED",
+      untouched: false,
+      roundScore: run.table.roundScore,
+      handsPlayed: run.table.handsPlayed,
+      lastPlay: run.table.lastPlay,
+      lastEvent: run.table.lastEvent,
+    });
+
+    run = step(run, { type: "NEXT_BLIND" });
+    view = deriveRunView(QUIET_ACT, run);
+    expect(view.table).toMatchObject({
+      status: "REVIEWING",
+      outcome: null,
+      untouched: true,
+      roundScore: 0,
+      lastPlay: null,
+    });
+  });
+
   it("ends the run when a Blind is lost, and restarts from the Small Blind", () => {
     let run = clearCurrent(createRunState(QUIET_ACT));
     run = step(run, { type: "NEXT_BLIND" });

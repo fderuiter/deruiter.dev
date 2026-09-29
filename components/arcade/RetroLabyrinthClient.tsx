@@ -92,6 +92,8 @@ export const RetroLabyrinthClient: React.FC = () => {
                 { key: "1-3", action: "Fire Class Tools" },
                 { key: "Space", action: "EMP Burst" },
                 { key: "C", action: "CRT Scanlines" },
+                { key: "P", action: "Pause" },
+                { key: "Enter / R", action: "Continue / Retry" },
               ]}
               importComponent={RetroLabyrinthLoader}
             >
@@ -110,10 +112,9 @@ export const RetroLabyrinthClient: React.FC = () => {
               <span>TSP Shifting Walls</span>
             </div>
             <p className="text-zinc-400 text-[11px] leading-relaxed">
-              The first room, Tier 03 :: Airgap Enclave, recalculates the
-              Traveling Salesperson tour as you move. Time your steps through
-              the purple airgap walls, which shift every step, to reach the
-              EXIT.
+              Room 01, the Airgap Enclave, recalculates the Traveling
+              Salesperson tour as you move. Time your steps through the purple
+              airgap walls, which shift every step, to reach the EXIT.
             </p>
           </div>
 
@@ -137,7 +138,7 @@ export const RetroLabyrinthClient: React.FC = () => {
               <span>3D Wireframe Boss</span>
             </div>
             <p className="text-zinc-400 text-[11px] leading-relaxed">
-              FaceForge in Room 2 projects real-time rotating 3D wireframe
+              FaceForge in Room 02 projects real-time rotating 3D wireframe
               polyhedra. Evade projecting face-normals and utilize EMP bursts to
               stun rogue drones.
             </p>

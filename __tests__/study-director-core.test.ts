@@ -12,6 +12,7 @@ import {
   dashboard,
   phaseForDay,
   resolveDecision,
+  routineLoad,
   totalOpenQueries,
   type DecisionInput,
   type StudyState,
@@ -71,6 +72,21 @@ describe("study director core", () => {
     expect(r.ok && r.state.attention).toBe(ATTENTION_PER_DAY - 3);
     s = r.ok ? r.state : s;
     expect(advanceDay(s).attention).toBe(ATTENTION_PER_DAY);
+  });
+
+  it("takes routine attention only when queries or debt pile up", () => {
+    const calm = fresh();
+    expect(routineLoad(calm)).toBe(0);
+    const backlog = {
+      ...calm,
+      documentationDebt: 70,
+      sites: calm.sites.map((x) => ({ ...x, openQueries: 12 })),
+    };
+    expect(routineLoad(backlog)).toBe(2);
+    const next = advanceDay(backlog);
+    expect(next.routine).toBeGreaterThan(0);
+    expect(next.attention).toBe(ATTENTION_PER_DAY - next.routine);
+    expect(next.attention).toBeGreaterThanOrEqual(ATTENTION_PER_DAY - 2);
   });
 
   it("refuses a decision that costs more attention than is left", () => {

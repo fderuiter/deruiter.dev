@@ -72,6 +72,43 @@ describe("study director events", () => {
     }
   });
 
+  it("keeps something in the inbox through most of the study (#1384)", () => {
+    expect(STUDY_EVENTS.length).toBeGreaterThanOrEqual(44);
+    const scripted = STUDY_EVENTS.filter((e) => !e.followUp && !e.trigger);
+    const quiet = Array.from(
+      { length: STUDY_24_081.durationDays },
+      (_, i) => i + 1
+    ).filter(
+      (day) => !scripted.some((e) => day >= e.day && day < e.day + e.ttl)
+    );
+    expect(quiet.length).toBeLessThanOrEqual(20);
+    const days = [...new Set(scripted.map((e) => e.day))].sort((a, b) => a - b);
+    for (let i = 1; i < days.length; i += 1)
+      expect(days[i] - days[i - 1]).toBeLessThanOrEqual(9);
+  });
+
+  it("pairs every risky shortcut in the routine-work events with an inspection question", () => {
+    const routine = new Set([
+      "pi-training-trailer",
+      "freezer-alarm",
+      "tmf-reconciliation",
+      "sae-late-report",
+      "sponsor-name-change",
+      "monitor-report-late",
+      "coordinator-vacation",
+      "sponsor-data-peek",
+      "central-lab-mismatch",
+      "csr-comment-versions",
+    ]);
+    for (const event of STUDY_EVENTS.filter((e) => routine.has(e.id))) {
+      for (const option of event.options) {
+        if (option.debtIfUndocumented >= 8 && option.attentionCost === 0) {
+          expect(option.finding, `${event.id}/${option.id}`).toBeDefined();
+        }
+      }
+    }
+  });
+
   it("offers real tradeoffs: no event's options are all identical", () => {
     for (const event of STUDY_EVENTS) {
       const shapes = new Set(

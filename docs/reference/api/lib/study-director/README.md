@@ -290,6 +290,12 @@ Re-exports [resolveEvent](internal/events/functions/resolveEvent.md)
 
 ***
 
+### routineLoad
+
+Re-exports [routineLoad](internal/model/functions/routineLoad.md)
+
+***
+
 ### runInspection
 
 Re-exports [runInspection](internal/endgame/functions/runInspection.md)

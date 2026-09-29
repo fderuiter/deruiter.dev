@@ -18,6 +18,7 @@ import {
 } from "@tabler/icons-react";
 import { FieldManualButton } from "@/components/FieldManualButton";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
+import { ARCADE_GAME_COUNT } from "@/lib/arcade";
 
 interface ArcadeGameCard {
   id: string;
@@ -410,7 +411,7 @@ export const ArcadeHubClient: React.FC = () => {
           {/* Quick Metrics Bar */}
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3 text-xs font-mono">
             <span className="px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-300">
-              <strong>6 Playable Games</strong>
+              <strong>{ARCADE_GAME_COUNT} Playable Games</strong>
             </span>
             <span className="px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-300">
               <strong>Web Audio Synthesis</strong>

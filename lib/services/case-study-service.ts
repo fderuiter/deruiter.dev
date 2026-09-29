@@ -3,7 +3,7 @@ import { env, isBuildPhase } from "@/lib/env";
 import { failBuildOnDataSourceError } from "@/lib/build-integrity";
 import { FALLBACK_CASE_STUDIES, CaseStudyData } from "@/lib/case-studies-data";
 import { redis, getScopedRedisKey, isRedisConfigured } from "@/lib/redis";
-import { sanitizeContentHtml } from "@/lib/content-sanitizer";
+import { sanitizeContentHtmlLazy } from "@/lib/content-sanitizer-lazy";
 
 export type { CaseStudyData };
 
@@ -554,8 +554,10 @@ export class CaseStudyService {
       github_url,
     } = input;
 
-    const sanitizedEditorial = sanitizeContentHtml(editorial_content);
-    const sanitizedNarrative = sanitizeContentHtml(architectural_narrative);
+    const sanitizedEditorial = await sanitizeContentHtmlLazy(editorial_content);
+    const sanitizedNarrative = await sanitizeContentHtmlLazy(
+      architectural_narrative
+    );
 
     const created = await prisma.caseStudy.create({
       data: {

@@ -19,10 +19,15 @@
 - [LoonCollisionInput](interfaces/LoonCollisionInput.md)
 - [LoonCollisionResult](interfaces/LoonCollisionResult.md)
 
+## Type Aliases
+
+- [CampaignKillOutcome](type-aliases/CampaignKillOutcome.md)
+
 ## Functions
 
 - [calculateNextComboAndMultiplier](functions/calculateNextComboAndMultiplier.md)
 - [checkLaserRayHit](functions/checkLaserRayHit.md)
+- [classifyCampaignKill](functions/classifyCampaignKill.md)
 - [createExplosionParticles](functions/createExplosionParticles.md)
 - [createIceBlock](functions/createIceBlock.md)
 - [createInitialState](functions/createInitialState.md)

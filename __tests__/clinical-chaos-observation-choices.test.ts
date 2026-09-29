@@ -138,10 +138,9 @@ describe("Clinical Trial Chaos protocol observations (#1150)", () => {
   });
 
   it("offers fallback choices when the option list is empty", () => {
-    expect(getObservationChoices({ ...heightObs, options: [] })).toEqual([
-      "180 cm",
-      "180 m",
-    ]);
+    expect(
+      [...getObservationChoices({ ...heightObs, options: [] })].sort()
+    ).toEqual(["180 cm", "180 m"]);
     expect(
       getObservationChoices({
         ...heightObs,
@@ -149,5 +148,43 @@ describe("Clinical Trial Chaos protocol observations (#1150)", () => {
         options: undefined,
       })
     ).toEqual(["180 m"]);
+  });
+
+  // #1305: every option list put the correct value first, so pressing 1
+  // always won.
+  describe("choice order (#1305)", () => {
+    const study = STUDY_PRESETS[0].study;
+    const domains = getStationsForPhase(2, "campaign").map((s) => s.id);
+    const observations = Array.from({ length: 40 }, (_, i) =>
+      generateClinicalSubjectFromProtocol(study, 1, false, 5000 + i, domains)
+    ).flatMap((subject) => subject.observations);
+
+    it("does not always put the correct value first", () => {
+      const withChoice = observations.filter(
+        (obs) => getObservationChoices(obs).length > 1
+      );
+      expect(withChoice.length).toBeGreaterThan(20);
+      const firstIsCorrect = withChoice.filter(
+        (obs) => getObservationChoices(obs)[0] === obs.correctedValue
+      ).length;
+      // A fair shuffle puts it first about 1/n of the time; allow slack.
+      expect(firstIsCorrect / withChoice.length).toBeLessThan(0.7);
+    });
+
+    it("keeps one observation's order stable between calls", () => {
+      for (const obs of observations.slice(0, 10)) {
+        expect(getObservationChoices({ ...obs })).toEqual(
+          getObservationChoices(obs)
+        );
+      }
+    });
+
+    it("still offers every option exactly once", () => {
+      for (const obs of observations) {
+        const choices = getObservationChoices(obs);
+        expect(new Set(choices).size).toBe(choices.length);
+        if (obs.correctedValue) expect(choices).toContain(obs.correctedValue);
+      }
+    });
   });
 });

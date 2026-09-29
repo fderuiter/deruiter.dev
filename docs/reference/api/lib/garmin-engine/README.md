@@ -17,6 +17,7 @@
 - [FlashVariable](interfaces/FlashVariable.md)
 - [FogPoint](interfaces/FogPoint.md)
 - [GameEngineState](interfaces/GameEngineState.md)
+- [GarminRunTuning](interfaces/GarminRunTuning.md)
 - [GarminWatchSnapshot](interfaces/GarminWatchSnapshot.md)
 - [MemoryVariable](interfaces/MemoryVariable.md)
 - [Obstacle](interfaces/Obstacle.md)
@@ -24,6 +25,8 @@
 ## Type Aliases
 
 - [DeviceTarget](type-aliases/DeviceTarget.md)
+- [GarminDifficulty](type-aliases/GarminDifficulty.md)
+- [GarminLoadout](type-aliases/GarminLoadout.md)
 - [ObstacleType](type-aliases/ObstacleType.md)
 - [VariableType](type-aliases/VariableType.md)
 
@@ -31,6 +34,7 @@
 
 - [CANVAS\_SIZE](variables/CANVAS_SIZE.md)
 - [CIQ\_PALETTE](variables/CIQ_PALETTE.md)
+- [DEFAULT\_RUN\_TUNING](variables/DEFAULT_RUN_TUNING.md)
 - [DEVICE\_PROFILES](variables/DEVICE_PROFILES.md)
 - [FLASH\_STORAGE\_KEY](variables/FLASH_STORAGE_KEY.md)
 - [GC\_SCORE](variables/GC_SCORE.md)
@@ -54,6 +58,7 @@
 - [jettisonOldestVariable](functions/jettisonOldestVariable.md)
 - [loadPersistedFlashStorage](functions/loadPersistedFlashStorage.md)
 - [renderCanvasFrame](functions/renderCanvasFrame.md)
+- [resolveRunTuning](functions/resolveRunTuning.md)
 - [savePersistedFlashStorage](functions/savePersistedFlashStorage.md)
 - [startGame](functions/startGame.md)
 - [triggerGarbageCollection](functions/triggerGarbageCollection.md)

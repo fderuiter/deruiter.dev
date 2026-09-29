@@ -164,6 +164,14 @@
 
 ***
 
+### tuning?
+
+> `optional` **tuning?**: [`GarminRunTuning`](GarminRunTuning.md)
+
+Setup-derived parameters for this run; absent means defaults.
+
+***
+
 ### variables
 
 > **variables**: [`MemoryVariable`](MemoryVariable.md)[]

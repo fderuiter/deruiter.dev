@@ -1466,3 +1466,103 @@ describe("Custom Proof session regression (#1225)", () => {
     expect(output).not.toContain("P → Q");
   });
 });
+
+describe("Garmin setup options reach the engine (#1209)", () => {
+  it("maps difficulty and loadout ids to distinct, testable engine parameters", async () => {
+    const { resolveRunTuning, DEFAULT_RUN_TUNING } =
+      await import("@/lib/garmin-engine");
+    expect(resolveRunTuning("normal", "standard-ram")).toEqual(
+      DEFAULT_RUN_TUNING
+    );
+    expect(resolveRunTuning("nope", "nope")).toEqual(DEFAULT_RUN_TUNING);
+    const casual = resolveRunTuning("casual", "standard-ram");
+    const hard = resolveRunTuning("hard", "standard-ram");
+    expect(casual.obstacleSpeedScale).toBeLessThan(1);
+    expect(hard.obstacleSpeedScale).toBeGreaterThan(1);
+    expect(casual.obstacleIntervalScale).toBeGreaterThan(1);
+    expect(hard.allocIntervalScale).toBeLessThan(1);
+    expect(resolveRunTuning("normal", "low-power").gcFreezeMs).toBe(350);
+    expect(resolveRunTuning("normal", "overclocked").gcBonusFreedKb).toBe(2);
+  });
+
+  it("startGame carries the tuning into the run and keeps it on restart", async () => {
+    const { createInitialState, startGame, resolveRunTuning } =
+      await import("@/lib/garmin-engine");
+    const tuning = resolveRunTuning("hard", "low-power");
+    const run = startGame(createInitialState("fenix", 0), "fenix", tuning);
+    expect(run.gameState).toBe("playing");
+    expect(run.tuning).toEqual(tuning);
+    expect(startGame(run).tuning).toEqual(tuning);
+  });
+
+  it("the loadout changes GC freeze length and battery drain", async () => {
+    const {
+      createInitialState,
+      startGame,
+      resolveRunTuning,
+      triggerGarbageCollection,
+      updateGameSimulation,
+    } = await import("@/lib/garmin-engine");
+    const run = (loadout: string) =>
+      startGame(
+        createInitialState("fenix", 0),
+        "fenix",
+        resolveRunTuning("normal", loadout)
+      );
+    // GC is a no-op on an empty heap (#1213), so seed collectible garbage.
+    const withGarbage = (state: ReturnType<typeof run>) => ({
+      ...state,
+      variables: [
+        ...state.variables,
+        {
+          id: 9001,
+          name: "leakedBuffer",
+          type: "array" as const,
+          sizeKb: 8,
+          allocatedAt: 0,
+        },
+      ],
+    });
+    expect(
+      triggerGarbageCollection(withGarbage(run("standard-ram"))).state.gcTimerMs
+    ).toBe(500);
+    expect(
+      triggerGarbageCollection(withGarbage(run("low-power"))).state.gcTimerMs
+    ).toBe(350);
+    const drained = (loadout: string) =>
+      100 -
+      updateGameSimulation({ ...run(loadout), lastAllocTime: Date.now() }, 1000)
+        .battery;
+    expect(drained("low-power")).toBeLessThan(drained("standard-ram"));
+    expect(drained("overclocked")).toBeGreaterThan(drained("standard-ram"));
+  });
+
+  it("the difficulty changes obstacle speed", async () => {
+    const {
+      createInitialState,
+      startGame,
+      resolveRunTuning,
+      updateGameSimulation,
+    } = await import("@/lib/garmin-engine");
+    vi.spyOn(Math, "random").mockReturnValue(0.99);
+    try {
+      const speed = (difficulty: string) => {
+        const state = startGame(
+          createInitialState("fenix", 0),
+          "fenix",
+          resolveRunTuning(difficulty, "standard-ram")
+        );
+        const next = updateGameSimulation(
+          { ...state, lastAllocTime: Date.now(), lastObstacleTime: 0 },
+          16
+        );
+        return next.obstacles[0]?.speed ?? 0;
+      };
+      expect(speed("casual")).toBeGreaterThan(0);
+      expect(speed("casual")).toBeLessThan(speed("normal"));
+      expect(speed("hard")).toBeGreaterThan(speed("normal"));
+    } finally {
+      vi.restoreAllMocks();
+    }
+  });
+});

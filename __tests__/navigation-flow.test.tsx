@@ -14,6 +14,11 @@ import { Footer } from "@/components/Footer";
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/arcade/laser-loon",
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    prefetch: vi.fn(),
+  }),
 }));
 
 vi.mock("@/components/providers/AudioProvider", async (importOriginal) => {

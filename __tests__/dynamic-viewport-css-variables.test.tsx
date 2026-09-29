@@ -50,6 +50,11 @@ vi.mock("@/components/providers/PersonaProvider", () => ({
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/arcade",
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    prefetch: vi.fn(),
+  }),
 }));
 
 describe("Dynamic Viewport Heights & CSS Custom Variable Space Contract", () => {

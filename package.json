@@ -37,7 +37,8 @@
     "generate:icons": "npx tsx scripts/generate-brand-icons.ts",
     "generate:theme": "npx tsx scripts/generate-theme.ts",
     "precompile-docs": "npx prisma generate",
-    "compile-docs": "npx tsx scripts/compile-docs.ts",
+    "compile-docs": "npx tsx scripts/compile-docs.ts && npm run generate:llms",
+    "generate:llms": "npx tsx scripts/generate-llms-txt.ts",
     "check-docs-drift": "npx tsx scripts/check-drift.ts",
     "check:migrations": "node scripts/check-migrations.js",
     "check:migrations:drift": "prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code",
@@ -47,7 +48,7 @@
     "inventory:neon": "npx tsx scripts/neon-capacity-inventory.ts",
     "headroom:vercel": "npx tsx scripts/vercel-headroom.ts",
     "lint:docs": "npx markdownlint \"**/*.md\" --ignore node_modules --ignore .next --ignore coverage --ignore .agents --ignore scratch --ignore tmp --ignore test-results",
-    "prebuild": "npx tsx scripts/generate-theme.ts",
+    "prebuild": "npx tsx scripts/generate-theme.ts && npx tsx scripts/generate-llms-txt.ts",
     "build": "node scripts/build.js",
     "start": "next start",
     "lint": "eslint --no-warn-ignored",
@@ -93,7 +94,7 @@
     "jsdom": "26.1.0"
   },
   "dependencies": {
-    "@chenglou/pretext": "^0.0.5",
+    "@chenglou/pretext": "^0.0.9",
     "@clerk/nextjs": "^7.7.8",
     "@clerk/themes": "^2.4.57",
     "@fontsource/opendyslexic": "^5.3.0",
@@ -120,11 +121,11 @@
     "next": "16.3.4",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "resend": "^6.20.0",
-    "tailwind-merge": "^3.5.0",
+    "resend": "^6.30.0",
+    "tailwind-merge": "^3.7.0",
     "three": "^0.185.1",
     "ws": "^8.21.0",
-    "zod": "^4.4.3"
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",

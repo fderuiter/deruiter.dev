@@ -42,6 +42,26 @@ idempotency handling. Returns the queue id, or null if nothing was stored.
 
 ***
 
+### getQueueEntryState()
+
+> `static` **getQueueEntryState**(`queueId`): `Promise`\<\{ `attempts`: `number`; `status`: [`OutboundEmailStatus`](../../../db/type-aliases/OutboundEmailStatus.md); \} \| `null`\>
+
+Returns the retry state of one queue row, or null when it does not exist
+(or the read fails). Used by the QStash webhook to decide whether to
+schedule another sub-daily attempt.
+
+#### Parameters
+
+##### queueId
+
+`string`
+
+#### Returns
+
+`Promise`\<\{ `attempts`: `number`; `status`: [`OutboundEmailStatus`](../../../db/type-aliases/OutboundEmailStatus.md); \} \| `null`\>
+
+***
+
 ### getRetryQueueHealth()
 
 > `static` **getRetryQueueHealth**(`now?`): `Promise`\<\{ `depth`: `number`; `oldestPendingAgeMs`: `number` \| `null`; `retryExhausted`: `number`; `terminalFailures`: `number`; \}\>
@@ -163,6 +183,12 @@ Processes due items from OutboundEmailQueue with exponential backoff.
 ###### now?
 
 `Date`
+
+###### queueId?
+
+`string`
+
+Restrict the run to one queue row (QStash-targeted retry).
 
 #### Returns
 

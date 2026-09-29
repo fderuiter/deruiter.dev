@@ -204,6 +204,7 @@
 - [lib/proof-custom](lib/proof-custom/README.md)
 - [lib/proof-utils](lib/proof-utils/README.md)
 - [lib/public-routes](lib/public-routes/README.md)
+- [lib/qstash-retry](lib/qstash-retry/README.md)
 - [lib/quasi-perfect](lib/quasi-perfect/README.md)
 - [lib/quasi-perfect-puzzler](lib/quasi-perfect-puzzler/README.md)
 - [lib/quasi-perfect/engine](lib/quasi-perfect/engine/README.md)

@@ -35,6 +35,8 @@ import {
   NewsletterResponseSchema,
   ResendWebhookEventSchema,
   ResendWebhookResponseSchema,
+  QStashRetryPayloadSchema,
+  QStashRetryResponseSchema,
 } from "../lib/schemas";
 
 // Helper to recursively find API route files
@@ -996,6 +998,80 @@ export const openApiSpec = {
         },
       },
     },
+    "/api/webhooks/qstash/retry": {
+      post: {
+        summary: "Run a targeted outbound email retry from a QStash delivery",
+        description:
+          "Verifies the Upstash-Signature header against the current and next QStash signing keys, then retries one OutboundEmailQueue row and schedules the next sub-daily attempt if it is still retrying. Optional: without QStash configuration the daily maintenance cron is the only retry path.",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/QStashRetryPayload" },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: "Retry executed",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/QStashRetryResponse" },
+              },
+            },
+          },
+          202: {
+            description:
+              "Ignored: delivery reached a non-production deployment",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/QStashRetryResponse" },
+              },
+            },
+          },
+          400: {
+            description: "Invalid JSON payload",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ErrorResponse" },
+              },
+            },
+          },
+          401: {
+            description: "Missing or invalid QStash signature",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ErrorResponse" },
+              },
+            },
+          },
+          422: {
+            description: "Payload does not match the retry schema",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ErrorResponse" },
+              },
+            },
+          },
+          500: {
+            description: "Retry failed; QStash will redeliver",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ErrorResponse" },
+              },
+            },
+          },
+          503: {
+            description: "QStash signing keys are not configured",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ErrorResponse" },
+              },
+            },
+          },
+        },
+      },
+    },
     "/api/admin/blog": {
       get: {
         summary: "List unpublished blog drafts",
@@ -1522,6 +1598,8 @@ export const openApiSpec = {
       NewsletterResponse: zodToOpenApi(NewsletterResponseSchema),
       ResendWebhookEvent: zodToOpenApi(ResendWebhookEventSchema),
       ResendWebhookResponse: zodToOpenApi(ResendWebhookResponseSchema),
+      QStashRetryPayload: zodToOpenApi(QStashRetryPayloadSchema),
+      QStashRetryResponse: zodToOpenApi(QStashRetryResponseSchema),
     },
   },
 };

@@ -67,6 +67,11 @@ const GHP_FIXTURE_LITERAL = new Set<string>([
   "ghp_123456789012345678901234567890123456",
 ]);
 
+const HISTORICAL_TEST_FIXTURES = new Set<string>([
+  "postgresql://user:npg_SecretPass1234@ep-cool-lake-123456.us-east-2.aws.neon.tech/neondb",
+  "npg_SecretPass1234",
+]);
+
 function union(...sets: readonly Set<string>[]): Set<string> {
   return new Set(sets.flatMap((set) => [...set]));
 }
@@ -78,18 +83,30 @@ const SAFE_FILE_VALUES = new Map<string, Set<string>>([
   // MIGRATION_REPLAY_FIXTURES and GHP_FIXTURE_LITERAL above).
   [
     "lib/security-scan/internal/allowlist.ts",
-    union(MIGRATION_REPLAY_FIXTURES, GHP_FIXTURE_LITERAL),
+    union(
+      MIGRATION_REPLAY_FIXTURES,
+      GHP_FIXTURE_LITERAL,
+      HISTORICAL_TEST_FIXTURES
+    ),
   ],
   // Pre-refactor home of both fixture sets, which still holds them at
   // earlier reachable commits.
   [
     "scripts/audit-secret-history.ts",
-    union(MIGRATION_REPLAY_FIXTURES, GHP_FIXTURE_LITERAL),
+    union(
+      MIGRATION_REPLAY_FIXTURES,
+      GHP_FIXTURE_LITERAL,
+      HISTORICAL_TEST_FIXTURES
+    ),
   ],
   ["__tests__/validation.test.ts", GHP_FIXTURE_LITERAL],
   [
     "__tests__/husky-hook-wiring.test.ts",
-    union(MIGRATION_REPLAY_FIXTURES, GHP_FIXTURE_LITERAL),
+    union(
+      MIGRATION_REPLAY_FIXTURES,
+      GHP_FIXTURE_LITERAL,
+      HISTORICAL_TEST_FIXTURES
+    ),
   ],
 ]);
 

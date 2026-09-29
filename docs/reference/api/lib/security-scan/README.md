@@ -87,3 +87,9 @@ Re-exports [SecretDetector](types/interfaces/SecretDetector.md)
 ### SecretDetectorFixtureSet
 
 Re-exports [SecretDetectorFixtureSet](types/interfaces/SecretDetectorFixtureSet.md)
+
+***
+
+### shouldScanFile
+
+Re-exports [shouldScanFile](internal/scan/functions/shouldScanFile.md)

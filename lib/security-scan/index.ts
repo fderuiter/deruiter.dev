@@ -20,6 +20,7 @@ export {
   scanFile,
   scanHistorySnapshot,
   scanText,
+  shouldScanFile,
 } from "./internal/scan";
 
 import { SECRET_DETECTORS } from "./internal/catalog";

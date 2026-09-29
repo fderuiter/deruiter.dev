@@ -139,7 +139,7 @@ const STACK_LAYERS: StackLayer[] = [
     glowColor: "bg-indigo-500/5",
     technologies: [
       { name: "Vitest", version: "v4.x", role: "Unit, integration, and defect remediation test runner", link: "https://vitest.dev" },
-      { name: "Playwright & @axe-core", version: "v1.60.0", role: "Synthetic browser probes & WCAG 2.1 AA a11y gates", link: "https://playwright.dev" },
+      { name: "Playwright & @axe-core", version: "v1.63.0", role: "Synthetic browser probes & WCAG 2.1 AA a11y gates", link: "https://playwright.dev" },
       { name: "fast-check", version: "v4.9.0", role: "Property-based AST fuzzing & invariant validation" },
       { name: "TypeDoc & OpenAPI", version: "Automated", role: "Zero-drift automated specification generator" },
     ],

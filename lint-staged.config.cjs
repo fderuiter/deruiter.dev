@@ -45,6 +45,9 @@ module.exports = {
       commands.push(
         `eslint --fix --no-warn-ignored ${codeFiles.map(quote).join(" ")}`
       );
+      commands.push(
+        `jscpd ${codeFiles.map(quote).join(" ")}`
+      );
     }
 
     return commands;

@@ -1,21 +1,19 @@
-import type {
-  CellCoordinates,
-  ColumnArm,
-  PopulationSnapshot,
-  PopulationType,
-  QcCategory,
-  QcFinding,
-  QcReport,
-  RowStatistic,
-  SapRule,
-  SapRulebook,
-  StagedTable,
-  Subject,
-} from "../types";
 import {
   POPULATION_LABELS,
   PopulationTypeSchema,
   RoundingModeSchema,
+  type CellCoordinates,
+  type ColumnArm,
+  type PopulationSnapshot,
+  type PopulationType,
+  type QcCategory,
+  type QcFinding,
+  type QcReport,
+  type RowStatistic,
+  type SapRule,
+  type SapRulebook,
+  type StagedTable,
+  type Subject,
 } from "../types";
 import { decimalPlaces, roundRatio } from "./rounding";
 

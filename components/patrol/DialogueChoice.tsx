@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import type { DialogueMoment, DialogueOption, PatrolEvent } from "@/lib/patrol";
-import { createDialogueChoiceEvent, findDialogueOption } from "@/lib/patrol";
+import { createDialogueChoiceEvent, findDialogueOption, type DialogueMoment, type DialogueOption, type PatrolEvent } from "@/lib/patrol";
 import {
   IconMessageCircle2,
   IconCheck,

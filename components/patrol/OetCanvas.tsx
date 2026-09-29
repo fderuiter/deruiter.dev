@@ -8,13 +8,13 @@ import React, {
   useCallback,
   useMemo,
 } from "react";
-import type {
-  PatrolScenario,
-  PatrolEvent,
-  BriefingState,
-  OetDescentSnapshot,
+import {
+  OetDescentEngine,
+  type PatrolScenario,
+  type PatrolEvent,
+  type BriefingState,
+  type OetDescentSnapshot,
 } from "@/lib/patrol";
-import { OetDescentEngine } from "@/lib/patrol";
 import { useAnnouncer } from "@/hooks/useAnnouncer";
 import {
   IconGauge,

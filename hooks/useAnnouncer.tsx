@@ -7,12 +7,10 @@ export {
   initialAnnouncerState,
   liveAnnouncer,
   LiveAnnouncer,
-} from "@/components/providers/A11yProvider";
-export type {
-  Priority,
-  Priority as AnnouncementMode,
-  AnnouncerContextType,
-  AnnounceItem,
-  AnnouncerState,
-  A11yProviderProps,
+  type Priority,
+  type Priority as AnnouncementMode,
+  type AnnouncerContextType,
+  type AnnounceItem,
+  type AnnouncerState,
+  type A11yProviderProps,
 } from "@/components/providers/A11yProvider";

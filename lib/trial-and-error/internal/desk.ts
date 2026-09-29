@@ -14,6 +14,7 @@ import {
   deriveInspectionView,
   inspectCell,
   unpenalizedMult,
+  type DeskCellStatus,
   type DeskCellView,
 } from "./inspection";
 
@@ -54,7 +55,7 @@ export type DeskAction =
   | { type: "DISCARD" }
   | { type: "RESET" };
 
-export type { DeskCellStatus, DeskCellView } from "./inspection";
+export { type DeskCellStatus, type DeskCellView };
 
 /** Everything the HUD renders, derived purely from scenario and state. */
 export interface DeskView {

@@ -1,13 +1,14 @@
-import type {
-  BlindTier,
-  Pack,
-  PopulationTransition,
-  SapRulebook,
-  ShopCatalog,
-  ShopEntry,
-  Site,
+import {
+  POPULATION_LABELS,
+  shopEntryId,
+  type BlindTier,
+  type Pack,
+  type PopulationTransition,
+  type SapRulebook,
+  type ShopCatalog,
+  type ShopEntry,
+  type Site,
 } from "../types";
-import { POPULATION_LABELS, shopEntryId } from "../types";
 import { amendedRule } from "./amendments";
 import { drawInt } from "./rng";
 

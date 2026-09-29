@@ -1,7 +1,6 @@
 import { defaultCache } from "@serwist/next/worker";
 import { PUBLIC_ROUTE_PATHS } from "@/lib/public-routes";
-import type { PrecacheEntry } from "serwist";
-import { CacheFirst, ExpirationPlugin, NetworkOnly, Serwist } from "serwist";
+import { CacheFirst, ExpirationPlugin, NetworkOnly, Serwist, type PrecacheEntry } from "serwist";
 
 declare global {
   interface ServiceWorkerGlobalScope {

@@ -1,12 +1,12 @@
-import type {
-  Arm,
-  PopulationSnapshot,
-  RowStatistic,
-  SapRulebook,
-  StagedTable,
-  Subject,
+import {
+  POPULATION_LABELS,
+  type Arm,
+  type PopulationSnapshot,
+  type RowStatistic,
+  type SapRulebook,
+  type StagedTable,
+  type Subject,
 } from "../types";
-import { POPULATION_LABELS } from "../types";
 import { matchingEvents, members } from "./validator";
 
 /**

@@ -1,13 +1,14 @@
-import type {
-  Act,
-  Campaign,
-  CrisisCard,
-  Endless,
-  Pack,
-  Scenario,
-  ShopEntry,
+import {
+  POPULATION_LABELS,
+  shopEntryId,
+  type Act,
+  type Campaign,
+  type CrisisCard,
+  type Endless,
+  type Pack,
+  type Scenario,
+  type ShopEntry,
 } from "../types";
-import { POPULATION_LABELS, shopEntryId } from "../types";
 import { raiseQuotas } from "./quotas";
 import { blindStartCpu } from "./relics";
 import { drawInt } from "./rng";

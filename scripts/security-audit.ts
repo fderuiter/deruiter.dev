@@ -511,17 +511,54 @@ export function runSecurityAudit(options: SecurityAuditOptions = {}): boolean {
     shell: true,
   });
 
-  let auditJson: AuditReport;
-  try {
-    auditJson = JSON.parse(
-      auditResult.stdout || auditResult.stderr || "{}"
-    ) as AuditReport;
-  } catch (_e) {
+  let auditJson: AuditReport | null = null;
+  const rawOutput = (auditResult.stdout || "").trim();
+  const rawStderr = (auditResult.stderr || "").trim();
+
+  if (rawOutput) {
+    try {
+      const firstBrace = rawOutput.indexOf("{");
+      const lastBrace = rawOutput.lastIndexOf("}");
+      const jsonStr =
+        firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace
+          ? rawOutput.slice(firstBrace, lastBrace + 1)
+          : rawOutput;
+      auditJson = JSON.parse(jsonStr) as AuditReport;
+    } catch (_e) {
+      // Failed to parse stdout as JSON
+    }
+  }
+
+  if (!auditJson && rawStderr && rawStderr.includes("{")) {
+    try {
+      const firstBrace = rawStderr.indexOf("{");
+      const lastBrace = rawStderr.lastIndexOf("}");
+      if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+        auditJson = JSON.parse(
+          rawStderr.slice(firstBrace, lastBrace + 1)
+        ) as AuditReport;
+      }
+    } catch (_e) {
+      // Failed to parse stderr as JSON
+    }
+  }
+
+  if (
+    auditResult.error ||
+    !auditJson ||
+    typeof auditJson !== "object" ||
+    (!auditJson.vulnerabilities &&
+      typeof auditJson.auditReportVersion !== "number" &&
+      (auditResult.status !== 0 || !rawOutput))
+  ) {
     console.error(
-      `${colors.brightRed}❌ Failed to parse npm audit JSON output.${colors.reset}`
+      `${colors.brightRed}❌ npm audit execution failed or returned an invalid audit report.${colors.reset}`
     );
+    if (rawStderr) {
+      console.error(`${colors.gray}stderr: ${rawStderr}${colors.reset}`);
+    }
     if (options.throwOnError) {
-      throw new Error("Failed to parse npm audit JSON output.");
+      throw new Error("npm audit execution failed or returned invalid JSON.");
     }
     process.exit(1);
   }

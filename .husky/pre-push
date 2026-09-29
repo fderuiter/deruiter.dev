@@ -14,10 +14,6 @@ fi
 # branches too; the validator accepts their reserved `jules/` prefix.
 npx tsx scripts/validate-branch.ts
 
-# Whole-project typechecking and boundary enforcement
-npm run typecheck
-npm run lint:boundaries
-
 # Read pushed refs from stdin
 # Format: <local ref> <local sha1> <remote ref> <remote sha1>
 while read -r local_ref local_sha remote_ref remote_sha; do

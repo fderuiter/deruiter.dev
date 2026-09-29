@@ -47,6 +47,7 @@ const {
   runVercelProductionPreflight,
   shouldRunPreflight,
   verifyUpstashCredentials,
+  verifyVercelHeadroomCapacity,
 } = require("./vercel-production-preflight");
 async function runBuildPipeline() {
   if (!runVercelProductionPreflight(process.env)) {
@@ -54,6 +55,16 @@ async function runBuildPipeline() {
   }
 
   if (shouldRunPreflight(process.env)) {
+    console.log("Checking Vercel headroom capacity...");
+    const headroomCheck = await verifyVercelHeadroomCapacity(process.env);
+    if (!headroomCheck) {
+      console.error(
+        "Production release preflight failed: Critical Vercel headroom capacity breached."
+      );
+      process.exit(1);
+    }
+    console.log("Vercel headroom capacity verification passed.");
+
     console.log("Checking Upstash REST authentication...");
     const upstashCheck = await verifyUpstashCredentials(process.env);
     if (!upstashCheck.ok) {

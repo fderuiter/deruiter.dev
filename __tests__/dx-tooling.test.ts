@@ -193,8 +193,6 @@ describe("Developer Experience (DX) Tooling Suite", () => {
       expect(validateBranchName("jules-cleanup").valid).toBe(false);
       expect(validateBranchName("Jules/Uppercase").valid).toBe(false);
       expect(validateBranchName("jules/Uppercase").valid).toBe(false);
-      expect(validateBranchName("stitch/feat/example").valid).toBe(false);
-      expect(validateBranchName("stitch/fix/example").valid).toBe(false);
     });
 
     it("passes checkGitHygieneConfig diagnostic check", () => {

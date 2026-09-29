@@ -565,5 +565,51 @@ describe("Security Audit Script", () => {
         "https://github.com/advisories/GHSA-pretext"
       );
     });
+
+    it("should fail closed on empty stdout, non-JSON stderr, and status 1", () => {
+      vi.mocked(spawnSync).mockReturnValue(
+        fromPartial<SpawnSyncReturns<string>>({
+          status: 1,
+          stdout: "",
+          stderr: "npm ERR! code ENOTFOUND\nnpm ERR! network request failed",
+        })
+      );
+
+      expect(() =>
+        runSecurityAudit({ now: testNow, throwOnError: true })
+      ).toThrowError("npm audit execution failed or returned invalid JSON.");
+    });
+
+    it("should fail closed on spawn execution error", () => {
+      vi.mocked(spawnSync).mockReturnValue(
+        fromPartial<SpawnSyncReturns<string>>({
+          error: new Error("spawn npm ENOENT"),
+          stdout: "",
+          stderr: "",
+        })
+      );
+
+      expect(() =>
+        runSecurityAudit({ now: testNow, throwOnError: true })
+      ).toThrowError("npm audit execution failed or returned invalid JSON.");
+    });
+
+    it("should parse warning-prefixed valid JSON output in stdout or stderr successfully", () => {
+      vi.mocked(spawnSync).mockReturnValue(
+        fromPartial<SpawnSyncReturns<string>>({
+          status: 0,
+          stdout:
+            "npm WARN config global `--global`, `--local` are deprecated\n" +
+            JSON.stringify({
+              auditReportVersion: 2,
+              vulnerabilities: {},
+            }),
+          stderr: "",
+        })
+      );
+
+      const result = runSecurityAudit({ now: testNow, throwOnError: true });
+      expect(result).toBe(true);
+    });
   });
 });

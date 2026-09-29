@@ -5,7 +5,6 @@ import dynamic from "next/dynamic";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { NextPrevNav } from "@/components/ui/NextPrevNav";
 import { PlayCabinet } from "@/components/arcade/PlayCabinet";
-import { DesktopOnlyGate } from "@/components/arcade/DesktopOnlyGate";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -80,27 +79,22 @@ export const WorkingWithDuckClient: React.FC = () => {
 
         {/* Game Container */}
         <div className="rounded-3xl border border-zinc-800 bg-zinc-950/90 p-4 sm:p-6 shadow-[0_0_50px_rgba(251,191,36,0.08)]">
-          <DesktopOnlyGate
+          <PlayCabinet
             gameId="working-with-duck"
-            gameTitle="Working With Duck"
+            title="Working With Duck"
+            subtitle="Code, Toys, and Questionable Priorities"
+            accentColor="amber"
+            icon={<IconBone className="w-8 h-8 text-amber-400" />}
+            instructions="Try to finish your code while Duck requests toys, treats, and belly rubs. Take him to the park, save a few scrapbook moments, and see how much work gets done."
+            controls={[
+              { key: "1-3", action: "Toss Toys" },
+              { key: "4", action: "Trade Treats" },
+              { key: "Space", action: "Steer Duck" },
+            ]}
+            importComponent={WorkingWithDuckLoader}
           >
-            <PlayCabinet
-              gameId="working-with-duck"
-              title="Working With Duck"
-              subtitle="Code, Toys, and Questionable Priorities"
-              accentColor="amber"
-              icon={<IconBone className="w-8 h-8 text-amber-400" />}
-              instructions="Try to finish your code while Duck requests toys, treats, and belly rubs. Take him to the park, save a few scrapbook moments, and see how much work gets done."
-              controls={[
-                { key: "1-3", action: "Toss Toys" },
-                { key: "4", action: "Trade Treats" },
-                { key: "Space", action: "Steer Duck" },
-              ]}
-              importComponent={WorkingWithDuckLoader}
-            >
-              <DynamicWorkingWithDuck />
-            </PlayCabinet>
-          </DesktopOnlyGate>
+            <DynamicWorkingWithDuck />
+          </PlayCabinet>
         </div>
 
         {/* Instructions & Controls Reference */}

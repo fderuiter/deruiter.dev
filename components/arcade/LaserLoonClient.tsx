@@ -5,7 +5,6 @@ import dynamic from "next/dynamic";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { NextPrevNav } from "@/components/ui/NextPrevNav";
 import { PlayCabinet } from "@/components/arcade/PlayCabinet";
-import { DesktopOnlyGate } from "@/components/arcade/DesktopOnlyGate";
 import Link from "next/link";
 import {
   IconCrosshair,
@@ -78,26 +77,24 @@ export const LaserLoonClient: React.FC = () => {
 
         {/* Game Container */}
         <div className="rounded-3xl border border-zinc-800 bg-zinc-950/90 p-4 sm:p-6 shadow-[0_0_50px_rgba(239,68,68,0.1)]">
-          <DesktopOnlyGate gameId="laser-loon" gameTitle="Laser Loon">
-            <PlayCabinet
-              gameId="laser-loon"
-              title="Laser Loon: Quest for the State Flag"
-              subtitle="A Loon With a Legislative Agenda"
-              accentColor="red"
-              icon={<IconCrosshair className="w-8 h-8 text-red-400" />}
-              instructions="Fly Laser Loon toward the State Capitol, take on rival flags, and blast through red tape. There are ice weapons and boss battles. The flag committee did not request these features."
-              controls={[
-                { key: "WASD / Arrows", action: "Glide Loon" },
-                { key: "Click / Space", action: "Aim & Shoot" },
-                { key: "1 - 4", action: "Optic Arsenal" },
-                { key: "U", action: "Loon Tremolo" },
-                { key: "P", action: "Pause Game" },
-              ]}
-              importComponent={LaserLoonLoader}
-            >
-              <DynamicLaserLoon />
-            </PlayCabinet>
-          </DesktopOnlyGate>
+          <PlayCabinet
+            gameId="laser-loon"
+            title="Laser Loon: Quest for the State Flag"
+            subtitle="A Loon With a Legislative Agenda"
+            accentColor="red"
+            icon={<IconCrosshair className="w-8 h-8 text-red-400" />}
+            instructions="Fly Laser Loon toward the State Capitol, take on rival flags, and blast through red tape. There are ice weapons and boss battles. The flag committee did not request these features."
+            controls={[
+              { key: "WASD / Arrows", action: "Glide Loon" },
+              { key: "Click / Space", action: "Aim & Shoot" },
+              { key: "1 - 4", action: "Optic Arsenal" },
+              { key: "U", action: "Loon Tremolo" },
+              { key: "P", action: "Pause Game" },
+            ]}
+            importComponent={LaserLoonLoader}
+          >
+            <DynamicLaserLoon />
+          </PlayCabinet>
         </div>
 
         {/* Instructions & Controls Reference */}

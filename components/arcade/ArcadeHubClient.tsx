@@ -53,12 +53,6 @@ const getScore = (key?: string) => () => {
 
 const getServerScore = () => "0";
 
-// Same query as DesktopOnlyGate (ADR 0048): phones and portrait tablets.
-const SHOW_ON_TOUCH_COMPACT_INLINE =
-  "hidden [@media(pointer:coarse)_and_(max-width:1023px)]:inline-block";
-const SHOW_ON_TOUCH_COMPACT_BLOCK =
-  "hidden [@media(pointer:coarse)_and_(max-width:1023px)]:block";
-
 const ARCADE_GAMES: ArcadeGameCard[] = [
   {
     id: "working-with-duck",
@@ -286,11 +280,6 @@ function GameCard({ game, index }: { game: ArcadeGameCard; index: number }) {
               >
                 {game.genre}
               </span>
-              <span
-                className={`${SHOW_ON_TOUCH_COMPACT_INLINE} px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase border border-zinc-700 text-zinc-300`}
-              >
-                Desktop only
-              </span>
             </div>
           </div>
 
@@ -394,19 +383,6 @@ export const ArcadeHubClient: React.FC = () => {
             attention.
           </p>
 
-          <p
-            className={`${SHOW_ON_TOUCH_COMPACT_BLOCK} mt-6 rounded-xl border border-zinc-800 bg-zinc-900/60 px-4 py-3 text-sm text-zinc-300`}
-          >
-            On a phone? These games need a desktop, but the{" "}
-            <Link
-              href="/arcade/meme-vault"
-              className="text-emerald-300 underline underline-offset-4"
-            >
-              Meme Vault
-            </Link>{" "}
-            works fine here.
-          </p>
-
           {/* Quick Metrics Bar */}
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3 text-xs font-mono">
             <span className="px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-300">
@@ -416,7 +392,7 @@ export const ArcadeHubClient: React.FC = () => {
               <strong>Web Audio Synthesis</strong>
             </span>
             <span className="px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-300">
-              <strong>Built for Keyboard &amp; Mouse</strong>
+              <strong>Touch &amp; Keyboard Controls</strong>
             </span>
             <span className="px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-300">
               <strong>Custom Canvas Engines</strong>

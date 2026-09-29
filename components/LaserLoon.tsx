@@ -9,7 +9,7 @@ import React, {
 } from "react";
 import { useAudio } from "@/components/providers/AudioProvider";
 import { getSoundEngine } from "@/lib/audio/sound-engine";
-import { getMatchMediaMatches } from "@/hooks/useMediaQuery";
+import { useMediaQuery, getMatchMediaMatches } from "@/hooks/useMediaQuery";
 import { useTelemetry } from "@/hooks/useTelemetry";
 import { clamp } from "@/lib/game-utils";
 import {
@@ -105,6 +105,7 @@ export const LaserLoon: React.FC = () => {
   const loadedHighScore = parseInt(rawHighScore, 10) || 0;
   const { playNote, playSuccess } = useAudio();
   const { recordEvent } = useTelemetry();
+  const isCoarsePointer = useMediaQuery("(pointer: coarse)");
 
   // Game configuration & React state
   const [mode, setMode] = useState<LaserMode>("campaign");
@@ -2186,10 +2187,18 @@ export const LaserLoon: React.FC = () => {
               </div>
 
               <div className="mt-6 pt-4 border-t border-neutral-800 w-full text-[10px] font-mono text-neutral-500 flex justify-around flex-wrap gap-2">
-                <span>WASD: Move</span>
-                <span>Click: Fire</span>
-                <span>1-4: Optics</span>
-                <span>U: Tremolo</span>
+                <span>
+                  {isCoarsePointer ? "Touch & Drag: Move" : "WASD: Move"}
+                </span>
+                <span>
+                  {isCoarsePointer ? "Tap Dock: Fire" : "Click: Fire"}
+                </span>
+                <span>
+                  {isCoarsePointer ? "Tap Arsenal: Optics" : "1-4: Optics"}
+                </span>
+                <span>
+                  {isCoarsePointer ? "Tap Dock: Tremolo" : "U: Tremolo"}
+                </span>
               </div>
             </div>
           </div>
@@ -2424,10 +2433,24 @@ export const LaserLoon: React.FC = () => {
               </button>
             </div>
             <div className="flex flex-wrap justify-center gap-4 mt-6 text-[10px] font-mono text-neutral-500">
-              <span>MOUSE / WASD: AIM & GLIDE</span>
-              <span>CLICK / DRAG / SPACE: FIRE LASERS</span>
-              <span>KEYS 1-4: OPTICS</span>
-              <span>U: LOON TREMOLO ULTIMATE</span>
+              <span>
+                {isCoarsePointer
+                  ? "TOUCH / DRAG: AIM & GLIDE"
+                  : "MOUSE / WASD: AIM & GLIDE"}
+              </span>
+              <span>
+                {isCoarsePointer
+                  ? "TAP DOCK: FIRE LASERS"
+                  : "CLICK / DRAG / SPACE: FIRE LASERS"}
+              </span>
+              <span>
+                {isCoarsePointer ? "TAP 1-4: OPTICS" : "KEYS 1-4: OPTICS"}
+              </span>
+              <span>
+                {isCoarsePointer
+                  ? "TAP TREMOLO: ULTIMATE"
+                  : "U: LOON TREMOLO ULTIMATE"}
+              </span>
             </div>
           </div>
         )}
@@ -2772,8 +2795,9 @@ export const LaserLoon: React.FC = () => {
       {/* Footer Controls & Toggles */}
       <div className="arcade-shooter-footer w-full max-w-3xl flex flex-wrap gap-2 justify-between items-center px-4 mt-2 text-[10px] font-mono text-neutral-500">
         <span>
-          Controls: Aim &amp; Click / Space to fire · Keys 1-4 for Optics · U
-          for Tremolo
+          {isCoarsePointer
+            ? "Controls: Touch & Drag to aim · Tap Dock to fire · Tap Arsenal for Optics"
+            : "Controls: Aim & Click / Space to fire · Keys 1-4 for Optics · U for Tremolo"}
         </span>
         <div className="flex items-center gap-4">
           <button

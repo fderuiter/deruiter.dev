@@ -22,6 +22,7 @@ import { useDuckService } from "@/hooks/useDuckService";
 import { useResponsiveCanvas } from "@/hooks/useResponsiveCanvas";
 import { useCanvasResolution } from "@/hooks/useCanvasResolution";
 import { applyCanvasScale } from "@/lib/arcade";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import {
   IconPlayerPlay,
   IconPlayerPause,
@@ -1639,6 +1640,7 @@ interface WorkingWithDuckProps {
 export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
   initialState,
 }) => {
+  const isCoarsePointer = useMediaQuery("(pointer: coarse)");
   const rawHighScore = useSyncExternalStore(
     subscribeStorage,
     getHighScoreSnapshot,
@@ -3820,7 +3822,11 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                   title="Focus work sprint at desk (Spacebar)"
                 >
                   <IconCode className="w-4 h-4" />
-                  <span>Focus Work Sprint (Space)</span>
+                  <span>
+                    {isCoarsePointer
+                      ? "Focus Work Sprint"
+                      : "Focus Work Sprint (Space)"}
+                  </span>
                 </button>
               ) : uiState.inBathtub ? (
                 <div className="flex items-center gap-2">
@@ -3851,7 +3857,11 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                     }}
                     className="min-h-[44px] min-w-[44px] px-4 py-2 rounded-xl bg-amber-400 text-black font-bold text-xs hover:bg-amber-300 active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none shadow-[0_0_12px_rgba(250,204,21,0.3)]"
                   >
-                    <span>🦘 Agility Jump (Space)</span>
+                    <span>
+                      {isCoarsePointer
+                        ? "🦘 Agility Jump"
+                        : "🦘 Agility Jump (Space)"}
+                    </span>
                   </button>
 
                   <button

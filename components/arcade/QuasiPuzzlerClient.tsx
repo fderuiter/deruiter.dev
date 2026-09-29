@@ -5,7 +5,6 @@ import dynamic from "next/dynamic";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { NextPrevNav } from "@/components/ui/NextPrevNav";
 import { PlayCabinet } from "@/components/arcade/PlayCabinet";
-import { DesktopOnlyGate } from "@/components/arcade/DesktopOnlyGate";
 import Link from "next/link";
 import {
   IconBrain,
@@ -80,29 +79,24 @@ export const QuasiPuzzlerClient: React.FC = () => {
 
         {/* Game Container */}
         <div className="rounded-3xl border border-zinc-800 bg-zinc-950/90 p-4 sm:p-6 shadow-[0_0_50px_rgba(168,85,247,0.1)]">
-          <DesktopOnlyGate
+          <PlayCabinet
             gameId="quasi-puzzler"
-            gameTitle="Quasi-Perfect Puzzler"
+            title="Quasi-Perfect Puzzler"
+            subtitle="Small Proofs, Limited Memory"
+            accentColor="purple"
+            icon={<IconBrain className="w-8 h-8 text-purple-400" />}
+            instructions="Apply tactics to a proof tree and work your way to a complete proof. You can skip a goal with “sorry,” but the score will notice."
+            controls={[
+              { key: "Click / Drag", action: "Apply Tactic" },
+              { key: "Z / Y", action: "Undo / Redo" },
+              { key: "R", action: "Reset Level" },
+              { key: "H / C / B", action: "Hints / IDE / Brief" },
+              { key: "sorry", action: "Admit Goal" },
+            ]}
+            importComponent={QuasiPerfectPuzzlerLoader}
           >
-            <PlayCabinet
-              gameId="quasi-puzzler"
-              title="Quasi-Perfect Puzzler"
-              subtitle="Small Proofs, Limited Memory"
-              accentColor="purple"
-              icon={<IconBrain className="w-8 h-8 text-purple-400" />}
-              instructions="Apply tactics to a proof tree and work your way to a complete proof. You can skip a goal with “sorry,” but the score will notice."
-              controls={[
-                { key: "Click / Drag", action: "Apply Tactic" },
-                { key: "Z / Y", action: "Undo / Redo" },
-                { key: "R", action: "Reset Level" },
-                { key: "H / C / B", action: "Hints / IDE / Brief" },
-                { key: "sorry", action: "Admit Goal" },
-              ]}
-              importComponent={QuasiPerfectPuzzlerLoader}
-            >
-              <DynamicQuasiPerfectPuzzler />
-            </PlayCabinet>
-          </DesktopOnlyGate>
+            <DynamicQuasiPerfectPuzzler />
+          </PlayCabinet>
         </div>
 
         {/* Instructions & Controls Reference */}

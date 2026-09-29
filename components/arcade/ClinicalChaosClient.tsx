@@ -5,7 +5,6 @@ import dynamic from "next/dynamic";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { NextPrevNav } from "@/components/ui/NextPrevNav";
 import { PlayCabinet } from "@/components/arcade/PlayCabinet";
-import { DesktopOnlyGate } from "@/components/arcade/DesktopOnlyGate";
 import Link from "next/link";
 import {
   IconShieldCheck,
@@ -80,28 +79,23 @@ export const ClinicalChaosClient: React.FC = () => {
 
         {/* Game Container */}
         <div className="rounded-3xl border border-zinc-800 bg-zinc-950/90 p-1.5 sm:p-6 shadow-[0_0_50px_rgba(16,185,129,0.1)]">
-          <DesktopOnlyGate
+          <PlayCabinet
             gameId="clinical-chaos"
-            gameTitle="Clinical Trial Chaos"
+            title="Clinical Trial Chaos: CDISC Compliance"
+            subtitle="Clinical Data, Against the Clock"
+            accentColor="emerald"
+            icon={<IconShieldCheck className="w-8 h-8 text-emerald-400" />}
+            instructions="Sort clinical observations, fix data problems, and sign submissions before time runs out. A game inspired by clinical data work, with a considerably less patient auditor."
+            controls={[
+              { key: "Enter", action: "Next step (fix / route / sign)" },
+              { key: "1–6", action: "Pick answer / route to station" },
+              { key: "Q W E R", action: "Lifelines" },
+              { key: "Tab", action: "Next subject" },
+            ]}
+            importComponent={ClinicalTrialChaosLoader}
           >
-            <PlayCabinet
-              gameId="clinical-chaos"
-              title="Clinical Trial Chaos: CDISC Compliance"
-              subtitle="Clinical Data, Against the Clock"
-              accentColor="emerald"
-              icon={<IconShieldCheck className="w-8 h-8 text-emerald-400" />}
-              instructions="Sort clinical observations, fix data problems, and sign submissions before time runs out. A game inspired by clinical data work, with a considerably less patient auditor."
-              controls={[
-                { key: "Enter", action: "Next step (fix / route / sign)" },
-                { key: "1–6", action: "Pick answer / route to station" },
-                { key: "Q W E R", action: "Lifelines" },
-                { key: "Tab", action: "Next subject" },
-              ]}
-              importComponent={ClinicalTrialChaosLoader}
-            >
-              <DynamicClinicalTrialChaos />
-            </PlayCabinet>
-          </DesktopOnlyGate>
+            <DynamicClinicalTrialChaos />
+          </PlayCabinet>
         </div>
 
         {/* Context that complements the in-game Fix → Route → Sign briefing. */}

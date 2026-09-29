@@ -24,6 +24,7 @@ import {
   IconDeviceTv,
 } from "@tabler/icons-react";
 import { DpadActionDock } from "@/components/arcade/ControlDocks";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useResponsiveCanvas } from "@/hooks/useResponsiveCanvas";
 import { FieldManualButton } from "@/components/FieldManualButton";
 import { FullscreenButton } from "@/components/arcade/FullscreenButton";
@@ -123,6 +124,7 @@ const emptySubscribe = () => () => {};
 export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   isMounted: propIsMounted,
 }) => {
+  const isCoarsePointer = useMediaQuery("(pointer: coarse)");
   const clientMounted = useSyncExternalStore(
     emptySubscribe,
     () => true,
@@ -2429,7 +2431,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                 onClick={() => handleFireWeapon("emp_blast")}
                 className="px-1.5 py-0.5 rounded border bg-neutral-900 text-cyan-400 border-cyan-800/40 hover:bg-cyan-950 cursor-pointer font-bold"
               >
-                [SPACE] EMP
+                {isCoarsePointer ? "EMP" : "[SPACE] EMP"}
               </button>
 
               <button
@@ -2442,7 +2444,9 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
 
             {/* Controls string */}
             <div className="text-neutral-500 uppercase tracking-wider hidden md:block">
-              WASD / ARROWS · C: CRT SCANLINES
+              {isCoarsePointer
+                ? "TOUCH D-PAD · TAP ACTIONS"
+                : "WASD / ARROWS · C: CRT SCANLINES"}
             </div>
           </div>
 

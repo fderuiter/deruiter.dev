@@ -5,7 +5,6 @@ import dynamic from "next/dynamic";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { NextPrevNav } from "@/components/ui/NextPrevNav";
 import { PlayCabinet } from "@/components/arcade/PlayCabinet";
-import { DesktopOnlyGate } from "@/components/arcade/DesktopOnlyGate";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -84,26 +83,24 @@ export const GarminWatchClient: React.FC = () => {
 
         {/* Game Container */}
         <div className="rounded-3xl border border-zinc-800 bg-zinc-950/90 p-4 sm:p-6 shadow-[0_0_50px_rgba(245,158,11,0.1)] flex flex-col items-center">
-          <DesktopOnlyGate gameId="garmin-watch" gameTitle="Monkey C Mayhem">
-            <PlayCabinet
-              gameId="garmin-watch"
-              title="Monkey C Mayhem: Garmin Schvitz App"
-              subtitle="A Small Watch With a Lot Going On"
-              accentColor="amber"
-              icon={<IconDeviceWatch className="w-8 h-8 text-amber-400" />}
-              instructions="Keep a simulated Garmin Schvitz App running with a 32KB memory budget. Clear memory, dodge obstacles, and wipe the fog off the screen before the watch has a very bad day."
-              controls={[
-                { key: "UP", action: "Jump" },
-                { key: "DOWN", action: "Jettison RAM" },
-                { key: "Drag", action: "Wipe Thermal" },
-              ]}
-              importComponent={GarminWatchSimulatorLoader}
-            >
-              <div className="flex flex-col items-center w-full">
-                <DynamicGarminWatchSimulator />
-              </div>
-            </PlayCabinet>
-          </DesktopOnlyGate>
+          <PlayCabinet
+            gameId="garmin-watch"
+            title="Monkey C Mayhem: Garmin Schvitz App"
+            subtitle="A Small Watch With a Lot Going On"
+            accentColor="amber"
+            icon={<IconDeviceWatch className="w-8 h-8 text-amber-400" />}
+            instructions="Keep a simulated Garmin Schvitz App running with a 32KB memory budget. Clear memory, dodge obstacles, and wipe the fog off the screen before the watch has a very bad day."
+            controls={[
+              { key: "UP", action: "Jump" },
+              { key: "DOWN", action: "Jettison RAM" },
+              { key: "Drag", action: "Wipe Thermal" },
+            ]}
+            importComponent={GarminWatchSimulatorLoader}
+          >
+            <div className="flex flex-col items-center w-full">
+              <DynamicGarminWatchSimulator />
+            </div>
+          </PlayCabinet>
         </div>
 
         {/* Instructions & Controls Reference */}

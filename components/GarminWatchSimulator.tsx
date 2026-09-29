@@ -28,6 +28,7 @@ import { useAnnouncer } from "@/hooks/useAnnouncer";
 import { useGarminService } from "@/hooks/useGarminService";
 import { triggerHaptic } from "@/lib/haptics";
 import { BezelClusterDock } from "@/components/arcade/ControlDocks";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import {
   DeviceTarget,
   DEVICE_PROFILES,
@@ -104,6 +105,7 @@ interface GarminWatchSimulatorProps {
 export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
   initialState,
 }) => {
+  const isCoarsePointer = useMediaQuery("(pointer: coarse)");
   const rawHighScore = useSyncExternalStore(
     subscribeHighScore,
     getHighScoreSnapshot,
@@ -981,7 +983,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
               onClick={() => handleWipeFog()}
               className="absolute top-16 right-12 z-30 px-2 py-0.5 bg-amber-500/90 text-black font-bold text-[8px] font-mono rounded-full border border-amber-300 shadow-md animate-bounce cursor-pointer"
             >
-              WIPE [W]
+              {isCoarsePointer ? "WIPE FOG" : "WIPE [W]"}
             </button>
           )}
         </div>
@@ -1091,22 +1093,28 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       {/* Control Quick Reference Guide */}
       <div className="mt-3 flex flex-wrap justify-center gap-2 text-[10px] font-mono text-zinc-500">
         <span className="px-2 py-0.5 bg-zinc-900 border border-zinc-800 rounded">
-          <strong className="text-zinc-300">UP / ▲:</strong> Jump
+          <strong className="text-zinc-300">
+            {isCoarsePointer ? "TAP BEZEL / UP:" : "UP / ▲:"}
+          </strong>{" "}
+          Jump
         </span>
         <span className="px-2 py-0.5 bg-zinc-900 border border-zinc-800 rounded">
-          <strong className="text-zinc-300">DOWN / ▼:</strong> Pop Heap Variable
+          <strong className="text-zinc-300">
+            {isCoarsePointer ? "TAP BEZEL / DOWN:" : "DOWN / ▼:"}
+          </strong>{" "}
+          Pop Heap Variable
         </span>
         <span className="px-2 py-0.5 bg-zinc-900 border border-zinc-800 rounded">
-          <strong className="text-zinc-300">BACK / [GC]:</strong> Trigger
-          Garbage Collector
+          <strong className="text-zinc-300">
+            {isCoarsePointer ? "TAP BEZEL / BACK:" : "BACK / [GC]:"}
+          </strong>{" "}
+          Trigger Garbage Collector
         </span>
         <span className="px-2 py-0.5 bg-zinc-900 border border-zinc-800 rounded">
-          <strong className="text-zinc-300">LIGHT / [L]:</strong> Backlight
-          (Burns Bat)
-        </span>
-        <span className="px-2 py-0.5 bg-zinc-900 border border-zinc-800 rounded">
-          <strong className="text-zinc-300">SWIPE / [W]:</strong> Wipe Screen
-          Fog
+          <strong className="text-zinc-300">
+            {isCoarsePointer ? "SWIPE LENS:" : "SWIPE / [W]:"}
+          </strong>{" "}
+          Wipe Screen Fog
         </span>
       </div>
 

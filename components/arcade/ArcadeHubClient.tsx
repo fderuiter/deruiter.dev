@@ -15,6 +15,7 @@ import {
   IconBone,
   IconSparkles,
   IconCards,
+  IconClipboardCheck,
 } from "@tabler/icons-react";
 import { FieldManualButton } from "@/components/FieldManualButton";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
@@ -215,6 +216,31 @@ const ARCADE_GAMES: ArcadeGameCard[] = [
     borderHover: "hover:border-amber-400/50",
     badgeBg: "bg-amber-500/10 text-amber-300 border-amber-500/30",
     route: "/arcade/trial-and-error",
+  },
+  {
+    id: "study-director",
+    slug: "study-director",
+    title: "Study Director: Everything Is Fine",
+    subtitle: "Clinical Study Management Simulator",
+    genre: "Management Simulation",
+    description:
+      "Shepherd one study from kickoff to closeout with eight attention points a day. Delegate, audit the sites behind the green dashboard, and defend your decisions when the FDA arrives.",
+    mechanics: [
+      "Daily Attention Budget",
+      "Documentation Debt",
+      "Site Audits",
+      "FDA Inspection Replay",
+    ],
+    techStack: [
+      "Seeded Deterministic Simulation",
+      "Causal Risk Model",
+      "Decision Log Replay",
+    ],
+    icon: <IconClipboardCheck className="w-6 h-6 text-amber-400" />,
+    accentColor: "from-amber-500/20 via-amber-500/5 to-transparent",
+    borderHover: "hover:border-amber-400/50",
+    badgeBg: "bg-amber-500/10 text-amber-300 border-amber-500/30",
+    route: "/arcade/study-director",
   },
   {
     id: "retro-labyrinth",

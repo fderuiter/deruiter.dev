@@ -98,7 +98,7 @@ const STACK_LAYERS: StackLayer[] = [
     technologies: [
       { name: "Prisma ORM", version: "v7.7.0", role: "Type-safe database client and schema migrations", link: "https://www.prisma.io" },
       { name: "Neon PostgreSQL", version: "Serverless", role: "Distributed Postgres over WebSocket pooler", link: "https://neon.tech" },
-      { name: "Upstash Redis", version: "v1.38.0", role: "Low-latency sliding window rate limiting", link: "https://upstash.com" },
+      { name: "Upstash Redis", version: "v1.39.0", role: "Low-latency sliding window rate limiting", link: "https://upstash.com" },
       { name: "Vercel KV & Analytics", version: "v3.0.0", role: "Edge telemetry logging and performance tracking" },
     ],
     keyHighlights: [

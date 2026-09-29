@@ -13,6 +13,26 @@ import { isProductionEnvironment } from "./env";
 export const MAX_PRODUCTION_TRACES_SAMPLE_RATE = 0.05;
 
 /**
+ * Sentry 11 removed `sendDefaultPii` and now collects user info, cookies,
+ * headers, bodies and query parameters unless told otherwise. This is the
+ * explicit opt-out that preserves the previous `sendDefaultPii: false`
+ * behaviour at every init site.
+ */
+export const SENTRY_DATA_COLLECTION: {
+  userInfo: boolean;
+  cookies: boolean;
+  httpHeaders: boolean;
+  httpBodies: never[];
+  urlQueryParams: boolean;
+} = {
+  userInfo: false,
+  cookies: false,
+  httpHeaders: false,
+  httpBodies: [],
+  urlQueryParams: false,
+};
+
+/**
  * Resolves the trace sampling rate for the current deployment.
  *
  * Production is decided by `isProductionEnvironment`, which reads the validated

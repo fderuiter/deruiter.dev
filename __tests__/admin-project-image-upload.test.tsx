@@ -96,9 +96,9 @@ describe("ProjectImageUploader Component", () => {
     fireEvent.change(fileInput, { target: { files: [oversizedFile] } });
 
     await waitFor(() => {
-      expect(screen.getByRole("alert").textContent).toMatch(
-        /exceeds maximum allowed limit of 5MB/i
-      );
+      expect(
+        screen.getByTestId("project-image-upload-error").textContent
+      ).toMatch(/exceeds maximum allowed limit of 5MB/i);
     });
   });
 
@@ -118,9 +118,9 @@ describe("ProjectImageUploader Component", () => {
     fireEvent.change(fileInput, { target: { files: [invalidFile] } });
 
     await waitFor(() => {
-      expect(screen.getByRole("alert").textContent).toMatch(
-        /Invalid file format/i
-      );
+      expect(
+        screen.getByTestId("project-image-upload-error").textContent
+      ).toMatch(/Invalid file format/i);
     });
   });
 
@@ -248,9 +248,9 @@ describe("ProjectImageUploader Component", () => {
     fireEvent.click(uploadButton);
 
     await waitFor(() => {
-      expect(screen.getByRole("alert").textContent).toMatch(
-        /Server processing error/i
-      );
+      expect(
+        screen.getByTestId("project-image-upload-error").textContent
+      ).toMatch(/Server processing error/i);
       expect(
         screen.getByRole("button", { name: /Retry Upload/i })
       ).toBeDefined();

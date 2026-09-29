@@ -16,7 +16,7 @@ Supports configurable single quote entity formatting.
 
 ### unsafe
 
-`string` \| `null` \| `undefined`
+`unknown`
 
 ### options?
 

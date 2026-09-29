@@ -2,6 +2,7 @@
 
 import React, { useCallback, useRef } from "react";
 import { cn } from "@/lib/utils";
+import { triggerHaptic } from "@/lib/haptics";
 import { useAudio } from "@/components/providers/AudioProvider";
 import {
   IconChevronUp,
@@ -41,15 +42,13 @@ export const VirtualDPad: React.FC<VirtualDPadProps> = ({
   const activeTouchesRef = useRef<Map<string, number>>(new Map());
 
   const handlePress = useCallback(
-    (action: (() => void) | undefined, e: React.TouchEvent | React.MouseEvent, id: string) => {
+    (
+      action: (() => void) | undefined,
+      e: React.TouchEvent | React.MouseEvent,
+      id: string
+    ) => {
       e.preventDefault();
-      try {
-        if ("vibrate" in navigator && typeof navigator.vibrate === "function") {
-          navigator.vibrate(15);
-        }
-      } catch {
-        // Fallback gracefully if vibration is not permitted
-      }
+      triggerHaptic(15);
       playNote(880, 0.02);
       action?.();
       activeTouchesRef.current.set(id, Date.now());
@@ -58,7 +57,11 @@ export const VirtualDPad: React.FC<VirtualDPadProps> = ({
   );
 
   const handleRelease = useCallback(
-    (releaseAction: (() => void) | undefined, e: React.TouchEvent | React.MouseEvent, id: string) => {
+    (
+      releaseAction: (() => void) | undefined,
+      e: React.TouchEvent | React.MouseEvent,
+      id: string
+    ) => {
       e.preventDefault();
       releaseAction?.();
       activeTouchesRef.current.delete(id);
@@ -85,10 +88,18 @@ export const VirtualDPad: React.FC<VirtualDPadProps> = ({
         <button
           type="button"
           aria-label="Move Up"
-          onTouchStart={(e) => handlePress(() => onDirectionPress?.("up"), e, "up")}
-          onTouchEnd={(e) => handleRelease(() => onDirectionRelease?.("up"), e, "up")}
-          onMouseDown={(e) => handlePress(() => onDirectionPress?.("up"), e, "up")}
-          onMouseUp={(e) => handleRelease(() => onDirectionRelease?.("up"), e, "up")}
+          onTouchStart={(e) =>
+            handlePress(() => onDirectionPress?.("up"), e, "up")
+          }
+          onTouchEnd={(e) =>
+            handleRelease(() => onDirectionRelease?.("up"), e, "up")
+          }
+          onMouseDown={(e) =>
+            handlePress(() => onDirectionPress?.("up"), e, "up")
+          }
+          onMouseUp={(e) =>
+            handleRelease(() => onDirectionRelease?.("up"), e, "up")
+          }
           className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-12 rounded-t-xl bg-zinc-900/90 border-t border-x border-zinc-700/80 active:bg-brand-cyan/20 active:border-brand-cyan active:text-brand-cyan text-zinc-300 flex items-center justify-center transition-all cursor-pointer shadow-md active:scale-95"
         >
           <IconChevronUp className="w-6 h-6 pointer-events-none" />
@@ -98,10 +109,18 @@ export const VirtualDPad: React.FC<VirtualDPadProps> = ({
         <button
           type="button"
           aria-label="Move Down"
-          onTouchStart={(e) => handlePress(() => onDirectionPress?.("down"), e, "down")}
-          onTouchEnd={(e) => handleRelease(() => onDirectionRelease?.("down"), e, "down")}
-          onMouseDown={(e) => handlePress(() => onDirectionPress?.("down"), e, "down")}
-          onMouseUp={(e) => handleRelease(() => onDirectionRelease?.("down"), e, "down")}
+          onTouchStart={(e) =>
+            handlePress(() => onDirectionPress?.("down"), e, "down")
+          }
+          onTouchEnd={(e) =>
+            handleRelease(() => onDirectionRelease?.("down"), e, "down")
+          }
+          onMouseDown={(e) =>
+            handlePress(() => onDirectionPress?.("down"), e, "down")
+          }
+          onMouseUp={(e) =>
+            handleRelease(() => onDirectionRelease?.("down"), e, "down")
+          }
           className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-12 rounded-b-xl bg-zinc-900/90 border-b border-x border-zinc-700/80 active:bg-brand-cyan/20 active:border-brand-cyan active:text-brand-cyan text-zinc-300 flex items-center justify-center transition-all cursor-pointer shadow-md active:scale-95"
         >
           <IconChevronDown className="w-6 h-6 pointer-events-none" />
@@ -111,10 +130,18 @@ export const VirtualDPad: React.FC<VirtualDPadProps> = ({
         <button
           type="button"
           aria-label="Move Left"
-          onTouchStart={(e) => handlePress(() => onDirectionPress?.("left"), e, "left")}
-          onTouchEnd={(e) => handleRelease(() => onDirectionRelease?.("left"), e, "left")}
-          onMouseDown={(e) => handlePress(() => onDirectionPress?.("left"), e, "left")}
-          onMouseUp={(e) => handleRelease(() => onDirectionRelease?.("left"), e, "left")}
+          onTouchStart={(e) =>
+            handlePress(() => onDirectionPress?.("left"), e, "left")
+          }
+          onTouchEnd={(e) =>
+            handleRelease(() => onDirectionRelease?.("left"), e, "left")
+          }
+          onMouseDown={(e) =>
+            handlePress(() => onDirectionPress?.("left"), e, "left")
+          }
+          onMouseUp={(e) =>
+            handleRelease(() => onDirectionRelease?.("left"), e, "left")
+          }
           className="absolute left-0 top-1/2 -translate-y-1/2 w-12 h-12 rounded-l-xl bg-zinc-900/90 border-l border-y border-zinc-700/80 active:bg-brand-cyan/20 active:border-brand-cyan active:text-brand-cyan text-zinc-300 flex items-center justify-center transition-all cursor-pointer shadow-md active:scale-95"
         >
           <IconChevronLeft className="w-6 h-6 pointer-events-none" />
@@ -124,10 +151,18 @@ export const VirtualDPad: React.FC<VirtualDPadProps> = ({
         <button
           type="button"
           aria-label="Move Right"
-          onTouchStart={(e) => handlePress(() => onDirectionPress?.("right"), e, "right")}
-          onTouchEnd={(e) => handleRelease(() => onDirectionRelease?.("right"), e, "right")}
-          onMouseDown={(e) => handlePress(() => onDirectionPress?.("right"), e, "right")}
-          onMouseUp={(e) => handleRelease(() => onDirectionRelease?.("right"), e, "right")}
+          onTouchStart={(e) =>
+            handlePress(() => onDirectionPress?.("right"), e, "right")
+          }
+          onTouchEnd={(e) =>
+            handleRelease(() => onDirectionRelease?.("right"), e, "right")
+          }
+          onMouseDown={(e) =>
+            handlePress(() => onDirectionPress?.("right"), e, "right")
+          }
+          onMouseUp={(e) =>
+            handleRelease(() => onDirectionRelease?.("right"), e, "right")
+          }
           className="absolute right-0 top-1/2 -translate-y-1/2 w-12 h-12 rounded-r-xl bg-zinc-900/90 border-r border-y border-zinc-700/80 active:bg-brand-cyan/20 active:border-brand-cyan active:text-brand-cyan text-zinc-300 flex items-center justify-center transition-all cursor-pointer shadow-md active:scale-95"
         >
           <IconChevronRight className="w-6 h-6 pointer-events-none" />

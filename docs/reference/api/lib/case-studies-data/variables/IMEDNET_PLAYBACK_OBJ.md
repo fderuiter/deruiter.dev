@@ -6,4 +6,4 @@
 
 # Variable: IMEDNET\_PLAYBACK\_OBJ
 
-> `const` **IMEDNET\_PLAYBACK\_OBJ**: `CaseStudyPlayback`
+> `const` **IMEDNET\_PLAYBACK\_OBJ**: [`CaseStudyPlayback`](../type-aliases/CaseStudyPlayback.md)

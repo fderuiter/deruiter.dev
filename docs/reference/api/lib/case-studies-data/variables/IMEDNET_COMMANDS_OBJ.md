@@ -6,4 +6,4 @@
 
 # Variable: IMEDNET\_COMMANDS\_OBJ
 
-> `const` **IMEDNET\_COMMANDS\_OBJ**: `CaseStudyCommands`
+> `const` **IMEDNET\_COMMANDS\_OBJ**: [`CaseStudyCommands`](../type-aliases/CaseStudyCommands.md)

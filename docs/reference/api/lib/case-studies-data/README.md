@@ -8,7 +8,14 @@
 
 ## Interfaces
 
+- [CaseStudyCommandDefinition](interfaces/CaseStudyCommandDefinition.md)
 - [CaseStudyData](interfaces/CaseStudyData.md)
+- [CaseStudyPlaybackStep](interfaces/CaseStudyPlaybackStep.md)
+
+## Type Aliases
+
+- [CaseStudyCommands](type-aliases/CaseStudyCommands.md)
+- [CaseStudyPlayback](type-aliases/CaseStudyPlayback.md)
 
 ## Variables
 

@@ -23,19 +23,19 @@ export interface CaseStudyData {
   updated_at: Date;
 }
 
-interface CaseStudyCommandDefinition {
+export interface CaseStudyCommandDefinition {
   description: string;
   payload: unknown;
 }
 
-type CaseStudyCommands = Record<string, CaseStudyCommandDefinition>;
+export type CaseStudyCommands = Record<string, CaseStudyCommandDefinition>;
 
-interface CaseStudyPlaybackStep {
+export interface CaseStudyPlaybackStep {
   command: string;
   description: string;
 }
 
-type CaseStudyPlayback = CaseStudyPlaybackStep[];
+export type CaseStudyPlayback = CaseStudyPlaybackStep[];
 
 export const IMEDNET_COMMANDS_OBJ: CaseStudyCommands = {
   "imednet studies list": {

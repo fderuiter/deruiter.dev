@@ -6,4 +6,4 @@
 
 # Variable: PROMPTOPS\_PLAYBACK\_OBJ
 
-> `const` **PROMPTOPS\_PLAYBACK\_OBJ**: `CaseStudyPlayback`
+> `const` **PROMPTOPS\_PLAYBACK\_OBJ**: [`CaseStudyPlayback`](../type-aliases/CaseStudyPlayback.md)

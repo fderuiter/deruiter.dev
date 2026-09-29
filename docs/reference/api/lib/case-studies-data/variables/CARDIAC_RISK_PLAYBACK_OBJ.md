@@ -6,4 +6,4 @@
 
 # Variable: CARDIAC\_RISK\_PLAYBACK\_OBJ
 
-> `const` **CARDIAC\_RISK\_PLAYBACK\_OBJ**: `CaseStudyPlayback`
+> `const` **CARDIAC\_RISK\_PLAYBACK\_OBJ**: [`CaseStudyPlayback`](../type-aliases/CaseStudyPlayback.md)

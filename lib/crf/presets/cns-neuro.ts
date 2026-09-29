@@ -1,23 +1,35 @@
 import { StudyProtocol, CRFForm } from "../types";
-import { STANDARD_CODELISTS, scaffoldCdashDomain } from "../cdisc-cdash-library";
+import {
+  STANDARD_CODELISTS,
+  scaffoldCdashDomain,
+} from "../cdisc-cdash-library";
 
 const MMSE_FORM: CRFForm = {
   id: "form_mmse_cns",
   name: "Mini-Mental State Examination (MMSE)",
   domain: "QS",
-  description: "30-point standardized cognitive assessment questionnaire for cognitive impairment screening",
+  description:
+    "30-point standardized cognitive assessment questionnaire for cognitive impairment screening",
   version: "1.0",
   rules: [
     {
       id: "rule_mmse_total",
       name: "MMSE Total Score Calculation",
-      description: "Sum of Orientation, Registration, Attention, Recall, and Language sub-scores",
-      triggerFieldIds: ["f_mmse_orient", "f_mmse_reg", "f_mmse_att", "f_mmse_rec", "f_mmse_lang"],
+      description:
+        "Sum of Orientation, Registration, Attention, Recall, and Language sub-scores",
+      triggerFieldIds: [
+        "f_mmse_orient",
+        "f_mmse_reg",
+        "f_mmse_att",
+        "f_mmse_rec",
+        "f_mmse_lang",
+      ],
       actionType: "set_value",
       targetFieldId: "f_mmse_total",
       conditions: [{ fieldId: "f_mmse_orient", operator: "gte", value: 0 }],
       logicalOperator: "AND",
-      formulaExpression: "f_mmse_orient + f_mmse_reg + f_mmse_att + f_mmse_rec + f_mmse_lang",
+      formulaExpression:
+        "f_mmse_orient + f_mmse_reg + f_mmse_att + f_mmse_rec + f_mmse_lang",
     },
     {
       id: "rule_mmse_impairment",
@@ -29,7 +41,8 @@ const MMSE_FORM: CRFForm = {
       conditions: [{ fieldId: "f_mmse_total", operator: "lt", value: 18 }],
       logicalOperator: "AND",
       querySeverity: "warning",
-      queryMessage: "MMSE Total Score < 18 indicates moderate-to-severe impairment. Expedited neurologist review recommended.",
+      queryMessage:
+        "MMSE Total Score < 18 indicates moderate-to-severe impairment. Expedited neurologist review recommended.",
     },
   ],
   sections: [
@@ -39,7 +52,7 @@ const MMSE_FORM: CRFForm = {
       fields: [
         {
           id: "f_mmse_orient",
-          variableName: "QS_ORIENT",
+          variableName: "QS_ORNT",
           label: "Orientation to Time & Place (0 - 10 points)",
           dataType: "integer",
           columnSpan: 6,
@@ -96,7 +109,8 @@ const MMSE_FORM: CRFForm = {
           required: false,
           readOnly: true,
           unit: "Points",
-          calculationFormula: "f_mmse_orient + f_mmse_reg + f_mmse_att + f_mmse_rec + f_mmse_lang",
+          calculationFormula:
+            "f_mmse_orient + f_mmse_reg + f_mmse_att + f_mmse_rec + f_mmse_lang",
         },
       ],
     },
@@ -106,7 +120,8 @@ const MMSE_FORM: CRFForm = {
 export const CNS_NEURO_PRESET: StudyProtocol = {
   id: "study_cns_002",
   protocolNumber: "NEURO-2026-401",
-  studyName: "Phase II Placebo-Controlled Study of Anti-Amyloid Monoclonal Antibody in Early Alzheimer's Disease",
+  studyName:
+    "Phase II Placebo-Controlled Study of Anti-Amyloid Monoclonal Antibody in Early Alzheimer's Disease",
   phase: "Phase II",
   sponsor: "Cortex Biosystems",
   therapeuticArea: "Neurology",

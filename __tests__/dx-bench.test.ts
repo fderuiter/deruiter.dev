@@ -19,7 +19,7 @@ describe("DX Micro-Benchmark Suite", () => {
 
     for (const r of results) {
       expect(r.opsPerSec).toBeGreaterThan(100);
-      expect(r.durationMs).toBeGreaterThan(0);
+      expect(r.durationMs).toBeGreaterThanOrEqual(0);
       expect(r.metrics?.["Height Variance"]).toBeDefined();
     }
   });

@@ -10,6 +10,12 @@ Historical lineage and provenance tracking for studies restored from baselines o
 
 ## Properties
 
+### author?
+
+> `optional` **author?**: `string`
+
+***
+
 ### derivedFromBaselineId?
 
 > `optional` **derivedFromBaselineId?**: `string`
@@ -19,6 +25,18 @@ Historical lineage and provenance tracking for studies restored from baselines o
 ### derivedFromVersionTag?
 
 > `optional` **derivedFromVersionTag?**: `string`
+
+***
+
+### importedAt?
+
+> `optional` **importedAt?**: `string`
+
+***
+
+### importedBy?
+
+> `optional` **importedBy?**: `string`
 
 ***
 
@@ -37,3 +55,21 @@ Historical lineage and provenance tracking for studies restored from baselines o
 ### restoredBy?
 
 > `optional` **restoredBy?**: `string`
+
+***
+
+### sourceFormat?
+
+> `optional` **sourceFormat?**: `string`
+
+***
+
+### sourceVersion?
+
+> `optional` **sourceVersion?**: `string`
+
+***
+
+### timestamp?
+
+> `optional` **timestamp?**: `string`

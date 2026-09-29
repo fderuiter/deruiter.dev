@@ -11,6 +11,7 @@ import {
 import { CRFStudioContainer } from "@/components/crf/CRFStudioContainer";
 import {
   loadStudyDraft,
+  saveStudyDraft,
   exportUniversalCrfJson,
   parseUniversalCrf,
   getOncologyPresetSync,
@@ -329,6 +330,7 @@ describe("EDC Simulation State Integration", () => {
       });
       await act(async () => {
         fireEvent.click(importBtn);
+        await new Promise((resolve) => setTimeout(resolve, 50));
       });
 
       const confirmReplacementBtn2 = await screen.findByRole("button", {
@@ -412,5 +414,197 @@ describe("EDC Simulation State Integration", () => {
     expect(simEntry?.previousValue).toEqual({ sys: 120, dia: 80 });
     expect(simEntry?.newValue).toEqual({ sys: 130, dia: 85 });
     expect(simEntry?.details).toBe("Manual adjustment");
+  });
+
+  it("7. Attempting malformed same-ID import in full studio preserves active state and saved draft", async () => {
+    // Seed initial study draft with custom form values, object-valued audit snapshots with details, and signature inputs
+    const basePreset = getOncologyPresetSync();
+    const seededStudy: StudyProtocol = {
+      ...basePreset,
+      simulationState: {
+        formValues: {
+          "001-101_v_screen_f_brthyr": 1985,
+          "001-101_v_screen_f_weight": 75,
+          "001-101_v_screen_f_custom_note": "Verified Pre-entry Note",
+        },
+        auditLog: [
+          {
+            id: "aud_obj_1",
+            timestamp: "2026-09-28T10:00:00Z",
+            subjectId: "001-101",
+            formId: "form_dm",
+            fieldId: "f_vitals",
+            fieldName: "VITALS",
+            previousValue: { sys: 120, dia: 80 },
+            newValue: { sys: 130, dia: 85 },
+            details: { reason: "Manual Recalibration", scaleId: "SCALE_01" },
+            changedBy: "Investigator Dr. Sarah",
+            userRole: "Principal Investigator",
+            actionType: "FIELD_UPDATE",
+          },
+        ],
+        signatures: [
+          {
+            id: "sig_obj_1",
+            subjectId: "001-101",
+            formId: "form_dm",
+            visitId: "v_screen",
+            signedBy: "Dr. Sarah Jenkins, M.D.",
+            userRole: "Principal Investigator",
+            timestamp: "2026-09-28T10:05:00Z",
+            meaning: "Data Lock",
+            digest: "SHA256-signature-digest-abc123456789",
+          },
+        ],
+        lockedForms: {
+          "001-101_v_screen_form_dm": {
+            locked: true,
+            lockedBy: "Principal Investigator",
+            timestamp: "2026-09-28T10:05:00Z",
+          },
+        },
+        availableSubjects: ["001-101", "001-102"],
+      },
+    };
+
+    saveStudyDraft(seededStudy);
+
+    window.location.hash = "#mode=edc";
+    render(<CRFStudioContainer />);
+
+    // Switch role to Principal Investigator and trigger lock & sign in UI
+    const piRoleBtn = await screen.findByRole("button", {
+      name: "Principal Investigator",
+    });
+    fireEvent.click(piRoleBtn);
+
+    const lockBtn = await screen.findByRole("button", {
+      name: /Lock & Sign/i,
+    });
+    fireEvent.click(lockBtn);
+
+    // Verify form locked status from UI
+    expect(await screen.findByText(/Locked \(PI\)/i)).toBeDefined();
+
+    // Wait for useStudyAutosave debounce (1000ms) to ensure draft is saved
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    });
+
+    const draftBefore = loadStudyDraft();
+    expect(draftBefore.status).toBe("recovered");
+    if (draftBefore.status !== "recovered") {
+      throw new Error("Draft not recovered");
+    }
+
+    const activeStudyId = draftBefore.study.id;
+    const activeProtocolNumber = draftBefore.study.protocolNumber;
+
+    // Explicitly assert nonempty form values, object-valued audit snapshots, details, and signature inputs
+    const simBefore = draftBefore.study.simulationState;
+    expect(simBefore).toBeDefined();
+    expect(Object.keys(simBefore?.formValues ?? {})).not.toHaveLength(0);
+    expect(simBefore?.formValues?.["001-101_v_screen_f_custom_note"]).toBe(
+      "Verified Pre-entry Note"
+    );
+
+    expect(simBefore?.auditLog).toBeDefined();
+    expect(simBefore?.auditLog?.length).toBeGreaterThan(0);
+    const objAuditEntry = simBefore?.auditLog?.find(
+      (a) => typeof a.previousValue === "object" && a.previousValue !== null
+    );
+    expect(objAuditEntry).toBeDefined();
+    expect(objAuditEntry?.previousValue).toEqual({ sys: 120, dia: 80 });
+    expect(objAuditEntry?.newValue).toEqual({ sys: 130, dia: 85 });
+    expect(objAuditEntry?.details).toEqual({
+      reason: "Manual Recalibration",
+      scaleId: "SCALE_01",
+    });
+
+    expect(simBefore?.signatures).toBeDefined();
+    expect(simBefore?.signatures?.length).toBeGreaterThan(0);
+    const sigInput = simBefore?.signatures?.[0];
+    expect(sigInput?.signedBy).toBe("Dr. Sarah Jenkins, M.D.");
+    expect(sigInput?.meaning).toBe("Data Lock");
+    expect(sigInput?.digest).toBe("SHA256-signature-digest-abc123456789");
+
+    // Preserve a complete before snapshot of simulationState
+    const beforeSimulationSnapshot = JSON.parse(
+      JSON.stringify(draftBefore.study.simulationState)
+    );
+
+    // Navigate to Export/Import mode (#mode=export)
+    act(() => {
+      window.location.hash = "#mode=export";
+      window.dispatchEvent(new HashChangeEvent("hashchange"));
+    });
+
+    // Paste malformed same-ID USDM JSON (auditLog is string instead of array)
+    const malformedSameIdUsdm = JSON.stringify({
+      study: {
+        id: activeStudyId,
+        protocolNumber: activeProtocolNumber,
+        title: "Malformed Same-ID Replacement Protocol",
+        phase: "Phase III",
+        sponsor: "Test Sponsor",
+        studyDesigns: [],
+        simulationState: {
+          auditLog: "INVALID_AUDIT_LOG_STRING_NOT_ARRAY",
+        },
+      },
+    });
+
+    const importTextarea = await screen.findByPlaceholderText(
+      /Paste exported StudyProtocol JSON here to load\.\.\./i
+    );
+    fireEvent.change(importTextarea, {
+      target: { value: malformedSameIdUsdm },
+    });
+
+    const importBtn = await screen.findByRole("button", {
+      name: /Import Protocol into Studio/i,
+    });
+
+    await act(async () => {
+      fireEvent.click(importBtn);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+
+    // Assert error message is displayed in modal
+    expect(
+      await screen.findByText(/Invalid supplied simulationState extension/i)
+    ).toBeDefined();
+
+    // Wait for autosave tick
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    });
+
+    // Assert saved draft in localStorage remains unchanged and compare recovered simulationState deep equal
+    const draftAfter = loadStudyDraft();
+    expect(draftAfter.status).toBe("recovered");
+    if (draftAfter.status === "recovered") {
+      expect(draftAfter.study.id).toBe(activeStudyId);
+      expect(draftAfter.study.simulationState).toEqual(
+        beforeSimulationSnapshot
+      );
+    }
+
+    // Reopen saved draft / remount studio to verify recovered state
+    cleanup();
+
+    window.location.hash = "#mode=edc";
+    render(<CRFStudioContainer />);
+
+    const draftRemount = loadStudyDraft();
+    expect(draftRemount.status).toBe("recovered");
+    if (draftRemount.status === "recovered") {
+      expect(draftRemount.study.simulationState).toEqual(
+        beforeSimulationSnapshot
+      );
+    }
+
+    // Verify remounted studio UI still reflects locked state
+    expect(await screen.findByText(/Locked \(PI\)/i)).toBeDefined();
   });
 });

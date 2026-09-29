@@ -22,6 +22,8 @@ import {
 import {
   getUniversalCrfSchemaUrl,
   validateUniversalCrf,
+  EdcSimulationStateSchema,
+  StudyProvenanceSchema,
 } from "./universal-schema";
 import { cloneDeep } from "../utils";
 import { STANDARD_CODELISTS } from "./cdisc-controlled-terminology";
@@ -136,6 +138,8 @@ export interface UsdmStudy {
   valueSets?: Record<string, unknown>[];
   codelists?: CodelistDefinition[];
   rules?: EditCheckRule[];
+  simulationState?: StudyProtocol["simulationState"];
+  provenance?: StudyProtocol["provenance"];
 }
 
 export interface UsdmDocument {
@@ -476,6 +480,8 @@ export function exportStudyToUsdmObject(study: StudyProtocol): UsdmDocument {
       codeLists,
       valueSets,
       rules: exportRules,
+      simulationState: study.simulationState,
+      provenance: study.provenance,
     },
   };
 }
@@ -615,7 +621,16 @@ export function importStudyFromUsdm(
   // Support direct StudyProtocol JSON fallback if user pasted a Universal CRF JSON
   if (doc.forms && doc.visits && doc.protocolNumber) {
     const val = validateUniversalCrf(doc as unknown as StudyProtocol);
-    if (val.success) return val.study!;
+    if (val.success) {
+      const uStudy = val.study!;
+      return {
+        ...uStudy,
+        provenance: {
+          ...(uStudy.provenance || {}),
+          sourceFormat: uStudy.provenance?.sourceFormat || "Universal CRF JSON",
+        },
+      };
+    }
   }
 
   const studyObj = (doc.study || doc) as UsdmStudy & Record<string, unknown>;
@@ -879,6 +894,58 @@ export function importStudyFromUsdm(
 
   const rules: EditCheckRule[] = Array.from(ruleMap.values());
 
+  let validatedSimulationState: StudyProtocol["simulationState"] = undefined;
+  if (studyObj.simulationState !== undefined) {
+    if (
+      typeof studyObj.simulationState !== "object" ||
+      studyObj.simulationState === null
+    ) {
+      throw new Error(
+        "Invalid supplied simulationState extension: payload must be an object."
+      );
+    }
+    const simResult = EdcSimulationStateSchema.safeParse(
+      studyObj.simulationState
+    );
+    if (!simResult.success) {
+      const details = simResult.error.issues
+        .slice(0, 5)
+        .map((i) => `[${i.path.join(".")}]: ${i.message}`)
+        .join(", ");
+      throw new Error(
+        `Invalid supplied simulationState extension: payload failed EDC simulation schema validation (${details}).`
+      );
+    }
+    validatedSimulationState =
+      simResult.data as unknown as StudyProtocol["simulationState"];
+  }
+
+  let validatedProvenance: StudyProtocol["provenance"] = undefined;
+  if (studyObj.provenance !== undefined) {
+    if (
+      typeof studyObj.provenance !== "object" ||
+      studyObj.provenance === null
+    ) {
+      throw new Error(
+        "Invalid supplied provenance extension: payload must be an object."
+      );
+    }
+    const provResult = StudyProvenanceSchema.safeParse(studyObj.provenance);
+    if (!provResult.success) {
+      const details = provResult.error.issues
+        .slice(0, 5)
+        .map((i) => `[${i.path.join(".")}]: ${i.message}`)
+        .join(", ");
+      throw new Error(
+        `Invalid supplied provenance extension: payload failed provenance schema validation (${details}).`
+      );
+    }
+    validatedProvenance = {
+      ...(provResult.data as StudyProtocol["provenance"]),
+      sourceFormat: provResult.data.sourceFormat || "CDISC USDM JSON",
+    };
+  }
+
   const protocol: StudyProtocol = {
     $schema: getUniversalCrfSchemaUrl(),
     schemaVersion: "1.0.0",
@@ -902,6 +969,8 @@ export function importStudyFromUsdm(
     epochs,
     cohorts,
     biomedicalConcepts,
+    simulationState: validatedSimulationState,
+    provenance: validatedProvenance,
   };
 
   return protocol;

@@ -7,6 +7,8 @@ import { NextPrevNav } from "@/components/ui/NextPrevNav";
 import { PageLayout } from "@/components/PageLayout";
 import { FieldManualButton } from "@/components/FieldManualButton";
 import { CRFStudioSkeleton } from "@/components/crf/Skeletons";
+import { FAQAccordion } from "@/components/ui/FAQAccordion";
+import { CRF_FAQ } from "@/lib/faq-content";
 
 const CRFStudioContainer = dynamic(
   () =>
@@ -51,6 +53,7 @@ export default function CRFStudioPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 w-full">
+        <FAQAccordion items={CRF_FAQ} pageUrl="/crf" className="mb-12" />
         <NextPrevNav
           prev={{
             title: "NeuroRecon: FreeSurfer Simulator",

@@ -169,4 +169,28 @@ describe("BlogPostReactions UI Component", () => {
       ).toBeDefined();
     });
   });
+
+  it("reports a network failure when the reaction cannot be sent", async () => {
+    const baseFetch = global.fetch;
+    global.fetch = vi
+      .fn()
+      .mockImplementation((url: string, init?: RequestInit) =>
+        init?.method === "POST"
+          ? Promise.reject(new TypeError("Failed to fetch"))
+          : baseFetch(url, init)
+      );
+
+    render(<BlogPostReactions slug={slug} />);
+    await waitFor(() => {
+      expect(screen.getByText("4")).toBeDefined();
+    });
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /React with Insightful/i })
+    );
+
+    expect(
+      await screen.findByText("Network error submitting reaction.")
+    ).toBeDefined();
+  });
 });

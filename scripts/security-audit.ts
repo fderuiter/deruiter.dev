@@ -323,6 +323,58 @@ export function loadIgnoreList(now: Date = new Date()): ParsedIgnoreRule[] {
   return parseIgnoreRules(rawData, now);
 }
 
+export interface SecurityManifestRule {
+  advisory: string;
+  package?: string;
+  expiresAt: string;
+  reason: string;
+  owner: string;
+  followUp: string;
+  createdAt?: string;
+}
+
+export interface SecurityManifestData {
+  generatedAt: string;
+  activeRules: SecurityManifestRule[];
+}
+
+export function generateSecurityManifest(
+  now: Date = new Date(),
+  outputPath?: string
+): SecurityManifestData {
+  const ignoreRules = loadIgnoreList(now);
+  const activeRules: SecurityManifestRule[] = ignoreRules
+    .filter((rule) => rule.isValid && !rule.isExpired)
+    .map((rule) => ({
+      advisory: rule.advisory,
+      package: rule.package,
+      expiresAt: rule.expiresAt,
+      reason: rule.reason,
+      owner: rule.owner,
+      followUp: rule.followUp,
+      createdAt: rule.createdAt,
+    }));
+
+  const manifest: SecurityManifestData = {
+    generatedAt: now.toISOString(),
+    activeRules,
+  };
+
+  const targetPath =
+    outputPath || path.join(process.cwd(), "lib", "security-manifest.json");
+  try {
+    const dir = path.dirname(targetPath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(targetPath, JSON.stringify(manifest, null, 2), "utf8");
+  } catch (err) {
+    console.warn("Failed to write runtime security manifest:", err);
+  }
+
+  return manifest;
+}
+
 export function isPretextRelated(
   pkgName: string,
   vuln: VulnerabilityInfo
@@ -479,6 +531,7 @@ export function runSecurityAudit(options: SecurityAuditOptions = {}): boolean {
   );
 
   const now = options.now || new Date();
+  generateSecurityManifest(now);
   const ignoreRules = loadIgnoreList(now);
   let hasInvalidRules = false;
   let hasExpiredRules = false;
@@ -696,5 +749,13 @@ if (
   (require.main === module ||
     (process.argv[1] && process.argv[1].includes("security-audit")))
 ) {
-  runSecurityAudit();
+  if (process.argv.includes("--generate-manifest")) {
+    generateSecurityManifest();
+    console.log(
+      `${colors.brightGreen}✔ Runtime security manifest generated in lib/security-manifest.json${colors.reset}`
+    );
+    process.exit(0);
+  } else {
+    runSecurityAudit();
+  }
 }

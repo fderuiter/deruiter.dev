@@ -123,6 +123,9 @@ async function runBuildPipeline() {
   console.log("\n--- Phase 1: Generating Prisma Client ---");
   runStep("npx", ["prisma", "generate"]);
 
+  console.log("\n--- Phase 1.1: Generating Runtime Security Manifest ---");
+  runStep("npx", ["tsx", "scripts/security-audit.ts", "--generate-manifest"]);
+
   console.log(
     "\n--- Phase 1.2: Verifying & Generating OpenAPI Specification ---"
   );

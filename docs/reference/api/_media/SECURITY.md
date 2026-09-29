@@ -81,3 +81,25 @@ During local or CI execution, the audit tool validates all active override rules
 - **Expired Rules:** Rules whose expiration date has passed (`expiresAt <= now`) are rejected and cause the security audit to fail.
 - **Invalid Rules:** Rules missing required fields or exceeding the 90-day limit trigger explicit validation errors and fail the audit.
 - **Active Rules:** Valid, unexpired rules temporarily suppress matching high or critical vulnerabilities and log active remaining lifespan (in days) to console output.
+
+## Dynamic Runtime Security Circuit Breaker & Manifest Integration
+
+To prevent exploitation of unpatched dependency vulnerabilities on critical data paths, the system integrates build-time security audit manifests with dynamic API route middleware.
+
+### Build-Time Security Manifest Generation
+
+During build execution (and whenever `scripts/security-audit.ts` runs), the security audit tool processes active vulnerability override rules from `security-audit-ignore.json` and exports `lib/security-manifest.json`. This structured manifest contains:
+
+- `generatedAt`: ISO timestamp of manifest generation.
+- `activeRules`: List of active, valid, non-expired CVE override rules including advisory ID, target package, expiration date, owner, follow-up ticket, and justification.
+
+### Runtime Route Circuit Breaker Enforcement
+
+API route handlers wrapped with `createApiHandler` in `lib/route-wrapper.ts` declare their underlying package dependencies via the `packages` option (e.g. `packages: ["@upstash/redis", "@prisma/client"]`).
+
+During request processing:
+
+1. **In-Memory Manifest Inspection:** `createApiHandler` inspects `lib/security-manifest.json` in memory without adding database or network latency.
+2. **Active CVE Matching:** If an active override rule in the security manifest targets a package declared by the route handler, the circuit breaker automatically trips.
+3. **Traffic Shedding & Status Response:** Tripped endpoints shed traffic immediately with an `HTTP 503 Service Unavailable` response, returning `Retry-After: 300` and `X-Circuit-Breaker-Tripped: true` headers.
+4. **Security Observability:** Circuit breaker trips log structured audit records containing the route, affected package, advisory ID, owner, follow-up ticket, and justification.

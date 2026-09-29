@@ -60,6 +60,24 @@
 
 ***
 
+### packages?
+
+> `optional` **packages?**: `string`[]
+
+Package dependencies required by this endpoint data path.
+If any listed package is flagged by an active unpatched CVE rule in the security manifest,
+the runtime circuit breaker trips and sheds traffic (HTTP 503 Service Unavailable).
+
+***
+
+### retryAfterSeconds?
+
+> `optional` **retryAfterSeconds?**: `number`
+
+Optional custom retry-after window in seconds (default: 300 seconds).
+
+***
+
 ### schema?
 
 > `optional` **schema?**: `TSchema`

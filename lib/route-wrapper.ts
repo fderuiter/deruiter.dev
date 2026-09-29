@@ -4,6 +4,7 @@ import { applySecurityHeaders } from "@/lib/security-headers";
 import { logger } from "@/lib/logger";
 import { isCurrentUserAdmin } from "@/lib/auth/admin";
 import { validateSyncRequest } from "@/lib/security";
+import { evaluateCircuitBreaker } from "@/lib/security-circuit-breaker";
 
 export type ApiAuthRequirement = "clerk_admin" | "cron_secret" | "public";
 
@@ -17,6 +18,16 @@ export interface ApiWrapperOptions<TSchema extends ZodSchema = ZodSchema> {
   customJsonError?: string;
   defaultStatus?: number;
   auth?: ApiAuthRequirement;
+  /**
+   * Package dependencies required by this endpoint data path.
+   * If any listed package is flagged by an active unpatched CVE rule in the security manifest,
+   * the runtime circuit breaker trips and sheds traffic (HTTP 503 Service Unavailable).
+   */
+  packages?: string[];
+  /**
+   * Optional custom retry-after window in seconds (default: 300 seconds).
+   */
+  retryAfterSeconds?: number;
 }
 
 export type ApiHandler<TData = unknown> = (
@@ -75,6 +86,39 @@ export function createApiHandler<TSchema extends ZodSchema>(
   ): Promise<NextResponse> => {
     const req = rawReq || new NextRequest("http://localhost:3000");
     try {
+      if (options?.packages && options.packages.length > 0) {
+        const cbResult = evaluateCircuitBreaker(options.packages);
+        if (cbResult.tripped) {
+          logger.warn("Data path security circuit breaker tripped:", {
+            route: req.nextUrl?.pathname || req.url,
+            package: cbResult.trippedPackage,
+            advisory: cbResult.rule?.advisory,
+            owner: cbResult.rule?.owner,
+            followUp: cbResult.rule?.followUp,
+            reason: cbResult.rule?.reason,
+          });
+
+          const retryAfter = options.retryAfterSeconds ?? 300;
+          const response = NextResponse.json(
+            {
+              error:
+                "Service Unavailable: Data path circuit breaker tripped due to active security advisory",
+              package: cbResult.trippedPackage,
+              advisory: cbResult.rule?.advisory,
+              reason: cbResult.rule?.reason,
+            },
+            {
+              status: 503,
+              headers: {
+                "Retry-After": String(retryAfter),
+                "X-Circuit-Breaker-Tripped": "true",
+              },
+            }
+          );
+          return applySecurityHeaders(response, req);
+        }
+      }
+
       if (options?.auth === "clerk_admin") {
         if (!(await isCurrentUserAdmin())) {
           const response = NextResponse.json(

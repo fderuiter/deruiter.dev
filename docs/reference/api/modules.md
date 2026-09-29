@@ -215,6 +215,7 @@
 - [lib/schemas](lib/schemas/README.md)
 - [lib/search-utils](lib/search-utils/README.md)
 - [lib/security](lib/security/README.md)
+- [lib/security-circuit-breaker](lib/security-circuit-breaker/README.md)
 - [lib/security-headers](lib/security-headers/README.md)
 - [lib/security-scan](lib/security-scan/README.md)
 - [lib/security-scan/internal/allowlist](lib/security-scan/internal/allowlist/README.md)

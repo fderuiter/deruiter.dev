@@ -1,3 +1,5 @@
+import { generateId } from "@/lib/utils";
+
 /**
  * Pure LiveAnnouncer Engine & State Machine
  *
@@ -49,7 +51,7 @@ export const initialAnnouncerState: AnnouncerState = {
 
 let nextAnnounceId = 0;
 function generateAnnounceId(): string {
-  return `announcement-${++nextAnnounceId}-${Math.random().toString(36).substring(2, 9)}`;
+  return generateId(`announcement-${++nextAnnounceId}`);
 }
 
 /**
@@ -111,7 +113,10 @@ export class LiveAnnouncer {
    * @param priority Announcement priority level (polite or assertive).
    * @returns The generated announcement item or null if invalid.
    */
-  announce(message: string, priority: Priority = "polite"): AnnounceItem | null {
+  announce(
+    message: string,
+    priority: Priority = "polite"
+  ): AnnounceItem | null {
     if (typeof message !== "string") {
       return null;
     }
@@ -140,7 +145,10 @@ export class LiveAnnouncer {
         };
       }
     } else {
-      if (this.state.activeAssertive === null && this.state.activePolite === null) {
+      if (
+        this.state.activeAssertive === null &&
+        this.state.activePolite === null
+      ) {
         this.state = {
           ...this.state,
           activePolite: item,

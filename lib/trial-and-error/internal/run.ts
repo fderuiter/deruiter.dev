@@ -245,6 +245,8 @@ export interface ShopView {
   } | null;
   /** What each relic in the rack sells for, by id. */
   relicSellValues: Record<string, number>;
+  /** Purchases made this visit: a new pack opened is a new reveal. */
+  purchases: number;
 }
 
 /** Everything a run renders, derived purely from act and state. */
@@ -261,6 +263,8 @@ export interface RunView {
   /** The act card, while a new study's first Blind has not started. */
   actIntro: ActIntroView | null;
   phase: RunPhase;
+  /** The act being played, from 0; post-marketing rounds follow the campaign. */
+  actIndex: number;
   /** The Blind has just started: nothing has been played or discarded. */
   showIntro: boolean;
   table: TableView;
@@ -876,6 +880,7 @@ function deriveShopView(plan: RunPlan, run: RunState): ShopView | null {
     rerollRefusal:
       busy ??
       (budget < price ? `Reroll needs $${price}k; $${budget}k left.` : null),
+    purchases: shop.purchases,
     opened: opened
       ? {
           packId: opened.pack.id,
@@ -1357,6 +1362,7 @@ export function deriveRunView(plan: RunPlan, run: RunState): RunView {
           }
         : null,
     phase,
+    actIndex: run.actIndex,
     showIntro,
     table: deriveTableView(blind, run.table),
     seed: run.seed,

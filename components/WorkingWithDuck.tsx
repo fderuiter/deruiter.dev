@@ -3238,7 +3238,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
           className={
             isFullscreen
               ? "max-h-[var(--layout-viewport-budget,calc(100dvh-var(--header-height,80px)-var(--layout-dock-height,64px)))] max-h-[calc(100dvh-var(--header-height,80px)-var(--footer-height,48px))] max-w-full aspect-[800/500] object-contain block cursor-crosshair touch-none my-auto mx-auto [@media(max-height:500px)]:max-h-[45dvh] focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
-              : "w-full h-auto aspect-[800/500] cursor-crosshair block touch-none [@media(max-height:500px)]:w-auto [@media(max-height:500px)]:max-w-full [@media(max-height:500px)]:max-h-[52dvh] [@media(max-height:500px)]:mx-auto focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
+              : "w-[min(100%,max(28rem,calc((100dvh-29rem)*1.6)))] mx-auto h-auto aspect-[800/500] cursor-crosshair block touch-none [@media(max-height:500px)]:w-auto [@media(max-height:500px)]:max-w-full [@media(max-height:500px)]:max-h-[52dvh] [@media(max-height:500px)]:mx-auto focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
           }
         />
 
@@ -4448,7 +4448,14 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
               Sprint Level: {uiState.currentLevel}
             </output>
             <output htmlFor="duck-work">
-              Work Progress: {Math.round(uiState.workProgress)}%
+              Work Progress:{" "}
+              {Math.min(
+                100,
+                Math.round(
+                  (uiState.workProgress / uiState.targetWorkProgress) * 100
+                )
+              )}
+              %
             </output>
             <output htmlFor="duck-excitement">
               Excitement: {Math.round(uiState.excitement)}%

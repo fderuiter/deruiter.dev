@@ -37,11 +37,13 @@ function mapDataTypeToOdm(type: string): string {
  * Serializes a StudyProtocol into standard CDISC ODM-XML v1.3.2 format
  */
 export function exportStudyToCdiscOdmXml(study: StudyProtocol): string {
+  const safeStudy =
+    study && typeof study === "object" ? study : ({} as StudyProtocol);
   const timestamp = new Date().toISOString();
-  const protoNum = study.protocolNumber || "STUDY01";
-  const studyOid = `STUDY.${protoNum.replace(/[^A-Za-z0-9_]/g, "_")}`;
-  const metaOid = `MDV.${study.version || "1.0"}`;
-  const studyTitle = study.studyName || protoNum;
+  const protoNum = safeStudy.protocolNumber || "STUDY01";
+  const studyOid = `STUDY.${String(protoNum).replace(/[^A-Za-z0-9_]/g, "_")}`;
+  const metaOid = `MDV.${safeStudy.version || "1.0"}`;
+  const studyTitle = safeStudy.studyName || protoNum;
 
   let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <!-- Schedule Consultation: ${consultationUrl()} -->
@@ -56,15 +58,25 @@ export function exportStudyToCdiscOdmXml(study: StudyProtocol): string {
   <Study OID="${escapeXml(studyOid)}">
     <GlobalVariables>
       <StudyName>${escapeXml(studyTitle)}</StudyName>
-      <StudyDescription>Protocol ${escapeXml(protoNum)} - ${escapeXml(study.phase || "")} • Schedule Consultation: ${consultationUrl()}</StudyDescription>
+      <StudyDescription>Protocol ${escapeXml(protoNum)} - ${escapeXml(safeStudy.phase || "")} • Schedule Consultation: ${consultationUrl()}</StudyDescription>
       <ProtocolName>${escapeXml(protoNum)}</ProtocolName>
     </GlobalVariables>
-    <MetaDataVersion OID="${escapeXml(metaOid)}" Name="Protocol Definition Version ${escapeXml(study.version || "1.0")}">
+    <MetaDataVersion OID="${escapeXml(metaOid)}" Name="Protocol Definition Version ${escapeXml(safeStudy.version || "1.0")}">
       <Protocol>
 `;
 
+  const visits = Array.isArray(safeStudy.visits) ? safeStudy.visits : [];
+  const forms = Array.isArray(safeStudy.forms) ? safeStudy.forms : [];
+  const studyCodelists = Array.isArray(safeStudy.codelists)
+    ? safeStudy.codelists
+    : [];
+  const auditTrail = Array.isArray(safeStudy.auditTrail)
+    ? safeStudy.auditTrail
+    : [];
+
   // StudyEventRefs
-  study.visits.forEach((v, idx) => {
+  visits.forEach((v, idx) => {
+    if (!v || typeof v !== "object") return;
     const vOid = v.oid || v.id || `VIS_${idx + 1}`;
     xml += `        <StudyEventRef StudyEventOID="${escapeXml(vOid)}" OrderNumber="${idx + 1}" Mandatory="Yes"/>\n`;
   });
@@ -72,9 +84,10 @@ export function exportStudyToCdiscOdmXml(study: StudyProtocol): string {
   xml += `      </Protocol>\n\n`;
 
   // StudyEventDefs (Visits)
-  study.visits.forEach((v, idx) => {
+  visits.forEach((v, idx) => {
+    if (!v || typeof v !== "object") return;
     const vOid = v.oid || v.id || `VIS_${idx + 1}`;
-    const formIds = v.assignedFormIds || [];
+    const formIds = Array.isArray(v.assignedFormIds) ? v.assignedFormIds : [];
     xml += `      <StudyEventDef OID="${escapeXml(vOid)}" Name="${escapeXml(v.name)}" Repeating="${v.isRepeating ? "Yes" : "No"}" Type="${escapeXml(v.visitType || "Scheduled")}">\n`;
     formIds.forEach((fId: string, fIdx: number) => {
       xml += `        <FormRef FormOID="${escapeXml(`FORM.${fId}`)}" OrderNumber="${fIdx + 1}" Mandatory="Yes"/>\n`;
@@ -85,10 +98,13 @@ export function exportStudyToCdiscOdmXml(study: StudyProtocol): string {
   xml += `\n`;
 
   // FormDefs
-  study.forms.forEach((form) => {
+  forms.forEach((form) => {
+    if (!form || typeof form !== "object") return;
     const formOid = `FORM.${form.id}`;
     xml += `      <FormDef OID="${escapeXml(formOid)}" Name="${escapeXml(form.name)}" Repeating="${form.isLogForm ? "Yes" : "No"}">\n`;
-    form.sections.forEach((sec, sIdx) => {
+    const sections = Array.isArray(form.sections) ? form.sections : [];
+    sections.forEach((sec, sIdx) => {
+      if (!sec || typeof sec !== "object") return;
       const igOid = `IG.${form.domain || "CRF"}.${sec.id}`;
       xml += `        <ItemGroupRef ItemGroupOID="${escapeXml(igOid)}" OrderNumber="${sIdx + 1}" Mandatory="Yes"/>\n`;
     });
@@ -98,11 +114,16 @@ export function exportStudyToCdiscOdmXml(study: StudyProtocol): string {
   xml += `\n`;
 
   // ItemGroupDefs (Sections)
-  study.forms.forEach((form) => {
-    form.sections.forEach((sec) => {
+  forms.forEach((form) => {
+    if (!form || typeof form !== "object") return;
+    const sections = Array.isArray(form.sections) ? form.sections : [];
+    sections.forEach((sec) => {
+      if (!sec || typeof sec !== "object") return;
       const igOid = `IG.${form.domain || "CRF"}.${sec.id}`;
       xml += `      <ItemGroupDef OID="${escapeXml(igOid)}" Name="${escapeXml(sec.title)}" Repeating="${sec.isRepeating ? "Yes" : "No"}">\n`;
-      sec.fields.forEach((field, fIdx) => {
+      const fields = Array.isArray(sec.fields) ? sec.fields : [];
+      fields.forEach((field, fIdx) => {
+        if (!field || typeof field !== "object") return;
         const itemOid = `IT.${field.variableName || field.id}`;
         xml += `        <ItemRef ItemOID="${escapeXml(itemOid)}" OrderNumber="${fIdx + 1}" Mandatory="${field.required ? "Yes" : "No"}"/>\n`;
       });
@@ -119,9 +140,14 @@ export function exportStudyToCdiscOdmXml(study: StudyProtocol): string {
     import("./types").CodelistDefinition
   > = new Map();
 
-  study.forms.forEach((form) => {
-    form.sections.forEach((sec) => {
-      sec.fields.forEach((field) => {
+  forms.forEach((form) => {
+    if (!form || typeof form !== "object") return;
+    const sections = Array.isArray(form.sections) ? form.sections : [];
+    sections.forEach((sec) => {
+      if (!sec || typeof sec !== "object") return;
+      const fields = Array.isArray(sec.fields) ? sec.fields : [];
+      fields.forEach((field) => {
+        if (!field || typeof field !== "object") return;
         const itemOid = `IT.${field.variableName || field.id}`;
         if (processedItems.has(itemOid)) return;
         processedItems.add(itemOid);
@@ -129,7 +155,7 @@ export function exportStudyToCdiscOdmXml(study: StudyProtocol): string {
         let effectiveCodelistId = field.codelistId;
         if (
           !effectiveCodelistId &&
-          field.customOptions &&
+          Array.isArray(field.customOptions) &&
           field.customOptions.length > 0
         ) {
           effectiveCodelistId = `CL_${field.variableName || field.id}`;
@@ -165,18 +191,21 @@ export function exportStudyToCdiscOdmXml(study: StudyProtocol): string {
 
   // CodeLists (Study Codelists + Inline Custom Codelists)
   const allCodelists: import("./types").CodelistDefinition[] = [
-    ...study.codelists,
+    ...studyCodelists,
     ...Array.from(customFieldCodelists.values()).filter(
-      (ccl) => !study.codelists.some((cl) => cl.id === ccl.id)
+      (ccl) => !studyCodelists.some((cl) => cl && cl.id === ccl.id)
     ),
   ];
 
   allCodelists.forEach((cl) => {
+    if (!cl || typeof cl !== "object") return;
     const nciAttr = cl.nciCodelistCode
       ? ` def:NCICode="${escapeXml(cl.nciCodelistCode)}"`
       : "";
     xml += `      <CodeList OID="${escapeXml(cl.id)}" Name="${escapeXml(cl.name)}" DataType="text"${nciAttr}>\n`;
-    cl.options.forEach((opt) => {
+    const options = Array.isArray(cl.options) ? cl.options : [];
+    options.forEach((opt) => {
+      if (!opt || typeof opt !== "object") return;
       const optNci = opt.nciCode
         ? ` def:NCICode="${escapeXml(opt.nciCode)}"`
         : "";
@@ -187,9 +216,10 @@ export function exportStudyToCdiscOdmXml(study: StudyProtocol): string {
     xml += `      </CodeList>\n`;
   });
 
-  if (study.auditTrail && study.auditTrail.length > 0) {
+  if (auditTrail.length > 0) {
     xml += `\n      <AuditTrail>\n`;
-    study.auditTrail.forEach((entry) => {
+    auditTrail.forEach((entry) => {
+      if (!entry || typeof entry !== "object") return;
       xml += `        <AuditRecord ID="${escapeXml(entry.id)}">\n`;
       xml += `          <UserRef UserOID="${escapeXml(entry.changedBy)}"/>\n`;
       if (entry.userRole) {
@@ -209,17 +239,27 @@ export function exportStudyToCdiscOdmXml(study: StudyProtocol): string {
         xml += `          <ItemOID>${escapeXml(entry.fieldId)}</ItemOID>\n`;
       }
       if (entry.previousValue !== undefined && entry.previousValue !== null) {
-        const prevStr =
-          typeof entry.previousValue === "object"
-            ? JSON.stringify(entry.previousValue)
-            : String(entry.previousValue);
+        let prevStr: string;
+        try {
+          prevStr =
+            typeof entry.previousValue === "object"
+              ? JSON.stringify(entry.previousValue)
+              : String(entry.previousValue);
+        } catch {
+          prevStr = String(entry.previousValue);
+        }
         xml += `          <PreviousValue>${escapeXml(prevStr)}</PreviousValue>\n`;
       }
       if (entry.newValue !== undefined && entry.newValue !== null) {
-        const newStr =
-          typeof entry.newValue === "object"
-            ? JSON.stringify(entry.newValue)
-            : String(entry.newValue);
+        let newStr: string;
+        try {
+          newStr =
+            typeof entry.newValue === "object"
+              ? JSON.stringify(entry.newValue)
+              : String(entry.newValue);
+        } catch {
+          newStr = String(entry.newValue);
+        }
         xml += `          <NewValue>${escapeXml(newStr)}</NewValue>\n`;
       }
       if (entry.reasonForChange) {
@@ -229,10 +269,15 @@ export function exportStudyToCdiscOdmXml(study: StudyProtocol): string {
         xml += `          <DiagnosticID>${escapeXml(entry.diagnosticId)}</DiagnosticID>\n`;
       }
       if (entry.details !== undefined && entry.details !== null) {
-        const detailsStr =
-          typeof entry.details === "object"
-            ? JSON.stringify(entry.details)
-            : String(entry.details);
+        let detailsStr: string;
+        try {
+          detailsStr =
+            typeof entry.details === "object"
+              ? JSON.stringify(entry.details)
+              : String(entry.details);
+        } catch {
+          detailsStr = String(entry.details);
+        }
         xml += `          <Details>${escapeXml(detailsStr)}</Details>\n`;
       }
       xml += `        </AuditRecord>\n`;

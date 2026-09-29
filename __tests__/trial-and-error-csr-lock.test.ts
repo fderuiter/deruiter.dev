@@ -325,6 +325,8 @@ describe("locking the package (#922)", () => {
     const preview = deriveTableView(S, state).preview?.score;
     state = act(state, { type: "PLAY_HAND" });
     expect(state.status).toBe("CLEARED");
+    // The table plays the lock's own cue, not a plain clear (#996).
+    expect(deriveTableView(S, state).outcome).toBe("LOCKED");
     expect(state.lastEvent?.message).toMatch(
       /CSR v2\.0 LOCKED\. The CSR is released: final campaign score \d+\./
     );

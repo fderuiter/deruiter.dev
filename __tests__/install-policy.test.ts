@@ -57,4 +57,37 @@ describe("reproducible install policy (#854)", () => {
       expect(reason.trim().length, `${name} needs a reason`).toBeGreaterThan(0);
     }
   });
+
+  it("configures standard allowScripts in package.json and removes unsupported keys", () => {
+    expect(
+      pkg.ignoreScripts,
+      "ignoreScripts must be removed from package.json"
+    ).toBeUndefined();
+    expect(
+      pkg.trustedDependencies,
+      "trustedDependencies must be removed from package.json"
+    ).toBeUndefined();
+
+    expect(
+      pkg.allowScripts,
+      "allowScripts must be defined in package.json"
+    ).toBeDefined();
+    expect(typeof pkg.allowScripts).toBe("object");
+
+    const allowScriptsKeys = Object.keys(
+      pkg.allowScripts as Record<string, boolean>
+    ).sort();
+    const allowlistKeys = Object.keys(allowlist).sort();
+
+    expect(
+      allowScriptsKeys,
+      "package.json allowScripts must match scripts/install-script-allowlist.json registry"
+    ).toEqual(allowlistKeys);
+
+    for (const [name, enabled] of Object.entries(
+      pkg.allowScripts as Record<string, boolean>
+    )) {
+      expect(enabled, `allowScripts entry for ${name} must be true`).toBe(true);
+    }
+  });
 });

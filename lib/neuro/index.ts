@@ -4,6 +4,7 @@
 
 export * from "./types";
 export * from "./scenarios";
+export * from "./terminal";
 export * from "./drafts";
 export * from "./provenance";
 export * from "./hotkeys";

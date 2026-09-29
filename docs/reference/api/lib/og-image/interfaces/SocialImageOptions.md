@@ -26,6 +26,14 @@
 
 ***
 
+### dossier?
+
+> `optional` **dossier?**: [`DossierChips`](DossierChips.md)
+
+Dossier chips; rendered for the SYSTEMS_ARCHITECTURE preset only.
+
+***
+
 ### preset?
 
 > `optional` **preset?**: [`SocialPreset`](../type-aliases/SocialPreset.md)

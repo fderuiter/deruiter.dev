@@ -167,26 +167,19 @@ describe("Developer Experience (DX) Tooling Suite", () => {
       expect(validateBranchName("feat/add-dx-suite").valid).toBe(true);
       expect(validateBranchName("fix/proof-ast-bug").valid).toBe(true);
       expect(validateBranchName("dx/commit-wizard").valid).toBe(true);
-      expect(
-        validateBranchName("jules/add-anthropic-google-secret-detectors").valid
-      ).toBe(true);
+      expect(validateBranchName("jules/add-anthropic-google-secret-detectors").valid).toBe(true);
 
       const invalidBranch = validateBranchName("random_branch_name");
       expect(invalidBranch.valid).toBe(false);
       expect(invalidBranch.error).toContain("Expected prefixes");
     });
 
-    it("accepts test/, dev/, Jules and Stitch agent branches, and still rejects near-misses", () => {
+    it("accepts test/, dev/ and Jules agent branches, and still rejects near-misses", () => {
       expect(validateBranchName("test/crf-autosave").valid).toBe(true);
       expect(validateBranchName("dev/scratch-spike").valid).toBe(true);
       expect(
         validateBranchName(
           "jules/test-dungeon-tsp-jm1-18c22370-cdca-4c40-9ea9-0770e0597b82"
-        ).valid
-      ).toBe(true);
-      expect(
-        validateBranchName(
-          "stitch/fix/add-exodus-bytes-server-external-packages-jm0-dd2c182e-1508-4907-a12a-19ce87ff8e19"
         ).valid
       ).toBe(true);
       expect(

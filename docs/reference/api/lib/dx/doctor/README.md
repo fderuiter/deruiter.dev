@@ -14,6 +14,7 @@
 
 ## Functions
 
+- [checkAccessibilityAuditIntegrity](functions/checkAccessibilityAuditIntegrity.md)
 - [checkAccessibilityStandards](functions/checkAccessibilityStandards.md)
 - [checkDefectRemediationInvariants](functions/checkDefectRemediationInvariants.md)
 - [checkDesignTokens](functions/checkDesignTokens.md)

@@ -94,8 +94,8 @@ describe("production deploy configuration", () => {
 
   // Issue #995: bundling jsdom pulled @exodus/bytes (ESM-only) through
   // html-encoding-sniffer into a require() chain and every SSR page returned
-  // 500 with ERR_REQUIRE_ESM. Both packages must stay external.
-  it("keeps jsdom and isomorphic-dompurify out of the server bundle", () => {
+  // 500 with ERR_REQUIRE_ESM. All four packages must stay external.
+  it("keeps jsdom, isomorphic-dompurify, @exodus/bytes, and html-encoding-sniffer out of the server bundle", () => {
     const serverExternals = /serverExternalPackages:\s*\[([^\]]*)\]/.exec(
       read("next.config.ts")
     );
@@ -104,7 +104,12 @@ describe("production deploy configuration", () => {
       ...(serverExternals?.[1] ?? "").matchAll(/["']([^"']+)["']/g),
     ].map((match) => match[1]);
     expect(packages).toEqual(
-      expect.arrayContaining(["jsdom", "isomorphic-dompurify"])
+      expect.arrayContaining([
+        "jsdom",
+        "isomorphic-dompurify",
+        "@exodus/bytes",
+        "html-encoding-sniffer",
+      ])
     );
   });
 

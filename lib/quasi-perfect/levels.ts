@@ -91,7 +91,7 @@ export const puzzleLevels: PuzzlerLevelDef[] = [
     hints: [
       "Equality is a symmetric binary relation: if a = b, then b = a.",
       "You can use 'symm' to flip the goal (b = a ⟹ a = b) and then rewrite with 'h', or rewrite directly.",
-      "Apply 'symm' followed by 'rw [h]' and 'rfl' to complete the proof.",
+      "Apply 'symm', then select the sub-term 'a' (not the whole equality) and apply 'rw [h]'. The goal becomes b = b and closes automatically, so 'rfl' is not needed.",
     ],
     leanTheoremName: "mirror_law",
     leanTypeSignature: "(a b : Nat) (h : a = b) : b = a",
@@ -105,7 +105,7 @@ export const puzzleLevels: PuzzlerLevelDef[] = [
       leanAnalogy:
         "In Lean 4, `symm` applies `Eq.symm`, transforming the goal `b = a` into `a = b` so that direct left-to-right hypotheses can match.",
       tacticalObjective:
-        "Use 'symm' to swap the goal sides, then rewrite with hypothesis 'h' and close with 'rfl'.",
+        "Use 'symm' to swap the goal sides, then select the sub-term 'a' and rewrite with hypothesis 'h'. The goal becomes b = b and closes automatically (rw tries rfl), so no separate 'rfl' is needed.",
       leanDocUrl:
         "https://lean-lang.org/theorem_proving_in_lean4/tactics.html#the-rewrite-tactic",
       realWorldApplication:

@@ -83,6 +83,35 @@ export interface WebPageNodeOptions {
   isAccessibleForFree?: boolean;
 }
 
+/** A visible question and answer pair rendered by the FAQ accordion. */
+export interface FAQItem {
+  question: string;
+  answer: string;
+}
+
+/**
+ * Returns a Schema.org `FAQPage` node for the given items. The items must be
+ * the same ones rendered visibly on the page (Google's anti-cloaking rule).
+ */
+export function getFAQPageNode(
+  items: readonly FAQItem[],
+  pageUrl: string
+): Record<string, unknown> {
+  const fullUrl = pageUrl.startsWith("http")
+    ? pageUrl
+    : `${SITE_BASE_URL}${pageUrl.startsWith("/") ? pageUrl : "/" + pageUrl}`;
+  return {
+    "@type": "FAQPage",
+    "@id": `${fullUrl}/#faq`,
+    url: fullUrl,
+    mainEntity: items.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: { "@type": "Answer", text: item.answer },
+    })),
+  };
+}
+
 /**
  * Returns a canonical WebPage entity node linked to the root WebSite and Person.
  */

@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext } from "react";
 import { usePersistentState } from "@/hooks/usePersistentState";
+import { safeGetItem } from "@/lib/safe-storage";
 
 interface TerminologyContextType {
   simplified: boolean;
@@ -9,10 +10,17 @@ interface TerminologyContextType {
   isFallback?: boolean;
 }
 
-const TerminologyContext = createContext<TerminologyContextType | undefined>(undefined);
+const TerminologyContext = createContext<TerminologyContextType | undefined>(
+  undefined
+);
 
-export const TerminologyProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [simplified, setSimplified] = usePersistentState("simplified-terminology", false);
+export const TerminologyProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  const [simplified, setSimplified] = usePersistentState(
+    "simplified-terminology",
+    false
+  );
 
   return (
     <TerminologyContext.Provider value={{ simplified, setSimplified }}>
@@ -25,19 +33,10 @@ export const useTerminology = () => {
   const context = useContext(TerminologyContext);
   if (!context) {
     // Return safe fallback values if called outside of the provider (e.g. in standalone unit tests)
-    let initialSimplified = false;
-    if (typeof window !== "undefined") {
-      try {
-        const stored = window.localStorage.getItem("simplified-terminology");
-        if (stored !== null) {
-          initialSimplified = JSON.parse(stored) === true;
-        }
-      } catch {
-        // ignore parse error
-      }
-    }
+    // Read through safeStorage so the envelope written by usePersistentState
+    // (and the legacy bare JSON boolean) resolves, and blocked storage cannot throw.
     return {
-      simplified: initialSimplified,
+      simplified: safeGetItem<unknown>("simplified-terminology") === true,
       setSimplified: () => {},
       isFallback: true,
     };

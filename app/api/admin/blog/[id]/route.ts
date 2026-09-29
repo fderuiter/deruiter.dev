@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { BlogDraftIdParamsSchema, BlogDraftUpdateSchema } from "@/lib/schemas";
-import { isCurrentUserAdmin } from "@/lib/auth/admin";
 import { BlogPostService } from "@/lib/services/blog-service";
 import { createApiHandler } from "@/lib/route-wrapper";
 import { sanitizeError } from "@/lib/error-sanitization";
@@ -45,13 +44,6 @@ function getDraftId(params: Record<string, string | string[] | undefined>) {
 
 export const GET = createApiHandler(
   async (_req: NextRequest, { params }) => {
-    if (!(await isCurrentUserAdmin())) {
-      return NextResponse.json(
-        { error: "Administrator access required" },
-        { status: 403 }
-      );
-    }
-
     const parsed = getDraftId(params);
     if ("error" in parsed) {
       return NextResponse.json(parsed.error, { status: 400 });
@@ -79,13 +71,6 @@ export const GET = createApiHandler(
 
 export const PATCH = createApiHandler(
   async (_req: NextRequest, { data, params }) => {
-    if (!(await isCurrentUserAdmin())) {
-      return NextResponse.json(
-        { error: "Administrator access required" },
-        { status: 403 }
-      );
-    }
-
     const parsed = getDraftId(params);
     if ("error" in parsed) {
       return NextResponse.json(parsed.error, { status: 400 });
@@ -131,13 +116,6 @@ export const PATCH = createApiHandler(
 
 export const DELETE = createApiHandler(
   async (_req: NextRequest, { params }) => {
-    if (!(await isCurrentUserAdmin())) {
-      return NextResponse.json(
-        { error: "Administrator access required" },
-        { status: 403 }
-      );
-    }
-
     const parsed = getDraftId(params);
     if ("error" in parsed) {
       return NextResponse.json(parsed.error, { status: 400 });

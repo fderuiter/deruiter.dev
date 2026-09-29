@@ -3,7 +3,6 @@ import {
   BlogDraftCreateSchema,
   BlogDraftPaginationSchema,
 } from "@/lib/schemas";
-import { isCurrentUserAdmin } from "@/lib/auth/admin";
 import { BlogPostService } from "@/lib/services/blog-service";
 import { createApiHandler } from "@/lib/route-wrapper";
 import { sanitizeError } from "@/lib/error-sanitization";
@@ -28,13 +27,6 @@ function validationError(error: unknown) {
 
 export const GET = createApiHandler(
   async (_req: NextRequest, { data }) => {
-    if (!(await isCurrentUserAdmin())) {
-      return NextResponse.json(
-        { error: "Administrator access required" },
-        { status: 403 }
-      );
-    }
-
     try {
       const { drafts, total } = await BlogPostService.getDraftBlogPosts(data);
       return NextResponse.json({
@@ -59,13 +51,6 @@ export const GET = createApiHandler(
 
 export const POST = createApiHandler(
   async (_req: NextRequest, { data }) => {
-    if (!(await isCurrentUserAdmin())) {
-      return NextResponse.json(
-        { error: "Administrator access required" },
-        { status: 403 }
-      );
-    }
-
     try {
       const created = await BlogPostService.createDraftBlogPost(data);
       return NextResponse.json(

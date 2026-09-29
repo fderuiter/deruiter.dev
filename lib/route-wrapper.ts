@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { z, ZodSchema } from "zod";
 import { applySecurityHeaders } from "@/lib/security-headers";
 import { logger } from "@/lib/logger";
+import { isCurrentUserAdmin } from "@/lib/auth/admin";
+import { validateSyncRequest } from "@/lib/security";
 
 export type ApiAuthRequirement = "clerk_admin" | "cron_secret" | "public";
 
@@ -73,6 +75,24 @@ export function createApiHandler<TSchema extends ZodSchema>(
   ): Promise<NextResponse> => {
     const req = rawReq || new NextRequest("http://localhost:3000");
     try {
+      if (options?.auth === "clerk_admin") {
+        if (!(await isCurrentUserAdmin())) {
+          const response = NextResponse.json(
+            { error: "Administrator access required" },
+            { status: 403 }
+          );
+          return applySecurityHeaders(response, req);
+        }
+      } else if (options?.auth === "cron_secret") {
+        const authResult = validateSyncRequest(req);
+        if (!authResult.isValid) {
+          const response =
+            authResult.errorResponse ??
+            NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+          return applySecurityHeaders(response, req);
+        }
+      }
+
       const resolvedParams = routeParams?.params
         ? await Promise.resolve(routeParams.params)
         : {};

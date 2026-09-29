@@ -242,7 +242,10 @@ export interface GameEngineState {
   isGrounded: boolean;
   score: number;
   highScore: number;
+  /** Unrounded distance; round only when displaying. */
   distanceMeters: number;
+  /** Fractional score (0 to under 1) carried between ticks. */
+  scoreRemainder?: number;
   variables: MemoryVariable[];
   allocatedRamKb: number;
   flashVariables: FlashVariable[];
@@ -744,8 +747,8 @@ export function updateGameSimulation(
         battery: nextBattery,
         isLightOn: nextLight,
         lightActiveDurationMs: lightDuration,
-        thermalStress: Number(nextThermalStress.toFixed(3)),
-        fogLevel: Number(nextFogLevel.toFixed(3)),
+        thermalStress: nextThermalStress,
+        fogLevel: nextFogLevel,
         isGcActive: false,
         gcTimerMs: 0,
       };
@@ -755,8 +758,8 @@ export function updateGameSimulation(
       battery: nextBattery,
       isLightOn: nextLight,
       lightActiveDurationMs: lightDuration,
-      thermalStress: Number(nextThermalStress.toFixed(3)),
-      fogLevel: Number(nextFogLevel.toFixed(3)),
+      thermalStress: nextThermalStress,
+      fogLevel: nextFogLevel,
       gcTimerMs: remainingGc,
     };
   }
@@ -868,8 +871,14 @@ export function updateGameSimulation(
   }
 
   // 3. Distance & Score Tracking
+  // Score, distance and the stress meters accumulate fractionally so equal
+  // elapsed time gives equal progress at any refresh rate; only the score is
+  // an integer to callers, with its remainder carried in scoreRemainder
+  // (#1212). Round for display, never in the tick.
   const nextDistance = state.distanceMeters + 0.25 * dtRatio;
-  const nextScore = state.score + Math.round(1 * dtRatio);
+  const exactScore = state.score + (state.scoreRemainder ?? 0) + dtRatio;
+  const nextScore = Math.floor(exactScore + 1e-9);
+  const nextScoreRemainder = Math.max(0, exactScore - nextScore);
   const nextHighScore = Math.max(state.highScore, nextScore);
   const nextHeartRate = clamp(130 + Math.floor(nextScore * 0.05), 120, 188);
 
@@ -882,10 +891,11 @@ export function updateGameSimulation(
     battery: nextBattery,
     isLightOn: nextLight,
     lightActiveDurationMs: lightDuration,
-    thermalStress: Number(nextThermalStress.toFixed(3)),
-    fogLevel: Number(nextFogLevel.toFixed(3)),
-    distanceMeters: Number(nextDistance.toFixed(1)),
+    thermalStress: nextThermalStress,
+    fogLevel: nextFogLevel,
+    distanceMeters: nextDistance,
     score: nextScore,
+    scoreRemainder: nextScoreRemainder,
     highScore: nextHighScore,
     heartRate: nextHeartRate,
   };

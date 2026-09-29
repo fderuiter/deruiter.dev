@@ -2,6 +2,7 @@
 
 import React from "react";
 import { clamp } from "@/lib/game-utils";
+import { formatNumber, formatPercent } from "@/lib/utils";
 import { QAMetrics, ScenarioConfig, ScoreState } from "@/lib/neuro/types";
 import {
   IconFlame,
@@ -96,7 +97,7 @@ export const NeuroMetricsPanel: React.FC<NeuroMetricsPanelProps> = ({
         <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 text-xs font-mono text-zinc-400 min-w-0">
           <span>DICE ESTIMATE</span>
           <span className="text-[10px] text-zinc-400">
-            GOAL: ≥{(scenario.targetDice * 100).toFixed(0)}%
+            GOAL: ≥{formatPercent(scenario.targetDice)}
           </span>
         </div>
         <div className="flex items-center gap-1.5 mt-1">
@@ -107,7 +108,7 @@ export const NeuroMetricsPanel: React.FC<NeuroMetricsPanelProps> = ({
                 : "text-brand-cyan"
             }`}
           >
-            {(metrics.diceScore * 100).toFixed(1)}%
+            {formatPercent(metrics.diceScore, { decimals: 1 })}
           </span>
         </div>
         <div className="text-[10px] font-mono text-zinc-400 mt-1">
@@ -123,7 +124,7 @@ export const NeuroMetricsPanel: React.FC<NeuroMetricsPanelProps> = ({
         </div>
         <div className="flex items-center gap-1.5 mt-1">
           <span className="text-xl font-mono font-bold text-white">
-            {metrics.meanCorticalThicknessMm.toFixed(2)}
+            {formatNumber(metrics.meanCorticalThicknessMm, 2)}
           </span>
           <span className="text-xs font-mono text-zinc-400">mm</span>
         </div>
@@ -144,7 +145,7 @@ export const NeuroMetricsPanel: React.FC<NeuroMetricsPanelProps> = ({
         <div className="flex items-center gap-1.5 mt-1">
           <IconTrophy className="w-5 h-5 text-amber-400" />
           <span className="text-xl font-mono font-bold text-amber-400">
-            {scoreState.score.toLocaleString()}
+            {formatNumber(scoreState.score)}
           </span>
         </div>
         <div className="text-[10px] font-mono text-zinc-400 mt-1">

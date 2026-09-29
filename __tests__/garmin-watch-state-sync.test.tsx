@@ -148,8 +148,21 @@ describe("Garmin Watch Simulator - stateRef/gameState stay in lockstep (#685)", 
     // (`gameState !== "playing"`) would silently no-op the click against
     // the component's real idle default, so this specifically requires the
     // seam to be honored rather than ignored.
+    // Force GC only acts when something collectible is on the heap (#1213),
+    // so seed one leaked allocation alongside the protected base variables.
+    const started = startGame(createInitialState("fenix", 0), "fenix");
     const seed = {
-      ...startGame(createInitialState("fenix", 0), "fenix"),
+      ...started,
+      variables: [
+        ...started.variables,
+        {
+          id: 9001,
+          name: "leakedBuffer",
+          type: "array" as const,
+          sizeKb: 8,
+          allocatedAt: 0,
+        },
+      ],
       obstacles: [],
       lastObstacleTime: Date.now(),
     };

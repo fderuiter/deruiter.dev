@@ -344,17 +344,50 @@ export function startGame(
 }
 
 /**
- * Jettison (pop) the oldest variable in the heap
+ * Names of required app state allocated at boot. These are never collectible:
+ * jettison and garbage collection skip them, so the watch stays functional.
+ */
+export const REQUIRED_VARIABLE_NAMES: readonly string[] = [
+  "appCtx",
+  "displayGfx",
+];
+
+/**
+ * Points awarded for a memory action that actually reclaimed heap. Actions that
+ * reclaim nothing award no points. Survival ticks and dodges are the primary
+ * score source; higher-difficulty devices only differ in their RAM limits.
+ */
+export const JETTISON_SCORE = 5;
+export const GC_SCORE = 10;
+
+/**
+ * Returns true when a heap variable is collectible garbage rather than required app state.
+ */
+export function isCollectibleVariable(v: MemoryVariable): boolean {
+  return !REQUIRED_VARIABLE_NAMES.includes(v.name);
+}
+
+/**
+ * Jettison (pop) the oldest collectible variable in the heap.
+ * Required app state is never discarded; with nothing collectible the call is
+ * a no-op that awards no score and reports a reason.
  */
 export function jettisonOldestVariable(state: GameEngineState): {
   state: GameEngineState;
   popped?: MemoryVariable;
+  reason?: string;
 } {
-  if (state.gameState !== "playing" || state.variables.length === 0) {
+  if (state.gameState !== "playing") {
     return { state };
   }
 
-  const [popped, ...rest] = state.variables;
+  const idx = state.variables.findIndex(isCollectibleVariable);
+  if (idx === -1) {
+    return { state, reason: "Nothing to jettison: only required app state" };
+  }
+
+  const popped = state.variables[idx];
+  const rest = state.variables.filter((_, i) => i !== idx);
   const newRam = Math.max(0.2, state.allocatedRamKb - popped.sizeKb);
 
   return {
@@ -362,7 +395,7 @@ export function jettisonOldestVariable(state: GameEngineState): {
       ...state,
       variables: rest,
       allocatedRamKb: Number(newRam.toFixed(2)),
-      score: state.score + 5,
+      score: state.score + JETTISON_SCORE,
     },
     popped,
   };
@@ -370,14 +403,24 @@ export function jettisonOldestVariable(state: GameEngineState): {
 
 /**
  * Force Garbage Collection (GC)
- * Freezes game for 500ms and frees 2.0 to 4.0 KB of garbage
+ * Freezes game for 500ms and frees up to 2.0 to 4.0 KB of collectible garbage.
+ * With no collectible garbage the call is a no-op: no freeze, no score.
  */
 export function triggerGarbageCollection(state: GameEngineState): {
   state: GameEngineState;
   freedKb: number;
+  reason?: string;
 } {
   if (state.gameState !== "playing" || state.isGcActive) {
     return { state, freedKb: 0 };
+  }
+
+  if (!state.variables.some(isCollectibleVariable)) {
+    return {
+      state,
+      freedKb: 0,
+      reason: "Heap already clean: nothing to collect",
+    };
   }
 
   // Calculate garbage memory to free (2.0 to 4.0 KB, capped by current non-essential variables)
@@ -388,13 +431,9 @@ export function triggerGarbageCollection(state: GameEngineState): {
   let accumulatedFreed = 0;
   const remainingVars: MemoryVariable[] = [];
 
-  // Remove variables from oldest to newest until target freed is met
-  for (let i = 0; i < state.variables.length; i++) {
-    const v = state.variables[i];
-    if (
-      accumulatedFreed < targetFreedKb &&
-      state.variables.length - remainingVars.length > 2
-    ) {
+  // Remove collectible variables from oldest to newest until target freed is met
+  for (const v of state.variables) {
+    if (isCollectibleVariable(v) && accumulatedFreed < targetFreedKb) {
       accumulatedFreed += v.sizeKb;
     } else {
       remainingVars.push(v);
@@ -413,9 +452,9 @@ export function triggerGarbageCollection(state: GameEngineState): {
       gcTimerMs: tuning.gcFreezeMs,
       variables: remainingVars,
       allocatedRamKb: newRam,
-      score: state.score + 10,
+      score: state.score + GC_SCORE,
     },
-    freedKb: accumulatedFreed,
+    freedKb: Number(accumulatedFreed.toFixed(2)),
   };
 }
 

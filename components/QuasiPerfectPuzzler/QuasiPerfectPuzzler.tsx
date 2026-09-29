@@ -678,6 +678,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
   const containerRef = useRef<HTMLElement | null>(null);
   const levelHeadingRef = useRef<HTMLHeadingElement | null>(null);
   const [levelIndexOpen, setLevelIndexOpen] = useState<boolean>(false);
+  const [modeRulesOpen, setModeRulesOpen] = useState<boolean>(false);
 
   // Choosing a level from the index collapses it again (small screens) and
   // moves focus and scroll to the active task so keyboard and screen-reader
@@ -691,7 +692,8 @@ export const QuasiPerfectPuzzler: React.FC = () => {
         if (!heading) return;
         heading.focus({ preventScroll: true });
         if (typeof heading.scrollIntoView === "function") {
-          heading.scrollIntoView({ block: "nearest" });
+          // scroll-mt-24 on the heading keeps it clear of the fixed Navbar.
+          heading.scrollIntoView({ block: "start" });
         }
       });
     },
@@ -807,7 +809,12 @@ export const QuasiPerfectPuzzler: React.FC = () => {
 
       {/* Active mode rules and mid-proof mode-change confirmation */}
       <div className="mt-3 min-w-0 space-y-2" data-testid="mode-rules">
-        <p className="text-xs text-zinc-400 break-words">
+        <p
+          id="quasi-mode-rules-text"
+          className={`text-xs text-zinc-400 break-words ${
+            modeRulesOpen ? "" : "line-clamp-2 md:line-clamp-none"
+          }`}
+        >
           <span
             className={`font-bold ${
               gameMode === "story" ? "text-emerald-400" : "text-amber-400"
@@ -818,6 +825,16 @@ export const QuasiPerfectPuzzler: React.FC = () => {
           {modeRules.budget} {modeRules.failure} {modeRules.exhaustion}{" "}
           {modeRules.scoring} Changing mode mid-proof restarts the level.
         </p>
+        {/* Small screens show two lines of the rules so the active level stays near the top */}
+        <button
+          type="button"
+          aria-expanded={modeRulesOpen}
+          aria-controls="quasi-mode-rules-text"
+          onClick={() => setModeRulesOpen((prev) => !prev)}
+          className="md:hidden min-h-[44px] px-1 text-xs font-bold text-brand-cyan underline underline-offset-2 focus-visible:ring-2 focus-visible:ring-brand-cyan focus-visible:outline-none rounded"
+        >
+          {modeRulesOpen ? "Show fewer rules" : "Read all mode rules"}
+        </button>
         {pendingMode && (
           <div
             role="alertdialog"
@@ -889,7 +906,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
                 ref={levelHeadingRef}
                 tabIndex={-1}
                 id="quasi-current-level-heading"
-                className="text-base font-bold text-zinc-100 mt-0.5 outline-none"
+                className="scroll-mt-24 rounded-sm text-base font-bold text-zinc-100 mt-0.5 outline-none focus-visible:ring-2 focus-visible:ring-brand-cyan focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
               >
                 {currentLevel.title}
               </h3>
@@ -931,11 +948,11 @@ export const QuasiPerfectPuzzler: React.FC = () => {
           {/* Tools */}
           <div className="mt-3">
             {/* Tools Toggles */}
-            <div className="flex items-center gap-1.5 flex-wrap">
+            <div className="grid grid-cols-3 gap-1.5 sm:flex sm:flex-wrap sm:items-center">
               <button
                 type="button"
                 onClick={() => setShowBriefingModal(true)}
-                className="min-h-[44px] flex items-center justify-center gap-1 px-3 py-1.5 text-xs font-bold rounded-lg border border-brand-cyan/40 bg-brand-cyan/10 text-brand-cyan hover:bg-brand-cyan/20 transition-all focus-visible:ring-2 focus-visible:ring-brand-cyan focus-visible:outline-none"
+                className="min-h-[44px] flex flex-col sm:flex-row items-center justify-center gap-1 px-2 sm:px-3 py-1.5 text-center text-xs font-bold rounded-lg border border-brand-cyan/40 bg-brand-cyan/10 text-brand-cyan hover:bg-brand-cyan/20 transition-all focus-visible:ring-2 focus-visible:ring-brand-cyan focus-visible:outline-none"
               >
                 <IconSparkles className="w-3.5 h-3.5" />
                 <span>Theory Briefing</span>
@@ -943,7 +960,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setShowHints((prev) => !prev)}
-                className={`min-h-[44px] flex items-center justify-center gap-1 px-3 py-1.5 text-xs font-bold rounded-lg border transition-all focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none ${
+                className={`min-h-[44px] flex flex-col sm:flex-row items-center justify-center gap-1 px-2 sm:px-3 py-1.5 text-center text-xs font-bold rounded-lg border transition-all focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none ${
                   showHints
                     ? "bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-[0_0_10px_rgba(245,158,11,0.3)]"
                     : "bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-zinc-200"
@@ -955,7 +972,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setShowLeanInspector((prev) => !prev)}
-                className={`min-h-[44px] flex items-center justify-center gap-1 px-3 py-1.5 text-xs font-bold rounded-lg border transition-all focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:outline-none ${
+                className={`min-h-[44px] flex flex-col sm:flex-row items-center justify-center gap-1 px-2 sm:px-3 py-1.5 text-center text-xs font-bold rounded-lg border transition-all focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:outline-none ${
                   showLeanInspector
                     ? "bg-purple-500/20 text-purple-300 border-purple-500/50 shadow-[0_0_10px_rgba(168,85,247,0.3)]"
                     : "bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-zinc-200"
@@ -990,7 +1007,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
           >
             {/* Chapter Tabs */}
             <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[10px] uppercase font-bold text-zinc-500 mr-1">
+              <span className="text-[10px] uppercase font-bold text-zinc-400 mr-1">
                 Chapter:
               </span>
               {[
@@ -1006,7 +1023,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
                   className={`min-h-[44px] px-3 py-1.5 rounded text-[11px] font-bold transition-all flex items-center justify-center focus-visible:ring-2 focus-visible:ring-brand-cyan focus-visible:outline-none ${
                     selectedChapter === chap.id
                       ? "bg-zinc-800 text-brand-cyan border border-brand-cyan/40"
-                      : "text-zinc-500 hover:text-zinc-300"
+                      : "text-zinc-400 hover:text-zinc-300"
                   }`}
                 >
                   {chap.label}

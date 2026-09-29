@@ -86,4 +86,25 @@ describe("Quasi-Puzzler puts the active task within reach on mobile (#1236)", ()
       "hidden"
     );
   });
+
+  it("keeps the focused level heading visible and clear of the fixed Navbar", () => {
+    render(<QuasiPerfectPuzzler />);
+    const heading = document.getElementById("quasi-current-level-heading");
+    expect(heading?.className).toContain("scroll-mt-24");
+    expect(heading?.className).toContain("focus-visible:ring-2");
+  });
+
+  it("clamps the mode rules on small screens and expands them on request", () => {
+    render(<QuasiPerfectPuzzler />);
+    const rules = document.getElementById("quasi-mode-rules-text");
+    const toggle = screen.getByRole("button", { name: /Read all mode rules/i });
+    expect(rules?.className).toContain("line-clamp-2");
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(toggle.getAttribute("aria-controls")).toBe("quasi-mode-rules-text");
+
+    click(toggle);
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    expect(rules?.className).not.toContain("line-clamp-2");
+    expect(toggle.textContent).toMatch(/Show fewer rules/i);
+  });
 });

@@ -184,6 +184,7 @@
 - [lib/neuro/progress-bus](lib/neuro/progress-bus/README.md)
 - [lib/neuro/qa-engine](lib/neuro/qa-engine/README.md)
 - [lib/neuro/scenarios](lib/neuro/scenarios/README.md)
+- [lib/neuro/terminal](lib/neuro/terminal/README.md)
 - [lib/neuro/types](lib/neuro/types/README.md)
 - [lib/neuro/volume-generator](lib/neuro/volume-generator/README.md)
 - [lib/og-image](lib/og-image/README.md)

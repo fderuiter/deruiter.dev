@@ -136,6 +136,38 @@ describe("NeuroRecon Workspace UI Suite", () => {
     expect(container.textContent).toContain("Intensity Defect");
   });
 
+  it("initial terminal diagnostics match the HUD and reject unmodeled recon-all flags", async () => {
+    window.location.hash = "";
+    await act(async () => {
+      root = createRoot(container);
+      root.render(<NeuroReconClient />);
+    });
+    const text = container.textContent ?? "";
+    expect(text).not.toContain("412 defect voxels");
+    expect(text).not.toContain("χ = -12");
+    expect(text).toContain("Constrained simulation");
+    expect(text).toMatch(
+      /Estimated Euler χ = 2, target = 2\. 38 estimated defect units/
+    );
+  });
+
+  it("appends current-case diagnostics to the terminal on scenario switch", async () => {
+    window.location.hash = "";
+    await act(async () => {
+      root = createRoot(container);
+      root.render(<NeuroReconClient />);
+    });
+    const case2 = Array.from(container.querySelectorAll("button")).find((b) =>
+      b.textContent?.includes("Case 02")
+    );
+    await act(async () => {
+      case2?.click();
+    });
+    const text = container.textContent ?? "";
+    expect(text).toMatch(/target = 2\. 52 estimated defect units for Case 02/);
+    expect(text).toContain("earlier lines above describe the previous case");
+  });
+
   it("opens and closes the Field Manual modal", async () => {
     await act(async () => {
       root = createRoot(container);

@@ -146,6 +146,12 @@ Re-exports [formatNeuroToolKey](hotkeys/functions/formatNeuroToolKey.md)
 
 ***
 
+### formatScenarioDiagnostics
+
+Re-exports [formatScenarioDiagnostics](terminal/functions/formatScenarioDiagnostics.md)
+
+***
+
 ### generateHemisphereBuffers
 
 Re-exports [generateHemisphereBuffers](internal/mesh-geometry/functions/generateHemisphereBuffers.md)
@@ -278,9 +284,33 @@ Re-exports [MeshWorkerTarget](mesh-worker/interfaces/MeshWorkerTarget.md)
 
 ***
 
+### NEURO\_RECON\_MODIFIER\_FLAGS
+
+Re-exports [NEURO_RECON_MODIFIER_FLAGS](terminal/variables/NEURO_RECON_MODIFIER_FLAGS.md)
+
+***
+
+### NEURO\_RECON\_STAGE\_FLAGS
+
+Re-exports [NEURO_RECON_STAGE_FLAGS](terminal/variables/NEURO_RECON_STAGE_FLAGS.md)
+
+***
+
 ### NEURO\_RUN\_RECON\_KEY
 
 Re-exports [NEURO_RUN_RECON_KEY](hotkeys/variables/NEURO_RUN_RECON_KEY.md)
+
+***
+
+### NEURO\_TERMINAL\_COMMANDS
+
+Re-exports [NEURO_TERMINAL_COMMANDS](terminal/variables/NEURO_TERMINAL_COMMANDS.md)
+
+***
+
+### NEURO\_TERMINAL\_SIMULATION\_NOTICE
+
+Re-exports [NEURO_TERMINAL_SIMULATION_NOTICE](terminal/variables/NEURO_TERMINAL_SIMULATION_NOTICE.md)
 
 ***
 
@@ -305,6 +335,12 @@ Re-exports [NeuroHotkeyEventLike](hotkeys/interfaces/NeuroHotkeyEventLike.md)
 ### NeuroToolHotkey
 
 Re-exports [NeuroToolHotkey](hotkeys/interfaces/NeuroToolHotkey.md)
+
+***
+
+### parseReconAllCommand
+
+Re-exports [parseReconAllCommand](terminal/functions/parseReconAllCommand.md)
 
 ***
 
@@ -341,6 +377,12 @@ Re-exports [QAMetrics](types/interfaces/QAMetrics.md)
 ### RawGeometryBuffer
 
 Re-exports [RawGeometryBuffer](types/interfaces/RawGeometryBuffer.md)
+
+***
+
+### ReconAllParse
+
+Re-exports [ReconAllParse](terminal/type-aliases/ReconAllParse.md)
 
 ***
 

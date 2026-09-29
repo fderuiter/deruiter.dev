@@ -1834,3 +1834,32 @@ describe("Garmin progression is refresh-rate independent (#1212)", () => {
     expect(state.thermalStress).toBeLessThan(0.3);
   });
 });
+
+describe("Garmin obstacles crash with their own type (#1318)", () => {
+  it("maps NULL to Null Pointer and STK to Stack Overflow", async () => {
+    const { createInitialState, startGame, updateGameSimulation, GROUND_Y } =
+      await import("@/lib/garmin-engine");
+    const crash = (type: "null_pointer" | "stack_overflow", label: string) =>
+      updateGameSimulation(
+        {
+          ...startGame(createInitialState("fenix", 0), "fenix"),
+          lastObstacleTime: Date.now() + 60_000,
+          obstacles: [
+            {
+              id: 1,
+              x: 52,
+              y: GROUND_Y - 20,
+              width: 16,
+              height: 20,
+              type,
+              label,
+              speed: 2.2,
+            },
+          ],
+        },
+        16.6
+      ).crashReport?.errorType;
+    expect(crash("null_pointer", "NULL")).toBe("Null Pointer");
+    expect(crash("stack_overflow", "STK")).toBe("Stack Overflow");
+  });
+});

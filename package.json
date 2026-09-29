@@ -164,14 +164,16 @@
     "typescript": "^5",
     "vitest": "^4.1.11"
   },
-  "ignoreScripts": [
-    "sharp",
-    "unrs-resolver"
-  ],
-  "trustedDependencies": [
-    "sharp",
-    "unrs-resolver"
-  ],
+  "allowScripts": {
+    "@clerk/shared": true,
+    "@prisma/engines": true,
+    "@sentry/cli": true,
+    "core-js": true,
+    "esbuild": true,
+    "fsevents": true,
+    "prisma": true,
+    "unrs-resolver": true
+  },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"
   },

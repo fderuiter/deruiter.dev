@@ -145,6 +145,7 @@
 - [lib/dx/preflight](lib/dx/preflight/README.md)
 - [lib/dx/scaffolder](lib/dx/scaffolder/README.md)
 - [lib/dx/setup](lib/dx/setup/README.md)
+- [lib/dx/source-state](lib/dx/source-state/README.md)
 - [lib/dx/utils](lib/dx/utils/README.md)
 - [lib/email-templates](lib/email-templates/README.md)
 - [lib/env](lib/env/README.md)

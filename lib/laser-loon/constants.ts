@@ -439,3 +439,20 @@ export const LOON_MAX_HITS = 3;
 export const LOON_HIT_RADIUS = 22;
 /** Invulnerability window after the loon takes a hit, in milliseconds. */
 export const LOON_INVULNERABLE_MS = 1500;
+
+/** Frames (at 60 fps) between boss volleys in Act 1; each later act fires sooner. */
+export const BOSS_ATTACK_BASE_FRAMES = 230;
+/** Frames each act after the first takes off the boss volley interval. */
+export const BOSS_ATTACK_FRAMES_PER_ACT = 30;
+/** Shortest boss volley interval, in frames, whatever the act or phase. */
+export const BOSS_ATTACK_MIN_FRAMES = 90;
+/** Interval multiplier once a boss drops below half HP (phase 2). */
+export const BOSS_PHASE_TWO_INTERVAL_SCALE = 0.65;
+/** Frames before a volley during which the boss visibly winds up. */
+export const BOSS_TELEGRAPH_FRAMES = 45;
+/** Radius of a boss volley shot, in canvas pixels. */
+export const BOSS_PROJECTILE_RADIUS = 9;
+/** Chance per frame of a minion joining a boss fight while below the cap. */
+export const BOSS_MINION_SPAWN_RATE = 0.01;
+/** Frames from a boss's arrival to its first volley, wind-up included. */
+export const BOSS_FIRST_VOLLEY_FRAMES = 90;

@@ -101,7 +101,7 @@ export const SCENARIOS: Record<ScenarioId, ScenarioConfig> = {
       biologicalCause:
         "Partial volume averaging in tight sulcal banks causes opposing gyral white matter boundaries to falsely touch across CSF sulcal fundi.",
       algorithmicImpact:
-        "Topological defect invalidates homeomorphy to a 2-sphere ($S^2$). FreeSurfer's mris_fix_topology is forced to apply artificial cutting planes, creating distortion in spherical morphometry.",
+        "Topological defect invalidates homeomorphy to a 2-sphere (S²). FreeSurfer's mris_fix_topology is forced to apply artificial cutting planes, creating distortion in spherical morphometry.",
       remediationProtocol:
         `Switch to Axial view. Select ${formatNeuroToolKey("erase")}. Locate the spurious white matter bridge bridging the sulcus and cut the connection to restore Euler characteristic χ = 2.`,
       freeSurferCommand: "recon-all -s sub-01 -autorecon2-wm -fix-topology",

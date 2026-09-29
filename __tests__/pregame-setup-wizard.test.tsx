@@ -196,14 +196,13 @@ describe("Standardized Pre-Game Setup Wizard", () => {
       expect(screen.getByTestId("wizard-step-1")).toBeTruthy();
     });
 
-    it("renders circular display mode cleanly without errors", () => {
+    it("renders for the Garmin watch without errors", () => {
       render(
         <PreGameSetupWizard
           gameId="garmin-watch"
           gameTitle="Garmin Watch"
           isOpen={true}
           onComplete={vi.fn()}
-          isCircularDisplay={true}
         />
       );
 
@@ -259,6 +258,12 @@ describe("Standardized Pre-Game Setup Wizard", () => {
         // Setup wizard is visible
         expect(screen.getByTestId("pregame-setup-wizard-overlay")).toBeTruthy();
         expect(screen.getByText(/Step 1: Gameplay Parameters/i)).toBeTruthy();
+
+        // The panel stays a rectangle: a round one over the Garmin face
+        // clipped the title and the Next Step button (#1401).
+        const panel = screen.getByTestId("pregame-setup-wizard-overlay")
+          .firstElementChild as HTMLElement;
+        expect(panel.className).not.toContain("rounded-full");
 
         // Complete Step 1
         fireEvent.click(screen.getByText(/Next Step/i));

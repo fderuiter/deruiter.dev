@@ -61,7 +61,7 @@ describe("Prisma migration integrity", () => {
     "20261021000000_add_newsletter_subscribers",
     "20261022000000_add_case_study_reaction_unique_constraint",
     "20261023000000_add_telemetry_event_created_at_idx",
-    "20261024000000_add_case_study_published_created_at_idx",
+    "20261024000000_add_case_study_and_blog_post_composite_indexes",
   ];
 
   it("validates every checked-in migration file", () => {
@@ -203,14 +203,22 @@ describe("Prisma migration integrity", () => {
     expect(migration).not.toMatch(/\bDROP\s+(?:TABLE|COLUMN|INDEX)\b/i);
   });
 
-  it("adds the CaseStudy published/created_at index without destructive drops", () => {
+  it("adds the CaseStudy and BlogPost composite indexes without destructive drops", () => {
     const migration = readMigrationSql(
-      "20261024000000_add_case_study_published_created_at_idx"
+      "20261024000000_add_case_study_and_blog_post_composite_indexes"
     );
 
-    expect(migration).toMatch(
-      /CREATE INDEX(?: IF NOT EXISTS)? "CaseStudy_published_created_at_idx"\s+ON "CaseStudy"\("published", "created_at"\)/
-    );
+    for (const index of [
+      /"CaseStudy_published_created_at_idx"\s+ON "CaseStudy"\("published", "created_at"\)/,
+      /"CaseStudyFeedback_caseStudySlug_createdAt_idx"\s+ON "CaseStudyFeedback"\("caseStudySlug", "createdAt"\)/,
+      /"CaseStudyFeedback_caseStudySlug_connectionHash_createdAt_idx"\s+ON "CaseStudyFeedback"\("caseStudySlug", "connectionHash", "createdAt"\)/,
+      /"BlogPost_published_created_at_idx"\s+ON "BlogPost"\("published", "created_at"\)/,
+      /"BlogPost_published_updated_at_idx"\s+ON "BlogPost"\("published", "updated_at"\)/,
+    ]) {
+      expect(migration).toMatch(
+        new RegExp(`CREATE INDEX(?: IF NOT EXISTS)? ${index.source}`)
+      );
+    }
     expect(migration).not.toMatch(/\bDROP\s+(?:TABLE|COLUMN|INDEX)\b/i);
   });
 

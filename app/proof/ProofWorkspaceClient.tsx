@@ -15,7 +15,6 @@ import {
   applyRuleToAsts,
   areAstsEqual,
   parseFormula,
-  formatFormula,
   getCompatibleTargets,
   computeMagneticSnap,
   AlignmentGuide,

@@ -33,6 +33,8 @@ import {
   NEURO_RUN_RECON_KEY,
   applyVoxelEditsToVolume,
   countNeuroDraftEdits,
+  getNeuroProvenance,
+  isNeuroSelectionValid,
   resolveNeuroHotkey,
   withNeuroDraft,
   type NeuroDraft,
@@ -355,17 +357,22 @@ export const NeuroReconClient: React.FC = () => {
     (scenarioId: ScenarioId) => {
       applyScenarioState(scenarioId);
 
+      // Defect cases are synthetic: leave a real-scan dataset when one is picked.
+      const leaveDataset = !isNeuroSelectionValid(activeDataset, scenarioId);
+      if (leaveDataset) setActiveDatasetState("case_study");
+
       setParams(
         {
           scenario: scenarioId === "dura_inclusion" ? null : scenarioId,
           tool: null,
+          ...(leaveDataset ? { dataset: null } : {}),
         },
         { replace: false }
       );
 
       recordEvent("neuro", "project_click");
     },
-    [applyScenarioState, setParams, recordEvent]
+    [applyScenarioState, setParams, recordEvent, activeDataset]
   );
 
   // Synchronize incoming hash state on mount or browser Back/Forward navigation
@@ -383,12 +390,15 @@ export const NeuroReconClient: React.FC = () => {
       setViewModeState(rawView);
     }
     const rawDs = (params.dataset as DatasetSource | undefined) || "case_study";
-    if (
+    // A share link pairing a real-scan dataset with a synthetic case is invalid.
+    const effectiveDs =
       ["case_study", "mni152", "oasis"].includes(rawDs) &&
-      rawDs !== activeDataset
-    ) {
+      isNeuroSelectionValid(rawDs, rawSc)
+        ? rawDs
+        : "case_study";
+    if (effectiveDs !== activeDataset) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setActiveDatasetState(rawDs);
+      setActiveDatasetState(effectiveDs);
     }
     const rawTool = params.tool as ToolMode | undefined;
     const recommendedTool = currentScenario?.recommendedTool || "inspect";
@@ -803,7 +813,7 @@ export const NeuroReconClient: React.FC = () => {
           {
             id: `out-ds-list-${Date.now()}`,
             type: "info",
-            text: `Available datasets:\n  dataset cases   : FreeSurfer Clinical QA Cases 01-04\n  dataset mni152  : Real Human MNI152 ICBM 2009c 3D GLB\n  dataset oasis   : Real Human OASIS-1 3T Scan OBJ`,
+            text: `Available datasets:\n  dataset cases   : FreeSurfer Clinical QA Cases 01-04 (synthetic)\n  dataset mni152  : MNI152 ICBM 2009c 3D reference mesh (slices and QA stay synthetic)\n  dataset oasis   : OASIS-1 3D reference mesh (slices and QA stay synthetic)`,
             timestamp,
           },
         ]);
@@ -871,6 +881,10 @@ export const NeuroReconClient: React.FC = () => {
   }
 
   const activeDatasetConfig = datasetConfigs[activeDataset];
+  const provenance = getNeuroProvenance(
+    activeDataset,
+    activeDatasetConfig?.name
+  );
 
   return (
     <div
@@ -912,7 +926,8 @@ export const NeuroReconClient: React.FC = () => {
               <div className="text-brand-cyan font-bold">1. SELECT CASE</div>
               <p className="text-[11px] text-zinc-400 leading-snug">
                 Choose a defect scenario (e.g. Dura Over-Inclusion or
-                Hypointensity) or load real MNI152 / OASIS scans.
+                Hypointensity), or pair the Sandbox with an MNI152 / OASIS 3D
+                reference mesh. 2D slices and QA metrics are always synthetic.
               </p>
             </div>
             <div className="bg-zinc-950/80 p-3 rounded-2xl border border-zinc-800 space-y-1">
@@ -1039,7 +1054,13 @@ export const NeuroReconClient: React.FC = () => {
                 <button
                   key={scId}
                   onClick={() => handleSelectScenario(scId)}
-                  className={`flex items-center gap-1.5 px-3 py-2 min-h-[44px] rounded-xl text-xs font-mono transition-all whitespace-nowrap ${
+                  disabled={!isNeuroSelectionValid(activeDataset, scId)}
+                  title={
+                    isNeuroSelectionValid(activeDataset, scId)
+                      ? undefined
+                      : "Defect cases use synthetic slices and QA; switch to QA Scenarios to open them."
+                  }
+                  className={`disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 px-3 py-2 min-h-[44px] rounded-xl text-xs font-mono transition-all whitespace-nowrap ${
                     isActive
                       ? "bg-brand-cyan text-zinc-950 font-bold shadow-md"
                       : "text-zinc-400 hover:text-white hover:bg-zinc-900"
@@ -1175,6 +1196,29 @@ export const NeuroReconClient: React.FC = () => {
         onReset={handleReset}
         onOpenFieldManual={() => setIsFieldManualOpen(true)}
       />
+
+      {/* Data provenance for each view and metric */}
+      <dl
+        aria-label="Data provenance"
+        className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px] font-mono text-zinc-400"
+        data-testid="neuro-provenance"
+      >
+        {(
+          [
+            ["3D mesh", provenance.mesh],
+            ["2D slices", provenance.volume],
+            ["QA metrics", provenance.qa],
+          ] as const
+        ).map(([label, value]) => (
+          <div
+            key={label}
+            className="min-w-0 break-words rounded-xl border border-zinc-800 bg-zinc-950/60 px-3 py-2"
+          >
+            <dt className="text-zinc-500 uppercase tracking-wider">{label}</dt>
+            <dd className="text-zinc-300">{value}</dd>
+          </div>
+        ))}
+      </dl>
 
       {/* Main Viewport Canvas Workspace */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">

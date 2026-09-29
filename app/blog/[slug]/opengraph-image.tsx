@@ -4,6 +4,7 @@ import {
   OG_IMAGE_CONTENT_TYPE,
 } from "@/lib/og-image";
 import { ROUTE_METADATA_CONFIGS } from "@/lib/seo-metadata";
+import { buildDossierChips } from "@/lib/og-dossier";
 
 export const runtime = "nodejs";
 export const alt = "Engineering Dispatch | Frederick de Ruiter";
@@ -32,10 +33,37 @@ export default async function Image({ params }: ImageProps) {
     "Blog",
   ];
 
+  // The post itself is read through the same cached path as the article page;
+  // if it is unavailable the card renders without dossier chips.
+  let post: {
+    title: string;
+    dek: string;
+    tags: string[];
+    publishedAt: Date;
+    readingTimeMinutes: number | null;
+  } | null = null;
+  try {
+    const { getBlogPostBySlug } = await import("@/lib/blog");
+    post = await getBlogPostBySlug(slug);
+  } catch {
+    post = null;
+  }
+
   return createSocialImageResponse({
+    preset: "SYSTEMS_ARCHITECTURE",
+    dossier: post
+      ? buildDossierChips({
+          ...(post.readingTimeMinutes
+            ? { readingTime: `${post.readingTimeMinutes} min read` }
+            : {}),
+          publishedAt: post.publishedAt,
+          ...(post.tags[0] ? { language: post.tags[0] } : {}),
+          verified: true,
+        })
+      : undefined,
     category: "ENGINEERING DISPATCH // BLOG",
-    title,
-    description,
+    title: post?.title ?? title,
+    description: post?.dek ?? description,
     badge: `DISPATCH // ${slug.toUpperCase()}`,
     tags,
     systemStatus: "PUBLISHED",

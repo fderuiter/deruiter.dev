@@ -284,41 +284,21 @@ async function verifyUpstashCredentials(env = process.env, fetchImpl = fetch) {
   }
 }
 
+function defaultExec(prog, args, options) {
+  const { execFileSync } = require("child_process");
+  return execFileSync(prog, args, options);
+}
+
 /**
  * Evaluates Vercel storage headroom before production releases.
- * Fails fast if critical storage thresholds (>=95%) are breached.
+ * Fails fast if critical storage thresholds (>=95%) are breached or if meters are stale/unreadable.
  */
 async function verifyVercelHeadroomCapacity(
   env = process.env,
-  logger = console
+  logger = console,
+  execFn = defaultExec
 ) {
-  if (env._TEST_HEADROOM_OUTCOME) {
-    if (env._TEST_HEADROOM_OUTCOME === "healthy") return true;
-    if (env._TEST_HEADROOM_OUTCOME === "critical") {
-      logger.error(
-        "Production preflight failed: Critical Vercel storage or build time headroom threshold breached (>=95%)."
-      );
-      return false;
-    }
-    if (env._TEST_HEADROOM_OUTCOME === "load_failure") {
-      logger.error(
-        "Vercel headroom check failed to load or execute: MODULE_NOT_FOUND"
-      );
-      return false;
-    }
-    if (env._TEST_HEADROOM_OUTCOME === "unavailable") {
-      logger.error(
-        "Vercel headroom check unavailable: provider capacity measurement unreadable."
-      );
-      return false;
-    }
-  }
-
-  if (env.VITEST && !env.VERCEL_HEADROOM_TEST) {
-    return true;
-  }
-
-  if (!env.VERCEL_TOKEN && !env.VITEST) {
+  if (!env.VERCEL_TOKEN) {
     logger.error(
       "Production preflight failed: VERCEL_TOKEN is not set; Vercel headroom capacity check cannot run."
     );
@@ -326,7 +306,6 @@ async function verifyVercelHeadroomCapacity(
   }
 
   try {
-    const { execFileSync } = require("child_process");
     const path = require("path");
     const fs = require("fs");
 
@@ -348,31 +327,68 @@ async function verifyVercelHeadroomCapacity(
       args = [tsxCli, "scripts/vercel-headroom.ts", "--strict", "--json"];
     }
 
-    const output = execFileSync(prog, args, {
+    const output = execFn(prog, args, {
       cwd: rootDir,
       env: childEnv,
       encoding: "utf8",
       stdio: ["ignore", "pipe", "pipe"],
     });
+
     const parsed = JSON.parse(output);
-    if (!parsed || typeof parsed !== "object") {
+    if (!parsed || typeof parsed !== "object" || !parsed.meters) {
       logger.error("Vercel headroom check returned invalid JSON response.");
       return false;
     }
-    if (parsed.hasCriticalAlerts) {
+
+    const meters = Object.values(parsed.meters);
+    if (meters.length === 0) {
+      logger.error("Vercel headroom check returned zero meters.");
+      return false;
+    }
+
+    const hasUnhealthyMeter = meters.some(
+      (m) =>
+        !m ||
+        m.severity === "critical" ||
+        m.severity === "stale" ||
+        m.severity === "unreadable" ||
+        m.isStale === true ||
+        m.isUnreadable === true ||
+        m.used === null
+    );
+
+    if (parsed.hasCriticalAlerts || hasUnhealthyMeter) {
       logger.error(
-        "Production preflight failed: Critical Vercel storage or build time headroom threshold breached (>=95%)."
+        "Production preflight failed: Critical Vercel storage or build time headroom threshold breached (>=95%) or meters are stale/unreadable."
       );
       return false;
     }
+
     return true;
   } catch (err) {
     if (err && err.stdout) {
       try {
         const parsed = JSON.parse(err.stdout);
-        if (parsed && typeof parsed === "object" && parsed.hasCriticalAlerts) {
+        const meters = Object.values(parsed?.meters || {});
+        const hasUnhealthyMeter =
+          meters.length === 0 ||
+          meters.some(
+            (m) =>
+              !m ||
+              m.severity === "critical" ||
+              m.severity === "stale" ||
+              m.severity === "unreadable" ||
+              m.isStale === true ||
+              m.isUnreadable === true ||
+              m.used === null
+          );
+        if (
+          parsed &&
+          typeof parsed === "object" &&
+          (parsed.hasCriticalAlerts || hasUnhealthyMeter)
+        ) {
           logger.error(
-            "Production preflight failed: Critical Vercel storage or build time headroom threshold breached (>=95%)."
+            "Production preflight failed: Critical Vercel storage or build time headroom threshold breached (>=95%) or meters are stale/unreadable."
           );
           return false;
         }

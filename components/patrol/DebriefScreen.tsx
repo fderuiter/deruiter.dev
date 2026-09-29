@@ -1,8 +1,7 @@
 "use client";
 
 import React from "react";
-import type { PatrolScenario, IncidentDebriefResult } from "@/lib/patrol";
-import { DEBRIEF_DIMENSION_ORDER } from "@/lib/patrol";
+import { DEBRIEF_DIMENSION_ORDER, type PatrolScenario, type IncidentDebriefResult } from "@/lib/patrol";
 import {
   IconArrowBackUp,
   IconRefresh,

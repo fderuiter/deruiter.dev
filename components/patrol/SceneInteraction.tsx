@@ -1,16 +1,16 @@
 "use client";
 
 import React, { useMemo } from "react";
-import type {
-  PatrolScenario,
-  ScenarioAction,
-  PatientState,
-  EnvironmentState,
-  PatrolActor,
-  VitalsData,
-  PatrolEvent,
+import {
+  getUnlockedDialogueMoments,
+  type PatrolScenario,
+  type ScenarioAction,
+  type PatientState,
+  type EnvironmentState,
+  type PatrolActor,
+  type VitalsData,
+  type PatrolEvent,
 } from "@/lib/patrol";
-import { getUnlockedDialogueMoments } from "@/lib/patrol";
 import {
   IconMapPin,
   IconClock,

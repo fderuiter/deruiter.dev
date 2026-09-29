@@ -1,16 +1,15 @@
-import type {
-  ColumnArm,
-  PopulationSnapshot,
-  PopulationType,
-  RoundingMode,
-  RowStatistic,
-  SapRulebook,
-  StagedTable,
-  TableShellSpec,
+import {
+  RoundingModeSchema,
+  type ColumnArm,
+  type PopulationSnapshot,
+  type PopulationType,
+  type RoundingMode,
+  type RowStatistic,
+  type SapRulebook,
+  type StagedTable,
+  type TableShellSpec,
 } from "../types";
-import { RoundingModeSchema } from "../types";
-import { decimalPlaces } from "./rounding";
-import { roundRatio } from "./rounding";
+import { decimalPlaces, roundRatio } from "./rounding";
 import {
   COUNT_PCT_PATTERN,
   NOT_ESTIMABLE,

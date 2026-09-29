@@ -12,7 +12,12 @@
  */
 
 import { logger } from "@/lib/logger";
-import { createCorticalSurfaceMeshBuffers } from "./internal/mesh-geometry";
+import {
+  createCorticalSurfaceMeshBuffers,
+  generateHemisphereBuffers,
+  generateSubcorticalBuffers,
+  getAnatomicalParcelAtCoordinate,
+} from "./internal/mesh-geometry";
 import {
   HemisphereFilter,
   MeshWorkerRequest,
@@ -26,7 +31,7 @@ export {
   generateHemisphereBuffers,
   generateSubcorticalBuffers,
   getAnatomicalParcelAtCoordinate,
-} from "./internal/mesh-geometry";
+};
 
 // Background Web Worker Management & Async Interface
 let workerInstance: Worker | null = null;

@@ -1,11 +1,11 @@
-import type {
-  PopulationSnapshot,
-  PopulationTransition,
-  PopulationType,
-  SnapshotRef,
-  TransitionReason,
+import {
+  PopulationTypeSchema,
+  type PopulationSnapshot,
+  type PopulationTransition,
+  type PopulationType,
+  type SnapshotRef,
+  type TransitionReason,
 } from "../types";
-import { PopulationTypeSchema } from "../types";
 
 /**
  * The structured record a population transition leaves behind: which subject

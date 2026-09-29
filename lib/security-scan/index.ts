@@ -11,7 +11,7 @@
  */
 
 export * from "./types";
-export { SECRET_DETECTORS } from "./internal/catalog";
+export { SECRET_DETECTORS };
 export { SECRET_DETECTOR_FIXTURES } from "./internal/fixtures";
 export { isAllowlistedSecretValue } from "./internal/allowlist";
 export { formatFinding } from "./internal/redact";

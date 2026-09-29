@@ -8,8 +8,8 @@ import {
   exportProofToLean4,
   exportProofToMarkdown,
   exportProofToMermaid,
+  type Edge,
 } from "@/lib/proof-utils";
-import type { Edge } from "@/lib/proof-utils";
 import {
   evaluateFormula,
   lintFormula,

@@ -28,6 +28,8 @@ import {
   generateCdashVariableName,
   generateEngineId,
   FieldImpactPreview,
+  DEFAULT_TEST_SCOPE,
+  type ConditionalFieldValues,
   SectionImpactPreview,
   SlashCommandItem,
   getStudyBranding,
@@ -88,7 +90,6 @@ const SpotlightTourOverlay = dynamic(
 
 import { StudioTerminal } from "./Terminal/StudioTerminal";
 import { FormTestDock } from "./Modes/FormTestDock";
-import { DEFAULT_TEST_SCOPE, type ConditionalFieldValues } from "@/lib/crf";
 import { SlashPaletteModal } from "./SlashPaletteModal";
 import { BaselineManagerModal } from "./BaselineManagerModal";
 import {

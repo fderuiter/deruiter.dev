@@ -454,8 +454,7 @@ export const TISSUE_LABELS: TissueSegmentLabels = {
   SKULL: 6,
 };
 
-export type { AssetProgressEvent, ProgressSubscriber } from "./progress-bus";
-export { progressBus, formatBytes } from "./progress-bus";
+export { progressBus, formatBytes, type AssetProgressEvent, type ProgressSubscriber } from "./progress-bus";
 
 export interface MeshWorkerRequest {
   id: string;

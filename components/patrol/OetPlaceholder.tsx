@@ -1,5 +1,6 @@
-export { OetCanvas as OetPlaceholder, OetCanvas } from "./OetCanvas";
-export type {
-  OetCanvasProps,
-  OetCanvasProps as OetPlaceholderProps,
+export {
+  OetCanvas as OetPlaceholder,
+  OetCanvas,
+  type OetCanvasProps,
+  type OetCanvasProps as OetPlaceholderProps,
 } from "./OetCanvas";

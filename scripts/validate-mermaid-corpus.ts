@@ -1,8 +1,8 @@
 import path from "path";
 import { launchChromiumWithFallback } from "../lib/dx/browser-launch";
-import { extractAllMermaidBlocks } from "./mermaid-corpus";
+import { extractAllMermaidBlocks, type MermaidBlock } from "./mermaid-corpus";
 
-export { extractAllMermaidBlocks, type MermaidBlock } from "./mermaid-corpus";
+export { extractAllMermaidBlocks, type MermaidBlock };
 
 interface MermaidRenderResult {
   file: string;

@@ -1,8 +1,6 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, cleanup } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup } from "@testing-library/react";
-import { StudyProtocolEngine } from "@/lib/crf";
-import type { StudyReviewActor } from "@/lib/crf";
+import { StudyProtocolEngine, type StudyReviewActor } from "@/lib/crf";
 import { ReviewThreadsTab } from "@/components/crf/RightInspector/ReviewThreadsTab";
 import { FieldPropertiesTab } from "@/components/crf/RightInspector/FieldPropertiesTab";
 

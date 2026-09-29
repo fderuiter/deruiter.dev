@@ -14,6 +14,7 @@ const eslintConfig = defineConfig([
       reportUnusedDisableDirectives: "off",
     },
     rules: {
+      "no-duplicate-imports": ["error", { includeExports: true }],
       "@typescript-eslint/no-unused-vars": [
         "warn",
         {
@@ -59,6 +60,12 @@ const eslintConfig = defineConfig([
             "JSXAttribute[name.name='style'] ObjectExpression > Property[key.type='Literal'][key.value=/^(?!--).*/]",
           message:
             "Unconstrained raw inline style property detected in JSX. Replace raw inline style properties with Tailwind utility classes or CSS custom variables (--*).",
+        },
+        {
+          selector:
+            "JSXElement[openingElement.name.name='button'][openingElement.attributes.0.name.name='onClick'][openingElement.attributes.0.value.expression.callee.object.name='navigator'][openingElement.attributes.0.value.expression.callee.property.name='clipboard']",
+          message:
+            "Do not re-implement copy button logic using raw <button> and navigator.clipboard. Use the canonical <CopyButton /> component or useClipboard hook instead.",
         },
       ],
     },

@@ -1,22 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { mockCreate, mockFindMany, mockUpdateMany, mockUpdate, mockSend } =
-  vi.hoisted(() => ({
-    mockCreate: vi.fn(),
-    mockFindMany: vi.fn().mockResolvedValue([]),
-    mockUpdateMany: vi.fn().mockResolvedValue({ count: 1 }),
-    mockUpdate: vi.fn().mockResolvedValue({}),
-    mockSend: vi
-      .fn()
-      .mockResolvedValue({ data: { id: "msg_live" }, error: null }),
-  }));
+const { mockCreate, mockQueryRaw, mockUpdate, mockSend } = vi.hoisted(() => ({
+  mockCreate: vi.fn(),
+  mockQueryRaw: vi.fn().mockResolvedValue([]),
+  mockUpdate: vi.fn().mockResolvedValue({}),
+  mockSend: vi
+    .fn()
+    .mockResolvedValue({ data: { id: "msg_live" }, error: null }),
+}));
 
 vi.mock("@/lib/db", () => ({
   prisma: {
+    // Leasing is one FOR UPDATE SKIP LOCKED statement (#1116).
+    $queryRaw: mockQueryRaw,
     outboundEmailQueue: {
       create: mockCreate,
-      findMany: mockFindMany,
-      updateMany: mockUpdateMany,
       update: mockUpdate,
     },
     suppressionList: { findUnique: vi.fn().mockResolvedValue(null) },
@@ -59,8 +57,7 @@ describe("Outbound queue header fidelity (#841)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.RESEND_API_KEY = "re_test_key";
-    mockFindMany.mockResolvedValue([]);
-    mockUpdateMany.mockResolvedValue({ count: 1 });
+    mockQueryRaw.mockResolvedValue([]);
     mockCreate.mockResolvedValue({ id: "queue-news" });
   });
 
@@ -83,7 +80,7 @@ describe("Outbound queue header fidelity (#841)", () => {
   });
 
   it("replays stored List-Unsubscribe headers on the send", async () => {
-    mockFindMany.mockResolvedValueOnce([queuedRow(HEADERS)]);
+    mockQueryRaw.mockResolvedValueOnce([queuedRow(HEADERS)]);
 
     await EmailService.processRetryQueue();
 
@@ -92,7 +89,7 @@ describe("Outbound queue header fidelity (#841)", () => {
   });
 
   it("drops a malformed headers column instead of sending it", async () => {
-    mockFindMany.mockResolvedValueOnce([queuedRow(["not", "an", "object"])]);
+    mockQueryRaw.mockResolvedValueOnce([queuedRow(["not", "an", "object"])]);
 
     await EmailService.processRetryQueue();
 

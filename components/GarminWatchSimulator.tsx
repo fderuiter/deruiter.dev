@@ -1270,7 +1270,13 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
         </button>
         <button
           onClick={handleDrainBattery}
-          className="px-2.5 py-1 bg-rose-950/40 hover:bg-rose-900/50 text-rose-300 border border-rose-800/50 rounded shadow cursor-pointer transition-all active:scale-95"
+          disabled={gameState.gameState !== "playing"}
+          title={
+            gameState.gameState === "playing"
+              ? undefined
+              : "Start a run first: each run begins on a full battery"
+          }
+          className="px-2.5 py-1 bg-rose-950/40 hover:bg-rose-900/50 text-rose-300 border border-rose-800/50 rounded shadow cursor-pointer transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100"
         >
           ⚡ Drain Battery (-20%)
         </button>

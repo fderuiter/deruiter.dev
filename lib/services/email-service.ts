@@ -1,6 +1,7 @@
 import { Resend } from "resend";
 import crypto from "crypto";
 import { logger } from "@/lib/logger";
+import { generateId } from "@/lib/utils";
 import { env, getEnv } from "@/lib/env";
 import { scheduleEmailRetry } from "@/lib/qstash-retry";
 import { prisma, SuppressionReason, OutboundEmailStatus } from "@/lib/db";
@@ -721,7 +722,7 @@ export class EmailService {
     const apiKey = getEnv().RESEND_API_KEY || env.RESEND_API_KEY;
     // Missing credentials and every non-production deployment are simulated.
     if (!client || shouldSimulateEmailDelivery(apiKey)) {
-      const simulatedId = `sim_msg_${Math.random().toString(36).substring(2, 10)}`;
+      const simulatedId = generateId("sim_msg_");
 
       if (env.NODE_ENV === "development") {
         console.log(
@@ -783,7 +784,7 @@ export class EmailService {
       return {
         success: true,
         data: {
-          id: data?.id || `msg_${Math.random().toString(36).substring(2, 10)}`,
+          id: data?.id || generateId("msg_"),
         },
       };
     } catch (err) {

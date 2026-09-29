@@ -19,6 +19,7 @@ import {
 } from "./benchmark-evidence";
 import { type RemediationAction } from "./cli-parser";
 import { getEnv } from "../env";
+import { inspectSourceState } from "./source-state";
 import { FALLBACK_CASE_STUDIES } from "../case-studies-data";
 import { FALLBACK_BLOG_POSTS } from "../fallback-blog-posts";
 
@@ -2346,15 +2347,9 @@ export function checkSubRoutePerformance(root: string): DiagnosticCheckResult {
 
   try {
     const evidence = readBenchmarkEvidence(jsonPath);
-    const revision = execSync("git rev-parse HEAD", {
-      cwd: root,
-      encoding: "utf-8",
-    }).trim();
-    const dirty =
-      execSync("git status --porcelain", {
-        cwd: root,
-        encoding: "utf-8",
-      }).trim().length > 0;
+    // Same definition of "dirty" as the benchmark script that wrote the
+    // evidence: rewritten build artifacts are not source changes (#1377).
+    const { revision, dirty } = inspectSourceState(root);
     const validation = validateBenchmarkEvidence(evidence, { revision, dirty });
     if (!validation.valid) {
       return {

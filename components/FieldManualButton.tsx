@@ -15,6 +15,7 @@ import {
   type FieldManualAction,
 } from "@/components/FieldManualModal";
 import { useAudio } from "@/components/providers/AudioProvider";
+import { isEditableElement } from "@/hooks/useHotkeys";
 
 interface FieldManualButtonProps {
   manualId: string;
@@ -39,22 +40,6 @@ interface ManualInstance {
 }
 
 const registeredInstances: ManualInstance[] = [];
-
-function isEditableContext(target: HTMLElement | null): boolean {
-  if (!target) return false;
-  if (
-    target.tagName === "INPUT" ||
-    target.tagName === "TEXTAREA" ||
-    target.isContentEditable ||
-    target.getAttribute?.("contenteditable") === "true" ||
-    target.getAttribute?.("contenteditable") === "" ||
-    Boolean(target.closest?.('[contenteditable="true"]')) ||
-    Boolean(target.closest?.('[contenteditable=""]'))
-  ) {
-    return true;
-  }
-  return false;
-}
 
 function isElementVisible(el: HTMLElement | null): boolean {
   if (!el) return false;
@@ -92,7 +77,7 @@ function selectCandidate(pool: ManualInstance[]): ManualInstance | undefined {
 
 function handleGlobalCoordinatorKeyDown(e: KeyboardEvent) {
   const target = e.target as HTMLElement | null;
-  if (isEditableContext(target)) {
+  if (isEditableElement(target)) {
     return;
   }
 

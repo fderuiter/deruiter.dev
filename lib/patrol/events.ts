@@ -1,4 +1,5 @@
 import type { IncidentSeverity, PatrolEvent } from "./types";
+import { generateId } from "@/lib/utils";
 
 /**
  * Stub event dispatcher and queue management for patrol shifts.
@@ -10,7 +11,7 @@ export function createEvent(
   severity: PatrolEvent["severity"] = "info"
 ): PatrolEvent {
   return {
-    id: `event-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    id: generateId("event", { timestamp: true }),
     timestamp: Date.now(),
     scenarioId: "general",
     action: type,
@@ -90,7 +91,7 @@ export function generateWeatherEvent(
   const description = `Weather condition [${weatherType}] reported at ${location} (${sector}). Temp: ${temperatureFahrenheit}°F, Wind: ${windSpeedMph} mph, Visibility: ${visibility}.`;
 
   return {
-    id: `weather-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    id: generateId("weather", { timestamp: true }),
     timestamp: Date.now(),
     scenarioId: "general",
     action: "WEATHER_ALERT",
@@ -146,7 +147,7 @@ export function generateAmbientEvent(
   } = options;
 
   return {
-    id: `ambient-${category}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    id: generateId(`ambient-${category}`, { timestamp: true }),
     timestamp: Date.now(),
     scenarioId: "general",
     action: `AMBIENT_${category.toUpperCase()}`,

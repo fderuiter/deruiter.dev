@@ -1088,7 +1088,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
     genre: "Dungeon Roguelike",
     badge: "Cyberpunk Roguelike",
     route: "/arcade/retro-labyrinth",
-    storageKey: "retro_labyrinth_high_score",
+    storageKey: "retro_labyrinth_highscore",
     accentColor: "from-cyan-500/20 via-cyan-500/5 to-transparent",
     badgeBg: "bg-cyan-500/10 text-cyan-300 border-cyan-500/30",
     objective:
@@ -1113,6 +1113,17 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         description:
           "Discharge an electromagnetic surge to stun all security drones and camera sentinels in the sector.",
         key: "Spacebar / Touch Action A",
+      },
+      {
+        action: "Pause",
+        description: "Pause and resume the run. Enter also resumes.",
+        key: "P",
+      },
+      {
+        action: "Continue or Retry",
+        description:
+          "On the room-cleared screen, Enter moves to the next room and R retries this one. After a trace, Enter or R retries the room.",
+        key: "Enter / R",
       },
       {
         action: "Toggle CRT Phosphor Scanlines",

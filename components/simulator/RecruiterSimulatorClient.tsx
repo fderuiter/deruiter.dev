@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useEffect, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTelemetry } from "@/hooks/useTelemetry";
@@ -141,6 +141,28 @@ function replaySimulatorHistory(ansIndices: number[]): {
   };
 }
 
+/**
+ * Resolves the simulator's visible step, visited-step history and chosen
+ * options from the `step` and `ans` hash parameters. An invalid `step`
+ * falls back to the welcome screen; a missing one resumes after the last
+ * replayable answer.
+ */
+function deriveSimulatorState(
+  rawStep: string | undefined,
+  rawAns: string | undefined
+): { currentStep: string; history: string[]; answers: Option[] } {
+  const replayed = replaySimulatorHistory(parseAnsIndices(rawAns));
+  let currentStep = rawStep || replayed.replayedStep;
+  if (!branchingQuestions[currentStep] && currentStep !== "final_eval") {
+    currentStep = "welcome";
+  }
+  return {
+    currentStep,
+    history: replayed.replayedHistory,
+    answers: replayed.replayedAnswers,
+  };
+}
+
 export default function RecruiterSimulatorClient() {
   const { recordEvent } = useTelemetry();
   const { playNote, playSuccess } = useAudio();
@@ -148,56 +170,14 @@ export default function RecruiterSimulatorClient() {
   const cardRef = useRef<HTMLDivElement>(null);
   const { params, setParams } = useStudioHashParams();
 
-  const [currentStep, setCurrentStep] = useState<string>(() => {
-    if (typeof window !== "undefined") {
-      const rawHash = window.location.hash.startsWith("#")
-        ? window.location.hash.slice(1)
-        : window.location.hash;
-      const searchParams = new URLSearchParams(rawHash);
-      const rawStep = searchParams.get("step");
-      const rawAns = searchParams.get("ans");
-      const ansIndices = parseAnsIndices(rawAns || undefined);
-      const replayed = replaySimulatorHistory(ansIndices);
-      if (
-        rawStep &&
-        (branchingQuestions[rawStep] || rawStep === "final_eval")
-      ) {
-        return rawStep;
-      }
-      if (replayed.replayedStep) {
-        return replayed.replayedStep;
-      }
-    }
-    return "welcome";
-  });
-
-  const [history, setHistory] = useState<string[]>(() => {
-    if (typeof window !== "undefined") {
-      const rawHash = window.location.hash.startsWith("#")
-        ? window.location.hash.slice(1)
-        : window.location.hash;
-      const searchParams = new URLSearchParams(rawHash);
-      const rawAns = searchParams.get("ans");
-      const ansIndices = parseAnsIndices(rawAns || undefined);
-      const replayed = replaySimulatorHistory(ansIndices);
-      return replayed.replayedHistory;
-    }
-    return [];
-  });
-
-  const [answers, setAnswers] = useState<Option[]>(() => {
-    if (typeof window !== "undefined") {
-      const rawHash = window.location.hash.startsWith("#")
-        ? window.location.hash.slice(1)
-        : window.location.hash;
-      const searchParams = new URLSearchParams(rawHash);
-      const rawAns = searchParams.get("ans");
-      const ansIndices = parseAnsIndices(rawAns || undefined);
-      const replayed = replaySimulatorHistory(ansIndices);
-      return replayed.replayedAnswers;
-    }
-    return [];
-  });
+  // The hash is the single source of truth: step, history and answers are
+  // derived from it, so deep links, Back/Forward and in-app navigation all
+  // flow through useStudioHashParams, and the server snapshot (empty params)
+  // keeps the first client render identical to the SSR markup.
+  const { currentStep, history, answers } = useMemo(
+    () => deriveSimulatorState(params.step, params.ans),
+    [params.step, params.ans]
+  );
 
   const hasTracked = useRef(false);
 
@@ -206,28 +186,6 @@ export default function RecruiterSimulatorClient() {
     hasTracked.current = true;
     recordEvent("simulator", "page_view", { defer: true });
   }, [recordEvent]);
-
-  // Synchronize incoming hash state on mount or browser Back/Forward navigation
-  useEffect(() => {
-    const ansIndices = parseAnsIndices(params.ans);
-    const replayed = replaySimulatorHistory(ansIndices);
-
-    let targetStep = params.step || replayed.replayedStep;
-    if (!branchingQuestions[targetStep] && targetStep !== "final_eval") {
-      targetStep = "welcome";
-    }
-
-    if (
-      targetStep !== currentStep ||
-      replayed.replayedHistory.length !== history.length ||
-      replayed.replayedAnswers.length !== answers.length
-    ) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setCurrentStep(targetStep);
-      setHistory(replayed.replayedHistory);
-      setAnswers(replayed.replayedAnswers);
-    }
-  }, [params.step, params.ans, currentStep, history.length, answers.length]);
 
   // Delayed focus redirection to the active question card after step transition animation completes
   useEffect(() => {
@@ -245,8 +203,6 @@ export default function RecruiterSimulatorClient() {
         ? currentQuestion.options.indexOf(option)
         : -1;
 
-      const newAnswers = [...answers, option];
-      const newHistory = [...history, currentStep];
       const nextStep = option.nextStep;
 
       let currentAnsIndices = parseAnsIndices(params.ans || undefined);
@@ -254,10 +210,6 @@ export default function RecruiterSimulatorClient() {
         currentAnsIndices = [...currentAnsIndices, optionIndex];
       }
       const newAnsStr = currentAnsIndices.join(",");
-
-      setAnswers(newAnswers);
-      setHistory(newHistory);
-      setCurrentStep(nextStep);
 
       setParams(
         {
@@ -278,7 +230,6 @@ export default function RecruiterSimulatorClient() {
     [
       answers,
       currentStep,
-      history,
       params.ans,
       playNote,
       playSuccess,
@@ -291,15 +242,9 @@ export default function RecruiterSimulatorClient() {
   const handleBack = useCallback(() => {
     if (history.length === 0) return;
     const previousStep = history[history.length - 1];
-    const newHistory = history.slice(0, -1);
-    const newAnswers = answers.slice(0, -1);
     const currentAnsIndices = parseAnsIndices(params.ans);
     const newAnsIndices = currentAnsIndices.slice(0, -1);
     const newAnsStr = newAnsIndices.length > 0 ? newAnsIndices.join(",") : null;
-
-    setHistory(newHistory);
-    setAnswers(newAnswers);
-    setCurrentStep(previousStep);
 
     setParams(
       {
@@ -308,13 +253,9 @@ export default function RecruiterSimulatorClient() {
       },
       { replace: false }
     );
-  }, [history, answers, params.ans, setParams]);
+  }, [history, params.ans, setParams]);
 
   const handleReset = useCallback(() => {
-    setHistory([]);
-    setAnswers([]);
-    setCurrentStep("welcome");
-
     setParams(
       {
         step: null,

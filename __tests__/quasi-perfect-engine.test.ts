@@ -437,6 +437,30 @@ describe("Quasi-Perfect Puzzler Granular 18-Level Step-by-Step Solvability", () 
     expect(step3.isProofComplete).toBe(true);
   });
 
+  it("Level 2: wrong-target rw names the selection, the expected sub-terms and a next action (#1232)", () => {
+    const lvl = puzzleLevels[1];
+    const flipped = tacticDefs.symm.execute(lvl.goal, lvl.goal, lvl.hypotheses);
+    const root = flipped.newAST!;
+    const res = tacticDefs.rw.execute(root, root, lvl.hypotheses, "h");
+    expect(res.success).toBe(false);
+    expect(res.ramConsumed).toBe(1);
+    // Not the old tautology "Sub-expression 'a = b' does not match 'a = b'".
+    expect(res.message).not.toMatch(/does not match 'a = b'/);
+    expect(res.message).toContain("selected 'a = b'");
+    expect(res.message).toContain("'a' or 'b'");
+    expect(res.message).toMatch(/Tap one of those sub-terms/);
+  });
+
+  it("Level 2: briefing and hints match the auto-closing rewrite (#1232)", () => {
+    const lvl = puzzleLevels[1];
+    const copy = [...lvl.hints, lvl.educationalConcept.tacticalObjective].join(
+      " "
+    );
+    expect(copy).toMatch(/sub-term 'a'/);
+    expect(copy).toMatch(/closes automatically/);
+    expect(lvl.hints.join(" ")).not.toMatch(/'rw \[h\]' and 'rfl'/);
+  });
+
   it("Level 3: The Transitivity Chain (a = b, b = c ⊢ a = c via rw [h1] + rw [h2] + rfl)", () => {
     const lvl = puzzleLevels[2];
     expect(lvl.id).toBe(3);

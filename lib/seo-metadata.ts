@@ -610,6 +610,9 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
   },
 };
 
+const TRAILING_BRAND_PATTERN =
+  /\s*[|\-\u2013\u2014]\s*(?:Fred|Frederick)\s+de\s+Ruiter\s*$/i;
+
 /**
  * Helper to construct standardized Next.js Metadata for any route configuration.
  */
@@ -626,9 +629,9 @@ export function buildRouteMetadata(config: RouteMetaConfig): Metadata {
   // instead. The short form is matched as well as the long one: the previous
   // guard tested only "Frederick de Ruiter", so the many configs written
   // "... | Fred de Ruiter" were double-branded in social cards too.
-  const alreadyBranded = /\|\s*(?:Fred|Frederick) de Ruiter\s*$/.test(
-    config.title
-  );
+  // Any trailing separator (pipe, hyphen, en/em dash) followed by either name
+  // form counts as branded, case-insensitively.
+  const alreadyBranded = TRAILING_BRAND_PATTERN.test(config.title);
   const fullTitle = alreadyBranded
     ? config.title
     : `${config.title} | Frederick de Ruiter`;
@@ -655,6 +658,7 @@ export function buildRouteMetadata(config: RouteMetaConfig): Metadata {
           url: ogImageUrl,
           width: 1200,
           height: 630,
+          type: "image/png",
           alt: fullTitle,
         },
       ],

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Lexend, Atkinson_Hyperlegible, Geist_Mono } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
@@ -63,6 +63,11 @@ const openDyslexic = localFont({
   variable: "--font-opendyslexic",
   display: "swap",
 });
+
+export const viewport: Viewport = {
+  themeColor: "#090D16",
+  colorScheme: "dark",
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL(resolveBaseUrl()),

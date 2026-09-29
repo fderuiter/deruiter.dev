@@ -562,6 +562,66 @@ describe("SEO Architecture & JSON-LD Schemas", () => {
     }
   });
 
+  it("root layout exports a dark themeColor viewport (#1251)", async () => {
+    const { viewport } = await import("@/app/layout");
+    expect(viewport.themeColor).toBe("#090D16");
+    expect(viewport.colorScheme).toBe("dark");
+  });
+
+  it("buildRouteMetadata declares 1200x630 image/png OpenGraph images on every route (#1251)", () => {
+    for (const [key, config] of Object.entries(ROUTE_METADATA_CONFIGS)) {
+      const images = buildRouteMetadata(config).openGraph?.images as Array<{
+        width?: number;
+        height?: number;
+        type?: string;
+      }>;
+      expect(images[0], key).toMatchObject({
+        width: 1200,
+        height: 630,
+        type: "image/png",
+      });
+    }
+  });
+
+  it("never double-brands generated titles, whatever trailing separator or name form is used (#1251)", () => {
+    const brandedVariants = [
+      "Demo | Frederick de Ruiter",
+      "Demo | Fred de Ruiter",
+      "Demo - Frederick de Ruiter",
+      "Demo - Fred de Ruiter",
+      "Demo \u2013 Fred de Ruiter",
+      "Demo \u2014 Frederick de Ruiter",
+      "Demo | frederick de ruiter  ",
+    ];
+    for (const title of brandedVariants) {
+      const meta = buildRouteMetadata({ title, description: "d", path: "/x" });
+      expect(meta.openGraph?.title, title).toBe(title);
+    }
+    const plain = buildRouteMetadata({
+      title: "Demo",
+      description: "d",
+      path: "/x",
+    });
+    expect(plain.openGraph?.title).toBe("Demo | Frederick de Ruiter");
+
+    for (const [key, config] of Object.entries(ROUTE_METADATA_CONFIGS)) {
+      const ogTitle = String(buildRouteMetadata(config).openGraph?.title);
+      const brands = ogTitle.match(/(?:Fred|Frederick) de Ruiter/gi) ?? [];
+      expect(brands.length, key).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it("keeps branded titles at or under 60 characters and descriptions at or under 160 (#1251)", () => {
+    for (const [key, config] of Object.entries(ROUTE_METADATA_CONFIGS)) {
+      const ogTitle = String(buildRouteMetadata(config).openGraph?.title);
+      expect(ogTitle.length, `${key} title`).toBeLessThanOrEqual(60);
+      expect(
+        config.description.length,
+        `${key} description`
+      ).toBeLessThanOrEqual(160);
+    }
+  });
+
   it("root layout metadata configures SVG, ICO, Apple Touch, and web manifest", async () => {
     const { metadata } = await import("@/app/layout");
     expect(metadata.icons).toBeDefined();

@@ -70,6 +70,7 @@ import { StudyProtocol } from "@/lib/crf/types";
 
 import {
   createInitialScoreState,
+  getNextShiftScoreState,
   createInitialAuditorState,
   createInitialPowerUpInventory,
   createAuditLogEntry,
@@ -522,9 +523,13 @@ export const ClinicalTrialChaos: React.FC = () => {
       // A new trial (phase 1 or endless) starts a fresh SDTM dataset; advancing
       // phases continues the same study, so its locked CRFs carry over.
       if (targetPhase === 1) setSubmittedHistory([]);
+      // Advancing to campaign phase 2 or 3 continues the same run: the score,
+      // tallies and charged lifelines carry over, so the campaign ends on one
+      // total (#1325). Phase 1 and endless start fresh.
+      const continuesCampaign = mode === "campaign" && targetPhase > 1;
       setRuleViolations([]);
       ruleViolationsRef.current = [];
-      setPowerUps(createInitialPowerUpInventory());
+      if (!continuesCampaign) setPowerUps(createInitialPowerUpInventory());
       setSignatureModal({
         isOpen: false,
         subject: null,
@@ -584,10 +589,9 @@ export const ClinicalTrialChaos: React.FC = () => {
         : null;
       setCalibrationSubjectId(calibrationId);
       calibrationActiveRef.current = calibrationId !== null;
-      setScoreState({
-        ...createInitialScoreState(),
-        highScore: effectiveHighScore,
-      });
+      setScoreState((prev) =>
+        getNextShiftScoreState(prev, continuesCampaign, effectiveHighScore)
+      );
 
       addAuditLog(
         `[STUDY PROTOCOL ONLINE] Phase ${targetPhase} (${
@@ -3921,7 +3925,7 @@ export const ClinicalTrialChaos: React.FC = () => {
               <dl className="mx-auto mt-4 grid max-w-lg grid-cols-2 gap-2 text-left sm:grid-cols-4">
                 {[
                   {
-                    label: "Score",
+                    label: gameMode === "campaign" ? "Campaign score" : "Score",
                     value: scoreState.score,
                     tone: "text-white",
                   },
@@ -3931,8 +3935,10 @@ export const ClinicalTrialChaos: React.FC = () => {
                     tone: "text-emerald-300",
                   },
                   {
+                    // Wrong fixes are recorded as rule violations and missed
+                    // or misrouted CRFs as audit violations; count both (#1325).
                     label: "Violations",
-                    value: scoreState.auditViolations,
+                    value: scoreState.auditViolations + ruleViolations.length,
                     tone: "text-rose-300",
                   },
                   {
@@ -4184,7 +4190,7 @@ export const ClinicalTrialChaos: React.FC = () => {
       )}
 
       {/* Multi-Choice Regulatory Validation Drawer Modal */}
-      {validatingObs && (
+      {validatingObs && playState === "playing" && (
         <div className="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div
             role="dialog"
@@ -4300,129 +4306,135 @@ export const ClinicalTrialChaos: React.FC = () => {
       )}
 
       {/* 21 CFR Part 11 Electronic Signature Modal */}
-      {signatureModal.isOpen && signatureModal.subject && (
-        <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="cc-sign-dialog-title"
-            className="max-w-lg w-full rounded-2xl border border-brand-cyan/60 bg-zinc-950 p-6 shadow-2xl"
-          >
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
-              <div className="flex items-center gap-2">
-                <IconLock className="h-5 w-5 text-brand-cyan" />
-                <h3
-                  id="cc-sign-dialog-title"
-                  className="text-base font-bold text-white"
-                >
-                  21 CFR Part 11 Electronic Signature
-                </h3>
-              </div>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">
-                {targetRoutingStation} EDC LOCK
-              </span>
-            </div>
-
-            <div className="mt-4 space-y-4 text-xs font-mono">
-              <div className="bg-zinc-900/80 p-3 rounded-xl border border-zinc-800">
-                <p className="text-zinc-400">
-                  <span className="text-zinc-400">SUBJECT:</span>{" "}
-                  {signatureModal.subject.subjectLabel} (
-                  {signatureModal.subject.studySite})
-                </p>
-                <p className="text-zinc-400 mt-1">
-                  <span className="text-zinc-400">TARGET EDC:</span>{" "}
-                  {targetRoutingStation} Domain Desk (
-                  {stations.find((s) => s.id === targetRoutingStation)?.vendor})
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-bold uppercase text-zinc-400 mb-1.5">
-                  Select Legal Signature Reason [21 CFR § 11.50]
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {(
-                    [
-                      "Intent to Submit",
-                      "Author Verification",
-                      "Protocol Compliance Review",
-                      "Urgent Safety Expedited",
-                    ] as SignatureReason[]
-                  ).map((r) => (
-                    <button
-                      key={r}
-                      type="button"
-                      onClick={() =>
-                        setSignatureModal((prev) => ({
-                          ...prev,
-                          selectedReason: r,
-                        }))
-                      }
-                      className={`p-2 min-h-[44px] rounded-lg text-left text-[11px] border transition ${
-                        signatureModal.selectedReason === r
-                          ? "border-brand-cyan bg-cyan-950/60 text-cyan-300 font-bold"
-                          : "border-zinc-800 bg-zinc-900 text-zinc-400 hover:border-zinc-700"
-                      }`}
-                    >
-                      {r}
-                    </button>
-                  ))}
+      {signatureModal.isOpen &&
+        signatureModal.subject &&
+        playState === "playing" && (
+          <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="cc-sign-dialog-title"
+              className="max-w-lg w-full rounded-2xl border border-brand-cyan/60 bg-zinc-950 p-6 shadow-2xl"
+            >
+              <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+                <div className="flex items-center gap-2">
+                  <IconLock className="h-5 w-5 text-brand-cyan" />
+                  <h3
+                    id="cc-sign-dialog-title"
+                    className="text-base font-bold text-white"
+                  >
+                    21 CFR Part 11 Electronic Signature
+                  </h3>
                 </div>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                  {targetRoutingStation} EDC LOCK
+                </span>
               </div>
 
-              <div>
-                <label
-                  htmlFor="cc-signature-password"
-                  className="block text-[10px] font-bold uppercase text-zinc-400 mb-1"
-                >
-                  User Authenticator Password
-                </label>
-                <input
-                  id="cc-signature-password"
-                  type="password"
-                  value={signatureModal.passwordInput}
-                  onChange={(e) =>
+              <div className="mt-4 space-y-4 text-xs font-mono">
+                <div className="bg-zinc-900/80 p-3 rounded-xl border border-zinc-800">
+                  <p className="text-zinc-400">
+                    <span className="text-zinc-400">SUBJECT:</span>{" "}
+                    {signatureModal.subject.subjectLabel} (
+                    {signatureModal.subject.studySite})
+                  </p>
+                  <p className="text-zinc-400 mt-1">
+                    <span className="text-zinc-400">TARGET EDC:</span>{" "}
+                    {targetRoutingStation} Domain Desk (
+                    {
+                      stations.find((s) => s.id === targetRoutingStation)
+                        ?.vendor
+                    }
+                    )
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-zinc-400 mb-1.5">
+                    Select Legal Signature Reason [21 CFR § 11.50]
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {(
+                      [
+                        "Intent to Submit",
+                        "Author Verification",
+                        "Protocol Compliance Review",
+                        "Urgent Safety Expedited",
+                      ] as SignatureReason[]
+                    ).map((r) => (
+                      <button
+                        key={r}
+                        type="button"
+                        onClick={() =>
+                          setSignatureModal((prev) => ({
+                            ...prev,
+                            selectedReason: r,
+                          }))
+                        }
+                        className={`p-2 min-h-[44px] rounded-lg text-left text-[11px] border transition ${
+                          signatureModal.selectedReason === r
+                            ? "border-brand-cyan bg-cyan-950/60 text-cyan-300 font-bold"
+                            : "border-zinc-800 bg-zinc-900 text-zinc-400 hover:border-zinc-700"
+                        }`}
+                      >
+                        {r}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="cc-signature-password"
+                    className="block text-[10px] font-bold uppercase text-zinc-400 mb-1"
+                  >
+                    User Authenticator Password
+                  </label>
+                  <input
+                    id="cc-signature-password"
+                    type="password"
+                    value={signatureModal.passwordInput}
+                    onChange={(e) =>
+                      setSignatureModal((prev) => ({
+                        ...prev,
+                        passwordInput: e.target.value,
+                      }))
+                    }
+                    className="w-full min-h-[44px] rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-zinc-200 focus:border-brand-cyan focus:outline-none"
+                  />
+                </div>
+
+                <p className="text-[10px] text-zinc-400 leading-relaxed italic">
+                  By executing this signature, I legally attest that all
+                  clinical data points conform to CDISC Controlled Terminology
+                  and ICH GCP E6(R2) standards.
+                </p>
+              </div>
+
+              <div className="mt-6 flex items-center justify-end gap-2">
+                <button
+                  onClick={() =>
                     setSignatureModal((prev) => ({
                       ...prev,
-                      passwordInput: e.target.value,
+                      isOpen: false,
+                      subject: null,
                     }))
                   }
-                  className="w-full min-h-[44px] rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-zinc-200 focus:border-brand-cyan focus:outline-none"
-                />
+                  className="px-4 py-2.5 min-h-[44px] rounded-xl border border-zinc-800 bg-zinc-900 text-xs text-zinc-400 hover:text-white"
+                >
+                  Cancel (Esc)
+                </button>
+                <button
+                  onClick={handleConfirmSignature}
+                  className="flex min-h-[44px] items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold text-xs uppercase tracking-wider hover:opacity-90 transition shadow-lg shadow-cyan-500/20"
+                >
+                  <IconShieldCheck className="h-4 w-4" /> Sign &amp; Lock CRF
+                  (Enter)
+                </button>
               </div>
-
-              <p className="text-[10px] text-zinc-400 leading-relaxed italic">
-                By executing this signature, I legally attest that all clinical
-                data points conform to CDISC Controlled Terminology and ICH GCP
-                E6(R2) standards.
-              </p>
-            </div>
-
-            <div className="mt-6 flex items-center justify-end gap-2">
-              <button
-                onClick={() =>
-                  setSignatureModal((prev) => ({
-                    ...prev,
-                    isOpen: false,
-                    subject: null,
-                  }))
-                }
-                className="px-4 py-2.5 min-h-[44px] rounded-xl border border-zinc-800 bg-zinc-900 text-xs text-zinc-400 hover:text-white"
-              >
-                Cancel (Esc)
-              </button>
-              <button
-                onClick={handleConfirmSignature}
-                className="flex min-h-[44px] items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold text-xs uppercase tracking-wider hover:opacity-90 transition shadow-lg shadow-cyan-500/20"
-              >
-                <IconShieldCheck className="h-4 w-4" /> Sign &amp; Lock CRF
-                (Enter)
-              </button>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* FDA BIMO Inspection Report Modal */}
       {bimoReport && (

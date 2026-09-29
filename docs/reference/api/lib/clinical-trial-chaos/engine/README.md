@@ -34,6 +34,7 @@
 - [generateBIMOReport](functions/generateBIMOReport.md)
 - [generateSDTMDataset](functions/generateSDTMDataset.md)
 - [getCalibrationStep](functions/getCalibrationStep.md)
+- [getNextShiftScoreState](functions/getNextShiftScoreState.md)
 - [getObservationChoices](functions/getObservationChoices.md)
 - [getRoutingReadiness](functions/getRoutingReadiness.md)
 - [getSubmissionMode](functions/getSubmissionMode.md)

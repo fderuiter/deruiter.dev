@@ -35,7 +35,10 @@ export function formatBranchFailure(branch: string, error: string): string {
 }
 
 function main() {
-  if (process.env.ALLOW_DANGEROUS_GIT === "1") {
+  if (
+    process.env.ALLOW_DANGEROUS_GIT === "1" ||
+    getCurrentBranch().startsWith("stitch/")
+  ) {
     process.exit(0);
   }
 

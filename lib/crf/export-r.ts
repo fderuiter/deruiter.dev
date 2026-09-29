@@ -8,8 +8,15 @@
  * 5. Diagnostic dplyr::glimpse() and summary() verification suites
  */
 
-import { StudyProtocol, CRFForm, CRFField, ExportROptions, CodelistOption } from "./types";
+import {
+  StudyProtocol,
+  CRFForm,
+  CRFField,
+  ExportROptions,
+  CodelistOption,
+} from "./types";
 import { STANDARD_CODELISTS } from "./cdisc-controlled-terminology";
+import { consultationUrl } from "./export-annotations";
 
 /**
  * Sanitizes a string into a valid R variable name.
@@ -35,13 +42,17 @@ export function escapeRString(text: string): string {
 /**
  * Retrieves field options from custom options or referenced codelists.
  */
-export function getFieldOptions(field: CRFField, study: StudyProtocol): CodelistOption[] {
+export function getFieldOptions(
+  field: CRFField,
+  study: StudyProtocol
+): CodelistOption[] {
   if (field.customOptions && field.customOptions.length > 0) {
     return field.customOptions;
   }
   if (field.codelistId) {
-    const cl = study.codelists?.find((c) => c.id === field.codelistId) ||
-               STANDARD_CODELISTS.find((c) => c.id === field.codelistId);
+    const cl =
+      study.codelists?.find((c) => c.id === field.codelistId) ||
+      STANDARD_CODELISTS.find((c) => c.id === field.codelistId);
     if (cl && cl.options && cl.options.length > 0) {
       return cl.options;
     }
@@ -62,16 +73,27 @@ export function parseMultiSelectValue(
   edcValue: string | string[] | boolean | null | undefined,
   optionCode: string
 ): "Y" | "N" {
-  if (edcValue === null || edcValue === undefined || edcValue === false) return "N";
+  if (edcValue === null || edcValue === undefined || edcValue === false)
+    return "N";
   if (edcValue === true) return "Y";
   let selectedCodes: string[] = [];
   if (Array.isArray(edcValue)) {
     selectedCodes = edcValue.map((s) => String(s).trim().toUpperCase());
   } else if (typeof edcValue === "string") {
     const trimmed = edcValue.trim().toUpperCase();
-    if (trimmed === "TRUE" || trimmed === "1" || trimmed === "Y" || trimmed === "YES") {
+    if (
+      trimmed === "TRUE" ||
+      trimmed === "1" ||
+      trimmed === "Y" ||
+      trimmed === "YES"
+    ) {
       const targetUpper = String(optionCode).trim().toUpperCase();
-      if (targetUpper === "Y" || targetUpper === "1" || targetUpper === "YES" || targetUpper === "TRUE") {
+      if (
+        targetUpper === "Y" ||
+        targetUpper === "1" ||
+        targetUpper === "YES" ||
+        targetUpper === "TRUE"
+      ) {
         return "Y";
       }
     }
@@ -87,7 +109,11 @@ export function parseMultiSelectValue(
 /**
  * Generates a unique R variable name guaranteed not to collide with usedNames and within maxLength.
  */
-function generateUniqueRName(baseName: string, usedNames: Set<string>, maxLength = 32): string {
+function generateUniqueRName(
+  baseName: string,
+  usedNames: Set<string>,
+  maxLength = 32
+): string {
   let counter = 1;
   const sanitizedBase = sanitizeRName(baseName, maxLength).toUpperCase();
   let candidate = sanitizedBase;
@@ -169,7 +195,7 @@ function generateRHeader(study: StudyProtocol, formScope?: string): string {
 #               CDASH variable label attributes, synthetic clinical test rows,
 #               and diagnostic glimpse inspection.
 # AUTHOR:       CRF Studio Automated Statistical Exporter
-# CONSULTATION: Schedule Consultation: /schedule
+# CONSULTATION: Schedule Consultation: ${consultationUrl()}
 #==============================================================================
 
 # Recommended packages:
@@ -188,7 +214,10 @@ suppressPackageStartupMessages({
 /**
  * Generates Factor definitions for study codelists.
  */
-export function generateRCodelists(study: StudyProtocol, formsToInclude: CRFForm[]): string {
+export function generateRCodelists(
+  study: StudyProtocol,
+  formsToInclude: CRFForm[]
+): string {
   const referencedCodelistIds = new Set<string>();
   let hasMultiOrCheckbox = false;
 
@@ -209,13 +238,19 @@ export function generateRCodelists(study: StudyProtocol, formsToInclude: CRFForm
   }
 
   const allAvailableCodelists = [...userCodelists];
-  if (hasMultiOrCheckbox && !allAvailableCodelists.some((c) => c.id === "CL_NY")) {
+  if (
+    hasMultiOrCheckbox &&
+    !allAvailableCodelists.some((c) => c.id === "CL_NY")
+  ) {
     const ny = STANDARD_CODELISTS.find((c) => c.id === "CL_NY");
     if (ny) allAvailableCodelists.push(ny);
   }
 
   const relevantCodelists = allAvailableCodelists.filter(
-    (cl) => referencedCodelistIds.has(cl.id) || (hasMultiOrCheckbox && cl.id === "CL_NY") || cl.isStandard
+    (cl) =>
+      referencedCodelistIds.has(cl.id) ||
+      (hasMultiOrCheckbox && cl.id === "CL_NY") ||
+      cl.isStandard
   );
 
   if (relevantCodelists.length === 0) {
@@ -229,9 +264,15 @@ export function generateRCodelists(study: StudyProtocol, formsToInclude: CRFForm
   relevantCodelists.forEach((cl) => {
     if (!cl.options || cl.options.length === 0) return;
     const safeName = sanitizeRName(cl.id || cl.name).toLowerCase();
-    const levels = cl.options.map((opt) => `"${escapeRString(opt.code)}"`).join(", ");
-    const labels = cl.options.map((opt) => `"${escapeRString(opt.label)}"`).join(", ");
-    const nciComment = cl.nciCodelistCode ? ` # NCI Codelist: ${cl.nciCodelistCode}` : "";
+    const levels = cl.options
+      .map((opt) => `"${escapeRString(opt.code)}"`)
+      .join(", ");
+    const labels = cl.options
+      .map((opt) => `"${escapeRString(opt.label)}"`)
+      .join(", ");
+    const nciComment = cl.nciCodelistCode
+      ? ` # NCI Codelist: ${cl.nciCodelistCode}`
+      : "";
 
     output += `# Codelist: ${escapeRString(cl.name)}${nciComment}\n`;
     output += `cl_${safeName}_levels <- c(${levels})\n`;
@@ -244,7 +285,10 @@ export function generateRCodelists(study: StudyProtocol, formsToInclude: CRFForm
 /**
  * Generates dichotomous Yes/No factor code for expanded sub-variables.
  */
-function getRSubVarSampleCode(optionCode: string | undefined, rowCount = 3): string {
+function getRSubVarSampleCode(
+  optionCode: string | undefined,
+  rowCount = 3
+): string {
   const codeIdx = optionCode ? optionCode.charCodeAt(0) : 0;
   const vals = Array.from({ length: rowCount }, (_, i) =>
     (i + codeIdx) % 2 === 1 ? '"Y"' : '"N"'
@@ -269,7 +313,12 @@ function getRSampleColumnCode(
       const vals: number[] = [];
       for (let i = 1; i <= rowCount; i++) {
         if (field.minValue !== undefined && field.maxValue !== undefined) {
-          vals.push(Math.round(field.minValue + ((field.maxValue - field.minValue) * i) / (rowCount + 1)));
+          vals.push(
+            Math.round(
+              field.minValue +
+                ((field.maxValue - field.minValue) * i) / (rowCount + 1)
+            )
+          );
         } else if (varName.includes("AGE") || varName.includes("YEAR")) {
           vals.push(45 + i * 5);
         } else {
@@ -284,7 +333,14 @@ function getRSampleColumnCode(
       const vals: number[] = [];
       for (let i = 1; i <= rowCount; i++) {
         if (field.minValue !== undefined && field.maxValue !== undefined) {
-          vals.push(Number((field.minValue + ((field.maxValue - field.minValue) * i) / (rowCount + 1)).toFixed(1)));
+          vals.push(
+            Number(
+              (
+                field.minValue +
+                ((field.maxValue - field.minValue) * i) / (rowCount + 1)
+              ).toFixed(1)
+            )
+          );
         } else if (varName.includes("WEIGHT") || varName.includes("WT")) {
           vals.push(Number((70.5 + i * 2.2).toFixed(1)));
         } else if (varName.includes("HEIGHT") || varName.includes("HT")) {
@@ -307,24 +363,35 @@ function getRSampleColumnCode(
     case "date":
     case "partial_date":
     case "precision_date": {
-      const vals = Array.from({ length: rowCount }, (_, i) => `"2026-03-0${i + 1}"`);
+      const vals = Array.from(
+        { length: rowCount },
+        (_, i) => `"2026-03-0${i + 1}"`
+      );
       return `as.Date(c(${vals.join(", ")}))`;
     }
 
     case "time": {
-      const vals = Array.from({ length: rowCount }, (_, i) => `"08:3${i + 1}:00"`);
+      const vals = Array.from(
+        { length: rowCount },
+        (_, i) => `"08:3${i + 1}:00"`
+      );
       return `c(${vals.join(", ")})`;
     }
 
     case "datetime": {
-      const vals = Array.from({ length: rowCount }, (_, i) => `"2026-03-0${i + 1} 08:30:00"`);
+      const vals = Array.from(
+        { length: rowCount },
+        (_, i) => `"2026-03-0${i + 1} 08:30:00"`
+      );
       return `as.POSIXct(c(${vals.join(", ")}), tz = "UTC")`;
     }
 
     case "single_select":
     case "radio":
       if (hasCodelist) {
-        const safeName = sanitizeRName(codelist!.id || codelist!.name).toLowerCase();
+        const safeName = sanitizeRName(
+          codelist!.id || codelist!.name
+        ).toLowerCase();
         const sampleCodes = Array.from({ length: rowCount }, (_, i) => {
           const opt = codelist!.options[i % codelist!.options.length];
           return `"${escapeRString(opt.code)}"`;
@@ -341,7 +408,10 @@ function getRSampleColumnCode(
     case "signature":
     case "text":
     default: {
-      const vals = Array.from({ length: rowCount }, (_, i) => `"${varName}_TEST_${i + 1}"`);
+      const vals = Array.from(
+        { length: rowCount },
+        (_, i) => `"${varName}_TEST_${i + 1}"`
+      );
       return `c(${vals.join(", ")})`;
     }
   }
@@ -384,9 +454,10 @@ export function generateRDataStepForForm(
 # DESCRIPTION:  CDASH Tibble Scaffolding with Variable Labels & Factor Levels
 #------------------------------------------------------------------------------\n`;
 
-  const visitNames = study.visits && study.visits.length > 0
-    ? study.visits.map((v) => `"${escapeRString(v.name)}"`)
-    : ['"Screening"', '"Visit 1 (Day 1)"', '"Visit 2 (Day 28)"'];
+  const visitNames =
+    study.visits && study.visits.length > 0
+      ? study.visits.map((v) => `"${escapeRString(v.name)}"`)
+      : ['"Screening"', '"Visit 1 (Day 1)"', '"Visit 2 (Day 28)"'];
 
   code += `${tibbleName} <- tibble::tibble(\n`;
   code += `  # Standard Clinical Trial Identifiers\n`;
@@ -401,9 +472,10 @@ export function generateRDataStepForForm(
     code += `\n  # Form Specific CDASH Fields\n`;
     expandedFields.forEach((item, fIdx) => {
       const colCode = includeSample
-        ? (item.field.dataType === "multi_select" || item.field.dataType === "checkbox"
-            ? getRSubVarSampleCode(item.optionCode, 3)
-            : getRSampleColumnCode(item.field, study, 3))
+        ? item.field.dataType === "multi_select" ||
+          item.field.dataType === "checkbox"
+          ? getRSubVarSampleCode(item.optionCode, 3)
+          : getRSampleColumnCode(item.field, study, 3)
         : "character(0)";
       const isLast = fIdx === expandedFields.length - 1;
       code += `  ${item.varName.padEnd(10)} = ${colCode}${isLast ? "" : ",\n"}`;
@@ -426,8 +498,13 @@ export function generateRDataStepForForm(
     code += `    DTC_INIT  = "Form Initiation Date",\n`;
 
     expandedFields.forEach((item, fIdx) => {
-      const baseLabel = item.field.cdashMetadata?.cdashLabel || item.field.label || item.varName;
-      const fullLabel = item.optLabel ? `${baseLabel} - ${item.optLabel}` : baseLabel;
+      const baseLabel =
+        item.field.cdashMetadata?.cdashLabel ||
+        item.field.label ||
+        item.varName;
+      const fullLabel = item.optLabel
+        ? `${baseLabel} - ${item.optLabel}`
+        : baseLabel;
       const escapedLabel = escapeRString(fullLabel);
       const isLast = fIdx === expandedFields.length - 1;
       code += `    ${item.varName.padEnd(10)} = "${escapedLabel}"${isLast ? "" : ",\n"}`;
@@ -435,16 +512,26 @@ export function generateRDataStepForForm(
     code += `\n  )\n} else {\n`;
     code += `  # Fallback to base R attributes\n`;
     expandedFields.forEach((item) => {
-      const baseLabel = item.field.cdashMetadata?.cdashLabel || item.field.label || item.varName;
-      const fullLabel = item.optLabel ? `${baseLabel} - ${item.optLabel}` : baseLabel;
+      const baseLabel =
+        item.field.cdashMetadata?.cdashLabel ||
+        item.field.label ||
+        item.varName;
+      const fullLabel = item.optLabel
+        ? `${baseLabel} - ${item.optLabel}`
+        : baseLabel;
       const escapedLabel = escapeRString(fullLabel);
       code += `  attr(${tibbleName}$${item.varName}, "label") <- "${escapedLabel}"\n`;
     });
     code += `}\n\n`;
   } else {
     expandedFields.forEach((item) => {
-      const baseLabel = item.field.cdashMetadata?.cdashLabel || item.field.label || item.varName;
-      const fullLabel = item.optLabel ? `${baseLabel} - ${item.optLabel}` : baseLabel;
+      const baseLabel =
+        item.field.cdashMetadata?.cdashLabel ||
+        item.field.label ||
+        item.varName;
+      const fullLabel = item.optLabel
+        ? `${baseLabel} - ${item.optLabel}`
+        : baseLabel;
       const escapedLabel = escapeRString(fullLabel);
       code += `attr(${tibbleName}$${item.varName}, "label") <- "${escapedLabel}"\n`;
     });
@@ -472,7 +559,7 @@ export function exportFormToR(
   let output = generateRHeader(study, form.domain || form.id);
   output += generateRCodelists(study, [form]);
   output += generateRDataStepForForm(form, study, options);
-  output += `# Schedule Consultation: /schedule\n`;
+  output += `# Schedule Consultation: ${consultationUrl()}\n`;
   return output;
 }
 
@@ -488,12 +575,17 @@ export function exportStudyToR(
     : study.forms;
 
   if (formsToExport.length === 0) {
-    return generateRHeader(study) + `# No forms selected or available in study\n# Schedule Consultation: /schedule\n`;
+    return (
+      generateRHeader(study) +
+      `# No forms selected or available in study\n# Schedule Consultation: ${consultationUrl()}\n`
+    );
   }
 
   let output = generateRHeader(
     study,
-    options?.selectedFormId ? formsToExport[0]?.domain || formsToExport[0]?.id : "suite"
+    options?.selectedFormId
+      ? formsToExport[0]?.domain || formsToExport[0]?.id
+      : "suite"
   );
   output += generateRCodelists(study, formsToExport);
 
@@ -504,6 +596,6 @@ export function exportStudyToR(
     output += generateRDataStepForForm(form, study, options);
   });
 
-  output += `# Schedule Consultation: /schedule\n`;
+  output += `# Schedule Consultation: ${consultationUrl()}\n`;
   return output;
 }

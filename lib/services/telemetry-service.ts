@@ -108,6 +108,16 @@ export const _testCache = {
   },
 };
 
+const BUFFER_ENQUEUE_TIMEOUT_MS = 2000;
+
+/** Raised when the Redis buffer write exceeds its time budget. */
+class BufferEnqueueTimeoutError extends Error {
+  constructor(timeoutMs: number) {
+    super(`Redis buffer enqueue timed out after ${timeoutMs}ms`);
+    this.name = "BufferEnqueueTimeoutError";
+  }
+}
+
 export class TelemetryService {
   /**
    * Evaluates rate limiting anonymously using Web Crypto SHA-256 IP hashing.
@@ -277,8 +287,8 @@ export class TelemetryService {
       let execTimer: ReturnType<typeof setTimeout> | undefined;
       const execTimeoutPromise = new Promise<never>((_, reject) => {
         execTimer = setTimeout(() => {
-          reject(new Error("Redis buffer enqueue timed out after 2000ms"));
-        }, 2000);
+          reject(new BufferEnqueueTimeoutError(BUFFER_ENQUEUE_TIMEOUT_MS));
+        }, BUFFER_ENQUEUE_TIMEOUT_MS);
         execTimer.unref?.();
       });
 
@@ -296,6 +306,16 @@ export class TelemetryService {
         );
       }
     } catch (err) {
+      // A slow Upstash round trip is an expected degradation: the beacon is
+      // answered with a cheap 202 and the client never retries, so it is not
+      // an application error and must not spend Sentry quota (#1341).
+      if (err instanceof BufferEnqueueTimeoutError) {
+        logger.warn(
+          "Telemetry buffer enqueue timed out; event dropped (non-durable 202):",
+          { timeoutMs: BUFFER_ENQUEUE_TIMEOUT_MS }
+        );
+        return { event: eventData, buffered: false };
+      }
       // Losing the event here is silent by nature: nothing else holds it.
       logger.error("Failed to commit telemetry event to Redis buffer:", err);
       return { event: eventData, buffered: false };
@@ -334,11 +354,7 @@ export class TelemetryService {
           }),
         ]);
 
-        const addStats = (
-          slug: string,
-          eventType: string,
-          count: number
-        ) => {
+        const addStats = (slug: string, eventType: string, count: number) => {
           if (eventType !== "page_view" && eventType !== "project_click") {
             return;
           }

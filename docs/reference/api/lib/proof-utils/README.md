@@ -57,6 +57,7 @@
 - [getDeductionLedger](functions/getDeductionLedger.md)
 - [getFallacyDiagnosis](functions/getFallacyDiagnosis.md)
 - [getNextTacticHint](functions/getNextTacticHint.md)
+- [getStepStatusLabel](functions/getStepStatusLabel.md)
 - [getSuggestion](functions/getSuggestion.md)
 - [isValidNode](functions/isValidNode.md)
 - [parseFormula](functions/parseFormula.md)

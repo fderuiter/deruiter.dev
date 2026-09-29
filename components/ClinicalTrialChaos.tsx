@@ -196,7 +196,8 @@ function getConveyorGeometry(width: number, height: number) {
 
 /**
  * The slice of the queue the canvas shows. The window follows the selected
- * subject so a selection past the visible slots (via Tab or the dossier) is
+ * subject so a selection past the visible slots (via the arrow keys or the
+ * dossier) is
  * still drawn, highlighted and tappable.
  */
 function getVisibleSubjects<T extends { id: string }>(
@@ -2011,6 +2012,27 @@ export const ClinicalTrialChaos: React.FC = () => {
   // 18. Hotkeys and Keyboard Boundary
   const handleKeyDown = (e: React.KeyboardEvent) => {
     const key = e.key.toUpperCase();
+    const target = e.target as HTMLElement;
+
+    // Typing in a field (e.g. the signature password) never triggers hotkeys.
+    if (
+      target !== e.currentTarget &&
+      target.closest("input, textarea, select, [contenteditable=true]")
+    ) {
+      return;
+    }
+
+    // A focused button, link or tab keeps its native keys: Enter and Space
+    // activate it and Tab moves focus on (WCAG 2.1.1, 2.1.2). Only the board
+    // itself and its canvas treat them as game keys.
+    const onControl =
+      target !== e.currentTarget &&
+      target !== canvasRef.current &&
+      !!target.closest(
+        'button, a[href], [role="button"], [role="tab"], [role="radio"], [role="option"], [role="checkbox"], [role="switch"]'
+      );
+    if (onControl && (key === " " || key === "ENTER")) return;
+    if (key === "TAB") return;
 
     // Prevent scrolling on gameplay keys
     if (
@@ -2028,7 +2050,8 @@ export const ClinicalTrialChaos: React.FC = () => {
         "W",
         "E",
         "R",
-        "TAB",
+        "ARROWLEFT",
+        "ARROWRIGHT",
       ].includes(key)
     ) {
       e.preventDefault();
@@ -2111,12 +2134,18 @@ export const ClinicalTrialChaos: React.FC = () => {
       if (station) handleInitiateSubmission(station.id);
     }
 
-    // Tab key cycles active subject
-    if (key === "TAB" && conveyorSubjects.length > 0) {
+    // Left and right arrows cycle the active subject; Tab stays free to move
+    // focus between the game's controls.
+    if (
+      (key === "ARROWRIGHT" || key === "ARROWLEFT") &&
+      conveyorSubjects.length > 0
+    ) {
       const currentIdx = conveyorSubjects.findIndex(
         (s) => s.id === selectedSubjectId
       );
-      const nextIdx = (currentIdx + 1) % conveyorSubjects.length;
+      const step = key === "ARROWRIGHT" ? 1 : -1;
+      const nextIdx =
+        (currentIdx + step + conveyorSubjects.length) % conveyorSubjects.length;
       setSelectedSubjectId(conveyorSubjects[nextIdx].id);
     }
   };
@@ -2814,7 +2843,7 @@ export const ClinicalTrialChaos: React.FC = () => {
               onClick={handleCanvasClick}
               style={{ touchAction: "none" }}
               role="application"
-              aria-label="Clinical Trial Chaos Simulation Canvas. Use Tab to navigate accessible controls, or space/enter to interact with subjects."
+              aria-label="Clinical Trial Chaos Simulation Canvas. Left and right arrows change the selected subject, Enter takes the next step, and Tab moves to the game's other controls."
               tabIndex={0}
               className="block w-full aspect-[13/5] cursor-pointer touch-none focus:outline-none focus:ring-2 focus:ring-emerald-500/50 md:aspect-[760/150]"
             />
@@ -2994,7 +3023,7 @@ export const ClinicalTrialChaos: React.FC = () => {
                     Queue · {conveyorSubjects.length}/5
                   </span>
                   <span className="hidden text-[10px] text-zinc-400 sm:inline">
-                    Tab to cycle
+                    ← → to cycle
                   </span>
                 </div>
                 <ul className="mt-2 flex gap-2 overflow-x-auto pb-1">

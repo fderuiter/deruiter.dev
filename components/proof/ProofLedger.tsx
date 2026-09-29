@@ -133,12 +133,18 @@ export const ProofLedger: React.FC<ProofLedgerProps> = ({
                       <div className="flex items-center gap-1.5">
                         <span
                           className={`text-[9px] font-mono px-1.5 py-0.5 rounded ${
-                            step.isProven
-                              ? "bg-emerald-950 text-emerald-400"
-                              : "bg-slate-800 text-slate-500"
+                            step.isGiven
+                              ? "bg-slate-800 text-sky-300"
+                              : step.isProven
+                                ? "bg-emerald-950 text-emerald-400"
+                                : "bg-slate-800 text-slate-500"
                           }`}
                         >
-                          {step.isProven ? "✔ PROVEN" : "⏳ PENDING"}
+                          {step.isGiven
+                            ? "● GIVEN"
+                            : step.isProven
+                              ? "✔ PROVEN"
+                              : "⏳ PENDING"}
                         </span>
                         {step.isDeletable && (
                           <button

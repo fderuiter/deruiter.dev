@@ -59,8 +59,21 @@ export interface LedgerStep {
   premises: string;
   plainEnglish: string;
   isProven: boolean;
+  /** True for given premises, which are available rather than derived. */
+  isGiven?: boolean;
   nodeId?: string;
   isDeletable?: boolean;
+}
+
+/**
+ * Returns the display status label shared by the canvas, ledger, and exports.
+ */
+export function getStepStatusLabel(step: {
+  isProven: boolean;
+  isGiven?: boolean;
+}): "GIVEN" | "PROVEN" | "PENDING" {
+  if (step.isGiven) return "GIVEN";
+  return step.isProven ? "PROVEN" : "PENDING";
 }
 
 export interface TruthTableRow {
@@ -700,11 +713,11 @@ export const THEOREMS: Record<TheoremId, TheoremDefinition> = {
     title: "Modus Ponens",
     subtitle: "Affirming the Antecedent · CI/CD Quality Gate",
     category: "Foundational",
-    ruleName: "Modus Ponens (P ∧ (P → Q) ⊢ Q)",
+    ruleName: "Modus Ponens (P ∧ (P → Q) ∧ (Q → R) ⊢ R)",
     scenario:
       "Automated regression testing in continuous integration pipelines.",
     goalDescription:
-      "Discharge Conclusion R (Reliability is guaranteed) through test suite verification.",
+      "Given P, P → Q and Q → R, Q is already derived from the first Modus Ponens step (P and P → Q are given). Your goal is R: connect Q with the given Q → R (Node D) to discharge Conclusion R.",
     targetNodeId: "E",
     intermediateNodeId: "C",
     intermediateRequires: ["A", "B"],
@@ -2816,6 +2829,7 @@ export function getDeductionLedger(
       premises: "Given",
       plainEnglish: nA?.description || "Initial premise established.",
       isProven: true,
+      isGiven: true,
       nodeId: nA?.id || "A",
       isDeletable: false,
     },
@@ -2826,6 +2840,7 @@ export function getDeductionLedger(
       premises: "Given",
       plainEnglish: nB?.description || "Conditional implication premise.",
       isProven: true,
+      isGiven: true,
       nodeId: nB?.id || "B",
       isDeletable: false,
     },
@@ -2846,6 +2861,7 @@ export function getDeductionLedger(
       premises: "Given",
       plainEnglish: nD?.description || "Goal conditional premise.",
       isProven: true,
+      isGiven: true,
       nodeId: nD?.id || "D",
       isDeletable: false,
     },
@@ -3262,7 +3278,7 @@ export function exportProofToMarkdown(
   const rows = ledger
     .map(
       (s) =>
-        `| ${s.stepNumber} | \`${s.formula}\` | ${s.rule} | ${s.premises} | ${s.isProven ? "✔ PROVEN" : "⏳ PENDING"} | ${s.plainEnglish} |`
+        `| ${s.stepNumber} | \`${s.formula}\` | ${s.rule} | ${s.premises} | ${getStepStatusLabel(s) === "GIVEN" ? "● GIVEN" : s.isProven ? "✔ PROVEN" : "⏳ PENDING"} | ${s.plainEnglish} |`
     )
     .join("\n");
 

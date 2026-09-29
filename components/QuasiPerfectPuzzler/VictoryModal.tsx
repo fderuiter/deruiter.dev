@@ -9,6 +9,8 @@ import { IconCheck, IconCopy, IconSparkles } from "@tabler/icons-react";
 
 interface VictoryModalProps {
   score: LevelScore;
+  /** Best saved result for this level; may differ from the run just finished. */
+  savedBest?: LevelScore;
   level: PuzzlerLevelDef;
   totalLevels: number;
   currentLevelIndex: number;
@@ -19,6 +21,7 @@ interface VictoryModalProps {
 
 export const VictoryModal: React.FC<VictoryModalProps> = ({
   score,
+  savedBest,
   level,
   totalLevels,
   currentLevelIndex,
@@ -68,6 +71,13 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
             : "The local AST goal was discharged without exhausting simulated RAM. The generated Lean text has not been compiled or kernel-checked."}
         </p>
 
+        <p
+          data-testid="victory-run-label"
+          className="mt-2 text-[10px] font-bold uppercase tracking-wider text-zinc-500"
+        >
+          This run
+        </p>
+
         {/* Stars Display */}
         <div className="my-4 flex justify-center items-center gap-3">
           {[1, 2, 3].map((starIdx) => (
@@ -103,6 +113,17 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
             </span>
           </div>
         </div>
+
+        {savedBest && savedBest.completed && !savedBest.usedSorry && (
+          <p
+            data-testid="victory-saved-best"
+            className="mb-4 text-[11px] text-zinc-400"
+          >
+            Saved best: {savedBest.stars} of 3 stars,{" "}
+            {savedBest.remainingRam.toFixed(1)} GB remaining
+            {isSorry ? " (this run did not replace it)" : ""}
+          </p>
+        )}
 
         {/* Lean 4 Code Preview Snippet */}
         {leanCode && !isSorry && (

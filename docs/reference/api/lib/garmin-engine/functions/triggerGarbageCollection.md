@@ -6,7 +6,7 @@
 
 # Function: triggerGarbageCollection()
 
-> **triggerGarbageCollection**(`state`): `object`
+> **triggerGarbageCollection**(`state`, `now?`): `object`
 
 Force Garbage Collection (GC)
 Freezes game for 500ms and frees up to 2.0 to 4.0 KB of collectible garbage.
@@ -17,6 +17,10 @@ With no collectible garbage the call is a no-op: no freeze, no score.
 ### state
 
 [`GameEngineState`](../interfaces/GameEngineState.md)
+
+### now?
+
+`number` = `...`
 
 ## Returns
 

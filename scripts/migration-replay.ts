@@ -407,17 +407,18 @@ export async function runMigrationReplay(
   }
 }
 
-// CLI entrypoint
-if (
-  require.main === module ||
-  (process.argv[1] &&
-    process.argv[1].includes("migration-replay") &&
-    !process.env["VITEST"])
-) {
-  const args = process.argv.slice(2);
+export interface ParsedCliArgs {
+  explicitUrl?: string;
+  allowNonDisposable: boolean;
+  isolatedSchema?: string;
+  showHelp: boolean;
+}
+
+export function parseCliArgs(args: string[]): ParsedCliArgs {
   let explicitUrl: string | undefined;
   let allowNonDisposable = false;
   let isolatedSchema: string | undefined;
+  let showHelp = false;
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
@@ -428,7 +429,19 @@ if (
     } else if (arg === "--schema") {
       isolatedSchema = args[++i];
     } else if (arg === "--help" || arg === "-h") {
-      console.log(`
+      showHelp = true;
+    }
+  }
+
+  return { explicitUrl, allowNonDisposable, isolatedSchema, showHelp };
+}
+
+export async function runCliMain(
+  args: string[] = process.argv.slice(2)
+): Promise<number> {
+  const parsed = parseCliArgs(args);
+  if (parsed.showHelp) {
+    console.log(`
 Usage: npx tsx scripts/migration-replay.ts [options]
 
 Options:
@@ -442,21 +455,29 @@ Environment Variables:
   DISPOSABLE_DATABASE_URL     Alternative explicit connection string
   ALLOW_NON_DISPOSABLE_TARGET Set to 'true' to allow non-disposable target hosts
 `);
-      process.exit(0);
-    }
+    return 0;
   }
 
-  runMigrationReplay({
-    targetUrl: explicitUrl,
-    allowNonDisposable,
-    isolatedSchema,
-  })
-    .then(() => {
-      process.exit(0);
-    })
-    .catch((err: unknown) => {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.error(`\n❌ Migration Replay Failed:\n${msg}`);
-      process.exit(1);
+  try {
+    await runMigrationReplay({
+      targetUrl: parsed.explicitUrl,
+      allowNonDisposable: parsed.allowNonDisposable,
+      isolatedSchema: parsed.isolatedSchema,
     });
+    return 0;
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`\n❌ Migration Replay Failed:\n${msg}`);
+    return 1;
+  }
+}
+
+// CLI entrypoint
+if (
+  require.main === module ||
+  (process.argv[1] &&
+    process.argv[1].includes("migration-replay") &&
+    !process.env["VITEST"])
+) {
+  runCliMain().then((code) => process.exit(code));
 }

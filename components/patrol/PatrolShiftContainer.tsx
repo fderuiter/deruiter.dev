@@ -12,13 +12,7 @@ import {
 import { useAnnouncer } from "@/hooks/useAnnouncer";
 import { FieldManualButton } from "@/components/FieldManualButton";
 import { playPatrolCue, type PatrolSoundName } from "@/lib/game-audio";
-import {
-  IconShieldCheck,
-  IconClock,
-  IconRefresh,
-  IconRoute,
-  IconCheck,
-} from "@tabler/icons-react";
+import { IconShieldCheck, IconClock, IconRefresh } from "@tabler/icons-react";
 import { IntroScreen } from "./IntroScreen";
 import { BriefingScreen } from "./BriefingScreen";
 import { MountainMap } from "./MountainMap";
@@ -182,14 +176,12 @@ export const PatrolShiftContainer: React.FC<PatrolShiftContainerProps> = ({
                 Patrol Shift Studio
               </h1>
               <span className="px-2 py-0.5 rounded-full bg-brand-cyan/10 border border-brand-cyan/30 text-brand-cyan text-[10px] font-mono font-bold uppercase tracking-wider">
-                M1 Foundation Scaffold &bull; M3 Map Hub &bull; M4 OET Mini-Game
-                &bull; M5 OEC Interaction &bull; M6 Multi-Scenario &bull; M7
-                Contextual Debrief &bull; M8 Ambient Ops &bull; M9 Field Manual
+                Outdoor Emergency Care &bull; Toboggan Handling &bull; Sweep
+                &amp; Hill Safety
               </span>
             </div>
             <p className="text-xs font-mono text-zinc-400">
-              Welch Village Ski Patrol Judgment Simulation: Vertical Slice
-              (Issue #749)
+              Welch Village Ski Patrol Judgment Simulation
             </p>
           </div>
         </div>
@@ -390,45 +382,6 @@ export const PatrolShiftContainer: React.FC<PatrolShiftContainerProps> = ({
             onResetShift={handleReset}
           />
         )}
-      </div>
-
-      {/* Milestone Roadmap Box */}
-      <div className="p-4 rounded-2xl bg-zinc-900/40 border border-zinc-800/80 space-y-2">
-        <div className="flex items-center gap-2 text-xs font-mono font-bold text-zinc-300">
-          <IconRoute className="w-4 h-4 text-brand-cyan" />
-          <span>Milestone Roadmap (Epic #744)</span>
-        </div>
-        <ul className="text-[11px] font-mono text-zinc-400 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
-          <li className="text-brand-cyan flex items-center gap-1.5">
-            <IconCheck className="w-3 h-3" /> M1: Route Scaffold &amp;
-            lib/patrol
-          </li>
-          <li className="text-brand-cyan flex items-center gap-1.5">
-            <IconCheck className="w-3 h-3" /> M2: Shift State Machine (#748)
-          </li>
-          <li className="text-brand-cyan flex items-center gap-1.5">
-            <IconCheck className="w-3 h-3" /> M3: Mountain Map Hub (#749)
-          </li>
-          <li className="text-brand-cyan flex items-center gap-1.5">
-            <IconCheck className="w-3 h-3" /> M4: OET Mini-Game (#750)
-          </li>
-          <li className="text-brand-cyan flex items-center gap-1.5">
-            <IconCheck className="w-3 h-3" /> M5: OEC Clinical (#751)
-          </li>
-          <li className="text-brand-cyan flex items-center gap-1.5">
-            <IconCheck className="w-3 h-3" /> M6: Multi-Scenario (#752)
-          </li>
-          <li className="text-brand-cyan flex items-center gap-1.5">
-            <IconCheck className="w-3 h-3" /> M7: Contextual Debrief (#753)
-          </li>
-          <li className="text-brand-cyan flex items-center gap-1.5">
-            <IconCheck className="w-3 h-3" /> M8: Ambient Operations (#754)
-          </li>
-          <li className="text-white font-bold flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-brand-cyan animate-pulse" />
-            M9: Field Manual &amp; Audio (#755)
-          </li>
-        </ul>
       </div>
     </div>
   );

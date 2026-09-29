@@ -303,7 +303,7 @@ export default async function CaseStudyPage({ params }: PageProps) {
                   <IconTerminal className="w-5 h-5 text-brand-cyan" />
                   Try the Sample Commands
                 </h2>
-                <p className="text-xs font-mono text-zinc-500 mb-6 leading-relaxed">
+                <p className="text-xs font-mono text-muted mb-6 leading-relaxed">
                   Explore recorded sample responses in this browser demo. Choose
                   a command or type &apos;help&apos; to see what’s available.
                 </p>
@@ -334,7 +334,7 @@ export default async function CaseStudyPage({ params }: PageProps) {
                   </svg>
                   Try a Proof Tree
                 </h2>
-                <p className="text-xs font-mono text-zinc-500 mb-6 leading-relaxed">
+                <p className="text-xs font-mono text-muted mb-6 leading-relaxed">
                   Apply logical tactics to branch and navigate the mathematical
                   proof tree. Click nodes to connect/disconnect, track real-time
                   telemetry, and run/rollback proof states.

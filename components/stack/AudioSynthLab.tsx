@@ -130,12 +130,12 @@ export const AudioSynthLab: React.FC = () => {
               <IconArrowsHorizontal className="w-3.5 h-3.5 text-purple-400" />
               Spatial Stereo Pan
             </span>
-            <span className="text-[10px] text-zinc-500">
+            <span className="text-[10px] text-muted">
               {pan < -0.1 ? `Left ${Math.round(Math.abs(pan) * 100)}%` : pan > 0.1 ? `Right ${Math.round(pan * 100)}%` : "Center"}
             </span>
           </label>
           <div className="flex items-center gap-2 bg-zinc-950/60 border border-zinc-800 rounded-xl p-2">
-            <span className="text-[10px] font-mono text-zinc-500">L</span>
+            <span className="text-[10px] font-mono text-muted">L</span>
             <input
               id="soundboard-pan"
               type="range"
@@ -147,7 +147,7 @@ export const AudioSynthLab: React.FC = () => {
               aria-label="Stereo panning slider"
               className="w-full accent-purple-400 cursor-pointer"
             />
-            <span className="text-[10px] font-mono text-zinc-500">R</span>
+            <span className="text-[10px] font-mono text-muted">R</span>
           </div>
         </div>
       </div>
@@ -166,7 +166,7 @@ export const AudioSynthLab: React.FC = () => {
           <IconSparkles className="w-4 h-4 text-brand-cyan" />
           <div>
             <div className="text-xs font-mono font-bold text-white">Tactile Pop</div>
-            <div className="text-[10px] text-zinc-500 font-mono">UI Hover / Click</div>
+            <div className="text-[10px] text-muted font-mono">UI Hover / Click</div>
           </div>
         </button>
 
@@ -182,7 +182,7 @@ export const AudioSynthLab: React.FC = () => {
           <IconCrosshair className="w-4 h-4 text-purple-400" />
           <div>
             <div className="text-xs font-mono font-bold text-white">Laser Blip</div>
-            <div className="text-[10px] text-zinc-500 font-mono">880Hz Chip Pulse</div>
+            <div className="text-[10px] text-muted font-mono">880Hz Chip Pulse</div>
           </div>
         </button>
 
@@ -198,7 +198,7 @@ export const AudioSynthLab: React.FC = () => {
           <IconCheck className="w-4 h-4 text-emerald-400" />
           <div>
             <div className="text-xs font-mono font-bold text-white">Success Chord</div>
-            <div className="text-[10px] text-zinc-500 font-mono">Major Triad</div>
+            <div className="text-[10px] text-muted font-mono">Major Triad</div>
           </div>
         </button>
 
@@ -214,7 +214,7 @@ export const AudioSynthLab: React.FC = () => {
           <IconAlertTriangle className="w-4 h-4 text-rose-400" />
           <div>
             <div className="text-xs font-mono font-bold text-white">Error Buzz</div>
-            <div className="text-[10px] text-zinc-500 font-mono">Diminished 5th</div>
+            <div className="text-[10px] text-muted font-mono">Diminished 5th</div>
           </div>
         </button>
 
@@ -230,7 +230,7 @@ export const AudioSynthLab: React.FC = () => {
           <IconKeyboard className="w-4 h-4 text-amber-400" />
           <div>
             <div className="text-xs font-mono font-bold text-white">Keystroke Clack</div>
-            <div className="text-[10px] text-zinc-500 font-mono">Dynamic ASCII Pitch</div>
+            <div className="text-[10px] text-muted font-mono">Dynamic ASCII Pitch</div>
           </div>
         </button>
       </div>

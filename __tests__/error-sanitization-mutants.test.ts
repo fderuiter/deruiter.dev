@@ -89,7 +89,7 @@ describe("sanitizeError in production", () => {
       myframe: "f",
       SentryEvent: "s",
       list: [1],
-    }) as unknown as Record<string, unknown>;
+    }) as Record<string, unknown>;
     expect(out.code).toBe("E1");
     for (const k of [
       "StackTrace",
@@ -109,7 +109,7 @@ describe("sanitizeError in production", () => {
       message: "m",
       name: "N",
       cause: undefined,
-    }) as unknown as Record<string, unknown>;
+    }) as Record<string, unknown>;
     expect(out.name).toBe("N");
     expect(out.cause).toBeUndefined();
     expect(Object.keys(out)).not.toContain("cause");
@@ -124,7 +124,7 @@ describe("sanitizeError in production", () => {
       count: 3,
       flag: false,
       nothing: null,
-    }) as unknown as Record<string, unknown>;
+    }) as Record<string, unknown>;
     expect(out.path).toBe("at [scrubbed]");
     expect(out.meta).toEqual({ label: "ok", n: 1 });
     expect(out.count).toBe(3);
@@ -139,7 +139,7 @@ describe("sanitizeError in production", () => {
     const out = sanitizeError({
       message: "m",
       circular,
-    }) as unknown as Record<string, unknown>;
+    }) as Record<string, unknown>;
     expect(out).not.toHaveProperty("circular");
   });
 
@@ -148,13 +148,13 @@ describe("sanitizeError in production", () => {
     const out = sanitizeError({
       message: "outer",
       cause: { message: "inner /app/lib/x.ts", name: "Inner" },
-    }) as unknown as { cause: Error };
+    }) as { cause: Error };
     expect(out.cause).toBeInstanceOf(Error);
     expect(out.cause.message).toBe("inner [scrubbed]");
     const strCause = sanitizeError({
       message: "o",
       cause: "at /app/lib/x.ts",
-    }) as unknown as { cause: string };
+    }) as { cause: string };
     expect(strCause.cause).toBe("at [scrubbed]");
     const none = sanitizeError({ message: "o", cause: 0 });
     expect(none).not.toHaveProperty("cause", 0);

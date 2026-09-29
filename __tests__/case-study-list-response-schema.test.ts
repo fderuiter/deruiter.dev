@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { fromAny } from "@total-typescript/shoehorn";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { GET } from "@/app/api/case-studies/route";
 import { prisma } from "@/lib/db";
@@ -43,9 +44,7 @@ const dbRecord = {
 describe("GET /api/case-studies response contract (#1426)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(prisma.caseStudy.findMany).mockResolvedValue([
-      dbRecord,
-    ] as unknown as Awaited<ReturnType<typeof prisma.caseStudy.findMany>>);
+    vi.mocked(prisma.caseStudy.findMany).mockResolvedValue(fromAny([dbRecord]));
   });
 
   it("returns a body that satisfies CaseStudyListResponseSchema", async () => {

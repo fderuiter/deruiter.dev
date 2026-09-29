@@ -10,6 +10,14 @@ What a decision or event changes. Everything is optional.
 
 ## Properties
 
+### auditSites?
+
+> `optional` **auditSites?**: `string`[]
+
+Sites whose true state the dashboard shows from today (an audit).
+
+***
+
 ### meters?
 
 > `optional` **meters?**: `Partial`\<`Record`\<`"client"` \| `"integrity"` \| `"compliance"` \| `"timeline"` \| `"budget"` \| `"team"`, `number`\>\>
@@ -33,6 +41,10 @@ Direct meter adjustments, added to the derived meters.
 #### eligibilityConcerns?
 
 > `optional` **eligibilityConcerns?**: `number`
+
+#### enrolled?
+
+> `optional` **enrolled?**: `number`
 
 #### openQueries?
 

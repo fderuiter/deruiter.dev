@@ -49,6 +49,7 @@ export type TeamRole =
 export type MemberArchetype =
   | "optimisticStatistician"
   | "veteranDataManager"
+  | "veteranMonitor"
   | "steadyProfessional"
   | "overloadedStar";
 
@@ -109,9 +110,12 @@ export interface Effects {
   /** Days added to the schedule (negative shortens it). */
   slipDays?: number;
   workload?: Array<{ memberId: string; delta: number }>;
+  /** Sites whose true state the dashboard shows from today (an audit). */
+  auditSites?: string[];
   sites?: Array<{
     siteId: string;
     burden?: number;
+    enrolled?: number;
     openQueries?: number;
     deviations?: number;
     unsignedSource?: number;
@@ -164,6 +168,48 @@ export interface StudyState {
   /** Next unused draw index for the seeded PRNG. */
   draws: number;
   log: DecisionRecord[];
+  /** Story flags set by decisions, read by later events. */
+  flags: string[];
+  /** Follow-up events scheduled by earlier decisions. */
+  scheduled: Array<{ eventId: string; day: number }>;
+  /** Day each event first reached the inbox. */
+  seen: Record<string, number>;
+  /** Events that were answered or expired. */
+  handled: string[];
+}
+
+export type Urgency = "critical" | "important" | "routine";
+
+export interface EventOption {
+  id: string;
+  label: string;
+  attentionCost: number;
+  debtIfUndocumented: number;
+  effects: Effects;
+  /** Flags set when this option is chosen. */
+  flags?: string[];
+  /** Follow-up events scheduled this many days out. */
+  schedule?: Array<{ eventId: string; inDays: number }>;
+}
+
+export interface StudyEvent {
+  id: string;
+  /** Who is writing: a sponsor, site, team member or the boss. */
+  from: string;
+  subject: string;
+  body: string;
+  urgency: Urgency;
+  /** First day the event can appear. */
+  day: number;
+  /** Days the event stays actionable, counting its first day. */
+  ttl: number;
+  /** Extra condition that must hold for the event to appear. */
+  trigger?: (state: StudyState) => boolean;
+  /** Only appears when scheduled by an earlier decision. */
+  followUp?: boolean;
+  options: EventOption[];
+  /** Applied when the event expires unanswered. */
+  ifIgnored: Effects;
 }
 
 export type Meters = Record<MeterId, number>;

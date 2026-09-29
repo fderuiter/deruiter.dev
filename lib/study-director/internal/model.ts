@@ -86,6 +86,10 @@ export function createStudy(
     },
     draws: 0,
     log: [],
+    flags: [],
+    scheduled: [],
+    seen: {},
+    handled: [],
   };
 }
 
@@ -324,7 +328,7 @@ export function advanceDay(input: StudyState): StudyState {
   return state;
 }
 
-function applyEffects(state: StudyState, effects: Effects): StudyState {
+export function applyEffects(state: StudyState, effects: Effects): StudyState {
   const adjust = { ...state.adjust };
   for (const id of METER_IDS) {
     adjust[id] += effects.meters?.[id] ?? 0;
@@ -337,10 +341,14 @@ function applyEffects(state: StudyState, effects: Effects): StudyState {
   });
   const sites = state.sites.map((s) => {
     const changes = (effects.sites ?? []).filter((c) => c.siteId === s.id);
+    const audited = effects.auditSites?.includes(s.id)
+      ? state.day
+      : s.lastAuditedDay;
     return changes.reduce<SiteState>(
       (acc, c) => ({
         ...acc,
         burden: clamp(acc.burden + (c.burden ?? 0)),
+        enrolled: Math.max(0, acc.enrolled + (c.enrolled ?? 0)),
         openQueries: Math.max(0, acc.openQueries + (c.openQueries ?? 0)),
         deviations: Math.max(0, acc.deviations + (c.deviations ?? 0)),
         unsignedSource: Math.max(
@@ -353,7 +361,7 @@ function applyEffects(state: StudyState, effects: Effects): StudyState {
         ),
         trainingCurrent: c.trainingCurrent ?? acc.trainingCurrent,
       }),
-      s
+      { ...s, lastAuditedDay: audited }
     );
   });
   return {
@@ -435,7 +443,7 @@ export function computeMeters(state: StudyState): Meters {
       Math.max(0, spentRatio - planned) * 300 -
       Math.max(0, spentRatio - 1) * 300,
     client: 65 - late * 2,
-    team: 100 - Math.max(0, meanLoad - 60) * 1.8,
+    team: 100 - Math.max(0, meanLoad - 45) * 1.6,
   };
   const out = {} as Meters;
   for (const id of METER_IDS as readonly MeterId[]) {

@@ -92,7 +92,7 @@ export const STUDY_24_081_TEAM: TeamMember[] = [
     id: "walt",
     name: "Walt",
     role: "monitor",
-    archetype: "veteranDataManager",
+    archetype: "veteranMonitor",
     skill: 5,
     speed: 3,
     reliability: 4,

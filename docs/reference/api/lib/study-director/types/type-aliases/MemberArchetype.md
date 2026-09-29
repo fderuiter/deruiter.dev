@@ -6,4 +6,4 @@
 
 # Type Alias: MemberArchetype
 
-> **MemberArchetype** = `"optimisticStatistician"` \| `"veteranDataManager"` \| `"steadyProfessional"` \| `"overloadedStar"`
+> **MemberArchetype** = `"optimisticStatistician"` \| `"veteranDataManager"` \| `"veteranMonitor"` \| `"steadyProfessional"` \| `"overloadedStar"`

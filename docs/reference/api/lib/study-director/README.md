@@ -62,6 +62,12 @@ Re-exports [auditSite](internal/model/functions/auditSite.md)
 
 ***
 
+### beginStudy
+
+Re-exports [beginStudy](internal/events/functions/beginStudy.md)
+
+***
+
 ### computeMeters
 
 Re-exports [computeMeters](internal/model/functions/computeMeters.md)
@@ -122,9 +128,33 @@ Re-exports [Effects](types/interfaces/Effects.md)
 
 ***
 
+### endDay
+
+Re-exports [endDay](internal/events/functions/endDay.md)
+
+***
+
+### EventOption
+
+Re-exports [EventOption](types/interfaces/EventOption.md)
+
+***
+
+### getEvent
+
+Re-exports [getEvent](internal/events/functions/getEvent.md)
+
+***
+
 ### Health
 
 Re-exports [Health](types/type-aliases/Health.md)
+
+***
+
+### inbox
+
+Re-exports [inbox](internal/events/functions/inbox.md)
 
 ***
 
@@ -182,6 +212,12 @@ Re-exports [resolveDecision](internal/model/functions/resolveDecision.md)
 
 ***
 
+### resolveEvent
+
+Re-exports [resolveEvent](internal/events/functions/resolveEvent.md)
+
+***
+
 ### SiteAuditReport
 
 Re-exports [SiteAuditReport](types/interfaces/SiteAuditReport.md)
@@ -218,6 +254,18 @@ Re-exports [STUDY_24_081_TEAM](presets/variables/STUDY_24_081_TEAM.md)
 
 ***
 
+### STUDY\_EVENTS
+
+Re-exports [STUDY_EVENTS](internal/events-data/variables/STUDY_EVENTS.md)
+
+***
+
+### StudyEvent
+
+Re-exports [StudyEvent](types/interfaces/StudyEvent.md)
+
+***
+
 ### StudySetup
 
 Re-exports [StudySetup](types/interfaces/StudySetup.md)
@@ -245,3 +293,9 @@ Re-exports [TeamRole](types/type-aliases/TeamRole.md)
 ### totalOpenQueries
 
 Re-exports [totalOpenQueries](internal/model/functions/totalOpenQueries.md)
+
+***
+
+### Urgency
+
+Re-exports [Urgency](types/type-aliases/Urgency.md)

@@ -46,6 +46,22 @@ Next unused draw index for the seeded PRNG.
 
 ***
 
+### flags
+
+> **flags**: `string`[]
+
+Story flags set by decisions, read by later events.
+
+***
+
+### handled
+
+> **handled**: `string`[]
+
+Events that were answered or expired.
+
+***
+
 ### log
 
 > **log**: [`DecisionRecord`](DecisionRecord.md)[]
@@ -60,9 +76,33 @@ Total queries ever raised, for data-cleanliness reporting.
 
 ***
 
+### scheduled
+
+> **scheduled**: `object`[]
+
+Follow-up events scheduled by earlier decisions.
+
+#### day
+
+> **day**: `number`
+
+#### eventId
+
+> **eventId**: `string`
+
+***
+
 ### seed
 
 > **seed**: `string`
+
+***
+
+### seen
+
+> **seen**: `Record`\<`string`, `number`\>
+
+Day each event first reached the inbox.
 
 ***
 

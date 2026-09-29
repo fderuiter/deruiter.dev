@@ -12,8 +12,10 @@
 - [DecisionInput](interfaces/DecisionInput.md)
 - [DecisionRecord](interfaces/DecisionRecord.md)
 - [Effects](interfaces/Effects.md)
+- [EventOption](interfaces/EventOption.md)
 - [SiteAuditReport](interfaces/SiteAuditReport.md)
 - [SiteState](interfaces/SiteState.md)
+- [StudyEvent](interfaces/StudyEvent.md)
 - [StudySetup](interfaces/StudySetup.md)
 - [StudyState](interfaces/StudyState.md)
 - [TeamMember](interfaces/TeamMember.md)
@@ -31,6 +33,7 @@
 - [Phase](type-aliases/Phase.md)
 - [SponsorArchetype](type-aliases/SponsorArchetype.md)
 - [TeamRole](type-aliases/TeamRole.md)
+- [Urgency](type-aliases/Urgency.md)
 
 ## Variables
 

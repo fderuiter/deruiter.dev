@@ -61,6 +61,7 @@ import {
   checkLaserRayHit,
   triggerUltimateTremolo,
   calculateNextComboAndMultiplier,
+  classifyCampaignKill,
   createExplosionParticles,
   updateParticles,
   updateShockwaves,
@@ -209,6 +210,7 @@ export const LaserLoon: React.FC = () => {
   const nextTextIdRef = useRef(1);
   const lastFireTimeRef = useRef(0);
   const lastComboTimeRef = useRef(0);
+  const comboRef = useRef(0);
   const animFrameIdRef = useRef<number | null>(null);
   const shakeIntensityRef = useRef(0);
   const actKillsRef = useRef(0);
@@ -487,6 +489,64 @@ export const LaserLoon: React.FC = () => {
     nextPowerUpIdRef.current = nextId;
   }, []);
 
+  // Every weapon's kills go through these two handlers, so a kill counts
+  // toward the act and a boss kill ends it whichever weapon landed it.
+  const awardComboKill = useCallback(
+    (t: Target, now: number): number => {
+      const { nextCombo, nextMultiplier } = calculateNextComboAndMultiplier(
+        comboRef.current,
+        lastComboTimeRef.current,
+        now
+      );
+      lastComboTimeRef.current = now;
+      comboRef.current = nextCombo;
+      setCombo(nextCombo);
+      setMultiplier(nextMultiplier);
+
+      const extraMul = activePowerUpRef.current?.type === "north-star" ? 3 : 0;
+      const pts = t.points * (nextMultiplier + extraMul);
+      addScore(pts);
+
+      if (nextCombo > 1 && nextCombo % 3 === 0) {
+        playComboSound(nextCombo);
+        addFloatingText(t.x, t.y - 20, `${nextMultiplier}x COMBO!`, "#38bdf8");
+      }
+      return pts;
+    },
+    [addScore, playComboSound, addFloatingText]
+  );
+
+  const recordCampaignKill = useCallback(
+    (t: Target) => {
+      if (mode !== "campaign") return;
+      const outcome = classifyCampaignKill(t, currentActNum);
+      if (outcome === "act-kill") {
+        actKillsRef.current += 1;
+        setActKills(actKillsRef.current);
+        return;
+      }
+      // Defeated act boss!
+      setBossActive(false);
+      setBossHp(0);
+      if (outcome === "campaign-victory") {
+        setGameState("campaign-victory");
+        playSuccess();
+        recordEvent("laser_loon_victory", "project_click").catch(() => {});
+      } else {
+        setGameState("act-victory");
+        playSuccess();
+      }
+    },
+    [mode, currentActNum, playSuccess, recordEvent]
+  );
+
+  // The render loop reads the latest handlers through a ref rather than
+  // restarting whenever the act or mode changes.
+  const killHandlersRef = useRef({ awardComboKill, recordCampaignKill });
+  useEffect(() => {
+    killHandlersRef.current = { awardComboKill, recordCampaignKill };
+  }, [awardComboKill, recordCampaignKill]);
+
   // Trigger Ultimate Move
   const fireUltimateTremolo = useCallback(() => {
     if (ultimateMeterRef.current < 100 && mode !== "sandbox") return;
@@ -525,7 +585,11 @@ export const LaserLoon: React.FC = () => {
         `TREMOLO VAPORIZED! +${t.points * 3}`,
         "#38bdf8"
       );
+      recordCampaignKill(t);
     });
+
+    const survivingBoss = targetsRef.current.find((t) => t.isBoss);
+    if (survivingBoss) setBossHp(survivingBoss.hp);
 
     addFloatingText(w * 0.5, 120, "THE HAUNTING LOON TREMOLO!", "#22d3ee");
   }, [
@@ -535,6 +599,7 @@ export const LaserLoon: React.FC = () => {
     addScore,
     spawnExplosion,
     addFloatingText,
+    recordCampaignKill,
   ]);
 
   // Start campaign act
@@ -565,6 +630,7 @@ export const LaserLoon: React.FC = () => {
     const fresh = createInitialState(mode);
     setScore(0);
     setCombo(0);
+    comboRef.current = 0;
     setMultiplier(1);
     setTimeLeft(fresh.timeLeft);
     setIsPaused(false);
@@ -595,6 +661,7 @@ export const LaserLoon: React.FC = () => {
     setIsPaused(false);
     setScore(0);
     setCombo(0);
+    comboRef.current = 0;
     setMultiplier(1);
     setBossActive(false);
     ultimateMeterRef.current = 0;
@@ -746,52 +813,9 @@ export const LaserLoon: React.FC = () => {
 
       hitResult.killedTargets.forEach((t) => {
         spawnExplosion(t.x, t.y, t.color, t.isBoss ? 50 : 24, false, t.isBoss);
-
-        const { nextCombo, nextMultiplier } = calculateNextComboAndMultiplier(
-          combo,
-          lastComboTimeRef.current,
-          now
-        );
-        lastComboTimeRef.current = now;
-        setCombo(nextCombo);
-        setMultiplier(nextMultiplier);
-
-        const extraMul =
-          activePowerUpRef.current?.type === "north-star" ? 3 : 0;
-        const pts = t.points * (nextMultiplier + extraMul);
-        addScore(pts);
+        const pts = awardComboKill(t, now);
         addFloatingText(t.x, t.y, `+${pts}`, t.color);
-
-        if (nextCombo > 1 && nextCombo % 3 === 0) {
-          playComboSound(nextCombo);
-          addFloatingText(
-            t.x,
-            t.y - 20,
-            `${nextMultiplier}x COMBO!`,
-            "#38bdf8"
-          );
-        }
-
-        // Campaign progression
-        if (mode === "campaign") {
-          if (!t.isBoss) {
-            actKillsRef.current += 1;
-            setActKills(actKillsRef.current);
-          } else {
-            // Defeated act boss!
-            setBossActive(false);
-            if (currentActNum >= 4) {
-              setGameState("campaign-victory");
-              playSuccess();
-              recordEvent("laser_loon_victory", "project_click").catch(
-                () => {}
-              );
-            } else {
-              setGameState("act-victory");
-              playSuccess();
-            }
-          }
-        }
+        recordCampaignKill(t);
       });
     } else if (
       hitResult.hitAny &&
@@ -802,20 +826,15 @@ export const LaserLoon: React.FC = () => {
     }
   }, [
     laserType,
-    combo,
-    mode,
-    currentActNum,
     screenShakeEnabled,
     playLaserSound,
     playExplodeSound,
-    playComboSound,
-    playSuccess,
     spawnExplosion,
     addFloatingText,
     launchIceBlock,
-    addScore,
     addUltimateMeter,
-    recordEvent,
+    awardComboKill,
+    recordCampaignKill,
     isPaused,
   ]);
 
@@ -1096,15 +1115,21 @@ export const LaserLoon: React.FC = () => {
         addFloatingText(t.x, t.y, "CRYO-FROZEN!", "#38bdf8");
       });
 
-      if (iceResult.pointsEarned > 0) {
-        addScore(iceResult.pointsEarned);
-        addUltimateMeter(6);
+      if (iceResult.killedTargets.length > 0) {
+        addUltimateMeter(3);
       }
 
+      // Mortar kills score and count like laser kills.
+      const iceNow = performance.now();
       iceResult.killedTargets.forEach((t) => {
         spawnExplosion(t.x, t.y, "#38bdf8", 28, true);
-        addFloatingText(t.x, t.y, `SHATTERED! +${t.points * 2}`, "#38bdf8");
+        const pts = killHandlersRef.current.awardComboKill(t, iceNow);
+        addFloatingText(t.x, t.y, `SHATTERED! +${pts}`, "#38bdf8");
+        killHandlersRef.current.recordCampaignKill(t);
       });
+
+      const frozenBoss = iceResult.frozenTargets.find((t) => t.isBoss);
+      if (frozenBoss && frozenBoss.hp > 0) setBossHp(frozenBoss.hp);
 
       // Render Active Ice Blocks
       iceBlocksRef.current.forEach((block) => {

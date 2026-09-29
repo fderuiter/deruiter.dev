@@ -99,6 +99,55 @@ test.describe("Arcade Games & Simulators Suite", () => {
     }).toPass({ timeout: 15000 });
   });
 
+  test("Garmin setup wizard starts the run with the chosen options (#1209)", async ({
+    page,
+  }) => {
+    await page.goto("/arcade/garmin-watch", { waitUntil: "domcontentloaded" });
+
+    await expect(async () => {
+      const launchBtn = page.getByRole("button", { name: /Launch Cabinet/i });
+      if (await launchBtn.isVisible()) {
+        await launchBtn.click({ force: true });
+      }
+      await expect(page.locator("canvas").first()).toBeVisible({
+        timeout: 2000,
+      });
+    }).toPass({ timeout: 20000 });
+
+    const watch = page.getByRole("img", {
+      name: /Smartwatch display simulator/i,
+    });
+    await expect(watch).toHaveAttribute("aria-label", /Status: idle/);
+
+    // Open Setup, pick Hard + Heavy Scanlines, and confirm.
+    await expect(async () => {
+      await page.getByTitle("Pre-Game Setup Wizard").first().click();
+      await expect(page.getByTestId("wizard-step-1")).toBeVisible({
+        timeout: 2000,
+      });
+    }).toPass({ timeout: 15000 });
+    await page.getByRole("button", { name: /^Hard/ }).click();
+    await page.getByRole("button", { name: /Next Step/i }).click();
+    await page.getByRole("button", { name: /Heavy Scanlines/i }).click();
+    await page.getByRole("button", { name: /Next Step/i }).click();
+    await page.getByRole("button", { name: /Start Game/i }).click();
+
+    // No second start click: the run is already playing and the watch owns focus.
+    await expect(watch).toHaveAttribute("aria-label", /Status: playing/);
+    await expect(page.getByText(/START SIMULATION/i)).toBeHidden();
+    await expect(page.locator('[data-keyboard-boundary="true"]')).toBeFocused();
+    await expect(page.getByTestId("garmin-crt-overlay")).toHaveAttribute(
+      "data-garmin-crt",
+      "scanlines"
+    );
+
+    // Reopening Setup mid-run pauses the run underneath the wizard.
+    await page.getByTitle("Pre-Game Setup Wizard").first().click();
+    await expect(watch).toHaveAttribute("aria-label", /Status: paused/);
+    await page.getByRole("button", { name: /Skip Setup/i }).click();
+    await expect(watch).toHaveAttribute("aria-label", /Status: playing/);
+  });
+
   test("Garmin Watch Simulator switches device targets and starts", async ({
     page,
   }) => {

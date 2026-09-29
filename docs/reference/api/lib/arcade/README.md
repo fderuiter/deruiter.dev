@@ -14,6 +14,18 @@ Re-exports [applyCanvasScale](core/viewport/functions/applyCanvasScale.md)
 
 ***
 
+### ARCADE\_GAME\_COUNT
+
+Re-exports [ARCADE_GAME_COUNT](games/variables/ARCADE_GAME_COUNT.md)
+
+***
+
+### ARCADE\_GAME\_ROUTES
+
+Re-exports [ARCADE_GAME_ROUTES](games/variables/ARCADE_GAME_ROUTES.md)
+
+***
+
 ### ArcadeEngine
 
 Re-exports [ArcadeEngine](core/engine/classes/ArcadeEngine.md)

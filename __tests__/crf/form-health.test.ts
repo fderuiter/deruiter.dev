@@ -209,4 +209,51 @@ describe("computeFormHealthMetrics", () => {
     expect(metrics.cdashConformancePercentage).toBe(0);
     expect(metrics.missingCoreVariables).toEqual(["SEX", "AGE", "RACE"]);
   });
+
+  it("handles empty forms with 0 total fields, custom non-existent domains, and customOptions edge cases", () => {
+    const emptyForm: CRFForm = {
+      id: "form_empty",
+      name: "Empty Form",
+      domain: "UNKNOWN_DOMAIN",
+      description: "Empty",
+      version: "1.0",
+      sections: [],
+      rules: [],
+    };
+
+    const emptyMetrics = computeFormHealthMetrics(emptyForm);
+    expect(emptyMetrics.totalFields).toBe(0);
+    expect(emptyMetrics.sdvReadinessPercentage).toBe(0);
+    expect(emptyMetrics.cdashConformancePercentage).toBe(100);
+    expect(emptyMetrics.missingCoreVariables).toEqual([]);
+
+    const customOptionsEmptyForm: CRFForm = {
+      id: "form_custom_opt_empty",
+      name: "Custom Options Empty",
+      domain: "DM",
+      description: "Test",
+      version: "1.0",
+      sections: [
+        {
+          id: "s1",
+          title: "S1",
+          fields: [
+            {
+              id: "f_empty_opts",
+              variableName: "AGE",
+              label: "Age",
+              dataType: "single_select",
+              required: false,
+              customOptions: [], // customOptions.length === 0 and no codelistId -> codelistsAttached = 0
+              columnSpan: 6,
+            },
+          ],
+        },
+      ],
+      rules: [],
+    };
+
+    const optMetrics = computeFormHealthMetrics(customOptionsEmptyForm);
+    expect(optMetrics.codelistsAttached).toBe(0);
+  });
 });

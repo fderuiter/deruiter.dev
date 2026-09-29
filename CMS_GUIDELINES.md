@@ -56,6 +56,7 @@ model CaseStudyReaction {
   connectionHash String
   createdAt      DateTime @default(now())
 
+  @@unique([caseStudySlug, reactionType, connectionHash])
   @@index([caseStudySlug])
   @@index([caseStudySlug, reactionType])
   @@index([connectionHash])
@@ -90,18 +91,19 @@ Per ADR 0041, blog posts are authored as Prisma-backed rows through `/admin` (th
 
 ```prisma
 model BlogPost {
-  id                   String   @id @default(cuid())
-  slug                 String   @unique
+  id                   String              @id @default(cuid())
+  slug                 String              @unique
   title                String
   dek                  String   // short standfirst/summary shown on the /blog index grid
   body                 String   // sanitized HTML (same allowlist as CaseStudy.architectural_narrative)
   pillar               String   // one of ADR 0041's content-pillar taxonomy
   tags                 String   // comma-separated, same convention as CaseStudy.tags
-  published            Boolean  @default(false)
+  published            Boolean             @default(false)
   reading_time_minutes Int?
   hero_image_url       String?
-  created_at           DateTime @default(now())
-  updated_at           DateTime @updatedAt
+  created_at           DateTime            @default(now())
+  updated_at           DateTime            @updatedAt
+  newsletterDispatch   NewsletterDispatch?
 }
 ```
 
@@ -124,6 +126,7 @@ model BlogPostReaction {
   connectionHash String
   createdAt      DateTime @default(now())
 
+  @@unique([blogPostSlug, reactionType, connectionHash])
   @@index([blogPostSlug])
   @@index([blogPostSlug, reactionType])
   @@index([connectionHash])

@@ -15,7 +15,7 @@ JSON schema component definition.
 
 ### schema
 
-`ZodTypeAny`
+`ZodType`
 
 ## Returns
 

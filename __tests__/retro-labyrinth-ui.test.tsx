@@ -163,8 +163,22 @@ describe("RetroLabyrinth React Component UI Suite", () => {
     };
     const drawn = ctx.fillText.mock.calls.map((call) => call[0]);
     expect(drawn).toContain("@");
-    expect(drawn).toContain("EXIT");
-    expect(drawn).toContain("REACH THE EXIT >>");
+    // Room 1 opens with its route nodes unvisited, so the exit is marked
+    // locked and the prompt names the objective instead (#1321).
+    expect(drawn).toContain("LOCK");
+    expect(drawn).toContain("VISIT THE ROUTE NODES (0/4) >>");
+  });
+
+  it("names what still locks the exit in the objective line (#1321)", async () => {
+    await act(async () => {
+      root.render(<RetroLabyrinth isMounted={true} />);
+    });
+
+    const objective = container.querySelector(
+      '[data-testid="labyrinth-objective"]'
+    );
+    expect(objective?.textContent).toBe("VISIT THE ROUTE NODES (0/4)");
+    expect(container.textContent).toContain("then guide the");
   });
 
   it("should render ASCII fallback when isMounted is false", async () => {

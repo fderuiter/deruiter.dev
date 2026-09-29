@@ -20,6 +20,12 @@ Re-exports [AIUpdateResult](ai/interfaces/AIUpdateResult.md)
 
 ***
 
+### BOSS\_MAX\_LEAD\_TILES
+
+Re-exports [BOSS_MAX_LEAD_TILES](boss/variables/BOSS_MAX_LEAD_TILES.md)
+
+***
+
 ### BossState
 
 Re-exports [BossState](types/interfaces/BossState.md)
@@ -188,6 +194,12 @@ Re-exports [euclideanDist](tsp/functions/euclideanDist.md)
 
 ***
 
+### ExitLockState
+
+Re-exports [ExitLockState](objective/interfaces/ExitLockState.md)
+
+***
+
 ### fireWeapon
 
 Re-exports [fireWeapon](weapons/functions/fireWeapon.md)
@@ -281,6 +293,18 @@ Re-exports [generateRoguelikeCampaign](generator/functions/generateRoguelikeCamp
 ### generateTSPRoom
 
 Re-exports [generateTSPRoom](generator/functions/generateTSPRoom.md)
+
+***
+
+### getBossAimPoint
+
+Re-exports [getBossAimPoint](boss/functions/getBossAimPoint.md)
+
+***
+
+### getExitLockState
+
+Re-exports [getExitLockState](objective/functions/getExitLockState.md)
 
 ***
 

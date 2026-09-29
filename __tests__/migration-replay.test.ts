@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import child_process from "child_process";
+import { fromPartial } from "@total-typescript/shoehorn";
 import {
   redactDatabaseUrl,
   isTargetDisposable,
@@ -286,16 +287,20 @@ describe("Migration Replay: CLI Flag Parsing", () => {
 
 describe("Migration Replay: Docker Fallbacks & Command Execution", () => {
   it("checks Docker availability via child_process.spawnSync", () => {
-    const spy = vi.spyOn(child_process, "spawnSync").mockReturnValueOnce({
-      status: 0,
-    } as unknown as ReturnType<typeof child_process.spawnSync>);
+    const spy = vi.spyOn(child_process, "spawnSync").mockReturnValueOnce(
+      fromPartial<ReturnType<typeof child_process.spawnSync>>({
+        status: 0,
+      })
+    );
 
     expect(isDockerAvailable()).toBe(true);
     expect(spy).toHaveBeenCalledWith("docker", ["info"], expect.any(Object));
 
-    spy.mockReturnValueOnce({
-      status: 1,
-    } as unknown as ReturnType<typeof child_process.spawnSync>);
+    spy.mockReturnValueOnce(
+      fromPartial<ReturnType<typeof child_process.spawnSync>>({
+        status: 1,
+      })
+    );
     expect(isDockerAvailable()).toBe(false);
 
     spy.mockImplementationOnce(() => {
@@ -306,9 +311,11 @@ describe("Migration Replay: Docker Fallbacks & Command Execution", () => {
   });
 
   it("resolves target as docker when Docker is available and no explicit url is provided", () => {
-    const spy = vi.spyOn(child_process, "spawnSync").mockReturnValueOnce({
-      status: 0,
-    } as unknown as ReturnType<typeof child_process.spawnSync>);
+    const spy = vi.spyOn(child_process, "spawnSync").mockReturnValueOnce(
+      fromPartial<ReturnType<typeof child_process.spawnSync>>({
+        status: 0,
+      })
+    );
 
     const resolved = resolveReplayTarget({ checkDocker: true });
     expect(resolved.type).toBe("docker");
@@ -327,9 +334,11 @@ describe("Migration Replay: Docker Fallbacks & Command Execution", () => {
   });
 
   it("provisions ephemeral Docker container and cleans up on completion", async () => {
-    const dockerSpy = vi.spyOn(child_process, "spawnSync").mockReturnValue({
-      status: 0,
-    } as unknown as ReturnType<typeof child_process.spawnSync>);
+    const dockerSpy = vi.spyOn(child_process, "spawnSync").mockReturnValue(
+      fromPartial<ReturnType<typeof child_process.spawnSync>>({
+        status: 0,
+      })
+    );
 
     const commands: string[] = [];
     const result = await runMigrationReplay({
@@ -355,9 +364,11 @@ describe("Migration Replay: Docker Fallbacks & Command Execution", () => {
   });
 
   it("throws error when Docker container fails to start", async () => {
-    const dockerSpy = vi.spyOn(child_process, "spawnSync").mockReturnValue({
-      status: 0,
-    } as unknown as ReturnType<typeof child_process.spawnSync>);
+    const dockerSpy = vi.spyOn(child_process, "spawnSync").mockReturnValue(
+      fromPartial<ReturnType<typeof child_process.spawnSync>>({
+        status: 0,
+      })
+    );
 
     await expect(
       runMigrationReplay({
@@ -380,9 +391,11 @@ describe("Migration Replay: Docker Fallbacks & Command Execution", () => {
   });
 
   it("throws error when Docker container pg_isready times out", async () => {
-    const dockerSpy = vi.spyOn(child_process, "spawnSync").mockReturnValue({
-      status: 0,
-    } as unknown as ReturnType<typeof child_process.spawnSync>);
+    const dockerSpy = vi.spyOn(child_process, "spawnSync").mockReturnValue(
+      fromPartial<ReturnType<typeof child_process.spawnSync>>({
+        status: 0,
+      })
+    );
 
     await expect(
       runMigrationReplay({

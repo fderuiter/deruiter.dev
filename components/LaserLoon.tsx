@@ -61,6 +61,7 @@ import {
   checkLaserRayHit,
   triggerUltimateTremolo,
   calculateNextComboAndMultiplier,
+  classifyCampaignKill,
   createExplosionParticles,
   updateParticles,
   updateShockwaves,
@@ -144,6 +145,10 @@ export const LaserLoon: React.FC = () => {
   const [showMuseum, setShowMuseum] = useState(false);
   const [selectedFlagIndex, setSelectedFlagIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [isManualOpen, setIsManualOpen] = useState(false);
+  // The simulation also stops behind the Flag Museum and the Field Manual,
+  // so reading them never costs a run.
+  const isHalted = isPaused || showMuseum || isManualOpen;
 
   const { announce } = useAnnouncer();
   const isInitialPauseRef = useRef(true);
@@ -162,6 +167,12 @@ export const LaserLoon: React.FC = () => {
 
   const museumTrapRef = useFocusTrap<HTMLDivElement>(showMuseum, {
     onEscape: () => setShowMuseum(false),
+    onKeyDown: (event) => {
+      if (event.key.toLowerCase() === "m") {
+        event.preventDefault();
+        setShowMuseum(false);
+      }
+    },
   });
 
   const pauseTrapRef = useFocusTrap<HTMLDivElement>(isPaused, {
@@ -209,6 +220,7 @@ export const LaserLoon: React.FC = () => {
   const nextTextIdRef = useRef(1);
   const lastFireTimeRef = useRef(0);
   const lastComboTimeRef = useRef(0);
+  const comboRef = useRef(0);
   const animFrameIdRef = useRef<number | null>(null);
   const shakeIntensityRef = useRef(0);
   const actKillsRef = useRef(0);
@@ -487,6 +499,64 @@ export const LaserLoon: React.FC = () => {
     nextPowerUpIdRef.current = nextId;
   }, []);
 
+  // Every weapon's kills go through these two handlers, so a kill counts
+  // toward the act and a boss kill ends it whichever weapon landed it.
+  const awardComboKill = useCallback(
+    (t: Target, now: number): number => {
+      const { nextCombo, nextMultiplier } = calculateNextComboAndMultiplier(
+        comboRef.current,
+        lastComboTimeRef.current,
+        now
+      );
+      lastComboTimeRef.current = now;
+      comboRef.current = nextCombo;
+      setCombo(nextCombo);
+      setMultiplier(nextMultiplier);
+
+      const extraMul = activePowerUpRef.current?.type === "north-star" ? 3 : 0;
+      const pts = t.points * (nextMultiplier + extraMul);
+      addScore(pts);
+
+      if (nextCombo > 1 && nextCombo % 3 === 0) {
+        playComboSound(nextCombo);
+        addFloatingText(t.x, t.y - 20, `${nextMultiplier}x COMBO!`, "#38bdf8");
+      }
+      return pts;
+    },
+    [addScore, playComboSound, addFloatingText]
+  );
+
+  const recordCampaignKill = useCallback(
+    (t: Target) => {
+      if (mode !== "campaign") return;
+      const outcome = classifyCampaignKill(t, currentActNum);
+      if (outcome === "act-kill") {
+        actKillsRef.current += 1;
+        setActKills(actKillsRef.current);
+        return;
+      }
+      // Defeated act boss!
+      setBossActive(false);
+      setBossHp(0);
+      if (outcome === "campaign-victory") {
+        setGameState("campaign-victory");
+        playSuccess();
+        recordEvent("laser_loon_victory", "project_click").catch(() => {});
+      } else {
+        setGameState("act-victory");
+        playSuccess();
+      }
+    },
+    [mode, currentActNum, playSuccess, recordEvent]
+  );
+
+  // The render loop reads the latest handlers through a ref rather than
+  // restarting whenever the act or mode changes.
+  const killHandlersRef = useRef({ awardComboKill, recordCampaignKill });
+  useEffect(() => {
+    killHandlersRef.current = { awardComboKill, recordCampaignKill };
+  }, [awardComboKill, recordCampaignKill]);
+
   // Trigger Ultimate Move
   const fireUltimateTremolo = useCallback(() => {
     if (ultimateMeterRef.current < 100 && mode !== "sandbox") return;
@@ -525,7 +595,11 @@ export const LaserLoon: React.FC = () => {
         `TREMOLO VAPORIZED! +${t.points * 3}`,
         "#38bdf8"
       );
+      recordCampaignKill(t);
     });
+
+    const survivingBoss = targetsRef.current.find((t) => t.isBoss);
+    if (survivingBoss) setBossHp(survivingBoss.hp);
 
     addFloatingText(w * 0.5, 120, "THE HAUNTING LOON TREMOLO!", "#22d3ee");
   }, [
@@ -535,6 +609,7 @@ export const LaserLoon: React.FC = () => {
     addScore,
     spawnExplosion,
     addFloatingText,
+    recordCampaignKill,
   ]);
 
   // Start campaign act
@@ -565,6 +640,7 @@ export const LaserLoon: React.FC = () => {
     const fresh = createInitialState(mode);
     setScore(0);
     setCombo(0);
+    comboRef.current = 0;
     setMultiplier(1);
     setTimeLeft(fresh.timeLeft);
     setIsPaused(false);
@@ -595,6 +671,7 @@ export const LaserLoon: React.FC = () => {
     setIsPaused(false);
     setScore(0);
     setCombo(0);
+    comboRef.current = 0;
     setMultiplier(1);
     setBossActive(false);
     ultimateMeterRef.current = 0;
@@ -650,14 +727,14 @@ export const LaserLoon: React.FC = () => {
 
   // Countdown timer for arcade mode
   useEffect(() => {
-    if (gameState !== "playing" || mode !== "arcade" || isPaused) return;
+    if (gameState !== "playing" || mode !== "arcade" || isHalted) return;
 
     const timer = setInterval(() => {
       setTimeLeft((prev) => Math.max(0, prev - 1));
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [gameState, mode, isPaused]);
+  }, [gameState, mode, isHalted]);
 
   // Handle countdown expiration outside functional state updater
   useEffect(() => {
@@ -671,7 +748,7 @@ export const LaserLoon: React.FC = () => {
 
   // Active Power-Up timer
   useEffect(() => {
-    if (!activePowerUpType || isPaused) return;
+    if (!activePowerUpType || isHalted) return;
     const interval = setInterval(() => {
       if (activePowerUpRef.current) {
         const remaining = activePowerUpRef.current.expiresAt - Date.now();
@@ -685,11 +762,11 @@ export const LaserLoon: React.FC = () => {
       }
     }, 100);
     return () => clearInterval(interval);
-  }, [activePowerUpType, isPaused]);
+  }, [activePowerUpType, isHalted]);
 
   // Weapon fire trigger
   const fireWeapon = useCallback(() => {
-    if (isPaused) return;
+    if (isHalted) return;
     const now = performance.now();
     const hasHotdish = activePowerUpRef.current?.type === "hotdish";
     const weapon = WEAPONS[laserType] || WEAPONS["ruby-laser"];
@@ -746,52 +823,9 @@ export const LaserLoon: React.FC = () => {
 
       hitResult.killedTargets.forEach((t) => {
         spawnExplosion(t.x, t.y, t.color, t.isBoss ? 50 : 24, false, t.isBoss);
-
-        const { nextCombo, nextMultiplier } = calculateNextComboAndMultiplier(
-          combo,
-          lastComboTimeRef.current,
-          now
-        );
-        lastComboTimeRef.current = now;
-        setCombo(nextCombo);
-        setMultiplier(nextMultiplier);
-
-        const extraMul =
-          activePowerUpRef.current?.type === "north-star" ? 3 : 0;
-        const pts = t.points * (nextMultiplier + extraMul);
-        addScore(pts);
+        const pts = awardComboKill(t, now);
         addFloatingText(t.x, t.y, `+${pts}`, t.color);
-
-        if (nextCombo > 1 && nextCombo % 3 === 0) {
-          playComboSound(nextCombo);
-          addFloatingText(
-            t.x,
-            t.y - 20,
-            `${nextMultiplier}x COMBO!`,
-            "#38bdf8"
-          );
-        }
-
-        // Campaign progression
-        if (mode === "campaign") {
-          if (!t.isBoss) {
-            actKillsRef.current += 1;
-            setActKills(actKillsRef.current);
-          } else {
-            // Defeated act boss!
-            setBossActive(false);
-            if (currentActNum >= 4) {
-              setGameState("campaign-victory");
-              playSuccess();
-              recordEvent("laser_loon_victory", "project_click").catch(
-                () => {}
-              );
-            } else {
-              setGameState("act-victory");
-              playSuccess();
-            }
-          }
-        }
+        recordCampaignKill(t);
       });
     } else if (
       hitResult.hitAny &&
@@ -802,21 +836,16 @@ export const LaserLoon: React.FC = () => {
     }
   }, [
     laserType,
-    combo,
-    mode,
-    currentActNum,
     screenShakeEnabled,
     playLaserSound,
     playExplodeSound,
-    playComboSound,
-    playSuccess,
     spawnExplosion,
     addFloatingText,
     launchIceBlock,
-    addScore,
     addUltimateMeter,
-    recordEvent,
-    isPaused,
+    awardComboKill,
+    recordCampaignKill,
+    isHalted,
   ]);
 
   // Main Canvas Render & Physics Loop
@@ -841,7 +870,7 @@ export const LaserLoon: React.FC = () => {
     const handleContextRestored = () => {
       isContextLost = false;
       lastFrameTime = performance.now();
-      if (!isPaused) {
+      if (!isHalted) {
         animFrameIdRef.current = requestAnimationFrame(renderLoop);
       }
     };
@@ -850,7 +879,7 @@ export const LaserLoon: React.FC = () => {
     canvas.addEventListener("contextrestored", handleContextRestored);
 
     const renderLoop = (time: number) => {
-      if (isContextLost || isPaused) return;
+      if (isContextLost || isHalted) return;
       const dt = Math.min(32, time - lastFrameTime) / 16.666;
       lastFrameTime = time;
 
@@ -1096,15 +1125,21 @@ export const LaserLoon: React.FC = () => {
         addFloatingText(t.x, t.y, "CRYO-FROZEN!", "#38bdf8");
       });
 
-      if (iceResult.pointsEarned > 0) {
-        addScore(iceResult.pointsEarned);
-        addUltimateMeter(6);
+      if (iceResult.killedTargets.length > 0) {
+        addUltimateMeter(3);
       }
 
+      // Mortar kills score and count like laser kills.
+      const iceNow = performance.now();
       iceResult.killedTargets.forEach((t) => {
         spawnExplosion(t.x, t.y, "#38bdf8", 28, true);
-        addFloatingText(t.x, t.y, `SHATTERED! +${t.points * 2}`, "#38bdf8");
+        const pts = killHandlersRef.current.awardComboKill(t, iceNow);
+        addFloatingText(t.x, t.y, `SHATTERED! +${pts}`, "#38bdf8");
+        killHandlersRef.current.recordCampaignKill(t);
       });
+
+      const frozenBoss = iceResult.frozenTargets.find((t) => t.isBoss);
+      if (frozenBoss && frozenBoss.hp > 0) setBossHp(frozenBoss.hp);
 
       // Render Active Ice Blocks
       iceBlocksRef.current.forEach((block) => {
@@ -1478,12 +1513,12 @@ export const LaserLoon: React.FC = () => {
 
       ctx.restore();
 
-      if (!isPaused) {
+      if (!isHalted) {
         animFrameIdRef.current = requestAnimationFrame(renderLoop);
       }
     };
 
-    if (!isPaused) {
+    if (!isHalted) {
       animFrameIdRef.current = requestAnimationFrame(renderLoop);
     }
 
@@ -1514,7 +1549,7 @@ export const LaserLoon: React.FC = () => {
     addFloatingText,
     addScore,
     addUltimateMeter,
-    isPaused,
+    isHalted,
   ]);
 
   // Pointer / Mouse / Touch Controls
@@ -1703,7 +1738,9 @@ export const LaserLoon: React.FC = () => {
     }
 
     if (isPaused) {
-      if (e.key === " " || e.key === "Enter" || e.key === "Escape") {
+      // Escape is left to the pause dialog's focus trap, which already
+      // resumes on it; toggling here too would re-pause at once.
+      if (e.key === " " || e.key === "Enter") {
         togglePause();
       }
       return;
@@ -1728,7 +1765,10 @@ export const LaserLoon: React.FC = () => {
     } else if (e.key.toLowerCase() === "u") {
       fireUltimateTremolo();
     } else if (e.key.toLowerCase() === "m") {
-      setShowMuseum((prev) => !prev);
+      // The museum's trap mounts during this keypress and closes on M, so
+      // keep the event from reaching it.
+      e.stopPropagation();
+      setShowMuseum(true);
     } else if (e.key === "ArrowUp" || e.key.toLowerCase() === "w") {
       const nextY = Math.max(40, loonPosRef.current.targetY - 25);
       loonPosRef.current.targetY = nextY;
@@ -1766,7 +1806,13 @@ export const LaserLoon: React.FC = () => {
     } else if (e.key === "4") {
       selectLaserType("ice-cannon");
     } else if (e.key === "Escape") {
-      resetGame();
+      // Escape pauses; ending the run is left to the Reset button. The
+      // pause dialog's trap mounts during this same keypress and listens on
+      // window, so keep the event from reaching it and resuming at once.
+      if (gameState === "playing") {
+        e.stopPropagation();
+        setIsPaused(true);
+      }
     }
   };
 
@@ -1903,7 +1949,11 @@ export const LaserLoon: React.FC = () => {
               <span>Flag Museum</span>
             </button>
 
-            <FieldManualButton manualId="laser-loon" label="Manual" />
+            <FieldManualButton
+              manualId="laser-loon"
+              label="Manual"
+              onOpenChange={setIsManualOpen}
+            />
             <FullscreenButton
               isFullscreen={isFullscreen}
               onToggle={toggleFullscreen}
@@ -2141,12 +2191,18 @@ export const LaserLoon: React.FC = () => {
           <div className="arcade-shooter-pause absolute inset-0 bg-neutral-950/90 backdrop-blur-md z-40 flex flex-col items-center justify-center text-center p-4 select-none overflow-y-auto">
             <div
               ref={pauseTrapRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="laser-loon-pause-title"
               className="max-w-md w-full bg-neutral-900/95 border border-red-500/40 rounded-3xl p-6 shadow-2xl flex flex-col items-center my-auto"
             >
               <div className="w-14 h-14 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-center mb-3 text-red-400">
                 <IconPlayerPause className="w-7 h-7" />
               </div>
-              <h3 className="text-2xl font-bold text-white font-mono tracking-tight mb-1">
+              <h3
+                id="laser-loon-pause-title"
+                className="text-2xl font-bold text-white font-mono tracking-tight mb-1"
+              >
                 GAME PAUSED
               </h3>
               <p className="text-xs text-neutral-400 mb-6 font-mono">
@@ -2801,10 +2857,14 @@ export const LaserLoon: React.FC = () => {
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
           <div
             ref={museumTrapRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="laser-loon-museum-title"
             className="bg-neutral-950 border border-neutral-800 rounded-3xl max-w-2xl w-full p-6 relative shadow-2xl overflow-y-auto max-h-[90vh]"
           >
             <button
               onClick={() => setShowMuseum(false)}
+              aria-label="Close Flag Museum"
               className="absolute top-5 right-5 min-h-[44px] min-w-[44px] flex items-center justify-center p-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-white cursor-pointer touch-manipulation select-none active:scale-95"
             >
               <IconX className="w-5 h-5" />
@@ -2815,7 +2875,10 @@ export const LaserLoon: React.FC = () => {
                 <IconBook className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="text-xl font-bold font-mono text-white">
+                <h3
+                  id="laser-loon-museum-title"
+                  className="text-xl font-bold font-mono text-white"
+                >
                   Minnesota Flag Redesign Museum
                 </h3>
                 <p className="text-xs text-neutral-400 font-mono">

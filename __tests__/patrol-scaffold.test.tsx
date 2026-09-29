@@ -39,7 +39,9 @@ describe("Patrol Shift — M1 Foundation Scaffold & Discovery Verification", () 
     render(<PatrolShiftContainer />);
 
     expect(screen.getByTestId("patrol-shift-container")).toBeDefined();
-    expect(screen.getByText(/M1 Foundation Scaffold/i)).toBeDefined();
+    expect(
+      screen.getByText(/Outdoor Emergency Care.*Toboggan Handling/i)
+    ).toBeDefined();
 
     const disclaimer = screen.getByRole("note", {
       name: /Medical & Clinical Disclaimer/i,

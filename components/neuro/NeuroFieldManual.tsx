@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import { motion } from "framer-motion";
+import { createPortal } from "react-dom";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 import {
   IconX,
   IconBook,
@@ -17,25 +19,38 @@ interface NeuroFieldManualProps {
   onClose: () => void;
 }
 
-export const NeuroFieldManual: React.FC<NeuroFieldManualProps> = ({
-  isOpen,
-  onClose,
-}) => {
+const ManualDialog: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+  const reduceMotion = useReducedMotion();
+  const dialogRef = useFocusTrap<HTMLDivElement>(true, {
+    onEscape: onClose,
+  });
   const [activeTab, setActiveTab] = useState<
     "physics" | "defects" | "shortcuts" | "pipeline"
   >("physics");
 
-  if (!isOpen) return null;
-
   return (
-    <div
+    <motion.div
+      key="neuro-field-manual-backdrop"
+      initial={{ opacity: reduceMotion ? 1 : 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: reduceMotion ? 1 : 0 }}
+      transition={reduceMotion ? { duration: 0 } : undefined}
       onClick={onClose}
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-md"
     >
       <motion.div
-        initial={{ opacity: 0, scale: 0.96, y: 10 }}
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="neuro-field-manual-title"
+        aria-describedby="neuro-field-manual-desc"
+        tabIndex={-1}
+        initial={reduceMotion ? false : { opacity: 0, scale: 0.96, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.96, y: 10 }}
+        exit={
+          reduceMotion ? { opacity: 1 } : { opacity: 0, scale: 0.96, y: 10 }
+        }
+        transition={reduceMotion ? { duration: 0 } : undefined}
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-3xl max-h-[85vh] bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden shadow-2xl flex flex-col"
       >
@@ -46,10 +61,13 @@ export const NeuroFieldManual: React.FC<NeuroFieldManualProps> = ({
               <IconBook className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-white font-mono uppercase tracking-wider">
+              <h2
+                id="neuro-field-manual-title"
+                className="text-sm font-bold text-white font-mono uppercase tracking-wider"
+              >
                 NeuroRecon Field Manual · FreeSurfer 7.x
               </h2>
-              <p className="text-xs text-zinc-400">
+              <p id="neuro-field-manual-desc" className="text-xs text-zinc-400">
                 Cortical Reconstruction Physics, Defect Taxonomy, and QA
                 Protocol
               </p>
@@ -57,7 +75,9 @@ export const NeuroFieldManual: React.FC<NeuroFieldManualProps> = ({
           </div>
 
           <button
+            type="button"
             onClick={onClose}
+            aria-label="Close Field Manual"
             className="p-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white transition-colors"
           >
             <IconX className="w-4 h-4" />
@@ -65,7 +85,11 @@ export const NeuroFieldManual: React.FC<NeuroFieldManualProps> = ({
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex items-center border-b border-zinc-800 px-4 bg-zinc-950/30 gap-2">
+        <div
+          role="group"
+          aria-label="Field Manual sections"
+          className="flex items-center border-b border-zinc-800 px-4 bg-zinc-950/30 gap-2 overflow-x-auto"
+        >
           {[
             {
               id: "physics",
@@ -90,6 +114,8 @@ export const NeuroFieldManual: React.FC<NeuroFieldManualProps> = ({
           ].map((tab) => (
             <button
               key={tab.id}
+              type="button"
+              aria-pressed={activeTab === tab.id}
               onClick={() => setActiveTab(tab.id as typeof activeTab)}
               className={`flex items-center gap-1.5 py-3 px-3 text-xs font-mono border-b-2 transition-all select-none ${
                 activeTab === tab.id
@@ -290,7 +316,7 @@ export const NeuroFieldManual: React.FC<NeuroFieldManualProps> = ({
                   key: "Mouse Wheel",
                   desc: "Scroll through anatomical slices",
                 },
-                { key: "Space", desc: "Run recon-all pipeline execution" },
+                { key: "R / Space", desc: "Run recon-all pipeline execution" },
                 { key: "M / ?", desc: "Open this Field Manual" },
                 { key: "Cmd + K", desc: "Site-wide Command Palette" },
               ].map((s) => (
@@ -318,6 +344,7 @@ export const NeuroFieldManual: React.FC<NeuroFieldManualProps> = ({
             </span>
           </div>
           <button
+            type="button"
             onClick={onClose}
             className="px-4 py-2 rounded-xl bg-brand-cyan text-zinc-950 font-bold hover:bg-brand-cyan/90 transition-all self-end sm:self-auto min-h-[44px] min-w-[44px] flex items-center justify-center"
           >
@@ -325,6 +352,19 @@ export const NeuroFieldManual: React.FC<NeuroFieldManualProps> = ({
           </button>
         </div>
       </motion.div>
-    </div>
+    </motion.div>
+  );
+};
+
+export const NeuroFieldManual: React.FC<NeuroFieldManualProps> = ({
+  isOpen,
+  onClose,
+}) => {
+  if (typeof document === "undefined") return null;
+  return createPortal(
+    <AnimatePresence>
+      {isOpen && <ManualDialog key="neuro-field-manual" onClose={onClose} />}
+    </AnimatePresence>,
+    document.body
   );
 };

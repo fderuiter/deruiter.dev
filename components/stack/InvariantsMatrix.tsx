@@ -197,7 +197,7 @@ export const InvariantsMatrix: React.FC = () => {
 
         {/* Search input */}
         <div className="relative min-w-[220px]">
-          <IconSearch className="w-3.5 h-3.5 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
+          <IconSearch className="w-3.5 h-3.5 text-muted absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             placeholder="Search invariants..."
@@ -211,7 +211,7 @@ export const InvariantsMatrix: React.FC = () => {
 
       {/* Category Pills */}
       <div className="flex items-center gap-1.5 flex-wrap my-4">
-        <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 mr-1 flex items-center gap-1">
+        <span className="text-[10px] font-mono uppercase tracking-wider text-muted mr-1 flex items-center gap-1">
           <IconFilter className="w-3 h-3" /> Filter:
         </span>
         {CATEGORIES.map((cat) => (
@@ -250,7 +250,7 @@ export const InvariantsMatrix: React.FC = () => {
                     {inv.name}
                   </span>
                 </div>
-                <span className="text-[10px] font-mono text-zinc-500 px-2 py-0.5 rounded-full bg-zinc-900 border border-zinc-800">
+                <span className="text-[10px] font-mono text-muted px-2 py-0.5 rounded-full bg-zinc-900 border border-zinc-800">
                   {inv.category}
                 </span>
               </div>
@@ -261,7 +261,7 @@ export const InvariantsMatrix: React.FC = () => {
 
             {/* Command Trigger & Status */}
             <div className="flex items-center justify-between pt-2.5 border-t border-zinc-900 gap-2">
-              <div className="flex items-center gap-1.5 font-mono text-[11px] text-zinc-500 truncate min-w-0">
+              <div className="flex items-center gap-1.5 font-mono text-[11px] text-muted truncate min-w-0">
                 <IconTerminal className="w-3 h-3 text-zinc-600 flex-shrink-0" />
                 <code className="truncate text-zinc-400">
                   {inv.verificationCmd}

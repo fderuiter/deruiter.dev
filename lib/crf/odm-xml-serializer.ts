@@ -1,5 +1,6 @@
 import { StudyProtocol } from "./types";
 import { escapeXml } from "../utils";
+import { consultationUrl } from "./export-annotations";
 
 /**
  * Maps ClinicalDataType to CDISC ODM DataType
@@ -43,7 +44,7 @@ export function exportStudyToCdiscOdmXml(study: StudyProtocol): string {
   const studyTitle = study.studyName || protoNum;
 
   let xml = `<?xml version="1.0" encoding="UTF-8"?>
-<!-- Schedule Consultation: /schedule -->
+<!-- Schedule Consultation: ${consultationUrl()} -->
 <ODM xmlns="http://www.cdisc.org/ns/odm/v1.3"
      xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -55,7 +56,7 @@ export function exportStudyToCdiscOdmXml(study: StudyProtocol): string {
   <Study OID="${escapeXml(studyOid)}">
     <GlobalVariables>
       <StudyName>${escapeXml(studyTitle)}</StudyName>
-      <StudyDescription>Protocol ${escapeXml(protoNum)} - ${escapeXml(study.phase || "")} • Schedule Consultation: /schedule</StudyDescription>
+      <StudyDescription>Protocol ${escapeXml(protoNum)} - ${escapeXml(study.phase || "")} • Schedule Consultation: ${consultationUrl()}</StudyDescription>
       <ProtocolName>${escapeXml(protoNum)}</ProtocolName>
     </GlobalVariables>
     <MetaDataVersion OID="${escapeXml(metaOid)}" Name="Protocol Definition Version ${escapeXml(study.version || "1.0")}">

@@ -122,10 +122,43 @@ export function createAuditLogEntry(
   };
 }
 
+// FNV-1a: a small, stable string hash used to seed the choice shuffle.
+function hashString(value: string): number {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < value.length; i++) {
+    hash ^= value.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return hash >>> 0;
+}
+
+// Fisher-Yates driven by mulberry32, so one seed always gives one order.
+function seededShuffle<T>(items: T[], seed: number): T[] {
+  const result = [...items];
+  let state = seed;
+  const next = () => {
+    state = (state + 0x6d2b79f5) >>> 0;
+    let t = state;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(next() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+
 /**
  * The choices the fix dialog offers for an observation. An empty or missing
  * option list falls back to the expected value and the raw entry, so the
  * dialog never opens without a button to press.
+ *
+ * Authored and generated option lists put the correct value first, so the
+ * choices are shuffled. The shuffle is seeded by the observation, which keeps
+ * the order (and so the 1-4 hotkeys) stable while a dialog is open and across
+ * server and client renders, but varies it from one observation to the next.
  */
 export function getObservationChoices(
   observation: ClinicalObservation
@@ -140,7 +173,11 @@ export function getObservationChoices(
           observation.correctedValue ?? observation.rawValue,
           observation.rawValue,
         ];
-  return Array.from(new Set(choices));
+  const unique = Array.from(new Set(choices));
+  return seededShuffle(
+    unique,
+    hashString(`${observation.id}|${observation.field}|${observation.rawValue}`)
+  );
 }
 
 /**

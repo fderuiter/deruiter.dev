@@ -227,19 +227,27 @@ describe("Working With Duck - Deterministic Game Engine", () => {
     expect(state.excitement).toBe(40); // -20 excitement
     expect(state.soundCueQueue).toContain("trick-chime");
 
+    // Duck finishes one trick before listening for the next (#1307)
+    const finishTrick = (s: typeof state): typeof state => ({
+      ...s,
+      activeTrick: null,
+      duck: { ...s.duck, state: "IDLE_ROAM" },
+    });
+
     // 2. High Five Trick
-    state = performTrick(state, "HIGH_FIVE");
+    state = performTrick(finishTrick(state), "HIGH_FIVE");
     expect(state.activeTrick?.trick).toBe("HIGH_FIVE");
     expect(state.soundCueQueue).toContain("paw-clap");
 
     // 3. Drop It Trick on stolen hazard
+    state = finishTrick(state);
     state.duck.state = "SNEAKY_CHEW";
     state = performTrick(state, "DROP_IT");
     expect(state.soundCueQueue).toContain("ding");
     expect(state.naughtyVsGood).toBeGreaterThan(15);
 
     // 4. Spin Trick
-    state = performTrick(state, "SPIN");
+    state = performTrick(finishTrick(state), "SPIN");
     expect(state.activeTrick?.trick).toBe("SPIN");
     expect(state.soundCueQueue).toContain("spin-whoosh");
   });

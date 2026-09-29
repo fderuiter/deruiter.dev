@@ -7,6 +7,7 @@ import { useResizeObserver } from "@/hooks/useResizeObserver";
 import {
   IconArrowUp,
   IconCards,
+  IconClipboardCheck,
   IconBrandGithub,
   IconBrandLinkedin,
   IconCalendar,
@@ -194,6 +195,16 @@ export const Footer: React.FC = () => {
                   >
                     <IconCards className="w-3 h-3 text-cyan-400" />
                     Trial &amp; Error
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/arcade/study-director"
+                    onMouseEnter={handleHover}
+                    className="text-zinc-400 hover:text-brand-cyan transition-colors flex items-center gap-1.5"
+                  >
+                    <IconClipboardCheck className="w-3 h-3 text-cyan-400" />
+                    Study Director
                   </Link>
                 </li>
                 <li>

@@ -230,6 +230,22 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     locale: "en-US",
     isAccessibleForFree: true,
   },
+  studyDirector: {
+    title: "Study Director: Everything Is Fine",
+    description:
+      "Run a clinical study from kickoff to closeout. Spend limited attention, audit the sites behind the green dashboard, and defend your decisions to the FDA.",
+    path: "/arcade/study-director",
+    keywords: [
+      "Clinical Study Management Simulator",
+      "Study Director Game",
+      "Clinical Operations Simulation",
+      "FDA Inspection Readiness",
+      "Documentation Debt",
+    ],
+    inLanguage: "en-US",
+    locale: "en-US",
+    isAccessibleForFree: true,
+  },
   retroLabyrinth: {
     title: "Retro Labyrinth",
     description:

@@ -169,7 +169,6 @@
   "allowScripts": {
     "@clerk/shared": true,
     "@prisma/engines": true,
-    "@sentry/cli": true,
     "core-js": true,
     "esbuild": true,
     "fsevents": true,

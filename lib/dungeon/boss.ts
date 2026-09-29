@@ -31,17 +31,34 @@ export function createFaceMesh(): WireframeMesh {
   ];
 
   const edges = [
-    { p1: 0, p2: 1 }, { p1: 1, p2: 2 },
-    { p1: 0, p2: 3 }, { p1: 1, p2: 4 }, { p1: 1, p2: 5 }, { p1: 2, p2: 6 },
-    { p1: 3, p2: 4 }, { p1: 4, p2: 5 }, { p1: 5, p2: 6 },
-    { p1: 4, p2: 7 }, { p1: 5, p2: 8 },
-    { p1: 4, p2: 9 }, { p1: 5, p2: 9 }, { p1: 9, p2: 10 },
-    { p1: 3, p2: 11 }, { p1: 6, p2: 12 },
-    { p1: 7, p2: 11 }, { p1: 8, p2: 12 },
-    { p1: 10, p2: 14 }, { p1: 11, p2: 13 }, { p1: 12, p2: 15 },
-    { p1: 13, p2: 14 }, { p1: 14, p2: 15 },
-    { p1: 13, p2: 16 }, { p1: 14, p2: 17 }, { p1: 15, p2: 18 },
-    { p1: 16, p2: 17 }, { p1: 17, p2: 18 },
+    { p1: 0, p2: 1 },
+    { p1: 1, p2: 2 },
+    { p1: 0, p2: 3 },
+    { p1: 1, p2: 4 },
+    { p1: 1, p2: 5 },
+    { p1: 2, p2: 6 },
+    { p1: 3, p2: 4 },
+    { p1: 4, p2: 5 },
+    { p1: 5, p2: 6 },
+    { p1: 4, p2: 7 },
+    { p1: 5, p2: 8 },
+    { p1: 4, p2: 9 },
+    { p1: 5, p2: 9 },
+    { p1: 9, p2: 10 },
+    { p1: 3, p2: 11 },
+    { p1: 6, p2: 12 },
+    { p1: 7, p2: 11 },
+    { p1: 8, p2: 12 },
+    { p1: 10, p2: 14 },
+    { p1: 11, p2: 13 },
+    { p1: 12, p2: 15 },
+    { p1: 13, p2: 14 },
+    { p1: 14, p2: 15 },
+    { p1: 13, p2: 16 },
+    { p1: 14, p2: 17 },
+    { p1: 15, p2: 18 },
+    { p1: 16, p2: 17 },
+    { p1: 17, p2: 18 },
   ];
 
   return {
@@ -57,7 +74,10 @@ export function createFaceMesh(): WireframeMesh {
 /**
  * Creates an Octahedron 3D mesh for Security Daemons.
  */
-export function createOctahedronMesh(color: string = "#38bdf8", scale: number = 22): WireframeMesh {
+export function createOctahedronMesh(
+  color: string = "#38bdf8",
+  scale: number = 22
+): WireframeMesh {
   const vertices: Vec3[] = [
     { x: 0, y: -1.2, z: 0 },
     { x: 1, y: 0, z: 0 },
@@ -68,9 +88,18 @@ export function createOctahedronMesh(color: string = "#38bdf8", scale: number = 
   ];
 
   const edges = [
-    { p1: 0, p2: 1 }, { p1: 0, p2: 2 }, { p1: 0, p2: 3 }, { p1: 0, p2: 4 },
-    { p1: 5, p2: 1 }, { p1: 5, p2: 2 }, { p1: 5, p2: 3 }, { p1: 5, p2: 4 },
-    { p1: 1, p2: 2 }, { p1: 2, p2: 3 }, { p1: 3, p2: 4 }, { p1: 4, p2: 1 },
+    { p1: 0, p2: 1 },
+    { p1: 0, p2: 2 },
+    { p1: 0, p2: 3 },
+    { p1: 0, p2: 4 },
+    { p1: 5, p2: 1 },
+    { p1: 5, p2: 2 },
+    { p1: 5, p2: 3 },
+    { p1: 5, p2: 4 },
+    { p1: 1, p2: 2 },
+    { p1: 2, p2: 3 },
+    { p1: 3, p2: 4 },
+    { p1: 4, p2: 1 },
   ];
 
   return {
@@ -86,7 +115,10 @@ export function createOctahedronMesh(color: string = "#38bdf8", scale: number = 
 /**
  * Creates 3D cube mesh for projectiles.
  */
-export function createCubeMesh(color: string = "#f43f5e", scale: number = 8): WireframeMesh {
+export function createCubeMesh(
+  color: string = "#f43f5e",
+  scale: number = 8
+): WireframeMesh {
   const vertices: Vec3[] = [
     { x: -1, y: -1, z: -1 },
     { x: 1, y: -1, z: -1 },
@@ -99,9 +131,18 @@ export function createCubeMesh(color: string = "#f43f5e", scale: number = 8): Wi
   ];
 
   const edges = [
-    { p1: 0, p2: 1 }, { p1: 1, p2: 2 }, { p1: 2, p2: 3 }, { p1: 3, p2: 0 },
-    { p1: 4, p2: 5 }, { p1: 5, p2: 6 }, { p1: 6, p2: 7 }, { p1: 7, p2: 4 },
-    { p1: 0, p2: 4 }, { p1: 1, p2: 5 }, { p1: 2, p2: 6 }, { p1: 3, p2: 7 },
+    { p1: 0, p2: 1 },
+    { p1: 1, p2: 2 },
+    { p1: 2, p2: 3 },
+    { p1: 3, p2: 0 },
+    { p1: 4, p2: 5 },
+    { p1: 5, p2: 6 },
+    { p1: 6, p2: 7 },
+    { p1: 7, p2: 4 },
+    { p1: 0, p2: 4 },
+    { p1: 1, p2: 5 },
+    { p1: 2, p2: 6 },
+    { p1: 3, p2: 7 },
   ];
 
   return {
@@ -117,7 +158,10 @@ export function createCubeMesh(color: string = "#f43f5e", scale: number = 8): Wi
 /**
  * Creates 3D tetrahedron/pyramid mesh for high-velocity projectiles.
  */
-export function createTetrahedronMesh(color: string = "#a855f7", scale: number = 7): WireframeMesh {
+export function createTetrahedronMesh(
+  color: string = "#a855f7",
+  scale: number = 7
+): WireframeMesh {
   const vertices: Vec3[] = [
     { x: 0, y: -1, z: 0 },
     { x: -1, y: 1, z: -1 },
@@ -126,8 +170,12 @@ export function createTetrahedronMesh(color: string = "#a855f7", scale: number =
   ];
 
   const edges = [
-    { p1: 0, p2: 1 }, { p1: 0, p2: 2 }, { p1: 0, p2: 3 },
-    { p1: 1, p2: 2 }, { p1: 2, p2: 3 }, { p1: 3, p2: 1 },
+    { p1: 0, p2: 1 },
+    { p1: 0, p2: 2 },
+    { p1: 0, p2: 3 },
+    { p1: 1, p2: 2 },
+    { p1: 2, p2: 3 },
+    { p1: 3, p2: 1 },
   ];
 
   return {
@@ -246,7 +294,10 @@ export function createFaceForgeBoss(gridX: number, gridY: number): BossState {
 /**
  * Initializes the NEURAL_WARDEN_v9 Sovereign Boss State.
  */
-export function createNeuralWardenBoss(gridX: number, gridY: number): BossState {
+export function createNeuralWardenBoss(
+  gridX: number,
+  gridY: number
+): BossState {
   return {
     name: "NEURAL_WARDEN_v9 :: Sovereign Kernel Core",
     hp: 450,
@@ -264,6 +315,40 @@ export function createNeuralWardenBoss(gridX: number, gridY: number): BossState 
 }
 
 /**
+ * Most tiles a boss shot leads a moving player by.
+ */
+export const BOSS_MAX_LEAD_TILES = 3;
+
+/**
+ * Picks the point a boss salvo aims at. With no heading it is the player's
+ * tile; with one it is ahead of the player along that heading, by half the
+ * distance to the boss (a shot takes longer to reach a far player), capped at
+ * `BOSS_MAX_LEAD_TILES`.
+ *
+ * @param boss - The boss firing the salvo.
+ * @param playerX - The player's column.
+ * @param playerY - The player's row.
+ * @param playerHeading - The player's last step, if they are moving.
+ * @returns The grid point to aim at.
+ */
+export function getBossAimPoint(
+  boss: Pick<BossState, "x" | "y">,
+  playerX: number,
+  playerY: number,
+  playerHeading?: { dx: number; dy: number }
+): { x: number; y: number } {
+  if (!playerHeading || (playerHeading.dx === 0 && playerHeading.dy === 0)) {
+    return { x: playerX, y: playerY };
+  }
+  const distance = Math.hypot(playerX - boss.x, playerY - boss.y);
+  const lead = Math.min(BOSS_MAX_LEAD_TILES, distance * 0.5);
+  return {
+    x: playerX + Math.sign(playerHeading.dx) * lead,
+    y: playerY + Math.sign(playerHeading.dy) * lead,
+  };
+}
+
+/**
  * Updates boss animations, attack patterns, and projectile trajectories.
  */
 export function updateFaceForgeBoss(
@@ -272,12 +357,17 @@ export function updateFaceForgeBoss(
   playerY: number,
   nowMs: number,
   gridWidth: number,
-  gridHeight: number
+  gridHeight: number,
+  playerHeading?: { dx: number; dy: number }
 ): {
   updatedBoss: BossState;
   spawnedDamage: number;
 } {
   if (boss.defeated) return { updatedBoss: boss, spawnedDamage: 0 };
+
+  // #1321: aim where the player is heading, not where they stand, so a
+  // player walking past the boss is not missed by every shot.
+  const aim = getBossAimPoint(boss, playerX, playerY, playerHeading);
 
   const nextMesh: WireframeMesh = {
     ...boss.mesh,
@@ -314,21 +404,30 @@ export function updateFaceForgeBoss(
 
   if (nowMs - boss.lastSalvoTime >= attackIntervalMs) {
     if (phase === 1) {
-      const angle = Math.atan2(playerY - boss.y, playerX - boss.x);
+      // A narrow fan of three covers a step to either side of the aim point.
+      const baseAngle = Math.atan2(aim.y - boss.y, aim.x - boss.x);
       const speed = 0.08;
-      newProjectiles.push({
-        id: `mesh-cube-${nowMs}-1`,
-        x: boss.x,
-        y: boss.y,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
-        mesh: createCubeMesh("#f43f5e", 7),
-        damage: 15,
-        alive: true,
+      [baseAngle - 0.2, baseAngle, baseAngle + 0.2].forEach((angle, idx) => {
+        newProjectiles.push({
+          id: `mesh-cube-${nowMs}-${idx + 1}`,
+          x: boss.x,
+          y: boss.y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          mesh: createCubeMesh("#f43f5e", 7),
+          damage: 15,
+          alive: true,
+        });
       });
     } else if (phase === 2) {
-      const baseAngle = Math.atan2(playerY - boss.y, playerX - boss.x);
-      const spreadAngles = [baseAngle - 0.25, baseAngle, baseAngle + 0.25];
+      const baseAngle = Math.atan2(aim.y - boss.y, aim.x - boss.x);
+      const spreadAngles = [
+        baseAngle - 0.4,
+        baseAngle - 0.2,
+        baseAngle,
+        baseAngle + 0.2,
+        baseAngle + 0.4,
+      ];
       const speed = 0.11;
 
       spreadAngles.forEach((ang, idx) => {
@@ -404,7 +503,10 @@ export function updateFaceForgeBoss(
     mesh: nextMesh,
     attackIntervalMs,
     projectiles: liveProjectiles,
-    lastSalvoTime: nowMs - boss.lastSalvoTime >= attackIntervalMs ? nowMs : boss.lastSalvoTime,
+    lastSalvoTime:
+      nowMs - boss.lastSalvoTime >= attackIntervalMs
+        ? nowMs
+        : boss.lastSalvoTime,
     phaseTitle,
   };
 

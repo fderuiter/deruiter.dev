@@ -133,6 +133,7 @@
 - [lib/dungeon/generator](lib/dungeon/generator/README.md)
 - [lib/dungeon/hacking](lib/dungeon/hacking/README.md)
 - [lib/dungeon/metaprogression](lib/dungeon/metaprogression/README.md)
+- [lib/dungeon/objective](lib/dungeon/objective/README.md)
 - [lib/dungeon/room-label](lib/dungeon/room-label/README.md)
 - [lib/dungeon/tsp](lib/dungeon/tsp/README.md)
 - [lib/dungeon/types](lib/dungeon/types/README.md)

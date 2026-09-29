@@ -96,6 +96,12 @@ function handleGlobalCoordinatorKeyDown(e: KeyboardEvent) {
     return;
   }
 
+  // A game that already handled the key owns it: Quasi-Perfect's H toggles
+  // hints, so it must not also open the manual (#1323). ? still opens it.
+  if (e.defaultPrevented) {
+    return;
+  }
+
   // Filter candidates that allow hotkeys and are not blocked by a foreign keyboard boundary
   const targetBoundary = target?.closest?.("[data-keyboard-boundary]");
   const candidates = registeredInstances.filter((inst) => {

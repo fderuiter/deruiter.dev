@@ -579,7 +579,8 @@ export const MultiPlanarSliceViewer: React.FC<MultiPlanarSliceViewerProps> = ({
               min="0"
               max={VOLUME_SIZE - 1}
               value={crosshair.y}
-              aria-label="Coronal slice Y coordinate"
+              aria-label="Coronal slice"
+              aria-valuetext={`Coronal slice {crosshair.y} of {VOLUME_SIZE - 1}`}
               onChange={(e) =>
                 onCrosshairChange({
                   ...crosshair,
@@ -632,7 +633,8 @@ export const MultiPlanarSliceViewer: React.FC<MultiPlanarSliceViewerProps> = ({
               min="0"
               max={VOLUME_SIZE - 1}
               value={crosshair.z}
-              aria-label="Axial slice Z coordinate"
+              aria-label="Axial slice"
+              aria-valuetext={`Axial slice {crosshair.z} of {VOLUME_SIZE - 1}`}
               onChange={(e) =>
                 onCrosshairChange({
                   ...crosshair,
@@ -685,7 +687,8 @@ export const MultiPlanarSliceViewer: React.FC<MultiPlanarSliceViewerProps> = ({
               min="0"
               max={VOLUME_SIZE - 1}
               value={crosshair.x}
-              aria-label="Sagittal slice X coordinate"
+              aria-label="Sagittal slice"
+              aria-valuetext={`Sagittal slice {crosshair.x} of {VOLUME_SIZE - 1}`}
               onChange={(e) =>
                 onCrosshairChange({
                   ...crosshair,

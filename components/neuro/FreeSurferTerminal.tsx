@@ -117,7 +117,10 @@ export const FreeSurferTerminal: React.FC<FreeSurferTerminalProps> = ({
       <div
         ref={logContainerRef}
         data-testid="terminal-log-container"
-        className="flex-1 p-3 overflow-y-auto font-mono text-xs space-y-1.5 scrollbar-thin scrollbar-thumb-zinc-800 min-w-0"
+        role="log"
+        aria-label="FreeSurfer terminal output"
+        tabIndex={0}
+        className="flex-1 p-3 overflow-y-auto font-mono text-xs space-y-1.5 scrollbar-thin scrollbar-thumb-zinc-800 min-w-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-cyan/60"
       >
         {logs.map((log) => (
           <div
@@ -175,8 +178,8 @@ export const FreeSurferTerminal: React.FC<FreeSurferTerminalProps> = ({
         />
         <button
           type="submit"
-          aria-label="Execute command"
-          title="Execute command"
+          aria-label="Send command"
+          title="Send command"
           className="p-1.5 rounded text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center"
         >
           <IconCornerDownLeft className="w-4 h-4" />

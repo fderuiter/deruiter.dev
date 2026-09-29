@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { settleFooterTicker } from "./helpers/footer-ticker";
 
 const ALL_FIRST_CLASS_ROUTES = [
   "/",
@@ -107,8 +108,13 @@ test.describe("SEO & Navigation Full-Spectrum Suite", () => {
       "/case-studies/clinical-data-mapper",
     ];
 
+    // Entrance fades and the footer ticker cross-fade pass through partial
+    // opacity, which axe measures as low contrast. Scan the settled page.
+    await page.emulateMedia({ reducedMotion: "reduce" });
+
     for (const route of criticalRoutes) {
       await page.goto(route, { waitUntil: "domcontentloaded" });
+      await settleFooterTicker(page);
       const accessibilityScanResults = await new AxeBuilder({ page })
         .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
         .analyze();

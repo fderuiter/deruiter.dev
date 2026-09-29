@@ -19,7 +19,7 @@
     "setup:clerk": "./scripts/setup-clerk-wizard.sh",
     "doctor": "npx tsx scripts/dx.ts doctor",
     "doctor:fix": "npx tsx scripts/dx.ts doctor --fix",
-    "verify": "npm run audit:a11y && npx tsx scripts/dx.ts verify",
+    "verify": "npx tsx scripts/dx.ts verify",
     "commit": "npx tsx scripts/dx.ts commit",
     "env:check": "npx tsx scripts/dx.ts env",
     "preflight": "npx tsx scripts/dx.ts preflight",

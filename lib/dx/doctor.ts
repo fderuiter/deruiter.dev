@@ -1422,6 +1422,11 @@ export function checkAccessibilityStandards(
   };
 }
 
+/**
+ * Asserts that no test suite disables axe rules (`disableRules`) and that any
+ * accessibility scan reports left by a local `npm run audit:a11y` run record
+ * zero violations. A missing report directory passes.
+ */
 export function checkAccessibilityAuditIntegrity(
   root: string
 ): DiagnosticCheckResult {
@@ -1453,45 +1458,37 @@ export function checkAccessibilityAuditIntegrity(
     scanDir(testsDir);
   }
 
-  // 2. Validate scan reports in playwright-report/accessibility-results/
+  // 2. Validate scan reports in playwright-report/accessibility-results/ when
+  // a local audit has produced them. A fresh checkout has no report yet, and
+  // that is not a violation: CI's heavy gate runs the suite itself.
   const resultsDir = path.join(
     root,
     "playwright-report",
     "accessibility-results"
   );
-  if (!fs.existsSync(resultsDir)) {
-    violations.push(
-      "Missing accessibility report directory 'playwright-report/accessibility-results'. Run 'npm run audit:a11y' to generate reports."
-    );
-  } else {
+  if (fs.existsSync(resultsDir)) {
     const jsonFiles = fs
       .readdirSync(resultsDir)
       .filter((f) => f.endsWith(".json"));
-    if (jsonFiles.length === 0) {
-      violations.push(
-        "No accessibility scan report files found in 'playwright-report/accessibility-results'. Run 'npm run audit:a11y' to generate reports."
-      );
-    } else {
-      for (const file of jsonFiles) {
-        try {
-          const content = fs.readFileSync(path.join(resultsDir, file), "utf-8");
-          const data = JSON.parse(content);
-          const vCount =
-            data.violationsCount !== undefined
-              ? data.violationsCount
-              : data.violations
-                ? data.violations.length
-                : 0;
-          if (vCount > 0) {
-            violations.push(
-              `Accessibility report '${file}' (${data.state || "unknown state"}) contains ${vCount} WCAG violation(s).`
-            );
-          }
-        } catch {
+    for (const file of jsonFiles) {
+      try {
+        const content = fs.readFileSync(path.join(resultsDir, file), "utf-8");
+        const data = JSON.parse(content);
+        const vCount =
+          data.violationsCount !== undefined
+            ? data.violationsCount
+            : data.violations
+              ? data.violations.length
+              : 0;
+        if (vCount > 0) {
           violations.push(
-            `Unable to parse accessibility report JSON file '${file}'.`
+            `Accessibility report '${file}' (${data.state || "unknown state"}) contains ${vCount} WCAG violation(s).`
           );
         }
+      } catch {
+        violations.push(
+          `Unable to parse accessibility report JSON file '${file}'.`
+        );
       }
     }
   }

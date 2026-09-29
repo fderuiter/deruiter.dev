@@ -16,6 +16,7 @@ import {
   AlignmentGuide,
   INFERENCE_RULES,
   getCompatibleTargets,
+  evaluateProofStatus,
 } from "@/lib/proof-utils";
 
 interface ProofCanvasProps {
@@ -45,7 +46,7 @@ interface ProofCanvasProps {
   handleNodePointerDown: (e: React.PointerEvent, id: string) => void;
   handleNodePointerMove: (e: React.PointerEvent, id: string) => void;
   handleNodePointerUp: (e: React.PointerEvent, id: string) => void;
-  handleNodeClick: (id: string) => void;
+  handleNodeClick: (id: string, addToSelection?: boolean) => void;
   handleHandlePointerDown: (e: React.PointerEvent, id: string) => void;
   handleCanvasPointerMove: (e: React.PointerEvent) => void;
   handleCanvasPointerUp: (e: React.PointerEvent) => void;
@@ -84,6 +85,7 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
   svgCanvasRef,
   mobileActiveView,
 }) => {
+  const proofStatus = evaluateProofStatus(edges, activeTheorem);
   return (
     <div
       className={`lg:col-span-8 flex flex-col gap-4 ${
@@ -154,6 +156,14 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
           </span>
         </div>
 
+        <p
+          id="proof-node-keyboard-help"
+          className="px-4 py-2 text-xs text-slate-300"
+        >
+          Tab to a node. Enter or Space selects it; activate another node to
+          connect. Hold Shift while activating nodes to select several premises
+          for a rule. Connection handles also support Enter or Space.
+        </p>
         {/* SVG Canvas Area (Responsive scroll wrapper) */}
         <div
           ref={canvasWrapperRef}
@@ -337,9 +347,10 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
               const isSelected = selectedNodeIds.includes(node.id);
               const isInspected = inspectedNodeId === node.id;
               const isNodeProven =
-                node.id === "A" ||
-                node.id === "B" ||
-                edges.some((e) => e.target === node.id);
+                node.type === "premise" ||
+                (node.id === activeTheorem.intermediateNodeId
+                  ? proofStatus.isC_Proven
+                  : proofStatus.isE_Proven);
 
               const isDimmed =
                 dragConnection &&
@@ -354,7 +365,7 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
                 selectedNodeIds.length === 1
                   ? getCompatibleTargets(
                       selectedNodeIds[0],
-                      activeTheorem.id,
+                      activeTheorem,
                       edges
                     )
                   : [];
@@ -376,8 +387,7 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
                   onPointerDown={(e) => handleNodePointerDown(e, node.id)}
                   onPointerMove={(e) => handleNodePointerMove(e, node.id)}
                   onPointerUp={(e) => handleNodePointerUp(e, node.id)}
-                  onClick={() => handleNodeClick(node.id)}
-                  className={`group w-40 p-2.5 rounded-xl border cursor-pointer transition-all shadow-md select-none ${
+                  className={`group w-[160px] p-2.5 rounded-xl border cursor-pointer transition-all shadow-md select-none ${
                     isDimmed ? "opacity-40" : "opacity-100"
                   } ${
                     isHoveredInDrag
@@ -409,35 +419,58 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
                     </div>
                   )}
 
-                  {/* Node Header & Status */}
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-950 text-slate-300">
-                      Node {node.id}
-                    </span>
-                    <span
-                      className={`text-[9px] font-mono px-1 py-0.5 rounded ${
-                        isNodeProven
-                          ? "bg-emerald-950 text-emerald-400 border border-emerald-800/40"
-                          : "bg-amber-950 text-amber-400 border border-amber-800/40"
-                      }`}
-                    >
-                      {isNodeProven ? "PROVEN" : "PENDING"}
-                    </span>
-                  </div>
-                  <div className="font-mono text-sm font-bold text-white mb-0.5">
-                    {node.label}
-                  </div>
-                  <div className="text-[10px] text-slate-400 line-clamp-2 leading-tight">
-                    {node.meaning}
-                  </div>
+                  <button
+                    type="button"
+                    tabIndex={0}
+                    aria-label={`Node ${node.id}, ${node.label}, ${node.type}, ${isNodeProven ? "proven" : "pending"}, ${isSelected ? "selected" : "not selected"}`}
+                    aria-pressed={isSelected}
+                    aria-describedby="proof-node-keyboard-help"
+                    onClick={(event) =>
+                      handleNodeClick(node.id, event.shiftKey)
+                    }
+                    onKeyDown={(event) => {
+                      if (
+                        event.shiftKey &&
+                        (event.key === "Enter" || event.key === " ")
+                      ) {
+                        event.preventDefault();
+                        handleNodeClick(node.id, true);
+                      }
+                    }}
+                    className="block w-full min-h-11 min-w-0 pr-4 text-left rounded-md cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-amber-400"
+                  >
+                    {/* Node Header & Status */}
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-950 text-slate-300">
+                        Node {node.id}
+                      </span>
+                      <span
+                        className={`text-[9px] font-mono px-1 py-0.5 rounded ${
+                          isNodeProven
+                            ? "bg-emerald-950 text-emerald-400 border border-emerald-800/40"
+                            : "bg-amber-950 text-amber-400 border border-amber-800/40"
+                        }`}
+                      >
+                        {isNodeProven ? "PROVEN" : "PENDING"}
+                      </span>
+                    </div>
+                    <div className="min-w-0 break-words font-mono text-sm font-bold text-white mb-0.5">
+                      {node.label}
+                    </div>
+                    <div className="text-[10px] text-slate-400 line-clamp-2 leading-tight">
+                      {node.meaning}
+                    </div>
+                  </button>
 
                   {/* Connection Anchor Handle Port (Right Edge) */}
                   <button
                     type="button"
+                    tabIndex={0}
                     onPointerDown={(e) => handleHandlePointerDown(e, node.id)}
-                    className="absolute -right-2 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-slate-950 border-2 border-brand-cyan/80 hover:border-brand-cyan hover:scale-125 hover:bg-brand-cyan transition-all shadow-md shadow-cyan-500/40 flex items-center justify-center cursor-crosshair z-20 group-hover:opacity-100 opacity-80"
-                    title={`Drag connection from Node ${node.id}`}
-                    aria-label={`Drag connection handle from Node ${node.id}`}
+                    onClick={() => handleNodeClick(node.id)}
+                    className="absolute -right-6 top-1/2 -translate-y-1/2 w-11 h-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400 rounded-full bg-slate-950 border-2 border-brand-cyan/80 hover:border-brand-cyan hover:scale-125 hover:bg-brand-cyan transition-all shadow-md shadow-cyan-500/40 flex items-center justify-center cursor-crosshair z-20 group-hover:opacity-100 opacity-80"
+                    title={`Connect Node ${node.id}: drag, or press Enter/Space then activate the target node`}
+                    aria-label={`Drag connection handle from Node ${node.id}, ${node.label}`}
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-brand-cyan group-hover:bg-slate-950" />
                   </button>

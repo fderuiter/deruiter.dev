@@ -1011,12 +1011,25 @@ export function ProofWorkspaceClient() {
     announceToScreenReader("Workspace state reset to default layout.");
   };
 
-  const handleNodeClick = (nodeId: string) => {
+  const handleNodeClick = (nodeId: string, addToSelection = false) => {
     try {
       playHover();
     } catch {}
 
     setInspectedNodeId(nodeId);
+
+    if (addToSelection) {
+      const wasSelected = selectedNodeIds.includes(nodeId);
+      setSelectedNodeIds(
+        wasSelected
+          ? selectedNodeIds.filter((id) => id !== nodeId)
+          : [...selectedNodeIds, nodeId]
+      );
+      const message = `${wasSelected ? "Deselected" : "Selected"} Node ${nodeId} for rule application.`;
+      showToast(message, "info");
+      announceToScreenReader(message);
+      return;
+    }
 
     if (selectedNodeIds.length === 0) {
       setSelectedNodeIds([nodeId]);

@@ -170,10 +170,13 @@ export const FreeSurferTerminal: React.FC<FreeSurferTerminalProps> = ({
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Enter FreeSurfer command (e.g. recon-all -autorecon2-cp, stats, help)..."
+          aria-label="FreeSurfer command input"
           className="flex-1 min-w-0 bg-transparent text-xs font-mono text-white placeholder-zinc-400 focus:outline-none"
         />
         <button
           type="submit"
+          aria-label="Execute command"
+          title="Execute command"
           className="p-1.5 rounded text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center"
         >
           <IconCornerDownLeft className="w-4 h-4" />

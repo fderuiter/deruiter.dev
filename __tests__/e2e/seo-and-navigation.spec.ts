@@ -111,7 +111,6 @@ test.describe("SEO & Navigation Full-Spectrum Suite", () => {
       await page.goto(route, { waitUntil: "domcontentloaded" });
       const accessibilityScanResults = await new AxeBuilder({ page })
         .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
-        .disableRules(["color-contrast"])
         .analyze();
 
       const criticalViolations = accessibilityScanResults.violations.filter(

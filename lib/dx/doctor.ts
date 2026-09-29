@@ -1422,6 +1422,109 @@ export function checkAccessibilityStandards(
   };
 }
 
+export function checkAccessibilityAuditIntegrity(
+  root: string
+): DiagnosticCheckResult {
+  const violations: string[] = [];
+
+  // 1. Scan __tests__/ for prohibited disableRules calls
+  const testsDir = path.join(root, "__tests__");
+  if (fs.existsSync(testsDir)) {
+    const scanDir = (dir: string) => {
+      const entries = fs.readdirSync(dir, { withFileTypes: true });
+      for (const entry of entries) {
+        const fullPath = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          scanDir(fullPath);
+        } else if (entry.isFile() && /\.(ts|tsx|js|jsx)$/.test(entry.name)) {
+          const content = fs.readFileSync(fullPath, "utf-8");
+          if (
+            content.includes("disableRules:") ||
+            content.includes(".disableRules(")
+          ) {
+            const relPath = path.relative(root, fullPath);
+            violations.push(
+              `Prohibited WCAG rule override 'disableRules' detected in test suite '${relPath}'`
+            );
+          }
+        }
+      }
+    };
+    scanDir(testsDir);
+  }
+
+  // 2. Validate scan reports in playwright-report/accessibility-results/
+  const resultsDir = path.join(
+    root,
+    "playwright-report",
+    "accessibility-results"
+  );
+  if (!fs.existsSync(resultsDir)) {
+    violations.push(
+      "Missing accessibility report directory 'playwright-report/accessibility-results'. Run 'npm run audit:a11y' to generate reports."
+    );
+  } else {
+    const jsonFiles = fs
+      .readdirSync(resultsDir)
+      .filter((f) => f.endsWith(".json"));
+    if (jsonFiles.length === 0) {
+      violations.push(
+        "No accessibility scan report files found in 'playwright-report/accessibility-results'. Run 'npm run audit:a11y' to generate reports."
+      );
+    } else {
+      for (const file of jsonFiles) {
+        try {
+          const content = fs.readFileSync(path.join(resultsDir, file), "utf-8");
+          const data = JSON.parse(content);
+          const vCount =
+            data.violationsCount !== undefined
+              ? data.violationsCount
+              : data.violations
+                ? data.violations.length
+                : 0;
+          if (vCount > 0) {
+            violations.push(
+              `Accessibility report '${file}' (${data.state || "unknown state"}) contains ${vCount} WCAG violation(s).`
+            );
+          }
+        } catch {
+          violations.push(
+            `Unable to parse accessibility report JSON file '${file}'.`
+          );
+        }
+      }
+    }
+  }
+
+  if (violations.length === 0) {
+    return {
+      id: "a11y-audit-integrity",
+      name: "Shift-Left Accessibility Rule Integrity & Zero-Violation Scans",
+      category: "accessibility",
+      status: "pass",
+      message:
+        "Zero WCAG rule suppressions (disableRules) in test suites and zero violations in accessibility scan reports.",
+    };
+  }
+
+  return {
+    id: "a11y-audit-integrity",
+    name: "Shift-Left Accessibility Rule Integrity & Zero-Violation Scans",
+    category: "accessibility",
+    status: "fail",
+    message: `${violations.length} shift-left accessibility integrity violation(s) detected`,
+    details: violations,
+    fixable: false,
+    remediation: {
+      id: "fix-a11y-audit-integrity",
+      title: "Run accessibility audit suite and fix underlying WCAG issues",
+      command: "npm run audit:a11y",
+      autoFixable: false,
+      scope: "accessibility",
+    },
+  };
+}
+
 /**
  * Check Defect Remediation & Root-Cause Invariants (AGENTS.md Invariant #11).
  * Asserts presence of regression test harness and computational boundary defenses.
@@ -2415,6 +2518,7 @@ export async function runDiagnostics(
     checkOpenApiParity(root, fix),
     checkHydrationSafety(root),
     checkAccessibilityStandards(root, fix),
+    checkAccessibilityAuditIntegrity(root),
     checkDefectRemediationInvariants(root),
     checkProactiveDefectInterception(root),
     checkLayoutTextClippingInvariants(root),

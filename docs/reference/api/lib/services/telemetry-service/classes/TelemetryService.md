@@ -18,11 +18,36 @@
 
 ## Methods
 
+### clearAggregateCache()
+
+> `static` **clearAggregateCache**(): `void`
+
+Clears the in-memory aggregate stats cache.
+
+#### Returns
+
+`void`
+
+***
+
+### clearAggregateStatsCache()
+
+> `static` **clearAggregateStatsCache**(): `void`
+
+Clears the in-memory aggregate stats cache.
+
+#### Returns
+
+`void`
+
+***
+
 ### getAggregateStats()
 
 > `static` **getAggregateStats**(): `Promise`\<`Record`\<`string`, \{ `clicks`: `number`; `views`: `number`; \}\>\>
 
 Fetches aggregate portfolio view/click telemetry statistics.
+Results are cached in memory for 10 seconds.
 
 #### Returns
 

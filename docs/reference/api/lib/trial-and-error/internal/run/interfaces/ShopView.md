@@ -28,6 +28,14 @@ Everything the shop screen renders.
 
 ***
 
+### purchases
+
+> **purchases**: `number`
+
+Purchases made this visit: a new pack opened is a new reveal.
+
+***
+
 ### relicSellValues
 
 > **relicSellValues**: `Record`\<`string`, `number`\>

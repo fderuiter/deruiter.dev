@@ -8,3 +8,4 @@ export * from "./ai";
 export * from "./hacking";
 export * from "./metaprogression";
 export * from "./audio";
+export * from "./room-label";

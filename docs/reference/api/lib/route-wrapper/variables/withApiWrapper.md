@@ -20,7 +20,7 @@ Sentry exception logging, error sanitization, and security header enforcement.
 
 #### TSchema
 
-`TSchema` *extends* `ZodSchema`
+`TSchema` *extends* `ZodType`\<`unknown`, `unknown`, `$ZodTypeInternals`\<`unknown`, `unknown`\>\>
 
 ### Parameters
 
@@ -52,7 +52,7 @@ Sentry exception logging, error sanitization, and security header enforcement.
 
 #### options?
 
-[`ApiWrapperOptions`](../interfaces/ApiWrapperOptions.md)\<`ZodSchema`\>
+[`ApiWrapperOptions`](../interfaces/ApiWrapperOptions.md)\<`ZodType`\<`unknown`, `unknown`, `$ZodTypeInternals`\<`unknown`, `unknown`\>\>\>
 
 ### Returns
 

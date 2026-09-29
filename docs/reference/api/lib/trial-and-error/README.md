@@ -2156,6 +2156,12 @@ Re-exports [TableInspectionView](internal/table/interfaces/TableInspectionView.m
 
 ***
 
+### TableOutcome
+
+Re-exports [TableOutcome](internal/table/type-aliases/TableOutcome.md)
+
+***
+
 ### TableRules
 
 Re-exports [TableRules](types/type-aliases/TableRules.md)

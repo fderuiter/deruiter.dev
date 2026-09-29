@@ -60,6 +60,7 @@ model TelemetryEvent {
   @@index([projectSlug])
   @@index([eventType])
   @@index([createdAt])
+  @@index([eventType, projectSlug])
 }
 
 model TelemetryDailyRollup {

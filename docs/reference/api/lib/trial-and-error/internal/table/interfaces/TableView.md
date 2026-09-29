@@ -6,8 +6,6 @@
 
 # Interface: TableView
 
-Everything the Card Table renders, derived purely from scenario and state.
-
 ## Properties
 
 ### accessLog
@@ -100,6 +98,22 @@ The consumable tray.
 
 ***
 
+### cpu
+
+> **cpu**: `object`
+
+CPU left to spend this Blind, and CPU spent so far.
+
+#### available
+
+> **available**: `number`
+
+#### spent
+
+> **spent**: `number`
+
+***
+
 ### cpuAllocation
 
 > **cpuAllocation**: `number`
@@ -151,6 +165,12 @@ What one discard costs, with any penalty.
 > **discardFree**: `boolean`
 
 The next discard is one of the Blind's free discards (#924).
+
+***
+
+### discards
+
+> **discards**: `number`
 
 ***
 
@@ -303,6 +323,14 @@ without them it would be one. Empty otherwise.
 
 ***
 
+### handIds
+
+> **handIds**: `string`[]
+
+Card ids in hand, in hand order: the ids of `hand`.
+
+***
+
 ### handLevels
 
 > **handLevels**: [`HandLevels`](../../../types/type-aliases/HandLevels.md)
@@ -325,11 +353,25 @@ Hands left under a hand limit, or null when there is none.
 
 ***
 
+### handsPlayed
+
+> **handsPlayed**: `number`
+
+***
+
 ### handTable
 
 > **handTable**: [`HandLevelRow`](../../hands/interfaces/HandLevelRow.md)[]
 
 The run's hand table at current levels, weakest hand first, for Run Info.
+
+***
+
+### inspecting
+
+> **inspecting**: `string` \| `null`
+
+The card whose Inspect drawer is open, or null.
 
 ***
 
@@ -344,6 +386,22 @@ The run's hand table at current levels, weakest hand first, for Run Info.
 > **invalidations**: [`SnapshotInvalidation`](../../snapshots/interfaces/SnapshotInvalidation.md)[]
 
 Every population transition so far this study, oldest first.
+
+***
+
+### lastEvent
+
+> **lastEvent**: [`TableEvent`](TableEvent.md) \| `null`
+
+The latest table event, for announcements and cues.
+
+***
+
+### lastPlay
+
+> **lastPlay**: [`PlayedHand`](PlayedHand.md) \| `null`
+
+The last hand played this Blind, for playback and its summary.
 
 ***
 
@@ -388,6 +446,14 @@ Every modifier in force: the boss's, then any a crisis imposed.
 #### name
 
 > **name**: `string`
+
+***
+
+### outcome
+
+> **outcome**: [`TableOutcome`](../type-aliases/TableOutcome.md) \| `null`
+
+How the Blind ended, or null while it is being reviewed.
 
 ***
 
@@ -696,6 +762,12 @@ A defended encounter's relic offer, or null.
 
 ***
 
+### roundScore
+
+> **roundScore**: `number`
+
+***
+
 ### rulebook
 
 > **rulebook**: `object`
@@ -742,6 +814,14 @@ The SAP rulebook in force, amendments applied.
 
 Every hand played this Blind, oldest first, read from the same timeline
 the playback uses. The scores sum to the round score.
+
+***
+
+### selected
+
+> **selected**: `string`[]
+
+Selected card ids, in selection order.
 
 ***
 
@@ -855,3 +935,19 @@ hand agree.
 > **staleSelected**: `string`[]
 
 Selected cards that are stale, in selection order.
+
+***
+
+### status
+
+> **status**: [`DeskStatus`](../../desk/type-aliases/DeskStatus.md)
+
+Whether the Blind is being reviewed, cleared or failed.
+
+***
+
+### untouched
+
+> **untouched**: `boolean`
+
+Nothing has been played, discarded or spent this Blind yet.

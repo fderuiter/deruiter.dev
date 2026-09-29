@@ -264,7 +264,7 @@ test.describe("Mobile & Tablet Touch Interactions Suite", () => {
       exact: true,
     });
     const iceBtn = page.getByRole("button", {
-      name: "4: Mortar",
+      name: "4: Cryo-Mortar",
       exact: true,
     });
 

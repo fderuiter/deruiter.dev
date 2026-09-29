@@ -629,4 +629,36 @@ export const COMMAND_REGISTRY: CommandDescriptor[] = [
     options: [],
     examples: ["npm run dx check:migrations"],
   },
+  {
+    name: "db:sync-blog",
+    aliases: ["sync-blog", "sync:blog"],
+    summary: "Synchronize audited blog posts into Neon PostgreSQL database",
+    description:
+      "Synchronizes local audited blog post dispatches into database rows. Defaults to dry-run mode unless --commit is supplied.",
+    category: "workflow",
+    isMutating: true,
+    options: [
+      {
+        name: "commit",
+        type: "boolean",
+        description: "Commit created or updated blog posts to database",
+        default: false,
+      },
+    ],
+    examples: [
+      "npm run dx db:sync-blog",
+      "npm run dx db:sync-blog -- --commit",
+    ],
+  },
+  {
+    name: "audit:a11y",
+    aliases: ["a11y:audit", "a11y"],
+    summary: "Generate WCAG accessibility report from automated test results",
+    description:
+      "Compiles Playwright-Axe automated accessibility test results into summary reports.",
+    category: "diagnostics",
+    isMutating: false,
+    options: [],
+    examples: ["npm run dx audit:a11y"],
+  },
 ];

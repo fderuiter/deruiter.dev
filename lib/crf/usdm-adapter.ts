@@ -161,10 +161,14 @@ export function extractCodelistFromUsdmObject(
   if (!raw || typeof raw !== "object") return null;
   const obj = raw as Record<string, unknown>;
 
-  const target = (obj.codeList ||
-    obj.valueSet ||
-    obj.codelist ||
-    obj) as Record<string, unknown>;
+  const rawTarget =
+    (obj.codeList && typeof obj.codeList === "object" ? obj.codeList : null) ??
+    (obj.valueSet && typeof obj.valueSet === "object" ? obj.valueSet : null) ??
+    (obj.codelist && typeof obj.codelist === "object" ? obj.codelist : null) ??
+    obj;
+
+  if (!rawTarget || typeof rawTarget !== "object") return null;
+  const target = rawTarget as Record<string, unknown>;
 
   const id =
     target.id ||
@@ -204,17 +208,22 @@ export function extractCodelistFromUsdmObject(
             order: idx + 1,
           };
         }
-        const o = (opt || {}) as Record<string, unknown>;
-        const code = String(
-          o.code ?? o.value ?? o.id ?? o.name ?? o.term ?? idx + 1
-        );
-        const label = String(
-          o.label ?? o.decode ?? o.name ?? o.text ?? o.description ?? code
-        );
-        const nciCode = (o.nciCode ||
-          o.cCode ||
-          o.conceptId ||
-          (code.match(/^C\d+$/) ? code : undefined)) as string | undefined;
+        if (!opt || typeof opt !== "object") {
+          return {
+            code: String(opt ?? idx + 1),
+            label: String(opt ?? idx + 1),
+            order: idx + 1,
+          };
+        }
+        const o = opt as Record<string, unknown>;
+        const rawCode =
+          o.code ?? o.value ?? o.id ?? o.name ?? o.term ?? idx + 1;
+        const code = String(rawCode);
+        const rawLabel =
+          o.label ?? o.decode ?? o.name ?? o.text ?? o.description ?? code;
+        const label = String(rawLabel);
+        const nciCode = (o.nciCode || o.cCode || o.conceptId) as
+          string | undefined;
         const order =
           typeof o.order === "number"
             ? o.order
@@ -949,14 +958,14 @@ export function importStudyFromUsdm(
   const protocol: StudyProtocol = {
     $schema: getUniversalCrfSchemaUrl(),
     schemaVersion: "1.0.0",
-    id: studyObj.id || "imported_usdm_study",
-    protocolNumber: studyObj.protocolNumber || studyObj.name || "USDM-STUDY",
-    studyName: studyObj.title || studyObj.name || "Imported USDM Protocol",
-    phase: (studyObj.phase as StudyProtocol["phase"]) || "Phase III",
-    sponsor: studyObj.sponsor || "Clinical Sponsor",
-    therapeuticArea: studyObj.therapeuticArea || "General Medicine",
-    version: studyObj.version || "1.0",
-    lastModified: studyObj.lastModified || new Date().toISOString(),
+    id: studyObj.id ?? "imported_usdm_study",
+    protocolNumber: studyObj.protocolNumber ?? studyObj.name ?? "USDM-STUDY",
+    studyName: studyObj.title ?? studyObj.name ?? "Imported USDM Protocol",
+    phase: (studyObj.phase as StudyProtocol["phase"]) ?? "Phase III",
+    sponsor: studyObj.sponsor ?? "Clinical Sponsor",
+    therapeuticArea: studyObj.therapeuticArea ?? "General Medicine",
+    version: studyObj.version ?? "1.0",
+    lastModified: studyObj.lastModified ?? new Date().toISOString(),
     forms,
     visits,
     codelists:

@@ -1,0 +1,35 @@
+name: Scheduled Security Audit
+
+on:
+  schedule:
+    # Daily at 06:00 UTC. Continuous vulnerability monitoring for production
+    # dependencies during dormant development periods without active PRs.
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scheduled-security-audit:
+    name: Scheduled Vulnerability Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v5
+        with:
+          ref: main
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Execute Security Audit Gate
+        run: npm run audit:security

@@ -42,16 +42,6 @@
 
 ***
 
-### letterSpacing?
-
-> `optional` **letterSpacing?**: `number`
-
-#### Inherited from
-
-`RichInlineItem.letterSpacing`
-
-***
-
 ### text
 
 > **text**: `string`

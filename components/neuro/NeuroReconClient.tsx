@@ -35,10 +35,13 @@ import {
   countNeuroDraftEdits,
   getNeuroProvenance,
   isNeuroSelectionValid,
-  resolveNeuroHotkey,
   withNeuroDraft,
   type NeuroDraft,
   type NeuroDraftMap,
+  NEURO_TERMINAL_SIMULATION_NOTICE,
+  formatScenarioDiagnostics,
+  parseReconAllCommand,
+  resolveNeuroHotkey,
 } from "@/lib/neuro";
 import { SyntheticVolume, VOLUME_SIZE } from "@/lib/neuro/volume-generator";
 import { MultiPlanarSliceViewer } from "./MultiPlanarSliceViewer";
@@ -274,26 +277,31 @@ export const NeuroReconClient: React.FC = () => {
   const scoreStateRef = React.useRef<ScoreState>(scoreState);
   const [lastReward, setLastReward] = useState(500);
 
-  const [logs, setLogs] = useState<TerminalLog[]>([
-    {
-      id: "log-init-1",
-      type: "info",
-      text: "FreeSurfer v7.4.1 (Linux x86_64) environment loaded.",
-      timestamp: "00:00:01",
-    },
-    {
-      id: "log-init-2",
-      type: "output",
-      text: `Loaded subject sub-01 [Scenario: Case 01: Dura Over-Inclusion in Temporal Lobe]`,
-      timestamp: "00:00:02",
-    },
-    {
-      id: "log-init-3",
-      type: "output",
-      text: `Initial Euler χ = -12, Target = 2. 412 defect voxels detected.`,
-      timestamp: "00:00:03",
-    },
-  ]);
+  const [logs, setLogs] = useState<TerminalLog[]>(() => {
+    const initialScenario = getNeuroScenariosSync()[activeScenarioId];
+    return [
+      {
+        id: "log-init-1",
+        type: "info",
+        text: "FreeSurfer v7.4.1 (Linux x86_64) environment loaded.",
+        timestamp: "00:00:01",
+      },
+      {
+        id: "log-init-sim",
+        type: "info",
+        text: NEURO_TERMINAL_SIMULATION_NOTICE,
+        timestamp: "00:00:01",
+      },
+      {
+        id: "log-init-2",
+        type: "output",
+        text: initialScenario
+          ? `Loaded subject sub-01 [${initialScenario.title}]\n${formatScenarioDiagnostics(initialScenario, qaMetrics)}`
+          : "Loaded subject sub-01.",
+        timestamp: "00:00:02",
+      },
+    ];
+  });
 
   // Apply Scenario State locally without pushing history
   const applyScenarioState = useCallback(
@@ -323,6 +331,9 @@ export const NeuroReconClient: React.FC = () => {
       const restored = savedDrafts[scenarioId];
       if (restored) applyVoxelEditsToVolume(newVol, restored.voxelEdits);
       setVolume(newVol);
+      const newMetrics = newConfig
+        ? await computeQAMetrics(newConfig, newVol, [], [])
+        : null;
       if (newConfig) {
         setCrosshair(newConfig.targetCoords);
         setToolModeState(newConfig.recommendedTool);
@@ -342,9 +353,10 @@ export const NeuroReconClient: React.FC = () => {
         {
           id: `log-sw-out-${Date.now()}`,
           type: "info",
-          text: newConfig
-            ? `Loaded ${newConfig.title}. ${newConfig.defectDescription}${restored ? `\nRestored your ${countNeuroDraftEdits(restored)} unsaved edit(s) for this case from this session.` : ""}`
-            : `Loaded ${scenarioId}`,
+          text:
+            newConfig && newMetrics
+              ? `Loaded ${newConfig.title}. ${newConfig.defectDescription}\n${formatScenarioDiagnostics(newConfig, newMetrics)} (earlier lines above describe the previous case)${restored ? `\nRestored your ${countNeuroDraftEdits(restored)} unsaved edit(s) for this case from this session.` : ""}`
+              : `Loaded ${scenarioId}`,
           timestamp: new Date().toLocaleTimeString(),
         },
       ]);
@@ -714,14 +726,27 @@ export const NeuroReconClient: React.FC = () => {
     ]);
 
     if (trimmed.startsWith("recon-all")) {
-      handleRunRecon();
+      const parsed = parseReconAllCommand(trimmed);
+      if (parsed.ok) {
+        handleRunRecon();
+      } else {
+        setLogs((prev) => [
+          ...prev,
+          {
+            id: `out-recon-err-${Date.now()}`,
+            type: "error",
+            text: parsed.error,
+            timestamp,
+          },
+        ]);
+      }
     } else if (trimmed === "help") {
       setLogs((prev) => [
         ...prev,
         {
           id: `out-help-${Date.now()}`,
           type: "output",
-          text: `Available FreeSurfer commands:\n  recon-all -autorecon2-cp  : Re-run normalization with control points\n  recon-all -autorecon3     : Re-run pial surface & morphometry\n  freeview -f <mesh>        : Inspect surface meshes\n  stats                     : Print cortical & subcortical volume metrics\n  euler                     : Display Euler characteristic diagnostics\n  cp list                   : List active control point anchors\n  clear                     : Clear terminal log buffer`,
+          text: `Constrained simulation; only these commands are modeled:\n  recon-all [-s <subject>] [-autorecon2 | -autorecon2-cp | -autorecon2-wm | -autorecon3 | -all]\n                            : Run the simulated repair check (all stages behave the same)\n  freeview -f <mesh>        : Inspect surface meshes\n  stats                     : Print cortical & subcortical volume metrics\n  euler                     : Display Euler characteristic diagnostics\n  cp list                   : List active control point anchors\n  dataset [cases|mni152|oasis] : Switch 3D reference dataset\n  clear                     : Clear terminal log buffer`,
           timestamp,
         },
       ]);

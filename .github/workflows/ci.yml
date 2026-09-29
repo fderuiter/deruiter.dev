@@ -329,7 +329,7 @@ jobs:
         if: always()
         run: |
           # Generate accessibility summary and status files
-          node scripts/generate-accessibility-report.js || true
+          node scripts/generate-accessibility-report.js
 
           # Read accessibility status
           ACC_STATUS="❌ Fail"
@@ -337,6 +337,11 @@ jobs:
             ACC_STATUS=$(cat playwright-report/accessibility-status.txt)
           elif [ "${{ steps.playwright.outcome }}" = "success" ]; then
             ACC_STATUS="✅ Pass"
+          fi
+
+          if [ "$ACC_STATUS" != "✅ Pass" ]; then
+            echo "::error::Accessibility audit gate failed: WCAG violations or unhandled accessibility issues detected."
+            exit 1
           fi
 
           echo "# 🛡️ Rigor Ecosystem Health Report" >> $GITHUB_STEP_SUMMARY

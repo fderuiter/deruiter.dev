@@ -77,6 +77,13 @@ describe("RetroLabyrinth drone contact and retry HP (#1310)", () => {
   let root: Root;
 
   beforeEach(() => {
+    // Freeze the animation loop. The drone patrol runs on it and, under a
+    // loaded CI runner, would step onto the player between the test's own
+    // moves and after RETRY BREACH (#1420). Contact then only happens when
+    // the player walks into the drone, which is what these tests check.
+    vi.useFakeTimers({
+      toFake: ["requestAnimationFrame", "cancelAnimationFrame", "performance"],
+    });
     const store: Record<string, string> = {};
     Object.defineProperty(window, "localStorage", {
       configurable: true,
@@ -115,6 +122,7 @@ describe("RetroLabyrinth drone contact and retry HP (#1310)", () => {
       root.unmount();
     });
     container.remove();
+    vi.useRealTimers();
   });
 
   function hp(): number {

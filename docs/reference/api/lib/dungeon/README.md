@@ -200,6 +200,12 @@ Re-exports [FloatingNotification](types/interfaces/FloatingNotification.md)
 
 ***
 
+### formatCampaignRoomBadge
+
+Re-exports [formatCampaignRoomBadge](room-label/functions/formatCampaignRoomBadge.md)
+
+***
+
 ### FOVResult
 
 Re-exports [FOVResult](fov/interfaces/FOVResult.md)
@@ -353,6 +359,12 @@ Re-exports [renderWireframeMesh](boss/functions/renderWireframeMesh.md)
 ### resetFogOfWar
 
 Re-exports [resetFogOfWar](fov/functions/resetFogOfWar.md)
+
+***
+
+### RETRO\_LABYRINTH\_HIGH\_SCORE\_KEY
+
+Re-exports [RETRO_LABYRINTH_HIGH_SCORE_KEY](metaprogression/variables/RETRO_LABYRINTH_HIGH_SCORE_KEY.md)
 
 ***
 

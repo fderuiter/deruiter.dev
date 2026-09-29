@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { EmailService, RawEmailOptions } from "@/lib/services/email-service";
+import { prisma } from "@/lib/db";
 
 // In-memory mock store for OutboundEmailQueue & SuppressionList
 interface MockQueueItem {
@@ -27,6 +28,37 @@ const mockSuppressionStore = new Map<
 
 vi.mock("@/lib/db", () => ({
   prisma: {
+    // Emulates the single lease statement (#1116). The mock body runs without
+    // an await, so like the real statement it is atomic: an overlapping call
+    // sees rows this one leased as no longer due. Bound values arrive in
+    // template order: now, queueId (twice), limit, leaseUntil, updatedAt.
+    $queryRaw: vi
+      .fn()
+      .mockImplementation(
+        async (_sql: TemplateStringsArray, ...values: unknown[]) => {
+          const [now, queueId, , limit, leaseUntil] = values as [
+            Date,
+            string | null,
+            string | null,
+            number,
+            Date,
+          ];
+          const due = Array.from(mockQueueStore.values())
+            .filter(
+              (item) =>
+                ["PENDING", "RETRYING"].includes(item.status) &&
+                item.nextRetryAt.getTime() <= now.getTime() &&
+                (queueId === null || item.id === queueId)
+            )
+            .sort((a, b) => a.nextRetryAt.getTime() - b.nextRetryAt.getTime())
+            .slice(0, limit);
+          return due.map((item) => {
+            const leased = { ...item, nextRetryAt: leaseUntil };
+            mockQueueStore.set(item.id, leased);
+            return { ...leased, dueAt: item.nextRetryAt };
+          });
+        }
+      ),
     suppressionList: {
       findUnique: vi
         .fn()
@@ -85,62 +117,6 @@ vi.mock("@/lib/db", () => ({
             return record;
           }
         ),
-      findMany: vi.fn().mockImplementation(
-        async ({
-          where,
-          take,
-        }: {
-          where?: {
-            status?: { in?: string[] };
-            nextRetryAt?: { lte?: Date };
-          };
-          take?: number;
-        }) => {
-          let results = Array.from(mockQueueStore.values());
-          if (where?.status?.in) {
-            results = results.filter((item) =>
-              where.status?.in?.includes(item.status)
-            );
-          }
-          if (where?.nextRetryAt?.lte) {
-            const lteTime =
-              where.nextRetryAt.lte instanceof Date
-                ? where.nextRetryAt.lte.getTime()
-                : new Date(where.nextRetryAt.lte).getTime();
-            results = results.filter(
-              (item) => item.nextRetryAt.getTime() <= lteTime
-            );
-          }
-          if (take) {
-            results = results.slice(0, take);
-          }
-          return results;
-        }
-      ),
-      updateMany: vi.fn().mockImplementation(
-        async ({
-          where,
-          data,
-        }: {
-          where: {
-            id: string;
-            status?: { in?: string[] };
-            nextRetryAt?: { lte?: Date };
-          };
-          data: Partial<MockQueueItem>;
-        }) => {
-          const existing = mockQueueStore.get(where.id);
-          const isDue =
-            existing &&
-            (!where.status?.in || where.status.in.includes(existing.status)) &&
-            (!where.nextRetryAt?.lte ||
-              existing.nextRetryAt.getTime() <=
-                where.nextRetryAt.lte.getTime());
-          if (!existing || !isDue) return { count: 0 };
-          mockQueueStore.set(where.id, { ...existing, ...data });
-          return { count: 1 };
-        }
-      ),
       update: vi
         .fn()
         .mockImplementation(
@@ -358,6 +334,95 @@ describe("Outbound Email Queue & Resilient Backoff Retry Engine (#546)", () => {
 
       expect(summary.processed).toBe(20);
       expect(mockSendFn).toHaveBeenCalledTimes(20);
+    });
+
+    describe("batch leasing (#1116)", () => {
+      const seedDue = (id: string, dueAt: Date) =>
+        mockQueueStore.set(id, {
+          id,
+          to: `${id}@example.com`,
+          from: "sender@deruiter.dev",
+          replyTo: null,
+          subject: "Batch lease",
+          html: "<p>once</p>",
+          text: null,
+          tags: null,
+          attempts: 1,
+          status: "RETRYING",
+          nextRetryAt: dueAt,
+          lastError: "temporary",
+          createdAt: new Date(0),
+          updatedAt: new Date(0),
+        });
+
+      it("leases a whole batch in one SKIP LOCKED statement", async () => {
+        for (let index = 0; index < 5; index++) {
+          seedDue(`batch-${index}`, new Date(index));
+        }
+        mockSendFn.mockResolvedValue({ data: { id: "msg" }, error: null });
+
+        const summary = await EmailService.processRetryQueue();
+
+        expect(summary.processed).toBe(5);
+        expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
+        const statement = (
+          vi.mocked(prisma.$queryRaw).mock.calls[0][0] as TemplateStringsArray
+        ).join("?");
+        expect(statement).toContain("FOR UPDATE SKIP LOCKED");
+        expect(statement).toContain("RETURNING");
+      });
+
+      it("hands a row leased by one worker to no later worker", async () => {
+        seedDue("single", new Date(0));
+        mockSendFn.mockResolvedValue({ data: { id: "msg" }, error: null });
+        // The first worker's send fails transiently, so the row is still
+        // RETRYING, but its lease has moved nextRetryAt past `now`.
+        mockSendFn.mockRejectedValueOnce(new Error("socket hang up"));
+        const now = new Date(1000);
+
+        const first = await EmailService.processRetryQueue({ now });
+        const second = await EmailService.processRetryQueue({ now });
+
+        expect(first.processed).toBe(1);
+        expect(second.processed).toBe(0);
+        expect(mockSendFn).toHaveBeenCalledTimes(1);
+      });
+
+      it("dispatches oldest-due first whatever order RETURNING yields", async () => {
+        seedDue("newer", new Date(2000));
+        seedDue("older", new Date(1000));
+        vi.mocked(prisma.$queryRaw).mockImplementationOnce((async () => [
+          { ...mockQueueStore.get("newer"), dueAt: new Date(2000) },
+          { ...mockQueueStore.get("older"), dueAt: new Date(1000) },
+        ]) as unknown as typeof prisma.$queryRaw);
+        mockSendFn.mockResolvedValue({ data: { id: "msg" }, error: null });
+
+        await EmailService.processRetryQueue();
+
+        expect(mockSendFn.mock.calls.map((call) => call[0].to)).toEqual([
+          "older@example.com",
+          "newer@example.com",
+        ]);
+      });
+
+      it("sends nothing when the lease statement fails", async () => {
+        seedDue("unleased", new Date(0));
+        vi.mocked(prisma.$queryRaw).mockRejectedValueOnce(
+          new Error("db asleep")
+        );
+        const consoleError = vi
+          .spyOn(console, "error")
+          .mockImplementation(() => undefined);
+
+        await expect(EmailService.processRetryQueue()).rejects.toThrow(
+          "db asleep"
+        );
+        expect(mockSendFn).not.toHaveBeenCalled();
+        expect(mockQueueStore.get("unleased")?.nextRetryAt).toEqual(
+          new Date(0)
+        );
+        consoleError.mockRestore();
+      });
     });
 
     it("forces simulated delivery in Preview even when an API key is attached", async () => {

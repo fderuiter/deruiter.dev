@@ -28,6 +28,7 @@ import {
   tokenizeWithSpans,
 } from "@/lib/crf/ast-evaluator";
 import { CRFField, CRFForm, StudyProtocol } from "@/lib/crf/types";
+import { mergeLevelScore, type LevelScore } from "@/lib/quasi-perfect";
 import { computeFormHealthMetrics } from "@/lib/crf/form-health";
 import {
   LOON_MAX_HITS,
@@ -42,6 +43,7 @@ import {
   triggerGarbageCollection,
   allocateVariable,
   wipeScreenFog,
+  startGame,
   type GameEngineState,
 } from "@/lib/garmin-engine";
 import {
@@ -1668,5 +1670,136 @@ describe("Garmin setup options reach the engine (#1209)", () => {
     } finally {
       vi.restoreAllMocks();
     }
+  });
+});
+
+describe("Quasi-Perfect progress: best score survives weaker replays (#1230)", () => {
+  const mk = (over: Partial<LevelScore>): LevelScore => ({
+    levelId: 1,
+    completed: true,
+    usedSorry: false,
+    remainingRam: 20,
+    stars: 2,
+    morality: 100,
+    timestamp: 1,
+    ...over,
+  });
+
+  it("never lets a sorry replay erase an honest proof", () => {
+    const honest = mk({});
+    const sorry = mk({
+      usedSorry: true,
+      stars: 0,
+      morality: -100,
+      timestamp: 2,
+    });
+    expect(mergeLevelScore(honest, sorry)).toBe(honest);
+  });
+
+  it("lets an honest proof replace a sorry admission", () => {
+    const sorry = mk({ usedSorry: true, stars: 0, morality: -100 });
+    const honest = mk({ timestamp: 2 });
+    expect(mergeLevelScore(sorry, honest)).toBe(honest);
+  });
+
+  it("keeps higher stars, then more RAM, and ignores equal replays", () => {
+    const base = mk({});
+    expect(mergeLevelScore(base, mk({ stars: 1 }))).toBe(base);
+    const better = mk({ stars: 3 });
+    expect(mergeLevelScore(base, better)).toBe(better);
+    const moreRam = mk({ remainingRam: 25 });
+    expect(mergeLevelScore(base, moreRam)).toBe(moreRam);
+    expect(mergeLevelScore(base, mk({ timestamp: 9 }))).toBe(base);
+  });
+
+  it("accepts the first score", () => {
+    const first = mk({});
+    expect(mergeLevelScore(undefined, first)).toBe(first);
+  });
+});
+
+describe("Garmin progression is refresh-rate independent (#1212)", () => {
+  const simulate = (hz: number, seconds: number, isLightOn = false) => {
+    const step = 1000 / hz;
+    let state: GameEngineState = {
+      ...startGame(createInitialState("fenix", 0), "fenix"),
+      isLightOn,
+    };
+    for (let i = 0; i < Math.round(seconds * hz); i++) {
+      // Keep the run alive: no spawns, no random allocation crashes.
+      state = updateGameSimulation(
+        {
+          ...state,
+          obstacles: [],
+          lastAllocTime: Date.now(),
+          lastObstacleTime: Date.now() + 60_000,
+        },
+        step
+      );
+    }
+    return state;
+  };
+
+  it("gives equal score and distance after equal time at 30, 60 and 120 Hz", () => {
+    const runs = [30, 60, 120].map((hz) => simulate(hz, 10));
+    for (const run of runs) {
+      expect(run.score).toBeGreaterThanOrEqual(598);
+      expect(run.score).toBeLessThanOrEqual(602);
+      expect(run.distanceMeters).toBeCloseTo(150, 0);
+    }
+  });
+
+  it("drains the battery at 0.1 percent a second with the light off at any rate", () => {
+    for (const hz of [30, 60, 120]) {
+      expect(100 - simulate(hz, 10).battery).toBeCloseTo(1, 1);
+    }
+  });
+
+  it("drains 0.4 percent a second with the backlight on at any rate", () => {
+    for (const hz of [30, 60, 120]) {
+      expect(100 - simulate(hz, 10, true).battery).toBeCloseTo(4, 1);
+    }
+  });
+
+  it("reaches power loss through normal ticks, not only the debug drain", () => {
+    let state: GameEngineState = {
+      ...startGame(createInitialState("fenix", 0), "fenix"),
+      isLightOn: true,
+      battery: 0.5,
+    };
+    for (let i = 0; i < 600 && state.gameState === "playing"; i++) {
+      state = updateGameSimulation(
+        {
+          ...state,
+          obstacles: [],
+          lastAllocTime: Date.now(),
+          lastObstacleTime: Date.now() + 60_000,
+        },
+        1000 / 60
+      );
+    }
+    expect(state.gameState).toBe("shutdown");
+    expect(state.crashReport?.errorType).toBe("Power Loss");
+  });
+
+  it("keeps sub-tick thermal decay from stalling at high refresh rates", () => {
+    let state: GameEngineState = {
+      ...startGame(createInitialState("fenix", 0), "fenix"),
+      thermalStress: 0.5,
+      fogLevel: 0.5,
+    };
+    for (let i = 0; i < 120 * 4; i++) {
+      state = updateGameSimulation(
+        {
+          ...state,
+          obstacles: [],
+          lastAllocTime: Date.now(),
+          lastObstacleTime: Date.now() + 60_000,
+        },
+        1000 / 120
+      );
+    }
+    // 4 s at 1/14900 per ms is about 0.27 of decay.
+    expect(state.thermalStress).toBeLessThan(0.3);
   });
 });

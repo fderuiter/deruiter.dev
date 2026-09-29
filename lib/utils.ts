@@ -27,10 +27,12 @@ export interface EscapeXmlOptions {
  * Supports configurable single quote entity formatting.
  */
 export function escapeXml(
-  unsafe: string | null | undefined,
+  unsafe: unknown,
   options?: EscapeXmlOptions | "&apos;" | "&#39;" | boolean
 ): string {
-  if (!unsafe) return "";
+  if (unsafe === null || unsafe === undefined) return "";
+  const str = typeof unsafe === "string" ? unsafe : String(unsafe);
+  if (!str) return "";
 
   let singleQuote = "&apos;";
   if (typeof options === "boolean") {
@@ -45,7 +47,7 @@ export function escapeXml(
     }
   }
 
-  return unsafe
+  return str
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")

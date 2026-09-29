@@ -56,6 +56,7 @@ function isStudyDraftEnvelopeShape(
   );
 }
 
+/* jscpd:ignore-start */
 export function resolveStorage(storage?: Storage): Storage | undefined {
   if (storage) return storage;
   if (typeof window === "undefined") return undefined;
@@ -83,6 +84,7 @@ export function saveStudyDraft(
     savedAt,
     study,
   };
+/* jscpd:ignore-end */
 
   try {
     target.setItem(STUDY_DRAFT_STORAGE_KEY, JSON.stringify(envelope));

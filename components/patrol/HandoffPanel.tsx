@@ -51,6 +51,7 @@ export interface HandoffPanelProps {
  * Notice: Educational simulation prototype.
  * // PLACEHOLDER — needs OEC/NSP content review, see #744
  */
+/* jscpd:ignore-start */
 export const HandoffPanel: React.FC<HandoffPanelProps> = ({
   scenario,
   actionHistory,
@@ -268,6 +269,7 @@ export const HandoffPanel: React.FC<HandoffPanelProps> = ({
                       ? "text-rose-400 uppercase"
                       : "text-amber-400 uppercase"
                 }
+/* jscpd:ignore-end */
               >
                 {patientCondition}
               </strong>

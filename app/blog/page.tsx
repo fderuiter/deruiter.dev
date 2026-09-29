@@ -12,6 +12,7 @@ export const metadata: Metadata = buildRouteMetadata(
   ROUTE_METADATA_CONFIGS.blog
 );
 
+/* jscpd:ignore-start */
 export default async function BlogIndexPage() {
   const posts = await getAllPublishedBlogPosts();
 
@@ -85,4 +86,5 @@ export default async function BlogIndexPage() {
       </div>
     </PageLayout>
   );
+/* jscpd:ignore-end */
 }

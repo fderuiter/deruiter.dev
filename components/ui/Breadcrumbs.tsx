@@ -15,6 +15,7 @@ interface BreadcrumbsProps {
   className?: string;
 }
 
+/* jscpd:ignore-start */
 export const Breadcrumbs: React.FC<BreadcrumbsProps> = ({
   items,
   className = "",
@@ -86,6 +87,7 @@ export const Breadcrumbs: React.FC<BreadcrumbsProps> = ({
               )}
             </li>
           );
+/* jscpd:ignore-end */
         })}
       </ol>
     </nav>

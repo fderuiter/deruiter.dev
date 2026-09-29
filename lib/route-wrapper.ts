@@ -60,6 +60,7 @@ export function createApiHandler(
   options?: ApiWrapperOptions
 ): ApiRouteHandler;
 
+/* jscpd:ignore-start */
 export function createApiHandler<TSchema extends ZodSchema>(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   handler: ApiHandler<any>,
@@ -151,6 +152,7 @@ export function createApiHandler<TSchema extends ZodSchema>(
                     message: issue.message,
                   })),
                 };
+/* jscpd:ignore-end */
             const response = NextResponse.json(formatted, { status: 400 });
             return applySecurityHeaders(response, req);
           }

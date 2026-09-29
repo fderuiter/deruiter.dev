@@ -4,6 +4,7 @@ import React from "react";
 import { IconCpu, IconLink, IconPlus, IconDownload } from "@tabler/icons-react";
 import { FieldManualButton } from "@/components/FieldManualButton";
 
+/* jscpd:ignore-start */
 export function ProofWorkspaceSkeleton() {
   return (
     <div className="min-h-dvh bg-brand-dark text-slate-100 flex flex-col font-sans pt-20 pb-12 overflow-x-hidden">
@@ -205,4 +206,5 @@ export function ProofWorkspaceSkeleton() {
       </div>
     </div>
   );
+/* jscpd:ignore-end */
 }

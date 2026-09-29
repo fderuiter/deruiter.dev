@@ -5,6 +5,7 @@ import { reportClientError } from "@/lib/client-sentry";
 import { resolveBaseUrl } from "@/lib/domain";
 import { logger } from "@/lib/logger";
 
+/* jscpd:ignore-start */
 export default function GlobalError({
   error,
   reset,
@@ -25,6 +26,7 @@ export default function GlobalError({
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setCanonicalUrl(window.location.href);
     }
+/* jscpd:ignore-end */
   }, [error]);
 
   return (

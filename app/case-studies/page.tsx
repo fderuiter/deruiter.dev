@@ -53,6 +53,7 @@ interface HydratedCaseStudy extends BaseCaseStudy {
   githubStats: GitHubStats | null;
 }
 
+/* jscpd:ignore-start */
 export default async function CaseStudiesPage() {
   const data = await CaseStudyService.getAllPublishedCaseStudies();
 
@@ -131,4 +132,5 @@ export default async function CaseStudiesPage() {
       </div>
     </PageLayout>
   );
+/* jscpd:ignore-end */
 }

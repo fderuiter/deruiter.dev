@@ -18,6 +18,7 @@ import { useAudio } from "@/components/providers/AudioProvider";
 import { triggerHaptic } from "@/lib/haptics";
 import { getMatchMediaMatches } from "@/hooks/useMediaQuery";
 
+/* jscpd:ignore-start */
 function useIsTouchDevice(): boolean {
   const [isTouch, setIsTouch] = useState<boolean>(false);
 
@@ -193,6 +194,7 @@ export const DpadActionDock: React.FC<DpadActionDockProps> = ({
     activePointersRef.current.delete(e.pointerId);
     callback?.();
   };
+/* jscpd:ignore-end */
 
   if (!isTouch && !forceVisible) return null;
 

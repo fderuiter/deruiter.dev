@@ -24,7 +24,7 @@ export default defineConfig({
       "**/__tests__/crf/study-engine.test.ts",
       "**/__tests__/crf/form-health.test.ts",
     ],
-    exclude: ["**/node_modules/**", "**/e2e/**"],
+    exclude: ["**/node_modules/**", "**/e2e/**", "**/.stryker-tmp/**"],
   },
   resolve: {
     alias: {

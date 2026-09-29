@@ -39,7 +39,7 @@ export const NON_IMPORTABLE_COVERAGE: Array<{
   },
   {
     match:
-      /^(?:package\.json|vitest\.config\.ts|next\.config\.ts|tsconfig\.json|eslint\.config\.[cm]?js|prisma\.config\.ts)$/u,
+      /^(?:package\.json|vitest\.config\.[cm]?ts|next\.config\.ts|tsconfig\.json|eslint\.config\.[cm]?js|prisma\.config\.ts)$/u,
     testNameMatches: [
       /package-manager-config/u,
       /gate-ordering/u,
@@ -125,7 +125,6 @@ export function runStagedTests(cwd: string): void {
   // configuration or index. Git supplies the authoritative variable list.
   const testEnv: NodeJS.ProcessEnv = {
     ...process.env,
-    VITE_CONFIG_NATIVE_IGNORE_WARNING: "1",
   };
   const gitLocalVariables = execFileSync(
     "git",

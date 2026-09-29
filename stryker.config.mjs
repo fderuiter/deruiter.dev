@@ -13,7 +13,7 @@ const config = {
     ],
   },
   vitest: {
-    configFile: "vitest.stryker.config.ts",
+    configFile: "vitest.stryker.config.mts",
     related: false,
   },
   htmlReporter: {

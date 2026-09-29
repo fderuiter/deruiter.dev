@@ -114,7 +114,7 @@ Ctrl-C to stop. Useless headless — this is what the driver replaces.
 ## Test
 
 ```bash
-VITE_CONFIG_NATIVE_IGNORE_WARNING=1 npx vitest run
+npx vitest run
 ```
 
 363 files / 3247 tests pass as of this writing (a couple minutes; most

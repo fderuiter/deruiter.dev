@@ -1,5 +1,3 @@
-process.env.VITE_CONFIG_NATIVE_IGNORE_WARNING = "true";
-
 import { defineConfig } from "vitest/config";
 import path from "path";
 import os from "os";
@@ -92,7 +90,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./"),
+      "@": path.resolve(import.meta.dirname, "./"),
     },
   },
 });

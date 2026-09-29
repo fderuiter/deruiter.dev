@@ -776,6 +776,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       "Move across the hand with ← →, select up to five cards with Space, and press Enter to play the best hand they make (2 CPU). D discards the selection (1 CPU). I opens the focused card's QC Desk (1 CPU): inspect cells with Enter or Space, correct with C, trace a flagged cell to its Listing with T, and close with Esc. R recompiles a stale card (2 CPU), S runs structural QC on a face-down card (1 CPU), and A jumps to a blank shell's analysis sets. Between Blinds, spend the Study Budget in the shop. The run saves as you play, so a reload offers Resume run.",
     controls: [
       {
+        action: "Replay the guided Blind",
+        description:
+          "Your first visit offers a guided Blind: one hand, with a coach outlining each control in amber as you inspect a Table, correct its finding, and play it with its Listing. Skip it at any step. Replay tutorial on this tab plays it again.",
+        key: "Replay tutorial",
+      },
+      {
         action: "Move across the hand",
         description:
           "Left and right arrows move between cards; Home and End jump to the ends. Tab reaches the relic rack and the Play, Discard and Inspect buttons.",

@@ -331,12 +331,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
     objective:
       "Pilot the iconic F277 Laser Loon through four campaign acts from Lake Minnetonka to the State Capitol dome, battling rival flag finalists, bureaucratic red tape, and Minnesota folklore hazards.",
     quickSummary:
-      "Aim with the cursor or touch controls, fire ruby eye-lasers and cryogenic ice mortars, collect Hotdish power-ups, and unleash the Haunting Loon Tremolo ultimate shockwave to claim victory!",
+      "Aim with the cursor or touch controls, fire ruby eye-lasers and the Cryo-Mortar's ice blocks, collect Hotdish power-ups, and unleash the Haunting Loon Tremolo ultimate shockwave to claim victory!",
     controls: [
       {
         action: "Aim & Fire Laser Arsenal",
         description:
-          "Aim crosshair with cursor or touch; left-click, drag or hold Space to fire the active laser beam (Ruby Laser, Cyan Pulse, Aurora Wave, or Cryo Mortar).",
+          "Aim crosshair with cursor or touch; left-click, drag or hold Space to fire the active laser beam (Ruby Laser, Cyan Pulse, Aurora Wave, or Cryo-Mortar).",
         key: "Left Click / Drag / Space",
       },
       {
@@ -368,7 +368,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         title: "Glacial Cryo-Shatter Combos",
         detail:
-          "Mortar ice blocks bounce off lake boundaries, encasing targets in ice. Shattering frozen targets awards 2x points and cascades shrapnel.",
+          "Cryo-Mortar ice blocks bounce off lake boundaries, encasing targets in ice. Shattering frozen targets awards 2x points and cascades shrapnel.",
         badge: "2x Shatter Combo",
       },
       {
@@ -381,7 +381,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
     proTips: [
       "Save your Haunting Loon Tremolo ultimate for boss encounters to shatter their revolving defense shields.",
       "Grab floating Tater Tot Hotdish pickups for instant zero-cooldown laser overcharge frenzy.",
-      "Bouncing Cryo Mortar ice blocks off the canvas floor and ceiling creates hazardous pinball walls for rival flags.",
+      "Bouncing Cryo-Mortar ice blocks off the canvas floor and ceiling creates hazardous pinball walls for rival flags.",
     ],
     lore: {
       title: "The Grassroots Legend of Submission F277",

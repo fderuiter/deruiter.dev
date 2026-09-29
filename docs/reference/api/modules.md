@@ -42,6 +42,7 @@
 - [lib/arcade/core/pool](lib/arcade/core/pool/README.md)
 - [lib/arcade/core/viewport](lib/arcade/core/viewport/README.md)
 - [lib/arcade/crt-pipeline](lib/arcade/crt-pipeline/README.md)
+- [lib/arcade/games](lib/arcade/games/README.md)
 - [lib/arcade/utils](lib/arcade/utils/README.md)
 - [lib/audio](lib/audio/README.md)
 - [lib/audio/sound-engine](lib/audio/sound-engine/README.md)

@@ -1,1 +1,42 @@
-[]
+[
+  {
+    "advisory": "GHSA-ggr8-5vv4-36mx",
+    "createdAt": "2026-08-19T00:00:00Z",
+    "expiresAt": "2026-11-15T23:59:59Z",
+    "reason": "Transitive deepmerge-ts stack exhaustion vulnerability in Prisma CLI tools",
+    "owner": "security-team",
+    "followUp": "SEC-101"
+  },
+  {
+    "advisory": "GHSA-c83g-rgw3-j3cx",
+    "createdAt": "2026-08-19T00:00:00Z",
+    "expiresAt": "2026-11-15T23:59:59Z",
+    "reason": "Transitive browserslist memory growth vulnerability in Serwist Next.js plugin",
+    "owner": "security-team",
+    "followUp": "SEC-102"
+  },
+  {
+    "advisory": "GHSA-73wf-gq98-2v4g",
+    "createdAt": "2026-08-19T00:00:00Z",
+    "expiresAt": "2026-11-15T23:59:59Z",
+    "reason": "Transitive browserslist prototype write vulnerability in Serwist Next.js plugin",
+    "owner": "security-team",
+    "followUp": "SEC-103"
+  },
+  {
+    "advisory": "GHSA-3f6p-5ww8-9rcr",
+    "createdAt": "2026-08-19T00:00:00Z",
+    "expiresAt": "2026-11-15T23:59:59Z",
+    "reason": "Transitive mysql2 auth downgrade vulnerability in Prisma dev tools",
+    "owner": "security-team",
+    "followUp": "SEC-104"
+  },
+  {
+    "advisory": "GHSA-rgwj-5xj2-c3m3",
+    "createdAt": "2026-08-19T00:00:00Z",
+    "expiresAt": "2026-11-15T23:59:59Z",
+    "reason": "Transitive mysql2 zlib inflate DoS vulnerability in Prisma dev tools",
+    "owner": "security-team",
+    "followUp": "SEC-105"
+  }
+]

@@ -75,23 +75,6 @@
     "npm": ">=10.0.0"
   },
   "packageManager": "npm@10.9.2",
-  "overrides": {
-    "typedoc": {
-      "brace-expansion": "^5.0.8"
-    },
-    "eslint": {
-      "@eslint/eslintrc": {
-        "js-yaml": "^4.3.2"
-      }
-    },
-    "deepmerge-ts": "^8.0.1",
-    "fast-uri": "^3.1.6",
-    "shell-quote": "^1.8.1",
-    "browserslist": "^4.28.8",
-    "mysql2": "^3.24.3",
-    "qs": "6.16.0",
-    "jsdom": "26.1.0"
-  },
   "dependencies": {
     "@chenglou/pretext": "^0.0.5",
     "@clerk/nextjs": "^7.7.8",
@@ -150,7 +133,7 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "fast-check": "^4.9.0",
     "husky": "^9.1.7",
-    "jsdom": "26.1.0",
+    "jsdom": "^30.0.0",
     "jszip": "^3.10.1",
     "lint-staged": "^17.0.5",
     "markdownlint-cli": "^0.49.1",

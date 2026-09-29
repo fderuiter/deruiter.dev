@@ -83,7 +83,7 @@ if (typeof globalThis.IntersectionObserver === "undefined") {
     MockIntersectionObserver as unknown as typeof IntersectionObserver;
 }
 
-// Polyfill PointerEvent (unsupported by jsdom@26, pinned in package.json overrides)
+// Polyfill PointerEvent if unsupported in DOM environment
 if (typeof globalThis.PointerEvent === "undefined") {
   class PointerEventPolyfill extends MouseEvent {
     pointerId: number;

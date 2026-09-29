@@ -242,6 +242,7 @@ describe("Security Audit Script", () => {
 
   describe("loadIgnoreList", () => {
     it("ships without default vulnerability exceptions", () => {
+      vi.spyOn(fs, "existsSync").mockReturnValue(false);
       const fixedNow = new Date("2026-08-19T12:00:00Z");
       const list = loadIgnoreList(fixedNow);
       expect(list).toEqual([]);

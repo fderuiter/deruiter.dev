@@ -26,6 +26,62 @@ function normalizeAllowlistPath(file: string): string {
     : posix;
 }
 
+export function shouldScanFile(filePath: string): boolean {
+  // Exclude node_modules, package locks, binary files, configurations that are meant to hold env configs, etc.
+  const ignoredExtensions = [
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".gif",
+    ".svg",
+    ".ico",
+    ".woff",
+    ".woff2",
+    ".ttf",
+    ".eot",
+    ".db",
+    ".zip",
+    ".tar",
+    ".gz",
+    ".pdf",
+    ".mp4",
+    ".mov",
+  ];
+  const ignoredFiles = [
+    "package-lock.json",
+    "bun.lock",
+    "yarn.lock",
+    "pnpm-lock.yaml",
+  ];
+  const ignoredDirectories = [
+    "node_modules/",
+    ".git/",
+    ".next/",
+    "dist/",
+    "build/",
+    "__tests__/",
+  ];
+
+  const baseName = path.basename(filePath);
+  const ext = path.extname(filePath).toLowerCase();
+
+  if (
+    ignoredExtensions.includes(ext) ||
+    ignoredFiles.includes(baseName) ||
+    baseName.startsWith(".env")
+  ) {
+    return false;
+  }
+
+  for (const dir of ignoredDirectories) {
+    if (filePath.startsWith(dir) || filePath.includes("/" + dir)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 /**
  * Scans text against every `contentGuard`-surface detector, reporting at
  * most one finding per line (the first detector to match), mirroring the

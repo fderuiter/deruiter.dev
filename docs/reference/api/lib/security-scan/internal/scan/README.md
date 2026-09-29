@@ -12,3 +12,4 @@
 - [scanFile](functions/scanFile.md)
 - [scanHistorySnapshot](functions/scanHistorySnapshot.md)
 - [scanText](functions/scanText.md)
+- [shouldScanFile](functions/shouldScanFile.md)

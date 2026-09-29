@@ -107,6 +107,12 @@ function printUsage(): void {
   console.log(
     `  ${colors.cyan}headroom:vercel${colors.reset}               Evaluate Vercel storage and build hour headroom budgets`
   );
+  console.log(
+    `  ${colors.cyan}db:sync-blog [--commit]${colors.reset}       Synchronize local blog posts into database`
+  );
+  console.log(
+    `  ${colors.cyan}audit:a11y${colors.reset}                    Generate WCAG accessibility report from test results`
+  );
   console.log();
   console.log(
     `  ${colors.cyan}crf <cmd> [options]${colors.reset}           Clinical Research Form (CRF) authoring & validation CLI`
@@ -1453,6 +1459,24 @@ export async function main(): Promise<void> {
         ledger,
       });
       if (!success) process.exit(1);
+      break;
+    }
+    case "db:sync-blog":
+    case "sync-blog":
+    case "sync:blog": {
+      const { syncBlogPosts } = await import("./sync-blog-posts");
+      const commit = Boolean(parsed.flags.commit);
+      const report = await syncBlogPosts({ commit });
+      if (report.errors > 0) process.exit(1);
+      break;
+    }
+    case "audit:a11y":
+    case "a11y:audit":
+    case "a11y": {
+      execSync("node scripts/generate-accessibility-report.js", {
+        cwd: workspaceRoot,
+        stdio: "inherit",
+      });
       break;
     }
     case "clean":

@@ -20,6 +20,16 @@
 
 `Map`\<`string`, [`LocalCacheEntry`](../interfaces/LocalCacheEntry.md)\>
 
+### aggregateStats
+
+#### Get Signature
+
+> **get** **aggregateStats**(): \{ `data`: `Record`\<`string`, \{ `clicks`: `number`; `views`: `number`; \}\>; `expiresAt`: `number`; \} \| `null`
+
+##### Returns
+
+\{ `data`: `Record`\<`string`, \{ `clicks`: `number`; `views`: `number`; \}\>; `expiresAt`: `number`; \} \| `null`
+
 ### circuitBreakerCooldownUntil
 
 #### Get Signature
@@ -39,6 +49,22 @@
 ##### Returns
 
 `Map`\<`string`, [`LocalCacheEntry`](../interfaces/LocalCacheEntry.md)\>
+
+### clearAggregateCache()
+
+> **clearAggregateCache**(): `void`
+
+#### Returns
+
+`void`
+
+### clearAggregateStatsCache()
+
+> **clearAggregateStatsCache**(): `void`
+
+#### Returns
+
+`void`
 
 ### reset()
 

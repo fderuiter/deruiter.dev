@@ -14,6 +14,7 @@ import {
   IconRotate,
 } from "@tabler/icons-react";
 import { usePersistentState } from "@/hooks/usePersistentState";
+import { useSafeTimeout, type SafeTimeoutId } from "@/hooks/useSafeTimeout";
 import { logger } from "@/lib/logger";
 import { useAnnouncer } from "@/components/providers/A11yProvider";
 import { useAudio } from "@/components/providers/AudioProvider";
@@ -161,6 +162,8 @@ export const SandboxTerminal: React.FC<SandboxTerminalProps> = ({
 }) => {
   const { announce } = useAnnouncer();
   const { playKeystroke, playAutocomplete, playSuccess } = useAudio();
+  // Response lag, post-typing and between-step delays are cleared on unmount.
+  const { setSafeTimeout, clearSafeTimeout } = useSafeTimeout();
   const [input, setInput] = useState("");
   const [logs, setLogs] = useState<LogItem[]>([
     {
@@ -189,7 +192,7 @@ export const SandboxTerminal: React.FC<SandboxTerminalProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const logsContainerRef = useRef<HTMLDivElement>(null);
   const typingTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const playbackTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const playbackTimeoutRef = useRef<SafeTimeoutId | null>(null);
   const startPlaybackLoopRef = useRef<((targetIdx?: number) => void) | null>(
     null
   );
@@ -241,7 +244,7 @@ export const SandboxTerminal: React.FC<SandboxTerminalProps> = ({
       announce("Command execution started", "polite");
 
       // Simulated short response lag for realism
-      setTimeout(() => {
+      setSafeTimeout(() => {
         setIsExecuting(false);
         const outputId = generateLogId();
 
@@ -510,6 +513,7 @@ export const SandboxTerminal: React.FC<SandboxTerminalProps> = ({
       announce,
       playSuccess,
       activeRegistry,
+      setSafeTimeout,
     ]
   );
 
@@ -552,7 +556,7 @@ export const SandboxTerminal: React.FC<SandboxTerminalProps> = ({
             typingTimerRef.current = null;
           }
 
-          setTimeout(() => {
+          setSafeTimeout(() => {
             setIsTyping(false);
             executeCommand(command);
             onComplete?.();
@@ -560,7 +564,7 @@ export const SandboxTerminal: React.FC<SandboxTerminalProps> = ({
         }
       }, 40); // 40ms realistic physical typing pace
     },
-    [executeCommand, playKeystroke]
+    [executeCommand, playKeystroke, setSafeTimeout]
   );
 
   // Automated step playback runner loop
@@ -580,13 +584,13 @@ export const SandboxTerminal: React.FC<SandboxTerminalProps> = ({
 
       typeAndExecute(step.command, () => {
         if (isPlayingRef.current) {
-          playbackTimeoutRef.current = setTimeout(() => {
+          playbackTimeoutRef.current = setSafeTimeout(() => {
             startPlaybackLoopRef.current?.(nextIdx + 1);
           }, 1500); // 1.5 seconds natural delay before typing next command
         }
       });
     },
-    [currentStepIndex, activePlayback, typeAndExecute]
+    [currentStepIndex, activePlayback, typeAndExecute, setSafeTimeout]
   );
 
   // Sync ref to avoid ESLint immutability recursion rule
@@ -601,7 +605,7 @@ export const SandboxTerminal: React.FC<SandboxTerminalProps> = ({
     if (isPlaying) {
       setIsPlaying(false);
       if (playbackTimeoutRef.current) {
-        clearTimeout(playbackTimeoutRef.current);
+        clearSafeTimeout(playbackTimeoutRef.current);
         playbackTimeoutRef.current = null;
       }
     } else {
@@ -621,7 +625,7 @@ export const SandboxTerminal: React.FC<SandboxTerminalProps> = ({
         const step = activePlayback[0];
         typeAndExecute(step.command, () => {
           if (isPlayingRef.current) {
-            playbackTimeoutRef.current = setTimeout(() => {
+            playbackTimeoutRef.current = setSafeTimeout(() => {
               startPlaybackLoopRef.current?.(1);
             }, 1500);
           }
@@ -640,7 +644,7 @@ export const SandboxTerminal: React.FC<SandboxTerminalProps> = ({
     if (isPlaying) {
       setIsPlaying(false);
       if (playbackTimeoutRef.current) {
-        clearTimeout(playbackTimeoutRef.current);
+        clearSafeTimeout(playbackTimeoutRef.current);
         playbackTimeoutRef.current = null;
       }
     }
@@ -660,7 +664,7 @@ export const SandboxTerminal: React.FC<SandboxTerminalProps> = ({
     if (isPlaying) {
       setIsPlaying(false);
       if (playbackTimeoutRef.current) {
-        clearTimeout(playbackTimeoutRef.current);
+        clearSafeTimeout(playbackTimeoutRef.current);
         playbackTimeoutRef.current = null;
       }
     }
@@ -716,7 +720,7 @@ export const SandboxTerminal: React.FC<SandboxTerminalProps> = ({
   const handleReset = () => {
     setIsPlaying(false);
     if (playbackTimeoutRef.current) {
-      clearTimeout(playbackTimeoutRef.current);
+      clearSafeTimeout(playbackTimeoutRef.current);
       playbackTimeoutRef.current = null;
     }
     if (typingTimerRef.current) {
@@ -820,12 +824,10 @@ export const SandboxTerminal: React.FC<SandboxTerminalProps> = ({
     };
   }, [isExecuting, isTyping, typeAndExecute]);
 
-  // Clean up all timeouts and intervals on unmount
+  // Clean up the typing interval on unmount; useSafeTimeout clears the
+  // pending delays itself.
   useEffect(() => {
     return () => {
-      if (playbackTimeoutRef.current) {
-        clearTimeout(playbackTimeoutRef.current);
-      }
       if (typingTimerRef.current) {
         clearInterval(typingTimerRef.current);
       }

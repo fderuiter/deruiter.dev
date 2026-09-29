@@ -167,7 +167,9 @@ describe("Developer Experience (DX) Tooling Suite", () => {
       expect(validateBranchName("feat/add-dx-suite").valid).toBe(true);
       expect(validateBranchName("fix/proof-ast-bug").valid).toBe(true);
       expect(validateBranchName("dx/commit-wizard").valid).toBe(true);
-      expect(validateBranchName("jules/add-anthropic-google-secret-detectors").valid).toBe(true);
+      expect(
+        validateBranchName("jules/add-anthropic-google-secret-detectors").valid
+      ).toBe(true);
 
       const invalidBranch = validateBranchName("random_branch_name");
       expect(invalidBranch.valid).toBe(false);
@@ -191,6 +193,8 @@ describe("Developer Experience (DX) Tooling Suite", () => {
       expect(validateBranchName("jules-cleanup").valid).toBe(false);
       expect(validateBranchName("Jules/Uppercase").valid).toBe(false);
       expect(validateBranchName("jules/Uppercase").valid).toBe(false);
+      expect(validateBranchName("stitch/feat/example").valid).toBe(false);
+      expect(validateBranchName("stitch/fix/example").valid).toBe(false);
     });
 
     it("passes checkGitHygieneConfig diagnostic check", () => {

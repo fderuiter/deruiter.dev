@@ -414,4 +414,108 @@ describe("EDC Simulation State Integration", () => {
     expect(simEntry?.newValue).toEqual({ sys: 130, dia: 85 });
     expect(simEntry?.details).toBe("Manual adjustment");
   });
+
+  it("7. Attempting malformed same-ID import in full studio preserves active state and saved draft", async () => {
+    window.location.hash = "#mode=edc";
+    render(<CRFStudioContainer />);
+
+    // Switch role to Principal Investigator and lock form to generate electronic signature
+    const piRoleBtn = await screen.findByRole("button", {
+      name: "Principal Investigator",
+    });
+    fireEvent.click(piRoleBtn);
+
+    const lockBtn = await screen.findByRole("button", {
+      name: /Lock & Sign/i,
+    });
+    fireEvent.click(lockBtn);
+
+    // Verify signature was created and form is locked
+    expect(await screen.findByText(/Locked \(PI\)/i)).toBeDefined();
+
+    // Wait for useStudyAutosave debounce (1000ms) to ensure draft is saved
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    });
+
+    const draftBefore = loadStudyDraft();
+    expect(draftBefore.status).toBe("recovered");
+    if (draftBefore.status !== "recovered") {
+      throw new Error("Draft not recovered");
+    }
+
+    const activeStudyId = draftBefore.study.id;
+    const activeProtocolNumber = draftBefore.study.protocolNumber;
+    expect(
+      draftBefore.study.simulationState?.signatures?.length
+    ).toBeGreaterThan(0);
+
+    // Navigate to Export/Import mode (#mode=export)
+    act(() => {
+      window.location.hash = "#mode=export";
+      window.dispatchEvent(new HashChangeEvent("hashchange"));
+    });
+
+    // Paste malformed same-ID USDM JSON (auditLog is string instead of array)
+    const malformedSameIdUsdm = JSON.stringify({
+      study: {
+        id: activeStudyId,
+        protocolNumber: activeProtocolNumber,
+        title: "Malformed Same-ID Replacement Protocol",
+        phase: "Phase III",
+        sponsor: "Test Sponsor",
+        studyDesigns: [],
+        simulationState: {
+          auditLog: "INVALID_AUDIT_LOG_STRING_NOT_ARRAY",
+        },
+      },
+    });
+
+    const importTextarea = await screen.findByPlaceholderText(
+      /Paste exported StudyProtocol JSON here to load\.\.\./i
+    );
+    fireEvent.change(importTextarea, {
+      target: { value: malformedSameIdUsdm },
+    });
+
+    const importBtn = await screen.findByRole("button", {
+      name: /Import Protocol into Studio/i,
+    });
+
+    await act(async () => {
+      fireEvent.click(importBtn);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+
+    // Assert error message is displayed in modal
+    expect(
+      await screen.findByText(/Invalid supplied simulationState extension/i)
+    ).toBeDefined();
+
+    // Wait for autosave tick
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    });
+
+    // Assert saved draft in localStorage remains unchanged
+    const draftAfter = loadStudyDraft();
+    expect(draftAfter.status).toBe("recovered");
+    if (draftAfter.status === "recovered") {
+      expect(draftAfter.study.id).toBe(activeStudyId);
+      expect(
+        draftAfter.study.simulationState?.signatures?.length
+      ).toBeGreaterThan(0);
+      expect(draftAfter.study.simulationState?.signatures?.[0].meaning).toBe(
+        "Data Lock"
+      );
+    }
+
+    // Navigate back to EDC Simulator mode and verify active studio UI still reflects saved state
+    act(() => {
+      window.location.hash = "#mode=edc";
+      window.dispatchEvent(new HashChangeEvent("hashchange"));
+    });
+
+    expect(await screen.findByText(/Locked \(PI\)/i)).toBeDefined();
+  });
 });

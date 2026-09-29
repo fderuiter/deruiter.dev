@@ -895,10 +895,7 @@ export function importStudyFromUsdm(
   const rules: EditCheckRule[] = Array.from(ruleMap.values());
 
   let validatedSimulationState: StudyProtocol["simulationState"] = undefined;
-  if (
-    studyObj.simulationState !== undefined &&
-    studyObj.simulationState !== null
-  ) {
+  if (studyObj.simulationState !== undefined) {
     if (
       typeof studyObj.simulationState !== "object" ||
       studyObj.simulationState === null
@@ -924,7 +921,7 @@ export function importStudyFromUsdm(
   }
 
   let validatedProvenance: StudyProtocol["provenance"] = undefined;
-  if (studyObj.provenance !== undefined && studyObj.provenance !== null) {
+  if (studyObj.provenance !== undefined) {
     if (
       typeof studyObj.provenance !== "object" ||
       studyObj.provenance === null

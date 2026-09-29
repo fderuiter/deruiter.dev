@@ -674,7 +674,39 @@ describe("ExportImportModal USDM Import Conformance Gating & Provenance Logging"
       /Invalid supplied provenance extension/
     );
 
-    // Construct USDM payload with absent optional extensions (should succeed)
+    // Construct USDM payload with supplied null simulationState
+    const nullSimUsdmJson = JSON.stringify({
+      study: {
+        id: "usdm_null_01",
+        title: "Null Simulation Test Protocol",
+        protocolNumber: "PROTO-NULL-SIM",
+        phase: "Phase I",
+        sponsor: "Test Sponsor",
+        studyDesigns: [],
+        simulationState: null,
+      },
+    });
+
+    expect(() => importStudyFromUsdm(nullSimUsdmJson)).toThrow(
+      /Invalid supplied simulationState extension: payload must be an object/
+    );
+
+    // Construct USDM payload with supplied null provenance
+    const nullProvUsdmJson = JSON.stringify({
+      study: {
+        id: "usdm_null_02",
+        title: "Null Provenance Test Protocol",
+        protocolNumber: "PROTO-NULL-PROV",
+        phase: "Phase I",
+        sponsor: "Test Sponsor",
+        studyDesigns: [],
+        provenance: null,
+      },
+    });
+
+    expect(() => importStudyFromUsdm(nullProvUsdmJson)).toThrow(
+      /Invalid supplied provenance extension: payload must be an object/
+    );
     const absentExtensionsUsdmJson = JSON.stringify({
       study: {
         id: "usdm_absent_01",

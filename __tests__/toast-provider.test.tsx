@@ -252,6 +252,15 @@ describe("ToastProvider & useToast", () => {
     errorSpy.mockRestore();
   });
 
+  it("skips the announcement when the caller already announced (announce: false)", () => {
+    const { getApi, announceSpy } = setup();
+    act(() => {
+      getApi().success("Already spoken", { announce: false });
+    });
+    expect(inViewport().getByText("Already spoken")).toBeTruthy();
+    expect(announceSpy).not.toHaveBeenCalled();
+  });
+
   it("falls back to announcing only when no provider is mounted", () => {
     const { result } = renderHook(() => useToast());
     const id = result.current.success("Standalone");

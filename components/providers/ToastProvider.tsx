@@ -32,6 +32,12 @@ export interface ToastOptions {
    * Pass `Infinity` or `0` to keep the toast until the user dismisses it.
    */
   duration?: number;
+  /**
+   * Whether to announce the toast to screen readers. Defaults to true. Set
+   * false only when the caller has already announced the same message (for
+   * example through useClipboard), so it is not spoken twice.
+   */
+  announce?: boolean;
 }
 
 /** A toast currently held in the provider's visible stack. */
@@ -111,10 +117,12 @@ const fallbackApi: ToastApi = (() => {
     message: string,
     options?: ToastOptions
   ) => {
-    liveAnnouncer.announce(
-      composeAnnouncement(message, options?.description),
-      priorityFor(variant)
-    );
+    if (options?.announce !== false) {
+      liveAnnouncer.announce(
+        composeAnnouncement(message, options?.description),
+        priorityFor(variant)
+      );
+    }
     return createToastId();
   };
   return {
@@ -277,10 +285,12 @@ export function ToastProvider({
       }
       commit(next);
       armTimer(id, item.duration);
-      announce(
-        composeAnnouncement(message, item.description),
-        priorityFor(variant)
-      );
+      if (options?.announce !== false) {
+        announce(
+          composeAnnouncement(message, item.description),
+          priorityFor(variant)
+        );
+      }
       return id;
     },
     [announce, armTimer, clearTimer, commit, maxVisible]
@@ -347,7 +357,7 @@ export function ToastProvider({
                   }}
                   data-testid="toast"
                   data-variant={t.variant}
-                  className="pointer-events-auto relative flex w-full min-w-0 items-start gap-3 overflow-hidden rounded-lg border border-white/[0.08] bg-[#13151a] py-3 pr-2 pl-4 text-[#f4f4f6] shadow-lg shadow-black/40"
+                  className="pointer-events-auto relative flex w-full min-w-0 items-start gap-3 overflow-hidden rounded-lg border border-zinc-800 bg-[#13151a] py-3 pr-2 pl-4 text-[#f4f4f6] shadow-lg shadow-black/40"
                 >
                   <span
                     aria-hidden="true"

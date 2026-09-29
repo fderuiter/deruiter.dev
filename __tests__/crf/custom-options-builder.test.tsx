@@ -1,13 +1,20 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+(
+  globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true;
 
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { FieldPropertiesTab } from "@/components/crf/RightInspector/FieldPropertiesTab";
 import { CRFField } from "@/lib/crf/types";
 import { STANDARD_CODELISTS } from "@/lib/crf/cdisc-cdash-library";
+import {
+  A11yProvider,
+  LiveAnnouncer,
+} from "@/components/providers/A11yProvider";
+import { ToastProvider } from "@/hooks/useToast";
 
 describe("CRF Custom Question Options Builder Component", () => {
   let container: HTMLDivElement;
@@ -55,7 +62,9 @@ describe("CRF Custom Question Options Builder Component", () => {
       );
     });
 
-    const inputValues = Array.from(container.querySelectorAll("input")).map((i) => i.value);
+    const inputValues = Array.from(container.querySelectorAll("input")).map(
+      (i) => i.value
+    );
     expect(inputValues).toContain("Option Alpha");
     expect(inputValues).toContain("Option Beta");
     expect(container.textContent).toContain("Add Option");
@@ -74,8 +83,8 @@ describe("CRF Custom Question Options Builder Component", () => {
       );
     });
 
-    const addBtn = Array.from(container.querySelectorAll("button")).find(
-      (b) => b.textContent?.includes("Add Option")
+    const addBtn = Array.from(container.querySelectorAll("button")).find((b) =>
+      b.textContent?.includes("Add Option")
     );
     expect(addBtn).toBeDefined();
 
@@ -142,8 +151,8 @@ describe("CRF Custom Question Options Builder Component", () => {
       );
     });
 
-    const saveBtn = Array.from(container.querySelectorAll("button")).find(
-      (b) => b.textContent?.includes("Save to Study Codelists")
+    const saveBtn = Array.from(container.querySelectorAll("button")).find((b) =>
+      b.textContent?.includes("Save to Study Codelists")
     );
     expect(saveBtn).toBeDefined();
 
@@ -163,6 +172,45 @@ describe("CRF Custom Question Options Builder Component", () => {
         codelistId: expect.stringMatching(/^CL_/),
         customOptions: undefined,
       })
+    );
+  });
+
+  it("confirms the codelist save through the global toast, announced once (#1134)", async () => {
+    const announcer = new LiveAnnouncer({ expirationMs: 60_000 });
+    const announceSpy = vi.spyOn(announcer, "announce");
+
+    await act(async () => {
+      root.render(
+        <A11yProvider announcer={announcer}>
+          <ToastProvider>
+            <FieldPropertiesTab
+              field={dummyField}
+              allFieldsInForm={[dummyField]}
+              codelists={STANDARD_CODELISTS}
+              onUpdateField={vi.fn()}
+              onSaveToStudyCodelist={vi.fn()}
+            />
+          </ToastProvider>
+        </A11yProvider>
+      );
+    });
+
+    const saveBtn = Array.from(container.querySelectorAll("button")).find((b) =>
+      b.textContent?.includes("Save to Study Codelists")
+    );
+    await act(async () => {
+      saveBtn?.click();
+    });
+
+    const toast = container.querySelector('[data-testid="toast"]');
+    expect(toast?.getAttribute("data-variant")).toBe("success");
+    expect(toast?.textContent).toContain(
+      'Saved as study codelist "Custom Clinical Decision Question (2 Options)"!'
+    );
+    expect(announceSpy).toHaveBeenCalledTimes(1);
+    expect(announceSpy).toHaveBeenCalledWith(
+      'Saved as study codelist "Custom Clinical Decision Question (2 Options)"!',
+      "polite"
     );
   });
 });

@@ -10,6 +10,16 @@ Per-call options accepted by the toast methods.
 
 ## Properties
 
+### announce?
+
+> `optional` **announce?**: `boolean`
+
+Whether to announce the toast to screen readers. Defaults to true. Set
+false only when the caller has already announced the same message (for
+example through useClipboard), so it is not spoken twice.
+
+***
+
 ### description?
 
 > `optional` **description?**: `string`

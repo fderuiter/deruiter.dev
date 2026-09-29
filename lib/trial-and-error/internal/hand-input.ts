@@ -99,18 +99,20 @@ export function handKeyIntent(
   }
   if (!input.onCard || context.locked) return null;
   if (input.metaKey || input.ctrlKey || input.altKey) return null;
-  const lower = key.toLowerCase();
   if (context.sealArmed && (key === "Enter" || key === " ")) {
     return { kind: "APPLY_SEAL" };
   }
   if (context.sealArmed && key === "Escape") return { kind: "PUT_SEAL_BACK" };
-  if (lower === "a" && context.blank) return { kind: "FOCUS_ALLOCATE" };
+  if (key.toLowerCase() === "a" && context.blank)
+    return { kind: "FOCUS_ALLOCATE" };
   if (key === " ") return { kind: "TOGGLE_SELECT" };
   if (key === "Enter") return { kind: "PLAY" };
-  if (lower === "d") return { kind: "DISCARD" };
-  if (lower === "i") return { kind: "INSPECT" };
-  if (lower === "r" && !input.shiftKey) return { kind: "RECOMPILE" };
-  if (lower === "s" && context.faceDown) return { kind: "STRUCTURAL_QC" };
+  if (key.toLowerCase() === "d") return { kind: "DISCARD" };
+  if (key.toLowerCase() === "i") return { kind: "INSPECT" };
+  if (key.toLowerCase() === "r" && !input.shiftKey)
+    return { kind: "RECOMPILE" };
+  if (key.toLowerCase() === "s" && context.faceDown)
+    return { kind: "STRUCTURAL_QC" };
   // On a card, ? reads it; elsewhere it opens the Field Manual.
   if (key === "?") return { kind: "READ" };
   return null;

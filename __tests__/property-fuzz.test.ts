@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { createCustomTheorem } from "@/lib/proof-custom";
 import * as fc from "fast-check";
 import {
   parseFormula,
@@ -6,6 +7,7 @@ import {
   extractVariables,
   evaluateAst,
   areAstsEqual,
+  generateTruthTable,
   type PropAst,
 } from "@/lib/proof-utils";
 import {
@@ -1303,5 +1305,37 @@ describe("Shift-Left Fuzz & Property-Based Verification", () => {
         )
       );
     });
+  });
+});
+
+describe("Custom Proof session fuzzing", () => {
+  it("preserves entailment when every visitor proposition is renamed", () => {
+    fc.assert(
+      fc.property(fc.nat(100000), (suffix) => {
+        const [a, b, c] = [
+          `Source_${suffix}`,
+          `Middle_${suffix}`,
+          `Goal_${suffix}`,
+        ];
+        const theorem = createCustomTheorem(
+          [a, `${a} -> ${b}`, `${b} -> ${c}`],
+          c
+        );
+        const premises = theorem.nodes
+          .filter((node) => node.type === "premise")
+          .map((node) => ({ label: node.label, ast: node.ast! }));
+        const target = theorem.nodes.find(
+          (node) => node.type === "conclusion"
+        )!;
+        const table = generateTruthTable(premises, {
+          label: target.label,
+          ast: target.ast!,
+        });
+        expect(table.truthTable.some((row) => row.isCounterexample)).toBe(
+          false
+        );
+        expect(table.variables).toEqual([c, b, a].sort());
+      })
+    );
   });
 });

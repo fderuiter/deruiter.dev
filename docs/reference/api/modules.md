@@ -197,6 +197,7 @@
 - [lib/patrol/types](lib/patrol/types/README.md)
 - [lib/patrol/welch-data](lib/patrol/welch-data/README.md)
 - [lib/pretext-block-parser](lib/pretext-block-parser/README.md)
+- [lib/proof-custom](lib/proof-custom/README.md)
 - [lib/proof-utils](lib/proof-utils/README.md)
 - [lib/public-routes](lib/public-routes/README.md)
 - [lib/quasi-perfect](lib/quasi-perfect/README.md)

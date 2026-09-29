@@ -8,6 +8,7 @@ import {
   evaluateProofStatus,
   exportWorkspaceProof,
   TheoremId,
+  TheoremDefinition,
   Edge,
 } from "@/lib/proof-utils";
 
@@ -15,6 +16,7 @@ interface ProofExportModalProps {
   isOpen: boolean;
   onClose: () => void;
   activeTheoremId: TheoremId;
+  theorem?: TheoremDefinition;
   edges: Edge[];
 }
 
@@ -23,6 +25,7 @@ export const ProofExportModal: React.FC<ProofExportModalProps> = ({
   onClose,
   activeTheoremId,
   edges,
+  theorem,
 }) => {
   const titleId = useId();
   const [exportFormat, setExportFormat] = useState<
@@ -30,10 +33,13 @@ export const ProofExportModal: React.FC<ProofExportModalProps> = ({
   >("lean");
 
   const getExportText = () =>
-    exportWorkspaceProof(exportFormat, edges, activeTheoremId);
-  const graphComplete = evaluateProofStatus(edges, activeTheoremId).isE_Proven;
+    exportWorkspaceProof(exportFormat, edges, theorem ?? activeTheoremId);
+  const graphComplete = evaluateProofStatus(
+    edges,
+    theorem ?? activeTheoremId
+  ).isE_Proven;
   const canCopy =
-    activeTheoremId !== "custom" &&
+    (activeTheoremId !== "custom" || theorem?.id === "custom") &&
     (graphComplete ||
       exportFormat === "markdown" ||
       exportFormat === "mermaid");

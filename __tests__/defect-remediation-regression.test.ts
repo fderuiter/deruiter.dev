@@ -1395,3 +1395,13 @@ describe("Sandbox target regression (#1234)", () => {
     }
   });
 });
+
+describe("Custom Proof session regression (#1225)", () => {
+  it("exports changed visitor formulas instead of the shared default theorem", async () => {
+    const { createCustomTheorem } = await import("@/lib/proof-custom");
+    const theorem = createCustomTheorem(["A", "A -> B", "B -> C"], "C");
+    const output = exportWorkspaceProof("markdown", [], theorem);
+    expect(output).toContain("A -> B");
+    expect(output).not.toContain("P → Q");
+  });
+});

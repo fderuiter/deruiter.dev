@@ -26,7 +26,7 @@ Diagnoses formal logical fallacies and synthesizes counterexample truth table ro
 
 ### \_theoremId?
 
-[`TheoremId`](../type-aliases/TheoremId.md) = `"modus-ponens"`
+[`TheoremDefinition`](../interfaces/TheoremDefinition.md) \| [`TheoremId`](../type-aliases/TheoremId.md)
 
 ## Returns
 

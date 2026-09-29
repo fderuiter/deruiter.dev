@@ -13,6 +13,7 @@ import {
   pruneStepOrNode,
   exportWorkspaceProof,
   applyRuleToAsts,
+  areAstsEqual,
   parseFormula,
   formatFormula,
   getCompatibleTargets,
@@ -24,6 +25,7 @@ import {
   FallacyDiagnosis,
   ProofNode,
 } from "@/lib/proof-utils";
+import { createCustomTheorem } from "@/lib/proof-custom";
 import { useAudio } from "@/components/providers/AudioProvider";
 import { useStudioHashParams } from "@/hooks/useStudioHashParams";
 import { NextPrevNav } from "@/components/ui/NextPrevNav";
@@ -36,6 +38,23 @@ import {
 } from "@/components/proof/ProofTerminalConsole";
 import { ProofExportModal } from "@/components/proof/ProofExportModal";
 import { ProofCustomModal } from "@/components/proof/ProofCustomModal";
+
+function readCustomSession(serialized: string | null | undefined) {
+  if (!serialized || serialized.length > 2048) return null;
+  try {
+    const formulas: unknown = JSON.parse(serialized);
+    if (
+      !Array.isArray(formulas) ||
+      formulas.length !== 4 ||
+      !formulas.every((formula) => typeof formula === "string")
+    )
+      return null;
+    const theorem = createCustomTheorem(formulas.slice(0, 3), formulas[3]);
+    return { serialized, formulas, theorem };
+  } catch {
+    return null;
+  }
+}
 
 export function ProofWorkspaceClient() {
   const { params, setParam, setParams } = useStudioHashParams();
@@ -51,7 +70,17 @@ export function ProofWorkspaceClient() {
     }
     return "modus-ponens";
   });
-  const activeTheorem = THEOREMS[activeTheoremId];
+  const [customSession, setCustomSession] = useState(() =>
+    readCustomSession(
+      typeof window === "undefined"
+        ? null
+        : new URLSearchParams(window.location.hash.slice(1)).get("custom")
+    )
+  );
+  const activeTheorem =
+    activeTheoremId === "custom" && customSession
+      ? customSession.theorem
+      : THEOREMS[activeTheoremId];
 
   const [edges, setEdges] = useState<Edge[]>(activeTheorem.initialEdges);
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
@@ -109,11 +138,23 @@ export function ProofWorkspaceClient() {
   } | null>(null);
 
   // Custom Studio modal state
-  const [isCustomStudioOpen, setIsCustomStudioOpen] = useState(false);
-  const [customPremise1, setCustomPremise1] = useState("P");
-  const [customPremise2, setCustomPremise2] = useState("P -> Q");
-  const [customPremise3, setCustomPremise3] = useState("Q -> R");
-  const [customGoal, setCustomGoal] = useState("R");
+  const [isCustomStudioOpen, setIsCustomStudioOpen] = useState(
+    activeTheoremId === "custom" && !customSession
+  );
+  const [customPremise1, setCustomPremise1] = useState(
+    customSession?.formulas[0] ?? "P"
+  );
+  const [customPremise2, setCustomPremise2] = useState(
+    customSession?.formulas[1] ?? "P -> Q"
+  );
+  const [customPremise3, setCustomPremise3] = useState(
+    customSession?.formulas[2] ?? "Q -> R"
+  );
+  const [customGoal, setCustomGoal] = useState(
+    customSession?.formulas[3] ?? "R"
+  );
+
+  const [customError, setCustomError] = useState<string | null>(null);
 
   // Export Modal state
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
@@ -229,8 +270,26 @@ export function ProofWorkspaceClient() {
   useEffect(() => {
     const targetTh =
       (params.theorem as TheoremId | undefined) || "modus-ponens";
-    if (THEOREMS[targetTh] && targetTh !== activeTheoremId) {
-      const nextTh = THEOREMS[targetTh];
+    const sharedSession =
+      targetTh === "custom" ? readCustomSession(params.custom) : null;
+    const sessionChanged =
+      targetTh === "custom" &&
+      sharedSession &&
+      sharedSession.serialized !== customSession?.serialized;
+    if (
+      THEOREMS[targetTh] &&
+      (targetTh !== activeTheoremId || sessionChanged)
+    ) {
+      const nextTh = sharedSession?.theorem ?? THEOREMS[targetTh];
+      if (sharedSession) {
+        // Hydrate a newly navigated share URL into the editable custom session.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setCustomSession(sharedSession);
+        setCustomPremise1(sharedSession.formulas[0]);
+        setCustomPremise2(sharedSession.formulas[1]);
+        setCustomPremise3(sharedSession.formulas[2]);
+        setCustomGoal(sharedSession.formulas[3]);
+      }
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setActiveTheoremId(targetTh);
       setEdges(nextTh.initialEdges);
@@ -250,13 +309,21 @@ export function ProofWorkspaceClient() {
       setActiveTabState(targetTab);
     }
 
-    const currentTh = THEOREMS[targetTh] || activeTheorem;
+    const currentTh =
+      sharedSession?.theorem ?? THEOREMS[targetTh] ?? activeTheorem;
     const targetInspect = params.inspect || currentTh.targetNodeId;
     if (targetInspect !== inspectedNodeId) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setInspectedNodeIdState(targetInspect);
     }
-  }, [params, activeTheoremId, activeTab, inspectedNodeId, activeTheorem]);
+  }, [
+    params,
+    activeTheoremId,
+    activeTab,
+    inspectedNodeId,
+    activeTheorem,
+    customSession,
+  ]);
 
   const setActiveTab = React.useCallback(
     (tab: "ledger" | "systems" | "fallacy") => {
@@ -299,18 +366,18 @@ export function ProofWorkspaceClient() {
   };
 
   const { isC_Proven, isE_Proven } = useMemo(
-    () => evaluateProofStatus(edges, activeTheoremId),
-    [edges, activeTheoremId]
+    () => evaluateProofStatus(edges, activeTheorem),
+    [edges, activeTheorem]
   );
 
   const activeTacticHint = useMemo(
-    () => getNextTacticHint(edges, activeTheoremId),
-    [edges, activeTheoremId]
+    () => getNextTacticHint(edges, activeTheorem),
+    [edges, activeTheorem]
   );
 
   const deductionLedger = useMemo(
-    () => getDeductionLedger(edges, activeTheoremId),
-    [edges, activeTheoremId]
+    () => getDeductionLedger(edges, activeTheorem),
+    [edges, activeTheorem]
   );
 
   const toggleSnapping = React.useCallback(() => {
@@ -556,7 +623,14 @@ export function ProofWorkspaceClient() {
 
   const handleSwitchTheorem = (newTheoremId: TheoremId) => {
     if (newTheoremId === activeTheoremId) return;
-    const nextTh = THEOREMS[newTheoremId];
+    if (newTheoremId === "custom" && !customSession) {
+      setIsCustomStudioOpen(true);
+      return;
+    }
+    const nextTh =
+      newTheoremId === "custom" && customSession
+        ? customSession.theorem
+        : THEOREMS[newTheoremId];
     if (!nextTh) return;
 
     if (workerRef.current) {
@@ -578,6 +652,10 @@ export function ProofWorkspaceClient() {
       {
         theorem: newTheoremId === "modus-ponens" ? null : newTheoremId,
         inspect: null,
+        custom:
+          newTheoremId === "custom"
+            ? (customSession?.serialized ?? null)
+            : null,
       },
       { replace: false }
     );
@@ -808,13 +886,13 @@ export function ProofWorkspaceClient() {
           currentDragConnection.sourceId,
           hoveredTargetId,
           edges,
-          activeTheoremId
+          activeTheorem
         );
         isValid = validation.allowed;
         if (isValid) {
           const targets = getCompatibleTargets(
             currentDragConnection.sourceId,
-            activeTheoremId,
+            activeTheorem,
             edges
           );
           const found = targets.find((c) => c.targetId === hoveredTargetId);
@@ -835,7 +913,7 @@ export function ProofWorkspaceClient() {
           : null
       );
     },
-    [edges, activeTheoremId]
+    [edges, activeTheorem]
   );
 
   const handleCanvasPointerMove = React.useCallback(
@@ -898,7 +976,7 @@ export function ProofWorkspaceClient() {
       } else if (dragConnection.hoveredTargetId && !dragConnection.isValid) {
         const sId = dragConnection.sourceId;
         const tId = dragConnection.hoveredTargetId;
-        const fallacy = getFallacyDiagnosis(sId, tId, edges, activeTheoremId);
+        const fallacy = getFallacyDiagnosis(sId, tId, edges, activeTheorem);
         setCurrentFallacy(fallacy);
         setActiveTab("fallacy");
         showToast(`Invalid Connection: ${fallacy.fallacyName}`, "error");
@@ -910,7 +988,7 @@ export function ProofWorkspaceClient() {
     [
       dragConnection,
       edges,
-      activeTheoremId,
+      activeTheorem,
       playSuccess,
       processCanvasPointerMove,
       announceToScreenReader,
@@ -959,13 +1037,13 @@ export function ProofWorkspaceClient() {
 
     if (selectedNodeIds.length === 1) {
       const sourceId = selectedNodeIds[0];
-      const validation = canConnect(sourceId, nodeId, edges, activeTheoremId);
+      const validation = canConnect(sourceId, nodeId, edges, activeTheorem);
       if (!validation.allowed) {
         const fallacy = getFallacyDiagnosis(
           sourceId,
           nodeId,
           edges,
-          activeTheoremId
+          activeTheorem
         );
         setCurrentFallacy(fallacy);
         setActiveTab("fallacy");
@@ -1025,8 +1103,8 @@ export function ProofWorkspaceClient() {
     setSelectedNodeIds([nodeId]);
   };
 
-  const handleApplyRule = (ruleId: string) => {
-    if (selectedNodeIds.length === 0) {
+  const handleApplyRule = (ruleId: string, nodeIds = selectedNodeIds) => {
+    if (nodeIds.length === 0) {
       showToast(
         "Select at least 1 premise/lemma node before applying a rule.",
         "info"
@@ -1034,7 +1112,7 @@ export function ProofWorkspaceClient() {
       return;
     }
 
-    const selectedNodes = selectedNodeIds
+    const selectedNodes = nodeIds
       .map((id) => activeTheorem.nodes.find((n) => n.id === id))
       .filter((n): n is ProofNode => Boolean(n));
 
@@ -1049,21 +1127,48 @@ export function ProofWorkspaceClient() {
         playSuccess();
       } catch {}
 
-      const autoTarget = activeTheorem.nodes.find(
-        (n) =>
-          n.label === formatFormula(ruleResult.resultAst!) ||
-          n.id === activeTheorem.intermediateNodeId ||
-          n.id === activeTheorem.targetNodeId
-      );
-
-      if (autoTarget) {
-        const newEdges: Edge[] = selectedNodeIds.map((s) => ({
-          source: s,
+      const autoTarget = activeTheorem.nodes.find((node) => {
+        if (
+          node.type === "premise" ||
+          !node.ast ||
+          !areAstsEqual(node.ast, ruleResult.resultAst!)
+        )
+          return false;
+        const required =
+          node.id === activeTheorem.intermediateNodeId
+            ? activeTheorem.intermediateRequires
+            : activeTheorem.conclusionRequires;
+        return (
+          required.length === nodeIds.length &&
+          required.every((id) => nodeIds.includes(id)) &&
+          nodeIds.every(
+            (source) =>
+              edges.some(
+                (edge) => edge.source === source && edge.target === node.id
+              ) || canConnect(source, node.id, edges, activeTheorem).allowed
+          )
+        );
+      });
+      if (!autoTarget) {
+        showToast(
+          "The derived formula does not match an available workspace step. Select that step's required premises.",
+          "info"
+        );
+        return;
+      }
+      const newEdges: Edge[] = nodeIds
+        .filter(
+          (source) =>
+            !edges.some(
+              (edge) => edge.source === source && edge.target === autoTarget.id
+            )
+        )
+        .map((source) => ({
+          source,
           target: autoTarget.id,
           ruleApplied: ruleId.toUpperCase(),
         }));
-        setEdges((prev) => [...prev, ...newEdges]);
-      }
+      setEdges((prev) => [...prev, ...newEdges]);
 
       setSelectedNodeIds([]);
       setCurrentFallacy(null);
@@ -1077,7 +1182,7 @@ export function ProofWorkspaceClient() {
         {
           id: `cmd-${Date.now()}`,
           type: "command",
-          text: `apply ${ruleId} ${selectedNodeIds.join(" ")}`,
+          text: `apply ${ruleId} ${nodeIds.join(" ")}`,
         },
         {
           id: `out-${Date.now()}`,
@@ -1086,9 +1191,9 @@ export function ProofWorkspaceClient() {
         },
       ]);
     } else {
-      const sId = selectedNodeIds[0];
-      const tId = selectedNodeIds[1] || sId;
-      const fallacy = getFallacyDiagnosis(sId, tId, edges, activeTheoremId);
+      const sId = nodeIds[0];
+      const tId = nodeIds[1] || sId;
+      const fallacy = getFallacyDiagnosis(sId, tId, edges, activeTheorem);
       setCurrentFallacy(fallacy);
       setActiveTab("fallacy");
 
@@ -1147,7 +1252,7 @@ export function ProofWorkspaceClient() {
   };
 
   const handleDeleteStep = (stepOrNode: number | string) => {
-    const result = pruneStepOrNode(stepOrNode, edges, activeTheoremId);
+    const result = pruneStepOrNode(stepOrNode, edges, activeTheorem);
     if (!result.success) {
       showToast(result.reason, "error");
       announceToScreenReader(result.reason);
@@ -1183,7 +1288,7 @@ export function ProofWorkspaceClient() {
 
   const handleStartSimulation = (mode: "normal" | "loop" = "normal") => {
     if (isSimulating) return;
-    if (activeTheoremId === "custom") {
+    if (activeTheoremId === "custom" && !customSession) {
       setConsoleLogs((prev) => [
         ...prev,
         {
@@ -1221,6 +1326,7 @@ export function ProofWorkspaceClient() {
         requestId: reqId,
         mode,
         theoremId: activeTheoremId,
+        customFormulas: customSession?.formulas,
       });
     }
   };
@@ -1390,8 +1496,7 @@ export function ProofWorkspaceClient() {
         ]);
         return;
       }
-      setSelectedNodeIds(nodes);
-      handleApplyRule(rule);
+      handleApplyRule(rule, nodes);
       return;
     }
 
@@ -1468,7 +1573,7 @@ export function ProofWorkspaceClient() {
     }
 
     if (op === "ledger") {
-      const ledger = getDeductionLedger(edges, activeTheoremId);
+      const ledger = getDeductionLedger(edges, activeTheorem);
       const textRows = ledger
         .map(
           (s) =>
@@ -1500,7 +1605,7 @@ export function ProofWorkspaceClient() {
           {
             id: `exp-${Date.now()}`,
             type: "info",
-            text: exportWorkspaceProof(fmt, edges, activeTheoremId),
+            text: exportWorkspaceProof(fmt, edges, activeTheorem),
           },
         ]);
       } else {
@@ -1665,6 +1770,11 @@ export function ProofWorkspaceClient() {
           isOpen={isExportModalOpen}
           onClose={() => setIsExportModalOpen(false)}
           activeTheoremId={activeTheoremId}
+          theorem={
+            activeTheoremId !== "custom" || customSession
+              ? activeTheorem
+              : undefined
+          }
           edges={edges}
         />
 
@@ -1679,9 +1789,44 @@ export function ProofWorkspaceClient() {
           setCustomPremise2={setCustomPremise2}
           setCustomPremise3={setCustomPremise3}
           setCustomGoal={setCustomGoal}
+          error={customError}
           onLoadIntoWorkspace={() => {
-            handleSwitchTheorem("custom");
-            setIsCustomStudioOpen(false);
+            try {
+              const formulas = [
+                customPremise1,
+                customPremise2,
+                customPremise3,
+                customGoal,
+              ];
+              const theorem = createCustomTheorem(
+                formulas.slice(0, 3),
+                formulas[3]
+              );
+              const serialized = JSON.stringify(formulas);
+              if (workerRef.current)
+                workerRef.current.postMessage({ type: "ABORT" });
+              currentRequestIdRef.current += 1;
+              setIsSimulating(false);
+              setSimulationProgress(null);
+              clearWatchdog();
+              setCustomSession({ serialized, formulas, theorem });
+              setActiveTheoremId("custom");
+              setEdges([]);
+              setSelectedNodeIds([]);
+              setInspectedNodeIdState(theorem.targetNodeId);
+              setNodeOffsets({});
+              setCurrentFallacy(null);
+              setCustomError(null);
+              setParams(
+                { theorem: "custom", custom: serialized, inspect: null },
+                { replace: false }
+              );
+              setIsCustomStudioOpen(false);
+            } catch (error) {
+              setCustomError(
+                error instanceof Error ? error.message : "Invalid custom proof."
+              );
+            }
           }}
         />
 

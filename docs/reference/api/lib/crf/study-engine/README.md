@@ -15,13 +15,22 @@
 - [DomainMetadata](interfaces/DomainMetadata.md)
 - [FieldImpactPreview](interfaces/FieldImpactPreview.md)
 - [FieldReferenceLocation](interfaces/FieldReferenceLocation.md)
+- [ProtocolAuditEntryInput](interfaces/ProtocolAuditEntryInput.md)
 - [ProtocolValidationResult](interfaces/ProtocolValidationResult.md)
 - [SectionImpactPreview](interfaces/SectionImpactPreview.md)
 - [ValidationIssue](interfaces/ValidationIssue.md)
 
+## Type Aliases
+
+- [ActorContext](type-aliases/ActorContext.md)
+
 ## Variables
 
 - [CDASH\_DOMAIN\_CATALOG](variables/CDASH_DOMAIN_CATALOG.md)
+
+## Functions
+
+- [appendProtocolAuditEntry](functions/appendProtocolAuditEntry.md)
 
 ## References
 

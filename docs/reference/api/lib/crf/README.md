@@ -14,6 +14,12 @@ Re-exports [AcrfHtmlOptions](export-acrf/interfaces/AcrfHtmlOptions.md)
 
 ***
 
+### ActorContext
+
+Re-exports [ActorContext](study-engine/type-aliases/ActorContext.md)
+
+***
+
 ### ALL\_SLASH\_COMMANDS
 
 Re-exports [ALL_SLASH_COMMANDS](smart-blocks-engine/variables/ALL_SLASH_COMMANDS.md)
@@ -41,6 +47,12 @@ Re-exports [ANNOTATED_COL_WIDTH_3](export-docx/variables/ANNOTATED_COL_WIDTH_3.m
 ### ansi
 
 Re-exports [ansi](cli-engine/variables/ansi.md)
+
+***
+
+### appendProtocolAuditEntry
+
+Re-exports [appendProtocolAuditEntry](study-engine/functions/appendProtocolAuditEntry.md)
 
 ***
 
@@ -1574,6 +1586,12 @@ Re-exports [projectScopedValues](form-test-harness/functions/projectScopedValues
 
 ***
 
+### ProtocolAuditEntryInput
+
+Re-exports [ProtocolAuditEntryInput](study-engine/interfaces/ProtocolAuditEntryInput.md)
+
+***
+
 ### ProtocolDiffSummary
 
 Re-exports [ProtocolDiffSummary](universal-schema/interfaces/ProtocolDiffSummary.md)
@@ -2165,6 +2183,12 @@ Re-exports [TokenType](expression-evaluator/type-aliases/TokenType.md)
 ### UniversalAstCondition
 
 Re-exports [UniversalAstCondition](universal-schema/type-aliases/UniversalAstCondition.md)
+
+***
+
+### UniversalAuditTrailEntry
+
+Re-exports [UniversalAuditTrailEntry](universal-schema/type-aliases/UniversalAuditTrailEntry.md)
 
 ***
 

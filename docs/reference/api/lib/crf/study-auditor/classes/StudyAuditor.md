@@ -24,7 +24,7 @@ Schedule of Activities (SoA) consistency, form health telemetry, and 1-click aut
 
 ### applyAutoFix()
 
-> `static` **applyAutoFix**(`study`, `diagnosticId`): [`StudyProtocol`](../../types/interfaces/StudyProtocol.md)
+> `static` **applyAutoFix**(`study`, `diagnosticId`, `actor?`): [`StudyProtocol`](../../types/interfaces/StudyProtocol.md)
 
 Applies an individual 1-click auto-fix remediation to a StudyProtocol instance.
 
@@ -38,6 +38,10 @@ Applies an individual 1-click auto-fix remediation to a StudyProtocol instance.
 
 `string`
 
+##### actor?
+
+[`ActorContext`](../../study-engine/type-aliases/ActorContext.md)
+
 #### Returns
 
 [`StudyProtocol`](../../types/interfaces/StudyProtocol.md)
@@ -46,7 +50,7 @@ Applies an individual 1-click auto-fix remediation to a StudyProtocol instance.
 
 ### applyAutoFixAll()
 
-> `static` **applyAutoFixAll**(`study`, `diagnostics?`): `object`
+> `static` **applyAutoFixAll**(`study`, `diagnostics?`, `actor?`): `object`
 
 Applies all available auto-fix remediations in a single pass.
 
@@ -59,6 +63,10 @@ Applies all available auto-fix remediations in a single pass.
 ##### diagnostics?
 
 [`AuditDiagnostic`](../interfaces/AuditDiagnostic.md)[]
+
+##### actor?
+
+[`ActorContext`](../../study-engine/type-aliases/ActorContext.md)
 
 #### Returns
 

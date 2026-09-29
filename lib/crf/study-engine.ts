@@ -25,6 +25,7 @@ import {
   StudyReviewEvent,
   StudyReviewTarget,
   StudyReviewThread,
+  AuditTrailEntry,
 } from "./types";
 import {
   saveStudyBaseline,
@@ -314,6 +315,73 @@ export const CDASH_DOMAIN_CATALOG: DomainMetadata[] = [
 ];
 
 export { generateEngineId, generateCdashVariableName } from "./precision-date";
+
+export type ActorContext =
+  string | { name?: string; role?: string } | StudyReviewActor;
+
+export interface ProtocolAuditEntryInput {
+  actionType: string;
+  targetId?: string;
+  subjectId?: string;
+  formId?: string;
+  fieldId?: string;
+  fieldName?: string;
+  previousValue?: unknown;
+  newValue?: unknown;
+  actor?: ActorContext;
+  reasonForChange?: string;
+  diagnosticId?: string;
+  details?: string | Record<string, unknown>;
+}
+
+/**
+ * Helper function that records a timestamped audit entry onto a StudyProtocol instance.
+ */
+export function appendProtocolAuditEntry(
+  study: StudyProtocol,
+  input: ProtocolAuditEntryInput
+): StudyProtocol {
+  let changedBy = "System Auditor";
+  let userRole: string | undefined = "System Auditor";
+
+  if (typeof input.actor === "string" && input.actor.trim() !== "") {
+    changedBy = input.actor.trim();
+  } else if (input.actor && typeof input.actor === "object") {
+    if (input.actor.name) changedBy = input.actor.name;
+    if (input.actor.role) userRole = input.actor.role;
+  }
+
+  const timestamp = new Date().toISOString();
+  const id = generateEngineId("aud");
+
+  const newEntry: AuditTrailEntry = {
+    id,
+    timestamp,
+    actionType: input.actionType,
+    targetId: input.targetId,
+    subjectId: input.subjectId || "PROTOCOL",
+    formId: input.formId || "",
+    fieldId: input.fieldId || "",
+    fieldName: input.fieldName || "",
+    previousValue:
+      input.previousValue !== undefined ? cloneDeep(input.previousValue) : null,
+    newValue: input.newValue !== undefined ? cloneDeep(input.newValue) : null,
+    changedBy,
+    userRole,
+    reasonForChange:
+      input.reasonForChange || `Protocol mutation: ${input.actionType}`,
+    ...(input.diagnosticId ? { diagnosticId: input.diagnosticId } : {}),
+    ...(input.details !== undefined
+      ? { details: cloneDeep(input.details) }
+      : {}),
+  };
+
+  const currentTrail = study.auditTrail ? [...study.auditTrail] : [];
+  return {
+    ...study,
+    auditTrail: [...currentTrail, newEntry],
+  };
+}
 
 function escapeRegex(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -645,7 +713,8 @@ export class StudyProtocolEngine {
   static addForm(
     study: StudyProtocol,
     domain: string,
-    customName?: string
+    customName?: string,
+    actor?: ActorContext
   ): { study: StudyProtocol; form: CRFForm } {
     const upperDomain = domain.trim().toUpperCase();
     let newForm: CRFForm;
@@ -683,7 +752,18 @@ export class StudyProtocolEngine {
       forms: [...study.forms, newForm],
     };
 
-    return { study: updatedStudy, form: newForm };
+    const auditedStudy = appendProtocolAuditEntry(updatedStudy, {
+      actionType: "FORM_CREATE",
+      targetId: newForm.id,
+      formId: newForm.id,
+      newValue: { id: newForm.id, name: newForm.name, domain: newForm.domain },
+      actor,
+      reasonForChange: customName
+        ? `Added form ${customName}`
+        : `Added form ${newForm.name} (${newForm.domain})`,
+    });
+
+    return { study: auditedStudy, form: newForm };
   }
 
   /**
@@ -744,7 +824,8 @@ export class StudyProtocolEngine {
    */
   static removeForm(
     study: StudyProtocol,
-    formIdOrDomain: string
+    formIdOrDomain: string,
+    actor?: ActorContext
   ): {
     study: StudyProtocol;
     removedForm?: CRFForm;
@@ -815,6 +896,19 @@ export class StudyProtocolEngine {
       visits: updatedVisits,
     };
 
+    const auditedStudy = appendProtocolAuditEntry(updatedStudy, {
+      actionType: "FORM_REMOVE",
+      targetId: targetForm.id,
+      formId: targetForm.id,
+      previousValue: {
+        id: targetForm.id,
+        name: targetForm.name,
+        domain: targetForm.domain,
+      },
+      actor,
+      reasonForChange: `Removed form ${targetForm.name} (${targetForm.domain})`,
+    });
+
     const undo = (currentStudy: StudyProtocol): StudyProtocol => {
       return StudyProtocolEngine.restoreForm(
         currentStudy,
@@ -825,7 +919,7 @@ export class StudyProtocolEngine {
     };
 
     return {
-      study: updatedStudy,
+      study: auditedStudy,
       removedForm: targetForm,
       affectedVisits,
       affectedArms,
@@ -1341,7 +1435,9 @@ export class StudyProtocolEngine {
       sectionId?: string;
       sectionIndex?: number;
       targetIndex?: number;
-    }
+      actor?: ActorContext;
+    },
+    actor?: ActorContext
   ): {
     study: StudyProtocol;
     field?: CRFField;
@@ -1489,7 +1585,24 @@ export class StudyProtocolEngine {
       forms: study.forms.map((f) => (f.id === targetForm.id ? updatedForm : f)),
     };
 
-    return { study: updatedStudy, field: newField, form: updatedForm };
+    const effectiveActor = options?.actor || actor;
+    const auditedStudy = appendProtocolAuditEntry(updatedStudy, {
+      actionType: "FIELD_INSERT",
+      targetId: newField.id,
+      formId: targetForm.id,
+      fieldId: newField.id,
+      fieldName: newField.variableName,
+      newValue: {
+        id: newField.id,
+        variableName: newField.variableName,
+        dataType: newField.dataType,
+        label: newField.label,
+      },
+      actor: effectiveActor,
+      reasonForChange: `Inserted field ${newField.variableName} into form ${targetForm.name}`,
+    });
+
+    return { study: auditedStudy, field: newField, form: updatedForm };
   }
 
   /**
@@ -1504,7 +1617,13 @@ export class StudyProtocolEngine {
     },
     sectionIndexOrOptions:
       | number
-      | { sectionId?: string; sectionIndex?: number; targetIndex?: number } = 0
+      | {
+          sectionId?: string;
+          sectionIndex?: number;
+          targetIndex?: number;
+          actor?: ActorContext;
+        } = 0,
+    actor?: ActorContext
   ): {
     study: StudyProtocol;
     field?: CRFField;
@@ -1513,8 +1632,11 @@ export class StudyProtocolEngine {
   } {
     const options =
       typeof sectionIndexOrOptions === "number"
-        ? { sectionIndex: sectionIndexOrOptions }
-        : sectionIndexOrOptions;
+        ? { sectionIndex: sectionIndexOrOptions, actor }
+        : {
+            ...sectionIndexOrOptions,
+            actor: sectionIndexOrOptions.actor || actor,
+          };
     return this.insertField(study, domainOrFormId, fieldData, options);
   }
 
@@ -1691,7 +1813,8 @@ export class StudyProtocolEngine {
     study: StudyProtocol,
     domainOrFormId: string,
     fieldIdOrVar: string,
-    updates: Partial<CRFField>
+    updates: Partial<CRFField>,
+    actor?: ActorContext
   ): {
     study: StudyProtocol;
     field?: CRFField;
@@ -1733,7 +1856,19 @@ export class StudyProtocolEngine {
       forms: study.forms.map((f) => (f.id === form.id ? updatedForm : f)),
     };
 
-    return { study: updatedStudy, field: updatedField, form: updatedForm };
+    const auditedStudy = appendProtocolAuditEntry(updatedStudy, {
+      actionType: "FIELD_UPDATE",
+      targetId: currentField.id,
+      formId: form.id,
+      fieldId: currentField.id,
+      fieldName: updatedField.variableName,
+      previousValue: currentField,
+      newValue: updatedField,
+      actor,
+      reasonForChange: `Updated field ${currentField.variableName}`,
+    });
+
+    return { study: auditedStudy, field: updatedField, form: updatedForm };
   }
 
   /**
@@ -2380,6 +2515,7 @@ export class StudyProtocolEngine {
     fieldIdOrVar: string,
     options?: {
       purgeReferencingRules?: boolean;
+      actor?: ActorContext;
     },
     reviewAuthor: StudyReviewActor = this.defaultReviewActor,
     reviewAt = new Date().toISOString()
@@ -2499,14 +2635,28 @@ export class StudyProtocolEngine {
       );
     };
 
-    return {
-      study: this.recordReviewDeletion(
+    const auditedStudy = appendProtocolAuditEntry(
+      this.recordReviewDeletion(
         updatedStudy,
         form,
         field,
         reviewAuthor,
         reviewAt
       ),
+      {
+        actionType: "FIELD_REMOVE",
+        targetId: field.id,
+        formId: form.id,
+        fieldId: field.id,
+        fieldName: field.variableName,
+        previousValue: field,
+        actor: options?.actor || reviewAuthor,
+        reasonForChange: `Removed field ${field.variableName} from form ${form.name}`,
+      }
+    );
+
+    return {
+      study: auditedStudy,
       removedField: field,
       removedFromSectionId: targetSectionId,
       removedAtIndex: fieldIndex,

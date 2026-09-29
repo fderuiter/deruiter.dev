@@ -10,6 +10,7 @@ import {
 } from "@/lib/crf/cdisc-cdash-library";
 import { lintFormula, FormulaLintResult } from "@/lib/crf/formula-linter";
 import { cloneDeep } from "@/lib/utils";
+import { appendProtocolAuditEntry, type ActorContext } from "./study-engine";
 
 /**
  * Diagnostic finding tier categorization.
@@ -458,7 +459,8 @@ export class StudyAuditor {
    */
   public static applyAutoFix(
     study: StudyProtocol,
-    diagnosticId: string
+    diagnosticId: string,
+    actor?: ActorContext
   ): StudyProtocol {
     const report = StudyAuditor.audit(study);
     const target = report.diagnostics.find((d) => d.id === diagnosticId);
@@ -558,7 +560,21 @@ export class StudyAuditor {
       }
     }
 
-    return cloned;
+    return appendProtocolAuditEntry(cloned, {
+      actionType: "AUTO_FIX",
+      targetId: diagnosticId,
+      diagnosticId,
+      formId: target.formId,
+      fieldId: target.fieldId,
+      fieldName: target.variableName,
+      details: {
+        autoFixType: target.autoFixType,
+        message: target.message,
+        suggestedFix: target.suggestedFix,
+      },
+      actor: actor || "System Auditor",
+      reasonForChange: `Applied 1-click auto-fix for diagnostic ${diagnosticId}: ${target.message}`,
+    });
   }
 
   /**
@@ -566,7 +582,8 @@ export class StudyAuditor {
    */
   public static applyAutoFixAll(
     study: StudyProtocol,
-    diagnostics?: AuditDiagnostic[]
+    diagnostics?: AuditDiagnostic[],
+    actor?: ActorContext
   ): { protocol: StudyProtocol; fixedCount: number } {
     let currentStudy = study;
     let fixedCount = 0;
@@ -574,7 +591,7 @@ export class StudyAuditor {
     const fixables = diags.filter((d) => d.autoFixAvailable);
 
     for (const diag of fixables) {
-      const next = StudyAuditor.applyAutoFix(currentStudy, diag.id);
+      const next = StudyAuditor.applyAutoFix(currentStudy, diag.id, actor);
       if (next !== currentStudy) {
         currentStudy = next;
         fixedCount++;

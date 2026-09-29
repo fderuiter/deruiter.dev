@@ -113,7 +113,10 @@ export function exportStudyToCdiscOdmXml(study: StudyProtocol): string {
 
   // ItemDefs (Fields)
   const processedItems = new Set<string>();
-  const customFieldCodelists: Map<string, import("./types").CodelistDefinition> = new Map();
+  const customFieldCodelists: Map<
+    string,
+    import("./types").CodelistDefinition
+  > = new Map();
 
   study.forms.forEach((form) => {
     form.sections.forEach((sec) => {
@@ -123,7 +126,11 @@ export function exportStudyToCdiscOdmXml(study: StudyProtocol): string {
         processedItems.add(itemOid);
 
         let effectiveCodelistId = field.codelistId;
-        if (!effectiveCodelistId && field.customOptions && field.customOptions.length > 0) {
+        if (
+          !effectiveCodelistId &&
+          field.customOptions &&
+          field.customOptions.length > 0
+        ) {
           effectiveCodelistId = `CL_${field.variableName || field.id}`;
           if (!customFieldCodelists.has(effectiveCodelistId)) {
             customFieldCodelists.set(effectiveCodelistId, {
@@ -136,7 +143,9 @@ export function exportStudyToCdiscOdmXml(study: StudyProtocol): string {
         }
 
         const odmType = mapDataTypeToOdm(field.dataType);
-        const codelistAttr = effectiveCodelistId ? ` CodeListOID="${escapeXml(effectiveCodelistId)}"` : "";
+        const codelistAttr = effectiveCodelistId
+          ? ` CodeListOID="${escapeXml(effectiveCodelistId)}"`
+          : "";
 
         xml += `      <ItemDef OID="${escapeXml(itemOid)}" Name="${escapeXml(field.variableName)}" DataType="${escapeXml(odmType)}"${codelistAttr}>\n`;
         xml += `        <Description><TranslatedText xml:lang="en">${escapeXml(field.label)}</TranslatedText></Description>\n`;
@@ -162,16 +171,73 @@ export function exportStudyToCdiscOdmXml(study: StudyProtocol): string {
   ];
 
   allCodelists.forEach((cl) => {
-    const nciAttr = cl.nciCodelistCode ? ` def:NCICode="${escapeXml(cl.nciCodelistCode)}"` : "";
+    const nciAttr = cl.nciCodelistCode
+      ? ` def:NCICode="${escapeXml(cl.nciCodelistCode)}"`
+      : "";
     xml += `      <CodeList OID="${escapeXml(cl.id)}" Name="${escapeXml(cl.name)}" DataType="text"${nciAttr}>\n`;
     cl.options.forEach((opt) => {
-      const optNci = opt.nciCode ? ` def:NCICode="${escapeXml(opt.nciCode)}"` : "";
+      const optNci = opt.nciCode
+        ? ` def:NCICode="${escapeXml(opt.nciCode)}"`
+        : "";
       xml += `        <CodeListItem CodedValue="${escapeXml(opt.code)}"${optNci}>\n`;
       xml += `          <Decode><TranslatedText xml:lang="en">${escapeXml(opt.label)}</TranslatedText></Decode>\n`;
       xml += `        </CodeListItem>\n`;
     });
     xml += `      </CodeList>\n`;
   });
+
+  if (study.auditTrail && study.auditTrail.length > 0) {
+    xml += `\n      <AuditTrail>\n`;
+    study.auditTrail.forEach((entry) => {
+      xml += `        <AuditRecord ID="${escapeXml(entry.id)}">\n`;
+      xml += `          <UserRef UserOID="${escapeXml(entry.changedBy)}"/>\n`;
+      if (entry.userRole) {
+        xml += `          <UserRole>${escapeXml(entry.userRole)}</UserRole>\n`;
+      }
+      xml += `          <DateTimeStamp>${escapeXml(entry.timestamp)}</DateTimeStamp>\n`;
+      if (entry.actionType) {
+        xml += `          <ActionType>${escapeXml(entry.actionType)}</ActionType>\n`;
+      }
+      if (entry.targetId) {
+        xml += `          <TargetID>${escapeXml(entry.targetId)}</TargetID>\n`;
+      }
+      if (entry.formId) {
+        xml += `          <FormOID>${escapeXml(entry.formId)}</FormOID>\n`;
+      }
+      if (entry.fieldId) {
+        xml += `          <ItemOID>${escapeXml(entry.fieldId)}</ItemOID>\n`;
+      }
+      if (entry.previousValue !== undefined && entry.previousValue !== null) {
+        const prevStr =
+          typeof entry.previousValue === "object"
+            ? JSON.stringify(entry.previousValue)
+            : String(entry.previousValue);
+        xml += `          <PreviousValue>${escapeXml(prevStr)}</PreviousValue>\n`;
+      }
+      if (entry.newValue !== undefined && entry.newValue !== null) {
+        const newStr =
+          typeof entry.newValue === "object"
+            ? JSON.stringify(entry.newValue)
+            : String(entry.newValue);
+        xml += `          <NewValue>${escapeXml(newStr)}</NewValue>\n`;
+      }
+      if (entry.reasonForChange) {
+        xml += `          <ReasonForChange>${escapeXml(entry.reasonForChange)}</ReasonForChange>\n`;
+      }
+      if (entry.diagnosticId) {
+        xml += `          <DiagnosticID>${escapeXml(entry.diagnosticId)}</DiagnosticID>\n`;
+      }
+      if (entry.details !== undefined && entry.details !== null) {
+        const detailsStr =
+          typeof entry.details === "object"
+            ? JSON.stringify(entry.details)
+            : String(entry.details);
+        xml += `          <Details>${escapeXml(detailsStr)}</Details>\n`;
+      }
+      xml += `        </AuditRecord>\n`;
+    });
+    xml += `      </AuditTrail>\n`;
+  }
 
   xml += `    </MetaDataVersion>
   </Study>

@@ -12,6 +12,7 @@ describe("Game Manuals Registry", () => {
     "garmin-watch",
     "clinical-chaos",
     "retro-labyrinth",
+    "study-director",
     "simulator",
     "crf",
   ];

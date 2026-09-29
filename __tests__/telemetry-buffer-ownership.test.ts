@@ -180,5 +180,23 @@ describe("Telemetry buffer ownership across concurrent sync and enqueue failure 
         expect.anything()
       );
     });
+
+    it("treats an enqueue timeout as expected degradation, not a Sentry error", async () => {
+      vi.useFakeTimers();
+      try {
+        mockExec.mockReturnValueOnce(new Promise(() => {}));
+        const pending = TelemetryService.recordEvent({
+          projectSlug: "/dashboard",
+          eventType: "page_view",
+        });
+        await vi.advanceTimersByTimeAsync(2000);
+        const result = await pending;
+
+        expect(result.buffered).toBe(false);
+        expect(mockCaptureException).not.toHaveBeenCalled();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
   });
 });

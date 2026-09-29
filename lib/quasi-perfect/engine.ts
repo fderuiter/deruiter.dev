@@ -28,7 +28,11 @@ export function findNodeById(root: ASTNode, id: string): ASTNode | null {
 /**
  * Replaces a target node matching targetId with replacementNode.
  */
-export function replaceNode(root: ASTNode, targetId: string, replacementNode: ASTNode): ASTNode {
+export function replaceNode(
+  root: ASTNode,
+  targetId: string,
+  replacementNode: ASTNode
+): ASTNode {
   if (root.id === targetId) {
     return cloneAST(replacementNode);
   }
@@ -37,7 +41,9 @@ export function replaceNode(root: ASTNode, targetId: string, replacementNode: AS
   }
   return {
     ...root,
-    children: root.children.map((child) => replaceNode(child, targetId, replacementNode)),
+    children: root.children.map((child) =>
+      replaceNode(child, targetId, replacementNode)
+    ),
   };
 }
 
@@ -61,8 +67,68 @@ export function areNodesEqual(a: ASTNode, b: ASTNode): boolean {
   return true;
 }
 
+type Associativity = "left" | "right" | "none";
+
+const CONNECTIVE_SYMBOLS: Partial<Record<ASTNode["type"], string>> = {
+  Implication: "→",
+  Conjunction: "∧",
+  Disjunction: "∨",
+};
+
+/**
+ * Binding strength and grouping of a binary node, or null for nodes that
+ * never need parentheses (atoms, functions, negations, unary operators).
+ */
+function binaryPrecedence(
+  node: ASTNode
+): { precedence: number; associativity: Associativity } | null {
+  if (!node.children || node.children.length !== 2) return null;
+  switch (node.type) {
+    case "Implication":
+      return { precedence: 1, associativity: "right" };
+    case "Disjunction":
+      return { precedence: 2, associativity: "left" };
+    case "Conjunction":
+      return { precedence: 3, associativity: "left" };
+    case "Equality":
+    case "Inequality":
+      return { precedence: 4, associativity: "none" };
+    case "Operator":
+      if (node.value === "^") return { precedence: 7, associativity: "right" };
+      if (node.value === "*" || node.value === "/" || node.value === "×") {
+        return { precedence: 6, associativity: "left" };
+      }
+      return { precedence: 5, associativity: "left" };
+    default:
+      return null;
+  }
+}
+
+/**
+ * Renders a binary node's operand, adding parentheses whenever dropping them
+ * would change the grouping, so (a + b) + c and a + (b + c) read differently.
+ */
+function renderOperand(
+  child: ASTNode,
+  parent: ASTNode,
+  side: "left" | "right"
+): string {
+  const rendered = renderASTString(child);
+  const outer = binaryPrecedence(parent);
+  const inner = binaryPrecedence(child);
+  if (!outer || !inner) return rendered;
+  if (inner.precedence > outer.precedence) return rendered;
+  if (inner.precedence === outer.precedence && outer.associativity === side) {
+    return rendered;
+  }
+  return `(${rendered})`;
+}
+
 /**
  * Formats an AST node to human-readable mathematical notation string.
+ *
+ * Nested binary nodes are parenthesized only where the conventional
+ * precedence and associativity rules would otherwise group them differently.
  */
 export function renderASTString(node: ASTNode): string {
   switch (node.type) {
@@ -85,44 +151,35 @@ export function renderASTString(node: ASTNode): string {
       return String(node.value);
 
     case "Implication":
-      if (node.children && node.children.length === 2) {
-        const left = renderASTString(node.children[0]);
-        const right = renderASTString(node.children[1]);
-        return `${left} → ${right}`;
-      }
-      return String(node.value);
-
     case "Conjunction":
-      if (node.children && node.children.length === 2) {
-        const left = renderASTString(node.children[0]);
-        const right = renderASTString(node.children[1]);
-        return `${left} ∧ ${right}`;
-      }
-      return String(node.value);
-
     case "Disjunction":
-      if (node.children && node.children.length === 2) {
-        const left = renderASTString(node.children[0]);
-        const right = renderASTString(node.children[1]);
-        return `${left} ∨ ${right}`;
-      }
-      return String(node.value);
-
     case "Operator":
     case "Equality":
-    case "Inequality":
+    case "Inequality": {
       if (!node.children || node.children.length === 0) {
         return String(node.value);
       }
+      const symbol = CONNECTIVE_SYMBOLS[node.type] ?? String(node.value);
       if (node.children.length === 1) {
-        return `${node.value} ${renderASTString(node.children[0])}`;
+        const operand = node.children[0];
+        const inner = renderASTString(operand);
+        return binaryPrecedence(operand)
+          ? `${symbol} (${inner})`
+          : `${symbol} ${inner}`;
       }
       if (node.children.length === 2) {
-        const left = renderASTString(node.children[0]);
-        const right = renderASTString(node.children[1]);
-        return `${left} ${node.value} ${right}`;
+        const left = renderOperand(node.children[0], node, "left");
+        const right = renderOperand(node.children[1], node, "right");
+        return `${left} ${symbol} ${right}`;
       }
-      return node.children.map(renderASTString).join(` ${node.value} `);
+      return node.children
+        .map((child) =>
+          binaryPrecedence(child)
+            ? `(${renderASTString(child)})`
+            : renderASTString(child)
+        )
+        .join(` ${symbol} `);
+    }
 
     default:
       return String(node.value);
@@ -225,7 +282,10 @@ export function evaluateBooleanExpression(node: ASTNode): boolean | null {
 /**
  * Recursively simplifies algebraic and arithmetic expressions.
  */
-export function simplifyNode(node: ASTNode): { node: ASTNode; changed: boolean } {
+export function simplifyNode(node: ASTNode): {
+  node: ASTNode;
+  changed: boolean;
+} {
   let changed = false;
 
   // 1. Simplify children first
@@ -271,15 +331,20 @@ export function simplifyNode(node: ASTNode): { node: ASTNode; changed: boolean }
 
     // Algebraic identities for multiplication: x * 1 -> x, 1 * x -> x, x * 0 -> 0, 0 * x -> 0
     if (updatedNode.value === "*" || updatedNode.value === "×") {
-      if (right.type === "Constant" && right.value === 1) return { node: left, changed: true };
-      if (left.type === "Constant" && left.value === 1) return { node: right, changed: true };
-      if (right.type === "Constant" && right.value === 0) return { node: right, changed: true };
-      if (left.type === "Constant" && left.value === 0) return { node: left, changed: true };
+      if (right.type === "Constant" && right.value === 1)
+        return { node: left, changed: true };
+      if (left.type === "Constant" && left.value === 1)
+        return { node: right, changed: true };
+      if (right.type === "Constant" && right.value === 0)
+        return { node: right, changed: true };
+      if (left.type === "Constant" && left.value === 0)
+        return { node: left, changed: true };
     }
 
     // Algebraic identities for subtraction: x - 0 -> x, x - x -> 0
     if (updatedNode.value === "-") {
-      if (right.type === "Constant" && right.value === 0) return { node: left, changed: true };
+      if (right.type === "Constant" && right.value === 0)
+        return { node: left, changed: true };
       if (areNodesEqual(left, right)) {
         return {
           node: {

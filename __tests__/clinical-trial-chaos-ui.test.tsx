@@ -1149,6 +1149,41 @@ describe("ClinicalTrialChaos React Component UI Suite", () => {
     );
   });
 
+  // #1306: the board's key handler cancelled Tab, Enter and Space for every
+  // target, so focus could never leave the board and focused buttons
+  // couldn't be pressed from the keyboard.
+  it("never traps Tab and leaves Enter and Space to focused buttons", async () => {
+    await act(async () => {
+      root.render(<ClinicalTrialChaos />);
+    });
+    const board = container.querySelector(
+      '[data-keyboard-boundary="true"]'
+    ) as HTMLElement;
+    const endless = Array.from(container.querySelectorAll("button")).find((b) =>
+      b.textContent?.includes("Endless")
+    ) as HTMLElement;
+    expect(endless).toBeDefined();
+
+    const press = (el: HTMLElement, key: string) => {
+      const event = new KeyboardEvent("keydown", {
+        key,
+        bubbles: true,
+        cancelable: true,
+      });
+      act(() => {
+        el.dispatchEvent(event);
+      });
+      return event.defaultPrevented;
+    };
+
+    expect(press(board, "Tab")).toBe(false);
+    expect(press(endless, "Tab")).toBe(false);
+    expect(press(endless, "Enter")).toBe(false);
+    expect(press(endless, " ")).toBe(false);
+    // Game keys on the board itself are still claimed.
+    expect(press(board, "1")).toBe(true);
+  });
+
   it("remembers the selected outfit and announces it at clock-in", async () => {
     await act(async () => {
       root.render(<ClinicalTrialChaos />);

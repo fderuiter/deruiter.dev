@@ -388,6 +388,9 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     loadRoom("roguelike", 0);
   }, [selectedClassId, loadRoom]);
 
+  // Grid position of the hacking terminal the player is working on.
+  const hackTerminalPosRef = useRef<{ x: number; y: number } | null>(null);
+
   // Trigger Terminal Hacking Minigame
   const openHackingTerminal = useCallback((difficulty: number = 2) => {
     const puzzle = generateHexMatrixPuzzle(difficulty);
@@ -433,12 +436,24 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     setScore((s) => s + solved.rewardCrypto * 2);
   }, [hexPuzzle, bypassChips]);
 
-  // Close Hacking Minigame Modal
+  // Close Hacking Minigame Modal. A decrypted terminal goes dark, so the
+  // player can walk on without reopening it.
   const closeHackingModal = useCallback(() => {
+    const terminal = hackTerminalPosRef.current;
+    if (terminal && hexPuzzle?.solved) {
+      setCurrentMaze((maze) =>
+        maze.map((row, y) =>
+          row.map((cell, x) =>
+            x === terminal.x && y === terminal.y && cell === "H" ? " " : cell
+          )
+        )
+      );
+    }
+    hackTerminalPosRef.current = null;
     setGameStatus("playing");
     setHexPuzzle(null);
     containerRef.current?.focus({ preventScroll: true });
-  }, []);
+  }, [hexPuzzle]);
 
   // Darknet Vendor Purchase
   const buyDarknetItem = useCallback(
@@ -510,8 +525,11 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
           setExploredMap(fov.explored);
         }
 
-        // Room 1 (TSP): Dynamic wall shifting & node collection
-        if (gameMode === "roguelike" && roomIndex === 2) {
+        // TSP room: Dynamic wall shifting & node collection
+        if (
+          gameMode === "roguelike" &&
+          campaignRooms[roomIndex]?.id === "tsp"
+        ) {
           const { updatedGrid, updatedWalls } = updateTSPMovingWalls(
             currentMaze,
             tspWalls,
@@ -610,12 +628,17 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
           })
         );
 
-        // Terminal / Chest Intercept
-        if (gameMode === "roguelike" && currentMaze[nextY][nextX] === "T") {
-          if (roomIndex === 3) {
+        // Terminal / Chest Intercept: "T" is the timesheet-locked repo chest,
+        // "H" a hex-matrix hacking terminal.
+        const tile = currentMaze[nextY][nextX];
+        if (gameMode === "roguelike" && (tile === "T" || tile === "H")) {
+          if (tile === "T") {
             setGameStatus("timesheet");
           } else {
-            openHackingTerminal(roomIndex + 1);
+            hackTerminalPosRef.current = { x: nextX, y: nextY };
+            openHackingTerminal(
+              campaignRooms[roomIndex]?.securityTier ?? roomIndex + 1
+            );
           }
           playNote(440, 0.15);
           return;
@@ -697,6 +720,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       gameMode,
       exploredMap,
       roomIndex,
+      campaignRooms,
       tspWalls,
       dronesStunned,
       enemies,
@@ -1293,7 +1317,11 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                 ctx.font = "10px monospace";
                 ctx.textAlign = "center";
                 ctx.textBaseline = "middle";
-                ctx.fillText("💻", px + cellW / 2, py + cellH / 2);
+                ctx.fillText(
+                  cell === "T" ? "🧰" : "💻",
+                  px + cellW / 2,
+                  py + cellH / 2
+                );
               } else if (x === EXIT_X && y === EXIT_Y) {
                 ctx.fillStyle = "rgba(16, 185, 129, 0.25)";
                 ctx.fillRect(px, py, cellW, cellH);
@@ -1529,7 +1557,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
           if (
             cursorGridPosRef.current &&
             gameMode === "roguelike" &&
-            roomIndex === 2 &&
+            campaignRooms[roomIndex]?.id === "tsp" &&
             gameStatus === "playing"
           ) {
             const { x: hx, y: hy } = cursorGridPosRef.current;

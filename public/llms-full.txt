@@ -1,0 +1,457 @@
+# Fred de Ruiter: full architectural dossier
+
+> Portfolio of Fred de Ruiter, a clinical data engineer. Interactive studios for clinical forms, formal proofs and neuroimaging, a playable arcade, and engineering case studies with architectural write-ups.
+
+Compiled at build time from checked-in sources. Index: [llms.txt](https://deruiter.dev/llms.txt).
+
+## Case studies
+
+### 4Glory: Does Fred Know Ball?
+
+URL: https://deruiter.dev/case-studies/4glory
+Primary language: Python
+Source: https://github.com/fderuiter/4Glory
+
+Abstract:
+
+A **Python** basketball prediction project that compares my basketball judgment with **XGBoost** models across NBA seasons. Includes rolling features, walk-forward validation, and SHAP analysis. Confidence is easy; checking it takes a dataset.
+
+Architecture and trade-offs:
+
+The problem
+
+I have basketball opinions. This project gives them something to compete against: models trained on NBA data. The interesting part is testing predictions on later games and seeing which features hold up when the answer is not already known.
+
+The approach: Rolling features feed XGBoost models, and walk-forward validation tests them on later games. SHAP analysis helps explain what influenced a prediction.
+
+### Cadence Clinical: From Protocol to Study Data
+
+URL: https://deruiter.dev/case-studies/cadence-clinical
+Primary language: Python / Vue 3
+Source: https://github.com/fderuiter/cadence-clinical
+
+Abstract:
+
+A clinical study has a lot of moving parts. **Cadence Clinical** connects protocol design with study records, using **Neo4j** for relationships and **PostgreSQL** for transactions, with audit trails and digital signatures.
+
+Architecture and trade-offs:
+
+The problem
+
+A protocol describes how a study should run. The database has to keep up when that protocol changes. Cadence Clinical connects protocol relationships, day-to-day study records, and an audit history so those pieces can be reasoned about together.
+
+The approach: Neo4j represents protocol relationships; PostgreSQL handles record transactions. Ports and adapters separate the study logic from storage, with append-only audit records and RSA-PSS signatures.
+
+### Cardiac Risk Modeling: Predictions You Can Inspect
+
+URL: https://deruiter.dev/case-studies/cardiac-risk-modeling
+Primary language: Python
+Source: https://github.com/fderuiter/cardiac-risk-modeling
+
+Abstract:
+
+A **Python** cardiac risk modeling project using **XGBoost**, **LightGBM**, calibration, and **SHAP** explanations. The writeup examines data leakage, distribution shift, and how to evaluate the predictions.
+
+Architecture and trade-offs:
+
+The problem
+
+A risk model needs more scrutiny than a good leaderboard score. This project looks at cardiovascular data through preprocessing, cross-validation, calibration, and feature explanations, with particular attention to leakage and changes in the data distribution.
+
+The approach: Scikit-Learn preprocessing feeds XGBoost and LightGBM models. Cross-validation, probability calibration, and SHAP analysis provide different views of model behavior.
+
+### Clinical Data Mapper: From ODM to SDTM
+
+URL: https://deruiter.dev/case-studies/clinical-data-mapper
+Primary language: TypeScript
+Source: https://github.com/fderuiter/clinical-data-mapper
+
+Abstract:
+
+Clinical data arrives in one format and needs to leave in another. This **TypeScript** tool reads **CDISC ODM** metadata, builds validation schemas, and maps EDC records into **SDTM** domains.
+
+Architecture and trade-offs:
+
+The problem
+
+Clinical study data often needs to move from an EDC export into a standard analysis format. This project tackles that mapping: read ODM metadata, validate the incoming records, and organize them into SDTM domains. The tricky parts are the study-specific fields and the rules hidden in the details.
+
+The approach: A SAX parser reads XML incrementally. ODM metadata defines Zod validation schemas, and a separate mapping layer builds SDTM records.
+
+### clintrials: Try Trial Designs in Your Browser
+
+URL: https://deruiter.dev/case-studies/clintrials
+Primary language: Python
+Source: https://github.com/fderuiter/clintrials
+
+Abstract:
+
+A browser-based workspace for comparing **adaptive clinical trial designs**. **Pyodide** workers run models including CRM, EffTox, group sequential designs, and win ratio analyses.
+
+Architecture and trade-offs:
+
+The problem
+
+Trial design involves comparing assumptions, not just choosing a formula. clintrials brings several statistical models into a browser workspace so their behavior can be explored without setting up a separate Python environment.
+
+The approach: Pyodide runs Python models in WebAssembly workers, keeping numerical work separate from the page’s interaction loop.
+
+### CRF.xl: From Spreadsheet to Clinical Forms
+
+URL: https://deruiter.dev/case-studies/crf-xl
+Primary language: TypeScript
+Source: https://github.com/fderuiter/CRF.xl
+
+Abstract:
+
+An **Excel add-in** that turns protocol spreadsheets into **CDISC CDASH** forms and **ODM-XML** exports. It checks rule dependencies and runs compilation in background workers so the workbook stays usable.
+
+Architecture and trade-offs:
+
+The problem
+
+Clinical form specifications often begin in Excel. CRF.xl works from that starting point, turning workbook grids into form definitions and ODM-XML while checking the dependencies between calculation rules.
+
+The approach: Office.js reads the workbook, a dependency graph checks formula relationships, and Web Workers generate the clinical form exports.
+
+### Designing for My Brother: Accessible Typography & Cognitive UX
+
+URL: https://deruiter.dev/case-studies/designing-for-my-brother
+Primary language: TypeScript
+Source: https://github.com/fderuiter/portfolio
+
+Abstract:
+
+When your brother lives with dyslexia, software accessibility ceases to be a checklist item; it becomes deeply personal. This case study details replacing generic system fonts with a scientifically grounded cognitive typography stack: Lexend for headings, Atkinson Hyperlegible for body prose, and a 1-click persistent OpenDyslexic mode coupled with zero-CLS Pretext text reflow.
+
+Architecture and trade-offs:
+
+The problem
+
+Most modern web applications choose typography based exclusively on brand aesthetics or minimalism, relying on geometric grotesque sans-serifs that induce visual crowding and character mirror confusion for neurodivergent readers. For individuals with dyslexia, letters like b, d, p, and q appear rotationally symmetrical, causing cognitive fatigue, visual reversals, and reading stalls.
+
+The personal context: My brother was diagnosed with dyslexia early in life. Watching him navigate the modern web (where ultra-thin fonts, cramped line heights, and layout shifts are ubiquitous) made the friction undeniable. Standard web design optimizes for visual coolness; accessible engineering optimizes for cognitive clarity, legibility, and orientation.
+
+### DuckDeploy: From Configuration Forms to Deployment Files
+
+URL: https://deruiter.dev/case-studies/duckdeploy
+Primary language: TypeScript
+Source: https://github.com/fderuiter/duckdeploy
+
+Abstract:
+
+A **TypeScript** tool that turns **JSON Schema** into configuration forms, then compiles their values into Kubernetes, Helm, or Cloud Run manifests. **Web Workers** keep compilation off the UI thread.
+
+Architecture and trade-offs:
+
+The problem
+
+Deployment configuration repeats the same information in different forms. DuckDeploy starts from JSON Schema, generates an editable form, and compiles the resulting values into deployment manifests.
+
+The approach: The UI derives form state from JSON Schema. Web Workers compile that state into the selected deployment format.
+
+### Equipose: Reproducible Clinical Trial Randomization
+
+URL: https://deruiter.dev/case-studies/equipose-randomization
+Primary language: Angular / TypeScript
+Source: https://github.com/fderuiter/equipose-randomization
+
+Abstract:
+
+A browser-based tool for clinical trial allocation. It uses **Mersenne Twister (MT19937)** and generates code for **Python, R, SAS, and Stata**, making it easier to inspect and reproduce a randomization.
+
+Architecture and trade-offs:
+
+The problem
+
+A randomization plan needs to be reproducible and inspectable. Equipose runs allocation logic in the browser and generates code for several statistical languages, with a focus on matching random-number behavior across runtimes.
+
+The approach: MT19937 supplies the random sequence. Exported Python, R, SAS, and Stata implementations make the allocation logic available for independent inspection.
+
+### Hono-Kiln: A Starting Point for TypeScript Backends
+
+URL: https://deruiter.dev/case-studies/hono-kiln
+Primary language: TypeScript
+Source: https://github.com/fderuiter/hono-kiln
+
+Abstract:
+
+A **Bun** and **Hono** backend scaffold with module generation, tenant isolation, and database migrations. It packages the setup work I’d rather not repeat on every project.
+
+Architecture and trade-offs:
+
+The problem
+
+New backends tend to start with familiar chores: routes, database access, migrations, and module boundaries. Hono-Kiln packages those patterns into a Bun and Hono scaffold, including support for keeping tenants separate.
+
+The approach: Bun and Hono provide the runtime and routing. Generated modules keep application logic, persistence, and tenant handling organized.
+
+### iMednet Python SDK: Clinical Data Without the Manual Exports
+
+URL: https://deruiter.dev/case-studies/imednet-python-sdk
+Primary language: Python
+Source: https://github.com/fderuiter/imednet-python-sdk
+
+Abstract:
+
+A typed **Python SDK** for working with the **iMednet EDC** API. It gives data engineers and biostatisticians a way to retrieve study metadata and records without repeating the same export routine.
+
+Architecture and trade-offs:
+
+The problem
+
+Getting data out of an EDC should not mean writing the same authentication, pagination, and response-parsing code every time. This SDK puts those routines behind a typed Python interface for iMednet, so analysis code can concentrate on the study data.
+
+The approach: Pydantic models validate responses, async generators handle pagination, and the transport layer manages authentication and token refresh.
+
+### InBody QR Decoder: What’s in That QR Code?
+
+URL: https://deruiter.dev/case-studies/inbody-qr-decoder
+Primary language: Python
+Source: https://github.com/fderuiter/inbody-qr-decoder
+
+Abstract:
+
+A set of **Python** tools for decoding **InBody** body-composition QR codes. The project explores the binary format, maps its fields, and exposes the results through a library and CLI.
+
+Architecture and trade-offs:
+
+The problem
+
+An InBody result contains a QR code, which raises a reasonable question: what is actually in it? This project examines the encoded binary data, maps positions to measurements, and turns those findings into Python tools.
+
+The approach: The Python packages separate binary decoding, field discovery, API access, and command-line use. Mutation-based experiments help identify what each field represents.
+
+### Lambda-Wave: Tracking Respiratory Motion With Radar
+
+URL: https://deruiter.dev/case-studies/lambda-wave
+Primary language: Haskell / C++
+Source: https://github.com/fderuiter/lambda-wave
+
+Abstract:
+
+An **FMCW radar** project exploring respiratory motion tracking for Surface Guided Radiation Therapy. **Haskell** handles signal processing; **C++** ring buffers move samples between stages.
+
+Architecture and trade-offs:
+
+The problem
+
+Lambda-Wave explores a radar signal-processing pipeline for tracking respiratory motion in the context of Surface Guided Radiation Therapy. The design separates numerical processing from sample transport and makes timing and failure handling explicit.
+
+The approach: Haskell implements the signal-processing stages, and C++ ring buffers carry samples across the FFI boundary. The design also considers watchdogs and timing limits.
+
+### Laser Loon: Minnesota, With Eye Lasers
+
+URL: https://deruiter.dev/case-studies/laser-loon
+Primary language: Graphic Design
+Source: https://github.com/fderuiter/laser-loon
+
+Abstract:
+
+My submission to Minnesota’s state flag redesign: a common loon with uncommon eye contact. The artwork is available in print and web formats, so the lasers can travel.
+
+Architecture and trade-offs:
+
+The problem
+
+For Minnesota’s state flag redesign, I submitted a common loon with red eye lasers. Submission F277 became Laser Loon. This project collects the artwork in formats people can use on screens, in print, and on whatever else needs a laser-eyed bird.
+
+The approach: The bird silhouette and laser layers remain editable as vectors. The download set includes source, print, and web formats.
+
+### OxidizeMath: Scientific Computing in Rust
+
+URL: https://deruiter.dev/case-studies/oxidizemath
+Primary language: Rust
+Source: https://github.com/fderuiter/OxidizeMath
+
+Abstract:
+
+A **Rust** scientific computing framework exploring numerical solvers, compile-time checks, and interactive simulations. The aim is to keep the mathematical model and the code that runs it close together.
+
+Architecture and trade-offs:
+
+The problem
+
+Scientific software often separates the mathematical description from the code that runs quickly. OxidizeMath explores bringing those closer together in Rust, with numerical solvers, compile-time checks, and interactive views of simulation state.
+
+The approach: Rust modules separate numerical domains, while procedural macros and buffered state updates support checking and simulation.
+
+### Polyglot-TSP: One Problem, 50+ Languages
+
+URL: https://deruiter.dev/case-studies/polyglot-tsp
+Primary language: Rust
+Source: https://github.com/fderuiter/polyglot-tsp
+
+Abstract:
+
+The **Traveling Salesman Problem**, implemented across **50+ programming languages**. An excuse to compare memory models, type systems, and runtime costs while asking the same very expensive routing question.
+
+Architecture and trade-offs:
+
+The problem
+
+What changes when you solve the same problem in a different language? Polyglot-TSP uses brute-force Traveling Salesman solutions across more than 50 languages to compare implementation choices, runtime behavior, and the cost of factorial growth.
+
+The approach: Each implementation solves the same routing problem. Comparing the code and benchmark results exposes differences in allocation, representation, and execution.
+
+### PromptOps: Test Prompts Like Other Code
+
+URL: https://deruiter.dev/case-studies/promptops
+Primary language: TypeScript
+Source: https://github.com/fderuiter/PromptOps
+
+Abstract:
+
+A **TypeScript** toolkit for versioning prompts, validating output with **Zod**, and running regression evaluations in CI. A prompt change should come with a way to check what changed in the results.
+
+Architecture and trade-offs:
+
+The problem
+
+Changing a prompt can fix one example and break another. PromptOps versions prompts, validates response shapes, and runs evaluation cases so changes have something more useful than a good first impression to go on.
+
+The approach: Versioned prompt definitions run against evaluation cases in CI. Zod checks response structure, while regression results help identify behavior changes.
+
+### SchemaFlow: Build JSON Schemas Visually
+
+URL: https://deruiter.dev/case-studies/schemaflow
+Primary language: TypeScript
+Source: https://github.com/fderuiter/SchemaFlow
+
+Abstract:
+
+A **React** and **TypeScript** graph editor for composing **JSON Schema**. Connect nodes, check for circular dependencies, and see the generated code as you work.
+
+Architecture and trade-offs:
+
+The problem
+
+JSON Schema is useful, but nested structures can be hard to follow in a text editor. SchemaFlow lets you compose them as a graph, inspect the connections, and see the generated schema as you work.
+
+The approach: React renders the graph editor while TypeScript logic tracks dependencies, checks for cycles, and generates JSON Schema.
+
+### Sonos Network Controller: Keep the Music Local
+
+URL: https://deruiter.dev/case-studies/sonos-network-controller
+Primary language: Python
+Source: https://github.com/fderuiter/sonos-network-controller
+
+Abstract:
+
+A local **Sonos** controller built with **Python**, **FastAPI**, and **HTMX**. It talks to speakers over UPnP/SOAP and exposes a REST API for playback control on your own network.
+
+Architecture and trade-offs:
+
+The problem
+
+Speakers on a local network can be controlled on that network. This project explores that route for Sonos, combining a Python API with a small web interface for discovering speakers and controlling playback.
+
+The approach: FastAPI and asyncio handle the API and network requests. UPnP/SOAP talks to the speakers, and HTMX provides the browser controls.
+
+### Sortify: Organize Documents Locally
+
+URL: https://deruiter.dev/case-studies/sortify
+Primary language: Python
+Source: https://github.com/fderuiter/Sortify
+
+Abstract:
+
+A local document classifier using **ONNX** embeddings and **TF-IDF** to group related files. **SQLCipher** stores encrypted metadata, while two-phase file operations help recover interrupted moves.
+
+Architecture and trade-offs:
+
+The problem
+
+A folder full of documents is easy to accumulate and tedious to organize. Sortify groups related files using local text models, keeps metadata in an encrypted registry, and treats interrupted file moves as something to plan for.
+
+The approach: ONNX embeddings and TF-IDF provide complementary similarity signals. SQLCipher stores metadata, and two-phase file operations support recovery.
+
+### UALBF: Searching for Quasiperfect Numbers
+
+URL: https://deruiter.dev/case-studies/ualbf
+Primary language: Rust
+Source: https://github.com/fderuiter/ualbf
+
+Abstract:
+
+A computational number theory project pairing **Rust** branch-and-bound search with **Lean 4** verification. It explores prime signature lattices in the search for **quasiperfect numbers**, with proof checking alongside the search.
+
+Architecture and trade-offs:
+
+The problem
+
+Quasiperfect numbers make for a deceptively short question and a very large search space. UALBF pairs Rust search routines with Lean 4 verification to explore candidate structures and check the reasoning used to rule them out.
+
+The approach: Rust branch-and-bound routines narrow the search space. Lean 4 provides a separate place to express and verify the mathematical arguments.
+
+### A Wedding Website: RSVPs, Dinner Choices, and One Database
+
+URL: https://deruiter.dev/case-studies/wedding-website
+Primary language: TypeScript
+Source: https://github.com/fderuiter/wedding_website
+
+Abstract:
+
+A wedding website with invitation codes, RSVPs for multiple events, dietary requirements, and an admin dashboard. Built with **Next.js**, **Prisma**, and **PostgreSQL**. Apparently wedding planning was going to involve a schema.
+
+Architecture and trade-offs:
+
+The problem
+
+A wedding RSVP becomes a data-modeling problem surprisingly quickly. One household can have several guests, different event invitations, and multiple dietary requirements. This site gives those details a home without making guests think about the database underneath.
+
+The approach: Next.js Server Actions handle submissions, Zod checks the inputs, and Prisma writes guest and RSVP records to PostgreSQL. Confirmation emails close the loop.
+
+## Routes
+
+## Systems and studios
+
+- [CRF Studio: Clinical Form Designer](https://deruiter.dev/crf): Build clinical research forms, add validation rules, and try them with sample data. Explore a browser-based study designer by Fred de Ruiter.
+- [NeuroRecon Studio](https://deruiter.dev/neuro): Explore brain surfaces and MRI slices, place control points, and work through simulated reconstruction problems in NeuroRecon Studio.
+- [Ski Patrol Shift Studio](https://deruiter.dev/patrol): An interactive Midwest ski-patrol judgment simulation foundation powered by deterministic FSM transitions and operational dispatch routines.
+- [Logical Proof Workspace](https://deruiter.dev/proof): Build a proof one step at a time. Connect premises, try inference rules, and inspect where an argument goes wrong in this logic workspace.
+- [Incident Decision Simulator](https://deruiter.dev/simulator): Work through a few engineering decisions, from interface priorities to an outage. Explore what your choices emphasize and compare the results.
+- [Under the Hood](https://deruiter.dev/stack): See how this site works: text layout, browser audio, the application stack, and the checks I use while building it. Demos and source included.
+
+## Arcade
+
+- [Arcade & Browser Games](https://deruiter.dev/arcade): Try browser games by Fred de Ruiter: a laser loon, a demanding puppy, logic puzzles, and a smartwatch with very little memory to spare.
+- [Clinical Trial Chaos](https://deruiter.dev/arcade/clinical-chaos): Sort clinical data, fix entries, and sign submissions against the clock. Play a clinical research arcade game with an impatient auditor.
+- [Monkey C Mayhem: Garmin Schvitz App](https://deruiter.dev/arcade/garmin-watch): Dodge obstacles, clear memory, and wipe the fog from a simulated smartwatch. Play Monkey C Mayhem with a stubbornly small 32KB budget.
+- [Laser Loon: Quest for the State Flag](https://deruiter.dev/arcade/laser-loon): Fly F277 Laser Loon toward the Minnesota State Capitol, battle rival flags, and blast through red tape in this browser arcade game.
+- [Meme Vault & Soundboard](https://deruiter.dev/arcade/meme-vault): Make some noise with a browser soundboard, discover hidden trophies, and enjoy a few jokes about code, clinical data, and the working day.
+- [Formal Verification Puzzler](https://deruiter.dev/arcade/quasi-puzzler): Apply deductive proof tactics to a tree in this Lean-inspired puzzle game. Complete the proof before your simulated memory runs out.
+- [Retro Labyrinth](https://deruiter.dev/arcade/retro-labyrinth): Explore an abandoned codebase as a shifting dungeon. Fight bugs, navigate moving walls, and face a wireframe boss in this browser game.
+- [Study Director: Everything Is Fine](https://deruiter.dev/arcade/study-director): Run a clinical study from kickoff to closeout. Spend limited attention, audit the sites behind the green dashboard, and defend your decisions to the FDA.
+- [Trial & Error: Biostat Ops](https://deruiter.dev/arcade/trial-and-error): Review clinical tables against a statistical analysis plan, correct the redlines, and play Chips × Mult hands to beat regulatory Blinds.
+- [Working With Duck](https://deruiter.dev/arcade/working-with-duck): You have a deadline. Duck the puppy has a ball. Keep the project and the puppy happy with toys, treats, and park breaks in this browser game.
+
+## Case studies
+
+- [Project Writeups](https://deruiter.dev/case-studies): Read about the problems, implementation choices, and lessons behind Fred de Ruiter’s clinical data tools, web apps, and side projects.
+- [4Glory: Does Fred Know Ball?](https://deruiter.dev/case-studies/4glory): Does Fred know ball? Compare basketball opinions with Python and XGBoost predictions on NBA data, using walk-forward validation and SHAP.
+- [Inspectable Cardiac Risk Models](https://deruiter.dev/case-studies/cardiac-risk-modeling): Read a cardiac risk modeling project using Python, XGBoost, and SHAP. Explore data leakage, cross-validation, calibration, and model explanations.
+- [clintrials: Trial Designs in Browser](https://deruiter.dev/case-studies/clintrials): Compare adaptive clinical trial designs in a browser workspace. See how Pyodide workers run statistical models without a separate Python setup.
+- [CRF.xl: Spreadsheet to Clinical Forms](https://deruiter.dev/case-studies/crf-xl): Turn Excel protocol grids into clinical form definitions and ODM-XML exports. Read how CRF.xl handles rules, dependencies, and background work.
+- [Designing for My Brother: Typography](https://deruiter.dev/case-studies/designing-for-my-brother): A personal case study on cognitive typography: replacing generic fonts with Lexend, Atkinson Hyperlegible, and OpenDyslexic with zero-CLS Pretext reflow.
+- [DuckDeploy: Config to Deployed Forms](https://deruiter.dev/case-studies/duckdeploy): Turn JSON Schema into configuration forms, then compile the values into deployment manifests. See how DuckDeploy uses TypeScript and workers.
+- [Equipose: Trial Randomization](https://deruiter.dev/case-studies/equipose-randomization): Explore reproducible clinical trial randomization in the browser, with generated Python, R, SAS, and Stata code for inspecting the allocation.
+- [Lambda-Wave: Respiratory Motion Radar](https://deruiter.dev/case-studies/lambda-wave): Explore a respiratory motion tracking project using FMCW radar, Haskell signal processing, and C++ sample transport. Read the design notes.
+- [OxidizeMath: Rust Scientific Computing](https://deruiter.dev/case-studies/oxidizemath): Explore scientific computing in Rust with numerical solvers, compile-time checks, and interactive simulations. Read the OxidizeMath writeup.
+- [PromptOps: Test Prompts Like Code](https://deruiter.dev/case-studies/promptops): Version prompts, validate response shapes, and run regression evaluations in CI. Read how PromptOps makes changes easier to inspect and compare.
+- [Sonos Network Controller](https://deruiter.dev/case-studies/sonos-network-controller): Control Sonos speakers on your own network with a Python API and a small web interface. Read about the protocols and implementation choices.
+- [Laser Loon: Artwork & Downloads](https://deruiter.dev/work/laser-loon): Meet Laser Loon, my Minnesota flag submission, and download the artwork in print and web formats. The eye lasers are included in the download.
+
+## Writing and contact
+
+- [Engineering Dispatches: Blog](https://deruiter.dev/blog): Cross-project retrospectives and technique write-ups on clinical data engineering, formal verification, accessibility, and browser graphics by Fred de Ruiter.
+- [Contact Fred](https://deruiter.dev/contact): Have a project, a role, or a question in mind? Send Fred de Ruiter a note about what you’re working on, or find a time to talk it through.
+- [Book a Chat With Fred](https://deruiter.dev/schedule): Find a time to talk about a project, ask a question, or introduce yourself. Book a 30-minute Google Meet chat with Fred de Ruiter.
+
+## Mobile and utility routes
+
+- [Mobile CRF Studio](https://deruiter.dev/m/crf): Touch-optimized clinical research form studio designed for mobile viewports, enabling interactive section and field inspection on mobile devices.
+- [Mobile NeuroRecon Studio](https://deruiter.dev/m/neuro): Touch-optimized neuroimaging structural morphometry viewer for mobile screens, providing subcortical volumetric metrics and FreeSurfer recon status.
+- [Mobile Ski Patrol Shift Studio](https://deruiter.dev/m/patrol): Touch-optimized ski patrol operational judgment simulator built for mobile screens, allowing real-time triage and emergency intervention decisions.
+- [Mobile Logical Proof Workspace](https://deruiter.dev/m/proof): Touch-optimized formal logic proof workspace tailored for handheld devices, offering interactive deduction step ledgers and fallacy diagnostics.
+- [You’re Offline](https://deruiter.dev/offline): This page is not available offline. Check your connection, retry the page, or explore tools and pages already saved in your browser.

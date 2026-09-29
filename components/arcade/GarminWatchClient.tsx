@@ -74,9 +74,9 @@ export const GarminWatchClient: React.FC = () => {
                 <span className="text-amber-400">Garmin Schvitz App</span>
               </h1>
               <p className="text-xs sm:text-sm text-zinc-400 font-mono mt-1">
-                A smartwatch game with a 32KB memory budget and an inconvenient
-                tendency to fog up. Manage the memory while keeping the run
-                alive.
+                An endless smartwatch runner with a 32 to 128 KB memory budget
+                and an inconvenient tendency to fog up. Manage the memory and
+                keep the run alive for a high score.
               </p>
             </div>
           </div>
@@ -91,11 +91,13 @@ export const GarminWatchClient: React.FC = () => {
               subtitle="A Small Watch With a Lot Going On"
               accentColor="amber"
               icon={<IconDeviceWatch className="w-8 h-8 text-amber-400" />}
-              instructions="Keep a simulated Garmin Schvitz App running with a 32KB memory budget. Clear memory, dodge obstacles, and wipe the fog off the screen before the watch has a very bad day."
+              instructions="An endless run for a high score. Keep a simulated Garmin Schvitz App running inside its memory budget (32 KB on Fēnix, up to 128 KB on Edge): jump the bugs, free memory before the heap fills, and wipe the fog off the screen before the watch has a very bad day."
               controls={[
+                { key: "Enter", action: "Start / Pause" },
                 { key: "UP", action: "Jump" },
                 { key: "DOWN", action: "Jettison RAM" },
-                { key: "Drag", action: "Wipe Thermal" },
+                { key: "Backspace", action: "Force GC" },
+                { key: "Drag", action: "Wipe Fog" },
               ]}
               importComponent={GarminWatchSimulatorLoader}
             >
@@ -111,12 +113,13 @@ export const GarminWatchClient: React.FC = () => {
           <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
             <div className="flex items-center gap-2 text-amber-400 font-bold mb-2">
               <IconCpu className="w-4 h-4" />
-              <span>32KB RAM Constraint &amp; Jettison</span>
+              <span>RAM Ceiling &amp; Jettison</span>
             </div>
             <p className="text-zinc-400 text-[11px] leading-relaxed">
-              Every obstacle passed allocates variables onto the memory heap.
-              Press <strong>DOWN</strong> or tap the bezel button to jettison
-              variables before hitting the 32KB ceiling.
+              The app allocates a variable every few seconds, and floating
+              memory tokens add more. Press <strong>DOWN</strong> or the bezel
+              button to jettison variables before the heap hits the device limit
+              (32 KB on Fēnix).
             </p>
           </div>
 

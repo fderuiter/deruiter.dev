@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { getMatchMediaMatches } from "@/hooks/useMediaQuery";
+import { triggerHaptic } from "@/lib/haptics";
 import {
   IconArrowUp,
   IconArrowDown,
@@ -27,6 +28,7 @@ export const VirtualDPad: React.FC<VirtualDPadProps> = ({
     direction: "up" | "down" | "left" | "right"
   ) => {
     if (e.cancelable) e.preventDefault();
+    triggerHaptic(15);
     onDirectionPress?.(direction);
   };
 
@@ -183,6 +185,14 @@ export const VirtualGamepad: React.FC<VirtualGamepadProps> = ({
     callback?.();
   };
 
+  const handleActionPress = (
+    e: React.SyntheticEvent,
+    callback?: () => void
+  ) => {
+    triggerHaptic(15);
+    handleAction(e, callback);
+  };
+
   return (
     <div
       role="group"
@@ -221,13 +231,13 @@ export const VirtualGamepad: React.FC<VirtualGamepadProps> = ({
           <button
             type="button"
             aria-label={actionBLabel}
-            onTouchStart={(e) => handleAction(e, onActionBPress)}
+            onTouchStart={(e) => handleActionPress(e, onActionBPress)}
             onTouchEnd={(e) => handleAction(e, onActionBRelease)}
             onTouchCancel={(e) => handleAction(e, onActionBRelease)}
-            onMouseDown={(e) => handleAction(e, onActionBPress)}
+            onMouseDown={(e) => handleActionPress(e, onActionBPress)}
             onMouseUp={(e) => handleAction(e, onActionBRelease)}
             onMouseLeave={(e) => handleAction(e, onActionBRelease)}
-            onPointerDown={(e) => handleAction(e, onActionBPress)}
+            onPointerDown={(e) => handleActionPress(e, onActionBPress)}
             onPointerUp={(e) => handleAction(e, onActionBRelease)}
             onPointerLeave={(e) => handleAction(e, onActionBRelease)}
             className="flex flex-col items-center justify-center w-14 h-14 rounded-2xl bg-rose-500/20 active:bg-rose-500/40 border border-rose-500/40 text-rose-300 active:scale-95 transition-transform shadow-lg"
@@ -243,13 +253,13 @@ export const VirtualGamepad: React.FC<VirtualGamepadProps> = ({
           <button
             type="button"
             aria-label={actionALabel}
-            onTouchStart={(e) => handleAction(e, onActionAPress)}
+            onTouchStart={(e) => handleActionPress(e, onActionAPress)}
             onTouchEnd={(e) => handleAction(e, onActionARelease)}
             onTouchCancel={(e) => handleAction(e, onActionARelease)}
-            onMouseDown={(e) => handleAction(e, onActionAPress)}
+            onMouseDown={(e) => handleActionPress(e, onActionAPress)}
             onMouseUp={(e) => handleAction(e, onActionARelease)}
             onMouseLeave={(e) => handleAction(e, onActionARelease)}
-            onPointerDown={(e) => handleAction(e, onActionAPress)}
+            onPointerDown={(e) => handleActionPress(e, onActionAPress)}
             onPointerUp={(e) => handleAction(e, onActionARelease)}
             onPointerLeave={(e) => handleAction(e, onActionARelease)}
             className="flex flex-col items-center justify-center w-16 h-16 rounded-2xl bg-brand-cyan/20 active:bg-brand-cyan/40 border border-brand-cyan/40 text-brand-cyan active:scale-95 transition-transform shadow-lg"

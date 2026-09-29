@@ -124,6 +124,22 @@ Unrounded distance; round only when displaying.
 
 ***
 
+### lastGcAt?
+
+> `optional` **lastGcAt?**: `number`
+
+Wall-clock time of the last GC, for its cooldown.
+
+***
+
+### lastJettisonAt?
+
+> `optional` **lastJettisonAt?**: `number`
+
+Wall-clock time of the last pop, for its cooldown.
+
+***
+
 ### lastObstacleTime
 
 > **lastObstacleTime**: `number`

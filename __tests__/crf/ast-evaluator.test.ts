@@ -9,6 +9,13 @@ import {
   tokenizeWithSpans,
   mapPresetToFormVariables,
   CLINICAL_FORMULA_PRESETS,
+  calculateBMI,
+  calculateMostellerBSA,
+  calculateDuboisBSA,
+  calculateCockcroftGaultCrCl,
+  calculateBazettQTc,
+  calculateFridericiaQTc,
+  calculateRecistSldChange,
 } from "@/lib/crf/ast-evaluator";
 import { CRFField, EditCheckRule, CRFForm } from "@/lib/crf/types";
 
@@ -750,6 +757,39 @@ describe("CRF Studio - AST Formula & Rule Evaluator", () => {
         fuzzyFields
       );
       expect(fuzzyMapped).toContain("MY_PATIENT_HEIGHT");
+    });
+
+    it("evaluates direct clinical calculation functions (BMI, BSA, CrCl, QTc, RECIST)", () => {
+      // calculateBMI
+      expect(calculateBMI(80, 180)).toBe(24.7);
+      expect(calculateBMI(80, 0)).toBeNull();
+      expect(calculateBMI(80, -10)).toBeNull();
+
+      // calculateMostellerBSA
+      expect(calculateMostellerBSA(180, 80)).toBe(2.0);
+      expect(calculateMostellerBSA(0, 80)).toBeNull();
+      expect(calculateMostellerBSA(180, -5)).toBeNull();
+
+      // calculateDuboisBSA
+      expect(calculateDuboisBSA(180, 80)).toBe(2);
+      expect(calculateDuboisBSA(-1, 80)).toBeNull();
+      expect(calculateDuboisBSA(180, -1)).toBeNull();
+
+      // calculateCockcroftGaultCrCl
+      expect(calculateCockcroftGaultCrCl(60, 70, 1.0, false)).toBe(77.8);
+      expect(calculateCockcroftGaultCrCl(60, 70, 1.0, true)).toBe(66.1);
+      expect(calculateCockcroftGaultCrCl(60, 70, 0, false)).toBeNull();
+
+      // calculateBazettQTc & calculateFridericiaQTc
+      expect(calculateBazettQTc(400, 1.0)).toBe(400);
+      expect(calculateBazettQTc(400, 0)).toBeNull();
+      expect(calculateFridericiaQTc(400, 1.0)).toBe(400);
+      expect(calculateFridericiaQTc(400, -0.5)).toBeNull();
+
+      // calculateRecistSldChange
+      expect(calculateRecistSldChange(100, 120)).toBe(20.0);
+      expect(calculateRecistSldChange(100, 70)).toBe(-30.0);
+      expect(calculateRecistSldChange(0, 50)).toBeNull();
     });
   });
 });

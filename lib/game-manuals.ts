@@ -331,12 +331,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
     objective:
       "Pilot the iconic F277 Laser Loon through four campaign acts from Lake Minnetonka to the State Capitol dome, battling rival flag finalists, bureaucratic red tape, and Minnesota folklore hazards.",
     quickSummary:
-      "Aim with the cursor or touch controls, fire ruby eye-lasers and cryogenic ice mortars, collect Hotdish power-ups, and unleash the Haunting Loon Tremolo ultimate shockwave to claim victory!",
+      "Aim with the cursor or touch controls, fire ruby eye-lasers and the Cryo-Mortar's ice blocks, collect Hotdish power-ups, and unleash the Haunting Loon Tremolo ultimate shockwave to claim victory!",
     controls: [
       {
         action: "Aim & Fire Laser Arsenal",
         description:
-          "Aim crosshair with cursor or touch; left-click, drag or hold Space to fire the active laser beam (Ruby Laser, Cyan Pulse, Aurora Wave, or Cryo Mortar).",
+          "Aim crosshair with cursor or touch; left-click, drag or hold Space to fire the active laser beam (Ruby Laser, Cyan Pulse, Aurora Wave, or Cryo-Mortar).",
         key: "Left Click / Drag / Space",
       },
       {
@@ -368,7 +368,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         title: "Glacial Cryo-Shatter Combos",
         detail:
-          "Mortar ice blocks bounce off lake boundaries, encasing targets in ice. Shattering frozen targets awards 2x points and cascades shrapnel.",
+          "Cryo-Mortar ice blocks bounce off lake boundaries, encasing targets in ice. Shattering frozen targets awards 2x points and cascades shrapnel.",
         badge: "2x Shatter Combo",
       },
       {
@@ -381,7 +381,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
     proTips: [
       "Save your Haunting Loon Tremolo ultimate for boss encounters to shatter their revolving defense shields.",
       "Grab floating Tater Tot Hotdish pickups for instant zero-cooldown laser overcharge frenzy.",
-      "Bouncing Cryo Mortar ice blocks off the canvas floor and ceiling creates hazardous pinball walls for rival flags.",
+      "Bouncing Cryo-Mortar ice blocks off the canvas floor and ceiling creates hazardous pinball walls for rival flags.",
     ],
     lore: {
       title: "The Grassroots Legend of Submission F277",
@@ -499,64 +499,100 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
     accentColor: "from-amber-500/20 via-amber-500/5 to-transparent",
     badgeBg: "bg-amber-500/10 text-amber-300 border-amber-500/30",
     objective:
-      "Keep your custom Connect IQ watch face executing inside an unforgiving 32KB RAM limit on a circular 280×280 MIP display while managing GC freezes and thermal condensation.",
+      "An endless run: keep a Connect IQ app alive as long as you can and beat your high score. Jump the bugs that crash it, keep the heap under the device's RAM limit, and don't let the battery die.",
     quickSummary:
-      "Use physical bezel buttons to cycle sensor widgets, swipe across the watch crystal to wipe fog, and trigger manual GC before running out of memory.",
+      "Press Enter to boot. Jump NULL, DOG and STK bugs with the Up arrow. The app allocates memory on its own, so pop variables with Down or run GC with Backspace before the heap fills. Wipe fog with W or a drag.",
     controls: [
       {
-        action: "Bezel Buttons",
+        action: "Start, Pause & Resume",
         description:
-          "Click the physical watch bezel buttons: UP, DOWN, SELECT, and BACK to navigate watch apps and menus.",
-        key: "Bezel Clicks",
+          "Boots the app, pauses and resumes a run, or reboots after a crash. Same as the START bezel button.",
+        key: "Enter / Space",
       },
       {
-        action: "Wipe Thermal Fog",
+        action: "Jump",
         description:
-          "Click and drag your cursor across the circular glass face to wipe away condensation built up from high heart-rate intervals.",
-        key: "Drag Across Screen",
+          "Jump over bugs (NULL, DOG, STK). Floating memory and NV tokens are also collected by touching them, so jump or duck under them on purpose. Same as the UP bezel button, or swipe up on the screen.",
+        key: "↑",
       },
       {
-        action: "Sensor Rate Toggle",
+        action: "Pop Heap Variable (Jettison)",
         description:
-          "Switch GPS, Optical HR, and Accelerometer polling frequencies to balance telemetry fidelity against battery drain.",
-        key: "Sensor Toggles",
+          "Frees the oldest collectible variable instantly for +5 points. The app's required state (appCtx, displayGfx) is never popped. Same as the DOWN bezel button, or swipe down.",
+        key: "↓",
       },
       {
         action: "Force Garbage Collection",
         description:
-          "Execute manual memory compaction to reclaim abandoned object references before hitting the 32KB heap ceiling.",
-        key: "G / Backspace / BACK",
+          "Frees 2 to 4 KB of garbage for +10 points, but freezes the game for 500 ms (350 ms with the low-power loadout) and heats the watch. Does nothing on a clean heap. Same as the BACK bezel button, or swipe left.",
+        key: "G / Backspace",
+      },
+      {
+        action: "Backlight",
+        description:
+          "Lights the display but quadruples battery drain and, after a few seconds, raises thermal stress and fog. Same as the LIGHT bezel button.",
+        key: "L",
+      },
+      {
+        action: "Wipe Screen Fog",
+        description:
+          "Clears part of the condensation. Drag across the watch face to wipe where you drag.",
+        key: "W / Drag Across Screen",
       },
     ],
     rules: [
       {
-        title: "32KB Monkey C Heap Ceiling",
+        title: "Scoring",
         detail:
-          "Connect IQ watch face apps run in an isolated virtual machine with a strict 32KB memory ceiling. Exceeding 32,768 bytes triggers an immediate Out-Of-Memory system halt.",
-        badge: "32KB Limit",
+          "You earn about 60 points for every second the app stays up, plus 5 for each popped variable and 10 for each GC that frees memory. A power loss costs 50. There is no finish line; your best score is saved on this device.",
+        badge: "High Score",
       },
       {
-        title: "500ms GC Stop-The-World Freeze",
+        title: "Bugs Crash the App",
         detail:
-          "Running garbage collection freezes UI rendering and sensor capture for 500ms. Time your GC cycles during low-velocity running intervals.",
-        badge: "GC Pause",
+          "Running into NULL crashes with a Null Pointer, DOG with Watchdog Tripped, and STK with Stack Overflow. The crash screen names the cause and how to avoid it next run.",
+        badge: "Crash Types",
       },
       {
-        title: "Thermal Condensation Fog",
+        title: "Heap Ceiling (Out of Memory)",
         detail:
-          "During high HR workouts, perspiration condensation obscures the MIP display. Failure to wipe fog prevents reading cadence and heart rate alerts.",
-        badge: "Fog Hazard",
+          "The app allocates an int, float, string or array on its own every few seconds, and floating memory tokens add one more. Reach the device's RAM limit and the app halts with Out Of Memory.",
+        badge: "RAM Limit",
+      },
+      {
+        title: "Flash Storage (Out of Storage)",
+        detail:
+          "NV tokens write 4 KB to persistent flash, which survives between runs. Fill the device's flash limit and the app crashes with Out Of Storage. Clear Flash Storage below the watch empties it.",
+        badge: "NV Flash",
+      },
+      {
+        title: "Battery & Power Loss",
+        detail:
+          "The battery drains about 0.1% a second, or 0.4% with the backlight on. At 0% the watch browns out, the run ends, and you lose 50 points.",
+        badge: "Power",
+      },
+      {
+        title: "Thermal Fog",
+        detail:
+          "Fog builds when the watch heats up: from the backlight after a few seconds, from RAM above 80%, or during a GC freeze. It fades as the watch cools, or wipe it away.",
+        badge: "Fog",
+      },
+      {
+        title: "Device Tiers",
+        detail:
+          "Fēnix 5 has 32 KB of RAM and 64 KB of flash and allocates every 3.2 s (hard). Forerunner 245 has 64 KB and 256 KB every 4 s (medium). Edge 1030 has 128 KB and 512 KB every 5 s (casual).",
+        badge: "Difficulty",
       },
     ],
     proTips: [
-      "Avoid allocating transient objects inside the `onUpdate(dc)` 1Hz rendering loop to prevent garbage build-up.",
-      "Wipe screen fog early before it occludes the battery life percentage indicator.",
-      "Drop GPS polling from 1Hz to 0.1Hz when battery drops below 15%.",
+      "Pop with Down when RAM passes about 70%: it's instant, while GC freezes you for half a second.",
+      "Keep the backlight off unless fog is heavy; it drains the battery four times faster.",
+      "Only GC when nothing is about to reach you, since you can't jump during the freeze.",
     ],
     lore: {
       title: "Engineering for Wearable Hardware Constraints",
       story:
-        "Smartwatches like the Garmin Forerunner and Fenix utilize ultra-low-power Memory-in-Pixel (MIP) displays and ultra-constrained microcontrollers capable of running for 14+ days on a single charge. Developing for Garmin's Monkey C language demands relentless memory optimization: reusing object pools, avoiding dynamic closures, and managing strict byte-aligned bitmaps.",
+        "The game started on the Theodore Wirth mud run, a 10 km Minnesota trail race where Fred's Garmin fogged up and fought for GPS lock the whole way. That run became the mechanics: the runner and the bugs are the race, the fog is the sweat on the watch glass, and the heap is the tiny memory a real Connect IQ app has to live in. Garmin watches pair ultra-low-power Memory-in-Pixel (MIP) displays with microcontrollers that run for weeks on a charge, so Monkey C code has to be frugal: reuse object pools, avoid dynamic closures, and keep bitmaps small.",
       realWorldTech: [
         "Garmin Connect IQ",
         "Monkey C VM",
@@ -1088,7 +1124,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
     genre: "Dungeon Roguelike",
     badge: "Cyberpunk Roguelike",
     route: "/arcade/retro-labyrinth",
-    storageKey: "retro_labyrinth_high_score",
+    storageKey: "retro_labyrinth_highscore",
     accentColor: "from-cyan-500/20 via-cyan-500/5 to-transparent",
     badgeBg: "bg-cyan-500/10 text-cyan-300 border-cyan-500/30",
     objective:
@@ -1113,6 +1149,17 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         description:
           "Discharge an electromagnetic surge to stun all security drones and camera sentinels in the sector.",
         key: "Spacebar / Touch Action A",
+      },
+      {
+        action: "Pause",
+        description: "Pause and resume the run. Enter also resumes.",
+        key: "P",
+      },
+      {
+        action: "Continue or Retry",
+        description:
+          "On the room-cleared screen, Enter moves to the next room and R retries this one. After a trace, Enter or R retries the room.",
+        key: "Enter / R",
       },
       {
         action: "Toggle CRT Phosphor Scanlines",

@@ -944,6 +944,12 @@ Re-exports [GuidanceCardSchema](types/variables/GuidanceCardSchema.md)
 
 ***
 
+### GUIDED\_BLIND\_SCENARIO
+
+Re-exports [GUIDED_BLIND_SCENARIO](scenarios/variables/GUIDED_BLIND_SCENARIO.md)
+
+***
+
 ### HAND\_BASE\_SCORES
 
 Re-exports [HAND_BASE_SCORES](internal/hands/variables/HAND_BASE_SCORES.md)
@@ -1253,6 +1259,12 @@ Re-exports [MILESTONE_WEIGHTS](internal/package/variables/MILESTONE_WEIGHTS.md)
 ### MilestoneKind
 
 Re-exports [MilestoneKind](internal/package/type-aliases/MilestoneKind.md)
+
+***
+
+### nextTutorialStep
+
+Re-exports [nextTutorialStep](internal/tutorial/functions/nextTutorialStep.md)
 
 ***
 
@@ -2255,6 +2267,42 @@ Re-exports [TransitionReason](types/type-aliases/TransitionReason.md)
 ### TransitionReasonSchema
 
 Re-exports [TransitionReasonSchema](types/variables/TransitionReasonSchema.md)
+
+***
+
+### TUTORIAL\_STEPS
+
+Re-exports [TUTORIAL_STEPS](internal/tutorial/variables/TUTORIAL_STEPS.md)
+
+***
+
+### TutorialStep
+
+Re-exports [TutorialStep](internal/tutorial/interfaces/TutorialStep.md)
+
+***
+
+### tutorialStepAfter
+
+Re-exports [tutorialStepAfter](internal/tutorial/functions/tutorialStepAfter.md)
+
+***
+
+### tutorialStepDone
+
+Re-exports [tutorialStepDone](internal/tutorial/functions/tutorialStepDone.md)
+
+***
+
+### TutorialTarget
+
+Re-exports [TutorialTarget](internal/tutorial/type-aliases/TutorialTarget.md)
+
+***
+
+### TutorialWait
+
+Re-exports [TutorialWait](internal/tutorial/type-aliases/TutorialWait.md)
 
 ***
 

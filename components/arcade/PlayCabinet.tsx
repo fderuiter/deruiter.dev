@@ -482,7 +482,6 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
             gameId={gameId}
             gameTitle={title}
             isOpen={showWizard}
-            isCircularDisplay={gameId === "garmin-watch"}
             onComplete={(cfg) => {
               setSetupConfig(cfg);
               setRunRevision((revision) => revision + 1);

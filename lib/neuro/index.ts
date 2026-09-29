@@ -4,6 +4,7 @@
 
 export * from "./types";
 export * from "./scenarios";
+export * from "./provenance";
 export * from "./loader";
 export * from "./asset-loader";
 export * from "./engine-loader";

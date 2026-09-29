@@ -14,6 +14,60 @@ Re-exports [ARCADE_GAME_DURATION_SECS](constants/variables/ARCADE_GAME_DURATION_
 
 ***
 
+### BOSS\_ATTACK\_BASE\_FRAMES
+
+Re-exports [BOSS_ATTACK_BASE_FRAMES](constants/variables/BOSS_ATTACK_BASE_FRAMES.md)
+
+***
+
+### BOSS\_ATTACK\_FRAMES\_PER\_ACT
+
+Re-exports [BOSS_ATTACK_FRAMES_PER_ACT](constants/variables/BOSS_ATTACK_FRAMES_PER_ACT.md)
+
+***
+
+### BOSS\_ATTACK\_MIN\_FRAMES
+
+Re-exports [BOSS_ATTACK_MIN_FRAMES](constants/variables/BOSS_ATTACK_MIN_FRAMES.md)
+
+***
+
+### BOSS\_FIRST\_VOLLEY\_FRAMES
+
+Re-exports [BOSS_FIRST_VOLLEY_FRAMES](constants/variables/BOSS_FIRST_VOLLEY_FRAMES.md)
+
+***
+
+### BOSS\_MINION\_SPAWN\_RATE
+
+Re-exports [BOSS_MINION_SPAWN_RATE](constants/variables/BOSS_MINION_SPAWN_RATE.md)
+
+***
+
+### BOSS\_PHASE\_TWO\_INTERVAL\_SCALE
+
+Re-exports [BOSS_PHASE_TWO_INTERVAL_SCALE](constants/variables/BOSS_PHASE_TWO_INTERVAL_SCALE.md)
+
+***
+
+### BOSS\_PROJECTILE\_RADIUS
+
+Re-exports [BOSS_PROJECTILE_RADIUS](constants/variables/BOSS_PROJECTILE_RADIUS.md)
+
+***
+
+### BOSS\_TELEGRAPH\_FRAMES
+
+Re-exports [BOSS_TELEGRAPH_FRAMES](constants/variables/BOSS_TELEGRAPH_FRAMES.md)
+
+***
+
+### BossAttackResult
+
+Re-exports [BossAttackResult](engine/interfaces/BossAttackResult.md)
+
+***
+
 ### BUG\_TYPES
 
 Re-exports [BUG_TYPES](constants/variables/BUG_TYPES.md)
@@ -44,6 +98,12 @@ Re-exports [CampaignAct](types/interfaces/CampaignAct.md)
 
 ***
 
+### CampaignKillOutcome
+
+Re-exports [CampaignKillOutcome](engine/type-aliases/CampaignKillOutcome.md)
+
+***
+
 ### checkLaserRayHit
 
 Re-exports [checkLaserRayHit](engine/functions/checkLaserRayHit.md)
@@ -53,6 +113,12 @@ Re-exports [checkLaserRayHit](engine/functions/checkLaserRayHit.md)
 ### CivicEnemyType
 
 Re-exports [CivicEnemyType](types/type-aliases/CivicEnemyType.md)
+
+***
+
+### classifyCampaignKill
+
+Re-exports [classifyCampaignKill](engine/functions/classifyCampaignKill.md)
 
 ***
 
@@ -128,6 +194,12 @@ Re-exports [getActAvailableEnemies](engine/functions/getActAvailableEnemies.md)
 
 ***
 
+### getBossAttackInterval
+
+Re-exports [getBossAttackInterval](engine/functions/getBossAttackInterval.md)
+
+***
+
 ### IceBlock
 
 Re-exports [IceBlock](types/interfaces/IceBlock.md)
@@ -137,6 +209,12 @@ Re-exports [IceBlock](types/interfaces/IceBlock.md)
 ### IceCollisionResult
 
 Re-exports [IceCollisionResult](engine/interfaces/IceCollisionResult.md)
+
+***
+
+### isBossTelegraphing
+
+Re-exports [isBossTelegraphing](engine/functions/isBossTelegraphing.md)
 
 ***
 
@@ -311,6 +389,12 @@ Re-exports [ULTIMATE_CHARGE_PER_KILL](constants/variables/ULTIMATE_CHARGE_PER_KI
 ### ULTIMATE\_DURATION\_MS
 
 Re-exports [ULTIMATE_DURATION_MS](constants/variables/ULTIMATE_DURATION_MS.md)
+
+***
+
+### updateBossAttack
+
+Re-exports [updateBossAttack](engine/functions/updateBossAttack.md)
 
 ***
 

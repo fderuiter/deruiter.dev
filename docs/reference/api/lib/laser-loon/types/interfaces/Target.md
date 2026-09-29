@@ -44,6 +44,14 @@
 
 ***
 
+### isProjectile?
+
+> `optional` **isProjectile?**: `boolean`
+
+A boss volley shot: flies straight, costs a hit on contact, scores no act kill.
+
+***
+
 ### label
 
 > **label**: `string`

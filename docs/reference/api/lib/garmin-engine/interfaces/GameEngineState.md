@@ -48,6 +48,8 @@
 
 > **distanceMeters**: `number`
 
+Unrounded distance; round only when displaying.
+
 ***
 
 ### flashFiles?
@@ -158,9 +160,25 @@
 
 ***
 
+### scoreRemainder?
+
+> `optional` **scoreRemainder?**: `number`
+
+Fractional score (0 to under 1) carried between ticks.
+
+***
+
 ### thermalStress
 
 > **thermalStress**: `number`
+
+***
+
+### tuning?
+
+> `optional` **tuning?**: [`GarminRunTuning`](GarminRunTuning.md)
+
+Setup-derived parameters for this run; absent means defaults.
 
 ***
 

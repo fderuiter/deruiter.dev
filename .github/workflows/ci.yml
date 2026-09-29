@@ -62,6 +62,9 @@ on:
 # of `main` is worth verifying, and GitHub bills a cancelled job's elapsed
 # time rather than its full cap, so superseding is strictly cheaper than
 # letting a stale run finish.
+# #1389: `cancel-closed-pr-ci.yml` joins this group when a PR closes, so a
+# closed or merged PR's runs are cancelled too. Keep the two group strings
+# (and this workflow's name) in sync.
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true

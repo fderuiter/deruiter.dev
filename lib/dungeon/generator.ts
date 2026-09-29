@@ -3,7 +3,13 @@
  */
 
 import { createFaceForgeBoss, createNeuralWardenBoss } from "./boss";
-import { DungeonRoom, Enemy, ItemPickup, TSPMovingWall, TSPNode } from "./types";
+import {
+  DungeonRoom,
+  Enemy,
+  ItemPickup,
+  TSPMovingWall,
+  TSPNode,
+} from "./types";
 
 export const STAGE_1_MAZE: string[][] = [
   ["#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#"],
@@ -108,7 +114,8 @@ export function generateDMZGatewayRoom(): DungeonRoom {
     index: 1,
     title: "DMZ Gateway (Subnet 01)",
     repo: "netsec://dmz-perimeter-gateway",
-    mechanic: "Unauthenticated perimeter. Use Nmap [1] to expose CVEs for critical burst damage.",
+    mechanic:
+      "Unauthenticated perimeter. Use Nmap [1] to expose CVEs for critical burst damage.",
     badge: "TIER 01 :: DMZ PERIMETER",
     width: 15,
     height: 9,
@@ -204,7 +211,8 @@ export function generateActiveDirectoryRoom(): DungeonRoom {
     index: 2,
     title: "Active Directory & Intranet",
     repo: "netsec://corp-active-directory-forest",
-    mechanic: "Kerberos tokens and LDAP daemons. MitM spoof [4] scrambles patrol coordinates.",
+    mechanic:
+      "Kerberos tokens and LDAP daemons. MitM spoof [4] scrambles patrol coordinates.",
     badge: "TIER 02 :: ACTIVE DIRECTORY",
     width: 15,
     height: 9,
@@ -227,7 +235,7 @@ export function generateActiveDirectoryRoom(): DungeonRoom {
 export function generateTSPRoom(): DungeonRoom {
   const grid: string[][] = [
     ["#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#"],
-    ["#", " ", " ", " ", "#", " ", " ", " ", " ", "#", " ", " ", " ", " ", "#"],
+    ["#", " ", " ", " ", "#", " ", " ", " ", "H", "#", " ", " ", " ", " ", "#"],
     ["#", " ", "#", " ", "#", " ", "#", " ", " ", "#", " ", "#", "#", " ", "#"],
     ["#", " ", "#", " ", " ", " ", "#", " ", " ", " ", " ", " ", "#", " ", "#"],
     ["#", " ", "#", "#", " ", " ", "#", "#", "#", " ", " ", " ", "#", " ", "#"],
@@ -313,7 +321,8 @@ export function generateTSPRoom(): DungeonRoom {
     index: 3,
     title: "Zero-Trust Enclave & Kernel Ring 0",
     repo: "github.com/fderuiter/tsp-heuristic-v1",
-    mechanic: "Dynamic airgap moving walls shift every step. TSP route recalculates shortest tour.",
+    mechanic:
+      "Dynamic airgap moving walls shift every step. TSP route recalculates shortest tour.",
     badge: "TIER 03 :: AIRGAP ENCLAVE",
     width: 15,
     height: 9,
@@ -340,7 +349,7 @@ export function generateDarknetVaultRoom(): DungeonRoom {
     ["#", " ", " ", " ", " ", " ", " ", "#", " ", " ", " ", " ", " ", " ", "#"],
     ["#", " ", "#", "#", "#", " ", " ", "#", " ", " ", "#", "#", "#", " ", "#"],
     ["#", " ", "#", " ", " ", " ", " ", " ", " ", " ", " ", " ", "#", " ", "#"],
-    ["#", " ", "#", " ", "T", " ", " ", " ", " ", " ", "T", " ", "#", " ", "#"],
+    ["#", " ", "#", " ", "T", " ", " ", " ", " ", " ", "H", " ", "#", " ", "#"],
     ["#", " ", "#", " ", " ", " ", " ", " ", " ", " ", " ", " ", "#", " ", "#"],
     ["#", " ", "#", "#", "#", " ", " ", "#", " ", " ", "#", "#", "#", " ", "#"],
     ["#", " ", " ", " ", " ", " ", " ", "#", " ", " ", " ", " ", " ", "E", "#"],
@@ -404,7 +413,8 @@ export function generateDarknetVaultRoom(): DungeonRoom {
     index: 4,
     title: "Darknet Black-Market & Admin Vault",
     repo: "darknet://admin-privilege-vault",
-    mechanic: "Terminal hacking bypass & Darknet vendor node. Decrypt root chests for high bounties.",
+    mechanic:
+      "Terminal hacking bypass & Darknet vendor node. Decrypt root chests for high bounties.",
     badge: "TIER 04 :: DARKNET VAULT",
     width: 15,
     height: 9,
@@ -468,7 +478,8 @@ export function generateFaceForgeRoom(): DungeonRoom {
     index: 2,
     title: "faceforge_3d :: Neural Warden Core",
     repo: "github.com/fderuiter/faceforge-wireframe-abandoned",
-    mechanic: "Boss Fight: Wireframe 3D face firing untextured mesh projectiles.",
+    mechanic:
+      "Boss Fight: Wireframe 3D face firing untextured mesh projectiles.",
     badge: "ROOM 02 :: BOSS ARENA",
     width: 15,
     height: 9,
@@ -530,7 +541,8 @@ export function generateNeuralWardenRoom(): DungeonRoom {
     index: 5,
     title: "NEURAL_WARDEN_v9 :: AI Sovereign Core",
     repo: "netsec://neural-warden-core-mainframe",
-    mechanic: "Final Boss: Multi-phase 3D vector octahedron firing zero-trust beam volleys.",
+    mechanic:
+      "Final Boss: Multi-phase 3D vector octahedron firing zero-trust beam volleys.",
     badge: "TIER 05 :: AI SOVEREIGN",
     width: 15,
     height: 9,
@@ -625,7 +637,8 @@ export function generateBlinkBrowseRoom(): DungeonRoom {
     index: 3,
     title: "BlinkBrowse",
     repo: "github.com/fderuiter/blink-browse-webcam-nav",
-    mechanic: "Eye-tracking drift: Character steers towards mouse cursor position!",
+    mechanic:
+      "Eye-tracking drift: Character steers towards mouse cursor position!",
     badge: "ROOM 03 :: GAZE TRACKING",
     width: 15,
     height: 9,

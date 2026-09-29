@@ -154,6 +154,86 @@ export interface FogPoint {
   radius: number;
 }
 
+export type GarminDifficulty = "casual" | "normal" | "hard";
+export type GarminLoadout = "standard-ram" | "low-power" | "overclocked";
+
+/**
+ * Engine parameters a run is tuned with. Every field is a plain multiplier or
+ * constant so the effect of a setup choice is directly testable.
+ */
+export interface GarminRunTuning {
+  /** Multiplies obstacle scroll speed. */
+  obstacleSpeedScale: number;
+  /** Multiplies the gap between obstacle spawns (larger is easier). */
+  obstacleIntervalScale: number;
+  /** Multiplies the gap between automatic heap allocations (larger is easier). */
+  allocIntervalScale: number;
+  /** Multiplies battery drain (base and backlight). */
+  batteryDrainScale: number;
+  /** Length of the garbage-collection freeze in milliseconds. */
+  gcFreezeMs: number;
+  /** Extra kilobytes a garbage collection frees on top of its base 2 to 4 KB. */
+  gcBonusFreedKb: number;
+}
+
+export const DEFAULT_RUN_TUNING: GarminRunTuning = {
+  obstacleSpeedScale: 1,
+  obstacleIntervalScale: 1,
+  allocIntervalScale: 1,
+  batteryDrainScale: 1,
+  gcFreezeMs: 500,
+  gcBonusFreedKb: 0,
+};
+
+const DIFFICULTY_TUNING: Record<
+  GarminDifficulty,
+  Pick<
+    GarminRunTuning,
+    "obstacleSpeedScale" | "obstacleIntervalScale" | "allocIntervalScale"
+  >
+> = {
+  casual: {
+    obstacleSpeedScale: 0.85,
+    obstacleIntervalScale: 1.3,
+    allocIntervalScale: 1.3,
+  },
+  normal: {
+    obstacleSpeedScale: 1,
+    obstacleIntervalScale: 1,
+    allocIntervalScale: 1,
+  },
+  hard: {
+    obstacleSpeedScale: 1.2,
+    obstacleIntervalScale: 0.8,
+    allocIntervalScale: 0.75,
+  },
+};
+
+const LOADOUT_TUNING: Record<
+  GarminLoadout,
+  Pick<GarminRunTuning, "batteryDrainScale" | "gcFreezeMs" | "gcBonusFreedKb">
+> = {
+  "standard-ram": { batteryDrainScale: 1, gcFreezeMs: 500, gcBonusFreedKb: 0 },
+  "low-power": { batteryDrainScale: 0.6, gcFreezeMs: 350, gcBonusFreedKb: 0 },
+  overclocked: { batteryDrainScale: 1.6, gcFreezeMs: 500, gcBonusFreedKb: 2 },
+};
+
+/**
+ * Resolves the setup wizard's difficulty and loadout ids to engine
+ * parameters. Unknown ids fall back to the Normal / Standard Heap defaults.
+ */
+export function resolveRunTuning(
+  difficulty: string,
+  loadout: string
+): GarminRunTuning {
+  const diff =
+    DIFFICULTY_TUNING[difficulty as GarminDifficulty] ??
+    DIFFICULTY_TUNING.normal;
+  const load =
+    LOADOUT_TUNING[loadout as GarminLoadout] ?? LOADOUT_TUNING["standard-ram"];
+  return { ...DEFAULT_RUN_TUNING, ...diff, ...load };
+}
+
 export interface GameEngineState {
   gameState: "idle" | "playing" | "paused" | "crashed" | "shutdown" | "summary";
   device: DeviceTarget;
@@ -162,7 +242,10 @@ export interface GameEngineState {
   isGrounded: boolean;
   score: number;
   highScore: number;
+  /** Unrounded distance; round only when displaying. */
   distanceMeters: number;
+  /** Fractional score (0 to under 1) carried between ticks. */
+  scoreRemainder?: number;
   variables: MemoryVariable[];
   allocatedRamKb: number;
   flashVariables: FlashVariable[];
@@ -182,6 +265,8 @@ export interface GameEngineState {
   lastAllocTime: number;
   lastObstacleTime: number;
   consecutiveDodges: number;
+  /** Setup-derived parameters for this run; absent means defaults. */
+  tuning?: GarminRunTuning;
 }
 
 export const CANVAS_SIZE = 280;
@@ -248,28 +333,64 @@ export function createInitialState(
  */
 export function startGame(
   state: GameEngineState,
-  device?: DeviceTarget
+  device?: DeviceTarget,
+  tuning?: GarminRunTuning
 ): GameEngineState {
   const targetDevice = device || state.device;
   const initial = createInitialState(targetDevice, state.highScore);
+  const runTuning = tuning ?? state.tuning;
   return {
     ...initial,
+    ...(runTuning ? { tuning: runTuning } : {}),
     gameState: "playing",
   };
 }
 
 /**
- * Jettison (pop) the oldest variable in the heap
+ * Names of required app state allocated at boot. These are never collectible:
+ * jettison and garbage collection skip them, so the watch stays functional.
+ */
+export const REQUIRED_VARIABLE_NAMES: readonly string[] = [
+  "appCtx",
+  "displayGfx",
+];
+
+/**
+ * Points awarded for a memory action that actually reclaimed heap. Actions that
+ * reclaim nothing award no points. Survival ticks and dodges are the primary
+ * score source; higher-difficulty devices only differ in their RAM limits.
+ */
+export const JETTISON_SCORE = 5;
+export const GC_SCORE = 10;
+
+/**
+ * Returns true when a heap variable is collectible garbage rather than required app state.
+ */
+export function isCollectibleVariable(v: MemoryVariable): boolean {
+  return !REQUIRED_VARIABLE_NAMES.includes(v.name);
+}
+
+/**
+ * Jettison (pop) the oldest collectible variable in the heap.
+ * Required app state is never discarded; with nothing collectible the call is
+ * a no-op that awards no score and reports a reason.
  */
 export function jettisonOldestVariable(state: GameEngineState): {
   state: GameEngineState;
   popped?: MemoryVariable;
+  reason?: string;
 } {
-  if (state.gameState !== "playing" || state.variables.length === 0) {
+  if (state.gameState !== "playing") {
     return { state };
   }
 
-  const [popped, ...rest] = state.variables;
+  const idx = state.variables.findIndex(isCollectibleVariable);
+  if (idx === -1) {
+    return { state, reason: "Nothing to jettison: only required app state" };
+  }
+
+  const popped = state.variables[idx];
+  const rest = state.variables.filter((_, i) => i !== idx);
   const newRam = Math.max(0.2, state.allocatedRamKb - popped.sizeKb);
 
   return {
@@ -277,7 +398,7 @@ export function jettisonOldestVariable(state: GameEngineState): {
       ...state,
       variables: rest,
       allocatedRamKb: Number(newRam.toFixed(2)),
-      score: state.score + 5,
+      score: state.score + JETTISON_SCORE,
     },
     popped,
   };
@@ -285,28 +406,37 @@ export function jettisonOldestVariable(state: GameEngineState): {
 
 /**
  * Force Garbage Collection (GC)
- * Freezes game for 500ms and frees 2.0 to 4.0 KB of garbage
+ * Freezes game for 500ms and frees up to 2.0 to 4.0 KB of collectible garbage.
+ * With no collectible garbage the call is a no-op: no freeze, no score.
  */
 export function triggerGarbageCollection(state: GameEngineState): {
   state: GameEngineState;
   freedKb: number;
+  reason?: string;
 } {
   if (state.gameState !== "playing" || state.isGcActive) {
     return { state, freedKb: 0 };
   }
 
+  if (!state.variables.some(isCollectibleVariable)) {
+    return {
+      state,
+      freedKb: 0,
+      reason: "Heap already clean: nothing to collect",
+    };
+  }
+
   // Calculate garbage memory to free (2.0 to 4.0 KB, capped by current non-essential variables)
-  const targetFreedKb = Number((2.0 + Math.random() * 2.0).toFixed(2));
+  const tuning = state.tuning ?? DEFAULT_RUN_TUNING;
+  const targetFreedKb = Number(
+    (2.0 + Math.random() * 2.0 + tuning.gcBonusFreedKb).toFixed(2)
+  );
   let accumulatedFreed = 0;
   const remainingVars: MemoryVariable[] = [];
 
-  // Remove variables from oldest to newest until target freed is met
-  for (let i = 0; i < state.variables.length; i++) {
-    const v = state.variables[i];
-    if (
-      accumulatedFreed < targetFreedKb &&
-      state.variables.length - remainingVars.length > 2
-    ) {
+  // Remove collectible variables from oldest to newest until target freed is met
+  for (const v of state.variables) {
+    if (isCollectibleVariable(v) && accumulatedFreed < targetFreedKb) {
       accumulatedFreed += v.sizeKb;
     } else {
       remainingVars.push(v);
@@ -322,12 +452,12 @@ export function triggerGarbageCollection(state: GameEngineState): {
     state: {
       ...state,
       isGcActive: true,
-      gcTimerMs: 500, // 500ms freeze
+      gcTimerMs: tuning.gcFreezeMs,
       variables: remainingVars,
       allocatedRamKb: newRam,
-      score: state.score + 10,
+      score: state.score + GC_SCORE,
     },
-    freedKb: accumulatedFreed,
+    freedKb: Number(accumulatedFreed.toFixed(2)),
   };
 }
 
@@ -517,6 +647,8 @@ export function updateGameSimulation(
   }
 
   const safeDelta = Number.isFinite(deltaMs) ? clamp(deltaMs, 0, 5000) : 0;
+  const tuning = state.tuning ?? DEFAULT_RUN_TUNING;
+  const drainScale = tuning.batteryDrainScale;
 
   // Handle GC Freeze
   if (state.isGcActive) {
@@ -529,7 +661,9 @@ export function updateGameSimulation(
     const baseDrainPerMs = 0.0001;
     const lightDrainPerMs = 0.0003;
     const totalDrain =
-      (baseDrainPerMs + (state.isLightOn ? lightDrainPerMs : 0)) * safeDelta;
+      (baseDrainPerMs + (state.isLightOn ? lightDrainPerMs : 0)) *
+      safeDelta *
+      drainScale;
     const nextBattery = Math.max(0, state.battery - totalDrain);
 
     let nextLight = state.isLightOn;
@@ -610,22 +744,22 @@ export function updateGameSimulation(
     if (remainingGc <= 0) {
       return {
         ...state,
-        battery: Number(nextBattery.toFixed(2)),
+        battery: nextBattery,
         isLightOn: nextLight,
         lightActiveDurationMs: lightDuration,
-        thermalStress: Number(nextThermalStress.toFixed(3)),
-        fogLevel: Number(nextFogLevel.toFixed(3)),
+        thermalStress: nextThermalStress,
+        fogLevel: nextFogLevel,
         isGcActive: false,
         gcTimerMs: 0,
       };
     }
     return {
       ...state,
-      battery: Number(nextBattery.toFixed(2)),
+      battery: nextBattery,
       isLightOn: nextLight,
       lightActiveDurationMs: lightDuration,
-      thermalStress: Number(nextThermalStress.toFixed(3)),
-      fogLevel: Number(nextFogLevel.toFixed(3)),
+      thermalStress: nextThermalStress,
+      fogLevel: nextFogLevel,
       gcTimerMs: remainingGc,
     };
   }
@@ -636,11 +770,15 @@ export function updateGameSimulation(
   let nextBattery = state.battery;
   let lightDuration = state.lightActiveDurationMs;
 
-  // Base battery drain: 0.1%/sec; With light: +0.3%/sec (0.4%/sec total)
+  // Base battery drain: 0.1%/sec; With light: +0.3%/sec (0.4%/sec total).
+  // Battery is kept unrounded: a frame drains about 0.0017%, which rounding
+  // to two decimals would undo every frame. Round only for display.
   const baseDrainPerMs = 0.0001;
   const lightDrainPerMs = 0.0003;
   const totalDrain =
-    (baseDrainPerMs + (state.isLightOn ? lightDrainPerMs : 0)) * safeDelta;
+    (baseDrainPerMs + (state.isLightOn ? lightDrainPerMs : 0)) *
+    safeDelta *
+    drainScale;
   nextBattery = Math.max(0, nextBattery - totalDrain);
 
   let nextLight = state.isLightOn;
@@ -733,8 +871,14 @@ export function updateGameSimulation(
   }
 
   // 3. Distance & Score Tracking
+  // Score, distance and the stress meters accumulate fractionally so equal
+  // elapsed time gives equal progress at any refresh rate; only the score is
+  // an integer to callers, with its remainder carried in scoreRemainder
+  // (#1212). Round for display, never in the tick.
   const nextDistance = state.distanceMeters + 0.25 * dtRatio;
-  const nextScore = state.score + Math.round(1 * dtRatio);
+  const exactScore = state.score + (state.scoreRemainder ?? 0) + dtRatio;
+  const nextScore = Math.floor(exactScore + 1e-9);
+  const nextScoreRemainder = Math.max(0, exactScore - nextScore);
   const nextHighScore = Math.max(state.highScore, nextScore);
   const nextHeartRate = clamp(130 + Math.floor(nextScore * 0.05), 120, 188);
 
@@ -744,24 +888,25 @@ export function updateGameSimulation(
     playerY: nextPlayerY,
     playerVy: nextPlayerVy,
     isGrounded,
-    battery: Number(nextBattery.toFixed(2)),
+    battery: nextBattery,
     isLightOn: nextLight,
     lightActiveDurationMs: lightDuration,
-    thermalStress: Number(nextThermalStress.toFixed(3)),
-    fogLevel: Number(nextFogLevel.toFixed(3)),
-    distanceMeters: Number(nextDistance.toFixed(1)),
+    thermalStress: nextThermalStress,
+    fogLevel: nextFogLevel,
+    distanceMeters: nextDistance,
     score: nextScore,
+    scoreRemainder: nextScoreRemainder,
     highScore: nextHighScore,
     heartRate: nextHeartRate,
   };
 
   const now = Date.now();
   const allocInterval =
-    state.device === "fenix"
+    (state.device === "fenix"
       ? 3200
       : state.device === "forerunner"
         ? 4000
-        : 5000;
+        : 5000) * tuning.allocIntervalScale;
   if (now - state.lastAllocTime > allocInterval) {
     const types: VariableType[] = ["int", "float", "string", "array"];
     const chosenType = types[Math.floor(Math.random() * types.length)];
@@ -869,7 +1014,8 @@ export function updateGameSimulation(
   }
 
   // 6. Spawn new Obstacles
-  const obstacleInterval = 1800 + Math.random() * 1200;
+  const obstacleInterval =
+    (1800 + Math.random() * 1200) * tuning.obstacleIntervalScale;
   if (
     now - updatedState.lastObstacleTime > obstacleInterval &&
     nextObstacles.length < 3
@@ -929,7 +1075,9 @@ export function updateGameSimulation(
         height,
         type: chosen,
         label,
-        speed: 2.2 + Math.min(2.0, updatedState.score * 0.005),
+        speed:
+          (2.2 + Math.min(2.0, updatedState.score * 0.005)) *
+          tuning.obstacleSpeedScale,
         variablePayload,
       });
 

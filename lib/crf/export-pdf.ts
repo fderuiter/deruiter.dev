@@ -2,6 +2,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { CRFForm, StudyProtocol, CRFField, ExportPdfOptions } from "./types";
 import { getStudyBranding } from "./branding-defaults";
+import { consultationUrl, sdtmTargetFor } from "./export-annotations";
 
 /**
  * jspdf-autotable's plugin attaches `lastAutoTable` to the jsPDF instance at
@@ -330,10 +331,7 @@ export async function generateStudyPdf(
         const valCol = formatResponseMock(field, study);
 
         if (isAnnotated) {
-          const sdtmTarget =
-            field.cdashMetadata?.sdtmVariable ||
-            field.cdashMetadata?.acrfAnnotation ||
-            `${form.domain}.${field.variableName}`;
+          const sdtmTarget = sdtmTargetFor(field, form.domain);
           const isDerived = field.dataType === "calculated";
           const core =
             field.cdashMetadata?.core || (field.required ? "HR" : "O");
@@ -412,8 +410,7 @@ export async function generateStudyPdf(
             f.domain,
             field.variableName,
             field.label,
-            field.cdashMetadata?.sdtmVariable ||
-              `${f.domain}.${field.variableName}`,
+            sdtmTargetFor(field, f.domain),
             field.dataType === "calculated" ? "Derived" : "CRF",
             field.cdashMetadata?.core || (field.required ? "HR" : "O"),
           ]);
@@ -463,7 +460,7 @@ export async function generateStudyPdf(
     // Running Footer
     doc.line(margin, pageHeight - 11, pageWidth - margin, pageHeight - 11);
     doc.text(
-      `${branding.footerText || "CRF Studio"} • CDISC CDASH 2.2 • Schedule Consultation: /schedule`,
+      `${branding.footerText || "CRF Studio"} • CDISC CDASH 2.2 • Schedule Consultation: ${consultationUrl()}`,
       margin,
       pageHeight - 7
     );

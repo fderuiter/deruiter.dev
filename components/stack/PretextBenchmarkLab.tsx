@@ -217,9 +217,9 @@ export const PretextBenchmarkLab: React.FC = () => {
             <span className="text-2xl font-mono font-extrabold text-white">
               {domTimeMs !== null ? `${domTimeMs}` : "—"}
             </span>
-            <span className="text-xs font-mono text-zinc-500">ms</span>
+            <span className="text-xs font-mono text-muted">ms</span>
           </div>
-          <p className="text-[11px] text-zinc-500 mt-2">
+          <p className="text-[11px] text-muted mt-2">
             Forces synchronous layout calculation (`getBoundingClientRect` reflow).
           </p>
         </div>
@@ -239,7 +239,7 @@ export const PretextBenchmarkLab: React.FC = () => {
             <span className="text-2xl font-mono font-extrabold text-brand-cyan">
               {pretextTimeMs !== null ? `${pretextTimeMs}` : "—"}
             </span>
-            <span className="text-xs font-mono text-zinc-500">ms</span>
+            <span className="text-xs font-mono text-muted">ms</span>
           </div>
           <p className="text-[11px] text-zinc-400 mt-2">
             Userland canvas arithmetic over cached word boundaries.

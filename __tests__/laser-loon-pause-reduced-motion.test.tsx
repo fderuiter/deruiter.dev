@@ -1,7 +1,13 @@
 // @vitest-environment jsdom
 import React from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import {
+  render,
+  screen,
+  fireEvent,
+  act,
+  cleanup,
+} from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { LaserLoon } from "@/components/LaserLoon";
 
 // Mocks
@@ -192,5 +198,87 @@ describe("Laser Loon Pause & Reduced Motion Invariants", () => {
     vi.advanceTimersByTime(1000);
 
     vi.useRealTimers();
+  });
+  describe("Escape and overlays (#1312)", () => {
+    beforeEach(() => cleanup());
+    afterEach(() => cleanup());
+
+    function startCampaign() {
+      render(<LaserLoon />);
+      fireEvent.click(
+        screen.getAllByRole("button", { name: /START CAMPAIGN/i })[0]
+      );
+      fireEvent.click(screen.getByRole("button", { name: /ENGAGE STAGE/i }));
+      return screen.getByRole("application", {
+        name: /Laser Loon Arcade Game/i,
+      }).parentElement as HTMLElement;
+    }
+
+    async function framesScheduledOver(ms: number) {
+      const rafSpy = vi.spyOn(window, "requestAnimationFrame");
+      const before = rafSpy.mock.calls.length;
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, ms));
+      });
+      const scheduled = rafSpy.mock.calls.length - before;
+      rafSpy.mockRestore();
+      return scheduled;
+    }
+
+    it("pauses on Escape instead of wiping the run", () => {
+      const playfield = startCampaign();
+      fireEvent.keyDown(playfield, { key: "Escape" });
+
+      const dialog = screen.getByRole("dialog", { name: /GAME PAUSED/i });
+      expect(dialog.getAttribute("aria-modal")).toBe("true");
+      expect(dialog.textContent).toContain("Act 1 campaign session paused");
+    });
+
+    it("resumes on a second Escape", () => {
+      const playfield = startCampaign();
+      fireEvent.keyDown(playfield, { key: "Escape" });
+      const dialog = screen.getByRole("dialog", { name: /GAME PAUSED/i });
+      fireEvent.keyDown(dialog, { key: "Escape" });
+      expect(screen.queryByRole("dialog", { name: /GAME PAUSED/i })).toBe(null);
+    });
+
+    it("keeps the loop running while playing, as a baseline", async () => {
+      startCampaign();
+      expect(await framesScheduledOver(120)).toBeGreaterThan(0);
+    });
+
+    it("stops the game behind the Flag Museum", async () => {
+      startCampaign();
+      fireEvent.click(screen.getByRole("button", { name: /Flag Museum/i }));
+      expect(
+        screen.getByRole("dialog", { name: /Flag Redesign Museum/i })
+      ).toBeDefined();
+
+      expect(await framesScheduledOver(120)).toBe(0);
+
+      fireEvent.click(
+        screen.getByRole("button", { name: /Close Flag Museum/i })
+      );
+      expect(await framesScheduledOver(120)).toBeGreaterThan(0);
+    });
+
+    it("opens the museum with M and closes it with M", () => {
+      const playfield = startCampaign();
+      fireEvent.keyDown(playfield, { key: "m" });
+      const museum = screen.getByRole("dialog", {
+        name: /Flag Redesign Museum/i,
+      });
+      fireEvent.keyDown(museum, { key: "m" });
+      expect(
+        screen.queryByRole("dialog", { name: /Flag Redesign Museum/i })
+      ).toBe(null);
+    });
+
+    it("stops the game behind the Field Manual", async () => {
+      startCampaign();
+      fireEvent.click(screen.getByRole("button", { name: /Manual/i }));
+
+      expect(await framesScheduledOver(120)).toBe(0);
+    });
   });
 });

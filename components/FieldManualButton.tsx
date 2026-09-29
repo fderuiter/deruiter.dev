@@ -10,7 +10,10 @@ import React, {
 } from "react";
 import { IconHelp, IconBook2 } from "@tabler/icons-react";
 import { GAME_MANUALS } from "@/lib/game-manuals";
-import { FieldManualModal } from "@/components/FieldManualModal";
+import {
+  FieldManualModal,
+  type FieldManualAction,
+} from "@/components/FieldManualModal";
 import { useAudio } from "@/components/providers/AudioProvider";
 
 interface FieldManualButtonProps {
@@ -20,6 +23,8 @@ interface FieldManualButtonProps {
   label?: string;
   onOpenChange?: (isOpen: boolean) => void;
   isHotkeyOwner?: boolean;
+  /** A game action offered on the manual's first tab. */
+  action?: FieldManualAction;
 }
 
 interface ManualInstance {
@@ -167,6 +172,7 @@ export function FieldManualButton({
   label = "Field Manual",
   onOpenChange,
   isHotkeyOwner,
+  action,
 }: FieldManualButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const isOpenRef = useRef(isOpen);
@@ -279,6 +285,7 @@ export function FieldManualButton({
           isOpen={isOpen}
           onClose={handleClose}
           manual={manual}
+          action={action}
         />
       </>
     );
@@ -306,6 +313,7 @@ export function FieldManualButton({
           isOpen={isOpen}
           onClose={handleClose}
           manual={manual}
+          action={action}
         />
       </>
     );
@@ -342,7 +350,12 @@ export function FieldManualButton({
         )}
       </div>
 
-      <FieldManualModal isOpen={isOpen} onClose={handleClose} manual={manual} />
+      <FieldManualModal
+        isOpen={isOpen}
+        onClose={handleClose}
+        manual={manual}
+        action={action}
+      />
     </>
   );
 }

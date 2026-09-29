@@ -149,7 +149,7 @@ export function SchemaFlowWorkspaceSkeleton() {
               <span className="w-2.5 h-2.5 rounded-full bg-zinc-800" />
               <span className="w-2.5 h-2.5 rounded-full bg-zinc-800" />
               <span className="w-2.5 h-2.5 rounded-full bg-zinc-800" />
-              <span className="text-[10px] font-mono text-zinc-500 font-bold ml-2">
+              <span className="text-[10px] font-mono text-muted font-bold ml-2">
                 PROOF-TACTIC-SHELL
               </span>
             </div>

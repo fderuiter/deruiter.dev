@@ -15,6 +15,7 @@ import { tacticDefs } from "@/lib/quasi-perfect/tactics";
 import {
   STORY_RAM_MULTIPLIER,
   computeLevelStars,
+  describeModeRules,
   getStartingRam,
 } from "@/lib/quasi-perfect";
 import {
@@ -114,6 +115,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
     }
   });
 
+  const [pendingMode, setPendingMode] = useState<GameMode | null>(null);
   const [currentLevelIndex, setCurrentLevelIndex] = useState<number>(0);
   const currentLevel: PuzzlerLevelDef =
     puzzleLevels[currentLevelIndex] || puzzleLevels[0];
@@ -158,21 +160,6 @@ export const QuasiPerfectPuzzler: React.FC = () => {
       text: `Local tactic simulator initialized. Loaded [Ch ${currentLevel.chapter} · ${currentLevel.chapterTitle}]: ${currentLevel.title}. Mode: ${gameMode.toUpperCase()}.`,
     },
   ]);
-
-  const handleToggleMode = useCallback(
-    (mode: GameMode) => {
-      setGameMode(mode);
-      setCurrentRam(getStartingRam(currentLevel, mode));
-      if (typeof window !== "undefined") {
-        try {
-          localStorage.setItem(MODE_STORAGE_KEY, mode);
-        } catch {
-          // Storage fallback
-        }
-      }
-    },
-    [currentLevel]
-  );
 
   // SSR-Safe progress state
   const rawProgress = useSyncExternalStore(
@@ -223,9 +210,11 @@ export const QuasiPerfectPuzzler: React.FC = () => {
   );
 
   const loadLevel = useCallback(
-    (index: number) => {
+    (index: number, modeOverride?: GameMode) => {
       const targetLvl = puzzleLevels[index] || puzzleLevels[0];
+      const activeMode = modeOverride ?? gameMode;
       setCurrentLevelIndex(index);
+      setPendingMode(null);
       setSubgoals([
         {
           id: `root-goal-${targetLvl.id}`,
@@ -236,7 +225,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
         },
       ]);
       setActiveGoalIndex(0);
-      setCurrentRam(getStartingRam(targetLvl, gameMode));
+      setCurrentRam(getStartingRam(targetLvl, activeMode));
       setProofSteps([]);
       setHistory([]);
       setRedoHistory([]);
@@ -254,7 +243,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
           id: `lvl-${targetLvl.id}-${Date.now()}`,
           timestamp: new Date().toLocaleTimeString("en-US", { hour12: false }),
           type: "info",
-          text: `Loaded Chapter ${targetLvl.chapter} [${targetLvl.subtitle}]: ${targetLvl.title}. Mode: ${gameMode.toUpperCase()}.`,
+          text: `Loaded Chapter ${targetLvl.chapter} [${targetLvl.subtitle}]: ${targetLvl.title}. Mode: ${activeMode.toUpperCase()}.`,
         },
       ]);
       announce(
@@ -264,6 +253,53 @@ export const QuasiPerfectPuzzler: React.FC = () => {
     },
     [gameMode, announce]
   );
+
+  const persistMode = useCallback((mode: GameMode) => {
+    if (typeof window === "undefined") return;
+    try {
+      localStorage.setItem(MODE_STORAGE_KEY, mode);
+    } catch {
+      // Storage fallback
+    }
+  }, []);
+
+  // A proof is in progress once any RAM has been spent or a step recorded.
+  const isProofInProgress =
+    !levelSolved &&
+    (proofSteps.length > 0 ||
+      history.length > 0 ||
+      currentRam !== getStartingRam(currentLevel, gameMode));
+
+  const handleToggleMode = useCallback(
+    (mode: GameMode) => {
+      if (mode === gameMode) {
+        setPendingMode(null);
+        return;
+      }
+      if (isProofInProgress) {
+        // Never refill or convert RAM mid-proof: require an explicit restart.
+        setPendingMode(mode);
+        return;
+      }
+      setGameMode(mode);
+      persistMode(mode);
+      loadLevel(currentLevelIndex, mode);
+    },
+    [gameMode, isProofInProgress, persistMode, loadLevel, currentLevelIndex]
+  );
+
+  const handleConfirmModeChange = useCallback(() => {
+    if (!pendingMode) return;
+    const mode = pendingMode;
+    setPendingMode(null);
+    setGameMode(mode);
+    persistMode(mode);
+    loadLevel(currentLevelIndex, mode);
+  }, [pendingMode, persistMode, loadLevel, currentLevelIndex]);
+
+  const handleCancelModeChange = useCallback(() => {
+    setPendingMode(null);
+  }, []);
 
   // Execute a tactic on a given target AST node
   const executeTacticOnNode = useCallback(
@@ -626,6 +662,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
   };
 
   const isOOM = currentRam <= 0 && !levelSolved;
+  const modeRules = describeModeRules(gameMode, currentLevel);
 
   // Filtered levels based on chapter tab
   const filteredLevels = useMemo(() => {
@@ -689,6 +726,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
             <button
               type="button"
               onClick={() => handleToggleMode("story")}
+              aria-pressed={gameMode === "story"}
               className={`min-h-[44px] px-3 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center focus-visible:ring-2 focus-visible:ring-brand-cyan focus-visible:outline-none ${
                 gameMode === "story"
                   ? "bg-brand-cyan text-black shadow-[0_0_10px_rgba(6,182,212,0.4)]"
@@ -700,6 +738,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
             <button
               type="button"
               onClick={() => handleToggleMode("hacker")}
+              aria-pressed={gameMode === "hacker"}
               className={`min-h-[44px] px-3 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none ${
                 gameMode === "hacker"
                   ? "bg-amber-400 text-black shadow-[0_0_10px_rgba(251,191,36,0.4)] font-extrabold"
@@ -743,6 +782,61 @@ export const QuasiPerfectPuzzler: React.FC = () => {
             variant="header"
           />
         </div>
+      </div>
+
+      {/* Active mode rules and mid-proof mode-change confirmation */}
+      <div className="mt-3 min-w-0 space-y-2" data-testid="mode-rules">
+        <p className="text-xs text-zinc-400 break-words">
+          <span
+            className={`font-bold ${
+              gameMode === "story" ? "text-emerald-400" : "text-amber-400"
+            }`}
+          >
+            {modeRules.heading}
+          </span>{" "}
+          {modeRules.budget} {modeRules.failure} {modeRules.exhaustion}{" "}
+          {modeRules.scoring} Changing mode mid-proof restarts the level.
+        </p>
+        {pendingMode && (
+          <div
+            role="alertdialog"
+            aria-labelledby="mode-change-title"
+            aria-describedby="mode-change-desc"
+            className="rounded-xl border border-amber-500/40 bg-amber-950/30 p-3"
+          >
+            <p
+              id="mode-change-title"
+              className="text-sm font-bold text-amber-300"
+            >
+              Switch to {pendingMode === "story" ? "Story" : "Hacker"} Mode and
+              restart this level?
+            </p>
+            <p
+              id="mode-change-desc"
+              className="mt-1 text-xs text-zinc-400 break-words"
+            >
+              Your current proof steps and RAM usage will be discarded and the
+              level restarts with a fresh{" "}
+              {getStartingRam(currentLevel, pendingMode)} GB budget.
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={handleConfirmModeChange}
+                className="min-h-[44px] px-3 py-2 text-xs font-bold rounded-lg bg-amber-400 text-black focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none"
+              >
+                Restart in {pendingMode === "story" ? "Story" : "Hacker"} Mode
+              </button>
+              <button
+                type="button"
+                onClick={handleCancelModeChange}
+                className="min-h-[44px] px-3 py-2 text-xs font-bold rounded-lg border border-zinc-700 text-zinc-300 hover:text-zinc-100 focus-visible:ring-2 focus-visible:ring-brand-cyan focus-visible:outline-none"
+              >
+                Keep current proof
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 2. Sandbox View (if selected) */}

@@ -14,6 +14,12 @@ Re-exports [AnatomicalParcel](types/interfaces/AnatomicalParcel.md)
 
 ***
 
+### applyVoxelEditsToVolume
+
+Re-exports [applyVoxelEditsToVolume](drafts/functions/applyVoxelEditsToVolume.md)
+
+***
+
 ### AssetProgressEvent
 
 Re-exports [AssetProgressEvent](progress-bus/interfaces/AssetProgressEvent.md)
@@ -47,6 +53,12 @@ Re-exports [computeSyntheticVolumeSync](loader/functions/computeSyntheticVolumeS
 ### ControlPoint
 
 Re-exports [ControlPoint](types/interfaces/ControlPoint.md)
+
+***
+
+### countNeuroDraftEdits
+
+Re-exports [countNeuroDraftEdits](drafts/functions/countNeuroDraftEdits.md)
 
 ***
 
@@ -140,6 +152,12 @@ Re-exports [formatBytes](progress-bus/functions/formatBytes.md)
 
 ***
 
+### formatNeuroToolKey
+
+Re-exports [formatNeuroToolKey](hotkeys/functions/formatNeuroToolKey.md)
+
+***
+
 ### generateHemisphereBuffers
 
 Re-exports [generateHemisphereBuffers](internal/mesh-geometry/functions/generateHemisphereBuffers.md)
@@ -194,6 +212,12 @@ Re-exports [getNeuroDatasetConfigsSync](loader/functions/getNeuroDatasetConfigsS
 
 ***
 
+### getNeuroProvenance
+
+Re-exports [getNeuroProvenance](provenance/functions/getNeuroProvenance.md)
+
+***
+
 ### getNeuroScenarioList
 
 Re-exports [getNeuroScenarioList](loader/functions/getNeuroScenarioList.md)
@@ -236,6 +260,12 @@ Re-exports [HemisphereFilter](types/type-aliases/HemisphereFilter.md)
 
 ***
 
+### isNeuroSelectionValid
+
+Re-exports [isNeuroSelectionValid](provenance/functions/isNeuroSelectionValid.md)
+
+***
+
 ### loadExternalBrainBuffers
 
 Re-exports [loadExternalBrainBuffers](asset-loader/functions/loadExternalBrainBuffers.md)
@@ -269,6 +299,54 @@ Re-exports [MeshWorkerResponse](types/interfaces/MeshWorkerResponse.md)
 ### MeshWorkerTarget
 
 Re-exports [MeshWorkerTarget](mesh-worker/interfaces/MeshWorkerTarget.md)
+
+***
+
+### NEURO\_RUN\_RECON\_KEY
+
+Re-exports [NEURO_RUN_RECON_KEY](hotkeys/variables/NEURO_RUN_RECON_KEY.md)
+
+***
+
+### NEURO\_TOOL\_HOTKEYS
+
+Re-exports [NEURO_TOOL_HOTKEYS](hotkeys/variables/NEURO_TOOL_HOTKEYS.md)
+
+***
+
+### NeuroDraft
+
+Re-exports [NeuroDraft](drafts/interfaces/NeuroDraft.md)
+
+***
+
+### NeuroDraftMap
+
+Re-exports [NeuroDraftMap](drafts/type-aliases/NeuroDraftMap.md)
+
+***
+
+### NeuroHotkeyAction
+
+Re-exports [NeuroHotkeyAction](hotkeys/type-aliases/NeuroHotkeyAction.md)
+
+***
+
+### NeuroHotkeyEventLike
+
+Re-exports [NeuroHotkeyEventLike](hotkeys/interfaces/NeuroHotkeyEventLike.md)
+
+***
+
+### NeuroProvenance
+
+Re-exports [NeuroProvenance](provenance/interfaces/NeuroProvenance.md)
+
+***
+
+### NeuroToolHotkey
+
+Re-exports [NeuroToolHotkey](hotkeys/interfaces/NeuroToolHotkey.md)
 
 ***
 
@@ -311,6 +389,12 @@ Re-exports [RawGeometryBuffer](types/interfaces/RawGeometryBuffer.md)
 ### registerMeshWorker
 
 Re-exports [registerMeshWorker](mesh-worker/functions/registerMeshWorker.md)
+
+***
+
+### resolveNeuroHotkey
+
+Re-exports [resolveNeuroHotkey](hotkeys/functions/resolveNeuroHotkey.md)
 
 ***
 
@@ -413,3 +497,9 @@ Re-exports [VoxelCoord](types/interfaces/VoxelCoord.md)
 ### VoxelEdit
 
 Re-exports [VoxelEdit](types/interfaces/VoxelEdit.md)
+
+***
+
+### withNeuroDraft
+
+Re-exports [withNeuroDraft](drafts/functions/withNeuroDraft.md)

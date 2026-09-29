@@ -452,7 +452,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         title: "Proof-Engine RAM Limit",
         detail:
-          "Complex tactic expansions consume proof engine memory. If RAM usage hits 100%, an Out-Of-Memory (OOM) kernel crash resets the current level.",
+          "Each tactic, including a failed one, consumes simulated memory. Story Mode starts with twice the Hacker Mode budget. In either mode, hitting 0 GB stops the simulated tactic session and the level must be reset.",
         badge: "RAM Constraint",
       },
       {
@@ -609,8 +609,8 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         action: "Cycle Active Queue & Switch View",
         description:
-          "Press [Tab] to cycle between conveyor parcels. Toggle between Conveyor Floor, Live SDTM Studio, and Audit Trail Log tabs to export XML/CSV datasets.",
-        key: "Tab / Tab Switcher",
+          "Press the left and right arrows to cycle between conveyor parcels. Toggle between Conveyor Floor, Live SDTM Studio, and Audit Trail Log tabs to export XML/CSV datasets. Tab moves focus between the game's buttons.",
+        key: "← → / Tab Switcher",
       },
     ],
     rules: [
@@ -659,6 +659,108 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
     },
   },
 
+  "study-director": {
+    id: "study-director",
+    title: "Study Director: Everything Is Fine",
+    subtitle: "Clinical Study Management Simulator",
+    genre: "Management Simulation",
+    badge: "Attention Budget",
+    route: "/arcade/study-director",
+    accentColor: "from-amber-500/20 via-amber-500/5 to-transparent",
+    badgeBg: "bg-amber-500/10 text-amber-300 border-amber-500/30",
+    objective:
+      "Take Study 24-081, a randomized PK study for a first-time biotech, from kickoff to closeout: a scientifically valid, compliant study, on time, without wrecking the budget, the sponsor relationship or your team. Six meters compete and you cannot keep them all high. At the end the sponsor, the company, the science and the regulator each give a verdict, and the FDA may come to ask about your decisions.",
+    quickSummary:
+      "Each day you have 5 attention points. Answer messages in the inbox (1 to 5 choose an option), audit a site to see what the dashboard is hiding, then end the day. Documenting a decision costs 1 more attention. Skipped documentation adds documentation debt, which the inspection replays. Your run saves as you play.",
+    controls: [
+      {
+        action: "Choose an option",
+        description:
+          "Answers the open message with the numbered option. Each option shows its attention cost.",
+        key: "1 - 5",
+      },
+      {
+        action: "Document the decision",
+        description:
+          "Toggles documentation for the next choice. It costs 1 extra attention and keeps the decision from becoming an observation at inspection.",
+        key: "D",
+      },
+      {
+        action: "Move through the inbox",
+        description: "Selects the next or previous message in the inbox.",
+        key: "J / K",
+      },
+      {
+        action: "End the day",
+        description:
+          "Unanswered messages whose time has run out apply their fallout, the study advances one day and attention refills to 5, less when a query backlog or documentation debt is taking routine work.",
+        key: "E",
+      },
+      {
+        action: "Skip to the next message",
+        description:
+          "When nothing is waiting, ends days until the next message arrives, so quiet stretches take one keypress.",
+        key: "N",
+      },
+      {
+        action: "Audit a site",
+        description:
+          "Costs 2 attention. Shows the site's true queries, deviations, unsigned source, eligibility concerns and training for 10 days.",
+        key: "Audit button",
+      },
+    ],
+    rules: [
+      {
+        title: "Attention is the resource",
+        detail:
+          "You get 5 attention points a day and unspent points do not carry over. Answering, delegating and auditing all spend them, so some messages will go unanswered.",
+        badge: "Attention",
+      },
+      {
+        title: "Everything is fine, until you look",
+        detail:
+          "Enrollment, budget and timeline on the dashboard are honest. Safety, data and regulatory only show what each site has reported: a coordinator who emails about everything surfaces most problems, one who says nothing surfaces almost none. An audit shows the real numbers.",
+        badge: "Dashboard",
+      },
+      {
+        title: "Decisions echo",
+        detail:
+          "A high-burden protocol overloads sites, which produces deviations and queries, which overload data management, which delays lock and pushes the schedule. A choice on day 4 can be a crisis on day 63, and some choices schedule a follow-up message.",
+        badge: "Causal chain",
+      },
+      {
+        title: "Documentation debt",
+        detail:
+          "Skipping documentation saves attention today and adds debt. Debt lowers Compliance and raises the chance the FDA visits. If it does, it asks about your own decisions: documented ones close, undocumented ones become observations.",
+        badge: "Inspection",
+      },
+      {
+        title: "Four verdicts and a profile",
+        detail:
+          "Locking the database turns open queries into delay. The sponsor rates you in stars, the company reports margin and timeline variance, the science reports evaluable and missing data, and the regulator grades inspection readiness. The game then names which kind of Study Director you were, from what you actually did.",
+        badge: "Closeout",
+      },
+    ],
+    proTips: [
+      "Audit the site you hear least from.",
+      "A message ignored on a critical day costs more than a cheap answer.",
+      "Documenting everything is not free. Document the decisions an inspector would ask about.",
+      "When the veteran says there is a problem, there is a problem.",
+    ],
+    lore: {
+      title: "The person in the middle",
+      story:
+        "A study director sits between the sponsor, the sites, the statisticians, the data managers and the regulators, and is judged on whether the study holds up years later. The game is fictional and simplified: every sponsor, site and person is invented, and nothing in it is regulatory or clinical advice.",
+      realWorldTech: [
+        "Protocol deviation tracking",
+        "Edit checks and data queries",
+        "Database lock",
+        "Trial master file",
+        "FDA inspection readiness",
+      ],
+    },
+  },
+
   "trial-and-error": {
     id: "trial-and-error",
     title: "Trial & Error: Biostat Ops",
@@ -673,6 +775,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
     quickSummary:
       "Move across the hand with ← →, select up to five cards with Space, and press Enter to play the best hand they make (2 CPU). D discards the selection (1 CPU). I opens the focused card's QC Desk (1 CPU): inspect cells with Enter or Space, correct with C, trace a flagged cell to its Listing with T, and close with Esc. R recompiles a stale card (2 CPU), S runs structural QC on a face-down card (1 CPU), and A jumps to a blank shell's analysis sets. Between Blinds, spend the Study Budget in the shop. The run saves as you play, so a reload offers Resume run.",
     controls: [
+      {
+        action: "Replay the guided Blind",
+        description:
+          "Your first visit offers a guided Blind: one hand, with a coach outlining each control in amber as you inspect a Table, correct its finding, and play it with its Listing. Skip it at any step. Replay tutorial on this tab plays it again.",
+        key: "Replay tutorial",
+      },
       {
         action: "Move across the hand",
         description:

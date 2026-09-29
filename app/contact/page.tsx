@@ -137,7 +137,7 @@ export default function ContactPage() {
                       ? "Based in Minnesota"
                       : "Tactical Flame Mode"}
                   </span>
-                  <span className="text-[9px] font-mono text-zinc-500 group-hover:text-amber-400 transition-colors shrink-0">
+                  <span className="text-[9px] font-mono text-muted group-hover:text-amber-400 transition-colors shrink-0">
                     [flip]
                   </span>
                 </div>

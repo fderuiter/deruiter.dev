@@ -25,10 +25,10 @@ export const NeuroMetricsPanel: React.FC<NeuroMetricsPanelProps> = ({
   const isEulerOk = metrics.eulerCharacteristic === scenario.targetEuler;
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+    <div className="grid grid-cols-1 min-[480px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
       {/* 1. Euler Characteristic χ */}
-      <div className="bg-zinc-900/80 border border-zinc-800/80 p-3 rounded-2xl flex flex-col justify-between">
-        <div className="flex items-center justify-between text-xs font-mono text-zinc-400">
+      <div className="bg-zinc-900/80 border border-zinc-800/80 p-3 rounded-2xl flex flex-col justify-between min-w-0 break-words">
+        <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 text-xs font-mono text-zinc-400 min-w-0">
           <span>EULER ESTIMATE (χ)</span>
           <span className="text-[10px] text-zinc-400">
             TARGET: {scenario.targetEuler}
@@ -36,7 +36,7 @@ export const NeuroMetricsPanel: React.FC<NeuroMetricsPanelProps> = ({
         </div>
         <div className="flex items-center gap-2 mt-1">
           <span
-            className={`text-xl font-mono font-bold ${
+            className={`text-xl font-mono font-bold whitespace-nowrap ${
               isEulerOk ? "text-emerald-400" : "text-amber-400"
             }`}
           >
@@ -54,8 +54,8 @@ export const NeuroMetricsPanel: React.FC<NeuroMetricsPanelProps> = ({
       </div>
 
       {/* 2. Defect Count */}
-      <div className="bg-zinc-900/80 border border-zinc-800/80 p-3 rounded-2xl flex flex-col justify-between">
-        <div className="flex items-center justify-between text-xs font-mono text-zinc-400">
+      <div className="bg-zinc-900/80 border border-zinc-800/80 p-3 rounded-2xl flex flex-col justify-between min-w-0 break-words">
+        <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 text-xs font-mono text-zinc-400 min-w-0">
           <span>DEFECT UNITS (EST.)</span>
           <span className="text-[10px] text-zinc-400">
             INITIAL: {scenario.initialDefects}
@@ -92,8 +92,8 @@ export const NeuroMetricsPanel: React.FC<NeuroMetricsPanelProps> = ({
       </div>
 
       {/* 3. Dice Similarity Coefficient */}
-      <div className="bg-zinc-900/80 border border-zinc-800/80 p-3 rounded-2xl flex flex-col justify-between">
-        <div className="flex items-center justify-between text-xs font-mono text-zinc-400">
+      <div className="bg-zinc-900/80 border border-zinc-800/80 p-3 rounded-2xl flex flex-col justify-between min-w-0 break-words">
+        <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 text-xs font-mono text-zinc-400 min-w-0">
           <span>DICE ESTIMATE</span>
           <span className="text-[10px] text-zinc-400">
             GOAL: ≥{(scenario.targetDice * 100).toFixed(0)}%
@@ -116,8 +116,8 @@ export const NeuroMetricsPanel: React.FC<NeuroMetricsPanelProps> = ({
       </div>
 
       {/* 4. Cortical Thickness Estimate */}
-      <div className="bg-zinc-900/80 border border-zinc-800/80 p-3 rounded-2xl flex flex-col justify-between">
-        <div className="flex items-center justify-between text-xs font-mono text-zinc-400">
+      <div className="bg-zinc-900/80 border border-zinc-800/80 p-3 rounded-2xl flex flex-col justify-between min-w-0 break-words">
+        <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 text-xs font-mono text-zinc-400 min-w-0">
           <span>THICKNESS ESTIMATE</span>
           <span className="text-[10px] text-zinc-400">MEAN</span>
         </div>
@@ -133,8 +133,8 @@ export const NeuroMetricsPanel: React.FC<NeuroMetricsPanelProps> = ({
       </div>
 
       {/* 5. Score & Streak */}
-      <div className="bg-zinc-900/80 border border-zinc-800/80 p-3 rounded-2xl flex flex-col justify-between">
-        <div className="flex items-center justify-between text-xs font-mono text-zinc-400">
+      <div className="bg-zinc-900/80 border border-zinc-800/80 p-3 rounded-2xl flex flex-col justify-between min-w-0 break-words">
+        <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 text-xs font-mono text-zinc-400 min-w-0">
           <span>QA SCORE</span>
           <div className="flex items-center gap-1 text-amber-400 font-bold">
             <IconFlame className="w-3.5 h-3.5" />
@@ -160,7 +160,7 @@ export const NeuroMetricsPanel: React.FC<NeuroMetricsPanelProps> = ({
             : "bg-zinc-900/80 border-zinc-800/80 text-zinc-400"
         }`}
       >
-        <div className="flex items-center justify-between text-xs font-mono">
+        <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 text-xs font-mono min-w-0">
           <span>STATUS</span>
           <IconCircleDot
             className={`w-3.5 h-3.5 ${

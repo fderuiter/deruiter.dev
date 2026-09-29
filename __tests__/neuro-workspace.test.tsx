@@ -136,6 +136,30 @@ describe("NeuroRecon Workspace UI Suite", () => {
     expect(container.textContent).toContain("Intensity Defect");
   });
 
+  it("shows provenance and disables defect cases under a real dataset", async () => {
+    await act(async () => {
+      root = createRoot(container);
+      root.render(<NeuroReconClient />);
+    });
+    const prov = container.querySelector('[data-testid="neuro-provenance"]');
+    expect(prov?.textContent).toMatch(/Synthetic phantom volume/);
+
+    const buttons = () => Array.from(container.querySelectorAll("button"));
+    await act(async () => {
+      buttons()
+        .find((b) => b.textContent?.includes("MNI152 (GLB)"))
+        ?.click();
+    });
+    expect(
+      container.querySelector('[data-testid="neuro-provenance"]')?.textContent
+    ).toMatch(/MNI152.*3D reference mesh/);
+    const case1 = buttons().find((b) => b.textContent?.includes("Case 01"));
+    expect(case1?.disabled).toBe(true);
+    expect(
+      buttons().find((b) => b.textContent?.includes("Sandbox"))?.disabled
+    ).toBe(false);
+  });
+
   it("opens and closes the Field Manual modal", async () => {
     await act(async () => {
       root = createRoot(container);
@@ -151,26 +175,30 @@ describe("NeuroRecon Workspace UI Suite", () => {
       manualButton?.click();
     });
 
-    expect(container.textContent).toContain(
+    expect(document.body.textContent).toContain(
       "NeuroRecon Field Manual · FreeSurfer 7.x"
     );
-    expect(container.textContent).toContain(
+    expect(document.body.textContent).toContain(
       "Topological Homeomorphism & Euler Characteristic"
     );
 
     // Close button
-    const dismissButton = Array.from(container.querySelectorAll("button")).find(
-      (btn) => btn.textContent?.includes("DISMISS FIELD MANUAL")
-    );
+    const dismissButton = Array.from(
+      document.body.querySelectorAll("button")
+    ).find((btn) => btn.textContent?.includes("DISMISS FIELD MANUAL"));
     expect(dismissButton).toBeDefined();
 
     await act(async () => {
       dismissButton?.click();
     });
 
-    expect(container.textContent).not.toContain(
-      "NeuroRecon Field Manual · FreeSurfer 7.x"
-    );
+    await act(async () => {
+      for (let i = 0; i < 30; i++) {
+        if (!document.body.querySelector('[role="dialog"]')) break;
+        await new Promise((r) => setTimeout(r, 50));
+      }
+    });
+    expect(document.body.querySelector('[role="dialog"]')).toBeNull();
   });
 
   it("executes CLI commands in the terminal and renders log outputs", async () => {

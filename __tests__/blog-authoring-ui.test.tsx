@@ -106,6 +106,108 @@ describe("BlogAuthoringForm UI", () => {
     expect(screen.getByText("Preview Heading")).toBeDefined();
     expect(screen.getByText("Preview paragraph copy.")).toBeDefined();
   });
+
+  it("surfaces the API error envelope message when creating a draft fails", async () => {
+    vi.mocked(global.fetch).mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          error: "A blog post with this slug already exists",
+          details: [{ path: "slug", message: "duplicate" }],
+        }),
+        { status: 409 }
+      )
+    );
+    render(<BlogAuthoringForm isNew={true} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Save Draft/i }));
+
+    expect(
+      await screen.findByText("A blog post with this slug already exists")
+    ).toBeDefined();
+    expect(global.fetch).toHaveBeenCalledWith(
+      "/api/admin/blog",
+      expect.objectContaining({ method: "POST" })
+    );
+  });
+
+  it("falls back to its own copy when the server returns a non-JSON error", async () => {
+    vi.mocked(global.fetch).mockResolvedValueOnce(
+      new Response("<html>502</html>", { status: 502 })
+    );
+    render(
+      <BlogAuthoringForm
+        initialData={{
+          id: "post-1",
+          title: "T",
+          slug: "t",
+          dek: "d",
+          body: "b",
+          pillar: "field-notes",
+          tags: "",
+        }}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /Publish Post/i }));
+
+    expect(await screen.findByText("Failed to update blog post")).toBeDefined();
+    expect(global.fetch).toHaveBeenCalledWith(
+      "/api/admin/blog/post-1",
+      expect.objectContaining({ method: "PATCH" })
+    );
+  });
+
+  it("reports a failed publish step after the draft was created", async () => {
+    vi.mocked(global.fetch)
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ data: { id: "new-1" } }), { status: 201 })
+      )
+      .mockRejectedValueOnce(new TypeError("Failed to fetch"));
+    render(<BlogAuthoringForm isNew={true} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Publish Post/i }));
+
+    expect(
+      await screen.findByText("Created draft, but failed to publish")
+    ).toBeDefined();
+    expect(global.fetch).toHaveBeenLastCalledWith(
+      "/api/admin/blog/new-1",
+      expect.objectContaining({
+        method: "PATCH",
+        body: JSON.stringify({ published: true }),
+      })
+    );
+  });
+
+  it("surfaces the server message when deleting fails", async () => {
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    vi.mocked(global.fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: "Blog post not found" }), {
+        status: 404,
+      })
+    );
+    render(
+      <BlogAuthoringForm
+        initialData={{
+          id: "post-2",
+          title: "T",
+          slug: "t",
+          dek: "d",
+          body: "b",
+          pillar: "field-notes",
+          tags: "",
+        }}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /Delete/i }));
+
+    expect(await screen.findByText("Blog post not found")).toBeDefined();
+    expect(global.fetch).toHaveBeenCalledWith(
+      "/api/admin/blog/post-2",
+      expect.objectContaining({ method: "DELETE" })
+    );
+  });
 });
 
 describe("Draft vs Published Isolation State Machine", () => {

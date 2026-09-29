@@ -33,6 +33,7 @@
 - [hooks/useWebGLContextLoss](hooks/useWebGLContextLoss/README.md)
 - [lib/a11y/announcer](lib/a11y/announcer/README.md)
 - [lib/accessibility-utils](lib/accessibility-utils/README.md)
+- [lib/api-client](lib/api-client/README.md)
 - [lib/arcade](lib/arcade/README.md)
 - [lib/arcade-data](lib/arcade-data/README.md)
 - [lib/arcade/core](lib/arcade/core/README.md)

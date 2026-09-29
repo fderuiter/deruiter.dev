@@ -2,7 +2,13 @@
 
 import React, { useState, useRef, useCallback } from "react";
 import { prepare, layout } from "@chenglou/pretext";
-import { IconBolt, IconCpu, IconRefresh, IconDeviceFloppy, IconLayersLinked } from "@tabler/icons-react";
+import {
+  IconBolt,
+  IconCpu,
+  IconRefresh,
+  IconDeviceFloppy,
+  IconLayersLinked,
+} from "@tabler/icons-react";
 import { useAudio } from "@/components/providers/AudioProvider";
 
 const DATASETS = [
@@ -126,7 +132,8 @@ export const PretextBenchmarkLab: React.FC = () => {
               </span>
             </h3>
             <p className="text-xs text-zinc-400 font-sans mt-0.5">
-              Compare userland multiline text calculations with Canvas caching against synchronous browser DOM reflow penalties.
+              Compare userland multiline text calculations with Canvas caching
+              against synchronous browser DOM reflow penalties.
             </p>
           </div>
         </div>
@@ -177,7 +184,10 @@ export const PretextBenchmarkLab: React.FC = () => {
         </div>
 
         <div className="space-y-2">
-          <label htmlFor="benchmark-iterations" className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 block font-semibold">
+          <label
+            htmlFor="benchmark-iterations"
+            className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 block font-semibold"
+          >
             Iterations ({iterations}x passes)
           </label>
           <div className="flex items-center gap-2 bg-zinc-950/60 border border-zinc-800 rounded-xl p-2">
@@ -211,16 +221,19 @@ export const PretextBenchmarkLab: React.FC = () => {
               <IconLayersLinked className="w-3.5 h-3.5 text-rose-400" />
               Standard DOM Reflow
             </span>
-            <span className="text-[10px] text-rose-400/80 uppercase">Layout Thrash</span>
+            <span className="text-[10px] text-rose-400/80 uppercase">
+              Layout Thrash
+            </span>
           </div>
           <div className="flex items-baseline gap-1.5">
             <span className="text-2xl font-mono font-extrabold text-white">
               {domTimeMs !== null ? `${domTimeMs}` : "—"}
             </span>
-            <span className="text-xs font-mono text-zinc-500">ms</span>
+            <span className="text-xs font-mono text-muted">ms</span>
           </div>
-          <p className="text-[11px] text-zinc-500 mt-2">
-            Forces synchronous layout calculation (`getBoundingClientRect` reflow).
+          <p className="text-[11px] text-muted mt-2">
+            Forces synchronous layout calculation (`getBoundingClientRect`
+            reflow).
           </p>
         </div>
 
@@ -239,7 +252,7 @@ export const PretextBenchmarkLab: React.FC = () => {
             <span className="text-2xl font-mono font-extrabold text-brand-cyan">
               {pretextTimeMs !== null ? `${pretextTimeMs}` : "—"}
             </span>
-            <span className="text-xs font-mono text-zinc-500">ms</span>
+            <span className="text-xs font-mono text-muted">ms</span>
           </div>
           <p className="text-[11px] text-zinc-400 mt-2">
             Userland canvas arithmetic over cached word boundaries.
@@ -250,13 +263,19 @@ export const PretextBenchmarkLab: React.FC = () => {
         <div className="p-4 rounded-xl bg-gradient-to-br from-brand-cyan/10 via-zinc-950/80 to-emerald-500/10 border border-brand-cyan/30 flex flex-col justify-between">
           <div className="flex items-center justify-between text-xs font-mono text-zinc-300 mb-2">
             <span>Speedup Multiplier</span>
-            <span className="text-[10px] text-emerald-400 font-mono">60 FPS Target</span>
+            <span className="text-[10px] text-emerald-400 font-mono">
+              60 FPS Target
+            </span>
           </div>
           <div className="flex items-baseline gap-1.5">
             <span className="text-3xl font-mono font-extrabold text-emerald-400">
               {speedup ? `${speedup}x` : benchmarkRan ? "Instant" : "—"}
             </span>
-            {speedup && <span className="text-xs font-mono text-emerald-400/80">faster</span>}
+            {speedup && (
+              <span className="text-xs font-mono text-emerald-400/80">
+                faster
+              </span>
+            )}
           </div>
           <p className="text-[11px] text-zinc-400 mt-2">
             Eliminates frame drops in masonry bento dynamic resizing.

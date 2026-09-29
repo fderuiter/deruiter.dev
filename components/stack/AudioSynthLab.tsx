@@ -12,7 +12,10 @@ import {
   IconKeyboard,
   IconArrowsHorizontal,
 } from "@tabler/icons-react";
-import { useAudio, type AudioProfile } from "@/components/providers/AudioProvider";
+import {
+  useAudio,
+  type AudioProfile,
+} from "@/components/providers/AudioProvider";
 
 export const AudioSynthLab: React.FC = () => {
   const {
@@ -61,7 +64,8 @@ export const AudioSynthLab: React.FC = () => {
               </span>
             </h3>
             <p className="text-xs text-zinc-400 font-sans mt-0.5">
-              100% procedural sound synthesis using the native Web Audio API (`AudioContext`, `StereoPannerNode`, `GainNode`).
+              100% procedural sound synthesis using the native Web Audio API
+              (`AudioContext`, `StereoPannerNode`, `GainNode`).
             </p>
           </div>
         </div>
@@ -125,17 +129,24 @@ export const AudioSynthLab: React.FC = () => {
         </div>
 
         <div className="space-y-2">
-          <label htmlFor="soundboard-pan" className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 block font-semibold flex items-center justify-between">
+          <label
+            htmlFor="soundboard-pan"
+            className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 block font-semibold flex items-center justify-between"
+          >
             <span className="flex items-center gap-1.5">
               <IconArrowsHorizontal className="w-3.5 h-3.5 text-purple-400" />
               Spatial Stereo Pan
             </span>
-            <span className="text-[10px] text-zinc-500">
-              {pan < -0.1 ? `Left ${Math.round(Math.abs(pan) * 100)}%` : pan > 0.1 ? `Right ${Math.round(pan * 100)}%` : "Center"}
+            <span className="text-[10px] text-muted">
+              {pan < -0.1
+                ? `Left ${Math.round(Math.abs(pan) * 100)}%`
+                : pan > 0.1
+                  ? `Right ${Math.round(pan * 100)}%`
+                  : "Center"}
             </span>
           </label>
           <div className="flex items-center gap-2 bg-zinc-950/60 border border-zinc-800 rounded-xl p-2">
-            <span className="text-[10px] font-mono text-zinc-500">L</span>
+            <span className="text-[10px] font-mono text-muted">L</span>
             <input
               id="soundboard-pan"
               type="range"
@@ -147,7 +158,7 @@ export const AudioSynthLab: React.FC = () => {
               aria-label="Stereo panning slider"
               className="w-full accent-purple-400 cursor-pointer"
             />
-            <span className="text-[10px] font-mono text-zinc-500">R</span>
+            <span className="text-[10px] font-mono text-muted">R</span>
           </div>
         </div>
       </div>
@@ -165,8 +176,12 @@ export const AudioSynthLab: React.FC = () => {
         >
           <IconSparkles className="w-4 h-4 text-brand-cyan" />
           <div>
-            <div className="text-xs font-mono font-bold text-white">Tactile Pop</div>
-            <div className="text-[10px] text-zinc-500 font-mono">UI Hover / Click</div>
+            <div className="text-xs font-mono font-bold text-white">
+              Tactile Pop
+            </div>
+            <div className="text-[10px] text-muted font-mono">
+              UI Hover / Click
+            </div>
           </div>
         </button>
 
@@ -181,8 +196,12 @@ export const AudioSynthLab: React.FC = () => {
         >
           <IconCrosshair className="w-4 h-4 text-purple-400" />
           <div>
-            <div className="text-xs font-mono font-bold text-white">Laser Blip</div>
-            <div className="text-[10px] text-zinc-500 font-mono">880Hz Chip Pulse</div>
+            <div className="text-xs font-mono font-bold text-white">
+              Laser Blip
+            </div>
+            <div className="text-[10px] text-muted font-mono">
+              880Hz Chip Pulse
+            </div>
           </div>
         </button>
 
@@ -197,8 +216,10 @@ export const AudioSynthLab: React.FC = () => {
         >
           <IconCheck className="w-4 h-4 text-emerald-400" />
           <div>
-            <div className="text-xs font-mono font-bold text-white">Success Chord</div>
-            <div className="text-[10px] text-zinc-500 font-mono">Major Triad</div>
+            <div className="text-xs font-mono font-bold text-white">
+              Success Chord
+            </div>
+            <div className="text-[10px] text-muted font-mono">Major Triad</div>
           </div>
         </button>
 
@@ -213,14 +234,22 @@ export const AudioSynthLab: React.FC = () => {
         >
           <IconAlertTriangle className="w-4 h-4 text-rose-400" />
           <div>
-            <div className="text-xs font-mono font-bold text-white">Error Buzz</div>
-            <div className="text-[10px] text-zinc-500 font-mono">Diminished 5th</div>
+            <div className="text-xs font-mono font-bold text-white">
+              Error Buzz
+            </div>
+            <div className="text-[10px] text-muted font-mono">
+              Diminished 5th
+            </div>
           </div>
         </button>
 
         <button
           type="button"
-          onClick={() => triggerSound("key", () => playKeystroke(65 + Math.floor(Math.random() * 26)))}
+          onClick={() =>
+            triggerSound("key", () =>
+              playKeystroke(65 + Math.floor(Math.random() * 26))
+            )
+          }
           className={`p-3 rounded-xl border col-span-2 sm:col-span-1 flex flex-col items-center text-center gap-2 transition-all cursor-pointer ${
             activeSoundName === "key"
               ? "bg-purple-500/20 border-purple-400 scale-95"
@@ -229,8 +258,12 @@ export const AudioSynthLab: React.FC = () => {
         >
           <IconKeyboard className="w-4 h-4 text-amber-400" />
           <div>
-            <div className="text-xs font-mono font-bold text-white">Keystroke Clack</div>
-            <div className="text-[10px] text-zinc-500 font-mono">Dynamic ASCII Pitch</div>
+            <div className="text-xs font-mono font-bold text-white">
+              Keystroke Clack
+            </div>
+            <div className="text-[10px] text-muted font-mono">
+              Dynamic ASCII Pitch
+            </div>
           </div>
         </button>
       </div>

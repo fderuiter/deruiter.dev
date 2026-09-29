@@ -20,7 +20,12 @@ interface StackLayer {
   accentColor: string;
   borderColor: string;
   glowColor: string;
-  technologies: { name: string; version?: string; role: string; link?: string }[];
+  technologies: {
+    name: string;
+    version?: string;
+    role: string;
+    link?: string;
+  }[];
   keyHighlights: string[];
   architecturalRationale: string;
 }
@@ -34,10 +39,29 @@ const STACK_LAYERS: StackLayer[] = [
     borderColor: "hover:border-brand-cyan/40",
     glowColor: "bg-brand-cyan/5",
     technologies: [
-      { name: "Next.js", version: "v16.2.6", role: "App Router & React Server Components", link: "https://nextjs.org" },
-      { name: "React", version: "v19.2.4", role: "Modern UI rendering engine & Actions", link: "https://react.dev" },
-      { name: "Turbopack", version: "Stable", role: "Blazing fast development & production bundler" },
-      { name: "TypeScript", version: "v5.x", role: "Strict compile-time type verification", link: "https://www.typescriptlang.org" },
+      {
+        name: "Next.js",
+        version: "v16.2.6",
+        role: "App Router & React Server Components",
+        link: "https://nextjs.org",
+      },
+      {
+        name: "React",
+        version: "v19.2.4",
+        role: "Modern UI rendering engine & Actions",
+        link: "https://react.dev",
+      },
+      {
+        name: "Turbopack",
+        version: "Stable",
+        role: "Blazing fast development & production bundler",
+      },
+      {
+        name: "TypeScript",
+        version: "v5.x",
+        role: "Strict compile-time type verification",
+        link: "https://www.typescriptlang.org",
+      },
     ],
     keyHighlights: [
       "Zero-waterfall server data fetching with React Server Components",
@@ -55,10 +79,28 @@ const STACK_LAYERS: StackLayer[] = [
     borderColor: "hover:border-purple-400/40",
     glowColor: "bg-purple-500/5",
     technologies: [
-      { name: "Tailwind CSS", version: "v4.x", role: "CSS-first compiler & @theme token mappings", link: "https://tailwindcss.com" },
-      { name: "Framer Motion", version: "v12.x", role: "GPU-accelerated physics & spring animations", link: "https://www.framer.com/motion" },
-      { name: "Tabler Icons", version: "v3.x", role: "Pixel-crisp responsive SVG icons" },
-      { name: "Aceternity UI", version: "Pattern", role: "Copy-and-paste micro-interaction primitives" },
+      {
+        name: "Tailwind CSS",
+        version: "v4.x",
+        role: "CSS-first compiler & @theme token mappings",
+        link: "https://tailwindcss.com",
+      },
+      {
+        name: "Framer Motion",
+        version: "v12.x",
+        role: "GPU-accelerated physics & spring animations",
+        link: "https://www.framer.com/motion",
+      },
+      {
+        name: "Tabler Icons",
+        version: "v3.x",
+        role: "Pixel-crisp responsive SVG icons",
+      },
+      {
+        name: "Aceternity UI",
+        version: "Pattern",
+        role: "Copy-and-paste micro-interaction primitives",
+      },
     ],
     keyHighlights: [
       "Zero-config JS file: 100% CSS-native @theme inline token declarations",
@@ -76,9 +118,22 @@ const STACK_LAYERS: StackLayer[] = [
     borderColor: "hover:border-emerald-400/40",
     glowColor: "bg-emerald-500/5",
     technologies: [
-      { name: "@chenglou/pretext", version: "v0.0.5", role: "Userland multiline canvas text measurement", link: "https://github.com/chenglou/pretext" },
-      { name: "Greedy LPT Scheduler", version: "Custom", role: "Zero-whitespace masonry bento grid packing" },
-      { name: "ResizeObserver", version: "Native", role: "Asynchronous element boundary surveillance" },
+      {
+        name: "@chenglou/pretext",
+        version: "v0.0.5",
+        role: "Userland multiline canvas text measurement",
+        link: "https://github.com/chenglou/pretext",
+      },
+      {
+        name: "Greedy LPT Scheduler",
+        version: "Custom",
+        role: "Zero-whitespace masonry bento grid packing",
+      },
+      {
+        name: "ResizeObserver",
+        version: "Native",
+        role: "Asynchronous element boundary surveillance",
+      },
     ],
     keyHighlights: [
       "Eliminates standard getBoundingClientRect layout thrashing (30ms -> <1ms)",
@@ -96,10 +151,29 @@ const STACK_LAYERS: StackLayer[] = [
     borderColor: "hover:border-amber-400/40",
     glowColor: "bg-amber-500/5",
     technologies: [
-      { name: "Prisma ORM", version: "v7.7.0", role: "Type-safe database client and schema migrations", link: "https://www.prisma.io" },
-      { name: "Neon PostgreSQL", version: "Serverless", role: "Distributed Postgres over WebSocket pooler", link: "https://neon.tech" },
-      { name: "Upstash Redis", version: "v1.38.0", role: "Low-latency sliding window rate limiting", link: "https://upstash.com" },
-      { name: "Vercel KV & Analytics", version: "v3.0.0", role: "Edge telemetry logging and performance tracking" },
+      {
+        name: "Prisma ORM",
+        version: "v7.7.0",
+        role: "Type-safe database client and schema migrations",
+        link: "https://www.prisma.io",
+      },
+      {
+        name: "Neon PostgreSQL",
+        version: "Serverless",
+        role: "Distributed Postgres over WebSocket pooler",
+        link: "https://neon.tech",
+      },
+      {
+        name: "Upstash Redis",
+        version: "v1.38.0",
+        role: "Low-latency sliding window rate limiting",
+        link: "https://upstash.com",
+      },
+      {
+        name: "Vercel KV & Analytics",
+        version: "v3.0.0",
+        role: "Edge telemetry logging and performance tracking",
+      },
     ],
     keyHighlights: [
       "Zero cold-start connection pooling with Neon Serverless adapter",
@@ -117,10 +191,27 @@ const STACK_LAYERS: StackLayer[] = [
     borderColor: "hover:border-rose-400/40",
     glowColor: "bg-rose-500/5",
     technologies: [
-      { name: "Web Audio API", version: "Native", role: "Procedural sound synthesis (zero audio mp3/wav files)" },
-      { name: "Three.js", version: "v0.185.1", role: "3D cortical neuroimaging surface renderer", link: "https://threejs.org" },
-      { name: "HTML5 2D Canvas", version: "Native", role: "High-performance arcade physics & raycasting" },
-      { name: "Custom GLSL Shaders", version: "Custom", role: "Procedural CRT scanlines & phosphor bloom" },
+      {
+        name: "Web Audio API",
+        version: "Native",
+        role: "Procedural sound synthesis (zero audio mp3/wav files)",
+      },
+      {
+        name: "Three.js",
+        version: "v0.185.1",
+        role: "3D cortical neuroimaging surface renderer",
+        link: "https://threejs.org",
+      },
+      {
+        name: "HTML5 2D Canvas",
+        version: "Native",
+        role: "High-performance arcade physics & raycasting",
+      },
+      {
+        name: "Custom GLSL Shaders",
+        version: "Custom",
+        role: "Procedural CRT scanlines & phosphor bloom",
+      },
     ],
     keyHighlights: [
       "100% procedural sound design with spatial stereo panning and chip timbres",
@@ -138,10 +229,28 @@ const STACK_LAYERS: StackLayer[] = [
     borderColor: "hover:border-indigo-400/40",
     glowColor: "bg-indigo-500/5",
     technologies: [
-      { name: "Vitest", version: "v4.x", role: "Unit, integration, and defect remediation test runner", link: "https://vitest.dev" },
-      { name: "Playwright & @axe-core", version: "v1.60.0", role: "Synthetic browser probes & WCAG 2.1 AA a11y gates", link: "https://playwright.dev" },
-      { name: "fast-check", version: "v4.9.0", role: "Property-based AST fuzzing & invariant validation" },
-      { name: "TypeDoc & OpenAPI", version: "Automated", role: "Zero-drift automated specification generator" },
+      {
+        name: "Vitest",
+        version: "v4.x",
+        role: "Unit, integration, and defect remediation test runner",
+        link: "https://vitest.dev",
+      },
+      {
+        name: "Playwright & @axe-core",
+        version: "v1.60.0",
+        role: "Synthetic browser probes & WCAG 2.1 AA a11y gates",
+        link: "https://playwright.dev",
+      },
+      {
+        name: "fast-check",
+        version: "v4.9.0",
+        role: "Property-based AST fuzzing & invariant validation",
+      },
+      {
+        name: "TypeDoc & OpenAPI",
+        version: "Automated",
+        role: "Zero-drift automated specification generator",
+      },
     ],
     keyHighlights: [
       "12 strict architectural invariants enforced across pre-commit & CI gates",
@@ -165,7 +274,8 @@ export const StackLayerCards: React.FC = () => {
             <IconSparkles className="w-4 h-4 text-brand-cyan" />
           </h2>
           <p className="text-xs text-zinc-400 font-sans mt-0.5">
-            Detailed breakdown of frontend frameworks, layout physics, databases, audio synthesizers, and verification suites.
+            Detailed breakdown of frontend frameworks, layout physics,
+            databases, audio synthesizers, and verification suites.
           </p>
         </div>
       </div>
@@ -178,7 +288,9 @@ export const StackLayerCards: React.FC = () => {
             className={`p-5 rounded-2xl bg-zinc-900/40 border border-zinc-800/80 ${layer.borderColor} transition-all duration-200 flex flex-col justify-between group backdrop-blur-sm relative overflow-hidden`}
           >
             {/* Ambient Corner Glow */}
-            <div className={`absolute -top-10 -right-10 w-28 h-28 rounded-full ${layer.glowColor} blur-2xl pointer-events-none group-hover:scale-150 transition-transform duration-500`} />
+            <div
+              className={`absolute -top-10 -right-10 w-28 h-28 rounded-full ${layer.glowColor} blur-2xl pointer-events-none group-hover:scale-150 transition-transform duration-500`}
+            />
 
             <div>
               {/* Category Header */}
@@ -190,7 +302,9 @@ export const StackLayerCards: React.FC = () => {
                   <h3 className="text-sm font-mono font-bold text-white group-hover:text-zinc-100 transition-colors">
                     {layer.category}
                   </h3>
-                  <span className={`text-[10px] font-mono ${layer.accentColor} font-semibold`}>
+                  <span
+                    className={`text-[10px] font-mono ${layer.accentColor} font-semibold`}
+                  >
                     Core System Component
                   </span>
                 </div>
@@ -209,7 +323,7 @@ export const StackLayerCards: React.FC = () => {
                           {tech.name}
                         </span>
                         {tech.version && (
-                          <span className="text-[10px] font-mono text-zinc-500 bg-zinc-900 px-1.5 py-0.2 rounded border border-zinc-800">
+                          <span className="text-[10px] font-mono text-muted bg-zinc-900 px-1.5 py-0.2 rounded border border-zinc-800">
                             {tech.version}
                           </span>
                         )}
@@ -224,7 +338,7 @@ export const StackLayerCards: React.FC = () => {
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label={`Visit ${tech.name} official documentation`}
-                        className="text-zinc-500 hover:text-white transition-colors p-1"
+                        className="text-muted hover:text-white transition-colors p-1"
                       >
                         <IconExternalLink className="w-3.5 h-3.5" />
                       </a>
@@ -235,7 +349,7 @@ export const StackLayerCards: React.FC = () => {
 
               {/* Architectural Rationale */}
               <div className="text-xs text-zinc-400 font-sans leading-relaxed mb-4 bg-zinc-950/40 p-3 rounded-xl border border-zinc-900">
-                <span className="font-mono text-[10px] uppercase font-bold text-zinc-500 block mb-1">
+                <span className="font-mono text-[10px] uppercase font-bold text-muted block mb-1">
                   Architectural Rationale
                 </span>
                 {layer.architecturalRationale}
@@ -244,7 +358,7 @@ export const StackLayerCards: React.FC = () => {
 
             {/* Highlights */}
             <div className="pt-3 border-t border-zinc-900/90">
-              <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 font-bold block mb-1.5">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-muted font-bold block mb-1.5">
                 Key Invariants
               </span>
               <ul className="space-y-1">
@@ -253,7 +367,9 @@ export const StackLayerCards: React.FC = () => {
                     key={idx}
                     className="text-[11px] font-sans text-zinc-300 flex items-start gap-1.5"
                   >
-                    <span className={`w-1 h-1 rounded-full ${layer.accentColor} mt-1.5 flex-shrink-0`} />
+                    <span
+                      className={`w-1 h-1 rounded-full ${layer.accentColor} mt-1.5 flex-shrink-0`}
+                    />
                     <span>{highlight}</span>
                   </li>
                 ))}

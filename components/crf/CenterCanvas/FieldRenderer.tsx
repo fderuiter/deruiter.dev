@@ -492,7 +492,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
               className="w-full px-2.5 py-1.5 text-xs bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-400"
             />
             {field.unit && (
-              <span className="absolute right-2.5 top-1.5 text-[11px] font-mono text-zinc-500">
+              <span className="absolute right-2.5 top-1.5 text-[11px] font-mono text-muted">
                 {field.unit}
               </span>
             )}
@@ -503,19 +503,19 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
           <div className="space-y-1.5">
             <div className="grid grid-cols-3 gap-1.5 font-mono text-[11px]">
               <div className="p-1.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-400 text-center">
-                <span className="text-[9px] text-zinc-500 block">Day</span>
+                <span className="text-[9px] text-muted block">Day</span>
                 <span>{field.allowPartial ? "DD / UNK" : "DD (01-31)"}</span>
               </div>
               <div className="p-1.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-400 text-center">
-                <span className="text-[9px] text-zinc-500 block">Month</span>
+                <span className="text-[9px] text-muted block">Month</span>
                 <span>{field.allowPartial ? "MM / UNK" : "MMM (01-12)"}</span>
               </div>
               <div className="p-1.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-400 text-center">
-                <span className="text-[9px] text-zinc-500 block">Year</span>
+                <span className="text-[9px] text-muted block">Year</span>
                 <span>YYYY</span>
               </div>
             </div>
-            <div className="flex items-center justify-between text-[10px] font-mono text-zinc-500">
+            <div className="flex items-center justify-between text-[10px] font-mono text-muted">
               <span>
                 {field.allowPartial
                   ? "ISO: YYYY-MM-DD / UNK"
@@ -626,7 +626,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
           </div>
         )}
         {field.allowNullFlavor && (
-          <div className="flex items-center justify-between pt-1 text-[10px] font-mono text-zinc-500 border-t border-zinc-850/60 mt-1">
+          <div className="flex items-center justify-between pt-1 text-[10px] font-mono text-muted border-t border-zinc-850/60 mt-1">
             <span>Null Flavors:</span>
             <div className="flex gap-1">
               {(["ND", "NA", "UNK"] as const).map((nf) => (
@@ -644,11 +644,9 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
 
       {/* CDASH SDTM Annotation Tag */}
       {field.cdashMetadata && (
-        <div className="mt-2.5 pt-2 border-t border-zinc-850 flex items-center justify-between text-[10px] font-mono text-zinc-500">
+        <div className="mt-2.5 pt-2 border-t border-zinc-850 flex items-center justify-between text-[10px] font-mono text-muted">
           <span>SDTM: {field.cdashMetadata.acrfAnnotation}</span>
-          <span className="text-zinc-600">
-            Core: {field.cdashMetadata.core}
-          </span>
+          <span className="text-muted">Core: {field.cdashMetadata.core}</span>
         </div>
       )}
     </div>

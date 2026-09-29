@@ -1010,6 +1010,69 @@ export function ProofWorkspaceClient() {
     announceToScreenReader("Workspace state reset to default layout.");
   };
 
+  const connectNodes = (sourceId: string, nodeId: string) => {
+    const validation = canConnect(sourceId, nodeId, edges, activeTheorem);
+    if (!validation.allowed) {
+      const fallacy = getFallacyDiagnosis(
+        sourceId,
+        nodeId,
+        edges,
+        activeTheorem
+      );
+      setCurrentFallacy(fallacy);
+      setActiveTab("fallacy");
+
+      showToast(`Invalid Connection: ${fallacy.fallacyName}`, "error");
+      announceToScreenReader(
+        `Connection rejected: ${fallacy.fallacyName}. ${validation.reason}`
+      );
+      setConsoleLogs((prev) => [
+        ...prev,
+        {
+          id: `err-${Date.now()}`,
+          type: "error",
+          text: `[FALLACY DETECTED] ${fallacy.fallacyName}: ${validation.reason}\nFormula: ${fallacy.formalFormula}\nAnalogy: ${fallacy.softwareAnalogy}`,
+        },
+      ]);
+      setSelectedNodeIds([]);
+      return;
+    }
+
+    const newEdge: Edge = { source: sourceId, target: nodeId };
+    setEdges((prev) => [...prev, newEdge]);
+    setSelectedNodeIds([]);
+    setCurrentFallacy(null);
+
+    try {
+      playSuccess();
+    } catch {}
+
+    showToast(
+      `✔ Connected Node ${newEdge.source} → Node ${newEdge.target}!`,
+      "success"
+    );
+    announceToScreenReader(
+      `Successfully connected Node ${newEdge.source} to Node ${newEdge.target}.`
+    );
+
+    const sNode = activeTheorem.nodes.find((n) => n.id === newEdge.source);
+    const tNode = activeTheorem.nodes.find((n) => n.id === newEdge.target);
+
+    setConsoleLogs((prev) => [
+      ...prev,
+      {
+        id: `cmd-${Date.now()}`,
+        type: "command",
+        text: `connect ${newEdge.source} ${newEdge.target}`,
+      },
+      {
+        id: `out-${Date.now()}`,
+        type: "success",
+        text: `✔ Established edge: Node ${newEdge.source} (${sNode?.label}) → Node ${newEdge.target} (${tNode?.label})`,
+      },
+    ]);
+  };
+
   const handleNodeClick = (nodeId: string, addToSelection = false) => {
     try {
       playHover();
@@ -1048,67 +1111,7 @@ export function ProofWorkspaceClient() {
     }
 
     if (selectedNodeIds.length === 1) {
-      const sourceId = selectedNodeIds[0];
-      const validation = canConnect(sourceId, nodeId, edges, activeTheorem);
-      if (!validation.allowed) {
-        const fallacy = getFallacyDiagnosis(
-          sourceId,
-          nodeId,
-          edges,
-          activeTheorem
-        );
-        setCurrentFallacy(fallacy);
-        setActiveTab("fallacy");
-
-        showToast(`Invalid Connection: ${fallacy.fallacyName}`, "error");
-        announceToScreenReader(
-          `Connection rejected: ${fallacy.fallacyName}. ${validation.reason}`
-        );
-        setConsoleLogs((prev) => [
-          ...prev,
-          {
-            id: `err-${Date.now()}`,
-            type: "error",
-            text: `[FALLACY DETECTED] ${fallacy.fallacyName}: ${validation.reason}\nFormula: ${fallacy.formalFormula}\nAnalogy: ${fallacy.softwareAnalogy}`,
-          },
-        ]);
-        setSelectedNodeIds([]);
-        return;
-      }
-
-      const newEdge: Edge = { source: sourceId, target: nodeId };
-      setEdges((prev) => [...prev, newEdge]);
-      setSelectedNodeIds([]);
-      setCurrentFallacy(null);
-
-      try {
-        playSuccess();
-      } catch {}
-
-      showToast(
-        `✔ Connected Node ${newEdge.source} → Node ${newEdge.target}!`,
-        "success"
-      );
-      announceToScreenReader(
-        `Successfully connected Node ${newEdge.source} to Node ${newEdge.target}.`
-      );
-
-      const sNode = activeTheorem.nodes.find((n) => n.id === newEdge.source);
-      const tNode = activeTheorem.nodes.find((n) => n.id === newEdge.target);
-
-      setConsoleLogs((prev) => [
-        ...prev,
-        {
-          id: `cmd-${Date.now()}`,
-          type: "command",
-          text: `connect ${newEdge.source} ${newEdge.target}`,
-        },
-        {
-          id: `out-${Date.now()}`,
-          type: "success",
-          text: `✔ Established edge: Node ${newEdge.source} (${sNode?.label}) → Node ${newEdge.target} (${tNode?.label})`,
-        },
-      ]);
+      connectNodes(selectedNodeIds[0], nodeId);
       return;
     }
 
@@ -1439,8 +1442,7 @@ export function ProofWorkspaceClient() {
         ]);
         return;
       }
-      handleNodeClick(s);
-      handleNodeClick(t);
+      connectNodes(s, t);
       return;
     }
 

@@ -89,10 +89,9 @@ runs, repeated pushes while chasing a flaky test):
 - `cross-device-matrix` (the full four-device matrix against the full suite)
   is `workflow_dispatch`-only, for a release or a device-sensitive change
   that specifically warrants it.
-- The current one-time Jules consolidation PR targets `main` and uses the same
-  required pre-merge gates as other changes. After it lands, new feature work
-  continues to target `main`; the temporary `dev` branch is not a CI target
-  (see [ADR 0050](../../adr/0050-jules-consolidation-release.md)).
+- The one-time Jules consolidation PR (#1029) used the same required pre-merge
+  gates as other changes and has landed. All work targets `main`; the retired
+  `dev` branch is not a CI target (see [ADR 0050](../../adr/0050-jules-consolidation-release.md)).
 
 ## CI-02: targeted device coverage gates pull requests to `main`
 
@@ -126,7 +125,7 @@ required status check: **`Merge Gate (Required Checks Summary)`** (the
 Settings → Branches → branch protection → "Require status checks to pass
 before merging". The current rules remain unverified because the connected
 GitHub API integration cannot read branch-protection settings; #732 tracks
-dashboard verification. The `dev` → `main` consolidation PR is gated on the
+dashboard verification. The retired `dev` → `main` consolidation PR (#1029) was gated on the
 same `main` rule.
 
 This replaces the two check names #732 originally listed

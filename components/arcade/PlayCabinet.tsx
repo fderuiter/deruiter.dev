@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   IconPlayerPlay,
   IconPower,
@@ -10,6 +10,7 @@ import {
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useFullscreen } from "@/hooks/useFullscreen";
 import { CabinetFullscreenContext } from "./CabinetFullscreen";
+import { CabinetSetupContext } from "./CabinetSetupContext";
 import { FullscreenButton } from "@/components/arcade/FullscreenButton";
 import {
   PreGameSetupWizard,
@@ -43,6 +44,14 @@ function getKeyboardBoundary(cabinet: HTMLElement): HTMLElement | null {
   return cabinet.querySelector<HTMLElement>('[data-keyboard-boundary="true"]');
 }
 
+// A game's own dialog (a fix dialog, a pause menu) gets the first Escape, so
+// the press closes it rather than leaving fullscreen.
+function findOpenGameDialog(cabinet: HTMLElement): Element | null {
+  return cabinet.querySelector(
+    '[role="dialog"], [role="alertdialog"], [aria-modal="true"]'
+  );
+}
+
 export const PlayCabinet: React.FC<PlayCabinetProps> = ({
   gameId: rawGameId,
   title,
@@ -71,17 +80,43 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
     getSavedSetupConfig(gameId)
   );
 
+  const [runRevision, setRunRevision] = useState(0);
+  const setupValue = useMemo(
+    () => ({ config: setupConfig, runRevision, isSetupOpen: showWizard }),
+    [setupConfig, runRevision, showWizard]
+  );
+
   const {
     isFullscreen,
     isPseudoFullscreen,
     toggleFullscreen: toggleCabinetFullscreen,
     exitFullscreen,
   } = useFullscreen(cabinetRef, { enableKeyShortcut: false });
+  // Entering fullscreen swaps the header, so focus would otherwise land on the
+  // first toolbar button ("Exit Fullscreen"), where the game's Space key
+  // presses it. Start the trap on the game's keyboard boundary instead.
+  // Escape is handled by the cabinet's capture handler below, which defers
+  // to any dialog the game has open.
+  const boundaryFocusRef = useRef<HTMLElement | null>(null);
   const fullscreenFocusRef = useFocusTrap(isFullscreen && !showWizard, {
-    onEscape: () => {
-      void exitFullscreen();
-    },
+    initialFocusRef: boundaryFocusRef,
+    returnFocus: false,
   });
+
+  // Point the trap at the game on entry, and hand focus back to the game on
+  // exit: the button that was focused before entering has since unmounted.
+  const wasFullscreenRef = useRef(false);
+  useEffect(() => {
+    const cabinet = cabinetRef.current;
+    const wasFullscreen = wasFullscreenRef.current;
+    wasFullscreenRef.current = isFullscreen;
+    if (!cabinet) return;
+    const boundary = getKeyboardBoundary(cabinet);
+    boundaryFocusRef.current = boundary;
+    if (wasFullscreen && !isFullscreen) {
+      (boundary ?? cabinet).focus({ preventScroll: true });
+    }
+  }, [isFullscreen]);
 
   useEffect(() => {
     if (!isFullscreen) return;
@@ -312,6 +347,18 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
             target.closest("input, textarea, select, [contenteditable=true]")
           )
             return;
+          if (event.key === "Escape" && isFullscreen) {
+            const dialog = findOpenGameDialog(event.currentTarget);
+            if (dialog) {
+              // Let the game handle this press. If its dialog is still open
+              // afterwards, the game doesn't close it on Escape (a results
+              // screen, say), so fall back to leaving fullscreen.
+              setTimeout(() => {
+                if (dialog.isConnected) void exitFullscreen();
+              }, 0);
+              return;
+            }
+          }
           if (
             event.key.toLowerCase() === "f" ||
             (event.key === "Escape" && isFullscreen)
@@ -425,7 +472,9 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
           } overflow-y-auto overflow-x-hidden flex flex-col items-center justify-start bg-black ${bezelClasses}`}
         >
           <CabinetFullscreenContext.Provider value={toggleCabinetFullscreen}>
-            {children}
+            <CabinetSetupContext.Provider value={setupValue}>
+              {children}
+            </CabinetSetupContext.Provider>
           </CabinetFullscreenContext.Provider>
 
           {/* 3-Step Setup Wizard Overlay prior to active gameplay / when reconfiguring */}
@@ -436,6 +485,7 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
             isCircularDisplay={gameId === "garmin-watch"}
             onComplete={(cfg) => {
               setSetupConfig(cfg);
+              setRunRevision((revision) => revision + 1);
               setShowWizard(false);
             }}
             onCancel={() => setShowWizard(false)}

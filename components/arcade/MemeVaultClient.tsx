@@ -114,7 +114,7 @@ const AudioWaveformVisualizer: React.FC<{
               : "Web Audio Synthesis Engine (Idle)"}
           </span>
         </div>
-        <span className="font-mono text-[10px] text-zinc-500">
+        <span className="font-mono text-[10px] text-muted">
           24-Channel DSP · 44.1kHz
         </span>
       </div>
@@ -445,7 +445,7 @@ export const MemeVaultClient: React.FC = () => {
                 className={`p-5 rounded-2xl border transition-all ${
                   isUnlocked
                     ? "bg-slate-900/90 border-emerald-500/40 shadow-[0_0_20px_rgba(16,185,129,0.1)]"
-                    : "bg-slate-950/60 border-slate-800/80 opacity-70"
+                    : "bg-slate-950/60 border-slate-800/80"
                 }`}
               >
                 <div className="flex items-start justify-between gap-3 mb-3">
@@ -457,7 +457,7 @@ export const MemeVaultClient: React.FC = () => {
                       <h3 className="font-bold text-sm text-white">
                         {ach.title}
                       </h3>
-                      <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">
+                      <span className="text-[10px] uppercase font-bold tracking-wider text-slate-300">
                         {isUnlocked ? "Unlocked 🏆" : "Locked 🔒"}
                       </span>
                     </div>

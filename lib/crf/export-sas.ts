@@ -17,6 +17,7 @@ import {
   CodelistOption,
 } from "./types";
 import { STANDARD_CODELISTS } from "./cdisc-controlled-terminology";
+import { consultationUrl } from "./export-annotations";
 
 /**
  * Sanitizes a string into a valid SAS variable or dataset name.
@@ -398,7 +399,7 @@ function generateSasHeader(study: StudyProtocol, formScope?: string): string {
                 explicit ATTRIB specifications, synthetic test records, and
                 PROC CONTENTS/FREQ data integrity validation.
   AUTHOR:       CRF Studio Automated Statistical Exporter
-  CONSULTATION: Schedule Consultation: /schedule
+  CONSULTATION: Schedule Consultation: ${consultationUrl()}
 =============================================================================*/
 
 OPTIONS NODATE NONUMBER LS=132 PS=60 NOFMTERR;
@@ -737,7 +738,7 @@ export function exportFormToSas(
   let output = generateSasHeader(study, form.domain || form.id);
   output += generateSasProcFormat(study, [form]);
   output += generateSasDataStepForForm(form, study, options);
-  output += `/* Schedule Consultation: /schedule */\n`;
+  output += `/* Schedule Consultation: ${consultationUrl()} */\n`;
   return output;
 }
 
@@ -755,7 +756,7 @@ export function exportStudyToSas(
   if (formsToExport.length === 0) {
     return (
       generateSasHeader(study) +
-      `/* No forms selected or available in study */\n/* Schedule Consultation: /schedule */\n`
+      `/* No forms selected or available in study */\n/* Schedule Consultation: ${consultationUrl()} */\n`
     );
   }
 
@@ -774,6 +775,6 @@ export function exportStudyToSas(
     output += generateSasDataStepForForm(form, study, options);
   });
 
-  output += `/* Schedule Consultation: /schedule */\n`;
+  output += `/* Schedule Consultation: ${consultationUrl()} */\n`;
   return output;
 }

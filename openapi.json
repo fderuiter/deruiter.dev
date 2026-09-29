@@ -1813,10 +1813,8 @@
             "minLength": 1
           },
           "tags": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
+            "type": "string",
+            "description": "Comma-separated tag list exactly as stored on the case study, e.g. \"clinical, edc, mapping\". Split on commas and trim each entry to get individual tags."
           }
         },
         "required": [

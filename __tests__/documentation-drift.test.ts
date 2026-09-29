@@ -28,6 +28,7 @@ function passingDependencies(): DriftCheckDependencies {
     checkTopology: () => ({ status: "pass" }),
     checkMarkdownLinks: () => ({ status: "pass", details: [] }),
     checkPublicRoutes: () => ({ status: "pass", details: [] }),
+    checkTechnicalGuides: () => ({ status: "pass", details: [] }),
   };
 }
 

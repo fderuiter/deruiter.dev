@@ -5,6 +5,7 @@ import React, { useState, useCallback, useEffect, useMemo } from "react";
 import { logger } from "@/lib/logger";
 import { clamp } from "@/lib/game-utils";
 import { useClipboard } from "@/hooks/useClipboard";
+import { useToast } from "@/hooks/useToast";
 import {
   StudyProtocol,
   StudioMode,
@@ -147,7 +148,6 @@ import {
   IconAdjustments,
   IconSparkles,
   IconX,
-  IconCheck,
 } from "@tabler/icons-react";
 
 export const CRFStudioContainer: React.FC = () => {
@@ -233,7 +233,7 @@ export const CRFStudioContainer: React.FC = () => {
 
   const { params, setParam, setParams } = useStudioHashParams();
   const { playSuccess } = useAudio();
-  const [copyToast, setCopyToast] = useState<string | null>(null);
+  const toast = useToast();
 
   // Studio Navigation & Selection State
   const [activeMode, setActiveModeState] = useState<StudioMode>(() => {
@@ -570,10 +570,11 @@ export const CRFStudioContainer: React.FC = () => {
       try {
         playSuccess();
       } catch {}
-      setCopyToast(
-        "View link copied. It opens this navigation state, not the authored study; recipients need their own copy of the study data."
+      // useClipboard already announced successMessage; show it without speaking it twice.
+      toast.success(
+        "View link copied. It opens this navigation state, not the authored study; recipients need their own copy of the study data.",
+        { announce: false }
       );
-      setTimeout(() => setCopyToast(null), 3500);
     },
   });
 
@@ -1406,8 +1407,7 @@ export const CRFStudioContainer: React.FC = () => {
     setActiveVisitId(restoredStudy.visits[0]?.id || "");
     setSelectedFieldId(null);
     playSuccess();
-    setCopyToast(`Restored draft from baseline ${baseline.versionTag}`);
-    setTimeout(() => setCopyToast(null), 4000);
+    toast.success(`Restored draft from baseline ${baseline.versionTag}`);
   };
 
   const handleCloseCompareModal = () => {
@@ -1494,18 +1494,6 @@ export const CRFStudioContainer: React.FC = () => {
         onStartSpotlightTour={startSpotlightTour}
         onCopyShareLink={handleCopyShareLink}
       />
-
-      {/* Copy Toast Alert */}
-      {copyToast && (
-        <div
-          role="status"
-          aria-live="polite"
-          className="absolute top-16 right-6 z-50 flex items-center gap-2 bg-emerald-950 border border-emerald-500/50 text-emerald-200 text-xs font-mono px-3.5 py-2 rounded-xl shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-top-2 duration-150"
-        >
-          <IconCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span>{copyToast}</span>
-        </div>
-      )}
 
       {/* Local Draft Save Status */}
       <div

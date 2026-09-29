@@ -59,9 +59,38 @@ const eslintConfig = defineConfig([
       ],
     },
   },
+  // Haptics go through triggerHaptic (#1130). This uses no-restricted-properties
+  // rather than no-restricted-syntax because flat config replaces a rule's
+  // options when a later block matching the same file sets that rule again, so a
+  // selector added to the no-restricted-syntax blocks below would be silently
+  // dropped for application modules.
+  {
+    files: [
+      "app/**/*.{ts,tsx,js,jsx}",
+      "lib/**/*.{ts,tsx,js,jsx}",
+      "components/**/*.{ts,tsx,js,jsx}",
+      "hooks/**/*.{ts,tsx,js,jsx}",
+    ],
+    ignores: ["lib/haptics.ts"],
+    rules: {
+      "no-restricted-properties": [
+        "error",
+        {
+          object: "navigator",
+          property: "vibrate",
+          message:
+            "Do not call navigator.vibrate directly. Use triggerHaptic from @/lib/haptics, which handles SSR, unsupported browsers and permission errors.",
+        },
+      ],
+    },
+  },
   {
     files: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],
-    ignores: [...restrictedSyntaxHelperFiles, "__tests__/**", "vitest.setup.ts"],
+    ignores: [
+      ...restrictedSyntaxHelperFiles,
+      "__tests__/**",
+      "vitest.setup.ts",
+    ],
     rules: {
       "no-restricted-syntax": [
         "error",

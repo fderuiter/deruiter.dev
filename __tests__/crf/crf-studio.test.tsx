@@ -100,6 +100,11 @@ vi.mock("next/dynamic", () => {
 });
 
 import { CRFStudioContainer } from "@/components/crf/CRFStudioContainer";
+import {
+  A11yProvider,
+  LiveAnnouncer,
+} from "@/components/providers/A11yProvider";
+import { ToastProvider } from "@/hooks/useToast";
 
 describe("CRFStudioContainer Component", () => {
   let container: HTMLDivElement;
@@ -377,9 +382,18 @@ describe("CRFStudioContainer Component", () => {
       },
     });
 
+    const announcer = new LiveAnnouncer({ expirationMs: 60_000 });
+    const announceSpy = vi.spyOn(announcer, "announce");
+
     await act(async () => {
       root = createRoot(container);
-      root.render(<CRFStudioContainer />);
+      root.render(
+        <A11yProvider announcer={announcer}>
+          <ToastProvider>
+            <CRFStudioContainer />
+          </ToastProvider>
+        </A11yProvider>
+      );
     });
 
     const moreActionsBtn = container.querySelector(
@@ -410,9 +424,17 @@ describe("CRFStudioContainer Component", () => {
     });
 
     expect(navigator.clipboard.writeText).toHaveBeenCalled();
-    expect(container.textContent).toContain(
+    // The confirmation now renders in the global toast stack (#1134)...
+    const toast = container.querySelector('[data-testid="toast"]');
+    expect(toast?.getAttribute("data-variant")).toBe("success");
+    expect(toast?.textContent).toContain(
       "not the authored study; recipients need their own copy of the study data"
     );
+    // ...and is spoken exactly once: useClipboard announces it, the toast does not repeat it.
+    const spoken = announceSpy.mock.calls.filter(([message]) =>
+      String(message).includes("not the authored study")
+    );
+    expect(spoken).toHaveLength(1);
   });
 
   it("inserts a new field into the section whose Add Field control was used, not always the form's first section (#669)", async () => {

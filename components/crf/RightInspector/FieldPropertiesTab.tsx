@@ -18,9 +18,9 @@ import {
   IconDeviceFloppy,
   IconClipboardText,
   IconSparkles,
-  IconCheck,
   IconListDetails,
 } from "@tabler/icons-react";
+import { useToast } from "@/hooks/useToast";
 
 interface FieldPropertiesTabProps {
   field: CRFField;
@@ -205,11 +205,11 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
   );
   const [isBulkOpen, setIsBulkOpen] = useState(false);
   const [bulkInput, setBulkInput] = useState("");
-  const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(
-    null
-  );
+  const toast = useToast();
   const [renameSuccess, setRenameSuccess] = useState<string | null>(null);
-  const [variableNameDraft, setVariableNameDraft] = useState(field.variableName);
+  const [variableNameDraft, setVariableNameDraft] = useState(
+    field.variableName
+  );
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -365,8 +365,7 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
       customOptions: undefined,
     });
     setOptionMode("standard");
-    setSaveSuccessMessage(`Saved as study codelist "${newCodelist.name}"!`);
-    setTimeout(() => setSaveSuccessMessage(null), 4000);
+    toast.success(`Saved as study codelist "${newCodelist.name}"!`);
   };
 
   const varValidation = validateCdashVariableName(variableNameDraft);
@@ -771,14 +770,6 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
               {currentOptions.length === 1 ? "" : "s"}
             </span>
           </div>
-
-          {/* Success Toast */}
-          {saveSuccessMessage && (
-            <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[11px] flex items-center gap-1.5 animate-in fade-in">
-              <IconCheck className="w-3.5 h-3.5 shrink-0" />
-              <span>{saveSuccessMessage}</span>
-            </div>
-          )}
 
           {/* Source Switcher: Standard vs Custom */}
           <div className="flex rounded-lg p-0.5 bg-zinc-900 border border-zinc-800">

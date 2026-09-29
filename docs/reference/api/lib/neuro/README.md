@@ -14,6 +14,12 @@ Re-exports [AnatomicalParcel](types/interfaces/AnatomicalParcel.md)
 
 ***
 
+### applyVoxelEditsToVolume
+
+Re-exports [applyVoxelEditsToVolume](drafts/functions/applyVoxelEditsToVolume.md)
+
+***
+
 ### AssetProgressEvent
 
 Re-exports [AssetProgressEvent](progress-bus/interfaces/AssetProgressEvent.md)
@@ -47,6 +53,12 @@ Re-exports [computeSyntheticVolumeSync](loader/functions/computeSyntheticVolumeS
 ### ControlPoint
 
 Re-exports [ControlPoint](types/interfaces/ControlPoint.md)
+
+***
+
+### countNeuroDraftEdits
+
+Re-exports [countNeuroDraftEdits](drafts/functions/countNeuroDraftEdits.md)
 
 ***
 
@@ -302,6 +314,18 @@ Re-exports [NEURO_TOOL_HOTKEYS](hotkeys/variables/NEURO_TOOL_HOTKEYS.md)
 
 ***
 
+### NeuroDraft
+
+Re-exports [NeuroDraft](drafts/interfaces/NeuroDraft.md)
+
+***
+
+### NeuroDraftMap
+
+Re-exports [NeuroDraftMap](drafts/type-aliases/NeuroDraftMap.md)
+
+***
+
 ### NeuroHotkeyAction
 
 Re-exports [NeuroHotkeyAction](hotkeys/type-aliases/NeuroHotkeyAction.md)
@@ -473,3 +497,9 @@ Re-exports [VoxelCoord](types/interfaces/VoxelCoord.md)
 ### VoxelEdit
 
 Re-exports [VoxelEdit](types/interfaces/VoxelEdit.md)
+
+***
+
+### withNeuroDraft
+
+Re-exports [withNeuroDraft](drafts/functions/withNeuroDraft.md)

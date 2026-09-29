@@ -175,6 +175,7 @@
 - [lib/moderation](lib/moderation/README.md)
 - [lib/neuro](lib/neuro/README.md)
 - [lib/neuro/asset-loader](lib/neuro/asset-loader/README.md)
+- [lib/neuro/drafts](lib/neuro/drafts/README.md)
 - [lib/neuro/engine-loader](lib/neuro/engine-loader/README.md)
 - [lib/neuro/hotkeys](lib/neuro/hotkeys/README.md)
 - [lib/neuro/internal/mesh-geometry](lib/neuro/internal/mesh-geometry/README.md)

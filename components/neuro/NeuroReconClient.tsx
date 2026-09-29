@@ -31,9 +31,14 @@ import {
 } from "@/lib/neuro/loader";
 import {
   NEURO_RUN_RECON_KEY,
+  applyVoxelEditsToVolume,
+  countNeuroDraftEdits,
   getNeuroProvenance,
   isNeuroSelectionValid,
   resolveNeuroHotkey,
+  withNeuroDraft,
+  type NeuroDraft,
+  type NeuroDraftMap,
 } from "@/lib/neuro";
 import { SyntheticVolume, VOLUME_SIZE } from "@/lib/neuro/volume-generator";
 import { MultiPlanarSliceViewer } from "./MultiPlanarSliceViewer";
@@ -241,6 +246,19 @@ export const NeuroReconClient: React.FC = () => {
 
   const [controlPoints, setControlPoints] = useState<ControlPoint[]>([]);
   const [voxelEdits, setVoxelEdits] = useState<VoxelEdit[]>([]);
+  // Session-only per-case drafts so switching cases never discards edits.
+  const [drafts, setDrafts] = useState<NeuroDraftMap>({});
+  const draftsRef = React.useRef<NeuroDraftMap>({});
+  const editsRef = React.useRef<NeuroDraft>({
+    controlPoints: [],
+    voxelEdits: [],
+  });
+  const activeScenarioRef = React.useRef<ScenarioId>(activeScenarioId);
+  const [resetUndo, setResetUndo] = useState<NeuroDraft | null>(null);
+  useEffect(() => {
+    editsRef.current = { controlPoints, voxelEdits };
+    activeScenarioRef.current = activeScenarioId;
+  }, [controlPoints, voxelEdits, activeScenarioId]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isFieldManualOpen, setIsFieldManualOpen] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -286,17 +304,31 @@ export const NeuroReconClient: React.FC = () => {
         setIsProcessing(false);
       }
 
+      // Park the current case's edits as a draft before leaving it.
+      const leavingId = activeScenarioRef.current;
+      const savedDrafts = withNeuroDraft(
+        draftsRef.current,
+        leavingId,
+        editsRef.current
+      );
+      draftsRef.current = savedDrafts;
+      setDrafts(savedDrafts);
+      setResetUndo(null);
+
       setActiveScenarioId(scenarioId);
+      activeScenarioRef.current = scenarioId;
       const scs = scenarios || (await getNeuroScenarios());
       const newConfig = scs[scenarioId];
       const newVol = await computeSyntheticVolume(scenarioId);
+      const restored = savedDrafts[scenarioId];
+      if (restored) applyVoxelEditsToVolume(newVol, restored.voxelEdits);
       setVolume(newVol);
       if (newConfig) {
         setCrosshair(newConfig.targetCoords);
         setToolModeState(newConfig.recommendedTool);
       }
-      setControlPoints([]);
-      setVoxelEdits([]);
+      setControlPoints(restored ? restored.controlPoints : []);
+      setVoxelEdits(restored ? restored.voxelEdits : []);
       setShowSuccessModal(false);
 
       setLogs((prev) => [
@@ -311,7 +343,7 @@ export const NeuroReconClient: React.FC = () => {
           id: `log-sw-out-${Date.now()}`,
           type: "info",
           text: newConfig
-            ? `Loaded ${newConfig.title}. ${newConfig.defectDescription}`
+            ? `Loaded ${newConfig.title}. ${newConfig.defectDescription}${restored ? `\nRestored your ${countNeuroDraftEdits(restored)} unsaved edit(s) for this case from this session.` : ""}`
             : `Loaded ${scenarioId}`,
           timestamp: new Date().toLocaleTimeString(),
         },
@@ -415,12 +447,15 @@ export const NeuroReconClient: React.FC = () => {
   );
 
   const { copy: copyShareLink } = useClipboard({
-    successMessage: "NeuroRecon Studio link copied to clipboard!",
+    successMessage:
+      "Link copied: case, view and tool only. Your edits are not included.",
     onSuccess: () => {
       try {
         playSuccess();
       } catch {}
-      setCopyToast("NeuroRecon Studio link copied to clipboard!");
+      setCopyToast(
+        "Link copied: case, view and tool only. Your edits are not included."
+      );
       setTimeout(() => setCopyToast(null), 3500);
     },
   });
@@ -510,6 +545,8 @@ export const NeuroReconClient: React.FC = () => {
       setIsProcessing(false);
     }
 
+    const previous: NeuroDraft = { controlPoints, voxelEdits };
+    setResetUndo(countNeuroDraftEdits(previous) > 0 ? previous : null);
     const freshVol = await computeSyntheticVolume(activeScenarioId);
     setVolume(freshVol);
     setControlPoints([]);
@@ -531,6 +568,27 @@ export const NeuroReconClient: React.FC = () => {
         id: `log-rst-out-${Date.now()}`,
         type: "info",
         text: "Reset all manual voxel edits and control points to baseline.",
+        timestamp: new Date().toLocaleTimeString(),
+      },
+    ]);
+  };
+
+  // Undo the last Reset by replaying its edits onto a fresh volume
+  const handleUndoReset = async () => {
+    if (!resetUndo) return;
+    const restoredEdits = resetUndo;
+    const freshVol = await computeSyntheticVolume(activeScenarioId);
+    applyVoxelEditsToVolume(freshVol, restoredEdits.voxelEdits);
+    setVolume(freshVol);
+    setControlPoints(restoredEdits.controlPoints);
+    setVoxelEdits(restoredEdits.voxelEdits);
+    setResetUndo(null);
+    setLogs((prev) => [
+      ...prev,
+      {
+        id: `log-rst-undo-${Date.now()}`,
+        type: "info",
+        text: `Restored ${countNeuroDraftEdits(restoredEdits)} edit(s) cleared by Reset.`,
         timestamp: new Date().toLocaleTimeString(),
       },
     ]);
@@ -945,7 +1003,7 @@ export const NeuroReconClient: React.FC = () => {
           <button
             onClick={handleCopyShareLink}
             className="flex items-center gap-1.5 px-3 py-2.5 min-h-[44px] bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 rounded-xl text-xs font-mono text-zinc-300 hover:text-white transition-all shadow-sm"
-            title="Copy Shareable Link for Current Scenario & View"
+            title="Copy a link to this case, view and tool. Edits are not included in the link."
           >
             <IconLink className="w-3.5 h-3.5 text-brand-cyan" />
             <span>Share</span>
@@ -1014,12 +1072,50 @@ export const NeuroReconClient: React.FC = () => {
                   {isResolved && (
                     <IconCheck className="w-3.5 h-3.5 text-emerald-400" />
                   )}
+                  {(isActive
+                    ? controlPoints.length + voxelEdits.length
+                    : countNeuroDraftEdits(drafts[scId])) > 0 && (
+                    <>
+                      <span
+                        aria-hidden="true"
+                        className="w-1.5 h-1.5 rounded-full bg-amber-400"
+                      />
+                      <span className="sr-only">has unsaved edits</span>
+                    </>
+                  )}
                 </button>
               );
             })}
           </div>
         </div>
       </div>
+
+      <p
+        className="text-[11px] font-mono text-zinc-400"
+        data-testid="neuro-draft-note"
+      >
+        Edits are kept per case while this page stays open (amber dot marks
+        unsaved edits). Reload clears them, and Share links never include them.
+        Reset clears only the current case.
+      </p>
+      {resetUndo && (
+        <div
+          role="status"
+          className="flex flex-wrap items-center gap-3 rounded-xl border border-amber-500/30 bg-zinc-900/80 px-3 py-2 text-xs font-mono text-amber-300"
+        >
+          <span className="min-w-0 break-words">
+            Reset cleared {countNeuroDraftEdits(resetUndo)} edit(s) on this
+            case.
+          </span>
+          <button
+            type="button"
+            onClick={handleUndoReset}
+            className="min-h-[44px] px-3 rounded-lg border border-amber-500/40 text-amber-300 hover:bg-zinc-800"
+          >
+            Undo reset
+          </button>
+        </div>
+      )}
 
       {/* Live FreeSurfer QA HUD Metrics */}
       <NeuroMetricsPanel

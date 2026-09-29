@@ -15,6 +15,7 @@ import { tacticDefs } from "@/lib/quasi-perfect/tactics";
 import {
   STORY_RAM_MULTIPLIER,
   computeLevelStars,
+  describeModeRules,
   getStartingRam,
 } from "@/lib/quasi-perfect";
 import {
@@ -661,6 +662,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
   };
 
   const isOOM = currentRam <= 0 && !levelSolved;
+  const modeRules = describeModeRules(gameMode, currentLevel);
 
   // Filtered levels based on chapter tab
   const filteredLevels = useMemo(() => {
@@ -806,19 +808,15 @@ export const QuasiPerfectPuzzler: React.FC = () => {
       {/* Active mode rules and mid-proof mode-change confirmation */}
       <div className="mt-3 min-w-0 space-y-2" data-testid="mode-rules">
         <p className="text-xs text-zinc-400 break-words">
-          {gameMode === "story" ? (
-            <>
-              <span className="font-bold text-emerald-400">Story Mode:</span>{" "}
-              {STORY_RAM_MULTIPLIER}× RAM budget, no failure penalty. Stars
-              still grade RAM used against the Hacker targets.
-            </>
-          ) : (
-            <>
-              <span className="font-bold text-amber-400">Hacker Mode:</span>{" "}
-              base RAM budget, failed tactics cost RAM.
-            </>
-          )}{" "}
-          Changing mode mid-proof restarts the level.
+          <span
+            className={`font-bold ${
+              gameMode === "story" ? "text-emerald-400" : "text-amber-400"
+            }`}
+          >
+            {modeRules.heading}
+          </span>{" "}
+          {modeRules.budget} {modeRules.failure} {modeRules.exhaustion}{" "}
+          {modeRules.scoring} Changing mode mid-proof restarts the level.
         </p>
         {pendingMode && (
           <div

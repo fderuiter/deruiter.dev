@@ -8,6 +8,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { useStudyAutosave } from "@/hooks/useStudyAutosave";
+import { DEFAULT_REVOKE_DELAY_MS } from "@/lib/download";
 import type { StudyProtocol } from "@/lib/crf/types";
 import * as draftStorage from "@/lib/crf/study-draft-storage";
 
@@ -260,15 +261,18 @@ describe("useStudyAutosave Hook Suite", () => {
       .spyOn(URL, "revokeObjectURL")
       .mockImplementation(() => {});
 
-    const clickSpy = vi.fn();
-    const appendChildSpy = vi.spyOn(document.body, "appendChild");
-    const removeChildSpy = vi.spyOn(document.body, "removeChild");
+    let anchor: HTMLAnchorElement | null = null;
+    let attachedAtClick = false;
+    const clickSpy = vi.fn(() => {
+      attachedAtClick = anchor !== null && document.body.contains(anchor);
+    });
 
     const createElementOriginal = document.createElement.bind(document);
     vi.spyOn(document, "createElement").mockImplementation(
       (tagName: string) => {
         const element = createElementOriginal(tagName);
         if (tagName === "a") {
+          anchor = element as HTMLAnchorElement;
           element.click = clickSpy;
         }
         return element;
@@ -288,9 +292,17 @@ describe("useStudyAutosave Hook Suite", () => {
     const createdBlob = createObjectURLSpy.mock.calls[0][0] as Blob;
     expect(createdBlob.type).toBe("application/json");
 
-    expect(appendChildSpy).toHaveBeenCalled();
     expect(clickSpy).toHaveBeenCalledTimes(1);
-    expect(removeChildSpy).toHaveBeenCalled();
+    // Firefox only downloads from an anchor attached to the document.
+    expect(attachedAtClick).toBe(true);
+    expect(anchor!.href).toBe(mockUrl);
+    expect(anchor!.isConnected).toBe(false);
+
+    // Revocation is deferred so the browser can finish reading the Blob.
+    expect(revokeObjectURLSpy).not.toHaveBeenCalled();
+    act(() => {
+      vi.advanceTimersByTime(DEFAULT_REVOKE_DELAY_MS);
+    });
     expect(revokeObjectURLSpy).toHaveBeenCalledWith(mockUrl);
   });
 

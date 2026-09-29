@@ -4,8 +4,14 @@ import { buildRouteMetadata, ROUTE_METADATA_CONFIGS } from "@/lib/seo-metadata";
 import { getWebApplicationSchema, getBreadcrumbSchema } from "@/lib/seo";
 
 import { PageLayout } from "@/components/PageLayout";
+import {
+  EngineeringBridge,
+  EngineeringBridgeJump,
+} from "@/components/EngineeringBridge";
 
-export const metadata: Metadata = buildRouteMetadata(ROUTE_METADATA_CONFIGS.laserLoon);
+export const metadata: Metadata = buildRouteMetadata(
+  ROUTE_METADATA_CONFIGS.laserLoon
+);
 
 export default function LaserLoonPage() {
   return (
@@ -33,6 +39,8 @@ export default function LaserLoonPage() {
         }}
       />
       <LaserLoonClient />
+      <EngineeringBridgeJump />
+      <EngineeringBridge route="/arcade/laser-loon" />
     </PageLayout>
   );
 }

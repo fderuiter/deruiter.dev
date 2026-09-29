@@ -278,6 +278,30 @@ Re-exports [LOON_MAX_HITS](constants/variables/LOON_MAX_HITS.md)
 
 ***
 
+### LOON\_MAX\_X
+
+Re-exports [LOON_MAX_X](constants/variables/LOON_MAX_X.md)
+
+***
+
+### LOON\_MAX\_Y
+
+Re-exports [LOON_MAX_Y](constants/variables/LOON_MAX_Y.md)
+
+***
+
+### LOON\_MIN\_X
+
+Re-exports [LOON_MIN_X](constants/variables/LOON_MIN_X.md)
+
+***
+
+### LOON\_MIN\_Y
+
+Re-exports [LOON_MIN_Y](constants/variables/LOON_MIN_Y.md)
+
+***
+
 ### LoonCollisionInput
 
 Re-exports [LoonCollisionInput](engine/interfaces/LoonCollisionInput.md)

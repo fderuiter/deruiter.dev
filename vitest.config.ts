@@ -11,7 +11,7 @@ export default defineConfig({
     testTimeout: 15000,
     include: ["__tests__/**/*.{test,spec}.{ts,tsx}"],
     execArgv: ["--max-old-space-size=4096", "--no-warnings"],
-    exclude: ["**/node_modules/**", "**/e2e/**"],
+    exclude: ["**/node_modules/**", "**/e2e/**", "**/.stryker-tmp/**"],
     // Vitest defaults threads.maxThreads to (cpus - 1). On small runners
     // that oversubscribes the machine once each worker's own libuv/GC
     // helper threads are counted, which starves CPU-heavy synchronous
@@ -34,7 +34,9 @@ export default defineConfig({
         "sentry.*.config.ts",
         "instrumentation-client.ts",
         "prisma.config.ts",
-        "scripts/**",
+        "scripts/**/*.sh",
+        "scripts/**/*.json",
+        "scripts/!(migration-replay.ts|vercel-production-preflight.js)",
         "lib/layout-config.ts",
         "hooks/usePretextLayout.tsx",
         "lib/utils.ts",
@@ -86,6 +88,10 @@ export default defineConfig({
           branches: 95,
           functions: 95,
           lines: 95,
+        },
+        "scripts/**": {
+          lines: 80,
+          functions: 80,
         },
       },
     },

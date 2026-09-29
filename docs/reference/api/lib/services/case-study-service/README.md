@@ -17,6 +17,10 @@
 - [FeedbackSubmissionInput](interfaces/FeedbackSubmissionInput.md)
 - [ReactionSubmissionInput](interfaces/ReactionSubmissionInput.md)
 
+## Type Aliases
+
+- [CaseStudySearchSummary](type-aliases/CaseStudySearchSummary.md)
+
 ## References
 
 ### CaseStudyData

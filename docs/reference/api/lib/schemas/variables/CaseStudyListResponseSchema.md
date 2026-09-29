@@ -6,6 +6,6 @@
 
 # Variable: CaseStudyListResponseSchema
 
-> `const` **CaseStudyListResponseSchema**: `ZodArray`\<`ZodObject`\<\{ `id`: `ZodString`; `primary_language`: `ZodString`; `slug`: `ZodString`; `tags`: `ZodArray`\<`ZodString`\>; `title`: `ZodString`; \}, `$strip`\>\>
+> `const` **CaseStudyListResponseSchema**: `ZodArray`\<`ZodObject`\<\{ `id`: `ZodString`; `primary_language`: `ZodString`; `slug`: `ZodString`; `tags`: `ZodString`; `title`: `ZodString`; \}, `$strip`\>\>
 
 Schema for Case Study list response

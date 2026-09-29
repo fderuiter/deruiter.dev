@@ -134,6 +134,12 @@ Re-exports [LevelScore](types/interfaces/LevelScore.md)
 
 ***
 
+### mergeLevelScore
+
+Re-exports [mergeLevelScore](progress/functions/mergeLevelScore.md)
+
+***
+
 ### ModeRuleCopy
 
 Re-exports [ModeRuleCopy](ram/interfaces/ModeRuleCopy.md)

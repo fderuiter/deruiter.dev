@@ -6,4 +6,4 @@
 
 # Variable: GarbageCollectErrorCode
 
-> `const` **GarbageCollectErrorCode**: `ZodEnum`\<\{ `GC_ALREADY_ACTIVE`: `"GC_ALREADY_ACTIVE"`; `INVALID_GAME_STATE`: `"INVALID_GAME_STATE"`; \}\>
+> `const` **GarbageCollectErrorCode**: `ZodEnum`\<\{ `GC_ALREADY_ACTIVE`: `"GC_ALREADY_ACTIVE"`; `GC_COOLDOWN`: `"GC_COOLDOWN"`; `INVALID_GAME_STATE`: `"INVALID_GAME_STATE"`; \}\>

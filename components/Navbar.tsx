@@ -9,6 +9,7 @@ import { useAudio } from "@/components/providers/AudioProvider";
 import { useSearch } from "@/components/providers/SearchProvider";
 import { usePersona } from "@/components/providers/PersonaProvider";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { useHotkeys } from "@/hooks/useHotkeys";
 import { useResizeObserver } from "@/hooks/useResizeObserver";
 import { useFontPreference } from "@/hooks/useFontPreference";
 import { useAnnouncer } from "@/components/providers/A11yProvider";
@@ -290,33 +291,34 @@ export const Navbar: React.FC = () => {
     };
   }, [isOpen]);
 
-  // Accessibility: Esc key listener for desktop disclosures and audio panel
-  useEffect(() => {
-    if (!activeDropdown && !showAudioPanel && !showPreferences) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        if (showPreferences) {
-          setShowPreferences(false);
-          preferencesTriggerRef.current?.focus();
-        } else if (showAudioPanel) {
-          setShowAudioPanel(false);
-        } else if (activeDropdown) {
-          const trigger =
-            activeDropdown === "arcade"
-              ? arcadeTriggerRef.current
-              : systemsTriggerRef.current;
-          setActiveDropdown(null);
-          trigger?.focus();
-        }
+  // Accessibility: Esc key listener for desktop disclosures and audio panel.
+  // Escape must still close a panel while focus is on one of its controls, so
+  // it is allowed in inputs. It listens on document so it runs before the
+  // window-level focus trap listeners.
+  useHotkeys(
+    "Escape",
+    () => {
+      if (showPreferences) {
+        setShowPreferences(false);
+        preferencesTriggerRef.current?.focus();
+      } else if (showAudioPanel) {
+        setShowAudioPanel(false);
+      } else if (activeDropdown) {
+        const trigger =
+          activeDropdown === "arcade"
+            ? arcadeTriggerRef.current
+            : systemsTriggerRef.current;
+        setActiveDropdown(null);
+        trigger?.focus();
       }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [activeDropdown, showAudioPanel, showPreferences]);
+    },
+    {
+      enabled: Boolean(activeDropdown || showAudioPanel || showPreferences),
+      allowInInputs: true,
+      allowInKeyboardBoundary: true,
+      target: "document",
+    }
+  );
 
   // Handle smooth scroll clicks on homepage and universal mobile drawer dismissal
   const handleNavClick = (

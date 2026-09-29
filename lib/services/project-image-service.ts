@@ -3,6 +3,7 @@ import { CaseStudyService } from "@/lib/services/case-study-service";
 import type { ServiceResult } from "@/lib/services/service-result";
 import { logger } from "@/lib/logger";
 import { sanitizeError } from "@/lib/error-sanitization";
+import { generateId } from "@/lib/utils";
 import {
   getMediaStorageProvider,
   type MediaAssetRecord,
@@ -290,7 +291,7 @@ export class ProjectImageService {
 
     // 4. Generate key and save media asset using provider
     const ext = getExtensionForMimeType(mimeType);
-    const key = `project-${slug}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const key = `${generateId(`project-${slug}`, { timestamp: true })}.${ext}`;
     const assetUrl = await ProjectImageService.saveMediaAsset(
       key,
       fileBuffer,

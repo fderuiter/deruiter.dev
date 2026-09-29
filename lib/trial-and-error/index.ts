@@ -132,6 +132,7 @@ export {
   type TableInspectionView,
   type TableState,
   type TableView,
+  type TableOutcome,
   type PlayBlocker,
   STALE_ALERT,
   AMENDMENT_STALE_ALERT,

@@ -590,7 +590,7 @@ export const PROMPTOPS_PLAYBACK_OBJ: CaseStudyPlayback = [
   },
 ];
 
-export const DESIGNING_FOR_MY_BROTHER_COMMANDS_OBJ: CaseStudyCommands = {
+const DESIGNING_FOR_MY_BROTHER_COMMANDS_OBJ: CaseStudyCommands = {
   "typography inspect --target runtime": {
     description:
       "Inspect current font family cascade, CSS variables, and WCAG 2.1 AA contrast ratios.",
@@ -639,7 +639,7 @@ export const DESIGNING_FOR_MY_BROTHER_COMMANDS_OBJ: CaseStudyCommands = {
   },
 };
 
-export const DESIGNING_FOR_MY_BROTHER_PLAYBACK_OBJ: CaseStudyPlayback = [
+const DESIGNING_FOR_MY_BROTHER_PLAYBACK_OBJ: CaseStudyPlayback = [
   {
     command: "typography inspect --target runtime",
     description:
@@ -702,13 +702,13 @@ flowchart TD
 import sax from "sax";
 import { Readable } from "stream";
 
-export interface SubjectDataChunk {
+interface SubjectDataChunk {
   studyOID: string;
   subjectKey: string;
   items: Array<{ itemOID: string; value: string }>;
 }
 
-export async function* parseODMStream(xmlStream: Readable): AsyncGenerator<SubjectDataChunk> {
+async function* parseODMStream(xmlStream: Readable): AsyncGenerator<SubjectDataChunk> {
   const parser = sax.createStream(true, { trim: true });
   let currentSubject: Partial<SubjectDataChunk> | null = null;
 
@@ -726,7 +726,7 @@ export async function* parseODMStream(xmlStream: Readable): AsyncGenerator<Subje
 <h4>Declarative SDTM Domain Compiler (<code>src/compiler/sdtm_builder.ts</code>)</h4>
 <pre><code class="language-typescript">
 // Declarative SDTM Domain Transformation Engine
-export function deriveStudyDay(eventDate: Date, referenceDate: Date): number {
+function deriveStudyDay(eventDate: Date, referenceDate: Date): number {
   const diffTime = eventDate.getTime() - referenceDate.getTime();
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
   // SDTM convention: Day 1 is baseline, Day -1 is prior day (no Day 0)
@@ -978,7 +978,7 @@ import { prisma } from "@/lib/prisma";
 import { RsvpPayloadSchema, type RsvpPayload } from "@/lib/schemas/rsvp";
 import { revalidatePath } from "next/cache";
 
-export async function submitRsvpAction(rawPayload: RsvpPayload) {
+async function submitRsvpAction(rawPayload: RsvpPayload) {
   const validated = RsvpPayloadSchema.safeParse(rawPayload);
   if (!validated.success) {
     return { success: false, errors: validated.error.flatten().fieldErrors };
@@ -1015,14 +1015,14 @@ export async function submitRsvpAction(rawPayload: RsvpPayload) {
 // Strict runtime schema validation for multi-event RSVP submissions
 import { z } from "zod";
 
-export const GuestResponseSchema = z.object({
+const GuestResponseSchema = z.object({
   guestId: z.string().cuid(),
   isAttending: z.boolean(),
   mealPreference: z.enum(["BEEF", "FISH", "VEGETARIAN", "VEGAN", "KIDS"]),
   dietaryNotes: z.string().max(500).optional(),
 });
 
-export const RsvpPayloadSchema = z.object({
+const RsvpPayloadSchema = z.object({
   householdId: z.string().cuid(),
   inviteCode: z.string().min(4).max(12),
   responses: z.array(GuestResponseSchema).min(1),
@@ -1030,7 +1030,7 @@ export const RsvpPayloadSchema = z.object({
   songRequest: z.string().max(200).optional(),
 });
 
-export type RsvpPayload = z.infer<typeof RsvpPayloadSchema>;
+type RsvpPayload = z.infer<typeof RsvpPayloadSchema>;
 </code></pre>
 
 <h3>Tradeoffs and lessons</h3>
@@ -1081,14 +1081,14 @@ flowchart TD
 <h4>DAG Node State & Connection Definition (<code>src/store/graph_store.ts</code>)</h4>
 <pre><code class="language-typescript">
 // Immutable Graph State Model
-export interface SchemaNode {
+interface SchemaNode {
   id: string;
   type: "string" | "number" | "object" | "array" | "ref";
   properties: Record<string, unknown>;
   position: { x: number; y: number };
 }
 
-export interface SchemaConnection {
+interface SchemaConnection {
   sourceId: string;
   targetId: string;
   sourceHandle?: string;
@@ -1099,7 +1099,7 @@ export interface SchemaConnection {
 <h4>DFS Recursive Reference Resolver (<code>src/compiler/cycle_detector.ts</code>)</h4>
 <pre><code class="language-typescript">
 // Depth-First Search for recursive reference resolution
-export function detectAndResolveCycles(nodes: SchemaNode[], connections: SchemaConnection[]): Map<string, string> {
+function detectAndResolveCycles(nodes: SchemaNode[], connections: SchemaConnection[]): Map<string, string> {
   const adj = new Map<string, string[]>();
   nodes.forEach((n) => adj.set(n.id, []));
   connections.forEach((c) => adj.get(c.sourceId)?.push(c.targetId));
@@ -1177,7 +1177,7 @@ flowchart TD
 // Type-Safe Tenant Auth Guard for Multi-Tenant Edge Routing
 import { createMiddleware } from "hono/factory";
 
-export const tenantAuthGuard = createMiddleware(async (c, next) => {
+const tenantAuthGuard = createMiddleware(async (c, next) => {
   const tenantId = c.req.header("x-tenant-id");
   if (!tenantId) return c.json({ error: "Missing required tenant identity" }, 401);
   c.set("tenantId", tenantId);
@@ -1190,7 +1190,7 @@ export const tenantAuthGuard = createMiddleware(async (c, next) => {
 // Embedded Inngest Step Workflow inside Hono
 import { inngest } from "../inngest/client";
 
-export const processTenantDataSync = inngest.createFunction(
+const processTenantDataSync = inngest.createFunction(
   { id: "tenant-data-sync", retries: 3 },
   { event: "tenant/data.sync" },
   async ({ event, step }) => {
@@ -2028,16 +2028,16 @@ import { StudySchemaIR, TargetLanguage } from "./ir.model";
 import { RCodeGeneratorStrategy } from "./r.strategy";
 import { PythonCodeGeneratorStrategy } from "./python.strategy";
 
-export interface WorkerRPCMessage {
+interface WorkerRPCMessage {
   type: "ALLOCATE" | "BALANCE_CHECK";
   payload: StudySchemaIR;
 }
 
-export class MT19937PRNG {
+class MT19937PRNG {
   // Deterministic 32-bit Mersenne Twister PRNG engine
 }
 
-export class TrialSchemaTranspiler {
+class TrialSchemaTranspiler {
   private strategies = new Map<TargetLanguage, CodeGeneratorStrategy>([
     ["R", new RCodeGeneratorStrategy()],
     ["PYTHON", new PythonCodeGeneratorStrategy()],
@@ -2055,12 +2055,12 @@ export class TrialSchemaTranspiler {
 
 <h4>Pocock-Simon Covariate Minimization (<code>src/app/domain/randomization-engine/core/minimization-algorithm.ts</code>)</h4>
 <pre><code class="language-typescript">
-export interface CovariateFactor {
+interface CovariateFactor {
   name: string;
   level: string;
 }
 
-export class PocockSimonMinimizer {
+class PocockSimonMinimizer {
   constructor(private arms: string[], private pBase: number = 0.85) {}
 
   public allocateSubject(covariates: CovariateFactor[], history: Record<string, CovariateFactor[]>): string {
@@ -2282,7 +2282,7 @@ flowchart TD
 <h4>Schema AST Normalization & Type Resolution (<code>lib/schema-normalizer.ts</code>)</h4>
 <pre><code class="language-typescript">
 // Recursive Schema AST Normalizer & Node Synthesis
-export interface SchemaASTNode {
+interface SchemaASTNode {
   id: string;
   type: "string" | "number" | "boolean" | "object" | "array" | "oneOf" | "anyOf";
   title: string;
@@ -2294,7 +2294,7 @@ export interface SchemaASTNode {
   branches?: Record&lt;string, SchemaASTNode&gt;;
 }
 
-export function normalizeSchemaAST(
+function normalizeSchemaAST(
   rawSchema: Record&lt;string, unknown&gt;,
   definitions: Record&lt;string, unknown&gt; = {}
 ): SchemaASTNode {
@@ -2699,12 +2699,12 @@ flowchart TD
 <h4>DAG Circular Dependency Detection Solver (<code>src/taskpane/core/dag-validator.ts</code>)</h4>
 <pre><code class="language-typescript">
 // Topological DAG Validation Solver for Clinical Skip & Derivation Logic
-export interface RuleNode {
+interface RuleNode {
   id: string;
   dependsOn: string[];
 }
 
-export function detectCircularLogicDependencies(nodes: RuleNode[]): string[][] {
+function detectCircularLogicDependencies(nodes: RuleNode[]): string[][] {
   const adjList = new Map&lt;string, string[]&gt;();
   nodes.forEach((n) => adjList.set(n.id, n.dependsOn || []));
 
@@ -2742,7 +2742,7 @@ export function detectCircularLogicDependencies(nodes: RuleNode[]): string[][] {
 <h4>Office.js Memory-Efficient Range Chunking (<code>src/taskpane/office/excel-reader.ts</code>)</h4>
 <pre><code class="language-typescript">
 // Non-blocking chunked reading of large clinical protocol worksheets in Office.js
-export async function readWorkbookInChunks(
+async function readWorkbookInChunks(
   context: Excel.RequestContext,
   sheetName: string,
   chunkSize: number = 500,
@@ -2766,7 +2766,7 @@ export async function readWorkbookInChunks(
 <h4>CDISC ODM-XML v1.3.2 Serializer (<code>src/taskpane/export/odm-serializer.ts</code>)</h4>
 <pre><code class="language-typescript">
 // Regulatory-grade CDISC ODM-XML 1.3.2 Snapshot Serializer
-export function serializeODMStudy(study: {
+function serializeODMStudy(study: {
   oid: string;
   name: string;
   protocolId: string;
@@ -2867,7 +2867,7 @@ flowchart TD
 // Type-Safe Prompt Template Contract & Output Assertion
 import { z } from "zod";
 
-export interface PromptDefinition&lt;TInput extends z.ZodTypeAny, TOutput extends z.ZodTypeAny&gt; {
+interface PromptDefinition&lt;TInput extends z.ZodTypeAny, TOutput extends z.ZodTypeAny&gt; {
   id: string;
   version: string;
   inputSchema: TInput;
@@ -2875,7 +2875,7 @@ export interface PromptDefinition&lt;TInput extends z.ZodTypeAny, TOutput extend
   template: (inputs: z.infer&lt;TInput&gt;) => string;
 }
 
-export class PromptRunner {
+class PromptRunner {
   public static async execute&lt;TIn extends z.ZodTypeAny, TOut extends z.ZodTypeAny&gt;(
     def: PromptDefinition&lt;TIn, TOut&gt;,
     inputs: z.infer&lt;TIn&gt;,
@@ -2900,12 +2900,12 @@ export class PromptRunner {
 <h4>Automated CI/CD Evaluation Runner (<code>lib/evals/eval_suite.ts</code>)</h4>
 <pre><code class="language-typescript">
 // Automated Golden Dataset Eval Suite Runner
-export interface EvalCase {
+interface EvalCase {
   input: Record&lt;string, unknown&gt;;
   expectedOutput: Record&lt;string, unknown&gt;;
 }
 
-export async function runEvalSuite(
+async function runEvalSuite(
   evalCases: EvalCase[],
   runner: (input: Record&lt;string, unknown&gt;) => Promise&lt;Record&lt;string, unknown&gt;&gt;
 ): Promise&lt;{ passRate: number; totalCases: number }&gt; {
@@ -3011,9 +3011,9 @@ import {
   richLayoutCache,
 } from "@/lib/graphics-engine";
 
-export type FontMode = "default" | "opendyslexic";
+type FontMode = "default" | "opendyslexic";
 
-export function useFontPreference() {
+function useFontPreference() {
   const [fontMode, setStoredFontMode] = usePersistentState&lt;FontMode&gt;(
     "portfolio-font-mode",
     "default"

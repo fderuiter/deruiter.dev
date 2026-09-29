@@ -209,7 +209,7 @@ export const StackLayerCards: React.FC = () => {
                           {tech.name}
                         </span>
                         {tech.version && (
-                          <span className="text-[10px] font-mono text-zinc-500 bg-zinc-900 px-1.5 py-0.2 rounded border border-zinc-800">
+                          <span className="text-[10px] font-mono text-muted bg-zinc-900 px-1.5 py-0.2 rounded border border-zinc-800">
                             {tech.version}
                           </span>
                         )}
@@ -224,7 +224,7 @@ export const StackLayerCards: React.FC = () => {
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label={`Visit ${tech.name} official documentation`}
-                        className="text-zinc-500 hover:text-white transition-colors p-1"
+                        className="text-muted hover:text-white transition-colors p-1"
                       >
                         <IconExternalLink className="w-3.5 h-3.5" />
                       </a>
@@ -235,7 +235,7 @@ export const StackLayerCards: React.FC = () => {
 
               {/* Architectural Rationale */}
               <div className="text-xs text-zinc-400 font-sans leading-relaxed mb-4 bg-zinc-950/40 p-3 rounded-xl border border-zinc-900">
-                <span className="font-mono text-[10px] uppercase font-bold text-zinc-500 block mb-1">
+                <span className="font-mono text-[10px] uppercase font-bold text-muted block mb-1">
                   Architectural Rationale
                 </span>
                 {layer.architecturalRationale}
@@ -244,7 +244,7 @@ export const StackLayerCards: React.FC = () => {
 
             {/* Highlights */}
             <div className="pt-3 border-t border-zinc-900/90">
-              <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 font-bold block mb-1.5">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-muted font-bold block mb-1.5">
                 Key Invariants
               </span>
               <ul className="space-y-1">

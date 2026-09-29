@@ -44,6 +44,12 @@ Re-exports [CampaignAct](types/interfaces/CampaignAct.md)
 
 ***
 
+### CampaignKillOutcome
+
+Re-exports [CampaignKillOutcome](engine/type-aliases/CampaignKillOutcome.md)
+
+***
+
 ### checkLaserRayHit
 
 Re-exports [checkLaserRayHit](engine/functions/checkLaserRayHit.md)
@@ -53,6 +59,12 @@ Re-exports [checkLaserRayHit](engine/functions/checkLaserRayHit.md)
 ### CivicEnemyType
 
 Re-exports [CivicEnemyType](types/type-aliases/CivicEnemyType.md)
+
+***
+
+### classifyCampaignKill
+
+Re-exports [classifyCampaignKill](engine/functions/classifyCampaignKill.md)
 
 ***
 

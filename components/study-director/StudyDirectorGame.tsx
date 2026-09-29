@@ -67,9 +67,20 @@ export const StudyDirectorGame: React.FC = () => {
   }, [state]);
 
   const rootRef = useRef<HTMLDivElement>(null);
+  const primaryRef = useRef<HTMLButtonElement>(null);
+  const hasBriefing = state === null;
+  useEffect(() => {
+    if (hasBriefing) primaryRef.current?.focus({ preventScroll: true });
+  }, [hasBriefing]);
   const active = state !== null;
   useEffect(() => {
-    if (active) rootRef.current?.focus();
+    if (!active) return;
+    rootRef.current?.focus({ preventScroll: true });
+    const top = rootRef.current?.getBoundingClientRect().top;
+    if (top !== undefined) {
+      // Clear the fixed site header so the day and attention readout stay visible.
+      window.scrollTo({ top: window.scrollY + top - 88, behavior: "instant" });
+    }
   }, [active]);
 
   const events = useMemo(() => (state ? inbox(state) : []), [state]);
@@ -140,6 +151,28 @@ export const StudyDirectorGame: React.FC = () => {
     );
   }, [state]);
 
+  const skipQuietDays = useCallback(() => {
+    if (!state) return;
+    let next = endDay(state);
+    let skipped = 1;
+    while (
+      next.status === "running" &&
+      inbox(next).length === 0 &&
+      skipped < 30
+    ) {
+      next = endDay(next);
+      skipped += 1;
+    }
+    setState(next);
+    setSelectedId(null);
+    setDocumented(false);
+    setNotice(
+      next.status === "complete"
+        ? "The study is complete."
+        : `Skipped ${skipped} days to day ${next.day}. ${inbox(next).length} messages in the inbox.`
+    );
+  }, [state]);
+
   const restart = useCallback(() => {
     clearStudySave();
     setState(null);
@@ -160,6 +193,9 @@ export const StudyDirectorGame: React.FC = () => {
     if (key === "e") {
       e.preventDefault();
       finishDay();
+    } else if (key === "n" && events.length === 0) {
+      e.preventDefault();
+      skipQuietDays();
     } else if (key === "d") {
       e.preventDefault();
       setDocumented((v) => !v);
@@ -215,6 +251,10 @@ export const StudyDirectorGame: React.FC = () => {
             documentation comes back at the FDA inspection.
           </li>
           <li>
+            A backlog of open queries and unrecorded decisions takes attention
+            before you decide anything. Dashed pips show it.
+          </li>
+          <li>
             The dashboard shows what people report. Audit a site to see what is
             true.
           </li>
@@ -223,6 +263,7 @@ export const StudyDirectorGame: React.FC = () => {
         <div className="flex flex-wrap gap-3">
           <button
             type="button"
+            ref={saved && saved.status === "running" ? undefined : primaryRef}
             onClick={() => start(newStudy())}
             className="min-h-[44px] border border-amber-500 bg-amber-500/10 px-4 text-sm font-bold text-amber-300 hover:bg-amber-500/20"
           >
@@ -231,6 +272,7 @@ export const StudyDirectorGame: React.FC = () => {
           {saved && saved.status === "running" ? (
             <button
               type="button"
+              ref={primaryRef}
               onClick={() => start(saved)}
               className="min-h-[44px] border border-zinc-600 px-4 text-sm text-zinc-200 hover:border-amber-500"
             >
@@ -280,14 +322,25 @@ export const StudyDirectorGame: React.FC = () => {
         <div
           className="flex items-center gap-1.5"
           role="img"
-          aria-label={`${state.attention} of ${ATTENTION_PER_DAY} attention left today`}
+          aria-label={`${state.attention} of ${ATTENTION_PER_DAY} attention left today${state.routine > 0 ? `, ${state.routine} taken by routine work` : ""}`}
+          title={
+            state.routine > 0
+              ? `${state.routine} attention went to routine work: open queries and unrecorded decisions.`
+              : undefined
+          }
         >
           <span className="text-[11px] text-zinc-400">Attention</span>
           {Array.from({ length: ATTENTION_PER_DAY }, (_, i) => (
             <span
               key={i}
               aria-hidden="true"
-              className={`h-2.5 w-2.5 ${i < state.attention ? "bg-amber-500" : "bg-zinc-700"}`}
+              className={`h-2.5 w-2.5 ${
+                i < state.attention
+                  ? "bg-amber-500"
+                  : i >= ATTENTION_PER_DAY - state.routine
+                    ? "border border-dashed border-zinc-500"
+                    : "bg-zinc-700"
+              }`}
             />
           ))}
         </div>
@@ -359,10 +412,21 @@ export const StudyDirectorGame: React.FC = () => {
           >
             End day
           </button>
+          {events.length === 0 ? (
+            <button
+              type="button"
+              onClick={skipQuietDays}
+              className="min-h-[44px] border border-zinc-600 px-4 text-sm text-zinc-200 hover:border-amber-500"
+            >
+              Skip to next message
+            </button>
+          ) : null}
           <p className="text-[11px] text-zinc-400">
             {criticalOpen > 0
               ? `${criticalOpen} critical message${criticalOpen === 1 ? "" : "s"} will lapse if you end the day.`
-              : "Keys: 1-5 choose, D document, J/K move, E end day."}
+              : events.length === 0
+                ? "Nothing is waiting. Keys: E end day, N skip to the next message."
+                : "Keys: 1-5 choose, D document, J/K move, E end day."}
           </p>
         </div>
       ) : null}

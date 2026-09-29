@@ -671,7 +671,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
     objective:
       "Take Study 24-081, a randomized PK study for a first-time biotech, from kickoff to closeout: a scientifically valid, compliant study, on time, without wrecking the budget, the sponsor relationship or your team. Six meters compete and you cannot keep them all high. At the end the sponsor, the company, the science and the regulator each give a verdict, and the FDA may come to ask about your decisions.",
     quickSummary:
-      "Each day you have 8 attention points. Answer messages in the inbox (1 to 5 choose an option), audit a site to see what the dashboard is hiding, then end the day. Documenting a decision costs 1 more attention. Skipped documentation adds documentation debt, which the inspection replays. Your run saves as you play.",
+      "Each day you have 5 attention points. Answer messages in the inbox (1 to 5 choose an option), audit a site to see what the dashboard is hiding, then end the day. Documenting a decision costs 1 more attention. Skipped documentation adds documentation debt, which the inspection replays. Your run saves as you play.",
     controls: [
       {
         action: "Choose an option",
@@ -693,8 +693,14 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         action: "End the day",
         description:
-          "Unanswered messages whose time has run out apply their fallout, the study advances one day and attention refills to 8.",
+          "Unanswered messages whose time has run out apply their fallout, the study advances one day and attention refills to 5, less when a query backlog or documentation debt is taking routine work.",
         key: "E",
+      },
+      {
+        action: "Skip to the next message",
+        description:
+          "When nothing is waiting, ends days until the next message arrives, so quiet stretches take one keypress.",
+        key: "N",
       },
       {
         action: "Audit a site",
@@ -707,7 +713,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         title: "Attention is the resource",
         detail:
-          "You get 8 attention points a day and unspent points do not carry over. Answering, delegating and auditing all spend them, so some messages will go unanswered.",
+          "You get 5 attention points a day and unspent points do not carry over. Answering, delegating and auditing all spend them, so some messages will go unanswered.",
         badge: "Attention",
       },
       {

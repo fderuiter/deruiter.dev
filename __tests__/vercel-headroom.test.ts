@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 import {
@@ -8,6 +8,7 @@ import {
   MemoryNotificationSink,
   evaluateVercelHeadroom,
   runHeadroomVerification,
+  fetchVercelLiveMetrics,
   DEFAULT_THRESHOLDS,
   FREE_TIER_BUDGET_LEDGER,
   type MeterSample,
@@ -343,16 +344,19 @@ describe("Vercel Hobby Storage & Build Headroom Tracker", () => {
       expect(result.meters.buildTime.severity).toBe("warning");
     });
 
-    it("executes CLI verification returning success in standard mode and failing in strict mode", () => {
-      const normalResult = runHeadroomVerification({
+    it("executes CLI verification returning success in standard mode and failing in strict mode", async () => {
+      const fixedNow = new Date("2026-09-12T18:00:00.000Z");
+      const normalResult = await runHeadroomVerification({
         strict: false,
         json: false,
+        evalTime: fixedNow,
       });
       expect(normalResult.success).toBe(true);
 
-      const strictResult = runHeadroomVerification({
+      const strictResult = await runHeadroomVerification({
         strict: true,
         json: false,
+        evalTime: fixedNow,
       });
       expect(strictResult.success).toBe(false); // Fails strict mode due to critical Functions Storage
     });
@@ -373,6 +377,245 @@ describe("Vercel Hobby Storage & Build Headroom Tracker", () => {
       expect(docContent).toContain("Issue #692");
       expect(docContent).toContain("ADR 0036");
       expect(docContent).toContain("HeadroomAlertManager");
+    });
+  });
+
+  describe("7. Dynamic Clock & Live Vercel API Integration", () => {
+    it("defaults evaluateVercelHeadroom evalTime to system clock (new Date())", () => {
+      const fixedNow = new Date("2026-09-13T12:00:00.000Z");
+      const result = evaluateVercelHeadroom(
+        DEFAULT_THRESHOLDS,
+        {},
+        new HeadroomAlertManager(),
+        undefined,
+        fixedNow
+      );
+      expect(result.meters.functionsStorage.isStale).toBe(false);
+      expect(result.meters.functionsStorage.severity).toBe("critical");
+    });
+
+    it("evaluates snapshot samples older than 30 days as stale when evalTime exceeds 30 days", () => {
+      const futureDate = new Date("2026-10-20T00:00:00.000Z"); // > 30 days after snapshot (2026-09-12)
+      const result = evaluateVercelHeadroom(
+        DEFAULT_THRESHOLDS,
+        {},
+        new HeadroomAlertManager(),
+        undefined,
+        futureDate
+      );
+      expect(result.meters.functionsStorage.isStale).toBe(true);
+      expect(result.meters.functionsStorage.severity).toBe("stale");
+      expect(result.meters.functionsStorage.message).toContain("stale");
+      expect(result.meters.deploymentStorage.isStale).toBe(true);
+      expect(result.meters.deploymentStorage.severity).toBe("stale");
+      expect(result.meters.buildTime.isStale).toBe(true);
+      expect(result.meters.buildTime.severity).toBe("stale");
+    });
+
+    it("fetches live Vercel REST API usage when VERCEL_TOKEN is available", async () => {
+      const mockFetch = vi.fn().mockImplementation((url: string) => {
+        if (url.includes("/v6/deployments")) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ deployments: [{ id: "dpl_1" }] }),
+          });
+        }
+        if (url.includes("/v2/usage")) {
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                functionsStorage: { used: 4.5 },
+                deploymentStorage: { used: 3.2 },
+                builds: { used: 42.0 },
+              }),
+          });
+        }
+        return Promise.reject(new Error("Unknown URL"));
+      });
+
+      const liveResult = await fetchVercelLiveMetrics({
+        token: "test_token_123",
+        teamId: "team_456",
+        fetchImpl: mockFetch as unknown as typeof fetch,
+      });
+
+      expect(liveResult).not.toBeNull();
+      expect(liveResult?.meters.functionsStorage?.used).toBe(4.5);
+      expect(liveResult?.meters.deploymentStorage?.used).toBe(3.2);
+      expect(liveResult?.meters.buildTime?.used).toBe(42.0);
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining(
+          "https://api.vercel.com/v6/deployments?teamId=team_456"
+        ),
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            Authorization: "Bearer test_token_123",
+          }),
+        })
+      );
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining(
+          "https://api.vercel.com/v2/usage?teamId=team_456"
+        ),
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            Authorization: "Bearer test_token_123",
+          }),
+        })
+      );
+    });
+
+    it("falls back gracefully to snapshot evaluation when VERCEL_TOKEN is absent", async () => {
+      const result = await runHeadroomVerification({
+        token: undefined,
+        evalTime: new Date("2026-09-13T12:00:00.000Z"),
+      });
+      expect(result.data.timestamp).toBe("2026-09-12T23:31:22.151Z");
+      expect(result.data.meters.functionsStorage.used).toBe(9.68);
+    });
+
+    it("evaluates live fetched samples correctly in runHeadroomVerification", async () => {
+      const mockFetch = vi.fn().mockImplementation((url: string) => {
+        if (url.includes("/v2/usage")) {
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                functionsStorage: { used: 2.0 },
+                deploymentStorage: { used: 1.0 },
+                builds: { used: 10.0 },
+              }),
+          });
+        }
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+      });
+
+      const fixedNow = new Date("2026-09-28T12:00:00.000Z");
+      const result = await runHeadroomVerification({
+        token: "live_test_token",
+        evalTime: fixedNow,
+        fetchImpl: mockFetch as unknown as typeof fetch,
+        strict: true,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.data.hasCriticalAlerts).toBe(false);
+      expect(result.data.meters.functionsStorage.severity).toBe("healthy");
+      expect(result.data.meters.functionsStorage.used).toBe(2.0);
+    });
+
+    it("handles malformed or nonfinite provider values by keeping meters unreadable", async () => {
+      const mockFetch = vi.fn().mockImplementation((url: string) => {
+        if (url.includes("/v2/usage")) {
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                functionsStorage: { used: "invalid_string" },
+                deploymentStorage: { used: -50.0 },
+                builds: { used: NaN },
+              }),
+          });
+        }
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+      });
+
+      const liveResult = await fetchVercelLiveMetrics({
+        token: "live_test_token",
+        fetchImpl: mockFetch as unknown as typeof fetch,
+      });
+
+      expect(liveResult).toBeNull(); // No valid meters produced from malformed response
+
+      // Evaluate null live samples to verify unreadable severity
+      const evalNull = evaluateMeter({
+        resource: "Functions Storage",
+        used: null,
+        limit: 10.0,
+        unit: "GB",
+        timestamp: new Date().toISOString(),
+      });
+      expect(evalNull.severity).toBe("unreadable");
+      expect(evalNull.isUnreadable).toBe(true);
+    });
+
+    it("normalizes byte counts to GB and seconds to hours strictly from field names and schema units, independent of value magnitude", async () => {
+      // Test explicit usedBytes: 9999 (9999 bytes -> 0.0000093 GB, NOT 9999 GB)
+      // Test explicit usedBytes: 10001 (10001 bytes -> ~0.0000093 GB)
+      // Test explicit usedSeconds: 999 (999 seconds -> 0.2775 hours, NOT 999 hours)
+      // Test explicit usedSeconds: 1001 (1001 seconds -> 0.278 hours)
+      const mockFetchBytesSmall = vi.fn().mockImplementation((url: string) => {
+        if (url.includes("/v2/usage")) {
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                functionsStorage: { usedBytes: 9999 },
+                deploymentStorage: { usedBytes: 10001 },
+                builds: { usedSeconds: 999 },
+              }),
+          });
+        }
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+      });
+
+      const liveSmall = await fetchVercelLiveMetrics({
+        token: "live_test_token",
+        fetchImpl: mockFetchBytesSmall as unknown as typeof fetch,
+      });
+
+      expect(liveSmall).not.toBeNull();
+      // 9999 bytes / (1024^3) = ~0.0000093 GB -> formatted via toFixed(3) as 0
+      expect(liveSmall?.meters.functionsStorage?.used).toBe(0);
+      // 10001 bytes / (1024^3) = ~0.0000093 GB -> formatted via toFixed(3) as 0
+      expect(liveSmall?.meters.deploymentStorage?.used).toBe(0);
+      // 999 seconds / 3600 = 0.2775 hours -> formatted via toFixed(3) as 0.278
+      expect(liveSmall?.meters.buildTime?.used).toBe(0.278);
+
+      const mockFetchGBAndHours = vi.fn().mockImplementation((url: string) => {
+        if (url.includes("/v2/usage")) {
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                functionsStorage: { used: 9999, unit: "GB" },
+                deploymentStorage: { used: 10001, unit: "GB" },
+                builds: { usedSeconds: 1001 },
+              }),
+          });
+        }
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+      });
+
+      const liveGBAndHours = await fetchVercelLiveMetrics({
+        token: "live_test_token",
+        fetchImpl: mockFetchGBAndHours as unknown as typeof fetch,
+      });
+
+      expect(liveGBAndHours).not.toBeNull();
+      // Explicit unit "GB" preserves 9999 without byte division
+      expect(liveGBAndHours?.meters.functionsStorage?.used).toBe(9999);
+      expect(liveGBAndHours?.meters.deploymentStorage?.used).toBe(10001);
+      // 1001 seconds / 3600 = 0.278055... -> 0.278 hours
+      expect(liveGBAndHours?.meters.buildTime?.used).toBe(0.278);
+    });
+
+    it("preserves static inventory timestamp on fallback and flags stale data when evalTime > 30 days", () => {
+      const futureEvalTime = new Date("2026-11-01T00:00:00.000Z"); // >30 days after snapshot
+      const result = evaluateVercelHeadroom(
+        DEFAULT_THRESHOLDS,
+        {},
+        new HeadroomAlertManager(),
+        undefined,
+        futureEvalTime,
+        null // No live samples
+      );
+
+      expect(result.timestamp).toBe("2026-09-12T23:31:22.151Z"); // Preserves static fallback timestamp
+      expect(result.meters.functionsStorage.severity).toBe("stale");
+      expect(result.meters.functionsStorage.isStale).toBe(true);
     });
   });
 });

@@ -26,6 +26,15 @@
 
 ***
 
+### finding?
+
+> `optional` **finding?**: [`InspectionFinding`](InspectionFinding.md)
+
+What an inspector asks about this choice. If the player documented it
+the question closes; if not, it becomes an observation.
+
+***
+
 ### flags?
 
 > `optional` **flags?**: `string`[]

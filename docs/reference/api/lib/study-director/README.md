@@ -68,6 +68,12 @@ Re-exports [beginStudy](internal/events/functions/beginStudy.md)
 
 ***
 
+### classifyProfile
+
+Re-exports [classifyProfile](internal/endgame/functions/classifyProfile.md)
+
+***
+
 ### computeMeters
 
 Re-exports [computeMeters](internal/model/functions/computeMeters.md)
@@ -134,9 +140,33 @@ Re-exports [endDay](internal/events/functions/endDay.md)
 
 ***
 
+### evaluate
+
+Re-exports [evaluate](internal/endgame/functions/evaluate.md)
+
+***
+
+### Evaluations
+
+Re-exports [Evaluations](types/interfaces/Evaluations.md)
+
+***
+
 ### EventOption
 
 Re-exports [EventOption](types/interfaces/EventOption.md)
+
+***
+
+### finalizeStudy
+
+Re-exports [finalizeStudy](internal/endgame/functions/finalizeStudy.md)
+
+***
+
+### FinalReport
+
+Re-exports [FinalReport](types/interfaces/FinalReport.md)
 
 ***
 
@@ -155,6 +185,42 @@ Re-exports [Health](types/type-aliases/Health.md)
 ### inbox
 
 Re-exports [inbox](internal/events/functions/inbox.md)
+
+***
+
+### InspectionFinding
+
+Re-exports [InspectionFinding](types/interfaces/InspectionFinding.md)
+
+***
+
+### InspectionItem
+
+Re-exports [InspectionItem](types/interfaces/InspectionItem.md)
+
+***
+
+### inspectionReadiness
+
+Re-exports [inspectionReadiness](internal/endgame/functions/inspectionReadiness.md)
+
+***
+
+### InspectionReport
+
+Re-exports [InspectionReport](types/interfaces/InspectionReport.md)
+
+***
+
+### lockDatabase
+
+Re-exports [lockDatabase](internal/endgame/functions/lockDatabase.md)
+
+***
+
+### LockSummary
+
+Re-exports [LockSummary](types/interfaces/LockSummary.md)
 
 ***
 
@@ -200,6 +266,12 @@ Re-exports [PHASES](types/variables/PHASES.md)
 
 ***
 
+### ProfileResult
+
+Re-exports [ProfileResult](types/interfaces/ProfileResult.md)
+
+***
+
 ### projectedFinishDay
 
 Re-exports [projectedFinishDay](internal/model/functions/projectedFinishDay.md)
@@ -215,6 +287,12 @@ Re-exports [resolveDecision](internal/model/functions/resolveDecision.md)
 ### resolveEvent
 
 Re-exports [resolveEvent](internal/events/functions/resolveEvent.md)
+
+***
+
+### runInspection
+
+Re-exports [runInspection](internal/endgame/functions/runInspection.md)
 
 ***
 
@@ -257,6 +335,12 @@ Re-exports [STUDY_24_081_TEAM](presets/variables/STUDY_24_081_TEAM.md)
 ### STUDY\_EVENTS
 
 Re-exports [STUDY_EVENTS](internal/events-data/variables/STUDY_EVENTS.md)
+
+***
+
+### StudyDirectorProfile
+
+Re-exports [StudyDirectorProfile](types/type-aliases/StudyDirectorProfile.md)
 
 ***
 

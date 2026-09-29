@@ -32,3 +32,11 @@ export {
   inbox,
   resolveEvent,
 } from "./internal/events";
+export {
+  classifyProfile,
+  evaluate,
+  finalizeStudy,
+  inspectionReadiness,
+  lockDatabase,
+  runInspection,
+} from "./internal/endgame";

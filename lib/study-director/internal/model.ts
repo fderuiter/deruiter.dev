@@ -538,6 +538,18 @@ export function auditSite(
     state: {
       ...state,
       attention: state.attention - AUDIT_ATTENTION,
+      log: [
+        ...state.log,
+        {
+          day: state.day,
+          eventId: `audit:${siteId}`,
+          optionId: "audit",
+          label: `Audited ${site.name}`,
+          documented: true,
+          attentionSpent: AUDIT_ATTENTION,
+          effects: { auditSites: [siteId] },
+        },
+      ],
       sites: state.sites.map((s) =>
         s.id === siteId ? { ...s, lastAuditedDay: state.day } : s
       ),

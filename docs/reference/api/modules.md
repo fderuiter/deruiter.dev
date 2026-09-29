@@ -260,6 +260,7 @@
 - [lib/services/service-result](lib/services/service-result/README.md)
 - [lib/services/telemetry-service](lib/services/telemetry-service/README.md)
 - [lib/study-director](lib/study-director/README.md)
+- [lib/study-director/internal/endgame](lib/study-director/internal/endgame/README.md)
 - [lib/study-director/internal/events](lib/study-director/internal/events/README.md)
 - [lib/study-director/internal/events-data](lib/study-director/internal/events-data/README.md)
 - [lib/study-director/internal/model](lib/study-director/internal/model/README.md)

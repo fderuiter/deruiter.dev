@@ -190,6 +190,19 @@ export interface EventOption {
   flags?: string[];
   /** Follow-up events scheduled this many days out. */
   schedule?: Array<{ eventId: string; inDays: number }>;
+  /**
+   * What an inspector asks about this choice. If the player documented it
+   * the question closes; if not, it becomes an observation.
+   */
+  finding?: InspectionFinding;
+}
+
+export interface InspectionFinding {
+  question: string;
+  /** What the file shows when the decision was documented. */
+  answer: string;
+  /** Severity if the decision was not documented. */
+  severity: "minor" | "major";
 }
 
 export interface StudyEvent {
@@ -237,3 +250,64 @@ export type ActionResult<T extends object = object> =
       ok: false;
       reason: "not-enough-attention" | "unknown-target" | "study-complete";
     };
+
+export interface LockSummary {
+  dataCleanPct: number;
+  openQueriesAtLock: number;
+  /** Days added because queries were still open at lock. */
+  lockDelayDays: number;
+}
+
+export type StudyDirectorProfile =
+  | "firefighter"
+  | "bureaucrat"
+  | "peoplePleaser"
+  | "scientist"
+  | "operator"
+  | "delegator"
+  | "controlFreak";
+
+export interface ProfileResult {
+  profile: StudyDirectorProfile;
+  title: string;
+  /** The strength and the catch, in the game's voice. */
+  summary: string;
+  /** Plain figures behind the label. */
+  evidence: string[];
+}
+
+export interface Evaluations {
+  sponsor: { stars: 1 | 2 | 3 | 4 | 5; quote: string };
+  company: { marginPct: number; timelineVarianceDays: number };
+  science: {
+    evaluablePct: number;
+    missingPct: number;
+    majorDeviations: number;
+  };
+  regulatory: { grade: "A" | "B" | "C" | "D" | "F"; gaps: number };
+}
+
+export interface InspectionItem {
+  eventId: string;
+  day: number;
+  question: string;
+  documented: boolean;
+  /** What the inspector found on file. */
+  answer: string;
+  outcome: "closed" | "minor" | "major";
+}
+
+export interface InspectionReport {
+  /** True when the FDA actually came. */
+  triggered: boolean;
+  items: InspectionItem[];
+  grade: Evaluations["regulatory"]["grade"];
+}
+
+export interface FinalReport {
+  state: StudyState;
+  lock: LockSummary;
+  evaluations: Evaluations;
+  profile: ProfileResult;
+  inspection: InspectionReport;
+}

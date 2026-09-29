@@ -523,60 +523,159 @@ export function parseFiniteNonNegativeNumber(val: unknown): number | null {
 
 /**
  * Normalizes storage value to GB based strictly on property name or unit string,
- * NEVER on numerical magnitude.
+ * NEVER on numerical magnitude. Returns null for unknown, missing, or conflicting units.
  */
 export function normalizeStorageToGB(
   val: number,
   propName?: string,
   unitStr?: string
-): number {
-  const lowerProp = (propName || "").toLowerCase();
-  const lowerUnit = (unitStr || "").toLowerCase();
+): number | null {
+  const lowerProp = (propName || "").toLowerCase().trim();
+  const lowerUnit = (unitStr || "").toLowerCase().trim();
+
+  let propUnit: "bytes" | "mb" | "gb" | null = null;
+  let isSpecificPropUnit = false;
+
+  if (lowerProp.includes("bytes") || lowerProp === "artifactssize") {
+    propUnit = "bytes";
+    isSpecificPropUnit = true;
+  } else if (lowerProp.includes("mb") || lowerProp === "usedmb") {
+    propUnit = "mb";
+    isSpecificPropUnit = true;
+  } else if (lowerProp.includes("gb") || lowerProp === "usedgb") {
+    propUnit = "gb";
+    isSpecificPropUnit = true;
+  } else if (
+    lowerProp === "functionsstorage" ||
+    lowerProp === "deploymentstorage" ||
+    lowerProp === "storage"
+  ) {
+    propUnit = "gb";
+    isSpecificPropUnit = false;
+  }
+
+  let explicitUnit: "bytes" | "mb" | "gb" | null = null;
+  if (lowerUnit !== "") {
+    if (lowerUnit === "bytes" || lowerUnit === "b") {
+      explicitUnit = "bytes";
+    } else if (lowerUnit === "mb") {
+      explicitUnit = "mb";
+    } else if (lowerUnit === "gb" || lowerUnit === "gigabytes") {
+      explicitUnit = "gb";
+    } else {
+      return null;
+    }
+  }
 
   if (
-    lowerProp.includes("bytes") ||
-    lowerProp === "artifactssize" ||
-    lowerUnit === "bytes" ||
-    lowerUnit === "b"
+    isSpecificPropUnit &&
+    explicitUnit !== null &&
+    propUnit !== explicitUnit
   ) {
+    return null;
+  }
+
+  const effectiveUnit = explicitUnit ?? propUnit;
+  if (effectiveUnit === "bytes") {
     return val / (1024 * 1024 * 1024);
   }
-  if (lowerUnit === "mb") {
+  if (effectiveUnit === "mb") {
     return val / 1024;
   }
-  return val;
+  if (effectiveUnit === "gb") {
+    return val;
+  }
+
+  return null;
 }
 
 /**
  * Normalizes build duration value to hours based strictly on property name or unit string,
- * NEVER on numerical magnitude.
+ * NEVER on numerical magnitude. Returns null for unknown, missing, or conflicting units.
  */
 export function normalizeDurationToHours(
   val: number,
   propName?: string,
   unitStr?: string
-): number {
-  const lowerProp = (propName || "").toLowerCase();
-  const lowerUnit = (unitStr || "").toLowerCase();
+): number | null {
+  const lowerProp = (propName || "").toLowerCase().trim();
+  const lowerUnit = (unitStr || "").toLowerCase().trim();
+
+  let propUnit: "seconds" | "minutes" | "hours" | null = null;
+  let isSpecificPropUnit = false;
 
   if (
     lowerProp.includes("seconds") ||
     lowerProp === "seconds" ||
-    lowerUnit === "seconds" ||
-    lowerUnit === "s" ||
-    lowerUnit === "sec"
+    lowerProp === "sec"
   ) {
+    propUnit = "seconds";
+    isSpecificPropUnit = true;
+  } else if (
+    lowerProp.includes("minutes") ||
+    lowerProp === "minutes" ||
+    lowerProp === "min"
+  ) {
+    propUnit = "minutes";
+    isSpecificPropUnit = true;
+  } else if (
+    lowerProp.includes("hours") ||
+    lowerProp === "hours" ||
+    lowerProp === "hr"
+  ) {
+    propUnit = "hours";
+    isSpecificPropUnit = true;
+  } else if (
+    lowerProp === "buildtime" ||
+    lowerProp === "builds" ||
+    lowerProp === "duration"
+  ) {
+    propUnit = "hours";
+    isSpecificPropUnit = false;
+  }
+
+  let explicitUnit: "seconds" | "minutes" | "hours" | null = null;
+  if (lowerUnit !== "") {
+    if (lowerUnit === "seconds" || lowerUnit === "s" || lowerUnit === "sec") {
+      explicitUnit = "seconds";
+    } else if (
+      lowerUnit === "minutes" ||
+      lowerUnit === "m" ||
+      lowerUnit === "min"
+    ) {
+      explicitUnit = "minutes";
+    } else if (
+      lowerUnit === "hours" ||
+      lowerUnit === "h" ||
+      lowerUnit === "hr" ||
+      lowerUnit === "hrs"
+    ) {
+      explicitUnit = "hours";
+    } else {
+      return null;
+    }
+  }
+
+  if (
+    isSpecificPropUnit &&
+    explicitUnit !== null &&
+    propUnit !== explicitUnit
+  ) {
+    return null;
+  }
+
+  const effectiveUnit = explicitUnit ?? propUnit;
+  if (effectiveUnit === "seconds") {
     return val / 3600;
   }
-  if (
-    lowerProp.includes("minutes") ||
-    lowerUnit === "minutes" ||
-    lowerUnit === "m" ||
-    lowerUnit === "min"
-  ) {
+  if (effectiveUnit === "minutes") {
     return val / 60;
   }
-  return val;
+  if (effectiveUnit === "hours") {
+    return val;
+  }
+
+  return null;
 }
 
 /**
@@ -656,10 +755,10 @@ export async function fetchVercelLiveMetrics(
           rawFsProp = "usedGB";
         } else if ("used" in fsObj) {
           rawFsVal = fsObj.used;
-          rawFsProp = "used";
+          rawFsProp = "functionsStorage";
         } else if ("storage" in fsObj) {
           rawFsVal = fsObj.storage;
-          rawFsProp = "storage";
+          rawFsProp = "functionsStorage";
         }
         if (typeof fsObj.unit === "string") {
           rawFsUnit = fsObj.unit;
@@ -684,21 +783,22 @@ export async function fetchVercelLiveMetrics(
       ) {
         if (typeof fsObj.limit === "object" && fsObj.limit !== null) {
           rawFsLimitVal = fsObj.limit.limit ?? fsObj.limit.used;
-          rawFsLimitProp = "limit";
+          rawFsLimitProp = "functionsStorage";
           if (typeof fsObj.limit.unit === "string")
             rawFsLimitUnit = fsObj.limit.unit;
         } else {
           rawFsLimitVal = fsObj.limit;
-          rawFsLimitProp = "limit";
+          rawFsLimitProp = "functionsStorage";
         }
       }
       const parsedFsLimit = parseFiniteNonNegativeNumber(rawFsLimitVal);
       if (parsedFsLimit !== null) {
-        functionsLimit = normalizeStorageToGB(
-          parsedFsLimit,
-          rawFsLimitProp,
-          rawFsLimitUnit || rawFsUnit
-        );
+        functionsLimit =
+          normalizeStorageToGB(
+            parsedFsLimit,
+            rawFsLimitProp,
+            rawFsLimitUnit || rawFsUnit
+          ) ?? 10.0;
       }
 
       // Deployment Storage extraction & unit normalization
@@ -716,7 +816,7 @@ export async function fetchVercelLiveMetrics(
           rawDsProp = "usedGB";
         } else if ("used" in dsObj) {
           rawDsVal = dsObj.used;
-          rawDsProp = "used";
+          rawDsProp = "deploymentStorage";
         }
         if (typeof dsObj.unit === "string") {
           rawDsUnit = dsObj.unit;
@@ -748,21 +848,22 @@ export async function fetchVercelLiveMetrics(
       ) {
         if (typeof dsObj.limit === "object" && dsObj.limit !== null) {
           rawDsLimitVal = dsObj.limit.limit ?? dsObj.limit.used;
-          rawDsLimitProp = "limit";
+          rawDsLimitProp = "deploymentStorage";
           if (typeof dsObj.limit.unit === "string")
             rawDsLimitUnit = dsObj.limit.unit;
         } else {
           rawDsLimitVal = dsObj.limit;
-          rawDsLimitProp = "limit";
+          rawDsLimitProp = "deploymentStorage";
         }
       }
       const parsedDsLimit = parseFiniteNonNegativeNumber(rawDsLimitVal);
       if (parsedDsLimit !== null) {
-        deploymentStorageLimit = normalizeStorageToGB(
-          parsedDsLimit,
-          rawDsLimitProp,
-          rawDsLimitUnit || rawDsUnit
-        );
+        deploymentStorageLimit =
+          normalizeStorageToGB(
+            parsedDsLimit,
+            rawDsLimitProp,
+            rawDsLimitUnit || rawDsUnit
+          ) ?? 10.0;
       }
 
       // Build Time extraction & unit normalization
@@ -780,7 +881,7 @@ export async function fetchVercelLiveMetrics(
           rawBtProp = "usedHours";
         } else if ("used" in btObj) {
           rawBtVal = btObj.used;
-          rawBtProp = "used";
+          rawBtProp = "buildTime";
         }
         if (typeof btObj.unit === "string") {
           rawBtUnit = btObj.unit;
@@ -809,21 +910,22 @@ export async function fetchVercelLiveMetrics(
       ) {
         if (typeof btObj.limit === "object" && btObj.limit !== null) {
           rawBtLimitVal = btObj.limit.limit ?? btObj.limit.used;
-          rawBtLimitProp = "limit";
+          rawBtLimitProp = "buildTime";
           if (typeof btObj.limit.unit === "string")
             rawBtLimitUnit = btObj.limit.unit;
         } else {
           rawBtLimitVal = btObj.limit;
-          rawBtLimitProp = "limit";
+          rawBtLimitProp = "buildTime";
         }
       }
       const parsedBtLimit = parseFiniteNonNegativeNumber(rawBtLimitVal);
       if (parsedBtLimit !== null) {
-        buildTimeLimit = normalizeDurationToHours(
-          parsedBtLimit,
-          rawBtLimitProp,
-          rawBtLimitUnit || rawBtUnit
-        );
+        buildTimeLimit =
+          normalizeDurationToHours(
+            parsedBtLimit,
+            rawBtLimitProp,
+            rawBtLimitUnit || rawBtUnit
+          ) ?? 100.0;
       }
     }
 

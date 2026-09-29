@@ -9,6 +9,8 @@ import {
   evaluateVercelHeadroom,
   runHeadroomVerification,
   fetchVercelLiveMetrics,
+  normalizeStorageToGB,
+  normalizeDurationToHours,
   DEFAULT_THRESHOLDS,
   FREE_TIER_BUDGET_LEDGER,
   type MeterSample,
@@ -616,6 +618,69 @@ describe("Vercel Hobby Storage & Build Headroom Tracker", () => {
       expect(result.timestamp).toBe("2026-09-12T23:31:22.151Z"); // Preserves static fallback timestamp
       expect(result.meters.functionsStorage.severity).toBe("stale");
       expect(result.meters.functionsStorage.isStale).toBe(true);
+    });
+  });
+
+  describe("8. Strict Unit Normalization Regressions", () => {
+    it("returns null for unknown/missing/conflicting storage units", () => {
+      // Unknown explicit unit
+      expect(normalizeStorageToGB(512, "used", "requests")).toBeNull();
+      // Generic propName with missing unit
+      expect(normalizeStorageToGB(512, "used", "")).toBeNull();
+      expect(normalizeStorageToGB(512, "", undefined)).toBeNull();
+      // Conflicting propName and explicit unit
+      expect(normalizeStorageToGB(512, "usedBytes", "GB")).toBeNull();
+      expect(normalizeStorageToGB(512, "usedGB", "bytes")).toBeNull();
+    });
+
+    it("converts storage correctly for verified base-unit names and supported explicit units", () => {
+      // Verified propName without explicit unit
+      expect(normalizeStorageToGB(1073741824, "usedBytes")).toBe(1);
+      expect(normalizeStorageToGB(1024, "usedMB")).toBe(1);
+      expect(normalizeStorageToGB(10, "usedGB")).toBe(10);
+      expect(normalizeStorageToGB(1073741824, "artifactsSize")).toBe(1);
+
+      // Supported explicit unit
+      expect(normalizeStorageToGB(1073741824, "used", "bytes")).toBe(1);
+      expect(normalizeStorageToGB(1073741824, "used", "b")).toBe(1);
+      expect(normalizeStorageToGB(2048, "used", "mb")).toBe(2);
+      expect(normalizeStorageToGB(5, "used", "gb")).toBe(5);
+      expect(normalizeStorageToGB(5, "used", "gigabytes")).toBe(5);
+
+      // Consistent propName and explicit unit
+      expect(normalizeStorageToGB(1073741824, "usedBytes", "bytes")).toBe(1);
+    });
+
+    it("returns null for unknown/missing/conflicting duration units", () => {
+      // Unknown explicit unit
+      expect(normalizeDurationToHours(1000, "used", "milliseconds")).toBeNull();
+      expect(normalizeDurationToHours(1000, "used", "requests")).toBeNull();
+      // Generic propName with missing unit
+      expect(normalizeDurationToHours(1000, "used", "")).toBeNull();
+      expect(normalizeDurationToHours(1000, "", undefined)).toBeNull();
+      // Conflicting propName and explicit unit
+      expect(normalizeDurationToHours(1000, "usedSeconds", "hours")).toBeNull();
+      expect(normalizeDurationToHours(1000, "usedHours", "seconds")).toBeNull();
+    });
+
+    it("converts duration correctly for verified base-unit names and supported explicit units", () => {
+      // Verified propName without explicit unit
+      expect(normalizeDurationToHours(3600, "usedSeconds")).toBe(1);
+      expect(normalizeDurationToHours(60, "usedMinutes")).toBe(1);
+      expect(normalizeDurationToHours(10, "usedHours")).toBe(10);
+
+      // Supported explicit unit
+      expect(normalizeDurationToHours(7200, "used", "seconds")).toBe(2);
+      expect(normalizeDurationToHours(7200, "used", "s")).toBe(2);
+      expect(normalizeDurationToHours(7200, "used", "sec")).toBe(2);
+      expect(normalizeDurationToHours(120, "used", "minutes")).toBe(2);
+      expect(normalizeDurationToHours(120, "used", "m")).toBe(2);
+      expect(normalizeDurationToHours(120, "used", "min")).toBe(2);
+      expect(normalizeDurationToHours(5, "used", "hours")).toBe(5);
+      expect(normalizeDurationToHours(5, "used", "h")).toBe(5);
+
+      // Consistent propName and explicit unit
+      expect(normalizeDurationToHours(3600, "usedSeconds", "seconds")).toBe(1);
     });
   });
 });

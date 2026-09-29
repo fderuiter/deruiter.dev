@@ -337,17 +337,6 @@ async function verifyVercelHeadroomCapacity(
     const parsed = JSON.parse(output);
     return validateParsedHeadroomReport(parsed, logger);
   } catch (err) {
-    if (err && err.stdout) {
-      try {
-        const parsed = JSON.parse(err.stdout);
-        if (validateParsedHeadroomReport(parsed, logger)) {
-          return true;
-        }
-        return false;
-      } catch (_e) {
-        // Ignore parse error
-      }
-    }
     logger.error(
       "Vercel headroom check failed to execute:",
       err && err.message

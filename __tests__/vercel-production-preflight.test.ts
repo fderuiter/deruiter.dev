@@ -433,11 +433,7 @@ describe("Vercel Headroom Capacity Preflight Check", () => {
         },
       },
     });
-    const mockExec = vi.fn().mockImplementation(() => {
-      const err = new Error("Command failed") as Error & { stdout?: string };
-      err.stdout = criticalJson;
-      throw err;
-    });
+    const mockExec = vi.fn().mockReturnValue(criticalJson);
     const result = await verifyVercelHeadroomCapacity(env, logger, mockExec);
     expect(result).toBe(false);
     expect(loggedText(logger)).toContain("unhealthy severity: critical");
@@ -455,6 +451,26 @@ describe("Vercel Headroom Capacity Preflight Check", () => {
       "Vercel headroom check failed to execute"
     );
     expect(loggedText(logger)).toContain("MODULE_NOT_FOUND");
+  });
+
+  it("returns false when child process fails (non-zero exit) even if stdout emitted healthy JSON report", async () => {
+    const logger = silentLogger();
+    const env = { ...validProductionEnv(), VERCEL_TOKEN: "valid_token" };
+    const mockExec = vi.fn().mockImplementation(() => {
+      const err = new Error("Command failed with exit status 1") as Error & {
+        stdout?: string;
+        status?: number;
+      };
+      err.stdout = healthyJson;
+      err.status = 1;
+      throw err;
+    });
+    const result = await verifyVercelHeadroomCapacity(env, logger, mockExec);
+    expect(result).toBe(false);
+    expect(loggedText(logger)).toContain(
+      "Vercel headroom check failed to execute"
+    );
+    expect(loggedText(logger)).toContain("Command failed with exit status 1");
   });
 
   it("returns false and logs error when capacity measurement is unreadable (unavailable outcome)", async () => {
@@ -552,7 +568,7 @@ describe("Vercel Headroom Capacity Preflight Check", () => {
     expect(loggedText(logger)).toContain("VERCEL_TOKEN is not set");
   });
 
-  it("executes headroom script via actual process boundary and fails when snapshot inventory has critical meter", async () => {
+  it("executes headroom script via actual process boundary and fails when process fails or outputs critical severity", async () => {
     const logger = silentLogger();
     const env: Env = {
       ...validProductionEnv(),
@@ -560,6 +576,8 @@ describe("Vercel Headroom Capacity Preflight Check", () => {
     };
     const result = await verifyVercelHeadroomCapacity(env, logger);
     expect(result).toBe(false);
-    expect(loggedText(logger)).toContain("unhealthy severity: critical");
+    expect(loggedText(logger)).toMatch(
+      /unhealthy severity: critical|Vercel headroom check failed to execute/
+    );
   });
 });

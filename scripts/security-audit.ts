@@ -547,16 +547,21 @@ export function runSecurityAudit(options: SecurityAuditOptions = {}): boolean {
     auditResult.error ||
     !auditJson ||
     typeof auditJson !== "object" ||
-    (!auditJson.vulnerabilities &&
-      typeof auditJson.auditReportVersion !== "number" &&
-      (auditResult.status !== 0 || !rawOutput))
+    Array.isArray(auditJson) ||
+    !auditJson.vulnerabilities ||
+    typeof auditJson.vulnerabilities !== "object" ||
+    Array.isArray(auditJson.vulnerabilities) ||
+    "error" in auditJson ||
+    auditResult.signal ||
+    (auditResult.status != null &&
+      auditResult.status !== 0 &&
+      (auditResult.status !== 1 ||
+        Object.keys(auditJson.vulnerabilities).length === 0))
   ) {
     console.error(
       `${colors.brightRed}❌ npm audit execution failed or returned an invalid audit report.${colors.reset}`
     );
-    if (rawStderr) {
-      console.error(`${colors.gray}stderr: ${rawStderr}${colors.reset}`);
-    }
+    // Raw process output can contain credentials; report only the failure category.
     if (options.throwOnError) {
       throw new Error("npm audit execution failed or returned invalid JSON.");
     }

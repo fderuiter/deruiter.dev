@@ -8,7 +8,6 @@ import child_process from "child_process";
 function setProductionConfig() {
   process.env.VERCEL = "1";
   process.env.VERCEL_ENV = "production";
-  process.env.VERCEL_TOKEN = "tok-fake-vercel";
   process.env.DATABASE_URL = "postgresql://pooled.neon.test/db";
   process.env.DATABASE_URL_UNPOOLED = "postgresql://unpooled.neon.test/db";
   process.env.CRON_SECRET = "cron-fake";
@@ -21,7 +20,20 @@ describe("build.js script execution", () => {
   let originalEnv: NodeJS.ProcessEnv;
   let exitMock: any;
   let spawnSpy: any;
-  let execFileSpy: any;
+
+  it("never invokes optional headroom probing during a production build", async () => {
+    setProductionConfig();
+    delete process.env.VERCEL_TOKEN;
+    const execSpy = vi.spyOn(child_process, "execFileSync");
+    try {
+      await expect(require("../scripts/build.js")).rejects.toThrow(
+        "Process exited with code 0"
+      );
+      expect(execSpy).not.toHaveBeenCalled();
+    } finally {
+      execSpy.mockRestore();
+    }
+  });
 
   beforeEach(() => {
     // Clear require cache for scripts/build.js so it executes on each require call
@@ -34,50 +46,6 @@ describe("build.js script execution", () => {
     spawnSpy = vi
       .spyOn(child_process, "spawnSync")
       .mockImplementation(() => ({ status: 0 }) as any);
-    execFileSpy = vi
-      .spyOn(child_process, "execFileSync")
-      .mockImplementation((_prog: any, args: any) => {
-        if (
-          args &&
-          Array.isArray(args) &&
-          args.includes("scripts/vercel-headroom.ts")
-        ) {
-          return JSON.stringify({
-            timestamp: new Date().toISOString(),
-            hasCriticalAlerts: false,
-            meters: {
-              functionsStorage: {
-                resource: "Functions Storage",
-                used: 2.0,
-                limit: 10.0,
-                unit: "GB",
-                severity: "healthy",
-                isStale: false,
-                isUnreadable: false,
-              },
-              deploymentStorage: {
-                resource: "Deployment Storage",
-                used: 1.0,
-                limit: 10.0,
-                unit: "GB",
-                severity: "healthy",
-                isStale: false,
-                isUnreadable: false,
-              },
-              buildTime: {
-                resource: "Build Time",
-                used: 10.0,
-                limit: 100.0,
-                unit: "hours",
-                severity: "healthy",
-                isStale: false,
-                isUnreadable: false,
-              },
-            },
-          });
-        }
-        return "" as any;
-      });
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => ({
@@ -92,7 +60,6 @@ describe("build.js script execution", () => {
     process.env = originalEnv;
     exitMock.mockRestore();
     spawnSpy.mockRestore();
-    execFileSpy.mockRestore();
     vi.unstubAllGlobals();
   });
 

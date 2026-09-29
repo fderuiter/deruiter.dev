@@ -1,4 +1,5 @@
 import { createRequire } from "module";
+import { execFileSync } from "node:child_process";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const require = createRequire(import.meta.url);
@@ -350,6 +351,7 @@ describe("Vercel Headroom Capacity Preflight Check", () => {
     hasCriticalAlerts: false,
     meters: {
       functionsStorage: {
+        source: "snapshot-budget",
         resource: "Functions Storage",
         used: 2.5,
         limit: 10.0,
@@ -359,6 +361,7 @@ describe("Vercel Headroom Capacity Preflight Check", () => {
         isUnreadable: false,
       },
       deploymentStorage: {
+        source: "snapshot-budget",
         resource: "Deployment Storage",
         used: 1.0,
         limit: 10.0,
@@ -368,6 +371,7 @@ describe("Vercel Headroom Capacity Preflight Check", () => {
         isUnreadable: false,
       },
       buildTime: {
+        source: "snapshot-budget",
         resource: "Build Time",
         used: 10.0,
         limit: 100.0,
@@ -405,6 +409,7 @@ describe("Vercel Headroom Capacity Preflight Check", () => {
       hasCriticalAlerts: true,
       meters: {
         functionsStorage: {
+          source: "snapshot-budget",
           resource: "Functions Storage",
           used: 9.8,
           limit: 10.0,
@@ -414,6 +419,7 @@ describe("Vercel Headroom Capacity Preflight Check", () => {
           isUnreadable: false,
         },
         deploymentStorage: {
+          source: "snapshot-budget",
           resource: "Deployment Storage",
           used: 1.0,
           limit: 10.0,
@@ -423,6 +429,7 @@ describe("Vercel Headroom Capacity Preflight Check", () => {
           isUnreadable: false,
         },
         buildTime: {
+          source: "snapshot-budget",
           resource: "Build Time",
           used: 10.0,
           limit: 100.0,
@@ -450,7 +457,7 @@ describe("Vercel Headroom Capacity Preflight Check", () => {
     expect(loggedText(logger)).toContain(
       "Vercel headroom check failed to execute"
     );
-    expect(loggedText(logger)).toContain("MODULE_NOT_FOUND");
+    expect(loggedText(logger)).not.toContain("MODULE_NOT_FOUND");
   });
 
   it("returns false when child process fails (non-zero exit) even if stdout emitted healthy JSON report", async () => {
@@ -470,7 +477,9 @@ describe("Vercel Headroom Capacity Preflight Check", () => {
     expect(loggedText(logger)).toContain(
       "Vercel headroom check failed to execute"
     );
-    expect(loggedText(logger)).toContain("Command failed with exit status 1");
+    expect(loggedText(logger)).not.toContain(
+      "Command failed with exit status 1"
+    );
   });
 
   it("returns false and logs error when capacity measurement is unreadable (unavailable outcome)", async () => {
@@ -481,6 +490,7 @@ describe("Vercel Headroom Capacity Preflight Check", () => {
       hasCriticalAlerts: false,
       meters: {
         functionsStorage: {
+          source: "snapshot-budget",
           resource: "Functions Storage",
           used: null,
           limit: 10.0,
@@ -490,6 +500,7 @@ describe("Vercel Headroom Capacity Preflight Check", () => {
           isUnreadable: true,
         },
         deploymentStorage: {
+          source: "snapshot-budget",
           resource: "Deployment Storage",
           used: 1.0,
           limit: 10.0,
@@ -499,6 +510,7 @@ describe("Vercel Headroom Capacity Preflight Check", () => {
           isUnreadable: false,
         },
         buildTime: {
+          source: "snapshot-budget",
           resource: "Build Time",
           used: 10.0,
           limit: 100.0,
@@ -525,6 +537,7 @@ describe("Vercel Headroom Capacity Preflight Check", () => {
       hasCriticalAlerts: false,
       meters: {
         functionsStorage: {
+          source: "snapshot-budget",
           resource: "Functions Storage",
           used: 2.0,
           limit: 10.0,
@@ -534,6 +547,7 @@ describe("Vercel Headroom Capacity Preflight Check", () => {
           isUnreadable: false,
         },
         deploymentStorage: {
+          source: "snapshot-budget",
           resource: "Deployment Storage",
           used: 1.0,
           limit: 10.0,
@@ -543,6 +557,7 @@ describe("Vercel Headroom Capacity Preflight Check", () => {
           isUnreadable: false,
         },
         buildTime: {
+          source: "snapshot-budget",
           resource: "Build Time",
           used: 10.0,
           limit: 100.0,
@@ -568,16 +583,42 @@ describe("Vercel Headroom Capacity Preflight Check", () => {
     expect(loggedText(logger)).toContain("VERCEL_TOKEN is not set");
   });
 
-  it("executes headroom script via actual process boundary and fails when process fails or outputs critical severity", async () => {
+  it("fails on an actual child exit despite healthy stdout without exposing stderr", async () => {
     const logger = silentLogger();
-    const env: Env = {
-      ...validProductionEnv(),
-      VERCEL_TOKEN: "test_token_123",
-    };
-    const result = await verifyVercelHeadroomCapacity(env, logger);
-    expect(result).toBe(false);
-    expect(loggedText(logger)).toMatch(
-      /unhealthy severity: critical|Vercel headroom check failed to execute/
+    const secret = "private-child-output";
+    const result = await verifyVercelHeadroomCapacity(
+      { ...validProductionEnv(), VERCEL_TOKEN: "test-token" },
+      logger,
+      () =>
+        execFileSync(
+          process.execPath,
+          [
+            "-e",
+            `process.stdout.write(${JSON.stringify(healthyJson)}); process.stderr.write(${JSON.stringify(secret)}); process.exit(1)`,
+          ],
+          { stdio: ["ignore", "pipe", "pipe"] }
+        )
     );
+    expect(result).toBe(false);
+    expect(loggedText(logger)).toContain("failed to execute");
+    expect(loggedText(logger)).not.toContain(secret);
+    expect(loggedText(logger)).not.toContain(healthyJson);
+  });
+  it("rejects unverified and stale evidence even if the report claims healthy", async () => {
+    const env = { ...validProductionEnv(), VERCEL_TOKEN: "test-token" };
+    const report = JSON.parse(healthyJson);
+    report.meters.functionsStorage.source = "unverified-api-probe";
+    expect(
+      await verifyVercelHeadroomCapacity(env, silentLogger(), () =>
+        JSON.stringify(report)
+      )
+    ).toBe(false);
+    report.meters.functionsStorage.source = "snapshot-budget";
+    report.timestamp = "2020-01-01T00:00:00Z";
+    expect(
+      await verifyVercelHeadroomCapacity(env, silentLogger(), () =>
+        JSON.stringify(report)
+      )
+    ).toBe(false);
   });
 });

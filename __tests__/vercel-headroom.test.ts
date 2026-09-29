@@ -124,7 +124,9 @@ describe("Vercel Hobby Storage & Build Headroom Tracker", () => {
       expect(result.used).toBeNull();
       expect(result.headroom).toBeNull();
       expect(result.headroomPercentage).toBeNull();
-      expect(result.message).toContain("unavailable or unreadable");
+      expect(result.message).toContain(
+        "unavailable, unreadable, or unverified"
+      );
     });
   });
 
@@ -427,9 +429,9 @@ describe("Vercel Hobby Storage & Build Headroom Tracker", () => {
             ok: true,
             json: () =>
               Promise.resolve({
-                functionsStorage: { used: 4.5 },
-                deploymentStorage: { used: 3.2 },
-                builds: { used: 42.0 },
+                functionsStorage: { used: 4.5, unit: "GB", limit: 10 },
+                deploymentStorage: { used: 3.2, unit: "GB", limit: 10 },
+                builds: { used: 42.0, unit: "hours", limit: 100 },
               }),
           });
         }
@@ -485,9 +487,9 @@ describe("Vercel Hobby Storage & Build Headroom Tracker", () => {
             ok: true,
             json: () =>
               Promise.resolve({
-                functionsStorage: { used: 2.0 },
-                deploymentStorage: { used: 1.0 },
-                builds: { used: 10.0 },
+                functionsStorage: { used: 2.0, unit: "GB", limit: 10 },
+                deploymentStorage: { used: 1.0, unit: "GB", limit: 10 },
+                builds: { used: 10.0, unit: "hours", limit: 100 },
               }),
           });
         }
@@ -502,9 +504,9 @@ describe("Vercel Hobby Storage & Build Headroom Tracker", () => {
         strict: true,
       });
 
-      expect(result.success).toBe(true);
-      expect(result.data.hasCriticalAlerts).toBe(false);
-      expect(result.data.meters.functionsStorage.severity).toBe("healthy");
+      expect(result.success).toBe(false);
+      expect(result.data.hasCriticalAlerts).toBe(true);
+      expect(result.data.meters.functionsStorage.severity).toBe("unreadable");
       expect(result.data.meters.functionsStorage.used).toBe(2.0);
     });
 
@@ -529,7 +531,9 @@ describe("Vercel Hobby Storage & Build Headroom Tracker", () => {
         fetchImpl: mockFetch as unknown as typeof fetch,
       });
 
-      expect(liveResult).toBeNull(); // No valid meters produced from malformed response
+      expect(liveResult?.meters.functionsStorage?.used).toBeNull();
+      expect(liveResult?.meters.deploymentStorage?.used).toBeNull();
+      expect(liveResult?.meters.buildTime?.used).toBeNull();
 
       // Evaluate null live samples to verify unreadable severity
       const evalNull = evaluateMeter({
@@ -569,9 +573,9 @@ describe("Vercel Hobby Storage & Build Headroom Tracker", () => {
       });
 
       expect(liveSmall).not.toBeNull();
-      // 9999 bytes / (1024^3) = ~0.0000093 GB -> formatted via toFixed(3) as 0
+      // 9999 bytes / (1000^3) = ~0.0000093 GB -> formatted via toFixed(3) as 0
       expect(liveSmall?.meters.functionsStorage?.used).toBe(0);
-      // 10001 bytes / (1024^3) = ~0.0000093 GB -> formatted via toFixed(3) as 0
+      // 10001 bytes / (1000^3) = ~0.0000093 GB -> formatted via toFixed(3) as 0
       expect(liveSmall?.meters.deploymentStorage?.used).toBe(0);
       // 999 seconds / 3600 = 0.2775 hours -> formatted via toFixed(3) as 0.278
       expect(liveSmall?.meters.buildTime?.used).toBe(0.278);
@@ -635,20 +639,20 @@ describe("Vercel Hobby Storage & Build Headroom Tracker", () => {
 
     it("converts storage correctly for verified base-unit names and supported explicit units", () => {
       // Verified propName without explicit unit
-      expect(normalizeStorageToGB(1073741824, "usedBytes")).toBe(1);
-      expect(normalizeStorageToGB(1024, "usedMB")).toBe(1);
+      expect(normalizeStorageToGB(1000000000, "usedBytes")).toBe(1);
+      expect(normalizeStorageToGB(1000, "usedMB")).toBe(1);
       expect(normalizeStorageToGB(10, "usedGB")).toBe(10);
-      expect(normalizeStorageToGB(1073741824, "artifactsSize")).toBe(1);
+      expect(normalizeStorageToGB(1000000000, "artifactsSize")).toBe(1);
 
       // Supported explicit unit
-      expect(normalizeStorageToGB(1073741824, "used", "bytes")).toBe(1);
-      expect(normalizeStorageToGB(1073741824, "used", "b")).toBe(1);
-      expect(normalizeStorageToGB(2048, "used", "mb")).toBe(2);
+      expect(normalizeStorageToGB(1000000000, "used", "bytes")).toBe(1);
+      expect(normalizeStorageToGB(1000000000, "used", "b")).toBe(1);
+      expect(normalizeStorageToGB(2000, "used", "mb")).toBe(2);
       expect(normalizeStorageToGB(5, "used", "gb")).toBe(5);
       expect(normalizeStorageToGB(5, "used", "gigabytes")).toBe(5);
 
       // Consistent propName and explicit unit
-      expect(normalizeStorageToGB(1073741824, "usedBytes", "bytes")).toBe(1);
+      expect(normalizeStorageToGB(1000000000, "usedBytes", "bytes")).toBe(1);
     });
 
     it("returns null for unknown/missing/conflicting duration units", () => {
@@ -682,5 +686,50 @@ describe("Vercel Hobby Storage & Build Headroom Tracker", () => {
       // Consistent propName and explicit unit
       expect(normalizeDurationToHours(3600, "usedSeconds", "seconds")).toBe(1);
     });
+  });
+});
+
+describe("live probe contract regressions", () => {
+  const probe = (payload: unknown) =>
+    fetchVercelLiveMetrics({
+      token: "unit-test",
+      fetchImpl: vi.fn(async () => ({
+        ok: true,
+        json: async () => payload,
+      })) as unknown as typeof fetch,
+    });
+  it("does not infer units from generic meter names", async () => {
+    const result = await probe({
+      functionsStorage: { used: 512, limit: 10 },
+      deploymentStorage: { used: 512, limit: 10 },
+      builds: { used: 1000, limit: 100 },
+    });
+    expect(result?.meters.functionsStorage?.used).toBeNull();
+    expect(result?.meters.deploymentStorage?.used).toBeNull();
+    expect(result?.meters.buildTime?.used).toBeNull();
+  });
+  it.each([undefined, null, "bad", 0, { limit: 10, unit: "requests" }])(
+    "never substitutes a quota for invalid supplied limit %j",
+    async (limit) => {
+      const result = await probe({
+        functionsStorage: { used: 1, unit: "GB", limit },
+      });
+      expect(result?.meters.functionsStorage?.limit).toBeNull();
+      expect(evaluateMeter(result!.meters.functionsStorage!).severity).toBe(
+        "unreadable"
+      );
+    }
+  );
+  it("labels normalized probe data as unverified rather than authorizing healthy quota", async () => {
+    const result = await probe({
+      functionsStorage: { used: 1, unit: "GB", limit: 10 },
+    });
+    expect(result?.meters.functionsStorage?.used).toBe(1);
+    expect(result?.meters.functionsStorage?.source).toBe(
+      "unverified-api-probe"
+    );
+    const evaluated = evaluateMeter(result!.meters.functionsStorage!);
+    expect(evaluated.severity).toBe("unreadable");
+    expect(evaluated.source).toBe("unverified-api-probe");
   });
 });

@@ -1,6 +1,6 @@
 # Monitor Vercel Storage and Build Headroom
 
-Documentation last reconciled: 2026-09-22. Meter data last verified:
+Documentation last reconciled: 2026-09-29. Meter data last verified:
 2026-09-12 23:31 UTC against Vercel Hobby.
 
 Governing policy: [ADR 0036](../../adr/0036-free-tier-offloading-and-provider-quota-governance.md),
@@ -18,7 +18,30 @@ npm run headroom:vercel -- --strict
 npm run inventory:vercel
 ```
 
-`--strict` exits unsuccessfully while any meter is critical. When `VERCEL_TOKEN` is present in the environment, `scripts/vercel-headroom.ts` queries live Vercel REST API usage endpoints (`/v6/deployments` and `/v2/usage`). In unauthenticated environments without `VERCEL_TOKEN`, it falls back gracefully to checked-in snapshot data while evaluating sample age dynamically against system execution time (`new Date()`).
+`--strict` exits unsuccessfully for critical, stale, unreadable or unverified
+meters. Evaluation uses the current clock; the checked-in snapshot retains its
+original collection timestamp and is explicitly labeled `snapshot-budget`.
+The table below records historical dashboard budgets, not verified current API
+entitlements.
+
+When `VERCEL_TOKEN` is configured, the tool optionally probes `/v6/deployments`
+and `/v2/usage`. The usage response contract and quota availability have not
+been verified. Probe observations are labeled `unverified-api-probe`, never
+healthy release evidence. Missing units, invalid values and absent or malformed
+limits remain unknown; historical 10 GB / 100 hour budgets are not substituted.
+Schema-named byte/second fields and explicit compatible units are normalized
+without magnitude guessing; GB and MB use decimal units.
+
+The [official billing API](https://vercel.com/changelog/access-billing-usage-cost-data-api)
+documents `/v1/billing/charges` billing records. Those records do not establish
+this probe's storage quotas. Until a provider contract is verified, refresh the
+audited snapshot from the dashboard with its collection timestamp. Without a
+usable probe, reporting retains the dated snapshot and evaluates its age.
+
+This is optional manual tooling. Production builds do not call the capacity
+helper and do not require a new Vercel API credential. The helper fails on child
+errors, malformed reports, unverified provenance or stale samples. No tool
+starts or authorizes a deployment; the manual hold in ADR 0051 remains.
 
 ## Thresholds and Captured Snapshot
 

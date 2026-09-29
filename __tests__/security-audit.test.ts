@@ -580,6 +580,37 @@ describe("Security Audit Script", () => {
       ).toThrowError("npm audit execution failed or returned invalid JSON.");
     });
 
+    it("rejects non-report JSON even after a successful child exit", () => {
+      vi.mocked(spawnSync).mockReturnValue(
+        fromPartial<SpawnSyncReturns<string>>({
+          status: 0,
+          stdout: "{}",
+          stderr: "private-error-output",
+        })
+      );
+      expect(() =>
+        runSecurityAudit({ now: testNow, throwOnError: true })
+      ).toThrowError("npm audit execution failed or returned invalid JSON.");
+      expect(errorSpy.mock.calls.flat().join(" ")).not.toContain(
+        "private-error-output"
+      );
+    });
+
+    it("fails on a nonzero process exit even with a clean report", () => {
+      vi.mocked(spawnSync).mockReturnValue(
+        fromPartial<SpawnSyncReturns<string>>({
+          status: 1,
+          stdout: JSON.stringify({
+            auditReportVersion: 2,
+            vulnerabilities: {},
+          }),
+        })
+      );
+      expect(() =>
+        runSecurityAudit({ now: testNow, throwOnError: true })
+      ).toThrowError("npm audit execution failed or returned invalid JSON.");
+    });
+
     it("should fail closed on spawn execution error", () => {
       vi.mocked(spawnSync).mockReturnValue(
         fromPartial<SpawnSyncReturns<string>>({

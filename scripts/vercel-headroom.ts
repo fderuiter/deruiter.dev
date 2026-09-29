@@ -18,8 +18,9 @@ export type HeadroomSeverity =
 export interface MeterSample {
   resource: string;
   used: number | null;
-  limit: number;
+  limit: number | null;
   unit: string;
+  source?: "snapshot-budget" | "unverified-api-probe";
   timestamp: string; // ISO 8601
   portfolioContribution?: number;
   weddingContribution?: number;
@@ -41,9 +42,10 @@ export interface GrowthForecast {
 }
 
 export interface EvaluatedMeter {
+  source: "snapshot-budget" | "unverified-api-probe";
   resource: string;
   used: number | null;
-  limit: number;
+  limit: number | null;
   unit: string;
   usagePercentage: number | null;
   headroom: number | null;
@@ -312,11 +314,18 @@ export function evaluateMeter(
   if (
     sample.used === null ||
     typeof sample.used !== "number" ||
-    Number.isNaN(sample.used)
+    !Number.isFinite(sample.used) ||
+    sample.used < 0 ||
+    sample.limit === null ||
+    !Number.isFinite(sample.limit) ||
+    sample.limit <= 0 ||
+    !Number.isFinite(Date.parse(sample.timestamp)) ||
+    sample.source === "unverified-api-probe"
   ) {
     return {
       resource: sample.resource,
-      used: null,
+      used: sample.used,
+      source: sample.source ?? "snapshot-budget",
       limit: sample.limit,
       unit: sample.unit,
       usagePercentage: null,
@@ -325,7 +334,7 @@ export function evaluateMeter(
       severity: "unreadable",
       isStale: false,
       isUnreadable: true,
-      message: `Provider measurement unavailable or unreadable for ${sample.resource}. Metric treated as unknown, not zero.`,
+      message: `Provider measurement or quota unavailable, unreadable, or unverified for ${sample.resource}. Metric treated as unknown, not zero.`,
       growthForecast: {
         status: "unknown",
         samplesAnalyzed: 0,
@@ -367,6 +376,7 @@ export function evaluateMeter(
   return {
     resource: sample.resource,
     used: sample.used,
+    source: sample.source ?? "snapshot-budget",
     limit: sample.limit,
     unit: sample.unit,
     usagePercentage,
@@ -500,7 +510,7 @@ export interface VercelApiFetchOptions {
  *    - Baseline Reporting: Snapshot retention inventory (`getVercelRetentionInventory()`) is the primary baseline contract.
  *    - REST Usage Probing: Optional REST endpoint probing queries usage meters when VERCEL_TOKEN is configured.
  *
- * 2. Vercel Hobby Free Tier Quota Limits:
+ * 2. Historical snapshot budget limits (not verified live API entitlements):
  *    - Functions Storage: 10.0 GB (rolling 30-day window)
  *    - Deployment Storage: 10.0 GB (rolling 30-day window)
  *    - Build Time: 100.0 hours (rolling 30-day window)
@@ -536,22 +546,17 @@ export function normalizeStorageToGB(
   let propUnit: "bytes" | "mb" | "gb" | null = null;
   let isSpecificPropUnit = false;
 
-  if (lowerProp.includes("bytes") || lowerProp === "artifactssize") {
+  if (
+    ["usedbytes", "limitbytes", "bytes", "artifactssize"].includes(lowerProp)
+  ) {
     propUnit = "bytes";
     isSpecificPropUnit = true;
-  } else if (lowerProp.includes("mb") || lowerProp === "usedmb") {
+  } else if (["usedmb", "limitmb", "mb"].includes(lowerProp)) {
     propUnit = "mb";
     isSpecificPropUnit = true;
-  } else if (lowerProp.includes("gb") || lowerProp === "usedgb") {
+  } else if (["usedgb", "limitgb", "gb"].includes(lowerProp)) {
     propUnit = "gb";
     isSpecificPropUnit = true;
-  } else if (
-    lowerProp === "functionsstorage" ||
-    lowerProp === "deploymentstorage" ||
-    lowerProp === "storage"
-  ) {
-    propUnit = "gb";
-    isSpecificPropUnit = false;
   }
 
   let explicitUnit: "bytes" | "mb" | "gb" | null = null;
@@ -577,10 +582,10 @@ export function normalizeStorageToGB(
 
   const effectiveUnit = explicitUnit ?? propUnit;
   if (effectiveUnit === "bytes") {
-    return val / (1024 * 1024 * 1024);
+    return val / 1_000_000_000;
   }
   if (effectiveUnit === "mb") {
-    return val / 1024;
+    return val / 1000;
   }
   if (effectiveUnit === "gb") {
     return val;
@@ -604,34 +609,17 @@ export function normalizeDurationToHours(
   let propUnit: "seconds" | "minutes" | "hours" | null = null;
   let isSpecificPropUnit = false;
 
-  if (
-    lowerProp.includes("seconds") ||
-    lowerProp === "seconds" ||
-    lowerProp === "sec"
-  ) {
+  if (["usedseconds", "limitseconds", "seconds", "sec"].includes(lowerProp)) {
     propUnit = "seconds";
     isSpecificPropUnit = true;
   } else if (
-    lowerProp.includes("minutes") ||
-    lowerProp === "minutes" ||
-    lowerProp === "min"
+    ["usedminutes", "limitminutes", "minutes", "min"].includes(lowerProp)
   ) {
     propUnit = "minutes";
     isSpecificPropUnit = true;
-  } else if (
-    lowerProp.includes("hours") ||
-    lowerProp === "hours" ||
-    lowerProp === "hr"
-  ) {
+  } else if (["usedhours", "limithours", "hours", "hr"].includes(lowerProp)) {
     propUnit = "hours";
     isSpecificPropUnit = true;
-  } else if (
-    lowerProp === "buildtime" ||
-    lowerProp === "builds" ||
-    lowerProp === "duration"
-  ) {
-    propUnit = "hours";
-    isSpecificPropUnit = false;
   }
 
   let explicitUnit: "seconds" | "minutes" | "hours" | null = null;
@@ -679,9 +667,10 @@ export function normalizeDurationToHours(
 }
 
 /**
- * Fetches real-time usage metrics from Vercel REST API usage endpoints.
- * Validates provider responses at runtime and converts units explicitly.
- * Returns null when unauthenticated, unreachable, or when responses are malformed.
+ * Optionally probes an unverified usage endpoint. Returned values are diagnostic
+ * observations, never verified provider quota evidence or release authorization.
+ * Missing or malformed usage and limits remain null; snapshot budgets are not
+ * substituted for provider limits.
  */
 export async function fetchVercelLiveMetrics(
   options?: VercelApiFetchOptions
@@ -694,300 +683,139 @@ export async function fetchVercelLiveMetrics(
   };
 } | null> {
   const token = options?.token || process.env.VERCEL_TOKEN;
-  if (!token) {
-    return null;
-  }
-
   const fetchImpl = options?.fetchImpl || globalThis.fetch;
-  if (typeof fetchImpl !== "function") {
-    return null;
-  }
-
+  if (!token || typeof fetchImpl !== "function") return null;
   const teamId =
     options?.teamId || process.env.VERCEL_TEAM_ID || process.env.VERCEL_ORG_ID;
-
-  const queryParams = teamId ? `?teamId=${encodeURIComponent(teamId)}` : "";
-  const baseUrl = "https://api.vercel.com";
+  const query = teamId ? `?teamId=${encodeURIComponent(teamId)}` : "";
   const headers = {
     Authorization: `Bearer ${token}`,
     "Content-Type": "application/json",
   };
-
   try {
-    const timestamp = new Date().toISOString();
-
-    const [deploymentsRes, usageRes] = await Promise.all([
-      fetchImpl(`${baseUrl}/v6/deployments${queryParams}`, {
+    // The deployment inventory remains useful optional reporting, but cannot
+    // establish a storage quota or substitute a usage measurement.
+    const [, response] = await Promise.all([
+      fetchImpl(`https://api.vercel.com/v6/deployments${query}`, {
         headers,
         signal: AbortSignal.timeout(5000),
       }).catch(() => null),
-      fetchImpl(`${baseUrl}/v2/usage${queryParams}`, {
+      fetchImpl(`https://api.vercel.com/v2/usage${query}`, {
         headers,
         signal: AbortSignal.timeout(5000),
       }).catch(() => null),
     ]);
-
-    let functionsUsed: number | null = null;
-    let functionsLimit = 10.0;
-    let deploymentStorageUsed: number | null = null;
-    let deploymentStorageLimit = 10.0;
-    let buildTimeUsed: number | null = null;
-    let buildTimeLimit = 100.0;
-
-    if (usageRes && usageRes.ok) {
-      const usageData = await usageRes.json();
-      if (!usageData || typeof usageData !== "object") {
-        return null;
-      }
-
-      // Functions Storage extraction & unit normalization
-      const fsObj = usageData?.functionsStorage ?? usageData?.functions;
-      let rawFsVal: unknown = null;
-      let rawFsProp = "";
-      let rawFsUnit = "";
-
-      if (typeof fsObj === "object" && fsObj !== null) {
-        if ("usedBytes" in fsObj) {
-          rawFsVal = fsObj.usedBytes;
-          rawFsProp = "usedBytes";
-        } else if ("usedGB" in fsObj || "usedGb" in fsObj) {
-          rawFsVal = fsObj.usedGB ?? fsObj.usedGb;
-          rawFsProp = "usedGB";
-        } else if ("used" in fsObj) {
-          rawFsVal = fsObj.used;
-          rawFsProp = "functionsStorage";
-        } else if ("storage" in fsObj) {
-          rawFsVal = fsObj.storage;
-          rawFsProp = "functionsStorage";
-        }
-        if (typeof fsObj.unit === "string") {
-          rawFsUnit = fsObj.unit;
-        }
-      } else if (usageData?.functionsStorage !== undefined) {
-        rawFsVal = usageData.functionsStorage;
-        rawFsProp = "functionsStorage";
-      }
-
-      const parsedFs = parseFiniteNonNegativeNumber(rawFsVal);
-      if (parsedFs !== null) {
-        functionsUsed = normalizeStorageToGB(parsedFs, rawFsProp, rawFsUnit);
-      }
-
-      let rawFsLimitVal: unknown = null;
-      let rawFsLimitProp = "";
-      let rawFsLimitUnit = "";
-      if (
-        typeof fsObj === "object" &&
-        fsObj !== null &&
-        fsObj.limit !== undefined
-      ) {
-        if (typeof fsObj.limit === "object" && fsObj.limit !== null) {
-          rawFsLimitVal = fsObj.limit.limit ?? fsObj.limit.used;
-          rawFsLimitProp = "functionsStorage";
-          if (typeof fsObj.limit.unit === "string")
-            rawFsLimitUnit = fsObj.limit.unit;
-        } else {
-          rawFsLimitVal = fsObj.limit;
-          rawFsLimitProp = "functionsStorage";
-        }
-      }
-      const parsedFsLimit = parseFiniteNonNegativeNumber(rawFsLimitVal);
-      if (parsedFsLimit !== null) {
-        functionsLimit =
-          normalizeStorageToGB(
-            parsedFsLimit,
-            rawFsLimitProp,
-            rawFsLimitUnit || rawFsUnit
-          ) ?? 10.0;
-      }
-
-      // Deployment Storage extraction & unit normalization
-      const dsObj = usageData?.deploymentStorage;
-      let rawDsVal: unknown = null;
-      let rawDsProp = "";
-      let rawDsUnit = "";
-
-      if (typeof dsObj === "object" && dsObj !== null) {
-        if ("usedBytes" in dsObj) {
-          rawDsVal = dsObj.usedBytes;
-          rawDsProp = "usedBytes";
-        } else if ("usedGB" in dsObj || "usedGb" in dsObj) {
-          rawDsVal = dsObj.usedGB ?? dsObj.usedGb;
-          rawDsProp = "usedGB";
-        } else if ("used" in dsObj) {
-          rawDsVal = dsObj.used;
-          rawDsProp = "deploymentStorage";
-        }
-        if (typeof dsObj.unit === "string") {
-          rawDsUnit = dsObj.unit;
-        }
-      } else if (usageData?.artifactsSize !== undefined) {
-        rawDsVal = usageData.artifactsSize;
-        rawDsProp = "artifactsSize";
-      } else if (usageData?.deploymentStorage !== undefined) {
-        rawDsVal = usageData.deploymentStorage;
-        rawDsProp = "deploymentStorage";
-      }
-
-      const parsedDs = parseFiniteNonNegativeNumber(rawDsVal);
-      if (parsedDs !== null) {
-        deploymentStorageUsed = normalizeStorageToGB(
-          parsedDs,
-          rawDsProp,
-          rawDsUnit
-        );
-      }
-
-      let rawDsLimitVal: unknown = null;
-      let rawDsLimitProp = "";
-      let rawDsLimitUnit = "";
-      if (
-        typeof dsObj === "object" &&
-        dsObj !== null &&
-        dsObj.limit !== undefined
-      ) {
-        if (typeof dsObj.limit === "object" && dsObj.limit !== null) {
-          rawDsLimitVal = dsObj.limit.limit ?? dsObj.limit.used;
-          rawDsLimitProp = "deploymentStorage";
-          if (typeof dsObj.limit.unit === "string")
-            rawDsLimitUnit = dsObj.limit.unit;
-        } else {
-          rawDsLimitVal = dsObj.limit;
-          rawDsLimitProp = "deploymentStorage";
-        }
-      }
-      const parsedDsLimit = parseFiniteNonNegativeNumber(rawDsLimitVal);
-      if (parsedDsLimit !== null) {
-        deploymentStorageLimit =
-          normalizeStorageToGB(
-            parsedDsLimit,
-            rawDsLimitProp,
-            rawDsLimitUnit || rawDsUnit
-          ) ?? 10.0;
-      }
-
-      // Build Time extraction & unit normalization
-      const btObj = usageData?.builds ?? usageData?.buildTime;
-      let rawBtVal: unknown = null;
-      let rawBtProp = "";
-      let rawBtUnit = "";
-
-      if (typeof btObj === "object" && btObj !== null) {
-        if ("usedSeconds" in btObj || "seconds" in btObj) {
-          rawBtVal = btObj.usedSeconds ?? btObj.seconds;
-          rawBtProp = "usedSeconds";
-        } else if ("usedHours" in btObj || "hours" in btObj) {
-          rawBtVal = btObj.usedHours ?? btObj.hours;
-          rawBtProp = "usedHours";
-        } else if ("used" in btObj) {
-          rawBtVal = btObj.used;
-          rawBtProp = "buildTime";
-        }
-        if (typeof btObj.unit === "string") {
-          rawBtUnit = btObj.unit;
-        }
-      } else if (usageData?.buildTime !== undefined) {
-        rawBtVal = usageData.buildTime;
-        rawBtProp = "buildTime";
-      }
-
-      const parsedBt = parseFiniteNonNegativeNumber(rawBtVal);
-      if (parsedBt !== null) {
-        buildTimeUsed = normalizeDurationToHours(
-          parsedBt,
-          rawBtProp,
-          rawBtUnit
-        );
-      }
-
-      let rawBtLimitVal: unknown = null;
-      let rawBtLimitProp = "";
-      let rawBtLimitUnit = "";
-      if (
-        typeof btObj === "object" &&
-        btObj !== null &&
-        btObj.limit !== undefined
-      ) {
-        if (typeof btObj.limit === "object" && btObj.limit !== null) {
-          rawBtLimitVal = btObj.limit.limit ?? btObj.limit.used;
-          rawBtLimitProp = "buildTime";
-          if (typeof btObj.limit.unit === "string")
-            rawBtLimitUnit = btObj.limit.unit;
-        } else {
-          rawBtLimitVal = btObj.limit;
-          rawBtLimitProp = "buildTime";
-        }
-      }
-      const parsedBtLimit = parseFiniteNonNegativeNumber(rawBtLimitVal);
-      if (parsedBtLimit !== null) {
-        buildTimeLimit =
-          normalizeDurationToHours(
-            parsedBtLimit,
-            rawBtLimitProp,
-            rawBtLimitUnit || rawBtUnit
-          ) ?? 100.0;
-      }
-    }
-
-    if (deploymentsRes && deploymentsRes.ok && deploymentStorageUsed === null) {
-      const deploymentsData = await deploymentsRes.json();
-      if (Array.isArray(deploymentsData?.deployments)) {
-        // Marker if deployment list was returned
-      }
-    }
-
-    const resultMeters: {
+    if (!response?.ok) return null;
+    const data: unknown = await response.json();
+    if (!data || typeof data !== "object" || Array.isArray(data)) return null;
+    const payload = data as Record<string, unknown>;
+    const timestamp = new Date().toISOString();
+    const meters: {
       functionsStorage?: MeterSample;
       deploymentStorage?: MeterSample;
       buildTime?: MeterSample;
     } = {};
-
-    if (functionsUsed !== null) {
-      resultMeters.functionsStorage = {
-        resource: "Functions Storage",
-        used: Number(functionsUsed.toFixed(3)),
-        limit: functionsLimit,
-        unit: "GB",
-        timestamp,
+    const read = (
+      value: unknown,
+      resource: string,
+      unit: string,
+      normalize: typeof normalizeStorageToGB,
+      keys: string[]
+    ): MeterSample => {
+      const obj =
+        value && typeof value === "object" && !Array.isArray(value)
+          ? (value as Record<string, unknown>)
+          : { used: value };
+      const readValue = (
+        record: Record<string, unknown>,
+        fields: string[],
+        fallbackUnit?: string
+      ): number | null => {
+        const suppliedUnit = record.unit;
+        if (suppliedUnit !== undefined && typeof suppliedUnit !== "string")
+          return null;
+        const key = fields.find((key) => Object.hasOwn(record, key));
+        if (!key) return null;
+        const number = parseFiniteNonNegativeNumber(record[key]);
+        return number === null
+          ? null
+          : normalize(
+              number,
+              key,
+              (suppliedUnit as string | undefined) ?? fallbackUnit
+            );
       };
-    }
-
-    if (deploymentStorageUsed !== null) {
-      resultMeters.deploymentStorage = {
-        resource: "Deployment Storage",
-        used: Number(deploymentStorageUsed.toFixed(3)),
-        limit: deploymentStorageLimit,
-        unit: "GB",
-        timestamp,
-      };
-    }
-
-    if (buildTimeUsed !== null) {
-      resultMeters.buildTime = {
-        resource: "Build Time",
-        used: Number(buildTimeUsed.toFixed(3)),
-        limit: buildTimeLimit,
-        unit: "hours",
-        timestamp,
-      };
-    }
-
-    if (Object.keys(resultMeters).length > 0) {
+      const used = readValue(obj, keys);
+      const limitObj =
+        obj.limit && typeof obj.limit === "object" && !Array.isArray(obj.limit)
+          ? (obj.limit as Record<string, unknown>)
+          : { limit: obj.limit };
+      const normalizedLimit = readValue(
+        limitObj,
+        [
+          "limitBytes",
+          "limitGB",
+          "limitSeconds",
+          "limitHours",
+          "limit",
+          "used",
+        ],
+        typeof obj.unit === "string" ? obj.unit : undefined
+      );
+      const limit =
+        normalizedLimit !== null && normalizedLimit > 0
+          ? normalizedLimit
+          : null;
       return {
+        resource,
+        used: used === null ? null : Number(used.toFixed(3)),
+        limit,
+        unit,
         timestamp,
-        meters: resultMeters,
+        source: "unverified-api-probe",
       };
-    }
-
-    return null;
+    };
+    if (
+      Object.hasOwn(payload, "functionsStorage") ||
+      Object.hasOwn(payload, "functions")
+    )
+      meters.functionsStorage = read(
+        payload.functionsStorage ?? payload.functions,
+        "Functions Storage",
+        "GB",
+        normalizeStorageToGB,
+        ["usedBytes", "usedGB", "usedGb", "used", "storage"]
+      );
+    if (
+      Object.hasOwn(payload, "deploymentStorage") ||
+      Object.hasOwn(payload, "artifactsSize")
+    )
+      meters.deploymentStorage = read(
+        Object.hasOwn(payload, "deploymentStorage")
+          ? payload.deploymentStorage
+          : { usedBytes: payload.artifactsSize },
+        "Deployment Storage",
+        "GB",
+        normalizeStorageToGB,
+        ["usedBytes", "usedGB", "usedGb", "used"]
+      );
+    if (Object.hasOwn(payload, "buildTime") || Object.hasOwn(payload, "builds"))
+      meters.buildTime = read(
+        payload.builds ?? payload.buildTime,
+        "Build Time",
+        "hours",
+        normalizeDurationToHours,
+        ["usedSeconds", "seconds", "usedHours", "hours", "used"]
+      );
+    return Object.keys(meters).length ? { timestamp, meters } : null;
   } catch {
     return null;
   }
 }
 
 /**
- * Main evaluation function collecting authoritative meter samples from Issue #691 inventory
- * or live Vercel REST API usage meters when provided.
+ * Evaluates the dated Issue #691 snapshot budgets or optional unverified probe
+ * observations. Probe observations cannot authorize a release.
  */
 export function evaluateVercelHeadroom(
   thresholds: ThresholdConfig = DEFAULT_THRESHOLDS,
@@ -1135,7 +963,7 @@ export async function runHeadroomVerification(options?: {
               ? "[UNREADABLE]"
               : "[HEALTHY]";
     console.log(
-      `• ${badge.padEnd(12)} ${meter.resource.padEnd(20)} ${meter.used}/${meter.limit} ${meter.unit} (${meter.headroomPercentage}% headroom)`
+      `• ${badge.padEnd(12)} ${meter.resource.padEnd(20)} ${meter.used}/${meter.limit} ${meter.unit} (${meter.headroomPercentage}% headroom; source: ${meter.source})`
     );
   }
 
@@ -1165,7 +993,7 @@ export async function runHeadroomVerification(options?: {
 
   if (options?.strict && result.hasCriticalAlerts) {
     console.error(
-      "\n❌ Strict failure: One or more critical headroom thresholds are currently breached!"
+      "\n❌ Strict failure: One or more meters are critical, stale, unavailable, or unverified."
     );
     return { success: false, data: result };
   }

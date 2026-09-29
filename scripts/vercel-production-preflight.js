@@ -290,7 +290,7 @@ function defaultExec(prog, args, options) {
 }
 
 /**
- * Evaluates Vercel storage headroom before production releases.
+ * Optional manual headroom check; not invoked by Production build preflight.
  * Fails fast if critical storage thresholds (>=95%) are breached or if meters are stale/unreadable.
  */
 async function verifyVercelHeadroomCapacity(
@@ -332,15 +332,15 @@ async function verifyVercelHeadroomCapacity(
       env: childEnv,
       encoding: "utf8",
       stdio: ["ignore", "pipe", "pipe"],
+      timeout: 15000,
+      maxBuffer: 1024 * 1024,
     });
 
     const parsed = JSON.parse(output);
     return validateParsedHeadroomReport(parsed, logger);
-  } catch (err) {
-    logger.error(
-      "Vercel headroom check failed to execute:",
-      err && err.message
-    );
+  } catch {
+    // Child errors include raw stdout/stderr and can expose credentials.
+    logger.error("Vercel headroom check failed to execute.");
     return false;
   }
 }
@@ -378,6 +378,13 @@ function validateParsedHeadroomReport(parsed, logger) {
         logger.error(
           `Vercel headroom check missing required named meter: ${expected.key}`
         );
+      return false;
+    }
+
+    if (meter.source !== "snapshot-budget") {
+      logger?.error(
+        "Vercel headroom check requires explicit audited snapshot provenance; optional API probes are unverified."
+      );
       return false;
     }
 
@@ -422,6 +429,7 @@ function validateParsedHeadroomReport(parsed, logger) {
     }
 
     if (
+      !["healthy", "warning"].includes(meter.severity) ||
       meter.severity === "critical" ||
       meter.severity === "stale" ||
       meter.severity === "unreadable"
@@ -433,7 +441,7 @@ function validateParsedHeadroomReport(parsed, logger) {
       return false;
     }
 
-    if (meter.isStale === true || meter.isUnreadable === true) {
+    if (meter.isStale !== false || meter.isUnreadable !== false) {
       if (logger)
         logger.error(
           `Vercel headroom check meter ${expected.key} is stale or unreadable.`
@@ -462,7 +470,15 @@ function validateParsedHeadroomReport(parsed, logger) {
     return false;
   }
 
-  if (parsed.hasCriticalAlerts) {
+  const ageMs = Date.now() - Date.parse(parsed.timestamp);
+  if (ageMs < -60000 || ageMs > 30 * 24 * 60 * 60 * 1000) {
+    logger?.error(
+      "Vercel headroom check sample timestamp is stale or in the future."
+    );
+    return false;
+  }
+
+  if (parsed.hasCriticalAlerts !== false) {
     if (logger)
       logger.error(
         "Production preflight failed: Critical Vercel storage or build time headroom threshold breached."

@@ -150,9 +150,11 @@ describe("CI Gate Ordering", () => {
     it("installs Chromium before the Vitest step that renders the Mermaid corpus", () => {
       const vitest = block.indexOf("run: npm run test:ci");
       const install = block.indexOf(
-        "npx playwright install chromium --with-deps"
+        "npx --no-install playwright install chromium --with-deps"
       );
-      const depsOnly = block.indexOf("npx playwright install-deps chromium");
+      const depsOnly = block.indexOf(
+        "npx --no-install playwright install-deps chromium"
+      );
 
       expect(vitest).toBeGreaterThan(-1);
       expect(install, "fast-gate must install Chromium").toBeGreaterThan(-1);

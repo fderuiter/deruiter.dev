@@ -1673,6 +1673,37 @@ describe("Garmin setup options reach the engine (#1209)", () => {
   });
 });
 
+describe("Garmin NV flash clear survives a restart (#1210)", () => {
+  it("does not re-seed the default flash entry after a clear", async () => {
+    const store: Record<string, string> = {};
+    Object.defineProperty(window, "localStorage", {
+      configurable: true,
+      value: {
+        getItem: (k: string) => store[k] ?? null,
+        setItem: (k: string, v: string) => {
+          store[k] = String(v);
+        },
+        removeItem: (k: string) => {
+          delete store[k];
+        },
+      },
+    });
+    const { createInitialState, clearFlashStorage } =
+      await import("@/lib/garmin-engine");
+    // First boot seeds sys_log.dat.
+    const first = createInitialState("fenix", 0);
+    expect(first.allocatedFlashKb).toBe(4);
+    const cleared = clearFlashStorage(first);
+    expect(cleared.flashVariables).toEqual([]);
+    expect(cleared.flashFiles).toEqual([]);
+    // A fresh initialization must stay empty.
+    const reboot = createInitialState("fenix", 0);
+    expect(reboot.allocatedFlashKb).toBe(0);
+    expect(reboot.flashVariables).toEqual([]);
+    expect(reboot.flashFiles).toEqual([]);
+  });
+});
+
 describe("Quasi-Perfect progress: best score survives weaker replays (#1230)", () => {
   const mk = (over: Partial<LevelScore>): LevelScore => ({
     levelId: 1,

@@ -452,7 +452,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         title: "Proof-Engine RAM Limit",
         detail:
-          "Complex tactic expansions consume proof engine memory. If RAM usage hits 100%, an Out-Of-Memory (OOM) kernel crash resets the current level.",
+          "Each tactic, including a failed one, consumes simulated memory. Story Mode starts with twice the Hacker Mode budget. In either mode, hitting 0 GB stops the simulated tactic session and the level must be reset.",
         badge: "RAM Constraint",
       },
       {

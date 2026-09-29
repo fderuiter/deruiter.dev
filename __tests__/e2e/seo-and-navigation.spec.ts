@@ -108,13 +108,22 @@ test.describe("SEO & Navigation Full-Spectrum Suite", () => {
       "/case-studies/clinical-data-mapper",
     ];
 
+    test.setTimeout(90_000);
+
     // Entrance fades and the footer ticker cross-fade pass through partial
     // opacity, which axe measures as low contrast. Scan the settled page.
     await page.emulateMedia({ reducedMotion: "reduce" });
 
     for (const route of criticalRoutes) {
-      await page.goto(route, { waitUntil: "domcontentloaded" });
+      await page.goto(route, { waitUntil: "load" });
       await settleFooterTicker(page);
+      // Same settle routine as accessibility.spec.ts: stop CSS transitions
+      // and let the entrance fades finish before scanning.
+      await page.addStyleTag({
+        content:
+          "*, *::before, *::after { transition: none !important; animation: none !important; }",
+      });
+      await page.waitForTimeout(300);
       const accessibilityScanResults = await new AxeBuilder({ page })
         .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
         .analyze();

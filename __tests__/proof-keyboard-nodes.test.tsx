@@ -36,7 +36,7 @@ describe("Proof graph keyboard controls (#1228)", () => {
     fireEvent.click(goal);
     expect(goal.getAttribute("aria-label")).toMatch(/conclusion, pending/);
     const premise = screen.getByRole("button", {
-      name: /^Node D, Q → R, premise, proven/,
+      name: /^Node D, Q → R, premise, given premise/,
     });
     premise.focus();
     fireEvent.click(premise);

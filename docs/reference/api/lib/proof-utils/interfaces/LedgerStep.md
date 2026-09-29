@@ -20,6 +20,14 @@
 
 ***
 
+### isGiven?
+
+> `optional` **isGiven?**: `boolean`
+
+True for given premises, which are available rather than derived.
+
+***
+
 ### isProven
 
 > **isProven**: `boolean`

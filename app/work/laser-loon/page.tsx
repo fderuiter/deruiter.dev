@@ -3,6 +3,8 @@ import CaseStudyPage, {
 } from "@/app/case-studies/[slug]/page";
 import type { Metadata } from "next";
 import { resolveBaseUrl } from "@/lib/domain";
+import { FAQAccordion } from "@/components/ui/FAQAccordion";
+import { LASER_LOON_FAQ } from "@/lib/faq-content";
 
 export const revalidate = 3600;
 
@@ -45,6 +47,9 @@ export default async function LaserLoonWorkPage() {
   return (
     <div className="min-h-dvh">
       <CaseStudyPage params={Promise.resolve({ slug: "laser-loon" })} />
+      <div className="px-4 sm:px-6 pb-16">
+        <FAQAccordion items={LASER_LOON_FAQ} pageUrl="/work/laser-loon" />
+      </div>
     </div>
   );
 }

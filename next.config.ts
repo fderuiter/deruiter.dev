@@ -61,6 +61,18 @@ const nextConfig: NextConfig = {
         ],
       },
       {
+        // Declared after the generic .txt rule so the regenerated manifests
+        // revalidate hourly instead of being pinned for a year.
+        source: "/:file(llms|llms-full).txt",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=0, s-maxage=3600, must-revalidate",
+          },
+          { key: "Content-Type", value: "text/plain; charset=utf-8" },
+        ],
+      },
+      {
         source: "/models/:path*",
         headers: [
           {

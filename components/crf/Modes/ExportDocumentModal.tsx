@@ -6,6 +6,7 @@ import { getStudyBranding } from "@/lib/crf/branding-defaults";
 import { ModalContainer } from "@/components/ui/ModalContainer";
 import { useTelemetry } from "@/hooks/useTelemetry";
 import { logger } from "@/lib/logger";
+import { downloadFile } from "@/lib/download";
 import {
   IconFileSpreadsheet,
   IconDownload,
@@ -80,15 +81,8 @@ export const ExportDocumentModal: React.FC<ExportDocumentModalProps> = ({
       const options = getEffectiveOptions();
       const { generateStudyDocx } = await import("@/lib/crf/export-docx");
       const blob = await generateStudyDocx(study, options);
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
       const filename = `${study.protocolNumber}-${exportMode === "annotated" ? "aCRF" : "CRF"}-book.docx`;
-      link.href = url;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      downloadFile(blob, filename);
       setDocxSuccess(true);
       setTimeout(() => setDocxSuccess(false), 2500);
     } catch (err) {
@@ -105,15 +99,8 @@ export const ExportDocumentModal: React.FC<ExportDocumentModalProps> = ({
       const options = getEffectiveOptions();
       const { generateStudyPdf } = await import("@/lib/crf/export-pdf");
       const blob = await generateStudyPdf(study, options);
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
       const filename = `${study.protocolNumber}-${exportMode === "annotated" ? "aCRF" : "CRF"}-book.pdf`;
-      link.href = url;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      downloadFile(blob, filename);
       setPdfSuccess(true);
       setTimeout(() => setPdfSuccess(false), 2500);
     } catch (err) {

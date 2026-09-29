@@ -14,6 +14,7 @@ import { useTelemetry } from "@/hooks/useTelemetry";
 import { useAnnouncer } from "@/hooks/useAnnouncer";
 import { cloneDeep } from "@/lib/utils";
 import { clamp } from "@/lib/game-utils";
+import { downloadFile } from "@/lib/download";
 import { getMatchMediaMatches } from "@/hooks/useMediaQuery";
 import {
   IconAlertTriangle,
@@ -2155,13 +2156,9 @@ export const ClinicalTrialChaos: React.FC = () => {
   // 19. Export Downloads
   const downloadODMXML = () => {
     const xml = exportToCDISCODMXML(submittedHistory, sdtmDataset);
-    const blob = new Blob([xml], { type: "application/xml" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `CDISC_ODM_Snapshot_${Date.now()}.xml`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadFile(xml, `CDISC_ODM_Snapshot_${Date.now()}.xml`, {
+      mimeType: "application/xml",
+    });
     addAuditLog(
       "CDISC ODM 1.3 XML snapshot exported and downloaded.",
       "COMPLIANT"
@@ -2170,13 +2167,9 @@ export const ClinicalTrialChaos: React.FC = () => {
 
   const downloadSDTMCSV = () => {
     const csv = exportToSDTMCSV(sdtmDataset);
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `SDTM_Dataset_${Date.now()}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadFile(csv, `SDTM_Dataset_${Date.now()}.csv`, {
+      mimeType: "text/csv",
+    });
     addAuditLog(
       "CDISC SDTM observation dataset (.csv) exported and downloaded.",
       "COMPLIANT"

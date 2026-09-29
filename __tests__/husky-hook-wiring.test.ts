@@ -388,7 +388,42 @@ describe("Husky hook wiring", () => {
       spawnSync("git", ["rm", "-f", "config.ts"], { cwd: repo });
     });
 
-    it("fails closed if index enumeration or index read fails", () => {
+    it.each(["café.ts", "tab\tname.ts", "line\nname.ts", " spaced.ts "])(
+      "preserves the exact staged pathname %j",
+      (file) => {
+        fs.writeFileSync(path.join(repo, file), "const harmless = 1;\n");
+        spawnSync("git", ["add", "--", file], { cwd: repo });
+        try {
+          const result = runValidateCommit();
+          expect(result.status).toBe(0);
+          expect(result.stdout).toContain("Pre-Commit validation passed");
+        } finally {
+          spawnSync("git", ["rm", "-f", "--", file], { cwd: repo });
+        }
+      }
+    );
+
+    it("fails closed on an oversized index read without printing indexed contents", () => {
+      const file = "oversized.ts";
+      const marker = "UNTRUSTED_INDEX_BYTES_MARKER";
+      fs.writeFileSync(
+        path.join(repo, file),
+        marker + "x".repeat(11 * 1024 * 1024)
+      );
+      spawnSync("git", ["add", "--", file], { cwd: repo });
+      try {
+        const result = runValidateCommit();
+        expect(result.status).toBe(1);
+        expect(result.stderr).toContain("Failed to read staged content");
+        // Boolean assertion keeps even a failing regression's diagnostics
+        // from reproducing the untrusted indexed payload.
+        expect(`${result.stdout}${result.stderr}`.includes(marker)).toBe(false);
+      } finally {
+        spawnSync("git", ["rm", "-f", "--", file], { cwd: repo });
+      }
+    });
+
+    it("fails closed if index enumeration fails", () => {
       const result = runValidateCommit({
         GIT_DIR: path.join(repo, ".invalid_git_dir"),
       });

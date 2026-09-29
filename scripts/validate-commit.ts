@@ -5,19 +5,17 @@ import { formatFinding, scanText } from "../lib/security-scan";
 export function getStagedFiles(): string[] {
   const output = execFileSync(
     "git",
-    ["diff", "--cached", "--name-only", "--diff-filter=d"],
-    { encoding: "utf-8" }
+    ["diff", "--cached", "--name-only", "--diff-filter=d", "-z"],
+    { encoding: "utf-8", stdio: ["ignore", "pipe", "pipe"] }
   );
-  return output
-    .split("\n")
-    .map((f) => f.trim())
-    .filter((f) => f.length > 0);
+  return output.split("\0").filter((f) => f.length > 0);
 }
 
 export function getStagedFileContent(filePath: string): string {
   return execFileSync("git", ["show", `:${filePath}`], {
     encoding: "utf-8",
     maxBuffer: 10 * 1024 * 1024,
+    stdio: ["ignore", "pipe", "pipe"],
   });
 }
 
@@ -84,10 +82,9 @@ function main() {
   let stagedFiles: string[];
   try {
     stagedFiles = getStagedFiles();
-  } catch (error) {
+  } catch {
     console.error(
-      "❌ [BLOCKER] Failed to enumerate staged files from Git index:",
-      error
+      "❌ [BLOCKER] Failed to enumerate staged files from Git index. Check Git index health."
     );
     process.exit(1);
   }
@@ -120,10 +117,11 @@ function main() {
     let stagedContent: string;
     try {
       stagedContent = getStagedFileContent(file);
-    } catch (error) {
+    } catch {
+      // Child-process errors can contain raw indexed stdout. Never print
+      // the error object or captured streams before redacted scanning.
       console.error(
-        `\n❌ [BLOCKER] Failed to read staged content from Git index for file: ${file}`,
-        error
+        `\n❌ [BLOCKER] Failed to read staged content from Git index for file: ${file}. Check staged file size and Git index health.`
       );
       hasViolation = true;
       break;

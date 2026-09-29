@@ -596,6 +596,57 @@ export const DEMOGRAPHICS_SCENARIO: Scenario = {
 };
 
 // ---------------------------------------------------------------------------
+// Guided Blind (#1089): the first-run tutorial.
+// ---------------------------------------------------------------------------
+
+/**
+ * The guided draft of Table 14.1.1: clean except one mean age printed to two
+ * decimal places, so a single cell holds a single, minor finding.
+ */
+const GUIDED_DRAFT = demographicsDraft("T-14.1.1-G", "Guided draft (v0.1)", [
+  DEMOGRAPHICS_CLEAN[0],
+  ["49.83", "40.7", "45.2"],
+  ...DEMOGRAPHICS_CLEAN.slice(2),
+]);
+
+/**
+ * The guided first Blind (#1089): a fixed five-card hand with no crisis, no
+ * draws and no shop. The Table and its Listing make a TLF Pair, and the
+ * quota is set so the Pair clears it only once its one finding is corrected.
+ * No other hand in it forms a Pair.
+ */
+export const GUIDED_BLIND_SCENARIO: Scenario = {
+  ...DEMOGRAPHICS_SCENARIO,
+  id: "guided-blind",
+  title: "Guided Blind",
+  summary:
+    "A guided first review: inspect Table 14.1.1, correct its finding and play it with its listing.",
+  intro:
+    "Your first QC review. Inspect the demographics table, correct the one thing the SAP forbids, and play it with its supporting listing.",
+  blind: {
+    tier: "SMALL_BLIND",
+    name: "Guided Blind: First Review",
+    // The corrected Pair scores 460; nothing in the hand uncorrected tops 184.
+    quota: 400,
+  },
+  table: { startingCpu: 10, handSize: 5, maxSelection: 5 },
+  deck: [
+    {
+      ...demographicsCard("A"),
+      id: "C-T14.1.1-G",
+      title: "Demographics (Guided)",
+      draftId: GUIDED_DRAFT.id,
+    },
+    DM_LISTING,
+    DISPOSITION,
+    AE_LISTING,
+    SAE_LISTING,
+  ],
+  consumables: [],
+  drawPile: [GUIDED_DRAFT],
+};
+
+// ---------------------------------------------------------------------------
 // Safety outputs shared by the Big and Boss Blinds.
 // ---------------------------------------------------------------------------
 

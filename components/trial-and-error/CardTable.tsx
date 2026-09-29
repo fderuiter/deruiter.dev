@@ -113,6 +113,20 @@ interface CardTableProps {
    * never share a save.
    */
   persist?: boolean;
+  /**
+   * A coach mark for the guided Blind (#1089). It shows above the table, or
+   * inside the Inspect view while that is open, so it is always on screen.
+   */
+  coach?: React.ReactNode;
+  /** Called with the table state after every move, for the guided Blind. */
+  onTableChange?: (table: TableState) => void;
+  /** Offers "Replay tutorial" in the Field Manual. */
+  onReplayTutorial?: () => void;
+  /**
+   * Replaces Play again or Restart run when the run ends, as the guided Blind
+   * does to hand over to the campaign.
+   */
+  endAction?: (won: boolean) => { label: string; onSelect: () => void };
 }
 
 /** The run and every move since it started: what a save replays. */
@@ -358,6 +372,10 @@ export function CardTable({
   scenario: single,
   seed,
   persist = false,
+  coach,
+  onTableChange,
+  onReplayTutorial,
+  endAction,
 }: CardTableProps) {
   const act = useMemo<RunPlan>(
     () =>
@@ -413,6 +431,9 @@ export function CardTable({
   }, [persist, offerResume, runOver, log]);
   const scenario = runView.blind;
   const state = run.table;
+  useEffect(() => {
+    onTableChange?.(state);
+  }, [onTableChange, state]);
   const view = runView.table;
   const numbersOf = (ids: readonly string[]) =>
     ids
@@ -1032,9 +1053,25 @@ export function CardTable({
           >
             Hands [H]
           </button>
-          <FieldManualButton manualId="trial-and-error" label="Manual" />
+          <FieldManualButton
+            manualId="trial-and-error"
+            label="Manual"
+            action={
+              onReplayTutorial
+                ? {
+                    label: "Replay tutorial",
+                    description:
+                      "Play the guided Blind again: one hand, step by step.",
+                    onSelect: onReplayTutorial,
+                  }
+                : undefined
+            }
+          />
         </div>
       </header>
+      {coach && !inspected && (
+        <div className="border-b border-zinc-800 p-3">{coach}</div>
+      )}
 
       <div className="grid gap-px bg-zinc-800 md:grid-cols-[minmax(0,14rem)_minmax(0,1fr)]">
         <aside
@@ -1775,6 +1812,7 @@ export function CardTable({
                 <button
                   type="button"
                   onClick={play}
+                  data-coach="play"
                   disabled={!view.canPlay}
                   aria-describedby={playDescribedBy}
                   className={`${BUTTON_BASE} border-emerald-500 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20`}
@@ -2211,6 +2249,10 @@ export function CardTable({
                     ref={restartRef}
                     type="button"
                     onClick={() => {
+                      if (endAction) {
+                        endAction(runView.phase === "RUN_WON").onSelect();
+                        return;
+                      }
                       setFocusIndex(0);
                       send(
                         { type: "RESTART_RUN", seed: freshSeed() },
@@ -2219,7 +2261,11 @@ export function CardTable({
                     }}
                     className={`${BUTTON_BASE} mt-4 border-amber-500 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20`}
                   >
-                    {runView.phase === "RUN_WON" ? "Play again" : "Restart run"}
+                    {endAction
+                      ? endAction(runView.phase === "RUN_WON").label
+                      : runView.phase === "RUN_WON"
+                        ? "Play again"
+                        : "Restart run"}
                   </button>
                 </>
               )}
@@ -2278,6 +2324,9 @@ export function CardTable({
                   </span>
                 )}
               </p>
+              {coach && (
+                <div className="border-b border-zinc-800 p-3">{coach}</div>
+              )}
               {view.inspection ? (
                 <QcDesk
                   card={view.inspection.card}
@@ -2316,6 +2365,7 @@ export function CardTable({
                 <button
                   type="button"
                   onClick={closeInspect}
+                  data-coach="close-inspect"
                   className={`${BUTTON_BASE} w-full border-zinc-600 text-zinc-200 hover:bg-zinc-800`}
                 >
                   Close Inspect [Esc]

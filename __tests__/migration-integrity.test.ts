@@ -61,6 +61,7 @@ describe("Prisma migration integrity", () => {
     "20261021000000_add_newsletter_subscribers",
     "20261022000000_add_case_study_reaction_unique_constraint",
     "20261023000000_add_telemetry_event_created_at_idx",
+    "20261024000000_add_case_study_published_created_at_idx",
   ];
 
   it("validates every checked-in migration file", () => {
@@ -198,6 +199,17 @@ describe("Prisma migration integrity", () => {
 
     expect(migration).toMatch(
       /CREATE INDEX(?: IF NOT EXISTS)? "TelemetryEvent_createdAt_idx"\s+ON "TelemetryEvent"\("createdAt"\)/
+    );
+    expect(migration).not.toMatch(/\bDROP\s+(?:TABLE|COLUMN|INDEX)\b/i);
+  });
+
+  it("adds the CaseStudy published/created_at index without destructive drops", () => {
+    const migration = readMigrationSql(
+      "20261024000000_add_case_study_published_created_at_idx"
+    );
+
+    expect(migration).toMatch(
+      /CREATE INDEX(?: IF NOT EXISTS)? "CaseStudy_published_created_at_idx"\s+ON "CaseStudy"\("published", "created_at"\)/
     );
     expect(migration).not.toMatch(/\bDROP\s+(?:TABLE|COLUMN|INDEX)\b/i);
   });

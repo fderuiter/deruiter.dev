@@ -22,6 +22,7 @@ The repository contains fourteen active Prisma migrations:
 12. `20261021000000_add_newsletter_subscribers`: Additive newsletter tables (`NewsletterSubscriber`, `NewsletterDispatch`, `NewsletterDelivery`) and a nullable `headers` column on `OutboundEmailQueue` for double opt-in and capped Systems Dispatch delivery (#841).
 13. `20261022000000_add_case_study_reaction_unique_constraint`: Deduplicates legacy case study reactions and enforces one reaction per case study, type, and visitor hash (#1114).
 14. `20261023000000_add_telemetry_event_created_at_idx`: Adds an index on `TelemetryEvent.createdAt` for timestamp-filtered telemetry queries (#1115).
+15. `20261024000000_add_case_study_published_created_at_idx`: Adds a composite index on `CaseStudy(published, created_at)` for published case study listings ordered by creation time (#1112).
 
 ## Normal workflow
 

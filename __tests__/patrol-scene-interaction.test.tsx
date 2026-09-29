@@ -766,7 +766,9 @@ describe("Patrol Shift — M5 OEC Scene & Patient Interaction System", () => {
       // Verify container renders and disclaimer is accessible
       expect(screen.getByTestId("patrol-shift-container")).toBeDefined();
       expect(screen.getByTestId("medical-disclaimer-banner")).toBeDefined();
-      expect(screen.getByText(/M5: OEC Clinical/i)).toBeDefined();
+      expect(
+        screen.getByText(/Outdoor Emergency Care.*Toboggan Handling/i)
+      ).toBeDefined();
     });
   });
 });

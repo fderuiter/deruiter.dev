@@ -5,6 +5,7 @@ import React, {
   useEffect,
   useRef,
   useCallback,
+  useMemo,
   useSyncExternalStore,
 } from "react";
 import {
@@ -28,10 +29,14 @@ import { useAnnouncer } from "@/hooks/useAnnouncer";
 import { useGarminService } from "@/hooks/useGarminService";
 import { triggerHaptic } from "@/lib/haptics";
 import { BezelClusterDock } from "@/components/arcade/ControlDocks";
+import { useCabinetSetup } from "@/components/arcade/CabinetSetupContext";
+import { usePrefersReducedMotion } from "@/hooks/useMediaQuery";
 import {
   DeviceTarget,
   DEVICE_PROFILES,
   createInitialState,
+  resolveRunTuning,
+  DEFAULT_RUN_TUNING,
   startGame,
   jettisonOldestVariable,
   wipeScreenFog,
@@ -116,6 +121,23 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
   const { allocateMemory, garbageCollect, syncFlashStorage } =
     useGarminService();
   const [alertMessage, setAlertMessage] = useState<string>("");
+
+  // Pre-Game Setup Wizard choices from the hosting cabinet (null standalone).
+  const cabinetSetup = useCabinetSetup();
+  const prefersReducedMotion = usePrefersReducedMotion();
+  const setupDifficulty = cabinetSetup?.config.difficulty;
+  const setupLoadout = cabinetSetup?.config.loadout;
+  const setupShake = cabinetSetup?.config.screenShake ?? "none";
+  const setupCrt = cabinetSetup?.config.crtFilter ?? "off";
+  const setupRunRevision = cabinetSetup?.runRevision ?? 0;
+  const isSetupOpen = cabinetSetup?.isSetupOpen ?? false;
+  const runTuning = useMemo(
+    () =>
+      setupDifficulty && setupLoadout
+        ? resolveRunTuning(setupDifficulty, setupLoadout)
+        : DEFAULT_RUN_TUNING,
+    [setupDifficulty, setupLoadout]
+  );
 
   const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
   const swipeHandledRef = useRef<boolean>(false);
@@ -324,7 +346,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       current.gameState === "shutdown" ||
       current.gameState === "summary"
     ) {
-      applyTransition((state) => startGame(state, deviceTarget));
+      applyTransition((state) => startGame(state, deviceTarget, runTuning));
       recordEvent("garmin_simulator_start", "project_click").catch(() => {});
       playSuccess();
     } else if (current.gameState === "playing") {
@@ -332,7 +354,14 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     } else if (current.gameState === "paused") {
       applyTransition((state) => ({ ...state, gameState: "playing" as const }));
     }
-  }, [deviceTarget, playButtonTone, playSuccess, recordEvent, applyTransition]);
+  }, [
+    deviceTarget,
+    runTuning,
+    playButtonTone,
+    playSuccess,
+    recordEvent,
+    applyTransition,
+  ]);
 
   // Quick Fog Wipe (W / Touch / Mouse)
   const handleWipeFog = useCallback(
@@ -342,6 +371,56 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     },
     [playBeep, applyTransition]
   );
+
+  // Setup confirmed in the cabinet wizard (START GAME): begin a fresh run with
+  // the chosen options right away and hand keyboard focus to the watch, so
+  // the player never has to press a second start button.
+  const handledRunRevisionRef = useRef(setupRunRevision);
+  useEffect(() => {
+    if (setupRunRevision === handledRunRevisionRef.current) return;
+    handledRunRevisionRef.current = setupRunRevision;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    applyTransition((state) => startGame(state, deviceTarget, runTuning));
+    recordEvent("garmin_simulator_start", "project_click").catch(() => {});
+    playSuccess();
+    announce("New run started with your setup options.", "polite");
+    // The wizard's focus trap restores focus to its trigger as it unmounts;
+    // move focus to the watch after that has happened.
+    window.setTimeout(() => {
+      containerRef.current?.focus({ preventScroll: true });
+    }, 0);
+  }, [
+    setupRunRevision,
+    deviceTarget,
+    runTuning,
+    applyTransition,
+    recordEvent,
+    playSuccess,
+    announce,
+  ]);
+
+  // Reopening Setup mid-run pauses the run underneath the wizard. Confirming
+  // restarts (handled above); skipping resumes exactly where it stopped.
+  const pausedBySetupRef = useRef(false);
+  useEffect(() => {
+    if (isSetupOpen) {
+      if (stateRef.current.gameState === "playing") {
+        pausedBySetupRef.current = true;
+        applyTransition((state) => ({
+          ...state,
+          gameState: "paused" as const,
+        }));
+      }
+    } else if (pausedBySetupRef.current) {
+      pausedBySetupRef.current = false;
+      if (stateRef.current.gameState === "paused") {
+        applyTransition((state) => ({
+          ...state,
+          gameState: "playing" as const,
+        }));
+      }
+    }
+  }, [isSetupOpen, applyTransition]);
 
   // Switch Device Profile
   const handleSelectDevice = (target: DeviceTarget) => {
@@ -528,8 +607,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     // 2. Garbage Collection Freeze
     if (gameState.isGcActive && !hasAlertedGcRef.current) {
       hasAlertedGcRef.current = true;
-      const msg =
-        "Garbage collection active. 500 millisecond execution freeze.";
+      const msg = `Garbage collection active. ${gameState.tuning?.gcFreezeMs ?? DEFAULT_RUN_TUNING.gcFreezeMs} millisecond execution freeze.`;
       setAlertMessage(msg);
       announce(msg, "assertive");
     } else if (!gameState.isGcActive) {
@@ -599,13 +677,21 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
           }
         );
 
-        // Save high scores safely
-        if (nextState.score > nextState.highScore) {
-          if (typeof window !== "undefined") {
+        // Save a new high score when the run ends, and about once a second
+        // while it's still going. The engine raises highScore to the score
+        // every tick, so compare against the stored best instead.
+        const runEnded = nextState.gameState !== "playing";
+        if (runEnded || frameCountRef.current % 60 === 0) {
+          const storedBest = parseInt(getHighScoreSnapshot(), 10) || 0;
+          if (
+            nextState.highScore > storedBest &&
+            typeof window !== "undefined" &&
+            typeof window.localStorage?.setItem === "function"
+          ) {
             try {
               localStorage.setItem(
                 "garmin_simulator_high_score",
-                nextState.score.toString()
+                nextState.highScore.toString()
               );
             } catch {}
           }
@@ -654,6 +740,17 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
   };
 
   const currentProfile = DEVICE_PROFILES[deviceTarget];
+  const gcFreezeMs = gameState.tuning?.gcFreezeMs ?? runTuning.gcFreezeMs;
+
+  // Screen shake fires on discrete impacts only (crash, and GC on High) and
+  // never when the player prefers reduced motion.
+  const shakeLevel = prefersReducedMotion ? "none" : setupShake;
+  const shakeEvent =
+    gameState.gameState === "crashed" || gameState.gameState === "shutdown"
+      ? "crash"
+      : gameState.isGcActive
+        ? "gc"
+        : "none";
 
   return (
     <div
@@ -780,7 +877,9 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
         onBlur={() => setIsFocused(false)}
         onKeyDown={handleKeyDown}
         data-keyboard-boundary="true"
-        className={`relative w-full max-w-[336px] aspect-square h-auto rounded-full bg-gradient-to-br p-6 flex items-center justify-center border-4 select-none outline-none transition-all duration-300 ${getThemeChassis()} ${
+        data-garmin-shake={shakeLevel}
+        data-garmin-shake-event={shakeEvent}
+        className={`garmin-chassis relative w-full max-w-[336px] aspect-square h-auto rounded-full bg-gradient-to-br p-6 flex items-center justify-center border-4 select-none outline-none transition-all duration-300 ${getThemeChassis()} ${
           isFocused
             ? "ring-4 ring-brand-cyan/20 shadow-[0_0_40px_rgba(34,211,238,0.25)] scale-[1.01]"
             : "shadow-2xl"
@@ -855,7 +954,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
             handleForceGc();
             containerRef.current?.focus({ preventScroll: true });
           }}
-          title="Force Garbage Collection (Backspace / Escape): 500ms Freeze"
+          title={`Force Garbage Collection (Backspace / Escape): ${gcFreezeMs}ms Freeze`}
           className="absolute -right-3.5 top-[62%] px-2.5 py-1.5 bg-gradient-to-l from-zinc-700 to-zinc-800 hover:from-purple-500 hover:to-purple-600 text-[8px] font-bold text-zinc-300 hover:text-black rounded-r-md border-y border-r border-zinc-600 active:scale-95 transition-all shadow-md cursor-pointer flex flex-col items-center"
         >
           <span>BACK</span>
@@ -900,6 +999,16 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
             onPointerCancel={handleCanvasPointerCancel}
             className="w-full h-full aspect-square rounded-full cursor-crosshair touch-none"
           />
+
+          {/* CRT filter chosen in Pre-Game Setup (static, never animated) */}
+          {setupCrt !== "off" && (
+            <div
+              aria-hidden="true"
+              data-testid="garmin-crt-overlay"
+              data-garmin-crt={setupCrt}
+              className="garmin-crt pointer-events-none absolute inset-0 z-20 rounded-full"
+            />
+          )}
 
           {/* Idle Menu Overlay */}
           {gameState.gameState === "idle" && (

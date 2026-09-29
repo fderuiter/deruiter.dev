@@ -366,7 +366,7 @@ export const VectorComparisonViewer: React.FC = () => {
       )}
 
       {/* Footer Instructions */}
-      <div className="mt-4 flex flex-wrap items-center justify-between text-[11px] font-mono text-zinc-500">
+      <div className="mt-4 flex flex-wrap items-center justify-between text-[11px] font-mono text-muted">
         <span>Pass 1: Common Loon (Gavia immer) Base Geometry</span>
         <span>
           Pass 2: Hard-Edge Vector Raytracing &amp; Radial Glow Filter

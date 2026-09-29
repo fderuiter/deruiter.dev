@@ -182,7 +182,7 @@ export const NeuroToolbar: React.FC<NeuroToolbarProps> = ({
 
         <button
           onClick={onReset}
-          title="Reset current edits & control points"
+          title="Reset this case: clears its edits and control points (other cases keep their drafts). Undo is offered afterward."
           aria-label="Reset workspace"
           className="p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-900 transition-all"
         >

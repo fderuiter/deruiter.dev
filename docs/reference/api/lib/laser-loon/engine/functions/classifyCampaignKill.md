@@ -16,7 +16,7 @@ act whichever weapon landed it.
 
 ### target
 
-`Pick`\<[`Target`](../../types/interfaces/Target.md), `"isBoss"`\>
+`Pick`\<[`Target`](../../types/interfaces/Target.md), `"isBoss"` \| `"isProjectile"`\>
 
 The target that was just destroyed.
 
@@ -31,4 +31,5 @@ The act being played.
 [`CampaignKillOutcome`](../type-aliases/CampaignKillOutcome.md)
 
 `act-kill` for a regular enemy, `act-victory` for a boss before
-  the final act, and `campaign-victory` for the final act's boss.
+  the final act, `campaign-victory` for the final act's boss, and
+  `no-credit` for a boss volley shot, which doesn't count toward the act.

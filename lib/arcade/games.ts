@@ -9,6 +9,7 @@ export const ARCADE_GAME_ROUTES = [
   "/arcade/garmin-watch",
   "/arcade/clinical-chaos",
   "/arcade/trial-and-error",
+  "/arcade/study-director",
   "/arcade/retro-labyrinth",
 ] as const;
 

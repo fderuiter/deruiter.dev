@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-// ADR 0048: six games show a desktop-only notice on phones and portrait
+// ADR 0048: seven games show a desktop-only notice on phones and portrait
 // tablets. Each case sets its own viewport and touch emulation so the spec
 // means the same thing under every Playwright project.
 const GATED = [
@@ -10,6 +10,7 @@ const GATED = [
   "garmin-watch",
   "clinical-chaos",
   "retro-labyrinth",
+  "study-director",
 ];
 
 test.describe("Desktop-only arcade gate", () => {

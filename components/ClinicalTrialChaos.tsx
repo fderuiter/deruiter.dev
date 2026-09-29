@@ -108,6 +108,8 @@ import {
   OfficeId,
   getOfficeById,
   applyOfficeSpawnInterval,
+  getSpawnIntervalSeconds,
+  MAX_CONVEYOR_SUBJECTS,
   applyOfficeErrorChance,
   applyOfficeAmendmentInterval,
   applyOfficeScore,
@@ -118,6 +120,7 @@ import {
   SponsorState,
   createInitialSponsorState,
   tickSponsor,
+  getSponsorMoodDecayPerSecond,
   resolveSponsorChoice,
   applySponsorSubmissionBoost,
   applySponsorSkeletonsToReport,
@@ -1814,13 +1817,14 @@ export const ClinicalTrialChaos: React.FC = () => {
 
       // 6. Spawning new subjects
       spawnTimerRef.current += deltaSeconds;
-      const spawnInterval = applyOfficeSpawnInterval(
-        phaseRef.current === 1 ? 6.5 : phaseRef.current === 2 ? 4.8 : 3.5,
-        officeRef.current
+      const spawnInterval = getSpawnIntervalSeconds(
+        phaseRef.current,
+        conveyorSubjectsRef.current.length,
+        (seconds) => applyOfficeSpawnInterval(seconds, officeRef.current)
       );
       if (
         spawnTimerRef.current > spawnInterval &&
-        conveyorSubjectsRef.current.length < 5
+        conveyorSubjectsRef.current.length < MAX_CONVEYOR_SUBJECTS
       ) {
         uiNeedsSync = true;
         spawnTimerRef.current = 0;
@@ -1859,7 +1863,9 @@ export const ClinicalTrialChaos: React.FC = () => {
         const prevSponsor = sponsorRef.current;
         const { state: nextSponsor, events: sponsorEvents } = tickSponsor(
           prevSponsor,
-          deltaSeconds
+          deltaSeconds,
+          Math.random,
+          getSponsorMoodDecayPerSecond(phaseRef.current)
         );
         sponsorRef.current = nextSponsor;
         for (const ev of sponsorEvents) {
@@ -2353,76 +2359,82 @@ export const ClinicalTrialChaos: React.FC = () => {
   const stationHotkey = (id: CDISCDomain) =>
     sortedStations.findIndex((s) => s.id === id) + 1;
 
-  const sponsorEmailCard = sponsor.activeRequest ? (
-    <section
-      aria-label="Sponsor email"
-      className={`overflow-hidden rounded-xl border ${
-        sponsor.activeRequest.followUps > 0
-          ? "border-rose-500/50 bg-rose-500/5"
-          : "border-amber-500/40 bg-amber-500/5"
-      }`}
-    >
-      <div className="h-1 bg-zinc-800">
-        <div
-          className={`h-full transition-[width] duration-500 ease-linear ${
-            sponsor.activeRequest.followUps > 0 ? "bg-rose-500" : "bg-amber-500"
-          }`}
-          style={{
-            width: `${Math.max(
-              0,
-              (sponsor.activeRequest.timeRemaining /
-                (sponsor.activeRequest.followUps > 0
-                  ? 12
-                  : sponsor.activeRequest.request.deadlineSeconds)) *
-                100
-            )}%`,
-          }}
-        />
-      </div>
-      <div className="p-3">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0" aria-live="polite">
-            <p className="flex items-center gap-1.5 text-[10px] text-zinc-400">
-              <IconMail className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-              <span className="break-words">
-                {sponsor.activeRequest.request.from} ·{" "}
-                {sponsor.activeRequest.request.role}
-              </span>
-            </p>
-            <p className="mt-0.5 text-xs font-bold text-zinc-100 break-words">
-              {sponsor.activeRequest.followUps > 0
-                ? getFollowUpSubject(
-                    sponsor.activeRequest.request,
-                    sponsor.activeRequest.followUps
-                  )
-                : sponsor.activeRequest.request.subject}
-            </p>
+  // `overlay` lays the email over the conveyor board on a wide cabinet, so
+  // the stations and lifelines stay on screen while it is open (#1327).
+  const renderSponsorEmailCard = (overlay: boolean) =>
+    sponsor.activeRequest ? (
+      <section
+        aria-label="Sponsor email"
+        className={`overflow-hidden rounded-xl border ${
+          sponsor.activeRequest.followUps > 0
+            ? "border-rose-500/50 bg-rose-500/5"
+            : "border-amber-500/40 bg-amber-500/5"
+        }`}
+      >
+        <div className="h-1 bg-zinc-800">
+          <div
+            className={`h-full transition-[width] duration-500 ease-linear ${
+              sponsor.activeRequest.followUps > 0
+                ? "bg-rose-500"
+                : "bg-amber-500"
+            }`}
+            style={{
+              width: `${Math.max(
+                0,
+                (sponsor.activeRequest.timeRemaining /
+                  (sponsor.activeRequest.followUps > 0
+                    ? 12
+                    : sponsor.activeRequest.request.deadlineSeconds)) *
+                  100
+              )}%`,
+            }}
+          />
+        </div>
+        <div className="p-3">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0" aria-live="polite">
+              <p className="flex items-center gap-1.5 text-[10px] text-zinc-400">
+                <IconMail className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                <span className="break-words">
+                  {sponsor.activeRequest.request.from} ·{" "}
+                  {sponsor.activeRequest.request.role}
+                </span>
+              </p>
+              <p className="mt-0.5 text-xs font-bold text-zinc-100 break-words">
+                {sponsor.activeRequest.followUps > 0
+                  ? getFollowUpSubject(
+                      sponsor.activeRequest.request,
+                      sponsor.activeRequest.followUps
+                    )
+                  : sponsor.activeRequest.request.subject}
+              </p>
+            </div>
+            <span className="shrink-0 text-xs font-bold tabular-nums text-amber-300">
+              {Math.ceil(sponsor.activeRequest.timeRemaining)}s
+            </span>
           </div>
-          <span className="shrink-0 text-xs font-bold tabular-nums text-amber-300">
-            {Math.ceil(sponsor.activeRequest.timeRemaining)}s
-          </span>
+          <p className="mt-1 text-[11px] text-zinc-400 break-words">
+            {sponsor.activeRequest.request.body}
+          </p>
+          <div className={`mt-2 grid gap-1.5 ${overlay ? "grid-cols-3" : ""}`}>
+            {sponsor.activeRequest.request.choices.map((choice, idx) => (
+              <button
+                key={choice.label}
+                type="button"
+                onClick={() => handleSponsorChoice(idx)}
+                className="min-h-[44px] min-w-0 rounded-lg border border-zinc-700 bg-[#0d0e11] px-3 py-2 text-left text-[11px] font-bold text-zinc-200 break-words transition hover:border-amber-500/60 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/60"
+              >
+                {choice.label}
+              </button>
+            ))}
+          </div>
+          <p className="mt-2 text-[10px] text-zinc-400">
+            Ignore it and they will follow up. Twice.
+          </p>
         </div>
-        <p className="mt-1 text-[11px] text-zinc-400 break-words">
-          {sponsor.activeRequest.request.body}
-        </p>
-        <div className="mt-2 grid gap-1.5">
-          {sponsor.activeRequest.request.choices.map((choice, idx) => (
-            <button
-              key={choice.label}
-              type="button"
-              onClick={() => handleSponsorChoice(idx)}
-              className="min-h-[44px] min-w-0 rounded-lg border border-zinc-700 bg-[#0d0e11] px-3 py-2 text-left text-[11px] font-bold text-zinc-200 break-words transition hover:border-amber-500/60 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/60"
-            >
-              {choice.label}
-            </button>
-          ))}
-        </div>
-        <p className="mt-2 text-[10px] text-zinc-400">
-          Ignore it and they will follow up. Twice.
-        </p>
-      </div>
-    </section>
-  ) : null;
+      </section>
+    ) : null;
+  const sponsorEmailCard = renderSponsorEmailCard(false);
 
   return (
     <div
@@ -2430,7 +2442,7 @@ export const ClinicalTrialChaos: React.FC = () => {
       data-keyboard-boundary="true"
       tabIndex={0}
       onKeyDown={handleKeyDown}
-      className={`relative w-full font-mono focus:outline-none transition-all ${
+      className={`@container relative w-full font-mono focus:outline-none transition-all ${
         isFullscreen
           ? "fixed inset-0 z-50 w-full h-[100dvh] max-h-[100dvh] max-w-none rounded-none border-none bg-black p-3 sm:p-6 overflow-y-auto select-none"
           : "rounded-2xl border border-blue-500/30 bg-zinc-950 p-2.5 sm:p-4 md:p-6 shadow-2xl focus:ring-1 focus:ring-brand-cyan"
@@ -2651,183 +2663,152 @@ export const ClinicalTrialChaos: React.FC = () => {
         )}
       </div>
 
-      {/* The core tension: FDA auditor vs sponsor */}
-      {playState !== "idle" && (
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <div className="min-w-0 rounded-xl border border-zinc-800 bg-[#13151a] p-3">
-            <div className="flex items-center justify-between gap-2 text-xs">
-              <span className="flex min-w-0 items-center gap-2">
-                <IconShieldCheck
-                  className={`h-4 w-4 shrink-0 ${
-                    auditor.suspicion > 60 ? "text-rose-400" : "text-zinc-400"
-                  }`}
-                  aria-hidden="true"
-                />
-                <span className="truncate font-bold text-zinc-300">
-                  FDA
-                  <span className="hidden sm:inline"> AUDITOR SCRUTINY</span>
+      {/* Board and pressure meters: side by side on a wide cabinet so the
+          work below still fits a 900px-tall screen (#1327). */}
+      <div
+        className={`mt-3 grid grid-cols-1 gap-3 ${
+          activeTab === "conveyor" && playState !== "idle"
+            ? "@5xl:grid-cols-[minmax(0,1fr)_20rem]"
+            : ""
+        }`}
+      >
+        {/* The core tension: FDA auditor vs sponsor */}
+        {playState !== "idle" && (
+          <div className="grid grid-cols-2 gap-2 @5xl:col-start-2 @5xl:row-start-1 @5xl:grid-cols-1 @5xl:content-center">
+            <div className="min-w-0 rounded-xl border border-zinc-800 bg-[#13151a] p-3">
+              <div className="flex items-center justify-between gap-2 text-xs">
+                <span className="flex min-w-0 items-center gap-2">
+                  <IconShieldCheck
+                    className={`h-4 w-4 shrink-0 ${
+                      auditor.suspicion > 60 ? "text-rose-400" : "text-zinc-400"
+                    }`}
+                    aria-hidden="true"
+                  />
+                  <span className="truncate font-bold text-zinc-300">
+                    FDA
+                    <span className="hidden sm:inline"> AUDITOR SCRUTINY</span>
+                  </span>
                 </span>
-              </span>
-              <span className="flex shrink-0 items-center gap-2">
-                <span
-                  className={`font-bold tabular-nums ${
-                    auditor.suspicion > 75
-                      ? "text-rose-400"
-                      : auditor.suspicion > 40
-                        ? "text-amber-300"
-                        : "text-emerald-400"
-                  }`}
-                >
-                  {Math.round(auditor.suspicion)}%
+                <span className="flex shrink-0 items-center gap-2">
+                  <span
+                    className={`font-bold tabular-nums ${
+                      auditor.suspicion > 75
+                        ? "text-rose-400"
+                        : auditor.suspicion > 40
+                          ? "text-amber-300"
+                          : "text-emerald-400"
+                    }`}
+                  >
+                    {Math.round(auditor.suspicion)}%
+                  </span>
                 </span>
-              </span>
-            </div>
-            <div
-              className="relative mt-2 h-2 overflow-hidden rounded-full bg-zinc-800"
-              role="meter"
-              aria-label="FDA auditor suspicion"
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={Math.round(auditor.suspicion)}
-            >
+              </div>
               <div
-                aria-hidden="true"
-                className="absolute inset-y-0 right-0 w-1/4 bg-rose-500/15"
-              />
-              <div
-                className={`relative h-full rounded-full transition-[width] duration-300 ${
-                  auditor.suspicion > 75
-                    ? "bg-rose-500"
-                    : auditor.suspicion > 40
-                      ? "bg-amber-500"
-                      : "bg-emerald-500"
-                }`}
-                style={{ width: `${Math.min(100, auditor.suspicion)}%` }}
-              />
-            </div>
-            <div className="mt-1.5 flex items-center gap-2">
-              <span
-                className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold ${
-                  auditor.behavior === "issuing_483"
-                    ? "bg-rose-600 text-white"
-                    : auditor.behavior === "suspicious"
-                      ? "bg-amber-500/15 text-amber-300"
-                      : "bg-zinc-800 text-zinc-400"
-                }`}
+                className="relative mt-2 h-2 overflow-hidden rounded-full bg-zinc-800"
+                role="meter"
+                aria-label="FDA auditor suspicion"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={Math.round(auditor.suspicion)}
               >
-                {AUDITOR_BEHAVIOR_LABELS[auditor.behavior]}
-              </span>
-              <p className="hidden min-w-0 truncate text-[10px] text-zinc-400 sm:block">
-                Bad data and expired subjects raise it. 100% = Form 483.
-              </p>
-            </div>
-          </div>
-
-          <div className="min-w-0 rounded-xl border border-zinc-800 bg-[#13151a] p-3">
-            <div className="flex items-center justify-between gap-2 text-xs">
-              <span className="flex min-w-0 items-center gap-2">
-                <IconMail
-                  className={`h-4 w-4 shrink-0 ${
-                    sponsor.mood < 25 ? "text-rose-400" : "text-zinc-400"
-                  }`}
+                <div
                   aria-hidden="true"
+                  className="absolute inset-y-0 right-0 w-1/4 bg-rose-500/15"
                 />
-                <span className="truncate font-bold text-zinc-300">
-                  SPONSOR
-                  <span className="hidden sm:inline"> SATISFACTION</span>
-                </span>
-              </span>
-              <span className="flex shrink-0 items-center gap-2">
+                <div
+                  className={`relative h-full rounded-full transition-[width] duration-300 ${
+                    auditor.suspicion > 75
+                      ? "bg-rose-500"
+                      : auditor.suspicion > 40
+                        ? "bg-amber-500"
+                        : "bg-emerald-500"
+                  }`}
+                  style={{ width: `${Math.min(100, auditor.suspicion)}%` }}
+                />
+              </div>
+              <div className="mt-1.5 flex items-center gap-2">
                 <span
-                  className="hidden text-[10px] tabular-nums text-zinc-400 sm:inline"
-                  title="Shortcuts you took to please the sponsor. The inspector will find them."
-                >
-                  🦴 {sponsor.skeletons.length}
-                </span>
-                <span
-                  className={`font-bold tabular-nums ${
-                    sponsor.mood < 25
-                      ? "text-rose-400"
-                      : sponsor.mood < 45
-                        ? "text-amber-300"
-                        : "text-emerald-400"
+                  className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold ${
+                    auditor.behavior === "issuing_483"
+                      ? "bg-rose-600 text-white"
+                      : auditor.behavior === "suspicious"
+                        ? "bg-amber-500/15 text-amber-300"
+                        : "bg-zinc-800 text-zinc-400"
                   }`}
                 >
-                  {Math.round(sponsor.mood)}%
+                  {AUDITOR_BEHAVIOR_LABELS[auditor.behavior]}
                 </span>
-              </span>
-            </div>
-            <div
-              className="relative mt-2 h-2 overflow-hidden rounded-full bg-zinc-800"
-              role="meter"
-              aria-label="Sponsor satisfaction"
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={Math.round(sponsor.mood)}
-            >
-              <div
-                aria-hidden="true"
-                className="absolute inset-y-0 left-0 w-1/4 bg-rose-500/15"
-              />
-              <div
-                className={`relative h-full rounded-full transition-[width] duration-300 ${
-                  sponsor.mood >= 45
-                    ? "bg-emerald-500"
-                    : sponsor.mood >= 25
-                      ? "bg-amber-500"
-                      : "bg-rose-500"
-                }`}
-                style={{ width: `${Math.round(sponsor.mood)}%` }}
-              />
-            </div>
-            <p className="mt-1.5 truncate py-0.5 text-[10px] italic text-zinc-400">
-              {getSponsorMoodLabel(sponsor.mood)}
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Active Protocol Amendment Banner */}
-      {playState === "playing" && activeAmendment && activeAmendment.active && (
-        <div
-          role="status"
-          className="mt-3 overflow-hidden rounded-xl border border-amber-500/40 bg-amber-500/5"
-        >
-          <div className="flex items-start justify-between gap-3 p-3">
-            <div className="flex min-w-0 items-start gap-2">
-              <IconArrowsShuffle
-                className="mt-0.5 h-4 w-4 shrink-0 text-amber-400"
-                aria-hidden="true"
-              />
-              <div className="min-w-0">
-                <p className="text-xs font-bold text-amber-300 break-words">
-                  Protocol amendment: {activeAmendment.title}
-                </p>
-                <p className="text-[11px] text-zinc-400 break-words">
-                  {activeAmendment.description}
+                <p className="hidden min-w-0 truncate text-[10px] text-zinc-400 sm:block @5xl:whitespace-normal">
+                  Bad data and expired subjects raise it. 100% = Form 483.
                 </p>
               </div>
             </div>
-            <span className="shrink-0 text-xs font-bold tabular-nums text-amber-300">
-              {Math.ceil(activeAmendment.timeRemaining)}s
-            </span>
-          </div>
-          <div className="h-1 bg-zinc-800">
-            <div
-              className="h-full bg-amber-500 transition-[width] duration-500 ease-linear"
-              style={{
-                width: `${Math.max(0, (activeAmendment.timeRemaining / activeAmendment.durationSeconds) * 100)}%`,
-              }}
-            />
-          </div>
-        </div>
-      )}
 
-      {/* TAB 1: Conveyor Floor View */}
-      {activeTab === "conveyor" && (
-        <>
-          {/* HTML5 Canvas Simulation */}
-          <div className="mt-3 relative rounded-xl border border-zinc-800 bg-black overflow-hidden">
+            <div className="min-w-0 rounded-xl border border-zinc-800 bg-[#13151a] p-3">
+              <div className="flex items-center justify-between gap-2 text-xs">
+                <span className="flex min-w-0 items-center gap-2">
+                  <IconMail
+                    className={`h-4 w-4 shrink-0 ${
+                      sponsor.mood < 25 ? "text-rose-400" : "text-zinc-400"
+                    }`}
+                    aria-hidden="true"
+                  />
+                  <span className="truncate font-bold text-zinc-300">
+                    SPONSOR
+                    <span className="hidden sm:inline"> SATISFACTION</span>
+                  </span>
+                </span>
+                <span className="flex shrink-0 items-center gap-2">
+                  <span
+                    className="hidden text-[10px] tabular-nums text-zinc-400 sm:inline"
+                    title="Shortcuts you took to please the sponsor. The inspector will find them."
+                  >
+                    🦴 {sponsor.skeletons.length}
+                  </span>
+                  <span
+                    className={`font-bold tabular-nums ${
+                      sponsor.mood < 25
+                        ? "text-rose-400"
+                        : sponsor.mood < 45
+                          ? "text-amber-300"
+                          : "text-emerald-400"
+                    }`}
+                  >
+                    {Math.round(sponsor.mood)}%
+                  </span>
+                </span>
+              </div>
+              <div
+                className="relative mt-2 h-2 overflow-hidden rounded-full bg-zinc-800"
+                role="meter"
+                aria-label="Sponsor satisfaction"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={Math.round(sponsor.mood)}
+              >
+                <div
+                  aria-hidden="true"
+                  className="absolute inset-y-0 left-0 w-1/4 bg-rose-500/15"
+                />
+                <div
+                  className={`relative h-full rounded-full transition-[width] duration-300 ${
+                    sponsor.mood >= 45
+                      ? "bg-emerald-500"
+                      : sponsor.mood >= 25
+                        ? "bg-amber-500"
+                        : "bg-rose-500"
+                  }`}
+                  style={{ width: `${Math.round(sponsor.mood)}%` }}
+                />
+              </div>
+              <p className="mt-1.5 truncate py-0.5 text-[10px] italic text-zinc-400">
+                {getSponsorMoodLabel(sponsor.mood)}
+              </p>
+            </div>
+          </div>
+        )}
+        {activeTab === "conveyor" && (
+          <div className="relative rounded-xl @5xl:col-start-1 @5xl:row-start-1 border border-zinc-800 bg-black overflow-hidden">
             <canvas
               ref={canvasRef}
               width={760}
@@ -2992,6 +2973,12 @@ export const ClinicalTrialChaos: React.FC = () => {
               </fieldset>
             </div>
 
+            {playState === "playing" && sponsor.activeRequest && (
+              <div className="absolute inset-x-2 top-2 hidden max-h-[calc(100%-1rem)] overflow-y-auto rounded-xl bg-[#13151a] shadow-2xl @5xl:block">
+                {renderSponsorEmailCard(true)}
+              </div>
+            )}
+
             {/* Canvas status caption while the conveyor is stopped */}
             {playState !== "playing" && (
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/55">
@@ -3005,6 +2992,49 @@ export const ClinicalTrialChaos: React.FC = () => {
               </div>
             )}
           </div>
+        )}
+      </div>
+
+      {/* Active Protocol Amendment Banner */}
+      {playState === "playing" && activeAmendment && activeAmendment.active && (
+        <div
+          role="status"
+          className="mt-3 overflow-hidden rounded-xl border border-amber-500/40 bg-amber-500/5"
+        >
+          <div className="flex items-start justify-between gap-3 p-3">
+            <div className="flex min-w-0 items-start gap-2">
+              <IconArrowsShuffle
+                className="mt-0.5 h-4 w-4 shrink-0 text-amber-400"
+                aria-hidden="true"
+              />
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-amber-300 break-words">
+                  Protocol amendment: {activeAmendment.title}
+                </p>
+                <p className="text-[11px] text-zinc-400 break-words">
+                  {activeAmendment.description}
+                </p>
+              </div>
+            </div>
+            <span className="shrink-0 text-xs font-bold tabular-nums text-amber-300">
+              {Math.ceil(activeAmendment.timeRemaining)}s
+            </span>
+          </div>
+          <div className="h-1 bg-zinc-800">
+            <div
+              className="h-full bg-amber-500 transition-[width] duration-500 ease-linear"
+              style={{
+                width: `${Math.max(0, (activeAmendment.timeRemaining / activeAmendment.durationSeconds) * 100)}%`,
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* TAB 1: Conveyor Floor View */}
+      {activeTab === "conveyor" && (
+        <>
+          {/* HTML5 Canvas Simulation */}
 
           {playState === "playing" ? (
             <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-12 lg:items-start">
@@ -3020,7 +3050,7 @@ export const ClinicalTrialChaos: React.FC = () => {
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
-                    Queue · {conveyorSubjects.length}/5
+                    Queue · {conveyorSubjects.length}/{MAX_CONVEYOR_SUBJECTS}
                   </span>
                   <span className="hidden text-[10px] text-zinc-400 sm:inline">
                     ← → to cycle
@@ -3290,7 +3320,7 @@ export const ClinicalTrialChaos: React.FC = () => {
                     )}
 
                     {/* Observations */}
-                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                    <div className="mt-3 grid gap-2 sm:grid-cols-2 @5xl:grid-cols-3">
                       {activeSubject.observations.map((obs) => (
                         <button
                           key={obs.id}
@@ -3365,7 +3395,9 @@ export const ClinicalTrialChaos: React.FC = () => {
               {/* Right column: email, stations, lifelines */}
               <div className="flex min-w-0 flex-col gap-3 lg:col-span-5">
                 {sponsorEmailCard && (
-                  <div className="hidden lg:block">{sponsorEmailCard}</div>
+                  <div className="hidden lg:block @5xl:hidden">
+                    {sponsorEmailCard}
+                  </div>
                 )}
 
                 <section
@@ -3389,7 +3421,7 @@ export const ClinicalTrialChaos: React.FC = () => {
                   <div
                     className={`mt-2 grid gap-2 ${
                       sortedStations.length > 4
-                        ? "grid-cols-2 sm:grid-cols-3"
+                        ? "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4"
                         : "grid-cols-2"
                     }`}
                   >
@@ -3445,17 +3477,20 @@ export const ClinicalTrialChaos: React.FC = () => {
                               />
                             )}
                           </span>
-                          <h4 className="mt-1 truncate text-xs font-bold text-white">
-                            {station.label}
-                          </h4>
-                          <span className="block truncate text-[10px] text-zinc-400">
-                            {station.name}
-                          </span>
-                          <span className="mt-1 flex items-center justify-between text-[10px] text-zinc-400">
-                            <span>Submits:</span>
-                            <span className="font-bold tabular-nums text-emerald-400">
+                          <span className="mt-1 flex items-baseline justify-between gap-1">
+                            <h4 className="min-w-0 truncate text-xs font-bold text-white">
+                              {station.label}
+                            </h4>
+                            <span
+                              className="shrink-0 text-[10px] font-bold tabular-nums text-emerald-400"
+                              title="CRFs submitted here"
+                            >
+                              <span className="sr-only">Submits:</span>
                               {station.processedCount}
                             </span>
+                          </span>
+                          <span className="block truncate text-[10px] text-zinc-400">
+                            {station.name}
                           </span>
                         </button>
                       );

@@ -398,7 +398,7 @@ export default function RecruiterSimulatorClient() {
                             {opt.text}
                           </span>
                           <span
-                            className="text-xs font-mono text-zinc-600 group-hover:text-brand-cyan transition-colors ml-2"
+                            className="text-xs font-mono text-zinc-400 group-hover:text-brand-cyan transition-colors ml-2"
                             aria-hidden="true"
                           >
                             &rarr;
@@ -504,7 +504,7 @@ export default function RecruiterSimulatorClient() {
                 {/* Radar Metrics Grid */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full mb-6 font-mono text-left">
                   <div className="bg-zinc-950 p-2.5 rounded-xl border border-zinc-800">
-                    <span className="text-[9px] text-zinc-500 block uppercase">
+                    <span className="text-[9px] text-zinc-400 block uppercase">
                       Systems Rigor
                     </span>
                     <span className="text-sm font-bold text-brand-cyan">
@@ -512,7 +512,7 @@ export default function RecruiterSimulatorClient() {
                     </span>
                   </div>
                   <div className="bg-zinc-950 p-2.5 rounded-xl border border-zinc-800">
-                    <span className="text-[9px] text-zinc-500 block uppercase">
+                    <span className="text-[9px] text-zinc-400 block uppercase">
                       UI/UX Craft
                     </span>
                     <span className="text-sm font-bold text-emerald-400">
@@ -520,7 +520,7 @@ export default function RecruiterSimulatorClient() {
                     </span>
                   </div>
                   <div className="bg-zinc-950 p-2.5 rounded-xl border border-zinc-800">
-                    <span className="text-[9px] text-zinc-500 block uppercase">
+                    <span className="text-[9px] text-zinc-400 block uppercase">
                       Resilience
                     </span>
                     <span className="text-sm font-bold text-sky-400">
@@ -528,7 +528,7 @@ export default function RecruiterSimulatorClient() {
                     </span>
                   </div>
                   <div className="bg-zinc-950 p-2.5 rounded-xl border border-zinc-800">
-                    <span className="text-[9px] text-zinc-500 block uppercase">
+                    <span className="text-[9px] text-zinc-400 block uppercase">
                       Ship Speed
                     </span>
                     <span className="text-sm font-bold text-amber-400">

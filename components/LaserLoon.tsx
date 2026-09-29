@@ -72,6 +72,11 @@ import {
   POWER_UP_CONFIGS,
   DEFAULT_CANVAS_WIDTH,
   DEFAULT_CANVAS_HEIGHT,
+  COMBO_TIMEOUT_MS,
+  LOON_MIN_X,
+  LOON_MAX_X,
+  LOON_MIN_Y,
+  LOON_MAX_Y,
   LOON_MAX_HITS,
   resolveLoonCollision,
   updateBossAttack,
@@ -133,6 +138,7 @@ export const LaserLoon: React.FC = () => {
   const [highScore, setHighScore] = useState(0);
   const effectiveHighScore = Math.max(highScore, loadedHighScore);
   const [combo, setCombo] = useState(0);
+  const [maxCombo, setMaxCombo] = useState(0);
   const [multiplier, setMultiplier] = useState(1);
   const [timeLeft, setTimeLeft] = useState(45);
   const [ultimateMeter, setUltimateMeter] = useState(0);
@@ -514,6 +520,7 @@ export const LaserLoon: React.FC = () => {
       lastComboTimeRef.current = now;
       comboRef.current = nextCombo;
       setCombo(nextCombo);
+      setMaxCombo((best) => Math.max(best, nextCombo));
       setMultiplier(nextMultiplier);
 
       const extraMul = activePowerUpRef.current?.type === "north-star" ? 3 : 0;
@@ -528,6 +535,18 @@ export const LaserLoon: React.FC = () => {
     },
     [addScore, playComboSound, addFloatingText]
   );
+
+  // A combo lapses COMBO_TIMEOUT_MS after the last kill; clear the HUD pill
+  // then instead of leaving a stale multiplier on screen.
+  useEffect(() => {
+    if (combo <= 1) return;
+    const timer = setTimeout(() => {
+      comboRef.current = 0;
+      setCombo(0);
+      setMultiplier(1);
+    }, COMBO_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, [combo]);
 
   const recordCampaignKill = useCallback(
     (t: Target) => {
@@ -644,6 +663,7 @@ export const LaserLoon: React.FC = () => {
     const fresh = createInitialState(mode);
     setScore(0);
     setCombo(0);
+    setMaxCombo(0);
     comboRef.current = 0;
     setMultiplier(1);
     setTimeLeft(fresh.timeLeft);
@@ -675,6 +695,7 @@ export const LaserLoon: React.FC = () => {
     setIsPaused(false);
     setScore(0);
     setCombo(0);
+    setMaxCombo(0);
     comboRef.current = 0;
     setMultiplier(1);
     setBossActive(false);
@@ -1615,11 +1636,7 @@ export const LaserLoon: React.FC = () => {
       loonPosRef.current.targetX = mouseX;
       loonPosRef.current.targetY = mouseY;
     } else {
-      loonPosRef.current.targetY = clamp(
-        mouseY,
-        40,
-        DEFAULT_CANVAS_HEIGHT - 40
-      );
+      loonPosRef.current.targetY = clamp(mouseY, LOON_MIN_Y, LOON_MAX_Y);
     }
   };
 
@@ -1821,28 +1838,28 @@ export const LaserLoon: React.FC = () => {
       e.stopPropagation();
       setShowMuseum(true);
     } else if (e.key === "ArrowUp" || e.key.toLowerCase() === "w") {
-      const nextY = Math.max(40, loonPosRef.current.targetY - 25);
+      const nextY = Math.max(LOON_MIN_Y, loonPosRef.current.targetY - 25);
       loonPosRef.current.targetY = nextY;
       announce(
         `Loon moved up. Horizontal position: ${Math.round(loonPosRef.current.targetX)}, vertical position: ${Math.round(nextY)}`,
         "polite"
       );
     } else if (e.key === "ArrowDown" || e.key.toLowerCase() === "s") {
-      const nextY = Math.min(340, loonPosRef.current.targetY + 25);
+      const nextY = Math.min(LOON_MAX_Y, loonPosRef.current.targetY + 25);
       loonPosRef.current.targetY = nextY;
       announce(
         `Loon moved down. Horizontal position: ${Math.round(loonPosRef.current.targetX)}, vertical position: ${Math.round(nextY)}`,
         "polite"
       );
     } else if (e.key === "ArrowLeft" || e.key.toLowerCase() === "a") {
-      const nextX = Math.max(40, loonPosRef.current.targetX - 25);
+      const nextX = Math.max(LOON_MIN_X, loonPosRef.current.targetX - 25);
       loonPosRef.current.targetX = nextX;
       announce(
         `Loon moved left. Horizontal position: ${Math.round(nextX)}, vertical position: ${Math.round(loonPosRef.current.targetY)}`,
         "polite"
       );
     } else if (e.key === "ArrowRight" || e.key.toLowerCase() === "d") {
-      const nextX = Math.min(728, loonPosRef.current.targetX + 25);
+      const nextX = Math.min(LOON_MAX_X, loonPosRef.current.targetX + 25);
       loonPosRef.current.targetX = nextX;
       announce(
         `Loon moved right. Horizontal position: ${Math.round(nextX)}, vertical position: ${Math.round(loonPosRef.current.targetY)}`,
@@ -1986,7 +2003,7 @@ export const LaserLoon: React.FC = () => {
               }`}
             >
               <IconSnowflake className="w-3.5 h-3.5" />
-              Mortar (4)
+              Cryo-Mortar (4)
             </button>
           </div>
 
@@ -2397,7 +2414,7 @@ export const LaserLoon: React.FC = () => {
                 onClick={() => selectLaserType("ice-cannon")}
                 aria-pressed={laserType === "ice-cannon"}
               >
-                Optics: Ice Cannon
+                Optics: Cryo-Mortar
               </button>
 
               <button
@@ -2422,7 +2439,10 @@ export const LaserLoon: React.FC = () => {
               <button
                 type="button"
                 onClick={() => {
-                  const nextY = Math.max(40, loonPosRef.current.targetY - 25);
+                  const nextY = Math.max(
+                    LOON_MIN_Y,
+                    loonPosRef.current.targetY - 25
+                  );
                   loonPosRef.current.targetY = nextY;
                   announce(
                     `Moved Loon Up to Y position ${Math.round(nextY)}`,
@@ -2435,7 +2455,10 @@ export const LaserLoon: React.FC = () => {
               <button
                 type="button"
                 onClick={() => {
-                  const nextY = Math.min(340, loonPosRef.current.targetY + 25);
+                  const nextY = Math.min(
+                    LOON_MAX_Y,
+                    loonPosRef.current.targetY + 25
+                  );
                   loonPosRef.current.targetY = nextY;
                   announce(
                     `Moved Loon Down to Y position ${Math.round(nextY)}`,
@@ -2448,7 +2471,10 @@ export const LaserLoon: React.FC = () => {
               <button
                 type="button"
                 onClick={() => {
-                  const nextX = Math.max(40, loonPosRef.current.targetX - 25);
+                  const nextX = Math.max(
+                    LOON_MIN_X,
+                    loonPosRef.current.targetX - 25
+                  );
                   loonPosRef.current.targetX = nextX;
                   announce(
                     `Moved Loon Left to X position ${Math.round(nextX)}`,
@@ -2461,7 +2487,10 @@ export const LaserLoon: React.FC = () => {
               <button
                 type="button"
                 onClick={() => {
-                  const nextX = Math.min(728, loonPosRef.current.targetX + 25);
+                  const nextX = Math.min(
+                    LOON_MAX_X,
+                    loonPosRef.current.targetX + 25
+                  );
                   loonPosRef.current.targetX = nextX;
                   announce(
                     `Moved Loon Right to X position ${Math.round(nextX)}`,
@@ -2747,7 +2776,7 @@ export const LaserLoon: React.FC = () => {
                   Max Combo
                 </span>
                 <span className="text-xl font-mono font-bold text-amber-400">
-                  {combo}x
+                  {maxCombo}x
                 </span>
               </div>
             </div>
@@ -2807,7 +2836,7 @@ export const LaserLoon: React.FC = () => {
                 }}
                 className="min-h-[44px] min-w-[44px] px-3 py-1 bg-sky-950 hover:bg-sky-900 text-sky-300 text-[10px] font-mono font-bold rounded-lg border border-sky-800/60 cursor-pointer touch-manipulation select-none active:scale-95 flex items-center justify-center"
               >
-                🧊 Ice Mortar
+                🧊 Launch Cryo-Mortar
               </button>
               <button
                 onClick={() => {
@@ -2870,7 +2899,7 @@ export const LaserLoon: React.FC = () => {
             { id: "ruby-laser", label: "Ruby", color: "red" },
             { id: "cyan-pulse", label: "Pulse", color: "cyan" },
             { id: "aurora-wave", label: "Aurora", color: "emerald" },
-            { id: "ice-cannon", label: "Mortar", color: "amber" },
+            { id: "ice-cannon", label: "Cryo-Mortar", color: "amber" },
           ]}
           energyPercent={ultimateMeter}
         />

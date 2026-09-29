@@ -2,7 +2,9 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+(
+  globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true;
 
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -153,8 +155,8 @@ describe("LaserLoon React Component UI Suite", () => {
       root.render(<LaserLoon />);
     });
 
-    const pulseBtn = Array.from(container.querySelectorAll("button")).find((b) =>
-      b.textContent?.includes("Pulse (2)")
+    const pulseBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.includes("Pulse (2)")
     );
     expect(pulseBtn).toBeDefined();
 
@@ -170,8 +172,8 @@ describe("LaserLoon React Component UI Suite", () => {
       root.render(<LaserLoon />);
     });
 
-    const sandboxBtn = Array.from(container.querySelectorAll("button")).find((b) =>
-      b.textContent?.includes("Zero-G Sandbox")
+    const sandboxBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.includes("Zero-G Sandbox")
     );
     expect(sandboxBtn).toBeDefined();
 
@@ -181,7 +183,7 @@ describe("LaserLoon React Component UI Suite", () => {
 
     expect(container.textContent).toContain("GRAVITY:");
     expect(container.textContent).toContain("Zero-G");
-    expect(container.textContent).toContain("Ice Mortar");
+    expect(container.textContent).toContain("Launch Cryo-Mortar");
   });
 
   it("should toggle screen shake option", async () => {
@@ -189,8 +191,8 @@ describe("LaserLoon React Component UI Suite", () => {
       root.render(<LaserLoon />);
     });
 
-    const shakeBtn = Array.from(container.querySelectorAll("button")).find((b) =>
-      b.textContent?.includes("Screen Shake: ON")
+    const shakeBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.includes("Screen Shake: ON")
     );
     expect(shakeBtn).toBeDefined();
 
@@ -206,8 +208,8 @@ describe("LaserLoon React Component UI Suite", () => {
       root.render(<LaserLoon />);
     });
 
-    const startBtn = Array.from(container.querySelectorAll("button")).find((b) =>
-      b.textContent?.includes("START CAMPAIGN")
+    const startBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.includes("START CAMPAIGN")
     );
     expect(startBtn).toBeDefined();
 
@@ -215,7 +217,10 @@ describe("LaserLoon React Component UI Suite", () => {
       startBtn?.click();
     });
 
-    expect(mockRecordEvent).toHaveBeenCalledWith("laser_loon_start", "project_click");
+    expect(mockRecordEvent).toHaveBeenCalledWith(
+      "laser_loon_start",
+      "project_click"
+    );
   });
 
   it("should handle keyboard shortcuts for weapon switching and spacebar start", async () => {
@@ -223,24 +228,37 @@ describe("LaserLoon React Component UI Suite", () => {
       root.render(<LaserLoon />);
     });
 
-    const boundary = container.querySelector('[data-keyboard-boundary="true"]') as HTMLDivElement;
+    const boundary = container.querySelector(
+      '[data-keyboard-boundary="true"]'
+    ) as HTMLDivElement;
 
     await act(async () => {
       boundary.dispatchEvent(
-        new KeyboardEvent("keydown", { key: " ", bubbles: true, cancelable: true })
+        new KeyboardEvent("keydown", {
+          key: " ",
+          bubbles: true,
+          cancelable: true,
+        })
       );
     });
 
-    expect(mockRecordEvent).toHaveBeenCalledWith("laser_loon_start", "project_click");
+    expect(mockRecordEvent).toHaveBeenCalledWith(
+      "laser_loon_start",
+      "project_click"
+    );
 
     await act(async () => {
       boundary.dispatchEvent(
-        new KeyboardEvent("keydown", { key: "3", bubbles: true, cancelable: true })
+        new KeyboardEvent("keydown", {
+          key: "3",
+          bubbles: true,
+          cancelable: true,
+        })
       );
     });
 
-    const auroraBtn = Array.from(container.querySelectorAll("button")).find((b) =>
-      b.textContent?.includes("Aurora (3)")
+    const auroraBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.includes("Aurora (3)")
     );
     expect(auroraBtn?.className).toContain("bg-emerald-500/20");
   });

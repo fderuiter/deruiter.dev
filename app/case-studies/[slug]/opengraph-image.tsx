@@ -1,5 +1,11 @@
-import { createSocialImageResponse, OG_IMAGE_SIZE, OG_IMAGE_CONTENT_TYPE } from "@/lib/og-image";
+import {
+  createSocialImageResponse,
+  OG_IMAGE_SIZE,
+  OG_IMAGE_CONTENT_TYPE,
+} from "@/lib/og-image";
 import { ROUTE_METADATA_CONFIGS } from "@/lib/seo-metadata";
+import { FALLBACK_CASE_STUDIES } from "@/lib/case-studies-data";
+import { buildDossierChips, formatReadingTime } from "@/lib/og-dossier";
 
 export const runtime = "nodejs";
 export const alt = "Case Study Technical Deep-Dive | Frederick de Ruiter";
@@ -19,10 +25,31 @@ export default async function Image({ params }: ImageProps) {
   );
 
   const title = config?.title || `Technical Case Study: ${slug}`;
-  const description = config?.description || "In-depth technical architecture breakdown and verifiable systems design.";
-  const tags = config?.keywords?.slice(0, 5) || ["Architecture", "TypeScript", "Systems", "Case Study"];
+  const description =
+    config?.description ||
+    "In-depth technical architecture breakdown and verifiable systems design.";
+  const tags = config?.keywords?.slice(0, 5) || [
+    "Architecture",
+    "TypeScript",
+    "Systems",
+    "Case Study",
+  ];
+
+  // Bundled case-study text only: a social card must never wake the database.
+  const study = FALLBACK_CASE_STUDIES.find((c) => c.slug === slug);
 
   return createSocialImageResponse({
+    preset: "SYSTEMS_ARCHITECTURE",
+    dossier: study
+      ? buildDossierChips({
+          readingTime: formatReadingTime(
+            `${study.editorial_content} ${study.architectural_narrative}`
+          ),
+          publishedAt: study.created_at,
+          language: study.primary_language,
+          verified: true,
+        })
+      : undefined,
     category: "ENGINEERING CASE STUDY // ARCHITECTURAL BREAKDOWN",
     title,
     description,

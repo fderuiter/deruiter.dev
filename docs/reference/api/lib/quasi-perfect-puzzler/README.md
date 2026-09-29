@@ -148,6 +148,12 @@ Re-exports [LevelScore](../quasi-perfect/types/interfaces/LevelScore.md)
 
 ***
 
+### mergeLevelScore
+
+Re-exports [mergeLevelScore](../quasi-perfect/progress/functions/mergeLevelScore.md)
+
+***
+
 ### ModeRuleCopy
 
 Re-exports [ModeRuleCopy](../quasi-perfect/ram/interfaces/ModeRuleCopy.md)

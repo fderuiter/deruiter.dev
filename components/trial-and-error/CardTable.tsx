@@ -35,6 +35,7 @@ import {
   type RunState,
   type Scenario,
   type TableCardView,
+  type TableEvent,
   type TableState,
   RELIC_PHASE_LABELS,
   relicPhase,
@@ -412,7 +413,7 @@ export function CardTable({
     (runView.phase === "RUN_WON" && !runView.endless?.canContinue);
   const endlessRound = runView.endless?.round ?? null;
   // The act being played: its shop runs between its Blinds.
-  const currentAct = planActs(act)[run.actIndex];
+  const currentAct = planActs(act)[runView.actIndex];
   // A campaign with post-marketing rounds is won once, whatever act shows.
   const wonLabel =
     runView.act.count > 1 || runView.endless
@@ -430,11 +431,18 @@ export function CardTable({
     }
   }, [persist, offerResume, runOver, log]);
   const scenario = runView.blind;
-  const state = run.table;
+  // The reducer state goes only to domain helpers and the tutorial; every
+  // render decision reads the derived view (#996).
+  const tableState = run.table;
   useEffect(() => {
-    onTableChange?.(state);
-  }, [onTableChange, state]);
+    onTableChange?.(tableState);
+  }, [onTableChange, tableState]);
   const view = runView.table;
+  // Stable effect inputs: the ids keep their identity until the hand changes.
+  const handIds = view.handIds;
+  const status = view.status;
+  const hasCrisis = view.crisis !== null;
+  const shopOpen = runView.shop !== null;
   const numbersOf = (ids: readonly string[]) =>
     ids
       .map((id) => {
@@ -455,7 +463,7 @@ export function CardTable({
   const [handWidthRem, handRef] = useRowWidthRem();
   const timeline = view.lastTimeline;
   const sound = useTeSound();
-  const playback = useScorePlayback(timeline, state.lastPlay, {
+  const playback = useScorePlayback(timeline, view.lastPlay, {
     speed,
     reducedMotion,
     onStep: (_step, index) => {
@@ -477,7 +485,7 @@ export function CardTable({
   const displayedRound =
     playing && progress && playback.shown < (timeline?.length ?? 0) - 1
       ? progress.before
-      : state.roundScore;
+      : view.roundScore;
   const flashCleared =
     playing &&
     progress?.crossed === true &&
@@ -503,30 +511,27 @@ export function CardTable({
   const [peekId, setPeekId] = useState<string | null>(null);
   const [amendingId, setAmendingId] = useState<string | null>(null);
   // Every Boss Blind opens on its intro card until it is dismissed.
-  const bossIntroKey = `${runView.seed}:${run.actIndex}:${runView.blindIndex}:${scenario.id}`;
+  const bossIntroKey = `${runView.seed}:${runView.actIndex}:${runView.blindIndex}:${scenario.id}`;
   const [bossIntroSeen, setBossIntroSeen] = useState<string | null>(null);
   const showBossIntro =
     view.bossIntro !== null &&
-    state.status === "REVIEWING" &&
-    state.handsPlayed === 0 &&
-    state.cpu.spent === 0 &&
+    view.status === "REVIEWING" &&
+    view.untouched &&
     bossIntroSeen !== bossIntroKey;
   // A new study opens on its act card until it is dismissed (#924).
-  const actIntroKey = `${runView.seed}:${run.actIndex}`;
+  const actIntroKey = `${runView.seed}:${runView.actIndex}`;
   const [actIntroSeen, setActIntroSeen] = useState<string | null>(null);
   const showActIntro =
-    runView.actIntro !== null &&
-    state.cpu.spent === 0 &&
-    actIntroSeen !== actIntroKey;
+    runView.actIntro !== null && view.untouched && actIntroSeen !== actIntroKey;
   const playBossStinger = useEffectEvent(() => sound.play("bossStinger"));
   // Dismissing the intro hands focus to the table: a crisis's first choice
   // when one must be answered first, otherwise the first card in hand.
   const focusTable = useEffectEvent(() => {
-    if (state.crisis) {
+    if (view.crisis) {
       crisisRef.current?.focus();
       return;
     }
-    const first = state.hand[0];
+    const first = view.handIds[0];
     if (first) cardRefs.current.get(first)?.focus();
   });
   const playActCue = useEffectEvent(() => sound.play("cardDeal"));
@@ -557,8 +562,8 @@ export function CardTable({
   const pendingFocus = useRef<PendingFocus>(null);
 
   const closeInspect = () => {
-    if (state.inspecting) {
-      pendingFocus.current = { kind: "card", cardId: state.inspecting };
+    if (view.inspecting) {
+      pendingFocus.current = { kind: "card", cardId: view.inspecting };
     }
     dispatch({ type: "CLOSE_INSPECT" });
   };
@@ -589,71 +594,62 @@ export function CardTable({
 
   // A played hand is announced once, as a summary, after its timeline
   // resolves, so screen readers are not flooded while it plays.
-  const playEventCues = useEffectEvent(
-    (kind: NonNullable<TableState["lastEvent"]>["kind"]) => {
-      const cues: Partial<Record<typeof kind, TeCue[]>> = {
-        SELECTED: ["cardSelect"],
-        DESELECTED: ["cardDeselect"],
-        DISCARDED: ["discardWhoosh", "cardDeal"],
-        PLAYED: ["cardDeal"],
-        INSPECT_OPENED: ["cardFlip"],
-        RECOMPILED: ["cardFlip"],
-        ALLOCATED: ["cardFlip"],
-        SEALED: ["multThunk"],
-        SOLD: ["sell"],
-        LEVELED_UP: ["chipTick", "multThunk"],
-        CRISIS_RESOLVED: ["cardFlip"],
-        AMENDED: ["cardFlip"],
-      };
-      cues[kind]?.forEach((cue) => sound.play(cue));
-      if (kind === "PLAYED" || kind === "DISCARDED") {
-        // The lock is the run's victory: it gets its own cue and the flame.
-        if (state.lock) {
-          sound.play("csrLocked");
-          sound.play("fireIgnite");
-        } else if (state.status === "CLEARED") sound.play("blindCleared");
-        if (state.status === "FAILED") sound.play("blindFailed");
-      }
+  const playEventCues = useEffectEvent((kind: TableEvent["kind"]) => {
+    const cues: Partial<Record<typeof kind, TeCue[]>> = {
+      SELECTED: ["cardSelect"],
+      DESELECTED: ["cardDeselect"],
+      DISCARDED: ["discardWhoosh", "cardDeal"],
+      PLAYED: ["cardDeal"],
+      INSPECT_OPENED: ["cardFlip"],
+      RECOMPILED: ["cardFlip"],
+      ALLOCATED: ["cardFlip"],
+      SEALED: ["multThunk"],
+      SOLD: ["sell"],
+      LEVELED_UP: ["chipTick", "multThunk"],
+      CRISIS_RESOLVED: ["cardFlip"],
+      AMENDED: ["cardFlip"],
+    };
+    cues[kind]?.forEach((cue) => sound.play(cue));
+    if (kind === "PLAYED" || kind === "DISCARDED") {
+      // The lock is the run's victory: it gets its own cue and the flame.
+      if (view.outcome === "LOCKED") {
+        sound.play("csrLocked");
+        sound.play("fireIgnite");
+      } else if (view.outcome === "CLEARED") sound.play("blindCleared");
+      if (view.outcome === "FAILED") sound.play("blindFailed");
     }
-  );
+  });
 
   useEffect(() => {
-    if (!state.lastEvent || playing) return;
-    announce(state.lastEvent.message);
-    playEventCues(state.lastEvent.kind);
-  }, [state.lastEvent, announce, playing]);
+    if (!view.lastEvent || playing) return;
+    announce(view.lastEvent.message);
+    playEventCues(view.lastEvent.kind);
+  }, [view.lastEvent, announce, playing]);
 
   useEffect(() => {
     if (playing) {
       skipRef.current?.focus();
       return;
     }
-    if (state.status !== "REVIEWING") {
+    if (status !== "REVIEWING") {
       // The shop and pack reveals manage their own focus.
-      if (!run.shop) restartRef.current?.focus();
+      if (!shopOpen) restartRef.current?.focus();
       return;
     }
     const target = pendingFocus.current;
     if (!target) return;
     pendingFocus.current = null;
     // A crisis must be answered first, so focus goes to its first choice.
-    if (state.crisis) {
+    if (hasCrisis) {
       crisisRef.current?.focus();
       return;
     }
     const cardId =
       target.kind === "card"
         ? target.cardId
-        : state.hand[Math.min(target.index, state.hand.length - 1)];
+        : handIds[Math.min(target.index, handIds.length - 1)];
     if (cardId) cardRefs.current.get(cardId)?.focus();
-  }, [
-    state.lastEvent?.sequence,
-    state.status,
-    state.hand,
-    state.crisis,
-    playing,
-    run.shop,
-  ]);
+  }, [view.lastEvent?.sequence, status, handIds, hasCrisis, playing, shopOpen]);
 
   // Shift+R opens Run Info from anywhere in the table; a plain R on a card
   // stays Recompile. A dialog already open keeps the key to itself.
@@ -748,15 +744,15 @@ export function CardTable({
 
   const handOrder =
     dragOrder &&
-    dragOrder.length === state.hand.length &&
-    dragOrder.every((id) => state.hand.includes(id))
+    dragOrder.length === view.handIds.length &&
+    dragOrder.every((id) => view.handIds.includes(id))
       ? dragOrder
-      : state.hand;
+      : view.handIds;
 
   const commitDrag = (cardId: string) => {
     const to = handOrder.indexOf(cardId);
     setDragOrder(null);
-    if (to !== -1 && to !== state.hand.indexOf(cardId)) {
+    if (to !== -1 && to !== view.handIds.indexOf(cardId)) {
       setFocusIndex(to);
       send(
         { type: "MOVE_CARD", cardId, toIndex: to },
@@ -773,7 +769,7 @@ export function CardTable({
     }
     // On touch, a second tap on a selected card reads it instead of
     // deselecting it; the detail view offers Deselect.
-    if (pointerType === "touch" && state.selected.includes(cardId)) {
+    if (pointerType === "touch" && view.selected.includes(cardId)) {
       setDetailId(cardId);
       return;
     }
@@ -863,7 +859,7 @@ export function CardTable({
   const handCards = handOrder.map((id, index) => {
     const h = view.hand.find((c) => c.card.id === id);
     if (!h) return null;
-    const viewIndex = state.hand.indexOf(id);
+    const viewIndex = view.handIds.indexOf(id);
     return (
       <HandCard
         key={id}
@@ -907,37 +903,37 @@ export function CardTable({
     !view.stageAccepts.includes(view.classification.handType);
   const cpuPips = Array.from(
     { length: view.cpuAllocation },
-    (_, i) => i < state.cpu.available
+    (_, i) => i < view.cpu.available
   );
   const allocation =
-    focusedCard?.blank && state.status === "REVIEWING"
-      ? previewAllocation(scenario, state, focusedCard.card.id)
+    focusedCard?.blank && view.status === "REVIEWING"
+      ? previewAllocation(scenario, tableState, focusedCard.card.id)
       : [];
   // Why a costed button the player has something selected for is disabled.
   const costNotes = (
     [
       // The play blocker line already says when CPU stops Play Hand.
-      ["PLAY_HAND", state.selected.length > 0 && !view.playBlocker],
-      ["DISCARD", state.selected.length > 0],
+      ["PLAY_HAND", view.selected.length > 0 && !view.playBlocker],
+      ["DISCARD", view.selected.length > 0],
       ["INSPECT", focusedCard?.inspectable && !focusedCard.inspected],
       ["RECOMPILE", focusedCard?.stale],
     ] as const
   )
     .filter(
       ([action, wanted]) =>
-        wanted && state.cpu.available < costFor(action, view.discardCost)
+        wanted && view.cpu.available < costFor(action, view.discardCost)
     )
     .map(
       ([action]) =>
-        `${COST_NAMES[action]} needs ${costFor(action, view.discardCost)} CPU; ${state.cpu.available} left.`
+        `${COST_NAMES[action]} needs ${costFor(action, view.discardCost)} CPU; ${view.cpu.available} left.`
     );
   // An FDA Information Request's clock: what each costed move takes.
   const clock = view.clock;
   const hoursFor = (action: ClockAction): string =>
     clock ? ` · ${clock.costs[action]}h` : "";
-  if (clock && state.status === "REVIEWING") {
+  if (clock && view.status === "REVIEWING") {
     for (const [action, name, wanted] of [
-      ["DISCARD", "Discard", state.selected.length > 0],
+      ["DISCARD", "Discard", view.selected.length > 0],
       [
         "INSPECT",
         "Inspect",
@@ -1252,7 +1248,7 @@ export function CardTable({
             )}
             <dt className="text-zinc-400">CPU</dt>
             <dd className="text-right" data-testid="cpu-counter">
-              {state.cpu.available}/{view.cpuAllocation}
+              {view.cpu.available}/{view.cpuAllocation}
             </dd>
             <dt className="text-zinc-400">Hands</dt>
             <dd className="text-right" data-testid="hands-affordable">
@@ -1453,7 +1449,7 @@ export function CardTable({
                   }}
                   // The shop buys between Blinds too.
                   disabled={
-                    (state.status !== "REVIEWING" && !shopView) || playing
+                    (view.status !== "REVIEWING" && !shopView) || playing
                   }
                   className="min-h-[44px] border-t border-zinc-800 px-2 text-left uppercase tracking-wider text-zinc-300 touch-manipulation hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 disabled:text-zinc-500"
                 >
@@ -1476,7 +1472,7 @@ export function CardTable({
                       type="button"
                       onClick={() => setAmendingId(item.id)}
                       disabled={
-                        state.status !== "REVIEWING" ||
+                        view.status !== "REVIEWING" ||
                         playing ||
                         !preview ||
                         preview.refusal !== null
@@ -1525,7 +1521,7 @@ export function CardTable({
                           { kind: "hand", index: activeIndex }
                         )
                       }
-                      disabled={state.status !== "REVIEWING" || playing}
+                      disabled={view.status !== "REVIEWING" || playing}
                       title={`${guidance.document}. ${guidance.flavor}`}
                       aria-label={`Use ${guidance.name}: level ${HAND_NAMES[guidance.handType]} up from Lv.${level} to Lv.${level + 1}, +${bonus.chips} Chips and +${bonus.mult} Mult.`}
                       className="min-h-[44px] min-w-0 px-2 py-1 text-left touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 disabled:text-zinc-400"
@@ -1560,14 +1556,14 @@ export function CardTable({
                 >
                   <button
                     type="button"
-                    draggable={state.status === "REVIEWING"}
+                    draggable={view.status === "REVIEWING"}
                     onDragStart={(e) => {
                       e.dataTransfer.setData(SEAL_DRAG_TYPE, item.id);
                       e.dataTransfer.effectAllowed = "copy";
                     }}
                     onClick={() => toggleArmed(item.id)}
                     aria-pressed={isArmed}
-                    disabled={state.status !== "REVIEWING" || playing}
+                    disabled={view.status !== "REVIEWING" || playing}
                     title={seal.footnote}
                     className="min-h-[44px] min-w-0 px-2 py-1 text-left touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 disabled:text-zinc-400"
                   >
@@ -1602,7 +1598,7 @@ export function CardTable({
               <ScorePlayer
                 steps={timeline}
                 shown={playback.shown}
-                cards={(state.lastPlay?.cardIds ?? []).map((id) => ({
+                cards={(view.lastPlay?.cardIds ?? []).map((id) => ({
                   id,
                   number:
                     scenario.deck.find((card) => card.id === id)?.number ?? id,
@@ -1617,11 +1613,11 @@ export function CardTable({
               className="mt-3 min-h-[13rem] border border-zinc-800 bg-[color:var(--te-surface-1)] px-3 py-2"
               data-testid="hand-preview"
             >
-              {state.lastEvent?.levelUp && (
+              {view.lastEvent?.levelUp && (
                 <div className="mb-2">
                   <LevelUpPlate
-                    key={state.lastEvent.sequence}
-                    levelUp={state.lastEvent.levelUp}
+                    key={view.lastEvent.sequence}
+                    levelUp={view.lastEvent.levelUp}
                     reducedMotion={reducedMotion}
                     loud={loudEffectsEnabled}
                   />
@@ -1716,7 +1712,7 @@ export function CardTable({
             </div>
           )}
 
-          {state.status === "REVIEWING" || playing ? (
+          {view.status === "REVIEWING" || playing ? (
             <div inert={playing}>
               {view.crisis && (
                 <CrisisPanel
@@ -1778,7 +1774,7 @@ export function CardTable({
                   </span>
                 </div>
               </div>
-              {view.csrLock && state.status === "REVIEWING" && (
+              {view.csrLock && view.status === "REVIEWING" && (
                 <CsrSlots
                   slots={view.csrLock.report.slots}
                   names={Object.fromEntries(
@@ -1859,7 +1855,7 @@ export function CardTable({
                     onClick={() => structural(focusedCard.card.id)}
                     disabled={
                       !focusedCard.structural &&
-                      state.cpu.available < CPU_COSTS.INSPECT
+                      view.cpu.available < CPU_COSTS.INSPECT
                     }
                     aria-describedby={costDescribedBy}
                     className={`${BUTTON_BASE} border-amber-500 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20`}
@@ -1987,7 +1983,7 @@ export function CardTable({
           ) : (
             <div className="mt-3 p-4 text-center" data-testid="blind-result">
               <p
-                className={`text-lg font-bold uppercase ${state.status === "CLEARED" ? "text-emerald-300" : "text-rose-300"}`}
+                className={`text-lg font-bold uppercase ${view.status === "CLEARED" ? "text-emerald-300" : "text-rose-300"}`}
               >
                 {runView.phase === "RUN_WON" && view.csrLock?.lock
                   ? `CSR locked · ${wonLabel}`
@@ -2034,18 +2030,18 @@ export function CardTable({
                 </section>
               )}
               <p className="mt-2 text-sm text-zinc-300 tabular-nums">
-                {state.roundScore} of {view.quota} · {state.handsPlayed} hand
-                {state.handsPlayed === 1 ? "" : "s"} played · {state.discards}{" "}
+                {view.roundScore} of {view.quota} · {view.handsPlayed} hand
+                {view.handsPlayed === 1 ? "" : "s"} played · {view.discards}{" "}
                 discard
-                {state.discards === 1 ? "" : "s"} · {state.cpu.spent} CPU spent
+                {view.discards === 1 ? "" : "s"} · {view.cpu.spent} CPU spent
               </p>
               {view.csrLock?.lock && (
                 <CsrLockSummary
                   lock={view.csrLock.lock}
                   amendRefusal={view.csrLock.amendRefusal}
                   seed={runView.seed}
-                  handsPlayed={state.handsPlayed}
-                  cpuSpent={state.cpu.spent}
+                  handsPlayed={view.handsPlayed}
+                  cpuSpent={view.cpu.spent}
                   loud={loudEffectsEnabled}
                   onAmend={() => {
                     setFocusIndex(0);
@@ -2104,7 +2100,7 @@ export function CardTable({
               )}
               {shopView?.opened ? (
                 <PackOpening
-                  key={`${shopView.opened.packId}-${run.shop?.purchases}`}
+                  key={`${shopView.opened.packId}-${shopView.purchases}`}
                   title={shopView.opened.name}
                   picksLeft={shopView.opened.picksLeft}
                   cards={shopView.opened.cards.map((card): RevealCard => ({
@@ -2272,16 +2268,16 @@ export function CardTable({
             </div>
           )}
 
-          {state.lastPlay && !playing && (
+          {view.lastPlay && !playing && (
             <p
               className="mt-3 text-xs text-zinc-300 tabular-nums break-words"
               data-testid="last-hand"
             >
-              Last hand: {HAND_NAMES[state.lastPlay.classification.handType]} ·{" "}
-              {state.lastPlay.evaluation.chips.total} Chips ×{" "}
-              {state.lastPlay.evaluation.finalMult} Mult ={" "}
-              {state.lastPlay.evaluation.score}
-              {state.lastPlay.evaluation.zeroRule.triggered &&
+              Last hand: {HAND_NAMES[view.lastPlay.classification.handType]} ·{" "}
+              {view.lastPlay.evaluation.chips.total} Chips ×{" "}
+              {view.lastPlay.evaluation.finalMult} Mult ={" "}
+              {view.lastPlay.evaluation.score}
+              {view.lastPlay.evaluation.zeroRule.triggered &&
                 " (zero-score rule)"}
             </p>
           )}

@@ -677,13 +677,21 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
           }
         );
 
-        // Save high scores safely
-        if (nextState.score > nextState.highScore) {
-          if (typeof window !== "undefined") {
+        // Save a new high score when the run ends, and about once a second
+        // while it's still going. The engine raises highScore to the score
+        // every tick, so compare against the stored best instead.
+        const runEnded = nextState.gameState !== "playing";
+        if (runEnded || frameCountRef.current % 60 === 0) {
+          const storedBest = parseInt(getHighScoreSnapshot(), 10) || 0;
+          if (
+            nextState.highScore > storedBest &&
+            typeof window !== "undefined" &&
+            typeof window.localStorage?.setItem === "function"
+          ) {
             try {
               localStorage.setItem(
                 "garmin_simulator_high_score",
-                nextState.score.toString()
+                nextState.highScore.toString()
               );
             } catch {}
           }

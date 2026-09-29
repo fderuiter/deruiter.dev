@@ -42,6 +42,7 @@ import {
   triggerGarbageCollection,
   allocateVariable,
   wipeScreenFog,
+  type GameEngineState,
 } from "@/lib/garmin-engine";
 import {
   clampBounds,
@@ -49,8 +50,10 @@ import {
   dragDuckTo,
   stepDuckGame,
   performTrick,
+  activeCodeBurst,
   advanceToNextLevel,
   shouldSyncDuckHudState,
+  type WorkingWithDuckState,
 } from "@/lib/working-with-duck-engine";
 import { sanitizeError, sanitizeString } from "@/lib/error-sanitization";
 import { evaluateCanaryRollout } from "@/scripts/canary-analyzer";
@@ -328,6 +331,20 @@ describe("Defect Remediation & Regression Verification Suite (Invariant #11)", (
       expect(Number.isFinite(stepNeg.distanceMeters)).toBe(true);
     });
 
+    it("drains the battery with the backlight off instead of rounding each frame's drain away (#1308)", () => {
+      let state: GameEngineState = {
+        ...createInitialState("fenix"),
+        gameState: "playing",
+        isLightOn: false,
+      };
+      for (let frame = 0; frame < 600; frame++) {
+        state = { ...updateGameSimulation(state, 1000 / 60), obstacles: [] };
+      }
+      // 10 s at 0.1%/s
+      expect(state.battery).toBeLessThan(99.5);
+      expect(state.battery).toBeGreaterThan(98.5);
+    });
+
     it("maintains non-negative RAM bounds and consistent heap allocations under memory pressure", () => {
       const initial = createInitialState("fenix");
       const playing = { ...initial, gameState: "playing" as const };
@@ -409,6 +426,94 @@ describe("Defect Remediation & Regression Verification Suite (Invariant #11)", (
       expect(endless.mode).toBe("endless");
       expect(endless.status).toBe("running");
       expect(stepDuckGame(endless).ticks).toBe(1);
+    });
+
+    // #1307: holding a trick key finished Sprint 1 in about 12 s for 45,000
+    // points, and mashing Space finished it in about 7 s.
+    it("trick spam neither finishes a sprint nor farms points (#1307)", () => {
+      let state: WorkingWithDuckState = {
+        ...createInitialDuckGameState(1, "campaign"),
+        status: "running",
+      };
+      for (let tick = 0; tick < 60 * 30; tick++) {
+        if (tick % 15 === 0) state = performTrick(state, "HIGH_FIVE");
+        state = stepDuckGame(state);
+      }
+      expect(state.status).toBe("running");
+      expect(state.workProgress).toBeLessThan(state.targetWorkProgress / 2);
+      expect(state.totalScore).toBeLessThan(2000);
+    });
+
+    it("ignores a second trick until Duck finishes the first, and tricks that don't fit an emergency (#1307)", () => {
+      const running: WorkingWithDuckState = {
+        ...createInitialDuckGameState(1, "campaign"),
+        status: "running",
+        excitement: 90,
+      };
+      const tricked = performTrick(running, "SIT");
+      expect(performTrick(tricked, "SPIN")).toBe(tricked);
+
+      // A trick that doesn't fit leaves Duck alone and shows a hint instead.
+      const expectHintOnly = (
+        state: typeof running,
+        trick: Parameters<typeof performTrick>[1]
+      ) => {
+        const next = performTrick(state, trick);
+        expect(next.duck).toBe(state.duck);
+        expect(next.totalScore).toBe(state.totalScore);
+        expect(next.comboStreak).toBe(state.comboStreak);
+        expect(next.floatingAlerts.length).toBe(
+          state.floatingAlerts.length + 1
+        );
+        // Pressing again doesn't stack a second copy of the hint.
+        expect(performTrick(next, trick)).toBe(next);
+      };
+      expectHintOnly(
+        {
+          ...running,
+          duck: { ...running.duck, state: "SNIFFING_POTTY" as const },
+        },
+        "SIT"
+      );
+      const chewing = {
+        ...running,
+        duck: { ...running.duck, state: "SNEAKY_CHEW" as const },
+      };
+      expectHintOnly(chewing, "SPIN");
+      expect(performTrick(chewing, "DROP_IT").duck.state).toBe(
+        "PERFORMING_TRICK"
+      );
+      expectHintOnly(running, "DROP_IT");
+    });
+
+    it("caps a trick's combo score bonus at 3x (#1307)", () => {
+      const state = {
+        ...createInitialDuckGameState(1, "campaign"),
+        status: "running" as const,
+        excitement: 90,
+        comboStreak: 20,
+      };
+      const next = performTrick(state, "HIGH_FIVE");
+      expect(next.totalScore - state.totalScore).toBe(45 * 3);
+    });
+
+    it("rate-limits code bursts and blocks them during an emergency (#1307)", () => {
+      let state: WorkingWithDuckState = {
+        ...createInitialDuckGameState(1, "campaign"),
+        status: "running",
+      };
+      for (let tick = 0; tick < 60; tick++) {
+        state = activeCodeBurst(state);
+        state = { ...state, ticks: state.ticks + 1 };
+      }
+      expect(state.activeCodeBursts).toBeLessThanOrEqual(6);
+
+      const chewing = {
+        ...state,
+        ticks: state.ticks + 60,
+        duck: { ...state.duck, state: "SNEAKY_CHEW" as const },
+      };
+      expect(activeCodeBurst(chewing)).toBe(chewing);
     });
 
     it("shouldSyncDuckHudState always flushes terminal win/fail frames regardless of tick remainder (#598 D01)", () => {

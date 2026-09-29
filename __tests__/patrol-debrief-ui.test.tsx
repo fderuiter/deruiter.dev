@@ -9,6 +9,7 @@ import {
 } from "@testing-library/react";
 import { DebriefScreen } from "@/components/patrol/DebriefScreen";
 import { ShiftSummary } from "@/components/patrol/ShiftSummary";
+import { liveAnnouncer } from "@/hooks/useAnnouncer";
 import {
   evaluateIncidentDebrief,
   createInitialShiftState,
@@ -116,7 +117,8 @@ describe("Patrol Shift — M7 Debrief UI Integration (Issue #753)", () => {
       }
     });
 
-    it("exposes a screen-reader live status region announcing the overall rating", () => {
+    it("announces the overall rating through the root announcer (#1125)", () => {
+      const announceSpy = vi.spyOn(liveAnnouncer, "announce");
       render(
         <DebriefScreen
           scenario={scenarioFixture}
@@ -125,8 +127,14 @@ describe("Patrol Shift — M7 Debrief UI Integration (Issue #753)", () => {
         />
       );
 
-      const status = screen.getByRole("status");
-      expect(status.textContent).toContain(result.overallRating);
+      expect(announceSpy).toHaveBeenCalledTimes(1);
+      expect(announceSpy).toHaveBeenCalledWith(
+        `Incident debrief complete. Overall rating: ${result.overallRating}.`,
+        "polite"
+      );
+      expect(screen.queryByRole("status")).toBeNull();
+      announceSpy.mockRestore();
+      liveAnnouncer.clear();
     });
 
     it("renders qualitative observation cards with icon badges, capped at three", () => {

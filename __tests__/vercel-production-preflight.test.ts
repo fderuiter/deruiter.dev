@@ -343,6 +343,83 @@ describe("Upstash production authentication", () => {
     });
     expect(JSON.stringify(result)).not.toContain("fake-upstash-token-7Q2");
   });
+
+  it("handles missing URL or token configuration", async () => {
+    const noUrl = {
+      ...validProductionEnv(),
+      UPSTASH_REDIS_REST_URL: undefined,
+    };
+    expect(await verifyUpstashCredentials(noUrl)).toEqual({
+      ok: false,
+      name: "UPSTASH_REDIS_REST_URL",
+      reason: "is not configured",
+    });
+
+    const noToken = {
+      ...validProductionEnv(),
+      UPSTASH_REDIS_REST_TOKEN: undefined,
+    };
+    expect(await verifyUpstashCredentials(noToken)).toEqual({
+      ok: false,
+      name: "UPSTASH_REDIS_REST_TOKEN",
+      reason: "is not configured",
+    });
+  });
+
+  it("rejects non-HTTPS REST URLs", async () => {
+    const httpEnv = {
+      ...validProductionEnv(),
+      UPSTASH_REDIS_REST_URL: "http://cache.upstash.test",
+    };
+    expect(await verifyUpstashCredentials(httpEnv)).toEqual({
+      ok: false,
+      name: "UPSTASH_REDIS_REST_URL",
+      reason: "is not a valid HTTPS URL",
+    });
+  });
+
+  it("handles HTTP 403 Forbidden token rejection", async () => {
+    const fetchImpl = vi.fn<typeof fetch>(
+      async () => new Response("Forbidden", { status: 403 })
+    );
+
+    expect(
+      await verifyUpstashCredentials(validProductionEnv(), fetchImpl)
+    ).toEqual({
+      ok: false,
+      name: "UPSTASH_REDIS_REST_TOKEN",
+      reason: "was rejected by Upstash",
+    });
+  });
+
+  it("handles non-200 HTTP server error status", async () => {
+    const fetchImpl = vi.fn<typeof fetch>(
+      async () => new Response("Internal Error", { status: 500 })
+    );
+
+    expect(
+      await verifyUpstashCredentials(validProductionEnv(), fetchImpl)
+    ).toEqual({
+      ok: false,
+      name: "UPSTASH_REDIS_REST_URL",
+      reason: "returned HTTP 500",
+    });
+  });
+
+  it("handles unexpected JSON payload without PONG", async () => {
+    const fetchImpl = vi.fn<typeof fetch>(
+      async () =>
+        new Response(JSON.stringify({ result: "OK" }), { status: 200 })
+    );
+
+    expect(
+      await verifyUpstashCredentials(validProductionEnv(), fetchImpl)
+    ).toEqual({
+      ok: false,
+      name: "UPSTASH_REDIS_REST_URL",
+      reason: "did not return the expected PONG response",
+    });
+  });
 });
 
 describe("Vercel Headroom Capacity Preflight Check", () => {
@@ -399,6 +476,20 @@ describe("Vercel Headroom Capacity Preflight Check", () => {
       ]),
       expect.any(Object)
     );
+  });
+
+  it("uses defaultExec (child_process.execFileSync) when no custom execFn is passed", async () => {
+    const logger = silentLogger();
+    const env = { ...validProductionEnv(), VERCEL_TOKEN: "valid_token" };
+    const childProcess = require("child_process");
+    const spy = vi
+      .spyOn(childProcess, "execFileSync")
+      .mockReturnValue(healthyJson);
+
+    const result = await verifyVercelHeadroomCapacity(env, logger);
+    expect(result).toBe(true);
+    expect(spy).toHaveBeenCalled();
+    spy.mockRestore();
   });
 
   it("returns false and logs error when critical threshold is breached (critical outcome)", async () => {

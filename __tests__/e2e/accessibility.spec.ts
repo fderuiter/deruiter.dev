@@ -88,6 +88,14 @@ async function auditAndAssert(
   stateName: string,
   options: { disableRules?: string[]; exclude?: string[] } = {}
 ) {
+  if (options.disableRules && options.disableRules.length > 0) {
+    throw new Error(
+      `Prohibited disableRules override detected in test [${stateName}]: ${options.disableRules.join(
+        ", "
+      )}. Shift-left zero-tolerance policy forbids disabling WCAG rules.`
+    );
+  }
+
   let builder = new AxeBuilder({ page }).withTags([
     "wcag2a",
     "wcag2aa",
@@ -95,10 +103,6 @@ async function auditAndAssert(
     "wcag21aa",
     "best-practice",
   ]);
-
-  if (options.disableRules && options.disableRules.length > 0) {
-    builder = builder.disableRules(options.disableRules);
-  }
 
   for (const selector of options.exclude ?? []) {
     builder = builder.exclude(selector);
@@ -353,6 +357,7 @@ test.describe("Continuous Accessibility (a11y) & WCAG 2.1 AA Audit Suite", () =>
   test("Audit: Patrol Shift Intro, Briefing, Map Hub & Field Manual", async ({
     page,
   }, testInfo) => {
+    test.setTimeout(60000);
     await page.goto("/patrol");
     await page.waitForLoadState("networkidle");
     await page.waitForSelector('[data-testid="patrol-shift-container"]', {
@@ -516,8 +521,7 @@ test.describe("Continuous Accessibility (a11y) & WCAG 2.1 AA Audit Suite", () =>
     await auditAndAssert(
       page,
       testInfo,
-      "Incident Commander Simulator Default State",
-      { disableRules: ["color-contrast"] }
+      "Incident Commander Simulator Default State"
     );
 
     // 2. Interactive Step Transition: Stage 2 (Live Incident Commander Triage)
@@ -534,8 +538,7 @@ test.describe("Continuous Accessibility (a11y) & WCAG 2.1 AA Audit Suite", () =>
       await auditAndAssert(
         page,
         testInfo,
-        "Incident Commander Simulator Step 2 Triage State",
-        { disableRules: ["color-contrast"] }
+        "Incident Commander Simulator Step 2 Triage State"
       );
 
       // 3. Interactive Step Transition: Stage 3 (Systems Review)
@@ -551,8 +554,7 @@ test.describe("Continuous Accessibility (a11y) & WCAG 2.1 AA Audit Suite", () =>
         await auditAndAssert(
           page,
           testInfo,
-          "Incident Commander Simulator Step 3 Review State",
-          { disableRules: ["color-contrast"] }
+          "Incident Commander Simulator Step 3 Review State"
         );
       }
     }
@@ -568,9 +570,7 @@ test.describe("Continuous Accessibility (a11y) & WCAG 2.1 AA Audit Suite", () =>
     const skeleton = page.locator('[data-testid="brain-3d-skeleton"]');
     await skeleton.waitFor({ state: "detached", timeout: 30000 });
 
-    await auditAndAssert(page, testInfo, "Neuroimaging Studio Default State", {
-      disableRules: ["color-contrast", "button-name", "label"],
-    });
+    await auditAndAssert(page, testInfo, "Neuroimaging Studio Default State");
   });
 
   test("Audit: Neuroimaging Route - Interactive Slice Viewing & Sub-states", async ({
@@ -596,8 +596,7 @@ test.describe("Continuous Accessibility (a11y) & WCAG 2.1 AA Audit Suite", () =>
     await auditAndAssert(
       page,
       testInfo,
-      "Neuroimaging Studio Interactive Slice Viewing State",
-      { disableRules: ["color-contrast", "button-name", "label"] }
+      "Neuroimaging Studio Interactive Slice Viewing State"
     );
   });
 

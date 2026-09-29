@@ -20,15 +20,19 @@ const transactionClient = {
 };
 
 let getAggregateStats: typeof import("@/lib/services/telemetry-service").TelemetryService.getAggregateStats;
+let TelemetryService: typeof import("@/lib/services/telemetry-service").TelemetryService;
+let _testCache: typeof import("@/lib/services/telemetry-service")._testCache;
 
 describe("TelemetryService.getAggregateStats", () => {
   beforeEach(async () => {
     vi.resetModules();
     vi.stubEnv("PLAYWRIGHT_TEST", "");
 
-    ({
-      TelemetryService: { getAggregateStats },
-    } = await import("@/lib/services/telemetry-service"));
+    const mod = await import("@/lib/services/telemetry-service");
+    TelemetryService = mod.TelemetryService;
+    getAggregateStats = mod.TelemetryService.getAggregateStats;
+    _testCache = mod._testCache;
+    _testCache.reset();
 
     vi.clearAllMocks();
     mockRawGroupBy.mockResolvedValue([]);
@@ -41,6 +45,76 @@ describe("TelemetryService.getAggregateStats", () => {
 
   afterAll(() => {
     vi.unstubAllEnvs();
+  });
+
+  it("returns cached statistics when called within 10 seconds without executing new database queries", async () => {
+    mockRawGroupBy.mockResolvedValue([
+      { projectSlug: "/dashboard", eventType: "page_view", _count: { id: 10 } },
+    ]);
+
+    const stats1 = await getAggregateStats();
+    expect(stats1).toEqual({ "/dashboard": { views: 10, clicks: 0 } });
+    expect(mockTransaction).toHaveBeenCalledTimes(1);
+
+    mockRawGroupBy.mockResolvedValue([
+      { projectSlug: "/dashboard", eventType: "page_view", _count: { id: 99 } },
+    ]);
+
+    const stats2 = await getAggregateStats();
+    expect(stats2).toEqual({ "/dashboard": { views: 10, clicks: 0 } });
+    expect(mockTransaction).toHaveBeenCalledTimes(1);
+  });
+
+  it("re-queries the database after the 10-second cache TTL expires", async () => {
+    vi.useFakeTimers();
+    try {
+      mockRawGroupBy.mockResolvedValue([
+        {
+          projectSlug: "/dashboard",
+          eventType: "page_view",
+          _count: { id: 10 },
+        },
+      ]);
+
+      const stats1 = await getAggregateStats();
+      expect(stats1).toEqual({ "/dashboard": { views: 10, clicks: 0 } });
+      expect(mockTransaction).toHaveBeenCalledTimes(1);
+
+      vi.advanceTimersByTime(10001);
+
+      mockRawGroupBy.mockResolvedValue([
+        {
+          projectSlug: "/dashboard",
+          eventType: "page_view",
+          _count: { id: 25 },
+        },
+      ]);
+
+      const stats2 = await getAggregateStats();
+      expect(stats2).toEqual({ "/dashboard": { views: 25, clicks: 0 } });
+      expect(mockTransaction).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("re-queries the database when the cache is cleared via test utility", async () => {
+    mockRawGroupBy.mockResolvedValue([
+      { projectSlug: "/dashboard", eventType: "page_view", _count: { id: 5 } },
+    ]);
+
+    await getAggregateStats();
+    expect(mockTransaction).toHaveBeenCalledTimes(1);
+
+    TelemetryService.clearAggregateCache();
+
+    mockRawGroupBy.mockResolvedValue([
+      { projectSlug: "/dashboard", eventType: "page_view", _count: { id: 15 } },
+    ]);
+
+    const refreshedStats = await getAggregateStats();
+    expect(refreshedStats).toEqual({ "/dashboard": { views: 15, clicks: 0 } });
+    expect(mockTransaction).toHaveBeenCalledTimes(2);
   });
 
   it("adds raw and daily rollup counts for matching slugs and event types", async () => {

@@ -310,4 +310,74 @@ describe("RecruiterSimulator - Ecosystem-Aligned Accessibility Integration", () 
 
     expect(window.location.hash).toBe("");
   });
+
+  it("follows browser Back/Forward navigation through the hash without local state drift", () => {
+    render(<RecruiterSimulator />);
+
+    fireEvent.click(screen.getAllByText("Systems & Performance")[0]);
+    expect(screen.getByText(/Live Incident Commander/)).toBeDefined();
+
+    // Simulate the browser restoring the previous history entry
+    act(() => {
+      window.history.replaceState(null, "", window.location.pathname);
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
+    expect(screen.getByText(/Define Your Target Profile/)).toBeDefined();
+    expect(screen.queryByRole("button", { name: "Back" })).toBeNull();
+
+    // And moving forward again
+    act(() => {
+      window.history.replaceState(
+        null,
+        "",
+        `${window.location.pathname}#step=code_review&ans=0,1`
+      );
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
+    expect(screen.getByText(/Code Review Speed Challenge/)).toBeDefined();
+    expect(screen.getByRole("button", { name: "Back" })).toBeDefined();
+  });
+
+  it("resumes after the last replayable answer when step is omitted, and falls back to welcome for an unknown step", () => {
+    window.location.hash = "#ans=0,1";
+    const { unmount } = render(<RecruiterSimulator />);
+    expect(screen.getByText(/Code Review Speed Challenge/)).toBeDefined();
+    unmount();
+
+    window.location.hash = "#step=bogus&ans=0";
+    render(<RecruiterSimulator />);
+    expect(screen.getByText(/Define Your Target Profile/)).toBeDefined();
+  });
+
+  it("hydrates a deep link without a server/client markup mismatch", async () => {
+    const { renderToString } = await import("react-dom/server");
+    const { hydrateRoot } = await import("react-dom/client");
+
+    window.location.hash = "#step=final_eval&ans=0,1,0";
+    const html = renderToString(<RecruiterSimulator />);
+    // The server snapshot has no hash, so SSR renders the welcome step
+    expect(html).toContain("Define Your Target Profile");
+
+    const host = document.createElement("div");
+    host.innerHTML = html;
+    document.body.appendChild(host);
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const recoverable = vi.fn();
+
+    let root: ReturnType<typeof hydrateRoot> | undefined;
+    await act(async () => {
+      root = hydrateRoot(host, <RecruiterSimulator />, {
+        onRecoverableError: recoverable,
+      });
+    });
+
+    expect(recoverable).not.toHaveBeenCalled();
+    expect(errorSpy).not.toHaveBeenCalled();
+    // After hydration the client snapshot restores the deep-linked result
+    expect(host.textContent).toContain("A Focus on Systems");
+
+    act(() => root?.unmount());
+    host.remove();
+    errorSpy.mockRestore();
+  });
 });

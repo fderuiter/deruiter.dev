@@ -264,6 +264,10 @@ export interface GameEngineState {
   crashReport: CrashReport | null;
   lastAllocTime: number;
   lastObstacleTime: number;
+  /** Wall-clock time of the last pop, for its cooldown. */
+  lastJettisonAt?: number;
+  /** Wall-clock time of the last GC, for its cooldown. */
+  lastGcAt?: number;
   consecutiveDodges: number;
   /** Setup-derived parameters for this run; absent means defaults. */
   tuning?: GarminRunTuning;
@@ -357,11 +361,54 @@ export const REQUIRED_VARIABLE_NAMES: readonly string[] = [
 
 /**
  * Points awarded for a memory action that actually reclaimed heap. Actions that
- * reclaim nothing award no points. Survival ticks and dodges are the primary
- * score source; higher-difficulty devices only differ in their RAM limits.
+ * reclaim nothing award no points. Survival ticks are the primary score
+ * source; devices differ in RAM limits and allocation pace.
  */
 export const JETTISON_SCORE = 5;
 export const GC_SCORE = 10;
+
+/**
+ * Memory actions cost something, so managing the heap is a choice rather than
+ * free points (#1320): a pop needs a short recharge, and a GC needs a longer
+ * one and draws battery on top of its freeze and heat.
+ */
+export const JETTISON_COOLDOWN_MS = 1500;
+export const GC_COOLDOWN_MS = 5000;
+export const GC_BATTERY_COST = 1;
+
+/**
+ * Collecting a floating token is a trade: it costs memory or flash, and pays
+ * points. Jumping over it keeps the memory and forgoes the points.
+ */
+export const MEM_TOKEN_SCORE = 25;
+export const FLASH_TOKEN_SCORE = 40;
+
+/**
+ * Distance (m) over which the run ramps from its opening pace to full
+ * difficulty. The runner covers about 15 m a second, so this is 3 minutes.
+ */
+export const DIFFICULTY_RAMP_METERS = 2700;
+
+/**
+ * How far into the difficulty ramp a run is, from 0 at the start to 1 at
+ * {@link DIFFICULTY_RAMP_METERS} and beyond.
+ */
+export function getDifficultyRamp(distanceMeters: number): number {
+  if (!Number.isFinite(distanceMeters) || distanceMeters <= 0) return 0;
+  return Math.min(1, distanceMeters / DIFFICULTY_RAMP_METERS);
+}
+
+/**
+ * Milliseconds until a memory action recharges, or 0 when it is ready.
+ */
+export function getCooldownRemainingMs(
+  lastUsedAt: number | undefined,
+  cooldownMs: number,
+  now: number = Date.now()
+): number {
+  if (lastUsedAt === undefined) return 0;
+  return Math.max(0, cooldownMs - (now - lastUsedAt));
+}
 
 /**
  * Returns true when a heap variable is collectible garbage rather than required app state.
@@ -375,13 +422,28 @@ export function isCollectibleVariable(v: MemoryVariable): boolean {
  * Required app state is never discarded; with nothing collectible the call is
  * a no-op that awards no score and reports a reason.
  */
-export function jettisonOldestVariable(state: GameEngineState): {
+export function jettisonOldestVariable(
+  state: GameEngineState,
+  now: number = Date.now()
+): {
   state: GameEngineState;
   popped?: MemoryVariable;
   reason?: string;
 } {
   if (state.gameState !== "playing") {
     return { state };
+  }
+
+  const recharge = getCooldownRemainingMs(
+    state.lastJettisonAt,
+    JETTISON_COOLDOWN_MS,
+    now
+  );
+  if (recharge > 0) {
+    return {
+      state,
+      reason: `Pop recharging: ${(recharge / 1000).toFixed(1)}s`,
+    };
   }
 
   const idx = state.variables.findIndex(isCollectibleVariable);
@@ -399,6 +461,7 @@ export function jettisonOldestVariable(state: GameEngineState): {
       variables: rest,
       allocatedRamKb: Number(newRam.toFixed(2)),
       score: state.score + JETTISON_SCORE,
+      lastJettisonAt: now,
     },
     popped,
   };
@@ -409,13 +472,25 @@ export function jettisonOldestVariable(state: GameEngineState): {
  * Freezes game for 500ms and frees up to 2.0 to 4.0 KB of collectible garbage.
  * With no collectible garbage the call is a no-op: no freeze, no score.
  */
-export function triggerGarbageCollection(state: GameEngineState): {
+export function triggerGarbageCollection(
+  state: GameEngineState,
+  now: number = Date.now()
+): {
   state: GameEngineState;
   freedKb: number;
   reason?: string;
 } {
   if (state.gameState !== "playing" || state.isGcActive) {
     return { state, freedKb: 0 };
+  }
+
+  const recharge = getCooldownRemainingMs(state.lastGcAt, GC_COOLDOWN_MS, now);
+  if (recharge > 0) {
+    return {
+      state,
+      freedKb: 0,
+      reason: `GC recharging: ${(recharge / 1000).toFixed(1)}s`,
+    };
   }
 
   if (!state.variables.some(isCollectibleVariable)) {
@@ -456,6 +531,8 @@ export function triggerGarbageCollection(state: GameEngineState): {
       variables: remainingVars,
       allocatedRamKb: newRam,
       score: state.score + GC_SCORE,
+      battery: Math.max(0, state.battery - GC_BATTERY_COST),
+      lastGcAt: now,
     },
     freedKb: Number(accumulatedFreed.toFixed(2)),
   };
@@ -901,12 +978,17 @@ export function updateGameSimulation(
   };
 
   const now = Date.now();
+  // The app allocates faster, bugs arrive sooner and move quicker as the run
+  // goes on, reaching full difficulty after DIFFICULTY_RAMP_METERS (#1320).
+  const ramp = getDifficultyRamp(nextDistance);
   const allocInterval =
     (state.device === "fenix"
       ? 3200
       : state.device === "forerunner"
         ? 4000
-        : 5000) * tuning.allocIntervalScale;
+        : 5000) *
+    tuning.allocIntervalScale *
+    (1 - 0.6 * ramp);
   if (now - state.lastAllocTime > allocInterval) {
     const types: VariableType[] = ["int", "float", "string", "array"];
     const chosenType = types[Math.floor(Math.random() * types.length)];
@@ -956,7 +1038,10 @@ export function updateGameSimulation(
         if (allocRes.crashed) {
           return allocRes.state;
         }
-        updatedState = allocRes.state;
+        updatedState = {
+          ...allocRes.state,
+          score: allocRes.state.score + MEM_TOKEN_SCORE,
+        };
         // Don't keep obstacle after collection
         continue;
       } else if (obs.type === "flash_token") {
@@ -964,7 +1049,10 @@ export function updateGameSimulation(
         if (flashRes.crashed) {
           return flashRes.state;
         }
-        updatedState = flashRes.state;
+        updatedState = {
+          ...flashRes.state,
+          score: flashRes.state.score + FLASH_TOKEN_SCORE,
+        };
         continue;
       } else if (obs.type === "watchdog") {
         crashTriggered = {
@@ -1015,7 +1103,9 @@ export function updateGameSimulation(
 
   // 6. Spawn new Obstacles
   const obstacleInterval =
-    (1800 + Math.random() * 1200) * tuning.obstacleIntervalScale;
+    (1800 + Math.random() * 1200) *
+    tuning.obstacleIntervalScale *
+    (1 - 0.4 * ramp);
   if (
     now - updatedState.lastObstacleTime > obstacleInterval &&
     nextObstacles.length < 3
@@ -1075,9 +1165,7 @@ export function updateGameSimulation(
         height,
         type: chosen,
         label,
-        speed:
-          (2.2 + Math.min(2.0, updatedState.score * 0.005)) *
-          tuning.obstacleSpeedScale,
+        speed: (2.2 + 2.6 * ramp) * tuning.obstacleSpeedScale,
         variablePayload,
       });
 

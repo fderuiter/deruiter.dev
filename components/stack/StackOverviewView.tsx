@@ -14,6 +14,7 @@ import {
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { NextPrevNav } from "@/components/ui/NextPrevNav";
 import { useAudio } from "@/components/providers/AudioProvider";
+import { useScrollToAnchor } from "@/hooks/useScrollToAnchor";
 import { PretextBenchmarkLab } from "./PretextBenchmarkLab";
 import { AudioSynthLab } from "./AudioSynthLab";
 import { StackLayerCards } from "./StackLayerCards";
@@ -45,17 +46,9 @@ const CLI_SNIPPETS = [
 export const StackOverviewView: React.FC = () => {
   const { playHover, playSuccess } = useAudio();
 
-  const handleAnchorClick = (
-    e: React.MouseEvent<HTMLAnchorElement>,
-    id: string
-  ) => {
-    e.preventDefault();
-    playHover();
-    const el = document.getElementById(id);
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth" });
-    }
-  };
+  const handleAnchorClick = useScrollToAnchor({
+    onNavigate: () => playHover(),
+  });
 
   return (
     <div className="bg-zinc-950 text-foreground pb-24 px-4 sm:px-6 md:px-12 lg:px-24 relative overflow-hidden">
@@ -173,27 +166,42 @@ export const StackOverviewView: React.FC = () => {
             </div>
           </div>
 
-          <div id="pretext-lab">
+          <div
+            id="pretext-lab"
+            className="scroll-mt-[calc(var(--navbar-height)+2rem)]"
+          >
             <PretextBenchmarkLab />
           </div>
 
-          <div id="audio-lab">
+          <div
+            id="audio-lab"
+            className="scroll-mt-[calc(var(--navbar-height)+2rem)]"
+          >
             <AudioSynthLab />
           </div>
         </section>
 
         {/* Section 2: Modular Stack Layers */}
-        <section id="stack-layers" className="w-full mb-16">
+        <section
+          id="stack-layers"
+          className="w-full mb-16 scroll-mt-[calc(var(--navbar-height)+2rem)]"
+        >
           <StackLayerCards />
         </section>
 
         {/* Section 3: 12 Architectural Invariants */}
-        <section id="invariants" className="w-full mb-16">
+        <section
+          id="invariants"
+          className="w-full mb-16 scroll-mt-[calc(var(--navbar-height)+2rem)]"
+        >
           <InvariantsMatrix />
         </section>
 
         {/* Section 4: Developer CLI Quickstart */}
-        <section id="quickstart" className="w-full mb-16">
+        <section
+          id="quickstart"
+          className="w-full mb-16 scroll-mt-[calc(var(--navbar-height)+2rem)]"
+        >
           <div className="w-full rounded-2xl bg-zinc-900/50 border border-zinc-800/80 p-6 backdrop-blur-xl">
             <div className="flex items-center gap-3 pb-5 border-b border-zinc-800/80 mb-5">
               <div className="p-2.5 rounded-xl bg-brand-cyan/10 border border-brand-cyan/30 text-brand-cyan">

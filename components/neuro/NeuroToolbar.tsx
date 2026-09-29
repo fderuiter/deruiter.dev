@@ -114,6 +114,7 @@ export const NeuroToolbar: React.FC<NeuroToolbarProps> = ({
               <button
                 key={r}
                 onClick={() => onBrushRadiusChange(r)}
+                aria-label={`Brush radius ${r}`}
                 className={`w-6 h-6 rounded-md font-bold text-xs flex items-center justify-center transition-all ${
                   brushRadius === r
                     ? "bg-brand-cyan text-zinc-950 shadow-sm"

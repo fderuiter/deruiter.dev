@@ -4,6 +4,7 @@ import React from "react";
 import dynamic from "next/dynamic";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { NextPrevNav } from "@/components/ui/NextPrevNav";
+import { getArcadeNeighbors } from "@/lib/arcade";
 import { PlayCabinet } from "@/components/arcade/PlayCabinet";
 import { DesktopOnlyGate } from "@/components/arcade/DesktopOnlyGate";
 import Link from "next/link";
@@ -197,18 +198,7 @@ export const WorkingWithDuckClient: React.FC = () => {
 
         {/* Sequential Next / Previous Navigation */}
         <NextPrevNav
-          prev={{
-            title: "Retro Labyrinth",
-            href: "/arcade/retro-labyrinth",
-            label: "Previous Game",
-            tag: "Graveyard Roguelike",
-          }}
-          next={{
-            title: "Laser Loon: Quest for the State Flag",
-            href: "/arcade/laser-loon",
-            label: "Next Game",
-            tag: "Civic Arcade Campaign",
-          }}
+          {...getArcadeNeighbors("/arcade/working-with-duck")}
           backToHub={{
             title: "All Arcade Games",
             href: "/arcade",

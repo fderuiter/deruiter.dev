@@ -3,7 +3,12 @@ import path from "path";
 import { execSync } from "child_process";
 import { scanFile } from "../security-scan";
 import { colors, badge, formatHeader } from "./utils";
-import { checkEnvironmentVariables } from "./env-guard";
+import {
+  checkEnvironmentVariables,
+  getDeclaredEnvKeys,
+  parseEnvFile,
+  generateEnvExampleContent,
+} from "./env-guard";
 import { checkGitHygieneConfig } from "./git-guard";
 import { checkDeadCode } from "./dead-code";
 import { checkBundleBudgets } from "./bundle-guard";
@@ -1015,6 +1020,386 @@ export function checkDocumentationParity(
     category: "docs",
     status: "pass",
     message: "Documentation in docs/ is synchronized and up to date.",
+  };
+}
+
+export interface CanonicalField {
+  name: string;
+  type: string;
+  attributes: string[];
+  comment?: string;
+  rawLine: string;
+}
+
+export interface CanonicalDirective {
+  name: string;
+  args: string;
+  normalized: string;
+  rawLine: string;
+}
+
+export interface CanonicalModel {
+  name: string;
+  fields: CanonicalField[];
+  directives: CanonicalDirective[];
+  rawBlock: string;
+}
+
+/**
+ * Parse Prisma models from a Prisma schema file or markdown snippet.
+ */
+export function parsePrismaModels(
+  content: string
+): Map<string, CanonicalModel> {
+  const models = new Map<string, CanonicalModel>();
+  const lines = content.split("\n");
+  let currentModelName: string | null = null;
+  let currentFields: CanonicalField[] = [];
+  let currentDirectives: CanonicalDirective[] = [];
+  let blockLines: string[] = [];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!currentModelName) {
+      const match = trimmed.match(/^model\s+([A-Za-z0-9_]+)\s*\{/);
+      if (match) {
+        currentModelName = match[1];
+        currentFields = [];
+        currentDirectives = [];
+        blockLines = [line];
+      }
+    } else {
+      blockLines.push(line);
+      if (trimmed === "}") {
+        models.set(currentModelName, {
+          name: currentModelName,
+          fields: currentFields,
+          directives: currentDirectives,
+          rawBlock: blockLines.join("\n"),
+        });
+        currentModelName = null;
+        currentFields = [];
+        currentDirectives = [];
+        blockLines = [];
+      } else if (trimmed.startsWith("@@")) {
+        const dirMatch = trimmed.match(/^(@@[A-Za-z0-9_]+)\((.*)\)$/);
+        if (dirMatch) {
+          const dirName = dirMatch[1];
+          const dirArgs = dirMatch[2].trim();
+          const normArgs = dirArgs.replace(/\s*,\s*/g, ", ");
+          currentDirectives.push({
+            name: dirName,
+            args: dirArgs,
+            normalized: `${dirName}(${normArgs})`,
+            rawLine: trimmed,
+          });
+        }
+      } else if (
+        trimmed &&
+        !trimmed.startsWith("//") &&
+        !trimmed.startsWith("///")
+      ) {
+        let codePart = trimmed;
+        let commentPart: string | undefined = undefined;
+        const commentIdx = trimmed.indexOf("//");
+        if (commentIdx !== -1) {
+          codePart = trimmed.slice(0, commentIdx).trim();
+          commentPart = trimmed.slice(commentIdx + 2).trim();
+        }
+
+        const tokens = codePart.split(/\s+/);
+        if (tokens.length >= 2) {
+          const fieldName = tokens[0];
+          const fieldType = tokens[1];
+          const attributes = tokens.slice(2);
+          currentFields.push({
+            name: fieldName,
+            type: fieldType,
+            attributes,
+            comment: commentPart,
+            rawLine: trimmed,
+          });
+        }
+      }
+    }
+  }
+
+  return models;
+}
+
+/**
+ * Reconstruct a Prisma model definition block cleanly formatted,
+ * preserving custom comments from the embedded model snippet where present.
+ */
+export function reconstructPrismaModel(
+  canonical: CanonicalModel,
+  embedded?: CanonicalModel
+): string {
+  const embeddedFieldMap = new Map<string, CanonicalField>();
+  if (embedded) {
+    for (const f of embedded.fields) {
+      embeddedFieldMap.set(f.name, f);
+    }
+  }
+
+  let maxNameWidth = 0;
+  let maxTypeWidth = 0;
+  for (const f of canonical.fields) {
+    if (f.name.length > maxNameWidth) maxNameWidth = f.name.length;
+    if (f.type.length > maxTypeWidth) maxTypeWidth = f.type.length;
+  }
+
+  const lines: string[] = [`model ${canonical.name} {`];
+
+  for (const field of canonical.fields) {
+    const embeddedField = embeddedFieldMap.get(field.name);
+    const comment = embeddedField?.comment ?? field.comment;
+
+    const nameStr = field.name.padEnd(maxNameWidth);
+    const typeStr = field.type.padEnd(maxTypeWidth);
+    const attrStr = field.attributes.join(" ");
+
+    let line = `  ${nameStr} ${typeStr}`;
+    if (attrStr) {
+      line += ` ${attrStr}`;
+    }
+    line = line.trimEnd();
+    if (comment) {
+      line += `   // ${comment}`;
+    }
+    lines.push(line);
+  }
+
+  if (canonical.directives.length > 0) {
+    lines.push("");
+    for (const d of canonical.directives) {
+      lines.push(`  ${d.normalized}`);
+    }
+  }
+
+  lines.push("}");
+  return lines.join("\n");
+}
+
+/**
+ * Compare an embedded model snippet from markdown against canonical schema model.
+ */
+export function comparePrismaModel(
+  canonical: CanonicalModel,
+  embedded: CanonicalModel
+): { isMatch: boolean; details: string[] } {
+  const details: string[] = [];
+
+  const embeddedFieldMap = new Map<string, CanonicalField>();
+  for (const f of embedded.fields) {
+    embeddedFieldMap.set(f.name, f);
+  }
+
+  for (const cField of canonical.fields) {
+    const eField = embeddedFieldMap.get(cField.name);
+    if (!eField) {
+      details.push(
+        `Model '${canonical.name}' field '${cField.name}' is missing in guide snippet`
+      );
+    } else {
+      if (eField.type !== cField.type) {
+        details.push(
+          `Model '${canonical.name}' field '${cField.name}' type mismatch: expected '${cField.type}', found '${eField.type}'`
+        );
+      }
+      const cAttrs = cField.attributes.join(" ");
+      const eAttrs = eField.attributes.join(" ");
+      if (cAttrs !== eAttrs) {
+        details.push(
+          `Model '${canonical.name}' field '${cField.name}' attributes mismatch: expected '${cAttrs}', found '${eAttrs}'`
+        );
+      }
+    }
+  }
+
+  for (const eField of embedded.fields) {
+    if (!canonical.fields.some((cf) => cf.name === eField.name)) {
+      details.push(
+        `Model '${canonical.name}' field '${eField.name}' in guide snippet does not exist in canonical schema`
+      );
+    }
+  }
+
+  const canonicalDirs = new Set(canonical.directives.map((d) => d.normalized));
+  const embeddedDirs = new Set(embedded.directives.map((d) => d.normalized));
+
+  for (const cDir of canonicalDirs) {
+    if (!embeddedDirs.has(cDir)) {
+      details.push(
+        `Model '${canonical.name}' is missing directive '${cDir}' in guide snippet`
+      );
+    }
+  }
+
+  for (const eDir of embeddedDirs) {
+    if (!canonicalDirs.has(eDir)) {
+      details.push(
+        `Model '${canonical.name}' has extra directive '${eDir}' in guide snippet`
+      );
+    }
+  }
+
+  return { isMatch: details.length === 0, details };
+}
+
+/**
+ * Check Technical Guide Schema Parity & Environment Variable Documentation Parity
+ */
+export function checkTechnicalGuideSchemaParity(
+  root: string,
+  fix = false
+): DiagnosticCheckResult {
+  const schemaPath = path.join(root, "prisma", "schema.prisma");
+  if (!fs.existsSync(schemaPath)) {
+    return {
+      id: "technical-guide-schema-parity",
+      name: "Technical Guide Schema & Environment Parity",
+      category: "docs",
+      status: "fail",
+      message: "prisma/schema.prisma not found.",
+      fixable: false,
+    };
+  }
+
+  const schemaContent = fs.readFileSync(schemaPath, "utf-8");
+  const canonicalModels = parsePrismaModels(schemaContent);
+
+  const driftDetails: string[] = [];
+  const fixesApplied: string[] = [];
+
+  const markdownFiles = findFiles(root, /\.md$/i, [
+    "node_modules",
+    ".git",
+    ".next",
+    "dist",
+    "coverage",
+    "tmp",
+    ".stryker-tmp",
+    ".claude",
+    "app/generated",
+  ]);
+
+  for (const filePath of markdownFiles) {
+    const relativePath = path.relative(root, filePath).replace(/\\/g, "/");
+    let fileContent = fs.readFileSync(filePath, "utf-8");
+    let fileModified = false;
+
+    const modelMatches = Array.from(
+      fileContent.matchAll(/(model\s+([A-Za-z0-9_]+)\s*\{[\s\S]*?\n\})/g)
+    );
+
+    for (const match of modelMatches) {
+      const embeddedBlock = match[1];
+      const modelName = match[2];
+
+      const canonicalModel = canonicalModels.get(modelName);
+      if (!canonicalModel) continue;
+
+      const embeddedModelsMap = parsePrismaModels(embeddedBlock);
+      const embeddedModel = embeddedModelsMap.get(modelName);
+      if (!embeddedModel) continue;
+
+      const comparison = comparePrismaModel(canonicalModel, embeddedModel);
+      if (!comparison.isMatch) {
+        for (const detail of comparison.details) {
+          driftDetails.push(`${relativePath}: ${detail}`);
+        }
+
+        if (fix) {
+          const reconstructed = reconstructPrismaModel(
+            canonicalModel,
+            embeddedModel
+          );
+          if (reconstructed !== embeddedBlock) {
+            fileContent = fileContent.replace(embeddedBlock, reconstructed);
+            fileModified = true;
+            fixesApplied.push(
+              `Updated model '${modelName}' snippet in ${relativePath}`
+            );
+          }
+        }
+      }
+    }
+
+    if (fileModified) {
+      fs.writeFileSync(filePath, fileContent, "utf-8");
+    }
+  }
+
+  const examplePath = path.join(root, ".env.example");
+  const { allKeys } = getDeclaredEnvKeys();
+  const exampleKeys = fs.existsSync(examplePath)
+    ? Object.keys(parseEnvFile(examplePath))
+    : [];
+
+  const missingEnvKeys = allKeys.filter(
+    (k) => k !== "NODE_ENV" && k !== "VERCEL_ENV" && !exampleKeys.includes(k)
+  );
+
+  if (missingEnvKeys.length > 0) {
+    driftDetails.push(
+      `.env.example is missing schema key(s): ${missingEnvKeys.join(", ")}`
+    );
+    if (fix) {
+      const content = generateEnvExampleContent(examplePath);
+      fs.writeFileSync(examplePath, content, "utf-8");
+      fixesApplied.push(
+        `Updated .env.example with missing key(s): ${missingEnvKeys.join(", ")}`
+      );
+    }
+  }
+
+  const deployDocPath = path.join(root, "docs/how-to/release-and-deploy.md");
+  if (fs.existsSync(deployDocPath)) {
+    const deployContent = fs.readFileSync(deployDocPath, "utf-8");
+    const missingInDeployDoc = allKeys.filter((k) => {
+      const pattern = new RegExp(`\`${k}\``);
+      return !pattern.test(deployContent);
+    });
+
+    if (missingInDeployDoc.length > 0) {
+      driftDetails.push(
+        `docs/how-to/release-and-deploy.md is missing documentation for schema key(s): ${missingInDeployDoc.join(", ")}`
+      );
+    }
+  }
+
+  if (fixesApplied.length > 0) {
+    return {
+      id: "technical-guide-schema-parity",
+      name: "Technical Guide Schema & Environment Parity",
+      category: "docs",
+      status: "fixed",
+      message: `Auto-remediated ${fixesApplied.length} technical guide schema or environment drift issue(s).`,
+      details: fixesApplied,
+      fixedMessage: fixesApplied.join("; "),
+    };
+  }
+
+  if (driftDetails.length > 0) {
+    return {
+      id: "technical-guide-schema-parity",
+      name: "Technical Guide Schema & Environment Parity",
+      category: "docs",
+      status: "fail",
+      message: `Detected ${driftDetails.length} technical guide schema or environment drift issue(s).`,
+      details: driftDetails,
+      fixable: true,
+    };
+  }
+
+  return {
+    id: "technical-guide-schema-parity",
+    name: "Technical Guide Schema & Environment Parity",
+    category: "docs",
+    status: "pass",
+    message:
+      "All markdown guide Prisma snippets and environment variable documentation match canonical source definitions.",
   };
 }
 
@@ -2410,6 +2795,7 @@ export async function runDiagnostics(
 
     checkMigrationGuard(root),
     checkDocumentationParity(root, fix),
+    checkTechnicalGuideSchemaParity(root, fix),
     checkOnboardingDocsDrift(root, fix),
     checkDirectoryTopology(root),
     checkOpenApiParity(root, fix),

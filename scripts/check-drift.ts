@@ -16,6 +16,7 @@ import {
   checkOnboardingDocsDrift,
   checkDirectoryTopology,
   checkPublicRouteRegistryDrift,
+  checkTechnicalGuideSchemaParity,
 } from "../lib/dx/doctor";
 
 interface DetailCheckResult {
@@ -36,6 +37,7 @@ export interface DriftCheckDependencies {
   checkTopology: () => DetailCheckResult;
   checkMarkdownLinks: () => MarkdownLinkCheckResult;
   checkPublicRoutes: () => DetailCheckResult;
+  checkTechnicalGuides?: () => DetailCheckResult;
 }
 
 function defaultDependencies(workspaceRoot: string): DriftCheckDependencies {
@@ -53,6 +55,7 @@ function defaultDependencies(workspaceRoot: string): DriftCheckDependencies {
     checkTopology: () => checkDirectoryTopology(workspaceRoot),
     checkMarkdownLinks: () => checkMarkdownLinkIntegrity(workspaceRoot),
     checkPublicRoutes: () => checkPublicRouteRegistryDrift(workspaceRoot),
+    checkTechnicalGuides: () => checkTechnicalGuideSchemaParity(workspaceRoot),
   };
 }
 
@@ -64,7 +67,8 @@ export type DriftCategory =
   | "onboarding"
   | "topology"
   | "markdown-links"
-  | "public-routes";
+  | "public-routes"
+  | "schema-parity";
 
 const REMEDIES: Record<DriftCategory, { title: string; steps: string[] }> = {
   "generated-docs": {
@@ -99,6 +103,10 @@ const REMEDIES: Record<DriftCategory, { title: string; steps: string[] }> = {
     title:
       "Public route registry drift (a route in app/ is missing from lib/public-routes.ts or stale)",
     steps: ["npm run doctor:fix", "git add lib/public-routes.ts"],
+  },
+  "schema-parity": {
+    title: "Technical guide Prisma schema or environment variable drift",
+    steps: ["npm run doctor:fix", "git add CMS_GUIDELINES.md docs/"],
   },
 };
 
@@ -233,6 +241,23 @@ export function checkDrift(
     driftSummary +=
       "• Public route registry drift detected:\n" +
       (publicRoutesResult.details || [])
+        .map((detail) => `  - ${detail}`)
+        .join("\n") +
+      "\n";
+  }
+
+  console.log(
+    "Checking technical guide schema and environment variable parity..."
+  );
+  const technicalGuidesResult = dependencies.checkTechnicalGuides
+    ? dependencies.checkTechnicalGuides()
+    : { status: "pass" as const };
+  if (technicalGuidesResult.status === "fail") {
+    docsDrift = true;
+    categories.push("schema-parity");
+    driftSummary +=
+      "• Technical guide schema or environment variable drift detected:\n" +
+      (technicalGuidesResult.details || [])
         .map((detail) => `  - ${detail}`)
         .join("\n") +
       "\n";

@@ -66,6 +66,26 @@ const SWAP_INTERVAL_MS = 5000;
 const CIRCUIT_BREAKER_COOLDOWN_MS = 30000;
 let circuitBreakerCooldownUntil = 0;
 
+const AGGREGATE_STATS_TTL_MS = 10000; // 10 seconds
+
+let aggregateStatsCache: {
+  data: Record<string, { views: number; clicks: number }>;
+  expiresAt: number;
+} | null = null;
+
+function cloneAggregateStats(
+  stats: Record<string, { views: number; clicks: number }>
+): Record<string, { views: number; clicks: number }> {
+  const result: Record<string, { views: number; clicks: number }> = {};
+  for (const slug of Object.keys(stats)) {
+    const val = stats[slug];
+    if (val) {
+      result[slug] = { views: val.views, clicks: val.clicks };
+    }
+  }
+  return result;
+}
+
 function swapGenerations() {
   const temp = inactiveGeneration;
   inactiveGeneration = activeGeneration;
@@ -97,14 +117,24 @@ export const _testCache = {
   get circuitBreakerCooldownUntil() {
     return circuitBreakerCooldownUntil;
   },
+  get aggregateStats() {
+    return aggregateStatsCache;
+  },
   swap() {
     swapGenerations();
+  },
+  clearAggregateCache() {
+    aggregateStatsCache = null;
+  },
+  clearAggregateStatsCache() {
+    aggregateStatsCache = null;
   },
   reset() {
     activeGeneration.clear();
     inactiveGeneration.clear();
     lastSwapTime = Date.now();
     circuitBreakerCooldownUntil = 0;
+    aggregateStatsCache = null;
   },
 };
 
@@ -305,7 +335,22 @@ export class TelemetryService {
   }
 
   /**
+   * Clears the in-memory aggregate stats cache.
+   */
+  static clearAggregateCache() {
+    aggregateStatsCache = null;
+  }
+
+  /**
+   * Clears the in-memory aggregate stats cache.
+   */
+  static clearAggregateStatsCache() {
+    aggregateStatsCache = null;
+  }
+
+  /**
    * Fetches aggregate portfolio view/click telemetry statistics.
+   * Results are cached in memory for 10 seconds.
    */
   static async getAggregateStats() {
     if (env.PLAYWRIGHT_TEST === "true") {
@@ -314,6 +359,11 @@ export class TelemetryService {
         simulator: { views: 10, clicks: 4 },
         neuro: { views: 8, clicks: 3 },
       };
+    }
+
+    const now = Date.now();
+    if (aggregateStatsCache && now < aggregateStatsCache.expiresAt) {
+      return cloneAggregateStats(aggregateStatsCache.data);
     }
 
     const formattedStats: Record<string, { views: number; clicks: number }> =
@@ -334,11 +384,7 @@ export class TelemetryService {
           }),
         ]);
 
-        const addStats = (
-          slug: string,
-          eventType: string,
-          count: number
-        ) => {
+        const addStats = (slug: string, eventType: string, count: number) => {
           if (eventType !== "page_view" && eventType !== "project_click") {
             return;
           }
@@ -365,7 +411,12 @@ export class TelemetryService {
       { isolationLevel: "RepeatableRead" }
     );
 
-    return formattedStats;
+    aggregateStatsCache = {
+      data: formattedStats,
+      expiresAt: now + AGGREGATE_STATS_TTL_MS,
+    };
+
+    return cloneAggregateStats(formattedStats);
   }
 
   /**

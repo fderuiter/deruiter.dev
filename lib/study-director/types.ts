@@ -157,6 +157,8 @@ export interface StudyState {
   sites: SiteState[];
   /** Attention left today. */
   attention: number;
+  /** Attention today's routine work took before any decision. */
+  routine: number;
   /** Documentation debt, 0 to 100. */
   documentationDebt: number;
   spent: number;

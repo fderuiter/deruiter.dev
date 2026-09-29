@@ -76,6 +76,14 @@ Total queries ever raised, for data-cleanliness reporting.
 
 ***
 
+### routine
+
+> **routine**: `number`
+
+Attention today's routine work took before any decision.
+
+***
+
 ### scheduled
 
 > **scheduled**: `object`[]

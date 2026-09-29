@@ -43,9 +43,14 @@ the same reason ADR 0046 gives: shared code would couple release cadences.
 
 ### Time and attention
 
-One simulated day is one turn. Each day the player has 8 attention points.
+One simulated day is one turn. Each day the player has 5 attention points.
 Decisions and audits spend them; documenting a decision costs one more.
 Unspent attention does not carry over.
+
+A calm study costs nothing to keep running. Open queries and documentation
+debt pull the Study Director into routine work: each day they can take up to
+two attention points before any decision (`routineLoad`). A shortcut that saves
+attention today is paid back in attention later, and again at inspection.
 
 ### The causal chain
 

@@ -89,6 +89,33 @@ describe("Husky hook wiring", () => {
       expect(output).toContain("npm run dx branch");
     });
 
+    it("rejects stitch/ prefixed branches like stitch/feat/example", () => {
+      const result = runPrePush("stitch/feat/example");
+      expect(result.status).toBe(1);
+      const output = `${result.stdout}${result.stderr}`;
+      expect(output).toContain("npm run dx branch");
+    });
+
+    it("rejects stitch/feat/example via direct CLI execution of validate-branch.ts", () => {
+      const result = spawnSync(
+        "npx",
+        [
+          "tsx",
+          path.join(workspaceRoot, "scripts/validate-branch.ts"),
+          "stitch/feat/example",
+        ],
+        {
+          cwd: workspaceRoot,
+          encoding: "utf-8",
+          env: { ...process.env, ALLOW_DANGEROUS_GIT: "0" },
+        }
+      );
+      expect(result.status).toBe(1);
+      expect(`${result.stdout}${result.stderr}`).toContain(
+        "Git branch validation failed"
+      );
+    });
+
     it("still validates branch names inside Jules sessions", () => {
       const result = runPrePush("nope", { julesSession: true });
       expect(result.status).toBe(1);

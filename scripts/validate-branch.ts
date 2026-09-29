@@ -41,17 +41,14 @@ function main() {
 
   const args = process.argv.slice(2);
   const warnOnly = args.includes("--warn");
-  const rawBranch =
+  const branch =
     args.find((arg) => !arg.startsWith("--")) || getCurrentBranch();
-  const branchToValidate = rawBranch.startsWith("stitch/")
-    ? rawBranch.slice("stitch/".length)
-    : rawBranch;
-  const result = validateBranchName(branchToValidate);
+  const result = validateBranchName(branch);
 
   if (result.valid) {
     if (!warnOnly) {
       console.log(
-        `${colors.brightGreen}✔ Branch '${rawBranch}' conforms to naming conventions.${colors.reset}`
+        `${colors.brightGreen}✔ Branch '${branch}' conforms to naming conventions.${colors.reset}`
       );
     }
     process.exit(0);
@@ -61,7 +58,7 @@ function main() {
     // At checkout the branch is new and renaming is free, so this informs
     // rather than blocks; `git checkout -b` is often exploratory.
     console.warn(
-      `\n${colors.yellow}⚠ Branch '${rawBranch}' does not follow the naming convention.${colors.reset}`
+      `\n${colors.yellow}⚠ Branch '${branch}' does not follow the naming convention.${colors.reset}`
     );
     console.warn(
       `  ${colors.gray}Expected one of feat/, fix/, chore/, refactor/, docs/, perf/, dx/, test/, dev/, jules/.${colors.reset}`
@@ -73,7 +70,7 @@ function main() {
     process.exit(0);
   }
 
-  console.error(`\n${formatBranchFailure(rawBranch, result.error ?? "")}\n`);
+  console.error(`\n${formatBranchFailure(branch, result.error ?? "")}\n`);
   process.exit(1);
 }
 

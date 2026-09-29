@@ -224,7 +224,9 @@ describe("SEO Architecture & JSON-LD Schemas", () => {
 
       expect(meta.title).toBe(config.title);
       expect(meta.description).toBe(config.description);
-      expect(meta.alternates?.canonical).toBe(config.path);
+      expect(meta.alternates?.canonical).toBe(
+        config.canonicalPath || config.path
+      );
       expect(meta.openGraph?.title).toContain(config.title);
       expect(meta.openGraph?.description).toBe(config.description);
       expect(meta.twitter?.title).toContain(config.title);

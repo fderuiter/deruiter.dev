@@ -56,7 +56,7 @@ const STACK_LAYERS: StackLayer[] = [
     glowColor: "bg-purple-500/5",
     technologies: [
       { name: "Tailwind CSS", version: "v4.x", role: "CSS-first compiler & @theme token mappings", link: "https://tailwindcss.com" },
-      { name: "Framer Motion", version: "v12.x", role: "GPU-accelerated physics & spring animations", link: "https://www.framer.com/motion" },
+      { name: "Framer Motion", version: "v13.x", role: "GPU-accelerated physics & spring animations", link: "https://www.framer.com/motion" },
       { name: "Tabler Icons", version: "v3.x", role: "Pixel-crisp responsive SVG icons" },
       { name: "Aceternity UI", version: "Pattern", role: "Copy-and-paste micro-interaction primitives" },
     ],

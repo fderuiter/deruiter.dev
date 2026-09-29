@@ -22,6 +22,8 @@ import {
   runSecurityAudit,
   collectAdvisoriesForVulnerability,
   matchAdvisoryRule,
+  writeStepSummary,
+  writeAuditFailureStepSummary,
 } from "../scripts/security-audit";
 import type {
   VulnerabilityInfo,
@@ -641,6 +643,131 @@ describe("Security Audit Script", () => {
 
       const result = runSecurityAudit({ now: testNow, throwOnError: true });
       expect(result).toBe(true);
+    });
+
+    it("should write GITHUB_STEP_SUMMARY when process.env.GITHUB_STEP_SUMMARY is set", () => {
+      const summaryPath = "/tmp/test-step-summary.md";
+      const appendSpy = vi
+        .spyOn(fs, "appendFileSync")
+        .mockImplementation(() => {});
+      process.env.GITHUB_STEP_SUMMARY = summaryPath;
+
+      vi.mocked(spawnSync).mockReturnValue(
+        fromPartial<SpawnSyncReturns<string>>({
+          status: 0,
+          stdout: JSON.stringify({
+            auditReportVersion: 2,
+            vulnerabilities: {},
+          }),
+        })
+      );
+
+      runSecurityAudit({ now: testNow, throwOnError: true });
+      expect(appendSpy).toHaveBeenCalledWith(
+        summaryPath,
+        expect.stringContaining("Security Vulnerability Audit Report"),
+        "utf8"
+      );
+
+      delete process.env.GITHUB_STEP_SUMMARY;
+    });
+  });
+
+  describe("writeStepSummary & writeAuditFailureStepSummary", () => {
+    it("does nothing if GITHUB_STEP_SUMMARY is not set", () => {
+      delete process.env.GITHUB_STEP_SUMMARY;
+      const appendSpy = vi
+        .spyOn(fs, "appendFileSync")
+        .mockImplementation(() => {});
+
+      writeStepSummary(false, [], [], false);
+      expect(appendSpy).not.toHaveBeenCalled();
+    });
+
+    it("writes passed status summary when failed is false", () => {
+      const summaryPath = "/tmp/test-summary-pass.md";
+      process.env.GITHUB_STEP_SUMMARY = summaryPath;
+      const appendSpy = vi
+        .spyOn(fs, "appendFileSync")
+        .mockImplementation(() => {});
+
+      writeStepSummary(false, [], [], false);
+
+      expect(appendSpy).toHaveBeenCalledWith(
+        summaryPath,
+        expect.stringContaining("✅ Passed"),
+        "utf8"
+      );
+      expect(appendSpy).toHaveBeenCalledWith(
+        summaryPath,
+        expect.stringContaining(
+          "No unhandled high or critical vulnerabilities found"
+        ),
+        "utf8"
+      );
+
+      delete process.env.GITHUB_STEP_SUMMARY;
+    });
+
+    it("writes failed status summary with unhandled vulnerability details table", () => {
+      const summaryPath = "/tmp/test-summary-fail.md";
+      process.env.GITHUB_STEP_SUMMARY = summaryPath;
+      const appendSpy = vi
+        .spyOn(fs, "appendFileSync")
+        .mockImplementation(() => {});
+
+      const unhandled = [
+        {
+          pkgName: "bad-pkg",
+          info: { severity: "high" } as VulnerabilityInfo,
+          advisory: {
+            title: "Bad package flaw",
+            url: "https://example.com/adv",
+            range: "<2.0.0",
+            source: "GHSA-xxxx-yyyy",
+          } as Advisory,
+        },
+      ];
+
+      writeStepSummary(true, unhandled, [], false);
+
+      expect(appendSpy).toHaveBeenCalledWith(
+        summaryPath,
+        expect.stringContaining("❌ Failed"),
+        "utf8"
+      );
+      expect(appendSpy).toHaveBeenCalledWith(
+        summaryPath,
+        expect.stringContaining(
+          "| `bad-pkg` | HIGH | `ghsa-xxxx-yyyy` | Bad package flaw | `<2.0.0` | [Advisory](https://example.com/adv) |"
+        ),
+        "utf8"
+      );
+
+      delete process.env.GITHUB_STEP_SUMMARY;
+    });
+
+    it("writes audit failure summary on exception/invalid output", () => {
+      const summaryPath = "/tmp/test-summary-error.md";
+      process.env.GITHUB_STEP_SUMMARY = summaryPath;
+      const appendSpy = vi
+        .spyOn(fs, "appendFileSync")
+        .mockImplementation(() => {});
+
+      writeAuditFailureStepSummary("Execution failed");
+
+      expect(appendSpy).toHaveBeenCalledWith(
+        summaryPath,
+        expect.stringContaining("❌ Security Execution Error"),
+        "utf8"
+      );
+      expect(appendSpy).toHaveBeenCalledWith(
+        summaryPath,
+        expect.stringContaining("Execution failed"),
+        "utf8"
+      );
+
+      delete process.env.GITHUB_STEP_SUMMARY;
     });
   });
 });

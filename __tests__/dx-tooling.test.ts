@@ -176,7 +176,7 @@ describe("Developer Experience (DX) Tooling Suite", () => {
       expect(invalidBranch.error).toContain("Expected prefixes");
     });
 
-    it("accepts test/, dev/ and Jules agent branches, and still rejects near-misses", () => {
+    it("accepts test/, dev/, Jules, and Stitch agent branches, and still rejects near-misses", () => {
       expect(validateBranchName("test/crf-autosave").valid).toBe(true);
       expect(validateBranchName("dev/scratch-spike").valid).toBe(true);
       expect(
@@ -189,12 +189,15 @@ describe("Developer Experience (DX) Tooling Suite", () => {
           "jules/feat/public-route-drift-checks-jm1-a48796dc-f2e1-4304-8c10-7d53506719e2"
         ).valid
       ).toBe(true);
+      expect(validateBranchName("stitch/feat/example").valid).toBe(true);
+      expect(validateBranchName("stitch/fix/example").valid).toBe(true);
 
       expect(validateBranchName("jules-cleanup").valid).toBe(false);
       expect(validateBranchName("Jules/Uppercase").valid).toBe(false);
       expect(validateBranchName("jules/Uppercase").valid).toBe(false);
-      expect(validateBranchName("stitch/feat/example").valid).toBe(false);
-      expect(validateBranchName("stitch/fix/example").valid).toBe(false);
+      expect(validateBranchName("stitch-cleanup").valid).toBe(false);
+      expect(validateBranchName("Stitch/Uppercase").valid).toBe(false);
+      expect(validateBranchName("stitch/Uppercase").valid).toBe(false);
     });
 
     it("passes checkGitHygieneConfig diagnostic check", () => {

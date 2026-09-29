@@ -129,6 +129,16 @@ export function validateBranchName(branch: string): {
     return { valid: true };
   }
 
+  if (
+    cleanBranch.startsWith("stitch/feat/") ||
+    cleanBranch.startsWith("stitch/fix/")
+  ) {
+    return {
+      valid: false,
+      error: `Branch name '${cleanBranch}' contains redundant type prefix. Use stitch/<description>.`,
+    };
+  }
+
   const validPrefixes = [
     "feat/",
     "fix/",
@@ -140,6 +150,7 @@ export function validateBranchName(branch: string): {
     "test/",
     "dev/",
     "jules/",
+    "stitch/",
   ];
   const hasValidPrefix = validPrefixes.some((p) => cleanBranch.startsWith(p));
 

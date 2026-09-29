@@ -47,13 +47,13 @@ describe("Working With Duck Engine: Deterministic Scenario Replay Suite", () => 
     it("executes HIGH_FIVE trick to lower excitement and increase good boy score", () => {
       let state = createInitialDuckGameState(1, "campaign");
       state.status = "running";
-      state.excitement = 50;
+      state.excitement = 60;
       state.naughtyVsGood = 10;
 
       state = performTrick(state, "HIGH_FIVE");
 
       expect(state.duck.state).toBe("PERFORMING_TRICK");
-      expect(state.excitement).toBe(35); // -15
+      expect(state.excitement).toBe(45); // -15
       expect(state.naughtyVsGood).toBe(30); // +20
       expect(state.soundCueQueue).toContain("paw-clap");
     });
@@ -73,13 +73,22 @@ describe("Working With Duck Engine: Deterministic Scenario Replay Suite", () => 
     it("executes SPIN trick and increments combo streak", () => {
       let state = createInitialDuckGameState(1, "campaign");
       state.status = "running";
+      state.excitement = 90; // wound up, so both tricks pay in full
 
       state = performTrick(state, "SPIN");
       expect(state.duck.state).toBe("PERFORMING_TRICK");
       expect(state.comboStreak).toBe(1);
       expect(state.soundCueQueue).toContain("spin-whoosh");
 
-      // Immediate second trick increases combo multiplier
+      // A trick asked for mid-trick is ignored (#1307)
+      expect(performTrick(state, "HIGH_FIVE")).toBe(state);
+
+      // Once Duck finishes, the next trick raises the combo multiplier
+      state = {
+        ...state,
+        activeTrick: null,
+        duck: { ...state.duck, state: "IDLE_ROAM" },
+      };
       state = performTrick(state, "HIGH_FIVE");
       expect(state.comboStreak).toBe(2);
       expect(state.totalScore).toBe(50 + 45 * 2); // 140

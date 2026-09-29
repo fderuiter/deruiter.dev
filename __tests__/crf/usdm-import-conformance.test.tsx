@@ -632,11 +632,11 @@ describe("ExportImportModal USDM Import Conformance Gating & Provenance Logging"
     expect(reimported.provenance?.restoredBy).toBe("Dr. Bob");
   });
 
-  it("safely handles malformed simulationState and audit payloads during USDM import using Zod runtime schemas", async () => {
+  it("rejects invalid supplied simulationState or provenance extensions with actionable import errors and preserves valid extensions", async () => {
     const { importStudyFromUsdm } = await import("@/lib/crf/usdm-adapter");
 
     // Construct USDM payload with malformed simulationState (invalid auditLog structure)
-    const malformedUsdmJson = JSON.stringify({
+    const malformedSimUsdmJson = JSON.stringify({
       study: {
         id: "usdm_malformed_01",
         title: "Malformed Simulation Test Protocol",
@@ -646,22 +646,49 @@ describe("ExportImportModal USDM Import Conformance Gating & Provenance Logging"
         studyDesigns: [],
         simulationState: {
           auditLog: "THIS_SHOULD_BE_AN_ARRAY_NOT_A_STRING", // Malformed
-          signatures: [{ invalidField: 123 }], // Malformed
-        },
-        provenance: {
-          author: "Test Author",
-          sourceFormat: "CDISC USDM JSON",
         },
       },
     });
 
-    expect(() => {
-      const imported = importStudyFromUsdm(malformedUsdmJson);
-      // Malformed simulationState should be safely discarded/undefined
-      expect(imported.simulationState).toBeUndefined();
-      // Valid provenance should be retained
-      expect(imported.provenance?.author).toBe("Test Author");
-    }).not.toThrow();
+    // Expect importStudyFromUsdm to throw an actionable error
+    expect(() => importStudyFromUsdm(malformedSimUsdmJson)).toThrow(
+      /Invalid supplied simulationState extension/
+    );
+
+    // Construct USDM payload with malformed provenance
+    const malformedProvUsdmJson = JSON.stringify({
+      study: {
+        id: "usdm_malformed_02",
+        title: "Malformed Provenance Test Protocol",
+        protocolNumber: "PROTO-BAD-PROV",
+        phase: "Phase I",
+        sponsor: "Test Sponsor",
+        studyDesigns: [],
+        provenance: {
+          importedAt: 12345, // Invalid, expected string date
+        },
+      },
+    });
+
+    expect(() => importStudyFromUsdm(malformedProvUsdmJson)).toThrow(
+      /Invalid supplied provenance extension/
+    );
+
+    // Construct USDM payload with absent optional extensions (should succeed)
+    const absentExtensionsUsdmJson = JSON.stringify({
+      study: {
+        id: "usdm_absent_01",
+        title: "Absent Extensions Test Protocol",
+        protocolNumber: "PROTO-NO-EXT",
+        phase: "Phase I",
+        sponsor: "Test Sponsor",
+        studyDesigns: [],
+      },
+    });
+
+    const importedAbsent = importStudyFromUsdm(absentExtensionsUsdmJson);
+    expect(importedAbsent.simulationState).toBeUndefined();
+    expect(importedAbsent.provenance).toBeUndefined();
 
     // Construct USDM payload with valid simulationState and auditLog
     const validUsdmJson = JSON.stringify({
@@ -693,5 +720,117 @@ describe("ExportImportModal USDM Import Conformance Gating & Provenance Logging"
     expect(importedValid.simulationState?.availableSubjects).toEqual([
       "SUBJ-001",
     ]);
+  });
+
+  it("rejects invalid supplied extensions in UI with actionable error and preserves active study during same-ID replacement", async () => {
+    const handleImport = vi.fn();
+    const currentStudy: StudyProtocol = {
+      ...ONCOLOGY_RECIST_PRESET,
+      id: "active_study_001",
+      protocolNumber: "ACTIVE-001",
+    };
+
+    await act(async () => {
+      root.render(
+        <ExportImportModal study={currentStudy} onImportStudy={handleImport} />
+      );
+    });
+
+    const textarea = container.querySelector("textarea");
+    expect(textarea).not.toBeNull();
+
+    // Paste USDM payload with malformed simulationState
+    const malformedUsdmJson = JSON.stringify({
+      study: {
+        id: "active_study_001", // same ID replacement attempt
+        title: "Same ID Malformed Payload Study",
+        protocolNumber: "ACTIVE-001",
+        phase: "Phase I",
+        sponsor: "Test Sponsor",
+        studyDesigns: [],
+        simulationState: {
+          auditLog: "INVALID_NOT_AN_ARRAY",
+        },
+      },
+    });
+
+    await act(async () => {
+      const nativeTextareaValueSetter = Object.getOwnPropertyDescriptor(
+        window.HTMLTextAreaElement.prototype,
+        "value"
+      )?.set;
+      nativeTextareaValueSetter?.call(textarea, malformedUsdmJson);
+      textarea?.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+
+    const importBtn = Array.from(container.querySelectorAll("button")).find(
+      (btn) => btn.textContent?.includes("Import Protocol into Studio")
+    );
+    expect(importBtn).not.toBeUndefined();
+
+    await act(async () => {
+      importBtn?.click();
+    });
+
+    await waitForCondition(() => {
+      return (
+        container.textContent?.includes(
+          "Invalid supplied simulationState extension"
+        ) ?? false
+      );
+    });
+
+    // Active study is preserved: handleImport callback was NOT called
+    expect(handleImport).not.toHaveBeenCalled();
+
+    // Now test valid same-ID USDM replacement
+    const validUsdmSameIdJson = JSON.stringify({
+      study: {
+        id: "active_study_001",
+        title: "Active Study Replaced",
+        protocolNumber: "ACTIVE-001",
+        phase: "Phase III",
+        sponsor: "Test Sponsor",
+        studyDesigns: [],
+        simulationState: {
+          auditLog: [
+            {
+              id: "aud_100",
+              timestamp: "2026-09-29T12:00:00.000Z",
+              changedBy: "Investigator X",
+              action: "Initial Entry",
+            },
+          ],
+          availableSubjects: ["SUBJ-100"],
+        },
+        provenance: {
+          author: "Investigator X",
+          sourceFormat: "CDISC USDM JSON",
+        },
+      },
+    });
+
+    await act(async () => {
+      const nativeTextareaValueSetter = Object.getOwnPropertyDescriptor(
+        window.HTMLTextAreaElement.prototype,
+        "value"
+      )?.set;
+      nativeTextareaValueSetter?.call(textarea, validUsdmSameIdJson);
+      textarea?.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+
+    await act(async () => {
+      importBtn?.click();
+    });
+
+    await waitForCondition(() => handleImport.mock.calls.length > 0);
+
+    expect(handleImport).toHaveBeenCalledTimes(1);
+    const importedResult = handleImport.mock.calls[0][0] as StudyProtocol;
+    expect(importedResult.id).toBe("active_study_001");
+    expect(importedResult.studyName).toBe("Active Study Replaced");
+    expect(importedResult.simulationState?.auditLog).toHaveLength(1);
+    expect(importedResult.simulationState?.auditLog?.[0].id).toBe("aud_100");
+    expect(importedResult.provenance?.author).toBe("Investigator X");
   });
 });

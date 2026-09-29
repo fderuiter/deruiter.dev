@@ -896,27 +896,57 @@ export function importStudyFromUsdm(
 
   let validatedSimulationState: StudyProtocol["simulationState"] = undefined;
   if (
-    studyObj.simulationState &&
-    typeof studyObj.simulationState === "object"
+    studyObj.simulationState !== undefined &&
+    studyObj.simulationState !== null
   ) {
+    if (
+      typeof studyObj.simulationState !== "object" ||
+      studyObj.simulationState === null
+    ) {
+      throw new Error(
+        "Invalid supplied simulationState extension: payload must be an object."
+      );
+    }
     const simResult = EdcSimulationStateSchema.safeParse(
       studyObj.simulationState
     );
-    if (simResult.success) {
-      validatedSimulationState =
-        simResult.data as unknown as StudyProtocol["simulationState"];
+    if (!simResult.success) {
+      const details = simResult.error.issues
+        .slice(0, 5)
+        .map((i) => `[${i.path.join(".")}]: ${i.message}`)
+        .join(", ");
+      throw new Error(
+        `Invalid supplied simulationState extension: payload failed EDC simulation schema validation (${details}).`
+      );
     }
+    validatedSimulationState =
+      simResult.data as unknown as StudyProtocol["simulationState"];
   }
 
   let validatedProvenance: StudyProtocol["provenance"] = undefined;
-  if (studyObj.provenance && typeof studyObj.provenance === "object") {
-    const provResult = StudyProvenanceSchema.safeParse(studyObj.provenance);
-    if (provResult.success) {
-      validatedProvenance = {
-        ...(provResult.data as StudyProtocol["provenance"]),
-        sourceFormat: provResult.data.sourceFormat || "CDISC USDM JSON",
-      };
+  if (studyObj.provenance !== undefined && studyObj.provenance !== null) {
+    if (
+      typeof studyObj.provenance !== "object" ||
+      studyObj.provenance === null
+    ) {
+      throw new Error(
+        "Invalid supplied provenance extension: payload must be an object."
+      );
     }
+    const provResult = StudyProvenanceSchema.safeParse(studyObj.provenance);
+    if (!provResult.success) {
+      const details = provResult.error.issues
+        .slice(0, 5)
+        .map((i) => `[${i.path.join(".")}]: ${i.message}`)
+        .join(", ");
+      throw new Error(
+        `Invalid supplied provenance extension: payload failed provenance schema validation (${details}).`
+      );
+    }
+    validatedProvenance = {
+      ...(provResult.data as StudyProtocol["provenance"]),
+      sourceFormat: provResult.data.sourceFormat || "CDISC USDM JSON",
+    };
   }
 
   const protocol: StudyProtocol = {

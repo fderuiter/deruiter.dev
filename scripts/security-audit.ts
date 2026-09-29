@@ -561,6 +561,9 @@ export function runSecurityAudit(options: SecurityAuditOptions = {}): boolean {
     console.error(
       `${colors.brightRed}❌ npm audit execution failed or returned an invalid audit report.${colors.reset}`
     );
+    writeAuditFailureStepSummary(
+      "npm audit execution failed or returned invalid JSON."
+    );
     // Raw process output can contain credentials; report only the failure category.
     if (options.throwOnError) {
       throw new Error("npm audit execution failed or returned invalid JSON.");
@@ -664,6 +667,13 @@ export function runSecurityAudit(options: SecurityAuditOptions = {}): boolean {
     failed = true;
   }
 
+  writeStepSummary(
+    failed,
+    uniqueUnhandled,
+    ignoreRules,
+    pretextVulnerabilitiesFound
+  );
+
   if (failed) {
     console.error(
       `${colors.brightRed}${colors.bold}✖ Security status check failed.${colors.reset}`
@@ -688,6 +698,136 @@ export function runSecurityAudit(options: SecurityAuditOptions = {}): boolean {
       return true;
     }
     process.exit(0);
+  }
+}
+
+export function writeAuditFailureStepSummary(message: string): void {
+  const summaryFile = process.env.GITHUB_STEP_SUMMARY;
+  if (!summaryFile) return;
+
+  const lines = [
+    "# 🛡️ Security Vulnerability Audit Report",
+    "",
+    `- **Scan Time:** ${new Date().toISOString()}`,
+    "- **Status:** ❌ Failed",
+    "",
+    "### ❌ Security Execution Error",
+    "",
+    `\`\`\`\n${message}\n\`\`\``,
+    "",
+  ];
+
+  try {
+    fs.appendFileSync(summaryFile, lines.join("\n") + "\n", "utf8");
+  } catch (e) {
+    console.warn("Failed to write GitHub step summary:", e);
+  }
+}
+
+export function writeStepSummary(
+  failed: boolean,
+  uniqueUnhandled: Array<{
+    pkgName: string;
+    info: VulnerabilityInfo;
+    advisory: Advisory;
+  }>,
+  ignoreRules: ParsedIgnoreRule[],
+  pretextVulnerabilitiesFound: boolean
+): void {
+  const summaryFile = process.env.GITHUB_STEP_SUMMARY;
+  if (!summaryFile) return;
+
+  const lines: string[] = [];
+  lines.push("# 🛡️ Security Vulnerability Audit Report");
+  lines.push("");
+  lines.push(`- **Scan Time:** ${new Date().toISOString()}`);
+  lines.push(`- **Status:** ${failed ? "❌ Failed" : "✅ Passed"}`);
+  lines.push("");
+
+  if (failed) {
+    lines.push("### ❌ Security Scan Summary");
+    lines.push("");
+    if (pretextVulnerabilitiesFound) {
+      lines.push(
+        "> ⚠️ **SECURITY ALERT:** A dependency vulnerability affecting a core layout component was detected. Please refer to `SECURITY.md` for disclosure instructions."
+      );
+      lines.push("");
+    }
+
+    const invalidRules = ignoreRules.filter((r) => !r.isValid);
+    if (invalidRules.length > 0) {
+      lines.push("#### Invalid Override Rules");
+      lines.push("");
+      for (const rule of invalidRules) {
+        lines.push(
+          `- **${rule.advisory || rule.package || "Unknown"}**: ${rule.validationError}`
+        );
+      }
+      lines.push("");
+    }
+
+    const expiredRules = ignoreRules.filter((r) => r.isValid && r.isExpired);
+    if (expiredRules.length > 0) {
+      lines.push("#### Expired Override Rules");
+      lines.push("");
+      for (const rule of expiredRules) {
+        lines.push(
+          `- **Advisory ${rule.advisory}** (Package: \`${rule.package || "all"}\`) expired on ${rule.expiresAt}`
+        );
+      }
+      lines.push("");
+    }
+
+    if (uniqueUnhandled.length > 0) {
+      lines.push("#### Unhandled High/Critical Vulnerabilities");
+      lines.push("");
+      lines.push(
+        "| Package | Severity | Advisory ID | Advisory Title | Vulnerable Range | Link |"
+      );
+      lines.push("| --- | --- | --- | --- | --- | --- |");
+      for (const { pkgName, info, advisory } of uniqueUnhandled) {
+        const advId = advisory
+          ? getAdvisoryIdentifiers(advisory)[0] || "N/A"
+          : "N/A";
+        const title = advisory?.title || "N/A";
+        const severity = (info.severity || "").toUpperCase();
+        const range = advisory?.range || info.range || "N/A";
+        const url = advisory?.url ? `[Advisory](${advisory.url})` : "N/A";
+        lines.push(
+          `| \`${pkgName}\` | ${severity} | \`${advId}\` | ${title} | \`${range}\` | ${url} |`
+        );
+      }
+      lines.push("");
+    }
+  } else {
+    lines.push("### ✅ Security Scan Passed");
+    lines.push("");
+    lines.push(
+      "No unhandled high or critical vulnerabilities found in third-party dependencies."
+    );
+    lines.push("");
+  }
+
+  const activeRules = ignoreRules.filter((r) => r.isValid && !r.isExpired);
+  if (activeRules.length > 0) {
+    lines.push("### ℹ️ Active Vulnerability Overrides");
+    lines.push("");
+    lines.push(
+      "| Advisory | Package | Remaining Days | Owner | Follow-up | Reason |"
+    );
+    lines.push("| --- | --- | --- | --- | --- | --- |");
+    for (const rule of activeRules) {
+      lines.push(
+        `| \`${rule.advisory}\` | \`${rule.package || "all"}\` | ${rule.remainingDays}d | ${rule.owner} | ${rule.followUp} | ${rule.reason} |`
+      );
+    }
+    lines.push("");
+  }
+
+  try {
+    fs.appendFileSync(summaryFile, lines.join("\n") + "\n", "utf8");
+  } catch (e) {
+    console.warn("Failed to write GitHub step summary:", e);
   }
 }
 

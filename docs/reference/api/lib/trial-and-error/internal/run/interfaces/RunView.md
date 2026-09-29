@@ -16,6 +16,14 @@ Everything a run renders, derived purely from act and state.
 
 ***
 
+### actIndex
+
+> **actIndex**: `number`
+
+The act being played, from 0; post-marketing rounds follow the campaign.
+
+***
+
 ### actIntro
 
 > **actIntro**: [`ActIntroView`](ActIntroView.md) \| `null`

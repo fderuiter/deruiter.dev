@@ -119,6 +119,7 @@
 - [lib/db](lib/db/README.md)
 - [lib/design-manifest](lib/design-manifest/README.md)
 - [lib/domain](lib/domain/README.md)
+- [lib/download](lib/download/README.md)
 - [lib/dungeon](lib/dungeon/README.md)
 - [lib/dungeon/ai](lib/dungeon/ai/README.md)
 - [lib/dungeon/audio](lib/dungeon/audio/README.md)

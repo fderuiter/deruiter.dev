@@ -332,6 +332,8 @@ export function ToastProvider({
     <ToastContext.Provider value={api}>
       {children}
       <div
+        role="region"
+        aria-label="Notifications"
         data-testid="toast-viewport"
         className="pointer-events-none fixed inset-x-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-50 flex flex-col items-stretch sm:inset-x-auto sm:right-6 sm:bottom-6 sm:w-96 sm:items-end"
         onMouseEnter={pauseTimers}
@@ -339,7 +341,7 @@ export function ToastProvider({
         onFocus={pauseTimers}
         onBlur={handleBlur}
       >
-        <ol aria-label="Notifications" className="flex w-full flex-col gap-2">
+        <ol className="flex w-full flex-col gap-2">
           <AnimatePresence initial={false}>
             {toasts.map((t) => {
               const style = VARIANT_STYLES[t.variant];

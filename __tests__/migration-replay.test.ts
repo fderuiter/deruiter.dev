@@ -1,9 +1,13 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import child_process from "child_process";
 import {
   redactDatabaseUrl,
   isTargetDisposable,
   resolveReplayTarget,
   runMigrationReplay,
+  parseCliArgs,
+  isDockerAvailable,
+  defaultExecutor,
 } from "../scripts/migration-replay";
 
 describe("Migration Replay: URL Redaction & Target Disposability", () => {
@@ -219,5 +223,174 @@ describe("Migration Replay: Target Resolution & Ambient Env Isolation", () => {
         },
       })
     ).rejects.toThrow(/residual schema drift/);
+  });
+});
+
+describe("Migration Replay: CLI Flag Parsing", () => {
+  it("parses --url and --target flags", () => {
+    expect(
+      parseCliArgs(["--url", "postgresql://localhost:5432/db"]).explicitUrl
+    ).toBe("postgresql://localhost:5432/db");
+    expect(
+      parseCliArgs(["--target", "postgresql://localhost:5432/db2"]).explicitUrl
+    ).toBe("postgresql://localhost:5432/db2");
+  });
+
+  it("parses --allow-non-disposable flag", () => {
+    expect(parseCliArgs(["--allow-non-disposable"]).allowNonDisposable).toBe(
+      true
+    );
+  });
+
+  it("parses --schema flag", () => {
+    expect(parseCliArgs(["--schema", "test_schema"]).isolatedSchema).toBe(
+      "test_schema"
+    );
+  });
+
+  it("parses --help and -h flags", () => {
+    expect(parseCliArgs(["--help"]).showHelp).toBe(true);
+    expect(parseCliArgs(["-h"]).showHelp).toBe(true);
+  });
+
+  it("returns default options when no args provided", () => {
+    const parsed = parseCliArgs([]);
+    expect(parsed.explicitUrl).toBeUndefined();
+    expect(parsed.allowNonDisposable).toBe(false);
+    expect(parsed.isolatedSchema).toBeUndefined();
+    expect(parsed.showHelp).toBe(false);
+  });
+});
+
+describe("Migration Replay: Docker Fallbacks & Command Execution", () => {
+  it("checks Docker availability via child_process.spawnSync", () => {
+    const spy = vi.spyOn(child_process, "spawnSync").mockReturnValueOnce({
+      status: 0,
+    } as unknown as ReturnType<typeof child_process.spawnSync>);
+
+    expect(isDockerAvailable()).toBe(true);
+    expect(spy).toHaveBeenCalledWith("docker", ["info"], expect.any(Object));
+
+    spy.mockReturnValueOnce({
+      status: 1,
+    } as unknown as ReturnType<typeof child_process.spawnSync>);
+    expect(isDockerAvailable()).toBe(false);
+
+    spy.mockImplementationOnce(() => {
+      throw new Error("Docker not installed");
+    });
+    expect(isDockerAvailable()).toBe(false);
+    spy.mockRestore();
+  });
+
+  it("resolves target as docker when Docker is available and no explicit url is provided", () => {
+    const spy = vi.spyOn(child_process, "spawnSync").mockReturnValueOnce({
+      status: 0,
+    } as unknown as ReturnType<typeof child_process.spawnSync>);
+
+    const resolved = resolveReplayTarget({ checkDocker: true });
+    expect(resolved.type).toBe("docker");
+    expect(resolved.isDisposable).toBe(true);
+    spy.mockRestore();
+  });
+
+  it("executes defaultExecutor and returns status and output", () => {
+    const res = defaultExecutor(process.execPath, [
+      "-e",
+      "console.log('hello'); process.stderr.write('err')",
+    ]);
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain("hello");
+    expect(res.stderr).toContain("err");
+  });
+
+  it("provisions ephemeral Docker container and cleans up on completion", async () => {
+    const dockerSpy = vi.spyOn(child_process, "spawnSync").mockReturnValue({
+      status: 0,
+    } as unknown as ReturnType<typeof child_process.spawnSync>);
+
+    const commands: string[] = [];
+    const result = await runMigrationReplay({
+      checkDocker: true,
+      skipGenerate: true,
+      quiet: false,
+      executor: (cmd, args) => {
+        commands.push(`${cmd} ${args.join(" ")}`);
+        if (args.includes("status")) {
+          return { status: 0, stdout: "20260417215437_init", stderr: "" };
+        }
+        return { status: 0, stdout: "", stderr: "" };
+      },
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.targetRedacted).toContain("localhost:54329/portfolio_replay");
+    expect(commands.some((c) => c.startsWith("docker run"))).toBe(true);
+    expect(commands.some((c) => c.includes("pg_isready"))).toBe(true);
+    expect(commands.some((c) => c.startsWith("docker stop"))).toBe(true);
+
+    dockerSpy.mockRestore();
+  });
+
+  it("throws error when Docker container fails to start", async () => {
+    const dockerSpy = vi.spyOn(child_process, "spawnSync").mockReturnValue({
+      status: 0,
+    } as unknown as ReturnType<typeof child_process.spawnSync>);
+
+    await expect(
+      runMigrationReplay({
+        checkDocker: true,
+        quiet: true,
+        executor: (cmd, args) => {
+          if (args[0] === "run") {
+            return {
+              status: 1,
+              stdout: "",
+              stderr: "docker daemon not responding",
+            };
+          }
+          return { status: 0, stdout: "", stderr: "" };
+        },
+      })
+    ).rejects.toThrow(/Failed to start ephemeral PostgreSQL container/);
+
+    dockerSpy.mockRestore();
+  });
+
+  it("throws error when Docker container pg_isready times out", async () => {
+    const dockerSpy = vi.spyOn(child_process, "spawnSync").mockReturnValue({
+      status: 0,
+    } as unknown as ReturnType<typeof child_process.spawnSync>);
+
+    await expect(
+      runMigrationReplay({
+        checkDocker: true,
+        quiet: true,
+        executor: (cmd, args) => {
+          if (args.includes("pg_isready")) {
+            return { status: 1, stdout: "", stderr: "not ready" };
+          }
+          return { status: 0, stdout: "", stderr: "" };
+        },
+      })
+    ).rejects.toThrow(/Timed out waiting for ephemeral PostgreSQL container/);
+
+    dockerSpy.mockRestore();
+  });
+
+  it("throws error when prisma generate fails", async () => {
+    await expect(
+      runMigrationReplay({
+        targetUrl: "postgresql://postgres:postgres@localhost:5432/portfolio_ci",
+        quiet: true,
+        skipGenerate: false,
+        executor: (cmd, args) => {
+          if (args.includes("generate")) {
+            return { status: 1, stdout: "", stderr: "prisma schema not found" };
+          }
+          return { status: 0, stdout: "", stderr: "" };
+        },
+      })
+    ).rejects.toThrow(/Prisma client generation failed/);
   });
 });

@@ -407,17 +407,18 @@ export async function runMigrationReplay(
   }
 }
 
-// CLI entrypoint
-if (
-  require.main === module ||
-  (process.argv[1] &&
-    process.argv[1].includes("migration-replay") &&
-    !process.env["VITEST"])
-) {
-  const args = process.argv.slice(2);
+export interface ParsedCliArgs {
+  explicitUrl?: string;
+  allowNonDisposable: boolean;
+  isolatedSchema?: string;
+  showHelp: boolean;
+}
+
+export function parseCliArgs(args: string[]): ParsedCliArgs {
   let explicitUrl: string | undefined;
   let allowNonDisposable = false;
   let isolatedSchema: string | undefined;
+  let showHelp = false;
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
@@ -428,7 +429,23 @@ if (
     } else if (arg === "--schema") {
       isolatedSchema = args[++i];
     } else if (arg === "--help" || arg === "-h") {
-      console.log(`
+      showHelp = true;
+    }
+  }
+
+  return { explicitUrl, allowNonDisposable, isolatedSchema, showHelp };
+}
+
+// CLI entrypoint
+if (
+  require.main === module ||
+  (process.argv[1] &&
+    process.argv[1].includes("migration-replay") &&
+    !process.env["VITEST"])
+) {
+  const parsed = parseCliArgs(process.argv.slice(2));
+  if (parsed.showHelp) {
+    console.log(`
 Usage: npx tsx scripts/migration-replay.ts [options]
 
 Options:
@@ -442,14 +459,13 @@ Environment Variables:
   DISPOSABLE_DATABASE_URL     Alternative explicit connection string
   ALLOW_NON_DISPOSABLE_TARGET Set to 'true' to allow non-disposable target hosts
 `);
-      process.exit(0);
-    }
+    process.exit(0);
   }
 
   runMigrationReplay({
-    targetUrl: explicitUrl,
-    allowNonDisposable,
-    isolatedSchema,
+    targetUrl: parsed.explicitUrl,
+    allowNonDisposable: parsed.allowNonDisposable,
+    isolatedSchema: parsed.isolatedSchema,
   })
     .then(() => {
       process.exit(0);

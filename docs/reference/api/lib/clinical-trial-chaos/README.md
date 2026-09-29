@@ -302,6 +302,12 @@ Re-exports [getFollowUpSubject](sponsor/functions/getFollowUpSubject.md)
 
 ***
 
+### getNextShiftScoreState
+
+Re-exports [getNextShiftScoreState](engine/functions/getNextShiftScoreState.md)
+
+***
+
 ### getObservationChoices
 
 Re-exports [getObservationChoices](engine/functions/getObservationChoices.md)

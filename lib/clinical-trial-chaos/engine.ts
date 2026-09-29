@@ -38,6 +38,37 @@ export function createInitialScoreState(): GameScoreState {
   };
 }
 
+/**
+ * Score state for the next shift. Advancing to campaign phase 2 or 3
+ * continues the same run, so the score and running tallies carry over and the
+ * campaign ends on one total (#1325); the combo and multiplier restart. Any
+ * other start (phase 1 or endless) is a fresh run.
+ *
+ * @param prev - The score state at the end of the previous shift.
+ * @param continuesCampaign - True when advancing to campaign phase 2 or 3.
+ * @param highScore - The best score saved so far.
+ * @returns The score state to start the shift with.
+ */
+export function getNextShiftScoreState(
+  prev: GameScoreState,
+  continuesCampaign: boolean,
+  highScore: number
+): GameScoreState {
+  if (!continuesCampaign) {
+    return { ...createInitialScoreState(), highScore };
+  }
+  return {
+    ...createInitialScoreState(),
+    score: prev.score,
+    maxCombo: prev.maxCombo,
+    subjectsSubmitted: prev.subjectsSubmitted,
+    correctionsMade: prev.correctionsMade,
+    cleanSubmissions: prev.cleanSubmissions,
+    auditViolations: prev.auditViolations,
+    highScore: Math.max(highScore, prev.score),
+  };
+}
+
 export function createInitialAuditorState(): AuditorState {
   return {
     x: 0.1,

@@ -60,7 +60,7 @@ describe("Quasi-Puzzler mode toggle cannot refill RAM mid-proof (#1231)", () => 
     );
     click(screen.getByRole("button", { name: /^Hacker Mode$/i }));
     expect(screen.getByTestId("mode-rules").textContent).toMatch(
-      /Hacker Mode:.*failed tactics cost RAM/
+      /Hacker Mode:.*failed tactics cost RAM/i
     );
   });
 

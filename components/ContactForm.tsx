@@ -13,6 +13,7 @@ import {
 } from "@tabler/icons-react";
 import { CONTACT_INTENTS, ContactIntent } from "@/lib/schemas";
 import { logger } from "@/lib/logger";
+import { useAnnouncer } from "@/hooks/useAnnouncer";
 
 interface ContactFormProps {
   initialIntent?: ContactIntent;
@@ -40,6 +41,7 @@ export function ContactForm({
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const mountedRef = useRef(false);
+  const { announce } = useAnnouncer();
   const nameInputRef = useRef<HTMLInputElement>(null);
   const emailInputRef = useRef<HTMLInputElement>(null);
   const subjectInputRef = useRef<HTMLInputElement>(null);
@@ -134,6 +136,13 @@ export function ContactForm({
       }
 
       setStatus("success");
+      // The success card replaces the form, so a live region on it would be
+      // mounted with its text already present and skipped by most screen
+      // readers. Announce through the persistent root regions instead.
+      announce(
+        `Message sent! Thanks for reaching out, ${name || "friend"}. Your message is in my inbox. I’ll get back to you by email.`,
+        "polite"
+      );
       onSuccess?.();
     } catch (err) {
       logger.error("Contact submission error:", err);
@@ -161,8 +170,7 @@ export function ContactForm({
     return (
       <div
         className={`p-6 sm:p-8 rounded-2xl bg-[#13151a] border border-emerald-500/30 text-center flex flex-col items-center justify-center shadow-xl ${className}`}
-        role="status"
-        aria-live="polite"
+        data-testid="contact-form-success"
       >
         <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mb-4 shadow-[0_0_20px_rgba(16,185,129,0.2)]">
           <IconCheck className="w-7 h-7" />

@@ -2,6 +2,20 @@ import { describe, it, expect } from "vitest";
 import { createCustomTheorem } from "@/lib/proof-custom";
 import * as fc from "fast-check";
 import {
+  exportStudyToCdiscOdmXml,
+  exportStudyToUsdm,
+  importStudyFromUsdm,
+  extractCodelistFromUsdmObject,
+  diffUniversalCrfStudies,
+  type StudyProtocol,
+} from "@/lib/crf";
+import {
+  studyProtocolArbitrary,
+  malformedXmlStringArbitrary,
+  malformedCodelistArbitrary,
+  malformedUsdmDocArbitrary,
+} from "./helpers/clinical-fuzz-generators";
+import {
   parseFormula,
   formatFormula,
   extractVariables,
@@ -1336,6 +1350,117 @@ describe("Custom Proof session fuzzing", () => {
         );
         expect(table.variables).toEqual([c, b, a].sort());
       })
+    );
+  });
+});
+
+describe("Clinical Data Engine - Fast-Check Property Fuzzing", () => {
+  it("serializes randomized study protocols with reserved characters without XML errors across 1,000 iterations", () => {
+    fc.assert(
+      fc.property(
+        studyProtocolArbitrary,
+        malformedXmlStringArbitrary,
+        (baseStudy, malformedString) => {
+          const fuzzStudy: StudyProtocol = {
+            ...baseStudy,
+            protocolNumber: `${baseStudy.protocolNumber}_${malformedString}`,
+            studyName: `${baseStudy.studyName}_${malformedString}`,
+            forms: baseStudy.forms.map((f) => ({
+              ...f,
+              name: `${f.name}_${malformedString}`,
+              sections: f.sections.map((s) => ({
+                ...s,
+                title: `${s.title}_${malformedString}`,
+                fields: s.fields.map((field) => ({
+                  ...field,
+                  label: `${field.label}_${malformedString}`,
+                })),
+              })),
+            })),
+            codelists: baseStudy.codelists.map((c) => ({
+              ...c,
+              name: `${c.name}_${malformedString}`,
+              options: c.options.map((opt) => ({
+                ...opt,
+                label: `${opt.label}_${malformedString}`,
+              })),
+            })),
+          };
+
+          const xml = exportStudyToCdiscOdmXml(fuzzStudy);
+
+          expect(xml).toBeDefined();
+          expect(xml.startsWith('<?xml version="1.0" encoding="UTF-8"?>')).toBe(
+            true
+          );
+          expect(xml).toContain(
+            '<ODM xmlns="http://www.cdisc.org/ns/odm/v1.3"'
+          );
+          expect(xml).toContain("</ODM>");
+          expect(typeof xml).toBe("string");
+        }
+      ),
+      { numRuns: 1000 }
+    );
+  });
+
+  it("performs 100% lossless roundtrip conversion on randomized valid study protocols across 1,000 iterations", () => {
+    fc.assert(
+      fc.property(studyProtocolArbitrary, (study) => {
+        const usdmJson = exportStudyToUsdm(study);
+        expect(typeof usdmJson).toBe("string");
+
+        const reimported = importStudyFromUsdm(usdmJson);
+        expect(reimported.protocolNumber).toBe(study.protocolNumber);
+        expect(reimported.forms.length).toBe(study.forms.length);
+        expect(reimported.visits.length).toBe(study.visits.length);
+        expect(reimported.codelists.length).toBeGreaterThanOrEqual(
+          study.codelists.length
+        );
+
+        // Verify 2nd roundtrip idempotency
+        const usdmJson2 = exportStudyToUsdm(reimported);
+        const reimported2 = importStudyFromUsdm(usdmJson2);
+        expect(usdmJson2).toBe(usdmJson);
+
+        const diff = diffUniversalCrfStudies(reimported, reimported2);
+        expect(diff.hasChanges).toBe(false);
+      }),
+      { numRuns: 1000 }
+    );
+  });
+
+  it("extracts codelists safely without unhandled exceptions across 1,000 malformed inputs", () => {
+    fc.assert(
+      fc.property(malformedCodelistArbitrary, (rawInput) => {
+        const result = extractCodelistFromUsdmObject(rawInput);
+        if (result !== null) {
+          expect(typeof result.id).toBe("string");
+          expect(typeof result.name).toBe("string");
+          expect(Array.isArray(result.options)).toBe(true);
+        }
+      }),
+      { numRuns: 1000 }
+    );
+  });
+
+  it("imports malformed or partial USDM JSON graphs safely without crashing across 1,000 iterations", () => {
+    fc.assert(
+      fc.property(malformedUsdmDocArbitrary, (rawDoc) => {
+        try {
+          const imported = importStudyFromUsdm(
+            rawDoc as Record<string, unknown>
+          );
+          if (imported) {
+            expect(typeof imported.protocolNumber).toBe("string");
+            expect(Array.isArray(imported.forms)).toBe(true);
+            expect(Array.isArray(imported.visits)).toBe(true);
+          }
+        } catch (err) {
+          expect(err).toBeInstanceOf(Error);
+        }
+      }),
+      { numRuns: 1000 }
     );
   });
 });

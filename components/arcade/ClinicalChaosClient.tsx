@@ -93,7 +93,7 @@ export const ClinicalChaosClient: React.FC = () => {
               instructions="Sort clinical observations, fix data problems, and sign submissions before time runs out. A game inspired by clinical data work, with a considerably less patient auditor."
               controls={[
                 { key: "Enter", action: "Next step (fix / route / sign)" },
-                { key: "1–6", action: "Pick answer / route to station" },
+                { key: "1–8", action: "Pick answer / route to station" },
                 { key: "Q W E R", action: "Lifelines" },
                 { key: "← →", action: "Change subject" },
               ]}

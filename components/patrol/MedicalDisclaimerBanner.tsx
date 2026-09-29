@@ -1,12 +1,7 @@
 "use client";
 
 import React, { useCallback, useSyncExternalStore } from "react";
-import {
-  IconAlertTriangle,
-  IconX,
-  IconInfoCircle,
-  IconShieldCheck,
-} from "@tabler/icons-react";
+import { IconAlertTriangle, IconX } from "@tabler/icons-react";
 
 /**
  * Props for the MedicalDisclaimerBanner component.
@@ -166,7 +161,7 @@ export const MedicalDisclaimerBanner: React.FC<
               </span>
             </div>
             <span className="text-[11px] text-amber-300/80 font-mono">
-              Non-clinical simulation artifact (Issues #744 / #751)
+              Non-clinical simulation artifact
             </span>
           </div>
         </div>
@@ -188,10 +183,9 @@ export const MedicalDisclaimerBanner: React.FC<
       <div className="pt-2.5 space-y-2 text-amber-100/90 font-sans leading-relaxed text-xs">
         <p>
           <strong>Notice:</strong> Patrol Shift is an architectural simulation
-          prototype under active development (Issues #744 / #747 / #749 / #751).
-          It models operational dispatch, toboggan descent dynamics, and state
-          machines for educational and software architecture demonstration
-          purposes.
+          prototype under active development. It models operational dispatch,
+          toboggan descent dynamics, and state machines for educational and
+          software architecture demonstration purposes.
         </p>
         <p className="text-[11px] text-amber-200/80">
           It does <strong>not</strong> provide certified clinical guidance,
@@ -201,17 +195,6 @@ export const MedicalDisclaimerBanner: React.FC<
           first responders. In a real emergency, contact local ski patrol or
           dial 911 immediately.
         </p>
-      </div>
-
-      <div className="mt-3 pt-2 border-t border-amber-500/20 flex flex-wrap items-center gap-4 text-[11px] font-mono text-amber-300/80">
-        <span className="inline-flex items-center gap-1">
-          <IconInfoCircle className="w-3.5 h-3.5 text-amber-400" />
-          WCAG AA Contrast Compliant
-        </span>
-        <span className="inline-flex items-center gap-1">
-          <IconShieldCheck className="w-3.5 h-3.5 text-amber-400" />
-          Non-Blocking Operational Overlay
-        </span>
       </div>
     </aside>
   );

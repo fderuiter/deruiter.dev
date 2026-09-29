@@ -5,10 +5,7 @@ import dynamic from "next/dynamic";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { NextPrevNav } from "@/components/ui/NextPrevNav";
 import { PageLayout } from "@/components/PageLayout";
-import {
-  EngineeringBridge,
-  EngineeringBridgeJump,
-} from "@/components/EngineeringBridge";
+import { EngineeringBridge } from "@/components/EngineeringBridge";
 import { PatrolShiftSkeleton } from "@/components/patrol/Skeletons";
 
 const PatrolShiftContainer = dynamic(
@@ -46,7 +43,6 @@ export default function PatrolShiftPage() {
         </div>
       </div>
 
-      <EngineeringBridgeJump />
       <EngineeringBridge route="/patrol" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 w-full">

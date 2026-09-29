@@ -92,13 +92,25 @@ describe("engineering bridges (#1255)", () => {
     expect(document.activeElement).toBe(heading);
   });
 
+  it("jump trigger is desktop-only so it never overlays the mobile menu or studio controls", () => {
+    render(<EngineeringBridgeJump />);
+    const link = screen.getByRole("link", {
+      name: /Architecture & Engine Notes/i,
+    });
+    expect(link.className).toContain("hidden");
+    expect(link.className).toContain("xl:inline-flex");
+    expect(link.className).toContain("active:scale-[0.98]");
+    expect(link.className).not.toMatch(/z-\[/);
+  });
+
   it.each([
-    ["app/crf/page.tsx", "/crf"],
-    ["app/patrol/page.tsx", "/patrol"],
-    ["app/arcade/laser-loon/page.tsx", "/arcade/laser-loon"],
-  ])("%s mounts the bridge and jump trigger", (file, route) => {
+    ["app/crf/page.tsx", "/crf", false],
+    ["app/patrol/page.tsx", "/patrol", false],
+    ["app/arcade/laser-loon/page.tsx", "/arcade/laser-loon", true],
+  ])("%s mounts the bridge section (jump: %s)", (file, route, jump) => {
     const source = fs.readFileSync(path.join(root, file), "utf8");
     expect(source).toContain(`<EngineeringBridge route="${route}" />`);
-    expect(source).toContain("<EngineeringBridgeJump />");
+    if (jump) expect(source).toContain("<EngineeringBridgeJump />");
+    else expect(source).not.toContain("<EngineeringBridgeJump />");
   });
 });

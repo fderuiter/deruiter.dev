@@ -22,7 +22,11 @@ function prefersReducedMotion(): boolean {
 /**
  * Small pinned control that scrolls to the engineering notes without asking
  * visitors to leave the canvas they are using. It is a real anchor, so it
- * still works before hydration and without JavaScript.
+ * still works before hydration and without JavaScript. It only renders from
+ * the `xl` breakpoint, where the Navbar is the desktop bar: below that the
+ * mobile menu drawer would sit beneath it, and it collided with page controls
+ * on the studios. Use it only where the top-right is empty (Laser Loon); the
+ * in-page section is the fallback everywhere else.
  */
 export function EngineeringBridgeJump({
   className = "",
@@ -44,7 +48,7 @@ export function EngineeringBridgeJump({
     <a
       href={`#${BRIDGE_HEADING_ID}`}
       onClick={handleClick}
-      className={`fixed right-3 top-20 z-40 inline-flex items-center gap-1.5 rounded-full border border-zinc-800 bg-zinc-950/90 px-3 py-1.5 font-mono text-xs text-zinc-300 hover:border-brand-cyan/40 hover:text-brand-cyan focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-cyan active:scale-[0.98] transition-colors ${className}`}
+      className={`fixed right-3 top-20 z-40 hidden xl:inline-flex items-center gap-1.5 rounded-full border border-zinc-800 bg-zinc-950/90 px-3 py-1.5 font-mono text-xs text-zinc-300 hover:border-brand-cyan/40 hover:text-brand-cyan focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-cyan active:scale-[0.98] transition-colors ${className}`}
     >
       Architecture &amp; Engine Notes
       <IconArrowDown aria-hidden="true" className="h-3.5 w-3.5" />

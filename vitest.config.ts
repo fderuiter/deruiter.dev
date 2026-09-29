@@ -36,6 +36,7 @@ export default defineConfig({
         "prisma.config.ts",
         "scripts/**/*.sh",
         "scripts/**/*.json",
+        "scripts/!(migration-replay.ts|vercel-production-preflight.js)",
         "lib/layout-config.ts",
         "hooks/usePretextLayout.tsx",
         "lib/utils.ts",

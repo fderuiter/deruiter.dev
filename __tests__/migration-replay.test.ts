@@ -8,6 +8,7 @@ import {
   parseCliArgs,
   isDockerAvailable,
   defaultExecutor,
+  runCliMain,
 } from "../scripts/migration-replay";
 
 describe("Migration Replay: URL Redaction & Target Disposability", () => {
@@ -259,6 +260,27 @@ describe("Migration Replay: CLI Flag Parsing", () => {
     expect(parsed.allowNonDisposable).toBe(false);
     expect(parsed.isolatedSchema).toBeUndefined();
     expect(parsed.showHelp).toBe(false);
+  });
+
+  it("executes runCliMain with --help returning 0", async () => {
+    const spy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const code = await runCliMain(["--help"]);
+    expect(code).toBe(0);
+    expect(spy).toHaveBeenCalled();
+    spy.mockRestore();
+  });
+
+  it("executes runCliMain with unavailable target returning exit code 1", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const code = await runCliMain([
+      "--url",
+      "postgresql://admin:secret@ep-prod.neon.tech/neondb",
+    ]);
+    expect(code).toBe(1);
+    expect(spy).toHaveBeenCalledWith(
+      expect.stringMatching(/Migration Replay Failed/)
+    );
+    spy.mockRestore();
   });
 });
 

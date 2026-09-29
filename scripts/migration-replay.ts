@@ -436,14 +436,10 @@ export function parseCliArgs(args: string[]): ParsedCliArgs {
   return { explicitUrl, allowNonDisposable, isolatedSchema, showHelp };
 }
 
-// CLI entrypoint
-if (
-  require.main === module ||
-  (process.argv[1] &&
-    process.argv[1].includes("migration-replay") &&
-    !process.env["VITEST"])
-) {
-  const parsed = parseCliArgs(process.argv.slice(2));
+export async function runCliMain(
+  args: string[] = process.argv.slice(2)
+): Promise<number> {
+  const parsed = parseCliArgs(args);
   if (parsed.showHelp) {
     console.log(`
 Usage: npx tsx scripts/migration-replay.ts [options]
@@ -459,20 +455,29 @@ Environment Variables:
   DISPOSABLE_DATABASE_URL     Alternative explicit connection string
   ALLOW_NON_DISPOSABLE_TARGET Set to 'true' to allow non-disposable target hosts
 `);
-    process.exit(0);
+    return 0;
   }
 
-  runMigrationReplay({
-    targetUrl: parsed.explicitUrl,
-    allowNonDisposable: parsed.allowNonDisposable,
-    isolatedSchema: parsed.isolatedSchema,
-  })
-    .then(() => {
-      process.exit(0);
-    })
-    .catch((err: unknown) => {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.error(`\n❌ Migration Replay Failed:\n${msg}`);
-      process.exit(1);
+  try {
+    await runMigrationReplay({
+      targetUrl: parsed.explicitUrl,
+      allowNonDisposable: parsed.allowNonDisposable,
+      isolatedSchema: parsed.isolatedSchema,
     });
+    return 0;
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`\n❌ Migration Replay Failed:\n${msg}`);
+    return 1;
+  }
+}
+
+// CLI entrypoint
+if (
+  require.main === module ||
+  (process.argv[1] &&
+    process.argv[1].includes("migration-replay") &&
+    !process.env["VITEST"])
+) {
+  runCliMain().then((code) => process.exit(code));
 }

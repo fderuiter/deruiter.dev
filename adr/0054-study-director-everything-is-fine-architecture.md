@@ -19,7 +19,7 @@ and cannot all be maximized.
 
 The first delivery is a vertical slice: one ~20-minute study (Study 24-081,
 a randomized PK study for a first-time biotech), three sites, six team
-members, about 30 events, database lock and a possible FDA inspection.
+members, about 45 events, database lock and a possible FDA inspection.
 
 ## Decision
 

@@ -268,7 +268,22 @@ them.
 | `ALLOW_FALLBACK_PRODUCTION_BUILD` | Optional | None | Emergency override that lets a build ship fallback content. Set it for one build only, then remove it. |
 | `ALLOW_DESTRUCTIVE_MIGRATIONS` | Optional | None | Emergency override for the migration safety check. Set it for one build only, then remove it. |
 
-The QStash integration provisions `QSTASH_*`. No code reads them yet.
+### QStash (optional sub-daily email retries)
+
+| Variable | Class | Vercel scope | Notes |
+| --- | --- | --- | --- |
+| `QSTASH_TOKEN` | Optional | Production | Unset means no delayed retry is published and the daily maintenance run is the only retry path. Publishing also requires `VERCEL_ENV=production`. |
+| `QSTASH_URL` | Optional | Production | Regional API base URL; the client default is used when unset. |
+| `QSTASH_CURRENT_SIGNING_KEY` | Optional | Production | Verifies `/api/webhooks/qstash/retry` deliveries. Unset means the webhook answers 503. |
+| `QSTASH_NEXT_SIGNING_KEY` | Optional | Production | Second key so rotation never drops deliveries. Both keys are required. |
+
+A retryable send failure enqueues the email and publishes one delayed message
+(5 minutes, then 15 minutes, then 1 hour on later attempts). The webhook
+verifies the signature, retries that one queue row and reschedules while it is
+still retrying. This adds at most a few messages per failed email, inside the
+500 messages per day free tier ([ADR 0036](../../adr/0036-free-tier-offloading-and-provider-quota-governance.md)).
+Preview deployments neither publish nor act on deliveries while the QStash
+variables stay shared with Production (#622).
 
 ### Keeping secrets in Vercel
 

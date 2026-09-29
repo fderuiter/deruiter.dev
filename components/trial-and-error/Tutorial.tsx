@@ -22,10 +22,32 @@ import {
 export const TUTORIAL_SEEN_KEY = "te:tutorial-seen";
 const SEEN_EVENT = "te:tutorial-seen-change";
 
+// 48px targets: the arcade touch standard (ADR 0003, ADR 0019).
 const BUTTON =
-  "min-h-[44px] border px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider touch-manipulation active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400";
+  "min-h-[48px] min-w-[48px] border px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider touch-manipulation active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400";
 const PRIMARY = `${BUTTON} border-amber-500 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20`;
 const QUIET = `${BUTTON} border-zinc-600 text-zinc-200 hover:bg-zinc-800`;
+
+/** A coach or offer button: amber when it is the step's main action. */
+function TutorialButton({
+  primary = false,
+  onClick,
+  children,
+}: {
+  primary?: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={primary ? PRIMARY : QUIET}
+    >
+      {children}
+    </button>
+  );
+}
 
 function readSeen(): boolean {
   try {
@@ -146,19 +168,19 @@ function Coach({ step, table, onNext, onSkip, onRestart }: CoachProps) {
       </p>
       <div className="mt-3 flex flex-wrap gap-2">
         {!done && current.waitsFor === null && (
-          <button type="button" onClick={onNext} className={PRIMARY}>
+          <TutorialButton primary onClick={onNext}>
             Next
-          </button>
+          </TutorialButton>
         )}
         {done && status === "REVIEWING" && (
-          <button type="button" onClick={onRestart} className={PRIMARY}>
+          <TutorialButton primary onClick={onRestart}>
             Restart guided Blind
-          </button>
+          </TutorialButton>
         )}
         {!(done && status === "CLEARED") && (
-          <button type="button" onClick={onSkip} className={QUIET}>
+          <TutorialButton onClick={onSkip}>
             {done ? "Go to the campaign" : "Skip tutorial"}
-          </button>
+          </TutorialButton>
         )}
       </div>
     </section>
@@ -195,12 +217,10 @@ function TutorialOffer({
         </p>
       </div>
       <div className="flex flex-wrap gap-2">
-        <button type="button" onClick={onStart} className={PRIMARY}>
+        <TutorialButton primary onClick={onStart}>
           Start guided Blind
-        </button>
-        <button type="button" onClick={onSkip} className={QUIET}>
-          No thanks
-        </button>
+        </TutorialButton>
+        <TutorialButton onClick={onSkip}>No thanks</TutorialButton>
       </div>
     </section>
   );

@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import path from "path";
 import fs from "fs";
-import vitestConfig from "../vitest.config";
+import vitestConfig from "../vitest.config.mjs";
 
 const workspaceRoot = path.resolve(__dirname, "..");
 
@@ -58,9 +58,9 @@ describe("Coverage Policy Governance & Threshold Guardrails", () => {
     expect(trialAndError.branches).toBeGreaterThanOrEqual(95);
   });
 
-  it("prevents silent degradation or un-scoped global threshold overrides in vitest.config.ts", () => {
+  it("prevents silent degradation or un-scoped global threshold overrides in vitest.config.mts", () => {
     const configContent = fs.readFileSync(
-      path.join(workspaceRoot, "vitest.config.ts"),
+      path.join(workspaceRoot, "vitest.config.mts"),
       "utf8"
     );
 

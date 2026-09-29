@@ -403,6 +403,29 @@ describe("Husky hook wiring", () => {
       }
     );
 
+    it("scans numeric-colon filenames without interpreting them as Git stage selectors", () => {
+      const files = ["config.ts", "0:config.ts"];
+      fs.writeFileSync(
+        path.join(repo, files[0]),
+        'const dbUrl = "placeholder";\n'
+      );
+      fs.writeFileSync(
+        path.join(repo, files[1]),
+        'const dbUrl = "postgresql://user:pass@ep-cool-pooler.us-east-2.aws.neon.tech/portfolio_prod";\n'
+      );
+      spawnSync("git", ["add", "--", ...files], { cwd: repo });
+      try {
+        const result = runValidateCommit();
+        expect(result.status).toBe(1);
+        expect(result.stderr).toContain(
+          "Sensitive information or credential pattern detected"
+        );
+        expect(result.stderr).toContain("0:config.ts");
+      } finally {
+        spawnSync("git", ["rm", "-f", "--", ...files], { cwd: repo });
+      }
+    });
+
     it("fails closed on an oversized index read without printing indexed contents", () => {
       const file = "oversized.ts";
       const marker = "UNTRUSTED_INDEX_BYTES_MARKER";

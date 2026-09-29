@@ -12,7 +12,9 @@ export function getStagedFiles(): string[] {
 }
 
 export function getStagedFileContent(filePath: string): string {
-  return execFileSync("git", ["show", `:${filePath}`], {
+  // Explicit stage zero prevents a pathname such as 0:config.ts from
+  // selecting the unrelated config.ts index entry.
+  return execFileSync("git", ["show", `:0:${filePath}`], {
     encoding: "utf-8",
     maxBuffer: 10 * 1024 * 1024,
     stdio: ["ignore", "pipe", "pipe"],

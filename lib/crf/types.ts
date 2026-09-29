@@ -588,6 +588,12 @@ export interface StudyProvenance {
   restoredAt?: string;
   restoredBy?: string;
   notes?: string;
+  sourceFormat?: string;
+  sourceVersion?: string;
+  importedAt?: string;
+  importedBy?: string;
+  timestamp?: string;
+  author?: string;
 }
 
 /**

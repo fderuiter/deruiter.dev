@@ -329,6 +329,7 @@ describe("EDC Simulation State Integration", () => {
       });
       await act(async () => {
         fireEvent.click(importBtn);
+        await new Promise((resolve) => setTimeout(resolve, 50));
       });
 
       const confirmReplacementBtn2 = await screen.findByRole("button", {

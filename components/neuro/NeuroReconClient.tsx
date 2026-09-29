@@ -247,6 +247,8 @@ export const NeuroReconClient: React.FC = () => {
     streak: 0,
     resolvedScenarios: [],
   });
+  const scoreStateRef = React.useRef<ScoreState>(scoreState);
+  const [lastReward, setLastReward] = useState(500);
 
   const [logs, setLogs] = useState<TerminalLog[]>([
     {
@@ -559,23 +561,45 @@ export const NeuroReconClient: React.FC = () => {
       setIsProcessing(false);
 
       if (metrics.isResolved) {
-        playSuccess();
-        setShowSuccessModal(true);
-        setScoreState((prev) => ({
-          score: prev.score + 500 * prev.multiplier,
+        const prev = scoreStateRef.current;
+        const alreadyEarned = prev.resolvedScenarios.includes(activeScenarioId);
+        const isSandbox = activeScenarioId === "sandbox";
+        // Reward policy (#1218): each repair scenario pays out once per
+        // session; Sandbox is inspection-only and never pays out.
+        if (isSandbox || alreadyEarned) {
+          playNote(440, 0.1);
+          setLogs((logs) => [
+            ...logs,
+            {
+              id: `log-res-insp-${Date.now()}`,
+              type: "info",
+              text: isSandbox
+                ? `[INSPECTION PASS] Sandbox volume verified with no defects to correct. Estimated Euler χ = ${metrics.eulerCharacteristic}, estimated Dice = ${(metrics.diceScore * 100).toFixed(1)}%. No points awarded.`
+                : `[SIMULATION PASSED] Case already completed; re-verified. Estimated Euler χ = ${metrics.eulerCharacteristic}, estimated Dice = ${(metrics.diceScore * 100).toFixed(1)}%. No additional points.`,
+              timestamp: new Date().toLocaleTimeString(),
+            },
+          ]);
+          return;
+        }
+        const reward = 500 * prev.multiplier;
+        const next: ScoreState = {
+          score: prev.score + reward,
           multiplier: Math.min(4, prev.multiplier + 1),
           streak: prev.streak + 1,
-          resolvedScenarios: Array.from(
-            new Set([...prev.resolvedScenarios, activeScenarioId])
-          ),
-        }));
+          resolvedScenarios: [...prev.resolvedScenarios, activeScenarioId],
+        };
+        scoreStateRef.current = next;
+        setScoreState(next);
+        setLastReward(reward);
+        playSuccess();
+        setShowSuccessModal(true);
 
-        setLogs((prev) => [
-          ...prev,
+        setLogs((logs) => [
+          ...logs,
           {
             id: `log-res-succ-${Date.now()}`,
             type: "success",
-            text: `[SIMULATION PASSED] ${currentScenario.successMessage} Estimated Euler χ = ${metrics.eulerCharacteristic}, estimated Dice = ${(metrics.diceScore * 100).toFixed(1)}%. +500 PTS`,
+            text: `[SIMULATION PASSED] ${currentScenario.successMessage} Estimated Euler χ = ${metrics.eulerCharacteristic}, estimated Dice = ${(metrics.diceScore * 100).toFixed(1)}%. +${reward} PTS`,
             timestamp: new Date().toLocaleTimeString(),
           },
         ]);
@@ -1130,6 +1154,7 @@ export const NeuroReconClient: React.FC = () => {
         message={currentScenario.successMessage}
         eulerCharacteristic={qaMetrics.eulerCharacteristic}
         diceScore={qaMetrics.diceScore}
+        reward={lastReward}
         onStay={() => setShowSuccessModal(false)}
         onAdvance={handleAdvanceNextScenario}
         onSchedule={() => recordEvent("neuro", "project_click")}

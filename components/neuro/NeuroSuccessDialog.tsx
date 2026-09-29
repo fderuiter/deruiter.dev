@@ -15,6 +15,7 @@ interface NeuroSuccessDialogProps {
   message: string;
   eulerCharacteristic: number;
   diceScore: number;
+  reward: number;
   onStay: () => void;
   onAdvance: () => void;
   onSchedule: () => void;
@@ -24,6 +25,7 @@ const SuccessDialogBody: React.FC<Omit<NeuroSuccessDialogProps, "isOpen">> = ({
   message,
   eulerCharacteristic,
   diceScore,
+  reward,
   onStay,
   onAdvance,
   onSchedule,
@@ -93,7 +95,7 @@ const SuccessDialogBody: React.FC<Omit<NeuroSuccessDialogProps, "isOpen">> = ({
           </div>
           <div className="min-w-0">
             <div className="text-zinc-400">SCORE</div>
-            <div className="font-bold text-amber-400">+500 PTS</div>
+            <div className="font-bold text-amber-400">+{reward} PTS</div>
           </div>
         </div>
 

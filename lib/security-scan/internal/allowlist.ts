@@ -33,7 +33,19 @@ const MIGRATION_REPLAY_FIXTURES = new Set<string>([
   "postgresql://admin:secret@ep-live.neon.tech/portfolio",
   "postgresql://admin:secret@ep-pooler.neon.tech/portfolio",
   "postgresql://admin:secret@ep-prod.neon.tech/neondb",
+  "postgresql://user:npg_SecretPass1234@ep-cool-lake-123456.us-east-2.aws.neon.tech/neondb",
+  "npg_SecretPass1234",
 ]);
+
+const MIGRATION_REPLAY_LITERALS = new Set<string>();
+for (const rawValue of MIGRATION_REPLAY_FIXTURES) {
+  MIGRATION_REPLAY_LITERALS.add(rawValue);
+  for (const detector of SECRET_DETECTORS) {
+    detector.regex.lastIndex = 0;
+    const match = rawValue.match(detector.regex);
+    if (match) MIGRATION_REPLAY_LITERALS.add(match[0]);
+  }
+}
 
 /**
  * Every positive/negative fixture, as its *own detector* would actually
@@ -72,19 +84,20 @@ function union(...sets: readonly Set<string>[]): Set<string> {
 }
 
 const SAFE_FILE_VALUES = new Map<string, Set<string>>([
-  ["__tests__/migration-replay.test.ts", MIGRATION_REPLAY_FIXTURES],
+  ["__tests__/migration-replay.test.ts", MIGRATION_REPLAY_LITERALS],
+  ["__tests__/husky-hook-wiring.test.ts", MIGRATION_REPLAY_LITERALS],
   [FIXTURES_FILE, FIXTURE_LITERALS],
   // This module's own literal Neon and GitHub-token fixtures (see
   // MIGRATION_REPLAY_FIXTURES and GHP_FIXTURE_LITERAL above).
   [
     "lib/security-scan/internal/allowlist.ts",
-    union(MIGRATION_REPLAY_FIXTURES, GHP_FIXTURE_LITERAL),
+    union(MIGRATION_REPLAY_LITERALS, GHP_FIXTURE_LITERAL),
   ],
   // Pre-refactor home of both fixture sets, which still holds them at
   // earlier reachable commits.
   [
     "scripts/audit-secret-history.ts",
-    union(MIGRATION_REPLAY_FIXTURES, GHP_FIXTURE_LITERAL),
+    union(MIGRATION_REPLAY_LITERALS, GHP_FIXTURE_LITERAL),
   ],
   ["__tests__/validation.test.ts", GHP_FIXTURE_LITERAL],
 ]);

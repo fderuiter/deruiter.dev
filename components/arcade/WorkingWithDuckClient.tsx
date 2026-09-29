@@ -135,9 +135,10 @@ export const WorkingWithDuckClient: React.FC = () => {
               <span>Dog Park &amp; Multipliers</span>
             </div>
             <p className="text-zinc-400 text-[11px] leading-relaxed">
-              Click <strong>Go to Dog Park</strong> to flick-throw the ball. Tap{" "}
-              <strong>Spacebar</strong> to steer Duck around mud puddles and
-              earn the 20-second Tired Puppy calm buff.
+              Click <strong>Go to Dog Park</strong> to flick-throw the ball.
+              Steer Duck around mud puddles with <strong>W</strong> or the{" "}
+              <strong>arrow keys</strong>, press <strong>Space</strong> to jump
+              hurdles, and earn the 20-second Tired Puppy calm buff.
             </p>
           </div>
         </div>

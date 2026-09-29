@@ -27,10 +27,12 @@ export interface EscapeXmlOptions {
  * Supports configurable single quote entity formatting.
  */
 export function escapeXml(
-  unsafe: string | null | undefined,
+  unsafe: unknown,
   options?: EscapeXmlOptions | "&apos;" | "&#39;" | boolean
 ): string {
-  if (!unsafe) return "";
+  if (unsafe === null || unsafe === undefined) return "";
+  const str = typeof unsafe === "string" ? unsafe : String(unsafe);
+  if (!str) return "";
 
   let singleQuote = "&apos;";
   if (typeof options === "boolean") {
@@ -45,7 +47,7 @@ export function escapeXml(
     }
   }
 
-  return unsafe
+  return str
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
@@ -90,28 +92,72 @@ export function getAnonymousDeviceHash(
 }
 
 /**
- * Standardized random identifier generator.
- * Generates element or component IDs using a clean hash string.
+ * Options accepted by {@link generateId}.
  */
-export function generateId(prefix?: string): string {
-  let randomPart = "";
-  if (
-    typeof crypto !== "undefined" &&
-    typeof crypto.randomUUID === "function"
-  ) {
-    try {
-      randomPart = crypto.randomUUID().replace(/-/g, "").slice(0, 9);
-    } catch {
-      randomPart = Math.random().toString(36).substring(2, 11);
-    }
-  } else {
-    randomPart = Math.random().toString(36).substring(2, 11);
-  }
+export interface GenerateIdOptions {
+  /**
+   * Inserts `Date.now()` between the prefix and the random part, so IDs sort
+   * by creation time (e.g. storage keys and event logs). Defaults to `false`.
+   */
+  timestamp?: boolean;
+}
 
-  if (!prefix) return randomPart;
-  return prefix.endsWith("-") || prefix.endsWith("_")
-    ? `${prefix}${randomPart}`
-    : `${prefix}-${randomPart}`;
+const ID_RANDOM_LENGTH = 9;
+
+function randomIdPart(): string {
+  if (typeof crypto !== "undefined") {
+    try {
+      if (typeof crypto.randomUUID === "function") {
+        return crypto.randomUUID().replace(/-/g, "").slice(0, ID_RANDOM_LENGTH);
+      }
+      if (typeof crypto.getRandomValues === "function") {
+        const bytes = crypto.getRandomValues(new Uint8Array(5));
+        return Array.from(bytes, (b) => b.toString(16).padStart(2, "0"))
+          .join("")
+          .slice(0, ID_RANDOM_LENGTH);
+      }
+    } catch {
+      // Fall through to the non-cryptographic fallback below.
+    }
+  }
+  // Last resort for runtimes without Web Crypto. Padded so the length is fixed.
+  return Math.random()
+    .toString(36)
+    .substring(2, 2 + ID_RANDOM_LENGTH)
+    .padEnd(ID_RANDOM_LENGTH, "0");
+}
+
+/**
+ * Standardized random identifier generator for client-side and server-side
+ * runtime identifiers (log entries, queue items, storage keys, message IDs).
+ *
+ * The random part is 9 hex characters drawn from Web Crypto when available.
+ * A prefix is joined with `-`, unless it already ends in `-` or `_`, in which
+ * case that delimiter is kept and reused before the timestamp's random part.
+ *
+ * Do not use it for IDs that appear in server-rendered markup, since the value
+ * differs between server and client; use React's `useId` there instead.
+ *
+ * @param prefix Optional namespace, e.g. `"event"` or `"sim_msg_"`.
+ * @param options Optional formatting, see {@link GenerateIdOptions}.
+ * @returns An identifier such as `event-1759140000000-3f9a1c2b7`.
+ */
+export function generateId(
+  prefix?: string,
+  options: GenerateIdOptions = {}
+): string {
+  const randomPart = randomIdPart();
+  const trailing =
+    prefix && (prefix.endsWith("-") || prefix.endsWith("_"))
+      ? prefix.slice(-1)
+      : "";
+  const delimiter = trailing || "-";
+  const body = options.timestamp
+    ? `${Date.now()}${delimiter}${randomPart}`
+    : randomPart;
+
+  if (!prefix) return body;
+  return trailing ? `${prefix}${body}` : `${prefix}-${body}`;
 }
 
 export const generateRandomId = generateId;

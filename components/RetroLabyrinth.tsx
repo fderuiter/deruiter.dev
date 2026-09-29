@@ -70,6 +70,8 @@ import {
   CYBERDECK_CLASSES,
   DARKNET_VENDOR_CATALOG,
   loadCyberdeckProfile,
+  RETRO_LABYRINTH_HIGH_SCORE_KEY,
+  formatCampaignRoomBadge,
   saveCyberdeckProfile,
   STAGE_1_MAZE,
 } from "@/lib/dungeon";
@@ -114,7 +116,7 @@ const subscribeHighScore = (callback: () => void) => {
 };
 const getHighScoreSnapshot = () => {
   try {
-    return localStorage.getItem("retro_labyrinth_highscore") || "0";
+    return localStorage.getItem(RETRO_LABYRINTH_HIGH_SCORE_KEY) || "0";
   } catch {
     return "0";
   }
@@ -192,6 +194,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   // Game lifecycle status & Modals
   const [gameStatus, setGameStatus] = useState<
     | "playing"
+    | "paused"
     | "victory"
     | "caught"
     | "timesheet"
@@ -715,7 +718,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
             setHighScore(finalScore);
             if (typeof window !== "undefined") {
               localStorage.setItem(
-                "retro_labyrinth_highscore",
+                RETRO_LABYRINTH_HIGH_SCORE_KEY,
                 finalScore.toString()
               );
             }
@@ -890,6 +893,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   // Keyboard controls
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
+      const lowerKey = e.key.toLowerCase();
       if (gameStatus !== "playing") {
         if (gameStatus === "timesheet" && e.key === "Enter") {
           e.preventDefault();
@@ -897,7 +901,38 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         } else if (gameStatus === "hacking" && e.key === "Escape") {
           e.preventDefault();
           closeHackingModal();
+        } else if (
+          gameStatus === "paused" &&
+          (lowerKey === "p" || e.key === "Enter" || e.key === "Escape")
+        ) {
+          e.preventDefault();
+          setGameStatus("playing");
+        } else if (
+          gameStatus === "caught" &&
+          (e.key === "Enter" || lowerKey === "r")
+        ) {
+          e.preventDefault();
+          handleRestart();
+        } else if (gameStatus === "victory" && lowerKey === "r") {
+          e.preventDefault();
+          handleRestart();
+        } else if (gameStatus === "victory" && e.key === "Enter") {
+          e.preventDefault();
+          if (
+            gameMode === "roguelike" &&
+            roomIndex < campaignRooms.length - 1
+          ) {
+            handleNextRoom();
+          } else {
+            handleRestart();
+          }
         }
+        return;
+      }
+
+      if (lowerKey === "p") {
+        e.preventDefault();
+        setGameStatus("paused");
         return;
       }
 
@@ -971,11 +1006,16 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     [
       activeSideEffect,
       gameStatus,
+      gameMode,
+      roomIndex,
+      campaignRooms.length,
       selectedClass,
       weapons,
       handleFireWeapon,
       handleSubmitTimesheet,
       closeHackingModal,
+      handleRestart,
+      handleNextRoom,
       tryMove,
     ]
   );
@@ -1856,7 +1896,10 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         <div className="w-full flex flex-wrap justify-between items-center gap-x-3 gap-y-1 text-[10px] font-bold px-2 py-0.5 border-b border-neutral-900/60">
           <div className="flex items-center gap-2">
             <span className="text-neutral-400">
-              SYSTEM_LABYRINTH.EXE · {currentRoom.badge}
+              SYSTEM_LABYRINTH.EXE ·{" "}
+              {gameMode === "roguelike"
+                ? formatCampaignRoomBadge(currentRoom.badge, roomIndex)
+                : currentRoom.badge}
             </span>
             <span className="text-brand-cyan/80 text-[9px] hidden sm:inline truncate max-w-[150px]">
               [{currentRoom.title}]
@@ -1901,10 +1944,10 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
             {/* Crypto Balance */}
             <div
               className="flex items-center gap-1 text-[9px] font-mono text-amber-400 font-bold"
-              title="Crypto Chips"
+              title="Crypto"
             >
-              <span>🪙</span>
-              <span>{cryptoBounty} Chips</span>
+              <span aria-hidden="true">🪙</span>
+              <span>{cryptoBounty} Crypto</span>
             </div>
 
             {/* Total Score & High Score */}
@@ -2144,7 +2187,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                     }}
                     className="inline-flex items-center gap-1 px-3 py-1 bg-brand-cyan hover:bg-cyan-400 text-black text-[9px] font-bold rounded-lg transition-all cursor-pointer shadow-md"
                   >
-                    <span>Next Subnet Tier</span>
+                    <span>Next Room</span>
                     <IconArrowRight className="w-3 h-3" />
                   </button>
                 ) : (
@@ -2161,6 +2204,32 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                   </button>
                 )}
               </div>
+              <p className="text-[8px] text-neutral-500 mt-1">
+                Enter to continue · R to retry this room
+              </p>
+            </div>
+          )}
+
+          {/* Pause Overlay */}
+          {gameStatus === "paused" && (
+            <div className="absolute inset-0 bg-neutral-950/90 backdrop-blur-sm flex flex-col items-center justify-center text-center p-3 rounded-lg border border-brand-cyan/30 z-30">
+              <h3 className="text-brand-cyan font-bold text-xs uppercase tracking-widest">
+                PAUSED
+              </h3>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setGameStatus("playing");
+                  containerRef.current?.focus({ preventScroll: true });
+                }}
+                className="mt-2 px-3 py-1 bg-brand-cyan hover:bg-cyan-400 text-black text-[9px] font-bold rounded-lg transition-all cursor-pointer"
+              >
+                Resume
+              </button>
+              <p className="text-[8px] text-neutral-500 mt-1">
+                P or Enter to resume
+              </p>
             </div>
           )}
 
@@ -2183,6 +2252,9 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
               >
                 RETRY BREACH
               </button>
+              <p className="text-[8px] text-neutral-500 mt-1">
+                Enter or R to retry
+              </p>
             </div>
           )}
 

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { logger } from "@/lib/logger";
 import {
   TelemetryOutbox,
   DEFAULT_OUTBOX_CAPACITY,
@@ -127,37 +128,46 @@ describe("TelemetryOutbox Contract Test Suite", () => {
       expect(outbox.getCapacity()).toBe(4);
       expect(outbox.size).toBe(4);
 
+      // Verify boundary capacity 1 works and persists to storage
+      outbox.setCapacity(1);
+      expect(outbox.getCapacity()).toBe(1);
+      expect(outbox.size).toBe(1);
+
       const queue = outbox.getQueue();
       expect(queue.map((i: TelemetryOutboxItem) => i.projectSlug)).toEqual([
-        "item-5",
-        "item-6",
-        "item-7",
         "item-8",
       ]);
 
       // Ignore invalid capacity <= 0
       outbox.setCapacity(0);
-      expect(outbox.getCapacity()).toBe(4);
+      expect(outbox.getCapacity()).toBe(1);
       outbox.setCapacity(-5);
-      expect(outbox.getCapacity()).toBe(4);
+      expect(outbox.getCapacity()).toBe(1);
 
       outbox.destroy();
     });
 
     it("synchronously clears queue and resets metrics", () => {
+      const clearTimeoutSpy = vi.spyOn(globalThis, "clearTimeout");
       const outbox = new TelemetryOutbox({
-        storage: null,
+        storage: mockStorage,
+        storageKey: "clear_test",
         autoFlushOnUnload: false,
+        baseDelayMs: 1000,
       });
       outbox.enqueue({ projectSlug: "test", eventType: "page_view" });
       expect(outbox.size).toBe(1);
 
+      clearTimeoutSpy.mockClear();
       outbox.clear();
+      expect(clearTimeoutSpy).toHaveBeenCalled();
+
       expect(outbox.size).toBe(0);
       expect(outbox.isEmpty).toBe(true);
       expect(outbox.getQueue()).toEqual([]);
       expect(outbox.peek()).toBeUndefined();
 
+      clearTimeoutSpy.mockRestore();
       outbox.destroy();
     });
   });
@@ -619,6 +629,7 @@ describe("TelemetryOutbox Contract Test Suite", () => {
         .fn()
         .mockResolvedValue({ ok: true, status: 200 });
       const removeEventListenerSpy = vi.spyOn(window, "removeEventListener");
+      const clearTimeoutSpy = vi.spyOn(globalThis, "clearTimeout");
 
       const outbox = new TelemetryOutbox({
         transport: mockTransport,
@@ -630,8 +641,10 @@ describe("TelemetryOutbox Contract Test Suite", () => {
       outbox.enqueue({ projectSlug: "timer-item", eventType: "page_view" });
       expect(outbox.isDestroyed).toBe(false);
 
+      clearTimeoutSpy.mockClear();
       outbox.destroy();
 
+      expect(clearTimeoutSpy).toHaveBeenCalled();
       expect(outbox.isDestroyed).toBe(true);
       expect(removeEventListenerSpy).toHaveBeenCalledWith(
         "pagehide",
@@ -641,6 +654,11 @@ describe("TelemetryOutbox Contract Test Suite", () => {
         "beforeunload",
         expect.any(Function)
       );
+
+      // Verify second call to destroy() is a safe no-op
+      removeEventListenerSpy.mockClear();
+      outbox.destroy();
+      expect(removeEventListenerSpy).not.toHaveBeenCalled();
 
       // Advance timers to confirm no background retry runs after destroy
       vi.mocked(mockTransport).mockClear();
@@ -653,6 +671,501 @@ describe("TelemetryOutbox Contract Test Suite", () => {
       expect(outbox.size).toBe(0);
 
       removeEventListenerSpy.mockRestore();
+      clearTimeoutSpy.mockRestore();
+    });
+
+    it("uses default transport with fetch when transport is omitted", async () => {
+      const originalFetch = globalThis.fetch;
+      const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200 });
+      globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+      const outbox = new TelemetryOutbox({
+        storage: null,
+        autoFlushOnUnload: false,
+      });
+
+      const item: TelemetryOutboxItem = {
+        projectSlug: "default-fetch-test",
+        eventType: "click",
+      };
+      const res = await outbox.send(item);
+
+      expect(res).toBe(true);
+      expect(fetchMock).toHaveBeenCalledWith("/api/telemetry", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          projectSlug: "default-fetch-test",
+          eventType: "click",
+        }),
+        keepalive: false,
+      });
+
+      globalThis.fetch = originalFetch;
+      outbox.destroy();
+    });
+
+    it("hydrates from window.localStorage by default when config and storage are omitted", () => {
+      const outbox = new TelemetryOutbox();
+      expect(outbox.getCapacity()).toBe(DEFAULT_OUTBOX_CAPACITY);
+      outbox.destroy();
+    });
+
+    it("handles status 500 and non-ok status in send() and flush()", async () => {
+      const onRollback = vi.fn();
+      const mockTransport = vi
+        .fn()
+        .mockResolvedValue({ ok: false, status: 500 });
+
+      const outbox = new TelemetryOutbox({
+        transport: mockTransport,
+        storage: null,
+        autoFlushOnUnload: false,
+        onRollback,
+      });
+
+      const item: TelemetryOutboxItem = { projectSlug: "p1", eventType: "err" };
+      const res = await outbox.send(item);
+      expect(res).toBe(false);
+      expect(onRollback).toHaveBeenCalledWith(item, "error", expect.anything());
+
+      outbox.destroy();
+    });
+
+    it("handles response objects without explicit status property", async () => {
+      const mockTransport = vi.fn().mockResolvedValue({ ok: true });
+      const onSuccess = vi.fn();
+
+      const outbox = new TelemetryOutbox({
+        transport: mockTransport,
+        storage: null,
+        autoFlushOnUnload: false,
+        onSuccess,
+      });
+
+      const item: TelemetryOutboxItem = {
+        projectSlug: "no-status",
+        eventType: "evt",
+      };
+      const res = await outbox.send(item);
+      expect(res).toBe(true);
+      expect(onSuccess).toHaveBeenCalledWith(item);
+
+      outbox.destroy();
+    });
+
+    it("logs warning on 429 rate limit via logger.warn", async () => {
+      const loggerWarnSpy = vi.spyOn(logger, "warn").mockImplementation(() => ({
+        level: "warn",
+        message: "",
+        timestamp: "",
+      }));
+      const mockTransport = vi
+        .fn()
+        .mockResolvedValue({ ok: false, status: 429 });
+
+      const outbox = new TelemetryOutbox({
+        transport: mockTransport,
+        storage: null,
+        autoFlushOnUnload: false,
+      });
+
+      const item: TelemetryOutboxItem = {
+        projectSlug: "rl-test",
+        eventType: "click",
+      };
+      await outbox.send(item);
+
+      expect(loggerWarnSpy).toHaveBeenCalledWith(
+        "Telemetry record rate limited by API."
+      );
+      loggerWarnSpy.mockRestore();
+      outbox.destroy();
+    });
+
+    it("correctly unregisters document visibilitychange listener on destroy", () => {
+      const docRemoveSpy = vi.spyOn(document, "removeEventListener");
+      const winRemoveSpy = vi.spyOn(window, "removeEventListener");
+
+      const outbox = new TelemetryOutbox({
+        storage: null,
+        autoFlushOnUnload: true,
+      });
+
+      docRemoveSpy.mockClear();
+      winRemoveSpy.mockClear();
+
+      outbox.destroy();
+
+      expect(docRemoveSpy).toHaveBeenCalledWith(
+        "visibilitychange",
+        expect.any(Function)
+      );
+      expect(winRemoveSpy).toHaveBeenCalledWith(
+        "pagehide",
+        expect.any(Function)
+      );
+      expect(winRemoveSpy).toHaveBeenCalledWith(
+        "beforeunload",
+        expect.any(Function)
+      );
+
+      docRemoveSpy.mockRestore();
+      winRemoveSpy.mockRestore();
+    });
+
+    it("replaces existing window and document unload listeners when instantiating new outbox", () => {
+      const docRemoveSpy = vi.spyOn(document, "removeEventListener");
+      const winRemoveSpy = vi.spyOn(window, "removeEventListener");
+
+      const outbox1 = new TelemetryOutbox({
+        storage: null,
+        autoFlushOnUnload: true,
+      });
+
+      docRemoveSpy.mockClear();
+      winRemoveSpy.mockClear();
+
+      const outbox2 = new TelemetryOutbox({
+        storage: null,
+        autoFlushOnUnload: true,
+      });
+
+      expect(winRemoveSpy).toHaveBeenCalledWith(
+        "pagehide",
+        expect.any(Function)
+      );
+      expect(winRemoveSpy).toHaveBeenCalledWith(
+        "beforeunload",
+        expect.any(Function)
+      );
+      expect(docRemoveSpy).toHaveBeenCalledWith(
+        "visibilitychange",
+        expect.any(Function)
+      );
+
+      outbox1.destroy();
+      outbox2.destroy();
+
+      docRemoveSpy.mockRestore();
+      winRemoveSpy.mockRestore();
+    });
+
+    it("handles boundary constructor options correctly", () => {
+      const outbox = new TelemetryOutbox({
+        maxCapacity: -10,
+        maxRetries: 0,
+        baseDelayMs: 0,
+        maxDelayMs: 0,
+        storage: null,
+        autoFlushOnUnload: false,
+      });
+
+      expect(outbox.getCapacity()).toBe(DEFAULT_OUTBOX_CAPACITY);
+      outbox.destroy();
+    });
+
+    it("handles transport responses lacking ok property or status property", async () => {
+      const mockTransport = vi.fn().mockResolvedValue({});
+      const onRollback = vi.fn();
+
+      const outbox = new TelemetryOutbox({
+        transport: mockTransport,
+        storage: null,
+        autoFlushOnUnload: false,
+        onRollback,
+      });
+
+      const res = await outbox.send({
+        projectSlug: "bad-res",
+        eventType: "evt",
+      });
+      expect(res).toBe(false);
+      expect(onRollback).toHaveBeenCalledWith(
+        expect.anything(),
+        "error",
+        expect.anything()
+      );
+
+      outbox.destroy();
+    });
+  });
+
+  describe("8. Additional Targeted Stryker Mutant Killing Suite", () => {
+    it("handles constructor maxCapacity 0 and negative values by falling back to DEFAULT_OUTBOX_CAPACITY", () => {
+      const outboxZero = new TelemetryOutbox({
+        maxCapacity: 0,
+        storage: null,
+        autoFlushOnUnload: false,
+      });
+      expect(outboxZero.getCapacity()).toBe(DEFAULT_OUTBOX_CAPACITY);
+      outboxZero.destroy();
+
+      const outboxNeg = new TelemetryOutbox({
+        maxCapacity: -1,
+        storage: null,
+        autoFlushOnUnload: false,
+      });
+      expect(outboxNeg.getCapacity()).toBe(DEFAULT_OUTBOX_CAPACITY);
+      outboxNeg.destroy();
+    });
+
+    it("handles non-array and corrupt items in storage hydration safely", () => {
+      mockStorage.setItem(
+        "outbox_non_array",
+        JSON.stringify({ notAnArray: true })
+      );
+      const outboxObj = new TelemetryOutbox({
+        storage: mockStorage,
+        storageKey: "outbox_non_array",
+        autoFlushOnUnload: false,
+      });
+      expect(outboxObj.size).toBe(0);
+      outboxObj.destroy();
+
+      mockStorage.setItem(
+        "outbox_bad_retries",
+        JSON.stringify([
+          { projectSlug: "p1", eventType: "e1", retries: "invalid" },
+        ])
+      );
+      const outboxRetries = new TelemetryOutbox({
+        storage: mockStorage,
+        storageKey: "outbox_bad_retries",
+        autoFlushOnUnload: false,
+      });
+      expect(outboxRetries.size).toBe(1);
+      expect(outboxRetries.getQueue()[0].retries).toBe(0);
+      outboxRetries.destroy();
+    });
+
+    it("removes item from storage when queue becomes empty during persistToStorage", () => {
+      const removeItemSpy = vi.spyOn(mockStorage, "removeItem");
+      const setItemSpy = vi.spyOn(mockStorage, "setItem");
+
+      const outbox = new TelemetryOutbox({
+        storage: mockStorage,
+        storageKey: "persist_remove_key",
+        autoFlushOnUnload: false,
+      });
+
+      outbox.enqueue({ projectSlug: "p1", eventType: "e1" });
+      expect(setItemSpy).toHaveBeenCalledWith(
+        "persist_remove_key",
+        expect.any(String)
+      );
+
+      outbox.clear();
+      expect(removeItemSpy).toHaveBeenCalledWith("persist_remove_key");
+
+      outbox.destroy();
+    });
+
+    it("prevents scheduling multiple simultaneous retry timers", () => {
+      const setTimeoutSpy = vi.spyOn(globalThis, "setTimeout");
+
+      const outbox = new TelemetryOutbox({
+        storage: null,
+        autoFlushOnUnload: false,
+        baseDelayMs: 5000,
+      });
+
+      outbox.enqueue({ projectSlug: "item1", eventType: "e1" });
+      const callsFirst = setTimeoutSpy.mock.calls.length;
+
+      // Enqueueing second item while timer is pending should NOT schedule another timer
+      outbox.enqueue({ projectSlug: "item2", eventType: "e2" });
+      expect(setTimeoutSpy.mock.calls.length).toBe(callsFirst);
+
+      outbox.destroy();
+      setTimeoutSpy.mockRestore();
+    });
+
+    it("computes minRetries correctly when scheduling retry worker with heterogeneous queue retries", async () => {
+      const mockTransport = vi
+        .fn()
+        .mockResolvedValue({ ok: false, status: 500 });
+      const storageKey = "min_retries_test_key";
+      mockStorage.setItem(
+        storageKey,
+        JSON.stringify([
+          { projectSlug: "item1", eventType: "e1", retries: 2 },
+          { projectSlug: "item2", eventType: "e2", retries: 1 },
+        ])
+      );
+
+      const outbox = new TelemetryOutbox({
+        transport: mockTransport,
+        storage: mockStorage,
+        storageKey,
+        autoFlushOnUnload: false,
+        baseDelayMs: 1000,
+        maxRetries: 5,
+      });
+
+      // Hydration loaded queue. Now schedule retry worker manually or via enqueue.
+      outbox.enqueue({ projectSlug: "item3", eventType: "e3", retries: 3 });
+
+      // minRetries across items (2, 1, 3) is 1 => delay = 1000 * 2^1 = 2000ms.
+      await vi.advanceTimersByTimeAsync(1990);
+      expect(mockTransport).not.toHaveBeenCalled();
+
+      await vi.advanceTimersByTimeAsync(20);
+      expect(mockTransport).toHaveBeenCalled();
+
+      outbox.destroy();
+    });
+
+    it("returns false on direct send when destroyed or on 404/500/exception", async () => {
+      const mockTransport = vi
+        .fn()
+        .mockResolvedValue({ ok: false, status: 404 });
+      const outbox = new TelemetryOutbox({
+        transport: mockTransport,
+        storage: null,
+        autoFlushOnUnload: false,
+      });
+
+      const res404 = await outbox.send({ projectSlug: "p404", eventType: "e" });
+      expect(res404).toBe(false);
+      expect(outbox.size).toBe(1);
+
+      outbox.destroy();
+
+      const resDestroyed = await outbox.send({
+        projectSlug: "pDest",
+        eventType: "e",
+      });
+      expect(resDestroyed).toBe(false);
+    });
+
+    it("clears active retry timer when flush() is invoked", async () => {
+      const clearTimeoutSpy = vi.spyOn(globalThis, "clearTimeout");
+      const mockTransport = vi
+        .fn()
+        .mockResolvedValue({ ok: true, status: 200 });
+
+      const outbox = new TelemetryOutbox({
+        transport: mockTransport,
+        storage: null,
+        autoFlushOnUnload: false,
+        baseDelayMs: 5000,
+      });
+
+      outbox.enqueue({ projectSlug: "pTimer", eventType: "e" });
+      clearTimeoutSpy.mockClear();
+
+      await outbox.flush();
+
+      expect(clearTimeoutSpy).toHaveBeenCalled();
+      outbox.destroy();
+      clearTimeoutSpy.mockRestore();
+    });
+
+    it("handles transport exception during batch flush when currentRetries < maxRetries and >= maxRetries", async () => {
+      let failCount = 0;
+      const mockTransport = vi.fn().mockImplementation(async () => {
+        failCount++;
+        throw new Error(`Flush transport exception #${failCount}`);
+      });
+      const onRollback = vi.fn();
+
+      const outbox = new TelemetryOutbox({
+        transport: mockTransport,
+        storage: null,
+        autoFlushOnUnload: false,
+        maxRetries: 1,
+        onRollback,
+      });
+
+      outbox.enqueue({ projectSlug: "pExc", eventType: "e", retries: 0 });
+
+      // First flush: retries 0 < 1 => candidate retries becomes 1, re-queued
+      await outbox.flush();
+      expect(outbox.size).toBe(1);
+      expect(outbox.getQueue()[0].retries).toBe(1);
+      expect(onRollback).not.toHaveBeenCalled();
+
+      // Second flush: retries 1 < 1 is false => max_retries_exceeded rollback
+      await outbox.flush();
+      expect(outbox.size).toBe(0);
+      expect(onRollback).toHaveBeenCalledWith(
+        expect.objectContaining({ projectSlug: "pExc" }),
+        "max_retries_exceeded",
+        expect.any(Error)
+      );
+
+      outbox.destroy();
+    });
+
+    it("trims excess candidates when re-queueing after failed flush if capacity is exceeded", async () => {
+      const mockTransport = vi
+        .fn()
+        .mockResolvedValue({ ok: false, status: 500 });
+
+      const outbox = new TelemetryOutbox({
+        transport: mockTransport,
+        storage: mockStorage,
+        storageKey: "trim_candidates_key",
+        maxCapacity: 2,
+        maxRetries: 3,
+        autoFlushOnUnload: false,
+      });
+
+      outbox.enqueue({ projectSlug: "c1", eventType: "e" });
+      outbox.enqueue({ projectSlug: "c2", eventType: "e" });
+      outbox.enqueue({ projectSlug: "c3", eventType: "e" }); // c1 shifted, queue has [c2, c3]
+
+      await outbox.flush();
+
+      // [c2, c3] failed, re-queued with retries: 1. Max capacity 2 retained.
+      expect(outbox.size).toBe(2);
+      expect(outbox.getQueue().map((i) => i.projectSlug)).toEqual(["c2", "c3"]);
+
+      outbox.destroy();
+    });
+
+    it("ignores setCapacity calls with values < 1 or when instance is destroyed", () => {
+      const outbox = new TelemetryOutbox({
+        maxCapacity: 5,
+        storage: null,
+        autoFlushOnUnload: false,
+      });
+
+      outbox.setCapacity(0);
+      expect(outbox.getCapacity()).toBe(5);
+
+      outbox.setCapacity(-10);
+      expect(outbox.getCapacity()).toBe(5);
+
+      outbox.destroy();
+
+      outbox.setCapacity(2);
+      expect(outbox.getCapacity()).toBe(5);
+    });
+
+    it("cancels retryTimer and clears queue on clear() and destroy() when timer is pending", () => {
+      const clearTimeoutSpy = vi.spyOn(globalThis, "clearTimeout");
+
+      const outbox = new TelemetryOutbox({
+        storage: null,
+        autoFlushOnUnload: false,
+        baseDelayMs: 5000,
+      });
+
+      outbox.enqueue({ projectSlug: "clearTimerItem", eventType: "e" });
+      clearTimeoutSpy.mockClear();
+
+      outbox.clear();
+      expect(clearTimeoutSpy).toHaveBeenCalled();
+
+      outbox.enqueue({ projectSlug: "destroyTimerItem", eventType: "e" });
+      clearTimeoutSpy.mockClear();
+
+      outbox.destroy();
+      expect(clearTimeoutSpy).toHaveBeenCalled();
+
+      clearTimeoutSpy.mockRestore();
     });
   });
 });

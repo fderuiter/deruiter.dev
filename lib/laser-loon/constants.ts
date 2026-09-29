@@ -223,6 +223,7 @@ export const WEAPONS: Record<LaserType, WeaponConfig> = {
       "Prismatic Northern Lights wave sweeping through multiple legislative obstacles.",
   },
   "ice-cannon": {
+    // Short form everywhere else in the UI: "Cryo-Mortar".
     name: "Glacial Cryo-Mortar",
     keyNumber: "4",
     color: "#38bdf8",
@@ -456,3 +457,11 @@ export const BOSS_PROJECTILE_RADIUS = 9;
 export const BOSS_MINION_SPAWN_RATE = 0.01;
 /** Frames from a boss's arrival to its first volley, wind-up included. */
 export const BOSS_FIRST_VOLLEY_FRAMES = 90;
+/** Leftmost x the loon can fly to, in canvas pixels. */
+export const LOON_MIN_X = 40;
+/** Rightmost x the loon can fly to, in canvas pixels. */
+export const LOON_MAX_X = DEFAULT_CANVAS_WIDTH - 40;
+/** Highest point (smallest y) the loon can fly to, in canvas pixels. */
+export const LOON_MIN_Y = 40;
+/** Lowest point (largest y) the loon can fly to by keyboard, touch or mouse. */
+export const LOON_MAX_Y = DEFAULT_CANVAS_HEIGHT - 40;

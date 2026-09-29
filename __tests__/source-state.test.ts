@@ -51,3 +51,17 @@ describe("inspectSourceState (#1377)", () => {
     expect(inspectSourceState(repo).dirty).toBe(true);
   });
 });
+
+describe("DX Doctor clean-tree definition (#1377)", () => {
+  it("reads dirty state through inspectSourceState, not a raw git status", () => {
+    const doctor = fs.readFileSync(
+      path.resolve(process.cwd(), "lib/dx/doctor.ts"),
+      "utf-8"
+    );
+    const start = doctor.indexOf("export function checkSubRoutePerformance");
+    const end = doctor.indexOf("\nexport function", start + 1);
+    const body = doctor.slice(start, end === -1 ? undefined : end);
+    expect(body).toContain("inspectSourceState(");
+    expect(body).not.toContain("git status --porcelain");
+  });
+});

@@ -9,6 +9,7 @@
 ## Interfaces
 
 - [EscapeXmlOptions](interfaces/EscapeXmlOptions.md)
+- [GenerateIdOptions](interfaces/GenerateIdOptions.md)
 
 ## Variables
 

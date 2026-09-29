@@ -12,6 +12,7 @@ import {
   IconPhoto,
   IconTrash,
 } from "@tabler/icons-react";
+import { useAnnouncer } from "@/hooks/useAnnouncer";
 
 interface ProjectOption {
   slug: string;
@@ -24,6 +25,10 @@ interface ProjectImageUploaderProps {
   defaultSlug?: string;
   onUploadSuccess?: (slug: string, heroImageUrl: string) => void;
 }
+
+const UPLOADING_MESSAGE = "Sending multipart image buffer to server...";
+const SUCCESS_MESSAGE = "Image uploaded & persisted successfully!";
+const CANCELLED_MESSAGE = "Upload cancelled. Prior asset preserved.";
 
 const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 const ALLOWED_TYPES = [
@@ -59,6 +64,14 @@ export function ProjectImageUploader({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const previewUrlRef = useRef<string | null>(null);
   const progressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Status changes are spoken through the root A11yProvider regions: the
+  // banners below mount with their text already present, which most screen
+  // readers skip when the banner itself is the live region.
+  const { announce } = useAnnouncer();
+  const announceError = useCallback(
+    (message: string) => announce(`Upload Failed. ${message}`, "assertive"),
+    [announce]
+  );
 
   const cleanupPreviewUrl = useCallback(() => {
     if (previewUrlRef.current) {
@@ -117,6 +130,7 @@ export function ProjectImageUploader({
         setStatus("error");
         setFile(null);
         setPreviewUrl(null);
+        announceError(error);
         return;
       }
 
@@ -128,7 +142,7 @@ export function ProjectImageUploader({
       previewUrlRef.current = objectUrl;
       setPreviewUrl(objectUrl);
     },
-    [cleanupPreviewUrl]
+    [cleanupPreviewUrl, announceError]
   );
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -165,6 +179,7 @@ export function ProjectImageUploader({
     setStatus("cancelled");
     setProgress(0);
     setErrorMessage("Upload cancelled by user.");
+    announce(CANCELLED_MESSAGE, "polite");
   };
 
   const executeUpload = async () => {
@@ -173,6 +188,7 @@ export function ProjectImageUploader({
     setStatus("uploading");
     setProgress(10);
     setErrorMessage(null);
+    announce(UPLOADING_MESSAGE, "polite");
 
     const controller = new AbortController();
     abortControllerRef.current = controller;
@@ -220,6 +236,7 @@ export function ProjectImageUploader({
 
       setProgress(100);
       setStatus("success");
+      announce(SUCCESS_MESSAGE, "polite");
       setOverriddenAssets((prev) => ({
         ...prev,
         [selectedSlug]: heroImageUrl || null,
@@ -230,15 +247,18 @@ export function ProjectImageUploader({
       }
     } catch (err: unknown) {
       if (err instanceof Error && err.name === "AbortError") {
+        // Only cancelUpload aborts the request, and it has already
+        // announced the cancellation, so stay silent here.
         setStatus("cancelled");
         setErrorMessage("Upload cancelled by user.");
       } else {
-        setStatus("error");
-        setErrorMessage(
+        const message =
           err instanceof Error
             ? err.message
-            : "An unexpected upload error occurred."
-        );
+            : "An unexpected upload error occurred.";
+        setStatus("error");
+        setErrorMessage(message);
+        announceError(message);
       }
     } finally {
       cleanupProgressTimer();
@@ -480,12 +500,8 @@ export function ProjectImageUploader({
             />
           </div>
           <div className="flex justify-between items-center mt-1">
-            <span
-              className="text-[10px] font-mono text-zinc-400"
-              role="status"
-              aria-live="polite"
-            >
-              Sending multipart image buffer to server...
+            <span className="text-[10px] font-mono text-zinc-400">
+              {UPLOADING_MESSAGE}
             </span>
             <button
               type="button"
@@ -502,12 +518,11 @@ export function ProjectImageUploader({
       {status === "success" && (
         <div
           className="p-3 rounded-md bg-emerald-950/40 border border-emerald-500/40 text-emerald-300 text-xs font-mono flex items-center justify-between"
-          role="status"
-          aria-live="polite"
+          data-testid="project-image-upload-success"
         >
           <div className="flex items-center gap-2">
             <IconCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span>Image uploaded &amp; persisted successfully!</span>
+            <span>{SUCCESS_MESSAGE}</span>
           </div>
         </div>
       )}
@@ -516,12 +531,11 @@ export function ProjectImageUploader({
       {status === "cancelled" && (
         <div
           className="p-3 rounded-md bg-amber-950/40 border border-amber-500/40 text-amber-300 text-xs font-mono flex items-center justify-between"
-          role="status"
-          aria-live="polite"
+          data-testid="project-image-upload-cancelled"
         >
           <div className="flex items-center gap-2">
             <IconAlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
-            <span>Upload cancelled. Prior asset preserved.</span>
+            <span>{CANCELLED_MESSAGE}</span>
           </div>
           {file && (
             <button
@@ -539,8 +553,7 @@ export function ProjectImageUploader({
       {status === "error" && errorMessage && (
         <div
           className="p-3 rounded-md bg-red-950/40 border border-red-500/40 text-red-300 text-xs font-mono flex flex-col gap-2"
-          role="alert"
-          aria-live="assertive"
+          data-testid="project-image-upload-error"
         >
           <div className="flex items-start gap-2">
             <IconAlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />

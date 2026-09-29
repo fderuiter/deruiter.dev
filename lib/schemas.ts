@@ -539,6 +539,30 @@ export const ResendWebhookResponseSchema = z.object({
 
 export type ResendWebhookResponse = z.infer<typeof ResendWebhookResponseSchema>;
 
+/**
+ * Body of the delayed QStash message that asks the app to retry one queued
+ * outbound email (#715). Carries only the queue id; the message content stays
+ * in the database.
+ */
+export const QStashRetryPayloadSchema = z.object({
+  queueId: z.string().min(1).max(64),
+});
+
+export type QStashRetryPayload = z.infer<typeof QStashRetryPayloadSchema>;
+
+/** Response of the QStash email-retry webhook. */
+export const QStashRetryResponseSchema = z.object({
+  received: z.boolean(),
+  queueId: z.string().optional(),
+  processed: z.number().int().nonnegative().optional(),
+  succeeded: z.number().int().nonnegative().optional(),
+  failed: z.number().int().nonnegative().optional(),
+  rescheduled: z.boolean().optional(),
+  ignored: z.string().optional(),
+});
+
+export type QStashRetryResponse = z.infer<typeof QStashRetryResponseSchema>;
+
 /** Alias for NewsletterSubscriptionSchema to match OpenAPI naming convention */
 export const NewsletterSubmissionSchema = NewsletterSubscriptionSchema;
 

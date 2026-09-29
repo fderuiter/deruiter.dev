@@ -125,6 +125,10 @@ Conforms to ADR 0028 Typed Service Contract (Spec & Handler Pattern).
 
 `Date`
 
+###### queueId?
+
+`string`
+
 #### Returns
 
 `Promise`\<\{ `failed`: `number`; `processed`: `number`; `succeeded`: `number`; \}\>

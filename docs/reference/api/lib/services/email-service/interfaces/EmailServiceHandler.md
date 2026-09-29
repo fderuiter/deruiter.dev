@@ -136,6 +136,10 @@ Execution handler interface implementing the EmailServiceSpec contract.
 
 `Date`
 
+###### queueId?
+
+`string`
+
 #### Returns
 
 `Promise`\<\{ `failed`: `number`; `processed`: `number`; `succeeded`: `number`; \}\>

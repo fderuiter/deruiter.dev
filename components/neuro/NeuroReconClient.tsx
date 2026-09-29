@@ -29,6 +29,7 @@ import {
   computeSyntheticVolumeSync,
   computeQAMetricsSync,
 } from "@/lib/neuro/loader";
+import { NEURO_RUN_RECON_KEY, resolveNeuroHotkey } from "@/lib/neuro";
 import { SyntheticVolume, VOLUME_SIZE } from "@/lib/neuro/volume-generator";
 import { MultiPlanarSliceViewer } from "./MultiPlanarSliceViewer";
 import dynamic from "next/dynamic";
@@ -87,19 +88,17 @@ import { NeuroToolbar } from "./NeuroToolbar";
 import { NeuroMetricsPanel } from "./NeuroMetricsPanel";
 import { FreeSurferTerminal } from "./FreeSurferTerminal";
 import { NeuroFieldManual } from "./NeuroFieldManual";
+import { NeuroSuccessDialog } from "./NeuroSuccessDialog";
 import { useAudio } from "@/components/providers/AudioProvider";
 import { useTelemetry } from "@/hooks/useTelemetry";
 import { useStudioHashParams } from "@/hooks/useStudioHashParams";
 import {
   IconBrain,
   IconCheck,
-  IconArrowRight,
   IconInfoCircle,
   Icon3dCubeSphere,
   IconLayersSubtract,
-  IconShieldCheck,
   IconLink,
-  IconCalendar,
   IconX,
   IconCompass,
   IconAlertCircle,
@@ -249,6 +248,8 @@ export const NeuroReconClient: React.FC = () => {
     streak: 0,
     resolvedScenarios: [],
   });
+  const scoreStateRef = React.useRef<ScoreState>(scoreState);
+  const [lastReward, setLastReward] = useState(500);
 
   const [logs, setLogs] = useState<TerminalLog[]>([
     {
@@ -561,23 +562,45 @@ export const NeuroReconClient: React.FC = () => {
       setIsProcessing(false);
 
       if (metrics.isResolved) {
-        playSuccess();
-        setShowSuccessModal(true);
-        setScoreState((prev) => ({
-          score: prev.score + 500 * prev.multiplier,
+        const prev = scoreStateRef.current;
+        const alreadyEarned = prev.resolvedScenarios.includes(activeScenarioId);
+        const isSandbox = activeScenarioId === "sandbox";
+        // Reward policy (#1218): each repair scenario pays out once per
+        // session; Sandbox is inspection-only and never pays out.
+        if (isSandbox || alreadyEarned) {
+          playNote(440, 0.1);
+          setLogs((logs) => [
+            ...logs,
+            {
+              id: `log-res-insp-${Date.now()}`,
+              type: "info",
+              text: isSandbox
+                ? `[INSPECTION PASS] Sandbox volume verified with no defects to correct. Estimated Euler χ = ${metrics.eulerCharacteristic}, estimated Dice = ${(metrics.diceScore * 100).toFixed(1)}%. No points awarded.`
+                : `[SIMULATION PASSED] Case already completed; re-verified. Estimated Euler χ = ${metrics.eulerCharacteristic}, estimated Dice = ${(metrics.diceScore * 100).toFixed(1)}%. No additional points.`,
+              timestamp: new Date().toLocaleTimeString(),
+            },
+          ]);
+          return;
+        }
+        const reward = 500 * prev.multiplier;
+        const next: ScoreState = {
+          score: prev.score + reward,
           multiplier: Math.min(4, prev.multiplier + 1),
           streak: prev.streak + 1,
-          resolvedScenarios: Array.from(
-            new Set([...prev.resolvedScenarios, activeScenarioId])
-          ),
-        }));
+          resolvedScenarios: [...prev.resolvedScenarios, activeScenarioId],
+        };
+        scoreStateRef.current = next;
+        setScoreState(next);
+        setLastReward(reward);
+        playSuccess();
+        setShowSuccessModal(true);
 
-        setLogs((prev) => [
-          ...prev,
+        setLogs((logs) => [
+          ...logs,
           {
             id: `log-res-succ-${Date.now()}`,
             type: "success",
-            text: `[SIMULATION PASSED] ${currentScenario.successMessage} Estimated Euler χ = ${metrics.eulerCharacteristic}, estimated Dice = ${(metrics.diceScore * 100).toFixed(1)}%. +500 PTS`,
+            text: `[SIMULATION PASSED] ${currentScenario.successMessage} Estimated Euler χ = ${metrics.eulerCharacteristic}, estimated Dice = ${(metrics.diceScore * 100).toFixed(1)}%. +${reward} PTS`,
             timestamp: new Date().toLocaleTimeString(),
           },
         ]);
@@ -739,40 +762,29 @@ export const NeuroReconClient: React.FC = () => {
     }
   };
 
+  const isDialogOpen = isFieldManualOpen || showSuccessModal;
+
   // Keyboard Shortcuts Listener
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Avoid hotkeys when typing in input or when focused within a keyboard boundary
-      const target = e.target as HTMLElement | null;
-      if (
-        !target ||
-        target.tagName === "INPUT" ||
-        target.tagName === "TEXTAREA" ||
-        target.isContentEditable ||
-        target.closest?.("[data-keyboard-boundary]")
-      ) {
-        return;
-      }
-
-      if (e.key === "1" || e.key.toLowerCase() === "v") {
-        setToolMode("inspect");
-      } else if (e.key === "2" || e.key.toLowerCase() === "c") {
-        setToolMode("control_point");
-      } else if (e.key === "3" || e.key.toLowerCase() === "b") {
-        setToolMode("paint");
-      } else if (e.key === "4" || e.key.toLowerCase() === "e") {
-        setToolMode("erase");
-      } else if (e.key === " " && !isProcessing) {
+      // Studio hotkeys are suspended while a modal dialog owns the keyboard.
+      if (isDialogOpen) return;
+      // Ignore text entry, modifier chords, and natively activating controls.
+      const action = resolveNeuroHotkey(e);
+      if (!action) return;
+      if (action.type === "tool") {
+        setToolMode(action.tool);
+      } else if (action.type === "run") {
         e.preventDefault();
-        handleRunRecon();
-      } else if (e.key.toLowerCase() === "m" || e.key === "?") {
+        if (!isProcessing) handleRunRecon();
+      } else {
         setIsFieldManualOpen((prev) => !prev);
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isProcessing, handleRunRecon, setToolMode]);
+  }, [isProcessing, isDialogOpen, handleRunRecon, setToolMode]);
 
   // Next Scenario Advancer
   const handleAdvanceNextScenario = async () => {
@@ -803,6 +815,7 @@ export const NeuroReconClient: React.FC = () => {
     <div
       className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6"
       data-keyboard-boundary="true"
+      inert={isDialogOpen}
     >
       {/* Interactive First Action Guide & Onboarding Banner */}
       {showOnboarding && (
@@ -854,7 +867,7 @@ export const NeuroReconClient: React.FC = () => {
               <p className="text-[11px] text-zinc-400 leading-snug">
                 Click{" "}
                 <strong className="text-brand-cyan">[RUN RECON-ALL]</strong> or
-                press <kbd>[Space]</kbd> to check the simulated Euler target χ =
+                press <kbd>[{NEURO_RUN_RECON_KEY}]</kbd> to check the simulated Euler target χ =
                 2.
               </p>
             </div>
@@ -1122,83 +1135,16 @@ export const NeuroReconClient: React.FC = () => {
       />
 
       {/* Case Resolution Celebration Modal */}
-      <AnimatePresence>
-        {showSuccessModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-md">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="w-full max-w-lg bg-zinc-900 border border-emerald-500/40 rounded-3xl p-6 shadow-2xl space-y-5 text-center relative overflow-hidden"
-            >
-              <div className="absolute -top-24 -right-24 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-
-              <div className="w-16 h-16 rounded-3xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mx-auto shadow-inner">
-                <IconShieldCheck className="w-8 h-8" />
-              </div>
-
-              <div className="space-y-2">
-                <span className="text-xs font-mono font-bold uppercase tracking-widest text-emerald-400">
-                  SIMULATED RECON PASS
-                </span>
-                <h3 className="text-xl font-bold text-white font-mono">
-                  Scenario Target Reached
-                </h3>
-                <p className="text-xs text-zinc-300 leading-relaxed font-sans">
-                  {currentScenario.successMessage}
-                </p>
-              </div>
-
-              {/* Stats pill */}
-              <div className="grid grid-cols-3 gap-2 bg-zinc-950 p-3 rounded-2xl border border-zinc-800 text-xs font-mono">
-                <div>
-                  <div className="text-zinc-400">EULER EST.</div>
-                  <div className="font-bold text-emerald-400">
-                    χ = {qaMetrics.eulerCharacteristic}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-zinc-400">DICE EST.</div>
-                  <div className="font-bold text-brand-cyan">
-                    {(qaMetrics.diceScore * 100).toFixed(1)}%
-                  </div>
-                </div>
-                <div>
-                  <div className="text-zinc-400">SCORE</div>
-                  <div className="font-bold text-amber-400">+500 PTS</div>
-                </div>
-              </div>
-
-              {/* Action buttons */}
-              <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-                <a
-                  href="/schedule"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => recordEvent("neuro", "project_click")}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-mono font-bold text-xs shadow-lg shadow-emerald-500/20 transition-all"
-                >
-                  <IconCalendar className="w-4 h-4" />
-                  <span>Schedule Consultation</span>
-                </a>
-                <button
-                  onClick={() => setShowSuccessModal(false)}
-                  className="px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-mono transition-all"
-                >
-                  Stay in Current Case
-                </button>
-                <button
-                  onClick={handleAdvanceNextScenario}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-cyan hover:bg-brand-cyan/90 text-zinc-950 font-mono font-bold text-xs shadow-lg shadow-brand-cyan/20 transition-all"
-                >
-                  <span>Advance Next Case</span>
-                  <IconArrowRight className="w-4 h-4" />
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <NeuroSuccessDialog
+        isOpen={showSuccessModal}
+        message={currentScenario.successMessage}
+        eulerCharacteristic={qaMetrics.eulerCharacteristic}
+        diceScore={qaMetrics.diceScore}
+        reward={lastReward}
+        onStay={() => setShowSuccessModal(false)}
+        onAdvance={handleAdvanceNextScenario}
+        onSchedule={() => recordEvent("neuro", "project_click")}
+      />
 
       {/* Share Toast Notification */}
       <AnimatePresence>

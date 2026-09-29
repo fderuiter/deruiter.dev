@@ -33,6 +33,7 @@ import {
   IconFlame,
   IconShieldCheck,
   IconCamera,
+  IconClipboardCheck,
 } from "@tabler/icons-react";
 import { filterFuzzySearch } from "@/lib/search-utils";
 import { useSearch } from "@/components/providers/SearchProvider";
@@ -701,6 +702,25 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           "Three studies, each ending at a Boss",
           "Relics, packs and a Procurement Shop",
           "Endless post-marketing rounds",
+        ],
+      },
+      {
+        id: "nav-study-director",
+        title: "Study Director: Everything Is Fine",
+        subtitle:
+          "Run a clinical study on eight attention points a day and defend your decisions to the FDA.",
+        category: "navigation",
+        url: "/arcade/study-director",
+        icon: <IconClipboardCheck className="w-4 h-4 text-brand-cyan" />,
+        badge: "Simulation",
+        status: "Playable",
+        description:
+          "Shepherd one study from kickoff to database lock. Answer the inbox, delegate, audit the sites behind the green dashboard, and see which decisions the inspector asks about.",
+        techStack: ["Seeded Simulation", "Causal Model", "Decision Log"],
+        highlights: [
+          "Eight attention points a day, six meters",
+          "Documentation debt comes due at inspection",
+          "Discover which kind of Study Director you are",
         ],
       },
       {

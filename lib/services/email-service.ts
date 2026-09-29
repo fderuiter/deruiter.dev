@@ -2,6 +2,7 @@ import { Resend } from "resend";
 import crypto from "crypto";
 import { logger } from "@/lib/logger";
 import { env, getEnv } from "@/lib/env";
+import { scheduleEmailRetry } from "@/lib/qstash-retry";
 import { prisma, SuppressionReason, OutboundEmailStatus } from "@/lib/db";
 
 export type { SuppressionReason, OutboundEmailStatus };
@@ -64,6 +65,7 @@ export interface EmailServiceSpec {
   processRetryQueue(options?: {
     maxBatchSize?: number;
     now?: Date;
+    queueId?: string;
   }): Promise<{ processed: number; succeeded: number; failed: number }>;
   getRetryQueueHealth(now?: Date): Promise<{
     retryingCount: number;
@@ -394,6 +396,9 @@ export class EmailService {
           lastError: errorReason || "Initial dispatch failed",
         },
       });
+      // Sub-daily retry (#715): optional, best effort, retryable failures
+      // only. Never awaited into failure; the queue row is the fallback.
+      await scheduleEmailRetry(entry.id, 1);
       return entry.id;
     } catch (err) {
       // Nothing was persisted, so there is no retry and no queue id to hand
@@ -409,6 +414,8 @@ export class EmailService {
   static async processRetryQueue(options?: {
     maxBatchSize?: number;
     now?: Date;
+    /** Restrict the run to one queue row (QStash-targeted retry). */
+    queueId?: string;
   }): Promise<{ processed: number; succeeded: number; failed: number }> {
     const limit = Math.min(
       MAX_RETRY_BATCH_SIZE,
@@ -436,6 +443,7 @@ export class EmailService {
     try {
       const candidates = await prisma.outboundEmailQueue.findMany({
         where: {
+          ...(options?.queueId ? { id: options.queueId } : {}),
           status: { in: ["PENDING", "RETRYING"] },
           nextRetryAt: { lte: now },
         },
@@ -600,6 +608,26 @@ export class EmailService {
     }
 
     return { processed: items.length, succeeded, failed };
+  }
+
+  /**
+   * Returns the retry state of one queue row, or null when it does not exist
+   * (or the read fails). Used by the QStash webhook to decide whether to
+   * schedule another sub-daily attempt.
+   */
+  static async getQueueEntryState(
+    queueId: string
+  ): Promise<{ status: OutboundEmailStatus; attempts: number } | null> {
+    try {
+      const row = await prisma.outboundEmailQueue.findUnique({
+        where: { id: queueId },
+        select: { status: true, attempts: true },
+      });
+      return row ?? null;
+    } catch (err) {
+      logger.error("Failed to read outbound email queue entry:", err);
+      return null;
+    }
   }
 
   /** Returns secret-free operational health for the durable retry queue. */

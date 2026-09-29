@@ -264,5 +264,109 @@ describe("PlayCabinet - Viewport Budgeting & Responsive Container Suite", () => 
       });
       expect(document.activeElement).toBe(screen.getByTestId("game"));
     });
+
+    it("puts focus on the game, not the toolbar, when entering and leaving fullscreen", async () => {
+      await launch();
+      await act(async () => {
+        fireEvent.click(
+          screen.getByRole("button", { name: /Enter Fullscreen/i })
+        );
+      });
+      act(() => {
+        vi.advanceTimersByTime(100);
+      });
+      expect(document.activeElement).toBe(screen.getByTestId("game"));
+
+      await act(async () => {
+        fireEvent.click(
+          screen.getByRole("button", { name: /Exit Fullscreen/i })
+        );
+      });
+      act(() => {
+        vi.advanceTimersByTime(100);
+      });
+      expect(document.activeElement).toBe(screen.getByTestId("game"));
+    });
+  });
+
+  describe("Escape in fullscreen", () => {
+    function GameWithDialog({ closesOnEscape }: { closesOnEscape: boolean }) {
+      const [open, setOpen] = React.useState(true);
+      return (
+        <div
+          data-keyboard-boundary="true"
+          tabIndex={0}
+          data-testid="game"
+          onKeyDown={(event) => {
+            if (event.key === "Escape" && closesOnEscape) setOpen(false);
+          }}
+        >
+          {open && (
+            <div role="dialog" aria-modal="true" aria-label="Fix dialog">
+              <button type="button">Option 1</button>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    async function launchFullscreen(closesOnEscape: boolean) {
+      render(
+        <PlayCabinet
+          title="Dialog game"
+          accentColor="emerald"
+          icon={<span />}
+          instructions="Play"
+          controls={[]}
+          importComponent={() => Promise.resolve({})}
+        >
+          <GameWithDialog closesOnEscape={closesOnEscape} />
+        </PlayCabinet>
+      );
+      await act(async () => {
+        fireEvent.click(
+          screen.getByRole("button", { name: /Launch Cabinet/i })
+        );
+      });
+      act(() => {
+        vi.advanceTimersByTime(2000);
+      });
+      await act(async () => {
+        fireEvent.click(
+          screen.getByRole("button", { name: /Enter Fullscreen/i })
+        );
+      });
+      act(() => {
+        vi.advanceTimersByTime(100);
+      });
+    }
+
+    it("closes the game's dialog first and stays in fullscreen", async () => {
+      await launchFullscreen(true);
+      await act(async () => {
+        fireEvent.keyDown(screen.getByTestId("game"), { key: "Escape" });
+      });
+      act(() => {
+        vi.advanceTimersByTime(10);
+      });
+      expect(screen.queryByRole("dialog", { name: "Fix dialog" })).toBeNull();
+      expect(
+        screen.getByRole("button", { name: /Exit Fullscreen/i })
+      ).toBeDefined();
+    });
+
+    it("leaves fullscreen when the game's dialog ignores Escape", async () => {
+      await launchFullscreen(false);
+      await act(async () => {
+        fireEvent.keyDown(screen.getByTestId("game"), { key: "Escape" });
+      });
+      await act(async () => {
+        vi.advanceTimersByTime(10);
+      });
+      expect(screen.getByRole("dialog", { name: "Fix dialog" })).toBeDefined();
+      expect(
+        screen.getByRole("button", { name: /Enter Fullscreen/i })
+      ).toBeDefined();
+    });
   });
 });

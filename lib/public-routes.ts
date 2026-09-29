@@ -184,6 +184,11 @@ export const PUBLIC_ROUTE_REGISTRY = [
     category: "arcade",
   },
   {
+    path: "/arcade/study-director",
+    name: "Game: Study Director",
+    category: "arcade",
+  },
+  {
     path: "/arcade/retro-labyrinth",
     name: "Game: Retro Labyrinth",
     category: "arcade",

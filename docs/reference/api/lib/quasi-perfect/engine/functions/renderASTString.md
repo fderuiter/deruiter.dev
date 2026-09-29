@@ -10,6 +10,9 @@
 
 Formats an AST node to human-readable mathematical notation string.
 
+Nested binary nodes are parenthesized only where the conventional
+precedence and associativity rules would otherwise group them differently.
+
 ## Parameters
 
 ### node

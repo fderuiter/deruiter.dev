@@ -55,7 +55,7 @@ export function CaseStudyHeroActions({
             </span>
           )}
           {stats && typeof stats.commitsCount === "number" && stats.commitsCount > 0 && (
-            <span className="hidden sm:inline-flex items-center gap-1 pl-1 text-xs font-mono text-zinc-500">
+            <span className="hidden sm:inline-flex items-center gap-1 pl-1 text-xs font-mono text-muted">
               <IconGitCommit className="w-3.5 h-3.5 text-zinc-400" />
               <span>{stats.commitsCount}</span>
             </span>

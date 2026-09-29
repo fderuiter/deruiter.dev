@@ -106,19 +106,22 @@ const GAME_LOADOUTS: Record<string, GameLoadoutOption[]> = {
     {
       id: "standard-ram",
       name: "32KB Standard Heap",
-      description: "Balanced Monkey C memory allocation for smooth GC cycles",
+      description:
+        "Baseline: 500ms GC freeze, normal battery drain, standard 2 to 4 KB GC sweep",
       badge: "32KB RAM",
     },
     {
       id: "low-power",
       name: "Low-Power Runner",
-      description: "Optimized battery life & reduced GC freeze pressure",
+      description:
+        "Battery drains 40% slower and the GC freeze shrinks to 350ms",
       badge: "Eco",
     },
     {
       id: "overclocked",
       name: "Overclocked Speedster",
-      description: "High FPS canvas render with aggressive memory sweep",
+      description:
+        "GC frees 2 KB more per sweep, but the battery drains 60% faster",
       badge: "Overclock",
     },
   ],
@@ -215,6 +218,30 @@ const DIFFICULTY_OPTIONS: {
     color: "text-red-400 border-red-500/30 bg-red-500/10",
   },
 ];
+
+/**
+ * Games that map difficulty to concrete engine parameters describe them here
+ * so the wizard never promises more than the game delivers.
+ */
+const GAME_DIFFICULTY_DESCRIPTIONS: Record<
+  string,
+  Partial<Record<DifficultyMode, string>>
+> = {
+  "garmin-watch": {
+    casual: "Obstacles 15% slower and spaced out; RAM fills 30% more slowly",
+    normal: "Standard obstacle speed, spacing and RAM pressure",
+    hard: "Obstacles 20% faster and closer together; RAM fills 33% faster",
+  },
+};
+
+/**
+ * Games whose cabinet reacts to the wizard's screen shake, CRT and bezel
+ * options and restarts the run on confirm describe that here.
+ */
+const GAME_APPLY_NOTES: Record<string, string> = {
+  "garmin-watch":
+    "Confirming starts a fresh run with these options. A run in progress is paused while you set up, and Skip Setup resumes it.",
+};
 
 const SCREEN_SHAKE_OPTIONS: {
   id: ScreenShakeIntensity;
@@ -466,6 +493,9 @@ export const PreGameSetupWizard: React.FC<PreGameSetupWizardProps> = ({
     onComplete(config);
   };
 
+  const difficultyDescriptions = GAME_DIFFICULTY_DESCRIPTIONS[gameId];
+  const applyNote = GAME_APPLY_NOTES[gameId];
+
   // Find readable labels for summary preview
   const currentLoadoutObj =
     loadoutOptions.find((o) => o.id === config.loadout) || loadoutOptions[0];
@@ -581,7 +611,7 @@ export const PreGameSetupWizard: React.FC<PreGameSetupWizardProps> = ({
                         )}
                       </div>
                       <p className="text-[9px] text-zinc-400 leading-tight hidden sm:block">
-                        {opt.desc}
+                        {difficultyDescriptions?.[opt.id] ?? opt.desc}
                       </p>
                     </button>
                   ))}
@@ -764,6 +794,14 @@ export const PreGameSetupWizard: React.FC<PreGameSetupWizardProps> = ({
                     {currentDiffObj.label}
                   </span>
                 </div>
+                {difficultyDescriptions?.[config.difficulty] && (
+                  <p
+                    data-testid="wizard-summary-difficulty-effect"
+                    className="text-[10px] text-zinc-400 leading-tight break-words"
+                  >
+                    {difficultyDescriptions[config.difficulty]}
+                  </p>
+                )}
                 <div className="flex justify-between border-b border-zinc-800/80 pb-2">
                   <span className="text-zinc-400 uppercase text-[10px]">
                     Loadout:
@@ -772,6 +810,14 @@ export const PreGameSetupWizard: React.FC<PreGameSetupWizardProps> = ({
                     {currentLoadoutObj.name}
                   </span>
                 </div>
+                {applyNote && (
+                  <p
+                    data-testid="wizard-summary-loadout-effect"
+                    className="text-[10px] text-zinc-400 leading-tight break-words"
+                  >
+                    {currentLoadoutObj.description}
+                  </p>
+                )}
                 <div className="flex justify-between border-b border-zinc-800/80 pb-2">
                   <span className="text-zinc-400 uppercase text-[10px]">
                     Screen Shake:
@@ -797,6 +843,14 @@ export const PreGameSetupWizard: React.FC<PreGameSetupWizardProps> = ({
                   </span>
                 </div>
               </div>
+              {applyNote && (
+                <p
+                  data-testid="wizard-apply-note"
+                  className="text-[10px] text-amber-300/90 leading-snug break-words"
+                >
+                  {applyNote}
+                </p>
+              )}
             </div>
           )}
         </div>

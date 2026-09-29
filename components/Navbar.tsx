@@ -1182,8 +1182,8 @@ export const Navbar: React.FC = () => {
                     Systems
                   </span>
                   <Link
-                    href="/crf"
-                    onClick={(e) => handleNavClick(e, "/crf")}
+                    href="/m/crf"
+                    onClick={(e) => handleNavClick(e, "/m/crf")}
                     className="min-h-[48px] px-3.5 py-3 rounded-xl bg-zinc-900/40 border border-zinc-800/80 text-sm font-semibold text-neutral-200 hover:text-brand-cyan flex items-center justify-between gap-2 active:scale-[0.99] transition-all min-w-0"
                   >
                     <span className="flex items-center gap-2 min-w-0">
@@ -1195,8 +1195,8 @@ export const Navbar: React.FC = () => {
                     </span>
                   </Link>
                   <Link
-                    href="/patrol"
-                    onClick={(e) => handleNavClick(e, "/patrol")}
+                    href="/m/patrol"
+                    onClick={(e) => handleNavClick(e, "/m/patrol")}
                     className="min-h-[48px] px-3.5 py-3 rounded-xl bg-zinc-900/40 border border-zinc-800/80 text-sm font-semibold text-neutral-200 hover:text-brand-cyan flex items-center justify-between gap-2 active:scale-[0.99] transition-all min-w-0"
                   >
                     <span className="flex items-center gap-2 min-w-0">
@@ -1208,8 +1208,8 @@ export const Navbar: React.FC = () => {
                     </span>
                   </Link>
                   <Link
-                    href="/proof"
-                    onClick={(e) => handleNavClick(e, "/proof")}
+                    href="/m/proof"
+                    onClick={(e) => handleNavClick(e, "/m/proof")}
                     className="min-h-[48px] px-3.5 py-3 rounded-xl bg-zinc-900/40 border border-zinc-800/80 text-sm font-semibold text-neutral-200 hover:text-brand-cyan flex items-center justify-between gap-2 active:scale-[0.99] transition-all min-w-0"
                   >
                     <span className="flex items-center gap-2 min-w-0">
@@ -1221,8 +1221,8 @@ export const Navbar: React.FC = () => {
                     </span>
                   </Link>
                   <Link
-                    href="/neuro"
-                    onClick={(e) => handleNavClick(e, "/neuro")}
+                    href="/m/neuro"
+                    onClick={(e) => handleNavClick(e, "/m/neuro")}
                     className="min-h-[48px] px-3.5 py-3 rounded-xl bg-zinc-900/40 border border-zinc-800/80 text-sm font-semibold text-neutral-200 hover:text-brand-cyan flex items-center justify-between gap-2 active:scale-[0.99] transition-all min-w-0"
                   >
                     <span className="flex items-center gap-2 min-w-0">

@@ -8,6 +8,12 @@
 
 ## Properties
 
+### canonicalPath?
+
+> `optional` **canonicalPath?**: `string`
+
+***
+
 ### description
 
 > **description**: `string`

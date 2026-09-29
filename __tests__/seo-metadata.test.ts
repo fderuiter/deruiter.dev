@@ -222,9 +222,10 @@ describe("SEO Architecture & JSON-LD Schemas", () => {
       const config = ROUTE_METADATA_CONFIGS[key];
       const meta = buildRouteMetadata(config);
 
+      const expectedCanonical = config.canonicalPath ?? config.path;
       expect(meta.title).toBe(config.title);
       expect(meta.description).toBe(config.description);
-      expect(meta.alternates?.canonical).toBe(config.path);
+      expect(meta.alternates?.canonical).toBe(expectedCanonical);
       expect(meta.openGraph?.title).toContain(config.title);
       expect(meta.openGraph?.description).toBe(config.description);
       expect(meta.twitter?.title).toContain(config.title);
@@ -249,6 +250,86 @@ describe("SEO Architecture & JSON-LD Schemas", () => {
       const twImages = meta.twitter?.images as Array<string>;
       expect(twImages.length).toBeGreaterThan(0);
       expect(twImages[0]).toContain(`${config.path}/opengraph-image`);
+    }
+  });
+
+  it("derives explicit canonical URLs and social metadata for touch aliases (/m/*) while retaining coverage for every canonical studio route", () => {
+    const touchAliases = [
+      {
+        aliasKey: "mCrf",
+        canonicalKey: "crf",
+        aliasPath: "/m/crf",
+        canonicalPath: "/crf",
+      },
+      {
+        aliasKey: "mProof",
+        canonicalKey: "proof",
+        aliasPath: "/m/proof",
+        canonicalPath: "/proof",
+      },
+      {
+        aliasKey: "mNeuro",
+        canonicalKey: "neuro",
+        aliasPath: "/m/neuro",
+        canonicalPath: "/neuro",
+      },
+      {
+        aliasKey: "mPatrol",
+        canonicalKey: "patrol",
+        aliasPath: "/m/patrol",
+        canonicalPath: "/patrol",
+      },
+    ];
+
+    for (const item of touchAliases) {
+      const aliasConfig = ROUTE_METADATA_CONFIGS[item.aliasKey];
+      const canonicalConfig = ROUTE_METADATA_CONFIGS[item.canonicalKey];
+
+      expect(aliasConfig).toBeDefined();
+      expect(canonicalConfig).toBeDefined();
+
+      expect(aliasConfig.path).toBe(item.aliasPath);
+      expect(aliasConfig.canonicalPath).toBe(item.canonicalPath);
+      expect(canonicalConfig.path).toBe(item.canonicalPath);
+      expect(canonicalConfig.canonicalPath).toBeUndefined();
+
+      const aliasMeta = buildRouteMetadata(aliasConfig);
+      const canonicalMeta = buildRouteMetadata(canonicalConfig);
+
+      // Verify alias resolves canonical to canonicalPath, NOT aliasPath
+      expect(aliasMeta.alternates?.canonical).toBe(item.canonicalPath);
+      expect(aliasMeta.alternates?.canonical).not.toBe(item.aliasPath);
+
+      // Verify canonical route resolves canonical to itself
+      expect(canonicalMeta.alternates?.canonical).toBe(item.canonicalPath);
+
+      // Verify social metadata for alias routes
+      expect(aliasMeta.openGraph?.title).toContain(aliasConfig.title);
+      expect(aliasMeta.openGraph?.description).toBe(aliasConfig.description);
+      const aliasOgImages = aliasMeta.openGraph?.images as Array<{
+        url: string;
+      }>;
+      expect(aliasOgImages[0]?.url).toContain(
+        `${item.aliasPath}/opengraph-image`
+      );
+      const aliasTwImages = aliasMeta.twitter?.images as Array<string>;
+      expect(aliasTwImages[0]).toContain(`${item.aliasPath}/opengraph-image`);
+
+      // Verify social metadata for canonical routes
+      expect(canonicalMeta.openGraph?.title).toContain(canonicalConfig.title);
+      expect(canonicalMeta.openGraph?.description).toBe(
+        canonicalConfig.description
+      );
+      const canonicalOgImages = canonicalMeta.openGraph?.images as Array<{
+        url: string;
+      }>;
+      expect(canonicalOgImages[0]?.url).toContain(
+        `${item.canonicalPath}/opengraph-image`
+      );
+      const canonicalTwImages = canonicalMeta.twitter?.images as Array<string>;
+      expect(canonicalTwImages[0]).toContain(
+        `${item.canonicalPath}/opengraph-image`
+      );
     }
   });
 

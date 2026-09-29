@@ -22,12 +22,10 @@ test.describe("Visual Regression & Drift Detection", () => {
     await expect(caseStudies).toBeVisible();
 
     // Verify all featured project cards are hydrated, visible, and bounded
-    const cards = page.getByTestId("featured-project-card");
-    const count = await cards.count();
-    expect(count).toBeGreaterThan(0);
+    const cardElements = await page.getByTestId("featured-project-card").all();
+    expect(cardElements.length).toBeGreaterThan(0);
 
-    for (let i = 0; i < count; i++) {
-      const card = cards.nth(i);
+    for (const card of cardElements) {
       await expect(card).toBeVisible();
       const box = await card.boundingBox();
       expect(box).not.toBeNull();

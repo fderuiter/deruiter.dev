@@ -849,17 +849,8 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         status: "M1 Scaffold Active",
         description:
           "Midwest ski-patrol operational judgment simulation and state machine foundation.",
-        techStack: [
-          "Finite State Machine",
-          "Operational Protocols",
-          "Deep Modules",
-          "React 19",
-        ],
-        highlights: [
-          "Operational trail sweep and dispatch routines",
-          "Deterministic shift phase transitions",
-          "Automated operational debrief reports",
-        ],
+        techStack: ["Next.js 16", "Canvas 2D"],
+        highlights: ["Triage simulation", "OET physics engine"],
       },
       {
         id: "nav-stack",

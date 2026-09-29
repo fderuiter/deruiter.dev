@@ -144,7 +144,20 @@ export async function measurePageRoute(
   url: string
 ): Promise<SingleRunMetrics> {
   // Navigate and wait for page to reach load state
-  await page.goto(url, { waitUntil: "load", timeout: 30000 });
+  try {
+    await page.goto(url, { waitUntil: "load", timeout: 30000 });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (
+      message.includes("ERR_ABORTED") ||
+      message.includes("ERR_CONNECTION_RESET")
+    ) {
+      await page.waitForTimeout(300);
+      await page.goto(url, { waitUntil: "load", timeout: 30000 });
+    } else {
+      throw error;
+    }
+  }
 
   // Give a brief window for layout shifts & LCP observers to settle
   await page.waitForTimeout(200);
@@ -278,6 +291,7 @@ export async function runPageBenchmarks(
         "--no-sandbox",
         "--disable-setuid-sandbox",
         "--disable-dev-shm-usage",
+        "--js-flags=--max-old-space-size=4096",
       ],
     });
 
@@ -297,43 +311,68 @@ export async function runPageBenchmarks(
             hasTouch: false,
           });
 
-    const context = await browser.newContext(contextOptions);
+    let currentContext = await browser.newContext(contextOptions);
+    let routeIndex = 0;
 
     for (const route of routes) {
-      const pageUrl = `${baseUrl.replace(/\/$/, "")}${route.path}`;
-      const page = await context.newPage();
-
-      if (throttled) {
-        try {
-          const client = await context.newCDPSession(page);
-          await client.send("Emulation.setCPUThrottlingRate", {
-            rate: THROTTLED_MOBILE_PROFILE.cpuSlowdownMultiplier,
-          });
-          await client.send("Network.enable");
-          await client.send("Network.emulateNetworkConditions", {
-            offline: false,
-            latency: THROTTLED_MOBILE_PROFILE.latency,
-            downloadThroughput: THROTTLED_MOBILE_PROFILE.downloadThroughput,
-            uploadThroughput: THROTTLED_MOBILE_PROFILE.uploadThroughput,
-          });
-        } catch (error) {
-          // The evidence records throttled: true, so an unthrottled run must
-          // not be reported as throttled.
-          await page.close();
-          throw new Error(
-            `Throttled benchmark requested but CDP throttling failed: ${
-              error instanceof Error ? error.message : String(error)
-            }`
-          );
+      if (routeIndex > 0 && routeIndex % 10 === 0) {
+        await currentContext.close().catch(() => {});
+        if (browser) {
+          await browser.close().catch(() => {});
         }
+        browser = await launchChromiumWithFallback({
+          headless: true,
+          args: [
+            "--no-sandbox",
+            "--disable-setuid-sandbox",
+            "--disable-dev-shm-usage",
+            "--js-flags=--max-old-space-size=4096",
+          ],
+        });
+        currentContext = await browser.newContext(contextOptions);
       }
+      routeIndex++;
+
+      const pageUrl = `${baseUrl.replace(/\/$/, "")}${route.path}`;
+
+      const createAndConfigurePage = async (): Promise<Page> => {
+        const page = await currentContext.newPage();
+        if (throttled) {
+          try {
+            const client = await currentContext.newCDPSession(page);
+            await client.send("Emulation.setCPUThrottlingRate", {
+              rate: THROTTLED_MOBILE_PROFILE.cpuSlowdownMultiplier,
+            });
+            await client.send("Network.enable");
+            await client.send("Network.emulateNetworkConditions", {
+              offline: false,
+              latency: THROTTLED_MOBILE_PROFILE.latency,
+              downloadThroughput: THROTTLED_MOBILE_PROFILE.downloadThroughput,
+              uploadThroughput: THROTTLED_MOBILE_PROFILE.uploadThroughput,
+            });
+          } catch (error) {
+            await page.close();
+            throw new Error(
+              `Throttled benchmark requested but CDP throttling failed: ${
+                error instanceof Error ? error.message : String(error)
+              }`
+            );
+          }
+        }
+        return page;
+      };
 
       // Warmup run
       if (options.onProgress) {
         options.onProgress({ route, currentRun: 0, totalRuns: runs });
       }
       try {
-        await measurePageRoute(page, pageUrl);
+        const warmupPage = await createAndConfigurePage();
+        try {
+          await measurePageRoute(warmupPage, pageUrl);
+        } finally {
+          await warmupPage.close();
+        }
       } catch {
         // Ignore warmup error
       }
@@ -341,19 +380,22 @@ export async function runPageBenchmarks(
       // Measured runs
       const samples: SingleRunMetrics[] = [];
       for (let run = 1; run <= runs; run++) {
-        const metrics = await measurePageRoute(page, pageUrl);
-        samples.push(metrics);
-        if (options.onProgress) {
-          options.onProgress({
-            route,
-            currentRun: run,
-            totalRuns: runs,
-            metrics,
-          });
+        const runPage = await createAndConfigurePage();
+        try {
+          const metrics = await measurePageRoute(runPage, pageUrl);
+          samples.push(metrics);
+          if (options.onProgress) {
+            options.onProgress({
+              route,
+              currentRun: run,
+              totalRuns: runs,
+              metrics,
+            });
+          }
+        } finally {
+          await runPage.close();
         }
       }
-
-      await page.close();
 
       const ttfbSummary = calculateSummary(samples.map((s) => s.ttfb));
       const fcpSummary = calculateSummary(samples.map((s) => s.fcp));
@@ -395,7 +437,7 @@ export async function runPageBenchmarks(
       });
     }
 
-    await context.close();
+    await currentContext.close();
   } finally {
     if (browser) {
       await browser.close();

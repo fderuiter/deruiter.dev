@@ -537,3 +537,92 @@
     flex-shrink: 0;
   }
 }
+
+/* Monkey C Mayhem (Garmin watch): Pre-Game Setup visual options. The CRT
+ * overlay is static; the shake animates transform only, fires once per
+ * discrete impact (crash, or GC on "high"), and never runs under reduced
+ * motion. */
+.garmin-crt[data-garmin-crt="soft"] {
+  background:
+    radial-gradient(circle, transparent 62%, rgba(0, 0, 0, 0.28) 100%),
+    repeating-linear-gradient(
+      0deg,
+      rgba(0, 0, 0, 0.12) 0,
+      rgba(0, 0, 0, 0.12) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+}
+
+.garmin-crt[data-garmin-crt="arcade"] {
+  background:
+    radial-gradient(circle, transparent 48%, rgba(0, 0, 0, 0.5) 100%),
+    repeating-linear-gradient(
+      0deg,
+      rgba(0, 0, 0, 0.2) 0,
+      rgba(0, 0, 0, 0.2) 1px,
+      transparent 1px,
+      transparent 3px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 0, 0, 0.05) 0,
+      rgba(0, 255, 0, 0.05) 1px,
+      rgba(0, 0, 255, 0.05) 2px
+    );
+}
+
+.garmin-crt[data-garmin-crt="scanlines"] {
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.4) 0,
+    rgba(0, 0, 0, 0.4) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+}
+
+@keyframes garmin-shake-subtle {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(-2px, 1px);
+  }
+  50% {
+    transform: translate(2px, -1px);
+  }
+  75% {
+    transform: translate(-1px, 1px);
+  }
+}
+
+@keyframes garmin-shake-high {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  20% {
+    transform: translate(-6px, 3px);
+  }
+  40% {
+    transform: translate(5px, -4px);
+  }
+  60% {
+    transform: translate(-4px, 2px);
+  }
+  80% {
+    transform: translate(3px, -2px);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .garmin-chassis[data-garmin-shake="subtle"][data-garmin-shake-event="crash"] {
+    animation: garmin-shake-subtle 320ms ease-out 1;
+  }
+  .garmin-chassis[data-garmin-shake="high"][data-garmin-shake-event="crash"],
+  .garmin-chassis[data-garmin-shake="high"][data-garmin-shake-event="gc"] {
+    animation: garmin-shake-high 380ms ease-out 1;
+  }
+}

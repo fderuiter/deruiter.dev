@@ -151,26 +151,30 @@ describe("NeuroRecon Workspace UI Suite", () => {
       manualButton?.click();
     });
 
-    expect(container.textContent).toContain(
+    expect(document.body.textContent).toContain(
       "NeuroRecon Field Manual · FreeSurfer 7.x"
     );
-    expect(container.textContent).toContain(
+    expect(document.body.textContent).toContain(
       "Topological Homeomorphism & Euler Characteristic"
     );
 
     // Close button
-    const dismissButton = Array.from(container.querySelectorAll("button")).find(
-      (btn) => btn.textContent?.includes("DISMISS FIELD MANUAL")
-    );
+    const dismissButton = Array.from(
+      document.body.querySelectorAll("button")
+    ).find((btn) => btn.textContent?.includes("DISMISS FIELD MANUAL"));
     expect(dismissButton).toBeDefined();
 
     await act(async () => {
       dismissButton?.click();
     });
 
-    expect(container.textContent).not.toContain(
-      "NeuroRecon Field Manual · FreeSurfer 7.x"
-    );
+    await act(async () => {
+      for (let i = 0; i < 30; i++) {
+        if (!document.body.querySelector('[role="dialog"]')) break;
+        await new Promise((r) => setTimeout(r, 50));
+      }
+    });
+    expect(document.body.querySelector('[role="dialog"]')).toBeNull();
   });
 
   it("executes CLI commands in the terminal and renders log outputs", async () => {

@@ -65,7 +65,8 @@ In the Vercel dashboard for the `portfolio` project:
 
 Verified through the GitHub API on 2026-09-28 for `fderuiter/portfolio`:
 
-- Pull requests are required, including for administrators. No approving
+- Pull requests are required, including for administrators unless the
+  [Owner Merge Override](#owner-merge-override) is on. No approving
   reviewer is required for this solo repository.
 - The exact required check is **Merge Gate (Required Checks Summary)**,
   bound to the GitHub Actions app (ID `15368`). It summarizes every required
@@ -91,6 +92,24 @@ check runs. Do not use `gh pr merge --admin` to bypass pending CI. When using
 enabled while Merge Gate is pending, then confirm it merges after success.
 Issue [#1247](https://github.com/fderuiter/portfolio/issues/1247) tracks the
 pending-CI verification.
+
+### Owner Merge Override
+
+CI runs on GitHub's shared free queue and can be slow. The repository owner
+may merge a pull request before Merge Gate finishes, and nobody else can:
+
+1. **Settings → Branches → Branch protection rules → main**, then clear
+   **Do not allow bypassing the above settings** (`enforce_admins` off). Keep
+   **Require status checks to pass** and the Merge Gate entry as they are.
+2. On a pull request, the owner then sees **Merge without waiting for
+   requirements to be met (bypass branch protections)**. Everyone else, and
+   auto-merge, still waits for Merge Gate.
+
+Production stays manual, so a bypass merge does not deploy. The cost is that a
+bypass merge that breaks `main` turns CI red on every other open pull request
+until a fix lands. Use it for changes whose risk is low, and confirm the
+`main` run afterward. The override does not relax the rule against
+`gh pr merge --admin` from agents: only the owner, in the GitHub UI, uses it.
 
 ## Environments
 
@@ -268,7 +287,22 @@ them.
 | `ALLOW_FALLBACK_PRODUCTION_BUILD` | Optional | None | Emergency override that lets a build ship fallback content. Set it for one build only, then remove it. |
 | `ALLOW_DESTRUCTIVE_MIGRATIONS` | Optional | None | Emergency override for the migration safety check. Set it for one build only, then remove it. |
 
-The QStash integration provisions `QSTASH_*`. No code reads them yet.
+### QStash (optional sub-daily email retries)
+
+| Variable | Class | Vercel scope | Notes |
+| --- | --- | --- | --- |
+| `QSTASH_TOKEN` | Optional | Production | Unset means no delayed retry is published and the daily maintenance run is the only retry path. Publishing also requires `VERCEL_ENV=production`. |
+| `QSTASH_URL` | Optional | Production | Regional API base URL; the client default is used when unset. |
+| `QSTASH_CURRENT_SIGNING_KEY` | Optional | Production | Verifies `/api/webhooks/qstash/retry` deliveries. Unset means the webhook answers 503. |
+| `QSTASH_NEXT_SIGNING_KEY` | Optional | Production | Second key so rotation never drops deliveries. Both keys are required. |
+
+A retryable send failure enqueues the email and publishes one delayed message
+(5 minutes, then 15 minutes, then 1 hour on later attempts). The webhook
+verifies the signature, retries that one queue row and reschedules while it is
+still retrying. This adds at most a few messages per failed email, inside the
+500 messages per day free tier ([ADR 0036](../../adr/0036-free-tier-offloading-and-provider-quota-governance.md)).
+Preview deployments neither publish nor act on deliveries while the QStash
+variables stay shared with Production (#622).
 
 ### Keeping secrets in Vercel
 

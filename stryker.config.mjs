@@ -37,14 +37,14 @@ const config = {
     "lib/error-sanitization.ts",
     "lib/security.ts",
   ],
-  // Ratchet (#960): measured 46.73% in CI and 48.52% locally on 2026-09-24
-  // after widening the Vitest include. `break` sits under both so the gate
-  // still catches regressions; raise it as tests kill surviving mutants.
-  // Target 80.
+  // Ratchet (#960, #968): measured 55.79% locally on 2026-09-29 (48.37% before
+  // the masonry and error-sanitization tests). CI ran about 1.8 points below
+  // local in #960, so `break` keeps that margin. Raise it as tests kill
+  // surviving mutants. Target 80.
   thresholds: {
     high: 85,
     low: 75,
-    break: 45,
+    break: 53,
   },
   concurrency: 4,
   timeoutMS: 2000,

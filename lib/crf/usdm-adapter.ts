@@ -136,6 +136,8 @@ export interface UsdmStudy {
   valueSets?: Record<string, unknown>[];
   codelists?: CodelistDefinition[];
   rules?: EditCheckRule[];
+  simulationState?: StudyProtocol["simulationState"];
+  provenance?: StudyProtocol["provenance"];
 }
 
 export interface UsdmDocument {
@@ -476,6 +478,8 @@ export function exportStudyToUsdmObject(study: StudyProtocol): UsdmDocument {
       codeLists,
       valueSets,
       rules: exportRules,
+      simulationState: study.simulationState,
+      provenance: study.provenance,
     },
   };
 }
@@ -615,7 +619,16 @@ export function importStudyFromUsdm(
   // Support direct StudyProtocol JSON fallback if user pasted a Universal CRF JSON
   if (doc.forms && doc.visits && doc.protocolNumber) {
     const val = validateUniversalCrf(doc as unknown as StudyProtocol);
-    if (val.success) return val.study!;
+    if (val.success) {
+      const uStudy = val.study!;
+      return {
+        ...uStudy,
+        provenance: {
+          ...(uStudy.provenance || {}),
+          sourceFormat: uStudy.provenance?.sourceFormat || "Universal CRF JSON",
+        },
+      };
+    }
   }
 
   const studyObj = (doc.study || doc) as UsdmStudy & Record<string, unknown>;
@@ -902,6 +915,16 @@ export function importStudyFromUsdm(
     epochs,
     cohorts,
     biomedicalConcepts,
+    simulationState:
+      studyObj.simulationState as StudyProtocol["simulationState"],
+    provenance: studyObj.provenance
+      ? {
+          ...(studyObj.provenance as StudyProtocol["provenance"]),
+          sourceFormat:
+            (studyObj.provenance as StudyProtocol["provenance"])
+              ?.sourceFormat || "CDISC USDM JSON",
+        }
+      : undefined,
   };
 
   return protocol;

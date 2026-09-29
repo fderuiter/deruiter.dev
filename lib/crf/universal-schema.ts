@@ -498,6 +498,20 @@ export type UniversalEdcSimulationState = z.infer<
   typeof EdcSimulationStateSchema
 >;
 
+export const StudyProvenanceSchema = z.object({
+  derivedFromBaselineId: z.string().optional(),
+  restoredAt: z.string().optional(),
+  restoredBy: z.string().optional(),
+  notes: z.string().optional(),
+  sourceFormat: z.string().optional(),
+  sourceVersion: z.string().optional(),
+  importedAt: z.string().optional(),
+  importedBy: z.string().optional(),
+  timestamp: z.string().optional(),
+  author: z.string().optional(),
+});
+export type UniversalStudyProvenance = z.infer<typeof StudyProvenanceSchema>;
+
 // 9. Root Universal Study Protocol Schema
 export const UniversalCrfProtocolSchema = z.object({
   $schema: z.string().optional(),
@@ -524,6 +538,7 @@ export const UniversalCrfProtocolSchema = z.object({
   testScenarios: z.array(TestScenarioSchema).default([]),
   reviewThreads: z.array(StudyReviewThreadSchema).optional(),
   simulationState: EdcSimulationStateSchema.optional(),
+  provenance: StudyProvenanceSchema.optional(),
   auditTrail: z.array(AuditTrailEntrySchema).optional(),
   auditLog: z.array(AuditTrailEntrySchema).optional(),
 });

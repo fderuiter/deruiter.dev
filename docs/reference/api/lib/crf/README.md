@@ -2060,6 +2060,12 @@ Re-exports [StudyProvenance](types/interfaces/StudyProvenance.md)
 
 ***
 
+### StudyProvenanceSchema
+
+Re-exports [StudyProvenanceSchema](universal-schema/variables/StudyProvenanceSchema.md)
+
+***
+
 ### StudyReviewActor
 
 Re-exports [StudyReviewActor](types/interfaces/StudyReviewActor.md)
@@ -2351,6 +2357,12 @@ Re-exports [UniversalStudyProtocol](universal-schema/type-aliases/UniversalStudy
 ### UniversalStudyProtocolSchema
 
 Re-exports [UniversalStudyProtocolSchema](universal-schema/variables/UniversalStudyProtocolSchema.md)
+
+***
+
+### UniversalStudyProvenance
+
+Re-exports [UniversalStudyProvenance](universal-schema/type-aliases/UniversalStudyProvenance.md)
 
 ***
 

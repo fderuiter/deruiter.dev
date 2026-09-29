@@ -274,19 +274,28 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
 
   const attachProvenance = (st: StudyProtocol): StudyProtocol => {
     const now = new Date().toISOString();
+    const existingProv = st.provenance || {};
+    const sourceFormat = existingProv.sourceFormat || "CDISC USDM JSON";
+    const author = existingProv.author || st.sponsor;
     return {
       ...st,
       provenance: {
-        ...st.provenance,
-        importedAt: now,
-        restoredAt: now,
-        timestamp: now,
-        importedBy: "CDISC Ingestion Engine",
-        restoredBy: "CDISC Ingestion Engine",
-        author: "CDISC Ingestion Engine",
-        sourceFormat: "CDISC USDM JSON",
-        sourceVersion: st.schemaVersion || st.version || "3.0.0",
-        notes: `Imported via ExportImportModal at ${now}`,
+        ...existingProv,
+        ...(author ? { author } : {}),
+        importedAt: existingProv.importedAt || now,
+        importedBy: existingProv.importedBy || "CRF Studio User",
+        sourceFormat,
+        sourceVersion:
+          existingProv.sourceVersion ||
+          st.schemaVersion ||
+          st.version ||
+          "1.0.0",
+        timestamp: existingProv.timestamp || now,
+        notes: existingProv.notes
+          ? existingProv.notes.includes("Imported via ExportImportModal")
+            ? existingProv.notes
+            : `${existingProv.notes} | Imported via ExportImportModal at ${now}`
+          : `Imported via ExportImportModal at ${now}`,
       },
     };
   };
@@ -302,16 +311,11 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
       const { validateStudyCompliance } =
         await import("@/lib/crf/cdisc-conformance-linter");
       const violations = validateStudyCompliance(imported);
-      const criticalViolations = violations.filter(
-        (v) => v.severity === "error"
-      );
 
       if (violations.length > 0) {
         setPreflightViolations(violations);
         setPendingStudy(imported);
-        if (criticalViolations.length > 0) {
-          return;
-        }
+        return;
       }
 
       const studyWithProvenance = attachProvenance(imported);
@@ -328,9 +332,21 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
 
   const handleAutoFixAndImport = async () => {
     if (!pendingStudy) return;
-    const { autoFixAllViolations } =
+    const { autoFixAllViolations, validateStudyCompliance } =
       await import("@/lib/crf/cdisc-conformance-linter");
     const { updatedStudy } = autoFixAllViolations(pendingStudy);
+
+    const remainingViolations = validateStudyCompliance(updatedStudy);
+    const hasRemainingErrors = remainingViolations.some(
+      (v) => v.severity === "error"
+    );
+
+    if (hasRemainingErrors) {
+      setPendingStudy(updatedStudy);
+      setPreflightViolations(remainingViolations);
+      return;
+    }
+
     const studyWithProvenance = attachProvenance(updatedStudy);
     onImportStudy(studyWithProvenance);
     setImportJsonText("");
@@ -340,6 +356,11 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
 
   const handleBypassAndImport = () => {
     if (!pendingStudy) return;
+    const criticalViolations = preflightViolations.filter(
+      (v) => v.severity === "error"
+    );
+    if (criticalViolations.length > 0) return;
+
     const studyWithProvenance = attachProvenance(pendingStudy);
     onImportStudy(studyWithProvenance);
     setImportJsonText("");

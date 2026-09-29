@@ -511,11 +511,27 @@ export function runSecurityAudit(options: SecurityAuditOptions = {}): boolean {
     shell: true,
   });
 
-  let auditJson: AuditReport;
+  let auditJson: AuditReport = {};
   try {
-    auditJson = JSON.parse(
-      auditResult.stdout || auditResult.stderr || "{}"
-    ) as AuditReport;
+    const rawOutput = (auditResult.stdout || "").trim();
+    if (rawOutput) {
+      const firstBrace = rawOutput.indexOf("{");
+      const lastBrace = rawOutput.lastIndexOf("}");
+      const jsonStr =
+        firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace
+          ? rawOutput.slice(firstBrace, lastBrace + 1)
+          : rawOutput;
+      auditJson = JSON.parse(jsonStr) as AuditReport;
+    } else if (auditResult.stderr && auditResult.stderr.includes("{")) {
+      const rawStderr = auditResult.stderr.trim();
+      const firstBrace = rawStderr.indexOf("{");
+      const lastBrace = rawStderr.lastIndexOf("}");
+      if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+        auditJson = JSON.parse(
+          rawStderr.slice(firstBrace, lastBrace + 1)
+        ) as AuditReport;
+      }
+    }
   } catch (_e) {
     console.error(
       `${colors.brightRed}❌ Failed to parse npm audit JSON output.${colors.reset}`

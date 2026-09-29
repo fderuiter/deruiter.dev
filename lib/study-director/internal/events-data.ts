@@ -7,7 +7,7 @@ function opt(
   attentionCost: number,
   debt: number,
   effects: EventOption["effects"],
-  extra: Pick<EventOption, "flags" | "schedule"> = {}
+  extra: Pick<EventOption, "flags" | "schedule" | "finding"> = {}
 ): EventOption {
   return {
     id,
@@ -163,9 +163,24 @@ export const STUDY_EVENTS: StudyEvent[] = [
         spend: 6000,
         workload: [{ memberId: "maya", delta: -15 }],
       }),
-      opt("scope", "Reduce validation scope", 1, 8, {
-        meters: { integrity: -8, compliance: -6 },
-      }),
+      opt(
+        "scope",
+        "Reduce validation scope",
+        1,
+        8,
+        {
+          meters: { integrity: -8, compliance: -6 },
+        },
+        {
+          finding: {
+            question:
+              "Edit-check testing was reduced during database build. What was the rationale and impact assessment?",
+            answer:
+              "The reduced scope, its rationale and an impact assessment are on file.",
+            severity: "minor",
+          },
+        }
+      ),
       opt("escalate", "Escalate to management", 2, 2, {
         slipDays: 2,
         meters: { client: -2 },
@@ -188,9 +203,24 @@ export const STUDY_EVENTS: StudyEvent[] = [
         slipDays: 2,
         sites: [{ siteId: "site-03", trainingCurrent: true }],
       }),
-      opt("waive", "Let them enroll and train later", 0, 8, {
-        meters: { compliance: -3 },
-      }),
+      opt(
+        "waive",
+        "Let them enroll and train later",
+        0,
+        8,
+        {
+          meters: { compliance: -3 },
+        },
+        {
+          finding: {
+            question:
+              "Site 03 staff performed study procedures before completing training on Amendment 1. Explain.",
+            answer:
+              "A waiver with a risk assessment and completed training records is on file.",
+            severity: "minor",
+          },
+        }
+      ),
       opt("remote", "Have Walt train them remotely", 2, 2, {
         workload: [{ memberId: "walt", delta: 12 }],
         sites: [{ siteId: "site-03", trainingCurrent: true }],
@@ -318,7 +348,16 @@ export const STUDY_EVENTS: StudyEvent[] = [
           meters: { compliance: -4 },
           sites: [{ siteId: "site-01", unsignedSource: 2 }],
         },
-        { flags: ["consent-waived"] }
+        {
+          flags: ["consent-waived"],
+          finding: {
+            question:
+              "Consent forms for Site 01 subjects lack the required second signature. Explain.",
+            answer:
+              "The deviation was logged, the PI was retrained and consent was re-obtained.",
+            severity: "major",
+          },
+        }
       ),
       opt("deviation", "Log it as a deviation and retrain", 3, 0, {
         meters: { compliance: 2 },
@@ -404,7 +443,16 @@ export const STUDY_EVENTS: StudyEvent[] = [
           sites: [{ siteId: "site-01", eligibilityConcerns: 1 }],
           meters: { integrity: -3 },
         },
-        { flags: ["subject-017-proceeded"] }
+        {
+          flags: ["subject-017-proceeded"],
+          finding: {
+            question:
+              "Subject 017 received study medication despite a creatinine result outside the eligibility criteria. Explain why the subject remained enrolled.",
+            answer:
+              "Medical monitor reviewed the laboratory result. A repeat sample showed the first was hemolyzed. The repeat met the criterion and sponsor medical approval is on file.",
+            severity: "major",
+          },
+        }
       ),
       opt(
         "review",
@@ -436,9 +484,24 @@ export const STUDY_EVENTS: StudyEvent[] = [
         meters: { compliance: 4 },
         sites: allSites({ trainingCurrent: false }),
       }),
-      opt("agree", "Agree by email", 1, 12, {
-        meters: { client: 5, compliance: -6 },
-      }),
+      opt(
+        "agree",
+        "Agree by email",
+        1,
+        12,
+        {
+          meters: { client: 5, compliance: -6 },
+        },
+        {
+          finding: {
+            question:
+              "The primary PK timepoint changed without a formal protocol amendment or IRB approval. Explain.",
+            answer:
+              "The change went through a documented amendment with IRB approval before it took effect.",
+            severity: "major",
+          },
+        }
+      ),
       opt("hold", "Hold the line on the protocol", 2, 2, {
         meters: { client: -7, integrity: 3 },
       }),
@@ -607,10 +670,25 @@ export const STUDY_EVENTS: StudyEvent[] = [
     ttl: 3,
     ifIgnored: { meters: { client: -3 } },
     options: [
-      opt("yes", "Commit to the earlier date", 1, 10, {
-        slipDays: -5,
-        meters: { client: 6, integrity: -6, compliance: -4 },
-      }),
+      opt(
+        "yes",
+        "Commit to the earlier date",
+        1,
+        10,
+        {
+          slipDays: -5,
+          meters: { client: 6, integrity: -6, compliance: -4 },
+        },
+        {
+          finding: {
+            question:
+              "The lock date was moved up a week. What was assessed about data readiness?",
+            answer:
+              "The impact assessment and sponsor approval are documented.",
+            severity: "minor",
+          },
+        }
+      ),
       opt("plan", "Show what it would cost", 2, 2, { meters: { client: 1 } }),
       opt("no", "Keep the plan", 1, 0, { meters: { client: -4 } }),
     ],
@@ -673,7 +751,16 @@ export const STUDY_EVENTS: StudyEvent[] = [
         0,
         10,
         { meters: { integrity: -10 } },
-        { flags: ["auc-mismatch-accepted"] }
+        {
+          flags: ["auc-mismatch-accepted"],
+          finding: {
+            question:
+              "Independent programming did not match production for two subjects. How was it resolved?",
+            answer:
+              "The mismatch, its investigation and the resolution are documented.",
+            severity: "major",
+          },
+        }
       ),
       opt("priya", "Ask Priya to arbitrate", 1, 2, {
         workload: [{ memberId: "priya", delta: 10 }],
@@ -717,9 +804,23 @@ export const STUDY_EVENTS: StudyEvent[] = [
         slipDays: 2,
         meters: { integrity: 3 },
       }),
-      opt("ship", "Ship the draft", 1, 6, {
-        meters: { client: 3, compliance: -3 },
-      }),
+      opt(
+        "ship",
+        "Ship the draft",
+        1,
+        6,
+        {
+          meters: { client: 3, compliance: -3 },
+        },
+        {
+          finding: {
+            question:
+              "The CSR draft was released with open table comments. What controls were in place?",
+            answer: "Release rationale and comment disposition are documented.",
+            severity: "minor",
+          },
+        }
+      ),
     ],
   },
   {
@@ -736,7 +837,21 @@ export const STUDY_EVENTS: StudyEvent[] = [
         meters: { compliance: 6 },
         slipDays: 1,
       }),
-      opt("close", "Close it out as is", 0, 10, { meters: { compliance: -4 } }),
+      opt(
+        "close",
+        "Close it out as is",
+        0,
+        10,
+        { meters: { compliance: -4 } },
+        {
+          finding: {
+            question:
+              "The trial master file was closed with known gaps. Explain.",
+            answer: "Gaps were remediated and reconciled before closeout.",
+            severity: "major",
+          },
+        }
+      ),
     ],
   },
 ];

@@ -19,10 +19,7 @@ export function runMutationGate(): void {
     execFileSync(process.execPath, [strykerCli, "run"], {
       cwd: workspaceRoot,
       stdio: "inherit",
-      env: {
-        ...process.env,
-        VITE_CONFIG_NATIVE_IGNORE_WARNING: "1",
-      },
+      env: process.env,
     });
     console.log("\n✅ Stryker Mutation Testing Gate passed.\n");
   } catch (_error) {

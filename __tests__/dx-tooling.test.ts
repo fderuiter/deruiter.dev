@@ -190,11 +190,18 @@ describe("Developer Experience (DX) Tooling Suite", () => {
         ).valid
       ).toBe(true);
 
+      expect(
+        validateBranchName(
+          "stitch/migrate-vitest-config-to-mts-jm1-169eb894-d239-47d5-9fd3-5a69a8cf9a58"
+        ).valid
+      ).toBe(true);
+
       expect(validateBranchName("jules-cleanup").valid).toBe(false);
       expect(validateBranchName("Jules/Uppercase").valid).toBe(false);
       expect(validateBranchName("jules/Uppercase").valid).toBe(false);
-      expect(validateBranchName("stitch/feat/example").valid).toBe(false);
-      expect(validateBranchName("stitch/fix/example").valid).toBe(false);
+      expect(validateBranchName("stitch-cleanup").valid).toBe(false);
+      expect(validateBranchName("Stitch/Uppercase").valid).toBe(false);
+      expect(validateBranchName("stitch/Uppercase").valid).toBe(false);
     });
 
     it("passes checkGitHygieneConfig diagnostic check", () => {

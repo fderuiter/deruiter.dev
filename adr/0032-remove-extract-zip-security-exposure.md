@@ -19,7 +19,7 @@ The regression test treats the installed dependency graph, audit policy, and bui
 ## Invariant Compliance
 
 - **AGENTS.md Dependency and security invariants**: The dependency graph no longer includes the unpatched extractor or a dynamic CI installation path to it; security policy retains only explicit, expiry-bound residual risks.
-- **Verification**: `npm ls extract-zip --all`, `npm run audit:security`, `npm run typecheck`, and `VITE_CONFIG_NATIVE_IGNORE_WARNING=1 npx vitest run __tests__/extract-zip-remediation.test.ts` verify removal, policy, and reachability.
+- **Verification**: `npm ls extract-zip --all`, `npm run audit:security`, `npm run typecheck`, and `npx vitest run __tests__/extract-zip-remediation.test.ts` verify removal, policy, and reachability.
 
 ## Consequences
 

@@ -12,6 +12,7 @@ import { useAudio } from "@/components/providers/AudioProvider";
 import { useAnnouncer } from "@/hooks/useAnnouncer";
 import { puzzleLevels } from "@/lib/quasi-perfect/levels";
 import { tacticDefs } from "@/lib/quasi-perfect/tactics";
+import { mergeLevelScore } from "@/lib/quasi-perfect/progress";
 import {
   STORY_RAM_MULTIPLIER,
   computeLevelStars,
@@ -186,7 +187,10 @@ export const QuasiPerfectPuzzler: React.FC = () => {
         currentLevelIndex: existing.currentLevelIndex || 0,
         completedLevels: {
           ...(existing.completedLevels || {}),
-          [score.levelId]: score,
+          [score.levelId]: mergeLevelScore(
+            existing.completedLevels?.[score.levelId],
+            score
+          ),
         },
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
@@ -1299,6 +1303,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
           {levelSolved && currentScore && (
             <VictoryModal
               score={currentScore}
+              savedBest={parsedProgress.completedLevels?.[currentLevel.id]}
               level={currentLevel}
               totalLevels={puzzleLevels.length}
               currentLevelIndex={currentLevelIndex}

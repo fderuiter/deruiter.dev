@@ -222,6 +222,7 @@
 - [lib/quasi-perfect-puzzler](lib/quasi-perfect-puzzler/README.md)
 - [lib/quasi-perfect/engine](lib/quasi-perfect/engine/README.md)
 - [lib/quasi-perfect/levels](lib/quasi-perfect/levels/README.md)
+- [lib/quasi-perfect/progress](lib/quasi-perfect/progress/README.md)
 - [lib/quasi-perfect/ram](lib/quasi-perfect/ram/README.md)
 - [lib/quasi-perfect/tactics](lib/quasi-perfect/tactics/README.md)
 - [lib/quasi-perfect/types](lib/quasi-perfect/types/README.md)

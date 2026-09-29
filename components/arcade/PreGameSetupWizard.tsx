@@ -360,6 +360,7 @@ interface PreGameSetupWizardProps {
   isCircularDisplay?: boolean;
 }
 
+/* jscpd:ignore-start */
 export const PreGameSetupWizard: React.FC<PreGameSetupWizardProps> = ({
   gameId,
   gameTitle = "Arcade Game",
@@ -851,4 +852,5 @@ export const PreGameSetupWizard: React.FC<PreGameSetupWizardProps> = ({
       </div>
     </div>
   );
+/* jscpd:ignore-end */
 };

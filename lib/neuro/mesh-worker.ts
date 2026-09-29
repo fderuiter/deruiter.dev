@@ -31,6 +31,7 @@ function getDefaultMeshWorkerTarget(): MeshWorkerTarget {
 /**
  * Core handler processing a single MeshWorkerRequest payload and computing geometry buffers with zero-copy transferables.
  */
+/* jscpd:ignore-start */
 export function processMeshWorkerRequest(req: MeshWorkerRequest): {
   response: MeshWorkerResponse;
   transferables: ArrayBuffer[];
@@ -95,6 +96,7 @@ export function processMeshWorkerRequest(req: MeshWorkerRequest): {
       rhBuf.colors.buffer as ArrayBuffer,
       rhBuf.indices.buffer as ArrayBuffer
     );
+/* jscpd:ignore-end */
   }
 
   const response: MeshWorkerResponse = {

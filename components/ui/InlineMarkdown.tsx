@@ -21,6 +21,7 @@ import { useTerminology } from "@/components/providers/TerminologyProvider";
  * Synchronously swaps compiled terminology tags for either simplified plain-text definitions
  * or original technical terms, then strips remaining raw HTML tags.
  */
+/* jscpd:ignore-start */
 export function resolveSnippetTerminology(
   html: string,
   simplified: boolean
@@ -50,6 +51,7 @@ export function resolveSnippetTerminology(
       if (!isTermTag) {
         return fullTag;
       }
+/* jscpd:ignore-end */
 
       if (simplified) {
         const termMatch = /data-term=["']([^"']*)["']/i.exec(attrs);

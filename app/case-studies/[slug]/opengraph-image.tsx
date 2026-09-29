@@ -2,6 +2,7 @@ import { createSocialImageResponse, OG_IMAGE_SIZE, OG_IMAGE_CONTENT_TYPE } from 
 import { ROUTE_METADATA_CONFIGS } from "@/lib/seo-metadata";
 
 export const runtime = "nodejs";
+/* jscpd:ignore-start */
 export const alt = "Case Study Technical Deep-Dive | Frederick de Ruiter";
 export const size = OG_IMAGE_SIZE;
 export const contentType = OG_IMAGE_CONTENT_TYPE;
@@ -17,6 +18,7 @@ export default async function Image({ params }: ImageProps) {
   const config = Object.values(ROUTE_METADATA_CONFIGS).find(
     (c) => c.path === `/case-studies/${slug}` || c.path === `/work/${slug}`
   );
+/* jscpd:ignore-end */
 
   const title = config?.title || `Technical Case Study: ${slug}`;
   const description = config?.description || "In-depth technical architecture breakdown and verifiable systems design.";

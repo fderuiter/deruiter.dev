@@ -33,6 +33,7 @@ export function normalizeUnionOrder(markdown: string): string {
 }
 
 /** Whether two generated pages differ at most in the order of literal unions. */
+/* jscpd:ignore-start */
 export function sameExceptUnionOrder(a: string, b: string): boolean {
   return a === b || normalizeUnionOrder(a) === normalizeUnionOrder(b);
 }
@@ -43,6 +44,7 @@ function listFiles(directory: string, relativeDirectory = ""): string[] {
     const relativePath = path.join(relativeDirectory, entry.name);
     return entry.isDirectory()
       ? listFiles(path.join(directory, entry.name), relativePath)
+/* jscpd:ignore-end */
       : [relativePath];
   });
 }

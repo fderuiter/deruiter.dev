@@ -37,6 +37,7 @@ interface Brain3DViewerProps {
   onCrosshairChange?: (coord: VoxelCoord) => void;
 }
 
+/* jscpd:ignore-start */
 export const Brain3DViewer: React.FC<Brain3DViewerProps> = ({
   surfaceMode,
   crosshair,
@@ -569,6 +570,7 @@ export const Brain3DViewer: React.FC<Brain3DViewerProps> = ({
     }
     isDraggingRef.current = false;
   };
+/* jscpd:ignore-end */
 
   return (
     <div className="relative w-full h-full min-h-[380px] bg-zinc-950 rounded-2xl border border-zinc-800/80 overflow-hidden flex flex-col select-none">

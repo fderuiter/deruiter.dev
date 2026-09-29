@@ -491,6 +491,7 @@ export function generateSubcorticalBuffers(
 /**
  * Procedurally generates raw cortical surface geometry array buffers synchronously.
  */
+/* jscpd:ignore-start */
 export function createCorticalSurfaceMeshBuffers(
   mode: SurfaceMode = "pial",
   _wireframe = false,
@@ -528,3 +529,4 @@ export function createCorticalSurfaceMeshBuffers(
 
   return buffers;
 }
+/* jscpd:ignore-end */

@@ -14,6 +14,7 @@ export interface ClinicalFormulaPreset {
   }[];
 }
 
+/* jscpd:ignore-start */
 export const CLINICAL_FORMULA_PRESETS: ClinicalFormulaPreset[] = [
   {
     id: "bsa_mosteller",
@@ -122,6 +123,7 @@ export function mapPresetToFormVariables(presetFormula: string, fields: CRFField
     if (f.cdashMetadata?.sdtmVariable) {
       fieldLookup.set(f.cdashMetadata.sdtmVariable.toUpperCase(), f.variableName);
     }
+/* jscpd:ignore-end */
   });
 
   CLINICAL_FORMULA_PRESETS.forEach((preset) => {

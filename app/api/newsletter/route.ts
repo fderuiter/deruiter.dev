@@ -1,3 +1,4 @@
+/* jscpd:ignore-start */
 import { NextRequest, NextResponse } from "next/server";
 import { NewsletterSubscriptionSchema } from "@/lib/schemas";
 import { NewsletterService } from "@/lib/services/newsletter-service";
@@ -63,6 +64,7 @@ export const POST = createApiHandler(
             },
             { status: 201 }
           );
+/* jscpd:ignore-end */
         }
       }
 

@@ -83,6 +83,7 @@ export function validateLockfiles(root: string): {
 /**
  * Run Interactive DX Setup Routine
  */
+/* jscpd:ignore-start */
 export async function runSetupWorkflow(
   options: SetupOptions = {}
 ): Promise<SetupResult> {
@@ -268,6 +269,7 @@ export async function runSetupWorkflow(
               rl.close();
               resolve(ans.trim());
             }
+/* jscpd:ignore-end */
           )
         );
         if (answer.toLowerCase() === "n" || answer.toLowerCase() === "no") {

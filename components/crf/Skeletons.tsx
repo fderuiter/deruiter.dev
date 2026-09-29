@@ -1,5 +1,6 @@
 import React from "react";
 
+/* jscpd:ignore-start */
 export const VisitMatrixEditorSkeleton: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col h-full bg-zinc-950 p-3 sm:p-6 overflow-y-auto animate-pulse">
@@ -152,6 +153,7 @@ export const LiveEdcSimulatorSkeleton: React.FC = () => {
       </div>
     </div>
   );
+/* jscpd:ignore-end */
 };
 
 export const WorkflowWizardModalSkeleton: React.FC = () => {

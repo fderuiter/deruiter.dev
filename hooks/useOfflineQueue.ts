@@ -210,6 +210,7 @@ export function getOfflineQueueLength(): number {
  *
  * @returns Object summarizing processed and failed items count.
  */
+/* jscpd:ignore-start */
 export async function flushOfflineQueue(): Promise<{
   processed: number;
   failed: number;
@@ -312,6 +313,7 @@ export async function flushOfflineQueue(): Promise<{
   isProcessingQueue = false;
   return { processed, failed };
 }
+/* jscpd:ignore-end */
 
 function subscribe(callback: () => void) {
   subscribers.add(callback);

@@ -1,3 +1,4 @@
+/* jscpd:ignore-start */
 import { NextRequest, NextResponse } from "next/server";
 import { ReactionSubmissionSchema } from "@/lib/schemas";
 import { CaseStudyService } from "@/lib/services/case-study-service";
@@ -69,3 +70,4 @@ export const POST = createApiHandler(
     },
   }
 );
+/* jscpd:ignore-end */

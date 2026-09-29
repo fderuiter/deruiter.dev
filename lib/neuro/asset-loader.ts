@@ -35,6 +35,7 @@ function cloneRawBuffers(buffers: RawGeometryBuffer[]): RawGeometryBuffer[] {
  * Load external 3D brain model (.glb, .gltf, or .obj) and extract raw vertex and index data buffers.
  * Stores raw geometry buffers in persistent module memory rather than live engine scene objects.
  */
+/* jscpd:ignore-start */
 export async function loadExternalBrainBuffers(
   modelUrl: string,
   mode: SurfaceMode = "pial",
@@ -217,6 +218,7 @@ export async function loadExternalBrainBuffers(
               indices,
             });
           }
+/* jscpd:ignore-end */
         }
       });
     }

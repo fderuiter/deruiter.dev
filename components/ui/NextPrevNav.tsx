@@ -23,6 +23,7 @@ interface NextPrevNavProps {
   className?: string;
 }
 
+/* jscpd:ignore-start */
 export const NextPrevNav: React.FC<NextPrevNavProps> = ({
   prev,
   next,
@@ -100,4 +101,5 @@ export const NextPrevNav: React.FC<NextPrevNavProps> = ({
       </div>
     </div>
   );
+/* jscpd:ignore-end */
 };

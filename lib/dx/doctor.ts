@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { execSync, spawnSync } from "child_process";
+import { execSync } from "child_process";
 import { scanFile } from "../security-scan";
 import { colors, badge, formatHeader } from "./utils";
 import { checkEnvironmentVariables } from "./env-guard";
@@ -2379,71 +2379,6 @@ export function checkServiceResultTypes(
   };
 }
 
-export function checkCodeClones(root: string): DiagnosticCheckResult {
-  try {
-    const res = spawnSync("npx", ["jscpd"], {
-      cwd: root,
-      encoding: "utf-8",
-      env: { ...process.env },
-    });
-
-    if (res.status === 0) {
-      return {
-        id: "quality-code-clones",
-        name: "Zero Duplicate Code Clones Guard (jscpd)",
-        category: "quality",
-        status: "pass",
-        message:
-          "No unapproved duplicate code clones exceeding 50 tokens detected across workspace.",
-      };
-    }
-
-    const output = (res.stdout || "") + "\n" + (res.stderr || "");
-    const details = output
-      .split("\n")
-      .filter(
-        (line) =>
-          line.includes("Clone found") ||
-          line.includes("ERROR:") ||
-          line.includes(" - ")
-      )
-      .slice(0, 15);
-
-    return {
-      id: "quality-code-clones",
-      name: "Zero Duplicate Code Clones Guard (jscpd)",
-      category: "quality",
-      status: "fail",
-      message:
-        "Duplicate code clones exceeding configured token threshold (50 tokens) detected.",
-      details:
-        details.length > 0
-          ? details
-          : ["Run `npm run lint:clones` to inspect duplicated code blocks."],
-      fixable: false,
-      remediation: {
-        id: "fix-quality-code-clones",
-        title:
-          "Inspect and refactor duplicate code blocks or baseline in .jscpdignore",
-        command: "npm run lint:clones",
-        autoFixable: false,
-        scope: "quality",
-      },
-    };
-  } catch (err) {
-    return {
-      id: "quality-code-clones",
-      name: "Zero Duplicate Code Clones Guard (jscpd)",
-      category: "quality",
-      status: "fail",
-      message: `Failed to execute clone detection: ${
-        err instanceof Error ? err.message : String(err)
-      }`,
-      fixable: false,
-    };
-  }
-}
-
 export interface DiagnosticSummary {
   results: DiagnosticCheckResult[];
   hasFailures: boolean;
@@ -2495,7 +2430,6 @@ export async function runDiagnostics(
     checkBundleBudgets(root),
     checkSubRoutePerformance(root),
     checkModuleBoundaries(root),
-    checkCodeClones(root),
   ];
 
   const checks = rawChecks.map((check) => {

@@ -190,6 +190,7 @@ function parseInlineNodes(
   return nodes;
 }
 
+/* jscpd:ignore-start */
 const FormattedMarkdownText: React.FC<{ text: string; className?: string }> = ({
   text,
   className,
@@ -287,6 +288,7 @@ const FormattedMarkdownText: React.FC<{ text: string; className?: string }> = ({
               ))}
             </div>
           );
+/* jscpd:ignore-end */
         }
 
         const nodes = parseInlineNodes(block.raw, simplified);

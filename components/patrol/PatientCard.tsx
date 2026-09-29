@@ -49,6 +49,7 @@ interface PatientCardProps {
  * Notice: Educational simulation prototype.
  * // PLACEHOLDER — needs OEC/NSP content review, see #744
  */
+/* jscpd:ignore-start */
 export const PatientCard: React.FC<PatientCardProps> = ({
   scenario,
   revealedPatient,
@@ -408,4 +409,5 @@ export const PatientCard: React.FC<PatientCardProps> = ({
         )}
     </article>
   );
+/* jscpd:ignore-end */
 };

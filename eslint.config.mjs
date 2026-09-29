@@ -63,7 +63,7 @@ const eslintConfig = defineConfig([
         },
         {
           selector:
-            "JSXElement[openingElement.name.name='button'][openingElement.attributes.0.name.name='onClick'][openingElement.attributes.0.value.expression.callee.object.name='navigator'][openingElement.attributes.0.value.expression.callee.property.name='clipboard']",
+            "JSXElement[openingElement.name.name='button']:has(JSXAttribute[name.name='onClick'] MemberExpression[property.name='clipboard'])",
           message:
             "Do not re-implement copy button logic using raw <button> and navigator.clipboard. Use the canonical <CopyButton /> component or useClipboard hook instead.",
         },

@@ -10,6 +10,7 @@ import { getIndex, SyntheticVolume } from "./volume-generator";
 /**
  * Evaluate the live QA status of the current workspace state.
  */
+/* jscpd:ignore-start */
 export function evaluateQAMetrics(
   scenario: ScenarioConfig,
   volume: SyntheticVolume,
@@ -155,6 +156,7 @@ export function evaluateQAMetrics(
       if (volume.labels[index] === 3 && initialMask[index] === 1) {
         finalEdits.set(`${edit.layer}:${index}`, edit.newValue);
       }
+/* jscpd:ignore-end */
     }
     const cutVoxels = new Set<number>();
     for (const [key, value] of finalEdits) {

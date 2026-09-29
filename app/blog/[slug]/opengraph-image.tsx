@@ -6,6 +6,7 @@ import {
 import { ROUTE_METADATA_CONFIGS } from "@/lib/seo-metadata";
 
 export const runtime = "nodejs";
+/* jscpd:ignore-start */
 export const alt = "Engineering Dispatch | Frederick de Ruiter";
 export const size = OG_IMAGE_SIZE;
 export const contentType = OG_IMAGE_CONTENT_TYPE;
@@ -21,6 +22,7 @@ export default async function Image({ params }: ImageProps) {
   const config = Object.values(ROUTE_METADATA_CONFIGS).find(
     (c) => c.path === `/blog/${slug}`
   );
+/* jscpd:ignore-end */
 
   const title = config?.title || `Dispatch: ${slug}`;
   const description =

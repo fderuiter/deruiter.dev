@@ -346,8 +346,9 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
               const offset = nodeOffsets[node.id] || { x: 0, y: 0 };
               const isSelected = selectedNodeIds.includes(node.id);
               const isInspected = inspectedNodeId === node.id;
+              const isGivenPremise = node.type === "premise";
               const isNodeProven =
-                node.type === "premise" ||
+                isGivenPremise ||
                 (node.id === activeTheorem.intermediateNodeId
                   ? proofStatus.isC_Proven
                   : proofStatus.isE_Proven);
@@ -422,7 +423,7 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
                   <button
                     type="button"
                     tabIndex={0}
-                    aria-label={`Node ${node.id}, ${node.label}, ${node.type}, ${isNodeProven ? "proven" : "pending"}, ${isSelected ? "selected" : "not selected"}`}
+                    aria-label={`Node ${node.id}, ${node.label}, ${node.type}, ${isGivenPremise ? "given premise" : isNodeProven ? "proven" : "pending"}, ${isSelected ? "selected" : "not selected"}`}
                     aria-pressed={isSelected}
                     aria-describedby="proof-node-keyboard-help"
                     onClick={(event) =>
@@ -446,12 +447,18 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
                       </span>
                       <span
                         className={`text-[9px] font-mono px-1 py-0.5 rounded ${
-                          isNodeProven
-                            ? "bg-emerald-950 text-emerald-400 border border-emerald-800/40"
-                            : "bg-amber-950 text-amber-400 border border-amber-800/40"
+                          isGivenPremise
+                            ? "bg-slate-800 text-sky-300 border border-slate-600/40"
+                            : isNodeProven
+                              ? "bg-emerald-950 text-emerald-400 border border-emerald-800/40"
+                              : "bg-amber-950 text-amber-400 border border-amber-800/40"
                         }`}
                       >
-                        {isNodeProven ? "PROVEN" : "PENDING"}
+                        {isGivenPremise
+                          ? "GIVEN"
+                          : isNodeProven
+                            ? "PROVEN"
+                            : "PENDING"}
                       </span>
                     </div>
                     <div className="min-w-0 break-words font-mono text-sm font-bold text-white mb-0.5">

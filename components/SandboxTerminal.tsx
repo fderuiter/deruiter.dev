@@ -957,7 +957,7 @@ export const SandboxTerminal: React.FC<SandboxTerminalProps> = ({
           <span className="text-[11px] font-mono font-bold text-brand-cyan uppercase tracking-wider">
             Incident Playback Controller
           </span>
-          <span className="text-[10px] font-mono text-zinc-500">
+          <span className="text-[10px] font-mono text-muted">
             {currentStepIndex === -1
               ? "Ready to start step-by-step diagnostic sequence."
               : `Step ${currentStepIndex + 1} of ${activePlayback.length}: "${activePlayback[currentStepIndex].command}"`}
@@ -1058,7 +1058,7 @@ export const SandboxTerminal: React.FC<SandboxTerminalProps> = ({
             <IconCircle className="w-3 h-3 fill-red-500/80 stroke-none shrink-0" />
             <IconCircle className="w-3 h-3 fill-yellow-500/80 stroke-none shrink-0" />
             <IconCircle className="w-3 h-3 fill-green-500/80 stroke-none shrink-0" />
-            <span className="text-[10px] font-mono font-bold text-zinc-500 tracking-wider ml-2 uppercase truncate min-w-0">
+            <span className="text-[10px] font-mono font-bold text-muted tracking-wider ml-2 uppercase truncate min-w-0">
               imednet-python-sdk // interactive CLI shell
             </span>
           </div>
@@ -1086,7 +1086,7 @@ export const SandboxTerminal: React.FC<SandboxTerminalProps> = ({
                 </div>
               )}
               {log.type === "info" && (
-                <div className="text-zinc-500 whitespace-pre-wrap leading-relaxed select-text min-w-0 break-all">
+                <div className="text-muted whitespace-pre-wrap leading-relaxed select-text min-w-0 break-all">
                   {log.text}
                 </div>
               )}
@@ -1097,7 +1097,7 @@ export const SandboxTerminal: React.FC<SandboxTerminalProps> = ({
               )}
               {log.type === "output" && log.jsonPayload !== undefined && (
                 <div className="bg-zinc-950 border border-zinc-900/50 rounded-xl p-3.5 mt-1 min-w-0">
-                  <div className="flex items-center justify-between border-b border-zinc-900 pb-2 mb-2 text-[9px] text-zinc-500 select-none min-w-0 gap-2">
+                  <div className="flex items-center justify-between border-b border-zinc-900 pb-2 mb-2 text-[9px] text-muted select-none min-w-0 gap-2">
                     <span className="truncate">
                       200 OK // TRANSACTION RETRUSTED
                     </span>

@@ -609,8 +609,8 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         action: "Cycle Active Queue & Switch View",
         description:
-          "Press [Tab] to cycle between conveyor parcels. Toggle between Conveyor Floor, Live SDTM Studio, and Audit Trail Log tabs to export XML/CSV datasets.",
-        key: "Tab / Tab Switcher",
+          "Press the left and right arrows to cycle between conveyor parcels. Toggle between Conveyor Floor, Live SDTM Studio, and Audit Trail Log tabs to export XML/CSV datasets. Tab moves focus between the game's buttons.",
+        key: "← → / Tab Switcher",
       },
     ],
     rules: [

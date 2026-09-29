@@ -111,14 +111,14 @@ export const StackOverviewView: React.FC = () => {
               >
                 <IconBrandGithub className="w-4 h-4 text-zinc-400 group-hover:text-white transition-colors" />
                 <span>View Source on GitHub</span>
-                <IconArrowUpRight className="w-3 h-3 text-zinc-500 group-hover:text-brand-cyan transition-colors" />
+                <IconArrowUpRight className="w-3 h-3 text-muted group-hover:text-brand-cyan transition-colors" />
               </a>
             </div>
           </div>
 
           {/* Quick Jump Anchors */}
           <div className="flex items-center gap-2 flex-wrap mt-8 pt-6 border-t border-zinc-900/80">
-            <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-500 mr-2">
+            <span className="text-[11px] font-mono uppercase tracking-wider text-muted mr-2">
               Jump To:
             </span>
             <a
@@ -235,7 +235,7 @@ export const StackOverviewView: React.FC = () => {
                       copiedIcon={
                         <IconCheck className="w-3.5 h-3.5 text-emerald-400" />
                       }
-                      className="text-zinc-500 hover:text-white transition-colors p-1 cursor-pointer flex-shrink-0"
+                      className="text-muted hover:text-white transition-colors p-1 cursor-pointer flex-shrink-0"
                       aria-label={`Copy command ${snippet.cmd}`}
                       successMessage={`Command copied to clipboard: ${snippet.cmd}`}
                       onCopySuccess={() => playSuccess()}

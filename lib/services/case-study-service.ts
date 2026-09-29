@@ -4,6 +4,7 @@ import { failBuildOnDataSourceError } from "@/lib/build-integrity";
 import { FALLBACK_CASE_STUDIES, CaseStudyData } from "@/lib/case-studies-data";
 import { redis, getScopedRedisKey, isRedisConfigured } from "@/lib/redis";
 import { sanitizeContentHtmlLazy } from "@/lib/content-sanitizer-lazy";
+import { logger } from "@/lib/logger";
 
 export type { CaseStudyData };
 
@@ -134,7 +135,7 @@ async function getBaseReactionCounts(
     }
   } catch (err) {
     if (env.VERCEL_ENV === "production" && !isBuildPhase()) {
-      console.warn(
+      logger.warn(
         `CaseStudyService: Failed to query base reactions for ${slug}:`,
         err
       );
@@ -198,7 +199,7 @@ async function submitReactionDirect(
     };
   } catch (dbErr) {
     if (env.VERCEL_ENV === "production" && !isBuildPhase()) {
-      console.error(
+      logger.error(
         "Database reaction creation failed, using mock fallback:",
         dbErr
       );
@@ -309,7 +310,7 @@ export class CaseStudyService {
       });
     } catch (err) {
       if (env.VERCEL_ENV === "production" && !isBuildPhase()) {
-        console.warn(
+        logger.warn(
           "CaseStudyService.getAllPublishedCaseStudies: Database query failed, using static fallbacks:",
           err
         );
@@ -384,7 +385,7 @@ export class CaseStudyService {
       }
     } catch (cacheErr) {
       if (env.VERCEL_ENV === "production" && !isBuildPhase()) {
-        console.warn(
+        logger.warn(
           `CaseStudyService.getCaseStudyBySlug: Redis cache read failed for "${slug}", falling back:`,
           cacheErr
         );
@@ -426,7 +427,7 @@ export class CaseStudyService {
       }
     } catch (err) {
       if (env.VERCEL_ENV === "production" && !isBuildPhase()) {
-        console.warn(
+        logger.warn(
           `CaseStudyService.getCaseStudyBySlug: DB query failed for slug "${slug}", falling back:`,
           err
         );
@@ -489,7 +490,7 @@ export class CaseStudyService {
         evicted = true;
       } catch (err) {
         if (env.VERCEL_ENV === "production" && !isBuildPhase()) {
-          console.warn(
+          logger.warn(
             `CaseStudyService.evictCaseStudyCache: Redis eviction failed for "${slug}":`,
             err
           );
@@ -594,7 +595,7 @@ export class CaseStudyService {
       });
     } catch (err) {
       if (env.VERCEL_ENV === "production" && !isBuildPhase()) {
-        console.warn(
+        logger.warn(
           "CaseStudyService.getPublishedCaseStudies: Database query failed, using static fallbacks:",
           err
         );
@@ -776,7 +777,7 @@ export class CaseStudyService {
       };
     } catch (err) {
       if (env.VERCEL_ENV === "production" && !isBuildPhase()) {
-        console.error("Failed to query case study feedback:", err);
+        logger.error("Failed to query case study feedback:", err);
       }
       const mockList = mockFeedbackStore.get(slug) || [];
       const hasSubmitted = mockList.some(
@@ -847,7 +848,7 @@ export class CaseStudyService {
       };
     } catch (dbErr) {
       if (env.VERCEL_ENV === "production" && !isBuildPhase()) {
-        console.error(
+        logger.error(
           "Database feedback creation failed, using fallback:",
           dbErr
         );
@@ -965,7 +966,7 @@ export class CaseStudyService {
       };
     } catch (err) {
       if (env.VERCEL_ENV === "production" && !isBuildPhase()) {
-        console.warn(
+        logger.warn(
           "CaseStudyService.getReactions: Redis path failed, falling back to DB/mock:",
           err
         );
@@ -999,7 +1000,7 @@ export class CaseStudyService {
         };
       } catch (dbErr) {
         if (env.VERCEL_ENV === "production" && !isBuildPhase()) {
-          console.error("Failed to query case study reactions from DB:", dbErr);
+          logger.error("Failed to query case study reactions from DB:", dbErr);
         }
         const counts = getDefaultReactionCounts();
         const slugMap = mockReactionsStore.get(slug);
@@ -1132,7 +1133,7 @@ export class CaseStudyService {
       };
     } catch (err) {
       if (env.VERCEL_ENV === "production" && !isBuildPhase()) {
-        console.warn(
+        logger.warn(
           "CaseStudyService.submitReaction: Redis buffering failed, falling back to DB/mock:",
           err
         );
@@ -1218,7 +1219,7 @@ export class CaseStudyService {
           skipDuplicates: true,
         });
       } catch (dbErr) {
-        console.error(
+        logger.error(
           "CaseStudyService.flushBufferedReactionsToDatabase: DB write failed; events remain in processing queue:",
           dbErr
         );
@@ -1299,7 +1300,7 @@ export class CaseStudyService {
       };
     } catch (err) {
       if (env.VERCEL_ENV === "production" && !isBuildPhase()) {
-        console.warn(
+        logger.warn(
           "CaseStudyService.flushBufferedReactionsToDatabase: Flush operation encountered error:",
           err
         );

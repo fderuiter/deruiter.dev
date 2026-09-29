@@ -77,6 +77,7 @@
 - [lib/crf/conditional-logic](lib/crf/conditional-logic/README.md)
 - [lib/crf/cross-visit-rules](lib/crf/cross-visit-rules/README.md)
 - [lib/crf/export-acrf](lib/crf/export-acrf/README.md)
+- [lib/crf/export-annotations](lib/crf/export-annotations/README.md)
 - [lib/crf/export-docx](lib/crf/export-docx/README.md)
 - [lib/crf/export-pdf](lib/crf/export-pdf/README.md)
 - [lib/crf/export-r](lib/crf/export-r/README.md)

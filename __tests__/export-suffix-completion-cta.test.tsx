@@ -11,6 +11,9 @@ import {
 import { exportStudyToCdiscOdmXml } from "@/lib/crf/odm-xml-serializer";
 import { exportFormToFhirQuestionnaire } from "@/lib/crf/fhir-questionnaire";
 import { ONCOLOGY_RECIST_PRESET } from "@/lib/crf/presets";
+import { consultationUrl } from "@/lib/crf/export-annotations";
+
+const SCHEDULE = consultationUrl();
 import { GarminWatchSimulator } from "@/components/GarminWatchSimulator";
 import { ExportDocumentModal } from "@/components/crf/Modes/ExportDocumentModal";
 import { ExportImportModal } from "@/components/crf/Modes/ExportImportModal";
@@ -40,29 +43,29 @@ describe("Export Suffix & Completion Screen CTA Retrofit Suite", () => {
     it("appends consultation scheduling link to SAS export header and footer comments", () => {
       const sasOutput = exportStudyToSas(ONCOLOGY_RECIST_PRESET);
       expect(sasOutput).toContain(
-        "CONSULTATION: Schedule Consultation: /schedule"
+        `CONSULTATION: Schedule Consultation: ${SCHEDULE}`
       );
-      expect(sasOutput).toContain("/* Schedule Consultation: /schedule */");
+      expect(sasOutput).toContain(`/* Schedule Consultation: ${SCHEDULE} */`);
 
       const singleSas = exportFormToSas(
         ONCOLOGY_RECIST_PRESET.forms[0],
         ONCOLOGY_RECIST_PRESET
       );
-      expect(singleSas).toContain("/* Schedule Consultation: /schedule */");
+      expect(singleSas).toContain(`/* Schedule Consultation: ${SCHEDULE} */`);
     });
 
     it("appends consultation scheduling link to R export header and footer comments", () => {
       const rOutput = exportStudyToR(ONCOLOGY_RECIST_PRESET);
       expect(rOutput).toContain(
-        "# CONSULTATION: Schedule Consultation: /schedule"
+        `# CONSULTATION: Schedule Consultation: ${SCHEDULE}`
       );
-      expect(rOutput).toContain("# Schedule Consultation: /schedule");
+      expect(rOutput).toContain(`# Schedule Consultation: ${SCHEDULE}`);
 
       const singleR = exportFormToR(
         ONCOLOGY_RECIST_PRESET.forms[0],
         ONCOLOGY_RECIST_PRESET
       );
-      expect(singleR).toContain("# Schedule Consultation: /schedule");
+      expect(singleR).toContain(`# Schedule Consultation: ${SCHEDULE}`);
     });
 
     it("appends consultation scheduling link to aCRF HTML output footers", () => {
@@ -70,16 +73,18 @@ describe("Export Suffix & Completion Screen CTA Retrofit Suite", () => {
         ONCOLOGY_RECIST_PRESET.forms[0],
         ONCOLOGY_RECIST_PRESET
       );
-      expect(htmlSingle).toContain("Schedule Consultation: /schedule");
+      expect(htmlSingle).toContain(`Schedule Consultation: ${SCHEDULE}`);
 
       const htmlBook = generateStudyAcrfBookHtml(ONCOLOGY_RECIST_PRESET);
-      expect(htmlBook).toContain("Schedule Consultation: /schedule");
+      expect(htmlBook).toContain(`Schedule Consultation: ${SCHEDULE}`);
     });
 
     it("appends consultation scheduling link to CDISC ODM-XML comment and StudyDescription", () => {
       const xmlOutput = exportStudyToCdiscOdmXml(ONCOLOGY_RECIST_PRESET);
-      expect(xmlOutput).toContain("<!-- Schedule Consultation: /schedule -->");
-      expect(xmlOutput).toContain("Schedule Consultation: /schedule");
+      expect(xmlOutput).toContain(
+        `<!-- Schedule Consultation: ${SCHEDULE} -->`
+      );
+      expect(xmlOutput).toContain(`Schedule Consultation: ${SCHEDULE}`);
     });
 
     it("appends consultation scheduling link to HL7 FHIR Questionnaire description", () => {
@@ -89,7 +94,9 @@ describe("Export Suffix & Completion Screen CTA Retrofit Suite", () => {
       ) as {
         description: string;
       };
-      expect(fhirObj.description).toContain("Schedule Consultation: /schedule");
+      expect(fhirObj.description).toContain(
+        `Schedule Consultation: ${SCHEDULE}`
+      );
     });
   });
 

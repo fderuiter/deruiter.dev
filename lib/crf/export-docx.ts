@@ -18,6 +18,7 @@ import {
 } from "docx";
 import { CRFForm, StudyProtocol, CRFField, ExportDocxOptions } from "./types";
 import { getStudyBranding } from "./branding-defaults";
+import { consultationUrl, sdtmTargetFor } from "./export-annotations";
 
 /**
  * Sanitizes hex color strings for docx (removes leading #).
@@ -222,7 +223,8 @@ function createSectionTable(
   study: StudyProtocol,
   isAnnotated: boolean,
   _primaryColor: string,
-  accentColor: string
+  accentColor: string,
+  domain: string
 ): Table {
   const cellBorder = {
     top: { style: BorderStyle.SINGLE, size: 1, color: "CBD5E1" },
@@ -336,10 +338,7 @@ function createSectionTable(
   fields.forEach((field) => {
     const isRequired = field.required;
     const isDerived = field.dataType === "calculated";
-    const sdtmTarget =
-      field.cdashMetadata?.sdtmVariable ||
-      field.cdashMetadata?.acrfAnnotation ||
-      field.variableName;
+    const sdtmTarget = sdtmTargetFor(field, domain);
     const sdtmOrigin = isDerived ? "Derived" : "CRF";
     const sdtmCore = field.cdashMetadata?.core || (isRequired ? "HR" : "O");
 
@@ -749,9 +748,7 @@ function createSdtmSpecificationTable(forms: CRFForm[]): Table {
       sec.fields.forEach((field) => {
         const isDerived = field.dataType === "calculated";
         const origin = isDerived ? "Derived" : "CRF";
-        const sdtmTarget =
-          field.cdashMetadata?.sdtmVariable ||
-          `${form.domain}.${field.variableName}`;
+        const sdtmTarget = sdtmTargetFor(field, form.domain);
         const core = field.cdashMetadata?.core || (field.required ? "HR" : "O");
 
         rows.push(
@@ -1171,7 +1168,8 @@ export async function generateStudyDocx(
           study,
           isAnnotated,
           primaryColor,
-          accentColor
+          accentColor,
+          form.domain
         ),
         new Paragraph({ spacing: { after: 160 } })
       );
@@ -1229,7 +1227,7 @@ export async function generateStudyDocx(
       new Paragraph({
         children: [
           new TextRun({
-            text: `${branding.footerText || "CRF Studio Export"} • CDISC CDASH v2.2 • Schedule Consultation: /schedule`,
+            text: `${branding.footerText || "CRF Studio Export"} • CDISC CDASH v2.2 • Schedule Consultation: ${consultationUrl()}`,
             size: 16,
             color: "94A3B8",
           }),

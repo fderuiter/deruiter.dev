@@ -499,9 +499,11 @@ export function dashboard(state: StudyState): Dashboard {
     safety: {
       health: grade(visSafety, 4, 10),
       summary:
-        visSafety >= 1
-          ? "Eligibility or deviation signals reported"
-          : "No open safety signals reported",
+        visSafety < 1
+          ? "No open safety signals reported"
+          : visSafety < 4
+            ? "Minor deviations noted"
+            : "Eligibility or deviation signals reported",
     },
     data: {
       health: grade(visQueries, 8, 20),

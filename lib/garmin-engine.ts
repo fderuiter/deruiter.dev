@@ -702,7 +702,7 @@ export function updateGameSimulation(
     if (remainingGc <= 0) {
       return {
         ...state,
-        battery: Number(nextBattery.toFixed(2)),
+        battery: nextBattery,
         isLightOn: nextLight,
         lightActiveDurationMs: lightDuration,
         thermalStress: Number(nextThermalStress.toFixed(3)),
@@ -713,7 +713,7 @@ export function updateGameSimulation(
     }
     return {
       ...state,
-      battery: Number(nextBattery.toFixed(2)),
+      battery: nextBattery,
       isLightOn: nextLight,
       lightActiveDurationMs: lightDuration,
       thermalStress: Number(nextThermalStress.toFixed(3)),
@@ -728,7 +728,9 @@ export function updateGameSimulation(
   let nextBattery = state.battery;
   let lightDuration = state.lightActiveDurationMs;
 
-  // Base battery drain: 0.1%/sec; With light: +0.3%/sec (0.4%/sec total)
+  // Base battery drain: 0.1%/sec; With light: +0.3%/sec (0.4%/sec total).
+  // Battery is kept unrounded: a frame drains about 0.0017%, which rounding
+  // to two decimals would undo every frame. Round only for display.
   const baseDrainPerMs = 0.0001;
   const lightDrainPerMs = 0.0003;
   const totalDrain =
@@ -838,7 +840,7 @@ export function updateGameSimulation(
     playerY: nextPlayerY,
     playerVy: nextPlayerVy,
     isGrounded,
-    battery: Number(nextBattery.toFixed(2)),
+    battery: nextBattery,
     isLightOn: nextLight,
     lightActiveDurationMs: lightDuration,
     thermalStress: Number(nextThermalStress.toFixed(3)),

@@ -42,6 +42,7 @@ import {
   triggerGarbageCollection,
   allocateVariable,
   wipeScreenFog,
+  type GameEngineState,
 } from "@/lib/garmin-engine";
 import {
   clampBounds,
@@ -328,6 +329,20 @@ describe("Defect Remediation & Regression Verification Suite (Invariant #11)", (
 
       const stepNeg = updateGameSimulation(playing, -50);
       expect(Number.isFinite(stepNeg.distanceMeters)).toBe(true);
+    });
+
+    it("drains the battery with the backlight off instead of rounding each frame's drain away (#1308)", () => {
+      let state: GameEngineState = {
+        ...createInitialState("fenix"),
+        gameState: "playing",
+        isLightOn: false,
+      };
+      for (let frame = 0; frame < 600; frame++) {
+        state = { ...updateGameSimulation(state, 1000 / 60), obstacles: [] };
+      }
+      // 10 s at 0.1%/s
+      expect(state.battery).toBeLessThan(99.5);
+      expect(state.battery).toBeGreaterThan(98.5);
     });
 
     it("maintains non-negative RAM bounds and consistent heap allocations under memory pressure", () => {

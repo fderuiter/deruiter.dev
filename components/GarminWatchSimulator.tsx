@@ -149,6 +149,8 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
   const hasAlertedMemoryRef = useRef<boolean>(false);
   const hasAlertedGcRef = useRef<boolean>(false);
   const hasAlertedCrashRef = useRef<boolean>(false);
+  const hasAlertedBatteryRef = useRef<boolean>(false);
+  const hasAlertedShutdownRef = useRef<boolean>(false);
 
   // Hardware & Simulation State
   const [bezelTheme, setBezelTheme] = useState<WatchBezelTheme>("slate");
@@ -561,6 +563,58 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     swipeHandledRef.current = false;
   };
 
+  // Accessible control handlers run the same engine action as the visible
+  // watch, then announce the state that actually resulted (not the state
+  // from before the press).
+  const a11yStartStop = () => {
+    handleStartStop();
+    const next = stateRef.current.gameState;
+    announce(
+      next === "playing"
+        ? "Run in progress."
+        : next === "paused"
+          ? "Run paused."
+          : `Status: ${next}.`,
+      "polite"
+    );
+  };
+  const a11yJump = () => {
+    const wasGrounded = stateRef.current.isGrounded;
+    handleJump();
+    if (wasGrounded && !stateRef.current.isGrounded) {
+      announce("Jumped.", "polite");
+    }
+  };
+  const a11yJettison = () => {
+    const before = stateRef.current.variables.length;
+    handleJettison();
+    const after = stateRef.current.variables.length;
+    announce(
+      after < before
+        ? `Jettisoned oldest variable. RAM ${stateRef.current.allocatedRamKb.toFixed(1)} KB.`
+        : "Nothing to jettison.",
+      "polite"
+    );
+  };
+  const a11yBack = () => {
+    // The GC freeze itself is announced by the critical-alert effect.
+    handleForceGc();
+  };
+  const a11yLight = () => {
+    handleToggleLight();
+    announce(
+      stateRef.current.isLightOn ? "Backlight on." : "Backlight off.",
+      "polite"
+    );
+  };
+  const a11yReadTelemetry = () => {
+    const s = stateRef.current;
+    announce(
+      `Status: ${s.gameState}. Memory: ${s.allocatedRamKb.toFixed(1)} of ${currentProfile.ramLimitKb} KB. Flash: ${s.allocatedFlashKb.toFixed(1)} KB. Battery: ${Math.round(s.battery)}%. Thermal stress: ${Math.round((s.thermalStress ?? 0) * 100)}%. Condensation: ${Math.round(s.fogLevel * 100)}%. Score: ${s.score}. High score: ${Math.max(s.highScore, loadedHighScore)}.`,
+      "polite"
+    );
+  };
+
   // Screen Reader Critical Alert Vocalizations Effect
   useEffect(() => {
     const ramLimit = DEVICE_PROFILES[deviceTarget].ramLimitKb;
@@ -602,6 +656,31 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       triggerHaptic([50, 50, 50]);
     } else if (gameState.gameState !== "crashed") {
       hasAlertedCrashRef.current = false;
+    }
+
+    // 4. Low battery (<15%), once per crossing
+    if (
+      gameState.gameState === "playing" &&
+      gameState.battery > 0 &&
+      gameState.battery < 15 &&
+      !hasAlertedBatteryRef.current
+    ) {
+      hasAlertedBatteryRef.current = true;
+      const msg = `Warning: low battery, ${Math.round(gameState.battery)}%. Turn off the backlight to save power.`;
+      setAlertMessage(msg);
+      announce(msg, "assertive");
+    } else if (gameState.battery >= 20) {
+      hasAlertedBatteryRef.current = false;
+    }
+
+    // 5. Power loss
+    if (gameState.gameState === "shutdown" && !hasAlertedShutdownRef.current) {
+      hasAlertedShutdownRef.current = true;
+      const msg = "Power loss: battery empty. The watch has shut down.";
+      setAlertMessage(msg);
+      announce(msg, "assertive");
+    } else if (gameState.gameState !== "shutdown") {
+      hasAlertedShutdownRef.current = false;
     }
   }, [gameState, deviceTarget, announce]);
 
@@ -1205,76 +1284,71 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
           </legend>
 
           <div role="group" aria-label="Garmin Simulator Telemetry and Status">
-            <output htmlFor="garmin-state">State: {gameState.gameState}</output>
-            <output htmlFor="garmin-score">Score: {gameState.score}</output>
-            <output htmlFor="garmin-highscore">
+            <output aria-live="off" htmlFor="garmin-state">
+              State: {gameState.gameState}
+            </output>
+            <output aria-live="off" htmlFor="garmin-score">
+              Score: {gameState.score}
+            </output>
+            <output aria-live="off" htmlFor="garmin-highscore">
               High Score: {effectiveHighScore}
             </output>
-            <output htmlFor="garmin-device">
+            <output aria-live="off" htmlFor="garmin-device">
               Device Target: {currentProfile.name}
             </output>
-            <output htmlFor="garmin-ram">
+            <output aria-live="off" htmlFor="garmin-ram">
               RAM Memory: {gameState.allocatedRamKb.toFixed(1)} /{" "}
               {currentProfile.ramLimitKb} KB
             </output>
-            <output htmlFor="garmin-battery">
+            <output aria-live="off" htmlFor="garmin-battery">
               Battery Level: {Math.round(gameState.battery)}%
             </output>
-            <output htmlFor="garmin-thermal">
+            <output aria-live="off" htmlFor="garmin-thermal">
               Thermal Stress: {Math.round((gameState.thermalStress ?? 0) * 100)}
               %
             </output>
-            <output htmlFor="garmin-fog">
+            <output aria-live="off" htmlFor="garmin-fog">
               Condensation Fog: {Math.round(gameState.fogLevel * 100)}%
             </output>
           </div>
 
           <div role="group" aria-label="Garmin Watch Physical Controls">
+            <button type="button" onClick={a11yLight}>
+              LIGHT / Backlight Button
+            </button>
+
             <button
               type="button"
-              onClick={() => {
-                handleStartStop();
-                announce(
-                  `Pressed START/STOP. Status: ${gameState.gameState}`,
-                  "polite"
-                );
-              }}
+              onClick={a11yJump}
+              disabled={gameState.gameState !== "playing"}
             >
+              UP / Jump Button
+            </button>
+
+            <button
+              type="button"
+              onClick={a11yJettison}
+              disabled={gameState.gameState !== "playing"}
+            >
+              DOWN / Jettison Variable Button
+            </button>
+
+            <button type="button" onClick={a11yStartStop}>
               START / STOP Button
             </button>
 
             <button
               type="button"
-              onClick={() => {
-                handleJettison();
-                announce("Pressed UP / Jettison button.", "polite");
-              }}
-              disabled={gameState.gameState !== "playing"}
-            >
-              UP / Jettison Variable Button
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                handleForceGc();
-                announce("Pressed DOWN / Force GC button.", "polite");
-              }}
+              onClick={a11yBack}
               disabled={
                 gameState.gameState !== "playing" || gameState.isGcActive
               }
             >
-              DOWN / Force GC Button
+              BACK / Force GC Button
             </button>
 
-            <button
-              type="button"
-              onClick={() => {
-                handleToggleLight();
-                announce("Pressed LIGHT / Backlight button.", "polite");
-              }}
-            >
-              LIGHT / Backlight Button
+            <button type="button" onClick={a11yReadTelemetry}>
+              Read Telemetry
             </button>
 
             <button
@@ -1344,16 +1418,10 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       </div>
 
       {/* Off-screen Live Regions for Screen Reader Telemetry & Assertive Alerts */}
+      {/* Polite status changes only on run transitions; changing telemetry is
+          read on demand via the Read Telemetry button (#1215). */}
       <div className="sr-only" aria-live="polite" aria-atomic="true">
-        {`Garmin Simulator Telemetry. Status: ${gameState.gameState}. Memory: ${gameState.allocatedRamKb.toFixed(
-          1
-        )} / ${currentProfile.ramLimitKb} KB. Battery: ${Math.round(
-          gameState.battery
-        )}%. Thermal Stress: ${Math.round(
-          (gameState.thermalStress ?? 0) * 100
-        )}%. Condensation: ${Math.round(
-          gameState.fogLevel * 100
-        )}%. Score: ${gameState.score}. High Score: ${effectiveHighScore}.`}
+        {`Garmin Simulator Telemetry. Status: ${gameState.gameState}.`}
       </div>
 
       <div

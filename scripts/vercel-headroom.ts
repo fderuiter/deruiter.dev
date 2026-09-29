@@ -18,8 +18,9 @@ export type HeadroomSeverity =
 export interface MeterSample {
   resource: string;
   used: number | null;
-  limit: number;
+  limit: number | null;
   unit: string;
+  source?: "snapshot-budget" | "unverified-api-probe";
   timestamp: string; // ISO 8601
   portfolioContribution?: number;
   weddingContribution?: number;
@@ -41,9 +42,10 @@ export interface GrowthForecast {
 }
 
 export interface EvaluatedMeter {
+  source: "snapshot-budget" | "unverified-api-probe";
   resource: string;
   used: number | null;
-  limit: number;
+  limit: number | null;
   unit: string;
   usagePercentage: number | null;
   headroom: number | null;
@@ -312,11 +314,18 @@ export function evaluateMeter(
   if (
     sample.used === null ||
     typeof sample.used !== "number" ||
-    Number.isNaN(sample.used)
+    !Number.isFinite(sample.used) ||
+    sample.used < 0 ||
+    sample.limit === null ||
+    !Number.isFinite(sample.limit) ||
+    sample.limit <= 0 ||
+    !Number.isFinite(Date.parse(sample.timestamp)) ||
+    sample.source === "unverified-api-probe"
   ) {
     return {
       resource: sample.resource,
-      used: null,
+      used: sample.used,
+      source: sample.source ?? "snapshot-budget",
       limit: sample.limit,
       unit: sample.unit,
       usagePercentage: null,
@@ -325,7 +334,7 @@ export function evaluateMeter(
       severity: "unreadable",
       isStale: false,
       isUnreadable: true,
-      message: `Provider measurement unavailable or unreadable for ${sample.resource}. Metric treated as unknown, not zero.`,
+      message: `Provider measurement or quota unavailable, unreadable, or unverified for ${sample.resource}. Metric treated as unknown, not zero.`,
       growthForecast: {
         status: "unknown",
         samplesAnalyzed: 0,
@@ -367,6 +376,7 @@ export function evaluateMeter(
   return {
     resource: sample.resource,
     used: sample.used,
+    source: sample.source ?? "snapshot-budget",
     limit: sample.limit,
     unit: sample.unit,
     usagePercentage,
@@ -487,19 +497,341 @@ export interface HeadroomTrackerResult {
   hasCriticalAlerts: boolean;
 }
 
+export interface VercelApiFetchOptions {
+  token?: string;
+  teamId?: string;
+  fetchImpl?: typeof fetch;
+}
+
 /**
- * Main evaluation function collecting authoritative meter samples from Issue #691 inventory.
+ * Vercel REST API Usage Probing & Baseline Snapshot Ledger Rules:
+ *
+ * 1. Probing & Baseline Contracts:
+ *    - Baseline Reporting: Snapshot retention inventory (`getVercelRetentionInventory()`) is the primary baseline contract.
+ *    - REST Usage Probing: Optional REST endpoint probing queries usage meters when VERCEL_TOKEN is configured.
+ *
+ * 2. Historical snapshot budget limits (not verified live API entitlements):
+ *    - Functions Storage: 10.0 GB (rolling 30-day window)
+ *    - Deployment Storage: 10.0 GB (rolling 30-day window)
+ *    - Build Time: 100.0 hours (rolling 30-day window)
+ *
+ * 3. Schema-Driven Unit Normalization Rules:
+ *    - Selected strictly from schema property names (e.g. `usedBytes`, `artifactsSize`, `usedSeconds`, `usedGB`, `usedHours`)
+ *      or explicit `unit` attributes (`"bytes"`, `"B"`, `"MB"`, `"GB"`, `"seconds"`, `"hours"`).
+ *    - Units are NEVER inferred from numerical magnitude.
+ */
+export function parseFiniteNonNegativeNumber(val: unknown): number | null {
+  if (typeof val === "number") {
+    return Number.isFinite(val) && !Number.isNaN(val) && val >= 0 ? val : null;
+  }
+  if (typeof val === "string" && val.trim() !== "") {
+    const num = Number(val);
+    return Number.isFinite(num) && !Number.isNaN(num) && num >= 0 ? num : null;
+  }
+  return null;
+}
+
+/**
+ * Normalizes storage value to GB based strictly on property name or unit string,
+ * NEVER on numerical magnitude. Returns null for unknown, missing, or conflicting units.
+ */
+export function normalizeStorageToGB(
+  val: number,
+  propName?: string,
+  unitStr?: string
+): number | null {
+  const lowerProp = (propName || "").toLowerCase().trim();
+  const lowerUnit = (unitStr || "").toLowerCase().trim();
+
+  let propUnit: "bytes" | "mb" | "gb" | null = null;
+  let isSpecificPropUnit = false;
+
+  if (
+    ["usedbytes", "limitbytes", "bytes", "artifactssize"].includes(lowerProp)
+  ) {
+    propUnit = "bytes";
+    isSpecificPropUnit = true;
+  } else if (["usedmb", "limitmb", "mb"].includes(lowerProp)) {
+    propUnit = "mb";
+    isSpecificPropUnit = true;
+  } else if (["usedgb", "limitgb", "gb"].includes(lowerProp)) {
+    propUnit = "gb";
+    isSpecificPropUnit = true;
+  }
+
+  let explicitUnit: "bytes" | "mb" | "gb" | null = null;
+  if (lowerUnit !== "") {
+    if (lowerUnit === "bytes" || lowerUnit === "b") {
+      explicitUnit = "bytes";
+    } else if (lowerUnit === "mb") {
+      explicitUnit = "mb";
+    } else if (lowerUnit === "gb" || lowerUnit === "gigabytes") {
+      explicitUnit = "gb";
+    } else {
+      return null;
+    }
+  }
+
+  if (
+    isSpecificPropUnit &&
+    explicitUnit !== null &&
+    propUnit !== explicitUnit
+  ) {
+    return null;
+  }
+
+  const effectiveUnit = explicitUnit ?? propUnit;
+  if (effectiveUnit === "bytes") {
+    return val / 1_000_000_000;
+  }
+  if (effectiveUnit === "mb") {
+    return val / 1000;
+  }
+  if (effectiveUnit === "gb") {
+    return val;
+  }
+
+  return null;
+}
+
+/**
+ * Normalizes build duration value to hours based strictly on property name or unit string,
+ * NEVER on numerical magnitude. Returns null for unknown, missing, or conflicting units.
+ */
+export function normalizeDurationToHours(
+  val: number,
+  propName?: string,
+  unitStr?: string
+): number | null {
+  const lowerProp = (propName || "").toLowerCase().trim();
+  const lowerUnit = (unitStr || "").toLowerCase().trim();
+
+  let propUnit: "seconds" | "minutes" | "hours" | null = null;
+  let isSpecificPropUnit = false;
+
+  if (["usedseconds", "limitseconds", "seconds", "sec"].includes(lowerProp)) {
+    propUnit = "seconds";
+    isSpecificPropUnit = true;
+  } else if (
+    ["usedminutes", "limitminutes", "minutes", "min"].includes(lowerProp)
+  ) {
+    propUnit = "minutes";
+    isSpecificPropUnit = true;
+  } else if (["usedhours", "limithours", "hours", "hr"].includes(lowerProp)) {
+    propUnit = "hours";
+    isSpecificPropUnit = true;
+  }
+
+  let explicitUnit: "seconds" | "minutes" | "hours" | null = null;
+  if (lowerUnit !== "") {
+    if (lowerUnit === "seconds" || lowerUnit === "s" || lowerUnit === "sec") {
+      explicitUnit = "seconds";
+    } else if (
+      lowerUnit === "minutes" ||
+      lowerUnit === "m" ||
+      lowerUnit === "min"
+    ) {
+      explicitUnit = "minutes";
+    } else if (
+      lowerUnit === "hours" ||
+      lowerUnit === "h" ||
+      lowerUnit === "hr" ||
+      lowerUnit === "hrs"
+    ) {
+      explicitUnit = "hours";
+    } else {
+      return null;
+    }
+  }
+
+  if (
+    isSpecificPropUnit &&
+    explicitUnit !== null &&
+    propUnit !== explicitUnit
+  ) {
+    return null;
+  }
+
+  const effectiveUnit = explicitUnit ?? propUnit;
+  if (effectiveUnit === "seconds") {
+    return val / 3600;
+  }
+  if (effectiveUnit === "minutes") {
+    return val / 60;
+  }
+  if (effectiveUnit === "hours") {
+    return val;
+  }
+
+  return null;
+}
+
+/**
+ * Optionally probes an unverified usage endpoint. Returned values are diagnostic
+ * observations, never verified provider quota evidence or release authorization.
+ * Missing or malformed usage and limits remain null; snapshot budgets are not
+ * substituted for provider limits.
+ */
+export async function fetchVercelLiveMetrics(
+  options?: VercelApiFetchOptions
+): Promise<{
+  timestamp: string;
+  meters: {
+    functionsStorage?: MeterSample;
+    deploymentStorage?: MeterSample;
+    buildTime?: MeterSample;
+  };
+} | null> {
+  const token = options?.token || process.env.VERCEL_TOKEN;
+  const fetchImpl = options?.fetchImpl || globalThis.fetch;
+  if (!token || typeof fetchImpl !== "function") return null;
+  const teamId =
+    options?.teamId || process.env.VERCEL_TEAM_ID || process.env.VERCEL_ORG_ID;
+  const query = teamId ? `?teamId=${encodeURIComponent(teamId)}` : "";
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
+  };
+  try {
+    // The deployment inventory remains useful optional reporting, but cannot
+    // establish a storage quota or substitute a usage measurement.
+    const [, response] = await Promise.all([
+      fetchImpl(`https://api.vercel.com/v6/deployments${query}`, {
+        headers,
+        signal: AbortSignal.timeout(5000),
+      }).catch(() => null),
+      fetchImpl(`https://api.vercel.com/v2/usage${query}`, {
+        headers,
+        signal: AbortSignal.timeout(5000),
+      }).catch(() => null),
+    ]);
+    if (!response?.ok) return null;
+    const data: unknown = await response.json();
+    if (!data || typeof data !== "object" || Array.isArray(data)) return null;
+    const payload = data as Record<string, unknown>;
+    const timestamp = new Date().toISOString();
+    const meters: {
+      functionsStorage?: MeterSample;
+      deploymentStorage?: MeterSample;
+      buildTime?: MeterSample;
+    } = {};
+    const read = (
+      value: unknown,
+      resource: string,
+      unit: string,
+      normalize: typeof normalizeStorageToGB,
+      keys: string[]
+    ): MeterSample => {
+      const obj =
+        value && typeof value === "object" && !Array.isArray(value)
+          ? (value as Record<string, unknown>)
+          : { used: value };
+      const readValue = (
+        record: Record<string, unknown>,
+        fields: string[],
+        fallbackUnit?: string
+      ): number | null => {
+        const suppliedUnit = record.unit;
+        if (suppliedUnit !== undefined && typeof suppliedUnit !== "string")
+          return null;
+        const key = fields.find((key) => Object.hasOwn(record, key));
+        if (!key) return null;
+        const number = parseFiniteNonNegativeNumber(record[key]);
+        return number === null
+          ? null
+          : normalize(
+              number,
+              key,
+              (suppliedUnit as string | undefined) ?? fallbackUnit
+            );
+      };
+      const used = readValue(obj, keys);
+      const limitObj =
+        obj.limit && typeof obj.limit === "object" && !Array.isArray(obj.limit)
+          ? (obj.limit as Record<string, unknown>)
+          : { limit: obj.limit };
+      const normalizedLimit = readValue(
+        limitObj,
+        [
+          "limitBytes",
+          "limitGB",
+          "limitSeconds",
+          "limitHours",
+          "limit",
+          "used",
+        ],
+        typeof obj.unit === "string" ? obj.unit : undefined
+      );
+      const limit =
+        normalizedLimit !== null && normalizedLimit > 0
+          ? normalizedLimit
+          : null;
+      return {
+        resource,
+        used: used === null ? null : Number(used.toFixed(3)),
+        limit,
+        unit,
+        timestamp,
+        source: "unverified-api-probe",
+      };
+    };
+    if (
+      Object.hasOwn(payload, "functionsStorage") ||
+      Object.hasOwn(payload, "functions")
+    )
+      meters.functionsStorage = read(
+        payload.functionsStorage ?? payload.functions,
+        "Functions Storage",
+        "GB",
+        normalizeStorageToGB,
+        ["usedBytes", "usedGB", "usedGb", "used", "storage"]
+      );
+    if (
+      Object.hasOwn(payload, "deploymentStorage") ||
+      Object.hasOwn(payload, "artifactsSize")
+    )
+      meters.deploymentStorage = read(
+        Object.hasOwn(payload, "deploymentStorage")
+          ? payload.deploymentStorage
+          : { usedBytes: payload.artifactsSize },
+        "Deployment Storage",
+        "GB",
+        normalizeStorageToGB,
+        ["usedBytes", "usedGB", "usedGb", "used"]
+      );
+    if (Object.hasOwn(payload, "buildTime") || Object.hasOwn(payload, "builds"))
+      meters.buildTime = read(
+        payload.builds ?? payload.buildTime,
+        "Build Time",
+        "hours",
+        normalizeDurationToHours,
+        ["usedSeconds", "seconds", "usedHours", "hours", "used"]
+      );
+    return Object.keys(meters).length ? { timestamp, meters } : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Evaluates the dated Issue #691 snapshot budgets or optional unverified probe
+ * observations. Probe observations cannot authorize a release.
  */
 export function evaluateVercelHeadroom(
   thresholds: ThresholdConfig = DEFAULT_THRESHOLDS,
   sampleHistory: Record<string, MeterSample[]> = {},
   alertManager: HeadroomAlertManager = new HeadroomAlertManager(),
   sink?: HeadroomNotificationSink,
-  evalTime: Date = new Date("2026-09-12T18:00:00.000Z")
+  evalTime: Date = new Date(),
+  liveSamples?: {
+    functionsStorage?: MeterSample;
+    deploymentStorage?: MeterSample;
+    buildTime?: MeterSample;
+  } | null
 ): HeadroomTrackerResult {
   const inventory = getVercelRetentionInventory();
 
-  const fsSample: MeterSample = {
+  const fsSample: MeterSample = liveSamples?.functionsStorage || {
     resource: "Functions Storage",
     used: inventory.meters.functionsStorage.used,
     limit: inventory.meters.functionsStorage.limit,
@@ -510,7 +842,7 @@ export function evaluateVercelHeadroom(
     weddingContribution: inventory.meters.functionsStorage.weddingContribution,
   };
 
-  const dsSample: MeterSample = {
+  const dsSample: MeterSample = liveSamples?.deploymentStorage || {
     resource: "Deployment Storage",
     used: inventory.meters.deploymentStorage.used,
     limit: inventory.meters.deploymentStorage.limit,
@@ -518,7 +850,7 @@ export function evaluateVercelHeadroom(
     timestamp: inventory.timestamp,
   };
 
-  const btSample: MeterSample = {
+  const btSample: MeterSample = liveSamples?.buildTime || {
     resource: "Build Time",
     used: inventory.meters.buildTime.used,
     limit: inventory.meters.buildTime.limit,
@@ -552,11 +884,23 @@ export function evaluateVercelHeadroom(
     evalTime
   );
   const hasCriticalAlerts = evaluatedList.some(
-    (m) => m.severity === "critical"
+    (m) =>
+      m.severity === "critical" ||
+      m.severity === "unreadable" ||
+      m.severity === "stale"
   );
 
+  const allLive =
+    Boolean(liveSamples?.functionsStorage) &&
+    Boolean(liveSamples?.deploymentStorage) &&
+    Boolean(liveSamples?.buildTime);
+
+  const sampleTimestamp = allLive
+    ? liveSamples!.functionsStorage!.timestamp
+    : inventory.timestamp;
+
   return {
-    timestamp: inventory.timestamp,
+    timestamp: sampleTimestamp,
     plan: inventory.plan,
     scope: inventory.scope,
     meters: {
@@ -570,12 +914,28 @@ export function evaluateVercelHeadroom(
   };
 }
 
-export function runHeadroomVerification(options?: {
+export async function runHeadroomVerification(options?: {
   strict?: boolean;
   json?: boolean;
   ledger?: boolean;
-}): { success: boolean; data: HeadroomTrackerResult } {
-  const result = evaluateVercelHeadroom();
+  token?: string;
+  evalTime?: Date;
+  fetchImpl?: typeof fetch;
+}): Promise<{ success: boolean; data: HeadroomTrackerResult }> {
+  const evalTime = options?.evalTime ?? new Date();
+  const liveData = await fetchVercelLiveMetrics({
+    token: options?.token,
+    fetchImpl: options?.fetchImpl,
+  });
+
+  const result = evaluateVercelHeadroom(
+    DEFAULT_THRESHOLDS,
+    {},
+    new HeadroomAlertManager(),
+    undefined,
+    evalTime,
+    liveData?.meters
+  );
 
   if (options?.json) {
     console.log(JSON.stringify(result, null, 2));
@@ -603,7 +963,7 @@ export function runHeadroomVerification(options?: {
               ? "[UNREADABLE]"
               : "[HEALTHY]";
     console.log(
-      `• ${badge.padEnd(12)} ${meter.resource.padEnd(20)} ${meter.used}/${meter.limit} ${meter.unit} (${meter.headroomPercentage}% headroom)`
+      `• ${badge.padEnd(12)} ${meter.resource.padEnd(20)} ${meter.used}/${meter.limit} ${meter.unit} (${meter.headroomPercentage}% headroom; source: ${meter.source})`
     );
   }
 
@@ -633,7 +993,7 @@ export function runHeadroomVerification(options?: {
 
   if (options?.strict && result.hasCriticalAlerts) {
     console.error(
-      "\n❌ Strict failure: One or more critical headroom thresholds are currently breached!"
+      "\n❌ Strict failure: One or more meters are critical, stale, unavailable, or unverified."
     );
     return { success: false, data: result };
   }
@@ -647,8 +1007,9 @@ if (require.main === module) {
   const json = args.includes("--json");
   const ledger = args.includes("--ledger");
 
-  const { success } = runHeadroomVerification({ strict, json, ledger });
-  if (!success) {
-    process.exit(1);
-  }
+  runHeadroomVerification({ strict, json, ledger }).then(({ success }) => {
+    if (!success) {
+      process.exit(1);
+    }
+  });
 }

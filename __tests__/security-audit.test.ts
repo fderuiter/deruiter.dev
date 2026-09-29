@@ -565,5 +565,82 @@ describe("Security Audit Script", () => {
         "https://github.com/advisories/GHSA-pretext"
       );
     });
+
+    it("should fail closed on empty stdout, non-JSON stderr, and status 1", () => {
+      vi.mocked(spawnSync).mockReturnValue(
+        fromPartial<SpawnSyncReturns<string>>({
+          status: 1,
+          stdout: "",
+          stderr: "npm ERR! code ENOTFOUND\nnpm ERR! network request failed",
+        })
+      );
+
+      expect(() =>
+        runSecurityAudit({ now: testNow, throwOnError: true })
+      ).toThrowError("npm audit execution failed or returned invalid JSON.");
+    });
+
+    it("rejects non-report JSON even after a successful child exit", () => {
+      vi.mocked(spawnSync).mockReturnValue(
+        fromPartial<SpawnSyncReturns<string>>({
+          status: 0,
+          stdout: "{}",
+          stderr: "private-error-output",
+        })
+      );
+      expect(() =>
+        runSecurityAudit({ now: testNow, throwOnError: true })
+      ).toThrowError("npm audit execution failed or returned invalid JSON.");
+      expect(errorSpy.mock.calls.flat().join(" ")).not.toContain(
+        "private-error-output"
+      );
+    });
+
+    it("fails on a nonzero process exit even with a clean report", () => {
+      vi.mocked(spawnSync).mockReturnValue(
+        fromPartial<SpawnSyncReturns<string>>({
+          status: 1,
+          stdout: JSON.stringify({
+            auditReportVersion: 2,
+            vulnerabilities: {},
+          }),
+        })
+      );
+      expect(() =>
+        runSecurityAudit({ now: testNow, throwOnError: true })
+      ).toThrowError("npm audit execution failed or returned invalid JSON.");
+    });
+
+    it("should fail closed on spawn execution error", () => {
+      vi.mocked(spawnSync).mockReturnValue(
+        fromPartial<SpawnSyncReturns<string>>({
+          error: new Error("spawn npm ENOENT"),
+          stdout: "",
+          stderr: "",
+        })
+      );
+
+      expect(() =>
+        runSecurityAudit({ now: testNow, throwOnError: true })
+      ).toThrowError("npm audit execution failed or returned invalid JSON.");
+    });
+
+    it("should parse warning-prefixed valid JSON output in stdout or stderr successfully", () => {
+      vi.mocked(spawnSync).mockReturnValue(
+        fromPartial<SpawnSyncReturns<string>>({
+          status: 0,
+          stdout:
+            "npm WARN config global `--global`, `--local` are deprecated\n" +
+            JSON.stringify({
+              auditReportVersion: 2,
+              vulnerabilities: {},
+            }),
+          stderr: "",
+        })
+      );
+
+      const result = runSecurityAudit({ now: testNow, throwOnError: true });
+      expect(result).toBe(true);
+    });
   });
 });

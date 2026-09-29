@@ -21,6 +21,20 @@ describe("build.js script execution", () => {
   let exitMock: any;
   let spawnSpy: any;
 
+  it("never invokes optional headroom probing during a production build", async () => {
+    setProductionConfig();
+    delete process.env.VERCEL_TOKEN;
+    const execSpy = vi.spyOn(child_process, "execFileSync");
+    try {
+      await expect(require("../scripts/build.js")).rejects.toThrow(
+        "Process exited with code 0"
+      );
+      expect(execSpy).not.toHaveBeenCalled();
+    } finally {
+      execSpy.mockRestore();
+    }
+  });
+
   beforeEach(() => {
     // Clear require cache for scripts/build.js so it executes on each require call
     delete require.cache[require.resolve("../scripts/build.js")];

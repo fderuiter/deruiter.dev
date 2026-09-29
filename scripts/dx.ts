@@ -1447,7 +1447,11 @@ export async function main(): Promise<void> {
       const strict = Boolean(parsed.flags.strict || parsed.flags.s);
       const json = Boolean(parsed.flags.json || parsed.flags.j);
       const ledger = Boolean(parsed.flags.ledger || parsed.flags.l);
-      const { success } = runHeadroomVerification({ strict, json, ledger });
+      const { success } = await runHeadroomVerification({
+        strict,
+        json,
+        ledger,
+      });
       if (!success) process.exit(1);
       break;
     }

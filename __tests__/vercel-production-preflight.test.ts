@@ -1,4 +1,5 @@
 import { createRequire } from "module";
+import { execFileSync } from "node:child_process";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const require = createRequire(import.meta.url);
@@ -8,6 +9,7 @@ const {
   runVercelProductionPreflight,
   shouldRunPreflight,
   verifyUpstashCredentials,
+  verifyVercelHeadroomCapacity,
 } = require("../scripts/vercel-production-preflight.js");
 
 type Env = Record<string, string | undefined>;
@@ -340,5 +342,283 @@ describe("Upstash production authentication", () => {
       reason: "could not complete a PING within 3 seconds",
     });
     expect(JSON.stringify(result)).not.toContain("fake-upstash-token-7Q2");
+  });
+});
+
+describe("Vercel Headroom Capacity Preflight Check", () => {
+  const healthyJson = JSON.stringify({
+    timestamp: new Date().toISOString(),
+    hasCriticalAlerts: false,
+    meters: {
+      functionsStorage: {
+        source: "snapshot-budget",
+        resource: "Functions Storage",
+        used: 2.5,
+        limit: 10.0,
+        unit: "GB",
+        severity: "healthy",
+        isStale: false,
+        isUnreadable: false,
+      },
+      deploymentStorage: {
+        source: "snapshot-budget",
+        resource: "Deployment Storage",
+        used: 1.0,
+        limit: 10.0,
+        unit: "GB",
+        severity: "healthy",
+        isStale: false,
+        isUnreadable: false,
+      },
+      buildTime: {
+        source: "snapshot-budget",
+        resource: "Build Time",
+        used: 10.0,
+        limit: 100.0,
+        unit: "hours",
+        severity: "healthy",
+        isStale: false,
+        isUnreadable: false,
+      },
+    },
+  });
+
+  it("returns true when headroom capacity check passes (healthy outcome)", async () => {
+    const logger = silentLogger();
+    const env = { ...validProductionEnv(), VERCEL_TOKEN: "valid_token" };
+    const mockExec = vi.fn().mockReturnValue(healthyJson);
+    const result = await verifyVercelHeadroomCapacity(env, logger, mockExec);
+    expect(result).toBe(true);
+    expect(logger.error).not.toHaveBeenCalled();
+    expect(mockExec).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.arrayContaining([
+        "scripts/vercel-headroom.ts",
+        "--strict",
+        "--json",
+      ]),
+      expect.any(Object)
+    );
+  });
+
+  it("returns false and logs error when critical threshold is breached (critical outcome)", async () => {
+    const logger = silentLogger();
+    const env = { ...validProductionEnv(), VERCEL_TOKEN: "valid_token" };
+    const criticalJson = JSON.stringify({
+      timestamp: new Date().toISOString(),
+      hasCriticalAlerts: true,
+      meters: {
+        functionsStorage: {
+          source: "snapshot-budget",
+          resource: "Functions Storage",
+          used: 9.8,
+          limit: 10.0,
+          unit: "GB",
+          severity: "critical",
+          isStale: false,
+          isUnreadable: false,
+        },
+        deploymentStorage: {
+          source: "snapshot-budget",
+          resource: "Deployment Storage",
+          used: 1.0,
+          limit: 10.0,
+          unit: "GB",
+          severity: "healthy",
+          isStale: false,
+          isUnreadable: false,
+        },
+        buildTime: {
+          source: "snapshot-budget",
+          resource: "Build Time",
+          used: 10.0,
+          limit: 100.0,
+          unit: "hours",
+          severity: "healthy",
+          isStale: false,
+          isUnreadable: false,
+        },
+      },
+    });
+    const mockExec = vi.fn().mockReturnValue(criticalJson);
+    const result = await verifyVercelHeadroomCapacity(env, logger, mockExec);
+    expect(result).toBe(false);
+    expect(loggedText(logger)).toContain("unhealthy severity: critical");
+  });
+
+  it("returns false and logs error when capacity check fails to load or execute (load-failure outcome)", async () => {
+    const logger = silentLogger();
+    const env = { ...validProductionEnv(), VERCEL_TOKEN: "valid_token" };
+    const mockExec = vi.fn().mockImplementation(() => {
+      throw new Error("MODULE_NOT_FOUND");
+    });
+    const result = await verifyVercelHeadroomCapacity(env, logger, mockExec);
+    expect(result).toBe(false);
+    expect(loggedText(logger)).toContain(
+      "Vercel headroom check failed to execute"
+    );
+    expect(loggedText(logger)).not.toContain("MODULE_NOT_FOUND");
+  });
+
+  it("returns false when child process fails (non-zero exit) even if stdout emitted healthy JSON report", async () => {
+    const logger = silentLogger();
+    const env = { ...validProductionEnv(), VERCEL_TOKEN: "valid_token" };
+    const mockExec = vi.fn().mockImplementation(() => {
+      const err = new Error("Command failed with exit status 1") as Error & {
+        stdout?: string;
+        status?: number;
+      };
+      err.stdout = healthyJson;
+      err.status = 1;
+      throw err;
+    });
+    const result = await verifyVercelHeadroomCapacity(env, logger, mockExec);
+    expect(result).toBe(false);
+    expect(loggedText(logger)).toContain(
+      "Vercel headroom check failed to execute"
+    );
+    expect(loggedText(logger)).not.toContain(
+      "Command failed with exit status 1"
+    );
+  });
+
+  it("returns false and logs error when capacity measurement is unreadable (unavailable outcome)", async () => {
+    const logger = silentLogger();
+    const env = { ...validProductionEnv(), VERCEL_TOKEN: "valid_token" };
+    const unreadableJson = JSON.stringify({
+      timestamp: new Date().toISOString(),
+      hasCriticalAlerts: false,
+      meters: {
+        functionsStorage: {
+          source: "snapshot-budget",
+          resource: "Functions Storage",
+          used: null,
+          limit: 10.0,
+          unit: "GB",
+          severity: "unreadable",
+          isStale: false,
+          isUnreadable: true,
+        },
+        deploymentStorage: {
+          source: "snapshot-budget",
+          resource: "Deployment Storage",
+          used: 1.0,
+          limit: 10.0,
+          unit: "GB",
+          severity: "healthy",
+          isStale: false,
+          isUnreadable: false,
+        },
+        buildTime: {
+          source: "snapshot-budget",
+          resource: "Build Time",
+          used: 10.0,
+          limit: 100.0,
+          unit: "hours",
+          severity: "healthy",
+          isStale: false,
+          isUnreadable: false,
+        },
+      },
+    });
+    const mockExec = vi.fn().mockReturnValue(unreadableJson);
+    const result = await verifyVercelHeadroomCapacity(env, logger, mockExec);
+    expect(result).toBe(false);
+    expect(loggedText(logger)).toContain(
+      "has non-finite or negative used value"
+    );
+  });
+
+  it("returns false and logs error when returned meter is stale", async () => {
+    const logger = silentLogger();
+    const env = { ...validProductionEnv(), VERCEL_TOKEN: "valid_token" };
+    const staleJson = JSON.stringify({
+      timestamp: new Date().toISOString(),
+      hasCriticalAlerts: false,
+      meters: {
+        functionsStorage: {
+          source: "snapshot-budget",
+          resource: "Functions Storage",
+          used: 2.0,
+          limit: 10.0,
+          unit: "GB",
+          severity: "stale",
+          isStale: true,
+          isUnreadable: false,
+        },
+        deploymentStorage: {
+          source: "snapshot-budget",
+          resource: "Deployment Storage",
+          used: 1.0,
+          limit: 10.0,
+          unit: "GB",
+          severity: "healthy",
+          isStale: false,
+          isUnreadable: false,
+        },
+        buildTime: {
+          source: "snapshot-budget",
+          resource: "Build Time",
+          used: 10.0,
+          limit: 100.0,
+          unit: "hours",
+          severity: "healthy",
+          isStale: false,
+          isUnreadable: false,
+        },
+      },
+    });
+    const mockExec = vi.fn().mockReturnValue(staleJson);
+    const result = await verifyVercelHeadroomCapacity(env, logger, mockExec);
+    expect(result).toBe(false);
+    expect(loggedText(logger)).toContain("unhealthy severity: stale");
+  });
+
+  it("returns false in production when VERCEL_TOKEN is not set and check cannot run", async () => {
+    const logger = silentLogger();
+    const env: Env = { VERCEL: "1", VERCEL_ENV: "production" };
+    delete env.VERCEL_TOKEN;
+    const result = await verifyVercelHeadroomCapacity(env, logger);
+    expect(result).toBe(false);
+    expect(loggedText(logger)).toContain("VERCEL_TOKEN is not set");
+  });
+
+  it("fails on an actual child exit despite healthy stdout without exposing stderr", async () => {
+    const logger = silentLogger();
+    const secret = "private-child-output";
+    const result = await verifyVercelHeadroomCapacity(
+      { ...validProductionEnv(), VERCEL_TOKEN: "test-token" },
+      logger,
+      () =>
+        execFileSync(
+          process.execPath,
+          [
+            "-e",
+            `process.stdout.write(${JSON.stringify(healthyJson)}); process.stderr.write(${JSON.stringify(secret)}); process.exit(1)`,
+          ],
+          { stdio: ["ignore", "pipe", "pipe"] }
+        )
+    );
+    expect(result).toBe(false);
+    expect(loggedText(logger)).toContain("failed to execute");
+    expect(loggedText(logger)).not.toContain(secret);
+    expect(loggedText(logger)).not.toContain(healthyJson);
+  });
+  it("rejects unverified and stale evidence even if the report claims healthy", async () => {
+    const env = { ...validProductionEnv(), VERCEL_TOKEN: "test-token" };
+    const report = JSON.parse(healthyJson);
+    report.meters.functionsStorage.source = "unverified-api-probe";
+    expect(
+      await verifyVercelHeadroomCapacity(env, silentLogger(), () =>
+        JSON.stringify(report)
+      )
+    ).toBe(false);
+    report.meters.functionsStorage.source = "snapshot-budget";
+    report.timestamp = "2020-01-01T00:00:00Z";
+    expect(
+      await verifyVercelHeadroomCapacity(env, silentLogger(), () =>
+        JSON.stringify(report)
+      )
+    ).toBe(false);
   });
 });

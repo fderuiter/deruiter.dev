@@ -511,17 +511,59 @@ export function runSecurityAudit(options: SecurityAuditOptions = {}): boolean {
     shell: true,
   });
 
-  let auditJson: AuditReport;
-  try {
-    auditJson = JSON.parse(
-      auditResult.stdout || auditResult.stderr || "{}"
-    ) as AuditReport;
-  } catch (_e) {
+  let auditJson: AuditReport | null = null;
+  const rawOutput = (auditResult.stdout || "").trim();
+  const rawStderr = (auditResult.stderr || "").trim();
+
+  if (rawOutput) {
+    try {
+      const firstBrace = rawOutput.indexOf("{");
+      const lastBrace = rawOutput.lastIndexOf("}");
+      const jsonStr =
+        firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace
+          ? rawOutput.slice(firstBrace, lastBrace + 1)
+          : rawOutput;
+      auditJson = JSON.parse(jsonStr) as AuditReport;
+    } catch (_e) {
+      // Failed to parse stdout as JSON
+    }
+  }
+
+  if (!auditJson && rawStderr && rawStderr.includes("{")) {
+    try {
+      const firstBrace = rawStderr.indexOf("{");
+      const lastBrace = rawStderr.lastIndexOf("}");
+      if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+        auditJson = JSON.parse(
+          rawStderr.slice(firstBrace, lastBrace + 1)
+        ) as AuditReport;
+      }
+    } catch (_e) {
+      // Failed to parse stderr as JSON
+    }
+  }
+
+  if (
+    auditResult.error ||
+    !auditJson ||
+    typeof auditJson !== "object" ||
+    Array.isArray(auditJson) ||
+    !auditJson.vulnerabilities ||
+    typeof auditJson.vulnerabilities !== "object" ||
+    Array.isArray(auditJson.vulnerabilities) ||
+    "error" in auditJson ||
+    auditResult.signal ||
+    (auditResult.status != null &&
+      auditResult.status !== 0 &&
+      (auditResult.status !== 1 ||
+        Object.keys(auditJson.vulnerabilities).length === 0))
+  ) {
     console.error(
-      `${colors.brightRed}❌ Failed to parse npm audit JSON output.${colors.reset}`
+      `${colors.brightRed}❌ npm audit execution failed or returned an invalid audit report.${colors.reset}`
     );
+    // Raw process output can contain credentials; report only the failure category.
     if (options.throwOnError) {
-      throw new Error("Failed to parse npm audit JSON output.");
+      throw new Error("npm audit execution failed or returned invalid JSON.");
     }
     process.exit(1);
   }

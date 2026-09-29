@@ -1,6 +1,6 @@
 # Monitor Vercel Storage and Build Headroom
 
-Documentation last reconciled: 2026-09-22. Meter data last verified:
+Documentation last reconciled: 2026-09-29. Meter data last verified:
 2026-09-12 23:31 UTC against Vercel Hobby.
 
 Governing policy: [ADR 0036](../../adr/0036-free-tier-offloading-and-provider-quota-governance.md),
@@ -18,11 +18,30 @@ npm run headroom:vercel -- --strict
 npm run inventory:vercel
 ```
 
-`--strict` exits unsuccessfully while any meter is critical. These commands
-evaluate the checked-in 2026-09-12 snapshot; they do not query Vercel live.
-The strict command currently fails because the captured Functions Storage
-meter was critical. That failure is not proof of today's value, and a pass
-after editing the snapshot would not be provider evidence.
+`--strict` exits unsuccessfully for critical, stale, unreadable or unverified
+meters. Evaluation uses the current clock; the checked-in snapshot retains its
+original collection timestamp and is explicitly labeled `snapshot-budget`.
+The table below records historical dashboard budgets, not verified current API
+entitlements.
+
+When `VERCEL_TOKEN` is configured, the tool optionally probes `/v6/deployments`
+and `/v2/usage`. The usage response contract and quota availability have not
+been verified. Probe observations are labeled `unverified-api-probe`, never
+healthy release evidence. Missing units, invalid values and absent or malformed
+limits remain unknown; historical 10 GB / 100 hour budgets are not substituted.
+Schema-named byte/second fields and explicit compatible units are normalized
+without magnitude guessing; GB and MB use decimal units.
+
+The [official billing API](https://vercel.com/changelog/access-billing-usage-cost-data-api)
+documents `/v1/billing/charges` billing records. Those records do not establish
+this probe's storage quotas. Until a provider contract is verified, refresh the
+audited snapshot from the dashboard with its collection timestamp. Without a
+usable probe, reporting retains the dated snapshot and evaluates its age.
+
+This is optional manual tooling. Production builds do not call the capacity
+helper and do not require a new Vercel API credential. The helper fails on child
+errors, malformed reports, unverified provenance or stale samples. No tool
+starts or authorizes a deployment; the manual hold in ADR 0051 remains.
 
 ## Thresholds and Captured Snapshot
 
@@ -35,7 +54,7 @@ after editing the snapshot would not be provider evidence.
 - Healthy: below 80%.
 - Warning: at least 80% and below 95%.
 - Critical: at least 95%.
-- Stale: the snapshot exceeds the configured maximum age.
+- Stale: the snapshot exceeds the configured maximum age (30 days).
 - Unreadable: a provider value is missing or malformed; never interpret it as
   zero.
 
@@ -43,12 +62,8 @@ after editing the snapshot would not be provider evidence.
 cooldown, and emits a recovery notification when a resource returns to a
 healthy band.
 
-> [!CAUTION]
-> `scripts/vercel-headroom.ts` currently defaults its evaluation clock to a
-> fixed 2026-09-12 timestamp. Its `stale` classification therefore does not
-> age naturally when the command is run later. Until the implementation is
-> corrected, compare the capture timestamp above with the real current date
-> and treat an over-age snapshot as stale manually.
+> [!NOTE]
+> `scripts/vercel-headroom.ts` defaults its evaluation clock to real system execution time (`new Date()`). When evaluating against checked-in snapshot data without `VERCEL_TOKEN`, any snapshot older than the 30-day maximum age threshold is dynamically marked as `stale` (`[STALE]`).
 
 ## Critical Functions Storage Response
 

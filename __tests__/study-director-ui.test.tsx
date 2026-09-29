@@ -1,5 +1,5 @@
 import React from "react";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   cleanup,
   fireEvent,
@@ -17,8 +17,12 @@ function start() {
 describe("StudyDirectorGame", () => {
   beforeEach(() => {
     globalThis.localStorage?.clear?.();
+    vi.spyOn(window, "scrollTo").mockImplementation(() => {});
   });
-  afterEach(() => cleanup());
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
+  });
 
   it("opens with a briefing that explains attention, documentation and the dashboard", () => {
     render(<StudyDirectorGame />);
@@ -43,7 +47,7 @@ describe("StudyDirectorGame", () => {
       screen.getByRole("button", { name: /Sure, we'll add them/ })
     );
     const attention = screen.getByRole("img", { name: /attention left today/ });
-    expect(attention.getAttribute("aria-label")).toMatch(/^7 of 8/);
+    expect(attention.getAttribute("aria-label")).toMatch(/^4 of 5/);
     const inbox = screen.getByRole("region", { name: "Inbox" });
     expect(within(inbox).queryByText("Exploratory biomarkers")).toBeNull();
   });
@@ -58,7 +62,7 @@ describe("StudyDirectorGame", () => {
       screen
         .getByRole("img", { name: /attention left today/ })
         .getAttribute("aria-label")
-    ).toMatch(/^6 of 8/);
+    ).toMatch(/^3 of 5/);
   });
 
   it("supports keyboard shortcuts for choosing and ending the day", () => {
@@ -71,9 +75,26 @@ describe("StudyDirectorGame", () => {
       screen
         .getByRole("img", { name: /attention left today/ })
         .getAttribute("aria-label")
-    ).toMatch(/^7 of 8/);
+    ).toMatch(/^4 of 5/);
     fireEvent.keyDown(root, { key: "e" });
     expect(screen.getByText(/Day 2 \/ 77/)).toBeTruthy();
+  });
+
+  it("skips quiet days to the next message", () => {
+    start();
+    expect(
+      screen.queryByRole("button", { name: /Skip to next message/ })
+    ).toBeNull();
+    fireEvent.click(
+      screen.getByRole("button", { name: /Sure, we'll add them/ })
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: /Skip to next message/ })
+    );
+    expect(screen.getByText(/Day [2-9] \/ 77/)).toBeTruthy();
+    expect(screen.getByRole("region", { name: "Inbox" }).textContent).toMatch(
+      /1 open/
+    );
   });
 
   it("audits a site and shows its real numbers", () => {
@@ -86,7 +107,7 @@ describe("StudyDirectorGame", () => {
       screen
         .getByRole("img", { name: /attention left today/ })
         .getAttribute("aria-label")
-    ).toMatch(/^6 of 8/);
+    ).toMatch(/^3 of 5/);
   });
 
   it("warns when critical messages will lapse", () => {

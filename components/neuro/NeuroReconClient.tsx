@@ -29,6 +29,12 @@ import {
   computeSyntheticVolumeSync,
   computeQAMetricsSync,
 } from "@/lib/neuro/loader";
+import {
+  NEURO_RUN_RECON_KEY,
+  getNeuroProvenance,
+  isNeuroSelectionValid,
+  resolveNeuroHotkey,
+} from "@/lib/neuro";
 import { SyntheticVolume, VOLUME_SIZE } from "@/lib/neuro/volume-generator";
 import { MultiPlanarSliceViewer } from "./MultiPlanarSliceViewer";
 import dynamic from "next/dynamic";
@@ -247,6 +253,8 @@ export const NeuroReconClient: React.FC = () => {
     streak: 0,
     resolvedScenarios: [],
   });
+  const scoreStateRef = React.useRef<ScoreState>(scoreState);
+  const [lastReward, setLastReward] = useState(500);
 
   const [logs, setLogs] = useState<TerminalLog[]>([
     {
@@ -317,17 +325,22 @@ export const NeuroReconClient: React.FC = () => {
     (scenarioId: ScenarioId) => {
       applyScenarioState(scenarioId);
 
+      // Defect cases are synthetic: leave a real-scan dataset when one is picked.
+      const leaveDataset = !isNeuroSelectionValid(activeDataset, scenarioId);
+      if (leaveDataset) setActiveDatasetState("case_study");
+
       setParams(
         {
           scenario: scenarioId === "dura_inclusion" ? null : scenarioId,
           tool: null,
+          ...(leaveDataset ? { dataset: null } : {}),
         },
         { replace: false }
       );
 
       recordEvent("neuro", "project_click");
     },
-    [applyScenarioState, setParams, recordEvent]
+    [applyScenarioState, setParams, recordEvent, activeDataset]
   );
 
   // Synchronize incoming hash state on mount or browser Back/Forward navigation
@@ -345,12 +358,15 @@ export const NeuroReconClient: React.FC = () => {
       setViewModeState(rawView);
     }
     const rawDs = (params.dataset as DatasetSource | undefined) || "case_study";
-    if (
+    // A share link pairing a real-scan dataset with a synthetic case is invalid.
+    const effectiveDs =
       ["case_study", "mni152", "oasis"].includes(rawDs) &&
-      rawDs !== activeDataset
-    ) {
+      isNeuroSelectionValid(rawDs, rawSc)
+        ? rawDs
+        : "case_study";
+    if (effectiveDs !== activeDataset) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setActiveDatasetState(rawDs);
+      setActiveDatasetState(effectiveDs);
     }
     const rawTool = params.tool as ToolMode | undefined;
     const recommendedTool = currentScenario?.recommendedTool || "inspect";
@@ -559,23 +575,45 @@ export const NeuroReconClient: React.FC = () => {
       setIsProcessing(false);
 
       if (metrics.isResolved) {
-        playSuccess();
-        setShowSuccessModal(true);
-        setScoreState((prev) => ({
-          score: prev.score + 500 * prev.multiplier,
+        const prev = scoreStateRef.current;
+        const alreadyEarned = prev.resolvedScenarios.includes(activeScenarioId);
+        const isSandbox = activeScenarioId === "sandbox";
+        // Reward policy (#1218): each repair scenario pays out once per
+        // session; Sandbox is inspection-only and never pays out.
+        if (isSandbox || alreadyEarned) {
+          playNote(440, 0.1);
+          setLogs((logs) => [
+            ...logs,
+            {
+              id: `log-res-insp-${Date.now()}`,
+              type: "info",
+              text: isSandbox
+                ? `[INSPECTION PASS] Sandbox volume verified with no defects to correct. Estimated Euler χ = ${metrics.eulerCharacteristic}, estimated Dice = ${(metrics.diceScore * 100).toFixed(1)}%. No points awarded.`
+                : `[SIMULATION PASSED] Case already completed; re-verified. Estimated Euler χ = ${metrics.eulerCharacteristic}, estimated Dice = ${(metrics.diceScore * 100).toFixed(1)}%. No additional points.`,
+              timestamp: new Date().toLocaleTimeString(),
+            },
+          ]);
+          return;
+        }
+        const reward = 500 * prev.multiplier;
+        const next: ScoreState = {
+          score: prev.score + reward,
           multiplier: Math.min(4, prev.multiplier + 1),
           streak: prev.streak + 1,
-          resolvedScenarios: Array.from(
-            new Set([...prev.resolvedScenarios, activeScenarioId])
-          ),
-        }));
+          resolvedScenarios: [...prev.resolvedScenarios, activeScenarioId],
+        };
+        scoreStateRef.current = next;
+        setScoreState(next);
+        setLastReward(reward);
+        playSuccess();
+        setShowSuccessModal(true);
 
-        setLogs((prev) => [
-          ...prev,
+        setLogs((logs) => [
+          ...logs,
           {
             id: `log-res-succ-${Date.now()}`,
             type: "success",
-            text: `[SIMULATION PASSED] ${currentScenario.successMessage} Estimated Euler χ = ${metrics.eulerCharacteristic}, estimated Dice = ${(metrics.diceScore * 100).toFixed(1)}%. +500 PTS`,
+            text: `[SIMULATION PASSED] ${currentScenario.successMessage} Estimated Euler χ = ${metrics.eulerCharacteristic}, estimated Dice = ${(metrics.diceScore * 100).toFixed(1)}%. +${reward} PTS`,
             timestamp: new Date().toLocaleTimeString(),
           },
         ]);
@@ -717,7 +755,7 @@ export const NeuroReconClient: React.FC = () => {
           {
             id: `out-ds-list-${Date.now()}`,
             type: "info",
-            text: `Available datasets:\n  dataset cases   : FreeSurfer Clinical QA Cases 01-04\n  dataset mni152  : Real Human MNI152 ICBM 2009c 3D GLB\n  dataset oasis   : Real Human OASIS-1 3T Scan OBJ`,
+            text: `Available datasets:\n  dataset cases   : FreeSurfer Clinical QA Cases 01-04 (synthetic)\n  dataset mni152  : MNI152 ICBM 2009c 3D reference mesh (slices and QA stay synthetic)\n  dataset oasis   : OASIS-1 3D reference mesh (slices and QA stay synthetic)`,
             timestamp,
           },
         ]);
@@ -744,30 +782,15 @@ export const NeuroReconClient: React.FC = () => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Studio hotkeys are suspended while a modal dialog owns the keyboard.
       if (isDialogOpen) return;
-      // Avoid hotkeys when typing in input or when focused within a keyboard boundary
-      const target = e.target as HTMLElement | null;
-      if (
-        !target ||
-        target.tagName === "INPUT" ||
-        target.tagName === "TEXTAREA" ||
-        target.isContentEditable ||
-        target.closest?.("[data-keyboard-boundary]")
-      ) {
-        return;
-      }
-
-      if (e.key === "1" || e.key.toLowerCase() === "v") {
-        setToolMode("inspect");
-      } else if (e.key === "2" || e.key.toLowerCase() === "c") {
-        setToolMode("control_point");
-      } else if (e.key === "3" || e.key.toLowerCase() === "b") {
-        setToolMode("paint");
-      } else if (e.key === "4" || e.key.toLowerCase() === "e") {
-        setToolMode("erase");
-      } else if (e.key === " " && !isProcessing) {
+      // Ignore text entry, modifier chords, and natively activating controls.
+      const action = resolveNeuroHotkey(e);
+      if (!action) return;
+      if (action.type === "tool") {
+        setToolMode(action.tool);
+      } else if (action.type === "run") {
         e.preventDefault();
-        handleRunRecon();
-      } else if (e.key.toLowerCase() === "m" || e.key === "?") {
+        if (!isProcessing) handleRunRecon();
+      } else {
         setIsFieldManualOpen((prev) => !prev);
       }
     };
@@ -800,6 +823,10 @@ export const NeuroReconClient: React.FC = () => {
   }
 
   const activeDatasetConfig = datasetConfigs[activeDataset];
+  const provenance = getNeuroProvenance(
+    activeDataset,
+    activeDatasetConfig?.name
+  );
 
   return (
     <div
@@ -841,7 +868,8 @@ export const NeuroReconClient: React.FC = () => {
               <div className="text-brand-cyan font-bold">1. SELECT CASE</div>
               <p className="text-[11px] text-zinc-400 leading-snug">
                 Choose a defect scenario (e.g. Dura Over-Inclusion or
-                Hypointensity) or load real MNI152 / OASIS scans.
+                Hypointensity), or pair the Sandbox with an MNI152 / OASIS 3D
+                reference mesh. 2D slices and QA metrics are always synthetic.
               </p>
             </div>
             <div className="bg-zinc-950/80 p-3 rounded-2xl border border-zinc-800 space-y-1">
@@ -857,8 +885,8 @@ export const NeuroReconClient: React.FC = () => {
               <p className="text-[11px] text-zinc-400 leading-snug">
                 Click{" "}
                 <strong className="text-brand-cyan">[RUN RECON-ALL]</strong> or
-                press <kbd>[Space]</kbd> to check the simulated Euler target χ =
-                2.
+                press <kbd>[{NEURO_RUN_RECON_KEY}]</kbd> to check the simulated
+                Euler target χ = 2.
               </p>
             </div>
           </div>
@@ -968,7 +996,13 @@ export const NeuroReconClient: React.FC = () => {
                 <button
                   key={scId}
                   onClick={() => handleSelectScenario(scId)}
-                  className={`flex items-center gap-1.5 px-3 py-2 min-h-[44px] rounded-xl text-xs font-mono transition-all whitespace-nowrap ${
+                  disabled={!isNeuroSelectionValid(activeDataset, scId)}
+                  title={
+                    isNeuroSelectionValid(activeDataset, scId)
+                      ? undefined
+                      : "Defect cases use synthetic slices and QA; switch to QA Scenarios to open them."
+                  }
+                  className={`disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 px-3 py-2 min-h-[44px] rounded-xl text-xs font-mono transition-all whitespace-nowrap ${
                     isActive
                       ? "bg-brand-cyan text-zinc-950 font-bold shadow-md"
                       : "text-zinc-400 hover:text-white hover:bg-zinc-900"
@@ -1067,6 +1101,29 @@ export const NeuroReconClient: React.FC = () => {
         onOpenFieldManual={() => setIsFieldManualOpen(true)}
       />
 
+      {/* Data provenance for each view and metric */}
+      <dl
+        aria-label="Data provenance"
+        className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px] font-mono text-zinc-400"
+        data-testid="neuro-provenance"
+      >
+        {(
+          [
+            ["3D mesh", provenance.mesh],
+            ["2D slices", provenance.volume],
+            ["QA metrics", provenance.qa],
+          ] as const
+        ).map(([label, value]) => (
+          <div
+            key={label}
+            className="min-w-0 break-words rounded-xl border border-zinc-800 bg-zinc-950/60 px-3 py-2"
+          >
+            <dt className="text-zinc-500 uppercase tracking-wider">{label}</dt>
+            <dd className="text-zinc-300">{value}</dd>
+          </div>
+        ))}
+      </dl>
+
       {/* Main Viewport Canvas Workspace */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* 3D Brain Surface Canvas (Span 5 or 12 or 0) */}
@@ -1130,6 +1187,7 @@ export const NeuroReconClient: React.FC = () => {
         message={currentScenario.successMessage}
         eulerCharacteristic={qaMetrics.eulerCharacteristic}
         diceScore={qaMetrics.diceScore}
+        reward={lastReward}
         onStay={() => setShowSuccessModal(false)}
         onAdvance={handleAdvanceNextScenario}
         onSchedule={() => recordEvent("neuro", "project_click")}

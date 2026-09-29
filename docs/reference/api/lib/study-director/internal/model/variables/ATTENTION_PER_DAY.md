@@ -6,6 +6,6 @@
 
 # Variable: ATTENTION\_PER\_DAY
 
-> `const` **ATTENTION\_PER\_DAY**: `8` = `8`
+> `const` **ATTENTION\_PER\_DAY**: `5` = `5`
 
 Attention points available each simulated day.

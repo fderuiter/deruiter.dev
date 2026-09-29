@@ -124,7 +124,10 @@ describe("Garmin Connect IQ Simulation Engine (lib/garmin-engine.ts)", () => {
   });
 
   it("should jettison oldest variable and reclaim memory with DOWN button", () => {
-    const state = startGame(createInitialState("fenix"));
+    const state = allocateVariable(
+      startGame(createInitialState("fenix")),
+      "string"
+    ).state;
     const beforeCount = state.variables.length;
     const beforeRam = state.allocatedRamKb;
 

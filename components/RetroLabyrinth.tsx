@@ -80,6 +80,8 @@ const START_X = 1;
 const START_Y = 1;
 const EXIT_X = 13;
 const EXIT_Y = 7;
+/** HP a drone takes when it and the player share a tile. */
+const DRONE_CONTACT_DAMAGE = 25;
 
 const WEAPON_SHORT_LABELS: Record<WeaponId, string> = {
   npm_install: "npm i",
@@ -352,8 +354,17 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     loadRoom("roguelike", 0);
   }, [loadRoom]);
 
+  // HP and RAM as the player entered the current room. Retry restores these,
+  // so a breach that ended at 0 HP doesn't restart at 0 HP.
+  const roomEntryVitalsRef = useRef({
+    hp: selectedClass.baseHp,
+    ram: selectedClass.baseRam,
+  });
+
   // Restart current stage
   const handleRestart = useCallback(() => {
+    setPlayerHp(roomEntryVitalsRef.current.hp);
+    setCurrentRam(roomEntryVitalsRef.current.ram);
     if (gameMode === "classic") {
       loadRoom("classic", stage);
     } else {
@@ -363,12 +374,13 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
 
   // Advance to next room in roguelike campaign
   const handleNextRoom = useCallback(() => {
+    roomEntryVitalsRef.current = { hp: playerHp, ram: currentRam };
     if (roomIndex < campaignRooms.length - 1) {
       loadRoom("roguelike", roomIndex + 1);
     } else {
       loadRoom("roguelike", 0);
     }
-  }, [roomIndex, campaignRooms.length, loadRoom]);
+  }, [roomIndex, campaignRooms.length, loadRoom, playerHp, currentRam]);
 
   // Start Roguelike Campaign with chosen Cyberdeck Class
   const startRoguelikeCampaign = useCallback(() => {
@@ -385,6 +397,10 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     }
     setScore(0);
     setCryptoBounty(0);
+    roomEntryVitalsRef.current = {
+      hp: chosenClass.baseHp,
+      ram: chosenClass.baseRam,
+    };
     loadRoom("roguelike", 0);
   }, [selectedClassId, loadRoom]);
 
@@ -507,6 +523,25 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         currentMaze[nextY][nextX] !== "#" &&
         currentMaze[nextY][nextX] !== "W"
       ) {
+        // Walking into a drone costs HP and leaves the player where they
+        // were, rather than ending the run outright.
+        if (
+          !dronesStunned &&
+          drones.some((d) => d.x === nextX && d.y === nextY)
+        ) {
+          setPlayerHp((hp) => {
+            const nextHp = hp - DRONE_CONTACT_DAMAGE;
+            if (nextHp <= 0) {
+              setGameStatus("caught");
+              retroAudio.playAlertPulse();
+              return 0;
+            }
+            return nextHp;
+          });
+          playNote(200, 0.2);
+          return;
+        }
+
         const nextMoves = movesCount + 1;
         setPlayerPosition({ x: nextX, y: nextY });
         setMovesCount(nextMoves);
@@ -665,12 +700,6 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
               return nextHp;
             });
             playNote(220, 0.2);
-          }
-
-          if (drones.some((d) => d.x === nextX && d.y === nextY)) {
-            setGameStatus("caught");
-            playNote(200, 0.2);
-            return;
           }
         }
 
@@ -1246,7 +1275,14 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
               }
 
               if (nextX === playerPosition.x && d.y === playerPosition.y) {
-                setGameStatus("caught");
+                setPlayerHp((hp) => {
+                  const nextHp = hp - DRONE_CONTACT_DAMAGE;
+                  if (nextHp <= 0) {
+                    setGameStatus("caught");
+                    return 0;
+                  }
+                  return nextHp;
+                });
                 playNote(220, 0.2);
               }
 
@@ -2312,6 +2348,10 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                       setPlayerHp(cls.baseHp);
                       setMaxPlayerHp(cls.baseHp);
                       setCurrentRam(cls.baseRam);
+                      roomEntryVitalsRef.current = {
+                        hp: cls.baseHp,
+                        ram: cls.baseRam,
+                      };
                       setMaxRam(cls.baseRam);
                       setBypassChips(cls.startBypassChips);
                       setWeapons(DEFAULT_WEAPONS);

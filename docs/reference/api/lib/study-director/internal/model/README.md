@@ -25,4 +25,5 @@
 - [phaseForDay](functions/phaseForDay.md)
 - [projectedFinishDay](functions/projectedFinishDay.md)
 - [resolveDecision](functions/resolveDecision.md)
+- [routineLoad](functions/routineLoad.md)
 - [totalOpenQueries](functions/totalOpenQueries.md)

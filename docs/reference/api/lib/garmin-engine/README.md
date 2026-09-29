@@ -37,12 +37,15 @@
 - [DEFAULT\_RUN\_TUNING](variables/DEFAULT_RUN_TUNING.md)
 - [DEVICE\_PROFILES](variables/DEVICE_PROFILES.md)
 - [FLASH\_STORAGE\_KEY](variables/FLASH_STORAGE_KEY.md)
+- [GC\_SCORE](variables/GC_SCORE.md)
 - [GRAVITY](variables/GRAVITY.md)
 - [GROUND\_Y](variables/GROUND_Y.md)
+- [JETTISON\_SCORE](variables/JETTISON_SCORE.md)
 - [JUMP\_FORCE](variables/JUMP_FORCE.md)
 - [PLAYER\_HEIGHT](variables/PLAYER_HEIGHT.md)
 - [PLAYER\_WIDTH](variables/PLAYER_WIDTH.md)
 - [PLAYER\_X](variables/PLAYER_X.md)
+- [REQUIRED\_VARIABLE\_NAMES](variables/REQUIRED_VARIABLE_NAMES.md)
 - [VARIABLE\_RAM\_COSTS](variables/VARIABLE_RAM_COSTS.md)
 
 ## Functions
@@ -51,6 +54,7 @@
 - [allocateVariable](functions/allocateVariable.md)
 - [clearFlashStorage](functions/clearFlashStorage.md)
 - [createInitialState](functions/createInitialState.md)
+- [isCollectibleVariable](functions/isCollectibleVariable.md)
 - [jettisonOldestVariable](functions/jettisonOldestVariable.md)
 - [loadPersistedFlashStorage](functions/loadPersistedFlashStorage.md)
 - [renderCanvasFrame](functions/renderCanvasFrame.md)

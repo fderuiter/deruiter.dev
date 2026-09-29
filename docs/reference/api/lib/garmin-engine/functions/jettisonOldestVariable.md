@@ -8,7 +8,9 @@
 
 > **jettisonOldestVariable**(`state`): `object`
 
-Jettison (pop) the oldest variable in the heap
+Jettison (pop) the oldest collectible variable in the heap.
+Required app state is never discarded; with nothing collectible the call is
+a no-op that awards no score and reports a reason.
 
 ## Parameters
 
@@ -23,6 +25,10 @@ Jettison (pop) the oldest variable in the heap
 ### popped?
 
 > `optional` **popped?**: [`MemoryVariable`](../interfaces/MemoryVariable.md)
+
+### reason?
+
+> `optional` **reason?**: `string`
 
 ### state
 

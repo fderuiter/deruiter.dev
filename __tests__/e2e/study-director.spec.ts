@@ -26,7 +26,7 @@ test.describe("Study Director (/arcade/study-director)", () => {
 
     await page.getByRole("button", { name: /Sure, we'll add them/ }).click();
     await expect(
-      page.getByRole("img", { name: /7 of 8 attention left today/ })
+      page.getByRole("img", { name: /4 of 5 attention left today/ })
     ).toBeVisible();
 
     await page.getByRole("button", { name: "End day" }).click();

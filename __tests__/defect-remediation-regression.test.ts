@@ -42,6 +42,7 @@ import {
   triggerGarbageCollection,
   allocateVariable,
   wipeScreenFog,
+  type GameEngineState,
 } from "@/lib/garmin-engine";
 import {
   clampBounds,
@@ -335,9 +336,10 @@ describe("Defect Remediation & Regression Verification Suite (Invariant #11)", (
       const { state: afterJettison } = jettisonOldestVariable(playing);
       expect(afterJettison.allocatedRamKb).toBeGreaterThanOrEqual(0.2);
 
-      const { state: afterGc, freedKb } = triggerGarbageCollection(playing);
+      const loaded = allocateVariable(playing, "array", "tmp").state;
+      const { state: afterGc, freedKb } = triggerGarbageCollection(loaded);
       expect(afterGc.isGcActive).toBe(true);
-      expect(freedKb).toBeGreaterThanOrEqual(0);
+      expect(freedKb).toBeGreaterThan(0);
       expect(afterGc.allocatedRamKb).toBeGreaterThanOrEqual(0.4);
 
       const { state: allocState } = allocateVariable(
@@ -346,6 +348,65 @@ describe("Defect Remediation & Regression Verification Suite (Invariant #11)", (
         "testVar"
       );
       expect(allocState.allocatedRamKb).toBeGreaterThan(playing.allocatedRamKb);
+    });
+  });
+
+  describe("Garmin point farming (#1213)", () => {
+    const fresh = (): GameEngineState => ({
+      ...createInitialState("fenix"),
+      gameState: "playing" as const,
+    });
+
+    it("never jettisons required app state and awards nothing for a no-op", () => {
+      const start = fresh();
+      const res = jettisonOldestVariable(start);
+      expect(res.popped).toBeUndefined();
+      expect(res.state.variables).toEqual(start.variables);
+      expect(res.state.score).toBe(0);
+      expect(res.reason).toBeTruthy();
+      expect(res.state.variables.map((v) => v.name)).toEqual([
+        "appCtx",
+        "displayGfx",
+      ]);
+    });
+
+    it("gives no score, freeze, or memory change for empty-heap GC, even repeated", () => {
+      let state = fresh();
+      for (let i = 0; i < 5; i++) {
+        const res = triggerGarbageCollection(state);
+        expect(res.freedKb).toBe(0);
+        expect(res.state.isGcActive).toBe(false);
+        expect(res.state.gcTimerMs).toBe(0);
+        expect(res.reason).toBeTruthy();
+        state = res.state;
+      }
+      expect(state.score).toBe(0);
+      expect(state.variables).toHaveLength(2);
+    });
+
+    it("rewards jettison and GC only when garbage was actually reclaimed", () => {
+      const loaded = allocateVariable(fresh(), "string", "tmp").state;
+      const j = jettisonOldestVariable(loaded);
+      expect(j.popped?.name).toBe("tmp");
+      expect(j.state.score).toBeGreaterThan(0);
+
+      const g = triggerGarbageCollection(loaded);
+      expect(g.freedKb).toBeGreaterThan(0);
+      expect(g.state.isGcActive).toBe(true);
+      expect(g.state.score).toBeGreaterThan(0);
+      expect(g.state.variables.map((v) => v.name)).toEqual([
+        "appCtx",
+        "displayGfx",
+      ]);
+
+      // A second GC once the heap is clean is a no-op again
+      const again = triggerGarbageCollection({
+        ...g.state,
+        isGcActive: false,
+        gcTimerMs: 0,
+      });
+      expect(again.freedKb).toBe(0);
+      expect(again.state.score).toBe(g.state.score);
     });
   });
 

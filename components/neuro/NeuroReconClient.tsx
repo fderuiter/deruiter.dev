@@ -1214,7 +1214,7 @@ export const NeuroReconClient: React.FC = () => {
             key={label}
             className="min-w-0 break-words rounded-xl border border-zinc-800 bg-zinc-950/60 px-3 py-2"
           >
-            <dt className="text-zinc-500 uppercase tracking-wider">{label}</dt>
+            <dt className="text-zinc-400 uppercase tracking-wider">{label}</dt>
             <dd className="text-zinc-300">{value}</dd>
           </div>
         ))}

@@ -418,12 +418,21 @@ describe("Quasi-Perfect Puzzler Granular 18-Level Step-by-Step Solvability", () 
 
     // Step 2: rw [h] on LHS 'a' -> b = b
     const targetA = step1.newAST!.children![0];
-    const step2 = tacticDefs.rw.execute(targetA, step1.newAST!, lvl.hypotheses, "h");
+    const step2 = tacticDefs.rw.execute(
+      targetA,
+      step1.newAST!,
+      lvl.hypotheses,
+      "h"
+    );
     expect(step2.success).toBe(true);
     expect(renderASTString(step2.newAST!)).toBe("b = b");
 
     // Step 3: rfl -> QED
-    const step3 = tacticDefs.rfl.execute(step2.newAST!, step2.newAST!, lvl.hypotheses);
+    const step3 = tacticDefs.rfl.execute(
+      step2.newAST!,
+      step2.newAST!,
+      lvl.hypotheses
+    );
     expect(step3.success).toBe(true);
     expect(step3.isProofComplete).toBe(true);
   });
@@ -434,17 +443,31 @@ describe("Quasi-Perfect Puzzler Granular 18-Level Step-by-Step Solvability", () 
     expect(renderASTString(lvl.goal)).toBe("a = c");
 
     // Step 1: rw [h1] on 'a' -> b = c
-    const step1 = tacticDefs.rw.execute(lvl.goal.children![0], lvl.goal, lvl.hypotheses, "h1");
+    const step1 = tacticDefs.rw.execute(
+      lvl.goal.children![0],
+      lvl.goal,
+      lvl.hypotheses,
+      "h1"
+    );
     expect(step1.success).toBe(true);
     expect(renderASTString(step1.newAST!)).toBe("b = c");
 
     // Step 2: rw [h2] on 'b' -> c = c
-    const step2 = tacticDefs.rw.execute(step1.newAST!.children![0], step1.newAST!, lvl.hypotheses, "h2");
+    const step2 = tacticDefs.rw.execute(
+      step1.newAST!.children![0],
+      step1.newAST!,
+      lvl.hypotheses,
+      "h2"
+    );
     expect(step2.success).toBe(true);
     expect(renderASTString(step2.newAST!)).toBe("c = c");
 
     // Step 3: rfl -> QED
-    const step3 = tacticDefs.rfl.execute(step2.newAST!, step2.newAST!, lvl.hypotheses);
+    const step3 = tacticDefs.rfl.execute(
+      step2.newAST!,
+      step2.newAST!,
+      lvl.hypotheses
+    );
     expect(step3.success).toBe(true);
     expect(step3.isProofComplete).toBe(true);
   });
@@ -453,11 +476,20 @@ describe("Quasi-Perfect Puzzler Granular 18-Level Step-by-Step Solvability", () 
     const lvl = puzzleLevels[3];
     expect(lvl.id).toBe(4);
 
-    const step1 = tacticDefs.rw.execute(lvl.goal.children![0], lvl.goal, lvl.hypotheses, "add_assoc");
+    const step1 = tacticDefs.rw.execute(
+      lvl.goal.children![0],
+      lvl.goal,
+      lvl.hypotheses,
+      "add_assoc"
+    );
     expect(step1.success).toBe(true);
-    expect(renderASTString(step1.newAST!)).toBe("a + b + c = a + b + c");
+    expect(renderASTString(step1.newAST!)).toBe("a + (b + c) = a + (b + c)");
 
-    const step2 = tacticDefs.rfl.execute(step1.newAST!, step1.newAST!, lvl.hypotheses);
+    const step2 = tacticDefs.rfl.execute(
+      step1.newAST!,
+      step1.newAST!,
+      lvl.hypotheses
+    );
     expect(step2.success).toBe(true);
     expect(step2.isProofComplete).toBe(true);
   });
@@ -466,11 +498,20 @@ describe("Quasi-Perfect Puzzler Granular 18-Level Step-by-Step Solvability", () 
     const lvl = puzzleLevels[4];
     expect(lvl.id).toBe(5);
 
-    const step1 = tacticDefs.rw.execute(lvl.goal.children![0], lvl.goal, lvl.hypotheses, "add_zero");
+    const step1 = tacticDefs.rw.execute(
+      lvl.goal.children![0],
+      lvl.goal,
+      lvl.hypotheses,
+      "add_zero"
+    );
     expect(step1.success).toBe(true);
     expect(renderASTString(step1.newAST!)).toBe("x = x");
 
-    const step2 = tacticDefs.rfl.execute(step1.newAST!, step1.newAST!, lvl.hypotheses);
+    const step2 = tacticDefs.rfl.execute(
+      step1.newAST!,
+      step1.newAST!,
+      lvl.hypotheses
+    );
     expect(step2.success).toBe(true);
     expect(step2.isProofComplete).toBe(true);
   });
@@ -494,13 +535,23 @@ describe("Quasi-Perfect Puzzler Granular 18-Level Step-by-Step Solvability", () 
     expect(lvl.id).toBe(7);
 
     // Step 1: intro h -> hypothesis [h : P], goal: P
-    const step1 = tacticDefs.intro.execute(lvl.goal, lvl.goal, lvl.hypotheses, "h");
+    const step1 = tacticDefs.intro.execute(
+      lvl.goal,
+      lvl.goal,
+      lvl.hypotheses,
+      "h"
+    );
     expect(step1.success).toBe(true);
     expect(step1.newHypotheses?.length).toBe(1);
     expect(step1.newAST?.value).toBe("P");
 
     // Step 2: exact h -> QED
-    const step2 = tacticDefs.exact.execute(step1.newAST!, step1.newAST!, step1.newHypotheses!, "h");
+    const step2 = tacticDefs.exact.execute(
+      step1.newAST!,
+      step1.newAST!,
+      step1.newHypotheses!,
+      "h"
+    );
     expect(step2.success).toBe(true);
     expect(step2.isProofComplete).toBe(true);
   });
@@ -510,12 +561,22 @@ describe("Quasi-Perfect Puzzler Granular 18-Level Step-by-Step Solvability", () 
     expect(lvl.id).toBe(8);
 
     // Step 1: apply h_imp -> goal becomes P
-    const step1 = tacticDefs.apply.execute(lvl.goal, lvl.goal, lvl.hypotheses, "h_imp");
+    const step1 = tacticDefs.apply.execute(
+      lvl.goal,
+      lvl.goal,
+      lvl.hypotheses,
+      "h_imp"
+    );
     expect(step1.success).toBe(true);
     expect(step1.newAST?.value).toBe("P");
 
     // Step 2: exact h_p -> QED
-    const step2 = tacticDefs.exact.execute(step1.newAST!, step1.newAST!, lvl.hypotheses, "h_p");
+    const step2 = tacticDefs.exact.execute(
+      step1.newAST!,
+      step1.newAST!,
+      lvl.hypotheses,
+      "h_p"
+    );
     expect(step2.success).toBe(true);
     expect(step2.isProofComplete).toBe(true);
   });
@@ -531,13 +592,23 @@ describe("Quasi-Perfect Puzzler Granular 18-Level Step-by-Step Solvability", () 
 
     // Subgoal 1: exact h_p
     const sg1 = step1.newSubGoals![0];
-    const res1 = tacticDefs.exact.execute(sg1.goal, sg1.goal, sg1.hypotheses, "h_p");
+    const res1 = tacticDefs.exact.execute(
+      sg1.goal,
+      sg1.goal,
+      sg1.hypotheses,
+      "h_p"
+    );
     expect(res1.success).toBe(true);
     expect(res1.isProofComplete).toBe(true);
 
     // Subgoal 2: exact h_q
     const sg2 = step1.newSubGoals![1];
-    const res2 = tacticDefs.exact.execute(sg2.goal, sg2.goal, sg2.hypotheses, "h_q");
+    const res2 = tacticDefs.exact.execute(
+      sg2.goal,
+      sg2.goal,
+      sg2.hypotheses,
+      "h_q"
+    );
     expect(res2.success).toBe(true);
     expect(res2.isProofComplete).toBe(true);
   });
@@ -547,17 +618,32 @@ describe("Quasi-Perfect Puzzler Granular 18-Level Step-by-Step Solvability", () 
     expect(lvl.id).toBe(10);
 
     // Step 1: apply h2 (Q → R) -> goal becomes Q
-    const step1 = tacticDefs.apply.execute(lvl.goal, lvl.goal, lvl.hypotheses, "h2");
+    const step1 = tacticDefs.apply.execute(
+      lvl.goal,
+      lvl.goal,
+      lvl.hypotheses,
+      "h2"
+    );
     expect(step1.success).toBe(true);
     expect(step1.newAST?.value).toBe("Q");
 
     // Step 2: apply h1 (P → Q) -> goal becomes P
-    const step2 = tacticDefs.apply.execute(step1.newAST!, step1.newAST!, lvl.hypotheses, "h1");
+    const step2 = tacticDefs.apply.execute(
+      step1.newAST!,
+      step1.newAST!,
+      lvl.hypotheses,
+      "h1"
+    );
     expect(step2.success).toBe(true);
     expect(step2.newAST?.value).toBe("P");
 
     // Step 3: exact h_p -> QED
-    const step3 = tacticDefs.exact.execute(step2.newAST!, step2.newAST!, lvl.hypotheses, "h_p");
+    const step3 = tacticDefs.exact.execute(
+      step2.newAST!,
+      step2.newAST!,
+      lvl.hypotheses,
+      "h_p"
+    );
     expect(step3.success).toBe(true);
     expect(step3.isProofComplete).toBe(true);
   });
@@ -567,29 +653,52 @@ describe("Quasi-Perfect Puzzler Granular 18-Level Step-by-Step Solvability", () 
     expect(lvl.id).toBe(11);
 
     // Step 1: cases h_or -> Subgoal 1 (Case 1: h_left : P) and Subgoal 2 (Case 2: h_right : Q)
-    const step1 = tacticDefs.cases.execute(lvl.goal, lvl.goal, lvl.hypotheses, "h_or");
+    const step1 = tacticDefs.cases.execute(
+      lvl.goal,
+      lvl.goal,
+      lvl.hypotheses,
+      "h_or"
+    );
     expect(step1.success).toBe(true);
     expect(step1.newSubGoals?.length).toBe(2);
 
     // Branch 1 (Case 1: goal Q ∨ P with h_left: P)
     const sub1 = step1.newSubGoals![0];
     // Select right disjunct: Q ∨ P ⟹ P
-    const right1 = tacticDefs.right.execute(sub1.goal, sub1.goal, sub1.hypotheses);
+    const right1 = tacticDefs.right.execute(
+      sub1.goal,
+      sub1.goal,
+      sub1.hypotheses
+    );
     expect(right1.success).toBe(true);
     expect(right1.newAST?.value).toBe("P");
     // Close with exact h_left
-    const close1 = tacticDefs.exact.execute(right1.newAST!, right1.newAST!, sub1.hypotheses, "h_left");
+    const close1 = tacticDefs.exact.execute(
+      right1.newAST!,
+      right1.newAST!,
+      sub1.hypotheses,
+      "h_left"
+    );
     expect(close1.success).toBe(true);
     expect(close1.isProofComplete).toBe(true);
 
     // Branch 2 (Case 2: goal Q ∨ P with h_right: Q)
     const sub2 = step1.newSubGoals![1];
     // Select left disjunct: Q ∨ P ⟹ Q
-    const left2 = tacticDefs.left.execute(sub2.goal, sub2.goal, sub2.hypotheses);
+    const left2 = tacticDefs.left.execute(
+      sub2.goal,
+      sub2.goal,
+      sub2.hypotheses
+    );
     expect(left2.success).toBe(true);
     expect(left2.newAST?.value).toBe("Q");
     // Close with exact h_right
-    const close2 = tacticDefs.exact.execute(left2.newAST!, left2.newAST!, sub2.hypotheses, "h_right");
+    const close2 = tacticDefs.exact.execute(
+      left2.newAST!,
+      left2.newAST!,
+      sub2.hypotheses,
+      "h_right"
+    );
     expect(close2.success).toBe(true);
     expect(close2.isProofComplete).toBe(true);
   });
@@ -598,7 +707,11 @@ describe("Quasi-Perfect Puzzler Granular 18-Level Step-by-Step Solvability", () 
     const lvl = puzzleLevels[11];
     expect(lvl.id).toBe(12);
 
-    const step1 = tacticDefs.norm_num.execute(lvl.goal, lvl.goal, lvl.hypotheses);
+    const step1 = tacticDefs.norm_num.execute(
+      lvl.goal,
+      lvl.goal,
+      lvl.hypotheses
+    );
     expect(step1.success).toBe(true);
     expect(step1.isProofComplete).toBe(true);
     expect(step1.leanProofStep).toBe("norm_num");
@@ -622,7 +735,11 @@ describe("Quasi-Perfect Puzzler Granular 18-Level Step-by-Step Solvability", () 
     const lvl = puzzleLevels[13];
     expect(lvl.id).toBe(14);
 
-    const step1 = tacticDefs.linarith.execute(lvl.goal, lvl.goal, lvl.hypotheses);
+    const step1 = tacticDefs.linarith.execute(
+      lvl.goal,
+      lvl.goal,
+      lvl.hypotheses
+    );
     expect(step1.success).toBe(true);
     expect(step1.isProofComplete).toBe(true);
     expect(step1.leanProofStep).toBe("linarith");
@@ -632,11 +749,20 @@ describe("Quasi-Perfect Puzzler Granular 18-Level Step-by-Step Solvability", () 
     const lvl = puzzleLevels[14];
     expect(lvl.id).toBe(15);
 
-    const step1 = tacticDefs.rw.execute(lvl.goal.children![0], lvl.goal, lvl.hypotheses, "h_prime");
+    const step1 = tacticDefs.rw.execute(
+      lvl.goal.children![0],
+      lvl.goal,
+      lvl.hypotheses,
+      "h_prime"
+    );
     expect(step1.success).toBe(true);
     expect(renderASTString(step1.newAST!)).toBe("p + 1 = p + 1");
 
-    const step2 = tacticDefs.rfl.execute(step1.newAST!, step1.newAST!, lvl.hypotheses);
+    const step2 = tacticDefs.rfl.execute(
+      step1.newAST!,
+      step1.newAST!,
+      lvl.hypotheses
+    );
     expect(step2.success).toBe(true);
     expect(step2.isProofComplete).toBe(true);
   });
@@ -645,11 +771,20 @@ describe("Quasi-Perfect Puzzler Granular 18-Level Step-by-Step Solvability", () 
     const lvl = puzzleLevels[15];
     expect(lvl.id).toBe(16);
 
-    const step1 = tacticDefs.rw.execute(lvl.goal.children![0], lvl.goal, lvl.hypotheses, "h_def");
+    const step1 = tacticDefs.rw.execute(
+      lvl.goal.children![0],
+      lvl.goal,
+      lvl.hypotheses,
+      "h_def"
+    );
     expect(step1.success).toBe(true);
     expect(renderASTString(step1.newAST!)).toBe("2 * n + 1 > 2 * n");
 
-    const step2 = tacticDefs.linarith.execute(step1.newAST!, step1.newAST!, lvl.hypotheses);
+    const step2 = tacticDefs.linarith.execute(
+      step1.newAST!,
+      step1.newAST!,
+      lvl.hypotheses
+    );
     expect(step2.success).toBe(true);
     expect(step2.isProofComplete).toBe(true);
   });
@@ -660,10 +795,19 @@ describe("Quasi-Perfect Puzzler Granular 18-Level Step-by-Step Solvability", () 
 
     // Target the σ(n) subterm inside (σ(n) - n)
     const targetSigma = lvl.goal.children![0].children![0];
-    const step1 = tacticDefs.rw.execute(targetSigma, lvl.goal, lvl.hypotheses, "h_def");
+    const step1 = tacticDefs.rw.execute(
+      targetSigma,
+      lvl.goal,
+      lvl.hypotheses,
+      "h_def"
+    );
     expect(step1.success).toBe(true);
 
-    const step2 = tacticDefs.ring.execute(step1.newAST!, step1.newAST!, lvl.hypotheses);
+    const step2 = tacticDefs.ring.execute(
+      step1.newAST!,
+      step1.newAST!,
+      lvl.hypotheses
+    );
     expect(step2.success).toBe(true);
     expect(step2.isProofComplete).toBe(true);
   });
@@ -674,10 +818,19 @@ describe("Quasi-Perfect Puzzler Granular 18-Level Step-by-Step Solvability", () 
 
     // Target σ(n) in (σ(n) - 1)
     const targetSigma = lvl.goal.children![0].children![0].children![0];
-    const step1 = tacticDefs.rw.execute(targetSigma, lvl.goal, lvl.hypotheses, "h_sig");
+    const step1 = tacticDefs.rw.execute(
+      targetSigma,
+      lvl.goal,
+      lvl.hypotheses,
+      "h_sig"
+    );
     expect(step1.success).toBe(true);
 
-    const step2 = tacticDefs.ring.execute(step1.newAST!, step1.newAST!, lvl.hypotheses);
+    const step2 = tacticDefs.ring.execute(
+      step1.newAST!,
+      step1.newAST!,
+      lvl.hypotheses
+    );
     expect(step2.success).toBe(true);
     expect(step2.isProofComplete).toBe(true);
   });
@@ -709,9 +862,15 @@ describe("Quasi-Perfect Puzzler Granular 18-Level Step-by-Step Solvability", () 
   it("handles tactic error branches for intro, exact, apply, cases, left, right, symm, split, and norm_num", () => {
     const nonImp: ASTNode = { id: "1", type: "Variable", value: "P" };
     expect(tacticDefs.intro.execute(nonImp, nonImp, []).success).toBe(false);
-    expect(tacticDefs.exact.execute(nonImp, nonImp, [], "missing").success).toBe(false);
-    expect(tacticDefs.apply.execute(nonImp, nonImp, [], "missing").success).toBe(false);
-    expect(tacticDefs.cases.execute(nonImp, nonImp, [], "missing").success).toBe(false);
+    expect(
+      tacticDefs.exact.execute(nonImp, nonImp, [], "missing").success
+    ).toBe(false);
+    expect(
+      tacticDefs.apply.execute(nonImp, nonImp, [], "missing").success
+    ).toBe(false);
+    expect(
+      tacticDefs.cases.execute(nonImp, nonImp, [], "missing").success
+    ).toBe(false);
     expect(tacticDefs.left.execute(nonImp, nonImp, []).success).toBe(false);
     expect(tacticDefs.right.execute(nonImp, nonImp, []).success).toBe(false);
     expect(tacticDefs.symm.execute(nonImp, nonImp, []).success).toBe(false);
@@ -797,7 +956,12 @@ describe("Quasi-Perfect Puzzler Granular 18-Level Step-by-Step Solvability", () 
 
       const hypotheses = [outerHyp, innerHyp];
 
-      const result = tacticDefs.exact.execute(targetGoal, targetGoal, hypotheses, "h_left");
+      const result = tacticDefs.exact.execute(
+        targetGoal,
+        targetGoal,
+        hypotheses,
+        "h_left"
+      );
       expect(result.success).toBe(true);
       expect(result.isProofComplete).toBe(true);
       expect(result.leanProofStep).toBe("exact h_left");
@@ -827,10 +991,19 @@ describe("Quasi-Perfect Puzzler Granular 18-Level Step-by-Step Solvability", () 
         ],
       };
 
-      const targetNode: ASTNode = { id: "v-target", type: "Variable", value: "x" };
+      const targetNode: ASTNode = {
+        id: "v-target",
+        type: "Variable",
+        value: "x",
+      };
       const hypotheses = [outerHyp, innerHyp];
 
-      const result = tacticDefs.rw.execute(targetNode, targetNode, hypotheses, "H_LEFT");
+      const result = tacticDefs.rw.execute(
+        targetNode,
+        targetNode,
+        hypotheses,
+        "H_LEFT"
+      );
       expect(result.success).toBe(true);
       expect(result.newAST?.value).toBe(2);
     });
@@ -858,10 +1031,18 @@ describe("Quasi-Perfect Puzzler Granular 18-Level Step-by-Step Solvability", () 
         ],
       };
 
-      const targetGoal: ASTNode = { id: "q-target", type: "Variable", value: "Q" };
+      const targetGoal: ASTNode = {
+        id: "q-target",
+        type: "Variable",
+        value: "Q",
+      };
       const hypotheses = [outerHyp, innerHyp];
 
-      const result = tacticDefs.apply.execute(targetGoal, targetGoal, hypotheses);
+      const result = tacticDefs.apply.execute(
+        targetGoal,
+        targetGoal,
+        hypotheses
+      );
       expect(result.success).toBe(true);
       expect(result.newAST?.value).toBe("R");
       expect(result.leanProofStep).toBe("apply h_imp_2");
@@ -893,7 +1074,12 @@ describe("Quasi-Perfect Puzzler Granular 18-Level Step-by-Step Solvability", () 
       const globalAST: ASTNode = { id: "goal-z", type: "Variable", value: "Z" };
       const hypotheses = [outerDisj, innerDisj];
 
-      const result = tacticDefs.cases.execute(globalAST, globalAST, hypotheses, "h_or");
+      const result = tacticDefs.cases.execute(
+        globalAST,
+        globalAST,
+        hypotheses,
+        "h_or"
+      );
       expect(result.success).toBe(true);
       expect(result.newSubGoals?.length).toBe(2);
       expect(result.newSubGoals![0].label).toContain("Case 1: X");

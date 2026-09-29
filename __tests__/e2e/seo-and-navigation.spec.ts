@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { settleFooterTicker } from "./helpers/footer-ticker";
 
 const ALL_FIRST_CLASS_ROUTES = [
   "/",
@@ -107,11 +108,45 @@ test.describe("SEO & Navigation Full-Spectrum Suite", () => {
       "/case-studies/clinical-data-mapper",
     ];
 
+    test.setTimeout(90_000);
+
+    // Entrance fades and the footer ticker cross-fade pass through partial
+    // opacity, which axe measures as low contrast. Scan the settled page.
+    await page.emulateMedia({ reducedMotion: "reduce" });
+
     for (const route of criticalRoutes) {
-      await page.goto(route, { waitUntil: "domcontentloaded" });
+      await page.goto(route, { waitUntil: "load" });
+      await settleFooterTicker(page);
+      // Same settle routine as accessibility.spec.ts: stop CSS transitions
+      // and let the entrance fades finish before scanning.
+      await page.addStyleTag({
+        content:
+          "*, *::before, *::after { transition: none !important; animation: none !important; }",
+      });
+      // Framer entrance fades run as JS or Web Animations, which the style
+      // tag can't stop: wait for every finite animation to finish, then for
+      // no animated element to sit between hidden and fully shown.
+      await page.evaluate(() =>
+        Promise.all(
+          document
+            .getAnimations()
+            .filter((a) => a.effect?.getComputedTiming().endTime !== Infinity)
+            .map((a) => a.finished.catch(() => undefined))
+        )
+      );
+      await page.waitForFunction(
+        () =>
+          Array.from(
+            document.querySelectorAll<HTMLElement>('[style*="opacity"]')
+          ).every((el) => {
+            const opacity = Number(el.style.opacity);
+            return Number.isNaN(opacity) || opacity === 0 || opacity === 1;
+          }),
+        undefined,
+        { timeout: 10_000 }
+      );
       const accessibilityScanResults = await new AxeBuilder({ page })
         .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
-        .disableRules(["color-contrast"])
         .analyze();
 
       const criticalViolations = accessibilityScanResults.violations.filter(

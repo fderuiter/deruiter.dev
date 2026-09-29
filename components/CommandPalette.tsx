@@ -7,7 +7,6 @@ import React, {
   useId,
   useMemo,
   useDeferredValue,
-  useTransition,
   useCallback,
 } from "react";
 import { createPortal } from "react-dom";
@@ -42,7 +41,17 @@ import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { unlockAchievement, setVaultUnlocked } from "@/lib/meme-data";
 import { playMemeSound } from "@/lib/meme-audio";
 import { useFontPreference } from "@/hooks/useFontPreference";
+import { useDebounce } from "@/hooks/useDebounce";
+import { useThrottledCallback } from "@/hooks/useThrottle";
 import { useAnnouncer } from "@/components/providers/A11yProvider";
+
+/** True under React's act() test environment, where timing gates collapse to 0ms. */
+function isActEnvironment(): boolean {
+  return Boolean(
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean })
+      .IS_REACT_ACT_ENVIRONMENT
+  );
+}
 
 interface SearchCaseStudy {
   id: string;
@@ -76,8 +85,12 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
   studies,
 }) => {
   const [query, setQuery] = useState("");
-  const [debouncedQuery, setDebouncedQuery] = useState("");
-  const [, startTransition] = useTransition();
+  // Clearing the field resets results at once; typing waits 150ms (0ms under
+  // React's act() test environment so suites stay synchronous).
+  const debouncedQuery = useDebounce(
+    query,
+    query === "" || isActEnvironment() ? 0 : 150
+  );
   const deferredQuery = useDeferredValue(debouncedQuery);
 
   const [activeIndex, setActiveIndex] = useState(0);
@@ -89,8 +102,6 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
   const backdropRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const searchId = useId();
-
-  const lastAudioTimeRef = useRef<number>(0);
 
   useEffect(() => {
     const backdrop = backdropRef.current;
@@ -120,54 +131,13 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
     };
   }, []);
 
-  const throttledPlayHover = useCallback(() => {
-    const now = performance.now();
-    const isActEnv =
-      typeof globalThis !== "undefined" &&
-      Boolean(
-        (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT?: boolean })
-          .IS_REACT_ACT_ENVIRONMENT
-      );
-    const throttleMs = isActEnv ? 0 : 50;
-    if (now - lastAudioTimeRef.current >= throttleMs) {
-      lastAudioTimeRef.current = now;
-      playHover();
-    }
-  }, [playHover]);
-
-  useEffect(() => {
-    if (query === "") {
-      startTransition(() => {
-        setDebouncedQuery("");
-      });
-      return;
-    }
-
-    const isActEnv =
-      typeof globalThis !== "undefined" &&
-      Boolean(
-        (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT?: boolean })
-          .IS_REACT_ACT_ENVIRONMENT
-      );
-    const timerMs = isActEnv ? 0 : 150;
-
-    if (timerMs === 0) {
-      startTransition(() => {
-        setDebouncedQuery(query);
-      });
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      startTransition(() => {
-        setDebouncedQuery(query);
-      });
-    }, timerMs);
-
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [query, startTransition]);
+  // Rate-limit hover ticks during fast pointer sweeps and held arrow keys;
+  // calls inside the 50ms window are dropped rather than queued.
+  const throttledPlayHover = useThrottledCallback(
+    playHover,
+    isActEnvironment() ? 0 : 50,
+    { trailing: false }
+  );
 
   const trapRef = useFocusTrap<HTMLDivElement>(true, {
     initialFocusRef: inputRef,

@@ -1,1 +1,16 @@
-[]
+[
+  {
+    "advisory": "1115805",
+    "expiresAt": "2026-12-15",
+    "reason": "Upstream transitive lodash-es code injection advisory in mermaid v12 dependency chain",
+    "owner": "secops",
+    "followUp": "https://github.com/mermaid-js/mermaid/issues"
+  },
+  {
+    "advisory": "1115809",
+    "expiresAt": "2026-12-15",
+    "reason": "Upstream transitive lodash-es prototype pollution advisory in mermaid v12 dependency chain",
+    "owner": "secops",
+    "followUp": "https://github.com/mermaid-js/mermaid/issues"
+  }
+]

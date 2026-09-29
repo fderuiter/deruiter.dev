@@ -10,7 +10,6 @@ Sentry.init({
     process.env.NEXT_PUBLIC_SENTRY_DSN || "https://dummy@o0.ingest.sentry.io/0",
   tracesSampleRate: resolveTracesSampleRate(),
   debug: false,
-  sendDefaultPii: false,
   beforeSend(event, hint) {
     if (!isReportableEnvironment()) {
       return null;

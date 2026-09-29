@@ -48,7 +48,6 @@ export async function initClientSentry(): Promise<boolean | null> {
       dsn,
       tracesSampleRate: resolveTracesSampleRate(),
       debug: false,
-      sendDefaultPii: false,
       beforeSend(event, hint) {
         if (!isReportableEnvironment()) {
           return null;

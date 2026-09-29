@@ -29,6 +29,7 @@ import {
   type CpuAction,
   type FootnoteSeal,
   type RestoredRun,
+  SEAL_DRAG_TYPE,
   type RunAction,
   type RunPlan,
   type RunLog,
@@ -72,10 +73,11 @@ import {
 import { CardBack } from "@/components/trial-and-error/cards/CardBack";
 import { CardDetail } from "@/components/trial-and-error/cards/CardDetail";
 import { POPULATION_LABEL } from "@/components/trial-and-error/cards/CardFace";
+import { HandCard } from "@/components/trial-and-error/cards/HandCard";
 import {
-  HandCard,
-  SEAL_DRAG_TYPE,
-} from "@/components/trial-and-error/cards/HandCard";
+  useHandInteraction,
+  type PendingFocus,
+} from "@/components/trial-and-error/useHandInteraction";
 import { handOverlap } from "@/components/trial-and-error/cards/hand-fit";
 import { useRowWidthRem } from "@/components/trial-and-error/cards/useRowWidthRem";
 import { STAMP_LABELS } from "@/components/trial-and-error/cards/Stamp";
@@ -177,9 +179,6 @@ function initialSeed(): string {
   }
   return freshSeed();
 }
-
-type PendingFocus =
-  { kind: "card"; cardId: string } | { kind: "hand"; index: number } | null;
 
 const SPEEDS = [1, 2, 4] as const;
 const FIGURE_SPACE = "\u2007";
@@ -491,14 +490,7 @@ export function CardTable({
     progress?.crossed === true &&
     playback.shown === (timeline?.length ?? 0);
 
-  const [focusIndex, setFocusIndex] = useState(0);
-  // Local order while a card is being dragged; committed as MOVE_CARD on drop.
-  const [dragOrder, setDragOrder] = useState<string[] | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
-  // A tray seal picked up with the keyboard or a click, waiting for a card.
-  const [armedId, setArmedId] = useState<string | null>(null);
-  const armedItem = view.consumables.find((c) => c.id === armedId);
-  const armed = armedItem?.kind === "SEAL" ? armedItem : null;
   const [runInfoOpen, setRunInfoOpen] = useState(false);
   const [handSheetOpen, setHandSheetOpen] = useState(false);
   /** The relic waiting for a sale to be confirmed, in the shop. */
@@ -549,8 +541,6 @@ export function CardTable({
     }
   }, [showBossIntro, showActIntro]);
   const detailView = view.hand.find((h) => h.card.id === detailId);
-  const activeIndex = Math.min(focusIndex, Math.max(0, view.hand.length - 1));
-  const focusedCard = view.hand[activeIndex];
 
   const sectionRef = useRef<HTMLElement>(null);
   const cardRefs = useRef(new Map<string, HTMLButtonElement>());
@@ -701,10 +691,6 @@ export function CardTable({
   const peekCard = peekId
     ? (view.hand.find((h) => h.card.id === peekId && h.faceDown) ?? null)
     : null;
-  const play = () =>
-    send({ type: "PLAY_HAND" }, { kind: "hand", index: activeIndex });
-  const discard = () =>
-    send({ type: "DISCARD" }, { kind: "hand", index: activeIndex });
   const inspect = (cardId: string | undefined) => {
     if (!cardId) return;
     // Viewing a face-down output is an unblinding: confirm it first.
@@ -722,132 +708,30 @@ export function CardTable({
   const recompile = (cardId: string | undefined) => {
     if (cardId) send({ type: "RECOMPILE", cardId }, { kind: "card", cardId });
   };
-  const applySeal = (consumableId: string, cardId: string) => {
-    setArmedId(null);
-    send(
-      { type: "APPLY_SEAL", consumableId, cardId },
-      { kind: "card", cardId }
-    );
-  };
-  const toggleArmed = (id: string) => {
-    const next = armedId === id ? null : id;
-    setArmedId(next);
-    const item = view.consumables.find((c) => c.id === id);
-    if (item?.kind === "SEAL") {
-      announce(
-        next
-          ? `${item.seal.name} picked up. Focus a card and press Enter to affix it. Escape puts it back.`
-          : `${item.seal.name} put back.`
-      );
-    }
-  };
-
-  const handOrder =
-    dragOrder &&
-    dragOrder.length === view.handIds.length &&
-    dragOrder.every((id) => view.handIds.includes(id))
-      ? dragOrder
-      : view.handIds;
-
-  const commitDrag = (cardId: string) => {
-    const to = handOrder.indexOf(cardId);
-    setDragOrder(null);
-    if (to !== -1 && to !== view.handIds.indexOf(cardId)) {
-      setFocusIndex(to);
-      send(
-        { type: "MOVE_CARD", cardId, toIndex: to },
-        { kind: "card", cardId }
-      );
-    }
-  };
-
-  const activateCard = (index: number, cardId: string, pointerType: string) => {
-    if (armed) {
-      setFocusIndex(index);
-      applySeal(armed.id, cardId);
-      return;
-    }
-    // On touch, a second tap on a selected card reads it instead of
-    // deselecting it; the detail view offers Deselect.
-    if (pointerType === "touch" && view.selected.includes(cardId)) {
-      setDetailId(cardId);
-      return;
-    }
-    setFocusIndex(index);
-    send({ type: "TOGGLE_SELECT", cardId });
-  };
-
-  const onCardKeyDown = (
-    event: React.KeyboardEvent<HTMLButtonElement>,
-    index: number,
-    cardId: string
-  ) => {
-    const last = view.hand.length - 1;
-    if (
-      event.altKey &&
-      (event.key === "ArrowLeft" || event.key === "ArrowRight")
-    ) {
-      event.preventDefault();
-      if (playing) return;
-      const to = event.key === "ArrowLeft" ? index - 1 : index + 1;
-      setFocusIndex(Math.max(0, Math.min(last, to)));
-      send(
-        { type: "MOVE_CARD", cardId, toIndex: to },
-        { kind: "card", cardId }
-      );
-      return;
-    }
-    const moves: Record<string, number> = {
-      ArrowLeft: Math.max(0, index - 1),
-      ArrowRight: Math.min(last, index + 1),
-      Home: 0,
-      End: last,
-    };
-    if (event.key in moves) {
-      event.preventDefault();
-      const next = moves[event.key];
-      setFocusIndex(next);
-      cardRefs.current.get(view.hand[next].card.id)?.focus();
-      return;
-    }
-    if (event.target !== event.currentTarget || playing) return;
-    if (event.metaKey || event.ctrlKey || event.altKey) return;
-    const key = event.key.toLowerCase();
-    if (armed && (event.key === "Enter" || event.key === " ")) {
-      event.preventDefault();
-      applySeal(armed.id, cardId);
-    } else if (armed && event.key === "Escape") {
-      event.preventDefault();
-      toggleArmed(armed.id);
-    } else if (key === "a" && view.hand[index]?.blank) {
-      event.preventDefault();
-      allocateRef.current?.focus();
-    } else if (event.key === " ") {
-      event.preventDefault();
-      send({ type: "TOGGLE_SELECT", cardId });
-    } else if (event.key === "Enter") {
-      event.preventDefault();
-      play();
-    } else if (key === "d") {
-      event.preventDefault();
-      discard();
-    } else if (key === "i") {
-      event.preventDefault();
-      inspect(cardId);
-    } else if (key === "r" && !event.shiftKey) {
-      event.preventDefault();
-      recompile(cardId);
-    } else if (key === "s" && view.hand[index]?.faceDown) {
-      event.preventDefault();
-      structural(cardId);
-    } else if (event.key === "?") {
-      // On a focused card, ? reads that card; elsewhere it still opens the
-      // Field Manual, whose listener sits on window in the bubble phase.
-      event.preventDefault();
-      event.stopPropagation();
-      setDetailId(cardId);
-    }
-  };
+  const {
+    activeIndex,
+    setFocusIndex,
+    handOrder,
+    setDragOrder,
+    armed,
+    toggleArmed,
+    releaseSeal,
+    play,
+    discard,
+    bindCard,
+  } = useHandInteraction({
+    view,
+    playing,
+    send,
+    announce,
+    cardRefs,
+    onRead: setDetailId,
+    onInspect: inspect,
+    onRecompile: recompile,
+    onStructural: structural,
+    onFocusAllocate: () => allocateRef.current?.focus(),
+  });
+  const focusedCard = view.hand[activeIndex];
 
   // A desktop hand overlaps to fit its row; phones keep the scroll strip.
   const overlap = handOverlap({
@@ -859,7 +743,6 @@ export function CardTable({
   const handCards = handOrder.map((id, index) => {
     const h = view.hand.find((c) => c.card.id === id);
     if (!h) return null;
-    const viewIndex = view.handIds.indexOf(id);
     return (
       <HandCard
         key={id}
@@ -869,7 +752,6 @@ export function CardTable({
         overlap={overlap}
         physical={physical}
         animate={animateCards}
-        tabIndex={viewIndex === activeIndex ? 0 : -1}
         label={cardLabel(
           h,
           h.pairedWith.map(
@@ -881,13 +763,7 @@ export function CardTable({
           if (el) cardRefs.current.set(id, el);
           else cardRefs.current.delete(id);
         }}
-        onActivate={(pointerType) => activateCard(viewIndex, id, pointerType)}
-        onFocus={() => setFocusIndex(viewIndex)}
-        onKeyDown={(e) => onCardKeyDown(e, viewIndex, id)}
-        onLongPress={() => setDetailId(id)}
-        onDragEnd={() => commitDrag(id)}
-        onSealDrop={(consumableId) => applySeal(consumableId, id)}
-        sealTarget={armed !== null}
+        interaction={bindCard(id)}
       />
     );
   });
@@ -1444,7 +1320,7 @@ export function CardTable({
                 <button
                   type="button"
                   onClick={() => {
-                    if (armed?.id === item.id) setArmedId(null);
+                    releaseSeal(item.id);
                     send({ type: "SELL_CONSUMABLE", consumableId: item.id });
                   }}
                   // The shop buys between Blinds too.

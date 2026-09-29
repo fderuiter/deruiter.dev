@@ -87,19 +87,17 @@ import { NeuroToolbar } from "./NeuroToolbar";
 import { NeuroMetricsPanel } from "./NeuroMetricsPanel";
 import { FreeSurferTerminal } from "./FreeSurferTerminal";
 import { NeuroFieldManual } from "./NeuroFieldManual";
+import { NeuroSuccessDialog } from "./NeuroSuccessDialog";
 import { useAudio } from "@/components/providers/AudioProvider";
 import { useTelemetry } from "@/hooks/useTelemetry";
 import { useStudioHashParams } from "@/hooks/useStudioHashParams";
 import {
   IconBrain,
   IconCheck,
-  IconArrowRight,
   IconInfoCircle,
   Icon3dCubeSphere,
   IconLayersSubtract,
-  IconShieldCheck,
   IconLink,
-  IconCalendar,
   IconX,
   IconCompass,
   IconAlertCircle,
@@ -739,9 +737,13 @@ export const NeuroReconClient: React.FC = () => {
     }
   };
 
+  const isDialogOpen = isFieldManualOpen || showSuccessModal;
+
   // Keyboard Shortcuts Listener
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Studio hotkeys are suspended while a modal dialog owns the keyboard.
+      if (isDialogOpen) return;
       // Avoid hotkeys when typing in input or when focused within a keyboard boundary
       const target = e.target as HTMLElement | null;
       if (
@@ -772,7 +774,7 @@ export const NeuroReconClient: React.FC = () => {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isProcessing, handleRunRecon, setToolMode]);
+  }, [isProcessing, isDialogOpen, handleRunRecon, setToolMode]);
 
   // Next Scenario Advancer
   const handleAdvanceNextScenario = async () => {
@@ -803,6 +805,7 @@ export const NeuroReconClient: React.FC = () => {
     <div
       className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6"
       data-keyboard-boundary="true"
+      inert={isDialogOpen}
     >
       {/* Interactive First Action Guide & Onboarding Banner */}
       {showOnboarding && (
@@ -1122,83 +1125,15 @@ export const NeuroReconClient: React.FC = () => {
       />
 
       {/* Case Resolution Celebration Modal */}
-      <AnimatePresence>
-        {showSuccessModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-md">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="w-full max-w-lg bg-zinc-900 border border-emerald-500/40 rounded-3xl p-6 shadow-2xl space-y-5 text-center relative overflow-hidden"
-            >
-              <div className="absolute -top-24 -right-24 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-
-              <div className="w-16 h-16 rounded-3xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mx-auto shadow-inner">
-                <IconShieldCheck className="w-8 h-8" />
-              </div>
-
-              <div className="space-y-2">
-                <span className="text-xs font-mono font-bold uppercase tracking-widest text-emerald-400">
-                  SIMULATED RECON PASS
-                </span>
-                <h3 className="text-xl font-bold text-white font-mono">
-                  Scenario Target Reached
-                </h3>
-                <p className="text-xs text-zinc-300 leading-relaxed font-sans">
-                  {currentScenario.successMessage}
-                </p>
-              </div>
-
-              {/* Stats pill */}
-              <div className="grid grid-cols-3 gap-2 bg-zinc-950 p-3 rounded-2xl border border-zinc-800 text-xs font-mono">
-                <div>
-                  <div className="text-zinc-400">EULER EST.</div>
-                  <div className="font-bold text-emerald-400">
-                    χ = {qaMetrics.eulerCharacteristic}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-zinc-400">DICE EST.</div>
-                  <div className="font-bold text-brand-cyan">
-                    {(qaMetrics.diceScore * 100).toFixed(1)}%
-                  </div>
-                </div>
-                <div>
-                  <div className="text-zinc-400">SCORE</div>
-                  <div className="font-bold text-amber-400">+500 PTS</div>
-                </div>
-              </div>
-
-              {/* Action buttons */}
-              <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-                <a
-                  href="/schedule"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => recordEvent("neuro", "project_click")}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-mono font-bold text-xs shadow-lg shadow-emerald-500/20 transition-all"
-                >
-                  <IconCalendar className="w-4 h-4" />
-                  <span>Schedule Consultation</span>
-                </a>
-                <button
-                  onClick={() => setShowSuccessModal(false)}
-                  className="px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-mono transition-all"
-                >
-                  Stay in Current Case
-                </button>
-                <button
-                  onClick={handleAdvanceNextScenario}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-cyan hover:bg-brand-cyan/90 text-zinc-950 font-mono font-bold text-xs shadow-lg shadow-brand-cyan/20 transition-all"
-                >
-                  <span>Advance Next Case</span>
-                  <IconArrowRight className="w-4 h-4" />
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <NeuroSuccessDialog
+        isOpen={showSuccessModal}
+        message={currentScenario.successMessage}
+        eulerCharacteristic={qaMetrics.eulerCharacteristic}
+        diceScore={qaMetrics.diceScore}
+        onStay={() => setShowSuccessModal(false)}
+        onAdvance={handleAdvanceNextScenario}
+        onSchedule={() => recordEvent("neuro", "project_click")}
+      />
 
       {/* Share Toast Notification */}
       <AnimatePresence>

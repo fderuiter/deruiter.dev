@@ -2,7 +2,12 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { CopyButton } from "@/components/ui/CopyButton";
-import type { CRFField, CRFForm, StudyProtocol } from "@/lib/crf/types";
+import type {
+  CRFField,
+  CRFForm,
+  StudyProtocol,
+  ComplianceViolation,
+} from "@/lib/crf/types";
 import { useTelemetry } from "@/hooks/useTelemetry";
 import {
   IconDownload,
@@ -17,6 +22,8 @@ import {
   IconAdjustments,
   IconCalendar,
   IconLoader2,
+  IconAlertCircle,
+  IconWand,
 } from "@tabler/icons-react";
 
 import { exportUniversalCrfJson } from "@/lib/crf/universal-schema";
@@ -90,6 +97,10 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
   const [importError, setImportError] = useState<string | null>(null);
   const [activeContent, setActiveContent] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState<boolean>(true);
+  const [preflightViolations, setPreflightViolations] = useState<
+    ComplianceViolation[]
+  >([]);
+  const [pendingStudy, setPendingStudy] = useState<StudyProtocol | null>(null);
 
   const tabRefs = React.useRef<Record<ExportTab, HTMLButtonElement | null>>({
     universal: null,
@@ -261,18 +272,100 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
     URL.revokeObjectURL(url);
   };
 
+  const attachProvenance = (st: StudyProtocol): StudyProtocol => {
+    const now = new Date().toISOString();
+    const existingProv = st.provenance || {};
+    const sourceFormat = existingProv.sourceFormat || "CDISC USDM JSON";
+    const author = existingProv.author;
+    return {
+      ...st,
+      provenance: {
+        ...existingProv,
+        ...(author ? { author } : {}),
+        importedAt: now,
+        importedBy: "Unverified Session",
+        sourceFormat,
+        sourceVersion:
+          existingProv.sourceVersion ||
+          st.schemaVersion ||
+          st.version ||
+          "1.0.0",
+        timestamp: now,
+        notes: existingProv.notes
+          ? existingProv.notes.includes("Imported via ExportImportModal")
+            ? existingProv.notes
+            : `${existingProv.notes} | Imported via ExportImportModal at ${now}`
+          : `Imported via ExportImportModal at ${now}`,
+      },
+    };
+  };
+
   const handlePerformImport = async () => {
     setImportError(null);
+    setPreflightViolations([]);
+    setPendingStudy(null);
     try {
       const { importStudyFromUsdm } = await import("@/lib/crf/usdm-adapter");
       const imported = importStudyFromUsdm(importJsonText);
-      onImportStudy(imported);
+
+      const { validateStudyCompliance } =
+        await import("@/lib/crf/cdisc-conformance-linter");
+      const violations = validateStudyCompliance(imported);
+
+      if (violations.length > 0) {
+        setPreflightViolations(violations);
+        setPendingStudy(imported);
+        return;
+      }
+
+      const studyWithProvenance = attachProvenance(imported);
+      onImportStudy(studyWithProvenance);
       setImportJsonText("");
+      setPreflightViolations([]);
+      setPendingStudy(null);
     } catch (err: unknown) {
       setImportError(
         (err as Error).message || "Invalid Protocol or USDM JSON syntax"
       );
     }
+  };
+
+  const handleAutoFixAndImport = async () => {
+    if (!pendingStudy) return;
+    const { autoFixAllViolations, validateStudyCompliance } =
+      await import("@/lib/crf/cdisc-conformance-linter");
+    const { updatedStudy } = autoFixAllViolations(pendingStudy);
+
+    const remainingViolations = validateStudyCompliance(updatedStudy);
+    const hasRemainingErrors = remainingViolations.some(
+      (v) => v.severity === "error"
+    );
+
+    if (hasRemainingErrors) {
+      setPendingStudy(updatedStudy);
+      setPreflightViolations(remainingViolations);
+      return;
+    }
+
+    const studyWithProvenance = attachProvenance(updatedStudy);
+    onImportStudy(studyWithProvenance);
+    setImportJsonText("");
+    setPreflightViolations([]);
+    setPendingStudy(null);
+  };
+
+  const handleBypassAndImport = () => {
+    if (!pendingStudy) return;
+    const criticalViolations = preflightViolations.filter(
+      (v) => v.severity === "error"
+    );
+    if (criticalViolations.length > 0) return;
+
+    const studyWithProvenance = attachProvenance(pendingStudy);
+    onImportStudy(studyWithProvenance);
+    setImportJsonText("");
+    setPreflightViolations([]);
+    setPendingStudy(null);
   };
 
   return (
@@ -689,6 +782,104 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
         {importError && (
           <div className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/30 text-xs text-red-400 font-mono">
             {importError}
+          </div>
+        )}
+
+        {preflightViolations.length > 0 && (
+          <div className="p-4 rounded-xl bg-red-950/40 border border-red-800/50 space-y-3 font-mono">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-red-400 font-bold text-xs uppercase">
+                <IconAlertCircle className="w-4 h-4 text-red-400" />
+                <span>
+                  CDISC Conformance Pre-Flight Violations (
+                  {preflightViolations.length})
+                </span>
+              </div>
+              <span className="text-[11px] text-zinc-400">
+                {
+                  preflightViolations.filter((v) => v.severity === "error")
+                    .length
+                }{" "}
+                Critical Errors ·{" "}
+                {
+                  preflightViolations.filter((v) => v.severity === "warning")
+                    .length
+                }{" "}
+                Warnings
+              </span>
+            </div>
+
+            <p className="text-xs text-zinc-300 font-sans">
+              Import halted due to CDISC conformance violations in the protocol
+              specification. Review the pre-flight violation summary below or
+              click Auto-Fix to remediate.
+            </p>
+
+            <div className="max-h-52 overflow-y-auto space-y-2 pr-1">
+              {preflightViolations.map((viol) => (
+                <div
+                  key={viol.id}
+                  className="p-2.5 rounded-lg bg-zinc-950/80 border border-zinc-800 text-xs flex flex-col gap-1"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span
+                        className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${
+                          viol.severity === "error"
+                            ? "bg-red-500/20 border border-red-500/40 text-red-400"
+                            : "bg-amber-500/20 border border-amber-500/40 text-amber-400"
+                        }`}
+                      >
+                        {viol.ruleId} ({viol.severity})
+                      </span>
+                      {viol.formName && (
+                        <span className="text-zinc-300 font-bold">
+                          Form: {viol.formName}
+                        </span>
+                      )}
+                      {viol.variableName && (
+                        <span className="text-brand-cyan font-mono text-[11px]">
+                          Variable: {viol.variableName}
+                        </span>
+                      )}
+                    </div>
+                    {viol.autoFixAvailable && (
+                      <span className="text-[10px] text-emerald-400 font-sans font-semibold">
+                        Auto-Fix Available
+                      </span>
+                    )}
+                  </div>
+
+                  <p className="text-zinc-300 font-sans">{viol.message}</p>
+                  {viol.suggestedFix && (
+                    <p className="text-zinc-400 text-[11px] font-sans italic">
+                      Suggested Fix: {viol.suggestedFix}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-zinc-800">
+              <button
+                type="button"
+                onClick={handleAutoFixAndImport}
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-mono text-xs font-bold rounded-xl transition-all shadow-sm cursor-pointer"
+              >
+                <IconWand className="w-4 h-4" />
+                <span>1-Click Auto-Fix &amp; Import Protocol</span>
+              </button>
+
+              {preflightViolations.every((v) => v.severity !== "error") && (
+                <button
+                  type="button"
+                  onClick={handleBypassAndImport}
+                  className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-mono rounded-xl transition-all cursor-pointer"
+                >
+                  Proceed with Warnings
+                </button>
+              )}
+            </div>
           </div>
         )}
 

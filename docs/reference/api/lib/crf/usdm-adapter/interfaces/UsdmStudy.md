@@ -92,9 +92,21 @@
 
 ***
 
+### provenance?
+
+> `optional` **provenance?**: [`StudyProvenance`](../../types/interfaces/StudyProvenance.md)
+
+***
+
 ### rules?
 
 > `optional` **rules?**: [`EditCheckRule`](../../types/interfaces/EditCheckRule.md)[]
+
+***
+
+### simulationState?
+
+> `optional` **simulationState?**: [`EdcSimulationState`](../../types/interfaces/EdcSimulationState.md)
 
 ***
 

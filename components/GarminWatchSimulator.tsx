@@ -39,6 +39,8 @@ import {
   DEFAULT_RUN_TUNING,
   startGame,
   jettisonOldestVariable,
+  pauseGame,
+  resumeGame,
   wipeScreenFog,
   updateGameSimulation,
   renderCanvasFrame,
@@ -356,9 +358,9 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       recordEvent("garmin_simulator_start", "project_click").catch(() => {});
       playSuccess();
     } else if (current.gameState === "playing") {
-      applyTransition((state) => ({ ...state, gameState: "paused" as const }));
+      applyTransition((state) => pauseGame(state));
     } else if (current.gameState === "paused") {
-      applyTransition((state) => ({ ...state, gameState: "playing" as const }));
+      applyTransition((state) => resumeGame(state));
     }
   }, [
     deviceTarget,
@@ -412,18 +414,12 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     if (isSetupOpen) {
       if (stateRef.current.gameState === "playing") {
         pausedBySetupRef.current = true;
-        applyTransition((state) => ({
-          ...state,
-          gameState: "paused" as const,
-        }));
+        applyTransition((state) => pauseGame(state));
       }
     } else if (pausedBySetupRef.current) {
       pausedBySetupRef.current = false;
       if (stateRef.current.gameState === "paused") {
-        applyTransition((state) => ({
-          ...state,
-          gameState: "playing" as const,
-        }));
+        applyTransition((state) => resumeGame(state));
       }
     }
   }, [isSetupOpen, applyTransition]);
@@ -847,6 +843,16 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
         ? "gc"
         : "none";
 
+  // What the START button does right now, shown on the bezel (#1216).
+  const startAction =
+    gameState.gameState === "playing"
+      ? "Pause"
+      : gameState.gameState === "paused"
+        ? "Resume"
+        : gameState.gameState === "idle"
+          ? "Start"
+          : "Restart";
+
   return (
     <div
       ref={outerContainerRef}
@@ -1040,10 +1046,11 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
             handleStartStop();
             containerRef.current?.focus({ preventScroll: true });
           }}
-          title="Start / Pause / Restart (Enter / Space)"
+          title={`${startAction} (Enter / Space)`}
+          aria-label={`${startAction} (Enter / Space)`}
           className="absolute -right-3.5 top-[30%] px-2.5 py-1.5 bg-gradient-to-l from-zinc-700 to-zinc-800 hover:from-emerald-500 hover:to-emerald-600 text-[8px] font-bold text-zinc-300 hover:text-black rounded-r-md border-y border-r border-zinc-600 active:scale-95 transition-all shadow-md cursor-pointer flex flex-col items-center"
         >
-          <span>START</span>
+          <span>{startAction.toUpperCase()}</span>
           <span className="text-[6px] text-emerald-300/80">[ENTER]</span>
         </button>
 

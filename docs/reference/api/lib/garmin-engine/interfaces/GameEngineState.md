@@ -142,6 +142,14 @@ Unrounded distance; round only when displaying.
 
 ***
 
+### pausedAt?
+
+> `optional` **pausedAt?**: `number`
+
+Wall-clock time the run was paused, so resuming can shift the spawn timers.
+
+***
+
 ### playerVy
 
 > **playerVy**: `number`

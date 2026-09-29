@@ -265,6 +265,8 @@ export interface GameEngineState {
   crashReport: CrashReport | null;
   lastAllocTime: number;
   lastObstacleTime: number;
+  /** Wall-clock time the run was paused, so resuming can shift the spawn timers. */
+  pausedAt?: number;
   consecutiveDodges: number;
   /** Setup-derived parameters for this run; absent means defaults. */
   tuning?: GarminRunTuning;
@@ -344,6 +346,37 @@ export function startGame(
     ...initial,
     ...(runTuning ? { tuning: runTuning } : {}),
     gameState: "playing",
+  };
+}
+
+/**
+ * Pause a running session. Only a playing run can pause.
+ */
+export function pauseGame(
+  state: GameEngineState,
+  now: number = Date.now()
+): GameEngineState {
+  if (state.gameState !== "playing") return state;
+  return { ...state, gameState: "paused", pausedAt: now };
+}
+
+/**
+ * Resume a paused session. The allocation and obstacle timers run on wall
+ * time, so they shift by the paused duration; otherwise a long pause would
+ * fire an allocation and a spawn the moment play resumes (#1216).
+ */
+export function resumeGame(
+  state: GameEngineState,
+  now: number = Date.now()
+): GameEngineState {
+  if (state.gameState !== "paused") return state;
+  const pausedFor = Math.max(0, now - (state.pausedAt ?? now));
+  return {
+    ...state,
+    gameState: "playing",
+    pausedAt: undefined,
+    lastAllocTime: state.lastAllocTime + pausedFor,
+    lastObstacleTime: state.lastObstacleTime + pausedFor,
   };
 }
 

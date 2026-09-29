@@ -19,6 +19,8 @@ import {
   startGame,
   updateGameSimulation,
   renderCanvasFrame,
+  pauseGame,
+  resumeGame,
   GROUND_Y,
   type GameEngineState,
   type ObstacleType,
@@ -123,6 +125,34 @@ describe("Garmin paused frame (#1318)", () => {
     mockCtx.fillText.mockClear();
     renderCanvasFrame(mockCtx as any, running({ gameState: "paused" }));
     expect(textCalls().some(([t]) => t === "PAUSED")).toBe(true);
+  });
+});
+
+describe("Garmin pause and resume (#1216)", () => {
+  it("shifts the spawn timers by the paused time so resuming fires nothing early", () => {
+    const run = running({ lastAllocTime: 10_000, lastObstacleTime: 12_000 });
+    const paused = pauseGame(run, 20_000);
+    expect(paused.gameState).toBe("paused");
+
+    const resumed = resumeGame(paused, 80_000);
+    expect(resumed.gameState).toBe("playing");
+    expect(resumed.lastAllocTime).toBe(70_000);
+    expect(resumed.lastObstacleTime).toBe(72_000);
+    expect(resumed.pausedAt).toBeUndefined();
+  });
+
+  it("only pauses a playing run and only resumes a paused one", () => {
+    const idle = createInitialState("fenix", 0);
+    expect(pauseGame(idle)).toBe(idle);
+    const run = running();
+    expect(resumeGame(run)).toBe(run);
+  });
+
+  it("keeps score and battery frozen while paused", () => {
+    const paused = pauseGame(running({ score: 42, battery: 77 }));
+    const later = updateGameSimulation(paused, 1000);
+    expect(later.score).toBe(42);
+    expect(later.battery).toBe(77);
   });
 });
 
@@ -287,6 +317,31 @@ describe("Garmin controls (#1318)", () => {
     expect(
       container.querySelector('output[for="garmin-device"]')?.textContent
     ).toMatch(/Forerunner/i);
+  });
+
+  it("labels the START bezel button with what it will do", async () => {
+    await render(createInitialState("fenix", 0));
+    const startButton = () =>
+      container.querySelector<HTMLButtonElement>(
+        'button[title$="(Enter / Space)"]'
+      )!;
+    expect(startButton().textContent).toContain("START");
+
+    await act(async () => {
+      startButton().click();
+    });
+    expect(startButton().textContent).toContain("PAUSE");
+    await act(async () => {
+      startButton().click();
+    });
+    expect(startButton().textContent).toContain("RESUME");
+    expect(startButton().getAttribute("aria-label")).toBe(
+      "Resume (Enter / Space)"
+    );
+    await act(async () => {
+      startButton().click();
+    });
+    expect(startButton().textContent).toContain("PAUSE");
   });
 
   it("switches device without asking while idle", async () => {

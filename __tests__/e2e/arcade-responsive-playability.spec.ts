@@ -1,4 +1,24 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Locator } from "@playwright/test";
+
+/**
+ * Asserts a control is fully on screen. Chrome's IntersectionObserver
+ * reports a ratio like 0.9999997 for a control laid out at fractional pixel
+ * offsets inside the pseudo-fullscreen stage, even when every clipping
+ * ancestor contains it, so `ratio: 1` fails on float noise. Check the box
+ * against the viewport exactly, and the observer ratio to within 0.1%.
+ */
+async function expectFullyVisible(
+  control: Locator,
+  view: { width: number; height: number }
+) {
+  await expect(control).toBeInViewport({ ratio: 0.999 });
+  const box = await control.boundingBox();
+  expect(box).not.toBeNull();
+  expect(box!.x).toBeGreaterThanOrEqual(0);
+  expect(box!.y).toBeGreaterThanOrEqual(0);
+  expect(box!.x + box!.width).toBeLessThanOrEqual(view.width);
+  expect(box!.y + box!.height).toBeLessThanOrEqual(view.height);
+}
 
 const games = [
   "laser-loon",
@@ -55,9 +75,10 @@ for (const view of views) {
         expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(view.height + 1);
       }
       if (game === "retro-labyrinth" && view.name === "landscape") {
-        await expect(
-          cabinet.getByRole("button", { name: "Move Down", exact: true })
-        ).toBeInViewport({ ratio: 1 });
+        await expectFullyVisible(
+          cabinet.getByRole("button", { name: "Move Down", exact: true }),
+          view
+        );
       }
       if (game === "laser-loon") {
         await cabinet.getByRole("button", { name: /START CAMPAIGN/ }).click();
@@ -66,7 +87,7 @@ for (const view of views) {
           name: "Primary Fire",
           exact: true,
         });
-        await expect(fire).toBeInViewport({ ratio: 1 });
+        await expectFullyVisible(fire, view);
         await fire.dispatchEvent("pointerdown", { pointerId: 1 });
         await fire.dispatchEvent("pointerup", { pointerId: 1 });
         await cabinet

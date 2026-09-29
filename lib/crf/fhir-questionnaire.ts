@@ -1,4 +1,5 @@
 import { StudyProtocol, CRFForm } from "./types";
+import { consultationUrl } from "./export-annotations";
 
 /**
  * Maps ClinicalDataType to FHIR QuestionnaireItemType
@@ -40,7 +41,10 @@ function mapToFhirItemType(type: string): string {
 /**
  * Converts a CRFForm into an HL7 FHIR R4 Questionnaire Resource
  */
-export function exportFormToFhirQuestionnaire(form: CRFForm, study: StudyProtocol): object {
+export function exportFormToFhirQuestionnaire(
+  form: CRFForm,
+  study: StudyProtocol
+): object {
   return {
     resourceType: "Questionnaire",
     id: `crf-${form.id.toLowerCase().replace(/[^a-z0-9-]/g, "-")}`,
@@ -58,8 +62,8 @@ export function exportFormToFhirQuestionnaire(form: CRFForm, study: StudyProtoco
     date: new Date().toISOString().split("T")[0],
     publisher: study.sponsor || "Clinical Study Sponsor",
     description: form.description
-      ? `${form.description} • Schedule Consultation: /schedule`
-      : "Schedule Consultation: /schedule",
+      ? `${form.description} • Schedule Consultation: ${consultationUrl()}`
+      : `Schedule Consultation: ${consultationUrl()}`,
     item: form.sections.map((sec, sIdx) => ({
       linkId: `section-${sIdx + 1}`,
       text: sec.title,
@@ -86,7 +90,9 @@ export function exportFormToFhirQuestionnaire(form: CRFForm, study: StudyProtoco
         }
 
         // Codelist options
-        const codelist = study.codelists.find((cl) => cl.id === field.codelistId);
+        const codelist = study.codelists.find(
+          (cl) => cl.id === field.codelistId
+        );
         const options = field.customOptions || codelist?.options;
         if (options && options.length > 0) {
           itemObj.answerOption = options.map((opt) => ({
@@ -120,4 +126,3 @@ export function exportStudyToFhirQuestionnaire(study: StudyProtocol): object {
     })),
   };
 }
-

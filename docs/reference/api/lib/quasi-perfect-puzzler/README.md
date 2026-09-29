@@ -70,6 +70,12 @@ Re-exports [computeLevelStars](../quasi-perfect/ram/functions/computeLevelStars.
 
 ***
 
+### describeModeRules
+
+Re-exports [describeModeRules](../quasi-perfect/ram/functions/describeModeRules.md)
+
+***
+
 ### EducationalConcept
 
 Re-exports [EducationalConcept](../quasi-perfect/types/interfaces/EducationalConcept.md)
@@ -145,6 +151,12 @@ Re-exports [LevelScore](../quasi-perfect/types/interfaces/LevelScore.md)
 ### mergeLevelScore
 
 Re-exports [mergeLevelScore](../quasi-perfect/progress/functions/mergeLevelScore.md)
+
+***
+
+### ModeRuleCopy
+
+Re-exports [ModeRuleCopy](../quasi-perfect/ram/interfaces/ModeRuleCopy.md)
 
 ***
 

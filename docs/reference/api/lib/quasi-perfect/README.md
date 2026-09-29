@@ -56,6 +56,12 @@ Re-exports [computeLevelStars](ram/functions/computeLevelStars.md)
 
 ***
 
+### describeModeRules
+
+Re-exports [describeModeRules](ram/functions/describeModeRules.md)
+
+***
+
 ### EducationalConcept
 
 Re-exports [EducationalConcept](types/interfaces/EducationalConcept.md)
@@ -131,6 +137,12 @@ Re-exports [LevelScore](types/interfaces/LevelScore.md)
 ### mergeLevelScore
 
 Re-exports [mergeLevelScore](progress/functions/mergeLevelScore.md)
+
+***
+
+### ModeRuleCopy
+
+Re-exports [ModeRuleCopy](ram/interfaces/ModeRuleCopy.md)
 
 ***
 

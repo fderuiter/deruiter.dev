@@ -22,6 +22,7 @@ function runPrePush(
   const npxLog = path.join(commandDirectory, "npx.log");
   const gitShim = path.join(commandDirectory, "git");
   const npxShim = path.join(commandDirectory, "npx");
+  const npmShim = path.join(commandDirectory, "npm");
 
   fs.writeFileSync(
     gitShim,
@@ -33,6 +34,7 @@ function runPrePush(
     '#!/bin/sh\nprintf "called\\n" >> "$PRE_PUSH_NPX_LOG"\nexit "${PRE_PUSH_NPX_EXIT_CODE:-0}"\n',
     { mode: 0o755 }
   );
+  fs.writeFileSync(npmShim, "#!/bin/sh\nexit 0\n", { mode: 0o755 });
 
   const env: NodeJS.ProcessEnv = {
     ...process.env,

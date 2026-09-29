@@ -104,7 +104,8 @@ function main() {
       continue;
     }
 
-    const absolutePath = path.resolve(process.cwd(), file);
+    const rootDir = process.env.GIT_WORK_TREE || process.cwd();
+    const absolutePath = path.resolve(rootDir, file);
     const findings = scanFile(absolutePath, file);
 
     if (findings.length > 0) {

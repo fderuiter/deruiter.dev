@@ -30,6 +30,7 @@
 - [hooks/useStudyAutosave](hooks/useStudyAutosave/README.md)
 - [hooks/useTelemetry](hooks/useTelemetry/README.md)
 - [hooks/useTimelineState](hooks/useTimelineState/README.md)
+- [hooks/useToast](hooks/useToast/README.md)
 - [hooks/useWebGLContextLoss](hooks/useWebGLContextLoss/README.md)
 - [lib/a11y/announcer](lib/a11y/announcer/README.md)
 - [lib/accessibility-utils](lib/accessibility-utils/README.md)

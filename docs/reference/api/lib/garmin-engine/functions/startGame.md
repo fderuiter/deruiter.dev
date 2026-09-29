@@ -6,7 +6,7 @@
 
 # Function: startGame()
 
-> **startGame**(`state`, `device?`): [`GameEngineState`](../interfaces/GameEngineState.md)
+> **startGame**(`state`, `device?`, `tuning?`): [`GameEngineState`](../interfaces/GameEngineState.md)
 
 Start a new game session
 
@@ -19,6 +19,10 @@ Start a new game session
 ### device?
 
 [`DeviceTarget`](../type-aliases/DeviceTarget.md)
+
+### tuning?
+
+[`GarminRunTuning`](../interfaces/GarminRunTuning.md)
 
 ## Returns
 

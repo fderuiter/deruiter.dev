@@ -35,6 +35,24 @@ const MIGRATION_REPLAY_FIXTURES = new Set<string>([
   "postgresql://admin:secret@ep-prod.neon.tech/neondb",
 ]);
 
+// Synthetic credentials authored by the hook regression in 64e5f73a4208
+// and recorded in the allowance module by a7f1d4a34d1d. Keep their exact
+// detector captures scoped to those files, including the revised fixture.
+const HUSKY_HOOK_FIXTURES = [
+  "postgresql://user:npg_SecretPass1234@ep-cool-lake-123456.us-east-2.aws.neon.tech/neondb",
+  "npg_SecretPass1234",
+  "postgresql://user:pass@ep-cool-pooler.us-east-2.aws.neon.tech/portfolio_prod",
+];
+const HUSKY_HOOK_LITERALS = new Set<string>(HUSKY_HOOK_FIXTURES);
+for (const value of HUSKY_HOOK_FIXTURES) {
+  for (const detector of SECRET_DETECTORS) {
+    detector.regex.lastIndex = 0;
+    for (const match of value.matchAll(detector.regex)) {
+      HUSKY_HOOK_LITERALS.add(match[0]);
+    }
+  }
+}
+
 /**
  * Every positive/negative fixture, as its *own detector* would actually
  * capture it (not necessarily the whole fixture string — e.g. the bare-URL
@@ -72,13 +90,14 @@ function union(...sets: readonly Set<string>[]): Set<string> {
 }
 
 const SAFE_FILE_VALUES = new Map<string, Set<string>>([
+  ["__tests__/husky-hook-wiring.test.ts", HUSKY_HOOK_LITERALS],
   ["__tests__/migration-replay.test.ts", MIGRATION_REPLAY_FIXTURES],
   [FIXTURES_FILE, FIXTURE_LITERALS],
   // This module's own literal Neon and GitHub-token fixtures (see
   // MIGRATION_REPLAY_FIXTURES and GHP_FIXTURE_LITERAL above).
   [
     "lib/security-scan/internal/allowlist.ts",
-    union(MIGRATION_REPLAY_FIXTURES, GHP_FIXTURE_LITERAL),
+    union(MIGRATION_REPLAY_FIXTURES, GHP_FIXTURE_LITERAL, HUSKY_HOOK_LITERALS),
   ],
   // Pre-refactor home of both fixture sets, which still holds them at
   // earlier reachable commits.

@@ -25,6 +25,8 @@ const nextConfig: NextConfig = {
     "@prisma/client",
     "jsdom",
     "isomorphic-dompurify",
+    "@exodus/bytes",
+    "html-encoding-sniffer",
   ],
   webpack: (config, { isServer }) => {
     if (isServer) {

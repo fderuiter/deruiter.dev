@@ -296,6 +296,36 @@ describe("isAllowlistedSecretValue: allowlisting rules", () => {
 });
 
 describe("documentation and generated-file false-positive avoidance", () => {
+  it("accepts historical hook fixtures only in their two source files", () => {
+    const password = ["npg_", "SecretPass1234"].join("");
+    const url = [
+      "postgresql",
+      "://user:",
+      password,
+      "@ep-cool-lake-123456.us-east-2.aws.neon.tech/neondb",
+    ].join("");
+    const historicalFiles = [
+      "__tests__/husky-hook-wiring.test.ts",
+      "lib/security-scan/internal/allowlist.ts",
+    ];
+    for (const file of historicalFiles) {
+      expect(scanHistorySnapshot(url, { commit: "fixture", file })).toEqual([]);
+      expect(
+        scanHistorySnapshot(password, { commit: "fixture", file })
+      ).toEqual([]);
+      expect(scanText(password.replace("1234", "5678"), file)).not.toEqual([]);
+    }
+    for (const file of [
+      "app/config.ts",
+      "__tests__/migration-replay.test.ts",
+    ]) {
+      expect(scanHistorySnapshot(url, { commit: "fixture", file })).not.toEqual(
+        []
+      );
+      expect(scanText(password, file)).not.toEqual([]);
+    }
+  });
+
   it("does not flag the local-dev .env.example connection string", () => {
     const line =
       'DATABASE_URL="postgresql://local_user:local_secret@localhost:5432/portfolio_dev?sslmode=disable"';

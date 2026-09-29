@@ -119,13 +119,30 @@ export function runStagedTests(cwd: string): void {
     );
   }
 
+  // Git hooks export checkout-local variables. Keep them while reading the
+  // staged index above, then remove them from the test process: tests that
+  // initialize a temporary repository must not modify this checkout's Git
+  // configuration or index. Git supplies the authoritative variable list.
+  const testEnv: NodeJS.ProcessEnv = {
+    ...process.env,
+    VITE_CONFIG_NATIVE_IGNORE_WARNING: "1",
+  };
+  const gitLocalVariables = execFileSync(
+    "git",
+    ["rev-parse", "--local-env-vars"],
+    { cwd, encoding: "utf8" }
+  );
+  for (const key of gitLocalVariables.trim().split(/\r?\n/u)) {
+    delete testEnv[key];
+  }
+
   execFileSync(
     "npx",
     ["vitest", "related", "--run", "--passWithNoTests", ...files],
     {
       cwd,
       stdio: "inherit",
-      env: { ...process.env, VITE_CONFIG_NATIVE_IGNORE_WARNING: "1" },
+      env: testEnv,
     }
   );
 }

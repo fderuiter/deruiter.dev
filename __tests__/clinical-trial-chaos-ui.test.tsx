@@ -1232,8 +1232,8 @@ describe("ClinicalTrialChaos React Component UI Suite", () => {
 
   it("closes the fix dialog at game over and counts wrong fixes as violations (#1325)", async () => {
     vi.useFakeTimers();
-    // Endless subjects are random; fix the draw so the first flagged field is
-    // the same on every run.
+    // Endless subjects are random; seed the draw so runs repeat closely. The
+    // loop below does not rely on which value is compliant.
     let seed = 1325;
     vi.spyOn(Math, "random").mockImplementation(() => {
       seed = (seed * 16807) % 2147483647;
@@ -1258,40 +1258,48 @@ describe("ClinicalTrialChaos React Component UI Suite", () => {
       startBtn?.click();
     });
 
-    const validateChoiceEl = Array.from(
-      container.querySelectorAll("span")
-    ).find((s) => s.textContent?.includes("Validate Choice"));
-    const obsCard = validateChoiceEl?.closest(".cursor-pointer") as HTMLElement;
-    await act(async () => {
-      obsCard.click();
-    });
-    expect(container.textContent).toContain(
-      "CDISC Controlled Terminology Validation"
-    );
     const dialogTitle = "CDISC Controlled Terminology Validation";
+    const openDialog = () =>
+      Array.from(container.querySelectorAll("[role='dialog']")).find((d) =>
+        d.textContent?.includes(dialogTitle)
+      );
+    const openNextFlaggedField = async () => {
+      const validateChoiceEl = Array.from(
+        container.querySelectorAll("span")
+      ).find((s) => s.textContent?.includes("Validate Choice"));
+      const card = validateChoiceEl?.closest(".cursor-pointer");
+      if (!card) return;
+      await act(async () => {
+        (card as HTMLElement).click();
+      });
+    };
 
-    // Keep picking a wrong value until the FDA's suspicion ends the trial.
+    await openNextFlaggedField();
+    expect(openDialog()).toBeTruthy();
+
+    // Keep answering flagged fields until the FDA's suspicion ends the trial.
+    // Which offered value is compliant depends on the random subject, so pick
+    // by position: a pick that leaves the dialog open was a wrong fix, and a
+    // pick that closes it resolved the field, so open the next one.
     let wrongPicks = 0;
     for (
       let i = 0;
-      i < 60 && !container.textContent?.includes("TRIAL TERMINATED");
+      i < 120 && !container.textContent?.includes("TRIAL TERMINATED");
       i++
     ) {
-      const wrong = Array.from(container.querySelectorAll("button")).find(
-        (b) => {
-          const text = b.textContent?.trim() ?? "";
-          return (
-            /^\d/.test(text) &&
-            text.replace(/^\d/, "") !== "180 cm" &&
-            !!b.closest("[role='dialog']")?.textContent?.includes(dialogTitle)
-          );
-        }
-      );
-      if (!wrong) break;
-      await act(async () => {
-        wrong.click();
-      });
-      wrongPicks++;
+      const dialog = openDialog();
+      if (!dialog) {
+        await openNextFlaggedField();
+      } else {
+        const choices = Array.from(dialog.querySelectorAll("button")).filter(
+          (b) => /^\d/.test(b.textContent?.trim() ?? "")
+        );
+        if (choices.length === 0) break;
+        await act(async () => {
+          choices[i % choices.length].click();
+        });
+        if (openDialog()) wrongPicks++;
+      }
       await act(async () => {
         vi.advanceTimersByTime(700);
       });

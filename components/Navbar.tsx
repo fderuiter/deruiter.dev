@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { isModifiedClick, scrollToElement } from "@/lib/scroll";
 import { useAudio } from "@/components/providers/AudioProvider";
 import { useSearch } from "@/components/providers/SearchProvider";
 import { usePersona } from "@/components/providers/PersonaProvider";
@@ -291,6 +292,21 @@ export const Navbar: React.FC = () => {
     };
   }, [isOpen]);
 
+  // A section picked from the mobile drawer is scrolled to once the drawer has
+  // closed. Closing the drawer releases its focus trap, which queues a focus
+  // restoration to the hamburger trigger; this timer is queued after it (all
+  // effect cleanups in a commit run before any effect setup), so focus lands
+  // on the section rather than being pulled back to the trigger.
+  const pendingAnchorRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (isOpen) return;
+    const targetId = pendingAnchorRef.current;
+    if (!targetId) return;
+    pendingAnchorRef.current = null;
+    const timer = setTimeout(() => scrollToElement(targetId), 0);
+    return () => clearTimeout(timer);
+  }, [isOpen]);
+
   // Accessibility: Esc key listener for desktop disclosures and audio panel.
   // Escape must still close a panel while focus is on one of its controls, so
   // it is allowed in inputs. It listens on document so it runs before the
@@ -331,14 +347,19 @@ export const Navbar: React.FC = () => {
     if (typeof document !== "undefined") {
       document.body.style.overflow = "";
     }
-    if (pathname === "/" && href.startsWith("/#")) {
-      e.preventDefault();
-      const targetId = href.substring(2);
-      const targetElement = document.getElementById(targetId);
-      if (targetElement) {
-        targetElement.scrollIntoView({ behavior: "smooth" });
-        setActiveSection(targetId);
-      }
+    // Off the homepage, or with a modifier key (open in a new tab), the link
+    // navigates as usual.
+    if (pathname !== "/" || !href.startsWith("/#") || isModifiedClick(e)) {
+      return;
+    }
+    e.preventDefault();
+    const targetId = href.substring(2);
+    if (!document.getElementById(targetId)) return;
+    setActiveSection(targetId);
+    if (isOpen) {
+      pendingAnchorRef.current = targetId;
+    } else {
+      scrollToElement(targetId);
     }
   };
 

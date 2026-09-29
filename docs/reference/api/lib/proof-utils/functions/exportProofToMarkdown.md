@@ -18,7 +18,7 @@ Exports the active theorem proof ledger into Markdown table format.
 
 ### theoremId?
 
-[`TheoremId`](../type-aliases/TheoremId.md) = `"modus-ponens"`
+[`TheoremDefinition`](../interfaces/TheoremDefinition.md) \| [`TheoremId`](../type-aliases/TheoremId.md)
 
 ## Returns
 

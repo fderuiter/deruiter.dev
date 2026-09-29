@@ -1,3 +1,6 @@
+import { createCustomTheorem } from "@/lib/proof-custom";
+import { generateTruthTable } from "@/lib/proof-utils";
+
 type TheoremId =
   | "modus-ponens"
   | "modus-tollens"
@@ -15,6 +18,7 @@ type WorkerAction =
       requestId?: number;
       mode: "normal" | "loop";
       theoremId?: TheoremId;
+      customFormulas?: string[];
     }
   | { type: "ABORT"; requestId?: number };
 
@@ -130,13 +134,50 @@ function cancelCurrentSimulation() {
 
 function runNormalSimulation(
   requestId: number,
-  theoremId: TheoremId = "modus-ponens"
+  theoremId: TheoremId = "modus-ponens",
+  customFormulas?: string[]
 ) {
   cancelCurrentSimulation();
   activeRequestId = requestId;
-  const steps =
+  let steps =
     THEOREM_SIMULATION_STEPS[theoremId] ||
     THEOREM_SIMULATION_STEPS["modus-ponens"];
+  if (theoremId === "custom") {
+    try {
+      if (!customFormulas || customFormulas.length !== 4)
+        throw new Error("Load custom formulas before simulation.");
+      const theorem = createCustomTheorem(
+        customFormulas.slice(0, 3),
+        customFormulas[3]
+      );
+      const premises = theorem.nodes
+        .filter((node) => node.type === "premise")
+        .map((node) => ({
+          label: node.label,
+          ast: node.ast!,
+          description: node.description,
+        }));
+      const target = theorem.nodes.find((node) => node.type === "conclusion")!;
+      const result = generateTruthTable(premises, {
+        label: target.label,
+        ast: target.ast!,
+      });
+      if (result.truthTable.some((row) => row.isCounterexample))
+        throw new Error("The submitted premises do not entail the goal.");
+      steps = [
+        ...theorem.simulationSteps,
+        `Checked ${result.truthTable.length} truth-table valuations against the submitted goal.`,
+      ];
+    } catch (error) {
+      self.postMessage({
+        type: "error",
+        requestId,
+        message:
+          error instanceof Error ? error.message : "Invalid custom proof.",
+      });
+      return;
+    }
+  }
   let currentStep = 0;
 
   function next() {
@@ -193,7 +234,11 @@ self.addEventListener("message", (event: MessageEvent<WorkerAction>) => {
         // block
       }
     } else {
-      runNormalSimulation(reqId, data.theoremId || "modus-ponens");
+      runNormalSimulation(
+        reqId,
+        data.theoremId || "modus-ponens",
+        data.customFormulas
+      );
     }
   }
 });

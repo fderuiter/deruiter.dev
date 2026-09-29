@@ -18,7 +18,7 @@ Calculates inline autocomplete suggestion based on current console input and act
 
 ### \_theoremId?
 
-[`TheoremId`](../type-aliases/TheoremId.md) = `"modus-ponens"`
+[`TheoremDefinition`](../interfaces/TheoremDefinition.md) \| [`TheoremId`](../type-aliases/TheoremId.md)
 
 ## Returns
 

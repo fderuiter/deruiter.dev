@@ -18,7 +18,7 @@ Returns contextual step-by-step tactic hint for guided proof assistant.
 
 ### theoremId?
 
-[`TheoremId`](../type-aliases/TheoremId.md) = `"modus-ponens"`
+[`TheoremDefinition`](../interfaces/TheoremDefinition.md) \| [`TheoremId`](../type-aliases/TheoremId.md)
 
 ## Returns
 

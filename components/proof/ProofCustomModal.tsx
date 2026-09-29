@@ -5,6 +5,7 @@ import { ModalContainer } from "@/components/ui/ModalContainer";
 import { IconPlus, IconX } from "@tabler/icons-react";
 
 interface ProofCustomModalProps {
+  error?: string | null;
   isOpen: boolean;
   onClose: () => void;
   customPremise1: string;
@@ -19,6 +20,7 @@ interface ProofCustomModalProps {
 }
 
 export const ProofCustomModal: React.FC<ProofCustomModalProps> = ({
+  error,
   isOpen,
   onClose,
   customPremise1,
@@ -123,6 +125,16 @@ export const ProofCustomModal: React.FC<ProofCustomModalProps> = ({
           />
         </div>
       </div>
+      <p className="text-xs text-slate-400">
+        Use three premises and two binary inference steps. Formulas are saved in
+        the share URL; anyone with that link can read them. Reopen Custom Studio
+        to edit.
+      </p>
+      {error && (
+        <p role="alert" className="text-sm text-amber-400">
+          {error}
+        </p>
+      )}
       <div className="flex justify-end gap-3 pt-2">
         <button
           onClick={onLoadIntoWorkspace}

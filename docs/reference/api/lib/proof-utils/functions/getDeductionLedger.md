@@ -18,7 +18,7 @@ Constructs the multi-row formal deduction ledger table for the active theorem.
 
 ### theoremId?
 
-[`TheoremId`](../type-aliases/TheoremId.md) = `"modus-ponens"`
+[`TheoremDefinition`](../interfaces/TheoremDefinition.md) \| [`TheoremId`](../type-aliases/TheoremId.md)
 
 ## Returns
 

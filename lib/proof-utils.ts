@@ -2228,7 +2228,7 @@ export function isValidNode(nodeId: string): boolean {
  */
 export function getSuggestion(
   inputVal: string,
-  _theoremId: TheoremId = "modus-ponens"
+  _theoremId: TheoremId | TheoremDefinition = "modus-ponens"
 ): string {
   const trimmed = inputVal.trim();
   if (!inputVal) return "";
@@ -2400,9 +2400,12 @@ export function getSuggestion(
  */
 export function evaluateProofStatus(
   edges: Edge[],
-  theoremId: TheoremId = "modus-ponens"
+  theoremId: TheoremId | TheoremDefinition = "modus-ponens"
 ): { isC_Proven: boolean; isE_Proven: boolean } {
-  const th = THEOREMS[theoremId] || THEOREMS["modus-ponens"];
+  const th =
+    typeof theoremId === "object"
+      ? theoremId
+      : THEOREMS[theoremId] || THEOREMS["modus-ponens"];
 
   const [req1, req2] = th.intermediateRequires;
   const hasReq1ToInter = edges.some(
@@ -2440,11 +2443,14 @@ export function canConnect(
   sourceId: string,
   targetId: string,
   edges: Edge[],
-  theoremId: TheoremId = "modus-ponens"
+  theoremId: TheoremId | TheoremDefinition = "modus-ponens"
 ): { allowed: boolean; reason?: string } {
   const s = sourceId.toUpperCase();
   const t = targetId.toUpperCase();
-  const th = THEOREMS[theoremId] || THEOREMS["modus-ponens"];
+  const th =
+    typeof theoremId === "object"
+      ? theoremId
+      : THEOREMS[theoremId] || THEOREMS["modus-ponens"];
 
   if (s === t) {
     return { allowed: false, reason: "Cannot connect a node to itself." };
@@ -2479,10 +2485,40 @@ export function getFallacyDiagnosis(
   sourceId: string,
   targetId: string,
   _edges: Edge[],
-  _theoremId: TheoremId = "modus-ponens"
+  _theoremId: TheoremId | TheoremDefinition = "modus-ponens"
 ): FallacyDiagnosis {
   const s = sourceId.toUpperCase();
   const t = targetId.toUpperCase();
+  if (typeof _theoremId === "object" && _theoremId.id === "custom") {
+    const source = _theoremId.nodes.find((node) => node.id === s);
+    const target = _theoremId.nodes.find((node) => node.id === t);
+    if (source?.ast && target?.ast) {
+      const premises = [
+        {
+          label: source.label,
+          ast: source.ast,
+          description: source.description,
+        },
+      ];
+      const conclusion = {
+        label: target.label,
+        ast: target.ast,
+        description: target.description,
+      };
+      const table = generateTruthTable(premises, conclusion);
+      return {
+        fallacyName: "Unsupported custom connection",
+        formalFormula: `${source.label} ⊢ ${target.label}`,
+        plainEnglish:
+          "Use the validated intermediate and goal dependencies; a single edge does not establish the required inference.",
+        softwareAnalogy:
+          "A dependent operation needs all of its prerequisites.",
+        premises,
+        conclusion,
+        ...table,
+      };
+    }
+  }
 
   // Circular Reasoning
   if (s === t) {
@@ -2646,9 +2682,12 @@ export function getFallacyDiagnosis(
  */
 export function getNextTacticHint(
   edges: Edge[],
-  theoremId: TheoremId = "modus-ponens"
+  theoremId: TheoremId | TheoremDefinition = "modus-ponens"
 ): TacticHint {
-  const th = THEOREMS[theoremId] || THEOREMS["modus-ponens"];
+  const th =
+    typeof theoremId === "object"
+      ? theoremId
+      : THEOREMS[theoremId] || THEOREMS["modus-ponens"];
   const { isE_Proven } = evaluateProofStatus(edges, theoremId);
 
   if (isE_Proven) {
@@ -2724,7 +2763,7 @@ export function getNextTacticHint(
       hint: `Node ${cReq1} (${cNode1?.label}) is proven! Now connect Node ${cReq1} to Node ${th.targetNodeId} (${targetNode?.description}).`,
       suggestedSource: cReq1,
       suggestedTarget: th.targetNodeId,
-      suggestedRule: "Modus Ponens",
+      suggestedRule: targetNode?.ruleUsed ?? "Modus Ponens",
       isCompleted: false,
     };
   }
@@ -2736,7 +2775,7 @@ export function getNextTacticHint(
       hint: `Connect Node ${cReq2} (${cNode2?.description}) to Node ${th.targetNodeId} (${targetNode?.label}).`,
       suggestedSource: cReq2,
       suggestedTarget: th.targetNodeId,
-      suggestedRule: "Modus Ponens",
+      suggestedRule: targetNode?.ruleUsed ?? "Modus Ponens",
       isCompleted: false,
     };
   }
@@ -2755,9 +2794,12 @@ export function getNextTacticHint(
  */
 export function getDeductionLedger(
   edges: Edge[],
-  theoremId: TheoremId = "modus-ponens"
+  theoremId: TheoremId | TheoremDefinition = "modus-ponens"
 ): LedgerStep[] {
-  const th = THEOREMS[theoremId] || THEOREMS["modus-ponens"];
+  const th =
+    typeof theoremId === "object"
+      ? theoremId
+      : THEOREMS[theoremId] || THEOREMS["modus-ponens"];
   const { isC_Proven, isE_Proven } = evaluateProofStatus(edges, theoremId);
 
   const nA = th.nodes.find((n) => n.id === "A");
@@ -2810,7 +2852,7 @@ export function getDeductionLedger(
     {
       stepNumber: 5,
       formula: nE?.label || "R",
-      rule: "Modus Ponens",
+      rule: nE?.ruleUsed ?? "Modus Ponens",
       premises: "Lines [3, 4]",
       plainEnglish:
         nE?.meaning || "Target conclusion proven with mathematical certainty.",
@@ -2841,9 +2883,12 @@ export interface PruneResult {
 export function pruneStepOrNode(
   stepOrNode: number | string,
   edges: Edge[],
-  theoremId: TheoremId = "modus-ponens"
+  theoremId: TheoremId | TheoremDefinition = "modus-ponens"
 ): PruneResult {
-  const th = THEOREMS[theoremId] || THEOREMS["modus-ponens"];
+  const th =
+    typeof theoremId === "object"
+      ? theoremId
+      : THEOREMS[theoremId] || THEOREMS["modus-ponens"];
 
   let targetNodeId: string;
   let targetStepNum: number | undefined;
@@ -3149,9 +3194,12 @@ export function applyRuleToAsts(
  * Exports the active theorem proof into Lean 4 verification syntax.
  */
 export function exportProofToLean4(
-  theoremId: TheoremId = "modus-ponens"
+  theoremId: TheoremId | TheoremDefinition = "modus-ponens"
 ): string {
-  const th = THEOREMS[theoremId] || THEOREMS["modus-ponens"];
+  const th =
+    typeof theoremId === "object"
+      ? theoremId
+      : THEOREMS[theoremId] || THEOREMS["modus-ponens"];
   return th.leanCode;
 }
 
@@ -3159,9 +3207,12 @@ export function exportProofToLean4(
  * Exports the active theorem proof into LaTeX natural deduction syntax.
  */
 export function exportProofToLatex(
-  theoremId: TheoremId = "modus-ponens"
+  theoremId: TheoremId | TheoremDefinition = "modus-ponens"
 ): string {
-  const th = THEOREMS[theoremId] || THEOREMS["modus-ponens"];
+  const th =
+    typeof theoremId === "object"
+      ? theoremId
+      : THEOREMS[theoremId] || THEOREMS["modus-ponens"];
   return th.latexCode;
 }
 
@@ -3172,7 +3223,7 @@ export function exportProofToLatex(
 export function exportWorkspaceProof(
   format: "lean" | "latex" | "markdown" | "mermaid",
   edges: Edge[],
-  theoremId: TheoremId = "modus-ponens"
+  theoremId: TheoremId | TheoremDefinition = "modus-ponens"
 ): string {
   if (theoremId === "custom") {
     return "CUSTOM WORKSPACE UNAVAILABLE: Entered formulas are not yet loaded into the proof graph, so no faithful export can be generated.";
@@ -3199,9 +3250,12 @@ export function exportWorkspaceProof(
  */
 export function exportProofToMarkdown(
   edges: Edge[],
-  theoremId: TheoremId = "modus-ponens"
+  theoremId: TheoremId | TheoremDefinition = "modus-ponens"
 ): string {
-  const th = THEOREMS[theoremId] || THEOREMS["modus-ponens"];
+  const th =
+    typeof theoremId === "object"
+      ? theoremId
+      : THEOREMS[theoremId] || THEOREMS["modus-ponens"];
   const ledger = getDeductionLedger(edges, theoremId);
   const { isE_Proven } = evaluateProofStatus(edges, theoremId);
 
@@ -3231,9 +3285,12 @@ ${rows}
  */
 export function exportProofToMermaid(
   edges: Edge[],
-  theoremId: TheoremId = "modus-ponens"
+  theoremId: TheoremId | TheoremDefinition = "modus-ponens"
 ): string {
-  const th = THEOREMS[theoremId] || THEOREMS["modus-ponens"];
+  const th =
+    typeof theoremId === "object"
+      ? theoremId
+      : THEOREMS[theoremId] || THEOREMS["modus-ponens"];
   const { isC_Proven, isE_Proven } = evaluateProofStatus(edges, theoremId);
 
   const nodeDefs = th.nodes
@@ -3279,10 +3336,13 @@ export interface CompatibleTargetInfo {
  */
 export function getCompatibleTargets(
   sourceId: string,
-  theoremId: TheoremId = "modus-ponens",
+  theoremId: TheoremId | TheoremDefinition = "modus-ponens",
   edges: Edge[] = []
 ): CompatibleTargetInfo[] {
-  const th = THEOREMS[theoremId] || THEOREMS["modus-ponens"];
+  const th =
+    typeof theoremId === "object"
+      ? theoremId
+      : THEOREMS[theoremId] || THEOREMS["modus-ponens"];
   const sNode = th.nodes.find(
     (n) => n.id.toUpperCase() === sourceId.toUpperCase()
   );
@@ -3329,10 +3389,13 @@ export function getCompatibleTargets(
           .toUpperCase();
       }
     } else if (tNode.id === th.targetNodeId) {
-      ruleId = "mp";
-      ruleName = "Modus Ponens";
-      ruleSymbol = "MP";
-      ruleTemplate = "P, P → Q ⊢ Q";
+      const rule =
+        INFERENCE_RULES.find((rule) => rule.name === tNode.ruleUsed) ??
+        INFERENCE_RULES[0];
+      ruleId = rule.id;
+      ruleName = rule.name;
+      ruleSymbol = rule.symbol;
+      ruleTemplate = rule.template;
     }
 
     results.push({

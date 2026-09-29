@@ -18,7 +18,7 @@ Returns all compatible target nodes and corresponding rule annotations for a sou
 
 ### theoremId?
 
-[`TheoremId`](../type-aliases/TheoremId.md) = `"modus-ponens"`
+[`TheoremDefinition`](../interfaces/TheoremDefinition.md) \| [`TheoremId`](../type-aliases/TheoremId.md)
 
 ### edges?
 

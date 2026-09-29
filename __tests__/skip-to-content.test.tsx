@@ -9,7 +9,9 @@ describe("SkipToContent Component & Bypass Blocks", () => {
     document.body.innerHTML = "";
   });
   it("renders a link with href pointing to the target main content ID", () => {
-    render(<SkipToContent targetId="main-content" label="Skip to main content" />);
+    render(
+      <SkipToContent targetId="main-content" label="Skip to main content" />
+    );
     const link = screen.getByRole("link", { name: "Skip to main content" });
     expect(link).toBeDefined();
     expect(link.getAttribute("href")).toBe("#main-content");
@@ -28,8 +30,11 @@ describe("SkipToContent Component & Bypass Blocks", () => {
 
     link.click();
 
-    expect(mainEl.focus).toHaveBeenCalled();
-    expect(mainEl.scrollIntoView).toHaveBeenCalledWith({ behavior: "smooth" });
+    expect(mainEl.focus).toHaveBeenCalledWith({ preventScroll: true });
+    expect(mainEl.scrollIntoView).toHaveBeenCalledWith({
+      behavior: "smooth",
+      block: "start",
+    });
 
     document.body.removeChild(mainEl);
   });

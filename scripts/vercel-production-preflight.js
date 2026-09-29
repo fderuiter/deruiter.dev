@@ -284,6 +284,206 @@ async function verifyUpstashCredentials(env = process.env, fetchImpl = fetch) {
   }
 }
 
+function defaultExec(prog, args, options) {
+  const { execFileSync } = require("child_process");
+  return execFileSync(prog, args, options);
+}
+
+/**
+ * Evaluates Vercel storage headroom before production releases.
+ * Fails fast if critical storage thresholds (>=95%) are breached or if meters are stale/unreadable.
+ */
+async function verifyVercelHeadroomCapacity(
+  env = process.env,
+  logger = console,
+  execFn = defaultExec
+) {
+  if (!env.VERCEL_TOKEN) {
+    logger.error(
+      "Production preflight failed: VERCEL_TOKEN is not set; Vercel headroom capacity check cannot run."
+    );
+    return false;
+  }
+
+  try {
+    const path = require("path");
+    const fs = require("fs");
+
+    const childEnv = { ...env };
+    if (childEnv.NODE_OPTIONS) {
+      childEnv.NODE_OPTIONS = childEnv.NODE_OPTIONS.replace(
+        /--experimental-require-module/g,
+        ""
+      ).trim();
+    }
+
+    const rootDir = path.resolve(__dirname, "..");
+    const tsxCli = path.join(rootDir, "node_modules", "tsx", "dist", "cli.mjs");
+    let prog = "npx";
+    let args = ["tsx", "scripts/vercel-headroom.ts", "--strict", "--json"];
+
+    if (fs.existsSync(tsxCli)) {
+      prog = process.execPath;
+      args = [tsxCli, "scripts/vercel-headroom.ts", "--strict", "--json"];
+    }
+
+    const output = execFn(prog, args, {
+      cwd: rootDir,
+      env: childEnv,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+
+    const parsed = JSON.parse(output);
+    return validateParsedHeadroomReport(parsed, logger);
+  } catch (err) {
+    if (err && err.stdout) {
+      try {
+        const parsed = JSON.parse(err.stdout);
+        if (validateParsedHeadroomReport(parsed, logger)) {
+          return true;
+        }
+        return false;
+      } catch (_e) {
+        // Ignore parse error
+      }
+    }
+    logger.error(
+      "Vercel headroom check failed to execute:",
+      err && err.message
+    );
+    return false;
+  }
+}
+
+function validateParsedHeadroomReport(parsed, logger) {
+  if (
+    !parsed ||
+    typeof parsed !== "object" ||
+    !parsed.meters ||
+    typeof parsed.meters !== "object"
+  ) {
+    if (logger)
+      logger.error("Vercel headroom check returned invalid JSON response.");
+    return false;
+  }
+
+  const EXPECTED_NAMED_METERS = [
+    {
+      key: "functionsStorage",
+      resource: "Functions Storage",
+      expectedUnit: "GB",
+    },
+    {
+      key: "deploymentStorage",
+      resource: "Deployment Storage",
+      expectedUnit: "GB",
+    },
+    { key: "buildTime", resource: "Build Time", expectedUnit: "hours" },
+  ];
+
+  for (const expected of EXPECTED_NAMED_METERS) {
+    const meter = parsed.meters[expected.key];
+    if (!meter || typeof meter !== "object") {
+      if (logger)
+        logger.error(
+          `Vercel headroom check missing required named meter: ${expected.key}`
+        );
+      return false;
+    }
+
+    if (meter.resource !== expected.resource) {
+      if (logger)
+        logger.error(
+          `Vercel headroom check meter ${expected.key} has unexpected resource name: ${meter.resource}`
+        );
+      return false;
+    }
+
+    if (
+      typeof meter.used !== "number" ||
+      !Number.isFinite(meter.used) ||
+      meter.used < 0
+    ) {
+      if (logger)
+        logger.error(
+          `Vercel headroom check meter ${expected.key} has non-finite or negative used value: ${meter.used}`
+        );
+      return false;
+    }
+
+    if (
+      typeof meter.limit !== "number" ||
+      !Number.isFinite(meter.limit) ||
+      meter.limit <= 0
+    ) {
+      if (logger)
+        logger.error(
+          `Vercel headroom check meter ${expected.key} has non-positive or non-finite limit: ${meter.limit}`
+        );
+      return false;
+    }
+
+    if (meter.unit !== expected.expectedUnit) {
+      if (logger)
+        logger.error(
+          `Vercel headroom check meter ${expected.key} has unexpected unit: ${meter.unit}`
+        );
+      return false;
+    }
+
+    if (
+      meter.severity === "critical" ||
+      meter.severity === "stale" ||
+      meter.severity === "unreadable"
+    ) {
+      if (logger)
+        logger.error(
+          `Vercel headroom check meter ${expected.key} has unhealthy severity: ${meter.severity}`
+        );
+      return false;
+    }
+
+    if (meter.isStale === true || meter.isUnreadable === true) {
+      if (logger)
+        logger.error(
+          `Vercel headroom check meter ${expected.key} is stale or unreadable.`
+        );
+      return false;
+    }
+
+    if (meter.used / meter.limit >= 0.95) {
+      if (logger)
+        logger.error(
+          `Vercel headroom check meter ${expected.key} breached critical capacity threshold (>=95%).`
+        );
+      return false;
+    }
+  }
+
+  if (
+    !parsed.timestamp ||
+    typeof parsed.timestamp !== "string" ||
+    isNaN(Date.parse(parsed.timestamp))
+  ) {
+    if (logger)
+      logger.error(
+        "Vercel headroom check returned invalid or missing sample timestamp provenance."
+      );
+    return false;
+  }
+
+  if (parsed.hasCriticalAlerts) {
+    if (logger)
+      logger.error(
+        "Production preflight failed: Critical Vercel storage or build time headroom threshold breached."
+      );
+    return false;
+  }
+
+  return true;
+}
+
 /**
  * Runs the preflight when this is a Vercel production build. Returns false
  * when the build must stop; true when it passed or was skipped.
@@ -319,4 +519,5 @@ module.exports = {
   runVercelProductionPreflight,
   shouldRunPreflight,
   verifyUpstashCredentials,
+  verifyVercelHeadroomCapacity,
 };

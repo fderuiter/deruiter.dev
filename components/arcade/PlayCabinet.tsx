@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   IconPlayerPlay,
   IconPower,
@@ -10,6 +10,7 @@ import {
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useFullscreen } from "@/hooks/useFullscreen";
 import { CabinetFullscreenContext } from "./CabinetFullscreen";
+import { CabinetSetupContext } from "./CabinetSetupContext";
 import { FullscreenButton } from "@/components/arcade/FullscreenButton";
 import {
   PreGameSetupWizard,
@@ -77,6 +78,12 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
   const cabinetRef = useRef<HTMLDivElement>(null);
   const [setupConfig, setSetupConfig] = useState<GameSetupConfig>(() =>
     getSavedSetupConfig(gameId)
+  );
+
+  const [runRevision, setRunRevision] = useState(0);
+  const setupValue = useMemo(
+    () => ({ config: setupConfig, runRevision, isSetupOpen: showWizard }),
+    [setupConfig, runRevision, showWizard]
   );
 
   const {
@@ -465,7 +472,9 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
           } overflow-y-auto overflow-x-hidden flex flex-col items-center justify-start bg-black ${bezelClasses}`}
         >
           <CabinetFullscreenContext.Provider value={toggleCabinetFullscreen}>
-            {children}
+            <CabinetSetupContext.Provider value={setupValue}>
+              {children}
+            </CabinetSetupContext.Provider>
           </CabinetFullscreenContext.Provider>
 
           {/* 3-Step Setup Wizard Overlay prior to active gameplay / when reconfiguring */}
@@ -476,6 +485,7 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
             isCircularDisplay={gameId === "garmin-watch"}
             onComplete={(cfg) => {
               setSetupConfig(cfg);
+              setRunRevision((revision) => revision + 1);
               setShowWizard(false);
             }}
             onCancel={() => setShowWizard(false)}

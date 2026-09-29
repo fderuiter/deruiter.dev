@@ -334,7 +334,8 @@ describe("Meme UI Components Rendering", () => {
       act(() => {
         chaosBtn.click();
       });
-      expect(container.textContent).toContain("Secret Achievement Unlocked!");
+      // The button is a shortcut; only the typed code earns the trophy (#1328).
+      expect(getUnlockedAchievements()).not.toContain("konami-hero");
     }
   });
 
@@ -359,6 +360,6 @@ describe("Meme UI Components Rendering", () => {
     });
 
     expect(container.querySelector("[role='dialog']")).toBeTruthy();
-    expect(container.textContent).toContain("Retro Chaos Mode Unlocked!");
+    expect(container.textContent).toContain("Retro Chaos Mode On");
   });
 });

@@ -2,7 +2,6 @@
 
 import React, {
   useState,
-  useEffect,
   useCallback,
   useRef,
   useSyncExternalStore,
@@ -18,6 +17,8 @@ import { playMemeSound } from "@/lib/meme-audio";
 import { generateId } from "@/lib/utils";
 import { IconDeviceGamepad2 } from "@tabler/icons-react";
 import { useResizeObserver } from "@/hooks/useResizeObserver";
+import { useInterval } from "@/hooks/useInterval";
+import { useSafeTimeout } from "@/hooks/useSafeTimeout";
 
 function subscribeVaultUnlock(callback: () => void) {
   if (typeof window === "undefined") return () => {};
@@ -70,13 +71,14 @@ export const FooterStatusTicker: React.FC = () => {
   // scan cannot land mid-cross-fade, where the partial opacity reads as a
   // contrast failure (#952).
   const tickerLineRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const timer = setInterval(() => {
-      if (tickerLineRef.current?.closest("[data-ticker-paused]")) return;
-      setTickerIndex((prev) => (prev + 1) % STATUS_TICKER_ITEMS.length);
-    }, 4500);
-    return () => clearInterval(timer);
-  }, []);
+  useInterval(() => {
+    if (tickerLineRef.current?.closest("[data-ticker-paused]")) return;
+    setTickerIndex((prev) => (prev + 1) % STATUS_TICKER_ITEMS.length);
+  }, 4500);
+
+  // The only timeout this component schedules is the quote dismissal, so
+  // clearing all of them restarts that countdown.
+  const { setSafeTimeout, clearAll: clearBubbleTimeout } = useSafeTimeout();
 
   // Handle Duck click
   const handleDuckClick = useCallback(() => {
@@ -97,11 +99,13 @@ export const FooterStatusTicker: React.FC = () => {
       { id: treatId, x: Math.random() * 40 - 20, y: -40 },
     ]);
 
-    // Dismiss quote bubble after 3.5 seconds
-    setTimeout(() => {
+    // Dismiss the quote bubble 3.5 seconds after the latest click. Restarting
+    // the countdown keeps an earlier click from hiding a newer quote early.
+    clearBubbleTimeout();
+    setSafeTimeout(() => {
       setDuckBubble(null);
     }, 3500);
-  }, []);
+  }, [clearBubbleTimeout, setSafeTimeout]);
 
   const tickerObserverRef = useResizeObserver<HTMLDivElement>(
     (entry) => {

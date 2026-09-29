@@ -147,6 +147,7 @@
 - [lib/dx/setup](lib/dx/setup/README.md)
 - [lib/dx/utils](lib/dx/utils/README.md)
 - [lib/email-templates](lib/email-templates/README.md)
+- [lib/engineering-bridges](lib/engineering-bridges/README.md)
 - [lib/env](lib/env/README.md)
 - [lib/error-sanitization](lib/error-sanitization/README.md)
 - [lib/exceptions](lib/exceptions/README.md)

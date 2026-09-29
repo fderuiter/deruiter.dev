@@ -62,6 +62,7 @@ describe("Prisma migration integrity", () => {
     "20261022000000_add_case_study_reaction_unique_constraint",
     "20261023000000_add_telemetry_event_created_at_idx",
     "20261024000000_add_case_study_and_blog_post_composite_indexes",
+    "20261025000000_reorder_blog_post_reaction_unique_constraint",
   ];
 
   it("validates every checked-in migration file", () => {
@@ -220,6 +221,20 @@ describe("Prisma migration integrity", () => {
       );
     }
     expect(migration).not.toMatch(/\bDROP\s+(?:TABLE|COLUMN|INDEX)\b/i);
+  });
+
+  it("reorders the BlogPostReaction unique constraint to enable prefix index matching", () => {
+    const migration = readMigrationSql(
+      "20261025000000_reorder_blog_post_reaction_unique_constraint"
+    );
+
+    expect(migration).toContain(
+      'DROP INDEX "BlogPostReaction_blogPostSlug_reactionType_connectionHash_key"'
+    );
+    expect(migration).toContain(
+      'CREATE UNIQUE INDEX "BlogPostReaction_blogPostSlug_connectionHash_reactionType_key" ON "BlogPostReaction"("blogPostSlug", "connectionHash", "reactionType")'
+    );
+    expect(migration).not.toMatch(/\bDROP\s+(?:TABLE|COLUMN)\b/i);
   });
 
   it("fails migration file validation when a migration asset is missing or empty", () => {

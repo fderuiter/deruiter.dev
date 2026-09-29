@@ -2,8 +2,9 @@
 
 ## Status
 
-Accepted on 2026-09-24 as a temporary exception to ADR 0037. This ADR governs
-the current `dev` → `main` release only; it does not establish `dev` as a
+Accepted on 2026-09-24 as a temporary exception to ADR 0037, and completed the
+same week: the `dev` → `main` release merged in #1029 and the `dev` branch has
+been deleted. This ADR governed that one release only; it does not establish `dev` as a
 permanent integration or staging branch. After this consolidation, normal
 feature pull requests target `main` under ADR 0037. Production deployment
 follows the temporary manual-release hold in ADR 0051 until a replacement
@@ -41,8 +42,7 @@ deployment is part of this decision.
 - CI continues to gate pull requests targeting `main`, including #1029. The
   workflow remains scoped to `main`; it does not add a second long-lived
   branch gate or run duplicate full checks on pushes to `dev`.
-- Keep Vercel Git deployments disabled during the manual-release hold in ADR
-  0051. An operator creates Production deployments from the Vercel Dashboard
+- Keep Vercel Git deployments disabled during the manual-release hold in ADR 0051. An operator creates Production deployments from the Vercel Dashboard
   after CI passes; GitHub Actions validates code and does not deploy it. Keep
   the hold until a replacement release policy is approved and verified.
   Verify production configuration and post-release

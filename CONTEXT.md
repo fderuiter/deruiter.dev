@@ -13,8 +13,7 @@
 ## Release Branches
 
 - **`main`**: The sole long-lived integration and stable release branch, and the only Vercel production source.
-- **`dev`**: A temporary consolidation branch for recovering and reviewing the combined Jules PR work in the current `dev` → `main` release (ADR 0050). It is not the steady-state target for new work.
-- **Release PR (`dev` → `main`)**: The one-time reviewed handoff of the consolidated work to production.
+- **`dev`** (retired): The temporary consolidation branch that carried the combined Jules PR work. It merged into `main` in #1029 and no longer exists (ADR 0050). Never a target for new work.
 - **Topic Branch**: A short-lived branch cut from `main` for one change and merged into `main` after its pull request gates pass.
 
 ## Logical Proof Workspace

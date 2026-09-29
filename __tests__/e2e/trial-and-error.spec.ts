@@ -1500,3 +1500,83 @@ test.describe("Trial & Error protocol deviations (#1087)", () => {
     }).toPass({ timeout: 10000 });
   });
 });
+
+test.describe("Trial & Error guided Blind (#1089)", () => {
+  const coach = (page: Page) => page.getByTestId("coach");
+  const coachTitle = (page: Page) => coach(page).getByRole("heading");
+
+  for (const [label, width, fontSize] of [
+    ["1440px", 1440, "100%"],
+    ["320px", 320, "100%"],
+    ["200% zoom", 1280, "200%"],
+  ] as const) {
+    test(`completes the guided Blind by keyboard at ${label}`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ reducedMotion: "reduce" });
+      await page.setViewportSize({ width, height: 900 });
+      await launch(page);
+      await page.evaluate((size) => {
+        document.documentElement.style.fontSize = size;
+      }, fontSize);
+      await expect(page.getByTestId("tutorial-offer")).toBeVisible();
+      await expectNoHorizontalOverflow(page);
+      await expectNoBlockingViolations(page, `tutorial offer at ${label}`);
+
+      await page.getByRole("button", { name: "Start guided Blind" }).click();
+      await expect(coachTitle(page)).toBeFocused();
+      await expect(coachTitle(page)).toHaveText("Your first review");
+      await page.getByRole("button", { name: "Next" }).click();
+      await expect(coachTitle(page)).toHaveText("Inspect the Table");
+      await expectNoHorizontalOverflow(page);
+      await expectNoBlockingViolations(page, `coach step at ${label}`);
+
+      await card(page, "C-T14.1.1-G").focus();
+      await page.keyboard.press("i");
+      await expect(drawer(page).getByTestId("coach")).toBeVisible();
+      await expect(coachTitle(page)).toHaveText("Review a cell");
+      await expectNoBlockingViolations(page, `coach in Inspect at ${label}`);
+      await page.keyboard.press("ArrowDown");
+      await page.keyboard.press("Enter");
+      await expect(coachTitle(page)).toHaveText("Correct the finding");
+      await page.keyboard.press("c");
+      await expect(coachTitle(page)).toHaveText("Back to the table");
+      await page.keyboard.press("Escape");
+      await expect(drawer(page)).toBeHidden();
+      await expect(coachTitle(page)).toHaveText("Make a TLF Pair");
+
+      await card(page, "C-T14.1.1-G").focus();
+      await page.keyboard.press("Space");
+      await card(page, DM_LISTING).focus();
+      await page.keyboard.press("Space");
+      await expect(coachTitle(page)).toHaveText("Play the hand");
+      await page.keyboard.press("Enter");
+      await expect(coachTitle(page)).toHaveText("Blind cleared", {
+        timeout: 15000,
+      });
+      await expectNoHorizontalOverflow(page);
+      await expectNoBlockingViolations(
+        page,
+        `guided Blind cleared at ${label}`
+      );
+
+      await page.getByRole("button", { name: "Start the campaign" }).click();
+      await expect(coach(page)).toHaveCount(0);
+      await expect(page.getByTestId("tutorial-offer")).toHaveCount(0);
+      await expect(card(page, DRAFT_A)).toBeVisible();
+    });
+  }
+
+  test("skips at any step and is not offered again", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await launch(page);
+    await page.getByRole("button", { name: "Start guided Blind" }).click();
+    await page.getByRole("button", { name: "Next" }).click();
+    await page.getByRole("button", { name: "Skip tutorial" }).click();
+    await expect(coach(page)).toHaveCount(0);
+    await expect(card(page, DRAFT_A)).toBeVisible();
+    await page.reload();
+    await launch(page);
+    await expect(page.getByTestId("tutorial-offer")).toHaveCount(0);
+  });
+});

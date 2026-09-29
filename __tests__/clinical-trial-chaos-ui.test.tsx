@@ -702,6 +702,99 @@ describe("ClinicalTrialChaos React Component UI Suite", () => {
     );
   });
 
+  it("downloads ODM XML and SDTM CSV exports through attached anchors with deferred revocation", async () => {
+    vi.useFakeTimers();
+    const originalCreate = URL.createObjectURL;
+    const originalRevoke = URL.revokeObjectURL;
+    const createObjectURL = vi.fn<(blob: Blob) => string>(
+      () => "blob:cc-export"
+    );
+    const revokeObjectURL = vi.fn<(url: string) => void>();
+    URL.createObjectURL = createObjectURL;
+    URL.revokeObjectURL = revokeObjectURL;
+    const downloads: { name: string; attached: boolean }[] = [];
+    const clickSpy = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(function (this: HTMLAnchorElement) {
+        downloads.push({
+          name: this.download,
+          attached: document.body.contains(this),
+        });
+      });
+
+    try {
+      await act(async () => {
+        root.render(<ClinicalTrialChaos />);
+      });
+      const findButton = (text: string) =>
+        Array.from(container.querySelectorAll("button")).find((b) =>
+          b.textContent?.includes(text)
+        );
+
+      await act(async () => {
+        findButton("Start 3-Phase Campaign")?.click();
+      });
+      const validateChoiceEl = Array.from(
+        container.querySelectorAll("span")
+      ).find((el) => el.textContent?.includes("Validate Choice"));
+      await act(async () => {
+        (validateChoiceEl?.closest(".cursor-pointer") as HTMLElement).click();
+      });
+      await act(async () => {
+        Array.from(container.querySelectorAll("button"))
+          .find((b) => b.textContent?.trim().replace(/^\d/, "") === "180 cm")
+          ?.click();
+      });
+      await act(async () => {
+        vi.advanceTimersByTime(600);
+      });
+      const dmHeading = Array.from(container.querySelectorAll("h4")).find((h) =>
+        h.textContent?.includes("DM Station")
+      );
+      await act(async () => {
+        (dmHeading?.closest(".group") as HTMLElement).click();
+      });
+      expect(container.textContent).toContain("Submits:1");
+
+      await act(async () => {
+        findButton("Live SDTM Studio")?.click();
+      });
+      const odmBtn = findButton("Export CDISC ODM XML") as HTMLButtonElement;
+      const csvBtn = findButton("Export SDTM CSV") as HTMLButtonElement;
+      expect(odmBtn.disabled).toBe(false);
+      expect(csvBtn.disabled).toBe(false);
+
+      await act(async () => {
+        odmBtn.click();
+      });
+      await act(async () => {
+        csvBtn.click();
+      });
+
+      expect(downloads).toHaveLength(2);
+      expect(downloads[0].name).toMatch(/^CDISC_ODM_Snapshot_\d+\.xml$/);
+      expect(downloads[1].name).toMatch(/^SDTM_Dataset_\d+\.csv$/);
+      // Firefox ignores clicks on anchors that are not attached to the document.
+      expect(downloads.every((d) => d.attached)).toBe(true);
+      expect(createObjectURL.mock.calls.map(([blob]) => blob.type)).toEqual([
+        "application/xml",
+        "text/csv",
+      ]);
+      expect(container.querySelectorAll("a[download]")).toHaveLength(0);
+
+      expect(revokeObjectURL).not.toHaveBeenCalled();
+      await act(async () => {
+        vi.advanceTimersByTime(1000);
+      });
+      expect(revokeObjectURL).toHaveBeenCalledTimes(2);
+    } finally {
+      clickSpy.mockRestore();
+      URL.createObjectURL = originalCreate;
+      URL.revokeObjectURL = originalRevoke;
+      vi.useRealTimers();
+    }
+  });
+
   it("quick-dispatches a clean routine dossier exactly once without the signature modal", async () => {
     vi.useFakeTimers();
 
@@ -1228,6 +1321,96 @@ describe("ClinicalTrialChaos React Component UI Suite", () => {
     });
     expect(container.textContent).toContain("[WARDROBE]");
     expect(container.textContent).toContain("pyjama bottoms");
+  });
+
+  it("closes the fix dialog at game over and counts wrong fixes as violations (#1325)", async () => {
+    vi.useFakeTimers();
+    // Endless subjects are random; seed the draw so runs repeat closely. The
+    // loop below does not rely on which value is compliant.
+    let seed = 1325;
+    vi.spyOn(Math, "random").mockImplementation(() => {
+      seed = (seed * 16807) % 2147483647;
+      return (seed - 1) / 2147483646;
+    });
+
+    await act(async () => {
+      root.render(<ClinicalTrialChaos />);
+    });
+    // Endless mode, as in the playtest: no calibration shift to forgive the
+    // wrong picks.
+    const endlessBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.includes("Endless BIMO Audit Mode")
+    );
+    await act(async () => {
+      endlessBtn?.click();
+    });
+    const startBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => /^Start/.test(b.textContent?.trim() ?? "")
+    );
+    await act(async () => {
+      startBtn?.click();
+    });
+
+    const dialogTitle = "CDISC Controlled Terminology Validation";
+    const openDialog = () =>
+      Array.from(container.querySelectorAll("[role='dialog']")).find((d) =>
+        d.textContent?.includes(dialogTitle)
+      );
+    const openNextFlaggedField = async () => {
+      const validateChoiceEl = Array.from(
+        container.querySelectorAll("span")
+      ).find((s) => s.textContent?.includes("Validate Choice"));
+      const card = validateChoiceEl?.closest(".cursor-pointer");
+      if (!card) return;
+      await act(async () => {
+        (card as HTMLElement).click();
+      });
+    };
+
+    await openNextFlaggedField();
+    expect(openDialog()).toBeTruthy();
+
+    // Keep answering flagged fields until the FDA's suspicion ends the trial.
+    // Which offered value is compliant depends on the random subject, so pick
+    // by position: a pick that leaves the dialog open was a wrong fix, and a
+    // pick that closes it resolved the field, so open the next one.
+    let wrongPicks = 0;
+    for (
+      let i = 0;
+      i < 120 && !container.textContent?.includes("TRIAL TERMINATED");
+      i++
+    ) {
+      const dialog = openDialog();
+      if (!dialog) {
+        await openNextFlaggedField();
+      } else {
+        const choices = Array.from(dialog.querySelectorAll("button")).filter(
+          (b) => /^\d/.test(b.textContent?.trim() ?? "")
+        );
+        if (choices.length === 0) break;
+        await act(async () => {
+          choices[i % choices.length].click();
+        });
+        if (openDialog()) wrongPicks++;
+      }
+      await act(async () => {
+        vi.advanceTimersByTime(700);
+      });
+    }
+
+    expect(wrongPicks).toBeGreaterThan(0);
+    expect(container.textContent).toContain("TRIAL TERMINATED");
+    // The fix dialog no longer sits over the Form 483 panel.
+    expect(container.textContent).not.toContain(
+      "CDISC Controlled Terminology Validation"
+    );
+    const violations = Array.from(container.querySelectorAll("dt")).find(
+      (dt) => dt.textContent === "Violations"
+    )?.nextElementSibling?.textContent;
+    expect(Number(violations)).toBeGreaterThan(0);
+
+    vi.mocked(Math.random).mockRestore();
+    vi.useRealTimers();
   });
 
   it("should load existing high score from localStorage", async () => {

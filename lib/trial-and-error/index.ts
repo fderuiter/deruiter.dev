@@ -23,6 +23,7 @@ export {
   BLINDED_DATA_REVIEW_SCENARIO,
   CSR_LOCK_SCENARIO,
   DEMOGRAPHICS_SCENARIO,
+  GUIDED_BLIND_SCENARIO,
   DMC_MILESTONE_SCENARIO,
   DMC_OPEN_SESSION_SCENARIO,
   DMC_RELICS,
@@ -131,6 +132,7 @@ export {
   type TableInspectionView,
   type TableState,
   type TableView,
+  type TableOutcome,
   type PlayBlocker,
   STALE_ALERT,
   AMENDMENT_STALE_ALERT,
@@ -178,6 +180,20 @@ export {
   type StudyHistory,
 } from "./internal/table";
 export {
+  LONG_PRESS_MS,
+  LONG_PRESS_SLOP_PX,
+  SEAL_DRAG_TYPE,
+  handActivationIntent,
+  handDisplayOrder,
+  handKeyIntent,
+  pressTravelled,
+  reorderTarget,
+  type HandActivation,
+  type HandInputContext,
+  type HandIntent,
+  type HandKeyInput,
+} from "./internal/hand-input";
+export {
   applyTransition,
   membership,
   sameMembership,
@@ -185,6 +201,15 @@ export {
   type SnapshotInvalidation,
   type TransitionOutcome,
 } from "./internal/snapshots";
+export {
+  TUTORIAL_STEPS,
+  nextTutorialStep,
+  tutorialStepAfter,
+  tutorialStepDone,
+  type TutorialStep,
+  type TutorialTarget,
+  type TutorialWait,
+} from "./internal/tutorial";
 export { compileDraft, compileShell } from "./internal/compile";
 export {
   RELIC_PHASE_LABELS,

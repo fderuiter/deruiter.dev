@@ -331,12 +331,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
     objective:
       "Pilot the iconic F277 Laser Loon through four campaign acts from Lake Minnetonka to the State Capitol dome, battling rival flag finalists, bureaucratic red tape, and Minnesota folklore hazards.",
     quickSummary:
-      "Aim with the cursor or touch controls, fire ruby eye-lasers and cryogenic ice mortars, collect Hotdish power-ups, and unleash the Haunting Loon Tremolo ultimate shockwave to claim victory!",
+      "Aim with the cursor or touch controls, fire ruby eye-lasers and the Cryo-Mortar's ice blocks, collect Hotdish power-ups, and unleash the Haunting Loon Tremolo ultimate shockwave to claim victory!",
     controls: [
       {
         action: "Aim & Fire Laser Arsenal",
         description:
-          "Aim crosshair with cursor or touch; left-click, drag or hold Space to fire the active laser beam (Ruby Laser, Cyan Pulse, Aurora Wave, or Cryo Mortar).",
+          "Aim crosshair with cursor or touch; left-click, drag or hold Space to fire the active laser beam (Ruby Laser, Cyan Pulse, Aurora Wave, or Cryo-Mortar).",
         key: "Left Click / Drag / Space",
       },
       {
@@ -368,7 +368,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         title: "Glacial Cryo-Shatter Combos",
         detail:
-          "Mortar ice blocks bounce off lake boundaries, encasing targets in ice. Shattering frozen targets awards 2x points and cascades shrapnel.",
+          "Cryo-Mortar ice blocks bounce off lake boundaries, encasing targets in ice. Shattering frozen targets awards 2x points and cascades shrapnel.",
         badge: "2x Shatter Combo",
       },
       {
@@ -381,7 +381,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
     proTips: [
       "Save your Haunting Loon Tremolo ultimate for boss encounters to shatter their revolving defense shields.",
       "Grab floating Tater Tot Hotdish pickups for instant zero-cooldown laser overcharge frenzy.",
-      "Bouncing Cryo Mortar ice blocks off the canvas floor and ceiling creates hazardous pinball walls for rival flags.",
+      "Bouncing Cryo-Mortar ice blocks off the canvas floor and ceiling creates hazardous pinball walls for rival flags.",
     ],
     lore: {
       title: "The Grassroots Legend of Submission F277",
@@ -452,7 +452,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         title: "Proof-Engine RAM Limit",
         detail:
-          "Complex tactic expansions consume proof engine memory. If RAM usage hits 100%, an Out-Of-Memory (OOM) kernel crash resets the current level.",
+          "Each tactic, including a failed one, consumes simulated memory. Story Mode starts with twice the Hacker Mode budget. In either mode, hitting 0 GB stops the simulated tactic session and the level must be reset.",
         badge: "RAM Constraint",
       },
       {
@@ -499,64 +499,100 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
     accentColor: "from-amber-500/20 via-amber-500/5 to-transparent",
     badgeBg: "bg-amber-500/10 text-amber-300 border-amber-500/30",
     objective:
-      "Keep your custom Connect IQ watch face executing inside an unforgiving 32KB RAM limit on a circular 280×280 MIP display while managing GC freezes and thermal condensation.",
+      "An endless run: keep a Connect IQ app alive as long as you can and beat your high score. Jump the bugs that crash it, keep the heap under the device's RAM limit, and don't let the battery die.",
     quickSummary:
-      "Use physical bezel buttons to cycle sensor widgets, swipe across the watch crystal to wipe fog, and trigger manual GC before running out of memory.",
+      "Press Enter to boot. Jump NULL, DOG and STK bugs with the Up arrow. The app allocates memory on its own, so pop variables with Down or run GC with Backspace before the heap fills. Wipe fog with W or a drag.",
     controls: [
       {
-        action: "Bezel Buttons",
+        action: "Start, Pause & Resume",
         description:
-          "Click the physical watch bezel buttons: UP, DOWN, SELECT, and BACK to navigate watch apps and menus.",
-        key: "Bezel Clicks",
+          "Boots the app, pauses and resumes a run, or reboots after a crash. Same as the START bezel button.",
+        key: "Enter / Space",
       },
       {
-        action: "Wipe Thermal Fog",
+        action: "Jump",
         description:
-          "Click and drag your cursor across the circular glass face to wipe away condensation built up from high heart-rate intervals.",
-        key: "Drag Across Screen",
+          "Jump over bugs (NULL, DOG, STK). Floating memory and NV tokens are also collected by touching them, so jump or duck under them on purpose. Same as the UP bezel button, or swipe up on the screen.",
+        key: "↑",
       },
       {
-        action: "Sensor Rate Toggle",
+        action: "Pop Heap Variable (Jettison)",
         description:
-          "Switch GPS, Optical HR, and Accelerometer polling frequencies to balance telemetry fidelity against battery drain.",
-        key: "Sensor Toggles",
+          "Frees the oldest collectible variable instantly for +5 points. The app's required state (appCtx, displayGfx) is never popped. Same as the DOWN bezel button, or swipe down.",
+        key: "↓",
       },
       {
         action: "Force Garbage Collection",
         description:
-          "Execute manual memory compaction to reclaim abandoned object references before hitting the 32KB heap ceiling.",
-        key: "GC Button",
+          "Frees 2 to 4 KB of garbage for +10 points, but freezes the game for 500 ms (350 ms with the low-power loadout) and heats the watch. Does nothing on a clean heap. Same as the BACK bezel button, or swipe left.",
+        key: "G / Backspace",
+      },
+      {
+        action: "Backlight",
+        description:
+          "Lights the display but quadruples battery drain and, after a few seconds, raises thermal stress and fog. Same as the LIGHT bezel button.",
+        key: "L",
+      },
+      {
+        action: "Wipe Screen Fog",
+        description:
+          "Clears part of the condensation. Drag across the watch face to wipe where you drag.",
+        key: "W / Drag Across Screen",
       },
     ],
     rules: [
       {
-        title: "32KB Monkey C Heap Ceiling",
+        title: "Scoring",
         detail:
-          "Connect IQ watch face apps run in an isolated virtual machine with a strict 32KB memory ceiling. Exceeding 32,768 bytes triggers an immediate Out-Of-Memory system halt.",
-        badge: "32KB Limit",
+          "You earn about 60 points for every second the app stays up, plus 5 for each popped variable and 10 for each GC that frees memory. A power loss costs 50. There is no finish line; your best score is saved on this device.",
+        badge: "High Score",
       },
       {
-        title: "500ms GC Stop-The-World Freeze",
+        title: "Bugs Crash the App",
         detail:
-          "Running garbage collection freezes UI rendering and sensor capture for 500ms. Time your GC cycles during low-velocity running intervals.",
-        badge: "GC Pause",
+          "Running into NULL crashes with a Null Pointer, DOG with Watchdog Tripped, and STK with Stack Overflow. The crash screen names the cause and how to avoid it next run.",
+        badge: "Crash Types",
       },
       {
-        title: "Thermal Condensation Fog",
+        title: "Heap Ceiling (Out of Memory)",
         detail:
-          "During high HR workouts, perspiration condensation obscures the MIP display. Failure to wipe fog prevents reading cadence and heart rate alerts.",
-        badge: "Fog Hazard",
+          "The app allocates an int, float, string or array on its own every few seconds, and floating memory tokens add one more. Reach the device's RAM limit and the app halts with Out Of Memory.",
+        badge: "RAM Limit",
+      },
+      {
+        title: "Flash Storage (Out of Storage)",
+        detail:
+          "NV tokens write 4 KB to persistent flash, which survives between runs. Fill the device's flash limit and the app crashes with Out Of Storage. Clear Flash Storage below the watch empties it.",
+        badge: "NV Flash",
+      },
+      {
+        title: "Battery & Power Loss",
+        detail:
+          "The battery drains about 0.1% a second, or 0.4% with the backlight on. At 0% the watch browns out, the run ends, and you lose 50 points.",
+        badge: "Power",
+      },
+      {
+        title: "Thermal Fog",
+        detail:
+          "Fog builds when the watch heats up: from the backlight after a few seconds, from RAM above 80%, or during a GC freeze. It fades as the watch cools, or wipe it away.",
+        badge: "Fog",
+      },
+      {
+        title: "Device Tiers",
+        detail:
+          "Fēnix 5 has 32 KB of RAM and 64 KB of flash and allocates every 3.2 s (hard). Forerunner 245 has 64 KB and 256 KB every 4 s (medium). Edge 1030 has 128 KB and 512 KB every 5 s (casual).",
+        badge: "Difficulty",
       },
     ],
     proTips: [
-      "Avoid allocating transient objects inside the `onUpdate(dc)` 1Hz rendering loop to prevent garbage build-up.",
-      "Wipe screen fog early before it occludes the battery life percentage indicator.",
-      "Drop GPS polling from 1Hz to 0.1Hz when battery drops below 15%.",
+      "Pop with Down when RAM passes about 70%: it's instant, while GC freezes you for half a second.",
+      "Keep the backlight off unless fog is heavy; it drains the battery four times faster.",
+      "Only GC when nothing is about to reach you, since you can't jump during the freeze.",
     ],
     lore: {
       title: "Engineering for Wearable Hardware Constraints",
       story:
-        "Smartwatches like the Garmin Forerunner and Fenix utilize ultra-low-power Memory-in-Pixel (MIP) displays and ultra-constrained microcontrollers capable of running for 14+ days on a single charge. Developing for Garmin's Monkey C language demands relentless memory optimization: reusing object pools, avoiding dynamic closures, and managing strict byte-aligned bitmaps.",
+        "The game started on the Theodore Wirth mud run, a 10 km Minnesota trail race where Fred's Garmin fogged up and fought for GPS lock the whole way. That run became the mechanics: the runner and the bugs are the race, the fog is the sweat on the watch glass, and the heap is the tiny memory a real Connect IQ app has to live in. Garmin watches pair ultra-low-power Memory-in-Pixel (MIP) displays with microcontrollers that run for weeks on a charge, so Monkey C code has to be frugal: reuse object pools, avoid dynamic closures, and keep bitmaps small.",
       realWorldTech: [
         "Garmin Connect IQ",
         "Monkey C VM",
@@ -659,6 +695,108 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
     },
   },
 
+  "study-director": {
+    id: "study-director",
+    title: "Study Director: Everything Is Fine",
+    subtitle: "Clinical Study Management Simulator",
+    genre: "Management Simulation",
+    badge: "Attention Budget",
+    route: "/arcade/study-director",
+    accentColor: "from-amber-500/20 via-amber-500/5 to-transparent",
+    badgeBg: "bg-amber-500/10 text-amber-300 border-amber-500/30",
+    objective:
+      "Take Study 24-081, a randomized PK study for a first-time biotech, from kickoff to closeout: a scientifically valid, compliant study, on time, without wrecking the budget, the sponsor relationship or your team. Six meters compete and you cannot keep them all high. At the end the sponsor, the company, the science and the regulator each give a verdict, and the FDA may come to ask about your decisions.",
+    quickSummary:
+      "Each day you have 5 attention points. Answer messages in the inbox (1 to 5 choose an option), audit a site to see what the dashboard is hiding, then end the day. Documenting a decision costs 1 more attention. Skipped documentation adds documentation debt, which the inspection replays. Your run saves as you play.",
+    controls: [
+      {
+        action: "Choose an option",
+        description:
+          "Answers the open message with the numbered option. Each option shows its attention cost.",
+        key: "1 - 5",
+      },
+      {
+        action: "Document the decision",
+        description:
+          "Toggles documentation for the next choice. It costs 1 extra attention and keeps the decision from becoming an observation at inspection.",
+        key: "D",
+      },
+      {
+        action: "Move through the inbox",
+        description: "Selects the next or previous message in the inbox.",
+        key: "J / K",
+      },
+      {
+        action: "End the day",
+        description:
+          "Unanswered messages whose time has run out apply their fallout, the study advances one day and attention refills to 5, less when a query backlog or documentation debt is taking routine work.",
+        key: "E",
+      },
+      {
+        action: "Skip to the next message",
+        description:
+          "When nothing is waiting, ends days until the next message arrives, so quiet stretches take one keypress.",
+        key: "N",
+      },
+      {
+        action: "Audit a site",
+        description:
+          "Costs 2 attention. Shows the site's true queries, deviations, unsigned source, eligibility concerns and training for 10 days.",
+        key: "Audit button",
+      },
+    ],
+    rules: [
+      {
+        title: "Attention is the resource",
+        detail:
+          "You get 5 attention points a day and unspent points do not carry over. Answering, delegating and auditing all spend them, so some messages will go unanswered.",
+        badge: "Attention",
+      },
+      {
+        title: "Everything is fine, until you look",
+        detail:
+          "Enrollment, budget and timeline on the dashboard are honest. Safety, data and regulatory only show what each site has reported: a coordinator who emails about everything surfaces most problems, one who says nothing surfaces almost none. An audit shows the real numbers.",
+        badge: "Dashboard",
+      },
+      {
+        title: "Decisions echo",
+        detail:
+          "A high-burden protocol overloads sites, which produces deviations and queries, which overload data management, which delays lock and pushes the schedule. A choice on day 4 can be a crisis on day 63, and some choices schedule a follow-up message.",
+        badge: "Causal chain",
+      },
+      {
+        title: "Documentation debt",
+        detail:
+          "Skipping documentation saves attention today and adds debt. Debt lowers Compliance and raises the chance the FDA visits. If it does, it asks about your own decisions: documented ones close, undocumented ones become observations.",
+        badge: "Inspection",
+      },
+      {
+        title: "Four verdicts and a profile",
+        detail:
+          "Locking the database turns open queries into delay. The sponsor rates you in stars, the company reports margin and timeline variance, the science reports evaluable and missing data, and the regulator grades inspection readiness. The game then names which kind of Study Director you were, from what you actually did.",
+        badge: "Closeout",
+      },
+    ],
+    proTips: [
+      "Audit the site you hear least from.",
+      "A message ignored on a critical day costs more than a cheap answer.",
+      "Documenting everything is not free. Document the decisions an inspector would ask about.",
+      "When the veteran says there is a problem, there is a problem.",
+    ],
+    lore: {
+      title: "The person in the middle",
+      story:
+        "A study director sits between the sponsor, the sites, the statisticians, the data managers and the regulators, and is judged on whether the study holds up years later. The game is fictional and simplified: every sponsor, site and person is invented, and nothing in it is regulatory or clinical advice.",
+      realWorldTech: [
+        "Protocol deviation tracking",
+        "Edit checks and data queries",
+        "Database lock",
+        "Trial master file",
+        "FDA inspection readiness",
+      ],
+    },
+  },
+
   "trial-and-error": {
     id: "trial-and-error",
     title: "Trial & Error: Biostat Ops",
@@ -673,6 +811,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
     quickSummary:
       "Move across the hand with ← →, select up to five cards with Space, and press Enter to play the best hand they make (2 CPU). D discards the selection (1 CPU). I opens the focused card's QC Desk (1 CPU): inspect cells with Enter or Space, correct with C, trace a flagged cell to its Listing with T, and close with Esc. R recompiles a stale card (2 CPU), S runs structural QC on a face-down card (1 CPU), and A jumps to a blank shell's analysis sets. Between Blinds, spend the Study Budget in the shop. The run saves as you play, so a reload offers Resume run.",
     controls: [
+      {
+        action: "Replay the guided Blind",
+        description:
+          "Your first visit offers a guided Blind: one hand, with a coach outlining each control in amber as you inspect a Table, correct its finding, and play it with its Listing. Skip it at any step. Replay tutorial on this tab plays it again.",
+        key: "Replay tutorial",
+      },
       {
         action: "Move across the hand",
         description:
@@ -980,13 +1124,13 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
     genre: "Dungeon Roguelike",
     badge: "Cyberpunk Roguelike",
     route: "/arcade/retro-labyrinth",
-    storageKey: "retro_labyrinth_high_score",
+    storageKey: "retro_labyrinth_highscore",
     accentColor: "from-cyan-500/20 via-cyan-500/5 to-transparent",
     badgeBg: "bg-cyan-500/10 text-cyan-300 border-cyan-500/30",
     objective:
       "Infiltrate fortified corporate mainframe subnets as an autonomous Red Team Netrunner. Manage Cyberdeck RAM, weaponize zero-days and offensive exploits, bypass EDR sentinels, solve tactile Hex Matrix buffer puzzles, and defeat the 3D Wireframe Sovereign Boss.",
     quickSummary:
-      "Navigate procedural subnets with WASD/Arrows and reach each room's EXIT. Keys 1 to 3 fire your Cyberdeck class's tools (the default Script Kiddie carries npm install, Nmap Port Recon and EMP), and Space fires an EMP, to exploit daemon CVEs and extract encrypted payloads.",
+      "Navigate procedural subnets with WASD/Arrows and reach each room's EXIT once its objective is done. Keys 1 to 3 fire your Cyberdeck class's tools (the default Script Kiddie carries npm install, Nmap Port Recon and EMP), and Space fires an EMP, to exploit daemon CVEs and extract encrypted payloads.",
     controls: [
       {
         action: "Move Netrunner Avatar",
@@ -1007,6 +1151,17 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         key: "Spacebar / Touch Action A",
       },
       {
+        action: "Pause",
+        description: "Pause and resume the run. Enter also resumes.",
+        key: "P",
+      },
+      {
+        action: "Continue or Retry",
+        description:
+          "On the room-cleared screen, Enter moves to the next room and R retries this one. After a trace, Enter or R retries the room.",
+        key: "Enter / R",
+      },
+      {
         action: "Toggle CRT Phosphor Scanlines",
         description:
           "Toggle retro CRT phosphor curvature, bloom, and scanline shader post-processing filters.",
@@ -1014,6 +1169,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       },
     ],
     rules: [
+      {
+        title: "Locked Exits",
+        detail:
+          "A room with airgap route nodes keeps its EXIT locked until you step on every node, and a boss room keeps it locked until the boss is defeated. A locked exit is drawn as LOCK in red and blocks you like a wall. Boss volleys aim where you are heading, so change direction to dodge.",
+        badge: "Objectives",
+      },
       {
         title: "Cyberdeck RAM & CVE Vulnerability Synergies",
         detail:

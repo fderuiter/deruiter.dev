@@ -72,8 +72,16 @@ import {
   POWER_UP_CONFIGS,
   DEFAULT_CANVAS_WIDTH,
   DEFAULT_CANVAS_HEIGHT,
+  COMBO_TIMEOUT_MS,
+  LOON_MIN_X,
+  LOON_MAX_X,
+  LOON_MIN_Y,
+  LOON_MAX_Y,
   LOON_MAX_HITS,
   resolveLoonCollision,
+  updateBossAttack,
+  isBossTelegraphing,
+  BOSS_MINION_SPAWN_RATE,
 } from "@/lib/laser-loon";
 
 const emptySubscribe = () => () => {};
@@ -130,6 +138,7 @@ export const LaserLoon: React.FC = () => {
   const [highScore, setHighScore] = useState(0);
   const effectiveHighScore = Math.max(highScore, loadedHighScore);
   const [combo, setCombo] = useState(0);
+  const [maxCombo, setMaxCombo] = useState(0);
   const [multiplier, setMultiplier] = useState(1);
   const [timeLeft, setTimeLeft] = useState(45);
   const [ultimateMeter, setUltimateMeter] = useState(0);
@@ -145,6 +154,10 @@ export const LaserLoon: React.FC = () => {
   const [showMuseum, setShowMuseum] = useState(false);
   const [selectedFlagIndex, setSelectedFlagIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [isManualOpen, setIsManualOpen] = useState(false);
+  // The simulation also stops behind the Flag Museum and the Field Manual,
+  // so reading them never costs a run.
+  const isHalted = isPaused || showMuseum || isManualOpen;
 
   const { announce } = useAnnouncer();
   const isInitialPauseRef = useRef(true);
@@ -163,6 +176,12 @@ export const LaserLoon: React.FC = () => {
 
   const museumTrapRef = useFocusTrap<HTMLDivElement>(showMuseum, {
     onEscape: () => setShowMuseum(false),
+    onKeyDown: (event) => {
+      if (event.key.toLowerCase() === "m") {
+        event.preventDefault();
+        setShowMuseum(false);
+      }
+    },
   });
 
   const pauseTrapRef = useFocusTrap<HTMLDivElement>(isPaused, {
@@ -501,6 +520,7 @@ export const LaserLoon: React.FC = () => {
       lastComboTimeRef.current = now;
       comboRef.current = nextCombo;
       setCombo(nextCombo);
+      setMaxCombo((best) => Math.max(best, nextCombo));
       setMultiplier(nextMultiplier);
 
       const extraMul = activePowerUpRef.current?.type === "north-star" ? 3 : 0;
@@ -516,10 +536,23 @@ export const LaserLoon: React.FC = () => {
     [addScore, playComboSound, addFloatingText]
   );
 
+  // A combo lapses COMBO_TIMEOUT_MS after the last kill; clear the HUD pill
+  // then instead of leaving a stale multiplier on screen.
+  useEffect(() => {
+    if (combo <= 1) return;
+    const timer = setTimeout(() => {
+      comboRef.current = 0;
+      setCombo(0);
+      setMultiplier(1);
+    }, COMBO_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, [combo]);
+
   const recordCampaignKill = useCallback(
     (t: Target) => {
       if (mode !== "campaign") return;
       const outcome = classifyCampaignKill(t, currentActNum);
+      if (outcome === "no-credit") return;
       if (outcome === "act-kill") {
         actKillsRef.current += 1;
         setActKills(actKillsRef.current);
@@ -630,6 +663,7 @@ export const LaserLoon: React.FC = () => {
     const fresh = createInitialState(mode);
     setScore(0);
     setCombo(0);
+    setMaxCombo(0);
     comboRef.current = 0;
     setMultiplier(1);
     setTimeLeft(fresh.timeLeft);
@@ -661,6 +695,7 @@ export const LaserLoon: React.FC = () => {
     setIsPaused(false);
     setScore(0);
     setCombo(0);
+    setMaxCombo(0);
     comboRef.current = 0;
     setMultiplier(1);
     setBossActive(false);
@@ -717,14 +752,14 @@ export const LaserLoon: React.FC = () => {
 
   // Countdown timer for arcade mode
   useEffect(() => {
-    if (gameState !== "playing" || mode !== "arcade" || isPaused) return;
+    if (gameState !== "playing" || mode !== "arcade" || isHalted) return;
 
     const timer = setInterval(() => {
       setTimeLeft((prev) => Math.max(0, prev - 1));
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [gameState, mode, isPaused]);
+  }, [gameState, mode, isHalted]);
 
   // Handle countdown expiration outside functional state updater
   useEffect(() => {
@@ -738,7 +773,7 @@ export const LaserLoon: React.FC = () => {
 
   // Active Power-Up timer
   useEffect(() => {
-    if (!activePowerUpType || isPaused) return;
+    if (!activePowerUpType || isHalted) return;
     const interval = setInterval(() => {
       if (activePowerUpRef.current) {
         const remaining = activePowerUpRef.current.expiresAt - Date.now();
@@ -752,11 +787,11 @@ export const LaserLoon: React.FC = () => {
       }
     }, 100);
     return () => clearInterval(interval);
-  }, [activePowerUpType, isPaused]);
+  }, [activePowerUpType, isHalted]);
 
   // Weapon fire trigger
   const fireWeapon = useCallback(() => {
-    if (isPaused) return;
+    if (isHalted) return;
     const now = performance.now();
     const hasHotdish = activePowerUpRef.current?.type === "hotdish";
     const weapon = WEAPONS[laserType] || WEAPONS["ruby-laser"];
@@ -835,7 +870,7 @@ export const LaserLoon: React.FC = () => {
     addUltimateMeter,
     awardComboKill,
     recordCampaignKill,
-    isPaused,
+    isHalted,
   ]);
 
   // Main Canvas Render & Physics Loop
@@ -860,7 +895,7 @@ export const LaserLoon: React.FC = () => {
     const handleContextRestored = () => {
       isContextLost = false;
       lastFrameTime = performance.now();
-      if (!isPaused) {
+      if (!isHalted) {
         animFrameIdRef.current = requestAnimationFrame(renderLoop);
       }
     };
@@ -869,7 +904,7 @@ export const LaserLoon: React.FC = () => {
     canvas.addEventListener("contextrestored", handleContextRestored);
 
     const renderLoop = (time: number) => {
-      if (isContextLost || isPaused) return;
+      if (isContextLost || isHalted) return;
       const dt = Math.min(32, time - lastFrameTime) / 16.666;
       lastFrameTime = time;
 
@@ -969,6 +1004,20 @@ export const LaserLoon: React.FC = () => {
 
           if (actKillsRef.current >= reqKills && !bossSpawnedRef.current) {
             triggerBossEncounter(width, height);
+          } else if (bossSpawnedRef.current) {
+            // A thin trickle of minions keeps the boss fight busy.
+            const boss = targetsRef.current.find((t) => t.isBoss);
+            const minions = targetsRef.current.filter(
+              (t) => !t.isBoss && !t.isProjectile
+            ).length;
+            const cap = (boss?.bossPhase ?? 1) >= 2 ? 3 : 2;
+            if (
+              boss &&
+              minions < cap &&
+              Math.random() < BOSS_MINION_SPAWN_RATE * dt
+            ) {
+              spawnTarget(width, height);
+            }
           } else if (
             !bossSpawnedRef.current &&
             targetsRef.current.length < 5 &&
@@ -1175,6 +1224,27 @@ export const LaserLoon: React.FC = () => {
         ctx.restore();
       });
 
+      // Boss volleys, telegraphed by a wind-up ring, can cost the loon a hit
+      if (gameState === "playing" && mode === "campaign") {
+        const attack = updateBossAttack(
+          targetsRef.current,
+          dt,
+          loon.x,
+          loon.y,
+          currentActNum,
+          nextTargetIdRef.current
+        );
+        targetsRef.current = attack.targets;
+        nextTargetIdRef.current = attack.nextId;
+        if (attack.enteredPhaseTwo) {
+          const boss = attack.targets.find((t) => t.isBoss);
+          if (boss) {
+            addFloatingText(boss.x, boss.y - 70, "BOSS ENRAGED!", "#f59e0b");
+          }
+        }
+        if (attack.fired) playLaserSound("ruby-laser");
+      }
+
       // 6. Update & Render Targets / Enemies / Bosses
       targetsRef.current = updateTargetsPosition(
         targetsRef.current,
@@ -1212,6 +1282,17 @@ export const LaserLoon: React.FC = () => {
         ctx.strokeStyle = t.frozenTimer > 0 ? "#38bdf8" : t.color;
         ctx.lineWidth = t.isBoss ? 3.5 : 2;
         ctx.stroke();
+
+        // Wind-up ring before a boss volley
+        if (t.isBoss && isBossTelegraphing(t, currentActNum)) {
+          ctx.strokeStyle = "#f59e0b";
+          ctx.lineWidth = 2;
+          ctx.setLineDash([6, 6]);
+          ctx.beginPath();
+          ctx.arc(t.x, t.y, t.radius + 26 + pulse, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
 
         // Boss rotating energy shields
         if (t.isBoss && t.shieldAngle !== undefined) {
@@ -1503,12 +1584,12 @@ export const LaserLoon: React.FC = () => {
 
       ctx.restore();
 
-      if (!isPaused) {
+      if (!isHalted) {
         animFrameIdRef.current = requestAnimationFrame(renderLoop);
       }
     };
 
-    if (!isPaused) {
+    if (!isHalted) {
       animFrameIdRef.current = requestAnimationFrame(renderLoop);
     }
 
@@ -1535,11 +1616,12 @@ export const LaserLoon: React.FC = () => {
     playIceShatterSound,
     playPowerUpSound,
     playLoonHitSound,
+    playLaserSound,
     spawnExplosion,
     addFloatingText,
     addScore,
     addUltimateMeter,
-    isPaused,
+    isHalted,
   ]);
 
   // Pointer / Mouse / Touch Controls
@@ -1554,11 +1636,7 @@ export const LaserLoon: React.FC = () => {
       loonPosRef.current.targetX = mouseX;
       loonPosRef.current.targetY = mouseY;
     } else {
-      loonPosRef.current.targetY = clamp(
-        mouseY,
-        40,
-        DEFAULT_CANVAS_HEIGHT - 40
-      );
+      loonPosRef.current.targetY = clamp(mouseY, LOON_MIN_Y, LOON_MAX_Y);
     }
   };
 
@@ -1728,7 +1806,9 @@ export const LaserLoon: React.FC = () => {
     }
 
     if (isPaused) {
-      if (e.key === " " || e.key === "Enter" || e.key === "Escape") {
+      // Escape is left to the pause dialog's focus trap, which already
+      // resumes on it; toggling here too would re-pause at once.
+      if (e.key === " " || e.key === "Enter") {
         togglePause();
       }
       return;
@@ -1753,30 +1833,33 @@ export const LaserLoon: React.FC = () => {
     } else if (e.key.toLowerCase() === "u") {
       fireUltimateTremolo();
     } else if (e.key.toLowerCase() === "m") {
-      setShowMuseum((prev) => !prev);
+      // The museum's trap mounts during this keypress and closes on M, so
+      // keep the event from reaching it.
+      e.stopPropagation();
+      setShowMuseum(true);
     } else if (e.key === "ArrowUp" || e.key.toLowerCase() === "w") {
-      const nextY = Math.max(40, loonPosRef.current.targetY - 25);
+      const nextY = Math.max(LOON_MIN_Y, loonPosRef.current.targetY - 25);
       loonPosRef.current.targetY = nextY;
       announce(
         `Loon moved up. Horizontal position: ${Math.round(loonPosRef.current.targetX)}, vertical position: ${Math.round(nextY)}`,
         "polite"
       );
     } else if (e.key === "ArrowDown" || e.key.toLowerCase() === "s") {
-      const nextY = Math.min(340, loonPosRef.current.targetY + 25);
+      const nextY = Math.min(LOON_MAX_Y, loonPosRef.current.targetY + 25);
       loonPosRef.current.targetY = nextY;
       announce(
         `Loon moved down. Horizontal position: ${Math.round(loonPosRef.current.targetX)}, vertical position: ${Math.round(nextY)}`,
         "polite"
       );
     } else if (e.key === "ArrowLeft" || e.key.toLowerCase() === "a") {
-      const nextX = Math.max(40, loonPosRef.current.targetX - 25);
+      const nextX = Math.max(LOON_MIN_X, loonPosRef.current.targetX - 25);
       loonPosRef.current.targetX = nextX;
       announce(
         `Loon moved left. Horizontal position: ${Math.round(nextX)}, vertical position: ${Math.round(loonPosRef.current.targetY)}`,
         "polite"
       );
     } else if (e.key === "ArrowRight" || e.key.toLowerCase() === "d") {
-      const nextX = Math.min(728, loonPosRef.current.targetX + 25);
+      const nextX = Math.min(LOON_MAX_X, loonPosRef.current.targetX + 25);
       loonPosRef.current.targetX = nextX;
       announce(
         `Loon moved right. Horizontal position: ${Math.round(nextX)}, vertical position: ${Math.round(loonPosRef.current.targetY)}`,
@@ -1791,7 +1874,13 @@ export const LaserLoon: React.FC = () => {
     } else if (e.key === "4") {
       selectLaserType("ice-cannon");
     } else if (e.key === "Escape") {
-      resetGame();
+      // Escape pauses; ending the run is left to the Reset button. The
+      // pause dialog's trap mounts during this same keypress and listens on
+      // window, so keep the event from reaching it and resuming at once.
+      if (gameState === "playing") {
+        e.stopPropagation();
+        setIsPaused(true);
+      }
     }
   };
 
@@ -1914,7 +2003,7 @@ export const LaserLoon: React.FC = () => {
               }`}
             >
               <IconSnowflake className="w-3.5 h-3.5" />
-              Mortar (4)
+              Cryo-Mortar (4)
             </button>
           </div>
 
@@ -1928,7 +2017,11 @@ export const LaserLoon: React.FC = () => {
               <span>Flag Museum</span>
             </button>
 
-            <FieldManualButton manualId="laser-loon" label="Manual" />
+            <FieldManualButton
+              manualId="laser-loon"
+              label="Manual"
+              onOpenChange={setIsManualOpen}
+            />
             <FullscreenButton
               isFullscreen={isFullscreen}
               onToggle={toggleFullscreen}
@@ -2166,12 +2259,18 @@ export const LaserLoon: React.FC = () => {
           <div className="arcade-shooter-pause absolute inset-0 bg-neutral-950/90 backdrop-blur-md z-40 flex flex-col items-center justify-center text-center p-4 select-none overflow-y-auto">
             <div
               ref={pauseTrapRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="laser-loon-pause-title"
               className="max-w-md w-full bg-neutral-900/95 border border-red-500/40 rounded-3xl p-6 shadow-2xl flex flex-col items-center my-auto"
             >
               <div className="w-14 h-14 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-center mb-3 text-red-400">
                 <IconPlayerPause className="w-7 h-7" />
               </div>
-              <h3 className="text-2xl font-bold text-white font-mono tracking-tight mb-1">
+              <h3
+                id="laser-loon-pause-title"
+                className="text-2xl font-bold text-white font-mono tracking-tight mb-1"
+              >
                 GAME PAUSED
               </h3>
               <p className="text-xs text-neutral-400 mb-6 font-mono">
@@ -2315,7 +2414,7 @@ export const LaserLoon: React.FC = () => {
                 onClick={() => selectLaserType("ice-cannon")}
                 aria-pressed={laserType === "ice-cannon"}
               >
-                Optics: Ice Cannon
+                Optics: Cryo-Mortar
               </button>
 
               <button
@@ -2340,7 +2439,10 @@ export const LaserLoon: React.FC = () => {
               <button
                 type="button"
                 onClick={() => {
-                  const nextY = Math.max(40, loonPosRef.current.targetY - 25);
+                  const nextY = Math.max(
+                    LOON_MIN_Y,
+                    loonPosRef.current.targetY - 25
+                  );
                   loonPosRef.current.targetY = nextY;
                   announce(
                     `Moved Loon Up to Y position ${Math.round(nextY)}`,
@@ -2353,7 +2455,10 @@ export const LaserLoon: React.FC = () => {
               <button
                 type="button"
                 onClick={() => {
-                  const nextY = Math.min(340, loonPosRef.current.targetY + 25);
+                  const nextY = Math.min(
+                    LOON_MAX_Y,
+                    loonPosRef.current.targetY + 25
+                  );
                   loonPosRef.current.targetY = nextY;
                   announce(
                     `Moved Loon Down to Y position ${Math.round(nextY)}`,
@@ -2366,7 +2471,10 @@ export const LaserLoon: React.FC = () => {
               <button
                 type="button"
                 onClick={() => {
-                  const nextX = Math.max(40, loonPosRef.current.targetX - 25);
+                  const nextX = Math.max(
+                    LOON_MIN_X,
+                    loonPosRef.current.targetX - 25
+                  );
                   loonPosRef.current.targetX = nextX;
                   announce(
                     `Moved Loon Left to X position ${Math.round(nextX)}`,
@@ -2379,7 +2487,10 @@ export const LaserLoon: React.FC = () => {
               <button
                 type="button"
                 onClick={() => {
-                  const nextX = Math.min(728, loonPosRef.current.targetX + 25);
+                  const nextX = Math.min(
+                    LOON_MAX_X,
+                    loonPosRef.current.targetX + 25
+                  );
                   loonPosRef.current.targetX = nextX;
                   announce(
                     `Moved Loon Right to X position ${Math.round(nextX)}`,
@@ -2665,7 +2776,7 @@ export const LaserLoon: React.FC = () => {
                   Max Combo
                 </span>
                 <span className="text-xl font-mono font-bold text-amber-400">
-                  {combo}x
+                  {maxCombo}x
                 </span>
               </div>
             </div>
@@ -2725,7 +2836,7 @@ export const LaserLoon: React.FC = () => {
                 }}
                 className="min-h-[44px] min-w-[44px] px-3 py-1 bg-sky-950 hover:bg-sky-900 text-sky-300 text-[10px] font-mono font-bold rounded-lg border border-sky-800/60 cursor-pointer touch-manipulation select-none active:scale-95 flex items-center justify-center"
               >
-                🧊 Ice Mortar
+                🧊 Launch Cryo-Mortar
               </button>
               <button
                 onClick={() => {
@@ -2788,7 +2899,7 @@ export const LaserLoon: React.FC = () => {
             { id: "ruby-laser", label: "Ruby", color: "red" },
             { id: "cyan-pulse", label: "Pulse", color: "cyan" },
             { id: "aurora-wave", label: "Aurora", color: "emerald" },
-            { id: "ice-cannon", label: "Mortar", color: "amber" },
+            { id: "ice-cannon", label: "Cryo-Mortar", color: "amber" },
           ]}
           energyPercent={ultimateMeter}
         />
@@ -2826,10 +2937,14 @@ export const LaserLoon: React.FC = () => {
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
           <div
             ref={museumTrapRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="laser-loon-museum-title"
             className="bg-neutral-950 border border-neutral-800 rounded-3xl max-w-2xl w-full p-6 relative shadow-2xl overflow-y-auto max-h-[90vh]"
           >
             <button
               onClick={() => setShowMuseum(false)}
+              aria-label="Close Flag Museum"
               className="absolute top-5 right-5 min-h-[44px] min-w-[44px] flex items-center justify-center p-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-white cursor-pointer touch-manipulation select-none active:scale-95"
             >
               <IconX className="w-5 h-5" />
@@ -2840,7 +2955,10 @@ export const LaserLoon: React.FC = () => {
                 <IconBook className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="text-xl font-bold font-mono text-white">
+                <h3
+                  id="laser-loon-museum-title"
+                  className="text-xl font-bold font-mono text-white"
+                >
                   Minnesota Flag Redesign Museum
                 </h3>
                 <p className="text-xs text-neutral-400 font-mono">

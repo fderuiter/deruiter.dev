@@ -6,6 +6,7 @@ import Link from "next/link";
 import { UserButton } from "@clerk/nextjs";
 import { copyToClipboard } from "@/lib/clipboard";
 import { logger } from "@/lib/logger";
+import { useAnnouncer } from "@/hooks/useAnnouncer";
 import {
   IconShieldLock,
   IconCopy,
@@ -32,6 +33,7 @@ export function AdminAccessDenied({
   const router = useRouter();
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const { announce } = useAnnouncer();
 
   const emailSnippet = `ADMIN_EMAILS="${primaryEmail}"`;
   const uidSnippet = `ADMIN_USER_IDS="${userId}"`;
@@ -40,6 +42,7 @@ export function AdminAccessDenied({
     try {
       await copyToClipboard(text);
       setCopiedKey(key);
+      announce("Configuration snippet copied to clipboard", "polite");
       setTimeout(() => setCopiedKey(null), 2500);
     } catch (err) {
       logger.error("Failed to copy configuration snippet:", err);
@@ -222,11 +225,6 @@ export function AdminAccessDenied({
               </button>
             </div>
           </div>
-        </div>
-
-        {/* Live region for screen readers */}
-        <div aria-live="polite" className="sr-only">
-          {copiedKey ? `Configuration snippet copied to clipboard` : ""}
         </div>
 
         {/* Actions Bar */}

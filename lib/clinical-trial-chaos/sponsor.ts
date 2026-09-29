@@ -1,3 +1,4 @@
+import { clamp } from "../game-utils";
 import { BIMOFinding, BIMOInspectionReport } from "./types";
 
 /**
@@ -71,6 +72,19 @@ export type SponsorEvent =
 export const SPONSOR_STARTING_MOOD = 70;
 /** Mood lost per second: the sponsor always wants more. */
 export const SPONSOR_MOOD_DECAY_PER_SECOND = 0.35;
+/**
+ * Mood lost per second in each campaign phase. Later phases lock CRFs faster,
+ * so the sponsor's expectations climb with them and satisfaction keeps
+ * mattering instead of pinning at 100% (#1327).
+ */
+export const SPONSOR_MOOD_DECAY_BY_PHASE: Readonly<Record<1 | 2 | 3, number>> =
+  {
+    1: SPONSOR_MOOD_DECAY_PER_SECOND,
+    2: 0.5,
+    3: 0.8,
+  };
+/** Satisfaction above which each submission earns less goodwill. */
+export const SPONSOR_BOOST_TAPER_START = 60;
 export const SPONSOR_MAX_FOLLOW_UPS = 2;
 export const SPONSOR_FOLLOW_UP_MOOD_PENALTY = 6;
 export const SPONSOR_DROPPED_MOOD_PENALTY = 12;
@@ -536,14 +550,15 @@ function clampMood(mood: number): number {
 export function tickSponsor(
   state: SponsorState,
   deltaSeconds: number,
-  rand: () => number = Math.random
+  rand: () => number = Math.random,
+  decayPerSecond: number = SPONSOR_MOOD_DECAY_PER_SECOND
 ): { state: SponsorState; events: SponsorEvent[] } {
   const events: SponsorEvent[] = [];
   if (state.mood <= 0) return { state, events };
 
   let next: SponsorState = {
     ...state,
-    mood: clampMood(state.mood - SPONSOR_MOOD_DECAY_PER_SECOND * deltaSeconds),
+    mood: clampMood(state.mood - decayPerSecond * deltaSeconds),
   };
 
   if (next.activeRequest) {
@@ -645,14 +660,32 @@ export function resolveSponsorChoice(
 }
 
 /**
- * Sponsors love throughput: a signed submission nudges satisfaction up.
+ * Mood decay per second for a phase; endless mode and unknown phases use the
+ * phase 1 rate.
+ */
+export function getSponsorMoodDecayPerSecond(phase: number): number {
+  return phase === 2 || phase === 3
+    ? SPONSOR_MOOD_DECAY_BY_PHASE[phase]
+    : SPONSOR_MOOD_DECAY_PER_SECOND;
+}
+
+/**
+ * Sponsors love throughput: a signed submission nudges satisfaction up. Above
+ * `SPONSOR_BOOST_TAPER_START` the nudge shrinks, down to a quarter at 100%, so
+ * a fast player settles in the 70s rather than parking the meter at 100%.
  */
 export function applySponsorSubmissionBoost(
   state: SponsorState,
   allClean: boolean
 ): SponsorState {
   if (state.mood <= 0) return state;
-  return { ...state, mood: clampMood(state.mood + (allClean ? 5 : 3)) };
+  const base = allClean ? 5 : 3;
+  const taper = clamp(
+    (100 - state.mood) / (100 - SPONSOR_BOOST_TAPER_START),
+    0.25,
+    1
+  );
+  return { ...state, mood: clampMood(state.mood + base * taper) };
 }
 
 const SKELETON_SCORE_PENALTY: Record<BIMOFinding["severity"], number> = {

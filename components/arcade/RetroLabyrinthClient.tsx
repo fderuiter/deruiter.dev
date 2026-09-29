@@ -4,6 +4,7 @@ import React from "react";
 import dynamic from "next/dynamic";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { NextPrevNav } from "@/components/ui/NextPrevNav";
+import { getArcadeNeighbors } from "@/lib/arcade";
 import { PlayCabinet } from "@/components/arcade/PlayCabinet";
 import { DesktopOnlyGate } from "@/components/arcade/DesktopOnlyGate";
 import Link from "next/link";
@@ -30,7 +31,7 @@ const DynamicRetroLabyrinth = dynamic(RetroLabyrinthLoader, {
 
 export const RetroLabyrinthClient: React.FC = () => {
   return (
-    <div className="min-h-screen bg-black text-white pt-28 pb-24 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen text-white pb-24 px-4 sm:px-6 lg:px-8">
       <div className="max-w-5xl mx-auto">
         {/* Navigation Breadcrumb */}
         <div className="flex items-center justify-between gap-4 mb-6 border-b border-zinc-800/80 pb-4 flex-wrap">
@@ -92,6 +93,8 @@ export const RetroLabyrinthClient: React.FC = () => {
                 { key: "1-3", action: "Fire Class Tools" },
                 { key: "Space", action: "EMP Burst" },
                 { key: "C", action: "CRT Scanlines" },
+                { key: "P", action: "Pause" },
+                { key: "Enter / R", action: "Continue / Retry" },
               ]}
               importComponent={RetroLabyrinthLoader}
             >
@@ -110,10 +113,9 @@ export const RetroLabyrinthClient: React.FC = () => {
               <span>TSP Shifting Walls</span>
             </div>
             <p className="text-zinc-400 text-[11px] leading-relaxed">
-              The first room, Tier 03 :: Airgap Enclave, recalculates the
-              Traveling Salesperson tour as you move. Time your steps through
-              the purple airgap walls, which shift every step, to reach the
-              EXIT.
+              Room 01, the Airgap Enclave, recalculates the Traveling
+              Salesperson tour as you move. Time your steps through the purple
+              airgap walls, which shift every step, to reach the EXIT.
             </p>
           </div>
 
@@ -137,7 +139,7 @@ export const RetroLabyrinthClient: React.FC = () => {
               <span>3D Wireframe Boss</span>
             </div>
             <p className="text-zinc-400 text-[11px] leading-relaxed">
-              FaceForge in Room 2 projects real-time rotating 3D wireframe
+              FaceForge in Room 02 projects real-time rotating 3D wireframe
               polyhedra. Evade projecting face-normals and utilize EMP bursts to
               stun rogue drones.
             </p>
@@ -146,18 +148,7 @@ export const RetroLabyrinthClient: React.FC = () => {
 
         {/* Sequential Next / Previous Navigation */}
         <NextPrevNav
-          prev={{
-            title: "Clinical Trial Chaos",
-            href: "/arcade/clinical-chaos",
-            label: "Previous Game",
-            tag: "Compliance Arcade",
-          }}
-          next={{
-            title: "Working With Duck",
-            href: "/arcade/working-with-duck",
-            label: "Next Game",
-            tag: "Pet Simulation Arcade",
-          }}
+          {...getArcadeNeighbors("/arcade/retro-labyrinth")}
           backToHub={{
             title: "All Arcade Games",
             href: "/arcade",

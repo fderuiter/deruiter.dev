@@ -104,7 +104,10 @@ async function runBuildPipeline() {
   process.env.SKIP_DB_HEALTH_CHECK = "true";
 
   // Helper function to run a step and exit if it fails
-  function runStep(command, args, env = process.env) {
+  function runStep(command, rawArgs, env = process.env) {
+    // Only ever execute the locked, locally installed binary; bare `npx` may
+    // otherwise resolve and run a different version from the npm registry.
+    const args = command === "npx" ? ["--no-install", ...rawArgs] : rawArgs;
     console.log(`Executing: ${command} ${args.join(" ")}`);
     const result = spawnSync(command, args, {
       stdio: "inherit",

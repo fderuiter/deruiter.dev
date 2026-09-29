@@ -4,6 +4,7 @@ import React from "react";
 import dynamic from "next/dynamic";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { NextPrevNav } from "@/components/ui/NextPrevNav";
+import { getArcadeNeighbors } from "@/lib/arcade";
 import { PlayCabinet } from "@/components/arcade/PlayCabinet";
 import { DesktopOnlyGate } from "@/components/arcade/DesktopOnlyGate";
 import Link from "next/link";
@@ -32,7 +33,7 @@ const DynamicQuasiPerfectPuzzler = dynamic(QuasiPerfectPuzzlerLoader, {
 
 export const QuasiPuzzlerClient: React.FC = () => {
   return (
-    <div className="min-h-screen bg-black text-white pt-28 pb-24 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen text-white pb-24 px-4 sm:px-6 lg:px-8">
       <div className="max-w-5xl mx-auto">
         {/* Navigation Breadcrumb */}
         <div className="flex items-center justify-between gap-4 mb-6 border-b border-zinc-800/80 pb-4 flex-wrap">
@@ -124,9 +125,11 @@ export const QuasiPuzzlerClient: React.FC = () => {
               <span>Lean Server RAM Limits</span>
             </div>
             <p className="text-zinc-400 text-[11px] leading-relaxed">
-              Each tactic consumes language server memory. If RAM hits 0 GB, the
-              Lean runtime crashes (OOM). Close the theorem before running out
-              of memory.
+              Each tactic, including a failed one, consumes simulated memory.
+              Story Mode starts with twice the Hacker Mode budget. In either
+              mode, if RAM hits 0 GB the simulated tactic session stops and the
+              level must be reset. Close the theorem before running out of
+              memory.
             </p>
           </div>
 
@@ -145,18 +148,7 @@ export const QuasiPuzzlerClient: React.FC = () => {
 
         {/* Sequential Next / Previous Navigation */}
         <NextPrevNav
-          prev={{
-            title: "Laser Loon: Quest for the State Flag",
-            href: "/arcade/laser-loon",
-            label: "Previous Game",
-            tag: "Civic Arcade Campaign",
-          }}
-          next={{
-            title: "Monkey C Mayhem: Garmin Schvitz App",
-            href: "/arcade/garmin-watch",
-            label: "Next Game",
-            tag: "Embedded Simulator",
-          }}
+          {...getArcadeNeighbors("/arcade/quasi-puzzler")}
           backToHub={{
             title: "All Arcade Games",
             href: "/arcade",

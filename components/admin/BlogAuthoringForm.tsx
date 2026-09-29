@@ -15,6 +15,7 @@ import {
   IconAlertCircle,
 } from "@tabler/icons-react";
 import Link from "next/link";
+import { apiClient, type ApiClientResponse } from "@/lib/api-client";
 
 interface BlogPostFormData {
   id?: string;
@@ -26,6 +27,17 @@ interface BlogPostFormData {
   tags: string;
   hero_image_url?: string | null;
   published?: boolean;
+}
+
+interface BlogMutationResponse {
+  data?: { id?: string };
+}
+
+/** Throws the server's envelope message, or `fallback` when it sent none. */
+function throwIfFailed<T>(res: ApiClientResponse<T>, fallback: string): void {
+  if (!res.ok) {
+    throw new Error(res.error || res.details[0]?.message || fallback);
+  }
 }
 
 interface BlogAuthoringFormProps {
@@ -111,38 +123,21 @@ export function BlogAuthoringForm({
     try {
       if (isNew) {
         // First create as draft
-        const res = await fetch("/api/admin/blog", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
+        const res = await apiClient.post<BlogMutationResponse>(
+          "/api/admin/blog",
+          payload
+        );
+        throwIfFailed(res, "Failed to create blog post");
 
-        const data = await res.json();
-        if (!res.ok) {
-          throw new Error(
-            data.error ||
-              data.details?.[0]?.message ||
-              "Failed to create blog post"
-          );
-        }
-
-        const createdId = data.data?.id;
+        const createdId = res.data?.data?.id;
 
         if (publishTargetState && createdId) {
           // Explicitly publish after draft creation
-          const pubRes = await fetch(`/api/admin/blog/${createdId}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ published: true }),
-          });
-          const pubData = await pubRes.json();
-          if (!pubRes.ok) {
-            throw new Error(
-              pubData.error ||
-                pubData.details?.[0]?.message ||
-                "Created draft, but failed to publish"
-            );
-          }
+          const pubRes = await apiClient.patch<BlogMutationResponse>(
+            `/api/admin/blog/${createdId}`,
+            { published: true }
+          );
+          throwIfFailed(pubRes, "Created draft, but failed to publish");
         }
 
         setSuccessMessage(
@@ -158,20 +153,11 @@ export function BlogAuthoringForm({
         // Edit existing post/draft
         payload.published = publishTargetState;
 
-        const res = await fetch(`/api/admin/blog/${initialData?.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-
-        const data = await res.json();
-        if (!res.ok) {
-          throw new Error(
-            data.error ||
-              data.details?.[0]?.message ||
-              "Failed to update blog post"
-          );
-        }
+        const res = await apiClient.patch<BlogMutationResponse>(
+          `/api/admin/blog/${initialData?.id}`,
+          payload
+        );
+        throwIfFailed(res, "Failed to update blog post");
 
         setPublished(publishTargetState);
         setSuccessMessage(
@@ -203,12 +189,9 @@ export function BlogAuthoringForm({
     setError(null);
 
     try {
-      const res = await fetch(`/api/admin/blog/${initialData.id}`, {
-        method: "DELETE",
-      });
-      const data = await res.json();
+      const res = await apiClient.delete(`/api/admin/blog/${initialData.id}`);
       if (!res.ok) {
-        throw new Error(data.error || "Failed to delete blog post");
+        throw new Error(res.error || "Failed to delete blog post");
       }
       router.push("/admin/blog");
       router.refresh();

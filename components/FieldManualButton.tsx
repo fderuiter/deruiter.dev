@@ -10,8 +10,12 @@ import React, {
 } from "react";
 import { IconHelp, IconBook2 } from "@tabler/icons-react";
 import { GAME_MANUALS } from "@/lib/game-manuals";
-import { FieldManualModal } from "@/components/FieldManualModal";
+import {
+  FieldManualModal,
+  type FieldManualAction,
+} from "@/components/FieldManualModal";
 import { useAudio } from "@/components/providers/AudioProvider";
+import { isEditableElement } from "@/hooks/useHotkeys";
 
 interface FieldManualButtonProps {
   manualId: string;
@@ -20,6 +24,8 @@ interface FieldManualButtonProps {
   label?: string;
   onOpenChange?: (isOpen: boolean) => void;
   isHotkeyOwner?: boolean;
+  /** A game action offered on the manual's first tab. */
+  action?: FieldManualAction;
 }
 
 interface ManualInstance {
@@ -34,22 +40,6 @@ interface ManualInstance {
 }
 
 const registeredInstances: ManualInstance[] = [];
-
-function isEditableContext(target: HTMLElement | null): boolean {
-  if (!target) return false;
-  if (
-    target.tagName === "INPUT" ||
-    target.tagName === "TEXTAREA" ||
-    target.isContentEditable ||
-    target.getAttribute?.("contenteditable") === "true" ||
-    target.getAttribute?.("contenteditable") === "" ||
-    Boolean(target.closest?.('[contenteditable="true"]')) ||
-    Boolean(target.closest?.('[contenteditable=""]'))
-  ) {
-    return true;
-  }
-  return false;
-}
 
 function isElementVisible(el: HTMLElement | null): boolean {
   if (!el) return false;
@@ -87,7 +77,7 @@ function selectCandidate(pool: ManualInstance[]): ManualInstance | undefined {
 
 function handleGlobalCoordinatorKeyDown(e: KeyboardEvent) {
   const target = e.target as HTMLElement | null;
-  if (isEditableContext(target)) {
+  if (isEditableElement(target)) {
     return;
   }
 
@@ -103,6 +93,12 @@ function handleGlobalCoordinatorKeyDown(e: KeyboardEvent) {
   if (openInstance) {
     e.preventDefault();
     openInstance.close();
+    return;
+  }
+
+  // A game that already handled the key owns it: Quasi-Perfect's H toggles
+  // hints, so it must not also open the manual (#1323). ? still opens it.
+  if (e.defaultPrevented) {
     return;
   }
 
@@ -167,6 +163,7 @@ export function FieldManualButton({
   label = "Field Manual",
   onOpenChange,
   isHotkeyOwner,
+  action,
 }: FieldManualButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const isOpenRef = useRef(isOpen);
@@ -279,6 +276,7 @@ export function FieldManualButton({
           isOpen={isOpen}
           onClose={handleClose}
           manual={manual}
+          action={action}
         />
       </>
     );
@@ -306,6 +304,7 @@ export function FieldManualButton({
           isOpen={isOpen}
           onClose={handleClose}
           manual={manual}
+          action={action}
         />
       </>
     );
@@ -342,7 +341,12 @@ export function FieldManualButton({
         )}
       </div>
 
-      <FieldManualModal isOpen={isOpen} onClose={handleClose} manual={manual} />
+      <FieldManualModal
+        isOpen={isOpen}
+        onClose={handleClose}
+        manual={manual}
+        action={action}
+      />
     </>
   );
 }

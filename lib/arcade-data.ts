@@ -153,6 +153,30 @@ export const ARCADE_GAMES_METADATA: ArcadeGameMetadata[] = [
     route: "/arcade/trial-and-error",
   },
   {
+    id: "study-director",
+    slug: "study-director",
+    title: "Study Director: Everything Is Fine",
+    subtitle: "Clinical Study Management Simulator",
+    genre: "Management Simulation",
+    description:
+      "Shepherd one study from kickoff to closeout with eight attention points a day. Delegate, audit the sites behind the green dashboard, and defend your decisions when the FDA arrives.",
+    mechanics: [
+      "Daily Attention Budget",
+      "Documentation Debt",
+      "Site Audits",
+      "FDA Inspection Replay",
+    ],
+    techStack: [
+      "Seeded Deterministic Simulation",
+      "Causal Risk Model",
+      "Decision Log Replay",
+    ],
+    accentColor: "text-amber-400",
+    borderHover: "hover:border-amber-500/50",
+    badgeBg: "bg-amber-500/10 text-amber-300 border-amber-500/30",
+    route: "/arcade/study-director",
+  },
+  {
     id: "retro-labyrinth",
     slug: "retro-labyrinth",
     title: "Retro Labyrinth: Graveyard Roguelike",
@@ -174,7 +198,7 @@ export const ARCADE_GAMES_METADATA: ArcadeGameMetadata[] = [
     borderHover:
       "hover:border-rose-500/50 hover:shadow-[0_0_30px_rgba(244,63,94,0.15)]",
     badgeBg: "bg-rose-500/10 text-rose-300 border-rose-500/30",
-    storageKey: "retro_labyrinth_high_score",
+    storageKey: "retro_labyrinth_highscore",
     route: "/arcade/retro-labyrinth",
   },
   {

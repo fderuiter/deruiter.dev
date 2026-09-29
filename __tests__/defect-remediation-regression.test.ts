@@ -28,6 +28,7 @@ import {
   tokenizeWithSpans,
 } from "@/lib/crf/ast-evaluator";
 import { CRFField, CRFForm, StudyProtocol } from "@/lib/crf/types";
+import { mergeLevelScore, type LevelScore } from "@/lib/quasi-perfect";
 import { computeFormHealthMetrics } from "@/lib/crf/form-health";
 import {
   LOON_MAX_HITS,
@@ -42,6 +43,8 @@ import {
   triggerGarbageCollection,
   allocateVariable,
   wipeScreenFog,
+  startGame,
+  type GameEngineState,
 } from "@/lib/garmin-engine";
 import {
   clampBounds,
@@ -49,8 +52,10 @@ import {
   dragDuckTo,
   stepDuckGame,
   performTrick,
+  activeCodeBurst,
   advanceToNextLevel,
   shouldSyncDuckHudState,
+  type WorkingWithDuckState,
 } from "@/lib/working-with-duck-engine";
 import { sanitizeError, sanitizeString } from "@/lib/error-sanitization";
 import { evaluateCanaryRollout } from "@/scripts/canary-analyzer";
@@ -328,6 +333,20 @@ describe("Defect Remediation & Regression Verification Suite (Invariant #11)", (
       expect(Number.isFinite(stepNeg.distanceMeters)).toBe(true);
     });
 
+    it("drains the battery with the backlight off instead of rounding each frame's drain away (#1308)", () => {
+      let state: GameEngineState = {
+        ...createInitialState("fenix"),
+        gameState: "playing",
+        isLightOn: false,
+      };
+      for (let frame = 0; frame < 600; frame++) {
+        state = { ...updateGameSimulation(state, 1000 / 60), obstacles: [] };
+      }
+      // 10 s at 0.1%/s
+      expect(state.battery).toBeLessThan(99.5);
+      expect(state.battery).toBeGreaterThan(98.5);
+    });
+
     it("maintains non-negative RAM bounds and consistent heap allocations under memory pressure", () => {
       const initial = createInitialState("fenix");
       const playing = { ...initial, gameState: "playing" as const };
@@ -335,9 +354,10 @@ describe("Defect Remediation & Regression Verification Suite (Invariant #11)", (
       const { state: afterJettison } = jettisonOldestVariable(playing);
       expect(afterJettison.allocatedRamKb).toBeGreaterThanOrEqual(0.2);
 
-      const { state: afterGc, freedKb } = triggerGarbageCollection(playing);
+      const loaded = allocateVariable(playing, "array", "tmp").state;
+      const { state: afterGc, freedKb } = triggerGarbageCollection(loaded);
       expect(afterGc.isGcActive).toBe(true);
-      expect(freedKb).toBeGreaterThanOrEqual(0);
+      expect(freedKb).toBeGreaterThan(0);
       expect(afterGc.allocatedRamKb).toBeGreaterThanOrEqual(0.4);
 
       const { state: allocState } = allocateVariable(
@@ -346,6 +366,65 @@ describe("Defect Remediation & Regression Verification Suite (Invariant #11)", (
         "testVar"
       );
       expect(allocState.allocatedRamKb).toBeGreaterThan(playing.allocatedRamKb);
+    });
+  });
+
+  describe("Garmin point farming (#1213)", () => {
+    const fresh = (): GameEngineState => ({
+      ...createInitialState("fenix"),
+      gameState: "playing" as const,
+    });
+
+    it("never jettisons required app state and awards nothing for a no-op", () => {
+      const start = fresh();
+      const res = jettisonOldestVariable(start);
+      expect(res.popped).toBeUndefined();
+      expect(res.state.variables).toEqual(start.variables);
+      expect(res.state.score).toBe(0);
+      expect(res.reason).toBeTruthy();
+      expect(res.state.variables.map((v) => v.name)).toEqual([
+        "appCtx",
+        "displayGfx",
+      ]);
+    });
+
+    it("gives no score, freeze, or memory change for empty-heap GC, even repeated", () => {
+      let state = fresh();
+      for (let i = 0; i < 5; i++) {
+        const res = triggerGarbageCollection(state);
+        expect(res.freedKb).toBe(0);
+        expect(res.state.isGcActive).toBe(false);
+        expect(res.state.gcTimerMs).toBe(0);
+        expect(res.reason).toBeTruthy();
+        state = res.state;
+      }
+      expect(state.score).toBe(0);
+      expect(state.variables).toHaveLength(2);
+    });
+
+    it("rewards jettison and GC only when garbage was actually reclaimed", () => {
+      const loaded = allocateVariable(fresh(), "string", "tmp").state;
+      const j = jettisonOldestVariable(loaded);
+      expect(j.popped?.name).toBe("tmp");
+      expect(j.state.score).toBeGreaterThan(0);
+
+      const g = triggerGarbageCollection(loaded);
+      expect(g.freedKb).toBeGreaterThan(0);
+      expect(g.state.isGcActive).toBe(true);
+      expect(g.state.score).toBeGreaterThan(0);
+      expect(g.state.variables.map((v) => v.name)).toEqual([
+        "appCtx",
+        "displayGfx",
+      ]);
+
+      // A second GC once the heap is clean is a no-op again
+      const again = triggerGarbageCollection({
+        ...g.state,
+        isGcActive: false,
+        gcTimerMs: 0,
+      });
+      expect(again.freedKb).toBe(0);
+      expect(again.state.score).toBe(g.state.score);
     });
   });
 
@@ -409,6 +488,94 @@ describe("Defect Remediation & Regression Verification Suite (Invariant #11)", (
       expect(endless.mode).toBe("endless");
       expect(endless.status).toBe("running");
       expect(stepDuckGame(endless).ticks).toBe(1);
+    });
+
+    // #1307: holding a trick key finished Sprint 1 in about 12 s for 45,000
+    // points, and mashing Space finished it in about 7 s.
+    it("trick spam neither finishes a sprint nor farms points (#1307)", () => {
+      let state: WorkingWithDuckState = {
+        ...createInitialDuckGameState(1, "campaign"),
+        status: "running",
+      };
+      for (let tick = 0; tick < 60 * 30; tick++) {
+        if (tick % 15 === 0) state = performTrick(state, "HIGH_FIVE");
+        state = stepDuckGame(state);
+      }
+      expect(state.status).toBe("running");
+      expect(state.workProgress).toBeLessThan(state.targetWorkProgress / 2);
+      expect(state.totalScore).toBeLessThan(2000);
+    });
+
+    it("ignores a second trick until Duck finishes the first, and tricks that don't fit an emergency (#1307)", () => {
+      const running: WorkingWithDuckState = {
+        ...createInitialDuckGameState(1, "campaign"),
+        status: "running",
+        excitement: 90,
+      };
+      const tricked = performTrick(running, "SIT");
+      expect(performTrick(tricked, "SPIN")).toBe(tricked);
+
+      // A trick that doesn't fit leaves Duck alone and shows a hint instead.
+      const expectHintOnly = (
+        state: typeof running,
+        trick: Parameters<typeof performTrick>[1]
+      ) => {
+        const next = performTrick(state, trick);
+        expect(next.duck).toBe(state.duck);
+        expect(next.totalScore).toBe(state.totalScore);
+        expect(next.comboStreak).toBe(state.comboStreak);
+        expect(next.floatingAlerts.length).toBe(
+          state.floatingAlerts.length + 1
+        );
+        // Pressing again doesn't stack a second copy of the hint.
+        expect(performTrick(next, trick)).toBe(next);
+      };
+      expectHintOnly(
+        {
+          ...running,
+          duck: { ...running.duck, state: "SNIFFING_POTTY" as const },
+        },
+        "SIT"
+      );
+      const chewing = {
+        ...running,
+        duck: { ...running.duck, state: "SNEAKY_CHEW" as const },
+      };
+      expectHintOnly(chewing, "SPIN");
+      expect(performTrick(chewing, "DROP_IT").duck.state).toBe(
+        "PERFORMING_TRICK"
+      );
+      expectHintOnly(running, "DROP_IT");
+    });
+
+    it("caps a trick's combo score bonus at 3x (#1307)", () => {
+      const state = {
+        ...createInitialDuckGameState(1, "campaign"),
+        status: "running" as const,
+        excitement: 90,
+        comboStreak: 20,
+      };
+      const next = performTrick(state, "HIGH_FIVE");
+      expect(next.totalScore - state.totalScore).toBe(45 * 3);
+    });
+
+    it("rate-limits code bursts and blocks them during an emergency (#1307)", () => {
+      let state: WorkingWithDuckState = {
+        ...createInitialDuckGameState(1, "campaign"),
+        status: "running",
+      };
+      for (let tick = 0; tick < 60; tick++) {
+        state = activeCodeBurst(state);
+        state = { ...state, ticks: state.ticks + 1 };
+      }
+      expect(state.activeCodeBursts).toBeLessThanOrEqual(6);
+
+      const chewing = {
+        ...state,
+        ticks: state.ticks + 60,
+        duck: { ...state.duck, state: "SNEAKY_CHEW" as const },
+      };
+      expect(activeCodeBurst(chewing)).toBe(chewing);
     });
 
     it("shouldSyncDuckHudState always flushes terminal win/fail frames regardless of tick remainder (#598 D01)", () => {
@@ -1448,12 +1615,26 @@ describe("Garmin setup options reach the engine (#1209)", () => {
         "fenix",
         resolveRunTuning("normal", loadout)
       );
-    expect(triggerGarbageCollection(run("standard-ram")).state.gcTimerMs).toBe(
-      500
-    );
-    expect(triggerGarbageCollection(run("low-power")).state.gcTimerMs).toBe(
-      350
-    );
+    // GC is a no-op on an empty heap (#1213), so seed collectible garbage.
+    const withGarbage = (state: ReturnType<typeof run>) => ({
+      ...state,
+      variables: [
+        ...state.variables,
+        {
+          id: 9001,
+          name: "leakedBuffer",
+          type: "array" as const,
+          sizeKb: 8,
+          allocatedAt: 0,
+        },
+      ],
+    });
+    expect(
+      triggerGarbageCollection(withGarbage(run("standard-ram"))).state.gcTimerMs
+    ).toBe(500);
+    expect(
+      triggerGarbageCollection(withGarbage(run("low-power"))).state.gcTimerMs
+    ).toBe(350);
     const drained = (loadout: string) =>
       100 -
       updateGameSimulation({ ...run(loadout), lastAllocTime: Date.now() }, 1000)
@@ -1489,5 +1670,196 @@ describe("Garmin setup options reach the engine (#1209)", () => {
     } finally {
       vi.restoreAllMocks();
     }
+  });
+});
+
+describe("Garmin NV flash clear survives a restart (#1210)", () => {
+  it("does not re-seed the default flash entry after a clear", async () => {
+    const store: Record<string, string> = {};
+    Object.defineProperty(window, "localStorage", {
+      configurable: true,
+      value: {
+        getItem: (k: string) => store[k] ?? null,
+        setItem: (k: string, v: string) => {
+          store[k] = String(v);
+        },
+        removeItem: (k: string) => {
+          delete store[k];
+        },
+      },
+    });
+    const { createInitialState, clearFlashStorage } =
+      await import("@/lib/garmin-engine");
+    // First boot seeds sys_log.dat.
+    const first = createInitialState("fenix", 0);
+    expect(first.allocatedFlashKb).toBe(4);
+    const cleared = clearFlashStorage(first);
+    expect(cleared.flashVariables).toEqual([]);
+    expect(cleared.flashFiles).toEqual([]);
+    // A fresh initialization must stay empty.
+    const reboot = createInitialState("fenix", 0);
+    expect(reboot.allocatedFlashKb).toBe(0);
+    expect(reboot.flashVariables).toEqual([]);
+    expect(reboot.flashFiles).toEqual([]);
+  });
+});
+
+describe("Quasi-Perfect progress: best score survives weaker replays (#1230)", () => {
+  const mk = (over: Partial<LevelScore>): LevelScore => ({
+    levelId: 1,
+    completed: true,
+    usedSorry: false,
+    remainingRam: 20,
+    stars: 2,
+    morality: 100,
+    timestamp: 1,
+    ...over,
+  });
+
+  it("never lets a sorry replay erase an honest proof", () => {
+    const honest = mk({});
+    const sorry = mk({
+      usedSorry: true,
+      stars: 0,
+      morality: -100,
+      timestamp: 2,
+    });
+    expect(mergeLevelScore(honest, sorry)).toBe(honest);
+  });
+
+  it("lets an honest proof replace a sorry admission", () => {
+    const sorry = mk({ usedSorry: true, stars: 0, morality: -100 });
+    const honest = mk({ timestamp: 2 });
+    expect(mergeLevelScore(sorry, honest)).toBe(honest);
+  });
+
+  it("keeps higher stars, then more RAM, and ignores equal replays", () => {
+    const base = mk({});
+    expect(mergeLevelScore(base, mk({ stars: 1 }))).toBe(base);
+    const better = mk({ stars: 3 });
+    expect(mergeLevelScore(base, better)).toBe(better);
+    const moreRam = mk({ remainingRam: 25 });
+    expect(mergeLevelScore(base, moreRam)).toBe(moreRam);
+    expect(mergeLevelScore(base, mk({ timestamp: 9 }))).toBe(base);
+  });
+
+  it("accepts the first score", () => {
+    const first = mk({});
+    expect(mergeLevelScore(undefined, first)).toBe(first);
+  });
+});
+
+describe("Garmin progression is refresh-rate independent (#1212)", () => {
+  const simulate = (hz: number, seconds: number, isLightOn = false) => {
+    const step = 1000 / hz;
+    let state: GameEngineState = {
+      ...startGame(createInitialState("fenix", 0), "fenix"),
+      isLightOn,
+    };
+    for (let i = 0; i < Math.round(seconds * hz); i++) {
+      // Keep the run alive: no spawns, no random allocation crashes.
+      state = updateGameSimulation(
+        {
+          ...state,
+          obstacles: [],
+          lastAllocTime: Date.now(),
+          lastObstacleTime: Date.now() + 60_000,
+        },
+        step
+      );
+    }
+    return state;
+  };
+
+  it("gives equal score and distance after equal time at 30, 60 and 120 Hz", () => {
+    const runs = [30, 60, 120].map((hz) => simulate(hz, 10));
+    for (const run of runs) {
+      expect(run.score).toBeGreaterThanOrEqual(598);
+      expect(run.score).toBeLessThanOrEqual(602);
+      expect(run.distanceMeters).toBeCloseTo(150, 0);
+    }
+  });
+
+  it("drains the battery at 0.1 percent a second with the light off at any rate", () => {
+    for (const hz of [30, 60, 120]) {
+      expect(100 - simulate(hz, 10).battery).toBeCloseTo(1, 1);
+    }
+  });
+
+  it("drains 0.4 percent a second with the backlight on at any rate", () => {
+    for (const hz of [30, 60, 120]) {
+      expect(100 - simulate(hz, 10, true).battery).toBeCloseTo(4, 1);
+    }
+  });
+
+  it("reaches power loss through normal ticks, not only the debug drain", () => {
+    let state: GameEngineState = {
+      ...startGame(createInitialState("fenix", 0), "fenix"),
+      isLightOn: true,
+      battery: 0.5,
+    };
+    for (let i = 0; i < 600 && state.gameState === "playing"; i++) {
+      state = updateGameSimulation(
+        {
+          ...state,
+          obstacles: [],
+          lastAllocTime: Date.now(),
+          lastObstacleTime: Date.now() + 60_000,
+        },
+        1000 / 60
+      );
+    }
+    expect(state.gameState).toBe("shutdown");
+    expect(state.crashReport?.errorType).toBe("Power Loss");
+  });
+
+  it("keeps sub-tick thermal decay from stalling at high refresh rates", () => {
+    let state: GameEngineState = {
+      ...startGame(createInitialState("fenix", 0), "fenix"),
+      thermalStress: 0.5,
+      fogLevel: 0.5,
+    };
+    for (let i = 0; i < 120 * 4; i++) {
+      state = updateGameSimulation(
+        {
+          ...state,
+          obstacles: [],
+          lastAllocTime: Date.now(),
+          lastObstacleTime: Date.now() + 60_000,
+        },
+        1000 / 120
+      );
+    }
+    // 4 s at 1/14900 per ms is about 0.27 of decay.
+    expect(state.thermalStress).toBeLessThan(0.3);
+  });
+});
+
+describe("Garmin obstacles crash with their own type (#1318)", () => {
+  it("maps NULL to Null Pointer and STK to Stack Overflow", async () => {
+    const { createInitialState, startGame, updateGameSimulation, GROUND_Y } =
+      await import("@/lib/garmin-engine");
+    const crash = (type: "null_pointer" | "stack_overflow", label: string) =>
+      updateGameSimulation(
+        {
+          ...startGame(createInitialState("fenix", 0), "fenix"),
+          lastObstacleTime: Date.now() + 60_000,
+          obstacles: [
+            {
+              id: 1,
+              x: 52,
+              y: GROUND_Y - 20,
+              width: 16,
+              height: 20,
+              type,
+              label,
+              speed: 2.2,
+            },
+          ],
+        },
+        16.6
+      ).crashReport?.errorType;
+    expect(crash("null_pointer", "NULL")).toBe("Null Pointer");
+    expect(crash("stack_overflow", "STK")).toBe("Stack Overflow");
   });
 });

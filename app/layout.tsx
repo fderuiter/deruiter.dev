@@ -12,6 +12,7 @@ import {
 } from "@/lib/seo";
 import { A11yProvider } from "@/components/providers/A11yProvider";
 import { AudioProvider } from "@/components/providers/AudioProvider";
+import { ToastProvider } from "@/components/providers/ToastProvider";
 import { SearchProvider } from "@/components/providers/SearchProvider";
 import { TerminologyProvider } from "@/components/providers/TerminologyProvider";
 import { PersonaProvider } from "@/components/providers/PersonaProvider";
@@ -168,23 +169,25 @@ export default function RootLayout({
           <TerminologyProvider>
             <SearchProvider>
               <A11yProvider>
-                <AudioProvider>
-                  <Navbar />
-                  <main
-                    id="main-content"
-                    tabIndex={-1}
-                    className="flex-grow flex flex-col focus:outline-none"
-                  >
-                    {children}
-                  </main>
-                  <Footer />
-                  <RetroChaosOverlayWrapper />
-                  <Analytics />
-                  <SpeedInsights />
-                  <SearchWrapper />
-                  <GlobalPhotoGallery />
-                  <SerwistRegister />
-                </AudioProvider>
+                <ToastProvider>
+                  <AudioProvider>
+                    <Navbar />
+                    <main
+                      id="main-content"
+                      tabIndex={-1}
+                      className="flex-grow flex flex-col focus:outline-none"
+                    >
+                      {children}
+                    </main>
+                    <Footer />
+                    <RetroChaosOverlayWrapper />
+                    <Analytics />
+                    <SpeedInsights />
+                    <SearchWrapper />
+                    <GlobalPhotoGallery />
+                    <SerwistRegister />
+                  </AudioProvider>
+                </ToastProvider>
               </A11yProvider>
             </SearchProvider>
           </TerminologyProvider>

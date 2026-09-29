@@ -107,6 +107,7 @@ describe("NeuroRecon dialogs: accessibility (#1223)", () => {
           message="Surface repaired."
           eulerCharacteristic={2}
           diceScore={0.95}
+          reward={500}
           onStay={onStay}
           onAdvance={() => {}}
           onSchedule={() => {}}

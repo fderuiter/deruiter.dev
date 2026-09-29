@@ -2,6 +2,7 @@
 
 import React from "react";
 import { ToolMode } from "@/lib/neuro/types";
+import { NEURO_RUN_RECON_KEY, NEURO_TOOL_HOTKEYS } from "@/lib/neuro";
 import {
   IconPointer,
   IconMapPin,
@@ -52,25 +53,25 @@ export const NeuroToolbar: React.FC<NeuroToolbarProps> = ({
     {
       id: "inspect",
       label: "Inspect / Navigate",
-      key: "1 / V",
+      key: `${NEURO_TOOL_HOTKEYS.inspect.digit} / ${NEURO_TOOL_HOTKEYS.inspect.letter}`,
       icon: <IconPointer className="w-4 h-4" />,
     },
     {
       id: "control_point",
       label: "Control Point (110 Intensity)",
-      key: "2 / C",
+      key: `${NEURO_TOOL_HOTKEYS.control_point.digit} / ${NEURO_TOOL_HOTKEYS.control_point.letter}`,
       icon: <IconMapPin className="w-4 h-4 text-brand-cyan" />,
     },
     {
       id: "paint",
       label: "Voxel Paint Brush",
-      key: "3 / B",
+      key: `${NEURO_TOOL_HOTKEYS.paint.digit} / ${NEURO_TOOL_HOTKEYS.paint.letter}`,
       icon: <IconBrush className="w-4 h-4 text-emerald-400" />,
     },
     {
       id: "erase",
       label: "Voxel Erase Brush",
-      key: "4 / E",
+      key: `${NEURO_TOOL_HOTKEYS.erase.digit} / ${NEURO_TOOL_HOTKEYS.erase.letter}`,
       icon: <IconEraser className="w-4 h-4 text-rose-400" />,
     },
   ];
@@ -113,6 +114,7 @@ export const NeuroToolbar: React.FC<NeuroToolbarProps> = ({
               <button
                 key={r}
                 onClick={() => onBrushRadiusChange(r)}
+                aria-label={`Brush radius ${r}`}
                 className={`w-6 h-6 rounded-md font-bold text-xs flex items-center justify-center transition-all ${
                   brushRadius === r
                     ? "bg-brand-cyan text-zinc-950 shadow-sm"
@@ -166,7 +168,7 @@ export const NeuroToolbar: React.FC<NeuroToolbarProps> = ({
         <button
           onClick={onRunRecon}
           disabled={isProcessing}
-          title="Run FreeSurfer recon-all pipeline [R]"
+          title={`Run FreeSurfer recon-all pipeline [${NEURO_RUN_RECON_KEY}]`}
           className="flex items-center gap-1.5 px-3.5 py-2 min-h-[44px] bg-brand-cyan hover:bg-brand-cyan/90 text-zinc-950 font-mono font-bold text-xs rounded-xl shadow-lg shadow-brand-cyan/15 transition-all disabled:opacity-50"
         >
           <IconPlayerPlay
@@ -174,13 +176,13 @@ export const NeuroToolbar: React.FC<NeuroToolbarProps> = ({
           />
           <span>{isProcessing ? "RECON RUNNING..." : "RUN RECON-ALL"}</span>
           <span className="text-[10px] opacity-75 font-mono hidden md:inline">
-            [R]
+            [{NEURO_RUN_RECON_KEY}]
           </span>
         </button>
 
         <button
           onClick={onReset}
-          title="Reset current edits & control points"
+          title="Reset this case: clears its edits and control points (other cases keep their drafts). Undo is offered afterward."
           aria-label="Reset workspace"
           className="p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-900 transition-all"
         >

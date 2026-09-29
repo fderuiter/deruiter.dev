@@ -29,6 +29,7 @@
 - [safePruneExpired](functions/safePruneExpired.md)
 - [safeRemoveItem](functions/safeRemoveItem.md)
 - [safeSetItem](functions/safeSetItem.md)
+- [safeSetRawItem](functions/safeSetRawItem.md)
 
 ## References
 

@@ -4,6 +4,8 @@ import fs from "fs";
 import path from "path";
 import { colors } from "../lib/dx/utils";
 
+export const WARN_THRESHOLD_DAYS = 14;
+
 export interface IgnoreRule {
   advisory?: string;
   advisoryId?: string;
@@ -30,12 +32,16 @@ export interface ParsedIgnoreRule {
   isValid: boolean;
   isExpired: boolean;
   remainingDays?: number;
+  isApproachingExpiration?: boolean;
   validationError?: string;
 }
 
 export interface SecurityAuditOptions {
   throwOnError?: boolean;
   now?: Date;
+  warnOnApproachingExpiration?: boolean;
+  failOnWarning?: boolean;
+  warnThresholdDays?: number;
 }
 
 // Fail closed by default. Temporary exceptions must live in the reviewed policy
@@ -76,7 +82,8 @@ export interface AuditReport {
 
 export function parseIgnoreRules(
   data: unknown,
-  now: Date = new Date()
+  now: Date = new Date(),
+  warnThresholdDays: number = WARN_THRESHOLD_DAYS
 ): ParsedIgnoreRule[] {
   const rules: ParsedIgnoreRule[] = [];
   const ninetyDaysMs = 90 * 24 * 60 * 60 * 1000;
@@ -109,6 +116,7 @@ export function parseIgnoreRules(
         followUp,
         isValid: false,
         isExpired: false,
+        isApproachingExpiration: false,
         validationError: `Override entry ${pkg ? `for package "${pkg}" ` : ""}is missing a valid advisory ID ("advisory" or "cve").`,
       });
       return;
@@ -130,6 +138,7 @@ export function parseIgnoreRules(
         followUp,
         isValid: false,
         isExpired: false,
+        isApproachingExpiration: false,
         validationError: `Exception for advisory "${advisory}" is missing ${missingParts.join(" and ")}.`,
       });
       return;
@@ -147,6 +156,7 @@ export function parseIgnoreRules(
         followUp,
         isValid: false,
         isExpired: false,
+        isApproachingExpiration: false,
         validationError: `Exception for advisory "${advisory}" has an invalid expiration date format ("${expiresAt}").`,
       });
       return;
@@ -166,6 +176,7 @@ export function parseIgnoreRules(
           followUp,
           isValid: false,
           isExpired: false,
+          isApproachingExpiration: false,
           validationError: `Exception for advisory "${advisory}" has an invalid creation date format ("${createdAt}").`,
         });
         return;
@@ -183,6 +194,7 @@ export function parseIgnoreRules(
         followUp,
         isValid: false,
         isExpired: false,
+        isApproachingExpiration: false,
         validationError: `Expiration date for advisory "${advisory}" exceeds the maximum 90-day lifespan (${expiresAt}).`,
       });
       return;
@@ -202,6 +214,7 @@ export function parseIgnoreRules(
         followUp,
         isValid: false,
         isExpired: false,
+        isApproachingExpiration: false,
         validationError: `Expiration date for advisory "${advisory}" exceeds 90 days from creation date (${expiresAt}).`,
       });
       return;
@@ -211,6 +224,8 @@ export function parseIgnoreRules(
     const remainingDays = isExpired
       ? 0
       : Math.ceil((expDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
+    const isApproachingExpiration =
+      !isExpired && remainingDays <= warnThresholdDays;
 
     rules.push({
       advisory,
@@ -223,6 +238,7 @@ export function parseIgnoreRules(
       isValid: true,
       isExpired,
       remainingDays,
+      isApproachingExpiration,
     });
   };
 
@@ -318,9 +334,12 @@ export function loadRawIgnoreList(): unknown {
   return DEFAULT_IGNORE_LIST;
 }
 
-export function loadIgnoreList(now: Date = new Date()): ParsedIgnoreRule[] {
+export function loadIgnoreList(
+  now: Date = new Date(),
+  warnThresholdDays: number = WARN_THRESHOLD_DAYS
+): ParsedIgnoreRule[] {
   const rawData = loadRawIgnoreList();
-  return parseIgnoreRules(rawData, now);
+  return parseIgnoreRules(rawData, now, warnThresholdDays);
 }
 
 export function isPretextRelated(
@@ -478,8 +497,26 @@ export function runSecurityAudit(options: SecurityAuditOptions = {}): boolean {
     `${colors.gray}Executing lockfile vulnerability scans...${colors.reset}\n`
   );
 
+  const cliArgs =
+    typeof process !== "undefined" && Array.isArray(process.argv)
+      ? process.argv.slice(2)
+      : [];
+  const cliFailOnWarning = cliArgs.some((arg) =>
+    [
+      "--fail-on-warning",
+      "--failOnWarning",
+      "--warn-on-approaching-expiration",
+      "--warnOnApproachingExpiration",
+    ].includes(arg)
+  );
+  const failOnWarning =
+    options.failOnWarning ??
+    options.warnOnApproachingExpiration ??
+    cliFailOnWarning;
+  const warnThresholdDays = options.warnThresholdDays ?? WARN_THRESHOLD_DAYS;
+
   const now = options.now || new Date();
-  const ignoreRules = loadIgnoreList(now);
+  const ignoreRules = loadIgnoreList(now, warnThresholdDays);
   let hasInvalidRules = false;
   let hasExpiredRules = false;
 
@@ -496,6 +533,12 @@ export function runSecurityAudit(options: SecurityAuditOptions = {}): boolean {
         `${colors.brightRed}❌ Vulnerability override for advisory "${rule.advisory}" expired on ${rule.expiresAt}. Override rejected.${colors.reset}`
       );
       hasExpiredRules = true;
+    } else if (rule.isApproachingExpiration) {
+      console.warn(
+        `${colors.brightYellow}⚠️ WARNING: Vulnerability override for advisory "${rule.advisory}" expires in ${rule.remainingDays} days (Package: ${
+          rule.package || "all"
+        }, Owner: ${rule.owner}, Follow-up: ${rule.followUp}, Reason: ${rule.reason})${colors.reset}`
+      );
     } else {
       console.log(
         `${colors.gray}ℹ️ Active override rule: Advisory ${rule.advisory} (${rule.remainingDays} days remaining, Package: ${
@@ -561,6 +604,9 @@ export function runSecurityAudit(options: SecurityAuditOptions = {}): boolean {
     console.error(
       `${colors.brightRed}❌ npm audit execution failed or returned an invalid audit report.${colors.reset}`
     );
+    writeAuditFailureStepSummary(
+      "npm audit execution failed or returned invalid JSON."
+    );
     // Raw process output can contain credentials; report only the failure category.
     if (options.throwOnError) {
       throw new Error("npm audit execution failed or returned invalid JSON.");
@@ -595,9 +641,15 @@ export function runSecurityAudit(options: SecurityAuditOptions = {}): boolean {
           );
 
           if (matchingRule) {
-            console.log(
-              `${colors.gray}ℹ️ Overriding vulnerability for ${pkgName} / Advisory ${matchingRule.advisory} (Expires: ${matchingRule.expiresAt}, Remaining: ${matchingRule.remainingDays} days, Owner: ${matchingRule.owner}, Follow-up: ${matchingRule.followUp}, Reason: ${matchingRule.reason})${colors.reset}`
-            );
+            if (matchingRule.isApproachingExpiration) {
+              console.warn(
+                `${colors.brightYellow}⚠️ WARNING: Vulnerability override for advisory "${matchingRule.advisory}" (${pkgName}) expires in ${matchingRule.remainingDays} days (Expires: ${matchingRule.expiresAt}, Owner: ${matchingRule.owner}, Follow-up: ${matchingRule.followUp}, Reason: ${matchingRule.reason})${colors.reset}`
+              );
+            } else {
+              console.log(
+                `${colors.gray}ℹ️ Overriding vulnerability for ${pkgName} / Advisory ${matchingRule.advisory} (Expires: ${matchingRule.expiresAt}, Remaining: ${matchingRule.remainingDays} days, Owner: ${matchingRule.owner}, Follow-up: ${matchingRule.followUp}, Reason: ${matchingRule.reason})${colors.reset}`
+              );
+            }
           } else {
             unhandledVulnerabilities.push({
               pkgName,
@@ -610,7 +662,40 @@ export function runSecurityAudit(options: SecurityAuditOptions = {}): boolean {
     }
   }
 
+  const approachingRules = ignoreRules.filter(
+    (r) => r.isValid && !r.isExpired && r.isApproachingExpiration
+  );
+
+  if (approachingRules.length > 0) {
+    console.warn(
+      `\n${colors.brightYellow}${colors.bold}⚠️ PRE-EXPIRATION WARNING: ${approachingRules.length} vulnerability override(s) expiring within ${warnThresholdDays} days:${colors.reset}`
+    );
+    for (const rule of approachingRules) {
+      console.warn(
+        `  ${colors.brightYellow}• Advisory:${colors.reset} ${colors.bold}${rule.advisory}${colors.reset} (Package: ${rule.package || "all"})`
+      );
+      console.warn(
+        `    ${colors.bold}Days Remaining:${colors.reset} ${rule.remainingDays} (Expires: ${rule.expiresAt})`
+      );
+      console.warn(
+        `    ${colors.bold}Risk Owner:${colors.reset} ${rule.owner}`
+      );
+      console.warn(
+        `    ${colors.bold}Follow-up Ticket:${colors.reset} ${rule.followUp}`
+      );
+      console.warn(`    ${colors.bold}Reason:${colors.reset} ${rule.reason}`);
+    }
+    console.warn("");
+  }
+
   let failed = hasInvalidRules || hasExpiredRules;
+
+  if (failOnWarning && approachingRules.length > 0) {
+    console.error(
+      `${colors.brightRed}❌ Security check failed due to strict pre-expiration warning policy (--fail-on-warning / failOnWarning).${colors.reset}`
+    );
+    failed = true;
+  }
 
   if (pretextVulnerabilitiesFound) {
     console.error(
@@ -664,6 +749,13 @@ export function runSecurityAudit(options: SecurityAuditOptions = {}): boolean {
     failed = true;
   }
 
+  writeStepSummary(
+    failed,
+    uniqueUnhandled,
+    ignoreRules,
+    pretextVulnerabilitiesFound
+  );
+
   if (failed) {
     console.error(
       `${colors.brightRed}${colors.bold}✖ Security status check failed.${colors.reset}`
@@ -688,6 +780,136 @@ export function runSecurityAudit(options: SecurityAuditOptions = {}): boolean {
       return true;
     }
     process.exit(0);
+  }
+}
+
+export function writeAuditFailureStepSummary(message: string): void {
+  const summaryFile = process.env.GITHUB_STEP_SUMMARY;
+  if (!summaryFile) return;
+
+  const lines = [
+    "# 🛡️ Security Vulnerability Audit Report",
+    "",
+    `- **Scan Time:** ${new Date().toISOString()}`,
+    "- **Status:** ❌ Failed",
+    "",
+    "### ❌ Security Execution Error",
+    "",
+    `\`\`\`\n${message}\n\`\`\``,
+    "",
+  ];
+
+  try {
+    fs.appendFileSync(summaryFile, lines.join("\n") + "\n", "utf8");
+  } catch (e) {
+    console.warn("Failed to write GitHub step summary:", e);
+  }
+}
+
+export function writeStepSummary(
+  failed: boolean,
+  uniqueUnhandled: Array<{
+    pkgName: string;
+    info: VulnerabilityInfo;
+    advisory: Advisory;
+  }>,
+  ignoreRules: ParsedIgnoreRule[],
+  pretextVulnerabilitiesFound: boolean
+): void {
+  const summaryFile = process.env.GITHUB_STEP_SUMMARY;
+  if (!summaryFile) return;
+
+  const lines: string[] = [];
+  lines.push("# 🛡️ Security Vulnerability Audit Report");
+  lines.push("");
+  lines.push(`- **Scan Time:** ${new Date().toISOString()}`);
+  lines.push(`- **Status:** ${failed ? "❌ Failed" : "✅ Passed"}`);
+  lines.push("");
+
+  if (failed) {
+    lines.push("### ❌ Security Scan Summary");
+    lines.push("");
+    if (pretextVulnerabilitiesFound) {
+      lines.push(
+        "> ⚠️ **SECURITY ALERT:** A dependency vulnerability affecting a core layout component was detected. Please refer to `SECURITY.md` for disclosure instructions."
+      );
+      lines.push("");
+    }
+
+    const invalidRules = ignoreRules.filter((r) => !r.isValid);
+    if (invalidRules.length > 0) {
+      lines.push("#### Invalid Override Rules");
+      lines.push("");
+      for (const rule of invalidRules) {
+        lines.push(
+          `- **${rule.advisory || rule.package || "Unknown"}**: ${rule.validationError}`
+        );
+      }
+      lines.push("");
+    }
+
+    const expiredRules = ignoreRules.filter((r) => r.isValid && r.isExpired);
+    if (expiredRules.length > 0) {
+      lines.push("#### Expired Override Rules");
+      lines.push("");
+      for (const rule of expiredRules) {
+        lines.push(
+          `- **Advisory ${rule.advisory}** (Package: \`${rule.package || "all"}\`) expired on ${rule.expiresAt}`
+        );
+      }
+      lines.push("");
+    }
+
+    if (uniqueUnhandled.length > 0) {
+      lines.push("#### Unhandled High/Critical Vulnerabilities");
+      lines.push("");
+      lines.push(
+        "| Package | Severity | Advisory ID | Advisory Title | Vulnerable Range | Link |"
+      );
+      lines.push("| --- | --- | --- | --- | --- | --- |");
+      for (const { pkgName, info, advisory } of uniqueUnhandled) {
+        const advId = advisory
+          ? getAdvisoryIdentifiers(advisory)[0] || "N/A"
+          : "N/A";
+        const title = advisory?.title || "N/A";
+        const severity = (info.severity || "").toUpperCase();
+        const range = advisory?.range || info.range || "N/A";
+        const url = advisory?.url ? `[Advisory](${advisory.url})` : "N/A";
+        lines.push(
+          `| \`${pkgName}\` | ${severity} | \`${advId}\` | ${title} | \`${range}\` | ${url} |`
+        );
+      }
+      lines.push("");
+    }
+  } else {
+    lines.push("### ✅ Security Scan Passed");
+    lines.push("");
+    lines.push(
+      "No unhandled high or critical vulnerabilities found in third-party dependencies."
+    );
+    lines.push("");
+  }
+
+  const activeRules = ignoreRules.filter((r) => r.isValid && !r.isExpired);
+  if (activeRules.length > 0) {
+    lines.push("### ℹ️ Active Vulnerability Overrides");
+    lines.push("");
+    lines.push(
+      "| Advisory | Package | Remaining Days | Owner | Follow-up | Reason |"
+    );
+    lines.push("| --- | --- | --- | --- | --- | --- |");
+    for (const rule of activeRules) {
+      lines.push(
+        `| \`${rule.advisory}\` | \`${rule.package || "all"}\` | ${rule.remainingDays}d | ${rule.owner} | ${rule.followUp} | ${rule.reason} |`
+      );
+    }
+    lines.push("");
+  }
+
+  try {
+    fs.appendFileSync(summaryFile, lines.join("\n") + "\n", "utf8");
+  } catch (e) {
+    console.warn("Failed to write GitHub step summary:", e);
   }
 }
 

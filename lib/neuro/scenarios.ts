@@ -2,6 +2,7 @@
  * Clinical FreeSurfer Defect Scenarios & Curriculum Configuration
  */
 
+import { formatNeuroToolKey } from "./hotkeys";
 import { DatasetConfig, DatasetSource, ScenarioConfig, ScenarioId } from "./types";
 
 export const SCENARIOS: Record<ScenarioId, ScenarioConfig> = {
@@ -21,7 +22,7 @@ export const SCENARIOS: Record<ScenarioId, ScenarioConfig> = {
       algorithmicImpact:
         "The pial surface expansion algorithm (recon-all -autorecon3) seeks the CSF gradient. If dura is preserved in brainmask.mgz, the surface traps non-brain voxels, corrupting biomarker volumes and thickness stats.",
       remediationProtocol:
-        "Switch to Coronal orthoview. Select Voxel Erase (B key) with a 2-3 voxel radius. Erase the extra-cerebral dura voxels outside the gray matter border, then click 'Run recon-all' to recalculate.",
+        `Switch to Coronal orthoview. Select ${formatNeuroToolKey("erase")} with a 2-3 voxel radius. Erase the extra-cerebral dura voxels outside the gray matter border, then click 'Run recon-all' to recalculate.`,
       freeSurferCommand: "freeview -v brainmask.mgz:colormap=grayscale -f lh.pial:edgecolor=red",
     },
     initialEuler: 2,
@@ -48,7 +49,7 @@ export const SCENARIOS: Record<ScenarioId, ScenarioConfig> = {
       algorithmicImpact:
         "FreeSurfer's mri_normalize assumes WM intensity peak is 110. Voxels with intensity < 85 are classified as Gray Matter or CSF, causing white surface retraction and missing gyral white matter.",
       remediationProtocol:
-        "Select the Control Point tool (C key). Click inside the hypointense white matter region (intensity ~58) to place a 110 anchor point, or paint wm.mgz voxels directly. Then run 'recon-all -autorecon2-cp'.",
+        `Select ${formatNeuroToolKey("control_point")}. Click inside the hypointense white matter region (intensity ~58) to place a 110 anchor point, or paint wm.mgz voxels directly. Then run 'recon-all -autorecon2-cp'.`,
       freeSurferCommand: "recon-all -s sub-01 -autorecon2-cp",
     },
     initialEuler: -2,
@@ -75,7 +76,7 @@ export const SCENARIOS: Record<ScenarioId, ScenarioConfig> = {
       algorithmicImpact:
         "Voxels masked out of brainmask.mgz are strictly forbidden from surface tessellation. Any erased cortex results in truncated brain volume and false cortical thinning.",
       remediationProtocol:
-        "Switch to Sagittal view. Select Voxel Paint (B key), set intensity to Gray Matter (75-80), and paint the missing frontal gyri back into brainmask.mgz. Run 'recon-all -autorecon2'.",
+        `Switch to Sagittal view. Select ${formatNeuroToolKey("paint")}, set intensity to Gray Matter (75-80), and paint the missing frontal gyri back into brainmask.mgz. Run 'recon-all -autorecon2'.`,
       freeSurferCommand: "recon-all -s sub-01 -autorecon2-wm",
     },
     initialEuler: 2,
@@ -100,9 +101,9 @@ export const SCENARIOS: Record<ScenarioId, ScenarioConfig> = {
       biologicalCause:
         "Partial volume averaging in tight sulcal banks causes opposing gyral white matter boundaries to falsely touch across CSF sulcal fundi.",
       algorithmicImpact:
-        "Topological defect invalidates homeomorphy to a 2-sphere ($S^2$). FreeSurfer's mris_fix_topology is forced to apply artificial cutting planes, creating distortion in spherical morphometry.",
+        "Topological defect invalidates homeomorphy to a 2-sphere (S²). FreeSurfer's mris_fix_topology is forced to apply artificial cutting planes, creating distortion in spherical morphometry.",
       remediationProtocol:
-        "Switch to Axial view. Select Voxel Erase (E key). Locate the spurious white matter bridge bridging the sulcus and cut the connection to restore Euler characteristic χ = 2.",
+        `Switch to Axial view. Select ${formatNeuroToolKey("erase")}. Locate the spurious white matter bridge bridging the sulcus and cut the connection to restore Euler characteristic χ = 2.`,
       freeSurferCommand: "recon-all -s sub-01 -autorecon2-wm -fix-topology",
     },
     initialEuler: 0,

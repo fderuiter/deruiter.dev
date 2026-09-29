@@ -9,6 +9,7 @@ import type {
   ComplianceViolation,
 } from "@/lib/crf/types";
 import { useTelemetry } from "@/hooks/useTelemetry";
+import { downloadFile } from "@/lib/download";
 import {
   IconDownload,
   IconUpload,
@@ -261,15 +262,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
       mimeType = "text/csv";
     }
 
-    const blob = new Blob([content], { type: mimeType });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    downloadFile(content, filename, { mimeType });
   };
 
   const attachProvenance = (st: StudyProtocol): StudyProtocol => {

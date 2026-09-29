@@ -152,7 +152,7 @@ async function submitBlogReactionDirect(
     };
   } catch (err) {
     if (env.VERCEL_ENV === "production" && !isBuildPhase()) {
-      console.warn(
+      logger.warn(
         "Database blog reaction creation failed, using mock fallback:",
         err
       );
@@ -416,7 +416,7 @@ async function safeRevalidatePath(
     }
   } catch (err) {
     if (env.VERCEL_ENV === "production" && !isBuildPhase()) {
-      console.warn(
+      logger.warn(
         `BlogPostService.safeRevalidatePath: Path revalidation failed for "${path}":`,
         err
       );
@@ -432,7 +432,7 @@ async function safeRevalidateTag(tag: string): Promise<void> {
     }
   } catch (err) {
     if (env.VERCEL_ENV === "production" && !isBuildPhase()) {
-      console.warn(
+      logger.warn(
         `BlogPostService.safeRevalidateTag: Tag revalidation failed for "${tag}":`,
         err
       );
@@ -686,7 +686,7 @@ export class BlogPostService {
       }
     } catch (err) {
       if (env.VERCEL_ENV === "production" && !isBuildPhase()) {
-        console.warn(
+        logger.warn(
           "BlogPostService.getAllPublishedBlogPosts: Database query failed, using static fallbacks:",
           err
         );
@@ -766,7 +766,7 @@ export class BlogPostService {
       }
     } catch (cacheErr) {
       if (env.VERCEL_ENV === "production" && !isBuildPhase()) {
-        console.warn(
+        logger.warn(
           `BlogPostService.getBlogPostBySlug: Redis cache read failed for "${trimmedSlug}", falling back:`,
           cacheErr
         );
@@ -804,7 +804,7 @@ export class BlogPostService {
       }
     } catch (err) {
       if (env.VERCEL_ENV === "production" && !isBuildPhase()) {
-        console.warn(
+        logger.warn(
           `BlogPostService.getBlogPostBySlug: DB query failed for slug "${trimmedSlug}", falling back:`,
           err
         );
@@ -887,7 +887,7 @@ export class BlogPostService {
         evicted = true;
       } catch (err) {
         if (env.VERCEL_ENV === "production" && !isBuildPhase()) {
-          console.warn(
+          logger.warn(
             `BlogPostService.evictBlogPostCache: Redis eviction failed for "${trimmedSlug}":`,
             err
           );
@@ -955,7 +955,7 @@ export class BlogPostService {
       };
     } catch (err) {
       if (env.VERCEL_ENV === "production" && !isBuildPhase()) {
-        console.warn(
+        logger.warn(
           "BlogPostService.getReactions: Redis path failed, returning compute-shielded defaults:",
           err
         );
@@ -1135,7 +1135,7 @@ export class BlogPostService {
       };
     } catch (err) {
       if (env.VERCEL_ENV === "production" && !isBuildPhase()) {
-        console.warn(
+        logger.warn(
           "BlogPostService.submitReaction: Redis buffering failed:",
           err
         );
@@ -1222,7 +1222,7 @@ export class BlogPostService {
           skipDuplicates: true,
         });
       } catch (dbErr) {
-        console.error(
+        logger.error(
           "BlogPostService.flushBufferedReactionsToDatabase: DB write failed; events remain in processing queue:",
           dbErr
         );
@@ -1288,7 +1288,7 @@ export class BlogPostService {
       };
     } catch (err) {
       if (env.VERCEL_ENV === "production" && !isBuildPhase()) {
-        console.error(
+        logger.error(
           "BlogPostService.flushBufferedReactionsToDatabase encountered error:",
           err
         );
@@ -1334,7 +1334,7 @@ export class BlogPostService {
       }
     } catch (err) {
       if (env.VERCEL_ENV === "production" && !isBuildPhase()) {
-        console.warn(
+        logger.warn(
           `BlogPostService: Failed to hydrate base reactions for ${slug}:`,
           err
         );

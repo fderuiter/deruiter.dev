@@ -1,8 +1,17 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from "react";
-import { progressBus, formatBytes, AssetProgressEvent } from "@/lib/neuro/progress-bus";
-import { Icon3dCubeSphere, IconCheck, IconAlertTriangle, IconLoader2 } from "@tabler/icons-react";
+import {
+  progressBus,
+  formatBytes,
+  AssetProgressEvent,
+} from "@/lib/neuro/progress-bus";
+import {
+  Icon3dCubeSphere,
+  IconCheck,
+  IconAlertTriangle,
+  IconLoader2,
+} from "@tabler/icons-react";
 
 interface ProgressHUDProps {
   className?: string;
@@ -26,7 +35,10 @@ export const ProgressHUD: React.FC<ProgressHUDProps> = ({ className = "" }) => {
       if (newEvent.status === "loading") {
         setVisible(true);
         setIsFadingOut(false);
-      } else if (newEvent.status === "complete" || newEvent.status === "error") {
+      } else if (
+        newEvent.status === "complete" ||
+        newEvent.status === "error"
+      ) {
         setVisible(true);
         setIsFadingOut(true);
         dismissTimerRef.current = setTimeout(() => {
@@ -72,11 +84,17 @@ export const ProgressHUD: React.FC<ProgressHUDProps> = ({ className = "" }) => {
             <IconLoader2 className="w-4 h-4 text-brand-cyan animate-spin shrink-0" />
           )}
           <span className="font-semibold text-white truncate" title={filename}>
-            {isError ? "Fetch Failed (Procedural Fallback)" : isComplete ? "Asset Ready" : filename}
+            {isError
+              ? "Fetch Failed (Procedural Fallback)"
+              : isComplete
+                ? "Asset Ready"
+                : filename}
           </span>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <span className="text-[11px] text-zinc-400 font-bold">{event.percentage}%</span>
+          <span className="text-[11px] text-zinc-400 font-bold">
+            {event.percentage}%
+          </span>
         </div>
       </div>
 
@@ -85,7 +103,11 @@ export const ProgressHUD: React.FC<ProgressHUDProps> = ({ className = "" }) => {
         <div
           data-testid="progress-bar-fill"
           className={`h-full rounded-full transition-transform duration-100 ease-out origin-left will-change-transform ${
-            isError ? "bg-amber-500" : isComplete ? "bg-emerald-400" : "bg-brand-cyan"
+            isError
+              ? "bg-amber-500"
+              : isComplete
+                ? "bg-emerald-400"
+                : "bg-brand-cyan"
           }`}
           style={{
             transform: `scaleX(${Math.max(0, Math.min(1, event.percentage / 100))})`,
@@ -100,7 +122,11 @@ export const ProgressHUD: React.FC<ProgressHUDProps> = ({ className = "" }) => {
           <span>{byteCountDisplay}</span>
         </span>
         <span>
-          {isError ? "Fallback Active" : isComplete ? "100% Downloaded" : "Transferring Data..."}
+          {isError
+            ? "Fallback Active"
+            : isComplete
+              ? "100% Downloaded"
+              : "Transferring Data..."}
         </span>
       </div>
     </div>

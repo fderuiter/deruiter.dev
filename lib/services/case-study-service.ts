@@ -4,6 +4,7 @@ import { failBuildOnDataSourceError } from "@/lib/build-integrity";
 import { FALLBACK_CASE_STUDIES, CaseStudyData } from "@/lib/case-studies-data";
 import { redis, getScopedRedisKey, isRedisConfigured } from "@/lib/redis";
 import { sanitizeContentHtmlLazy } from "@/lib/content-sanitizer-lazy";
+import { logger } from "@/lib/logger";
 
 export type { CaseStudyData };
 
@@ -134,7 +135,7 @@ async function getBaseReactionCounts(
     }
   } catch (err) {
     if (env.VERCEL_ENV === "production" && !isBuildPhase()) {
-      console.warn(
+      logger.warn(
         `CaseStudyService: Failed to query base reactions for ${slug}:`,
         err
       );
@@ -198,7 +199,7 @@ async function submitReactionDirect(
     };
   } catch (dbErr) {
     if (env.VERCEL_ENV === "production" && !isBuildPhase()) {
-      console.error(
+      logger.error(
         "Database reaction creation failed, using mock fallback:",
         dbErr
       );
@@ -222,6 +223,22 @@ async function submitReactionDirect(
       userReactions: [reactionType],
     };
   }
+}
+
+/** The five fields `/api/case-studies` exposes for search and discovery. */
+export type CaseStudySearchSummary = Pick<
+  CaseStudyData,
+  "id" | "slug" | "title" | "primary_language" | "tags"
+>;
+
+function toSearchSummary(s: CaseStudySearchSummary): CaseStudySearchSummary {
+  return {
+    id: s.id,
+    slug: s.slug,
+    title: s.title,
+    primary_language: s.primary_language,
+    tags: s.tags,
+  };
 }
 
 export class CaseStudyService {
@@ -293,7 +310,7 @@ export class CaseStudyService {
       });
     } catch (err) {
       if (env.VERCEL_ENV === "production" && !isBuildPhase()) {
-        console.warn(
+        logger.warn(
           "CaseStudyService.getAllPublishedCaseStudies: Database query failed, using static fallbacks:",
           err
         );
@@ -368,7 +385,7 @@ export class CaseStudyService {
       }
     } catch (cacheErr) {
       if (env.VERCEL_ENV === "production" && !isBuildPhase()) {
-        console.warn(
+        logger.warn(
           `CaseStudyService.getCaseStudyBySlug: Redis cache read failed for "${slug}", falling back:`,
           cacheErr
         );
@@ -410,7 +427,7 @@ export class CaseStudyService {
       }
     } catch (err) {
       if (env.VERCEL_ENV === "production" && !isBuildPhase()) {
-        console.warn(
+        logger.warn(
           `CaseStudyService.getCaseStudyBySlug: DB query failed for slug "${slug}", falling back:`,
           err
         );
@@ -449,6 +466,7 @@ export class CaseStudyService {
     const cacheKey = getScopedRedisKey(`cs:slug:${slug}`);
     const reactionsBaseKey = getScopedRedisKey(`cs:reactions_counts:${slug}`);
     const allPublishedKey = getScopedRedisKey("cs:all_published");
+    const searchIndexKey = getScopedRedisKey("cs:search_index");
 
     let evicted = false;
     // Without Upstash there is no cache to evict, but the ISR tags below must
@@ -460,6 +478,7 @@ export class CaseStudyService {
             redis.del(cacheKey),
             redis.del(reactionsBaseKey),
             redis.del(allPublishedKey),
+            redis.del(searchIndexKey),
           ]),
           new Promise((_, reject) =>
             setTimeout(
@@ -471,7 +490,7 @@ export class CaseStudyService {
         evicted = true;
       } catch (err) {
         if (env.VERCEL_ENV === "production" && !isBuildPhase()) {
-          console.warn(
+          logger.warn(
             `CaseStudyService.evictCaseStudyCache: Redis eviction failed for "${slug}":`,
             err
           );
@@ -495,8 +514,11 @@ export class CaseStudyService {
 
   /**
    * Retrieves all published case studies for public search/discovery.
+   * Reads the `cs:search_index` Upstash cache (3600s TTL) first; on a miss it
+   * queries only the five summary columns from Postgres, appends static
+   * fallbacks for slugs absent from the database, and caches the result.
    */
-  static async getPublishedCaseStudies() {
+  static async getPublishedCaseStudies(): Promise<CaseStudySearchSummary[]> {
     if (env.PLAYWRIGHT_TEST === "true") {
       return [
         {
@@ -530,14 +552,89 @@ export class CaseStudyService {
       ];
     }
 
-    const allStudies = await CaseStudyService.getAllPublishedCaseStudies();
-    return allStudies.map((s) => ({
-      id: s.id,
-      slug: s.slug,
-      title: s.title,
-      primary_language: s.primary_language,
-      tags: s.tags,
-    }));
+    const cacheKey = getScopedRedisKey("cs:search_index");
+
+    // Check the dedicated Upstash search-index cache first. It holds only the
+    // five summary fields, so a hit never transfers narrative or playback JSON.
+    try {
+      const cached = !isRedisConfigured()
+        ? null
+        : await Promise.race([
+            redis.get<CaseStudySearchSummary[]>(cacheKey),
+            new Promise<null>((_, reject) =>
+              setTimeout(
+                () =>
+                  reject(new Error("Redis getPublishedCaseStudies timeout")),
+                1500
+              )
+            ),
+          ]);
+
+      if (Array.isArray(cached) && cached.length > 0) {
+        return cached;
+      }
+    } catch {
+      // Tolerated, fall through to DB query
+    }
+
+    let dbStudies: CaseStudySearchSummary[] = [];
+    try {
+      // Project only the summary columns so Postgres never ships
+      // editorial_content, architectural_narrative, commands_json or
+      // playback_json for a search index that discards them.
+      dbStudies = await prisma.caseStudy.findMany({
+        where: { published: true },
+        select: {
+          id: true,
+          slug: true,
+          title: true,
+          primary_language: true,
+          tags: true,
+        },
+        orderBy: { created_at: "asc" },
+      });
+    } catch (err) {
+      if (env.VERCEL_ENV === "production" && !isBuildPhase()) {
+        logger.warn(
+          "CaseStudyService.getPublishedCaseStudies: Database query failed, using static fallbacks:",
+          err
+        );
+      }
+      failBuildOnDataSourceError(
+        "CaseStudyService.getPublishedCaseStudies",
+        err
+      );
+      return FALLBACK_CASE_STUDIES.map(toSearchSummary);
+    }
+
+    const seenSlugs = new Set(dbStudies.map((s) => s.slug));
+    const merged: CaseStudySearchSummary[] = [...dbStudies];
+
+    for (const fallback of FALLBACK_CASE_STUDIES) {
+      if (!seenSlugs.has(fallback.slug)) {
+        merged.push(toSearchSummary(fallback));
+        seenSlugs.add(fallback.slug);
+      }
+    }
+
+    // Populate Redis cache with 3600s TTL
+    if (merged.length > 0 && isRedisConfigured()) {
+      try {
+        await Promise.race([
+          redis.set(cacheKey, merged, { ex: 3600 }),
+          new Promise((_, reject) =>
+            setTimeout(
+              () => reject(new Error("Redis cache write timeout")),
+              1500
+            )
+          ),
+        ]);
+      } catch {
+        // Silently tolerate cache write failure
+      }
+    }
+
+    return merged;
   }
 
   /**
@@ -680,7 +777,7 @@ export class CaseStudyService {
       };
     } catch (err) {
       if (env.VERCEL_ENV === "production" && !isBuildPhase()) {
-        console.error("Failed to query case study feedback:", err);
+        logger.error("Failed to query case study feedback:", err);
       }
       const mockList = mockFeedbackStore.get(slug) || [];
       const hasSubmitted = mockList.some(
@@ -751,7 +848,7 @@ export class CaseStudyService {
       };
     } catch (dbErr) {
       if (env.VERCEL_ENV === "production" && !isBuildPhase()) {
-        console.error(
+        logger.error(
           "Database feedback creation failed, using fallback:",
           dbErr
         );
@@ -869,7 +966,7 @@ export class CaseStudyService {
       };
     } catch (err) {
       if (env.VERCEL_ENV === "production" && !isBuildPhase()) {
-        console.warn(
+        logger.warn(
           "CaseStudyService.getReactions: Redis path failed, falling back to DB/mock:",
           err
         );
@@ -903,7 +1000,7 @@ export class CaseStudyService {
         };
       } catch (dbErr) {
         if (env.VERCEL_ENV === "production" && !isBuildPhase()) {
-          console.error("Failed to query case study reactions from DB:", dbErr);
+          logger.error("Failed to query case study reactions from DB:", dbErr);
         }
         const counts = getDefaultReactionCounts();
         const slugMap = mockReactionsStore.get(slug);
@@ -1036,7 +1133,7 @@ export class CaseStudyService {
       };
     } catch (err) {
       if (env.VERCEL_ENV === "production" && !isBuildPhase()) {
-        console.warn(
+        logger.warn(
           "CaseStudyService.submitReaction: Redis buffering failed, falling back to DB/mock:",
           err
         );
@@ -1122,7 +1219,7 @@ export class CaseStudyService {
           skipDuplicates: true,
         });
       } catch (dbErr) {
-        console.error(
+        logger.error(
           "CaseStudyService.flushBufferedReactionsToDatabase: DB write failed; events remain in processing queue:",
           dbErr
         );
@@ -1203,7 +1300,7 @@ export class CaseStudyService {
       };
     } catch (err) {
       if (env.VERCEL_ENV === "production" && !isBuildPhase()) {
-        console.warn(
+        logger.warn(
           "CaseStudyService.flushBufferedReactionsToDatabase: Flush operation encountered error:",
           err
         );

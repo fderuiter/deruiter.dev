@@ -1,0 +1,35 @@
+name: Cancel Closed PR CI
+
+# #1389: `ci.yml`'s concurrency group cancels a PR's older run when the PR
+# gets a new push, but nothing cancelled a PR's runs when the PR closed or
+# merged. Those runs kept holding the shared free-tier runner queue: on
+# 2026-09-29, 32 of 45 queued or running runs belonged to closed PRs.
+#
+# This workflow joins the PR's `CI Pipeline` concurrency group the moment the
+# PR closes. With `cancel-in-progress: true`, its arrival cancels the PR's
+# running CI run and replaces its pending one, and its own job does nothing.
+# The group string must match `ci.yml`'s, which is
+# `ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}`
+# with the workflow named "CI Pipeline"; `__tests__/ci-cancel-closed-pr.test.ts`
+# keeps the two in sync. `main` push runs use a different group and are never
+# touched.
+
+on:
+  pull_request:
+    types: [closed]
+    branches: ["main"]
+
+concurrency:
+  group: ci-CI Pipeline-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  cancel-superseded-ci:
+    name: Cancel CI for closed PR
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: Report
+        run: echo "PR #${{ github.event.pull_request.number }} closed; its CI Pipeline runs in this concurrency group were cancelled."

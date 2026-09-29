@@ -56,7 +56,7 @@ const STACK_LAYERS: StackLayer[] = [
     glowColor: "bg-purple-500/5",
     technologies: [
       { name: "Tailwind CSS", version: "v4.x", role: "CSS-first compiler & @theme token mappings", link: "https://tailwindcss.com" },
-      { name: "Framer Motion", version: "v12.x", role: "GPU-accelerated physics & spring animations", link: "https://www.framer.com/motion" },
+      { name: "Framer Motion", version: "v13.x", role: "GPU-accelerated physics & spring animations", link: "https://www.framer.com/motion" },
       { name: "Tabler Icons", version: "v3.x", role: "Pixel-crisp responsive SVG icons" },
       { name: "Aceternity UI", version: "Pattern", role: "Copy-and-paste micro-interaction primitives" },
     ],
@@ -76,7 +76,7 @@ const STACK_LAYERS: StackLayer[] = [
     borderColor: "hover:border-emerald-400/40",
     glowColor: "bg-emerald-500/5",
     technologies: [
-      { name: "@chenglou/pretext", version: "v0.0.5", role: "Userland multiline canvas text measurement", link: "https://github.com/chenglou/pretext" },
+      { name: "@chenglou/pretext", version: "v0.0.9", role: "Userland multiline canvas text measurement", link: "https://github.com/chenglou/pretext" },
       { name: "Greedy LPT Scheduler", version: "Custom", role: "Zero-whitespace masonry bento grid packing" },
       { name: "ResizeObserver", version: "Native", role: "Asynchronous element boundary surveillance" },
     ],
@@ -98,7 +98,7 @@ const STACK_LAYERS: StackLayer[] = [
     technologies: [
       { name: "Prisma ORM", version: "v7.7.0", role: "Type-safe database client and schema migrations", link: "https://www.prisma.io" },
       { name: "Neon PostgreSQL", version: "Serverless", role: "Distributed Postgres over WebSocket pooler", link: "https://neon.tech" },
-      { name: "Upstash Redis", version: "v1.38.0", role: "Low-latency sliding window rate limiting", link: "https://upstash.com" },
+      { name: "Upstash Redis", version: "v1.39.0", role: "Low-latency sliding window rate limiting", link: "https://upstash.com" },
       { name: "Vercel KV & Analytics", version: "v3.0.0", role: "Edge telemetry logging and performance tracking" },
     ],
     keyHighlights: [
@@ -139,7 +139,7 @@ const STACK_LAYERS: StackLayer[] = [
     glowColor: "bg-indigo-500/5",
     technologies: [
       { name: "Vitest", version: "v4.x", role: "Unit, integration, and defect remediation test runner", link: "https://vitest.dev" },
-      { name: "Playwright & @axe-core", version: "v1.60.0", role: "Synthetic browser probes & WCAG 2.1 AA a11y gates", link: "https://playwright.dev" },
+      { name: "Playwright & @axe-core", version: "v1.63.0", role: "Synthetic browser probes & WCAG 2.1 AA a11y gates", link: "https://playwright.dev" },
       { name: "fast-check", version: "v4.9.0", role: "Property-based AST fuzzing & invariant validation" },
       { name: "TypeDoc & OpenAPI", version: "Automated", role: "Zero-drift automated specification generator" },
     ],

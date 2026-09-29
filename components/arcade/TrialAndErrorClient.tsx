@@ -6,10 +6,14 @@ import Link from "next/link";
 import { IconArrowLeft, IconTable } from "@tabler/icons-react";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { PlayCabinet } from "@/components/arcade/PlayCabinet";
+import { NextPrevNav } from "@/components/ui/NextPrevNav";
+import { getArcadeNeighbors } from "@/lib/arcade";
 import { useTeMotion } from "@/components/trial-and-error/useTeMotion";
 
 const CardTableLoader = () =>
-  import("@/components/trial-and-error/CardTable").then((mod) => mod.CardTable);
+  import("@/components/trial-and-error/Tutorial").then(
+    (mod) => mod.TrialAndErrorTable
+  );
 
 const DynamicCardTable = dynamic(CardTableLoader, {
   ssr: false,
@@ -83,9 +87,13 @@ export const TrialAndErrorClient: React.FC = () => {
             ]}
             importComponent={CardTableLoader}
           >
-            <DynamicCardTable persist />
+            <DynamicCardTable />
           </PlayCabinet>
         </div>
+        <NextPrevNav
+          {...getArcadeNeighbors("/arcade/trial-and-error")}
+          backToHub={{ title: "All Arcade Games", href: "/arcade" }}
+        />
       </div>
     </div>
   );

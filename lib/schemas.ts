@@ -127,7 +127,11 @@ export const CaseStudySummarySchema = z.object({
   slug: z.string().min(1),
   title: z.string().min(1),
   primary_language: z.string().min(1),
-  tags: z.array(z.string()),
+  tags: z
+    .string()
+    .describe(
+      'Comma-separated tag list exactly as stored on the case study, e.g. "clinical, edc, mapping". Split on commas and trim each entry to get individual tags.'
+    ),
 });
 
 /**

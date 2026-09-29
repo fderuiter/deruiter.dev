@@ -48,6 +48,8 @@
 
 > **distanceMeters**: `number`
 
+Unrounded distance; round only when displaying.
+
 ***
 
 ### flashFiles?
@@ -122,6 +124,22 @@
 
 ***
 
+### lastGcAt?
+
+> `optional` **lastGcAt?**: `number`
+
+Wall-clock time of the last GC, for its cooldown.
+
+***
+
+### lastJettisonAt?
+
+> `optional` **lastJettisonAt?**: `number`
+
+Wall-clock time of the last pop, for its cooldown.
+
+***
+
 ### lastObstacleTime
 
 > **lastObstacleTime**: `number`
@@ -140,6 +158,14 @@
 
 ***
 
+### pausedAt?
+
+> `optional` **pausedAt?**: `number`
+
+Wall-clock time the run was paused, so resuming can shift the spawn timers.
+
+***
+
 ### playerVy
 
 > **playerVy**: `number`
@@ -155,6 +181,14 @@
 ### score
 
 > **score**: `number`
+
+***
+
+### scoreRemainder?
+
+> `optional` **scoreRemainder?**: `number`
+
+Fractional score (0 to under 1) carried between ticks.
 
 ***
 

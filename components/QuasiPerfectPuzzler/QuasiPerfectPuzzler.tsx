@@ -12,9 +12,11 @@ import { useAudio } from "@/components/providers/AudioProvider";
 import { useAnnouncer } from "@/hooks/useAnnouncer";
 import { puzzleLevels } from "@/lib/quasi-perfect/levels";
 import { tacticDefs } from "@/lib/quasi-perfect/tactics";
+import { mergeLevelScore } from "@/lib/quasi-perfect/progress";
 import {
   STORY_RAM_MULTIPLIER,
   computeLevelStars,
+  describeModeRules,
   getStartingRam,
 } from "@/lib/quasi-perfect";
 import {
@@ -185,7 +187,10 @@ export const QuasiPerfectPuzzler: React.FC = () => {
         currentLevelIndex: existing.currentLevelIndex || 0,
         completedLevels: {
           ...(existing.completedLevels || {}),
-          [score.levelId]: score,
+          [score.levelId]: mergeLevelScore(
+            existing.completedLevels?.[score.levelId],
+            score
+          ),
         },
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
@@ -661,6 +666,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
   };
 
   const isOOM = currentRam <= 0 && !levelSolved;
+  const modeRules = describeModeRules(gameMode, currentLevel);
 
   // Filtered levels based on chapter tab
   const filteredLevels = useMemo(() => {
@@ -674,6 +680,29 @@ export const QuasiPerfectPuzzler: React.FC = () => {
   );
 
   const containerRef = useRef<HTMLElement | null>(null);
+  const levelHeadingRef = useRef<HTMLHeadingElement | null>(null);
+  const [levelIndexOpen, setLevelIndexOpen] = useState<boolean>(false);
+  const [modeRulesOpen, setModeRulesOpen] = useState<boolean>(false);
+
+  // Choosing a level from the index collapses it again (small screens) and
+  // moves focus and scroll to the active task so keyboard and screen-reader
+  // users land on the level they picked.
+  const handleSelectLevel = useCallback(
+    (index: number) => {
+      loadLevel(index);
+      setLevelIndexOpen(false);
+      requestAnimationFrame(() => {
+        const heading = levelHeadingRef.current;
+        if (!heading) return;
+        heading.focus({ preventScroll: true });
+        if (typeof heading.scrollIntoView === "function") {
+          // scroll-mt-24 on the heading keeps it clear of the fixed Navbar.
+          heading.scrollIntoView({ block: "start" });
+        }
+      });
+    },
+    [loadLevel]
+  );
   const { isFullscreen, toggleFullscreen } = useFullscreen(containerRef);
 
   return (
@@ -784,21 +813,32 @@ export const QuasiPerfectPuzzler: React.FC = () => {
 
       {/* Active mode rules and mid-proof mode-change confirmation */}
       <div className="mt-3 min-w-0 space-y-2" data-testid="mode-rules">
-        <p className="text-xs text-zinc-400 break-words">
-          {gameMode === "story" ? (
-            <>
-              <span className="font-bold text-emerald-400">Story Mode:</span>{" "}
-              {STORY_RAM_MULTIPLIER}× RAM budget, no failure penalty. Stars
-              still grade RAM used against the Hacker targets.
-            </>
-          ) : (
-            <>
-              <span className="font-bold text-amber-400">Hacker Mode:</span>{" "}
-              base RAM budget, failed tactics cost RAM.
-            </>
-          )}{" "}
-          Changing mode mid-proof restarts the level.
+        <p
+          id="quasi-mode-rules-text"
+          className={`text-xs text-zinc-400 break-words ${
+            modeRulesOpen ? "" : "line-clamp-2 md:line-clamp-none"
+          }`}
+        >
+          <span
+            className={`font-bold ${
+              gameMode === "story" ? "text-emerald-400" : "text-amber-400"
+            }`}
+          >
+            {modeRules.heading}
+          </span>{" "}
+          {modeRules.budget} {modeRules.failure} {modeRules.exhaustion}{" "}
+          {modeRules.scoring} Changing mode mid-proof restarts the level.
         </p>
+        {/* Small screens show two lines of the rules so the active level stays near the top */}
+        <button
+          type="button"
+          aria-expanded={modeRulesOpen}
+          aria-controls="quasi-mode-rules-text"
+          onClick={() => setModeRulesOpen((prev) => !prev)}
+          className="md:hidden min-h-[44px] px-1 text-xs font-bold text-brand-cyan underline underline-offset-2 focus-visible:ring-2 focus-visible:ring-brand-cyan focus-visible:outline-none rounded"
+        >
+          {modeRulesOpen ? "Show fewer rules" : "Read all mode rules"}
+        </button>
         {pendingMode && (
           <div
             role="alertdialog"
@@ -849,109 +889,6 @@ export const QuasiPerfectPuzzler: React.FC = () => {
       ) : (
         /* 3. Campaign View */
         <>
-          {/* Chapter & Level Navigation */}
-          <div className="mt-4 space-y-2.5">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              {/* Chapter Tabs */}
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-[10px] uppercase font-bold text-zinc-500 mr-1">
-                  Chapter:
-                </span>
-                {[
-                  { id: "all", label: "All Levels (18)" },
-                  { id: 1, label: "Ch 1: Equational (1-6)" },
-                  { id: 2, label: "Ch 2: Logic (7-12)" },
-                  { id: 3, label: "Ch 3: Quasiperfect (13-18)" },
-                ].map((chap) => (
-                  <button
-                    key={chap.id}
-                    type="button"
-                    onClick={() =>
-                      setSelectedChapter(chap.id as number | "all")
-                    }
-                    className={`min-h-[44px] px-3 py-1.5 rounded text-[11px] font-bold transition-all flex items-center justify-center focus-visible:ring-2 focus-visible:ring-brand-cyan focus-visible:outline-none ${
-                      selectedChapter === chap.id
-                        ? "bg-zinc-800 text-brand-cyan border border-brand-cyan/40"
-                        : "text-zinc-500 hover:text-zinc-300"
-                    }`}
-                  >
-                    {chap.label}
-                  </button>
-                ))}
-              </div>
-
-              {/* Tools Toggles */}
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <button
-                  type="button"
-                  onClick={() => setShowBriefingModal(true)}
-                  className="min-h-[44px] flex items-center justify-center gap-1 px-3 py-1.5 text-xs font-bold rounded-lg border border-brand-cyan/40 bg-brand-cyan/10 text-brand-cyan hover:bg-brand-cyan/20 transition-all focus-visible:ring-2 focus-visible:ring-brand-cyan focus-visible:outline-none"
-                >
-                  <IconSparkles className="w-3.5 h-3.5" />
-                  <span>Theory Briefing</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowHints((prev) => !prev)}
-                  className={`min-h-[44px] flex items-center justify-center gap-1 px-3 py-1.5 text-xs font-bold rounded-lg border transition-all focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none ${
-                    showHints
-                      ? "bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-[0_0_10px_rgba(245,158,11,0.3)]"
-                      : "bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-zinc-200"
-                  }`}
-                >
-                  <IconBulb className="w-3.5 h-3.5" />
-                  <span>Hints {showHints ? "On" : "Off"}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowLeanInspector((prev) => !prev)}
-                  className={`min-h-[44px] flex items-center justify-center gap-1 px-3 py-1.5 text-xs font-bold rounded-lg border transition-all focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:outline-none ${
-                    showLeanInspector
-                      ? "bg-purple-500/20 text-purple-300 border-purple-500/50 shadow-[0_0_10px_rgba(168,85,247,0.3)]"
-                      : "bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-zinc-200"
-                  }`}
-                >
-                  <IconCode className="w-3.5 h-3.5" />
-                  <span>Lean IDE {showLeanInspector ? "Open" : "Closed"}</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Level Selector Buttons */}
-            <div className="flex flex-wrap items-center gap-1.5 p-2 bg-zinc-900/50 rounded-xl border border-zinc-850">
-              {filteredLevels.map((lvl) => {
-                const actualIdx = puzzleLevels.findIndex(
-                  (l) => l.id === lvl.id
-                );
-                const isCurrent = actualIdx === currentLevelIndex;
-                const lvlProgress = parsedProgress.completedLevels?.[lvl.id];
-
-                return (
-                  <button
-                    key={lvl.id}
-                    type="button"
-                    onClick={() => loadLevel(actualIdx)}
-                    className={`min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg px-3 py-1.5 text-xs font-bold transition-all focus-visible:ring-2 focus-visible:ring-brand-cyan focus-visible:outline-none ${
-                      isCurrent
-                        ? "bg-brand-cyan text-black shadow-[0_0_10px_rgba(6,182,212,0.5)] font-extrabold"
-                        : lvlProgress?.completed
-                          ? "bg-zinc-800 text-emerald-300 hover:bg-zinc-700"
-                          : "bg-zinc-900 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
-                    }`}
-                  >
-                    L{lvl.id}
-                    {lvlProgress?.completed && !lvlProgress.usedSorry && (
-                      <span className="ml-1 text-[10px] text-amber-400">★</span>
-                    )}
-                    {lvlProgress?.usedSorry && (
-                      <span className="ml-1 text-[10px] text-rose-400">⚠</span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
           {/* Level Header & Controls */}
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3 bg-zinc-900/40 border border-zinc-850 rounded-xl p-3.5">
             <div>
@@ -969,7 +906,12 @@ export const QuasiPerfectPuzzler: React.FC = () => {
                   </span>
                 )}
               </div>
-              <h3 className="text-base font-bold text-zinc-100 mt-0.5">
+              <h3
+                ref={levelHeadingRef}
+                tabIndex={-1}
+                id="quasi-current-level-heading"
+                className="scroll-mt-24 rounded-sm text-base font-bold text-zinc-100 mt-0.5 outline-none focus-visible:ring-2 focus-visible:ring-brand-cyan focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
+              >
                 {currentLevel.title}
               </h3>
               <p className="mt-0.5 text-xs text-zinc-400 max-w-xl">
@@ -1004,6 +946,127 @@ export const QuasiPerfectPuzzler: React.FC = () => {
                 <IconRotate className="w-3.5 h-3.5" />
                 <span>Reset</span>
               </button>
+            </div>
+          </div>
+
+          {/* Tools */}
+          <div className="mt-3">
+            {/* Tools Toggles */}
+            <div className="grid grid-cols-3 gap-1.5 sm:flex sm:flex-wrap sm:items-center">
+              <button
+                type="button"
+                onClick={() => setShowBriefingModal(true)}
+                className="min-h-[44px] flex flex-col sm:flex-row items-center justify-center gap-1 px-2 sm:px-3 py-1.5 text-center text-xs font-bold rounded-lg border border-brand-cyan/40 bg-brand-cyan/10 text-brand-cyan hover:bg-brand-cyan/20 transition-all focus-visible:ring-2 focus-visible:ring-brand-cyan focus-visible:outline-none"
+              >
+                <IconSparkles className="w-3.5 h-3.5" />
+                <span>Theory Briefing</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowHints((prev) => !prev)}
+                className={`min-h-[44px] flex flex-col sm:flex-row items-center justify-center gap-1 px-2 sm:px-3 py-1.5 text-center text-xs font-bold rounded-lg border transition-all focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none ${
+                  showHints
+                    ? "bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-[0_0_10px_rgba(245,158,11,0.3)]"
+                    : "bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-zinc-200"
+                }`}
+              >
+                <IconBulb className="w-3.5 h-3.5" />
+                <span>Hints {showHints ? "On" : "Off"}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowLeanInspector((prev) => !prev)}
+                className={`min-h-[44px] flex flex-col sm:flex-row items-center justify-center gap-1 px-2 sm:px-3 py-1.5 text-center text-xs font-bold rounded-lg border transition-all focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:outline-none ${
+                  showLeanInspector
+                    ? "bg-purple-500/20 text-purple-300 border-purple-500/50 shadow-[0_0_10px_rgba(168,85,247,0.3)]"
+                    : "bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-zinc-200"
+                }`}
+              >
+                <IconCode className="w-3.5 h-3.5" />
+                <span>Lean IDE {showLeanInspector ? "Open" : "Closed"}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Level index: collapsed behind a disclosure on small screens so the active task stays in reach */}
+          <div className="mt-3 md:hidden">
+            <button
+              type="button"
+              aria-expanded={levelIndexOpen}
+              aria-controls="quasi-level-index"
+              onClick={() => setLevelIndexOpen((prev) => !prev)}
+              className="min-h-[44px] w-full flex items-center justify-between gap-2 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-xs font-bold text-zinc-200 hover:bg-zinc-800 focus-visible:ring-2 focus-visible:ring-brand-cyan focus-visible:outline-none"
+            >
+              <span>
+                {levelIndexOpen ? "Hide levels" : "Browse levels"} · Level{" "}
+                {currentLevel.id} of {puzzleLevels.length}
+              </span>
+              <span aria-hidden="true">{levelIndexOpen ? "−" : "+"}</span>
+            </button>
+          </div>
+          <div
+            id="quasi-level-index"
+            data-testid="quasi-level-index"
+            className={`mt-3 space-y-2.5 ${levelIndexOpen ? "block" : "hidden md:block"}`}
+          >
+            {/* Chapter Tabs */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[10px] uppercase font-bold text-zinc-400 mr-1">
+                Chapter:
+              </span>
+              {[
+                { id: "all", label: "All Levels (18)" },
+                { id: 1, label: "Ch 1: Equational (1-6)" },
+                { id: 2, label: "Ch 2: Logic (7-12)" },
+                { id: 3, label: "Ch 3: Quasiperfect (13-18)" },
+              ].map((chap) => (
+                <button
+                  key={chap.id}
+                  type="button"
+                  onClick={() => setSelectedChapter(chap.id as number | "all")}
+                  className={`min-h-[44px] px-3 py-1.5 rounded text-[11px] font-bold transition-all flex items-center justify-center focus-visible:ring-2 focus-visible:ring-brand-cyan focus-visible:outline-none ${
+                    selectedChapter === chap.id
+                      ? "bg-zinc-800 text-brand-cyan border border-brand-cyan/40"
+                      : "text-zinc-400 hover:text-zinc-300"
+                  }`}
+                >
+                  {chap.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Level Selector Buttons */}
+            <div className="flex flex-wrap items-center gap-1.5 p-2 bg-zinc-900/50 rounded-xl border border-zinc-850">
+              {filteredLevels.map((lvl) => {
+                const actualIdx = puzzleLevels.findIndex(
+                  (l) => l.id === lvl.id
+                );
+                const isCurrent = actualIdx === currentLevelIndex;
+                const lvlProgress = parsedProgress.completedLevels?.[lvl.id];
+
+                return (
+                  <button
+                    key={lvl.id}
+                    type="button"
+                    onClick={() => handleSelectLevel(actualIdx)}
+                    className={`min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg px-3 py-1.5 text-xs font-bold transition-all focus-visible:ring-2 focus-visible:ring-brand-cyan focus-visible:outline-none ${
+                      isCurrent
+                        ? "bg-brand-cyan text-black shadow-[0_0_10px_rgba(6,182,212,0.5)] font-extrabold"
+                        : lvlProgress?.completed
+                          ? "bg-zinc-800 text-emerald-300 hover:bg-zinc-700"
+                          : "bg-zinc-900 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+                    }`}
+                  >
+                    L{lvl.id}
+                    {lvlProgress?.completed && !lvlProgress.usedSorry && (
+                      <span className="ml-1 text-[10px] text-amber-400">★</span>
+                    )}
+                    {lvlProgress?.usedSorry && (
+                      <span className="ml-1 text-[10px] text-rose-400">⚠</span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -1143,12 +1206,15 @@ export const QuasiPerfectPuzzler: React.FC = () => {
                       key={id + "-" + idx}
                       type="button"
                       onClick={() => {
+                        // These buttons are the screen-reader route, so they
+                        // apply the tactic to the whole active goal rather
+                        // than only selecting it (#1324).
                         setSelectedTacticIndex(idx);
-                        announce(`Selected tactic: ${label}`, "polite");
+                        executeTacticOnNode(idx, null);
+                        announce(`Applied tactic: ${label}`, "polite");
                       }}
-                      aria-pressed={selectedTacticIndex === idx}
                     >
-                      Apply Tactic: {label}
+                      Apply Tactic: {label} to the goal
                     </button>
                   );
                 })}
@@ -1240,6 +1306,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
           {levelSolved && currentScore && (
             <VictoryModal
               score={currentScore}
+              savedBest={parsedProgress.completedLevels?.[currentLevel.id]}
               level={currentLevel}
               totalLevels={puzzleLevels.length}
               currentLevelIndex={currentLevelIndex}

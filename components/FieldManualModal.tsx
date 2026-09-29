@@ -18,10 +18,18 @@ import { FieldManualData } from "@/types/game-manual";
 import { useAudio } from "@/components/providers/AudioProvider";
 import { ModalContainer } from "@/components/ui/ModalContainer";
 
+/** A game action the manual offers, such as replaying a tutorial. */
+export interface FieldManualAction {
+  label: string;
+  description?: string;
+  onSelect: () => void;
+}
+
 interface FieldManualModalProps {
   isOpen: boolean;
   onClose: () => void;
   manual: FieldManualData;
+  action?: FieldManualAction;
 }
 
 type TabType = "objective" | "controls" | "rules" | "lore";
@@ -30,6 +38,7 @@ export function FieldManualModal({
   isOpen,
   onClose,
   manual,
+  action,
 }: FieldManualModalProps) {
   const [activeTab, setActiveTab] = useState<TabType>("objective");
   const { playHover, playAutocomplete, playSuccess } = useAudio();
@@ -184,6 +193,26 @@ export function FieldManualModal({
                     </div>
                   </div>
                 </div>
+
+                {action && (
+                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-500/30 bg-zinc-900/40 p-4">
+                    {action.description && (
+                      <p className="min-w-0 text-sm text-zinc-300 break-words">
+                        {action.description}
+                      </p>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onClose();
+                        action.onSelect();
+                      }}
+                      className="min-h-[44px] rounded-lg border border-amber-500 bg-amber-500/10 px-4 font-mono text-xs font-bold uppercase tracking-wider text-amber-300 hover:bg-amber-500/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 active:scale-[0.98]"
+                    >
+                      {action.label}
+                    </button>
+                  </div>
+                )}
 
                 {/* Quick Summary Card */}
                 <div className="bg-zinc-900/40 border border-zinc-800/80 rounded-2xl p-5 space-y-2.5">

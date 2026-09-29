@@ -21,6 +21,7 @@ export {
   phaseForDay,
   projectedFinishDay,
   resolveDecision,
+  routineLoad,
   totalOpenQueries,
 } from "./internal/model";
 export { STUDY_24_081, STUDY_24_081_SITES, STUDY_24_081_TEAM } from "./presets";
@@ -32,3 +33,11 @@ export {
   inbox,
   resolveEvent,
 } from "./internal/events";
+export {
+  classifyProfile,
+  evaluate,
+  finalizeStudy,
+  inspectionReadiness,
+  lockDatabase,
+  runInspection,
+} from "./internal/endgame";

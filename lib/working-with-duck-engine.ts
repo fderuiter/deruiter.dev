@@ -269,6 +269,8 @@ export const DUCK_FACTS: DuckFact[] = [
 
 /** Good Boy points lost per tick while an emergency goes unhandled. */
 const NEGLECT_DRAIN_PER_TICK = 0.04;
+/** Minimum ticks between two code bursts (60 ticks = 1 s, so 6 per second). */
+const CODE_BURST_MIN_TICKS = 10;
 
 export const SPRINTS: GameSprint[] = [
   {
@@ -773,7 +775,11 @@ export function stepDuckGame(
   let nextWorkProgress = state.workProgress;
   let nextScore = state.totalScore;
 
-  if (!isEmergency && state.duck.state !== "NAP_TIME") {
+  // Training Duck takes the player's attention too: no passive work while
+  // he performs a trick, so a trick costs about a second of coding.
+  const isTraining = state.duck.state === "PERFORMING_TRICK";
+
+  if (!isEmergency && !isTraining && state.duck.state !== "NAP_TIME") {
     const workIncrement = 0.04 * effectiveMultiplier * puddlePenalty;
     nextWorkProgress = Math.min(
       state.targetWorkProgress,
@@ -1523,11 +1529,73 @@ export function performTrick(
     return state;
   }
 
+  // One trick at a time: Duck finishes the current trick (about a second)
+  // before he listens again, so holding a trick key can't farm points.
+  if (state.activeTrick || state.duck.state === "PERFORMING_TRICK") {
+    return state;
+  }
+
+  // A trick only answers the emergency it fits. Drop It stops chewing and
+  // stolen items, Sit settles the zoomies, and a potty emergency needs a
+  // potty break. Any other trick is ignored rather than cancelling it.
+  const duckState = state.duck.state;
+  const hasSomethingToDrop =
+    duckState === "NO_TAKE_THROW" ||
+    duckState === "SNEAKY_CHEW" ||
+    state.duck.isCarryingBall;
+  let hint: string | null = null;
+  if (duckState === "SNIFFING_POTTY") {
+    hint = "🚽 Duck needs a potty break, not a trick!";
+  } else if (
+    (duckState === "SNEAKY_CHEW" || duckState === "NO_TAKE_THROW") &&
+    trick !== "DROP_IT"
+  ) {
+    hint = "🦴 Try 'Drop It' (E)!";
+  } else if (duckState === "ZOOMIES" && trick !== "SIT") {
+    hint = "⚡ Only 'Sit' (Q) settles the zoomies!";
+  } else if (trick === "DROP_IT" && !hasSomethingToDrop) {
+    hint = "Nothing to drop right now.";
+  }
+  if (hint) {
+    // Show the hint once rather than stacking a copy per key press.
+    if (state.floatingAlerts.some((alert) => alert.text === hint)) {
+      return state;
+    }
+    return {
+      ...state,
+      floatingAlerts: [
+        ...state.floatingAlerts,
+        {
+          id: state.nextAlertId,
+          x: state.duck.x,
+          y: state.duck.y - 25,
+          text: hint,
+          color: "#f59e0b",
+          alpha: 1,
+          vy: -1.2,
+        },
+      ],
+    };
+  }
+
   const soundCues: Array<SoundCue> = ["trick-chime"];
   let nextScore = state.totalScore;
   let nextNaughty = state.naughtyVsGood;
   let nextExcitement = state.excitement;
-  const comboStreak = state.comboStreak + 1;
+  // The streak keeps counting, but its score bonus is capped at 3x, matching
+  // the multiplier bonus in stepDuckGame.
+  // Sit, High Five and Spin burn off Duck's excitement, so they pay most
+  // when he's wound up and very little when he's already calm. Spamming
+  // tricks keeps him calm and earns almost nothing. Drop It always answers
+  // a real problem, so it always pays in full.
+  const need =
+    trick === "DROP_IT" ? 1 : Math.min(1, Math.max(0.1, state.excitement / 60));
+  // Only a trick Duck needed extends the combo. The streak's score bonus is
+  // capped at 3x, matching the multiplier bonus in stepDuckGame.
+  const extendsCombo = need >= 0.5;
+  const comboStreak = extendsCombo ? state.comboStreak + 1 : state.comboStreak;
+  const comboMultiplier = Math.max(1, Math.min(3, comboStreak));
+  const scaled = (value: number) => Math.round(value * need);
   const alerts = [...state.floatingAlerts];
   const particles = [...state.particles];
 
@@ -1536,7 +1604,7 @@ export function performTrick(
     if (state.duck.state === "NO_TAKE_THROW" || state.duck.isCarryingBall) {
       soundCues.push("ding");
       nextNaughty = Math.min(100, nextNaughty + 30);
-      nextScore += 60 * comboStreak;
+      nextScore += 60 * comboMultiplier;
       alerts.push({
         id: state.nextAlertId,
         x: state.duck.x,
@@ -1549,7 +1617,7 @@ export function performTrick(
     } else if (state.duck.state === "SNEAKY_CHEW") {
       soundCues.push("ding");
       nextNaughty = Math.min(100, nextNaughty + 35);
-      nextScore += 75 * comboStreak;
+      nextScore += 75 * comboMultiplier;
       alerts.push({
         id: state.nextAlertId,
         x: state.duck.x,
@@ -1562,22 +1630,22 @@ export function performTrick(
     }
   } else if (trick === "HIGH_FIVE") {
     soundCues.push("paw-clap");
-    nextNaughty = Math.min(100, nextNaughty + 20);
-    nextScore += 45 * comboStreak;
+    nextNaughty = Math.min(100, nextNaughty + scaled(20));
+    nextScore += scaled(45) * comboMultiplier;
     nextExcitement = Math.max(0, nextExcitement - 15);
     alerts.push({
       id: state.nextAlertId,
       x: state.duck.x,
       y: state.duck.y - 25,
-      text: "🐾 High Five! (+45 pts)",
+      text: `🐾 High Five! (+${scaled(45) * comboMultiplier} pts)`,
       color: "#ec4899",
       alpha: 1,
       vy: -1.2,
     });
   } else if (trick === "SIT") {
     soundCues.push("ding");
-    nextNaughty = Math.min(100, nextNaughty + 18);
-    nextScore += 35 * comboStreak;
+    nextNaughty = Math.min(100, nextNaughty + scaled(18));
+    nextScore += scaled(35) * comboMultiplier;
     nextExcitement = Math.max(0, nextExcitement - 20);
     alerts.push({
       id: state.nextAlertId,
@@ -1590,13 +1658,14 @@ export function performTrick(
     });
   } else if (trick === "SPIN") {
     soundCues.push("spin-whoosh");
-    nextNaughty = Math.min(100, nextNaughty + 22);
-    nextScore += 50 * comboStreak;
+    nextNaughty = Math.min(100, nextNaughty + scaled(22));
+    nextScore += scaled(50) * comboMultiplier;
+    nextExcitement = Math.max(0, nextExcitement - 10);
     alerts.push({
       id: state.nextAlertId,
       x: state.duck.x,
       y: state.duck.y - 25,
-      text: "🌀 Spin Trick! (+50 pts)",
+      text: `🌀 Spin Trick! (+${scaled(50) * comboMultiplier} pts)`,
       color: "#a855f7",
       alpha: 1,
       vy: -1.2,
@@ -1623,7 +1692,7 @@ export function performTrick(
     naughtyVsGood: nextNaughty,
     excitement: nextExcitement,
     comboStreak,
-    comboTimer: 180,
+    comboTimer: extendsCombo ? 180 : state.comboTimer,
     activeTrick: {
       trick,
       timer: 60,
@@ -1651,8 +1720,27 @@ export function activeCodeBurst(
   if (state.status !== "running" || state.inDogPark || state.inBathtub)
     return state;
 
+  // Bursts are rate-limited, so mashing Space faster than a person types
+  // doesn't finish a sprint in seconds.
+  if (
+    state.activeCodeBursts > 0 &&
+    state.ticks - state.lastCodeTick < CODE_BURST_MIN_TICKS
+  ) {
+    return state;
+  }
+
+  // While Duck has an emergency, the player can't focus on code: the burst
+  // does nothing until Duck is dealt with.
+  if (
+    state.duck.state === "SNIFFING_POTTY" ||
+    state.duck.state === "SNEAKY_CHEW" ||
+    state.duck.state === "ZOOMIES"
+  ) {
+    return state;
+  }
+
   const effectiveMultiplier = state.multiplier;
-  const progressBoost = 0.6 * effectiveMultiplier;
+  const progressBoost = 0.45 * effectiveMultiplier;
   const nextWork = Math.min(
     state.targetWorkProgress,
     state.workProgress + progressBoost

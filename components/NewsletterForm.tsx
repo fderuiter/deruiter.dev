@@ -9,6 +9,9 @@ import {
   IconLoader2,
 } from "@tabler/icons-react";
 import { useAudio } from "@/components/providers/AudioProvider";
+import { useAnnouncer } from "@/hooks/useAnnouncer";
+
+const NEWSLETTER_SUCCESS_MESSAGE = "Almost there: check your inbox to confirm.";
 
 interface NewsletterFormProps {
   className?: string;
@@ -31,6 +34,7 @@ export function NewsletterForm({
 
   const mountedRef = useRef(false);
   const { playHover } = useAudio();
+  const { announce } = useAnnouncer();
 
   useEffect(() => {
     if (!mountedRef.current) {
@@ -82,6 +86,10 @@ export function NewsletterForm({
 
       setStatus("success");
       setEmail("");
+      // The confirmation banner replaces the form, so a live region on it
+      // would be mounted with its text already present and skipped by most
+      // screen readers. Announce through the persistent root regions instead.
+      announce(NEWSLETTER_SUCCESS_MESSAGE, "polite");
       if (onSuccess) onSuccess();
     } catch {
       setStatus("error");
@@ -119,11 +127,11 @@ export function NewsletterForm({
 
       {status === "success" ? (
         <div
-          role="status"
+          data-testid="newsletter-success"
           className="flex items-center gap-3 p-3.5 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-300 text-xs font-mono animate-fade-in"
         >
           <IconCheck className="w-4 h-4 shrink-0 text-emerald-400" />
-          <span>Almost there: check your inbox to confirm.</span>
+          <span>{NEWSLETTER_SUCCESS_MESSAGE}</span>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-2">

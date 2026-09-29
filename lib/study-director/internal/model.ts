@@ -18,11 +18,13 @@ import type {
 import { METER_IDS } from "../types";
 
 /** Attention points available each simulated day. */
-export const ATTENTION_PER_DAY = 8;
+export const ATTENTION_PER_DAY = 5;
 /** Extra attention a decision costs when the player documents it properly. */
 export const DOCUMENTATION_ATTENTION = 1;
 /** Attention an audit of one site costs. */
 export const AUDIT_ATTENTION = 2;
+/** Most attention routine work can take from a day. */
+const MAX_ROUTINE_LOAD = 2;
 /** Days an audit keeps a site's dashboard honest. */
 export const AUDIT_WINDOW_DAYS = 10;
 
@@ -38,6 +40,21 @@ const PHASE_BOUNDS: Array<[Phase, number]> = [
 
 const clamp = (value: number, lo = 0, hi = 100): number =>
   Math.min(hi, Math.max(lo, value));
+
+/**
+ * Attention the study's own upkeep takes before the player decides anything.
+ * A calm study costs nothing. A backlog of open queries and unrecorded
+ * decisions pulls the Study Director into routine work, so a shortcut that
+ * saves attention today is paid for in attention later.
+ */
+export function routineLoad(state: StudyState): number {
+  const queries = totalOpenQueries(state);
+  const load =
+    Math.floor(queries / 10) +
+    (state.documentationDebt >= 35 ? 1 : 0) +
+    (state.documentationDebt >= 65 ? 1 : 0);
+  return Math.min(MAX_ROUTINE_LOAD, load);
+}
 
 /** The phase a study is in on `day`, from the planned duration. */
 export function phaseForDay(day: number, durationDays: number): Phase {
@@ -72,6 +89,7 @@ export function createStudy(
     team: team.map((m) => ({ ...m })),
     sites: sites.map((s) => ({ ...s })),
     attention: ATTENTION_PER_DAY,
+    routine: 0,
     documentationDebt: 0,
     spent: 0,
     slipDays: 0,
@@ -320,8 +338,9 @@ export function advanceDay(input: StudyState): StudyState {
     ...state,
     spent: state.spent + burn,
     documentationDebt: clamp(state.documentationDebt + creep),
-    attention: ATTENTION_PER_DAY,
   };
+  const routine = routineLoad(state);
+  state = { ...state, routine, attention: ATTENTION_PER_DAY - routine };
   if (state.day >= setup.durationDays + state.slipDays) {
     state = { ...state, status: "complete" };
   }
@@ -499,9 +518,11 @@ export function dashboard(state: StudyState): Dashboard {
     safety: {
       health: grade(visSafety, 4, 10),
       summary:
-        visSafety >= 1
-          ? "Eligibility or deviation signals reported"
-          : "No open safety signals reported",
+        visSafety < 1
+          ? "No open safety signals reported"
+          : visSafety < 4
+            ? "Minor deviations noted"
+            : "Eligibility or deviation signals reported",
     },
     data: {
       health: grade(visQueries, 8, 20),
@@ -509,7 +530,12 @@ export function dashboard(state: StudyState): Dashboard {
     },
     regulatory: {
       health: grade(visReg, 3, 8),
-      summary: "Approvals and training on file",
+      summary:
+        visReg < 3
+          ? "Approvals and training on file"
+          : visReg < 8
+            ? "Some sign-offs or training pending"
+            : "Sign-offs, approvals or training outstanding",
     },
     budget: {
       health: grade(overspend, 0.05, 0.15),
@@ -538,6 +564,18 @@ export function auditSite(
     state: {
       ...state,
       attention: state.attention - AUDIT_ATTENTION,
+      log: [
+        ...state.log,
+        {
+          day: state.day,
+          eventId: `audit:${siteId}`,
+          optionId: "audit",
+          label: `Audited ${site.name}`,
+          documented: true,
+          attentionSpent: AUDIT_ATTENTION,
+          effects: { auditSites: [siteId] },
+        },
+      ],
       sites: state.sites.map((s) =>
         s.id === siteId ? { ...s, lastAuditedDay: state.day } : s
       ),

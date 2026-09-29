@@ -194,8 +194,10 @@ describe("CI Execution Policy", () => {
     });
 
     it("runs the full suite with no project filter", () => {
-      expect(block).toContain("npx playwright test");
-      expect(block).not.toMatch(/npx playwright test[^\n]*--project=/);
+      expect(block).toContain("npx --no-install playwright test");
+      expect(block).not.toMatch(
+        /npx --no-install playwright test[^\n]*--project=/
+      );
     });
   });
 

@@ -83,6 +83,35 @@ test.describe("Working With Duck: HUD and action dock stay simultaneously visibl
   }
 });
 
+// #1316: the windowed cabinet was 960 px tall at 1440x900, so the hotbar started below the fold
+// and clicking Dog Park or Bathtub scrolled the scene under the navbar. The canvas now caps its
+// width by the viewport height, so the whole cabinet fits below the fixed navbar.
+test.describe("Working With Duck: windowed cabinet fits a desktop screen", () => {
+  test("cabinet fits below the navbar at 1440x900", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await gotoDuck(page);
+
+    await expect(async () => {
+      const launchBtn = page.getByRole("button", { name: /Launch Cabinet/i });
+      if (await launchBtn.isVisible()) {
+        await launchBtn.click({ force: true });
+      }
+      await expect(page.getByTestId("duck-action-dock")).toBeVisible({
+        timeout: 2000,
+      });
+    }).toPass({ timeout: 20000 });
+
+    const cabinet = page.locator(".arcade-cabinet").first();
+    const navHeight = await page.evaluate(
+      () =>
+        document.querySelector("header")?.getBoundingClientRect().height ?? 0
+    );
+    const cabinetBox = await cabinet.boundingBox();
+    expect(cabinetBox).not.toBeNull();
+    expect(cabinetBox!.height).toBeLessThanOrEqual(900 - navHeight);
+  });
+});
+
 // Regression coverage for D09: axe found three serious color-contrast violations (3.84:1,
 // below the required 4.5:1) in the always-visible top HUD helper labels — the small
 // "Endless Mode / Speed", "Fetch / Sit / ZOOMIES", and "Drag to Door" text under each meter.

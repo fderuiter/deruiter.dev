@@ -1,7 +1,6 @@
 {
   "@clerk/shared": "postinstall prints Clerk's development-instance telemetry notice once and writes a marker under the user's config directory; nothing is downloaded. Reached through @clerk/themes.",
   "@prisma/engines": "postinstall downloads the Prisma query and schema engines for the current platform. Required: prisma generate and every database call use them.",
-  "@sentry/cli": "postinstall downloads the sentry-cli binary used to upload source maps during production builds.",
   "core-js": "postinstall prints a funding banner and swallows every error. Reached through jspdf and canvg; optional.",
   "esbuild": "postinstall verifies or installs the platform-specific esbuild binary. Used by tsx and Vite.",
   "fsevents": "Builds the macOS file-watching native module. Optional and skipped on Linux, including Vercel and CI.",

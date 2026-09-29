@@ -16,7 +16,8 @@ export const CYBERDECK_CLASSES: Record<CyberdeckClassId, CyberdeckClass> = {
     id: "script_kiddie",
     name: "Script Kiddie",
     role: "Rapid Infiltrator",
-    description: "Equipped with automated exploit toolkits and hardware bypass chips for swift breaches.",
+    description:
+      "Equipped with automated exploit toolkits and hardware bypass chips for swift breaches.",
     passiveBonus: "Starts with 2 extra Bypass Chips and +15% Movement Evasion.",
     baseHp: 80,
     baseRam: 24,
@@ -30,8 +31,10 @@ export const CYBERDECK_CLASSES: Record<CyberdeckClassId, CyberdeckClass> = {
     id: "cryptanalyst",
     name: "Cryptanalyst",
     role: "Cipher Specialist",
-    description: "Decodes encrypted mainframe keys and extracts maximum crypto bounties from breach targets.",
-    passiveBonus: "+50% Crypto harvest from Terminals and 2x Critical Strike damage on Exposed CVEs.",
+    description:
+      "Decodes encrypted mainframe keys and extracts maximum crypto bounties from breach targets.",
+    passiveBonus:
+      "+50% Crypto harvest from Terminals and 2x Critical Strike damage on Exposed CVEs.",
     baseHp: 100,
     baseRam: 32,
     ramRegen: 2,
@@ -44,7 +47,8 @@ export const CYBERDECK_CLASSES: Record<CyberdeckClassId, CyberdeckClass> = {
     id: "apt_specialist",
     name: "APT Specialist",
     role: "Advanced Persistent Threat",
-    description: "Elite Red Team operator wielding high-tier memory corruption and packet spoofing exploits.",
+    description:
+      "Elite Red Team operator wielding high-tier memory corruption and packet spoofing exploits.",
     passiveBonus: "Starts with 48 GB RAM and +25% AoE Exploit Blast Radius.",
     baseHp: 110,
     baseRam: 48,
@@ -58,8 +62,10 @@ export const CYBERDECK_CLASSES: Record<CyberdeckClassId, CyberdeckClass> = {
     id: "hardware_hacker",
     name: "Hardware Hacker",
     role: "Physical Jumper & EMP Titan",
-    description: "Armored physical infiltrator with fortified cyberdeck chassis and high-yield EMP surges.",
-    passiveBonus: "High Health (+40 Max HP) and Immune to Scrambled Controls / Glitch Lag.",
+    description:
+      "Armored physical infiltrator with fortified cyberdeck chassis and high-yield EMP surges.",
+    passiveBonus:
+      "High Health (+40 Max HP) and Immune to Scrambled Controls / Glitch Lag.",
     baseHp: 140,
     baseRam: 28,
     ramRegen: 2,
@@ -126,7 +132,8 @@ export const DARKNET_VENDOR_CATALOG: DarknetItem[] = [
     id: "bypass_hardware_chip",
     name: "Hardware Jumper Bypass Chip",
     cost: 200,
-    description: "Instantly solves any locked Hex Matrix terminal or security vault.",
+    description:
+      "Instantly solves any locked Hex Matrix terminal or security vault.",
     category: "chip",
     icon: "🔌",
   },
@@ -134,7 +141,8 @@ export const DARKNET_VENDOR_CATALOG: DarknetItem[] = [
     id: "zero_day_payload",
     name: "Airgap 0-Day Exploit Injector",
     cost: 450,
-    description: "Grants 2 rounds of Zero-Day Piercer ammunition with firewall penetration.",
+    description:
+      "Grants 2 rounds of Zero-Day Piercer ammunition with firewall penetration.",
     category: "weapon",
     icon: "💥",
   },
@@ -150,7 +158,8 @@ export const DARKNET_VENDOR_CATALOG: DarknetItem[] = [
     id: "firmware_cve_database",
     name: "Real-Time CVE Threat Feed",
     cost: 350,
-    description: "Automatically exposes CVE tags on all hostile daemons upon room entry.",
+    description:
+      "Automatically exposes CVE tags on all hostile daemons upon room entry.",
     category: "firmware",
     icon: "📡",
   },
@@ -171,6 +180,13 @@ export const DEFAULT_CYBERDECK_PROFILE: CyberdeckProfile = {
 };
 
 export const STORAGE_KEY_PROFILE = "retro_cyberdeck_profile";
+
+/**
+ * The one localStorage key for the Retro Labyrinth high score. The game and
+ * the arcade hub both read and write it, and the manual and arcade catalogue
+ * name it (#1322).
+ */
+export const RETRO_LABYRINTH_HIGH_SCORE_KEY = "retro_labyrinth_highscore";
 
 /**
  * Loads the persistent Cyberdeck profile from browser storage.

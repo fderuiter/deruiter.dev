@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import type { HeadingItem } from "@/lib/blog/headings";
+import { scrollToElement } from "@/lib/scroll";
 
 interface TableOfContentsProps {
   headings: HeadingItem[];
@@ -60,19 +61,11 @@ export function TableOfContents({ headings }: TableOfContentsProps) {
     e.preventDefault();
     setActiveId(id);
     setIsOpen(false);
-    window.history.pushState(null, "", `#${id}`);
     // The mobile list collapses on selection. Scroll after that layout change
-    // so the heading remains below the fixed navbar at every width.
+    // so the heading remains below the fixed navbar at every width. Focus
+    // follows the reader to the heading so the next Tab continues from there.
     window.requestAnimationFrame(() => {
-      const target = document.getElementById(id);
-      if (!target) return;
-      const reduceMotion =
-        typeof window.matchMedia === "function" &&
-        window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      target.scrollIntoView({
-        behavior: reduceMotion ? "auto" : "smooth",
-        block: "start",
-      });
+      scrollToElement(id, { updateHash: "push" });
     });
   };
 

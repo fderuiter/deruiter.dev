@@ -24,6 +24,49 @@ const eslintConfig = defineConfig([
       ],
     },
   },
+  // Application logging goes through the StructuredLogger in lib/logger.ts,
+  // which sanitizes errors and reports to Sentry (#1137). no-console sits in a
+  // block of its own because flat config replaces a rule's options when a later
+  // block matching the same file sets that rule again. It covers only
+  // directories that are already clean; scripts/ and lib/dx/ are CLIs whose
+  // console output is their interface. email-service.ts is exempt until its
+  // three remaining console calls migrate (held back by an open PR).
+  {
+    files: [
+      "app/**/*.{ts,tsx,js,jsx}",
+      "components/**/*.{ts,tsx,js,jsx}",
+      "lib/services/**/*.{ts,tsx,js,jsx}",
+    ],
+    ignores: ["app/generated/**", "lib/services/email-service.ts"],
+    rules: {
+      "no-console": "error",
+    },
+  },
+  // Haptics go through triggerHaptic (#1130). This uses no-restricted-properties
+  // rather than no-restricted-syntax because flat config replaces a rule's
+  // options when a later block matching the same file sets that rule again, so a
+  // selector added to the no-restricted-syntax blocks below would be silently
+  // dropped for application modules.
+  {
+    files: [
+      "app/**/*.{ts,tsx,js,jsx}",
+      "lib/**/*.{ts,tsx,js,jsx}",
+      "components/**/*.{ts,tsx,js,jsx}",
+      "hooks/**/*.{ts,tsx,js,jsx}",
+    ],
+    ignores: ["lib/haptics.ts"],
+    rules: {
+      "no-restricted-properties": [
+        "error",
+        {
+          object: "navigator",
+          property: "vibrate",
+          message:
+            "Do not call navigator.vibrate directly. Use triggerHaptic from @/lib/haptics, which handles SSR, unsupported browsers and permission errors.",
+        },
+      ],
+    },
+  },
   {
     files: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],
     ignores: [

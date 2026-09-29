@@ -4,9 +4,12 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useResizeObserver } from "@/hooks/useResizeObserver";
+import { useScrollToAnchor } from "@/hooks/useScrollToAnchor";
+import { resolveScrollBehavior } from "@/lib/scroll";
 import {
   IconArrowUp,
   IconCards,
+  IconClipboardCheck,
   IconBrandGithub,
   IconBrandLinkedin,
   IconCalendar,
@@ -49,20 +52,20 @@ export const Footer: React.FC = () => {
   const scrollToTop = () => {
     if (typeof window !== "undefined") {
       playSuccess();
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      window.scrollTo({ top: 0, behavior: resolveScrollBehavior("smooth") });
     }
   };
 
+  const scrollToAnchor = useScrollToAnchor();
+
+  // On the homepage the section is scrolled to in page; elsewhere the link
+  // navigates to it.
   const handleHashClick = (
     e: React.MouseEvent<HTMLAnchorElement>,
     hash: string
   ) => {
     if (pathname === "/") {
-      e.preventDefault();
-      const el = document.getElementById(hash);
-      if (el) {
-        el.scrollIntoView({ behavior: "smooth" });
-      }
+      scrollToAnchor(e, hash);
     }
   };
 
@@ -194,6 +197,16 @@ export const Footer: React.FC = () => {
                   >
                     <IconCards className="w-3 h-3 text-cyan-400" />
                     Trial &amp; Error
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/arcade/study-director"
+                    onMouseEnter={handleHover}
+                    className="text-zinc-400 hover:text-brand-cyan transition-colors flex items-center gap-1.5"
+                  >
+                    <IconClipboardCheck className="w-3 h-3 text-cyan-400" />
+                    Study Director
                   </Link>
                 </li>
                 <li>

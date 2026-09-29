@@ -11,6 +11,7 @@ import React, {
 import Link from "next/link";
 import { useTelemetry } from "@/hooks/useTelemetry";
 import { clamp } from "@/lib/game-utils";
+import { formatNumber } from "@/lib/utils";
 import { useSearch } from "@/components/providers/SearchProvider";
 import dynamic from "next/dynamic";
 import { RetroLabyrinthSkeleton } from "@/components/RetroLabyrinthSkeleton";
@@ -274,7 +275,8 @@ export function UnifiedErrorLayout({
               <div>LOC_X: {Math.round(mousePos.x)}px</div>
               <div>LOC_Y: {Math.round(mousePos.y)}px</div>
               <div>
-                NORM: {normalized.x.toFixed(2)}, {normalized.y.toFixed(2)}
+                NORM: {formatNumber(normalized.x, 2)},{" "}
+                {formatNumber(normalized.y, 2)}
               </div>
             </div>
           )}

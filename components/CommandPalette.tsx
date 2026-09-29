@@ -7,7 +7,6 @@ import React, {
   useId,
   useMemo,
   useDeferredValue,
-  useTransition,
   useCallback,
 } from "react";
 import { createPortal } from "react-dom";
@@ -33,15 +32,27 @@ import {
   IconFlame,
   IconShieldCheck,
   IconCamera,
+  IconClipboardCheck,
 } from "@tabler/icons-react";
 import { filterFuzzySearch } from "@/lib/search-utils";
 import { useSearch } from "@/components/providers/SearchProvider";
 import { useAudio } from "@/components/providers/AudioProvider";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { scrollToElement } from "@/lib/scroll";
 import { unlockAchievement, setVaultUnlocked } from "@/lib/meme-data";
 import { playMemeSound } from "@/lib/meme-audio";
 import { useFontPreference } from "@/hooks/useFontPreference";
+import { useDebounce } from "@/hooks/useDebounce";
+import { useThrottledCallback } from "@/hooks/useThrottle";
 import { useAnnouncer } from "@/components/providers/A11yProvider";
+
+/** True under React's act() test environment, where timing gates collapse to 0ms. */
+function isActEnvironment(): boolean {
+  return Boolean(
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean })
+      .IS_REACT_ACT_ENVIRONMENT
+  );
+}
 
 interface SearchCaseStudy {
   id: string;
@@ -75,8 +86,12 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
   studies,
 }) => {
   const [query, setQuery] = useState("");
-  const [debouncedQuery, setDebouncedQuery] = useState("");
-  const [, startTransition] = useTransition();
+  // Clearing the field resets results at once; typing waits 150ms (0ms under
+  // React's act() test environment so suites stay synchronous).
+  const debouncedQuery = useDebounce(
+    query,
+    query === "" || isActEnvironment() ? 0 : 150
+  );
   const deferredQuery = useDeferredValue(debouncedQuery);
 
   const [activeIndex, setActiveIndex] = useState(0);
@@ -88,8 +103,6 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
   const backdropRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const searchId = useId();
-
-  const lastAudioTimeRef = useRef<number>(0);
 
   useEffect(() => {
     const backdrop = backdropRef.current;
@@ -119,54 +132,13 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
     };
   }, []);
 
-  const throttledPlayHover = useCallback(() => {
-    const now = performance.now();
-    const isActEnv =
-      typeof globalThis !== "undefined" &&
-      Boolean(
-        (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT?: boolean })
-          .IS_REACT_ACT_ENVIRONMENT
-      );
-    const throttleMs = isActEnv ? 0 : 50;
-    if (now - lastAudioTimeRef.current >= throttleMs) {
-      lastAudioTimeRef.current = now;
-      playHover();
-    }
-  }, [playHover]);
-
-  useEffect(() => {
-    if (query === "") {
-      startTransition(() => {
-        setDebouncedQuery("");
-      });
-      return;
-    }
-
-    const isActEnv =
-      typeof globalThis !== "undefined" &&
-      Boolean(
-        (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT?: boolean })
-          .IS_REACT_ACT_ENVIRONMENT
-      );
-    const timerMs = isActEnv ? 0 : 150;
-
-    if (timerMs === 0) {
-      startTransition(() => {
-        setDebouncedQuery(query);
-      });
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      startTransition(() => {
-        setDebouncedQuery(query);
-      });
-    }, timerMs);
-
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [query, startTransition]);
+  // Rate-limit hover ticks during fast pointer sweeps and held arrow keys;
+  // calls inside the 50ms window are dropped rather than queued.
+  const throttledPlayHover = useThrottledCallback(
+    playHover,
+    isActEnvironment() ? 0 : 50,
+    { trailing: false }
+  );
 
   const trapRef = useFocusTrap<HTMLDivElement>(true, {
     initialFocusRef: inputRef,
@@ -187,6 +159,22 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
     return () => {
       document.body.style.overflow = "";
       clearTimeout(timer);
+    };
+  }, []);
+
+  // A homepage section picked while the homepage is open is scrolled to once
+  // the palette has unmounted: until then the rest of the page is inert and
+  // cannot take focus. The focus trap's cleanup runs first and queues a focus
+  // restoration to the element that opened the palette; this timer is queued
+  // after it, so focus ends on the section.
+  const pendingAnchorRef = useRef<string | null>(null);
+  useEffect(() => {
+    const pendingAnchor = pendingAnchorRef;
+    return () => {
+      const targetId = pendingAnchor.current;
+      if (targetId) {
+        setTimeout(() => scrollToElement(targetId), 0);
+      }
     };
   }, []);
 
@@ -701,6 +689,25 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           "Three studies, each ending at a Boss",
           "Relics, packs and a Procurement Shop",
           "Endless post-marketing rounds",
+        ],
+      },
+      {
+        id: "nav-study-director",
+        title: "Study Director: Everything Is Fine",
+        subtitle:
+          "Run a clinical study on eight attention points a day and defend your decisions to the FDA.",
+        category: "navigation",
+        url: "/arcade/study-director",
+        icon: <IconClipboardCheck className="w-4 h-4 text-brand-cyan" />,
+        badge: "Simulation",
+        status: "Playable",
+        description:
+          "Shepherd one study from kickoff to database lock. Answer the inbox, delegate, audit the sites behind the green dashboard, and see which decisions the inspector asks about.",
+        techStack: ["Seeded Simulation", "Causal Model", "Decision Log"],
+        highlights: [
+          "Eight attention points a day, six meters",
+          "Documentation debt comes due at inspection",
+          "Discover which kind of Study Director you are",
         ],
       },
       {
@@ -1311,22 +1318,17 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
       return;
     }
 
-    // Handle in-page dynamic smooth scrolls
-    if (item.url.startsWith("/#")) {
+    // On the homepage a homepage section is scrolled to in page. From any
+    // other page the palette navigates, and the router scrolls to the hash
+    // once the homepage has rendered.
+    if (item.url.startsWith("/#") && window.location.pathname === "/") {
       const targetId = item.url.substring(2);
-      const targetElement = document.getElementById(targetId);
-      if (targetElement) {
-        router.push("/");
-        // Allow thread transition to complete
-        setTimeout(() => {
-          targetElement.scrollIntoView({ behavior: "smooth" });
-        }, 100);
-      } else {
-        router.push(item.url);
+      if (document.getElementById(targetId)) {
+        pendingAnchorRef.current = targetId;
+        return;
       }
-    } else {
-      router.push(item.url);
     }
+    router.push(item.url);
   };
 
   // Close when clicking directly on the backdrop container

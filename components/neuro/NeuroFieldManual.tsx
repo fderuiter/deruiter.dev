@@ -139,17 +139,17 @@ const ManualDialog: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 </h3>
                 <p className="leading-relaxed">
                   In computational neuroanatomy, the human cerebral cortex is
-                  topologically equivalent to a 2-sphere ($S^2$). Under the
+                  topologically equivalent to a 2-sphere (S²). Under the
                   Euler-Poincaré formula:
                 </p>
                 <div className="my-2 p-3 rounded-xl bg-zinc-950 border border-zinc-800 font-mono text-emerald-400 text-center">
-                  \(\chi = V - E + F = 2 - 2g\) (where \(g\) is the topological
-                  genus / handle count)
+                  χ = V − E + F = 2 − 2g (where g is the topological genus /
+                  handle count)
                 </div>
                 <p className="leading-relaxed">
-                  A defect-free cortical mesh has genus \(g = 0\), yielding
-                  \(\chi = 2\). Any spurious tissue bridges create handles (\(g
-                  \ge 1\)), which must be severed before spherical inflation.
+                  A defect-free cortical mesh has genus g = 0, yielding χ = 2.
+                  Any spurious tissue bridges create handles (g ≥ 1), which must
+                  be severed before spherical inflation.
                 </p>
               </div>
 
@@ -252,8 +252,8 @@ const ManualDialog: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                   </span>
                 </div>
                 <p className="text-zinc-400 leading-relaxed">
-                  <strong>Symptom:</strong> Non-spherical mesh topology (\(\chi
-                  = 0\) instead of \(\chi = 2\)).
+                  <strong>Symptom:</strong> Non-spherical mesh topology (χ = 0
+                  instead of χ = 2).
                   <br />
                   <strong>Fix:</strong> Identify the spurious voxel bridge
                   across the sulcus and apply a cutting plane with Voxel Erase.
@@ -316,7 +316,7 @@ const ManualDialog: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                   key: "Mouse Wheel",
                   desc: "Scroll through anatomical slices",
                 },
-                { key: "Space", desc: "Run recon-all pipeline execution" },
+                { key: "R / Space", desc: "Run recon-all pipeline execution" },
                 { key: "M / ?", desc: "Open this Field Manual" },
                 { key: "Cmd + K", desc: "Site-wide Command Palette" },
               ].map((s) => (

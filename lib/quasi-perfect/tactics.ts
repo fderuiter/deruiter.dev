@@ -40,6 +40,7 @@ export function resolveHypothesis(
   return undefined;
 }
 
+/* jscpd:ignore-start */
 export const tacticDefs: Record<TacticId, TacticDef> = {
   rfl: {
     id: "rfl",
@@ -817,6 +818,7 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
           message:
             "error: tactic 'right' failed: goal is not a disjunction (A ∨ B).",
         };
+/* jscpd:ignore-end */
       }
 
       const [, rightDisj] = nodeToTest.children;

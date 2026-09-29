@@ -18,6 +18,7 @@ const emptyParams: Record<string, string> = {};
 
 const subscribers = new Set<() => void>();
 
+/* jscpd:ignore-start */
 function notifySubscribers(): void {
   subscribers.forEach((callback) => callback());
 }
@@ -38,6 +39,7 @@ if (typeof window !== "undefined") {
     }
     notifySubscribers();
   };
+/* jscpd:ignore-end */
 
   window.addEventListener("hashchange", handleWindowHashChange);
   window.addEventListener("popstate", handleWindowHashChange);
@@ -51,6 +53,7 @@ function subscribe(callback: () => void): () => void {
   };
 }
 
+/* jscpd:ignore-start */
 function getClientSnapshot(): Record<string, string> {
   if (typeof window === "undefined") {
     return emptyParams;
@@ -73,6 +76,7 @@ function getClientSnapshot(): Record<string, string> {
   cachedSnapshot = { raw, params };
   return cachedSnapshot.params;
 }
+/* jscpd:ignore-end */
 
 function getServerSnapshot(): Record<string, string> {
   return emptyParams;

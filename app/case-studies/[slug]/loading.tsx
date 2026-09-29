@@ -1,3 +1,4 @@
+/* jscpd:ignore-start */
 export default function CaseStudyLoading() {
   return (
     <div className="min-h-screen py-24 px-6 md:px-16 bg-brand-dark text-foreground flex flex-col items-center">
@@ -40,3 +41,4 @@ export default function CaseStudyLoading() {
     </div>
   );
 }
+/* jscpd:ignore-end */

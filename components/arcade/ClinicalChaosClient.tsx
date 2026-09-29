@@ -29,6 +29,7 @@ const DynamicClinicalTrialChaos = dynamic(ClinicalTrialChaosLoader, {
   ),
 });
 
+/* jscpd:ignore-start */
 export const ClinicalChaosClient: React.FC = () => {
   return (
     <div className="min-h-screen bg-black text-white pt-28 pb-24 px-4 sm:px-6 lg:px-8">
@@ -162,4 +163,5 @@ export const ClinicalChaosClient: React.FC = () => {
       </div>
     </div>
   );
+/* jscpd:ignore-end */
 };

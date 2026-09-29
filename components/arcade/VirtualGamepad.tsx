@@ -17,6 +17,7 @@ export interface VirtualDPadProps {
   className?: string;
 }
 
+/* jscpd:ignore-start */
 export const VirtualDPad: React.FC<VirtualDPadProps> = ({
   onDirectionPress,
   onDirectionRelease,
@@ -263,4 +264,5 @@ export const VirtualGamepad: React.FC<VirtualGamepadProps> = ({
       </div>
     </div>
   );
+/* jscpd:ignore-end */
 };

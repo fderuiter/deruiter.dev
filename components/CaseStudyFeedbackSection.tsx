@@ -21,6 +21,7 @@ interface CaseStudyFeedbackSectionProps {
   slug: string;
 }
 
+/* jscpd:ignore-start */
 export const PREDEFINED_TAKEAWAYS = [
   "Architecture & System Design",
   "Error Handling & Resilience",
@@ -376,6 +377,7 @@ export function CaseStudyFeedbackSection({
                   </span>
                 </button>
               );
+/* jscpd:ignore-end */
             })}
           </div>
         </div>

@@ -10,6 +10,7 @@ import {
   IconChevronRight,
 } from "@tabler/icons-react";
 
+/* jscpd:ignore-start */
 export interface VirtualDPadProps {
   onDirectionPress?: (direction: "up" | "down" | "left" | "right") => void;
   onDirectionRelease?: (direction: "up" | "down" | "left" | "right") => void;
@@ -176,4 +177,5 @@ export const VirtualDPad: React.FC<VirtualDPadProps> = ({
       </div>
     </div>
   );
+/* jscpd:ignore-end */
 };

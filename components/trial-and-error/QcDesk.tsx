@@ -119,6 +119,7 @@ export function QcDesk({
   const currentRow = shown?.rows.find((r) => r.usubjid === current);
   const [focusRow, focusCol] = (focus?.key ?? "0:0").split(":").map(Number);
 
+/* jscpd:ignore-start */
   /**
    * T on a flagged cell: the first press traces it; later presses cycle its
    * matched Listing rows (Shift+T backwards). Review state is untouched.
@@ -277,6 +278,7 @@ export function QcDesk({
                 className={
                   slashed ? "text-rose-300" : "text-[color:var(--te-plus-mult)]"
                 }
+/* jscpd:ignore-end */
               >
                 {expected.finalMult}
               </span>

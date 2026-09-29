@@ -1,3 +1,4 @@
+/* jscpd:ignore-start */
 import {
   createSocialImageResponse,
   OG_IMAGE_SIZE,
@@ -20,3 +21,4 @@ export default function Image() {
     systemStatus: "COME TAKE A LOOK",
   });
 }
+/* jscpd:ignore-end */

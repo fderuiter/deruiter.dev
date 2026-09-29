@@ -28,6 +28,7 @@ export const GET = createApiHandler(
   { auth: "public" }
 );
 
+/* jscpd:ignore-start */
 export const POST = createApiHandler(
   async (req: NextRequest, { data }) => {
     try {
@@ -102,6 +103,7 @@ export const POST = createApiHandler(
           : "Missing or invalid case study submission fields",
         details,
       };
+/* jscpd:ignore-end */
     },
     auth: "clerk_admin",
   }

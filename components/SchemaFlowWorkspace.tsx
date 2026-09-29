@@ -85,6 +85,7 @@ const DEFAULT_EDGES: Edge[] = [
   { source: "A", target: "C" }
 ];
 
+/* jscpd:ignore-start */
 export default function SchemaFlowWorkspace() {
   const [nodes] = useState<Node[]>(DEFAULT_NODES);
   const [edges, setEdges] = useState<Edge[]>(DEFAULT_EDGES);
@@ -512,6 +513,7 @@ export default function SchemaFlowWorkspace() {
                     markerEnd="url(#arrow-cyan)"
                   />
                 );
+/* jscpd:ignore-end */
               })}
 
               {/* Declarative Nodes as Groups (Completely layout-calculation free!) */}

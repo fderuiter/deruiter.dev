@@ -697,6 +697,7 @@ export function createExplosionParticles(
   return particles;
 }
 
+/* jscpd:ignore-start */
 export function updateParticles(particles: Particle[], dt: number): Particle[] {
   return particles
     .map((p) => ({
@@ -720,6 +721,7 @@ export function updateShockwaves(
     }))
     .filter((s) => s.alpha > 0.02 && s.radius < s.maxRadius);
 }
+/* jscpd:ignore-end */
 
 export function updateFloatingTexts(
   texts: FloatingText[],

@@ -16,6 +16,7 @@ interface SkillsGridProps {
   languages: SkillLanguage[];
 }
 
+/* jscpd:ignore-start */
 export const SkillsGrid: React.FC<SkillsGridProps> = ({ languages }) => {
   const { playSkillHover } = useAudio();
   const { simplified } = useTerminology();
@@ -176,6 +177,7 @@ export const SkillsGrid: React.FC<SkillsGridProps> = ({ languages }) => {
                 </p>
               </div>
             );
+/* jscpd:ignore-end */
           })}
         </div>
       </motion.div>

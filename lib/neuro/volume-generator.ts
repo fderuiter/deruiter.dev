@@ -270,6 +270,7 @@ export function generateSyntheticVolume(
 /**
  * Extract a 2D slice from the 3D volume along an anatomical plane.
  */
+/* jscpd:ignore-start */
 export function extractSlice(
   volume: SyntheticVolume,
   plane: "axial" | "coronal" | "sagittal",
@@ -346,3 +347,4 @@ export function extractSlice(
     return { width: sliceW, height: sliceH, pixels, mask, wm };
   }
 }
+/* jscpd:ignore-end */

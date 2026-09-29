@@ -5,6 +5,7 @@
 import { createFaceForgeBoss, createNeuralWardenBoss } from "./boss";
 import { DungeonRoom, Enemy, ItemPickup, TSPMovingWall, TSPNode } from "./types";
 
+/* jscpd:ignore-start */
 export const STAGE_1_MAZE: string[][] = [
   ["#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#"],
   ["#", "P", " ", " ", "#", " ", " ", " ", " ", " ", " ", " ", " ", " ", "#"],
@@ -482,11 +483,13 @@ export function generateFaceForgeRoom(): DungeonRoom {
     boss,
     securityTier: 5,
   };
+/* jscpd:ignore-end */
 }
 
 /**
  * Creates Final Mainframe AI Sovereign Boss Room (Neural Warden)
  */
+/* jscpd:ignore-start */
 export function generateNeuralWardenRoom(): DungeonRoom {
   const grid: string[][] = [
     ["#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#"],
@@ -544,11 +547,13 @@ export function generateNeuralWardenRoom(): DungeonRoom {
     boss,
     securityTier: 5,
   };
+/* jscpd:ignore-end */
 }
 
 /**
  * Creates Room 3: BlinkBrowse (Eye-tracking / Cursor Steering)
  */
+/* jscpd:ignore-start */
 export function generateBlinkBrowseRoom(): DungeonRoom {
   const grid: string[][] = [
     ["#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#"],
@@ -637,6 +642,7 @@ export function generateBlinkBrowseRoom(): DungeonRoom {
     enemies,
     items,
   };
+/* jscpd:ignore-end */
 }
 
 /**

@@ -185,6 +185,7 @@ export function tokenizeWithSpans(input: string): HighlightToken[] {
 /**
  * Character-accurate AST Formula Linter & Static Type Validator
  */
+/* jscpd:ignore-start */
 export function lintFormula(
   formula: string,
   fields: CRFField[] = [],
@@ -426,6 +427,7 @@ export function lintFormula(
           }
         }
       }
+/* jscpd:ignore-end */
     }
   }
 

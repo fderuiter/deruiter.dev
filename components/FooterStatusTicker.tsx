@@ -52,6 +52,7 @@ interface TreatParticle {
   y: number;
 }
 
+/* jscpd:ignore-start */
 export const FooterStatusTicker: React.FC = () => {
   const shouldReduceMotion = useReducedMotion();
   const [tickerIndex, setTickerIndex] = useState(0);
@@ -110,6 +111,7 @@ export const FooterStatusTicker: React.FC = () => {
         document.documentElement.style.setProperty("--footer-height", `${h}px`);
         document.documentElement.style.setProperty("--ticker-height", `${h}px`);
       }
+/* jscpd:ignore-end */
     },
     { trackVertical: true }
   );

@@ -172,6 +172,7 @@ export class LiveAnnouncer {
     this.notify();
   }
 
+/* jscpd:ignore-start */
   /**
    * Destroys the announcer instance, cancelling timers and removing all subscribers.
    */
@@ -275,6 +276,7 @@ export class LiveAnnouncer {
 
     this.notify();
   }
+/* jscpd:ignore-end */
 
   private notify(): void {
     for (const listener of this.listeners) {

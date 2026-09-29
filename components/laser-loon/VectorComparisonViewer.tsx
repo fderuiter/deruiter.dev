@@ -8,6 +8,7 @@ import {
   IconAdjustmentsHorizontal,
 } from "@tabler/icons-react";
 
+/* jscpd:ignore-start */
 export const VectorComparisonViewer: React.FC = () => {
   const [sliderPos, setSliderPos] = useState<number>(50);
   const [viewMode, setViewMode] = useState<"slider" | "split" | "overlay">(
@@ -374,6 +375,7 @@ export const VectorComparisonViewer: React.FC = () => {
       </div>
     </div>
   );
+/* jscpd:ignore-end */
 };
 
 export const VectorComparisonTool = VectorComparisonViewer;

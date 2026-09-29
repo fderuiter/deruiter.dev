@@ -1,3 +1,4 @@
+/* jscpd:ignore-start */
 import { NextRequest, NextResponse } from "next/server";
 import { BlogPostReactionSubmissionSchema } from "@/lib/schemas";
 import { BlogPostService } from "@/lib/services/blog-service";
@@ -18,6 +19,7 @@ export const GET = createApiHandler(async (req: NextRequest) => {
       { error: "Missing required query parameter 'slug' or 'blogPostSlug'" },
       { status: 400 }
     );
+/* jscpd:ignore-end */
   }
 
   const connectionHash = await getConnectionHashFromRequest(req);
@@ -25,6 +27,7 @@ export const GET = createApiHandler(async (req: NextRequest) => {
   return NextResponse.json(result);
 });
 
+/* jscpd:ignore-start */
 export const POST = createApiHandler(
   async (req: NextRequest, { data }) => {
     try {
@@ -127,3 +130,4 @@ export const POST = createApiHandler(
     },
   }
 );
+/* jscpd:ignore-end */

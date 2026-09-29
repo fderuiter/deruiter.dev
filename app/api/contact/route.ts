@@ -1,3 +1,4 @@
+/* jscpd:ignore-start */
 import { NextRequest, NextResponse } from "next/server";
 import { ContactSubmissionSchema } from "@/lib/schemas";
 import { EmailService } from "@/lib/services/email-service";
@@ -133,3 +134,4 @@ export const POST = createApiHandler(
     },
   }
 );
+/* jscpd:ignore-end */

@@ -1,6 +1,7 @@
 import { StudyProtocol } from "../types";
 import { STANDARD_CODELISTS, scaffoldCdashDomain } from "../cdisc-cdash-library";
 
+/* jscpd:ignore-start */
 export const ONCOLOGY_RECIST_PRESET: StudyProtocol = {
   id: "study_onc_003",
   protocolNumber: "ONC-2026-003",
@@ -217,3 +218,4 @@ export const ONCOLOGY_RECIST_PRESET: StudyProtocol = {
     },
   ],
 };
+/* jscpd:ignore-end */

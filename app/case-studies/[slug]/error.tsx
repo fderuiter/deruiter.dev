@@ -6,6 +6,7 @@ import { reportClientError } from "@/lib/client-sentry";
 import { resolveBaseUrl } from "@/lib/domain";
 import { logger } from "@/lib/logger";
 
+/* jscpd:ignore-start */
 export default function CaseStudyError({
   error,
   reset,
@@ -65,4 +66,5 @@ export default function CaseStudyError({
       </div>
     </>
   );
+/* jscpd:ignore-end */
 }

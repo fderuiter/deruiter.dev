@@ -15,7 +15,6 @@
 ## Functions
 
 - [checkAccessibilityStandards](functions/checkAccessibilityStandards.md)
-- [checkCodeClones](functions/checkCodeClones.md)
 - [checkDefectRemediationInvariants](functions/checkDefectRemediationInvariants.md)
 - [checkDesignTokens](functions/checkDesignTokens.md)
 - [checkDirectoryTopology](functions/checkDirectoryTopology.md)

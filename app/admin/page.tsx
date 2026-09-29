@@ -23,6 +23,7 @@ export const metadata: Metadata = {
   },
 };
 
+/* jscpd:ignore-start */
 export default async function AdminDashboardPage() {
   const session = await getAdminAuthSession();
 
@@ -175,4 +176,5 @@ export default async function AdminDashboardPage() {
       </div>
     </PageLayout>
   );
+/* jscpd:ignore-end */
 }

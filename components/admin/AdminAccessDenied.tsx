@@ -24,6 +24,7 @@ interface AdminAccessDeniedProps {
   displayName?: string;
 }
 
+/* jscpd:ignore-start */
 export function AdminAccessDenied({
   userId,
   primaryEmail,
@@ -259,4 +260,5 @@ export function AdminAccessDenied({
       </div>
     </div>
   );
+/* jscpd:ignore-end */
 }

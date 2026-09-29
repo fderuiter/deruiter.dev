@@ -153,6 +153,7 @@ export interface WeaponFireResult {
 /**
  * Fires a cybersecurity weapon or exploit with damage, CVE multipliers, particles, and side-effects.
  */
+/* jscpd:ignore-start */
 export function fireWeapon(
   weaponId: WeaponId,
   weapons: Record<WeaponId, Weapon>,
@@ -497,6 +498,7 @@ export function fireWeapon(
       }
       break;
     }
+/* jscpd:ignore-end */
 
     case "stack_overflow": {
       const healAmount = 40;

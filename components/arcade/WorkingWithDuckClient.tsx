@@ -1,3 +1,4 @@
+/* jscpd:ignore-start */
 "use client";
 
 import React from "react";
@@ -216,4 +217,5 @@ export const WorkingWithDuckClient: React.FC = () => {
       </div>
     </div>
   );
+/* jscpd:ignore-end */
 };

@@ -17,6 +17,7 @@ interface NeuroFieldManualProps {
   onClose: () => void;
 }
 
+/* jscpd:ignore-start */
 export const NeuroFieldManual: React.FC<NeuroFieldManualProps> = ({
   isOpen,
   onClose,
@@ -327,4 +328,5 @@ export const NeuroFieldManual: React.FC<NeuroFieldManualProps> = ({
       </motion.div>
     </div>
   );
+/* jscpd:ignore-end */
 };

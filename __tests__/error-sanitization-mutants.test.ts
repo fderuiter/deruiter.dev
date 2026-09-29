@@ -1,4 +1,5 @@
 import { describe, it, expect, afterEach } from "vitest";
+import { fromAny } from "@total-typescript/shoehorn";
 import { sanitizeError, sanitizeString } from "@/lib/error-sanitization";
 
 const setEnv = (value: string | undefined) => {
@@ -8,8 +9,8 @@ const setEnv = (value: string | undefined) => {
 describe("sanitizeString edge cases", () => {
   it("returns empty and falsy input unchanged", () => {
     expect(sanitizeString("")).toBe("");
-    expect(sanitizeString(undefined as unknown as string)).toBeUndefined();
-    expect(sanitizeString(null as unknown as string)).toBeNull();
+    expect(sanitizeString(fromAny(undefined))).toBeUndefined();
+    expect(sanitizeString(fromAny(null))).toBeNull();
   });
 
   it("scrubs extension paths outside the system roots", () => {
@@ -80,7 +81,7 @@ describe("sanitizeError in production", () => {
 
   it("skips reserved, trace, frame, sentry and array fields case-insensitively", () => {
     setEnv("production");
-    const out = sanitizeError({
+    const out = fromAny<Record<string, unknown>, unknown>(sanitizeError({
       message: "m",
       code: "E1",
       StackTrace: "x",
@@ -89,7 +90,7 @@ describe("sanitizeError in production", () => {
       myframe: "f",
       SentryEvent: "s",
       list: [1],
-    }) as unknown as Record<string, unknown>;
+    }));
     expect(out.code).toBe("E1");
     for (const k of [
       "StackTrace",
@@ -105,11 +106,11 @@ describe("sanitizeError in production", () => {
 
   it("does not copy reserved keys onto the result as extra fields", () => {
     setEnv("production");
-    const out = sanitizeError({
+    const out = fromAny<Record<string, unknown>, unknown>(sanitizeError({
       message: "m",
       name: "N",
       cause: undefined,
-    }) as unknown as Record<string, unknown>;
+    }));
     expect(out.name).toBe("N");
     expect(out.cause).toBeUndefined();
     expect(Object.keys(out)).not.toContain("cause");
@@ -117,14 +118,14 @@ describe("sanitizeError in production", () => {
 
   it("sanitizes string fields and deep-sanitizes object fields", () => {
     setEnv("production");
-    const out = sanitizeError({
+    const out = fromAny<Record<string, unknown>, unknown>(sanitizeError({
       message: "m",
       path: "at /app/lib/x.ts",
       meta: { label: "ok", n: 1 },
       count: 3,
       flag: false,
       nothing: null,
-    }) as unknown as Record<string, unknown>;
+    }));
     expect(out.path).toBe("at [scrubbed]");
     expect(out.meta).toEqual({ label: "ok", n: 1 });
     expect(out.count).toBe(3);
@@ -136,10 +137,10 @@ describe("sanitizeError in production", () => {
     setEnv("production");
     const circular: Record<string, unknown> = {};
     circular.self = circular;
-    const out = sanitizeError({
+    const out = fromAny<Record<string, unknown>, unknown>(sanitizeError({
       message: "m",
       circular,
-    }) as unknown as Record<string, unknown>;
+    }));
     expect(out).not.toHaveProperty("circular");
   });
 

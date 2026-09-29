@@ -8,6 +8,9 @@
 
 ## Interfaces
 
+- [CanonicalDirective](interfaces/CanonicalDirective.md)
+- [CanonicalField](interfaces/CanonicalField.md)
+- [CanonicalModel](interfaces/CanonicalModel.md)
 - [DiagnosticCheckResult](interfaces/DiagnosticCheckResult.md)
 - [DiagnosticSummary](interfaces/DiagnosticSummary.md)
 - [DoctorOptions](interfaces/DoctorOptions.md)
@@ -36,10 +39,14 @@
 - [checkSectionStructures](functions/checkSectionStructures.md)
 - [checkServiceResultTypes](functions/checkServiceResultTypes.md)
 - [checkSubRoutePerformance](functions/checkSubRoutePerformance.md)
+- [checkTechnicalGuideSchemaParity](functions/checkTechnicalGuideSchemaParity.md)
 - [checkTestFixtureHygiene](functions/checkTestFixtureHygiene.md)
 - [checkTestPathResolution](functions/checkTestPathResolution.md)
 - [checkTouchTargetDimensions](functions/checkTouchTargetDimensions.md)
 - [checkWorkspaceIdeConfig](functions/checkWorkspaceIdeConfig.md)
+- [comparePrismaModel](functions/comparePrismaModel.md)
+- [parsePrismaModels](functions/parsePrismaModels.md)
 - [printDoctorReport](functions/printDoctorReport.md)
+- [reconstructPrismaModel](functions/reconstructPrismaModel.md)
 - [routeExistsOnDisk](functions/routeExistsOnDisk.md)
 - [runDiagnostics](functions/runDiagnostics.md)

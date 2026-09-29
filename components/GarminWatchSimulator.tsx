@@ -46,7 +46,12 @@ import {
   CANVAS_SIZE,
   GameEngineState,
   CrashReport,
+  allocateFlashVariable,
+  clearFlashStorage,
 } from "@/lib/garmin-engine";
+
+/** Flash written by the Write NV Flash button; matches its label. */
+const NV_WRITE_KB = 8;
 
 /** What the crash overlay says for each cause, and how to avoid it next run. */
 const CRASH_LABELS: Record<
@@ -118,8 +123,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
   const { playNote, playSuccess } = useAudio();
   const { recordEvent } = useTelemetry();
   const { announce } = useAnnouncer();
-  const { allocateMemory, garbageCollect, syncFlashStorage } =
-    useGarminService();
+  const { garbageCollect } = useGarminService();
   const [alertMessage, setAlertMessage] = useState<string>("");
 
   // Pre-Game Setup Wizard choices from the hosting cabinet (null standalone).
@@ -280,58 +284,32 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     }
   }, [playBeep, applyTransition, garbageCollect]);
 
-  // Save Persistent Variable to Flash NVRAM
+  // Save Persistent Variable to Flash NVRAM (+8KB flash, RAM untouched)
   const handleSaveFlash = useCallback(() => {
     playBeep(800, 0.03);
     const current = stateRef.current;
-    const result = allocateMemory({
-      state: current,
-      type: "float",
-      name: `nvram_${Date.now()}`,
-    });
-    if (result.success) {
-      applyTransition(() => result.data.state);
-    } else {
-      syncFlashStorage({
-        action: "save",
-        variables: [
-          ...current.flashVariables,
-          {
-            id: Date.now(),
-            name: `nvram_${current.flashVariables.length + 1}`,
-            sizeKb: 8.0,
-            allocatedAt: Date.now(),
-          },
-        ],
-      }).then((res) => {
-        if (res.success) {
-          applyTransition((state) => ({
-            ...state,
-            flashVariables: res.data.variables,
-            allocatedFlashKb: res.data.totalAllocatedKb,
-          }));
-        } else if (res.error?.message) {
-          setAlertMessage(res.error.message);
-        }
-      });
+    const result = allocateFlashVariable(
+      current,
+      NV_WRITE_KB,
+      `nvram_${current.flashVariables.length + 1}.dat`
+    );
+    if (result.crashed) {
+      // A manual write that does not fit is refused with the flash-specific
+      // reason; only in-run flash tokens crash the run (#1210).
+      const report = result.state.crashReport;
+      setAlertMessage(
+        `Out of Storage: ${report?.flashUsedKb ?? "?"}KB / ${report?.flashLimitKb ?? "?"}KB flash limit exceeded. Clear flash storage first.`
+      );
+      return;
     }
-  }, [playBeep, applyTransition, allocateMemory, syncFlashStorage]);
+    applyTransition(() => result.state);
+  }, [playBeep, applyTransition]);
 
-  // Clear NVRAM Flash Storage
+  // Clear NVRAM Flash Storage (flashVariables, flashFiles, meter, persisted)
   const handleClearFlash = useCallback(() => {
     playBeep(500, 0.04);
-    syncFlashStorage({ action: "clear" }).then((res) => {
-      if (res.success) {
-        applyTransition((state) => ({
-          ...state,
-          flashStorage: [],
-          allocatedFlashKb: 0,
-        }));
-      } else if (res.error?.message) {
-        setAlertMessage(res.error.message);
-      }
-    });
-  }, [playBeep, applyTransition, syncFlashStorage]);
+    applyTransition((state) => clearFlashStorage(state));
+  }, [playBeep, applyTransition]);
 
   // Drain Battery for Power Loss Testing
   const handleDrainBattery = useCallback(() => {

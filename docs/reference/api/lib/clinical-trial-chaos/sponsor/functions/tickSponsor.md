@@ -6,7 +6,7 @@
 
 # Function: tickSponsor()
 
-> **tickSponsor**(`state`, `deltaSeconds`, `rand?`): `object`
+> **tickSponsor**(`state`, `deltaSeconds`, `rand?`, `decayPerSecond?`): `object`
 
 Advances the sponsor by `deltaSeconds`: mood decays, emails arrive, unanswered
 emails escalate into follow-ups and are eventually dropped with a penalty.
@@ -24,6 +24,10 @@ emails escalate into follow-ups and are eventually dropped with a penalty.
 ### rand?
 
 () => `number`
+
+### decayPerSecond?
+
+`number` = `SPONSOR_MOOD_DECAY_PER_SECOND`
 
 ## Returns
 

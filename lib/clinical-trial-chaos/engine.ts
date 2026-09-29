@@ -624,6 +624,36 @@ export function verify21CFRSubmission(
   };
 }
 
+/** Most subjects the conveyor holds at once. */
+export const MAX_CONVEYOR_SUBJECTS = 5;
+
+/** Seconds before a fresh subject arrives once the queue has emptied. */
+export const EMPTY_QUEUE_SPAWN_DELAY_SECONDS = 0.75;
+
+/** Seconds between subject spawns for each phase while the queue has work. */
+export const SPAWN_INTERVAL_BY_PHASE: Readonly<Record<GamePhase, number>> = {
+  1: 6.5,
+  2: 4.8,
+  3: 3.5,
+};
+
+/**
+ * Seconds until the next subject spawns. An empty queue refills almost at
+ * once and a queue with one subject left fills at twice the phase rate, so a
+ * fast player works instead of waiting on the conveyor (#1327). `scale`
+ * applies office modifiers to the phase rate; the empty-queue refill ignores
+ * it.
+ */
+export function getSpawnIntervalSeconds(
+  phase: GamePhase,
+  queueLength: number,
+  scale: (seconds: number) => number = (seconds) => seconds
+): number {
+  if (queueLength <= 0) return EMPTY_QUEUE_SPAWN_DELAY_SECONDS;
+  const base = SPAWN_INTERVAL_BY_PHASE[phase];
+  return scale(queueLength === 1 ? base / 2 : base);
+}
+
 /**
  * Picks the dossier to load after a submission: SAE cases first, then the
  * least time remaining, then the oldest arrival, then subject id, so the

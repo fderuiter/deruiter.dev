@@ -13,6 +13,9 @@ import {
   getSponsorMoodLabel,
   applySponsorSubmissionBoost,
   applySponsorSkeletonsToReport,
+  getSponsorMoodDecayPerSecond,
+  SPONSOR_BOOST_TAPER_START,
+  SPONSOR_MOOD_DECAY_PER_SECOND,
   generateBIMOReport,
   createInitialScoreState,
   createInitialAuditorState,
@@ -128,11 +131,60 @@ describe("Clinical Trial Chaos - Sponsor inbox", () => {
   });
 
   it("boosts mood on submissions, capped at 100", () => {
-    const s = { ...createInitialSponsorState(), mood: 98 };
+    const s = { ...createInitialSponsorState(), mood: 99.5 };
     expect(applySponsorSubmissionBoost(s, true).mood).toBe(100);
     expect(applySponsorSubmissionBoost(s, false).mood).toBe(100);
     const dead = { ...createInitialSponsorState(), mood: 0 };
     expect(applySponsorSubmissionBoost(dead, true).mood).toBe(0);
+  });
+
+  it("tapers the submission boost as satisfaction climbs (#1327)", () => {
+    const at = (mood: number) =>
+      applySponsorSubmissionBoost(
+        { ...createInitialSponsorState(), mood },
+        true
+      ).mood - mood;
+    expect(at(SPONSOR_BOOST_TAPER_START)).toBe(5);
+    expect(at(80)).toBeCloseTo(2.5);
+    expect(at(95)).toBeCloseTo(1.25);
+    expect(
+      applySponsorSubmissionBoost(
+        { ...createInitialSponsorState(), mood: 40 },
+        false
+      ).mood
+    ).toBe(43);
+  });
+
+  it("decays faster in later phases so phase 3 keeps the pressure on (#1327)", () => {
+    expect(getSponsorMoodDecayPerSecond(1)).toBe(SPONSOR_MOOD_DECAY_PER_SECOND);
+    expect(getSponsorMoodDecayPerSecond(2)).toBeGreaterThan(
+      getSponsorMoodDecayPerSecond(1)
+    );
+    expect(getSponsorMoodDecayPerSecond(3)).toBeGreaterThan(
+      getSponsorMoodDecayPerSecond(2)
+    );
+    const start = createInitialSponsorState(1000);
+    const p1 = tickSponsor(start, 10, zero).state.mood;
+    const p3 = tickSponsor(start, 10, zero, getSponsorMoodDecayPerSecond(3))
+      .state.mood;
+    expect(p1).toBeCloseTo(start.mood - 3.5);
+    expect(p3).toBeCloseTo(start.mood - 8);
+  });
+
+  it("a fast phase 3 player no longer pins satisfaction at 100% (#1327)", () => {
+    // One clean lock every 4 s for three minutes.
+    let state = createInitialSponsorState(100000);
+    for (let t = 0; t < 180; t += 4) {
+      state = tickSponsor(
+        state,
+        4,
+        zero,
+        getSponsorMoodDecayPerSecond(3)
+      ).state;
+      state = applySponsorSubmissionBoost(state, true);
+    }
+    expect(state.mood).toBeLessThan(90);
+    expect(state.mood).toBeGreaterThan(50);
   });
 
   it("surfaces skeletons as BIMO findings and escalates the verdict", () => {

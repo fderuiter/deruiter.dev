@@ -142,6 +142,12 @@ Re-exports [LevelScore](../quasi-perfect/types/interfaces/LevelScore.md)
 
 ***
 
+### mergeLevelScore
+
+Re-exports [mergeLevelScore](../quasi-perfect/progress/functions/mergeLevelScore.md)
+
+***
+
 ### MonomialMap
 
 Re-exports [MonomialMap](../quasi-perfect/engine/type-aliases/MonomialMap.md)

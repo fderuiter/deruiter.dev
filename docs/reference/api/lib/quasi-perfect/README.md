@@ -128,6 +128,12 @@ Re-exports [LevelScore](types/interfaces/LevelScore.md)
 
 ***
 
+### mergeLevelScore
+
+Re-exports [mergeLevelScore](progress/functions/mergeLevelScore.md)
+
+***
+
 ### MonomialMap
 
 Re-exports [MonomialMap](engine/type-aliases/MonomialMap.md)

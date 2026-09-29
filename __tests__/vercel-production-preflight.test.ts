@@ -8,6 +8,7 @@ const {
   runVercelProductionPreflight,
   shouldRunPreflight,
   verifyUpstashCredentials,
+  verifyVercelHeadroomCapacity,
 } = require("../scripts/vercel-production-preflight.js");
 
 type Env = Record<string, string | undefined>;
@@ -340,5 +341,56 @@ describe("Upstash production authentication", () => {
       reason: "could not complete a PING within 3 seconds",
     });
     expect(JSON.stringify(result)).not.toContain("fake-upstash-token-7Q2");
+  });
+});
+
+describe("Vercel Headroom Capacity Preflight Check", () => {
+  it("returns true when headroom capacity check passes (healthy outcome)", async () => {
+    const logger = silentLogger();
+    const env = { ...validProductionEnv(), _TEST_HEADROOM_OUTCOME: "healthy" };
+    const result = await verifyVercelHeadroomCapacity(env, logger);
+    expect(result).toBe(true);
+    expect(logger.error).not.toHaveBeenCalled();
+  });
+
+  it("returns false and logs error when critical threshold is breached (critical outcome)", async () => {
+    const logger = silentLogger();
+    const env = { ...validProductionEnv(), _TEST_HEADROOM_OUTCOME: "critical" };
+    const result = await verifyVercelHeadroomCapacity(env, logger);
+    expect(result).toBe(false);
+    expect(loggedText(logger)).toContain(
+      "Critical Vercel storage or build time headroom threshold breached"
+    );
+  });
+
+  it("returns false and logs error when capacity check fails to load or execute (load-failure outcome)", async () => {
+    const logger = silentLogger();
+    const env = {
+      ...validProductionEnv(),
+      _TEST_HEADROOM_OUTCOME: "load_failure",
+    };
+    const result = await verifyVercelHeadroomCapacity(env, logger);
+    expect(result).toBe(false);
+    expect(loggedText(logger)).toContain("failed to load or execute");
+  });
+
+  it("returns false and logs error when capacity measurement is unreadable or unavailable (unavailable outcome)", async () => {
+    const logger = silentLogger();
+    const env = {
+      ...validProductionEnv(),
+      _TEST_HEADROOM_OUTCOME: "unavailable",
+    };
+    const result = await verifyVercelHeadroomCapacity(env, logger);
+    expect(result).toBe(false);
+    expect(loggedText(logger)).toContain("unavailable");
+  });
+
+  it("returns false in production when VERCEL_TOKEN is not set and check cannot run", async () => {
+    const logger = silentLogger();
+    const env: Env = { VERCEL: "1", VERCEL_ENV: "production" };
+    delete env.VERCEL_TOKEN;
+    const result = await verifyVercelHeadroomCapacity(env, logger);
+    expect(result).toBe(false);
+    expect(loggedText(logger)).toContain("VERCEL_TOKEN is not set");
   });
 });

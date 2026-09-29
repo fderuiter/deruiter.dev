@@ -106,6 +106,10 @@ const SAFE_FILE_VALUES = new Map<string, Set<string>>([
     union(MIGRATION_REPLAY_FIXTURES, GHP_FIXTURE_LITERAL),
   ],
   ["__tests__/validation.test.ts", GHP_FIXTURE_LITERAL],
+  [
+    "__tests__/husky-hook-wiring.test.ts",
+    union(MIGRATION_REPLAY_FIXTURES, GHP_FIXTURE_LITERAL),
+  ],
 ]);
 
 /**

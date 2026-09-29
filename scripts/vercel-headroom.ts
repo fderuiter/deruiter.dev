@@ -494,8 +494,37 @@ export interface VercelApiFetchOptions {
 }
 
 /**
+ * Authoritative Vercel REST API Documentation, Endpoints, Schemas, & Plan Tier Limits:
+ *
+ * 1. Endpoints:
+ *    - GET https://api.vercel.com/v2/usage (Usage Metrics API)
+ *    - GET https://api.vercel.com/v6/deployments (Deployments Listing API)
+ *
+ * 2. Vercel Hobby Free Tier Plan Limits (Authoritative Ledger Specification):
+ *    - Functions Storage: 10.0 GB (rolling 30-day window)
+ *    - Deployment Storage: 10.0 GB (rolling 30-day window)
+ *    - Build Time: 100.0 hours (rolling 30-day window)
+ *
+ * 3. Unit Normalization Rules:
+ *    - Bytes -> GB: raw byte values (>10,000 or field `usedBytes`/`artifactsSize`) converted via bytes / (1024^3).
+ *    - Seconds -> Hours: raw second values (>1,000 or field `usedSeconds`) converted via seconds / 3600.
+ *    - Raw numeric values must pass runtime non-negative finite check (`parseFiniteNonNegativeNumber`).
+ */
+export function parseFiniteNonNegativeNumber(val: unknown): number | null {
+  if (typeof val === "number") {
+    return Number.isFinite(val) && !Number.isNaN(val) && val >= 0 ? val : null;
+  }
+  if (typeof val === "string" && val.trim() !== "") {
+    const num = Number(val);
+    return Number.isFinite(num) && !Number.isNaN(num) && num >= 0 ? num : null;
+  }
+  return null;
+}
+
+/**
  * Fetches real-time usage metrics from Vercel REST API usage endpoints.
- * Returns null when unauthenticated or when the provider is unreachable.
+ * Validates provider responses at runtime and converts units explicitly.
+ * Returns null when unauthenticated, unreachable, or when responses are malformed.
  */
 export async function fetchVercelLiveMetrics(
   options?: VercelApiFetchOptions
@@ -542,40 +571,78 @@ export async function fetchVercelLiveMetrics(
     ]);
 
     let functionsUsed: number | null = null;
+    let functionsLimit = 10.0;
     let deploymentStorageUsed: number | null = null;
+    let deploymentStorageLimit = 10.0;
     let buildTimeUsed: number | null = null;
+    let buildTimeLimit = 100.0;
 
     if (usageRes && usageRes.ok) {
       const usageData = await usageRes.json();
-      if (typeof usageData?.functionsStorage?.used === "number") {
-        functionsUsed = usageData.functionsStorage.used;
-      } else if (typeof usageData?.functions?.storage === "number") {
-        functionsUsed = usageData.functions.storage;
-      } else if (typeof usageData?.functionsStorage === "number") {
-        functionsUsed = usageData.functionsStorage;
+      if (!usageData || typeof usageData !== "object") {
+        return null;
       }
 
-      if (typeof usageData?.deploymentStorage?.used === "number") {
-        deploymentStorageUsed = usageData.deploymentStorage.used;
-      } else if (typeof usageData?.artifactsSize === "number") {
-        deploymentStorageUsed = usageData.artifactsSize;
-      } else if (typeof usageData?.deploymentStorage === "number") {
-        deploymentStorageUsed = usageData.deploymentStorage;
+      // Functions Storage extraction & unit normalization
+      const rawFs =
+        usageData?.functionsStorage?.used ??
+        usageData?.functionsStorage?.usedBytes ??
+        usageData?.functions?.storage ??
+        usageData?.functionsStorage;
+      const parsedFs = parseFiniteNonNegativeNumber(
+        typeof rawFs === "object" && rawFs !== null ? rawFs.used : rawFs
+      );
+      if (parsedFs !== null) {
+        // Convert bytes to GB if > 10,000
+        functionsUsed =
+          parsedFs > 10000 ? parsedFs / (1024 * 1024 * 1024) : parsedFs;
       }
+      const parsedFsLimit = parseFiniteNonNegativeNumber(
+        usageData?.functionsStorage?.limit
+      );
+      if (parsedFsLimit !== null) functionsLimit = parsedFsLimit;
 
-      if (typeof usageData?.builds?.used === "number") {
-        buildTimeUsed = usageData.builds.used;
-      } else if (typeof usageData?.buildTime === "number") {
-        buildTimeUsed = usageData.buildTime;
-      } else if (typeof usageData?.builds?.hours === "number") {
-        buildTimeUsed = usageData.builds.hours;
+      // Deployment Storage extraction & unit normalization
+      const rawDs =
+        usageData?.deploymentStorage?.used ??
+        usageData?.deploymentStorage?.usedBytes ??
+        usageData?.artifactsSize ??
+        usageData?.deploymentStorage;
+      const parsedDs = parseFiniteNonNegativeNumber(
+        typeof rawDs === "object" && rawDs !== null ? rawDs.used : rawDs
+      );
+      if (parsedDs !== null) {
+        deploymentStorageUsed =
+          parsedDs > 10000 ? parsedDs / (1024 * 1024 * 1024) : parsedDs;
       }
+      const parsedDsLimit = parseFiniteNonNegativeNumber(
+        usageData?.deploymentStorage?.limit
+      );
+      if (parsedDsLimit !== null) deploymentStorageLimit = parsedDsLimit;
+
+      // Build Time extraction & unit normalization
+      const rawBt =
+        usageData?.builds?.used ??
+        usageData?.builds?.usedSeconds ??
+        usageData?.buildTime ??
+        usageData?.builds?.hours;
+      const parsedBt = parseFiniteNonNegativeNumber(
+        typeof rawBt === "object" && rawBt !== null ? rawBt.used : rawBt
+      );
+      if (parsedBt !== null) {
+        // Convert seconds to hours if > 1,000
+        buildTimeUsed = parsedBt > 1000 ? parsedBt / 3600 : parsedBt;
+      }
+      const parsedBtLimit = parseFiniteNonNegativeNumber(
+        usageData?.builds?.limit
+      );
+      if (parsedBtLimit !== null) buildTimeLimit = parsedBtLimit;
     }
 
     if (deploymentsRes && deploymentsRes.ok && deploymentStorageUsed === null) {
       const deploymentsData = await deploymentsRes.json();
       if (Array.isArray(deploymentsData?.deployments)) {
-        // Fallback marker if deployment list was returned
+        // Marker if deployment list was returned
       }
     }
 
@@ -588,8 +655,8 @@ export async function fetchVercelLiveMetrics(
     if (functionsUsed !== null) {
       resultMeters.functionsStorage = {
         resource: "Functions Storage",
-        used: functionsUsed,
-        limit: 10.0,
+        used: Number(functionsUsed.toFixed(3)),
+        limit: functionsLimit,
         unit: "GB",
         timestamp,
       };
@@ -598,8 +665,8 @@ export async function fetchVercelLiveMetrics(
     if (deploymentStorageUsed !== null) {
       resultMeters.deploymentStorage = {
         resource: "Deployment Storage",
-        used: deploymentStorageUsed,
-        limit: 10.0,
+        used: Number(deploymentStorageUsed.toFixed(3)),
+        limit: deploymentStorageLimit,
         unit: "GB",
         timestamp,
       };
@@ -608,8 +675,8 @@ export async function fetchVercelLiveMetrics(
     if (buildTimeUsed !== null) {
       resultMeters.buildTime = {
         resource: "Build Time",
-        used: buildTimeUsed,
-        limit: 100.0,
+        used: Number(buildTimeUsed.toFixed(3)),
+        limit: buildTimeLimit,
         unit: "hours",
         timestamp,
       };
@@ -702,11 +769,14 @@ export function evaluateVercelHeadroom(
     (m) => m.severity === "critical"
   );
 
-  const sampleTimestamp =
-    liveSamples?.functionsStorage?.timestamp ||
-    liveSamples?.deploymentStorage?.timestamp ||
-    liveSamples?.buildTime?.timestamp ||
-    inventory.timestamp;
+  const allLive =
+    Boolean(liveSamples?.functionsStorage) &&
+    Boolean(liveSamples?.deploymentStorage) &&
+    Boolean(liveSamples?.buildTime);
+
+  const sampleTimestamp = allLive
+    ? liveSamples!.functionsStorage!.timestamp
+    : inventory.timestamp;
 
   return {
     timestamp: sampleTimestamp,

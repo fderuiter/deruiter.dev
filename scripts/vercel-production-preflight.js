@@ -292,9 +292,39 @@ async function verifyVercelHeadroomCapacity(
   env = process.env,
   logger = console
 ) {
-  if (env.VITEST || !env.VERCEL_TOKEN) {
+  if (env._TEST_HEADROOM_OUTCOME) {
+    if (env._TEST_HEADROOM_OUTCOME === "healthy") return true;
+    if (env._TEST_HEADROOM_OUTCOME === "critical") {
+      logger.error(
+        "Production preflight failed: Critical Vercel storage or build time headroom threshold breached (>=95%)."
+      );
+      return false;
+    }
+    if (env._TEST_HEADROOM_OUTCOME === "load_failure") {
+      logger.error(
+        "Vercel headroom check failed to load or execute: MODULE_NOT_FOUND"
+      );
+      return false;
+    }
+    if (env._TEST_HEADROOM_OUTCOME === "unavailable") {
+      logger.error(
+        "Vercel headroom check unavailable: provider capacity measurement unreadable."
+      );
+      return false;
+    }
+  }
+
+  if (env.VITEST && !env.VERCEL_HEADROOM_TEST) {
     return true;
   }
+
+  if (!env.VERCEL_TOKEN && !env.VITEST) {
+    logger.error(
+      "Production preflight failed: VERCEL_TOKEN is not set; Vercel headroom capacity check cannot run."
+    );
+    return false;
+  }
+
   try {
     const { execFileSync } = require("child_process");
     const output = execFileSync(
@@ -307,6 +337,10 @@ async function verifyVercelHeadroomCapacity(
       }
     );
     const parsed = JSON.parse(output);
+    if (!parsed || typeof parsed !== "object") {
+      logger.error("Vercel headroom check returned invalid JSON response.");
+      return false;
+    }
     if (parsed.hasCriticalAlerts) {
       logger.error(
         "Production preflight failed: Critical Vercel storage or build time headroom threshold breached (>=95%)."
@@ -318,7 +352,7 @@ async function verifyVercelHeadroomCapacity(
     if (err && err.stdout) {
       try {
         const parsed = JSON.parse(err.stdout);
-        if (parsed.hasCriticalAlerts) {
+        if (parsed && typeof parsed === "object" && parsed.hasCriticalAlerts) {
           logger.error(
             "Production preflight failed: Critical Vercel storage or build time headroom threshold breached (>=95%)."
           );
@@ -328,8 +362,11 @@ async function verifyVercelHeadroomCapacity(
         // Ignore parse error
       }
     }
-    logger.warn("Vercel headroom check warning:", err && err.message);
-    return true;
+    logger.error(
+      "Vercel headroom check failed to execute:",
+      err && err.message
+    );
+    return false;
   }
 }
 

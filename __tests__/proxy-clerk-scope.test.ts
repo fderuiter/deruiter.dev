@@ -96,4 +96,45 @@ describe("Proxy Clerk Scope", () => {
         headers.get("x-connection-hash")
     ).toBeTruthy();
   });
+
+  it("attaches security headers to public responses", async () => {
+    const res = await proxy(
+      new NextRequest("http://localhost:3000/api/case-studies"),
+      event
+    );
+    expect(res).toBeDefined();
+    expect(res!.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(res!.headers.get("content-security-policy")).toBeTruthy();
+  });
+
+  it("handles mobile user agent routing and security headers without redirect loops", async () => {
+    const mobileReq = new NextRequest("http://localhost:3000/proof?mode=demo", {
+      headers: {
+        "user-agent":
+          "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15",
+      },
+    });
+    const redirectRes = await proxy(mobileReq, event);
+    expect(redirectRes).toBeDefined();
+    expect(redirectRes!.status).toBe(307);
+    expect(redirectRes!.headers.get("location")).toBe(
+      "http://localhost:3000/m/proof?mode=demo"
+    );
+    expect(redirectRes!.headers.get("x-content-type-options")).toBe("nosniff");
+
+    const decoupledReq = new NextRequest(
+      "http://localhost:3000/m/proof?mode=demo",
+      {
+        headers: {
+          "user-agent":
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15",
+        },
+      }
+    );
+    const passRes = await proxy(decoupledReq, event);
+    expect(passRes).toBeDefined();
+    expect(passRes!.status).toBe(200);
+    expect(passRes!.headers.get("location")).toBeNull();
+    expect(passRes!.headers.get("x-content-type-options")).toBe("nosniff");
+  });
 });

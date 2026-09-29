@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 /** Real-browser Core Web Vitals CLI with reproducible production evidence. */
 
-import { spawn, type ChildProcess, execFileSync } from "child_process";
+import { spawn, type ChildProcess } from "child_process";
 import fs from "fs";
 import http from "http";
 import path from "path";
+import { inspectSourceState } from "../lib/dx/source-state";
 import {
   CANONICAL_ROUTES,
   generateMarkdownReport,
@@ -111,16 +112,7 @@ function productionEnvironment(): NodeJS.ProcessEnv {
 }
 
 function inspectSource() {
-  const revision = execFileSync("git", ["rev-parse", "HEAD"], {
-    cwd: process.cwd(),
-    encoding: "utf-8",
-  }).trim();
-  const dirty =
-    execFileSync("git", ["status", "--porcelain"], {
-      cwd: process.cwd(),
-      encoding: "utf-8",
-    }).trim().length > 0;
-  return { revision, dirty };
+  return inspectSourceState(process.cwd());
 }
 
 async function probeTarget(

@@ -597,10 +597,19 @@ export async function fetchVercelLiveMetrics(
         functionsUsed =
           parsedFs > 10000 ? parsedFs / (1024 * 1024 * 1024) : parsedFs;
       }
-      const parsedFsLimit = parseFiniteNonNegativeNumber(
-        usageData?.functionsStorage?.limit
-      );
-      if (parsedFsLimit !== null) functionsLimit = parsedFsLimit;
+      const rawFsLimit =
+        typeof usageData?.functionsStorage?.limit === "object" &&
+        usageData.functionsStorage.limit !== null
+          ? (usageData.functionsStorage.limit.limit ??
+            usageData.functionsStorage.limit.used)
+          : usageData?.functionsStorage?.limit;
+      const parsedFsLimit = parseFiniteNonNegativeNumber(rawFsLimit);
+      if (parsedFsLimit !== null) {
+        functionsLimit =
+          parsedFsLimit > 10000
+            ? parsedFsLimit / (1024 * 1024 * 1024)
+            : parsedFsLimit;
+      }
 
       // Deployment Storage extraction & unit normalization
       const rawDs =
@@ -615,10 +624,19 @@ export async function fetchVercelLiveMetrics(
         deploymentStorageUsed =
           parsedDs > 10000 ? parsedDs / (1024 * 1024 * 1024) : parsedDs;
       }
-      const parsedDsLimit = parseFiniteNonNegativeNumber(
-        usageData?.deploymentStorage?.limit
-      );
-      if (parsedDsLimit !== null) deploymentStorageLimit = parsedDsLimit;
+      const rawDsLimit =
+        typeof usageData?.deploymentStorage?.limit === "object" &&
+        usageData.deploymentStorage.limit !== null
+          ? (usageData.deploymentStorage.limit.limit ??
+            usageData.deploymentStorage.limit.used)
+          : usageData?.deploymentStorage?.limit;
+      const parsedDsLimit = parseFiniteNonNegativeNumber(rawDsLimit);
+      if (parsedDsLimit !== null) {
+        deploymentStorageLimit =
+          parsedDsLimit > 10000
+            ? parsedDsLimit / (1024 * 1024 * 1024)
+            : parsedDsLimit;
+      }
 
       // Build Time extraction & unit normalization
       const rawBt =
@@ -633,10 +651,16 @@ export async function fetchVercelLiveMetrics(
         // Convert seconds to hours if > 1,000
         buildTimeUsed = parsedBt > 1000 ? parsedBt / 3600 : parsedBt;
       }
-      const parsedBtLimit = parseFiniteNonNegativeNumber(
-        usageData?.builds?.limit
-      );
-      if (parsedBtLimit !== null) buildTimeLimit = parsedBtLimit;
+      const rawBtLimit =
+        typeof usageData?.builds?.limit === "object" &&
+        usageData.builds.limit !== null
+          ? (usageData.builds.limit.limit ?? usageData.builds.limit.used)
+          : usageData?.builds?.limit;
+      const parsedBtLimit = parseFiniteNonNegativeNumber(rawBtLimit);
+      if (parsedBtLimit !== null) {
+        buildTimeLimit =
+          parsedBtLimit > 1000 ? parsedBtLimit / 3600 : parsedBtLimit;
+      }
     }
 
     if (deploymentsRes && deploymentsRes.ok && deploymentStorageUsed === null) {
@@ -766,7 +790,10 @@ export function evaluateVercelHeadroom(
     evalTime
   );
   const hasCriticalAlerts = evaluatedList.some(
-    (m) => m.severity === "critical"
+    (m) =>
+      m.severity === "critical" ||
+      m.severity === "unreadable" ||
+      m.severity === "stale"
   );
 
   const allLive =

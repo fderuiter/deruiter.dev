@@ -327,15 +327,33 @@ async function verifyVercelHeadroomCapacity(
 
   try {
     const { execFileSync } = require("child_process");
-    const output = execFileSync(
-      "npx",
-      ["tsx", "scripts/vercel-headroom.ts", "--strict", "--json"],
-      {
-        env: { ...env },
-        encoding: "utf8",
-        stdio: ["ignore", "pipe", "pipe"],
-      }
-    );
+    const path = require("path");
+    const fs = require("fs");
+
+    const childEnv = { ...env };
+    if (childEnv.NODE_OPTIONS) {
+      childEnv.NODE_OPTIONS = childEnv.NODE_OPTIONS.replace(
+        /--experimental-require-module/g,
+        ""
+      ).trim();
+    }
+
+    const rootDir = path.resolve(__dirname, "..");
+    const tsxCli = path.join(rootDir, "node_modules", "tsx", "dist", "cli.mjs");
+    let prog = "npx";
+    let args = ["tsx", "scripts/vercel-headroom.ts", "--strict", "--json"];
+
+    if (fs.existsSync(tsxCli)) {
+      prog = process.execPath;
+      args = [tsxCli, "scripts/vercel-headroom.ts", "--strict", "--json"];
+    }
+
+    const output = execFileSync(prog, args, {
+      cwd: rootDir,
+      env: childEnv,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+    });
     const parsed = JSON.parse(output);
     if (!parsed || typeof parsed !== "object") {
       logger.error("Vercel headroom check returned invalid JSON response.");

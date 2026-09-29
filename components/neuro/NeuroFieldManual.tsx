@@ -316,7 +316,7 @@ const ManualDialog: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                   key: "Mouse Wheel",
                   desc: "Scroll through anatomical slices",
                 },
-                { key: "Space", desc: "Run recon-all pipeline execution" },
+                { key: "R / Space", desc: "Run recon-all pipeline execution" },
                 { key: "M / ?", desc: "Open this Field Manual" },
                 { key: "Cmd + K", desc: "Site-wide Command Palette" },
               ].map((s) => (

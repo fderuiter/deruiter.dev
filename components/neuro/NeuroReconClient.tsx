@@ -29,6 +29,7 @@ import {
   computeSyntheticVolumeSync,
   computeQAMetricsSync,
 } from "@/lib/neuro/loader";
+import { NEURO_RUN_RECON_KEY, resolveNeuroHotkey } from "@/lib/neuro";
 import { SyntheticVolume, VOLUME_SIZE } from "@/lib/neuro/volume-generator";
 import { MultiPlanarSliceViewer } from "./MultiPlanarSliceViewer";
 import dynamic from "next/dynamic";
@@ -768,30 +769,15 @@ export const NeuroReconClient: React.FC = () => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Studio hotkeys are suspended while a modal dialog owns the keyboard.
       if (isDialogOpen) return;
-      // Avoid hotkeys when typing in input or when focused within a keyboard boundary
-      const target = e.target as HTMLElement | null;
-      if (
-        !target ||
-        target.tagName === "INPUT" ||
-        target.tagName === "TEXTAREA" ||
-        target.isContentEditable ||
-        target.closest?.("[data-keyboard-boundary]")
-      ) {
-        return;
-      }
-
-      if (e.key === "1" || e.key.toLowerCase() === "v") {
-        setToolMode("inspect");
-      } else if (e.key === "2" || e.key.toLowerCase() === "c") {
-        setToolMode("control_point");
-      } else if (e.key === "3" || e.key.toLowerCase() === "b") {
-        setToolMode("paint");
-      } else if (e.key === "4" || e.key.toLowerCase() === "e") {
-        setToolMode("erase");
-      } else if (e.key === " " && !isProcessing) {
+      // Ignore text entry, modifier chords, and natively activating controls.
+      const action = resolveNeuroHotkey(e);
+      if (!action) return;
+      if (action.type === "tool") {
+        setToolMode(action.tool);
+      } else if (action.type === "run") {
         e.preventDefault();
-        handleRunRecon();
-      } else if (e.key.toLowerCase() === "m" || e.key === "?") {
+        if (!isProcessing) handleRunRecon();
+      } else {
         setIsFieldManualOpen((prev) => !prev);
       }
     };
@@ -881,7 +867,7 @@ export const NeuroReconClient: React.FC = () => {
               <p className="text-[11px] text-zinc-400 leading-snug">
                 Click{" "}
                 <strong className="text-brand-cyan">[RUN RECON-ALL]</strong> or
-                press <kbd>[Space]</kbd> to check the simulated Euler target χ =
+                press <kbd>[{NEURO_RUN_RECON_KEY}]</kbd> to check the simulated Euler target χ =
                 2.
               </p>
             </div>

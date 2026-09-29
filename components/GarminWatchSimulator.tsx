@@ -243,6 +243,11 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     if (current.gameState !== "playing") return;
     triggerHaptic(20);
     playBeep(650, 0.035);
+    const result = jettisonOldestVariable(current);
+    if (result.reason && !result.popped) {
+      setAlertMessage(result.reason);
+      return;
+    }
     applyTransition((state) => jettisonOldestVariable(state).state);
   }, [playBeep, applyTransition]);
 

@@ -22,6 +22,8 @@ import {
 import {
   getUniversalCrfSchemaUrl,
   validateUniversalCrf,
+  EdcSimulationStateSchema,
+  StudyProvenanceSchema,
 } from "./universal-schema";
 import { cloneDeep } from "../utils";
 import { STANDARD_CODELISTS } from "./cdisc-controlled-terminology";
@@ -892,6 +894,31 @@ export function importStudyFromUsdm(
 
   const rules: EditCheckRule[] = Array.from(ruleMap.values());
 
+  let validatedSimulationState: StudyProtocol["simulationState"] = undefined;
+  if (
+    studyObj.simulationState &&
+    typeof studyObj.simulationState === "object"
+  ) {
+    const simResult = EdcSimulationStateSchema.safeParse(
+      studyObj.simulationState
+    );
+    if (simResult.success) {
+      validatedSimulationState =
+        simResult.data as unknown as StudyProtocol["simulationState"];
+    }
+  }
+
+  let validatedProvenance: StudyProtocol["provenance"] = undefined;
+  if (studyObj.provenance && typeof studyObj.provenance === "object") {
+    const provResult = StudyProvenanceSchema.safeParse(studyObj.provenance);
+    if (provResult.success) {
+      validatedProvenance = {
+        ...(provResult.data as StudyProtocol["provenance"]),
+        sourceFormat: provResult.data.sourceFormat || "CDISC USDM JSON",
+      };
+    }
+  }
+
   const protocol: StudyProtocol = {
     $schema: getUniversalCrfSchemaUrl(),
     schemaVersion: "1.0.0",
@@ -915,16 +942,8 @@ export function importStudyFromUsdm(
     epochs,
     cohorts,
     biomedicalConcepts,
-    simulationState:
-      studyObj.simulationState as StudyProtocol["simulationState"],
-    provenance: studyObj.provenance
-      ? {
-          ...(studyObj.provenance as StudyProtocol["provenance"]),
-          sourceFormat:
-            (studyObj.provenance as StudyProtocol["provenance"])
-              ?.sourceFormat || "CDISC USDM JSON",
-        }
-      : undefined,
+    simulationState: validatedSimulationState,
+    provenance: validatedProvenance,
   };
 
   return protocol;

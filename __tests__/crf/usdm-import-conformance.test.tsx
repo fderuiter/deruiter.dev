@@ -94,7 +94,7 @@ describe("ExportImportModal USDM Import Conformance Gating & Provenance Logging"
     const importedStudy: StudyProtocol = handleImport.mock.calls[0][0];
     expect(importedStudy.provenance).toBeDefined();
     expect(importedStudy.provenance?.importedAt).toBeDefined();
-    expect(importedStudy.provenance?.importedBy).toBe("CRF Studio User");
+    expect(importedStudy.provenance?.importedBy).toBe("Unverified Session");
     expect(importedStudy.provenance?.sourceFormat).toBe("CDISC USDM JSON");
   });
 
@@ -286,7 +286,7 @@ describe("ExportImportModal USDM Import Conformance Gating & Provenance Logging"
     const fixedField = remediatedStudy.forms[0].sections[0].fields[0];
     expect(fixedField.variableName.length).toBeLessThanOrEqual(8);
     expect(remediatedStudy.provenance).toBeDefined();
-    expect(remediatedStudy.provenance?.importedBy).toBe("CRF Studio User");
+    expect(remediatedStudy.provenance?.importedBy).toBe("Unverified Session");
   });
 
   it("pauses warning-only import and allows user to Proceed with Warnings explicitly", async () => {
@@ -563,7 +563,135 @@ describe("ExportImportModal USDM Import Conformance Gating & Provenance Logging"
 
     // Must distinguish source format
     expect(imported.provenance?.sourceFormat).toBe("Universal CRF JSON");
-    expect(imported.provenance?.importedBy).toBe("CRF Studio User");
+    expect(imported.provenance?.importedBy).toBe("Unverified Session");
     expect(imported.provenance?.importedAt).toBeDefined();
+  });
+
+  it("updates import timestamp and operator on second import while preserving prior author and restoration lineage", async () => {
+    const handleImport = vi.fn();
+
+    await act(async () => {
+      root.render(
+        <ExportImportModal
+          study={ONCOLOGY_RECIST_PRESET}
+          onImportStudy={handleImport}
+        />
+      );
+    });
+
+    const previousImportTime = "2026-01-01T12:00:00.000Z";
+    const studyWithPreviousImport: StudyProtocol = {
+      ...ONCOLOGY_RECIST_PRESET,
+      provenance: {
+        author: "Lead Investigator",
+        derivedFromBaselineId: "base_001",
+        restoredAt: "2026-01-01T10:00:00.000Z",
+        restoredBy: "Dr. Bob",
+        importedAt: previousImportTime,
+        importedBy: "Previous Session",
+        timestamp: previousImportTime,
+        sourceFormat: "Universal CRF JSON",
+      },
+    };
+
+    const universalJson = exportUniversalCrfJson(studyWithPreviousImport);
+
+    const textarea = container.querySelector("textarea");
+    await act(async () => {
+      if (textarea) {
+        const nativeTextareaSetter = Object.getOwnPropertyDescriptor(
+          window.HTMLTextAreaElement.prototype,
+          "value"
+        )?.set;
+        nativeTextareaSetter?.call(textarea, universalJson);
+        textarea.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+    });
+
+    const importBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.includes("Import Protocol into Studio")
+    );
+
+    await act(async () => {
+      importBtn?.click();
+    });
+
+    await waitForCondition(() => handleImport.mock.calls.length > 0);
+
+    const reimported: StudyProtocol = handleImport.mock.calls[0][0];
+
+    // Second import MUST record new import time, not keep previousImportTime
+    expect(reimported.provenance?.importedAt).not.toBe(previousImportTime);
+    expect(reimported.provenance?.timestamp).not.toBe(previousImportTime);
+    expect(reimported.provenance?.importedBy).toBe("Unverified Session");
+
+    // Prior author and restoration lineage MUST be preserved
+    expect(reimported.provenance?.author).toBe("Lead Investigator");
+    expect(reimported.provenance?.derivedFromBaselineId).toBe("base_001");
+    expect(reimported.provenance?.restoredAt).toBe("2026-01-01T10:00:00.000Z");
+    expect(reimported.provenance?.restoredBy).toBe("Dr. Bob");
+  });
+
+  it("safely handles malformed simulationState and audit payloads during USDM import using Zod runtime schemas", async () => {
+    const { importStudyFromUsdm } = await import("@/lib/crf/usdm-adapter");
+
+    // Construct USDM payload with malformed simulationState (invalid auditLog structure)
+    const malformedUsdmJson = JSON.stringify({
+      study: {
+        id: "usdm_malformed_01",
+        title: "Malformed Simulation Test Protocol",
+        protocolNumber: "PROTO-BAD-SIM",
+        phase: "Phase I",
+        sponsor: "Test Sponsor",
+        studyDesigns: [],
+        simulationState: {
+          auditLog: "THIS_SHOULD_BE_AN_ARRAY_NOT_A_STRING", // Malformed
+          signatures: [{ invalidField: 123 }], // Malformed
+        },
+        provenance: {
+          author: "Test Author",
+          sourceFormat: "CDISC USDM JSON",
+        },
+      },
+    });
+
+    expect(() => {
+      const imported = importStudyFromUsdm(malformedUsdmJson);
+      // Malformed simulationState should be safely discarded/undefined
+      expect(imported.simulationState).toBeUndefined();
+      // Valid provenance should be retained
+      expect(imported.provenance?.author).toBe("Test Author");
+    }).not.toThrow();
+
+    // Construct USDM payload with valid simulationState and auditLog
+    const validUsdmJson = JSON.stringify({
+      study: {
+        id: "usdm_valid_01",
+        title: "Valid Simulation Test Protocol",
+        protocolNumber: "PROTO-GOOD-SIM",
+        phase: "Phase I",
+        sponsor: "Test Sponsor",
+        studyDesigns: [],
+        simulationState: {
+          auditLog: [
+            {
+              id: "aud_001",
+              timestamp: "2026-09-29T10:00:00.000Z",
+              changedBy: "Investigator A",
+              action: "Update Value",
+            },
+          ],
+          availableSubjects: ["SUBJ-001"],
+        },
+      },
+    });
+
+    const importedValid = importStudyFromUsdm(validUsdmJson);
+    expect(importedValid.simulationState).toBeDefined();
+    expect(importedValid.simulationState?.auditLog).toHaveLength(1);
+    expect(importedValid.simulationState?.auditLog?.[0].id).toBe("aud_001");
+    expect(importedValid.simulationState?.availableSubjects).toEqual([
+      "SUBJ-001",
+    ]);
   });
 });

@@ -276,21 +276,21 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
     const now = new Date().toISOString();
     const existingProv = st.provenance || {};
     const sourceFormat = existingProv.sourceFormat || "CDISC USDM JSON";
-    const author = existingProv.author || st.sponsor;
+    const author = existingProv.author;
     return {
       ...st,
       provenance: {
         ...existingProv,
         ...(author ? { author } : {}),
-        importedAt: existingProv.importedAt || now,
-        importedBy: existingProv.importedBy || "CRF Studio User",
+        importedAt: now,
+        importedBy: "Unverified Session",
         sourceFormat,
         sourceVersion:
           existingProv.sourceVersion ||
           st.schemaVersion ||
           st.version ||
           "1.0.0",
-        timestamp: existingProv.timestamp || now,
+        timestamp: now,
         notes: existingProv.notes
           ? existingProv.notes.includes("Imported via ExportImportModal")
             ? existingProv.notes

@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { useClipboard } from "@/hooks/useClipboard";
+import { useToast } from "@/hooks/useToast";
 import {
   ControlPoint,
   DatasetSource,
@@ -121,7 +121,7 @@ export const NeuroReconClient: React.FC = () => {
   const { playNote, playSuccess } = useAudio();
   const { recordEvent } = useTelemetry();
   const { params, setParam, setParams } = useStudioHashParams();
-  const [copyToast, setCopyToast] = useState<string | null>(null);
+  const toast = useToast();
 
   const [activeScenarioId, setActiveScenarioId] = useState<ScenarioId>(() => {
     if (typeof window !== "undefined") {
@@ -465,10 +465,11 @@ export const NeuroReconClient: React.FC = () => {
       try {
         playSuccess();
       } catch {}
-      setCopyToast(
-        "Link copied: case, view and tool only. Your edits are not included."
+      // useClipboard already announced successMessage; show it without speaking it twice.
+      toast.success(
+        "Link copied: case, view and tool only. Your edits are not included.",
+        { duration: 3500, announce: false }
       );
-      setTimeout(() => setCopyToast(null), 3500);
     },
   });
 
@@ -1313,21 +1314,6 @@ export const NeuroReconClient: React.FC = () => {
         onAdvance={handleAdvanceNextScenario}
         onSchedule={() => recordEvent("neuro", "project_click")}
       />
-
-      {/* Share Toast Notification */}
-      <AnimatePresence>
-        {copyToast && (
-          <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 15 }}
-            className="fixed bottom-6 right-6 z-50 px-4 py-2.5 rounded-xl border border-brand-cyan/40 bg-zinc-900/95 text-xs font-mono text-brand-cyan shadow-2xl flex items-center gap-2 backdrop-blur-md"
-          >
-            <IconLink className="w-4 h-4 text-brand-cyan" />
-            <span>{copyToast}</span>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 };

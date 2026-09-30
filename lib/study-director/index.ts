@@ -13,6 +13,7 @@ export {
   ATTENTION_PER_DAY,
   DOCUMENTATION_ATTENTION,
   advanceDay,
+  applyDifficulty,
   auditSite,
   computeMeters,
   createStudy,
@@ -27,11 +28,13 @@ export {
 export { STUDY_24_081, STUDY_24_081_SITES, STUDY_24_081_TEAM } from "./presets";
 export { STUDY_EVENTS } from "./internal/events-data";
 export {
+  WILDCARDS_PER_RUN,
   beginStudy,
   endDay,
   getEvent,
   inbox,
   resolveEvent,
+  scheduleWildcards,
 } from "./internal/events";
 export {
   classifyProfile,

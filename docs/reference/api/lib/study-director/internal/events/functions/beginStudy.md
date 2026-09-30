@@ -8,7 +8,7 @@
 
 > **beginStudy**(`state`): [`StudyState`](../../../types/interfaces/StudyState.md)
 
-Starts the study on day 1 with the first inbox ready.
+Starts the study on day 1 with its wildcards drawn and the first inbox ready.
 
 ## Parameters
 

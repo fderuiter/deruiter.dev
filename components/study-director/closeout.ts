@@ -16,8 +16,11 @@ export function verdictFor(report: FinalReport): Verdict {
   const score =
     GRADE_POINTS[regulatory.grade] +
     (sponsor.stars - 1) +
-    (company.marginPct >= 10 ? 2 : company.marginPct >= 0 ? 1 : 0) +
-    (company.timelineVarianceDays <= 0 ? 1 : 0);
+    // Studies almost always run over (#1548 playtest: the best lines land
+    // near -10% margin and +2 days), so the thresholds reward holding the
+    // overrun down rather than the near-impossible clean sheet.
+    (company.marginPct >= -5 ? 2 : company.marginPct >= -15 ? 1 : 0) +
+    (company.timelineVarianceDays <= 3 ? 1 : 0);
   if (score >= 9) {
     return {
       score,

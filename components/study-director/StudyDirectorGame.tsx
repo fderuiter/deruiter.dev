@@ -14,6 +14,7 @@ import {
   STUDY_24_081,
   STUDY_24_081_SITES,
   STUDY_24_081_TEAM,
+  applyDifficulty,
   auditSite,
   beginStudy,
   computeMeters,
@@ -22,6 +23,7 @@ import {
   finalizeStudy,
   inbox,
   resolveEvent,
+  type Difficulty,
   type Meters,
   type StudyEvent,
   type StudyState,
@@ -39,6 +41,7 @@ import {
 import { InboxPanel } from "./InboxPanel";
 import { OfficeScene } from "./OfficeScene";
 import { sceneFor } from "./scene";
+import { dailyHeadline } from "./headline";
 import { PhaseTimeline } from "./PhaseTimeline";
 import { PHASE_LABELS } from "./labels";
 import { ShortcutSheet } from "./ShortcutSheet";
@@ -57,13 +60,20 @@ import {
 import { verdictFor } from "./closeout";
 import { PersonnelFile } from "./PersonnelFile";
 import { SharePanel } from "./ShareCard";
+import { DifficultyPicker } from "./DifficultyPicker";
 
-function newStudy(sharedSeed?: string | null): StudyState {
+function newStudy(
+  sharedSeed: string | null,
+  difficulty: Difficulty
+): StudyState {
   const seed =
     sharedSeed ??
     `sd-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`;
   return beginStudy(
-    createStudy(seed, STUDY_24_081, STUDY_24_081_SITES, STUDY_24_081_TEAM)
+    applyDifficulty(
+      createStudy(seed, STUDY_24_081, STUDY_24_081_SITES, STUDY_24_081_TEAM),
+      difficulty
+    )
   );
 }
 
@@ -77,6 +87,16 @@ function subscribeHash(onChange: () => void): () => void {
 /** A seed shared by link (`#seed=...`), or null. */
 function hashSeed(): string | null {
   return SEED_PATTERN.exec(window.location.hash)?.[1] ?? null;
+}
+
+const DIFFICULTY_PATTERN = /(?:^#|&)difficulty=(calm|standard|rescue)(?:&|$)/;
+
+/** The difficulty a shared link asks for, or null. */
+function hashDifficulty(): Difficulty | null {
+  return (
+    (DIFFICULTY_PATTERN.exec(window.location.hash)?.[1] as
+      Difficulty | undefined) ?? null
+  );
 }
 
 /**
@@ -99,6 +119,15 @@ export const StudyDirectorGame: React.FC = () => {
   const [news, setNews] = useState<CareerNews | null>(null);
   const [confirmAbandon, setConfirmAbandon] = useState(false);
   const sharedSeed = useSyncExternalStore(subscribeHash, hashSeed, () => null);
+  const sharedDifficulty = useSyncExternalStore(
+    subscribeHash,
+    hashDifficulty,
+    () => null
+  );
+  const [pickedDifficulty, setPickedDifficulty] = useState<Difficulty | null>(
+    null
+  );
+  const difficulty = pickedDifficulty ?? sharedDifficulty ?? "standard";
   const seq = useRef(0);
 
   const updateCareer = useCallback((next: CareerFile) => {
@@ -171,8 +200,8 @@ export const StudyDirectorGame: React.FC = () => {
         window.location.pathname + window.location.search
       );
     }
-    start(newStudy(sharedSeed));
-  }, [career, sharedSeed, start, updateCareer]);
+    start(newStudy(sharedSeed, difficulty));
+  }, [career, sharedSeed, difficulty, start, updateCareer]);
 
   /** Files a finished study in the career, once per seed. */
   const closeOut = useCallback(
@@ -384,6 +413,10 @@ export const StudyDirectorGame: React.FC = () => {
         team={STUDY_24_081_TEAM}
         actions={
           <>
+            <DifficultyPicker
+              value={difficulty}
+              onChange={setPickedDifficulty}
+            />
             <button
               type="button"
               ref={saved && saved.status === "running" ? undefined : primaryRef}
@@ -521,7 +554,12 @@ export const StudyDirectorGame: React.FC = () => {
 
       <StatusBar state={state} />
       <PhaseTimeline state={state} />
-      {scene ? <OfficeScene scene={scene} /> : null}
+      {scene ? (
+        <OfficeScene
+          scene={scene}
+          headline={running ? dailyHeadline(state) : undefined}
+        />
+      ) : null}
 
       {report ? (
         <ReportView

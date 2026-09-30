@@ -147,9 +147,14 @@ export interface DecisionRecord {
   effects: Effects;
 }
 
+/** How hard the study starts. Older saves have none, which plays as standard. */
+export const DIFFICULTIES = ["calm", "standard", "rescue"] as const;
+export type Difficulty = (typeof DIFFICULTIES)[number];
+
 export interface StudyState {
   version: 1;
   seed: string;
+  difficulty?: Difficulty;
   setup: StudySetup;
   day: number;
   status: "running" | "complete";
@@ -222,6 +227,10 @@ export interface StudyEvent {
   trigger?: (state: StudyState) => boolean;
   /** Only appears when scheduled by an earlier decision. */
   followUp?: boolean;
+  /** A rare event drawn from the seed; scheduled at the start of a run. */
+  wildcard?: boolean;
+  /** The earlier event whose decision this one calls back to. */
+  recalls?: string;
   options: EventOption[];
   /** Applied when the event expires unanswered. */
   ifIgnored: Effects;

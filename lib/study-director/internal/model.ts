@@ -4,6 +4,7 @@ import type {
   ActionResult,
   Dashboard,
   DecisionInput,
+  Difficulty,
   Effects,
   Health,
   MeterId,
@@ -110,6 +111,46 @@ export function createStudy(
     seen: {},
     handled: [],
   };
+}
+
+/**
+ * Sets how hard the study starts. Calm has more budget, a warmer sponsor
+ * and a rested team; rescue inherits a study already behind, over-spent,
+ * under-documented and with a sponsor who has stopped smiling. Apply it to
+ * a fresh study, before it begins.
+ */
+export function applyDifficulty(
+  state: StudyState,
+  difficulty: Difficulty
+): StudyState {
+  if (difficulty === "calm") {
+    return {
+      ...state,
+      difficulty,
+      setup: { ...state.setup, budget: Math.round(state.setup.budget * 1.15) },
+      adjust: { ...state.adjust, client: state.adjust.client + 8 },
+      team: state.team.map((m) => ({
+        ...m,
+        workload: clamp(m.workload - 10),
+      })),
+    };
+  }
+  if (difficulty === "rescue") {
+    return {
+      ...state,
+      difficulty,
+      slipDays: state.slipDays + 6,
+      spent: state.spent + Math.round(state.setup.budget * 0.08),
+      documentationDebt: clamp(state.documentationDebt + 12),
+      adjust: { ...state.adjust, client: state.adjust.client - 15 },
+      team: state.team.map((m) => ({
+        ...m,
+        workload: clamp(m.workload + 10),
+      })),
+      sites: state.sites.map((x) => ({ ...x, burden: clamp(x.burden + 8) })),
+    };
+  }
+  return { ...state, difficulty };
 }
 
 function member(state: StudyState, role: TeamRole): TeamMember | undefined {

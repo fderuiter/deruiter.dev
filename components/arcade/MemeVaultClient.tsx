@@ -27,6 +27,8 @@ import { playMemeSound, getMemeSoundDuration } from "@/lib/meme-audio";
 import { useAnnouncer } from "@/components/providers/A11yProvider";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { useToast } from "@/hooks/useToast";
+import { useAppEvent } from "@/hooks/useAppEvent";
+import { emitAppEvent, onAppEvent } from "@/lib/event-bus";
 import {
   IconSparkles,
   IconTrophy,
@@ -40,10 +42,10 @@ import {
 
 function subscribeAchievements(callback: () => void) {
   if (typeof window === "undefined") return () => {};
-  window.addEventListener("meme_achievement_unlocked", callback);
+  const offUnlock = onAppEvent("meme_achievement_unlocked", callback);
   window.addEventListener("storage", callback);
   return () => {
-    window.removeEventListener("meme_achievement_unlocked", callback);
+    offUnlock();
     window.removeEventListener("storage", callback);
   };
 }
@@ -192,19 +194,15 @@ export const MemeVaultClient: React.FC = () => {
 
   // Every trophy unlock, from this page or anywhere else while it is open,
   // gets the same self-dismissing toast (#1328).
-  useEffect(() => {
-    const handleUnlock = (event: Event) => {
-      const id = (event as CustomEvent<{ id?: string }>).detail?.id;
-      const achievement = EASTER_EGG_ACHIEVEMENTS.find((a) => a.id === id);
-      if (!achievement) return;
-      toast.success(`Trophy unlocked: ${achievement.title}`, {
-        description: achievement.description,
-      });
-    };
-    window.addEventListener("meme_achievement_unlocked", handleUnlock);
-    return () =>
-      window.removeEventListener("meme_achievement_unlocked", handleUnlock);
-  }, [toast]);
+  useAppEvent("meme_achievement_unlocked", (detail) => {
+    const achievement = EASTER_EGG_ACHIEVEMENTS.find(
+      (a) => a.id === detail?.id
+    );
+    if (!achievement) return;
+    toast.success(`Trophy unlocked: ${achievement.title}`, {
+      description: achievement.description,
+    });
+  });
 
   // Trigger soundboard sound
   const handlePlaySound = (button: SoundboardButton) => {
@@ -238,9 +236,7 @@ export const MemeVaultClient: React.FC = () => {
   // the Konami trophy: only typing the code does (#1328).
   const triggerChaosMode = useCallback(() => {
     playMemeSound("fanfare");
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new CustomEvent("trigger_retro_chaos"));
-    }
+    emitAppEvent("trigger_retro_chaos");
   }, []);
 
   const filteredQuotes = MEME_QUOTES.filter(

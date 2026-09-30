@@ -284,6 +284,7 @@
 - [lib/services/duck/interact-hazard/handler](lib/services/duck/interact-hazard/handler/README.md)
 - [lib/services/duck/interact-hazard/spec](lib/services/duck/interact-hazard/spec/README.md)
 - [lib/services/email-service](lib/services/email-service/README.md)
+- [lib/services/event-outbox](lib/services/event-outbox/README.md)
 - [lib/services/garmin/allocate-memory/handler](lib/services/garmin/allocate-memory/handler/README.md)
 - [lib/services/garmin/allocate-memory/spec](lib/services/garmin/allocate-memory/spec/README.md)
 - [lib/services/garmin/garbage-collect/handler](lib/services/garmin/garbage-collect/handler/README.md)

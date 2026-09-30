@@ -84,7 +84,6 @@ export const LaserLoonClient: React.FC = () => {
               gameId="laser-loon"
               title="Laser Loon: Quest for the State Flag"
               subtitle="A Loon With a Legislative Agenda"
-              accentColor="red"
               icon={<IconCrosshair className="w-8 h-8 text-red-400" />}
               instructions="Fly Laser Loon toward the State Capitol, take on rival flags, and blast through red tape. There are ice weapons and boss battles. The flag committee did not request these features."
               controls={[

@@ -85,7 +85,6 @@ export const RetroLabyrinthClient: React.FC = () => {
               gameId="retro-labyrinth"
               title="Retro Labyrinth: Graveyard Roguelike"
               subtitle="There Are Bugs in the Dungeon"
-              accentColor="rose"
               icon={<IconDeviceGamepad2 className="w-8 h-8 text-rose-400" />}
               instructions="Explore a shifting dungeon made from abandoned codebases. Fight bugs, find your way through the fog, and face a wireframe boss with an unreasonable number of angles."
               controls={[

@@ -121,7 +121,6 @@ describe("Dynamic Viewport Heights & CSS Custom Variable Space Contract", () => 
           title="Laser Loon"
           instructions="Test instructions"
           controls={[]}
-          accentColor="amber"
           icon={<div>Icon</div>}
           importComponent={() => Promise.resolve({ default: () => <div /> })}
         >

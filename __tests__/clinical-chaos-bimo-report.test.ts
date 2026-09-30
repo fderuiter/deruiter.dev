@@ -174,3 +174,80 @@ describe("Date of Birth fix puzzle (#1554)", () => {
     expect(hints.size).toBe(1);
   });
 });
+
+// #1670: expired subjects were worded as "submitted with unresolved raw data",
+// could outnumber the CRFs processed, and sat beside a 100% clean rate.
+describe("generateBIMOReport with expired subjects (#1670)", () => {
+  const phase1 = {
+    ...createInitialScoreState(),
+    subjectsSubmitted: 5,
+    cleanSubmissions: 5,
+    auditViolations: 4,
+    expiredSubjects: 4,
+  };
+
+  it("reports a phase with expiries and no bad submissions as expiries", () => {
+    const report = generateBIMOReport(phase1, createInitialAuditorState(), []);
+    expect(report.submittedCRFs).toBe(5);
+    expect(report.cleanRate).toBe(100);
+    // The expired count sits beside the clean rate, so the two cannot
+    // contradict each other.
+    expect(report.expiredCRFs).toBe(4);
+    expect(report.findings.map((f) => f.description)).toEqual([
+      "4 subjects expired on the conveyor before source data verification.",
+    ]);
+    expect(report.findings.some((f) => f.id === "FND-001")).toBe(false);
+  });
+
+  it("never counts more submitted CRFs than were processed", () => {
+    const report = generateBIMOReport(
+      {
+        ...createInitialScoreState(),
+        subjectsSubmitted: 8,
+        cleanSubmissions: 8,
+        auditViolations: 12,
+        expiredSubjects: 12,
+      },
+      { ...createInitialAuditorState(), suspicion: 100 },
+      []
+    );
+    for (const finding of report.findings) {
+      const submitted = finding.description.match(/(\d+) .*submitted/);
+      if (submitted) {
+        expect(Number(submitted[1])).toBeLessThanOrEqual(report.submittedCRFs);
+      }
+    }
+    expect(report.expiredCRFs).toBe(12);
+  });
+
+  it("names misrouted CRFs separately from expired ones", () => {
+    const report = generateBIMOReport(
+      { ...phase1, auditViolations: 5 },
+      createInitialAuditorState(),
+      [],
+      [wrongPick(1)]
+    );
+    const text = report.findings.map((f) => f.description).join("\n");
+    expect(text).toContain(
+      "1 Case Report Form was rejected at an EDC station that does not match its domain."
+    );
+    expect(text).toContain(
+      "4 subjects expired on the conveyor before source data verification."
+    );
+  });
+
+  it("keeps the verdict rules unchanged (#899)", () => {
+    // Four violations still meet the Form 483 threshold, whatever their kind.
+    expect(
+      generateBIMOReport(phase1, createInitialAuditorState(), []).verdict
+    ).toMatch(/^OAI/);
+    // Two expiries alone stay voluntary action.
+    expect(
+      generateBIMOReport(
+        { ...phase1, auditViolations: 2, expiredSubjects: 2 },
+        createInitialAuditorState(),
+        []
+      ).verdict
+    ).toMatch(/^VAI/);
+  });
+});

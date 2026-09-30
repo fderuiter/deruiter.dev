@@ -13,6 +13,7 @@ import {
   createInitialPowerUpInventory,
   createInitialScoreState,
   createRuleViolation,
+  describePowerUpRefusal,
   describeSponsorEvent,
   endCoffeeBreak,
   extendSubjectDeadlines,
@@ -20,11 +21,18 @@ import {
   getAmendmentIntervalSeconds,
   getComboMultiplier,
   getFastTrackDomain,
+  getNextShiftScoreState,
+  getPhaseLockTarget,
+  getPhaseProgress,
+  getPowerUpRefusal,
   getSAEChance,
   getStationsForPhase,
   getSubjectErrorChance,
+  getShiftTickSeconds,
   getSubmissionCharge,
+  getViolationBreakdown,
   isPhaseCleared,
+  isShiftClockHalted,
   PHASE_TARGETS,
   raiseAuditorSuspicion,
   recordStationSubmission,
@@ -382,23 +390,23 @@ describe("lifelines", () => {
 
   it("fires only when charged, running and, if needed, with a dossier open", () => {
     const empty = createInitialPowerUpInventory();
-    expect(canActivatePowerUp(empty, "fda-coffee-break", true, true)).toBe(
+    expect(canActivatePowerUp(empty, "fda-coffee-break", true, subject())).toBe(
       false
     );
-    expect(canActivatePowerUp(inventory, "fda-coffee-break", false, true)).toBe(
-      false
-    );
-    expect(canActivatePowerUp(inventory, "fda-coffee-break", true, false)).toBe(
+    expect(
+      canActivatePowerUp(inventory, "fda-coffee-break", false, subject())
+    ).toBe(false);
+    expect(canActivatePowerUp(inventory, "fda-coffee-break", true, null)).toBe(
       true
     );
-    expect(canActivatePowerUp(inventory, "query-extension", true, false)).toBe(
+    expect(canActivatePowerUp(inventory, "query-extension", true, null)).toBe(
       true
     );
-    expect(canActivatePowerUp(inventory, "auto-clean", true, false)).toBe(
-      false
+    expect(canActivatePowerUp(inventory, "auto-clean", true, null)).toBe(false);
+    expect(canActivatePowerUp(inventory, "fast-sign", true, null)).toBe(false);
+    expect(canActivatePowerUp(inventory, "fast-sign", true, subject())).toBe(
+      true
     );
-    expect(canActivatePowerUp(inventory, "fast-sign", true, false)).toBe(false);
-    expect(canActivatePowerUp(inventory, "fast-sign", true, true)).toBe(true);
   });
 
   it("empties the fired lifeline and starts its duration", () => {
@@ -714,5 +722,225 @@ describe("ClinicalTrialChaosEngine delegates to the shift rules", () => {
       auditViolations: 1,
     });
     expect(engine.getSnapshot().auditorState.behavior).toBe("suspicious");
+  });
+});
+
+// #1670: expired subjects were reported as CRFs "submitted with unresolved
+// raw data" beside a 100% clean rate.
+describe("expired subjects in the tallies and report (#1670)", () => {
+  it("counts expiries apart from misrouted CRFs", () => {
+    const tick = tickShiftClocks(
+      {
+        subjects: [
+          subject({ id: "a", timeRemaining: 0.05 }),
+          subject({ id: "b", timeRemaining: 0.05 }),
+        ],
+        auditor: createInitialAuditorState(),
+        scoreState: createInitialScoreState(),
+        powerUps: createInitialPowerUpInventory(),
+        amendment: null,
+      },
+      0.1
+    );
+    expect(tick.scoreState.expiredSubjects).toBe(2);
+    expect(tick.scoreState.auditViolations).toBe(2);
+
+    const misrouted = breakCombo(tick.scoreState);
+    expect(getViolationBreakdown(misrouted, 1)).toEqual({
+      expired: 2,
+      misrouted: 1,
+      wrongFixes: 1,
+      total: 4,
+    });
+  });
+
+  it("names expiries as expired, never as submissions, and shows the count", () => {
+    const score = {
+      ...createInitialScoreState(),
+      subjectsSubmitted: 5,
+      cleanSubmissions: 5,
+      auditViolations: 4,
+      expiredSubjects: 4,
+    };
+    const report = buildInspectionReport(
+      score,
+      createInitialAuditorState(),
+      [],
+      [],
+      null,
+      []
+    );
+    expect(report.submittedCRFs).toBe(5);
+    expect(report.expiredCRFs).toBe(4);
+    const text = report.findings.map((f) => f.description).join(" ");
+    expect(text).toContain(
+      "4 subjects expired on the conveyor before source data verification"
+    );
+    expect(text).not.toMatch(/submitted with unresolved/);
+  });
+
+  it("carries the expired count across campaign phases", () => {
+    const next = getNextShiftScoreState(
+      { ...createInitialScoreState(), expiredSubjects: 3, auditViolations: 3 },
+      true,
+      0
+    );
+    expect(next.expiredSubjects).toBe(3);
+  });
+});
+
+// #1673: Auto-Clean fired on a clean CRF, and later phases opened with the
+// campaign total already filling their lock counter.
+describe("lifelines refuse a clean dossier (#1673)", () => {
+  const inventory = charged(createInitialPowerUpInventory());
+  const clean = subject({
+    observations: [observation({ isResolved: true })],
+  });
+  const flagged = subject();
+
+  it("keeps Auto-Clean and Fast-Track for dossiers with flagged fields", () => {
+    expect(canActivatePowerUp(inventory, "auto-clean", true, clean)).toBe(
+      false
+    );
+    expect(canActivatePowerUp(inventory, "fast-sign", true, clean)).toBe(false);
+    expect(canActivatePowerUp(inventory, "auto-clean", true, flagged)).toBe(
+      true
+    );
+    expect(canActivatePowerUp(inventory, "fast-sign", true, flagged)).toBe(
+      true
+    );
+    // The other lifelines do not act on the dossier.
+    expect(canActivatePowerUp(inventory, "query-extension", true, clean)).toBe(
+      true
+    );
+  });
+
+  it("says why a lifeline is unavailable", () => {
+    expect(getPowerUpRefusal(inventory, "auto-clean", true, clean)).toBe(
+      "nothing_to_clean"
+    );
+    expect(getPowerUpRefusal(inventory, "auto-clean", true, null)).toBe(
+      "no_dossier"
+    );
+    expect(
+      getPowerUpRefusal(
+        createInitialPowerUpInventory(),
+        "auto-clean",
+        true,
+        flagged
+      )
+    ).toBe("charging");
+    expect(getPowerUpRefusal(inventory, "auto-clean", false, flagged)).toBe(
+      "shift_stopped"
+    );
+    expect(
+      getPowerUpRefusal(inventory, "auto-clean", true, flagged)
+    ).toBeNull();
+    expect(describePowerUpRefusal("nothing_to_clean", "CDISC Auto-Clean")).toBe(
+      "CDISC Auto-Clean not used: nothing to clean on this dossier. Its charge is kept."
+    );
+  });
+
+  it("counts each phase's new locks from zero against its own new target", () => {
+    // The campaign length is unchanged: phases clear at 5, 8 and 12 locks in
+    // total, so they ask for 5, 3 and 4 new locks.
+    expect(PHASE_TARGETS).toEqual({ 1: 5, 2: 8, 3: 12 });
+    expect([1, 2, 3].map((p) => getPhaseLockTarget(p as 1 | 2 | 3))).toEqual([
+      5, 3, 4,
+    ]);
+
+    let running = createInitialScoreState();
+    const locksPerPhase: number[] = [];
+    for (const phase of [1, 2, 3] as const) {
+      expect(getPhaseProgress(running, "campaign", phase)).toEqual({
+        locked: 0,
+        target: getPhaseLockTarget(phase),
+      });
+      let cleared = false;
+      let locks = 0;
+      while (!cleared) {
+        const outcome = settleSubmission(
+          running,
+          subject({ id: `p${phase}-${locks}` }),
+          true,
+          "campaign",
+          phase
+        );
+        running = outcome.scoreState;
+        cleared = outcome.phaseCleared;
+        locks++;
+        expect(getPhaseProgress(running, "campaign", phase).locked).toBe(locks);
+      }
+      locksPerPhase.push(locks);
+      // Advancing a phase carries the score and total (#1325).
+      running = getNextShiftScoreState(running, true, 0);
+    }
+    expect(locksPerPhase).toEqual([5, 3, 4]);
+    expect(running.subjectsSubmitted).toBe(12);
+  });
+
+  it("has no phase target in endless mode", () => {
+    expect(
+      getPhaseProgress(
+        {
+          ...createInitialScoreState(),
+          subjectsSubmitted: 7,
+        },
+        "endless",
+        1
+      )
+    ).toEqual({ locked: 7, target: null });
+  });
+});
+
+// #1672: the conveyor clocks kept running behind the Field Manual, and a
+// shift could not be paused.
+describe("shift pause rules (#1672)", () => {
+  it("halts the clocks for a pause, the manual, a dialog or calibration", () => {
+    expect(isShiftClockHalted({})).toBe(false);
+    expect(isShiftClockHalted({ userPaused: true })).toBe(true);
+    expect(isShiftClockHalted({ manualOpen: true })).toBe(true);
+    expect(isShiftClockHalted({ dialogOpen: true })).toBe(true);
+    expect(isShiftClockHalted({ calibrating: true })).toBe(true);
+  });
+
+  it("advances nothing while halted and clamps a long frame", () => {
+    expect(getShiftTickSeconds(5000, true)).toBe(0);
+    expect(getShiftTickSeconds(50, false)).toBeCloseTo(0.05);
+    expect(getShiftTickSeconds(5000, false)).toBeCloseTo(0.1);
+  });
+
+  it("keeps the engine's clocks still while paused or while the manual is open", () => {
+    const engine = new ClinicalTrialChaosEngine();
+    engine.addSubject(subject({ timeRemaining: 3 }));
+    engine.setPaused(true);
+    engine.update(5);
+    expect(engine.getSnapshot().subjectCount).toBe(1);
+    engine.setPaused(false);
+    engine.setManualOpen(true);
+    engine.update(5);
+    expect(engine.getSnapshot().subjectCount).toBe(1);
+    engine.setManualOpen(false);
+    engine.update(5);
+    // Unpaused, the subject runs out of time.
+    expect(engine.getSnapshot().subjectCount).toBe(0);
+    expect(engine.getSnapshot().scoreState.expiredSubjects).toBe(1);
+  });
+});
+
+describe("Field Manual agrees with the shift rules (#1672, #1673)", () => {
+  it("lists the pause key and each phase's own lock target", async () => {
+    const { GAME_MANUALS } = await import("@/lib/game-manuals");
+    const manual = GAME_MANUALS["clinical-chaos"];
+    expect(manual.controls.some((c) => c.key?.startsWith("P "))).toBe(true);
+    const targets = manual.rules.find(
+      (r) => r.title === "Campaign Phase Targets"
+    )?.detail;
+    expect(targets).toContain(
+      `Lock ${getPhaseLockTarget(1)} CRFs to clear Phase 1`
+    );
+    expect(targets).toContain(`${getPhaseLockTarget(2)} more to clear Phase 2`);
+    expect(targets).toContain(`${getPhaseLockTarget(3)} more to clear Phase 3`);
+    expect(targets).toContain(`${PHASE_TARGETS[3]} in all`);
   });
 });

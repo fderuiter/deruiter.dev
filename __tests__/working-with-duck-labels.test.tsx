@@ -190,7 +190,7 @@ describe("Working With Duck labels (#1316)", () => {
       root.render(<WorkingWithDuck />);
     });
     const text = container.textContent ?? "";
-    expect(text).toContain("High Five 🐾");
+    expect(text).toContain("High Five");
     expect(text).not.toContain("Paw 🐾");
     expect(text).toContain("Sprint Score:");
     expect(text).not.toContain("Total Score");

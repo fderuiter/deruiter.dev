@@ -10,6 +10,7 @@
  * a parameter.
  */
 import type { StudyProtocol } from "../crf/types";
+import { clamp } from "../game-utils";
 import {
   calculateSubmissionPoints,
   fixObservation,
@@ -41,7 +42,12 @@ import type {
   StationConfig,
 } from "./types";
 
-/** CRFs to lock before a campaign phase is cleared. */
+/**
+ * Campaign-total CRF locks at which each phase clears: 5, then 8, then 12, so
+ * the phases ask for 5, 3 and 4 new locks. The header shows each phase's new
+ * locks against its own new target (#1673); the campaign score and total
+ * carry across phases (#1325).
+ */
 export const PHASE_TARGETS: Readonly<Record<GamePhase, number>> = {
   1: 5,
   2: 8,
@@ -128,6 +134,60 @@ export function breakCombo(
     combo: 0,
     multiplier: 1,
     auditViolations: score.auditViolations + violations,
+  };
+}
+
+/**
+ * Records subjects that expired on the conveyor: the combo breaks, each
+ * expiry counts as an audit violation, and the expired tally grows so the
+ * report can name them as expiries rather than bad submissions (#1670).
+ *
+ * @param score - The score state before the expiries.
+ * @param count - Subjects that expired.
+ * @returns The updated score state.
+ */
+export function recordExpiredSubjects(
+  score: GameScoreState,
+  count: number
+): GameScoreState {
+  if (count <= 0) return score;
+  return {
+    ...breakCombo(score, count),
+    expiredSubjects: score.expiredSubjects + count,
+  };
+}
+
+/** A run's violations by kind, as the report and the end panel show them. */
+export interface ViolationBreakdown {
+  /** Subjects that expired on the conveyor before anyone locked them. */
+  expired: number;
+  /** CRFs a station rejected because they belong to another domain. */
+  misrouted: number;
+  /** Wrong answers picked in the fix dialog. */
+  wrongFixes: number;
+  /** All of the above. */
+  total: number;
+}
+
+/**
+ * Splits a run's violations by kind (#1670). Audit violations hold both the
+ * expiries and the station rejections; wrong fixes are recorded separately.
+ *
+ * @param score - The score state to break down.
+ * @param wrongFixes - Rule violations recorded for wrong fixes.
+ * @returns The counts by kind and their total.
+ */
+export function getViolationBreakdown(
+  score: GameScoreState,
+  wrongFixes: number
+): ViolationBreakdown {
+  const expired = Math.min(score.auditViolations, score.expiredSubjects);
+  const misrouted = score.auditViolations - expired;
+  return {
+    expired,
+    misrouted,
+    wrongFixes,
+    total: expired + misrouted + wrongFixes,
   };
 }
 
@@ -394,7 +454,7 @@ export function recordStationSubmission(
  *
  * @param gameMode - The running mode.
  * @param phase - The running phase.
- * @param submittedBefore - CRFs locked before this submission.
+ * @param submittedBefore - CRFs locked in the campaign before this submission.
  * @returns True when this submission reaches the phase target.
  */
 export function isPhaseCleared(
@@ -403,6 +463,56 @@ export function isPhaseCleared(
   submittedBefore: number
 ): boolean {
   return gameMode === "campaign" && submittedBefore + 1 >= PHASE_TARGETS[phase];
+}
+
+/**
+ * New CRF locks a campaign phase asks for: its clearing total less the
+ * previous phase's (5, 3 and 4).
+ *
+ * @param phase - The campaign phase.
+ * @returns The phase's own lock target.
+ */
+export function getPhaseLockTarget(phase: GamePhase): number {
+  const before = phase === 1 ? 0 : PHASE_TARGETS[(phase - 1) as GamePhase];
+  return PHASE_TARGETS[phase] - before;
+}
+
+/** Locks shown against the phase target in the header. */
+export interface PhaseProgress {
+  /** CRFs locked in this phase, or in the whole run in endless mode. */
+  locked: number;
+  /** This phase's target, or `null` in endless mode. */
+  target: number | null;
+}
+
+/**
+ * The header's lock counter: this phase's new locks against this phase's own
+ * new target, so each phase starts at zero (#1673). The clearing rule is
+ * unchanged and still uses the campaign total. Endless mode has no target and
+ * counts every lock in the run.
+ *
+ * @param score - The running score state.
+ * @param gameMode - The running mode.
+ * @param phase - The running phase.
+ * @returns The locked count and the target.
+ */
+export function getPhaseProgress(
+  score: GameScoreState,
+  gameMode: GameMode,
+  phase: GamePhase
+): PhaseProgress {
+  if (gameMode !== "campaign") {
+    return { locked: score.subjectsSubmitted, target: null };
+  }
+  const before = PHASE_TARGETS[phase] - getPhaseLockTarget(phase);
+  return {
+    locked: clamp(
+      score.subjectsSubmitted - before,
+      0,
+      getPhaseLockTarget(phase)
+    ),
+    target: getPhaseLockTarget(phase),
+  };
 }
 
 /**
@@ -463,28 +573,88 @@ export function buildInspectionReport(
 
 // --- Lifelines --------------------------------------------------------------
 
+/** Why a lifeline cannot fire right now. */
+export type PowerUpRefusal =
+  "charging" | "shift_stopped" | "no_dossier" | "nothing_to_clean";
+
 /**
- * Whether a lifeline can fire: it is fully charged, the shift is running, and
- * the lifelines that act on the open dossier have one to act on.
+ * Why a lifeline cannot fire, or `null` when it can: it must be fully
+ * charged and the shift running, and Auto-Clean and Fast-Track need an open
+ * dossier with at least one flagged field, so their charge is never spent on
+ * a CRF they cannot change (#1673).
  *
  * @param inventory - The lifeline inventory.
  * @param type - The lifeline to fire.
  * @param playing - Whether the shift is running.
- * @param hasActiveSubject - Whether a dossier is open.
+ * @param activeSubject - The open dossier, if any.
+ * @returns The reason it cannot fire, or null.
+ */
+export function getPowerUpRefusal(
+  inventory: PowerUpInventory,
+  type: PowerUpType,
+  playing: boolean,
+  activeSubject: Pick<ClinicalSubject, "observations"> | null
+): PowerUpRefusal | null {
+  const p = inventory[type];
+  if (!p || p.charge < p.maxCharge) return "charging";
+  if (!playing) return "shift_stopped";
+  if (type === "auto-clean" || type === "fast-sign") {
+    if (!activeSubject) return "no_dossier";
+    if (activeSubject.observations.every((obs) => obs.isResolved)) {
+      return "nothing_to_clean";
+    }
+  }
+  return null;
+}
+
+/**
+ * Whether a lifeline can fire. See `getPowerUpRefusal` for the rules.
+ *
+ * @param inventory - The lifeline inventory.
+ * @param type - The lifeline to fire.
+ * @param playing - Whether the shift is running.
+ * @param activeSubject - The open dossier, if any.
  * @returns True when the lifeline can fire.
  */
 export function canActivatePowerUp(
   inventory: PowerUpInventory,
   type: PowerUpType,
   playing: boolean,
-  hasActiveSubject: boolean
+  activeSubject: Pick<ClinicalSubject, "observations"> | null
 ): boolean {
-  const p = inventory[type];
-  if (!p || p.charge < p.maxCharge || !playing) return false;
-  return !(
-    (type === "auto-clean" || type === "fast-sign") &&
-    !hasActiveSubject
-  );
+  return getPowerUpRefusal(inventory, type, playing, activeSubject) === null;
+}
+
+/** Short tile labels for a refused lifeline. */
+export const POWER_UP_REFUSAL_LABELS: Readonly<Record<PowerUpRefusal, string>> =
+  {
+    charging: "Charging",
+    shift_stopped: "Shift stopped",
+    no_dossier: "No dossier",
+    nothing_to_clean: "Nothing to clean",
+  };
+
+/**
+ * The announcement when a pressed lifeline is refused.
+ *
+ * @param refusal - Why it was refused.
+ * @param name - The lifeline's display name.
+ * @returns A sentence to announce.
+ */
+export function describePowerUpRefusal(
+  refusal: PowerUpRefusal,
+  name: string
+): string {
+  switch (refusal) {
+    case "nothing_to_clean":
+      return `${name} not used: nothing to clean on this dossier. Its charge is kept.`;
+    case "no_dossier":
+      return `${name} not used: no dossier is open.`;
+    case "shift_stopped":
+      return `${name} not used: the shift is not running.`;
+    case "charging":
+      return `${name} is still charging.`;
+  }
 }
 
 /**
@@ -593,6 +763,54 @@ export function getFastTrackDomain(
 
 // --- Per-frame clocks -------------------------------------------------------
 
+/** Longest frame the clocks advance in one step, in milliseconds. */
+export const MAX_SHIFT_TICK_MS = 100;
+
+/** What can hold the shift clocks still. */
+export interface ShiftPauseState {
+  /** The player paused the shift (P or the Pause button). */
+  userPaused?: boolean;
+  /** The Field Manual is open. */
+  manualOpen?: boolean;
+  /** A fix or signature dialog is open. */
+  dialogOpen?: boolean;
+  /** The first-shift calibration is running. */
+  calibrating?: boolean;
+}
+
+/**
+ * Whether the shift clocks are held still (#1672): a player pause, the Field
+ * Manual, a fix or signature dialog, or calibration each stop every subject
+ * timer, the auditor patrol, the sponsor drift and the lifeline durations.
+ *
+ * @param pause - What is currently open or paused.
+ * @returns True when the clocks must not advance.
+ */
+export function isShiftClockHalted(pause: ShiftPauseState): boolean {
+  return !!(
+    pause.userPaused ||
+    pause.manualOpen ||
+    pause.dialogOpen ||
+    pause.calibrating
+  );
+}
+
+/**
+ * Seconds a frame advances the shift clocks: none while halted, otherwise
+ * the elapsed time clamped to `MAX_SHIFT_TICK_MS`.
+ *
+ * @param elapsedMs - Milliseconds since the previous frame.
+ * @param halted - Whether the clocks are held still.
+ * @returns Seconds to pass to `tickShiftClocks`.
+ */
+export function getShiftTickSeconds(
+  elapsedMs: number,
+  halted: boolean
+): number {
+  if (halted) return 0;
+  return clamp(elapsedMs, 0, MAX_SHIFT_TICK_MS) / 1000;
+}
+
 /** The state the per-frame clocks advance. */
 export interface ShiftClocks {
   subjects: ClinicalSubject[];
@@ -652,7 +870,7 @@ export function tickShiftClocks(
         expired.length * EXPIRY_SUSPICION
       );
     }
-    scoreState = breakCombo(scoreState, expired.length);
+    scoreState = recordExpiredSubjects(scoreState, expired.length);
   }
 
   auditor = tickAuditor(auditor, deltaSeconds, subjects.length);

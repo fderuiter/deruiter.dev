@@ -436,6 +436,16 @@ export function applyEffects(state: StudyState, effects: Effects): StudyState {
 }
 
 /**
+ * True when the study budgets the player's day in attention points. In clock
+ * mode the world layer budgets time instead (ADR 0055), so the domain does
+ * not refuse or deduct, but still records the attention each action would
+ * have cost.
+ */
+function spendsAttention(state: StudyState): boolean {
+  return state.budget !== "clock";
+}
+
+/**
  * Resolves a decision: spends attention, applies its effects and records it.
  * A decision the player does not document adds documentation debt, which the
  * inspection later replays (ADR 0054).
@@ -449,14 +459,16 @@ export function resolveDecision(
   const attentionSpent =
     Math.max(0, input.attentionCost) +
     (input.documented ? DOCUMENTATION_ATTENTION : 0);
-  if (attentionSpent > state.attention)
+  if (spendsAttention(state) && attentionSpent > state.attention)
     return { ok: false, reason: "not-enough-attention" };
   const next = applyEffects(state, input.effects);
   return {
     ok: true,
     state: {
       ...next,
-      attention: state.attention - attentionSpent,
+      attention: spendsAttention(state)
+        ? state.attention - attentionSpent
+        : state.attention,
       documentationDebt: clamp(
         state.documentationDebt +
           (input.documented ? 0 : Math.max(0, input.debtIfUndocumented))
@@ -599,13 +611,15 @@ export function auditSite(
     return { ok: false, reason: "study-complete" };
   const site = state.sites.find((s) => s.id === siteId);
   if (!site) return { ok: false, reason: "unknown-target" };
-  if (AUDIT_ATTENTION > state.attention)
+  if (spendsAttention(state) && AUDIT_ATTENTION > state.attention)
     return { ok: false, reason: "not-enough-attention" };
   return {
     ok: true,
     state: {
       ...state,
-      attention: state.attention - AUDIT_ATTENTION,
+      attention: spendsAttention(state)
+        ? state.attention - AUDIT_ATTENTION
+        : state.attention,
       log: [
         ...state.log,
         {

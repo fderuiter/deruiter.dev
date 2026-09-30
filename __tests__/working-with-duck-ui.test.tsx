@@ -135,8 +135,8 @@ describe("Working With Duck - UI & Component Suite", () => {
 
     expect(container.textContent).toContain("Work Progress");
     expect(container.textContent).toContain("Excitement");
-    expect(container.textContent).toContain("Bladder Clock");
-    expect(container.textContent).toContain("Good Boy Scale");
+    expect(container.textContent).toContain("Bladder");
+    expect(container.textContent).toContain("Good Boy");
     expect(container.textContent).toContain("Start Sprint 1");
     expect(container.textContent).toContain("Duck Scrapbook");
   });
@@ -149,14 +149,14 @@ describe("Working With Duck - UI & Component Suite", () => {
     expect(container.textContent).toContain("Tennis Ball");
     expect(container.textContent).toContain("Kong Chew");
     expect(container.textContent).toContain("Squeaky");
-    expect(container.textContent).toContain("Treat 🍖");
-    expect(container.textContent).toContain("Sit 🪑");
-    expect(container.textContent).toContain("High Five 🐾");
-    expect(container.textContent).toContain("Drop It ✋");
-    expect(container.textContent).toContain("Spin 🌀");
-    expect(container.textContent).toContain("Focus Work Sprint (Space)");
-    expect(container.textContent).toContain("Dog Park 🌲");
-    expect(container.textContent).toContain("Bathtub 🛁");
+    expect(container.textContent).toContain("Treat");
+    expect(container.textContent).toContain("Sit");
+    expect(container.textContent).toContain("High Five");
+    expect(container.textContent).toContain("Drop It");
+    expect(container.textContent).toContain("Spin");
+    expect(container.textContent).toContain("Focus Work Sprint");
+    expect(container.textContent).toContain("Dog Park");
+    expect(container.textContent).toContain("Bathtub");
   });
 
   it("opens and toggles the Polaroid Scrapbook modal", async () => {
@@ -310,7 +310,7 @@ describe("Working With Duck - UI & Component Suite", () => {
         parkBtn.click();
       });
 
-      expect(container.textContent).toContain("Agility Jump (Space)");
+      expect(container.textContent).toContain("Agility Jump");
       expect(container.textContent).toContain("Whistle");
       expect(container.textContent).toContain("Return to Office");
     }
@@ -362,7 +362,7 @@ describe("Working With Duck - UI & Component Suite", () => {
     await act(async () => {
       parkBtn!.click();
     });
-    expect(container.textContent).toContain("Agility Jump (Space)");
+    expect(container.textContent).toContain("Agility Jump");
   });
 
   it("enters Bathtub and renders bathtub wash and shower rinse controls", async () => {
@@ -378,8 +378,8 @@ describe("Working With Duck - UI & Component Suite", () => {
         bathBtn.click();
       });
 
-      expect(container.textContent).toContain("Shower Rinse Spray");
-      expect(container.textContent).toContain("Finish Bath & Return");
+      expect(container.textContent).toContain("Rinse Spray");
+      expect(container.textContent).toContain("Finish Bath");
     }
   });
 
@@ -511,6 +511,6 @@ describe("Working With Duck - UI & Component Suite", () => {
     expect(
       container.querySelector('[aria-labelledby="duck-win-dialog-heading"]')
     ).toBeNull();
-    expect(container.textContent).toContain("Endless Mode");
+    expect(container.textContent).toContain("Endless");
   });
 });

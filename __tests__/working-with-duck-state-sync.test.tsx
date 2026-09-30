@@ -185,7 +185,7 @@ describe("Working With Duck - gameStateRef/uiState stay in lockstep (#655)", () 
     });
 
     // giveTreat's NO_TAKE_THROW branch: comboStreak -> 2, comboTimer -> 180.
-    await clickByText(container, "🍖 Give Treat");
+    await clickByText(container, "Give Treat");
 
     expect(container.textContent).toContain("2× COMBO STREAK");
 

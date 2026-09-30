@@ -88,7 +88,10 @@ they cannot drift out of sync with the state.
   ([ADR 0048](0048-desktop-only-arcade-games-on-touch-devices.md)).
 - The UI is a Study Director's desktop, not a video game: dashboard, team,
   timeline, inbox and a decision panel. No continuous particle or canvas
-  loops, and no icon-stuffed cards (the zero-trope invariant).
+  loops, and no icon-stuffed cards (the zero-trope invariant). Superseded
+  on 2026-09-30 by [ADR 0055](0055-study-director-world-simulation-architecture.md),
+  which moves play into an explorable top-down workplace; the classic desk
+  remains available.
 - Save and resume use the seed, draw index and decision log.
 
 ## Consequences

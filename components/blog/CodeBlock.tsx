@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React from "react";
+import { useClipboard } from "@/hooks/useClipboard";
 
 /**
  * Chrome classes shared with RichNarrative's server-rendered fallback, so the
@@ -33,37 +34,16 @@ export function CodeBlock({
 }: CodeBlockProps) {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { key: _key, ...cleanPreProps } = preProps as Record<string, unknown>;
-  const [copied, setCopied] = useState(false);
-  const [statusMessage, setStatusMessage] = useState("");
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  // useClipboard owns the copied state, its reset timer (cleared on
+  // unmount), the legacy execCommand fallback and the screen reader
+  // announcement through the global live announcer.
+  const { copy, copied } = useClipboard({
+    successMessage: "Code copied to clipboard",
+    errorMessage: "Failed to copy code",
+  });
 
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-      }
-    };
-  }, []);
-
-  const handleCopy = async () => {
-    try {
-      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(code);
-        setCopied(true);
-        setStatusMessage("Code copied to clipboard");
-
-        if (timerRef.current) {
-          clearTimeout(timerRef.current);
-        }
-
-        timerRef.current = setTimeout(() => {
-          setCopied(false);
-          setStatusMessage("");
-        }, 2000);
-      }
-    } catch {
-      setStatusMessage("Failed to copy code");
-    }
+  const handleCopy = () => {
+    void copy(code);
   };
 
   const formattedLanguage = language
@@ -123,11 +103,6 @@ export function CodeBlock({
           )}
         </button>
       </div>
-
-      {/* Screen reader live announcement */}
-      <span role="status" aria-live="polite" className="sr-only">
-        {statusMessage}
-      </span>
 
       {/* Pre-formatted code block */}
       <pre

@@ -20,6 +20,22 @@ const processEnvRestriction = {
     "Direct access to process.env is forbidden in application modules. Access configuration exclusively through validated schema exports in '@/lib/env'.",
 };
 
+const clipboardRestriction = {
+  selector:
+    "MemberExpression[object.name='navigator'][property.name='clipboard']",
+  message:
+    "Do not access navigator.clipboard directly. Use copyToClipboard from @/lib/clipboard, useClipboard hook from @/hooks/useClipboard, or <CopyButton /> component instead.",
+};
+
+// Call sites that still write to navigator.clipboard directly. They sit in
+// files owned by other work lanes (CRF Studio, Laser Loon) and migrate with
+// that work (#1123); until then they keep every other restriction.
+const pendingClipboardMigrationFiles = [
+  "components/crf/RightInspector/InspectorPanel.tsx",
+  "components/crf/Terminal/StudioTerminal.tsx",
+  "components/laser-loon/AssetDistributionHub.tsx",
+];
+
 // The files that implement what the global restrictions point callers to.
 // lib/arcade/utils.ts holds clamp() itself; lib/game-utils.ts re-exports it.
 const restrictedSyntaxHelperFiles = [
@@ -113,12 +129,7 @@ const eslintConfig = defineConfig([
       "no-restricted-syntax": [
         "error",
         nestedMathRestriction,
-        {
-          selector:
-            "MemberExpression[object.name='navigator'][property.name='clipboard']",
-          message:
-            "Do not access navigator.clipboard directly. Use copyToClipboard from @/lib/clipboard, useClipboard hook from @/hooks/useClipboard, or <CopyButton /> component instead.",
-        },
+        clipboardRestriction,
         {
           selector:
             "JSXAttribute[name.name='style'] ObjectExpression > Property[key.type='Identifier']",
@@ -135,12 +146,25 @@ const eslintConfig = defineConfig([
     },
   },
   // Application modules. This block replaces the one above for these files,
-  // so it restates the nested Math.min/max restriction next to process.env.
-  // The clipboard and inline-style restrictions are not restated yet: turning
-  // them on here needs the call-site migrations tracked in #1123.
+  // so it restates the nested Math.min/max and navigator.clipboard
+  // restrictions next to process.env. The inline-style restriction is not
+  // restated yet: turning it on here needs its own call-site migration.
   {
     files: applicationModuleFiles,
     ignores: [...envExemptFiles, ...restrictedSyntaxHelperFiles],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        nestedMathRestriction,
+        clipboardRestriction,
+        processEnvRestriction,
+      ],
+    },
+  },
+  // Application modules awaiting their clipboard migration keep the other
+  // restrictions from the block above, without the clipboard one.
+  {
+    files: pendingClipboardMigrationFiles,
     rules: {
       "no-restricted-syntax": [
         "error",

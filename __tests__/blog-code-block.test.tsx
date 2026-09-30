@@ -9,8 +9,17 @@ import {
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { CodeBlock } from "@/components/blog/CodeBlock";
 import { RichNarrative } from "@/components/RichNarrative";
+import {
+  A11yProvider,
+  LiveAnnouncer,
+} from "@/components/providers/A11yProvider";
 
 describe("CodeBlock Component (Ticket #1059)", () => {
+  const originalExecCommand = Object.getOwnPropertyDescriptor(
+    document,
+    "execCommand"
+  );
+
   beforeEach(() => {
     Object.assign(navigator, {
       clipboard: {
@@ -22,6 +31,11 @@ describe("CodeBlock Component (Ticket #1059)", () => {
   afterEach(() => {
     cleanup();
     vi.restoreAllMocks();
+    if (originalExecCommand) {
+      Object.defineProperty(document, "execCommand", originalExecCommand);
+    } else {
+      Reflect.deleteProperty(document, "execCommand");
+    }
   });
 
   it("renders code block with language badge", () => {
@@ -68,24 +82,81 @@ describe("CodeBlock Component (Ticket #1059)", () => {
     });
   });
 
-  it("announces copy status via ARIA live region", async () => {
+  it("announces copy success through the global live announcer", async () => {
     render(
-      <CodeBlock language="typescript" code="console.log('test');">
-        <code>{"console.log('test');"}</code>
+      <A11yProvider announcer={new LiveAnnouncer()}>
+        <CodeBlock language="typescript" code="console.log('test');">
+          <code>{"console.log('test');"}</code>
+        </CodeBlock>
+      </A11yProvider>
+    );
+
+    const politeRegion = document.querySelector('[aria-live="polite"]');
+    expect(politeRegion?.textContent).toBe("");
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /copy code to clipboard/i })
+    );
+
+    await waitFor(() => {
+      expect(politeRegion?.textContent).toBe("Code copied to clipboard");
+    });
+  });
+
+  it("falls back to execCommand when the Clipboard API is unavailable", async () => {
+    Object.assign(navigator, { clipboard: undefined });
+    const execCommand = vi.fn().mockReturnValue(true);
+    Object.defineProperty(document, "execCommand", {
+      value: execCommand,
+      configurable: true,
+      writable: true,
+    });
+
+    render(
+      <CodeBlock language="bash" code="npm test">
+        <code>npm test</code>
       </CodeBlock>
     );
 
-    const liveRegion = screen.getByRole("status");
-    expect(liveRegion.textContent).toBe("");
-
-    const copyButton = screen.getByRole("button", {
-      name: /copy code to clipboard/i,
-    });
-    fireEvent.click(copyButton);
+    fireEvent.click(
+      screen.getByRole("button", { name: /copy code to clipboard/i })
+    );
 
     await waitFor(() => {
-      expect(liveRegion.textContent).toBe("Code copied to clipboard");
+      expect(screen.getByText(/copied!/i)).toBeDefined();
     });
+    expect(execCommand).toHaveBeenCalledWith("copy");
+  });
+
+  it("announces a failed copy assertively and keeps the copy label", async () => {
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: vi.fn().mockRejectedValue(new Error("Permission denied")),
+      },
+    });
+    Object.defineProperty(document, "execCommand", {
+      value: vi.fn().mockReturnValue(false),
+      configurable: true,
+      writable: true,
+    });
+
+    render(
+      <A11yProvider announcer={new LiveAnnouncer()}>
+        <CodeBlock language="bash" code="npm test">
+          <code>npm test</code>
+        </CodeBlock>
+      </A11yProvider>
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /copy code to clipboard/i })
+    );
+
+    const assertiveRegion = document.querySelector('[aria-live="assertive"]');
+    await waitFor(() => {
+      expect(assertiveRegion?.textContent).toMatch(/^Failed to copy code: /);
+    });
+    expect(screen.queryByText(/copied!/i)).toBeNull();
   });
 
   it("copies the original source after syntax tokens are rendered", async () => {

@@ -72,8 +72,9 @@ export const StudyDirectorClient: React.FC = () => (
             controls={[
               { key: "1 - 5", action: "Choose an option" },
               { key: "D", action: "Document the decision (+1 attention)" },
-              { key: "J / K", action: "Move through the inbox" },
+              { key: "J / K or ↑ / ↓", action: "Move through the inbox" },
               { key: "E", action: "End the day" },
+              { key: "?", action: "Show every shortcut" },
             ]}
             importComponent={StudyDirectorLoader}
           >

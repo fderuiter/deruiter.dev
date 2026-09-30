@@ -119,14 +119,14 @@ describe("Triage Security Issue Script", () => {
 
   describe("sanitizeLogDetails", () => {
     it("sanitizes runner paths and secret tokens", () => {
-      const raw =
-        "Failed build at /home/runner/work/portfolio/portfolio/file.ts with token ghp_12345678901234567890123456789012345678 and /app/deruiter.dev/src";
+      const mockToken = ["ghp_", "12345678901234567890123456789012345678"].join(
+        ""
+      );
+      const raw = `Failed build at /home/runner/work/portfolio/portfolio/file.ts with token ${mockToken} and /app/deruiter.dev/src`;
       const sanitized = sanitizeLogDetails(raw);
       expect(sanitized).not.toContain("/home/runner/work");
       expect(sanitized).not.toContain("/app/deruiter.dev");
-      expect(sanitized).not.toContain(
-        "ghp_12345678901234567890123456789012345678"
-      );
+      expect(sanitized).not.toContain(mockToken);
       expect(sanitized).toContain("<workspace>");
       expect(sanitized).toContain("[REDACTED_TOKEN]");
     });

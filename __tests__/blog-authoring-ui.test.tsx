@@ -105,7 +105,7 @@ describe("BlogAuthoringForm UI", () => {
       />
     );
 
-    const previewTabButton = screen.getAllByRole("button", {
+    const previewTabButton = screen.getAllByRole("tab", {
       name: /Live Preview/i,
     })[0];
     fireEvent.click(previewTabButton);

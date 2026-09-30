@@ -506,7 +506,7 @@ describe("CRF Features Track 3 Slice 4: Save Named Baselines & Restore Into New 
       expect(screen.getByText(/No Baselines Recorded/i)).toBeTruthy();
 
       // Switch to Create New Baseline tab
-      const createTabBtn = screen.getByRole("button", {
+      const createTabBtn = screen.getByRole("tab", {
         name: /Save New Baseline/i,
       });
       fireEvent.click(createTabBtn);

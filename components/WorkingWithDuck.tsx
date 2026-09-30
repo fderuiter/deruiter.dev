@@ -18,7 +18,11 @@ import { DynamicTabletOrientationHint as TabletOrientationHint } from "@/compone
 import { useGameFullscreen as useFullscreen } from "@/components/arcade/CabinetFullscreen";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useAnnouncer } from "@/hooks/useAnnouncer";
-import { safeGetItem, safeSetRawItem } from "@/lib/safe-storage";
+import {
+  safeGetItem,
+  safeGetRawItem,
+  safeSetRawItem,
+} from "@/lib/safe-storage";
 import { useDuckService } from "@/hooks/useDuckService";
 import { useResponsiveCanvas } from "@/hooks/useResponsiveCanvas";
 import { useCanvasResolution } from "@/hooks/useCanvasResolution";
@@ -98,10 +102,7 @@ const subscribeStorage = (callback: () => void) => {
 const getHighScoreSnapshot = () => {
   if (typeof window === "undefined") return "0";
   try {
-    return window.localStorage &&
-      typeof window.localStorage.getItem === "function"
-      ? window.localStorage.getItem("working_with_duck_high_score") || "0"
-      : "0";
+    return safeGetRawItem("working_with_duck_high_score") || "0";
   } catch {
     return "0";
   }

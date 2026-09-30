@@ -11,7 +11,7 @@ import React, {
 import { useTelemetry } from "@/hooks/useTelemetry";
 import { logger } from "@/lib/logger";
 import { useAnnouncer } from "@/hooks/useAnnouncer";
-import { safeSetRawItem } from "@/lib/safe-storage";
+import { safeGetRawItem, safeSetRawItem } from "@/lib/safe-storage";
 import { clamp } from "@/lib/game-utils";
 import { useAudio } from "@/components/providers/AudioProvider";
 import {
@@ -120,7 +120,7 @@ const subscribeHighScore = (callback: () => void) => {
 };
 const getHighScoreSnapshot = () => {
   try {
-    return localStorage.getItem(RETRO_LABYRINTH_HIGH_SCORE_KEY) || "0";
+    return safeGetRawItem(RETRO_LABYRINTH_HIGH_SCORE_KEY) || "0";
   } catch {
     return "0";
   }

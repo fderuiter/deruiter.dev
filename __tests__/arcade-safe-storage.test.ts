@@ -6,7 +6,11 @@
 // localStorage calls produced: plain JSON.stringify output or a bare string,
 // never the safeStorage metadata envelope.
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { safeStorage, safeSetRawItem } from "@/lib/safe-storage";
+import {
+  safeStorage,
+  safeGetRawItem,
+  safeSetRawItem,
+} from "@/lib/safe-storage";
 import {
   CRT_CALIBRATION_STORAGE_KEY,
   DEFAULT_CRT_CALIBRATION,
@@ -25,6 +29,7 @@ import {
 import {
   MEME_STORAGE_KEYS,
   getUnlockedAchievements,
+  isVaultUnlocked,
   setVaultUnlocked,
   unlockAchievement,
 } from "@/lib/meme-data";
@@ -213,5 +218,30 @@ describe("High score raw writes (RetroLabyrinth, WorkingWithDuck)", () => {
     expect(storage.getItem(RETRO_LABYRINTH_HIGH_SCORE_KEY)).toBe("15400");
     safeSetRawItem("working_with_duck_high_score", String(1200));
     expect(storage.getItem("working_with_duck_high_score")).toBe("1200");
+  });
+});
+
+describe("Bare-string reads (safeGetRawItem)", () => {
+  it("returns a legacy bare high score as the exact stored string", () => {
+    storage.setItem("laser_loon_high_score", "1200");
+    expect(safeGetRawItem("laser_loon_high_score")).toBe("1200");
+  });
+
+  it("does not turn a vault flag into a boolean", () => {
+    storage.setItem(MEME_STORAGE_KEYS.VAULT_UNLOCKED, "true");
+    expect(safeGetRawItem(MEME_STORAGE_KEYS.VAULT_UNLOCKED)).toBe("true");
+    expect(isVaultUnlocked()).toBe(true);
+  });
+
+  it("returns null for a missing key", () => {
+    expect(safeGetRawItem("working_with_duck_high_score")).toBeNull();
+  });
+
+  it("falls back to the in-memory value when storage throws", () => {
+    safeSetRawItem("laser_loon_high_score", "900");
+    vi.spyOn(storage, "getItem").mockImplementation(() => {
+      throw new Error("SecurityError");
+    });
+    expect(safeGetRawItem("laser_loon_high_score")).toBe("900");
   });
 });

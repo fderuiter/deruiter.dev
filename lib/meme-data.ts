@@ -5,6 +5,7 @@
 
 import {
   safeGetItem,
+  safeGetRawItem,
   safeIsAvailable,
   safeSetRawItem,
 } from "@/lib/safe-storage";
@@ -401,19 +402,8 @@ export function unlockAchievement(achievementId: string): boolean {
 }
 
 export function isVaultUnlocked(): boolean {
-  if (
-    typeof window === "undefined" ||
-    typeof window.localStorage?.getItem !== "function"
-  ) {
-    return false;
-  }
-  try {
-    return (
-      window.localStorage.getItem(MEME_STORAGE_KEYS.VAULT_UNLOCKED) === "true"
-    );
-  } catch {
-    return false;
-  }
+  if (typeof window === "undefined") return false;
+  return safeGetRawItem(MEME_STORAGE_KEYS.VAULT_UNLOCKED) === "true";
 }
 
 export function setVaultUnlocked(unlocked: boolean = true): void {

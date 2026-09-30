@@ -10,7 +10,7 @@
 import type { CampaignAct, CivicEnemyType, Target } from "@/lib/laser-loon";
 
 type Ctx = CanvasRenderingContext2D;
-export type BackdropTheme = CampaignAct["backgroundTheme"];
+type BackdropTheme = CampaignAct["backgroundTheme"];
 
 interface ThemeSpec {
   sky: [string, string, string];

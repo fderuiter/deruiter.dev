@@ -218,7 +218,11 @@ describe("Mobile Navigation Drawer & Touch Interaction Suite", () => {
       aboutLink.click();
     });
 
-    expect(aboutSection.scrollIntoView).toHaveBeenCalled();
+    // The scroll is deferred one macrotask so it runs after the drawer's focus
+    // trap has released; wait for it rather than assuming act() flushed it.
+    await vi.waitFor(() => {
+      expect(aboutSection.scrollIntoView).toHaveBeenCalled();
+    });
     expect(hamburgerBtn.getAttribute("aria-expanded")).toBe("false");
     expect(document.body.style.overflow).toBe("");
 

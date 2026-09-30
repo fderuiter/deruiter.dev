@@ -34,8 +34,8 @@ export interface SceneState {
   meters: Meters;
 }
 
-export const SMOKE_BELOW = 35;
-export const FIRE_BELOW = 20;
+const SMOKE_BELOW = 35;
+const FIRE_BELOW = 20;
 
 function lowestMeter(meters: Meters): number {
   return Math.min(...METER_IDS.map((id) => meters[id]));

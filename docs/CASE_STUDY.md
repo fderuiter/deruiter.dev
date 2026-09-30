@@ -159,7 +159,7 @@ $$\text{SMI} = \frac{\text{ASM}}{\text{Height}^2} \quad (\text{kg/m}^2)$$
 Managing and categorizing massive, unstructured document dumps (clinical trial records, financial reports, technical documentation) poses severe risks when strictly adhering to regulatory compliance frameworks such as **21 CFR Part 11**, **HIPAA**, and **GDPR**. Traditional cloud-based classification tools risk data leakage and compliance violations when handling sensitive patient health information (PHI) or proprietary datasets.
 
 ### Core Technical Highlight
-Sortify provides a zero-telemetry, fully air-gapped pipeline featuring local hybrid semantic clustering—combining **ONNX Runtime vector embeddings** with **incremental TF-IDF** and **GBNF grammar-guided LLM inference**—paired with crash-resilient file operations backed by an encrypted **SQLCipher** metadata registry.
+Sortify provides a zero-telemetry, fully air-gapped pipeline featuring local hybrid semantic clustering (combining **ONNX Runtime vector embeddings** with **incremental TF-IDF** and **GBNF grammar-guided LLM inference**) paired with crash-resilient file operations backed by an encrypted **SQLCipher** metadata registry.
 
 ### Key Metrics & Benchmarks
 - **100% Offline Enforcement**: Zero external network dependency enforced via OS-level network isolation rules and pre-packaged ONNX models/wheels bundles.

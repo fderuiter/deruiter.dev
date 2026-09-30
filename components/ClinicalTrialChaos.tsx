@@ -1160,6 +1160,19 @@ export const ClinicalTrialChaos: React.FC = () => {
       } else {
         triggerSound("error");
         addAuditLog(result.logMessage, result.level, result.suspicionDelta);
+        // Say why on the board itself, not only in the audit log tab (#1326).
+        const { matchingDomains } = getRoutingReadiness(subj, stations);
+        const rejection = `Rejected: ${subj.subjectLabel} does not belong at ${domain}.${
+          matchingDomains.length > 0
+            ? ` Route it to ${matchingDomains.join(" or ")}.`
+            : ""
+        }`;
+        setRoutingNotice({
+          subjectId: subj.id,
+          unresolvedCount: 0,
+          message: rejection,
+        });
+        announce(rejection, "assertive");
 
         setScoreState((prev) => ({
           ...prev,
@@ -1182,7 +1195,14 @@ export const ClinicalTrialChaos: React.FC = () => {
       }
       setSignatureModal((prev) => ({ ...prev, isOpen: false, subject: null }));
     },
-    [triggerSound, spawnSparkles, addAuditLog, completeSubmission, announce]
+    [
+      triggerSound,
+      spawnSparkles,
+      addAuditLog,
+      completeSubmission,
+      announce,
+      stations,
+    ]
   );
 
   // 15. Route now or open the full review dialog for exceptional packets.
@@ -2056,6 +2076,8 @@ export const ClinicalTrialChaos: React.FC = () => {
         "4",
         "5",
         "6",
+        "7",
+        "8",
         " ",
         "ESCAPE",
         "ENTER",
@@ -2137,7 +2159,7 @@ export const ClinicalTrialChaos: React.FC = () => {
     else if (key === "E") triggerPowerUp("query-extension");
     else if (key === "R") triggerPowerUp("fast-sign");
 
-    // Station routing hotkeys 1-6
+    // Station routing hotkeys 1-8 (phase 3 opens DS and MH as 7 and 8)
     const sorted = [...stations].sort(
       (a, b) => a.positionIndex - b.positionIndex
     );

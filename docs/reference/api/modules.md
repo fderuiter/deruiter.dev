@@ -101,7 +101,6 @@
 - [lib/crf/export-pdf](lib/crf/export-pdf/README.md)
 - [lib/crf/export-r](lib/crf/export-r/README.md)
 - [lib/crf/export-sas](lib/crf/export-sas/README.md)
-- [lib/crf/exporters](lib/crf/exporters/README.md)
 - [lib/crf/expression-evaluator](lib/crf/expression-evaluator/README.md)
 - [lib/crf/fhir-questionnaire](lib/crf/fhir-questionnaire/README.md)
 - [lib/crf/form-health](lib/crf/form-health/README.md)

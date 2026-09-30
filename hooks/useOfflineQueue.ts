@@ -397,7 +397,15 @@ export async function flushOfflineQueue(): Promise<{
         failed++;
         let failureReason = `HTTP ${res.status}: Client Error`;
         try {
-          const targetRes = typeof res.clone === "function" ? res.clone() : res;
+          const resObj = res as unknown as {
+            clone?: () => unknown;
+            json?: () => Promise<unknown>;
+            text?: () => Promise<unknown>;
+          };
+          const targetRes =
+            typeof resObj.clone === "function"
+              ? (resObj.clone() as typeof resObj)
+              : resObj;
           let data: unknown;
           if (typeof targetRes.json === "function") {
             try {

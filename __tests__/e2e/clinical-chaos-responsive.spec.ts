@@ -206,19 +206,41 @@ test.describe("with a CRF Studio protocol loaded (#1150)", () => {
     for (let fixed = 0; fixed < 8; fixed++) {
       const flagged = page.getByText("Validate Choice").first();
       if ((await flagged.count()) === 0) break;
-      await flagged.click();
-      await expect(dialog).toBeVisible();
+      await expect(async () => {
+        if ((await dialog.count()) === 0 || !(await dialog.isVisible())) {
+          await flagged.click();
+        }
+        await expect(dialog).toBeVisible();
+      }).toPass({ timeout: 15000 });
+
+      let verified = false;
       const options = dialog.locator("button:has(kbd)");
       const count = await options.count();
-      expect(count).toBeGreaterThan(0);
-      let verified = false;
       for (let i = 0; i < count && !verified; i++) {
-        await options.nth(i).click();
-        verified = await dialog
-          .getByText("✓ Standard Verified")
-          .isVisible()
-          .catch(() => false);
+        const opt = options.nth(i);
+        if (await opt.isDisabled().catch(() => false)) continue;
+        await opt.click();
+        await expect
+          .poll(async () => {
+            const isVer = await dialog
+              .getByText("✓ Standard Verified")
+              .isVisible()
+              .catch(() => false);
+            const isDisabled = await opt.isDisabled().catch(() => true);
+            return isVer || isDisabled;
+          })
+          .toBe(true);
+
+        if (
+          await dialog
+            .getByText("✓ Standard Verified")
+            .isVisible()
+            .catch(() => false)
+        ) {
+          verified = true;
+        }
       }
+
       expect(verified).toBe(true);
       await expect(dialog).toBeHidden();
     }

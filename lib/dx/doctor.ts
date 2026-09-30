@@ -2322,6 +2322,113 @@ export function checkPackageLockfile(root: string): DiagnosticCheckResult {
 }
 
 /**
+ * Check SEO and social preview integrity (ADR 0053, #1256).
+ *
+ * Reads `lib/seo-metadata.ts` as source so the check needs no module loading.
+ * A rendered title is the route title plus the layout template
+ * (" | Frederick de Ruiter", 22 characters). Fails when a rendered title is
+ * outside 50 to 60 characters, a description is outside 140 to 160, a route
+ * title carries the site name itself, the root viewport lacks the brand
+ * theme color, or a registered route is missing from the llms manifests.
+ *
+ * @param root - Workspace root to inspect.
+ * @returns The diagnostic result; never auto-fixable, since fixing copy is
+ * an editorial change.
+ */
+export function checkSeoSocialIntegrity(root: string): DiagnosticCheckResult {
+  const base = {
+    id: "seo-social-integrity",
+    name: "SEO & Social Preview Integrity",
+    category: "quality" as const,
+  };
+  const read = (...segments: string[]): string | null => {
+    try {
+      return fs.readFileSync(path.join(root, ...segments), "utf8");
+    } catch {
+      return null;
+    }
+  };
+
+  const metadataSource = read("lib", "seo-metadata.ts");
+  if (metadataSource === null) {
+    return {
+      ...base,
+      status: "pass",
+      message: "No lib/seo-metadata.ts in this workspace; nothing to audit.",
+    };
+  }
+
+  const details: string[] = [];
+  const templateLength = " | Frederick de Ruiter".length;
+  const entryPattern =
+    /\n {2}(\w+): \{\s*title:\s*"((?:[^"\\]|\\.)*)",\s*description:\s*"((?:[^"\\]|\\.)*)",\s*path:\s*"([^"]+)"/g;
+  const routes: {
+    key: string;
+    title: string;
+    description: string;
+    route: string;
+  }[] = [];
+  for (const match of metadataSource.matchAll(entryPattern)) {
+    routes.push({
+      key: match[1],
+      title: match[2],
+      description: match[3],
+      route: match[4],
+    });
+  }
+  if (routes.length === 0) {
+    details.push("Could not parse any route from ROUTE_METADATA_CONFIGS.");
+  }
+
+  const llms = read("public", "llms.txt");
+  const llmsFull = read("public", "llms-full.txt");
+  for (const { key, title, description, route } of routes) {
+    const rendered = title.length + templateLength;
+    if (rendered < 50 || rendered > 60) {
+      details.push(`${key}: rendered title is ${rendered} chars (need 50-60)`);
+    }
+    if (description.length < 140 || description.length > 160) {
+      details.push(
+        `${key}: description is ${description.length} chars (need 140-160)`
+      );
+    }
+    if (/(?:Fred|Frederick) de Ruiter/i.test(title)) {
+      details.push(`${key}: title repeats the site name the layout appends`);
+    }
+    const link = `(https://deruiter.dev${route})`;
+    if (llms !== null && !llms.includes(link)) {
+      details.push(`${key}: ${route} missing from public/llms.txt`);
+    }
+    if (llmsFull !== null && !llmsFull.includes(link)) {
+      details.push(`${key}: ${route} missing from public/llms-full.txt`);
+    }
+  }
+
+  const layout = read("app", "layout.tsx");
+  if (layout !== null) {
+    const viewport = layout.slice(layout.indexOf("export const viewport"));
+    if (!/themeColor:\s*"#090D16"/.test(viewport)) {
+      details.push('app/layout.tsx viewport must set themeColor "#090D16"');
+    }
+  }
+
+  if (details.length > 0) {
+    return {
+      ...base,
+      status: "fail",
+      message: `${details.length} SEO or social preview issue(s) found.`,
+      details,
+      fixable: false,
+    };
+  }
+  return {
+    ...base,
+    status: "pass",
+    message: `${routes.length} routes meet title and description bounds, list in llms manifests, and the root viewport sets the brand theme color.`,
+  };
+}
+
+/**
  * Check System Architecture & Directory Topology Sync (AGENTS.md & ARCHITECTURE.md).
  * Asserts that all non-hidden top-level repository directories are explicitly represented in ARCHITECTURE.md.
  */
@@ -2907,6 +3014,7 @@ export async function runDiagnostics(
     checkGitHygieneConfig(root, fix),
     checkWorkspaceIdeConfig(root, fix),
     checkPackageLockfile(root),
+    checkSeoSocialIntegrity(root),
     checkDesignTokens(root),
     checkDeadCode(root),
     checkBundleBudgets(root),

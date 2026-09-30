@@ -38,7 +38,6 @@ export type TelemetryEventType =
   | "route_error"
   | "simulator_option_select"
   | "simulator_milestone_reached"
-  | "simulator_schedule_click"
   | "simulator_report_copy"
   | (string & {});
 

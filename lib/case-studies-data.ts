@@ -2659,7 +2659,7 @@ def explain_matchup_prediction(model, feature_matrix: pd.DataFrame, matchup_idx:
     title: "CRF.xl: From Spreadsheet to Clinical Forms",
     primary_language: "TypeScript",
     github_url: "https://github.com/fderuiter/CRF.xl",
-    interactive_url: "/simulator",
+    interactive_url: "/crf",
     interactive_label: "Launch CRF Studio",
     published: true,
     simulated_telemetry: false,

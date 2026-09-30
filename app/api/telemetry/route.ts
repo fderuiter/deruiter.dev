@@ -94,7 +94,7 @@ export const POST = createApiHandler(
         errorMessage = "Missing or invalid projectSlug identifier";
       } else if (firstIssue && firstIssue.path[0] === "eventType") {
         errorMessage =
-          "Missing or invalid eventType. Allowed: 'page_view', 'project_click', 'route_error', 'simulator_option_select', 'simulator_milestone_reached', 'simulator_schedule_click', 'simulator_report_copy'";
+          "Missing or invalid eventType. Allowed: 'page_view', 'project_click', 'route_error', 'simulator_option_select', 'simulator_milestone_reached', 'simulator_report_copy'";
       }
       return {
         error: errorMessage,

@@ -113,12 +113,11 @@ export const TelemetryEventSchema = z.object({
       "route_error",
       "simulator_option_select",
       "simulator_milestone_reached",
-      "simulator_schedule_click",
       "simulator_report_copy",
     ],
     {
       message:
-        "Allowed: 'page_view', 'project_click', 'route_error', 'simulator_option_select', 'simulator_milestone_reached', 'simulator_schedule_click', 'simulator_report_copy'",
+        "Allowed: 'page_view', 'project_click', 'route_error', 'simulator_option_select', 'simulator_milestone_reached', 'simulator_report_copy'",
     }
   ),
 });

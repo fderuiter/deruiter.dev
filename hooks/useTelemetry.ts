@@ -9,6 +9,7 @@ import {
 import { sanitizeError } from "@/lib/error-sanitization";
 import { logger } from "@/lib/logger";
 import { generateId } from "@/lib/utils";
+import { safeGetItem, safeSetRawItem } from "@/lib/safe-storage";
 import {
   TelemetryOutbox,
   DEFAULT_OUTBOX_CAPACITY,
@@ -93,7 +94,12 @@ let currentStoreState: TelemetryStoreState = {
   telemetry: {},
   syncFailed: false,
 };
-let lastRawCache: string | null = null;
+/**
+ * The value safeStorage last returned for CACHE_KEY. safeStorage hands back the
+ * same parsed reference while the stored string is unchanged, so a reference
+ * comparison detects writes from elsewhere.
+ */
+let lastStoredCache: unknown = null;
 const listeners = new Set<() => void>();
 
 function notify() {
@@ -111,52 +117,43 @@ function updateStore(
     next.syncFailed !== currentStoreState.syncFailed
   ) {
     currentStoreState = next;
-    try {
-      if (
-        typeof window !== "undefined" &&
-        typeof window.localStorage?.setItem === "function"
-      ) {
-        const raw = JSON.stringify(currentStoreState.telemetry);
-        lastRawCache = raw;
-        localStorage.setItem(CACHE_KEY, raw);
+    if (typeof window !== "undefined") {
+      // Bare JSON object (no envelope) so cached counters from earlier visits
+      // keep loading. safeSetRawItem never throws; it logs and keeps the value
+      // in memory when localStorage rejects the write.
+      const persisted = safeSetRawItem(
+        CACHE_KEY,
+        JSON.stringify(currentStoreState.telemetry)
+      );
+      lastStoredCache = safeGetItem<unknown>(CACHE_KEY);
+      if (persisted) {
         window.dispatchEvent(new CustomEvent(CHANGE_EVENT));
       }
-    } catch (e) {
-      logger.warn(
-        "Failed to write to local storage telemetry cache:",
-        sanitizeError(e)
-      );
     }
     notify();
   }
 }
 
 function syncFromStorage() {
-  if (
-    typeof window !== "undefined" &&
-    typeof window.localStorage?.getItem === "function"
-  ) {
-    try {
-      const raw = localStorage.getItem(CACHE_KEY);
-      if (raw !== lastRawCache) {
-        lastRawCache = raw;
-        if (raw) {
-          currentStoreState = {
-            ...currentStoreState,
-            telemetry: { ...currentStoreState.telemetry, ...JSON.parse(raw) },
-          };
-        } else {
-          currentStoreState = { ...currentStoreState, telemetry: {} };
-        }
-        notify();
-      }
-    } catch (e) {
-      logger.warn(
-        "Failed to retrieve local storage telemetry cache:",
-        sanitizeError(e)
-      );
-    }
+  if (typeof window === "undefined") return;
+  const stored = safeGetItem<unknown>(CACHE_KEY);
+  if (stored === lastStoredCache) return;
+  lastStoredCache = stored;
+  if (stored === null) {
+    currentStoreState = { ...currentStoreState, telemetry: {} };
+  } else if (typeof stored === "object" && !Array.isArray(stored)) {
+    currentStoreState = {
+      ...currentStoreState,
+      telemetry: {
+        ...currentStoreState.telemetry,
+        ...(stored as TelemetryData),
+      },
+    };
+  } else {
+    logger.warn("Ignoring malformed local storage telemetry cache.");
+    return;
   }
+  notify();
 }
 
 function rollbackEvent(projectSlug: string, eventType: string) {
@@ -399,7 +396,7 @@ export function getRetryQueueLength(): number {
 export function clearRetryQueue(): void {
   telemetryOutbox.clear();
   currentStoreState = { telemetry: {}, syncFailed: false };
-  lastRawCache = null;
+  lastStoredCache = null;
   lastFetchTime = 0;
   inFlightFetch = null;
   clearPendingDeferredQueue();
@@ -418,7 +415,9 @@ if (typeof window !== "undefined") {
   syncFromStorage();
   window.addEventListener("storage", (e) => {
     if (e.key === CACHE_KEY || !e.key) {
-      lastRawCache = e.newValue;
+      // Record what the other tab wrote so syncFromStorage does not merge it
+      // a second time.
+      lastStoredCache = safeGetItem<unknown>(CACHE_KEY);
       if (e.newValue) {
         try {
           currentStoreState = {

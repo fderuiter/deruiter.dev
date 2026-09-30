@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback, useEffect } from "react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { clamp } from "@/lib/game-utils";
 import {
   IconX,
   IconChevronRight,
@@ -119,7 +120,7 @@ function cardPosition(rect: TargetRect | null): React.CSSProperties {
   const vh = window.innerHeight;
   if (vw < 768) return {};
   const width = Math.min(CARD_WIDTH, vw - 2 * GAP);
-  const clampLeft = (x: number) => Math.min(Math.max(x, GAP), vw - width - GAP);
+  const clampLeft = (x: number) => clamp(x, GAP, vw - width - GAP);
   const below = rect.top + rect.height + GAP;
   if (vh - below >= 300) {
     return { position: "fixed", top: below, left: clampLeft(rect.left), width };
@@ -139,7 +140,8 @@ function cardPosition(rect: TargetRect | null): React.CSSProperties {
       : rect.left - width - GAP;
   return {
     position: "fixed",
-    top: Math.min(Math.max(rect.top, GAP), vh - 320),
+    // On a viewport shorter than 320px + GAP the card pins to vh - 320.
+    top: clamp(rect.top, Math.min(GAP, vh - 320), vh - 320),
     left: clampLeft(left),
     width,
   };

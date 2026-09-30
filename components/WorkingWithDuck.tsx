@@ -18,6 +18,11 @@ import { DynamicTabletOrientationHint as TabletOrientationHint } from "@/compone
 import { useGameFullscreen as useFullscreen } from "@/components/arcade/CabinetFullscreen";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useAnnouncer } from "@/hooks/useAnnouncer";
+import {
+  safeGetItem,
+  safeGetRawItem,
+  safeSetRawItem,
+} from "@/lib/safe-storage";
 import { useDuckService } from "@/hooks/useDuckService";
 import { useResponsiveCanvas } from "@/hooks/useResponsiveCanvas";
 import { useCanvasResolution } from "@/hooks/useCanvasResolution";
@@ -97,10 +102,7 @@ const subscribeStorage = (callback: () => void) => {
 const getHighScoreSnapshot = () => {
   if (typeof window === "undefined") return "0";
   try {
-    return window.localStorage &&
-      typeof window.localStorage.getItem === "function"
-      ? window.localStorage.getItem("working_with_duck_high_score") || "0"
-      : "0";
+    return safeGetRawItem("working_with_duck_high_score") || "0";
   } catch {
     return "0";
   }
@@ -117,15 +119,9 @@ const getServerSnapshot = () => "0";
 const getStoredUnlockedFacts = (): number[] => {
   if (typeof window === "undefined") return [1];
   try {
-    if (
-      !window.localStorage ||
-      typeof window.localStorage.getItem !== "function"
-    ) {
-      return [1];
-    }
-    const raw = window.localStorage.getItem("working_with_duck_unlocked_facts");
-    if (!raw) return [1];
-    const parsed: unknown = JSON.parse(raw);
+    // Stored as a plain JSON array. safeGetItem returns null when the key is
+    // missing or storage is unavailable, and the raw string for malformed JSON.
+    const parsed = safeGetItem<unknown>("working_with_duck_unlocked_facts");
     if (!Array.isArray(parsed)) return [1];
     return parsed.filter(
       (id): id is number => typeof id === "number" && Number.isInteger(id)
@@ -2089,22 +2085,19 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
-      if (
-        window.localStorage &&
-        typeof window.localStorage.setItem === "function"
-      ) {
-        if (uiState.highScore > loadedHighScore) {
-          window.localStorage.setItem(
-            "working_with_duck_high_score",
-            String(uiState.highScore)
-          );
-        }
-        if (uiState.unlockedFacts.length > 0) {
-          window.localStorage.setItem(
-            "working_with_duck_unlocked_facts",
-            JSON.stringify(uiState.unlockedFacts)
-          );
-        }
+      // Raw writes keep the stored bytes: a bare numeric string and a plain
+      // JSON array, exactly as before safeStorage.
+      if (uiState.highScore > loadedHighScore) {
+        safeSetRawItem(
+          "working_with_duck_high_score",
+          String(uiState.highScore)
+        );
+      }
+      if (uiState.unlockedFacts.length > 0) {
+        safeSetRawItem(
+          "working_with_duck_unlocked_facts",
+          JSON.stringify(uiState.unlockedFacts)
+        );
       }
     } catch {}
   }, [uiState.highScore, uiState.unlockedFacts, loadedHighScore]);

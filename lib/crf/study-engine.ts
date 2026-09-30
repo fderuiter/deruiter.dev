@@ -53,6 +53,7 @@ import {
   generateCdashVariableName,
 } from "./precision-date";
 import { cloneDeep } from "../utils";
+import { clamp } from "../game-utils";
 import { lintForm } from "./ast-evaluator";
 import {
   instantiateSmartBlock,
@@ -1550,15 +1551,17 @@ export class StudyProtocolEngine {
       if (foundIdx !== -1) {
         targetSecIdx = foundIdx;
       } else if (options?.sectionIndex !== undefined) {
-        targetSecIdx = Math.max(
+        targetSecIdx = clamp(
+          options.sectionIndex,
           0,
-          Math.min(options.sectionIndex, targetForm.sections.length - 1)
+          Math.max(0, targetForm.sections.length - 1)
         );
       }
     } else if (options?.sectionIndex !== undefined) {
-      targetSecIdx = Math.max(
+      targetSecIdx = clamp(
+        options.sectionIndex,
         0,
-        Math.min(options.sectionIndex, targetForm.sections.length - 1)
+        Math.max(0, targetForm.sections.length - 1)
       );
     }
 
@@ -1566,7 +1569,7 @@ export class StudyProtocolEngine {
     const maxTargetIdx = targetSec.fields.length;
     const insertIdx =
       options?.targetIndex !== undefined
-        ? Math.max(0, Math.min(options.targetIndex, maxTargetIdx))
+        ? clamp(options.targetIndex, 0, maxTargetIdx)
         : maxTargetIdx;
 
     const updatedSections = targetForm.sections.map((sec, idx) => {

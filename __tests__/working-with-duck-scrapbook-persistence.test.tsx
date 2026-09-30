@@ -342,6 +342,9 @@ describe("Working With Duck component - scrapbook unlock preservation (#599)", (
     ({ container, root } = await mountFresh());
 
     expect(JSON.parse(storageStore[STORAGE_KEY]).sort()).toEqual([1, 2, 3, 4]);
+    // #1507: the write goes through safeSetRawItem and must stay a plain JSON
+    // array, never the safeStorage metadata envelope.
+    expect(storageStore[STORAGE_KEY]).toMatch(/^\[\d+(,\d+)*\]$/);
   });
 
   it("does not crash and falls back safely when saved unlocks are malformed", async () => {

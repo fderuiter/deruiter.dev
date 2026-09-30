@@ -4,6 +4,7 @@ import {
   ArcadeViewport,
   ArcadeInputManager,
   ObjectPool,
+  clamp,
 } from "@/lib/arcade";
 import type {
   OETEngineState,
@@ -285,7 +286,7 @@ export class OetDescentEngine extends ArcadeEngine<
    */
   public override update(dt: number): void {
     // Defensive clamping against spiral of death or negative time
-    const clampedDt = Math.max(0, Math.min(0.1, dt));
+    const clampedDt = clamp(dt, 0, 0.1);
     if (clampedDt <= 0) return;
 
     if (this.state.status === "completed" || this.state.status === "crashed") {
@@ -345,12 +346,10 @@ export class OetDescentEngine extends ArcadeEngine<
     } else {
       this.state.sled.isStopped = false;
       this.state.status = "descending";
-      this.state.sled.speedMph = Math.max(
+      this.state.sled.speedMph = clamp(
+        this.state.sled.speedMph + netAcceleration * clampedDt,
         0,
-        Math.min(
-          terminalGlideSpeed,
-          this.state.sled.speedMph + netAcceleration * clampedDt
-        )
+        terminalGlideSpeed
       );
 
       if (this.state.sled.speedMph > this.highestSpeedSinceLastStop) {
@@ -444,9 +443,10 @@ export class OetDescentEngine extends ArcadeEngine<
       );
 
       // Clamp sled so it does not fly off screen
-      this.state.sled.x = Math.max(
+      this.state.sled.x = clamp(
+        this.state.sled.x,
         this.state.trailLeft - 20,
-        Math.min(this.state.trailRight + 20, this.state.sled.x)
+        this.state.trailRight + 20
       );
     } else {
       this.wasOutOfBounds = false;
@@ -533,7 +533,7 @@ export class OetDescentEngine extends ArcadeEngine<
       score += 5;
     }
 
-    this.state.metrics.judgmentScore = Math.max(0, Math.min(100, score));
+    this.state.metrics.judgmentScore = clamp(score, 0, 100);
 
     // 12. Snow Spray Particles
     if (this.state.sled.speedMph > 0.8) {
@@ -630,7 +630,7 @@ export class OetDescentEngine extends ArcadeEngine<
   // --- Control Actions ---
 
   public setSteering(val: number): void {
-    this.state.sled.steering = Math.max(-1, Math.min(1, val));
+    this.state.sled.steering = clamp(val, -1, 1);
     this.notifySubscribers();
   }
 
@@ -1379,7 +1379,7 @@ export function calculateInjurySeverity(
     }
   }
 
-  const finalScore = Math.max(0, Math.min(100, score));
+  const finalScore = clamp(score, 0, 100);
 
   let level: "minor" | "moderate" | "severe" | "critical" = "minor";
   if (finalScore >= 70 || vitalsCompromised) {

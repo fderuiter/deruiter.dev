@@ -8,6 +8,7 @@ import {
   CRFField,
 } from "./types";
 import { isCdiscNullFlavor } from "./precision-date";
+import { clamp } from "../game-utils";
 
 /**
  * Unified Missing Value & CDISC Null Flavor Guard
@@ -297,7 +298,14 @@ export class ExpressionEvaluator {
             return Math.cbrt(numArgs[0]);
           case "clamp":
             if (numArgs.length < 3) return null;
-            return Math.min(Math.max(numArgs[0], numArgs[1]), numArgs[2]);
+            // Formula semantics: NaN propagates, and inverted bounds
+            // resolve to the upper argument (clamp(x, 10, 0) === 0).
+            if (Number.isNaN(numArgs[0])) return NaN;
+            return clamp(
+              numArgs[0],
+              Math.min(numArgs[1], numArgs[2]),
+              numArgs[2]
+            );
           case "abs":
             if (numArgs.length === 0) return null;
             return Math.abs(numArgs[0]);

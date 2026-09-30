@@ -40,14 +40,16 @@ export const Card: React.FC<{
 }> = ({ title, hint, children, className = "" }) => (
   <section
     aria-label={title}
-    className={`min-w-0 border border-zinc-800 bg-[#13151a] p-3 ${className}`}
+    className={`min-w-0 border border-[var(--sd-hairline)] bg-[var(--sd-surface)] p-3 ${className}`}
   >
-    <div className="mb-2 flex items-baseline justify-between gap-2">
-      <h2 className="font-mono text-[11px] font-bold tracking-wider text-zinc-300 uppercase">
+    <div className="mb-2.5 flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5 border-b border-[var(--sd-hairline)] pb-2">
+      <h2 className="font-mono text-[11px] font-bold tracking-[0.14em] whitespace-nowrap text-zinc-200 uppercase">
         {title}
       </h2>
       {hint ? (
-        <span className="font-mono text-[10px] text-zinc-400">{hint}</span>
+        <span className="min-w-0 font-mono text-[10px] text-[var(--sd-muted)]">
+          {hint}
+        </span>
       ) : null}
     </div>
     {children}
@@ -58,13 +60,13 @@ export const DashboardPanel: React.FC<{ state: StudyState }> = ({ state }) => {
   const board = dashboard(state);
   return (
     <Card title="Dashboard" hint="What everyone reports">
-      <ul className="grid gap-1.5 sm:grid-cols-2">
+      <ul className="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-1">
         {AREA_IDS.map((id) => {
           const area = board[id];
           return (
             <li
               key={id}
-              className="flex min-w-0 items-start gap-2 border border-zinc-800/80 bg-[#0d0e11] px-2 py-1.5"
+              className="flex min-w-0 items-start gap-2 border border-zinc-800/80 bg-[var(--sd-bg)] px-2 py-1.5"
             >
               <span
                 aria-hidden="true"
@@ -171,7 +173,7 @@ export const SitesPanel: React.FC<{
   onAudit: (siteId: string) => void;
 }> = ({ state, canAudit, onAudit }) => (
   <Card title="Sites" hint={`Audit costs ${AUDIT_ATTENTION} attention`}>
-    <ul className="space-y-2">
+    <ul className="grid gap-2 lg:grid-cols-3">
       {state.sites.map((site) => {
         const audited =
           site.lastAuditedDay !== null &&
@@ -179,7 +181,7 @@ export const SitesPanel: React.FC<{
         return (
           <li
             key={site.id}
-            className="min-w-0 border border-zinc-800/80 bg-[#0d0e11] p-2"
+            className="min-w-0 border border-zinc-800/80 bg-[var(--sd-bg)] p-2"
           >
             <div className="flex items-center justify-between gap-2">
               <span className="font-mono text-xs font-semibold text-zinc-100">

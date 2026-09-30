@@ -474,6 +474,25 @@ describe("ClinicalTrialChaos React Component UI Suite", () => {
     vi.useRealTimers();
   });
 
+  it("ignores a malformed stored CRF Studio protocol (#1507)", async () => {
+    mockStorage.setItem("crf_active_protocol", "{not json");
+
+    await act(async () => {
+      root.render(<ClinicalTrialChaos />);
+    });
+
+    const loadBtn = Array.from(container.querySelectorAll("button")).find((b) =>
+      b.textContent?.includes("Load Authored Protocol")
+    );
+    expect(loadBtn).toBeTruthy();
+    await act(async () => {
+      loadBtn?.click();
+    });
+    expect(announcements).toContain(
+      "No authored protocol found. Author one in CRF Studio first."
+    );
+  });
+
   it("accepts a compliant choice and lets the player retry after a rejection with a CRF Studio protocol loaded (#1150)", async () => {
     vi.useFakeTimers();
     // Every generated field starts flagged.
@@ -1410,6 +1429,64 @@ describe("ClinicalTrialChaos React Component UI Suite", () => {
     expect(Number(violations)).toBeGreaterThan(0);
 
     vi.mocked(Math.random).mockRestore();
+    vi.useRealTimers();
+  });
+
+  it("says on the board when a clean CRF went to the wrong station (#1326)", async () => {
+    vi.useFakeTimers();
+
+    await act(async () => {
+      root.render(<ClinicalTrialChaos />);
+    });
+    const startBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.includes("Start 3-Phase Campaign")
+    );
+    await act(async () => {
+      startBtn?.click();
+    });
+
+    // Fix SUBJ-1001's height (180 m -> 180 cm) so the CRF is clean.
+    const validateChoiceEl = Array.from(
+      container.querySelectorAll("span")
+    ).find((s) => s.textContent?.includes("Validate Choice"));
+    const obsCard = validateChoiceEl?.closest(".cursor-pointer") as HTMLElement;
+    await act(async () => {
+      obsCard.click();
+    });
+    const choiceBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.trim().replace(/^\d/, "") === "180 cm"
+    );
+    await act(async () => {
+      choiceBtn?.click();
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(600);
+    });
+
+    // Send it to AE, which does not take DM or VS data.
+    const aeHeading = Array.from(container.querySelectorAll("h4")).find((h) =>
+      h.textContent?.includes("AE Station")
+    );
+    const aeCard = aeHeading?.closest(".group") as HTMLElement;
+    await act(async () => {
+      aeCard.click();
+    });
+    const signBtn = Array.from(container.querySelectorAll("button")).find((b) =>
+      b.textContent?.includes("Sign & Lock CRF")
+    );
+    if (signBtn) {
+      await act(async () => {
+        signBtn.click();
+      });
+    }
+
+    expect(container.textContent).toContain(
+      "Rejected: SUBJ-1001 does not belong at AE."
+    );
+    expect(announcements.some((a) => a.startsWith("Rejected: SUBJ-1001"))).toBe(
+      true
+    );
+
     vi.useRealTimers();
   });
 

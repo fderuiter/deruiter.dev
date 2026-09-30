@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import {
   ProjectImageService,
   MAX_PROJECT_IMAGE_SIZE_BYTES,
+  type ProjectImageErrorCode,
 } from "@/lib/services/project-image-service";
 import { CaseStudyService } from "@/lib/services/case-study-service";
 import { applySecurityHeaders } from "@/lib/security-headers";
@@ -15,6 +16,20 @@ interface FormFileBlob {
 }
 
 export const dynamic = "force-dynamic";
+
+/**
+ * Upload failures the administrator can correct: their message is returned
+ * verbatim with a 400. Every other code is an infrastructure failure and gets
+ * a generic 500 so storage and database details stay in the server log.
+ */
+const CLIENT_ERROR_CODES: ReadonlySet<ProjectImageErrorCode> = new Set([
+  "EMPTY_PAYLOAD",
+  "FILE_TOO_LARGE",
+  "UNSUPPORTED_TYPE",
+  "MALFORMED_HEADER",
+  "SANITIZED_SVG_EMPTY",
+  "CASE_STUDY_NOT_FOUND",
+]);
 
 export const POST = createApiHandler(
   async (req, { params }) => {
@@ -93,35 +108,40 @@ export const POST = createApiHandler(
         mimeType
       );
 
+      if (!result.success) {
+        if (CLIENT_ERROR_CODES.has(result.error.code)) {
+          const res = NextResponse.json(
+            { error: result.error.message },
+            { status: 400 }
+          );
+          return applySecurityHeaders(res, req);
+        }
+
+        logger.error("Project image upload failed:", {
+          code: result.error.code,
+          cause: sanitizeError(result.error.details),
+        });
+        const res = NextResponse.json(
+          { error: "Failed to process and store project image" },
+          { status: 500 }
+        );
+        return applySecurityHeaders(res, req);
+      }
+
       const res = NextResponse.json(
         {
           success: true,
           data: {
             slug,
-            hero_image_url: result.hero_image_url,
-            key: result.key,
+            hero_image_url: result.data.hero_image_url,
+            key: result.data.key,
           },
         },
         { status: 200 }
       );
       return applySecurityHeaders(res, req);
     } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : "Image processing failed";
-
-      // Handle known user validation errors (size limit, file format, magic bytes)
-      if (
-        message.includes("limit") ||
-        message.includes("Invalid") ||
-        message.includes("Malformed") ||
-        message.includes("Header") ||
-        message.includes("exceeds") ||
-        message.includes("not found")
-      ) {
-        const res = NextResponse.json({ error: message }, { status: 400 });
-        return applySecurityHeaders(res, req);
-      }
-
+      // Only request parsing (multipart form data) can throw here.
       logger.error("Project image upload failed:", sanitizeError(err));
       const res = NextResponse.json(
         { error: "Failed to process and store project image" },
@@ -164,7 +184,25 @@ export const DELETE = createApiHandler(
         existing.hero_image_url
       );
 
-      await CaseStudyService.updateCaseStudyImage(slug, null);
+      const cleared = await CaseStudyService.updateCaseStudyImage(slug, null);
+      if (!cleared.success) {
+        if (cleared.error.code === "CASE_STUDY_NOT_FOUND") {
+          const res = NextResponse.json(
+            { error: cleared.error.message },
+            { status: 404 }
+          );
+          return applySecurityHeaders(res, req);
+        }
+        logger.error(
+          "Failed to clear project image:",
+          sanitizeError(cleared.error.details)
+        );
+        const res = NextResponse.json(
+          { error: "Failed to clear project image" },
+          { status: 500 }
+        );
+        return applySecurityHeaders(res, req);
+      }
 
       if (priorKey) {
         try {

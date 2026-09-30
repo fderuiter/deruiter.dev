@@ -1,4 +1,5 @@
 import { logger } from "@/lib/logger";
+import { clamp } from "@/lib/game-utils";
 import { CaseStudyService } from "@/lib/services/case-study-service";
 import { BlogPostService } from "@/lib/services/blog-service";
 import {
@@ -159,12 +160,13 @@ export class MaintenanceService {
     const clock = options?.clock || Date.now;
     const startedAtMs = clock();
     const now = options?.now || new Date(startedAtMs);
-    const deadlineMs = Math.min(
-      DEFAULT_DEADLINE_MS,
-      Math.max(500, options?.deadlineMs || DEFAULT_DEADLINE_MS)
+    const deadlineMs = clamp(
+      options?.deadlineMs || DEFAULT_DEADLINE_MS,
+      500,
+      DEFAULT_DEADLINE_MS
     );
     const deadlineAt = startedAtMs + deadlineMs;
-    const batchSize = Math.max(1, Math.min(500, options?.batchSize || 50));
+    const batchSize = clamp(options?.batchSize || 50, 1, 500);
     const adapters = options?.adapters || createProductionAdapters(batchSize);
 
     const phases = {} as Record<MaintenancePhaseName, MaintenancePhaseSummary>;

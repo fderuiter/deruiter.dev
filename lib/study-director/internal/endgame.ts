@@ -1,6 +1,7 @@
 import { getEvent } from "./events";
 import { computeMeters, dataManagerCapacity, totalOpenQueries } from "./model";
 import { uniformAt } from "./rng";
+import { clamp as clampRange } from "../../game-utils";
 import type {
   Evaluations,
   FinalReport,
@@ -13,8 +14,7 @@ import type {
 } from "../types";
 
 const round1 = (n: number): number => Math.round(n * 10) / 10;
-const clamp = (n: number, lo = 0, hi = 100): number =>
-  Math.min(hi, Math.max(lo, n));
+const clamp = (n: number, lo = 0, hi = 100): number => clampRange(n, lo, hi);
 
 /**
  * Locks the database. Queries still open at lock cost days and integrity, so
@@ -160,7 +160,8 @@ export function evaluate(state: StudyState): Evaluations {
   );
   const unsigned = state.sites.reduce((n, s) => n + s.unsignedSource, 0);
   const majorDeviations = eligibility + Math.floor(deviations / 5);
-  const evaluable = Math.max(0, enrolled - Math.min(enrolled, majorDeviations));
+  const excluded = Math.min(enrolled, majorDeviations);
+  const evaluable = Math.max(0, enrolled - excluded);
   const items = inspectionItems(state);
   return {
     sponsor: { stars, quote: SPONSOR_QUOTES[stars] },

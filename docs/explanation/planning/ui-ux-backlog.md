@@ -63,7 +63,7 @@ Prepared 2026-09-08. This initial 32-item inventory was consolidated into 24 app
 
 ## Ticket specifications
 
-### UX-01 — Define the portfolio’s visual system and reference layouts
+### UX-01: Define the portfolio’s visual system and reference layouts
 
 **Area:** Foundation · **Priority:** P1 · **Size:** M
 
@@ -81,7 +81,7 @@ Prepared 2026-09-08. This initial 32-item inventory was consolidated into 24 app
 
 **Depends on:** None.
 
-### UX-02 — Create a route-by-route visual baseline
+### UX-02: Create a route-by-route visual baseline
 
 **Area:** Foundation · **Priority:** P1 · **Size:** M
 
@@ -99,7 +99,7 @@ Prepared 2026-09-08. This initial 32-item inventory was consolidated into 24 app
 
 **Depends on:** None.
 
-### UX-03 — Improve text hierarchy and contrast throughout the site
+### UX-03: Improve text hierarchy and contrast throughout the site
 
 **Area:** Foundation · **Priority:** P1 · **Size:** M
 
@@ -117,7 +117,7 @@ Prepared 2026-09-08. This initial 32-item inventory was consolidated into 24 app
 
 **Depends on:** UX-01.
 
-### UX-04 — Eliminate overflow and collisions across shared layout primitives
+### UX-04: Eliminate overflow and collisions across shared layout primitives
 
 **Area:** Foundation · **Priority:** P1 · **Size:** M
 
@@ -135,7 +135,7 @@ Prepared 2026-09-08. This initial 32-item inventory was consolidated into 24 app
 
 **Depends on:** UX-02.
 
-### UX-05 — Resolve hero crowding and establish a clear first impression
+### UX-05: Resolve hero crowding and establish a clear first impression
 
 **Area:** Homepage · **Priority:** P1 · **Size:** S
 
@@ -153,7 +153,7 @@ Prepared 2026-09-08. This initial 32-item inventory was consolidated into 24 app
 
 **Depends on:** UX-01.
 
-### UX-06 — Make the engineering demo responsive and keyboard accessible
+### UX-06: Make the engineering demo responsive and keyboard accessible
 
 **Area:** Homepage · **Priority:** P1 · **Size:** M
 
@@ -171,7 +171,7 @@ Prepared 2026-09-08. This initial 32-item inventory was consolidated into 24 app
 
 **Depends on:** UX-03, UX-04.
 
-### UX-07 — Stabilize hero text rendering and selection
+### UX-07: Stabilize hero text rendering and selection
 
 **Area:** Homepage · **Priority:** P1 · **Size:** M
 
@@ -189,7 +189,7 @@ Prepared 2026-09-08. This initial 32-item inventory was consolidated into 24 app
 
 **Depends on:** UX-05.
 
-### UX-08 — Improve homepage pacing and reduce unnecessary scrolling
+### UX-08: Improve homepage pacing and reduce unnecessary scrolling
 
 **Area:** Homepage · **Priority:** P2 · **Size:** M
 
@@ -207,7 +207,7 @@ Prepared 2026-09-08. This initial 32-item inventory was consolidated into 24 app
 
 **Depends on:** UX-01, UX-05.
 
-### UX-09 — Curate featured projects around evidence and outcomes
+### UX-09: Curate featured projects around evidence and outcomes
 
 **Area:** Homepage · **Priority:** P1 · **Size:** M
 
@@ -225,7 +225,7 @@ Prepared 2026-09-08. This initial 32-item inventory was consolidated into 24 app
 
 **Depends on:** UX-01.
 
-### UX-10 — Make project snippets readable and visually consistent
+### UX-10: Make project snippets readable and visually consistent
 
 **Area:** Homepage · **Priority:** P2 · **Size:** M
 
@@ -243,7 +243,7 @@ Prepared 2026-09-08. This initial 32-item inventory was consolidated into 24 app
 
 **Depends on:** UX-03, UX-09.
 
-### UX-11 — Simplify global navigation and clarify destination names
+### UX-11: Simplify global navigation and clarify destination names
 
 **Area:** Navigation · **Priority:** P1 · **Size:** M
 
@@ -261,7 +261,7 @@ Prepared 2026-09-08. This initial 32-item inventory was consolidated into 24 app
 
 **Depends on:** UX-01.
 
-### UX-12 — Verify mobile navigation and desktop menu interaction
+### UX-12: Verify mobile navigation and desktop menu interaction
 
 **Area:** Navigation · **Priority:** P1 · **Size:** M
 
@@ -279,7 +279,7 @@ Prepared 2026-09-08. This initial 32-item inventory was consolidated into 24 app
 
 **Depends on:** UX-11.
 
-### UX-13 — Explain persona switching and preserve visitor orientation
+### UX-13: Explain persona switching and preserve visitor orientation
 
 **Area:** Navigation · **Priority:** P2 · **Size:** M
 
@@ -297,7 +297,7 @@ Prepared 2026-09-08. This initial 32-item inventory was consolidated into 24 app
 
 **Depends on:** UX-11.
 
-### UX-14 — Polish search and command-palette discovery
+### UX-14: Polish search and command-palette discovery
 
 **Area:** Navigation · **Priority:** P1 · **Size:** M
 
@@ -315,7 +315,7 @@ Prepared 2026-09-08. This initial 32-item inventory was consolidated into 24 app
 
 **Depends on:** UX-11, UX-12.
 
-### UX-15 — Make the case-study index easy to scan and explore
+### UX-15: Make the case-study index easy to scan and explore
 
 **Area:** Projects · **Priority:** P1 · **Size:** M
 
@@ -333,7 +333,7 @@ Prepared 2026-09-08. This initial 32-item inventory was consolidated into 24 app
 
 **Depends on:** UX-09, UX-10.
 
-### UX-16 — Standardize case studies around problem, decisions, and results
+### UX-16: Standardize case studies around problem, decisions, and results
 
 **Area:** Projects · **Priority:** P1 · **Size:** L
 
@@ -351,7 +351,7 @@ Prepared 2026-09-08. This initial 32-item inventory was consolidated into 24 app
 
 **Depends on:** UX-01, UX-15.
 
-### UX-17 — Improve experience and skills storytelling
+### UX-17: Improve experience and skills storytelling
 
 **Area:** Projects · **Priority:** P2 · **Size:** M
 
@@ -369,7 +369,7 @@ Prepared 2026-09-08. This initial 32-item inventory was consolidated into 24 app
 
 **Depends on:** UX-03, UX-13.
 
-### UX-18 — Create a clear contact journey with fewer competing actions
+### UX-18: Create a clear contact journey with fewer competing actions
 
 **Area:** Contact · **Priority:** P1 · **Size:** M
 
@@ -387,7 +387,7 @@ Prepared 2026-09-08. This initial 32-item inventory was consolidated into 24 app
 
 **Depends on:** UX-01.
 
-### UX-19 — Verify contact form validation, submission, and recovery
+### UX-19: Verify contact form validation, submission, and recovery
 
 **Area:** Contact · **Priority:** P1 · **Size:** M
 
@@ -405,7 +405,7 @@ Prepared 2026-09-08. This initial 32-item inventory was consolidated into 24 app
 
 **Depends on:** UX-18.
 
-### UX-20 — Polish scheduling and newsletter fallback states
+### UX-20: Polish scheduling and newsletter fallback states
 
 **Area:** Contact · **Priority:** P2 · **Size:** M
 
@@ -423,7 +423,7 @@ Prepared 2026-09-08. This initial 32-item inventory was consolidated into 24 app
 
 **Depends on:** UX-18, UX-19.
 
-### UX-21 — Create consistent studio entry points and first-use guidance
+### UX-21: Create consistent studio entry points and first-use guidance
 
 **Area:** Studios and arcade · **Priority:** P1 · **Size:** L
 
@@ -441,7 +441,7 @@ Prepared 2026-09-08. This initial 32-item inventory was consolidated into 24 app
 
 **Depends on:** UX-01, UX-11.
 
-### UX-22 — Audit studio responsiveness, panels, and input methods
+### UX-22: Audit studio responsiveness, panels, and input methods
 
 **Area:** Studios and arcade · **Priority:** P1 · **Size:** L
 
@@ -459,7 +459,7 @@ Prepared 2026-09-08. This initial 32-item inventory was consolidated into 24 app
 
 **Depends on:** UX-04, UX-21.
 
-### UX-23 — Make studio editing states and recovery predictable
+### UX-23: Make studio editing states and recovery predictable
 
 **Area:** Studios and arcade · **Priority:** P1 · **Size:** M
 
@@ -477,7 +477,7 @@ Prepared 2026-09-08. This initial 32-item inventory was consolidated into 24 app
 
 **Depends on:** UX-21.
 
-### UX-24 — Unify arcade discovery, launch, and return flows
+### UX-24: Unify arcade discovery, launch, and return flows
 
 **Area:** Studios and arcade · **Priority:** P2 · **Size:** M
 
@@ -495,7 +495,7 @@ Prepared 2026-09-08. This initial 32-item inventory was consolidated into 24 app
 
 **Depends on:** UX-11, UX-22.
 
-### UX-25 — Complete a keyboard and screen-reader journey audit
+### UX-25: Complete a keyboard and screen-reader journey audit
 
 **Area:** Accessibility and motion · **Priority:** P1 · **Size:** L
 
@@ -513,7 +513,7 @@ Prepared 2026-09-08. This initial 32-item inventory was consolidated into 24 app
 
 **Depends on:** UX-02, UX-12, UX-14, UX-19, UX-22.
 
-### UX-26 — Make motion and audio restrained and controllable
+### UX-26: Make motion and audio restrained and controllable
 
 **Area:** Accessibility and motion · **Priority:** P1 · **Size:** M
 
@@ -531,7 +531,7 @@ Prepared 2026-09-08. This initial 32-item inventory was consolidated into 24 app
 
 **Depends on:** UX-01, UX-25.
 
-### UX-27 — Replace generic loading screens with stable page-family skeletons
+### UX-27: Replace generic loading screens with stable page-family skeletons
 
 **Area:** Reliability and states · **Priority:** P1 · **Size:** M
 
@@ -549,7 +549,7 @@ Prepared 2026-09-08. This initial 32-item inventory was consolidated into 24 app
 
 **Depends on:** UX-02, UX-04.
 
-### UX-28 — Polish empty, error, offline, and missing-page experiences
+### UX-28: Polish empty, error, offline, and missing-page experiences
 
 **Area:** Reliability and states · **Priority:** P1 · **Size:** M
 
@@ -567,7 +567,7 @@ Prepared 2026-09-08. This initial 32-item inventory was consolidated into 24 app
 
 **Depends on:** UX-01, UX-27.
 
-### UX-29 — Keep authentication failures out of public portfolio journeys
+### UX-29: Keep authentication failures out of public portfolio journeys
 
 **Area:** Reliability and states · **Priority:** P1 · **Size:** M
 
@@ -585,7 +585,7 @@ Prepared 2026-09-08. This initial 32-item inventory was consolidated into 24 app
 
 **Depends on:** None.
 
-### UX-30 — Make status labels and performance claims trustworthy
+### UX-30: Make status labels and performance claims trustworthy
 
 **Area:** Reliability and states · **Priority:** P1 · **Size:** M
 
@@ -603,7 +603,7 @@ Prepared 2026-09-08. This initial 32-item inventory was consolidated into 24 app
 
 **Depends on:** UX-05, UX-17.
 
-### UX-31 — Establish a visual and interaction regression gate
+### UX-31: Establish a visual and interaction regression gate
 
 **Area:** Performance and QA · **Priority:** P1 · **Size:** L
 
@@ -621,7 +621,7 @@ Prepared 2026-09-08. This initial 32-item inventory was consolidated into 24 app
 
 **Depends on:** UX-02, UX-25, UX-27.
 
-### UX-32 — Verify perceived performance and real-device layout quality
+### UX-32: Verify perceived performance and real-device layout quality
 
 **Area:** Performance and QA · **Priority:** P1 · **Size:** M
 

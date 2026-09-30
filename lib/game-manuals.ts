@@ -616,7 +616,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
     objective:
       "Standardize clinical observations across 8 CDISC SDTM domains (DM, VS, AE, LB, CM, EX, DS, MH), solve multi-choice Controlled Terminology puzzles, deploy combo-charged regulatory lifelines, sign 21 CFR Part 11 electronic records, and achieve a clean FDA BIMO inspection rating.",
     quickSummary:
-      "Solve Controlled Terminology discrepancies via multi-choice puzzles, route validated dossier packets to tiered EDC stations with hotkeys [1-6], deploy power-ups [Q, W, E, R], and export authentic CDISC ODM XML / SDTM CSV datasets.",
+      "Solve Controlled Terminology discrepancies via multi-choice puzzles, route validated dossier packets to tiered EDC stations with hotkeys [1-8] (four stations in phase 1, six in phase 2 and endless, all eight in phase 3), deploy power-ups [Q, W, E, R], and export authentic CDISC ODM XML / SDTM CSV datasets.",
     controls: [
       {
         action: "Validate Clinical Observation",
@@ -628,7 +628,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         action: "Route to EDC Domain Desk",
         description:
           "Submit validated dossiers to active EDC stations: [1] Demographics (DM), [2] Vital Signs (VS), [3] Adverse Events (AE), [4] Laboratory (LB), [5] Concomitant Meds (CM), [6] Drug Exposure (EX).",
-        key: "Keys [1-6] or Click Station",
+        key: "Keys [1-8] or Click Station",
       },
       {
         action: "Deploy Regulatory Lifelines",

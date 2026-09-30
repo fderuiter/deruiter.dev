@@ -41,6 +41,7 @@ import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { scrollToElement } from "@/lib/scroll";
 import { unlockAchievement, setVaultUnlocked } from "@/lib/meme-data";
 import { playMemeSound } from "@/lib/meme-audio";
+import { emitAppEvent } from "@/lib/event-bus";
 import { useFontPreference } from "@/hooks/useFontPreference";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useThrottledCallback } from "@/hooks/useThrottle";
@@ -695,7 +696,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         id: "nav-study-director",
         title: "Study Director: Everything Is Fine",
         subtitle:
-          "Run a clinical study on eight attention points a day and defend your decisions to the FDA.",
+          "Run a clinical study on five attention points a day and defend your decisions to the FDA.",
         category: "navigation",
         url: "/arcade/study-director",
         icon: <IconClipboardCheck className="w-4 h-4 text-brand-cyan" />,
@@ -705,7 +706,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           "Shepherd one study from kickoff to database lock. Answer the inbox, delegate, audit the sites behind the green dashboard, and see which decisions the inspector asks about.",
         techStack: ["Seeded Simulation", "Causal Model", "Decision Log"],
         highlights: [
-          "Eight attention points a day, six meters",
+          "Five attention points a day, six meters",
           "Documentation debt comes due at inspection",
           "Discover which kind of Study Director you are",
         ],
@@ -1302,18 +1303,14 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         unlockAchievement("konami-hero");
         setVaultUnlocked(true);
         playMemeSound("fanfare");
-        if (typeof window !== "undefined") {
-          window.dispatchEvent(new CustomEvent("trigger_retro_chaos"));
-        }
+        emitAppEvent("trigger_retro_chaos");
       } else if (actionType === "friday") {
         unlockAchievement("friday-survivor");
         playMemeSound("friday-alarm");
       } else if (actionType === "ping") {
         playMemeSound("matrix-glitch");
       } else if (actionType === "photos") {
-        if (typeof window !== "undefined") {
-          window.dispatchEvent(new CustomEvent("open-photo-gallery"));
-        }
+        emitAppEvent("open-photo-gallery");
       }
       return;
     }

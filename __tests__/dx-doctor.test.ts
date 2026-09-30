@@ -20,6 +20,7 @@ import {
   checkSectionStructures,
   checkServiceResultTypes,
   checkSubRoutePerformance,
+  checkSeoSocialIntegrity,
   runDiagnostics,
   printDoctorReport,
 } from "@/lib/dx/doctor";
@@ -720,6 +721,24 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       const result = checkServiceResultTypes(tempDir, false);
       expect(result.status).toBe("pass");
     });
+
+    it("scans *-service.ts modules for raw throws unless they are pending migration", () => {
+      const serviceDir = path.join(tempDir, "lib", "services");
+      fs.mkdirSync(serviceDir, { recursive: true });
+      const body =
+        'import type { ServiceResult } from "./service-result";\nexport function run(): ServiceResult<number> { throw new Error("boom"); }\n';
+      fs.writeFileSync(path.join(serviceDir, "widget-service.ts"), body);
+      // Listed as pending migration (#1140), so its raw throw is tolerated.
+      fs.writeFileSync(path.join(serviceDir, "blog-service.ts"), body);
+
+      const result = checkServiceResultTypes(tempDir, false);
+      expect(result.status).toBe("fail");
+      expect(result.details).toEqual([
+        expect.stringContaining(
+          `${path.join("lib", "services", "widget-service.ts")}:2`
+        ),
+      ]);
+    });
   });
 
   describe("checkSubRoutePerformance", () => {
@@ -851,6 +870,77 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         remediations: [],
       };
       expect(() => printDoctorReport(summary, false)).not.toThrow();
+    });
+  });
+
+  describe("checkSeoSocialIntegrity", () => {
+    const title = "A Route Title That Fits Well"; // 28 + 22 template = 50
+    const description = "d".repeat(140);
+
+    const writeWorkspace = (
+      overrides: {
+        title?: string;
+        description?: string;
+        llms?: string;
+        layout?: string;
+      } = {}
+    ) => {
+      fs.mkdirSync(path.join(tempDir, "lib"), { recursive: true });
+      fs.mkdirSync(path.join(tempDir, "app"), { recursive: true });
+      fs.mkdirSync(path.join(tempDir, "public"), { recursive: true });
+      fs.writeFileSync(
+        path.join(tempDir, "lib", "seo-metadata.ts"),
+        `export const ROUTE_METADATA_CONFIGS = {\n  demo: {\n    title: "${overrides.title ?? title}",\n    description:\n      "${overrides.description ?? description}",\n    path: "/demo",\n  },\n};\n`
+      );
+      const manifest =
+        overrides.llms ?? "- [Demo](https://deruiter.dev/demo): text\n";
+      fs.writeFileSync(path.join(tempDir, "public", "llms.txt"), manifest);
+      fs.writeFileSync(path.join(tempDir, "public", "llms-full.txt"), manifest);
+      fs.writeFileSync(
+        path.join(tempDir, "app", "layout.tsx"),
+        overrides.layout ??
+          'export const viewport = { themeColor: "#090D16", colorScheme: "dark" };\n'
+      );
+    };
+
+    it("passes when bounds, manifests and theme color hold", () => {
+      writeWorkspace();
+      expect(checkSeoSocialIntegrity(tempDir).status).toBe("pass");
+    });
+
+    it("passes when the workspace has no route metadata", () => {
+      expect(checkSeoSocialIntegrity(tempDir).status).toBe("pass");
+    });
+
+    it("fails on short or long titles and descriptions", () => {
+      writeWorkspace({ title: "Short", description: "d".repeat(161) });
+      const result = checkSeoSocialIntegrity(tempDir);
+      expect(result.status).toBe("fail");
+      expect(result.details?.join("\n")).toMatch(/rendered title is 27/);
+      expect(result.details?.join("\n")).toMatch(/description is 161/);
+    });
+
+    it("fails on a title that carries the site name", () => {
+      writeWorkspace({ title: "Book a Chat With Frederick de Ruiter" });
+      expect(checkSeoSocialIntegrity(tempDir).details?.join("\n")).toMatch(
+        /repeats the site name/
+      );
+    });
+
+    it("fails when a route is missing from the llms manifests", () => {
+      writeWorkspace({ llms: "- [Other](https://deruiter.dev/other): text\n" });
+      expect(checkSeoSocialIntegrity(tempDir).details?.join("\n")).toMatch(
+        /\/demo missing from public\/llms\.txt/
+      );
+    });
+
+    it("fails when the viewport loses the brand theme color", () => {
+      writeWorkspace({
+        layout: 'export const viewport = { themeColor: "#000" };\n',
+      });
+      expect(checkSeoSocialIntegrity(tempDir).details?.join("\n")).toMatch(
+        /themeColor/
+      );
     });
   });
 });

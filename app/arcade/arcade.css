@@ -626,3 +626,20 @@
     animation: garmin-shake-high 380ms ease-out 1;
   }
 }
+
+/* Study Director desk tokens (ADR 0054, #1496).
+ * Scoped to [data-sd-desk]: graphite surfaces, hairlines and the semantic
+ * status accents from the zero-trope palette. No glow, no gradients. */
+[data-sd-desk] {
+  --sd-bg: #0d0e11;
+  --sd-surface: #13151a;
+  --sd-surface-2: #181b21;
+  --sd-hairline: rgba(255, 255, 255, 0.08);
+  --sd-hairline-strong: rgba(255, 255, 255, 0.14);
+  --sd-text: #f4f4f6;
+  --sd-muted: #a1a1aa;
+  --sd-amber: #f59e0b;
+  --sd-emerald: #10b981;
+  --sd-steel: #94a3b8;
+  --sd-red: #f87171;
+}

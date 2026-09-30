@@ -49,7 +49,7 @@ export const StudyDirectorClient: React.FC = () => (
           <span className="text-amber-400">Everything Is Fine</span>
         </h1>
         <p className="mt-2 max-w-3xl font-mono text-xs text-zinc-300 sm:text-sm">
-          Shepherd one clinical study from kickoff to closeout. You have eight
+          Shepherd one clinical study from kickoff to closeout. You have five
           attention points a day, a team that is not always fine, and a
           dashboard that says everything is. Every study, site and person here
           is fictional; nothing is clinical or regulatory advice.
@@ -69,7 +69,7 @@ export const StudyDirectorClient: React.FC = () => (
                 aria-hidden="true"
               />
             }
-            instructions="Answer the inbox, spend your eight daily attention points, and audit the sites behind the green dashboard. Documenting a decision costs one more attention; skipped documentation comes back at inspection."
+            instructions="Answer the inbox, spend your five daily attention points, and audit the sites behind the green dashboard. Documenting a decision costs one more attention; skipped documentation comes back at inspection."
             controls={[
               { key: "1 - 5", action: "Choose an option" },
               { key: "D", action: "Document the decision (+1 attention)" },

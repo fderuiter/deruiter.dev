@@ -6,6 +6,8 @@
  * and React hydration never sees a mismatched separator.
  */
 
+import { clamp } from "@/lib/game-utils";
+
 /** Locale used by every number formatter unless a caller overrides it. */
 export const DEFAULT_NUMBER_LOCALE = "en-US";
 
@@ -169,8 +171,9 @@ export function formatBytes(
 
   let index = unit ? BYTE_UNITS.indexOf(unit) : 0;
   if (!unit && safeBytes > 0) {
-    index = Math.min(
-      Math.max(Math.floor(Math.log(safeBytes) / Math.log(1024)), 0),
+    index = clamp(
+      Math.floor(Math.log(safeBytes) / Math.log(1024)),
+      0,
       BYTE_UNITS.length - 1
     );
   }

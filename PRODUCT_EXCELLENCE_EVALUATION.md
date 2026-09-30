@@ -7,7 +7,7 @@
 
 ## Executive Summary
 
-This evaluation provides a proactive, rigorous assessment of the entire web application ecosystem—spanning **CRF Studio**, **Logical Proof Workspace**, **NeuroRecon Studio**, **Interactive Arcade Labs**, and the **Portfolio Showcase & Command Palette**—against the **Product Excellence (PE) Framework**.
+This evaluation provides a proactive, rigorous assessment of the entire web application ecosystem (spanning **CRF Studio**, **Logical Proof Workspace**, **NeuroRecon Studio**, **Interactive Arcade Labs**, and the **Portfolio Showcase & Command Palette**) against the **Product Excellence (PE) Framework**.
 
 Product Excellence elevates software from functional utility to experiences that evoke joy, earn enduring trust, and inspire confidence. Guided by the core tenet **"Focus on the user and all else will follow,"** this evaluation scores each capability across the **3 Core Pillars** and **9 Sub-Principles**, transforming observations into high-leverage, motivating product opportunities.
 
@@ -58,7 +58,7 @@ _Concentrates on specific critical needs for its intended user persona. Solves a
 
 ### 1.2 Essential
 
-_Honed set of features required to address the problem—no feature bloat, clutter, or unnecessary complexity._
+_Honed set of features required to address the problem, no feature bloat, clutter, or unnecessary complexity._
 
 - **Current State**:
   - The feature set across all flagship tools avoids gratuitous bloat. Tools provide exactly what is required for their mission: CRF Studio focuses on form structure, validation, visits, and export; Proof Canvas provides premises, AST rules, deduction ledger, and verification.

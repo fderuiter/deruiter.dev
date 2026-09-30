@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useAudio } from "@/components/providers/AudioProvider";
 import { useAnnouncer } from "@/hooks/useAnnouncer";
+import { safeGetItem, safeSetRawItem } from "@/lib/safe-storage";
 import {
   IconCheck,
   IconChevronRight,
@@ -337,9 +338,11 @@ export function getSavedSetupConfig(gameId: string): GameSetupConfig {
   if (typeof window === "undefined") return defaultConfig;
 
   try {
-    const raw = localStorage.getItem(`pregame_setup_${gameId}`);
-    if (raw) {
-      const parsed = JSON.parse(raw);
+    // Stored as plain JSON.stringify output (no envelope).
+    const stored = safeGetItem<unknown>(`pregame_setup_${gameId}`);
+    if (stored && typeof stored === "object" && !Array.isArray(stored)) {
+      // Fields are validated one by one below.
+      const parsed = stored as GameSetupConfig;
       return {
         difficulty: ["casual", "normal", "hard"].includes(parsed.difficulty)
           ? parsed.difficulty
@@ -372,7 +375,7 @@ export function getSavedSetupConfig(gameId: string): GameSetupConfig {
 export function saveSetupConfig(gameId: string, config: GameSetupConfig): void {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(`pregame_setup_${gameId}`, JSON.stringify(config));
+    safeSetRawItem(`pregame_setup_${gameId}`, JSON.stringify(config));
   } catch {
     // Ignore storage quota error
   }

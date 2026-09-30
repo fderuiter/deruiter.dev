@@ -35,17 +35,17 @@ A few things live outside this four-quadrant structure by long-standing
 repository convention (see [`AGENTS.md`](../AGENTS.md) at the repository
 root, which governs how autonomous coding agents operate in this repo):
 
-- [`adr/`](../adr/) — Architecture Decision Records (the root source for
+- [`adr/`](../adr/), Architecture Decision Records (the root source for
   the Explanation quadrant above).
-- [`CONTEXT.md`](../CONTEXT.md) — single-context domain overview.
-- [`docs/agents/`](agents/) — agent-tooling operating docs (issue tracker
+- [`CONTEXT.md`](../CONTEXT.md), single-context domain overview.
+- [`docs/agents/`](agents/), agent-tooling operating docs (issue tracker
   workflow, triage labels, domain-doc conventions) referenced directly by
   `AGENTS.md`.
-- [`docs/CASE_STUDY.md`](CASE_STUDY.md) — the Sortify air-gapped document
+- [`docs/CASE_STUDY.md`](CASE_STUDY.md), the Sortify air-gapped document
   classification case study deep dive.
-- [`CASE_STUDY.md`](../CASE_STUDY.md) — the cross-project engineering-note
+- [`CASE_STUDY.md`](../CASE_STUDY.md), the cross-project engineering-note
   compendium used by the Mermaid corpus checks.
-- [`PRODUCT_EXCELLENCE_EVALUATION.md`](../PRODUCT_EXCELLENCE_EVALUATION.md) — a
+- [`PRODUCT_EXCELLENCE_EVALUATION.md`](../PRODUCT_EXCELLENCE_EVALUATION.md), a
   point-in-time opportunity catalog, not the live release-status source.
 - `ARCHITECTURE.md`, `DEPLOYMENT.md`, `CONTRIBUTING.md`,
   `CMS_GUIDELINES.md`, and `DATABASE_MIGRATIONS.md` at the repository root.

@@ -139,6 +139,9 @@ test.describe("SEO & Navigation Full-Spectrum Suite", () => {
           Array.from(
             document.querySelectorAll<HTMLElement>('[style*="opacity"]')
           ).every((el) => {
+            // Decorative SVG shapes (the mobile grid background) hold a fixed
+            // fractional opacity and carry no text for axe to measure.
+            if (el instanceof SVGElement) return true;
             const opacity = Number(el.style.opacity);
             return Number.isNaN(opacity) || opacity === 0 || opacity === 1;
           }),

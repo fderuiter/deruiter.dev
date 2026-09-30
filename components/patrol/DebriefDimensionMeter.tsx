@@ -2,6 +2,7 @@
 
 import React from "react";
 import type { DebriefDimension, DimensionScore } from "@/lib/patrol";
+import { clamp } from "@/lib/game-utils";
 
 /**
  * Props for the DebriefDimensionMeter component.
@@ -54,10 +55,7 @@ export const DebriefDimensionMeter: React.FC<DebriefDimensionMeterProps> = ({
   dimensionScore,
 }) => {
   const styles = RATING_STYLES[dimensionScore.rating];
-  const percent = Math.max(
-    0,
-    Math.min(100, Math.round((dimensionScore.score / 10) * 100))
-  );
+  const percent = clamp(Math.round((dimensionScore.score / 10) * 100), 0, 100);
 
   return (
     <div

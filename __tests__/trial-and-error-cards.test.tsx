@@ -28,6 +28,9 @@ import { CardFlip } from "@/components/trial-and-error/cards/CardFlip";
 import { MiniFigure } from "@/components/trial-and-error/cards/MiniFigure";
 import { MiniTable } from "@/components/trial-and-error/cards/MiniTable";
 import { StampSlot } from "@/components/trial-and-error/cards/Stamp";
+import { HandCard } from "@/components/trial-and-error/cards/HandCard";
+import type { HandCardInteraction } from "@/components/trial-and-error/useHandInteraction";
+import { Reorder } from "framer-motion";
 import {
   CENTER_CLEARANCE_REM,
   FAN_ALLOWANCE_REM,
@@ -550,6 +553,53 @@ describe("hand physicality on the Card Table", () => {
       screen.getByTestId("hand").children
     ) as HTMLElement[];
     expect(compact[1].style.marginLeft).toBe("");
+  });
+});
+
+describe("a card leaving the hand (#1038)", () => {
+  it("hands its outer element to AnimatePresence, so popLayout can lift it out of the row", () => {
+    const view = deriveTableView(
+      DEMOGRAPHICS_SCENARIO,
+      createTableState(DEMOGRAPHICS_SCENARIO)
+    ).hand[0];
+    const noop = () => {};
+    const interaction: HandCardInteraction = {
+      tabIndex: 0,
+      sealTarget: false,
+      onClick: noop,
+      onFocus: noop,
+      onKeyDown: noop,
+      onPointerDown: noop,
+      onPointerMove: noop,
+      onPointerEnd: noop,
+      onContextMenu: noop,
+      onDragOver: noop,
+      onDrop: noop,
+      onDragEnd: noop,
+    };
+    const ref = React.createRef<HTMLDivElement>();
+    render(
+      <Reorder.Group as="div" axis="x" values={[view.card.id]} onReorder={noop}>
+        <HandCard
+          ref={ref}
+          view={view}
+          index={0}
+          count={1}
+          overlap={0}
+          physical={false}
+          animate={false}
+          label="card"
+          buttonRef={noop}
+          interaction={interaction}
+        />
+      </Reorder.Group>
+    );
+    // Without it, a played card stays in the row while it fades and the
+    // cards after it jump when it goes, a layout shift during playback.
+    expect(ref.current).toBeInstanceOf(HTMLDivElement);
+    expect(
+      ref.current?.querySelector(`[data-card-id="${view.card.id}"]`)
+    ).not.toBeNull();
   });
 });
 

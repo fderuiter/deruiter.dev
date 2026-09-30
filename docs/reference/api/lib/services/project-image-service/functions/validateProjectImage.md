@@ -6,10 +6,10 @@
 
 # Function: validateProjectImage()
 
-> **validateProjectImage**(`buffer`, `mimeType`): `void`
+> **validateProjectImage**(`buffer`, `mimeType`): [`ProjectImageValidationResult`](../type-aliases/ProjectImageValidationResult.md)
 
 Validates file size, MIME type, and magic bytes.
-Throws user-safe validation error if validation fails.
+Returns a failure envelope carrying a user-safe message when validation fails.
 
 ## Parameters
 
@@ -23,4 +23,4 @@ Throws user-safe validation error if validation fails.
 
 ## Returns
 
-`void`
+[`ProjectImageValidationResult`](../type-aliases/ProjectImageValidationResult.md)

@@ -10,6 +10,7 @@ import {
   CyberdeckProfile,
   DarknetItem,
 } from "./types";
+import { safeGetItem, safeSetRawItem } from "@/lib/safe-storage";
 
 export const CYBERDECK_CLASSES: Record<CyberdeckClassId, CyberdeckClass> = {
   script_kiddie: {
@@ -194,9 +195,13 @@ export const RETRO_LABYRINTH_HIGH_SCORE_KEY = "retro_labyrinth_highscore";
 export function loadCyberdeckProfile(): CyberdeckProfile {
   if (typeof window === "undefined") return DEFAULT_CYBERDECK_PROFILE;
   try {
-    const raw = localStorage.getItem(STORAGE_KEY_PROFILE);
-    if (!raw) return DEFAULT_CYBERDECK_PROFILE;
-    const parsed = JSON.parse(raw);
+    // Stored as plain JSON.stringify output; malformed JSON comes back as a
+    // string from safeGetItem and falls through to the default.
+    const stored = safeGetItem<unknown>(STORAGE_KEY_PROFILE);
+    if (!stored || typeof stored !== "object" || Array.isArray(stored)) {
+      return DEFAULT_CYBERDECK_PROFILE;
+    }
+    const parsed = stored as Partial<CyberdeckProfile>;
     return {
       ...DEFAULT_CYBERDECK_PROFILE,
       ...parsed,
@@ -216,7 +221,7 @@ export function loadCyberdeckProfile(): CyberdeckProfile {
 export function saveCyberdeckProfile(profile: CyberdeckProfile): void {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(STORAGE_KEY_PROFILE, JSON.stringify(profile));
+    safeSetRawItem(STORAGE_KEY_PROFILE, JSON.stringify(profile));
   } catch {
     // Gracefully handle storage quota or privacy mode errors
   }

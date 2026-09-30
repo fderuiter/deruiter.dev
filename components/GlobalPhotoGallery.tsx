@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import dynamic from "next/dynamic";
+import { useAppEvent } from "@/hooks/useAppEvent";
 
 const PhotoGalleryModal = dynamic(
   () => import("./PhotoGalleryModal").then((mod) => mod.PhotoGalleryModal),
@@ -18,20 +19,10 @@ export function GlobalPhotoGallery() {
     undefined
   );
 
-  useEffect(() => {
-    const handleOpen = (e: Event) => {
-      const customEvent = e as CustomEvent<{ photoId?: string }>;
-      if (customEvent.detail?.photoId) {
-        setInitialPhotoId(customEvent.detail.photoId);
-      } else {
-        setInitialPhotoId(undefined);
-      }
-      setIsOpen(true);
-    };
-
-    window.addEventListener("open-photo-gallery", handleOpen);
-    return () => window.removeEventListener("open-photo-gallery", handleOpen);
-  }, []);
+  useAppEvent("open-photo-gallery", (detail) => {
+    setInitialPhotoId(detail?.photoId || undefined);
+    setIsOpen(true);
+  });
 
   if (!isOpen) return null;
 

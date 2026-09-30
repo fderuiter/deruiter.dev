@@ -12,6 +12,7 @@ import type {
   ShiftState,
 } from "./types";
 import { evaluateOETCompliance } from "./oet-engine";
+import { clamp } from "@/lib/game-utils";
 
 /**
  * Contextual Debrief Engine (Milestone M7, Issue #753).
@@ -550,7 +551,7 @@ const DEBRIEF_RULES: DebriefRuleDefinition[] = [
 
 function clampScore(value: number): number {
   if (!Number.isFinite(value)) return BASE_DIMENSION_SCORE;
-  return Math.max(0, Math.min(10, Math.round(value)));
+  return clamp(Math.round(value), 0, 10);
 }
 
 function rateScore(score: number): DimensionScore["rating"] {
@@ -668,7 +669,7 @@ export function calculateDebriefScore(
     }
   }
 
-  percentage = Math.max(0, Math.min(100, safeNumber(percentage, 50)));
+  percentage = clamp(safeNumber(percentage, 50), 0, 100);
 
   let grade: "A" | "B" | "C" | "D" | "F";
   let rating: "exemplary" | "proficient" | "developing" | "needs-attention";

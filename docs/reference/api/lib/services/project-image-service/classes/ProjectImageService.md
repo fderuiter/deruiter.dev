@@ -104,10 +104,12 @@ URL for an asset that was not stored durably.
 
 ### uploadProjectImage()
 
-> `static` **uploadProjectImage**(`slug`, `fileBuffer`, `mimeType`): `Promise`\<\{ `hero_image_url`: `string`; `key`: `string`; \}\>
+> `static` **uploadProjectImage**(`slug`, `fileBuffer`, `mimeType`): `Promise`\<[`ProjectImageResult`](../type-aliases/ProjectImageResult.md)\>
 
 Processes, validates, persists, and links a project image asset to a case study.
 If database persistence fails, the prior asset is preserved.
+
+Never throws: every failure is returned as a typed [ProjectImageErrorCode](../variables/ProjectImageErrorCode.md).
 
 #### Parameters
 
@@ -125,4 +127,4 @@ If database persistence fails, the prior asset is preserved.
 
 #### Returns
 
-`Promise`\<\{ `hero_image_url`: `string`; `key`: `string`; \}\>
+`Promise`\<[`ProjectImageResult`](../type-aliases/ProjectImageResult.md)\>

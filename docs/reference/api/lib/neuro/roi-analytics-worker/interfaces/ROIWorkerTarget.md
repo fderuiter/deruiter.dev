@@ -1,0 +1,119 @@
+[**fderuiter-portfolio**](../../../../README.md)
+
+***
+
+[fderuiter-portfolio](../../../../modules.md) / [lib/neuro/roi-analytics-worker](../README.md) / ROIWorkerTarget
+
+# Interface: ROIWorkerTarget
+
+## Extends
+
+- `EventTarget`
+
+## Methods
+
+### addEventListener()
+
+> **addEventListener**(`type`, `callback`, `options?`): `void`
+
+The **`addEventListener()`** method of the EventTarget interface sets up a function that will be called whenever the specified event is delivered to the target.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/EventTarget/addEventListener)
+
+#### Parameters
+
+##### type
+
+`string`
+
+##### callback
+
+`EventListenerOrEventListenerObject` \| `null`
+
+##### options?
+
+`boolean` \| `AddEventListenerOptions`
+
+#### Returns
+
+`void`
+
+#### Inherited from
+
+`EventTarget.addEventListener`
+
+***
+
+### dispatchEvent()
+
+> **dispatchEvent**(`event`): `boolean`
+
+The **`dispatchEvent()`** method of the EventTarget sends an Event to the object, (synchronously) invoking the affected event listeners in the appropriate order. The normal event processing rules (including the capturing and optional bubbling phase) also apply to events dispatched manually with dispatchEvent().
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/EventTarget/dispatchEvent)
+
+#### Parameters
+
+##### event
+
+`Event`
+
+#### Returns
+
+`boolean`
+
+#### Inherited from
+
+`EventTarget.dispatchEvent`
+
+***
+
+### postMessage()
+
+> **postMessage**(`message`, `transfer?`): `void`
+
+#### Parameters
+
+##### message
+
+[`ROIWorkerResponse`](../../types/interfaces/ROIWorkerResponse.md)
+
+##### transfer?
+
+`Transferable`[]
+
+#### Returns
+
+`void`
+
+***
+
+### removeEventListener()
+
+> **removeEventListener**(`type`, `callback`, `options?`): `void`
+
+The **`removeEventListener()`** method of the EventTarget interface removes an event listener previously registered with EventTarget.addEventListener() from the target. The event listener to be removed is identified using a combination of the event type, the event listener function itself, and various optional options that may affect the matching process; see Matching event listeners for removal.
+
+[MDN Reference](https://developer.mozilla.org/docs/Web/API/EventTarget/removeEventListener)
+
+#### Parameters
+
+##### type
+
+`string`
+
+##### callback
+
+`EventListenerOrEventListenerObject` \| `null`
+
+##### options?
+
+`boolean` \| `EventListenerOptions`
+
+#### Returns
+
+`void`
+
+#### Inherited from
+
+`EventTarget.removeEventListener`

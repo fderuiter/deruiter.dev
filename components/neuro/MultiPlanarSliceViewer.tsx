@@ -6,6 +6,7 @@ import {
   ControlPoint,
   SlicePlane,
   ToolMode,
+  VectorContourPath,
   VoxelCoord,
   VoxelEdit,
 } from "@/lib/neuro/types";
@@ -24,9 +25,12 @@ interface MultiPlanarSliceViewerProps {
   showPialContour: boolean;
   showWmContour: boolean;
   controlPoints: ControlPoint[];
+  vectorContours?: VectorContourPath[];
+  roiMask?: Uint8Array;
   onCrosshairChange: (coord: VoxelCoord) => void;
   onAddControlPoint: (point: Omit<ControlPoint, "id" | "timestamp">) => void;
   onApplyVoxelEdits: (edits: VoxelEdit[]) => void;
+  onSelectROISeed?: (coord: VoxelCoord) => void;
 }
 
 export const MultiPlanarSliceViewer: React.FC<MultiPlanarSliceViewerProps> = ({
@@ -37,9 +41,12 @@ export const MultiPlanarSliceViewer: React.FC<MultiPlanarSliceViewerProps> = ({
   showPialContour,
   showWmContour,
   controlPoints,
+  vectorContours,
+  roiMask: _roiMask,
   onCrosshairChange,
   onAddControlPoint,
   onApplyVoxelEdits,
+  onSelectROISeed,
 }) => {
   const [activePlane, setActivePlane] = useState<SlicePlane>("coronal");
   const [viewLayout, setViewLayout] = useState<"focused" | "multi">("multi");
@@ -125,6 +132,21 @@ export const MultiPlanarSliceViewer: React.FC<MultiPlanarSliceViewerProps> = ({
           }
         }
         ctx.stroke();
+      }
+
+      // Render Marching Squares Vector Contours
+      if (vectorContours && vectorContours.length > 0) {
+        vectorContours.forEach((contour) => {
+          if (!contour.segments || contour.segments.length === 0) return;
+          ctx.strokeStyle = contour.color || "#00f5d4";
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          contour.segments.forEach((seg) => {
+            ctx.moveTo(seg.p1.x, seg.p1.y);
+            ctx.lineTo(seg.p2.x, seg.p2.y);
+          });
+          ctx.stroke();
+        });
       }
 
       // Render Defect Bounding Box if intersecting current slice
@@ -236,7 +258,14 @@ export const MultiPlanarSliceViewer: React.FC<MultiPlanarSliceViewerProps> = ({
       ctx.stroke();
       ctx.setLineDash([]);
     },
-    [volume, crosshair, showPialContour, showWmContour, controlPoints]
+    [
+      volume,
+      crosshair,
+      showPialContour,
+      showWmContour,
+      controlPoints,
+      vectorContours,
+    ]
   );
 
   // Render all active slice views on state update and context restoration
@@ -309,7 +338,9 @@ export const MultiPlanarSliceViewer: React.FC<MultiPlanarSliceViewerProps> = ({
    * Apply editing tool action at coordinate
    */
   const handleToolAction = (coord: VoxelCoord) => {
-    if (toolMode === "control_point") {
+    if (toolMode === "roi_select" && onSelectROISeed) {
+      onSelectROISeed(coord);
+    } else if (toolMode === "control_point") {
       onAddControlPoint({
         x: coord.x,
         y: coord.y,

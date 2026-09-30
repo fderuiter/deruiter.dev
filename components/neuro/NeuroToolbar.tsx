@@ -8,6 +8,7 @@ import {
   IconMapPin,
   IconBrush,
   IconEraser,
+  IconTarget,
   IconPlayerPlay,
   IconRotateClockwise2,
   IconBook,
@@ -73,6 +74,12 @@ export const NeuroToolbar: React.FC<NeuroToolbarProps> = ({
       label: "Voxel Erase Brush",
       key: `${NEURO_TOOL_HOTKEYS.erase.digit} / ${NEURO_TOOL_HOTKEYS.erase.letter}`,
       icon: <IconEraser className="w-4 h-4 text-rose-400" />,
+    },
+    {
+      id: "roi_select",
+      label: "ROI Region Grow",
+      key: "5 / G",
+      icon: <IconTarget className="w-4 h-4 text-purple-400" />,
     },
   ];
 

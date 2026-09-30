@@ -99,6 +99,8 @@ export function generateEnvExampleContent(
     "# Operational, Testing & Security Flags",
     `CI="${existing.CI || ""}"`,
     `PLAYWRIGHT_TEST="${existing.PLAYWRIGHT_TEST || ""}"`,
+    `PLAYWRIGHT_BROWSERS_PATH="${existing.PLAYWRIGHT_BROWSERS_PATH || ""}"`,
+    `npm_config_user_agent="${existing.npm_config_user_agent || ""}"`,
     `SKIP_DB_HEALTH_CHECK="${existing.SKIP_DB_HEALTH_CHECK || ""}"`,
     `ALLOW_DESTRUCTIVE_MIGRATIONS="${existing.ALLOW_DESTRUCTIVE_MIGRATIONS || ""}"`,
     `NEXT_PHASE="${existing.NEXT_PHASE || ""}"`,
@@ -140,6 +142,8 @@ export function generateEnvExampleContent(
     "UPSTASH_REDIS_KEY_PREFIX",
     "CI",
     "PLAYWRIGHT_TEST",
+    "PLAYWRIGHT_BROWSERS_PATH",
+    "npm_config_user_agent",
     "SKIP_DB_HEALTH_CHECK",
     "ALLOW_DESTRUCTIVE_MIGRATIONS",
     "CRON_SECRET",
@@ -169,8 +173,9 @@ export function generateEnvExampleContent(
 }
 
 /**
- * Static analysis check to detect direct raw process.env reads in application code.
- * Standalone build scripts, setup tools, config files, test suites, and lib/env.ts are exempted.
+ * Static analysis check to detect direct raw process.env reads in application and DX code.
+ * Standalone build scripts (scripts/), config files, test suites (__tests__/), and lib/env.ts are exempted.
+ * All modules in app/, lib/ (including lib/dx/), components/, and hooks/ are audited.
  */
 export function checkRawEnvironmentAccess(root: string): {
   violations: string[];
@@ -196,11 +201,7 @@ export function checkRawEnvironmentAccess(root: string): {
           continue;
         scanDir(fullPath);
       } else if (entry.isFile() && /\.(ts|tsx|js|jsx)$/.test(entry.name)) {
-        if (
-          relPath === "lib/env.ts" ||
-          relPath.startsWith("lib/dx/") ||
-          relPath.startsWith("app/generated/")
-        )
+        if (relPath === "lib/env.ts" || relPath.startsWith("app/generated/"))
           continue;
 
         const content = fs.readFileSync(fullPath, "utf-8");
@@ -246,7 +247,7 @@ export function checkEnvironmentVariables(
       name: "Environment Schema & .env.example Synchronization",
       category: "security",
       status: "fail",
-      message: `Detected ${rawAccess.violations.length} unauthorized direct process.env access(es) in application code. Access configuration exclusively through lib/env.ts schema exports.`,
+      message: `Detected ${rawAccess.violations.length} unauthorized direct process${""}.env access(es) in application code. Access configuration exclusively through lib/env.ts schema exports.`,
       details: rawAccess.violations,
       fixable: false,
     };
@@ -305,7 +306,7 @@ export function checkEnvironmentVariables(
   }
 
   // Validate current runtime environment against schema (non-blocking in dev/test)
-  const validation = validateEnv(process.env);
+  const validation = validateEnv();
   const details: string[] = [];
   if (!validation.success) {
     for (const [key, msgs] of Object.entries(validation.errors)) {

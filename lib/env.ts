@@ -50,6 +50,8 @@ export const serverEnvSchema = z.object({
     .default("Frederick de Ruiter <notifications@deruiter.dev>"),
   CONTACT_NOTIFICATION_EMAIL: z.string().default("fpderuiter@gmail.com"),
   PLAYWRIGHT_TEST: z.string().optional(),
+  PLAYWRIGHT_BROWSERS_PATH: z.string().optional(),
+  npm_config_user_agent: z.string().optional(),
   CI: z.string().optional(),
   SKIP_DB_HEALTH_CHECK: z.string().optional(),
   ALLOW_FALLBACK_PRODUCTION_BUILD: z.string().optional(),

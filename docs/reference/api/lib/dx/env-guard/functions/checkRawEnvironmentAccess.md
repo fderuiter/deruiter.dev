@@ -8,8 +8,9 @@
 
 > **checkRawEnvironmentAccess**(`root`): `object`
 
-Static analysis check to detect direct raw process.env reads in application code.
-Standalone build scripts, setup tools, config files, test suites, and lib/env.ts are exempted.
+Static analysis check to detect direct raw process.env reads in application and DX code.
+Standalone build scripts (scripts/), config files, test suites (__tests__/), and lib/env.ts are exempted.
+All modules in app/, lib/ (including lib/dx/), components/, and hooks/ are audited.
 
 ## Parameters
 

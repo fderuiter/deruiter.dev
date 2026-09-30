@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useResizeObserver } from "@/hooks/useResizeObserver";
 import { useScrollToAnchor } from "@/hooks/useScrollToAnchor";
 import { resolveScrollBehavior } from "@/lib/scroll";
+import { emitAppEvent } from "@/lib/event-bus";
 import {
   IconArrowUp,
   IconCards,
@@ -408,13 +409,7 @@ export const Footer: React.FC = () => {
               <li data-testid="footer-photo-gallery">
                 <button
                   type="button"
-                  onClick={() => {
-                    if (typeof window !== "undefined") {
-                      window.dispatchEvent(
-                        new CustomEvent("open-photo-gallery")
-                      );
-                    }
-                  }}
+                  onClick={() => emitAppEvent("open-photo-gallery")}
                   onMouseEnter={handleHover}
                   className="text-zinc-400 hover:text-brand-cyan transition-colors flex items-center gap-1.5 cursor-pointer text-left"
                 >

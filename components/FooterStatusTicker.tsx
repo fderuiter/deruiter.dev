@@ -14,6 +14,7 @@ import {
   isVaultUnlocked,
 } from "@/lib/meme-data";
 import { playMemeSound } from "@/lib/meme-audio";
+import { onAppEvent } from "@/lib/event-bus";
 import { generateId } from "@/lib/utils";
 import { IconDeviceGamepad2 } from "@tabler/icons-react";
 import { useResizeObserver } from "@/hooks/useResizeObserver";
@@ -22,10 +23,10 @@ import { useSafeTimeout } from "@/hooks/useSafeTimeout";
 
 function subscribeVaultUnlock(callback: () => void) {
   if (typeof window === "undefined") return () => {};
-  window.addEventListener("meme_vault_unlocked_change", callback);
+  const offVaultChange = onAppEvent("meme_vault_unlocked_change", callback);
   window.addEventListener("storage", callback);
   return () => {
-    window.removeEventListener("meme_vault_unlocked_change", callback);
+    offVaultChange();
     window.removeEventListener("storage", callback);
   };
 }

@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useKonamiCode } from "@/hooks/useKonamiCode";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { useAppEvent } from "@/hooks/useAppEvent";
 import {
   IconSparkles,
   IconDeviceGamepad2,
@@ -46,15 +47,10 @@ export const RetroChaosOverlay: React.FC = () => {
   });
 
   // Listen for manual trigger events from Command Palette or Secret buttons
-  useEffect(() => {
-    const handleTrigger = () => {
-      setSource("shortcut");
-      setIsOpen(true);
-    };
-    window.addEventListener("trigger_retro_chaos", handleTrigger);
-    return () =>
-      window.removeEventListener("trigger_retro_chaos", handleTrigger);
-  }, []);
+  useAppEvent("trigger_retro_chaos", () => {
+    setSource("shortcut");
+    setIsOpen(true);
+  });
 
   return (
     <AnimatePresence>

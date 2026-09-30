@@ -10,6 +10,7 @@
 import { CRTThemeConfig } from "@/lib/dungeon/types";
 import { clamp } from "../game-utils";
 import { getMatchMediaMatches } from "@/hooks/useMediaQuery";
+import { emitAppEvent } from "@/lib/event-bus";
 
 export type PhosphorMaskType =
   "none" | "aperture-grille" | "shadow-mask" | "monochrome-dot";
@@ -240,7 +241,7 @@ export function saveCRTCalibration(config: CRTCalibrationConfig): void {
       CRT_CALIBRATION_STORAGE_KEY,
       JSON.stringify(config)
     );
-    window.dispatchEvent(new Event("crt-calibration-changed"));
+    emitAppEvent("crt-calibration-changed");
   } catch {
     // Ignore storage errors
   }

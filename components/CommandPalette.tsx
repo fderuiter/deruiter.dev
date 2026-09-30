@@ -41,6 +41,7 @@ import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { scrollToElement } from "@/lib/scroll";
 import { unlockAchievement, setVaultUnlocked } from "@/lib/meme-data";
 import { playMemeSound } from "@/lib/meme-audio";
+import { emitAppEvent } from "@/lib/event-bus";
 import { useFontPreference } from "@/hooks/useFontPreference";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useThrottledCallback } from "@/hooks/useThrottle";
@@ -1302,18 +1303,14 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         unlockAchievement("konami-hero");
         setVaultUnlocked(true);
         playMemeSound("fanfare");
-        if (typeof window !== "undefined") {
-          window.dispatchEvent(new CustomEvent("trigger_retro_chaos"));
-        }
+        emitAppEvent("trigger_retro_chaos");
       } else if (actionType === "friday") {
         unlockAchievement("friday-survivor");
         playMemeSound("friday-alarm");
       } else if (actionType === "ping") {
         playMemeSound("matrix-glitch");
       } else if (actionType === "photos") {
-        if (typeof window !== "undefined") {
-          window.dispatchEvent(new CustomEvent("open-photo-gallery"));
-        }
+        emitAppEvent("open-photo-gallery");
       }
       return;
     }

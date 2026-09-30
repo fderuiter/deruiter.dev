@@ -283,6 +283,7 @@
 - [lib/services/project-image-service](lib/services/project-image-service/README.md)
 - [lib/services/service-result](lib/services/service-result/README.md)
 - [lib/services/telemetry-service](lib/services/telemetry-service/README.md)
+- [lib/simulator](lib/simulator/README.md)
 - [lib/study-director](lib/study-director/README.md)
 - [lib/study-director/internal/endgame](lib/study-director/internal/endgame/README.md)
 - [lib/study-director/internal/events](lib/study-director/internal/events/README.md)

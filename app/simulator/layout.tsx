@@ -17,12 +17,12 @@ export default function SimulatorLayout({
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: getWebApplicationSchema({
-            name: "Engineering Alignment & Incident Simulator",
+            name: "Architectural Archetype & Incident Triage Simulator",
             description:
-              "Interactive incident commander decision tree: navigate high-stress production outages, architectural dilemmas, and verify technical candidate compatibility.",
+              "Interactive decision tree: choose an architecture bias, triage a production outage, review an async pipeline, and see which architectural archetype your trade-offs map to.",
             url: "/simulator",
             applicationCategory: "EducationalApplication",
-            genre: "Incident Commander Simulator",
+            genre: "Architecture Decision Simulator",
           }),
         }}
       />

@@ -225,7 +225,7 @@ export default function SchedulePage() {
         {/* Sequential Next / Prev Flow */}
         <NextPrevNav
           prev={{
-            title: "Incident Alignment Simulator",
+            title: "Architectural Archetype Simulator",
             href: "/simulator",
             label: "Systems Tool",
             tag: "Incident Commander",

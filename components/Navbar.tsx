@@ -138,7 +138,7 @@ const SYSTEMS_ITEMS: SubNavItem[] = [
   },
   {
     title: "Incident Simulator",
-    subtitle: "Production outage triage simulation",
+    subtitle: "Architecture bias & outage triage",
     href: "/simulator",
     icon: <IconTerminal className="w-4 h-4 text-brand-cyan" />,
   },

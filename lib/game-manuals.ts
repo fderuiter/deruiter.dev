@@ -1329,72 +1329,72 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
   },
   simulator: {
     id: "simulator",
-    title: "Engineering Leadership Simulator",
-    subtitle: "Executive Decision Tree & Incident Commander",
-    genre: "Leadership Sim",
+    title: "Architectural Archetype Simulator",
+    subtitle: "Architecture Bias, Incident Triage & Code Review",
+    genre: "Decision Sim",
     badge: "Decision Tree",
     route: "/simulator",
     accentColor: "from-blue-500/20 via-blue-500/5 to-transparent",
     badgeBg: "bg-blue-500/10 text-blue-300 border-blue-500/30",
     objective:
-      "Navigate high-stakes technical leadership, production incident triage, and organizational scaling dilemmas to balance Technical Depth, Alignment, UI Craft, and Resilience.",
+      "Make three engineering trade-offs (an architecture bias, a production incident mitigation and a code review safeguard) and see how they balance Systems Rigor, UI/UX Craft, Resilience and Velocity.",
     quickSummary:
-      "Evaluate realistic engineering scenarios, choose strategic trade-offs, and generate a verified Leadership Archetype profile summarizing your management philosophy.",
+      "Choose an architecture bias, triage a live latency spike and review an async pipeline. Your path maps deterministically to one of four Architectural Archetypes.",
     controls: [
       {
-        action: "Select Strategic Option",
+        action: "Select an Option",
         description:
-          "Click option cards to choose your leadership decision for the active stage. Each option carries distinct 4-axis trade-offs.",
+          "Click or press Enter on an option card to commit to that trade-off. Each option adds points to the four decision axes.",
         key: "Click Option Card",
       },
       {
-        action: "Review Dimension Impact",
+        action: "Step Back",
         description:
-          "Hover over option descriptions to preview the systemic consequences on Tech Depth, Team Alignment, UI Polish, and Resilience.",
-        key: "Hover Impact",
+          "Use Back (or the browser's Back button) to revisit the previous question. Progress lives in the URL, so any step can be shared or bookmarked.",
+        key: "Back Button",
       },
       {
-        action: "Copy Leadership Assessment",
+        action: "Copy Report",
         description:
-          "At the conclusion of the simulation, generate and copy a Markdown/JSON report of your leadership archetype and decision log.",
-        key: "Export Button",
+          "On the result screen, copy a plain-text report with your archetype, the four decision stats, your three decisions and a link that reopens the result.",
+        key: "Copy Report",
       },
       {
-        action: "Restart Simulation",
+        action: "Run Again",
         description:
-          "Reset the decision tree to explore alternative incident mitigation pathways and divergent architectural strategies.",
-        key: "Reset Button",
+          "Return to the first question to explore a different path and archetype.",
+        key: "Run Again",
       },
     ],
     rules: [
       {
-        title: "4-Dimensional Evaluation Matrix",
+        title: "Four Decision Axes",
         detail:
-          "Decisions adjust 4 core competencies: Technical Architecture, Organizational Alignment, User Experience Polish, and Operational Resilience.",
+          "Every option adds points to Systems Rigor, UI/UX Craft, Resilience and Velocity. Stats show each axis as a share of the most that axis can score on any path.",
         badge: "Score Matrix",
       },
       {
         title: "Live Incident Commander Triage",
         detail:
-          "Stage 2 places you in the middle of a live production outage. Balancing short-term mitigation (circuit breakers, read-replicas) against root-cause durability determines your outcome.",
+          "Stage 2 places you in the middle of a production latency spike. A circuit breaker with a fallback queue favours resilience; scaling read-replicas favours velocity.",
         badge: "Outage Triage",
       },
       {
-        title: "Leadership Archetype Synthesis",
+        title: "Architectural Archetypes",
         detail:
-          "Your aggregate path maps to distinguished engineering leadership archetypes: from 'Pragmatic Systems Architect' to 'Product Velocity Champion'.",
+          "Your bias (systems or interface) and stance (resilience or velocity) select one of four archetypes, from 'Fault-Isolation Architect' to 'Product Velocity Engineer'. Ties resolve to systems and resilience.",
         badge: "Archetype Profile",
       },
     ],
     proTips: [
-      "There are no purely 'correct' choices: every decision involves deliberate trade-offs between speed, durability, and operational overhead.",
-      "High resilience choices protect against catastrophic cascading outages during subsequent stages.",
-      "Review the stage badge indicators to understand the operational context of each challenge.",
+      "There are no purely 'correct' choices: every decision trades speed, durability and operational overhead against each other.",
+      "Question 1 sets your bias; question 2 mostly sets your stance. Change one of them to reach a different archetype.",
+      "The stage badge above each question names the operational context of the challenge.",
     ],
     lore: {
-      title: "Staff+ and Engineering Management Decision Frameworks",
+      title: "Architecture Trade-offs Under Pressure",
       story:
-        "Great engineering leaders don't just write clean code; they manage risk, mentor teams through high-severity outages, and make architectural decisions that compound positively over years. This interactive simulation models real-world Staff+ engineering trade-offs: from Expand-and-Contract schema migrations to blameless post-mortem cultures.",
+        "Architecture is mostly a series of trade-offs made with incomplete information: which layer to harden first, how to stop a latency spike from cascading, and which safeguard a pipeline cannot ship without. The simulation compresses three of those decisions into a few minutes and shows which pattern your choices form.",
       realWorldTech: [
         "Expand-and-Contract Migrations",
         "SRE SLO/SLA Frameworks",

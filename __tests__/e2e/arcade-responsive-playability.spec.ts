@@ -82,7 +82,7 @@ for (const view of views) {
       }
       if (game === "laser-loon") {
         await cabinet.getByRole("button", { name: /START CAMPAIGN/ }).click();
-        await cabinet.getByRole("button", { name: /ENGAGE STAGE/ }).click();
+        await cabinet.getByRole("button", { name: /engage stage/i }).click();
         const fire = cabinet.getByRole("button", {
           name: "Primary Fire",
           exact: true,

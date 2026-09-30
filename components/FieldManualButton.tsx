@@ -16,6 +16,12 @@ import {
 } from "@/components/FieldManualModal";
 import { useAudio } from "@/components/providers/AudioProvider";
 import { isEditableElement } from "@/hooks/useHotkeys";
+import {
+  STORAGE_CHANGE_EVENT,
+  safeGetItem,
+  safeIsAvailable,
+  safeSetRawItem,
+} from "@/lib/safe-storage";
 
 interface FieldManualButtonProps {
   manualId: string;
@@ -152,8 +158,14 @@ function unregisterManualInstance(id: string) {
 }
 
 function subscribeStorage(callback: () => void) {
+  // "storage" covers other tabs; STORAGE_CHANGE_EVENT covers safeStorage
+  // writes in this tab, including another instance opening the same manual.
   window.addEventListener("storage", callback);
-  return () => window.removeEventListener("storage", callback);
+  window.addEventListener(STORAGE_CHANGE_EVENT, callback);
+  return () => {
+    window.removeEventListener("storage", callback);
+    window.removeEventListener(STORAGE_CHANGE_EVENT, callback);
+  };
 }
 
 export function FieldManualButton({
@@ -187,12 +199,9 @@ export function FieldManualButton({
     isOpenRef.current = true;
     setIsOpen(true);
     onOpenChangeRef.current?.(true);
-    try {
-      if (typeof window.localStorage?.setItem === "function") {
-        window.localStorage.setItem(`seen_manual_${manualId}`, "true");
-        window.dispatchEvent(new Event("storage"));
-      }
-    } catch {}
+    // Bare "true" (no envelope) so visitors who already opened a manual keep
+    // that state. safeSetRawItem never throws and notifies subscribers.
+    safeSetRawItem(`seen_manual_${manualId}`, "true");
   }, [manualId]);
 
   const close = useCallback(() => {
@@ -232,16 +241,11 @@ export function FieldManualButton({
     subscribeStorage,
     () => {
       if (typeof window === "undefined" || !manualId) return true;
-      try {
-        if (typeof window.localStorage?.getItem === "function") {
-          return (
-            window.localStorage.getItem(`seen_manual_${manualId}`) === "true"
-          );
-        }
-        return true;
-      } catch {
-        return true;
-      }
+      // Without storage the "new" hint could never be dismissed for good, so
+      // it stays hidden, as it did before.
+      if (!safeIsAvailable()) return true;
+      // The stored string "true" parses to the boolean true.
+      return safeGetItem<boolean>(`seen_manual_${manualId}`) === true;
     },
     () => true
   );

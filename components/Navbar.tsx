@@ -405,7 +405,7 @@ export const Navbar: React.FC = () => {
       >
         <div
           ref={navContainerRef}
-          className="max-w-6xl mx-auto px-4 sm:px-6 md:px-10 flex justify-between items-center w-full gap-4 sm:gap-6 lg:gap-8"
+          className="max-w-6xl mx-auto px-4 sm:px-6 md:px-10 flex flex-wrap justify-between items-center w-full gap-4 sm:gap-6 lg:gap-8"
         >
           {/* Logo / Wordmark */}
           <Link
@@ -1067,7 +1067,10 @@ export const Navbar: React.FC = () => {
           </div>
 
           {/* Mobile Header Actions (Search Button + Hamburger) */}
-          <div className="xl:hidden flex items-center gap-2 relative z-50">
+          <div
+            data-testid="navbar-mobile-bar"
+            className="xl:hidden flex flex-wrap items-center justify-end gap-2 min-w-0 max-w-full ml-auto relative z-50"
+          >
             <button
               type="button"
               onClick={openSearch}

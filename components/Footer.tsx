@@ -452,7 +452,10 @@ export const Footer: React.FC = () => {
             </span>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div
+            data-testid="footer-utility-row"
+            className="flex flex-wrap items-center justify-center gap-4 min-w-0 max-w-full"
+          >
             <button
               type="button"
               onClick={() => {

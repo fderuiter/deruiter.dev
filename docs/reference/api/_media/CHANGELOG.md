@@ -52,6 +52,38 @@ Not yet in production; these ship with the next manual release.
   to 75, and `cancel-closed-pr-ci` no longer takes a runner for its no-op job
   (#1502, #1511, #1534, #1540, #1544, #1594).
 - Docs: em-dashes removed from authored prose (#1508).
+- Study Director overhaul continued: inbox-style messages and decisions,
+  consequences with the passing of days, briefing dossier and closeout report,
+  keyboard shortcut sheet and keyboard-only play, a living office illustration
+  that falls apart as the study does, career file with visible saving and a
+  shareable closeout card, and a fun pass with callbacks, wildcards,
+  difficulty and a daily headline (#1593, #1606, #1615, #1621, #1625, #1634,
+  #1637).
+- Trial & Error: seeded runs, challenge links and the Daily Protocol, sponsor
+  and stake chosen in New Run, the Codex and run history, and tests for the
+  #925 presentation-hardening checks (#1559, #1600, #1613, #1626).
+- Laser Loon: a real loon, shape-coded enemies and per-act parallax
+  backdrops, a slim HUD strip with a docked boss plate, and newsprint act
+  cards with a shared `ResultCard` (#1604, #1623, #1629).
+- `/simulator` is reframed as an Architectural Archetype evaluation, and stale
+  simulator, CRF and brain-viewer links point at the right pages (#1612,
+  #1622).
+- Arcade fixes: Clinical Chaos counts the final CRF and unfreezes the auditor,
+  runs on one set of shift rules, and Retro Labyrinth expires side effects on
+  one clock (#1608, #1620, #1638).
+- Accessibility and layout: dialog focus returns to the original trigger after
+  a handoff, the polite announcer queue is bounded, the Proof terminal
+  releases its Tab trap, status pings settle instead of looping, and the
+  navbar, cabinet and footer rows wrap at 200% text on narrow phones (#1607,
+  #1618, #1619, #1642, #1644).
+- More shared primitives: game loops on `useAnimationFrame`, Duck keys on
+  `useHotkeys`, NeuroRecon on the shared toast, hash-param, hotkey and
+  `clamp` helpers, the last clipboard and storage calls on the shared
+  helpers, and a lint rule banning direct Web Storage access outside
+  `lib/safe-storage` (#1590, #1627, #1633, #1640).
+- Dependencies: TypeScript 6.0.3 and `eslint-config-next` aligned with Next
+  16.3.6 (#1602, #1630); the `ServiceResult` migration is finished for
+  maintenance services and media storage (#1584).
 - Test stability: the seo-and-navigation settle wait ignores decorative SVG
   opacity, the mobile drawer test waits for the deferred hash scroll, and the
   drag-reorder e2e aims at the middle of its drop window (#1506, #1562,

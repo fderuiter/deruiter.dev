@@ -131,12 +131,28 @@ describe("shared chrome wraps at 200% text size (#1636)", () => {
 
     const desktop = classesOf(group);
     expect(desktop).toContain("hidden");
-    expect(desktop).toContain("xl:@min-[66rem]:flex");
+    expect(desktop).toContain("xl:max-2xl:@min-[66rem]:flex");
+    expect(desktop).toContain("2xl:@min-[78rem]:flex");
     expect(desktop).not.toContain("xl:flex");
+    expect(desktop).not.toContain("2xl:flex");
 
     const mobile = classesOf(bar);
-    expect(mobile).toContain("xl:@min-[66rem]:hidden");
+    expect(mobile).toContain("xl:max-2xl:@min-[66rem]:hidden");
+    expect(mobile).toContain("2xl:@min-[78rem]:hidden");
     expect(mobile).not.toContain("xl:hidden");
+    expect(mobile).not.toContain("2xl:hidden");
+  });
+
+  // #1659: the widest (2xl) desktop group plus the wordmark needs about
+  // 78rem, so the header row widens at 2xl to keep a single row at 100%
+  // text on 1536px and wider viewports, while xl keeps the 67rem row.
+  it("widens the header row at 2xl so the 2xl group fits beside the wordmark", () => {
+    render(<Navbar />);
+    const row = screen.getByTestId("navbar-mobile-bar").parentElement;
+    const classes = classesOf(row);
+    expect(classes).toContain("max-w-6xl");
+    expect(classes).toContain("2xl:max-w-[85rem]");
+    expect(classes).toContain("md:px-10");
   });
 
   it("wraps the site footer utility row", () => {

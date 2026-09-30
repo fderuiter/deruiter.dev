@@ -405,7 +405,7 @@ export const Navbar: React.FC = () => {
       >
         <div
           ref={navContainerRef}
-          className="@container max-w-6xl mx-auto px-4 sm:px-6 md:px-10 flex flex-wrap justify-between items-center w-full gap-4 sm:gap-6 lg:gap-8"
+          className="@container max-w-6xl 2xl:max-w-[85rem] mx-auto px-4 sm:px-6 md:px-10 flex flex-wrap justify-between items-center w-full gap-4 sm:gap-6 lg:gap-8"
         >
           {/* Logo / Wordmark */}
           <Link
@@ -425,13 +425,17 @@ export const Navbar: React.FC = () => {
           {/* Desktop Navigation Links. Media queries ignore the page's root
               font size, so at 200% text a 1440px viewport still matches xl
               while the group needs twice the room (#1643). The group therefore
-              also requires 66rem of header row, measured in the root font
-              size by the container query: the widest (2xl) group is about
-              65.6rem, and the row is 67rem at 100% text on every xl width.
-              Otherwise the mobile bar below takes over. */}
+              also requires enough header row to sit beside the wordmark on one
+              row, measured in the root font size by the container query;
+              otherwise the mobile bar below takes over. The logo plus the row
+              gap take about 8.25rem. From xl to 2xl the row is 67rem at 100%
+              text and the xl group about 54.6rem, so 66rem leaves room. At 2xl
+              the row widens to 80rem (#1659) because the 2xl group is about
+              65.6rem and grows to about 69.8rem with the dyslexia and sound
+              labels on, so it needs 78rem. */}
           <div
             data-testid="navbar-desktop-group"
-            className="hidden xl:@min-[66rem]:flex items-center gap-2.5 lg:gap-3.5 2xl:gap-5 shrink-0"
+            className="hidden xl:max-2xl:@min-[66rem]:flex 2xl:@min-[78rem]:flex items-center gap-2.5 lg:gap-3.5 2xl:gap-5 shrink-0"
           >
             <nav
               className="flex items-center gap-2.5 md:gap-3.5 lg:gap-4.5 shrink-0"
@@ -1078,7 +1082,7 @@ export const Navbar: React.FC = () => {
           {/* Mobile Header Actions (Search Button + Hamburger) */}
           <div
             data-testid="navbar-mobile-bar"
-            className="xl:@min-[66rem]:hidden flex flex-wrap items-center justify-end gap-2 min-w-0 max-w-full ml-auto relative z-50"
+            className="xl:max-2xl:@min-[66rem]:hidden 2xl:@min-[78rem]:hidden flex flex-wrap items-center justify-end gap-2 min-w-0 max-w-full ml-auto relative z-50"
           >
             <button
               type="button"

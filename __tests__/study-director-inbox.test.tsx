@@ -1,4 +1,5 @@
 import React from "react";
+import { fromPartial } from "@total-typescript/shoehorn";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   cleanup,
@@ -19,7 +20,7 @@ import { StudyDirectorGame } from "@/components/study-director/StudyDirectorGame
 describe("message helpers", () => {
   it("counts days left from the day a message first arrived", () => {
     const event = { id: "e", ttl: 3 } as StudyEvent;
-    const state = { day: 5, seen: { e: 4 } } as unknown as StudyState;
+    const state = fromPartial<StudyState>({ day: 5, seen: { e: 4 } });
     expect(daysLeft(state, event)).toBe(2);
     expect(daysLeft({ ...state, day: 6 }, event)).toBe(1);
   });

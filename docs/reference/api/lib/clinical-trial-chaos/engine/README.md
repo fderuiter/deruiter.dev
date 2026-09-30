@@ -6,15 +6,6 @@
 
 # lib/clinical-trial-chaos/engine
 
-## Classes
-
-- [ClinicalTrialChaosEngine](classes/ClinicalTrialChaosEngine.md)
-
-## Interfaces
-
-- [ClinicalTrialChaosSnapshot](interfaces/ClinicalTrialChaosSnapshot.md)
-- [ClinicalTrialChaosState](interfaces/ClinicalTrialChaosState.md)
-
 ## Type Aliases
 
 - [CalibrationStep](type-aliases/CalibrationStep.md)

@@ -75,17 +75,11 @@ import {
   createInitialAuditorState,
   createInitialPowerUpInventory,
   createAuditLogEntry,
-  fixObservation,
   validateObservationChoice,
   getObservationChoices,
-  selectNextUrgentSubject,
   shouldRunCalibration,
   getCalibrationStep,
   isSubjectFullyCompliant,
-  calculateSubmissionPoints,
-  tickSubjectTimers,
-  tickAuditor,
-  tickPowerUps,
   chargePowerUps,
   scrambleStations,
   verify21CFRSubmission,
@@ -93,7 +87,6 @@ import {
   generateSDTMDataset,
   exportToCDISCODMXML,
   exportToSDTMCSV,
-  generateBIMOReport,
 } from "@/lib/clinical-trial-chaos/engine";
 
 import {
@@ -126,7 +119,6 @@ import {
   getSponsorMoodDecayPerSecond,
   resolveSponsorChoice,
   applySponsorSubmissionBoost,
-  applySponsorSkeletonsToReport,
   getSponsorMoodLabel,
   getFollowUpSubject,
   OUTFITS,
@@ -135,8 +127,49 @@ import {
   OutfitId,
   getOutfitById,
   drawOutfitAvatar,
+  PHASE_TARGETS,
+  EXPIRY_SUSPICION,
+  COFFEE_BREAK_START_LOG,
+  COFFEE_BREAK_END_LOG,
+  QUERY_EXTENSION_LOG,
+  raiseAuditorSuspicion,
+  adjustAuditorSuspicion,
+  breakCombo,
+  applyCorrectionScore,
+  replaceObservation,
+  createRuleViolation,
+  appendRuleViolation,
+  formatCorrectionLog,
+  formatRuleFailureLog,
+  formatExpiryLog,
+  scoreSubmission,
+  applySubmissionScore,
+  getSubmissionCharge,
+  recordStationSubmission,
+  isPhaseCleared,
+  selectNextDossier,
+  formatNextDossierCue,
+  buildInspectionReport,
+  canActivatePowerUp,
+  spendPowerUp,
+  startCoffeeBreak,
+  extendSubjectDeadlines,
+  autoCleanSubject,
+  getFastTrackDomain,
+  tickShiftClocks,
+  getAmendmentIntervalSeconds,
+  getSubjectErrorChance,
+  getSAEChance,
+  describeSponsorEvent,
+  SHIFT_END_LOGS,
 } from "@/lib/clinical-trial-chaos";
 
+import {
+  drawConveyor,
+  getConveyorGeometry,
+  getVisibleSubjects,
+  type Particle,
+} from "@/components/clinical-trial-chaos/conveyor-canvas";
 import {
   safeGetItem,
   safeGetRawItem,
@@ -173,8 +206,6 @@ const getHighScoreSnapshot = () => {
 };
 const getHighScoreServerSnapshot = () => "0";
 
-/** CRFs to lock before a campaign phase is cleared. */
-const PHASE_TARGETS: Record<GamePhase, number> = { 1: 5, 2: 8, 3: 12 };
 const QUICK_DISPATCH_GUARD_MS = 400;
 
 const AUDITOR_BEHAVIOR_LABELS: Record<AuditorState["behavior"], string> = {
@@ -185,59 +216,10 @@ const AUDITOR_BEHAVIOR_LABELS: Record<AuditorState["behavior"], string> = {
   coffee_break: "☕ Coffee break",
 };
 
-function getConveyorGeometry(width: number, height: number) {
-  const compact = width <= 500;
-  const narrow = width < 280;
-  const visibleSlots = narrow ? 2 : compact ? 3 : 5;
-  const subjectHeight = compact ? Math.min(52, height - 36) : 52;
-  const subjectTop = compact
-    ? Math.max(30, (height - subjectHeight) / 2 + 8)
-    : height * 0.57 - 26;
-  const beltY = compact ? subjectTop + subjectHeight / 2 : height * 0.57;
-  return {
-    compact,
-    narrow,
-    visibleSlots,
-    beltY,
-    beltHeight: compact ? Math.min(44, height - beltY - 4) : 44,
-    subjectTop,
-    subjectHeight,
-    slotWidth: (width - 70) / visibleSlots,
-  };
-}
-
-/**
- * The slice of the queue the canvas shows. The window follows the selected
- * subject so a selection past the visible slots (via the arrow keys or the
- * dossier) is
- * still drawn, highlighted and tappable.
- */
-function getVisibleSubjects<T extends { id: string }>(
-  subjects: T[],
-  selectedId: string | null,
-  visibleSlots: number
-): T[] {
-  const selectedIndex = subjects.findIndex((s) => s.id === selectedId);
-  const start =
-    selectedIndex >= visibleSlots ? selectedIndex - visibleSlots + 1 : 0;
-  return subjects.slice(start, start + visibleSlots);
-}
-
 function timerBarColor(ratio: number): string {
   if (ratio > 0.5) return "bg-emerald-500";
   if (ratio > 0.25) return "bg-amber-500";
   return "bg-rose-500";
-}
-
-interface Particle {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  color: string;
-  alpha: number;
-  size: number;
-  life: number;
 }
 
 const OUTFIT_STORAGE_KEY = "clinical_chaos_outfit";
@@ -727,32 +709,14 @@ export const ClinicalTrialChaos: React.FC = () => {
             : null
         );
 
-        // Update observation on subject
         setConveyorSubjects((prev) =>
-          prev.map((sub) => {
-            if (sub.id !== subjectId) return sub;
-            const updatedObs = sub.observations.map((o) =>
-              o.id === obs.id ? result.observation : o
-            );
-            return { ...sub, observations: updatedObs };
-          })
+          replaceObservation(prev, subjectId, result.observation)
         );
-
         pushScorePop(result.scoreDelta);
-        setScoreState((prev) => {
-          const nextScore = prev.score + result.scoreDelta;
-          return {
-            ...prev,
-            score: nextScore,
-            correctionsMade: prev.correctionsMade + 1,
-          };
-        });
-
-        // Charge power-ups
+        setScoreState((prev) => applyCorrectionScore(prev, result.scoreDelta));
         setPowerUps((pu) => chargePowerUps(pu, applyOfficeCharge(1, office)));
-
         addAuditLog(
-          `Observation Standardized: ${obs.field} -> '${choice}' [${result.explanation}]`,
+          formatCorrectionLog(obs.field, choice, result.explanation),
           "COMPLIANT",
           result.suspicionDelta
         );
@@ -777,36 +741,31 @@ export const ClinicalTrialChaos: React.FC = () => {
             : null
         );
 
-        // Immediately increase Auditor AI suspicion metrics
-        setAuditor((aud) => {
-          const nextSusp = Math.min(100, aud.suspicion + result.suspicionDelta);
-          return {
-            ...aud,
-            suspicion: nextSusp,
-            behavior: nextSusp >= 100 ? "issuing_483" : "suspicious",
-          };
-        });
+        setAuditor((aud) => raiseAuditorSuspicion(aud, result.suspicionDelta));
 
         // Record rule violation for final regulatory inspection report
-        const violation: RecordedRuleViolation = {
-          id: `viol_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-          type: obs.astRule ? "ast_edit_check" : "cdisc_conformance",
-          subjectLabel: activeSubject?.subjectLabel || "SUBJ-UNK",
-          field: obs.field,
-          selectedChoice: choice,
-          ruleName: result.ruleName,
-          message: result.explanation,
-          domain: obs.destination,
-          timestamp: new Date().toISOString(),
-        };
+        const violation = createRuleViolation(
+          obs,
+          choice,
+          result,
+          activeSubject?.subjectLabel || "SUBJ-UNK"
+        );
         // Replace the ref's array rather than pushing onto it: the ref holds
         // the state array itself, so a push would also land in `prev` and
         // record every wrong pick twice (#1553).
-        ruleViolationsRef.current = [...ruleViolationsRef.current, violation];
-        setRuleViolations((prev) => [...prev, violation]);
+        ruleViolationsRef.current = appendRuleViolation(
+          ruleViolationsRef.current,
+          violation
+        );
+        setRuleViolations((prev) => appendRuleViolation(prev, violation));
 
         addAuditLog(
-          `[AST RULE FAILURE] ${result.ruleName || "Edit check"} failed for ${obs.field}: '${choice}'. Auditor Suspicion +${result.suspicionDelta}%`,
+          formatRuleFailureLog(
+            obs.field,
+            choice,
+            result.ruleName,
+            result.suspicionDelta
+          ),
           "WARN",
           result.suspicionDelta
         );
@@ -837,52 +796,28 @@ export const ClinicalTrialChaos: React.FC = () => {
         suspicionDelta,
       }: { allClean: boolean; suspicionDelta: number }
     ) => {
-      const points = applyOfficeScore(
-        calculateSubmissionPoints(subj, scoreState.multiplier, allClean),
-        office
+      const submission = scoreSubmission(scoreState, subj, allClean, (p) =>
+        applyOfficeScore(p, office)
       );
-      const nextCombo = scoreState.combo + 1;
-      const nextMultiplier = Math.min(4, 1 + Math.floor(nextCombo / 3));
-
-      pushScorePop(points);
-      setScoreState((prev) => {
-        const newScore = prev.score + points;
-        return {
-          ...prev,
-          score: newScore,
-          highScore: Math.max(newScore, prev.highScore),
-          combo: nextCombo,
-          maxCombo: Math.max(prev.maxCombo, nextCombo),
-          multiplier: nextMultiplier,
-          subjectsSubmitted: prev.subjectsSubmitted + 1,
-          cleanSubmissions: allClean
-            ? prev.cleanSubmissions + 1
-            : prev.cleanSubmissions,
-        };
-      });
+      pushScorePop(submission.points);
+      setScoreState((prev) => applySubmissionScore(prev, submission, allClean));
       // Persist outside the updater (AGENTS.md §4).
       safeSetRawItem(
         "clinical_chaos_highscore",
-        Math.max(scoreState.score + points, scoreState.highScore).toString()
+        applySubmissionScore(
+          scoreState,
+          submission,
+          allClean
+        ).highScore.toString()
       );
-
-      // Charge power-ups
       setPowerUps((pu) =>
-        chargePowerUps(pu, applyOfficeCharge(allClean ? 2 : 1, office))
-      );
-
-      // Cool down auditor suspicion
-      setAuditor((prev) => ({
-        ...prev,
-        suspicion: Math.max(0, prev.suspicion + suspicionDelta),
-      }));
-
-      // Update station stats
-      setStations((prev) =>
-        prev.map((s) =>
-          s.id === domain ? { ...s, processedCount: s.processedCount + 1 } : s
+        chargePowerUps(
+          pu,
+          applyOfficeCharge(getSubmissionCharge(allClean), office)
         )
       );
+      setAuditor((prev) => adjustAuditorSuspicion(prev, suspicionDelta));
+      setStations((prev) => recordStationSubmission(prev, domain));
 
       // Sponsors love throughput
       sponsorRef.current = applySponsorSubmissionBoost(
@@ -903,49 +838,43 @@ export const ClinicalTrialChaos: React.FC = () => {
         announce("Calibration complete. The shift is live.", "polite");
       }
 
-      // Phase completion check in Campaign mode
-      const phaseCleared =
-        gameMode === "campaign" &&
-        scoreState.subjectsSubmitted + 1 >= PHASE_TARGETS[phase];
+      const phaseCleared = isPhaseCleared(
+        gameMode,
+        phase,
+        scoreState.subjectsSubmitted
+      );
 
-      // Load the most urgent remaining dossier (#834), computed from the
-      // queue without the packet just submitted.
-      const nextSubject = phaseCleared
-        ? null
-        : selectNextUrgentSubject(
-            conveyorSubjects.filter((s) => s.id !== subj.id)
-          );
+      // Load the most urgent remaining dossier (#834).
+      const nextSubject = selectNextDossier(
+        conveyorSubjects,
+        subj.id,
+        phaseCleared
+      );
       setSelectedSubjectId(nextSubject?.id ?? null);
       if (nextSubject) {
-        const cue = `Next dossier loaded: ${nextSubject.subjectLabel}${
-          nextSubject.isSAE ? " (SAE)" : ""
-        }`;
+        const cue = formatNextDossierCue(nextSubject);
         setNextDossierCue({ subjectId: nextSubject.id, text: cue });
         announce(cue, "polite");
       } else {
         setNextDossierCue(null);
       }
 
-      if (gameMode === "campaign") {
-        if (phaseCleared) {
-          setPlayState("phase_cleared");
-          playSuccess();
-          const report = applySponsorSkeletonsToReport(
-            generateBIMOReport(
-              {
-                ...scoreState,
-                subjectsSubmitted: scoreState.subjectsSubmitted + 1,
-              },
-              auditor,
-              auditLogs,
-              ruleViolations,
-              activeProtocol
-            ),
-            sponsorRef.current.skeletons
-          );
-          setBimoReport(report);
-          setLastBimoReport(report);
-        }
+      if (phaseCleared) {
+        setPlayState("phase_cleared");
+        playSuccess();
+        const report = buildInspectionReport(
+          {
+            ...scoreState,
+            subjectsSubmitted: scoreState.subjectsSubmitted + 1,
+          },
+          auditor,
+          auditLogs,
+          ruleViolations,
+          activeProtocol,
+          sponsorRef.current.skeletons
+        );
+        setBimoReport(report);
+        setLastBimoReport(report);
       }
     },
     [
@@ -968,38 +897,28 @@ export const ClinicalTrialChaos: React.FC = () => {
   // 13. Power-Up Trigger Execution
   const triggerPowerUp = useCallback(
     (type: PowerUpType) => {
-      const p = powerUps[type];
       if (
-        !p ||
-        p.charge < p.maxCharge ||
-        playState !== "playing" ||
-        ((type === "auto-clean" || type === "fast-sign") && !activeSubject)
+        !canActivatePowerUp(
+          powerUps,
+          type,
+          playState === "playing",
+          !!activeSubject
+        )
       )
         return;
+      const p = powerUps[type];
 
       triggerSound("powerup");
 
       if (type === "fda-coffee-break") {
-        setAuditor((aud) => ({
-          ...aud,
-          behavior: "coffee_break",
-          isPaused: true,
-          suspicion: Math.max(0, aud.suspicion - 15),
-        }));
-        addAuditLog(
-          "☕ [POWER-UP ACTIVATED] FDA Coffee Break! Auditor halted for 8 seconds.",
-          "COMPLIANT"
-        );
+        setAuditor(startCoffeeBreak);
+        addAuditLog(COFFEE_BREAK_START_LOG, "COMPLIANT");
       } else if (type === "auto-clean") {
         if (activeSubject) {
           setConveyorSubjects((prev) =>
-            prev.map((sub) => {
-              if (sub.id !== activeSubject.id) return sub;
-              const cleaned = sub.observations.map(
-                (obs) => fixObservation(obs).observation
-              );
-              return { ...sub, observations: cleaned };
-            })
+            prev.map((sub) =>
+              sub.id === activeSubject.id ? autoCleanSubject(sub) : sub
+            )
           );
           addAuditLog(
             `✨ [POWER-UP ACTIVATED] CDISC Auto-Clean standardized all fields on ${activeSubject.subjectLabel}.`,
@@ -1007,32 +926,14 @@ export const ClinicalTrialChaos: React.FC = () => {
           );
         }
       } else if (type === "query-extension") {
-        setConveyorSubjects((prev) =>
-          prev.map((sub) => ({
-            ...sub,
-            timeRemaining: Math.min(sub.maxTime + 10, sub.timeRemaining + 12),
-          }))
-        );
-        addAuditLog(
-          "⏱️ [POWER-UP ACTIVATED] Site Query Extension added +12s to all active conveyors.",
-          "COMPLIANT"
-        );
+        setConveyorSubjects(extendSubjectDeadlines);
+        addAuditLog(QUERY_EXTENSION_LOG, "COMPLIANT");
       } else if (type === "fast-sign") {
         if (activeSubject) {
           // Auto-clean, then sign to the first active station the subject
           // routes to, exactly as a signed CRF would be.
-          const cleanedSubject = {
-            ...activeSubject,
-            observations: activeSubject.observations.map(
-              (obs) => fixObservation(obs).observation
-            ),
-          };
-          const domain =
-            cleanedSubject.observations.find((obs) =>
-              stations.some((st) => st.id === obs.destination)
-            )?.destination ??
-            cleanedSubject.observations[0]?.destination ??
-            "DM";
+          const cleanedSubject = autoCleanSubject(activeSubject);
+          const domain = getFastTrackDomain(cleanedSubject, stations);
           const result = verify21CFRSubmission(
             cleanedSubject,
             "Intent to Submit",
@@ -1051,15 +952,7 @@ export const ClinicalTrialChaos: React.FC = () => {
         }
       }
 
-      // Reset power-up charge
-      setPowerUps((prev) => ({
-        ...prev,
-        [type]: {
-          ...prev[type],
-          charge: 0,
-          activeSecondsRemaining: p.duration,
-        },
-      }));
+      setPowerUps((prev) => spendPowerUp(prev, type));
       announce(`${p.name} activated`, "polite");
     },
     [
@@ -1196,24 +1089,10 @@ export const ClinicalTrialChaos: React.FC = () => {
         });
         announce(rejection, "assertive");
 
-        setScoreState((prev) => ({
-          ...prev,
-          combo: 0,
-          multiplier: 1,
-          auditViolations: prev.auditViolations + 1,
-        }));
-
-        setAuditor((prev) => {
-          const nextSusp = Math.min(
-            100,
-            prev.suspicion + result.suspicionDelta
-          );
-          return {
-            ...prev,
-            suspicion: nextSusp,
-            behavior: nextSusp >= 100 ? "issuing_483" : "suspicious",
-          };
-        });
+        setScoreState((prev) => breakCombo(prev));
+        setAuditor((prev) =>
+          raiseAuditorSuspicion(prev, result.suspicionDelta)
+        );
       }
       setSignatureModal((prev) => ({ ...prev, isOpen: false, subject: null }));
     },
@@ -1306,230 +1185,12 @@ export const ClinicalTrialChaos: React.FC = () => {
       auditorState: AuditorState,
       subjects: ClinicalSubject[],
       particles: Particle[]
-    ) => {
-      ctx.clearRect(0, 0, width, height);
-
-      // Background Grid (tinted per office floor)
-      ctx.fillStyle = office.floorColor;
-      ctx.fillRect(0, 0, width, height);
-
-      ctx.strokeStyle = "#18181b";
-      ctx.lineWidth = 1;
-      for (let x = 0; x < width; x += 20) {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, height);
-        ctx.stroke();
-      }
-
-      // The narrow canvas is a compact queue map; the DOM dossier below it
-      // remains the full-fidelity way to inspect and process observations.
-      const {
-        compact,
-        narrow,
-        visibleSlots,
-        beltY,
-        beltHeight,
-        subjectTop,
-        subjectHeight,
-        slotWidth,
-      } = getConveyorGeometry(width, height);
-      ctx.fillStyle = "#18181b";
-      ctx.fillRect(20, beltY, width - 40, beltHeight);
-
-      // Rollers Animation
-      ctx.fillStyle = "#27272a";
-      const rollerCount = compact ? 12 : 28;
-      const timeOffset = (Date.now() / 35) % 20;
-      for (let i = 0; i < rollerCount; i++) {
-        const rx = 24 + i * ((width - 48) / rollerCount) + timeOffset;
-        if (rx < width - 24) {
-          ctx.fillRect(rx, beltY + 4, 3, beltHeight - 8);
-        }
-      }
-
-      ctx.strokeStyle = "#3f3f46";
-      ctx.lineWidth = 2;
-      ctx.strokeRect(20, beltY, width - 40, beltHeight);
-
-      // Conveyor Subject Parcels
-      getVisibleSubjects(subjects, selectedSubjectId, visibleSlots).forEach(
-        (subj, idx) => {
-          const px = 28 + idx * slotWidth;
-          const py = subjectTop;
-
-          const isSelected = subj.id === selectedSubjectId;
-          ctx.fillStyle = subj.isSAE
-            ? "#7f1d1d"
-            : isSelected
-              ? "#1e3a8a"
-              : "#1f2937";
-          ctx.strokeStyle = subj.isSAE
-            ? "#ef4444"
-            : isSelected
-              ? "#38bdf8"
-              : "#4b5563";
-          ctx.lineWidth = isSelected ? 2 : 1;
-          ctx.fillRect(px, py, slotWidth - 10, subjectHeight);
-          ctx.strokeRect(px, py, slotWidth - 10, subjectHeight);
-
-          // Subject Label
-          ctx.fillStyle = "#f3f4f6";
-          ctx.font = "bold 10px monospace";
-          ctx.fillText(subj.subjectLabel, px + 6, py + 16);
-
-          // SAE Badge or Domain Badge
-          if (subj.isSAE && !narrow) {
-            // Right-aligned so it ends before the status pip; light text reads on the red card
-            ctx.fillStyle = "#fecaca";
-            ctx.font = "bold 8px monospace";
-            ctx.textAlign = "right";
-            ctx.fillText("⚡ SAE", px + slotWidth - 26, py + 16);
-            ctx.textAlign = "left";
-          }
-
-          // Compliance status pip
-          const allClean = isSubjectFullyCompliant(subj);
-          if (!narrow) {
-            ctx.fillStyle = allClean ? "#10b981" : "#f59e0b";
-            ctx.beginPath();
-            ctx.arc(px + slotWidth - 18, py + 12, 4, 0, Math.PI * 2);
-            ctx.fill();
-          }
-
-          // Mini timer bar
-          const timePercent = Math.max(0, subj.timeRemaining / subj.maxTime);
-          ctx.fillStyle = "#374151";
-          ctx.fillRect(px + 6, py + subjectHeight - 14, slotWidth - 22, 5);
-          ctx.fillStyle =
-            timePercent < 0.25
-              ? "#ef4444"
-              : timePercent < 0.5
-                ? "#f59e0b"
-                : "#3b82f6";
-          ctx.fillRect(
-            px + 6,
-            py + subjectHeight - 14,
-            (slotWidth - 22) * timePercent,
-            5
-          );
-        }
-      );
-
-      if (!compact) {
-        // Preserve the chosen outfit in the narrow right-side desk lane.
-        // The lane starts after the fifth parcel, avoiding belt/card overlap.
-        const deskX = width - 46;
-        ctx.fillStyle = "#3f3f46";
-        ctx.fillRect(deskX, height - 13, 34, 4);
-        ctx.fillRect(deskX + 3, height - 9, 3, 8);
-        ctx.fillRect(deskX + 28, height - 9, 3, 8);
-        drawOutfitAvatar(ctx, width - 29, height - 6, outfit, 0.82);
-        ctx.fillStyle = "#f4f4f6";
-        ctx.font = "bold 8px monospace";
-        ctx.fillText("YOU", deskX + 8, height - 49);
-      }
-
-      // Auditor Sprite on Top Patrol Floor
-      const auditorX = 50 + auditorState.x * (width - 100);
-      const auditorY = 44;
-
-      if (compact) {
-        ctx.fillStyle = "#f4f4f6";
-        ctx.font = "bold 11px monospace";
-        ctx.fillText(`FDA ${Math.round(auditorState.suspicion)}%`, 20, 20);
-        ctx.textAlign = "right";
-        ctx.fillText(`QUEUE ${subjects.length}/5`, width - 24, 20);
-        ctx.textAlign = "left";
-      } else {
-        // Suspicion Aura
-        const suspRatio = auditorState.suspicion / 100;
-        if (suspRatio > 0.2) {
-          const grad = ctx.createRadialGradient(
-            auditorX,
-            auditorY,
-            4,
-            auditorX,
-            auditorY,
-            36
-          );
-          grad.addColorStop(0, `rgba(239, 68, 68, ${suspRatio * 0.45})`);
-          grad.addColorStop(1, "rgba(239, 68, 68, 0)");
-          ctx.fillStyle = grad;
-          ctx.beginPath();
-          ctx.arc(auditorX, auditorY, 36, 0, Math.PI * 2);
-          ctx.fill();
-        }
-
-        // Auditor Body
-        ctx.fillStyle =
-          auditorState.behavior === "issuing_483"
-            ? "#dc2626"
-            : auditorState.behavior === "coffee_break"
-              ? "#8b5cf6"
-              : auditorState.behavior === "suspicious"
-                ? "#ea580c"
-                : "#0284c7";
-        ctx.fillRect(auditorX - 10, auditorY - 14, 20, 28);
-
-        // Clipboard / Coffee Cup
-        if (auditorState.behavior === "coffee_break") {
-          ctx.fillStyle = "#fbbf24";
-          ctx.fillRect(auditorX + 5, auditorY - 8, 8, 10);
-        } else {
-          ctx.fillStyle = "#fef08a";
-          ctx.fillRect(
-            auditorX + (auditorState.direction > 0 ? 4 : -12),
-            auditorY - 6,
-            8,
-            12
-          );
-        }
-
-        // Head
-        ctx.fillStyle = "#fed7aa";
-        ctx.beginPath();
-        ctx.arc(auditorX, auditorY - 18, 7, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Glasses / Hat
-        ctx.fillStyle = "#1e293b";
-        ctx.fillRect(auditorX - 8, auditorY - 26, 16, 4);
-        ctx.fillRect(auditorX - 5, auditorY - 30, 10, 5);
-
-        // Auditor Name / Status Tag
-        ctx.fillStyle = "#ffffff";
-        ctx.font = "bold 9px monospace";
-        ctx.textAlign = "center";
-        ctx.fillText(
-          auditorState.behavior === "coffee_break"
-            ? "☕ FDA COFFEE BREAK"
-            : `FDA AUDITOR [${Math.round(auditorState.suspicion)}%]`,
-          // Pinned to the left inset when the canvas is narrower than 160px.
-          clamp(auditorX, 80, Math.max(80, width - 80)),
-          auditorY - 34
-        );
-        ctx.textAlign = "left";
-      }
-
-      // Render Particles
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i];
-        p.x += p.vx;
-        p.y += p.vy;
-        p.alpha -= 0.02;
-        if (p.alpha <= 0) {
-          particles.splice(i, 1);
-          continue;
-        }
-        ctx.fillStyle = p.color;
-        ctx.globalAlpha = p.alpha;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.globalAlpha = 1;
-      }
-    },
+    ) =>
+      drawConveyor(ctx, width, height, auditorState, subjects, particles, {
+        selectedSubjectId,
+        floorColor: office.floorColor,
+        outfit,
+      }),
     [selectedSubjectId, office.floorColor, outfit]
   );
 
@@ -1685,6 +1346,26 @@ export const ClinicalTrialChaos: React.FC = () => {
       canvas.addEventListener("contextrestored", handleContextRestored);
     }
 
+    // Ends the shift on a Form 483 or a terminated sponsor contract and
+    // files the BIMO inspection report from the latest simulation state.
+    const endShift = (reason: "auditor" | "sponsor") => {
+      triggerSoundRef.current("alarm");
+      playStateRef.current = "game_over";
+      setGameOverReason(reason);
+      setPlayState("game_over");
+      addAuditLogRef.current(SHIFT_END_LOGS[reason], "CRITICAL");
+      const report = buildInspectionReport(
+        scoreStateRef.current,
+        auditorRef.current,
+        auditLogsRef.current,
+        ruleViolationsRef.current,
+        activeProtocolRef.current,
+        sponsorRef.current.skeletons
+      );
+      setBimoReport(report);
+      setLastBimoReport(report);
+    };
+
     const gameLoop = () => {
       if (!isRunning || isContextLost) return;
 
@@ -1699,137 +1380,63 @@ export const ClinicalTrialChaos: React.FC = () => {
 
       let uiNeedsSync = false;
 
-      // 1. Tick subjects on conveyor
-      const { updatedSubjects, expiredSubjects } = tickSubjectTimers(
-        conveyorSubjectsRef.current,
+      // 1-4. Deadlines, auditor patrol, lifeline durations and the running
+      // amendment advance through the shared shift rules (#901).
+      const tick = tickShiftClocks(
+        {
+          subjects: conveyorSubjectsRef.current,
+          auditor: auditorRef.current,
+          scoreState: scoreStateRef.current,
+          powerUps: powerUpsRef.current,
+          amendment: activeAmendmentRef.current,
+        },
         deltaSeconds
       );
-      conveyorSubjectsRef.current = updatedSubjects;
+      conveyorSubjectsRef.current = tick.subjects;
+      auditorRef.current = tick.auditor;
+      powerUpsRef.current = tick.powerUps;
 
-      if (expiredSubjects.length > 0) {
+      if (tick.expired.length > 0) {
         uiNeedsSync = true;
-        expiredSubjects.forEach((exp) => {
+        tick.expired.forEach((exp) => {
           triggerSoundRef.current("error");
           addAuditLogRef.current(
-            `[AUDIT TIMEOUT] Subject ${exp.subjectLabel} expired unverified on conveyor! Auditor suspicion +20%`,
+            formatExpiryLog(exp),
             "CRITICAL",
-            20
+            EXPIRY_SUSPICION
           );
         });
-
-        if (
-          !auditorRef.current.isPaused &&
-          auditorRef.current.behavior !== "coffee_break"
-        ) {
-          const nextSusp = Math.min(
-            100,
-            auditorRef.current.suspicion + expiredSubjects.length * 20
-          );
-          auditorRef.current = {
-            ...auditorRef.current,
-            suspicion: nextSusp,
-            behavior: nextSusp >= 100 ? "issuing_483" : "suspicious",
-          };
-          setAuditor({ ...auditorRef.current });
-        }
-
-        scoreStateRef.current = {
-          ...scoreStateRef.current,
-          combo: 0,
-          multiplier: 1,
-          auditViolations:
-            scoreStateRef.current.auditViolations + expiredSubjects.length,
-        };
+        scoreStateRef.current = tick.scoreState;
         setScoreState({ ...scoreStateRef.current });
       }
 
-      // 2. Tick Auditor AI
-      const updatedAuditor = tickAuditor(
-        auditorRef.current,
-        deltaSeconds,
-        conveyorSubjectsRef.current.length
-      );
-      auditorRef.current = updatedAuditor;
-      if (
-        updatedAuditor.suspicion >= 100 &&
-        playStateRef.current === "playing"
-      ) {
+      if (tick.suspicionMaxed && playStateRef.current === "playing") {
         uiNeedsSync = true;
-        triggerSoundRef.current("alarm");
-        playStateRef.current = "game_over";
-        setGameOverReason("auditor");
-        setPlayState("game_over");
-        addAuditLogRef.current(
-          `[FDA NOTICE OF STUDY TERMINATION] 21 CFR Part 11 Audit Suspicion reached 100%. Form 483 Issued.`,
-          "CRITICAL"
-        );
-        const report = applySponsorSkeletonsToReport(
-          generateBIMOReport(
-            scoreStateRef.current,
-            updatedAuditor,
-            auditLogsRef.current,
-            ruleViolationsRef.current,
-            activeProtocolRef.current
-          ),
-          sponsorRef.current.skeletons
-        );
-        setBimoReport(report);
-        setLastBimoReport(report);
-        setAuditor({ ...updatedAuditor });
+        endShift("auditor");
       }
 
-      // 3. Tick Power-ups
-      const prevPu = powerUpsRef.current;
-      const nextPu = tickPowerUps(prevPu, deltaSeconds);
-      powerUpsRef.current = nextPu;
-      if (
-        prevPu["fda-coffee-break"].activeSecondsRemaining > 0 &&
-        nextPu["fda-coffee-break"].activeSecondsRemaining === 0
-      ) {
+      if (tick.coffeeBreakEnded) {
         uiNeedsSync = true;
-        if (auditorRef.current.behavior === "coffee_break") {
-          auditorRef.current = {
-            ...auditorRef.current,
-            behavior: "patrolling",
-            isPaused: false,
-          };
-          setAuditor({ ...auditorRef.current });
-        }
+        addAuditLogRef.current(COFFEE_BREAK_END_LOG, "INFO");
+      }
+
+      if (tick.concludedAmendment) {
+        uiNeedsSync = true;
         addAuditLogRef.current(
-          "☕ FDA Coffee Break ended. Auditor resumed inspection floor patrol.",
+          `Protocol Amendment ${tick.concludedAmendment.version} concluded. Standard site procedures resumed.`,
           "INFO"
         );
-        setPowerUps({ ...nextPu });
-      }
-
-      // 4. Tick Protocol Amendment countdown
-      if (activeAmendmentRef.current && activeAmendmentRef.current.active) {
-        const remaining =
-          activeAmendmentRef.current.timeRemaining - deltaSeconds;
-        if (remaining <= 0) {
-          uiNeedsSync = true;
-          addAuditLogRef.current(
-            `Protocol Amendment ${activeAmendmentRef.current.version} concluded. Standard site procedures resumed.`,
-            "INFO"
-          );
-          activeAmendmentRef.current = null;
-          setActiveAmendment(null);
-        } else {
-          const secondChanged =
-            Math.ceil(remaining) !==
-            Math.ceil(activeAmendmentRef.current.timeRemaining);
-          activeAmendmentRef.current = {
-            ...activeAmendmentRef.current,
-            timeRemaining: remaining,
-          };
-          if (secondChanged) setActiveAmendment(activeAmendmentRef.current);
-        }
+        activeAmendmentRef.current = null;
+        setActiveAmendment(null);
+      } else if (tick.amendment) {
+        activeAmendmentRef.current = tick.amendment;
+        if (tick.amendmentSecondChanged) setActiveAmendment(tick.amendment);
       }
 
       // 5. Random Protocol Amendments
       amendmentTimerRef.current += deltaSeconds;
       const amendmentInterval = applyOfficeAmendmentInterval(
-        phaseRef.current === 1 ? 40 : phaseRef.current === 2 ? 28 : 20,
+        getAmendmentIntervalSeconds(phaseRef.current),
         officeRef.current
       );
       if (amendmentTimerRef.current > amendmentInterval) {
@@ -1878,10 +1485,10 @@ export const ClinicalTrialChaos: React.FC = () => {
         uiNeedsSync = true;
         spawnTimerRef.current = 0;
         const errorChance = applyOfficeErrorChance(
-          phaseRef.current === 1 ? 0.45 : phaseRef.current === 2 ? 0.65 : 0.8,
+          getSubjectErrorChance(phaseRef.current),
           officeRef.current
         );
-        const isSAE = Math.random() < (phaseRef.current === 1 ? 0.1 : 0.3);
+        const isSAE = Math.random() < getSAEChance(phaseRef.current);
         const newSub = applyOfficeToSubject(
           activeProtocolRef.current
             ? generateClinicalSubjectFromProtocol(
@@ -1918,45 +1525,13 @@ export const ClinicalTrialChaos: React.FC = () => {
         );
         sponsorRef.current = nextSponsor;
         for (const ev of sponsorEvents) {
-          if (ev.type === "request_arrived") {
-            triggerSoundRef.current("chute");
-            addAuditLogRef.current(
-              `[SPONSOR] 📧 New email from ${ev.request.from} (${ev.request.role}): "${ev.request.subject}"`,
-              "WARN"
-            );
-          } else if (ev.type === "follow_up") {
-            triggerSoundRef.current("error");
-            addAuditLogRef.current(
-              `[SPONSOR] 📧 ${ev.request.from}: "${ev.subjectLine}"`,
-              "WARN"
-            );
-          } else if (ev.type === "request_dropped") {
-            addAuditLogRef.current(
-              `[SPONSOR] ${ev.request.from} escalated "${ev.request.subject}" to your manager's manager. Satisfaction ${ev.moodDelta}%.`,
-              "CRITICAL"
-            );
-          } else if (ev.type === "contract_terminated") {
-            triggerSoundRef.current("alarm");
-            playStateRef.current = "game_over";
-            setGameOverReason("sponsor");
-            setPlayState("game_over");
-            addAuditLogRef.current(
-              "[CONTRACT TERMINATED] The sponsor has 'decided to go in a different direction' and moved the study to another CRO.",
-              "CRITICAL"
-            );
-            const sponsorReport = applySponsorSkeletonsToReport(
-              generateBIMOReport(
-                scoreStateRef.current,
-                auditorRef.current,
-                auditLogsRef.current,
-                ruleViolationsRef.current,
-                activeProtocolRef.current
-              ),
-              nextSponsor.skeletons
-            );
-            setBimoReport(sponsorReport);
-            setLastBimoReport(sponsorReport);
+          if (ev.type === "contract_terminated") {
+            endShift("sponsor");
+            continue;
           }
+          const { message, level, sound } = describeSponsorEvent(ev);
+          if (sound) triggerSoundRef.current(sound);
+          addAuditLogRef.current(message, level);
         }
         if (
           sponsorEvents.length > 0 ||

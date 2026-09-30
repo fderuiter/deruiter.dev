@@ -263,4 +263,45 @@ test.describe("Visual Regression & Drift Detection", () => {
     ).toBeVisible();
     expect(await findOverflowingElements(page)).toEqual([]);
   });
+
+  // #1659: at 1536px and wider the 2xl desktop group adds labels, GitHub and
+  // the sound control. The header row widens at 2xl so the group still sits
+  // beside the wordmark on one row, keeping the header as short as at 1440px.
+  test("Navbar stays a single row at 100% text on Desktop 1920px", async ({
+    page,
+  }) => {
+    const headerHeightAt = async (width: number) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/");
+      await page.waitForLoadState("domcontentloaded");
+      const group = page.getByTestId("navbar-desktop-group");
+      await expect(group).toBeVisible();
+      return page.evaluate(() => {
+        const header = document.querySelector("header");
+        const groupEl = document.querySelector(
+          '[data-testid="navbar-desktop-group"]'
+        );
+        const logo = groupEl?.parentElement?.firstElementChild;
+        return {
+          height: header?.getBoundingClientRect().height ?? 0,
+          sameRow:
+            !!logo &&
+            !!groupEl &&
+            groupEl.getBoundingClientRect().top <
+              logo.getBoundingClientRect().bottom,
+        };
+      });
+    };
+
+    const at1440 = await headerHeightAt(1440);
+    const at1920 = await headerHeightAt(1920);
+
+    expect(at1440.sameRow).toBe(true);
+    expect(at1920.sameRow, "desktop group wrapped below the wordmark").toBe(
+      true
+    );
+    expect(Math.abs(at1920.height - at1440.height)).toBeLessThanOrEqual(4);
+    await expect(page.getByTestId("navbar-mobile-bar")).toBeHidden();
+    expect(await findOverflowingElements(page)).toEqual([]);
+  });
 });

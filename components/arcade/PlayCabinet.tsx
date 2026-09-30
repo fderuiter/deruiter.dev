@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
+import Image from "next/image";
 import {
   IconPlayerPlay,
   IconPower,
@@ -30,7 +31,6 @@ interface PlayCabinetProps {
   gameId?: string;
   title: string;
   subtitle?: string;
-  accentColor: "amber" | "red" | "purple" | "emerald" | "rose";
   icon: React.ReactNode;
   instructions: string;
   controls: ControlItem[];
@@ -58,7 +58,6 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
   gameId: rawGameId,
   title,
   subtitle,
-  accentColor,
   icon,
   instructions,
   controls,
@@ -129,74 +128,6 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
       document.body.style.overflow = previousOverflow;
     };
   }, [isFullscreen]);
-
-  const colors = {
-    amber: {
-      border: "border-amber-500/30",
-      borderHover: "hover:border-amber-400/50",
-      bgGlow: "bg-amber-500/5",
-      text: "text-amber-400",
-      textDark: "text-amber-600",
-      shadow: "shadow-amber-500/10",
-      buttonBg: "bg-amber-500",
-      buttonHover: "hover:bg-amber-400",
-      buttonBorder: "border-amber-700",
-      buttonShadow: "shadow-amber-500/40",
-      accent: "amber",
-    },
-    red: {
-      border: "border-red-500/30",
-      borderHover: "hover:border-red-400/50",
-      bgGlow: "bg-red-500/5",
-      text: "text-red-400",
-      textDark: "text-red-600",
-      shadow: "shadow-red-500/10",
-      buttonBg: "bg-red-500",
-      buttonHover: "hover:bg-red-400",
-      buttonBorder: "border-red-700",
-      buttonShadow: "shadow-red-500/40",
-      accent: "red",
-    },
-    purple: {
-      border: "border-purple-500/30",
-      borderHover: "hover:border-purple-400/50",
-      bgGlow: "bg-purple-500/5",
-      text: "text-purple-400",
-      textDark: "text-purple-600",
-      shadow: "shadow-purple-500/10",
-      buttonBg: "bg-purple-500",
-      buttonHover: "hover:bg-purple-400",
-      buttonBorder: "border-purple-700",
-      buttonShadow: "shadow-purple-500/40",
-      accent: "purple",
-    },
-    emerald: {
-      border: "border-emerald-500/30",
-      borderHover: "hover:border-emerald-400/50",
-      bgGlow: "bg-emerald-500/5",
-      text: "text-emerald-400",
-      textDark: "text-emerald-600",
-      shadow: "shadow-emerald-500/10",
-      buttonBg: "bg-emerald-500",
-      buttonHover: "hover:bg-emerald-400",
-      buttonBorder: "border-emerald-700",
-      buttonShadow: "shadow-emerald-500/40",
-      accent: "emerald",
-    },
-    rose: {
-      border: "border-rose-500/30",
-      borderHover: "hover:border-rose-400/50",
-      bgGlow: "bg-rose-500/5",
-      text: "text-rose-400",
-      textDark: "text-rose-600",
-      shadow: "shadow-rose-500/10",
-      buttonBg: "bg-rose-500",
-      buttonHover: "hover:bg-rose-400",
-      buttonBorder: "border-rose-700",
-      buttonShadow: "shadow-rose-500/40",
-      accent: "rose",
-    },
-  }[accentColor];
 
   const handlePrefetch = () => {
     if (!isPrefetched) {
@@ -324,7 +255,8 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
   if (isLaunched) {
     const bezelClasses =
       {
-        classic: "border-amber-800/80 shadow-[0_0_30px_rgba(217,119,6,0.15)]",
+        // The classic bezel takes the game's own accent (--game-accent).
+        classic: "arcade-bezel-accent",
         neon: "border-cyan-500/80 shadow-[0_0_30px_rgba(6,182,212,0.25)]",
         woodgrain: "border-yellow-600/80 shadow-[0_0_30px_rgba(234,179,8,0.2)]",
         minimal: "border-zinc-800/80 shadow-[0_0_30px_rgba(0,0,0,0.5)]",
@@ -371,6 +303,7 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
         }}
         tabIndex={-1}
         data-arcade-cabinet={gameId}
+        data-game={gameId}
         data-fullscreen={isFullscreen}
         className={`arcade-cabinet w-full flex flex-col items-center max-w-full min-w-0 @container ${
           isFullscreen
@@ -426,7 +359,7 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
           /* Windowed Mode: Cabinet Marquee / Top Frame Bezel Header Bar */
           <div className="w-full flex items-center justify-between px-3.5 py-2 bg-zinc-950/95 border border-zinc-800 rounded-t-2xl font-mono text-xs text-zinc-400 select-none backdrop-blur-md gap-2 shrink-0 z-20">
             <div className="flex items-center gap-2 min-w-0">
-              <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399] shrink-0" />
+              <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0" />
               <span className="font-bold tracking-wider text-zinc-200 text-xs uppercase truncate">
                 {title}
               </span>
@@ -502,7 +435,7 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
         {!isFullscreen && (
           <div className="mt-3 flex items-center justify-between w-full border border-zinc-800 bg-zinc-900/60 rounded-2xl px-4 py-2 font-mono text-xs text-zinc-400 flex-wrap gap-2 shrink-0">
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <div className="w-2 h-2 rounded-full bg-emerald-500" />
               <span className="uppercase tracking-wider">Cabinet Engaged</span>
             </div>
 
@@ -532,7 +465,7 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
   }
 
   return (
-    <div className={`w-full ${colors.shadow} transition-all duration-300`}>
+    <div data-game={gameId} className="w-full">
       {/* Static Retro Cabinet Preview Screen with scanlines */}
       <div
         className="w-full aspect-[16/10] min-h-[min(380px,65dvh)] rounded-2xl border border-zinc-800 bg-zinc-950 flex flex-col justify-between p-6 sm:p-8 relative overflow-hidden select-none"
@@ -541,6 +474,23 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
             "radial-gradient(circle at center, #09090b 40%, #020202 100%)",
         }}
       >
+        {/* The game's own preview still, dimmed behind the title so the
+            attract screen shows what the game looks like. */}
+        {!isWarmingUp && (
+          <>
+            <Image
+              src={`/images/arcade/previews/${gameId}.webp`}
+              alt=""
+              fill
+              sizes="(min-width: 1280px) 1200px, 100vw"
+              // Already-small WebP stills: skip the optimizer and its quota.
+              unoptimized
+              className="object-cover object-top opacity-80"
+            />
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(9,9,11,0.82)_0%,rgba(9,9,11,0.55)_55%,rgba(9,9,11,0.35)_100%)] pointer-events-none" />
+          </>
+        )}
+
         {/* Scanlines Effect */}
         <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(255,255,255,0),rgba(255,255,255,0)_50%,rgba(0,0,0,0.45)_50%,rgba(0,0,0,0.45))] bg-[size:100%_4px] pointer-events-none z-10" />
 
@@ -605,7 +555,7 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
             <div className="flex items-center justify-between border-b border-zinc-800/80 pb-4 font-mono text-[10px] text-zinc-500 z-10">
               <div className="flex items-center gap-2">
                 <div
-                  className={`w-2 h-2 rounded-full ${isPrefetched ? "bg-amber-400" : "bg-zinc-600"} animate-pulse`}
+                  className={`w-2 h-2 rounded-full ${isPrefetched ? "bg-amber-400" : "bg-zinc-600"} ${isPrefetched && !isLoaded ? "animate-pulse" : ""}`}
                 />
                 <span className="uppercase tracking-wider">
                   {isPrefetched
@@ -615,29 +565,25 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
                     : "Cabinet Standby"}
                 </span>
               </div>
-              <span className="uppercase tracking-widest text-[9px] text-zinc-600">
+              <span className="uppercase tracking-widest text-[9px] text-zinc-400">
                 FDR PORTFOLIO ARCADE v2.6
               </span>
             </div>
 
             {/* Cabinet Game Display Details */}
             <div className="flex-1 flex flex-col items-center justify-center text-center my-6 max-w-xl mx-auto z-10">
-              <div
-                className={`p-4 rounded-full bg-zinc-900/60 border border-zinc-800/80 text-white mb-4 shadow-inner group-hover:scale-105 transition-transform`}
-              >
+              <div className="arcade-accent-text p-3 rounded-full bg-zinc-950/80 border border-zinc-700/80 mb-4">
                 {icon}
               </div>
-              <h2 className="text-2xl sm:text-3xl font-extrabold font-mono text-white tracking-tight uppercase">
+              <h2 className="text-2xl sm:text-4xl font-extrabold font-mono text-white tracking-[-0.035em] text-balance [text-shadow:0_2px_12px_rgba(0,0,0,0.8)]">
                 {title}
               </h2>
               {subtitle && (
-                <p
-                  className={`text-[10px] font-mono ${colors.text} uppercase tracking-widest mt-1 font-bold`}
-                >
+                <p className="arcade-accent-text text-[10px] font-mono uppercase tracking-widest mt-2 font-bold">
                   {subtitle}
                 </p>
               )}
-              <p className="text-xs text-zinc-400 font-mono mt-3 leading-relaxed">
+              <p className="text-xs text-zinc-300 font-mono mt-3 leading-relaxed">
                 {instructions}
               </p>
             </div>
@@ -649,7 +595,7 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
                 {controls?.slice(0, 3).map((ctrl, idx) => (
                   <div
                     key={idx}
-                    className="flex items-center gap-1.5 bg-zinc-900/80 border border-zinc-800/80 px-2 py-1 rounded-md text-zinc-400"
+                    className="flex items-center gap-1.5 bg-zinc-950/85 border border-zinc-800/80 px-2 py-1 rounded-md text-zinc-300"
                   >
                     <span className="px-1.5 py-0.5 bg-zinc-950 text-white border border-zinc-700 rounded text-[9px] font-bold">
                       {ctrl.key}
@@ -665,7 +611,7 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
                   onMouseEnter={handlePrefetch}
                   onFocus={handlePrefetch}
                   onClick={handleLaunch}
-                  className={`w-full md:w-auto min-h-[44px] min-w-[44px] px-8 py-3.5 ${colors.buttonBg} ${colors.buttonHover} text-black font-extrabold rounded-xl border-b-4 ${colors.buttonBorder} hover:border-b-2 active:border-b-0 active:translate-y-1 active:scale-95 transition-all duration-70s flex items-center justify-center gap-2 font-mono text-xs sm:text-sm tracking-wider shadow-lg ${colors.buttonShadow} uppercase cursor-pointer touch-manipulation select-none`}
+                  className={`w-full md:w-auto min-h-[44px] min-w-[44px] px-8 py-3.5 arcade-launch-button text-black font-extrabold rounded-xl border-b-4 hover:border-b-2 active:border-b-0 active:translate-y-1 active:scale-95 transition-all duration-75 flex items-center justify-center gap-2 font-mono text-xs sm:text-sm tracking-wider shadow-lg uppercase cursor-pointer touch-manipulation select-none`}
                 >
                   <IconPlayerPlay className="w-4 h-4 fill-black text-black" />
                   <span>Launch Cabinet</span>

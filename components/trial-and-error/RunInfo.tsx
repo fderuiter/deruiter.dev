@@ -8,13 +8,19 @@ import {
   type AccessRecord,
   type HandLevelRow,
   type Relic,
+  type RunOrigin,
 } from "@/lib/trial-and-error";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { SeedShare } from "@/components/trial-and-error/SeedShare";
 
 interface RunInfoProps {
   /** The run's hand table at current levels, from the domain view. */
   rows: readonly HandLevelRow[];
   seed: string;
+  /** How the seed was chosen; a Daily Protocol run shows its date. */
+  origin?: RunOrigin;
+  /** Offers "New run…", which opens the New Run dialog (#1528). */
+  onNewRun?: () => void;
   /** How many relic slots the rack has. */
   relicSlots: number;
   /** The relics the run has equipped. */
@@ -32,12 +38,14 @@ interface RunInfoProps {
 /**
  * Run Info (T&E-UX-05): a focus-trapped dialog with the run's hand table
  * (level, base Chips, base +Mult, times played), the equipped relics and the
- * run seed. It renders the domain's rows and never adds a level bonus
+ * run seed, with Copy seed, Copy challenge link and New run (#1528). It renders the domain's rows and never adds a level bonus
  * itself. Escape or Close dismisses it and focus returns to the trigger.
  */
 export function RunInfo({
   rows,
   seed,
+  origin = { kind: "RANDOM" },
+  onNewRun,
   relicSlots,
   relics = [],
   accessLog = [],
@@ -179,9 +187,19 @@ export function RunInfo({
         <h3 className="mt-4 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
           Seed
         </h3>
-        <p className="text-xs text-zinc-300 break-all">
-          <span data-testid="run-seed">{seed}</span>
-        </p>
+        <div className="mt-1">
+          <SeedShare seed={seed} origin={origin} />
+        </div>
+        {onNewRun && (
+          <button
+            type="button"
+            onClick={onNewRun}
+            className="mt-4 min-h-[48px] w-full border border-amber-500 px-4 py-3 text-xs font-bold uppercase tracking-wider text-amber-300 touch-manipulation hover:bg-amber-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 active:scale-[0.98]"
+            data-testid="run-info-new-run"
+          >
+            New run…
+          </button>
+        )}
         <button
           type="button"
           onClick={onClose}

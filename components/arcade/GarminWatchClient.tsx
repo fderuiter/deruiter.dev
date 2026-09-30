@@ -90,7 +90,6 @@ export const GarminWatchClient: React.FC = () => {
               gameId="garmin-watch"
               title="Monkey C Mayhem: Garmin Schvitz App"
               subtitle="A Small Watch With a Lot Going On"
-              accentColor="amber"
               icon={<IconDeviceWatch className="w-8 h-8 text-amber-400" />}
               instructions="An endless run for a high score. Keep a simulated Garmin Schvitz App running inside its memory budget (32 KB on Fēnix, up to 128 KB on Edge): jump the bugs, free memory before the heap fills, and wipe the fog off the screen before the watch has a very bad day."
               controls={[

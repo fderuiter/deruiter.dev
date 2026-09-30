@@ -180,6 +180,30 @@ describe("Event-Driven Progress Bus & Floating Visual Progress HUD", () => {
       expect(barFill.className).toContain("will-change-transform");
     });
 
+    // #1441: the fill is clamped with clamp() rather than nested Math calls.
+    it.each([
+      [150, "scaleX(1)"],
+      [-20, "scaleX(0)"],
+      [0, "scaleX(0)"],
+      [100, "scaleX(1)"],
+    ])("clamps a %s%% progress event to %s", (percentage, transform) => {
+      render(<ProgressHUD />);
+
+      act(() => {
+        progressBus.publish({
+          url: "/models/brain-surface.glb",
+          loaded: 0,
+          total: 0,
+          percentage,
+          status: "loading",
+        });
+      });
+
+      expect(screen.getByTestId("progress-bar-fill").style.transform).toBe(
+        transform
+      );
+    });
+
     it("auto-dismisses within 300ms upon asset transfer completion", () => {
       render(<ProgressHUD />);
 

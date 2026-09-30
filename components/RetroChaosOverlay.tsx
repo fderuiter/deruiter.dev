@@ -113,45 +113,59 @@ export const RetroChaosOverlay: React.FC = () => {
             </h2>
 
             <p className="text-sm text-slate-300 mb-6 leading-relaxed">
+              {/* Say what actually happened: the vault itself is open to
+                  everyone, so neither path unlocks it (#1556). */}
               {source === "konami" ? (
                 <>
-                  You found the legendary secret trigger! The{" "}
-                  <strong>Secret Meme Vault</strong> and Developer Soundboard
-                  have been permanently unlocked in your session.
+                  You typed the Konami code and earned the{" "}
+                  <strong>Konami Code Pioneer</strong> trophy. The site footer
+                  now keeps a Meme Vault link on every page.
                 </>
               ) : (
                 <>
-                  You flipped the switch. The <strong>Secret Meme Vault</strong>{" "}
-                  and Developer Soundboard are open for this session.
+                  Retro Chaos Mode is just for fun: a fanfare and the status
+                  board below. It doesn&apos;t change how any page works.
                 </>
               )}
             </p>
 
             {/* Meme Badges Matrix */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 mb-6 text-xs">
-              <div className="flex items-center gap-2 p-2 rounded-lg bg-emerald-950/40 border border-emerald-500/30 text-emerald-300">
-                <IconCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span className="truncate">Duck: 100% Good Boy</span>
+              <div className="flex min-w-0 items-start gap-2 p-2 rounded-lg bg-emerald-950/40 border border-emerald-500/30 text-emerald-300">
+                <IconCheck className="w-4 h-4 mt-px text-emerald-400 shrink-0" />
+                <span className="min-w-0 break-words leading-snug">
+                  Duck: 100% Good Boy
+                </span>
               </div>
-              <div className="flex items-center gap-2 p-2 rounded-lg bg-cyan-950/40 border border-cyan-500/30 text-cyan-300">
-                <IconCheck className="w-4 h-4 text-cyan-400 shrink-0" />
-                <span className="truncate">Laser Loon: Ready</span>
+              <div className="flex min-w-0 items-start gap-2 p-2 rounded-lg bg-cyan-950/40 border border-cyan-500/30 text-cyan-300">
+                <IconCheck className="w-4 h-4 mt-px text-cyan-400 shrink-0" />
+                <span className="min-w-0 break-words leading-snug">
+                  Laser Loon: Ready
+                </span>
               </div>
-              <div className="flex items-center gap-2 p-2 rounded-lg bg-amber-950/40 border border-amber-500/30 text-amber-300">
-                <IconCheck className="w-4 h-4 text-amber-400 shrink-0" />
-                <span className="truncate">21 CFR Part 11: Valid</span>
+              <div className="flex min-w-0 items-start gap-2 p-2 rounded-lg bg-amber-950/40 border border-amber-500/30 text-amber-300">
+                <IconCheck className="w-4 h-4 mt-px text-amber-400 shrink-0" />
+                <span className="min-w-0 break-words leading-snug">
+                  21 CFR Part 11: Valid
+                </span>
               </div>
-              <div className="flex items-center gap-2 p-2 rounded-lg bg-purple-950/40 border border-purple-500/30 text-purple-300">
-                <IconCheck className="w-4 h-4 text-purple-400 shrink-0" />
-                <span className="truncate">32KB RAM: 0 Leaks</span>
+              <div className="flex min-w-0 items-start gap-2 p-2 rounded-lg bg-purple-950/40 border border-purple-500/30 text-purple-300">
+                <IconCheck className="w-4 h-4 mt-px text-purple-400 shrink-0" />
+                <span className="min-w-0 break-words leading-snug">
+                  32KB RAM: 0 Leaks
+                </span>
               </div>
-              <div className="flex items-center gap-2 p-2 rounded-lg bg-rose-950/40 border border-rose-500/30 text-rose-300">
-                <IconCheck className="w-4 h-4 text-rose-400 shrink-0" />
-                <span className="truncate">Friday Push: Armed</span>
+              <div className="flex min-w-0 items-start gap-2 p-2 rounded-lg bg-rose-950/40 border border-rose-500/30 text-rose-300">
+                <IconCheck className="w-4 h-4 mt-px text-rose-400 shrink-0" />
+                <span className="min-w-0 break-words leading-snug">
+                  Friday Push: Armed
+                </span>
               </div>
-              <div className="flex items-center gap-2 p-2 rounded-lg bg-teal-950/40 border border-teal-500/30 text-teal-300">
-                <IconCheck className="w-4 h-4 text-teal-400 shrink-0" />
-                <span className="truncate">RFC 418: Teapot Warm</span>
+              <div className="flex min-w-0 items-start gap-2 p-2 rounded-lg bg-teal-950/40 border border-teal-500/30 text-teal-300">
+                <IconCheck className="w-4 h-4 mt-px text-teal-400 shrink-0" />
+                <span className="min-w-0 break-words leading-snug">
+                  RFC 418: Teapot Warm
+                </span>
               </div>
             </div>
 

@@ -6,6 +6,7 @@ import {
   advanceRun,
   deriveRunView,
   createRunState,
+  dailySeed,
   runBlinds,
   serializeRun,
   type LoggedAction,
@@ -1057,6 +1058,80 @@ test.describe("Trial & Error saved runs (#1079)", () => {
     await expect(page.getByTestId("hand")).toBeVisible();
     await expect(page.getByTestId("round-score")).toHaveText(score ?? "");
     expect(await handIds()).toEqual(hand);
+  });
+});
+
+test.describe("Trial & Error seeded runs (#1528)", () => {
+  const CHALLENGE_SEED = "7K3M-Q9PX";
+
+  /** The hand a seed deals first, from the domain itself. */
+  const firstHand = (seed: string) =>
+    deriveRunView(CAMPAIGN, createRunState(CAMPAIGN, seed)).table.handIds;
+  const handIds = (page: Page) =>
+    page
+      .locator("[data-card-id]")
+      .evaluateAll((els) => els.map((el) => el.getAttribute("data-card-id")));
+
+  async function openChallenge(page: Page, hash: string) {
+    await page.goto(`/arcade/trial-and-error${hash}`, {
+      waitUntil: "domcontentloaded",
+    });
+    const dialog = page.getByRole("dialog", { name: "New run" });
+    await expect(async () => {
+      const launchBtn = page.getByRole("button", { name: /Launch Cabinet/i });
+      if (await launchBtn.isVisible()) await launchBtn.click();
+      await expect(dialog).toBeVisible({ timeout: 3000 });
+    }).toPass({ timeout: 30000 });
+    return dialog;
+  }
+
+  for (const width of [375, 1280]) {
+    test(`replays a challenge link's seed at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 800 });
+      const dialog = await openChallenge(page, "#seed=7k3m-q9px");
+      await expect(dialog.getByTestId("new-run-seed")).toHaveValue(
+        CHALLENGE_SEED
+      );
+      await expect(dialog.getByTestId("new-run-seed")).toBeFocused();
+      await expectNoHorizontalOverflow(page);
+      await expectNoBlockingViolations(page, `New Run at ${width}px`);
+      await page.keyboard.press("Enter");
+
+      await expect(dialog).toBeHidden();
+      expect(new URL(page.url()).hash).toBe("");
+      await expect.poll(() => handIds(page)).toEqual(firstHand(CHALLENGE_SEED));
+      await page.getByTestId("run-info-button").click();
+      const info = page.getByRole("dialog", { name: "Run Info" });
+      await expect(info.getByTestId("run-seed")).toHaveText(CHALLENGE_SEED);
+      await expect(
+        info.getByRole("button", { name: "Copy challenge link" })
+      ).toBeVisible();
+      await expectNoBlockingViolations(page, `Run Info seed at ${width}px`);
+    });
+  }
+
+  test("starts today's Daily Protocol from Run Info", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await launch(page);
+    const info = page.getByRole("dialog", { name: "Run Info" });
+    await expect(async () => {
+      await page.getByTestId("run-info-button").click();
+      await expect(info).toBeVisible({ timeout: 1000 });
+    }).toPass({ timeout: 15000 });
+    await info.getByTestId("run-info-new-run").click();
+    const dialog = page.getByRole("dialog", { name: "New run" });
+    const daily = dialog.getByRole("radio", { name: /Daily Protocol/ });
+    await expect(daily).toBeEnabled();
+    await daily.check();
+    await dialog.getByRole("button", { name: "Start run" }).click();
+    await expect(dialog).toBeHidden();
+
+    await page.getByTestId("run-info-button").click();
+    const today = new Date().toISOString().slice(0, 10);
+    await expect(info.getByTestId("run-daily")).toContainText(today);
+    const seed = (await info.getByTestId("run-seed").textContent()) ?? "";
+    expect(seed).toBe(dailySeed(today));
+    expect(await handIds(page)).toEqual(firstHand(seed));
   });
 });
 

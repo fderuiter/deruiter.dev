@@ -1,6 +1,6 @@
 "use client";
 
-import React, { ReactNode } from "react";
+import React, { ReactNode, useRef } from "react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { cn } from "@/lib/utils";
 
@@ -90,11 +90,26 @@ export function ModalContainer({
     returnFocus,
     onKeyDown,
   });
+  // A click event targets the nearest common ancestor of its mousedown and
+  // mouseup, so a drag that starts inside the panel (a range slider, a text
+  // selection) and is released over the backdrop arrives as a backdrop
+  // click. Only a press that also began on the backdrop may dismiss.
+  const pressStartedOnBackdropRef = useRef<boolean | null>(null);
 
   if (!isOpen) return null;
 
+  const handleBackdropMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    pressStartedOnBackdropRef.current = e.target === e.currentTarget;
+  };
+
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (closeOnBackdropClick && e.target === e.currentTarget) {
+    const pressStartedOnBackdrop = pressStartedOnBackdropRef.current !== false;
+    pressStartedOnBackdropRef.current = null;
+    if (
+      closeOnBackdropClick &&
+      e.target === e.currentTarget &&
+      pressStartedOnBackdrop
+    ) {
       e.preventDefault();
       onClose();
     }
@@ -108,6 +123,7 @@ export function ModalContainer({
       aria-labelledby={titleId}
       aria-label={ariaLabel}
       aria-describedby={ariaDescribedBy}
+      onMouseDown={handleBackdropMouseDown}
       onClick={handleBackdropClick}
       className={cn(
         "fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto transition-opacity duration-200",

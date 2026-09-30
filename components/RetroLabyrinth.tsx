@@ -363,12 +363,27 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     []
   );
 
+  // HP, RAM, score and crypto as the player entered the current room. Retry
+  // restores these, so a breach that ended at 0 HP doesn't restart at 0 HP,
+  // and dying then retrying can't bank the room's points twice (#1552).
+  const roomEntryVitalsRef = useRef({
+    hp: selectedClass.baseHp,
+    ram: selectedClass.baseRam,
+    score: 0,
+    cryptoBounty: 0,
+  });
+
   // Switch Stage (classic support)
   const switchStage = useCallback(
     (stgNum: number) => {
+      roomEntryVitalsRef.current = {
+        ...roomEntryVitalsRef.current,
+        score,
+        cryptoBounty,
+      };
       loadRoom("classic", stgNum);
     },
-    [loadRoom]
+    [loadRoom, score, cryptoBounty]
   );
 
   // Load the opening room on mount so the maze, fog and HUD match the room
@@ -377,17 +392,22 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     loadRoom("roguelike", 0);
   }, [loadRoom]);
 
-  // HP and RAM as the player entered the current room. Retry restores these,
-  // so a breach that ended at 0 HP doesn't restart at 0 HP.
-  const roomEntryVitalsRef = useRef({
-    hp: selectedClass.baseHp,
-    ram: selectedClass.baseRam,
-  });
+  // A run that ends in a trace still counts toward the high score; only
+  // reaching the exit used to record it (#1552). Same key and bare numeric
+  // string as the exit path.
+  useEffect(() => {
+    if (gameStatus !== "caught" || score <= effectiveHighScore) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setHighScore(score);
+    safeSetRawItem(RETRO_LABYRINTH_HIGH_SCORE_KEY, score.toString());
+  }, [gameStatus, score, effectiveHighScore]);
 
   // Restart current stage
   const handleRestart = useCallback(() => {
     setPlayerHp(roomEntryVitalsRef.current.hp);
     setCurrentRam(roomEntryVitalsRef.current.ram);
+    setScore(roomEntryVitalsRef.current.score);
+    setCryptoBounty(roomEntryVitalsRef.current.cryptoBounty);
     if (gameMode === "classic") {
       loadRoom("classic", stage);
     } else {
@@ -397,13 +417,26 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
 
   // Advance to next room in roguelike campaign
   const handleNextRoom = useCallback(() => {
-    roomEntryVitalsRef.current = { hp: playerHp, ram: currentRam };
+    roomEntryVitalsRef.current = {
+      hp: playerHp,
+      ram: currentRam,
+      score,
+      cryptoBounty,
+    };
     if (roomIndex < campaignRooms.length - 1) {
       loadRoom("roguelike", roomIndex + 1);
     } else {
       loadRoom("roguelike", 0);
     }
-  }, [roomIndex, campaignRooms.length, loadRoom, playerHp, currentRam]);
+  }, [
+    roomIndex,
+    campaignRooms.length,
+    loadRoom,
+    playerHp,
+    currentRam,
+    score,
+    cryptoBounty,
+  ]);
 
   // Start Roguelike Campaign with chosen Cyberdeck Class
   const startRoguelikeCampaign = useCallback(() => {
@@ -423,6 +456,8 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     roomEntryVitalsRef.current = {
       hp: chosenClass.baseHp,
       ram: chosenClass.baseRam,
+      score: 0,
+      cryptoBounty: 0,
     };
     loadRoom("roguelike", 0);
   }, [selectedClassId, loadRoom]);
@@ -2042,15 +2077,18 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
             <>
               <span className="text-rose-400" data-testid="labyrinth-objective">
                 {roomExitLock.objective}
-              </span>
-              , then guide the{" "}
+              </span>{" "}
+              to unlock the <span className="text-amber-400">EXIT</span> (bottom
+              right), then guide the <span className="text-amber-400">@</span>{" "}
+              there. Bugs and drones cost HP.
             </>
           ) : (
-            "Guide the "
+            <>
+              Guide the <span className="text-amber-400">@</span> to the{" "}
+              <span className="text-amber-400">EXIT</span> (bottom right). Bugs
+              and drones cost HP.
+            </>
           )}
-          <span className="text-amber-400">@</span> to the{" "}
-          <span className="text-amber-400">EXIT</span> (bottom right). Bugs and
-          drones cost HP.
         </p>
 
         {/* Active Side-Effect Warning Banner */}
@@ -2063,12 +2101,14 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
           </div>
         )}
 
-        {/* Game Canvas Container */}
+        {/* Game Canvas Container. Height budget: 21rem covers the navbar,
+            cabinet header, HUD rows and the hotbar below, so the whole
+            stage fits a launched 1280x800 viewport (#1552). */}
         <div
           className={`arcade-labyrinth-canvas relative ${
             isFullscreen
               ? "w-full flex-1 max-h-[var(--layout-viewport-budget,calc(100vh-var(--header-height,80px)-var(--footer-height,48px)))] max-h-[var(--layout-viewport-budget,calc(100dvh-var(--header-height,80px)-var(--footer-height,48px)))] max-h-[calc(100vh-var(--header-height,80px)-var(--footer-height,48px))] max-h-[calc(100dvh-var(--header-height,80px)-var(--footer-height,48px))] aspect-[240/144] min-h-0"
-              : "w-[min(100%,calc((100dvh-16rem)*5/3))] min-w-[240px] aspect-[240/144] h-auto"
+              : "w-[min(100%,calc((100dvh-21rem)*5/3))] min-w-[240px] aspect-[240/144] h-auto"
           } flex items-center justify-center transition-all duration-300 my-auto`}
           style={
             crtCalibration.curvature > 0.05
@@ -2499,6 +2539,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                       setMaxPlayerHp(cls.baseHp);
                       setCurrentRam(cls.baseRam);
                       roomEntryVitalsRef.current = {
+                        ...roomEntryVitalsRef.current,
                         hp: cls.baseHp,
                         ram: cls.baseRam,
                       };

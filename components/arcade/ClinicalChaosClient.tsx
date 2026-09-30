@@ -89,7 +89,6 @@ export const ClinicalChaosClient: React.FC = () => {
               gameId="clinical-chaos"
               title="Clinical Trial Chaos: CDISC Compliance"
               subtitle="Clinical Data, Against the Clock"
-              accentColor="emerald"
               icon={<IconShieldCheck className="w-8 h-8 text-emerald-400" />}
               instructions="Sort clinical observations, fix data problems, and sign submissions before time runs out. A game inspired by clinical data work, with a considerably less patient auditor."
               controls={[

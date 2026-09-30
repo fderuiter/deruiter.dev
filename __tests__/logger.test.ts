@@ -151,4 +151,70 @@ describe("StructuredLogger", () => {
     expect(Sentry.captureException).not.toHaveBeenCalled();
     expect(consoleErrorSpy).toHaveBeenCalled();
   });
+
+  describe("metadata sanitization (#1475)", () => {
+    it("scrubs paths from metadata that warn() receives as its second argument", () => {
+      const testLogger = new StructuredLogger();
+      const meta = { file: "/var/task/lib/db.ts", attempt: 2 };
+
+      const entry = testLogger.warn("Retrying", meta);
+
+      expect(entry.meta).toEqual({ file: "[scrubbed]", attempt: 2 });
+      expect(consoleWarnSpy).toHaveBeenCalledWith("Retrying", {
+        file: "[scrubbed]",
+        attempt: 2,
+      });
+      expect(Sentry.addBreadcrumb).toHaveBeenCalledWith(
+        expect.objectContaining({ data: { file: "[scrubbed]", attempt: 2 } })
+      );
+      // The caller's object is copied, never mutated.
+      expect(meta.file).toBe("/var/task/lib/db.ts");
+    });
+
+    it("walks nested objects and arrays and survives circular references", () => {
+      const testLogger = new StructuredLogger();
+      const meta: Record<string, unknown> = {
+        nested: { paths: ["/opt/admin/secret.json", "ok"] },
+      };
+      meta.self = meta;
+
+      const entry = testLogger.info("Loaded", meta);
+
+      expect(entry.meta).toEqual({
+        nested: { paths: ["[scrubbed]", "ok"] },
+        self: "[circular]",
+      });
+    });
+
+    it("sanitizes errors nested in metadata in production", () => {
+      vi.stubEnv("NODE_ENV", "production");
+      try {
+        const testLogger = new StructuredLogger();
+        const cause = new Error("failed at /var/task/lib/db.ts");
+
+        const entry = testLogger.error("Wrapped", undefined, { cause });
+
+        const logged = (entry.meta as { cause: Error }).cause;
+        expect(logged).not.toBe(cause);
+        expect(logged.message).toBe("failed at [scrubbed]");
+        expect(Sentry.captureMessage).toHaveBeenCalledWith("Wrapped", {
+          level: "error",
+          extra: { cause: logged },
+        });
+      } finally {
+        vi.unstubAllEnvs();
+      }
+    });
+
+    it("still honours skipTelemetry", () => {
+      const testLogger = new StructuredLogger();
+
+      testLogger.warn("Denied", new Error("NotAllowedError"), {
+        skipTelemetry: true,
+      });
+
+      expect(Sentry.captureException).not.toHaveBeenCalled();
+      expect(consoleWarnSpy).toHaveBeenCalled();
+    });
+  });
 });

@@ -22,6 +22,7 @@ import {
   consumableSellValue,
   costOf,
   createRunState,
+  parseSeed,
   planActs,
   deriveRunView,
   previewAllocation,
@@ -33,6 +34,7 @@ import {
   type RunAction,
   type RunPlan,
   type RunLog,
+  type RunOrigin,
   type RunState,
   type Scenario,
   type TableCardView,
@@ -54,6 +56,13 @@ import {
   writeRunSave,
 } from "@/components/trial-and-error/useRunSave";
 import { RunInfo } from "@/components/trial-and-error/RunInfo";
+import { NewRun } from "@/components/trial-and-error/NewRun";
+import { SeedShare } from "@/components/trial-and-error/SeedShare";
+import {
+  clearChallengeHash,
+  freshSeed,
+  useChallengeHash,
+} from "@/components/trial-and-error/useChallenge";
 import { ScoreLog } from "@/components/trial-and-error/ScoreLog";
 import { HandCheatSheet } from "@/components/trial-and-error/HandCheatSheet";
 import { ActIntro } from "@/components/trial-and-error/ActIntro";
@@ -107,7 +116,8 @@ interface CardTableProps {
   scenario?: Scenario;
   /**
    * The run seed. Without it the table replays the page's `?seed=`
-   * parameter, or starts a fresh random seed.
+   * parameter, or starts a fresh random seed. A persisted table also opens
+   * a challenge link's `#seed=` in the New Run dialog (#1528).
    */
   seed?: string;
   /**
@@ -138,8 +148,14 @@ interface LoggedRun {
   log: RunLog;
 }
 
-/** A move, or a saved run replacing the fresh one on resume. */
-type TableIntent = RunAction | { type: "LOAD_SAVED"; saved: RestoredRun };
+/**
+ * A move, a saved run replacing the fresh one on resume, or a new run on a
+ * chosen seed, whose log records how the seed was chosen (#1528).
+ */
+type TableIntent =
+  | RunAction
+  | { type: "LOAD_SAVED"; saved: RestoredRun }
+  | { type: "NEW_RUN"; seed: string; origin: RunOrigin };
 
 function logRun(
   act: RunPlan,
@@ -148,6 +164,21 @@ function logRun(
 ): LoggedRun {
   if (intent.type === "LOAD_SAVED") {
     return { run: intent.saved.run, log: intent.saved.log };
+  }
+  if (intent.type === "NEW_RUN") {
+    const run = advanceRun(act, current.run, {
+      type: "RESTART_RUN",
+      seed: intent.seed,
+    });
+    return {
+      run,
+      log: {
+        actId: act.id,
+        seed: run.seed,
+        origin: intent.origin,
+        actions: [],
+      },
+    };
   }
   const run = advanceRun(act, current.run, intent);
   // A new run starts a new log; every other move joins the current one.
@@ -160,24 +191,16 @@ function logRun(
   };
 }
 
-const SEED_PATTERN = /^[A-Za-z0-9-]{1,32}$/;
-
-/** A fresh random run seed, drawn in the browser (the domain never draws one). */
-function freshSeed(): string {
-  const bytes = new Uint32Array(2);
-  globalThis.crypto.getRandomValues(bytes);
-  return Array.from(bytes, (b) => b.toString(36)).join("-");
-}
-
 /** The page's `?seed=` parameter when it is a valid seed, else a fresh one. */
-function initialSeed(): string {
+function initialSeed(): { seed: string; origin?: RunOrigin } {
   try {
     const param = new URLSearchParams(window.location.search).get("seed");
-    if (param && SEED_PATTERN.test(param)) return param;
+    const seed = param === null ? null : parseSeed(param);
+    if (seed) return { seed, origin: { kind: "SEEDED" } };
   } catch {
     // No location (a test harness): fall through to a fresh seed.
   }
-  return freshSeed();
+  return { seed: freshSeed() };
 }
 
 const SPEEDS = [1, 2, 4] as const;
@@ -389,8 +412,17 @@ export function CardTable({
     (current: LoggedRun, intent: TableIntent) => logRun(act, current, intent),
     act,
     (a: RunPlan): LoggedRun => {
-      const run = createRunState(a, seed ?? initialSeed());
-      return { run, log: { actId: a.id, seed: run.seed, actions: [] } };
+      const start = seed === undefined ? initialSeed() : { seed };
+      const run = createRunState(a, start.seed);
+      return {
+        run,
+        log: {
+          actId: a.id,
+          seed: run.seed,
+          ...(start.origin ? { origin: start.origin } : {}),
+          actions: [],
+        },
+      };
     }
   );
   const saved = useSavedRun(act, persist);
@@ -492,6 +524,13 @@ export function CardTable({
 
   const [detailId, setDetailId] = useState<string | null>(null);
   const [runInfoOpen, setRunInfoOpen] = useState(false);
+  const [newRunOpen, setNewRunOpen] = useState(false);
+  // A challenge link opens the New Run dialog on a persisted table, once any
+  // saved run's Resume choice is made; the guided Blind never takes one.
+  const hashChallenge = useChallengeHash();
+  const challenge = persist && !endAction ? hashChallenge : null;
+  const newRunShown = newRunOpen || challenge !== null;
+  const runOrigin: RunOrigin = log.origin ?? { kind: "RANDOM" };
   const [handSheetOpen, setHandSheetOpen] = useState(false);
   /** The relic waiting for a sale to be confirmed, in the shop. */
   const [sellRelicId, setSellRelicId] = useState<string | null>(null);
@@ -580,6 +619,24 @@ export function CardTable({
   const send = (action: RunAction, focus: PendingFocus = null) => {
     pendingFocus.current = focus;
     dispatch(action);
+  };
+
+  const closeNewRun = () => {
+    clearChallengeHash();
+    setNewRunOpen(false);
+  };
+  /** Starts a new run on a chosen seed, with focus on the first card. */
+  const startNewRun = (nextSeed: string, origin: RunOrigin) => {
+    closeNewRun();
+    setFocusIndex(0);
+    setSellRelicId(null);
+    pendingFocus.current = { kind: "hand", index: 0 };
+    dispatch({ type: "NEW_RUN", seed: nextSeed, origin });
+    announce(
+      origin.kind === "DAILY"
+        ? `Daily Protocol for ${origin.date} started.`
+        : `New run started on seed ${nextSeed}.`
+    );
   };
 
   // A played hand is announced once, as a summary, after its timeline
@@ -2117,28 +2174,44 @@ export function CardTable({
                         {endlessRound ?? 0} reached
                       </p>
                     )}
-                  <button
-                    ref={restartRef}
-                    type="button"
-                    onClick={() => {
-                      if (endAction) {
-                        endAction(runView.phase === "RUN_WON").onSelect();
-                        return;
-                      }
-                      setFocusIndex(0);
-                      send(
-                        { type: "RESTART_RUN", seed: freshSeed() },
-                        { kind: "hand", index: 0 }
-                      );
-                    }}
-                    className={`${BUTTON_BASE} mt-4 border-amber-500 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20`}
-                  >
-                    {endAction
-                      ? endAction(runView.phase === "RUN_WON").label
-                      : runView.phase === "RUN_WON"
-                        ? "Play again"
-                        : "Restart run"}
-                  </button>
+                  <div className="mt-4 flex flex-wrap justify-center gap-2">
+                    <button
+                      ref={restartRef}
+                      type="button"
+                      onClick={() => {
+                        if (endAction) {
+                          endAction(runView.phase === "RUN_WON").onSelect();
+                          return;
+                        }
+                        startNewRun(freshSeed(), { kind: "RANDOM" });
+                      }}
+                      className={`${BUTTON_BASE} border-amber-500 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20`}
+                    >
+                      {endAction
+                        ? endAction(runView.phase === "RUN_WON").label
+                        : runView.phase === "RUN_WON"
+                          ? "Play again"
+                          : "Restart run"}
+                    </button>
+                    {!endAction && (
+                      <button
+                        type="button"
+                        onClick={() => setNewRunOpen(true)}
+                        className={`${BUTTON_BASE} border-zinc-600 text-zinc-200 hover:bg-zinc-800`}
+                        data-testid="end-new-run"
+                      >
+                        New run…
+                      </button>
+                    )}
+                  </div>
+                  {!endAction && (
+                    <div className="mx-auto mt-4 max-w-sm text-left">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+                        Challenge a friend to this run
+                      </p>
+                      <SeedShare seed={runView.seed} origin={runOrigin} />
+                    </div>
+                  )}
                 </>
               )}
             </div>
@@ -2252,11 +2325,29 @@ export function CardTable({
         <RunInfo
           rows={view.handTable}
           seed={runView.seed}
+          origin={runOrigin}
+          onNewRun={
+            endAction
+              ? undefined
+              : () => {
+                  setRunInfoOpen(false);
+                  setNewRunOpen(true);
+                }
+          }
           relicSlots={view.relicSlots}
           relics={view.relics}
           accessLog={view.accessLog}
           dmc={view.dmcCharter !== null}
           onClose={() => setRunInfoOpen(false)}
+        />
+      )}
+
+      {newRunShown && (
+        <NewRun
+          challenge={challenge}
+          discards={log.actions.length > 0 && !runOver}
+          onStart={startNewRun}
+          onClose={closeNewRun}
         />
       )}
 

@@ -85,6 +85,14 @@ The run went on into endless post-marketing rounds after winning (#1088).
 
 ***
 
+### lockedRelicSlot?
+
+> `optional` **lockedRelicSlot?**: `number`
+
+Form 483 (stake 5): the relic slot locked this act, from 0.
+
+***
+
 ### seed
 
 > **seed**: `string`
@@ -106,6 +114,30 @@ The shop visit after the cash-out, if the act has a shop.
 > **shopDraws**: `number`
 
 The next unused draw index on the shop's own seeded stream.
+
+***
+
+### sponsorId?
+
+> `optional` **sponsorId?**: `"VIRTUAL_BIOTECH"` \| `"ONCOLOGY_PHARMA"` \| `"CARDIO_MEGA_TRIAL"` \| `"RARE_DISEASE_BIOTECH"`
+
+The run's sponsor (#950). Absent means Virtual Biotech, the default.
+
+***
+
+### stake?
+
+> `optional` **stake?**: `number`
+
+The run's GCP-audit stake (#950). Absent means stake 1, the default.
+
+***
+
+### suspendedRelic?
+
+> `optional` **suspendedRelic?**: [`SuspendedRelic`](SuspendedRelic.md) \| `null`
+
+Form 483: the relic the locked slot held when the act began, if any.
 
 ***
 

@@ -126,6 +126,13 @@ describe("Meme Vault trophies and chaos button (#1328)", () => {
       within(dialog).queryByRole("link", { name: /Enter Secret Meme Vault/ })
     ).toBeNull();
     expect(screen.queryByText(/Trophy unlocked/)).toBeNull();
+    // #1556: the vault is open to everyone, so the copy must not claim the
+    // button unlocked it, and the status chips wrap instead of truncating.
+    expect(dialog.textContent).not.toMatch(
+      /open for this session|permanently unlocked/
+    );
+    expect(dialog.textContent).toContain("doesn't change how any page works");
+    expect(dialog.querySelector(".truncate")).toBeNull();
   });
 
   it("keeps the vault link when chaos mode opens on another page", () => {
@@ -166,6 +173,35 @@ describe("Meme Vault trophies and chaos button (#1328)", () => {
     expect(
       toasts().getByText("Trophy unlocked: Konami Code Pioneer")
     ).toBeTruthy();
+  });
+
+  it("describes what the typed Konami code actually does (#1556)", () => {
+    renderVault();
+    act(() => {
+      for (const key of [
+        "ArrowUp",
+        "ArrowUp",
+        "ArrowDown",
+        "ArrowDown",
+        "ArrowLeft",
+        "ArrowRight",
+        "ArrowLeft",
+        "ArrowRight",
+        "b",
+        "a",
+      ]) {
+        window.dispatchEvent(new KeyboardEvent("keydown", { key }));
+      }
+    });
+    const dialog = screen.getByRole("dialog", {
+      name: "Retro Chaos Mode Notification",
+    });
+    expect(dialog.textContent).toContain("Konami Sequence Detected");
+    expect(dialog.textContent).toContain("Konami Code Pioneer");
+    expect(dialog.textContent).toContain("Meme Vault link");
+    expect(dialog.textContent).not.toMatch(
+      /open for this session|permanently unlocked/
+    );
   });
 
   it("marks the selected filter and ASCII pills as pressed", () => {

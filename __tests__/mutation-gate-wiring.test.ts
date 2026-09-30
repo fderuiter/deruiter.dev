@@ -35,4 +35,13 @@ describe("mutation gate wiring", () => {
       'fileName: ".stryker-tmp/mutation-report.html"'
     );
   });
+
+  it("never lets the mutation break threshold fall below the ratcheted floor (#968)", async () => {
+    const { default: config } = (await import(
+      path.join(workspaceRoot, "stryker.config.mjs")
+    )) as { default: { thresholds: { break: number } } };
+
+    expect(config.thresholds.break).toBeGreaterThanOrEqual(75);
+    expect(config.thresholds.break).toBeLessThanOrEqual(80);
+  });
 });

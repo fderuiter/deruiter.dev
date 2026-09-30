@@ -15,6 +15,7 @@ import type {
   OetDescentSnapshot,
 } from "@/lib/patrol";
 import { OetDescentEngine } from "@/lib/patrol";
+import { useAnimationFrame } from "@/hooks/useAnimationFrame";
 import { useAnnouncer } from "@/hooks/useAnnouncer";
 import {
   IconGauge,
@@ -66,6 +67,8 @@ export const OetCanvas: React.FC<OetCanvasProps> = ({
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const hasRecordedEventRef = useRef<boolean>(false);
+  // The engine whose init() has run; the frame loop waits until it matches.
+  const initializedEngineRef = useRef<OetDescentEngine | null>(null);
   const { announce } = useAnnouncer();
 
   // Step-Through accessibility mode toggle
@@ -153,6 +156,7 @@ export const OetCanvas: React.FC<OetCanvasProps> = ({
   // Reinitialize engine on mount or scenario change
   useEffect(() => {
     activeEngine.init();
+    initializedEngineRef.current = activeEngine;
     hasRecordedEventRef.current = false;
   }, [activeEngine]);
 
@@ -165,17 +169,18 @@ export const OetCanvas: React.FC<OetCanvasProps> = ({
     };
   }, [customEngine, defaultEngine]);
 
-  // Continuous animation and physics loop
-  useEffect(() => {
-    let animId: number | null = null;
-    let lastTime = 0;
+  // Continuous animation and physics loop. A new engine, or a pause or
+  // step-through toggle, restarts the loop so its first frame steps by 0.
+  const loopRestartKey = useMemo(
+    () => ({ activeEngine, isPaused, isStepThroughMode }),
+    [activeEngine, isPaused, isStepThroughMode]
+  );
 
-    function onFrame(timestamp: number) {
-      if (lastTime === 0) {
-        lastTime = timestamp;
-      }
-      const deltaMs = timestamp - lastTime;
-      lastTime = timestamp;
+  useAnimationFrame(
+    (deltaMs) => {
+      // The callback sees a new engine from the commit's layout phase, but the
+      // engine is initialised in the effect above; never step or draw it first.
+      if (initializedEngineRef.current !== activeEngine) return;
 
       const currentStatus = activeEngine.createSnapshot().status;
       if (
@@ -197,18 +202,9 @@ export const OetCanvas: React.FC<OetCanvasProps> = ({
           activeEngine.render(ctx, 1.0);
         }
       }
-
-      animId = requestAnimationFrame(onFrame);
-    }
-
-    animId = requestAnimationFrame(onFrame);
-
-    return () => {
-      if (animId !== null) {
-        cancelAnimationFrame(animId);
-      }
-    };
-  }, [activeEngine, isPaused, isStepThroughMode]);
+    },
+    { restartKey: loopRestartKey }
+  );
 
   // Desktop Keyboard Input Handlers
   useEffect(() => {

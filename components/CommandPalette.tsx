@@ -38,6 +38,7 @@ import { filterFuzzySearch } from "@/lib/search-utils";
 import { useSearch } from "@/components/providers/SearchProvider";
 import { useAudio } from "@/components/providers/AudioProvider";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { useHotkeys } from "@/hooks/useHotkeys";
 import { scrollToElement } from "@/lib/scroll";
 import { unlockAchievement, setVaultUnlocked } from "@/lib/meme-data";
 import { playMemeSound } from "@/lib/meme-audio";
@@ -1654,6 +1655,20 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
   );
 };
 
+// Cmd+K and Ctrl+K both toggle the palette on every platform, matching the
+// hand-written listener this replaced, which accepted either modifier (or
+// both) and ignored Alt. matchesHotkey matches Ctrl, Meta and Alt exactly, so
+// each accepted combination is listed; Shift is tolerated because it is only
+// required when named.
+const PALETTE_TOGGLE_HOTKEYS = [
+  "Meta+K",
+  "Ctrl+K",
+  "Ctrl+Meta+K",
+  "Alt+Meta+K",
+  "Ctrl+Alt+K",
+  "Ctrl+Alt+Meta+K",
+] as const;
+
 export const CommandPalette: React.FC = () => {
   const [isMounted, setIsMounted] = useState(false);
   const { isOpen, setIsOpen, closeSearch } = useSearch();
@@ -1665,29 +1680,15 @@ export const CommandPalette: React.FC = () => {
     setIsMounted(true);
   }, []);
 
-  // 1. Keyboard Shortcut Listener (Cmd+K / Ctrl+K) site-wide
-  useEffect(() => {
-    if (!isMounted) return;
-    const isWithinBoundary = (target: EventTarget | null) => {
-      if (target instanceof Element) {
-        return !!target.closest("[data-keyboard-boundary]");
-      }
-      return false;
-    };
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (isWithinBoundary(e.target)) {
-        return;
-      }
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        setIsOpen(!isOpen);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isMounted, isOpen, setIsOpen]);
+  // 1. Keyboard Shortcut Listener (Cmd+K / Ctrl+K) site-wide. Either modifier
+  // toggles on every platform, and it also fires from inside the palette's own
+  // search input so the same chord closes it. Keys inside a
+  // [data-keyboard-boundary] region (games, terminals) are left to that region.
+  useHotkeys(PALETTE_TOGGLE_HOTKEYS, () => setIsOpen(!isOpen), {
+    enabled: isMounted,
+    allowInInputs: true,
+    preventDefault: true,
+  });
 
   // Expose test helper globally to open search modal programmatically
   useEffect(() => {

@@ -21,6 +21,7 @@
 - [ShopSlot](interfaces/ShopSlot.md)
 - [ShopState](interfaces/ShopState.md)
 - [ShopView](interfaces/ShopView.md)
+- [SuspendedRelic](interfaces/SuspendedRelic.md)
 
 ## Type Aliases
 
@@ -40,3 +41,4 @@
 - [endlessAct](functions/endlessAct.md)
 - [planActs](functions/planActs.md)
 - [runBlinds](functions/runBlinds.md)
+- [runChoice](functions/runChoice.md)

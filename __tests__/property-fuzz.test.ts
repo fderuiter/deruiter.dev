@@ -65,6 +65,11 @@ import {
   advanceDesk,
   advanceRun,
   createRunState,
+  dailySeed,
+  normalizeSeed,
+  parseChallengeHash,
+  challengeHash,
+  seedFromBytes,
   advanceTable,
   deriveTableView,
   createDeskState,
@@ -72,6 +77,9 @@ import {
   evaluateHand,
   roundRatio,
   scoreTimeline,
+  stakeLevels,
+  stakeModifiers,
+  MAX_STAKE,
   type DeskAction,
   type RunAction,
   type TableAction,
@@ -1319,6 +1327,24 @@ describe("Shift-Left Fuzz & Property-Based Verification", () => {
         )
       );
     });
+
+    it("keeps GCP-audit stakes cumulative: stake N's rules contain stake N-1's", () => {
+      fc.assert(
+        fc.property(fc.integer({ min: 2, max: MAX_STAKE }), (stake) => {
+          const lower = stakeLevels(stake - 1).map((l) => l.id);
+          const higher = stakeLevels(stake).map((l) => l.id);
+          expect(higher).toEqual(expect.arrayContaining(lower));
+          expect(higher).toHaveLength(lower.length + 1);
+          // Every rule of every stake up to N is still in force at N.
+          const modifiers = stakeModifiers(stake);
+          for (const level of stakeLevels(stake)) {
+            for (const [key, value] of Object.entries(level.modifier)) {
+              expect(modifiers[key as keyof typeof modifiers]).toBe(value);
+            }
+          }
+        })
+      );
+    });
   });
 });
 
@@ -1461,6 +1487,58 @@ describe("Clinical Data Engine - Fast-Check Property Fuzzing", () => {
         }
       }),
       { numRuns: 1000 }
+    );
+  });
+});
+
+describe("Trial & Error run seeds (#1528)", () => {
+  const bytes = fc.uint8Array({ minLength: 5, maxLength: 5 });
+
+  it("reads back every seed it writes, however the player types it", () => {
+    fc.assert(
+      fc.property(bytes, fc.boolean(), fc.boolean(), (raw, lower, spaced) => {
+        const seed = seedFromBytes(raw);
+        expect(seed).toMatch(/^[0-9A-HJKMNP-TV-Z]{4}-[0-9A-HJKMNP-TV-Z]{4}$/);
+        let typed = lower ? seed.toLowerCase() : seed;
+        if (spaced) typed = typed.replace("-", " ");
+        expect(normalizeSeed(typed)).toBe(seed);
+      }),
+      { numRuns: 1000 }
+    );
+  });
+
+  it("never throws on an arbitrary hash, and only returns valid seeds", () => {
+    fc.assert(
+      fc.property(fc.string({ maxLength: 80 }), (hash) => {
+        const challenge = parseChallengeHash(hash);
+        if (challenge) {
+          expect(challenge.seed.length).toBeGreaterThan(0);
+          if (challenge.daily) {
+            expect(dailySeed(challenge.daily)).toBe(challenge.seed);
+          }
+        }
+      }),
+      { numRuns: 1000 }
+    );
+  });
+
+  it("round-trips a Daily Protocol challenge link for any date", () => {
+    fc.assert(
+      fc.property(
+        fc.date({
+          min: new Date("2000-01-01T00:00:00Z"),
+          max: new Date("2100-12-31T23:59:59Z"),
+          noInvalidDate: true,
+        }),
+        (when) => {
+          const date = when.toISOString().slice(0, 10);
+          const seed = dailySeed(date);
+          expect(
+            parseChallengeHash(challengeHash(seed, { kind: "DAILY", date }))
+          ).toEqual({ seed, daily: date });
+        }
+      ),
+      { numRuns: 300 }
     );
   });
 });

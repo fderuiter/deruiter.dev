@@ -2,6 +2,7 @@
 import type React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { act, renderHook } from "@testing-library/react";
+import { fromAny } from "@total-typescript/shoehorn";
 import {
   GUIDED_BLIND_SCENARIO as GUIDED,
   LONG_PRESS_MS,
@@ -52,7 +53,7 @@ function setup(over: Partial<Options> = {}, view: TableView = baseView) {
 
 function keyEvent(key: string, init: Partial<KeyboardEventInit> = {}) {
   const target = document.createElement("button");
-  return {
+  return fromAny<React.KeyboardEvent<HTMLButtonElement>, unknown>({
     key,
     altKey: false,
     shiftKey: false,
@@ -63,15 +64,15 @@ function keyEvent(key: string, init: Partial<KeyboardEventInit> = {}) {
     currentTarget: target,
     preventDefault: vi.fn(),
     stopPropagation: vi.fn(),
-  } as unknown as React.KeyboardEvent<HTMLButtonElement>;
+  });
 }
 
 function pointer(pointerType: string, x = 0, y = 0) {
-  return {
+  return fromAny<React.PointerEvent<HTMLButtonElement>, unknown>({
     pointerType,
     clientX: x,
     clientY: y,
-  } as unknown as React.PointerEvent<HTMLButtonElement>;
+  });
 }
 
 const ids = baseView.handIds;
@@ -197,10 +198,10 @@ describe("useHandInteraction seals (#997)", () => {
       dropEffect: "none",
       getData: (type: string) => (type === SEAL_DRAG_TYPE ? SEAL.id : ""),
     };
-    const drag = {
+    const drag = fromAny<React.DragEvent<HTMLButtonElement>, unknown>({
       dataTransfer,
       preventDefault,
-    } as unknown as React.DragEvent<HTMLButtonElement>;
+    });
     act(() => result.current.bindCard(ids[1]).onDragOver(drag));
     expect(preventDefault).toHaveBeenCalled();
     expect(dataTransfer.dropEffect).toBe("copy");
@@ -281,9 +282,9 @@ describe("useHandInteraction pointer and touch (#997)", () => {
   it("keeps the browser menu off a long press by touch only", () => {
     const { result } = setup();
     const menu = () =>
-      ({
+      fromAny<React.MouseEvent<HTMLButtonElement>, unknown>({
         preventDefault: vi.fn(),
-      }) as unknown as React.MouseEvent<HTMLButtonElement>;
+      });
     act(() => result.current.bindCard(ids[0]).onPointerDown(pointer("touch")));
     const touch = menu();
     result.current.bindCard(ids[0]).onContextMenu(touch);

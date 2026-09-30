@@ -1342,6 +1342,101 @@ describe("ClinicalTrialChaos React Component UI Suite", () => {
     expect(container.textContent).toContain("pyjama bottoms");
   });
 
+  it("disables a rejected fix so the same wrong pick is never charged twice (#1554)", async () => {
+    vi.useFakeTimers();
+
+    await act(async () => {
+      root.render(<ClinicalTrialChaos />);
+    });
+    const startBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.includes("Start 3-Phase Campaign")
+    );
+    await act(async () => {
+      startBtn?.click();
+    });
+
+    const openFirstFlaggedField = async () => {
+      const card = Array.from(container.querySelectorAll("span"))
+        .find((s) => s.textContent?.includes("Validate Choice"))
+        ?.closest(".cursor-pointer") as HTMLElement | null;
+      expect(card).toBeTruthy();
+      await act(async () => {
+        card?.click();
+      });
+    };
+    const dialog = () =>
+      container.querySelector('[aria-labelledby="cc-fix-dialog-title"]');
+    const choices = () =>
+      Array.from(dialog()?.querySelectorAll("button") ?? []).filter((b) =>
+        /^\d/.test(b.textContent?.trim() ?? "")
+      );
+    const suspicion = () =>
+      container
+        .querySelector('[aria-label="FDA auditor suspicion"]')
+        ?.getAttribute("aria-valuenow");
+    const pressKey = async (key: string) => {
+      const board = container.querySelector(
+        '[data-keyboard-boundary="true"]'
+      ) as HTMLElement;
+      await act(async () => {
+        board.dispatchEvent(
+          new KeyboardEvent("keydown", { key, bubbles: true })
+        );
+      });
+    };
+
+    await openFirstFlaggedField();
+    expect(dialog()).toBeTruthy();
+
+    // The seeded first subject's Height field accepts only "180 cm".
+    const wrong = choices().find(
+      (b) => !b.textContent?.includes("180 cm")
+    ) as HTMLButtonElement;
+    const wrongLabel = wrong.textContent?.replace(/^\d/, "") ?? "";
+    const wrongIndex = choices().indexOf(wrong);
+    expect(wrong.disabled).toBe(false);
+
+    await act(async () => {
+      wrong.click();
+    });
+    const afterFirst = suspicion();
+    expect(Number(afterFirst)).toBeGreaterThan(0);
+
+    const rejected = choices()[wrongIndex] as HTMLButtonElement;
+    expect(rejected.disabled).toBe(true);
+    expect(rejected.getAttribute("aria-disabled")).toBe("true");
+    expect(rejected.getAttribute("data-rejected")).toBe("true");
+    expect(rejected.textContent).toContain("Rejected");
+    expect(rejected.textContent).toContain(wrongLabel);
+
+    // Neither a second click nor its number hotkey charges the mistake again.
+    await act(async () => {
+      rejected.click();
+    });
+    await pressKey(String(wrongIndex + 1));
+    expect(suspicion()).toBe(afterFirst);
+
+    // Closing and reopening the dialog keeps the rejection.
+    await pressKey("Escape");
+    expect(dialog()).toBeNull();
+    await openFirstFlaggedField();
+    const reopened = choices().find((b) =>
+      b.textContent?.includes(wrongLabel)
+    ) as HTMLButtonElement;
+    expect(reopened.disabled).toBe(true);
+    await act(async () => {
+      reopened.click();
+    });
+    expect(suspicion()).toBe(afterFirst);
+
+    // The other options stay selectable.
+    expect(
+      choices().filter((b) => !(b as HTMLButtonElement).disabled).length
+    ).toBe(choices().length - 1);
+
+    vi.useRealTimers();
+  });
+
   it("closes the fix dialog at game over and counts wrong fixes as violations (#1325)", async () => {
     vi.useFakeTimers();
     // Endless subjects are random; seed the draw so runs repeat closely. The

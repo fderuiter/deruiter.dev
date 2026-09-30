@@ -944,9 +944,15 @@ export function generateBIMOReport(
   const violations = scoreState.auditViolations;
   const cleanSubmissions = scoreState.cleanSubmissions;
 
+  // With nothing submitted there is no clean rate to report (#1553): the
+  // report shows "n/a" rather than a perfect 100%.
   const cleanRate =
-    totalSubmissions > 0 ? (cleanSubmissions / totalSubmissions) * 100 : 100;
-  const violationPenalty = Math.min(60, violations * 15);
+    totalSubmissions > 0 ? (cleanSubmissions / totalSubmissions) * 100 : null;
+  // The score is charged for every violation the report lists: missed or
+  // misrouted CRFs (audit violations) and wrong fixes (rule violations), the
+  // same two counts the end-of-run "Violations" stat adds together (#1553).
+  const listedViolations = violations + (ruleViolations?.length ?? 0);
+  const violationPenalty = Math.min(60, listedViolations * 15);
   const suspicionPenalty = Math.min(30, auditorState.suspicion * 0.3);
   const rawScore = Math.max(
     0,
@@ -1020,8 +1026,8 @@ export function generateBIMOReport(
   }
 
   if (
+    cleanRate !== null &&
     cleanRate < 80 &&
-    totalSubmissions > 0 &&
     !findings.some((f) => f.id === "FND-003")
   ) {
     findings.push({
@@ -1049,7 +1055,7 @@ export function generateBIMOReport(
   } else if (findings.length > 0 || auditorState.suspicion > 30) {
     verdict = "VAI (Voluntary Action Indicated)";
     summary =
-      "Objectionable conditions were noted, but they do not meet the threshold for regulatory action. The sponsor is advised to implement corrective and preventive action (CAPA) plans for Corrective Action plans for Controlled Terminology validation.";
+      "Objectionable conditions were noted, but they do not meet the threshold for regulatory action. The sponsor is advised to implement corrective and preventive action (CAPA) plans for Controlled Terminology validation.";
   }
 
   return {
@@ -1061,10 +1067,10 @@ export function generateBIMOReport(
     }),
     overallScore: rawScore,
     verdict,
-    complianceRate: Math.round(cleanRate),
+    complianceRate: cleanRate === null ? null : Math.round(cleanRate),
     findings,
     submittedCRFs: totalSubmissions,
-    cleanRate: Math.round(cleanRate),
+    cleanRate: cleanRate === null ? null : Math.round(cleanRate),
     summary,
   };
 }

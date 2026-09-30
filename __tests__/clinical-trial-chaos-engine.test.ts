@@ -412,7 +412,7 @@ describe("Clinical Trial Chaos Engine - Unit Tests", () => {
       createInitialAuditorState(),
       []
     );
-    expect(zeroSubmissionsReport.cleanRate).toBe(100);
+    expect(zeroSubmissionsReport.cleanRate).toBeNull();
   });
 
   it("handles verify21CFRSubmission with non-compliant subjects or invalid domain", () => {

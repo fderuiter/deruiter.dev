@@ -33,7 +33,17 @@ export class SyncFlashStorageHandler implements SyncFlashStorageSpec {
             }
           );
         }
-        savePersistedFlashStorage(input.variables);
+        const saved = savePersistedFlashStorage(input.variables);
+        if (!saved) {
+          return createFailure(
+            "STORAGE_UNAVAILABLE",
+            "Failed to save flash storage to localStorage",
+            {
+              suggestion: "Check localStorage availability and quota limits",
+              recoverable: true,
+            }
+          );
+        }
         const totalKb = input.variables.reduce((sum, v) => sum + v.sizeKb, 0);
         return createSuccess({
           variables: input.variables,
@@ -45,7 +55,17 @@ export class SyncFlashStorageHandler implements SyncFlashStorageSpec {
       if (input.action === "clear") {
         // Persist an explicit empty array (not removeItem) so a restart does
         // not re-seed the default flash entry (#1210).
-        savePersistedFlashStorage([]);
+        const saved = savePersistedFlashStorage([]);
+        if (!saved) {
+          return createFailure(
+            "STORAGE_UNAVAILABLE",
+            "Failed to clear flash storage in localStorage",
+            {
+              suggestion: "Check localStorage availability and quota limits",
+              recoverable: true,
+            }
+          );
+        }
         return createSuccess({
           variables: [],
           totalAllocatedKb: 0,

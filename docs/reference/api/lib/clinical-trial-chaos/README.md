@@ -782,6 +782,18 @@ Re-exports [selectNextUrgentSubject](engine/functions/selectNextUrgentSubject.md
 
 ***
 
+### SettledSubmission
+
+Re-exports [SettledSubmission](shift/interfaces/SettledSubmission.md)
+
+***
+
+### settleSubmission
+
+Re-exports [settleSubmission](shift/functions/settleSubmission.md)
+
+***
+
 ### SHIFT\_END\_LOGS
 
 Re-exports [SHIFT_END_LOGS](shift/variables/SHIFT_END_LOGS.md)

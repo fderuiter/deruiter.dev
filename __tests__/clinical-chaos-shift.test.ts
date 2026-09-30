@@ -31,6 +31,7 @@ import {
   replaceObservation,
   scoreSubmission,
   selectNextDossier,
+  settleSubmission,
   SHIFT_END_LOGS,
   spendPowerUp,
   startCoffeeBreak,
@@ -308,6 +309,51 @@ describe("phase completion", () => {
     expect(report.complianceRate).toBeNull();
   });
 
+  it("grades a phase clear on the tallies after the final submission (#1609)", () => {
+    const clean = (id: string) =>
+      subject({ id, observations: [observation({ isResolved: true })] });
+    let score = createInitialScoreState();
+    let outcome = settleSubmission(score, clean("s-0"), true, "campaign", 1);
+    for (let i = 1; i < PHASE_TARGETS[1]; i++) {
+      expect(outcome.phaseCleared).toBe(false);
+      score = outcome.scoreState;
+      outcome = settleSubmission(score, clean(`s-${i}`), true, "campaign", 1);
+    }
+
+    expect(outcome.phaseCleared).toBe(true);
+    expect(outcome.scoreState).toMatchObject({
+      subjectsSubmitted: PHASE_TARGETS[1],
+      cleanSubmissions: PHASE_TARGETS[1],
+    });
+    const report = buildInspectionReport(
+      outcome.scoreState,
+      createInitialAuditorState(),
+      [],
+      [],
+      null,
+      []
+    );
+    expect(report.cleanRate).toBe(100);
+  });
+
+  it("settles a submission exactly as scoreSubmission and applySubmissionScore do", () => {
+    const score = {
+      ...createInitialScoreState(),
+      combo: 2,
+      subjectsSubmitted: 3,
+    };
+    const dirty = subject();
+    const adjust = (points: number) => points * 2;
+    const submission = scoreSubmission(score, dirty, false, adjust);
+    expect(settleSubmission(score, dirty, false, "endless", 1, adjust)).toEqual(
+      {
+        submission,
+        scoreState: applySubmissionScore(score, submission, false),
+        phaseCleared: false,
+      }
+    );
+  });
+
   it("adds the sponsor's skeletons to the inspection report", () => {
     const score = {
       ...createInitialScoreState(),
@@ -380,12 +426,25 @@ describe("lifelines", () => {
     });
   });
 
-  it("leaves an auditor whose behavior changed during the break alone", () => {
+  it("resumes patrol even if a wrong fix raised suspicion during the break (#1610)", () => {
     const suspicious = raiseAuditorSuspicion(
       startCoffeeBreak(createInitialAuditorState()),
       10
     );
-    expect(endCoffeeBreak(suspicious)).toBe(suspicious);
+    expect(endCoffeeBreak(suspicious)).toMatchObject({
+      behavior: "patrolling",
+      isPaused: false,
+      suspicion: 10,
+    });
+  });
+
+  it("leaves an auditor writing a Form 483 alone", () => {
+    const issuing = raiseAuditorSuspicion(
+      startCoffeeBreak(createInitialAuditorState()),
+      100
+    );
+    expect(issuing.behavior).toBe("issuing_483");
+    expect(endCoffeeBreak(issuing)).toBe(issuing);
   });
 
   it("extends every deadline by 12 seconds, capped 10 over full time", () => {
@@ -526,6 +585,31 @@ describe("tickShiftClocks", () => {
       behavior: "patrolling",
       isPaused: false,
     });
+  });
+
+  it("un-freezes the auditor after a wrong fix during a coffee break (#1610)", () => {
+    const powerUps = spendPowerUp(
+      createInitialPowerUpInventory(),
+      "fda-coffee-break"
+    );
+    const onBreak = startCoffeeBreak(createInitialAuditorState());
+    const afterWrongFix = raiseAuditorSuspicion(onBreak, 10);
+
+    const tick = tickShiftClocks(
+      { ...clocks, auditor: afterWrongFix, powerUps },
+      9
+    );
+    expect(tick.coffeeBreakEnded).toBe(true);
+    expect(tick.auditor).toMatchObject({
+      behavior: "patrolling",
+      isPaused: false,
+    });
+
+    const patrolled = tickShiftClocks(
+      { ...clocks, auditor: tick.auditor, powerUps: tick.powerUps },
+      1
+    );
+    expect(patrolled.auditor.x).not.toBe(tick.auditor.x);
   });
 
   it("counts an amendment down and concludes it", () => {

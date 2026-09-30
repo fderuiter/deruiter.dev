@@ -83,6 +83,7 @@ for (const detector of SECRET_DETECTORS) {
  */
 const GHP_FIXTURE_LITERAL = new Set<string>([
   "ghp_123456789012345678901234567890123456",
+  "ghp_12345678901234567890123456789012345678",
 ]);
 
 function union(...sets: readonly Set<string>[]): Set<string> {
@@ -106,6 +107,7 @@ const SAFE_FILE_VALUES = new Map<string, Set<string>>([
     union(MIGRATION_REPLAY_FIXTURES, GHP_FIXTURE_LITERAL),
   ],
   ["__tests__/validation.test.ts", GHP_FIXTURE_LITERAL],
+  ["__tests__/triage-security-issue.test.ts", GHP_FIXTURE_LITERAL],
 ]);
 
 /**

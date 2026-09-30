@@ -72,10 +72,10 @@ export const ExpressionTree: React.FC<ExpressionTreeProps> = ({
                     isSelected
                       ? "border-purple-400 bg-purple-600/30 text-white shadow-[0_0_12px_rgba(168,85,247,0.5)] ring-2 ring-purple-400"
                       : isHovered
-                      ? "border-purple-500/60 bg-purple-950/40 text-purple-100"
-                      : isTargetEligible
-                      ? "border-purple-400 bg-purple-950/60 text-purple-100 shadow-[0_0_12px_rgba(168,85,247,0.5)] ring-1 ring-purple-400"
-                      : "border-purple-500/30 bg-purple-950/20 text-purple-200 hover:border-purple-400"
+                        ? "border-purple-500/60 bg-purple-950/40 text-purple-100"
+                        : isTargetEligible
+                          ? "border-purple-400 bg-purple-950/60 text-purple-100 shadow-[0_0_12px_rgba(168,85,247,0.5)] ring-1 ring-purple-400"
+                          : "border-purple-500/30 bg-purple-950/20 text-purple-200 hover:border-purple-400"
                   }`}
                 >
                   <span className="font-bold text-purple-300">{hypName}:</span>
@@ -96,7 +96,9 @@ export const ExpressionTree: React.FC<ExpressionTreeProps> = ({
               GOAL ⊢
             </span>
             <span className="text-sm font-semibold font-mono text-zinc-200">
-              {isProofComplete ? "Q.E.D. (Proof Complete)" : mathematicalNotation}
+              {isProofComplete
+                ? "Q.E.D. (Proof Complete)"
+                : mathematicalNotation}
             </span>
           </div>
 
@@ -107,7 +109,10 @@ export const ExpressionTree: React.FC<ExpressionTreeProps> = ({
               <span className="rounded bg-brand-cyan/10 border border-brand-cyan/30 px-2 py-0.5 text-brand-cyan font-bold flex items-center gap-1">
                 <IconFocus2 className="w-3 h-3" />
                 <span>
-                  {inspectedNode.type}: <code className="text-white font-mono">{renderASTString(inspectedNode)}</code>
+                  {inspectedNode.type}:{" "}
+                  <code className="text-white font-mono">
+                    {renderASTString(inspectedNode)}
+                  </code>
                 </span>
               </span>
             ) : (
@@ -137,11 +142,18 @@ export const ExpressionTree: React.FC<ExpressionTreeProps> = ({
               {selectedTargetId ? (
                 <span className="text-brand-cyan font-semibold flex items-center justify-center gap-1">
                   <IconSparkles className="w-3.5 h-3.5 text-brand-cyan" />
-                  <span>Subterm locked: &apos;{inspectedNode ? renderASTString(inspectedNode) : selectedTargetId}&apos;. Click or drop a tactic card!</span>
+                  <span>
+                    Subterm locked: &apos;
+                    {inspectedNode
+                      ? renderASTString(inspectedNode)
+                      : selectedTargetId}
+                    &apos;. Click or drop a tactic card!
+                  </span>
                 </span>
               ) : (
                 <span>
-                  Drag a tactic card onto any target node, or click a node then click a card.
+                  Drag a tactic card onto any target node, or click a node then
+                  click a card.
                 </span>
               )}
             </p>
@@ -159,4 +171,3 @@ export const ExpressionTree: React.FC<ExpressionTreeProps> = ({
     </div>
   );
 };
-

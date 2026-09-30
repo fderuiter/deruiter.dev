@@ -386,6 +386,24 @@ Re-exports [CellTrace](internal/listing/interfaces/CellTrace.md)
 
 ***
 
+### Challenge
+
+Re-exports [Challenge](internal/seed/interfaces/Challenge.md)
+
+***
+
+### challengeHash
+
+Re-exports [challengeHash](internal/seed/functions/challengeHash.md)
+
+***
+
+### challengeOrigin
+
+Re-exports [challengeOrigin](internal/seed/functions/challengeOrigin.md)
+
+***
+
 ### ClassifiableCard
 
 Re-exports [ClassifiableCard](internal/hands/type-aliases/ClassifiableCard.md)
@@ -629,6 +647,12 @@ Re-exports [CsrStage](types/type-aliases/CsrStage.md)
 ### CsrStageSchema
 
 Re-exports [CsrStageSchema](types/variables/CsrStageSchema.md)
+
+***
+
+### dailySeed
+
+Re-exports [dailySeed](internal/seed/functions/dailySeed.md)
 
 ***
 
@@ -1214,6 +1238,12 @@ Re-exports [isFreeCrisisChoice](types/functions/isFreeCrisisChoice.md)
 
 ***
 
+### isIsoDate
+
+Re-exports [isIsoDate](internal/seed/functions/isIsoDate.md)
+
+***
+
 ### kaplanMeier
 
 Re-exports [kaplanMeier](internal/km/functions/kaplanMeier.md)
@@ -1370,6 +1400,12 @@ Re-exports [nextTutorialStep](internal/tutorial/functions/nextTutorialStep.md)
 
 ***
 
+### normalizeSeed
+
+Re-exports [normalizeSeed](internal/seed/functions/normalizeSeed.md)
+
+***
+
 ### OpenedPack
 
 Re-exports [OpenedPack](internal/run/interfaces/OpenedPack.md)
@@ -1454,9 +1490,21 @@ Re-exports [PackSlot](internal/run/interfaces/PackSlot.md)
 
 ***
 
+### parseChallengeHash
+
+Re-exports [parseChallengeHash](internal/seed/functions/parseChallengeHash.md)
+
+***
+
 ### parseRunSave
 
 Re-exports [parseRunSave](internal/save/functions/parseRunSave.md)
+
+***
+
+### parseSeed
+
+Re-exports [parseSeed](internal/seed/functions/parseSeed.md)
 
 ***
 
@@ -1874,6 +1922,12 @@ Re-exports [RunLog](internal/save/interfaces/RunLog.md)
 
 ***
 
+### RunOrigin
+
+Re-exports [RunOrigin](internal/seed/type-aliases/RunOrigin.md)
+
+***
+
 ### RunPhase
 
 Re-exports [RunPhase](internal/run/type-aliases/RunPhase.md)
@@ -2057,6 +2111,12 @@ Re-exports [SealEffect](types/type-aliases/SealEffect.md)
 ### SealEffectSchema
 
 Re-exports [SealEffectSchema](types/variables/SealEffectSchema.md)
+
+***
+
+### seedFromBytes
+
+Re-exports [seedFromBytes](internal/seed/functions/seedFromBytes.md)
 
 ***
 
@@ -2573,6 +2633,12 @@ Re-exports [UNBLINDING_RULE_ID](internal/blinding/variables/UNBLINDING_RULE_ID.m
 ### uniformAt
 
 Re-exports [uniformAt](internal/rng/functions/uniformAt.md)
+
+***
+
+### utcDate
+
+Re-exports [utcDate](internal/seed/functions/utcDate.md)
 
 ***
 

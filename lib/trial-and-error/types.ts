@@ -2018,6 +2018,20 @@ export const RunSaveSchema = z.object({
   /** The run's stake. Absent in older saves, which are stake 1. */
   stake: StakeSchema.optional(),
   actions: z.array(RunActionSchema).max(5000),
+  /**
+   * How the seed was chosen (#1528). Optional, so saves from before it load
+   * as random runs.
+   */
+  origin: z
+    .discriminatedUnion("kind", [
+      z.object({ kind: z.literal("RANDOM") }),
+      z.object({ kind: z.literal("SEEDED") }),
+      z.object({
+        kind: z.literal("DAILY"),
+        date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      }),
+    ])
+    .optional(),
 });
 /** A saved run, as stored. */
 export type RunSave = z.infer<typeof RunSaveSchema>;

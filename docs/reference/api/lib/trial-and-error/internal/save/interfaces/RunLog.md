@@ -24,6 +24,14 @@ The plan's id: the act played on its own, or the campaign.
 
 ***
 
+### origin?
+
+> `optional` **origin?**: [`RunOrigin`](../../seed/type-aliases/RunOrigin.md)
+
+How the seed was chosen; absent means a random run.
+
+***
+
 ### seed
 
 > **seed**: `string`

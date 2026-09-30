@@ -15,20 +15,17 @@ import { clamp } from "@/lib/game-utils";
 import {
   IconFlame,
   IconRefresh,
-  IconTrophy,
   IconPlayerPlay,
   IconPlayerPause,
   IconSnowflake,
   IconSparkles,
   IconBook,
   IconX,
-  IconAward,
   IconVolume,
   IconVolumeOff,
   IconChevronRight,
   IconTarget,
   IconHeart,
-  IconHeartBroken,
 } from "@tabler/icons-react";
 import { FieldManualButton } from "@/components/FieldManualButton";
 import { FullscreenButton } from "@/components/arcade/FullscreenButton";
@@ -47,6 +44,7 @@ import {
 } from "@/components/laser-loon/scene-art";
 import { PauseMenu } from "@/components/laser-loon/PauseMenu";
 import { ArcadeHud } from "@/components/arcade/ArcadeHud";
+import { ResultCard } from "@/components/arcade/ResultCard";
 import { useArcadeFx } from "@/hooks/useArcadeFx";
 import { safeGetRawItem, safeSetRawItem } from "@/lib/safe-storage";
 import {
@@ -148,6 +146,8 @@ export const LaserLoon: React.FC = () => {
   const effectiveHighScore = Math.max(highScore, loadedHighScore);
   const [combo, setCombo] = useState(0);
   const [maxCombo, setMaxCombo] = useState(0);
+  // The best score before this run, for the result card's best-score line.
+  const [runStartBest, setRunStartBest] = useState(0);
   const [multiplier, setMultiplier] = useState(1);
   const [timeLeft, setTimeLeft] = useState(45);
   const [ultimateMeter, setUltimateMeter] = useState(0);
@@ -670,6 +670,7 @@ export const LaserLoon: React.FC = () => {
   // Start game session
   const startGame = useCallback(() => {
     const fresh = createInitialState(mode);
+    setRunStartBest(Math.max(bestScoreRef.current, loadedHighScore));
     scoreRef.current = 0;
     setScore(0);
     setCombo(0);
@@ -697,7 +698,7 @@ export const LaserLoon: React.FC = () => {
     }
 
     recordEvent("laser_loon_start", "project_click").catch(() => {});
-  }, [mode, recordEvent]);
+  }, [mode, recordEvent, loadedHighScore]);
 
   // Reset Game
   const resetGame = useCallback(() => {
@@ -1677,10 +1678,9 @@ export const LaserLoon: React.FC = () => {
 
   // Keyboard Handlers
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    // Space and Enter on a pause-dialog button activate that button; the
-    // playfield's own shortcuts would otherwise swallow them and resume.
+    // Space and Enter on a dialog's button (pause menu, result card) activate
+    // that button; the playfield's own shortcuts would otherwise swallow them.
     if (
-      isPaused &&
       (e.key === " " || e.key === "Enter") &&
       e.target instanceof HTMLElement &&
       e.target !== e.currentTarget &&
@@ -2432,228 +2432,156 @@ export const LaserLoon: React.FC = () => {
 
         {/* Newspaper Story Card (Act Intro) */}
         {gameState === "act-intro" && (
-          <div className="arcade-shooter-story absolute inset-0 bg-neutral-950/90 z-30 flex flex-col items-center p-3 text-center select-none overflow-y-auto">
-            <div className="max-w-lg w-full bg-stone-900/90 border-2 border-stone-600/80 rounded-2xl p-6 shadow-2xl text-left font-serif text-stone-200 relative">
-              <div className="text-center border-b-2 border-stone-600/80 pb-3 mb-3">
-                <span className="text-[10px] tracking-widest uppercase font-mono text-amber-400 block mb-1">
+          <div className="arcade-shooter-story absolute inset-0 bg-black/80 z-30 flex flex-col items-center p-3 select-none overflow-y-auto">
+            {/* Act intro as a newspaper front page (#1599). */}
+            <article className="loon-newsprint my-auto w-full max-w-[36rem] rounded-sm px-6 py-5 text-left shadow-2xl">
+              <header className="text-center">
+                <div className="flex items-baseline justify-between font-mono text-[10px] uppercase tracking-widest text-[#5b5346]">
+                  <span>Act {currentActNum} of 4</span>
+                  <span>{currentAct.location}</span>
+                </div>
+                <p className="loon-newsprint-masthead mt-1 border-y-[3px] border-double border-[#1c1a17] py-1 text-3xl leading-none">
+                  The Loon Ledger
+                </p>
+                <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.2em] text-[#8a2c1f]">
                   {currentAct.newspaperSubheader}
-                </span>
-                <h4 className="text-lg sm:text-xl font-extrabold uppercase tracking-tight text-white leading-tight font-serif">
+                </p>
+                <h4 className="loon-newsprint-headline mt-1 text-2xl sm:text-3xl leading-[1.05]">
                   {currentAct.newspaperHeadline}
                 </h4>
-              </div>
+              </header>
 
-              <div className="space-y-2 mb-6 font-sans text-xs text-stone-300 leading-relaxed">
+              <div className="mt-4 border-t border-[#1c1a17]/40 pt-3 text-[13px] leading-snug text-[#2a2620] sm:columns-2 sm:gap-6 [&>p+p]:mt-2">
                 {currentAct.storyIntro.map((paragraph, idx) => (
-                  <p key={idx}>{paragraph}</p>
+                  <p
+                    key={idx}
+                    className={
+                      idx === 0
+                        ? "first-letter:float-left first-letter:mr-1 first-letter:text-4xl first-letter:font-bold first-letter:leading-[0.85]"
+                        : undefined
+                    }
+                  >
+                    {paragraph}
+                  </p>
                 ))}
               </div>
 
-              <div className="flex items-center justify-between gap-4 border-t border-stone-700/80 pt-4 flex-wrap">
-                <div className="text-[10px] font-mono text-stone-400">
-                  <span>Location: </span>
-                  <span className="text-amber-300 font-bold">
-                    {currentAct.location}
-                  </span>
-                </div>
-
+              <div className="mt-4 flex items-center justify-between gap-4 border-t border-[#1c1a17] pt-3">
+                <span className="font-mono text-[10px] uppercase tracking-widest text-[#5b5346]">
+                  Boss sighted: {currentAct.bossName}
+                </span>
                 <button
                   onClick={() => startAct(currentActNum)}
-                  className="inline-flex items-center justify-center gap-2 min-h-[44px] min-w-[44px] px-5 py-2 rounded-xl bg-red-500 hover:bg-red-400 text-white font-mono font-bold text-xs shadow-lg cursor-pointer transition-all transform hover:scale-105 active:scale-95 touch-manipulation select-none ml-auto"
+                  className="inline-flex items-center justify-center gap-2 min-h-[44px] min-w-[44px] px-5 py-2 rounded-sm bg-[#1c1a17] hover:bg-[#35302a] text-[#f3ecd9] font-mono font-bold text-xs uppercase tracking-wider cursor-pointer transition-colors active:scale-[0.98] touch-manipulation select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8a2c1f] focus-visible:ring-offset-2 focus-visible:ring-offset-[#f3ecd9]"
                 >
-                  <span>ENGAGE STAGE [SPACE]</span>
+                  <span>Engage stage [Space]</span>
                   <IconChevronRight className="w-4 h-4" />
                 </button>
               </div>
-            </div>
+            </article>
           </div>
         )}
 
-        {/* Act Victory Screen */}
+        {/* End-of-round cards share the Arcade Kit ResultCard (#1599). */}
         {gameState === "act-victory" && (
-          <div className="absolute inset-0 bg-neutral-950/90 backdrop-blur-md z-30 flex flex-col items-center justify-center text-center p-6 select-none animate-in fade-in zoom-in duration-200">
-            <div className="w-14 h-14 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center mb-3 text-emerald-400 animate-bounce">
-              <IconAward className="w-7 h-7" />
-            </div>
-            <h3 className="text-2xl font-bold text-emerald-400 font-mono tracking-tight mb-1">
-              STAGE CLEARED!
-            </h3>
-            <p className="text-xs text-neutral-300 max-w-md mb-4 leading-relaxed font-sans">
-              &quot;{currentAct.victoryQuote}&quot;
-            </p>
-            <div className="grid grid-cols-2 gap-4 bg-neutral-900/80 border border-neutral-800 rounded-2xl p-4 mb-6 min-w-[240px]">
-              <div>
-                <span className="text-[10px] font-mono text-neutral-500 uppercase block">
-                  Current Score
-                </span>
-                <span className="text-xl font-mono font-bold text-red-400">
-                  {score}
-                </span>
-              </div>
-              <div>
-                <span className="text-[10px] font-mono text-neutral-500 uppercase block">
-                  Act Boss
-                </span>
-                <span className="text-xs font-mono font-bold text-emerald-400 mt-1 block">
-                  DEFEATED
-                </span>
-              </div>
-            </div>
-            <button
-              onClick={() => {
+          <ResultCard
+            title={`Act ${currentActNum} cleared`}
+            stamp="Cleared"
+            verdict="win"
+            message={`"${currentAct.victoryQuote}"`}
+            stats={[
+              { label: "Score", value: score },
+              { label: "Max combo", value: maxCombo, suffix: "x" },
+            ]}
+            score={score}
+            previousBest={runStartBest}
+            primary={{
+              label: `Advance to Act ${currentActNum + 1} [Space]`,
+              icon: <IconChevronRight className="w-4 h-4" />,
+              onClick: () => {
                 setCurrentActNum((prev) => prev + 1);
                 setGameState("act-intro");
-              }}
-              className="inline-flex items-center justify-center gap-2 min-h-[44px] min-w-[44px] px-6 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-mono font-bold text-sm rounded-xl shadow-[0_0_20px_rgba(16,185,129,0.4)] transition-all transform hover:scale-105 active:scale-95 cursor-pointer touch-manipulation select-none"
-            >
-              <span>ADVANCE TO ACT {currentActNum + 1} [SPACE]</span>
-              <IconChevronRight className="w-4 h-4" />
-            </button>
-          </div>
+              },
+            }}
+          />
         )}
 
-        {/* Act Failed Screen */}
         {gameState === "act-failed" && (
-          <div className="absolute inset-0 bg-neutral-950/90 backdrop-blur-md z-30 flex flex-col items-center justify-center text-center p-6 select-none animate-in fade-in zoom-in duration-200">
-            <div className="w-14 h-14 rounded-full bg-rose-500/10 border border-rose-500/30 flex items-center justify-center mb-3 text-rose-400">
-              <IconHeartBroken className="w-7 h-7" />
-            </div>
-            <h3 className="text-2xl font-bold text-rose-400 font-mono tracking-tight mb-1">
-              THE LOON IS DOWN
-            </h3>
-            <p className="text-xs text-neutral-300 max-w-md mb-4 leading-relaxed font-sans">
-              Three hits and the loon splashes down. Dodge with W/S or the arrow
-              keys, freeze enemies with the Glacial Cryo-Mortar [4], and grab a
-              Pronto Pup to shield a hit.
-            </p>
-            <div className="grid grid-cols-2 gap-4 bg-neutral-900/80 border border-neutral-800 rounded-2xl p-4 mb-6 min-w-[240px]">
-              <div>
-                <span className="text-[10px] font-mono text-neutral-500 uppercase block">
-                  Score
-                </span>
-                <span className="text-xl font-mono font-bold text-red-400">
-                  {score}
-                </span>
-              </div>
-              <div>
-                <span className="text-[10px] font-mono text-neutral-500 uppercase block">
-                  Act Kills
-                </span>
-                <span className="text-xl font-mono font-bold text-amber-400">
-                  {actKills}/{currentAct.requiredMinionKills}
-                </span>
-              </div>
-            </div>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
+          <ResultCard
+            title="The loon is down"
+            stamp="Down"
+            verdict="loss"
+            message="Three hits and the loon splashes down. Dodge with W/S or the arrow keys, freeze enemies with the Glacial Cryo-Mortar [4], and grab a Pronto Pup to shield a hit."
+            stats={[
+              { label: "Score", value: score },
+              {
+                label: "Act kills",
+                value: actKills,
+                suffix: `/${currentAct.requiredMinionKills}`,
+              },
+              { label: "Max combo", value: maxCombo, suffix: "x" },
+            ]}
+            score={score}
+            previousBest={runStartBest}
+            primary={{
+              label: `Try Act ${currentActNum} again [Space]`,
+              icon: <IconRefresh className="w-4 h-4" />,
+              onClick: () => {
                 startAct(currentActNum);
                 containerRef.current?.focus({ preventScroll: true });
-              }}
-              className="inline-flex items-center justify-center gap-2 min-h-[44px] min-w-[44px] px-6 py-2.5 bg-rose-500 hover:bg-rose-400 text-white font-mono font-bold text-sm rounded-xl transition-all transform hover:scale-105 active:scale-95 cursor-pointer touch-manipulation select-none"
-            >
-              <IconRefresh className="w-4 h-4" />
-              TRY ACT {currentActNum} AGAIN [SPACE]
-            </button>
-          </div>
+              },
+            }}
+            secondary={{ label: "Quit to title", onClick: resetGame }}
+          />
         )}
 
-        {/* Campaign Grand Victory Screen */}
         {gameState === "campaign-victory" && (
-          <div className="absolute inset-0 bg-neutral-950/95 backdrop-blur-lg z-30 flex flex-col items-center justify-center text-center p-6 select-none animate-in fade-in zoom-in duration-300">
-            <div className="w-16 h-16 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center mb-3 text-amber-300 animate-bounce shadow-[0_0_30px_rgba(245,158,11,0.4)]">
-              <IconTrophy className="w-8 h-8" />
-            </div>
-            <h3 className="text-3xl font-extrabold text-amber-300 font-mono tracking-tight mb-2">
-              HISTORY MADE! F277 PREVAILS!
-            </h3>
-            <p className="text-xs text-neutral-300 max-w-lg mb-5 leading-relaxed font-sans">
-              Laser Loon is hoisted high atop the Minnesota State Capitol Dome!
-              Over <span className="text-amber-300 font-bold">$13,500</span>{" "}
-              raised for the Saint Paul Public Library Foundation as the public
-              domain legend lives on.
-            </p>
-            <div className="grid grid-cols-2 gap-4 bg-neutral-900/80 border border-neutral-800 rounded-2xl p-4 mb-6 min-w-[280px]">
-              <div>
-                <span className="text-[10px] font-mono text-neutral-500 uppercase block">
-                  Total Score
-                </span>
-                <span className="text-2xl font-mono font-bold text-amber-400">
-                  {score}
-                </span>
-              </div>
-              <div>
-                <span className="text-[10px] font-mono text-neutral-500 uppercase block">
-                  Rank
-                </span>
-                <span className="text-2xl font-mono font-bold text-red-400">
-                  STATE FLAG
-                </span>
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => {
-                  startGame();
-                }}
-                className="inline-flex items-center justify-center gap-2 min-h-[44px] min-w-[44px] px-6 py-2.5 bg-red-500 hover:bg-red-400 text-white font-mono font-bold text-sm rounded-xl shadow-lg cursor-pointer touch-manipulation select-none active:scale-95"
-              >
-                <IconRefresh className="w-4 h-4" />
-                PLAY AGAIN [SPACE]
-              </button>
-              <button
-                onClick={() => setShowMuseum(true)}
-                className="inline-flex items-center justify-center gap-2 min-h-[44px] min-w-[44px] px-4 py-2.5 bg-neutral-900 text-amber-300 border border-amber-500/30 font-mono font-bold text-sm rounded-xl cursor-pointer touch-manipulation select-none active:scale-95"
-              >
-                <IconBook className="w-4 h-4" />
-                FLAG MUSEUM
-              </button>
-            </div>
-          </div>
+          <ResultCard
+            title="History made! F277 prevails"
+            stamp="State flag"
+            verdict="win"
+            message="Laser Loon is hoisted high atop the Minnesota State Capitol Dome! Over $13,500 raised for the Saint Paul Public Library Foundation as the public domain legend lives on."
+            stats={[
+              { label: "Total score", value: score },
+              { label: "Max combo", value: maxCombo, suffix: "x" },
+              { label: "Acts", value: CAMPAIGN_ACTS.length },
+            ]}
+            score={score}
+            previousBest={runStartBest}
+            primary={{
+              label: "Play again [Space]",
+              icon: <IconRefresh className="w-4 h-4" />,
+              onClick: startGame,
+            }}
+            secondary={{
+              label: "Flag Museum",
+              icon: <IconBook className="w-4 h-4" />,
+              onClick: () => setShowMuseum(true),
+            }}
+          />
         )}
 
-        {/* Game Over Screen */}
         {gameState === "gameover" && (
-          <div className="absolute inset-0 bg-neutral-950/90 backdrop-blur-md z-30 flex flex-col items-center justify-center text-center p-6 select-none animate-in fade-in zoom-in duration-200">
-            <div className="w-14 h-14 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center mb-3 text-red-400 animate-bounce">
-              <IconTrophy className="w-7 h-7" />
-            </div>
-            <h3 className="text-2xl font-bold text-red-400 font-mono tracking-tight mb-1">
-              CAMPAIGN SESSION CONCLUDED
-            </h3>
-            <p className="text-xs text-neutral-400 mb-4">
-              Vexillology obstacles and legislative hearings recorded.
-            </p>
-            <div className="grid grid-cols-2 gap-4 bg-neutral-900/80 border border-neutral-800 rounded-2xl p-4 mb-6 min-w-[240px]">
-              <div>
-                <span className="text-[10px] font-mono text-neutral-500 uppercase block">
-                  Final Score
-                </span>
-                <span className="text-xl font-mono font-bold text-red-400">
-                  {score}
-                </span>
-              </div>
-              <div>
-                <span className="text-[10px] font-mono text-neutral-500 uppercase block">
-                  Max Combo
-                </span>
-                <span className="text-xl font-mono font-bold text-amber-400">
-                  {maxCombo}x
-                </span>
-              </div>
-            </div>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
+          <ResultCard
+            title="Session concluded"
+            stamp="Time"
+            verdict="neutral"
+            message="Vexillology obstacles and legislative hearings recorded."
+            stats={[
+              { label: "Final score", value: score },
+              { label: "Max combo", value: maxCombo, suffix: "x" },
+            ]}
+            score={score}
+            previousBest={runStartBest}
+            primary={{
+              label: "Play again [Space]",
+              icon: <IconRefresh className="w-4 h-4" />,
+              onClick: () => {
                 startGame();
                 containerRef.current?.focus({ preventScroll: true });
-              }}
-              className="inline-flex items-center justify-center gap-2 min-h-[44px] min-w-[44px] px-6 py-2.5 bg-red-500 hover:bg-red-400 text-white font-mono font-bold text-sm rounded-xl shadow-[0_0_20px_rgba(239,68,68,0.4)] transition-all transform hover:scale-105 active:scale-95 cursor-pointer touch-manipulation select-none"
-            >
-              <IconRefresh className="w-4 h-4" />
-              PLAY AGAIN [SPACE]
-            </button>
-          </div>
+              },
+            }}
+          />
         )}
 
         {/* Sandbox Controls Bar */}

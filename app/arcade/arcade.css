@@ -99,6 +99,56 @@
   }
 }
 
+/* Laser Loon act intro as newsprint (#1599). Cream stock, ink text and a
+ * real serif stack; it is the game's own content inside the cabinet. */
+.loon-newsprint {
+  background-color: #f3ecd9;
+  background-image: linear-gradient(
+    180deg,
+    rgba(28, 26, 23, 0.035) 0%,
+    rgba(28, 26, 23, 0) 30%,
+    rgba(28, 26, 23, 0.05) 100%
+  );
+  color: #1c1a17;
+  font-family:
+    "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, Georgia,
+    "Times New Roman", serif;
+}
+.loon-newsprint-masthead {
+  font-family:
+    "Old English Text MT", "UnifrakturMaguntia", "Iowan Old Style",
+    "Palatino Linotype", Georgia, serif;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.loon-newsprint-headline {
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  text-transform: uppercase;
+}
+
+/* Result card verdict stamp (#1599): one press on entry, never a loop. */
+@keyframes arcade-stamp-in {
+  0% {
+    opacity: 0;
+    transform: scale(1.8);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(0.94);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
+  .arcade-result-stamp {
+    animation: arcade-stamp-in 280ms cubic-bezier(0.2, 0.9, 0.3, 1.2) 180ms both;
+  }
+}
+
 /* Trial & Error: Biostat Ops cabinet tokens (ADR 0046 amendment, #942).
  * Scoped to [data-te-cabinet] so nothing leaks into the portfolio frame.
  * "Calm at rest, loud when scoring": .te-loud-* layers only apply while the
@@ -585,6 +635,14 @@
 .arcade-shooter-playfield > .absolute.inset-0 > * {
   flex-shrink: 0;
   max-width: 100%;
+}
+/* Cards that set their own measure keep it inside the overlay (#1599). */
+.arcade-result-card,
+.arcade-shooter-playfield > .absolute.inset-0 > .arcade-result-card {
+  max-width: min(100%, 28rem);
+}
+.arcade-shooter-playfield > .absolute.inset-0 > .loon-newsprint {
+  max-width: min(100%, 36rem);
 }
 @media (orientation: landscape) and (max-height: 600px) {
   .arcade-cabinet[data-fullscreen="true"] .arcade-labyrinth {

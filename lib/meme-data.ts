@@ -3,6 +3,12 @@
  * soundboard triggers, fortunes, and ASCII art assets.
  */
 
+import {
+  safeGetItem,
+  safeIsAvailable,
+  safeSetRawItem,
+} from "@/lib/safe-storage";
+
 export interface MemeQuote {
   id: string;
   category: "dev" | "medtech" | "lore" | "classic";
@@ -354,35 +360,33 @@ export const MEME_STORAGE_KEYS = {
 } as const;
 
 export function getUnlockedAchievements(): string[] {
-  if (
-    typeof window === "undefined" ||
-    typeof window.localStorage?.getItem !== "function"
-  ) {
+  if (typeof window === "undefined" || !safeIsAvailable()) {
     return [];
   }
   try {
-    const raw = window.localStorage.getItem(MEME_STORAGE_KEYS.ACHIEVEMENTS);
-    return raw ? (JSON.parse(raw) as string[]) : [];
+    // Stored as a plain JSON array; malformed JSON comes back from
+    // safeGetItem as a string, which is not an array. Copy so callers never
+    // mutate safeStorage's cached value.
+    const stored = safeGetItem<unknown>(MEME_STORAGE_KEYS.ACHIEVEMENTS);
+    return Array.isArray(stored) ? ([...stored] as string[]) : [];
   } catch {
     return [];
   }
 }
 
 export function unlockAchievement(achievementId: string): boolean {
-  if (
-    typeof window === "undefined" ||
-    typeof window.localStorage?.setItem !== "function"
-  ) {
+  if (typeof window === "undefined" || !safeIsAvailable()) {
     return false;
   }
   try {
     const current = getUnlockedAchievements();
     if (!current.includes(achievementId)) {
       const next = [...current, achievementId];
-      window.localStorage.setItem(
-        MEME_STORAGE_KEYS.ACHIEVEMENTS,
-        JSON.stringify(next)
-      );
+      if (
+        !safeSetRawItem(MEME_STORAGE_KEYS.ACHIEVEMENTS, JSON.stringify(next))
+      ) {
+        return false;
+      }
       window.dispatchEvent(
         new CustomEvent("meme_achievement_unlocked", {
           detail: { id: achievementId },
@@ -413,17 +417,19 @@ export function isVaultUnlocked(): boolean {
 }
 
 export function setVaultUnlocked(unlocked: boolean = true): void {
-  if (
-    typeof window === "undefined" ||
-    typeof window.localStorage?.setItem !== "function"
-  ) {
+  if (typeof window === "undefined" || !safeIsAvailable()) {
     return;
   }
   try {
-    window.localStorage.setItem(
-      MEME_STORAGE_KEYS.VAULT_UNLOCKED,
-      unlocked ? "true" : "false"
-    );
+    // Bare "true"/"false" string, written raw to keep the stored bytes.
+    if (
+      !safeSetRawItem(
+        MEME_STORAGE_KEYS.VAULT_UNLOCKED,
+        unlocked ? "true" : "false"
+      )
+    ) {
+      return;
+    }
     window.dispatchEvent(
       new CustomEvent("meme_vault_unlocked_change", { detail: { unlocked } })
     );

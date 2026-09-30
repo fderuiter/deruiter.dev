@@ -7,10 +7,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Everything merged to `main` after 0.4.0 (2026-09-24) and shipped in the
-2026-09-29 production release (`main` at
-`d1a66b7`). The version number is set when the release is
-tagged.
+Everything merged to `main` after 0.4.0 (2026-09-24). The Added, Changed,
+Performance and Fixed sections shipped in the 2026-09-29 production release
+(`main` at `d1a66b7`); the first section lists what has merged since. The
+version number is set when the release is tagged.
+
+### Merged since the 2026-09-29 release
+
+Not yet in production; these ship with the next manual release.
+
+- Study Director: desk layout with status bar and scoped design tokens, study
+  health radar, phase timeline, team portraits and site cards (#1510, #1541).
+- Arcade: every hub card shows a gameplay thumbnail and the cabinet attract
+  screen shows the game with its own accent (#1574, #1588). Fixes for Laser
+  Loon pause confirmation, Retro Labyrinth retry scoring, Duck's urgent-state
+  deadlock, Field Manual access, Retro Chaos copy and a Garmin crash ghost
+  (#1570, #1575, #1577).
+- Quasi-Puzzler and Clinical Chaos: the rewrite targeting rule is stated before
+  the tap, remaining low-contrast text meets WCAG AA, BIMO report numbers are
+  honest, the DOB puzzle is solvable, and DS and MH open in phase 3 (#1470,
+  #1545, #1568, #1572).
+- Trial & Error: sponsor and stake modifiers in the domain, played cards lift
+  out of the hand row at once, and a synthetic probe covers the Card Table
+  journey (#1527, #1563, #1582).
+- Proof: the theorem catalog collapses on mobile so the canvas stays in reach
+  (#1558).
+- Shared primitives: `useAnimationFrame` (Patrol, Brain3DViewer), a typed app
+  event bus with `useAppEvent` (Meme Vault), `useHotkeys` for Cmd/Ctrl+K, and
+  `ModalContainer` for the CRT calibration and Patrol code dialogs (#1525,
+  #1536, #1579, #1581, #1583, #1595).
+- Storage, logging, clipboard and forms: arcade, Field Manual, offline queue,
+  telemetry cache and Clinical Chaos storage use `safeStorage`; the last
+  console calls use the logger; blog code copy uses `useClipboard`; Contact,
+  Newsletter, feedback and blog forms send through `apiClient` and validate
+  with the route Zod schemas; the nested `Math.min`/`Math.max` ban is enforced
+  in favor of `clamp()` (#1443, #1512, #1513, #1515, #1531, #1533, #1538,
+  #1566, #1569).
+- SEO: every route meets the 50-60 character title and 140-160 character
+  description bounds, and a new SEO and social integrity suite adds a DX
+  Doctor check (#1505, #1509).
+- Dependencies and CI: dependency-cruiser 18, concurrently 10 and dotenv 18,
+  four obsolete package overrides retired, `markdown-it` 14.3.2, patched
+  nested `brace-expansion` copies, the Stryker break threshold raised from 65
+  to 75, and `cancel-closed-pr-ci` no longer takes a runner for its no-op job
+  (#1502, #1511, #1534, #1540, #1544, #1594).
+- Docs: em-dashes removed from authored prose (#1508).
+- Test stability: the seo-and-navigation settle wait ignores decorative SVG
+  opacity, the mobile drawer test waits for the deferred hash scroll, and the
+  drag-reorder e2e aims at the middle of its drop window (#1506, #1562,
+  #1573).
 
 ### Added
 

@@ -50,6 +50,14 @@ Server-supplied `error` string from the envelope of a failed response.
 
 ***
 
+### headers
+
+> **headers**: `Headers`
+
+Server response headers, or empty Headers when no response was received.
+
+***
+
 ### networkError
 
 > **networkError**: `boolean`

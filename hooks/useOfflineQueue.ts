@@ -4,6 +4,7 @@ import { useSyncExternalStore, useCallback, useEffect } from "react";
 import { logger } from "@/lib/logger";
 import { generateId } from "@/lib/utils";
 import { safeGetItem, safeSetRawItem } from "@/lib/safe-storage";
+import { apiClient, type ApiClientResponse } from "@/lib/api-client";
 
 export type QueueItemType = "telemetry" | "reaction" | "feedback" | string;
 
@@ -225,12 +226,39 @@ export async function flushOfflineQueue(): Promise<{
     const item = currentQueue[0];
 
     try {
-      const res = await fetch(item.endpoint, {
-        method: item.method || "POST",
-        headers: item.headers || { "Content-Type": "application/json" },
-        body:
-          typeof item.body === "string" ? item.body : JSON.stringify(item.body),
-      });
+      const method = (item.method || "POST").toUpperCase();
+      const init: RequestInit = {
+        headers: item.headers,
+      };
+
+      let body = item.body;
+      if (typeof body === "string") {
+        try {
+          body = JSON.parse(body);
+        } catch {
+          // Keep as string if not valid JSON
+        }
+      }
+
+      let res: ApiClientResponse<unknown>;
+      switch (method) {
+        case "GET":
+          res = await apiClient.get(item.endpoint, init);
+          break;
+        case "PUT":
+          res = await apiClient.put(item.endpoint, body, init);
+          break;
+        case "PATCH":
+          res = await apiClient.patch(item.endpoint, body, init);
+          break;
+        case "DELETE":
+          res = await apiClient.delete(item.endpoint, init);
+          break;
+        case "POST":
+        default:
+          res = await apiClient.post(item.endpoint, body, init);
+          break;
+      }
 
       if (
         res.ok ||

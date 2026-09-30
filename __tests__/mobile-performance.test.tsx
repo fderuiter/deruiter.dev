@@ -199,7 +199,10 @@ describe("Mobile Performance & Asset Optimization Suite", () => {
         root.render(<CommandPalette />);
       });
 
-      expect(fetchSpy).toHaveBeenCalledWith("/api/case-studies");
+      expect(fetchSpy).toHaveBeenCalledWith(
+        "/api/case-studies",
+        expect.anything()
+      );
     });
   });
 

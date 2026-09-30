@@ -231,6 +231,12 @@ describe("useTeSound", () => {
     expect(() =>
       act(() => blocked.current.setMusicEnabled(true))
     ).not.toThrow();
+    // The switch holds for the page (#925); a successful write hands it
+    // back to storage so later tests start from the defaults.
+    expect(blocked.current.musicEnabled).toBe(true);
+    vi.restoreAllMocks();
+    act(() => blocked.current.setMusicEnabled(false));
+    expect(blocked.current.musicEnabled).toBe(false);
   });
 });
 

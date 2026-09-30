@@ -92,6 +92,7 @@ function union(...sets: readonly Set<string>[]): Set<string> {
 const SAFE_FILE_VALUES = new Map<string, Set<string>>([
   ["__tests__/husky-hook-wiring.test.ts", HUSKY_HOOK_LITERALS],
   ["__tests__/migration-replay.test.ts", MIGRATION_REPLAY_FIXTURES],
+  ["__tests__/triage-security-issue.test.ts", GHP_FIXTURE_LITERAL],
   [FIXTURES_FILE, FIXTURE_LITERALS],
   // This module's own literal Neon and GitHub-token fixtures (see
   // MIGRATION_REPLAY_FIXTURES and GHP_FIXTURE_LITERAL above).

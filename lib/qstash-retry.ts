@@ -17,11 +17,7 @@ export const QSTASH_RETRY_DELAYS_SECONDS: readonly number[] = [300, 900, 3600];
 
 /** Picks the delay for the given number of attempts already made (1-based). */
 export function getQStashRetryDelaySeconds(attempts: number): number {
-  const index = clamp(
-    attempts - 1,
-    0,
-    QSTASH_RETRY_DELAYS_SECONDS.length - 1
-  );
+  const index = clamp(attempts - 1, 0, QSTASH_RETRY_DELAYS_SECONDS.length - 1);
   return QSTASH_RETRY_DELAYS_SECONDS[index];
 }
 

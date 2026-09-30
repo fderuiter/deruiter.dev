@@ -73,7 +73,7 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
 
         <p
           data-testid="victory-run-label"
-          className="mt-2 text-[10px] font-bold uppercase tracking-wider text-zinc-500"
+          className="mt-2 text-[10px] font-bold uppercase tracking-wider text-zinc-400"
         >
           This run
         </p>
@@ -97,13 +97,13 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
         {/* Score & Memory Breakdown */}
         <div className="grid grid-cols-2 gap-3 rounded-xl border border-zinc-800 bg-zinc-900/60 p-3 text-xs mb-4">
           <div className="flex flex-col">
-            <span className="text-zinc-500">Remaining RAM</span>
+            <span className="text-zinc-400">Remaining RAM</span>
             <span className="font-bold text-brand-cyan text-sm">
               {score.remainingRam.toFixed(1)} GB
             </span>
           </div>
           <div className="flex flex-col">
-            <span className="text-zinc-500">Mathematical Morality</span>
+            <span className="text-zinc-400">Mathematical Morality</span>
             <span
               className={`font-bold text-sm ${
                 isSorry ? "text-rose-400" : "text-emerald-400"

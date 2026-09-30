@@ -35,6 +35,17 @@ describe("Quasi-Perfect Puzzler Polish & Access Invariants", () => {
     expect(screen.getAllByText(/Reset Level/i).length).toBeGreaterThan(0);
   });
 
+  // #1555: the panel said "Z / Y", but only Ctrl/Cmd+Z and Ctrl/Cmd+Y undo
+  // and redo, and the M mode switch was undocumented.
+  it("labels undo/redo with the modifier and documents the M mode switch (#1555)", () => {
+    render(<QuasiPuzzlerClient />);
+
+    expect(screen.getAllByText("Ctrl/⌘ + Z / Y").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Z / Y")).toBeNull();
+    expect(screen.getAllByText("R / M").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Switch Mode/).length).toBeGreaterThan(0);
+  });
+
   it("switches modes between Story Mode and Hacker Mode smoothly", () => {
     render(<QuasiPerfectPuzzler />);
 

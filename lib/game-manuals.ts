@@ -246,13 +246,13 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         action: "Active Code Burst",
         description:
-          "Press Spacebar while at your desk to rapidly push code commits and squash bugs with Good Boy multiplier bonuses.",
+          "In the office, press Spacebar (Focus Work Sprint) to rapidly push code commits and squash bugs with Good Boy multiplier bonuses.",
         key: "Spacebar / Desk Click",
       },
       {
         action: "Training Tricks",
         description:
-          "Press Q (Sit), W (High Five/Paw), E (Drop It), or R (Spin) for immediate obedience, focus recovery, and Good Boy score multipliers.",
+          "In the office, press Q (Sit), W (High Five), E (Drop It), or R (Spin) for immediate obedience, focus recovery, and Good Boy score multipliers.",
         key: "Q, W, E, R",
       },
       {
@@ -270,8 +270,8 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         action: "Agility Jump & Whistle",
         description:
-          "In the Dog Park, tap Spacebar to leap over agility hurdles and recall Duck with the ultrasonic whistle.",
-        key: "Spacebar / Whistle",
+          "In the Dog Park, steer Duck around mud puddles with W or the Up and Down arrow keys, tap Spacebar to leap over agility hurdles, and recall Duck with the ultrasonic whistle.",
+        key: "W / Arrows, Spacebar, Whistle",
       },
     ],
     rules: [
@@ -434,6 +434,18 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         description:
           "Inspect live generated Lean 4 code in real time (`theorem ... := by ...`) and copy directly to Lean Web Editor.",
         key: "Lean IDE (C)",
+      },
+      {
+        action: "Undo & Redo Tactics",
+        description:
+          "Step back through applied tactics with Ctrl+Z (Cmd+Z on Mac) and reapply them with Ctrl+Y (Cmd+Y). The plain Z and Y keys do nothing. R resets the level.",
+        key: "Ctrl/⌘ + Z / Y",
+      },
+      {
+        action: "Switch Mode",
+        description:
+          "Toggle between Story Mode and Hacker Mode. Switching restarts the current level with the new mode's RAM budget; mid-proof, you confirm the restart first.",
+        key: "M",
       },
       {
         action: "The 'Sorry' Escape Valve",

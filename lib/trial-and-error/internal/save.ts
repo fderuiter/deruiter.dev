@@ -1,6 +1,7 @@
 import { RUN_SAVE_VERSION, RunActionSchema, RunSaveSchema } from "../types";
 import type { z } from "zod";
 import type { RunAction, RunPlan, RunState } from "./run";
+import type { RunChoice } from "./run-rules";
 import type { RunOrigin } from "./seed";
 import { advanceRun, createRunState, deriveRunView } from "./run";
 
@@ -23,6 +24,10 @@ export interface RunLog {
   /** The plan's id: the act played on its own, or the campaign. */
   actId: string;
   seed: string;
+  /** The run's sponsor (#950). Absent means Virtual Biotech. */
+  sponsorId?: RunChoice["sponsorId"];
+  /** The run's stake (#950). Absent means stake 1. */
+  stake?: RunChoice["stake"];
   actions: LoggedAction[];
   /** How the seed was chosen; absent means a random run. */
   origin?: RunOrigin;
@@ -65,17 +70,25 @@ export function serializeRun(log: RunLog, savedAt: Date): string {
       actId: log.actId,
       savedAt: savedAt.toISOString(),
       seed: log.seed,
+      sponsorId: log.sponsorId,
+      stake: log.stake,
       actions: log.actions,
       ...(log.origin ? { origin: log.origin } : {}),
     })
   );
 }
 
-/** Replays a log from its seed. The same seed and moves give the same run. */
+/**
+ * Replays a log from its seed, sponsor and stake. The same seed, choice and
+ * moves give the same run.
+ */
 export function replayRun(act: RunPlan, log: RunLog): RunState {
   return log.actions.reduce(
     (run, action) => advanceRun(act, run, action),
-    createRunState(act, log.seed)
+    createRunState(act, log.seed, {
+      sponsorId: log.sponsorId,
+      stake: log.stake,
+    })
   );
 }
 
@@ -106,6 +119,8 @@ export function parseRunSave(
     const log: RunLog = {
       actId: save.actId,
       seed: save.seed,
+      ...(save.sponsorId !== undefined && { sponsorId: save.sponsorId }),
+      ...(save.stake !== undefined && { stake: save.stake }),
       actions: [...save.actions, ...deselect],
       ...(save.origin ? { origin: save.origin } : {}),
     };

@@ -119,16 +119,16 @@ export const ASTNodeView: React.FC<ASTNodeViewProps> = React.memo(
             isSelected
               ? "ring-2 ring-brand-cyan scale-105 shadow-[0_0_20px_rgba(6,182,212,0.6)]"
               : isHovered
-              ? "ring-1 ring-brand-cyan/70 scale-102"
-              : isTargetEligible
-              ? "ring-2 ring-brand-cyan/80 border-brand-cyan bg-cyan-950/50 text-cyan-200 shadow-[0_0_15px_rgba(6,182,212,0.5)] animate-pulse cursor-pointer"
-              : "hover:border-zinc-500"
+                ? "ring-1 ring-brand-cyan/70 scale-102"
+                : isTargetEligible
+                  ? "ring-2 ring-brand-cyan/80 border-brand-cyan bg-cyan-950/50 text-cyan-200 shadow-[0_0_15px_rgba(6,182,212,0.5)] animate-pulse cursor-pointer"
+                  : "hover:border-zinc-500"
           }`}
           whileHover={{ scale: 1.03 }}
           whileTap={{ scale: 0.97 }}
         >
           {/* Node Type Pill Indicator */}
-          <span className="text-[9px] uppercase tracking-wider opacity-60 font-sans font-semibold">
+          <span className="text-[9px] uppercase tracking-wider font-sans font-semibold">
             {getTypePill()}
           </span>
 
@@ -149,7 +149,10 @@ export const ASTNodeView: React.FC<ASTNodeViewProps> = React.memo(
         {hasChildren && (
           <div className="relative mt-4 flex items-start justify-center gap-6 pt-3 before:absolute before:top-0 before:left-1/2 before:h-3 before:w-px before:-translate-x-1/2 before:bg-zinc-700/60">
             {node.children!.map((child) => (
-              <div key={child.id} className="relative flex flex-col items-center">
+              <div
+                key={child.id}
+                className="relative flex flex-col items-center"
+              >
                 <ASTNodeView
                   node={child}
                   selectedTargetId={selectedTargetId}

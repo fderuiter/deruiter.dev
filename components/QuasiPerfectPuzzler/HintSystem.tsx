@@ -1,7 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
-import { IconBulb, IconChevronRight, IconLock, IconSparkles } from "@tabler/icons-react";
+import {
+  IconBulb,
+  IconChevronRight,
+  IconLock,
+  IconSparkles,
+} from "@tabler/icons-react";
 
 interface HintSystemProps {
   hints: [string, string, string];
@@ -9,7 +14,10 @@ interface HintSystemProps {
   onClose?: () => void;
 }
 
-export const HintSystem: React.FC<HintSystemProps> = ({ hints, onTierChange }) => {
+export const HintSystem: React.FC<HintSystemProps> = ({
+  hints,
+  onTierChange,
+}) => {
   const [unlockedTier, setUnlockedTier] = useState<number>(1);
 
   const handleUnlockNext = () => {
@@ -22,7 +30,11 @@ export const HintSystem: React.FC<HintSystemProps> = ({ hints, onTierChange }) =
 
   const tierLabels = [
     { tier: 1, title: "Tier 1 · Strategy Clue", color: "text-brand-cyan" },
-    { tier: 2, title: "Tier 2 · Subtree Target Focus", color: "text-amber-400" },
+    {
+      tier: 2,
+      title: "Tier 2 · Subtree Target Focus",
+      color: "text-amber-400",
+    },
     { tier: 3, title: "Tier 3 · Recommended Tactic", color: "text-purple-400" },
   ];
 
@@ -41,7 +53,8 @@ export const HintSystem: React.FC<HintSystemProps> = ({ hints, onTierChange }) =
       <div className="mt-3 space-y-2.5">
         {tierLabels.map((tierInfo, idx) => {
           const isUnlocked = unlockedTier >= tierInfo.tier;
-          const hintText = hints[idx] || "Think about the foundational logic rules.";
+          const hintText =
+            hints[idx] || "Think about the foundational logic rules.";
 
           return (
             <div
@@ -53,11 +66,13 @@ export const HintSystem: React.FC<HintSystemProps> = ({ hints, onTierChange }) =
               }`}
             >
               <div className="flex items-center justify-between">
-                <span className={`text-[11px] font-bold ${tierInfo.color} flex items-center gap-1.5`}>
+                <span
+                  className={`text-[11px] font-bold ${tierInfo.color} flex items-center gap-1.5`}
+                >
                   {isUnlocked ? (
                     <IconSparkles className="w-3.5 h-3.5" />
                   ) : (
-                    <IconLock className="w-3.5 h-3.5 text-zinc-500" />
+                    <IconLock className="w-3.5 h-3.5 text-zinc-400" />
                   )}
                   {tierInfo.title}
                 </span>
@@ -74,9 +89,11 @@ export const HintSystem: React.FC<HintSystemProps> = ({ hints, onTierChange }) =
               </div>
 
               {isUnlocked ? (
-                <p className="mt-1.5 text-xs text-zinc-300 leading-relaxed">{hintText}</p>
+                <p className="mt-1.5 text-xs text-zinc-300 leading-relaxed">
+                  {hintText}
+                </p>
               ) : (
-                <p className="mt-1.5 text-[11px] text-zinc-500 italic">
+                <p className="mt-1.5 text-[11px] text-zinc-400 italic">
                   Unlock this tier to reveal deeper mathematical guidance.
                 </p>
               )}

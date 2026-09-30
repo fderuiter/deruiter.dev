@@ -138,6 +138,12 @@ import {
 } from "@/lib/clinical-trial-chaos";
 
 import {
+  safeGetItem,
+  safeGetRawItem,
+  safeRemoveItem,
+  safeSetRawItem,
+} from "@/lib/safe-storage";
+import {
   playValidationSound,
   playChoiceIncorrectSound,
   playSignatureVerifiedSound,
@@ -160,7 +166,7 @@ const subscribeHighScore = (callback: () => void) => {
 };
 const getHighScoreSnapshot = () => {
   try {
-    return localStorage.getItem("clinical_chaos_highscore") || "0";
+    return safeGetRawItem("clinical_chaos_highscore") || "0";
   } catch {
     return "0";
   }
@@ -236,14 +242,26 @@ interface Particle {
 
 const OUTFIT_STORAGE_KEY = "clinical_chaos_outfit";
 
+/** CRF Studio writes the protocol to simulate here as plain JSON. */
+const CRF_ACTIVE_PROTOCOL_KEY = "crf_active_protocol";
+
+function readStoredProtocol(): StudyProtocol | null {
+  const stored = safeGetItem<unknown>(CRF_ACTIVE_PROTOCOL_KEY);
+  if (
+    stored &&
+    typeof stored === "object" &&
+    !Array.isArray(stored) &&
+    "id" in stored &&
+    (stored as { id: unknown }).id
+  ) {
+    return stored as StudyProtocol;
+  }
+  return null;
+}
+
 function readStoredOutfitId(): OutfitId {
   if (typeof window === "undefined") return DEFAULT_OUTFIT_ID;
-  try {
-    if (typeof window.localStorage?.getItem === "function") {
-      return getOutfitById(window.localStorage.getItem(OUTFIT_STORAGE_KEY)).id;
-    }
-  } catch {}
-  return DEFAULT_OUTFIT_ID;
+  return getOutfitById(safeGetRawItem(OUTFIT_STORAGE_KEY)).id;
 }
 
 /** Small canvas preview of an outfit, drawn with the same renderer as the game. */
@@ -293,11 +311,7 @@ export const ClinicalTrialChaos: React.FC = () => {
   const outfit = getOutfitById(outfitId);
   const selectOutfit = useCallback((id: OutfitId) => {
     setOutfitId(id);
-    try {
-      if (typeof window.localStorage?.setItem === "function") {
-        window.localStorage.setItem(OUTFIT_STORAGE_KEY, id);
-      }
-    } catch {}
+    safeSetRawItem(OUTFIT_STORAGE_KEY, id);
   }, []);
   const [sponsor, setSponsor] = useState<SponsorState>(() =>
     createInitialSponsorState()
@@ -361,6 +375,12 @@ export const ClinicalTrialChaos: React.FC = () => {
     selectedChoice?: string;
     feedback?: { isValid: boolean; text: string };
   } | null>(null);
+  // Answers already rejected in a fix dialog, keyed by subject and
+  // observation. A rejected answer stays disabled, even after the dialog is
+  // closed and reopened, so the same mistake is never charged twice (#1554).
+  const [rejectedChoices, setRejectedChoices] = useState<
+    Record<string, string[]>
+  >({});
 
   const [signatureModal, setSignatureModal] = useState<SignatureModalState>({
     isOpen: false,
@@ -385,13 +405,8 @@ export const ClinicalTrialChaos: React.FC = () => {
   const [activeProtocol, setActiveProtocol] = useState<StudyProtocol | null>(
     () => {
       if (typeof window !== "undefined") {
-        try {
-          const stored = localStorage.getItem("crf_active_protocol");
-          if (stored) {
-            const parsed = JSON.parse(stored);
-            if (parsed && parsed.id) return parsed;
-          }
-        } catch {}
+        const stored = readStoredProtocol();
+        if (stored) return stored;
       }
       return null;
     }
@@ -533,6 +548,7 @@ export const ClinicalTrialChaos: React.FC = () => {
       const continuesCampaign = mode === "campaign" && targetPhase > 1;
       setRuleViolations([]);
       ruleViolationsRef.current = [];
+      setRejectedChoices({});
       if (!continuesCampaign) setPowerUps(createInitialPowerUpInventory());
       setSignatureModal({
         isOpen: false,
@@ -694,6 +710,8 @@ export const ClinicalTrialChaos: React.FC = () => {
     (choice: string) => {
       if (!validatingObs) return;
       const { subjectId, obs } = validatingObs;
+      const rejectionKey = `${subjectId}:${obs.id}`;
+      if (rejectedChoices[rejectionKey]?.includes(choice)) return;
 
       const result = validateObservationChoice(obs, choice, activeProtocol);
 
@@ -745,6 +763,10 @@ export const ClinicalTrialChaos: React.FC = () => {
         }, 550);
       } else {
         triggerSound("incorrect");
+        setRejectedChoices((prev) => ({
+          ...prev,
+          [rejectionKey]: [...(prev[rejectionKey] ?? []), choice],
+        }));
         setValidatingObs((prev) =>
           prev
             ? {
@@ -777,8 +799,11 @@ export const ClinicalTrialChaos: React.FC = () => {
           domain: obs.destination,
           timestamp: new Date().toISOString(),
         };
+        // Replace the ref's array rather than pushing onto it: the ref holds
+        // the state array itself, so a push would also land in `prev` and
+        // record every wrong pick twice (#1553).
+        ruleViolationsRef.current = [...ruleViolationsRef.current, violation];
         setRuleViolations((prev) => [...prev, violation]);
-        ruleViolationsRef.current.push(violation);
 
         addAuditLog(
           `[AST RULE FAILURE] ${result.ruleName || "Edit check"} failed for ${obs.field}: '${choice}'. Auditor Suspicion +${result.suspicionDelta}%`,
@@ -789,6 +814,7 @@ export const ClinicalTrialChaos: React.FC = () => {
     },
     [
       validatingObs,
+      rejectedChoices,
       activeProtocol,
       activeSubject,
       office,
@@ -835,14 +861,10 @@ export const ClinicalTrialChaos: React.FC = () => {
         };
       });
       // Persist outside the updater (AGENTS.md §4).
-      if (typeof window.localStorage?.setItem === "function") {
-        try {
-          localStorage.setItem(
-            "clinical_chaos_highscore",
-            Math.max(scoreState.score + points, scoreState.highScore).toString()
-          );
-        } catch {}
-      }
+      safeSetRawItem(
+        "clinical_chaos_highscore",
+        Math.max(scoreState.score + points, scoreState.highScore).toString()
+      );
 
       // Charge power-ups
       setPowerUps((pu) =>
@@ -2668,9 +2690,7 @@ export const ClinicalTrialChaos: React.FC = () => {
               type="button"
               onClick={() => {
                 setActiveProtocol(null);
-                try {
-                  localStorage.removeItem("crf_active_protocol");
-                } catch {}
+                safeRemoveItem(CRF_ACTIVE_PROTOCOL_KEY);
                 addAuditLog(
                   "Switched simulation engine to Built-in Preset Scenarios.",
                   "INFO"
@@ -3899,21 +3919,16 @@ export const ClinicalTrialChaos: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => {
-                      try {
-                        const stored = localStorage.getItem(
-                          "crf_active_protocol"
+                      const stored = readStoredProtocol();
+                      if (stored) {
+                        setActiveProtocol(stored);
+                        addAuditLog(
+                          `Loaded active protocol ${stored.protocolNumber} into simulation.`,
+                          "COMPLIANT"
                         );
-                        if (stored) {
-                          const parsed = JSON.parse(stored);
-                          setActiveProtocol(parsed);
-                          addAuditLog(
-                            `Loaded active protocol ${parsed.protocolNumber} into simulation.`,
-                            "COMPLIANT"
-                          );
-                          announce("Authored protocol loaded", "polite");
-                          return;
-                        }
-                      } catch {}
+                        announce("Authored protocol loaded", "polite");
+                        return;
+                      }
                       announce(
                         "No authored protocol found. Author one in CRF Studio first.",
                         "polite"
@@ -4310,26 +4325,44 @@ export const ClinicalTrialChaos: React.FC = () => {
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {getObservationChoices(validatingObs.obs).map(
-                    (opt, optIdx) => (
-                      <button
-                        key={opt}
-                        onClick={() => handleSelectChoice(opt)}
-                        className={`p-2.5 min-h-[44px] rounded-xl border text-left font-mono text-xs transition ${
-                          validatingObs.selectedChoice === opt
-                            ? validatingObs.feedback?.isValid
+                    (opt, optIdx) => {
+                      const isRejected =
+                        rejectedChoices[
+                          `${validatingObs.subjectId}:${validatingObs.obs.id}`
+                        ]?.includes(opt) ?? false;
+                      return (
+                        <button
+                          key={opt}
+                          type="button"
+                          onClick={() => handleSelectChoice(opt)}
+                          disabled={isRejected}
+                          aria-disabled={isRejected}
+                          data-rejected={isRejected ? "true" : undefined}
+                          className={`p-2.5 min-h-[44px] rounded-xl border text-left font-mono text-xs transition ${
+                            validatingObs.selectedChoice === opt &&
+                            validatingObs.feedback?.isValid
                               ? "border-emerald-500 bg-emerald-950/60 text-emerald-300 font-bold"
-                              : "border-rose-500 bg-rose-950/60 text-rose-300 font-bold"
-                            : "border-zinc-800 bg-zinc-900 text-zinc-300 hover:border-brand-cyan hover:bg-zinc-800"
-                        }`}
-                      >
-                        <span className="flex items-center gap-2">
-                          <kbd className="rounded border border-zinc-700 px-1 text-[10px] font-normal text-zinc-400">
-                            {optIdx + 1}
-                          </kbd>
-                          <span>{opt}</span>
-                        </span>
-                      </button>
-                    )
+                              : isRejected
+                                ? "border-rose-500/70 bg-rose-950/40 text-rose-300 cursor-not-allowed"
+                                : "border-zinc-800 bg-zinc-900 text-zinc-300 hover:border-brand-cyan hover:bg-zinc-800"
+                          }`}
+                        >
+                          <span className="flex items-center gap-2">
+                            <kbd className="rounded border border-zinc-700 px-1 text-[10px] font-normal text-zinc-400">
+                              {optIdx + 1}
+                            </kbd>
+                            <span className={isRejected ? "line-through" : ""}>
+                              {opt}
+                            </span>
+                            {isRejected && (
+                              <span className="ml-auto text-[10px] font-bold uppercase tracking-wider text-rose-400">
+                                Rejected
+                              </span>
+                            )}
+                          </span>
+                        </button>
+                      );
+                    }
                   )}
                 </div>
               </div>
@@ -4542,7 +4575,9 @@ export const ClinicalTrialChaos: React.FC = () => {
                     Clean Rate
                   </span>
                   <span className="text-lg font-bold text-brand-cyan">
-                    {bimoReport.cleanRate}%
+                    {bimoReport.cleanRate === null
+                      ? "n/a"
+                      : `${bimoReport.cleanRate}%`}
                   </span>
                 </div>
                 <div>

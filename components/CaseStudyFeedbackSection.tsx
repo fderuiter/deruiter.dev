@@ -14,7 +14,7 @@ import {
 } from "@tabler/icons-react";
 import { isProductionEnvironment } from "@/lib/env";
 import { useOfflineQueue, getOfflineQueue } from "@/hooks/useOfflineQueue";
-import { validateConstructiveContent } from "@/lib/moderation";
+import { FeedbackSubmissionSchema } from "@/lib/schemas";
 import { logger } from "@/lib/logger";
 import { apiClient } from "@/lib/api-client";
 
@@ -224,31 +224,18 @@ export function CaseStudyFeedbackSection({
     setErrorMsg(null);
     setSuccessMsg(null);
 
-    // Client-side pre-validation
-    if (selectedTakeaways.length === 0) {
-      setErrorMsg("Please select at least one learning takeaway.");
-      return;
-    }
-    if (comments.trim().length < 3) {
-      setErrorMsg(
-        "Please provide constructive comments (at least 3 characters)."
-      );
-      return;
-    }
-
-    const toneCheck = validateConstructiveContent(comments.trim());
-    if (!toneCheck.isValid) {
-      setErrorMsg(
-        toneCheck.reason || "Submission text violates community tone standards."
-      );
-      return;
-    }
-
-    const payload = {
+    // Validate against the same contract /api/case-studies/feedback
+    // enforces, including its tone checks, before queueing or sending.
+    const parsed = FeedbackSubmissionSchema.safeParse({
       caseStudySlug: slug,
       takeaways: selectedTakeaways,
       comments: comments.trim(),
-    };
+    });
+    if (!parsed.success) {
+      setErrorMsg(parsed.error.issues[0].message);
+      return;
+    }
+    const payload = parsed.data;
 
     setSubmitting(true);
 

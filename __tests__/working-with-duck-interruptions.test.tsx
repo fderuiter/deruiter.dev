@@ -201,7 +201,7 @@ describe("Working With Duck - Interruption Suspension (DUCK-01)", () => {
     // Open scrapbook
     const scrapbookBtn = firstByTitle(container, "Duck Scrapbook & Facts");
     await clickEl(scrapbookBtn);
-    expect(container.querySelector('[role="dialog"]')).not.toBeNull();
+    expect(document.body.querySelector('[role="dialog"]')).not.toBeNull();
 
     const progressAtOpen = readWorkProgressPercent(container);
     const bladderAtOpen = readBladderPercent(container);
@@ -215,12 +215,12 @@ describe("Working With Duck - Interruption Suspension (DUCK-01)", () => {
     expect(readBladderPercent(container)).toBe(bladderAtOpen);
 
     // Close scrapbook dialog
-    const closeBtn = container.querySelector(
+    const closeBtn = document.body.querySelector(
       '[role="dialog"] button'
     ) as HTMLElement;
     expect(closeBtn).not.toBeNull();
     await clickEl(closeBtn);
-    expect(container.querySelector('[role="dialog"]')).toBeNull();
+    expect(document.body.querySelector('[role="dialog"]')).toBeNull();
 
     // Advance 60 frames after closing
     await advanceFrames(60, ts);
@@ -240,7 +240,7 @@ describe("Working With Duck - Interruption Suspension (DUCK-01)", () => {
     // Open wardrobe
     const wardrobeBtn = firstByTitle(container, "Duck Wardrobe & Accessories");
     await clickEl(wardrobeBtn);
-    expect(container.querySelector('[role="dialog"]')).not.toBeNull();
+    expect(document.body.querySelector('[role="dialog"]')).not.toBeNull();
 
     const progressAtOpen = readWorkProgressPercent(container);
     const bladderAtOpen = readBladderPercent(container);
@@ -254,12 +254,12 @@ describe("Working With Duck - Interruption Suspension (DUCK-01)", () => {
     expect(readBladderPercent(container)).toBe(bladderAtOpen);
 
     // Close wardrobe dialog
-    const closeBtn = container.querySelector(
+    const closeBtn = document.body.querySelector(
       '[role="dialog"] button'
     ) as HTMLElement;
     expect(closeBtn).not.toBeNull();
     await clickEl(closeBtn);
-    expect(container.querySelector('[role="dialog"]')).toBeNull();
+    expect(document.body.querySelector('[role="dialog"]')).toBeNull();
 
     // Advance 60 frames after closing
     await advanceFrames(60, ts);
@@ -485,7 +485,7 @@ describe("Working With Duck - Interruption Suspension (DUCK-01)", () => {
     // 1. Open wardrobe
     const wardrobeBtn = firstByTitle(container, "Duck Wardrobe & Accessories");
     await clickEl(wardrobeBtn);
-    expect(container.querySelector('[role="dialog"]')).not.toBeNull();
+    expect(document.body.querySelector('[role="dialog"]')).not.toBeNull();
 
     // 2. Document hidden while reading wardrobe
     Object.defineProperty(document, "visibilityState", {
@@ -500,11 +500,11 @@ describe("Working With Duck - Interruption Suspension (DUCK-01)", () => {
     const progressFrozen = readWorkProgressPercent(container);
 
     // 3. Close wardrobe while still hidden
-    const closeBtn = container.querySelector(
+    const closeBtn = document.body.querySelector(
       '[role="dialog"] button'
     ) as HTMLElement;
     await clickEl(closeBtn);
-    expect(container.querySelector('[role="dialog"]')).toBeNull();
+    expect(document.body.querySelector('[role="dialog"]')).toBeNull();
 
     // Still hidden: must NOT resume!
     ts = await advanceFrames(60, ts);
@@ -545,13 +545,13 @@ describe("Working With Duck - Interruption Suspension (DUCK-01)", () => {
     // Open and close scrapbook from idle overlay
     const scrapbookBtn = firstByTitle(container, "Duck Scrapbook & Facts");
     await clickEl(scrapbookBtn);
-    expect(container.querySelector('[role="dialog"]')).not.toBeNull();
+    expect(document.body.querySelector('[role="dialog"]')).not.toBeNull();
 
-    const closeBtn = container.querySelector(
+    const closeBtn = document.body.querySelector(
       '[role="dialog"] button'
     ) as HTMLElement;
     await clickEl(closeBtn);
-    expect(container.querySelector('[role="dialog"]')).toBeNull();
+    expect(document.body.querySelector('[role="dialog"]')).toBeNull();
 
     // Status MUST remain idle! Start Sprint button still present!
     expect(container.querySelector("button")?.textContent).toContain(
@@ -597,12 +597,12 @@ describe("Working With Duck - Interruption Suspension (DUCK-01)", () => {
     const scrapbookBtn = firstByTitle(container, "Duck Scrapbook & Facts");
     await clickEl(scrapbookBtn);
     expect(
-      container.querySelectorAll('[role="dialog"]').length
+      document.body.querySelectorAll('[role="dialog"]').length
     ).toBeGreaterThan(0);
 
     // Close scrapbook (scoped to its dialog: the won dialog has buttons too)
     const scrapbookDialog = Array.from(
-      container.querySelectorAll('[role="dialog"]')
+      document.body.querySelectorAll('[role="dialog"]')
     ).find((d) => d.textContent?.includes("Polaroid Scrapbook"));
     const closeBtn = Array.from(
       scrapbookDialog?.querySelectorAll("button") ?? []
@@ -683,10 +683,10 @@ describe("Working With Duck - Interruption Suspension (DUCK-01)", () => {
     // Open scrapbook
     const sbBtn = firstByTitle(container, "Duck Scrapbook & Facts");
     await clickEl(sbBtn);
-    expect(container.querySelector('[role="dialog"]')).not.toBeNull();
+    expect(document.body.querySelector('[role="dialog"]')).not.toBeNull();
 
     // Close scrapbook
-    const sbClose = container.querySelector(
+    const sbClose = document.body.querySelector(
       '[role="dialog"] button'
     ) as HTMLElement;
     await clickEl(sbClose);
@@ -781,7 +781,7 @@ describe("Working With Duck - Interruption Suspension (DUCK-01)", () => {
     });
 
     // Verify modal is open
-    const manualModal = container.querySelector('[role="dialog"]');
+    const manualModal = document.body.querySelector('[role="dialog"]');
     expect(manualModal).not.toBeNull();
 
     // Advance 60 frames while manual is open
@@ -815,7 +815,7 @@ describe("Working With Duck - Interruption Suspension (DUCK-01)", () => {
     });
 
     // Exactly one manual dialog is open
-    const dialogs = container.querySelectorAll('[role="dialog"]');
+    const dialogs = document.body.querySelectorAll('[role="dialog"]');
     expect(dialogs).toHaveLength(1);
     expect(dialogs[0].textContent).toContain("Working With Duck");
 
@@ -829,7 +829,7 @@ describe("Working With Duck - Interruption Suspension (DUCK-01)", () => {
         new KeyboardEvent("keydown", { key: "?", bubbles: true })
       );
     });
-    expect(container.querySelectorAll('[role="dialog"]')).toHaveLength(0);
+    expect(document.body.querySelectorAll('[role="dialog"]')).toHaveLength(0);
 
     // Simulation resumes
     await advanceFrames(30, ts);
@@ -870,7 +870,7 @@ describe("Working With Duck - Interruption Suspension (DUCK-01)", () => {
         new KeyboardEvent("keydown", { key: "h", bubbles: true })
       );
     });
-    const manualDialog = container.querySelector('[role="dialog"]');
+    const manualDialog = document.body.querySelector('[role="dialog"]');
     expect(manualDialog).not.toBeNull();
 
     // Advance 60 frames while both interruptions active
@@ -1076,16 +1076,12 @@ describe("Working With Duck - Interruption Suspension (DUCK-01)", () => {
       );
     });
 
-    // Modal opens inside the visible container
-    const dialog = container.querySelector('[role="dialog"]');
-    expect(dialog).not.toBeNull();
-    // Verify the dialog is attached to the visible mobile button hierarchy, NOT hidden desktop
-    const mobileContainer = mobileManualBtn!.closest(
-      'div[class*="[min-height:560px)]:hidden"]'
-    );
-    const desktopContainer = desktopManualBtn!.closest("div.hidden");
-    expect(mobileContainer?.querySelector('[role="dialog"]')).not.toBeNull();
-    expect(desktopContainer?.querySelector('[role="dialog"]')).toBeNull();
+    // One manual opens. It is portaled to document.body (#1549), so ownership
+    // is read from the trigger: the visible mobile button opened it, not the
+    // hidden desktop one.
+    expect(document.body.querySelectorAll('[role="dialog"]')).toHaveLength(1);
+    expect(mobileManualBtn!.getAttribute("aria-expanded")).toBe("true");
+    expect(desktopManualBtn!.getAttribute("aria-expanded")).toBe("false");
 
     // Advance 60 frames while manual is open: simulation remains suspended
     ts = await advanceFrames(60, ts);
@@ -1097,7 +1093,7 @@ describe("Working With Duck - Interruption Suspension (DUCK-01)", () => {
         new KeyboardEvent("keydown", { key: "h", bubbles: true })
       );
     });
-    expect(container.querySelector('[role="dialog"]')).toBeNull();
+    expect(document.body.querySelector('[role="dialog"]')).toBeNull();
 
     // Resumes
     await advanceFrames(30, ts);

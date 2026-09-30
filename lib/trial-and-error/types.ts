@@ -1934,6 +1934,28 @@ const id = z.string().min(1).max(128);
 const index = z.number().int().min(0).max(1000);
 
 /**
+ * The sponsor a run develops a compound for (#950): the client whose deck,
+ * starting kit and one rule twist shape the run. Virtual Biotech is the
+ * default and has no twist.
+ */
+export const SponsorIdSchema = z.enum([
+  "VIRTUAL_BIOTECH",
+  "ONCOLOGY_PHARMA",
+  "CARDIO_MEGA_TRIAL",
+  "RARE_DISEASE_BIOTECH",
+]);
+/** A sponsor's id. */
+export type SponsorId = z.infer<typeof SponsorIdSchema>;
+
+/**
+ * A GCP-audit stake (#950), from 1 (Routine Monitoring) to 6 (Warning
+ * Letter). Stakes are cumulative: stake N applies every rule from 1 to N.
+ */
+export const StakeSchema = z.number().int().min(1).max(6);
+/** A GCP-audit stake, 1 to 6. */
+export type Stake = z.infer<typeof StakeSchema>;
+
+/**
  * Every move a run records, as data (#1079). A saved run is its seed and
  * these moves, replayed on load, so the save never holds a compiled value:
  * blinded outputs stay out of storage by construction.
@@ -1991,6 +2013,10 @@ export const RunSaveSchema = z.object({
   actId: id,
   savedAt: z.string().datetime(),
   seed: z.string().regex(/^[A-Za-z0-9-]{1,64}$/),
+  /** The run's sponsor. Absent in older saves, which are Virtual Biotech. */
+  sponsorId: SponsorIdSchema.optional(),
+  /** The run's stake. Absent in older saves, which are stake 1. */
+  stake: StakeSchema.optional(),
   actions: z.array(RunActionSchema).max(5000),
   /**
    * How the seed was chosen (#1528). Optional, so saves from before it load

@@ -744,22 +744,38 @@ test.describe("Trial & Error: Biostat Ops Card Table", () => {
     test("drags a card by its grip to reorder the hand", async ({ page }) => {
       await page.setViewportSize({ width: 1440, height: 900 });
       await launch(page);
+      // Layout boxes, which Reorder compares, ignore the breathing and tilt
+      // transforms. The hand's overlap (#1181) is sized after it measures its
+      // row, so wait for two identical reads before aiming.
+      const slots = () =>
+        page.locator("[data-card-id]").evaluateAll((els) =>
+          els.map((el) => {
+            const item = el.closest('[data-testid="hand"] > *') as HTMLElement;
+            return { left: item.offsetLeft, width: item.offsetWidth };
+          })
+        );
+      let layout = await slots();
+      await expect
+        .poll(async () => {
+          const previous = JSON.stringify(layout);
+          layout = await slots();
+          return JSON.stringify(layout) === previous;
+        })
+        .toBe(true);
       const first = (await order(page))[0]!;
+      const step = layout[1]!.left - layout[0]!.left;
+      const width = layout[0]!.width;
+      // Reorder moves the card past a neighbour once its trailing edge
+      // crosses that neighbour's centre, so index 2 holds for drag offsets
+      // between 2 steps and 3 steps less half a card. Aim at the middle.
+      const offset = 2.5 * step - width / 2;
       const grip = page.getByTestId("drag-grip").first();
-      const target = await page.locator("[data-card-id]").nth(2).boundingBox();
-      // The hand overlaps to fit (#1181): aim at the part of the third card
-      // that the fourth leaves in view.
-      const next = await page.locator("[data-card-id]").nth(3).boundingBox();
       const box = await grip.boundingBox();
-      await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
+      const x = box!.x + box!.width / 2;
+      const y = box!.y + box!.height / 2;
+      await page.mouse.move(x, y);
       await page.mouse.down();
-      await page.mouse.move(
-        target!.x + (next!.x - target!.x) * 0.75,
-        box!.y + 4,
-        {
-          steps: 20,
-        }
-      );
+      await page.mouse.move(x + offset, y + 4, { steps: 20 });
       await page.mouse.up();
       await expect.poll(async () => (await order(page)).indexOf(first)).toBe(2);
     });

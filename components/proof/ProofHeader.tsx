@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useRef, useState } from "react";
 import {
   IconCpu,
   IconLink,
@@ -47,6 +47,18 @@ export const ProofHeader: React.FC<ProofHeaderProps> = ({
   setMobileActiveView,
   setActiveTab,
 }) => {
+  // Below md the 12-card catalog collapses behind a disclosure so the canvas
+  // stays in reach (#1236); md and up always show the full grid.
+  const [catalogOpen, setCatalogOpen] = useState(false);
+  const catalogToggleRef = useRef<HTMLButtonElement>(null);
+  const activeTheorem = THEOREMS[activeTheoremId];
+
+  const selectTheorem = (id: TheoremId) => {
+    handleSwitchTheorem(id);
+    setCatalogOpen(false);
+    catalogToggleRef.current?.focus({ preventScroll: true });
+  };
+
   return (
     <div className="flex flex-col gap-6">
       {/* Top Header Bar */}
@@ -110,7 +122,26 @@ export const ProofHeader: React.FC<ProofHeaderProps> = ({
             {isE_Proven ? "✔ GRAPH COMPLETE · SIMULATED" : "⏳ IN PROGRESS"}
           </span>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+        <button
+          ref={catalogToggleRef}
+          type="button"
+          aria-expanded={catalogOpen}
+          aria-controls="proof-catalog"
+          data-testid="proof-catalog-toggle"
+          onClick={() => setCatalogOpen((prev) => !prev)}
+          className="md:hidden min-h-[44px] w-full flex items-center justify-between gap-2 rounded-xl border border-slate-700 bg-slate-900 px-3 py-1.5 text-left text-xs font-bold text-slate-200 hover:bg-slate-800 focus-visible:ring-2 focus-visible:ring-brand-cyan focus-visible:outline-none cursor-pointer active:scale-[0.98]"
+        >
+          <span className="min-w-0 truncate">
+            {catalogOpen ? "Hide proofs" : "Browse proofs"} ·{" "}
+            {activeTheorem?.title ?? "Custom"}
+          </span>
+          <span aria-hidden="true">{catalogOpen ? "−" : "+"}</span>
+        </button>
+        <div
+          id="proof-catalog"
+          data-testid="proof-catalog"
+          className={`${catalogOpen ? "grid" : "hidden md:grid"} grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2`}
+        >
           {(Object.keys(THEOREMS) as TheoremId[]).map((thKey) => {
             const th = THEOREMS[thKey];
             const isActive = thKey === activeTheoremId;
@@ -121,7 +152,7 @@ export const ProofHeader: React.FC<ProofHeaderProps> = ({
             return (
               <button
                 key={thKey}
-                onClick={() => handleSwitchTheorem(thKey)}
+                onClick={() => selectTheorem(thKey)}
                 className={`flex flex-col text-left p-2.5 rounded-xl border transition-all relative overflow-hidden cursor-pointer active:scale-[0.98] ${
                   isActive
                     ? "bg-slate-800 border-brand-cyan shadow-lg shadow-brand-cyan/10"

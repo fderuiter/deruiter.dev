@@ -120,6 +120,35 @@ describe("Working With Duck - Deterministic Game Engine", () => {
     expect(outRight.y).toBe(MAX_DUCK_Y);
   });
 
+  // #1550: with both meters full, the Zoomies trigger and the Potty trigger
+  // overwrote each other every tick, so neither countdown ever ran and work
+  // froze while the Good Boy scale drained.
+  it("resolves both urgent states in turn when Excitement and Bladder are both full (#1550)", () => {
+    let state = createInitialDuckGameState(1, "campaign");
+    state.status = "running";
+    state.excitement = 100;
+    state.bladder = 100;
+
+    state = stepDuckGame(state);
+    expect(state.duck.state).toBe("SNIFFING_POTTY");
+    const firstCountdown = state.duck.sniffCountdown;
+
+    state = stepDuckGame(state);
+    expect(state.duck.state).toBe("SNIFFING_POTTY");
+    expect(state.duck.sniffCountdown).toBeLessThan(firstCountdown);
+
+    const workBefore = state.workProgress;
+    let sawZoomies = false;
+    for (let i = 0; i < 700; i++) {
+      state = stepDuckGame(state);
+      if (state.duck.state === "ZOOMIES") sawZoomies = true;
+    }
+    expect(state.indoorPuddles.length).toBeGreaterThan(0);
+    expect(sawZoomies).toBe(true);
+    expect(state.excitement).toBeLessThan(99);
+    expect(state.workProgress).toBeGreaterThan(workBefore);
+  });
+
   it("should trigger urgent Potty Sniffing when Bladder reaches 100%", () => {
     let state = createInitialDuckGameState(1, "campaign");
     state.status = "running";

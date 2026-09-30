@@ -75,7 +75,7 @@ export const DiagnosticDrawers: React.FC<DiagnosticDrawersProps> = ({
             </span>
           </div>
           <div className="flex items-center gap-2 text-zinc-400">
-            <span className="text-[10px] hidden sm:inline text-zinc-500">
+            <span className="text-[10px] hidden sm:inline text-zinc-400">
               {isLeanInspectorOpen ? "Collapse Drawer" : "Expand Drawer"}
             </span>
             {isLeanInspectorOpen ? (
@@ -119,7 +119,7 @@ export const DiagnosticDrawers: React.FC<DiagnosticDrawersProps> = ({
             </span>
           </div>
           <div className="flex items-center gap-2 text-zinc-400">
-            <span className="text-[10px] hidden sm:inline text-zinc-500">
+            <span className="text-[10px] hidden sm:inline text-zinc-400">
               {isTerminalOpen ? "Collapse Drawer" : "Expand Drawer"}
             </span>
             {isTerminalOpen ? (

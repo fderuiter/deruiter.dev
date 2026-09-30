@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   IconX,
@@ -34,6 +35,23 @@ interface FieldManualModalProps {
 
 type TabType = "objective" | "controls" | "rules" | "lore";
 
+const subscribeNoop = () => () => {};
+
+/**
+ * The manual renders in a portal on document.body. A trigger can sit inside an
+ * ancestor with backdrop-filter or transform (the arcade hub cards use
+ * backdrop-blur-xl), and such an ancestor becomes the containing block for the
+ * dialog's `fixed inset-0` overlay, trapping it inside the card (#1549).
+ * Rendering is gated on mount so the server and first client render agree.
+ */
+function useIsClient(): boolean {
+  return useSyncExternalStore(
+    subscribeNoop,
+    () => true,
+    () => false
+  );
+}
+
 export function FieldManualModal({
   isOpen,
   onClose,
@@ -42,6 +60,7 @@ export function FieldManualModal({
 }: FieldManualModalProps) {
   const [activeTab, setActiveTab] = useState<TabType>("objective");
   const { playHover, playAutocomplete, playSuccess } = useAudio();
+  const isClient = useIsClient();
 
   // Reset tab to objective on open
   useEffect(() => {
@@ -62,10 +81,13 @@ export function FieldManualModal({
     } catch {}
   };
 
-  return (
+  if (!isClient) return null;
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <ModalContainer
+          key="field-manual-modal"
           isOpen={isOpen}
           onClose={onClose}
           titleId="manual-title"
@@ -438,6 +460,7 @@ export function FieldManualModal({
           </div>
         </ModalContainer>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }

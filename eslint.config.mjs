@@ -131,26 +131,23 @@ const eslintConfig = defineConfig([
   //                              (scripts/ is outside the block for the same reason).
   //   lib/logger.ts              the logger's own console sink.
   //   lib/env.ts                 the logger depends on it, so it cannot log through it.
-  //   lib/client-sentry.ts       lazy-loads the Sentry SDK; the logger imports it
-  //                              statically, which would defeat the lazy load, and
-  //                              its one warning reports that Sentry failed to load.
   //   lib/build-integrity.ts     build-time stderr is deliberate.
   //   hooks/useConsoleArt.ts     the console art Easter egg.
-  // instrumentation-client.ts is exempt by not being listed: it runs before the
-  // logger exists.
+  // client-sentry.ts and instrumentation-client.ts consume StructuredLogger safely
+  // now that logger core dynamically binds Sentry telemetry SDK dispatches.
   {
     files: [
       "app/**/*.{ts,tsx,js,jsx}",
       "components/**/*.{ts,tsx,js,jsx}",
       "lib/**/*.{ts,tsx,js,jsx}",
       "hooks/**/*.{ts,tsx,js,jsx}",
+      "instrumentation*.ts",
     ],
     ignores: [
       "app/generated/**",
       "lib/dx/**",
       "lib/logger.ts",
       "lib/env.ts",
-      "lib/client-sentry.ts",
       "lib/build-integrity.ts",
       "hooks/useConsoleArt.ts",
     ],

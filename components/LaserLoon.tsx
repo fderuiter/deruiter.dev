@@ -45,6 +45,7 @@ import {
   drawEnemySilhouette,
   drawLoon,
 } from "@/components/laser-loon/scene-art";
+import { PauseMenu } from "@/components/laser-loon/PauseMenu";
 import { safeGetRawItem, safeSetRawItem } from "@/lib/safe-storage";
 import {
   LaserMode,
@@ -188,10 +189,6 @@ export const LaserLoon: React.FC = () => {
         setShowMuseum(false);
       }
     },
-  });
-
-  const pauseTrapRef = useFocusTrap<HTMLDivElement>(isPaused, {
-    onEscape: () => togglePause(),
   });
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -1665,6 +1662,17 @@ export const LaserLoon: React.FC = () => {
 
   // Keyboard Handlers
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    // Space and Enter on a pause-dialog button activate that button; the
+    // playfield's own shortcuts would otherwise swallow them and resume.
+    if (
+      isPaused &&
+      (e.key === " " || e.key === "Enter") &&
+      e.target instanceof HTMLElement &&
+      e.target !== e.currentTarget &&
+      e.target.closest('[role="dialog"]')
+    ) {
+      return;
+    }
     const interceptKeys = [
       "ArrowUp",
       "ArrowDown",
@@ -2053,7 +2061,10 @@ export const LaserLoon: React.FC = () => {
               </div>
             )}
 
-            {(gameState === "playing" || isPaused) && (
+            {/* Fullscreen hides the footer strip, so Pause stays in the HUD
+                there; elsewhere it lives below the playfield, out of the
+                firing area (#1551). */}
+            {isFullscreen && (gameState === "playing" || isPaused) && (
               <button
                 type="button"
                 onClick={togglePause}
@@ -2158,65 +2169,19 @@ export const LaserLoon: React.FC = () => {
         {/* Pause Overlay Screen */}
         {isPaused && (
           <div className="arcade-shooter-pause absolute inset-0 bg-neutral-950/90 backdrop-blur-md z-40 flex flex-col items-center justify-center text-center p-4 select-none overflow-y-auto">
-            <div
-              ref={pauseTrapRef}
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="laser-loon-pause-title"
-              className="max-w-md w-full bg-neutral-900/95 border border-red-500/40 rounded-3xl p-6 shadow-2xl flex flex-col items-center my-auto"
-            >
-              <div className="w-14 h-14 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-center mb-3 text-red-400">
-                <IconPlayerPause className="w-7 h-7" />
-              </div>
-              <h3
-                id="laser-loon-pause-title"
-                className="text-2xl font-bold text-white font-mono tracking-tight mb-1"
-              >
-                GAME PAUSED
-              </h3>
-              <p className="text-xs text-neutral-400 mb-6 font-mono">
-                Act {currentActNum} campaign session paused.
-              </p>
-
-              <div className="flex flex-col gap-3 w-full font-mono text-xs font-bold">
-                <button
-                  onClick={togglePause}
-                  className="min-h-[44px] min-w-[44px] w-full px-6 py-3 bg-red-500 hover:bg-red-400 text-white rounded-xl shadow-[0_0_20px_rgba(239,68,68,0.4)] transition-all flex items-center justify-center gap-2 cursor-pointer focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
-                >
-                  <IconPlayerPlay className="w-4 h-4 fill-current" />
-                  <span>RESUME GAME [P / SPACE]</span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    setIsPaused(false);
-                    startGame();
-                  }}
-                  className="min-h-[44px] min-w-[44px] w-full px-6 py-3 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 rounded-xl border border-neutral-700 transition-all flex items-center justify-center gap-2 cursor-pointer focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:outline-none"
-                >
-                  <IconRefresh className="w-4 h-4 text-red-400" />
-                  <span>RESTART CAMPAIGN</span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    setIsPaused(false);
-                    resetGame();
-                  }}
-                  className="min-h-[44px] min-w-[44px] w-full px-6 py-3 bg-neutral-950 hover:bg-neutral-900 text-neutral-400 hover:text-white rounded-xl border border-neutral-800 transition-all flex items-center justify-center gap-2 cursor-pointer focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:outline-none"
-                >
-                  <IconX className="w-4 h-4 text-red-500" />
-                  <span>EXIT TO CABINET MENU</span>
-                </button>
-              </div>
-
-              <div className="mt-6 pt-4 border-t border-neutral-800 w-full text-[10px] font-mono text-neutral-500 flex justify-around flex-wrap gap-2">
-                <span>WASD: Move</span>
-                <span>Click: Fire</span>
-                <span>1-4: Optics</span>
-                <span>U: Tremolo</span>
-              </div>
-            </div>
+            <PauseMenu
+              score={score}
+              actNum={currentActNum}
+              onResume={togglePause}
+              onRestart={() => {
+                setIsPaused(false);
+                startGame();
+              }}
+              onExit={() => {
+                setIsPaused(false);
+                resetGame();
+              }}
+            />
           </div>
         )}
 
@@ -2813,6 +2778,21 @@ export const LaserLoon: React.FC = () => {
           for Tremolo
         </span>
         <div className="flex items-center gap-4">
+          {(gameState === "playing" || isPaused) && (
+            <button
+              type="button"
+              onClick={togglePause}
+              aria-label={isPaused ? "Resume Game" : "Pause Game"}
+              className="min-h-[44px] min-w-[44px] px-3 py-1 rounded-full bg-neutral-900/90 border border-neutral-800 hover:border-red-500/50 text-neutral-200 hover:text-red-400 font-mono text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer touch-manipulation select-none active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:outline-none"
+            >
+              {isPaused ? (
+                <IconPlayerPlay className="w-3.5 h-3.5 fill-current text-red-400" />
+              ) : (
+                <IconPlayerPause className="w-3.5 h-3.5 text-red-400" />
+              )}
+              <span>{isPaused ? "Resume" : "Pause"} [P]</span>
+            </button>
+          )}
           <button
             onClick={() => setSoundEnabled((prev) => !prev)}
             className="min-h-[44px] min-w-[44px] px-2 py-1 hover:text-neutral-300 transition-colors cursor-pointer flex items-center justify-center gap-1 touch-manipulation select-none active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:outline-none rounded-lg"

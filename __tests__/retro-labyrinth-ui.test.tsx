@@ -156,7 +156,7 @@ describe("RetroLabyrinth React Component UI Suite", () => {
     });
 
     expect(container.textContent).toContain("OBJECTIVE");
-    expect(container.textContent).toContain("to the EXIT");
+    expect(container.textContent).toContain("EXIT (bottom right)");
 
     const ctx = HTMLCanvasElement.prototype.getContext("2d") as unknown as {
       fillText: ReturnType<typeof vi.fn>;
@@ -179,6 +179,8 @@ describe("RetroLabyrinth React Component UI Suite", () => {
     );
     expect(objective?.textContent).toBe("VISIT THE ROUTE NODES (0/4)");
     expect(container.textContent).toContain("then guide the");
+    // The exit tile reads LOCK until then, so the copy says it unlocks (#1552).
+    expect(container.textContent).toContain("to unlock the EXIT");
   });
 
   it("should render ASCII fallback when isMounted is false", async () => {

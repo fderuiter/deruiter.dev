@@ -37,6 +37,12 @@ interface HandCardProps {
   buttonRef: (el: HTMLButtonElement | null) => void;
   /** What each input means, decided by `useHandInteraction`. */
   interaction: HandCardInteraction;
+  /**
+   * The card's outer element. AnimatePresence's popLayout needs it to lift a
+   * leaving card out of the row at once, so the cards that stay slide over
+   * by transform instead of jumping when its exit ends (#1038).
+   */
+  ref?: React.Ref<HTMLDivElement>;
 }
 
 /**
@@ -55,6 +61,7 @@ export function HandCard({
   label,
   buttonRef,
   interaction,
+  ref,
 }: HandCardProps) {
   const controls = useDragControls();
   const tiltX = useMotionValue(0);
@@ -66,6 +73,7 @@ export function HandCard({
 
   return (
     <Reorder.Item
+      ref={ref}
       value={view.card.id}
       as="div"
       dragListener={false}

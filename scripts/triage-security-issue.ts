@@ -138,18 +138,32 @@ export function collectTriageItems(
   return uniqueItems;
 }
 
+export function sanitizeLogDetails(input?: string): string {
+  if (!input) return "";
+  return input
+    .replace(/\/home\/[a-zA-Z0-9_-]+\/work\/[^\s/]+\/[^\s/]+/g, "<workspace>")
+    .replace(/\/home\/runner\/work\/[^\s/]+\/[^\s/]+/g, "<workspace>")
+    .replace(/\/app\/[a-zA-Z0-9_.-]+/g, "<workspace>")
+    .replace(/C:\\[^\s/]+/g, "<workspace>")
+    .replace(/(?:ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9_]{36,}/g, "[REDACTED_TOKEN]")
+    .replace(/github_pat_[A-Za-z0-9_]{22,}/g, "[REDACTED_TOKEN]")
+    .replace(/Bearer\s+[A-Za-z0-9._-]+/gi, "Bearer [REDACTED_TOKEN]")
+    .replace(/https?:\/\/[a-zA-Z0-9.-]+:[0-9]+/g, "http://<redacted_host>");
+}
+
 export interface ExistingGitHubIssue {
   number: number;
   title: string;
   state: string;
   body: string;
+  labels?: Array<{ name: string } | string>;
 }
 
 export async function triageSecurityIssues(options?: {
   token?: string;
   repo?: string;
   now?: Date;
-}): Promise<{ created: number; updated: number }> {
+}): Promise<{ created: number; updated: number; closed: number }> {
   const token =
     options?.token || process.env.GH_TOKEN || process.env.GITHUB_TOKEN;
   const repo =
@@ -157,41 +171,140 @@ export async function triageSecurityIssues(options?: {
 
   if (!token) {
     console.warn("GH_TOKEN not set, skipping GitHub issue triage creation.");
-    return { created: 0, updated: 0 };
+    return { created: 0, updated: 0, closed: 0 };
   }
 
   const items = collectTriageItems(options?.now);
-  if (items.length === 0) {
-    console.log("No security triage items detected.");
-    return { created: 0, updated: 0 };
-  }
 
-  let existingIssues: ExistingGitHubIssue[] = [];
-  try {
-    const listRes = await fetch(
-      `https://api.github.com/repos/${repo}/issues?labels=security-triage&state=all&per_page=100`,
-      {
-        headers: {
-          Authorization: `token ${token}`,
-          Accept: "application/vnd.github.v3+json",
-          "User-Agent": "security-triage-bot",
-        },
-      }
-    );
-
-    if (listRes.ok) {
-      existingIssues = (await listRes.json()) as ExistingGitHubIssue[];
-    } else {
-      console.warn(
-        `Failed to list existing triage issues: ${listRes.status} ${listRes.statusText}`
+  const fetchIssuesByLabel = async (
+    label: string
+  ): Promise<ExistingGitHubIssue[]> => {
+    try {
+      const listRes = await fetch(
+        `https://api.github.com/repos/${repo}/issues?labels=${encodeURIComponent(
+          label
+        )}&state=open&per_page=100`,
+        {
+          headers: {
+            Authorization: `token ${token}`,
+            Accept: "application/vnd.github.v3+json",
+            "User-Agent": "security-triage-bot",
+          },
+        }
       );
+
+      if (listRes.status === 403 || listRes.status === 429) {
+        console.warn(
+          `GitHub API rate limit hit (${listRes.status}). Skipping issue search.`
+        );
+        return [];
+      }
+
+      if (listRes.ok) {
+        return (await listRes.json()) as ExistingGitHubIssue[];
+      } else {
+        console.warn(
+          `Failed to list existing issues for label ${label}: ${listRes.status} ${listRes.statusText}`
+        );
+      }
+    } catch (err) {
+      console.warn(`Error fetching issues for label ${label}:`, err);
     }
-  } catch (err) {
-    console.warn("Error fetching existing triage issues:", err);
+    return [];
+  };
+
+  const securityAlertIssues = await fetchIssuesByLabel("security");
+  const automatedAlertIssues = await fetchIssuesByLabel("automated-alert");
+  const triageIssues = await fetchIssuesByLabel("security-triage");
+
+  const issueMap = new Map<number, ExistingGitHubIssue>();
+  for (const issue of [
+    ...securityAlertIssues,
+    ...automatedAlertIssues,
+    ...triageIssues,
+  ]) {
+    issueMap.set(issue.number, issue);
   }
+  const existingIssues = Array.from(issueMap.values());
 
   let created = 0;
   let updated = 0;
+  let closed = 0;
+
+  if (items.length === 0) {
+    console.log(
+      "No security triage items detected (clean scan). Checking for open tracking issues to resolve..."
+    );
+    for (const issue of existingIssues) {
+      const isTrackingIssue =
+        issue.state === "open" &&
+        (issue.title.includes("scheduled-vulnerability-alert") ||
+          issue.body.includes("scheduled-vulnerability-alert") ||
+          issue.title.toLowerCase().includes("[security triage]") ||
+          (Array.isArray(issue.labels) &&
+            issue.labels.some((l) => {
+              const name = typeof l === "string" ? l : l.name;
+              return name === "automated-alert" || name === "security-triage";
+            })));
+
+      if (isTrackingIssue) {
+        try {
+          const commentRes = await fetch(
+            `https://api.github.com/repos/${repo}/issues/${issue.number}/comments`,
+            {
+              method: "POST",
+              headers: {
+                Authorization: `token ${token}`,
+                Accept: "application/vnd.github.v3+json",
+                "Content-Type": "application/json",
+                "User-Agent": "security-triage-bot",
+              },
+              body: JSON.stringify({
+                body: `✅ **Scheduled Security Audit Cleared:** [scheduled-vulnerability-alert] The latest scheduled security audit passed cleanly with zero vulnerability findings. Automatically resolving and closing this tracking issue.`,
+              }),
+            }
+          );
+
+          if (commentRes.status === 403 || commentRes.status === 429) {
+            console.warn(
+              `Rate limit encountered posting comment on issue #${issue.number}.`
+            );
+          }
+
+          const closeRes = await fetch(
+            `https://api.github.com/repos/${repo}/issues/${issue.number}`,
+            {
+              method: "PATCH",
+              headers: {
+                Authorization: `token ${token}`,
+                Accept: "application/vnd.github.v3+json",
+                "Content-Type": "application/json",
+                "User-Agent": "security-triage-bot",
+              },
+              body: JSON.stringify({
+                state: "closed",
+                state_reason: "completed",
+              }),
+            }
+          );
+
+          if (closeRes.ok) {
+            console.log(
+              `Resolved and closed security triage issue #${issue.number}`
+            );
+            closed++;
+          } else {
+            console.warn(
+              `Failed to close issue #${issue.number}: ${closeRes.status}`
+            );
+          }
+        } catch (err) {
+          console.warn(`Error resolving issue #${issue.number}:`, err);
+        }
+      }
+    }
+    return { created, updated, closed };
+  }
 
   for (const item of items) {
     const openIssue = existingIssues.find(
@@ -202,7 +315,9 @@ export async function triageSecurityIssues(options?: {
     );
 
     if (openIssue) {
-      // Update existing open issue by adding a comment
+      const commentText = sanitizeLogDetails(
+        `⚠️ **Scheduled Security Audit Alert:** [scheduled-vulnerability-alert] Vulnerability or override issue \`${item.advisoryId}\` (${item.pkgName || "N/A"}) remains active as of ${new Date().toISOString()}.`
+      );
       try {
         const commentRes = await fetch(
           `https://api.github.com/repos/${repo}/issues/${openIssue.number}/comments`,
@@ -215,7 +330,7 @@ export async function triageSecurityIssues(options?: {
               "User-Agent": "security-triage-bot",
             },
             body: JSON.stringify({
-              body: `⚠️ **Scheduled Security Audit Alert:** Vulnerability or override issue \`${item.advisoryId}\` (${item.pkgName || "N/A"}) remains active as of ${new Date().toISOString()}.`,
+              body: commentText,
             }),
           }
         );
@@ -233,10 +348,10 @@ export async function triageSecurityIssues(options?: {
         console.warn(`Error updating issue #${openIssue.number}:`, err);
       }
     } else {
-      // Create new issue with security-triage label
-      const title = `[Security Triage] ${item.severity.toUpperCase()} Advisory: ${item.advisoryId}${item.pkgName ? ` (${item.pkgName})` : ""}`;
-      const bodyLines = [
-        `# 🛡️ Security Vulnerability Triage Ticket`,
+      const title = `[scheduled-vulnerability-alert] [Security Triage] ${item.severity.toUpperCase()} Advisory: ${item.advisoryId}${item.pkgName ? ` (${item.pkgName})` : ""}`;
+      const rawBodyLines = [
+        `# 🛡️ Scheduled Vulnerability Alert Ticket`,
+        `<!-- tag: scheduled-vulnerability-alert -->`,
         "",
         `- **Advisory Identifier:** \`${item.advisoryId}\``,
         `- **Package Name:** \`${item.pkgName || "N/A"}\``,
@@ -247,36 +362,38 @@ export async function triageSecurityIssues(options?: {
       ];
 
       if (item.type === "unhandled") {
-        bodyLines.push("### Unhandled Advisory Details");
-        bodyLines.push(`- **Title:** ${item.title || "N/A"}`);
-        bodyLines.push(`- **Vulnerable Range:** \`${item.range || "N/A"}\``);
+        rawBodyLines.push("### Unhandled Advisory Details");
+        rawBodyLines.push(`- **Title:** ${item.title || "N/A"}`);
+        rawBodyLines.push(`- **Vulnerable Range:** \`${item.range || "N/A"}\``);
         if (item.url) {
-          bodyLines.push(`- **Reference:** [${item.url}](${item.url})`);
+          rawBodyLines.push(`- **Reference:** [${item.url}](${item.url})`);
         }
       } else if (item.type === "expired_rule") {
-        bodyLines.push("### Expired Override Rule Details");
-        bodyLines.push(`- **Previous Reason:** ${item.reason || "N/A"}`);
-        bodyLines.push(
+        rawBodyLines.push("### Expired Override Rule Details");
+        rawBodyLines.push(`- **Previous Reason:** ${item.reason || "N/A"}`);
+        rawBodyLines.push(
           "The temporary override rule for this advisory has expired and must be remediated or re-approved."
         );
       } else if (item.type === "invalid_rule") {
-        bodyLines.push("### Invalid Override Rule Details");
-        bodyLines.push(
+        rawBodyLines.push("### Invalid Override Rule Details");
+        rawBodyLines.push(
           `- **Validation Error:** ${item.validationError || "N/A"}`
         );
       }
 
-      bodyLines.push("");
-      bodyLines.push("### 📋 Remediation Instructions");
-      bodyLines.push(
+      rawBodyLines.push("");
+      rawBodyLines.push("### 📋 Remediation Instructions");
+      rawBodyLines.push(
         "1. Review the advisory details and assess production impact."
       );
-      bodyLines.push(
+      rawBodyLines.push(
         "2. Update the affected dependency to a patched version if available."
       );
-      bodyLines.push(
-        "3. If an upstream patch is unavailable, create a valid entry in `security-audit-ignore.json` with justification, owner, follow-up ticket, explicit `severity`, and an expiration date within the policy cap (14 days for Critical, 30 days for High)."
+      rawBodyLines.push(
+        "3. If an upstream patch is unavailable, create a valid entry in `security-audit-ignore.json` with justification, owner, follow-up ticket, explicit `severity`, and an expiration date within policy limit."
       );
+
+      const body = sanitizeLogDetails(rawBodyLines.join("\n"));
 
       try {
         const createRes = await fetch(
@@ -291,8 +408,8 @@ export async function triageSecurityIssues(options?: {
             },
             body: JSON.stringify({
               title,
-              body: bodyLines.join("\n"),
-              labels: ["security-triage"],
+              body,
+              labels: ["security", "automated-alert"],
             }),
           }
         );
@@ -314,7 +431,7 @@ export async function triageSecurityIssues(options?: {
     }
   }
 
-  return { created, updated };
+  return { created, updated, closed };
 }
 
 if (

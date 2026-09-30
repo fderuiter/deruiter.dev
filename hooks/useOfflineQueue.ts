@@ -442,7 +442,7 @@ export async function flushOfflineQueue(): Promise<{
             }
           }
         } catch {
-          // Fallback to default failureReason if reading fails
+          // ignore parsing error
         }
 
         const deadLetterItem: DeadLetterItem = {

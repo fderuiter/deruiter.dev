@@ -179,6 +179,12 @@ async function runBuildPipeline() {
   );
   runStep("npx", ["tsx", "scripts/build-standalone-engine.ts"]);
 
+  // 3.9. Automated CycloneDX SBOM Generation Phase (Phase 1.95)
+  console.log(
+    "\n--- Phase 1.95: Generating Automated CycloneDX v1.5 SBOM Manifest ---"
+  );
+  runStep("npm", ["run", "generate:sbom"]);
+
   // 4. Application Compilation Phase (Phase 2)
   console.log("\n--- Phase 2: Compiling Frontend Application ---");
   runStep("npx", ["next", "build", "--webpack"]);

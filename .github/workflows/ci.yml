@@ -236,6 +236,10 @@ jobs:
     needs: fast-gate
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
     # Provisional: this used to be part of a single 70-minute job dominated by
     # a 4-device Playwright run; scoping to one device should cut that
     # substantially, but the number below is not yet backed by a measured run
@@ -303,6 +307,14 @@ jobs:
           # WebSocket handshake against a server that speaks the Postgres wire
           # protocol, gets no HTTP response, and waits forever with no timeout.
           DATABASE_URL: "postgresql://dummy:dummy@127.0.0.1:59999/dummy"
+
+      - name: Attest Build Provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            public/sbom.json
+            public/garmin-engine.js
+            public/monkey-c-mayhem.js
 
       - name: Verify Bundle Performance Budgets
         id: bundle

@@ -39,6 +39,7 @@
     "precompile-docs": "prisma generate",
     "compile-docs": "tsx scripts/compile-docs.ts && npm run generate:llms",
     "generate:llms": "tsx scripts/generate-llms-txt.ts",
+    "generate:sbom": "tsx scripts/generate-sbom.ts",
     "check-docs-drift": "tsx scripts/check-drift.ts",
     "check:migrations": "node scripts/check-migrations.js",
     "check:migrations:drift": "prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code",
@@ -122,6 +123,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
+    "@cyclonedx/cyclonedx-npm": "^6.0.1",
     "@playwright/test": "^1.63.0",
     "@stryker-mutator/core": "^10.0.0",
     "@stryker-mutator/vitest-runner": "^10.0.0",

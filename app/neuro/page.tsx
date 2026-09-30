@@ -49,10 +49,10 @@ export default function NeuroReconPage() {
             tag: "Interactive Proof Canvas",
           }}
           next={{
-            title: "Engineering Alignment Simulator",
+            title: "Architectural Archetype Simulator",
             href: "/simulator",
-            label: "Incident Triage",
-            tag: "Engineering Leadership",
+            label: "Systems Tool",
+            tag: "Incident Triage",
           }}
           backToHub={{
             title: "Return to Portfolio",

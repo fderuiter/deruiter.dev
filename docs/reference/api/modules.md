@@ -9,6 +9,7 @@
 - [hooks/useAnimationFrame](hooks/useAnimationFrame/README.md)
 - [hooks/useAnnouncer](hooks/useAnnouncer/README.md)
 - [hooks/useAppEvent](hooks/useAppEvent/README.md)
+- [hooks/useArcadeFx](hooks/useArcadeFx/README.md)
 - [hooks/useCanvasResolution](hooks/useCanvasResolution/README.md)
 - [hooks/useClipboard](hooks/useClipboard/README.md)
 - [hooks/useConsoleArt](hooks/useConsoleArt/README.md)

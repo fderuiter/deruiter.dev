@@ -145,7 +145,7 @@ type DosingWorkflowEvent =
 <h2>Lessons from Mission-Critical Clinical Deployments</h2>
 <p>Adopting statechart-driven state management requires an initial mindset shift: thinking about discrete state transitions first, rather than sprinkling imperative event callbacks across React hooks. However, the benefits compound over the lifetime of a system. When clinical requirements change, updating the state transition matrix immediately reveals missing edges and unreachable states at compile time.</p>
 
-<p>To see formal verification principles applied to interactive directed acyclic graphs (DAGs), test the <a href="/proof">Proof Studio</a> or walk through the compiler architecture in the <a href="/case-studies/crf-xl">CRF-XL Case Study</a>. You can also explore live real-time simulation invariants in the <a href="/simulator">3D Brain Simulator</a>.</p>
+<p>To see formal verification principles applied to interactive directed acyclic graphs (DAGs), test the <a href="/proof">Proof Studio</a> or walk through the compiler architecture in the <a href="/case-studies/crf-xl">CRF-XL Case Study</a>. You can also explore live real-time simulation invariants in the <a href="/neuro">NeuroRecon 3D Brain Studio</a>.</p>
 `.trim(),
   },
   {

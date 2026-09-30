@@ -1,6 +1,6 @@
 "use client";
 
-import React, { RefObject } from "react";
+import React, { RefObject, useId } from "react";
 import { IconTerminal } from "@tabler/icons-react";
 
 export interface TerminalLog {
@@ -38,6 +38,7 @@ export const ProofTerminalConsole: React.FC<ProofTerminalConsoleProps> = ({
   toggleBtnRef,
   terminalLogsContainerRef,
 }) => {
+  const hintId = useId();
   return (
     <div
       data-keyboard-boundary="true"
@@ -101,13 +102,26 @@ export const ProofTerminalConsole: React.FC<ProofTerminalConsoleProps> = ({
               value={consoleInput}
               onChange={(e) => setConsoleInput(e.target.value)}
               onKeyDown={handleConsoleKeyDown}
+              aria-describedby={suggestion ? hintId : undefined}
               placeholder="Enter logic command (e.g. 'connect A C', 'apply mp A B', 'help')..."
-              className="w-full bg-transparent px-3 py-2.5 font-mono text-xs text-white placeholder-slate-600 focus:outline-none"
+              className="w-full min-w-0 bg-transparent px-3 py-2.5 font-mono text-xs text-white placeholder-slate-600 focus:outline-none"
             />
             {suggestion && (
               <span className="absolute left-6 pointer-events-none font-mono text-xs text-slate-600 pl-[1ch]">
                 <span className="invisible">{consoleInput}</span>
                 {suggestion.substring(consoleInput.length)}
+              </span>
+            )}
+            {suggestion && (
+              <span
+                id={hintId}
+                className="shrink-0 whitespace-nowrap pr-4 pl-2 font-mono text-[11px] text-slate-400"
+              >
+                <kbd className="rounded border border-slate-700 bg-slate-900 px-1 py-px text-slate-300">
+                  Tab
+                </kbd>{" "}
+                to complete
+                <span className="sr-only">: {suggestion}</span>
               </span>
             )}
           </form>

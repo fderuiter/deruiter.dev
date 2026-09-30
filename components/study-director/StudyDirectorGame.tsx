@@ -9,6 +9,7 @@ import React, {
 } from "react";
 import {
   ATTENTION_PER_DAY,
+  AUDIT_ATTENTION,
   DOCUMENTATION_ATTENTION,
   STUDY_24_081,
   STUDY_24_081_SITES,
@@ -19,27 +20,17 @@ import {
   endDay,
   finalizeStudy,
   inbox,
-  phaseForDay,
   resolveEvent,
   type StudyEvent,
   type StudyState,
 } from "@/lib/study-director";
-import {
-  DashboardPanel,
-  MetersPanel,
-  SitesPanel,
-  TeamPanel,
-  Card,
-} from "./Panels";
+import { DashboardPanel, MetersPanel, SitesPanel, TeamPanel } from "./Panels";
+import { DecisionPanel } from "./DecisionPanel";
+import { InboxPanel } from "./InboxPanel";
+import { StatusBar } from "./StatusBar";
+import { money } from "./format";
 import { ReportView } from "./ReportView";
-import { PHASE_LABELS, URGENCY_LABELS } from "./labels";
 import { clearStudySave, loadStudySave, saveStudy } from "./useStudySave";
-
-const URGENCY_TONE = {
-  critical: "border-red-500/60 text-red-400",
-  important: "border-amber-500/60 text-amber-400",
-  routine: "border-zinc-700 text-zinc-400",
-} as const;
 
 function newStudy(): StudyState {
   const seed = `sd-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`;
@@ -47,9 +38,6 @@ function newStudy(): StudyState {
     createStudy(seed, STUDY_24_081, STUDY_24_081_SITES, STUDY_24_081_TEAM)
   );
 }
-
-const money = (n: number): string =>
-  `$${Math.round(n / 1000).toLocaleString("en-US")}K`;
 
 /**
  * The Study Director desk: dashboard, inbox, team, sites and a decision
@@ -285,213 +273,97 @@ export const StudyDirectorGame: React.FC = () => {
   }
 
   const running = state.status === "running";
-  const phase = phaseForDay(state.day, state.setup.durationDays);
-  const total = state.setup.durationDays + state.slipDays;
   const criticalOpen = events.filter((e) => e.urgency === "critical").length;
+
+  const actions = (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+      <button
+        type="button"
+        onClick={finishDay}
+        className="min-h-[44px] border border-[var(--sd-amber)] bg-[var(--sd-amber)]/10 px-4 text-sm font-bold text-amber-300 hover:bg-[var(--sd-amber)]/20 active:scale-[0.98]"
+      >
+        End day
+      </button>
+      {events.length === 0 ? (
+        <button
+          type="button"
+          onClick={skipQuietDays}
+          className="min-h-[44px] border border-zinc-600 px-4 text-sm text-zinc-200 hover:border-[var(--sd-amber)] active:scale-[0.98]"
+        >
+          Skip to next message
+        </button>
+      ) : null}
+      <div className="min-w-0 flex-1 basis-56">
+        <p
+          className={`text-[11px] ${criticalOpen > 0 ? "font-semibold text-red-400" : "text-[var(--sd-muted)]"}`}
+        >
+          {criticalOpen > 0
+            ? `${criticalOpen} critical message${criticalOpen === 1 ? "" : "s"} will lapse if you end the day.`
+            : events.length === 0
+              ? "Nothing is waiting. Keys: E end day, N skip to the next message."
+              : "Keys: 1-5 choose, D document, J/K move, E end day."}
+        </p>
+        {notice ? (
+          <p
+            className="mt-0.5 truncate text-[11px] text-zinc-300"
+            aria-hidden="true"
+            title={notice}
+          >
+            {notice}
+          </p>
+        ) : null}
+      </div>
+    </div>
+  );
 
   return (
     <div
       ref={rootRef}
       tabIndex={0}
       data-keyboard-boundary="true"
+      data-sd-desk=""
       onKeyDown={handleKeyDown}
-      className="space-y-3 p-2 font-mono text-zinc-200 outline-none focus-visible:ring-1 focus-visible:ring-amber-500 sm:p-3"
+      className="space-y-3 bg-[var(--sd-bg)] p-2 font-mono text-[var(--sd-text)] outline-none focus-visible:ring-1 focus-visible:ring-amber-500 sm:p-3"
     >
       <div role="status" aria-live="polite" className="sr-only">
         {notice}
       </div>
 
-      <header className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border border-zinc-800 bg-[#13151a] px-3 py-2">
-        <div className="min-w-0">
-          <p className="text-sm font-bold text-zinc-100">
-            Study {state.setup.id} · {PHASE_LABELS[phase]}
-          </p>
-          <p className="text-[11px] text-zinc-400">
-            {state.setup.sponsor.name}
-          </p>
-        </div>
-        <p className="text-xs tabular-nums">
-          Day {Math.min(state.day, total)} / {total}
-          {state.slipDays > 0 ? (
-            <span className="text-amber-400"> (+{state.slipDays})</span>
-          ) : null}
-        </p>
-        <p className="text-xs tabular-nums">
-          {money(state.spent)} of {money(state.setup.budget)}
-        </p>
-        <div
-          className="flex items-center gap-1.5"
-          role="img"
-          aria-label={`${state.attention} of ${ATTENTION_PER_DAY} attention left today${state.routine > 0 ? `, ${state.routine} taken by routine work` : ""}`}
-          title={
-            state.routine > 0
-              ? `${state.routine} attention went to routine work: open queries and unrecorded decisions.`
-              : undefined
-          }
-        >
-          <span className="text-[11px] text-zinc-400">Attention</span>
-          {Array.from({ length: ATTENTION_PER_DAY }, (_, i) => (
-            <span
-              key={i}
-              aria-hidden="true"
-              className={`h-2.5 w-2.5 ${
-                i < state.attention
-                  ? "bg-amber-500"
-                  : i >= ATTENTION_PER_DAY - state.routine
-                    ? "border border-dashed border-zinc-500"
-                    : "bg-zinc-700"
-              }`}
-            />
-          ))}
-        </div>
-      </header>
-
-      {!report && running ? (
-        <Card
-          title={selected ? selected.subject : "Decision"}
-          hint={selected?.from}
-        >
-          {selected ? (
-            <div className="space-y-3">
-              <p className="max-w-3xl text-sm break-words text-zinc-200">
-                {selected.body}
-              </p>
-              <ul className="grid gap-2 md:grid-cols-2">
-                {selected.options.map((option, index) => {
-                  const cost =
-                    option.attentionCost +
-                    (documented ? DOCUMENTATION_ATTENTION : 0);
-                  const blocked = cost > state.attention;
-                  return (
-                    <li key={option.id}>
-                      <button
-                        type="button"
-                        onClick={() => choose(selected, option.id)}
-                        disabled={blocked}
-                        className="flex min-h-[44px] w-full min-w-0 items-start gap-2 border border-zinc-700 px-3 py-2 text-left text-xs hover:border-amber-500 disabled:cursor-not-allowed disabled:opacity-40"
-                      >
-                        <kbd className="mt-0.5 border border-zinc-600 px-1 text-[10px] text-zinc-300">
-                          {index + 1}
-                        </kbd>
-                        <span className="min-w-0 flex-1 break-words">
-                          {option.label}
-                        </span>
-                        <span className="shrink-0 text-amber-400 tabular-nums">
-                          {cost} attn
-                        </span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-              <label className="flex items-center gap-2 text-xs text-zinc-300">
-                <input
-                  type="checkbox"
-                  checked={documented}
-                  onChange={(e) => setDocumented(e.target.checked)}
-                  className="h-4 w-4 accent-amber-500"
-                />
-                Document this decision (+{DOCUMENTATION_ATTENTION} attention).
-                Skipped documentation is remembered.
-              </label>
-            </div>
-          ) : (
-            <p className="text-xs text-zinc-400">
-              Nothing needs an answer right now.
-            </p>
-          )}
-        </Card>
-      ) : null}
-
-      {running ? (
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            onClick={finishDay}
-            className="min-h-[44px] border border-amber-500 bg-amber-500/10 px-4 text-sm font-bold text-amber-300 hover:bg-amber-500/20"
-          >
-            End day
-          </button>
-          {events.length === 0 ? (
-            <button
-              type="button"
-              onClick={skipQuietDays}
-              className="min-h-[44px] border border-zinc-600 px-4 text-sm text-zinc-200 hover:border-amber-500"
-            >
-              Skip to next message
-            </button>
-          ) : null}
-          <p className="text-[11px] text-zinc-400">
-            {criticalOpen > 0
-              ? `${criticalOpen} critical message${criticalOpen === 1 ? "" : "s"} will lapse if you end the day.`
-              : events.length === 0
-                ? "Nothing is waiting. Keys: E end day, N skip to the next message."
-                : "Keys: 1-5 choose, D document, J/K move, E end day."}
-          </p>
-        </div>
-      ) : null}
+      <StatusBar state={state} />
 
       {report ? (
         <ReportView report={report} onRestart={restart} />
       ) : (
-        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)_minmax(0,1fr)]">
-          <div className="space-y-3">
-            <TeamPanel state={state} />
-            <SitesPanel
-              state={state}
-              canAudit={running && state.attention >= 2}
-              onAudit={audit}
+        <>
+          <div className="grid gap-3 lg:grid-cols-[minmax(0,220px)_minmax(0,1fr)_minmax(0,230px)] xl:grid-cols-[minmax(0,260px)_minmax(0,1fr)_minmax(0,280px)]">
+            <div className="min-w-0 space-y-3">
+              <InboxPanel
+                events={events}
+                selectedId={selected?.id}
+                onSelect={setSelectedId}
+              />
+              <DashboardPanel state={state} />
+            </div>
+            <DecisionPanel
+              event={running ? selected : undefined}
+              attention={state.attention}
+              documented={documented}
+              onDocumentedChange={setDocumented}
+              onChoose={choose}
+              footer={running ? actions : null}
             />
+            <div className="min-w-0 space-y-3">
+              <MetersPanel state={state} />
+              <TeamPanel state={state} />
+            </div>
           </div>
-          <div className="space-y-3">
-            <DashboardPanel state={state} />
-            <MetersPanel state={state} />
-          </div>
-          <div className="space-y-3">
-            <Card
-              title="Inbox"
-              hint={`${events.length} open${criticalOpen ? `, ${criticalOpen} critical` : ""}`}
-            >
-              {events.length === 0 ? (
-                <p className="text-xs text-zinc-400">
-                  Inbox zero. Enjoy it. End the day when you are ready.
-                </p>
-              ) : (
-                <ul className="space-y-1.5">
-                  {events.map((event) => (
-                    <li key={event.id}>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedId(event.id)}
-                        aria-current={selected?.id === event.id}
-                        className={`w-full min-w-0 border px-2 py-1.5 text-left ${selected?.id === event.id ? "border-amber-500 bg-amber-500/5" : "border-zinc-800 hover:border-zinc-600"}`}
-                      >
-                        <span
-                          className={`mr-2 border px-1 text-[10px] uppercase ${URGENCY_TONE[event.urgency]}`}
-                        >
-                          {URGENCY_LABELS[event.urgency]}
-                        </span>
-                        <span className="text-xs break-words text-zinc-100">
-                          {event.subject}
-                        </span>
-                        <span className="block text-[11px] break-words text-zinc-400">
-                          {event.from}
-                        </span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </Card>
-          </div>
-        </div>
+          <SitesPanel
+            state={state}
+            canAudit={running && state.attention >= AUDIT_ATTENTION}
+            onAudit={audit}
+          />
+        </>
       )}
-
-      {notice ? (
-        <p className="text-[11px] text-zinc-400" aria-hidden="true">
-          {notice}
-        </p>
-      ) : null}
     </div>
   );
 };

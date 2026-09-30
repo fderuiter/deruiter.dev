@@ -13,6 +13,7 @@ import { useAudio } from "@/components/providers/AudioProvider";
 import { useTelemetry } from "@/hooks/useTelemetry";
 import { useAnnouncer } from "@/hooks/useAnnouncer";
 import { cloneDeep } from "@/lib/utils";
+import { clamp } from "@/lib/game-utils";
 import { downloadFile } from "@/lib/download";
 import { getMatchMediaMatches } from "@/hooks/useMediaQuery";
 import {
@@ -1070,10 +1071,7 @@ export const ClinicalTrialChaos: React.FC = () => {
       if (effects.suspicion !== 0) {
         setAuditor((prev) => ({
           ...prev,
-          suspicion: Math.min(
-            100,
-            Math.max(0, prev.suspicion + effects.suspicion)
-          ),
+          suspicion: clamp(prev.suspicion + effects.suspicion, 0, 100),
         }));
       }
       if (effects.score !== 0) {
@@ -1085,16 +1083,19 @@ export const ClinicalTrialChaos: React.FC = () => {
       }
       if (effects.timeBonusSeconds !== 0) {
         setConveyorSubjects((prev) =>
-          prev.map((sub) => ({
-            ...sub,
-            timeRemaining: Math.max(
-              Math.min(sub.timeRemaining, 3),
-              Math.min(
-                sub.maxTime + 10,
-                sub.timeRemaining + effects.timeBonusSeconds
-              )
-            ),
-          }))
+          prev.map((sub) => {
+            // A penalty never drops a subject below min(current, 3) seconds;
+            // the upper bound is lifted to that floor so it cannot invert.
+            const floor = Math.min(sub.timeRemaining, 3);
+            return {
+              ...sub,
+              timeRemaining: clamp(
+                sub.timeRemaining + effects.timeBonusSeconds,
+                floor,
+                Math.max(floor, sub.maxTime + 10)
+              ),
+            };
+          })
         );
       }
       if (effects.powerUpCharge > 0) {
@@ -1159,6 +1160,19 @@ export const ClinicalTrialChaos: React.FC = () => {
       } else {
         triggerSound("error");
         addAuditLog(result.logMessage, result.level, result.suspicionDelta);
+        // Say why on the board itself, not only in the audit log tab (#1326).
+        const { matchingDomains } = getRoutingReadiness(subj, stations);
+        const rejection = `Rejected: ${subj.subjectLabel} does not belong at ${domain}.${
+          matchingDomains.length > 0
+            ? ` Route it to ${matchingDomains.join(" or ")}.`
+            : ""
+        }`;
+        setRoutingNotice({
+          subjectId: subj.id,
+          unresolvedCount: 0,
+          message: rejection,
+        });
+        announce(rejection, "assertive");
 
         setScoreState((prev) => ({
           ...prev,
@@ -1181,7 +1195,14 @@ export const ClinicalTrialChaos: React.FC = () => {
       }
       setSignatureModal((prev) => ({ ...prev, isOpen: false, subject: null }));
     },
-    [triggerSound, spawnSparkles, addAuditLog, completeSubmission, announce]
+    [
+      triggerSound,
+      spawnSparkles,
+      addAuditLog,
+      completeSubmission,
+      announce,
+      stations,
+    ]
   );
 
   // 15. Route now or open the full review dialog for exceptional packets.
@@ -1462,7 +1483,8 @@ export const ClinicalTrialChaos: React.FC = () => {
           auditorState.behavior === "coffee_break"
             ? "☕ FDA COFFEE BREAK"
             : `FDA AUDITOR [${Math.round(auditorState.suspicion)}%]`,
-          Math.max(80, Math.min(width - 80, auditorX)),
+          // Pinned to the left inset when the canvas is narrower than 160px.
+          clamp(auditorX, 80, Math.max(80, width - 80)),
           auditorY - 34
         );
         ctx.textAlign = "left";
@@ -2054,6 +2076,8 @@ export const ClinicalTrialChaos: React.FC = () => {
         "4",
         "5",
         "6",
+        "7",
+        "8",
         " ",
         "ESCAPE",
         "ENTER",
@@ -2135,7 +2159,7 @@ export const ClinicalTrialChaos: React.FC = () => {
     else if (key === "E") triggerPowerUp("query-extension");
     else if (key === "R") triggerPowerUp("fast-sign");
 
-    // Station routing hotkeys 1-6
+    // Station routing hotkeys 1-8 (phase 3 opens DS and MH as 7 and 8)
     const sorted = [...stations].sort(
       (a, b) => a.positionIndex - b.positionIndex
     );
@@ -3105,7 +3129,7 @@ export const ClinicalTrialChaos: React.FC = () => {
                             <span
                               className={`block h-full transition-[width] duration-500 ease-linear ${timerBarColor(ratio)}`}
                               style={{
-                                width: `${Math.max(0, Math.min(100, ratio * 100))}%`,
+                                width: `${clamp(ratio * 100, 0, 100)}%`,
                               }}
                             />
                           </span>

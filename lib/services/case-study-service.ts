@@ -5,6 +5,12 @@ import { FALLBACK_CASE_STUDIES, CaseStudyData } from "@/lib/case-studies-data";
 import { redis, getScopedRedisKey, isRedisConfigured } from "@/lib/redis";
 import { sanitizeContentHtmlLazy } from "@/lib/content-sanitizer-lazy";
 import { logger } from "@/lib/logger";
+import { z } from "zod";
+import {
+  createFailure,
+  createSuccess,
+  type ServiceResult,
+} from "@/lib/services/service-result";
 
 export type { CaseStudyData };
 
@@ -240,6 +246,22 @@ function toSearchSummary(s: CaseStudySearchSummary): CaseStudySearchSummary {
     tags: s.tags,
   };
 }
+
+/**
+ * Error codes returned by {@link CaseStudyService.updateCaseStudyImage}
+ * (ADR 0028 typed service contract).
+ */
+export const CaseStudyImageErrorCode = z.enum([
+  "CASE_STUDY_NOT_FOUND",
+  "PERSISTENCE_FAILED",
+]);
+export type CaseStudyImageErrorCode = z.infer<typeof CaseStudyImageErrorCode>;
+
+/** Result envelope of {@link CaseStudyService.updateCaseStudyImage}. */
+export type UpdateCaseStudyImageResult = ServiceResult<
+  CaseStudyData,
+  CaseStudyImageErrorCode
+>;
 
 export class CaseStudyService {
   /**
@@ -676,46 +698,61 @@ export class CaseStudyService {
 
   /**
    * Updates the hero image asset URL for a case study and evicts cache.
+   *
+   * Never throws: an unknown slug resolves to `CASE_STUDY_NOT_FOUND` and a
+   * failed database read or write to `PERSISTENCE_FAILED` (ADR 0028).
    */
   static async updateCaseStudyImage(
     slug: string,
     heroImageUrl: string | null
-  ): Promise<CaseStudyData> {
-    const existing = await prisma.caseStudy.findUnique({
-      where: { slug },
-    });
-
+  ): Promise<UpdateCaseStudyImageResult> {
     let updated;
-    if (existing) {
-      updated = await prisma.caseStudy.update({
+    try {
+      const existing = await prisma.caseStudy.findUnique({
         where: { slug },
-        data: { hero_image_url: heroImageUrl },
       });
-    } else {
-      const fallback = FALLBACK_CASE_STUDIES.find((f) => f.slug === slug);
-      if (!fallback) {
-        throw new Error(`Case study with slug "${slug}" not found`);
+
+      if (existing) {
+        updated = await prisma.caseStudy.update({
+          where: { slug },
+          data: { hero_image_url: heroImageUrl },
+        });
+      } else {
+        const fallback = FALLBACK_CASE_STUDIES.find((f) => f.slug === slug);
+        if (!fallback) {
+          return createFailure(
+            "CASE_STUDY_NOT_FOUND",
+            `Case study with slug "${slug}" not found`,
+            { recoverable: false }
+          );
+        }
+        updated = await prisma.caseStudy.create({
+          data: {
+            slug: fallback.slug,
+            title: fallback.title,
+            primary_language: fallback.primary_language,
+            editorial_content: fallback.editorial_content,
+            architectural_narrative: fallback.architectural_narrative,
+            tags: fallback.tags,
+            github_url: fallback.github_url,
+            published: true,
+            simulated_telemetry: fallback.simulated_telemetry,
+            hero_image_url: heroImageUrl,
+          },
+        });
       }
-      updated = await prisma.caseStudy.create({
-        data: {
-          slug: fallback.slug,
-          title: fallback.title,
-          primary_language: fallback.primary_language,
-          editorial_content: fallback.editorial_content,
-          architectural_narrative: fallback.architectural_narrative,
-          tags: fallback.tags,
-          github_url: fallback.github_url,
-          published: true,
-          simulated_telemetry: fallback.simulated_telemetry,
-          hero_image_url: heroImageUrl,
-        },
-      });
+    } catch (error) {
+      return createFailure(
+        "PERSISTENCE_FAILED",
+        `Could not persist the hero image for case study "${slug}"`,
+        { recoverable: true, details: error }
+      );
     }
 
     await CaseStudyService.evictCaseStudyCache(slug);
 
     const fallback = FALLBACK_CASE_STUDIES.find((f) => f.slug === slug);
-    return {
+    return createSuccess({
       id: updated.id,
       slug: updated.slug,
       title: updated.title,
@@ -738,7 +775,7 @@ export class CaseStudyService {
       hero_image_url: updated.hero_image_url ?? null,
       created_at: new Date(updated.created_at),
       updated_at: new Date(updated.updated_at),
-    };
+    });
   }
 
   /**

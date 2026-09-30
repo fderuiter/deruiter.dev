@@ -276,6 +276,28 @@ export class SafeStorageAdapter {
   }
 
   /**
+   * Reads the stored string exactly as written, without JSON parsing or
+   * envelope unwrapping. It is the read counterpart of `setRawItem` for keys
+   * whose legacy format is a bare string (for example a high score "1200"
+   * that `getItem` would return as the number 1200). Falls back to the
+   * in-memory cache when storage is unavailable or throws.
+   *
+   * @param key - The storage key to read
+   * @returns The stored string, or null when the key is absent
+   */
+  public getRawItem(key: string): string | null {
+    if (this.isAvailable()) {
+      try {
+        const raw = window.localStorage.getItem(key);
+        if (raw !== null) return raw;
+      } catch {
+        // Fallback to memory cache
+      }
+    }
+    return this.memoryCache.get(key)?.raw ?? null;
+  }
+
+  /**
    * Removes an item from storage and memory cache.
    */
   public removeItem(key: string): void {
@@ -550,6 +572,9 @@ export const safeSetItem = <T = any>(
 
 export const safeSetRawItem = (key: string, raw: string): boolean =>
   safeStorage.setRawItem(key, raw);
+
+export const safeGetRawItem = (key: string): string | null =>
+  safeStorage.getRawItem(key);
 
 export const safeRemoveItem = (key: string): void =>
   safeStorage.removeItem(key);

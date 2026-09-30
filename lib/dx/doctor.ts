@@ -2883,6 +2883,17 @@ export function checkSectionStructures(
 }
 
 /**
+ * Service modules that still throw raw exceptions across their public boundary
+ * and are exempt from the raw-throw scan until they migrate to ServiceResult
+ * (#1140). Every other service module is scanned, so a new service cannot
+ * inherit the exemption; remove an entry once its module is migrated.
+ */
+const SERVICE_RESULT_PENDING_MIGRATION: ReadonlySet<string> = new Set([
+  "lib/services/blog-service.ts",
+  "lib/services/newsletter-service.ts",
+]);
+
+/**
  * Check Typed Service Contracts & Result Envelopes Guard (ADR-0028)
  */
 export function checkServiceResultTypes(
@@ -2932,7 +2943,9 @@ export function checkServiceResultTypes(
           /throw\s+new\s+(Error|TypeError|Exception)\b/.test(line) &&
           !/createFailure/.test(line) &&
           !relative.includes("spec.test") &&
-          !relative.includes("service.ts") // allow internal retry queue throw or wrapped throw
+          !SERVICE_RESULT_PENDING_MIGRATION.has(
+            relative.split(path.sep).join("/")
+          )
         ) {
           violations.push({
             file: relative,

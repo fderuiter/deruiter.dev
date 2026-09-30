@@ -98,6 +98,15 @@
     },
     "@typescript-eslint/typescript-estree": {
       "typescript": "npm:typescript@~6.0.3"
+    },
+    "@stryker-mutator/core": {
+      "typescript": "npm:typescript@~6.0.3"
+    },
+    "@stryker-mutator/vitest-runner": {
+      "typescript": "npm:typescript@~6.0.3"
+    },
+    "dependency-cruiser": {
+      "typescript": "npm:typescript@~6.0.3"
     }
   },
   "dependencies": {

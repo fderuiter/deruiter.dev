@@ -63,6 +63,7 @@ export const ExpressionTree: React.FC<ExpressionTreeProps> = ({
                 <button
                   type="button"
                   key={hyp.id}
+                  aria-label={`${hypName}: ${hypFormula}`}
                   data-node-id={hyp.id}
                   data-target-eligible={isTargetEligible ? "true" : undefined}
                   onClick={() => onSelectTarget(hyp.id)}

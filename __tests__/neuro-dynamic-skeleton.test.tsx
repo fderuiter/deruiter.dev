@@ -27,6 +27,9 @@ vi.mock("@/hooks/useTelemetry", () => ({
   }),
 }));
 
+// Mock Brain3DViewer to keep the dynamic import loading skeleton rendered
+vi.mock("@/components/neuro/Brain3DViewer", () => new Promise(() => {}));
+
 describe("NeuroRecon Dynamic Import & Skeleton Placeholder Suite", () => {
   let container: HTMLDivElement;
   let root: Root;

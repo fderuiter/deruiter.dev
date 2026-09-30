@@ -355,93 +355,101 @@ export class ProjectImageService {
     fileBuffer: Buffer,
     mimeType: string
   ): Promise<ProjectImageResult> {
-    // 1. Validate image format, size, and magic bytes
-    const validation = validateProjectImage(fileBuffer, mimeType);
-    if (!validation.success) {
-      return validation;
-    }
+    try {
+      // 1. Validate image format, size, and magic bytes
+      const validation = validateProjectImage(fileBuffer, mimeType);
+      if (!validation.success) {
+        return validation;
+      }
 
-    // 2. SVG Defense-in-Depth sanitization
-    if (mimeType.toLowerCase() === "image/svg+xml") {
-      const sanitized = sanitizeSvg(fileBuffer.toString("utf-8"));
-      fileBuffer = Buffer.from(sanitized, "utf-8");
-      if (!validateImageMagicBytes(fileBuffer, mimeType)) {
+      // 2. SVG Defense-in-Depth sanitization
+      if (mimeType.toLowerCase() === "image/svg+xml") {
+        const sanitized = sanitizeSvg(fileBuffer.toString("utf-8"));
+        fileBuffer = Buffer.from(sanitized, "utf-8");
+        if (!validateImageMagicBytes(fileBuffer, mimeType)) {
+          return createFailure(
+            "SANITIZED_SVG_EMPTY",
+            "Invalid image payload: Sanitized SVG contains no valid svg element."
+          );
+        }
+      }
+
+      // 3. Fetch existing case study to preserve prior asset URL on failure
+      let existing: Awaited<
+        ReturnType<typeof CaseStudyService.getCaseStudyBySlug>
+      >;
+      try {
+        existing = await CaseStudyService.getCaseStudyBySlug(slug);
+      } catch (error) {
         return createFailure(
-          "SANITIZED_SVG_EMPTY",
-          "Invalid image payload: Sanitized SVG contains no valid svg element."
+          "CASE_STUDY_LOOKUP_FAILED",
+          `Could not read case study "${slug}" before replacing its image`,
+          { details: error }
         );
       }
-    }
+      const priorAssetUrl = existing?.hero_image_url ?? null;
+      const priorKey = extractMediaKeyFromUrl(priorAssetUrl);
 
-    // 3. Fetch existing case study to preserve prior asset URL on failure
-    let existing: Awaited<
-      ReturnType<typeof CaseStudyService.getCaseStudyBySlug>
-    >;
-    try {
-      existing = await CaseStudyService.getCaseStudyBySlug(slug);
+      // 4. Generate key and save media asset using provider
+      const ext = getExtensionForMimeType(mimeType);
+      const key = `${generateId(`project-${slug}`, { timestamp: true })}.${ext}`;
+      const stored = await ProjectImageService.saveMediaAsset(
+        key,
+        fileBuffer,
+        mimeType
+      );
+      if (!stored.success) {
+        return createFailure(
+          "STORAGE_FAILED",
+          "Could not store the project image asset",
+          { details: stored.error }
+        );
+      }
+      const assetUrl = stored.data;
+
+      // 5. Persist the new asset reference before cleaning up the prior asset.
+      const persisted = await CaseStudyService.updateCaseStudyImage(
+        slug,
+        assetUrl
+      );
+      if (!persisted.success) {
+        // 6. On persistence failure, clean up the new asset and restore the prior
+        // reference. Cleanup is best-effort and never masks the original failure.
+        const cleanup = await ProjectImageService.deleteMediaAsset(key);
+        if (!cleanup.success) {
+          logger.warn(
+            "Project image upload rollback could not clean up the new asset.",
+            sanitizeError(cleanup.error.details),
+            { slug, code: cleanup.error.code }
+          );
+        }
+        if (existing) {
+          // Best effort rollback: the original failure is what the caller sees.
+          await CaseStudyService.updateCaseStudyImage(slug, priorAssetUrl);
+        }
+        return persisted;
+      }
+
+      // 7. Cleanup is post-commit and best-effort: a provider outage must not
+      // report failure after the new image reference has already been persisted.
+      if (priorKey && priorKey !== key) {
+        const cleanup = await ProjectImageService.deleteMediaAsset(priorKey);
+        if (!cleanup.success) {
+          logger.warn(
+            "Project image was replaced, but prior asset cleanup failed.",
+            sanitizeError(cleanup.error.details),
+            { slug, code: cleanup.error.code }
+          );
+        }
+      }
+
+      return createSuccess({ hero_image_url: assetUrl, key });
     } catch (error) {
       return createFailure(
-        "CASE_STUDY_LOOKUP_FAILED",
-        `Could not read case study "${slug}" before replacing its image`,
+        "PERSISTENCE_FAILED",
+        `Unexpected error uploading project image for "${slug}"`,
         { details: error }
       );
     }
-    const priorAssetUrl = existing?.hero_image_url ?? null;
-    const priorKey = extractMediaKeyFromUrl(priorAssetUrl);
-
-    // 4. Generate key and save media asset using provider
-    const ext = getExtensionForMimeType(mimeType);
-    const key = `${generateId(`project-${slug}`, { timestamp: true })}.${ext}`;
-    const stored = await ProjectImageService.saveMediaAsset(
-      key,
-      fileBuffer,
-      mimeType
-    );
-    if (!stored.success) {
-      return createFailure(
-        "STORAGE_FAILED",
-        "Could not store the project image asset",
-        { details: stored.error }
-      );
-    }
-    const assetUrl = stored.data;
-
-    // 5. Persist the new asset reference before cleaning up the prior asset.
-    const persisted = await CaseStudyService.updateCaseStudyImage(
-      slug,
-      assetUrl
-    );
-    if (!persisted.success) {
-      // 6. On persistence failure, clean up the new asset and restore the prior
-      // reference. Cleanup is best-effort and never masks the original failure.
-      const cleanup = await ProjectImageService.deleteMediaAsset(key);
-      if (!cleanup.success) {
-        logger.warn(
-          "Project image upload rollback could not clean up the new asset.",
-          sanitizeError(cleanup.error.details),
-          { slug, code: cleanup.error.code }
-        );
-      }
-      if (existing) {
-        // Best effort rollback: the original failure is what the caller sees.
-        await CaseStudyService.updateCaseStudyImage(slug, priorAssetUrl);
-      }
-      return persisted;
-    }
-
-    // 7. Cleanup is post-commit and best-effort: a provider outage must not
-    // report failure after the new image reference has already been persisted.
-    if (priorKey && priorKey !== key) {
-      const cleanup = await ProjectImageService.deleteMediaAsset(priorKey);
-      if (!cleanup.success) {
-        logger.warn(
-          "Project image was replaced, but prior asset cleanup failed.",
-          sanitizeError(cleanup.error.details),
-          { slug, code: cleanup.error.code }
-        );
-      }
-    }
-
-    return createSuccess({ hero_image_url: assetUrl, key });
   }
 }

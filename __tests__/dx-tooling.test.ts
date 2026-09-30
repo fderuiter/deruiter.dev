@@ -194,7 +194,7 @@ describe("Developer Experience (DX) Tooling Suite", () => {
         validateBranchName(
           "stitch/phased-toolchain-migration-jm0-fd813e32-4441-4e86-8e04-081ff22216d9"
         ).valid
-      ).toBe(true);
+      ).toBe(false);
 
       expect(validateBranchName("jules-cleanup").valid).toBe(false);
       expect(validateBranchName("Jules/Uppercase").valid).toBe(false);

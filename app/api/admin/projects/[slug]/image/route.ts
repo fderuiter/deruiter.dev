@@ -119,6 +119,7 @@ export const POST = createApiHandler(
 
         logger.error("Project image upload failed:", {
           code: result.error.code,
+          message: result.error.message,
           cause: sanitizeError(result.error.details),
         });
         const res = NextResponse.json(
@@ -193,10 +194,11 @@ export const DELETE = createApiHandler(
           );
           return applySecurityHeaders(res, req);
         }
-        logger.error(
-          "Failed to clear project image:",
-          sanitizeError(cleared.error.details)
-        );
+        logger.error("Failed to clear project image:", {
+          code: cleared.error.code,
+          message: cleared.error.message,
+          cause: sanitizeError(cleared.error.details),
+        });
         const res = NextResponse.json(
           { error: "Failed to clear project image" },
           { status: 500 }

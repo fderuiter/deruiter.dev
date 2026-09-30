@@ -13,6 +13,18 @@ export interface StorageOptions {
   ttlMs?: number;
 }
 
+export interface RawWriteOptions {
+  /**
+   * Whether the value is also kept in the in-memory cache, so later reads in
+   * the same page see it even when the write could not reach localStorage.
+   * Defaults to true. Pass false for keys whose readers must see exactly what
+   * localStorage holds and fall back to their default when a write fails, as
+   * a direct localStorage call would. Such failed writes are expected by
+   * the caller and are not logged.
+   */
+  retainInMemory?: boolean;
+}
+
 export interface StorageEnvelope<T = unknown> {
   value: T;
   lastAccessedAt: number;
@@ -242,20 +254,31 @@ export class SafeStorageAdapter {
    * envelope that `setItem` adds. Use it only for keys whose stored format
    * predates the envelope and must stay byte-identical so existing visitors
    * keep their settings. `getItem` reads such values back unchanged. Storage
-   * failures fall back to the in-memory cache instead of throwing.
+   * failures fall back to the in-memory cache instead of throwing, unless
+   * `options.retainInMemory` is false: the key is then never held in memory,
+   * so a failed write is dropped and reads see only localStorage.
    *
    * @param key - The storage key to write
    * @param raw - The exact string to store
-   * @returns true when the value reached localStorage, false when it is held in memory only
+   * @param options - Whether the value is kept in memory (default true)
+   * @returns true when the value reached localStorage, false when it did not
    */
-  public setRawItem(key: string, raw: string): boolean {
-    let parsedValue: unknown = raw;
-    try {
-      parsedValue = JSON.parse(raw);
-    } catch {
-      // Raw non-JSON string is returned as-is by getItem
+  public setRawItem(
+    key: string,
+    raw: string,
+    options?: RawWriteOptions
+  ): boolean {
+    if (options?.retainInMemory === false) {
+      this.memoryCache.delete(key);
+    } else {
+      let parsedValue: unknown = raw;
+      try {
+        parsedValue = JSON.parse(raw);
+      } catch {
+        // Raw non-JSON string is returned as-is by getItem
+      }
+      this.memoryCache.set(key, { raw, envelope: null, parsedValue });
     }
-    this.memoryCache.set(key, { raw, envelope: null, parsedValue });
 
     let persisted = false;
     if (this.isAvailable()) {
@@ -263,11 +286,15 @@ export class SafeStorageAdapter {
         window.localStorage.setItem(key, raw);
         persisted = true;
       } catch (error) {
-        const sanitized = sanitizeError(error);
-        logger.warn(
-          `SafeStorage: setRawItem failed for key "${key}". Value retained in memory.`,
-          sanitized
-        );
+        // A caller that opted out of the memory copy expects failed writes
+        // and handles them itself, so only retained writes are reported.
+        if (options?.retainInMemory !== false) {
+          const sanitized = sanitizeError(error);
+          logger.warn(
+            `SafeStorage: setRawItem failed for key "${key}". Value retained in memory.`,
+            sanitized
+          );
+        }
       }
     }
 
@@ -570,14 +597,39 @@ export const safeSetItem = <T = any>(
   options?: StorageOptions
 ): boolean => safeStorage.setItem(key, value, options);
 
-export const safeSetRawItem = (key: string, raw: string): boolean =>
-  safeStorage.setRawItem(key, raw);
+export const safeSetRawItem = (
+  key: string,
+  raw: string,
+  options?: RawWriteOptions
+): boolean => safeStorage.setRawItem(key, raw, options);
 
 export const safeGetRawItem = (key: string): string | null =>
   safeStorage.getRawItem(key);
 
 export const safeRemoveItem = (key: string): void =>
   safeStorage.removeItem(key);
+
+/**
+ * The subset of the Web Storage API that `safeRawStorage` provides.
+ */
+export type RawStorage = Pick<Storage, "getItem" | "setItem" | "removeItem">;
+
+/**
+ * localStorage through this module, shaped like the Web Storage API for code
+ * that takes an injectable storage dependency. Values are stored exactly as
+ * given, without an envelope, and are never kept in memory, so reads see only
+ * what localStorage holds. `setItem` throws when the value does not reach
+ * localStorage, as `Storage.setItem` does, so callers keep their own handling.
+ */
+export const safeRawStorage: RawStorage = {
+  getItem: (key) => safeStorage.getRawItem(key),
+  setItem: (key, value) => {
+    if (!safeStorage.setRawItem(key, value, { retainInMemory: false })) {
+      throw new Error(`SafeStorage: localStorage rejected key "${key}"`);
+    }
+  },
+  removeItem: (key) => safeStorage.removeItem(key),
+};
 
 export const safeClear = (): void => safeStorage.clear();
 

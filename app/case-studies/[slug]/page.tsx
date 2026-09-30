@@ -298,7 +298,10 @@ export default async function CaseStudyPage({ params }: PageProps) {
             {/* Interactive Sandbox Terminal Shell */}
             {(Boolean(commands || study.commands_json) ||
               slug === "imednet-python-sdk") && (
-              <div className="mt-12 border-t border-zinc-900/50 pt-10">
+              <div
+                id="sample-commands"
+                className="mt-12 scroll-mt-24 border-t border-zinc-900/50 pt-10"
+              >
                 <h2 className="text-xl font-bold font-sans text-neutral-100 mb-3 flex items-center gap-2">
                   <IconTerminal className="w-5 h-5 text-brand-cyan" />
                   Try the Sample Commands

@@ -357,15 +357,18 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
           </div>
         ) : (
           /* Windowed Mode: Cabinet Marquee / Top Frame Bezel Header Bar */
-          <div className="w-full flex items-center justify-between px-3.5 py-2 bg-zinc-950/95 border border-zinc-800 rounded-t-2xl font-mono text-xs text-zinc-400 select-none backdrop-blur-md gap-2 shrink-0 z-20">
-            <div className="flex items-center gap-2 min-w-0">
+          <div className="w-full flex flex-wrap items-center justify-between px-3.5 py-2 bg-zinc-950/95 border border-zinc-800 rounded-t-2xl font-mono text-xs text-zinc-400 select-none backdrop-blur-md gap-2 shrink-0 z-20">
+            <div className="flex grow basis-12 items-center gap-2 min-w-0">
               <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0" />
               <span className="font-bold tracking-wider text-zinc-200 text-xs uppercase truncate">
                 {title}
               </span>
             </div>
 
-            <div className="flex items-center gap-1.5 shrink-0">
+            <div
+              data-testid="cabinet-header-controls"
+              className="flex flex-wrap items-center justify-end gap-1.5 shrink-0 min-w-0 max-w-full ml-auto"
+            >
               <FullscreenButton
                 isFullscreen={isFullscreen}
                 isPseudoFullscreen={isPseudoFullscreen}
@@ -439,7 +442,10 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
               <span className="uppercase tracking-wider">Cabinet Engaged</span>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div
+              data-testid="cabinet-footer-controls"
+              className="flex flex-wrap items-center gap-2 min-w-0 max-w-full"
+            >
               <button
                 type="button"
                 onClick={() => setShowWizard(true)}

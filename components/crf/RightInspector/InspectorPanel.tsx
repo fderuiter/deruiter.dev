@@ -27,6 +27,7 @@ import {
   generateCliCommandForField,
   generateCliCommandForForm,
 } from "@/lib/crf/universal-schema";
+import { useClipboard } from "@/hooks/useClipboard";
 
 interface InspectorPanelProps {
   form: CRFForm;
@@ -78,7 +79,10 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
   onCommitReviewTargetChange,
 }) => {
   const [activeTab, setActiveTab] = useState<InspectorTab>("properties");
-  const [hasCopiedCli, setHasCopiedCli] = useState(false);
+  const { copy: copyCli, copied: hasCopiedCli } = useClipboard({
+    successMessage: "CLI command copied to clipboard",
+    errorMessage: "Failed to copy CLI command",
+  });
   const allFields = form.sections.flatMap((s) => s.fields);
   const healthMetrics = computeFormHealthMetrics(form);
   const openReviewThreadCount = reviewThreads.filter(
@@ -90,11 +94,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
       ? generateCliCommandForField(form.domain, selectedField)
       : generateCliCommandForForm(form);
 
-    if (navigator?.clipboard?.writeText) {
-      await navigator.clipboard.writeText(cmd);
-      setHasCopiedCli(true);
-      setTimeout(() => setHasCopiedCli(false), 2000);
-    }
+    await copyCli(cmd);
   };
 
   return (

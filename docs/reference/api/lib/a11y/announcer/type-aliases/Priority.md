@@ -11,7 +11,7 @@
 Pure LiveAnnouncer Engine & State Machine
 
 Provides a framework-agnostic, zero-React queue management engine for screen reader live region announcements:
-- Polite FIFO queuing for status updates
+- Bounded polite queuing: the newest waiting status update supersedes older ones
 - Assertive preemption for critical alerts
 - Deterministic auto-expiration timers
 - PII masking for Social Security Numbers and sensitive identifiers

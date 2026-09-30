@@ -1,4 +1,57 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
+
+// Detect any uncontained element overflowing the horizontal viewport boundary
+function findOverflowingElements(page: Page) {
+  return page.evaluate(() => {
+    const clientWidth = document.documentElement.clientWidth;
+    const badElements: {
+      tag: string;
+      className: string;
+      right: number;
+      clientWidth: number;
+    }[] = [];
+
+    document.querySelectorAll("*").forEach((el) => {
+      // Skip elements contained inside an explicitly clipped or scrollable horizontal container
+      let parent = el.parentElement;
+      let isContained = false;
+      while (
+        parent &&
+        parent !== document.body &&
+        parent !== document.documentElement
+      ) {
+        const style = window.getComputedStyle(parent);
+        if (
+          style.overflowX === "hidden" ||
+          style.overflowX === "auto" ||
+          style.overflowX === "scroll" ||
+          style.overflowX === "clip" ||
+          style.overflow === "hidden" ||
+          style.overflow === "clip"
+        ) {
+          isContained = true;
+          break;
+        }
+        parent = parent.parentElement;
+      }
+      if (isContained) return;
+
+      const rect = el.getBoundingClientRect();
+      // Allow small 1px subpixel tolerance
+      if (rect.right > clientWidth + 1) {
+        badElements.push({
+          tag: el.tagName.toLowerCase(),
+          className:
+            typeof el.className === "string" ? el.className.slice(0, 50) : "",
+          right: Math.round(rect.right),
+          clientWidth,
+        });
+      }
+    });
+
+    return badElements;
+  });
+}
 
 test.describe("Visual Regression & Drift Detection", () => {
   test("Case Study components layout and visibility", async ({ page }) => {
@@ -126,58 +179,7 @@ test.describe("Visual Regression & Drift Detection", () => {
         }
         await page.waitForSelector(route.ready, { timeout: 15000 });
 
-        // Detect any uncontained element overflowing the horizontal viewport boundary
-        const overflowingElements = await page.evaluate(() => {
-          const clientWidth = document.documentElement.clientWidth;
-          const badElements: {
-            tag: string;
-            className: string;
-            right: number;
-            clientWidth: number;
-          }[] = [];
-
-          document.querySelectorAll("*").forEach((el) => {
-            // Skip elements contained inside an explicitly clipped or scrollable horizontal container
-            let parent = el.parentElement;
-            let isContained = false;
-            while (
-              parent &&
-              parent !== document.body &&
-              parent !== document.documentElement
-            ) {
-              const style = window.getComputedStyle(parent);
-              if (
-                style.overflowX === "hidden" ||
-                style.overflowX === "auto" ||
-                style.overflowX === "scroll" ||
-                style.overflowX === "clip" ||
-                style.overflow === "hidden" ||
-                style.overflow === "clip"
-              ) {
-                isContained = true;
-                break;
-              }
-              parent = parent.parentElement;
-            }
-            if (isContained) return;
-
-            const rect = el.getBoundingClientRect();
-            // Allow small 1px subpixel tolerance
-            if (rect.right > clientWidth + 1) {
-              badElements.push({
-                tag: el.tagName.toLowerCase(),
-                className:
-                  typeof el.className === "string"
-                    ? el.className.slice(0, 50)
-                    : "",
-                right: Math.round(rect.right),
-                clientWidth,
-              });
-            }
-          });
-
-          return badElements;
-        });
+        const overflowingElements = await findOverflowingElements(page);
 
         expect(
           overflowingElements,
@@ -186,4 +188,79 @@ test.describe("Visual Regression & Drift Detection", () => {
       });
     }
   }
+
+  // #1636: with the root font size at 200%, the mobile navbar actions and the
+  // footer utility row wrap instead of pushing past a 320px viewport.
+  test("Horizontal Overflow Detector at 200% text on Mobile 320px Squeeze (Landing)", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 320, height: 568 });
+    await page.goto("/");
+    await page.waitForLoadState("domcontentloaded");
+    await page.evaluate(() => {
+      document.documentElement.style.fontSize = "200%";
+    });
+
+    expect(
+      await findOverflowingElements(page),
+      "Horizontal overflow detected on Landing at 320px with 200% text"
+    ).toEqual([]);
+    expect(
+      await page.evaluate(
+        () =>
+          document.documentElement.scrollWidth -
+          document.documentElement.clientWidth
+      )
+    ).toBeLessThanOrEqual(0);
+  });
+
+  // #1643: media queries ignore the page's root font size, so at 200% text a
+  // 1440px viewport still matches `xl` while the desktop link group needs
+  // twice the room. The header row's container query hands over to the
+  // mobile bar instead, so every navbar control stays inside the viewport.
+  test("Navbar controls stay within the viewport at 200% text on Desktop 1440px", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto("/");
+    await page.waitForLoadState("domcontentloaded");
+    await page.evaluate(() => {
+      document.documentElement.style.fontSize = "200%";
+    });
+
+    const offscreen = await page.evaluate(() => {
+      const clientWidth = document.documentElement.clientWidth;
+      const header = document.querySelector("header");
+      return Array.from(
+        header?.querySelectorAll("a, button, [role='group']") ?? []
+      )
+        .filter((el) => {
+          const rect = el.getBoundingClientRect();
+          return (
+            rect.width > 0 &&
+            rect.height > 0 &&
+            window.getComputedStyle(el).visibility !== "hidden"
+          );
+        })
+        .map((el) => ({
+          label: (el.getAttribute("aria-label") ?? el.textContent ?? "").slice(
+            0,
+            40
+          ),
+          left: Math.round(el.getBoundingClientRect().left),
+          right: Math.round(el.getBoundingClientRect().right),
+        }))
+        .filter((c) => c.left < -1 || c.right > clientWidth + 1);
+    });
+
+    expect(
+      offscreen,
+      "Navbar controls outside the 1440px viewport at 200% text"
+    ).toEqual([]);
+    await expect(page.getByTestId("navbar-mobile-bar")).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Open navigation menu" })
+    ).toBeVisible();
+    expect(await findOverflowingElements(page)).toEqual([]);
+  });
 });

@@ -11,6 +11,7 @@ import {
   TeMusicLoop,
   type TeCue,
 } from "@/components/trial-and-error/teAudio";
+import { safeGetRawItem, safeSetRawItem } from "@/lib/safe-storage";
 
 /** Cabinet-level audio switches, persisted per viewer. */
 interface TeAudioSettings {
@@ -36,21 +37,16 @@ const SETTINGS_EVENT = "te:audio-change";
 // Music stays off until the viewer turns it on; SFX follow the site mute.
 const DEFAULT_SETTINGS = "sfx=1;music=0";
 
+// The viewer's last switch when storage refused to keep it: it holds for
+// this page, and the next successful write hands control back to storage.
+let pageOnlySettings: string | null = null;
+
 function readSettingsRaw(): string {
-  try {
-    if (
-      typeof window === "undefined" ||
-      typeof window.localStorage?.getItem !== "function"
-    ) {
-      return DEFAULT_SETTINGS;
-    }
-    const stored = window.localStorage.getItem(SETTINGS_KEY);
-    return stored && /^sfx=[01];music=[01]$/.test(stored)
-      ? stored
-      : DEFAULT_SETTINGS;
-  } catch {
-    return DEFAULT_SETTINGS;
-  }
+  if (pageOnlySettings !== null) return pageOnlySettings;
+  const stored = safeGetRawItem(SETTINGS_KEY);
+  return stored && /^sfx=[01];music=[01]$/.test(stored)
+    ? stored
+    : DEFAULT_SETTINGS;
 }
 
 function parseSettings(raw: string): TeAudioSettings {
@@ -58,16 +54,14 @@ function parseSettings(raw: string): TeAudioSettings {
 }
 
 function writeSettings(settings: TeAudioSettings): void {
-  try {
-    if (typeof window.localStorage?.setItem === "function") {
-      window.localStorage.setItem(
-        SETTINGS_KEY,
-        `sfx=${settings.sfx ? 1 : 0};music=${settings.music ? 1 : 0}`
-      );
-    }
-  } catch {
-    // Storage unavailable: the choice lasts for this page only.
-  }
+  const raw = `sfx=${settings.sfx ? 1 : 0};music=${settings.music ? 1 : 0}`;
+  // Storage unavailable or full: the choice lasts for this page only (#925).
+  // It is kept here rather than in the shared memory cache, so a stale value
+  // storage still holds cannot win over it.
+  const persisted = safeSetRawItem(SETTINGS_KEY, raw, {
+    retainInMemory: false,
+  });
+  pageOnlySettings = persisted ? null : raw;
   window.dispatchEvent(new Event(SETTINGS_EVENT));
 }
 

@@ -1,24 +1,30 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { fromAny } from "@total-typescript/shoehorn";
 
-(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+(
+  globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true;
 
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
 // Mock ResizeObserver and IntersectionObserver
-global.ResizeObserver = class {
-  observe = vi.fn();
-  unobserve = vi.fn();
-  disconnect = vi.fn();
-} as any;
+global.ResizeObserver = fromAny(
+  class {
+    observe = vi.fn();
+    unobserve = vi.fn();
+    disconnect = vi.fn();
+  }
+);
 
-global.IntersectionObserver = class {
-  observe = vi.fn();
-  unobserve = vi.fn();
-  disconnect = vi.fn();
-} as any;
+global.IntersectionObserver = fromAny(
+  class {
+    observe = vi.fn();
+    unobserve = vi.fn();
+    disconnect = vi.fn();
+  }
+);
 
 // Mock Canvas 2D context
 const mockCtx = {
@@ -48,9 +54,29 @@ const mockCtx = {
   createRadialGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
   createLinearGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
   setLineDash: vi.fn(),
+  // LaserLoon paints its act backdrop with drawImage once the art loads; a
+  // frame that lands mid-test otherwise throws an unhandled TypeError.
+  drawImage: vi.fn(),
+  getLineDash: vi.fn(() => []),
+  clip: vi.fn(),
+  strokeText: vi.fn(),
+  setTransform: vi.fn(),
+  resetTransform: vi.fn(),
+  createPattern: vi.fn(() => null),
+  createImageData: vi.fn((w: number, h: number) => ({
+    width: w,
+    height: h,
+    data: new Uint8ClampedArray(w * h * 4),
+  })),
+  getImageData: vi.fn((_x: number, _y: number, w: number, h: number) => ({
+    width: w,
+    height: h,
+    data: new Uint8ClampedArray(w * h * 4),
+  })),
+  putImageData: vi.fn(),
 };
 
-HTMLCanvasElement.prototype.getContext = vi.fn(() => mockCtx as any);
+HTMLCanvasElement.prototype.getContext = vi.fn(() => fromAny(mockCtx));
 HTMLCanvasElement.prototype.getBoundingClientRect = vi.fn(() => ({
   left: 0,
   top: 0,
@@ -73,7 +99,10 @@ HTMLCanvasElement.prototype.hasPointerCapture = mockHasPointerCapture;
 
 // Mock AudioProvider
 vi.mock("@/components/providers/AudioProvider", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/components/providers/AudioProvider")>();
+  const actual =
+    await importOriginal<
+      typeof import("@/components/providers/AudioProvider")
+    >();
   return {
     ...actual,
     useAudio: () => ({
@@ -88,7 +117,9 @@ vi.mock("@/components/providers/AudioProvider", async (importOriginal) => {
       setMuted: vi.fn(),
       setProfile: vi.fn(),
     }),
-    AudioProvider: ({ children }: any) => <>{children}</>,
+    AudioProvider: ({ children }: { children: React.ReactNode }) => (
+      <>{children}</>
+    ),
   };
 });
 
@@ -105,12 +136,24 @@ import { ClinicalTrialChaos } from "@/components/ClinicalTrialChaos";
 
 class LocalStorageMock {
   private store: Record<string, string> = {};
-  getItem(key: string): string | null { return this.store[key] ?? null; }
-  setItem(key: string, value: string): void { this.store[key] = String(value); }
-  removeItem(key: string): void { delete this.store[key]; }
-  clear(): void { this.store = {}; }
-  get length(): number { return Object.keys(this.store).length; }
-  key(index: number): string | null { return Object.keys(this.store)[index] ?? null; }
+  getItem(key: string): string | null {
+    return this.store[key] ?? null;
+  }
+  setItem(key: string, value: string): void {
+    this.store[key] = String(value);
+  }
+  removeItem(key: string): void {
+    delete this.store[key];
+  }
+  clear(): void {
+    this.store = {};
+  }
+  get length(): number {
+    return Object.keys(this.store).length;
+  }
+  key(index: number): string | null {
+    return Object.keys(this.store)[index] ?? null;
+  }
 }
 
 describe("Canvas Pointer Events Migration & Cancellation Suite", () => {

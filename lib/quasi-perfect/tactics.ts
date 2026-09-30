@@ -60,7 +60,7 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
       ) {
         return {
           success: false,
-          ramConsumed: 1,
+          ramConsumed: tacticDefs.rfl.failureCost,
           message:
             "error: 'rfl' failed: target is not an equality (lhs = rhs).",
         };
@@ -77,7 +77,7 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
         return {
           success: true,
           newAST,
-          ramConsumed: 1,
+          ramConsumed: tacticDefs.rfl.baseRamCost,
           leanProofStep: "rfl",
           message: "tactic 'rfl' succeeded: equality proven by reflexivity.",
           isProofComplete: newAST.type === "Boolean" && newAST.value === true,
@@ -86,7 +86,7 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
 
       return {
         success: false,
-        ramConsumed: 1,
+        ramConsumed: tacticDefs.rfl.failureCost,
         message: `error: type mismatch in 'rfl': expected '${renderASTString(left)} = ${renderASTString(left)}', got '${renderASTString(left)} = ${renderASTString(right)}'.`,
       };
     },
@@ -104,7 +104,7 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
       if (!hypotheses || hypotheses.length === 0) {
         return {
           success: false,
-          ramConsumed: 1,
+          ramConsumed: tacticDefs.rw.failureCost,
           message:
             "error: tactic 'rw' failed. No hypotheses available in context.",
         };
@@ -129,10 +129,10 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
       ) {
         return {
           success: false,
-          ramConsumed: 1,
+          ramConsumed: tacticDefs.rw.failureCost,
           message: `error: tactic 'rw' failed. You selected '${renderASTString(targetNode)}', which matches no side of hypothesis ${
             arg ? `[${arg}]` : "in context"
-          }. Select a sub-term equal to one side of the equality and apply rw again (a wrong target costs 1 GB).`,
+          }. Select a sub-term equal to one side of the equality and apply rw again (a wrong target costs ${tacticDefs.rw.failureCost} GB).`,
         };
       }
 
@@ -148,10 +148,10 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
       if (!replacement) {
         return {
           success: false,
-          ramConsumed: 1,
+          ramConsumed: tacticDefs.rw.failureCost,
           message: `error: tactic 'rw' failed. You selected '${renderASTString(targetNode)}', but rw [${
             (matchedHypothesis.metadata?.name as string) || "h"
-          }] rewrites a selected sub-term equal to '${renderASTString(hypLHS)}' or '${renderASTString(hypRHS)}', not a whole larger expression. Tap one of those sub-terms inside the goal and apply rw again (a wrong target costs 1 GB).`,
+          }] rewrites a selected sub-term equal to '${renderASTString(hypLHS)}' or '${renderASTString(hypRHS)}', not a whole larger expression. Tap one of those sub-terms inside the goal and apply rw again (a wrong target costs ${tacticDefs.rw.failureCost} GB).`,
         };
       }
 
@@ -161,7 +161,7 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
       return {
         success: true,
         newAST,
-        ramConsumed: 2,
+        ramConsumed: tacticDefs.rw.baseRamCost,
         leanProofStep: `rw [${hypName}]`,
         message: `tactic 'rw [${hypName}]' succeeded: substituted '${renderASTString(targetNode)}' with '${renderASTString(replacement)}'.`,
       };
@@ -186,9 +186,8 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
       if (!changed) {
         return {
           success: false,
-          ramConsumed: 1,
-          message:
-            "warning: 'simp' made no progress. 6 GB of RAM was consumed with no reduction.",
+          ramConsumed: tacticDefs.simp.failureCost,
+          message: `warning: 'simp' made no progress. ${tacticDefs.simp.failureCost} GB of RAM was consumed with no reduction.`,
         };
       }
 
@@ -198,7 +197,7 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
       return {
         success: true,
         newAST,
-        ramConsumed: 6,
+        ramConsumed: tacticDefs.simp.baseRamCost,
         leanProofStep: "simp",
         message: `tactic 'simp' succeeded: expression reduced to '${renderASTString(newAST)}'.`,
         isProofComplete: isComplete,
@@ -225,7 +224,7 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
       ) {
         return {
           success: false,
-          ramConsumed: 1,
+          ramConsumed: tacticDefs.ring.failureCost,
           message:
             "error: 'ring' failed: target must be an algebraic equality (A = B).",
         };
@@ -242,7 +241,7 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
         return {
           success: true,
           newAST,
-          ramConsumed: 4,
+          ramConsumed: tacticDefs.ring.baseRamCost,
           leanProofStep: "ring",
           message: `local 'ring' check confirmed polynomial ring equivalence: '${renderASTString(left)}' = '${renderASTString(right)}'.`,
           isProofComplete: newAST.type === "Boolean" && newAST.value === true,
@@ -251,7 +250,7 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
 
       return {
         success: false,
-        ramConsumed: 1,
+        ramConsumed: tacticDefs.ring.failureCost,
         message: `error: tactic 'ring' failed. Expressions are not algebraically equivalent in polynomial rings.`,
       };
     },
@@ -276,7 +275,7 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
       ) {
         return {
           success: false,
-          ramConsumed: 1,
+          ramConsumed: tacticDefs.intro.failureCost,
           message:
             "error: tactic 'intro' failed: goal is not an implication (P → Q).",
         };
@@ -297,7 +296,7 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
         success: true,
         newAST,
         newHypotheses,
-        ramConsumed: 2,
+        ramConsumed: tacticDefs.intro.baseRamCost,
         leanProofStep: `intro ${hypName}`,
         message: `tactic 'intro ${hypName}' introduced hypothesis ${hypName} : '${renderASTString(antecedent)}'. New goal: '${renderASTString(consequent)}'.`,
         isProofComplete: false,
@@ -317,7 +316,7 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
       if (!hypotheses || hypotheses.length === 0) {
         return {
           success: false,
-          ramConsumed: 1,
+          ramConsumed: tacticDefs.apply.failureCost,
           message:
             "error: tactic 'apply' failed. No implication hypotheses in context.",
         };
@@ -340,7 +339,7 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
       ) {
         return {
           success: false,
-          ramConsumed: 1,
+          ramConsumed: tacticDefs.apply.failureCost,
           message: `error: tactic 'apply' failed. No hypothesis matches rule (P → ${renderASTString(targetNode)}).`,
         };
       }
@@ -349,7 +348,7 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
       if (!areNodesEqual(conclusion, targetNode)) {
         return {
           success: false,
-          ramConsumed: 1,
+          ramConsumed: tacticDefs.apply.failureCost,
           message: `error: tactic 'apply' conclusion mismatch. Hypothesis proves '${renderASTString(conclusion)}', but goal is '${renderASTString(targetNode)}'.`,
         };
       }
@@ -360,7 +359,7 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
       return {
         success: true,
         newAST,
-        ramConsumed: 3,
+        ramConsumed: tacticDefs.apply.baseRamCost,
         leanProofStep: `apply ${hypName}`,
         message: `tactic 'apply ${hypName}' applied rule. New subgoal required: '${renderASTString(premise)}'.`,
         isProofComplete: false,
@@ -384,7 +383,7 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
       if (!matchedHyp || !areNodesEqual(matchedHyp, targetNode)) {
         return {
           success: false,
-          ramConsumed: 1,
+          ramConsumed: tacticDefs.exact.failureCost,
           message: `error: tactic 'exact' failed: no hypothesis exactly matches '${renderASTString(targetNode)}'.`,
         };
       }
@@ -400,7 +399,7 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
       return {
         success: true,
         newAST,
-        ramConsumed: 1,
+        ramConsumed: tacticDefs.exact.baseRamCost,
         leanProofStep: `exact ${hypName}`,
         message: `tactic 'exact ${hypName}' closed goal by direct hypothesis proof.`,
         isProofComplete: newAST.type === "Boolean" && newAST.value === true,
@@ -431,7 +430,7 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
       ) {
         return {
           success: false,
-          ramConsumed: 1,
+          ramConsumed: tacticDefs.cases.failureCost,
           message:
             "error: tactic 'cases' requires a disjunctive hypothesis (P ∨ Q).",
         };
@@ -476,7 +475,7 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
       return {
         success: true,
         newSubGoals: [subGoal1, subGoal2],
-        ramConsumed: 4,
+        ramConsumed: tacticDefs.cases.baseRamCost,
         leanProofStep: `cases ${hypName} with h_left h_right`,
         message: `tactic 'cases ${hypName}' split goal into 2 subgoals: Case 1 (h_left) and Case 2 (h_right).`,
         isProofComplete: false,
@@ -504,7 +503,7 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
         return {
           success: true,
           newAST,
-          ramConsumed: 3,
+          ramConsumed: tacticDefs.norm_num.baseRamCost,
           leanProofStep: "norm_num",
           message: `tactic 'norm_num' evaluated expression '${renderASTString(targetNode)}' to True.`,
           isProofComplete: newAST.type === "Boolean" && newAST.value === true,
@@ -522,7 +521,7 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
         return {
           success: true,
           newAST,
-          ramConsumed: 3,
+          ramConsumed: tacticDefs.norm_num.baseRamCost,
           leanProofStep: "norm_num",
           message: `tactic 'norm_num' computed value ${numRes}.`,
           isProofComplete: false,
@@ -531,7 +530,7 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
 
       return {
         success: false,
-        ramConsumed: 1,
+        ramConsumed: tacticDefs.norm_num.failureCost,
         message:
           "error: tactic 'norm_num' could not evaluate non-concrete expression.",
       };
@@ -557,7 +556,7 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
       if (!isConcreteExpression(nodeToTest)) {
         return {
           success: false,
-          ramConsumed: 1,
+          ramConsumed: tacticDefs.decide.failureCost,
           message:
             "error: tactic 'decide' failed. Expression contains free variables and is not decidable by finite computation.",
         };
@@ -574,7 +573,7 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
         return {
           success: true,
           newAST,
-          ramConsumed: 4,
+          ramConsumed: tacticDefs.decide.baseRamCost,
           leanProofStep: "decide",
           message: `local 'decide' evaluation succeeded for '${renderASTString(nodeToTest)}'.`,
           isProofComplete: newAST.type === "Boolean" && newAST.value === true,
@@ -583,7 +582,7 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
 
       return {
         success: false,
-        ramConsumed: 1,
+        ramConsumed: tacticDefs.decide.failureCost,
         message: `error: tactic 'decide' evaluated proposition '${renderASTString(nodeToTest)}' to False.`,
       };
     },
@@ -611,7 +610,7 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
       ) {
         return {
           success: false,
-          ramConsumed: 1,
+          ramConsumed: tacticDefs.omega.failureCost,
           message:
             "error: omega cannot evaluate non-linear arithmetic (e.g. x * x or σ(n)). Presburger arithmetic is strictly linear.",
         };
@@ -626,7 +625,7 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
       return {
         success: true,
         newAST,
-        ramConsumed: 10,
+        ramConsumed: tacticDefs.omega.baseRamCost,
         leanProofStep: "omega",
         message:
           "tactic 'omega' closed linear integer arithmetic goal via Presburger elimination.",
@@ -657,7 +656,7 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
       return {
         success: true,
         newAST,
-        ramConsumed: 8,
+        ramConsumed: tacticDefs.linarith.baseRamCost,
         leanProofStep: "linarith",
         message: "tactic 'linarith' found linear combination proving the goal.",
         isProofComplete: newAST.type === "Boolean" && newAST.value === true,
@@ -684,7 +683,7 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
       ) {
         return {
           success: false,
-          ramConsumed: 1,
+          ramConsumed: tacticDefs.symm.failureCost,
           message:
             "error: 'symm' failed: target must be an equality (LHS = RHS).",
         };
@@ -700,7 +699,7 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
       return {
         success: true,
         newAST,
-        ramConsumed: 1,
+        ramConsumed: tacticDefs.symm.baseRamCost,
         leanProofStep: "symm",
         message: `tactic 'symm' transposed equality: '${renderASTString(left)} = ${renderASTString(right)}' ⟹ '${renderASTString(right)} = ${renderASTString(left)}'.`,
         isProofComplete: false,
@@ -727,7 +726,7 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
       ) {
         return {
           success: false,
-          ramConsumed: 1,
+          ramConsumed: tacticDefs.split.failureCost,
           message: "error: 'split' failed: goal is not a conjunction (A ∧ B).",
         };
       }
@@ -751,7 +750,7 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
       return {
         success: true,
         newSubGoals: [subGoal1, subGoal2],
-        ramConsumed: 2,
+        ramConsumed: tacticDefs.split.baseRamCost,
         leanProofStep: "constructor",
         message: `tactic 'split' decomposed conjunction goal into 2 subgoals: '${renderASTString(leftConj)}' and '${renderASTString(rightConj)}'.`,
         isProofComplete: false,
@@ -777,7 +776,7 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
       ) {
         return {
           success: false,
-          ramConsumed: 1,
+          ramConsumed: tacticDefs.left.failureCost,
           message:
             "error: tactic 'left' failed: goal is not a disjunction (A ∨ B).",
         };
@@ -789,7 +788,7 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
       return {
         success: true,
         newAST,
-        ramConsumed: 1,
+        ramConsumed: tacticDefs.left.baseRamCost,
         leanProofStep: "left",
         message: `tactic 'left' selected left disjunct: '${renderASTString(leftDisj)}'.`,
         isProofComplete: false,
@@ -815,7 +814,7 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
       ) {
         return {
           success: false,
-          ramConsumed: 1,
+          ramConsumed: tacticDefs.right.failureCost,
           message:
             "error: tactic 'right' failed: goal is not a disjunction (A ∨ B).",
         };
@@ -827,7 +826,7 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
       return {
         success: true,
         newAST,
-        ramConsumed: 1,
+        ramConsumed: tacticDefs.right.baseRamCost,
         leanProofStep: "right",
         message: `tactic 'right' selected right disjunct: '${renderASTString(rightDisj)}'.`,
         isProofComplete: false,
@@ -853,7 +852,7 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
       return {
         success: true,
         newAST: qedNode,
-        ramConsumed: 0,
+        ramConsumed: tacticDefs.sorry.baseRamCost,
         leanProofStep: "sorry",
         message:
           "WARNING: Morality exception. Proof accepted via 'sorry'. A single tear falls from the eye of a distant mathematician.",

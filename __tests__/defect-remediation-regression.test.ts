@@ -28,7 +28,16 @@ import {
   tokenizeWithSpans,
 } from "@/lib/crf/ast-evaluator";
 import { CRFField, CRFForm, StudyProtocol } from "@/lib/crf/types";
-import { mergeLevelScore, type LevelScore } from "@/lib/quasi-perfect";
+import {
+  getTacticBlock,
+  mergeLevelScore,
+  parseGameProgress,
+  puzzleLevels,
+  resolveResumeLevelIndex,
+  tacticDefs,
+  type ASTNode,
+  type LevelScore,
+} from "@/lib/quasi-perfect";
 import { computeFormHealthMetrics } from "@/lib/crf/form-health";
 import {
   LOON_MAX_HITS,
@@ -55,6 +64,11 @@ import {
   activeCodeBurst,
   advanceToNextLevel,
   shouldSyncDuckHudState,
+  giveTreat,
+  startDraggingDuck,
+  releaseDuck,
+  enterDogPark,
+  BACK_DOOR_BOUNDS,
   type WorkingWithDuckState,
 } from "@/lib/working-with-duck-engine";
 import { sanitizeError, sanitizeString } from "@/lib/error-sanitization";
@@ -1769,6 +1783,39 @@ describe("Quasi-Perfect progress: best score survives weaker replays (#1230)", (
   });
 });
 
+describe("Quasi-Perfect resume level and RAM rules (#1650, #1651)", () => {
+  it("resumes a saved level and falls back to Level 1 on a corrupt index", () => {
+    const levels = puzzleLevels;
+    expect(
+      resolveResumeLevelIndex(
+        parseGameProgress('{"completedLevels":{},"currentLevelIndex":4}'),
+        levels
+      )
+    ).toBe(4);
+    expect(
+      resolveResumeLevelIndex(
+        parseGameProgress('{"completedLevels":{},"currentLevelIndex":-3}'),
+        levels
+      )
+    ).toBe(0);
+    expect(resolveResumeLevelIndex(parseGameProgress("not json"), levels)).toBe(
+      0
+    );
+  });
+
+  it("refuses sorry at 0 GB and allows it while RAM remains", () => {
+    expect(getTacticBlock(tacticDefs.sorry, 0)?.reason).toBe("exhausted");
+    expect(getTacticBlock(tacticDefs.sorry, 0.5)).toBeNull();
+  });
+
+  it("reports simp's no-progress charge from its failureCost", () => {
+    const x: ASTNode = { id: "x", type: "Variable", value: "x" };
+    const result = tacticDefs.simp.execute(x, x, []);
+    expect(result.ramConsumed).toBe(tacticDefs.simp.failureCost);
+    expect(result.message).toContain(`${tacticDefs.simp.failureCost} GB`);
+  });
+});
+
 describe("Garmin progression is refresh-rate independent (#1212)", () => {
   const simulate = (hz: number, seconds: number, isLightOn = false) => {
     const step = 1000 / hz;
@@ -1981,5 +2028,97 @@ describe("Clinical Trial Chaos auditor resumes after a Coffee Break (#1610)", ()
     expect(tick.coffeeBreakEnded).toBe(true);
     expect(tick.auditor.behavior).toBe("patrolling");
     expect(tick.auditor.isPaused).toBe(false);
+  });
+});
+
+// Behavioural reproductions live in __tests__/arcade-animation-loops.test.tsx.
+describe("Arcade loops read current state (#1628)", () => {
+  const readComponent = (name: string) =>
+    fs.readFileSync(
+      path.resolve(__dirname, `../components/${name}.tsx`),
+      "utf-8"
+    );
+  const loopBody = (code: string, marker: string, end: string) => {
+    const start = code.indexOf("useAnimationFrame(", code.indexOf(marker));
+    const stop = code.indexOf(end, start);
+    expect(start).toBeGreaterThan(-1);
+    expect(stop).toBeGreaterThan(start);
+    return code.slice(start, stop);
+  };
+
+  it("expires Retro Labyrinth side effects on the clock that stamps them", async () => {
+    const { fireWeapon, DEFAULT_WEAPONS } = await import("@/lib/dungeon");
+    const nowMs = 1_800_000_000_000;
+    const res = fireWeapon(
+      "npm_install",
+      DEFAULT_WEAPONS,
+      1,
+      1,
+      80,
+      80,
+      [],
+      undefined,
+      nowMs,
+      32
+    );
+    expect(res.activeSideEffect?.expiresAt).toBe(nowMs + 4000);
+
+    const body = loopBody(
+      readComponent("RetroLabyrinth"),
+      "// Main Real-Time Game Loop",
+      "isActive: isLoopActive"
+    );
+    expect(body).toContain("activeSideEffect.expiresAt <= Date.now()");
+    expect(body).not.toContain("expiresAt <= timestamp");
+  });
+
+  it("reads the current Retro Labyrinth rooms and Clinical Chaos subjects", () => {
+    const labyrinth = readComponent("RetroLabyrinth");
+    expect(labyrinth).not.toContain("loopCampaignRoomsRef");
+    expect(labyrinth).toContain("campaignRoomsRef.current = campaignRooms;");
+
+    const chaos = readComponent("ClinicalTrialChaos");
+    expect(chaos).not.toContain("loopStartSubjects");
+    const body = loopBody(
+      chaos,
+      "// 17. Main Game Loop Tick",
+      "isActive: playState"
+    );
+    expect(body).toContain("renderedLoopStateRef.current");
+  });
+});
+
+describe("Working With Duck - a paused sprint ignores player actions (#1645)", () => {
+  const paused = (): WorkingWithDuckState => ({
+    ...createInitialDuckGameState(1),
+    status: "paused",
+    excitement: 42,
+    totalScore: 1046,
+  });
+
+  it("treats, tricks, drags and scene entry are no-ops while paused", () => {
+    const state = paused();
+    expect(giveTreat(state)).toBe(state);
+    expect(performTrick(state, "SIT")).toBe(state);
+    expect(startDraggingDuck(state)).toBe(state);
+    expect(dragDuckTo(state, 700, 400)).toBe(state);
+    expect(enterDogPark(state)).toBe(state);
+  });
+
+  it("does not bank the Back Door potty bonus while paused", () => {
+    const base = paused();
+    const held: WorkingWithDuckState = {
+      ...base,
+      duck: {
+        ...base.duck,
+        state: "DRAGGED",
+        x: BACK_DOOR_BOUNDS.x + 10,
+        y: BACK_DOOR_BOUNDS.y + 10,
+      },
+    };
+    expect(releaseDuck(held).totalScore).toBe(1046);
+    expect(
+      releaseDuck({ ...held, status: "running" }).totalScore
+    ).toBeGreaterThan(1046);
   });
 });

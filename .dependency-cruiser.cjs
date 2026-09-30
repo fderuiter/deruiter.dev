@@ -60,6 +60,19 @@ module.exports = {
       to: { path: `^${R}/[^/]+/tests/` },
     },
     {
+      name: "trial-and-error-isolation",
+      comment:
+        "Trial & Error (ADR 0046, #925) shares no code with Clinical Trial Chaos or CRF Studio, directly or through anything it imports.",
+      severity: "error",
+      from: {
+        path: "^(lib/trial-and-error/|components/trial-and-error/|components/arcade/TrialAndErrorClient\\.tsx$|app/arcade/trial-and-error/)",
+      },
+      to: {
+        path: "^(lib/clinical-trial-chaos|components/clinical-trial-chaos/|components/ClinicalTrialChaos\\.tsx$|components/arcade/ClinicalChaosClient\\.tsx$|lib/crf/|components/crf/|app/crf/)",
+        reachable: true,
+      },
+    },
+    {
       name: "no-circular",
       comment: "Zero circular dependency cycles allowed across the codebase.",
       severity: "error",

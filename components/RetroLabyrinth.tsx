@@ -7,7 +7,6 @@ import React, {
   useCallback,
   useMemo,
   useSyncExternalStore,
-  useEffectEvent,
 } from "react";
 import { useTelemetry } from "@/hooks/useTelemetry";
 import { logger } from "@/lib/logger";
@@ -1135,10 +1134,12 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     }
   }, [selectedClass.starterWeapons, activeWeaponId, weapons, handleFireWeapon]);
 
-  // BlinkBrowse cursor movement handler
+  // Cursor tracking for every campaign room: the TSP room draws a hover
+  // highlight from it, and BlinkBrowse also steers the player towards it.
+  // Rooms are matched by id, not position, so reordering the campaign
+  // cannot strand either mechanic (#1639).
   const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (gameMode !== "roguelike" || roomIndex !== 2 || gameStatus !== "playing")
-      return;
+    if (gameMode !== "roguelike" || gameStatus !== "playing") return;
 
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -1167,6 +1168,8 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     const gridY = clamp(rawGridY, 0, rows - 1);
 
     cursorGridPosRef.current = { x: gridX, y: gridY };
+
+    if (campaignRooms[roomIndex]?.id !== "blinkbrowse") return;
 
     if (Math.random() < 0.2) {
       const dx =
@@ -1260,15 +1263,15 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   const frameAnchorRef = useRef<number | null>(null);
   // Phosphor shimmer phase for renderCRTEffects: one step per frame.
   const crtFrameRef = useRef(0);
-  // The TSP hover highlight reads the campaign rendered when the loop
-  // started, as the effect-based loop's closure did.
-  const loopCampaignRoomsRef = useRef(campaignRooms);
-  const readRenderedCampaignRooms = useEffectEvent(() => campaignRooms);
+  // The TSP hover highlight reads the rendered campaign, so a new run's
+  // rooms replace the old layout on the next frame (#1628).
+  const campaignRoomsRef = useRef(campaignRooms);
+  useEffect(() => {
+    campaignRoomsRef.current = campaignRooms;
+  });
 
   useEffect(() => {
     if (!isMounted) return;
-
-    loopCampaignRoomsRef.current = readRenderedCampaignRooms();
 
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -1308,7 +1311,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       }
       const timestamp = frameAnchorRef.current + frameClockMs;
       crtFrameRef.current += 1;
-      const campaignRooms = loopCampaignRoomsRef.current;
+      const campaignRooms = campaignRoomsRef.current;
 
       const {
         currentMaze,
@@ -1335,8 +1338,10 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
 
       const deltaMs = Math.min(40, frameDeltaMs);
 
-      // 1. Update active side effect expiry
-      if (activeSideEffect && activeSideEffect.expiresAt <= timestamp) {
+      // 1. Update active side effect expiry. fireWeapon stamps expiresAt on
+      // the Date.now() clock, which the key handlers also read, so the loop
+      // checks it on that clock rather than the frame timestamp (#1628).
+      if (activeSideEffect && activeSideEffect.expiresAt <= Date.now()) {
         setActiveSideEffect(null);
       }
 

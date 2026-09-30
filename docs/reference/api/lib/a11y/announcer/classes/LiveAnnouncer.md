@@ -6,7 +6,12 @@
 
 # Class: LiveAnnouncer
 
-Pure LiveAnnouncer Engine managing polite FIFO queuing, assertive preemption, and auto-expiration timers.
+Pure LiveAnnouncer Engine managing bounded polite queuing, assertive preemption, and auto-expiration timers.
+
+At most one polite announcement waits at a time: a new polite message replaces any
+queued one that has not been played, so a burst of status updates announces the latest
+state within about a second instead of replaying a stale backlog. The playing polite
+message is kept for a minimum dwell so screen readers have time to start speaking it.
 
 ## Constructors
 

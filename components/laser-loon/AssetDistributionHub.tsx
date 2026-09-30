@@ -14,6 +14,7 @@ import {
   IconCreativeCommons,
   IconCheck,
 } from "@tabler/icons-react";
+import { useClipboard } from "@/hooks/useClipboard";
 
 interface AssetFormatItem {
   filename: string;
@@ -109,7 +110,10 @@ interface AssetDistributionHubProps {
 export const AssetDistributionHub: React.FC<AssetDistributionHubProps> = ({
   items = ASSET_ITEMS,
 }) => {
-  const [copied, setCopied] = React.useState(false);
+  const { copy, copied } = useClipboard({
+    successMessage: "Asset page link copied to clipboard",
+    errorMessage: "Failed to copy asset page link",
+  });
   const [activeCategory, setActiveCategory] = React.useState<
     "all" | "vector" | "web" | "raster"
   >("all");
@@ -244,11 +248,7 @@ export const AssetDistributionHub: React.FC<AssetDistributionHubProps> = ({
 
   const handleShare = async () => {
     const url = typeof window !== "undefined" ? window.location.href : "";
-    if (navigator.clipboard) {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
+    await copy(url);
   };
 
   return (

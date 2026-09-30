@@ -193,4 +193,36 @@ describe("Garmin high score persistence (#1308)", () => {
     await advanceFrames(2000);
     expect(store.garmin_simulator_high_score).toBe("9000");
   });
+
+  // #1514: the high score now goes through lib/safe-storage. Blocked storage
+  // must still leave the run playing and write nothing, as before.
+  it("keeps the run going and saves nothing when storage throws", async () => {
+    const setItem = vi.fn(() => {
+      throw new Error("QuotaExceededError");
+    });
+    Object.defineProperty(window, "localStorage", {
+      configurable: true,
+      value: {
+        getItem: () => {
+          throw new Error("SecurityError");
+        },
+        setItem,
+        removeItem: vi.fn(),
+        clear: vi.fn(),
+      },
+    });
+    await act(async () => {
+      root.render(
+        <GarminWatchSimulator
+          initialState={runningSession({ score: 500, highScore: 500 })}
+        />
+      );
+    });
+    await advanceFrames(2000);
+    expect(setItem).toHaveBeenCalledWith(
+      "garmin_simulator_high_score",
+      expect.stringMatching(/^\d+$/)
+    );
+    expect(container.querySelector("canvas")).not.toBeNull();
+  });
 });

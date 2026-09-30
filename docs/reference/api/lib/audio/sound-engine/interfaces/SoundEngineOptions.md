@@ -36,4 +36,4 @@ Initial volume level (0.0 to 1.0). If omitted, loads from storage or defaults to
 
 > `optional` **storage?**: `Storage` \| `null`
 
-Custom storage provider (defaults to globalThis.localStorage when available)
+Custom storage provider (defaults to localStorage through lib/safe-storage when available)

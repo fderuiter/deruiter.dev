@@ -168,6 +168,10 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
   const effectiveHighScore = Math.max(gameState.highScore, loadedHighScore);
   const [isFocused, setIsFocused] = useState(false);
   const isDraggingFogRef = useRef(false);
+  // A gesture that meets fog at any point is a wipe for its whole duration,
+  // so clearing the last of the fog mid-drag never turns it into a swipe
+  // (#1648).
+  const isWipeGestureRef = useRef(false);
 
   // References for Canvas and Animation Loop
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -405,6 +409,16 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     }
   }, [isSetupOpen, applyTransition]);
 
+  // A mouse or touch click on a setup control hands the keyboard back to the
+  // watch, so Enter starts or reboots the run instead of pressing that
+  // control again (#1649). Keyboard activation (click detail 0) keeps focus
+  // where the player deliberately put it.
+  const returnFocusAfterPointerClick = (e: React.MouseEvent) => {
+    if (e.detail > 0) {
+      containerRef.current?.focus({ preventScroll: true });
+    }
+  };
+
   // Switch Device Profile
   const handleSelectDevice = (target: DeviceTarget) => {
     if (target === stateRef.current.device) return;
@@ -495,6 +509,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     isDraggingFogRef.current = true;
     pointerStartRef.current = { x: e.clientX, y: e.clientY };
     swipeHandledRef.current = false;
+    isWipeGestureRef.current = stateRef.current.fogLevel > 0;
 
     if (typeof e.currentTarget.setPointerCapture === "function") {
       try {
@@ -515,8 +530,12 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     const { x, y } = toGameCoordinates(e.clientX, e.clientY);
     handleWipeFog(x, y);
 
-    // Suppress directional swipe action processing while active screen fog is present
+    // Suppress directional swipe action processing for any gesture that has
+    // met screen fog, even once the wipe has cleared it.
     if (stateRef.current.fogLevel > 0) {
+      isWipeGestureRef.current = true;
+    }
+    if (isWipeGestureRef.current) {
       return;
     }
 
@@ -541,9 +560,11 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       } catch {}
     }
 
-    // Evaluate directional swipe gesture only when screen fog is zero
+    // Evaluate directional swipe gesture only when screen fog is zero and
+    // the gesture was never a wipe
     if (
       stateRef.current.fogLevel <= 0 &&
+      !isWipeGestureRef.current &&
       pointerStartRef.current &&
       !swipeHandledRef.current
     ) {
@@ -560,6 +581,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     isDraggingFogRef.current = false;
     pointerStartRef.current = null;
     swipeHandledRef.current = false;
+    isWipeGestureRef.current = false;
   };
 
   const handleCanvasPointerCancel = (
@@ -576,6 +598,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     isDraggingFogRef.current = false;
     pointerStartRef.current = null;
     swipeHandledRef.current = false;
+    isWipeGestureRef.current = false;
   };
 
   // Accessible control handlers run the same engine action as the visible
@@ -857,7 +880,10 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
         {/* Device Profile Target (Memory Limit) Selector */}
         <div className="flex items-center gap-1 p-0.5 bg-zinc-900 border border-zinc-800 rounded-full text-[9px] font-mono">
           <button
-            onClick={() => handleSelectDevice("fenix")}
+            onClick={(e) => {
+              handleSelectDevice("fenix");
+              returnFocusAfterPointerClick(e);
+            }}
             className={`px-2.5 py-0.5 rounded-full cursor-pointer transition-all ${
               deviceTarget === "fenix"
                 ? "bg-rose-600 text-white font-bold"
@@ -867,7 +893,10 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
             Fēnix (32KB)
           </button>
           <button
-            onClick={() => handleSelectDevice("forerunner")}
+            onClick={(e) => {
+              handleSelectDevice("forerunner");
+              returnFocusAfterPointerClick(e);
+            }}
             className={`px-2.5 py-0.5 rounded-full cursor-pointer transition-all ${
               deviceTarget === "forerunner"
                 ? "bg-amber-600 text-black font-bold"
@@ -877,7 +906,10 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
             Forerunner (64KB)
           </button>
           <button
-            onClick={() => handleSelectDevice("edge")}
+            onClick={(e) => {
+              handleSelectDevice("edge");
+              returnFocusAfterPointerClick(e);
+            }}
             className={`px-2.5 py-0.5 rounded-full cursor-pointer transition-all ${
               deviceTarget === "edge"
                 ? "bg-emerald-600 text-white font-bold"
@@ -892,7 +924,10 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
         <div className="flex flex-wrap items-center justify-center gap-2">
           <div className="flex items-center gap-1 p-0.5 bg-zinc-900 border border-zinc-800 rounded-full text-[9px] font-mono">
             <button
-              onClick={() => setBezelTheme("slate")}
+              onClick={(e) => {
+                setBezelTheme("slate");
+                returnFocusAfterPointerClick(e);
+              }}
               className={`px-2 py-0.5 rounded-full cursor-pointer ${
                 bezelTheme === "slate"
                   ? "bg-zinc-700 text-white font-bold"
@@ -902,7 +937,10 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
               Tactix
             </button>
             <button
-              onClick={() => setBezelTheme("solar")}
+              onClick={(e) => {
+                setBezelTheme("solar");
+                returnFocusAfterPointerClick(e);
+              }}
               className={`px-2 py-0.5 rounded-full cursor-pointer ${
                 bezelTheme === "solar"
                   ? "bg-amber-600 text-black font-bold"
@@ -912,7 +950,10 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
               Solar
             </button>
             <button
-              onClick={() => setBezelTheme("cyan")}
+              onClick={(e) => {
+                setBezelTheme("cyan");
+                returnFocusAfterPointerClick(e);
+              }}
               className={`px-2 py-0.5 rounded-full cursor-pointer ${
                 bezelTheme === "cyan"
                   ? "bg-cyan-500 text-black font-bold"
@@ -1259,19 +1300,28 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       {/* NV Flash & Power Simulation Action Controls */}
       <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-[10px] font-mono">
         <button
-          onClick={handleSaveFlash}
+          onClick={(e) => {
+            handleSaveFlash();
+            returnFocusAfterPointerClick(e);
+          }}
           className="px-2.5 py-1 bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 border border-amber-500/40 rounded shadow cursor-pointer transition-all active:scale-95"
         >
           💾 Write NV Flash (+8KB)
         </button>
         <button
-          onClick={handleClearFlash}
+          onClick={(e) => {
+            handleClearFlash();
+            returnFocusAfterPointerClick(e);
+          }}
           className="px-2.5 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 rounded shadow cursor-pointer transition-all active:scale-95"
         >
           🗑️ Clear Flash Storage
         </button>
         <button
-          onClick={handleDrainBattery}
+          onClick={(e) => {
+            handleDrainBattery();
+            returnFocusAfterPointerClick(e);
+          }}
           disabled={gameState.gameState !== "playing"}
           title={
             gameState.gameState === "playing"

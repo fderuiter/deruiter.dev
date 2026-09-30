@@ -34,6 +34,8 @@ export interface ApiClientResponse<T> {
   details: ApiErrorDetail[];
   /** Parsed JSON body regardless of status (useful when an error response also carries data); `null` when empty or not JSON. */
   body: unknown;
+  /** Server response headers, or empty Headers when no response was received. */
+  headers: Headers;
   /** HTTP status code, or `0` when no response was received. */
   status: number;
   /** `true` for a 2xx response. */
@@ -86,9 +88,19 @@ async function request<T>(
   init: RequestInit | undefined
 ): Promise<ApiClientResponse<T>> {
   const headers = new Headers(init?.headers);
+  const isFormData =
+    typeof FormData !== "undefined" && body instanceof FormData;
   const hasBody = body !== undefined;
-  if (hasBody && !headers.has("Content-Type")) {
+
+  if (isFormData) {
+    headers.delete("Content-Type");
+  } else if (hasBody && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
+  }
+
+  let fetchBody: BodyInit | undefined = undefined;
+  if (hasBody) {
+    fetchBody = isFormData ? (body as FormData) : JSON.stringify(body);
   }
 
   let res: Response;
@@ -97,7 +109,7 @@ async function request<T>(
       ...init,
       method,
       headers,
-      body: hasBody ? JSON.stringify(body) : undefined,
+      body: fetchBody,
     });
   } catch {
     return {
@@ -105,11 +117,19 @@ async function request<T>(
       error: null,
       details: [],
       body: null,
+      headers: new Headers(),
       status: 0,
       ok: false,
       networkError: true,
     };
   }
+
+  const responseHeaders =
+    res.headers && typeof res.headers.get === "function"
+      ? res.headers instanceof Headers
+        ? res.headers
+        : new Headers(res.headers)
+      : new Headers();
 
   const parsed = await readJsonBody(res);
   if (res.ok) {
@@ -118,6 +138,7 @@ async function request<T>(
       error: null,
       details: [],
       body: parsed,
+      headers: responseHeaders,
       status: res.status,
       ok: true,
       networkError: false,
@@ -128,6 +149,7 @@ async function request<T>(
     error: extractError(parsed),
     details: extractDetails(parsed),
     body: parsed,
+    headers: responseHeaders,
     status: res.status,
     ok: false,
     networkError: false,

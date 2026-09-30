@@ -1,6 +1,7 @@
 import { sanitizeError } from "@/lib/error-sanitization";
 import { logger } from "@/lib/logger";
 import { safeIsAvailable, safeRawStorage } from "@/lib/safe-storage";
+import { apiClient } from "@/lib/api-client";
 
 /**
  * Default maximum number of queued items retained in the outbox.
@@ -91,20 +92,19 @@ export interface TelemetryOutboxConfig {
 }
 
 /**
- * Default transport utilizing standard window fetch to post to the telemetry API.
+ * Default transport utilizing apiClient to post to the telemetry API.
  */
 const defaultTransport: TelemetryTransport = async (item, options) => {
-  return await fetch("/api/telemetry", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
+  return await apiClient.post(
+    "/api/telemetry",
+    {
       projectSlug: item.projectSlug,
       eventType: item.eventType,
-    }),
-    keepalive: options?.keepalive ?? false,
-  });
+    },
+    {
+      keepalive: options?.keepalive ?? false,
+    }
+  );
 };
 
 /**

@@ -6,6 +6,8 @@ import { colors } from "../lib/dx/utils";
 
 export const WARN_THRESHOLD_DAYS = 14;
 
+export type Severity = "critical" | "high";
+
 export interface IgnoreRule {
   advisory?: string;
   advisoryId?: string;
@@ -16,6 +18,7 @@ export interface IgnoreRule {
   name?: string;
   expiresAt: string;
   createdAt?: string;
+  severity?: string;
   reason: string;
   owner: string;
   followUp: string;
@@ -26,6 +29,7 @@ export interface ParsedIgnoreRule {
   package?: string;
   expiresAt: string;
   createdAt?: string;
+  severity: Severity;
   reason: string;
   owner: string;
   followUp: string;
@@ -33,6 +37,7 @@ export interface ParsedIgnoreRule {
   isExpired: boolean;
   remainingDays?: number;
   isApproachingExpiration?: boolean;
+  warningThresholdDays?: number;
   validationError?: string;
 }
 
@@ -86,7 +91,6 @@ export function parseIgnoreRules(
   warnThresholdDays: number = WARN_THRESHOLD_DAYS
 ): ParsedIgnoreRule[] {
   const rules: ParsedIgnoreRule[] = [];
-  const ninetyDaysMs = 90 * 24 * 60 * 60 * 1000;
 
   const validateAndAdd = (
     advisoryRaw: string,
@@ -95,7 +99,8 @@ export function parseIgnoreRules(
     reasonRaw: string,
     ownerRaw: string,
     followUpRaw: string,
-    createdAtRaw?: string
+    createdAtRaw?: string,
+    severityRaw?: string
   ) => {
     const advisory = advisoryRaw.trim();
     const pkg = pkgRaw.trim();
@@ -104,6 +109,30 @@ export function parseIgnoreRules(
     const owner = ownerRaw.trim();
     const followUp = followUpRaw.trim();
     const createdAt = createdAtRaw ? createdAtRaw.trim() : undefined;
+    const severityInput = severityRaw ? severityRaw.trim().toLowerCase() : "";
+
+    let severity: Severity = "critical";
+    if (severityInput) {
+      if (severityInput === "critical" || severityInput === "high") {
+        severity = severityInput;
+      } else {
+        rules.push({
+          advisory: advisory || "",
+          package: pkg || undefined,
+          expiresAt,
+          createdAt,
+          severity: "critical",
+          reason,
+          owner,
+          followUp,
+          isValid: false,
+          isExpired: false,
+          isApproachingExpiration: false,
+          validationError: `Exception for advisory "${advisory || pkg || "unknown"}" has an invalid severity ("${severityRaw}"). Expected "critical" or "high".`,
+        });
+        return;
+      }
+    }
 
     if (!advisory) {
       rules.push({
@@ -111,6 +140,7 @@ export function parseIgnoreRules(
         package: pkg || undefined,
         expiresAt,
         createdAt,
+        severity,
         reason,
         owner,
         followUp,
@@ -133,6 +163,7 @@ export function parseIgnoreRules(
         package: pkg || undefined,
         expiresAt,
         createdAt,
+        severity,
         reason,
         owner,
         followUp,
@@ -151,6 +182,7 @@ export function parseIgnoreRules(
         package: pkg || undefined,
         expiresAt,
         createdAt,
+        severity,
         reason,
         owner,
         followUp,
@@ -171,6 +203,7 @@ export function parseIgnoreRules(
           package: pkg || undefined,
           expiresAt,
           createdAt,
+          severity,
           reason,
           owner,
           followUp,
@@ -183,39 +216,41 @@ export function parseIgnoreRules(
       }
     }
 
-    if (expDate.getTime() > now.getTime() + ninetyDaysMs) {
+    const maxDays = severity === "high" ? 30 : 14;
+    const maxMs = maxDays * 24 * 60 * 60 * 1000;
+
+    if (expDate.getTime() > now.getTime() + maxMs) {
       rules.push({
         advisory,
         package: pkg || undefined,
         expiresAt,
         createdAt,
+        severity,
         reason,
         owner,
         followUp,
         isValid: false,
         isExpired: false,
         isApproachingExpiration: false,
-        validationError: `Expiration date for advisory "${advisory}" exceeds the maximum 90-day lifespan (${expiresAt}).`,
+        validationError: `Expiration date for advisory "${advisory}" exceeds the maximum ${maxDays}-day lifespan (${expiresAt}).`,
       });
       return;
     }
 
-    if (
-      createdDate &&
-      expDate.getTime() > createdDate.getTime() + ninetyDaysMs
-    ) {
+    if (createdDate && expDate.getTime() > createdDate.getTime() + maxMs) {
       rules.push({
         advisory,
         package: pkg || undefined,
         expiresAt,
         createdAt,
+        severity,
         reason,
         owner,
         followUp,
         isValid: false,
         isExpired: false,
         isApproachingExpiration: false,
-        validationError: `Expiration date for advisory "${advisory}" exceeds 90 days from creation date (${expiresAt}).`,
+        validationError: `Expiration date for advisory "${advisory}" exceeds ${maxDays} days from creation date (${expiresAt}).`,
       });
       return;
     }
@@ -224,14 +259,23 @@ export function parseIgnoreRules(
     const remainingDays = isExpired
       ? 0
       : Math.ceil((expDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
+
+    const ruleWarnThreshold =
+      warnThresholdDays !== WARN_THRESHOLD_DAYS
+        ? warnThresholdDays
+        : severity === "high"
+          ? 14
+          : 7;
+
     const isApproachingExpiration =
-      !isExpired && remainingDays <= warnThresholdDays;
+      !isExpired && remainingDays <= ruleWarnThreshold;
 
     rules.push({
       advisory,
       package: pkg || undefined,
       expiresAt,
       createdAt,
+      severity,
       reason,
       owner,
       followUp,
@@ -239,6 +283,7 @@ export function parseIgnoreRules(
       isExpired,
       remainingDays,
       isApproachingExpiration,
+      warningThresholdDays: ruleWarnThreshold,
     });
   };
 
@@ -260,6 +305,7 @@ export function parseIgnoreRules(
           obj.createdAt || obj.created
             ? String(obj.createdAt || obj.created)
             : undefined;
+        const severity = obj.severity ? String(obj.severity) : undefined;
         validateAndAdd(
           advisory,
           pkg,
@@ -267,7 +313,8 @@ export function parseIgnoreRules(
           reason,
           owner,
           followUp,
-          createdAt
+          createdAt,
+          severity
         );
       }
     }
@@ -287,6 +334,7 @@ export function parseIgnoreRules(
           obj.createdAt || obj.created
             ? String(obj.createdAt || obj.created)
             : undefined;
+        const severity = obj.severity ? String(obj.severity) : undefined;
         validateAndAdd(
           advisory,
           pkg,
@@ -294,7 +342,8 @@ export function parseIgnoreRules(
           reason,
           owner,
           followUp,
-          createdAt
+          createdAt,
+          severity
         );
       }
     }
@@ -467,6 +516,11 @@ export function matchAdvisoryRule(
   pkgName: string
 ): boolean {
   if (!rule.isValid || rule.isExpired) return false;
+
+  const advSeverity = (adv.severity || "").toLowerCase();
+  if (advSeverity === "critical" && rule.severity === "high") {
+    return false;
+  }
 
   if (rule.package) {
     const rulePkg = rule.package.trim().toLowerCase();
@@ -719,32 +773,69 @@ export function runSecurityAudit(options: SecurityAuditOptions = {}): boolean {
   });
 
   if (uniqueUnhandled.length > 0) {
-    console.error(
-      `${colors.brightRed}${colors.bold}❌ Blocked high/critical severity dependency vulnerabilities:${colors.reset}\n`
+    const criticalUnhandled = uniqueUnhandled.filter(
+      (item) => (item.info.severity || "").toLowerCase() === "critical"
+    );
+    const highUnhandled = uniqueUnhandled.filter(
+      (item) => (item.info.severity || "").toLowerCase() !== "critical"
     );
 
-    for (const { pkgName, info, advisory } of uniqueUnhandled) {
+    if (criticalUnhandled.length > 0) {
       console.error(
-        `${colors.bold}${colors.brightYellow}• Package:${colors.reset} ${colors.bold}${pkgName}${colors.reset}`
+        `${colors.brightRed}${colors.bold}❌ Blocked Critical severity dependency vulnerabilities:${colors.reset}\n`
       );
-      console.error(
-        `  ${colors.bold}Severity:${colors.reset} ${(info.severity || "").toUpperCase()}`
-      );
-      if (advisory) {
-        const advId =
-          getAdvisoryIdentifiers(advisory)[0] || advisory.title || "N/A";
-        console.error(`  ${colors.bold}Advisory ID:${colors.reset} ${advId}`);
+      for (const { pkgName, info, advisory } of criticalUnhandled) {
         console.error(
-          `  ${colors.bold}Advisory Title:${colors.reset} ${advisory.title || "N/A"}`
+          `${colors.bold}${colors.brightYellow}• Package:${colors.reset} ${colors.bold}${pkgName}${colors.reset}`
         );
         console.error(
-          `  ${colors.bold}Advisory URL:${colors.reset} ${advisory.url || "N/A"}`
+          `  ${colors.bold}Severity:${colors.reset} ${(info.severity || "").toUpperCase()}`
         );
-        console.error(
-          `  ${colors.bold}Vulnerable Range:${colors.reset} ${advisory.range || "N/A"}`
-        );
+        if (advisory) {
+          const advId =
+            getAdvisoryIdentifiers(advisory)[0] || advisory.title || "N/A";
+          console.error(`  ${colors.bold}Advisory ID:${colors.reset} ${advId}`);
+          console.error(
+            `  ${colors.bold}Advisory Title:${colors.reset} ${advisory.title || "N/A"}`
+          );
+          console.error(
+            `  ${colors.bold}Advisory URL:${colors.reset} ${advisory.url || "N/A"}`
+          );
+          console.error(
+            `  ${colors.bold}Vulnerable Range:${colors.reset} ${advisory.range || "N/A"}`
+          );
+        }
+        console.error("");
       }
-      console.error("");
+    }
+
+    if (highUnhandled.length > 0) {
+      console.error(
+        `${colors.brightRed}${colors.bold}❌ Blocked High severity dependency vulnerabilities:${colors.reset}\n`
+      );
+      for (const { pkgName, info, advisory } of highUnhandled) {
+        console.error(
+          `${colors.bold}${colors.brightYellow}• Package:${colors.reset} ${colors.bold}${pkgName}${colors.reset}`
+        );
+        console.error(
+          `  ${colors.bold}Severity:${colors.reset} ${(info.severity || "").toUpperCase()}`
+        );
+        if (advisory) {
+          const advId =
+            getAdvisoryIdentifiers(advisory)[0] || advisory.title || "N/A";
+          console.error(`  ${colors.bold}Advisory ID:${colors.reset} ${advId}`);
+          console.error(
+            `  ${colors.bold}Advisory Title:${colors.reset} ${advisory.title || "N/A"}`
+          );
+          console.error(
+            `  ${colors.bold}Advisory URL:${colors.reset} ${advisory.url || "N/A"}`
+          );
+          console.error(
+            `  ${colors.bold}Vulnerable Range:${colors.reset} ${advisory.range || "N/A"}`
+          );
+        }
+        console.error("");
+      }
     }
     failed = true;
   }
@@ -761,7 +852,7 @@ export function runSecurityAudit(options: SecurityAuditOptions = {}): boolean {
       `${colors.brightRed}${colors.bold}✖ Security status check failed.${colors.reset}`
     );
     console.error(
-      `${colors.gray}Vulnerable third-party packages must be fixed or approved (added to ignore list with explicit advisory ID, expiration date <= 90 days, and justification) to pass this gate.${colors.reset}`
+      `${colors.gray}Vulnerable third-party packages must be fixed or approved (added to ignore list with explicit advisory ID, valid severity, expiration date <= 14d for critical or 30d for high, and justification) to pass this gate.${colors.reset}`
     );
     if (options.throwOnError) {
       throw new Error(
@@ -861,25 +952,56 @@ export function writeStepSummary(
     }
 
     if (uniqueUnhandled.length > 0) {
-      lines.push("#### Unhandled High/Critical Vulnerabilities");
-      lines.push("");
-      lines.push(
-        "| Package | Severity | Advisory ID | Advisory Title | Vulnerable Range | Link |"
+      const criticalUnhandled = uniqueUnhandled.filter(
+        (item) => (item.info.severity || "").toLowerCase() === "critical"
       );
-      lines.push("| --- | --- | --- | --- | --- | --- |");
-      for (const { pkgName, info, advisory } of uniqueUnhandled) {
-        const advId = advisory
-          ? getAdvisoryIdentifiers(advisory)[0] || "N/A"
-          : "N/A";
-        const title = advisory?.title || "N/A";
-        const severity = (info.severity || "").toUpperCase();
-        const range = advisory?.range || info.range || "N/A";
-        const url = advisory?.url ? `[Advisory](${advisory.url})` : "N/A";
+      const highUnhandled = uniqueUnhandled.filter(
+        (item) => (item.info.severity || "").toLowerCase() !== "critical"
+      );
+
+      if (criticalUnhandled.length > 0) {
+        lines.push("#### Critical Severity Vulnerabilities");
+        lines.push("");
         lines.push(
-          `| \`${pkgName}\` | ${severity} | \`${advId}\` | ${title} | \`${range}\` | ${url} |`
+          "| Package | Severity | Advisory ID | Advisory Title | Vulnerable Range | Link |"
         );
+        lines.push("| --- | --- | --- | --- | --- | --- |");
+        for (const { pkgName, info, advisory } of criticalUnhandled) {
+          const advId = advisory
+            ? getAdvisoryIdentifiers(advisory)[0] || "N/A"
+            : "N/A";
+          const title = advisory?.title || "N/A";
+          const severity = (info.severity || "").toUpperCase();
+          const range = advisory?.range || info.range || "N/A";
+          const url = advisory?.url ? `[Advisory](${advisory.url})` : "N/A";
+          lines.push(
+            `| \`${pkgName}\` | ${severity} | \`${advId}\` | ${title} | \`${range}\` | ${url} |`
+          );
+        }
+        lines.push("");
       }
-      lines.push("");
+
+      if (highUnhandled.length > 0) {
+        lines.push("#### High Severity Vulnerabilities");
+        lines.push("");
+        lines.push(
+          "| Package | Severity | Advisory ID | Advisory Title | Vulnerable Range | Link |"
+        );
+        lines.push("| --- | --- | --- | --- | --- | --- |");
+        for (const { pkgName, info, advisory } of highUnhandled) {
+          const advId = advisory
+            ? getAdvisoryIdentifiers(advisory)[0] || "N/A"
+            : "N/A";
+          const title = advisory?.title || "N/A";
+          const severity = (info.severity || "").toUpperCase();
+          const range = advisory?.range || info.range || "N/A";
+          const url = advisory?.url ? `[Advisory](${advisory.url})` : "N/A";
+          lines.push(
+            `| \`${pkgName}\` | ${severity} | \`${advId}\` | ${title} | \`${range}\` | ${url} |`
+          );
+        }
+        lines.push("");
+      }
     }
   } else {
     lines.push("### ✅ Security Scan Passed");
@@ -894,16 +1016,39 @@ export function writeStepSummary(
   if (activeRules.length > 0) {
     lines.push("### ℹ️ Active Vulnerability Overrides");
     lines.push("");
-    lines.push(
-      "| Advisory | Package | Remaining Days | Owner | Follow-up | Reason |"
-    );
-    lines.push("| --- | --- | --- | --- | --- | --- |");
-    for (const rule of activeRules) {
+
+    const criticalActive = activeRules.filter((r) => r.severity === "critical");
+    const highActive = activeRules.filter((r) => r.severity === "high");
+
+    if (criticalActive.length > 0) {
+      lines.push("#### Critical Severity Overrides");
+      lines.push("");
       lines.push(
-        `| \`${rule.advisory}\` | \`${rule.package || "all"}\` | ${rule.remainingDays}d | ${rule.owner} | ${rule.followUp} | ${rule.reason} |`
+        "| Advisory | Package | Remaining Days | Owner | Follow-up | Reason |"
       );
+      lines.push("| --- | --- | --- | --- | --- | --- |");
+      for (const rule of criticalActive) {
+        lines.push(
+          `| \`${rule.advisory}\` | \`${rule.package || "all"}\` | ${rule.remainingDays}d | ${rule.owner} | ${rule.followUp} | ${rule.reason} |`
+        );
+      }
+      lines.push("");
     }
-    lines.push("");
+
+    if (highActive.length > 0) {
+      lines.push("#### High Severity Overrides");
+      lines.push("");
+      lines.push(
+        "| Advisory | Package | Remaining Days | Owner | Follow-up | Reason |"
+      );
+      lines.push("| --- | --- | --- | --- | --- | --- |");
+      for (const rule of highActive) {
+        lines.push(
+          `| \`${rule.advisory}\` | \`${rule.package || "all"}\` | ${rule.remainingDays}d | ${rule.owner} | ${rule.followUp} | ${rule.reason} |`
+        );
+      }
+      lines.push("");
+    }
   }
 
   try {

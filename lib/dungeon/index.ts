@@ -10,3 +10,4 @@ export * from "./metaprogression";
 export * from "./audio";
 export * from "./objective";
 export * from "./room-label";
+export * from "./scoring";

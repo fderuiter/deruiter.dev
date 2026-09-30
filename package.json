@@ -69,6 +69,7 @@
     "audit:a11y": "playwright test __tests__/e2e/accessibility.spec.ts --project=chromium",
     "audit:security": "tsx scripts/security-audit.ts",
     "audit:secrets": "tsx scripts/audit-secret-history.ts",
+    "audit:triage": "tsx scripts/triage-security-issue.ts",
     "probe:synthetic": "playwright test __tests__/e2e/synthetic-probes.spec.ts",
     "canary:eval": "tsx scripts/canary-analyzer.ts"
   },

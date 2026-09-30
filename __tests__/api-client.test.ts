@@ -100,11 +100,32 @@ describe("apiClient", () => {
       expect(headers.get("Content-Type")).toBe("application/vnd.custom+json");
       expect(headers.get("X-Trace")).toBe("t1");
     });
+
+    it("detects FormData bodies, omits application/json Content-Type, and passes raw FormData", async () => {
+      fetchMock.mockResolvedValue(jsonResponse({ ok: true }));
+      const formData = new FormData();
+      formData.append("file", "test");
+
+      await apiClient.post("/api/upload", formData);
+
+      const init = lastInit();
+      expect(init.method).toBe("POST");
+      expect(init.body).toBe(formData);
+      expect(new Headers(init.headers).has("Content-Type")).toBe(false);
+    });
   });
 
   describe("successful responses", () => {
-    it("returns parsed JSON as data and body", async () => {
-      fetchMock.mockResolvedValue(jsonResponse({ id: "abc" }, 201));
+    it("returns parsed JSON as data and body, and exposes response headers", async () => {
+      fetchMock.mockResolvedValue(
+        new Response(JSON.stringify({ id: "abc" }), {
+          status: 201,
+          headers: {
+            "Content-Type": "application/json",
+            "x-telemetry-offline": "expected",
+          },
+        })
+      );
 
       const res = await apiClient.post<{ id: string }>("/api/x", {});
 
@@ -113,10 +134,12 @@ describe("apiClient", () => {
         error: null,
         details: [],
         body: { id: "abc" },
+        headers: expect.any(Headers),
         status: 201,
         ok: true,
         networkError: false,
       });
+      expect(res.headers.get("x-telemetry-offline")).toBe("expected");
     });
 
     it("does not treat an `error` field on a 2xx body as a failure", async () => {
@@ -202,6 +225,7 @@ describe("apiClient", () => {
           error: "Validation failed",
           details: [{ path: "slug", message: "Slug is required" }],
         },
+        headers: expect.any(Headers),
         status: 400,
         ok: false,
         networkError: false,
@@ -289,6 +313,7 @@ describe("apiClient", () => {
         error: null,
         details: [],
         body: null,
+        headers: expect.any(Headers),
         status: 502,
         ok: false,
         networkError: false,
@@ -305,6 +330,7 @@ describe("apiClient", () => {
         error: null,
         details: [],
         body: null,
+        headers: expect.any(Headers),
         status: 0,
         ok: false,
         networkError: true,

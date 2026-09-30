@@ -38,4 +38,15 @@ describe("Retro Labyrinth manual copy (#1179)", () => {
     }
     expect(deploy?.key).toBe("1, 2, 3 Keys");
   });
+
+  // #1667: Nmap Port Recon is key 2 for the default class, not key 1.
+  it("names the right key for Nmap in the pro tips", () => {
+    const manual = GAME_MANUALS["retro-labyrinth"];
+    const slot = starter.indexOf("port_scan") + 1;
+    expect(slot).toBe(2);
+    const tip = manual.proTips.find((t) => t.includes("Nmap"));
+    expect(tip).toBeDefined();
+    expect(tip).not.toContain("[1]");
+    expect(tip).toContain(`key ${slot}`);
+  });
 });

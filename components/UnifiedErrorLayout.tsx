@@ -26,6 +26,7 @@ const RetroLabyrinth = dynamic(
 import { getClosestMatches, type CaseStudyItem } from "@/lib/search-utils";
 import { logger } from "@/lib/logger";
 import { resolveBaseUrl } from "@/lib/domain";
+import { apiClient } from "@/lib/api-client";
 
 interface UnifiedErrorLayoutProps {
   badge: string;
@@ -107,10 +108,9 @@ export function UnifiedErrorLayout({
   useEffect(() => {
     const fetchStudies = async () => {
       try {
-        const res = await fetch("/api/case-studies");
-        if (res.ok) {
-          const data = await res.json();
-          setCaseStudies(data);
+        const res = await apiClient.get<CaseStudyItem[]>("/api/case-studies");
+        if (res.ok && res.data) {
+          setCaseStudies(res.data);
         }
       } catch (err) {
         logger.error(

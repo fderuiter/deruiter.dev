@@ -87,7 +87,7 @@ function roundRect(
  * canvas. Duck's status labels and floating alerts follow him to the walls,
  * where centring on his position clipped them at the edge (#1550).
  */
-export function fillCenteredTextInCanvas(
+function fillCenteredTextInCanvas(
   ctx: Ctx,
   text: string,
   x: number,
@@ -928,7 +928,7 @@ const MUDDY = {
 
 type Fur = typeof FUR;
 
-export interface DuckSprite {
+interface DuckSprite {
   x: number;
   y: number;
   angle: number;

@@ -5,7 +5,7 @@ import type { TeamRole } from "@/lib/study-director";
 import { clamp } from "@/lib/game-utils";
 
 /** One restrained accent per role, so a face is recognisable across panels. */
-export const ROLE_ACCENT: Record<TeamRole, string> = {
+const ROLE_ACCENT: Record<TeamRole, string> = {
   biostatistician: "#7dd3fc",
   dataManager: "#5eead4",
   regulatory: "#fde047",
@@ -18,8 +18,8 @@ const RING = 15;
 const CIRC = 2 * Math.PI * RING;
 
 /** Workload at which a member is stretched, then overloaded. */
-export const STRETCHED = 70;
-export const OVERLOADED = 85;
+const STRETCHED = 70;
+const OVERLOADED = 85;
 
 export function strain(workload: number): "ok" | "stretched" | "overloaded" {
   if (workload > OVERLOADED) return "overloaded";

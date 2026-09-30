@@ -18,7 +18,7 @@ export function radarPoints(
   });
 }
 
-export interface PhaseSpan {
+interface PhaseSpan {
   phase: Phase;
   /** First day of the phase, 1-based. */
   start: number;

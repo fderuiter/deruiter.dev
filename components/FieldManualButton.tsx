@@ -270,6 +270,8 @@ export function FieldManualButton({
           onClick={handleOpen}
           onMouseEnter={() => playHover()}
           aria-label={`Open Field Manual for ${manual.title}`}
+          aria-haspopup="dialog"
+          aria-expanded={isOpen}
           className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 min-h-[44px] min-w-[44px] rounded-xl text-xs font-mono font-medium text-zinc-400 hover:text-cyan-300 bg-zinc-900/60 hover:bg-zinc-850 border border-zinc-800 transition-all cursor-pointer touch-manipulation select-none active:scale-95 ${className}`}
         >
           <IconHelp className="w-3.5 h-3.5 text-cyan-400" />
@@ -295,6 +297,8 @@ export function FieldManualButton({
           onClick={handleOpen}
           onMouseEnter={() => playHover()}
           aria-label={`Open Field Manual for ${manual.title}`}
+          aria-haspopup="dialog"
+          aria-expanded={isOpen}
           className={`inline-flex items-center justify-center gap-2 px-3 py-1.5 min-h-[44px] min-w-[44px] text-xs font-mono font-semibold rounded-xl bg-zinc-900/80 hover:bg-zinc-800 text-zinc-300 hover:text-cyan-400 border border-zinc-800 hover:border-cyan-500/30 transition-all cursor-pointer touch-manipulation select-none active:scale-95 ${className}`}
         >
           <IconBook2 className="w-4 h-4 text-cyan-400" />
@@ -324,6 +328,8 @@ export function FieldManualButton({
           onClick={handleOpen}
           onMouseEnter={() => playHover()}
           aria-label={`Open Field Manual for ${manual.title}`}
+          aria-haspopup="dialog"
+          aria-expanded={isOpen}
           className={`group flex items-center justify-center gap-2 px-3.5 py-1.5 min-h-[44px] min-w-[44px] text-xs font-mono font-bold rounded-xl transition-all border cursor-pointer touch-manipulation select-none active:scale-95 ${
             !hasSeenGuide
               ? "bg-cyan-950/40 text-cyan-300 border-cyan-500/40 shadow-sm shadow-cyan-500/10"

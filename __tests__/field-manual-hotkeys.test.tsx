@@ -100,7 +100,7 @@ describe("FieldManualButton - Hotkey & Ownership Safety (DUCK-02)", () => {
     expect(
       container.querySelector('[data-testid="parent-status"]')?.textContent
     ).toBe("OPEN");
-    expect(container.querySelectorAll('[role="dialog"]')).toHaveLength(1);
+    expect(document.body.querySelectorAll('[role="dialog"]')).toHaveLength(1);
 
     // Press '?' again to toggle closed
     await act(async () => {
@@ -112,7 +112,7 @@ describe("FieldManualButton - Hotkey & Ownership Safety (DUCK-02)", () => {
     expect(
       container.querySelector('[data-testid="parent-status"]')?.textContent
     ).toBe("CLOSED");
-    expect(container.querySelectorAll('[role="dialog"]')).toHaveLength(0);
+    expect(document.body.querySelectorAll('[role="dialog"]')).toHaveLength(0);
   });
 
   it("opens exactly one dialog when duplicate responsive controls are mounted", async () => {
@@ -158,7 +158,7 @@ describe("FieldManualButton - Hotkey & Ownership Safety (DUCK-02)", () => {
     });
 
     // Exactly one dialog should be open in the DOM, not two competing dialogs
-    const openDialogs = container.querySelectorAll('[role="dialog"]');
+    const openDialogs = document.body.querySelectorAll('[role="dialog"]');
     expect(openDialogs).toHaveLength(1);
 
     // Desktop owner was notified, mobile non-owner was not falsely triggered
@@ -172,7 +172,7 @@ describe("FieldManualButton - Hotkey & Ownership Safety (DUCK-02)", () => {
       );
     });
 
-    expect(container.querySelectorAll('[role="dialog"]')).toHaveLength(0);
+    expect(document.body.querySelectorAll('[role="dialog"]')).toHaveLength(0);
     expect(onOpenChangeDesktop).toHaveBeenCalledWith(false);
   });
 
@@ -205,7 +205,7 @@ describe("FieldManualButton - Hotkey & Ownership Safety (DUCK-02)", () => {
     });
 
     // Exactly one dialog opens
-    expect(container.querySelectorAll('[role="dialog"]')).toHaveLength(1);
+    expect(document.body.querySelectorAll('[role="dialog"]')).toHaveLength(1);
     expect(onOpen1.mock.calls.length + onOpen2.mock.calls.length).toBe(1);
 
     // Press '?' to close
@@ -215,7 +215,7 @@ describe("FieldManualButton - Hotkey & Ownership Safety (DUCK-02)", () => {
       );
     });
 
-    expect(container.querySelectorAll('[role="dialog"]')).toHaveLength(0);
+    expect(document.body.querySelectorAll('[role="dialog"]')).toHaveLength(0);
   });
 
   it("ignores hotkey when typing in editable or protected contexts", async () => {
@@ -263,7 +263,7 @@ describe("FieldManualButton - Hotkey & Ownership Safety (DUCK-02)", () => {
         new KeyboardEvent("keydown", { key: "h", bubbles: true })
       );
     });
-    expect(container.querySelectorAll('[role="dialog"]')).toHaveLength(0);
+    expect(document.body.querySelectorAll('[role="dialog"]')).toHaveLength(0);
     expect(onOpenChange).not.toHaveBeenCalled();
 
     // 2. Inside Textarea
@@ -273,7 +273,7 @@ describe("FieldManualButton - Hotkey & Ownership Safety (DUCK-02)", () => {
         new KeyboardEvent("keydown", { key: "?", bubbles: true })
       );
     });
-    expect(container.querySelectorAll('[role="dialog"]')).toHaveLength(0);
+    expect(document.body.querySelectorAll('[role="dialog"]')).toHaveLength(0);
 
     // 3. Inside contentEditable
     editable.focus();
@@ -282,7 +282,7 @@ describe("FieldManualButton - Hotkey & Ownership Safety (DUCK-02)", () => {
         new KeyboardEvent("keydown", { key: "h", bubbles: true })
       );
     });
-    expect(container.querySelectorAll('[role="dialog"]')).toHaveLength(0);
+    expect(document.body.querySelectorAll('[role="dialog"]')).toHaveLength(0);
 
     // 4. Inside keyboard boundary
     boundaryBtn.focus();
@@ -291,7 +291,7 @@ describe("FieldManualButton - Hotkey & Ownership Safety (DUCK-02)", () => {
         new KeyboardEvent("keydown", { key: "?", bubbles: true })
       );
     });
-    expect(container.querySelectorAll('[role="dialog"]')).toHaveLength(0);
+    expect(document.body.querySelectorAll('[role="dialog"]')).toHaveLength(0);
     expect(onOpenChange).not.toHaveBeenCalled();
   });
 
@@ -373,7 +373,7 @@ describe("FieldManualButton - Hotkey & Ownership Safety (DUCK-02)", () => {
     });
 
     // Card variant buttons should ignore global hotkeys by default
-    expect(container.querySelectorAll('[role="dialog"]')).toHaveLength(0);
+    expect(document.body.querySelectorAll('[role="dialog"]')).toHaveLength(0);
     expect(onOpenChange).not.toHaveBeenCalled();
   });
 
@@ -399,7 +399,7 @@ describe("FieldManualButton - Hotkey & Ownership Safety (DUCK-02)", () => {
       button.click();
     });
 
-    expect(container.querySelectorAll('[role="dialog"]')).toHaveLength(1);
+    expect(document.body.querySelectorAll('[role="dialog"]')).toHaveLength(1);
     expect(onOpenChange).toHaveBeenCalledWith(true);
 
     // Close via 'h' hotkey
@@ -409,7 +409,7 @@ describe("FieldManualButton - Hotkey & Ownership Safety (DUCK-02)", () => {
       );
     });
 
-    expect(container.querySelectorAll('[role="dialog"]')).toHaveLength(0);
+    expect(document.body.querySelectorAll('[role="dialog"]')).toHaveLength(0);
     expect(onOpenChange).toHaveBeenCalledWith(false);
 
     // Re-open via '?' hotkey
@@ -419,7 +419,7 @@ describe("FieldManualButton - Hotkey & Ownership Safety (DUCK-02)", () => {
       );
     });
 
-    expect(container.querySelectorAll('[role="dialog"]')).toHaveLength(1);
+    expect(document.body.querySelectorAll('[role="dialog"]')).toHaveLength(1);
 
     // Dismiss via Escape
     await act(async () => {
@@ -428,7 +428,7 @@ describe("FieldManualButton - Hotkey & Ownership Safety (DUCK-02)", () => {
       );
     });
 
-    expect(container.querySelectorAll('[role="dialog"]')).toHaveLength(0);
+    expect(document.body.querySelectorAll('[role="dialog"]')).toHaveLength(0);
     expect(onOpenChange).toHaveBeenLastCalledWith(false);
   });
 
@@ -484,7 +484,7 @@ describe("FieldManualButton - Hotkey & Ownership Safety (DUCK-02)", () => {
     });
 
     // Exactly one dialog opens, owned by the visible mobile button
-    expect(container.querySelectorAll('[role="dialog"]')).toHaveLength(1);
+    expect(document.body.querySelectorAll('[role="dialog"]')).toHaveLength(1);
     expect(onOpenMobile).toHaveBeenCalledWith(true);
     expect(onOpenDesktop).not.toHaveBeenCalled();
 
@@ -494,7 +494,7 @@ describe("FieldManualButton - Hotkey & Ownership Safety (DUCK-02)", () => {
         new KeyboardEvent("keydown", { key: "h", bubbles: true })
       );
     });
-    expect(container.querySelectorAll('[role="dialog"]')).toHaveLength(0);
+    expect(document.body.querySelectorAll('[role="dialog"]')).toHaveLength(0);
     expect(onOpenMobile).toHaveBeenCalledWith(false);
     expect(onOpenDesktop).not.toHaveBeenCalled();
   });
@@ -550,7 +550,7 @@ describe("FieldManualButton - Hotkey & Ownership Safety (DUCK-02)", () => {
       );
     });
 
-    expect(container.querySelectorAll('[role="dialog"]')).toHaveLength(1);
+    expect(document.body.querySelectorAll('[role="dialog"]')).toHaveLength(1);
     expect(onOpenMobile).toHaveBeenCalledWith(true);
     expect(onOpenDesktop).not.toHaveBeenCalled();
 
@@ -560,7 +560,7 @@ describe("FieldManualButton - Hotkey & Ownership Safety (DUCK-02)", () => {
         new KeyboardEvent("keydown", { key: "?", bubbles: true })
       );
     });
-    expect(container.querySelectorAll('[role="dialog"]')).toHaveLength(0);
+    expect(document.body.querySelectorAll('[role="dialog"]')).toHaveLength(0);
     expect(onOpenMobile).toHaveBeenCalledWith(false);
   });
 
@@ -615,7 +615,7 @@ describe("FieldManualButton - Hotkey & Ownership Safety (DUCK-02)", () => {
       );
     });
 
-    expect(container.querySelectorAll('[role="dialog"]')).toHaveLength(1);
+    expect(document.body.querySelectorAll('[role="dialog"]')).toHaveLength(1);
     expect(onOpenDesktop).toHaveBeenCalledWith(true);
     expect(onOpenMobile).not.toHaveBeenCalled();
 
@@ -625,7 +625,7 @@ describe("FieldManualButton - Hotkey & Ownership Safety (DUCK-02)", () => {
         new KeyboardEvent("keydown", { key: "h", bubbles: true })
       );
     });
-    expect(container.querySelectorAll('[role="dialog"]')).toHaveLength(0);
+    expect(document.body.querySelectorAll('[role="dialog"]')).toHaveLength(0);
     expect(onOpenDesktop).toHaveBeenCalledWith(false);
   });
 
@@ -703,7 +703,7 @@ describe("FieldManualButton - Hotkey & Ownership Safety (DUCK-02)", () => {
 
     expect(onOpenMobile).toHaveBeenCalledWith(true);
     expect(onOpenDesktop).toHaveBeenCalledTimes(2); // open(true) + close(false) from earlier
-    expect(container.querySelectorAll('[role="dialog"]')).toHaveLength(1);
+    expect(document.body.querySelectorAll('[role="dialog"]')).toHaveLength(1);
 
     // Dismiss with 'h'
     await act(async () => {
@@ -711,7 +711,7 @@ describe("FieldManualButton - Hotkey & Ownership Safety (DUCK-02)", () => {
         new KeyboardEvent("keydown", { key: "h", bubbles: true })
       );
     });
-    expect(container.querySelectorAll('[role="dialog"]')).toHaveLength(0);
+    expect(document.body.querySelectorAll('[role="dialog"]')).toHaveLength(0);
     expect(onOpenMobile).toHaveBeenCalledWith(false);
   });
 
@@ -767,7 +767,7 @@ describe("FieldManualButton - Hotkey & Ownership Safety (DUCK-02)", () => {
     });
 
     // Zero dialogs opened, neither callback invoked!
-    expect(container.querySelectorAll('[role="dialog"]')).toHaveLength(0);
+    expect(document.body.querySelectorAll('[role="dialog"]')).toHaveLength(0);
     expect(onOpenDesktop).not.toHaveBeenCalled();
     expect(onOpenMobile).not.toHaveBeenCalled();
   });

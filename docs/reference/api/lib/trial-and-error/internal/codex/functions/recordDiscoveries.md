@@ -53,9 +53,16 @@ adapter writes only when something was discovered.
 
 `object`[] = `...`
 
+#### unlocks
+
+`Partial`\<`Record`\<`"VIRTUAL_BIOTECH"` \| `"ONCOLOGY_PHARMA"` \| `"CARDIO_MEGA_TRIAL"` \| `"RARE_DISEASE_BIOTECH"`, `number`\>\> = `UnlocksSchema`
+
+Each unlocked sponsor and the highest stake unlocked for it (#950).
+Virtual Biotech at stake 1 is always open, recorded or not.
+
 #### version
 
-`1` = `...`
+`2` = `...`
 
 ### plan
 
@@ -82,8 +89,6 @@ How the run's seed was chosen; absent means a random run.
 `string` = `runSeed`
 
 ## Returns
-
-`object`
 
 ### discovered
 
@@ -121,6 +126,13 @@ How the run's seed was chosen; absent means a random run.
 
 > **history**: `object`[]
 
+### unlocks
+
+> **unlocks**: `Partial`\<`Record`\<`"VIRTUAL_BIOTECH"` \| `"ONCOLOGY_PHARMA"` \| `"CARDIO_MEGA_TRIAL"` \| `"RARE_DISEASE_BIOTECH"`, `number`\>\> = `UnlocksSchema`
+
+Each unlocked sponsor and the highest stake unlocked for it (#950).
+Virtual Biotech at stake 1 is always open, recorded or not.
+
 ### version
 
-> **version**: `1`
+> **version**: `2`

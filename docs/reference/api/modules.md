@@ -328,6 +328,7 @@
 - [lib/trial-and-error/internal/table](lib/trial-and-error/internal/table/README.md)
 - [lib/trial-and-error/internal/timeline](lib/trial-and-error/internal/timeline/README.md)
 - [lib/trial-and-error/internal/tutorial](lib/trial-and-error/internal/tutorial/README.md)
+- [lib/trial-and-error/internal/unlocks](lib/trial-and-error/internal/unlocks/README.md)
 - [lib/trial-and-error/internal/validator](lib/trial-and-error/internal/validator/README.md)
 - [lib/trial-and-error/scenarios](lib/trial-and-error/scenarios/README.md)
 - [lib/trial-and-error/types](lib/trial-and-error/types/README.md)

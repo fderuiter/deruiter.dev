@@ -1,7 +1,11 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { challengeHash, type RunOrigin } from "@/lib/trial-and-error";
+import {
+  challengeHash,
+  type RunChoice,
+  type RunOrigin,
+} from "@/lib/trial-and-error";
 import { copyToClipboard, getActiveHostUrl } from "@/lib/clipboard";
 import { useAnnouncer } from "@/hooks/useAnnouncer";
 import { CHALLENGE_PATH } from "@/components/trial-and-error/useChallenge";
@@ -14,14 +18,18 @@ type Copied = "seed" | "link" | null;
 /**
  * A run's seed with Copy seed and Copy challenge link (#1528). The link opens
  * the same seed on this site's origin; a Daily Protocol run's link also
- * carries its date, so it still replays after the day ends.
+ * carries its date, so it still replays after the day ends, and any other
+ * run's link carries its sponsor and stake when they are not the defaults
+ * (#950).
  */
 export function SeedShare({
   seed,
   origin,
+  choice,
 }: {
   seed: string;
   origin: RunOrigin;
+  choice?: RunChoice;
 }) {
   const { announce } = useAnnouncer();
   const [copied, setCopied] = useState<Copied>(null);
@@ -36,7 +44,7 @@ export function SeedShare({
     const text =
       what === "seed"
         ? seed
-        : `${getActiveHostUrl()}${CHALLENGE_PATH}${challengeHash(seed, origin)}`;
+        : `${getActiveHostUrl()}${CHALLENGE_PATH}${challengeHash(seed, origin, choice)}`;
     try {
       await copyToClipboard(text);
       setCopied(what);

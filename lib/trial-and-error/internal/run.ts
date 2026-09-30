@@ -388,6 +388,8 @@ export interface RunView {
   showIntro: boolean;
   table: TableView;
   seed: string;
+  /** The sponsor and stake the run is played under (#950), defaults filled. */
+  choice: RunChoice;
   draws: RunDraw[];
   /** What the sponsor will pay at cash-out, until it has been paid. */
   pendingCashOut: CashOutReport | null;
@@ -1566,6 +1568,7 @@ export function deriveRunView(authored: RunPlan, run: RunState): RunView {
             relicSlots: relicCapacity(run),
           },
     seed: run.seed,
+    choice: runChoice(run),
     draws: run.draws,
     pendingCashOut:
       cashOutRefusal(plan, run) === null ? payoutFor(plan, run) : null,

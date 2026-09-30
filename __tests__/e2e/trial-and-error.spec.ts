@@ -7,7 +7,9 @@ import {
   deriveRunView,
   createRunState,
   dailySeed,
+  emptyCodex,
   runBlinds,
+  serializeCodex,
   serializeRun,
   type LoggedAction,
   type RunState,
@@ -1132,6 +1134,133 @@ test.describe("Trial & Error seeded runs (#1528)", () => {
     const seed = (await info.getByTestId("run-seed").textContent()) ?? "";
     expect(seed).toBe(dailySeed(today));
     expect(await handIds(page)).toEqual(firstHand(seed));
+  });
+});
+
+test.describe("Trial & Error sponsors and stakes (#950)", () => {
+  /** A Codex with one win recorded: Oncology Pharma and stake 2 open. */
+  const UNLOCKED = serializeCodex({
+    ...emptyCodex(),
+    unlocks: { VIRTUAL_BIOTECH: 2, ONCOLOGY_PHARMA: 1 },
+  });
+
+  for (const width of [375, 1280]) {
+    test(`starts a non-default sponsor run from New Run at ${width}px`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 800 });
+      await page.addInitScript((codex) => {
+        if (!window.sessionStorage.getItem("te-e2e-seeded")) {
+          window.localStorage.setItem("te:codex", codex);
+          window.sessionStorage.setItem("te-e2e-seeded", "1");
+        }
+      }, UNLOCKED);
+      await launch(page);
+      const blind = page.getByRole("complementary", { name: "Blind" });
+      await expect(blind.getByTestId("sponsor-badge")).toContainText(
+        "Virtual Biotech"
+      );
+
+      const info = page.getByRole("dialog", { name: "Run Info" });
+      await expect(async () => {
+        await page.getByTestId("run-info-button").click();
+        await expect(info).toBeVisible({ timeout: 1000 });
+      }).toPass({ timeout: 15000 });
+      await info.getByTestId("run-info-new-run").click();
+      const dialog = page.getByRole("dialog", { name: "New run" });
+      await expect(dialog).toBeVisible();
+
+      const sponsors = dialog.getByRole("group", { name: "Sponsor" });
+      const cardio = sponsors.getByRole("radio", { name: "Cardio Mega-Trial" });
+      await expect(cardio).toBeDisabled();
+      await expect(sponsors).toContainText(
+        "Win a run with Oncology Pharma to unlock."
+      );
+      await expectNoHorizontalOverflow(page);
+      await expectNoBlockingViolations(page, `sponsor picker at ${width}px`);
+
+      // Keyboard: arrow keys move within the sponsor group, then the stake.
+      await sponsors.getByRole("radio", { name: "Virtual Biotech" }).focus();
+      await page.keyboard.press("ArrowDown");
+      const oncology = sponsors.getByRole("radio", { name: "Oncology Pharma" });
+      await expect(oncology).toBeChecked();
+      await expect(oncology).toBeFocused();
+      const stakes = dialog.getByRole("group", {
+        name: "Stake: GCP audit level",
+      });
+      await expect(
+        stakes.getByRole("radio", { name: "1. Routine Monitoring" })
+      ).toBeChecked();
+      await expect(
+        stakes.getByRole("radio", { name: "2. Sponsor Audit" })
+      ).toBeDisabled();
+      await dialog.getByRole("button", { name: "Start run" }).click();
+      await expect(dialog).toBeHidden();
+
+      await expect(blind.getByTestId("sponsor-badge")).toHaveText(
+        "Sponsor: Oncology Pharma"
+      );
+      await expect(blind.getByTestId("stake-badge")).toHaveText(
+        "Stake 1: Routine Monitoring"
+      );
+      await expectNoHorizontalOverflow(page);
+      await expectNoBlockingViolations(page, `sponsor badge at ${width}px`);
+
+      // A move saves the run; a reload resumes it under the same sponsor.
+      await page.locator("[data-card-id]").first().click();
+      await page.reload({ waitUntil: "domcontentloaded" });
+      const resume = page.getByRole("button", { name: "Resume run" });
+      await expect(async () => {
+        const launchBtn = page.getByRole("button", { name: /Launch Cabinet/i });
+        if (await launchBtn.isVisible()) await launchBtn.click();
+        await expect(resume).toBeVisible({ timeout: 3000 });
+      }).toPass({ timeout: 30000 });
+      await resume.click();
+      await expect(blind.getByTestId("sponsor-badge")).toContainText(
+        "Oncology Pharma"
+      );
+      await expect(async () => {
+        await page.getByTestId("run-info-button").click();
+        await expect(info).toBeVisible({ timeout: 1000 });
+      }).toPass({ timeout: 15000 });
+      await expect(info.getByTestId("sponsor-badge")).toContainText(
+        "Oncology Pharma"
+      );
+      await expectNoHorizontalOverflow(page);
+    });
+  }
+
+  test("plays a challenge link's locked sponsor and stake", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto(
+      "/arcade/trial-and-error#seed=7K3M-Q9PX&sponsor=CARDIO_MEGA_TRIAL&stake=3",
+      { waitUntil: "domcontentloaded" }
+    );
+    const dialog = page.getByRole("dialog", { name: "New run" });
+    await expect(async () => {
+      const launchBtn = page.getByRole("button", { name: /Launch Cabinet/i });
+      if (await launchBtn.isVisible()) await launchBtn.click();
+      await expect(dialog).toBeVisible({ timeout: 3000 });
+    }).toPass({ timeout: 30000 });
+    await expect(
+      dialog.getByRole("radio", { name: "Cardio Mega-Trial" })
+    ).toBeChecked();
+    await expect(
+      dialog.getByRole("radio", { name: "3. For-Cause Audit" })
+    ).toBeChecked();
+    await expect(
+      dialog.getByTestId("challenge-choice-note").first()
+    ).toBeVisible();
+    await expectNoBlockingViolations(page, "challenge sponsor picker");
+    await dialog.getByRole("button", { name: "Start run" }).click();
+    await expect(dialog).toBeHidden();
+    const blind = page.getByRole("complementary", { name: "Blind" });
+    await expect(blind.getByTestId("sponsor-badge")).toContainText(
+      "Cardio Mega-Trial"
+    );
+    await expect(blind.getByTestId("stake-badge")).toContainText("Stake 3");
   });
 });
 

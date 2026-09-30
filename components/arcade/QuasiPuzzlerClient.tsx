@@ -89,7 +89,6 @@ export const QuasiPuzzlerClient: React.FC = () => {
               gameId="quasi-puzzler"
               title="Quasi-Perfect Puzzler"
               subtitle="Small Proofs, Limited Memory"
-              accentColor="purple"
               icon={<IconBrain className="w-8 h-8 text-purple-400" />}
               instructions="Apply tactics to a proof tree and work your way to a complete proof. You can skip a goal with “sorry,” but the score will notice."
               controls={[

@@ -66,7 +66,6 @@ async function launch() {
     <PlayCabinet
       gameId="garmin-watch"
       title="Monkey C Mayhem"
-      accentColor="amber"
       icon={<span />}
       instructions="x"
       controls={[]}

@@ -89,7 +89,6 @@ export const WorkingWithDuckClient: React.FC = () => {
               gameId="working-with-duck"
               title="Working With Duck"
               subtitle="Code, Toys, and Questionable Priorities"
-              accentColor="amber"
               icon={<IconBone className="w-8 h-8 text-amber-400" />}
               instructions="Try to finish your code while Duck requests toys, treats, and belly rubs. Take him to the park, save a few scrapbook moments, and see how much work gets done."
               controls={[

@@ -55,7 +55,6 @@ describe("PlayCabinet - Viewport Budgeting & Responsive Container Suite", () => 
         gameId="test-game"
         title="Test Arcade Game"
         subtitle="Responsive Test Engine"
-        accentColor="emerald"
         icon={<span data-testid="test-icon">🎮</span>}
         instructions="Test instructions"
         controls={[{ key: "Space", action: "Jump" }]}
@@ -76,7 +75,6 @@ describe("PlayCabinet - Viewport Budgeting & Responsive Container Suite", () => 
       <PlayCabinet
         gameId="test-game"
         title="Test Arcade Game"
-        accentColor="emerald"
         icon={<span>🎮</span>}
         instructions="Test instructions"
         controls={[{ key: "Space", action: "Jump" }]}
@@ -127,7 +125,6 @@ describe("PlayCabinet - Viewport Budgeting & Responsive Container Suite", () => 
       <PlayCabinet
         gameId="test-game"
         title="Test Arcade Game"
-        accentColor="emerald"
         icon={<span>🎮</span>}
         instructions="Test instructions"
         controls={[{ key: "Space", action: "Jump" }]}
@@ -163,7 +160,6 @@ describe("PlayCabinet - Viewport Budgeting & Responsive Container Suite", () => 
     render(
       <PlayCabinet
         title="Keyboard game"
-        accentColor="emerald"
         icon={<span />}
         instructions="Play"
         controls={[]}
@@ -217,7 +213,6 @@ describe("PlayCabinet - Viewport Budgeting & Responsive Container Suite", () => 
         <PlayCabinet
           gameId="focus-game"
           title="Focus Game"
-          accentColor="emerald"
           icon={<span>🎮</span>}
           instructions="Test instructions"
           controls={[{ key: "Space", action: "Jump" }]}
@@ -314,7 +309,6 @@ describe("PlayCabinet - Viewport Budgeting & Responsive Container Suite", () => 
       render(
         <PlayCabinet
           title="Dialog game"
-          accentColor="emerald"
           icon={<span />}
           instructions="Play"
           controls={[]}

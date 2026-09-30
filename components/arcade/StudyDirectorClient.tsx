@@ -62,7 +62,6 @@ export const StudyDirectorClient: React.FC = () => (
             gameId="study-director"
             title="Study Director: Everything Is Fine"
             subtitle="Study 24-081 · Clinical Study Management"
-            accentColor="amber"
             icon={
               <IconClipboardCheck
                 className="h-8 w-8 text-amber-400"

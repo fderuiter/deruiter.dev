@@ -2,10 +2,7 @@
 
 import ProofWorkspacePage from "@/app/proof/page";
 
+// Delegates layout framing directly to ProofWorkspacePage <PageLayout> / dynamic container (min-h-dvh)
 export default function MobileProofPage() {
-  return (
-    <div className="pt-24 min-h-screen">
-      <ProofWorkspacePage />
-    </div>
-  );
+  return <ProofWorkspacePage />;
 }

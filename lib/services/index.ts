@@ -5,6 +5,7 @@
 
 // Shared Service Envelope
 export * from "./service-result";
+export * from "./event-outbox";
 
 // CRF Evaluator Vertical Slices
 export * from "./crf-evaluator/evaluate-formula/spec";

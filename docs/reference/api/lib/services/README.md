@@ -170,9 +170,21 @@ Re-exports [EvaluateFormulaSpec](crf-evaluator/evaluate-formula/spec/interfaces/
 
 ***
 
+### EventOutboxConfig
+
+Re-exports [EventOutboxConfig](event-outbox/interfaces/EventOutboxConfig.md)
+
+***
+
 ### FlashVariableSchema
 
 Re-exports [FlashVariableSchema](garmin/sync-flash-storage/spec/variables/FlashVariableSchema.md)
+
+***
+
+### flushOutboxQueue
+
+Re-exports [flushOutboxQueue](event-outbox/functions/flushOutboxQueue.md)
 
 ***
 
@@ -329,6 +341,18 @@ Re-exports [LintFormulaResult](crf-evaluator/lint-formula/spec/type-aliases/Lint
 ### LintFormulaSpec
 
 Re-exports [LintFormulaSpec](crf-evaluator/lint-formula/spec/interfaces/LintFormulaSpec.md)
+
+***
+
+### OutboxFlushErrorCode
+
+Re-exports [OutboxFlushErrorCode](event-outbox/variables/OutboxFlushErrorCode.md)
+
+***
+
+### OutboxFlushResult
+
+Re-exports [OutboxFlushResult](event-outbox/type-aliases/OutboxFlushResult.md)
 
 ***
 

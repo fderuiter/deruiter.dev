@@ -1908,7 +1908,7 @@ describe("ClinicalTrialChaos React Component UI Suite", () => {
       expect(container.textContent).toContain(
         "PHASE 1 COMPLIANCE AUDIT PASSED!"
       );
-      expect(container.textContent).toContain("asks for 8 new locks");
+      expect(container.textContent).toContain("asks for 3 more locks");
       // Close the phase report, then advance.
       await act(async () => {
         Array.from(container.querySelectorAll("button"))
@@ -1921,10 +1921,10 @@ describe("ClinicalTrialChaos React Component UI Suite", () => {
           ?.click();
       });
       expect(container.textContent).toContain("Phase 2/3");
-      expect(container.textContent).toContain("0/8 locked");
+      expect(container.textContent).toContain("0/3 locked");
       expect(
         container.querySelector(
-          '[aria-label="0 of 8 CRFs locked in this phase"]'
+          '[aria-label="0 of 3 CRFs locked in this phase"]'
         )
       ).toBeTruthy();
     } finally {

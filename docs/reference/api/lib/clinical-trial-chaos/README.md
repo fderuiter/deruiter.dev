@@ -470,6 +470,12 @@ Re-exports [getOutfitById](outfits/functions/getOutfitById.md)
 
 ***
 
+### getPhaseLockTarget
+
+Re-exports [getPhaseLockTarget](shift/functions/getPhaseLockTarget.md)
+
+***
+
 ### getPhaseProgress
 
 Re-exports [getPhaseProgress](shift/functions/getPhaseProgress.md)

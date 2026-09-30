@@ -677,8 +677,8 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         title: "Campaign Phase Targets",
         detail:
-          "Each phase counts its own locks from zero. Lock 5 CRFs to clear Phase 1, 8 new CRFs to clear Phase 2 and 12 to clear Phase 3. Your score carries across all three phases.",
-        badge: "5 / 8 / 12 Locks",
+          "Each phase's counter starts at zero and counts that phase's new locks. Lock 5 CRFs to clear Phase 1, 3 more to clear Phase 2 and 4 more to clear Phase 3, 12 in all. Your score carries across all three phases.",
+        badge: "5 + 3 + 4 Locks",
       },
       {
         title: "Controlled Terminology & MedDRA Coding",

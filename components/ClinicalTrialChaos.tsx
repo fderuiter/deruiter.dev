@@ -157,6 +157,7 @@ import {
   describePowerUpRefusal,
   POWER_UP_REFUSAL_LABELS,
   getPhaseProgress,
+  getPhaseLockTarget,
   getViolationBreakdown,
   isShiftClockHalted,
   getShiftTickSeconds,
@@ -1241,7 +1242,7 @@ export const ClinicalTrialChaos: React.FC = () => {
       if (
         getSubmissionMode(activeSubject, domain, stations, {
           gameMode,
-          submittedCount: scoreState.phaseSubmissions,
+          submittedCount: scoreState.subjectsSubmitted,
           phaseTarget: PHASE_TARGETS[phase],
           amendmentActive: !!activeAmendment?.active,
         }) === "quick"
@@ -1266,7 +1267,7 @@ export const ClinicalTrialChaos: React.FC = () => {
       stations,
       announce,
       gameMode,
-      scoreState.phaseSubmissions,
+      scoreState.subjectsSubmitted,
       phase,
       activeAmendment,
       submitDossier,
@@ -2167,7 +2168,7 @@ export const ClinicalTrialChaos: React.FC = () => {
   // Derived guidance for the "what do I do next" flow: fix → route → sign
   // The header counts this phase's locks against this phase's target (#1673).
   const phaseProgress = getPhaseProgress(scoreState, gameMode, phase);
-  const phaseTarget = phaseProgress.target ?? PHASE_TARGETS[phase];
+  const phaseTarget = phaseProgress.target ?? getPhaseLockTarget(phase);
   const violationBreakdown = getViolationBreakdown(
     scoreState,
     ruleViolations.length
@@ -2370,23 +2371,24 @@ export const ClinicalTrialChaos: React.FC = () => {
 
         <div className="ml-auto flex items-center gap-1.5">
           {playState === "playing" && (
+            // Compact, like the audio toggles beside it, so the header keeps
+            // one row with a four-digit score at 1280px.
             <button
               type="button"
               onClick={togglePause}
-              aria-pressed={isPaused}
+              aria-label={isPaused ? "Resume shift" : "Pause shift"}
               aria-keyshortcuts="P"
               title={isPaused ? "Resume the shift (P)" : "Pause the shift (P)"}
-              className="flex h-11 min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-lg border border-zinc-800 bg-[#13151a] px-2.5 text-xs font-bold text-zinc-300 transition hover:text-white"
+              className="flex h-11 min-h-[44px] min-w-[44px] items-center justify-center gap-1 rounded-lg border border-zinc-800 bg-[#13151a] px-2 text-xs font-bold text-zinc-300 transition hover:text-white"
             >
               {isPaused ? (
                 <IconPlayerPlay className="h-4 w-4" aria-hidden="true" />
               ) : (
                 <IconPlayerPause className="h-4 w-4" aria-hidden="true" />
               )}
-              <span>{isPaused ? "Resume" : "Pause"}</span>
               <kbd
                 aria-hidden="true"
-                className="hidden rounded border border-zinc-700 px-1 text-[10px] font-normal text-zinc-400 sm:inline"
+                className="rounded border border-zinc-700 px-1 text-[10px] font-normal text-zinc-400"
               >
                 P
               </kbd>
@@ -3506,7 +3508,7 @@ export const ClinicalTrialChaos: React.FC = () => {
                   </h3>
                   <p className="mt-1 text-[11px] text-zinc-400">
                     {gameMode === "campaign"
-                      ? `Lock ${PHASE_TARGETS[1]} CRFs to clear Phase 1, then ${PHASE_TARGETS[2]} new ones in Phase 2 and ${PHASE_TARGETS[3]} in Phase 3. Each phase is busier than the last.`
+                      ? `Lock ${getPhaseLockTarget(1)} CRFs to clear Phase 1, then ${getPhaseLockTarget(2)} more in Phase 2 and ${getPhaseLockTarget(3)} more in Phase 3. Each phase is busier than the last.`
                       : "No finish line. Lock as many CRFs as you can before someone ends your career."}
                   </p>
                 </div>
@@ -3843,7 +3845,7 @@ export const ClinicalTrialChaos: React.FC = () => {
               <p className="mx-auto mt-1 max-w-md text-xs text-zinc-400">
                 {playState === "phase_cleared"
                   ? phase < 3
-                    ? `Phase ${phase + 1} opens more EDC stations and a faster conveyor, and asks for ${PHASE_TARGETS[(phase + 1) as GamePhase]} new locks. Your score carries over.`
+                    ? `Phase ${phase + 1} opens more EDC stations and a faster conveyor, and asks for ${getPhaseLockTarget((phase + 1) as GamePhase)} more locks. Your score carries over.`
                     : "Database locked. All trial data validated and archived."
                   : gameOverReason === "sponsor"
                     ? "Sponsor satisfaction hit 0%. They 'decided to go in a different direction' and awarded the study to a vendor whose bid was 40% cheaper and entirely hypothetical."

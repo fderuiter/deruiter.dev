@@ -2203,14 +2203,14 @@ describe("Clinical Trial Chaos pass-4 fixes (#1670, #1671, #1672, #1673)", () =>
       {
         ...createInitialScoreState(),
         subjectsSubmitted: 5,
-        phaseSubmissions: 5,
       },
       true,
       0
     );
+    // Only the display is per phase: Phase 2 still clears at 8 in total.
     expect(getPhaseProgress(phase2, "campaign", 2)).toEqual({
       locked: 0,
-      target: PHASE_TARGETS[2],
+      target: PHASE_TARGETS[2] - PHASE_TARGETS[1],
     });
   });
 });

@@ -8,6 +8,7 @@
 
 > `const` **PHASE\_TARGETS**: `Readonly`\<`Record`\<[`GamePhase`](../../types/type-aliases/GamePhase.md), `number`\>\>
 
-New CRFs to lock in each campaign phase before it is cleared. Each phase
-counts its own locks from zero, so every phase asks for more than the last
-(#1673); the campaign score and total still carry across phases (#1325).
+Campaign-total CRF locks at which each phase clears: 5, then 8, then 12, so
+the phases ask for 5, 3 and 4 new locks. The header shows each phase's new
+locks against its own new target (#1673); the campaign score and total
+carry across phases (#1325).

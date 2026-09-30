@@ -54,6 +54,7 @@
 - [getAmendmentIntervalSeconds](functions/getAmendmentIntervalSeconds.md)
 - [getComboMultiplier](functions/getComboMultiplier.md)
 - [getFastTrackDomain](functions/getFastTrackDomain.md)
+- [getPhaseLockTarget](functions/getPhaseLockTarget.md)
 - [getPhaseProgress](functions/getPhaseProgress.md)
 - [getPowerUpRefusal](functions/getPowerUpRefusal.md)
 - [getSAEChance](functions/getSAEChance.md)

@@ -22,6 +22,7 @@ import {
   getComboMultiplier,
   getFastTrackDomain,
   getNextShiftScoreState,
+  getPhaseLockTarget,
   getPhaseProgress,
   getPowerUpRefusal,
   getSAEChance,
@@ -840,50 +841,42 @@ describe("lifelines refuse a clean dossier (#1673)", () => {
     );
   });
 
-  it("counts each phase's locks from zero against that phase's target", () => {
-    let score = createInitialScoreState();
-    for (let i = 0; i < PHASE_TARGETS[1]; i++) {
-      score = settleSubmission(
-        score,
-        subject({ id: `p1-${i}` }),
-        true,
-        "campaign",
-        1
-      ).scoreState;
-    }
-    expect(getPhaseProgress(score, "campaign", 1)).toEqual({
-      locked: PHASE_TARGETS[1],
-      target: PHASE_TARGETS[1],
-    });
+  it("counts each phase's new locks from zero against its own new target", () => {
+    // The campaign length is unchanged: phases clear at 5, 8 and 12 locks in
+    // total, so they ask for 5, 3 and 4 new locks.
+    expect(PHASE_TARGETS).toEqual({ 1: 5, 2: 8, 3: 12 });
+    expect([1, 2, 3].map((p) => getPhaseLockTarget(p as 1 | 2 | 3))).toEqual([
+      5, 3, 4,
+    ]);
 
-    const phase2 = getNextShiftScoreState(score, true, 0);
-    expect(phase2.subjectsSubmitted).toBe(PHASE_TARGETS[1]);
-    expect(getPhaseProgress(phase2, "campaign", 2)).toEqual({
-      locked: 0,
-      target: PHASE_TARGETS[2],
-    });
-
-    // Phase 2 needs its full target of new locks.
-    let running = phase2;
-    let cleared = false;
-    let locks = 0;
-    while (!cleared) {
-      const outcome = settleSubmission(
-        running,
-        subject({ id: `p2-${locks}` }),
-        true,
-        "campaign",
-        2
-      );
-      running = outcome.scoreState;
-      cleared = outcome.phaseCleared;
-      locks++;
+    let running = createInitialScoreState();
+    const locksPerPhase: number[] = [];
+    for (const phase of [1, 2, 3] as const) {
+      expect(getPhaseProgress(running, "campaign", phase)).toEqual({
+        locked: 0,
+        target: getPhaseLockTarget(phase),
+      });
+      let cleared = false;
+      let locks = 0;
+      while (!cleared) {
+        const outcome = settleSubmission(
+          running,
+          subject({ id: `p${phase}-${locks}` }),
+          true,
+          "campaign",
+          phase
+        );
+        running = outcome.scoreState;
+        cleared = outcome.phaseCleared;
+        locks++;
+        expect(getPhaseProgress(running, "campaign", phase).locked).toBe(locks);
+      }
+      locksPerPhase.push(locks);
+      // Advancing a phase carries the score and total (#1325).
+      running = getNextShiftScoreState(running, true, 0);
     }
-    expect(locks).toBe(PHASE_TARGETS[2]);
-    expect(PHASE_TARGETS[2]).toBeGreaterThan(PHASE_TARGETS[1]);
-    expect(PHASE_TARGETS[3]).toBeGreaterThan(PHASE_TARGETS[2]);
-    // The campaign score and total still carry (#1325).
-    expect(running.subjectsSubmitted).toBe(PHASE_TARGETS[1] + PHASE_TARGETS[2]);
+    expect(locksPerPhase).toEqual([5, 3, 4]);
+    expect(running.subjectsSubmitted).toBe(12);
   });
 
   it("has no phase target in endless mode", () => {
@@ -892,7 +885,6 @@ describe("lifelines refuse a clean dossier (#1673)", () => {
         {
           ...createInitialScoreState(),
           subjectsSubmitted: 7,
-          phaseSubmissions: 7,
         },
         "endless",
         1
@@ -944,8 +936,11 @@ describe("Field Manual agrees with the shift rules (#1672, #1673)", () => {
     const targets = manual.rules.find(
       (r) => r.title === "Campaign Phase Targets"
     )?.detail;
-    expect(targets).toContain(`Lock ${PHASE_TARGETS[1]} CRFs to clear Phase 1`);
-    expect(targets).toContain(`${PHASE_TARGETS[2]} new CRFs to clear Phase 2`);
-    expect(targets).toContain(`${PHASE_TARGETS[3]} to clear Phase 3`);
+    expect(targets).toContain(
+      `Lock ${getPhaseLockTarget(1)} CRFs to clear Phase 1`
+    );
+    expect(targets).toContain(`${getPhaseLockTarget(2)} more to clear Phase 2`);
+    expect(targets).toContain(`${getPhaseLockTarget(3)} more to clear Phase 3`);
+    expect(targets).toContain(`${PHASE_TARGETS[3]} in all`);
   });
 });

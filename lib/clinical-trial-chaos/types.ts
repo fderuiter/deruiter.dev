@@ -123,8 +123,6 @@ export interface GameScoreState {
   multiplier: number;
   /** CRFs locked across the whole campaign run. */
   subjectsSubmitted: number;
-  /** CRFs locked in the running phase, counted against its target (#1673). */
-  phaseSubmissions: number;
   correctionsMade: number;
   cleanSubmissions: number;
   /** Every missed or misrouted CRF: expired subjects plus station rejections. */

@@ -8,8 +8,10 @@
 
 > **getPhaseProgress**(`score`, `gameMode`, `phase`): [`PhaseProgress`](../interfaces/PhaseProgress.md)
 
-The header's lock counter: this phase's locks against this phase's target
-(#1673). Endless mode has no target and counts every lock in the run.
+The header's lock counter: this phase's new locks against this phase's own
+new target, so each phase starts at zero (#1673). The clearing rule is
+unchanged and still uses the campaign total. Endless mode has no target and
+counts every lock in the run.
 
 ## Parameters
 

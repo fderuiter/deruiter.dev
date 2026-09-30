@@ -60,14 +60,6 @@ Subjects that expired on the conveyor, a subset of `auditViolations` (#1670).
 
 ***
 
-### phaseSubmissions
-
-> **phaseSubmissions**: `number`
-
-CRFs locked in the running phase, counted against its target (#1673).
-
-***
-
 ### score
 
 > **score**: `number`

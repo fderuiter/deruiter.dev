@@ -43,9 +43,10 @@ import type {
 } from "./types";
 
 /**
- * New CRFs to lock in each campaign phase before it is cleared. Each phase
- * counts its own locks from zero, so every phase asks for more than the last
- * (#1673); the campaign score and total still carry across phases (#1325).
+ * Campaign-total CRF locks at which each phase clears: 5, then 8, then 12, so
+ * the phases ask for 5, 3 and 4 new locks. The header shows each phase's new
+ * locks against its own new target (#1673); the campaign score and total
+ * carry across phases (#1325).
  */
 export const PHASE_TARGETS: Readonly<Record<GamePhase, number>> = {
   1: 5,
@@ -376,7 +377,6 @@ export function applySubmissionScore(
     maxCombo: Math.max(score.maxCombo, submission.combo),
     multiplier: submission.multiplier,
     subjectsSubmitted: score.subjectsSubmitted + 1,
-    phaseSubmissions: score.phaseSubmissions + 1,
     cleanSubmissions: allClean
       ? score.cleanSubmissions + 1
       : score.cleanSubmissions,
@@ -418,7 +418,7 @@ export function settleSubmission(
   return {
     submission,
     scoreState: applySubmissionScore(score, submission, allClean),
-    phaseCleared: isPhaseCleared(gameMode, phase, score.phaseSubmissions),
+    phaseCleared: isPhaseCleared(gameMode, phase, score.subjectsSubmitted),
   };
 }
 
@@ -454,7 +454,7 @@ export function recordStationSubmission(
  *
  * @param gameMode - The running mode.
  * @param phase - The running phase.
- * @param submittedBefore - CRFs locked in this phase before this submission.
+ * @param submittedBefore - CRFs locked in the campaign before this submission.
  * @returns True when this submission reaches the phase target.
  */
 export function isPhaseCleared(
@@ -463,6 +463,18 @@ export function isPhaseCleared(
   submittedBefore: number
 ): boolean {
   return gameMode === "campaign" && submittedBefore + 1 >= PHASE_TARGETS[phase];
+}
+
+/**
+ * New CRF locks a campaign phase asks for: its clearing total less the
+ * previous phase's (5, 3 and 4).
+ *
+ * @param phase - The campaign phase.
+ * @returns The phase's own lock target.
+ */
+export function getPhaseLockTarget(phase: GamePhase): number {
+  const before = phase === 1 ? 0 : PHASE_TARGETS[(phase - 1) as GamePhase];
+  return PHASE_TARGETS[phase] - before;
 }
 
 /** Locks shown against the phase target in the header. */
@@ -474,8 +486,10 @@ export interface PhaseProgress {
 }
 
 /**
- * The header's lock counter: this phase's locks against this phase's target
- * (#1673). Endless mode has no target and counts every lock in the run.
+ * The header's lock counter: this phase's new locks against this phase's own
+ * new target, so each phase starts at zero (#1673). The clearing rule is
+ * unchanged and still uses the campaign total. Endless mode has no target and
+ * counts every lock in the run.
  *
  * @param score - The running score state.
  * @param gameMode - The running mode.
@@ -490,7 +504,15 @@ export function getPhaseProgress(
   if (gameMode !== "campaign") {
     return { locked: score.subjectsSubmitted, target: null };
   }
-  return { locked: score.phaseSubmissions, target: PHASE_TARGETS[phase] };
+  const before = PHASE_TARGETS[phase] - getPhaseLockTarget(phase);
+  return {
+    locked: clamp(
+      score.subjectsSubmitted - before,
+      0,
+      getPhaseLockTarget(phase)
+    ),
+    target: getPhaseLockTarget(phase),
+  };
 }
 
 /**

@@ -32,7 +32,6 @@ export function createInitialScoreState(): GameScoreState {
     maxCombo: 0,
     multiplier: 1,
     subjectsSubmitted: 0,
-    phaseSubmissions: 0,
     correctionsMade: 0,
     cleanSubmissions: 0,
     auditViolations: 0,
@@ -43,8 +42,7 @@ export function createInitialScoreState(): GameScoreState {
 /**
  * Score state for the next shift. Advancing to campaign phase 2 or 3
  * continues the same run, so the score and running tallies carry over and the
- * campaign ends on one total (#1325); the combo, the multiplier and the
- * phase's own lock count restart (#1673). Any
+ * campaign ends on one total (#1325); the combo and multiplier restart. Any
  * other start (phase 1 or endless) is a fresh run.
  *
  * @param prev - The score state at the end of the previous shift.

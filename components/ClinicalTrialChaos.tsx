@@ -7,7 +7,7 @@ import React, {
   useSyncExternalStore,
   useCallback,
   useMemo,
-  useEffectEvent,
+  type SetStateAction,
 } from "react";
 import Link from "next/link";
 import { useAudio } from "@/components/providers/AudioProvider";
@@ -247,6 +247,67 @@ function readStoredOutfitId(): OutfitId {
   return getOutfitById(safeGetRawItem(OUTFIT_STORAGE_KEY)).id;
 }
 
+/**
+ * State the game loop advances between renders. The ref holds the latest
+ * value and is the base for every update, so a handler builds on the loop's
+ * current countdowns and patrol rather than the last rendered ones, and a
+ * render never rewinds the loop (#1628).
+ */
+function useLoopOwnedState<T>(initial: T | (() => T)) {
+  const [state, setState] = useState<T>(initial);
+  const ref = useRef<T>(state);
+  const update = useCallback((action: SetStateAction<T>) => {
+    const next =
+      typeof action === "function"
+        ? (action as (prev: T) => T)(ref.current)
+        : action;
+    ref.current = next;
+    setState(next);
+  }, []);
+  return [state, update, ref] as const;
+}
+
+/**
+ * True when the loop's state would change what the board shows: a subject
+ * added, removed or reordered, a displayed countdown second, the auditor's
+ * shown suspicion or behavior, or a lifeline's shown seconds (#1628).
+ */
+function loopStateChangesDisplay(
+  rendered: {
+    subjects: readonly ClinicalSubject[];
+    auditor: AuditorState;
+    powerUps: PowerUpInventory;
+  },
+  current: {
+    subjects: readonly ClinicalSubject[];
+    auditor: AuditorState;
+    powerUps: PowerUpInventory;
+  }
+): boolean {
+  if (rendered.subjects.length !== current.subjects.length) return true;
+  const subjectChanged = current.subjects.some((s, i) => {
+    const shown = rendered.subjects[i];
+    return (
+      s.id !== shown.id ||
+      Math.ceil(s.timeRemaining) !== Math.ceil(shown.timeRemaining) ||
+      Math.round(s.timeRemaining) !== Math.round(shown.timeRemaining)
+    );
+  });
+  if (subjectChanged) return true;
+  if (
+    rendered.auditor.behavior !== current.auditor.behavior ||
+    Math.round(rendered.auditor.suspicion) !==
+      Math.round(current.auditor.suspicion)
+  ) {
+    return true;
+  }
+  return (Object.keys(current.powerUps) as PowerUpType[]).some(
+    (type) =>
+      Math.ceil(current.powerUps[type].activeSecondsRemaining) !==
+      Math.ceil(rendered.powerUps[type]?.activeSecondsRemaining ?? 0)
+  );
+}
+
 /** Small canvas preview of an outfit, drawn with the same renderer as the game. */
 const OutfitPreview: React.FC<{ outfit: OutfitConfig }> = ({ outfit }) => {
   const ref = useRef<HTMLCanvasElement>(null);
@@ -312,21 +373,21 @@ export const ClinicalTrialChaos: React.FC = () => {
     createInitialScoreState
   );
   const effectiveHighScore = Math.max(scoreState.highScore, loadedHighScore);
-  const [auditor, setAuditor] = useState<AuditorState>(
+  // The game loop advances the auditor, the subject countdowns and the
+  // lifeline timers between renders; their refs hold the latest values.
+  const [auditor, setAuditor, auditorRef] = useLoopOwnedState<AuditorState>(
     createInitialAuditorState
   );
   const [stations, setStations] = useState<StationConfig[]>(() =>
     getStationsForPhase(1, "campaign")
   );
-  const [conveyorSubjects, setConveyorSubjects] = useState<ClinicalSubject[]>(
-    []
-  );
+  const [conveyorSubjects, setConveyorSubjects, conveyorSubjectsRef] =
+    useLoopOwnedState<ClinicalSubject[]>([]);
   const [submittedHistory, setSubmittedHistory] = useState<ClinicalSubject[]>(
     []
   );
-  const [powerUps, setPowerUps] = useState<PowerUpInventory>(
-    createInitialPowerUpInventory
-  );
+  const [powerUps, setPowerUps, powerUpsRef] =
+    useLoopOwnedState<PowerUpInventory>(createInitialPowerUpInventory);
   const [activeAmendment, setActiveAmendment] =
     useState<ProtocolAmendment | null>(null);
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
@@ -644,6 +705,9 @@ export const ClinicalTrialChaos: React.FC = () => {
       office,
       outfit,
       isFullscreen,
+      setAuditor,
+      setConveyorSubjects,
+      setPowerUps,
     ]
   );
 
@@ -780,6 +844,9 @@ export const ClinicalTrialChaos: React.FC = () => {
       triggerSound,
       addAuditLog,
       pushScorePop,
+      setAuditor,
+      setConveyorSubjects,
+      setPowerUps,
     ]
   );
 
@@ -884,6 +951,9 @@ export const ClinicalTrialChaos: React.FC = () => {
       pushScorePop,
       playSuccess,
       announce,
+      setAuditor,
+      setConveyorSubjects,
+      setPowerUps,
     ]
   );
 
@@ -957,6 +1027,9 @@ export const ClinicalTrialChaos: React.FC = () => {
       addAuditLog,
       completeSubmission,
       announce,
+      setAuditor,
+      setConveyorSubjects,
+      setPowerUps,
     ]
   );
 
@@ -1019,7 +1092,15 @@ export const ClinicalTrialChaos: React.FC = () => {
       );
       announce(`Replied to ${request.from}. ${outcome}`, "polite");
     },
-    [addAuditLog, triggerSound, announce, pushScorePop]
+    [
+      addAuditLog,
+      triggerSound,
+      announce,
+      pushScorePop,
+      setAuditor,
+      setConveyorSubjects,
+      setPowerUps,
+    ]
   );
 
   // 14. Shared verified submission path for routine and reviewed dossiers.
@@ -1096,6 +1177,7 @@ export const ClinicalTrialChaos: React.FC = () => {
       completeSubmission,
       announce,
       stations,
+      setAuditor,
     ]
   );
 
@@ -1241,12 +1323,16 @@ export const ClinicalTrialChaos: React.FC = () => {
   const playStateRef = useRef(playState);
   const phaseRef = useRef(phase);
   const officeRef = useRef(office);
-  const conveyorSubjectsRef = useRef(conveyorSubjects);
   const selectedSubjectIdRef = useRef(selectedSubjectId);
-  const auditorRef = useRef(auditor);
   const stationsRef = useRef(stations);
   const scoreStateRef = useRef(scoreState);
-  const powerUpsRef = useRef(powerUps);
+  // What the board last rendered, which the loop compares against to decide
+  // whether a frame changes the display (#1628).
+  const renderedLoopStateRef = useRef({
+    subjects: conveyorSubjects,
+    auditor,
+    powerUps,
+  });
   const activeAmendmentRef = useRef(activeAmendment);
   // Sync only when the state changes: the game loop owns the countdown, and
   // an every-render sync would reset it to the last rendered value.
@@ -1265,12 +1351,14 @@ export const ClinicalTrialChaos: React.FC = () => {
     playStateRef.current = playState;
     phaseRef.current = phase;
     officeRef.current = office;
-    conveyorSubjectsRef.current = conveyorSubjects;
     selectedSubjectIdRef.current = selectedSubjectId;
-    auditorRef.current = auditor;
     stationsRef.current = stations;
     scoreStateRef.current = scoreState;
-    powerUpsRef.current = powerUps;
+    renderedLoopStateRef.current = {
+      subjects: conveyorSubjects,
+      auditor,
+      powerUps,
+    };
     auditLogsRef.current = auditLogs;
     addAuditLogRef.current = addAuditLog;
     triggerSoundRef.current = triggerSound;
@@ -1323,15 +1411,10 @@ export const ClinicalTrialChaos: React.FC = () => {
   // and a state flag that stops the loop; restoring starts a fresh one.
   const contextLostRef = useRef(false);
   const [isContextLost, setIsContextLost] = useState(false);
-  // The seconds-changed check below compares against the subjects rendered
-  // when the shift started, as the effect-based loop's closure did.
-  const loopStartSubjectsRef = useRef<ClinicalSubject[]>(conveyorSubjects);
-  const readRenderedSubjects = useEffectEvent(() => conveyorSubjects);
 
   useEffect(() => {
     if (playState !== "playing") return;
 
-    loopStartSubjectsRef.current = readRenderedSubjects();
     lastTickTimeRef.current = Date.now();
 
     const canvas = canvasRef.current;
@@ -1362,7 +1445,6 @@ export const ClinicalTrialChaos: React.FC = () => {
   useAnimationFrame(
     () => {
       if (contextLostRef.current) return;
-      const loopStartSubjects = loopStartSubjectsRef.current;
 
       // Ends the shift on a Form 483 or a terminated sponsor contract and
       // files the BIMO inspection report from the latest simulation state.
@@ -1568,14 +1650,18 @@ export const ClinicalTrialChaos: React.FC = () => {
         );
       }
 
-      // 7. UI State Sync: Sync React state only when DOM second display value changes or milestones occur
-      const secondsChanged = conveyorSubjectsRef.current.some(
-        (s, i) =>
-          Math.ceil(s.timeRemaining) !==
-          Math.ceil(loopStartSubjects[i]?.timeRemaining ?? 0)
+      // 7. UI State Sync: render only when a milestone occurs or the frame
+      // changes what the board last rendered (#1628).
+      const displayChanged = loopStateChangesDisplay(
+        renderedLoopStateRef.current,
+        {
+          subjects: conveyorSubjectsRef.current,
+          auditor: auditorRef.current,
+          powerUps: powerUpsRef.current,
+        }
       );
 
-      if (uiNeedsSync || secondsChanged) {
+      if (uiNeedsSync || displayChanged) {
         setConveyorSubjects([...conveyorSubjectsRef.current]);
         setAuditor({ ...auditorRef.current });
         setPowerUps({ ...powerUpsRef.current });

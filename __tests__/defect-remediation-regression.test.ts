@@ -1983,3 +1983,60 @@ describe("Clinical Trial Chaos auditor resumes after a Coffee Break (#1610)", ()
     expect(tick.auditor.isPaused).toBe(false);
   });
 });
+
+// Behavioural reproductions live in __tests__/arcade-animation-loops.test.tsx.
+describe("Arcade loops read current state (#1628)", () => {
+  const readComponent = (name: string) =>
+    fs.readFileSync(
+      path.resolve(__dirname, `../components/${name}.tsx`),
+      "utf-8"
+    );
+  const loopBody = (code: string, marker: string, end: string) => {
+    const start = code.indexOf("useAnimationFrame(", code.indexOf(marker));
+    const stop = code.indexOf(end, start);
+    expect(start).toBeGreaterThan(-1);
+    expect(stop).toBeGreaterThan(start);
+    return code.slice(start, stop);
+  };
+
+  it("expires Retro Labyrinth side effects on the clock that stamps them", async () => {
+    const { fireWeapon, DEFAULT_WEAPONS } = await import("@/lib/dungeon");
+    const nowMs = 1_800_000_000_000;
+    const res = fireWeapon(
+      "npm_install",
+      DEFAULT_WEAPONS,
+      1,
+      1,
+      80,
+      80,
+      [],
+      undefined,
+      nowMs,
+      32
+    );
+    expect(res.activeSideEffect?.expiresAt).toBe(nowMs + 4000);
+
+    const body = loopBody(
+      readComponent("RetroLabyrinth"),
+      "// Main Real-Time Game Loop",
+      "isActive: isLoopActive"
+    );
+    expect(body).toContain("activeSideEffect.expiresAt <= Date.now()");
+    expect(body).not.toContain("expiresAt <= timestamp");
+  });
+
+  it("reads the current Retro Labyrinth rooms and Clinical Chaos subjects", () => {
+    const labyrinth = readComponent("RetroLabyrinth");
+    expect(labyrinth).not.toContain("loopCampaignRoomsRef");
+    expect(labyrinth).toContain("campaignRoomsRef.current = campaignRooms;");
+
+    const chaos = readComponent("ClinicalTrialChaos");
+    expect(chaos).not.toContain("loopStartSubjects");
+    const body = loopBody(
+      chaos,
+      "// 17. Main Game Loop Tick",
+      "isActive: playState"
+    );
+    expect(body).toContain("renderedLoopStateRef.current");
+  });
+});

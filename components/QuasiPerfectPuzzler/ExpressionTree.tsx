@@ -15,6 +15,8 @@ interface ExpressionTreeProps {
   onHoverTarget: (nodeId: string | null) => void;
   isProofComplete?: boolean;
   isTacticActive?: boolean;
+  /** Rule shown before a tap so a wrong target is never a surprise penalty. */
+  targetingHint?: string;
 }
 
 export const ExpressionTree: React.FC<ExpressionTreeProps> = ({
@@ -26,6 +28,7 @@ export const ExpressionTree: React.FC<ExpressionTreeProps> = ({
   onHoverTarget,
   isProofComplete = false,
   isTacticActive = false,
+  targetingHint,
 }) => {
   const mathematicalNotation = renderASTString(goalAST);
 
@@ -71,11 +74,11 @@ export const ExpressionTree: React.FC<ExpressionTreeProps> = ({
                       : isHovered
                       ? "border-purple-500/60 bg-purple-950/40 text-purple-100"
                       : isTargetEligible
-                      ? "border-purple-400 bg-purple-950/60 text-purple-100 shadow-[0_0_12px_rgba(168,85,247,0.5)] ring-1 ring-purple-400 animate-pulse"
+                      ? "border-purple-400 bg-purple-950/60 text-purple-100 shadow-[0_0_12px_rgba(168,85,247,0.5)] ring-1 ring-purple-400"
                       : "border-purple-500/30 bg-purple-950/20 text-purple-200 hover:border-purple-400"
                   }`}
                 >
-                  <span className="font-bold text-purple-400">{hypName}:</span>
+                  <span className="font-bold text-purple-300">{hypName}:</span>
                   <span>{hypFormula}</span>
                 </button>
               );
@@ -142,6 +145,14 @@ export const ExpressionTree: React.FC<ExpressionTreeProps> = ({
                 </span>
               )}
             </p>
+            {targetingHint && (
+              <p
+                data-testid="targeting-hint"
+                className="mt-2 text-[11px] font-mono text-amber-300"
+              >
+                {targetingHint}
+              </p>
+            )}
           </div>
         )}
       </div>

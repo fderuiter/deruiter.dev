@@ -57,7 +57,7 @@ export const HintSystem: React.FC<HintSystemProps> = ({ hints, onTierChange }) =
                   {isUnlocked ? (
                     <IconSparkles className="w-3.5 h-3.5" />
                   ) : (
-                    <IconLock className="w-3.5 h-3.5 text-zinc-500" />
+                    <IconLock className="w-3.5 h-3.5 text-zinc-400" />
                   )}
                   {tierInfo.title}
                 </span>
@@ -76,7 +76,7 @@ export const HintSystem: React.FC<HintSystemProps> = ({ hints, onTierChange }) =
               {isUnlocked ? (
                 <p className="mt-1.5 text-xs text-zinc-300 leading-relaxed">{hintText}</p>
               ) : (
-                <p className="mt-1.5 text-[11px] text-zinc-500 italic">
+                <p className="mt-1.5 text-[11px] text-zinc-400 italic">
                   Unlock this tier to reveal deeper mathematical guidance.
                 </p>
               )}

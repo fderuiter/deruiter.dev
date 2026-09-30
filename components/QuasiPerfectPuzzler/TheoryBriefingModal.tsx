@@ -69,7 +69,7 @@ export const TheoryBriefingModal: React.FC<TheoryBriefingModalProps> = ({
           <span className="rounded bg-brand-cyan/10 border border-brand-cyan/30 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-brand-cyan">
             Chapter {level.chapter} · {level.chapterTitle}
           </span>
-          <span className="text-zinc-600">/</span>
+          <span className="text-zinc-400">/</span>
           <span className="text-[11px] font-bold text-zinc-400">
             {level.subtitle}
           </span>
@@ -153,7 +153,7 @@ export const TheoryBriefingModal: React.FC<TheoryBriefingModalProps> = ({
               <IconShieldCheck className="w-4 h-4" />
               <span>2. Formal Proof Assistant Analogy (Lean 4)</span>
             </span>
-            <span className="text-[10px] text-zinc-500 font-mono">
+            <span className="text-[10px] text-zinc-400 font-mono">
               {level.leanTheoremName}
             </span>
           </div>
@@ -191,7 +191,7 @@ export const TheoryBriefingModal: React.FC<TheoryBriefingModalProps> = ({
 
       {/* Action Footer */}
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-zinc-800 pt-4">
-        <div className="text-[11px] text-zinc-500">
+        <div className="text-[11px] text-zinc-400">
           Press{" "}
           <kbd className="rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] text-zinc-300">
             B

@@ -37,7 +37,7 @@ export const TacticHand: React.FC<TacticHandProps> = ({
         <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 font-mono">
           Tactic Hand (Available Cards)
         </span>
-        <span className="text-[10px] text-zinc-500 font-mono">
+        <span className="text-[10px] text-zinc-400 font-mono">
           {availableTactics.length} cards available
         </span>
       </div>

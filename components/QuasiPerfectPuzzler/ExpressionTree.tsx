@@ -44,7 +44,7 @@ export const ExpressionTree: React.FC<ExpressionTreeProps> = ({
             <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
               Active Hypotheses Context (Γ)
             </span>
-            <span className="text-[10px] text-zinc-500 font-mono">
+            <span className="text-[10px] text-zinc-400 font-mono">
               {hypotheses.length} in context
             </span>
           </div>
@@ -97,7 +97,7 @@ export const ExpressionTree: React.FC<ExpressionTreeProps> = ({
             </span>
           </div>
 
-          <div className="text-[10px] text-zinc-500 font-mono flex items-center gap-2">
+          <div className="text-[10px] text-zinc-400 font-mono flex items-center gap-2">
             {isProofComplete ? (
               <span className="text-emerald-400 font-bold">✔ Closed</span>
             ) : inspectedNode ? (
@@ -130,7 +130,7 @@ export const ExpressionTree: React.FC<ExpressionTreeProps> = ({
         {/* Tree Instructions Footer */}
         {!isProofComplete && (
           <div className="mt-4 text-center">
-            <p className="text-[11px] text-zinc-500 font-mono">
+            <p className="text-[11px] text-zinc-400 font-mono">
               {selectedTargetId ? (
                 <span className="text-brand-cyan font-semibold flex items-center justify-center gap-1">
                   <IconSparkles className="w-3.5 h-3.5 text-brand-cyan" />

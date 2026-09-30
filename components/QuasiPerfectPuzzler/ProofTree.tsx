@@ -126,7 +126,7 @@ export const ProofTree: React.FC<ProofTreeProps> = ({
               )}
             </button>
           ) : (
-            <IconGitCommit className="w-3.5 h-3.5 shrink-0 text-zinc-500" />
+            <IconGitCommit className="w-3.5 h-3.5 shrink-0 text-zinc-400" />
           )}
 
           <button
@@ -192,7 +192,7 @@ export const ProofTree: React.FC<ProofTreeProps> = ({
         <span className="text-xs font-bold uppercase tracking-wider text-zinc-300">
           Proof Tree Inspector
         </span>
-        <span className="text-[10px] text-zinc-500">
+        <span className="text-[10px] text-zinc-400">
           Root: {rootNode.label}
         </span>
       </div>

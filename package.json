@@ -79,7 +79,7 @@
   "packageManager": "npm@10.9.2",
   "overrides": {
     "typedoc": {
-      "brace-expansion": "^5.0.8"
+      "brace-expansion": "^5.0.12"
     },
     "eslint": {
       "@eslint/eslintrc": {
@@ -143,7 +143,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/ws": "^8.18.1",
-    "@vitest/coverage-v8": "^5.0.2",
+    "@vitest/coverage-v8": "^4.1.11",
     "concurrently": "^10.0.5",
     "dependency-cruiser": "^18.4.0",
     "dotenv": "^18.0.4",
@@ -164,7 +164,7 @@
     "typedoc": "^0.28.20",
     "typedoc-plugin-markdown": "^4.12.0",
     "typescript": "^5",
-    "vitest": "^5.0.2"
+    "vitest": "^4.1.11"
   },
   "allowScripts": {
     "@clerk/shared": true,

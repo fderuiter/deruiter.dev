@@ -27,22 +27,6 @@ vi.mock("@/hooks/useTelemetry", () => ({
   }),
 }));
 
-// Hold the dynamic import of the viewer open so the loading skeleton stays
-// mounted for the whole test. Without the gate the import can settle inside
-// act(), which replaces the skeleton before it is asserted.
-const viewerGate = vi.hoisted(() => {
-  let release: () => void = () => {};
-  const promise = new Promise<void>((resolve) => {
-    release = resolve;
-  });
-  return { promise, release };
-});
-
-vi.mock("@/components/neuro/Brain3DViewer", async () => {
-  await viewerGate.promise;
-  return { Brain3DViewer: () => null };
-});
-
 describe("NeuroRecon Dynamic Import & Skeleton Placeholder Suite", () => {
   let container: HTMLDivElement;
   let root: Root;
@@ -59,7 +43,6 @@ describe("NeuroRecon Dynamic Import & Skeleton Placeholder Suite", () => {
     if (container.parentNode) {
       document.body.removeChild(container);
     }
-    viewerGate.release();
     vi.restoreAllMocks();
   });
 

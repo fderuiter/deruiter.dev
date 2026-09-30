@@ -8,6 +8,7 @@ import {
   checkNpmVersion,
   checkPrismaClientGenerated,
   checkTsxExecution,
+  checkToolchainVersions,
   runPreflight,
 } from "../lib/dx/preflight";
 
@@ -134,6 +135,42 @@ describe("DX Runtime Preflight (#612)", () => {
       expect(result.message.toLowerCase()).toMatch(
         /sandbox|environment|restriction/
       );
+    });
+  });
+
+  describe("checkToolchainVersions", () => {
+    let tempDir: string;
+
+    beforeEach(() => {
+      tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "dx-preflight-test-"));
+    });
+
+    afterEach(() => {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    });
+
+    it("passes against this repo's real package.json devDependencies", () => {
+      const result = checkToolchainVersions(path.resolve(process.cwd()));
+      expect(result.status).toBe("pass");
+      expect(result.message).toContain("Vitest v5");
+    });
+
+    it("fails when toolchain versions are below major requirements", () => {
+      fs.writeFileSync(
+        path.join(tempDir, "package.json"),
+        JSON.stringify({
+          devDependencies: {
+            vitest: "^4.0.0",
+            jsdom: "^29.0.0",
+            eslint: "^9.0.0",
+            typescript: "~6.0.0",
+          },
+        })
+      );
+
+      const result = checkToolchainVersions(tempDir);
+      expect(result.status).toBe("fail");
+      expect(result.message).toContain("version mismatch");
     });
   });
 

@@ -203,6 +203,57 @@ export function checkTsxExecution(root: string): PreflightCheckResult {
 }
 
 /**
+ * Verifies core developer toolchain dependencies (Vitest v5, jsdom v30,
+ * ESLint v10, TypeScript v7) satisfy required major version releases.
+ */
+export function checkToolchainVersions(root: string): PreflightCheckResult {
+  const pkg = readPackageJson(root);
+  const devDeps = (pkg.devDependencies || {}) as Record<string, string>;
+
+  const requirements: { name: string; requiredMajor: number }[] = [
+    { name: "vitest", requiredMajor: 5 },
+    { name: "jsdom", requiredMajor: 30 },
+    { name: "eslint", requiredMajor: 10 },
+    { name: "typescript", requiredMajor: 7 },
+  ];
+
+  const violations: string[] = [];
+
+  for (const { name, requiredMajor } of requirements) {
+    const declared = devDeps[name];
+    if (!declared) {
+      violations.push(`${name} not declared in devDependencies`);
+      continue;
+    }
+
+    const match = declared.match(/(\d+)/);
+    const major = match ? Number(match[1]) : 0;
+    if (major < requiredMajor) {
+      violations.push(
+        `${name} declared as ${declared} (requires >= v${requiredMajor})`
+      );
+    }
+  }
+
+  if (violations.length > 0) {
+    return {
+      id: "toolchain-versions",
+      label: "Toolchain package versions",
+      status: "fail",
+      message: `Toolchain version mismatch: ${violations.join("; ")}.`,
+    };
+  }
+
+  return {
+    id: "toolchain-versions",
+    label: "Toolchain package versions",
+    status: "pass",
+    message:
+      "All core toolchain engines satisfied (Vitest v5, jsdom v30, ESLint v10, TypeScript v7).",
+  };
+}
+
+/**
  * Runs every preflight probe and reports whether the environment is
  * ready for real work. Intended to be run once, cheaply, before an
  * agent or developer starts an expensive verification pass (tests,
@@ -217,6 +268,7 @@ export function runPreflight(root: string): PreflightReport {
     checkNpmVersion(root),
     checkPrismaClientGenerated(root),
     checkTsxExecution(root),
+    checkToolchainVersions(root),
   ];
 
   const ready = checks.every((check) => check.status !== "fail");

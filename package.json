@@ -57,7 +57,7 @@
     "check": "tsc --noEmit && npm run lint && npm run lint:boundaries",
     "prepare": "husky",
     "preinstall": "node scripts/enforce-npm.js",
-    "postinstall": "prisma generate",
+    "postinstall": "prisma generate && node scripts/ensure-toolchain-compatibility.js",
     "pretest": "prisma generate",
     "test": "VITE_CONFIG_NATIVE_IGNORE_WARNING=1 vitest run",
     "test:staged": "tsx scripts/test-staged.ts",
@@ -83,7 +83,22 @@
     "mysql2": "^3.24.3",
     "lodash-es": "^4.18.1",
     "qs": "6.16.0",
-    "jsdom": "26.1.0"
+    "jsdom": "^30.1.1",
+    "typedoc": {
+      "typescript": "npm:typescript@~6.0.3"
+    },
+    "typescript-eslint": {
+      "typescript": "npm:typescript@~6.0.3"
+    },
+    "@typescript-eslint/parser": {
+      "typescript": "npm:typescript@~6.0.3"
+    },
+    "@typescript-eslint/eslint-plugin": {
+      "typescript": "npm:typescript@~6.0.3"
+    },
+    "@typescript-eslint/typescript-estree": {
+      "typescript": "npm:typescript@~6.0.3"
+    }
   },
   "dependencies": {
     "@chenglou/pretext": "^0.0.9",
@@ -133,17 +148,17 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/ws": "^8.18.1",
-    "@vitest/coverage-v8": "^4.1.11",
+    "@vitest/coverage-v8": "^5.0.3",
     "concurrently": "^10.0.5",
     "dependency-cruiser": "^18.4.0",
     "dotenv": "^18.0.4",
     "esbuild": "^0.28.2",
-    "eslint": "^9",
+    "eslint": "^10.0.0",
     "eslint-config-next": "16.3.6",
     "eslint-plugin-react-hooks": "^7.1.1",
     "fast-check": "^4.9.0",
     "husky": "^9.1.7",
-    "jsdom": "26.1.0",
+    "jsdom": "^30.1.1",
     "jszip": "^3.10.1",
     "lint-staged": "^17.0.5",
     "markdownlint-cli": "^0.49.1",
@@ -153,8 +168,8 @@
     "tsx": "^4.23.12",
     "typedoc": "^0.28.20",
     "typedoc-plugin-markdown": "^4.12.0",
-    "typescript": "~6.0.3",
-    "vitest": "^4.1.11"
+    "typescript": "~7.0.2",
+    "vitest": "^5.0.3"
   },
   "allowScripts": {
     "@clerk/shared": true,

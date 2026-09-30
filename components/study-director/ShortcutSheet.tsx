@@ -4,7 +4,7 @@ import React from "react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 
 /** Every key the desk answers to, in the order a day is played. */
-export const SHORTCUTS: Array<{ keys: string[]; action: string }> = [
+const SHORTCUTS: Array<{ keys: string[]; action: string }> = [
   { keys: ["1", "–", "5"], action: "Choose an option on the open message" },
   { keys: ["D"], action: "Toggle documenting the decision" },
   { keys: ["J", "K"], action: "Next or previous message" },

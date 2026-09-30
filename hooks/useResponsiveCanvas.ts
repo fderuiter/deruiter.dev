@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback } from "react";
+import { clamp } from "@/lib/game-utils";
 
 export interface UseResponsiveCanvasOptions {
   canvasRef?: React.RefObject<HTMLCanvasElement | null> | null;
@@ -69,7 +70,8 @@ export function useResponsiveCanvas(
 
   // Compute clamped DPR
   const dpr = typeof window !== "undefined"
-    ? Math.min(maxDpr, Math.max(1, window.devicePixelRatio || 1))
+    ? // A maxDpr below 1 wins over the 1x floor, as it always has.
+      clamp(window.devicePixelRatio || 1, Math.min(1, maxDpr), maxDpr)
     : 1;
 
   const bindCanvas = useCallback((canvasElement: HTMLCanvasElement | null) => {

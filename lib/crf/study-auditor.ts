@@ -10,6 +10,7 @@ import {
 } from "@/lib/crf/cdisc-cdash-library";
 import { lintFormula, FormulaLintResult } from "@/lib/crf/formula-linter";
 import { cloneDeep } from "@/lib/utils";
+import { clamp } from "@/lib/game-utils";
 import { appendProtocolAuditEntry, type ActorContext } from "./study-engine";
 
 /**
@@ -378,7 +379,7 @@ export class StudyAuditor {
     const fixable = diagnostics.filter((d) => d.autoFixAvailable).length;
 
     const penalty = errors * 15 + warnings * 5;
-    const score = Math.max(0, Math.min(100, 100 - penalty));
+    const score = clamp(100 - penalty, 0, 100);
 
     const health: FormHealthMetrics = {
       totalFields,

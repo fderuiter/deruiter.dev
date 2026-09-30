@@ -1,4 +1,5 @@
 import React from "react";
+import { clamp } from "@/lib/game-utils";
 
 /** Named loud-moment presets for the surfaces that use them. */
 export const LOUD_PRESETS = {
@@ -20,7 +21,7 @@ export const MAX_SHAKE_PX = 6;
 /** A CSS shake amplitude for an intensity, clamped to [0, MAX_SHAKE_PX]. */
 export function shakeAmplitude(intensity: number): string {
   const px = Number.isFinite(intensity)
-    ? Math.min(MAX_SHAKE_PX, Math.max(0, intensity))
+    ? clamp(intensity, 0, MAX_SHAKE_PX)
     : 0;
   return `${px}px`;
 }

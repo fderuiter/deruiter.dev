@@ -37,6 +37,7 @@ export function handOverlap({
   const needed = (count * cardRem - room) / (count - 1);
   const most = cardRem / 2 - CENTER_CLEARANCE_REM;
   // Round up to a tenth so the last card never pokes a pixel past the row.
-  const fit = Math.min(most, Math.ceil(Math.max(0, needed) * 10) / 10);
+  const overlap = Math.max(0, needed);
+  const fit = Math.min(most, Math.ceil(overlap * 10) / 10);
   return Math.max(fanned, fit);
 }

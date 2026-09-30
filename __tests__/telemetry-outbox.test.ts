@@ -693,7 +693,7 @@ describe("TelemetryOutbox Contract Test Suite", () => {
       expect(res).toBe(true);
       expect(fetchMock).toHaveBeenCalledWith("/api/telemetry", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: expect.any(Headers),
         body: JSON.stringify({
           projectSlug: "default-fetch-test",
           eventType: "click",

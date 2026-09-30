@@ -13,6 +13,7 @@ import { createPortal } from "react-dom";
 import { hexToRgba } from "@/lib/utils";
 import { designManifest } from "@/lib/design-manifest";
 import { logger } from "@/lib/logger";
+import { apiClient } from "@/lib/api-client";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import {
@@ -1718,11 +1719,10 @@ export const CommandPalette: React.FC = () => {
 
     const loadStudies = async () => {
       try {
-        const res = await fetch("/api/case-studies");
-        if (res.ok && isSubscribed) {
-          const data = await res.json();
-          if (Array.isArray(data)) {
-            setStudies(data);
+        const res = await apiClient.get<SearchCaseStudy[]>("/api/case-studies");
+        if (res.ok && isSubscribed && res.data) {
+          if (Array.isArray(res.data)) {
+            setStudies(res.data);
           }
         }
       } catch (err) {

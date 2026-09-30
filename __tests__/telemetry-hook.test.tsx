@@ -101,14 +101,25 @@ describe("useTelemetry Hook Integration & Isolation", () => {
   });
 
   // Helper test component
-  const TelemetryTestComponent = ({ onHookValue }: { onHookValue: (val: any) => void }) => {
+  const TelemetryTestComponent = ({
+    onHookValue,
+  }: {
+    onHookValue: (val: any) => void;
+  }) => {
     const hookData = useTelemetry();
     onHookValue(hookData);
     return (
       <div>
-        <div data-testid="views">{hookData.telemetry["project-abc"]?.views ?? 0}</div>
-        <div data-testid="sync-status">{hookData.syncFailed ? "failed" : "ok"}</div>
-        <button data-testid="record-btn" onClick={() => hookData.recordEvent("project-abc", "page_view")}>
+        <div data-testid="views">
+          {hookData.telemetry["project-abc"]?.views ?? 0}
+        </div>
+        <div data-testid="sync-status">
+          {hookData.syncFailed ? "failed" : "ok"}
+        </div>
+        <button
+          data-testid="record-btn"
+          onClick={() => hookData.recordEvent("project-abc", "page_view")}
+        >
           Record View
         </button>
       </div>
@@ -164,7 +175,9 @@ describe("useTelemetry Hook Integration & Isolation", () => {
 
     // Fetch returns 5 views, which merges/updates globalTelemetryData
     expect(viewsEl?.textContent).toBe("5");
-    expect(localStorage.getItem("portfolio_telemetry_cache")).toContain('"views":5');
+    expect(localStorage.getItem("portfolio_telemetry_cache")).toContain(
+      '"views":5'
+    );
   });
 
   it("should trigger optimistic UI updates immediately before server POST completes", async () => {
@@ -201,15 +214,18 @@ describe("useTelemetry Hook Integration & Isolation", () => {
     });
 
     // Trigger record event
-    const recordBtn = container.querySelector('[data-testid="record-btn"]') as HTMLButtonElement;
+    const recordBtn = container.querySelector(
+      '[data-testid="record-btn"]'
+    ) as HTMLButtonElement;
     await act(async () => {
       recordBtn.click();
     });
 
     // Optimistic update: Views should IMMEDIATELY increment to 6 before POST resolves
     expect(viewsEl?.textContent).toBe("6");
-    expect(JSON.parse(localStorage.getItem("portfolio_telemetry_cache")!))
-      .toEqual({ "project-abc": { views: 6, clicks: 10 } });
+    expect(
+      JSON.parse(localStorage.getItem("portfolio_telemetry_cache")!)
+    ).toEqual({ "project-abc": { views: 6, clicks: 10 } });
 
     // Now resolve the POST promise
     await act(async () => {
@@ -245,7 +261,9 @@ describe("useTelemetry Hook Integration & Isolation", () => {
     expect(viewsEl?.textContent).toBe("5");
 
     // Click record event
-    const recordBtn = container.querySelector('[data-testid="record-btn"]') as HTMLButtonElement;
+    const recordBtn = container.querySelector(
+      '[data-testid="record-btn"]'
+    ) as HTMLButtonElement;
     await act(async () => {
       recordBtn.click();
     });
@@ -286,7 +304,9 @@ describe("useTelemetry Hook Integration & Isolation", () => {
     await act(async () => {
       await hookResult.recordEvent("project-abc", "page_view");
     });
-    expect(warnSpy).toHaveBeenCalledWith("Telemetry record rate limited by API.");
+    expect(warnSpy).toHaveBeenCalledWith(
+      "Telemetry record rate limited by API."
+    );
     warnSpy.mockRestore();
 
     // 3. Test generic fetch error (500) branch
@@ -313,7 +333,13 @@ describe("useTelemetry Hook Integration & Isolation", () => {
 
       // Simulate rate limiting or sync failure in recordEvent
       fetchMock.mockImplementationOnce(async () => {
-        throw new Error("POST request failed on server at /app/api/telemetry/route.ts");
+        return new Response(
+          JSON.stringify({
+            error:
+              "POST request failed on server at /app/api/telemetry/route.ts",
+          }),
+          { status: 500, headers: { "Content-Type": "application/json" } }
+        );
       });
 
       let hookResult: any;
@@ -340,7 +366,8 @@ describe("useTelemetry Hook Integration & Isolation", () => {
 
       // Verify console.error was called with a sanitized error object (no "/app/api/telemetry" path)
       expect(errorSpy).toHaveBeenCalled();
-      const lastErrorCallArgs = errorSpy.mock.calls[errorSpy.mock.calls.length - 1];
+      const lastErrorCallArgs =
+        errorSpy.mock.calls[errorSpy.mock.calls.length - 1];
       const errorObj = lastErrorCallArgs[1];
       expect(errorObj).toBeInstanceOf(Error);
       expect(errorObj.message).toContain("[scrubbed]");
@@ -352,7 +379,13 @@ describe("useTelemetry Hook Integration & Isolation", () => {
       (process.env as any).NODE_ENV = "development";
 
       fetchMock.mockImplementationOnce(async () => {
-        throw new Error("POST request failed on server at /app/api/telemetry/route.ts");
+        return new Response(
+          JSON.stringify({
+            error:
+              "POST request failed on server at /app/api/telemetry/route.ts",
+          }),
+          { status: 500, headers: { "Content-Type": "application/json" } }
+        );
       });
 
       await act(async () => {
@@ -361,7 +394,8 @@ describe("useTelemetry Hook Integration & Isolation", () => {
 
       // Verify console.error was called with raw, unmodified error
       expect(errorSpy).toHaveBeenCalled();
-      const devErrorCallArgs = errorSpy.mock.calls[errorSpy.mock.calls.length - 1];
+      const devErrorCallArgs =
+        errorSpy.mock.calls[errorSpy.mock.calls.length - 1];
       const devErrorObj = devErrorCallArgs[1];
       expect(devErrorObj).toBeInstanceOf(Error);
       expect(devErrorObj.message).toContain("/app");
@@ -400,13 +434,16 @@ describe("useTelemetry Hook Integration & Isolation", () => {
       });
 
       // Click record event to trigger local storage write
-      const recordBtn = container.querySelector('[data-testid="record-btn"]') as HTMLButtonElement;
+      const recordBtn = container.querySelector(
+        '[data-testid="record-btn"]'
+      ) as HTMLButtonElement;
       await act(async () => {
         recordBtn.click();
       });
 
       expect(warnSpy).toHaveBeenCalled();
-      const lastWarnCallArgs = warnSpy.mock.calls[warnSpy.mock.calls.length - 1];
+      const lastWarnCallArgs =
+        warnSpy.mock.calls[warnSpy.mock.calls.length - 1];
       const warnObj = lastWarnCallArgs[1];
       expect(warnObj).toBeInstanceOf(Error);
       expect(warnObj.message).toContain("[scrubbed]");
@@ -441,7 +478,11 @@ describe("useTelemetry Hook Integration & Isolation", () => {
     const PureRenderComponent = () => {
       renderCount++;
       const { telemetry } = useTelemetry();
-      return <div data-testid="telemetry-views">{telemetry["project-abc"]?.views ?? 0}</div>;
+      return (
+        <div data-testid="telemetry-views">
+          {telemetry["project-abc"]?.views ?? 0}
+        </div>
+      );
     };
 
     getItemSpy.mockClear();
@@ -513,7 +554,10 @@ describe("useTelemetry Hook Integration & Isolation", () => {
     });
 
     // Verify GET fetch was initiated exactly once for all 3 components
-    const getCalls = fetchMock.mock.calls.filter(([url, init]: [string, any]) => url === "/api/telemetry" && (!init || init.method === "GET"));
+    const getCalls = fetchMock.mock.calls.filter(
+      ([url, init]: [string, any]) =>
+        url === "/api/telemetry" && (!init || init.method === "GET")
+    );
     expect(getCalls.length).toBe(1);
 
     // Resolve the single in-flight fetch
@@ -530,7 +574,9 @@ describe("useTelemetry Hook Integration & Isolation", () => {
         return {
           ok: true,
           status: 200,
-          json: async () => ({ "project-abc": { views: callCount * 10, clicks: 0 } }),
+          json: async () => ({
+            "project-abc": { views: callCount * 10, clicks: 0 },
+          }),
         };
       }
       return { ok: true, json: async () => ({}) };
@@ -654,7 +700,10 @@ describe("useTelemetry Hook Integration & Isolation", () => {
       "project-abc": { views: 12, clicks: 3 },
       "project-xyz": { views: 40, clicks: 15 },
     };
-    mockStorage.setItem("portfolio_telemetry_cache", JSON.stringify(initialCache));
+    mockStorage.setItem(
+      "portfolio_telemetry_cache",
+      JSON.stringify(initialCache)
+    );
 
     let hookResult: any;
     await act(async () => {
@@ -696,11 +745,19 @@ describe("useTelemetry Hook Integration & Isolation", () => {
 
     // Active state and UI should be fully restored to pre-update snapshot
     expect(viewsEl?.textContent).toBe("12");
-    expect(hookResult.telemetry["project-abc"]).toEqual({ views: 12, clicks: 3 });
-    expect(hookResult.telemetry["project-xyz"]).toEqual({ views: 40, clicks: 15 });
+    expect(hookResult.telemetry["project-abc"]).toEqual({
+      views: 12,
+      clicks: 3,
+    });
+    expect(hookResult.telemetry["project-xyz"]).toEqual({
+      views: 40,
+      clicks: 15,
+    });
 
     // Local Storage cache must also match the restored pre-update snapshot
-    const persistedCache = JSON.parse(mockStorage.getItem("portfolio_telemetry_cache") || "{}");
+    const persistedCache = JSON.parse(
+      mockStorage.getItem("portfolio_telemetry_cache") || "{}"
+    );
     expect(persistedCache).toEqual(initialCache);
     expect(hookResult.syncFailed).toBe(true);
 
@@ -711,7 +768,10 @@ describe("useTelemetry Hook Integration & Isolation", () => {
     const initialCache = {
       "project-abc": { views: 100, clicks: 50 },
     };
-    mockStorage.setItem("portfolio_telemetry_cache", JSON.stringify(initialCache));
+    mockStorage.setItem(
+      "portfolio_telemetry_cache",
+      JSON.stringify(initialCache)
+    );
 
     let hookResult: any;
     await act(async () => {
@@ -740,13 +800,20 @@ describe("useTelemetry Hook Integration & Isolation", () => {
     });
 
     // React state & UI must be restored to pre-update values
-    expect(hookResult.telemetry["project-abc"]).toEqual({ views: 100, clicks: 50 });
+    expect(hookResult.telemetry["project-abc"]).toEqual({
+      views: 100,
+      clicks: 50,
+    });
 
     // Local storage cache must match reverted values with zero residual bloat
-    const persistedCache = JSON.parse(mockStorage.getItem("portfolio_telemetry_cache") || "{}");
+    const persistedCache = JSON.parse(
+      mockStorage.getItem("portfolio_telemetry_cache") || "{}"
+    );
     expect(persistedCache).toEqual(initialCache);
 
-    expect(warnSpy).toHaveBeenCalledWith("Telemetry record rate limited by API.");
+    expect(warnSpy).toHaveBeenCalledWith(
+      "Telemetry record rate limited by API."
+    );
     warnSpy.mockRestore();
   });
 });

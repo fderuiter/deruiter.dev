@@ -3,6 +3,7 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import Image from "next/image";
 import { formatBytes } from "@/lib/utils";
+import { apiClient } from "@/lib/api-client";
 import {
   IconUpload,
   IconX,
@@ -209,30 +210,29 @@ export function ProjectImageUploader({
         });
       }, 120);
 
-      const response = await fetch(
-        `/api/admin/projects/${selectedSlug}/image`,
-        {
-          method: "POST",
-          body: formData,
-          signal: controller.signal,
-        }
-      );
+      const response = await apiClient.post<{
+        hero_image_url?: string;
+        data?: { hero_image_url?: string };
+      }>(`/api/admin/projects/${selectedSlug}/image`, formData, {
+        signal: controller.signal,
+      });
 
       cleanupProgressTimer();
 
+      if (controller.signal.aborted) {
+        setStatus("cancelled");
+        setErrorMessage("Upload cancelled by user.");
+        return;
+      }
+
       if (!response.ok) {
-        let errText = "Failed to upload project image.";
-        try {
-          const resJson = await response.json();
-          errText = resJson.error || errText;
-        } catch {
-          // Ignore json parse error
-        }
+        const errText = response.error || "Failed to upload project image.";
         throw new Error(errText);
       }
 
-      const resData = await response.json();
-      const heroImageUrl = resData.data?.hero_image_url;
+      const resData = response.data;
+      const heroImageUrl =
+        resData?.hero_image_url || resData?.data?.hero_image_url;
 
       setProgress(100);
       setStatus("success");
@@ -246,7 +246,10 @@ export function ProjectImageUploader({
         onUploadSuccess(selectedSlug, heroImageUrl);
       }
     } catch (err: unknown) {
-      if (err instanceof Error && err.name === "AbortError") {
+      if (
+        (err instanceof Error && err.name === "AbortError") ||
+        controller.signal.aborted
+      ) {
         // Only cancelUpload aborts the request, and it has already
         // announced the cancellation, so stay silent here.
         setStatus("cancelled");
@@ -268,11 +271,8 @@ export function ProjectImageUploader({
 
   const handleClearImage = async () => {
     try {
-      const response = await fetch(
-        `/api/admin/projects/${selectedSlug}/image`,
-        {
-          method: "DELETE",
-        }
+      const response = await apiClient.delete(
+        `/api/admin/projects/${selectedSlug}/image`
       );
       if (response.ok) {
         cleanupPreviewUrl();

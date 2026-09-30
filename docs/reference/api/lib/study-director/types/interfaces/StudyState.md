@@ -24,6 +24,16 @@ Attention left today.
 
 ***
 
+### budget?
+
+> `optional` **budget?**: [`StudyBudget`](../type-aliases/StudyBudget.md)
+
+How the player's day is budgeted. Attention points (the default, and
+every save made before ADR 0055) or the world's clock, in which case the
+domain records attention costs without enforcing them.
+
+***
+
 ### day
 
 > **day**: `number`

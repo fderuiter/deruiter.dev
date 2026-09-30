@@ -25,7 +25,13 @@ interface InteractiveTruthTableProps {
 /**
  * Renders a single AST node trace with its recursive sub-expressions and evaluated truth values.
  */
-function AstTraceView({ trace, isRoot = false }: { trace: AstTraceNode; isRoot?: boolean }) {
+function AstTraceView({
+  trace,
+  isRoot = false,
+}: {
+  trace: AstTraceNode;
+  isRoot?: boolean;
+}) {
   const isLeaf = !trace.children || trace.children.length === 0;
 
   return (
@@ -59,7 +65,11 @@ function AstTraceView({ trace, isRoot = false }: { trace: AstTraceNode; isRoot?:
       {!isLeaf && (
         <div className="pl-2 border-l border-slate-800 flex flex-col gap-1 mt-1">
           {trace.children?.map((child, idx) => (
-            <AstTraceView key={`${child.label}-${idx}`} trace={child} isRoot={false} />
+            <AstTraceView
+              key={`${child.label}-${idx}`}
+              trace={child}
+              isRoot={false}
+            />
           ))}
         </div>
       )}
@@ -70,7 +80,9 @@ function AstTraceView({ trace, isRoot = false }: { trace: AstTraceNode; isRoot?:
 /**
  * Interactive Truth Table and AST Sub-Expression Truth Propagation Visualizer for Formal Fallacy Diagnostics.
  */
-export function InteractiveTruthTable({ diagnosis }: InteractiveTruthTableProps) {
+export function InteractiveTruthTable({
+  diagnosis,
+}: InteractiveTruthTableProps) {
   // Extract all distinct variables involved in the fallacy (defaulting to P and Q)
   const variables = useMemo(() => {
     if (diagnosis.variables && diagnosis.variables.length > 0) {
@@ -83,7 +95,10 @@ export function InteractiveTruthTable({ diagnosis }: InteractiveTruthTableProps)
   const initialValuation = useMemo(() => {
     const valuation: Record<string, boolean> = {};
     variables.forEach((v) => {
-      if (diagnosis.counterexampleValuation && v in diagnosis.counterexampleValuation) {
+      if (
+        diagnosis.counterexampleValuation &&
+        v in diagnosis.counterexampleValuation
+      ) {
         valuation[v] = diagnosis.counterexampleValuation[v];
       } else {
         valuation[v] = false;
@@ -109,7 +124,8 @@ export function InteractiveTruthTable({ diagnosis }: InteractiveTruthTableProps)
   const updateValuations = useCallback(
     (updater: (prev: Record<string, boolean>) => Record<string, boolean>) => {
       setCustomValuations((prev) => {
-        const current = prev && prev.key === diagnosisKey ? prev.vals : initialValuation;
+        const current =
+          prev && prev.key === diagnosisKey ? prev.vals : initialValuation;
         return {
           key: diagnosisKey,
           vals: updater(current),
@@ -210,7 +226,10 @@ export function InteractiveTruthTable({ diagnosis }: InteractiveTruthTableProps)
       if (row.valuations) {
         return variables.every((v) => row.valuations?.[v] === valuations[v]);
       }
-      return row.p === (valuations["P"] ?? false) && row.q === (valuations["Q"] ?? false);
+      return (
+        row.p === (valuations["P"] ?? false) &&
+        row.q === (valuations["Q"] ?? false)
+      );
     },
     [valuations, variables]
   );
@@ -243,7 +262,9 @@ export function InteractiveTruthTable({ diagnosis }: InteractiveTruthTableProps)
       {/* Header Diagnostic Card */}
       <div className="p-3 rounded-lg bg-red-950/40 border border-red-800/60 text-red-300 space-y-1">
         <div className="flex items-start justify-between gap-2">
-          <span className="font-bold block text-sm">{diagnosis.fallacyName}</span>
+          <span className="font-bold block text-sm">
+            {diagnosis.fallacyName}
+          </span>
           <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-red-900/80 text-red-200 border border-red-700/80 shrink-0">
             DEDUCTIVE ERROR
           </span>
@@ -254,14 +275,18 @@ export function InteractiveTruthTable({ diagnosis }: InteractiveTruthTableProps)
       </div>
 
       {/* Narrative Explanation */}
-      <p className="text-slate-300 leading-relaxed text-xs">{diagnosis.plainEnglish}</p>
+      <p className="text-slate-300 leading-relaxed text-xs">
+        {diagnosis.plainEnglish}
+      </p>
 
       {/* Software Bug Analogy */}
       <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800 space-y-1">
         <span className="font-mono text-amber-400 font-semibold block text-[11px]">
           Software Bug Analogy
         </span>
-        <p className="text-slate-400 leading-relaxed text-[11px]">{diagnosis.softwareAnalogy}</p>
+        <p className="text-slate-400 leading-relaxed text-[11px]">
+          {diagnosis.softwareAnalogy}
+        </p>
       </div>
 
       {/* Live Variable Boolean Toggles */}
@@ -319,7 +344,9 @@ export function InteractiveTruthTable({ diagnosis }: InteractiveTruthTableProps)
                     : "bg-rose-950/30 border-rose-900/60 text-rose-300 hover:bg-rose-950/50"
                 }`}
               >
-                <span className="font-mono font-bold text-xs">Var {varName}</span>
+                <span className="font-mono font-bold text-xs">
+                  Var {varName}
+                </span>
                 <span
                   className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold tracking-wider ${
                     isTrue
@@ -341,8 +368,8 @@ export function InteractiveTruthTable({ diagnosis }: InteractiveTruthTableProps)
           isCounterexampleActive
             ? "bg-red-950/60 border-red-700 text-red-200 shadow-md shadow-red-950/50"
             : allPremisesTrue
-            ? "bg-emerald-950/50 border-emerald-700/70 text-emerald-200"
-            : "bg-slate-950 border-slate-800 text-slate-400"
+              ? "bg-emerald-950/50 border-emerald-700/70 text-emerald-200"
+              : "bg-slate-950 border-slate-800 text-slate-400"
         }`}
       >
         <div className="flex items-center gap-2">
@@ -357,16 +384,16 @@ export function InteractiveTruthTable({ diagnosis }: InteractiveTruthTableProps)
             {isCounterexampleActive
               ? "💥 Formal Contradiction: Premises Hold (True) but Conclusion Fails (False)!"
               : allPremisesTrue
-              ? "✓ Consistent State: Premises & Conclusion are simultaneously satisfied."
-              : "ℹ Non-Violating State: Premise preconditions are not fully satisfied."}
+                ? "✓ Consistent State: Premises & Conclusion are simultaneously satisfied."
+                : "ℹ Non-Violating State: Premise preconditions are not fully satisfied."}
           </span>
         </div>
         <p className="text-[11px] mt-1 opacity-90 pl-6">
           {isCounterexampleActive
             ? "Because all premises evaluate to True while the target conclusion evaluates to False, this rule step is mathematically invalid and unsound."
             : allPremisesTrue
-            ? "Under this specific variable assignment, the formula holds true; however, a deductive inference rule must hold across ALL possible truth assignments."
-            : "When premise conditions are False, the deduction cannot fire, avoiding a false conclusion."}
+              ? "Under this specific variable assignment, the formula holds true; however, a deductive inference rule must hold across ALL possible truth assignments."
+              : "When premise conditions are False, the deduction cannot fire, avoiding a false conclusion."}
         </p>
       </div>
 
@@ -375,12 +402,17 @@ export function InteractiveTruthTable({ diagnosis }: InteractiveTruthTableProps)
         <div className="space-y-2">
           <div className="flex items-center justify-between font-mono text-slate-400 font-semibold text-[11px]">
             <span>AST Sub-Expression Truth Propagation</span>
-            <span className="text-[10px] text-slate-500 font-normal">Live Boolean Evaluation</span>
+            <span className="text-[10px] text-slate-500 font-normal">
+              Live Boolean Evaluation
+            </span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             {premisesWithTrace.map((p, idx) => (
-              <div key={idx} className="p-2 rounded-lg bg-slate-950 border border-slate-800 space-y-1.5">
+              <div
+                key={idx}
+                className="p-2 rounded-lg bg-slate-950 border border-slate-800 space-y-1.5"
+              >
                 <div className="flex items-center justify-between">
                   <span className="font-mono font-semibold text-cyan-300 text-[11px]">
                     {p.label}
@@ -395,7 +427,9 @@ export function InteractiveTruthTable({ diagnosis }: InteractiveTruthTableProps)
                     {p.trace.value ? "TRUE" : "FALSE"}
                   </span>
                 </div>
-                <p className="text-[10px] text-slate-400 leading-tight">{p.description}</p>
+                <p className="text-[10px] text-slate-400 leading-tight">
+                  {p.description}
+                </p>
                 <AstTraceView trace={p.trace} isRoot={true} />
               </div>
             ))}
@@ -431,9 +465,13 @@ export function InteractiveTruthTable({ diagnosis }: InteractiveTruthTableProps)
         <div className="flex items-center justify-between">
           <span className="font-mono text-slate-400 block font-semibold text-[11px] flex items-center gap-1.5">
             <IconTable className="w-3.5 h-3.5 text-indigo-400" />
-            <span>Exhaustive Truth Table ({diagnosis.truthTable.length} Valuations)</span>
+            <span>
+              Exhaustive Truth Table ({diagnosis.truthTable.length} Valuations)
+            </span>
           </span>
-          <span className="text-[10px] text-slate-500 font-mono">Click row to test valuation</span>
+          <span className="text-[10px] text-slate-500 font-mono">
+            Click row to test valuation
+          </span>
         </div>
 
         <div className="overflow-x-auto rounded-lg border border-slate-800 bg-slate-950">
@@ -441,17 +479,28 @@ export function InteractiveTruthTable({ diagnosis }: InteractiveTruthTableProps)
             className="w-full text-left font-mono text-[10px]"
             aria-label="Truth Table with Live Valuation Highlight"
           >
+            <caption className="sr-only">
+              Truth Table with Live Valuation Highlight
+            </caption>
             <thead className="bg-slate-900/90 text-slate-300 border-b border-slate-800">
               <tr>
                 {variables.map((v) => (
-                  <th key={v} className="p-1.5 text-center">
+                  <th key={v} scope="col" className="p-1.5 text-center">
                     {v}
                   </th>
                 ))}
-                <th className="p-1.5 text-center">Premise 1</th>
-                <th className="p-1.5 text-center">Premise 2</th>
-                <th className="p-1.5 text-center">Conclusion</th>
-                <th className="p-1.5 text-center">Diagnostic Status</th>
+                <th scope="col" className="p-1.5 text-center">
+                  Premise 1
+                </th>
+                <th scope="col" className="p-1.5 text-center">
+                  Premise 2
+                </th>
+                <th scope="col" className="p-1.5 text-center">
+                  Conclusion
+                </th>
+                <th scope="col" className="p-1.5 text-center">
+                  Diagnostic Status
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -474,8 +523,8 @@ export function InteractiveTruthTable({ diagnosis }: InteractiveTruthTableProps)
                       isActive
                         ? "bg-cyan-950/60 text-cyan-200 font-bold ring-1 ring-inset ring-cyan-500/80"
                         : row.isCounterexample
-                        ? "bg-red-950/20 text-red-300 hover:bg-red-950/40"
-                        : "text-slate-400 hover:bg-slate-900/50"
+                          ? "bg-red-950/20 text-red-300 hover:bg-red-950/40"
+                          : "text-slate-400 hover:bg-slate-900/50"
                     }`}
                   >
                     {variables.map((v) => {
@@ -483,10 +532,10 @@ export function InteractiveTruthTable({ diagnosis }: InteractiveTruthTableProps)
                         row.valuations && v in row.valuations
                           ? row.valuations[v]
                           : v === "P"
-                          ? row.p
-                          : v === "Q"
-                          ? row.q
-                          : false;
+                            ? row.p
+                            : v === "Q"
+                              ? row.q
+                              : false;
                       return (
                         <td key={v} className="p-1.5 text-center">
                           <span

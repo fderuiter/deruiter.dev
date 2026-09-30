@@ -12,6 +12,60 @@
  * so raw `window.addEventListener` listeners and tests keep working.
  */
 
+/** Configuration for registering a workspace contextual command. */
+export interface WorkspaceActionPayload {
+  id: string;
+  title: string;
+  description?: string;
+  subToolId: string;
+  subToolName: string;
+  badge?: string;
+  tags?: string[];
+  shortcut?: string;
+  handler?: () => void | Promise<void>;
+}
+
+/** Payload for unregistering a workspace action. */
+export interface WorkspaceUnregisterPayload {
+  id: string;
+}
+
+/** Payload for executing a workspace action. */
+export interface WorkspaceExecutePayload {
+  id: string;
+  args?: Record<string, unknown>;
+}
+
+/** Payload for macro step recording. */
+export interface MacroRecordStepPayload {
+  actionId: string;
+  timestamp: number;
+  args?: Record<string, unknown>;
+}
+
+/** Payload for saving a macro sequence. */
+export interface MacroSavePayload {
+  name: string;
+  description?: string;
+  steps: Array<{
+    actionId: string;
+    timestamp?: number;
+    args?: Record<string, unknown>;
+  }>;
+}
+
+/** Payload for executing a saved macro. */
+export interface MacroExecutePayload {
+  macroId: string;
+}
+
+/** Payload for macro state updates. */
+export interface MacroStatePayload {
+  isRecording: boolean;
+  recordingName?: string;
+  recordedStepsCount: number;
+}
+
 /**
  * Registry of application events, mapping each event name to the type of its
  * `detail` payload. An event whose payload type includes `undefined` may be
@@ -30,6 +84,27 @@ export interface AppEventMap {
   meme_vault_unlocked_change: { unlocked: boolean };
   /** The arcade CRT calibration was saved. */
   "crt-calibration-changed": undefined;
+
+  /** Registers a sub-tool contextual workspace action. */
+  "workspace:register_action": WorkspaceActionPayload;
+  /** Unregisters a sub-tool contextual workspace action. */
+  "workspace:unregister_action": WorkspaceUnregisterPayload;
+  /** Triggers execution of a registered workspace action. */
+  "workspace:execute_action": WorkspaceExecutePayload;
+  /** Starts recording a new macro sequence. */
+  "macro:start_recording": { name?: string } | undefined;
+  /** Stops the active macro recording session. */
+  "macro:stop_recording": undefined;
+  /** Records a single action step into the active macro recording. */
+  "macro:record_step": MacroRecordStepPayload;
+  /** Saves a named macro sequence to persistent browser storage. */
+  "macro:save": MacroSavePayload;
+  /** Executes a saved macro by ID. */
+  "macro:execute": MacroExecutePayload;
+  /** Toggles macro recording mode on/off. */
+  "macro:toggle_recording": { name?: string } | undefined;
+  /** Emitted whenever macro recording state changes. */
+  "macro:state_changed": MacroStatePayload;
 }
 
 /** Name of a registered application event. */

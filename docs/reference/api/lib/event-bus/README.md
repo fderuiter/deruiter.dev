@@ -9,6 +9,13 @@
 ## Interfaces
 
 - [AppEventMap](interfaces/AppEventMap.md)
+- [MacroExecutePayload](interfaces/MacroExecutePayload.md)
+- [MacroRecordStepPayload](interfaces/MacroRecordStepPayload.md)
+- [MacroSavePayload](interfaces/MacroSavePayload.md)
+- [MacroStatePayload](interfaces/MacroStatePayload.md)
+- [WorkspaceActionPayload](interfaces/WorkspaceActionPayload.md)
+- [WorkspaceExecutePayload](interfaces/WorkspaceExecutePayload.md)
+- [WorkspaceUnregisterPayload](interfaces/WorkspaceUnregisterPayload.md)
 
 ## Type Aliases
 

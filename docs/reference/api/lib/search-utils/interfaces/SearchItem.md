@@ -8,6 +8,18 @@
 
 ## Properties
 
+### badge?
+
+> `optional` **badge?**: `string`
+
+***
+
+### description?
+
+> `optional` **description?**: `string`
+
+***
+
 ### id
 
 > **id**: `string`
@@ -17,6 +29,18 @@
 ### subtitle
 
 > **subtitle**: `string`
+
+***
+
+### tags?
+
+> `optional` **tags?**: `string`[]
+
+***
+
+### techStack?
+
+> `optional` **techStack?**: `string`[]
 
 ***
 

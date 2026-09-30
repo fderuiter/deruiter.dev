@@ -38,6 +38,7 @@ import {
 } from "@/lib/crf";
 import { useStudyAutosave } from "@/hooks/useStudyAutosave";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { useWorkspaceAction } from "@/hooks/useWorkspaceAction";
 import { StudioHeader } from "./StudioHeader";
 import { StudySpine, LeftSidebarTab } from "./LeftSidebar/StudySpine";
 import { WidgetPalette } from "./LeftSidebar/WidgetPalette";
@@ -549,6 +550,44 @@ export const CRFStudioContainer: React.FC = () => {
       replace: true,
     });
   }, [theme, setParam]);
+
+  useWorkspaceAction({
+    id: "crf-studio:validate-cdash",
+    title: "CRF Studio: Validate CDASH Rules",
+    description:
+      "Run automated CDASH rule verification and compliance diagnostics",
+    subToolId: "crf-studio",
+    subToolName: "CRF Studio",
+    badge: "Validation",
+    tags: ["cdash", "validation", "compliance", "crf"],
+    shortcut: "Alt+V",
+    handler: () => setIsDiagnosticsOpen(true),
+  });
+
+  useWorkspaceAction({
+    id: "crf-studio:export-odm",
+    title: "CRF Studio: Export ODM-XML Schema",
+    description:
+      "Export ODM-XML protocol definitions and case report form schemas",
+    subToolId: "crf-studio",
+    subToolName: "CRF Studio",
+    badge: "Export",
+    tags: ["odm", "export", "xml", "crf"],
+    shortcut: "Alt+E",
+    handler: () => setIsExportDocModalOpen(true),
+  });
+
+  useWorkspaceAction({
+    id: "crf-studio:toggle-theme",
+    title: "CRF Studio: Toggle Studio Theme",
+    description: "Switch CRF Studio between dark and light themes",
+    subToolId: "crf-studio",
+    subToolName: "CRF Studio",
+    badge: "Theme",
+    tags: ["theme", "dark", "light"],
+    shortcut: "Alt+T",
+    handler: handleToggleTheme,
+  });
 
   const { copy: copyShareLink } = useClipboard({
     successMessage:

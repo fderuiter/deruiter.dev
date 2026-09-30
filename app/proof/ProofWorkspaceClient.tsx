@@ -28,6 +28,7 @@ import { useAudio } from "@/components/providers/AudioProvider";
 import { useStudioHashParams } from "@/hooks/useStudioHashParams";
 import { useHotkeys } from "@/hooks/useHotkeys";
 import { useToast } from "@/hooks/useToast";
+import { useWorkspaceAction } from "@/hooks/useWorkspaceAction";
 import { NextPrevNav } from "@/components/ui/NextPrevNav";
 import { ProofHeader } from "@/components/proof/ProofHeader";
 import { ProofCanvas } from "@/components/proof/ProofCanvas";
@@ -1262,6 +1263,45 @@ export function ProofWorkspaceClient() {
       playSuccess();
     } catch {}
   };
+
+  useWorkspaceAction({
+    id: "proof:verify-premises",
+    title: "Proof Canvas: Verify Premises & Auto-Step Tactic",
+    description:
+      "Automatically discharge compatible deduction rules on active proof tree",
+    subToolId: "proof-canvas",
+    subToolName: "Proof Canvas",
+    badge: "Tactic Step",
+    tags: ["proof", "tactic", "logic", "verification"],
+    shortcut: "Alt+A",
+    handler: handleAutoStep,
+  });
+
+  useWorkspaceAction({
+    id: "proof:reset-layout",
+    title: "Proof Canvas: Reset Proof Node Layout",
+    description:
+      "Reset layout positions and alignment guides on active proof canvas",
+    subToolId: "proof-canvas",
+    subToolName: "Proof Canvas",
+    badge: "Layout",
+    tags: ["proof", "layout", "reset"],
+    shortcut: "Alt+R",
+    handler: handleResetLayout,
+  });
+
+  useWorkspaceAction({
+    id: "proof:toggle-snapping",
+    title: "Proof Canvas: Toggle Magnetic Snap-To-Grid",
+    description:
+      "Toggle magnetic grid snapping for proof canvas node positioning",
+    subToolId: "proof-canvas",
+    subToolName: "Proof Canvas",
+    badge: "Grid",
+    tags: ["proof", "snapping", "grid"],
+    shortcut: "G",
+    handler: toggleSnapping,
+  });
 
   const handleDeleteStep = (stepOrNode: number | string) => {
     const result = pruneStepOrNode(stepOrNode, edges, activeTheorem);

@@ -2,6 +2,10 @@ export interface SearchItem {
   id: string;
   title: string;
   subtitle: string;
+  description?: string;
+  badge?: string;
+  techStack?: string[];
+  tags?: string[];
 }
 
 export function filterFuzzySearch<T extends SearchItem>(
@@ -10,15 +14,32 @@ export function filterFuzzySearch<T extends SearchItem>(
 ): T[] {
   if (!query) return items;
   const cleanQuery = query.toLowerCase().trim();
-  
+
   if (!cleanQuery) return items;
 
   return items.filter((item) => {
     // Normalize strings: handle special characters, empty fields
     const titleNorm = (item.title || "").toLowerCase();
     const subtitleNorm = (item.subtitle || "").toLowerCase();
-    
-    return titleNorm.includes(cleanQuery) || subtitleNorm.includes(cleanQuery);
+    const descriptionNorm = (item.description || "").toLowerCase();
+    const badgeNorm = (item.badge || "").toLowerCase();
+    const techStackNorm = Array.isArray(item.techStack)
+      ? item.techStack.join(" ").toLowerCase()
+      : "";
+    const tagsNorm = Array.isArray(item.tags)
+      ? item.tags.join(" ").toLowerCase()
+      : typeof (item.tags as unknown) === "string"
+        ? (item.tags as unknown as string).toLowerCase()
+        : "";
+
+    return (
+      titleNorm.includes(cleanQuery) ||
+      subtitleNorm.includes(cleanQuery) ||
+      descriptionNorm.includes(cleanQuery) ||
+      badgeNorm.includes(cleanQuery) ||
+      techStackNorm.includes(cleanQuery) ||
+      tagsNorm.includes(cleanQuery)
+    );
   });
 }
 
@@ -50,28 +71,36 @@ export function getLevenshteinDistance(a: string, b: string): number {
   return tmp[a.length][b.length];
 }
 
-export function getClosestMatches<T extends { id: string; slug: string; title: string; primary_language?: string; tags?: string }>(
-  path: string,
-  items: T[]
-): T[] {
+export function getClosestMatches<
+  T extends {
+    id: string;
+    slug: string;
+    title: string;
+    primary_language?: string;
+    tags?: string;
+  },
+>(path: string, items: T[]): T[] {
   if (!path || items.length === 0) return items.slice(0, 3);
 
   // Clean the path (remove leading/trailing slashes, convert to lowercase)
   const cleanPath = path.toLowerCase().replace(/^\/+|\/+$/g, "");
-  
+
   // Extract segments/tokens from the path
   const pathSegments = cleanPath.split("/").filter(Boolean);
   const lastSegment = pathSegments[pathSegments.length - 1] || "";
-  
+
   // Tokenize the whole path for keyword matching (non-alphanumeric split)
-  const pathTokens = cleanPath.split(/[^a-z0-9]+/).filter(t => t.length > 1);
+  const pathTokens = cleanPath.split(/[^a-z0-9]+/).filter((t) => t.length > 1);
 
   const scored = items.map((item) => {
     let score = 0;
     const slugLower = (item.slug || "").toLowerCase();
     const titleLower = (item.title || "").toLowerCase();
     const langLower = (item.primary_language || "").toLowerCase();
-    const tagsLower = (item.tags || "").toLowerCase().split(",").map(t => t.trim());
+    const tagsLower = (item.tags || "")
+      .toLowerCase()
+      .split(",")
+      .map((t) => t.trim());
 
     // 1. Exact or close slug/title matches
     if (slugLower === cleanPath || slugLower === lastSegment) {
@@ -84,13 +113,19 @@ export function getClosestMatches<T extends { id: string; slug: string; title: s
     // 2. Substring matches
     if (cleanPath.includes(slugLower) || slugLower.includes(cleanPath)) {
       score += 60;
-    } else if (lastSegment && (lastSegment.includes(slugLower) || slugLower.includes(lastSegment))) {
+    } else if (
+      lastSegment &&
+      (lastSegment.includes(slugLower) || slugLower.includes(lastSegment))
+    ) {
       score += 50;
     }
 
     if (cleanPath.includes(titleLower) || titleLower.includes(cleanPath)) {
       score += 50;
-    } else if (lastSegment && (lastSegment.includes(titleLower) || titleLower.includes(lastSegment))) {
+    } else if (
+      lastSegment &&
+      (lastSegment.includes(titleLower) || titleLower.includes(lastSegment))
+    ) {
       score += 40;
     }
 

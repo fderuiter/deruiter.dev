@@ -5,6 +5,75 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+Everything merged to `main` after 0.4.0 (2026-09-24) and shipped in the
+2026-09-29 production release. The version number is set when the release is
+tagged.
+
+### Added
+
+- Trial & Error campaign: three acts linked into one run, the timed FDA
+  Information Request, act two and three content, the CSR Lock boss, SOP relic
+  triggers, SAP Amendments, seeded protocol deviations, endless post-marketing
+  rounds, a skippable guided first Blind, the hand cheat sheet, per-Blind score
+  log and boss intro (#1164, #1165, #1166, #1167, #1170, #1171, #1172, #1173,
+  #1174, #1183, #1197, #1239, #1397).
+- Study Director cabinet at `/arcade/study-director`: ADR 0054, the
+  deterministic domain core, archetypes, branching events, the audit mechanic,
+  database lock, evaluations and FDA inspection, and routine-work events
+  (#1289, #1362, #1363, #1373, #1379, #1390).
+- CRF Studio: document-level EDC simulation state, functional protocol audit
+  middleware and audit log, and USDM import validation with audit provenance
+  (#1260, #1261, #1262, #1276).
+- Search and discovery: static `/llms.txt` and `/llms-full.txt` manifests, an
+  accessible FAQ accordion with FAQPage schema, engineering bridges linking
+  tools to case studies and ADRs, brand fonts and artifact-enriched social
+  cards, and the viewport theme color (#1332, #1405, #1413, #1421, #1430;
+  ADR 0053).
+- Event-driven sub-daily email retries through Upstash QStash (#1337).
+- Shared UI and hook primitives: `ToastProvider`, `useDebounce`,
+  `useThrottle`, `useSafeTimeout`, `useInterval`, `scrollToElement`,
+  `apiClient`, `downloadFile` and locale-pinned number formatting (#1136,
+  #1422, #1444, #1465, #1466, #1476).
+- Game changes: Retro Labyrinth exits lock until the room objective is done,
+  Garmin Watch ramps difficulty and puts costs on pops and GC, Laser Loon
+  bosses telegraph volleys, Quasi-Puzzler Story Mode gets a real double RAM
+  budget (#1191, #1192, #1399, #1453, #1454).
+- Tooling: a 14-day pre-expiry warning for audit overrides, Prisma schema and
+  environment checks in doctor, a daily scheduled security audit, and
+  shift-left accessibility audits (#1280, #1295, #1301, #1304).
+
+### Changed
+
+- Mobile routes use dedicated touch views with edge middleware redirection
+  (#1264).
+- `createApiHandler` evaluates `options.auth` inline (#1266).
+- Logging, storage and timer access now go through the shared logger,
+  `safeStorage` and safe-timer hooks (#1136, #1137, #1467).
+- npm install scripts use the native `allowScripts` configuration, and dx
+  scripts run only locally installed binaries (#1294, #1429).
+
+### Performance
+
+- Composite indexes for `CaseStudy`, `CaseStudyFeedback` and `BlogPost`, and a
+  reordered `BlogPostReaction` unique constraint (#1334, #1335).
+- The email retry batch is leased in one `SKIP LOCKED` statement, the
+  case-study search index projects summary columns, and telemetry reads use a
+  10-second in-memory cache (#1300, #1424, #1433).
+
+### Fixed
+
+- Playtest fixes across Garmin Watch, Neuro Simulator, Quasi-Puzzler, Laser
+  Loon, Clinical Trial Chaos, Working with Duck, Meme Vault and the arcade
+  hub: score farming, accessibility, 320px layout, copy that no longer matched
+  the game, and persistence (#1398, #1400, #1404, #1407, #1408, #1419, #1438,
+  #1462, #1463, #1478, #1479).
+- Toast viewport landmark and provenance label contrast for WCAG AA (#1447,
+  #1481).
+- Case-study tags are documented as the comma-separated string the API
+  returns (#1439).
+
 ## [0.4.0] - 2026-09-24
 
 The first release since the repository became public and adopted the Apache-2.0

@@ -98,7 +98,10 @@ describe("engineering bridges (#1255)", () => {
       name: /Architecture & Engine Notes/i,
     });
     expect(link.className).toContain("hidden");
-    expect(link.className).toContain("xl:inline-flex");
+    // From 2xl only: at 1280 and 1440 the cabinet leaves no gutter wide
+    // enough, and the pill overlapped its top-right border (#1551).
+    expect(link.className).toContain("2xl:inline-flex");
+    expect(link.className).not.toMatch(/(^|\s)xl:inline-flex/);
     expect(link.className).toContain("active:scale-[0.98]");
     expect(link.className).not.toMatch(/z-\[/);
   });

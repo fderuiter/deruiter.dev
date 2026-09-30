@@ -41,11 +41,13 @@ const config = {
     "lib/crf/cross-visit-rules.ts",
     "lib/crf/form-health.ts",
   ],
-  // Ratchet (#960, #968): threshold raised to 65% for telemetry and clinical core expansion
+  // Ratchet (#960, #968): break was 45, then 53, then 65; raised to 75 after
+  // CI and local runs both measured 79.64% on 2026-09-30 (about 4.6 points of
+  // headroom for timeout-classified mutants). Never lower it; target is 80.
   thresholds: {
     high: 85,
     low: 75,
-    break: 65,
+    break: 75,
   },
   concurrency: 4,
   timeoutMS: 2000,

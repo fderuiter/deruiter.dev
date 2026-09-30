@@ -6,7 +6,7 @@
 
 set -eu
 
-if [ "${ALLOW_DANGEROUS_GIT:-0}" = "1" ] || [ "$(git config --get hooks.allowdangerousgit 2>/dev/null)" = "true" ]; then
+if [ "${ALLOW_DANGEROUS_GIT:-0}" = "1" ]; then
   exit 0
 fi
 

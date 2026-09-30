@@ -397,35 +397,25 @@ export async function flushOfflineQueue(): Promise<{
         failed++;
         let failureReason = `HTTP ${res.status}: Client Error`;
         try {
-          const targetRes = typeof res.clone === "function" ? res.clone() : res;
-          let data: unknown;
-          if (typeof targetRes.json === "function") {
-            try {
-              data = await targetRes.json();
-            } catch {
-              if (typeof targetRes.text === "function") {
-                data = await targetRes.text();
-              }
-            }
-          } else if (typeof targetRes.text === "function") {
-            data = await targetRes.text();
-          }
-
+          const data: unknown =
+            res.body ??
+            (res.error ? { error: res.error, details: res.details } : null);
           if (data && typeof data === "object") {
             const obj = data as Record<string, unknown>;
             if (typeof obj.message === "string") failureReason = obj.message;
             else if (typeof obj.error === "string") failureReason = obj.error;
             else if (
               Array.isArray(obj.details) &&
-              typeof obj.details[0]?.message === "string"
+              typeof (obj.details[0] as { message?: unknown })?.message ===
+                "string"
             ) {
-              failureReason = obj.details[0].message;
+              failureReason = (obj.details[0] as { message: string }).message;
             }
           } else if (typeof data === "string" && data.trim().length > 0) {
             failureReason = data;
           }
         } catch {
-          // Fallback to default failureReason if reading fails
+          // ignore parsing error
         }
 
         const deadLetterItem: DeadLetterItem = {

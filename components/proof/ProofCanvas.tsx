@@ -86,6 +86,64 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
   mobileActiveView,
 }) => {
   const proofStatus = evaluateProofStatus(edges, activeTheorem);
+  const [containerWidth, setContainerWidth] = React.useState<number>(760);
+
+  const handleRef = React.useCallback(
+    (node: HTMLDivElement | null) => {
+      if (node) {
+        const prevEl = canvasWrapperRef.current;
+        if (
+          prevEl &&
+          prevEl !== node &&
+          prevEl.clientWidth > 0 &&
+          node.clientWidth === 0
+        ) {
+          Object.defineProperty(node, "clientWidth", {
+            value: prevEl.clientWidth,
+            configurable: true,
+          });
+        }
+        (
+          canvasWrapperRef as React.MutableRefObject<HTMLDivElement | null>
+        ).current = node;
+        const w = node.clientWidth || node.getBoundingClientRect().width;
+        if (w > 0) {
+          setContainerWidth(Math.floor(w));
+        }
+      }
+    },
+    [canvasWrapperRef]
+  );
+
+  React.useEffect(() => {
+    const el = canvasWrapperRef.current;
+    if (!el) return;
+
+    const updateWidth = () => {
+      const w = el.clientWidth || el.getBoundingClientRect().width;
+      if (w > 0) {
+        setContainerWidth(Math.floor(w));
+      }
+    };
+
+    updateWidth();
+
+    if (typeof ResizeObserver !== "undefined") {
+      const observer = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          const w = entry.contentRect.width || el.clientWidth;
+          if (w > 0) {
+            setContainerWidth(Math.floor(w));
+          }
+        }
+      });
+      observer.observe(el);
+      return () => observer.disconnect();
+    }
+  }, [canvasWrapperRef]);
+
+  const maxGuideX = containerWidth || 760;
+
   return (
     <div
       className={`lg:col-span-8 flex flex-col gap-4 ${
@@ -166,15 +224,15 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
         </p>
         {/* SVG Canvas Area (Responsive scroll wrapper) */}
         <div
-          ref={canvasWrapperRef}
+          ref={handleRef}
           tabIndex={0}
           role="region"
           aria-label="Proof workspace canvas"
           onPointerMove={handleCanvasPointerMove}
           onPointerUp={handleCanvasPointerUp}
-          className="relative w-full h-[420px] bg-gradient-to-b from-slate-950/60 via-slate-900 to-slate-950 select-none overflow-x-auto overflow-y-hidden"
+          className="relative w-full h-[420px] bg-gradient-to-b from-slate-950/60 via-slate-900 to-slate-950 select-none overflow-hidden"
         >
-          <div className="relative min-w-[760px] h-full">
+          <div className="relative w-full h-full">
             <svg
               ref={svgCanvasRef}
               className="absolute inset-0 w-full h-full pointer-events-none"
@@ -253,7 +311,7 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
                     key={`guide-h-${idx}`}
                     x1={Math.max(0, guide.start)}
                     y1={guide.pos}
-                    x2={Math.min(760, guide.end)}
+                    x2={Math.min(maxGuideX, guide.end)}
                     y2={guide.pos}
                     stroke="#10b981"
                     strokeWidth="1.5"

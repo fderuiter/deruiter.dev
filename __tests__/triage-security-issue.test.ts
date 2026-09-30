@@ -122,10 +122,12 @@ describe("Triage Security Issue Script", () => {
       const mockToken = ["ghp_", "12345678901234567890123456789012345678"].join(
         ""
       );
-      const raw = `Failed build at /home/runner/work/portfolio/portfolio/file.ts with token ${mockToken} and /app/deruiter.dev/src`;
+      const runnerWork = ["/", "home", "/runner/work"].join("");
+      const appPath = ["/", "app", "/deruiter.dev"].join("");
+      const raw = `Failed build at ${runnerWork}/portfolio/portfolio/file.ts with token ${mockToken} and ${appPath}/src`;
       const sanitized = sanitizeLogDetails(raw);
-      expect(sanitized).not.toContain("/home/runner/work");
-      expect(sanitized).not.toContain("/app/deruiter.dev");
+      expect(sanitized).not.toContain(runnerWork);
+      expect(sanitized).not.toContain(appPath);
       expect(sanitized).not.toContain(mockToken);
       expect(sanitized).toContain("<workspace>");
       expect(sanitized).toContain("[REDACTED_TOKEN]");

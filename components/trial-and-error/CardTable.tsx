@@ -41,7 +41,11 @@ import {
   type TableEvent,
   type TableState,
   RELIC_PHASE_LABELS,
+  recordDiscoveries,
+  recordRun,
   relicPhase,
+  summarizeRun,
+  utcDate,
 } from "@/lib/trial-and-error";
 import { useAnnouncer } from "@/hooks/useAnnouncer";
 import { isAnyFocusTrapActive, useFocusTrap } from "@/hooks/useFocusTrap";
@@ -57,6 +61,8 @@ import {
 } from "@/components/trial-and-error/useRunSave";
 import { RunInfo } from "@/components/trial-and-error/RunInfo";
 import { NewRun } from "@/components/trial-and-error/NewRun";
+import { Codex } from "@/components/trial-and-error/Codex";
+import { updateCodex, useCodex } from "@/components/trial-and-error/useCodex";
 import { SeedShare } from "@/components/trial-and-error/SeedShare";
 import {
   clearChallengeHash,
@@ -461,6 +467,31 @@ export function CardTable({
       writeRunSave(log);
     }
   }, [persist, offerResume, runOver, log]);
+  // The Codex (#1529) records what this browser's runs have shown, and each
+  // finished run's summary. Only a persisted campaign table keeps one; the
+  // guided Blind and embedded tables never write it.
+  const codexEnabled = persist && !endAction;
+  const codex = useCodex(codexEnabled);
+  const logOrigin = log.origin;
+  useEffect(() => {
+    if (!codexEnabled || offerResume) return;
+    updateCodex((current) =>
+      recordDiscoveries(current, act, run, {
+        actId: log.actId,
+        seed: log.seed,
+        ...(logOrigin ? { origin: logOrigin } : {}),
+      })
+    );
+  }, [codexEnabled, offerResume, act, run, log.actId, log.seed, logOrigin]);
+  // A finished run is summarized once, from its log, into the history.
+  const recordedRun = useRef<RunLog | null>(null);
+  useEffect(() => {
+    if (!codexEnabled || offerResume || !runOver) return;
+    if (log.actions.length === 0 || recordedRun.current === log) return;
+    recordedRun.current = log;
+    const entry = summarizeRun(act, log, utcDate(Date.now()));
+    if (entry) updateCodex((current) => recordRun(current, entry));
+  }, [codexEnabled, offerResume, runOver, act, log]);
   const scenario = runView.blind;
   // The reducer state goes only to domain helpers and the tutorial; every
   // render decision reads the derived view (#996).
@@ -525,6 +556,18 @@ export function CardTable({
   const [detailId, setDetailId] = useState<string | null>(null);
   const [runInfoOpen, setRunInfoOpen] = useState(false);
   const [newRunOpen, setNewRunOpen] = useState(false);
+  /** Where the Codex was opened from, while it is open. */
+  const [codexFrom, setCodexFrom] = useState<"RUN_INFO" | "END" | null>(null);
+  const runInfoButtonRef = useRef<HTMLButtonElement>(null);
+  const closeCodex = () => {
+    const from = codexFrom;
+    setCodexFrom(null);
+    // Opened from Run Info, the Codex's trigger closed with Run Info, so
+    // focus returns to the Run Info button after the trap releases it.
+    if (from === "RUN_INFO") {
+      window.setTimeout(() => runInfoButtonRef.current?.focus(), 0);
+    }
+  };
   // A challenge link opens the New Run dialog on a persisted table, once any
   // saved run's Resume choice is made; the guided Blind never takes one.
   const hashChallenge = useChallengeHash();
@@ -963,6 +1006,7 @@ export function CardTable({
             ))}
           </div>
           <button
+            ref={runInfoButtonRef}
             type="button"
             onClick={() => setRunInfoOpen(true)}
             aria-haspopup="dialog"
@@ -2203,6 +2247,17 @@ export function CardTable({
                         New run…
                       </button>
                     )}
+                    {codexEnabled && (
+                      <button
+                        type="button"
+                        onClick={() => setCodexFrom("END")}
+                        aria-haspopup="dialog"
+                        className={`${BUTTON_BASE} border-zinc-600 text-zinc-200 hover:bg-zinc-800`}
+                        data-testid="end-codex"
+                      >
+                        Codex
+                      </button>
+                    )}
                   </div>
                   {!endAction && (
                     <div className="mx-auto mt-4 max-w-sm text-left">
@@ -2334,6 +2389,14 @@ export function CardTable({
                   setNewRunOpen(true);
                 }
           }
+          onCodex={
+            codexEnabled
+              ? () => {
+                  setRunInfoOpen(false);
+                  setCodexFrom("RUN_INFO");
+                }
+              : undefined
+          }
           relicSlots={view.relicSlots}
           relics={view.relics}
           accessLog={view.accessLog}
@@ -2341,6 +2404,8 @@ export function CardTable({
           onClose={() => setRunInfoOpen(false)}
         />
       )}
+
+      {codexFrom && <Codex plan={act} codex={codex} onClose={closeCodex} />}
 
       {newRunShown && (
         <NewRun

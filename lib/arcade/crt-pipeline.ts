@@ -10,6 +10,7 @@
 import { CRTThemeConfig } from "@/lib/dungeon/types";
 import { clamp } from "../game-utils";
 import { getMatchMediaMatches } from "@/hooks/useMediaQuery";
+import { emitAppEvent } from "@/lib/event-bus";
 import { safeGetItem, safeSetRawItem } from "@/lib/safe-storage";
 
 export type PhosphorMaskType =
@@ -243,7 +244,7 @@ export function saveCRTCalibration(config: CRTCalibrationConfig): void {
   try {
     // Raw write keeps the stored bytes identical to the pre-safeStorage format.
     if (safeSetRawItem(CRT_CALIBRATION_STORAGE_KEY, JSON.stringify(config))) {
-      window.dispatchEvent(new Event("crt-calibration-changed"));
+      emitAppEvent("crt-calibration-changed");
     }
   } catch {
     // Ignore storage errors

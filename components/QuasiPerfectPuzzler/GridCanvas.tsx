@@ -129,7 +129,7 @@ export const GridCanvas: React.FC<GridCanvasProps> = ({
             Grid Canvas Control
           </span>
         </div>
-        <span className="text-[10px] text-zinc-500">
+        <span className="text-[10px] text-zinc-400">
           {rows}×{cols} Grid ({effectiveTiles.length} tiles)
         </span>
       </div>

@@ -128,7 +128,7 @@ export const ASTNodeView: React.FC<ASTNodeViewProps> = React.memo(
           whileTap={{ scale: 0.97 }}
         >
           {/* Node Type Pill Indicator */}
-          <span className="text-[9px] uppercase tracking-wider opacity-60 font-sans font-semibold">
+          <span className="text-[9px] uppercase tracking-wider font-sans font-semibold">
             {getTypePill()}
           </span>
 

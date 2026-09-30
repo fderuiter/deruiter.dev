@@ -94,8 +94,8 @@ export const QuasiPuzzlerClient: React.FC = () => {
               instructions="Apply tactics to a proof tree and work your way to a complete proof. You can skip a goal with “sorry,” but the score will notice."
               controls={[
                 { key: "Click / Drag", action: "Apply Tactic" },
-                { key: "Z / Y", action: "Undo / Redo" },
-                { key: "R", action: "Reset Level" },
+                { key: "Ctrl/⌘ + Z / Y", action: "Undo / Redo" },
+                { key: "R / M", action: "Reset Level / Switch Mode" },
                 { key: "H / C / B", action: "Hints / IDE / Brief" },
                 { key: "sorry", action: "Admit Goal" },
               ]}

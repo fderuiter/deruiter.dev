@@ -20,9 +20,7 @@ export const MAX_SHAKE_PX = 6;
 
 /** A CSS shake amplitude for an intensity, clamped to [0, MAX_SHAKE_PX]. */
 export function shakeAmplitude(intensity: number): string {
-  const px = Number.isFinite(intensity)
-    ? clamp(intensity, 0, MAX_SHAKE_PX)
-    : 0;
+  const px = Number.isFinite(intensity) ? clamp(intensity, 0, MAX_SHAKE_PX) : 0;
   return `${px}px`;
 }
 

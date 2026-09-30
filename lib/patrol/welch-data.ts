@@ -1680,9 +1680,7 @@ export function interpolateSkierPosition(
     return { x: points[0].x, y: points[0].y, angleRad: 0 };
   }
 
-  const clampedProgress = Number.isFinite(progress)
-    ? clamp(progress, 0, 1)
-    : 0;
+  const clampedProgress = Number.isFinite(progress) ? clamp(progress, 0, 1) : 0;
 
   // Segment distances
   const distances: number[] = [];

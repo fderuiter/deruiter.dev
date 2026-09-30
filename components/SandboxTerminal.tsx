@@ -16,6 +16,8 @@ import {
 import { usePersistentState } from "@/hooks/usePersistentState";
 import { useSafeTimeout, type SafeTimeoutId } from "@/hooks/useSafeTimeout";
 import { logger } from "@/lib/logger";
+import { emitAppEvent } from "@/lib/event-bus";
+import { useAppEvent } from "@/hooks/useAppEvent";
 import { useAnnouncer } from "@/components/providers/A11yProvider";
 import { useAudio } from "@/components/providers/AudioProvider";
 import {
@@ -435,9 +437,7 @@ export const SandboxTerminal: React.FC<SandboxTerminalProps> = ({
           unlockAchievement("terminal-cowboy");
           setVaultUnlocked(true);
           playMemeSound("fanfare");
-          if (typeof window !== "undefined") {
-            window.dispatchEvent(new CustomEvent("trigger_retro_chaos"));
-          }
+          emitAppEvent("trigger_retro_chaos");
           setLogs((prev) => [
             ...prev,
             {
@@ -755,9 +755,7 @@ export const SandboxTerminal: React.FC<SandboxTerminalProps> = ({
           logger.error("terminal.run: command must be a string.");
           return;
         }
-        window.dispatchEvent(
-          new CustomEvent("terminal:run", { detail: { command: cmdText } })
-        );
+        emitAppEvent("terminal:run", { command: cmdText });
       },
       help: () => {
         logger.info(
@@ -798,31 +796,20 @@ export const SandboxTerminal: React.FC<SandboxTerminalProps> = ({
     };
   }, [slug]);
 
-  // Handle incoming terminal:run custom events
-  useEffect(() => {
-    const handleRunEvent = (e: Event) => {
-      const customEvent = e as CustomEvent<{ command: string }>;
-      if (!customEvent.detail || typeof customEvent.detail.command !== "string")
-        return;
+  // Handle incoming terminal:run events. The detail is still checked at
+  // runtime because anything on the page (or a console user) can dispatch it.
+  useAppEvent("terminal:run", (detail) => {
+    if (!detail || typeof detail.command !== "string") return;
 
-      const command = customEvent.detail.command;
+    if (isExecuting || isTyping) {
+      logger.warn(
+        "Terminal is currently executing a command or typing. Please wait."
+      );
+      return;
+    }
 
-      if (isExecuting || isTyping) {
-        logger.warn(
-          "Terminal is currently executing a command or typing. Please wait."
-        );
-        return;
-      }
-
-      typeAndExecute(command);
-    };
-
-    window.addEventListener("terminal:run", handleRunEvent);
-
-    return () => {
-      window.removeEventListener("terminal:run", handleRunEvent);
-    };
-  }, [isExecuting, isTyping, typeAndExecute]);
+    typeAndExecute(detail.command);
+  });
 
   // Clean up the typing interval on unmount; useSafeTimeout clears the
   // pending delays itself.

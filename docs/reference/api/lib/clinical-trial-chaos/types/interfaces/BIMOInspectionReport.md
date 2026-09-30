@@ -16,13 +16,17 @@
 
 ### cleanRate
 
-> **cleanRate**: `number`
+> **cleanRate**: `number` \| `null`
+
+Percentage of submitted CRFs that were clean, or `null` when none were submitted.
 
 ***
 
 ### complianceRate
 
-> **complianceRate**: `number`
+> **complianceRate**: `number` \| `null`
+
+Percentage of submitted CRFs that were clean, or `null` when none were submitted.
 
 ***
 

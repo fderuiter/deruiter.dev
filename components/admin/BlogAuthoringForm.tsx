@@ -16,6 +16,11 @@ import {
 } from "@tabler/icons-react";
 import Link from "next/link";
 import { apiClient, type ApiClientResponse } from "@/lib/api-client";
+import {
+  BlogDraftCreateSchema,
+  BlogDraftUpdateSchema,
+  toFieldErrors,
+} from "@/lib/schemas";
 
 interface BlogPostFormData {
   id?: string;
@@ -38,6 +43,42 @@ function throwIfFailed<T>(res: ApiClientResponse<T>, fallback: string): void {
   if (!res.ok) {
     throw new Error(res.error || res.details[0]?.message || fallback);
   }
+}
+
+/**
+ * Editable fields in visual order, mapped to their input ids, so the first
+ * invalid one can take focus and each error can be tied to its input.
+ */
+const FIELD_INPUT_IDS = [
+  ["title", "blog-title"],
+  ["slug", "blog-slug"],
+  ["pillar", "blog-pillar"],
+  ["dek", "blog-dek"],
+  ["tags", "blog-tags"],
+  ["heroImageUrl", "blog-hero-url"],
+  ["body", "blog-body"],
+] as const;
+
+type BlogFormField = (typeof FIELD_INPUT_IDS)[number][0];
+
+const INPUT_BASE_CLASS =
+  "w-full px-3 py-2 rounded bg-[#13151a] border text-zinc-100 focus:outline-none";
+
+/** Border classes for an input, red while its field has an error. */
+function borderClass(hasError: boolean): string {
+  return hasError
+    ? "border-red-500/60 focus:border-red-500"
+    : "border-white/10 focus:border-amber-500";
+}
+
+/** The inline message for one field, referenced by its input's aria-describedby. */
+function FieldError({ id, message }: { id: string; message?: string }) {
+  if (!message) return null;
+  return (
+    <span id={id} className="text-[11px] font-mono text-red-400">
+      {message}
+    </span>
+  );
 }
 
 interface BlogAuthoringFormProps {
@@ -68,6 +109,9 @@ export function BlogAuthoringForm({
   const [activeTab, setActiveTab] = useState<"edit" | "preview">("edit");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<
+    Partial<Record<BlogFormField, string>>
+  >({});
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const deriveSlug = (text: string) => {
@@ -78,21 +122,40 @@ export function BlogAuthoringForm({
       .replace(/^-+|-+$/g, "");
   };
 
+  const clearFieldError = (...fields: BlogFormField[]) => {
+    if (fields.some((field) => fieldErrors[field])) {
+      setFieldErrors((prev) => {
+        const next = { ...prev };
+        for (const field of fields) delete next[field];
+        return next;
+      });
+    }
+  };
+
+  /** Props tying an input to its inline error for assistive technology. */
+  const errorProps = (field: BlogFormField, inputId: string) => ({
+    "aria-invalid": !!fieldErrors[field],
+    "aria-describedby": fieldErrors[field] ? `${inputId}-error` : undefined,
+  });
+
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setTitle(val);
     if (!manualSlug) {
       setSlug(deriveSlug(val));
+      clearFieldError("title", "slug");
+    } else {
+      clearFieldError("title");
     }
   };
 
   const handleSlugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setManualSlug(true);
     setSlug(e.target.value);
+    clearFieldError("slug");
   };
 
   const handleSubmit = async (publishTargetState: boolean) => {
-    setSaving(true);
     setError(null);
     setSuccessMessage(null);
 
@@ -119,6 +182,30 @@ export function BlogAuthoringForm({
       tags: tagArray,
       heroImageUrl: heroImageUrl.trim() || null,
     };
+    if (!isNew) payload.published = publishTargetState;
+
+    // Validate against the contract the admin blog routes enforce, so slug
+    // format, missing tags and length bounds are caught before a roundtrip.
+    const parsed = isNew
+      ? BlogDraftCreateSchema.safeParse(payload)
+      : BlogDraftUpdateSchema.safeParse(payload);
+    if (!parsed.success) {
+      const errors = toFieldErrors(parsed.error) as Partial<
+        Record<BlogFormField, string>
+      >;
+      setFieldErrors(errors);
+      const firstInvalid = FIELD_INPUT_IDS.find(([field]) => errors[field]);
+      setError(
+        firstInvalid
+          ? "Please fix the highlighted fields before saving."
+          : (parsed.error.issues[0]?.message ?? "Please check the form.")
+      );
+      if (firstInvalid) document.getElementById(firstInvalid[1])?.focus();
+      return;
+    }
+
+    setFieldErrors({});
+    setSaving(true);
 
     try {
       if (isNew) {
@@ -151,8 +238,6 @@ export function BlogAuthoringForm({
         }, 1000);
       } else {
         // Edit existing post/draft
-        payload.published = publishTargetState;
-
         const res = await apiClient.patch<BlogMutationResponse>(
           `/api/admin/blog/${initialData?.id}`,
           payload
@@ -257,7 +342,10 @@ export function BlogAuthoringForm({
 
       {/* Notifications */}
       {error && (
-        <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-mono flex items-center gap-2">
+        <div
+          role="alert"
+          className="p-4 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-mono flex items-center gap-2"
+        >
           <IconAlertCircle className="w-5 h-5 shrink-0" />
           <span>{error}</span>
         </div>
@@ -295,8 +383,10 @@ export function BlogAuthoringForm({
                 value={title}
                 onChange={handleTitleChange}
                 placeholder="e.g. Formal Verification in WebAssembly Runtimes"
-                className="w-full px-3 py-2 rounded bg-[#13151a] border border-white/10 text-zinc-100 font-mono text-sm focus:border-amber-500 focus:outline-none"
+                {...errorProps("title", "blog-title")}
+                className={`${INPUT_BASE_CLASS} ${borderClass(!!fieldErrors.title)} font-mono text-sm`}
               />
+              <FieldError id="blog-title-error" message={fieldErrors.title} />
             </div>
 
             {/* Slug */}
@@ -314,8 +404,10 @@ export function BlogAuthoringForm({
                 value={slug}
                 onChange={handleSlugChange}
                 placeholder="formal-verification-wasm"
-                className="w-full px-3 py-2 rounded bg-[#13151a] border border-white/10 text-zinc-100 font-mono text-sm focus:border-amber-500 focus:outline-none"
+                {...errorProps("slug", "blog-slug")}
+                className={`${INPUT_BASE_CLASS} ${borderClass(!!fieldErrors.slug)} font-mono text-sm`}
               />
+              <FieldError id="blog-slug-error" message={fieldErrors.slug} />
               <span className="text-[10px] text-zinc-500 font-mono">
                 Canonical URL: /blog/{slug || "slug"}
               </span>
@@ -333,8 +425,12 @@ export function BlogAuthoringForm({
               <select
                 id="blog-pillar"
                 value={pillar}
-                onChange={(e) => setPillar(e.target.value as ContentPillar)}
-                className="w-full px-3 py-2 rounded bg-[#13151a] border border-white/10 text-zinc-100 font-mono text-sm focus:border-amber-500 focus:outline-none"
+                onChange={(e) => {
+                  setPillar(e.target.value as ContentPillar);
+                  clearFieldError("pillar");
+                }}
+                {...errorProps("pillar", "blog-pillar")}
+                className={`${INPUT_BASE_CLASS} ${borderClass(!!fieldErrors.pillar)} font-mono text-sm`}
               >
                 {CONTENT_PILLARS.map((p) => (
                   <option key={p} value={p}>
@@ -342,6 +438,7 @@ export function BlogAuthoringForm({
                   </option>
                 ))}
               </select>
+              <FieldError id="blog-pillar-error" message={fieldErrors.pillar} />
             </div>
 
             {/* Dek / Standfirst Summary */}
@@ -358,10 +455,15 @@ export function BlogAuthoringForm({
                 required
                 rows={2}
                 value={dek}
-                onChange={(e) => setDek(e.target.value)}
+                onChange={(e) => {
+                  setDek(e.target.value);
+                  clearFieldError("dek");
+                }}
                 placeholder="A concise 1-2 sentence standfirst summary displayed on index cards and OpenGraph metadata."
-                className="w-full px-3 py-2 rounded bg-[#13151a] border border-white/10 text-zinc-100 font-sans text-sm focus:border-amber-500 focus:outline-none"
+                {...errorProps("dek", "blog-dek")}
+                className={`${INPUT_BASE_CLASS} ${borderClass(!!fieldErrors.dek)} font-sans text-sm`}
               />
+              <FieldError id="blog-dek-error" message={fieldErrors.dek} />
             </div>
 
             {/* Tags */}
@@ -377,10 +479,15 @@ export function BlogAuthoringForm({
                 type="text"
                 required
                 value={tags}
-                onChange={(e) => setTags(e.target.value)}
+                onChange={(e) => {
+                  setTags(e.target.value);
+                  clearFieldError("tags");
+                }}
                 placeholder="security, runtime, formal-methods"
-                className="w-full px-3 py-2 rounded bg-[#13151a] border border-white/10 text-zinc-100 font-mono text-sm focus:border-amber-500 focus:outline-none"
+                {...errorProps("tags", "blog-tags")}
+                className={`${INPUT_BASE_CLASS} ${borderClass(!!fieldErrors.tags)} font-mono text-sm`}
               />
+              <FieldError id="blog-tags-error" message={fieldErrors.tags} />
             </div>
 
             {/* Hero Image URL */}
@@ -395,9 +502,17 @@ export function BlogAuthoringForm({
                 id="blog-hero-url"
                 type="url"
                 value={heroImageUrl}
-                onChange={(e) => setHeroImageUrl(e.target.value)}
+                onChange={(e) => {
+                  setHeroImageUrl(e.target.value);
+                  clearFieldError("heroImageUrl");
+                }}
                 placeholder="https://deruiter.dev/assets/hero.png"
-                className="w-full px-3 py-2 rounded bg-[#13151a] border border-white/10 text-zinc-100 font-mono text-sm focus:border-amber-500 focus:outline-none"
+                {...errorProps("heroImageUrl", "blog-hero-url")}
+                className={`${INPUT_BASE_CLASS} ${borderClass(!!fieldErrors.heroImageUrl)} font-mono text-sm`}
+              />
+              <FieldError
+                id="blog-hero-url-error"
+                message={fieldErrors.heroImageUrl}
               />
             </div>
 
@@ -439,10 +554,15 @@ export function BlogAuthoringForm({
               required
               rows={16}
               value={body}
-              onChange={(e) => setBody(e.target.value)}
+              onChange={(e) => {
+                setBody(e.target.value);
+                clearFieldError("body");
+              }}
               placeholder="<h2>System Architecture</h2><p>Article narrative here...</p>"
-              className="w-full p-4 rounded bg-[#13151a] border border-white/10 text-zinc-100 font-mono text-xs leading-relaxed focus:border-amber-500 focus:outline-none"
+              {...errorProps("body", "blog-body")}
+              className={`w-full p-4 rounded bg-[#13151a] border text-zinc-100 focus:outline-none ${borderClass(!!fieldErrors.body)} font-mono text-xs leading-relaxed`}
             />
+            <FieldError id="blog-body-error" message={fieldErrors.body} />
           </div>
 
           {/* Form Action Controls */}

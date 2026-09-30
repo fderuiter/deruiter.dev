@@ -163,7 +163,7 @@ export const puzzleLevels: PuzzlerLevelDef[] = [
     hints: [
       "Use active hypotheses in your context to replace subterms.",
       "Target variable 'a' in the goal and rewrite it using hypothesis 'h1'.",
-      "Then rewrite 'b' using 'h2' and close the resulting 'c = c' with 'rfl'.",
+      "Then rewrite 'b' using 'h2'. The goal becomes 'c = c' and closes automatically, so no separate 'rfl' is needed.",
     ],
     leanTheoremName: "transitivity_chain",
     leanTypeSignature: "(a b c : Nat) (h1 : a = b) (h2 : b = c) : a = c",
@@ -175,9 +175,9 @@ export const puzzleLevels: PuzzlerLevelDef[] = [
       mathIntuition:
         "If two terms are equal, anything true about one is true about the other. Rewriting is the mechanical engine of algebra: replacing equals with equals.",
       leanAnalogy:
-        "`rw [h1]` finds the first subterm matching `a` and replaces it with `b`. Applying `rw [h2]` then turns `b` into `c`, leaving `c = c` for `rfl`.",
+        "`rw [h1]` finds the first subterm matching `a` and replaces it with `b`. Applying `rw [h2]` then turns `b` into `c`, leaving `c = c`, which the rewrite closes automatically (rw tries `rfl`).",
       tacticalObjective:
-        "Chain `rw [h1]` followed by `rw [h2]` and finish with `rfl`.",
+        "Chain `rw [h1]` followed by `rw [h2]`; the second rewrite leaves `c = c` and closes the goal automatically.",
       leanDocUrl:
         "https://lean-lang.org/theorem_proving_in_lean4/tactics.html#the-rewrite-tactic",
       realWorldApplication:
@@ -289,7 +289,7 @@ export const puzzleLevels: PuzzlerLevelDef[] = [
     hints: [
       "Associativity allows regrouping parentheses without changing the evaluation outcome.",
       "The Left-Hand Side is `(a + b) + c` and the Right-Hand Side is `a + (b + c)`.",
-      "Apply `rw [add_assoc]` on the LHS and close with `rfl`.",
+      "Apply `rw [add_assoc]` on the LHS. Both sides then match and the goal closes automatically, so no separate `rfl` is needed.",
     ],
     leanTheoremName: "addition_associativity",
     leanTypeSignature: "(a b c : Nat) : (a + b) + c = a + (b + c)",
@@ -303,7 +303,7 @@ export const puzzleLevels: PuzzlerLevelDef[] = [
       leanAnalogy:
         "Lean 4’s standard library theorem `Nat.add_assoc` provides the exact rewrite rule used by term simplifiers.",
       tacticalObjective:
-        "Apply `rw [add_assoc]` to normalize the tree grouping, then close with `rfl`.",
+        "Apply `rw [add_assoc]` to normalize the tree grouping; both sides then match and the goal closes automatically.",
       leanDocUrl:
         "https://leanprover-community.github.io/mathlib4_docs/Init/Data/Nat/Basic.html#Nat.add_assoc",
       realWorldApplication:
@@ -367,7 +367,7 @@ export const puzzleLevels: PuzzlerLevelDef[] = [
     hints: [
       "Broad simplifiers like 'simp' traverse the entire lemma library and use significant memory.",
       "A specific rewrite lemma `rw [add_zero]` directly targets the addition identity.",
-      "Apply `rw [add_zero]` (2 GB) followed by `rfl` (1 GB) for total 3 GB consumption (Gold!).",
+      "Apply `rw [add_zero]` (2 GB). The goal becomes `x = x` and closes automatically, so no separate `rfl` is needed (Gold!).",
     ],
     leanTheoremName: "add_zero_identity",
     leanTypeSignature: "(x : Nat) : x + 0 = x",
@@ -1137,7 +1137,7 @@ export const puzzleLevels: PuzzlerLevelDef[] = [
     hints: [
       "The sum of positive divisors function σ(n) sums all d such that d | n.",
       "For any prime p, its only positive divisors are 1 and p, hence σ(p) = p + 1.",
-      "Apply `rw [h_prime]` on the LHS, then close the goal with 'rfl'.",
+      "Apply `rw [h_prime]` on the LHS. Both sides then match and the goal closes automatically, so no separate 'rfl' is needed.",
     ],
     leanTheoremName: "sigma_prime_identity",
     leanTypeSignature: "(p : Nat) (h_prime : σ(p) = p + 1) : σ(p) = p + 1",
@@ -1151,7 +1151,7 @@ export const puzzleLevels: PuzzlerLevelDef[] = [
       leanAnalogy:
         "In Mathlib, `Nat.sigma` is defined as a sum over the finset `Nat.divisors n`. For primes, `Nat.Prime.divisors` evaluates to `{1, p}`.",
       tacticalObjective:
-        "Rewrite σ(p) using hypothesis 'h_prime' and finish with 'rfl'.",
+        "Rewrite σ(p) using hypothesis 'h_prime'; both sides then match and the goal closes automatically.",
       leanDocUrl:
         "https://leanprover-community.github.io/mathlib4_docs/Mathlib/NumberTheory/ArithmeticFunction.html",
       realWorldApplication:

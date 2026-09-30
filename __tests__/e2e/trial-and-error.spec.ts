@@ -68,6 +68,8 @@ interface TeProbe {
   seen: string[];
   entries: { start: number; value: number; sources: string[] }[];
   end: number | null;
+  /** The hand's document box when the player first appears. */
+  hand: { x: number; y: number; width: number; height: number } | null;
 }
 const drawer = (page: Page) => page.getByTestId("inspect-drawer");
 const gridCell = (page: Page, row: number, col: number) =>
@@ -524,7 +526,12 @@ test.describe("Trial & Error: Biostat Ops Card Table", () => {
       // the final frame holds for only 150 ms, too briefly to poll for.
       await page.evaluate(() => {
         const w = window as Window & { __te?: TeProbe };
-        const probe: TeProbe = { seen: [], entries: [], end: null };
+        const probe: TeProbe = {
+          seen: [],
+          entries: [],
+          end: null,
+          hand: null,
+        };
         w.__te = probe;
         const note = (label: string) => {
           if (!probe.seen.includes(label)) probe.seen.push(label);
@@ -532,6 +539,18 @@ test.describe("Trial & Error: Biostat Ops Card Table", () => {
         new MutationObserver(() => {
           const player = document.querySelector('[data-testid="score-player"]');
           if (player) note("player");
+          // Measured in the frame the player appears: at 4× on a loaded
+          // machine the whole timeline can resolve before a later poll.
+          const hand = document.querySelector('[data-testid="hand"]');
+          if (player && hand && !probe.hand) {
+            const r = hand.getBoundingClientRect();
+            probe.hand = {
+              x: r.left + window.scrollX,
+              y: r.top + window.scrollY,
+              width: r.width,
+              height: r.height,
+            };
+          }
           if (player?.classList.contains("te-loud-fire")) note("fire");
           if (document.querySelector('[data-testid="player-cleared"]')) {
             note("player-cleared");
@@ -586,8 +605,9 @@ test.describe("Trial & Error: Biostat Ops Card Table", () => {
       const handBefore = await handBox();
 
       await page.getByRole("button", { name: /Play Hand/ }).click();
-      await expect(player(page)).toBeVisible();
-      expect(await handBox()).toEqual(handBefore);
+      await page.waitForFunction(() =>
+        (window as Window & { __te?: TeProbe }).__te?.seen.includes("player")
+      );
       await expect(player(page)).toBeHidden();
 
       await expect(page.getByTestId("round-score")).toHaveText("828");
@@ -600,6 +620,7 @@ test.describe("Trial & Error: Biostat Ops Card Table", () => {
       const probe = await page.evaluate(
         () => (window as Window & { __te?: TeProbe }).__te!
       );
+      expect(probe.hand).toEqual(handBefore);
       expect(probe.seen).toEqual(
         expect.arrayContaining([
           "player",
@@ -722,22 +743,38 @@ test.describe("Trial & Error: Biostat Ops Card Table", () => {
     test("drags a card by its grip to reorder the hand", async ({ page }) => {
       await page.setViewportSize({ width: 1440, height: 900 });
       await launch(page);
+      // Layout boxes, which Reorder compares, ignore the breathing and tilt
+      // transforms. The hand's overlap (#1181) is sized after it measures its
+      // row, so wait for two identical reads before aiming.
+      const slots = () =>
+        page.locator("[data-card-id]").evaluateAll((els) =>
+          els.map((el) => {
+            const item = el.closest('[data-testid="hand"] > *') as HTMLElement;
+            return { left: item.offsetLeft, width: item.offsetWidth };
+          })
+        );
+      let layout = await slots();
+      await expect
+        .poll(async () => {
+          const previous = JSON.stringify(layout);
+          layout = await slots();
+          return JSON.stringify(layout) === previous;
+        })
+        .toBe(true);
       const first = (await order(page))[0]!;
+      const step = layout[1]!.left - layout[0]!.left;
+      const width = layout[0]!.width;
+      // Reorder moves the card past a neighbour once its trailing edge
+      // crosses that neighbour's centre, so index 2 holds for drag offsets
+      // between 2 steps and 3 steps less half a card. Aim at the middle.
+      const offset = 2.5 * step - width / 2;
       const grip = page.getByTestId("drag-grip").first();
-      const target = await page.locator("[data-card-id]").nth(2).boundingBox();
-      // The hand overlaps to fit (#1181): aim at the part of the third card
-      // that the fourth leaves in view.
-      const next = await page.locator("[data-card-id]").nth(3).boundingBox();
       const box = await grip.boundingBox();
-      await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
+      const x = box!.x + box!.width / 2;
+      const y = box!.y + box!.height / 2;
+      await page.mouse.move(x, y);
       await page.mouse.down();
-      await page.mouse.move(
-        target!.x + (next!.x - target!.x) * 0.75,
-        box!.y + 4,
-        {
-          steps: 20,
-        }
-      );
+      await page.mouse.move(x + offset, y + 4, { steps: 20 });
       await page.mouse.up();
       await expect.poll(async () => (await order(page)).indexOf(first)).toBe(2);
     });

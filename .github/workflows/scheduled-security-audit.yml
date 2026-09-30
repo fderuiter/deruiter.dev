@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 jobs:
   scheduled-security-audit:
@@ -32,4 +33,17 @@ jobs:
         run: npm ci
 
       - name: Execute Security Audit Gate
+        id: audit
         run: npm run audit:security
+        continue-on-error: true
+
+      - name: Triage Security Issue Escalation
+        if: steps.audit.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: npx tsx scripts/triage-security-issue.ts
+
+      - name: Fail Workflow On Audit Failure
+        if: steps.audit.outcome == 'failure'
+        run: exit 1

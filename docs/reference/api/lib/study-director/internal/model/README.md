@@ -16,6 +16,7 @@
 ## Functions
 
 - [advanceDay](functions/advanceDay.md)
+- [applyDifficulty](functions/applyDifficulty.md)
 - [applyEffects](functions/applyEffects.md)
 - [auditSite](functions/auditSite.md)
 - [computeMeters](functions/computeMeters.md)

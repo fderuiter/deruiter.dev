@@ -4,12 +4,14 @@ import React, { useRef, useState } from "react";
 import {
   METER_IDS,
   computeMeters,
+  type Difficulty,
   type FinalReport,
 } from "@/lib/study-director";
 import { copyToClipboard, getActiveHostUrl } from "@/lib/clipboard";
 import { verdictFor } from "./closeout";
 import { radarPoints } from "./geometry";
 import type { CareerNews } from "./career";
+import { DIFFICULTY_TEXT } from "./DifficultyPicker";
 
 const W = 1200;
 const H = 630;
@@ -23,8 +25,14 @@ const GRADE_FILL = {
 } as const;
 
 /** The link that replays a study from its seed. */
-export function seedLink(seed: string, origin = getActiveHostUrl()): string {
-  return `${origin}/arcade/study-director#seed=${encodeURIComponent(seed)}`;
+export function seedLink(
+  seed: string,
+  origin = getActiveHostUrl(),
+  difficulty?: Difficulty
+): string {
+  const hard =
+    difficulty && difficulty !== "standard" ? `&difficulty=${difficulty}` : "";
+  return `${origin}/arcade/study-director#seed=${encodeURIComponent(seed)}${hard}`;
 }
 
 /**
@@ -176,8 +184,9 @@ const CardArt = React.forwardRef<SVGSVGElement, { report: FinalReport }>(
         </text>
 
         <text x={64} y={572} fill="#71717a" fontFamily={MONO} fontSize={18}>
-          Study {report.state.setup.id} · seed {report.state.seed} ·
-          deruiter.dev/arcade/study-director
+          Study {report.state.setup.id} ·{" "}
+          {DIFFICULTY_TEXT[report.state.difficulty ?? "standard"].label} · seed{" "}
+          {report.state.seed} · deruiter.dev/arcade/study-director
         </text>
       </svg>
     );
@@ -229,7 +238,9 @@ export const SharePanel: React.FC<{
 
   const copyLink = async () => {
     try {
-      await copyToClipboard(seedLink(report.state.seed));
+      await copyToClipboard(
+        seedLink(report.state.seed, undefined, report.state.difficulty)
+      );
       setMessage("Link copied. It opens this same study.");
     } catch {
       setMessage("Copy failed. The seed is on the card.");

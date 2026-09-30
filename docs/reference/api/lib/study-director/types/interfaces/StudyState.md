@@ -30,6 +30,12 @@ Attention left today.
 
 ***
 
+### difficulty?
+
+> `optional` **difficulty?**: `"calm"` \| `"standard"` \| `"rescue"`
+
+***
+
 ### documentationDebt
 
 > **documentationDebt**: `number`

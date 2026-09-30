@@ -58,6 +58,14 @@ Applied when the event expires unanswered.
 
 ***
 
+### recalls?
+
+> `optional` **recalls?**: `string`
+
+The earlier event whose decision this one calls back to.
+
+***
+
 ### subject
 
 > **subject**: `string`
@@ -93,3 +101,11 @@ Days the event stays actionable, counting its first day.
 ### urgency
 
 > **urgency**: [`Urgency`](../type-aliases/Urgency.md)
+
+***
+
+### wildcard?
+
+> `optional` **wildcard?**: `boolean`
+
+A rare event drawn from the seed; scheduled at the start of a run.

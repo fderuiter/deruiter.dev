@@ -1,6 +1,13 @@
 import { STUDY_EVENTS } from "./events-data";
 import { advanceDay, applyEffects, resolveDecision } from "./model";
-import type { ActionResult, StudyEvent, StudyState, Urgency } from "../types";
+import { uniformAt } from "./rng";
+import type {
+  ActionResult,
+  Difficulty,
+  StudyEvent,
+  StudyState,
+  Urgency,
+} from "../types";
 
 const URGENCY_ORDER: Record<Urgency, number> = {
   critical: 0,
@@ -114,7 +121,41 @@ export function endDay(state: StudyState): StudyState {
   return markSeen(advanceDay(expire(markSeen(state))));
 }
 
-/** Starts the study on day 1 with the first inbox ready. */
+/** How many wildcard events a run draws, by difficulty. */
+export const WILDCARDS_PER_RUN: Record<Difficulty, number> = {
+  calm: 2,
+  standard: 3,
+  rescue: 4,
+};
+
+/**
+ * Draws this run's wildcard events and the days they land, spread across
+ * the study. They use their own stream of the seed, so the study's other
+ * draws, and every existing replay, are unchanged by them.
+ */
+export function scheduleWildcards(state: StudyState): StudyState {
+  const pool = STUDY_EVENTS.filter((e) => e.wildcard).map((e) => e.id);
+  const count = Math.min(
+    pool.length,
+    WILDCARDS_PER_RUN[state.difficulty ?? "standard"]
+  );
+  if (count === 0) return state;
+  const stream = `${state.seed}:wildcards`;
+  for (let i = 0; i < count; i += 1) {
+    const j = i + Math.floor(uniformAt(stream, i) * (pool.length - i));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  const first = 8;
+  const last = Math.round(state.setup.durationDays * 0.85);
+  const span = (last - first) / count;
+  const drawn = pool.slice(0, count).map((eventId, k) => ({
+    eventId,
+    day: first + Math.floor(k * span + uniformAt(stream, 100 + k) * span * 0.8),
+  }));
+  return { ...state, scheduled: [...state.scheduled, ...drawn] };
+}
+
+/** Starts the study on day 1 with its wildcards drawn and the first inbox ready. */
 export function beginStudy(state: StudyState): StudyState {
-  return markSeen(advanceDay(state));
+  return markSeen(advanceDay(scheduleWildcards(state)));
 }

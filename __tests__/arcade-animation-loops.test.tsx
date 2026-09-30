@@ -5,7 +5,7 @@
 // keys through useHotkeys. Each test pins a behaviour the hand-rolled loops
 // had: when a loop runs, which clock it reads, how it clamps, and how it
 // stops and restarts around a lost canvas context.
-import React from "react";
+import React, { Profiler } from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, fireEvent, act, cleanup } from "@testing-library/react";
 import { fromAny, fromPartial } from "@total-typescript/shoehorn";
@@ -56,6 +56,11 @@ vi.mock("@/lib/clinical-trial-chaos", async (importOriginal) => {
   return { ...actual, tickShiftClocks: vi.fn(actual.tickShiftClocks) };
 });
 
+// Retro Labyrinth hover scenario (#1628): when set, each run is three open
+// rooms whose exit sits beside the start, and only runs after the first put
+// a TSP room at index 2, the room where the canvas tracks the cursor.
+const labyrinthCampaign = vi.hoisted(() => ({ openRuns: false, runs: 0 }));
+
 // Retro Labyrinth: a stationary drone beside the start, and an enemy AI that
 // never hurts the player, so the loop can be stepped without ending the run.
 vi.mock("@/lib/dungeon", async (importOriginal) => {
@@ -64,6 +69,37 @@ vi.mock("@/lib/dungeon", async (importOriginal) => {
     ...actual,
     generateRoguelikeCampaign: () => {
       const rooms = actual.generateRoguelikeCampaign();
+      if (labyrinthCampaign.openRuns) {
+        labyrinthCampaign.runs += 1;
+        const base = rooms[2];
+        const openGrid = base.grid.map((row, y) =>
+          row.map((cell, x) =>
+            y === 0 || x === 0 || y === base.grid.length - 1 || x === 14
+              ? "#"
+              : " "
+          )
+        );
+        const openRoom = (index: number) => ({
+          ...base,
+          index,
+          grid: openGrid.map((row) => [...row]),
+          startX: 12,
+          startY: 7,
+          enemies: [],
+          items: [],
+          boss: undefined,
+          tspNodes: [],
+          tspMovingWalls: [],
+        });
+        return [
+          openRoom(0),
+          openRoom(1),
+          {
+            ...openRoom(2),
+            id: labyrinthCampaign.runs > 1 ? "tsp" : base.id,
+          },
+        ];
+      }
       const first = rooms[0];
       const droneX = first.startX + 1;
       const grid = first.grid.map((row) => [...row]);
@@ -534,5 +570,150 @@ describe("MemeVaultClient spectrum loop on useAnimationFrame (#1624)", () => {
     const scales = barScales(container);
     expect(scales.length).toBe(24);
     expect(new Set(scales)).toEqual(new Set(["0.15"]));
+  });
+});
+
+// #1628: three loop reads that went stale once the loops moved onto
+// useAnimationFrame. Each test fails against the loops that shipped in #1627.
+describe("arcade loops read current state (#1628)", () => {
+  afterEach(() => {
+    labyrinthCampaign.openRuns = false;
+    labyrinthCampaign.runs = 0;
+  });
+
+  function labyrinthBoard(container: HTMLElement) {
+    const board = container.querySelector<HTMLElement>(
+      '[data-keyboard-boundary="true"]'
+    );
+    if (!board) throw new Error("labyrinth keyboard boundary not rendered");
+    return board;
+  }
+
+  it("ends a Retro Labyrinth side effect after its stated duration", () => {
+    let now = 1_800_000_000_000;
+    vi.spyOn(Date, "now").mockImplementation(() => now);
+    const { container } = render(<RetroLabyrinth isMounted={true} />);
+    // Keep enemy AI and cursor steering out of the way.
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    scheduler.tick(1000);
+
+    // Slot 1 is npm install, whose dependency bloat lasts 4 seconds.
+    fireEvent.keyDown(labyrinthBoard(container), { key: "1" });
+    expect(container.textContent).toContain("DEPENDENCY_BLOAT.LOG");
+
+    now += 3900;
+    scheduler.tick(4900);
+    expect(container.textContent).toContain("DEPENDENCY_BLOAT.LOG");
+
+    now += 200;
+    scheduler.tick(5100);
+    expect(container.textContent).not.toContain("DEPENDENCY_BLOAT.LOG");
+  });
+
+  it("draws the TSP hover highlight from the current run's rooms", () => {
+    labyrinthCampaign.openRuns = true;
+    const hoverFill = "rgba(34, 211, 238, 0.2)";
+    let hoverFills = 0;
+    const style: Record<string | symbol, unknown> = {};
+    const ctx = new Proxy(style, {
+      get: (target, prop) => {
+        if (prop === "fillRect") {
+          return () => {
+            if (target.fillStyle === hoverFill) hoverFills += 1;
+          };
+        }
+        if (prop === "measureText") {
+          return (text: string) => ({ width: (text || "").length * 8 });
+        }
+        if (
+          prop === "createRadialGradient" ||
+          prop === "createLinearGradient"
+        ) {
+          return () => ({ addColorStop: () => {} });
+        }
+        if (prop === "getImageData" || prop === "createImageData") {
+          return () => ({
+            width: 1,
+            height: 1,
+            data: new Uint8ClampedArray(4),
+          });
+        }
+        if (prop === "getLineDash") return () => [];
+        if (prop in target) return target[prop];
+        return () => {};
+      },
+      set: (target, prop, value) => {
+        target[prop] = value;
+        return true;
+      },
+    });
+    vi.mocked(HTMLCanvasElement.prototype.getContext).mockImplementation(() =>
+      fromAny(ctx)
+    );
+
+    const { container } = render(<RetroLabyrinth isMounted={true} />);
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    scheduler.tick(0);
+
+    // Clear rooms 0 and 1: each exit is one step right of the start, and
+    // every room load generates a fresh run.
+    const board = labyrinthBoard(container);
+    for (let room = 0; room < 2; room++) {
+      fireEvent.keyDown(board, { key: "ArrowRight" });
+      fireEvent.keyDown(board, { key: "Enter" });
+    }
+    // Only the runs generated after mount have a TSP room at index 2.
+    expect(labyrinthCampaign.runs).toBeGreaterThan(2);
+
+    const canvas = container.querySelector("canvas");
+    if (!canvas) throw new Error("labyrinth canvas not rendered");
+    vi.spyOn(canvas, "getBoundingClientRect").mockReturnValue(
+      fromPartial({ left: 0, top: 0, width: 300, height: 150 })
+    );
+    fireEvent.mouseMove(canvas, { clientX: 30, clientY: 30 });
+
+    hoverFills = 0;
+    scheduler.tick(16);
+    expect(hoverFills).toBe(1);
+  });
+
+  it("re-renders Clinical Trial Chaos only when a visible second changes", () => {
+    let now = 10_000;
+    vi.spyOn(Date, "now").mockImplementation(() => now);
+    let commits = 0;
+    const { container } = render(
+      <Profiler
+        id="clinical-trial-chaos"
+        onRender={() => {
+          commits += 1;
+        }}
+      >
+        <ClinicalTrialChaos />
+      </Profiler>
+    );
+    clickButton(container, "Start Phase 1");
+    clickButton(container, "Skip calibration");
+
+    // Run the shift clocks past a displayed second.
+    for (let frame = 1; frame <= 12; frame++) {
+      now += 100;
+      scheduler.tick(frame * 100);
+    }
+
+    // Ten 5 ms frames: at most one displayed second can roll over.
+    commits = 0;
+    for (let frame = 1; frame <= 10; frame++) {
+      now += 5;
+      scheduler.tick(2000 + frame * 5);
+    }
+    expect(commits).toBeLessThanOrEqual(1);
+
+    // A second later the countdowns have moved, so the board renders.
+    commits = 0;
+    for (let frame = 1; frame <= 11; frame++) {
+      now += 100;
+      scheduler.tick(3000 + frame * 100);
+    }
+    expect(commits).toBeGreaterThan(0);
   });
 });

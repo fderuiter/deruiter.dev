@@ -513,7 +513,7 @@ test.describe("Continuous Accessibility (a11y) & WCAG 2.1 AA Audit Suite", () =>
   }, testInfo) => {
     await page.goto("/simulator");
     await page.waitForLoadState("networkidle");
-    await page.waitForSelector("text=1. Define Your Target Profile", {
+    await page.waitForSelector("text=1. Choose Your Architecture Bias", {
       timeout: 15000,
     });
 
@@ -526,8 +526,10 @@ test.describe("Continuous Accessibility (a11y) & WCAG 2.1 AA Audit Suite", () =>
 
     // 2. Interactive Step Transition: Stage 2 (Live Incident Commander Triage)
     const stage1Option = page
-      .locator('button:has-text("Raw Systems & Performance Maverick")')
-      .or(page.locator('button:has-text("Pixel-Perfect")'))
+      .locator('button:has-text("Systems Rigor & Fault Isolation")')
+      .or(
+        page.locator('button:has-text("Interface Clarity & Human Ergonomics")')
+      )
       .first();
     if (await stage1Option.isVisible()) {
       await stage1Option.click();
@@ -555,6 +557,18 @@ test.describe("Continuous Accessibility (a11y) & WCAG 2.1 AA Audit Suite", () =>
           page,
           testInfo,
           "Incident Commander Simulator Step 3 Review State"
+        );
+
+        // 4. Final Architectural Archetype evaluation
+        await page
+          .locator('button:has-text("Enforce Exhaustive Idempotency Keys")')
+          .first()
+          .click();
+        await page.waitForSelector("text=Decision stats", { timeout: 10000 });
+        await auditAndAssert(
+          page,
+          testInfo,
+          "Incident Commander Simulator Archetype Result State"
         );
       }
     }

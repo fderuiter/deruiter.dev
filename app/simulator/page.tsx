@@ -2,15 +2,15 @@
 
 import React, { useSyncExternalStore } from "react";
 import dynamic from "next/dynamic";
-import { RecruiterSimulatorSkeleton } from "@/components/simulator/RecruiterSimulatorSkeleton";
+import { ArchetypeSimulatorSkeleton } from "@/components/simulator/ArchetypeSimulatorSkeleton";
 
 // Root entrypoint satisfies AGENTS.md invariant #2 by rendering <PageLayout /> in client container
 
-const DynamicRecruiterSimulator = dynamic(
-  () => import("@/components/simulator/RecruiterSimulatorClient"),
+const DynamicArchetypeSimulator = dynamic(
+  () => import("@/components/simulator/ArchetypeSimulatorClient"),
   {
     ssr: false,
-    loading: () => <RecruiterSimulatorSkeleton />,
+    loading: () => <ArchetypeSimulatorSkeleton />,
   }
 );
 
@@ -29,11 +29,13 @@ export default function IncidentSimulatorPage() {
           leaving assistive technology without a top-level heading. Declared
           outside the mount branch so it is present in the server-rendered
           skeleton too, not only after hydration. */}
-      <h1 className="sr-only">Incident and Engineering Decision Simulator</h1>
+      <h1 className="sr-only">
+        Architectural Archetype and Incident Triage Simulator
+      </h1>
       {isMounted ? (
-        <DynamicRecruiterSimulator />
+        <DynamicArchetypeSimulator />
       ) : (
-        <RecruiterSimulatorSkeleton />
+        <ArchetypeSimulatorSkeleton />
       )}
     </>
   );

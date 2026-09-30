@@ -28,7 +28,7 @@ app/                                       # Next.js 16 App Router routes, layou
 │   ├── patrol/page.tsx                    # Patrol Shift studio workspace route
 │   ├── proof/page.tsx                     # Formal proof AST workspace route
 │   ├── schedule/page.tsx                  # Interactive calendar & schedule route
-│   ├── simulator/page.tsx                 # Recruiter simulator route
+│   ├── simulator/page.tsx                 # Architectural archetype simulator
 │   ├── stack/page.tsx                     # System architecture & stack lab route
 │   └── work/                              # Professional case study work routes
 │       └── laser-loon/page.tsx            # Laser Loon work route & technical breakdown

@@ -888,16 +888,16 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
       },
       {
         id: "nav-simulator",
-        title: "Engineering Alignment Simulator",
+        title: "Architectural Archetype Simulator",
         subtitle:
-          "Work through a few engineering decisions, from interface priorities to an outage. Compare what your choices emphasize.",
+          "Pick an architecture bias, triage an outage and review a pipeline, then see which architectural archetype your trade-offs map to.",
         category: "navigation",
         url: "/simulator",
         icon: <IconDirections className="w-4 h-4 text-brand-cyan" />,
         badge: "Systems Simulator",
         status: "Incident Triage",
         description:
-          "Work through a few engineering decisions, from interface priorities to an outage. Compare what your choices emphasize.",
+          "Pick an architecture bias, triage an outage and review a pipeline, then see which architectural archetype your trade-offs map to.",
         techStack: [
           "State Machine",
           "Decision Trees",
@@ -906,8 +906,8 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         ],
         highlights: [
           "Live incident triage scenarios",
-          "Candidate alignment benchmark scoring",
-          "Detailed post-mortem decision reports",
+          "Deterministic four-axis archetype scoring",
+          "Copyable decision report",
         ],
       },
       {

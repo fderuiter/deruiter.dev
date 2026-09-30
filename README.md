@@ -12,16 +12,16 @@ and formal methods.
 
 ## What's inside
 
-| Area                            | What you can do                                                                                                              | Try it                                                                                  |
-| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| **Logical Proof Workspace**     | Build a proof one step at a time, apply inference rules, and see where an argument breaks.                                   | [/proof](https://deruiter.dev/proof)                                                    |
-| **CRF Studio**                  | Design clinical research forms, add validation rules, and test them against sample data.                                     | [/crf](https://deruiter.dev/crf)                                                        |
-| **NeuroRecon Studio**           | Explore brain surfaces and MRI slices, place control points, and work through simulated reconstruction problems.             | [/neuro](https://deruiter.dev/neuro)                                                    |
-| **Incident Decision Simulator** | Work through engineering decisions, from interface priorities to an outage, and compare what your choices emphasize.         | [/simulator](https://deruiter.dev/simulator)                                            |
-| **Ski Patrol Shift Studio**     | A Midwest ski-patrol judgment simulation driven by deterministic state machines.                                             | [/patrol](https://deruiter.dev/patrol)                                                  |
-| **Arcade**                      | Trial & Error: Biostat Ops, Clinical Trial Chaos, Laser Loon, Retro Labyrinth, Monkey C Mayhem, Working With Duck, and more. | [/arcade](https://deruiter.dev/arcade)                                                  |
-| **Case studies and blog**       | Write-ups of clinical data engineering, formal verification, accessibility, and browser graphics projects.                   | [/case-studies](https://deruiter.dev/case-studies) · [/blog](https://deruiter.dev/blog) |
-| **Under the Hood**              | How the site itself works: text layout, browser audio, the stack, and the checks behind it.                                  | [/stack](https://deruiter.dev/stack)                                                    |
+| Area                        | What you can do                                                                                                              | Try it                                                                                  |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| **Logical Proof Workspace** | Build a proof one step at a time, apply inference rules, and see where an argument breaks.                                   | [/proof](https://deruiter.dev/proof)                                                    |
+| **CRF Studio**              | Design clinical research forms, add validation rules, and test them against sample data.                                     | [/crf](https://deruiter.dev/crf)                                                        |
+| **NeuroRecon Studio**       | Explore brain surfaces and MRI slices, place control points, and work through simulated reconstruction problems.             | [/neuro](https://deruiter.dev/neuro)                                                    |
+| **Archetype Simulator**     | Pick an architecture bias, triage an outage, and see which architectural archetype your trade-offs map to.                   | [/simulator](https://deruiter.dev/simulator)                                            |
+| **Ski Patrol Shift Studio** | A Midwest ski-patrol judgment simulation driven by deterministic state machines.                                             | [/patrol](https://deruiter.dev/patrol)                                                  |
+| **Arcade**                  | Trial & Error: Biostat Ops, Clinical Trial Chaos, Laser Loon, Retro Labyrinth, Monkey C Mayhem, Working With Duck, and more. | [/arcade](https://deruiter.dev/arcade)                                                  |
+| **Case studies and blog**   | Write-ups of clinical data engineering, formal verification, accessibility, and browser graphics projects.                   | [/case-studies](https://deruiter.dev/case-studies) · [/blog](https://deruiter.dev/blog) |
+| **Under the Hood**          | How the site itself works: text layout, browser audio, the stack, and the checks behind it.                                  | [/stack](https://deruiter.dev/stack)                                                    |
 
 ## Built with
 

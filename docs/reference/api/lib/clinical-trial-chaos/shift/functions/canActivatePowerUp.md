@@ -6,10 +6,9 @@
 
 # Function: canActivatePowerUp()
 
-> **canActivatePowerUp**(`inventory`, `type`, `playing`, `hasActiveSubject`): `boolean`
+> **canActivatePowerUp**(`inventory`, `type`, `playing`, `activeSubject`): `boolean`
 
-Whether a lifeline can fire: it is fully charged, the shift is running, and
-the lifelines that act on the open dossier have one to act on.
+Whether a lifeline can fire. See `getPowerUpRefusal` for the rules.
 
 ## Parameters
 
@@ -31,11 +30,11 @@ The lifeline to fire.
 
 Whether the shift is running.
 
-### hasActiveSubject
+### activeSubject
 
-`boolean`
+`Pick`\<[`ClinicalSubject`](../../types/interfaces/ClinicalSubject.md), `"observations"`\> \| `null`
 
-Whether a dossier is open.
+The open dossier, if any.
 
 ## Returns
 

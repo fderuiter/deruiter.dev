@@ -121,10 +121,16 @@ export interface GameScoreState {
   combo: number;
   maxCombo: number;
   multiplier: number;
+  /** CRFs locked across the whole campaign run. */
   subjectsSubmitted: number;
+  /** CRFs locked in the running phase, counted against its target (#1673). */
+  phaseSubmissions: number;
   correctionsMade: number;
   cleanSubmissions: number;
+  /** Every missed or misrouted CRF: expired subjects plus station rejections. */
   auditViolations: number;
+  /** Subjects that expired on the conveyor, a subset of `auditViolations` (#1670). */
+  expiredSubjects: number;
 }
 
 export interface SignatureModalState {
@@ -212,5 +218,7 @@ export interface BIMOInspectionReport {
   submittedCRFs: number;
   /** Percentage of submitted CRFs that were clean, or `null` when none were submitted. */
   cleanRate: number | null;
+  /** Subjects that expired on the conveyor and were never submitted (#1670). */
+  expiredCRFs: number;
   summary: string;
 }

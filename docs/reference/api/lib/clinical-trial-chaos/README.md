@@ -284,6 +284,12 @@ Re-exports [DEFAULT_OUTFIT_ID](outfits/variables/DEFAULT_OUTFIT_ID.md)
 
 ***
 
+### describePowerUpRefusal
+
+Re-exports [describePowerUpRefusal](shift/functions/describePowerUpRefusal.md)
+
+***
+
 ### describeSponsorEvent
 
 Re-exports [describeSponsorEvent](shift/functions/describeSponsorEvent.md)
@@ -464,6 +470,18 @@ Re-exports [getOutfitById](outfits/functions/getOutfitById.md)
 
 ***
 
+### getPhaseProgress
+
+Re-exports [getPhaseProgress](shift/functions/getPhaseProgress.md)
+
+***
+
+### getPowerUpRefusal
+
+Re-exports [getPowerUpRefusal](shift/functions/getPowerUpRefusal.md)
+
+***
+
 ### getRoutingReadiness
 
 Re-exports [getRoutingReadiness](engine/functions/getRoutingReadiness.md)
@@ -473,6 +491,12 @@ Re-exports [getRoutingReadiness](engine/functions/getRoutingReadiness.md)
 ### getSAEChance
 
 Re-exports [getSAEChance](shift/functions/getSAEChance.md)
+
+***
+
+### getShiftTickSeconds
+
+Re-exports [getShiftTickSeconds](shift/functions/getShiftTickSeconds.md)
 
 ***
 
@@ -518,6 +542,12 @@ Re-exports [getSubmissionMode](engine/functions/getSubmissionMode.md)
 
 ***
 
+### getViolationBreakdown
+
+Re-exports [getViolationBreakdown](shift/functions/getViolationBreakdown.md)
+
+***
+
 ### INITIAL\_STATIONS
 
 Re-exports [INITIAL_STATIONS](scenarios/variables/INITIAL_STATIONS.md)
@@ -530,6 +560,12 @@ Re-exports [isPhaseCleared](shift/functions/isPhaseCleared.md)
 
 ***
 
+### isShiftClockHalted
+
+Re-exports [isShiftClockHalted](shift/functions/isShiftClockHalted.md)
+
+***
+
 ### isSubjectFullyCompliant
 
 Re-exports [isSubjectFullyCompliant](engine/functions/isSubjectFullyCompliant.md)
@@ -539,6 +575,12 @@ Re-exports [isSubjectFullyCompliant](engine/functions/isSubjectFullyCompliant.md
 ### MAX\_CONVEYOR\_SUBJECTS
 
 Re-exports [MAX_CONVEYOR_SUBJECTS](engine/variables/MAX_CONVEYOR_SUBJECTS.md)
+
+***
+
+### MAX\_SHIFT\_TICK\_MS
+
+Re-exports [MAX_SHIFT_TICK_MS](shift/variables/MAX_SHIFT_TICK_MS.md)
 
 ***
 
@@ -614,6 +656,12 @@ Re-exports [PHASE_TARGETS](shift/variables/PHASE_TARGETS.md)
 
 ***
 
+### PhaseProgress
+
+Re-exports [PhaseProgress](shift/interfaces/PhaseProgress.md)
+
+***
+
 ### pickOfficeAmbientEvent
 
 Re-exports [pickOfficeAmbientEvent](offices/functions/pickOfficeAmbientEvent.md)
@@ -686,9 +734,21 @@ Re-exports [playValidationSound](sound-effects/functions/playValidationSound.md)
 
 ***
 
+### POWER\_UP\_REFUSAL\_LABELS
+
+Re-exports [POWER_UP_REFUSAL_LABELS](shift/variables/POWER_UP_REFUSAL_LABELS.md)
+
+***
+
 ### PowerUpInventory
 
 Re-exports [PowerUpInventory](types/type-aliases/PowerUpInventory.md)
+
+***
+
+### PowerUpRefusal
+
+Re-exports [PowerUpRefusal](shift/type-aliases/PowerUpRefusal.md)
 
 ***
 
@@ -725,6 +785,12 @@ Re-exports [raiseAuditorSuspicion](shift/functions/raiseAuditorSuspicion.md)
 ### RecordedRuleViolation
 
 Re-exports [RecordedRuleViolation](types/interfaces/RecordedRuleViolation.md)
+
+***
+
+### recordExpiredSubjects
+
+Re-exports [recordExpiredSubjects](shift/functions/recordExpiredSubjects.md)
 
 ***
 
@@ -809,6 +875,12 @@ Re-exports [ShiftClocks](shift/interfaces/ShiftClocks.md)
 ### ShiftClockTick
 
 Re-exports [ShiftClockTick](shift/interfaces/ShiftClockTick.md)
+
+***
+
+### ShiftPauseState
+
+Re-exports [ShiftPauseState](shift/interfaces/ShiftPauseState.md)
 
 ***
 
@@ -1037,3 +1109,9 @@ Re-exports [VendorSystem](types/type-aliases/VendorSystem.md)
 ### verify21CFRSubmission
 
 Re-exports [verify21CFRSubmission](engine/functions/verify21CFRSubmission.md)
+
+***
+
+### ViolationBreakdown
+
+Re-exports [ViolationBreakdown](shift/interfaces/ViolationBreakdown.md)

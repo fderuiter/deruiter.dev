@@ -32,6 +32,14 @@
 
 ***
 
+### isManualOpen
+
+> **isManualOpen**: `boolean`
+
+The Field Manual is open, which holds the clocks still (#1672).
+
+***
+
 ### isModalPaused
 
 > **isModalPaused**: `boolean`

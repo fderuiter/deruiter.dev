@@ -12,6 +12,8 @@
 
 > **auditViolations**: `number`
 
+Every missed or misrouted CRF: expired subjects plus station rejections.
+
 ***
 
 ### cleanSubmissions
@@ -29,6 +31,14 @@
 ### correctionsMade
 
 > **correctionsMade**: `number`
+
+***
+
+### expiredSubjects
+
+> **expiredSubjects**: `number`
+
+Subjects that expired on the conveyor, a subset of `auditViolations` (#1670).
 
 ***
 
@@ -50,6 +60,14 @@
 
 ***
 
+### phaseSubmissions
+
+> **phaseSubmissions**: `number`
+
+CRFs locked in the running phase, counted against its target (#1673).
+
+***
+
 ### score
 
 > **score**: `number`
@@ -59,3 +77,5 @@
 ### subjectsSubmitted
 
 > **subjectsSubmitted**: `number`
+
+CRFs locked across the whole campaign run.

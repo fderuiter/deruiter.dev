@@ -645,8 +645,14 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         action: "Deploy Regulatory Lifelines",
         description:
-          "Deploy combo-charged power-ups: [Q] FDA Coffee Break (freeze auditor), [W] CDISC Auto-Clean (clean active dossier), [E] Site Query Extension (+12s), [R] Fast-Track 21 CFR Pass (instant sign).",
+          "Deploy combo-charged power-ups: [Q] FDA Coffee Break (freeze auditor), [W] CDISC Auto-Clean (clean active dossier), [E] Site Query Extension (+12s), [R] Fast-Track 21 CFR Pass (instant sign). Auto-Clean and Fast-Track only fire on a dossier with flagged fields, so a clean one keeps their charge.",
         key: "Keys [Q, W, E, R]",
+      },
+      {
+        action: "Pause the Shift",
+        description:
+          "Press P or the Pause button to stop every clock: subject timers, the auditor, the sponsor and lifeline durations. Press P or Resume to carry on. Opening this manual also holds the shift until you close it.",
+        key: "P / Pause Button",
       },
       {
         action: "21 CFR Electronic Signature Lock",
@@ -667,6 +673,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         detail:
           "Phase I activates core safety & lab domains (DM, VS, AE, LB). Phase II unlocks Concomitant Medications (CM) and Drug Exposure (EX). Phase III unlocks Disposition (DS) and Medical History (MH).",
         badge: "8 SDTM Domains",
+      },
+      {
+        title: "Campaign Phase Targets",
+        detail:
+          "Each phase counts its own locks from zero. Lock 5 CRFs to clear Phase 1, 8 new CRFs to clear Phase 2 and 12 to clear Phase 3. Your score carries across all three phases.",
+        badge: "5 / 8 / 12 Locks",
       },
       {
         title: "Controlled Terminology & MedDRA Coding",

@@ -2122,3 +2122,95 @@ describe("Working With Duck - a paused sprint ignores player actions (#1645)", (
     ).toBeGreaterThan(1046);
   });
 });
+
+describe("Clinical Trial Chaos pass-4 fixes (#1670, #1671, #1672, #1673)", () => {
+  const readChaos = () =>
+    fs.readFileSync(
+      path.resolve(__dirname, "../components/ClinicalTrialChaos.tsx"),
+      "utf-8"
+    );
+
+  it("#1670: reports expired subjects as expiries, not as submissions", async () => {
+    const {
+      createInitialAuditorState,
+      createInitialScoreState,
+      generateBIMOReport,
+      getViolationBreakdown,
+      recordExpiredSubjects,
+    } = await import("@/lib/clinical-trial-chaos");
+    const score = recordExpiredSubjects(
+      {
+        ...createInitialScoreState(),
+        subjectsSubmitted: 5,
+        cleanSubmissions: 5,
+      },
+      4
+    );
+    const report = generateBIMOReport(score, createInitialAuditorState(), []);
+    expect(report.expiredCRFs).toBe(4);
+    expect(report.findings.map((f) => f.description).join(" ")).not.toContain(
+      "submitted with unresolved"
+    );
+    expect(getViolationBreakdown(score, 0)).toMatchObject({
+      expired: 4,
+      misrouted: 0,
+      total: 4,
+    });
+  });
+
+  it("#1671: the fix, signature and pause dialogs use the shared focus trap", () => {
+    const code = readChaos();
+    expect(code).toContain('from "@/hooks/useFocusTrap"');
+    for (const ref of [
+      "ref={fixDialogRef}",
+      "ref={signatureDialogRef}",
+      "ref={pauseDialogRef}",
+    ]) {
+      expect(code).toContain(ref);
+    }
+  });
+
+  it("#1672: a pause or the Field Manual holds the shift clocks", async () => {
+    const { getShiftTickSeconds, isShiftClockHalted } =
+      await import("@/lib/clinical-trial-chaos");
+    expect(
+      getShiftTickSeconds(80, isShiftClockHalted({ userPaused: true }))
+    ).toBe(0);
+    expect(
+      getShiftTickSeconds(80, isShiftClockHalted({ manualOpen: true }))
+    ).toBe(0);
+    expect(readChaos()).toContain("onOpenChange={setIsManualOpen}");
+  });
+
+  it("#1673: lifelines skip a clean dossier and each phase counts from zero", async () => {
+    const {
+      canActivatePowerUp,
+      createInitialPowerUpInventory,
+      createInitialScoreState,
+      getNextShiftScoreState,
+      getPhaseProgress,
+      PHASE_TARGETS,
+    } = await import("@/lib/clinical-trial-chaos");
+    const inventory = createInitialPowerUpInventory();
+    inventory["auto-clean"] = {
+      ...inventory["auto-clean"],
+      charge: inventory["auto-clean"].maxCharge,
+    };
+    expect(
+      canActivatePowerUp(inventory, "auto-clean", true, { observations: [] })
+    ).toBe(false);
+    const phase2 = getNextShiftScoreState(
+      {
+        ...createInitialScoreState(),
+        subjectsSubmitted: 5,
+        phaseSubmissions: 5,
+      },
+      true,
+      0
+    );
+    expect(getPhaseProgress(phase2, "campaign", 2)).toEqual({
+      locked: 0,
+      target: PHASE_TARGETS[2],
+    });
+  });
+});

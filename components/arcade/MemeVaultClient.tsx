@@ -9,7 +9,8 @@ import React, {
 } from "react";
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
-import { getMatchMediaMatches } from "@/hooks/useMediaQuery";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { useAnimationFrame } from "@/hooks/useAnimationFrame";
 import {
   MEME_QUOTES,
   SOUNDBOARD_BUTTONS,
@@ -64,24 +65,27 @@ const AudioWaveformVisualizer: React.FC<{
   soundLabel?: string;
 }> = ({ isPlaying, soundLabel }) => {
   const barRefs = useRef<Array<HTMLDivElement | null>>([]);
+  // Frame time origin: the loop's clock counts from its first frame, so the
+  // performance.now() reading there turns it back into a frame timestamp.
+  const frameTimeOriginRef = useRef(0);
+  const prefersReduced = useMediaQuery("(prefers-reduced-motion: reduce)");
 
   useEffect(() => {
-    let animFrame: number;
-    const prefersReduced = getMatchMediaMatches(
-      "(prefers-reduced-motion: reduce)"
-    );
-
-    if (prefersReduced) {
-      for (let i = 0; i < 24; i++) {
-        const el = barRefs.current[i];
-        if (el) {
-          el.style.setProperty("--bar-scale", "0.15");
-        }
+    if (!prefersReduced) return;
+    for (let i = 0; i < 24; i++) {
+      const el = barRefs.current[i];
+      if (el) {
+        el.style.setProperty("--bar-scale", "0.15");
       }
-      return;
     }
+  }, [prefersReduced, isPlaying]);
 
-    const updateFrequencies = (currentTime: number) => {
+  useAnimationFrame(
+    (_deltaMs, elapsedMs) => {
+      if (elapsedMs === 0) {
+        frameTimeOriginRef.current = performance.now();
+      }
+      const currentTime = frameTimeOriginRef.current + elapsedMs;
       for (let i = 0; i < 24; i++) {
         const el = barRefs.current[i];
         if (!el) continue;
@@ -96,12 +100,13 @@ const AudioWaveformVisualizer: React.FC<{
         }
         el.style.setProperty("--bar-scale", scaleVal.toFixed(4));
       }
-      animFrame = requestAnimationFrame(updateFrequencies);
-    };
-
-    animFrame = requestAnimationFrame(updateFrequencies);
-    return () => cancelAnimationFrame(animFrame);
-  }, [isPlaying]);
+    },
+    {
+      isActive: !prefersReduced,
+      maxDeltaMs: Infinity,
+      restartKey: isPlaying,
+    }
+  );
 
   return (
     <div className="relative rounded-2xl border border-emerald-500/20 bg-slate-950/80 p-4 sm:p-5 backdrop-blur-md overflow-hidden mb-8">

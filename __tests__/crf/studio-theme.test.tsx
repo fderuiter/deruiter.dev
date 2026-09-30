@@ -210,6 +210,47 @@ describe("CRF Studio - Light Mode & Theming", () => {
     expect(studioRoot).not.toBeNull();
   });
 
+  // #1514: the theme and default branding now go through lib/safe-storage.
+  // Blocked storage for those keys must still give the dark default and a
+  // working toggle. (Only these keys throw: the study draft loader in
+  // lib/crf/study-draft-storage.ts is a separate path.)
+  it("falls back to dark and still toggles when storage throws", async () => {
+    const blocked = new Set([
+      "crf_studio_theme",
+      "crf_studio_default_branding",
+    ]);
+    const getItem = mockLocalStorage.getItem.bind(mockLocalStorage);
+    const setItemOriginal = mockLocalStorage.setItem.bind(mockLocalStorage);
+    vi.spyOn(mockLocalStorage, "getItem").mockImplementation((key) => {
+      if (blocked.has(key)) throw new Error("SecurityError");
+      return getItem(key);
+    });
+    const setItem = vi
+      .spyOn(mockLocalStorage, "setItem")
+      .mockImplementation((key, value) => {
+        if (blocked.has(key)) throw new Error("QuotaExceededError");
+        setItemOriginal(key, value);
+      });
+
+    await act(async () => {
+      root = createRoot(container);
+      root.render(<CRFStudioContainer />);
+    });
+
+    const studioRoot = container.querySelector("[data-studio-theme]");
+    expect(studioRoot?.getAttribute("data-studio-theme")).toBe("dark");
+
+    const themeBtn = container.querySelector(
+      'button[aria-label="Switch to Clinical Light Mode"]'
+    ) as HTMLButtonElement;
+    await act(async () => {
+      themeBtn?.click();
+    });
+
+    expect(studioRoot?.getAttribute("data-studio-theme")).toBe("light");
+    expect(setItem).toHaveBeenCalledWith("crf_studio_theme", "light");
+  });
+
   it("StudioHeader renders theme toggle and triggers onToggleTheme callback", async () => {
     const handleToggle = vi.fn();
 

@@ -3,6 +3,7 @@
 import { useSyncExternalStore } from "react";
 import { useIsMobileViewport } from "@/hooks/useIsMobileViewport";
 import { usePrefersReducedMotion } from "@/hooks/useMediaQuery";
+import { safeGetRawItem, safeSetRawItem } from "@/lib/safe-storage";
 
 /** Playback speeds for the scoring spectacle (ADR 0046 amendment). */
 type TeGameSpeed = 1 | 2 | 4;
@@ -25,18 +26,8 @@ const SPEED_CHANGE_EVENT = "te:game-speed-change";
 const SPEEDS: readonly TeGameSpeed[] = [1, 2, 4];
 
 function readSpeed(): TeGameSpeed {
-  try {
-    if (
-      typeof window === "undefined" ||
-      typeof window.localStorage?.getItem !== "function"
-    ) {
-      return 1;
-    }
-    const stored = Number(window.localStorage.getItem(SPEED_STORAGE_KEY));
-    return SPEEDS.includes(stored as TeGameSpeed) ? (stored as TeGameSpeed) : 1;
-  } catch {
-    return 1;
-  }
+  const stored = Number(safeGetRawItem(SPEED_STORAGE_KEY));
+  return SPEEDS.includes(stored as TeGameSpeed) ? (stored as TeGameSpeed) : 1;
 }
 
 function subscribeSpeed(callback: () => void): () => void {
@@ -61,13 +52,7 @@ const getServerSpeed = (): TeGameSpeed => 1;
  */
 function setSpeed(speed: TeGameSpeed): void {
   if (!SPEEDS.includes(speed)) return;
-  try {
-    if (typeof window.localStorage?.setItem === "function") {
-      window.localStorage.setItem(SPEED_STORAGE_KEY, String(speed));
-    }
-  } catch {
-    // Storage unavailable: nothing to persist.
-  }
+  safeSetRawItem(SPEED_STORAGE_KEY, String(speed), { retainInMemory: false });
   window.dispatchEvent(new Event(SPEED_CHANGE_EVENT));
 }
 

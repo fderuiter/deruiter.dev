@@ -2,6 +2,11 @@
 
 import { useMemo, useSyncExternalStore } from "react";
 import { parseCodex, serializeCodex, type Codex } from "@/lib/trial-and-error";
+import {
+  safeGetRawItem,
+  safeIsAvailable,
+  safeSetRawItem,
+} from "@/lib/safe-storage";
 
 /**
  * Browser storage for the Codex and run history (#1529). The pure core
@@ -16,17 +21,7 @@ export const CODEX_KEY = "te:codex";
 const CODEX_CHANGE_EVENT = "te:codex-change";
 
 function readRaw(): string | null {
-  try {
-    if (
-      typeof window === "undefined" ||
-      typeof window.localStorage?.getItem !== "function"
-    ) {
-      return null;
-    }
-    return window.localStorage.getItem(CODEX_KEY);
-  } catch {
-    return null;
-  }
+  return safeGetRawItem(CODEX_KEY);
 }
 
 function notify(): void {
@@ -48,12 +43,16 @@ export function updateCodex(update: (codex: Codex) => Codex): boolean {
   if (read.status === "NEWER") return false;
   const next = update(read.codex);
   if (next === read.codex) return false;
+  if (!safeIsAvailable()) return false;
+  let written = false;
   try {
-    if (typeof window.localStorage?.setItem !== "function") return false;
-    window.localStorage.setItem(CODEX_KEY, serializeCodex(next));
+    written = safeSetRawItem(CODEX_KEY, serializeCodex(next), {
+      retainInMemory: false,
+    });
   } catch {
-    return false;
+    // serializeCodex refused the document.
   }
+  if (!written) return false;
   notify();
   return true;
 }

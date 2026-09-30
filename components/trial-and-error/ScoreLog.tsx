@@ -2,21 +2,12 @@
 
 import React, { useId, useState, useSyncExternalStore } from "react";
 import type { ScoreLogEntry } from "@/lib/trial-and-error";
+import { safeGetRawItem, safeSetRawItem } from "@/lib/safe-storage";
 
 const OPEN_STORAGE_KEY = "te:score-log-open";
 
 function readOpen(): boolean {
-  try {
-    if (
-      typeof window === "undefined" ||
-      typeof window.localStorage?.getItem !== "function"
-    ) {
-      return false;
-    }
-    return window.localStorage.getItem(OPEN_STORAGE_KEY) === "1";
-  } catch {
-    return false;
-  }
+  return safeGetRawItem(OPEN_STORAGE_KEY) === "1";
 }
 
 function subscribeOpen(callback: () => void): () => void {
@@ -34,13 +25,11 @@ const getServerOpen = () => false;
 
 /** Remembers the choice for this viewer; a failing store is ignored. */
 function storeOpen(open: boolean): void {
-  try {
-    if (typeof window.localStorage?.setItem === "function") {
-      window.localStorage.setItem(OPEN_STORAGE_KEY, open ? "1" : "0");
-    }
-  } catch {
-    // Storage unavailable: the choice holds for this visit only.
-  }
+  // Storage unavailable: the write is dropped; the open state still holds
+  // for this visit through component state.
+  safeSetRawItem(OPEN_STORAGE_KEY, open ? "1" : "0", {
+    retainInMemory: false,
+  });
 }
 
 interface ScoreLogProps {

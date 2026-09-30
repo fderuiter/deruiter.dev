@@ -4,6 +4,7 @@
  * thermal overheating, crash reports, and 16-color pixel canvas rendering.
  */
 import { clamp } from "./game-utils";
+import { safeGetRawItem, safeSetRawItem } from "./safe-storage";
 
 export type DeviceTarget = "fenix" | "forerunner" | "edge";
 export type VariableType = "int" | "float" | "string" | "array";
@@ -99,17 +100,17 @@ export const FLASH_STORAGE_KEY = "garmin_simulator_flash_storage";
 function readPersistedFlashStorage(): FlashVariable[] | null {
   if (typeof window === "undefined") return null;
   try {
-    if (typeof window.localStorage?.getItem === "function") {
-      const raw = window.localStorage.getItem(FLASH_STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) {
-          return parsed;
-        }
+    // The key holds a bare JSON array (no safe-storage envelope), so it is
+    // read raw to keep every existing save readable.
+    const raw = safeGetRawItem(FLASH_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return parsed;
       }
     }
   } catch {
-    // Fall back safely when browser local storage is unavailable
+    // Fall back safely when the stored value is not valid JSON
   }
   return null;
 }
@@ -120,13 +121,11 @@ export function loadPersistedFlashStorage(): FlashVariable[] {
 
 export function savePersistedFlashStorage(flashVars: FlashVariable[]): void {
   if (typeof window === "undefined") return;
-  try {
-    if (typeof window.localStorage?.setItem === "function") {
-      window.localStorage.setItem(FLASH_STORAGE_KEY, JSON.stringify(flashVars));
-    }
-  } catch {
-    // Fall back safely when browser local storage is unavailable
-  }
+  // safeSetRawItem never throws; a write that cannot reach storage is dropped
+  // so reads fall back exactly as they did with direct localStorage calls.
+  safeSetRawItem(FLASH_STORAGE_KEY, JSON.stringify(flashVars), {
+    retainInMemory: false,
+  });
 }
 
 export interface Obstacle {

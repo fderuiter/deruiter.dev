@@ -3,6 +3,7 @@
 import "./studio-theme.css";
 import React, { useState, useCallback, useEffect, useMemo } from "react";
 import { logger } from "@/lib/logger";
+import { safeGetRawItem, safeSetRawItem } from "@/lib/safe-storage";
 import { clamp } from "@/lib/game-utils";
 import { useClipboard } from "@/hooks/useClipboard";
 import { useToast } from "@/hooks/useToast";
@@ -172,7 +173,7 @@ export const CRFStudioContainer: React.FC = () => {
     const preset = getOncologyPresetSync();
     if (typeof window !== "undefined") {
       try {
-        const cached = localStorage.getItem("crf_studio_default_branding");
+        const cached = safeGetRawItem("crf_studio_default_branding");
         if (cached) {
           const parsedBranding = JSON.parse(cached);
           return {
@@ -298,17 +299,9 @@ export const CRFStudioContainer: React.FC = () => {
       if (rawTheme === "light" || rawTheme === "dark") {
         return rawTheme;
       }
-      try {
-        if (typeof window.localStorage?.getItem === "function") {
-          const cached = localStorage.getItem(
-            "crf_studio_theme"
-          ) as StudioTheme;
-          if (cached === "light" || cached === "dark") {
-            return cached;
-          }
-        }
-      } catch {
-        // Fallback to dark
+      const cached = safeGetRawItem("crf_studio_theme");
+      if (cached === "light" || cached === "dark") {
+        return cached;
       }
     }
     return "dark";
@@ -550,13 +543,7 @@ export const CRFStudioContainer: React.FC = () => {
     const nextTheme: StudioTheme = theme === "dark" ? "light" : "dark";
     setTheme(nextTheme);
     if (typeof window !== "undefined") {
-      try {
-        if (typeof window.localStorage?.setItem === "function") {
-          localStorage.setItem("crf_studio_theme", nextTheme);
-        }
-      } catch {
-        // Ignore localstorage errors in restricted contexts
-      }
+      safeSetRawItem("crf_studio_theme", nextTheme, { retainInMemory: false });
     }
     setParam("theme", nextTheme === "dark" ? null : nextTheme, {
       replace: true,

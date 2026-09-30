@@ -12,6 +12,7 @@ import {
   IconCopy,
   IconSparkles,
 } from "@tabler/icons-react";
+import { useClipboard } from "@/hooks/useClipboard";
 
 interface StudioTerminalProps {
   isOpen: boolean;
@@ -20,7 +21,9 @@ interface StudioTerminalProps {
   onUpdateStudy: (updated: StudyProtocol) => void;
   onOpenWizard?: () => void;
   onSwitchMode?: (mode: StudioMode) => void;
-  onOpenModal?: (modal: "wizard" | "branding" | "diagnostics" | "export") => void;
+  onOpenModal?: (
+    modal: "wizard" | "branding" | "diagnostics" | "export"
+  ) => void;
 }
 
 interface TerminalHistoryItem {
@@ -53,6 +56,10 @@ export const StudioTerminal: React.FC<StudioTerminalProps> = ({
   ]);
   const [commandIndex, setCommandIndex] = useState<number>(-1);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const { copy: copyOutput, copied } = useClipboard({
+    successMessage: "Terminal output copied to clipboard",
+    errorMessage: "Failed to copy terminal output",
+  });
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -112,7 +119,10 @@ export const StudioTerminal: React.FC<StudioTerminalProps> = ({
         if (res.uiAction.payload === "wizard") {
           onOpenWizard?.();
         } else {
-          onOpenModal?.(res.uiAction.payload as "wizard" | "branding" | "diagnostics" | "export");
+          onOpenModal?.(
+            res.uiAction.payload as
+              "wizard" | "branding" | "diagnostics" | "export"
+          );
         }
       }
     }
@@ -125,7 +135,10 @@ export const StudioTerminal: React.FC<StudioTerminalProps> = ({
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       if (history.length > 0) {
-        const nextIdx = commandIndex === -1 ? history.length - 1 : Math.max(0, commandIndex - 1);
+        const nextIdx =
+          commandIndex === -1
+            ? history.length - 1
+            : Math.max(0, commandIndex - 1);
         setCommandIndex(nextIdx);
         setInputVal(history[nextIdx]?.command || "");
       }
@@ -147,11 +160,8 @@ export const StudioTerminal: React.FC<StudioTerminalProps> = ({
   };
 
   const handleCopyOutput = async (item: TerminalHistoryItem) => {
-    if (navigator?.clipboard?.writeText) {
-      await navigator.clipboard.writeText(item.output);
-      setCopiedId(item.id);
-      setTimeout(() => setCopiedId(null), 2000);
-    }
+    setCopiedId(item.id);
+    await copyOutput(item.output);
   };
 
   const QUICK_COMMANDS = [
@@ -238,7 +248,7 @@ export const StudioTerminal: React.FC<StudioTerminalProps> = ({
                   className="hover:text-white p-0.5 rounded"
                   title="Copy Output"
                 >
-                  {copiedId === item.id ? (
+                  {copied && copiedId === item.id ? (
                     <IconCheck className="w-3 h-3 text-emerald-400" />
                   ) : (
                     <IconCopy className="w-3 h-3" />
@@ -262,7 +272,9 @@ export const StudioTerminal: React.FC<StudioTerminalProps> = ({
 
       {/* Command Input Prompt Bar */}
       <div className="px-3 py-2 bg-zinc-900 border-t border-zinc-850 flex items-center gap-2 shrink-0">
-        <span className="text-brand-cyan font-bold text-xs select-none">crf&gt;</span>
+        <span className="text-brand-cyan font-bold text-xs select-none">
+          crf&gt;
+        </span>
         <input
           ref={inputRef}
           type="text"

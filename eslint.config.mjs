@@ -27,15 +27,6 @@ const clipboardRestriction = {
     "Do not access navigator.clipboard directly. Use copyToClipboard from @/lib/clipboard, useClipboard hook from @/hooks/useClipboard, or <CopyButton /> component instead.",
 };
 
-// Call sites that still write to navigator.clipboard directly. They sit in
-// files owned by other work lanes (CRF Studio, Laser Loon) and migrate with
-// that work (#1123); until then they keep every other restriction.
-const pendingClipboardMigrationFiles = [
-  "components/crf/RightInspector/InspectorPanel.tsx",
-  "components/crf/Terminal/StudioTerminal.tsx",
-  "components/laser-loon/AssetDistributionHub.tsx",
-];
-
 // The files that implement what the global restrictions point callers to.
 // lib/arcade/utils.ts holds clamp() itself; lib/game-utils.ts re-exports it.
 const restrictedSyntaxHelperFiles = [
@@ -176,18 +167,6 @@ const eslintConfig = defineConfig([
         "error",
         nestedMathRestriction,
         clipboardRestriction,
-        processEnvRestriction,
-      ],
-    },
-  },
-  // Application modules awaiting their clipboard migration keep the other
-  // restrictions from the block above, without the clipboard one.
-  {
-    files: pendingClipboardMigrationFiles,
-    rules: {
-      "no-restricted-syntax": [
-        "error",
-        nestedMathRestriction,
         processEnvRestriction,
       ],
     },

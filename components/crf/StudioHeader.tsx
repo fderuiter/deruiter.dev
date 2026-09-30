@@ -37,6 +37,7 @@ import {
   IconGitCompare,
 } from "@tabler/icons-react";
 import { getStudyBranding } from "@/lib/crf/branding-defaults";
+import { safeSetRawItem } from "@/lib/safe-storage";
 
 interface StudioHeaderProps {
   study: StudyProtocol;
@@ -346,12 +347,9 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
           <button
             onClick={() => {
               if (typeof window !== "undefined") {
-                try {
-                  localStorage.setItem(
-                    "crf_active_protocol",
-                    JSON.stringify(study)
-                  );
-                } catch {}
+                safeSetRawItem("crf_active_protocol", JSON.stringify(study), {
+                  retainInMemory: false,
+                });
                 router.push("/arcade/clinical-chaos");
               }
             }}
@@ -506,12 +504,11 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
                     onClick={() => {
                       setIsMoreMenuOpen(false);
                       if (typeof window !== "undefined") {
-                        try {
-                          localStorage.setItem(
-                            "crf_active_protocol",
-                            JSON.stringify(study)
-                          );
-                        } catch {}
+                        safeSetRawItem(
+                          "crf_active_protocol",
+                          JSON.stringify(study),
+                          { retainInMemory: false }
+                        );
                         router.push("/arcade/clinical-chaos");
                       }
                     }}

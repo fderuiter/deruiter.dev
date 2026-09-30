@@ -44,7 +44,25 @@ export interface EasterEggAchievement {
   icon: string;
   unlockedByDefault?: boolean;
   hint: string;
+  /** Where the hint's place lives, shown as a link under a locked trophy. */
+  hintLink?: {
+    href: string;
+    label: string;
+  };
 }
+
+/**
+ * The sample commands terminal (SandboxTerminal) that awards the terminal
+ * trophies. The iMednet SDK case study always renders it, including from
+ * the static fallback data, so the link works offline too.
+ */
+export const SANDBOX_TERMINAL_HREF =
+  "/case-studies/imednet-python-sdk#sample-commands";
+
+const SANDBOX_TERMINAL_LINK = {
+  href: SANDBOX_TERMINAL_HREF,
+  label: "Open the sample commands terminal",
+};
 
 export const MEME_QUOTES: MemeQuote[] = [
   {
@@ -225,7 +243,8 @@ export const EASTER_EGG_ACHIEVEMENTS: EasterEggAchievement[] = [
     description:
       "Executed UNIX easter eggs (cowsay, loon, sl, or matrix) in the Sandbox Terminal.",
     icon: "💻",
-    hint: "Explore UNIX and dev commands in the interactive terminal.",
+    hint: "Type cowsay, sl or matrix in the Try the Sample Commands terminal on the iMednet SDK case study. Searching sudo in the Command Palette (Cmd+K) works too.",
+    hintLink: SANDBOX_TERMINAL_LINK,
   },
   {
     id: "duck-whisperer",
@@ -256,7 +275,8 @@ export const EASTER_EGG_ACHIEVEMENTS: EasterEggAchievement[] = [
     description:
       "Attempted a simulated 'git push --force origin main' in the terminal.",
     icon: "🚨",
-    hint: "Try force-pushing in the terminal.",
+    hint: "Type git push --force origin main in the Try the Sample Commands terminal on the iMednet SDK case study. Searching friday in the Command Palette (Cmd+K) works too.",
+    hintLink: SANDBOX_TERMINAL_LINK,
   },
 ];
 

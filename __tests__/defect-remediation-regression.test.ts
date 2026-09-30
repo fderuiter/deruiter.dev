@@ -28,7 +28,16 @@ import {
   tokenizeWithSpans,
 } from "@/lib/crf/ast-evaluator";
 import { CRFField, CRFForm, StudyProtocol } from "@/lib/crf/types";
-import { mergeLevelScore, type LevelScore } from "@/lib/quasi-perfect";
+import {
+  getTacticBlock,
+  mergeLevelScore,
+  parseGameProgress,
+  puzzleLevels,
+  resolveResumeLevelIndex,
+  tacticDefs,
+  type ASTNode,
+  type LevelScore,
+} from "@/lib/quasi-perfect";
 import { computeFormHealthMetrics } from "@/lib/crf/form-health";
 import {
   LOON_MAX_HITS,
@@ -1766,6 +1775,39 @@ describe("Quasi-Perfect progress: best score survives weaker replays (#1230)", (
   it("accepts the first score", () => {
     const first = mk({});
     expect(mergeLevelScore(undefined, first)).toBe(first);
+  });
+});
+
+describe("Quasi-Perfect resume level and RAM rules (#1650, #1651)", () => {
+  it("resumes a saved level and falls back to Level 1 on a corrupt index", () => {
+    const levels = puzzleLevels;
+    expect(
+      resolveResumeLevelIndex(
+        parseGameProgress('{"completedLevels":{},"currentLevelIndex":4}'),
+        levels
+      )
+    ).toBe(4);
+    expect(
+      resolveResumeLevelIndex(
+        parseGameProgress('{"completedLevels":{},"currentLevelIndex":-3}'),
+        levels
+      )
+    ).toBe(0);
+    expect(resolveResumeLevelIndex(parseGameProgress("not json"), levels)).toBe(
+      0
+    );
+  });
+
+  it("refuses sorry at 0 GB and allows it while RAM remains", () => {
+    expect(getTacticBlock(tacticDefs.sorry, 0)?.reason).toBe("exhausted");
+    expect(getTacticBlock(tacticDefs.sorry, 0.5)).toBeNull();
+  });
+
+  it("reports simp's no-progress charge from its failureCost", () => {
+    const x: ASTNode = { id: "x", type: "Variable", value: "x" };
+    const result = tacticDefs.simp.execute(x, x, []);
+    expect(result.ramConsumed).toBe(tacticDefs.simp.failureCost);
+    expect(result.message).toContain(`${tacticDefs.simp.failureCost} GB`);
   });
 });
 

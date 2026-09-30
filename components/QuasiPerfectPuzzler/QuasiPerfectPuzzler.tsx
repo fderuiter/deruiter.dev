@@ -12,13 +12,21 @@ import { useAudio } from "@/components/providers/AudioProvider";
 import { useAnnouncer } from "@/hooks/useAnnouncer";
 import { puzzleLevels } from "@/lib/quasi-perfect/levels";
 import { tacticDefs } from "@/lib/quasi-perfect/tactics";
-import { mergeLevelScore } from "@/lib/quasi-perfect/progress";
 import {
   STORY_RAM_MULTIPLIER,
   computeLevelStars,
   describeModeRules,
   getStartingRam,
+  getTacticBlock,
+  mergeLevelScore,
+  parseGameProgress,
+  resolveResumeLevelIndex,
 } from "@/lib/quasi-perfect";
+import {
+  STORAGE_CHANGE_EVENT,
+  safeGetRawItem,
+  safeSetRawItem,
+} from "@/lib/safe-storage";
 import {
   CompilerLogEntry,
   GameMode,
@@ -61,24 +69,43 @@ import {
 const STORAGE_KEY = "quasi_perfect_puzzler_progress_v1";
 const MODE_STORAGE_KEY = "quasi_perfect_puzzler_mode_v1";
 
-// SSR-Safe localStorage sync subscriber
+// SSR-safe progress subscriber: other tabs fire "storage", writes in this tab
+// go through lib/safe-storage, which fires STORAGE_CHANGE_EVENT.
 function subscribeProgress(callback: () => void) {
   if (typeof window === "undefined") return () => {};
   window.addEventListener("storage", callback);
-  return () => window.removeEventListener("storage", callback);
+  window.addEventListener(STORAGE_CHANGE_EVENT, callback);
+  return () => {
+    window.removeEventListener("storage", callback);
+    window.removeEventListener(STORAGE_CHANGE_EVENT, callback);
+  };
 }
 
 function getProgressSnapshot(): string {
   if (typeof window === "undefined") return "{}";
-  try {
-    return localStorage.getItem(STORAGE_KEY) || "{}";
-  } catch {
-    return "{}";
-  }
+  return safeGetRawItem(STORAGE_KEY) || "{}";
 }
 
 function getProgressServerSnapshot(): string {
   return "{}";
+}
+
+function readStoredProgress(): GameProgressState {
+  if (typeof window === "undefined") return parseGameProgress(null);
+  return parseGameProgress(safeGetRawItem(STORAGE_KEY));
+}
+
+// Keys and bytes match the earlier direct localStorage writes, so returning
+// players keep their progress. Blocked writes are dropped, as before.
+function writeStoredProgress(progress: GameProgressState): void {
+  if (typeof window === "undefined") return;
+  safeSetRawItem(STORAGE_KEY, JSON.stringify(progress), {
+    retainInMemory: false,
+  });
+}
+
+function isGameMode(value: string | null): value is GameMode {
+  return value === "story" || value === "hacker";
 }
 
 interface StepHistory {
@@ -109,15 +136,16 @@ export const QuasiPerfectPuzzler: React.FC = () => {
   // Dual Game Mode State (Story/Casual vs Hacker/Speedrun)
   const [gameMode, setGameMode] = useState<GameMode>(() => {
     if (typeof window === "undefined") return "story";
-    try {
-      return (localStorage.getItem(MODE_STORAGE_KEY) as GameMode) || "story";
-    } catch {
-      return "story";
-    }
+    const stored = safeGetRawItem(MODE_STORAGE_KEY);
+    return isGameMode(stored) ? stored : "story";
   });
 
   const [pendingMode, setPendingMode] = useState<GameMode | null>(null);
-  const [currentLevelIndex, setCurrentLevelIndex] = useState<number>(0);
+  // The puzzler is loaded with ssr: false, so the saved level can be read
+  // before the first render instead of flashing Level 1 (#1650).
+  const [currentLevelIndex, setCurrentLevelIndex] = useState<number>(() =>
+    resolveResumeLevelIndex(readStoredProgress(), puzzleLevels)
+  );
   const currentLevel: PuzzlerLevelDef =
     puzzleLevels[currentLevelIndex] || puzzleLevels[0];
 
@@ -169,35 +197,33 @@ export const QuasiPerfectPuzzler: React.FC = () => {
     getProgressServerSnapshot
   );
 
-  const parsedProgress: GameProgressState = useMemo(() => {
-    try {
-      return JSON.parse(rawProgress) as GameProgressState;
-    } catch {
-      return { completedLevels: {}, currentLevelIndex: 0 };
-    }
-  }, [rawProgress]);
+  const parsedProgress: GameProgressState = useMemo(
+    () => parseGameProgress(rawProgress),
+    [rawProgress]
+  );
 
-  const saveProgress = useCallback((score: LevelScore) => {
-    if (typeof window === "undefined") return;
-    try {
-      const existing: GameProgressState = JSON.parse(
-        localStorage.getItem(STORAGE_KEY) || "{}"
-      );
-      const updated: GameProgressState = {
-        currentLevelIndex: existing.currentLevelIndex || 0,
+  const saveProgress = useCallback(
+    (score: LevelScore) => {
+      const existing = readStoredProgress();
+      writeStoredProgress({
+        ...existing,
+        currentLevelIndex,
         completedLevels: {
-          ...(existing.completedLevels || {}),
+          ...existing.completedLevels,
           [score.levelId]: mergeLevelScore(
-            existing.completedLevels?.[score.levelId],
+            existing.completedLevels[score.levelId],
             score
           ),
         },
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-      window.dispatchEvent(new Event("storage"));
-    } catch {
-      // Storage unavailable
-    }
+      });
+    },
+    [currentLevelIndex]
+  );
+
+  const saveCurrentLevelIndex = useCallback((index: number) => {
+    const existing = readStoredProgress();
+    if (existing.currentLevelIndex === index) return;
+    writeStoredProgress({ ...existing, currentLevelIndex: index });
   }, []);
 
   const addLog = useCallback(
@@ -215,9 +241,11 @@ export const QuasiPerfectPuzzler: React.FC = () => {
 
   const loadLevel = useCallback(
     (index: number, modeOverride?: GameMode) => {
-      const targetLvl = puzzleLevels[index] || puzzleLevels[0];
+      const safeIndex = puzzleLevels[index] ? index : 0;
+      const targetLvl = puzzleLevels[safeIndex];
       const activeMode = modeOverride ?? gameMode;
-      setCurrentLevelIndex(index);
+      setCurrentLevelIndex(safeIndex);
+      saveCurrentLevelIndex(safeIndex);
       setPendingMode(null);
       setSubgoals([
         {
@@ -255,16 +283,12 @@ export const QuasiPerfectPuzzler: React.FC = () => {
         "assertive"
       );
     },
-    [gameMode, announce]
+    [gameMode, announce, saveCurrentLevelIndex]
   );
 
   const persistMode = useCallback((mode: GameMode) => {
     if (typeof window === "undefined") return;
-    try {
-      localStorage.setItem(MODE_STORAGE_KEY, mode);
-    } catch {
-      // Storage fallback
-    }
+    safeSetRawItem(MODE_STORAGE_KEY, mode, { retainInMemory: false });
   }, []);
 
   // A proof is in progress once any RAM has been spent or a step recorded.
@@ -313,7 +337,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
     typeof armedTacticItem === "string" ? armedTacticItem : armedTacticItem?.id;
   const targetingHint =
     armedTacticId === "rw"
-      ? "rw rewrites a sub-term that matches one side of its hypothesis, never the whole equality. Tap that sub-term; a wrong tap costs 1 GB."
+      ? `rw rewrites a sub-term that matches one side of its hypothesis, never the whole equality. Tap that sub-term; a wrong tap costs ${tacticDefs.rw.failureCost} GB.`
       : undefined;
 
   // Execute a tactic on a given target AST node
@@ -332,12 +356,11 @@ export const QuasiPerfectPuzzler: React.FC = () => {
 
       if (!tactic) return;
 
-      // Check RAM availability
-      if (currentRam < tactic.baseRamCost && tactic.id !== "sorry") {
-        addLog(
-          `FATAL ERROR: Insufficient RAM for tactic '${tactic.name}'. Required: ${tactic.baseRamCost} GB, Available: ${currentRam.toFixed(1)} GB.`,
-          "error"
-        );
+      // Check RAM availability. At 0 GB every tactic, sorry included, is
+      // refused until the level is reset (#1651).
+      const block = getTacticBlock(tactic, currentRam);
+      if (block) {
+        addLog(block.message, "error");
         playNote(130.81, 0.2); // Error buzz
         return;
       }
@@ -488,6 +511,12 @@ export const QuasiPerfectPuzzler: React.FC = () => {
             );
           }
         } else {
+          if (nextRam <= 0) {
+            addLog(
+              "Simulated RAM exhausted; the local tactic session has stopped. Reset the level to continue.",
+              "error"
+            );
+          }
           // If current active subgoal was completed, automatically advance to next open subgoal
           if (updatedSubgoals[activeGoalIndex]?.isCompleted) {
             const nextOpenIdx = updatedSubgoals.findIndex(
@@ -511,7 +540,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
 
         if (nextRam <= 0) {
           addLog(
-            "Simulated RAM exhausted; the local tactic session has stopped.",
+            "Simulated RAM exhausted; the local tactic session has stopped. Reset the level to continue.",
             "error"
           );
           playNote(98, 0.4);
@@ -1107,7 +1136,8 @@ export const QuasiPerfectPuzzler: React.FC = () => {
               </p>
               <p className="mt-1 text-xs text-zinc-400">
                 Available RAM was completely exhausted before discharging the
-                goal.
+                goal. Every tactic, sorry included, is locked until you reset
+                the level.
               </p>
               <button
                 type="button"

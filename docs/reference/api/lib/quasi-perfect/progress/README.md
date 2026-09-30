@@ -9,3 +9,5 @@
 ## Functions
 
 - [mergeLevelScore](functions/mergeLevelScore.md)
+- [parseGameProgress](functions/parseGameProgress.md)
+- [resolveResumeLevelIndex](functions/resolveResumeLevelIndex.md)

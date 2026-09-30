@@ -298,6 +298,7 @@
 - [lib/trial-and-error](lib/trial-and-error/README.md)
 - [lib/trial-and-error/internal/amendments](lib/trial-and-error/internal/amendments/README.md)
 - [lib/trial-and-error/internal/blinding](lib/trial-and-error/internal/blinding/README.md)
+- [lib/trial-and-error/internal/codex](lib/trial-and-error/internal/codex/README.md)
 - [lib/trial-and-error/internal/compile](lib/trial-and-error/internal/compile/README.md)
 - [lib/trial-and-error/internal/cpu](lib/trial-and-error/internal/cpu/README.md)
 - [lib/trial-and-error/internal/desk](lib/trial-and-error/internal/desk/README.md)

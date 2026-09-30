@@ -21,6 +21,8 @@ interface RunInfoProps {
   origin?: RunOrigin;
   /** Offers "New run…", which opens the New Run dialog (#1528). */
   onNewRun?: () => void;
+  /** Offers "Codex", which opens the Codex and run history (#1529). */
+  onCodex?: () => void;
   /** How many relic slots the rack has. */
   relicSlots: number;
   /** The relics the run has equipped. */
@@ -38,7 +40,8 @@ interface RunInfoProps {
 /**
  * Run Info (T&E-UX-05): a focus-trapped dialog with the run's hand table
  * (level, base Chips, base +Mult, times played), the equipped relics and the
- * run seed, with Copy seed, Copy challenge link and New run (#1528). It renders the domain's rows and never adds a level bonus
+ * run seed, with Copy seed, Copy challenge link, New run (#1528) and the
+ * Codex (#1529). It renders the domain's rows and never adds a level bonus
  * itself. Escape or Close dismisses it and focus returns to the trigger.
  */
 export function RunInfo({
@@ -46,6 +49,7 @@ export function RunInfo({
   seed,
   origin = { kind: "RANDOM" },
   onNewRun,
+  onCodex,
   relicSlots,
   relics = [],
   accessLog = [],
@@ -190,6 +194,17 @@ export function RunInfo({
         <div className="mt-1">
           <SeedShare seed={seed} origin={origin} />
         </div>
+        {onCodex && (
+          <button
+            type="button"
+            onClick={onCodex}
+            aria-haspopup="dialog"
+            className="mt-4 min-h-[48px] w-full border border-zinc-600 px-4 py-3 text-xs font-bold uppercase tracking-wider text-zinc-200 touch-manipulation hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 active:scale-[0.98]"
+            data-testid="run-info-codex"
+          >
+            Codex and run history
+          </button>
+        )}
         {onNewRun && (
           <button
             type="button"

@@ -80,6 +80,11 @@ import {
   stakeLevels,
   stakeModifiers,
   MAX_STAKE,
+  CodexSchema,
+  emptyCodex,
+  parseCodex,
+  recordRun,
+  serializeCodex,
   type DeskAction,
   type RunAction,
   type TableAction,
@@ -1539,6 +1544,59 @@ describe("Trial & Error run seeds (#1528)", () => {
         }
       ),
       { numRuns: 300 }
+    );
+  });
+});
+
+describe("Trial & Error Codex document (#1529)", () => {
+  it("reads any string or JSON value without throwing, always as a valid Codex", () => {
+    fc.assert(
+      fc.property(
+        fc.oneof(
+          fc.string(),
+          fc.json(),
+          fc.jsonValue().map((value) => JSON.stringify({ version: 1, value }))
+        ),
+        (raw) => {
+          const read = parseCodex(raw);
+          expect(["EMPTY", "OK", "INVALID", "NEWER"]).toContain(read.status);
+          expect(CodexSchema.safeParse(read.codex).success).toBe(true);
+          if (read.status !== "OK") expect(read.codex).toEqual(emptyCodex());
+        }
+      ),
+      { numRuns: 500 }
+    );
+  });
+
+  it("keeps at most ten runs, newest first, however many are recorded", () => {
+    fc.assert(
+      fc.property(fc.array(fc.nat({ max: 50 }), { maxLength: 40 }), (moves) => {
+        const codex = moves.reduce(
+          (c, n, i) =>
+            recordRun(c, {
+              actId: "biostat-ops",
+              seed: `seed-${i}`,
+              reached: {
+                actIndex: 0,
+                actTitle: "Act I",
+                blindIndex: 0,
+                blindTitle: "Small Blind",
+                round: null,
+              },
+              bestHand: null,
+              result: "FAILED",
+              campaignWon: false,
+              moves: n,
+            }),
+          emptyCodex()
+        );
+        expect(codex.history.length).toBe(Math.min(moves.length, 10));
+        if (moves.length > 0) {
+          expect(codex.history[0].seed).toBe(`seed-${moves.length - 1}`);
+        }
+        expect(parseCodex(serializeCodex(codex)).codex).toEqual(codex);
+      }),
+      { numRuns: 200 }
     );
   });
 });

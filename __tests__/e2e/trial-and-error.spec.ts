@@ -1692,3 +1692,74 @@ test.describe("Trial & Error guided Blind (#1089)", () => {
     await expect(page.getByTestId("tutorial-offer")).toHaveCount(0);
   });
 });
+
+test.describe("Trial & Error Codex and run history (#1529)", () => {
+  const codex = (page: Page) => page.getByRole("dialog", { name: "Codex" });
+
+  async function openCodex(page: Page) {
+    const info = page.getByRole("dialog", { name: "Run Info" });
+    await expect(async () => {
+      await page.getByTestId("run-info-button").click();
+      await expect(info).toBeVisible({ timeout: 1000 });
+    }).toPass({ timeout: 15000 });
+    await info.getByTestId("run-info-codex").click();
+    await expect(codex(page)).toBeVisible();
+    await codex(page).getByTestId("codex-tab-HAND").click();
+  }
+
+  for (const width of [375, 1280]) {
+    test(`records a played hand and keeps it across a reload at ${width}px`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 800 });
+      await launch(page);
+      await card(page, DRAFT_A).click();
+      await card(page, DM_LISTING).click();
+      await page.getByRole("button", { name: /Play Hand/ }).click();
+      await expect(page.getByTestId("round-score")).not.toHaveText(/^0\b/);
+
+      await openCodex(page);
+      const discovered = codex(page).locator(
+        '[data-testid="codex-entry"][data-discovered="true"]'
+      );
+      const hidden = codex(page).locator(
+        '[data-testid="codex-entry"][data-discovered="false"]'
+      );
+      await expect(discovered).toHaveCount(1);
+      await expect(discovered).toContainText(`First seen on seed ${SEED}`);
+      await expect(hidden.first()).toContainText("Undiscovered");
+      await expectNoHorizontalOverflow(page);
+      await expectNoBlockingViolations(page, `Codex at ${width}px`);
+      await page.keyboard.press("Escape");
+      await expect(codex(page)).toBeHidden();
+      await expect(page.getByTestId("run-info-button")).toBeFocused();
+
+      await page.reload({ waitUntil: "domcontentloaded" });
+      await expect(async () => {
+        const launchBtn = page.getByRole("button", { name: /Launch Cabinet/i });
+        if (await launchBtn.isVisible()) await launchBtn.click();
+        await expect(page.getByTestId("resume-run")).toBeVisible({
+          timeout: 3000,
+        });
+      }).toPass({ timeout: 30000 });
+      await page.getByRole("button", { name: "Resume run" }).click();
+      await openCodex(page);
+      await expect(discovered).toHaveCount(1);
+      await codex(page).getByRole("tab", { name: "Run history" }).click();
+      await expect(codex(page).getByRole("tabpanel")).toContainText(
+        "No finished runs yet"
+      );
+    });
+  }
+
+  test("reflows at 200% zoom", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await launch(page);
+    await page.evaluate(() => {
+      document.documentElement.style.fontSize = "200%";
+    });
+    await openCodex(page);
+    await expectNoHorizontalOverflow(page);
+    await expectNoBlockingViolations(page, "Codex at 200% zoom");
+  });
+});

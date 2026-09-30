@@ -17,18 +17,12 @@ const CostPips: React.FC<{ cost: number; blocked: boolean }> = ({
   blocked,
 }) => (
   <span className="flex shrink-0 items-center gap-1" aria-hidden="true">
-    {cost === 0 ? (
-      <span className="text-[10px] font-bold text-emerald-400 uppercase">
-        Free
-      </span>
-    ) : (
-      Array.from({ length: cost }, (_, i) => (
-        <span
-          key={i}
-          className={`h-2.5 w-2.5 rounded-[2px] ${blocked ? "border border-red-400/70" : "bg-[var(--sd-amber)]"}`}
-        />
-      ))
-    )}
+    {Array.from({ length: cost }, (_, i) => (
+      <span
+        key={i}
+        className={`h-2.5 w-2.5 rounded-[2px] ${blocked ? "border border-red-400/70" : "bg-[var(--sd-amber)]"}`}
+      />
+    ))}
   </span>
 );
 
@@ -43,8 +37,18 @@ export const DecisionPanel: React.FC<{
   documented: boolean;
   onDocumentedChange: (value: boolean) => void;
   onChoose: (event: StudyEvent, optionId: string) => void;
+  /** What the last action did, shown above the message. */
+  banner?: React.ReactNode;
   footer: React.ReactNode;
-}> = ({ state, event, documented, onDocumentedChange, onChoose, footer }) => {
+}> = ({
+  state,
+  event,
+  documented,
+  onDocumentedChange,
+  onChoose,
+  banner,
+  footer,
+}) => {
   const attention = state.attention;
   const left = event ? daysLeft(state, event) : 0;
   return (
@@ -53,6 +57,7 @@ export const DecisionPanel: React.FC<{
       className="flex min-h-[320px] min-w-0 flex-col border border-[var(--sd-hairline-strong)] bg-[var(--sd-surface)]"
       data-testid="study-decision"
     >
+      {banner}
       {event ? (
         <div className="flex-1 space-y-4 p-4 sm:p-5">
           <div className="flex min-w-0 items-start gap-3 border-b border-[var(--sd-hairline)] pb-3">
@@ -113,11 +118,13 @@ export const DecisionPanel: React.FC<{
                       <span className="flex shrink-0 flex-col items-end gap-0.5">
                         <CostPips cost={cost} blocked={blocked} />
                         <span
-                          className={`text-[10px] tabular-nums ${blocked ? "font-bold text-red-400" : "text-[var(--sd-amber)]"}`}
+                          className={`text-[10px] tabular-nums ${blocked ? "font-bold text-red-400" : cost === 0 ? "font-bold text-emerald-400 uppercase" : "text-[var(--sd-amber)]"}`}
                         >
                           {blocked
                             ? `Needs ${cost}, ${attention} left`
-                            : `${cost} attn`}
+                            : cost === 0
+                              ? "Free"
+                              : `${cost} attn`}
                         </span>
                       </span>
                     </button>

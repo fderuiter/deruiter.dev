@@ -716,3 +716,42 @@
   --sd-steel: #94a3b8;
   --sd-red: #f87171;
 }
+
+/* Study Director outcome strip (#1499): one entrance per action, transform
+ * and opacity only, and none at all under reduced motion. */
+@keyframes sd-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, -4px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes sd-chip {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+[data-sd-desk] .sd-enter {
+  animation: sd-enter 220ms ease-out both;
+}
+
+[data-sd-desk] .sd-chip {
+  animation: sd-chip 200ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-sd-desk] .sd-enter,
+  [data-sd-desk] .sd-chip {
+    animation: none;
+  }
+}

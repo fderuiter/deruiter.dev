@@ -60,3 +60,15 @@ export const COORDINATOR_LABELS = {
   invisible: "Says nothing, always fine",
   steady: "Steady and responsive",
 } as const;
+
+/** One line on what a phase asks of the Study Director. */
+export const PHASE_BRIEFS: Record<Phase, string> = {
+  protocol: "Settle the protocol before anyone starts on it.",
+  startup: "Sites activate and train. Enrollment opens soon.",
+  conduct:
+    "Subjects enroll and data flows. Queries pile up if nobody works them.",
+  cleaning: "Close the open queries before the database locks.",
+  analysis: "Statistics runs the plan. Late data changes cost the most now.",
+  reporting: "Results go into the report. The file has to support them.",
+  closeout: "Close sites and lock the file. Inspectors read what you left.",
+};

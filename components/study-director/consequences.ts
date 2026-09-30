@@ -39,7 +39,7 @@ const thousands = (n: number): string =>
   `$${Math.round(Math.abs(n) / 1000).toLocaleString("en-US")}K`;
 
 /** Meter movements between two readings, biggest first. */
-export function meterChanges(before: Meters, after: Meters): Change[] {
+function meterChanges(before: Meters, after: Meters): Change[] {
   return METER_IDS.map((id) => ({ id, delta: after[id] - before[id] }))
     .filter((m) => m.delta !== 0)
     .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
@@ -98,7 +98,7 @@ export function diffStates(before: StudyState, after: StudyState): Change[] {
   return changes;
 }
 
-export interface Lapse {
+interface Lapse {
   eventId: string;
   subject: string;
 }

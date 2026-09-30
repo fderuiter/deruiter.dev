@@ -10,6 +10,7 @@ import { sanitizeError } from "@/lib/error-sanitization";
 import { logger } from "@/lib/logger";
 import { generateId } from "@/lib/utils";
 import { safeGetItem, safeSetRawItem } from "@/lib/safe-storage";
+import { apiClient } from "@/lib/api-client";
 import {
   TelemetryOutbox,
   DEFAULT_OUTBOX_CAPACITY,
@@ -176,23 +177,25 @@ function rollbackEvent(projectSlug: string, eventType: string) {
 
 const transport: TelemetryTransport = async (item, options) => {
   try {
-    const res = await fetch("/api/telemetry", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    const res = await apiClient.post(
+      "/api/telemetry",
+      {
         projectSlug: item.projectSlug,
         eventType: item.eventType,
-      }),
-      keepalive: options?.keepalive ?? false,
-    });
+      },
+      {
+        keepalive: options?.keepalive ?? false,
+      }
+    );
     if (!res.ok && res.status !== 429) {
+      const errToLog = res.error
+        ? new Error(res.error)
+        : new Error(
+            `Failed to persist telemetry event with status: ${res.status}`
+          );
       logger.error(
         "Optimistic telemetry sync persistence failed:",
-        sanitizeError(
-          new Error(
-            `Failed to persist telemetry event with status: ${res.status}`
-          )
-        )
+        sanitizeError(errToLog)
       );
     }
     return res;
@@ -228,7 +231,7 @@ async function fetchTelemetryAggregates(options?: {
   inFlightFetch = (async () => {
     let expectedOffline = false;
     try {
-      const res = await fetch("/api/telemetry");
+      const res = await apiClient.get<TelemetryData>("/api/telemetry");
       if (!res.ok) {
         // Outside a production runtime the route marks a missing database as
         // expected (a dev server usually runs without Postgres). Reporting
@@ -237,7 +240,7 @@ async function fetchTelemetryAggregates(options?: {
         expectedOffline = res.headers.get("x-telemetry-offline") === "expected";
         throw new Error("Telemetry sync fetch failure");
       }
-      const data = (await res.json()) as TelemetryData;
+      const data = res.data ?? {};
       updateStore((prev) => ({
         telemetry: { ...prev.telemetry, ...data },
         syncFailed: false,
@@ -334,15 +337,18 @@ export function flushPendingDeferredQueue(): void {
   clearPendingDeferredQueue();
   for (const t of toFlush) {
     try {
-      fetch("/api/telemetry", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          projectSlug: t.projectSlug,
-          eventType: t.eventType,
-        }),
-        keepalive: true,
-      }).catch(() => {});
+      apiClient
+        .post(
+          "/api/telemetry",
+          {
+            projectSlug: t.projectSlug,
+            eventType: t.eventType,
+          },
+          {
+            keepalive: true,
+          }
+        )
+        .catch(() => {});
     } catch {
       // Safe catch on unload
     }

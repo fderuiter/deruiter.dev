@@ -8,7 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 Everything merged to `main` after 0.4.0 (2026-09-24) and shipped in the
-2026-09-29 production release. The version number is set when the release is
+2026-09-29 production release (`main` at
+`d1a66b7`). The version number is set when the release is
 tagged.
 
 ### Added

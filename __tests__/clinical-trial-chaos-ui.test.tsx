@@ -474,6 +474,25 @@ describe("ClinicalTrialChaos React Component UI Suite", () => {
     vi.useRealTimers();
   });
 
+  it("ignores a malformed stored CRF Studio protocol (#1507)", async () => {
+    mockStorage.setItem("crf_active_protocol", "{not json");
+
+    await act(async () => {
+      root.render(<ClinicalTrialChaos />);
+    });
+
+    const loadBtn = Array.from(container.querySelectorAll("button")).find((b) =>
+      b.textContent?.includes("Load Authored Protocol")
+    );
+    expect(loadBtn).toBeTruthy();
+    await act(async () => {
+      loadBtn?.click();
+    });
+    expect(announcements).toContain(
+      "No authored protocol found. Author one in CRF Studio first."
+    );
+  });
+
   it("accepts a compliant choice and lets the player retry after a rejection with a CRF Studio protocol loaded (#1150)", async () => {
     vi.useFakeTimers();
     // Every generated field starts flagged.

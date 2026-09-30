@@ -8,7 +8,6 @@ import React, {
   useCallback,
 } from "react";
 import Link from "next/link";
-import { clamp } from "@/lib/game-utils";
 import Image from "next/image";
 import { useAudio } from "@/components/providers/AudioProvider";
 import { useTelemetry } from "@/hooks/useTelemetry";

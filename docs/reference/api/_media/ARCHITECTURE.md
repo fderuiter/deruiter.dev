@@ -529,8 +529,9 @@ To eliminate visual clipping, text overlapping, and unmanaged z-index escalation
 - **Stacking Context Isolation & Standardized Elevation Scale:**
   - Applies CSS `isolation: isolate` (`.section-isolate`) to multi-layered composite sections, preventing internal z-indexes from bleeding into sibling components.
   - Replaces arbitrary `z-[9999]` inflations with a bounded 4-tier elevation scale (`-z-10` background, `z-10` content, `z-40` fixed nav, `z-50` dialogs/modals).
-- **Component Independence via Container Queries (`@container`):**
+- **Component Independence via Container Queries (`@container`) & Fluid Viewports:**
   - Card modules (`BentoGrid`, `PretextCard`, `ProjectTeaserGrid`, `CaseStudyShowcase`) declare `@container` contexts, allowing internal typography, padding, and flex flows to adapt relative to parent column width.
+  - Interactive SVG viewports and canvas workspace wrappers (`ProofCanvas`, `ProofWorkspaceSkeleton`, `VectorComparisonViewer`) eliminate fixed horizontal bounds (`min-w-[760px]`, `min-w-[800px]`) in favor of fluid `w-full` wrappers, container query width units (`w-[100cqw]`), and dynamic `ResizeObserver` coordinate boundary tracking (`maxGuideX`).
 - **Dynamic Content & Zoom Stress Invariant:**
   - Verified via `__tests__/defensive-css-stress.test.tsx` simulating +40% elongated strings, 100-character unbroken tokens, and 200% font scaling.
 

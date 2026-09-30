@@ -230,7 +230,6 @@ describe("Standardized Pre-Game Setup Wizard", () => {
           <PlayCabinet
             gameId={game.id}
             title={game.title}
-            accentColor="amber"
             icon={<div data-testid="game-icon" />}
             instructions="Test Instructions"
             controls={[]}

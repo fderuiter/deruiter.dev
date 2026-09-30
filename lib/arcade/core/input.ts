@@ -58,7 +58,10 @@ export class ArcadeInputManager {
   /**
    * Attaches DOM event listeners to the canvas and window.
    */
-  public attach(canvas: HTMLCanvasElement, getMetrics: () => ViewportMetrics): void {
+  public attach(
+    canvas: HTMLCanvasElement,
+    getMetrics: () => ViewportMetrics
+  ): void {
     this.detach();
     this.canvas = canvas;
     this.getMetrics = getMetrics;
@@ -83,7 +86,10 @@ export class ArcadeInputManager {
       this.canvas.removeEventListener("pointerdown", this.onPointerDownEvent);
       this.canvas.removeEventListener("pointermove", this.onPointerMoveEvent);
       this.canvas.removeEventListener("pointerup", this.onPointerUpEvent);
-      this.canvas.removeEventListener("pointercancel", this.onPointerCancelEvent);
+      this.canvas.removeEventListener(
+        "pointercancel",
+        this.onPointerCancelEvent
+      );
       this.canvas = null;
     }
 
@@ -110,7 +116,12 @@ export class ArcadeInputManager {
     this.virtualActionA = false;
     this.virtualActionB = false;
     this.virtualActionC = false;
-    this.virtualDirState = { up: false, down: false, left: false, right: false };
+    this.virtualDirState = {
+      up: false,
+      down: false,
+      left: false,
+      right: false,
+    };
   }
 
   public handleKeyDown(code: string): void {
@@ -169,7 +180,12 @@ export class ArcadeInputManager {
 
   public setVirtualDirection(dir: VirtualDirection, pressed: boolean): void {
     if (dir === "neutral") {
-      this.virtualDirState = { up: false, down: false, left: false, right: false };
+      this.virtualDirState = {
+        up: false,
+        down: false,
+        left: false,
+        right: false,
+      };
       return;
     }
     this.virtualDirState[dir] = pressed;
@@ -222,7 +238,8 @@ export class ArcadeInputManager {
       this.keysDown.has("ShiftRight");
     const keyActionC = this.keysDown.has("KeyL") || this.keysDown.has("KeyC");
 
-    const actionA = keyActionA || this.virtualActionA || this.primaryPointer.isDown;
+    const actionA =
+      keyActionA || this.virtualActionA || this.primaryPointer.isDown;
     const actionB = keyActionB || this.virtualActionB;
     const actionC = keyActionC || this.virtualActionC;
 
@@ -239,7 +256,10 @@ export class ArcadeInputManager {
     };
   }
 
-  private translatePointerCoords(clientX: number, clientY: number): { x: number; y: number } {
+  private translatePointerCoords(
+    clientX: number,
+    clientY: number
+  ): { x: number; y: number } {
     if (!this.canvas || !this.getMetrics) {
       return { x: clientX, y: clientY };
     }
@@ -264,7 +284,10 @@ export class ArcadeInputManager {
   };
 
   private onPointerUpEvent = (e: PointerEvent): void => {
-    if (this.canvas && typeof this.canvas.releasePointerCapture === "function") {
+    if (
+      this.canvas &&
+      typeof this.canvas.releasePointerCapture === "function"
+    ) {
       try {
         if (this.canvas.hasPointerCapture?.(e.pointerId)) {
           this.canvas.releasePointerCapture(e.pointerId);

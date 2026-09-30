@@ -19,7 +19,7 @@ export const TerminalLog: React.FC<TerminalLogProps> = ({ logs }) => {
   return (
     <div className="w-full rounded-xl border border-zinc-800 bg-black/90 font-mono overflow-hidden shadow-inner">
       {/* Terminal Title Bar */}
-      <div className="flex items-center justify-between border-b border-zinc-800/80 bg-zinc-950 px-3 py-1.5 text-[10px] text-zinc-500">
+      <div className="flex items-center justify-between border-b border-zinc-800/80 bg-zinc-950 px-3 py-1.5 text-[10px] text-zinc-400">
         <div className="flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-rose-500/70" />
           <span className="w-2 h-2 rounded-full bg-amber-500/70" />
@@ -59,7 +59,7 @@ export const TerminalLog: React.FC<TerminalLogProps> = ({ logs }) => {
               key={log.id}
               className="flex items-start gap-2 leading-relaxed"
             >
-              <span className="text-zinc-600 shrink-0 select-none text-[10px]">
+              <span className="text-zinc-400 shrink-0 select-none text-[10px]">
                 {log.timestamp}
               </span>
               <span className={`${textStyle} shrink-0 select-none`}>

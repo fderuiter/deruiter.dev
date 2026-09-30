@@ -103,8 +103,13 @@ export const LeanIdeInspector: React.FC<LeanIdeInspectorProps> = ({
           </div>
 
           {/* Syntax Highlighted Lean 4 Script */}
-          <div className="relative rounded-xl border border-zinc-800 bg-zinc-900/90 p-3.5 overflow-x-auto">
-            <div className="flex items-center justify-between text-[10px] text-zinc-500 mb-2 border-b border-zinc-800/80 pb-1.5">
+          <div
+            role="region"
+            aria-label="Generated Lean source"
+            tabIndex={0}
+            className="relative rounded-xl border border-zinc-800 bg-zinc-900/90 p-3.5 overflow-x-auto"
+          >
+            <div className="flex items-center justify-between text-[10px] text-zinc-400 mb-2 border-b border-zinc-800/80 pb-1.5">
               <span>Main.lean · Local Text Generator</span>
               <span>
                 {hasAdmittedStep
@@ -117,7 +122,7 @@ export const LeanIdeInspector: React.FC<LeanIdeInspectorProps> = ({
             <pre className="text-xs text-zinc-300 font-mono leading-relaxed whitespace-pre">
               {leanCode.split("\n").map((line, idx) => {
                 let colorClass = "text-zinc-300";
-                if (line.startsWith("--")) colorClass = "text-zinc-500 italic";
+                if (line.startsWith("--")) colorClass = "text-zinc-400 italic";
                 else if (line.startsWith("theorem"))
                   colorClass = "text-purple-400 font-bold";
                 else if (
@@ -209,7 +214,7 @@ export const LeanIdeInspector: React.FC<LeanIdeInspectorProps> = ({
 
                   <div className="pt-2 border-t border-zinc-800 text-[11px] text-zinc-400 space-y-1">
                     <div>
-                      <span className="text-zinc-500 font-bold">
+                      <span className="text-zinc-400 font-bold">
                         Failure RAM Penalty:
                       </span>{" "}
                       {tac.failureCost} GB

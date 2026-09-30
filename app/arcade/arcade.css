@@ -2,6 +2,79 @@
  * Decoupled from app/globals.css so the landing page critical path is not blocked by arcade CSS.
  */
 
+/* Arcade Kit tokens (#1516, #1576).
+ * Scoped to [data-game], which PlayCabinet sets on the cabinet, so nothing
+ * leaks into the portfolio frame. Surfaces and signal colours are shared by
+ * every game; --game-accent is each game's one identity hue, used for its
+ * cabinet chrome (Launch button, classic bezel, subtitle) and never as a
+ * status signal. */
+[data-game] {
+  --arcade-stage: #0d0e11;
+  --arcade-panel: #13151a;
+  --arcade-raised: #1a1d24;
+  --arcade-hairline: rgba(255, 255, 255, 0.08);
+  --arcade-text: #f4f4f6;
+  --arcade-text-dim: #a1a1aa;
+  --arcade-amber: #f59e0b;
+  --arcade-emerald: #10b981;
+  --arcade-red: #ef4444;
+  --arcade-steel: #94a3b8;
+  --game-accent: var(--arcade-amber);
+}
+
+[data-game="working-with-duck"] {
+  --game-accent: #fbbf24;
+}
+[data-game="laser-loon"] {
+  --game-accent: #2dd4bf;
+}
+[data-game="quasi-puzzler"] {
+  --game-accent: #818cf8;
+}
+[data-game="garmin-watch"] {
+  --game-accent: #22d3ee;
+}
+[data-game="clinical-chaos"] {
+  --game-accent: #60a5fa;
+}
+[data-game="retro-labyrinth"] {
+  --game-accent: #4ade80;
+}
+[data-game="meme-vault"] {
+  --game-accent: var(--arcade-emerald);
+}
+
+[data-game] .arcade-accent-text {
+  color: var(--game-accent);
+}
+
+/* Cabinet icons carry their own Tailwind colour; the attract screen shows
+ * them in the game's accent instead. */
+[data-game] .arcade-accent-text svg {
+  color: var(--game-accent);
+}
+
+[data-game] .arcade-launch-button {
+  background-color: var(--game-accent);
+  border-color: color-mix(in srgb, var(--game-accent) 55%, black);
+  box-shadow: 0 10px 24px -8px
+    color-mix(in srgb, var(--game-accent) 45%, transparent);
+}
+
+[data-game] .arcade-launch-button:hover {
+  background-color: color-mix(in srgb, var(--game-accent) 85%, white);
+}
+
+[data-game] .arcade-launch-button:focus-visible {
+  outline: 2px solid var(--arcade-text);
+  outline-offset: 3px;
+}
+
+[data-game] .arcade-bezel-accent {
+  border-color: color-mix(in srgb, var(--game-accent) 45%, transparent);
+  box-shadow: 0 0 30px color-mix(in srgb, var(--game-accent) 12%, transparent);
+}
+
 /* Trial & Error: Biostat Ops cabinet tokens (ADR 0046 amendment, #942).
  * Scoped to [data-te-cabinet] so nothing leaks into the portfolio frame.
  * "Calm at rest, loud when scoring": .te-loud-* layers only apply while the

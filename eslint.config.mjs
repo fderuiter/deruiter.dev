@@ -20,6 +20,22 @@ const processEnvRestriction = {
     "Direct access to process.env is forbidden in application modules. Access configuration exclusively through validated schema exports in '@/lib/env'.",
 };
 
+const clipboardRestriction = {
+  selector:
+    "MemberExpression[object.name='navigator'][property.name='clipboard']",
+  message:
+    "Do not access navigator.clipboard directly. Use copyToClipboard from @/lib/clipboard, useClipboard hook from @/hooks/useClipboard, or <CopyButton /> component instead.",
+};
+
+// Call sites that still write to navigator.clipboard directly. They sit in
+// files owned by other work lanes (CRF Studio, Laser Loon) and migrate with
+// that work (#1123); until then they keep every other restriction.
+const pendingClipboardMigrationFiles = [
+  "components/crf/RightInspector/InspectorPanel.tsx",
+  "components/crf/Terminal/StudioTerminal.tsx",
+  "components/laser-loon/AssetDistributionHub.tsx",
+];
+
 // The files that implement what the global restrictions point callers to.
 // lib/arcade/utils.ts holds clamp() itself; lib/game-utils.ts re-exports it.
 const restrictedSyntaxHelperFiles = [
@@ -60,19 +76,38 @@ const eslintConfig = defineConfig([
     },
   },
   // Application logging goes through the StructuredLogger in lib/logger.ts,
-  // which sanitizes errors and reports to Sentry (#1137). no-console sits in a
-  // block of its own because flat config replaces a rule's options when a later
-  // block matching the same file sets that rule again. It covers only
-  // directories that are already clean; scripts/ and lib/dx/ are CLIs whose
-  // console output is their interface. email-service.ts is exempt until its
-  // three remaining console calls migrate (held back by an open PR).
+  // which sanitizes errors and reports to Sentry (#1137, #1475). no-console sits
+  // in a block of its own because flat config replaces a rule's options when a
+  // later block matching the same file sets that rule again. The exemptions are
+  // the places where console output is the point, or where the logger cannot
+  // be used:
+  //   lib/dx/**                  CLIs whose console output is their interface
+  //                              (scripts/ is outside the block for the same reason).
+  //   lib/logger.ts              the logger's own console sink.
+  //   lib/env.ts                 the logger depends on it, so it cannot log through it.
+  //   lib/client-sentry.ts       lazy-loads the Sentry SDK; the logger imports it
+  //                              statically, which would defeat the lazy load, and
+  //                              its one warning reports that Sentry failed to load.
+  //   lib/build-integrity.ts     build-time stderr is deliberate.
+  //   hooks/useConsoleArt.ts     the console art Easter egg.
+  // instrumentation-client.ts is exempt by not being listed: it runs before the
+  // logger exists.
   {
     files: [
       "app/**/*.{ts,tsx,js,jsx}",
       "components/**/*.{ts,tsx,js,jsx}",
-      "lib/services/**/*.{ts,tsx,js,jsx}",
+      "lib/**/*.{ts,tsx,js,jsx}",
+      "hooks/**/*.{ts,tsx,js,jsx}",
     ],
-    ignores: ["app/generated/**", "lib/services/email-service.ts"],
+    ignores: [
+      "app/generated/**",
+      "lib/dx/**",
+      "lib/logger.ts",
+      "lib/env.ts",
+      "lib/client-sentry.ts",
+      "lib/build-integrity.ts",
+      "hooks/useConsoleArt.ts",
+    ],
     rules: {
       "no-console": "error",
     },
@@ -113,12 +148,7 @@ const eslintConfig = defineConfig([
       "no-restricted-syntax": [
         "error",
         nestedMathRestriction,
-        {
-          selector:
-            "MemberExpression[object.name='navigator'][property.name='clipboard']",
-          message:
-            "Do not access navigator.clipboard directly. Use copyToClipboard from @/lib/clipboard, useClipboard hook from @/hooks/useClipboard, or <CopyButton /> component instead.",
-        },
+        clipboardRestriction,
         {
           selector:
             "JSXAttribute[name.name='style'] ObjectExpression > Property[key.type='Identifier']",
@@ -135,12 +165,25 @@ const eslintConfig = defineConfig([
     },
   },
   // Application modules. This block replaces the one above for these files,
-  // so it restates the nested Math.min/max restriction next to process.env.
-  // The clipboard and inline-style restrictions are not restated yet: turning
-  // them on here needs the call-site migrations tracked in #1123.
+  // so it restates the nested Math.min/max and navigator.clipboard
+  // restrictions next to process.env. The inline-style restriction is not
+  // restated yet: turning it on here needs its own call-site migration.
   {
     files: applicationModuleFiles,
     ignores: [...envExemptFiles, ...restrictedSyntaxHelperFiles],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        nestedMathRestriction,
+        clipboardRestriction,
+        processEnvRestriction,
+      ],
+    },
+  },
+  // Application modules awaiting their clipboard migration keep the other
+  // restrictions from the block above, without the clipboard one.
+  {
+    files: pendingClipboardMigrationFiles,
     rules: {
       "no-restricted-syntax": [
         "error",

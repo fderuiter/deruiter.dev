@@ -268,4 +268,63 @@ test.describe("Headless Synthetic User Probes & Journey Monitoring", () => {
       "Sitemap: https://deruiter.dev/sitemap.xml"
     );
   });
+
+  // The Trial & Error Card Table journey (#1560, #925): launch the cabinet,
+  // review and play the Small Blind's winning hand by keyboard, clear it and
+  // cash out into the Procurement Shop. A fixed seed deals the same hand.
+  test("Probe 9: Trial & Error Card Table from launch to the shop", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto("/arcade/trial-and-error?seed=shop-24", {
+      waitUntil: "domcontentloaded",
+    });
+    await expect(async () => {
+      const launchBtn = page.getByRole("button", { name: /Launch Cabinet/i });
+      if (await launchBtn.isVisible()) await launchBtn.click();
+      await expect(page.getByTestId("hand")).toBeVisible({ timeout: 3000 });
+    }).toPass({ timeout: 30000 });
+
+    // Inspect the first draft and correct every cell the SAP flags.
+    const draft = page.locator('[data-card-id="C-T14.1.1-A"]');
+    const firstCell = page
+      .getByTestId("inspect-drawer")
+      .getByRole("row")
+      .nth(1)
+      .getByRole("gridcell")
+      .first();
+    await expect(async () => {
+      await draft.focus();
+      await page.keyboard.press("i");
+      await expect(firstCell).toBeFocused({ timeout: 2000 });
+    }).toPass({ timeout: 15000 });
+    for (let row = 0; row < 5; row++) {
+      for (let col = 0; col < 3; col++) {
+        await page.keyboard.press("Enter");
+        await page.keyboard.press("c");
+        if (col < 2) await page.keyboard.press("ArrowRight");
+      }
+      if (row < 4) {
+        await page.keyboard.press("Home");
+        await page.keyboard.press("ArrowDown");
+      }
+    }
+    await page.keyboard.press("Escape");
+    await expect(page.getByTestId("inspect-drawer")).toBeHidden();
+
+    // Play the draft with its supporting listing.
+    await page.keyboard.press("Space");
+    await page.keyboard.press("ArrowRight");
+    await page.keyboard.press("Space");
+    await page.keyboard.press("Enter");
+    await page.keyboard.press("Space");
+    await expect(page.getByTestId("blind-result")).toContainText(
+      "Blind cleared",
+      { timeout: 15000 }
+    );
+
+    await page.getByRole("button", { name: /^Cash out \$\d+k$/ }).click();
+    await expect(page.getByTestId("shop")).toBeVisible();
+    await expect(page.getByTestId("shop-items")).toBeVisible();
+  });
 });

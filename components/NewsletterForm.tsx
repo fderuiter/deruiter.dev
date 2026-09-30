@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useId, useRef } from "react";
 import {
   IconMail,
   IconSend,
@@ -11,6 +11,7 @@ import {
 import { useAudio } from "@/components/providers/AudioProvider";
 import { useAnnouncer } from "@/hooks/useAnnouncer";
 import { apiClient } from "@/lib/api-client";
+import { NewsletterSubscriptionSchema, toFieldErrors } from "@/lib/schemas";
 
 const NEWSLETTER_SUCCESS_MESSAGE = "Almost there: check your inbox to confirm.";
 
@@ -32,6 +33,10 @@ export function NewsletterForm({
     "idle" | "submitting" | "success" | "error"
   >("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // True only when the email failed validation, so network and server
+  // failures do not mark the input itself as invalid.
+  const [emailInvalid, setEmailInvalid] = useState(false);
+  const errorId = useId();
 
   const mountedRef = useRef(false);
   const { playHover } = useAudio();
@@ -47,23 +52,28 @@ export function NewsletterForm({
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setErrorMessage(null);
+    setEmailInvalid(false);
 
-    const cleanEmail = email.trim();
-    if (!cleanEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+    // Validate against the same contract /api/newsletter enforces.
+    const parsed = NewsletterSubscriptionSchema.safeParse({
+      email,
+      _gotcha: gotcha,
+      _clientTimestamp: mountedAt || Date.now(),
+    });
+    if (!parsed.success) {
       // The alert below only renders in the "error" state, so the message
       // must be paired with it or it never reaches the reader (#1469).
       setStatus("error");
-      setErrorMessage("Please enter a valid email address.");
+      setEmailInvalid(true);
+      setErrorMessage(
+        toFieldErrors(parsed.error).email ?? parsed.error.issues[0].message
+      );
       return;
     }
 
     setStatus("submitting");
 
-    const res = await apiClient.post("/api/newsletter", {
-      email: cleanEmail,
-      _gotcha: gotcha,
-      _clientTimestamp: mountedAt || Date.now(),
-    });
+    const res = await apiClient.post("/api/newsletter", parsed.data);
 
     if (res.networkError) {
       setStatus("error");
@@ -152,9 +162,14 @@ export function NewsletterForm({
                 name="email"
                 required
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (emailInvalid) setEmailInvalid(false);
+                }}
                 placeholder="your.email@domain.com"
                 aria-label="Email address for engineering dispatch newsletter"
+                aria-invalid={emailInvalid}
+                aria-describedby={emailInvalid ? errorId : undefined}
                 disabled={status === "submitting"}
                 className="w-full pl-9 pr-3 py-2 bg-zinc-950/80 border border-zinc-800 rounded-xl text-xs font-mono text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-colors disabled:opacity-50"
               />
@@ -182,6 +197,7 @@ export function NewsletterForm({
 
           {status === "error" && errorMessage && (
             <div
+              id={errorId}
               role="alert"
               className="flex items-center gap-2 pt-1 text-[11px] font-mono text-rose-400"
             >

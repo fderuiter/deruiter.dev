@@ -14,6 +14,7 @@ import type {
   ShiftOperationalState,
 } from "./types";
 import { selectAmbientEvent, AMBIENT_EVENTS_CATALOG } from "./ambient-events";
+import { logger } from "@/lib/logger";
 
 /**
  * Creates the initial shift state.
@@ -1075,7 +1076,7 @@ class PatrolShiftEngineImpl implements PatrolShiftEngine {
       try {
         listener();
       } catch (err) {
-        console.error("Error in PatrolShiftEngine listener:", err);
+        logger.error("Error in PatrolShiftEngine listener:", err);
       }
     }
   }

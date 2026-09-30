@@ -136,4 +136,21 @@ describe("Garmin Watch crash overlay names the real cause (#1177)", () => {
       expect(container.textContent).not.toContain("CRASH / OOM");
     }
   );
+
+  // #1557: the canvas paints its own crash screen underneath; a translucent
+  // overlay let that title show through behind the HTML one.
+  it("covers the canvas crash screen with an opaque overlay", async () => {
+    await act(async () => {
+      root.render(
+        <GarminWatchSimulator initialState={crashedWith("Null Pointer")} />
+      );
+    });
+    const overlay = container.querySelector(
+      '[data-testid="garmin-end-overlay"]'
+    );
+    expect(overlay).not.toBeNull();
+    const classes = (overlay?.className ?? "").split(/\s+/);
+    expect(classes).toContain("bg-black");
+    expect(classes.some((c) => /^bg-black\/\d+$/.test(c))).toBe(false);
+  });
 });

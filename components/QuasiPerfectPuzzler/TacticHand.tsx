@@ -18,7 +18,11 @@ interface TacticHandProps {
   selectedTacticIndex: number | null;
   onSelectTactic: (index: number) => void;
   onCardDragStart: (index: number) => void;
-  onCardDragEnd: (index: number, event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => void;
+  onCardDragEnd: (
+    index: number,
+    event: MouseEvent | TouchEvent | PointerEvent,
+    info: PanInfo
+  ) => void;
   isProofComplete?: boolean;
 }
 
@@ -37,7 +41,7 @@ export const TacticHand: React.FC<TacticHandProps> = ({
         <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 font-mono">
           Tactic Hand (Available Cards)
         </span>
-        <span className="text-[10px] text-zinc-500 font-mono">
+        <span className="text-[10px] text-zinc-400 font-mono">
           {availableTactics.length} cards available
         </span>
       </div>
@@ -45,11 +49,14 @@ export const TacticHand: React.FC<TacticHandProps> = ({
       <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
         {availableTactics.map((item, idx) => {
           const tacticId = typeof item === "string" ? item : item.id;
-          const hypothesisTarget = typeof item === "object" ? item.hypothesis : undefined;
-          const labelOverride = typeof item === "object" ? item.labelOverride : undefined;
+          const hypothesisTarget =
+            typeof item === "object" ? item.hypothesis : undefined;
+          const labelOverride =
+            typeof item === "object" ? item.labelOverride : undefined;
           const tactic: TacticDef = tacticDefs[tacticId] || tacticDefs.rfl;
 
-          const isAffordable = currentRam >= tactic.baseRamCost || tactic.id === "sorry";
+          const isAffordable =
+            currentRam >= tactic.baseRamCost || tactic.id === "sorry";
           const isDisabled = isProofComplete || !isAffordable;
 
           return (

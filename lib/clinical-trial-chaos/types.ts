@@ -36,7 +36,14 @@ export interface ClinicalSubject {
   subjectLabel: string; // e.g. "SUBJ-1042"
   studySite: string; // e.g. "Site 014 (Boston General)"
   observations: ClinicalObservation[];
-  status: "queued" | "validating" | "routing" | "signing" | "submitted" | "rejected" | "expired";
+  status:
+    | "queued"
+    | "validating"
+    | "routing"
+    | "signing"
+    | "submitted"
+    | "rejected"
+    | "expired";
   isSAE?: boolean; // Serious Adverse Event - urgent priority rush!
   timeRemaining: number; // Seconds before auditor flags it as overdue
   maxTime: number;
@@ -44,7 +51,8 @@ export interface ClinicalSubject {
   createdAt: number;
 }
 
-export type VendorSystem = "iMednet" | "Veeva Vault" | "OpenClinica" | "Medidata Rave" | "Oracle InForm";
+export type VendorSystem =
+  "iMednet" | "Veeva Vault" | "OpenClinica" | "Medidata Rave" | "Oracle InForm";
 
 export interface StationConfig {
   id: CDISCDomain;
@@ -59,7 +67,8 @@ export interface StationConfig {
   processedCount: number;
 }
 
-export type AuditorBehavior = "patrolling" | "inspecting" | "suspicious" | "issuing_483" | "coffee_break";
+export type AuditorBehavior =
+  "patrolling" | "inspecting" | "suspicious" | "issuing_483" | "coffee_break";
 
 export interface AuditorState {
   x: number; // 0 to 1 percentage
@@ -103,7 +112,8 @@ export interface AuditLogEntry {
 
 export type GamePhase = 1 | 2 | 3;
 export type GameMode = "campaign" | "endless";
-export type PlayState = "idle" | "playing" | "paused" | "phase_cleared" | "game_over";
+export type PlayState =
+  "idle" | "playing" | "paused" | "phase_cleared" | "game_over";
 
 export interface GameScoreState {
   score: number;
@@ -131,7 +141,8 @@ export type SignatureReason =
   | "Protocol Compliance Review"
   | "Urgent Safety Expedited";
 
-export type PowerUpType = "fda-coffee-break" | "auto-clean" | "query-extension" | "fast-sign";
+export type PowerUpType =
+  "fda-coffee-break" | "auto-clean" | "query-extension" | "fast-sign";
 
 export interface PowerUpState {
   id: PowerUpType;
@@ -165,7 +176,11 @@ export interface SDTMRow {
 
 export interface BIMOFinding {
   id: string;
-  category: "Data Integrity" | "Protocol Compliance" | "21 CFR Part 11" | "Adverse Event Reporting";
+  category:
+    | "Data Integrity"
+    | "Protocol Compliance"
+    | "21 CFR Part 11"
+    | "Adverse Event Reporting";
   severity: "Critical" | "Major" | "Minor";
   description: string;
   regulation: string;
@@ -187,10 +202,15 @@ export interface BIMOInspectionReport {
   runId: string;
   auditDate: string;
   overallScore: number;
-  verdict: "NAI (No Action Indicated - Approved)" | "VAI (Voluntary Action Indicated)" | "OAI (Official Action Indicated - Form 483 Issued)";
-  complianceRate: number;
+  verdict:
+    | "NAI (No Action Indicated - Approved)"
+    | "VAI (Voluntary Action Indicated)"
+    | "OAI (Official Action Indicated - Form 483 Issued)";
+  /** Percentage of submitted CRFs that were clean, or `null` when none were submitted. */
+  complianceRate: number | null;
   findings: BIMOFinding[];
   submittedCRFs: number;
-  cleanRate: number;
+  /** Percentage of submitted CRFs that were clean, or `null` when none were submitted. */
+  cleanRate: number | null;
   summary: string;
 }

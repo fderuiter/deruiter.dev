@@ -101,6 +101,10 @@ describe("ESLint no-console boundary (#1137)", () => {
   it.each([
     "lib/services/probe-service.ts",
     "lib/services/garmin/probe/handler.ts",
+    "lib/services/email-service.ts",
+    "lib/probe-utils.ts",
+    "lib/patrol/probe-engine.ts",
+    "hooks/useProbe.ts",
     "app/probe/page.tsx",
     "components/ProbeWidget.tsx",
   ])(
@@ -113,7 +117,16 @@ describe("ESLint no-console boundary (#1137)", () => {
     60_000
   );
 
-  it.each(["scripts/probe-cli.ts", "lib/dx/probe-bench.ts", "lib/logger.ts"])(
+  it.each([
+    "scripts/probe-cli.ts",
+    "lib/dx/probe-bench.ts",
+    "lib/logger.ts",
+    "lib/env.ts",
+    "lib/client-sentry.ts",
+    "lib/build-integrity.ts",
+    "hooks/useConsoleArt.ts",
+    "instrumentation-client.ts",
+  ])(
     "allows console output in %s",
     async (file) => {
       const messages = await consoleMessagesFor(file);

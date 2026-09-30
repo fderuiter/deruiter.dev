@@ -305,6 +305,17 @@ export const QuasiPerfectPuzzler: React.FC = () => {
     setPendingMode(null);
   }, []);
 
+  const armedTacticItem =
+    selectedTacticIndex !== null
+      ? currentLevel.availableTactics[selectedTacticIndex]
+      : undefined;
+  const armedTacticId =
+    typeof armedTacticItem === "string" ? armedTacticItem : armedTacticItem?.id;
+  const targetingHint =
+    armedTacticId === "rw"
+      ? "rw rewrites a sub-term that matches one side of its hypothesis, never the whole equality. Tap that sub-term; a wrong tap costs 1 GB."
+      : undefined;
+
   // Execute a tactic on a given target AST node
   const executeTacticOnNode = useCallback(
     (tacticIdx: number, targetNodeId: string | null) => {
@@ -896,7 +907,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
                 <span className="text-[10px] font-bold uppercase tracking-wider text-brand-cyan">
                   Chapter {currentLevel.chapter} · {currentLevel.chapterTitle}
                 </span>
-                <span className="text-zinc-600">|</span>
+                <span className="text-zinc-400">|</span>
                 <span className="text-[10px] font-bold text-purple-400">
                   {currentLevel.subtitle}
                 </span>
@@ -1153,6 +1164,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
                     onHoverTarget={setHoveredTargetId}
                     isProofComplete={levelSolved || activeSubgoal.isCompleted}
                     isTacticActive={selectedTacticIndex !== null}
+                    targetingHint={targetingHint}
                   />
                 )}
               </div>

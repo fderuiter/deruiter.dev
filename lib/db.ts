@@ -3,6 +3,7 @@ import { PrismaNeon } from "@prisma/adapter-neon";
 import { PrismaClient } from "@/app/generated/prisma/client";
 import ws from "ws";
 import { getEnv } from "./env";
+import { logger } from "./logger";
 
 export {
   SuppressionReason,
@@ -37,9 +38,13 @@ const verifyDatabaseHealthAsync = (baseClient: PrismaClient) => {
     })
     .catch((error) => {
       if (currentEnv.VERCEL_ENV === "production") {
-        console.warn("Database health check non-blocking notice:", error);
+        // A non-blocking notice: kept out of Sentry so a lagging schema
+        // cannot spend the error quota on every cold start.
+        logger.warn("Database health check non-blocking notice:", error, {
+          skipTelemetry: true,
+        });
       } else {
-        console.error(
+        logger.error(
           "Database health check failed: Schema version is behind. Missing TelemetryEvent.",
           error
         );

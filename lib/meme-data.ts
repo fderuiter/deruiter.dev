@@ -9,6 +9,7 @@ import {
   safeIsAvailable,
   safeSetRawItem,
 } from "@/lib/safe-storage";
+import { emitAppEvent } from "@/lib/event-bus";
 
 export interface MemeQuote {
   id: string;
@@ -388,11 +389,7 @@ export function unlockAchievement(achievementId: string): boolean {
       ) {
         return false;
       }
-      window.dispatchEvent(
-        new CustomEvent("meme_achievement_unlocked", {
-          detail: { id: achievementId },
-        })
-      );
+      emitAppEvent("meme_achievement_unlocked", { id: achievementId });
       return true;
     }
     return false;
@@ -420,9 +417,7 @@ export function setVaultUnlocked(unlocked: boolean = true): void {
     ) {
       return;
     }
-    window.dispatchEvent(
-      new CustomEvent("meme_vault_unlocked_change", { detail: { unlocked } })
-    );
+    emitAppEvent("meme_vault_unlocked_change", { unlocked });
   } catch {
     // Ignore storage errors in restricted contexts
   }

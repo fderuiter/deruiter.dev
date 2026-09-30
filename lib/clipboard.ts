@@ -1,4 +1,5 @@
 import { resolveBaseUrl } from "./domain";
+import { logger } from "./logger";
 
 /**
  * Centralized Clipboard Helper with Environment-Aware Base Origin
@@ -23,16 +24,30 @@ export function getActiveHostUrl(): string {
  */
 export async function copyToClipboard(text: string): Promise<void> {
   if (typeof window === "undefined") {
-    throw new Error("Clipboard copy is only supported in browser environments.");
+    throw new Error(
+      "Clipboard copy is only supported in browser environments."
+    );
   }
 
   // Attempt modern navigator.clipboard API first
-  if (navigator && navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+  if (
+    navigator &&
+    navigator.clipboard &&
+    typeof navigator.clipboard.writeText === "function"
+  ) {
     try {
       await navigator.clipboard.writeText(text);
       return;
     } catch (err) {
-      console.warn("navigator.clipboard.writeText failed, attempting legacy fallback...", err);
+      // A denied or unavailable clipboard is expected browser behavior, not a
+      // defect, so it stays out of Sentry.
+      logger.warn(
+        "navigator.clipboard.writeText failed, attempting legacy fallback...",
+        err,
+        {
+          skipTelemetry: true,
+        }
+      );
     }
   }
 
@@ -46,19 +61,21 @@ export async function copyToClipboard(text: string): Promise<void> {
     textArea.style.left = "0";
     textArea.style.opacity = "0";
     textArea.style.pointerEvents = "none";
-    
+
     document.body.appendChild(textArea);
     textArea.focus();
     textArea.select();
-    
+
     const successful = document.execCommand("copy");
     document.body.removeChild(textArea);
-    
+
     if (!successful) {
       throw new Error("Fallback document.execCommand('copy') returned false.");
     }
   } catch (err) {
     const originalMessage = err instanceof Error ? err.message : String(err);
-    throw new Error(`Clipboard copy failed in this environment: ${originalMessage}`);
+    throw new Error(
+      `Clipboard copy failed in this environment: ${originalMessage}`
+    );
   }
 }

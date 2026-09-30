@@ -16,9 +16,7 @@ export function ReadingProgressBar() {
       const totalHeight =
         document.documentElement.scrollHeight - window.innerHeight;
 
-      setProgress(
-        totalHeight > 0 ? clamp(scrollY / totalHeight, 0, 1) : 0
-      );
+      setProgress(totalHeight > 0 ? clamp(scrollY / totalHeight, 0, 1) : 0);
     };
     const handleScroll = () => {
       if (!frame) {

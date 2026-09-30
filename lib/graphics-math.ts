@@ -123,14 +123,14 @@ export function mapDataToCoordinates(
   maxVal?: number
 ): Point2D[] {
   if (data.length === 0) return [];
-  
+
   const computedMin = minVal !== undefined ? minVal : Math.min(...data, 0);
   const computedMax = maxVal !== undefined ? maxVal : Math.max(...data, 1);
   const usableHeight = height - padding * 2;
 
   return data.map((val, i) => {
     const x = data.length > 1 ? (i / (data.length - 1)) * width : 0;
-    const percentage = (val - computedMin) / ((computedMax - computedMin) || 1);
+    const percentage = (val - computedMin) / (computedMax - computedMin || 1);
     const y = height - padding - percentage * usableHeight;
     return { x, y };
   });
@@ -152,13 +152,13 @@ export function generateCubicSplinePath(
   for (let i = 1; i < points.length; i++) {
     const prev = points[i - 1];
     const curr = points[i];
-    
+
     // Compute mid-point control points
     const cp1x = prev.x + (curr.x - prev.x) / 2;
     const cp1y = prev.y;
     const cp2x = prev.x + (curr.x - prev.x) / 2;
     const cp2y = curr.y;
-    
+
     pathD += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${curr.x} ${curr.y}`;
   }
 
@@ -183,7 +183,10 @@ export function generateHermiteSplinePath(
   }
   if (points.length === 1) {
     const pathD = `M ${points[0].x} ${points[0].y}`;
-    const areaD = heightForArea !== undefined ? `${pathD} L ${points[0].x} ${heightForArea} Z` : "";
+    const areaD =
+      heightForArea !== undefined
+        ? `${pathD} L ${points[0].x} ${heightForArea} Z`
+        : "";
     return { pathD, areaD };
   }
 
@@ -208,7 +211,10 @@ export function generateHermiteSplinePath(
     }
   }
 
-  const maxFrameHeight = heightForArea !== undefined ? heightForArea : Math.max(...points.map((p) => p.y), 0);
+  const maxFrameHeight =
+    heightForArea !== undefined
+      ? heightForArea
+      : Math.max(...points.map((p) => p.y), 0);
   // A negative explicit height pins control points to 0, as it always has.
   const frameCeiling = Math.max(0, maxFrameHeight);
 

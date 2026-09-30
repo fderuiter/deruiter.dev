@@ -89,13 +89,16 @@ export const WorkingWithDuckClient: React.FC = () => {
               gameId="working-with-duck"
               title="Working With Duck"
               subtitle="Code, Toys, and Questionable Priorities"
-              accentColor="amber"
               icon={<IconBone className="w-8 h-8 text-amber-400" />}
               instructions="Try to finish your code while Duck requests toys, treats, and belly rubs. Take him to the park, save a few scrapbook moments, and see how much work gets done."
               controls={[
-                { key: "1-3", action: "Toss Toys" },
-                { key: "4", action: "Trade Treats" },
-                { key: "Space", action: "Steer Duck" },
+                { key: "1-3 / 4", action: "Toss Toys / Trade Treats" },
+                { key: "Space", action: "Work Sprint (Park: Jump)" },
+                { key: "W / ↑ ↓", action: "Steer in the Park" },
+                {
+                  key: "Q / W / E / R",
+                  action: "Sit / High Five / Drop It / Spin",
+                },
               ]}
               importComponent={WorkingWithDuckLoader}
             >

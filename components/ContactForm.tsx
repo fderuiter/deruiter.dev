@@ -11,7 +11,12 @@ import {
   IconMessageCode,
   IconTarget,
 } from "@tabler/icons-react";
-import { CONTACT_INTENTS, ContactIntent } from "@/lib/schemas";
+import {
+  CONTACT_INTENTS,
+  ContactIntent,
+  ContactSubmissionSchema,
+  toFieldErrors,
+} from "@/lib/schemas";
 import { logger } from "@/lib/logger";
 import { apiClient } from "@/lib/api-client";
 import { useAnnouncer } from "@/hooks/useAnnouncer";
@@ -55,35 +60,24 @@ export function ContactForm({
     }
   }, []);
 
-  const validateForm = (): Record<string, string> => {
-    const errors: Record<string, string> = {};
-
-    if (!name.trim() || name.trim().length < 2) {
-      errors.name = "Please enter your name (at least 2 characters).";
-    }
-
-    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      errors.email = "Please provide a valid email address.";
-    }
-
-    if (!subject.trim() || subject.trim().length < 3) {
-      errors.subject = "Subject must be at least 3 characters.";
-    }
-
-    if (!message.trim() || message.trim().length < 10) {
-      errors.message = "Message must be at least 10 characters.";
-    }
-
-    setFieldErrors(errors);
-    return errors;
-  };
-
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setErrorMessage(null);
 
-    const errors = validateForm();
-    if (Object.keys(errors).length > 0) {
+    // Validate against the same contract /api/contact enforces, so bounds,
+    // email format and tone checks fail here instead of after a roundtrip.
+    const parsed = ContactSubmissionSchema.safeParse({
+      name,
+      email,
+      intent,
+      subject,
+      message,
+      _gotcha: gotcha,
+      _clientTimestamp: mountedAt || Date.now(),
+    });
+    if (!parsed.success) {
+      const errors = toFieldErrors(parsed.error);
+      setFieldErrors(errors);
       // Move focus to the first invalid field (in visual/DOM order) so
       // keyboard and screen-reader users are told a submission failed and
       // where to fix it, instead of focus silently staying on the submit
@@ -97,21 +91,21 @@ export function ContactForm({
             : errors.message
               ? messageInputRef
               : null;
-      firstInvalidRef?.current?.focus();
+      if (firstInvalidRef) {
+        firstInvalidRef.current?.focus();
+      } else {
+        // An issue on a field with no input (none today) must still be
+        // shown, or the submit would fail with no feedback at all.
+        setStatus("error");
+        setErrorMessage(parsed.error.issues[0]?.message ?? null);
+      }
       return;
     }
 
+    setFieldErrors({});
     setStatus("submitting");
 
-    const res = await apiClient.post("/api/contact", {
-      name: name.trim(),
-      email: email.trim(),
-      intent,
-      subject: subject.trim(),
-      message: message.trim(),
-      _gotcha: gotcha,
-      _clientTimestamp: mountedAt || Date.now(),
-    });
+    const res = await apiClient.post("/api/contact", parsed.data);
 
     if (res.networkError) {
       logger.error("Contact submission error: network request failed");

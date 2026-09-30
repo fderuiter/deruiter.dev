@@ -6,7 +6,9 @@
 
 ## Modules
 
+- [hooks/useAnimationFrame](hooks/useAnimationFrame/README.md)
 - [hooks/useAnnouncer](hooks/useAnnouncer/README.md)
+- [hooks/useAppEvent](hooks/useAppEvent/README.md)
 - [hooks/useCanvasResolution](hooks/useCanvasResolution/README.md)
 - [hooks/useClipboard](hooks/useClipboard/README.md)
 - [hooks/useConsoleArt](hooks/useConsoleArt/README.md)
@@ -162,6 +164,7 @@
 - [lib/engineering-bridges](lib/engineering-bridges/README.md)
 - [lib/env](lib/env/README.md)
 - [lib/error-sanitization](lib/error-sanitization/README.md)
+- [lib/event-bus](lib/event-bus/README.md)
 - [lib/exceptions](lib/exceptions/README.md)
 - [lib/fallback-blog-posts](lib/fallback-blog-posts/README.md)
 - [lib/fallback-case-studies](lib/fallback-case-studies/README.md)
@@ -310,10 +313,13 @@
 - [lib/trial-and-error/internal/rng](lib/trial-and-error/internal/rng/README.md)
 - [lib/trial-and-error/internal/rounding](lib/trial-and-error/internal/rounding/README.md)
 - [lib/trial-and-error/internal/run](lib/trial-and-error/internal/run/README.md)
+- [lib/trial-and-error/internal/run-rules](lib/trial-and-error/internal/run-rules/README.md)
 - [lib/trial-and-error/internal/save](lib/trial-and-error/internal/save/README.md)
 - [lib/trial-and-error/internal/scoring](lib/trial-and-error/internal/scoring/README.md)
 - [lib/trial-and-error/internal/shop](lib/trial-and-error/internal/shop/README.md)
 - [lib/trial-and-error/internal/snapshots](lib/trial-and-error/internal/snapshots/README.md)
+- [lib/trial-and-error/internal/sponsors](lib/trial-and-error/internal/sponsors/README.md)
+- [lib/trial-and-error/internal/stakes](lib/trial-and-error/internal/stakes/README.md)
 - [lib/trial-and-error/internal/table](lib/trial-and-error/internal/table/README.md)
 - [lib/trial-and-error/internal/timeline](lib/trial-and-error/internal/timeline/README.md)
 - [lib/trial-and-error/internal/tutorial](lib/trial-and-error/internal/tutorial/README.md)

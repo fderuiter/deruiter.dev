@@ -121,14 +121,14 @@ export const MOCK_OBSERVATION_TEMPLATES: MockObservationTemplate[] = [
     validValues: ["1985-04-12", "1992-11-03", "1978-08-25", "2001-02-17"],
     corruptions: [
       {
-        rawValue: "13/25/1990",
+        rawValue: "12/25/1990",
         correctedValue: "1990-12-25",
         errorType: "invalid-date",
-        hint: "Month 13 does not exist (ISO 8601 YYYY-MM-DD required)",
+        hint: "US MM/DD/YYYY entry (ISO 8601 YYYY-MM-DD required)",
         explanation:
-          "Transposed month/day format. Convert MM/DD/YYYY error to ISO 8601 YYYY-MM-DD standard: 1990-12-25.",
+          "12/25/1990 is month 12, day 25 in US MM/DD/YYYY order. Reorder to ISO 8601 YYYY-MM-DD: 1990-12-25.",
         ctCode: "ISO8601",
-        options: ["1990-12-25", "1990-13-25", "25-13-1990", "1990-01-25"],
+        options: ["1990-12-25", "1990-25-12", "25-12-1990", "12/25/1990"],
       },
       {
         rawValue: "1995-02-30",
@@ -1195,16 +1195,16 @@ export const SEEDED_SCENARIOS: readonly ClinicalSubject[] = [
       {
         id: "obs-1002-1",
         field: "Date of Birth",
-        rawValue: "13/25/1990",
+        rawValue: "12/25/1990",
         correctedValue: "1990-12-25",
-        currentValue: "13/25/1990",
+        currentValue: "12/25/1990",
         destination: "DM",
         errorType: "invalid-date",
-        hint: "Month 13 does not exist (ISO standard required)",
+        hint: "US MM/DD/YYYY entry (ISO 8601 YYYY-MM-DD required)",
         explanation:
-          "Convert MM/DD/YYYY error to ISO 8601 YYYY-MM-DD standard: 1990-12-25.",
+          "12/25/1990 is month 12, day 25 in US MM/DD/YYYY order. Reorder to ISO 8601 YYYY-MM-DD: 1990-12-25.",
         ctCode: "ISO8601",
-        options: ["1990-12-25", "1990-13-25", "25-13-1990", "1990-01-25"],
+        options: ["1990-12-25", "1990-25-12", "25-12-1990", "12/25/1990"],
         isResolved: false,
       },
       {

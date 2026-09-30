@@ -69,7 +69,6 @@ export const TrialAndErrorClient: React.FC = () => {
             gameId="trial-and-error"
             title="Trial & Error: Biostat Ops"
             subtitle="Card Table · Small Blind"
-            accentColor="amber"
             icon={
               <IconTable
                 className="h-8 w-8 text-amber-400"

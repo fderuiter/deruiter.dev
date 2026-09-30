@@ -89,13 +89,12 @@ export const QuasiPuzzlerClient: React.FC = () => {
               gameId="quasi-puzzler"
               title="Quasi-Perfect Puzzler"
               subtitle="Small Proofs, Limited Memory"
-              accentColor="purple"
               icon={<IconBrain className="w-8 h-8 text-purple-400" />}
               instructions="Apply tactics to a proof tree and work your way to a complete proof. You can skip a goal with “sorry,” but the score will notice."
               controls={[
                 { key: "Click / Drag", action: "Apply Tactic" },
-                { key: "Z / Y", action: "Undo / Redo" },
-                { key: "R", action: "Reset Level" },
+                { key: "Ctrl/⌘ + Z / Y", action: "Undo / Redo" },
+                { key: "R / M", action: "Reset Level / Switch Mode" },
                 { key: "H / C / B", action: "Hints / IDE / Brief" },
                 { key: "sorry", action: "Admit Goal" },
               ]}

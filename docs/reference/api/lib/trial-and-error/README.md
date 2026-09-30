@@ -176,6 +176,12 @@ Re-exports [ArmSchema](types/variables/ArmSchema.md)
 
 ***
 
+### BASE\_STAKE\_MODIFIERS
+
+Re-exports [BASE_STAKE_MODIFIERS](internal/stakes/variables/BASE_STAKE_MODIFIERS.md)
+
+***
+
 ### BIOSTAT\_OPS\_CAMPAIGN
 
 Re-exports [BIOSTAT_OPS_CAMPAIGN](scenarios/variables/BIOSTAT_OPS_CAMPAIGN.md)
@@ -281,6 +287,12 @@ Re-exports [CampaignScore](internal/package/interfaces/CampaignScore.md)
 ### canAfford
 
 Re-exports [canAfford](internal/cpu/functions/canAfford.md)
+
+***
+
+### CardChipBonus
+
+Re-exports [CardChipBonus](internal/sponsors/interfaces/CardChipBonus.md)
 
 ***
 
@@ -626,9 +638,27 @@ Re-exports [decimalPlaces](internal/rounding/functions/decimalPlaces.md)
 
 ***
 
+### DEFAULT\_RUN\_CHOICE
+
+Re-exports [DEFAULT_RUN_CHOICE](internal/run-rules/variables/DEFAULT_RUN_CHOICE.md)
+
+***
+
 ### DEFAULT\_SEED
 
 Re-exports [DEFAULT_SEED](internal/run/variables/DEFAULT_SEED.md)
+
+***
+
+### DEFAULT\_SPONSOR\_ID
+
+Re-exports [DEFAULT_SPONSOR_ID](internal/sponsors/variables/DEFAULT_SPONSOR_ID.md)
+
+***
+
+### DEFAULT\_STAKE
+
+Re-exports [DEFAULT_STAKE](internal/stakes/variables/DEFAULT_STAKE.md)
 
 ***
 
@@ -1172,6 +1202,12 @@ Re-exports [IrQuestionView](internal/table/interfaces/IrQuestionView.md)
 
 ***
 
+### isDefaultChoice
+
+Re-exports [isDefaultChoice](internal/run-rules/functions/isDefaultChoice.md)
+
+***
+
 ### isFreeCrisisChoice
 
 Re-exports [isFreeCrisisChoice](types/functions/isFreeCrisisChoice.md)
@@ -1280,6 +1316,12 @@ Re-exports [LockedOutput](internal/table/interfaces/LockedOutput.md)
 
 ***
 
+### lockedRelicSlot
+
+Re-exports [lockedRelicSlot](internal/stakes/functions/lockedRelicSlot.md)
+
+***
+
 ### LoggedAction
 
 Re-exports [LoggedAction](internal/save/type-aliases/LoggedAction.md)
@@ -1295,6 +1337,12 @@ Re-exports [LONG_PRESS_MS](internal/hand-input/variables/LONG_PRESS_MS.md)
 ### LONG\_PRESS\_SLOP\_PX
 
 Re-exports [LONG_PRESS_SLOP_PX](internal/hand-input/variables/LONG_PRESS_SLOP_PX.md)
+
+***
+
+### MAX\_STAKE
+
+Re-exports [MAX_STAKE](internal/stakes/variables/MAX_STAKE.md)
 
 ***
 
@@ -1700,6 +1748,12 @@ Re-exports [rerollPrice](internal/shop/functions/rerollPrice.md)
 
 ***
 
+### resolveRunChoice
+
+Re-exports [resolveRunChoice](internal/run-rules/functions/resolveRunChoice.md)
+
+***
+
 ### RestoredRun
 
 Re-exports [RestoredRun](internal/save/interfaces/RestoredRun.md)
@@ -1748,6 +1802,12 @@ Re-exports [RuleCheckResultSchema](types/variables/RuleCheckResultSchema.md)
 
 ***
 
+### ruledPlan
+
+Re-exports [ruledPlan](internal/run-rules/functions/ruledPlan.md)
+
+***
+
 ### RuleResultOptions
 
 Re-exports [RuleResultOptions](internal/scoring/interfaces/RuleResultOptions.md)
@@ -1787,6 +1847,18 @@ Re-exports [RunActView](internal/run/interfaces/RunActView.md)
 ### runBlinds
 
 Re-exports [runBlinds](internal/run/functions/runBlinds.md)
+
+***
+
+### runChoice
+
+Re-exports [runChoice](internal/run/functions/runChoice.md)
+
+***
+
+### RunChoice
+
+Re-exports [RunChoice](internal/run-rules/interfaces/RunChoice.md)
 
 ***
 
@@ -2108,6 +2180,12 @@ Re-exports [SnapshotRefSchema](types/variables/SnapshotRefSchema.md)
 
 ***
 
+### Sponsor
+
+Re-exports [Sponsor](internal/sponsors/interfaces/Sponsor.md)
+
+***
+
 ### SPONSOR\_SAFETY\_SCENARIO
 
 Re-exports [SPONSOR_SAFETY_SCENARIO](scenarios/variables/SPONSOR_SAFETY_SCENARIO.md)
@@ -2117,6 +2195,48 @@ Re-exports [SPONSOR_SAFETY_SCENARIO](scenarios/variables/SPONSOR_SAFETY_SCENARIO
 ### SPONSOR\_TOPLINE\_SCENARIO
 
 Re-exports [SPONSOR_TOPLINE_SCENARIO](scenarios/variables/SPONSOR_TOPLINE_SCENARIO.md)
+
+***
+
+### sponsorById
+
+Re-exports [sponsorById](internal/sponsors/functions/sponsorById.md)
+
+***
+
+### sponsorCardChips
+
+Re-exports [sponsorCardChips](internal/sponsors/functions/sponsorCardChips.md)
+
+***
+
+### sponsorHandLevels
+
+Re-exports [sponsorHandLevels](internal/sponsors/functions/sponsorHandLevels.md)
+
+***
+
+### sponsorHandSize
+
+Re-exports [sponsorHandSize](internal/sponsors/functions/sponsorHandSize.md)
+
+***
+
+### SponsorId
+
+Re-exports [SponsorId](types/type-aliases/SponsorId.md)
+
+***
+
+### SponsorIdSchema
+
+Re-exports [SponsorIdSchema](types/variables/SponsorIdSchema.md)
+
+***
+
+### SPONSORS
+
+Re-exports [SPONSORS](internal/sponsors/variables/SPONSORS.md)
 
 ***
 
@@ -2132,9 +2252,63 @@ Re-exports [StagedTableSchema](types/variables/StagedTableSchema.md)
 
 ***
 
+### Stake
+
+Re-exports [Stake](types/type-aliases/Stake.md)
+
+***
+
+### stakeCashOut
+
+Re-exports [stakeCashOut](internal/stakes/functions/stakeCashOut.md)
+
+***
+
+### StakeLevel
+
+Re-exports [StakeLevel](internal/stakes/interfaces/StakeLevel.md)
+
+***
+
+### stakeLevels
+
+Re-exports [stakeLevels](internal/stakes/functions/stakeLevels.md)
+
+***
+
+### stakeModifiers
+
+Re-exports [stakeModifiers](internal/stakes/functions/stakeModifiers.md)
+
+***
+
+### StakeModifiers
+
+Re-exports [StakeModifiers](internal/stakes/interfaces/StakeModifiers.md)
+
+***
+
+### STAKES
+
+Re-exports [STAKES](internal/stakes/variables/STAKES.md)
+
+***
+
+### StakeSchema
+
+Re-exports [StakeSchema](types/variables/StakeSchema.md)
+
+***
+
 ### STALE\_ALERT
 
 Re-exports [STALE_ALERT](internal/table/variables/STALE_ALERT.md)
+
+***
+
+### startingInventory
+
+Re-exports [startingInventory](internal/run-rules/functions/startingInventory.md)
 
 ***
 
@@ -2201,6 +2375,12 @@ Re-exports [Subject](types/type-aliases/Subject.md)
 ### SubjectSchema
 
 Re-exports [SubjectSchema](types/variables/SubjectSchema.md)
+
+***
+
+### SuspendedRelic
+
+Re-exports [SuspendedRelic](internal/run/interfaces/SuspendedRelic.md)
 
 ***
 

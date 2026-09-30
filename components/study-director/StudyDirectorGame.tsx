@@ -16,17 +16,20 @@ import {
   STUDY_24_081_TEAM,
   auditSite,
   beginStudy,
+  computeMeters,
   createStudy,
   endDay,
   finalizeStudy,
   inbox,
   resolveEvent,
+  type Meters,
   type StudyEvent,
   type StudyState,
 } from "@/lib/study-director";
 import { DashboardPanel, MetersPanel, SitesPanel, TeamPanel } from "./Panels";
 import { DecisionPanel } from "./DecisionPanel";
 import { InboxPanel } from "./InboxPanel";
+import { PhaseTimeline } from "./PhaseTimeline";
 import { StatusBar } from "./StatusBar";
 import { money } from "./format";
 import { ReportView } from "./ReportView";
@@ -49,6 +52,8 @@ export const StudyDirectorGame: React.FC = () => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [documented, setDocumented] = useState(false);
   const [notice, setNotice] = useState("");
+  // Meters at the start of the current day, so the desk can show drift.
+  const [baseline, setBaseline] = useState<Meters | null>(null);
 
   useEffect(() => {
     if (state) saveStudy(state);
@@ -81,6 +86,7 @@ export const StudyDirectorGame: React.FC = () => {
 
   const start = useCallback((next: StudyState) => {
     setState(next);
+    setBaseline(computeMeters(next));
     setSaved(null);
     setSelectedId(null);
     setDocumented(false);
@@ -120,7 +126,7 @@ export const StudyDirectorGame: React.FC = () => {
       }
       setState(result.state);
       setNotice(
-        `Audited ${result.report.siteId}. The real numbers are on the Sites panel.`
+        `Audited ${state.sites.find((x) => x.id === siteId)?.name ?? siteId}. The real numbers are on its site card.`
       );
     },
     [state]
@@ -130,6 +136,7 @@ export const StudyDirectorGame: React.FC = () => {
     if (!state) return;
     const next = endDay(state);
     setState(next);
+    setBaseline(computeMeters(next));
     setSelectedId(null);
     setDocumented(false);
     setNotice(
@@ -152,6 +159,7 @@ export const StudyDirectorGame: React.FC = () => {
       skipped += 1;
     }
     setState(next);
+    setBaseline(computeMeters(next));
     setSelectedId(null);
     setDocumented(false);
     setNotice(
@@ -330,6 +338,7 @@ export const StudyDirectorGame: React.FC = () => {
       </div>
 
       <StatusBar state={state} />
+      <PhaseTimeline state={state} />
 
       {report ? (
         <ReportView report={report} onRestart={restart} />
@@ -353,7 +362,7 @@ export const StudyDirectorGame: React.FC = () => {
               footer={running ? actions : null}
             />
             <div className="min-w-0 space-y-3">
-              <MetersPanel state={state} />
+              <MetersPanel state={state} baseline={baseline} />
               <TeamPanel state={state} />
             </div>
           </div>

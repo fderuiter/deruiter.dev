@@ -36,8 +36,6 @@ export const StatusBar: React.FC<{ state: StudyState }> = ({ state }) => {
   const phase = phaseForDay(state.day, state.setup.durationDays);
   const total = state.setup.durationDays + state.slipDays;
   const day = Math.min(state.day, total);
-  const planned = pct(state.setup.durationDays, total);
-  const elapsed = pct(day, total);
   const burn = pct(state.spent, state.setup.budget);
   const timeUsed = pct(day, state.setup.durationDays);
   const over = state.spent > state.setup.budget;
@@ -77,21 +75,6 @@ export const StatusBar: React.FC<{ state: StudyState }> = ({ state }) => {
             </span>
           ) : null}
         </p>
-        <div
-          aria-hidden="true"
-          className="relative mt-1 h-1.5 w-full overflow-hidden bg-zinc-800"
-        >
-          {state.slipDays > 0 ? (
-            <div
-              className="absolute inset-y-0 right-0 bg-[repeating-linear-gradient(135deg,rgba(245,158,11,0.55)_0_3px,transparent_3px_6px)]"
-              style={{ width: `${100 - planned}%` }}
-            />
-          ) : null}
-          <div
-            className="absolute inset-y-0 left-0 bg-[var(--sd-steel)]"
-            style={{ width: `${elapsed}%` }}
-          />
-        </div>
       </Readout>
 
       <Readout label="Budget">

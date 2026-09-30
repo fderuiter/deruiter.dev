@@ -1826,7 +1826,10 @@ export function ProofWorkspaceClient() {
 
         <NextPrevNav
           prev={{ title: "NeuroRecon CAD Simulator", href: "/neuro" }}
-          next={{ title: "Alignment Simulator", href: "/simulator" }}
+          next={{
+            title: "Architectural Archetype Simulator",
+            href: "/simulator",
+          }}
           backToHub={{ title: "Return to Experience Hub", href: "/" }}
         />
       </div>

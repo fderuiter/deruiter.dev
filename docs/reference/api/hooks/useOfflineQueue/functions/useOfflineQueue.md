@@ -8,7 +8,7 @@
 
 > **useOfflineQueue**(`options?`): `object`
 
-Custom hook providing access to the persistent offline request queue and online status.
+Custom hook providing access to the persistent offline request queue, dead-letter queue, and online status.
 Uses useSyncExternalStore for hydration-safe, referentially stable, cross-tab synchronized state.
 
 ## Parameters
@@ -31,6 +31,14 @@ Optional hook configuration options.
 
 `void`
 
+### clearDLQ
+
+> **clearDLQ**: () => `void` = `clearDLQCallback`
+
+#### Returns
+
+`void`
+
 ### dequeue
 
 > **dequeue**: (`id`) => `void`
@@ -44,6 +52,28 @@ Optional hook configuration options.
 #### Returns
 
 `void`
+
+### dismissDLQItem
+
+> **dismissDLQItem**: (`id`) => `void` = `dismissDLQItemCallback`
+
+#### Parameters
+
+##### id
+
+`string`
+
+#### Returns
+
+`void`
+
+### dlqLength
+
+> **dlqLength**: `number` = `dlqQueue.length`
+
+### dlqQueue
+
+> **dlqQueue**: [`DeadLetterItem`](../interfaces/DeadLetterItem.md)\<`unknown`\>[]
 
 ### enqueue
 
@@ -88,3 +118,17 @@ Optional hook configuration options.
 ### queueLength
 
 > **queueLength**: `number` = `queue.length`
+
+### retryDLQItem
+
+> **retryDLQItem**: (`id`) => `void` = `retryDLQItemCallback`
+
+#### Parameters
+
+##### id
+
+`string`
+
+#### Returns
+
+`void`

@@ -19,13 +19,28 @@ export interface QueuedRequest<T = unknown> {
   maxRetries?: number;
 }
 
+export interface DeadLetterItem<T = unknown> extends QueuedRequest<T> {
+  failedAt: number;
+  statusCode: number;
+  failureReason: string;
+}
+
 const STORAGE_KEY = "portfolio_offline_queue";
 const QUEUE_CHANGE_EVENT = "portfolio-offline-queue-change";
+
+const DLQ_STORAGE_KEY = "portfolio_offline_dlq";
+const DLQ_CHANGE_EVENT = "portfolio-offline-dlq-change";
+const DLQ_ERROR_EVENT = "portfolio-offline-queue-error";
 
 interface CacheEntry {
   /** The value safeStorage last returned, used to detect external changes. */
   source: unknown;
   items: QueuedRequest[];
+}
+
+interface DLQCacheEntry {
+  source: unknown;
+  items: DeadLetterItem[];
 }
 
 /** Forces the next read to rebuild the cache even if safeStorage is unchanged. */
@@ -36,7 +51,13 @@ let memoryCache: CacheEntry = {
   items: [],
 };
 
+let memoryDLQCache: DLQCacheEntry = {
+  source: null,
+  items: [],
+};
+
 const subscribers = new Set<() => void>();
+const dlqSubscribers = new Set<() => void>();
 const onlineSubscribers = new Set<() => void>();
 
 let isProcessingQueue = false;
@@ -44,6 +65,10 @@ let retryTimer: ReturnType<typeof setTimeout> | null = null;
 
 function notifySubscribers() {
   subscribers.forEach((cb) => cb());
+}
+
+function notifyDLQSubscribers() {
+  dlqSubscribers.forEach((cb) => cb());
 }
 
 function notifyOnlineSubscribers() {
@@ -75,10 +100,42 @@ function writeStorage(items: QueuedRequest[]): void {
   // visits are still read back and flushed.
   const persisted = safeSetRawItem(STORAGE_KEY, JSON.stringify(items));
   memoryCache = { source: safeGetItem<unknown>(STORAGE_KEY), items };
-  if (persisted) {
+  if (persisted && typeof window !== "undefined") {
     window.dispatchEvent(new CustomEvent(QUEUE_CHANGE_EVENT));
   }
   notifySubscribers();
+}
+
+function readDLQStorage(): DeadLetterItem[] {
+  const stored = safeGetItem<unknown>(DLQ_STORAGE_KEY);
+  if (stored === memoryDLQCache.source) {
+    return memoryDLQCache.items;
+  }
+
+  if (Array.isArray(stored)) {
+    memoryDLQCache = { source: stored, items: stored as DeadLetterItem[] };
+    return memoryDLQCache.items;
+  }
+
+  if (stored !== null) {
+    logger.warn("Ignoring malformed dead-letter queue in storage.");
+  }
+  memoryDLQCache = { source: stored, items: [] };
+  return memoryDLQCache.items;
+}
+
+function writeDLQStorage(items: DeadLetterItem[]): void {
+  // Cap dead-letter queue size at 50 items using FIFO eviction.
+  const capped = items.slice(-50);
+  const persisted = safeSetRawItem(DLQ_STORAGE_KEY, JSON.stringify(capped));
+  memoryDLQCache = {
+    source: safeGetItem<unknown>(DLQ_STORAGE_KEY),
+    items: capped,
+  };
+  if (persisted && typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent(DLQ_CHANGE_EVENT));
+  }
+  notifyDLQSubscribers();
 }
 
 // Global window event listeners setup
@@ -89,11 +146,21 @@ if (typeof window !== "undefined") {
       readStorage();
       notifySubscribers();
     }
+    if (e.key === DLQ_STORAGE_KEY || e.key === null) {
+      memoryDLQCache = { source: STALE, items: [] };
+      readDLQStorage();
+      notifyDLQSubscribers();
+    }
   });
 
   window.addEventListener(QUEUE_CHANGE_EVENT, () => {
     readStorage();
     notifySubscribers();
+  });
+
+  window.addEventListener(DLQ_CHANGE_EVENT, () => {
+    readDLQStorage();
+    notifyDLQSubscribers();
   });
 
   window.addEventListener("online", () => {
@@ -184,6 +251,64 @@ export function getOfflineQueueLength(): number {
 }
 
 /**
+ * Get shallow array copy of current dead-letter queue items.
+ *
+ * @returns Array of dead-letter queued requests.
+ */
+export function getDLQ(): DeadLetterItem[] {
+  return [...readDLQStorage()];
+}
+
+/**
+ * Get length of current dead-letter queue.
+ *
+ * @returns Total count of dead-letter items.
+ */
+export function getDLQLength(): number {
+  return readDLQStorage().length;
+}
+
+/**
+ * Clear all items from the dead-letter queue.
+ */
+export function clearDLQ(): void {
+  writeDLQStorage([]);
+}
+
+/**
+ * Remove an item from the dead-letter queue by its unique ID.
+ *
+ * @param id Unique identifier of the dead-letter item.
+ */
+export function dismissDLQItem(id: string): void {
+  const current = readDLQStorage();
+  const updated = current.filter((item) => item.id !== id);
+  writeDLQStorage(updated);
+}
+
+/**
+ * Retry an item from the dead-letter queue by re-enqueueing it into the offline queue.
+ *
+ * @param id Unique identifier of the dead-letter item to retry.
+ */
+export function retryDLQItem(id: string): void {
+  const currentDLQ = readDLQStorage();
+  const itemToRetry = currentDLQ.find((item) => item.id === id);
+  if (!itemToRetry) return;
+
+  dismissDLQItem(id);
+  enqueueOfflineRequest({
+    id: itemToRetry.id,
+    type: itemToRetry.type,
+    endpoint: itemToRetry.endpoint,
+    method: itemToRetry.method,
+    headers: itemToRetry.headers,
+    body: itemToRetry.body,
+    maxRetries: itemToRetry.maxRetries,
+  });
+}
+
+/**
  * Process queued requests sequentially with exponential backoff retries.
  *
  * @returns Object summarizing processed and failed items count.
@@ -232,15 +357,70 @@ export async function flushOfflineQueue(): Promise<{
           typeof item.body === "string" ? item.body : JSON.stringify(item.body),
       });
 
-      if (
-        res.ok ||
-        (res.status >= 400 &&
-          res.status < 500 &&
-          res.status !== 429 &&
-          res.status !== 408)
-      ) {
+      if (res.ok) {
         dequeueOfflineRequest(item.id);
         processed++;
+      } else if (
+        res.status >= 400 &&
+        res.status < 500 &&
+        res.status !== 429 &&
+        res.status !== 408
+      ) {
+        failed++;
+        let failureReason = `HTTP ${res.status}: Client Error`;
+        try {
+          const targetRes = typeof res.clone === "function" ? res.clone() : res;
+          let data: unknown;
+          if (typeof targetRes.json === "function") {
+            try {
+              data = await targetRes.json();
+            } catch {
+              if (typeof targetRes.text === "function") {
+                data = await targetRes.text();
+              }
+            }
+          } else if (typeof targetRes.text === "function") {
+            data = await targetRes.text();
+          }
+
+          if (data && typeof data === "object") {
+            const obj = data as Record<string, unknown>;
+            if (typeof obj.message === "string") failureReason = obj.message;
+            else if (typeof obj.error === "string") failureReason = obj.error;
+            else if (
+              Array.isArray(obj.details) &&
+              typeof obj.details[0]?.message === "string"
+            ) {
+              failureReason = obj.details[0].message;
+            }
+          } else if (typeof data === "string" && data.trim().length > 0) {
+            failureReason = data;
+          }
+        } catch {
+          // Fallback to default failureReason if reading fails
+        }
+
+        const deadLetterItem: DeadLetterItem = {
+          ...item,
+          failedAt: Date.now(),
+          statusCode: res.status,
+          failureReason,
+        };
+
+        const currentDLQ = readDLQStorage();
+        writeDLQStorage([...currentDLQ, deadLetterItem]);
+        dequeueOfflineRequest(item.id);
+
+        logger.error(
+          `Offline request failed with status ${res.status} and moved to DLQ`,
+          { deadLetterItem }
+        );
+
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent(DLQ_ERROR_EVENT, { detail: deadLetterItem })
+          );
+        }
       } else {
         failed++;
         const nextRetries = item.retries + 1;
@@ -298,6 +478,13 @@ function subscribe(callback: () => void) {
   };
 }
 
+function subscribeDLQ(callback: () => void) {
+  dlqSubscribers.add(callback);
+  return () => {
+    dlqSubscribers.delete(callback);
+  };
+}
+
 function subscribeOnline(callback: () => void) {
   onlineSubscribers.add(callback);
   return () => {
@@ -309,10 +496,19 @@ function getSnapshot(): QueuedRequest[] {
   return readStorage();
 }
 
+function getDLQSnapshot(): DeadLetterItem[] {
+  return readDLQStorage();
+}
+
 const SERVER_SNAPSHOT: QueuedRequest[] = [];
+const SERVER_DLQ_SNAPSHOT: DeadLetterItem[] = [];
 
 function getServerSnapshot(): QueuedRequest[] {
   return SERVER_SNAPSHOT;
+}
+
+function getServerDLQSnapshot(): DeadLetterItem[] {
+  return SERVER_DLQ_SNAPSHOT;
 }
 
 function getOnlineSnapshot(): boolean {
@@ -328,13 +524,18 @@ export interface UseOfflineQueueOptions {
 }
 
 /**
- * Custom hook providing access to the persistent offline request queue and online status.
+ * Custom hook providing access to the persistent offline request queue, dead-letter queue, and online status.
  * Uses useSyncExternalStore for hydration-safe, referentially stable, cross-tab synchronized state.
  *
  * @param options Optional hook configuration options.
  */
 export function useOfflineQueue(options?: UseOfflineQueueOptions) {
   const queue = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const dlqQueue = useSyncExternalStore(
+    subscribeDLQ,
+    getDLQSnapshot,
+    getServerDLQSnapshot
+  );
   const isOnline = useSyncExternalStore(
     subscribeOnline,
     getOnlineSnapshot,
@@ -359,15 +560,29 @@ export function useOfflineQueue(options?: UseOfflineQueueOptions) {
   const dequeue = useCallback((id: string) => dequeueOfflineRequest(id), []);
   const clear = useCallback(() => clearOfflineQueue(), []);
   const flush = useCallback(() => flushOfflineQueue(), []);
+  const clearDLQCallback = useCallback(() => clearDLQ(), []);
+  const dismissDLQItemCallback = useCallback(
+    (id: string) => dismissDLQItem(id),
+    []
+  );
+  const retryDLQItemCallback = useCallback(
+    (id: string) => retryDLQItem(id),
+    []
+  );
 
   return {
     queue,
     queueLength: queue.length,
+    dlqQueue,
+    dlqLength: dlqQueue.length,
     isOnline,
     isProcessing: isProcessingQueue,
     enqueue,
     dequeue,
     clear,
     flush,
+    clearDLQ: clearDLQCallback,
+    dismissDLQItem: dismissDLQItemCallback,
+    retryDLQItem: retryDLQItemCallback,
   };
 }

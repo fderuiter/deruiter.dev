@@ -47,7 +47,14 @@ import { PHASE_LABELS } from "./labels";
 import { ShortcutSheet } from "./ShortcutSheet";
 import { StatusBar } from "./StatusBar";
 import { ReportView } from "./ReportView";
-import { clearStudySave, loadStudySave, saveStudy } from "./useStudySave";
+import {
+  clearStudySave,
+  loadStudySave,
+  loadTutorialSeen,
+  saveStudy,
+  saveTutorialSeen,
+} from "./useStudySave";
+import { DeskSpotlightTour } from "./DeskSpotlightTour";
 import {
   loadCareer,
   mergeCareers,
@@ -112,6 +119,7 @@ export const StudyDirectorGame: React.FC = () => {
   // Why the last action could not happen; shown until the next one does.
   const [alert, setAlert] = useState("");
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [showTour, setShowTour] = useState(false);
   // Meters at the start of the current day, so the desk can show drift.
   const [baseline, setBaseline] = useState<Meters | null>(null);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
@@ -178,17 +186,31 @@ export const StudyDirectorGame: React.FC = () => {
     [state, criticalCount, outcome, report]
   );
 
-  const start = useCallback((next: StudyState) => {
-    setState(next);
-    setBaseline(computeMeters(next));
-    setOutcome(null);
-    setSaved(null);
-    setSelectedId(null);
-    setDocumented(false);
-    setNews(null);
-    setConfirmAbandon(false);
-    setNotice(`Day ${next.day}. ${inbox(next).length} new messages.`);
-  }, []);
+  const start = useCallback(
+    (next: StudyState) => {
+      setState(next);
+      setBaseline(computeMeters(next));
+      setOutcome(null);
+      setSaved(null);
+      setSelectedId(null);
+      setDocumented(false);
+      setNews(null);
+      setConfirmAbandon(false);
+      setNotice(`Day ${next.day}. ${inbox(next).length} new messages.`);
+
+      if (
+        next.day === 1 &&
+        !loadTutorialSeen() &&
+        career.finished === 0 &&
+        career.started <= 1
+      ) {
+        setShowTour(true);
+      } else {
+        setShowTour(false);
+      }
+    },
+    [career]
+  );
 
   const startNew = useCallback(() => {
     updateCareer(recordStart(career));
@@ -357,6 +379,15 @@ export const StudyDirectorGame: React.FC = () => {
   }, []);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (showTour) {
+      const key = e.key.toLowerCase();
+      if (["1", "2", "3", "4", "5", "d", "e", "n"].includes(key)) {
+        saveTutorialSeen();
+        setShowTour(false);
+      } else {
+        return;
+      }
+    }
     if (
       !state ||
       state.status !== "running" ||
@@ -460,13 +491,15 @@ export const StudyDirectorGame: React.FC = () => {
 
   const actions = (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-      <button
-        type="button"
-        onClick={finishDay}
-        className="min-h-[44px] border border-[var(--sd-amber)] bg-[var(--sd-amber)]/10 px-4 text-sm font-bold text-amber-300 hover:bg-[var(--sd-amber)]/20 active:scale-[0.98]"
-      >
-        End day
-      </button>
+      <div data-sd-coach="end-day">
+        <button
+          type="button"
+          onClick={finishDay}
+          className="min-h-[44px] border border-[var(--sd-amber)] bg-[var(--sd-amber)]/10 px-4 text-sm font-bold text-amber-300 hover:bg-[var(--sd-amber)]/20 active:scale-[0.98]"
+        >
+          End day
+        </button>
+      </div>
       {events.length === 0 ? (
         <button
           type="button"
@@ -551,8 +584,9 @@ export const StudyDirectorGame: React.FC = () => {
       {showShortcuts ? (
         <ShortcutSheet onClose={() => setShowShortcuts(false)} />
       ) : null}
+      <DeskSpotlightTour isOpen={showTour} onClose={() => setShowTour(false)} />
 
-      <StatusBar state={state} />
+      <StatusBar state={state} onStartTour={() => setShowTour(true)} />
       <PhaseTimeline state={state} />
       {scene ? (
         <OfficeScene

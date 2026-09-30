@@ -32,7 +32,10 @@ const Readout: React.FC<{
  * schedule, how much of the budget is gone against how much time is gone,
  * and the attention left today.
  */
-export const StatusBar: React.FC<{ state: StudyState }> = ({ state }) => {
+export const StatusBar: React.FC<{
+  state: StudyState;
+  onStartTour?: () => void;
+}> = ({ state, onStartTour }) => {
   const phase = phaseForDay(state.day, state.setup.durationDays);
   const total = state.setup.durationDays + state.slipDays;
   const day = Math.min(state.day, total);
@@ -52,7 +55,7 @@ export const StatusBar: React.FC<{ state: StudyState }> = ({ state }) => {
 
   return (
     <header
-      className="grid grid-cols-2 divide-[var(--sd-hairline)] border border-[var(--sd-hairline)] bg-[var(--sd-surface)] lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_auto] lg:divide-x"
+      className="grid grid-cols-2 divide-[var(--sd-hairline)] border border-[var(--sd-hairline)] bg-[var(--sd-surface)] lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto] lg:divide-x"
       data-testid="study-status-bar"
     >
       <Readout label={`Study ${state.setup.id}`}>
@@ -100,45 +103,60 @@ export const StatusBar: React.FC<{ state: StudyState }> = ({ state }) => {
         </div>
       </Readout>
 
-      <Readout
-        label="Attention today"
-        className="col-span-2 border-t border-[var(--sd-hairline)] lg:col-span-1 lg:border-t-0"
+      <div
+        data-sd-coach="attention"
+        className="col-span-2 border-t border-[var(--sd-hairline)] lg:col-span-1 lg:border-t-0 flex items-center justify-between"
       >
-        <div
-          className="mt-1 flex items-center gap-1"
-          role="img"
-          aria-label={`${state.attention} of ${ATTENTION_PER_DAY} attention left today${state.routine > 0 ? `, ${state.routine} taken by routine work` : ""}`}
-          title={
-            state.routine > 0
-              ? `${state.routine} attention went to routine work: open queries and unrecorded decisions.`
-              : undefined
-          }
-        >
-          {Array.from({ length: ATTENTION_PER_DAY }, (_, i) => (
-            <span
-              key={i}
-              aria-hidden="true"
-              data-pip={
-                i < state.attention
-                  ? "free"
-                  : i >= ATTENTION_PER_DAY - state.routine
-                    ? "routine"
-                    : "spent"
-              }
-              className={`h-4 w-4 rounded-[3px] ${
-                i < state.attention
-                  ? "bg-[var(--sd-amber)]"
-                  : i >= ATTENTION_PER_DAY - state.routine
-                    ? "border border-dashed border-[var(--sd-steel)]"
-                    : "border border-zinc-700 bg-zinc-800"
-              }`}
-            />
-          ))}
-          <span className="ml-1.5 text-xs font-bold text-[var(--sd-text)] tabular-nums">
-            {state.attention} left
-          </span>
-        </div>
-      </Readout>
+        <Readout label="Attention today" className="flex-1">
+          <div
+            className="mt-1 flex items-center gap-1"
+            role="img"
+            aria-label={`${state.attention} of ${ATTENTION_PER_DAY} attention left today${state.routine > 0 ? `, ${state.routine} taken by routine work` : ""}`}
+            title={
+              state.routine > 0
+                ? `${state.routine} attention went to routine work: open queries and unrecorded decisions.`
+                : undefined
+            }
+          >
+            {Array.from({ length: ATTENTION_PER_DAY }, (_, i) => (
+              <span
+                key={i}
+                aria-hidden="true"
+                data-pip={
+                  i < state.attention
+                    ? "free"
+                    : i >= ATTENTION_PER_DAY - state.routine
+                      ? "routine"
+                      : "spent"
+                }
+                className={`h-4 w-4 rounded-[3px] ${
+                  i < state.attention
+                    ? "bg-[var(--sd-amber)]"
+                    : i >= ATTENTION_PER_DAY - state.routine
+                      ? "border border-dashed border-[var(--sd-steel)]"
+                      : "border border-zinc-700 bg-zinc-800"
+                }`}
+              />
+            ))}
+            <span className="ml-1.5 text-xs font-bold text-[var(--sd-text)] tabular-nums">
+              {state.attention} left
+            </span>
+          </div>
+        </Readout>
+
+        {onStartTour ? (
+          <div className="pr-3 pt-1 shrink-0">
+            <button
+              type="button"
+              onClick={onStartTour}
+              data-testid="tour-trigger"
+              className="min-h-[48px] px-3 py-2 text-xs font-mono font-bold border border-[var(--sd-amber)]/60 text-[var(--sd-amber)] hover:bg-[var(--sd-amber)]/10 rounded transition-colors flex items-center justify-center"
+            >
+              Desk Tour
+            </button>
+          </div>
+        ) : null}
+      </div>
     </header>
   );
 };

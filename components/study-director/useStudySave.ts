@@ -55,3 +55,24 @@ export function clearStudySave(): void {
     // Nothing to clear.
   }
 }
+
+export const TUTORIAL_SEEN_KEY = "sd:tutorial-seen";
+
+/** Checks if the user has completed or skipped the spotlight tour. */
+export function loadTutorialSeen(): boolean {
+  try {
+    const val = storage()?.getItem(TUTORIAL_SEEN_KEY);
+    return val === "true" || val === "1";
+  } catch {
+    return false;
+  }
+}
+
+/** Remembers that the user has completed or skipped the spotlight tour. */
+export function saveTutorialSeen(): void {
+  try {
+    storage()?.setItem(TUTORIAL_SEEN_KEY, "true");
+  } catch {
+    // Storage failures (private browsing) are ignored.
+  }
+}

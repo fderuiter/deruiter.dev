@@ -8,6 +8,7 @@ import {
   within,
 } from "@testing-library/react";
 import { StudyDirectorGame } from "@/components/study-director/StudyDirectorGame";
+import { TUTORIAL_SEEN_KEY } from "@/components/study-director/useStudySave";
 
 function start() {
   render(<StudyDirectorGame />);
@@ -20,6 +21,7 @@ function start() {
 describe("Study Director keyboard play", () => {
   beforeEach(() => {
     globalThis.localStorage?.clear?.();
+    globalThis.localStorage?.setItem?.(TUTORIAL_SEEN_KEY, "true");
     vi.spyOn(window, "scrollTo").mockImplementation(() => {});
   });
   afterEach(() => {

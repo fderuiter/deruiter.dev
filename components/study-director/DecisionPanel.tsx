@@ -60,6 +60,7 @@ export const DecisionPanel: React.FC<{
       aria-label={event ? `Message: ${event.subject}` : "Decision"}
       className="flex min-h-[320px] min-w-0 flex-col border border-[var(--sd-hairline-strong)] bg-[var(--sd-surface)]"
       data-testid="study-decision"
+      data-sd-coach="decision"
     >
       {banner}
       {event ? (

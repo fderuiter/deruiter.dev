@@ -149,9 +149,9 @@ const liveTexts = (page: Page, mode: string) =>
 
 test.describe("Trial & Error release hardening (#925)", () => {
   test.describe("polite live announcements", () => {
-    // The site announcer plays polite messages one at a time, 3 s each, with
-    // no bound on its queue (#1635). These tests keep the queue short so they
-    // check what is announced and how, not how long a backlog takes to drain.
+    // The site announcer plays polite messages one at a time from a bounded
+    // queue (#1635). These tests keep the queue short so they check what is
+    // announced and how, not how long a backlog takes to drain.
     test("announces the scored hand after playback and the cleared Blind, politely", async ({
       page,
     }) => {
@@ -374,9 +374,6 @@ test.describe("Trial & Error release hardening (#925)", () => {
     test(`reflows without page overflow at 200% zoom at ${width}px`, async ({
       page,
     }) => {
-      // Site and cabinet chrome (navbar bar, cabinet header and footer rows,
-      // site footer) do not wrap at 200% text below 400px (#1636).
-      test.fail(width < 400, "Overflows at 200% text below 400px (#1636)");
       await page.setViewportSize({ width, height: 800 });
       await launch(page);
       await page.evaluate(() => {

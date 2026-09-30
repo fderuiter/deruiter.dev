@@ -41,8 +41,18 @@ function main() {
 
   const args = process.argv.slice(2);
   const warnOnly = args.includes("--warn");
+  const hasExplicitBranch = args.some((arg) => !arg.startsWith("--"));
   const branch =
     args.find((arg) => !arg.startsWith("--")) || getCurrentBranch();
+
+  if (
+    !hasExplicitBranch &&
+    process.env.JULES_SESSION_ID &&
+    branch.startsWith("stitch/")
+  ) {
+    process.exit(0);
+  }
+
   const result = validateBranchName(branch);
 
   if (result.valid) {

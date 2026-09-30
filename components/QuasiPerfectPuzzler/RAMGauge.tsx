@@ -63,7 +63,7 @@ export const RAMGauge: React.FC<RAMGaugeProps> = ({
           >
             {currentRam.toFixed(1)}
           </span>
-          <span className="text-zinc-500"> / {initialRam} GB</span>
+          <span className="text-zinc-400"> / {initialRam} GB</span>
         </span>
       </div>
 

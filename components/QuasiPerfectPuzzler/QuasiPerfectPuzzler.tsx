@@ -896,7 +896,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
                 <span className="text-[10px] font-bold uppercase tracking-wider text-brand-cyan">
                   Chapter {currentLevel.chapter} · {currentLevel.chapterTitle}
                 </span>
-                <span className="text-zinc-600">|</span>
+                <span className="text-zinc-400">|</span>
                 <span className="text-[10px] font-bold text-purple-400">
                   {currentLevel.subtitle}
                 </span>

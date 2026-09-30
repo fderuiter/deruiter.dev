@@ -114,7 +114,7 @@
  */
 @theme {
   --animate-ping-settle: ping-settle 1s cubic-bezier(0, 0, 0.2, 1) 3 forwards;
-  --animate-pulse-settle: pulse-settle 2s cubic-bezier(0.4, 0, 0.6, 1) 3;
+  --animate-pulse-settle: pulse-settle 1.5s cubic-bezier(0.4, 0, 0.6, 1) 2;
 
   @keyframes ping-settle {
     75%,

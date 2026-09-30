@@ -157,6 +157,11 @@ describe("site chrome is calm at rest (#1596)", () => {
       expect(decl).not.toBe("");
       expect(decl).not.toMatch(/infinite/);
       expect(decl).toMatch(/\s\d+(\s|$)/);
+      // Settles well inside the 5 s "calm at rest" poll in the Trial & Error
+      // hardening spec: duration x iterations stays at or under 3 s.
+      const [, seconds, count] =
+        decl.match(/\s([\d.]+)s\s.*\)\s(\d+)(\s|;|$)/) ?? [];
+      expect(Number(seconds) * Number(count)).toBeLessThanOrEqual(3);
     }
     // The halo finishes hidden so only the solid dot remains.
     expect(ping).toMatch(/forwards/);

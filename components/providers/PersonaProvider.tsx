@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useMemo, useCallback } from "react";
 import { usePersistentState } from "@/hooks/usePersistentState";
+import { safeGetItem } from "@/lib/safe-storage";
 
 type PersonaType = "recruiter" | "technical";
 
@@ -60,19 +61,13 @@ export function PersonaProvider({ children }: { children: React.ReactNode }) {
 export function usePersona() {
   const context = useContext(PersonaContext);
   if (!context) {
-    let saved: PersonaType | null = null;
-    if (typeof window !== "undefined") {
-      try {
-        const stored = localStorage.getItem("global-persona");
-        if (stored === "technical" || stored === "recruiter") {
-          saved = stored;
-        }
-      } catch {
-        // ignore storage read failure
-      }
-    }
+    // Read through safeStorage so the envelope written by usePersistentState
+    // (and any legacy bare string) resolves, and blocked storage cannot throw.
+    const stored = safeGetItem<unknown>("global-persona");
+    const persona: PersonaType =
+      stored === "technical" ? "technical" : "recruiter";
     return {
-      persona: (saved ?? "recruiter") as PersonaType,
+      persona,
       setPersona: () => {},
     };
   }

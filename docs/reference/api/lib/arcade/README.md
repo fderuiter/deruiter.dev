@@ -44,9 +44,21 @@ Re-exports [ArcadeGameLoopOptions](core/game-loop/interfaces/ArcadeGameLoopOptio
 
 ***
 
+### ArcadeGameRoute
+
+Re-exports [ArcadeGameRoute](games/type-aliases/ArcadeGameRoute.md)
+
+***
+
 ### ArcadeInputManager
 
 Re-exports [ArcadeInputManager](core/input/classes/ArcadeInputManager.md)
+
+***
+
+### ArcadeNeighbor
+
+Re-exports [ArcadeNeighbor](games/interfaces/ArcadeNeighbor.md)
 
 ***
 
@@ -143,6 +155,12 @@ Re-exports [DEFAULT_CRT_PRESET_ID](crt-pipeline/variables/DEFAULT_CRT_PRESET_ID.
 ### GamePoint
 
 Re-exports [GamePoint](core/viewport/interfaces/GamePoint.md)
+
+***
+
+### getArcadeNeighbors
+
+Re-exports [getArcadeNeighbors](games/functions/getArcadeNeighbors.md)
 
 ***
 

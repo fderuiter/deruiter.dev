@@ -124,6 +124,7 @@ describe("Garmin Watch crash overlay names the real cause (#1177)", () => {
     ["Watchdog Tripped", "WATCHDOG TRIPPED", "Jump (Up)"],
     ["Null Pointer", "NULL POINTER", "Jump (Up)"],
     ["Symbol Not Found", "SYMBOL NOT FOUND", "Jump (Up)"],
+    ["Stack Overflow", "STACK OVERFLOW", "Jump (Up)"],
   ] as const)(
     "titles a %s crash as %s with a hint",
     async (type, title, hint) => {

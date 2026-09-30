@@ -1130,7 +1130,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
     objective:
       "Infiltrate fortified corporate mainframe subnets as an autonomous Red Team Netrunner. Manage Cyberdeck RAM, weaponize zero-days and offensive exploits, bypass EDR sentinels, solve tactile Hex Matrix buffer puzzles, and defeat the 3D Wireframe Sovereign Boss.",
     quickSummary:
-      "Navigate procedural subnets with WASD/Arrows and reach each room's EXIT. Keys 1 to 3 fire your Cyberdeck class's tools (the default Script Kiddie carries npm install, Nmap Port Recon and EMP), and Space fires an EMP, to exploit daemon CVEs and extract encrypted payloads.",
+      "Navigate procedural subnets with WASD/Arrows and reach each room's EXIT once its objective is done. Keys 1 to 3 fire your Cyberdeck class's tools (the default Script Kiddie carries npm install, Nmap Port Recon and EMP), and Space fires an EMP, to exploit daemon CVEs and extract encrypted payloads.",
     controls: [
       {
         action: "Move Netrunner Avatar",
@@ -1169,6 +1169,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       },
     ],
     rules: [
+      {
+        title: "Locked Exits",
+        detail:
+          "A room with airgap route nodes keeps its EXIT locked until you step on every node, and a boss room keeps it locked until the boss is defeated. A locked exit is drawn as LOCK in red and blocks you like a wall. Boss volleys aim where you are heading, so change direction to dodge.",
+        badge: "Objectives",
+      },
       {
         title: "Cyberdeck RAM & CVE Vulnerability Synergies",
         detail:

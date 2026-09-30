@@ -249,3 +249,15 @@ export function formatRelativeTime(
 }
 
 export { cloneDeep } from "./utils/clone";
+export {
+  DEFAULT_NUMBER_LOCALE,
+  NUMBER_FALLBACK,
+  formatNumber,
+  formatPercent,
+  formatBytes,
+} from "./utils/number-format";
+export type {
+  FormatPercentOptions,
+  FormatBytesOptions,
+  ByteUnit,
+} from "./utils/number-format";

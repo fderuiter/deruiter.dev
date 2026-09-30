@@ -158,6 +158,14 @@ Wall-clock time of the last pop, for its cooldown.
 
 ***
 
+### pausedAt?
+
+> `optional` **pausedAt?**: `number`
+
+Wall-clock time the run was paused, so resuming can shift the spawn timers.
+
+***
+
 ### playerVy
 
 > **playerVy**: `number`

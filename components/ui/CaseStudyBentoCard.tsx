@@ -2,7 +2,7 @@
 
 import React from "react";
 import Image from "next/image";
-import { cn } from "@/lib/utils";
+import { cn, formatNumber } from "@/lib/utils";
 import { Card, CardTitle, type HeadingTag } from "@/components/BentoGrid";
 import { type ExtendedRichInlineItem } from "@/hooks/usePretextLayout";
 import { BaseCaseStudy } from "@/types/domain";
@@ -491,21 +491,21 @@ export const CaseStudyBentoCard: React.FC<CaseStudyBentoCardProps> = ({
                 <span className="flex items-center gap-1 min-w-0 shrink">
                   <IconStar className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                   <span className="text-zinc-300 font-bold truncate">
-                    {githubStats.stars.toLocaleString()}
+                    {formatNumber(githubStats.stars)}
                   </span>{" "}
                   <span className="truncate">STARS</span>
                 </span>
                 <span className="flex items-center gap-1 min-w-0 shrink">
                   <IconGitFork className="w-3.5 h-3.5 text-blue-500 shrink-0" />
                   <span className="text-zinc-300 font-bold truncate">
-                    {githubStats.forks.toLocaleString()}
+                    {formatNumber(githubStats.forks)}
                   </span>{" "}
                   <span className="truncate">FORKS</span>
                 </span>
                 <span className="flex items-center gap-1 min-w-0 shrink">
                   <IconAlertCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                   <span className="text-zinc-300 font-bold truncate">
-                    {githubStats.openIssues.toLocaleString()}
+                    {formatNumber(githubStats.openIssues)}
                   </span>{" "}
                   <span className="truncate">ISSUES</span>
                 </span>

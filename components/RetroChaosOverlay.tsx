@@ -2,15 +2,36 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useKonamiCode } from "@/hooks/useKonamiCode";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
-import { IconSparkles, IconDeviceGamepad2, IconX, IconTerminal, IconCheck } from "@tabler/icons-react";
+import {
+  IconSparkles,
+  IconDeviceGamepad2,
+  IconX,
+  IconTerminal,
+  IconCheck,
+} from "@tabler/icons-react";
+
+/** The route the overlay's call to action links to. */
+const MEME_VAULT_PATH = "/arcade/meme-vault";
+
+/**
+ * How the overlay was opened: the typed Konami code, or a shortcut such as the
+ * Meme Vault's chaos button, a Command Palette action or a terminal command.
+ * Only the typed code earns the "Konami Sequence Detected" copy (#1328).
+ */
+type ChaosSource = "konami" | "shortcut";
 
 export const RetroChaosOverlay: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [source, setSource] = useState<ChaosSource>("konami");
+  const pathname = usePathname();
+  const onVaultPage = pathname === MEME_VAULT_PATH;
 
   const handleKonami = useCallback(() => {
+    setSource("konami");
     setIsOpen(true);
   }, []);
 
@@ -26,9 +47,13 @@ export const RetroChaosOverlay: React.FC = () => {
 
   // Listen for manual trigger events from Command Palette or Secret buttons
   useEffect(() => {
-    const handleTrigger = () => setIsOpen(true);
+    const handleTrigger = () => {
+      setSource("shortcut");
+      setIsOpen(true);
+    };
     window.addEventListener("trigger_retro_chaos", handleTrigger);
-    return () => window.removeEventListener("trigger_retro_chaos", handleTrigger);
+    return () =>
+      window.removeEventListener("trigger_retro_chaos", handleTrigger);
   }, []);
 
   return (
@@ -73,18 +98,37 @@ export const RetroChaosOverlay: React.FC = () => {
             <div className="flex items-center gap-2 mb-3">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
                 <IconSparkles className="w-3.5 h-3.5 animate-spin" />
-                Konami Sequence Detected
+                {source === "konami"
+                  ? "Konami Sequence Detected"
+                  : "Retro Chaos Mode"}
               </span>
-              <span className="text-xs text-slate-400">↑ ↑ ↓ ↓ ← → ← → B A</span>
+              {source === "konami" && (
+                <span className="text-xs text-slate-400">
+                  ↑ ↑ ↓ ↓ ← → ← → B A
+                </span>
+              )}
             </div>
 
             <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white mb-2 flex items-center gap-2">
               <IconDeviceGamepad2 className="w-8 h-8 text-emerald-400 inline-block" />
-              Retro Chaos Mode Unlocked!
+              {source === "konami"
+                ? "Retro Chaos Mode Unlocked!"
+                : "Retro Chaos Mode On"}
             </h2>
 
             <p className="text-sm text-slate-300 mb-6 leading-relaxed">
-              You found the legendary secret trigger! The <strong>Secret Meme Vault</strong> and Developer Soundboard have been permanently unlocked in your session.
+              {source === "konami" ? (
+                <>
+                  You found the legendary secret trigger! The{" "}
+                  <strong>Secret Meme Vault</strong> and Developer Soundboard
+                  have been permanently unlocked in your session.
+                </>
+              ) : (
+                <>
+                  You flipped the switch. The <strong>Secret Meme Vault</strong>{" "}
+                  and Developer Soundboard are open for this session.
+                </>
+              )}
             </p>
 
             {/* Meme Badges Matrix */}
@@ -117,17 +161,19 @@ export const RetroChaosOverlay: React.FC = () => {
 
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              <Link
-                href="/arcade/meme-vault"
-                onClick={() => {
-                  setIsOpen(false);
-                  resetActivation();
-                }}
-                className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm shadow-lg shadow-emerald-500/25 transition-colors focus:ring-2 focus:ring-emerald-400 focus:outline-none"
-              >
-                <IconDeviceGamepad2 className="w-4 h-4" />
-                Enter Secret Meme Vault
-              </Link>
+              {!onVaultPage && (
+                <Link
+                  href={MEME_VAULT_PATH}
+                  onClick={() => {
+                    setIsOpen(false);
+                    resetActivation();
+                  }}
+                  className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm shadow-lg shadow-emerald-500/25 transition-colors focus:ring-2 focus:ring-emerald-400 focus:outline-none"
+                >
+                  <IconDeviceGamepad2 className="w-4 h-4" />
+                  Enter Secret Meme Vault
+                </Link>
+              )}
               <button
                 onClick={() => {
                   setIsOpen(false);

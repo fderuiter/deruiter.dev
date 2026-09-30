@@ -10,7 +10,7 @@
 
 ### errorType
 
-> **errorType**: `"Out Of Memory"` \| `"Symbol Not Found"` \| `"Watchdog Tripped"` \| `"Null Pointer"` \| `"Out Of Storage"` \| `"Power Loss"`
+> **errorType**: `"Out Of Memory"` \| `"Symbol Not Found"` \| `"Watchdog Tripped"` \| `"Null Pointer"` \| `"Stack Overflow"` \| `"Out Of Storage"` \| `"Power Loss"`
 
 ***
 

@@ -165,7 +165,7 @@ const STACK_LAYERS: StackLayer[] = [
       },
       {
         name: "Upstash Redis",
-        version: "v1.38.0",
+        version: "v1.39.0",
         role: "Low-latency sliding window rate limiting",
         link: "https://upstash.com",
       },

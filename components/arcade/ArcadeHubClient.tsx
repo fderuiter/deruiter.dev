@@ -395,7 +395,7 @@ function GameCard({ game, index }: { game: ArcadeGameCard; index: number }) {
 
 export const ArcadeHubClient: React.FC = () => {
   return (
-    <div className="min-h-screen bg-black text-white pt-28 pb-24 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen text-white pb-24 px-4 sm:px-6 lg:px-8">
       {/* Top Ambient Glows */}
       <div className="fixed top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-brand-cyan/5 blur-[160px] pointer-events-none hidden sm:block" />
       <div className="fixed bottom-1/4 right-1/4 w-80 h-80 rounded-full bg-brand-blue/5 blur-[140px] pointer-events-none hidden sm:block" />

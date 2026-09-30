@@ -160,7 +160,7 @@ export const DARKNET_VENDOR_CATALOG: DarknetItem[] = [
     name: "Real-Time CVE Threat Feed",
     cost: 350,
     description:
-      "Automatically exposes CVE tags on all hostile daemons upon room entry.",
+      "Exposes CVE tags on all hostile daemons now and on every room entry for the rest of the run.",
     category: "firmware",
     icon: "📡",
   },

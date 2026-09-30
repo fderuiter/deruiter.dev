@@ -110,8 +110,16 @@ function handleGlobalCoordinatorKeyDown(e: KeyboardEvent) {
 
   // Filter candidates that allow hotkeys and are not blocked by a foreign keyboard boundary
   const targetBoundary = target?.closest?.("[data-keyboard-boundary]");
+  // A game's playfield can name its own manual, so ? opens that manual from
+  // the focused board even when its trigger sits outside the boundary or in a
+  // collapsed panel (#1669).
+  const boundaryManualId =
+    targetBoundary?.getAttribute("data-field-manual") || null;
+  const isBoundaryManual = (inst: ManualInstance) =>
+    boundaryManualId !== null && inst.manualId === boundaryManualId;
   const candidates = registeredInstances.filter((inst) => {
     if (!inst.isHotkeyOwner) return false;
+    if (isBoundaryManual(inst)) return true;
     if (targetBoundary) {
       const instBoundary = inst.buttonRef.current?.closest?.(
         "[data-keyboard-boundary]"
@@ -128,11 +136,13 @@ function handleGlobalCoordinatorKeyDown(e: KeyboardEvent) {
   }
 
   // Check visible candidates only: hidden controls cannot capture the shortcut
-  const visibleCandidates = candidates.filter((inst) =>
-    isElementVisible(inst.buttonRef.current)
+  const visibleCandidates = candidates.filter(
+    (inst) => isBoundaryManual(inst) || isElementVisible(inst.buttonRef.current)
   );
 
-  const targetInstance = selectCandidate(visibleCandidates);
+  const targetInstance =
+    selectCandidate(visibleCandidates.filter(isBoundaryManual)) ??
+    selectCandidate(visibleCandidates);
 
   if (targetInstance) {
     e.preventDefault();

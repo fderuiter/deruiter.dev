@@ -8,15 +8,20 @@
 
 ## Properties
 
-### caughtPlayer
+### contactedPlayer
 
-> **caughtPlayer**: `boolean`
+> **contactedPlayer**: `boolean`
+
+True when an enemy touched the player this step. Contact costs HP only;
+the run ends when HP reaches 0, not on contact itself (#1665).
 
 ***
 
 ### damageToPlayer
 
 > **damageToPlayer**: `number`
+
+HP the player loses this step, 25 for each enemy that touched them.
 
 ***
 

@@ -771,4 +771,55 @@ describe("FieldManualButton - Hotkey & Ownership Safety (DUCK-02)", () => {
     expect(onOpenDesktop).not.toHaveBeenCalled();
     expect(onOpenMobile).not.toHaveBeenCalled();
   });
+
+  // #1669: a game's playfield names its manual, so ? from the focused board
+  // opens it, even with the trigger outside the boundary and hidden in a
+  // collapsed settings panel.
+  it("opens the manual a keyboard boundary names, even when its trigger is hidden", async () => {
+    const onOpenChange = vi.fn();
+    await act(async () => {
+      root.render(
+        <div>
+          <div data-testid="settings">
+            <FieldManualButton
+              manualId="retro-labyrinth"
+              onOpenChange={onOpenChange}
+            />
+          </div>
+          <div
+            data-keyboard-boundary="true"
+            data-field-manual="retro-labyrinth"
+            data-testid="board"
+            tabIndex={0}
+          />
+          <div data-keyboard-boundary="true" data-testid="other" tabIndex={0} />
+        </div>
+      );
+    });
+    const trigger = container.querySelector<HTMLButtonElement>(
+      '[data-testid="settings"] button'
+    )!;
+    trigger.checkVisibility = () => false;
+
+    const other = container.querySelector<HTMLElement>(
+      '[data-testid="other"]'
+    )!;
+    await act(async () => {
+      other.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "?", bubbles: true })
+      );
+    });
+    expect(onOpenChange).not.toHaveBeenCalled();
+
+    const board = container.querySelector<HTMLElement>(
+      '[data-testid="board"]'
+    )!;
+    await act(async () => {
+      board.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "?", bubbles: true })
+      );
+    });
+    expect(onOpenChange).toHaveBeenCalledWith(true);
+    expect(document.body.querySelectorAll('[role="dialog"]')).toHaveLength(1);
+  });
 });

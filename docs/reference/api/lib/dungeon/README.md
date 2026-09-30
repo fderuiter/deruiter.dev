@@ -20,9 +20,27 @@ Re-exports [AIUpdateResult](ai/interfaces/AIUpdateResult.md)
 
 ***
 
+### AmmoGrantResult
+
+Re-exports [AmmoGrantResult](weapons/interfaces/AmmoGrantResult.md)
+
+***
+
+### BOSS\_DAMAGE\_WEAPON\_IDS
+
+Re-exports [BOSS_DAMAGE_WEAPON_IDS](weapons/variables/BOSS_DAMAGE_WEAPON_IDS.md)
+
+***
+
 ### BOSS\_MAX\_LEAD\_TILES
 
 Re-exports [BOSS_MAX_LEAD_TILES](boss/variables/BOSS_MAX_LEAD_TILES.md)
+
+***
+
+### BOSS\_REFERENCE\_FRAME\_MS
+
+Re-exports [BOSS_REFERENCE_FRAME_MS](boss/variables/BOSS_REFERENCE_FRAME_MS.md)
 
 ***
 
@@ -35,6 +53,12 @@ Re-exports [BossState](types/interfaces/BossState.md)
 ### calculateFOV
 
 Re-exports [calculateFOV](fov/functions/calculateFOV.md)
+
+***
+
+### computeRoomExitScore
+
+Re-exports [computeRoomExitScore](scoring/functions/computeRoomExitScore.md)
 
 ***
 
@@ -176,6 +200,24 @@ Re-exports [Enemy](types/interfaces/Enemy.md)
 
 ***
 
+### ENEMY\_CONTACT\_DAMAGE
+
+Re-exports [ENEMY_CONTACT_DAMAGE](ai/variables/ENEMY_CONTACT_DAMAGE.md)
+
+***
+
+### ENEMY\_CONTACT\_RECOIL\_MS
+
+Re-exports [ENEMY_CONTACT_RECOIL_MS](ai/variables/ENEMY_CONTACT_RECOIL_MS.md)
+
+***
+
+### ENEMY\_STEP\_INTERVAL\_MS
+
+Re-exports [ENEMY_STEP_INTERVAL_MS](ai/variables/ENEMY_STEP_INTERVAL_MS.md)
+
+***
+
 ### EnemyState
 
 Re-exports [EnemyState](types/type-aliases/EnemyState.md)
@@ -314,6 +356,12 @@ Re-exports [getExitLockState](objective/functions/getExitLockState.md)
 
 ***
 
+### grantAmmoForLoadout
+
+Re-exports [grantAmmoForLoadout](weapons/functions/grantAmmoForLoadout.md)
+
+***
+
 ### hasLineOfSight
 
 Re-exports [hasLineOfSight](fov/functions/hasLineOfSight.md)
@@ -329,6 +377,12 @@ Re-exports [HexCell](types/interfaces/HexCell.md)
 ### HexMatrixPuzzle
 
 Re-exports [HexMatrixPuzzle](types/interfaces/HexMatrixPuzzle.md)
+
+***
+
+### isEnemyWalkable
+
+Re-exports [isEnemyWalkable](ai/functions/isEnemyWalkable.md)
 
 ***
 
@@ -359,6 +413,12 @@ Re-exports [loadCyberdeckProfile](metaprogression/functions/loadCyberdeckProfile
 ### MeshProjectile
 
 Re-exports [MeshProjectile](types/interfaces/MeshProjectile.md)
+
+***
+
+### MIN\_EXIT\_SPEED\_BONUS
+
+Re-exports [MIN_EXIT_SPEED_BONUS](scoring/variables/MIN_EXIT_SPEED_BONUS.md)
 
 ***
 

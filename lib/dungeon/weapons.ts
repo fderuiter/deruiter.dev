@@ -20,7 +20,8 @@ export const DEFAULT_WEAPONS: Record<WeaponId, Weapon> = {
     maxAmmo: 12,
     damage: 45,
     cooldownMs: 800,
-    description: "Throws ball of 100K sub-dependencies in a wide AoE blast. Exposes memory leaks.",
+    description:
+      "Throws ball of 100K sub-dependencies in a wide AoE blast. Exposes memory leaks.",
     sideEffect: "Simulates severe memory bloat & lag spike.",
     iconChar: "📦",
     ramCost: 4,
@@ -33,7 +34,8 @@ export const DEFAULT_WEAPONS: Record<WeaponId, Weapon> = {
     maxAmmo: 3,
     damage: 150,
     cooldownMs: 2500,
-    description: "Vaporizes all standard enemies in the room with an irreversible commit blast.",
+    description:
+      "Vaporizes all standard enemies in the room with an irreversible commit blast.",
     sideEffect: "Rewrites branch history & resets room score multiplier.",
     iconChar: "💥",
     ramCost: 8,
@@ -46,8 +48,10 @@ export const DEFAULT_WEAPONS: Record<WeaponId, Weapon> = {
     maxAmmo: 4,
     damage: 0,
     cooldownMs: 1500,
-    description: "Instantly injects undocumented code snippet to restore +40 HP.",
-    sideEffect: "Keybind Desync: Swaps WASD directional controls for 8 seconds.",
+    description:
+      "Instantly injects undocumented code snippet to restore +40 HP.",
+    sideEffect:
+      "Keybind Desync: Swaps WASD directional controls for 8 seconds.",
     iconChar: "📋",
     ramCost: 6,
   },
@@ -59,7 +63,8 @@ export const DEFAULT_WEAPONS: Record<WeaponId, Weapon> = {
     maxAmmo: 999,
     damage: 10,
     cooldownMs: 4000,
-    description: "Fires an electromagnetic pulse that stuns all security drones and sentinels.",
+    description:
+      "Fires an electromagnetic pulse that stuns all security drones and sentinels.",
     sideEffect: "Temporary daemon firmware lock.",
     iconChar: "⚡",
     ramCost: 4,
@@ -72,7 +77,8 @@ export const DEFAULT_WEAPONS: Record<WeaponId, Weapon> = {
     maxAmmo: 99,
     damage: 20,
     cooldownMs: 600,
-    description: "Scans all daemons in sector, exposes hidden CVE vulnerabilities and traps.",
+    description:
+      "Scans all daemons in sector, exposes hidden CVE vulnerabilities and traps.",
     sideEffect: "High network traffic signature.",
     iconChar: "📡",
     ramCost: 2,
@@ -86,7 +92,8 @@ export const DEFAULT_WEAPONS: Record<WeaponId, Weapon> = {
     maxAmmo: 8,
     damage: 75,
     cooldownMs: 1200,
-    description: "AoE memory corruption blast. Deals 2.5x critical damage to BUFFER_OVERFLOW targets.",
+    description:
+      "AoE memory corruption blast. Deals 2.5x critical damage to BUFFER_OVERFLOW targets.",
     sideEffect: "Memory fragmentation anomaly.",
     iconChar: "💥",
     ramCost: 6,
@@ -100,7 +107,8 @@ export const DEFAULT_WEAPONS: Record<WeaponId, Weapon> = {
     maxAmmo: 4,
     damage: 220,
     cooldownMs: 2000,
-    description: "Precision kinetic zero-day payload that punctures firewall barriers.",
+    description:
+      "Precision kinetic zero-day payload that punctures firewall barriers.",
     sideEffect: "Zero-Day signature burned in IDS logs.",
     iconChar: "🎯",
     ramCost: 10,
@@ -114,7 +122,8 @@ export const DEFAULT_WEAPONS: Record<WeaponId, Weapon> = {
     maxAmmo: 5,
     damage: 30,
     cooldownMs: 1800,
-    description: "Spoofs ARP/DNS tables, confusing hostile daemons to attack nearby allies.",
+    description:
+      "Spoofs ARP/DNS tables, confusing hostile daemons to attack nearby allies.",
     sideEffect: "Packet collision feedback.",
     iconChar: "🔀",
     ramCost: 6,
@@ -128,7 +137,8 @@ export const DEFAULT_WEAPONS: Record<WeaponId, Weapon> = {
     maxAmmo: 5,
     damage: 60,
     cooldownMs: 2200,
-    description: "Freezes target in encrypted state and siphons +200 Crypto bounty.",
+    description:
+      "Freezes target in encrypted state and siphons +200 Crypto bounty.",
     sideEffect: "Target filesystem locked.",
     iconChar: "🔒",
     ramCost: 8,
@@ -217,7 +227,8 @@ export function fireWeapon(
 
   switch (weaponId) {
     case "port_scan": {
-      message = "📡 Nmap Port Scan complete! Exposed CVE vulnerabilities in sector.";
+      message =
+        "📡 Nmap Port Scan complete! Exposed CVE vulnerabilities in sector.";
       updatedEnemies = updatedEnemies.map((e) => {
         const nextHp = e.hp - weapon.damage;
         return {
@@ -300,7 +311,10 @@ export function fireWeapon(
         .filter((e): e is Enemy => e !== null);
 
       if (updatedBoss && !updatedBoss.defeated) {
-        const bossDist = Math.hypot(updatedBoss.x - playerX, updatedBoss.y - playerY);
+        const bossDist = Math.hypot(
+          updatedBoss.x - playerX,
+          updatedBoss.y - playerY
+        );
         if (bossDist <= aoeRadius + 1) {
           const nextBossHp = updatedBoss.hp - weapon.damage;
           if (nextBossHp <= 0) {
@@ -316,7 +330,8 @@ export function fireWeapon(
     }
 
     case "zero_day": {
-      message = "🎯 Airgap 0-Day Exploit injected! Target firewall neutralized!";
+      message =
+        "🎯 Airgap 0-Day Exploit injected! Target firewall neutralized!";
       critTriggered = true;
 
       for (let i = 0; i < 35; i++) {
@@ -378,7 +393,8 @@ export function fireWeapon(
     }
 
     case "ransomware_lock": {
-      message = "🔒 Ransomware Lock engaged! Daemons frozen & crypto harvested!";
+      message =
+        "🔒 Ransomware Lock engaged! Daemons frozen & crypto harvested!";
       updatedEnemies = updatedEnemies.map((e) => ({
         ...e,
         state: "frozen",
@@ -397,11 +413,19 @@ export function fireWeapon(
       activeSideEffect = {
         type: "lag_spike",
         title: "DEPENDENCY_BLOAT.LOG",
-        description: "Resolving 84,219 transitive dependencies... frame latency elevated.",
+        description:
+          "Resolving 84,219 transitive dependencies... frame latency elevated.",
         expiresAt: nowMs + 4000,
       };
 
-      const chars = ["node_modules", "left-pad", "is-even", "lodash", "babel", "webpack"];
+      const chars = [
+        "node_modules",
+        "left-pad",
+        "is-even",
+        "lodash",
+        "babel",
+        "webpack",
+      ];
       for (let i = 0; i < 24; i++) {
         const angle = Math.random() * Math.PI * 2;
         const speed = 0.5 + Math.random() * 2.5;
@@ -440,7 +464,10 @@ export function fireWeapon(
         .filter((e): e is Enemy => e !== null);
 
       if (updatedBoss && !updatedBoss.defeated) {
-        const bossDist = Math.hypot(updatedBoss.x - playerX, updatedBoss.y - playerY);
+        const bossDist = Math.hypot(
+          updatedBoss.x - playerX,
+          updatedBoss.y - playerY
+        );
         if (bossDist <= aoeRadius + 1) {
           const nextBossHp = updatedBoss.hp - weapon.damage;
           if (nextBossHp <= 0) {
@@ -461,7 +488,8 @@ export function fireWeapon(
       activeSideEffect = {
         type: "history_rewritten",
         title: "FORCE_PUSH_EXECUTED",
-        description: "Branch history rewritten. Upstream refs permanently desynchronized.",
+        description:
+          "Branch history rewritten. Upstream refs permanently desynchronized.",
         expiresAt: nowMs + 5000,
       };
 
@@ -506,7 +534,8 @@ export function fireWeapon(
       activeSideEffect = {
         type: "scrambled_keys",
         title: "KEYBIND_DESYNC_WARNING",
-        description: "Copied untested code from 2011! Directional keybindings are inverted!",
+        description:
+          "Copied untested code from 2011! Directional keybindings are inverted!",
         expiresAt: nowMs + 8000,
       };
 
@@ -566,5 +595,82 @@ export function fireWeapon(
     message,
     success: true,
     critTriggered,
+  };
+}
+
+/**
+ * Weapons that damage a boss, in the order a converted ammo grant prefers
+ * them. Port Scan, EMP, MitM Spoof, Ransomware Lock and Stack Overflow do no
+ * boss damage.
+ */
+export const BOSS_DAMAGE_WEAPON_IDS: readonly WeaponId[] = [
+  "zero_day",
+  "git_force_push",
+  "buffer_overflow",
+  "npm_install",
+];
+
+/** What an ammo pickup or purchase actually gave the player. */
+export interface AmmoGrantResult {
+  updatedWeapons: Record<WeaponId, Weapon>;
+  /** The weapon that received the charges, or null when none could. */
+  weaponId: WeaponId | null;
+  /** Charges added, after any conversion and cap. */
+  charges: number;
+}
+
+/**
+ * Gives ammo the player's class can fire (#1667).
+ *
+ * A grant for a weapon on the class's hotbar goes to that weapon. Otherwise
+ * it converts to the class's first boss-damaging hotbar weapon, with enough
+ * charges to deal at least the same damage. When the class carries no such
+ * weapon, nothing changes and `weaponId` is null.
+ *
+ * @param weapons - The player's current weapons.
+ * @param loadout - The class's hotbar weapons, in key order.
+ * @param grantedId - The weapon the pickup or purchase is for.
+ * @param charges - Charges of `grantedId` it grants.
+ * @param capAtMax - Whether the result is capped at the weapon's `maxAmmo`.
+ * @returns The new weapons, which weapon got the ammo, and how much.
+ */
+export function grantAmmoForLoadout(
+  weapons: Record<WeaponId, Weapon>,
+  loadout: readonly WeaponId[],
+  grantedId: WeaponId,
+  charges: number,
+  capAtMax: boolean
+): AmmoGrantResult {
+  let targetId: WeaponId | null = null;
+  let targetCharges = charges;
+
+  if (loadout.includes(grantedId)) {
+    targetId = grantedId;
+  } else {
+    targetId =
+      loadout.find((id) => BOSS_DAMAGE_WEAPON_IDS.includes(id)) ?? null;
+    if (targetId) {
+      const grantedDamage = (weapons[grantedId]?.damage ?? 0) * charges;
+      const targetDamage = weapons[targetId]?.damage ?? 0;
+      targetCharges =
+        targetDamage > 0 ? Math.ceil(grantedDamage / targetDamage) : 0;
+    }
+  }
+
+  const target = targetId ? weapons[targetId] : undefined;
+  if (!targetId || !target || targetCharges <= 0) {
+    return { updatedWeapons: weapons, weaponId: null, charges: 0 };
+  }
+
+  const nextAmmo = capAtMax
+    ? Math.min(target.maxAmmo, target.ammo + targetCharges)
+    : target.ammo + targetCharges;
+  return {
+    updatedWeapons: {
+      ...weapons,
+      [targetId]: { ...target, ammo: nextAmmo },
+    },
+    weaponId: targetId,
+    charges: nextAmmo - target.ammo,
   };
 }

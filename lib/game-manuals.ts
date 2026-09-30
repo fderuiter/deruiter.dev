@@ -450,7 +450,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         action: "The 'Sorry' Escape Valve",
         description:
-          "Admit defeat on the current branch using `sorry`. This keeps the engine running but permanently incurs a -100 Morality Penalty.",
+          "Admit defeat on the current branch using `sorry`. It costs no RAM but permanently incurs a -100 Morality Penalty. Like every tactic, it is locked at 0 GB until you reset the level.",
         key: "Sorry Button",
       },
     ],
@@ -464,7 +464,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         title: "Proof-Engine RAM Limit",
         detail:
-          "Each tactic, including a failed one, consumes simulated memory. Story Mode starts with twice the Hacker Mode budget. In either mode, hitting 0 GB stops the simulated tactic session and the level must be reset.",
+          "Each tactic, including a failed one, consumes simulated memory. Story Mode starts with twice the Hacker Mode budget. In either mode, hitting 0 GB stops the simulated tactic session and the level must be reset. Every tactic, sorry included, stays locked until then.",
         badge: "RAM Constraint",
       },
       {

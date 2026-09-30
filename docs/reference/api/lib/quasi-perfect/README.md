@@ -80,6 +80,12 @@ Re-exports [evaluateBooleanExpression](engine/functions/evaluateBooleanExpressio
 
 ***
 
+### EXHAUSTION\_RULE
+
+Re-exports [EXHAUSTION_RULE](ram/variables/EXHAUSTION_RULE.md)
+
+***
+
 ### findNodeById
 
 Re-exports [findNodeById](engine/functions/findNodeById.md)
@@ -107,6 +113,12 @@ Re-exports [generateLeanProofScript](engine/functions/generateLeanProofScript.md
 ### getStartingRam
 
 Re-exports [getStartingRam](ram/functions/getStartingRam.md)
+
+***
+
+### getTacticBlock
+
+Re-exports [getTacticBlock](ram/functions/getTacticBlock.md)
 
 ***
 
@@ -158,6 +170,12 @@ Re-exports [NodeType](types/type-aliases/NodeType.md)
 
 ***
 
+### parseGameProgress
+
+Re-exports [parseGameProgress](progress/functions/parseGameProgress.md)
+
+***
+
 ### puzzleLevels
 
 Re-exports [puzzleLevels](levels/variables/puzzleLevels.md)
@@ -188,6 +206,12 @@ Re-exports [resolveHypothesis](tactics/functions/resolveHypothesis.md)
 
 ***
 
+### resolveResumeLevelIndex
+
+Re-exports [resolveResumeLevelIndex](progress/functions/resolveResumeLevelIndex.md)
+
+***
+
 ### simplifyNode
 
 Re-exports [simplifyNode](engine/functions/simplifyNode.md)
@@ -203,6 +227,12 @@ Re-exports [STORY_RAM_MULTIPLIER](ram/variables/STORY_RAM_MULTIPLIER.md)
 ### SubGoal
 
 Re-exports [SubGoal](types/interfaces/SubGoal.md)
+
+***
+
+### TacticBlock
+
+Re-exports [TacticBlock](ram/interfaces/TacticBlock.md)
 
 ***
 

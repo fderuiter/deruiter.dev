@@ -21,6 +21,7 @@ import {
   ASCII_TRAIN,
   getUnlockedAchievements,
   unlockAchievement,
+  SANDBOX_TERMINAL_HREF,
   type SoundboardButton,
 } from "@/lib/meme-data";
 import { clamp } from "@/lib/game-utils";
@@ -455,6 +456,17 @@ export const MemeVaultClient: React.FC = () => {
                 {!isUnlocked && (
                   <p className="text-[11px] text-amber-400/90 italic font-sans">
                     Hint: {ach.hint}
+                    {ach.hintLink && (
+                      <>
+                        {" "}
+                        <Link
+                          href={ach.hintLink.href}
+                          className="underline underline-offset-2"
+                        >
+                          {ach.hintLink.label}
+                        </Link>
+                      </>
+                    )}
                   </p>
                 )}
               </div>
@@ -586,6 +598,18 @@ export const MemeVaultClient: React.FC = () => {
             ))}
           </div>
         </div>
+
+        <p className="mb-4 text-xs text-slate-400 font-sans">
+          A gallery of the terminal&apos;s ASCII art. It does not award
+          trophies. Type the commands in the{" "}
+          <Link
+            href={SANDBOX_TERMINAL_HREF}
+            className="underline underline-offset-2"
+          >
+            sample commands terminal
+          </Link>{" "}
+          to earn them.
+        </p>
 
         <div className="relative rounded-2xl border border-slate-800 bg-slate-950 p-4 sm:p-6 overflow-x-auto shadow-inner">
           <CopyButton

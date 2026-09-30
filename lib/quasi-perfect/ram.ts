@@ -1,4 +1,50 @@
-import type { GameMode, PuzzlerLevelDef } from "./types";
+import type { GameMode, PuzzlerLevelDef, TacticDef } from "./types";
+
+/**
+ * The 0 GB rule as the player reads it. The HUD, the Theory Briefing and
+ * `getTacticBlock` all use this one sentence, so the copy and the engine
+ * cannot drift apart.
+ */
+export const EXHAUSTION_RULE =
+  "At 0 GB the simulated tactic session stops and the level must be reset, in either mode. Every tactic, sorry included, stays locked until then.";
+
+/** Why a tactic cannot be played right now. */
+export interface TacticBlock {
+  /** "exhausted" at 0 GB, "insufficient" when the tactic costs more than is left. */
+  reason: "exhausted" | "insufficient";
+  /** Terminal line explaining the refusal, built from the same numbers. */
+  message: string;
+}
+
+/**
+ * Decide whether a tactic can be played with the RAM that is left.
+ *
+ * At 0 GB the session has stopped, so every tactic is refused, including
+ * the free `sorry`, until the level is reset. Above 0 GB a tactic is
+ * refused only when its base cost is more than the RAM left.
+ *
+ * @param tactic - The tactic's name and base cost.
+ * @param currentRam - RAM left, in GB.
+ * @returns Why the tactic is refused, or null when it can be played.
+ */
+export function getTacticBlock(
+  tactic: Pick<TacticDef, "name" | "baseRamCost">,
+  currentRam: number
+): TacticBlock | null {
+  if (!(currentRam > 0)) {
+    return {
+      reason: "exhausted",
+      message: `Simulated RAM exhausted at 0 GB, so '${tactic.name}' was refused. Reset the level to continue; every tactic, sorry included, is locked until then.`,
+    };
+  }
+  if (currentRam < tactic.baseRamCost) {
+    return {
+      reason: "insufficient",
+      message: `FATAL ERROR: Insufficient RAM for tactic '${tactic.name}'. Required: ${tactic.baseRamCost} GB, Available: ${currentRam.toFixed(1)} GB.`,
+    };
+  }
+  return null;
+}
 
 /** Story Mode starts each level with this multiple of its Hacker Mode RAM. */
 export const STORY_RAM_MULTIPLIER = 2;
@@ -66,8 +112,7 @@ export function describeModeRules(
   mode: GameMode,
   level?: Pick<PuzzlerLevelDef, "initialRam">
 ): ModeRuleCopy {
-  const exhaustion =
-    "At 0 GB the simulated tactic session stops and the level must be reset, in either mode.";
+  const exhaustion = EXHAUSTION_RULE;
   const scoring =
     "Stars grade RAM used against the Hacker targets in both modes, so the larger Story budget makes a level harder to fail, not easier to three-star.";
   if (mode === "story") {

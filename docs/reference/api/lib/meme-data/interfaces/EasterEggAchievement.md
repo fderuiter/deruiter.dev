@@ -20,6 +20,22 @@
 
 ***
 
+### hintLink?
+
+> `optional` **hintLink?**: `object`
+
+Where the hint's place lives, shown as a link under a locked trophy.
+
+#### href
+
+> **href**: `string`
+
+#### label
+
+> **label**: `string`
+
+***
+
 ### icon
 
 > **icon**: `string`

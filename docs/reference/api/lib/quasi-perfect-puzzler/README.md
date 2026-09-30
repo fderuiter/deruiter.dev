@@ -94,6 +94,12 @@ Re-exports [evaluateBooleanExpression](../quasi-perfect/engine/functions/evaluat
 
 ***
 
+### EXHAUSTION\_RULE
+
+Re-exports [EXHAUSTION_RULE](../quasi-perfect/ram/variables/EXHAUSTION_RULE.md)
+
+***
+
 ### findNodeById
 
 Re-exports [findNodeById](../quasi-perfect/engine/functions/findNodeById.md)
@@ -121,6 +127,12 @@ Re-exports [generateLeanProofScript](../quasi-perfect/engine/functions/generateL
 ### getStartingRam
 
 Re-exports [getStartingRam](../quasi-perfect/ram/functions/getStartingRam.md)
+
+***
+
+### getTacticBlock
+
+Re-exports [getTacticBlock](../quasi-perfect/ram/functions/getTacticBlock.md)
 
 ***
 
@@ -172,6 +184,12 @@ Re-exports [NodeType](../quasi-perfect/types/type-aliases/NodeType.md)
 
 ***
 
+### parseGameProgress
+
+Re-exports [parseGameProgress](../quasi-perfect/progress/functions/parseGameProgress.md)
+
+***
+
 ### puzzleLevels
 
 Re-exports [puzzleLevels](../quasi-perfect/levels/variables/puzzleLevels.md)
@@ -202,6 +220,12 @@ Re-exports [resolveHypothesis](../quasi-perfect/tactics/functions/resolveHypothe
 
 ***
 
+### resolveResumeLevelIndex
+
+Re-exports [resolveResumeLevelIndex](../quasi-perfect/progress/functions/resolveResumeLevelIndex.md)
+
+***
+
 ### simplifyNode
 
 Re-exports [simplifyNode](../quasi-perfect/engine/functions/simplifyNode.md)
@@ -217,6 +241,12 @@ Re-exports [STORY_RAM_MULTIPLIER](../quasi-perfect/ram/variables/STORY_RAM_MULTI
 ### SubGoal
 
 Re-exports [SubGoal](../quasi-perfect/types/interfaces/SubGoal.md)
+
+***
+
+### TacticBlock
+
+Re-exports [TacticBlock](../quasi-perfect/ram/interfaces/TacticBlock.md)
 
 ***
 

@@ -71,7 +71,6 @@ const storageExemptFiles = [
 // Storage directly. Each lane migrates its file onto lib/safe-storage and
 // removes it from this list. Do not add new files here.
 const pendingStorageMigrationFiles = [
-  "components/QuasiPerfectPuzzler/QuasiPerfectPuzzler.tsx",
   "components/study-director/career.ts",
   "components/study-director/useStudySave.ts",
   "lib/crf/personal-library.ts",

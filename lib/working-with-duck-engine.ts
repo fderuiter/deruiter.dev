@@ -1588,8 +1588,7 @@ export function performTrick(
   // when he's wound up and very little when he's already calm. Spamming
   // tricks keeps him calm and earns almost nothing. Drop It always answers
   // a real problem, so it always pays in full.
-  const need =
-    trick === "DROP_IT" ? 1 : clamp(state.excitement / 60, 0.1, 1);
+  const need = trick === "DROP_IT" ? 1 : clamp(state.excitement / 60, 0.1, 1);
   // Only a trick Duck needed extends the combo. The streak's score bonus is
   // capped at 3x, matching the multiplier bonus in stepDuckGame.
   const extendsCombo = need >= 0.5;

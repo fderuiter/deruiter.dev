@@ -325,7 +325,5 @@ export function pickOfficeAmbientEvent(
   rand: () => number = Math.random
 ): string {
   const idx = Math.floor(rand() * office.ambientEvents.length);
-  return office.ambientEvents[
-    clamp(idx, 0, office.ambientEvents.length - 1)
-  ];
+  return office.ambientEvents[clamp(idx, 0, office.ambientEvents.length - 1)];
 }

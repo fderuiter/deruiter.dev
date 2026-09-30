@@ -7,6 +7,7 @@
 ## Modules
 
 - [hooks/useAnnouncer](hooks/useAnnouncer/README.md)
+- [hooks/useAppEvent](hooks/useAppEvent/README.md)
 - [hooks/useCanvasResolution](hooks/useCanvasResolution/README.md)
 - [hooks/useClipboard](hooks/useClipboard/README.md)
 - [hooks/useConsoleArt](hooks/useConsoleArt/README.md)
@@ -162,6 +163,7 @@
 - [lib/engineering-bridges](lib/engineering-bridges/README.md)
 - [lib/env](lib/env/README.md)
 - [lib/error-sanitization](lib/error-sanitization/README.md)
+- [lib/event-bus](lib/event-bus/README.md)
 - [lib/exceptions](lib/exceptions/README.md)
 - [lib/fallback-blog-posts](lib/fallback-blog-posts/README.md)
 - [lib/fallback-case-studies](lib/fallback-case-studies/README.md)

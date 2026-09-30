@@ -151,10 +151,19 @@ export interface DecisionRecord {
 export const DIFFICULTIES = ["calm", "standard", "rescue"] as const;
 export type Difficulty = (typeof DIFFICULTIES)[number];
 
+/** How a study budgets the player's day: attention points or the world's clock. */
+export type StudyBudget = "attention" | "clock";
+
 export interface StudyState {
   version: 1;
   seed: string;
   difficulty?: Difficulty;
+  /**
+   * How the player's day is budgeted. Attention points (the default, and
+   * every save made before ADR 0055) or the world's clock, in which case the
+   * domain records attention costs without enforcing them.
+   */
+  budget?: StudyBudget;
   setup: StudySetup;
   day: number;
   status: "running" | "complete";

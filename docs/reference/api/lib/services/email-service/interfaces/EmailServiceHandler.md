@@ -122,7 +122,7 @@ Execution handler interface implementing the EmailServiceSpec contract.
 
 ### processRetryQueue()
 
-> **processRetryQueue**(`options?`): `Promise`\<\{ `failed`: `number`; `processed`: `number`; `succeeded`: `number`; \}\>
+> **processRetryQueue**(`options?`): `Promise`\<[`EmailRetryResult`](../type-aliases/EmailRetryResult.md)\>
 
 #### Parameters
 
@@ -142,7 +142,7 @@ Execution handler interface implementing the EmailServiceSpec contract.
 
 #### Returns
 
-`Promise`\<\{ `failed`: `number`; `processed`: `number`; `succeeded`: `number`; \}\>
+`Promise`\<[`EmailRetryResult`](../type-aliases/EmailRetryResult.md)\>
 
 #### Inherited from
 

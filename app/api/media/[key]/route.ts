@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ProjectImageService } from "@/lib/services/project-image-service";
 import { applySecurityHeaders } from "@/lib/security-headers";
+import { logger } from "@/lib/logger";
+import { sanitizeError } from "@/lib/error-sanitization";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +20,20 @@ export async function GET(
     return applySecurityHeaders(response, req);
   }
 
-  const asset = await ProjectImageService.getMediaAsset(key);
+  const result = await ProjectImageService.getMediaAsset(key);
+  if (!result.success) {
+    logger.error(
+      `Media asset read failed (${result.error.code}):`,
+      sanitizeError(result.error.details ?? result.error.message)
+    );
+    const response = NextResponse.json(
+      { error: "Media asset could not be read" },
+      { status: 500 }
+    );
+    return applySecurityHeaders(response, req);
+  }
+
+  const asset = result.data;
   if (!asset) {
     const response = NextResponse.json(
       { error: "Media asset not found" },

@@ -4,6 +4,12 @@ import { env, getEnv } from "@/lib/env";
 import { resolveBaseUrl } from "@/lib/domain";
 import { logger } from "@/lib/logger";
 import { clamp } from "@/lib/game-utils";
+import { z } from "zod";
+import {
+  createFailure,
+  createSuccess,
+  type ServiceResult,
+} from "@/lib/services/service-result";
 import {
   renderNewsletterConfirmationEmail,
   renderNewsletterDispatchEmail,
@@ -63,6 +69,28 @@ export interface NewsletterDispatchCounts extends Record<string, number> {
   completedDispatches: number;
   capacity: number;
 }
+
+/**
+ * Error codes returned by {@link NewsletterService.dispatchDue} (ADR 0028).
+ *
+ * `ENQUEUE_FAILED` means an announcement could not be written to the outbound
+ * queue; its delivery claim is released so the next run retries that
+ * recipient. `DISPATCH_FAILED` means a database read or write in the phase
+ * failed. Either way the dispatch stays open for the next run.
+ */
+export const NewsletterDispatchErrorCode = z.enum([
+  "ENQUEUE_FAILED",
+  "DISPATCH_FAILED",
+]);
+export type NewsletterDispatchErrorCode = z.infer<
+  typeof NewsletterDispatchErrorCode
+>;
+
+/** Result envelope of {@link NewsletterService.dispatchDue}. */
+export type NewsletterDispatchResult = ServiceResult<
+  NewsletterDispatchCounts,
+  NewsletterDispatchErrorCode
+>;
 
 function newToken(): string {
   return crypto.randomBytes(32).toString("base64url");
@@ -277,10 +305,28 @@ export class NewsletterService {
    * CONFIRMED when the post was queued receive it, the suppression list is
    * rechecked for every recipient, and no run enqueues more than
    * `NEWSLETTER_DISPATCH_CAP` or the queue's remaining room in one batch.
+   *
+   * Never throws: failures are returned as a typed
+   * {@link NewsletterDispatchErrorCode}.
    */
   static async dispatchDue(
     now: Date = new Date()
-  ): Promise<NewsletterDispatchCounts> {
+  ): Promise<NewsletterDispatchResult> {
+    try {
+      return await NewsletterService.runDispatch(now);
+    } catch (error) {
+      return createFailure(
+        "DISPATCH_FAILED",
+        "Newsletter dispatch phase could not complete",
+        { details: error }
+      );
+    }
+  }
+
+  /** Body of {@link NewsletterService.dispatchDue}, which catches its database errors. */
+  private static async runDispatch(
+    now: Date
+  ): Promise<NewsletterDispatchResult> {
     const unannounced = await prisma.blogPost.findMany({
       where: {
         published: true,
@@ -383,7 +429,11 @@ export class NewsletterService {
           await prisma.newsletterDelivery.delete({
             where: { id: delivery.id },
           });
-          throw new Error("Could not enqueue a newsletter dispatch email");
+          return createFailure(
+            "ENQUEUE_FAILED",
+            "Could not enqueue a newsletter dispatch email",
+            { details: { dispatchId: dispatch.id, counts } }
+          );
         }
         await prisma.newsletterDelivery.update({
           where: { id: delivery.id },
@@ -414,6 +464,6 @@ export class NewsletterService {
         `[newsletter] Queued ${counts.queued} dispatch email(s); capacity ${capacity}.`
       );
     }
-    return counts;
+    return createSuccess(counts);
   }
 }

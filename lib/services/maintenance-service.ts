@@ -9,6 +9,10 @@ import {
 import { NewsletterService } from "@/lib/services/newsletter-service";
 import { TelemetryService } from "@/lib/services/telemetry-service";
 import { sanitizeError } from "@/lib/error-sanitization";
+import {
+  createSuccess,
+  type ServiceResult,
+} from "@/lib/services/service-result";
 
 const DEFAULT_DEADLINE_MS = 8000;
 const RESPONSE_RESERVE_MS = 250;
@@ -35,11 +39,21 @@ export interface MaintenanceSummary {
   phases: Record<MaintenancePhaseName, MaintenancePhaseSummary>;
 }
 
+/** Counts one maintenance phase reports. */
+export type MaintenancePhaseCounts = Record<string, number | null>;
+
+/**
+ * Result envelope an adapter returns for one phase. The error code is the
+ * underlying service's code (for example `PERSISTENCE_FAILED`), so a failure
+ * keeps the service's own taxonomy.
+ */
+export type MaintenancePhaseResult = ServiceResult<MaintenancePhaseCounts>;
+
 export interface MaintenanceAdapters {
-  syncTelemetry(batchSize: number): Promise<Record<string, number | null>>;
-  dispatchNewsletter(now: Date): Promise<Record<string, number | null>>;
-  processEmailRetry(now: Date): Promise<Record<string, number | null>>;
-  runRetention(now: Date): Promise<Record<string, number | null>>;
+  syncTelemetry(batchSize: number): Promise<MaintenancePhaseResult>;
+  dispatchNewsletter(now: Date): Promise<MaintenancePhaseResult>;
+  processEmailRetry(now: Date): Promise<MaintenancePhaseResult>;
+  runRetention(now: Date): Promise<MaintenancePhaseResult>;
 }
 
 function errorMessage(error: unknown): string {
@@ -51,7 +65,7 @@ function errorMessage(error: unknown): string {
 
 async function runBoundedPhase(
   name: MaintenancePhaseName,
-  task: () => Promise<Record<string, number | null>>,
+  task: () => Promise<MaintenancePhaseResult>,
   deadlineAt: number,
   clock: () => number
 ): Promise<MaintenancePhaseSummary> {
@@ -63,7 +77,7 @@ async function runBoundedPhase(
 
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
-    const counts = await Promise.race([
+    const result = await Promise.race([
       task(),
       new Promise<never>((_, reject) => {
         timer = setTimeout(
@@ -73,12 +87,28 @@ async function runBoundedPhase(
         timer.unref?.();
       }),
     ]);
+    if (!result.success) {
+      const message = result.error.message || result.error.code;
+      logger.warn(
+        `[maintenance:${name}] ${result.error.code}: ${message}`,
+        sanitizeError(result.error.details),
+        { maintenancePhase: name, errorCode: result.error.code }
+      );
+      return {
+        status: "failed",
+        durationMs: Math.max(0, clock() - startedAt),
+        counts: {},
+        error: message,
+      };
+    }
     return {
       status: "completed",
       durationMs: Math.max(0, clock() - startedAt),
-      counts,
+      counts: result.data,
     };
   } catch (error) {
+    // Deadline rejections, and throws from reads that are not on
+    // ServiceResult (the email queue health query).
     const timedOut = clock() >= deadlineAt - RESPONSE_RESERVE_MS;
     logger.warn(`[maintenance:${name}] ${errorMessage(error)}`, error, {
       maintenancePhase: name,
@@ -98,18 +128,23 @@ function createProductionAdapters(batchSize: number): MaintenanceAdapters {
   return {
     async syncTelemetry() {
       const telemetry = await TelemetryService.syncBufferedEvents(batchSize);
+      if (!telemetry.success) return telemetry;
+      // Both reaction queues drain even when one fails; the phase then
+      // reports the first failure.
       const reactions =
         await CaseStudyService.flushBufferedReactionsToDatabase(batchSize);
       const blogReactions =
         await BlogPostService.flushBufferedReactionsToDatabase(batchSize);
-      return {
-        processed: telemetry.processed,
-        inserted: telemetry.inserted,
-        reactionsProcessed: reactions.processed,
-        reactionsInserted: reactions.inserted,
-        blogReactionsProcessed: blogReactions.processed,
-        blogReactionsInserted: blogReactions.inserted,
-      };
+      if (!reactions.success) return reactions;
+      if (!blogReactions.success) return blogReactions;
+      return createSuccess({
+        processed: telemetry.data.processed,
+        inserted: telemetry.data.inserted,
+        reactionsProcessed: reactions.data.processed,
+        reactionsInserted: reactions.data.inserted,
+        blogReactionsProcessed: blogReactions.data.processed,
+        blogReactionsInserted: blogReactions.data.inserted,
+      });
     },
     async dispatchNewsletter(now) {
       return NewsletterService.dispatchDue(now);
@@ -119,27 +154,29 @@ function createProductionAdapters(batchSize: number): MaintenanceAdapters {
         maxBatchSize: EMAIL_RETRY_BATCH_SIZE,
         now,
       });
+      if (!retry.success) return retry;
       const health = await EmailService.getRetryQueueHealth(now);
-      return {
-        processed: retry.processed,
-        succeeded: retry.succeeded,
-        failed: retry.failed,
+      return createSuccess({
+        processed: retry.data.processed,
+        succeeded: retry.data.succeeded,
+        failed: retry.data.failed,
         queueDepth: health.depth,
         oldestPendingAgeMs: health.oldestPendingAgeMs,
         terminalFailures: health.terminalFailures,
         retryExhausted: health.retryExhausted,
-      };
+      });
     },
     async runRetention(now) {
       const cutoff = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
       const telemetry = await TelemetryService.rollupAndPruneRawEvents(cutoff);
-      return {
-        ...telemetry,
+      if (!telemetry.success) return telemetry;
+      return createSuccess({
+        ...telemetry.data,
         // Upstash removes rate-limit and other volatile keys at their TTL on
         // the provider. Scanning already-expired keys would add commands but
         // cannot find keys Redis has removed, so the bounded job records zero.
         providerExpiredKeysDeleted: 0,
-      };
+      });
     },
   };
 }

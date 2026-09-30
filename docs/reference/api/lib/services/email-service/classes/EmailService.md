@@ -168,9 +168,12 @@ Checks if an email address is in the suppression list (bounced, complained, unsu
 
 ### processRetryQueue()
 
-> `static` **processRetryQueue**(`options?`): `Promise`\<\{ `failed`: `number`; `processed`: `number`; `succeeded`: `number`; \}\>
+> `static` **processRetryQueue**(`options?`): `Promise`\<[`EmailRetryResult`](../type-aliases/EmailRetryResult.md)\>
 
 Processes due items from OutboundEmailQueue with exponential backoff.
+
+Never throws: a lease or queue-update failure is returned as a typed
+[EmailRetryErrorCode](../variables/EmailRetryErrorCode.md).
 
 #### Parameters
 
@@ -192,7 +195,7 @@ Restrict the run to one queue row (QStash-targeted retry).
 
 #### Returns
 
-`Promise`\<\{ `failed`: `number`; `processed`: `number`; `succeeded`: `number`; \}\>
+`Promise`\<[`EmailRetryResult`](../type-aliases/EmailRetryResult.md)\>
 
 ***
 

@@ -33,7 +33,7 @@ Used in local development and automated testing environments.
 
 ### delete()
 
-> **delete**(`key`): `Promise`\<`void`\>
+> **delete**(`key`): `Promise`\<[`MediaStorageResult`](../type-aliases/MediaStorageResult.md)\<`null`\>\>
 
 #### Parameters
 
@@ -43,7 +43,7 @@ Used in local development and automated testing environments.
 
 #### Returns
 
-`Promise`\<`void`\>
+`Promise`\<[`MediaStorageResult`](../type-aliases/MediaStorageResult.md)\<`null`\>\>
 
 #### Implementation of
 
@@ -53,7 +53,7 @@ Used in local development and automated testing environments.
 
 ### getAsset()
 
-> **getAsset**(`key`): `Promise`\<[`MediaAssetRecord`](../interfaces/MediaAssetRecord.md) \| `null`\>
+> **getAsset**(`key`): `Promise`\<[`MediaStorageResult`](../type-aliases/MediaStorageResult.md)\<[`MediaAssetRecord`](../interfaces/MediaAssetRecord.md) \| `null`\>\>
 
 #### Parameters
 
@@ -63,7 +63,7 @@ Used in local development and automated testing environments.
 
 #### Returns
 
-`Promise`\<[`MediaAssetRecord`](../interfaces/MediaAssetRecord.md) \| `null`\>
+`Promise`\<[`MediaStorageResult`](../type-aliases/MediaStorageResult.md)\<[`MediaAssetRecord`](../interfaces/MediaAssetRecord.md) \| `null`\>\>
 
 #### Implementation of
 
@@ -93,7 +93,7 @@ Used in local development and automated testing environments.
 
 ### upload()
 
-> **upload**(`file`, `filename`, `_contentType`): `Promise`\<[`MediaUploadResult`](../interfaces/MediaUploadResult.md)\>
+> **upload**(`file`, `filename`, `_contentType`): `Promise`\<[`MediaStorageResult`](../type-aliases/MediaStorageResult.md)\<[`MediaUploadResult`](../interfaces/MediaUploadResult.md)\>\>
 
 #### Parameters
 
@@ -111,7 +111,7 @@ Used in local development and automated testing environments.
 
 #### Returns
 
-`Promise`\<[`MediaUploadResult`](../interfaces/MediaUploadResult.md)\>
+`Promise`\<[`MediaStorageResult`](../type-aliases/MediaStorageResult.md)\<[`MediaUploadResult`](../interfaces/MediaUploadResult.md)\>\>
 
 #### Implementation of
 

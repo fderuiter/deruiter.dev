@@ -20,11 +20,11 @@
 
 ### deleteMediaAsset()
 
-> `static` **deleteMediaAsset**(`key`): `Promise`\<`boolean`\>
+> `static` **deleteMediaAsset**(`key`): `Promise`\<[`MediaStorageResult`](../../media-storage/type-aliases/MediaStorageResult.md)\<`null`\>\>
 
-Deletes a media asset from the active provider by key.
-Returns false when deletion fails. Provider selection/configuration errors
-remain exceptions so missing production credentials fail closed.
+Deletes a media asset from the active provider by key. A deployment with
+no configured provider resolves to `STORAGE_UNCONFIGURED`, so missing
+production credentials still fail closed.
 
 #### Parameters
 
@@ -34,7 +34,7 @@ remain exceptions so missing production credentials fail closed.
 
 #### Returns
 
-`Promise`\<`boolean`\>
+`Promise`\<[`MediaStorageResult`](../../media-storage/type-aliases/MediaStorageResult.md)\<`null`\>\>
 
 ***
 
@@ -58,9 +58,10 @@ Extracts the storage key from a media asset URL or path.
 
 ### getMediaAsset()
 
-> `static` **getMediaAsset**(`key`): `Promise`\<[`MediaAssetRecord`](../../media-storage/interfaces/MediaAssetRecord.md) \| `null`\>
+> `static` **getMediaAsset**(`key`): `Promise`\<[`MediaStorageResult`](../../media-storage/type-aliases/MediaStorageResult.md)\<[`MediaAssetRecord`](../../media-storage/interfaces/MediaAssetRecord.md) \| `null`\>\>
 
-Retrieves a media asset from storage by key.
+Retrieves a media asset from storage by key. A provider without read
+support, or a missing asset, resolves to `null` data.
 
 #### Parameters
 
@@ -70,17 +71,17 @@ Retrieves a media asset from storage by key.
 
 #### Returns
 
-`Promise`\<[`MediaAssetRecord`](../../media-storage/interfaces/MediaAssetRecord.md) \| `null`\>
+`Promise`\<[`MediaStorageResult`](../../media-storage/type-aliases/MediaStorageResult.md)\<[`MediaAssetRecord`](../../media-storage/interfaces/MediaAssetRecord.md) \| `null`\>\>
 
 ***
 
 ### saveMediaAsset()
 
-> `static` **saveMediaAsset**(`key`, `buffer`, `contentType`): `Promise`\<`string`\>
+> `static` **saveMediaAsset**(`key`, `buffer`, `contentType`): `Promise`\<[`MediaStorageResult`](../../media-storage/type-aliases/MediaStorageResult.md)\<`string`\>\>
 
 Saves a validated media buffer to the active storage provider and returns
-its asset URL. Upload failures are propagated so callers never persist a
-URL for an asset that was not stored durably.
+its asset URL. A failure means the asset was not stored durably, so the
+caller must not persist a URL for it.
 
 #### Parameters
 
@@ -98,7 +99,7 @@ URL for an asset that was not stored durably.
 
 #### Returns
 
-`Promise`\<`string`\>
+`Promise`\<[`MediaStorageResult`](../../media-storage/type-aliases/MediaStorageResult.md)\<`string`\>\>
 
 ***
 

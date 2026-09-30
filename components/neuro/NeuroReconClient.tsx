@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useClipboard } from "@/hooks/useClipboard";
+import { useToast } from "@/hooks/useToast";
 import {
   ControlPoint,
   DatasetSource,
@@ -31,6 +31,7 @@ import {
 } from "@/lib/neuro/loader";
 import {
   NEURO_RUN_RECON_KEY,
+  NEURO_TOOL_HOTKEYS,
   applyVoxelEditsToVolume,
   countNeuroDraftEdits,
   getNeuroProvenance,
@@ -105,6 +106,7 @@ import { NeuroSuccessDialog } from "./NeuroSuccessDialog";
 import { useAudio } from "@/components/providers/AudioProvider";
 import { useTelemetry } from "@/hooks/useTelemetry";
 import { useStudioHashParams } from "@/hooks/useStudioHashParams";
+import { useHotkeys } from "@/hooks/useHotkeys";
 import {
   IconBrain,
   IconCheck,
@@ -117,31 +119,92 @@ import {
   IconAlertCircle,
 } from "@tabler/icons-react";
 
+type NeuroViewMode = "split" | "3d" | "2d";
+
+const HASH_SCENARIOS: readonly string[] = [
+  "dura_inclusion",
+  "wm_hypointensity",
+  "skull_strip_erosion",
+  "sandbox",
+];
+const HASH_TOOLS: readonly string[] = [
+  "inspect",
+  "control_point",
+  "paint",
+  "erase",
+];
+const HASH_VIEWS: readonly string[] = ["split", "3d", "2d"];
+const HASH_DATASETS: readonly string[] = ["case_study", "mni152", "oasis"];
+
+/** The case a `scenario` hash value opens, or the default case when it names none. */
+function scenarioFromHash(raw: string | undefined): ScenarioId {
+  return raw && HASH_SCENARIOS.includes(raw)
+    ? (raw as ScenarioId)
+    : "dura_inclusion";
+}
+
+/** The layout a `view` hash value selects; unknown values fall back to split. */
+function viewModeFromHash(raw: string | undefined): NeuroViewMode {
+  return raw && HASH_VIEWS.includes(raw) ? (raw as NeuroViewMode) : "split";
+}
+
+/**
+ * The dataset a `dataset` hash value selects. A share link pairing a
+ * real-scan dataset with a synthetic case is invalid and falls back to the
+ * case study, as does an unknown value.
+ */
+function datasetFromHash(
+  rawDataset: string | undefined,
+  rawScenario: string | undefined
+): DatasetSource {
+  const dataset = rawDataset || "case_study";
+  const scenario = (rawScenario || "dura_inclusion") as ScenarioId;
+  return HASH_DATASETS.includes(dataset) &&
+    isNeuroSelectionValid(dataset as DatasetSource, scenario)
+    ? (dataset as DatasetSource)
+    : "case_study";
+}
+
+/** The tool a `tool` hash value selects, or the case's recommended tool. */
+function toolModeFromHash(
+  raw: string | undefined,
+  recommendedTool: ToolMode
+): ToolMode {
+  return raw && HASH_TOOLS.includes(raw) ? (raw as ToolMode) : recommendedTool;
+}
+
+/**
+ * Keys the studio listens for: each tool's digit and letter, R and Space to
+ * run recon-all, and M or ? for the Field Manual. Every binding names no
+ * modifier, so matchesHotkey accepts it only with Ctrl, Meta and Alt all up;
+ * the accepted combinations are the bare key and Shift+key, since Shift is
+ * not checked (Shift+V arrives as "V" and ? is typed with Shift).
+ * resolveNeuroHotkey still decides which of these act on a given target.
+ */
+const NEURO_STUDIO_HOTKEYS: readonly string[] = [
+  ...Object.values(NEURO_TOOL_HOTKEYS).flatMap((h) => [
+    h.digit,
+    h.letter.toLowerCase(),
+  ]),
+  NEURO_RUN_RECON_KEY.toLowerCase(),
+  "Space",
+  "m",
+  "?",
+];
+
 export const NeuroReconClient: React.FC = () => {
   const { playNote, playSuccess } = useAudio();
   const { recordEvent } = useTelemetry();
   const { params, setParam, setParams } = useStudioHashParams();
-  const [copyToast, setCopyToast] = useState<string | null>(null);
+  const toast = useToast();
 
-  const [activeScenarioId, setActiveScenarioId] = useState<ScenarioId>(() => {
-    if (typeof window !== "undefined") {
-      const rawSc = new URLSearchParams(window.location.hash.slice(1)).get(
-        "scenario"
-      ) as ScenarioId;
-      if (
-        rawSc &&
-        [
-          "dura_inclusion",
-          "wm_hypointensity",
-          "skull_strip_erosion",
-          "sandbox",
-        ].includes(rawSc)
-      ) {
-        return rawSc;
-      }
-    }
-    return "dura_inclusion";
-  });
+  // The loaded case stays in state because switching it parks drafts and
+  // recomputes the volume asynchronously. It starts from the hash snapshot,
+  // which is empty during SSR and hydration, and the sync effect below
+  // follows later hash changes.
+  const [activeScenarioId, setActiveScenarioId] = useState<ScenarioId>(() =>
+    scenarioFromHash(params.scenario)
+  );
 
   const [scenarios, setScenarios] = useState<
     Record<ScenarioId, ScenarioConfig>
@@ -194,20 +257,18 @@ export const NeuroReconClient: React.FC = () => {
     y: 58,
     z: 28,
   });
-  const [toolMode, setToolModeState] = useState<ToolMode>(() => {
-    if (typeof window !== "undefined") {
-      const rawTool = new URLSearchParams(window.location.hash.slice(1)).get(
-        "tool"
-      ) as ToolMode;
-      if (
-        rawTool &&
-        ["inspect", "control_point", "paint", "erase"].includes(rawTool)
-      ) {
-        return rawTool;
-      }
-    }
-    return "inspect";
-  });
+  // View, dataset and tool are derived from the hash rather than mirrored
+  // into state, so deep links, in-app changes and Back/Forward all flow
+  // through useStudioHashParams, and the server snapshot keeps the first
+  // client render identical to the SSR markup.
+  const toolMode = useMemo(
+    () =>
+      toolModeFromHash(
+        params.tool,
+        currentScenario?.recommendedTool || "inspect"
+      ),
+    [params.tool, currentScenario]
+  );
 
   useEffect(() => {
     if (currentScenario) {
@@ -224,28 +285,11 @@ export const NeuroReconClient: React.FC = () => {
   const [surfaceMode, setSurfaceMode] = useState<SurfaceMode>("pial");
   const [showPialContour, setShowPialContour] = useState(true);
   const [showWmContour, setShowWmContour] = useState(true);
-  const [viewMode, setViewModeState] = useState<"split" | "3d" | "2d">(() => {
-    if (typeof window !== "undefined") {
-      const rawView = new URLSearchParams(window.location.hash.slice(1)).get(
-        "view"
-      ) as "split" | "3d" | "2d";
-      if (rawView && ["split", "3d", "2d"].includes(rawView)) {
-        return rawView;
-      }
-    }
-    return "split";
-  });
-  const [activeDataset, setActiveDatasetState] = useState<DatasetSource>(() => {
-    if (typeof window !== "undefined") {
-      const rawDs = new URLSearchParams(window.location.hash.slice(1)).get(
-        "dataset"
-      ) as DatasetSource;
-      if (rawDs && ["case_study", "mni152", "oasis"].includes(rawDs)) {
-        return rawDs;
-      }
-    }
-    return "case_study";
-  });
+  const viewMode = useMemo(() => viewModeFromHash(params.view), [params.view]);
+  const activeDataset = useMemo(
+    () => datasetFromHash(params.dataset, params.scenario),
+    [params.dataset, params.scenario]
+  );
 
   const [controlPoints, setControlPoints] = useState<ControlPoint[]>([]);
   const [voxelEdits, setVoxelEdits] = useState<VoxelEdit[]>([]);
@@ -336,7 +380,6 @@ export const NeuroReconClient: React.FC = () => {
         : null;
       if (newConfig) {
         setCrosshair(newConfig.targetCoords);
-        setToolModeState(newConfig.recommendedTool);
       }
       setControlPoints(restored ? restored.controlPoints : []);
       setVoxelEdits(restored ? restored.voxelEdits : []);
@@ -371,7 +414,6 @@ export const NeuroReconClient: React.FC = () => {
 
       // Defect cases are synthetic: leave a real-scan dataset when one is picked.
       const leaveDataset = !isNeuroSelectionValid(activeDataset, scenarioId);
-      if (leaveDataset) setActiveDatasetState("case_study");
 
       setParams(
         {
@@ -387,7 +429,8 @@ export const NeuroReconClient: React.FC = () => {
     [applyScenarioState, setParams, recordEvent, activeDataset]
   );
 
-  // Synchronize incoming hash state on mount or browser Back/Forward navigation
+  // Load the hash's case on mount, after hydration, and on browser
+  // Back/Forward navigation.
   useEffect(() => {
     const rawSc =
       (params.scenario as ScenarioId | undefined) || "dura_inclusion";
@@ -395,52 +438,13 @@ export const NeuroReconClient: React.FC = () => {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       applyScenarioState(rawSc);
     }
-    const rawView =
-      (params.view as "split" | "3d" | "2d" | undefined) || "split";
-    if (["split", "3d", "2d"].includes(rawView) && rawView !== viewMode) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setViewModeState(rawView);
-    }
-    const rawDs = (params.dataset as DatasetSource | undefined) || "case_study";
-    // A share link pairing a real-scan dataset with a synthetic case is invalid.
-    const effectiveDs =
-      ["case_study", "mni152", "oasis"].includes(rawDs) &&
-      isNeuroSelectionValid(rawDs, rawSc)
-        ? rawDs
-        : "case_study";
-    if (effectiveDs !== activeDataset) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setActiveDatasetState(effectiveDs);
-    }
-    const rawTool = params.tool as ToolMode | undefined;
-    const recommendedTool = currentScenario?.recommendedTool || "inspect";
-    const targetTool =
-      rawTool &&
-      ["inspect", "control_point", "paint", "erase"].includes(rawTool)
-        ? rawTool
-        : recommendedTool;
-    if (targetTool !== toolMode) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setToolModeState(targetTool);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    params,
-    activeScenarioId,
-    viewMode,
-    activeDataset,
-    toolMode,
-    currentScenario,
-    applyScenarioState,
-  ]);
+  }, [params.scenario, scenarios, activeScenarioId, applyScenarioState]);
 
-  const setViewMode = (mode: "split" | "3d" | "2d") => {
-    setViewModeState(mode);
+  const setViewMode = (mode: NeuroViewMode) => {
     setParam("view", mode === "split" ? null : mode, { replace: true });
   };
 
   const setActiveDataset = (dataset: DatasetSource) => {
-    setActiveDatasetState(dataset);
     setParam("dataset", dataset === "case_study" ? null : dataset, {
       replace: true,
     });
@@ -448,7 +452,6 @@ export const NeuroReconClient: React.FC = () => {
 
   const setToolMode = useCallback(
     (tool: ToolMode) => {
-      setToolModeState(tool);
       setParam(
         "tool",
         tool === (currentScenario?.recommendedTool || "inspect") ? null : tool,
@@ -465,10 +468,11 @@ export const NeuroReconClient: React.FC = () => {
       try {
         playSuccess();
       } catch {}
-      setCopyToast(
-        "Link copied: case, view and tool only. Your edits are not included."
+      // useClipboard already announced successMessage; show it without speaking it twice.
+      toast.success(
+        "Link copied: case, view and tool only. Your edits are not included.",
+        { duration: 3500, announce: false }
       );
-      setTimeout(() => setCopyToast(null), 3500);
     },
   });
 
@@ -860,12 +864,15 @@ export const NeuroReconClient: React.FC = () => {
 
   const isDialogOpen = isFieldManualOpen || showSuccessModal;
 
-  // Keyboard Shortcuts Listener
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Studio hotkeys are suspended while a modal dialog owns the keyboard.
-      if (isDialogOpen) return;
-      // Ignore text entry, modifier chords, and natively activating controls.
+  // Keyboard shortcuts. The studio root is a keyboard boundary so global
+  // shortcuts yield to it; its own hotkeys opt back in. They are suspended
+  // while a modal dialog owns the keyboard.
+  useHotkeys(
+    NEURO_STUDIO_HOTKEYS,
+    (e) => {
+      // Ignore text entry, dialogs and Space on natively activating
+      // controls. preventDefault stays per action so Space still presses a
+      // focused button.
       const action = resolveNeuroHotkey(e);
       if (!action) return;
       if (action.type === "tool") {
@@ -876,11 +883,9 @@ export const NeuroReconClient: React.FC = () => {
       } else {
         setIsFieldManualOpen((prev) => !prev);
       }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isProcessing, isDialogOpen, handleRunRecon, setToolMode]);
+    },
+    { enabled: !isDialogOpen, allowInKeyboardBoundary: true }
+  );
 
   // Next Scenario Advancer
   const handleAdvanceNextScenario = async () => {
@@ -1313,21 +1318,6 @@ export const NeuroReconClient: React.FC = () => {
         onAdvance={handleAdvanceNextScenario}
         onSchedule={() => recordEvent("neuro", "project_click")}
       />
-
-      {/* Share Toast Notification */}
-      <AnimatePresence>
-        {copyToast && (
-          <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 15 }}
-            className="fixed bottom-6 right-6 z-50 px-4 py-2.5 rounded-xl border border-brand-cyan/40 bg-zinc-900/95 text-xs font-mono text-brand-cyan shadow-2xl flex items-center gap-2 backdrop-blur-md"
-          >
-            <IconLink className="w-4 h-4 text-brand-cyan" />
-            <span>{copyToast}</span>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 };

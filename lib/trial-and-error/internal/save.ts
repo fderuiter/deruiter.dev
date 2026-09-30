@@ -2,6 +2,7 @@ import { RUN_SAVE_VERSION, RunActionSchema, RunSaveSchema } from "../types";
 import type { z } from "zod";
 import type { RunAction, RunPlan, RunState } from "./run";
 import type { RunChoice } from "./run-rules";
+import type { RunOrigin } from "./seed";
 import { advanceRun, createRunState, deriveRunView } from "./run";
 
 /**
@@ -28,6 +29,8 @@ export interface RunLog {
   /** The run's stake (#950). Absent means stake 1. */
   stake?: RunChoice["stake"];
   actions: LoggedAction[];
+  /** How the seed was chosen; absent means a random run. */
+  origin?: RunOrigin;
 }
 
 /** A resumable run rebuilt from a save. */
@@ -70,6 +73,7 @@ export function serializeRun(log: RunLog, savedAt: Date): string {
       sponsorId: log.sponsorId,
       stake: log.stake,
       actions: log.actions,
+      ...(log.origin ? { origin: log.origin } : {}),
     })
   );
 }
@@ -118,6 +122,7 @@ export function parseRunSave(
       ...(save.sponsorId !== undefined && { sponsorId: save.sponsorId }),
       ...(save.stake !== undefined && { stake: save.stake }),
       actions: [...save.actions, ...deselect],
+      ...(save.origin ? { origin: save.origin } : {}),
     };
     const run = deselect.reduce(
       (r, action) => advanceRun(act, r, action),

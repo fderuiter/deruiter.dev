@@ -316,6 +316,7 @@
 - [lib/trial-and-error/internal/run-rules](lib/trial-and-error/internal/run-rules/README.md)
 - [lib/trial-and-error/internal/save](lib/trial-and-error/internal/save/README.md)
 - [lib/trial-and-error/internal/scoring](lib/trial-and-error/internal/scoring/README.md)
+- [lib/trial-and-error/internal/seed](lib/trial-and-error/internal/seed/README.md)
 - [lib/trial-and-error/internal/shop](lib/trial-and-error/internal/shop/README.md)
 - [lib/trial-and-error/internal/snapshots](lib/trial-and-error/internal/snapshots/README.md)
 - [lib/trial-and-error/internal/sponsors](lib/trial-and-error/internal/sponsors/README.md)

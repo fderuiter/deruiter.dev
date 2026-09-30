@@ -18,6 +18,18 @@
 - [CreateBlogDraftInput](interfaces/CreateBlogDraftInput.md)
 - [UpdateBlogDraftInput](interfaces/UpdateBlogDraftInput.md)
 
+## Type Aliases
+
+- [BlogPostDateErrorCode](type-aliases/BlogPostDateErrorCode.md)
+- [BlogPostDatesResult](type-aliases/BlogPostDatesResult.md)
+- [BlogReactionFlushErrorCode](type-aliases/BlogReactionFlushErrorCode.md)
+- [BlogReactionFlushResult](type-aliases/BlogReactionFlushResult.md)
+
+## Variables
+
+- [BlogPostDateErrorCode](variables/BlogPostDateErrorCode.md)
+- [BlogReactionFlushErrorCode](variables/BlogReactionFlushErrorCode.md)
+
 ## Functions
 
 - [compareBlogPostsNewestFirst](functions/compareBlogPostsNewestFirst.md)
@@ -25,6 +37,7 @@
 - [isValidPillar](functions/isValidPillar.md)
 - [parseBlogPostDates](functions/parseBlogPostDates.md)
 - [parseValidDate](functions/parseValidDate.md)
+- [toValidBlogPosts](functions/toValidBlogPosts.md)
 
 ## References
 

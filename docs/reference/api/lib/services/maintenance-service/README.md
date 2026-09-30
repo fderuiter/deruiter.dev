@@ -18,5 +18,7 @@
 
 ## Type Aliases
 
+- [MaintenancePhaseCounts](type-aliases/MaintenancePhaseCounts.md)
 - [MaintenancePhaseName](type-aliases/MaintenancePhaseName.md)
+- [MaintenancePhaseResult](type-aliases/MaintenancePhaseResult.md)
 - [MaintenancePhaseStatus](type-aliases/MaintenancePhaseStatus.md)

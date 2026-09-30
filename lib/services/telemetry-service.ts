@@ -5,10 +5,48 @@ import { RateLimitParamsSchema } from "@/lib/schemas";
 import { Ratelimit } from "@upstash/ratelimit";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
+import { z } from "zod";
 import {
   generateClientConnectionHash,
   extractClientIp,
 } from "./privacy-service";
+import {
+  createFailure,
+  createSuccess,
+  type ServiceResult,
+} from "@/lib/services/service-result";
+
+/**
+ * Error codes returned by the telemetry maintenance operations (ADR 0028).
+ *
+ * `QUEUE_UNAVAILABLE` means the Redis buffer could not be read or moved, and
+ * `PERSISTENCE_FAILED` that the batch did not reach Postgres; in both cases
+ * the events stay queued for the next run. `ACKNOWLEDGEMENT_FAILED` means the
+ * batch was written but not removed from the processing queue, so the next
+ * run replays it idempotently. `RETENTION_FAILED` means the rollup
+ * transaction rolled back.
+ */
+export const TelemetryMaintenanceErrorCode = z.enum([
+  "QUEUE_UNAVAILABLE",
+  "PERSISTENCE_FAILED",
+  "ACKNOWLEDGEMENT_FAILED",
+  "RETENTION_FAILED",
+]);
+export type TelemetryMaintenanceErrorCode = z.infer<
+  typeof TelemetryMaintenanceErrorCode
+>;
+
+/** Result envelope of {@link TelemetryService.syncBufferedEvents}. */
+export type TelemetrySyncResult = ServiceResult<
+  { processed: number; inserted: number },
+  TelemetryMaintenanceErrorCode
+>;
+
+/** Result envelope of {@link TelemetryService.rollupAndPruneRawEvents}. */
+export type TelemetryRetentionResult = ServiceResult<
+  { rollupsUpserted: number; rawEventsDeleted: number },
+  TelemetryMaintenanceErrorCode
+>;
 
 export interface TelemetryEventInput {
   projectSlug: string;
@@ -449,41 +487,50 @@ export class TelemetryService {
    * this invocation persisted are removed, so an overlapping invocation's
    * batch survives. Re-processing is idempotent through the explicit event id.
    */
-  static async syncBufferedEvents(batchSize: number) {
+  static async syncBufferedEvents(
+    batchSize: number
+  ): Promise<TelemetrySyncResult> {
     type BufferedEvent = BufferedTelemetryEvent;
     const bufferKey = getScopedRedisKey("telemetry_buffer");
     const processingKey = getScopedRedisKey("telemetry_processing");
 
-    // 1. Fetch any pending events previously transferred to processing queue but not yet synced to DB
-    const existingProcessing = (await redis.lrange(
-      processingKey,
-      0,
-      -1
-    )) as BufferedEvent[];
-    let events: BufferedEvent[] = Array.isArray(existingProcessing)
-      ? existingProcessing
-      : [];
+    let events: BufferedEvent[];
+    try {
+      // 1. Fetch any pending events previously transferred to processing queue but not yet synced to DB
+      const existingProcessing = (await redis.lrange(
+        processingKey,
+        0,
+        -1
+      )) as BufferedEvent[];
+      events = Array.isArray(existingProcessing) ? existingProcessing : [];
 
-    // 2. If existing processing queue has fewer items than batchSize, atomically move remaining batch from buffer
-    if (events.length < batchSize) {
-      const needed = batchSize - events.length;
-      const p = redis.pipeline();
-      for (let i = 0; i < needed; i++) {
-        p.lmove(bufferKey, processingKey, "right", "left");
+      // 2. If existing processing queue has fewer items than batchSize, atomically move remaining batch from buffer
+      if (events.length < batchSize) {
+        const needed = batchSize - events.length;
+        const p = redis.pipeline();
+        for (let i = 0; i < needed; i++) {
+          p.lmove(bufferKey, processingKey, "right", "left");
+        }
+        p.expire(processingKey, 48 * 60 * 60);
+        const moveResults = await p.exec();
+
+        const newlyMoved = moveResults.filter(
+          (item): item is BufferedEvent =>
+            item !== null && typeof item === "object" && "id" in item
+        );
+
+        events = [...events, ...newlyMoved];
       }
-      p.expire(processingKey, 48 * 60 * 60);
-      const moveResults = await p.exec();
-
-      const newlyMoved = moveResults.filter(
-        (item): item is BufferedEvent =>
-          item !== null && typeof item === "object" && "id" in item
+    } catch (queueErr) {
+      return createFailure(
+        "QUEUE_UNAVAILABLE",
+        "Telemetry buffer could not be read from Redis",
+        { details: queueErr }
       );
-
-      events = [...events, ...newlyMoved];
     }
 
     if (events.length === 0) {
-      return { processed: 0, inserted: 0 };
+      return createSuccess({ processed: 0, inserted: 0 });
     }
 
     let createResult;
@@ -502,7 +549,11 @@ export class TelemetryService {
         "Primary database write failed during sync. Telemetry event batch remains intact in processing queue.",
         dbErr
       );
-      throw dbErr;
+      return createFailure(
+        "PERSISTENCE_FAILED",
+        "Telemetry batch could not be written to the database",
+        { details: dbErr }
+      );
     }
 
     // On successful DB write, acknowledge exactly the events this invocation
@@ -510,48 +561,67 @@ export class TelemetryService {
     // overlapping sync moved into the processing queue after step 1 read it,
     // losing them before they ever reached the database. LREM removes a single
     // occurrence per owned event, so a concurrently moved event survives.
-    const ack = redis.pipeline();
-    for (const event of events) {
-      ack.lrem(processingKey, 1, event);
+    try {
+      const ack = redis.pipeline();
+      for (const event of events) {
+        ack.lrem(processingKey, 1, event);
+      }
+      await ack.exec();
+    } catch (ackErr) {
+      return createFailure(
+        "ACKNOWLEDGEMENT_FAILED",
+        "Telemetry batch was persisted but not acknowledged; the next run replays it idempotently",
+        { details: ackErr }
+      );
     }
-    await ack.exec();
 
-    return { processed: events.length, inserted: createResult.count };
+    return createSuccess({
+      processed: events.length,
+      inserted: createResult.count,
+    });
   }
 
   /**
    * Rolls raw events older than the cutoff into daily aggregates and removes
    * only the rows committed by the same database transaction.
    */
-  static async rollupAndPruneRawEvents(before: Date): Promise<{
-    rollupsUpserted: number;
-    rawEventsDeleted: number;
-  }> {
-    return prisma.$transaction(async (transaction) => {
-      const rollupsUpserted = await transaction.$executeRaw`
-        INSERT INTO "TelemetryDailyRollup"
-          ("day", "projectSlug", "eventType", "count", "createdAt", "updatedAt")
-        SELECT
-          date_trunc('day', "createdAt")::date,
-          "projectSlug",
-          "eventType",
-          COUNT(*)::integer,
-          CURRENT_TIMESTAMP,
-          CURRENT_TIMESTAMP
-        FROM "TelemetryEvent"
-        WHERE "createdAt" < ${before}
-        GROUP BY date_trunc('day', "createdAt")::date, "projectSlug", "eventType"
-        ON CONFLICT ("day", "projectSlug", "eventType")
-        DO UPDATE SET
-          "count" = "TelemetryDailyRollup"."count" + EXCLUDED."count",
-          "updatedAt" = CURRENT_TIMESTAMP
-      `;
+  static async rollupAndPruneRawEvents(
+    before: Date
+  ): Promise<TelemetryRetentionResult> {
+    try {
+      const counts = await prisma.$transaction(async (transaction) => {
+        const rollupsUpserted = await transaction.$executeRaw`
+          INSERT INTO "TelemetryDailyRollup"
+            ("day", "projectSlug", "eventType", "count", "createdAt", "updatedAt")
+          SELECT
+            date_trunc('day', "createdAt")::date,
+            "projectSlug",
+            "eventType",
+            COUNT(*)::integer,
+            CURRENT_TIMESTAMP,
+            CURRENT_TIMESTAMP
+          FROM "TelemetryEvent"
+          WHERE "createdAt" < ${before}
+          GROUP BY date_trunc('day', "createdAt")::date, "projectSlug", "eventType"
+          ON CONFLICT ("day", "projectSlug", "eventType")
+          DO UPDATE SET
+            "count" = "TelemetryDailyRollup"."count" + EXCLUDED."count",
+            "updatedAt" = CURRENT_TIMESTAMP
+        `;
 
-      const rawEventsDeleted = await transaction.$executeRaw`
-        DELETE FROM "TelemetryEvent" WHERE "createdAt" < ${before}
-      `;
+        const rawEventsDeleted = await transaction.$executeRaw`
+          DELETE FROM "TelemetryEvent" WHERE "createdAt" < ${before}
+        `;
 
-      return { rollupsUpserted, rawEventsDeleted };
-    });
+        return { rollupsUpserted, rawEventsDeleted };
+      });
+      return createSuccess(counts);
+    } catch (error) {
+      return createFailure(
+        "RETENTION_FAILED",
+        "Telemetry rollup and prune transaction failed",
+        { details: error }
+      );
+    }
   }
 }

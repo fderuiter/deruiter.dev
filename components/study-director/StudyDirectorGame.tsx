@@ -347,6 +347,7 @@ export const StudyDirectorGame: React.FC = () => {
           <div className="grid gap-3 lg:grid-cols-[minmax(0,220px)_minmax(0,1fr)_minmax(0,230px)] xl:grid-cols-[minmax(0,260px)_minmax(0,1fr)_minmax(0,280px)]">
             <div className="min-w-0 space-y-3">
               <InboxPanel
+                state={state}
                 events={events}
                 selectedId={selected?.id}
                 onSelect={setSelectedId}
@@ -354,8 +355,8 @@ export const StudyDirectorGame: React.FC = () => {
               <DashboardPanel state={state} />
             </div>
             <DecisionPanel
+              state={state}
               event={running ? selected : undefined}
-              attention={state.attention}
               documented={documented}
               onDocumentedChange={setDocumented}
               onChoose={choose}

@@ -20,6 +20,7 @@ import {
 import { FieldManualButton } from "@/components/FieldManualButton";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { ARCADE_GAME_COUNT } from "@/lib/arcade";
+import { safeGetRawItem } from "@/lib/safe-storage";
 
 interface ArcadeGameCard {
   id: string;
@@ -47,7 +48,7 @@ const subscribeStorage = (callback: () => void) => {
 const getScore = (key?: string) => () => {
   if (!key || typeof window === "undefined") return "0";
   try {
-    return localStorage.getItem(key) || "0";
+    return safeGetRawItem(key) || "0";
   } catch {
     return "0";
   }
@@ -224,7 +225,7 @@ const ARCADE_GAMES: ArcadeGameCard[] = [
     subtitle: "Clinical Study Management Simulator",
     genre: "Management Simulation",
     description:
-      "Shepherd one study from kickoff to closeout with eight attention points a day. Delegate, audit the sites behind the green dashboard, and defend your decisions when the FDA arrives.",
+      "Shepherd one study from kickoff to closeout with five attention points a day. Delegate, audit the sites behind the green dashboard, and defend your decisions when the FDA arrives.",
     mechanics: [
       "Daily Attention Budget",
       "Documentation Debt",

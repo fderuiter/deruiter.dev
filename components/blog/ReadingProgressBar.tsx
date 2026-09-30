@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { clamp } from "@/lib/game-utils";
 
 export function ReadingProgressBar() {
   const [progress, setProgress] = useState(0);
@@ -15,9 +16,7 @@ export function ReadingProgressBar() {
       const totalHeight =
         document.documentElement.scrollHeight - window.innerHeight;
 
-      setProgress(
-        totalHeight > 0 ? Math.min(1, Math.max(0, scrollY / totalHeight)) : 0
-      );
+      setProgress(totalHeight > 0 ? clamp(scrollY / totalHeight, 0, 1) : 0);
     };
     const handleScroll = () => {
       if (!frame) {

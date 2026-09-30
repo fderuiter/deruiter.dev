@@ -4,7 +4,7 @@ This compendium preserves the detailed engineering notes behind multiple case
 studies presented by the portfolio. It is source material for documentation and
 Mermaid validation, not a description of this repository's own runtime stack.
 
-## Hono-Kiln — Technical Breakdown & Portfolio Integration
+## Hono-Kiln: Technical Breakdown & Portfolio Integration
 
 ## 1. Executive Summary & Value Proposition
 
@@ -33,11 +33,11 @@ Polyglot test harness and unified verification architecture integrating compiled
 - **100% Target Parity**: Deterministic output alignment verified across standard matrices (3-city: `60`, 4-city: `80`, 5-city: `97`).
 - **Dual-Tier Test Suite**: Unified execution pipeline (`scripts/run_all.py`) and granular per-language test suites across native runtimes (`cargo test`, `go test`, `ghdl`, `iverilog`, `gnatmake`, `sunit`).
 
-## Case Study: OxidizeMath — Technical Breakdown & Portfolio Integration
+## Case Study: OxidizeMath: Technical Breakdown & Portfolio Integration
 
 ## 1. Executive Summary & Value Proposition
 
-**Problem Solved:** High-performance scientific computing and mathematical simulations frequently suffer from the "two-language problem"—prototyping in interpreted environments (Python/MATLAB) and rewriting in compiled languages (C/C++). This workflow introduces numerical drift, translation bugs, concurrency hazards, and missing academic provenance. **OxidizeMath** solves this by providing a unified, memory-safe, formally verified computation framework written in Rust spanning pure mathematics, medical physics, biology, and machine learning domains.
+**Problem Solved:** High-performance scientific computing and mathematical simulations frequently suffer from the "two-language problem", prototyping in interpreted environments (Python/MATLAB) and rewriting in compiled languages (C/C++). This workflow introduces numerical drift, translation bugs, concurrency hazards, and missing academic provenance. **OxidizeMath** solves this by providing a unified, memory-safe, formally verified computation framework written in Rust spanning pure mathematics, medical physics, biology, and machine learning domains.
 
 **Core Technical Highlight:** An end-to-end verified numerical execution engine (`verified_engine` and `unified_verification`) pairing compile-time procedural macros (`verified_engine_macros`) with runtime AST validation and dynamic double-buffering simulation pipelines.
 
@@ -90,7 +90,7 @@ Polyglot test harness and unified verification architecture integrating compiled
 
 ## 3. High-Impact Featured Code Snippets
 
-### `packages/api/utils/factory.ts` — Type-Safe Dynamic Middleware & Route Factory
+### `packages/api/utils/factory.ts`: Type-Safe Dynamic Middleware & Route Factory
 
 ```typescript
 import { Hono } from "hono";
@@ -105,7 +105,7 @@ export function createRouter() {
 }
 ```
 
-### `packages/api/modules/auth/guard.ts` — Multi-Tenant Auth Guard & Context Injector
+### `packages/api/modules/auth/guard.ts`: Multi-Tenant Auth Guard & Context Injector
 
 ```typescript
 import { createMiddleware } from "hono/factory";
@@ -128,7 +128,7 @@ export const tenantAuthGuard = createMiddleware<Env>(async (c, next) => {
 });
 ```
 
-### `scripts/generate.ts` — Module Scaffolding Engine
+### `scripts/generate.ts`: Module Scaffolding Engine
 
 ```typescript
 import fs from "fs";

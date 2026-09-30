@@ -338,11 +338,11 @@ describe("SEO Architecture & JSON-LD Schemas", () => {
     // No site name: app/layout.tsx templates it on as "%s | Frederick de
     // Ruiter". This previously asserted the branded string, which is what let
     // ten routes ship with the name rendered twice in the browser tab.
-    expect(metadata.title).toBe("Contact Fred");
+    expect(metadata.title).toBe("Contact Fred: Projects and Roles");
     expect(metadata.description).toContain("Send Fred de Ruiter a note");
     // OpenGraph is not templated, so it is branded by buildRouteMetadata.
     expect(metadata.openGraph?.title).toBe(
-      "Contact Fred | Frederick de Ruiter"
+      "Contact Fred: Projects and Roles | Frederick de Ruiter"
     );
     expect(metadata.openGraph?.description).toBe(metadata.description);
 
@@ -384,7 +384,7 @@ describe("SEO Architecture & JSON-LD Schemas", () => {
       expect(
         renderedTitle.length,
         `Route "${key}" renders only ${renderedTitle.length} chars: "${renderedTitle}"`
-      ).toBeGreaterThanOrEqual(25);
+      ).toBeGreaterThanOrEqual(50);
 
       // The config itself must not carry the site name, or it renders twice.
       expect(
@@ -392,11 +392,11 @@ describe("SEO Architecture & JSON-LD Schemas", () => {
         `Route "${key}" title already ends with the site name, which the layout template then appends again: "${config.title}"`
       ).toBe(false);
 
-      // Description must be between 120 and 160 characters for optimal SERP snippets
+      // Description must be between 140 and 160 characters for optimal SERP snippets
       expect(
         config.description.length,
-        `Route config "${key}" description is ${config.description.length} chars (must be >= 120 and <= 160): "${config.description}"`
-      ).toBeGreaterThanOrEqual(120);
+        `Route config "${key}" description is ${config.description.length} chars (must be >= 140 and <= 160): "${config.description}"`
+      ).toBeGreaterThanOrEqual(140);
       expect(
         config.description.length,
         `Route config "${key}" description is ${config.description.length} chars (must be <= 160): "${config.description}"`
@@ -611,10 +611,20 @@ describe("SEO Architecture & JSON-LD Schemas", () => {
     }
   });
 
-  it("keeps branded titles at or under 60 characters and descriptions at or under 160 (#1251)", () => {
+  it("keeps branded titles within 50 to 60 characters and descriptions within 140 to 160 (#1251)", () => {
     for (const [key, config] of Object.entries(ROUTE_METADATA_CONFIGS)) {
       const ogTitle = String(buildRouteMetadata(config).openGraph?.title);
-      expect(ogTitle.length, `${key} title`).toBeLessThanOrEqual(60);
+      expect(
+        ogTitle.length,
+        `${key} title "${ogTitle}"`
+      ).toBeGreaterThanOrEqual(50);
+      expect(ogTitle.length, `${key} title "${ogTitle}"`).toBeLessThanOrEqual(
+        60
+      );
+      expect(
+        config.description.length,
+        `${key} description`
+      ).toBeGreaterThanOrEqual(140);
       expect(
         config.description.length,
         `${key} description`

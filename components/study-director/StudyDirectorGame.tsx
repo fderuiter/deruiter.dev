@@ -28,8 +28,16 @@ import {
 } from "@/lib/study-director";
 import { DashboardPanel, MetersPanel, SitesPanel, TeamPanel } from "./Panels";
 import { DecisionPanel } from "./DecisionPanel";
+import { OutcomeStrip, type Outcome } from "./OutcomeStrip";
+import {
+  auditFindings,
+  describeChanges,
+  diffStates,
+  summarizeDays,
+} from "./consequences";
 import { InboxPanel } from "./InboxPanel";
 import { PhaseTimeline } from "./PhaseTimeline";
+import { PHASE_LABELS } from "./labels";
 import { StatusBar } from "./StatusBar";
 import { money } from "./format";
 import { ReportView } from "./ReportView";
@@ -52,8 +60,12 @@ export const StudyDirectorGame: React.FC = () => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [documented, setDocumented] = useState(false);
   const [notice, setNotice] = useState("");
+  // Why the last action could not happen; shown until the next one does.
+  const [alert, setAlert] = useState("");
   // Meters at the start of the current day, so the desk can show drift.
   const [baseline, setBaseline] = useState<Meters | null>(null);
+  const [outcome, setOutcome] = useState<Outcome | null>(null);
+  const seq = useRef(0);
 
   useEffect(() => {
     if (state) saveStudy(state);
@@ -87,6 +99,7 @@ export const StudyDirectorGame: React.FC = () => {
   const start = useCallback((next: StudyState) => {
     setState(next);
     setBaseline(computeMeters(next));
+    setOutcome(null);
     setSaved(null);
     setSelectedId(null);
     setDocumented(false);
@@ -98,19 +111,30 @@ export const StudyDirectorGame: React.FC = () => {
       if (!state) return;
       const result = resolveEvent(state, event.id, optionId, documented);
       if (!result.ok) {
-        setNotice(
+        const why =
           result.reason === "not-enough-attention"
             ? "Not enough attention left today. Try a cheaper option or end the day."
-            : "That message is no longer open."
-        );
+            : "That message is no longer open.";
+        setAlert(why);
+        setNotice(why);
         return;
       }
+      setAlert("");
       const label = event.options.find((o) => o.id === optionId)?.label ?? "";
+      const changes = diffStates(state, result.state);
+      seq.current += 1;
+      setOutcome({
+        kind: "decision",
+        seq: seq.current,
+        title: label,
+        documented,
+        changes,
+      });
       setState(result.state);
       setSelectedId(null);
       setDocumented(false);
       setNotice(
-        `${label}. ${documented ? "Documented." : "Not documented."} ${result.state.attention} attention left.`
+        `${label}. ${documented ? "Documented." : "Not documented."} ${describeChanges(changes)} ${result.state.attention} attention left.`
       );
     },
     [state, documented]
@@ -121,20 +145,58 @@ export const StudyDirectorGame: React.FC = () => {
       if (!state) return;
       const result = auditSite(state, siteId);
       if (!result.ok) {
-        setNotice("Not enough attention left to audit today.");
+        const why = "Not enough attention left to audit today.";
+        setAlert(why);
+        setNotice(why);
         return;
       }
+      setAlert("");
+      const name = state.sites.find((x) => x.id === siteId)?.name ?? siteId;
+      const changes = auditFindings(result.report);
+      seq.current += 1;
+      setOutcome({
+        kind: "audit",
+        seq: seq.current,
+        title: `Audited ${name}`,
+        changes,
+      });
       setState(result.state);
       setNotice(
-        `Audited ${state.sites.find((x) => x.id === siteId)?.name ?? siteId}. The real numbers are on its site card.`
+        `Audited ${name}. ${describeChanges(changes)} The real numbers are on its site card.`
       );
     },
     [state]
   );
 
+  /** Shows the overnight report and returns it as a sentence to announce. */
+  const reportNight = useCallback(
+    (before: StudyState, after: StudyState): string => {
+      if (after.status !== "running") {
+        setOutcome(null);
+        return "";
+      }
+      const summary = summarizeDays(before, after, inbox(after).length);
+      seq.current += 1;
+      setOutcome({ kind: "overnight", seq: seq.current, summary });
+      return [
+        summary.phaseChange
+          ? `New phase: ${PHASE_LABELS[summary.phaseChange.to]}.`
+          : "",
+        summary.lapsed.length > 0
+          ? `Lapsed unanswered: ${summary.lapsed.map((l) => l.subject).join(", ")}.`
+          : "",
+      ]
+        .filter(Boolean)
+        .join(" ");
+    },
+    []
+  );
+
   const finishDay = useCallback(() => {
     if (!state) return;
+    setAlert("");
     const next = endDay(state);
+    const night = reportNight(state, next);
     setState(next);
     setBaseline(computeMeters(next));
     setSelectedId(null);
@@ -142,12 +204,13 @@ export const StudyDirectorGame: React.FC = () => {
     setNotice(
       next.status === "complete"
         ? "The study is complete."
-        : `Day ${next.day}. ${inbox(next).length} messages in the inbox.`
+        : `Day ${next.day}. ${night} ${inbox(next).length} messages in the inbox.`
     );
-  }, [state]);
+  }, [state, reportNight]);
 
   const skipQuietDays = useCallback(() => {
     if (!state) return;
+    setAlert("");
     let next = endDay(state);
     let skipped = 1;
     while (
@@ -158,6 +221,7 @@ export const StudyDirectorGame: React.FC = () => {
       next = endDay(next);
       skipped += 1;
     }
+    const night = reportNight(state, next);
     setState(next);
     setBaseline(computeMeters(next));
     setSelectedId(null);
@@ -165,9 +229,9 @@ export const StudyDirectorGame: React.FC = () => {
     setNotice(
       next.status === "complete"
         ? "The study is complete."
-        : `Skipped ${skipped} days to day ${next.day}. ${inbox(next).length} messages in the inbox.`
+        : `Skipped ${skipped} days to day ${next.day}. ${night} ${inbox(next).length} messages in the inbox.`
     );
-  }, [state]);
+  }, [state, reportNight]);
 
   const restart = useCallback(() => {
     clearStudySave();
@@ -311,13 +375,9 @@ export const StudyDirectorGame: React.FC = () => {
               ? "Nothing is waiting. Keys: E end day, N skip to the next message."
               : "Keys: 1-5 choose, D document, J/K move, E end day."}
         </p>
-        {notice ? (
-          <p
-            className="mt-0.5 truncate text-[11px] text-zinc-300"
-            aria-hidden="true"
-            title={notice}
-          >
-            {notice}
+        {alert ? (
+          <p className="mt-0.5 text-[11px] font-semibold text-red-400">
+            {alert}
           </p>
         ) : null}
       </div>
@@ -360,6 +420,14 @@ export const StudyDirectorGame: React.FC = () => {
               documented={documented}
               onDocumentedChange={setDocumented}
               onChoose={choose}
+              banner={
+                outcome ? (
+                  <OutcomeStrip
+                    outcome={outcome}
+                    onDismiss={() => setOutcome(null)}
+                  />
+                ) : null
+              }
               footer={running ? actions : null}
             />
             <div className="min-w-0 space-y-3">

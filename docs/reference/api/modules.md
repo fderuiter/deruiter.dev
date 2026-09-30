@@ -173,7 +173,6 @@
 - [lib/event-bus](lib/event-bus/README.md)
 - [lib/exceptions](lib/exceptions/README.md)
 - [lib/fallback-blog-posts](lib/fallback-blog-posts/README.md)
-- [lib/fallback-case-studies](lib/fallback-case-studies/README.md)
 - [lib/faq-content](lib/faq-content/README.md)
 - [lib/fs-stat-mapping](lib/fs-stat-mapping/README.md)
 - [lib/game-audio](lib/game-audio/README.md)

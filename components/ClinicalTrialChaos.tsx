@@ -7,6 +7,7 @@ import React, {
   useSyncExternalStore,
   useCallback,
   useMemo,
+  useEffectEvent,
 } from "react";
 import Link from "next/link";
 import { useAudio } from "@/components/providers/AudioProvider";
@@ -46,6 +47,7 @@ import { FullscreenButton } from "@/components/arcade/FullscreenButton";
 import { DynamicTabletOrientationHint as TabletOrientationHint } from "@/components/arcade/DynamicTabletOrientationHint";
 import { useGameFullscreen as useFullscreen } from "@/components/arcade/CabinetFullscreen";
 import { applyCanvasScale, computeCanvasResolution } from "@/lib/arcade";
+import { useAnimationFrame } from "@/hooks/useAnimationFrame";
 
 import {
   CDISCDomain,
@@ -406,7 +408,6 @@ export const ClinicalTrialChaos: React.FC = () => {
   const lastTouchTimeRef = useRef(0);
   const isPointerDownRef = useRef(false);
   const { isFullscreen, toggleFullscreen } = useFullscreen(containerRef);
-  const animFrameIdRef = useRef<number | null>(null);
   const lastTickTimeRef = useRef<number>(0);
   const spawnTimerRef = useRef<number>(0);
   const amendmentTimerRef = useRef<number>(0);
@@ -1313,53 +1314,75 @@ export const ClinicalTrialChaos: React.FC = () => {
     containerRef.current?.focus({ preventScroll: true });
   };
 
-  // 17. Main Game Loop Tick (requestAnimationFrame)
+  // 17. Main Game Loop Tick (useAnimationFrame)
+  //
+  // The loop runs while a shift is playing and the canvas context is live.
+  // Its clock stays on Date.now() with the 100 ms clamp below, as before, so
+  // the hook's own delta is unused and unclamped (maxDeltaMs: Infinity).
+  // The context listeners set a ref that guards the frame already in flight
+  // and a state flag that stops the loop; restoring starts a fresh one.
+  const contextLostRef = useRef(false);
+  const [isContextLost, setIsContextLost] = useState(false);
+  // The seconds-changed check below compares against the subjects rendered
+  // when the shift started, as the effect-based loop's closure did.
+  const loopStartSubjectsRef = useRef<ClinicalSubject[]>(conveyorSubjects);
+  const readRenderedSubjects = useEffectEvent(() => conveyorSubjects);
+
   useEffect(() => {
     if (playState !== "playing") return;
 
-    let isRunning = true;
-    let isContextLost = false;
+    loopStartSubjectsRef.current = readRenderedSubjects();
+    lastTickTimeRef.current = Date.now();
+
     const canvas = canvasRef.current;
+    if (!canvas) return;
 
     const handleContextLost = (e: Event) => {
       e.preventDefault();
-      isContextLost = true;
-      if (animFrameIdRef.current) cancelAnimationFrame(animFrameIdRef.current);
+      contextLostRef.current = true;
+      setIsContextLost(true);
     };
 
     const handleContextRestored = () => {
-      isContextLost = false;
+      contextLostRef.current = false;
       lastTickTimeRef.current = Date.now();
-      animFrameIdRef.current = requestAnimationFrame(gameLoop);
+      setIsContextLost(false);
     };
 
-    if (canvas) {
-      canvas.addEventListener("contextlost", handleContextLost);
-      canvas.addEventListener("contextrestored", handleContextRestored);
-    }
-
-    // Ends the shift on a Form 483 or a terminated sponsor contract and
-    // files the BIMO inspection report from the latest simulation state.
-    const endShift = (reason: "auditor" | "sponsor") => {
-      triggerSoundRef.current("alarm");
-      playStateRef.current = "game_over";
-      setGameOverReason(reason);
-      setPlayState("game_over");
-      addAuditLogRef.current(SHIFT_END_LOGS[reason], "CRITICAL");
-      const report = buildInspectionReport(
-        scoreStateRef.current,
-        auditorRef.current,
-        auditLogsRef.current,
-        ruleViolationsRef.current,
-        activeProtocolRef.current,
-        sponsorRef.current.skeletons
-      );
-      setBimoReport(report);
-      setLastBimoReport(report);
+    canvas.addEventListener("contextlost", handleContextLost);
+    canvas.addEventListener("contextrestored", handleContextRestored);
+    return () => {
+      canvas.removeEventListener("contextlost", handleContextLost);
+      canvas.removeEventListener("contextrestored", handleContextRestored);
+      contextLostRef.current = false;
+      setIsContextLost(false);
     };
+  }, [playState]);
 
-    const gameLoop = () => {
-      if (!isRunning || isContextLost) return;
+  useAnimationFrame(
+    () => {
+      if (contextLostRef.current) return;
+      const loopStartSubjects = loopStartSubjectsRef.current;
+
+      // Ends the shift on a Form 483 or a terminated sponsor contract and
+      // files the BIMO inspection report from the latest simulation state.
+      const endShift = (reason: "auditor" | "sponsor") => {
+        triggerSoundRef.current("alarm");
+        playStateRef.current = "game_over";
+        setGameOverReason(reason);
+        setPlayState("game_over");
+        addAuditLogRef.current(SHIFT_END_LOGS[reason], "CRITICAL");
+        const report = buildInspectionReport(
+          scoreStateRef.current,
+          auditorRef.current,
+          auditLogsRef.current,
+          ruleViolationsRef.current,
+          activeProtocolRef.current,
+          sponsorRef.current.skeletons
+        );
+        setBimoReport(report);
+        setLastBimoReport(report);
+      };
 
       const now = Date.now();
       const isPausedByModal =
@@ -1549,7 +1572,7 @@ export const ClinicalTrialChaos: React.FC = () => {
       const secondsChanged = conveyorSubjectsRef.current.some(
         (s, i) =>
           Math.ceil(s.timeRemaining) !==
-          Math.ceil(conveyorSubjects[i]?.timeRemaining ?? 0)
+          Math.ceil(loopStartSubjects[i]?.timeRemaining ?? 0)
       );
 
       if (uiNeedsSync || secondsChanged) {
@@ -1575,23 +1598,12 @@ export const ClinicalTrialChaos: React.FC = () => {
           );
         }
       }
-
-      animFrameIdRef.current = requestAnimationFrame(gameLoop);
-    };
-
-    lastTickTimeRef.current = Date.now();
-    animFrameIdRef.current = requestAnimationFrame(gameLoop);
-
-    return () => {
-      isRunning = false;
-      if (canvas) {
-        canvas.removeEventListener("contextlost", handleContextLost);
-        canvas.removeEventListener("contextrestored", handleContextRestored);
-      }
-      if (animFrameIdRef.current) cancelAnimationFrame(animFrameIdRef.current);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [playState]);
+    },
+    {
+      isActive: playState === "playing" && !isContextLost,
+      maxDeltaMs: Infinity,
+    }
+  );
 
   // 17a. Keep hotkeys working: return focus to the board when a dialog closes
   useEffect(() => {

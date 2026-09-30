@@ -1022,11 +1022,13 @@ describe("Defect Remediation & Regression Verification Suite (Invariant #11)", (
       expect(code).toContain("tspTour,");
 
       // Verify computeShortestTour is not invoked inside the real-time canvas drawing loop
-      const loopStart = code.indexOf("const loop = ");
-      const loopEnd = code.indexOf(
-        "animFrameRef.current = requestAnimationFrame(loop);",
-        loopStart
+      const loopStart = code.indexOf(
+        "useAnimationFrame(",
+        code.indexOf("// Main Real-Time Game Loop")
       );
+      const loopEnd = code.indexOf("isActive: isLoopActive", loopStart);
+      expect(loopStart).toBeGreaterThan(-1);
+      expect(loopEnd).toBeGreaterThan(loopStart);
       const loopBody = code.slice(loopStart, loopEnd);
 
       expect(loopBody).not.toContain("computeShortestTour(");

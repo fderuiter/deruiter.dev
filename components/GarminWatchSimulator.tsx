@@ -24,6 +24,7 @@ import { useAudio } from "@/components/providers/AudioProvider";
 import { useTelemetry } from "@/hooks/useTelemetry";
 import { useResponsiveCanvas } from "@/hooks/useResponsiveCanvas";
 import { useCanvasResolution } from "@/hooks/useCanvasResolution";
+import { useAnimationFrame } from "@/hooks/useAnimationFrame";
 import { applyCanvasScale } from "@/lib/arcade";
 import { useAnnouncer } from "@/hooks/useAnnouncer";
 import { useGarminService } from "@/hooks/useGarminService";
@@ -193,8 +194,6 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const outerContainerRef = useRef<HTMLDivElement | null>(null);
   const { isFullscreen, toggleFullscreen } = useFullscreen(outerContainerRef);
-  const gameLoopRef = useRef<number | null>(null);
-  const lastFrameTimeRef = useRef<number>(0);
   const frameCountRef = useRef<number>(0);
 
   // Single gateway for every stateRef mutation: stateRef.current and
@@ -702,39 +701,40 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
   }, [gameState, deviceTarget, announce]);
 
   // Main 60FPS Game Physics and Rendering Loop
+  //
+  // Runs on every frame while the canvas context is live, with each delta
+  // clamped to 40 ms as before. The context listeners set a ref that guards
+  // the frame already in flight and a state flag that stops the loop;
+  // restoring the context starts a fresh one.
+  const contextLostRef = useRef(false);
+  const [isContextLost, setIsContextLost] = useState(false);
+
   useEffect(() => {
-    let animationFrameId: number;
-    let isContextLost = false;
     const canvas = canvasRef.current;
+    if (!canvas) return;
 
     const handleContextLost = (e: Event) => {
       e.preventDefault();
-      isContextLost = true;
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
-      }
+      contextLostRef.current = true;
+      setIsContextLost(true);
     };
 
     const handleContextRestored = () => {
-      isContextLost = false;
-      lastFrameTimeRef.current = performance.now();
-      animationFrameId = requestAnimationFrame(gameTick);
-      gameLoopRef.current = animationFrameId;
+      contextLostRef.current = false;
+      setIsContextLost(false);
     };
 
-    if (canvas) {
-      canvas.addEventListener("contextlost", handleContextLost);
-      canvas.addEventListener("contextrestored", handleContextRestored);
-    }
+    canvas.addEventListener("contextlost", handleContextLost);
+    canvas.addEventListener("contextrestored", handleContextRestored);
+    return () => {
+      canvas.removeEventListener("contextlost", handleContextLost);
+      canvas.removeEventListener("contextrestored", handleContextRestored);
+    };
+  }, []);
 
-    const gameTick = (timestamp: number) => {
-      if (isContextLost) return;
-
-      if (!lastFrameTimeRef.current) {
-        lastFrameTimeRef.current = timestamp;
-      }
-      const deltaMs = Math.min(40, timestamp - lastFrameTimeRef.current);
-      lastFrameTimeRef.current = timestamp;
+  useAnimationFrame(
+    (deltaMs) => {
+      if (contextLostRef.current) return;
 
       // Update simulation in mutable ref if active
       if (stateRef.current.gameState === "playing") {
@@ -773,6 +773,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       }
 
       // Render Canvas Frame directly from mutable ref
+      const canvas = canvasRef.current;
       if (canvas) {
         const ctx = canvas.getContext("2d");
         if (ctx) {
@@ -781,23 +782,9 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
           renderCanvasFrame(ctx, stateRef.current);
         }
       }
-
-      animationFrameId = requestAnimationFrame(gameTick);
-    };
-
-    animationFrameId = requestAnimationFrame(gameTick);
-    gameLoopRef.current = animationFrameId;
-
-    return () => {
-      if (canvas) {
-        canvas.removeEventListener("contextlost", handleContextLost);
-        canvas.removeEventListener("contextrestored", handleContextRestored);
-      }
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
-      }
-    };
-  }, [applyTransition, canvasScaleRef]);
+    },
+    { isActive: !isContextLost, maxDeltaMs: 40 }
+  );
 
   // Theme styling helpers
   const getThemeChassis = () => {

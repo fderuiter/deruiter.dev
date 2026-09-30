@@ -27,3 +27,19 @@ The plan's id: the act played on its own, or the campaign.
 ### seed
 
 > **seed**: `string`
+
+***
+
+### sponsorId?
+
+> `optional` **sponsorId?**: `"VIRTUAL_BIOTECH"` \| `"ONCOLOGY_PHARMA"` \| `"CARDIO_MEGA_TRIAL"` \| `"RARE_DISEASE_BIOTECH"`
+
+The run's sponsor (#950). Absent means Virtual Biotech.
+
+***
+
+### stake?
+
+> `optional` **stake?**: `number`
+
+The run's stake (#950). Absent means stake 1.

@@ -4,6 +4,7 @@ import type {
   CrisisCard,
   Endless,
   Pack,
+  Relic,
   Scenario,
   ShopEntry,
 } from "../types";
@@ -11,6 +12,20 @@ import { POPULATION_LABELS, shopEntryId } from "../types";
 import { raiseQuotas } from "./quotas";
 import { blindStartCpu } from "./relics";
 import { drawInt } from "./rng";
+import {
+  resolveRunChoice,
+  ruledPlan,
+  startingInventory,
+  type RunChoice,
+} from "./run-rules";
+import { DEFAULT_SPONSOR_ID } from "./sponsors";
+import {
+  DEFAULT_STAKE,
+  lockedRelicSlot,
+  stakeCashOut,
+  stakeModifiers,
+  type StakeModifiers,
+} from "./stakes";
 import {
   PACK_SLOTS,
   SHOP_SLOTS,
@@ -92,6 +107,13 @@ export interface ShopState {
   purchases: number;
 }
 
+/** A relic Form 483 took out of play with its slot (#950), until the act ends. */
+export interface SuspendedRelic {
+  relic: Relic;
+  /** The locked slot it held, from 0; it returns there. */
+  slot: number;
+}
+
 /**
  * Serializable run state: the seed and draw log that make the run
  * replayable, which Blind of the act is being played, and that Blind's Card
@@ -102,6 +124,10 @@ export interface RunState {
   actId: string;
   /** The run seed. The same seed and the same moves replay identically. */
   seed: string;
+  /** The run's sponsor (#950). Absent means Virtual Biotech, the default. */
+  sponsorId?: RunChoice["sponsorId"];
+  /** The run's GCP-audit stake (#950). Absent means stake 1, the default. */
+  stake?: RunChoice["stake"];
   /** The next unused draw index. */
   drawIndex: number;
   /** Every seeded draw so far, in order. */
@@ -126,10 +152,103 @@ export interface RunState {
   endless: boolean;
   /** The won run was submitted and ended; nothing follows (#1088). */
   ended: boolean;
+  /** Form 483 (stake 5): the relic slot locked this act, from 0. */
+  lockedRelicSlot?: number;
+  /** Form 483: the relic the locked slot held when the act began, if any. */
+  suspendedRelic?: SuspendedRelic | null;
 }
 
 /** The seed a run uses when none is given. */
 export const DEFAULT_SEED = "fold-change";
+
+/** The sponsor and stake a run was created with, defaults filled in. */
+export function runChoice(
+  run: Pick<RunState, "sponsorId" | "stake">
+): RunChoice {
+  return {
+    sponsorId: run.sponsorId ?? DEFAULT_SPONSOR_ID,
+    stake: run.stake ?? DEFAULT_STAKE,
+  };
+}
+
+/** The plan as the run plays it: rewritten by its sponsor and stake. */
+function playedPlan(
+  plan: RunPlan,
+  run: Pick<RunState, "sponsorId" | "stake">
+): RunPlan {
+  return ruledPlan(plan, runChoice(run));
+}
+
+/** The stake modifiers a run is played under. */
+function modifiersOf(run: Pick<RunState, "stake">): StakeModifiers {
+  return stakeModifiers(run.stake ?? DEFAULT_STAKE);
+}
+
+/** How many relics the rack holds now: one fewer while Form 483 locks a slot. */
+function relicCapacity(run: Pick<RunState, "lockedRelicSlot">): number {
+  return run.lockedRelicSlot === undefined ? RELIC_SLOTS : RELIC_SLOTS - 1;
+}
+
+/** The alert shown when a relic would overfill a rack Form 483 has locked. */
+function rackFull(run: Pick<RunState, "lockedRelicSlot">): string {
+  if (run.lockedRelicSlot === undefined) return RELIC_RACK_FULL;
+  return `Form 483 locks relic slot ${run.lockedRelicSlot + 1} this act: the rack holds ${relicCapacity(run)}. Sell a relic first.`;
+}
+
+/** The rack as an act begins under Form 483, and the slot it locks. */
+interface RackLock {
+  relics: Relic[];
+  lockedRelicSlot: number;
+  suspendedRelic: SuspendedRelic | null;
+}
+
+/**
+ * Locks an act's relic slot under Form 483 (stake 5), or returns null below
+ * it. The relic the last lock suspended returns to its slot first; then the
+ * slot drawn for this act from the seeded PRNG is locked, and a relic in it
+ * sits out the act.
+ */
+function lockRack(
+  seed: string,
+  actIndex: number,
+  relics: readonly Relic[],
+  suspended: SuspendedRelic | null | undefined,
+  modifiers: StakeModifiers
+): RackLock | null {
+  if (!modifiers.relicSlotLocked) return null;
+  const rack = [...relics];
+  if (suspended) {
+    rack.splice(Math.min(suspended.slot, rack.length), 0, suspended.relic);
+  }
+  const slot = lockedRelicSlot(seed, actIndex, RELIC_SLOTS);
+  const held = rack[slot];
+  return {
+    relics: held ? rack.filter((_, i) => i !== slot) : rack,
+    lockedRelicSlot: slot,
+    suspendedRelic: held ? { relic: held, slot } : null,
+  };
+}
+
+/** A lock's run fields, or none below Form 483. */
+function lockFields(
+  lock: RackLock | null
+): Pick<RunState, "lockedRelicSlot" | "suspendedRelic"> {
+  return lock
+    ? {
+        lockedRelicSlot: lock.lockedRelicSlot,
+        suspendedRelic: lock.suspendedRelic,
+      }
+    : {};
+}
+
+/** The act card's line about a lock, or "" below Form 483. */
+function lockMessage(lock: RackLock | null): string {
+  if (!lock) return "";
+  const held = lock.suspendedRelic
+    ? ` ${lock.suspendedRelic.relic.name} sits out the act.`
+    : "";
+  return ` Form 483: relic slot ${lock.lockedRelicSlot + 1} is locked.${held}`;
+}
 
 /**
  * Player intents the run reducer accepts. Every Card Table action except
@@ -335,10 +454,19 @@ function actAt(
 }
 
 /**
- * The Blinds the current act plays, in order. An act with a boss pool
- * contributes its Small and Big Blinds and the Boss the run drew.
+ * The Blinds the current act plays, in order, as the run's sponsor and stake
+ * rewrite them. An act with a boss pool contributes its Small and Big Blinds
+ * and the Boss the run drew.
  */
 export function runBlinds(
+  plan: RunPlan,
+  run: Pick<RunState, "bossIds" | "actIndex" | "sponsorId" | "stake">
+): Scenario[] {
+  return actBlinds(playedPlan(plan, run), run);
+}
+
+/** The current act's Blinds in a plan already rewritten for the run. */
+function actBlinds(
   plan: RunPlan,
   run: Pick<RunState, "bossIds" | "actIndex">
 ): Scenario[] {
@@ -357,7 +485,7 @@ interface Stop {
 }
 
 function nextStop(plan: RunPlan, run: RunState): Stop | null {
-  const blinds = runBlinds(plan, run);
+  const blinds = actBlinds(plan, run);
   if (run.blindIndex + 1 < blinds.length) {
     return {
       actIndex: run.actIndex,
@@ -485,19 +613,23 @@ function announce(
 
 /** The SAP rulebook the shop stocks for: the next Blind's. */
 function shopRulebook(plan: RunPlan, run: RunState) {
-  return (nextStop(plan, run)?.blind ?? runBlinds(plan, run)[run.blindIndex])
+  return (nextStop(plan, run)?.blind ?? actBlinds(plan, run)[run.blindIndex])
     .rulebook;
 }
 
 /** The payout the cleared Blind earns, before it is paid. */
 function payoutFor(plan: RunPlan, run: RunState): CashOutReport {
-  const blind = runBlinds(plan, run)[run.blindIndex];
-  return cashOut(blind.blind.tier, run.table.cpu.available, run.table.budget);
+  const blind = actBlinds(plan, run)[run.blindIndex];
+  return stakeCashOut(
+    cashOut(blind.blind.tier, run.table.cpu.available, run.table.budget),
+    blind.blind.tier,
+    modifiersOf(run)
+  );
 }
 
 /** Why the cleared Blind cannot be cashed out, or null. */
 function cashOutRefusal(plan: RunPlan, run: RunState): string | null {
-  const blind = runBlinds(plan, run)[run.blindIndex];
+  const blind = actBlinds(plan, run)[run.blindIndex];
   if (run.table.status !== "CLEARED") return `Clear ${blind.blind.name} first.`;
   if (!nextStop(plan, run)) return `${plan.title} is complete.`;
   if (dmcDefenseOf(blind) && !run.table.rewardClaimed) {
@@ -534,9 +666,10 @@ function relicSellValue(act: Act, relicId: string): number {
 }
 
 /** Why an entry cannot join the rack or tray now, or null. */
-function takeRefusal(table: TableState, entry: ShopEntry): string | null {
+function takeRefusal(run: RunState, entry: ShopEntry): string | null {
+  const table = run.table;
   if (entry.kind === "RELIC") {
-    return table.relics.length >= RELIC_SLOTS ? RELIC_RACK_FULL : null;
+    return table.relics.length >= relicCapacity(run) ? rackFull(run) : null;
   }
   return table.consumables.length >= CONSUMABLE_SLOTS ? TRAY_FULL : null;
 }
@@ -598,6 +731,11 @@ function goLiveAt(table: TableState): string {
     .replace(/\.\d{3}Z$/, "Z");
 }
 
+/** What the `rerolls`-th reroll of a visit costs, with any stake surcharge. */
+function rerollCost(run: RunState, rerolls: number): number {
+  return rerollPrice(rerolls) + modifiersOf(run).shopSurcharge;
+}
+
 /** Shop actions a run in the shop routes to the shop reducer. */
 function shopAction(plan: RunPlan, run: RunState, action: RunAction): RunState {
   const act = actAt(plan, run, run.actIndex);
@@ -646,7 +784,7 @@ function shopAction(plan: RunPlan, run: RunState, action: RunAction): RunState {
     case "REROLL": {
       if (!shop) return refuse("The shop is closed.");
       if (shop.opened) return refuse("Finish opening the pack first.");
-      const price = rerollPrice(shop.rerolls);
+      const price = rerollCost(run, shop.rerolls);
       if (run.table.budget < price) {
         return refuse(`Reroll needs $${price}k; $${run.table.budget}k left.`);
       }
@@ -655,7 +793,7 @@ function shopAction(plan: RunPlan, run: RunState, action: RunAction): RunState {
       return announce(
         run,
         "SHOP",
-        `Rerolled for $${price}k. Next reroll $${rerollPrice(shop.rerolls + 1)}k.`,
+        `Rerolled for $${price}k. Next reroll $${rerollCost(run, shop.rerolls + 1)}k.`,
         {
           shopDraws: slots.next,
           shop: { ...shop, slots: slots.slots, rerolls: shop.rerolls + 1 },
@@ -674,7 +812,7 @@ function shopAction(plan: RunPlan, run: RunState, action: RunAction): RunState {
           `${name} costs $${slot.entry.price}k; $${run.table.budget}k left.`
         );
       }
-      const full = takeRefusal(run.table, slot.entry);
+      const full = takeRefusal(run, slot.entry);
       if (full) return refuse(full);
       const table = take(
         { ...run.table, budget: run.table.budget - slot.entry.price },
@@ -762,7 +900,7 @@ function shopAction(plan: RunPlan, run: RunState, action: RunAction): RunState {
           ],
         };
       } else {
-        const full = takeRefusal(run.table, card.entry);
+        const full = takeRefusal(run, card.entry);
         if (full) return refuse(full);
         name = describeEntry(card.entry).name;
         table = take(
@@ -848,7 +986,7 @@ function deriveShopView(plan: RunPlan, run: RunState): ShopView | null {
   const busy = shop.opened ? "Finish opening the pack first." : null;
   const afford = (name: string, price: number) =>
     budget < price ? `${name} costs $${price}k; $${budget}k left.` : null;
-  const price = rerollPrice(shop.rerolls);
+  const price = rerollCost(run, shop.rerolls);
   const opened = shop.opened;
   return {
     items: shop.slots.map((slot, i) => {
@@ -863,7 +1001,7 @@ function deriveShopView(plan: RunPlan, run: RunState): ShopView | null {
           ? "Sold."
           : (busy ??
             afford(name, slot.entry.price) ??
-            takeRefusal(run.table, slot.entry)),
+            takeRefusal(run, slot.entry)),
       };
     }),
     packs: shop.packs.map((slot, i) => ({
@@ -912,7 +1050,7 @@ function deriveShopView(plan: RunPlan, run: RunState): ShopView | null {
               name,
               description,
               picked,
-              refusal: picked ? "Kept." : takeRefusal(run.table, card.entry),
+              refusal: picked ? "Kept." : takeRefusal(run, card.entry),
               warning: null,
             };
           }),
@@ -1087,11 +1225,19 @@ function endlessRefusal(plan: RunPlan, run: RunState): string | null {
  * first Blind dealt with full CPU. The first Blind draws no crisis. A later
  * act draws its Boss as its study starts, so a campaign's first act plays
  * exactly as the act does on its own.
+ *
+ * `options` chooses the sponsor and stake (#950); the defaults, Virtual
+ * Biotech at stake 1, leave the run exactly as it plays without them. The
+ * sponsor's starting kit is in the first table, and the choice is kept on
+ * the run, which records only what differs from the defaults.
  */
 export function createRunState(
-  plan: RunPlan,
-  seed: string = DEFAULT_SEED
+  authored: RunPlan,
+  seed: string = DEFAULT_SEED,
+  options: Partial<RunChoice> = {}
 ): RunState {
+  const choice = resolveRunChoice(options);
+  const plan = ruledPlan(authored, choice);
   const first = planActs(plan)[0];
   const boss = drawBoss(first, 0, {
     seed,
@@ -1104,9 +1250,24 @@ export function createRunState(
     0,
     0
   );
+  const kit = startingInventory(plan, choice.sponsorId);
+  const lock = lockRack(
+    seed,
+    0,
+    kit?.relics ?? [],
+    null,
+    stakeModifiers(choice.stake)
+  );
+  const inventory = lock
+    ? { consumables: [], budget: 0, ...kit, relics: lock.relics }
+    : kit;
   return {
     actId: plan.id,
     seed,
+    ...(choice.sponsorId !== DEFAULT_SPONSOR_ID && {
+      sponsorId: choice.sponsorId,
+    }),
+    ...(choice.stake !== DEFAULT_STAKE && { stake: choice.stake }),
     drawIndex,
     draws,
     bossIds: [boss.bossId],
@@ -1115,7 +1276,7 @@ export function createRunState(
     table: createTableState(
       first.blinds[0],
       undefined,
-      undefined,
+      inventory,
       null,
       deviation
     ),
@@ -1124,6 +1285,7 @@ export function createRunState(
     shopDraws: 0,
     endless: false,
     ended: false,
+    ...lockFields(lock),
   };
 }
 
@@ -1135,16 +1297,18 @@ export function createRunState(
  * own, and the run's relics, hand levels, tray, budget and cleared Blinds
  * come along. The draw piles are fixed and every draw is a function of the
  * seed and draw index, so the same plan, seed and action sequence always
- * yields the same state.
+ * yields the same state. The run plays the plan as its sponsor and stake
+ * rewrite it (#950).
  */
 export function advanceRun(
-  plan: RunPlan,
+  authored: RunPlan,
   run: RunState,
   action: RunAction
 ): RunState {
+  const plan = playedPlan(authored, run);
   const acts = planActs(plan);
   const act = actAt(plan, run, run.actIndex);
-  const blinds = runBlinds(plan, run);
+  const blinds = actBlinds(plan, run);
   const blind = blinds[run.blindIndex];
   const refuse = (message: string): RunState => ({
     ...run,
@@ -1162,15 +1326,19 @@ export function advanceRun(
     case "RESTART_RUN": {
       // A new run is a new study: its population history starts over, and
       // the tray and budget are empty again. The same seed replays the same
-      // Bosses and crises.
-      const fresh = createRunState(plan, action.seed ?? run.seed);
+      // Bosses and crises, under the same sponsor and stake.
+      const fresh = createRunState(
+        authored,
+        action.seed ?? run.seed,
+        runChoice(run)
+      );
       const first = acts[0].blinds[0];
       return {
         ...fresh,
         table: startBlind(
           first,
           undefined,
-          undefined,
+          fresh.table.opening.inventory,
           null,
           run.table.lastEvent,
           "RESET",
@@ -1257,8 +1425,21 @@ export function advanceRun(
           stop.actIndex,
           0
         );
+        const carried = {
+          ...carriedInventory(paid),
+          sites: [],
+          enrollments: [],
+        };
+        const lock = lockRack(
+          run.seed,
+          stop.actIndex,
+          carried.relics ?? [],
+          run.suspendedRelic,
+          modifiersOf(run)
+        );
         return {
           ...run,
+          ...lockFields(lock),
           drawIndex: opening.drawIndex,
           draws: opening.draws,
           bossIds: [...run.bossIds, boss.bossId],
@@ -1269,11 +1450,11 @@ export function advanceRun(
           table: startBlind(
             next,
             undefined,
-            { ...carriedInventory(paid), sites: [], enrollments: [] },
+            lock ? { ...carried, relics: lock.relics } : carried,
             null,
             run.table.lastEvent,
             "ACT_STARTED",
-            `${nextAct.title}. A new ${round === null ? "study" : "post-marketing study"}: subjects, snapshots, the SAP and every output start over. ${next.blind.name}. Target ${next.blind.quota}.`,
+            `${nextAct.title}. A new ${round === null ? "study" : "post-marketing study"}: subjects, snapshots, the SAP and every output start over. ${next.blind.name}. Target ${next.blind.quota}.${lockMessage(lock)}`,
             opening.deviation
           ),
         };
@@ -1311,15 +1492,28 @@ export function advanceRun(
       // Between Blinds the table is closed; the shop takes the sale.
       if (run.table.status === "CLEARED") return shopAction(plan, run, action);
       return { ...run, table: advanceTable(blind, run.table, action) };
-    default:
-      return { ...run, table: advanceTable(blind, run.table, action) };
+    default: {
+      const table = advanceTable(blind, run.table, action);
+      // Form 483: a Boss reward cannot fill the locked slot.
+      if (
+        table.relics.length > run.table.relics.length &&
+        table.relics.length > relicCapacity(run)
+      ) {
+        return refuse(rackFull(run));
+      }
+      return { ...run, table };
+    }
   }
 }
 
-/** Derives everything a run renders. Pure; safe to call on every render. */
-export function deriveRunView(plan: RunPlan, run: RunState): RunView {
+/**
+ * Derives everything a run renders, from the plan as the run's sponsor and
+ * stake rewrite it. Pure; safe to call on every render.
+ */
+export function deriveRunView(authored: RunPlan, run: RunState): RunView {
+  const plan = playedPlan(authored, run);
   const { blindIndex } = run;
-  const blinds = runBlinds(plan, run);
+  const blinds = actBlinds(plan, run);
   const blind = blinds[blindIndex];
   const stop = nextStop(plan, run);
   const isFinalBlind = stop === null;
@@ -1364,7 +1558,13 @@ export function deriveRunView(plan: RunPlan, run: RunState): RunView {
     phase,
     actIndex: run.actIndex,
     showIntro,
-    table: deriveTableView(blind, run.table),
+    table:
+      run.lockedRelicSlot === undefined
+        ? deriveTableView(blind, run.table)
+        : {
+            ...deriveTableView(blind, run.table),
+            relicSlots: relicCapacity(run),
+          },
     seed: run.seed,
     draws: run.draws,
     pendingCashOut:

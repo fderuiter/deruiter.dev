@@ -72,6 +72,9 @@ import {
   evaluateHand,
   roundRatio,
   scoreTimeline,
+  stakeLevels,
+  stakeModifiers,
+  MAX_STAKE,
   type DeskAction,
   type RunAction,
   type TableAction,
@@ -1317,6 +1320,24 @@ describe("Shift-Left Fuzz & Property-Based Verification", () => {
             ).toEqual(steps);
           }
         )
+      );
+    });
+
+    it("keeps GCP-audit stakes cumulative: stake N's rules contain stake N-1's", () => {
+      fc.assert(
+        fc.property(fc.integer({ min: 2, max: MAX_STAKE }), (stake) => {
+          const lower = stakeLevels(stake - 1).map((l) => l.id);
+          const higher = stakeLevels(stake).map((l) => l.id);
+          expect(higher).toEqual(expect.arrayContaining(lower));
+          expect(higher).toHaveLength(lower.length + 1);
+          // Every rule of every stake up to N is still in force at N.
+          const modifiers = stakeModifiers(stake);
+          for (const level of stakeLevels(stake)) {
+            for (const [key, value] of Object.entries(level.modifier)) {
+              expect(modifiers[key as keyof typeof modifiers]).toBe(value);
+            }
+          }
+        })
       );
     });
   });

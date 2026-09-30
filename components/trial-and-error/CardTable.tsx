@@ -32,6 +32,7 @@ import {
   type RestoredRun,
   SEAL_DRAG_TYPE,
   type RunAction,
+  type RunChoice,
   type RunPlan,
   type RunLog,
   type RunOrigin,
@@ -64,6 +65,7 @@ import { NewRun } from "@/components/trial-and-error/NewRun";
 import { Codex } from "@/components/trial-and-error/Codex";
 import { updateCodex, useCodex } from "@/components/trial-and-error/useCodex";
 import { SeedShare } from "@/components/trial-and-error/SeedShare";
+import { RunChoiceBadges } from "@/components/trial-and-error/RunChoiceBadges";
 import {
   clearChallengeHash,
   freshSeed,
@@ -156,12 +158,25 @@ interface LoggedRun {
 
 /**
  * A move, a saved run replacing the fresh one on resume, or a new run on a
- * chosen seed, whose log records how the seed was chosen (#1528).
+ * chosen seed, sponsor and stake, whose log records how the seed was chosen
+ * (#1528) and the sponsor and stake (#950).
  */
 type TableIntent =
   | RunAction
   | { type: "LOAD_SAVED"; saved: RestoredRun }
-  | { type: "NEW_RUN"; seed: string; origin: RunOrigin };
+  | { type: "NEW_RUN"; seed: string; origin: RunOrigin; choice: RunChoice };
+
+/**
+ * The sponsor and stake a run log records: only what differs from the
+ * defaults, as the run state and save do, so a default run's log is exactly
+ * what it was before sponsors existed.
+ */
+function loggedChoice(run: RunState): Pick<RunLog, "sponsorId" | "stake"> {
+  return {
+    ...(run.sponsorId !== undefined && { sponsorId: run.sponsorId }),
+    ...(run.stake !== undefined && { stake: run.stake }),
+  };
+}
 
 function logRun(
   act: RunPlan,
@@ -172,15 +187,23 @@ function logRun(
     return { run: intent.saved.run, log: intent.saved.log };
   }
   if (intent.type === "NEW_RUN") {
-    const run = advanceRun(act, current.run, {
-      type: "RESTART_RUN",
-      seed: intent.seed,
-    });
+    // RESTART_RUN keeps the run's own sponsor and stake, so it restarts a
+    // fresh run under the chosen ones, keeping the table's event sequence.
+    const chosen = createRunState(act, intent.seed, intent.choice);
+    const run = advanceRun(
+      act,
+      {
+        ...chosen,
+        table: { ...chosen.table, lastEvent: current.run.table.lastEvent },
+      },
+      { type: "RESTART_RUN", seed: intent.seed }
+    );
     return {
       run,
       log: {
         actId: act.id,
         seed: run.seed,
+        ...loggedChoice(run),
         origin: intent.origin,
         actions: [],
       },
@@ -189,7 +212,15 @@ function logRun(
   const run = advanceRun(act, current.run, intent);
   // A new run starts a new log; every other move joins the current one.
   if (intent.type === "RESTART_RUN") {
-    return { run, log: { actId: act.id, seed: run.seed, actions: [] } };
+    return {
+      run,
+      log: {
+        actId: act.id,
+        seed: run.seed,
+        ...loggedChoice(run),
+        actions: [],
+      },
+    };
   }
   return {
     run,
@@ -669,12 +700,16 @@ export function CardTable({
     setNewRunOpen(false);
   };
   /** Starts a new run on a chosen seed, with focus on the first card. */
-  const startNewRun = (nextSeed: string, origin: RunOrigin) => {
+  const startNewRun = (
+    nextSeed: string,
+    origin: RunOrigin,
+    choice: RunChoice
+  ) => {
     closeNewRun();
     setFocusIndex(0);
     setSellRelicId(null);
     pendingFocus.current = { kind: "hand", index: 0 };
-    dispatch({ type: "NEW_RUN", seed: nextSeed, origin });
+    dispatch({ type: "NEW_RUN", seed: nextSeed, origin, choice });
     announce(
       origin.kind === "DAILY"
         ? `Daily Protocol for ${origin.date} started.`
@@ -1061,6 +1096,7 @@ export function CardTable({
           >
             {scenario.blind.name}
           </p>
+          <RunChoiceBadges choice={runView.choice} className="mt-1" />
           {view.modifiers.map((modifier) => {
             const isBoss = modifier.id === scenario.boss?.id;
             return (
@@ -2227,7 +2263,11 @@ export function CardTable({
                           endAction(runView.phase === "RUN_WON").onSelect();
                           return;
                         }
-                        startNewRun(freshSeed(), { kind: "RANDOM" });
+                        startNewRun(
+                          freshSeed(),
+                          { kind: "RANDOM" },
+                          runView.choice
+                        );
                       }}
                       className={`${BUTTON_BASE} border-amber-500 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20`}
                     >
@@ -2264,7 +2304,11 @@ export function CardTable({
                       <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
                         Challenge a friend to this run
                       </p>
-                      <SeedShare seed={runView.seed} origin={runOrigin} />
+                      <SeedShare
+                        seed={runView.seed}
+                        origin={runOrigin}
+                        choice={runView.choice}
+                      />
                     </div>
                   )}
                 </>
@@ -2381,6 +2425,7 @@ export function CardTable({
           rows={view.handTable}
           seed={runView.seed}
           origin={runOrigin}
+          choice={runView.choice}
           onNewRun={
             endAction
               ? undefined
@@ -2411,6 +2456,8 @@ export function CardTable({
         <NewRun
           challenge={challenge}
           discards={log.actions.length > 0 && !runOver}
+          unlocks={codex.unlocks}
+          current={runView.choice}
           onStart={startNewRun}
           onClose={closeNewRun}
         />

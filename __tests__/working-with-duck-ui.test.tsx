@@ -289,7 +289,9 @@ describe("Working With Duck - UI & Component Suite", () => {
       window.dispatchEvent(new KeyboardEvent("keydown", { key: "w" }));
       window.dispatchEvent(new KeyboardEvent("keydown", { key: "e" }));
       window.dispatchEvent(new KeyboardEvent("keydown", { key: "r" }));
-      window.dispatchEvent(new KeyboardEvent("keydown", { code: "Space" }));
+      window.dispatchEvent(
+        new KeyboardEvent("keydown", { key: " ", code: "Space" })
+      );
     });
 
     expect(container.textContent).toContain("Tennis Ball");
@@ -341,6 +343,7 @@ describe("Working With Duck - UI & Component Suite", () => {
     let event!: KeyboardEvent;
     await act(async () => {
       event = new KeyboardEvent("keydown", {
+        key: " ",
         code: "Space",
         bubbles: true,
         cancelable: true,

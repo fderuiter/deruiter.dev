@@ -80,6 +80,11 @@ import {
   stakeLevels,
   stakeModifiers,
   MAX_STAKE,
+  SPONSOR_ORDER,
+  challengeChoice,
+  isChoiceUnlocked,
+  unlockAfterWin,
+  defaultUnlocks,
   CodexSchema,
   emptyCodex,
   parseCodex,
@@ -1543,6 +1548,72 @@ describe("Trial & Error run seeds (#1528)", () => {
           ).toEqual({ seed, daily: date });
         }
       ),
+      { numRuns: 300 }
+    );
+  });
+
+  it("never throws on a hash with arbitrary sponsor and stake values, and only returns valid ones (#950)", () => {
+    const value = fc.oneof(
+      fc.string({ maxLength: 24 }),
+      fc.constantFrom(...SPONSOR_ORDER),
+      fc.integer({ min: -2, max: 9 }).map(String)
+    );
+    fc.assert(
+      fc.property(value, value, fc.string({ maxLength: 40 }), (s, k, rest) => {
+        const hash = `#seed=7K3M-Q9PX&sponsor=${encodeURIComponent(s)}&stake=${encodeURIComponent(k)}&${rest}`;
+        const challenge = parseChallengeHash(hash);
+        expect(challenge).not.toBeNull();
+        const choice = challengeChoice(challenge!);
+        expect(SPONSOR_ORDER).toContain(choice.sponsorId);
+        expect(Number.isInteger(choice.stake)).toBe(true);
+        expect(choice.stake).toBeGreaterThanOrEqual(1);
+        expect(choice.stake).toBeLessThanOrEqual(MAX_STAKE);
+      }),
+      { numRuns: 1000 }
+    );
+  });
+
+  it("round-trips any valid seed, sponsor and stake through a challenge link (#950)", () => {
+    fc.assert(
+      fc.property(
+        fc.uint8Array({ minLength: 5, maxLength: 5 }),
+        fc.constantFrom(...SPONSOR_ORDER),
+        fc.integer({ min: 1, max: MAX_STAKE }),
+        fc.constantFrom("RANDOM" as const, "SEEDED" as const),
+        (raw, sponsorId, stake, kind) => {
+          const seed = seedFromBytes(raw);
+          const challenge = parseChallengeHash(
+            challengeHash(seed, { kind }, { sponsorId, stake })
+          );
+          expect(challenge?.seed).toBe(seed);
+          expect(challengeChoice(challenge!)).toEqual({ sponsorId, stake });
+        }
+      ),
+      { numRuns: 500 }
+    );
+  });
+
+  it("only ever grows unlocks, and a won choice stays open (#950)", () => {
+    const win = fc.record({
+      sponsorId: fc.constantFrom(...SPONSOR_ORDER),
+      stake: fc.integer({ min: 1, max: MAX_STAKE }),
+    });
+    fc.assert(
+      fc.property(fc.array(win, { maxLength: 30 }), (wins) => {
+        let unlocks = defaultUnlocks();
+        for (const choice of wins) {
+          const next = unlockAfterWin(unlocks, choice);
+          for (const sponsorId of SPONSOR_ORDER) {
+            for (let stake = 1; stake <= MAX_STAKE; stake += 1) {
+              if (isChoiceUnlocked(unlocks, { sponsorId, stake })) {
+                expect(isChoiceUnlocked(next, { sponsorId, stake })).toBe(true);
+              }
+            }
+          }
+          expect(isChoiceUnlocked(next, choice)).toBe(true);
+          unlocks = next;
+        }
+      }),
       { numRuns: 300 }
     );
   });

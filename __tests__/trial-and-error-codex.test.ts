@@ -308,7 +308,7 @@ describe("the stored document", () => {
       historyEntry("stored")
     );
 
-  it("round-trips a v1 document with no data loss", () => {
+  it("round-trips a v2 document with no data loss", () => {
     const codex = discovered();
     const read = parseCodex(serializeCodex(codex));
     expect(read.status).toBe("OK");
@@ -338,14 +338,70 @@ describe("the stored document", () => {
       },
       history: [historyEntry("v1-run")],
     };
-    expect(CODEX_VERSION).toBe(1);
+    expect(CODEX_VERSION).toBe(2);
+    // v1 to v2 (#950) adds unlocks and keeps every entry and the history.
+    const v2 = {
+      ...v1,
+      version: 2,
+      unlocks: { VIRTUAL_BIOTECH: 1 },
+    };
     const migrated = migrateCodex(v1);
-    expect(migrated).toEqual(v1);
+    expect(migrated).toEqual(v2);
     const read = parseCodex(JSON.stringify(v1));
     expect(read.status).toBe("OK");
-    expect(read.codex).toEqual(v1);
+    expect(read.codex).toEqual(v2);
     // Re-serialising keeps the retired entry: nothing is dropped.
-    expect(JSON.parse(serializeCodex(read.codex))).toEqual(v1);
+    expect(JSON.parse(serializeCodex(read.codex))).toEqual(v2);
+  });
+
+  it("migrates v1 wins into v2 unlocks, oldest win first", () => {
+    const won = (
+      seed: string,
+      choice: Partial<RunHistoryEntry>
+    ): RunHistoryEntry => ({
+      ...historyEntry(seed),
+      ...choice,
+      result: "WON",
+      campaignWon: true,
+    });
+    const v1 = {
+      ...JSON.parse(serializeCodex(emptyCodex())),
+      version: 1,
+      // Newest first, as the history keeps it.
+      history: [
+        won("third", { sponsorId: "ONCOLOGY_PHARMA", stake: 1 }),
+        historyEntry("lost"),
+        won("second", { stake: 2 }),
+        won("first", {}),
+      ],
+    };
+    delete v1.unlocks;
+    const read = parseCodex(JSON.stringify(v1));
+    expect(read.status).toBe("OK");
+    expect(read.codex.history).toEqual(v1.history);
+    expect(read.codex.unlocks).toEqual({
+      VIRTUAL_BIOTECH: 3,
+      ONCOLOGY_PHARMA: 2,
+      CARDIO_MEGA_TRIAL: 1,
+    });
+  });
+
+  it("rejects a v2 document with an unknown sponsor or a stake off the ladder", () => {
+    const good = JSON.parse(serializeCodex(emptyCodex()));
+    for (const unlocks of [
+      { GENERIC_CRO: 1 },
+      { VIRTUAL_BIOTECH: 7 },
+      { VIRTUAL_BIOTECH: 0 },
+      { VIRTUAL_BIOTECH: 1.5 },
+      [],
+    ]) {
+      expect(parseCodex(JSON.stringify({ ...good, unlocks })).status).toBe(
+        "INVALID"
+      );
+    }
+    expect(
+      parseCodex(JSON.stringify({ ...good, unlocks: undefined })).status
+    ).toBe("INVALID");
   });
 
   it("degrades corrupt, invalid or unknown documents to an empty Codex", () => {
@@ -388,7 +444,9 @@ describe("the stored document", () => {
     }
     expect(parseCodex(null).status).toBe("EMPTY");
     expect(parseCodex("").status).toBe("EMPTY");
-    const newer = parseCodex(JSON.stringify({ ...good, version: 2 }));
+    const newer = parseCodex(
+      JSON.stringify({ ...good, version: CODEX_VERSION + 1 })
+    );
     expect(newer).toEqual({ codex: emptyCodex(), status: "NEWER" });
   });
 });

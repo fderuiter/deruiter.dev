@@ -8,10 +8,12 @@ import {
   type AccessRecord,
   type HandLevelRow,
   type Relic,
+  type RunChoice,
   type RunOrigin,
 } from "@/lib/trial-and-error";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { SeedShare } from "@/components/trial-and-error/SeedShare";
+import { RunChoiceBadges } from "@/components/trial-and-error/RunChoiceBadges";
 
 interface RunInfoProps {
   /** The run's hand table at current levels, from the domain view. */
@@ -19,6 +21,8 @@ interface RunInfoProps {
   seed: string;
   /** How the seed was chosen; a Daily Protocol run shows its date. */
   origin?: RunOrigin;
+  /** The run's sponsor and stake (#950); absent shows no badges. */
+  choice?: RunChoice;
   /** Offers "New run…", which opens the New Run dialog (#1528). */
   onNewRun?: () => void;
   /** Offers "Codex", which opens the Codex and run history (#1529). */
@@ -39,8 +43,8 @@ interface RunInfoProps {
 
 /**
  * Run Info (T&E-UX-05): a focus-trapped dialog with the run's hand table
- * (level, base Chips, base +Mult, times played), the equipped relics and the
- * run seed, with Copy seed, Copy challenge link, New run (#1528) and the
+ * (level, base Chips, base +Mult, times played), the equipped relics, the
+ * run's sponsor and stake badges (#950) and the run seed, with Copy seed, Copy challenge link, New run (#1528) and the
  * Codex (#1529). It renders the domain's rows and never adds a level bonus
  * itself. Escape or Close dismisses it and focus returns to the trigger.
  */
@@ -48,6 +52,7 @@ export function RunInfo({
   rows,
   seed,
   origin = { kind: "RANDOM" },
+  choice,
   onNewRun,
   onCodex,
   relicSlots,
@@ -76,6 +81,7 @@ export function RunInfo({
         >
           Run Info
         </h2>
+        {choice && <RunChoiceBadges choice={choice} className="mt-2" />}
         <div className="mt-3 overflow-x-auto">
           <table className="w-full min-w-0 border-collapse text-xs tabular-nums">
             <caption className="mb-1 text-left text-[10px] uppercase tracking-wider text-zinc-400">
@@ -192,7 +198,7 @@ export function RunInfo({
           Seed
         </h3>
         <div className="mt-1">
-          <SeedShare seed={seed} origin={origin} />
+          <SeedShare seed={seed} origin={origin} choice={choice} />
         </div>
         {onCodex && (
           <button

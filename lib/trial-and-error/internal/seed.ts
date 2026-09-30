@@ -1,4 +1,9 @@
+import type { SponsorId, Stake } from "../types";
+import { SponsorIdSchema } from "../types";
 import { uniformAt } from "./rng";
+import type { RunChoice } from "./run-rules";
+import { DEFAULT_SPONSOR_ID } from "./sponsors";
+import { DEFAULT_STAKE, MAX_STAKE } from "./stakes";
 
 /**
  * Shareable run seeds (#949, #1528). A seed is eight Crockford base32
@@ -106,15 +111,39 @@ export interface Challenge {
   seed: string;
   /** Set when the link is a Daily Protocol run, and only if the seed is that day's. */
   daily: string | null;
+  /** The run's sponsor (#950). Absent means Virtual Biotech. */
+  sponsorId?: SponsorId;
+  /** The run's stake (#950). Absent means stake 1. */
+  stake?: Stake;
 }
+
+/** A stake as a link writes it: one digit on the ladder, nothing else. */
+const STAKE_PARAM = new RegExp(`^[1-${MAX_STAKE}]$`);
 
 /**
  * The URL hash for a challenge link, e.g. `#seed=7K3M-Q9PX`, with
- * `&daily=2026-09-30` for a Daily Protocol run.
+ * `&daily=2026-09-30` for a Daily Protocol run, and
+ * `&sponsor=ONCOLOGY_PHARMA&stake=3` for a run under a sponsor or stake
+ * other than the defaults (#950). The Daily Protocol is always played under
+ * the defaults, so its link never carries either.
  */
-export function challengeHash(seed: string, origin: RunOrigin): string {
+export function challengeHash(
+  seed: string,
+  origin: RunOrigin,
+  choice: Partial<RunChoice> = {}
+): string {
   const params = new URLSearchParams({ seed });
-  if (origin.kind === "DAILY") params.set("daily", origin.date);
+  if (origin.kind === "DAILY") {
+    params.set("daily", origin.date);
+  } else {
+    const { sponsorId, stake } = choice;
+    if (sponsorId !== undefined && sponsorId !== DEFAULT_SPONSOR_ID) {
+      params.set("sponsor", sponsorId);
+    }
+    if (stake !== undefined && stake !== DEFAULT_STAKE) {
+      params.set("stake", String(stake));
+    }
+  }
   return `#${params.toString()}`;
 }
 
@@ -123,6 +152,10 @@ export function challengeHash(seed: string, origin: RunOrigin): string {
  * parameters are ignored, so later links can add more. A `daily` date is
  * kept only when the seed really is that day's Daily Protocol, so a link
  * cannot pass another seed off as one.
+ *
+ * `sponsor` must be a sponsor id exactly as written and `stake` a single
+ * digit from 1 to 6; anything else falls back to the default, as does either
+ * one on a Daily Protocol link. Only choices other than the defaults are set.
  */
 export function parseChallengeHash(hash: string): Challenge | null {
   const params = new URLSearchParams(hash.replace(/^#/, ""));
@@ -132,7 +165,28 @@ export function parseChallengeHash(hash: string): Challenge | null {
   const date = params.get("daily");
   const daily =
     date !== null && isIsoDate(date) && dailySeed(date) === seed ? date : null;
-  return { seed, daily };
+  if (daily) return { seed, daily };
+  const sponsor = SponsorIdSchema.safeParse(params.get("sponsor"));
+  const stakeParam = params.get("stake");
+  const stake =
+    stakeParam !== null && STAKE_PARAM.test(stakeParam)
+      ? Number(stakeParam)
+      : DEFAULT_STAKE;
+  return {
+    seed,
+    daily,
+    ...(sponsor.success &&
+      sponsor.data !== DEFAULT_SPONSOR_ID && { sponsorId: sponsor.data }),
+    ...(stake !== DEFAULT_STAKE && { stake }),
+  };
+}
+
+/** The sponsor and stake a challenge's run is played under, defaults filled. */
+export function challengeChoice(challenge: Challenge): RunChoice {
+  return {
+    sponsorId: challenge.sponsorId ?? DEFAULT_SPONSOR_ID,
+    stake: challenge.stake ?? DEFAULT_STAKE,
+  };
 }
 
 /** The origin a challenge's run should record. */

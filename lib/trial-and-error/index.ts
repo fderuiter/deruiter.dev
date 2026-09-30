@@ -223,6 +223,7 @@ export {
 } from "./internal/relics";
 export { drawInt, uniformAt } from "./internal/rng";
 export {
+  challengeChoice,
   challengeHash,
   challengeOrigin,
   dailySeed,
@@ -354,3 +355,16 @@ export {
   type DiscoverySource,
   type RunHistoryEntry,
 } from "./internal/codex";
+export {
+  SPONSOR_ORDER,
+  UnlocksSchema,
+  defaultUnlocks,
+  isChoiceUnlocked,
+  sponsorOptions,
+  stakeOptions,
+  unlockAfterWin,
+  unlockedStake,
+  type SponsorOption,
+  type StakeOption,
+  type Unlocks,
+} from "./internal/unlocks";

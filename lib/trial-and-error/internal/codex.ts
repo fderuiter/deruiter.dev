@@ -25,7 +25,10 @@ import {
 } from "./run";
 import type { RunLog } from "./save";
 import type { RunOrigin } from "./seed";
-import { SPONSORS } from "./sponsors";
+import type { RunChoice } from "./run-rules";
+import { DEFAULT_SPONSOR_ID, SPONSORS } from "./sponsors";
+import { DEFAULT_STAKE } from "./stakes";
+import { defaultUnlocks, unlockAfterWin, UnlocksSchema } from "./unlocks";
 import { dmcDefenseOf } from "./table";
 
 /**
@@ -39,8 +42,11 @@ import { dmcDefenseOf } from "./table";
  * overwrite that.
  */
 
-/** The Codex format's current version. */
-export const CODEX_VERSION = 1;
+/**
+ * The Codex format's current version. v2 (#950) adds `unlocks`, the
+ * sponsors and stakes the player has opened by winning.
+ */
+export const CODEX_VERSION = 2;
 
 /** How many finished runs the history keeps, newest first. */
 export const RUN_HISTORY_LIMIT = 10;
@@ -166,7 +172,7 @@ export const RunHistoryEntrySchema = z.object({
 /** A finished run, as the history keeps it. */
 export type RunHistoryEntry = z.infer<typeof RunHistoryEntrySchema>;
 
-/** The stored Codex document, version 1. */
+/** The stored Codex document, version 2. */
 export const CodexSchema = z.object({
   version: z.literal(CODEX_VERSION),
   discovered: z.object({
@@ -179,6 +185,11 @@ export const CodexSchema = z.object({
     SPONSOR: section,
   }),
   history: z.array(RunHistoryEntrySchema).max(RUN_HISTORY_LIMIT),
+  /**
+   * Each unlocked sponsor and the highest stake unlocked for it (#950).
+   * Virtual Biotech at stake 1 is always open, recorded or not.
+   */
+  unlocks: UnlocksSchema,
 });
 /** The Codex: every discovery and the last runs. */
 export type Codex = z.infer<typeof CodexSchema>;
@@ -197,15 +208,38 @@ export function emptyCodex(): Codex {
       SPONSOR: {},
     },
     history: [],
+    unlocks: defaultUnlocks(),
   };
 }
 
+/** The unlocks every campaign win in a history earns, oldest win first. */
+function unlocksFromHistory(history: unknown): Codex["unlocks"] {
+  let unlocks = defaultUnlocks();
+  if (!Array.isArray(history)) return unlocks;
+  for (const raw of [...history].reverse()) {
+    const entry = RunHistoryEntrySchema.safeParse(raw);
+    if (entry.success && entry.data.campaignWon) {
+      unlocks = unlockAfterWin(unlocks, historyChoice(entry.data));
+    }
+  }
+  return unlocks;
+}
+
 /**
- * Upgrades an older Codex document one version at a time. Only v1 exists,
- * so the table is empty; a v2 adds `{ 1: (v1) => v2 }` and bumps
- * `CODEX_VERSION`, and every v1 document keeps its entries and history.
+ * Upgrades an older Codex document one version at a time, each step taking
+ * version n to n + 1 and keeping every entry and the run history.
+ *
+ * v1 to v2 (#950) adds `unlocks`, rebuilt from the wins still in the run
+ * history, so a player who won before unlocks existed keeps what those wins
+ * earn. Everything else is carried over untouched for the schema to check.
  */
-const MIGRATIONS: Readonly<Record<number, (doc: unknown) => unknown>> = {};
+const MIGRATIONS: Readonly<Record<number, (doc: unknown) => unknown>> = {
+  1: (doc) => ({
+    ...(doc as object),
+    version: 2,
+    unlocks: unlocksFromHistory((doc as { history?: unknown }).history),
+  }),
+};
 
 function versionOf(doc: unknown): unknown {
   return typeof doc === "object" && doc !== null
@@ -404,6 +438,10 @@ function sameRun(a: RunHistoryEntry, b: RunHistoryEntry): boolean {
  * Adds a finished run to the front of the history, keeping the newest
  * `RUN_HISTORY_LIMIT`. Recording the same run twice in a row (the same plan,
  * seed, choice, move count and result) leaves the history as it was.
+ *
+ * A run that won its campaign also unlocks (#950): the next stake for its
+ * sponsor, and the next sponsor at stake 1. A campaign won before
+ * post-marketing rounds failed still counts as a win.
  */
 export function recordRun(codex: Codex, entry: RunHistoryEntry): Codex {
   const newest = codex.history[0];
@@ -411,6 +449,17 @@ export function recordRun(codex: Codex, entry: RunHistoryEntry): Codex {
   return {
     ...codex,
     history: [entry, ...codex.history].slice(0, RUN_HISTORY_LIMIT),
+    unlocks: entry.campaignWon
+      ? unlockAfterWin(codex.unlocks, historyChoice(entry))
+      : codex.unlocks,
+  };
+}
+
+/** The sponsor and stake a history entry was played under, defaults filled. */
+function historyChoice(entry: RunHistoryEntry): RunChoice {
+  return {
+    sponsorId: entry.sponsorId ?? DEFAULT_SPONSOR_ID,
+    stake: entry.stake ?? DEFAULT_STAKE,
   };
 }
 

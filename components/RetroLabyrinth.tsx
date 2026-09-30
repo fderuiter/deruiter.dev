@@ -7,6 +7,7 @@ import React, {
   useCallback,
   useMemo,
   useSyncExternalStore,
+  useEffectEvent,
 } from "react";
 import { useTelemetry } from "@/hooks/useTelemetry";
 import { logger } from "@/lib/logger";
@@ -26,6 +27,7 @@ import {
 } from "@tabler/icons-react";
 import { DpadActionDock } from "@/components/arcade/ControlDocks";
 import { useResponsiveCanvas } from "@/hooks/useResponsiveCanvas";
+import { useAnimationFrame } from "@/hooks/useAnimationFrame";
 import { FieldManualButton } from "@/components/FieldManualButton";
 import { FullscreenButton } from "@/components/arcade/FullscreenButton";
 import { DynamicTabletOrientationHint as TabletOrientationHint } from "@/components/arcade/DynamicTabletOrientationHint";
@@ -254,8 +256,6 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   // FX: Particles & Floating texts
   const particlesRef = useRef<ParticleEffect[]>([]);
   const floatingTextsRef = useRef<FloatingNotification[]>([]);
-  const animFrameRef = useRef<number | null>(null);
-  const lastTimeRef = useRef<number>(0);
   const cursorGridPosRef = useRef<{ x: number; y: number } | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -1247,32 +1247,68 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   });
 
   // Main Real-Time Game Loop
+  //
+  // The loop runs once mounted while the canvas context is live. The hook's
+  // delta is unclamped (maxDeltaMs: Infinity) and clamped to 40 ms below, as
+  // before, so the frame clock can rebuild the frame timestamp the engine
+  // reads: an anchor taken on the loop's first frame plus the elapsed time.
+  // The context listeners set a ref that guards the frame already in flight
+  // and a state flag that stops the loop; restoring starts a fresh one.
+  const contextLostRef = useRef(false);
+  const [isContextLost, setIsContextLost] = useState(false);
+  const isLoopActive = isMounted && !isContextLost;
+  const frameAnchorRef = useRef<number | null>(null);
+  // Phosphor shimmer phase for renderCRTEffects: one step per frame.
+  const crtFrameRef = useRef(0);
+  // The TSP hover highlight reads the campaign rendered when the loop
+  // started, as the effect-based loop's closure did.
+  const loopCampaignRoomsRef = useRef(campaignRooms);
+  const readRenderedCampaignRooms = useEffectEvent(() => campaignRooms);
+
   useEffect(() => {
     if (!isMounted) return;
 
-    let isRunning = true;
-    let isContextLost = false;
+    loopCampaignRoomsRef.current = readRenderedCampaignRooms();
+
     const canvas = canvasRef.current;
+    if (!canvas) return;
 
     const handleContextLost = (e: Event) => {
       e.preventDefault();
-      isContextLost = true;
-      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+      contextLostRef.current = true;
+      setIsContextLost(true);
     };
 
     const handleContextRestored = () => {
-      isContextLost = false;
-      lastTimeRef.current = performance.now();
-      animFrameRef.current = requestAnimationFrame(loop);
+      contextLostRef.current = false;
+      setIsContextLost(false);
     };
 
-    if (canvas) {
-      canvas.addEventListener("contextlost", handleContextLost);
-      canvas.addEventListener("contextrestored", handleContextRestored);
-    }
+    canvas.addEventListener("contextlost", handleContextLost);
+    canvas.addEventListener("contextrestored", handleContextRestored);
+    return () => {
+      canvas.removeEventListener("contextlost", handleContextLost);
+      canvas.removeEventListener("contextrestored", handleContextRestored);
+      contextLostRef.current = false;
+      setIsContextLost(false);
+    };
+  }, [isMounted]);
 
-    const loop = (timestamp: number) => {
-      if (!isRunning || isContextLost) return;
+  // Every fresh loop re-anchors its frame timestamp.
+  useEffect(() => {
+    if (isLoopActive) frameAnchorRef.current = null;
+  }, [isLoopActive]);
+
+  useAnimationFrame(
+    (frameDeltaMs, frameClockMs) => {
+      if (contextLostRef.current) return;
+
+      if (frameAnchorRef.current === null) {
+        frameAnchorRef.current = performance.now() - frameClockMs;
+      }
+      const timestamp = frameAnchorRef.current + frameClockMs;
+      crtFrameRef.current += 1;
+      const campaignRooms = loopCampaignRoomsRef.current;
 
       const {
         currentMaze,
@@ -1297,9 +1333,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       const exitLocked =
         gameMode === "roguelike" && getExitLockState(boss, tspNodes).locked;
 
-      if (!lastTimeRef.current) lastTimeRef.current = timestamp;
-      const deltaMs = Math.min(40, timestamp - lastTimeRef.current);
-      lastTimeRef.current = timestamp;
+      const deltaMs = Math.min(40, frameDeltaMs);
 
       // 1. Update active side effect expiry
       if (activeSideEffect && activeSideEffect.expiresAt <= timestamp) {
@@ -1760,26 +1794,13 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
             height,
             crtCalibration,
             currentTheme,
-            animFrameRef.current || 0
+            crtFrameRef.current
           );
         }
       }
-
-      animFrameRef.current = requestAnimationFrame(loop);
-    };
-
-    animFrameRef.current = requestAnimationFrame(loop);
-
-    return () => {
-      isRunning = false;
-      if (canvas) {
-        canvas.removeEventListener("contextlost", handleContextLost);
-        canvas.removeEventListener("contextrestored", handleContextRestored);
-      }
-      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isMounted]);
+    },
+    { isActive: isLoopActive, maxDeltaMs: Infinity }
+  );
 
   // ASCII Fallback for SSR & Initial Hydration
   const renderAsciiFallback = () => {

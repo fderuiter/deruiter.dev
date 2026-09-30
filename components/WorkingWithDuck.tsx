@@ -27,6 +27,8 @@ import { useDuckService } from "@/hooks/useDuckService";
 import { useResponsiveCanvas } from "@/hooks/useResponsiveCanvas";
 import { useCanvasResolution } from "@/hooks/useCanvasResolution";
 import { applyCanvasScale } from "@/lib/arcade";
+import { useAnimationFrame } from "@/hooks/useAnimationFrame";
+import { useHotkeys } from "@/hooks/useHotkeys";
 import {
   IconPlayerPlay,
   IconPlayerPause,
@@ -92,6 +94,51 @@ import {
   SPRINTS,
   SoundCue,
 } from "@/lib/working-with-duck-engine";
+
+/** Fixed simulation step for the Duck loop: the engine is tuned to 60 ticks/sec (#600). */
+const DUCK_FIXED_STEP_MS = 1000 / 60;
+/** Most fixed steps one rendered frame may replay after a long gap. */
+const DUCK_MAX_CATCHUP_STEPS = 8;
+
+/** Keys the Duck keyboard handler acts on, named for `useHotkeys`. */
+const DUCK_HOTKEY_KEYS = [
+  "p",
+  "1",
+  "2",
+  "3",
+  "4",
+  "q",
+  "w",
+  "e",
+  "r",
+  "Space",
+  "ArrowUp",
+  "ArrowDown",
+  "ArrowLeft",
+  "ArrowRight",
+  "Enter",
+] as const;
+
+/**
+ * Every Ctrl/Alt/Meta combination the old window listener accepted. It never
+ * checked modifiers, and useHotkeys matches Ctrl, Alt and Meta exactly, so
+ * each one is listed. Shift needs no entry: useHotkeys ignores it unless a
+ * hotkey names it.
+ */
+const DUCK_HOTKEY_MODIFIERS = [
+  "",
+  "Ctrl+",
+  "Alt+",
+  "Meta+",
+  "Ctrl+Alt+",
+  "Ctrl+Meta+",
+  "Alt+Meta+",
+  "Ctrl+Alt+Meta+",
+] as const;
+
+const DUCK_HOTKEYS: readonly string[] = DUCK_HOTKEY_KEYS.flatMap((key) =>
+  DUCK_HOTKEY_MODIFIERS.map((modifiers) => `${modifiers}${key}`)
+);
 
 const subscribeStorage = (callback: () => void) => {
   if (typeof window === "undefined") return () => {};
@@ -1997,7 +2044,6 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
       observer.disconnect();
     };
   }, []);
-  const animFrameIdRef = useRef<number | null>(null);
   const lastBellyScrubPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
   const { isFullscreen, toggleFullscreen } = useFullscreen(containerRef);
@@ -2126,45 +2172,55 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
   }, [uiState.highScore, uiState.unlockedFacts, loadedHighScore]);
 
   // Main 60 FPS Canvas Game Loop
+  //
+  // The loop stops only while the canvas context is lost; idle, paused and
+  // finished sessions keep drawing, exactly as before. The context listeners
+  // set a ref that guards the frame already in flight and a state flag that
+  // stops the loop; restoring the context starts a fresh one.
+  const contextLostRef = useRef(false);
+  const [isContextLost, setIsContextLost] = useState(false);
+
   useEffect(() => {
-    let isRunning = true;
-    let isContextLost = false;
     const canvas = canvasRef.current;
+    if (!canvas) return;
 
     const handleContextLost = (e: Event) => {
       e.preventDefault();
-      isContextLost = true;
-      if (animFrameIdRef.current) {
-        cancelAnimationFrame(animFrameIdRef.current);
-      }
+      contextLostRef.current = true;
+      setIsContextLost(true);
     };
 
     const handleContextRestored = () => {
-      isContextLost = false;
+      contextLostRef.current = false;
       // Discard elapsed wall-clock time across the context-loss gap so
       // resuming doesn't replay it as a burst of catch-up steps.
       lastFrameTimeRef.current = null;
       stepAccumulatorRef.current = 0;
-      animFrameIdRef.current = requestAnimationFrame(render);
+      setIsContextLost(false);
     };
 
-    if (canvas) {
-      canvas.addEventListener("contextlost", handleContextLost);
-      canvas.addEventListener("contextrestored", handleContextRestored);
-    }
+    canvas.addEventListener("contextlost", handleContextLost);
+    canvas.addEventListener("contextrestored", handleContextRestored);
+    return () => {
+      canvas.removeEventListener("contextlost", handleContextLost);
+      canvas.removeEventListener("contextrestored", handleContextRestored);
+    };
+  }, []);
 
-    // Simulation runs on a fixed 60Hz timestep (the engine's tick balance —
-    // work increments, timers, combo decay — was tuned assuming 60 ticks/sec)
-    // driven by real elapsed time, not once per rendered frame, so gameplay
-    // speed stays identical whether the display is 30, 60, or 120Hz (#600).
-    const FIXED_STEP_MS = 1000 / 60;
-    const MAX_CATCHUP_STEPS = 8;
+  // Simulation runs on a fixed 60Hz timestep (the engine's tick balance —
+  // work increments, timers, combo decay — was tuned assuming 60 ticks/sec)
+  // driven by real elapsed time, not once per rendered frame, so gameplay
+  // speed stays identical whether the display is 30, 60, or 120Hz (#600).
+  // The loop's own delta is unclamped (maxDeltaMs: Infinity); the catch-up
+  // cap below is the only clamp, as before. lastFrameTimeRef holds the
+  // loop's clock (elapsedMs) at the previous frame, so the difference
+  // between two frames is the real gap between them.
+  useAnimationFrame(
+    (_deltaMs, clockMs) => {
+      if (contextLostRef.current) return;
 
-    const render = (timestamp: number) => {
-      if (!isRunning || isContextLost) return;
-
-      const previousTimestamp = lastFrameTimeRef.current;
-      lastFrameTimeRef.current = timestamp;
+      const previousClock = lastFrameTimeRef.current;
+      lastFrameTimeRef.current = clockMs;
       const state = gameStateRef.current;
 
       if (state.status !== "running") {
@@ -2181,18 +2237,18 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
         // dropped frame, a backgrounded tab, or that same gap can't be
         // replayed as a runaway catch-up burst.
         const elapsedMs =
-          previousTimestamp === null
-            ? FIXED_STEP_MS
+          previousClock === null
+            ? DUCK_FIXED_STEP_MS
             : Math.min(
-                timestamp - previousTimestamp,
-                FIXED_STEP_MS * MAX_CATCHUP_STEPS
+                clockMs - previousClock,
+                DUCK_FIXED_STEP_MS * DUCK_MAX_CATCHUP_STEPS
               );
         stepAccumulatorRef.current += elapsedMs;
 
         let stepsThisFrame = 0;
         while (
-          stepAccumulatorRef.current >= FIXED_STEP_MS &&
-          stepsThisFrame < MAX_CATCHUP_STEPS &&
+          stepAccumulatorRef.current >= DUCK_FIXED_STEP_MS &&
+          stepsThisFrame < DUCK_MAX_CATCHUP_STEPS &&
           gameStateRef.current.status === "running"
         ) {
           let cuesToPlay: SoundCue[] = [];
@@ -2208,7 +2264,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
             }
             return stepped;
           }, shouldSyncDuckHudState);
-          stepAccumulatorRef.current -= FIXED_STEP_MS;
+          stepAccumulatorRef.current -= DUCK_FIXED_STEP_MS;
           stepsThisFrame++;
 
           // Process sound cue queue
@@ -2217,6 +2273,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
       }
 
       // Draw canvas frame
+      const canvas = canvasRef.current;
       if (canvas) {
         const ctx = canvas.getContext("2d");
         if (ctx) {
@@ -2225,27 +2282,19 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
           drawCanvas(ctx, gameStateRef.current, aimParkStartRef.current);
         }
       }
-
-      animFrameIdRef.current = requestAnimationFrame(render);
-    };
-
-    animFrameIdRef.current = requestAnimationFrame(render);
-
-    return () => {
-      isRunning = false;
-      if (canvas) {
-        canvas.removeEventListener("contextlost", handleContextLost);
-        canvas.removeEventListener("contextrestored", handleContextRestored);
-      }
-      if (animFrameIdRef.current) {
-        cancelAnimationFrame(animFrameIdRef.current);
-      }
-    };
-  }, [applyTransition, canvasScaleRef]);
+    },
+    { isActive: !isContextLost, maxDeltaMs: Infinity }
+  );
 
   // Keyboard Shortcuts (1-4 for hotbar items, Q-W-E-R for tricks, Space for coding/jumping)
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+  //
+  // DUCK_HOTKEYS lists every key the handler acts on under every Ctrl, Alt
+  // and Meta combination, because the listener never checked modifiers.
+  // The container is a keyboard boundary, so the binding opts in to it; the
+  // handler keeps its own interactive-target and focus checks.
+  useHotkeys(
+    DUCK_HOTKEYS,
+    (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
       const interactiveTag =
         target?.tagName === "BUTTON" ||
@@ -2404,17 +2453,9 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
           announce(`Dropped Duck ${dropLocation}.`, "polite");
         }
       }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [
-    announce,
-    applyTransition,
-    toggleManualPause,
-    handleGiveTreat,
-    handlePerformTrick,
-  ]);
+    },
+    { allowInKeyboardBoundary: true }
+  );
 
   // Global Window Pointer Up & Cancel Handler (Prevents Drag Locking Off-Canvas)
   useEffect(() => {

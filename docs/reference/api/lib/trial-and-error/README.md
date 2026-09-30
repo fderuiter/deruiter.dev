@@ -392,6 +392,12 @@ Re-exports [Challenge](internal/seed/interfaces/Challenge.md)
 
 ***
 
+### challengeChoice
+
+Re-exports [challengeChoice](internal/seed/functions/challengeChoice.md)
+
+***
+
 ### challengeHash
 
 Re-exports [challengeHash](internal/seed/functions/challengeHash.md)
@@ -767,6 +773,12 @@ Re-exports [DEFAULT_SPONSOR_ID](internal/sponsors/variables/DEFAULT_SPONSOR_ID.m
 ### DEFAULT\_STAKE
 
 Re-exports [DEFAULT_STAKE](internal/stakes/variables/DEFAULT_STAKE.md)
+
+***
+
+### defaultUnlocks
+
+Re-exports [defaultUnlocks](internal/unlocks/functions/defaultUnlocks.md)
 
 ***
 
@@ -1337,6 +1349,12 @@ Re-exports [IrQuestionSchema](types/variables/IrQuestionSchema.md)
 ### IrQuestionView
 
 Re-exports [IrQuestionView](internal/table/interfaces/IrQuestionView.md)
+
+***
+
+### isChoiceUnlocked
+
+Re-exports [isChoiceUnlocked](internal/unlocks/functions/isChoiceUnlocked.md)
 
 ***
 
@@ -2414,6 +2432,12 @@ Re-exports [Sponsor](internal/sponsors/interfaces/Sponsor.md)
 
 ***
 
+### SPONSOR\_ORDER
+
+Re-exports [SPONSOR_ORDER](internal/unlocks/variables/SPONSOR_ORDER.md)
+
+***
+
 ### SPONSOR\_SAFETY\_SCENARIO
 
 Re-exports [SPONSOR_SAFETY_SCENARIO](scenarios/variables/SPONSOR_SAFETY_SCENARIO.md)
@@ -2459,6 +2483,18 @@ Re-exports [SponsorId](types/type-aliases/SponsorId.md)
 ### SponsorIdSchema
 
 Re-exports [SponsorIdSchema](types/variables/SponsorIdSchema.md)
+
+***
+
+### SponsorOption
+
+Re-exports [SponsorOption](internal/unlocks/interfaces/SponsorOption.md)
+
+***
+
+### sponsorOptions
+
+Re-exports [sponsorOptions](internal/unlocks/functions/sponsorOptions.md)
 
 ***
 
@@ -2513,6 +2549,18 @@ Re-exports [stakeModifiers](internal/stakes/functions/stakeModifiers.md)
 ### StakeModifiers
 
 Re-exports [StakeModifiers](internal/stakes/interfaces/StakeModifiers.md)
+
+***
+
+### StakeOption
+
+Re-exports [StakeOption](internal/unlocks/interfaces/StakeOption.md)
+
+***
+
+### stakeOptions
+
+Re-exports [stakeOptions](internal/unlocks/functions/stakeOptions.md)
 
 ***
 
@@ -2807,6 +2855,30 @@ Re-exports [UNBLINDING_RULE_ID](internal/blinding/variables/UNBLINDING_RULE_ID.m
 ### uniformAt
 
 Re-exports [uniformAt](internal/rng/functions/uniformAt.md)
+
+***
+
+### unlockAfterWin
+
+Re-exports [unlockAfterWin](internal/unlocks/functions/unlockAfterWin.md)
+
+***
+
+### unlockedStake
+
+Re-exports [unlockedStake](internal/unlocks/functions/unlockedStake.md)
+
+***
+
+### Unlocks
+
+Re-exports [Unlocks](internal/unlocks/type-aliases/Unlocks.md)
+
+***
+
+### UnlocksSchema
+
+Re-exports [UnlocksSchema](internal/unlocks/variables/UnlocksSchema.md)
 
 ***
 

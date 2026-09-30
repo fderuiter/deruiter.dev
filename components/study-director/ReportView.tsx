@@ -6,6 +6,7 @@ import { Card } from "./Panels";
 import { HealthRadar } from "./HealthRadar";
 import { DecisionTimeline } from "./DecisionTimeline";
 import { verdictFor } from "./closeout";
+import { DIFFICULTY_TEXT } from "./DifficultyPicker";
 
 const OUTCOME_STYLE = {
   closed: "border-emerald-500/50 text-emerald-400",
@@ -68,7 +69,8 @@ export const ReportView: React.FC<{
       >
         <div className="min-w-0 flex-1 basis-72">
           <p className="text-[10px] font-semibold tracking-[0.14em] text-[var(--sd-muted)] uppercase">
-            Database lock and closeout · Study {state.setup.id}
+            Database lock and closeout · Study {state.setup.id} ·{" "}
+            {DIFFICULTY_TEXT[state.difficulty ?? "standard"].label}
           </p>
           <h2
             className={`mt-1 text-2xl font-extrabold tracking-[-0.035em] break-words sm:text-3xl ${VERDICT_TONE[verdict.tone]}`}

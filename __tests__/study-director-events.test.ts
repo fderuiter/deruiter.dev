@@ -67,8 +67,13 @@ describe("study director events", () => {
         e.options.flatMap((o) => o.schedule?.map((x) => x.eventId) ?? [])
       )
     );
-    for (const event of STUDY_EVENTS.filter((e) => e.followUp)) {
+    // Wildcards are scheduled from the seed at the start of a run instead.
+    for (const event of STUDY_EVENTS.filter((e) => e.followUp && !e.wildcard)) {
       expect(scheduledIds.has(event.id)).toBe(true);
+    }
+    for (const event of STUDY_EVENTS.filter((e) => e.recalls)) {
+      expect(getEvent(event.recalls!)).toBeDefined();
+      expect(event.trigger).toBeDefined();
     }
   });
 

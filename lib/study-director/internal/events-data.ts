@@ -1383,6 +1383,360 @@ export const STUDY_EVENTS: StudyEvent[] = [
       ),
     ],
   },
+
+  // Callbacks: these only reach the inbox because of an earlier choice, and
+  // name it. `recalls` points the desk at the decision being called back.
+  {
+    id: "callback-biomarker-kits",
+    from: "Central Lab",
+    subject: "Biomarker kit invoice",
+    body: "Following up on the exploratory biomarkers you added on day 1: the kits are specialty-shipped on dry ice. Invoice attached. Also, sites are asking why visits now take an extra hour.",
+    urgency: "important",
+    day: 36,
+    ttl: 3,
+    recalls: "sponsor-biomarkers",
+    trigger: (s) => s.flags.includes("biomarkers-added"),
+    ifIgnored: { spend: 9000, meters: { budget: -4 } },
+    options: [
+      opt("pay", "Pay it and bill the sponsor later", 1, 2, {
+        spend: 9000,
+        meters: { client: -1 },
+      }),
+      opt("change-order", "Raise a change order with the sponsor", 2, 1, {
+        spend: 2000,
+        meters: { client: -4, budget: 3 },
+      }),
+      opt("drop", "Drop the biomarker draws at the next visit", 2, 4, {
+        sites: allSites({ burden: -6 }),
+        meters: { client: -6 },
+      }),
+    ],
+  },
+  {
+    id: "callback-consent-monitor",
+    from: "Walt (Monitoring)",
+    subject: "The consent thing, again",
+    body: "Remember the second consent signature you let slide at Site 01? I just found eleven more. The PI says you said it was fine.",
+    urgency: "critical",
+    day: 45,
+    ttl: 2,
+    recalls: "cowboy-pi-consent",
+    trigger: (s) => s.flags.includes("consent-waived"),
+    ifIgnored: {
+      meters: { compliance: -8 },
+      sites: [{ siteId: "site-01", unsignedSource: 6 }],
+    },
+    options: [
+      opt("reconsent", "Re-consent every affected subject", 3, 1, {
+        spend: 3000,
+        slipDays: 2,
+        meters: { compliance: 6 },
+        sites: [{ siteId: "site-01", deviations: 1, burden: 5 }],
+      }),
+      opt(
+        "note",
+        "Write a note to file",
+        1,
+        10,
+        { meters: { compliance: -3 } },
+        {
+          finding: {
+            question:
+              "A note to file covers eleven consent forms missing a required signature. Why were the subjects not re-consented?",
+            answer:
+              "The rationale, the ethics committee's agreement and the corrective action are on file.",
+            severity: "major",
+          },
+        }
+      ),
+    ],
+  },
+  {
+    id: "callback-subject-017",
+    from: "Medical Monitor",
+    subject: "Subject 017: serious adverse event",
+    body: "Subject 017, the one dosed on day 33 with an out-of-range creatinine, has been hospitalised with acute kidney injury. The sponsor would like to understand the enrollment decision.",
+    urgency: "critical",
+    day: 50,
+    ttl: 2,
+    recalls: "eligibility-subject-017",
+    trigger: (s) => s.flags.includes("subject-017-proceeded"),
+    ifIgnored: { meters: { integrity: -10, client: -10, compliance: -6 } },
+    options: [
+      opt("own", "Own it: full root cause and CAPA", 3, 0, {
+        spend: 2500,
+        meters: { integrity: 2, client: -4, compliance: 4 },
+      }),
+      opt("pi", "Point out that the PI insisted", 1, 6, {
+        meters: { client: -8, compliance: -2 },
+      }),
+    ],
+  },
+  {
+    id: "callback-auc-found",
+    from: "Arcadia Therapeutics (Sponsor)",
+    subject: "Our statistician re-ran the AUC",
+    body: "Our statistician re-ran the pharmacokinetics and gets different AUC values for two subjects. Can you walk us through your validation?",
+    urgency: "critical",
+    day: 70,
+    ttl: 2,
+    recalls: "programmer-mismatch",
+    trigger: (s) => s.flags.includes("auc-mismatch-accepted"),
+    ifIgnored: { meters: { client: -12, integrity: -6 } },
+    options: [
+      opt("rerun", "Rerun double programming now", 3, 1, {
+        slipDays: 3,
+        meters: { integrity: 8, client: -3 },
+        workload: [{ memberId: "omar", delta: 15 }],
+      }),
+      opt("explain", "Explain it is within rounding", 1, 8, {
+        meters: { client: -6, integrity: -4 },
+      }),
+    ],
+  },
+
+  // Wildcards: each run draws a few of these on seeded days. Absurd, but
+  // every one of them has happened to someone.
+  {
+    id: "wild-reply-all",
+    from: "IT Helpdesk",
+    subject: "RE: RE: RE: RE: Please remove me from this list",
+    body: "Someone replied all to the 400-person study distribution list. Forty people have replied all asking to be removed. Your team has stopped working to watch.",
+    urgency: "important",
+    day: 1,
+    ttl: 2,
+    followUp: true,
+    wildcard: true,
+    ifIgnored: { workload: s6(6), meters: { team: -3 } },
+    options: [
+      opt("lock", "Ask IT to lock the list", 1, 0, {
+        meters: { team: 1, compliance: 1 },
+      }),
+      opt("reply", "Reply all asking everyone to stop", 0, 0, {
+        workload: s6(8),
+        meters: { team: -4, client: -1 },
+      }),
+      opt("mute", "Mute the thread and get back to work", 0, 0, {
+        workload: s6(3),
+      }),
+    ],
+  },
+  {
+    id: "wild-fax-only",
+    from: "Site 02",
+    subject: "Our new director only accepts faxes",
+    body: "Our new research director has decided that email is not secure. From today, source documents and signatures come by fax only. Do you have a fax number?",
+    urgency: "important",
+    day: 1,
+    ttl: 3,
+    followUp: true,
+    wildcard: true,
+    ifIgnored: { sites: [{ siteId: "site-02", unsignedSource: 4 }] },
+    options: [
+      opt("fax", "Rent a fax machine", 1, 1, {
+        spend: 600,
+        sites: [{ siteId: "site-02", burden: 4 }],
+      }),
+      opt("visit", "Visit and walk them through the portal", 2, 1, {
+        spend: 1200,
+        meters: { integrity: 2, compliance: 2 },
+      }),
+      opt(
+        "scan",
+        "Have them scan it anyway",
+        0,
+        6,
+        {
+          sites: [{ siteId: "site-02", unsignedSource: 2 }],
+        },
+        {
+          finding: {
+            question:
+              "Site 02 source documents were transmitted outside the validated system. How was their integrity assured?",
+            answer:
+              "A certified-copy procedure was followed and the chain of custody is documented.",
+            severity: "minor",
+          },
+        }
+      ),
+    ],
+  },
+  {
+    id: "wild-pi-sabbatical",
+    from: "Site 01 PI",
+    subject: "Out of office: Bali",
+    body: "I'll be on sabbatical in Bali for six weeks. The sub-investigator can handle things. I have not updated the delegation log.",
+    urgency: "important",
+    day: 1,
+    ttl: 3,
+    followUp: true,
+    wildcard: true,
+    ifIgnored: {
+      meters: { compliance: -5 },
+      sites: [{ siteId: "site-01", unsignedSource: 3 }],
+    },
+    options: [
+      opt("delegate", "Get the delegation log updated first", 2, 0, {
+        meters: { compliance: 4 },
+        sites: [{ siteId: "site-01", burden: 3 }],
+      }),
+      opt("pause", "Pause enrollment at Site 01", 1, 1, {
+        slipDays: 2,
+        meters: { client: -3 },
+      }),
+      opt(
+        "sign-later",
+        "They can sign when they're back",
+        0,
+        8,
+        { sites: [{ siteId: "site-01", unsignedSource: 4 }] },
+        {
+          finding: {
+            question:
+              "Study procedures at Site 01 were performed while the PI was away and the delegation log was not current. Who was responsible?",
+            answer:
+              "The delegation log was updated before the PI left and the sub-investigator's training is on file.",
+            severity: "major",
+          },
+        }
+      ),
+    ],
+  },
+  {
+    id: "wild-vp-thoughts",
+    from: "Arcadia Therapeutics (Sponsor)",
+    subject: "Our new VP has a few thoughts",
+    body: "Our new VP of Clinical joined this week and has a few thoughts on the protocol. Just a few. Can we get 90 minutes on the calendar today?",
+    urgency: "important",
+    day: 1,
+    ttl: 2,
+    followUp: true,
+    wildcard: true,
+    ifIgnored: { meters: { client: -6 } },
+    options: [
+      opt("call", "Take the call", 2, 1, {
+        meters: { client: 6 },
+        workload: [{ memberId: "lee", delta: 8 }],
+      }),
+      opt("deck", "Send the status deck instead", 1, 0, {
+        meters: { client: 1 },
+      }),
+      opt("scope", "Take the call, and cost every thought", 3, 1, {
+        meters: { client: 3, budget: 3 },
+      }),
+    ],
+  },
+  {
+    id: "wild-friday-transfer",
+    from: "Lab Data Vendor",
+    subject: "Data transfer (Friday 4:59 PM)",
+    body: "Please find attached this month's lab data transfer. The format has changed slightly. Have a great weekend!",
+    urgency: "routine",
+    day: 1,
+    ttl: 2,
+    followUp: true,
+    wildcard: true,
+    ifIgnored: { slipDays: 1 },
+    options: [
+      opt("weekend", "Load it this weekend", 1, 0, {
+        meters: { integrity: 2, team: -4 },
+        workload: [{ memberId: "maya", delta: 12 }],
+      }),
+      opt("monday", "It can wait until Monday", 0, 0, { slipDays: 1 }),
+      opt(
+        "blind",
+        "Load it without the format checks",
+        0,
+        6,
+        { meters: { integrity: -6 } },
+        {
+          finding: {
+            question:
+              "A lab transfer with a changed format was loaded without reconciliation. How were the values verified?",
+            answer:
+              "The transfer was reconciled against the specification and discrepancies were queried.",
+            severity: "minor",
+          },
+        }
+      ),
+    ],
+  },
+  {
+    id: "wild-abstract",
+    from: "Arcadia Therapeutics (Sponsor)",
+    subject: "Exciting news: we submitted an abstract!",
+    body: "Exciting news! We submitted an abstract to the spring congress with some early efficacy trends. We pulled them from the blinded listings ourselves. Hope that's okay!",
+    urgency: "critical",
+    day: 1,
+    ttl: 2,
+    followUp: true,
+    wildcard: true,
+    ifIgnored: { meters: { integrity: -10, compliance: -4 } },
+    options: [
+      opt("withdraw", "Ask them to withdraw it", 2, 1, {
+        meters: { client: -7, integrity: 5 },
+      }),
+      opt("design", "Swap it for a design-only abstract", 2, 1, {
+        meters: { client: -2, integrity: 3 },
+      }),
+      opt(
+        "fine",
+        "It's probably fine",
+        0,
+        10,
+        { meters: { integrity: -8, client: 3 } },
+        {
+          finding: {
+            question:
+              "Interim efficacy trends from blinded data were presented publicly during the study. How was the blind protected?",
+            answer:
+              "The access was assessed, the abstract was withdrawn and the blind-break assessment is documented.",
+            severity: "major",
+          },
+        }
+      ),
+    ],
+  },
+  {
+    id: "wild-inbox-migration",
+    from: "IT Helpdesk",
+    subject: "Your mailbox is moving this weekend",
+    body: "Your mailbox moves to the new system this weekend. Folders over 5 GB will not migrate. Your trial master file correspondence folder is 38 GB.",
+    urgency: "routine",
+    day: 1,
+    ttl: 3,
+    followUp: true,
+    wildcard: true,
+    ifIgnored: { meters: { compliance: -5 } },
+    options: [
+      opt("archive", "File the correspondence to the eTMF first", 2, 0, {
+        meters: { compliance: 4 },
+      }),
+      opt("trust", "Trust the migration", 0, 6, {
+        meters: { compliance: -3 },
+      }),
+    ],
+  },
+  {
+    id: "wild-coffee-machine",
+    from: "Office Manager",
+    subject: "Coffee machine out of order",
+    body: "The coffee machine is broken until further notice. A replacement has been requested through procurement, which takes six to eight weeks.",
+    urgency: "routine",
+    day: 1,
+    ttl: 2,
+    followUp: true,
+    wildcard: true,
+    ifIgnored: { meters: { team: -4 } },
+    options: [
+      opt("buy", "Buy one on the study budget", 0, 3, {
+        spend: 350,
+        meters: { team: 5 },
+      }),
+      opt("expense", "Buy one yourself", 0, 0, { meters: { team: 5 } }),
+      opt("tea", "Suggest tea", 0, 0, { meters: { team: -2 } }),
+    ],
+  },
 ];
 
 function s6(delta: number): Array<{ memberId: string; delta: number }> {

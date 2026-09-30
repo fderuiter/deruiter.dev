@@ -490,8 +490,10 @@ const Bin: React.FC<{ smoke: boolean; fire: boolean }> = ({ smoke, fire }) => (
  */
 export const OfficeScene: React.FC<{
   scene: SceneState;
+  /** Today's front page, shown under the scene. */
+  headline?: string;
   className?: string;
-}> = ({ scene, className }) => (
+}> = ({ scene, headline, className }) => (
   <figure
     className={`overflow-hidden border border-[var(--sd-hairline)] transition-colors duration-500 ${scene.night ? "bg-[#0a0b0d]" : "bg-[#101216]"} ${className ?? ""}`}
     data-testid="study-office"
@@ -520,5 +522,18 @@ export const OfficeScene: React.FC<{
         <path d="M430 126l40 -60h120l40 60z" fill={AMBER} opacity={0.06} />
       ) : null}
     </svg>
+    {headline ? (
+      <figcaption className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-0.5 border-t border-[var(--sd-hairline)] px-3 py-1.5">
+        <span className="shrink-0 text-[10px] font-bold tracking-[0.18em] text-[var(--sd-amber)] uppercase">
+          The Daily Deviation
+        </span>
+        <span
+          className="min-w-0 text-xs break-words text-zinc-200"
+          data-testid="study-headline"
+        >
+          {headline}
+        </span>
+      </figcaption>
+    ) : null}
   </figure>
 );

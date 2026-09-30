@@ -17,6 +17,17 @@ Defaults to 3000ms.
 
 ***
 
+### minPoliteDwellMs?
+
+> `optional` **minPoliteDwellMs?**: `number`
+
+Minimum time in milliseconds a polite announcement stays in the live region
+before a newer polite announcement replaces it. Without a newer one waiting,
+the announcement stays for the full expiration.
+Defaults to 1000ms and is clamped to the expiration timeout.
+
+***
+
 ### sanitizePII?
 
 > `optional` **sanitizePII?**: `boolean`

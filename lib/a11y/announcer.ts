@@ -4,7 +4,7 @@ import { generateId } from "@/lib/utils";
  * Pure LiveAnnouncer Engine & State Machine
  *
  * Provides a framework-agnostic, zero-React queue management engine for screen reader live region announcements:
- * - Polite FIFO queuing for status updates
+ * - Bounded polite queuing: the newest waiting status update supersedes older ones
  * - Assertive preemption for critical alerts
  * - Deterministic auto-expiration timers
  * - PII masking for Social Security Numbers and sensitive identifiers
@@ -40,6 +40,13 @@ export interface LiveAnnouncerOptions {
    * Defaults to true.
    */
   sanitizePII?: boolean;
+  /**
+   * Minimum time in milliseconds a polite announcement stays in the live region
+   * before a newer polite announcement replaces it. Without a newer one waiting,
+   * the announcement stays for the full expiration.
+   * Defaults to 1000ms and is clamped to the expiration timeout.
+   */
+  minPoliteDwellMs?: number;
 }
 
 export const initialAnnouncerState: AnnouncerState = {
@@ -66,18 +73,28 @@ export function sanitizePII(message: string): string {
 }
 
 /**
- * Pure LiveAnnouncer Engine managing polite FIFO queuing, assertive preemption, and auto-expiration timers.
+ * Pure LiveAnnouncer Engine managing bounded polite queuing, assertive preemption, and auto-expiration timers.
+ *
+ * At most one polite announcement waits at a time: a new polite message replaces any
+ * queued one that has not been played, so a burst of status updates announces the latest
+ * state within about a second instead of replaying a stale backlog. The playing polite
+ * message is kept for a minimum dwell so screen readers have time to start speaking it.
  */
 export class LiveAnnouncer {
   private state: AnnouncerState;
   private timer: ReturnType<typeof setTimeout> | null = null;
+  private dwellTimer: ReturnType<typeof setTimeout> | null = null;
+  private politeDwellElapsed = false;
   private listeners: Set<LiveAnnouncerListener> = new Set();
   private expirationMs: number;
   private shouldSanitizePII: boolean;
+  private minPoliteDwellMs: number;
 
   constructor(options: LiveAnnouncerOptions = {}) {
     this.expirationMs = options.expirationMs ?? 3000;
     this.shouldSanitizePII = options.sanitizePII ?? true;
+    const requestedDwellMs = Math.max(0, options.minPoliteDwellMs ?? 1000);
+    this.minPoliteDwellMs = Math.min(requestedDwellMs, this.expirationMs);
     this.state = {
       activePolite: null,
       activeAssertive: null,
@@ -132,6 +149,7 @@ export class LiveAnnouncer {
     if (priority === "assertive") {
       if (this.state.activeAssertive === null) {
         this.clearTimer();
+        this.clearDwellTimer();
         this.state = {
           ...this.state,
           activePolite: null,
@@ -153,11 +171,23 @@ export class LiveAnnouncer {
           ...this.state,
           activePolite: item,
         };
-        this.startTimer();
-      } else {
+        this.startPoliteTimers();
+      } else if (
+        this.state.activeAssertive === null &&
+        this.politeDwellElapsed
+      ) {
+        // The playing polite message has had its minimum dwell: the newer one replaces it now.
         this.state = {
           ...this.state,
-          politeQueue: [...this.state.politeQueue, item],
+          activePolite: item,
+          politeQueue: [],
+        };
+        this.startPoliteTimers();
+      } else {
+        // Only the newest waiting polite message is kept; unplayed older ones are stale.
+        this.state = {
+          ...this.state,
+          politeQueue: [item],
         };
       }
     }
@@ -171,6 +201,7 @@ export class LiveAnnouncer {
    */
   clear(): void {
     this.clearTimer();
+    this.clearDwellTimer();
     this.state = {
       activePolite: null,
       activeAssertive: null,
@@ -185,6 +216,7 @@ export class LiveAnnouncer {
    */
   destroy(): void {
     this.clearTimer();
+    this.clearDwellTimer();
     this.state = {
       activePolite: null,
       activeAssertive: null,
@@ -208,8 +240,46 @@ export class LiveAnnouncer {
     }
   }
 
+  private startPoliteTimers(): void {
+    this.startTimer();
+    this.clearDwellTimer();
+    this.politeDwellElapsed = false;
+    this.dwellTimer = setTimeout(() => {
+      this.handleDwellComplete();
+    }, this.minPoliteDwellMs);
+  }
+
+  private clearDwellTimer(): void {
+    if (this.dwellTimer !== null) {
+      clearTimeout(this.dwellTimer);
+      this.dwellTimer = null;
+    }
+    this.politeDwellElapsed = false;
+  }
+
+  private handleDwellComplete(): void {
+    this.dwellTimer = null;
+    this.politeDwellElapsed = true;
+
+    if (
+      this.state.activePolite !== null &&
+      this.state.activeAssertive === null &&
+      this.state.politeQueue.length > 0
+    ) {
+      const next = this.state.politeQueue[0];
+      this.state = {
+        ...this.state,
+        activePolite: next,
+        politeQueue: this.state.politeQueue.slice(1),
+      };
+      this.startPoliteTimers();
+      this.notify();
+    }
+  }
+
   private handleTimerComplete(): void {
     this.timer = null;
+    this.clearDwellTimer();
 
     if (this.state.activeAssertive !== null) {
       if (this.state.assertiveQueue.length > 0) {
@@ -228,7 +298,7 @@ export class LiveAnnouncer {
           activePolite: next,
           politeQueue: this.state.politeQueue.slice(1),
         };
-        this.startTimer();
+        this.startPoliteTimers();
       } else {
         this.state = {
           ...this.state,
@@ -253,7 +323,7 @@ export class LiveAnnouncer {
           activePolite: next,
           politeQueue: this.state.politeQueue.slice(1),
         };
-        this.startTimer();
+        this.startPoliteTimers();
       } else {
         this.state = {
           ...this.state,
@@ -277,7 +347,7 @@ export class LiveAnnouncer {
           activePolite: next,
           politeQueue: this.state.politeQueue.slice(1),
         };
-        this.startTimer();
+        this.startPoliteTimers();
       }
     }
 

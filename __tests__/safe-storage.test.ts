@@ -10,6 +10,7 @@ import {
   safeGetEnvelope,
   safePruneExpired,
   safeIsAvailable,
+  safeRawStorage,
   STORAGE_CHANGE_EVENT,
 } from "@/lib/safe-storage";
 
@@ -93,7 +94,11 @@ describe("Centralized Safe Storage Adapter & LRU Eviction", () => {
 
   it("triggers automated LRU eviction of expirable keys when setItem throws QuotaExceededError", () => {
     // 1. Set critical user preference (non-expirable)
-    safeSetItem("user_settings", { theme: "cyberpunk", fontSize: 14 }, { isExpirable: false });
+    safeSetItem(
+      "user_settings",
+      { theme: "cyberpunk", fontSize: 14 },
+      { isExpirable: false }
+    );
 
     // 2. Set 3 expirable telemetry/log entries with distinct access timestamps
     const now = Date.now();
@@ -122,17 +127,22 @@ describe("Centralized Safe Storage Adapter & LRU Eviction", () => {
     let hasEvictedEntry1 = false;
     const originalSetItem = mockStorage.setItem.bind(mockStorage);
 
-    vi.spyOn(mockStorage, "setItem").mockImplementation((k: string, v: string) => {
-      if (!hasEvictedEntry1 && k === "heavy_asset") {
-        const err = new DOMException("QuotaExceededError", "QuotaExceededError");
-        throw err;
-      }
-      if (k === "heavy_asset" && hasEvictedEntry1) {
+    vi.spyOn(mockStorage, "setItem").mockImplementation(
+      (k: string, v: string) => {
+        if (!hasEvictedEntry1 && k === "heavy_asset") {
+          const err = new DOMException(
+            "QuotaExceededError",
+            "QuotaExceededError"
+          );
+          throw err;
+        }
+        if (k === "heavy_asset" && hasEvictedEntry1) {
+          originalSetItem(k, v);
+          return;
+        }
         originalSetItem(k, v);
-        return;
       }
-      originalSetItem(k, v);
-    });
+    );
 
     vi.spyOn(mockStorage, "removeItem").mockImplementation((k: string) => {
       if (k === "log_entry_1") {
@@ -142,13 +152,20 @@ describe("Centralized Safe Storage Adapter & LRU Eviction", () => {
     });
 
     // Attempt to save heavy asset
-    const success = safeSetItem("heavy_asset", { data: "large_payload" }, { isExpirable: true });
+    const success = safeSetItem(
+      "heavy_asset",
+      { data: "large_payload" },
+      { isExpirable: true }
+    );
 
     expect(success).toBe(true);
     // Least recently used entry log_entry_1 should have been evicted
     expect(safeGetItem("log_entry_1")).toBeNull();
     // Critical settings MUST NOT be deleted
-    expect(safeGetItem("user_settings")).toEqual({ theme: "cyberpunk", fontSize: 14 });
+    expect(safeGetItem("user_settings")).toEqual({
+      theme: "cyberpunk",
+      fontSize: 14,
+    });
     // Heavy asset successfully written
     expect(safeGetItem("heavy_asset")).toEqual({ data: "large_payload" });
   });
@@ -194,10 +211,19 @@ describe("Centralized Safe Storage Adapter & LRU Eviction", () => {
     (process.env as any).NODE_ENV = "production";
 
     try {
-      const sensitivePath = ["", "Users", "jules", "app", "secret", "config.json"].join("/");
+      const sensitivePath = [
+        "",
+        "Users",
+        "jules",
+        "app",
+        "secret",
+        "config.json",
+      ].join("/");
       // Make setItem throw an exception with a sensitive system file path
       vi.spyOn(mockStorage, "setItem").mockImplementation(() => {
-        throw new Error(`Failed to write to ${sensitivePath} due to disk error`);
+        throw new Error(
+          `Failed to write to ${sensitivePath} due to disk error`
+        );
       });
 
       safeSetItem("test_path_sanitization", "val", { isExpirable: false });
@@ -234,5 +260,56 @@ describe("Centralized Safe Storage Adapter & LRU Eviction", () => {
 
     const data = safeGetItem("legacy_key");
     expect(data).toEqual({ oldData: true });
+  });
+});
+
+describe("safeRawStorage (#1631)", () => {
+  let mockStorage: MockStorage;
+
+  beforeEach(() => {
+    mockStorage = new MockStorage();
+    safeStorage.clearCache();
+    Object.defineProperty(window, "localStorage", {
+      value: mockStorage,
+      writable: true,
+      configurable: true,
+    });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("stores and reads values byte for byte, without an envelope", () => {
+    safeRawStorage.setItem("sound_volume", "0.75");
+    expect(mockStorage.getItem("sound_volume")).toBe("0.75");
+    expect(safeRawStorage.getItem("sound_volume")).toBe("0.75");
+
+    safeRawStorage.setItem("queue", '[{"a":1}]');
+    expect(mockStorage.getItem("queue")).toBe('[{"a":1}]');
+
+    safeRawStorage.removeItem("queue");
+    expect(mockStorage.getItem("queue")).toBeNull();
+  });
+
+  it("throws when a write is rejected and keeps nothing in memory", () => {
+    vi.spyOn(mockStorage, "setItem").mockImplementation(() => {
+      throw new Error("QuotaExceededError");
+    });
+    expect(() => safeRawStorage.setItem("sound_muted", "false")).toThrow(
+      /sound_muted/
+    );
+    expect(safeRawStorage.getItem("sound_muted")).toBeNull();
+  });
+
+  it("reads null and rejects writes when storage access throws", () => {
+    Object.defineProperty(window, "localStorage", {
+      get() {
+        throw new Error("SecurityError");
+      },
+      configurable: true,
+    });
+    expect(safeRawStorage.getItem("sound_volume")).toBeNull();
+    expect(() => safeRawStorage.setItem("sound_volume", "1")).toThrow();
   });
 });

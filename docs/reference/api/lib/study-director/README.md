@@ -20,6 +20,12 @@ Re-exports [advanceDay](internal/model/functions/advanceDay.md)
 
 ***
 
+### applyDifficulty
+
+Re-exports [applyDifficulty](internal/model/functions/applyDifficulty.md)
+
+***
+
 ### AREA\_IDS
 
 Re-exports [AREA_IDS](types/variables/AREA_IDS.md)
@@ -119,6 +125,18 @@ Re-exports [DecisionInput](types/interfaces/DecisionInput.md)
 ### DecisionRecord
 
 Re-exports [DecisionRecord](types/interfaces/DecisionRecord.md)
+
+***
+
+### DIFFICULTIES
+
+Re-exports [DIFFICULTIES](types/variables/DIFFICULTIES.md)
+
+***
+
+### Difficulty
+
+Re-exports [Difficulty](types/type-aliases/Difficulty.md)
 
 ***
 
@@ -302,6 +320,12 @@ Re-exports [runInspection](internal/endgame/functions/runInspection.md)
 
 ***
 
+### scheduleWildcards
+
+Re-exports [scheduleWildcards](internal/events/functions/scheduleWildcards.md)
+
+***
+
 ### SiteAuditReport
 
 Re-exports [SiteAuditReport](types/interfaces/SiteAuditReport.md)
@@ -389,3 +413,9 @@ Re-exports [totalOpenQueries](internal/model/functions/totalOpenQueries.md)
 ### Urgency
 
 Re-exports [Urgency](types/type-aliases/Urgency.md)
+
+***
+
+### WILDCARDS\_PER\_RUN
+
+Re-exports [WILDCARDS_PER_RUN](internal/events/variables/WILDCARDS_PER_RUN.md)

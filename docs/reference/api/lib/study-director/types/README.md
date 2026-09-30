@@ -33,6 +33,7 @@
 - [AreaId](type-aliases/AreaId.md)
 - [CoordinatorArchetype](type-aliases/CoordinatorArchetype.md)
 - [Dashboard](type-aliases/Dashboard.md)
+- [Difficulty](type-aliases/Difficulty.md)
 - [Health](type-aliases/Health.md)
 - [MemberArchetype](type-aliases/MemberArchetype.md)
 - [MeterId](type-aliases/MeterId.md)
@@ -46,5 +47,6 @@
 ## Variables
 
 - [AREA\_IDS](variables/AREA_IDS.md)
+- [DIFFICULTIES](variables/DIFFICULTIES.md)
 - [METER\_IDS](variables/METER_IDS.md)
 - [PHASES](variables/PHASES.md)

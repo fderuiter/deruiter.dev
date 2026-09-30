@@ -51,6 +51,10 @@ export const DecisionPanel: React.FC<{
 }) => {
   const attention = state.attention;
   const left = event ? daysLeft(state, event) : 0;
+  // A callback names the earlier decision that brought it here.
+  const recalled = event?.recalls
+    ? state.log.find((r) => r.eventId === event.recalls)
+    : undefined;
   return (
     <section
       aria-label={event ? `Message: ${event.subject}` : "Decision"}
@@ -78,6 +82,11 @@ export const DecisionPanel: React.FC<{
                 >
                   {lapseLabel(left)}
                 </span>
+                {event.wildcard ? (
+                  <span className="border border-[var(--sd-steel)]/60 px-1.5 py-px font-bold tracking-wide text-[var(--sd-steel)] uppercase">
+                    Wildcard
+                  </span>
+                ) : null}
               </div>
               <h2 className="text-lg leading-snug font-extrabold tracking-[-0.02em] break-words text-[var(--sd-text)] sm:text-xl">
                 {event.subject}
@@ -88,6 +97,18 @@ export const DecisionPanel: React.FC<{
               </p>
             </div>
           </div>
+          {recalled ? (
+            <p
+              className="border-l-2 border-[var(--sd-amber)] bg-[var(--sd-amber)]/5 px-3 py-2 text-xs break-words text-zinc-200"
+              data-testid="study-callback"
+            >
+              <span className="font-bold text-[var(--sd-amber)]">
+                Because of day {recalled.day}:
+              </span>{" "}
+              you chose “{recalled.label}”
+              {recalled.documented ? ", and documented it." : "."}
+            </p>
+          ) : null}
           <p className="max-w-prose text-sm leading-relaxed break-words text-zinc-200">
             {event.body}
           </p>

@@ -6,7 +6,26 @@
 
 # lib/trial-and-error/internal/rng
 
-## Functions
+## References
 
-- [drawInt](functions/drawInt.md)
-- [uniformAt](functions/uniformAt.md)
+### drawInt
+
+Re-exports [drawInt](../../../utils/prng/functions/drawInt.md)
+
+***
+
+### fnv1a
+
+Re-exports [fnv1a](../../../utils/prng/functions/fnv1a.md)
+
+***
+
+### mulberry32
+
+Re-exports [mulberry32](../../../utils/prng/functions/mulberry32.md)
+
+***
+
+### uniformAt
+
+Re-exports [uniformAt](../../../utils/prng/functions/uniformAt.md)

@@ -1413,6 +1413,64 @@ describe("ClinicalTrialChaos React Component UI Suite", () => {
     vi.useRealTimers();
   });
 
+  it("says on the board when a clean CRF went to the wrong station (#1326)", async () => {
+    vi.useFakeTimers();
+
+    await act(async () => {
+      root.render(<ClinicalTrialChaos />);
+    });
+    const startBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.includes("Start 3-Phase Campaign")
+    );
+    await act(async () => {
+      startBtn?.click();
+    });
+
+    // Fix SUBJ-1001's height (180 m -> 180 cm) so the CRF is clean.
+    const validateChoiceEl = Array.from(
+      container.querySelectorAll("span")
+    ).find((s) => s.textContent?.includes("Validate Choice"));
+    const obsCard = validateChoiceEl?.closest(".cursor-pointer") as HTMLElement;
+    await act(async () => {
+      obsCard.click();
+    });
+    const choiceBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.trim().replace(/^\d/, "") === "180 cm"
+    );
+    await act(async () => {
+      choiceBtn?.click();
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(600);
+    });
+
+    // Send it to AE, which does not take DM or VS data.
+    const aeHeading = Array.from(container.querySelectorAll("h4")).find((h) =>
+      h.textContent?.includes("AE Station")
+    );
+    const aeCard = aeHeading?.closest(".group") as HTMLElement;
+    await act(async () => {
+      aeCard.click();
+    });
+    const signBtn = Array.from(container.querySelectorAll("button")).find((b) =>
+      b.textContent?.includes("Sign & Lock CRF")
+    );
+    if (signBtn) {
+      await act(async () => {
+        signBtn.click();
+      });
+    }
+
+    expect(container.textContent).toContain(
+      "Rejected: SUBJ-1001 does not belong at AE."
+    );
+    expect(announcements.some((a) => a.startsWith("Rejected: SUBJ-1001"))).toBe(
+      true
+    );
+
+    vi.useRealTimers();
+  });
+
   it("should load existing high score from localStorage", async () => {
     mockStorage.setItem("clinical_chaos_highscore", "9800");
 

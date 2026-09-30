@@ -11,6 +11,7 @@ import React, {
 import { useTelemetry } from "@/hooks/useTelemetry";
 import { logger } from "@/lib/logger";
 import { useAnnouncer } from "@/hooks/useAnnouncer";
+import { safeGetRawItem, safeSetRawItem } from "@/lib/safe-storage";
 import { clamp } from "@/lib/game-utils";
 import { useAudio } from "@/components/providers/AudioProvider";
 import {
@@ -119,7 +120,7 @@ const subscribeHighScore = (callback: () => void) => {
 };
 const getHighScoreSnapshot = () => {
   try {
-    return localStorage.getItem(RETRO_LABYRINTH_HIGH_SCORE_KEY) || "0";
+    return safeGetRawItem(RETRO_LABYRINTH_HIGH_SCORE_KEY) || "0";
   } catch {
     return "0";
   }
@@ -754,12 +755,11 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
           setScore(finalScore);
           if (finalScore > effectiveHighScore) {
             setHighScore(finalScore);
-            if (typeof window !== "undefined") {
-              localStorage.setItem(
-                RETRO_LABYRINTH_HIGH_SCORE_KEY,
-                finalScore.toString()
-              );
-            }
+            // Bare numeric string, written raw to keep the stored bytes.
+            safeSetRawItem(
+              RETRO_LABYRINTH_HIGH_SCORE_KEY,
+              finalScore.toString()
+            );
           }
 
           const updatedProf: CyberdeckProfile = {

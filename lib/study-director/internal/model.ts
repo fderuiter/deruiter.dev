@@ -1,4 +1,5 @@
 import { uniformAt } from "./rng";
+import { clamp as clampRange } from "../../game-utils";
 import type {
   ActionResult,
   Dashboard,
@@ -39,7 +40,7 @@ const PHASE_BOUNDS: Array<[Phase, number]> = [
 ];
 
 const clamp = (value: number, lo = 0, hi = 100): number =>
-  Math.min(hi, Math.max(lo, value));
+  clampRange(value, lo, hi);
 
 /**
  * Attention the study's own upkeep takes before the player decides anything.

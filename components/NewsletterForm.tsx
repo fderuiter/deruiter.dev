@@ -10,6 +10,7 @@ import {
 } from "@tabler/icons-react";
 import { useAudio } from "@/components/providers/AudioProvider";
 import { useAnnouncer } from "@/hooks/useAnnouncer";
+import { apiClient } from "@/lib/api-client";
 
 const NEWSLETTER_SUCCESS_MESSAGE = "Almost there: check your inbox to confirm.";
 
@@ -49,54 +50,45 @@ export function NewsletterForm({
 
     const cleanEmail = email.trim();
     if (!cleanEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      // The alert below only renders in the "error" state, so the message
+      // must be paired with it or it never reaches the reader (#1469).
+      setStatus("error");
       setErrorMessage("Please enter a valid email address.");
       return;
     }
 
     setStatus("submitting");
 
-    try {
-      const payload = {
-        email: cleanEmail,
-        _gotcha: gotcha,
-        _clientTimestamp: mountedAt || Date.now(),
-      };
+    const res = await apiClient.post("/api/newsletter", {
+      email: cleanEmail,
+      _gotcha: gotcha,
+      _clientTimestamp: mountedAt || Date.now(),
+    });
 
-      const response = await fetch("/api/newsletter", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      let data: { error?: string; message?: string } | null = null;
-      try {
-        data = await response.json();
-      } catch {
-        // Non-JSON response fallback
-      }
-
-      if (!response.ok) {
-        setStatus("error");
-        setErrorMessage(
-          data?.error ||
-            `Subscription failed (HTTP ${response.status}). Please try again.`
-        );
-        return;
-      }
-
-      setStatus("success");
-      setEmail("");
-      // The confirmation banner replaces the form, so a live region on it
-      // would be mounted with its text already present and skipped by most
-      // screen readers. Announce through the persistent root regions instead.
-      announce(NEWSLETTER_SUCCESS_MESSAGE, "polite");
-      if (onSuccess) onSuccess();
-    } catch {
+    if (res.networkError) {
       setStatus("error");
       setErrorMessage(
         "Network connection error. Please verify your connection and try again."
       );
+      return;
     }
+
+    if (!res.ok) {
+      setStatus("error");
+      setErrorMessage(
+        res.error ||
+          `Subscription failed (HTTP ${res.status}). Please try again.`
+      );
+      return;
+    }
+
+    setStatus("success");
+    setEmail("");
+    // The confirmation banner replaces the form, so a live region on it
+    // would be mounted with its text already present and skipped by most
+    // screen readers. Announce through the persistent root regions instead.
+    announce(NEWSLETTER_SUCCESS_MESSAGE, "polite");
+    onSuccess?.();
   };
 
   return (

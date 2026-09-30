@@ -109,6 +109,32 @@ Updates lastAccessedAt timestamp and auto-evicts expired items.
 
 ***
 
+### getRawItem()
+
+> **getRawItem**(`key`): `string` \| `null`
+
+Reads the stored string exactly as written, without JSON parsing or
+envelope unwrapping. It is the read counterpart of `setRawItem` for keys
+whose legacy format is a bare string (for example a high score "1200"
+that `getItem` would return as the number 1200). Falls back to the
+in-memory cache when storage is unavailable or throws.
+
+#### Parameters
+
+##### key
+
+`string`
+
+The storage key to read
+
+#### Returns
+
+`string` \| `null`
+
+The stored string, or null when the key is absent
+
+***
+
 ### invalidateCacheKey()
 
 > **invalidateCacheKey**(`key`): `void`

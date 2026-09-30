@@ -754,9 +754,10 @@ export function getStationsForPhase(
     return ALL_STATIONS.slice(0, 4);
   } else if (phase === 2) {
     return ALL_STATIONS.slice(0, 6);
-  } else {
-    return ALL_STATIONS.slice(0, 6);
   }
+  // Phase 3 opens the last two domains, DS and MH, as the clear screen
+  // promises (#1326).
+  return ALL_STATIONS.slice(0, 8);
 }
 
 export const AMENDMENT_PRESETS: ProtocolAmendment[] = [

@@ -55,6 +55,11 @@ import {
   activeCodeBurst,
   advanceToNextLevel,
   shouldSyncDuckHudState,
+  giveTreat,
+  startDraggingDuck,
+  releaseDuck,
+  enterDogPark,
+  BACK_DOOR_BOUNDS,
   type WorkingWithDuckState,
 } from "@/lib/working-with-duck-engine";
 import { sanitizeError, sanitizeString } from "@/lib/error-sanitization";
@@ -2038,5 +2043,40 @@ describe("Arcade loops read current state (#1628)", () => {
       "isActive: playState"
     );
     expect(body).toContain("renderedLoopStateRef.current");
+  });
+});
+
+describe("Working With Duck - a paused sprint ignores player actions (#1645)", () => {
+  const paused = (): WorkingWithDuckState => ({
+    ...createInitialDuckGameState(1),
+    status: "paused",
+    excitement: 42,
+    totalScore: 1046,
+  });
+
+  it("treats, tricks, drags and scene entry are no-ops while paused", () => {
+    const state = paused();
+    expect(giveTreat(state)).toBe(state);
+    expect(performTrick(state, "SIT")).toBe(state);
+    expect(startDraggingDuck(state)).toBe(state);
+    expect(dragDuckTo(state, 700, 400)).toBe(state);
+    expect(enterDogPark(state)).toBe(state);
+  });
+
+  it("does not bank the Back Door potty bonus while paused", () => {
+    const base = paused();
+    const held: WorkingWithDuckState = {
+      ...base,
+      duck: {
+        ...base.duck,
+        state: "DRAGGED",
+        x: BACK_DOOR_BOUNDS.x + 10,
+        y: BACK_DOOR_BOUNDS.y + 10,
+      },
+    };
+    expect(releaseDuck(held).totalScore).toBe(1046);
+    expect(
+      releaseDuck({ ...held, status: "running" }).totalScore
+    ).toBeGreaterThan(1046);
   });
 });

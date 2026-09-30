@@ -1744,6 +1744,10 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
     "toys"
   );
   const isDraggingDuckStateRef = useRef(false);
+  // A pointer drag that ends while the sprint is paused cannot drop Duck
+  // (releaseDuck is a no-op while paused, #1645), so the drop waits for the
+  // sprint to resume instead of leaving Duck held.
+  const pendingDragReleaseRef = useRef(false);
   const isThrowingParkBallRef = useRef(false);
   const aimParkStartRef = useRef<{ x: number; y: number } | null>(null);
   const [isMusicMuted, setIsMusicMuted] = useState(false);
@@ -1850,10 +1854,13 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
         stepAccumulatorRef.current = 0;
         lastFrameTimeRef.current = null;
         applyTransition((state) => {
-          if (state.status === "paused") {
-            return { ...state, status: "running" };
+          if (state.status !== "paused") return state;
+          const resumed: WorkingWithDuckState = { ...state, status: "running" };
+          if (pendingDragReleaseRef.current) {
+            pendingDragReleaseRef.current = false;
+            return releaseDuck(resumed);
           }
-          return state;
+          return resumed;
         });
       }
     },
@@ -2329,12 +2336,30 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
           e.preventDefault();
           toggleManualPause();
         }
+      } else if (state.status === "paused") {
+        // A paused sprint is frozen (#1645): only P acts. Swallow Space and
+        // the arrows so they don't scroll the page behind the pause overlay.
+        if (e.code === "Space" || e.key.startsWith("Arrow")) {
+          e.preventDefault();
+        }
       } else if (e.key === "1") {
-        applyTransition((state) => ({ ...state, selectedItem: "tennis-ball" }));
+        if (!state.inDogPark && !state.inBathtub) {
+          applyTransition((state) => ({
+            ...state,
+            selectedItem: "tennis-ball",
+          }));
+        }
       } else if (e.key === "2") {
-        applyTransition((state) => ({ ...state, selectedItem: "kong" }));
+        if (!state.inDogPark && !state.inBathtub) {
+          applyTransition((state) => ({ ...state, selectedItem: "kong" }));
+        }
       } else if (e.key === "3") {
-        applyTransition((state) => ({ ...state, selectedItem: "squeaky-toy" }));
+        if (!state.inDogPark && !state.inBathtub) {
+          applyTransition((state) => ({
+            ...state,
+            selectedItem: "squeaky-toy",
+          }));
+        }
       } else if (e.key === "4") {
         handleGiveTreat();
       } else if (e.key === "q" || e.key === "Q") {
@@ -2457,6 +2482,21 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
     { allowInKeyboardBoundary: true }
   );
 
+  // Ends a pointer drag. While paused the drop is deferred until the sprint
+  // resumes (see pendingDragReleaseRef), so it can't score with the clock
+  // stopped (#1645).
+  const endPointerDrag = useCallback(
+    (state: WorkingWithDuckState): WorkingWithDuckState => {
+      isDraggingDuckStateRef.current = false;
+      if (state.status === "paused") {
+        pendingDragReleaseRef.current = true;
+        return state;
+      }
+      return releaseDuck(state);
+    },
+    []
+  );
+
   // Global Window Pointer Up & Cancel Handler (Prevents Drag Locking Off-Canvas)
   useEffect(() => {
     const handleGlobalPointerUp = () => {
@@ -2475,8 +2515,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
       }
 
       if (isDraggingDuckStateRef.current) {
-        isDraggingDuckStateRef.current = false;
-        applyTransition((state) => releaseDuck(state));
+        applyTransition((state) => endPointerDrag(state));
       }
     };
 
@@ -2491,8 +2530,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
             needsUpdate = true;
           }
           if (isDraggingDuckStateRef.current) {
-            isDraggingDuckStateRef.current = false;
-            next = releaseDuck(next);
+            next = endPointerDrag(next);
             needsUpdate = true;
           }
           return next;
@@ -2511,7 +2549,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
       window.removeEventListener("mouseup", handleGlobalPointerUp);
       window.removeEventListener("touchend", handleGlobalPointerUp);
     };
-  }, [applyTransition]);
+  }, [applyTransition, endPointerDrag]);
 
   // Reactive metrics and status changes screen reader announcer
   const lastAnnouncedBladderRef = useRef(false);
@@ -2599,6 +2637,9 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
     const { x, y } = toGameCoordinates(e.clientX, e.clientY);
 
     const state = gameStateRef.current;
+
+    // A paused sprint ignores the canvas (#1645).
+    if (state.status === "paused") return;
 
     // Bathtub Mode Mouse Scrubbing
     if (state.inBathtub) {
@@ -2796,6 +2837,8 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
 
     const state = gameStateRef.current;
 
+    if (state.status === "paused") return;
+
     // Bathtub Mode Scrubbing
     if (state.inBathtub) {
       applyTransition((state) => scrubBathtub(state, x, y));
@@ -2867,8 +2910,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
     }
 
     if (isDraggingDuckStateRef.current) {
-      isDraggingDuckStateRef.current = false;
-      applyTransition((state) => releaseDuck(state));
+      applyTransition((state) => endPointerDrag(state));
     }
   };
 
@@ -2926,8 +2968,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
       (state) => {
         let next = state;
         if (isDraggingDuckStateRef.current) {
-          isDraggingDuckStateRef.current = false;
-          next = releaseDuck(next);
+          next = endPointerDrag(next);
           needsUpdate = true;
         }
         if (isThrowingParkBallRef.current) {
@@ -2975,8 +3016,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
       (state) => {
         let next = state;
         if (isDraggingDuckStateRef.current) {
-          isDraggingDuckStateRef.current = false;
-          next = releaseDuck(next);
+          next = endPointerDrag(next);
           needsUpdate = true;
         }
         if (isThrowingParkBallRef.current) {
@@ -2995,7 +3035,14 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
 
   // Guided Onboarding Hint Text
   let tutorialHint: string | null = null;
-  if (uiState.currentLevel === 1 && uiState.status === "running") {
+  if (uiState.status === "running" && uiState.inDogPark) {
+    // Scene tips show on every sprint: the controls change with the scene.
+    tutorialHint =
+      "🌲 Dog Park: drag on the field and let go to throw, steer Duck with the mouse, W or the arrow keys, and press Space to jump. Work, Excitement and Bladder pause until you return to the office.";
+  } else if (uiState.status === "running" && uiState.inBathtub) {
+    tutorialHint =
+      "🛁 Bath time: move your cursor over the tub to lather Duck, then Rinse until he's clean and Finish Bath. Work, Excitement and Bladder pause until you're back in the office.";
+  } else if (uiState.currentLevel === 1 && uiState.status === "running") {
     if (uiState.duck.state === "THE_FLOP") {
       tutorialHint =
         "💖 Duck flopped on his back! Move your cursor back & forth over his belly!";
@@ -3021,6 +3068,19 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
   }
 
   const sessionLabel = uiState.mode === "endless" ? "Run" : "Sprint";
+  const displayedHighScore = Math.max(uiState.highScore, loadedHighScore);
+
+  // Paused play is frozen (#1645); toys and tricks only work in the office
+  // (#1647). Disabled controls point at the reason via aria-describedby.
+  const isPlayFrozen = uiState.status === "paused";
+  const isAwayFromOffice = uiState.inDogPark || uiState.inBathtub;
+  const officeOnlyDisabled = isPlayFrozen || isAwayFromOffice;
+  const pausedReasonId = isPlayFrozen ? "duck-paused-reason" : undefined;
+  const officeOnlyReasonId = isPlayFrozen
+    ? "duck-paused-reason"
+    : isAwayFromOffice
+      ? "duck-office-only-reason"
+      : undefined;
 
   const renderPauseButton = (isQuickMeta: boolean) => (
     <button
@@ -3258,6 +3318,32 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
         </div>
       </div>
 
+      {/* Running Score (#1646): mirrors the sr-only outputs below */}
+      <div
+        data-testid="duck-hud-score"
+        aria-hidden="true"
+        className="mb-2 sm:mb-3 flex items-center justify-end gap-3 text-[11px] sm:text-xs font-mono tabular-nums [@media(max-height:650px)]:mb-1.5"
+      >
+        <span className="min-w-0 text-zinc-400">
+          Score{" "}
+          <span
+            data-testid="duck-hud-score-value"
+            className="text-amber-300 font-bold"
+          >
+            {uiState.totalScore}
+          </span>
+        </span>
+        <span className="min-w-0 text-zinc-400">
+          High Score{" "}
+          <span
+            data-testid="duck-hud-highscore-value"
+            className="text-emerald-400 font-bold"
+          >
+            {displayedHighScore}
+          </span>
+        </span>
+      </div>
+
       {/* Guided Tutorial Hint Banner */}
       {tutorialHint && (
         <div className="mb-3 px-4 py-2 rounded-xl border border-brand-cyan/30 bg-brand-cyan/10 backdrop-blur-md flex items-center gap-2 text-xs font-mono text-brand-cyan animate-fadeIn [@media(max-height:500px)]:hidden">
@@ -3317,6 +3403,15 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
               {uiState.mode === "endless"
                 ? "Infinite sprints with accelerating puppy impulses. Keep Duck entertained and protect the codebase!"
                 : currentSprint.description}
+            </p>
+            <p
+              data-testid="duck-start-highscore"
+              className="-mt-2 mb-4 sm:-mt-3 sm:mb-6 text-[11px] sm:text-xs font-mono tabular-nums text-zinc-400"
+            >
+              High Score{" "}
+              <span className="text-emerald-400 font-bold">
+                {displayedHighScore}
+              </span>
             </p>
             <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
               <button
@@ -3434,6 +3529,13 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
         data-testid="duck-action-dock"
         className="mt-3 sm:mt-4 flex flex-col gap-2.5 font-mono [@media(max-height:650px)]:mt-1.5 [@media(max-height:650px)]:gap-1.5"
       >
+        <span id="duck-paused-reason" className="sr-only">
+          {sessionLabel} paused. Press P or Resume {sessionLabel} to continue.
+        </span>
+        <span id="duck-office-only-reason" className="sr-only">
+          Toys and tricks only work in the office. Return to the office to use
+          them.
+        </span>
         {/* --- MOBILE VIEWPORT CONTROL DECK (<md, or any short/landscape viewport) --- */}
         <div className="flex [@media(min-width:768px)_and_(min-height:560px)]:hidden flex-col gap-2">
           {/* Segmented Switcher Tabs */}
@@ -3485,13 +3587,15 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
           {mobileTab === "toys" && (
             <div className="grid grid-cols-2 gap-2 animate-fadeIn">
               <button
+                disabled={officeOnlyDisabled}
+                aria-describedby={officeOnlyReasonId}
                 onClick={() => {
                   applyTransition((state) => ({
                     ...state,
                     selectedItem: "tennis-ball",
                   }));
                 }}
-                className={`p-3 rounded-2xl border text-xs font-bold transition-all flex items-center justify-center gap-2 min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-95 ${
+                className={`disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border text-xs font-bold transition-all flex items-center justify-center gap-2 min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-95 ${
                   uiState.selectedItem === "tennis-ball"
                     ? "border-brand-cyan bg-brand-cyan/25 text-brand-cyan shadow-[0_0_12px_rgba(6,182,212,0.3)]"
                     : "border-zinc-800 bg-zinc-900/80 text-zinc-300 active:bg-zinc-800"
@@ -3502,13 +3606,15 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
               </button>
 
               <button
+                disabled={officeOnlyDisabled}
+                aria-describedby={officeOnlyReasonId}
                 onClick={() => {
                   applyTransition((state) => ({
                     ...state,
                     selectedItem: "kong",
                   }));
                 }}
-                className={`p-3 rounded-2xl border text-xs font-bold transition-all flex items-center justify-center gap-2 min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-95 ${
+                className={`disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border text-xs font-bold transition-all flex items-center justify-center gap-2 min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-95 ${
                   uiState.selectedItem === "kong"
                     ? "border-brand-cyan bg-brand-cyan/25 text-brand-cyan shadow-[0_0_12px_rgba(6,182,212,0.3)]"
                     : "border-zinc-800 bg-zinc-900/80 text-zinc-300 active:bg-zinc-800"
@@ -3518,13 +3624,15 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
               </button>
 
               <button
+                disabled={officeOnlyDisabled}
+                aria-describedby={officeOnlyReasonId}
                 onClick={() => {
                   applyTransition((state) => ({
                     ...state,
                     selectedItem: "squeaky-toy",
                   }));
                 }}
-                className={`p-3 rounded-2xl border text-xs font-bold transition-all flex items-center justify-center gap-2 min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-95 ${
+                className={`disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border text-xs font-bold transition-all flex items-center justify-center gap-2 min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-95 ${
                   uiState.selectedItem === "squeaky-toy"
                     ? "border-brand-cyan bg-brand-cyan/25 text-brand-cyan shadow-[0_0_12px_rgba(6,182,212,0.3)]"
                     : "border-zinc-800 bg-zinc-900/80 text-zinc-300 active:bg-zinc-800"
@@ -3535,8 +3643,10 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
               </button>
 
               <button
+                disabled={isPlayFrozen}
+                aria-describedby={pausedReasonId}
                 onClick={handleGiveTreat}
-                className="p-3 rounded-2xl border border-amber-500/40 bg-amber-500/10 text-amber-300 active:bg-amber-500/20 text-xs font-bold transition-all flex items-center justify-center gap-2 min-h-[48px] min-w-[44px] cursor-pointer touch-manipulation select-none active:scale-[0.98]"
+                className="disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border border-amber-500/40 bg-amber-500/10 text-amber-300 active:bg-amber-500/20 text-xs font-bold transition-all flex items-center justify-center gap-2 min-h-[48px] min-w-[44px] cursor-pointer touch-manipulation select-none active:scale-[0.98]"
               >
                 <span>🍖 Give Treat</span>
               </button>
@@ -3547,29 +3657,37 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
           {mobileTab === "tricks" && (
             <div className="grid grid-cols-2 gap-2 animate-fadeIn">
               <button
+                disabled={officeOnlyDisabled}
+                aria-describedby={officeOnlyReasonId}
                 onClick={() => handlePerformTrick("SIT")}
-                className="p-3 rounded-2xl border border-sky-500/40 bg-sky-500/10 text-sky-300 active:bg-sky-500/20 text-xs font-bold transition-all flex items-center justify-center gap-2 min-h-[48px] min-w-[44px] cursor-pointer touch-manipulation select-none active:scale-[0.98]"
+                className="disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border border-sky-500/40 bg-sky-500/10 text-sky-300 active:bg-sky-500/20 text-xs font-bold transition-all flex items-center justify-center gap-2 min-h-[48px] min-w-[44px] cursor-pointer touch-manipulation select-none active:scale-[0.98]"
               >
                 <span>🪑 Sit (Calm)</span>
               </button>
 
               <button
+                disabled={officeOnlyDisabled}
+                aria-describedby={officeOnlyReasonId}
                 onClick={() => handlePerformTrick("HIGH_FIVE")}
-                className="p-3 rounded-2xl border border-pink-500/40 bg-pink-500/10 text-pink-300 active:bg-pink-500/20 text-xs font-bold transition-all flex items-center justify-center gap-2 min-h-[48px] min-w-[44px] cursor-pointer touch-manipulation select-none active:scale-[0.98]"
+                className="disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border border-pink-500/40 bg-pink-500/10 text-pink-300 active:bg-pink-500/20 text-xs font-bold transition-all flex items-center justify-center gap-2 min-h-[48px] min-w-[44px] cursor-pointer touch-manipulation select-none active:scale-[0.98]"
               >
                 <span>🐾 High Five</span>
               </button>
 
               <button
+                disabled={officeOnlyDisabled}
+                aria-describedby={officeOnlyReasonId}
                 onClick={() => handlePerformTrick("DROP_IT")}
-                className="p-3 rounded-2xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-300 active:bg-emerald-500/20 text-xs font-bold transition-all flex items-center justify-center gap-2 min-h-[48px] min-w-[44px] cursor-pointer touch-manipulation select-none active:scale-[0.98]"
+                className="disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-300 active:bg-emerald-500/20 text-xs font-bold transition-all flex items-center justify-center gap-2 min-h-[48px] min-w-[44px] cursor-pointer touch-manipulation select-none active:scale-[0.98]"
               >
                 <span>✋ Drop It!</span>
               </button>
 
               <button
+                disabled={officeOnlyDisabled}
+                aria-describedby={officeOnlyReasonId}
                 onClick={() => handlePerformTrick("SPIN")}
-                className="p-3 rounded-2xl border border-purple-500/40 bg-purple-500/10 text-purple-300 active:bg-purple-500/20 text-xs font-bold transition-all flex items-center justify-center gap-2 min-h-[48px] min-w-[44px] cursor-pointer touch-manipulation select-none active:scale-[0.98]"
+                className="disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border border-purple-500/40 bg-purple-500/10 text-purple-300 active:bg-purple-500/20 text-xs font-bold transition-all flex items-center justify-center gap-2 min-h-[48px] min-w-[44px] cursor-pointer touch-manipulation select-none active:scale-[0.98]"
               >
                 <span>🌀 Spin Trick</span>
               </button>
@@ -3582,10 +3700,12 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
               {!uiState.inDogPark && !uiState.inBathtub ? (
                 <>
                   <button
+                    disabled={isPlayFrozen}
+                    aria-describedby={pausedReasonId}
                     onClick={() => {
                       applyTransition((state) => activeCodeBurst(state));
                     }}
-                    className="w-full py-3 px-4 rounded-2xl bg-cyan-500 text-black font-bold text-xs hover:bg-cyan-400 active:scale-95 transition-all shadow-[0_0_15px_rgba(6,182,212,0.3)] flex items-center justify-center gap-2 min-h-[48px] cursor-pointer touch-manipulation select-none"
+                    className="disabled:opacity-40 disabled:cursor-not-allowed w-full py-3 px-4 rounded-2xl bg-cyan-500 text-black font-bold text-xs hover:bg-cyan-400 active:scale-95 transition-all shadow-[0_0_15px_rgba(6,182,212,0.3)] flex items-center justify-center gap-2 min-h-[48px] cursor-pointer touch-manipulation select-none"
                   >
                     <IconCode className="w-4 h-4" />
                     <span>Focus Work Sprint</span>
@@ -3593,20 +3713,24 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
 
                   <div className="grid grid-cols-2 gap-2">
                     <button
+                      disabled={isPlayFrozen}
+                      aria-describedby={pausedReasonId}
                       onClick={() => {
                         applyTransition((state) => enterDogPark(state));
                       }}
-                      className="p-3 rounded-2xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-300 active:bg-emerald-500/20 text-xs font-bold transition-all flex items-center justify-center gap-1.5 min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-95"
+                      className="disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-300 active:bg-emerald-500/20 text-xs font-bold transition-all flex items-center justify-center gap-1.5 min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-95"
                     >
                       <IconTrees className="w-4 h-4" />
                       <span>Dog Park 🌲</span>
                     </button>
 
                     <button
+                      disabled={isPlayFrozen}
+                      aria-describedby={pausedReasonId}
                       onClick={() => {
                         applyTransition((state) => enterBathtub(state));
                       }}
-                      className={`p-3 rounded-2xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-95 ${
+                      className={`disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-95 ${
                         uiState.isMuddy
                           ? "border-sky-400 bg-sky-500/20 text-sky-300 animate-pulse"
                           : "border-zinc-800 bg-zinc-900 text-zinc-400 active:text-white"
@@ -3620,20 +3744,24 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
               ) : uiState.inBathtub ? (
                 <div className="grid grid-cols-2 gap-2">
                   <button
+                    disabled={isPlayFrozen}
+                    aria-describedby={pausedReasonId}
                     onClick={() => {
                       applyTransition((state) => rinseBathtub(state));
                     }}
-                    className="p-3 rounded-2xl bg-sky-500 text-black font-bold text-xs active:bg-sky-400 transition-all flex items-center justify-center gap-1.5 min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-95 shadow-[0_0_15px_rgba(56,189,248,0.3)]"
+                    className="disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl bg-sky-500 text-black font-bold text-xs active:bg-sky-400 transition-all flex items-center justify-center gap-1.5 min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-95 shadow-[0_0_15px_rgba(56,189,248,0.3)]"
                   >
                     <IconDroplet className="w-4 h-4" />
                     <span>Rinse Spray 🚿</span>
                   </button>
 
                   <button
+                    disabled={isPlayFrozen}
+                    aria-describedby={pausedReasonId}
                     onClick={() => {
                       applyTransition((state) => exitBathtub(state));
                     }}
-                    className="p-3 rounded-2xl border border-zinc-700 bg-zinc-900 text-zinc-200 text-xs active:bg-zinc-800 transition-colors flex items-center justify-center min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-95"
+                    className="disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border border-zinc-700 bg-zinc-900 text-zinc-200 text-xs active:bg-zinc-800 transition-colors flex items-center justify-center min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-95"
                   >
                     <span>Finish Bath →</span>
                   </button>
@@ -3642,30 +3770,36 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                 <div className="flex flex-col gap-2">
                   <div className="grid grid-cols-2 gap-2">
                     <button
+                      disabled={isPlayFrozen}
+                      aria-describedby={pausedReasonId}
                       onClick={() => {
                         applyTransition((state) => jumpParkHurdle(state));
                       }}
-                      className="p-3 rounded-2xl bg-amber-400 text-black font-bold text-xs active:bg-amber-300 transition-all flex items-center justify-center gap-1.5 min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-95 shadow-[0_0_12px_rgba(250,204,21,0.3)]"
+                      className="disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl bg-amber-400 text-black font-bold text-xs active:bg-amber-300 transition-all flex items-center justify-center gap-1.5 min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-95 shadow-[0_0_12px_rgba(250,204,21,0.3)]"
                     >
                       <span>🦘 Jump Hurdle</span>
                     </button>
 
                     <button
+                      disabled={isPlayFrozen}
+                      aria-describedby={pausedReasonId}
                       onClick={() => {
                         applyTransition((state) => tapParkWhistle(state));
                       }}
-                      className="p-3 rounded-2xl border border-amber-500/40 bg-amber-500/10 text-amber-300 text-xs font-bold transition-all flex items-center justify-center min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-95"
+                      className="disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border border-amber-500/40 bg-amber-500/10 text-amber-300 text-xs font-bold transition-all flex items-center justify-center min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-95"
                     >
                       <span>Whistle 📢</span>
                     </button>
                   </div>
 
                   <button
+                    disabled={isPlayFrozen}
+                    aria-describedby={pausedReasonId}
                     onClick={() => {
                       const isSuccess = uiState.parkState.status === "success";
                       applyTransition((state) => exitDogPark(state, isSuccess));
                     }}
-                    className="w-full py-2.5 rounded-2xl border border-zinc-700 bg-zinc-900 text-zinc-200 text-xs active:bg-zinc-800 transition-colors flex items-center justify-center min-h-[44px] cursor-pointer touch-manipulation select-none active:scale-95"
+                    className="disabled:opacity-40 disabled:cursor-not-allowed w-full py-2.5 rounded-2xl border border-zinc-700 bg-zinc-900 text-zinc-200 text-xs active:bg-zinc-800 transition-colors flex items-center justify-center min-h-[44px] cursor-pointer touch-manipulation select-none active:scale-95"
                   >
                     <span>Return to Office →</span>
                   </button>
@@ -3739,6 +3873,8 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
             {/* Toys & Treats */}
             <div className="flex items-center gap-1.5 flex-wrap">
               <button
+                disabled={officeOnlyDisabled}
+                aria-describedby={officeOnlyReasonId}
                 onClick={() => {
                   applyTransition((state) => ({
                     ...state,
@@ -3746,7 +3882,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                   }));
                 }}
                 aria-pressed={uiState.selectedItem === "tennis-ball"}
-                className={`min-h-[44px] min-w-[44px] px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none active:scale-95 ${
+                className={`disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none active:scale-95 ${
                   uiState.selectedItem === "tennis-ball"
                     ? "border-brand-cyan bg-brand-cyan/20 text-brand-cyan shadow-[0_0_12px_rgba(6,182,212,0.3)]"
                     : "border-zinc-800 bg-zinc-900/70 text-zinc-400 hover:text-white"
@@ -3761,6 +3897,8 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
               </button>
 
               <button
+                disabled={officeOnlyDisabled}
+                aria-describedby={officeOnlyReasonId}
                 onClick={() => {
                   applyTransition((state) => ({
                     ...state,
@@ -3768,7 +3906,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                   }));
                 }}
                 aria-pressed={uiState.selectedItem === "kong"}
-                className={`min-h-[44px] min-w-[44px] px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none active:scale-95 ${
+                className={`disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none active:scale-95 ${
                   uiState.selectedItem === "kong"
                     ? "border-brand-cyan bg-brand-cyan/20 text-brand-cyan shadow-[0_0_12px_rgba(6,182,212,0.3)]"
                     : "border-zinc-800 bg-zinc-900/70 text-zinc-400 hover:text-white"
@@ -3782,6 +3920,8 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
               </button>
 
               <button
+                disabled={officeOnlyDisabled}
+                aria-describedby={officeOnlyReasonId}
                 onClick={() => {
                   applyTransition((state) => ({
                     ...state,
@@ -3789,7 +3929,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                   }));
                 }}
                 aria-pressed={uiState.selectedItem === "squeaky-toy"}
-                className={`min-h-[44px] min-w-[44px] px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none active:scale-95 ${
+                className={`disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none active:scale-95 ${
                   uiState.selectedItem === "squeaky-toy"
                     ? "border-brand-cyan bg-brand-cyan/20 text-brand-cyan shadow-[0_0_12px_rgba(6,182,212,0.3)]"
                     : "border-zinc-800 bg-zinc-900/70 text-zinc-400 hover:text-white"
@@ -3804,9 +3944,11 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
               </button>
 
               <button
+                disabled={isPlayFrozen}
+                aria-describedby={pausedReasonId}
                 onClick={handleGiveTreat}
                 aria-pressed={uiState.selectedItem === "treat"}
-                className="min-h-[44px] min-w-[44px] px-3 py-1.5 rounded-xl border border-zinc-800 bg-zinc-900/70 text-amber-300 hover:border-amber-500/40 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none active:scale-95"
+                className="disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-3 py-1.5 rounded-xl border border-zinc-800 bg-zinc-900/70 text-amber-300 hover:border-amber-500/40 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none active:scale-95"
                 title="Give treat (trades ball during No Take Only Throw)"
               >
                 <span className="px-1 py-0.5 rounded bg-zinc-950 text-[9px] text-zinc-500">
@@ -3819,8 +3961,10 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
             {/* Training Tricks [Q-W-E-R] */}
             <div className="flex items-center gap-1.5 flex-wrap">
               <button
+                disabled={officeOnlyDisabled}
+                aria-describedby={officeOnlyReasonId}
                 onClick={() => handlePerformTrick("SIT")}
-                className="min-h-[44px] min-w-[44px] px-3 py-1.5 rounded-xl border border-sky-500/40 bg-sky-500/10 text-sky-300 hover:bg-sky-500/20 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none active:scale-[0.98]"
+                className="disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-3 py-1.5 rounded-xl border border-sky-500/40 bg-sky-500/10 text-sky-300 hover:bg-sky-500/20 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none active:scale-[0.98]"
                 title="Command Sit: Calms Excitement (-20) & boosts Good Boy scale"
               >
                 <span className="px-1 py-0.5 rounded bg-zinc-950 text-[9px] text-sky-400">
@@ -3830,8 +3974,10 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
               </button>
 
               <button
+                disabled={officeOnlyDisabled}
+                aria-describedby={officeOnlyReasonId}
                 onClick={() => handlePerformTrick("HIGH_FIVE")}
-                className="min-h-[44px] min-w-[44px] px-3 py-1.5 rounded-xl border border-pink-500/40 bg-pink-500/10 text-pink-300 hover:bg-pink-500/20 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none active:scale-[0.98]"
+                className="disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-3 py-1.5 rounded-xl border border-pink-500/40 bg-pink-500/10 text-pink-300 hover:bg-pink-500/20 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none active:scale-[0.98]"
                 title="Command High Five: Morale boost (+45 pts) & tail wag"
               >
                 <span className="px-1 py-0.5 rounded bg-zinc-950 text-[9px] text-pink-400">
@@ -3841,8 +3987,10 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
               </button>
 
               <button
+                disabled={officeOnlyDisabled}
+                aria-describedby={officeOnlyReasonId}
                 onClick={() => handlePerformTrick("DROP_IT")}
-                className="min-h-[44px] min-w-[44px] px-3 py-1.5 rounded-xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none active:scale-[0.98]"
+                className="disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-3 py-1.5 rounded-xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none active:scale-[0.98]"
                 title="Command Drop It: Immediately drops stolen hazards or ball (+60-75 pts)"
               >
                 <span className="px-1 py-0.5 rounded bg-zinc-950 text-[9px] text-emerald-400">
@@ -3852,8 +4000,10 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
               </button>
 
               <button
+                disabled={officeOnlyDisabled}
+                aria-describedby={officeOnlyReasonId}
                 onClick={() => handlePerformTrick("SPIN")}
-                className="min-h-[44px] min-w-[44px] px-3 py-1.5 rounded-xl border border-purple-500/40 bg-purple-500/10 text-purple-300 hover:bg-purple-500/20 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none active:scale-[0.98]"
+                className="disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-3 py-1.5 rounded-xl border border-purple-500/40 bg-purple-500/10 text-purple-300 hover:bg-purple-500/20 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none active:scale-[0.98]"
                 title="Command Spin: Playful trick (+50 pts) with 360 rotation"
               >
                 <span className="px-1 py-0.5 rounded bg-zinc-950 text-[9px] text-purple-400">
@@ -3870,10 +4020,12 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
             <div className="flex items-center gap-2">
               {!uiState.inDogPark && !uiState.inBathtub ? (
                 <button
+                  disabled={isPlayFrozen}
+                  aria-describedby={pausedReasonId}
                   onClick={() => {
                     applyTransition((state) => activeCodeBurst(state));
                   }}
-                  className="min-h-[44px] min-w-[44px] px-4 py-2 rounded-xl bg-cyan-500 text-black font-bold text-xs hover:bg-cyan-400 active:scale-95 transition-all shadow-[0_0_15px_rgba(6,182,212,0.3)] flex items-center justify-center gap-2 cursor-pointer touch-manipulation select-none"
+                  className="disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-4 py-2 rounded-xl bg-cyan-500 text-black font-bold text-xs hover:bg-cyan-400 active:scale-95 transition-all shadow-[0_0_15px_rgba(6,182,212,0.3)] flex items-center justify-center gap-2 cursor-pointer touch-manipulation select-none"
                   title="Focus work sprint at desk (Spacebar)"
                 >
                   <IconCode className="w-4 h-4" />
@@ -3882,20 +4034,24 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
               ) : uiState.inBathtub ? (
                 <div className="flex items-center gap-2">
                   <button
+                    disabled={isPlayFrozen}
+                    aria-describedby={pausedReasonId}
                     onClick={() => {
                       applyTransition((state) => rinseBathtub(state));
                     }}
-                    className="min-h-[44px] min-w-[44px] px-4 py-2 rounded-xl bg-sky-500 text-black font-bold text-xs hover:bg-sky-400 active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none shadow-[0_0_15px_rgba(56,189,248,0.3)]"
+                    className="disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-4 py-2 rounded-xl bg-sky-500 text-black font-bold text-xs hover:bg-sky-400 active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none shadow-[0_0_15px_rgba(56,189,248,0.3)]"
                   >
                     <IconDroplet className="w-4 h-4" />
                     <span>Shower Rinse Spray 🚿</span>
                   </button>
 
                   <button
+                    disabled={isPlayFrozen}
+                    aria-describedby={pausedReasonId}
                     onClick={() => {
                       applyTransition((state) => exitBathtub(state));
                     }}
-                    className="min-h-[44px] min-w-[44px] px-4 py-2 rounded-xl border border-zinc-700 bg-zinc-900 text-zinc-200 text-xs hover:bg-zinc-800 transition-colors cursor-pointer touch-manipulation select-none active:scale-95 flex items-center justify-center"
+                    className="disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-4 py-2 rounded-xl border border-zinc-700 bg-zinc-900 text-zinc-200 text-xs hover:bg-zinc-800 transition-colors cursor-pointer touch-manipulation select-none active:scale-95 flex items-center justify-center"
                   >
                     <span>Finish Bath &amp; Return →</span>
                   </button>
@@ -3903,29 +4059,35 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
               ) : (
                 <div className="flex items-center gap-2">
                   <button
+                    disabled={isPlayFrozen}
+                    aria-describedby={pausedReasonId}
                     onClick={() => {
                       applyTransition((state) => jumpParkHurdle(state));
                     }}
-                    className="min-h-[44px] min-w-[44px] px-4 py-2 rounded-xl bg-amber-400 text-black font-bold text-xs hover:bg-amber-300 active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none shadow-[0_0_12px_rgba(250,204,21,0.3)]"
+                    className="disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-4 py-2 rounded-xl bg-amber-400 text-black font-bold text-xs hover:bg-amber-300 active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none shadow-[0_0_12px_rgba(250,204,21,0.3)]"
                   >
                     <span>🦘 Agility Jump (Space)</span>
                   </button>
 
                   <button
+                    disabled={isPlayFrozen}
+                    aria-describedby={pausedReasonId}
                     onClick={() => {
                       applyTransition((state) => tapParkWhistle(state));
                     }}
-                    className="min-h-[44px] min-w-[44px] px-3.5 py-2 rounded-xl border border-amber-500/40 bg-amber-500/10 text-amber-300 text-xs font-bold transition-all cursor-pointer touch-manipulation select-none active:scale-95 flex items-center justify-center"
+                    className="disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-3.5 py-2 rounded-xl border border-amber-500/40 bg-amber-500/10 text-amber-300 text-xs font-bold transition-all cursor-pointer touch-manipulation select-none active:scale-95 flex items-center justify-center"
                   >
                     <span>Whistle 📢</span>
                   </button>
 
                   <button
+                    disabled={isPlayFrozen}
+                    aria-describedby={pausedReasonId}
                     onClick={() => {
                       const isSuccess = uiState.parkState.status === "success";
                       applyTransition((state) => exitDogPark(state, isSuccess));
                     }}
-                    className="min-h-[44px] min-w-[44px] px-3.5 py-2 rounded-xl border border-zinc-700 bg-zinc-900 text-zinc-200 text-xs hover:bg-zinc-800 transition-colors cursor-pointer touch-manipulation select-none active:scale-95 flex items-center justify-center"
+                    className="disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-3.5 py-2 rounded-xl border border-zinc-700 bg-zinc-900 text-zinc-200 text-xs hover:bg-zinc-800 transition-colors cursor-pointer touch-manipulation select-none active:scale-95 flex items-center justify-center"
                   >
                     <span>Return to Office →</span>
                   </button>
@@ -3935,20 +4097,24 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
               {!uiState.inDogPark && !uiState.inBathtub && (
                 <>
                   <button
+                    disabled={isPlayFrozen}
+                    aria-describedby={pausedReasonId}
                     onClick={() => {
                       applyTransition((state) => enterDogPark(state));
                     }}
-                    className="min-h-[44px] min-w-[44px] px-3.5 py-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none active:scale-95"
+                    className="disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-3.5 py-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none active:scale-95"
                   >
                     <IconTrees className="w-4 h-4" />
                     <span>Dog Park 🌲</span>
                   </button>
 
                   <button
+                    disabled={isPlayFrozen}
+                    aria-describedby={pausedReasonId}
                     onClick={() => {
                       applyTransition((state) => enterBathtub(state));
                     }}
-                    className={`min-h-[44px] min-w-[44px] px-3.5 py-2 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none active:scale-95 ${
+                    className={`disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-3.5 py-2 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none active:scale-95 ${
                       uiState.isMuddy
                         ? "border-sky-400 bg-sky-500/20 text-sky-300 animate-pulse"
                         : "border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-white"
@@ -4055,9 +4221,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                 {uiState.totalScore}
               </strong>{" "}
               · High Score:{" "}
-              <strong className="text-brand-cyan">
-                {Math.max(uiState.highScore, loadedHighScore)}
-              </strong>
+              <strong className="text-brand-cyan">{displayedHighScore}</strong>
             </p>
 
             {/* Unlocked Polaroid Card */}
@@ -4499,7 +4663,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
               Sprint Score: {uiState.totalScore}
             </output>
             <output htmlFor="duck-highscore">
-              High Score: {Math.max(uiState.highScore, loadedHighScore)}
+              High Score: {displayedHighScore}
             </output>
             <output htmlFor="duck-level">
               Sprint Level: {uiState.currentLevel}
@@ -4524,7 +4688,12 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
               Equipped Accessory: {uiState.activeAccessory}
             </output>
             <output htmlFor="duck-location">
-              Location: {uiState.inBathtub ? "Bathtub" : "Office Workspace"}
+              Location:{" "}
+              {uiState.inBathtub
+                ? "Bathtub"
+                : uiState.inDogPark
+                  ? "Dog Park"
+                  : "Office Workspace"}
             </output>
           </div>
 
@@ -4544,6 +4713,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
 
             <button
               type="button"
+              disabled={isPlayFrozen}
               onClick={() => {
                 handleGiveTreat();
                 announce("Gave a delicious treat to the duck.", "polite");
@@ -4554,6 +4724,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
 
             <button
               type="button"
+              disabled={isPlayFrozen}
               onClick={() => {
                 applyTransition((state) => applySqueakyToy(state, 400, 250));
                 announce("Played with squeaky toy.", "polite");
@@ -4564,6 +4735,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
 
             <button
               type="button"
+              disabled={isPlayFrozen}
               onClick={() => {
                 applyTransition((state) => applyKongToy(state, 400, 250));
                 announce("Gave Kong toy filled with peanut butter.", "polite");
@@ -4574,6 +4746,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
 
             <button
               type="button"
+              disabled={isPlayFrozen}
               onClick={() => {
                 applyTransition((state) => scrubBelly(state, 400, 250));
                 announce("Gave duck a belly rub.", "polite");
@@ -4584,6 +4757,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
 
             <button
               type="button"
+              disabled={isPlayFrozen}
               onClick={() => {
                 applyTransition((state) => activeCodeBurst(state));
                 announce("Triggered code burst developer session.", "polite");
@@ -4594,6 +4768,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
 
             <button
               type="button"
+              disabled={officeOnlyDisabled}
               onClick={() => {
                 handlePerformTrick("SIT");
                 announce("Commanded duck to Sit.", "polite");
@@ -4604,6 +4779,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
 
             <button
               type="button"
+              disabled={officeOnlyDisabled}
               onClick={() => {
                 handlePerformTrick("HIGH_FIVE");
                 announce("Commanded duck to High Five.", "polite");
@@ -4614,6 +4790,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
 
             <button
               type="button"
+              disabled={officeOnlyDisabled}
               onClick={() => {
                 handlePerformTrick("DROP_IT");
                 announce("Commanded duck to Drop It.", "polite");
@@ -4624,6 +4801,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
 
             <button
               type="button"
+              disabled={officeOnlyDisabled}
               onClick={() => {
                 handlePerformTrick("SPIN");
                 announce("Commanded duck to Spin.", "polite");
@@ -4635,6 +4813,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
             {!uiState.inBathtub && (
               <button
                 type="button"
+                disabled={isPlayFrozen}
                 onClick={() => {
                   applyTransition((state) => enterBathtub(state));
                   announce("Entered bathtub for duck bath time.", "polite");
@@ -4648,6 +4827,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
               <>
                 <button
                   type="button"
+                  disabled={isPlayFrozen}
                   onClick={() => {
                     applyTransition((state) =>
                       scrubBathtub(state, Date.now(), 1)
@@ -4659,6 +4839,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                 </button>
                 <button
                   type="button"
+                  disabled={isPlayFrozen}
                   onClick={() => {
                     applyTransition((state) => rinseBathtub(state));
                     announce("Rinsed duck with warm water.", "polite");
@@ -4668,6 +4849,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                 </button>
                 <button
                   type="button"
+                  disabled={isPlayFrozen}
                   onClick={() => {
                     applyTransition((state) => exitBathtub(state));
                     announce("Exited bathtub clean and refreshed.", "polite");

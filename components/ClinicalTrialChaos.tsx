@@ -2080,8 +2080,10 @@ export const ClinicalTrialChaos: React.FC = () => {
         }`}
       >
         <div className="h-1 bg-zinc-800">
+          {/* The sponsor commits once per displayed second, so a linear
+              one-second transition keeps the bar moving between commits (#1639). */}
           <div
-            className={`h-full transition-[width] duration-500 ease-linear ${
+            className={`h-full transition-[width] duration-1000 ease-linear motion-reduce:transition-none ${
               sponsor.activeRequest.followUps > 0
                 ? "bg-rose-500"
                 : "bg-amber-500"
@@ -2727,8 +2729,9 @@ export const ClinicalTrialChaos: React.FC = () => {
             </span>
           </div>
           <div className="h-1 bg-zinc-800">
+            {/* Committed once per displayed second: glide for the whole second (#1639). */}
             <div
-              className="h-full bg-amber-500 transition-[width] duration-500 ease-linear"
+              className="h-full bg-amber-500 transition-[width] duration-1000 ease-linear motion-reduce:transition-none"
               style={{
                 width: `${Math.max(0, (activeAmendment.timeRemaining / activeAmendment.durationSeconds) * 100)}%`,
               }}
@@ -2811,8 +2814,10 @@ export const ClinicalTrialChaos: React.FC = () => {
                             {left > 0 ? `${left} to fix` : "Ready ✓"}
                           </span>
                           <span className="mt-1 block h-1 overflow-hidden rounded-full bg-zinc-800">
+                            {/* Subject clocks commit every half second (whole
+                                and rounded seconds), matching this 500 ms glide (#1639). */}
                             <span
-                              className={`block h-full transition-[width] duration-500 ease-linear ${timerBarColor(ratio)}`}
+                              className={`block h-full transition-[width] duration-500 ease-linear motion-reduce:transition-none ${timerBarColor(ratio)}`}
                               style={{
                                 width: `${clamp(ratio * 100, 0, 100)}%`,
                               }}

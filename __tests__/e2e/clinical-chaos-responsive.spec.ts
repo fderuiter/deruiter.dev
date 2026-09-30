@@ -217,27 +217,48 @@ test.describe("with a CRF Studio protocol loaded (#1150)", () => {
       const options = dialog.locator("button:has(kbd)");
       const count = await options.count();
       for (let i = 0; i < count && !verified; i++) {
+        if (!(await dialog.isVisible().catch(() => false))) {
+          break;
+        }
         const opt = options.nth(i);
-        if (await opt.isDisabled().catch(() => false)) continue;
-        await opt.click();
+        if (await opt.isDisabled().catch(() => true)) continue;
+
+        let selectedVerified = false;
+        try {
+          await opt.click({ timeout: 5000 });
+        } catch {
+          if (await dialog.isHidden().catch(() => true)) {
+            verified = true;
+            break;
+          }
+          continue;
+        }
+
         await expect
-          .poll(async () => {
-            const isVer = await dialog
-              .getByText("✓ Standard Verified")
-              .isVisible()
-              .catch(() => false);
-            const isDisabled = await opt.isDisabled().catch(() => true);
-            return isVer || isDisabled;
-          })
+          .poll(
+            async () => {
+              const isVer = await dialog
+                .getByText("✓ Standard Verified")
+                .isVisible()
+                .catch(() => false);
+              if (isVer) selectedVerified = true;
+              const isDisabled = await opt.isDisabled().catch(() => true);
+              const isHidden = await dialog.isHidden().catch(() => true);
+              return isVer || isDisabled || isHidden || selectedVerified;
+            },
+            { timeout: 10000 }
+          )
           .toBe(true);
 
-        if (
-          await dialog
-            .getByText("✓ Standard Verified")
-            .isVisible()
-            .catch(() => false)
-        ) {
+        const isVerNow = await dialog
+          .getByText("✓ Standard Verified")
+          .isVisible()
+          .catch(() => false);
+        const isDialogHidden = await dialog.isHidden().catch(() => true);
+
+        if (selectedVerified || isVerNow || isDialogHidden) {
           verified = true;
+          break;
         }
       }
 

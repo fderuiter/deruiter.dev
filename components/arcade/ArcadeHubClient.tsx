@@ -21,7 +21,27 @@ import {
 import { FieldManualButton } from "@/components/FieldManualButton";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { ARCADE_GAME_COUNT } from "@/lib/arcade";
-import { safeGetRawItem } from "@/lib/safe-storage";
+import {
+  safeGetRawItem,
+  safeSetRawItem,
+  STORAGE_CHANGE_EVENT,
+} from "@/lib/safe-storage";
+
+export type ArcadeCategory =
+  "all" | "clinical" | "logic" | "systems" | "arcade";
+
+interface CategoryTab {
+  id: ArcadeCategory;
+  label: string;
+}
+
+export const CATEGORY_TABS: CategoryTab[] = [
+  { id: "all", label: "All Games" },
+  { id: "clinical", label: "Clinical & RegTech" },
+  { id: "logic", label: "Logic & Verification" },
+  { id: "systems", label: "Systems & Embedded" },
+  { id: "arcade", label: "Arcade & Action" },
+];
 
 interface ArcadeGameCard {
   id: string;
@@ -38,12 +58,20 @@ interface ArcadeGameCard {
   badgeBg: string;
   storageKey?: string;
   route: string;
+  category: ArcadeCategory;
+  isStarter?: boolean;
 }
+
+const ONBOARDING_STORAGE_KEY = "arcade_hub_onboarding_dismissed";
 
 const subscribeStorage = (callback: () => void) => {
   if (typeof window === "undefined") return () => {};
   window.addEventListener("storage", callback);
-  return () => window.removeEventListener("storage", callback);
+  window.addEventListener(STORAGE_CHANGE_EVENT, callback);
+  return () => {
+    window.removeEventListener("storage", callback);
+    window.removeEventListener(STORAGE_CHANGE_EVENT, callback);
+  };
 };
 
 const getScore = (key?: string) => () => {
@@ -56,6 +84,95 @@ const getScore = (key?: string) => () => {
 };
 
 const getServerScore = () => "0";
+
+const getOnboardingDismissed = () => {
+  if (typeof window === "undefined") return "false";
+  try {
+    return safeGetRawItem(ONBOARDING_STORAGE_KEY) || "false";
+  } catch {
+    return "false";
+  }
+};
+
+const getServerOnboardingDismissed = () => "false";
+
+export function ArcadeOrientationBanner() {
+  const dismissed = useSyncExternalStore(
+    subscribeStorage,
+    getOnboardingDismissed,
+    getServerOnboardingDismissed
+  );
+
+  if (dismissed === "true") {
+    return null;
+  }
+
+  const handleDismiss = () => {
+    safeSetRawItem(ONBOARDING_STORAGE_KEY, "true");
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="relative mb-10 rounded-3xl border border-cyan-500/30 bg-zinc-900/80 p-6 sm:p-8 backdrop-blur-xl shadow-[0_0_30px_rgba(6,182,212,0.1)]"
+    >
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase border bg-cyan-500/10 text-cyan-300 border-cyan-500/30">
+              Welcome to the Arcade
+            </span>
+            <span className="text-xs font-mono text-zinc-400">
+              Interactive Systems &amp; Technical Labs
+            </span>
+          </div>
+          <h2 className="text-xl md:text-2xl font-bold font-mono text-white">
+            Hands-on Software Architecture &amp; Domain Prototypes
+          </h2>
+          <p className="mt-2 text-xs md:text-sm text-zinc-300 leading-relaxed font-sans">
+            These interactive browser games demonstrate technical domains across
+            formal logic verification, CDISC clinical regulatory standards, 32KB
+            embedded hardware memory budgets, and deterministic state engines.
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-mono text-zinc-400">
+            <span className="text-cyan-400 font-semibold">
+              Recommended Starters:
+            </span>
+            <Link
+              href="/arcade/working-with-duck"
+              className="text-amber-300 hover:underline font-medium"
+            >
+              Working With Duck
+            </Link>
+            <span>•</span>
+            <Link
+              href="/arcade/laser-loon"
+              className="text-red-300 hover:underline font-medium"
+            >
+              Laser Loon
+            </Link>
+            <span>•</span>
+            <Link
+              href="/arcade/quasi-puzzler"
+              className="text-purple-300 hover:underline font-medium"
+            >
+              Quasi-Perfect Puzzler
+            </Link>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={handleDismiss}
+          aria-label="Dismiss orientation banner"
+          className="shrink-0 px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white font-mono text-xs font-bold border border-zinc-700 transition-colors cursor-pointer"
+        >
+          Dismiss
+        </button>
+      </div>
+    </motion.div>
+  );
+}
 
 // Same query as DesktopOnlyGate (ADR 0048): phones and portrait tablets.
 const SHOW_ON_TOUCH_COMPACT_INLINE =
@@ -89,6 +206,8 @@ const ARCADE_GAMES: ArcadeGameCard[] = [
     badgeBg: "bg-amber-500/10 text-amber-300 border-amber-500/30",
     storageKey: "working_with_duck_high_score",
     route: "/arcade/working-with-duck",
+    category: "systems",
+    isStarter: true,
   },
   {
     id: "laser-loon",
@@ -115,6 +234,8 @@ const ARCADE_GAMES: ArcadeGameCard[] = [
     badgeBg: "bg-red-500/10 text-red-400 border-red-500/30",
     storageKey: "laser_loon_high_score",
     route: "/arcade/laser-loon",
+    category: "arcade",
+    isStarter: true,
   },
   {
     id: "quasi-puzzler",
@@ -141,6 +262,8 @@ const ARCADE_GAMES: ArcadeGameCard[] = [
     badgeBg: "bg-purple-500/10 text-purple-300 border-purple-500/30",
     storageKey: "quasi_perfect_puzzler_progress_v1",
     route: "/arcade/quasi-puzzler",
+    category: "logic",
+    isStarter: true,
   },
   {
     id: "garmin-watch",
@@ -167,6 +290,7 @@ const ARCADE_GAMES: ArcadeGameCard[] = [
     badgeBg: "bg-amber-500/10 text-amber-300 border-amber-500/30",
     storageKey: "garmin_simulator_high_score",
     route: "/arcade/garmin-watch",
+    category: "systems",
   },
   {
     id: "clinical-chaos",
@@ -193,6 +317,7 @@ const ARCADE_GAMES: ArcadeGameCard[] = [
     badgeBg: "bg-emerald-500/10 text-emerald-300 border-emerald-500/30",
     storageKey: "clinical_chaos_highscore",
     route: "/arcade/clinical-chaos",
+    category: "clinical",
   },
   {
     id: "trial-and-error",
@@ -218,6 +343,7 @@ const ARCADE_GAMES: ArcadeGameCard[] = [
     borderHover: "hover:border-amber-400/50",
     badgeBg: "bg-amber-500/10 text-amber-300 border-amber-500/30",
     route: "/arcade/trial-and-error",
+    category: "clinical",
   },
   {
     id: "study-director",
@@ -243,6 +369,7 @@ const ARCADE_GAMES: ArcadeGameCard[] = [
     borderHover: "hover:border-amber-400/50",
     badgeBg: "bg-amber-500/10 text-amber-300 border-amber-500/30",
     route: "/arcade/study-director",
+    category: "clinical",
   },
   {
     id: "retro-labyrinth",
@@ -269,6 +396,7 @@ const ARCADE_GAMES: ArcadeGameCard[] = [
     badgeBg: "bg-rose-500/10 text-rose-300 border-rose-500/30",
     storageKey: "retro_labyrinth_highscore",
     route: "/arcade/retro-labyrinth",
+    category: "arcade",
   },
 ];
 
@@ -330,6 +458,12 @@ function GameCard({ game, index }: { game: ArcadeGameCard; index: number }) {
               {game.icon}
             </div>
             <div className="flex flex-wrap items-center gap-1.5">
+              {game.isStarter && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase border border-cyan-500/40 bg-cyan-500/10 text-cyan-300">
+                  <IconSparkles className="w-3 h-3 text-cyan-400" />
+                  Recommended Starter
+                </span>
+              )}
               <span
                 className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase border ${game.badgeBg}`}
               >
@@ -416,6 +550,14 @@ function GameCard({ game, index }: { game: ArcadeGameCard; index: number }) {
 }
 
 export const ArcadeHubClient: React.FC = () => {
+  const [selectedCategory, setSelectedCategory] =
+    React.useState<ArcadeCategory>("all");
+
+  const filteredGames = React.useMemo(() => {
+    if (selectedCategory === "all") return ARCADE_GAMES;
+    return ARCADE_GAMES.filter((game) => game.category === selectedCategory);
+  }, [selectedCategory]);
+
   return (
     <div className="min-h-screen text-white pb-24 px-4 sm:px-6 lg:px-8">
       {/* Top Ambient Glows */}
@@ -429,7 +571,7 @@ export const ArcadeHubClient: React.FC = () => {
         </div>
 
         {/* Header Hero Section */}
-        <div className="text-center max-w-3xl mx-auto mb-16">
+        <div className="text-center max-w-3xl mx-auto mb-12">
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-mono font-bold mb-4">
             <span>SIDE PROJECTS YOU CAN PLAY</span>
           </div>
@@ -473,12 +615,65 @@ export const ArcadeHubClient: React.FC = () => {
           </div>
         </div>
 
-        {/* Games Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-          {ARCADE_GAMES.map((game, index) => (
-            <GameCard key={game.id} game={game} index={index} />
-          ))}
+        {/* Onboarding Orientation Banner */}
+        <ArcadeOrientationBanner />
+
+        {/* Category Filter Tabs */}
+        <div
+          className="flex flex-wrap items-center justify-center gap-2 mb-8"
+          role="tablist"
+          aria-label="Game Category Filters"
+        >
+          {CATEGORY_TABS.map((tab) => {
+            const isSelected = selectedCategory === tab.id;
+            const count =
+              tab.id === "all"
+                ? ARCADE_GAMES.length
+                : ARCADE_GAMES.filter((g) => g.category === tab.id).length;
+
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={isSelected}
+                onClick={() => setSelectedCategory(tab.id)}
+                className={`px-4 py-2 rounded-xl text-xs font-mono font-bold transition-all duration-200 cursor-pointer ${
+                  isSelected
+                    ? "bg-brand-cyan text-black shadow-[0_0_15px_rgba(6,182,212,0.3)]"
+                    : "bg-zinc-900/80 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700"
+                }`}
+              >
+                {tab.label} <span className="opacity-75">({count})</span>
+              </button>
+            );
+          })}
         </div>
+
+        {/* Games Cards Grid or Fallback */}
+        {filteredGames.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+            {filteredGames.map((game, index) => (
+              <GameCard key={game.id} game={game} index={index} />
+            ))}
+          </div>
+        ) : (
+          <div
+            role="status"
+            className="text-center py-12 px-4 rounded-3xl border border-zinc-800 bg-zinc-900/40 backdrop-blur-xl mb-12"
+          >
+            <p className="text-zinc-400 font-mono text-sm">
+              No games found matching this category filter.
+            </p>
+            <button
+              type="button"
+              onClick={() => setSelectedCategory("all")}
+              className="mt-4 px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-mono text-xs font-bold border border-zinc-700 transition-colors cursor-pointer"
+            >
+              Show All Games
+            </button>
+          </div>
+        )}
 
         {/* Easter Egg Meme Vault Discovery Card */}
         <motion.div

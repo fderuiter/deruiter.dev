@@ -12,6 +12,8 @@ export interface ArcadeGameMetadata {
   badgeBg: string;
   storageKey?: string;
   route: string;
+  category?: string;
+  isStarter?: boolean;
 }
 
 export const ARCADE_GAMES_METADATA: ArcadeGameMetadata[] = [

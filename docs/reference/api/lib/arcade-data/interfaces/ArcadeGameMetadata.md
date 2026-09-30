@@ -26,6 +26,12 @@
 
 ***
 
+### category?
+
+> `optional` **category?**: `string`
+
+***
+
 ### description
 
 > **description**: `string`
@@ -41,6 +47,12 @@
 ### id
 
 > **id**: `string`
+
+***
+
+### isStarter?
+
+> `optional` **isStarter?**: `boolean`
 
 ***
 

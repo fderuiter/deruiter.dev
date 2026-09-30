@@ -27,6 +27,52 @@ export interface LoggerOptions {
   silent?: boolean;
 }
 
+/** Nesting depth beyond which metadata values are replaced rather than walked. */
+const MAX_META_DEPTH = 5;
+
+/**
+ * Applies the same scrubbing to metadata that the message and error receive:
+ * strings go through sanitizeString and nested errors through sanitizeError.
+ * Plain objects and arrays are copied, never mutated, and circular or overly
+ * deep structures are replaced with a placeholder.
+ */
+function sanitizeMetaValue(
+  value: unknown,
+  depth: number,
+  seen: WeakSet<object>
+): unknown {
+  if (typeof value === "string") return sanitizeString(value);
+  if (value === null || typeof value !== "object") return value;
+  if (value instanceof Error) return sanitizeError(value);
+  if (seen.has(value)) return "[circular]";
+  if (depth >= MAX_META_DEPTH) return "[truncated]";
+
+  if (Array.isArray(value)) {
+    seen.add(value);
+    const copy = value.map((item) => sanitizeMetaValue(item, depth + 1, seen));
+    seen.delete(value);
+    return copy;
+  }
+
+  const proto = Object.getPrototypeOf(value);
+  if (proto !== Object.prototype && proto !== null) {
+    // Dates, Maps and class instances pass through unchanged.
+    return value;
+  }
+
+  seen.add(value);
+  const copy: Record<string, unknown> = {};
+  for (const [key, item] of Object.entries(value)) {
+    copy[key] = sanitizeMetaValue(item, depth + 1, seen);
+  }
+  seen.delete(value);
+  return copy;
+}
+
+function sanitizeMeta(meta: Record<string, unknown>): Record<string, unknown> {
+  return sanitizeMetaValue(meta, 0, new WeakSet()) as Record<string, unknown>;
+}
+
 /**
  * Centralized Telemetry Logger Wrapper.
  * Standardizes structured logging across client views, server components, and API routes.
@@ -126,21 +172,24 @@ export class StructuredLogger {
     const sanitizedMsg =
       typeof message === "string" ? sanitizeString(message) : String(message);
     const consoleErr = error !== undefined ? sanitizeError(error) : undefined;
+    const sanitizedMeta = meta ? sanitizeMeta(meta) : undefined;
 
     const entry: LogEntry = {
       level,
       message: sanitizedMsg,
       timestamp,
-      ...(meta && Object.keys(meta).length > 0 ? { meta } : {}),
+      ...(sanitizedMeta && Object.keys(sanitizedMeta).length > 0
+        ? { meta: sanitizedMeta }
+        : {}),
       ...(consoleErr !== undefined ? { error: consoleErr } : {}),
     };
 
     if (this.enableTelemetry && !meta?.skipTelemetry) {
-      this.dispatchTelemetry(level, sanitizedMsg, error, meta);
+      this.dispatchTelemetry(level, sanitizedMsg, error, sanitizedMeta);
     }
 
     if (!this.silent) {
-      this.writeToConsole(level, sanitizedMsg, consoleErr, meta);
+      this.writeToConsole(level, sanitizedMsg, consoleErr, sanitizedMeta);
     }
 
     return entry;

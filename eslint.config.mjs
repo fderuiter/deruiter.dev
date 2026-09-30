@@ -25,19 +25,38 @@ const eslintConfig = defineConfig([
     },
   },
   // Application logging goes through the StructuredLogger in lib/logger.ts,
-  // which sanitizes errors and reports to Sentry (#1137). no-console sits in a
-  // block of its own because flat config replaces a rule's options when a later
-  // block matching the same file sets that rule again. It covers only
-  // directories that are already clean; scripts/ and lib/dx/ are CLIs whose
-  // console output is their interface. email-service.ts is exempt until its
-  // three remaining console calls migrate (held back by an open PR).
+  // which sanitizes errors and reports to Sentry (#1137, #1475). no-console sits
+  // in a block of its own because flat config replaces a rule's options when a
+  // later block matching the same file sets that rule again. The exemptions are
+  // the places where console output is the point, or where the logger cannot
+  // be used:
+  //   lib/dx/**                  CLIs whose console output is their interface
+  //                              (scripts/ is outside the block for the same reason).
+  //   lib/logger.ts              the logger's own console sink.
+  //   lib/env.ts                 the logger depends on it, so it cannot log through it.
+  //   lib/client-sentry.ts       lazy-loads the Sentry SDK; the logger imports it
+  //                              statically, which would defeat the lazy load, and
+  //                              its one warning reports that Sentry failed to load.
+  //   lib/build-integrity.ts     build-time stderr is deliberate.
+  //   hooks/useConsoleArt.ts     the console art Easter egg.
+  // instrumentation-client.ts is exempt by not being listed: it runs before the
+  // logger exists.
   {
     files: [
       "app/**/*.{ts,tsx,js,jsx}",
       "components/**/*.{ts,tsx,js,jsx}",
-      "lib/services/**/*.{ts,tsx,js,jsx}",
+      "lib/**/*.{ts,tsx,js,jsx}",
+      "hooks/**/*.{ts,tsx,js,jsx}",
     ],
-    ignores: ["app/generated/**", "lib/services/email-service.ts"],
+    ignores: [
+      "app/generated/**",
+      "lib/dx/**",
+      "lib/logger.ts",
+      "lib/env.ts",
+      "lib/client-sentry.ts",
+      "lib/build-integrity.ts",
+      "hooks/useConsoleArt.ts",
+    ],
     rules: {
       "no-console": "error",
     },

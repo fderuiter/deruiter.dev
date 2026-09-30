@@ -158,7 +158,7 @@ export function verifySvixSignature({
     }
     return false;
   } catch (err) {
-    console.error("Failed to verify Svix signature:", err);
+    logger.error("Failed to verify Svix signature:", err);
     return false;
   }
 }
@@ -494,7 +494,7 @@ export class EmailService {
         queueId: options?.queueId || null,
       });
     } catch (err) {
-      console.error("Error reading OutboundEmailQueue:", err);
+      logger.error("Error reading OutboundEmailQueue:", err);
       throw err;
     }
 
@@ -750,7 +750,7 @@ export class EmailService {
       const simulatedId = generateId("sim_msg_");
 
       if (env.NODE_ENV === "development") {
-        console.log(
+        logger.info(
           `\x1b[36m[EmailService // Simulated Delivery]\x1b[0m\n  To: ${Array.isArray(options.to) ? options.to.join(", ") : options.to}\n  Subject: ${options.subject}\n  Simulated ID: ${simulatedId}`
         );
       }

@@ -244,6 +244,24 @@ function drawAccessories(
   }
 }
 
+/**
+ * Draws centred text, nudged horizontally so the whole string stays on the
+ * canvas. Duck's status labels and floating alerts follow him to the walls,
+ * where centring on his position clipped them at the edge (#1550).
+ */
+function fillCenteredTextInCanvas(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number
+) {
+  const halfWidth = ctx.measureText(text).width / 2;
+  const margin = 6;
+  const minX = margin + halfWidth;
+  const maxX = CANVAS_WIDTH - margin - halfWidth;
+  ctx.fillText(text, minX > maxX ? CANVAS_WIDTH / 2 : clamp(x, minX, maxX), y);
+}
+
 function drawDuckPuppy(
   ctx: CanvasRenderingContext2D,
   duck: {
@@ -565,37 +583,42 @@ function drawDuckPuppy(
     ctx.fillStyle = "#38bdf8";
     ctx.font = "bold 11px monospace";
     ctx.textAlign = "center";
-    ctx.fillText("🎾 NO TAKE! (Press 4 or Call Drop It)", duck.x, duck.y - 34);
+    fillCenteredTextInCanvas(
+      ctx,
+      "🎾 NO TAKE! (Press 4 or Call Drop It)",
+      duck.x,
+      duck.y - 34
+    );
   } else if (duck.state === "SNIFFING_POTTY") {
     ctx.fillStyle = "#ef4444";
     ctx.font = "bold 11px monospace";
     ctx.textAlign = "center";
-    ctx.fillText("🚽 DRAG TO DOOR!", duck.x, duck.y - 34);
+    fillCenteredTextInCanvas(ctx, "🚽 DRAG TO DOOR!", duck.x, duck.y - 34);
   } else if (duck.state === "ZOOMIES") {
     ctx.fillStyle = "#f59e0b";
     ctx.font = "bold 11px monospace";
     ctx.textAlign = "center";
-    ctx.fillText("⚡ ZOOMIES!", duck.x, duck.y - 34);
+    fillCenteredTextInCanvas(ctx, "⚡ ZOOMIES!", duck.x, duck.y - 34);
   } else if (duck.state === "SNEAKY_CHEW") {
     ctx.fillStyle = "#f87171";
     ctx.font = "bold 11px monospace";
     ctx.textAlign = "center";
-    ctx.fillText("😈 SNEAKY CHEW!", duck.x, duck.y - 34);
+    fillCenteredTextInCanvas(ctx, "😈 SNEAKY CHEW!", duck.x, duck.y - 34);
   } else if (duck.state === "PERFORMING_TRICK") {
     ctx.fillStyle = "#a855f7";
     ctx.font = "bold 11px monospace";
     ctx.textAlign = "center";
-    ctx.fillText("✨ GOOD BOY TRICK!", duck.x, duck.y - 34);
+    fillCenteredTextInCanvas(ctx, "✨ GOOD BOY TRICK!", duck.x, duck.y - 34);
   } else if (duck.state === "DRINKING_WATER") {
     ctx.fillStyle = "#38bdf8";
     ctx.font = "bold 10px monospace";
     ctx.textAlign = "center";
-    ctx.fillText("💧 Lap Lap Lap...", duck.x, duck.y - 34);
+    fillCenteredTextInCanvas(ctx, "💧 Lap Lap Lap...", duck.x, duck.y - 34);
   } else if (duck.state === "EATING_KIBBLE") {
     ctx.fillStyle = "#fbbf24";
     ctx.font = "bold 10px monospace";
     ctx.textAlign = "center";
-    ctx.fillText("🍖 Munch Crunch...", duck.x, duck.y - 34);
+    fillCenteredTextInCanvas(ctx, "🍖 Munch Crunch...", duck.x, duck.y - 34);
   }
 }
 
@@ -1188,7 +1211,7 @@ function drawOfficeScene(
     ctx.textAlign = "center";
     ctx.shadowColor = "#000000";
     ctx.shadowBlur = 6;
-    ctx.fillText(a.text, a.x, a.y);
+    fillCenteredTextInCanvas(ctx, a.text, a.x, a.y);
     ctx.restore();
   });
 }
@@ -3773,7 +3796,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                 <span className="px-1 py-0.5 rounded bg-zinc-950 text-[9px] text-pink-400">
                   W
                 </span>
-                <span>Paw 🐾</span>
+                <span>High Five 🐾</span>
               </button>
 
               <button
@@ -3986,7 +4009,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
             </h3>
 
             <p className="text-xs text-zinc-400 leading-relaxed mb-4">
-              Total Score:{" "}
+              Sprint Score:{" "}
               <strong className="text-amber-300 font-bold">
                 {uiState.totalScore}
               </strong>{" "}
@@ -4432,7 +4455,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
 
           <div role="group" aria-label="Duck Companion Telemetry and Status">
             <output htmlFor="duck-score">
-              Total Score: {uiState.totalScore}
+              Sprint Score: {uiState.totalScore}
             </output>
             <output htmlFor="duck-highscore">
               High Score: {Math.max(uiState.highScore, loadedHighScore)}

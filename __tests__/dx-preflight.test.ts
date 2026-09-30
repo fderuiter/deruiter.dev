@@ -162,8 +162,8 @@ describe("DX Runtime Preflight (#612)", () => {
           devDependencies: {
             vitest: "^4.0.0",
             jsdom: "^29.0.0",
-            eslint: "^9.0.0",
-            typescript: "~6.0.0",
+            eslint: "^8.0.0",
+            typescript: "~5.0.0",
           },
         })
       );

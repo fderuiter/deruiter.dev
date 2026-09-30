@@ -204,7 +204,7 @@ export function checkTsxExecution(root: string): PreflightCheckResult {
 
 /**
  * Verifies core developer toolchain dependencies (Vitest v5, jsdom v30,
- * ESLint v10, TypeScript v7) satisfy required major version releases.
+ * ESLint v9, TypeScript v6) satisfy required major version releases.
  */
 export function checkToolchainVersions(root: string): PreflightCheckResult {
   const pkg = readPackageJson(root);
@@ -213,8 +213,8 @@ export function checkToolchainVersions(root: string): PreflightCheckResult {
   const requirements: { name: string; requiredMajor: number }[] = [
     { name: "vitest", requiredMajor: 5 },
     { name: "jsdom", requiredMajor: 30 },
-    { name: "eslint", requiredMajor: 10 },
-    { name: "typescript", requiredMajor: 7 },
+    { name: "eslint", requiredMajor: 9 },
+    { name: "typescript", requiredMajor: 6 },
   ];
 
   const violations: string[] = [];
@@ -249,7 +249,7 @@ export function checkToolchainVersions(root: string): PreflightCheckResult {
     label: "Toolchain package versions",
     status: "pass",
     message:
-      "All core toolchain engines satisfied (Vitest v5, jsdom v30, ESLint v10, TypeScript v7).",
+      "All core toolchain engines satisfied (Vitest v5, jsdom v30, ESLint v9, TypeScript v6).",
   };
 }
 

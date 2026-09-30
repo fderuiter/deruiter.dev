@@ -10,6 +10,7 @@
 import { CRTThemeConfig } from "@/lib/dungeon/types";
 import { clamp } from "../game-utils";
 import { getMatchMediaMatches } from "@/hooks/useMediaQuery";
+import { safeGetItem, safeSetRawItem } from "@/lib/safe-storage";
 
 export type PhosphorMaskType =
   "none" | "aperture-grille" | "shadow-mask" | "monochrome-dot";
@@ -180,9 +181,13 @@ export function loadCRTCalibration(): CRTCalibrationConfig {
     return { ...DEFAULT_CRT_CALIBRATION };
   }
   try {
-    const raw = window.localStorage.getItem(CRT_CALIBRATION_STORAGE_KEY);
-    if (!raw) return { ...DEFAULT_CRT_CALIBRATION };
-    const parsed = JSON.parse(raw);
+    // The value is plain JSON.stringify output (no envelope); safeGetItem
+    // parses it and returns the raw string for malformed JSON.
+    const stored = safeGetItem<unknown>(CRT_CALIBRATION_STORAGE_KEY);
+    if (!stored || typeof stored !== "object" || Array.isArray(stored)) {
+      return { ...DEFAULT_CRT_CALIBRATION };
+    }
+    const parsed = stored as Record<string, unknown>;
     return {
       scanlinesEnabled:
         typeof parsed.scanlinesEnabled === "boolean"
@@ -201,8 +206,8 @@ export function loadCRTCalibration(): CRTCalibrationConfig {
         "aperture-grille",
         "shadow-mask",
         "monochrome-dot",
-      ].includes(parsed.phosphorMask)
-        ? parsed.phosphorMask
+      ].includes(parsed.phosphorMask as string)
+        ? (parsed.phosphorMask as CRTCalibrationConfig["phosphorMask"])
         : DEFAULT_CRT_CALIBRATION.phosphorMask,
       phosphorIntensity:
         typeof parsed.phosphorIntensity === "number"
@@ -236,11 +241,10 @@ export function loadCRTCalibration(): CRTCalibrationConfig {
 export function saveCRTCalibration(config: CRTCalibrationConfig): void {
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.setItem(
-      CRT_CALIBRATION_STORAGE_KEY,
-      JSON.stringify(config)
-    );
-    window.dispatchEvent(new Event("crt-calibration-changed"));
+    // Raw write keeps the stored bytes identical to the pre-safeStorage format.
+    if (safeSetRawItem(CRT_CALIBRATION_STORAGE_KEY, JSON.stringify(config))) {
+      window.dispatchEvent(new Event("crt-calibration-changed"));
+    }
   } catch {
     // Ignore storage errors
   }

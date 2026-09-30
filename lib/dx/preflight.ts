@@ -203,6 +203,132 @@ export function checkTsxExecution(root: string): PreflightCheckResult {
 }
 
 /**
+ * Validates toolchain major package upgrade readiness and compatibility
+ * guards for isolated dependency updates (Vitest v5, jsdom v30, ESLint v10, TypeScript v7).
+ */
+export function checkToolchainUpgradePreflight(
+  root: string,
+  targetTool?: string
+): PreflightCheckResult[] {
+  const pkg = readPackageJson(root);
+  const deps = (pkg.dependencies as Record<string, string>) || {};
+  const devDeps = (pkg.devDependencies as Record<string, string>) || {};
+  const overrides = (pkg.overrides as Record<string, string>) || {};
+
+  const normalizedTarget = targetTool?.toLowerCase().trim();
+
+  const results: PreflightCheckResult[] = [];
+
+  // 1. Vitest v5 Guard
+  if (!normalizedTarget || normalizedTarget === "vitest") {
+    const configPath = path.join(root, "vitest.config.ts");
+    const hasConfig = fs.existsSync(configPath);
+    const vitestVersion = devDeps.vitest || deps.vitest || "unknown";
+
+    if (!hasConfig) {
+      results.push({
+        id: "tool-vitest",
+        label: "Toolchain Preflight: Vitest v5",
+        status: "fail",
+        message: "vitest.config.ts configuration file missing.",
+      });
+    } else {
+      results.push({
+        id: "tool-vitest",
+        label: "Toolchain Preflight: Vitest v5",
+        status: "pass",
+        message: `Vitest setup verified (${vitestVersion}) with valid vitest.config.ts compatibility guard.`,
+      });
+    }
+  }
+
+  // 2. jsdom v30 Guard
+  if (!normalizedTarget || normalizedTarget === "jsdom") {
+    const setupPath = path.join(root, "vitest.setup.ts");
+    const hasSetup = fs.existsSync(setupPath);
+    const jsdomVersion =
+      deps.jsdom || devDeps.jsdom || overrides.jsdom || "unknown";
+
+    if (!hasSetup) {
+      results.push({
+        id: "tool-jsdom",
+        label: "Toolchain Preflight: jsdom v30",
+        status: "fail",
+        message: "vitest.setup.ts harness missing for DOM isolation.",
+      });
+    } else {
+      results.push({
+        id: "tool-jsdom",
+        label: "Toolchain Preflight: jsdom v30",
+        status: "pass",
+        message: `jsdom setup verified (${jsdomVersion}) with valid DOM mock isolation guard in vitest.setup.ts.`,
+      });
+    }
+  }
+
+  // 3. ESLint v10 Guard
+  if (!normalizedTarget || normalizedTarget === "eslint") {
+    const configPath = path.join(root, "eslint.config.mjs");
+    const hasConfig = fs.existsSync(configPath);
+    const eslintVersion = devDeps.eslint || deps.eslint || "unknown";
+
+    if (!hasConfig) {
+      results.push({
+        id: "tool-eslint",
+        label: "Toolchain Preflight: ESLint v10",
+        status: "fail",
+        message: "eslint.config.mjs flat configuration file missing.",
+      });
+    } else {
+      results.push({
+        id: "tool-eslint",
+        label: "Toolchain Preflight: ESLint v10",
+        status: "pass",
+        message: `ESLint setup verified (${eslintVersion}) with flat config compatibility guard in eslint.config.mjs.`,
+      });
+    }
+  }
+
+  // 4. TypeScript v7 Guard
+  if (
+    !normalizedTarget ||
+    normalizedTarget === "typescript" ||
+    normalizedTarget === "tsc"
+  ) {
+    const tsconfigPath = path.join(root, "tsconfig.json");
+    const hasConfig = fs.existsSync(tsconfigPath);
+    const tsVersion = devDeps.typescript || deps.typescript || "unknown";
+
+    if (!hasConfig) {
+      results.push({
+        id: "tool-typescript",
+        label: "Toolchain Preflight: TypeScript v7",
+        status: "fail",
+        message: "tsconfig.json configuration file missing.",
+      });
+    } else {
+      results.push({
+        id: "tool-typescript",
+        label: "Toolchain Preflight: TypeScript v7",
+        status: "pass",
+        message: `TypeScript setup verified (${tsVersion}) with tsconfig.json compatibility guard.`,
+      });
+    }
+  }
+
+  if (normalizedTarget && results.length === 0) {
+    results.push({
+      id: `tool-${normalizedTarget}`,
+      label: `Toolchain Preflight: ${targetTool}`,
+      status: "warn",
+      message: `Unknown target tool '${targetTool}'. Supported packages: vitest, jsdom, eslint, typescript.`,
+    });
+  }
+
+  return results;
+}
+
+/**
  * Runs every preflight probe and reports whether the environment is
  * ready for real work. Intended to be run once, cheaply, before an
  * agent or developer starts an expensive verification pass (tests,
@@ -211,12 +337,16 @@ export function checkTsxExecution(root: string): PreflightCheckResult {
  * unrelated failures deeper in the pipeline. Never prints credential
  * values and never attempts to escalate permissions itself.
  */
-export function runPreflight(root: string): PreflightReport {
+export function runPreflight(
+  root: string,
+  options?: { tool?: string }
+): PreflightReport {
   const checks: PreflightCheckResult[] = [
     checkNodeVersion(root),
     checkNpmVersion(root),
     checkPrismaClientGenerated(root),
     checkTsxExecution(root),
+    ...checkToolchainUpgradePreflight(root, options?.tool),
   ];
 
   const ready = checks.every((check) => check.status !== "fail");

@@ -16,6 +16,7 @@
 - [checkNodeVersion](functions/checkNodeVersion.md)
 - [checkNpmVersion](functions/checkNpmVersion.md)
 - [checkPrismaClientGenerated](functions/checkPrismaClientGenerated.md)
+- [checkToolchainUpgradePreflight](functions/checkToolchainUpgradePreflight.md)
 - [checkTsxExecution](functions/checkTsxExecution.md)
 - [meetsMinVersion](functions/meetsMinVersion.md)
 - [runPreflight](functions/runPreflight.md)

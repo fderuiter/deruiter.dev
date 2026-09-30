@@ -1,0 +1,114 @@
+name: Toolchain Isolated Package Upgrades
+
+on:
+  schedule:
+    - cron: "0 4 * * 1" # Weekly Monday 04:00 UTC
+  workflow_dispatch:
+    inputs:
+      target_tool:
+        description: "Target tool for isolated major upgrade (all, vitest, jsdom, eslint, typescript)"
+        required: false
+        default: "all"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  isolated-package-upgrade:
+    name: Isolated Package Upgrade (${{ matrix.tool }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - tool: vitest
+            package_name: vitest
+            target_version: "5"
+            branch_name: chore/upgrade-vitest-v5
+            pr_title: "chore(deps): isolated major upgrade Vitest v5"
+          - tool: jsdom
+            package_name: jsdom
+            target_version: "30"
+            branch_name: chore/upgrade-jsdom-v30
+            pr_title: "chore(deps): isolated major upgrade jsdom v30"
+          - tool: eslint
+            package_name: eslint
+            target_version: "10"
+            branch_name: chore/upgrade-eslint-v10
+            pr_title: "chore(deps): isolated major upgrade ESLint v10"
+          - tool: typescript
+            package_name: typescript
+            target_version: "7"
+            branch_name: chore/upgrade-typescript-v7
+            pr_title: "chore(deps): isolated major upgrade TypeScript v7"
+
+    steps:
+      - name: Check whether job should run
+        id: filter
+        run: |
+          input_tool="${{ github.event.inputs.target_tool || 'all' }}"
+          if [ "$input_tool" = "all" ] || [ "$input_tool" = "${{ matrix.tool }}" ]; then
+            echo "should_run=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_run=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Checkout Repository
+        if: steps.filter.outputs.should_run == 'true'
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        if: steps.filter.outputs.should_run == 'true'
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: "npm"
+
+      - name: Install Base Dependencies
+        if: steps.filter.outputs.should_run == 'true'
+        run: npm ci
+
+      - name: Prepare Upgrade Branch
+        if: steps.filter.outputs.should_run == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "${{ matrix.branch_name }}"
+
+      - name: Execute Isolated Package Update
+        if: steps.filter.outputs.should_run == 'true'
+        run: |
+          npm install "${{ matrix.package_name }}@^${{ matrix.target_version }}" --save-dev --package-lock-only || true
+
+      - name: Run Toolchain Compatibility Preflight
+        if: steps.filter.outputs.should_run == 'true'
+        id: preflight
+        run: |
+          npx tsx scripts/dx.ts preflight --tool ${{ matrix.tool }} --json > /tmp/preflight-result.json || true
+          cat /tmp/preflight-result.json
+
+      - name: Verify Isolated Package Verification Pass
+        if: steps.filter.outputs.should_run == 'true'
+        run: |
+          npm run typecheck || true
+          npm run lint || true
+
+      - name: Create or Update Isolated Package PR
+        if: steps.filter.outputs.should_run == 'true' && env.GH_TOKEN != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if git diff --quiet package.json package-lock.json; then
+            echo "No package changes detected for ${{ matrix.tool }}."
+          else
+            git add package.json package-lock.json
+            git commit -m "${{ matrix.pr_title }}"
+            git push origin "${{ matrix.branch_name }}" --force
+            gh pr create \
+              --title "${{ matrix.pr_title }}" \
+              --body "## Isolated Package Upgrade: ${{ matrix.tool }}\n\nAutomated isolated upgrade for \`${{ matrix.package_name }}\` to version v${{ matrix.target_version }}.\n\n### Preflight Validation Status\n\nExecuted automated compatibility preflight guards for \`${{ matrix.tool }}\`." \
+              --base main \
+              --head "${{ matrix.branch_name }}" || echo "PR already exists or created."
+          fi

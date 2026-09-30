@@ -1,0 +1,52 @@
+name: Dependency Upgrade Preflight Guard
+
+on:
+  push:
+    branches:
+      - "chore/upgrade-*"
+      - "deps/*"
+      - "jules/*"
+  pull_request:
+    branches:
+      - "main"
+
+concurrency:
+  group: dep-preflight-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  preflight-guard:
+    name: Compatibility Preflight Guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Generate Pre-build Artifacts
+        run: |
+          npx --no-install tsx scripts/generate-theme.ts
+          npx --no-install prisma generate
+
+      - name: Execute Developer Preflight Script
+        run: npm run preflight
+
+      - name: Execute Toolchain Isolated Preflight Probes
+        run: |
+          npx tsx scripts/dx.ts preflight --tool vitest
+          npx tsx scripts/dx.ts preflight --tool jsdom
+          npx tsx scripts/dx.ts preflight --tool eslint
+          npx tsx scripts/dx.ts preflight --tool typescript

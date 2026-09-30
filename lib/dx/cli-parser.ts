@@ -600,6 +600,36 @@ export const COMMAND_REGISTRY: CommandDescriptor[] = [
     examples: ["npm run dx describe", "npm run dx -- --help --json"],
   },
   {
+    name: "preflight",
+    summary: "Bounded environment & toolchain compatibility preflight check",
+    description:
+      "Validates Node, npm, Prisma generation, tsx execution, and per-tool major package compatibility guards (Vitest v5, jsdom v30, ESLint v10, TypeScript v7).",
+    category: "diagnostics",
+    isMutating: false,
+    options: [
+      {
+        name: "tool",
+        alias: "t",
+        type: "string",
+        description:
+          "Target specific toolchain package for isolated preflight validation (vitest, jsdom, eslint, typescript)",
+      },
+      {
+        name: "json",
+        alias: "j",
+        type: "boolean",
+        description:
+          "Emit structured JSON envelope with preflight probe results",
+        default: false,
+      },
+    ],
+    examples: [
+      "npm run preflight",
+      "npm run preflight -- --tool vitest",
+      "npm run preflight -- --tool jsdom --json",
+    ],
+  },
+  {
     name: "clean",
     aliases: ["reset"],
     summary: "Clean build artifacts and reset developer cache",

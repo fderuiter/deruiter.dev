@@ -314,9 +314,13 @@ export async function handleEnvCommand(parsed: ParsedCliArgs): Promise<void> {
  */
 export function handlePreflightCommand(parsed: ParsedCliArgs): void {
   const isJson = Boolean(parsed.flags.json || parsed.flags.j);
+  const tool =
+    typeof parsed.flags.tool === "string"
+      ? parsed.flags.tool
+      : parsed.positionals[0];
   const startTime = Date.now();
 
-  const report = runPreflight(workspaceRoot);
+  const report = runPreflight(workspaceRoot, { tool });
   const durationMs = Date.now() - startTime;
 
   if (isJson) {
@@ -330,7 +334,12 @@ export function handlePreflightCommand(parsed: ParsedCliArgs): void {
     );
   } else {
     console.log(
-      formatHeader("DX Runtime Preflight", "Node • npm • Prisma • tsx")
+      formatHeader(
+        "DX Runtime Preflight",
+        tool
+          ? `Isolated Tool Guard: ${tool}`
+          : "Node • npm • Prisma • tsx • Toolchain"
+      )
     );
     for (const check of report.checks) {
       console.log(`${badge(check.label, check.status)}`);

@@ -6,7 +6,7 @@
 
 # Function: runPreflight()
 
-> **runPreflight**(`root`): [`PreflightReport`](../interfaces/PreflightReport.md)
+> **runPreflight**(`root`, `options?`): [`PreflightReport`](../interfaces/PreflightReport.md)
 
 Runs every preflight probe and reports whether the environment is
 ready for real work. Intended to be run once, cheaply, before an
@@ -19,6 +19,12 @@ values and never attempts to escalate permissions itself.
 ## Parameters
 
 ### root
+
+`string`
+
+### options?
+
+#### tool?
 
 `string`
 

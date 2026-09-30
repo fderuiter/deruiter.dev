@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useSyncExternalStore } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
@@ -302,6 +303,26 @@ function GameCard({ game, index }: { game: ArcadeGameCard; index: number }) {
       />
 
       <div className="relative z-10">
+        {/* Gameplay thumbnail. The Play Game link below is the keyboard path,
+            so this duplicate link is hidden from tab order and screen readers. */}
+        <Link
+          href={game.route}
+          tabIndex={-1}
+          aria-hidden="true"
+          className="-mx-6 -mt-6 mb-6 block overflow-hidden rounded-t-3xl border-b border-zinc-800/80 md:-mx-8 md:-mt-8"
+        >
+          <Image
+            src={`/images/arcade/previews/${game.slug}.webp`}
+            alt=""
+            width={800}
+            height={500}
+            loading="lazy"
+            // Already-small WebP stills: skip the optimizer and its quota.
+            unoptimized
+            className="block aspect-[16/10] h-auto w-full object-cover object-top transition-transform duration-500 ease-out group-hover:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+          />
+        </Link>
+
         {/* Top Badges & Icon */}
         <div className="flex items-center justify-between gap-4 mb-4">
           <div className="flex items-center gap-3">
@@ -466,11 +487,27 @@ export const ArcadeHubClient: React.FC = () => {
           transition={{ delay: 0.5, duration: 0.4 }}
           className="relative rounded-3xl border border-emerald-500/30 bg-gradient-to-r from-emerald-950/40 via-slate-900/60 to-slate-950/80 p-6 sm:p-8 backdrop-blur-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 overflow-hidden shadow-[0_0_30px_rgba(16,185,129,0.1)] hover:border-emerald-500/50 transition-all"
         >
-          <div className="flex items-center gap-4">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-400">
-              <IconSparkles className="w-7 h-7 animate-pulse" />
+          <div className="flex min-w-0 items-center gap-4">
+            <Link
+              href="/arcade/meme-vault"
+              tabIndex={-1}
+              aria-hidden="true"
+              className="hidden shrink-0 overflow-hidden rounded-2xl border border-emerald-500/30 sm:block"
+            >
+              <Image
+                src="/images/arcade/previews/meme-vault.webp"
+                alt=""
+                width={800}
+                height={500}
+                loading="lazy"
+                unoptimized
+                className="block aspect-[16/10] h-auto w-40 object-cover object-top"
+              />
+            </Link>
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 sm:hidden">
+              <IconSparkles className="w-7 h-7" />
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2 mb-1">
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase border bg-emerald-500/10 text-emerald-300 border-emerald-500/30">
                   Meme Soundboard

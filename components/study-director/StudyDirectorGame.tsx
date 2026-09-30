@@ -8,6 +8,7 @@ import React, {
   useState,
 } from "react";
 import {
+  ATTENTION_PER_DAY,
   AUDIT_ATTENTION,
   STUDY_24_081,
   STUDY_24_081_SITES,
@@ -35,6 +36,8 @@ import {
   summarizeDays,
 } from "./consequences";
 import { InboxPanel } from "./InboxPanel";
+import { OfficeScene } from "./OfficeScene";
+import { sceneFor } from "./scene";
 import { PhaseTimeline } from "./PhaseTimeline";
 import { PHASE_LABELS } from "./labels";
 import { ShortcutSheet } from "./ShortcutSheet";
@@ -94,6 +97,20 @@ export const StudyDirectorGame: React.FC = () => {
   const report = useMemo(
     () => (state && state.status === "complete" ? finalizeStudy(state) : null),
     [state]
+  );
+  const criticalCount = events.filter((e) => e.urgency === "critical").length;
+  const scene = useMemo(
+    () =>
+      state
+        ? sceneFor(state, computeMeters(state), {
+            criticalCount,
+            attentionPerDay: ATTENTION_PER_DAY,
+            // Lights go off overnight and after closeout.
+            night: outcome?.kind === "overnight" || report !== null,
+            pinned: report?.evaluations.regulatory.grade,
+          })
+        : null,
+    [state, criticalCount, outcome, report]
   );
 
   const start = useCallback((next: StudyState) => {
@@ -391,6 +408,7 @@ export const StudyDirectorGame: React.FC = () => {
 
       <StatusBar state={state} />
       <PhaseTimeline state={state} />
+      {scene ? <OfficeScene scene={scene} /> : null}
 
       {report ? (
         <ReportView report={report} onRestart={restart} />

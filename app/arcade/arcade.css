@@ -777,3 +777,49 @@
     animation: none;
   }
 }
+
+/* Study Director office scene (#1546): SVG layers animate around their own box. */
+[data-sd-desk] svg .sd-chip,
+[data-sd-desk] svg .sd-stamp,
+[data-sd-desk] svg .sd-enter {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@keyframes sd-blink {
+  0%,
+  55% {
+    opacity: 1;
+  }
+  70%,
+  100% {
+    opacity: 0.2;
+  }
+}
+
+@keyframes sd-flicker {
+  0%,
+  100% {
+    transform: scaleY(1);
+  }
+  50% {
+    transform: scaleY(0.88);
+  }
+}
+
+[data-sd-desk] .sd-blink {
+  animation: sd-blink 1.4s steps(2, jump-none) infinite;
+}
+
+[data-sd-desk] .sd-flicker {
+  transform-box: fill-box;
+  transform-origin: bottom center;
+  animation: sd-flicker 0.9s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-sd-desk] .sd-blink,
+  [data-sd-desk] .sd-flicker {
+    animation: none;
+  }
+}

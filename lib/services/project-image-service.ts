@@ -1,6 +1,11 @@
 import DOMPurify from "isomorphic-dompurify";
+import { z } from "zod";
 import { CaseStudyService } from "@/lib/services/case-study-service";
-import type { ServiceResult } from "@/lib/services/service-result";
+import {
+  createFailure,
+  createSuccess,
+  type ServiceResult,
+} from "@/lib/services/service-result";
 import { logger } from "@/lib/logger";
 import { sanitizeError } from "@/lib/error-sanitization";
 import { generateId } from "@/lib/utils";
@@ -9,10 +14,40 @@ import {
   type MediaAssetRecord,
 } from "@/lib/services/media-storage";
 
-export type ProjectImageResult = ServiceResult<{
-  key: string;
-  hero_image_url: string;
-}>;
+/**
+ * Error codes returned by the project image upload contract (ADR 0028).
+ *
+ * The validation codes (`EMPTY_PAYLOAD` through `SANITIZED_SVG_EMPTY`) and
+ * `CASE_STUDY_NOT_FOUND` describe a request the caller can correct; the
+ * remaining codes are infrastructure failures.
+ */
+export const ProjectImageErrorCode = z.enum([
+  "EMPTY_PAYLOAD",
+  "FILE_TOO_LARGE",
+  "UNSUPPORTED_TYPE",
+  "MALFORMED_HEADER",
+  "SANITIZED_SVG_EMPTY",
+  "CASE_STUDY_NOT_FOUND",
+  "CASE_STUDY_LOOKUP_FAILED",
+  "STORAGE_FAILED",
+  "PERSISTENCE_FAILED",
+]);
+export type ProjectImageErrorCode = z.infer<typeof ProjectImageErrorCode>;
+
+/** Result envelope of {@link ProjectImageService.uploadProjectImage}. */
+export type ProjectImageResult = ServiceResult<
+  {
+    key: string;
+    hero_image_url: string;
+  },
+  ProjectImageErrorCode
+>;
+
+/** Result envelope of {@link validateProjectImage}. */
+export type ProjectImageValidationResult = ServiceResult<
+  null,
+  ProjectImageErrorCode
+>;
 
 export const MAX_PROJECT_IMAGE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 
@@ -121,29 +156,42 @@ export function validateImageMagicBytes(
 
 /**
  * Validates file size, MIME type, and magic bytes.
- * Throws user-safe validation error if validation fails.
+ * Returns a failure envelope carrying a user-safe message when validation fails.
  */
-export function validateProjectImage(buffer: Buffer, mimeType: string): void {
+export function validateProjectImage(
+  buffer: Buffer,
+  mimeType: string
+): ProjectImageValidationResult {
   if (!buffer || buffer.length === 0) {
-    throw new Error("Invalid image payload: File is empty or missing.");
+    return createFailure(
+      "EMPTY_PAYLOAD",
+      "Invalid image payload: File is empty or missing."
+    );
   }
 
   if (buffer.length > MAX_PROJECT_IMAGE_SIZE_BYTES) {
-    throw new Error("File size exceeds maximum allowed limit of 5MB.");
+    return createFailure(
+      "FILE_TOO_LARGE",
+      "File size exceeds maximum allowed limit of 5MB."
+    );
   }
 
   if (!ALLOWED_IMAGE_MIME_TYPES.has(mimeType.toLowerCase())) {
-    throw new Error(
+    return createFailure(
+      "UNSUPPORTED_TYPE",
       "Invalid image type. Allowed formats: JPEG, PNG, WebP, GIF, SVG, and AVIF."
     );
   }
 
   const isValidMagic = validateImageMagicBytes(buffer, mimeType);
   if (!isValidMagic) {
-    throw new Error(
+    return createFailure(
+      "MALFORMED_HEADER",
       "Malformed or corrupt image file header. Image magic bytes do not match declared content type."
     );
   }
+
+  return createSuccess(null);
 }
 
 /**
@@ -264,44 +312,72 @@ export class ProjectImageService {
   /**
    * Processes, validates, persists, and links a project image asset to a case study.
    * If database persistence fails, the prior asset is preserved.
+   *
+   * Never throws: every failure is returned as a typed {@link ProjectImageErrorCode}.
    */
   static async uploadProjectImage(
     slug: string,
     fileBuffer: Buffer,
     mimeType: string
-  ): Promise<{ hero_image_url: string; key: string }> {
+  ): Promise<ProjectImageResult> {
     // 1. Validate image format, size, and magic bytes
-    validateProjectImage(fileBuffer, mimeType);
+    const validation = validateProjectImage(fileBuffer, mimeType);
+    if (!validation.success) {
+      return validation;
+    }
 
     // 2. SVG Defense-in-Depth sanitization
     if (mimeType.toLowerCase() === "image/svg+xml") {
       const sanitized = sanitizeSvg(fileBuffer.toString("utf-8"));
       fileBuffer = Buffer.from(sanitized, "utf-8");
       if (!validateImageMagicBytes(fileBuffer, mimeType)) {
-        throw new Error(
+        return createFailure(
+          "SANITIZED_SVG_EMPTY",
           "Invalid image payload: Sanitized SVG contains no valid svg element."
         );
       }
     }
 
     // 3. Fetch existing case study to preserve prior asset URL on failure
-    const existing = await CaseStudyService.getCaseStudyBySlug(slug);
+    let existing: Awaited<
+      ReturnType<typeof CaseStudyService.getCaseStudyBySlug>
+    >;
+    try {
+      existing = await CaseStudyService.getCaseStudyBySlug(slug);
+    } catch (error) {
+      return createFailure(
+        "CASE_STUDY_LOOKUP_FAILED",
+        `Could not read case study "${slug}" before replacing its image`,
+        { details: error }
+      );
+    }
     const priorAssetUrl = existing?.hero_image_url ?? null;
     const priorKey = extractMediaKeyFromUrl(priorAssetUrl);
 
     // 4. Generate key and save media asset using provider
     const ext = getExtensionForMimeType(mimeType);
     const key = `${generateId(`project-${slug}`, { timestamp: true })}.${ext}`;
-    const assetUrl = await ProjectImageService.saveMediaAsset(
-      key,
-      fileBuffer,
-      mimeType
-    );
-
+    let assetUrl: string;
     try {
-      // 5. Persist the new asset reference before cleaning up the prior asset.
-      await CaseStudyService.updateCaseStudyImage(slug, assetUrl);
+      assetUrl = await ProjectImageService.saveMediaAsset(
+        key,
+        fileBuffer,
+        mimeType
+      );
     } catch (error) {
+      return createFailure(
+        "STORAGE_FAILED",
+        "Could not store the project image asset",
+        { details: error }
+      );
+    }
+
+    // 5. Persist the new asset reference before cleaning up the prior asset.
+    const persisted = await CaseStudyService.updateCaseStudyImage(
+      slug,
+      assetUrl
+    );
+    if (!persisted.success) {
       // 6. On persistence failure, clean up the new asset and restore the prior reference.
       try {
         const deleted = await ProjectImageService.deleteMediaAsset(key);
@@ -320,13 +396,10 @@ export class ProjectImageService {
         );
       }
       if (existing) {
-        try {
-          await CaseStudyService.updateCaseStudyImage(slug, priorAssetUrl);
-        } catch {
-          // Best effort rollback
-        }
+        // Best effort rollback: the original failure is what the caller sees.
+        await CaseStudyService.updateCaseStudyImage(slug, priorAssetUrl);
       }
-      throw error;
+      return persisted;
     }
 
     // 7. Cleanup is post-commit and best-effort: a provider outage must not
@@ -349,6 +422,6 @@ export class ProjectImageService {
       }
     }
 
-    return { hero_image_url: assetUrl, key };
+    return createSuccess({ hero_image_url: assetUrl, key });
   }
 }

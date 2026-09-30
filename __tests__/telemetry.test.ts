@@ -130,7 +130,6 @@ describe("Telemetry API Route - Route Error Telemetry", () => {
     const simulatorEventTypes = [
       "simulator_option_select",
       "simulator_milestone_reached",
-      "simulator_schedule_click",
       "simulator_report_copy",
     ];
 
@@ -180,6 +179,24 @@ describe("Telemetry API Route - Route Error Telemetry", () => {
     const data = await response.json();
     expect(data.error).toContain("Missing or invalid eventType");
     expect(prisma.telemetryEvent.create).not.toHaveBeenCalled();
+  });
+
+  it("should reject the retired simulator_schedule_click event and stop advertising it (#1611)", async () => {
+    const req = new NextRequest("http://localhost:3000/api/telemetry", {
+      method: "POST",
+      body: JSON.stringify({
+        projectSlug: "simulator",
+        eventType: "simulator_schedule_click",
+      }),
+    });
+
+    const response = await POST(req);
+    expect(response.status).toBe(400);
+
+    const data = await response.json();
+    expect(data.error).toContain("Missing or invalid eventType");
+    expect(data.error).not.toContain("simulator_schedule_click");
+    expect(mockLpush).not.toHaveBeenCalled();
   });
 
   it("should reject client with 429 when rate limit is exceeded", async () => {

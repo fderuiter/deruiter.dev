@@ -4,21 +4,60 @@ import { CONTENT_PILLARS } from "@/lib/blog/types";
 
 const BLOG_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
+/*
+ * Editable BlogPost draft fields, shared by the create and partial-update
+ * contracts so the admin authoring form and both routes enforce identical
+ * bounds and report identical messages.
+ */
+const blogDraftTitle = z
+  .string()
+  .trim()
+  .min(3, "Title must be at least 3 characters.")
+  .max(180, "Title cannot exceed 180 characters.");
+const blogDraftSlug = z
+  .string()
+  .trim()
+  .min(3, "Slug must be at least 3 characters.")
+  .max(120, "Slug cannot exceed 120 characters.")
+  .regex(BLOG_SLUG_PATTERN, "Slug must be lowercase kebab-case");
+const blogDraftDek = z
+  .string()
+  .trim()
+  .min(10, "Dek must be at least 10 characters.")
+  .max(500, "Dek cannot exceed 500 characters.");
+const blogDraftBody = z
+  .string()
+  .trim()
+  .min(1, "Body is required.")
+  .max(50_000, "Body cannot exceed 50,000 characters.");
+const blogDraftTags = z
+  .array(
+    z
+      .string()
+      .trim()
+      .min(1, "Tags cannot be empty.")
+      .max(50, "Each tag cannot exceed 50 characters.")
+  )
+  .min(1, "Add at least one tag.")
+  .max(12, "Use at most 12 tags.");
+const blogDraftHeroImageUrl = z
+  .string()
+  .trim()
+  .url("Hero image URL must be a valid URL.")
+  .max(2048, "Hero image URL cannot exceed 2048 characters.")
+  .nullable()
+  .optional();
+
 /** Runtime contract for a new, server-owned unpublished BlogPost draft. */
 export const BlogDraftCreateSchema = z
   .object({
-    title: z.string().trim().min(3).max(180),
-    slug: z
-      .string()
-      .trim()
-      .min(3)
-      .max(120)
-      .regex(BLOG_SLUG_PATTERN, "Slug must be lowercase kebab-case"),
-    dek: z.string().trim().min(10).max(500),
-    body: z.string().trim().min(1).max(50_000),
+    title: blogDraftTitle,
+    slug: blogDraftSlug,
+    dek: blogDraftDek,
+    body: blogDraftBody,
     pillar: z.enum(CONTENT_PILLARS),
-    tags: z.array(z.string().trim().min(1).max(50)).min(1).max(12),
-    heroImageUrl: z.string().trim().url().max(2048).nullable().optional(),
+    tags: blogDraftTags,
+    heroImageUrl: blogDraftHeroImageUrl,
   })
   .strict()
   .transform((data) => ({
@@ -40,19 +79,13 @@ export const BlogDraftIdParamsSchema = z
  */
 export const BlogDraftUpdateSchema = z
   .object({
-    title: z.string().trim().min(3).max(180).optional(),
-    slug: z
-      .string()
-      .trim()
-      .min(3)
-      .max(120)
-      .regex(BLOG_SLUG_PATTERN, "Slug must be lowercase kebab-case")
-      .optional(),
-    dek: z.string().trim().min(10).max(500).optional(),
-    body: z.string().trim().min(1).max(50_000).optional(),
+    title: blogDraftTitle.optional(),
+    slug: blogDraftSlug.optional(),
+    dek: blogDraftDek.optional(),
+    body: blogDraftBody.optional(),
     pillar: z.enum(CONTENT_PILLARS).optional(),
-    tags: z.array(z.string().trim().min(1).max(50)).min(1).max(12).optional(),
-    heroImageUrl: z.string().trim().url().max(2048).nullable().optional(),
+    tags: blogDraftTags.optional(),
+    heroImageUrl: blogDraftHeroImageUrl,
     published: z.boolean().optional(),
   })
   .strict()
@@ -298,11 +331,11 @@ export const FeedbackSubmissionSchema = z
       .min(1, "caseStudySlug must be a non-empty string"),
     takeaways: z
       .array(z.string().min(1, "Takeaway cannot be empty"))
-      .min(1, "At least one learning takeaway must be selected"),
+      .min(1, "Please select at least one learning takeaway."),
     comments: z
       .string()
-      .min(3, "Comments must be at least 3 characters long")
-      .max(2000, "Comments cannot exceed 2000 characters"),
+      .min(3, "Please add a comment (at least 3 characters).")
+      .max(2000, "Comments cannot exceed 2000 characters."),
   })
   .superRefine((data, ctx) => {
     if (data.comments) {
@@ -379,9 +412,9 @@ export const ContactSubmissionSchema = z
     name: z
       .string()
       .trim()
-      .min(2, "Name must be at least 2 characters")
-      .max(100, "Name cannot exceed 100 characters"),
-    email: z.string().trim().email("Please provide a valid email address"),
+      .min(2, "Please enter your name (at least 2 characters).")
+      .max(100, "Name cannot exceed 100 characters."),
+    email: z.string().trim().email("Please provide a valid email address."),
     intent: z
       .enum(CONTACT_INTENTS, {
         message:
@@ -391,13 +424,13 @@ export const ContactSubmissionSchema = z
     subject: z
       .string()
       .trim()
-      .min(3, "Subject must be at least 3 characters")
-      .max(150, "Subject cannot exceed 150 characters"),
+      .min(3, "Subject must be at least 3 characters.")
+      .max(150, "Subject cannot exceed 150 characters."),
     message: z
       .string()
       .trim()
-      .min(10, "Message must be at least 10 characters")
-      .max(5000, "Message cannot exceed 5000 characters"),
+      .min(10, "Message must be at least 10 characters.")
+      .max(5000, "Message cannot exceed 5000 characters."),
     _gotcha: z.string().optional(),
     _clientTimestamp: z.number().int().positive().optional(),
   })
@@ -454,7 +487,7 @@ export type ContactResponse = z.infer<typeof ContactResponseSchema>;
  * Schema for Newsletter subscription POST payload validation
  */
 export const NewsletterSubscriptionSchema = z.object({
-  email: z.string().trim().email("Please provide a valid email address"),
+  email: z.string().trim().email("Please enter a valid email address."),
   _gotcha: z.string().optional(),
   _clientTimestamp: z.number().int().positive().optional(),
 });
@@ -753,3 +786,23 @@ export const TelemetrySyncResponseSchema = z.object({
 export const ProjectSlugParamSchema = z.object({
   slug: z.string().trim().min(1, "Project slug is required"),
 });
+
+/**
+ * Collapses a Zod validation error into one message per top-level field, the
+ * shape client forms render inline beside each input. Nested issues (such as
+ * `tags[2]`) are reported under their owning field, and the first issue for a
+ * field wins so messages follow the schema's declaration order. Issues not
+ * tied to a field are omitted; read `error.issues` for those.
+ *
+ * @param error - The error from a failed `safeParse` of a form schema.
+ * @returns A map from field name to its first validation message.
+ */
+export function toFieldErrors(error: z.ZodError): Record<string, string> {
+  const fieldErrors: Record<string, string> = {};
+  for (const issue of error.issues) {
+    const field = issue.path[0];
+    if (typeof field !== "string" || field in fieldErrors) continue;
+    fieldErrors[field] = issue.message;
+  }
+  return fieldErrors;
+}

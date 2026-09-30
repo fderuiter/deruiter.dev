@@ -13,6 +13,14 @@ name: Cancel Closed PR CI
 # with the workflow named "CI Pipeline"; `__tests__/ci-cancel-closed-pr.test.ts`
 # keeps the two in sync. `main` push runs use a different group and are never
 # touched.
+#
+# #1492: the cancellation comes from the workflow-level `concurrency` block,
+# which GitHub applies when the run is created, before any job starts. The
+# job used to be a one-line `echo` that still needed a hosted runner, so every
+# PR close queued a no-op run behind real CI. The job is now skipped with
+# `if: false`: the run still joins the group and cancels the PR's CI, then
+# finishes as skipped without asking for a runner. A workflow must declare at
+# least one job, which is the only reason this one exists.
 
 on:
   pull_request:
@@ -28,8 +36,9 @@ permissions: {}
 jobs:
   cancel-superseded-ci:
     name: Cancel CI for closed PR
+    if: false
     runs-on: ubuntu-latest
     timeout-minutes: 1
     steps:
       - name: Report
-        run: echo "PR #${{ github.event.pull_request.number }} closed; its CI Pipeline runs in this concurrency group were cancelled."
+        run: echo "Skipped by design; the concurrency group above does the cancelling."

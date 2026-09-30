@@ -12,6 +12,10 @@ Adds a finished run to the front of the history, keeping the newest
 `RUN_HISTORY_LIMIT`. Recording the same run twice in a row (the same plan,
 seed, choice, move count and result) leaves the history as it was.
 
+A run that won its campaign also unlocks (#950): the next stake for its
+sponsor, and the next sponsor at stake 1. A campaign won before
+post-marketing rounds failed still counts as a win.
+
 ## Parameters
 
 ### codex
@@ -52,9 +56,16 @@ seed, choice, move count and result) leaves the history as it was.
 
 `object`[] = `...`
 
+#### unlocks
+
+`Partial`\<`Record`\<`"VIRTUAL_BIOTECH"` \| `"ONCOLOGY_PHARMA"` \| `"CARDIO_MEGA_TRIAL"` \| `"RARE_DISEASE_BIOTECH"`, `number`\>\> = `UnlocksSchema`
+
+Each unlocked sponsor and the highest stake unlocked for it (#950).
+Virtual Biotech at stake 1 is always open, recorded or not.
+
 #### version
 
-`1` = `...`
+`2` = `...`
 
 ### entry
 
@@ -138,8 +149,6 @@ WON: the plan's last Blind cleared and the run submitted.
 
 ## Returns
 
-`object`
-
 ### discovered
 
 > **discovered**: `object`
@@ -176,6 +185,13 @@ WON: the plan's last Blind cleared and the run submitted.
 
 > **history**: `object`[]
 
+### unlocks
+
+> **unlocks**: `Partial`\<`Record`\<`"VIRTUAL_BIOTECH"` \| `"ONCOLOGY_PHARMA"` \| `"CARDIO_MEGA_TRIAL"` \| `"RARE_DISEASE_BIOTECH"`, `number`\>\> = `UnlocksSchema`
+
+Each unlocked sponsor and the highest stake unlocked for it (#950).
+Virtual Biotech at stake 1 is always open, recorded or not.
+
 ### version
 
-> **version**: `1`
+> **version**: `2`

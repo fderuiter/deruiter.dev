@@ -12,8 +12,6 @@ A Codex with nothing discovered and no runs.
 
 ## Returns
 
-`object`
-
 ### discovered
 
 > **discovered**: `object`
@@ -50,6 +48,13 @@ A Codex with nothing discovered and no runs.
 
 > **history**: `object`[]
 
+### unlocks
+
+> **unlocks**: `Partial`\<`Record`\<`"VIRTUAL_BIOTECH"` \| `"ONCOLOGY_PHARMA"` \| `"CARDIO_MEGA_TRIAL"` \| `"RARE_DISEASE_BIOTECH"`, `number`\>\> = `UnlocksSchema`
+
+Each unlocked sponsor and the highest stake unlocked for it (#950).
+Virtual Biotech at stake 1 is always open, recorded or not.
+
 ### version
 
-> **version**: `1`
+> **version**: `2`

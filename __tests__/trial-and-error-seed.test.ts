@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   ACT_I,
+  challengeChoice,
   challengeHash,
   challengeOrigin,
   dailySeed,
@@ -94,7 +95,7 @@ describe("challenge links (#1528)", () => {
   });
 
   it("normalizes a typed seed and ignores unknown parameters", () => {
-    expect(parseChallengeHash("#seed=7k3m-q9px&stake=3")).toEqual({
+    expect(parseChallengeHash("#seed=7k3m-q9px&tier=3")).toEqual({
       seed: "7K3M-Q9PX",
       daily: null,
     });
@@ -162,5 +163,100 @@ describe("a saved run's origin (#1528)", () => {
     );
     expect(raw).toContain(`"date":"tomorrow"`);
     expect(parseRunSave(raw, [act])).toBeNull();
+  });
+});
+
+describe("challenge links with a sponsor and stake (#950)", () => {
+  it("writes the sponsor and stake only when they are not the defaults", () => {
+    expect(challengeHash("7K3M-Q9PX", { kind: "SEEDED" })).toBe(
+      "#seed=7K3M-Q9PX"
+    );
+    expect(
+      challengeHash(
+        "7K3M-Q9PX",
+        { kind: "RANDOM" },
+        { sponsorId: "VIRTUAL_BIOTECH", stake: 1 }
+      )
+    ).toBe("#seed=7K3M-Q9PX");
+    expect(
+      challengeHash(
+        "7K3M-Q9PX",
+        { kind: "SEEDED" },
+        { sponsorId: "ONCOLOGY_PHARMA", stake: 3 }
+      )
+    ).toBe("#seed=7K3M-Q9PX&sponsor=ONCOLOGY_PHARMA&stake=3");
+    expect(challengeHash("7K3M-Q9PX", { kind: "RANDOM" }, { stake: 2 })).toBe(
+      "#seed=7K3M-Q9PX&stake=2"
+    );
+  });
+
+  it("round-trips a sponsor and stake", () => {
+    const hash = challengeHash(
+      "7K3M-Q9PX",
+      { kind: "SEEDED" },
+      { sponsorId: "CARDIO_MEGA_TRIAL", stake: 6 }
+    );
+    const challenge = parseChallengeHash(hash)!;
+    expect(challenge).toEqual({
+      seed: "7K3M-Q9PX",
+      daily: null,
+      sponsorId: "CARDIO_MEGA_TRIAL",
+      stake: 6,
+    });
+    expect(challengeChoice(challenge)).toEqual({
+      sponsorId: "CARDIO_MEGA_TRIAL",
+      stake: 6,
+    });
+  });
+
+  it("falls back to the defaults on anything but an exact sponsor id or stake digit", () => {
+    for (const hash of [
+      "#seed=7K3M-Q9PX&sponsor=oncology_pharma&stake=0",
+      "#seed=7K3M-Q9PX&sponsor=GENERIC_CRO&stake=7",
+      "#seed=7K3M-Q9PX&sponsor=&stake=",
+      "#seed=7K3M-Q9PX&sponsor=VIRTUAL_BIOTECH&stake=1",
+      "#seed=7K3M-Q9PX&sponsor=__proto__&stake=2.0",
+      "#seed=7K3M-Q9PX&stake=%203",
+      "#seed=7K3M-Q9PX&stake=03",
+      "#seed=7K3M-Q9PX&stake=1e0",
+    ]) {
+      const challenge = parseChallengeHash(hash)!;
+      expect(challenge).toEqual({ seed: "7K3M-Q9PX", daily: null });
+      expect(challengeChoice(challenge)).toEqual({
+        sponsorId: "VIRTUAL_BIOTECH",
+        stake: 1,
+      });
+    }
+  });
+
+  it("keeps each valid value when the other is invalid", () => {
+    expect(
+      parseChallengeHash("#seed=7K3M-Q9PX&sponsor=RARE_DISEASE_BIOTECH&stake=9")
+    ).toEqual({
+      seed: "7K3M-Q9PX",
+      daily: null,
+      sponsorId: "RARE_DISEASE_BIOTECH",
+    });
+    expect(parseChallengeHash("#seed=7K3M-Q9PX&sponsor=NOPE&stake=4")).toEqual({
+      seed: "7K3M-Q9PX",
+      daily: null,
+      stake: 4,
+    });
+  });
+
+  it("plays the Daily Protocol under the defaults, whatever the link says", () => {
+    const daily = dailySeed("2026-09-30");
+    expect(
+      challengeHash(
+        daily,
+        { kind: "DAILY", date: "2026-09-30" },
+        { sponsorId: "ONCOLOGY_PHARMA", stake: 5 }
+      )
+    ).toBe(`#seed=${daily}&daily=2026-09-30`);
+    expect(
+      parseChallengeHash(
+        `#seed=${daily}&daily=2026-09-30&sponsor=ONCOLOGY_PHARMA&stake=5`
+      )
+    ).toEqual({ seed: daily, daily: "2026-09-30" });
   });
 });

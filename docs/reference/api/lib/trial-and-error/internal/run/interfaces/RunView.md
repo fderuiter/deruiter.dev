@@ -324,6 +324,14 @@ The cash-out paid for this Blind, once paid.
 
 ***
 
+### choice
+
+> **choice**: [`RunChoice`](../../run-rules/interfaces/RunChoice.md)
+
+The sponsor and stake the run is played under (#950), defaults filled.
+
+***
+
 ### draws
 
 > **draws**: [`RunDraw`](RunDraw.md)[]

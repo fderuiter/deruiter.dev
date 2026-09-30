@@ -16,6 +16,7 @@
 
 ## Functions
 
+- [challengeChoice](functions/challengeChoice.md)
 - [challengeHash](functions/challengeHash.md)
 - [challengeOrigin](functions/challengeOrigin.md)
 - [dailySeed](functions/dailySeed.md)

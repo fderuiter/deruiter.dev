@@ -218,7 +218,11 @@ describe("Mobile Navigation Drawer & Touch Interaction Suite", () => {
       aboutLink.click();
     });
 
-    expect(aboutSection.scrollIntoView).toHaveBeenCalled();
+    // Navbar defers the jump with setTimeout(0) until the drawer has closed,
+    // and act() does not flush macrotask timers, so wait for it.
+    await vi.waitFor(() => {
+      expect(aboutSection.scrollIntoView).toHaveBeenCalled();
+    });
     expect(hamburgerBtn.getAttribute("aria-expanded")).toBe("false");
     expect(document.body.style.overflow).toBe("");
 

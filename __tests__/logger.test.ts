@@ -155,7 +155,7 @@ describe("StructuredLogger", () => {
   describe("metadata sanitization (#1475)", () => {
     it("scrubs paths from metadata that warn() receives as its second argument", () => {
       const testLogger = new StructuredLogger();
-      const meta = { file: "/home/deploy/app/lib/db.ts", attempt: 2 };
+      const meta = { file: "/var/task/lib/db.ts", attempt: 2 };
 
       const entry = testLogger.warn("Retrying", meta);
 
@@ -168,13 +168,13 @@ describe("StructuredLogger", () => {
         expect.objectContaining({ data: { file: "[scrubbed]", attempt: 2 } })
       );
       // The caller's object is copied, never mutated.
-      expect(meta.file).toBe("/home/deploy/app/lib/db.ts");
+      expect(meta.file).toBe("/var/task/lib/db.ts");
     });
 
     it("walks nested objects and arrays and survives circular references", () => {
       const testLogger = new StructuredLogger();
       const meta: Record<string, unknown> = {
-        nested: { paths: ["/Users/admin/secret.json", "ok"] },
+        nested: { paths: ["/opt/admin/secret.json", "ok"] },
       };
       meta.self = meta;
 
@@ -190,7 +190,7 @@ describe("StructuredLogger", () => {
       vi.stubEnv("NODE_ENV", "production");
       try {
         const testLogger = new StructuredLogger();
-        const cause = new Error("failed at /home/deploy/app/lib/db.ts");
+        const cause = new Error("failed at /var/task/lib/db.ts");
 
         const entry = testLogger.error("Wrapped", undefined, { cause });
 

@@ -31,6 +31,7 @@ import {
 } from "@/lib/neuro/loader";
 import {
   NEURO_RUN_RECON_KEY,
+  NEURO_TOOL_HOTKEYS,
   applyVoxelEditsToVolume,
   countNeuroDraftEdits,
   getNeuroProvenance,
@@ -105,6 +106,7 @@ import { NeuroSuccessDialog } from "./NeuroSuccessDialog";
 import { useAudio } from "@/components/providers/AudioProvider";
 import { useTelemetry } from "@/hooks/useTelemetry";
 import { useStudioHashParams } from "@/hooks/useStudioHashParams";
+import { useHotkeys } from "@/hooks/useHotkeys";
 import {
   IconBrain,
   IconCheck,
@@ -170,6 +172,25 @@ function toolModeFromHash(
 ): ToolMode {
   return raw && HASH_TOOLS.includes(raw) ? (raw as ToolMode) : recommendedTool;
 }
+
+/**
+ * Keys the studio listens for: each tool's digit and letter, R and Space to
+ * run recon-all, and M or ? for the Field Manual. Every binding names no
+ * modifier, so matchesHotkey accepts it only with Ctrl, Meta and Alt all up;
+ * the accepted combinations are the bare key and Shift+key, since Shift is
+ * not checked (Shift+V arrives as "V" and ? is typed with Shift).
+ * resolveNeuroHotkey still decides which of these act on a given target.
+ */
+const NEURO_STUDIO_HOTKEYS: readonly string[] = [
+  ...Object.values(NEURO_TOOL_HOTKEYS).flatMap((h) => [
+    h.digit,
+    h.letter.toLowerCase(),
+  ]),
+  NEURO_RUN_RECON_KEY.toLowerCase(),
+  "Space",
+  "m",
+  "?",
+];
 
 export const NeuroReconClient: React.FC = () => {
   const { playNote, playSuccess } = useAudio();
@@ -843,12 +864,15 @@ export const NeuroReconClient: React.FC = () => {
 
   const isDialogOpen = isFieldManualOpen || showSuccessModal;
 
-  // Keyboard Shortcuts Listener
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Studio hotkeys are suspended while a modal dialog owns the keyboard.
-      if (isDialogOpen) return;
-      // Ignore text entry, modifier chords, and natively activating controls.
+  // Keyboard shortcuts. The studio root is a keyboard boundary so global
+  // shortcuts yield to it; its own hotkeys opt back in. They are suspended
+  // while a modal dialog owns the keyboard.
+  useHotkeys(
+    NEURO_STUDIO_HOTKEYS,
+    (e) => {
+      // Ignore text entry, dialogs and Space on natively activating
+      // controls. preventDefault stays per action so Space still presses a
+      // focused button.
       const action = resolveNeuroHotkey(e);
       if (!action) return;
       if (action.type === "tool") {
@@ -859,11 +883,9 @@ export const NeuroReconClient: React.FC = () => {
       } else {
         setIsFieldManualOpen((prev) => !prev);
       }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isProcessing, isDialogOpen, handleRunRecon, setToolMode]);
+    },
+    { enabled: !isDialogOpen, allowInKeyboardBoundary: true }
+  );
 
   // Next Scenario Advancer
   const handleAdvanceNextScenario = async () => {

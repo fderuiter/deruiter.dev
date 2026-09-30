@@ -244,25 +244,26 @@ npm run quality
 
 ### CI Quality Gate Mapping
 
-| Local Quality Command                | Continuous Integration Job / Step                                | Verification Scope & Purpose                                                                          |
-| ------------------------------------ | ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `npm run doctor`                     | `heavy-gate` / Verify ADR Invariants & Doctor Health Diagnostics | Diagnostic audit of architectural and testing invariants (routes, layout, WCAG a11y, hydration)       |
-| `npm run doctor:fix`                 | Local Auto-remediation                                           | Auto-remediates fixable architectural invariants and updates OpenAPI & TypeDoc contracts              |
-| `npm run env:check`                  | Local environment preflight                                      | Validates `.env.local` schema definitions against `lib/env.ts` and `.env.example`                     |
-| `npm run check`                      | `fast-gate` / Type Check & Lint                                  | Static TypeScript checking, ESLint, and dependency-boundary enforcement                               |
-| `npm run lint:docs`                  | `fast-gate` / Lint Documentation                                 | Markdown formatting and structure linting via `markdownlint-cli`                                      |
-| `npm run check-docs-drift`           | `fast-gate` / Check Documentation Drift                          | Verifies lockstep synchronization for TypeDoc API docs, OpenAPI schemas, and onboarding guides        |
-| `npm run check:migrations:drift`     | `fast-gate` / Check Schema Drift                                 | Verifies Prisma database schema against active migrations and checks for drift                        |
-| `npm test` / `npm run test:ci`       | `fast-gate` / Run Logic Tests (Vitest)                           | Comprehensive unit, logic, and state-engine tests with optional coverage                              |
-| `npm run test:fuzz`                  | `fast-gate` / Run Shift-Left Property Fuzz Testing Gate          | Fast-check property-based testing and generative invariant verification                               |
-| `npm run test:mutation`              | `fast-gate` / Run Stryker Mutation Gate                          | Mutation testing of critical deterministic and security modules                                       |
-| `npx playwright test`                | `heavy-gate` and `device-gate` browser suites                    | Visual regression, interaction, responsive-device, and Playwright-Axe accessibility checks            |
-| `npm run analyze:bundle -- --strict` | `heavy-gate` / Verify Bundle Performance Budgets                 | Enforces JavaScript chunk-size limits and initial shared-bundle gzip budgets                          |
-| `npm run bench:pages -- --assert`    | `heavy-gate` / Run Real-Browser Sub-Route Web Vitals             | Production-server Core Web Vitals assertions (LCP <= 2500ms, TTFB <= 800ms, CLS <= 0.1)               |
-| `npm run audit:security`             | `security-gate` / `Execute Security Audit Gate`                  | Dependency security vulnerability auditing and policy compliance                                      |
-| `npm run audit:secrets`              | `security-gate` / Scan Reachable Git History for Secrets         | Redacted scan of all reachable Git history for high-confidence credential patterns                    |
-| `npm run probe:synthetic`            | `synthetic-probes.yml` / `Headless Synthetic Probe Matrix`       | Playwright synthetic user probes verifying critical user journeys and API telemetry                   |
-| `npm run quality`                    | CI Pipeline Composite Pre-Flight Gate                            | Runs static checks, docs gates, secret-history audit, page benchmarks, and architectural verification |
+| Local Quality Command                | Continuous Integration Job / Step                                 | Verification Scope & Purpose                                                                          |
+| ------------------------------------ | ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `npm run doctor`                     | `heavy-gate` / Verify ADR Invariants & Doctor Health Diagnostics  | Diagnostic audit of architectural and testing invariants (routes, layout, WCAG a11y, hydration)       |
+| `npm run doctor:fix`                 | Local Auto-remediation                                            | Auto-remediates fixable architectural invariants and updates OpenAPI & TypeDoc contracts              |
+| `npm run env:check`                  | Local environment preflight                                       | Validates `.env.local` schema definitions against `lib/env.ts` and `.env.example`                     |
+| `npm run check`                      | `fast-gate` / Type Check & Lint                                   | Static TypeScript checking, ESLint, and dependency-boundary enforcement                               |
+| `npm run lint:docs`                  | `fast-gate` / Lint Documentation                                  | Markdown formatting and structure linting via `markdownlint-cli`                                      |
+| `npm run check-docs-drift`           | `fast-gate` / Check Documentation Drift                           | Verifies lockstep synchronization for TypeDoc API docs, OpenAPI schemas, and onboarding guides        |
+| `npm run check:migrations:drift`     | `fast-gate` / Check Schema Drift                                  | Verifies Prisma database schema against active migrations and checks for drift                        |
+| `npm test` / `npm run test:ci`       | `fast-gate` / Run Logic Tests (Vitest)                            | Comprehensive unit, logic, and state-engine tests with optional coverage                              |
+| `npm run test:fuzz`                  | `fast-gate` / Run Shift-Left Property Fuzz Testing Gate           | Fast-check property-based testing and generative invariant verification                               |
+| `npm run test:mutation`              | `fast-gate` / Run Stryker Mutation Gate                           | Mutation testing of critical deterministic and security modules                                       |
+| `npx playwright test`                | `heavy-gate` and `device-gate` browser suites                     | Visual regression, interaction, responsive-device, and Playwright-Axe accessibility checks            |
+| `npm run analyze:bundle -- --strict` | `heavy-gate` / Verify Bundle Performance Budgets                  | Enforces JavaScript chunk-size limits and initial shared-bundle gzip budgets                          |
+| `npm run bench:pages -- --assert`    | `heavy-gate` / Run Real-Browser Sub-Route Web Vitals              | Production-server Core Web Vitals assertions (LCP <= 2500ms, TTFB <= 800ms, CLS <= 0.1)               |
+| `npm run audit:security`             | `security-gate` / `Execute Security Audit Gate`                   | Dependency security vulnerability auditing and policy compliance                                      |
+| `npm run audit:secrets`              | `security-gate` / Scan Reachable Git History for Secrets          | Redacted scan of all reachable Git history for high-confidence credential patterns                    |
+| `npm run audit:triage`               | `scheduled-security-audit.yml` / Triage Security Issue Escalation | Automated GitHub issue escalation for unhandled vulnerabilities and expired overrides                 |
+| `npm run probe:synthetic`            | `synthetic-probes.yml` / `Headless Synthetic Probe Matrix`        | Playwright synthetic user probes verifying critical user journeys and API telemetry                   |
+| `npm run quality`                    | CI Pipeline Composite Pre-Flight Gate                             | Runs static checks, docs gates, secret-history audit, page benchmarks, and architectural verification |
 
 ---
 

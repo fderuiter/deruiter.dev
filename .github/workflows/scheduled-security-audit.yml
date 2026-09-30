@@ -42,7 +42,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-        run: npx tsx scripts/triage-security-issue.ts
+        run: npm run audit:triage
 
       - name: Fail Workflow On Audit Failure
         if: steps.audit.outcome == 'failure'

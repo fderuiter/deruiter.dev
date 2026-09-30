@@ -1,6 +1,7 @@
 import { RUN_SAVE_VERSION, RunActionSchema, RunSaveSchema } from "../types";
 import type { z } from "zod";
 import type { RunAction, RunPlan, RunState } from "./run";
+import type { RunOrigin } from "./seed";
 import { advanceRun, createRunState, deriveRunView } from "./run";
 
 /**
@@ -23,6 +24,8 @@ export interface RunLog {
   actId: string;
   seed: string;
   actions: LoggedAction[];
+  /** How the seed was chosen; absent means a random run. */
+  origin?: RunOrigin;
 }
 
 /** A resumable run rebuilt from a save. */
@@ -63,6 +66,7 @@ export function serializeRun(log: RunLog, savedAt: Date): string {
       savedAt: savedAt.toISOString(),
       seed: log.seed,
       actions: log.actions,
+      ...(log.origin ? { origin: log.origin } : {}),
     })
   );
 }
@@ -103,6 +107,7 @@ export function parseRunSave(
       actId: save.actId,
       seed: save.seed,
       actions: [...save.actions, ...deselect],
+      ...(save.origin ? { origin: save.origin } : {}),
     };
     const run = deselect.reduce(
       (r, action) => advanceRun(act, r, action),

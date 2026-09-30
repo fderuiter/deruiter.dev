@@ -223,6 +223,19 @@ export {
 } from "./internal/relics";
 export { drawInt, uniformAt } from "./internal/rng";
 export {
+  challengeHash,
+  challengeOrigin,
+  dailySeed,
+  isIsoDate,
+  normalizeSeed,
+  parseChallengeHash,
+  parseSeed,
+  seedFromBytes,
+  utcDate,
+  type Challenge,
+  type RunOrigin,
+} from "./internal/seed";
+export {
   scoreTimeline,
   type TimelineContext,
   type TimelineRunning,

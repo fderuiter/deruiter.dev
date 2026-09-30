@@ -1992,6 +1992,20 @@ export const RunSaveSchema = z.object({
   savedAt: z.string().datetime(),
   seed: z.string().regex(/^[A-Za-z0-9-]{1,64}$/),
   actions: z.array(RunActionSchema).max(5000),
+  /**
+   * How the seed was chosen (#1528). Optional, so saves from before it load
+   * as random runs.
+   */
+  origin: z
+    .discriminatedUnion("kind", [
+      z.object({ kind: z.literal("RANDOM") }),
+      z.object({ kind: z.literal("SEEDED") }),
+      z.object({
+        kind: z.literal("DAILY"),
+        date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      }),
+    ])
+    .optional(),
 });
 /** A saved run, as stored. */
 export type RunSave = z.infer<typeof RunSaveSchema>;

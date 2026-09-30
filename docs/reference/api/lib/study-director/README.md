@@ -368,6 +368,12 @@ Re-exports [STUDY_EVENTS](internal/events-data/variables/STUDY_EVENTS.md)
 
 ***
 
+### StudyBudget
+
+Re-exports [StudyBudget](types/type-aliases/StudyBudget.md)
+
+***
+
 ### StudyDirectorProfile
 
 Re-exports [StudyDirectorProfile](types/type-aliases/StudyDirectorProfile.md)

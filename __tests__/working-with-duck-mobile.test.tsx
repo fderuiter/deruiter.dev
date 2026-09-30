@@ -2,7 +2,9 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+(
+  globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true;
 
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -92,9 +94,15 @@ const storageStore: Record<string, string> = {};
 Object.defineProperty(globalThis, "localStorage", {
   value: {
     getItem: (k: string) => storageStore[k] || null,
-    setItem: (k: string, v: string) => { storageStore[k] = String(v); },
-    removeItem: (k: string) => { delete storageStore[k]; },
-    clear: () => { Object.keys(storageStore).forEach((k) => delete storageStore[k]); },
+    setItem: (k: string, v: string) => {
+      storageStore[k] = String(v);
+    },
+    removeItem: (k: string) => {
+      delete storageStore[k];
+    },
+    clear: () => {
+      Object.keys(storageStore).forEach((k) => delete storageStore[k]);
+    },
     key: () => null,
     length: 0,
   },
@@ -119,15 +127,17 @@ describe("Working With Duck - Mobile Layout & Touch Suite", () => {
     container.remove();
   });
 
-  it("renders 2x2 grid on mobile viewports for HUD status meters", async () => {
+  it("shows the four needs in one wrapping status bar (#1676)", async () => {
     await act(async () => {
       root.render(<WorkingWithDuck />);
     });
 
-    const hudGrid = container.querySelector(".grid-cols-2");
-    expect(hudGrid).not.toBeNull();
-    expect(hudGrid?.className).toContain("grid-cols-2");
-    expect(hudGrid?.className).toContain("md:grid-cols-4");
+    const hud = container.querySelector(
+      '[data-testid="duck-hud-meters"] [role="group"][aria-label="Game status"]'
+    );
+    expect(hud).not.toBeNull();
+    expect(hud?.className).toContain("flex-wrap");
+    expect(hud?.querySelectorAll('[role="progressbar"]')).toHaveLength(4);
   });
 
   it("renders segmented mobile action switcher tabs (Toys, Tricks, Actions)", async () => {
@@ -136,9 +146,15 @@ describe("Working With Duck - Mobile Layout & Touch Suite", () => {
     });
 
     const mobileTabs = container.querySelectorAll("button");
-    const toysTab = Array.from(mobileTabs).find((b) => b.textContent?.includes("Toys"));
-    const tricksTab = Array.from(mobileTabs).find((b) => b.textContent?.includes("Tricks"));
-    const actionsTab = Array.from(mobileTabs).find((b) => b.textContent?.includes("Actions"));
+    const toysTab = Array.from(mobileTabs).find((b) =>
+      b.textContent?.includes("Toys")
+    );
+    const tricksTab = Array.from(mobileTabs).find((b) =>
+      b.textContent?.includes("Tricks")
+    );
+    const actionsTab = Array.from(mobileTabs).find((b) =>
+      b.textContent?.includes("Actions")
+    );
 
     expect(toysTab).toBeDefined();
     expect(tricksTab).toBeDefined();
@@ -166,8 +182,8 @@ describe("Working With Duck - Mobile Layout & Touch Suite", () => {
     }
 
     // Switch to Actions tab
-    const actionsTab = Array.from(container.querySelectorAll("button")).find((b) =>
-      b.textContent?.includes("Actions")
+    const actionsTab = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.includes("Actions")
     );
     expect(actionsTab).toBeDefined();
     if (actionsTab) {
@@ -175,8 +191,8 @@ describe("Working With Duck - Mobile Layout & Touch Suite", () => {
         actionsTab.click();
       });
       expect(container.textContent).toContain("Focus Work Sprint");
-      expect(container.textContent).toContain("Dog Park 🌲");
-      expect(container.textContent).toContain("Bathtub 🛁");
+      expect(container.textContent).toContain("Dog Park");
+      expect(container.textContent).toContain("Bathtub");
     }
   });
 
@@ -186,8 +202,9 @@ describe("Working With Duck - Mobile Layout & Touch Suite", () => {
     });
 
     // Open Scrapbook
-    const scrapbookBtn = Array.from(container.querySelectorAll("button")).find((b) =>
-      b.textContent?.includes("Scrapbook") || b.title?.includes("Scrapbook")
+    const scrapbookBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) =>
+        b.textContent?.includes("Scrapbook") || b.title?.includes("Scrapbook")
     );
     expect(scrapbookBtn).toBeDefined();
     if (scrapbookBtn) {

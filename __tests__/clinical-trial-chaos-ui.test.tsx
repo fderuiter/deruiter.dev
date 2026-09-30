@@ -134,6 +134,28 @@ vi.mock("@/lib/clinical-trial-chaos/engine", async (importOriginal) => {
   };
 });
 
+// Lets a test make every spawned subject arrive with flagged fields, so the
+// dossier lifelines always have something to act on (#1673).
+const spawnFlags = vi.hoisted(() => ({ alwaysFlagged: false }));
+vi.mock("@/lib/clinical-trial-chaos/scenarios", async (importOriginal) => {
+  const actual =
+    await importOriginal<
+      typeof import("@/lib/clinical-trial-chaos/scenarios")
+    >();
+  return {
+    ...actual,
+    generateClinicalSubject: (
+      ...args: Parameters<typeof actual.generateClinicalSubject>
+    ) => {
+      const [errorProbability, ...rest] = args;
+      return actual.generateClinicalSubject(
+        spawnFlags.alwaysFlagged ? 1 : errorProbability,
+        ...rest
+      );
+    },
+  };
+});
+
 const mockRecordEvent = vi.fn().mockResolvedValue(true);
 vi.mock("@/hooks/useTelemetry", () => ({
   useTelemetry: () => ({
@@ -239,6 +261,7 @@ describe("ClinicalTrialChaos React Component UI Suite", () => {
 
   afterEach(() => {
     fastTrackLifeline.allCharged = false;
+    spawnFlags.alwaysFlagged = false;
     act(() => {
       root.unmount();
     });
@@ -368,7 +391,7 @@ describe("ClinicalTrialChaos React Component UI Suite", () => {
       "BIMO Auditor Behavior: coffee_break"
     );
     expect(coffee?.textContent).toContain("0 of");
-    for (const name of ["Auto Clean", "Query Extension", "Fast-Track"]) {
+    for (const name of ["Auto Clean", "Query Extension"]) {
       const button = Array.from(
         fallback?.querySelectorAll("button") ?? []
       ).find((candidate) =>
@@ -379,7 +402,18 @@ describe("ClinicalTrialChaos React Component UI Suite", () => {
       });
       expect(button?.textContent, name).toContain("0 of");
     }
-    expect(fallback?.textContent).toContain("Active Subjects on Conveyor: 2");
+    // Auto-Clean left the open dossier clean, so Fast-Track has nothing to
+    // change and keeps its charge (#1673).
+    const fastTrack = Array.from(
+      fallback?.querySelectorAll("button") ?? []
+    ).find((candidate) =>
+      candidate.textContent?.includes("Activate Fast-Track")
+    );
+    expect(fastTrack?.disabled).toBe(true);
+    expect(fastTrack?.textContent).toContain(
+      "5 of 5 charge): Nothing to clean"
+    );
+    expect(fallback?.textContent).toContain("Active Subjects on Conveyor: 3");
   });
 
   it("uses compact canvas geometry and matching subject hit targets", async () => {
@@ -1167,6 +1201,8 @@ describe("ClinicalTrialChaos React Component UI Suite", () => {
   it("completes a Fast-Track 21 CFR Pass like a signed CRF (#897)", async () => {
     vi.useFakeTimers();
     fastTrackLifeline.alwaysCharged = true;
+    // Fast-Track is kept for dossiers with flagged fields (#1673).
+    spawnFlags.alwaysFlagged = true;
     try {
       await act(async () => {
         root.render(<ClinicalTrialChaos />);
@@ -1221,6 +1257,7 @@ describe("ClinicalTrialChaos React Component UI Suite", () => {
       );
     } finally {
       fastTrackLifeline.alwaysCharged = false;
+      spawnFlags.alwaysFlagged = false;
       vi.useRealTimers();
     }
   });
@@ -1584,6 +1621,359 @@ describe("ClinicalTrialChaos React Component UI Suite", () => {
 
     vi.useRealTimers();
   });
+
+  // Shared steps for the pass-4 reproductions below.
+  const startCampaign = async () => {
+    await act(async () => {
+      root.render(<ClinicalTrialChaos />);
+    });
+    const startBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.includes("Start 3-Phase Campaign")
+    );
+    await act(async () => {
+      startBtn?.click();
+    });
+    await skipCalibration(container);
+    return container.querySelector(
+      '[data-keyboard-boundary="true"]'
+    ) as HTMLElement;
+  };
+  const pressKey = async (
+    el: Element | Window,
+    key: string,
+    init: KeyboardEventInit = {}
+  ) => {
+    await act(async () => {
+      el.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key,
+          bubbles: true,
+          cancelable: true,
+          ...init,
+        })
+      );
+    });
+  };
+  const flush = async (ms = 60) => {
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(ms);
+    });
+  };
+  const dialogTitled = (title: string) =>
+    Array.from(container.querySelectorAll("[role='dialog']")).find((d) =>
+      d.textContent?.includes(title)
+    ) as HTMLElement | undefined;
+  const focusables = (dialog: HTMLElement) =>
+    Array.from(
+      dialog.querySelectorAll<HTMLElement>("button:not([disabled]), input")
+    );
+  const dossierTimer = () =>
+    container
+      .querySelector("#cc-dossier-title")
+      ?.parentElement?.parentElement?.children.item(1)
+      ?.textContent?.trim();
+
+  // #1671: both dialogs were aria-modal but left focus on the board, so Tab
+  // walked the controls behind the backdrop.
+  it("traps focus in the fix dialog and returns it to the board (#1671)", async () => {
+    vi.useFakeTimers();
+    try {
+      const board = await startCampaign();
+      board.focus();
+      await pressKey(board, "Enter");
+      await flush();
+
+      const dialog = dialogTitled("CDISC Controlled Terminology Validation");
+      expect(dialog).toBeTruthy();
+      // Focus lands on the first answer, not on the board behind.
+      expect(dialog?.contains(document.activeElement)).toBe(true);
+      expect(document.activeElement?.textContent?.trim()).toMatch(/^1/);
+
+      // The page behind the dialog is inert.
+      const manual = container.querySelector(
+        '[aria-label^="Open Field Manual"]'
+      );
+      expect(manual?.closest("[inert]")).toBeTruthy();
+
+      // Tab from the last control wraps to the first, and Shift+Tab back.
+      const controls = focusables(dialog!);
+      controls[controls.length - 1].focus();
+      await pressKey(controls[controls.length - 1], "Tab");
+      expect(document.activeElement).toBe(controls[0]);
+      await pressKey(controls[0], "Tab", { shiftKey: true });
+      expect(document.activeElement).toBe(controls[controls.length - 1]);
+
+      // Number keys still pick an answer from inside the dialog.
+      await pressKey(controls[controls.length - 1], "1");
+      expect(dialog?.textContent).toMatch(/Standard Verified|Regulatory Query/);
+      await flush(600);
+
+      // Escape closes it and focus goes back to the board.
+      if (dialogTitled("CDISC Controlled Terminology Validation")) {
+        await pressKey(document.activeElement ?? board, "Escape");
+      }
+      await flush();
+      expect(dialogTitled("CDISC Controlled Terminology Validation")).toBe(
+        undefined
+      );
+      expect(document.activeElement).toBe(board);
+      expect(container.querySelector("[inert]")).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("traps focus in the signature dialog on Sign and restores it on Escape (#1671)", async () => {
+    vi.useFakeTimers();
+    try {
+      const board = await startCampaign();
+      const saeCard = Array.from(container.querySelectorAll("button")).find(
+        (b) => b.textContent?.includes("SUBJ-1003")
+      );
+      await act(async () => {
+        saeCard?.click();
+      });
+      const obsCard = Array.from(container.querySelectorAll("span"))
+        .find((s) => s.textContent?.includes("Validate Choice"))
+        ?.closest(".cursor-pointer") as HTMLElement;
+      await act(async () => {
+        obsCard.click();
+      });
+      const correct = Array.from(container.querySelectorAll("button")).find(
+        (b) => b.textContent?.trim().replace(/^\d/, "") === "Headache (Grade 2)"
+      );
+      await act(async () => {
+        correct?.click();
+      });
+      await flush(700);
+      board.focus();
+      const aeCard = Array.from(container.querySelectorAll("h4"))
+        .find((h) => h.textContent?.includes("AE Station"))
+        ?.closest(".group") as HTMLElement;
+      await act(async () => {
+        aeCard.click();
+      });
+      await flush();
+
+      const dialog = dialogTitled("21 CFR Part 11 Electronic Signature");
+      expect(dialog).toBeTruthy();
+      expect(document.activeElement?.textContent).toContain("Sign & Lock CRF");
+
+      const controls = focusables(dialog!);
+      await pressKey(document.activeElement!, "Tab");
+      expect(document.activeElement).toBe(controls[0]);
+      expect(dialog?.contains(document.activeElement)).toBe(true);
+
+      await pressKey(document.activeElement!, "Escape");
+      await flush();
+      expect(dialogTitled("21 CFR Part 11 Electronic Signature")).toBe(
+        undefined
+      );
+      expect(document.activeElement).toBe(board);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  // #1672: nothing could pause a shift, and the clocks ran behind the manual.
+  it("pauses every clock on P and while the Field Manual is open (#1672)", async () => {
+    vi.useFakeTimers();
+    try {
+      const board = await startCampaign();
+      const tick = async (ms: number) => {
+        for (let t = 0; t < ms; t += 100) await flush(100);
+      };
+      await tick(1500);
+
+      board.focus();
+      await pressKey(board, "p");
+      await flush();
+      const pauseDialog = dialogTitled("Shift paused");
+      expect(pauseDialog).toBeTruthy();
+      expect(document.activeElement?.textContent).toContain("Resume shift");
+      expect(container.textContent).toContain("Shift clocks: paused");
+      expect(announcements).toContain(
+        "Shift paused. Every clock is stopped. Press P or Resume to continue."
+      );
+
+      const frozenTimer = dossierTimer();
+      const sponsorMood = () =>
+        container
+          .querySelector('[aria-label="Sponsor satisfaction"]')
+          ?.getAttribute("aria-valuenow");
+      const frozenMood = sponsorMood();
+      await tick(10000);
+      expect(dossierTimer()).toBe(frozenTimer);
+      expect(sponsorMood()).toBe(frozenMood);
+
+      // Game keys do nothing while paused.
+      await pressKey(document.activeElement!, "Enter");
+      expect(dialogTitled("CDISC Controlled Terminology Validation")).toBe(
+        undefined
+      );
+
+      // P resumes, and the clock runs again.
+      await pressKey(document.activeElement!, "p");
+      await flush();
+      expect(dialogTitled("Shift paused")).toBe(undefined);
+      await tick(2000);
+      expect(parseInt(dossierTimer() ?? "", 10)).toBeLessThan(
+        parseInt(frozenTimer ?? "", 10)
+      );
+
+      // Opening the manual holds the shift; closing it resumes.
+      const manualButton = container.querySelector(
+        '[aria-label^="Open Field Manual"]'
+      ) as HTMLButtonElement;
+      await act(async () => {
+        manualButton.click();
+      });
+      await flush();
+      expect(container.textContent).toContain(
+        "Shift clocks: paused while the Field Manual is open"
+      );
+      const beforeManual = dossierTimer();
+      await tick(5000);
+      expect(dossierTimer()).toBe(beforeManual);
+      await pressKey(window, "?");
+      await flush();
+      expect(container.textContent).toContain("Shift clocks: running");
+      await tick(2000);
+      expect(parseInt(dossierTimer() ?? "", 10)).toBeLessThan(
+        parseInt(beforeManual ?? "", 10)
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  }, 30000);
+
+  // #1673: a lifeline fired on a clean CRF and spent its charge for nothing.
+  it("keeps a lifeline's charge when the open dossier is already clean (#1673)", async () => {
+    vi.useFakeTimers();
+    fastTrackLifeline.allCharged = true;
+    try {
+      const board = await startCampaign();
+      board.focus();
+      // Auto-Clean fixes the flagged dossier and spends its charge.
+      announcements.length = 0;
+      await pressKey(board, "w");
+      expect(announcements).toContain("CDISC Auto-Clean activated");
+      expect(container.textContent).toContain("Ready ✓");
+      // Fast-Track now has nothing to change on the same, clean dossier.
+      announcements.length = 0;
+      await pressKey(board, "r");
+      expect(announcements).toContain(
+        "Fast-Track 21 CFR Pass not used: nothing to clean on this dossier. Its charge is kept."
+      );
+      const tile = Array.from(container.querySelectorAll("button")).find((b) =>
+        b.textContent?.startsWith("Fast-Track 21 CFR Pass")
+      ) as HTMLButtonElement;
+      expect(tile.disabled).toBe(true);
+      expect(tile.textContent).toContain("NOTHING TO CLEAN");
+      expect(tile.textContent).toContain("Fast-Track 21 CFR Pass");
+      expect(container.textContent).toContain("0/5 locked");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("opens Phase 2 with its own lock counter at zero (#1673)", async () => {
+    vi.useFakeTimers();
+    fastTrackLifeline.alwaysCharged = true;
+    spawnFlags.alwaysFlagged = true;
+    try {
+      await act(async () => {
+        root.render(<ClinicalTrialChaos />);
+      });
+      const startBtn = Array.from(container.querySelectorAll("button")).find(
+        (b) => b.textContent?.includes("Start 3-Phase Campaign")
+      );
+      await act(async () => {
+        startBtn?.click();
+      });
+      const board = container.querySelector(
+        '[data-keyboard-boundary="true"]'
+      ) as HTMLElement;
+      for (
+        let i = 0;
+        i < 40 && !container.textContent?.includes("AUDIT PASSED");
+        i++
+      ) {
+        if (container.textContent?.includes("Waiting for the next packet")) {
+          await flush(1000);
+          continue;
+        }
+        await pressKey(board, "r");
+      }
+      expect(container.textContent).toContain(
+        "PHASE 1 COMPLIANCE AUDIT PASSED!"
+      );
+      expect(container.textContent).toContain("asks for 3 more locks");
+      // Close the phase report, then advance.
+      await act(async () => {
+        Array.from(container.querySelectorAll("button"))
+          .find((b) => b.textContent?.includes("Close Report"))
+          ?.click();
+      });
+      await act(async () => {
+        Array.from(container.querySelectorAll("button"))
+          .find((b) => b.textContent?.includes("Advance to Phase 2"))
+          ?.click();
+      });
+      expect(container.textContent).toContain("Phase 2/3");
+      expect(container.textContent).toContain("0/3 locked");
+      expect(
+        container.querySelector(
+          '[aria-label="0 of 3 CRFs locked in this phase"]'
+        )
+      ).toBeTruthy();
+    } finally {
+      fastTrackLifeline.alwaysCharged = false;
+      vi.useRealTimers();
+    }
+  });
+
+  // #1670: expired subjects were reported as CRFs "submitted with unresolved
+  // raw data", with more "submitted" than processed.
+  it("reports expired subjects as expired on the report and end panel (#1670)", async () => {
+    vi.useFakeTimers();
+    let seed = 1670;
+    vi.spyOn(Math, "random").mockImplementation(() => {
+      seed = (seed * 16807) % 2147483647;
+      return (seed - 1) / 2147483646;
+    });
+    try {
+      await startCampaign();
+      for (
+        let i = 0;
+        i < 240 && !container.textContent?.includes("TRIAL TERMINATED");
+        i++
+      ) {
+        await flush(1000);
+      }
+      expect(container.textContent).toContain("TRIAL TERMINATED");
+      const report = dialogTitled("FDA Bioresearch Monitoring (BIMO) Report");
+      expect(report).toBeTruthy();
+      expect(report?.textContent).toContain(
+        "expired on the conveyor before source data verification"
+      );
+      expect(report?.textContent).not.toContain("submitted with unresolved");
+      const expired = Array.from(report!.querySelectorAll("span")).find(
+        (el) => el.textContent === "Expired"
+      )?.nextElementSibling?.textContent;
+      expect(Number(expired)).toBeGreaterThan(0);
+
+      const violations = Array.from(container.querySelectorAll("dt")).find(
+        (dt) => dt.textContent === "Violations"
+      );
+      expect(violations?.parentElement?.textContent).toContain(
+        `${expired} expired · 0 misrouted · 0 wrong fixes`
+      );
+    } finally {
+      vi.restoreAllMocks();
+      vi.useRealTimers();
+    }
+  }, 60000);
 
   it("should load existing high score from localStorage", async () => {
     mockStorage.setItem("clinical_chaos_highscore", "9800");

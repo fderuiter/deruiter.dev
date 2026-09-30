@@ -22,6 +22,7 @@ import {
   IconCheck,
   IconRefresh,
   IconPlayerPlay,
+  IconPlayerPause,
   IconTrophy,
   IconFileText,
   IconShieldCheck,
@@ -48,6 +49,7 @@ import { DynamicTabletOrientationHint as TabletOrientationHint } from "@/compone
 import { useGameFullscreen as useFullscreen } from "@/components/arcade/CabinetFullscreen";
 import { applyCanvasScale, computeCanvasResolution } from "@/lib/arcade";
 import { useAnimationFrame } from "@/hooks/useAnimationFrame";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 
 import {
   CDISCDomain,
@@ -151,7 +153,14 @@ import {
   selectNextDossier,
   formatNextDossierCue,
   buildInspectionReport,
-  canActivatePowerUp,
+  getPowerUpRefusal,
+  describePowerUpRefusal,
+  POWER_UP_REFUSAL_LABELS,
+  getPhaseProgress,
+  getPhaseLockTarget,
+  getViolationBreakdown,
+  isShiftClockHalted,
+  getShiftTickSeconds,
   spendPowerUp,
   startCoffeeBreak,
   extendSubjectDeadlines,
@@ -344,6 +353,10 @@ export const ClinicalTrialChaos: React.FC = () => {
   const [gameMode, setGameMode] = useState<GameMode>("campaign");
   const [phase, setPhase] = useState<GamePhase>(1);
   const [playState, setPlayState] = useState<PlayState>("idle");
+  // A player pause (P or the Pause button) and an open Field Manual both hold
+  // the shift clocks still, as they do in the other arcade games (#1672).
+  const [isPaused, setIsPaused] = useState(false);
+  const [isManualOpen, setIsManualOpen] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   // Bitmap size of the conveyor canvas; changes trigger an idle redraw
   const [canvasSize, setCanvasSize] = useState("");
@@ -567,6 +580,7 @@ export const ClinicalTrialChaos: React.FC = () => {
       setGameMode(mode);
       setPhase(targetPhase);
       setPlayState("playing");
+      setIsPaused(false);
       setAuditor(applyOfficeToAuditor(createInitialAuditorState(), office));
       ambientTimerRef.current = 0;
       const freshSponsor = createInitialSponsorState();
@@ -710,6 +724,21 @@ export const ClinicalTrialChaos: React.FC = () => {
       setPowerUps,
     ]
   );
+
+  // 8b. Pause and resume a running shift (#1672). The loop keeps drawing but
+  // advances no clock; the resume stamp keeps the first frame from jumping.
+  const togglePause = useCallback(() => {
+    if (playState !== "playing") return;
+    const next = !isPaused;
+    if (!next) lastTickTimeRef.current = Date.now();
+    setIsPaused(next);
+    announce(
+      next
+        ? "Shift paused. Every clock is stopped. Press P or Resume to continue."
+        : "Shift resumed.",
+      "assertive"
+    );
+  }, [playState, isPaused, announce]);
 
   // 9. Active Subject in Dossier
   const activeSubject = useMemo(() => {
@@ -960,16 +989,21 @@ export const ClinicalTrialChaos: React.FC = () => {
   // 13. Power-Up Trigger Execution
   const triggerPowerUp = useCallback(
     (type: PowerUpType) => {
-      if (
-        !canActivatePowerUp(
-          powerUps,
-          type,
-          playState === "playing",
-          !!activeSubject
-        )
-      )
-        return;
       const p = powerUps[type];
+      const refusal = getPowerUpRefusal(
+        powerUps,
+        type,
+        playState === "playing",
+        activeSubject
+      );
+      if (refusal) {
+        // Say why, and keep the charge: a lifeline that cannot change the
+        // dossier is never spent on it (#1673).
+        if (playState === "playing" && p) {
+          announce(describePowerUpRefusal(refusal, p.name), "polite");
+        }
+        return;
+      }
 
       triggerSound("powerup");
 
@@ -1345,6 +1379,8 @@ export const ClinicalTrialChaos: React.FC = () => {
   const renderConveyorCanvasRef = useRef(renderConveyorCanvas);
   const validatingObsRef = useRef(validatingObs);
   const signatureModalRef = useRef(signatureModal);
+  const isPausedRef = useRef(isPaused);
+  const isManualOpenRef = useRef(isManualOpen);
 
   // Sync refs on every render
   useEffect(() => {
@@ -1365,6 +1401,8 @@ export const ClinicalTrialChaos: React.FC = () => {
     renderConveyorCanvasRef.current = renderConveyorCanvas;
     validatingObsRef.current = validatingObs;
     signatureModalRef.current = signatureModal;
+    isPausedRef.current = isPaused;
+    isManualOpenRef.current = isManualOpen;
     activeProtocolRef.current = activeProtocol;
     ruleViolationsRef.current = ruleViolations;
   });
@@ -1467,12 +1505,19 @@ export const ClinicalTrialChaos: React.FC = () => {
       };
 
       const now = Date.now();
-      const isPausedByModal =
-        !!validatingObsRef.current ||
-        !!signatureModalRef.current?.isOpen ||
-        calibrationActiveRef.current;
-      const deltaMs = Math.min(100, now - lastTickTimeRef.current);
-      const deltaSeconds = isPausedByModal ? 0 : deltaMs / 1000;
+      // A pause, the Field Manual, a fix or signature dialog and calibration
+      // all hold every clock still through the shared rule (#1672).
+      const halted = isShiftClockHalted({
+        userPaused: isPausedRef.current,
+        manualOpen: isManualOpenRef.current,
+        dialogOpen:
+          !!validatingObsRef.current || !!signatureModalRef.current?.isOpen,
+        calibrating: calibrationActiveRef.current,
+      });
+      const deltaSeconds = getShiftTickSeconds(
+        now - lastTickTimeRef.current,
+        halted
+      );
       lastTickTimeRef.current = now;
 
       let uiNeedsSync = false;
@@ -1703,6 +1748,62 @@ export const ClinicalTrialChaos: React.FC = () => {
     }
   }, [playState, validatingObs, signatureModal.isOpen]);
 
+  // 17a2. Modal dialogs (#1671): each traps Tab and Shift+Tab, closes on
+  // Escape and hands focus back to the board. The board's own key handler
+  // still sees their keys, so the number keys and Enter keep working.
+  const fixDialogOpen = !!validatingObs && playState === "playing";
+  const signatureDialogOpen =
+    signatureModal.isOpen &&
+    !!signatureModal.subject &&
+    playState === "playing";
+  const pauseDialogOpen = isPaused && playState === "playing";
+  const firstFixOptionRef = useRef<HTMLButtonElement | null>(null);
+  const signButtonRef = useRef<HTMLButtonElement | null>(null);
+  const resumeButtonRef = useRef<HTMLButtonElement | null>(null);
+  const fixDialogRef = useFocusTrap<HTMLDivElement>(fixDialogOpen, {
+    initialFocusRef: firstFixOptionRef,
+    onEscape: () => setValidatingObs(null),
+    returnFocusTo: containerRef,
+  });
+  const signatureDialogRef = useFocusTrap<HTMLDivElement>(signatureDialogOpen, {
+    initialFocusRef: signButtonRef,
+    onEscape: () => setSignatureModal((prev) => ({ ...prev, isOpen: false })),
+    returnFocusTo: containerRef,
+  });
+  const pauseDialogRef = useFocusTrap<HTMLDivElement>(pauseDialogOpen, {
+    initialFocusRef: resumeButtonRef,
+    onEscape: togglePause,
+    returnFocusTo: containerRef,
+  });
+
+  // A wrong pick disables the focused answer; move focus to the next open
+  // answer so it never falls back to the page behind the dialog.
+  useEffect(() => {
+    if (!fixDialogOpen) return;
+    const dialog = fixDialogRef.current;
+    const active = document.activeElement as HTMLElement | null;
+    if (
+      dialog &&
+      (!active || !dialog.contains(active) || active.hasAttribute("disabled"))
+    ) {
+      firstFixOptionRef.current?.focus();
+    }
+  }, [fixDialogOpen, fixDialogRef, rejectedChoices]);
+
+  // Everything behind an open dialog is inert, so neither Tab nor a pointer
+  // reaches the controls under the backdrop (#1671).
+  const anyTrappedDialogOpen =
+    fixDialogOpen || signatureDialogOpen || pauseDialogOpen;
+  useEffect(() => {
+    const board = containerRef.current;
+    if (!board || !anyTrappedDialogOpen) return;
+    const background = Array.from(board.children).filter(
+      (el) => !el.hasAttribute("data-cc-modal") && !el.hasAttribute("inert")
+    );
+    background.forEach((el) => el.setAttribute("inert", ""));
+    return () => background.forEach((el) => el.removeAttribute("inert"));
+  }, [anyTrappedDialogOpen]);
+
   // 17b. Draw a single static frame while the shift is not running
   useEffect(() => {
     if (playState === "playing" || activeTab !== "conveyor") return;
@@ -1824,6 +1925,18 @@ export const ClinicalTrialChaos: React.FC = () => {
       }
       return;
     }
+
+    // The Field Manual holds the shift; no game key acts behind it (#1672).
+    if (isManualOpen) return;
+
+    // P pauses and resumes the shift, as in the other arcade games (#1672).
+    if (key === "P") {
+      e.preventDefault();
+      togglePause();
+      return;
+    }
+    // While paused only P, or Escape and Resume in the pause dialog, act.
+    if (isPaused) return;
 
     // Enter performs the next step: fix the next flagged field, or route a clean CRF
     if (key === "ENTER" && activeSubject && e.target === e.currentTarget) {
@@ -2053,7 +2166,13 @@ export const ClinicalTrialChaos: React.FC = () => {
   );
 
   // Derived guidance for the "what do I do next" flow: fix → route → sign
-  const phaseTarget = PHASE_TARGETS[phase];
+  // The header counts this phase's locks against this phase's target (#1673).
+  const phaseProgress = getPhaseProgress(scoreState, gameMode, phase);
+  const phaseTarget = phaseProgress.target ?? getPhaseLockTarget(phase);
+  const violationBreakdown = getViolationBreakdown(
+    scoreState,
+    ruleViolations.length
+  );
   const flaggedObs =
     activeSubject?.observations.filter((o) => !o.isResolved) ?? [];
   const nextFlaggedObs = flaggedObs[0] ?? null;
@@ -2231,29 +2350,55 @@ export const ClinicalTrialChaos: React.FC = () => {
             <span
               className="flex items-center gap-1"
               role="img"
-              aria-label={`${Math.min(scoreState.subjectsSubmitted, phaseTarget)} of ${phaseTarget} CRFs locked`}
+              aria-label={`${Math.min(phaseProgress.locked, phaseTarget)} of ${phaseTarget} CRFs locked in this phase`}
             >
               {Array.from({ length: phaseTarget }, (_, i) => (
                 <span
                   key={i}
                   className={`h-2 w-2 rounded-sm transition-colors ${
-                    i < scoreState.subjectsSubmitted
-                      ? "bg-emerald-400"
-                      : "bg-zinc-700"
+                    i < phaseProgress.locked ? "bg-emerald-400" : "bg-zinc-700"
                   }`}
                 />
               ))}
             </span>
           )}
           <span className="tabular-nums text-zinc-300">
-            {scoreState.subjectsSubmitted}
+            {phaseProgress.locked}
             {gameMode === "campaign" ? `/${phaseTarget}` : ""}
             <span className="hidden sm:inline"> locked</span>
           </span>
         </div>
 
         <div className="ml-auto flex items-center gap-1.5">
-          <FieldManualButton manualId="clinical-chaos" label="Manual" />
+          {playState === "playing" && (
+            // Compact, like the audio toggles beside it, so the header keeps
+            // one row with a four-digit score at 1280px.
+            <button
+              type="button"
+              onClick={togglePause}
+              aria-label={isPaused ? "Resume shift" : "Pause shift"}
+              aria-keyshortcuts="P"
+              title={isPaused ? "Resume the shift (P)" : "Pause the shift (P)"}
+              className="flex h-11 min-h-[44px] min-w-[44px] items-center justify-center gap-1 rounded-lg border border-zinc-800 bg-[#13151a] px-2 text-xs font-bold text-zinc-300 transition hover:text-white"
+            >
+              {isPaused ? (
+                <IconPlayerPlay className="h-4 w-4" aria-hidden="true" />
+              ) : (
+                <IconPlayerPause className="h-4 w-4" aria-hidden="true" />
+              )}
+              <kbd
+                aria-hidden="true"
+                className="rounded border border-zinc-700 px-1 text-[10px] font-normal text-zinc-400"
+              >
+                P
+              </kbd>
+            </button>
+          )}
+          <FieldManualButton
+            manualId="clinical-chaos"
+            label="Manual"
+            onOpenChange={setIsManualOpen}
+          />
           <button
             type="button"
             onClick={() => setBgmEnabled(!bgmEnabled)}
@@ -2561,6 +2706,16 @@ export const ClinicalTrialChaos: React.FC = () => {
                   <output htmlFor="clinical-playstate">
                     Play State: {playState}
                   </output>
+                  <output htmlFor="clinical-paused">
+                    Shift clocks:{" "}
+                    {playState !== "playing"
+                      ? "stopped"
+                      : isPaused
+                        ? "paused"
+                        : isManualOpen
+                          ? "paused while the Field Manual is open"
+                          : "running"}
+                  </output>
                   <output htmlFor="clinical-auditor">
                     BIMO Auditor Behavior: {auditor.behavior} (Suspicion:{" "}
                     {Math.round(auditor.suspicion)}%)
@@ -2593,6 +2748,15 @@ export const ClinicalTrialChaos: React.FC = () => {
                     {playState === "phase_cleared"
                       ? `Start Phase ${phase < 3 ? phase + 1 : 1}`
                       : "Start Phase 1"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={togglePause}
+                    disabled={playState !== "playing"}
+                    aria-pressed={isPaused}
+                  >
+                    {isPaused ? "Resume Shift" : "Pause Shift"} (P)
                   </button>
 
                   <button
@@ -2661,22 +2825,29 @@ export const ClinicalTrialChaos: React.FC = () => {
                       ["query-extension", "Query Extension"],
                       ["fast-sign", "Fast-Track"],
                     ] as const
-                  ).map(([type, label]) => (
-                    <button
-                      key={type}
-                      type="button"
-                      onClick={() => triggerPowerUp(type)}
-                      disabled={
-                        playState !== "playing" ||
-                        powerUps[type].charge < powerUps[type].maxCharge ||
-                        ((type === "auto-clean" || type === "fast-sign") &&
-                          !activeSubject)
-                      }
-                    >
-                      Activate {label} ({powerUps[type].charge} of{" "}
-                      {powerUps[type].maxCharge} charge)
-                    </button>
-                  ))}
+                  ).map(([type, label]) => {
+                    const refusal = getPowerUpRefusal(
+                      powerUps,
+                      type,
+                      playState === "playing",
+                      activeSubject
+                    );
+                    return (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => triggerPowerUp(type)}
+                        disabled={refusal !== null}
+                      >
+                        Activate {label} ({powerUps[type].charge} of{" "}
+                        {powerUps[type].maxCharge} charge)
+                        {refusal === "nothing_to_clean" ||
+                        refusal === "no_dossier"
+                          ? `: ${POWER_UP_REFUSAL_LABELS[refusal]}`
+                          : ""}
+                      </button>
+                    );
+                  })}
                 </div>
               </fieldset>
             </div>
@@ -3231,17 +3402,30 @@ export const ClinicalTrialChaos: React.FC = () => {
                       const p = powerUps[type];
                       const isReady = p.charge >= p.maxCharge;
                       const isActive = p.activeSecondsRemaining > 0;
+                      // A charged lifeline that cannot change the open
+                      // dossier says why instead of READY (#1673).
+                      const refusal = getPowerUpRefusal(
+                        powerUps,
+                        type,
+                        true,
+                        activeSubject
+                      );
+                      const blockedLabel =
+                        refusal === "nothing_to_clean" ||
+                        refusal === "no_dossier"
+                          ? POWER_UP_REFUSAL_LABELS[refusal]
+                          : null;
                       return (
                         <button
                           key={type}
                           type="button"
                           onClick={() => triggerPowerUp(type)}
-                          disabled={
-                            !isReady ||
-                            ((type === "auto-clean" || type === "fast-sign") &&
-                              !activeSubject)
+                          disabled={refusal !== null}
+                          title={
+                            refusal && blockedLabel
+                              ? describePowerUpRefusal(refusal, p.name)
+                              : p.description
                           }
-                          title={p.description}
                           className={`flex min-h-[56px] min-w-0 flex-col justify-between rounded-lg border p-2 text-left transition active:scale-[0.98] ${
                             isActive
                               ? "border-violet-400/60 bg-violet-500/10"
@@ -3292,9 +3476,11 @@ export const ClinicalTrialChaos: React.FC = () => {
                             >
                               {isActive
                                 ? `${Math.ceil(p.activeSecondsRemaining)}s`
-                                : isReady
-                                  ? "READY"
-                                  : `${p.charge}/${p.maxCharge}`}
+                                : blockedLabel
+                                  ? blockedLabel.toUpperCase()
+                                  : isReady
+                                    ? "READY"
+                                    : `${p.charge}/${p.maxCharge}`}
                             </span>
                           </span>
                         </button>
@@ -3322,7 +3508,7 @@ export const ClinicalTrialChaos: React.FC = () => {
                   </h3>
                   <p className="mt-1 text-[11px] text-zinc-400">
                     {gameMode === "campaign"
-                      ? `Lock ${PHASE_TARGETS[1]} CRFs to clear Phase 1. Three phases, each busier than the last.`
+                      ? `Lock ${getPhaseLockTarget(1)} CRFs to clear Phase 1, then ${getPhaseLockTarget(2)} more in Phase 2 and ${getPhaseLockTarget(3)} more in Phase 3. Each phase is busier than the last.`
                       : "No finish line. Lock as many CRFs as you can before someone ends your career."}
                   </p>
                 </div>
@@ -3659,7 +3845,7 @@ export const ClinicalTrialChaos: React.FC = () => {
               <p className="mx-auto mt-1 max-w-md text-xs text-zinc-400">
                 {playState === "phase_cleared"
                   ? phase < 3
-                    ? `Phase ${phase + 1} opens more EDC stations and a faster conveyor.`
+                    ? `Phase ${phase + 1} opens more EDC stations and a faster conveyor, and asks for ${getPhaseLockTarget((phase + 1) as GamePhase)} more locks. Your score carries over.`
                     : "Database locked. All trial data validated and archived."
                   : gameOverReason === "sponsor"
                     ? "Sponsor satisfaction hit 0%. They 'decided to go in a different direction' and awarded the study to a vendor whose bid was 40% cheaper and entirely hypothetical."
@@ -3679,10 +3865,11 @@ export const ClinicalTrialChaos: React.FC = () => {
                     tone: "text-emerald-300",
                   },
                   {
-                    // Wrong fixes are recorded as rule violations and missed
-                    // or misrouted CRFs as audit violations; count both (#1325).
+                    // Expired subjects, misrouted CRFs and wrong fixes, the
+                    // same breakdown the inspection report uses (#1670).
                     label: "Violations",
-                    value: scoreState.auditViolations + ruleViolations.length,
+                    value: violationBreakdown.total,
+                    detail: `${violationBreakdown.expired} expired · ${violationBreakdown.misrouted} misrouted · ${violationBreakdown.wrongFixes} wrong ${violationBreakdown.wrongFixes === 1 ? "fix" : "fixes"}`,
                     tone: "text-rose-300",
                   },
                   {
@@ -3703,6 +3890,11 @@ export const ClinicalTrialChaos: React.FC = () => {
                     >
                       {stat.value}
                     </dd>
+                    {stat.detail && (
+                      <dd className="mt-0.5 text-[10px] leading-snug text-zinc-400 break-words">
+                        {stat.detail}
+                      </dd>
+                    )}
                   </div>
                 ))}
               </dl>
@@ -3933,10 +4125,59 @@ export const ClinicalTrialChaos: React.FC = () => {
         </div>
       )}
 
+      {/* Shift pause (#1672): every clock stops until the player resumes. */}
+      {pauseDialogOpen && (
+        <div
+          data-cc-modal="true"
+          className="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        >
+          <div
+            ref={pauseDialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cc-pause-dialog-title"
+            aria-describedby="cc-pause-dialog-desc"
+            className="max-w-sm w-full rounded-2xl border border-zinc-700 bg-zinc-950 p-6 text-center shadow-2xl"
+          >
+            <IconPlayerPause
+              className="mx-auto h-6 w-6 text-amber-400"
+              aria-hidden="true"
+            />
+            <h2
+              id="cc-pause-dialog-title"
+              className="mt-2 text-base font-bold text-white"
+            >
+              Shift paused
+            </h2>
+            <p
+              id="cc-pause-dialog-desc"
+              className="mt-1 text-xs leading-relaxed text-zinc-400"
+            >
+              Subject timers, the auditor, the sponsor and your lifelines are
+              all stopped. Press P or Resume to continue.
+            </p>
+            <button
+              ref={resumeButtonRef}
+              type="button"
+              onClick={togglePause}
+              aria-keyshortcuts="P"
+              className="mt-4 inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-emerald-500 px-5 text-xs font-bold uppercase tracking-wider text-black transition hover:bg-emerald-400 active:scale-[0.98]"
+            >
+              <IconPlayerPlay className="h-4 w-4" aria-hidden="true" />
+              Resume shift (P)
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Multi-Choice Regulatory Validation Drawer Modal */}
       {validatingObs && playState === "playing" && (
-        <div className="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div
+          data-cc-modal="true"
+          className="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        >
           <div
+            ref={fixDialogRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="cc-fix-dialog-title"
@@ -3945,12 +4186,12 @@ export const ClinicalTrialChaos: React.FC = () => {
             <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
               <div className="flex items-center gap-2">
                 <IconHelp className="h-5 w-5 text-amber-400" />
-                <h3
+                <h2
                   id="cc-fix-dialog-title"
                   className="text-base font-bold text-white"
                 >
                   CDISC Controlled Terminology Validation
-                </h3>
+                </h2>
               </div>
               <button
                 onClick={() => setValidatingObs(null)}
@@ -3995,14 +4236,21 @@ export const ClinicalTrialChaos: React.FC = () => {
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {getObservationChoices(validatingObs.obs).map(
-                    (opt, optIdx) => {
-                      const isRejected =
+                    (opt, optIdx, options) => {
+                      const rejectedHere =
                         rejectedChoices[
                           `${validatingObs.subjectId}:${validatingObs.obs.id}`
-                        ]?.includes(opt) ?? false;
+                        ] ?? [];
+                      const isRejected = rejectedHere.includes(opt);
+                      // Focus lands on the first answer still open (#1671).
+                      const isFirstOpen =
+                        !isRejected &&
+                        options.findIndex((o) => !rejectedHere.includes(o)) ===
+                          optIdx;
                       return (
                         <button
                           key={opt}
+                          ref={isFirstOpen ? firstFixOptionRef : undefined}
                           type="button"
                           onClick={() => handleSelectChoice(opt)}
                           disabled={isRejected}
@@ -4071,8 +4319,12 @@ export const ClinicalTrialChaos: React.FC = () => {
       {signatureModal.isOpen &&
         signatureModal.subject &&
         playState === "playing" && (
-          <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div
+            data-cc-modal="true"
+            className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4"
+          >
             <div
+              ref={signatureDialogRef}
               role="dialog"
               aria-modal="true"
               aria-labelledby="cc-sign-dialog-title"
@@ -4081,12 +4333,12 @@ export const ClinicalTrialChaos: React.FC = () => {
               <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
                 <div className="flex items-center gap-2">
                   <IconLock className="h-5 w-5 text-brand-cyan" />
-                  <h3
+                  <h2
                     id="cc-sign-dialog-title"
                     className="text-base font-bold text-white"
                   >
                     21 CFR Part 11 Electronic Signature
-                  </h3>
+                  </h2>
                 </div>
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">
                   {targetRoutingStation} EDC LOCK
@@ -4187,6 +4439,7 @@ export const ClinicalTrialChaos: React.FC = () => {
                   Cancel (Esc)
                 </button>
                 <button
+                  ref={signButtonRef}
                   onClick={handleConfirmSignature}
                   className="flex min-h-[44px] items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold text-xs uppercase tracking-wider hover:opacity-90 transition shadow-lg shadow-cyan-500/20"
                 >
@@ -4231,7 +4484,7 @@ export const ClinicalTrialChaos: React.FC = () => {
             </div>
 
             <div className="mt-4 space-y-4 text-xs font-mono">
-              <div className="grid grid-cols-3 gap-3 bg-zinc-900/80 p-3 rounded-xl border border-zinc-800">
+              <div className="grid grid-cols-2 gap-3 bg-zinc-900/80 p-3 rounded-xl border border-zinc-800 sm:grid-cols-4">
                 <div>
                   <span className="text-[10px] text-zinc-400 uppercase block">
                     Compliance Score
@@ -4256,6 +4509,22 @@ export const ClinicalTrialChaos: React.FC = () => {
                   </span>
                   <span className="text-lg font-bold text-white">
                     {bimoReport.submittedCRFs}
+                  </span>
+                </div>
+                <div>
+                  {/* Expired subjects were never processed, so they sit
+                      beside the clean rate rather than inside it (#1670). */}
+                  <span className="text-[10px] text-zinc-400 block uppercase">
+                    Expired
+                  </span>
+                  <span
+                    className={`text-lg font-bold ${
+                      bimoReport.expiredCRFs > 0
+                        ? "text-rose-300"
+                        : "text-white"
+                    }`}
+                  >
+                    {bimoReport.expiredCRFs}
                   </span>
                 </div>
               </div>

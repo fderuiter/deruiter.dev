@@ -138,6 +138,12 @@ import {
 } from "@/lib/clinical-trial-chaos";
 
 import {
+  safeGetItem,
+  safeGetRawItem,
+  safeRemoveItem,
+  safeSetRawItem,
+} from "@/lib/safe-storage";
+import {
   playValidationSound,
   playChoiceIncorrectSound,
   playSignatureVerifiedSound,
@@ -160,7 +166,7 @@ const subscribeHighScore = (callback: () => void) => {
 };
 const getHighScoreSnapshot = () => {
   try {
-    return localStorage.getItem("clinical_chaos_highscore") || "0";
+    return safeGetRawItem("clinical_chaos_highscore") || "0";
   } catch {
     return "0";
   }
@@ -236,14 +242,26 @@ interface Particle {
 
 const OUTFIT_STORAGE_KEY = "clinical_chaos_outfit";
 
+/** CRF Studio writes the protocol to simulate here as plain JSON. */
+const CRF_ACTIVE_PROTOCOL_KEY = "crf_active_protocol";
+
+function readStoredProtocol(): StudyProtocol | null {
+  const stored = safeGetItem<unknown>(CRF_ACTIVE_PROTOCOL_KEY);
+  if (
+    stored &&
+    typeof stored === "object" &&
+    !Array.isArray(stored) &&
+    "id" in stored &&
+    (stored as { id: unknown }).id
+  ) {
+    return stored as StudyProtocol;
+  }
+  return null;
+}
+
 function readStoredOutfitId(): OutfitId {
   if (typeof window === "undefined") return DEFAULT_OUTFIT_ID;
-  try {
-    if (typeof window.localStorage?.getItem === "function") {
-      return getOutfitById(window.localStorage.getItem(OUTFIT_STORAGE_KEY)).id;
-    }
-  } catch {}
-  return DEFAULT_OUTFIT_ID;
+  return getOutfitById(safeGetRawItem(OUTFIT_STORAGE_KEY)).id;
 }
 
 /** Small canvas preview of an outfit, drawn with the same renderer as the game. */
@@ -293,11 +311,7 @@ export const ClinicalTrialChaos: React.FC = () => {
   const outfit = getOutfitById(outfitId);
   const selectOutfit = useCallback((id: OutfitId) => {
     setOutfitId(id);
-    try {
-      if (typeof window.localStorage?.setItem === "function") {
-        window.localStorage.setItem(OUTFIT_STORAGE_KEY, id);
-      }
-    } catch {}
+    safeSetRawItem(OUTFIT_STORAGE_KEY, id);
   }, []);
   const [sponsor, setSponsor] = useState<SponsorState>(() =>
     createInitialSponsorState()
@@ -385,13 +399,8 @@ export const ClinicalTrialChaos: React.FC = () => {
   const [activeProtocol, setActiveProtocol] = useState<StudyProtocol | null>(
     () => {
       if (typeof window !== "undefined") {
-        try {
-          const stored = localStorage.getItem("crf_active_protocol");
-          if (stored) {
-            const parsed = JSON.parse(stored);
-            if (parsed && parsed.id) return parsed;
-          }
-        } catch {}
+        const stored = readStoredProtocol();
+        if (stored) return stored;
       }
       return null;
     }
@@ -835,14 +844,10 @@ export const ClinicalTrialChaos: React.FC = () => {
         };
       });
       // Persist outside the updater (AGENTS.md §4).
-      if (typeof window.localStorage?.setItem === "function") {
-        try {
-          localStorage.setItem(
-            "clinical_chaos_highscore",
-            Math.max(scoreState.score + points, scoreState.highScore).toString()
-          );
-        } catch {}
-      }
+      safeSetRawItem(
+        "clinical_chaos_highscore",
+        Math.max(scoreState.score + points, scoreState.highScore).toString()
+      );
 
       // Charge power-ups
       setPowerUps((pu) =>
@@ -2668,9 +2673,7 @@ export const ClinicalTrialChaos: React.FC = () => {
               type="button"
               onClick={() => {
                 setActiveProtocol(null);
-                try {
-                  localStorage.removeItem("crf_active_protocol");
-                } catch {}
+                safeRemoveItem(CRF_ACTIVE_PROTOCOL_KEY);
                 addAuditLog(
                   "Switched simulation engine to Built-in Preset Scenarios.",
                   "INFO"
@@ -3899,21 +3902,16 @@ export const ClinicalTrialChaos: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => {
-                      try {
-                        const stored = localStorage.getItem(
-                          "crf_active_protocol"
+                      const stored = readStoredProtocol();
+                      if (stored) {
+                        setActiveProtocol(stored);
+                        addAuditLog(
+                          `Loaded active protocol ${stored.protocolNumber} into simulation.`,
+                          "COMPLIANT"
                         );
-                        if (stored) {
-                          const parsed = JSON.parse(stored);
-                          setActiveProtocol(parsed);
-                          addAuditLog(
-                            `Loaded active protocol ${parsed.protocolNumber} into simulation.`,
-                            "COMPLIANT"
-                          );
-                          announce("Authored protocol loaded", "polite");
-                          return;
-                        }
-                      } catch {}
+                        announce("Authored protocol loaded", "polite");
+                        return;
+                      }
                       announce(
                         "No authored protocol found. Author one in CRF Studio first.",
                         "polite"

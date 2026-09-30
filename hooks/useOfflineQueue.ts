@@ -397,29 +397,21 @@ export async function flushOfflineQueue(): Promise<{
         failed++;
         let failureReason = `HTTP ${res.status}: Client Error`;
         try {
-          type ResObj = {
-            clone?: () => ResObj;
-            json?: () => Promise<unknown>;
-            text?: () => Promise<string>;
-          };
-          const resObj = res as unknown as ResObj;
-          const targetRes: ResObj =
-            typeof resObj.clone === "function" ? resObj.clone() : resObj;
-          let data: unknown;
-          if (typeof targetRes.json === "function") {
-            try {
-              data = await targetRes.json();
-            } catch {
-              if (typeof targetRes.text === "function") {
-                data = await targetRes.text();
-              }
-            }
-          } else if (typeof targetRes.text === "function") {
-            data = await targetRes.text();
-          }
-
-          if (data && typeof data === "object") {
-            const obj = data as Record<string, unknown>;
+          if (res.error) {
+            failureReason = res.error;
+          } else if (
+            res.details &&
+            Array.isArray(res.details) &&
+            typeof res.details[0]?.message === "string"
+          ) {
+            failureReason = res.details[0].message;
+          } else if (
+            typeof res.body === "string" &&
+            res.body.trim().length > 0
+          ) {
+            failureReason = res.body;
+          } else if (res.body && typeof res.body === "object") {
+            const obj = res.body as Record<string, unknown>;
             if (typeof obj.message === "string") failureReason = obj.message;
             else if (typeof obj.error === "string") failureReason = obj.error;
             else if (
@@ -428,8 +420,41 @@ export async function flushOfflineQueue(): Promise<{
             ) {
               failureReason = obj.details[0].message;
             }
-          } else if (typeof data === "string" && data.trim().length > 0) {
-            failureReason = data;
+          } else {
+            type ResObj = {
+              clone?: () => ResObj;
+              json?: () => Promise<unknown>;
+              text?: () => Promise<string>;
+            };
+            const resObj = res as unknown as ResObj;
+            const targetRes: ResObj =
+              typeof resObj.clone === "function" ? resObj.clone() : resObj;
+            let data: unknown;
+            if (typeof targetRes.json === "function") {
+              try {
+                data = await targetRes.json();
+              } catch {
+                if (typeof targetRes.text === "function") {
+                  data = await targetRes.text();
+                }
+              }
+            } else if (typeof targetRes.text === "function") {
+              data = await targetRes.text();
+            }
+
+            if (data && typeof data === "object") {
+              const obj = data as Record<string, unknown>;
+              if (typeof obj.message === "string") failureReason = obj.message;
+              else if (typeof obj.error === "string") failureReason = obj.error;
+              else if (
+                Array.isArray(obj.details) &&
+                typeof obj.details[0]?.message === "string"
+              ) {
+                failureReason = obj.details[0].message;
+              }
+            } else if (typeof data === "string" && data.trim().length > 0) {
+              failureReason = data;
+            }
           }
         } catch {
           // Fallback to default failureReason if reading fails

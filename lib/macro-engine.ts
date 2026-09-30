@@ -38,7 +38,7 @@ export interface RecordingStateSnapshot {
   recordedSteps: MacroStep[];
 }
 
-type Listener = () => void;
+export type MacroEngineListener = () => void;
 
 const EMPTY_RECORDED_STEPS: MacroStep[] = [];
 const EMPTY_SAVED_MACROS: MacroSequence[] = [];
@@ -50,13 +50,13 @@ const INITIAL_RECORDING_STATE: RecordingStateSnapshot = {
   recordedSteps: EMPTY_RECORDED_STEPS,
 };
 
-class MacroEngine {
+export class MacroEngine {
   private recording = false;
   private recordingName = "";
   private recordedSteps: MacroStep[] = [];
   private isExecuting = false;
   private isReplaying = false;
-  private listeners = new Set<Listener>();
+  private listeners = new Set<MacroEngineListener>();
   private isInitialized = false;
 
   private cachedRecordingState: RecordingStateSnapshot =
@@ -397,7 +397,7 @@ class MacroEngine {
   /**
    * Subscribes to changes in macro engine state.
    */
-  public subscribe(listener: Listener): () => void {
+  public subscribe(listener: MacroEngineListener): () => void {
     this.listeners.add(listener);
     return () => {
       this.listeners.delete(listener);

@@ -6,4 +6,4 @@
 
 # Variable: workspaceCommandRegistry
 
-> `const` **workspaceCommandRegistry**: `WorkspaceCommandRegistry`
+> `const` **workspaceCommandRegistry**: [`WorkspaceCommandRegistry`](../classes/WorkspaceCommandRegistry.md)

@@ -6,9 +6,14 @@
 
 # lib/workspace-command-registry
 
+## Classes
+
+- [WorkspaceCommandRegistry](classes/WorkspaceCommandRegistry.md)
+
 ## Type Aliases
 
 - [WorkspaceAction](type-aliases/WorkspaceAction.md)
+- [WorkspaceRegistryListener](type-aliases/WorkspaceRegistryListener.md)
 
 ## Variables
 

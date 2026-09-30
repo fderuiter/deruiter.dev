@@ -7,13 +7,13 @@ import {
 
 export type WorkspaceAction = WorkspaceActionPayload;
 
-type Listener = () => void;
+export type WorkspaceRegistryListener = () => void;
 
 const EMPTY_ACTIONS: WorkspaceAction[] = [];
 
-class WorkspaceCommandRegistry {
+export class WorkspaceCommandRegistry {
   private actions = new Map<string, WorkspaceAction>();
-  private listeners = new Set<Listener>();
+  private listeners = new Set<WorkspaceRegistryListener>();
   private isInitialized = false;
   private cachedActionsArray: WorkspaceAction[] = EMPTY_ACTIONS;
 
@@ -142,7 +142,7 @@ class WorkspaceCommandRegistry {
   /**
    * Subscribes to changes in the command registry.
    */
-  public subscribe(listener: Listener): () => void {
+  public subscribe(listener: WorkspaceRegistryListener): () => void {
     this.listeners.add(listener);
     return () => {
       this.listeners.delete(listener);

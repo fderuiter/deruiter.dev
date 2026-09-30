@@ -76,6 +76,10 @@ describe("Workspace Command Registry & Command Palette Integration", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ caseStudies: [] }),
+    }) as unknown as typeof fetch;
     mockIsOpen = true;
     workspaceCommandRegistry.clearActions();
     safeStorage.removeItem(MACRO_STORAGE_KEY);
@@ -211,7 +215,9 @@ describe("Workspace Command Registry & Command Palette Integration", () => {
     });
 
     // Start macro recording
-    macroEngine.startRecording("My Macro");
+    act(() => {
+      macroEngine.startRecording("My Macro");
+    });
     expect(macroEngine.isRecording()).toBe(true);
 
     // Execute action
@@ -223,7 +229,10 @@ describe("Workspace Command Registry & Command Palette Integration", () => {
     expect(macroEngine.getRecordingState().recordedStepsCount).toBe(1);
 
     // Save macro
-    const saved = macroEngine.saveMacro("Validate Macro");
+    let saved: unknown = null;
+    act(() => {
+      saved = macroEngine.saveMacro("Validate Macro");
+    });
     expect(saved).not.toBeNull();
     expect(macroEngine.getSavedMacros()).toHaveLength(1);
   });

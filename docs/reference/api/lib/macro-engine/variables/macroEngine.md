@@ -6,4 +6,4 @@
 
 # Variable: macroEngine
 
-> `const` **macroEngine**: `MacroEngine`
+> `const` **macroEngine**: [`MacroEngine`](../classes/MacroEngine.md)

@@ -6,12 +6,17 @@
 
 # lib/macro-engine
 
+## Classes
+
+- [MacroEngine](classes/MacroEngine.md)
+
 ## Interfaces
 
 - [RecordingStateSnapshot](interfaces/RecordingStateSnapshot.md)
 
 ## Type Aliases
 
+- [MacroEngineListener](type-aliases/MacroEngineListener.md)
 - [MacroSequence](type-aliases/MacroSequence.md)
 - [MacroStep](type-aliases/MacroStep.md)
 

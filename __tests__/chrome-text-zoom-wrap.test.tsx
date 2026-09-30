@@ -116,6 +116,29 @@ describe("shared chrome wraps at 200% text size (#1636)", () => {
     expectTouchTargets(bar);
   });
 
+  // #1643: media queries use the browser's default font size, not the page's
+  // root font size, so `xl` alone kept the desktop group on screen at 200%
+  // text on 1280-1440px viewports, where it ran past the right edge. The
+  // header row is a size container and both halves also key on its width in
+  // rem, which does scale with the root font size.
+  it("switches between the desktop group and mobile bar on header room, not viewport width alone", () => {
+    render(<Navbar />);
+    const bar = screen.getByTestId("navbar-mobile-bar");
+    const group = screen.getByTestId("navbar-desktop-group");
+    const row = bar.parentElement;
+    expect(group.parentElement).toBe(row);
+    expect(classesOf(row)).toContain("@container");
+
+    const desktop = classesOf(group);
+    expect(desktop).toContain("hidden");
+    expect(desktop).toContain("xl:@min-[66rem]:flex");
+    expect(desktop).not.toContain("xl:flex");
+
+    const mobile = classesOf(bar);
+    expect(mobile).toContain("xl:@min-[66rem]:hidden");
+    expect(mobile).not.toContain("xl:hidden");
+  });
+
   it("wraps the site footer utility row", () => {
     render(<Footer />);
     const row = screen.getByTestId("footer-utility-row");

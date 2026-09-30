@@ -2,12 +2,13 @@
 
 ***
 
-[fderuiter-portfolio](../../../../modules.md) / [lib/clinical-trial-chaos/engine](../README.md) / ClinicalTrialChaosEngine
+[fderuiter-portfolio](../../../../modules.md) / [lib/clinical-trial-chaos/arcade-engine](../README.md) / ClinicalTrialChaosEngine
 
 # Class: ClinicalTrialChaosEngine
 
-Base abstract class and typed EventBus for all headless arcade game engines.
-Zero framework dependencies. Testable in pure Node.js/Vitest.
+Event-emitting wrapper around the Clinical Trial Chaos shift rules. Every
+rule it applies comes from the same pure functions the player-facing
+component uses (#901); this class only holds the state and emits events.
 
 ## Extends
 

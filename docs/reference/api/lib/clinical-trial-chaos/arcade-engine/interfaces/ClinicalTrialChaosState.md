@@ -2,7 +2,7 @@
 
 ***
 
-[fderuiter-portfolio](../../../../modules.md) / [lib/clinical-trial-chaos/engine](../README.md) / ClinicalTrialChaosState
+[fderuiter-portfolio](../../../../modules.md) / [lib/clinical-trial-chaos/arcade-engine](../README.md) / ClinicalTrialChaosState
 
 # Interface: ClinicalTrialChaosState
 

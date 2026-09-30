@@ -11,7 +11,7 @@ Zero framework dependencies. Testable in pure Node.js/Vitest.
 
 ## Extended by
 
-- [`ClinicalTrialChaosEngine`](../../../../clinical-trial-chaos/engine/classes/ClinicalTrialChaosEngine.md)
+- [`ClinicalTrialChaosEngine`](../../../../clinical-trial-chaos/arcade-engine/classes/ClinicalTrialChaosEngine.md)
 - [`GarminWatchEngine`](../../../../garmin-engine/classes/GarminWatchEngine.md)
 - [`LaserLoonEngine`](../../../../laser-loon/engine/classes/LaserLoonEngine.md)
 - [`OetDescentEngine`](../../../../patrol/oet-engine/classes/OetDescentEngine.md)

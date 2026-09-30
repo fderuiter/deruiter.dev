@@ -236,6 +236,7 @@ export {
   runBlinds,
   endlessAct,
   DEFAULT_SEED,
+  runChoice,
   type ActIntroView,
   type EndlessView,
   type OpenedPack,
@@ -252,7 +253,38 @@ export {
   type ShopSlot,
   type ShopState,
   type ShopView,
+  type SuspendedRelic,
 } from "./internal/run";
+export {
+  DEFAULT_SPONSOR_ID,
+  SPONSORS,
+  sponsorById,
+  sponsorCardChips,
+  sponsorHandLevels,
+  sponsorHandSize,
+  type CardChipBonus,
+  type Sponsor,
+} from "./internal/sponsors";
+export {
+  BASE_STAKE_MODIFIERS,
+  DEFAULT_STAKE,
+  MAX_STAKE,
+  STAKES,
+  lockedRelicSlot,
+  stakeCashOut,
+  stakeLevels,
+  stakeModifiers,
+  type StakeLevel,
+  type StakeModifiers,
+} from "./internal/stakes";
+export {
+  DEFAULT_RUN_CHOICE,
+  isDefaultChoice,
+  resolveRunChoice,
+  ruledPlan,
+  startingInventory,
+  type RunChoice,
+} from "./internal/run-rules";
 export { raiseQuotas } from "./internal/quotas";
 export {
   CASH_OUT_BASE,

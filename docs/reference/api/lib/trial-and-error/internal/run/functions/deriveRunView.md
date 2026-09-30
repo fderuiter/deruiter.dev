@@ -6,13 +6,14 @@
 
 # Function: deriveRunView()
 
-> **deriveRunView**(`plan`, `run`): [`RunView`](../interfaces/RunView.md)
+> **deriveRunView**(`authored`, `run`): [`RunView`](../interfaces/RunView.md)
 
-Derives everything a run renders. Pure; safe to call on every render.
+Derives everything a run renders, from the plan as the run's sponsor and
+stake rewrite it. Pure; safe to call on every render.
 
 ## Parameters
 
-### plan
+### authored
 
 [`RunPlan`](../type-aliases/RunPlan.md)
 

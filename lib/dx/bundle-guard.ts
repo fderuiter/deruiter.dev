@@ -34,6 +34,34 @@ export const DEFAULT_BUDGETS = {
 };
 
 /**
+ * Third-party chunks that are only ever loaded on demand and cannot be split
+ * further, each with its own ceiling in place of `maxSingleChunkGzip`.
+ * A chunk matches when it is not part of the initial bundle and its source
+ * contains `marker`. Mermaid 12 lazy-loads the ELK layout engine (about
+ * 430 kB gzip) only for `elk` layout diagrams (#1490).
+ */
+export const LAZY_VENDOR_CHUNK_BUDGETS: ReadonlyArray<{
+  name: string;
+  marker: string;
+  maxGzip: number;
+}> = [{ name: "elkjs", marker: "elk.alg.common", maxGzip: 500 * 1024 }];
+
+/**
+ * Returns the gzip ceiling that applies to one chunk: a lazy vendor ceiling
+ * when a non-initial chunk carries that vendor's marker, otherwise the
+ * default single-chunk budget.
+ */
+export function chunkGzipBudget(source: string, isInitial: boolean): number {
+  if (!isInitial) {
+    const vendor = LAZY_VENDOR_CHUNK_BUDGETS.find((v) =>
+      source.includes(v.marker)
+    );
+    if (vendor) return vendor.maxGzip;
+  }
+  return DEFAULT_BUDGETS.maxSingleChunkGzip;
+}
+
+/**
  * Inspects .next build output chunks and evaluates gzip sizes and budget limits.
  */
 export function inspectBundleChunks(
@@ -116,9 +144,10 @@ export function inspectBundleChunks(
         isInitial,
       };
 
-      if (gzipBytes > DEFAULT_BUDGETS.maxSingleChunkGzip) {
+      const budget = chunkGzipBudget(rawContent.toString("utf-8"), isInitial);
+      if (gzipBytes > budget) {
         violations.push(
-          `Chunk '${path.basename(file)}' (${(gzipBytes / 1024).toFixed(1)} kB gzip) exceeds maximum chunk budget of ${(DEFAULT_BUDGETS.maxSingleChunkGzip / 1024).toFixed(0)} kB.`
+          `Chunk '${path.basename(file)}' (${(gzipBytes / 1024).toFixed(1)} kB gzip) exceeds maximum chunk budget of ${(budget / 1024).toFixed(0)} kB.`
         );
       }
 

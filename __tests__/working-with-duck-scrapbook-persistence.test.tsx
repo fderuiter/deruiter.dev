@@ -355,13 +355,13 @@ describe("Working With Duck component - scrapbook unlock preservation (#599)", (
     container = mounted.container;
     root = mounted.root;
 
-    expect(container.textContent).toContain("Working With Duck");
+    expect(container.textContent).toContain("Start Sprint 1");
   });
 
   it("does not crash when saved unlocks are the wrong shape (not an array)", async () => {
     storageStore[STORAGE_KEY] = JSON.stringify({ not: "an array" });
 
     ({ container, root } = await mountFresh());
-    expect(container.textContent).toContain("Working With Duck");
+    expect(container.textContent).toContain("Start Sprint 1");
   });
 });

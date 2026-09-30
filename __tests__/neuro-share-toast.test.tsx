@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { fromAny } from "@total-typescript/shoehorn";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import React from "react";
 import {
@@ -101,12 +102,9 @@ describe("NeuroRecon share-link toast (#1442)", () => {
         set: () => true,
       }
     );
-    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(((
-      contextId: string
-    ) =>
-      contextId === "2d"
-        ? context2D
-        : null) as unknown as HTMLCanvasElement["getContext"]);
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(
+      fromAny((contextId: string) => (contextId === "2d" ? context2D : null))
+    );
   });
 
   afterEach(() => {

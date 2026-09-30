@@ -3,6 +3,7 @@
 // #1552: RETRY BREACH kept the score, so dying and retrying farmed route-node
 // points, and a run that ended in a trace never recorded a high score.
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { fromAny } from "@total-typescript/shoehorn";
 import type { Enemy } from "@/lib/dungeon";
 
 (
@@ -125,9 +126,9 @@ describe("RetroLabyrinth retry score and high score on death (#1552)", () => {
     // safe-storage keeps a module-level memory cache; drop the key so one
     // test's high score doesn't leak into the next.
     safeRemoveItem(RETRO_LABYRINTH_HIGH_SCORE_KEY);
-    HTMLCanvasElement.prototype.getContext = vi.fn(
-      () => ctx as unknown as CanvasRenderingContext2D
-    ) as unknown as typeof HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = fromAny(
+      vi.fn(() => fromAny<CanvasRenderingContext2D, unknown>(ctx))
+    );
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);

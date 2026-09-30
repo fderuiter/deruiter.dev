@@ -6,7 +6,7 @@
 
 # Function: updateFaceForgeBoss()
 
-> **updateFaceForgeBoss**(`boss`, `playerX`, `playerY`, `nowMs`, `gridWidth`, `gridHeight`): `object`
+> **updateFaceForgeBoss**(`boss`, `playerX`, `playerY`, `nowMs`, `gridWidth`, `gridHeight`, `playerHeading?`): `object`
 
 Updates boss animations, attack patterns, and projectile trajectories.
 
@@ -33,6 +33,16 @@ Updates boss animations, attack patterns, and projectile trajectories.
 `number`
 
 ### gridHeight
+
+`number`
+
+### playerHeading?
+
+#### dx
+
+`number`
+
+#### dy
 
 `number`
 

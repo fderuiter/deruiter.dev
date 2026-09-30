@@ -159,7 +159,7 @@ export const ARCADE_GAMES_METADATA: ArcadeGameMetadata[] = [
     subtitle: "Clinical Study Management Simulator",
     genre: "Management Simulation",
     description:
-      "Shepherd one study from kickoff to closeout with eight attention points a day. Delegate, audit the sites behind the green dashboard, and defend your decisions when the FDA arrives.",
+      "Shepherd one study from kickoff to closeout with five attention points a day. Delegate, audit the sites behind the green dashboard, and defend your decisions when the FDA arrives.",
     mechanics: [
       "Daily Attention Budget",
       "Documentation Debt",
@@ -198,7 +198,7 @@ export const ARCADE_GAMES_METADATA: ArcadeGameMetadata[] = [
     borderHover:
       "hover:border-rose-500/50 hover:shadow-[0_0_30px_rgba(244,63,94,0.15)]",
     badgeBg: "bg-rose-500/10 text-rose-300 border-rose-500/30",
-    storageKey: "retro_labyrinth_high_score",
+    storageKey: "retro_labyrinth_highscore",
     route: "/arcade/retro-labyrinth",
   },
   {

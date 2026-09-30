@@ -250,7 +250,7 @@ describe("Garmin Connect IQ Simulation Engine (lib/garmin-engine.ts)", () => {
     };
     const crashedStk = updateGameSimulation(stkState, 16.6);
     expect(crashedStk.gameState).toBe("crashed");
-    expect(crashedStk.crashReport?.errorType).toBe("Symbol Not Found");
+    expect(crashedStk.crashReport?.errorType).toBe("Stack Overflow");
 
     // Test mem_token collection
     const memState = {

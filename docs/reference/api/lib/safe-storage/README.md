@@ -25,10 +25,12 @@
 - [safeClear](functions/safeClear.md)
 - [safeGetEnvelope](functions/safeGetEnvelope.md)
 - [safeGetItem](functions/safeGetItem.md)
+- [safeGetRawItem](functions/safeGetRawItem.md)
 - [safeIsAvailable](functions/safeIsAvailable.md)
 - [safePruneExpired](functions/safePruneExpired.md)
 - [safeRemoveItem](functions/safeRemoveItem.md)
 - [safeSetItem](functions/safeSetItem.md)
+- [safeSetRawItem](functions/safeSetRawItem.md)
 
 ## References
 

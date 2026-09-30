@@ -486,8 +486,10 @@ describe("Clinical Trial Chaos Engine - Unit Tests", () => {
     expect(getStationsForPhase(1, "campaign")).toHaveLength(4);
     // Phase 2 returns 6 stations
     expect(getStationsForPhase(2, "campaign")).toHaveLength(6);
-    // Phase 3 or higher returns 6 stations
-    expect(getStationsForPhase(3, "campaign")).toHaveLength(6);
+    // Phase 3 opens all eight, adding DS and MH as stations 7 and 8 (#1326)
+    expect(
+      getStationsForPhase(3, "campaign").map((station) => station.id)
+    ).toEqual(["DM", "VS", "AE", "LB", "CM", "EX", "DS", "MH"]);
   });
 
   it("handles generateClinicalSubject domain filtering and forceSAE fallback", () => {

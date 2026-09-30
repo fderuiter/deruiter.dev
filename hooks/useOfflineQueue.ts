@@ -2,6 +2,8 @@
 
 import { useSyncExternalStore, useCallback, useEffect } from "react";
 import { logger } from "@/lib/logger";
+import { generateId } from "@/lib/utils";
+import { safeGetItem, safeSetRawItem } from "@/lib/safe-storage";
 
 export type QueueItemType = "telemetry" | "reaction" | "feedback" | string;
 
@@ -21,12 +23,16 @@ const STORAGE_KEY = "portfolio_offline_queue";
 const QUEUE_CHANGE_EVENT = "portfolio-offline-queue-change";
 
 interface CacheEntry {
-  raw: string | null;
+  /** The value safeStorage last returned, used to detect external changes. */
+  source: unknown;
   items: QueuedRequest[];
 }
 
+/** Forces the next read to rebuild the cache even if safeStorage is unchanged. */
+const STALE = Symbol("stale");
+
 let memoryCache: CacheEntry = {
-  raw: null,
+  source: null,
   items: [],
 };
 
@@ -44,57 +50,33 @@ function notifyOnlineSubscribers() {
   onlineSubscribers.forEach((cb) => cb());
 }
 
-function isStorageAvailable(): boolean {
-  return (
-    typeof window !== "undefined" &&
-    typeof window.localStorage?.getItem === "function" &&
-    typeof window.localStorage?.setItem === "function"
-  );
-}
-
 function readStorage(): QueuedRequest[] {
-  if (!isStorageAvailable()) {
+  // safeStorage returns the same parsed reference while the stored string is
+  // unchanged, and holds the queue in memory when localStorage is unavailable.
+  const stored = safeGetItem<unknown>(STORAGE_KEY);
+  if (stored === memoryCache.source) {
     return memoryCache.items;
   }
 
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (raw === memoryCache.raw) {
-      return memoryCache.items;
-    }
-
-    if (!raw) {
-      memoryCache = { raw: null, items: [] };
-      return memoryCache.items;
-    }
-
-    const parsed = JSON.parse(raw) as QueuedRequest[];
-    if (Array.isArray(parsed)) {
-      memoryCache = { raw, items: parsed };
-      return parsed;
-    }
-  } catch (error) {
-    logger.warn("Failed to read offline queue from storage:", error);
+  if (Array.isArray(stored)) {
+    memoryCache = { source: stored, items: stored as QueuedRequest[] };
+    return memoryCache.items;
   }
 
-  memoryCache = { raw: null, items: [] };
+  if (stored !== null) {
+    logger.warn("Ignoring malformed offline queue in storage.");
+  }
+  memoryCache = { source: stored, items: [] };
   return memoryCache.items;
 }
 
 function writeStorage(items: QueuedRequest[]): void {
-  memoryCache = {
-    raw: isStorageAvailable() ? JSON.stringify(items) : null,
-    items,
-  };
-  if (isStorageAvailable()) {
-    try {
-      const raw = JSON.stringify(items);
-      window.localStorage.setItem(STORAGE_KEY, raw);
-      memoryCache = { raw, items };
-      window.dispatchEvent(new CustomEvent(QUEUE_CHANGE_EVENT));
-    } catch (error) {
-      logger.warn("Failed to write offline queue to storage:", error);
-    }
+  // Stored as a bare JSON array (no envelope) so queued requests from earlier
+  // visits are still read back and flushed.
+  const persisted = safeSetRawItem(STORAGE_KEY, JSON.stringify(items));
+  memoryCache = { source: safeGetItem<unknown>(STORAGE_KEY), items };
+  if (persisted) {
+    window.dispatchEvent(new CustomEvent(QUEUE_CHANGE_EVENT));
   }
   notifySubscribers();
 }
@@ -103,7 +85,7 @@ function writeStorage(items: QueuedRequest[]): void {
 if (typeof window !== "undefined") {
   window.addEventListener("storage", (e) => {
     if (e.key === STORAGE_KEY || e.key === null) {
-      memoryCache = { raw: null, items: [] };
+      memoryCache = { source: STALE, items: [] };
       readStorage();
       notifySubscribers();
     }
@@ -137,11 +119,7 @@ export function enqueueOfflineRequest<T = unknown>(
 ): QueuedRequest<T> {
   const current = readStorage();
 
-  const id =
-    request.id ||
-    (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-      ? crypto.randomUUID()
-      : `offline_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`);
+  const id = request.id || generateId("offline_", { timestamp: true });
 
   const newEntry: QueuedRequest<T> = {
     id,

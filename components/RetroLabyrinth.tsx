@@ -11,6 +11,7 @@ import React, {
 import { useTelemetry } from "@/hooks/useTelemetry";
 import { logger } from "@/lib/logger";
 import { useAnnouncer } from "@/hooks/useAnnouncer";
+import { safeGetRawItem, safeSetRawItem } from "@/lib/safe-storage";
 import { clamp } from "@/lib/game-utils";
 import { useAudio } from "@/components/providers/AudioProvider";
 import {
@@ -64,12 +65,15 @@ import {
   renderWireframeMesh,
   updateEnemyAI,
   updateFaceForgeBoss,
+  getExitLockState,
   updateTSPMovingWalls,
   retroAudio,
   CRT_THEMES,
   CYBERDECK_CLASSES,
   DARKNET_VENDOR_CATALOG,
   loadCyberdeckProfile,
+  RETRO_LABYRINTH_HIGH_SCORE_KEY,
+  formatCampaignRoomBadge,
   saveCyberdeckProfile,
   STAGE_1_MAZE,
 } from "@/lib/dungeon";
@@ -80,6 +84,8 @@ const START_X = 1;
 const START_Y = 1;
 const EXIT_X = 13;
 const EXIT_Y = 7;
+// How recent the player's last step must be for boss salvos to lead it.
+const BOSS_LEAD_WINDOW_MS = 600;
 /** HP a drone takes when it and the player share a tile. */
 const DRONE_CONTACT_DAMAGE = 25;
 
@@ -114,7 +120,7 @@ const subscribeHighScore = (callback: () => void) => {
 };
 const getHighScoreSnapshot = () => {
   try {
-    return localStorage.getItem("retro_labyrinth_highscore") || "0";
+    return safeGetRawItem(RETRO_LABYRINTH_HIGH_SCORE_KEY) || "0";
   } catch {
     return "0";
   }
@@ -192,6 +198,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   // Game lifecycle status & Modals
   const [gameStatus, setGameStatus] = useState<
     | "playing"
+    | "paused"
     | "victory"
     | "caught"
     | "timesheet"
@@ -224,6 +231,10 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   const [enemies, setEnemies] = useState<Enemy[]>([]);
   const [items, setItems] = useState<ItemPickup[]>([]);
   const [boss, setBoss] = useState<BossState | undefined>(undefined);
+  // The player's last step and when it was taken; boss salvos lead it (#1321).
+  const lastHeadingRef = useRef<{ dx: number; dy: number; at: number } | null>(
+    null
+  );
   const [tspNodes, setTspNodes] = useState(generateTSPRoom().tspNodes || []);
   const [tspWalls, setTspWalls] = useState(
     generateTSPRoom().tspMovingWalls || []
@@ -314,6 +325,18 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         setItems(currentRoom.items);
         setBoss(currentRoom.boss);
         setTspNodes(currentRoom.tspNodes || []);
+        // A boss or route-node room names its objective instead of the exit,
+        // which stays locked until that is done (#1321).
+        const roomObjective = getExitLockState(
+          currentRoom.boss,
+          currentRoom.tspNodes
+        );
+        if (roomObjective.locked) {
+          floatingTextsRef.current[0] = {
+            ...floatingTextsRef.current[0],
+            text: `${roomObjective.objective} >>`,
+          };
+        }
         setTspWalls(currentRoom.tspMovingWalls || []);
         setDrones(
           currentRoom.enemies
@@ -542,6 +565,25 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
           return;
         }
 
+        // A locked exit is a wall until the room objective is done (#1321).
+        if (gameMode === "roguelike" && nextX === EXIT_X && nextY === EXIT_Y) {
+          const exitLock = getExitLockState(boss, tspNodes);
+          if (exitLock.locked) {
+            floatingTextsRef.current.push({
+              id: `exit-locked-${Date.now()}`,
+              x: nextX,
+              y: nextY,
+              text: exitLock.lockedMessage,
+              color: "#ef4444",
+              alpha: 1.5,
+              vy: -0.02,
+            });
+            playNote(160, 0.15);
+            return;
+          }
+        }
+
+        lastHeadingRef.current = { dx, dy, at: Date.now() };
         const nextMoves = movesCount + 1;
         setPlayerPosition({ x: nextX, y: nextY });
         setMovesCount(nextMoves);
@@ -713,12 +755,11 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
           setScore(finalScore);
           if (finalScore > effectiveHighScore) {
             setHighScore(finalScore);
-            if (typeof window !== "undefined") {
-              localStorage.setItem(
-                "retro_labyrinth_highscore",
-                finalScore.toString()
-              );
-            }
+            // Bare numeric string, written raw to keep the stored bytes.
+            safeSetRawItem(
+              RETRO_LABYRINTH_HIGH_SCORE_KEY,
+              finalScore.toString()
+            );
           }
 
           const updatedProf: CyberdeckProfile = {
@@ -742,6 +783,8 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     [
       gameStatus,
       playerPosition,
+      boss,
+      tspNodes,
       currentMaze,
       movesCount,
       playNote,
@@ -890,6 +933,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   // Keyboard controls
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
+      const lowerKey = e.key.toLowerCase();
       if (gameStatus !== "playing") {
         if (gameStatus === "timesheet" && e.key === "Enter") {
           e.preventDefault();
@@ -897,7 +941,38 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         } else if (gameStatus === "hacking" && e.key === "Escape") {
           e.preventDefault();
           closeHackingModal();
+        } else if (
+          gameStatus === "paused" &&
+          (lowerKey === "p" || e.key === "Enter" || e.key === "Escape")
+        ) {
+          e.preventDefault();
+          setGameStatus("playing");
+        } else if (
+          gameStatus === "caught" &&
+          (e.key === "Enter" || lowerKey === "r")
+        ) {
+          e.preventDefault();
+          handleRestart();
+        } else if (gameStatus === "victory" && lowerKey === "r") {
+          e.preventDefault();
+          handleRestart();
+        } else if (gameStatus === "victory" && e.key === "Enter") {
+          e.preventDefault();
+          if (
+            gameMode === "roguelike" &&
+            roomIndex < campaignRooms.length - 1
+          ) {
+            handleNextRoom();
+          } else {
+            handleRestart();
+          }
         }
+        return;
+      }
+
+      if (lowerKey === "p") {
+        e.preventDefault();
+        setGameStatus("paused");
         return;
       }
 
@@ -971,11 +1046,16 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     [
       activeSideEffect,
       gameStatus,
+      gameMode,
+      roomIndex,
+      campaignRooms.length,
       selectedClass,
       weapons,
       handleFireWeapon,
       handleSubmitTimesheet,
       closeHackingModal,
+      handleRestart,
+      handleNextRoom,
       tryMove,
     ]
   );
@@ -1063,6 +1143,15 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       }
     }
   };
+
+  // What still locks the exit in this room, for the objective line (#1321).
+  const roomExitLock = useMemo(
+    () =>
+      gameMode === "roguelike"
+        ? getExitLockState(boss, tspNodes)
+        : getExitLockState(undefined, undefined),
+    [gameMode, boss, tspNodes]
+  );
 
   // Memoized Traveling Salesman Pathfinding Tour
   const tspTour = useMemo(() => {
@@ -1170,6 +1259,8 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         crtCalibration,
         playNote,
       } = loopStateRef.current;
+      const exitLocked =
+        gameMode === "roguelike" && getExitLockState(boss, tspNodes).locked;
 
       if (!lastTimeRef.current) lastTimeRef.current = timestamp;
       const deltaMs = Math.min(40, timestamp - lastTimeRef.current);
@@ -1220,7 +1311,11 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
           playerPosition.y,
           timestamp,
           currentMaze[0].length,
-          currentMaze.length
+          currentMaze.length,
+          lastHeadingRef.current &&
+            Date.now() - lastHeadingRef.current.at < BOSS_LEAD_WINDOW_MS
+            ? lastHeadingRef.current
+            : undefined
         );
         setBoss(updatedBoss);
 
@@ -1359,18 +1454,27 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                   py + cellH / 2
                 );
               } else if (x === EXIT_X && y === EXIT_Y) {
-                ctx.fillStyle = "rgba(16, 185, 129, 0.25)";
+                const exitColor = exitLocked
+                  ? "#ef4444"
+                  : currentTheme.primaryColor;
+                ctx.fillStyle = exitLocked
+                  ? "rgba(239, 68, 68, 0.2)"
+                  : "rgba(16, 185, 129, 0.25)";
                 ctx.fillRect(px, py, cellW, cellH);
 
-                ctx.strokeStyle = currentTheme.primaryColor;
+                ctx.strokeStyle = exitColor;
                 ctx.lineWidth = 1.5;
                 ctx.strokeRect(px + 1.5, py + 1.5, cellW - 3, cellH - 3);
 
-                ctx.fillStyle = currentTheme.primaryColor;
+                ctx.fillStyle = exitColor;
                 ctx.font = "bold 9px monospace";
                 ctx.textAlign = "center";
                 ctx.textBaseline = "middle";
-                ctx.fillText("EXIT", px + cellW / 2, py + cellH / 2);
+                ctx.fillText(
+                  exitLocked ? "LOCK" : "EXIT",
+                  px + cellW / 2,
+                  py + cellH / 2
+                );
               } else {
                 ctx.fillStyle = isVis
                   ? currentTheme.glowColor
@@ -1398,7 +1502,11 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
             ctx.font = "bold 6px monospace";
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
-            ctx.fillText("EXIT", ex + cellW / 2, ey + cellH / 2);
+            ctx.fillText(
+              exitLocked ? "LOCK" : "EXIT",
+              ex + cellW / 2,
+              ey + cellH / 2
+            );
             ctx.restore();
           }
 
@@ -1856,7 +1964,10 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         <div className="w-full flex flex-wrap justify-between items-center gap-x-3 gap-y-1 text-[10px] font-bold px-2 py-0.5 border-b border-neutral-900/60">
           <div className="flex items-center gap-2">
             <span className="text-neutral-400">
-              SYSTEM_LABYRINTH.EXE · {currentRoom.badge}
+              SYSTEM_LABYRINTH.EXE ·{" "}
+              {gameMode === "roguelike"
+                ? formatCampaignRoomBadge(currentRoom.badge, roomIndex)
+                : currentRoom.badge}
             </span>
             <span className="text-brand-cyan/80 text-[9px] hidden sm:inline truncate max-w-[150px]">
               [{currentRoom.title}]
@@ -1901,10 +2012,10 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
             {/* Crypto Balance */}
             <div
               className="flex items-center gap-1 text-[9px] font-mono text-amber-400 font-bold"
-              title="Crypto Chips"
+              title="Crypto"
             >
-              <span>🪙</span>
-              <span>{cryptoBounty} Chips</span>
+              <span aria-hidden="true">🪙</span>
+              <span>{cryptoBounty} Crypto</span>
             </div>
 
             {/* Total Score & High Score */}
@@ -1926,7 +2037,17 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
             screens need every row for the maze, and the in-maze
             "REACH THE EXIT" prompt already carries the goal there. */}
         <p className="w-full px-2 py-0.5 text-[9px] font-bold text-neutral-400 truncate [@media(max-height:500px)]:hidden">
-          <span className="text-amber-400">OBJECTIVE</span> · Guide the{" "}
+          <span className="text-amber-400">OBJECTIVE</span> ·{" "}
+          {roomExitLock.locked ? (
+            <>
+              <span className="text-rose-400" data-testid="labyrinth-objective">
+                {roomExitLock.objective}
+              </span>
+              , then guide the{" "}
+            </>
+          ) : (
+            "Guide the "
+          )}
           <span className="text-amber-400">@</span> to the{" "}
           <span className="text-amber-400">EXIT</span> (bottom right). Bugs and
           drones cost HP.
@@ -2144,7 +2265,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                     }}
                     className="inline-flex items-center gap-1 px-3 py-1 bg-brand-cyan hover:bg-cyan-400 text-black text-[9px] font-bold rounded-lg transition-all cursor-pointer shadow-md"
                   >
-                    <span>Next Subnet Tier</span>
+                    <span>Next Room</span>
                     <IconArrowRight className="w-3 h-3" />
                   </button>
                 ) : (
@@ -2161,6 +2282,32 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                   </button>
                 )}
               </div>
+              <p className="text-[8px] text-neutral-500 mt-1">
+                Enter to continue · R to retry this room
+              </p>
+            </div>
+          )}
+
+          {/* Pause Overlay */}
+          {gameStatus === "paused" && (
+            <div className="absolute inset-0 bg-neutral-950/90 backdrop-blur-sm flex flex-col items-center justify-center text-center p-3 rounded-lg border border-brand-cyan/30 z-30">
+              <h3 className="text-brand-cyan font-bold text-xs uppercase tracking-widest">
+                PAUSED
+              </h3>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setGameStatus("playing");
+                  containerRef.current?.focus({ preventScroll: true });
+                }}
+                className="mt-2 px-3 py-1 bg-brand-cyan hover:bg-cyan-400 text-black text-[9px] font-bold rounded-lg transition-all cursor-pointer"
+              >
+                Resume
+              </button>
+              <p className="text-[8px] text-neutral-500 mt-1">
+                P or Enter to resume
+              </p>
             </div>
           )}
 
@@ -2183,6 +2330,9 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
               >
                 RETRY BREACH
               </button>
+              <p className="text-[8px] text-neutral-500 mt-1">
+                Enter or R to retry
+              </p>
             </div>
           )}
 

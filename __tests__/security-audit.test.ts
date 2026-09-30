@@ -22,6 +22,9 @@ import {
   runSecurityAudit,
   collectAdvisoriesForVulnerability,
   matchAdvisoryRule,
+  WARN_THRESHOLD_DAYS,
+  writeStepSummary,
+  writeAuditFailureStepSummary,
 } from "../scripts/security-audit";
 import type {
   VulnerabilityInfo,
@@ -33,6 +36,7 @@ describe("Security Audit Script", () => {
   let exitSpy: MockInstance<typeof process.exit>;
   let logSpy: MockInstance<typeof console.log>;
   let errorSpy: MockInstance<typeof console.error>;
+  let warnSpy: MockInstance<typeof console.warn>;
 
   beforeEach(() => {
     vi.resetAllMocks();
@@ -41,13 +45,18 @@ describe("Security Audit Script", () => {
     }) as never;
     logSpy = vi.spyOn(console, "log").mockImplementation(() => {}) as never;
     errorSpy = vi.spyOn(console, "error").mockImplementation(() => {}) as never;
-    vi.spyOn(console, "warn").mockImplementation(() => {});
+    warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {}) as never;
   });
 
   afterEach(() => {
     exitSpy.mockRestore();
     logSpy.mockRestore();
     errorSpy.mockRestore();
+    warnSpy.mockRestore();
+  });
+
+  it("exports WARN_THRESHOLD_DAYS constant set to 14", () => {
+    expect(WARN_THRESHOLD_DAYS).toBe(14);
   });
 
   describe("isPretextRelated", () => {
@@ -194,6 +203,45 @@ describe("Security Audit Script", () => {
       expect(rules[0].isValid).toBe(true);
       expect(rules[0].isExpired).toBe(true);
       expect(rules[0].remainingDays).toBe(0);
+      expect(rules[0].isApproachingExpiration).toBe(false);
+    });
+
+    it("sets isApproachingExpiration: true for valid rules expiring within 14 days", () => {
+      // 7 days after fixedNow ("2026-08-18T12:00:00Z") is "2026-08-25T12:00:00Z"
+      const inputSoon = [
+        {
+          advisory: "GHSA-expiring-soon",
+          package: "expiring-pkg",
+          expiresAt: "2026-08-25T12:00:00Z",
+          reason: "Temporary workaround",
+          owner: "sec-team",
+          followUp: "#888",
+        },
+      ];
+      const rules = parseIgnoreRules(inputSoon, fixedNow);
+      expect(rules[0].isValid).toBe(true);
+      expect(rules[0].isExpired).toBe(false);
+      expect(rules[0].remainingDays).toBe(7);
+      expect(rules[0].isApproachingExpiration).toBe(true);
+    });
+
+    it("sets isApproachingExpiration: false for valid rules expiring in more than 14 days", () => {
+      // 30 days after fixedNow ("2026-08-18T12:00:00Z") is "2026-09-17T12:00:00Z"
+      const inputFuture = [
+        {
+          advisory: "GHSA-expiring-later",
+          package: "future-pkg",
+          expiresAt: "2026-09-17T12:00:00Z",
+          reason: "Long-term workaround",
+          owner: "sec-team",
+          followUp: "#999",
+        },
+      ];
+      const rules = parseIgnoreRules(inputFuture, fixedNow);
+      expect(rules[0].isValid).toBe(true);
+      expect(rules[0].isExpired).toBe(false);
+      expect(rules[0].remainingDays).toBe(30);
+      expect(rules[0].isApproachingExpiration).toBe(false);
     });
   });
 
@@ -641,6 +689,260 @@ describe("Security Audit Script", () => {
 
       const result = runSecurityAudit({ now: testNow, throwOnError: true });
       expect(result).toBe(true);
+    });
+
+    it("should write GITHUB_STEP_SUMMARY when process.env.GITHUB_STEP_SUMMARY is set", () => {
+      const summaryPath = "/tmp/test-step-summary.md";
+      const appendSpy = vi
+        .spyOn(fs, "appendFileSync")
+        .mockImplementation(() => {});
+      process.env.GITHUB_STEP_SUMMARY = summaryPath;
+
+      vi.mocked(spawnSync).mockReturnValue(
+        fromPartial<SpawnSyncReturns<string>>({
+          status: 0,
+          stdout: JSON.stringify({
+            auditReportVersion: 2,
+            vulnerabilities: {},
+          }),
+        })
+      );
+
+      runSecurityAudit({ now: testNow, throwOnError: true });
+      expect(appendSpy).toHaveBeenCalledWith(
+        summaryPath,
+        expect.stringContaining("Security Vulnerability Audit Report"),
+        "utf8"
+      );
+
+      delete process.env.GITHUB_STEP_SUMMARY;
+    });
+
+    it("logs yellow warning with console.warn for active rules approaching expiration within 14 days", () => {
+      vi.mocked(spawnSync).mockReturnValue(
+        fromPartial<SpawnSyncReturns<string>>({
+          stdout: JSON.stringify({
+            auditReportVersion: 2,
+            vulnerabilities: {},
+          }),
+        })
+      );
+
+      // testNow = "2026-08-19T12:00:00Z". Expiration = "2026-08-24T12:00:00Z" (5 days)
+      const approachingRawData = [
+        {
+          advisory: "GHSA-c2qf-rxjj-4v5w",
+          package: "concurrently",
+          expiresAt: "2026-08-24T12:00:00Z",
+          reason: "CLI process runner",
+          owner: "dev-team",
+          followUp: "#888",
+        },
+      ];
+      vi.spyOn(fs, "readFileSync").mockReturnValue(
+        JSON.stringify(approachingRawData)
+      );
+      vi.spyOn(fs, "existsSync").mockReturnValue(true);
+
+      expect(() => runSecurityAudit({ now: testNow })).toThrowError(
+        "process.exit called with 0"
+      );
+      expect(exitSpy).toHaveBeenCalledWith(0);
+
+      const warnCalls = warnSpy.mock.calls
+        .map((call) => call[0] as string)
+        .join("\n");
+      expect(warnCalls).toContain(
+        '⚠️ WARNING: Vulnerability override for advisory "GHSA-c2qf-rxjj-4v5w" expires in 5 days'
+      );
+      expect(warnCalls).toContain(
+        "⚠️ PRE-EXPIRATION WARNING: 1 vulnerability override(s) expiring within 14 days"
+      );
+      expect(warnCalls).toContain("dev-team");
+      expect(warnCalls).toContain("#888");
+    });
+
+    it("fails the audit when failOnWarning is true and an override is approaching expiration", () => {
+      vi.mocked(spawnSync).mockReturnValue(
+        fromPartial<SpawnSyncReturns<string>>({
+          stdout: JSON.stringify({
+            auditReportVersion: 2,
+            vulnerabilities: {},
+          }),
+        })
+      );
+
+      const approachingRawData = [
+        {
+          advisory: "GHSA-c2qf-rxjj-4v5w",
+          package: "concurrently",
+          expiresAt: "2026-08-24T12:00:00Z",
+          reason: "CLI process runner",
+          owner: "dev-team",
+          followUp: "#888",
+        },
+      ];
+      vi.spyOn(fs, "readFileSync").mockReturnValue(
+        JSON.stringify(approachingRawData)
+      );
+      vi.spyOn(fs, "existsSync").mockReturnValue(true);
+
+      expect(() =>
+        runSecurityAudit({ now: testNow, failOnWarning: true })
+      ).toThrowError("process.exit called with 1");
+      expect(exitSpy).toHaveBeenCalledWith(1);
+
+      const errorCalls = errorSpy.mock.calls
+        .map((call) => call[0] as string)
+        .join("\n");
+      expect(errorCalls).toContain("strict pre-expiration warning policy");
+    });
+
+    it("logs warning when matching a vulnerability with an override rule approaching expiration", () => {
+      vi.mocked(spawnSync).mockReturnValue(
+        fromPartial<SpawnSyncReturns<string>>({
+          stdout: JSON.stringify({
+            auditReportVersion: 2,
+            vulnerabilities: {
+              concurrently: {
+                name: "concurrently",
+                severity: "high",
+                via: [
+                  {
+                    source: "GHSA-c2qf-rxjj-4v5w",
+                    title: "Command Injection",
+                    url: "https://github.com/advisories/GHSA-c2qf-rxjj-4v5w",
+                  },
+                ],
+              },
+            },
+          }),
+        })
+      );
+
+      const approachingRawData = [
+        {
+          advisory: "GHSA-c2qf-rxjj-4v5w",
+          package: "concurrently",
+          expiresAt: "2026-08-24T12:00:00Z",
+          reason: "CLI process runner",
+          owner: "dev-team",
+          followUp: "#888",
+        },
+      ];
+      vi.spyOn(fs, "readFileSync").mockReturnValue(
+        JSON.stringify(approachingRawData)
+      );
+      vi.spyOn(fs, "existsSync").mockReturnValue(true);
+
+      expect(() => runSecurityAudit({ now: testNow })).toThrowError(
+        "process.exit called with 0"
+      );
+
+      const warnCalls = warnSpy.mock.calls
+        .map((call) => call[0] as string)
+        .join("\n");
+      expect(warnCalls).toContain(
+        '⚠️ WARNING: Vulnerability override for advisory "GHSA-c2qf-rxjj-4v5w" (concurrently) expires in 5 days'
+      );
+    });
+  });
+
+  describe("writeStepSummary & writeAuditFailureStepSummary", () => {
+    it("does nothing if GITHUB_STEP_SUMMARY is not set", () => {
+      delete process.env.GITHUB_STEP_SUMMARY;
+      const appendSpy = vi
+        .spyOn(fs, "appendFileSync")
+        .mockImplementation(() => {});
+
+      writeStepSummary(false, [], [], false);
+      expect(appendSpy).not.toHaveBeenCalled();
+    });
+
+    it("writes passed status summary when failed is false", () => {
+      const summaryPath = "/tmp/test-summary-pass.md";
+      process.env.GITHUB_STEP_SUMMARY = summaryPath;
+      const appendSpy = vi
+        .spyOn(fs, "appendFileSync")
+        .mockImplementation(() => {});
+
+      writeStepSummary(false, [], [], false);
+
+      expect(appendSpy).toHaveBeenCalledWith(
+        summaryPath,
+        expect.stringContaining("✅ Passed"),
+        "utf8"
+      );
+      expect(appendSpy).toHaveBeenCalledWith(
+        summaryPath,
+        expect.stringContaining(
+          "No unhandled high or critical vulnerabilities found"
+        ),
+        "utf8"
+      );
+
+      delete process.env.GITHUB_STEP_SUMMARY;
+    });
+
+    it("writes failed status summary with unhandled vulnerability details table", () => {
+      const summaryPath = "/tmp/test-summary-fail.md";
+      process.env.GITHUB_STEP_SUMMARY = summaryPath;
+      const appendSpy = vi
+        .spyOn(fs, "appendFileSync")
+        .mockImplementation(() => {});
+
+      const unhandled = [
+        {
+          pkgName: "bad-pkg",
+          info: { severity: "high" } as VulnerabilityInfo,
+          advisory: {
+            title: "Bad package flaw",
+            url: "https://example.com/adv",
+            range: "<2.0.0",
+            source: "GHSA-xxxx-yyyy",
+          } as Advisory,
+        },
+      ];
+
+      writeStepSummary(true, unhandled, [], false);
+
+      expect(appendSpy).toHaveBeenCalledWith(
+        summaryPath,
+        expect.stringContaining("❌ Failed"),
+        "utf8"
+      );
+      expect(appendSpy).toHaveBeenCalledWith(
+        summaryPath,
+        expect.stringContaining(
+          "| `bad-pkg` | HIGH | `ghsa-xxxx-yyyy` | Bad package flaw | `<2.0.0` | [Advisory](https://example.com/adv) |"
+        ),
+        "utf8"
+      );
+
+      delete process.env.GITHUB_STEP_SUMMARY;
+    });
+
+    it("writes audit failure summary on exception/invalid output", () => {
+      const summaryPath = "/tmp/test-summary-error.md";
+      process.env.GITHUB_STEP_SUMMARY = summaryPath;
+      const appendSpy = vi
+        .spyOn(fs, "appendFileSync")
+        .mockImplementation(() => {});
+
+      writeAuditFailureStepSummary("Execution failed");
+
+      expect(appendSpy).toHaveBeenCalledWith(
+        summaryPath,
+        expect.stringContaining("❌ Security Execution Error"),
+        "utf8"
+      );
+      expect(appendSpy).toHaveBeenCalledWith(
+        summaryPath,
+        expect.stringContaining("Execution failed"),
+        "utf8"
+      );
+
+      delete process.env.GITHUB_STEP_SUMMARY;
     });
   });
 });

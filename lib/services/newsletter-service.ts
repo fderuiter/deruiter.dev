@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { env, getEnv } from "@/lib/env";
 import { resolveBaseUrl } from "@/lib/domain";
 import { logger } from "@/lib/logger";
+import { clamp } from "@/lib/game-utils";
 import {
   renderNewsletterConfirmationEmail,
   renderNewsletterDispatchEmail,
@@ -297,9 +298,10 @@ export class NewsletterService {
     const pendingInQueue = await prisma.outboundEmailQueue.count({
       where: { status: { in: ["PENDING", "RETRYING"] } },
     });
-    const capacity = Math.max(
+    const capacity = clamp(
+      EMAIL_RETRY_BATCH_SIZE - pendingInQueue,
       0,
-      Math.min(NEWSLETTER_DISPATCH_CAP, EMAIL_RETRY_BATCH_SIZE - pendingInQueue)
+      NEWSLETTER_DISPATCH_CAP
     );
     const counts: NewsletterDispatchCounts = {
       openDispatches: 0,

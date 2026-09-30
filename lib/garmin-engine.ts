@@ -90,8 +90,14 @@ export interface FlashVariable {
 
 export const FLASH_STORAGE_KEY = "garmin_simulator_flash_storage";
 
-export function loadPersistedFlashStorage(): FlashVariable[] {
-  if (typeof window === "undefined") return [];
+/**
+ * Reads persisted flash. Returns null when nothing was ever saved (first
+ * boot) and an array, possibly empty, once the player has written or
+ * cleared flash. The distinction lets a deliberate clear survive a restart
+ * instead of re-seeding the default entry (#1210).
+ */
+function readPersistedFlashStorage(): FlashVariable[] | null {
+  if (typeof window === "undefined") return null;
   try {
     if (typeof window.localStorage?.getItem === "function") {
       const raw = window.localStorage.getItem(FLASH_STORAGE_KEY);
@@ -105,7 +111,11 @@ export function loadPersistedFlashStorage(): FlashVariable[] {
   } catch {
     // Fall back safely when browser local storage is unavailable
   }
-  return [];
+  return null;
+}
+
+export function loadPersistedFlashStorage(): FlashVariable[] {
+  return readPersistedFlashStorage() ?? [];
 }
 
 export function savePersistedFlashStorage(flashVars: FlashVariable[]): void {
@@ -137,6 +147,7 @@ export interface CrashReport {
     | "Symbol Not Found"
     | "Watchdog Tripped"
     | "Null Pointer"
+    | "Stack Overflow"
     | "Out Of Storage"
     | "Power Loss";
   file: string;
@@ -264,6 +275,12 @@ export interface GameEngineState {
   crashReport: CrashReport | null;
   lastAllocTime: number;
   lastObstacleTime: number;
+  /** Wall-clock time the run was paused, so resuming can shift the spawn timers. */
+  pausedAt?: number;
+  /** Wall-clock time of the last pop, for its cooldown. */
+  lastJettisonAt?: number;
+  /** Wall-clock time of the last GC, for its cooldown. */
+  lastGcAt?: number;
   consecutiveDodges: number;
   /** Setup-derived parameters for this run; absent means defaults. */
   tuning?: GarminRunTuning;
@@ -285,11 +302,13 @@ export function createInitialState(
   highScore = 0,
   initialFlash?: FlashVariable[]
 ): GameEngineState {
-  const flashVars = initialFlash || loadPersistedFlashStorage();
+  const persisted = initialFlash ? initialFlash : readPersistedFlashStorage();
+  // The default sys_log.dat is seeded only on first boot. A persisted empty
+  // array means the player cleared flash, which must survive a restart.
   const defaultFlashVars: FlashVariable[] =
-    flashVars.length > 0
-      ? flashVars
-      : [{ id: 1, name: "sys_log.dat", sizeKb: 4.0, allocatedAt: 0 }];
+    persisted === null || (initialFlash && persisted.length === 0)
+      ? [{ id: 1, name: "sys_log.dat", sizeKb: 4.0, allocatedAt: 0 }]
+      : persisted;
   const allocatedFlashKb = Number(
     defaultFlashVars.reduce((acc, v) => acc + v.sizeKb, 0).toFixed(2)
   );
@@ -347,6 +366,37 @@ export function startGame(
 }
 
 /**
+ * Pause a running session. Only a playing run can pause.
+ */
+export function pauseGame(
+  state: GameEngineState,
+  now: number = Date.now()
+): GameEngineState {
+  if (state.gameState !== "playing") return state;
+  return { ...state, gameState: "paused", pausedAt: now };
+}
+
+/**
+ * Resume a paused session. The allocation and obstacle timers run on wall
+ * time, so they shift by the paused duration; otherwise a long pause would
+ * fire an allocation and a spawn the moment play resumes (#1216).
+ */
+export function resumeGame(
+  state: GameEngineState,
+  now: number = Date.now()
+): GameEngineState {
+  if (state.gameState !== "paused") return state;
+  const pausedFor = Math.max(0, now - (state.pausedAt ?? now));
+  return {
+    ...state,
+    gameState: "playing",
+    pausedAt: undefined,
+    lastAllocTime: state.lastAllocTime + pausedFor,
+    lastObstacleTime: state.lastObstacleTime + pausedFor,
+  };
+}
+
+/**
  * Names of required app state allocated at boot. These are never collectible:
  * jettison and garbage collection skip them, so the watch stays functional.
  */
@@ -357,11 +407,54 @@ export const REQUIRED_VARIABLE_NAMES: readonly string[] = [
 
 /**
  * Points awarded for a memory action that actually reclaimed heap. Actions that
- * reclaim nothing award no points. Survival ticks and dodges are the primary
- * score source; higher-difficulty devices only differ in their RAM limits.
+ * reclaim nothing award no points. Survival ticks are the primary score
+ * source; devices differ in RAM limits and allocation pace.
  */
 export const JETTISON_SCORE = 5;
 export const GC_SCORE = 10;
+
+/**
+ * Memory actions cost something, so managing the heap is a choice rather than
+ * free points (#1320): a pop needs a short recharge, and a GC needs a longer
+ * one and draws battery on top of its freeze and heat.
+ */
+export const JETTISON_COOLDOWN_MS = 1500;
+export const GC_COOLDOWN_MS = 5000;
+export const GC_BATTERY_COST = 1;
+
+/**
+ * Collecting a floating token is a trade: it costs memory or flash, and pays
+ * points. Jumping over it keeps the memory and forgoes the points.
+ */
+export const MEM_TOKEN_SCORE = 25;
+export const FLASH_TOKEN_SCORE = 40;
+
+/**
+ * Distance (m) over which the run ramps from its opening pace to full
+ * difficulty. The runner covers about 15 m a second, so this is 3 minutes.
+ */
+export const DIFFICULTY_RAMP_METERS = 2700;
+
+/**
+ * How far into the difficulty ramp a run is, from 0 at the start to 1 at
+ * {@link DIFFICULTY_RAMP_METERS} and beyond.
+ */
+export function getDifficultyRamp(distanceMeters: number): number {
+  if (!Number.isFinite(distanceMeters) || distanceMeters <= 0) return 0;
+  return Math.min(1, distanceMeters / DIFFICULTY_RAMP_METERS);
+}
+
+/**
+ * Milliseconds until a memory action recharges, or 0 when it is ready.
+ */
+export function getCooldownRemainingMs(
+  lastUsedAt: number | undefined,
+  cooldownMs: number,
+  now: number = Date.now()
+): number {
+  if (lastUsedAt === undefined) return 0;
+  return Math.max(0, cooldownMs - (now - lastUsedAt));
+}
 
 /**
  * Returns true when a heap variable is collectible garbage rather than required app state.
@@ -375,13 +468,28 @@ export function isCollectibleVariable(v: MemoryVariable): boolean {
  * Required app state is never discarded; with nothing collectible the call is
  * a no-op that awards no score and reports a reason.
  */
-export function jettisonOldestVariable(state: GameEngineState): {
+export function jettisonOldestVariable(
+  state: GameEngineState,
+  now: number = Date.now()
+): {
   state: GameEngineState;
   popped?: MemoryVariable;
   reason?: string;
 } {
   if (state.gameState !== "playing") {
     return { state };
+  }
+
+  const recharge = getCooldownRemainingMs(
+    state.lastJettisonAt,
+    JETTISON_COOLDOWN_MS,
+    now
+  );
+  if (recharge > 0) {
+    return {
+      state,
+      reason: `Pop recharging: ${(recharge / 1000).toFixed(1)}s`,
+    };
   }
 
   const idx = state.variables.findIndex(isCollectibleVariable);
@@ -399,6 +507,7 @@ export function jettisonOldestVariable(state: GameEngineState): {
       variables: rest,
       allocatedRamKb: Number(newRam.toFixed(2)),
       score: state.score + JETTISON_SCORE,
+      lastJettisonAt: now,
     },
     popped,
   };
@@ -409,13 +518,25 @@ export function jettisonOldestVariable(state: GameEngineState): {
  * Freezes game for 500ms and frees up to 2.0 to 4.0 KB of collectible garbage.
  * With no collectible garbage the call is a no-op: no freeze, no score.
  */
-export function triggerGarbageCollection(state: GameEngineState): {
+export function triggerGarbageCollection(
+  state: GameEngineState,
+  now: number = Date.now()
+): {
   state: GameEngineState;
   freedKb: number;
   reason?: string;
 } {
   if (state.gameState !== "playing" || state.isGcActive) {
     return { state, freedKb: 0 };
+  }
+
+  const recharge = getCooldownRemainingMs(state.lastGcAt, GC_COOLDOWN_MS, now);
+  if (recharge > 0) {
+    return {
+      state,
+      freedKb: 0,
+      reason: `GC recharging: ${(recharge / 1000).toFixed(1)}s`,
+    };
   }
 
   if (!state.variables.some(isCollectibleVariable)) {
@@ -456,6 +577,8 @@ export function triggerGarbageCollection(state: GameEngineState): {
       variables: remainingVars,
       allocatedRamKb: newRam,
       score: state.score + GC_SCORE,
+      battery: Math.max(0, state.battery - GC_BATTERY_COST),
+      lastGcAt: now,
     },
     freedKb: Number(accumulatedFreed.toFixed(2)),
   };
@@ -901,12 +1024,17 @@ export function updateGameSimulation(
   };
 
   const now = Date.now();
+  // The app allocates faster, bugs arrive sooner and move quicker as the run
+  // goes on, reaching full difficulty after DIFFICULTY_RAMP_METERS (#1320).
+  const ramp = getDifficultyRamp(nextDistance);
   const allocInterval =
     (state.device === "fenix"
       ? 3200
       : state.device === "forerunner"
         ? 4000
-        : 5000) * tuning.allocIntervalScale;
+        : 5000) *
+    tuning.allocIntervalScale *
+    (1 - 0.6 * ramp);
   if (now - state.lastAllocTime > allocInterval) {
     const types: VariableType[] = ["int", "float", "string", "array"];
     const chosenType = types[Math.floor(Math.random() * types.length)];
@@ -956,7 +1084,10 @@ export function updateGameSimulation(
         if (allocRes.crashed) {
           return allocRes.state;
         }
-        updatedState = allocRes.state;
+        updatedState = {
+          ...allocRes.state,
+          score: allocRes.state.score + MEM_TOKEN_SCORE,
+        };
         // Don't keep obstacle after collection
         continue;
       } else if (obs.type === "flash_token") {
@@ -964,7 +1095,10 @@ export function updateGameSimulation(
         if (flashRes.crashed) {
           return flashRes.state;
         }
-        updatedState = flashRes.state;
+        updatedState = {
+          ...flashRes.state,
+          score: flashRes.state.score + FLASH_TOKEN_SCORE,
+        };
         continue;
       } else if (obs.type === "watchdog") {
         crashTriggered = {
@@ -980,16 +1114,29 @@ export function updateGameSimulation(
           heapLimitKb: DEVICE_PROFILES[updatedState.device].ramLimitKb,
         };
         break;
-      } else if (obs.type === "null_pointer" || obs.type === "stack_overflow") {
+      } else if (obs.type === "null_pointer") {
         crashTriggered = {
-          errorType:
-            obs.type === "null_pointer" ? "Null Pointer" : "Symbol Not Found",
+          errorType: "Null Pointer",
           file: "Garmin_Schvitz_App.mc",
           line: 77,
           stackTrace: [
-            `Symbol Not Found Error in Garmin_Schvitz_App.mc:77`,
-            `Failed symbol: :${obs.label.toLowerCase()}`,
+            "Null Pointer Exception in Garmin_Schvitz_App.mc:77",
+            "Attempted to access a member of null: :activeView",
             "at Ui.View.findDrawableById() [Ui.mc:104]",
+          ],
+          heapUsedKb: updatedState.allocatedRamKb,
+          heapLimitKb: DEVICE_PROFILES[updatedState.device].ramLimitKb,
+        };
+        break;
+      } else if (obs.type === "stack_overflow") {
+        crashTriggered = {
+          errorType: "Stack Overflow",
+          file: "Garmin_Schvitz_App.mc",
+          line: 118,
+          stackTrace: [
+            "Stack Overflow Error in Garmin_Schvitz_App.mc:118",
+            "Call depth exceeded: recursive onUpdate()",
+            "at Garmin_Schvitz_App.onUpdate() [App.mc:118]",
           ],
           heapUsedKb: updatedState.allocatedRamKb,
           heapLimitKb: DEVICE_PROFILES[updatedState.device].ramLimitKb,
@@ -1015,7 +1162,9 @@ export function updateGameSimulation(
 
   // 6. Spawn new Obstacles
   const obstacleInterval =
-    (1800 + Math.random() * 1200) * tuning.obstacleIntervalScale;
+    (1800 + Math.random() * 1200) *
+    tuning.obstacleIntervalScale *
+    (1 - 0.4 * ramp);
   if (
     now - updatedState.lastObstacleTime > obstacleInterval &&
     nextObstacles.length < 3
@@ -1075,9 +1224,7 @@ export function updateGameSimulation(
         height,
         type: chosen,
         label,
-        speed:
-          (2.2 + Math.min(2.0, updatedState.score * 0.005)) *
-          tuning.obstacleSpeedScale,
+        speed: (2.2 + 2.6 * ramp) * tuning.obstacleSpeedScale,
         variablePayload,
       });
 
@@ -1197,8 +1344,32 @@ export function renderCanvasFrame(
     drawOverheatFog(ctx, state);
   }
 
+  // 7. Paused: dim the frozen frame so it can't be mistaken for live play
+  if (state.gameState === "paused") {
+    drawPausedOverlay(ctx);
+  }
+
   ctx.restore();
 }
+
+function drawPausedOverlay(ctx: CanvasRenderingContext2D) {
+  ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+  ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+  ctx.textAlign = "center";
+  ctx.fillStyle = CIQ_PALETTE.white;
+  ctx.font = "bold 16px monospace";
+  ctx.fillText("PAUSED", CANVAS_SIZE / 2, CANVAS_SIZE / 2 - 4);
+  ctx.fillStyle = CIQ_PALETTE.lightGray;
+  ctx.font = "8px monospace";
+  ctx.fillText("PRESS START / ENTER", CANVAS_SIZE / 2, CANVAS_SIZE / 2 + 12);
+}
+
+// The top HUD row sits inside the round display's safe area: at the side
+// labels' cap height (y≈50) the display is visible from about x=35 to x=245,
+// so labels inset 60 px from either edge keep clear of the bezel (#1318).
+const HUD_SIDE_INSET_X = 60;
+const HUD_SIDE_Y = 58;
+const HUD_SCORE_Y = 40;
 
 /**
  * Draws HUD elements inside the circular screen
@@ -1218,27 +1389,35 @@ function drawHud(ctx: CanvasRenderingContext2D, state: GameEngineState) {
       : state.battery < 30
         ? CIQ_PALETTE.yellow
         : CIQ_PALETTE.green;
-  ctx.fillText(`BAT: ${Math.round(state.battery)}%`, 45, 40);
+  ctx.fillText(
+    `BAT: ${Math.round(state.battery)}%`,
+    HUD_SIDE_INSET_X,
+    HUD_SIDE_Y
+  );
 
   // Low power alarm badge
   if (state.battery < 15 && state.battery > 0) {
     ctx.fillStyle = CIQ_PALETTE.red;
-    ctx.fillRect(45, 43, 62, 10);
+    ctx.fillRect(HUD_SIDE_INSET_X, HUD_SIDE_Y + 3, 62, 10);
     ctx.fillStyle = CIQ_PALETTE.white;
     ctx.font = "bold 7px monospace";
-    ctx.fillText("⚠️ LOW POWER", 47, 51);
+    ctx.fillText("⚠️ LOW POWER", HUD_SIDE_INSET_X + 2, HUD_SIDE_Y + 11);
   }
 
   ctx.textAlign = "right";
   ctx.fillStyle = CIQ_PALETTE.lightGray;
   ctx.font = "bold 9px monospace";
-  ctx.fillText(state.device.toUpperCase(), CANVAS_SIZE - 45, 40);
+  ctx.fillText(
+    state.device.toUpperCase(),
+    CANVAS_SIZE - HUD_SIDE_INSET_X,
+    HUD_SIDE_Y
+  );
 
   // Top Center: Score & Heart Rate
   ctx.textAlign = "center";
   ctx.fillStyle = CIQ_PALETTE.white;
   ctx.font = "bold 11px monospace";
-  ctx.fillText(`${state.score} PTS`, CANVAS_SIZE / 2, 52);
+  ctx.fillText(`${state.score} PTS`, CANVAS_SIZE / 2, HUD_SCORE_Y);
 
   // Bottom HUD Box (RAM & Flash Meter Gauges)
   const ramY = 214;

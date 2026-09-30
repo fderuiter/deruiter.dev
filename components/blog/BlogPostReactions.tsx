@@ -10,12 +10,18 @@ import {
   IconAlertCircle,
   IconLoader2,
 } from "@tabler/icons-react";
+import { apiClient } from "@/lib/api-client";
 
 interface BlogPostReactionsProps {
   slug: string;
 }
 
 type ReactionType = "insightful" | "mind_blowing" | "actionable" | "thorough";
+
+interface ReactionsPayload {
+  counts?: Record<string, number>;
+  userReactions?: unknown;
+}
 
 interface ReactionConfig {
   type: ReactionType;
@@ -48,23 +54,17 @@ export function BlogPostReactions({ slug }: BlogPostReactionsProps) {
     let isMounted = true;
 
     async function loadReactions() {
-      try {
-        const res = await fetch(
-          `/api/blog/reactions?slug=${encodeURIComponent(slug)}`
-        );
-        if (res.ok) {
-          const data = await res.json();
-          if (isMounted) {
-            if (data.counts) {
-              setCounts(data.counts);
-            }
-            if (Array.isArray(data.userReactions)) {
-              setUserReactions(data.userReactions);
-            }
-          }
+      // Read failures (network, non-2xx, non-JSON) are tolerated silently.
+      const { data } = await apiClient.get<ReactionsPayload>(
+        `/api/blog/reactions?slug=${encodeURIComponent(slug)}`
+      );
+      if (data && isMounted) {
+        if (data.counts) {
+          setCounts(data.counts);
         }
-      } catch {
-        // Silently tolerate read failures
+        if (Array.isArray(data.userReactions)) {
+          setUserReactions(data.userReactions);
+        }
       }
     }
 
@@ -90,54 +90,47 @@ export function BlogPostReactions({ slug }: BlogPostReactionsProps) {
       [type]: (prev[type] || 0) + 1,
     }));
 
-    try {
-      const res = await fetch("/api/blog/reactions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          blogPostSlug: slug,
-          reactionType: type,
-        }),
-      });
+    const res = await apiClient.post<ReactionsPayload>("/api/blog/reactions", {
+      blogPostSlug: slug,
+      reactionType: type,
+    });
+    // A 429 duplicate still carries authoritative counts in its body.
+    const payload = (res.body ?? {}) as ReactionsPayload;
 
-      const data = await res.json();
-
-      if (res.status === 429) {
-        setStatusMsg({
-          type: "error",
-          text: data.error || "You have already submitted this reaction.",
-        });
-        if (data.counts) {
-          setCounts(data.counts);
-        }
-        if (Array.isArray(data.userReactions)) {
-          setUserReactions(data.userReactions);
-        }
-      } else if (!res.ok) {
-        setStatusMsg({
-          type: "error",
-          text: data.error || "Failed to submit reaction.",
-        });
-      } else {
-        if (data.counts) {
-          setCounts(data.counts);
-        }
-        if (Array.isArray(data.userReactions)) {
-          setUserReactions(data.userReactions);
-        }
-        setStatusMsg({
-          type: "success",
-          text: "Reaction recorded! Thank you for reading.",
-        });
-      }
-    } catch {
+    if (res.networkError) {
       setStatusMsg({
         type: "error",
         text: "Network error submitting reaction.",
       });
-    } finally {
-      setReactionLoading(null);
+    } else if (res.status === 429) {
+      setStatusMsg({
+        type: "error",
+        text: res.error || "You have already submitted this reaction.",
+      });
+      if (payload.counts) {
+        setCounts(payload.counts);
+      }
+      if (Array.isArray(payload.userReactions)) {
+        setUserReactions(payload.userReactions);
+      }
+    } else if (!res.ok) {
+      setStatusMsg({
+        type: "error",
+        text: res.error || "Failed to submit reaction.",
+      });
+    } else {
+      if (payload.counts) {
+        setCounts(payload.counts);
+      }
+      if (Array.isArray(payload.userReactions)) {
+        setUserReactions(payload.userReactions);
+      }
+      setStatusMsg({
+        type: "success",
+        text: "Reaction recorded! Thank you for reading.",
+      });
     }
+    setReactionLoading(null);
   };
 
   return (

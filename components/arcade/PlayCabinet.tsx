@@ -9,6 +9,8 @@ import {
 } from "@tabler/icons-react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useFullscreen } from "@/hooks/useFullscreen";
+import { useInterval } from "@/hooks/useInterval";
+import { useSafeTimeout } from "@/hooks/useSafeTimeout";
 import { CabinetFullscreenContext } from "./CabinetFullscreen";
 import { CabinetSetupContext } from "./CabinetSetupContext";
 import { FullscreenButton } from "@/components/arcade/FullscreenButton";
@@ -92,6 +94,7 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
     toggleFullscreen: toggleCabinetFullscreen,
     exitFullscreen,
   } = useFullscreen(cabinetRef, { enableKeyShortcut: false });
+  const { setSafeTimeout } = useSafeTimeout();
   // Entering fullscreen swaps the header, so focus would otherwise land on the
   // first toolbar button ("Exit Fullscreen"), where the game's Space key
   // presses it. Start the trap on the game's keyboard boundary instead.
@@ -216,10 +219,9 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
     onLaunch?.();
   };
 
-  useEffect(() => {
-    if (!isWarmingUp) return;
-
-    const updateProgress = () => {
+  // CRT warmup: advance the boot bar every 60ms while warming up.
+  useInterval(
+    () => {
       setBootProgress((prev) => {
         if (isLoaded) {
           const next = prev + Math.floor(Math.random() * 30) + 25;
@@ -237,11 +239,9 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
           return prev + Math.floor(Math.random() * 10) + 10;
         }
       });
-    };
-
-    const timer = setInterval(updateProgress, 60);
-    return () => clearInterval(timer);
-  }, [isWarmingUp, isLoaded]);
+    },
+    isWarmingUp ? 60 : null
+  );
 
   // On launch, bring the cabinet into view and hand keyboard focus to the
   // game's own key-handling container, so the first key press reaches it.
@@ -353,7 +353,7 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
               // Let the game handle this press. If its dialog is still open
               // afterwards, the game doesn't close it on Escape (a results
               // screen, say), so fall back to leaving fullscreen.
-              setTimeout(() => {
+              setSafeTimeout(() => {
                 if (dialog.isConnected) void exitFullscreen();
               }, 0);
               return;

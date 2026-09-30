@@ -20,6 +20,12 @@ Re-exports [AIUpdateResult](ai/interfaces/AIUpdateResult.md)
 
 ***
 
+### BOSS\_MAX\_LEAD\_TILES
+
+Re-exports [BOSS_MAX_LEAD_TILES](boss/variables/BOSS_MAX_LEAD_TILES.md)
+
+***
+
 ### BossState
 
 Re-exports [BossState](types/interfaces/BossState.md)
@@ -188,6 +194,12 @@ Re-exports [euclideanDist](tsp/functions/euclideanDist.md)
 
 ***
 
+### ExitLockState
+
+Re-exports [ExitLockState](objective/interfaces/ExitLockState.md)
+
+***
+
 ### fireWeapon
 
 Re-exports [fireWeapon](weapons/functions/fireWeapon.md)
@@ -197,6 +209,12 @@ Re-exports [fireWeapon](weapons/functions/fireWeapon.md)
 ### FloatingNotification
 
 Re-exports [FloatingNotification](types/interfaces/FloatingNotification.md)
+
+***
+
+### formatCampaignRoomBadge
+
+Re-exports [formatCampaignRoomBadge](room-label/functions/formatCampaignRoomBadge.md)
 
 ***
 
@@ -284,6 +302,18 @@ Re-exports [generateTSPRoom](generator/functions/generateTSPRoom.md)
 
 ***
 
+### getBossAimPoint
+
+Re-exports [getBossAimPoint](boss/functions/getBossAimPoint.md)
+
+***
+
+### getExitLockState
+
+Re-exports [getExitLockState](objective/functions/getExitLockState.md)
+
+***
+
 ### hasLineOfSight
 
 Re-exports [hasLineOfSight](fov/functions/hasLineOfSight.md)
@@ -353,6 +383,12 @@ Re-exports [renderWireframeMesh](boss/functions/renderWireframeMesh.md)
 ### resetFogOfWar
 
 Re-exports [resetFogOfWar](fov/functions/resetFogOfWar.md)
+
+***
+
+### RETRO\_LABYRINTH\_HIGH\_SCORE\_KEY
+
+Re-exports [RETRO_LABYRINTH_HIGH_SCORE_KEY](metaprogression/variables/RETRO_LABYRINTH_HIGH_SCORE_KEY.md)
 
 ***
 

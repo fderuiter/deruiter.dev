@@ -15,6 +15,7 @@ export type GarbageCollectInput = z.infer<typeof GarbageCollectInputSchema>;
 
 export const GarbageCollectErrorCode = z.enum([
   "GC_ALREADY_ACTIVE",
+  "GC_COOLDOWN",
   "INVALID_GAME_STATE",
 ]);
 

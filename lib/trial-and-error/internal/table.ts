@@ -646,7 +646,34 @@ export interface InspectionTraceView {
 }
 
 /** Everything the Card Table renders, derived purely from scenario and state. */
+/**
+ * How a Blind ended, for its cue: LOCKED when a CSR Lock package was
+ * locked, otherwise CLEARED or FAILED; null while it is being reviewed.
+ */
+export type TableOutcome = "LOCKED" | "CLEARED" | "FAILED";
+
 export interface TableView {
+  /** Whether the Blind is being reviewed, cleared or failed. */
+  status: DeskStatus;
+  /** How the Blind ended, or null while it is being reviewed. */
+  outcome: TableOutcome | null;
+  roundScore: number;
+  handsPlayed: number;
+  discards: number;
+  /** CPU left to spend this Blind, and CPU spent so far. */
+  cpu: { available: number; spent: number };
+  /** Card ids in hand, in hand order: the ids of `hand`. */
+  handIds: string[];
+  /** Selected card ids, in selection order. */
+  selected: string[];
+  /** The card whose Inspect drawer is open, or null. */
+  inspecting: string | null;
+  /** Nothing has been played, discarded or spent this Blind yet. */
+  untouched: boolean;
+  /** The latest table event, for announcements and cues. */
+  lastEvent: TableEvent | null;
+  /** The last hand played this Blind, for playback and its summary. */
+  lastPlay: PlayedHand | null;
   hand: TableCardView[];
   classification: HandClassification | null;
   /** Value of the selection from revealed findings only. */
@@ -3046,6 +3073,7 @@ function applyTableAction(
       if (from === -1) return refuse(state, "That card is not in your hand.");
       const to = Math.max(
         0,
+        // eslint-disable-next-line no-restricted-syntax -- #1119: file has open-PR/branch changes in flight; swap to clamp() after they land
         Math.min(state.hand.length - 1, Math.trunc(action.toIndex) || 0)
       );
       const card = cardById(scenario, state, action.cardId) as TlfCard;
@@ -4019,6 +4047,13 @@ function amendmentPreview(
   };
 }
 
+/** How the Blind ended: a locked package outranks a plain clear. */
+function tableOutcome(state: TableState): TableOutcome | null {
+  if (state.status === "REVIEWING") return null;
+  if (state.lock) return "LOCKED";
+  return state.status;
+}
+
 export function deriveTableView(
   scenario: Scenario,
   state: TableState
@@ -4259,6 +4294,19 @@ export function deriveTableView(
       )
     : null;
   return {
+    status: state.status,
+    outcome: tableOutcome(state),
+    roundScore: state.roundScore,
+    handsPlayed: state.handsPlayed,
+    discards: state.discards,
+    cpu: { available: state.cpu.available, spent: state.cpu.spent },
+    handIds: state.hand,
+    selected: state.selected,
+    inspecting: state.inspecting,
+    untouched:
+      state.handsPlayed === 0 && state.discards === 0 && state.cpu.spent === 0,
+    lastEvent: state.lastEvent,
+    lastPlay: state.lastPlay,
     hand,
     classification,
     preview,

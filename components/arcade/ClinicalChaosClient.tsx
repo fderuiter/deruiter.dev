@@ -4,6 +4,7 @@ import React from "react";
 import dynamic from "next/dynamic";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { NextPrevNav } from "@/components/ui/NextPrevNav";
+import { getArcadeNeighbors } from "@/lib/arcade";
 import { PlayCabinet } from "@/components/arcade/PlayCabinet";
 import { DesktopOnlyGate } from "@/components/arcade/DesktopOnlyGate";
 import Link from "next/link";
@@ -31,7 +32,7 @@ const DynamicClinicalTrialChaos = dynamic(ClinicalTrialChaosLoader, {
 
 export const ClinicalChaosClient: React.FC = () => {
   return (
-    <div className="min-h-screen bg-black text-white pt-28 pb-24 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen text-white pb-24 px-4 sm:px-6 lg:px-8">
       <div className="max-w-5xl mx-auto">
         {/* Navigation Breadcrumb */}
         <div className="flex items-center justify-between gap-4 mb-6 border-b border-zinc-800/80 pb-4 flex-wrap">
@@ -93,7 +94,7 @@ export const ClinicalChaosClient: React.FC = () => {
               instructions="Sort clinical observations, fix data problems, and sign submissions before time runs out. A game inspired by clinical data work, with a considerably less patient auditor."
               controls={[
                 { key: "Enter", action: "Next step (fix / route / sign)" },
-                { key: "1–6", action: "Pick answer / route to station" },
+                { key: "1–8", action: "Pick answer / route to station" },
                 { key: "Q W E R", action: "Lifelines" },
                 { key: "← →", action: "Change subject" },
               ]}
@@ -142,18 +143,7 @@ export const ClinicalChaosClient: React.FC = () => {
 
         {/* Sequential Next / Previous Navigation */}
         <NextPrevNav
-          prev={{
-            title: "Monkey C Mayhem: Garmin Schvitz App",
-            href: "/arcade/garmin-watch",
-            label: "Previous Game",
-            tag: "Embedded Simulator",
-          }}
-          next={{
-            title: "Retro Labyrinth",
-            href: "/arcade/retro-labyrinth",
-            label: "Next Game",
-            tag: "Graveyard Roguelike",
-          }}
+          {...getArcadeNeighbors("/arcade/clinical-chaos")}
           backToHub={{
             title: "All Arcade Games",
             href: "/arcade",

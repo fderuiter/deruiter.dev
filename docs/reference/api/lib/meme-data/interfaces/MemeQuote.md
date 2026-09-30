@@ -6,9 +6,6 @@
 
 # Interface: MemeQuote
 
-Central repository for portfolio memes, easter egg achievements,
-soundboard triggers, fortunes, and ASCII art assets.
-
 ## Properties
 
 ### author

@@ -133,16 +133,16 @@ jobs:
 
       - name: Install Playwright Browser with Dependencies (Cache Miss)
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install chromium --with-deps
+        run: npx --no-install playwright install chromium --with-deps
 
       - name: Install Playwright Dependencies Only (Cache Hit)
         if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium
+        run: npx --no-install playwright install-deps chromium
 
       - name: Generate Theme and Prisma Schema (Pre-build steps)
         run: |
-          npx tsx scripts/generate-theme.ts
-          npx prisma generate
+          npx --no-install tsx scripts/generate-theme.ts
+          npx --no-install prisma generate
 
       - name: Replay Migrations on Disposable CI Database
         run: npm run migration:replay
@@ -152,7 +152,7 @@ jobs:
       - name: Check Schema Drift
         run: |
           npm run check:migrations:drift
-          npx prisma migrate status
+          npx --no-install prisma migrate status
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/portfolio_ci?schema=replay
 
@@ -268,16 +268,16 @@ jobs:
 
       - name: Install Playwright Browser with Dependencies (Cache Miss)
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install chromium --with-deps
+        run: npx --no-install playwright install chromium --with-deps
 
       - name: Install Playwright Dependencies Only (Cache Hit)
         if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium
+        run: npx --no-install playwright install-deps chromium
 
       - name: Generate Theme and Prisma Schema (Pre-build steps)
         run: |
-          npx tsx scripts/generate-theme.ts
-          npx prisma generate
+          npx --no-install tsx scripts/generate-theme.ts
+          npx --no-install prisma generate
 
       - name: Next.js Cache
         uses: actions/cache@v4
@@ -310,7 +310,7 @@ jobs:
 
       - name: Run Visual & Drift Detection (Playwright, chromium)
         id: playwright
-        run: npx playwright test --project=chromium
+        run: npx --no-install playwright test --project=chromium
         env:
           DATABASE_URL: "postgresql://dummy:dummy@127.0.0.1:59999/dummy"
           CRON_SECRET: "ci_placeholder_cron_secret"
@@ -329,7 +329,7 @@ jobs:
         if: always()
         run: |
           # Generate accessibility summary and status files
-          node scripts/generate-accessibility-report.js || true
+          node scripts/generate-accessibility-report.js
 
           # Read accessibility status
           ACC_STATUS="❌ Fail"
@@ -337,6 +337,11 @@ jobs:
             ACC_STATUS=$(cat playwright-report/accessibility-status.txt)
           elif [ "${{ steps.playwright.outcome }}" = "success" ]; then
             ACC_STATUS="✅ Pass"
+          fi
+
+          if [ "$ACC_STATUS" != "✅ Pass" ]; then
+            echo "::error::Accessibility audit gate failed: WCAG violations or unhandled accessibility issues detected."
+            exit 1
           fi
 
           echo "# 🛡️ Rigor Ecosystem Health Report" >> $GITHUB_STEP_SUMMARY
@@ -402,16 +407,16 @@ jobs:
 
       - name: Install Playwright Browsers with Dependencies (Cache Miss)
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install chromium webkit --with-deps
+        run: npx --no-install playwright install chromium webkit --with-deps
 
       - name: Install Playwright Dependencies Only (Cache Hit)
         if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium webkit
+        run: npx --no-install playwright install-deps chromium webkit
 
       - name: Generate Theme and Prisma Schema (Pre-build steps)
         run: |
-          npx tsx scripts/generate-theme.ts
-          npx prisma generate
+          npx --no-install tsx scripts/generate-theme.ts
+          npx --no-install prisma generate
 
       - name: Build Production
         run: npm run build
@@ -420,7 +425,7 @@ jobs:
 
       - name: Run Device-Dependent Specs (Tablet Safari, Mobile Safari, Mobile Chrome)
         run: |
-          npx playwright test __tests__/e2e/visual.spec.ts __tests__/e2e/touch-controls.spec.ts \
+          npx --no-install playwright test __tests__/e2e/visual.spec.ts __tests__/e2e/touch-controls.spec.ts \
             --project="Tablet Safari" --project="Mobile Safari" --project="Mobile Chrome"
         env:
           DATABASE_URL: "postgresql://dummy:dummy@127.0.0.1:59999/dummy"
@@ -549,16 +554,16 @@ jobs:
 
       - name: Install Playwright Browsers with Dependencies (Cache Miss)
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install chromium webkit --with-deps
+        run: npx --no-install playwright install chromium webkit --with-deps
 
       - name: Install Playwright Dependencies Only (Cache Hit)
         if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium webkit
+        run: npx --no-install playwright install-deps chromium webkit
 
       - name: Generate Theme and Prisma Schema (Pre-build steps)
         run: |
-          npx tsx scripts/generate-theme.ts
-          npx prisma generate
+          npx --no-install tsx scripts/generate-theme.ts
+          npx --no-install prisma generate
 
       - name: Build Production
         run: npm run build
@@ -566,7 +571,7 @@ jobs:
           DATABASE_URL: "postgresql://dummy:dummy@127.0.0.1:59999/dummy"
 
       - name: Run Full Playwright Suite (All Devices)
-        run: npx playwright test
+        run: npx --no-install playwright test
         env:
           DATABASE_URL: "postgresql://dummy:dummy@127.0.0.1:59999/dummy"
           CRON_SECRET: "ci_placeholder_cron_secret"

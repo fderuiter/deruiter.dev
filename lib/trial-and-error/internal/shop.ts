@@ -62,10 +62,8 @@ export function cashOut(
   budget: number
 ): CashOutReport {
   const hands = Math.floor(Math.max(0, cpuLeft) / 2);
-  const interest = Math.min(
-    INTEREST_CAP,
-    Math.floor(Math.max(0, budget) / INTEREST_STEP)
-  );
+  const banked = Math.max(0, budget);
+  const interest = Math.min(INTEREST_CAP, Math.floor(banked / INTEREST_STEP));
   const lines: CashOutLine[] = [
     {
       id: "BASE",

@@ -68,6 +68,8 @@ interface TeProbe {
   seen: string[];
   entries: { start: number; value: number; sources: string[] }[];
   end: number | null;
+  /** The hand's document box when the player first appears. */
+  hand: { x: number; y: number; width: number; height: number } | null;
 }
 const drawer = (page: Page) => page.getByTestId("inspect-drawer");
 const gridCell = (page: Page, row: number, col: number) =>
@@ -524,7 +526,12 @@ test.describe("Trial & Error: Biostat Ops Card Table", () => {
       // the final frame holds for only 150 ms, too briefly to poll for.
       await page.evaluate(() => {
         const w = window as Window & { __te?: TeProbe };
-        const probe: TeProbe = { seen: [], entries: [], end: null };
+        const probe: TeProbe = {
+          seen: [],
+          entries: [],
+          end: null,
+          hand: null,
+        };
         w.__te = probe;
         const note = (label: string) => {
           if (!probe.seen.includes(label)) probe.seen.push(label);
@@ -532,6 +539,18 @@ test.describe("Trial & Error: Biostat Ops Card Table", () => {
         new MutationObserver(() => {
           const player = document.querySelector('[data-testid="score-player"]');
           if (player) note("player");
+          // Measured in the frame the player appears: at 4× on a loaded
+          // machine the whole timeline can resolve before a later poll.
+          const hand = document.querySelector('[data-testid="hand"]');
+          if (player && hand && !probe.hand) {
+            const r = hand.getBoundingClientRect();
+            probe.hand = {
+              x: r.left + window.scrollX,
+              y: r.top + window.scrollY,
+              width: r.width,
+              height: r.height,
+            };
+          }
           if (player?.classList.contains("te-loud-fire")) note("fire");
           if (document.querySelector('[data-testid="player-cleared"]')) {
             note("player-cleared");
@@ -586,8 +605,9 @@ test.describe("Trial & Error: Biostat Ops Card Table", () => {
       const handBefore = await handBox();
 
       await page.getByRole("button", { name: /Play Hand/ }).click();
-      await expect(player(page)).toBeVisible();
-      expect(await handBox()).toEqual(handBefore);
+      await page.waitForFunction(() =>
+        (window as Window & { __te?: TeProbe }).__te?.seen.includes("player")
+      );
       await expect(player(page)).toBeHidden();
 
       await expect(page.getByTestId("round-score")).toHaveText("828");
@@ -600,6 +620,7 @@ test.describe("Trial & Error: Biostat Ops Card Table", () => {
       const probe = await page.evaluate(
         () => (window as Window & { __te?: TeProbe }).__te!
       );
+      expect(probe.hand).toEqual(handBefore);
       expect(probe.seen).toEqual(
         expect.arrayContaining([
           "player",

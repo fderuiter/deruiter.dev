@@ -8,7 +8,9 @@
 
 > **applySponsorSubmissionBoost**(`state`, `allClean`): [`SponsorState`](../interfaces/SponsorState.md)
 
-Sponsors love throughput: a signed submission nudges satisfaction up.
+Sponsors love throughput: a signed submission nudges satisfaction up. Above
+`SPONSOR_BOOST_TAPER_START` the nudge shrinks, down to a quarter at 100%, so
+a fast player settles in the 70s rather than parking the meter at 100%.
 
 ## Parameters
 

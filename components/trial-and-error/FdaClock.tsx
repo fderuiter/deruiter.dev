@@ -2,6 +2,7 @@
 
 import React from "react";
 import type { ClockView, IrQuestionView } from "@/lib/trial-and-error";
+import { clamp } from "@/lib/game-utils";
 
 interface FdaClockProps {
   clock: ClockView;
@@ -19,7 +20,7 @@ const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
  * turns rose and says the response is due soon, in text as well as color.
  */
 export function FdaClock({ clock, questions }: FdaClockProps) {
-  const left = Math.max(0, Math.min(clock.hoursLeft, clock.totalHours));
+  const left = clamp(clock.hoursLeft, 0, clock.totalHours);
   const spent = CIRCUMFERENCE * (1 - left / clock.totalHours);
   const tone = clock.urgent ? "text-rose-300" : "text-amber-300";
   return (

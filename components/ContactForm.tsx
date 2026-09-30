@@ -13,6 +13,8 @@ import {
 } from "@tabler/icons-react";
 import { CONTACT_INTENTS, ContactIntent } from "@/lib/schemas";
 import { logger } from "@/lib/logger";
+import { apiClient } from "@/lib/api-client";
+import { useAnnouncer } from "@/hooks/useAnnouncer";
 
 interface ContactFormProps {
   initialIntent?: ContactIntent;
@@ -40,6 +42,7 @@ export function ContactForm({
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const mountedRef = useRef(false);
+  const { announce } = useAnnouncer();
   const nameInputRef = useRef<HTMLInputElement>(null);
   const emailInputRef = useRef<HTMLInputElement>(null);
   const subjectInputRef = useRef<HTMLInputElement>(null);
@@ -100,48 +103,43 @@ export function ContactForm({
 
     setStatus("submitting");
 
-    try {
-      const payload = {
-        name: name.trim(),
-        email: email.trim(),
-        intent,
-        subject: subject.trim(),
-        message: message.trim(),
-        _gotcha: gotcha,
-        _clientTimestamp: mountedAt || Date.now(),
-      };
+    const res = await apiClient.post("/api/contact", {
+      name: name.trim(),
+      email: email.trim(),
+      intent,
+      subject: subject.trim(),
+      message: message.trim(),
+      _gotcha: gotcha,
+      _clientTimestamp: mountedAt || Date.now(),
+    });
 
-      const response = await fetch("/api/contact", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      let data: { error?: string; message?: string } | null = null;
-      try {
-        data = await response.json();
-      } catch {
-        // Non-JSON response fallback
-      }
-
-      if (!response.ok) {
-        setStatus("error");
-        setErrorMessage(
-          data?.error ||
-            `Unable to send message (HTTP ${response.status}). Please try again later or email directly.`
-        );
-        return;
-      }
-
-      setStatus("success");
-      onSuccess?.();
-    } catch (err) {
-      logger.error("Contact submission error:", err);
+    if (res.networkError) {
+      logger.error("Contact submission error: network request failed");
       setStatus("error");
       setErrorMessage(
         "Network connection error. Please check your connection or email directly to fpderuiter@gmail.com."
       );
+      return;
     }
+
+    if (!res.ok) {
+      setStatus("error");
+      setErrorMessage(
+        res.error ||
+          `Unable to send message (HTTP ${res.status}). Please try again later or email directly.`
+      );
+      return;
+    }
+
+    setStatus("success");
+    // The success card replaces the form, so a live region on it would be
+    // mounted with its text already present and skipped by most screen
+    // readers. Announce through the persistent root regions instead.
+    announce(
+      `Message sent! Thanks for reaching out, ${name || "friend"}. Your message is in my inbox. I’ll get back to you by email.`,
+      "polite"
+    );
+    onSuccess?.();
   };
 
   const handleReset = () => {
@@ -161,8 +159,7 @@ export function ContactForm({
     return (
       <div
         className={`p-6 sm:p-8 rounded-2xl bg-[#13151a] border border-emerald-500/30 text-center flex flex-col items-center justify-center shadow-xl ${className}`}
-        role="status"
-        aria-live="polite"
+        data-testid="contact-form-success"
       >
         <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mb-4 shadow-[0_0_20px_rgba(16,185,129,0.2)]">
           <IconCheck className="w-7 h-7" />

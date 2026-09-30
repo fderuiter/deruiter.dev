@@ -50,7 +50,7 @@ RTO breakdown, from Neon's own operation timestamps:
 | Compute cold start to queryable | 31s |
 | **Total** | **~64s** |
 
-RTO is bounded by compute cold start, not by data volume — the database is 30.8
+RTO is bounded by compute cold start, not by data volume, the database is 30.8
 MiB of 512 MiB and restore is copy-on-write. Expect this figure to hold as the
 database grows.
 
@@ -65,7 +65,7 @@ database grows.
    what the application runs as. There is no migration-only or read-only role.
    See [#622](https://github.com/fderuiter/portfolio/issues/622).
 4. **No network restriction.** `allowed_ips: []`, `block_public_connections: false`.
-   A leaked credential is usable from anywhere — see
+   A leaked credential is usable from anywhere, see
    [#865](https://github.com/fderuiter/portfolio/issues/865).
 5. **Ten branches maximum** on the free plan. Rehearsal branches must be cleaned up.
 6. **The production branch is not protected.** `"protected": false`. Nothing at
@@ -125,7 +125,7 @@ create_snapshot(
 )
 ```
 
-### 4. Restore — deliberately choosing cutover or inspection
+### 4. Restore: deliberately choosing cutover or inspection
 
 **To inspect first (default for a rehearsal or an uncertain incident):**
 
@@ -148,7 +148,7 @@ restore_snapshot(..., finalize = true)   # or omit finalize - true is the defaul
 
 Re-run both queries from step 1 against the restored branch, passing its
 `branch_id`. Schema and data fingerprints must match the baseline exactly, unless
-the incident being recovered from is itself a data change — in which case the
+the incident being recovered from is itself a data change, in which case the
 CaseStudy fingerprint should differ and the schema fingerprint should not.
 
 Then verify application connectivity against the restored branch, not just raw
@@ -159,7 +159,7 @@ point predates a migration and the application code will not match the schema.
 
 If you restored with `finalize: false`, call `finalize_branch_restore` now.
 
-Confirm the endpoint actually moved — **this is the step most likely to surprise
+Confirm the endpoint actually moved, **this is the step most likely to surprise
 you**:
 
 ```text
@@ -182,7 +182,7 @@ curl -sS -o /dev/null -w "%{http_code}\n" https://deruiter.dev/case-studies/qrcr
 ```
 
 `200` means the running deployment reached Neon. `404` means it is serving
-fallbacks — the failure mode of
+fallbacks, the failure mode of
 [#859](https://github.com/fderuiter/portfolio/issues/859), which otherwise looks
 like a healthy site.
 
@@ -243,9 +243,9 @@ move touch overlapping but different lists.
 Two files record the production branch id and must be updated whenever it
 changes. Both are recorded snapshots, not live queries, so they drift silently.
 
-1. `scripts/neon-capacity-inventory.ts` — the `branchId` field of the production
+1. `scripts/neon-capacity-inventory.ts`: the `branchId` field of the production
    branch entry.
-2. `docs/reference/neon-capacity-inventory.md` — the inventory table row.
+2. `docs/reference/neon-capacity-inventory.md`: the inventory table row.
 
 ## Rehearsal ownership and cleanup
 

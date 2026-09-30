@@ -53,11 +53,11 @@ jobs:
 
       - name: Install Playwright Browsers (Cache Miss)
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install chromium --with-deps
+        run: npx --no-install playwright install chromium --with-deps
 
       - name: Install Playwright Dependencies Only (Cache Hit)
         if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium
+        run: npx --no-install playwright install-deps chromium
 
       - name: Resolve Probe Target
         id: target
@@ -75,7 +75,7 @@ jobs:
         # local webServer whenever PLAYWRIGHT_TEST_BASE_URL is set, so no
         # production build is needed here -- previously this step started
         # `next start` with nothing built and failed before any probe ran.
-        run: npx playwright test __tests__/e2e/synthetic-probes.spec.ts --project=chromium
+        run: npx --no-install playwright test __tests__/e2e/synthetic-probes.spec.ts --project=chromium
         env:
           PLAYWRIGHT_TEST_BASE_URL: ${{ steps.target.outputs.url }}
 

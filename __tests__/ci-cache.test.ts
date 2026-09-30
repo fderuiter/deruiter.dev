@@ -273,7 +273,7 @@ describe("CI Workflow Dual Caching and Isolation Suite", () => {
           "if: steps.playwright-cache.outputs.cache-hit != 'true'"
         );
         expect(cacheMissSection).toContain(
-          "run: npx playwright install chromium --with-deps"
+          "run: npx --no-install playwright install chromium --with-deps"
         );
       }
 
@@ -289,7 +289,7 @@ describe("CI Workflow Dual Caching and Isolation Suite", () => {
           "if: steps.playwright-cache.outputs.cache-hit == 'true'"
         );
         expect(cacheHitSection).toContain(
-          "run: npx playwright install-deps chromium"
+          "run: npx --no-install playwright install-deps chromium"
         );
       }
     });

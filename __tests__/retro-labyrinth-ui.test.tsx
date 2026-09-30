@@ -163,8 +163,22 @@ describe("RetroLabyrinth React Component UI Suite", () => {
     };
     const drawn = ctx.fillText.mock.calls.map((call) => call[0]);
     expect(drawn).toContain("@");
-    expect(drawn).toContain("EXIT");
-    expect(drawn).toContain("REACH THE EXIT >>");
+    // Room 1 opens with its route nodes unvisited, so the exit is marked
+    // locked and the prompt names the objective instead (#1321).
+    expect(drawn).toContain("LOCK");
+    expect(drawn).toContain("VISIT THE ROUTE NODES (0/4) >>");
+  });
+
+  it("names what still locks the exit in the objective line (#1321)", async () => {
+    await act(async () => {
+      root.render(<RetroLabyrinth isMounted={true} />);
+    });
+
+    const objective = container.querySelector(
+      '[data-testid="labyrinth-objective"]'
+    );
+    expect(objective?.textContent).toBe("VISIT THE ROUTE NODES (0/4)");
+    expect(container.textContent).toContain("then guide the");
   });
 
   it("should render ASCII fallback when isMounted is false", async () => {
@@ -319,6 +333,43 @@ describe("RetroLabyrinth React Component UI Suite", () => {
     expect(container.textContent).toContain("15400");
   });
 
+  it("names the currency Crypto and numbers the room by position (#1322)", async () => {
+    await act(async () => {
+      root.render(<RetroLabyrinth isMounted={true} />);
+    });
+
+    const crypto = container.querySelector('[title="Crypto"]');
+    expect(crypto?.textContent).toContain("0 Crypto");
+    expect(crypto?.textContent).not.toContain("Chips");
+    expect(container.textContent).toContain("ROOM 01 :: AIRGAP ENCLAVE");
+    expect(container.textContent).not.toContain("TIER 03");
+  });
+
+  it("pauses on P and resumes on P or Enter (#1322)", async () => {
+    await act(async () => {
+      root.render(<RetroLabyrinth isMounted={true} />);
+    });
+    const boundary = container.querySelector(
+      '[data-keyboard-boundary="true"]'
+    ) as HTMLElement;
+    const press = async (key: string) => {
+      await act(async () => {
+        boundary.dispatchEvent(
+          new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true })
+        );
+      });
+    };
+
+    await press("p");
+    expect(container.textContent).toContain("PAUSED");
+    await press("p");
+    expect(container.textContent).not.toContain("PAUSED");
+    await press("P");
+    expect(container.textContent).toContain("PAUSED");
+    await press("Enter");
+    expect(container.textContent).not.toContain("PAUSED");
+  });
+
   it("should render Cyberdeck RAM, Crypto counter, and Class selector", async () => {
     await act(async () => {
       root.render(<RetroLabyrinth isMounted={true} />);
@@ -326,7 +377,7 @@ describe("RetroLabyrinth React Component UI Suite", () => {
 
     expect(container.textContent).toContain("RAM");
     expect(container.textContent).toContain("Script Kiddie");
-    expect(container.textContent).toContain("Chips");
+    expect(container.textContent).toContain("0 Crypto");
 
     // Click class badge to open class selector modal
     const classBtn = Array.from(container.querySelectorAll("button")).find(

@@ -124,6 +124,22 @@ Unrounded distance; round only when displaying.
 
 ***
 
+### lastGcAt?
+
+> `optional` **lastGcAt?**: `number`
+
+Wall-clock time of the last GC, for its cooldown.
+
+***
+
+### lastJettisonAt?
+
+> `optional` **lastJettisonAt?**: `number`
+
+Wall-clock time of the last pop, for its cooldown.
+
+***
+
 ### lastObstacleTime
 
 > **lastObstacleTime**: `number`
@@ -139,6 +155,14 @@ Unrounded distance; round only when displaying.
 ### obstacles
 
 > **obstacles**: [`Obstacle`](Obstacle.md)[]
+
+***
+
+### pausedAt?
+
+> `optional` **pausedAt?**: `number`
+
+Wall-clock time the run was paused, so resuming can shift the spawn timers.
 
 ***
 

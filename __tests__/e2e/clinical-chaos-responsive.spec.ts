@@ -40,6 +40,35 @@ test("desktop start keeps the Next instruction in view", async ({
   ).toBeVisible();
 });
 
+test("fullscreen at 1440x900 keeps the flagged fields, stations and lifelines on screen (#1327)", async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(isMobile, "Desktop viewport assertion");
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await expect(async () => {
+    await page.getByRole("button", { name: /Start 3-Phase Campaign/i }).click();
+    await expect(page.locator("#cc-dossier-title")).toBeVisible();
+  }).toPass({ timeout: 15000 });
+  await page.getByRole("button", { name: "Skip calibration" }).click();
+  await page.getByRole("button", { name: "Enter Fullscreen (F)" }).click();
+  await expect(
+    page.getByRole("button", { name: /^Exit Fullscreen/ }).first()
+  ).toBeVisible();
+
+  await expect(page.locator("canvas[role='application']")).toBeInViewport({
+    ratio: 1,
+  });
+  await expect(
+    page.getByRole("region", { name: "EDC stations" })
+  ).toBeInViewport({ ratio: 1 });
+  await expect(page.getByRole("region", { name: "Lifelines" })).toBeInViewport({
+    ratio: 1,
+  });
+  const dossier = page.locator('section[aria-labelledby="cc-dossier-title"]');
+  await expect(dossier).toBeInViewport({ ratio: 1 });
+});
+
 test("early station routing gives accessible guidance without an auditor penalty", async ({
   page,
 }) => {

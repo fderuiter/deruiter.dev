@@ -1,6 +1,8 @@
 import { Resend } from "resend";
 import crypto from "crypto";
 import { logger } from "@/lib/logger";
+import { clamp } from "@/lib/game-utils";
+import { generateId } from "@/lib/utils";
 import { env, getEnv } from "@/lib/env";
 import { scheduleEmailRetry } from "@/lib/qstash-retry";
 import { prisma, SuppressionReason, OutboundEmailStatus } from "@/lib/db";
@@ -168,6 +170,66 @@ const BASE_RETRY_DELAY_MS = 1000;
 const MAX_RETRY_DELAY_MS = 600000; // 10 minutes
 const RETRY_LEASE_MS = 5 * 60 * 1000;
 const MAX_RETRY_BATCH_SIZE = 20;
+
+/** One OutboundEmailQueue row as the lease statement returns it. */
+interface LeasedQueueRow {
+  id: string;
+  to: string;
+  from: string;
+  replyTo: string | null;
+  subject: string;
+  html: string;
+  text: string | null;
+  tags: unknown;
+  headers?: unknown;
+  attempts: number;
+  status: OutboundEmailStatus;
+  nextRetryAt: Date;
+  lastError: string | null;
+  /** When the row fell due, before the lease moved nextRetryAt (#1116). */
+  dueAt: Date;
+}
+
+/**
+ * Selects and leases due queue rows in one statement (#1116).
+ *
+ * The CTE locks up to `limit` due rows with FOR UPDATE SKIP LOCKED and the
+ * UPDATE moves each one's retry timestamp into the lease window, returning
+ * exactly the rows this statement leased. An overlapping worker skips rows
+ * locked here and, once this statement commits, no longer sees them as due,
+ * so no row is handed to two workers. A worker that crashes mid-batch releases
+ * its rows when the lease expires. `updatedAt` is written explicitly because
+ * Prisma's @updatedAt does not apply to raw SQL.
+ */
+async function leaseDueQueueRows(args: {
+  now: Date;
+  leaseUntil: Date;
+  limit: number;
+  queueId: string | null;
+}): Promise<LeasedQueueRow[]> {
+  const { now, leaseUntil, limit, queueId } = args;
+  const rows = await prisma.$queryRaw<LeasedQueueRow[]>`
+    WITH due AS (
+      SELECT "id", "nextRetryAt" AS "dueAt"
+      FROM "OutboundEmailQueue"
+      WHERE "status" IN ('PENDING', 'RETRYING')
+        AND "nextRetryAt" <= ${now}
+        AND (${queueId}::text IS NULL OR "id" = ${queueId}::text)
+      ORDER BY "nextRetryAt" ASC
+      LIMIT ${limit}
+      FOR UPDATE SKIP LOCKED
+    )
+    UPDATE "OutboundEmailQueue" AS q
+    SET "nextRetryAt" = ${leaseUntil}, "updatedAt" = ${new Date()}
+    FROM due
+    WHERE q."id" = due."id"
+    RETURNING q.*, due."dueAt"
+  `;
+  // RETURNING carries no order; dispatch oldest-due first as before.
+  return [...rows].sort(
+    (a, b) => new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime()
+  );
+}
 
 /**
  * Queued emails the daily maintenance run sends at most. Newsletter dispatch
@@ -417,56 +479,22 @@ export class EmailService {
     /** Restrict the run to one queue row (QStash-targeted retry). */
     queueId?: string;
   }): Promise<{ processed: number; succeeded: number; failed: number }> {
-    const limit = Math.min(
-      MAX_RETRY_BATCH_SIZE,
-      Math.max(1, options?.maxBatchSize || MAX_RETRY_BATCH_SIZE)
+    const limit = clamp(
+      options?.maxBatchSize || MAX_RETRY_BATCH_SIZE,
+      1,
+      MAX_RETRY_BATCH_SIZE
     );
     const now = options?.now || new Date();
     const leaseUntil = new Date(now.getTime() + RETRY_LEASE_MS);
 
-    const items: Array<{
-      id: string;
-      to: string;
-      from: string;
-      replyTo: string | null;
-      subject: string;
-      html: string;
-      text: string | null;
-      tags: unknown;
-      headers?: unknown;
-      attempts: number;
-      status: OutboundEmailStatus;
-      nextRetryAt: Date;
-      lastError: string | null;
-    }> = [];
-
+    let items: LeasedQueueRow[];
     try {
-      const candidates = await prisma.outboundEmailQueue.findMany({
-        where: {
-          ...(options?.queueId ? { id: options.queueId } : {}),
-          status: { in: ["PENDING", "RETRYING"] },
-          nextRetryAt: { lte: now },
-        },
-        orderBy: { nextRetryAt: "asc" },
-        take: limit,
+      items = await leaseDueQueueRows({
+        now,
+        leaseUntil,
+        limit,
+        queueId: options?.queueId || null,
       });
-
-      // Optimistic row leasing: only one overlapping invocation can move a
-      // still-due row's retry timestamp into the lease window. A crashed
-      // worker releases itself naturally when the lease expires.
-      for (const candidate of candidates) {
-        const lease = await prisma.outboundEmailQueue.updateMany({
-          where: {
-            id: candidate.id,
-            status: { in: ["PENDING", "RETRYING"] },
-            nextRetryAt: { lte: now },
-          },
-          data: { nextRetryAt: leaseUntil },
-        });
-        if (lease.count === 1) {
-          items.push({ ...candidate, nextRetryAt: leaseUntil });
-        }
-      }
     } catch (err) {
       console.error("Error reading OutboundEmailQueue:", err);
       throw err;
@@ -721,7 +749,7 @@ export class EmailService {
     const apiKey = getEnv().RESEND_API_KEY || env.RESEND_API_KEY;
     // Missing credentials and every non-production deployment are simulated.
     if (!client || shouldSimulateEmailDelivery(apiKey)) {
-      const simulatedId = `sim_msg_${Math.random().toString(36).substring(2, 10)}`;
+      const simulatedId = generateId("sim_msg_");
 
       if (env.NODE_ENV === "development") {
         console.log(
@@ -783,7 +811,7 @@ export class EmailService {
       return {
         success: true,
         data: {
-          id: data?.id || `msg_${Math.random().toString(36).substring(2, 10)}`,
+          id: data?.id || generateId("msg_"),
         },
       };
     } catch (err) {

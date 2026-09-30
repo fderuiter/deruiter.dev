@@ -51,7 +51,7 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     isAccessibleForFree: true,
   },
   mCrf: {
-    title: "Mobile CRF Studio",
+    title: "Mobile CRF Studio for Clinical Forms",
     description:
       "Touch-optimized clinical research form studio designed for mobile viewports, enabling interactive section and field inspection on mobile devices.",
     path: "/m/crf",
@@ -67,7 +67,7 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     isAccessibleForFree: true,
   },
   patrol: {
-    title: "Ski Patrol Shift Studio",
+    title: "Ski Patrol Shift Studio Simulation",
     description:
       "An interactive Midwest ski-patrol judgment simulation foundation powered by deterministic FSM transitions and operational dispatch routines.",
     path: "/patrol",
@@ -116,7 +116,7 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     isAccessibleForFree: true,
   },
   mNeuro: {
-    title: "Mobile NeuroRecon Studio",
+    title: "Mobile NeuroRecon Studio Viewer",
     description:
       "Touch-optimized neuroimaging structural morphometry viewer for mobile screens, providing subcortical volumetric metrics and FreeSurfer recon status.",
     path: "/m/neuro",
@@ -132,9 +132,9 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     isAccessibleForFree: true,
   },
   arcade: {
-    title: "Arcade & Browser Games",
+    title: "Arcade: Browser Games and Puzzles",
     description:
-      "Try browser games by Fred de Ruiter: a laser loon, a demanding puppy, logic puzzles, and a smartwatch with very little memory to spare.",
+      "Try browser games by Fred de Ruiter: a laser loon, a demanding puppy, logic puzzles, clinical trial games, and a smartwatch with little memory to spare.",
     path: "/arcade",
     keywords: [
       "Engineering Arcade",
@@ -151,7 +151,7 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
   laserLoon: {
     title: "Laser Loon: Quest for the State Flag",
     description:
-      "Fly F277 Laser Loon toward the Minnesota State Capitol, battle rival flags, and blast through red tape in this browser arcade game.",
+      "Fly F277 Laser Loon through four campaign acts from Lake Minnetonka to the State Capitol dome, blasting rival flags and red tape in this browser game.",
     path: "/arcade/laser-loon",
     keywords: [
       "Laser Loon Game",
@@ -165,9 +165,9 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     isAccessibleForFree: true,
   },
   quasiPuzzler: {
-    title: "Formal Verification Puzzler",
+    title: "Formal Verification Puzzler Game",
     description:
-      "Apply deductive proof tactics to a tree in this Lean-inspired puzzle game. Complete the proof before your simulated memory runs out.",
+      "Apply deductive proof tactics to a tree in this Lean-inspired puzzle game and reach a complete proof. Skipping a goal with “sorry” costs you score.",
     path: "/arcade/quasi-puzzler",
     keywords: [
       "Formal Verification Game",
@@ -183,7 +183,7 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
   garminWatch: {
     title: "Monkey C Mayhem: Garmin Schvitz App",
     description:
-      "Dodge obstacles, clear memory, and wipe the fog from a simulated smartwatch. Play Monkey C Mayhem with a stubbornly small 32KB budget.",
+      "Keep a simulated smartwatch running within a 32KB memory budget. Dodge obstacles, clear memory, and wipe the screen when it fogs up in Monkey C Mayhem.",
     path: "/arcade/garmin-watch",
     keywords: [
       "Monkey C Mayhem",
@@ -199,9 +199,9 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     isAccessibleForFree: true,
   },
   clinicalChaos: {
-    title: "Clinical Trial Chaos",
+    title: "Clinical Trial Chaos: SDTM Game",
     description:
-      "Sort clinical data, fix entries, and sign submissions against the clock. Play a clinical research arcade game with an impatient auditor.",
+      "Sort clinical data into SDTM domains, sign the submissions, and keep up with the conveyor belt while the auditor watches. At least there is a restart button.",
     path: "/arcade/clinical-chaos",
     keywords: [
       "CDISC Compliance Game",
@@ -215,9 +215,9 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     isAccessibleForFree: true,
   },
   trialAndError: {
-    title: "Trial & Error: Biostat Ops",
+    title: "Trial & Error: Biostat Deckbuilder",
     description:
-      "Review clinical tables against a statistical analysis plan, correct the redlines, and play Chips × Mult hands to beat regulatory Blinds.",
+      "Clinical outputs are the cards. Review tables against the SAP, correct redlines for +Mult, and play Chips × Mult hands to beat the Blinds in this deckbuilder.",
     path: "/arcade/trial-and-error",
     keywords: [
       "Biostatistics Deckbuilder",
@@ -247,9 +247,9 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     isAccessibleForFree: true,
   },
   retroLabyrinth: {
-    title: "Retro Labyrinth",
+    title: "Retro Labyrinth: Graveyard Roguelike",
     description:
-      "Explore an abandoned codebase as a shifting dungeon. Fight bugs, navigate moving walls, and face a wireframe boss in this browser game.",
+      "An abandoned codebase, now with corridors. Navigate moving walls, wield developer-themed weapons, and find the FaceForge boss in this browser roguelike.",
     path: "/arcade/retro-labyrinth",
     keywords: [
       "Legacy Code Roguelike",
@@ -263,7 +263,7 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     isAccessibleForFree: true,
   },
   workingWithDuck: {
-    title: "Working With Duck",
+    title: "Working With Duck: Pet Sim Arcade",
     description:
       "You have a deadline. Duck the puppy has a ball. Keep the project and the puppy happy with toys, treats, and park breaks in this browser game.",
     path: "/arcade/working-with-duck",
@@ -278,9 +278,9 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     isAccessibleForFree: true,
   },
   proof: {
-    title: "Logical Proof Workspace",
+    title: "Logical Proof Workspace: Step by Step",
     description:
-      "Build a proof one step at a time. Connect premises, try inference rules, and inspect where an argument goes wrong in this logic workspace.",
+      "Build a proof one step at a time. Connect premises, try inference rules, and inspect where an argument goes wrong. Export finished proofs to Lean 4 or LaTeX.",
     path: "/proof",
     keywords: [
       "Formal Verification Workspace",
@@ -294,7 +294,7 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     isAccessibleForFree: true,
   },
   simulator: {
-    title: "Incident Decision Simulator",
+    title: "Engineering Alignment Simulator",
     description:
       "Work through a few engineering decisions, from interface priorities to an outage. Explore what your choices emphasize and compare the results.",
     path: "/simulator",
@@ -309,9 +309,9 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     isAccessibleForFree: true,
   },
   schedule: {
-    title: "Book a Chat With Fred",
+    title: "Book a 30-Minute Chat With Fred",
     description:
-      "Find a time to talk about a project, ask a question, or introduce yourself. Book a 30-minute Google Meet chat with Fred de Ruiter.",
+      "Pick a time on Google Calendar to talk about a project, ask a question, or say hello. Each booking is a 30-minute Google Meet chat with Fred de Ruiter.",
     path: "/schedule",
     keywords: [
       "Schedule Systems Consultation",
@@ -324,9 +324,9 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     isAccessibleForFree: true,
   },
   contact: {
-    title: "Contact Fred",
+    title: "Contact Fred: Projects and Roles",
     description:
-      "Have a project, a role, or a question in mind? Send Fred de Ruiter a note about what you’re working on, or find a time to talk it through.",
+      "Have a project, a role, or a question in mind? Send Fred de Ruiter a note about what you’re working on, or pick a time to talk it through by video.",
     path: "/contact",
     keywords: [
       "Contact Frederick de Ruiter",
@@ -340,9 +340,9 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     isAccessibleForFree: true,
   },
   neuro: {
-    title: "NeuroRecon Studio",
+    title: "NeuroRecon Studio: Brain Viewer",
     description:
-      "Explore brain surfaces and MRI slices, place control points, and work through simulated reconstruction problems in NeuroRecon Studio.",
+      "Explore brain surfaces and MRI slices, place control points, and work through simulated reconstruction problems in a FreeSurfer-style pipeline simulator.",
     path: "/neuro",
     keywords: [
       "FreeSurfer Cortical Mesh Repair",
@@ -356,7 +356,7 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     isAccessibleForFree: true,
   },
   stack: {
-    title: "Under the Hood",
+    title: "Under the Hood: How This Site Works",
     description:
       "See how this site works: text layout, browser audio, the application stack, and the checks I use while building it. Demos and source included.",
     path: "/stack",
@@ -372,9 +372,9 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     isAccessibleForFree: true,
   },
   memeVault: {
-    title: "Meme Vault & Soundboard",
+    title: "Meme Vault: Soundboard and Trophies",
     description:
-      "Make some noise with a browser soundboard, discover hidden trophies, and enjoy a few jokes about code, clinical data, and the working day.",
+      "Make some noise with a synthesized browser soundboard, discover hidden trophies, and enjoy a few jokes about code, clinical data, and the working day.",
     path: "/arcade/meme-vault",
     keywords: [
       "Developer Meme Vault",
@@ -388,9 +388,9 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     isAccessibleForFree: true,
   },
   offline: {
-    title: "You’re Offline",
+    title: "You’re Offline: Page Not Saved",
     description:
-      "This page is not available offline. Check your connection, retry the page, or explore tools and pages already saved in your browser.",
+      "This page has not been saved for offline use. Check your connection, retry the page, or open one of the pages already cached in your browser.",
     path: "/offline",
     keywords: [
       "Progressive Web App Shell",
@@ -403,9 +403,9 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     isAccessibleForFree: true,
   },
   caseStudies: {
-    title: "Project Writeups",
+    title: "Project Writeups and Case Studies",
     description:
-      "Read about the problems, implementation choices, and lessons behind Fred de Ruiter’s clinical data tools, web apps, and side projects.",
+      "Read about the problems, implementation choices, and lessons behind Fred de Ruiter’s clinical data tools, web apps, and side projects, with code on GitHub.",
     path: "/case-studies",
     keywords: [
       "Engineering Case Studies",
@@ -452,7 +452,7 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     isAccessibleForFree: true,
   },
   sonosNetworkController: {
-    title: "Sonos Network Controller",
+    title: "Sonos Network Controller in Python",
     description:
       "Control Sonos speakers on your own network with a Python API and a small web interface. Read about the protocols and implementation choices.",
     path: "/case-studies/sonos-network-controller",
@@ -504,7 +504,7 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
   lambdaWave: {
     title: "Lambda-Wave: Respiratory Motion Radar",
     description:
-      "Explore a respiratory motion tracking project using FMCW radar, Haskell signal processing, and C++ sample transport. Read the design notes.",
+      "Explore respiratory motion tracking for surface guided radiation therapy using FMCW radar, Haskell signal processing, and C++ sample transport.",
     path: "/case-studies/lambda-wave",
     keywords: [
       "SGRT FMCW Radar System",
@@ -555,7 +555,7 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
   fourGlory: {
     title: "4Glory: Does Fred Know Ball?",
     description:
-      "Does Fred know ball? Compare basketball opinions with Python and XGBoost predictions on NBA data, using walk-forward validation and SHAP.",
+      "Does Fred know ball? Compare basketball opinions with Python and XGBoost predictions on NBA data, using rolling features, walk-forward validation, and SHAP.",
     path: "/case-studies/4glory",
     keywords: [
       "Real-Time Sports Analytics",
@@ -626,6 +626,9 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
   },
 };
 
+const TRAILING_BRAND_PATTERN =
+  /\s*[|\-\u2013\u2014]\s*(?:Fred|Frederick)\s+de\s+Ruiter\s*$/i;
+
 /**
  * Helper to construct standardized Next.js Metadata for any route configuration.
  */
@@ -642,9 +645,9 @@ export function buildRouteMetadata(config: RouteMetaConfig): Metadata {
   // instead. The short form is matched as well as the long one: the previous
   // guard tested only "Frederick de Ruiter", so the many configs written
   // "... | Fred de Ruiter" were double-branded in social cards too.
-  const alreadyBranded = /\|\s*(?:Fred|Frederick) de Ruiter\s*$/.test(
-    config.title
-  );
+  // Any trailing separator (pipe, hyphen, en/em dash) followed by either name
+  // form counts as branded, case-insensitively.
+  const alreadyBranded = TRAILING_BRAND_PATTERN.test(config.title);
   const fullTitle = alreadyBranded
     ? config.title
     : `${config.title} | Frederick de Ruiter`;
@@ -671,6 +674,7 @@ export function buildRouteMetadata(config: RouteMetaConfig): Metadata {
           url: ogImageUrl,
           width: 1200,
           height: 630,
+          type: "image/png",
           alt: fullTitle,
         },
       ],

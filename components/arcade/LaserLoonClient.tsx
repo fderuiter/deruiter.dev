@@ -4,6 +4,7 @@ import React from "react";
 import dynamic from "next/dynamic";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { NextPrevNav } from "@/components/ui/NextPrevNav";
+import { getArcadeNeighbors } from "@/lib/arcade";
 import { PlayCabinet } from "@/components/arcade/PlayCabinet";
 import { DesktopOnlyGate } from "@/components/arcade/DesktopOnlyGate";
 import Link from "next/link";
@@ -29,7 +30,7 @@ const DynamicLaserLoon = dynamic(LaserLoonLoader, {
 
 export const LaserLoonClient: React.FC = () => {
   return (
-    <div className="min-h-screen bg-black text-white pt-28 pb-24 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen text-white pb-24 px-4 sm:px-6 lg:px-8">
       <div className="max-w-5xl mx-auto">
         {/* Navigation Breadcrumb */}
         <div className="flex items-center justify-between gap-4 mb-6 border-b border-zinc-800/80 pb-4 flex-wrap">
@@ -139,18 +140,7 @@ export const LaserLoonClient: React.FC = () => {
 
         {/* Sequential Next / Previous Navigation */}
         <NextPrevNav
-          prev={{
-            title: "Working With Duck",
-            href: "/arcade/working-with-duck",
-            label: "Previous Game",
-            tag: "Pet Simulation Arcade",
-          }}
-          next={{
-            title: "Quasi-Perfect Puzzler",
-            href: "/arcade/quasi-puzzler",
-            label: "Next Game",
-            tag: "Formal Verification Arcade",
-          }}
+          {...getArcadeNeighbors("/arcade/laser-loon")}
           backToHub={{
             title: "All Arcade Games",
             href: "/arcade",

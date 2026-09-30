@@ -109,6 +109,32 @@ Updates lastAccessedAt timestamp and auto-evicts expired items.
 
 ***
 
+### getRawItem()
+
+> **getRawItem**(`key`): `string` \| `null`
+
+Reads the stored string exactly as written, without JSON parsing or
+envelope unwrapping. It is the read counterpart of `setRawItem` for keys
+whose legacy format is a bare string (for example a high score "1200"
+that `getItem` would return as the number 1200). Falls back to the
+in-memory cache when storage is unavailable or throws.
+
+#### Parameters
+
+##### key
+
+`string`
+
+The storage key to read
+
+#### Returns
+
+`string` \| `null`
+
+The stored string, or null when the key is absent
+
+***
+
 ### invalidateCacheKey()
 
 > **invalidateCacheKey**(`key`): `void`
@@ -218,3 +244,35 @@ Handles QuotaExceededError by triggering LRU metadata eviction.
 #### Returns
 
 `boolean`
+
+***
+
+### setRawItem()
+
+> **setRawItem**(`key`, `raw`): `boolean`
+
+Writes a raw string to storage exactly as given, without the metadata
+envelope that `setItem` adds. Use it only for keys whose stored format
+predates the envelope and must stay byte-identical so existing visitors
+keep their settings. `getItem` reads such values back unchanged. Storage
+failures fall back to the in-memory cache instead of throwing.
+
+#### Parameters
+
+##### key
+
+`string`
+
+The storage key to write
+
+##### raw
+
+`string`
+
+The exact string to store
+
+#### Returns
+
+`boolean`
+
+true when the value reached localStorage, false when it is held in memory only

@@ -132,6 +132,7 @@ export {
   type TableInspectionView,
   type TableState,
   type TableView,
+  type TableOutcome,
   type PlayBlocker,
   STALE_ALERT,
   AMENDMENT_STALE_ALERT,
@@ -178,6 +179,20 @@ export {
   type Inventory,
   type StudyHistory,
 } from "./internal/table";
+export {
+  LONG_PRESS_MS,
+  LONG_PRESS_SLOP_PX,
+  SEAL_DRAG_TYPE,
+  handActivationIntent,
+  handDisplayOrder,
+  handKeyIntent,
+  pressTravelled,
+  reorderTarget,
+  type HandActivation,
+  type HandInputContext,
+  type HandIntent,
+  type HandKeyInput,
+} from "./internal/hand-input";
 export {
   applyTransition,
   membership,

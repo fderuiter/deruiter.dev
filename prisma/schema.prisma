@@ -60,6 +60,7 @@ model TelemetryEvent {
   @@index([projectSlug])
   @@index([eventType])
   @@index([createdAt])
+  @@index([eventType, projectSlug])
 }
 
 model TelemetryDailyRollup {
@@ -108,7 +109,7 @@ model BlogPostReaction {
   connectionHash String
   createdAt      DateTime @default(now())
 
-  @@unique([blogPostSlug, reactionType, connectionHash])
+  @@unique([blogPostSlug, connectionHash, reactionType])
   @@index([blogPostSlug])
   @@index([blogPostSlug, reactionType])
   @@index([connectionHash])

@@ -295,6 +295,58 @@ describe("FieldManualButton - Hotkey & Ownership Safety (DUCK-02)", () => {
     expect(onOpenChange).not.toHaveBeenCalled();
   });
 
+  it("leaves a key a game already handled to the game (#1323)", async () => {
+    function GameWithHintKey() {
+      const [hints, setHints] = useState(false);
+      return (
+        <div
+          data-testid="game"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === "h") {
+              e.preventDefault();
+              setHints((prev) => !prev);
+            }
+          }}
+        >
+          <span data-testid="hints">{hints ? "ON" : "OFF"}</span>
+          <FieldManualButton manualId="quasi-puzzler" />
+        </div>
+      );
+    }
+
+    await act(async () => {
+      root.render(<GameWithHintKey />);
+    });
+    const game = container.querySelector('[data-testid="game"]') as HTMLElement;
+
+    await act(async () => {
+      game.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: "h",
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+    });
+    expect(container.querySelector('[data-testid="hints"]')?.textContent).toBe(
+      "ON"
+    );
+    expect(document.querySelectorAll('[role="dialog"]')).toHaveLength(0);
+
+    // ? is not claimed by the game, so it still opens the manual.
+    await act(async () => {
+      game.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: "?",
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+    });
+    expect(document.querySelectorAll('[role="dialog"]')).toHaveLength(1);
+  });
+
   it("does not trigger hotkey for card variant buttons by default", async () => {
     const onOpenChange = vi.fn();
 

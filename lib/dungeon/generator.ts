@@ -248,7 +248,7 @@ export function generateTSPRoom(): DungeonRoom {
   const tspNodes: TSPNode[] = [
     { id: 1, x: 3, y: 1, visited: false },
     { id: 2, x: 7, y: 2, visited: false },
-    { id: 3, x: 10, y: 5, visited: false },
+    { id: 3, x: 11, y: 5, visited: false },
     { id: 4, x: 4, y: 7, visited: false },
   ];
 

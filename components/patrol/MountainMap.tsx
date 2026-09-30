@@ -45,6 +45,7 @@ import {
   getDescentCommitIntervalMs,
 } from "@/lib/patrol";
 import { AmbientEventToast } from "./AmbientEventToast";
+import { clamp } from "@/lib/game-utils";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useIsMobileViewport } from "@/hooks/useIsMobileViewport";
 
@@ -1968,8 +1969,9 @@ export const MountainMap: React.FC<MountainMapProps> = ({
                         pt.y,
                         activeSelectedTrail.zone
                       );
-                      const clampedElev = Math.min(
-                        Math.max(elev, activeSelectedTrail.baseElevationFt),
+                      const clampedElev = clamp(
+                        elev,
+                        activeSelectedTrail.baseElevationFt,
                         activeSelectedTrail.summitElevationFt
                       );
                       const py = 50 - (clampedElev - BASE_ELEVATION_FT) * 0.1;
@@ -1990,8 +1992,9 @@ export const MountainMap: React.FC<MountainMapProps> = ({
                         pt.y,
                         activeSelectedTrail.zone
                       );
-                      const clampedElev = Math.min(
-                        Math.max(elev, activeSelectedTrail.baseElevationFt),
+                      const clampedElev = clamp(
+                        elev,
+                        activeSelectedTrail.baseElevationFt,
                         activeSelectedTrail.summitElevationFt
                       );
                       const py = 50 - (clampedElev - BASE_ELEVATION_FT) * 0.1;

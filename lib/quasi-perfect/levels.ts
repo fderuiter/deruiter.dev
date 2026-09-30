@@ -43,7 +43,7 @@ export const puzzleLevels: PuzzlerLevelDef[] = [
       leanAnalogy:
         "In Lean 4, `rfl` is syntactic shorthand for `exact Eq.refl x`. The Lean kernel verifies that both sides reduce to the exact same normal form.",
       tacticalObjective:
-        "Click the 'rfl' tactic card to discharge the identity goal in 1 step.",
+        "Select the 'rfl' tactic card, then click the x = x goal to discharge it in 1 step. You can also drag the card onto the goal.",
       leanDocUrl:
         "https://leanprover-community.github.io/mathlib4_docs/Init/Core.html#Eq.refl",
       realWorldApplication:

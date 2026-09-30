@@ -18,6 +18,11 @@ import { DynamicTabletOrientationHint as TabletOrientationHint } from "@/compone
 import { useGameFullscreen as useFullscreen } from "@/components/arcade/CabinetFullscreen";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useAnnouncer } from "@/hooks/useAnnouncer";
+import {
+  safeGetItem,
+  safeGetRawItem,
+  safeSetRawItem,
+} from "@/lib/safe-storage";
 import { useDuckService } from "@/hooks/useDuckService";
 import { useResponsiveCanvas } from "@/hooks/useResponsiveCanvas";
 import { useCanvasResolution } from "@/hooks/useCanvasResolution";
@@ -97,10 +102,7 @@ const subscribeStorage = (callback: () => void) => {
 const getHighScoreSnapshot = () => {
   if (typeof window === "undefined") return "0";
   try {
-    return window.localStorage &&
-      typeof window.localStorage.getItem === "function"
-      ? window.localStorage.getItem("working_with_duck_high_score") || "0"
-      : "0";
+    return safeGetRawItem("working_with_duck_high_score") || "0";
   } catch {
     return "0";
   }
@@ -117,15 +119,9 @@ const getServerSnapshot = () => "0";
 const getStoredUnlockedFacts = (): number[] => {
   if (typeof window === "undefined") return [1];
   try {
-    if (
-      !window.localStorage ||
-      typeof window.localStorage.getItem !== "function"
-    ) {
-      return [1];
-    }
-    const raw = window.localStorage.getItem("working_with_duck_unlocked_facts");
-    if (!raw) return [1];
-    const parsed: unknown = JSON.parse(raw);
+    // Stored as a plain JSON array. safeGetItem returns null when the key is
+    // missing or storage is unavailable, and the raw string for malformed JSON.
+    const parsed = safeGetItem<unknown>("working_with_duck_unlocked_facts");
     if (!Array.isArray(parsed)) return [1];
     return parsed.filter(
       (id): id is number => typeof id === "number" && Number.isInteger(id)
@@ -2089,22 +2085,19 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
-      if (
-        window.localStorage &&
-        typeof window.localStorage.setItem === "function"
-      ) {
-        if (uiState.highScore > loadedHighScore) {
-          window.localStorage.setItem(
-            "working_with_duck_high_score",
-            String(uiState.highScore)
-          );
-        }
-        if (uiState.unlockedFacts.length > 0) {
-          window.localStorage.setItem(
-            "working_with_duck_unlocked_facts",
-            JSON.stringify(uiState.unlockedFacts)
-          );
-        }
+      // Raw writes keep the stored bytes: a bare numeric string and a plain
+      // JSON array, exactly as before safeStorage.
+      if (uiState.highScore > loadedHighScore) {
+        safeSetRawItem(
+          "working_with_duck_high_score",
+          String(uiState.highScore)
+        );
+      }
+      if (uiState.unlockedFacts.length > 0) {
+        safeSetRawItem(
+          "working_with_duck_unlocked_facts",
+          JSON.stringify(uiState.unlockedFacts)
+        );
       }
     } catch {}
   }, [uiState.highScore, uiState.unlockedFacts, loadedHighScore]);
@@ -3238,7 +3231,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
           className={
             isFullscreen
               ? "max-h-[var(--layout-viewport-budget,calc(100dvh-var(--header-height,80px)-var(--layout-dock-height,64px)))] max-h-[calc(100dvh-var(--header-height,80px)-var(--footer-height,48px))] max-w-full aspect-[800/500] object-contain block cursor-crosshair touch-none my-auto mx-auto [@media(max-height:500px)]:max-h-[45dvh] focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
-              : "w-full h-auto aspect-[800/500] cursor-crosshair block touch-none [@media(max-height:500px)]:w-auto [@media(max-height:500px)]:max-w-full [@media(max-height:500px)]:max-h-[52dvh] [@media(max-height:500px)]:mx-auto focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
+              : "w-[min(100%,max(28rem,calc((100dvh-29rem)*1.6)))] mx-auto h-auto aspect-[800/500] cursor-crosshair block touch-none [@media(max-height:500px)]:w-auto [@media(max-height:500px)]:max-w-full [@media(max-height:500px)]:max-h-[52dvh] [@media(max-height:500px)]:mx-auto focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
           }
         />
 
@@ -4448,7 +4441,14 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
               Sprint Level: {uiState.currentLevel}
             </output>
             <output htmlFor="duck-work">
-              Work Progress: {Math.round(uiState.workProgress)}%
+              Work Progress:{" "}
+              {Math.min(
+                100,
+                Math.round(
+                  (uiState.workProgress / uiState.targetWorkProgress) * 100
+                )
+              )}
+              %
             </output>
             <output htmlFor="duck-excitement">
               Excitement: {Math.round(uiState.excitement)}%

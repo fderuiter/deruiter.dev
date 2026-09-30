@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Lexend, Atkinson_Hyperlegible, Geist_Mono } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
@@ -12,6 +12,7 @@ import {
 } from "@/lib/seo";
 import { A11yProvider } from "@/components/providers/A11yProvider";
 import { AudioProvider } from "@/components/providers/AudioProvider";
+import { ToastProvider } from "@/components/providers/ToastProvider";
 import { SearchProvider } from "@/components/providers/SearchProvider";
 import { TerminologyProvider } from "@/components/providers/TerminologyProvider";
 import { PersonaProvider } from "@/components/providers/PersonaProvider";
@@ -63,6 +64,11 @@ const openDyslexic = localFont({
   variable: "--font-opendyslexic",
   display: "swap",
 });
+
+export const viewport: Viewport = {
+  themeColor: "#090D16",
+  colorScheme: "dark",
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL(resolveBaseUrl()),
@@ -163,23 +169,25 @@ export default function RootLayout({
           <TerminologyProvider>
             <SearchProvider>
               <A11yProvider>
-                <AudioProvider>
-                  <Navbar />
-                  <main
-                    id="main-content"
-                    tabIndex={-1}
-                    className="flex-grow flex flex-col focus:outline-none"
-                  >
-                    {children}
-                  </main>
-                  <Footer />
-                  <RetroChaosOverlayWrapper />
-                  <Analytics />
-                  <SpeedInsights />
-                  <SearchWrapper />
-                  <GlobalPhotoGallery />
-                  <SerwistRegister />
-                </AudioProvider>
+                <ToastProvider>
+                  <AudioProvider>
+                    <Navbar />
+                    <main
+                      id="main-content"
+                      tabIndex={-1}
+                      className="flex-grow flex flex-col focus:outline-none"
+                    >
+                      {children}
+                    </main>
+                    <Footer />
+                    <RetroChaosOverlayWrapper />
+                    <Analytics />
+                    <SpeedInsights />
+                    <SearchWrapper />
+                    <GlobalPhotoGallery />
+                    <SerwistRegister />
+                  </AudioProvider>
+                </ToastProvider>
               </A11yProvider>
             </SearchProvider>
           </TerminologyProvider>

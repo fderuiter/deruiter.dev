@@ -74,7 +74,7 @@ describe("build.js script execution", () => {
     // It should have called prisma generate, check:migrations, and next build
     expect(spawnSpy).toHaveBeenCalledWith(
       "npx",
-      ["prisma", "generate"],
+      ["--no-install", "prisma", "generate"],
       expect.any(Object)
     );
     expect(spawnSpy).toHaveBeenCalledWith(
@@ -84,14 +84,14 @@ describe("build.js script execution", () => {
     );
     expect(spawnSpy).toHaveBeenCalledWith(
       "npx",
-      ["next", "build", "--webpack"],
+      ["--no-install", "next", "build", "--webpack"],
       expect.any(Object)
     );
 
     // It MUST NOT execute live migration deploy
     expect(spawnSpy).not.toHaveBeenCalledWith(
       "npx",
-      ["prisma", "migrate", "deploy"],
+      ["--no-install", "prisma", "migrate", "deploy"],
       expect.any(Object)
     );
 
@@ -111,12 +111,12 @@ describe("build.js script execution", () => {
     // It should have called prisma generate, generate-openapi, check:migrations, and then next build
     expect(spawnSpy).toHaveBeenCalledWith(
       "npx",
-      ["prisma", "generate"],
+      ["--no-install", "prisma", "generate"],
       expect.any(Object)
     );
     expect(spawnSpy).toHaveBeenCalledWith(
       "npx",
-      ["tsx", "scripts/generate-openapi.ts"],
+      ["--no-install", "tsx", "scripts/generate-openapi.ts"],
       expect.any(Object)
     );
     expect(spawnSpy).toHaveBeenCalledWith(
@@ -126,14 +126,14 @@ describe("build.js script execution", () => {
     );
     expect(spawnSpy).toHaveBeenCalledWith(
       "npx",
-      ["next", "build", "--webpack"],
+      ["--no-install", "next", "build", "--webpack"],
       expect.any(Object)
     );
 
     // It MUST NOT execute live migration deploy in static compilation
     expect(spawnSpy).not.toHaveBeenCalledWith(
       "npx",
-      ["prisma", "migrate", "deploy"],
+      ["--no-install", "prisma", "migrate", "deploy"],
       expect.any(Object)
     );
 
@@ -165,13 +165,15 @@ describe("build.js script execution", () => {
     const calls = spawnSpy.mock.calls.map(
       (c: any[]) => `${c[0]} ${c[1].join(" ")}`
     );
-    const migrateIndex = calls.indexOf("npx prisma migrate deploy");
+    const migrateIndex = calls.indexOf(
+      "npx --no-install prisma migrate deploy"
+    );
     expect(migrateIndex).toBeGreaterThan(
       calls.indexOf("npm run check:migrations")
     );
-    expect(calls.indexOf("npx next build --webpack")).toBeGreaterThan(
-      migrateIndex
-    );
+    expect(
+      calls.indexOf("npx --no-install next build --webpack")
+    ).toBeGreaterThan(migrateIndex);
     expect(spawnSpy.mock.calls[migrateIndex][2].env.DIRECT_URL).toBe(
       "postgresql://unpooled.neon.test/db"
     );
@@ -189,7 +191,7 @@ describe("build.js script execution", () => {
 
     expect(spawnSpy).not.toHaveBeenCalledWith(
       "npx",
-      ["prisma", "migrate", "deploy"],
+      ["--no-install", "prisma", "migrate", "deploy"],
       expect.any(Object)
     );
   });
@@ -228,7 +230,7 @@ describe("build.js script execution", () => {
     expect(exitMock).toHaveBeenCalledWith(1);
     expect(spawnSpy).not.toHaveBeenCalledWith(
       "npx",
-      ["next", "build", "--webpack"],
+      ["--no-install", "next", "build", "--webpack"],
       expect.any(Object)
     );
     errorSpy.mockRestore();
@@ -271,14 +273,14 @@ describe("build.js script execution", () => {
     // It should have tried prisma generate
     expect(spawnSpy).toHaveBeenCalledWith(
       "npx",
-      ["prisma", "generate"],
+      ["--no-install", "prisma", "generate"],
       expect.any(Object)
     );
 
     // It should NOT have tried next build
     expect(spawnSpy).not.toHaveBeenCalledWith(
       "npx",
-      ["next", "build"],
+      ["--no-install", "next", "build"],
       expect.any(Object)
     );
 

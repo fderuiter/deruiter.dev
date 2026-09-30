@@ -28,6 +28,7 @@ import {
   tokenizeWithSpans,
 } from "@/lib/crf/ast-evaluator";
 import { CRFField, CRFForm, StudyProtocol } from "@/lib/crf/types";
+import { mergeLevelScore, type LevelScore } from "@/lib/quasi-perfect";
 import { computeFormHealthMetrics } from "@/lib/crf/form-health";
 import {
   LOON_MAX_HITS,
@@ -1672,6 +1673,82 @@ describe("Garmin setup options reach the engine (#1209)", () => {
   });
 });
 
+describe("Garmin NV flash clear survives a restart (#1210)", () => {
+  it("does not re-seed the default flash entry after a clear", async () => {
+    const store: Record<string, string> = {};
+    Object.defineProperty(window, "localStorage", {
+      configurable: true,
+      value: {
+        getItem: (k: string) => store[k] ?? null,
+        setItem: (k: string, v: string) => {
+          store[k] = String(v);
+        },
+        removeItem: (k: string) => {
+          delete store[k];
+        },
+      },
+    });
+    const { createInitialState, clearFlashStorage } =
+      await import("@/lib/garmin-engine");
+    // First boot seeds sys_log.dat.
+    const first = createInitialState("fenix", 0);
+    expect(first.allocatedFlashKb).toBe(4);
+    const cleared = clearFlashStorage(first);
+    expect(cleared.flashVariables).toEqual([]);
+    expect(cleared.flashFiles).toEqual([]);
+    // A fresh initialization must stay empty.
+    const reboot = createInitialState("fenix", 0);
+    expect(reboot.allocatedFlashKb).toBe(0);
+    expect(reboot.flashVariables).toEqual([]);
+    expect(reboot.flashFiles).toEqual([]);
+  });
+});
+
+describe("Quasi-Perfect progress: best score survives weaker replays (#1230)", () => {
+  const mk = (over: Partial<LevelScore>): LevelScore => ({
+    levelId: 1,
+    completed: true,
+    usedSorry: false,
+    remainingRam: 20,
+    stars: 2,
+    morality: 100,
+    timestamp: 1,
+    ...over,
+  });
+
+  it("never lets a sorry replay erase an honest proof", () => {
+    const honest = mk({});
+    const sorry = mk({
+      usedSorry: true,
+      stars: 0,
+      morality: -100,
+      timestamp: 2,
+    });
+    expect(mergeLevelScore(honest, sorry)).toBe(honest);
+  });
+
+  it("lets an honest proof replace a sorry admission", () => {
+    const sorry = mk({ usedSorry: true, stars: 0, morality: -100 });
+    const honest = mk({ timestamp: 2 });
+    expect(mergeLevelScore(sorry, honest)).toBe(honest);
+  });
+
+  it("keeps higher stars, then more RAM, and ignores equal replays", () => {
+    const base = mk({});
+    expect(mergeLevelScore(base, mk({ stars: 1 }))).toBe(base);
+    const better = mk({ stars: 3 });
+    expect(mergeLevelScore(base, better)).toBe(better);
+    const moreRam = mk({ remainingRam: 25 });
+    expect(mergeLevelScore(base, moreRam)).toBe(moreRam);
+    expect(mergeLevelScore(base, mk({ timestamp: 9 }))).toBe(base);
+  });
+
+  it("accepts the first score", () => {
+    const first = mk({});
+    expect(mergeLevelScore(undefined, first)).toBe(first);
+  });
+});
+
 describe("Garmin progression is refresh-rate independent (#1212)", () => {
   const simulate = (hz: number, seconds: number, isLightOn = false) => {
     const step = 1000 / hz;
@@ -1755,5 +1832,34 @@ describe("Garmin progression is refresh-rate independent (#1212)", () => {
     }
     // 4 s at 1/14900 per ms is about 0.27 of decay.
     expect(state.thermalStress).toBeLessThan(0.3);
+  });
+});
+
+describe("Garmin obstacles crash with their own type (#1318)", () => {
+  it("maps NULL to Null Pointer and STK to Stack Overflow", async () => {
+    const { createInitialState, startGame, updateGameSimulation, GROUND_Y } =
+      await import("@/lib/garmin-engine");
+    const crash = (type: "null_pointer" | "stack_overflow", label: string) =>
+      updateGameSimulation(
+        {
+          ...startGame(createInitialState("fenix", 0), "fenix"),
+          lastObstacleTime: Date.now() + 60_000,
+          obstacles: [
+            {
+              id: 1,
+              x: 52,
+              y: GROUND_Y - 20,
+              width: 16,
+              height: 20,
+              type,
+              label,
+              speed: 2.2,
+            },
+          ],
+        },
+        16.6
+      ).crashReport?.errorType;
+    expect(crash("null_pointer", "NULL")).toBe("Null Pointer");
+    expect(crash("stack_overflow", "STK")).toBe("Stack Overflow");
   });
 });

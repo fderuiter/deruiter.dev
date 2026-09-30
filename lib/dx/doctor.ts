@@ -3,7 +3,12 @@ import path from "path";
 import { execSync } from "child_process";
 import { scanFile } from "../security-scan";
 import { colors, badge, formatHeader } from "./utils";
-import { checkEnvironmentVariables } from "./env-guard";
+import {
+  checkEnvironmentVariables,
+  getDeclaredEnvKeys,
+  parseEnvFile,
+  generateEnvExampleContent,
+} from "./env-guard";
 import { checkGitHygieneConfig } from "./git-guard";
 import { checkDeadCode } from "./dead-code";
 import { checkBundleBudgets } from "./bundle-guard";
@@ -14,6 +19,7 @@ import {
 } from "./benchmark-evidence";
 import { type RemediationAction } from "./cli-parser";
 import { getEnv } from "../env";
+import { inspectSourceState } from "./source-state";
 import { FALLBACK_CASE_STUDIES } from "../case-studies-data";
 import { FALLBACK_BLOG_POSTS } from "../fallback-blog-posts";
 
@@ -1018,6 +1024,386 @@ export function checkDocumentationParity(
   };
 }
 
+export interface CanonicalField {
+  name: string;
+  type: string;
+  attributes: string[];
+  comment?: string;
+  rawLine: string;
+}
+
+export interface CanonicalDirective {
+  name: string;
+  args: string;
+  normalized: string;
+  rawLine: string;
+}
+
+export interface CanonicalModel {
+  name: string;
+  fields: CanonicalField[];
+  directives: CanonicalDirective[];
+  rawBlock: string;
+}
+
+/**
+ * Parse Prisma models from a Prisma schema file or markdown snippet.
+ */
+export function parsePrismaModels(
+  content: string
+): Map<string, CanonicalModel> {
+  const models = new Map<string, CanonicalModel>();
+  const lines = content.split("\n");
+  let currentModelName: string | null = null;
+  let currentFields: CanonicalField[] = [];
+  let currentDirectives: CanonicalDirective[] = [];
+  let blockLines: string[] = [];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!currentModelName) {
+      const match = trimmed.match(/^model\s+([A-Za-z0-9_]+)\s*\{/);
+      if (match) {
+        currentModelName = match[1];
+        currentFields = [];
+        currentDirectives = [];
+        blockLines = [line];
+      }
+    } else {
+      blockLines.push(line);
+      if (trimmed === "}") {
+        models.set(currentModelName, {
+          name: currentModelName,
+          fields: currentFields,
+          directives: currentDirectives,
+          rawBlock: blockLines.join("\n"),
+        });
+        currentModelName = null;
+        currentFields = [];
+        currentDirectives = [];
+        blockLines = [];
+      } else if (trimmed.startsWith("@@")) {
+        const dirMatch = trimmed.match(/^(@@[A-Za-z0-9_]+)\((.*)\)$/);
+        if (dirMatch) {
+          const dirName = dirMatch[1];
+          const dirArgs = dirMatch[2].trim();
+          const normArgs = dirArgs.replace(/\s*,\s*/g, ", ");
+          currentDirectives.push({
+            name: dirName,
+            args: dirArgs,
+            normalized: `${dirName}(${normArgs})`,
+            rawLine: trimmed,
+          });
+        }
+      } else if (
+        trimmed &&
+        !trimmed.startsWith("//") &&
+        !trimmed.startsWith("///")
+      ) {
+        let codePart = trimmed;
+        let commentPart: string | undefined = undefined;
+        const commentIdx = trimmed.indexOf("//");
+        if (commentIdx !== -1) {
+          codePart = trimmed.slice(0, commentIdx).trim();
+          commentPart = trimmed.slice(commentIdx + 2).trim();
+        }
+
+        const tokens = codePart.split(/\s+/);
+        if (tokens.length >= 2) {
+          const fieldName = tokens[0];
+          const fieldType = tokens[1];
+          const attributes = tokens.slice(2);
+          currentFields.push({
+            name: fieldName,
+            type: fieldType,
+            attributes,
+            comment: commentPart,
+            rawLine: trimmed,
+          });
+        }
+      }
+    }
+  }
+
+  return models;
+}
+
+/**
+ * Reconstruct a Prisma model definition block cleanly formatted,
+ * preserving custom comments from the embedded model snippet where present.
+ */
+export function reconstructPrismaModel(
+  canonical: CanonicalModel,
+  embedded?: CanonicalModel
+): string {
+  const embeddedFieldMap = new Map<string, CanonicalField>();
+  if (embedded) {
+    for (const f of embedded.fields) {
+      embeddedFieldMap.set(f.name, f);
+    }
+  }
+
+  let maxNameWidth = 0;
+  let maxTypeWidth = 0;
+  for (const f of canonical.fields) {
+    if (f.name.length > maxNameWidth) maxNameWidth = f.name.length;
+    if (f.type.length > maxTypeWidth) maxTypeWidth = f.type.length;
+  }
+
+  const lines: string[] = [`model ${canonical.name} {`];
+
+  for (const field of canonical.fields) {
+    const embeddedField = embeddedFieldMap.get(field.name);
+    const comment = embeddedField?.comment ?? field.comment;
+
+    const nameStr = field.name.padEnd(maxNameWidth);
+    const typeStr = field.type.padEnd(maxTypeWidth);
+    const attrStr = field.attributes.join(" ");
+
+    let line = `  ${nameStr} ${typeStr}`;
+    if (attrStr) {
+      line += ` ${attrStr}`;
+    }
+    line = line.trimEnd();
+    if (comment) {
+      line += `   // ${comment}`;
+    }
+    lines.push(line);
+  }
+
+  if (canonical.directives.length > 0) {
+    lines.push("");
+    for (const d of canonical.directives) {
+      lines.push(`  ${d.normalized}`);
+    }
+  }
+
+  lines.push("}");
+  return lines.join("\n");
+}
+
+/**
+ * Compare an embedded model snippet from markdown against canonical schema model.
+ */
+export function comparePrismaModel(
+  canonical: CanonicalModel,
+  embedded: CanonicalModel
+): { isMatch: boolean; details: string[] } {
+  const details: string[] = [];
+
+  const embeddedFieldMap = new Map<string, CanonicalField>();
+  for (const f of embedded.fields) {
+    embeddedFieldMap.set(f.name, f);
+  }
+
+  for (const cField of canonical.fields) {
+    const eField = embeddedFieldMap.get(cField.name);
+    if (!eField) {
+      details.push(
+        `Model '${canonical.name}' field '${cField.name}' is missing in guide snippet`
+      );
+    } else {
+      if (eField.type !== cField.type) {
+        details.push(
+          `Model '${canonical.name}' field '${cField.name}' type mismatch: expected '${cField.type}', found '${eField.type}'`
+        );
+      }
+      const cAttrs = cField.attributes.join(" ");
+      const eAttrs = eField.attributes.join(" ");
+      if (cAttrs !== eAttrs) {
+        details.push(
+          `Model '${canonical.name}' field '${cField.name}' attributes mismatch: expected '${cAttrs}', found '${eAttrs}'`
+        );
+      }
+    }
+  }
+
+  for (const eField of embedded.fields) {
+    if (!canonical.fields.some((cf) => cf.name === eField.name)) {
+      details.push(
+        `Model '${canonical.name}' field '${eField.name}' in guide snippet does not exist in canonical schema`
+      );
+    }
+  }
+
+  const canonicalDirs = new Set(canonical.directives.map((d) => d.normalized));
+  const embeddedDirs = new Set(embedded.directives.map((d) => d.normalized));
+
+  for (const cDir of canonicalDirs) {
+    if (!embeddedDirs.has(cDir)) {
+      details.push(
+        `Model '${canonical.name}' is missing directive '${cDir}' in guide snippet`
+      );
+    }
+  }
+
+  for (const eDir of embeddedDirs) {
+    if (!canonicalDirs.has(eDir)) {
+      details.push(
+        `Model '${canonical.name}' has extra directive '${eDir}' in guide snippet`
+      );
+    }
+  }
+
+  return { isMatch: details.length === 0, details };
+}
+
+/**
+ * Check Technical Guide Schema Parity & Environment Variable Documentation Parity
+ */
+export function checkTechnicalGuideSchemaParity(
+  root: string,
+  fix = false
+): DiagnosticCheckResult {
+  const schemaPath = path.join(root, "prisma", "schema.prisma");
+  if (!fs.existsSync(schemaPath)) {
+    return {
+      id: "technical-guide-schema-parity",
+      name: "Technical Guide Schema & Environment Parity",
+      category: "docs",
+      status: "fail",
+      message: "prisma/schema.prisma not found.",
+      fixable: false,
+    };
+  }
+
+  const schemaContent = fs.readFileSync(schemaPath, "utf-8");
+  const canonicalModels = parsePrismaModels(schemaContent);
+
+  const driftDetails: string[] = [];
+  const fixesApplied: string[] = [];
+
+  const markdownFiles = findFiles(root, /\.md$/i, [
+    "node_modules",
+    ".git",
+    ".next",
+    "dist",
+    "coverage",
+    "tmp",
+    ".stryker-tmp",
+    ".claude",
+    "app/generated",
+  ]);
+
+  for (const filePath of markdownFiles) {
+    const relativePath = path.relative(root, filePath).replace(/\\/g, "/");
+    let fileContent = fs.readFileSync(filePath, "utf-8");
+    let fileModified = false;
+
+    const modelMatches = Array.from(
+      fileContent.matchAll(/(model\s+([A-Za-z0-9_]+)\s*\{[\s\S]*?\n\})/g)
+    );
+
+    for (const match of modelMatches) {
+      const embeddedBlock = match[1];
+      const modelName = match[2];
+
+      const canonicalModel = canonicalModels.get(modelName);
+      if (!canonicalModel) continue;
+
+      const embeddedModelsMap = parsePrismaModels(embeddedBlock);
+      const embeddedModel = embeddedModelsMap.get(modelName);
+      if (!embeddedModel) continue;
+
+      const comparison = comparePrismaModel(canonicalModel, embeddedModel);
+      if (!comparison.isMatch) {
+        for (const detail of comparison.details) {
+          driftDetails.push(`${relativePath}: ${detail}`);
+        }
+
+        if (fix) {
+          const reconstructed = reconstructPrismaModel(
+            canonicalModel,
+            embeddedModel
+          );
+          if (reconstructed !== embeddedBlock) {
+            fileContent = fileContent.replace(embeddedBlock, reconstructed);
+            fileModified = true;
+            fixesApplied.push(
+              `Updated model '${modelName}' snippet in ${relativePath}`
+            );
+          }
+        }
+      }
+    }
+
+    if (fileModified) {
+      fs.writeFileSync(filePath, fileContent, "utf-8");
+    }
+  }
+
+  const examplePath = path.join(root, ".env.example");
+  const { allKeys } = getDeclaredEnvKeys();
+  const exampleKeys = fs.existsSync(examplePath)
+    ? Object.keys(parseEnvFile(examplePath))
+    : [];
+
+  const missingEnvKeys = allKeys.filter(
+    (k) => k !== "NODE_ENV" && k !== "VERCEL_ENV" && !exampleKeys.includes(k)
+  );
+
+  if (missingEnvKeys.length > 0) {
+    driftDetails.push(
+      `.env.example is missing schema key(s): ${missingEnvKeys.join(", ")}`
+    );
+    if (fix) {
+      const content = generateEnvExampleContent(examplePath);
+      fs.writeFileSync(examplePath, content, "utf-8");
+      fixesApplied.push(
+        `Updated .env.example with missing key(s): ${missingEnvKeys.join(", ")}`
+      );
+    }
+  }
+
+  const deployDocPath = path.join(root, "docs/how-to/release-and-deploy.md");
+  if (fs.existsSync(deployDocPath)) {
+    const deployContent = fs.readFileSync(deployDocPath, "utf-8");
+    const missingInDeployDoc = allKeys.filter((k) => {
+      const pattern = new RegExp(`\`${k}\``);
+      return !pattern.test(deployContent);
+    });
+
+    if (missingInDeployDoc.length > 0) {
+      driftDetails.push(
+        `docs/how-to/release-and-deploy.md is missing documentation for schema key(s): ${missingInDeployDoc.join(", ")}`
+      );
+    }
+  }
+
+  if (fixesApplied.length > 0) {
+    return {
+      id: "technical-guide-schema-parity",
+      name: "Technical Guide Schema & Environment Parity",
+      category: "docs",
+      status: "fixed",
+      message: `Auto-remediated ${fixesApplied.length} technical guide schema or environment drift issue(s).`,
+      details: fixesApplied,
+      fixedMessage: fixesApplied.join("; "),
+    };
+  }
+
+  if (driftDetails.length > 0) {
+    return {
+      id: "technical-guide-schema-parity",
+      name: "Technical Guide Schema & Environment Parity",
+      category: "docs",
+      status: "fail",
+      message: `Detected ${driftDetails.length} technical guide schema or environment drift issue(s).`,
+      details: driftDetails,
+      fixable: true,
+    };
+  }
+
+  return {
+    id: "technical-guide-schema-parity",
+    name: "Technical Guide Schema & Environment Parity",
+    category: "docs",
+    status: "pass",
+    message:
+      "All markdown guide Prisma snippets and environment variable documentation match canonical source definitions.",
+  };
+}
+
 /**
  * Onboarding Documentation & Engine Constraint Drift Check
  */
@@ -1419,6 +1805,106 @@ export function checkAccessibilityStandards(
     message: `${violations.length} accessibility structure violation(s) detected in app/layout.tsx`,
     details: violations,
     fixable: true,
+  };
+}
+
+/**
+ * Asserts that no test suite disables axe rules (`disableRules`) and that any
+ * accessibility scan reports left by a local `npm run audit:a11y` run record
+ * zero violations. A missing report directory passes.
+ */
+export function checkAccessibilityAuditIntegrity(
+  root: string
+): DiagnosticCheckResult {
+  const violations: string[] = [];
+
+  // 1. Scan __tests__/ for prohibited disableRules calls
+  const testsDir = path.join(root, "__tests__");
+  if (fs.existsSync(testsDir)) {
+    const scanDir = (dir: string) => {
+      const entries = fs.readdirSync(dir, { withFileTypes: true });
+      for (const entry of entries) {
+        const fullPath = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          scanDir(fullPath);
+        } else if (entry.isFile() && /\.(ts|tsx|js|jsx)$/.test(entry.name)) {
+          const content = fs.readFileSync(fullPath, "utf-8");
+          if (
+            content.includes("disableRules:") ||
+            content.includes(".disableRules(")
+          ) {
+            const relPath = path.relative(root, fullPath);
+            violations.push(
+              `Prohibited WCAG rule override 'disableRules' detected in test suite '${relPath}'`
+            );
+          }
+        }
+      }
+    };
+    scanDir(testsDir);
+  }
+
+  // 2. Validate scan reports in playwright-report/accessibility-results/ when
+  // a local audit has produced them. A fresh checkout has no report yet, and
+  // that is not a violation: CI's heavy gate runs the suite itself.
+  const resultsDir = path.join(
+    root,
+    "playwright-report",
+    "accessibility-results"
+  );
+  if (fs.existsSync(resultsDir)) {
+    const jsonFiles = fs
+      .readdirSync(resultsDir)
+      .filter((f) => f.endsWith(".json"));
+    for (const file of jsonFiles) {
+      try {
+        const content = fs.readFileSync(path.join(resultsDir, file), "utf-8");
+        const data = JSON.parse(content);
+        const vCount =
+          data.violationsCount !== undefined
+            ? data.violationsCount
+            : data.violations
+              ? data.violations.length
+              : 0;
+        if (vCount > 0) {
+          violations.push(
+            `Accessibility report '${file}' (${data.state || "unknown state"}) contains ${vCount} WCAG violation(s).`
+          );
+        }
+      } catch {
+        violations.push(
+          `Unable to parse accessibility report JSON file '${file}'.`
+        );
+      }
+    }
+  }
+
+  if (violations.length === 0) {
+    return {
+      id: "a11y-audit-integrity",
+      name: "Shift-Left Accessibility Rule Integrity & Zero-Violation Scans",
+      category: "accessibility",
+      status: "pass",
+      message:
+        "Zero WCAG rule suppressions (disableRules) in test suites and zero violations in accessibility scan reports.",
+    };
+  }
+
+  return {
+    id: "a11y-audit-integrity",
+    name: "Shift-Left Accessibility Rule Integrity & Zero-Violation Scans",
+    category: "accessibility",
+    status: "fail",
+    message: `${violations.length} shift-left accessibility integrity violation(s) detected`,
+    details: violations,
+    fixable: false,
+    remediation: {
+      id: "fix-a11y-audit-integrity",
+      title: "Run accessibility audit suite and fix underlying WCAG issues",
+      command: "npm run audit:a11y",
+      autoFixable: false,
+      scope: "accessibility",
+    },
   };
 }
 
@@ -1836,6 +2322,113 @@ export function checkPackageLockfile(root: string): DiagnosticCheckResult {
 }
 
 /**
+ * Check SEO and social preview integrity (ADR 0053, #1256).
+ *
+ * Reads `lib/seo-metadata.ts` as source so the check needs no module loading.
+ * A rendered title is the route title plus the layout template
+ * (" | Frederick de Ruiter", 22 characters). Fails when a rendered title is
+ * outside 50 to 60 characters, a description is outside 140 to 160, a route
+ * title carries the site name itself, the root viewport lacks the brand
+ * theme color, or a registered route is missing from the llms manifests.
+ *
+ * @param root - Workspace root to inspect.
+ * @returns The diagnostic result; never auto-fixable, since fixing copy is
+ * an editorial change.
+ */
+export function checkSeoSocialIntegrity(root: string): DiagnosticCheckResult {
+  const base = {
+    id: "seo-social-integrity",
+    name: "SEO & Social Preview Integrity",
+    category: "quality" as const,
+  };
+  const read = (...segments: string[]): string | null => {
+    try {
+      return fs.readFileSync(path.join(root, ...segments), "utf8");
+    } catch {
+      return null;
+    }
+  };
+
+  const metadataSource = read("lib", "seo-metadata.ts");
+  if (metadataSource === null) {
+    return {
+      ...base,
+      status: "pass",
+      message: "No lib/seo-metadata.ts in this workspace; nothing to audit.",
+    };
+  }
+
+  const details: string[] = [];
+  const templateLength = " | Frederick de Ruiter".length;
+  const entryPattern =
+    /\n {2}(\w+): \{\s*title:\s*"((?:[^"\\]|\\.)*)",\s*description:\s*"((?:[^"\\]|\\.)*)",\s*path:\s*"([^"]+)"/g;
+  const routes: {
+    key: string;
+    title: string;
+    description: string;
+    route: string;
+  }[] = [];
+  for (const match of metadataSource.matchAll(entryPattern)) {
+    routes.push({
+      key: match[1],
+      title: match[2],
+      description: match[3],
+      route: match[4],
+    });
+  }
+  if (routes.length === 0) {
+    details.push("Could not parse any route from ROUTE_METADATA_CONFIGS.");
+  }
+
+  const llms = read("public", "llms.txt");
+  const llmsFull = read("public", "llms-full.txt");
+  for (const { key, title, description, route } of routes) {
+    const rendered = title.length + templateLength;
+    if (rendered < 50 || rendered > 60) {
+      details.push(`${key}: rendered title is ${rendered} chars (need 50-60)`);
+    }
+    if (description.length < 140 || description.length > 160) {
+      details.push(
+        `${key}: description is ${description.length} chars (need 140-160)`
+      );
+    }
+    if (/(?:Fred|Frederick) de Ruiter/i.test(title)) {
+      details.push(`${key}: title repeats the site name the layout appends`);
+    }
+    const link = `(https://deruiter.dev${route})`;
+    if (llms !== null && !llms.includes(link)) {
+      details.push(`${key}: ${route} missing from public/llms.txt`);
+    }
+    if (llmsFull !== null && !llmsFull.includes(link)) {
+      details.push(`${key}: ${route} missing from public/llms-full.txt`);
+    }
+  }
+
+  const layout = read("app", "layout.tsx");
+  if (layout !== null) {
+    const viewport = layout.slice(layout.indexOf("export const viewport"));
+    if (!/themeColor:\s*"#090D16"/.test(viewport)) {
+      details.push('app/layout.tsx viewport must set themeColor "#090D16"');
+    }
+  }
+
+  if (details.length > 0) {
+    return {
+      ...base,
+      status: "fail",
+      message: `${details.length} SEO or social preview issue(s) found.`,
+      details,
+      fixable: false,
+    };
+  }
+  return {
+    ...base,
+    status: "pass",
+    message: `${routes.length} routes meet title and description bounds, list in llms manifests, and the root viewport sets the brand theme color.`,
+  };
+}
+
+/**
  * Check System Architecture & Directory Topology Sync (AGENTS.md & ARCHITECTURE.md).
  * Asserts that all non-hidden top-level repository directories are explicitly represented in ARCHITECTURE.md.
  */
@@ -1961,15 +2554,9 @@ export function checkSubRoutePerformance(root: string): DiagnosticCheckResult {
 
   try {
     const evidence = readBenchmarkEvidence(jsonPath);
-    const revision = execSync("git rev-parse HEAD", {
-      cwd: root,
-      encoding: "utf-8",
-    }).trim();
-    const dirty =
-      execSync("git status --porcelain", {
-        cwd: root,
-        encoding: "utf-8",
-      }).trim().length > 0;
+    // Same definition of "dirty" as the benchmark script that wrote the
+    // evidence: rewritten build artifacts are not source changes (#1377).
+    const { revision, dirty } = inspectSourceState(root);
     const validation = validateBenchmarkEvidence(evidence, { revision, dirty });
     if (!validation.valid) {
       return {
@@ -2296,6 +2883,17 @@ export function checkSectionStructures(
 }
 
 /**
+ * Service modules that still throw raw exceptions across their public boundary
+ * and are exempt from the raw-throw scan until they migrate to ServiceResult
+ * (#1140). Every other service module is scanned, so a new service cannot
+ * inherit the exemption; remove an entry once its module is migrated.
+ */
+const SERVICE_RESULT_PENDING_MIGRATION: ReadonlySet<string> = new Set([
+  "lib/services/blog-service.ts",
+  "lib/services/newsletter-service.ts",
+]);
+
+/**
  * Check Typed Service Contracts & Result Envelopes Guard (ADR-0028)
  */
 export function checkServiceResultTypes(
@@ -2345,7 +2943,9 @@ export function checkServiceResultTypes(
           /throw\s+new\s+(Error|TypeError|Exception)\b/.test(line) &&
           !/createFailure/.test(line) &&
           !relative.includes("spec.test") &&
-          !relative.includes("service.ts") // allow internal retry queue throw or wrapped throw
+          !SERVICE_RESULT_PENDING_MIGRATION.has(
+            relative.split(path.sep).join("/")
+          )
         ) {
           violations.push({
             file: relative,
@@ -2410,11 +3010,13 @@ export async function runDiagnostics(
 
     checkMigrationGuard(root),
     checkDocumentationParity(root, fix),
+    checkTechnicalGuideSchemaParity(root, fix),
     checkOnboardingDocsDrift(root, fix),
     checkDirectoryTopology(root),
     checkOpenApiParity(root, fix),
     checkHydrationSafety(root),
     checkAccessibilityStandards(root, fix),
+    checkAccessibilityAuditIntegrity(root),
     checkDefectRemediationInvariants(root),
     checkProactiveDefectInterception(root),
     checkLayoutTextClippingInvariants(root),
@@ -2425,6 +3027,7 @@ export async function runDiagnostics(
     checkGitHygieneConfig(root, fix),
     checkWorkspaceIdeConfig(root, fix),
     checkPackageLockfile(root),
+    checkSeoSocialIntegrity(root),
     checkDesignTokens(root),
     checkDeadCode(root),
     checkBundleBudgets(root),

@@ -19,6 +19,12 @@
 
 - [CalibrationStep](type-aliases/CalibrationStep.md)
 
+## Variables
+
+- [EMPTY\_QUEUE\_SPAWN\_DELAY\_SECONDS](variables/EMPTY_QUEUE_SPAWN_DELAY_SECONDS.md)
+- [MAX\_CONVEYOR\_SUBJECTS](variables/MAX_CONVEYOR_SUBJECTS.md)
+- [SPAWN\_INTERVAL\_BY\_PHASE](variables/SPAWN_INTERVAL_BY_PHASE.md)
+
 ## Functions
 
 - [calculateSubmissionPoints](functions/calculateSubmissionPoints.md)
@@ -34,8 +40,10 @@
 - [generateBIMOReport](functions/generateBIMOReport.md)
 - [generateSDTMDataset](functions/generateSDTMDataset.md)
 - [getCalibrationStep](functions/getCalibrationStep.md)
+- [getNextShiftScoreState](functions/getNextShiftScoreState.md)
 - [getObservationChoices](functions/getObservationChoices.md)
 - [getRoutingReadiness](functions/getRoutingReadiness.md)
+- [getSpawnIntervalSeconds](functions/getSpawnIntervalSeconds.md)
 - [getSubmissionMode](functions/getSubmissionMode.md)
 - [isSubjectFullyCompliant](functions/isSubjectFullyCompliant.md)
 - [scrambleStations](functions/scrambleStations.md)

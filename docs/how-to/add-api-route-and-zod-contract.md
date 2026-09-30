@@ -49,7 +49,7 @@ example, including a custom validation-error formatter and rate limiting.
 ## 3. Regenerate the OpenAPI contract
 
 `scripts/generate-openapi.ts` walks every `app/api/**/route.ts` handler and
-asserts 100% coverage against `openapi.json` — a new, undocumented route
+asserts 100% coverage against `openapi.json`, a new, undocumented route
 handler fails the drift gate. Regenerate it:
 
 ```bash
@@ -84,7 +84,7 @@ least one Zod validation failure.
 ## Common mistakes this prevents
 
 - **Forgetting the schema entirely**: without `options.schema`,
-  `createApiHandler` skips validation — any route accepting user input
+  `createApiHandler` skips validation, any route accepting user input
   should have one.
 - **Hand-rolling error responses**: `createApiHandler` already sanitizes
   errors and reports them to Sentry; a bare `try/catch` that swallows or

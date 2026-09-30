@@ -10,6 +10,7 @@ import {
   MAX_PROJECT_IMAGE_SIZE_BYTES,
 } from "@/lib/services/project-image-service";
 import { CaseStudyService } from "@/lib/services/case-study-service";
+import { createFailure, createSuccess } from "@/lib/services/service-result";
 import { logger } from "@/lib/logger";
 
 vi.mock("@/lib/auth/admin", () => ({
@@ -102,21 +103,22 @@ describe("API Admin Project Image Upload Route", () => {
       updated_at: new Date(),
     });
     vi.mocked(CaseStudyService.updateCaseStudyImage).mockImplementation(
-      async (slug, hero_image_url) => ({
-        id: "cs_1",
-        slug,
-        title: "Laser Loon",
-        primary_language: "TypeScript",
-        github_url: "https://github.com/test/laser-loon",
-        published: true,
-        simulated_telemetry: false,
-        tags: "game, canvas",
-        editorial_content: "Editorial narrative",
-        architectural_narrative: "Architectural breakdown",
-        hero_image_url,
-        created_at: new Date(),
-        updated_at: new Date(),
-      })
+      async (slug, hero_image_url) =>
+        createSuccess({
+          id: "cs_1",
+          slug,
+          title: "Laser Loon",
+          primary_language: "TypeScript",
+          github_url: "https://github.com/test/laser-loon",
+          published: true,
+          simulated_telemetry: false,
+          tags: "game, canvas",
+          editorial_content: "Editorial narrative",
+          architectural_narrative: "Architectural breakdown",
+          hero_image_url,
+          created_at: new Date(),
+          updated_at: new Date(),
+        })
     );
   });
 
@@ -338,9 +340,10 @@ describe("API Admin Project Image Upload Route", () => {
   });
 
   it("preserves prior asset when database update fails", async () => {
-    vi.mocked(CaseStudyService.updateCaseStudyImage).mockRejectedValue(
-      new Error("Database connection lost")
+    vi.mocked(CaseStudyService.updateCaseStudyImage).mockResolvedValueOnce(
+      createFailure("PERSISTENCE_FAILED", "Database connection lost")
     );
+    const deleteSpy = vi.spyOn(ProjectImageService, "deleteMediaAsset");
 
     const req = createMultipartRequest(
       "http://localhost:3000/api/admin/projects/laser-loon/image",
@@ -357,12 +360,103 @@ describe("API Admin Project Image Upload Route", () => {
       params: Promise.resolve({ slug: "laser-loon" }),
     });
     expect(res.status).toBe(500);
+    const data = await res.json();
+    expect(data.error).toBe("Failed to process and store project image");
 
     // Verify updateCaseStudyImage was called to roll back to prior asset
     expect(CaseStudyService.updateCaseStudyImage).toHaveBeenCalledWith(
       "laser-loon",
       "/api/media/project-laser-loon-old.png"
     );
+    // The new asset is cleaned up; the prior asset is left in place.
+    expect(deleteSpy).toHaveBeenCalledTimes(1);
+    expect(deleteSpy).not.toHaveBeenCalledWith("project-laser-loon-old.png");
+  });
+
+  it("returns 400 with the service message when the case study does not exist", async () => {
+    vi.mocked(CaseStudyService.getCaseStudyBySlug).mockResolvedValue(null);
+    vi.mocked(CaseStudyService.updateCaseStudyImage).mockResolvedValueOnce(
+      createFailure(
+        "CASE_STUDY_NOT_FOUND",
+        'Case study with slug "missing" not found',
+        { recoverable: false }
+      )
+    );
+    const deleteSpy = vi.spyOn(ProjectImageService, "deleteMediaAsset");
+
+    const req = createMultipartRequest(
+      "http://localhost:3000/api/admin/projects/missing/image",
+      {
+        file: {
+          buffer: VALID_PNG_BUFFER,
+          filename: "hero.png",
+          contentType: "image/png",
+        },
+      }
+    );
+
+    const res = await POST(req, {
+      params: Promise.resolve({ slug: "missing" }),
+    });
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.error).toBe('Case study with slug "missing" not found');
+    // The uploaded asset is removed and no prior reference is restored.
+    expect(deleteSpy).toHaveBeenCalledTimes(1);
+    expect(CaseStudyService.updateCaseStudyImage).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns a generic 500 when media storage rejects the upload", async () => {
+    vi.spyOn(ProjectImageService, "saveMediaAsset").mockRejectedValue(
+      new Error("Invalid token: Vercel Blob upload failed")
+    );
+    const errorSpy = vi.spyOn(logger, "error");
+
+    const req = createMultipartRequest(
+      "http://localhost:3000/api/admin/projects/laser-loon/image",
+      {
+        file: {
+          buffer: VALID_PNG_BUFFER,
+          filename: "hero.png",
+          contentType: "image/png",
+        },
+      }
+    );
+
+    const res = await POST(req, {
+      params: Promise.resolve({ slug: "laser-loon" }),
+    });
+    // A provider message containing "Invalid" is an infrastructure failure,
+    // not a validation error, and must not leak to the client.
+    expect(res.status).toBe(500);
+    const data = await res.json();
+    expect(data.error).toBe("Failed to process and store project image");
+    expect(errorSpy).toHaveBeenCalledWith(
+      "Project image upload failed:",
+      expect.objectContaining({ code: "STORAGE_FAILED" })
+    );
+    expect(CaseStudyService.updateCaseStudyImage).not.toHaveBeenCalled();
+  });
+
+  it("returns 500 on DELETE when clearing the image reference fails", async () => {
+    vi.mocked(CaseStudyService.updateCaseStudyImage).mockResolvedValueOnce(
+      createFailure("PERSISTENCE_FAILED", "Database connection lost")
+    );
+    const deleteSpy = vi.spyOn(ProjectImageService, "deleteMediaAsset");
+    const req = new NextRequest(
+      "http://localhost:3000/api/admin/projects/laser-loon/image",
+      { method: "DELETE" }
+    );
+
+    const res = await DELETE(req, {
+      params: Promise.resolve({ slug: "laser-loon" }),
+    });
+
+    expect(res.status).toBe(500);
+    const data = await res.json();
+    expect(data.error).toBe("Failed to clear project image");
+    // The prior asset stays in storage because its reference was not cleared.
+    expect(deleteSpy).not.toHaveBeenCalled();
   });
 
   it("keeps a successfully replaced image when prior-asset cleanup fails", async () => {

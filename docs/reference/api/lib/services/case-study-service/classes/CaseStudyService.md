@@ -127,13 +127,16 @@ Fetches user feedback for a given case study slug.
 
 ### getPublishedCaseStudies()
 
-> `static` **getPublishedCaseStudies**(): `Promise`\<`object`[]\>
+> `static` **getPublishedCaseStudies**(): `Promise`\<[`CaseStudySearchSummary`](../type-aliases/CaseStudySearchSummary.md)[]\>
 
 Retrieves all published case studies for public search/discovery.
+Reads the `cs:search_index` Upstash cache (3600s TTL) first; on a miss it
+queries only the five summary columns from Postgres, appends static
+fallbacks for slugs absent from the database, and caches the result.
 
 #### Returns
 
-`Promise`\<`object`[]\>
+`Promise`\<[`CaseStudySearchSummary`](../type-aliases/CaseStudySearchSummary.md)[]\>
 
 ***
 
@@ -228,9 +231,12 @@ Buffers reaction increments via HINCRBY and enqueues events without waking Neon 
 
 ### updateCaseStudyImage()
 
-> `static` **updateCaseStudyImage**(`slug`, `heroImageUrl`): `Promise`\<[`CaseStudyData`](../../../case-studies-data/interfaces/CaseStudyData.md)\>
+> `static` **updateCaseStudyImage**(`slug`, `heroImageUrl`): `Promise`\<[`UpdateCaseStudyImageResult`](../type-aliases/UpdateCaseStudyImageResult.md)\>
 
 Updates the hero image asset URL for a case study and evicts cache.
+
+Never throws: an unknown slug resolves to `CASE_STUDY_NOT_FOUND` and a
+failed database read or write to `PERSISTENCE_FAILED` (ADR 0028).
 
 #### Parameters
 
@@ -244,4 +250,4 @@ Updates the hero image asset URL for a case study and evicts cache.
 
 #### Returns
 
-`Promise`\<[`CaseStudyData`](../../../case-studies-data/interfaces/CaseStudyData.md)\>
+`Promise`\<[`UpdateCaseStudyImageResult`](../type-aliases/UpdateCaseStudyImageResult.md)\>

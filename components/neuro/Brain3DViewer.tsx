@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { clamp } from "@/lib/game-utils";
 import type * as THREE from "three";
 import {
@@ -19,6 +19,7 @@ import {
   loadGraphicsEngine,
 } from "@/lib/neuro/engine-loader";
 import { useWebGLContextLoss } from "@/hooks/useWebGLContextLoss";
+import { useAnimationFrame } from "@/hooks/useAnimationFrame";
 import { ProgressHUD } from "./ProgressHUD";
 import {
   Icon3dCubeSphere,
@@ -150,13 +151,54 @@ export const Brain3DViewer: React.FC<Brain3DViewerProps> = ({
     };
   }, []);
 
+  // The renderer, scene and camera the render loop draws, set once the scene
+  // effect below has built them and cleared by that effect's cleanup, so a
+  // frame can never draw with a disposed renderer.
+  const renderTargetRef = useRef<{
+    renderer: THREE.WebGLRenderer;
+    scene: THREE.Scene;
+    camera: THREE.PerspectiveCamera;
+  } | null>(null);
+  // The contextKey whose renderer the loop is drawing. The loop runs only
+  // while it matches the current contextKey: a context restore stops the old
+  // loop in the same commit that disposes its renderer, and a fresh loop
+  // starts once the rebuilt renderer exists. A renderer that fails to build
+  // never starts one.
+  const [loopContextKey, setLoopContextKey] = useState<number | null>(null);
+
+  // One frame of the render loop. Rotation advances per frame, not per unit
+  // of time, so the frame delta is deliberately unused. Frames are skipped,
+  // not cancelled, while the context is lost or the viewer is offscreen.
+  const renderFrame = useCallback(() => {
+    const target = renderTargetRef.current;
+    if (!target || isContextLostRef.current || !isIntersectingRef.current) {
+      return;
+    }
+
+    if (meshGroupRef.current) {
+      if (isRotatingRef.current && !isDraggingRef.current) {
+        rotationRef.current.y += 0.004;
+      }
+      meshGroupRef.current.rotation.x = rotationRef.current.x;
+      meshGroupRef.current.rotation.y = rotationRef.current.y;
+    }
+
+    target.renderer.render(target.scene, target.camera);
+  }, []);
+
+  useAnimationFrame(renderFrame, {
+    isActive: loopContextKey === contextKey,
+    restartKey: contextKey,
+    // The loop never used the delta, so nothing was ever clamped.
+    maxDeltaMs: Infinity,
+  });
+
   // Initialize Three.js Scene, Camera, and Renderer Asynchronously on Demand
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
     let isCancelled = false;
-    let animId: number;
     let handleResize: (() => void) | null = null;
 
     loadGraphicsEngine().then((THREE) => {
@@ -218,24 +260,11 @@ export const Brain3DViewer: React.FC<Brain3DViewerProps> = ({
         return;
       }
 
-      const animate = () => {
-        animId = requestAnimationFrame(animate);
-
-        if (isContextLostRef.current || !isIntersectingRef.current) return;
-
-        if (meshGroupRef.current) {
-          if (isRotatingRef.current && !isDraggingRef.current) {
-            rotationRef.current.y += 0.004;
-          }
-          meshGroupRef.current.rotation.x = rotationRef.current.x;
-          meshGroupRef.current.rotation.y = rotationRef.current.y;
-        }
-
-        if (renderer && scene && camera) {
-          renderer.render(scene, camera);
-        }
-      };
-      animate();
+      renderTargetRef.current = { renderer, scene, camera };
+      // Draw the first frame now, as the loop did before it moved onto
+      // useAnimationFrame, then hand later frames to the hook.
+      renderFrame();
+      setLoopContextKey(contextKey);
 
       handleResize = () => {
         if (!container || !renderer || !camera) return;
@@ -251,7 +280,7 @@ export const Brain3DViewer: React.FC<Brain3DViewerProps> = ({
 
     return () => {
       isCancelled = true;
-      if (animId) cancelAnimationFrame(animId);
+      renderTargetRef.current = null;
       if (handleResize) window.removeEventListener("resize", handleResize);
       bindCanvas(null);
       if (rendererRef.current) {
@@ -265,7 +294,7 @@ export const Brain3DViewer: React.FC<Brain3DViewerProps> = ({
         container.removeChild(rendererRef.current.domElement);
       }
     };
-  }, [contextKey, bindCanvas]);
+  }, [contextKey, bindCanvas, renderFrame]);
 
   // Update Cortical Mesh on surfaceMode, modelUrl, wireframeActive, hemiFilter, contextKey, or isNearViewport change
   useEffect(() => {

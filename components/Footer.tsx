@@ -105,7 +105,7 @@ export const Footer: React.FC = () => {
                 className="inline-flex items-center gap-2.5 font-mono text-sm tracking-widest font-extrabold text-foreground group"
               >
                 <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-cyan/70 opacity-75" />
+                  <span className="animate-ping-settle absolute inline-flex h-full w-full rounded-full bg-brand-cyan/70 opacity-75" />
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-cyan" />
                 </span>
                 <span className="group-hover:text-brand-cyan transition-colors">
@@ -425,7 +425,7 @@ export const Footer: React.FC = () => {
         <div className="mb-12 p-6 bg-[#13151a]/90 border border-white/10 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-xl">
           <div className="space-y-1 max-w-md">
             <div className="flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-brand-cyan animate-pulse" />
+              <span className="w-1.5 h-1.5 rounded-full bg-brand-cyan animate-pulse-settle" />
               <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-brand-cyan">
                 Project Notes
               </span>
@@ -479,7 +479,9 @@ export const Footer: React.FC = () => {
             >
               <span
                 className={`w-1.5 h-1.5 rounded-full ${
-                  isDyslexic ? "bg-amber-400 animate-pulse" : "bg-zinc-600"
+                  isDyslexic
+                    ? "bg-amber-400 animate-pulse-settle"
+                    : "bg-zinc-600"
                 }`}
               />
               <span>{isDyslexic ? "Dyslexia: ON" : "Dyslexia Mode"}</span>

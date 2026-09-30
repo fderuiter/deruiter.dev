@@ -165,6 +165,7 @@
     "core-js": true,
     "esbuild": true,
     "fsevents": true,
+    "libxmljs2": true,
     "prisma": true,
     "unrs-resolver": true
   },

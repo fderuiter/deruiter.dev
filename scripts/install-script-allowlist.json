@@ -4,6 +4,7 @@
   "core-js": "postinstall prints a funding banner and swallows every error. Reached through jspdf and canvg; optional.",
   "esbuild": "postinstall verifies or installs the platform-specific esbuild binary. Used by tsx and Vite.",
   "fsevents": "Builds the macOS file-watching native module. Optional and skipped on Linux, including Vercel and CI.",
+  "libxmljs2": "postinstall attempts to select or compile native libxml bindings. Optional dependency of @cyclonedx/cyclonedx-npm for XML validation.",
   "prisma": "preinstall runs Prisma's version check, which warns about incompatible global installs; nothing is downloaded.",
   "unrs-resolver": "postinstall (napi-postinstall) selects the prebuilt native binary for this platform. Used by the ESLint import resolver."
 }

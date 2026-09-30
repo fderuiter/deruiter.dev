@@ -309,6 +309,12 @@ export function retryDLQItem(id: string): void {
   });
 }
 
+interface ReadableResponseLike {
+  clone?: () => ReadableResponseLike;
+  json?: () => Promise<unknown>;
+  text?: () => Promise<string>;
+}
+
 /**
  * Process queued requests sequentially with exponential backoff retries.
  *
@@ -397,32 +403,45 @@ export async function flushOfflineQueue(): Promise<{
         failed++;
         let failureReason = `HTTP ${res.status}: Client Error`;
         try {
-          const targetRes = typeof res.clone === "function" ? res.clone() : res;
-          let data: unknown;
-          if (typeof targetRes.json === "function") {
-            try {
-              data = await targetRes.json();
-            } catch {
-              if (typeof targetRes.text === "function") {
+          if (typeof res.error === "string" && res.error.trim().length > 0) {
+            failureReason = res.error;
+          } else if (
+            Array.isArray(res.details) &&
+            typeof res.details[0]?.message === "string"
+          ) {
+            failureReason = res.details[0].message;
+          } else {
+            const source = res as unknown as ReadableResponseLike;
+            const targetRes: ReadableResponseLike =
+              typeof source.clone === "function" ? source.clone() : source;
+            let data: unknown = res.body;
+            if (data === undefined || data === null) {
+              if (typeof targetRes.json === "function") {
+                try {
+                  data = await targetRes.json();
+                } catch {
+                  if (typeof targetRes.text === "function") {
+                    data = await targetRes.text();
+                  }
+                }
+              } else if (typeof targetRes.text === "function") {
                 data = await targetRes.text();
               }
             }
-          } else if (typeof targetRes.text === "function") {
-            data = await targetRes.text();
-          }
 
-          if (data && typeof data === "object") {
-            const obj = data as Record<string, unknown>;
-            if (typeof obj.message === "string") failureReason = obj.message;
-            else if (typeof obj.error === "string") failureReason = obj.error;
-            else if (
-              Array.isArray(obj.details) &&
-              typeof obj.details[0]?.message === "string"
-            ) {
-              failureReason = obj.details[0].message;
+            if (data && typeof data === "object") {
+              const obj = data as Record<string, unknown>;
+              if (typeof obj.message === "string") failureReason = obj.message;
+              else if (typeof obj.error === "string") failureReason = obj.error;
+              else if (
+                Array.isArray(obj.details) &&
+                typeof obj.details[0]?.message === "string"
+              ) {
+                failureReason = obj.details[0].message;
+              }
+            } else if (typeof data === "string" && data.trim().length > 0) {
+              failureReason = data;
             }
-          } else if (typeof data === "string" && data.trim().length > 0) {
-            failureReason = data;
           }
         } catch {
           // Fallback to default failureReason if reading fails

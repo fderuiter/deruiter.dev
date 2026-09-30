@@ -14,7 +14,7 @@ export const PROFILES = [
 ] as const satisfies readonly StudyDirectorProfile[];
 
 /** One finished study, as the career file remembers it. */
-export interface CareerRun {
+interface CareerRun {
   seed: string;
   grade: Grade;
   stars: number;

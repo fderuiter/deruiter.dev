@@ -355,7 +355,7 @@ function GameCard({ game, index }: { game: ArcadeGameCard; index: number }) {
         <h2 className="text-xl md:text-2xl font-bold font-mono tracking-tight text-white group-hover:text-brand-cyan transition-colors">
           {game.title}
         </h2>
-        <p className="mt-1 text-xs font-mono text-zinc-400 font-medium">
+        <p className="mt-1 text-xs font-mono text-zinc-300 font-medium">
           {game.subtitle}
         </p>
 
@@ -365,14 +365,14 @@ function GameCard({ game, index }: { game: ArcadeGameCard; index: number }) {
 
         {/* Mechanics Chips */}
         <div className="mt-5">
-          <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-400 font-bold block mb-2">
+          <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-300 font-bold block mb-2">
             How to Play
           </span>
           <div className="flex flex-wrap gap-1.5">
             {game.mechanics.map((m) => (
               <span
                 key={m}
-                className="px-2 py-0.5 rounded-md bg-zinc-950/70 border border-zinc-800 text-[11px] font-mono text-zinc-400"
+                className="px-2 py-0.5 rounded-md bg-zinc-950/70 border border-zinc-800 text-[11px] font-mono text-zinc-300"
               >
                 {m}
               </span>
@@ -382,14 +382,14 @@ function GameCard({ game, index }: { game: ArcadeGameCard; index: number }) {
 
         {/* Tech Stack Chips */}
         <div className="mt-3">
-          <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-400 font-bold block mb-2">
+          <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-300 font-bold block mb-2">
             Built With
           </span>
           <div className="flex flex-wrap gap-1.5">
             {game.techStack.map((t) => (
               <span
                 key={t}
-                className="px-2 py-0.5 rounded-md bg-brand-cyan/5 border border-brand-cyan/20 text-[11px] font-mono text-brand-cyan/90"
+                className="px-2 py-0.5 rounded-md bg-brand-cyan/5 border border-brand-cyan/20 text-[11px] font-mono text-cyan-300"
               >
                 {t}
               </span>
@@ -512,7 +512,7 @@ export const ArcadeHubClient: React.FC = () => {
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase border bg-emerald-500/10 text-emerald-300 border-emerald-500/30">
                   Meme Soundboard
                 </span>
-                <span className="text-xs font-mono text-zinc-400">
+                <span className="text-xs font-mono text-zinc-300">
                   SOUNDS &amp; EASTER EGGS
                 </span>
               </div>

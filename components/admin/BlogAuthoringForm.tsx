@@ -21,6 +21,7 @@ import {
   BlogDraftUpdateSchema,
   toFieldErrors,
 } from "@/lib/schemas";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 interface BlogPostFormData {
   id?: string;
@@ -288,7 +289,11 @@ export function BlogAuthoringForm({
   };
 
   return (
-    <div className="flex flex-col gap-6 w-full max-w-5xl mx-auto">
+    <Tabs
+      value={activeTab}
+      onValueChange={(val) => setActiveTab(val as "edit" | "preview")}
+      className="flex flex-col gap-6 w-full max-w-5xl mx-auto"
+    >
       {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-white/10">
         <div className="flex items-center gap-3">
@@ -312,10 +317,12 @@ export function BlogAuthoringForm({
         </div>
 
         {/* Tab Toggle: Edit vs Preview */}
-        <div className="flex items-center gap-2 bg-[#0d0e11] p-1 rounded-lg border border-white/10">
-          <button
-            type="button"
-            onClick={() => setActiveTab("edit")}
+        <TabsList
+          aria-label="Article authoring views"
+          className="flex items-center gap-2 bg-[#0d0e11] p-1 rounded-lg border border-white/10"
+        >
+          <TabsTrigger
+            value="edit"
             className={`flex items-center gap-2 px-3 py-1.5 rounded text-xs font-mono transition-colors ${
               activeTab === "edit"
                 ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
@@ -324,10 +331,9 @@ export function BlogAuthoringForm({
           >
             <IconEdit className="w-4 h-4" aria-hidden="true" />
             <span>Editor</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("preview")}
+          </TabsTrigger>
+          <TabsTrigger
+            value="preview"
             className={`flex items-center gap-2 px-3 py-1.5 rounded text-xs font-mono transition-colors ${
               activeTab === "preview"
                 ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
@@ -336,8 +342,8 @@ export function BlogAuthoringForm({
           >
             <IconEye className="w-4 h-4" aria-hidden="true" />
             <span>Live Preview</span>
-          </button>
-        </div>
+          </TabsTrigger>
+        </TabsList>
       </div>
 
       {/* Notifications */}
@@ -358,7 +364,8 @@ export function BlogAuthoringForm({
         </div>
       )}
 
-      {activeTab === "edit" ? (
+      {/* Editor Panel */}
+      <TabsContent value="edit">
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -604,8 +611,10 @@ export function BlogAuthoringForm({
             </div>
           </div>
         </form>
-      ) : (
-        /* Preview Tab View */
+      </TabsContent>
+
+      {/* Preview Panel */}
+      <TabsContent value="preview">
         <div className="rounded-xl border border-white/10 bg-[#0d0e11] p-6 md:p-8 space-y-6">
           <div className="flex items-center justify-between pb-4 border-b border-zinc-800">
             <span className="text-xs font-mono text-amber-400 uppercase tracking-wider">
@@ -656,7 +665,7 @@ export function BlogAuthoringForm({
             <RichNarrative html={body} />
           </article>
         </div>
-      )}
-    </div>
+      </TabsContent>
+    </Tabs>
   );
 }

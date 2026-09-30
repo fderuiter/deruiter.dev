@@ -28,6 +28,7 @@ import {
   generateCliCommandForForm,
 } from "@/lib/crf/universal-schema";
 import { useClipboard } from "@/hooks/useClipboard";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 interface InspectorPanelProps {
   form: CRFForm;
@@ -98,7 +99,11 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full bg-zinc-950/90 border-l border-zinc-800/80">
+    <Tabs
+      value={activeTab}
+      onValueChange={(val) => setActiveTab(val as InspectorTab)}
+      className="flex flex-col h-full bg-zinc-950/90 border-l border-zinc-800/80"
+    >
       {/* Top Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800/80 bg-zinc-900/60">
         <div className="flex items-center gap-2 min-w-0">
@@ -176,43 +181,47 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
       </div>
 
       {/* Tabs Switcher */}
-      <div className="flex border-b border-zinc-800 bg-zinc-950/60">
-        <button
-          onClick={() => setActiveTab("properties")}
-          className={`flex-1 min-w-0 px-1 py-2 text-center text-xs font-mono whitespace-nowrap transition-colors border-b-2 flex items-center justify-center gap-1.5 ${
+      <TabsList
+        aria-label="Field inspector tabs"
+        className="flex border-b border-zinc-800 bg-zinc-950/60"
+      >
+        <TabsTrigger
+          value="properties"
+          className={`flex-1 min-w-0 px-1 py-2 text-center text-xs font-mono whitespace-nowrap transition-colors border-b-2 flex items-center justify-center gap-1.5 cursor-pointer ${
             activeTab === "properties"
               ? "border-brand-cyan text-brand-cyan font-bold bg-zinc-900/40"
               : "border-transparent text-zinc-400 hover:text-zinc-200"
           }`}
         >
           <span>Properties</span>
-        </button>
+        </TabsTrigger>
 
-        <button
-          onClick={() => setActiveTab("logic")}
-          className={`flex-1 min-w-0 px-1 py-2 text-center text-xs font-mono whitespace-nowrap transition-colors border-b-2 flex items-center justify-center gap-1.5 ${
+        <TabsTrigger
+          value="logic"
+          className={`flex-1 min-w-0 px-1 py-2 text-center text-xs font-mono whitespace-nowrap transition-colors border-b-2 flex items-center justify-center gap-1.5 cursor-pointer ${
             activeTab === "logic"
               ? "border-brand-cyan text-brand-cyan font-bold bg-zinc-900/40"
               : "border-transparent text-zinc-400 hover:text-zinc-200"
           }`}
         >
           <span>Edit Checks</span>
-        </button>
+        </TabsTrigger>
 
-        <button
-          onClick={() => setActiveTab("cdash")}
-          className={`flex-1 min-w-0 px-1 py-2 text-center text-xs font-mono whitespace-nowrap transition-colors border-b-2 flex items-center justify-center gap-1.5 ${
+        <TabsTrigger
+          value="cdash"
+          className={`flex-1 min-w-0 px-1 py-2 text-center text-xs font-mono whitespace-nowrap transition-colors border-b-2 flex items-center justify-center gap-1.5 cursor-pointer ${
             activeTab === "cdash"
               ? "border-brand-cyan text-brand-cyan font-bold bg-zinc-900/40"
               : "border-transparent text-zinc-400 hover:text-zinc-200"
           }`}
         >
           <span>CDASH / aCRF</span>
-        </button>
-        <button
-          onClick={() => setActiveTab("review")}
+        </TabsTrigger>
+
+        <TabsTrigger
+          value="review"
           aria-label={`Review threads (${openReviewThreadCount} open in study)`}
-          className={`flex-1 min-w-0 px-1 py-2 text-center text-xs font-mono whitespace-nowrap transition-colors border-b-2 flex items-center justify-center gap-1.5 ${
+          className={`flex-1 min-w-0 px-1 py-2 text-center text-xs font-mono whitespace-nowrap transition-colors border-b-2 flex items-center justify-center gap-1.5 cursor-pointer ${
             activeTab === "review"
               ? "border-amber-400 text-amber-300 font-bold bg-zinc-900/40"
               : "border-transparent text-zinc-400 hover:text-zinc-200"
@@ -222,12 +231,180 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
           <span className="rounded bg-zinc-800 px-1 text-[9px]">
             {openReviewThreadCount}
           </span>
-        </button>
-      </div>
+        </TabsTrigger>
+      </TabsList>
 
       {/* Tab Body */}
       <div className="flex-1 overflow-y-auto">
-        {activeTab === "review" ? (
+        <TabsContent value="properties">
+          {selectedField ? (
+            <FieldPropertiesTab
+              field={selectedField}
+              allFieldsInForm={allFields}
+              codelists={codelists}
+              onUpdateField={(updates) =>
+                onUpdateField(selectedField.id, updates)
+              }
+              onSaveToStudyCodelist={onSaveCodelist}
+              onRenameEverywhere={onRenameEverywhere}
+              onCommitReviewTargetChange={() =>
+                onCommitReviewTargetChange(selectedField.id)
+              }
+            />
+          ) : (
+            <div className="p-4 space-y-4">
+              {/* Executive Form Health Dashboard */}
+              <div className="p-4 rounded-2xl bg-zinc-900/60 border border-zinc-800/80 space-y-3.5 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                    <span className="text-xs font-bold text-white font-mono uppercase tracking-wider">
+                      Form Conformance &amp; Telemetry
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-brand-cyan/10 text-brand-cyan border border-brand-cyan/20 font-bold">
+                    CDASH {healthMetrics.cdashConformancePercentage}%
+                  </span>
+                </div>
+
+                {/* 4-Metric Grid */}
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  <div className="p-2.5 rounded-xl bg-zinc-950/80 border border-zinc-850">
+                    <div className="text-[10px] font-mono text-zinc-400 uppercase">
+                      Total Fields
+                    </div>
+                    <div className="text-sm font-mono font-extrabold text-white mt-0.5">
+                      {healthMetrics.totalFields}
+                    </div>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-zinc-950/80 border border-zinc-850">
+                    <div className="text-[10px] font-mono text-zinc-400 uppercase">
+                      Mandatory
+                    </div>
+                    <div className="text-sm font-mono font-extrabold text-amber-400 mt-0.5">
+                      {healthMetrics.mandatoryFields}
+                    </div>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-zinc-950/80 border border-zinc-850">
+                    <div className="text-[10px] font-mono text-zinc-400 uppercase">
+                      Codelists
+                    </div>
+                    <div className="text-sm font-mono font-extrabold text-purple-400 mt-0.5">
+                      {healthMetrics.codelistsAttached}
+                    </div>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-zinc-950/80 border border-zinc-850">
+                    <div className="text-[10px] font-mono text-zinc-400 uppercase">
+                      SDV Verified
+                    </div>
+                    <div className="text-sm font-mono font-extrabold text-emerald-400 mt-0.5">
+                      {healthMetrics.sdvVerifiedCount} /{" "}
+                      {healthMetrics.totalFields} (
+                      {healthMetrics.sdvReadinessPercentage}%)
+                    </div>
+                  </div>
+                </div>
+
+                {/* Form Metadata Settings */}
+                <div className="space-y-2.5 pt-2 border-t border-zinc-850">
+                  <div>
+                    <label
+                      htmlFor="crf-inspector-form-name"
+                      className="block text-[10px] font-mono text-zinc-400 mb-1"
+                    >
+                      Form Name
+                    </label>
+                    <input
+                      id="crf-inspector-form-name"
+                      type="text"
+                      value={form.name}
+                      onChange={(e) =>
+                        onUpdateFormMeta({ name: e.target.value })
+                      }
+                      className="w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white focus:border-brand-cyan focus:outline-none font-sans"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="crf-inspector-form-domain"
+                      className="block text-[10px] font-mono text-zinc-400 mb-1"
+                    >
+                      CDASH Domain
+                    </label>
+                    <input
+                      id="crf-inspector-form-domain"
+                      type="text"
+                      value={form.domain}
+                      onChange={(e) =>
+                        onUpdateFormMeta({
+                          domain: e.target.value.toUpperCase(),
+                        })
+                      }
+                      className="w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-brand-cyan font-mono uppercase focus:border-brand-cyan focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="flex items-center gap-2 cursor-pointer select-none pt-1">
+                      <input
+                        type="checkbox"
+                        checked={form.isLogForm || false}
+                        onChange={(e) =>
+                          onUpdateFormMeta({ isLogForm: e.target.checked })
+                        }
+                        className="rounded border-zinc-700 bg-zinc-900 text-brand-cyan focus:ring-0"
+                      />
+                      <span className="text-xs text-zinc-300">
+                        Continuous Log Form (e.g. AE / ConMeds)
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <LogicRulesTab
+                form={form}
+                selectedField={null}
+                onUpdateRules={onUpdateRules}
+              />
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="logic">
+          {selectedField ? (
+            <LogicRulesTab
+              form={form}
+              selectedField={selectedField}
+              onUpdateRules={onUpdateRules}
+            />
+          ) : (
+            <div className="p-4 space-y-4">
+              <LogicRulesTab
+                form={form}
+                selectedField={null}
+                onUpdateRules={onUpdateRules}
+              />
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="cdash">
+          {selectedField ? (
+            <CdiscMetadataTab
+              field={selectedField}
+              form={form}
+              onUpdateField={(updates) =>
+                onUpdateField(selectedField.id, updates)
+              }
+            />
+          ) : (
+            <div className="p-4 text-xs font-mono text-zinc-400 italic">
+              Select a field to configure CDASH metadata.
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="review">
           <ReviewThreadsTab
             threads={reviewThreads}
             selectedField={selectedField}
@@ -240,156 +417,8 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
               StudyProtocolEngine.getReviewThreadStatus(thread)
             }
           />
-        ) : selectedField ? (
-          <>
-            {activeTab === "properties" && (
-              <FieldPropertiesTab
-                field={selectedField}
-                allFieldsInForm={allFields}
-                codelists={codelists}
-                onUpdateField={(updates) =>
-                  onUpdateField(selectedField.id, updates)
-                }
-                onSaveToStudyCodelist={onSaveCodelist}
-                onRenameEverywhere={onRenameEverywhere}
-                onCommitReviewTargetChange={() =>
-                  onCommitReviewTargetChange(selectedField.id)
-                }
-              />
-            )}
-
-            {activeTab === "logic" && (
-              <LogicRulesTab
-                form={form}
-                selectedField={selectedField}
-                onUpdateRules={onUpdateRules}
-              />
-            )}
-
-            {activeTab === "cdash" && (
-              <CdiscMetadataTab
-                field={selectedField}
-                form={form}
-                onUpdateField={(updates) =>
-                  onUpdateField(selectedField.id, updates)
-                }
-              />
-            )}
-          </>
-        ) : (
-          <div className="p-4 space-y-4">
-            {/* Executive Form Health Dashboard */}
-            <div className="p-4 rounded-2xl bg-zinc-900/60 border border-zinc-800/80 space-y-3.5 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                  <span className="text-xs font-bold text-white font-mono uppercase tracking-wider">
-                    Form Conformance &amp; Telemetry
-                  </span>
-                </div>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-brand-cyan/10 text-brand-cyan border border-brand-cyan/20 font-bold">
-                  CDASH {healthMetrics.cdashConformancePercentage}%
-                </span>
-              </div>
-
-              {/* 4-Metric Grid */}
-              <div className="grid grid-cols-2 gap-2 pt-1">
-                <div className="p-2.5 rounded-xl bg-zinc-950/80 border border-zinc-850">
-                  <div className="text-[10px] font-mono text-zinc-400 uppercase">
-                    Total Fields
-                  </div>
-                  <div className="text-sm font-mono font-extrabold text-white mt-0.5">
-                    {healthMetrics.totalFields}
-                  </div>
-                </div>
-                <div className="p-2.5 rounded-xl bg-zinc-950/80 border border-zinc-850">
-                  <div className="text-[10px] font-mono text-zinc-400 uppercase">
-                    Mandatory
-                  </div>
-                  <div className="text-sm font-mono font-extrabold text-amber-400 mt-0.5">
-                    {healthMetrics.mandatoryFields}
-                  </div>
-                </div>
-                <div className="p-2.5 rounded-xl bg-zinc-950/80 border border-zinc-850">
-                  <div className="text-[10px] font-mono text-zinc-400 uppercase">
-                    Codelists
-                  </div>
-                  <div className="text-sm font-mono font-extrabold text-purple-400 mt-0.5">
-                    {healthMetrics.codelistsAttached}
-                  </div>
-                </div>
-                <div className="p-2.5 rounded-xl bg-zinc-950/80 border border-zinc-850">
-                  <div className="text-[10px] font-mono text-zinc-400 uppercase">
-                    SDV Verified
-                  </div>
-                  <div className="text-sm font-mono font-extrabold text-emerald-400 mt-0.5">
-                    {healthMetrics.sdvVerifiedCount} /{" "}
-                    {healthMetrics.totalFields} (
-                    {healthMetrics.sdvReadinessPercentage}%)
-                  </div>
-                </div>
-              </div>
-
-              {/* Form Metadata Settings */}
-              <div className="space-y-2.5 pt-2 border-t border-zinc-850">
-                <div>
-                  <label
-                    htmlFor="crf-inspector-form-name"
-                    className="block text-[10px] font-mono text-zinc-400 mb-1"
-                  >
-                    Form Name
-                  </label>
-                  <input
-                    id="crf-inspector-form-name"
-                    type="text"
-                    value={form.name}
-                    onChange={(e) => onUpdateFormMeta({ name: e.target.value })}
-                    className="w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white focus:border-brand-cyan focus:outline-none font-sans"
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="crf-inspector-form-domain"
-                    className="block text-[10px] font-mono text-zinc-400 mb-1"
-                  >
-                    CDASH Domain
-                  </label>
-                  <input
-                    id="crf-inspector-form-domain"
-                    type="text"
-                    value={form.domain}
-                    onChange={(e) =>
-                      onUpdateFormMeta({ domain: e.target.value.toUpperCase() })
-                    }
-                    className="w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-brand-cyan font-mono uppercase focus:border-brand-cyan focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="flex items-center gap-2 cursor-pointer select-none pt-1">
-                    <input
-                      type="checkbox"
-                      checked={form.isLogForm || false}
-                      onChange={(e) =>
-                        onUpdateFormMeta({ isLogForm: e.target.checked })
-                      }
-                      className="rounded border-zinc-700 bg-zinc-900 text-brand-cyan focus:ring-0"
-                    />
-                    <span className="text-xs text-zinc-300">
-                      Continuous Log Form (e.g. AE / ConMeds)
-                    </span>
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            <LogicRulesTab
-              form={form}
-              selectedField={null}
-              onUpdateRules={onUpdateRules}
-            />
-          </div>
-        )}
+        </TabsContent>
       </div>
-    </div>
+    </Tabs>
   );
 };

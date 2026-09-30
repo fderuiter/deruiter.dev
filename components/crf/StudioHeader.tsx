@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useResizeObserver } from "@/hooks/useResizeObserver";
 import { StudyProtocol, StudioMode, StudioTheme } from "@/lib/crf/types";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getStudyPresetsSync } from "@/lib/crf/presets";
 import { useDebouncedDiagnostics } from "@/hooks/useDebouncedDiagnostics";
 import {
@@ -114,34 +115,6 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
   const currentPreset = presets.find(
     (p) => p.study.protocolNumber === study.protocolNumber
   );
-
-  const tabRefs = React.useRef<Record<string, HTMLButtonElement | null>>({});
-
-  const handleModeKeyDown = (
-    event: React.KeyboardEvent<HTMLButtonElement>,
-    currentMode: StudioMode
-  ) => {
-    const modesList = MODES.map((m) => m.mode);
-    const currentIndex = modesList.indexOf(currentMode);
-    let nextIndex: number | null = null;
-
-    if (event.key === "ArrowRight" || event.key === "ArrowDown") {
-      nextIndex = (currentIndex + 1) % modesList.length;
-    } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
-      nextIndex = (currentIndex - 1 + modesList.length) % modesList.length;
-    } else if (event.key === "Home") {
-      nextIndex = 0;
-    } else if (event.key === "End") {
-      nextIndex = modesList.length - 1;
-    }
-
-    if (nextIndex === null) return;
-
-    event.preventDefault();
-    const nextMode = modesList[nextIndex];
-    onChangeMode(nextMode);
-    tabRefs.current[nextMode]?.focus();
-  };
 
   const MODES: {
     mode: StudioMode;
@@ -703,51 +676,48 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
           ))}
         </select>
         {/* Left Side: 6 Segmented Mode Navigation Pills */}
-        <nav
-          role="tablist"
-          aria-label="Studio Mode Navigation"
-          data-tour="modes"
-          className="hidden sm:flex items-center gap-1 overflow-x-auto scrollbar-none py-0.5 min-w-0"
+        <Tabs
+          value={activeMode}
+          onValueChange={(val) => onChangeMode(val as StudioMode)}
         >
-          {MODES.map((item) => {
-            const isActive = activeMode === item.mode;
-            return (
-              <button
-                ref={(node) => {
-                  tabRefs.current[item.mode] = node;
-                }}
-                key={item.mode}
-                role="tab"
-                aria-selected={isActive}
-                tabIndex={isActive ? 0 : -1}
-                onClick={() => onChangeMode(item.mode)}
-                onKeyDown={(e) => handleModeKeyDown(e, item.mode)}
-                title={`${item.description} (${item.shortcut})`}
-                className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-mono font-semibold transition-all rounded-lg whitespace-nowrap outline-none shrink-0 ${
-                  isActive
-                    ? "bg-brand-cyan/15 text-brand-cyan font-bold border border-brand-cyan/30 shadow-xs"
-                    : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 border border-transparent"
-                }`}
-              >
-                {item.icon}
-                <span className="hidden 2xl:inline">{item.label}</span>
-                <span className="hidden sm:inline 2xl:hidden">
-                  {item.shortLabel}
-                </span>
-                <span className="sm:hidden">{item.shortLabel}</span>
-                <span
-                  className={`text-[9px] px-1 py-0.2 rounded font-mono hidden 2xl:inline-block ${
+          <TabsList
+            aria-label="Studio Mode Navigation"
+            data-tour="modes"
+            className="hidden sm:flex items-center gap-1 overflow-x-auto scrollbar-none py-0.5 min-w-0"
+          >
+            {MODES.map((item) => {
+              const isActive = activeMode === item.mode;
+              return (
+                <TabsTrigger
+                  key={item.mode}
+                  value={item.mode}
+                  title={`${item.description} (${item.shortcut})`}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-mono font-semibold transition-all rounded-lg whitespace-nowrap outline-none shrink-0 cursor-pointer ${
                     isActive
-                      ? "bg-brand-cyan/25 text-brand-cyan font-bold"
-                      : "bg-zinc-900 text-zinc-600"
+                      ? "bg-brand-cyan/15 text-brand-cyan font-bold border border-brand-cyan/30 shadow-xs"
+                      : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 border border-transparent"
                   }`}
                 >
-                  {item.shortcut}
-                </span>
-              </button>
-            );
-          })}
-        </nav>
+                  {item.icon}
+                  <span className="hidden 2xl:inline">{item.label}</span>
+                  <span className="hidden sm:inline 2xl:hidden">
+                    {item.shortLabel}
+                  </span>
+                  <span className="sm:hidden">{item.shortLabel}</span>
+                  <span
+                    className={`text-[9px] px-1 py-0.2 rounded font-mono hidden 2xl:inline-block ${
+                      isActive
+                        ? "bg-brand-cyan/25 text-brand-cyan font-bold"
+                        : "bg-zinc-900 text-zinc-600"
+                    }`}
+                  >
+                    {item.shortcut}
+                  </span>
+                </TabsTrigger>
+              );
+            })}
+          </TabsList>
+        </Tabs>
 
         {/* Right Side: In-Studio Terminal Toggle & Workspace Sidebar Toggles */}
         <div className="hidden sm:flex items-center gap-1.5 shrink-0">

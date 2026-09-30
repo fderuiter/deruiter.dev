@@ -375,6 +375,22 @@ Handles canvas dimension and device pixel ratio resize events.
 
 ***
 
+### setManualOpen()
+
+> **setManualOpen**(`open`): `void`
+
+#### Parameters
+
+##### open
+
+`boolean`
+
+#### Returns
+
+`void`
+
+***
+
 ### setModalPause()
 
 > **setModalPause**(`paused`): `void`

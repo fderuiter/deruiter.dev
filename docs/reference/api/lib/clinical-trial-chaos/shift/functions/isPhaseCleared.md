@@ -29,7 +29,7 @@ The running phase.
 
 `number`
 
-CRFs locked before this submission.
+CRFs locked in the campaign before this submission.
 
 ## Returns
 

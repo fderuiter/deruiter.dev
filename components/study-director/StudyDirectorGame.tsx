@@ -6,6 +6,7 @@ import React, {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
 } from "react";
 import {
   ATTENTION_PER_DAY,
@@ -44,12 +45,38 @@ import { ShortcutSheet } from "./ShortcutSheet";
 import { StatusBar } from "./StatusBar";
 import { ReportView } from "./ReportView";
 import { clearStudySave, loadStudySave, saveStudy } from "./useStudySave";
+import {
+  loadCareer,
+  mergeCareers,
+  recordRun,
+  recordStart,
+  saveCareer,
+  type CareerFile,
+  type CareerNews,
+} from "./career";
+import { verdictFor } from "./closeout";
+import { PersonnelFile } from "./PersonnelFile";
+import { SharePanel } from "./ShareCard";
 
-function newStudy(): StudyState {
-  const seed = `sd-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`;
+function newStudy(sharedSeed?: string | null): StudyState {
+  const seed =
+    sharedSeed ??
+    `sd-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`;
   return beginStudy(
     createStudy(seed, STUDY_24_081, STUDY_24_081_SITES, STUDY_24_081_TEAM)
   );
+}
+
+const SEED_PATTERN = /(?:^#|&)seed=([\w-]{1,60})(?:&|$)/;
+
+function subscribeHash(onChange: () => void): () => void {
+  window.addEventListener("hashchange", onChange);
+  return () => window.removeEventListener("hashchange", onChange);
+}
+
+/** A seed shared by link (`#seed=...`), or null. */
+function hashSeed(): string | null {
+  return SEED_PATTERN.exec(window.location.hash)?.[1] ?? null;
 }
 
 /**
@@ -68,7 +95,16 @@ export const StudyDirectorGame: React.FC = () => {
   // Meters at the start of the current day, so the desk can show drift.
   const [baseline, setBaseline] = useState<Meters | null>(null);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
+  const [career, setCareer] = useState<CareerFile>(() => loadCareer());
+  const [news, setNews] = useState<CareerNews | null>(null);
+  const [confirmAbandon, setConfirmAbandon] = useState(false);
+  const sharedSeed = useSyncExternalStore(subscribeHash, hashSeed, () => null);
   const seq = useRef(0);
+
+  const updateCareer = useCallback((next: CareerFile) => {
+    setCareer(next);
+    saveCareer(next);
+  }, []);
 
   useEffect(() => {
     if (state) saveStudy(state);
@@ -120,8 +156,35 @@ export const StudyDirectorGame: React.FC = () => {
     setSaved(null);
     setSelectedId(null);
     setDocumented(false);
+    setNews(null);
+    setConfirmAbandon(false);
     setNotice(`Day ${next.day}. ${inbox(next).length} new messages.`);
   }, []);
+
+  const startNew = useCallback(() => {
+    updateCareer(recordStart(career));
+    if (sharedSeed) {
+      // The shared seed is used once; a later restart is a fresh study.
+      window.history.replaceState(
+        null,
+        "",
+        window.location.pathname + window.location.search
+      );
+    }
+    start(newStudy(sharedSeed));
+  }, [career, sharedSeed, start, updateCareer]);
+
+  /** Files a finished study in the career, once per seed. */
+  const closeOut = useCallback(
+    (done: StudyState) => {
+      if (done.status !== "complete") return;
+      const finished = finalizeStudy(done);
+      const result = recordRun(career, finished, verdictFor(finished).headline);
+      updateCareer(result.career);
+      setNews(result.news);
+    },
+    [career, updateCareer]
+  );
 
   const choose = useCallback(
     (event: StudyEvent, optionId: string) => {
@@ -218,6 +281,7 @@ export const StudyDirectorGame: React.FC = () => {
     const next = endDay(state);
     const night = reportNight(state, next);
     setState(next);
+    closeOut(next);
     setBaseline(computeMeters(next));
     setSelectedId(null);
     setDocumented(false);
@@ -226,7 +290,7 @@ export const StudyDirectorGame: React.FC = () => {
         ? "The study is complete."
         : `Day ${next.day}. ${night} ${inbox(next).length} messages in the inbox.`
     );
-  }, [state, reportNight]);
+  }, [state, reportNight, closeOut]);
 
   const skipQuietDays = useCallback(() => {
     if (!state) return;
@@ -243,6 +307,7 @@ export const StudyDirectorGame: React.FC = () => {
     }
     const night = reportNight(state, next);
     setState(next);
+    closeOut(next);
     setBaseline(computeMeters(next));
     setSelectedId(null);
     setDocumented(false);
@@ -251,12 +316,14 @@ export const StudyDirectorGame: React.FC = () => {
         ? "The study is complete."
         : `Skipped ${skipped} days to day ${next.day}. ${night} ${inbox(next).length} messages in the inbox.`
     );
-  }, [state, reportNight]);
+  }, [state, reportNight, closeOut]);
 
   const restart = useCallback(() => {
     clearStudySave();
     setState(null);
     setSaved(null);
+    setNews(null);
+    setConfirmAbandon(false);
     setNotice("");
   }, []);
 
@@ -320,7 +387,7 @@ export const StudyDirectorGame: React.FC = () => {
             <button
               type="button"
               ref={saved && saved.status === "running" ? undefined : primaryRef}
-              onClick={() => start(newStudy())}
+              onClick={startNew}
               className="min-h-[44px] border border-amber-500 bg-amber-500/10 px-4 text-sm font-bold text-amber-300 hover:bg-amber-500/20"
             >
               Start the study
@@ -335,7 +402,21 @@ export const StudyDirectorGame: React.FC = () => {
                 Resume day {saved.day}
               </button>
             ) : null}
+            {sharedSeed ? (
+              <p className="basis-full text-[11px] text-[var(--sd-muted)]">
+                Replaying a shared study, seed{" "}
+                <span className="text-zinc-300">{sharedSeed}</span>.
+              </p>
+            ) : null}
           </>
+        }
+        footer={
+          <PersonnelFile
+            career={career}
+            onImport={(imported) =>
+              updateCareer(mergeCareers(career, imported))
+            }
+          />
         }
       />
     );
@@ -387,6 +468,38 @@ export const StudyDirectorGame: React.FC = () => {
           </p>
         ) : null}
       </div>
+      <div className="flex flex-wrap items-center gap-2 text-[11px]">
+        <span className="text-[var(--sd-muted)]" data-testid="study-save-note">
+          Saved, day {state.day}
+        </span>
+        {confirmAbandon ? (
+          <>
+            <span className="text-zinc-300">Abandon this study?</span>
+            <button
+              type="button"
+              onClick={restart}
+              className="min-h-[32px] border border-red-500/60 px-2 text-red-300 hover:bg-red-500/10"
+            >
+              Abandon
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirmAbandon(false)}
+              className="min-h-[32px] border border-zinc-700 px-2 text-zinc-300 hover:border-[var(--sd-amber)]"
+            >
+              Keep going
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setConfirmAbandon(true)}
+            className="min-h-[32px] px-1 text-[var(--sd-muted)] underline decoration-dotted underline-offset-2 hover:text-zinc-200"
+          >
+            Abandon study
+          </button>
+        )}
+      </div>
     </div>
   );
 
@@ -411,7 +524,11 @@ export const StudyDirectorGame: React.FC = () => {
       {scene ? <OfficeScene scene={scene} /> : null}
 
       {report ? (
-        <ReportView report={report} onRestart={restart} />
+        <ReportView
+          report={report}
+          onRestart={restart}
+          share={<SharePanel report={report} news={news} />}
+        />
       ) : (
         <>
           <div className="grid gap-3 lg:grid-cols-[minmax(0,220px)_minmax(0,1fr)_minmax(0,230px)] xl:grid-cols-[minmax(0,260px)_minmax(0,1fr)_minmax(0,280px)]">

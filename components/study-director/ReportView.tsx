@@ -54,7 +54,9 @@ const Figure: React.FC<{
 export const ReportView: React.FC<{
   report: FinalReport;
   onRestart: () => void;
-}> = ({ report, onRestart }) => {
+  /** Shown under the verdict: sharing and career news. */
+  share?: React.ReactNode;
+}> = ({ report, onRestart, share }) => {
   const { evaluations: ev, profile, lock, inspection, state } = report;
   const verdict = verdictFor(report);
   const open = inspection.items.filter((i) => i.outcome !== "closed").length;
@@ -98,6 +100,7 @@ export const ReportView: React.FC<{
           </span>
         </div>
       </section>
+      {share}
 
       <div className="grid gap-3 lg:grid-cols-[minmax(0,280px)_minmax(0,1fr)]">
         <Card title="Final study health">

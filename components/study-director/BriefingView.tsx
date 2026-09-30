@@ -74,7 +74,9 @@ export const BriefingView: React.FC<{
   sites: SiteState[];
   team: TeamMember[];
   actions: React.ReactNode;
-}> = ({ setup, sites, team, actions }) => (
+  /** Shown under the cover sheet, full width: the personnel file. */
+  footer?: React.ReactNode;
+}> = ({ setup, sites, team, actions, footer }) => (
   <div
     data-sd-desk=""
     data-testid="study-briefing"
@@ -213,5 +215,6 @@ export const BriefingView: React.FC<{
         ))}
       </ol>
     </section>
+    {footer}
   </div>
 );

@@ -52,7 +52,7 @@ export function verdictFor(report: FinalReport): Verdict {
 
 export type MarkKind = "documented" | "undocumented" | "lapsed" | "audit";
 
-export interface TimelineMark {
+interface TimelineMark {
   day: number;
   kind: MarkKind;
   label: string;

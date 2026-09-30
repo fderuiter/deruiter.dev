@@ -2105,7 +2105,7 @@ describe("Working With Duck - a paused sprint ignores player actions (#1645)", (
     expect(enterDogPark(state)).toBe(state);
   });
 
-  it("does not bank the Back Door potty bonus while paused", () => {
+it("does not bank the Back Door potty bonus while paused", () => {
     const base = paused();
     const held: WorkingWithDuckState = {
       ...base,
@@ -2120,6 +2120,136 @@ describe("Working With Duck - a paused sprint ignores player actions (#1645)", (
     expect(
       releaseDuck({ ...held, status: "running" }).totalScore
     ).toBeGreaterThan(1046);
+  });
+});
+
+describe("Retro Labyrinth pass-4 playtest (#1665, #1667, #1668, #1669)", () => {
+  const labyrinth = () =>
+    fs.readFileSync(
+      path.resolve(__dirname, "../components/RetroLabyrinth.tsx"),
+      "utf-8"
+    );
+
+  it("charges HP for enemy contact without ending the run (#1665)", async () => {
+    const { updateEnemyAI } = await import("@/lib/dungeon");
+    const grid = Array.from({ length: 9 }, () => Array(15).fill(" "));
+    const res = updateEnemyAI(
+      [
+        fromPartial({
+          id: "d",
+          type: "drone",
+          x: 4,
+          y: 4,
+          hp: 40,
+          maxHp: 40,
+          state: "patrol",
+          patrolDir: "right",
+        }),
+      ],
+      grid,
+      5,
+      4,
+      333
+    );
+    expect(res.damageToPlayer).toBe(25);
+    expect(res.updatedEnemies[0]).toMatchObject({ x: 4, y: 4 });
+    expect(labyrinth()).not.toContain("caughtPlayer");
+  });
+
+  it("keeps patrols on the floor and moves up patrols up (#1665)", async () => {
+    const { updateEnemyAI, isEnemyWalkable, generateRoguelikeCampaign } =
+      await import("@/lib/dungeon");
+    for (const room of generateRoguelikeCampaign()) {
+      let enemies = room.enemies;
+      for (let step = 0; step < 60; step++) {
+        enemies = updateEnemyAI(enemies, room.grid, 0, 0, 333).updatedEnemies;
+        for (const e of enemies) {
+          expect(isEnemyWalkable(room.grid, e.x, e.y), room.id).toBe(true);
+        }
+      }
+    }
+  });
+
+  it("leaves no static drone copy in campaign rooms (#1665)", () => {
+    const code = labyrinth();
+    const roguelikeBranch = code.slice(
+      code.indexOf("const campaign = generateRoguelikeCampaign();"),
+      code.indexOf("const fov = calculateFOV(")
+    );
+    expect(roguelikeBranch).toContain("setDrones([]);");
+    expect(roguelikeBranch).not.toContain('filter((e) => e.type === "drone")');
+  });
+
+  it("moves enemies and boss volleys on elapsed time (#1665)", async () => {
+    const {
+      createFaceForgeBoss,
+      updateFaceForgeBoss,
+      BOSS_REFERENCE_FRAME_MS,
+    } = await import("@/lib/dungeon");
+    const fired = updateFaceForgeBoss(
+      createFaceForgeBoss(7, 4),
+      1,
+      4,
+      5000,
+      15,
+      9,
+      undefined,
+      0
+    ).updatedBoss;
+    const full = updateFaceForgeBoss(
+      fired,
+      1,
+      4,
+      5001,
+      15,
+      9,
+      undefined,
+      BOSS_REFERENCE_FRAME_MS
+    );
+    const half = updateFaceForgeBoss(
+      fired,
+      1,
+      4,
+      5001,
+      15,
+      9,
+      undefined,
+      BOSS_REFERENCE_FRAME_MS / 2
+    );
+    const dFull = Math.abs(
+      full.updatedBoss.projectiles[0].x - fired.projectiles[0].x
+    );
+    const dHalf = Math.abs(
+      half.updatedBoss.projectiles[0].x - fired.projectiles[0].x
+    );
+    expect(dHalf).toBeCloseTo(dFull / 2, 6);
+    expect(labyrinth()).not.toContain("Math.random() < 0.05");
+    expect(labyrinth()).not.toContain("Math.random() < 0.04");
+  });
+
+  it("restores weapon ammo on retry (#1667)", () => {
+    const code = labyrinth();
+    const restart = code.slice(
+      code.indexOf("const handleRestart = useCallback("),
+      code.indexOf("}, [gameMode, stage, roomIndex, loadRoom]);")
+    );
+    expect(restart).toContain("setWeapons(entry.weapons);");
+  });
+
+  it("scores each crypto coin once at the exit (#1668)", async () => {
+    const { computeRoomExitScore } = await import("@/lib/dungeon");
+    const room1 = computeRoomExitScore(900, 5, 200);
+    expect(computeRoomExitScore(room1, 5, 0)).toBe(room1 + 900);
+    expect(labyrinth()).not.toContain(
+      "score + Math.max(100, 1000 - nextMoves * 20) + cryptoBounty"
+    );
+  });
+
+  it("pauses for the manual and swallows overlay keys (#1669)", () => {
+    const code = labyrinth();
+    expect(code).toContain('data-field-manual="retro-labyrinth"');
+    expect(code).toContain("onOpenChange={handleManualOpenChange}");
+    expect(code).toContain("OVERLAY_CONSUMED_KEYS.has(e.key)");
   });
 });
 

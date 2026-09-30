@@ -1219,7 +1219,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       },
     ],
     proTips: [
-      "Use Nmap [1] on room entry to reveal hidden traps and tag hostile daemons with CVE vulnerability marks.",
+      "Use Nmap Port Recon on room entry (key 2 for the default Script Kiddie) to reveal hidden traps and tag hostile daemons with CVE vulnerability marks.",
       "Save Hardware Bypass Chips for Tier 3 & 4 encrypted vaults where time limits are tight.",
       "Visit the Darknet Market to purchase DDR5 RAM overclocks and Airgap 0-Day payloads using harvested Crypto.",
     ],

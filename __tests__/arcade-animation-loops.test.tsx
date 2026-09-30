@@ -155,7 +155,7 @@ vi.mock("@/lib/dungeon", async (importOriginal) => {
       (enemies: Parameters<typeof actual.updateEnemyAI>[0]) => ({
         updatedEnemies: enemies,
         damageToPlayer: 0,
-        caughtPlayer: false,
+        contactedPlayer: false,
       })
     ),
   };
@@ -173,7 +173,7 @@ import {
   updateGameSimulation,
 } from "@/lib/garmin-engine";
 import { tickShiftClocks } from "@/lib/clinical-trial-chaos";
-import { updateEnemyAI } from "@/lib/dungeon";
+import { ENEMY_STEP_INTERVAL_MS, updateEnemyAI } from "@/lib/dungeon";
 
 /**
  * Frame scheduler driven by the test: frames run only on `tick(timestamp)`,
@@ -571,20 +571,41 @@ describe("RetroLabyrinth loop on useAnimationFrame (#1624)", () => {
     const { container } = render(<RetroLabyrinth isMounted={true} />);
     const canvas = container.querySelector("canvas");
     if (!canvas) throw new Error("labyrinth canvas not rendered");
-    // Enemy AI runs on 5% of frames; make every frame one of them.
-    vi.spyOn(Math, "random").mockReturnValue(0);
     return canvas;
   }
 
   const enemyDeltas = () =>
     vi.mocked(updateEnemyAI).mock.calls.map((call) => call[4]);
 
-  it("skips enemy AI on the zero-delta first frame and clamps later deltas to 40 ms", () => {
+  // #1665: enemies step once per ENEMY_STEP_INTERVAL_MS of play, and each
+  // step is handed the play time since the previous one.
+  it("skips the zero-delta first frame and steps enemies on clamped play time", () => {
     renderLabyrinth();
     scheduler.tick(1000);
-    scheduler.tick(1016);
-    scheduler.tick(1216);
-    expect(enemyDeltas()).toEqual([16, 40]);
+    for (let i = 1; i <= 8; i++) scheduler.tick(1000 + i * 200);
+    // 8 frames clamped to 40 ms is 320 ms of play, short of one step.
+    expect(enemyDeltas()).toEqual([]);
+    scheduler.tick(1000 + 9 * 200);
+    expect(enemyDeltas()).toEqual([ENEMY_STEP_INTERVAL_MS + 27]);
+  });
+
+  it("steps enemies as often on a 144 Hz display as on a 60 Hz one (#1665)", () => {
+    const stepsInOneSecond = (hz: number) => {
+      vi.mocked(updateEnemyAI).mockClear();
+      // Before #1665 a 5% roll per frame gated each step; pin it so the
+      // frame-count dependence shows.
+      vi.spyOn(Math, "random").mockReturnValue(0);
+      const { unmount } = render(<RetroLabyrinth isMounted={true} />);
+      const frameMs = 1000 / hz;
+      for (let frame = 0; frame <= hz; frame++) scheduler.tick(frame * frameMs);
+      const steps = vi.mocked(updateEnemyAI).mock.calls.length;
+      unmount();
+      return steps;
+    };
+    const at60 = stepsInOneSecond(60);
+    const at144 = stepsInOneSecond(144);
+    expect(at60).toBe(Math.floor(1000 / ENEMY_STEP_INTERVAL_MS));
+    expect(at144).toBe(at60);
   });
 
   // As with Garmin, the first delta after a restore is now zero rather than
@@ -599,8 +620,9 @@ describe("RetroLabyrinth loop on useAnimationFrame (#1624)", () => {
 
     restoreContext(canvas);
     scheduler.tick(9000);
-    scheduler.tick(9020);
-    expect(enemyDeltas()).toEqual([16, 20]);
+    for (let i = 1; i <= 8; i++) scheduler.tick(9000 + i * 40);
+    // 16 ms before the loss, nothing for the restore frame, then 8 x 40 ms.
+    expect(enemyDeltas()).toEqual([336]);
   });
 });
 

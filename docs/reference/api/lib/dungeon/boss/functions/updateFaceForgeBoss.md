@@ -6,7 +6,7 @@
 
 # Function: updateFaceForgeBoss()
 
-> **updateFaceForgeBoss**(`boss`, `playerX`, `playerY`, `nowMs`, `gridWidth`, `gridHeight`, `playerHeading?`): `object`
+> **updateFaceForgeBoss**(`boss`, `playerX`, `playerY`, `nowMs`, `gridWidth`, `gridHeight`, `playerHeading?`, `frameDeltaMs?`): `object`
 
 Updates boss animations, attack patterns, and projectile trajectories.
 
@@ -45,6 +45,14 @@ Updates boss animations, attack patterns, and projectile trajectories.
 #### dy
 
 `number`
+
+### frameDeltaMs?
+
+`number` = `BOSS_REFERENCE_FRAME_MS`
+
+Real time since the previous update. Projectiles and
+mesh spin advance in proportion to it, so volleys travel at the same speed
+on a 60 Hz and a 144 Hz display (#1665). Defaults to one 60 Hz frame.
 
 ## Returns
 

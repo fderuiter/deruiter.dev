@@ -4,6 +4,7 @@ import readline from "readline";
 import { execSync } from "child_process";
 import { colors, formatHeader, badge, formatSection } from "./utils";
 import { checkEnvironmentVariables } from "./env-guard";
+import { getEnv } from "../env";
 
 export interface SetupOptions {
   workspaceRoot?: string;
@@ -41,7 +42,7 @@ export function validateNodeRuntime(): {
  * Validate npm package manager enforcement
  */
 export function validatePackageManager(): { valid: boolean; agent: string } {
-  const agent = process.env.npm_config_user_agent || "";
+  const agent = getEnv().npm_config_user_agent || "";
   const isBun =
     typeof (process.versions as Record<string, unknown>).bun !== "undefined" ||
     agent.startsWith("bun/");

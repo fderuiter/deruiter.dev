@@ -438,6 +438,7 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
               return (
                 <motion.div
                   key={node.id}
+                  data-node-id={node.id}
                   style={{
                     position: "absolute",
                     left: node.x + offset.x,
@@ -554,6 +555,7 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
             {INFERENCE_RULES.slice(0, 6).map((rule) => (
               <button
                 key={rule.id}
+                data-rule={rule.id}
                 onClick={() => handleApplyRule(rule.id)}
                 className="min-h-8 px-2.5 py-1 rounded-lg border border-slate-800 bg-slate-900 hover:bg-slate-800 text-xs font-mono text-slate-300 hover:text-white transition flex items-center gap-1 cursor-pointer active:scale-[0.98]"
                 title={`${rule.name}: ${rule.template}`}

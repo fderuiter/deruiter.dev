@@ -39,6 +39,7 @@ import {
 } from "@/components/proof/ProofTerminalConsole";
 import { ProofExportModal } from "@/components/proof/ProofExportModal";
 import { ProofCustomModal } from "@/components/proof/ProofCustomModal";
+import { ProofCoachTour } from "@/components/proof/ProofCoachTour";
 
 type CustomSession = {
   serialized: string;
@@ -608,61 +609,86 @@ export function ProofWorkspaceClient() {
     }
   );
 
-  const handleSwitchTheorem = (newTheoremId: TheoremId) => {
-    if (newTheoremId === activeTheoremId) return;
-    if (newTheoremId === "custom" && !customSession) {
-      setIsCustomStudioOpen(true);
-      return;
-    }
-    const nextTh =
-      newTheoremId === "custom" && customSession
-        ? customSession.theorem
-        : THEOREMS[newTheoremId];
-    if (!nextTh) return;
+  const handleSwitchTheorem = React.useCallback(
+    (newTheoremId: TheoremId) => {
+      if (newTheoremId === activeTheoremId) return;
+      if (newTheoremId === "custom" && !customSession) {
+        setIsCustomStudioOpen(true);
+        return;
+      }
+      const nextTh =
+        newTheoremId === "custom" && customSession
+          ? customSession.theorem
+          : THEOREMS[newTheoremId];
+      if (!nextTh) return;
 
-    if (workerRef.current) {
-      currentRequestIdRef.current += 1;
-      workerRef.current.postMessage({ type: "ABORT" });
-      setIsSimulating(false);
-      setSimulationProgress(null);
-      clearWatchdog();
-    }
+      if (workerRef.current) {
+        currentRequestIdRef.current += 1;
+        workerRef.current.postMessage({ type: "ABORT" });
+        setIsSimulating(false);
+        setSimulationProgress(null);
+        clearWatchdog();
+      }
 
-    setEdges(nextTh.initialEdges);
+      setEdges(nextTh.initialEdges);
+      setSelectedNodeIds([]);
+      setNodeOffsets({});
+      setCurrentFallacy(null);
+
+      setParams(
+        {
+          theorem: newTheoremId === "modus-ponens" ? null : newTheoremId,
+          inspect: null,
+          custom:
+            newTheoremId === "custom"
+              ? (customSession?.serialized ?? null)
+              : null,
+        },
+        { replace: false }
+      );
+
+      try {
+        playAutocomplete();
+      } catch {}
+
+      showToast(
+        `Switched active theorem scenario to '${nextTh.title}'`,
+        "info",
+        {
+          announce: false,
+        }
+      );
+      announceToScreenReader(`Switched theorem to ${nextTh.title}.`);
+
+      setConsoleLogs((prev) => [
+        ...prev,
+        {
+          id: `switch-${Date.now()}`,
+          type: "info",
+          text: `Switched active theorem to [${nextTh.title}] · ${nextTh.ruleName}\nGoal: ${nextTh.goalDescription}`,
+        },
+      ]);
+    },
+    [
+      activeTheoremId,
+      customSession,
+      clearWatchdog,
+      setParams,
+      playAutocomplete,
+      showToast,
+      announceToScreenReader,
+    ]
+  );
+
+  const handleResetAndStartTour = React.useCallback(() => {
+    if (activeTheoremId !== "modus-ponens") {
+      handleSwitchTheorem("modus-ponens");
+    }
+    setEdges([]);
     setSelectedNodeIds([]);
     setNodeOffsets({});
     setCurrentFallacy(null);
-
-    setParams(
-      {
-        theorem: newTheoremId === "modus-ponens" ? null : newTheoremId,
-        inspect: null,
-        custom:
-          newTheoremId === "custom"
-            ? (customSession?.serialized ?? null)
-            : null,
-      },
-      { replace: false }
-    );
-
-    try {
-      playAutocomplete();
-    } catch {}
-
-    showToast(`Switched active theorem scenario to '${nextTh.title}'`, "info", {
-      announce: false,
-    });
-    announceToScreenReader(`Switched theorem to ${nextTh.title}.`);
-
-    setConsoleLogs((prev) => [
-      ...prev,
-      {
-        id: `switch-${Date.now()}`,
-        type: "info",
-        text: `Switched active theorem to [${nextTh.title}] · ${nextTh.ruleName}\nGoal: ${nextTh.goalDescription}`,
-      },
-    ]);
-  };
+  }, [activeTheoremId, handleSwitchTheorem]);
 
   const handleNodePointerDown = React.useCallback(
     (e: React.PointerEvent, nodeId: string) => {
@@ -1730,6 +1756,16 @@ export function ProofWorkspaceClient() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 w-full flex-1 flex flex-col gap-6">
+        <ProofCoachTour
+          selectedNodeIds={selectedNodeIds}
+          edges={edges}
+          isE_Proven={isE_Proven}
+          activeTheoremId={activeTheoremId}
+          canvasWrapperRef={canvasWrapperRef}
+          onStartTour={() => {}}
+          onResetAndStartTour={handleResetAndStartTour}
+        />
+
         <ProofHeader
           activeTheoremId={activeTheoremId}
           handleSwitchTheorem={handleSwitchTheorem}

@@ -22,8 +22,28 @@ interface ArcadeHudMeter {
   hotkey?: string;
 }
 
+interface ArcadeHudGauge {
+  /** Short caption shown before the bar, e.g. "Work". */
+  label: string;
+  /** Accessible name of the progressbar, when it differs from the caption. */
+  ariaLabel?: string;
+  value: number;
+  /** Defaults to 0. */
+  min?: number;
+  /** Defaults to 100. */
+  max?: number;
+  /** Readout after the bar, e.g. "42%". */
+  display: ReactNode;
+  /** Colour of the fill and readout. Defaults to the game's accent. */
+  tone?: "accent" | "warn" | "danger" | "good";
+  /** Draw a mark at the middle of the bar, for scales that run negative. */
+  centerTick?: boolean;
+}
+
 interface ArcadeHudProps {
-  stats: ArcadeHudStat[];
+  stats?: ArcadeHudStat[];
+  /** Labelled bars such as a pet's needs, shown after the stats. */
+  gauges?: ArcadeHudGauge[];
   /** Transient callouts such as a combo or an active power-up. */
   callouts?: ReactNode;
   meter?: ArcadeHudMeter;
@@ -37,8 +57,23 @@ interface ArcadeHudProps {
  * It reads the cabinet's `--game-accent` token, uses tabular figures so
  * numbers don't jitter, and never animates in a loop.
  */
+const GAUGE_FILL: Record<NonNullable<ArcadeHudGauge["tone"]>, string> = {
+  accent: "bg-[var(--game-accent,#f59e0b)]",
+  warn: "bg-amber-400",
+  danger: "bg-rose-400",
+  good: "bg-emerald-400",
+};
+
+const GAUGE_TEXT: Record<NonNullable<ArcadeHudGauge["tone"]>, string> = {
+  accent: "arcade-accent-text",
+  warn: "text-amber-300",
+  danger: "text-rose-300",
+  good: "text-emerald-300",
+};
+
 export function ArcadeHud({
-  stats,
+  stats = [],
+  gauges = [],
   callouts,
   meter,
   trailing,
@@ -55,7 +90,7 @@ export function ArcadeHud({
           key={stat.label}
           className="inline-flex min-h-9 items-center gap-1.5 whitespace-nowrap"
         >
-          <span className="uppercase tracking-wider text-zinc-500">
+          <span className="uppercase tracking-wider text-zinc-400">
             {stat.label}
           </span>
           <span
@@ -67,6 +102,43 @@ export function ArcadeHud({
           </span>
         </span>
       ))}
+
+      {gauges.map((gauge) => {
+        const min = gauge.min ?? 0;
+        const max = gauge.max ?? 100;
+        const value = clamp(Math.round(gauge.value), min, max);
+        const fraction = max > min ? (value - min) / (max - min) : 0;
+        const tone = gauge.tone ?? "accent";
+        return (
+          <span
+            key={gauge.label}
+            className="inline-flex min-h-9 items-center gap-1.5 whitespace-nowrap"
+          >
+            <span className="uppercase tracking-wider text-zinc-400">
+              {gauge.label}
+            </span>
+            <span
+              role="progressbar"
+              aria-label={gauge.ariaLabel ?? gauge.label}
+              aria-valuenow={value}
+              aria-valuemin={min}
+              aria-valuemax={max}
+              className="relative block h-1.5 w-12 overflow-hidden rounded-full bg-zinc-800"
+            >
+              <span
+                className={`block h-full w-full origin-left transition-transform duration-200 ${GAUGE_FILL[tone]}`}
+                style={{ transform: `scaleX(${fraction})` }}
+              />
+              {gauge.centerTick && (
+                <span className="absolute inset-y-0 left-1/2 w-px bg-zinc-300/70" />
+              )}
+            </span>
+            <span className={`font-bold ${GAUGE_TEXT[tone]}`}>
+              {gauge.display}
+            </span>
+          </span>
+        );
+      })}
 
       {callouts && (
         <span className="inline-flex min-w-0 items-center gap-2">

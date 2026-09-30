@@ -42,7 +42,7 @@ function getTutorialSeenServerSnapshot(): boolean {
 }
 
 /** Props for the ProofCoachTour component. */
-export interface ProofCoachTourProps {
+interface ProofCoachTourProps {
   selectedNodeIds: string[];
   edges: Array<{ source: string; target: string; ruleApplied?: string }>;
   isE_Proven: boolean;

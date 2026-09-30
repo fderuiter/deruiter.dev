@@ -1,12 +1,7 @@
 "use client";
 
-import React, {
-  useState,
-  useRef,
-  useEffect,
-  useCallback,
-  useMemo,
-} from "react";
+import React, { useState, useRef, useCallback, useMemo } from "react";
+import { useAnimationFrame } from "@/hooks/useAnimationFrame";
 import {
   IconRadio,
   IconCheck,
@@ -276,27 +271,24 @@ export const MountainMap: React.FC<MountainMapProps> = ({
     activeSimulation?.active && !activeSimulation?.isPaused
   );
 
-  useEffect(() => {
-    if (!isSimulationActive) return;
+  // AGENTS.md section 16: cap React state commits on mobile so the descent
+  // does not drive a 60fps setState loop through the whole map render tree.
+  // The frame loop still runs; only the commit rate is throttled, so the
+  // animation stays smooth-enough while halving reconciliation work.
+  const minCommitMs = getDescentCommitIntervalMs(isMobileViewport);
+  // Frame time accrued since the last commit. Skipped frames add to it, so a
+  // throttled commit still advances the descent by the full time it covers.
+  const msSinceCommitRef = useRef(0);
 
-    let animFrameId: number;
-    let lastTime = performance.now();
-    let lastCommit = lastTime;
+  useAnimationFrame(
+    (deltaMs, elapsedMs) => {
+      // A (re)started loop reports elapsedMs 0 until time accrues: re-anchor.
+      if (elapsedMs === 0) msSinceCommitRef.current = 0;
+      msSinceCommitRef.current += deltaMs;
+      if (msSinceCommitRef.current < minCommitMs) return;
 
-    // AGENTS.md section 16: cap React state commits on mobile so the descent
-    // does not drive a 60fps setState loop through the whole map render tree.
-    // The frame loop still runs; only the commit rate is throttled, so the
-    // animation stays smooth-enough while halving reconciliation work.
-    const minCommitMs = getDescentCommitIntervalMs(isMobileViewport);
-
-    const step = (now: number) => {
-      animFrameId = requestAnimationFrame(step);
-
-      if (now - lastCommit < minCommitMs) return;
-
-      const dt = (now - lastTime) / 1000;
-      lastTime = now;
-      lastCommit = now;
+      const dt = msSinceCommitRef.current / 1000;
+      msSinceCommitRef.current = 0;
 
       setSimulation((prev) => {
         if (!prev || !prev.active || prev.isPaused) return prev;
@@ -307,11 +299,15 @@ export const MountainMap: React.FC<MountainMapProps> = ({
         }
         return { ...prev, progress: nextProgress };
       });
-    };
-
-    animFrameId = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(animFrameId);
-  }, [isSimulationActive, isMobileViewport]);
+    },
+    {
+      isActive: isSimulationActive,
+      // A viewport change restarts the loop so its commit throttle re-anchors.
+      restartKey: isMobileViewport,
+      // The descent has always advanced by the real time between commits.
+      maxDeltaMs: Infinity,
+    }
+  );
 
   // Current skier position & tangent
   const currentSkierPosition = useMemo(() => {

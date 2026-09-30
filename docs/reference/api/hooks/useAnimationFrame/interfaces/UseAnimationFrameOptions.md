@@ -40,3 +40,16 @@ Browsers pause or throttle animation frames in hidden tabs, so the first
 frame after the tab returns would otherwise report the whole time away.
 Pass `Infinity` to disable clamping. Zero, negative and NaN values fall
 back to the default.
+
+***
+
+### restartKey?
+
+> `optional` **restartKey?**: `unknown`
+
+Any value whose change restarts the loop. When it differs from the
+previous render's value (compared with `Object.is`), the pending frame is
+cancelled and a fresh loop starts, exactly as if `isActive` had toggled:
+the first frame receives a delta of 0 and `elapsedMs` restarts. Use it
+for inputs that should begin a new clock, such as a swapped simulation
+engine. Callback closures do not need it; they are always read fresh.

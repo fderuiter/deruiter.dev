@@ -237,6 +237,49 @@ describe("useAnimationFrame", () => {
     unmount();
   });
 
+  it("restarts with a fresh clock when restartKey changes, and only then", () => {
+    const callback = vi.fn();
+    const keyA = {};
+    const { rerender, unmount } = renderLoop({
+      callback,
+      options: { restartKey: keyA },
+    });
+    scheduler.tick(0);
+    scheduler.tick(16);
+
+    // Same key on a new render: the loop and its clock carry on.
+    rerender({ callback, options: { restartKey: keyA } });
+    expect(scheduler.cancel).not.toHaveBeenCalled();
+    scheduler.tick(32);
+
+    // New key: the pending frame is cancelled and the clock restarts.
+    rerender({ callback, options: { restartKey: {} } });
+    expect(scheduler.cancel).toHaveBeenCalledTimes(1);
+    expect(scheduler.pendingCount()).toBe(1);
+    scheduler.tick(500);
+    scheduler.tick(516);
+
+    expect(callback.mock.calls).toEqual([
+      [0, 0],
+      [16, 16],
+      [16, 32],
+      [0, 0],
+      [16, 16],
+    ]);
+    unmount();
+  });
+
+  it("does not start a loop for a restartKey change while inactive", () => {
+    const callback = vi.fn();
+    const { rerender, unmount } = renderLoop({
+      callback,
+      options: { isActive: false, restartKey: 1 },
+    });
+    rerender({ callback, options: { isActive: false, restartKey: 2 } });
+    expect(scheduler.request).not.toHaveBeenCalled();
+    unmount();
+  });
+
   it("skips frames under fpsLimit and carries their time into the next delta", () => {
     const callback = vi.fn();
     const { unmount } = renderLoop({ callback, options: { fpsLimit: 30 } });

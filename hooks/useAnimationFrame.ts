@@ -52,6 +52,15 @@ export interface UseAnimationFrameOptions {
    * Omit, or pass zero, a negative number or NaN, to run on every frame.
    */
   fpsLimit?: number;
+  /**
+   * Any value whose change restarts the loop. When it differs from the
+   * previous render's value (compared with `Object.is`), the pending frame is
+   * cancelled and a fresh loop starts, exactly as if `isActive` had toggled:
+   * the first frame receives a delta of 0 and `elapsedMs` restarts. Use it
+   * for inputs that should begin a new clock, such as a swapped simulation
+   * engine. Callback closures do not need it; they are always read fresh.
+   */
+  restartKey?: unknown;
 }
 
 function resolveMaxDelta(value: number | undefined): number {
@@ -72,9 +81,9 @@ function resolveMinInterval(fpsLimit: number | undefined): number {
  * Runs a callback on every animation frame while active, with delta-time
  * clamping and cancellation handled in one place.
  *
- * The loop is keyed only on `isActive`. The callback and the other options are
- * read through refs, so passing a new closure on every render never tears the
- * loop down or resets its clock. The pending frame is cancelled synchronously
+ * The loop is keyed only on `isActive` and `restartKey`. The callback and the
+ * other options are read through refs, so passing a new closure on every
+ * render never tears the loop down or resets its clock. The pending frame is cancelled synchronously
  * when the component unmounts or `isActive` becomes false, so a callback never
  * runs against an unmounted tree. On the server, and anywhere
  * `requestAnimationFrame` is unavailable, the hook does nothing.
@@ -89,13 +98,14 @@ function resolveMinInterval(fpsLimit: number | undefined): number {
  *
  * @param callback - Invoked once per delivered frame with the clamped delta
  *   and the accumulated simulation time, both in milliseconds.
- * @param options - Activity flag, delta ceiling and optional frame-rate cap.
+ * @param options - Activity flag, delta ceiling, optional frame-rate cap and
+ *   restart key.
  */
 export function useAnimationFrame(
   callback: AnimationFrameCallback,
   options: UseAnimationFrameOptions = {}
 ): void {
-  const { isActive = true, maxDeltaMs, fpsLimit } = options;
+  const { isActive = true, maxDeltaMs, fpsLimit, restartKey } = options;
 
   const callbackRef = useRef(callback);
   const maxDeltaRef = useRef(resolveMaxDelta(maxDeltaMs));
@@ -151,5 +161,7 @@ export function useAnimationFrame(
         window.cancelAnimationFrame(frameId);
       }
     };
-  }, [isActive]);
+    // restartKey is deliberately a dependency the effect body never reads:
+    // changing it is what tears the loop down and starts a fresh one.
+  }, [isActive, restartKey]);
 }

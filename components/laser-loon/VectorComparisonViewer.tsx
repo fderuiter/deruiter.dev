@@ -112,7 +112,7 @@ export const VectorComparisonViewer: React.FC = () => {
 
       {/* Main Canvas Viewport */}
       {viewMode === "slider" && (
-        <div className="relative w-full aspect-[16/10] max-h-[500px] rounded-2xl border border-zinc-800 overflow-hidden bg-[#070b12] select-none">
+        <div className="relative w-full aspect-[16/10] max-h-[500px] rounded-2xl border border-zinc-800 overflow-hidden bg-[#070b12] select-none @container">
           {/* Base Layer: Pass 1 (Silhouette Only) */}
           <div className="absolute inset-0 w-full h-full">
             <svg viewBox="0 0 800 500" className="w-full h-full">
@@ -175,7 +175,7 @@ export const VectorComparisonViewer: React.FC = () => {
             className="absolute inset-0 w-full h-full overflow-hidden border-r-2 border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.8)]"
             style={{ width: `${sliderPos}%` }}
           >
-            <div className="absolute inset-0 w-full min-w-[800px] h-full">
+            <div className="absolute inset-0 w-[100cqw] h-full">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/files/Laser_loon.svg"

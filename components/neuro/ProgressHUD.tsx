@@ -6,6 +6,7 @@ import {
   formatBytes,
   AssetProgressEvent,
 } from "@/lib/neuro/progress-bus";
+import { clamp } from "@/lib/game-utils";
 import {
   Icon3dCubeSphere,
   IconCheck,
@@ -110,8 +111,7 @@ export const ProgressHUD: React.FC<ProgressHUDProps> = ({ className = "" }) => {
                 : "bg-brand-cyan"
           }`}
           style={{
-            // eslint-disable-next-line no-restricted-syntax -- #1119: file has open-PR/branch changes in flight; swap to clamp() after they land
-            transform: `scaleX(${Math.max(0, Math.min(1, event.percentage / 100))})`,
+            transform: `scaleX(${clamp(event.percentage / 100, 0, 1)})`,
             transformOrigin: "left",
           }}
         />

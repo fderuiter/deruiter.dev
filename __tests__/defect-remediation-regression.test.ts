@@ -1881,3 +1881,103 @@ describe("Garmin obstacles crash with their own type (#1318)", () => {
     expect(crash("stack_overflow", "STK")).toBe("Stack Overflow");
   });
 });
+
+describe("Clinical Trial Chaos phase-clear report counts the final CRF (#1609)", () => {
+  it("reports a 100% clean rate when every CRF of the phase was clean", async () => {
+    const {
+      buildInspectionReport,
+      createInitialAuditorState,
+      createInitialScoreState,
+      PHASE_TARGETS,
+      settleSubmission,
+    } = await import("@/lib/clinical-trial-chaos");
+    const clean = (id: string): ClinicalSubject => ({
+      id,
+      subjectLabel: id,
+      studySite: "Site 001",
+      observations: [
+        {
+          id: `${id}-obs`,
+          field: "Weight",
+          rawValue: "70 kg",
+          currentValue: "70 kg",
+          destination: "VS",
+          isResolved: true,
+        },
+      ],
+      status: "queued",
+      timeRemaining: 30,
+      maxTime: 60,
+      createdAt: 1,
+    });
+
+    let score = createInitialScoreState();
+    let phaseCleared = false;
+    for (let i = 0; i < PHASE_TARGETS[1]; i++) {
+      const outcome = settleSubmission(
+        score,
+        clean(`S-${i}`),
+        true,
+        "campaign",
+        1
+      );
+      score = outcome.scoreState;
+      phaseCleared = outcome.phaseCleared;
+    }
+    expect(phaseCleared).toBe(true);
+    expect(
+      buildInspectionReport(
+        score,
+        createInitialAuditorState(),
+        [],
+        [],
+        null,
+        []
+      ).cleanRate
+    ).toBe(100);
+
+    // The component grades the phase on the settled score, not on the score
+    // before the final CRF with only the submission count bumped.
+    const code = fs.readFileSync(
+      path.resolve(__dirname, "../components/ClinicalTrialChaos.tsx"),
+      "utf-8"
+    );
+    expect(code).not.toContain(
+      "subjectsSubmitted: scoreState.subjectsSubmitted + 1"
+    );
+  });
+});
+
+describe("Clinical Trial Chaos auditor resumes after a Coffee Break (#1610)", () => {
+  it("un-freezes the auditor when a wrong fix raised suspicion during the break", async () => {
+    const {
+      createInitialAuditorState,
+      createInitialPowerUpInventory,
+      createInitialScoreState,
+      raiseAuditorSuspicion,
+      spendPowerUp,
+      startCoffeeBreak,
+      tickShiftClocks,
+    } = await import("@/lib/clinical-trial-chaos");
+    const auditor = raiseAuditorSuspicion(
+      startCoffeeBreak(createInitialAuditorState()),
+      10
+    );
+    const tick = tickShiftClocks(
+      {
+        subjects: [],
+        auditor,
+        scoreState: createInitialScoreState(),
+        powerUps: spendPowerUp(
+          createInitialPowerUpInventory(),
+          "fda-coffee-break"
+        ),
+        amendment: null,
+      },
+      9
+    );
+    expect(tick.coffeeBreakEnded).toBe(true);
+    expect(tick.auditor.behavior).toBe("patrolling");
+    expect(tick.auditor.isPaused).toBe(false);
+  });
+});

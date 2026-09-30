@@ -142,11 +142,10 @@ import {
   formatCorrectionLog,
   formatRuleFailureLog,
   formatExpiryLog,
-  scoreSubmission,
+  settleSubmission,
   applySubmissionScore,
   getSubmissionCharge,
   recordStationSubmission,
-  isPhaseCleared,
   selectNextDossier,
   formatNextDossierCue,
   buildInspectionReport,
@@ -796,7 +795,11 @@ export const ClinicalTrialChaos: React.FC = () => {
         suspicionDelta,
       }: { allClean: boolean; suspicionDelta: number }
     ) => {
-      const submission = scoreSubmission(scoreState, subj, allClean, (p) =>
+      const {
+        submission,
+        scoreState: settledScore,
+        phaseCleared,
+      } = settleSubmission(scoreState, subj, allClean, gameMode, phase, (p) =>
         applyOfficeScore(p, office)
       );
       pushScorePop(submission.points);
@@ -804,11 +807,7 @@ export const ClinicalTrialChaos: React.FC = () => {
       // Persist outside the updater (AGENTS.md §4).
       safeSetRawItem(
         "clinical_chaos_highscore",
-        applySubmissionScore(
-          scoreState,
-          submission,
-          allClean
-        ).highScore.toString()
+        settledScore.highScore.toString()
       );
       setPowerUps((pu) =>
         chargePowerUps(
@@ -838,12 +837,6 @@ export const ClinicalTrialChaos: React.FC = () => {
         announce("Calibration complete. The shift is live.", "polite");
       }
 
-      const phaseCleared = isPhaseCleared(
-        gameMode,
-        phase,
-        scoreState.subjectsSubmitted
-      );
-
       // Load the most urgent remaining dossier (#834).
       const nextSubject = selectNextDossier(
         conveyorSubjects,
@@ -862,11 +855,10 @@ export const ClinicalTrialChaos: React.FC = () => {
       if (phaseCleared) {
         setPlayState("phase_cleared");
         playSuccess();
+        // Grade the phase on the tallies after this final CRF, so its clean
+        // count is included (#1609).
         const report = buildInspectionReport(
-          {
-            ...scoreState,
-            subjectsSubmitted: scoreState.subjectsSubmitted + 1,
-          },
+          settledScore,
           auditor,
           auditLogs,
           ruleViolations,

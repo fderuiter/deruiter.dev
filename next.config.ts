@@ -10,6 +10,21 @@ const withSerwist = withSerwistInit({
   reloadOnOnline: true,
 });
 
+/** Route globs (picomatch, so bracketed segments match via wildcards) for every metadata image route. */
+const OG_ROUTE_GLOBS = [
+  "/opengraph-image",
+  "/twitter-image",
+  "/**/opengraph-image",
+  "/**/twitter-image",
+] as const;
+const OG_TRACED_ASSETS = [
+  "./assets/og-fonts/**/*",
+  "./public/og/**/*",
+] as const;
+const OG_TRACING_INCLUDES: Record<string, string[]> = Object.fromEntries(
+  OG_ROUTE_GLOBS.map((route) => [route, [...OG_TRACED_ASSETS]])
+);
+
 const nextConfig: NextConfig = {
   compiler: {
     removeConsole: {
@@ -39,6 +54,10 @@ const nextConfig: NextConfig = {
     config.plugins.push(new ChunkCycleGuardPlugin());
     return config;
   },
+  // og-image.tsx reads fonts and artwork with fs.readFileSync(process.cwd()...),
+  // which the file tracer cannot follow, so the assets never reached the
+  // serverless bundle and Satori threw "No fonts are loaded" (#1674).
+  outputFileTracingIncludes: OG_TRACING_INCLUDES,
   experimental: {
     optimizePackageImports: ["@tabler/icons-react"],
   },

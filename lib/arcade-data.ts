@@ -159,7 +159,7 @@ export const ARCADE_GAMES_METADATA: ArcadeGameMetadata[] = [
     subtitle: "Clinical Study Management Simulator",
     genre: "Management Simulation",
     description:
-      "Shepherd one study from kickoff to closeout with eight attention points a day. Delegate, audit the sites behind the green dashboard, and defend your decisions when the FDA arrives.",
+      "Shepherd one study from kickoff to closeout with five attention points a day. Delegate, audit the sites behind the green dashboard, and defend your decisions when the FDA arrives.",
     mechanics: [
       "Daily Attention Budget",
       "Documentation Debt",

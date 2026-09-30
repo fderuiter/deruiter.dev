@@ -35,6 +35,7 @@ export function createInitialScoreState(): GameScoreState {
     correctionsMade: 0,
     cleanSubmissions: 0,
     auditViolations: 0,
+    expiredSubjects: 0,
   };
 }
 
@@ -65,6 +66,7 @@ export function getNextShiftScoreState(
     correctionsMade: prev.correctionsMade,
     cleanSubmissions: prev.cleanSubmissions,
     auditViolations: prev.auditViolations,
+    expiredSubjects: prev.expiredSubjects,
     highScore: Math.max(highScore, prev.score),
   };
 }
@@ -1001,13 +1003,35 @@ export function generateBIMOReport(
     });
   }
 
-  if (violations > 0 && findings.length === 0) {
+  // Expired subjects never reached a station, so they are reported as
+  // expiries, apart from CRFs a station rejected (#1670). Each finding keeps
+  // the old severity threshold, so the verdict rules below are unchanged
+  // (#899): three or more of either kind already meets the OAI threshold.
+  const expired = Math.min(violations, scoreState.expiredSubjects);
+  const misrouted = violations - expired;
+  if (misrouted > 0) {
     findings.push({
       id: "FND-001",
       category: "Data Integrity",
-      severity: violations >= 3 ? "Critical" : "Major",
-      description: `${violations} Case Report Forms submitted with unresolved raw data entries or domain mismatch.`,
+      severity: misrouted >= 3 ? "Critical" : "Major",
+      description:
+        misrouted === 1
+          ? "1 Case Report Form was rejected at an EDC station that does not match its domain."
+          : `${misrouted} Case Report Forms were rejected at EDC stations that do not match their domain.`,
       regulation: "21 CFR § 11.10(a) - System validation & record authenticity",
+    });
+  }
+  if (expired > 0) {
+    findings.push({
+      id: "FND-004",
+      category: "Data Integrity",
+      severity: expired >= 3 ? "Critical" : "Major",
+      description:
+        expired === 1
+          ? "1 subject expired on the conveyor before source data verification."
+          : `${expired} subjects expired on the conveyor before source data verification.`,
+      regulation:
+        "ICH GCP E6(R2) § 5.18.4 - Timely source data verification by the monitor",
     });
   }
 
@@ -1071,6 +1095,7 @@ export function generateBIMOReport(
     findings,
     submittedCRFs: totalSubmissions,
     cleanRate: cleanRate === null ? null : Math.round(cleanRate),
+    expiredCRFs: expired,
     summary,
   };
 }

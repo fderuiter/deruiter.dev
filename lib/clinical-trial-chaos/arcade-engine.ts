@@ -24,6 +24,7 @@ import {
   formatExpiryLog,
   formatRuleFailureLog,
   getSubmissionCharge,
+  isShiftClockHalted,
   QUERY_EXTENSION_LOG,
   raiseAuditorSuspicion,
   replaceObservation,
@@ -52,6 +53,8 @@ export interface ClinicalTrialChaosState {
   powerUps: PowerUpInventory;
   isPaused: boolean;
   isModalPaused: boolean;
+  /** The Field Manual is open, which holds the clocks still (#1672). */
+  isManualOpen: boolean;
   activeAmendment: ProtocolAmendment | null;
   ruleViolations: RecordedRuleViolation[];
   subjects: ClinicalSubject[];
@@ -89,6 +92,7 @@ export class ClinicalTrialChaosEngine extends ArcadeEngine<
       powerUps: createInitialPowerUpInventory(),
       isPaused: false,
       isModalPaused: false,
+      isManualOpen: false,
       activeAmendment: null,
       ruleViolations: [],
       subjects: [],
@@ -104,6 +108,7 @@ export class ClinicalTrialChaosEngine extends ArcadeEngine<
     this.state.powerUps = createInitialPowerUpInventory();
     this.state.isPaused = false;
     this.state.isModalPaused = false;
+    this.state.isManualOpen = false;
     this.state.activeAmendment = null;
     this.state.ruleViolations = [];
     this.state.subjects = [];
@@ -119,6 +124,11 @@ export class ClinicalTrialChaosEngine extends ArcadeEngine<
 
   public setModalPause(paused: boolean): void {
     this.state.isModalPaused = paused;
+    this.notifySubscribers();
+  }
+
+  public setManualOpen(open: boolean): void {
+    this.state.isManualOpen = open;
     this.notifySubscribers();
   }
 
@@ -280,7 +290,15 @@ export class ClinicalTrialChaosEngine extends ArcadeEngine<
   }
 
   public override update(dt: number): void {
-    if (this.state.isPaused || this.state.isModalPaused) return;
+    if (
+      isShiftClockHalted({
+        userPaused: this.state.isPaused,
+        dialogOpen: this.state.isModalPaused,
+        manualOpen: this.state.isManualOpen,
+      })
+    ) {
+      return;
+    }
 
     const tick = tickShiftClocks(
       {

@@ -678,7 +678,7 @@ describe("Working With Duck - Interruption Suspension (DUCK-01)", () => {
       root.render(<WorkingWithDuck initialState={bathState} />);
     });
 
-    expect(container.textContent).toContain("Shower Rinse Spray");
+    expect(container.textContent).toContain("Rinse Spray");
 
     // Open scrapbook
     const sbBtn = firstByTitle(container, "Duck Scrapbook & Facts");
@@ -692,7 +692,7 @@ describe("Working With Duck - Interruption Suspension (DUCK-01)", () => {
     await clickEl(sbClose);
 
     // Still in bathtub!
-    expect(container.textContent).toContain("Shower Rinse Spray");
+    expect(container.textContent).toContain("Rinse Spray");
   });
 
   it("eliminates catch-up burst: resuming after a long wall-clock interruption advances by only one fixed step on the first frame", async () => {

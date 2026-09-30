@@ -104,7 +104,7 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
       if (!hypotheses || hypotheses.length === 0) {
         return {
           success: false,
-          ramConsumed: 1,
+          ramConsumed: tacticDefs.rw.failureCost,
           message:
             "error: tactic 'rw' failed. No hypotheses available in context.",
         };
@@ -129,10 +129,10 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
       ) {
         return {
           success: false,
-          ramConsumed: 1,
+          ramConsumed: tacticDefs.rw.failureCost,
           message: `error: tactic 'rw' failed. You selected '${renderASTString(targetNode)}', which matches no side of hypothesis ${
             arg ? `[${arg}]` : "in context"
-          }. Select a sub-term equal to one side of the equality and apply rw again (a wrong target costs 1 GB).`,
+          }. Select a sub-term equal to one side of the equality and apply rw again (a wrong target costs ${tacticDefs.rw.failureCost} GB).`,
         };
       }
 
@@ -148,10 +148,10 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
       if (!replacement) {
         return {
           success: false,
-          ramConsumed: 1,
+          ramConsumed: tacticDefs.rw.failureCost,
           message: `error: tactic 'rw' failed. You selected '${renderASTString(targetNode)}', but rw [${
             (matchedHypothesis.metadata?.name as string) || "h"
-          }] rewrites a selected sub-term equal to '${renderASTString(hypLHS)}' or '${renderASTString(hypRHS)}', not a whole larger expression. Tap one of those sub-terms inside the goal and apply rw again (a wrong target costs 1 GB).`,
+          }] rewrites a selected sub-term equal to '${renderASTString(hypLHS)}' or '${renderASTString(hypRHS)}', not a whole larger expression. Tap one of those sub-terms inside the goal and apply rw again (a wrong target costs ${tacticDefs.rw.failureCost} GB).`,
         };
       }
 
@@ -186,9 +186,8 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
       if (!changed) {
         return {
           success: false,
-          ramConsumed: 1,
-          message:
-            "warning: 'simp' made no progress. 6 GB of RAM was consumed with no reduction.",
+          ramConsumed: tacticDefs.simp.failureCost,
+          message: `warning: 'simp' made no progress. ${tacticDefs.simp.failureCost} GB of RAM was consumed with no reduction.`,
         };
       }
 
@@ -198,7 +197,7 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
       return {
         success: true,
         newAST,
-        ramConsumed: 6,
+        ramConsumed: tacticDefs.simp.baseRamCost,
         leanProofStep: "simp",
         message: `tactic 'simp' succeeded: expression reduced to '${renderASTString(newAST)}'.`,
         isProofComplete: isComplete,

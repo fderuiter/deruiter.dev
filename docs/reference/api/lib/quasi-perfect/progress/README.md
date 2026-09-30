@@ -9,3 +9,4 @@
 ## Functions
 
 - [mergeLevelScore](functions/mergeLevelScore.md)
+- [resolveSavedLevelIndex](functions/resolveSavedLevelIndex.md)

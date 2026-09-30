@@ -12,7 +12,10 @@ interface TacticCardProps {
   disabled: boolean;
   onSelect: () => void;
   onDragStart?: () => void;
-  onDragEnd?: (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => void;
+  onDragEnd?: (
+    event: MouseEvent | TouchEvent | PointerEvent,
+    info: PanInfo
+  ) => void;
 }
 
 export const TacticCard: React.FC<TacticCardProps> = ({
@@ -43,16 +46,17 @@ export const TacticCard: React.FC<TacticCardProps> = ({
         disabled
           ? "border-zinc-800/60 bg-zinc-950/40 opacity-40 cursor-not-allowed"
           : isSorry
-          ? "border-rose-500/40 bg-rose-950/30 text-rose-300 hover:border-rose-500/70 hover:shadow-[0_0_15px_rgba(244,63,94,0.3)]"
-          : isSelected
-          ? "border-brand-cyan bg-cyan-950/50 text-cyan-200 shadow-[0_0_20px_rgba(6,182,212,0.4)] ring-2 ring-brand-cyan"
-          : "border-zinc-700 bg-zinc-900/80 text-zinc-100 hover:border-brand-cyan/60 hover:bg-zinc-850"
+            ? "border-rose-500/40 bg-rose-950/30 text-rose-300 hover:border-rose-500/70 hover:shadow-[0_0_15px_rgba(244,63,94,0.3)]"
+            : isSelected
+              ? "border-brand-cyan bg-cyan-950/50 text-cyan-200 shadow-[0_0_20px_rgba(6,182,212,0.4)] ring-2 ring-brand-cyan"
+              : "border-zinc-700 bg-zinc-900/80 text-zinc-100 hover:border-brand-cyan/60 hover:bg-zinc-850"
       }`}
       onClick={(e) => {
         e.stopPropagation();
         if (!disabled) onSelect();
       }}
       role="button"
+      aria-disabled={disabled || undefined}
       tabIndex={disabled ? -1 : 0}
       onKeyDown={(e) => {
         if ((e.key === "Enter" || e.key === " ") && !disabled) {
@@ -65,7 +69,11 @@ export const TacticCard: React.FC<TacticCardProps> = ({
       <div className="flex flex-wrap items-center justify-between gap-1 sm:gap-2">
         <span
           className={`text-xs sm:text-sm font-bold tracking-tight break-words min-w-0 max-w-full ${
-            isSorry ? "text-rose-400" : isSelected ? "text-brand-cyan" : "text-zinc-100"
+            isSorry
+              ? "text-rose-400"
+              : isSelected
+                ? "text-brand-cyan"
+                : "text-zinc-100"
           }`}
         >
           {displayLabel}
@@ -76,8 +84,8 @@ export const TacticCard: React.FC<TacticCardProps> = ({
             isSorry
               ? "bg-rose-500/20 text-rose-300"
               : tactic.baseRamCost >= 6
-              ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
-              : "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
+                ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                : "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
           }`}
         >
           {tactic.baseRamCost} GB

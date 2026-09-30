@@ -27,3 +27,40 @@ export function mergeLevelScore(
   if (incoming.remainingRam > existing.remainingRam) return incoming;
   return existing;
 }
+
+/**
+ * Choose the level index the puzzler opens on from saved progress.
+ *
+ * A saved integer index inside the campaign is restored. A missing index
+ * opens the first level that is not yet completed (Level 1 when none is
+ * done, or when every level is). A corrupt or out-of-range index, or
+ * progress that is not an object, opens Level 1. It never throws.
+ *
+ * @param progress - The parsed saved progress, of unknown shape.
+ * @param levels - The campaign levels in order; only `id` is read.
+ * @returns A valid index into `levels`.
+ */
+export function resolveSavedLevelIndex(
+  progress: unknown,
+  levels: ReadonlyArray<{ id: string | number }>
+): number {
+  if (!progress || typeof progress !== "object") return 0;
+  const { currentLevelIndex, completedLevels } = progress as {
+    currentLevelIndex?: unknown;
+    completedLevels?: unknown;
+  };
+  if (currentLevelIndex !== undefined) {
+    return typeof currentLevelIndex === "number" &&
+      Number.isInteger(currentLevelIndex) &&
+      currentLevelIndex >= 0 &&
+      currentLevelIndex < levels.length
+      ? currentLevelIndex
+      : 0;
+  }
+  if (!completedLevels || typeof completedLevels !== "object") return 0;
+  const done = completedLevels as Record<string, { completed?: unknown }>;
+  const firstOpen = levels.findIndex(
+    (l) => done[String(l.id)]?.completed !== true
+  );
+  return firstOpen === -1 ? 0 : firstOpen;
+}

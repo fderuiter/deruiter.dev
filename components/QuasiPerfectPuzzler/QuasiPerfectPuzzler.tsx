@@ -6,13 +6,22 @@ import React, {
   useSyncExternalStore,
   useMemo,
   useRef,
+  useEffect,
 } from "react";
 import { PanInfo } from "framer-motion";
 import { useAudio } from "@/components/providers/AudioProvider";
 import { useAnnouncer } from "@/hooks/useAnnouncer";
 import { puzzleLevels } from "@/lib/quasi-perfect/levels";
 import { tacticDefs } from "@/lib/quasi-perfect/tactics";
-import { mergeLevelScore } from "@/lib/quasi-perfect/progress";
+import {
+  mergeLevelScore,
+  resolveSavedLevelIndex,
+} from "@/lib/quasi-perfect/progress";
+import {
+  STORAGE_CHANGE_EVENT,
+  safeGetRawItem,
+  safeSetRawItem,
+} from "@/lib/safe-storage";
 import {
   STORY_RAM_MULTIPLIER,
   computeLevelStars,
@@ -65,16 +74,33 @@ const MODE_STORAGE_KEY = "quasi_perfect_puzzler_mode_v1";
 function subscribeProgress(callback: () => void) {
   if (typeof window === "undefined") return () => {};
   window.addEventListener("storage", callback);
-  return () => window.removeEventListener("storage", callback);
+  window.addEventListener(STORAGE_CHANGE_EVENT, callback);
+  return () => {
+    window.removeEventListener("storage", callback);
+    window.removeEventListener(STORAGE_CHANGE_EVENT, callback);
+  };
 }
 
 function getProgressSnapshot(): string {
   if (typeof window === "undefined") return "{}";
+  return safeGetRawItem(STORAGE_KEY) || "{}";
+}
+
+/** Saved progress, or an empty record when it is missing or corrupt. */
+function readSavedProgress(): Partial<GameProgressState> {
   try {
-    return localStorage.getItem(STORAGE_KEY) || "{}";
+    const parsed: unknown = JSON.parse(getProgressSnapshot());
+    return parsed && typeof parsed === "object"
+      ? (parsed as Partial<GameProgressState>)
+      : {};
   } catch {
-    return "{}";
+    return {};
   }
+}
+
+function writeSavedProgress(next: GameProgressState): void {
+  if (typeof window === "undefined") return;
+  safeSetRawItem(STORAGE_KEY, JSON.stringify(next));
 }
 
 function getProgressServerSnapshot(): string {
@@ -178,26 +204,26 @@ export const QuasiPerfectPuzzler: React.FC = () => {
   }, [rawProgress]);
 
   const saveProgress = useCallback((score: LevelScore) => {
-    if (typeof window === "undefined") return;
-    try {
-      const existing: GameProgressState = JSON.parse(
-        localStorage.getItem(STORAGE_KEY) || "{}"
-      );
-      const updated: GameProgressState = {
-        currentLevelIndex: existing.currentLevelIndex || 0,
-        completedLevels: {
-          ...(existing.completedLevels || {}),
-          [score.levelId]: mergeLevelScore(
-            existing.completedLevels?.[score.levelId],
-            score
-          ),
-        },
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-      window.dispatchEvent(new Event("storage"));
-    } catch {
-      // Storage unavailable
-    }
+    const existing = readSavedProgress();
+    writeSavedProgress({
+      currentLevelIndex: existing.currentLevelIndex ?? 0,
+      completedLevels: {
+        ...(existing.completedLevels || {}),
+        [score.levelId]: mergeLevelScore(
+          existing.completedLevels?.[score.levelId],
+          score
+        ),
+      },
+    });
+  }, []);
+
+  const saveCurrentLevelIndex = useCallback((index: number) => {
+    const existing = readSavedProgress();
+    if (existing.currentLevelIndex === index) return;
+    writeSavedProgress({
+      completedLevels: existing.completedLevels || {},
+      currentLevelIndex: index,
+    });
   }, []);
 
   const addLog = useCallback(
@@ -218,6 +244,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
       const targetLvl = puzzleLevels[index] || puzzleLevels[0];
       const activeMode = modeOverride ?? gameMode;
       setCurrentLevelIndex(index);
+      saveCurrentLevelIndex(index);
       setPendingMode(null);
       setSubgoals([
         {
@@ -255,8 +282,20 @@ export const QuasiPerfectPuzzler: React.FC = () => {
         "assertive"
       );
     },
-    [gameMode, announce]
+    [gameMode, announce, saveCurrentLevelIndex]
   );
+
+  // Reopen on the saved level once after mount (storage is client-only, so
+  // the first render always matches the server's Level 1).
+  const restoredLevelRef = useRef(false);
+  useEffect(() => {
+    if (restoredLevelRef.current) return;
+    restoredLevelRef.current = true;
+    const index = resolveSavedLevelIndex(readSavedProgress(), puzzleLevels);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (index !== 0) loadLevel(index);
+    else saveCurrentLevelIndex(0);
+  }, [loadLevel, saveCurrentLevelIndex]);
 
   const persistMode = useCallback((mode: GameMode) => {
     if (typeof window === "undefined") return;
@@ -313,7 +352,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
     typeof armedTacticItem === "string" ? armedTacticItem : armedTacticItem?.id;
   const targetingHint =
     armedTacticId === "rw"
-      ? "rw rewrites a sub-term that matches one side of its hypothesis, never the whole equality. Tap that sub-term; a wrong tap costs 1 GB."
+      ? `rw rewrites a sub-term that matches one side of its hypothesis, never the whole equality. Tap that sub-term; a wrong tap costs ${tacticDefs.rw.failureCost} GB.`
       : undefined;
 
   // Execute a tactic on a given target AST node
@@ -333,9 +372,12 @@ export const QuasiPerfectPuzzler: React.FC = () => {
       if (!tactic) return;
 
       // Check RAM availability
-      if (currentRam < tactic.baseRamCost && tactic.id !== "sorry") {
+      // At 0 GB the session has stopped for every tactic, sorry included.
+      if (currentRam <= 0 || currentRam < tactic.baseRamCost) {
         addLog(
-          `FATAL ERROR: Insufficient RAM for tactic '${tactic.name}'. Required: ${tactic.baseRamCost} GB, Available: ${currentRam.toFixed(1)} GB.`,
+          currentRam <= 0
+            ? `FATAL ERROR: Simulated RAM exhausted; '${tactic.name}' cannot run until the level is reset.`
+            : `FATAL ERROR: Insufficient RAM for tactic '${tactic.name}'. Required: ${tactic.baseRamCost} GB, Available: ${currentRam.toFixed(1)} GB.`,
           "error"
         );
         playNote(130.81, 0.2); // Error buzz

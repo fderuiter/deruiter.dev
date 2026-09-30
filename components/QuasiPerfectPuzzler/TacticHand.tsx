@@ -35,6 +35,21 @@ export const TacticHand: React.FC<TacticHandProps> = ({
   onCardDragEnd,
   isProofComplete = false,
 }) => {
+  // At 0 GB the simulated tactic session has stopped: no card is playable,
+  // sorry included, until the level is reset.
+  const isPlayable = (item: TacticId | HandItem): boolean => {
+    const tacticId = typeof item === "string" ? item : item.id;
+    const tactic: TacticDef = tacticDefs[tacticId] || tacticDefs.rfl;
+    return (
+      !isProofComplete && currentRam > 0 && currentRam >= tactic.baseRamCost
+    );
+  };
+  const playableCount = availableTactics.filter(isPlayable).length;
+  const counterText =
+    playableCount === availableTactics.length
+      ? `${availableTactics.length} cards available`
+      : `${availableTactics.length} cards, ${playableCount} playable`;
+
   return (
     <div className="w-full">
       <div className="flex items-center justify-between mb-2">
@@ -42,7 +57,7 @@ export const TacticHand: React.FC<TacticHandProps> = ({
           Tactic Hand (Available Cards)
         </span>
         <span className="text-[10px] text-zinc-400 font-mono">
-          {availableTactics.length} cards available
+          {counterText}
         </span>
       </div>
 
@@ -55,9 +70,7 @@ export const TacticHand: React.FC<TacticHandProps> = ({
             typeof item === "object" ? item.labelOverride : undefined;
           const tactic: TacticDef = tacticDefs[tacticId] || tacticDefs.rfl;
 
-          const isAffordable =
-            currentRam >= tactic.baseRamCost || tactic.id === "sorry";
-          const isDisabled = isProofComplete || !isAffordable;
+          const isDisabled = !isPlayable(item);
 
           return (
             <TacticCard

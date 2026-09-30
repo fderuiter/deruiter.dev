@@ -188,6 +188,12 @@ Re-exports [resolveHypothesis](tactics/functions/resolveHypothesis.md)
 
 ***
 
+### resolveSavedLevelIndex
+
+Re-exports [resolveSavedLevelIndex](progress/functions/resolveSavedLevelIndex.md)
+
+***
+
 ### simplifyNode
 
 Re-exports [simplifyNode](engine/functions/simplifyNode.md)

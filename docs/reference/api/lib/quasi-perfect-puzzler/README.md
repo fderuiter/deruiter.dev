@@ -202,6 +202,12 @@ Re-exports [resolveHypothesis](../quasi-perfect/tactics/functions/resolveHypothe
 
 ***
 
+### resolveSavedLevelIndex
+
+Re-exports [resolveSavedLevelIndex](../quasi-perfect/progress/functions/resolveSavedLevelIndex.md)
+
+***
+
 ### simplifyNode
 
 Re-exports [simplifyNode](../quasi-perfect/engine/functions/simplifyNode.md)

@@ -4,11 +4,8 @@ import {
   resolveTracesSampleRate,
   SENTRY_DATA_COLLECTION,
 } from "./sentry-policy";
-/**
- * Utility for lazy Sentry loading and conditional initialization on client side.
- */
-
 import { getEnv } from "./env";
+import { logger } from "@/lib/logger";
 
 export const isDummyOrMissingDsn = (dsn?: string): boolean => {
   if (!dsn || !dsn.trim()) return true;
@@ -87,6 +84,6 @@ export async function reportClientError(error: unknown): Promise<void> {
       }
     }
   } catch (err) {
-    console.warn("Failed to dynamically load error telemetry SDK:", err);
+    logger.warn("Failed to dynamically load error telemetry SDK:", err);
   }
 }

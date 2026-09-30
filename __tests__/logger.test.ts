@@ -30,7 +30,7 @@ describe("StructuredLogger", () => {
     expect(logger).toBeInstanceOf(StructuredLogger);
   });
 
-  it("logs info messages with structured metadata to console and Sentry breadcrumbs", () => {
+  it("logs info messages with structured metadata to console and Sentry breadcrumbs", async () => {
     const testLogger = new StructuredLogger();
     const entry = testLogger.info("System initialized", { module: "auth" });
 
@@ -40,6 +40,7 @@ describe("StructuredLogger", () => {
     expect(consoleInfoSpy).toHaveBeenCalledWith("System initialized", {
       module: "auth",
     });
+    await new Promise((r) => setTimeout(r, 10));
     expect(Sentry.addBreadcrumb).toHaveBeenCalledWith({
       category: "logger",
       message: "System initialized",
@@ -59,7 +60,7 @@ describe("StructuredLogger", () => {
     });
   });
 
-  it("logs warning messages with errors or metadata", () => {
+  it("logs warning messages with errors or metadata", async () => {
     const testLogger = new StructuredLogger();
     const testErr = new Error("Quota near limit");
     const entry = testLogger.warn("Rate limit approaching", testErr, {
@@ -69,13 +70,14 @@ describe("StructuredLogger", () => {
     expect(entry.level).toBe("warn");
     expect(entry.message).toBe("Rate limit approaching");
     expect(consoleWarnSpy).toHaveBeenCalled();
+    await new Promise((r) => setTimeout(r, 0));
     expect(Sentry.captureException).toHaveBeenCalledWith(testErr, {
       level: "warning",
       extra: { message: "Rate limit approaching", threshold: 90 },
     });
   });
 
-  it("logs error messages and captures exception in Sentry", () => {
+  it("logs error messages and captures exception in Sentry", async () => {
     const testLogger = new StructuredLogger();
     const testErr = new Error("Database connection failed");
     const entry = testLogger.error("Failed DB write", testErr, {
@@ -85,15 +87,17 @@ describe("StructuredLogger", () => {
     expect(entry.level).toBe("error");
     expect(entry.message).toBe("Failed DB write");
     expect(consoleErrorSpy).toHaveBeenCalled();
+    await new Promise((r) => setTimeout(r, 0));
     expect(Sentry.captureException).toHaveBeenCalledWith(expect.any(Error), {
       extra: { message: "Failed DB write", route: "/api/contact" },
     });
   });
 
-  it("captures Sentry message when error method is called without an Error instance", () => {
+  it("captures Sentry message when error method is called without an Error instance", async () => {
     const testLogger = new StructuredLogger();
     testLogger.error("Unhandled state");
 
+    await new Promise((r) => setTimeout(r, 0));
     expect(Sentry.captureMessage).toHaveBeenCalledWith("Unhandled state", {
       level: "error",
       extra: undefined,
@@ -115,7 +119,7 @@ describe("StructuredLogger", () => {
     expect(consoleErrorSpy).toHaveBeenCalled();
   });
 
-  it("preserves actionable stack trace for Sentry in production while sanitizing console output", () => {
+  it("preserves actionable stack trace for Sentry in production while sanitizing console output", async () => {
     vi.stubEnv("NODE_ENV", "production");
 
     try {
@@ -128,6 +132,7 @@ describe("StructuredLogger", () => {
 
       testLogger.error("Production DB failure", prodError);
 
+      await new Promise((r) => setTimeout(r, 0));
       // Sentry must receive the original error with intact stack trace
       expect(Sentry.captureException).toHaveBeenCalledWith(prodError, {
         extra: { message: "Production DB failure" },
@@ -153,7 +158,7 @@ describe("StructuredLogger", () => {
   });
 
   describe("metadata sanitization (#1475)", () => {
-    it("scrubs paths from metadata that warn() receives as its second argument", () => {
+    it("scrubs paths from metadata that warn() receives as its second argument", async () => {
       const testLogger = new StructuredLogger();
       const meta = { file: "/var/task/lib/db.ts", attempt: 2 };
 
@@ -164,6 +169,7 @@ describe("StructuredLogger", () => {
         file: "[scrubbed]",
         attempt: 2,
       });
+      await new Promise((r) => setTimeout(r, 0));
       expect(Sentry.addBreadcrumb).toHaveBeenCalledWith(
         expect.objectContaining({ data: { file: "[scrubbed]", attempt: 2 } })
       );
@@ -186,7 +192,7 @@ describe("StructuredLogger", () => {
       });
     });
 
-    it("sanitizes errors nested in metadata in production", () => {
+    it("sanitizes errors nested in metadata in production", async () => {
       vi.stubEnv("NODE_ENV", "production");
       try {
         const testLogger = new StructuredLogger();
@@ -197,6 +203,7 @@ describe("StructuredLogger", () => {
         const logged = (entry.meta as { cause: Error }).cause;
         expect(logged).not.toBe(cause);
         expect(logged.message).toBe("failed at [scrubbed]");
+        await new Promise((r) => setTimeout(r, 0));
         expect(Sentry.captureMessage).toHaveBeenCalledWith("Wrapped", {
           level: "error",
           extra: { cause: logged },

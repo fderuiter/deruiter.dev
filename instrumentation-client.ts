@@ -1,11 +1,12 @@
 import { initClientSentry } from "@/lib/client-sentry";
+import { logger } from "@/lib/logger";
 
 export { initClientSentry };
 
 export const clientSentryPromise =
   typeof window !== "undefined"
     ? initClientSentry().catch((err) => {
-        console.warn("Failed to initialize client Sentry:", err);
+        logger.warn("Failed to initialize client Sentry:", err);
       })
     : Promise.resolve(null);
 
@@ -20,6 +21,9 @@ export async function onRouterTransitionStart(
     const Sentry = await import("@sentry/nextjs");
     Sentry.captureRouterTransitionStart(url, navigationType);
   } catch (err) {
-    console.warn("Failed to capture Sentry router transition:", err);
+    logger.warn("Failed to capture Sentry router transition:", err, {
+      url,
+      navigationType,
+    });
   }
 }

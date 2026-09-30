@@ -29,6 +29,7 @@ import { applyCanvasScale } from "@/lib/arcade";
 import { useAnnouncer } from "@/hooks/useAnnouncer";
 import { useGarminService } from "@/hooks/useGarminService";
 import { triggerHaptic } from "@/lib/haptics";
+import { safeGetRawItem, safeSetRawItem } from "@/lib/safe-storage";
 import { BezelClusterDock } from "@/components/arcade/ControlDocks";
 import { useCabinetSetup } from "@/components/arcade/CabinetSetupContext";
 import { usePrefersReducedMotion } from "@/hooks/useMediaQuery";
@@ -98,13 +99,11 @@ const subscribeHighScore = (callback: () => void) => {
   window.addEventListener("storage", callback);
   return () => window.removeEventListener("storage", callback);
 };
-const getHighScoreSnapshot = () => {
-  try {
-    return localStorage.getItem("garmin_simulator_high_score") || "0";
-  } catch {
-    return "0";
-  }
-};
+const HIGH_SCORE_KEY = "garmin_simulator_high_score";
+// The high score is stored as a bare numeric string, so it is read and
+// written raw; the safe-storage helpers already guard missing or throwing
+// storage, and a failed write is dropped rather than kept in memory.
+const getHighScoreSnapshot = () => safeGetRawItem(HIGH_SCORE_KEY) || "0";
 const getHighScoreServerSnapshot = () => "0";
 
 interface GarminWatchSimulatorProps {
@@ -757,17 +756,10 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
         const runEnded = nextState.gameState !== "playing";
         if (runEnded || frameCountRef.current % 60 === 0) {
           const storedBest = parseInt(getHighScoreSnapshot(), 10) || 0;
-          if (
-            nextState.highScore > storedBest &&
-            typeof window !== "undefined" &&
-            typeof window.localStorage?.setItem === "function"
-          ) {
-            try {
-              localStorage.setItem(
-                "garmin_simulator_high_score",
-                nextState.highScore.toString()
-              );
-            } catch {}
+          if (nextState.highScore > storedBest) {
+            safeSetRawItem(HIGH_SCORE_KEY, nextState.highScore.toString(), {
+              retainInMemory: false,
+            });
           }
         }
       }

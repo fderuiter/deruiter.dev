@@ -12,6 +12,7 @@
 
 ## Interfaces
 
+- [RawWriteOptions](interfaces/RawWriteOptions.md)
 - [StorageEnvelope](interfaces/StorageEnvelope.md)
 - [StorageOptions](interfaces/StorageOptions.md)
 

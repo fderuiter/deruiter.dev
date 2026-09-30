@@ -8,6 +8,12 @@ import {
   type RunLog,
   type RunPlan,
 } from "@/lib/trial-and-error";
+import {
+  safeGetRawItem,
+  safeIsAvailable,
+  safeRemoveItem,
+  safeSetRawItem,
+} from "@/lib/safe-storage";
 
 /**
  * Browser storage for a resumable run (#1079). The pure core builds and
@@ -22,17 +28,7 @@ const SAVE_CHANGE_EVENT = "te:run-save-change";
 const keyFor = (actId: string) => `${SAVE_KEY_PREFIX}${actId}`;
 
 function readSave(actId: string): string | null {
-  try {
-    if (
-      typeof window === "undefined" ||
-      typeof window.localStorage?.getItem !== "function"
-    ) {
-      return null;
-    }
-    return window.localStorage.getItem(keyFor(actId));
-  } catch {
-    return null;
-  }
+  return safeGetRawItem(keyFor(actId));
 }
 
 function notify(): void {
@@ -48,10 +44,16 @@ function notify(): void {
  * clears the save instead, so a stale save is never left behind.
  */
 export function writeRunSave(log: RunLog, now: Date = new Date()): void {
+  if (!safeIsAvailable()) return;
+  let saved = false;
   try {
-    if (typeof window.localStorage?.setItem !== "function") return;
-    window.localStorage.setItem(keyFor(log.actId), serializeRun(log, now));
+    saved = safeSetRawItem(keyFor(log.actId), serializeRun(log, now), {
+      retainInMemory: false,
+    });
   } catch {
+    // serializeRun refused the log.
+  }
+  if (!saved) {
     clearRunSave(log.actId);
     return;
   }
@@ -60,12 +62,9 @@ export function writeRunSave(log: RunLog, now: Date = new Date()): void {
 
 /** Removes an act's saved run, if any. */
 export function clearRunSave(actId: string): void {
-  try {
-    if (typeof window.localStorage?.removeItem !== "function") return;
-    window.localStorage.removeItem(keyFor(actId));
-  } catch {
-    // Storage unavailable: nothing to clear.
-  }
+  if (!safeIsAvailable()) return;
+  // safeRemoveItem swallows storage errors, so there is nothing to catch.
+  safeRemoveItem(keyFor(actId));
   notify();
 }
 

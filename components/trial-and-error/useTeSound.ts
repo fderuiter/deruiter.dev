@@ -11,6 +11,7 @@ import {
   TeMusicLoop,
   type TeCue,
 } from "@/components/trial-and-error/teAudio";
+import { safeGetRawItem, safeSetRawItem } from "@/lib/safe-storage";
 
 /** Cabinet-level audio switches, persisted per viewer. */
 interface TeAudioSettings {
@@ -37,20 +38,10 @@ const SETTINGS_EVENT = "te:audio-change";
 const DEFAULT_SETTINGS = "sfx=1;music=0";
 
 function readSettingsRaw(): string {
-  try {
-    if (
-      typeof window === "undefined" ||
-      typeof window.localStorage?.getItem !== "function"
-    ) {
-      return DEFAULT_SETTINGS;
-    }
-    const stored = window.localStorage.getItem(SETTINGS_KEY);
-    return stored && /^sfx=[01];music=[01]$/.test(stored)
-      ? stored
-      : DEFAULT_SETTINGS;
-  } catch {
-    return DEFAULT_SETTINGS;
-  }
+  const stored = safeGetRawItem(SETTINGS_KEY);
+  return stored && /^sfx=[01];music=[01]$/.test(stored)
+    ? stored
+    : DEFAULT_SETTINGS;
 }
 
 function parseSettings(raw: string): TeAudioSettings {
@@ -58,16 +49,13 @@ function parseSettings(raw: string): TeAudioSettings {
 }
 
 function writeSettings(settings: TeAudioSettings): void {
-  try {
-    if (typeof window.localStorage?.setItem === "function") {
-      window.localStorage.setItem(
-        SETTINGS_KEY,
-        `sfx=${settings.sfx ? 1 : 0};music=${settings.music ? 1 : 0}`
-      );
-    }
-  } catch {
-    // Storage unavailable: the choice lasts for this page only.
-  }
+  // Storage unavailable: the write is dropped and reads fall back to the
+  // defaults, exactly as a failed localStorage call did.
+  safeSetRawItem(
+    SETTINGS_KEY,
+    `sfx=${settings.sfx ? 1 : 0};music=${settings.music ? 1 : 0}`,
+    { retainInMemory: false }
+  );
   window.dispatchEvent(new Event(SETTINGS_EVENT));
 }
 

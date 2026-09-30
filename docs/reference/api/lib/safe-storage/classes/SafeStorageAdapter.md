@@ -249,13 +249,15 @@ Handles QuotaExceededError by triggering LRU metadata eviction.
 
 ### setRawItem()
 
-> **setRawItem**(`key`, `raw`): `boolean`
+> **setRawItem**(`key`, `raw`, `options?`): `boolean`
 
 Writes a raw string to storage exactly as given, without the metadata
 envelope that `setItem` adds. Use it only for keys whose stored format
 predates the envelope and must stay byte-identical so existing visitors
 keep their settings. `getItem` reads such values back unchanged. Storage
-failures fall back to the in-memory cache instead of throwing.
+failures fall back to the in-memory cache instead of throwing, unless
+`options.retainInMemory` is false: the key is then never held in memory,
+so a failed write is dropped and reads see only localStorage.
 
 #### Parameters
 
@@ -271,8 +273,14 @@ The storage key to write
 
 The exact string to store
 
+##### options?
+
+[`RawWriteOptions`](../interfaces/RawWriteOptions.md)
+
+Whether the value is kept in memory (default true)
+
 #### Returns
 
 `boolean`
 
-true when the value reached localStorage, false when it is held in memory only
+true when the value reached localStorage, false when it did not

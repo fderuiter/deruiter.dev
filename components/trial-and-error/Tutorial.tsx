@@ -9,6 +9,7 @@ import React, {
 } from "react";
 import { CardTable } from "@/components/trial-and-error/CardTable";
 import { useAnnouncer } from "@/hooks/useAnnouncer";
+import { safeGetRawItem, safeSetRawItem } from "@/lib/safe-storage";
 import {
   GUIDED_BLIND_SCENARIO,
   TUTORIAL_STEPS,
@@ -50,22 +51,13 @@ function TutorialButton({
 }
 
 function readSeen(): boolean {
-  try {
-    if (typeof window.localStorage?.getItem !== "function") return false;
-    return window.localStorage.getItem(TUTORIAL_SEEN_KEY) === "1";
-  } catch {
-    return false;
-  }
+  return safeGetRawItem(TUTORIAL_SEEN_KEY) === "1";
 }
 
 function writeSeen() {
-  try {
-    if (typeof window.localStorage?.setItem === "function") {
-      window.localStorage.setItem(TUTORIAL_SEEN_KEY, "1");
-    }
-  } catch {
-    // Storage is unavailable: the offer simply returns next visit.
-  }
+  // Storage is unavailable: the write is dropped and the offer simply
+  // returns next visit.
+  safeSetRawItem(TUTORIAL_SEEN_KEY, "1", { retainInMemory: false });
   window.dispatchEvent(new Event(SEEN_EVENT));
 }
 

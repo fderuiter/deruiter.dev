@@ -90,6 +90,11 @@ export interface FlashVariable {
 
 export const FLASH_STORAGE_KEY = "garmin_simulator_flash_storage";
 
+// This module is also bundled on its own into public/garmin-engine.js
+// (scripts/build-standalone-engine.ts), so it guards localStorage directly
+// instead of importing lib/safe-storage, whose logger pulls in Sentry and
+// Next.js server code that a browser IIFE bundle cannot resolve.
+
 /**
  * Reads persisted flash. Returns null when nothing was ever saved (first
  * boot) and an array, possibly empty, once the player has written or

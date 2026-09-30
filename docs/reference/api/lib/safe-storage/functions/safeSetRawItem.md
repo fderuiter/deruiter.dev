@@ -6,7 +6,7 @@
 
 # Function: safeSetRawItem()
 
-> **safeSetRawItem**(`key`, `raw`): `boolean`
+> **safeSetRawItem**(`key`, `raw`, `options?`): `boolean`
 
 ## Parameters
 
@@ -17,6 +17,10 @@
 ### raw
 
 `string`
+
+### options?
+
+[`RawWriteOptions`](../interfaces/RawWriteOptions.md)
 
 ## Returns
 

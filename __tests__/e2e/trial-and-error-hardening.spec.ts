@@ -164,10 +164,6 @@ test.describe("Trial & Error presentation hardening (#925, #1591)", () => {
     test("runs no animations anywhere in the document on a first visit at 375px", async ({
       page,
     }) => {
-      test.fail(
-        true,
-        "Known defect #1596: infinite Tailwind loops keep running at rest. In the cabinet: the PlayCabinet status LEDs (animate-pulse) and the Field Manual's unseen-guide badge (animate-ping). Outside it: the Navbar and Footer status dots (animate-ping, animate-pulse). Remove this annotation once they stop."
-      );
       await page.setViewportSize({ width: 375, height: 800 });
       await page.emulateMedia({ reducedMotion: "no-preference" });
       await launch(page);

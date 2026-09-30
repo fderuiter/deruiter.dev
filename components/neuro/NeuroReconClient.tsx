@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useClipboard } from "@/hooks/useClipboard";
 import { useToast } from "@/hooks/useToast";
 import {
@@ -117,31 +117,73 @@ import {
   IconAlertCircle,
 } from "@tabler/icons-react";
 
+type NeuroViewMode = "split" | "3d" | "2d";
+
+const HASH_SCENARIOS: readonly string[] = [
+  "dura_inclusion",
+  "wm_hypointensity",
+  "skull_strip_erosion",
+  "sandbox",
+];
+const HASH_TOOLS: readonly string[] = [
+  "inspect",
+  "control_point",
+  "paint",
+  "erase",
+];
+const HASH_VIEWS: readonly string[] = ["split", "3d", "2d"];
+const HASH_DATASETS: readonly string[] = ["case_study", "mni152", "oasis"];
+
+/** The case a `scenario` hash value opens, or the default case when it names none. */
+function scenarioFromHash(raw: string | undefined): ScenarioId {
+  return raw && HASH_SCENARIOS.includes(raw)
+    ? (raw as ScenarioId)
+    : "dura_inclusion";
+}
+
+/** The layout a `view` hash value selects; unknown values fall back to split. */
+function viewModeFromHash(raw: string | undefined): NeuroViewMode {
+  return raw && HASH_VIEWS.includes(raw) ? (raw as NeuroViewMode) : "split";
+}
+
+/**
+ * The dataset a `dataset` hash value selects. A share link pairing a
+ * real-scan dataset with a synthetic case is invalid and falls back to the
+ * case study, as does an unknown value.
+ */
+function datasetFromHash(
+  rawDataset: string | undefined,
+  rawScenario: string | undefined
+): DatasetSource {
+  const dataset = rawDataset || "case_study";
+  const scenario = (rawScenario || "dura_inclusion") as ScenarioId;
+  return HASH_DATASETS.includes(dataset) &&
+    isNeuroSelectionValid(dataset as DatasetSource, scenario)
+    ? (dataset as DatasetSource)
+    : "case_study";
+}
+
+/** The tool a `tool` hash value selects, or the case's recommended tool. */
+function toolModeFromHash(
+  raw: string | undefined,
+  recommendedTool: ToolMode
+): ToolMode {
+  return raw && HASH_TOOLS.includes(raw) ? (raw as ToolMode) : recommendedTool;
+}
+
 export const NeuroReconClient: React.FC = () => {
   const { playNote, playSuccess } = useAudio();
   const { recordEvent } = useTelemetry();
   const { params, setParam, setParams } = useStudioHashParams();
   const toast = useToast();
 
-  const [activeScenarioId, setActiveScenarioId] = useState<ScenarioId>(() => {
-    if (typeof window !== "undefined") {
-      const rawSc = new URLSearchParams(window.location.hash.slice(1)).get(
-        "scenario"
-      ) as ScenarioId;
-      if (
-        rawSc &&
-        [
-          "dura_inclusion",
-          "wm_hypointensity",
-          "skull_strip_erosion",
-          "sandbox",
-        ].includes(rawSc)
-      ) {
-        return rawSc;
-      }
-    }
-    return "dura_inclusion";
-  });
+  // The loaded case stays in state because switching it parks drafts and
+  // recomputes the volume asynchronously. It starts from the hash snapshot,
+  // which is empty during SSR and hydration, and the sync effect below
+  // follows later hash changes.
+  const [activeScenarioId, setActiveScenarioId] = useState<ScenarioId>(() =>
+    scenarioFromHash(params.scenario)
+  );
 
   const [scenarios, setScenarios] = useState<
     Record<ScenarioId, ScenarioConfig>
@@ -194,20 +236,18 @@ export const NeuroReconClient: React.FC = () => {
     y: 58,
     z: 28,
   });
-  const [toolMode, setToolModeState] = useState<ToolMode>(() => {
-    if (typeof window !== "undefined") {
-      const rawTool = new URLSearchParams(window.location.hash.slice(1)).get(
-        "tool"
-      ) as ToolMode;
-      if (
-        rawTool &&
-        ["inspect", "control_point", "paint", "erase"].includes(rawTool)
-      ) {
-        return rawTool;
-      }
-    }
-    return "inspect";
-  });
+  // View, dataset and tool are derived from the hash rather than mirrored
+  // into state, so deep links, in-app changes and Back/Forward all flow
+  // through useStudioHashParams, and the server snapshot keeps the first
+  // client render identical to the SSR markup.
+  const toolMode = useMemo(
+    () =>
+      toolModeFromHash(
+        params.tool,
+        currentScenario?.recommendedTool || "inspect"
+      ),
+    [params.tool, currentScenario]
+  );
 
   useEffect(() => {
     if (currentScenario) {
@@ -224,28 +264,11 @@ export const NeuroReconClient: React.FC = () => {
   const [surfaceMode, setSurfaceMode] = useState<SurfaceMode>("pial");
   const [showPialContour, setShowPialContour] = useState(true);
   const [showWmContour, setShowWmContour] = useState(true);
-  const [viewMode, setViewModeState] = useState<"split" | "3d" | "2d">(() => {
-    if (typeof window !== "undefined") {
-      const rawView = new URLSearchParams(window.location.hash.slice(1)).get(
-        "view"
-      ) as "split" | "3d" | "2d";
-      if (rawView && ["split", "3d", "2d"].includes(rawView)) {
-        return rawView;
-      }
-    }
-    return "split";
-  });
-  const [activeDataset, setActiveDatasetState] = useState<DatasetSource>(() => {
-    if (typeof window !== "undefined") {
-      const rawDs = new URLSearchParams(window.location.hash.slice(1)).get(
-        "dataset"
-      ) as DatasetSource;
-      if (rawDs && ["case_study", "mni152", "oasis"].includes(rawDs)) {
-        return rawDs;
-      }
-    }
-    return "case_study";
-  });
+  const viewMode = useMemo(() => viewModeFromHash(params.view), [params.view]);
+  const activeDataset = useMemo(
+    () => datasetFromHash(params.dataset, params.scenario),
+    [params.dataset, params.scenario]
+  );
 
   const [controlPoints, setControlPoints] = useState<ControlPoint[]>([]);
   const [voxelEdits, setVoxelEdits] = useState<VoxelEdit[]>([]);
@@ -336,7 +359,6 @@ export const NeuroReconClient: React.FC = () => {
         : null;
       if (newConfig) {
         setCrosshair(newConfig.targetCoords);
-        setToolModeState(newConfig.recommendedTool);
       }
       setControlPoints(restored ? restored.controlPoints : []);
       setVoxelEdits(restored ? restored.voxelEdits : []);
@@ -371,7 +393,6 @@ export const NeuroReconClient: React.FC = () => {
 
       // Defect cases are synthetic: leave a real-scan dataset when one is picked.
       const leaveDataset = !isNeuroSelectionValid(activeDataset, scenarioId);
-      if (leaveDataset) setActiveDatasetState("case_study");
 
       setParams(
         {
@@ -387,7 +408,8 @@ export const NeuroReconClient: React.FC = () => {
     [applyScenarioState, setParams, recordEvent, activeDataset]
   );
 
-  // Synchronize incoming hash state on mount or browser Back/Forward navigation
+  // Load the hash's case on mount, after hydration, and on browser
+  // Back/Forward navigation.
   useEffect(() => {
     const rawSc =
       (params.scenario as ScenarioId | undefined) || "dura_inclusion";
@@ -395,52 +417,13 @@ export const NeuroReconClient: React.FC = () => {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       applyScenarioState(rawSc);
     }
-    const rawView =
-      (params.view as "split" | "3d" | "2d" | undefined) || "split";
-    if (["split", "3d", "2d"].includes(rawView) && rawView !== viewMode) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setViewModeState(rawView);
-    }
-    const rawDs = (params.dataset as DatasetSource | undefined) || "case_study";
-    // A share link pairing a real-scan dataset with a synthetic case is invalid.
-    const effectiveDs =
-      ["case_study", "mni152", "oasis"].includes(rawDs) &&
-      isNeuroSelectionValid(rawDs, rawSc)
-        ? rawDs
-        : "case_study";
-    if (effectiveDs !== activeDataset) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setActiveDatasetState(effectiveDs);
-    }
-    const rawTool = params.tool as ToolMode | undefined;
-    const recommendedTool = currentScenario?.recommendedTool || "inspect";
-    const targetTool =
-      rawTool &&
-      ["inspect", "control_point", "paint", "erase"].includes(rawTool)
-        ? rawTool
-        : recommendedTool;
-    if (targetTool !== toolMode) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setToolModeState(targetTool);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    params,
-    activeScenarioId,
-    viewMode,
-    activeDataset,
-    toolMode,
-    currentScenario,
-    applyScenarioState,
-  ]);
+  }, [params.scenario, scenarios, activeScenarioId, applyScenarioState]);
 
-  const setViewMode = (mode: "split" | "3d" | "2d") => {
-    setViewModeState(mode);
+  const setViewMode = (mode: NeuroViewMode) => {
     setParam("view", mode === "split" ? null : mode, { replace: true });
   };
 
   const setActiveDataset = (dataset: DatasetSource) => {
-    setActiveDatasetState(dataset);
     setParam("dataset", dataset === "case_study" ? null : dataset, {
       replace: true,
     });
@@ -448,7 +431,6 @@ export const NeuroReconClient: React.FC = () => {
 
   const setToolMode = useCallback(
     (tool: ToolMode) => {
-      setToolModeState(tool);
       setParam(
         "tool",
         tool === (currentScenario?.recommendedTool || "inspect") ? null : tool,

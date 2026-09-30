@@ -103,6 +103,7 @@ function passingDependencies(): DriftCheckDependencies {
     checkMarkdownLinks: () => ({ status: "pass", details: [] }),
     checkPublicRoutes: () => ({ status: "pass", details: [] }),
     checkTechnicalGuides: () => ({ status: "pass", details: [] }),
+    checkLlmsManifests: () => ({ status: "pass", details: [] }),
   };
 }
 

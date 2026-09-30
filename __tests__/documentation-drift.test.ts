@@ -3,6 +3,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { checkDocumentationDrift } from "../scripts/documentation-drift";
+import { checkLlmsManifestsDrift } from "../lib/dx/doctor";
+import { buildLlmsManifests } from "../scripts/generate-llms-txt";
 import {
   checkDrift,
   formatDriftRemedy,
@@ -29,6 +31,7 @@ function passingDependencies(): DriftCheckDependencies {
     checkMarkdownLinks: () => ({ status: "pass", details: [] }),
     checkPublicRoutes: () => ({ status: "pass", details: [] }),
     checkTechnicalGuides: () => ({ status: "pass", details: [] }),
+    checkLlmsManifests: () => ({ status: "pass", details: [] }),
   };
 }
 
@@ -268,6 +271,109 @@ describe("documentation drift checking", () => {
     );
     error.mockRestore();
   });
+
+  it("reports LLM manifest drift with exit code 1 in checkDrift", () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const dependencies = passingDependencies();
+    dependencies.checkLlmsManifests = () => ({
+      status: "fail",
+      details: [
+        "public/llms.txt is out of sync with route metadata or case studies",
+      ],
+    });
+
+    expect(checkDrift("/workspace", dependencies)).toBe(1);
+    expect(error).toHaveBeenCalledWith(
+      expect.stringContaining("LLM discovery manifest drift detected:")
+    );
+    error.mockRestore();
+  });
+});
+
+describe("LLM discovery manifests drift checking", () => {
+  it("passes when public manifests match buildLlmsManifests output", () => {
+    const root = fs.mkdtempSync(
+      path.join(os.tmpdir(), "portfolio-llms-drift-")
+    );
+    temporaryDirectories.push(root);
+    const publicDir = path.join(root, "public");
+    fs.mkdirSync(publicDir, { recursive: true });
+
+    const { llms, full } = buildLlmsManifests();
+    fs.writeFileSync(path.join(publicDir, "llms.txt"), llms, "utf8");
+    fs.writeFileSync(path.join(publicDir, "llms-full.txt"), full, "utf8");
+
+    const result = checkLlmsManifestsDrift(root);
+    expect(result.status).toBe("pass");
+  });
+
+  it("handles CRLF line endings without reporting drift", () => {
+    const root = fs.mkdtempSync(
+      path.join(os.tmpdir(), "portfolio-llms-drift-")
+    );
+    temporaryDirectories.push(root);
+    const publicDir = path.join(root, "public");
+    fs.mkdirSync(publicDir, { recursive: true });
+
+    const { llms, full } = buildLlmsManifests();
+    fs.writeFileSync(
+      path.join(publicDir, "llms.txt"),
+      llms.replace(/\n/g, "\r\n"),
+      "utf8"
+    );
+    fs.writeFileSync(
+      path.join(publicDir, "llms-full.txt"),
+      full.replace(/\n/g, "\r\n"),
+      "utf8"
+    );
+
+    const result = checkLlmsManifestsDrift(root);
+    expect(result.status).toBe("pass");
+  });
+
+  it("reports failure when manifests are missing or stale", () => {
+    const root = fs.mkdtempSync(
+      path.join(os.tmpdir(), "portfolio-llms-drift-")
+    );
+    temporaryDirectories.push(root);
+    const publicDir = path.join(root, "public");
+    fs.mkdirSync(publicDir, { recursive: true });
+
+    fs.writeFileSync(path.join(publicDir, "llms.txt"), "stale content", "utf8");
+    fs.writeFileSync(
+      path.join(publicDir, "llms-full.txt"),
+      "stale content",
+      "utf8"
+    );
+
+    const result = checkLlmsManifestsDrift(root);
+    expect(result.status).toBe("fail");
+    expect(result.fixable).toBe(true);
+    expect(result.details).toContain(
+      "public/llms.txt is out of sync with route metadata or case studies"
+    );
+    expect(result.details).toContain(
+      "public/llms-full.txt is out of sync with route metadata or case studies"
+    );
+  });
+
+  it("auto-remediates drift when fix option is enabled", () => {
+    const root = fs.mkdtempSync(
+      path.join(os.tmpdir(), "portfolio-llms-drift-")
+    );
+    temporaryDirectories.push(root);
+
+    const result = checkLlmsManifestsDrift(root, true);
+    expect(result.status).toBe("fixed");
+
+    const { llms, full } = buildLlmsManifests();
+    expect(fs.readFileSync(path.join(root, "public", "llms.txt"), "utf8")).toBe(
+      llms
+    );
+    expect(
+      fs.readFileSync(path.join(root, "public", "llms-full.txt"), "utf8")
+    ).toBe(full);
+  });
 });
 
 /**
@@ -286,6 +392,12 @@ describe("Drift remedy guidance", () => {
     const remedy = formatDriftRemedy(["openapi"]);
     expect(remedy).toContain("npm run doctor:fix");
     expect(remedy).toContain("openapi.json");
+  });
+
+  it("names the generator command for LLM manifest drift", () => {
+    const remedy = formatDriftRemedy(["llms-manifests"]);
+    expect(remedy).toContain("npm run generate:llms");
+    expect(remedy).toContain("public/llms.txt");
   });
 
   it("never offers to regenerate authored documentation", () => {

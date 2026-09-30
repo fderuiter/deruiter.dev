@@ -169,9 +169,13 @@ export function buildLlmsManifests(): LlmsManifests {
 /** Writes both manifests into `<root>/public`. */
 export function writeLlmsManifests(workspaceRoot: string): string[] {
   const { llms, full } = buildLlmsManifests();
+  const publicDir = path.join(workspaceRoot, "public");
+  if (!fs.existsSync(publicDir)) {
+    fs.mkdirSync(publicDir, { recursive: true });
+  }
   const targets: Array<[string, string]> = [
-    [path.join(workspaceRoot, "public", "llms.txt"), llms],
-    [path.join(workspaceRoot, "public", "llms-full.txt"), full],
+    [path.join(publicDir, "llms.txt"), llms],
+    [path.join(publicDir, "llms-full.txt"), full],
   ];
   for (const [file, contents] of targets) {
     fs.writeFileSync(file, contents, "utf8");

@@ -17,6 +17,7 @@ import {
   checkDirectoryTopology,
   checkPublicRouteRegistryDrift,
   checkTechnicalGuideSchemaParity,
+  checkLlmsManifestsDrift,
 } from "../lib/dx/doctor";
 
 interface DetailCheckResult {
@@ -38,6 +39,7 @@ export interface DriftCheckDependencies {
   checkMarkdownLinks: () => MarkdownLinkCheckResult;
   checkPublicRoutes: () => DetailCheckResult;
   checkTechnicalGuides?: () => DetailCheckResult;
+  checkLlmsManifests?: () => DetailCheckResult;
 }
 
 function defaultDependencies(workspaceRoot: string): DriftCheckDependencies {
@@ -56,6 +58,7 @@ function defaultDependencies(workspaceRoot: string): DriftCheckDependencies {
     checkMarkdownLinks: () => checkMarkdownLinkIntegrity(workspaceRoot),
     checkPublicRoutes: () => checkPublicRouteRegistryDrift(workspaceRoot),
     checkTechnicalGuides: () => checkTechnicalGuideSchemaParity(workspaceRoot),
+    checkLlmsManifests: () => checkLlmsManifestsDrift(workspaceRoot),
   };
 }
 
@@ -68,7 +71,8 @@ export type DriftCategory =
   | "topology"
   | "markdown-links"
   | "public-routes"
-  | "schema-parity";
+  | "schema-parity"
+  | "llms-manifests";
 
 const REMEDIES: Record<DriftCategory, { title: string; steps: string[] }> = {
   "generated-docs": {
@@ -107,6 +111,14 @@ const REMEDIES: Record<DriftCategory, { title: string; steps: string[] }> = {
   "schema-parity": {
     title: "Technical guide Prisma schema or environment variable drift",
     steps: ["npm run doctor:fix", "git add CMS_GUIDELINES.md docs/"],
+  },
+  "llms-manifests": {
+    title:
+      "LLM discovery manifest drift (public/llms.txt or public/llms-full.txt is stale)",
+    steps: [
+      "npm run generate:llms",
+      "git add public/llms.txt public/llms-full.txt",
+    ],
   },
 };
 
@@ -258,6 +270,21 @@ export function checkDrift(
     driftSummary +=
       "• Technical guide schema or environment variable drift detected:\n" +
       (technicalGuidesResult.details || [])
+        .map((detail) => `  - ${detail}`)
+        .join("\n") +
+      "\n";
+  }
+
+  console.log("Checking LLM discovery manifests synchronization...");
+  const llmsManifestsResult = dependencies.checkLlmsManifests
+    ? dependencies.checkLlmsManifests()
+    : { status: "pass" as const };
+  if (llmsManifestsResult.status === "fail") {
+    docsDrift = true;
+    categories.push("llms-manifests");
+    driftSummary +=
+      "• LLM discovery manifest drift detected:\n" +
+      (llmsManifestsResult.details || [])
         .map((detail) => `  - ${detail}`)
         .join("\n") +
       "\n";

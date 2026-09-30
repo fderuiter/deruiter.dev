@@ -40,6 +40,11 @@ import { useResponsiveCanvas } from "@/hooks/useResponsiveCanvas";
 import { useCanvasResolution } from "@/hooks/useCanvasResolution";
 import { applyCanvasScale } from "@/lib/arcade";
 import { TwinStickAimDock } from "@/components/arcade/ControlDocks";
+import {
+  drawActBackdrop,
+  drawEnemySilhouette,
+  drawLoon,
+} from "@/components/laser-loon/scene-art";
 import { PauseMenu } from "@/components/laser-loon/PauseMenu";
 import { safeGetRawItem, safeSetRawItem } from "@/lib/safe-storage";
 import {
@@ -883,6 +888,14 @@ export const LaserLoon: React.FC = () => {
 
     let isContextLost = false;
     let lastFrameTime = performance.now();
+    const prefersReducedMotion = getMatchMediaMatches(
+      "(prefers-reduced-motion: reduce)"
+    );
+    const backdropTheme =
+      mode === "campaign"
+        ? (CAMPAIGN_ACTS.find((a) => a.actNumber === currentActNum)
+            ?.backgroundTheme ?? "lake")
+        : "lake";
 
     const handleContextLost = (e: Event) => {
       e.preventDefault();
@@ -928,58 +941,14 @@ export const LaserLoon: React.FC = () => {
       ctx.save();
       ctx.translate(shakeOffsetX, shakeOffsetY);
 
-      // 1. Clear background & theme-based atmosphere
+      // 1. Act backdrop: sky plus three parallax layers (#1597). The dark
+      // fill under it covers the margin that screen shake can expose.
       ctx.fillStyle = "#090d16";
       ctx.fillRect(-10, -10, width + 20, height + 20);
-
-      // Gradient horizon based on act / mode
-      const bgGrad = ctx.createRadialGradient(
-        width * 0.5,
-        height * 0.5,
-        20,
-        width * 0.5,
-        height * 0.5,
-        width * 0.75
-      );
-
-      if (mode === "campaign") {
-        if (currentActNum === 1) {
-          bgGrad.addColorStop(0, "rgba(8, 145, 178, 0.15)"); // Lake Minnetonka cyan mist
-          bgGrad.addColorStop(1, "rgba(9, 13, 22, 0)");
-        } else if (currentActNum === 2) {
-          bgGrad.addColorStop(0, "rgba(234, 179, 8, 0.12)"); // State Fair warm amber
-          bgGrad.addColorStop(1, "rgba(9, 13, 22, 0)");
-        } else if (currentActNum === 3) {
-          bgGrad.addColorStop(0, "rgba(168, 85, 247, 0.14)"); // Committee purple red tape
-          bgGrad.addColorStop(1, "rgba(9, 13, 22, 0)");
-        } else {
-          bgGrad.addColorStop(0, "rgba(239, 68, 68, 0.16)"); // Capitol crimson dome
-          bgGrad.addColorStop(1, "rgba(9, 13, 22, 0)");
-        }
-      } else {
-        bgGrad.addColorStop(0, "rgba(239, 68, 68, 0.12)");
-        bgGrad.addColorStop(1, "rgba(9, 13, 22, 0)");
-      }
-
-      ctx.fillStyle = bgGrad;
-      ctx.fillRect(0, 0, width, height);
-
-      // Subtle atmospheric grid
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.03)";
-      ctx.lineWidth = 1;
-      const gridSize = 32;
-      for (let x = 0; x < width; x += gridSize) {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, height);
-        ctx.stroke();
-      }
-      for (let y = 0; y < height; y += gridSize) {
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(width, y);
-        ctx.stroke();
-      }
+      drawActBackdrop(ctx, backdropTheme, width, height, time, {
+        scale,
+        animate: !prefersReducedMotion,
+      });
 
       // 2. Loon Position Smooth Lerp
       const loon = loonPosRef.current;
@@ -1258,30 +1227,8 @@ export const LaserLoon: React.FC = () => {
       targetsRef.current.forEach((t) => {
         ctx.save();
         const pulse = Math.sin(t.pulsePhase) * 3;
-        const glow = ctx.createRadialGradient(
-          t.x,
-          t.y,
-          2,
-          t.x,
-          t.y,
-          t.radius + 10 + pulse
-        );
-        glow.addColorStop(0, (t.frozenTimer > 0 ? "#38bdf8" : t.color) + "66");
-        glow.addColorStop(1, t.color + "00");
-        ctx.fillStyle = glow;
-        ctx.beginPath();
-        ctx.arc(t.x, t.y, t.radius + 10 + pulse, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle =
-          t.frozenTimer > 0 ? "rgba(186, 230, 253, 0.9)" : "#18181b";
-        ctx.beginPath();
-        ctx.arc(t.x, t.y, t.radius, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.strokeStyle = t.frozenTimer > 0 ? "#38bdf8" : t.color;
-        ctx.lineWidth = t.isBoss ? 3.5 : 2;
-        ctx.stroke();
+        // Shape-coded silhouette sized to the hit radius (#1597).
+        drawEnemySilhouette(ctx, t);
 
         // Wind-up ring before a boss volley
         if (t.isBoss && isBossTelegraphing(t, currentActNum)) {
@@ -1337,13 +1284,14 @@ export const LaserLoon: React.FC = () => {
           ctx.stroke();
         }
 
-        ctx.fillStyle = t.frozenTimer > 0 ? "#0369a1" : "#ffffff";
-        ctx.font = t.isBoss ? "bold 10px monospace" : "bold 8.5px monospace";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        const shortName =
-          t.label.length > 14 ? t.label.slice(0, 12) + ".." : t.label;
-        ctx.fillText(shortName, t.x, t.y);
+        // Minions read by shape alone; a boss keeps its full name under it.
+        if (t.isBoss) {
+          ctx.fillStyle = "#f4f4f6";
+          ctx.font = "bold 10px monospace";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "top";
+          ctx.fillText(t.label, t.x, t.y + t.radius + 12);
+        }
 
         ctx.restore();
       });
@@ -1478,64 +1426,14 @@ export const LaserLoon: React.FC = () => {
         ctx.restore();
       }
 
-      // Loon Water Reflection Ripple
-      ctx.fillStyle = "rgba(6, 182, 212, 0.15)";
-      ctx.beginPath();
-      ctx.ellipse(-15, 22, 34, 8, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Loon Black Torso & Plumage
-      ctx.fillStyle = "#111827";
-      ctx.beginPath();
-      ctx.ellipse(0, 10, 38, 22, -0.08, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = "#374151";
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      // White Checkered Necklace Ring
-      ctx.fillStyle = "#f3f4f6";
-      ctx.beginPath();
-      ctx.rect(14, -6, 6, 16);
-      ctx.fill();
-      ctx.fillStyle = "#111827";
-      ctx.beginPath();
-      ctx.rect(16, -4, 2, 12);
-      ctx.fill();
-
-      // Head & Neck
-      ctx.fillStyle = "#030712";
-      ctx.beginPath();
-      ctx.ellipse(24, -8, 15, 19, 0.35, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Beak
-      ctx.fillStyle = "#1f2937";
-      ctx.beginPath();
-      ctx.moveTo(34, -12);
-      ctx.lineTo(56, -8);
-      ctx.lineTo(34, -4);
-      ctx.closePath();
-      ctx.fill();
-
-      // Glowing Crimson Cybernetic Eye (F277 Iconic Spec)
       const eyeGlowColor =
         laserType === "ruby-laser"
           ? "#ef4444"
           : laserType === "ice-cannon"
             ? "#38bdf8"
             : "#22d3ee";
-      ctx.fillStyle = eyeGlowColor;
-      ctx.shadowColor = eyeGlowColor;
-      ctx.shadowBlur = 14;
-      ctx.beginPath();
-      ctx.arc(30, -10, 5, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillStyle = "#ffffff";
-      ctx.beginPath();
-      ctx.arc(31, -10, 1.8, 0, Math.PI * 2);
-      ctx.fill();
+      // The loon, eye at (30, -10) where the laser leaves (#1597).
+      drawLoon(ctx, eyeGlowColor);
 
       ctx.restore();
 

@@ -129,7 +129,7 @@ export const FooterStatusTicker: React.FC = () => {
         {/* Live Status Ticker */}
         <div className="flex items-center gap-2.5 overflow-hidden w-full sm:w-auto">
           <span className="relative flex h-2 w-2 shrink-0">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+            <span className="animate-ping-settle absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
           </span>
           <span className="text-zinc-400 uppercase tracking-wider text-[10px] font-semibold shrink-0">

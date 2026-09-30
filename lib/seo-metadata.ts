@@ -294,15 +294,15 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     isAccessibleForFree: true,
   },
   simulator: {
-    title: "Engineering Alignment Simulator",
+    title: "Architectural Archetype Simulator",
     description:
-      "Work through a few engineering decisions, from interface priorities to an outage. Explore what your choices emphasize and compare the results.",
+      "Pick an architecture bias, triage a production latency spike and review an async pipeline, then see which architectural archetype your trade-offs map to.",
     path: "/simulator",
     keywords: [
+      "Architectural Archetype Simulator",
       "Incident Commander Simulator",
       "Production Outage Triage",
       "System Architecture Decision Tree",
-      "Engineering Leadership Alignment",
     ],
     inLanguage: "en-US",
     locale: "en-US",

@@ -4,6 +4,8 @@
 
 export * from "./types";
 export * from "./engine";
+export * from "./shift";
+export * from "./arcade-engine";
 export * from "./scenarios";
 export * from "./offices";
 export * from "./sponsor";

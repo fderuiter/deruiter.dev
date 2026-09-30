@@ -138,7 +138,7 @@ const SYSTEMS_ITEMS: SubNavItem[] = [
   },
   {
     title: "Incident Simulator",
-    subtitle: "Production outage triage simulation",
+    subtitle: "Architecture bias & outage triage",
     href: "/simulator",
     icon: <IconTerminal className="w-4 h-4 text-brand-cyan" />,
   },
@@ -416,7 +416,7 @@ export const Navbar: React.FC = () => {
             aria-label="Frederick de Ruiter Homepage"
           >
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-cyan/70 opacity-75"></span>
+              <span className="animate-ping-settle absolute inline-flex h-full w-full rounded-full bg-brand-cyan/70 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-cyan"></span>
             </span>
             <span className="tracking-wider">FDERUITER</span>

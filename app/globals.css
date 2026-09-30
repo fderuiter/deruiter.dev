@@ -105,6 +105,32 @@
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
 
+/*
+ * Bounded status motion (#1596). Status dots and badges in site chrome draw
+ * the eye a few times on arrival, then settle: "calm at rest" (ADR 0046,
+ * AGENTS.md section 16). The ping halo finishes hidden (forwards) so only the
+ * solid dot remains; the pulse finishes at full opacity. Only transform and
+ * opacity animate, and the global reduced-motion clamp still applies.
+ */
+@theme {
+  --animate-ping-settle: ping-settle 1s cubic-bezier(0, 0, 0.2, 1) 3 forwards;
+  --animate-pulse-settle: pulse-settle 1.5s cubic-bezier(0.4, 0, 0.6, 1) 2;
+
+  @keyframes ping-settle {
+    75%,
+    100% {
+      transform: scale(2);
+      opacity: 0;
+    }
+  }
+
+  @keyframes pulse-settle {
+    50% {
+      opacity: 0.5;
+    }
+  }
+}
+
 /* OpenDyslexic Accessibility Mode (ADR 0040) */
 [data-font-mode="opendyslexic"] {
   --font-sans:

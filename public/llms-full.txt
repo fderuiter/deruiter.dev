@@ -410,7 +410,7 @@ The approach: Next.js Server Actions handle submissions, Zod checks the inputs, 
 - [NeuroRecon Studio: Brain Viewer](https://deruiter.dev/neuro): Explore brain surfaces and MRI slices, place control points, and work through simulated reconstruction problems in a FreeSurfer-style pipeline simulator.
 - [Ski Patrol Shift Studio Simulation](https://deruiter.dev/patrol): An interactive Midwest ski-patrol judgment simulation foundation powered by deterministic FSM transitions and operational dispatch routines.
 - [Logical Proof Workspace: Step by Step](https://deruiter.dev/proof): Build a proof one step at a time. Connect premises, try inference rules, and inspect where an argument goes wrong. Export finished proofs to Lean 4 or LaTeX.
-- [Engineering Alignment Simulator](https://deruiter.dev/simulator): Work through a few engineering decisions, from interface priorities to an outage. Explore what your choices emphasize and compare the results.
+- [Architectural Archetype Simulator](https://deruiter.dev/simulator): Pick an architecture bias, triage a production latency spike and review an async pipeline, then see which architectural archetype your trade-offs map to.
 - [Under the Hood: How This Site Works](https://deruiter.dev/stack): See how this site works: text layout, browser audio, the application stack, and the checks I use while building it. Demos and source included.
 
 ## Arcade

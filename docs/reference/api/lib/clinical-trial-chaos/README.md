@@ -14,6 +14,12 @@ Re-exports [ActiveSponsorRequest](sponsor/interfaces/ActiveSponsorRequest.md)
 
 ***
 
+### adjustAuditorSuspicion
+
+Re-exports [adjustAuditorSuspicion](shift/functions/adjustAuditorSuspicion.md)
+
+***
+
 ### ALL\_STATIONS
 
 Re-exports [ALL_STATIONS](scenarios/variables/ALL_STATIONS.md)
@@ -29,6 +35,18 @@ Re-exports [AMENDMENT_PRESETS](scenarios/variables/AMENDMENT_PRESETS.md)
 ### AmendmentType
 
 Re-exports [AmendmentType](types/type-aliases/AmendmentType.md)
+
+***
+
+### appendRuleViolation
+
+Re-exports [appendRuleViolation](shift/functions/appendRuleViolation.md)
+
+***
+
+### applyCorrectionScore
+
+Re-exports [applyCorrectionScore](shift/functions/applyCorrectionScore.md)
 
 ***
 
@@ -86,6 +104,12 @@ Re-exports [applySponsorSubmissionBoost](sponsor/functions/applySponsorSubmissio
 
 ***
 
+### applySubmissionScore
+
+Re-exports [applySubmissionScore](shift/functions/applySubmissionScore.md)
+
+***
+
 ### AuditLogEntry
 
 Re-exports [AuditLogEntry](types/interfaces/AuditLogEntry.md)
@@ -101,6 +125,12 @@ Re-exports [AuditorBehavior](types/type-aliases/AuditorBehavior.md)
 ### AuditorState
 
 Re-exports [AuditorState](types/interfaces/AuditorState.md)
+
+***
+
+### autoCleanSubject
+
+Re-exports [autoCleanSubject](shift/functions/autoCleanSubject.md)
 
 ***
 
@@ -122,6 +152,18 @@ Re-exports [BIMOInspectionReport](types/interfaces/BIMOInspectionReport.md)
 
 ***
 
+### breakCombo
+
+Re-exports [breakCombo](shift/functions/breakCombo.md)
+
+***
+
+### buildInspectionReport
+
+Re-exports [buildInspectionReport](shift/functions/buildInspectionReport.md)
+
+***
+
 ### calculateSubmissionPoints
 
 Re-exports [calculateSubmissionPoints](engine/functions/calculateSubmissionPoints.md)
@@ -131,6 +173,12 @@ Re-exports [calculateSubmissionPoints](engine/functions/calculateSubmissionPoint
 ### CalibrationStep
 
 Re-exports [CalibrationStep](engine/type-aliases/CalibrationStep.md)
+
+***
+
+### canActivatePowerUp
+
+Re-exports [canActivatePowerUp](shift/functions/canActivatePowerUp.md)
 
 ***
 
@@ -160,19 +208,31 @@ Re-exports [ClinicalSubject](types/interfaces/ClinicalSubject.md)
 
 ### ClinicalTrialChaosEngine
 
-Re-exports [ClinicalTrialChaosEngine](engine/classes/ClinicalTrialChaosEngine.md)
+Re-exports [ClinicalTrialChaosEngine](arcade-engine/classes/ClinicalTrialChaosEngine.md)
 
 ***
 
 ### ClinicalTrialChaosSnapshot
 
-Re-exports [ClinicalTrialChaosSnapshot](engine/interfaces/ClinicalTrialChaosSnapshot.md)
+Re-exports [ClinicalTrialChaosSnapshot](arcade-engine/interfaces/ClinicalTrialChaosSnapshot.md)
 
 ***
 
 ### ClinicalTrialChaosState
 
-Re-exports [ClinicalTrialChaosState](engine/interfaces/ClinicalTrialChaosState.md)
+Re-exports [ClinicalTrialChaosState](arcade-engine/interfaces/ClinicalTrialChaosState.md)
+
+***
+
+### COFFEE\_BREAK\_END\_LOG
+
+Re-exports [COFFEE_BREAK_END_LOG](shift/variables/COFFEE_BREAK_END_LOG.md)
+
+***
+
+### COFFEE\_BREAK\_START\_LOG
+
+Re-exports [COFFEE_BREAK_START_LOG](shift/variables/COFFEE_BREAK_START_LOG.md)
 
 ***
 
@@ -206,6 +266,12 @@ Re-exports [createInitialSponsorState](sponsor/functions/createInitialSponsorSta
 
 ***
 
+### createRuleViolation
+
+Re-exports [createRuleViolation](shift/functions/createRuleViolation.md)
+
+***
+
 ### DEFAULT\_OFFICE\_ID
 
 Re-exports [DEFAULT_OFFICE_ID](offices/variables/DEFAULT_OFFICE_ID.md)
@@ -215,6 +281,12 @@ Re-exports [DEFAULT_OFFICE_ID](offices/variables/DEFAULT_OFFICE_ID.md)
 ### DEFAULT\_OUTFIT\_ID
 
 Re-exports [DEFAULT_OUTFIT_ID](outfits/variables/DEFAULT_OUTFIT_ID.md)
+
+***
+
+### describeSponsorEvent
+
+Re-exports [describeSponsorEvent](shift/functions/describeSponsorEvent.md)
 
 ***
 
@@ -230,6 +302,18 @@ Re-exports [EMPTY_QUEUE_SPAWN_DELAY_SECONDS](engine/variables/EMPTY_QUEUE_SPAWN_
 
 ***
 
+### endCoffeeBreak
+
+Re-exports [endCoffeeBreak](shift/functions/endCoffeeBreak.md)
+
+***
+
+### EXPIRY\_SUSPICION
+
+Re-exports [EXPIRY_SUSPICION](shift/variables/EXPIRY_SUSPICION.md)
+
+***
+
 ### exportToCDISCODMXML
 
 Re-exports [exportToCDISCODMXML](engine/functions/exportToCDISCODMXML.md)
@@ -242,6 +326,12 @@ Re-exports [exportToSDTMCSV](engine/functions/exportToSDTMCSV.md)
 
 ***
 
+### extendSubjectDeadlines
+
+Re-exports [extendSubjectDeadlines](shift/functions/extendSubjectDeadlines.md)
+
+***
+
 ### fixObservation
 
 Re-exports [fixObservation](engine/functions/fixObservation.md)
@@ -251,6 +341,30 @@ Re-exports [fixObservation](engine/functions/fixObservation.md)
 ### formatAuditTimestamp
 
 Re-exports [formatAuditTimestamp](engine/functions/formatAuditTimestamp.md)
+
+***
+
+### formatCorrectionLog
+
+Re-exports [formatCorrectionLog](shift/functions/formatCorrectionLog.md)
+
+***
+
+### formatExpiryLog
+
+Re-exports [formatExpiryLog](shift/functions/formatExpiryLog.md)
+
+***
+
+### formatNextDossierCue
+
+Re-exports [formatNextDossierCue](shift/functions/formatNextDossierCue.md)
+
+***
+
+### formatRuleFailureLog
+
+Re-exports [formatRuleFailureLog](shift/functions/formatRuleFailureLog.md)
 
 ***
 
@@ -296,9 +410,27 @@ Re-exports [generateSDTMDataset](engine/functions/generateSDTMDataset.md)
 
 ***
 
+### getAmendmentIntervalSeconds
+
+Re-exports [getAmendmentIntervalSeconds](shift/functions/getAmendmentIntervalSeconds.md)
+
+***
+
 ### getCalibrationStep
 
 Re-exports [getCalibrationStep](engine/functions/getCalibrationStep.md)
+
+***
+
+### getComboMultiplier
+
+Re-exports [getComboMultiplier](shift/functions/getComboMultiplier.md)
+
+***
+
+### getFastTrackDomain
+
+Re-exports [getFastTrackDomain](shift/functions/getFastTrackDomain.md)
 
 ***
 
@@ -338,6 +470,12 @@ Re-exports [getRoutingReadiness](engine/functions/getRoutingReadiness.md)
 
 ***
 
+### getSAEChance
+
+Re-exports [getSAEChance](shift/functions/getSAEChance.md)
+
+***
+
 ### getSpawnIntervalSeconds
 
 Re-exports [getSpawnIntervalSeconds](engine/functions/getSpawnIntervalSeconds.md)
@@ -362,6 +500,18 @@ Re-exports [getStationsForPhase](scenarios/functions/getStationsForPhase.md)
 
 ***
 
+### getSubjectErrorChance
+
+Re-exports [getSubjectErrorChance](shift/functions/getSubjectErrorChance.md)
+
+***
+
+### getSubmissionCharge
+
+Re-exports [getSubmissionCharge](shift/functions/getSubmissionCharge.md)
+
+***
+
 ### getSubmissionMode
 
 Re-exports [getSubmissionMode](engine/functions/getSubmissionMode.md)
@@ -371,6 +521,12 @@ Re-exports [getSubmissionMode](engine/functions/getSubmissionMode.md)
 ### INITIAL\_STATIONS
 
 Re-exports [INITIAL_STATIONS](scenarios/variables/INITIAL_STATIONS.md)
+
+***
+
+### isPhaseCleared
+
+Re-exports [isPhaseCleared](shift/functions/isPhaseCleared.md)
 
 ***
 
@@ -449,6 +605,12 @@ Re-exports [OutfitPalette](outfits/interfaces/OutfitPalette.md)
 ### OUTFITS
 
 Re-exports [OUTFITS](outfits/variables/OUTFITS.md)
+
+***
+
+### PHASE\_TARGETS
+
+Re-exports [PHASE_TARGETS](shift/variables/PHASE_TARGETS.md)
 
 ***
 
@@ -548,15 +710,45 @@ Re-exports [ProtocolAmendment](types/interfaces/ProtocolAmendment.md)
 
 ***
 
+### QUERY\_EXTENSION\_LOG
+
+Re-exports [QUERY_EXTENSION_LOG](shift/variables/QUERY_EXTENSION_LOG.md)
+
+***
+
+### raiseAuditorSuspicion
+
+Re-exports [raiseAuditorSuspicion](shift/functions/raiseAuditorSuspicion.md)
+
+***
+
 ### RecordedRuleViolation
 
 Re-exports [RecordedRuleViolation](types/interfaces/RecordedRuleViolation.md)
 
 ***
 
+### recordStationSubmission
+
+Re-exports [recordStationSubmission](shift/functions/recordStationSubmission.md)
+
+***
+
+### replaceObservation
+
+Re-exports [replaceObservation](shift/functions/replaceObservation.md)
+
+***
+
 ### resolveSponsorChoice
 
 Re-exports [resolveSponsorChoice](sponsor/functions/resolveSponsorChoice.md)
+
+***
+
+### scoreSubmission
+
+Re-exports [scoreSubmission](shift/functions/scoreSubmission.md)
 
 ***
 
@@ -578,9 +770,33 @@ Re-exports [SEEDED_SCENARIOS](scenarios/variables/SEEDED_SCENARIOS.md)
 
 ***
 
+### selectNextDossier
+
+Re-exports [selectNextDossier](shift/functions/selectNextDossier.md)
+
+***
+
 ### selectNextUrgentSubject
 
 Re-exports [selectNextUrgentSubject](engine/functions/selectNextUrgentSubject.md)
+
+***
+
+### SHIFT\_END\_LOGS
+
+Re-exports [SHIFT_END_LOGS](shift/variables/SHIFT_END_LOGS.md)
+
+***
+
+### ShiftClocks
+
+Re-exports [ShiftClocks](shift/interfaces/ShiftClocks.md)
+
+***
+
+### ShiftClockTick
+
+Re-exports [ShiftClockTick](shift/interfaces/ShiftClockTick.md)
 
 ***
 
@@ -605,6 +821,12 @@ Re-exports [SignatureReason](types/type-aliases/SignatureReason.md)
 ### SPAWN\_INTERVAL\_BY\_PHASE
 
 Re-exports [SPAWN_INTERVAL_BY_PHASE](engine/variables/SPAWN_INTERVAL_BY_PHASE.md)
+
+***
+
+### spendPowerUp
+
+Re-exports [spendPowerUp](shift/functions/spendPowerUp.md)
 
 ***
 
@@ -674,6 +896,12 @@ Re-exports [SponsorEvent](sponsor/type-aliases/SponsorEvent.md)
 
 ***
 
+### SponsorEventNotice
+
+Re-exports [SponsorEventNotice](shift/interfaces/SponsorEventNotice.md)
+
+***
+
 ### SponsorRequest
 
 Re-exports [SponsorRequest](sponsor/interfaces/SponsorRequest.md)
@@ -689,6 +917,12 @@ Re-exports [SponsorSkeleton](sponsor/interfaces/SponsorSkeleton.md)
 ### SponsorState
 
 Re-exports [SponsorState](sponsor/interfaces/SponsorState.md)
+
+***
+
+### startCoffeeBreak
+
+Re-exports [startCoffeeBreak](shift/functions/startCoffeeBreak.md)
 
 ***
 
@@ -710,6 +944,12 @@ Re-exports [stopProceduralBGM](sound-effects/functions/stopProceduralBGM.md)
 
 ***
 
+### SubmissionScore
+
+Re-exports [SubmissionScore](shift/interfaces/SubmissionScore.md)
+
+***
+
 ### tickAuditor
 
 Re-exports [tickAuditor](engine/functions/tickAuditor.md)
@@ -719,6 +959,12 @@ Re-exports [tickAuditor](engine/functions/tickAuditor.md)
 ### tickPowerUps
 
 Re-exports [tickPowerUps](engine/functions/tickPowerUps.md)
+
+***
+
+### tickShiftClocks
+
+Re-exports [tickShiftClocks](shift/functions/tickShiftClocks.md)
 
 ***
 

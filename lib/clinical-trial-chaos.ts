@@ -1,5 +1,7 @@
 export * from "./clinical-trial-chaos/types";
 export * from "./clinical-trial-chaos/engine";
+export * from "./clinical-trial-chaos/shift";
+export * from "./clinical-trial-chaos/arcade-engine";
 export * from "./clinical-trial-chaos/scenarios";
 export * from "./clinical-trial-chaos/offices";
 export * from "./clinical-trial-chaos/sponsor";

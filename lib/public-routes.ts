@@ -33,7 +33,7 @@ export const PUBLIC_ROUTE_REGISTRY = [
   { path: "/m/patrol", name: "Mobile Patrol Shift Studio", category: "tool" },
   {
     path: "/simulator",
-    name: "System Dynamics Simulator",
+    name: "Architectural Archetype Simulator",
     category: "tool",
   },
   {

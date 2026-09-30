@@ -52,7 +52,7 @@ describe("legacy storage formats (#1468)", () => {
       container.querySelector<HTMLButtonElement>(
         'button[aria-label^="Open Field Manual"]'
       );
-    const newHint = () => container.querySelector(".animate-ping");
+    const newHint = () => container.querySelector(".animate-ping-settle");
 
     it('writes a bare "true" under seen_manual_<id> and hides the hint', async () => {
       await act(async () => {

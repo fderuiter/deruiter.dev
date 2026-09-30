@@ -28,6 +28,12 @@ describe("cancel-closed-pr-ci workflow (#1389)", () => {
     expect(cancel).toMatch(/cancel-in-progress: true/);
   });
 
+  it("skips its only job so it never waits for a runner (#1492)", () => {
+    const jobs = cancel.slice(cancel.indexOf("\njobs:"));
+    expect(jobs).toMatch(/^\s+if: false$/m);
+    expect(jobs.match(/^  [\w-]+:$/gm)).toHaveLength(1);
+  });
+
   it("holds no permissions", () => {
     expect(cancel).toMatch(/^permissions: \{\}$/m);
   });

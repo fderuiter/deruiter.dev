@@ -2,6 +2,7 @@ import { Client, Receiver } from "@upstash/qstash";
 import { getEnv } from "@/lib/env";
 import { resolveBaseUrl } from "@/lib/domain";
 import { logger } from "@/lib/logger";
+import { clamp } from "@/lib/game-utils";
 
 /** Path of the webhook QStash delivers retry messages to. */
 export const QSTASH_RETRY_PATH = "/api/webhooks/qstash/retry";
@@ -16,8 +17,9 @@ export const QSTASH_RETRY_DELAYS_SECONDS: readonly number[] = [300, 900, 3600];
 
 /** Picks the delay for the given number of attempts already made (1-based). */
 export function getQStashRetryDelaySeconds(attempts: number): number {
-  const index = Math.min(
-    Math.max(0, attempts - 1),
+  const index = clamp(
+    attempts - 1,
+    0,
     QSTASH_RETRY_DELAYS_SECONDS.length - 1
   );
   return QSTASH_RETRY_DELAYS_SECONDS[index];

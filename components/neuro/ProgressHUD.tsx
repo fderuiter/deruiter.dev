@@ -110,6 +110,7 @@ export const ProgressHUD: React.FC<ProgressHUDProps> = ({ className = "" }) => {
                 : "bg-brand-cyan"
           }`}
           style={{
+            // eslint-disable-next-line no-restricted-syntax -- #1119: file has open-PR/branch changes in flight; swap to clamp() after they land
             transform: `scaleX(${Math.max(0, Math.min(1, event.percentage / 100))})`,
             transformOrigin: "left",
           }}

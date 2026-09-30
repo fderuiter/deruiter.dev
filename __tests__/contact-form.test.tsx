@@ -155,4 +155,101 @@ describe("ContactForm Component", () => {
       await screen.findByText(/Too many contact submission attempts/i)
     ).toBeDefined();
   });
+
+  describe("server responses (#1469)", () => {
+    const fillValidForm = () => {
+      fireEvent.change(screen.getByLabelText(/Your Name/i), {
+        target: { value: "  Ada Lovelace " },
+      });
+      fireEvent.change(screen.getByLabelText(/Email Address/i), {
+        target: { value: "ada@example.com " },
+      });
+      fireEvent.change(screen.getByLabelText(/Subject/i), {
+        target: { value: "Formal Verification Inquiry" },
+      });
+      fireEvent.change(screen.getByLabelText(/Message/i), {
+        target: { value: "I would like to discuss building proof engines." },
+      });
+      fireEvent.click(screen.getByRole("button", { name: /Send Message/i }));
+    };
+
+    it("posts trimmed JSON to /api/contact", async () => {
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ success: true }),
+      });
+      render(<ContactForm initialIntent="consulting" />);
+      fillValidForm();
+
+      await screen.findByTestId("contact-form-success");
+      const [url, init] = (global.fetch as ReturnType<typeof vi.fn>).mock
+        .calls[0] as [string, RequestInit];
+      expect(url).toBe("/api/contact");
+      expect(init.method).toBe("POST");
+      expect(new Headers(init.headers).get("Content-Type")).toBe(
+        "application/json"
+      );
+      const body = JSON.parse(init.body as string);
+      expect(body).toMatchObject({
+        name: "Ada Lovelace",
+        email: "ada@example.com",
+        intent: "consulting",
+        subject: "Formal Verification Inquiry",
+        message: "I would like to discuss building proof engines.",
+        _gotcha: "",
+      });
+      expect(typeof body._clientTimestamp).toBe("number");
+    });
+
+    it("shows the server's error message on a 400 validation failure", async () => {
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        json: async () => ({
+          error: "Invalid request",
+          details: [{ path: "email", message: "Invalid email" }],
+        }),
+      });
+      render(<ContactForm />);
+      fillValidForm();
+
+      const alert = await screen.findByRole("alert");
+      expect(alert.textContent).toContain("Couldn’t send your message:");
+      expect(alert.textContent).toContain("Invalid request");
+    });
+
+    it("falls back to an HTTP status message when the error body is not JSON", async () => {
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: false,
+        status: 502,
+        json: async () => {
+          throw new SyntaxError("Unexpected token <");
+        },
+      });
+      render(<ContactForm />);
+      fillValidForm();
+
+      expect((await screen.findByRole("alert")).textContent).toContain(
+        "Unable to send message (HTTP 502). Please try again later or email directly."
+      );
+    });
+
+    it("shows the network message and re-enables the form when the request cannot be sent", async () => {
+      (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+        new TypeError("Failed to fetch")
+      );
+      render(<ContactForm />);
+      fillValidForm();
+
+      expect((await screen.findByRole("alert")).textContent).toContain(
+        "Network connection error. Please check your connection or email directly to fpderuiter@gmail.com."
+      );
+      expect(
+        screen
+          .getByRole("button", { name: /Send Message/i })
+          .hasAttribute("disabled")
+      ).toBe(false);
+    });
+  });
 });

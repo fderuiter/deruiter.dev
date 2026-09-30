@@ -6,6 +6,7 @@
  */
 
 import { getMatchMediaMatches } from "@/hooks/useMediaQuery";
+import { clamp } from "@/lib/game-utils";
 
 export type WaveformType = OscillatorType;
 
@@ -117,7 +118,7 @@ export class SoundEngine {
     }
 
     if (options.initialVolume !== undefined) {
-      this.volume = Math.max(0, Math.min(1, options.initialVolume));
+      this.volume = clamp(options.initialVolume, 0, 1);
     } else {
       this.volume = this.loadStoredVolume();
     }
@@ -136,7 +137,7 @@ export class SoundEngine {
       if (stored !== null) {
         const val = parseFloat(stored);
         if (!isNaN(val)) {
-          return Math.max(0, Math.min(1, val));
+          return clamp(val, 0, 1);
         }
       }
     } catch {
@@ -210,7 +211,7 @@ export class SoundEngine {
    * Sets master volume, clamps between 0 and 1, and persists to storage.
    */
   public setVolume(v: number): void {
-    const clamped = Math.max(0, Math.min(1, v));
+    const clamped = clamp(v, 0, 1);
     this.volume = clamped;
     if (this.storage && typeof this.storage.setItem === "function") {
       try {
@@ -435,7 +436,7 @@ export class SoundEngine {
       ) {
         try {
           const panner = ctx.createStereoPanner();
-          panner.pan.setValueAtTime(Math.max(-1, Math.min(1, pan)), startTime);
+          panner.pan.setValueAtTime(clamp(pan, -1, 1), startTime);
           gainNode.connect(panner);
           lastNode = panner;
         } catch {}
@@ -589,10 +590,7 @@ export class SoundEngine {
       ) {
         try {
           const panner = ctx.createStereoPanner();
-          panner.pan.setValueAtTime(
-            Math.max(-1, Math.min(1, options.pan)),
-            startTime
-          );
+          panner.pan.setValueAtTime(clamp(options.pan, -1, 1), startTime);
           gainNode.connect(panner);
           lastNode = panner;
         } catch {}

@@ -407,51 +407,51 @@ The approach: Next.js Server Actions handle submissions, Zod checks the inputs, 
 ## Systems and studios
 
 - [CRF Studio: Clinical Form Designer](https://deruiter.dev/crf): Build clinical research forms, add validation rules, and try them with sample data. Explore a browser-based study designer by Fred de Ruiter.
-- [NeuroRecon Studio](https://deruiter.dev/neuro): Explore brain surfaces and MRI slices, place control points, and work through simulated reconstruction problems in NeuroRecon Studio.
-- [Ski Patrol Shift Studio](https://deruiter.dev/patrol): An interactive Midwest ski-patrol judgment simulation foundation powered by deterministic FSM transitions and operational dispatch routines.
-- [Logical Proof Workspace](https://deruiter.dev/proof): Build a proof one step at a time. Connect premises, try inference rules, and inspect where an argument goes wrong in this logic workspace.
-- [Incident Decision Simulator](https://deruiter.dev/simulator): Work through a few engineering decisions, from interface priorities to an outage. Explore what your choices emphasize and compare the results.
-- [Under the Hood](https://deruiter.dev/stack): See how this site works: text layout, browser audio, the application stack, and the checks I use while building it. Demos and source included.
+- [NeuroRecon Studio: Brain Viewer](https://deruiter.dev/neuro): Explore brain surfaces and MRI slices, place control points, and work through simulated reconstruction problems in a FreeSurfer-style pipeline simulator.
+- [Ski Patrol Shift Studio Simulation](https://deruiter.dev/patrol): An interactive Midwest ski-patrol judgment simulation foundation powered by deterministic FSM transitions and operational dispatch routines.
+- [Logical Proof Workspace: Step by Step](https://deruiter.dev/proof): Build a proof one step at a time. Connect premises, try inference rules, and inspect where an argument goes wrong. Export finished proofs to Lean 4 or LaTeX.
+- [Engineering Alignment Simulator](https://deruiter.dev/simulator): Work through a few engineering decisions, from interface priorities to an outage. Explore what your choices emphasize and compare the results.
+- [Under the Hood: How This Site Works](https://deruiter.dev/stack): See how this site works: text layout, browser audio, the application stack, and the checks I use while building it. Demos and source included.
 
 ## Arcade
 
-- [Arcade & Browser Games](https://deruiter.dev/arcade): Try browser games by Fred de Ruiter: a laser loon, a demanding puppy, logic puzzles, and a smartwatch with very little memory to spare.
-- [Clinical Trial Chaos](https://deruiter.dev/arcade/clinical-chaos): Sort clinical data, fix entries, and sign submissions against the clock. Play a clinical research arcade game with an impatient auditor.
-- [Monkey C Mayhem: Garmin Schvitz App](https://deruiter.dev/arcade/garmin-watch): Dodge obstacles, clear memory, and wipe the fog from a simulated smartwatch. Play Monkey C Mayhem with a stubbornly small 32KB budget.
-- [Laser Loon: Quest for the State Flag](https://deruiter.dev/arcade/laser-loon): Fly F277 Laser Loon toward the Minnesota State Capitol, battle rival flags, and blast through red tape in this browser arcade game.
-- [Meme Vault & Soundboard](https://deruiter.dev/arcade/meme-vault): Make some noise with a browser soundboard, discover hidden trophies, and enjoy a few jokes about code, clinical data, and the working day.
-- [Formal Verification Puzzler](https://deruiter.dev/arcade/quasi-puzzler): Apply deductive proof tactics to a tree in this Lean-inspired puzzle game. Complete the proof before your simulated memory runs out.
-- [Retro Labyrinth](https://deruiter.dev/arcade/retro-labyrinth): Explore an abandoned codebase as a shifting dungeon. Fight bugs, navigate moving walls, and face a wireframe boss in this browser game.
+- [Arcade: Browser Games and Puzzles](https://deruiter.dev/arcade): Try browser games by Fred de Ruiter: a laser loon, a demanding puppy, logic puzzles, clinical trial games, and a smartwatch with little memory to spare.
+- [Clinical Trial Chaos: SDTM Game](https://deruiter.dev/arcade/clinical-chaos): Sort clinical data into SDTM domains, sign the submissions, and keep up with the conveyor belt while the auditor watches. At least there is a restart button.
+- [Monkey C Mayhem: Garmin Schvitz App](https://deruiter.dev/arcade/garmin-watch): Keep a simulated smartwatch running within a 32KB memory budget. Dodge obstacles, clear memory, and wipe the screen when it fogs up in Monkey C Mayhem.
+- [Laser Loon: Quest for the State Flag](https://deruiter.dev/arcade/laser-loon): Fly F277 Laser Loon through four campaign acts from Lake Minnetonka to the State Capitol dome, blasting rival flags and red tape in this browser game.
+- [Meme Vault: Soundboard and Trophies](https://deruiter.dev/arcade/meme-vault): Make some noise with a synthesized browser soundboard, discover hidden trophies, and enjoy a few jokes about code, clinical data, and the working day.
+- [Formal Verification Puzzler Game](https://deruiter.dev/arcade/quasi-puzzler): Apply deductive proof tactics to a tree in this Lean-inspired puzzle game and reach a complete proof. Skipping a goal with “sorry” costs you score.
+- [Retro Labyrinth: Graveyard Roguelike](https://deruiter.dev/arcade/retro-labyrinth): An abandoned codebase, now with corridors. Navigate moving walls, wield developer-themed weapons, and find the FaceForge boss in this browser roguelike.
 - [Study Director: Everything Is Fine](https://deruiter.dev/arcade/study-director): Run a clinical study from kickoff to closeout. Spend limited attention, audit the sites behind the green dashboard, and defend your decisions to the FDA.
-- [Trial & Error: Biostat Ops](https://deruiter.dev/arcade/trial-and-error): Review clinical tables against a statistical analysis plan, correct the redlines, and play Chips × Mult hands to beat regulatory Blinds.
-- [Working With Duck](https://deruiter.dev/arcade/working-with-duck): You have a deadline. Duck the puppy has a ball. Keep the project and the puppy happy with toys, treats, and park breaks in this browser game.
+- [Trial & Error: Biostat Deckbuilder](https://deruiter.dev/arcade/trial-and-error): Clinical outputs are the cards. Review tables against the SAP, correct redlines for +Mult, and play Chips × Mult hands to beat the Blinds in this deckbuilder.
+- [Working With Duck: Pet Sim Arcade](https://deruiter.dev/arcade/working-with-duck): You have a deadline. Duck the puppy has a ball. Keep the project and the puppy happy with toys, treats, and park breaks in this browser game.
 
 ## Case studies
 
-- [Project Writeups](https://deruiter.dev/case-studies): Read about the problems, implementation choices, and lessons behind Fred de Ruiter’s clinical data tools, web apps, and side projects.
-- [4Glory: Does Fred Know Ball?](https://deruiter.dev/case-studies/4glory): Does Fred know ball? Compare basketball opinions with Python and XGBoost predictions on NBA data, using walk-forward validation and SHAP.
+- [Project Writeups and Case Studies](https://deruiter.dev/case-studies): Read about the problems, implementation choices, and lessons behind Fred de Ruiter’s clinical data tools, web apps, and side projects, with code on GitHub.
+- [4Glory: Does Fred Know Ball?](https://deruiter.dev/case-studies/4glory): Does Fred know ball? Compare basketball opinions with Python and XGBoost predictions on NBA data, using rolling features, walk-forward validation, and SHAP.
 - [Inspectable Cardiac Risk Models](https://deruiter.dev/case-studies/cardiac-risk-modeling): Read a cardiac risk modeling project using Python, XGBoost, and SHAP. Explore data leakage, cross-validation, calibration, and model explanations.
 - [clintrials: Trial Designs in Browser](https://deruiter.dev/case-studies/clintrials): Compare adaptive clinical trial designs in a browser workspace. See how Pyodide workers run statistical models without a separate Python setup.
 - [CRF.xl: Spreadsheet to Clinical Forms](https://deruiter.dev/case-studies/crf-xl): Turn Excel protocol grids into clinical form definitions and ODM-XML exports. Read how CRF.xl handles rules, dependencies, and background work.
 - [Designing for My Brother: Typography](https://deruiter.dev/case-studies/designing-for-my-brother): A personal case study on cognitive typography: replacing generic fonts with Lexend, Atkinson Hyperlegible, and OpenDyslexic with zero-CLS Pretext reflow.
 - [DuckDeploy: Config to Deployed Forms](https://deruiter.dev/case-studies/duckdeploy): Turn JSON Schema into configuration forms, then compile the values into deployment manifests. See how DuckDeploy uses TypeScript and workers.
 - [Equipose: Trial Randomization](https://deruiter.dev/case-studies/equipose-randomization): Explore reproducible clinical trial randomization in the browser, with generated Python, R, SAS, and Stata code for inspecting the allocation.
-- [Lambda-Wave: Respiratory Motion Radar](https://deruiter.dev/case-studies/lambda-wave): Explore a respiratory motion tracking project using FMCW radar, Haskell signal processing, and C++ sample transport. Read the design notes.
+- [Lambda-Wave: Respiratory Motion Radar](https://deruiter.dev/case-studies/lambda-wave): Explore respiratory motion tracking for surface guided radiation therapy using FMCW radar, Haskell signal processing, and C++ sample transport.
 - [OxidizeMath: Rust Scientific Computing](https://deruiter.dev/case-studies/oxidizemath): Explore scientific computing in Rust with numerical solvers, compile-time checks, and interactive simulations. Read the OxidizeMath writeup.
 - [PromptOps: Test Prompts Like Code](https://deruiter.dev/case-studies/promptops): Version prompts, validate response shapes, and run regression evaluations in CI. Read how PromptOps makes changes easier to inspect and compare.
-- [Sonos Network Controller](https://deruiter.dev/case-studies/sonos-network-controller): Control Sonos speakers on your own network with a Python API and a small web interface. Read about the protocols and implementation choices.
+- [Sonos Network Controller in Python](https://deruiter.dev/case-studies/sonos-network-controller): Control Sonos speakers on your own network with a Python API and a small web interface. Read about the protocols and implementation choices.
 - [Laser Loon: Artwork & Downloads](https://deruiter.dev/work/laser-loon): Meet Laser Loon, my Minnesota flag submission, and download the artwork in print and web formats. The eye lasers are included in the download.
 
 ## Writing and contact
 
 - [Engineering Dispatches: Blog](https://deruiter.dev/blog): Cross-project retrospectives and technique write-ups on clinical data engineering, formal verification, accessibility, and browser graphics by Fred de Ruiter.
-- [Contact Fred](https://deruiter.dev/contact): Have a project, a role, or a question in mind? Send Fred de Ruiter a note about what you’re working on, or find a time to talk it through.
-- [Book a Chat With Fred](https://deruiter.dev/schedule): Find a time to talk about a project, ask a question, or introduce yourself. Book a 30-minute Google Meet chat with Fred de Ruiter.
+- [Contact Fred: Projects and Roles](https://deruiter.dev/contact): Have a project, a role, or a question in mind? Send Fred de Ruiter a note about what you’re working on, or pick a time to talk it through by video.
+- [Book a 30-Minute Chat With Fred](https://deruiter.dev/schedule): Pick a time on Google Calendar to talk about a project, ask a question, or say hello. Each booking is a 30-minute Google Meet chat with Fred de Ruiter.
 
 ## Mobile and utility routes
 
-- [Mobile CRF Studio](https://deruiter.dev/m/crf): Touch-optimized clinical research form studio designed for mobile viewports, enabling interactive section and field inspection on mobile devices.
-- [Mobile NeuroRecon Studio](https://deruiter.dev/m/neuro): Touch-optimized neuroimaging structural morphometry viewer for mobile screens, providing subcortical volumetric metrics and FreeSurfer recon status.
+- [Mobile CRF Studio for Clinical Forms](https://deruiter.dev/m/crf): Touch-optimized clinical research form studio designed for mobile viewports, enabling interactive section and field inspection on mobile devices.
+- [Mobile NeuroRecon Studio Viewer](https://deruiter.dev/m/neuro): Touch-optimized neuroimaging structural morphometry viewer for mobile screens, providing subcortical volumetric metrics and FreeSurfer recon status.
 - [Mobile Ski Patrol Shift Studio](https://deruiter.dev/m/patrol): Touch-optimized ski patrol operational judgment simulator built for mobile screens, allowing real-time triage and emergency intervention decisions.
 - [Mobile Logical Proof Workspace](https://deruiter.dev/m/proof): Touch-optimized formal logic proof workspace tailored for handheld devices, offering interactive deduction step ledgers and fallacy diagnostics.
-- [You’re Offline](https://deruiter.dev/offline): This page is not available offline. Check your connection, retry the page, or explore tools and pages already saved in your browser.
+- [You’re Offline: Page Not Saved](https://deruiter.dev/offline): This page has not been saved for offline use. Check your connection, retry the page, or open one of the pages already cached in your browser.

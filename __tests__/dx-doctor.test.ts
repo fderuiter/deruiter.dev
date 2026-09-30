@@ -720,6 +720,24 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       const result = checkServiceResultTypes(tempDir, false);
       expect(result.status).toBe("pass");
     });
+
+    it("scans *-service.ts modules for raw throws unless they are pending migration", () => {
+      const serviceDir = path.join(tempDir, "lib", "services");
+      fs.mkdirSync(serviceDir, { recursive: true });
+      const body =
+        'import type { ServiceResult } from "./service-result";\nexport function run(): ServiceResult<number> { throw new Error("boom"); }\n';
+      fs.writeFileSync(path.join(serviceDir, "widget-service.ts"), body);
+      // Listed as pending migration (#1140), so its raw throw is tolerated.
+      fs.writeFileSync(path.join(serviceDir, "blog-service.ts"), body);
+
+      const result = checkServiceResultTypes(tempDir, false);
+      expect(result.status).toBe("fail");
+      expect(result.details).toEqual([
+        expect.stringContaining(
+          `${path.join("lib", "services", "widget-service.ts")}:2`
+        ),
+      ]);
+    });
   });
 
   describe("checkSubRoutePerformance", () => {

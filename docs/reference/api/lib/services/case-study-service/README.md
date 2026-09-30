@@ -19,7 +19,13 @@
 
 ## Type Aliases
 
+- [CaseStudyImageErrorCode](type-aliases/CaseStudyImageErrorCode.md)
 - [CaseStudySearchSummary](type-aliases/CaseStudySearchSummary.md)
+- [UpdateCaseStudyImageResult](type-aliases/UpdateCaseStudyImageResult.md)
+
+## Variables
+
+- [CaseStudyImageErrorCode](variables/CaseStudyImageErrorCode.md)
 
 ## References
 

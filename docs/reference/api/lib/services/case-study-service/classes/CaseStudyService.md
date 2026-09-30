@@ -231,9 +231,12 @@ Buffers reaction increments via HINCRBY and enqueues events without waking Neon 
 
 ### updateCaseStudyImage()
 
-> `static` **updateCaseStudyImage**(`slug`, `heroImageUrl`): `Promise`\<[`CaseStudyData`](../../../case-studies-data/interfaces/CaseStudyData.md)\>
+> `static` **updateCaseStudyImage**(`slug`, `heroImageUrl`): `Promise`\<[`UpdateCaseStudyImageResult`](../type-aliases/UpdateCaseStudyImageResult.md)\>
 
 Updates the hero image asset URL for a case study and evicts cache.
+
+Never throws: an unknown slug resolves to `CASE_STUDY_NOT_FOUND` and a
+failed database read or write to `PERSISTENCE_FAILED` (ADR 0028).
 
 #### Parameters
 
@@ -247,4 +250,4 @@ Updates the hero image asset URL for a case study and evicts cache.
 
 #### Returns
 
-`Promise`\<[`CaseStudyData`](../../../case-studies-data/interfaces/CaseStudyData.md)\>
+`Promise`\<[`UpdateCaseStudyImageResult`](../type-aliases/UpdateCaseStudyImageResult.md)\>

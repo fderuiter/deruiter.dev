@@ -316,11 +316,10 @@ export const OetCanvas: React.FC<OetCanvasProps> = ({
     announce(`${label}: ${announcementGenerator(updatedSnap)}`);
   };
 
+  const safeTotalDistance = Math.max(1, snapshot.totalDistance);
   const progressPercent = Math.min(
     100,
-    Math.round(
-      (snapshot.distanceTraveled / Math.max(1, snapshot.totalDistance)) * 100
-    )
+    Math.round((snapshot.distanceTraveled / safeTotalDistance) * 100)
   );
 
   const speedColorClass =

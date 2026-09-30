@@ -20,6 +20,7 @@ import {
 import { FieldManualButton } from "@/components/FieldManualButton";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { ARCADE_GAME_COUNT } from "@/lib/arcade";
+import { safeGetRawItem } from "@/lib/safe-storage";
 
 interface ArcadeGameCard {
   id: string;
@@ -47,7 +48,7 @@ const subscribeStorage = (callback: () => void) => {
 const getScore = (key?: string) => () => {
   if (!key || typeof window === "undefined") return "0";
   try {
-    return localStorage.getItem(key) || "0";
+    return safeGetRawItem(key) || "0";
   } catch {
     return "0";
   }

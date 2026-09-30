@@ -40,6 +40,7 @@ import { useResponsiveCanvas } from "@/hooks/useResponsiveCanvas";
 import { useCanvasResolution } from "@/hooks/useCanvasResolution";
 import { applyCanvasScale } from "@/lib/arcade";
 import { TwinStickAimDock } from "@/components/arcade/ControlDocks";
+import { safeGetRawItem, safeSetRawItem } from "@/lib/safe-storage";
 import {
   LaserMode,
   LaserType,
@@ -93,7 +94,7 @@ const subscribeHighScore = (callback: () => void) => {
 };
 const getHighScoreSnapshot = () => {
   try {
-    return localStorage.getItem("laser_loon_high_score") || "0";
+    return safeGetRawItem("laser_loon_high_score") || "0";
   } catch {
     return "0";
   }
@@ -427,24 +428,24 @@ export const LaserLoon: React.FC = () => {
     [spawnExplosion]
   );
 
-  // High score updater
-  const addScore = useCallback((pts: number) => {
-    setScore((s) => {
-      const next = s + pts;
-      setHighScore((h) => {
-        if (next > h) {
-          if (typeof window !== "undefined") {
-            try {
-              localStorage.setItem("laser_loon_high_score", next.toString());
-            } catch {}
-          }
-          return next;
-        }
-        return h;
-      });
-      return next;
-    });
-  }, []);
+  // High score updater. Score and best are tracked in refs so the storage
+  // write happens outside any setState updater (AGENTS.md §4), and the best
+  // includes the saved score so a lower run never overwrites it.
+  const scoreRef = useRef(0);
+  const bestScoreRef = useRef(0);
+  const addScore = useCallback(
+    (pts: number) => {
+      const next = scoreRef.current + pts;
+      scoreRef.current = next;
+      setScore(next);
+      if (next > Math.max(bestScoreRef.current, loadedHighScore)) {
+        bestScoreRef.current = next;
+        setHighScore(next);
+        safeSetRawItem("laser_loon_high_score", next.toString());
+      }
+    },
+    [loadedHighScore]
+  );
 
   const addUltimateMeter = useCallback((amount: number) => {
     const nextVal = Math.min(100, ultimateMeterRef.current + amount);
@@ -661,6 +662,7 @@ export const LaserLoon: React.FC = () => {
   // Start game session
   const startGame = useCallback(() => {
     const fresh = createInitialState(mode);
+    scoreRef.current = 0;
     setScore(0);
     setCombo(0);
     setMaxCombo(0);
@@ -693,6 +695,7 @@ export const LaserLoon: React.FC = () => {
   const resetGame = useCallback(() => {
     setGameState("idle");
     setIsPaused(false);
+    scoreRef.current = 0;
     setScore(0);
     setCombo(0);
     setMaxCombo(0);

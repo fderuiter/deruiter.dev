@@ -36,7 +36,7 @@ Two properties of the response matter and are easy to get wrong:
 
 - **Only private repositories draw on the allowance.** Public repositories
   appear in the same response with their minutes fully discounted. Summing
-  every `usageItems` entry overstates consumption several-fold — September
+  every `usageItems` entry overstates consumption several-fold, September
   2026 totalled 19,955 minutes across all repositories but only 2,433
   against the allowance. Filter by private repositories before summing.
 - **`netAmount` is not a usage signal.** It stays `0.00` both when usage is
@@ -68,16 +68,16 @@ runs, repeated pushes while chasing a flaky test):
 ## What changed to reduce cost (ADR 0039 / #733)
 
 - `fast-gate` (typecheck, lint, docs/schema drift, unit tests, property
-  fuzzing) runs on `main` pushes and pull requests targeting `main` —
+  fuzzing) runs on `main` pushes and pull requests targeting `main`, 
   cheap, and gates the expensive jobs below via `needs:`.
 - `security-gate` (vulnerability audit) runs on `main` pushes and pull requests
-  targeting `main` — independent and fast.
+  targeting `main`, independent and fast.
 - `heavy-gate` (build, bundle budget, Playwright, Web Vitals) runs only on
   PR pushes, and only against the `chromium` Playwright project instead of
   all four configured device projects.
 - `device-gate` runs only on PR pushes, alongside `heavy-gate`, and runs the
   two genuinely device-engine-dependent specs (`visual.spec.ts`,
-  `touch-controls.spec.ts`) against the three non-chromium projects —
+  `touch-controls.spec.ts`) against the three non-chromium projects, 
   coverage `heavy-gate`'s single `chromium` project does not have. This used
   to be a separate `post-merge-device-smoke` job that ran only after a
   squash-merge landed on `main` (see CI-02 below); it does not repeat the
@@ -98,17 +98,17 @@ runs, repeated pushes while chasing a flaky test):
 Before this change, `device-gate` was `post-merge-device-smoke`: it ran only
 on the `push` to `main` after a squash-merge, so a device-engine regression
 (a pixel-diff drift or a touch-only interaction bug) could land on `main`
-before anything caught it — the PR's own `heavy-gate` run only exercised
+before anything caught it, the PR's own `heavy-gate` run only exercised
 `chromium`. `device-gate` now runs on the pull request itself, alongside
 `heavy-gate`, so both the full-suite `chromium` run and the targeted
 `Tablet Safari` / `Mobile Safari` / `Mobile Chrome` run of `visual.spec.ts`
 and `touch-controls.spec.ts` gate the merge. Nothing now re-runs that
-targeted suite a second time on the post-merge push — the reduced-scope
+targeted suite a second time on the post-merge push, the reduced-scope
 split from #733/#775 (one four-device matrix run per merge, not per push and
 per PR) is unchanged, just relocated to before the merge instead of after.
 
 `main`-push confirmation stays deliberately bounded to `fast-gate` and
-`security-gate` — a safety net for a direct push that bypasses PR review.
+`security-gate`, a safety net for a direct push that bypasses PR review.
 Branch protection is available for this public repository, but its current
 dashboard configuration has not been verified; #732 tracks that human check.
 The bounded push jobs are not a repeat of the build/Playwright work the merged
@@ -130,17 +130,17 @@ same `main` rule.
 
 This replaces the two check names #732 originally listed
 (`Rigor Ecosystem (Logic, Visual, Performance)` and
-`Security Gate (Vulnerability Audit)`) — the first no longer exists under
+`Security Gate (Vulnerability Audit)`), the first no longer exists under
 that name since #775 split it into `fast-gate`/`heavy-gate`/`device-gate`.
 Requiring the individual job names directly does not work correctly here:
 `heavy-gate` and `device-gate` both carry an `if: github.event_name ==
 'pull_request'` condition, and GitHub's required-status-checks rule treats a
 job skipped by its own `if:` (or skipped as a side effect of a failed
-`needs:` predecessor) the same as a job that never applied — a "skipped"
+`needs:` predecessor) the same as a job that never applied, a "skipped"
 conclusion satisfies the requirement instead of blocking it. `merge-gate`
 runs with `if: always()` specifically to stay unaffected by that, then
 inspects `needs.<job>.result` for every job that should have run for the
-current event and fails unless each one is literally `"success"` — so a
+current event and fails unless each one is literally `"success"`, so a
 cancelled Playwright run, a failed `fast-gate`, or an unexpectedly skipped
 `device-gate` cannot produce a passing `merge-gate`, and requiring that one
 check is sufficient; requiring the four upstream jobs individually as well
@@ -149,7 +149,7 @@ depend on).
 
 `security-gate` remains unconditional (no `if:`), so its `"Security Gate
 (Vulnerability Audit)"` check name is safe to require directly as well if the
-repo owner wants defense-in-depth beyond `merge-gate` alone — but `merge-gate`
+repo owner wants defense-in-depth beyond `merge-gate` alone, but `merge-gate`
 failing already implies `security-gate` failed or was skipped, so it is not
 required for correctness.
 
@@ -189,8 +189,8 @@ event exclusion), and its shell script dispatches explicitly on `github.event_na
   `heavy-gate`, `device-gate`) to report literal `"success"`.
 - `push`: requires `fast-gate` and `security-gate` only (the bounded main-push
   confirmation, since PR review already validated heavy-gate and device-gate).
-- `*` (default): any other event — `workflow_dispatch` included, and any future
-  trigger this workflow does not yet have — hits an explicit default branch that
+- `*` (default): any other event: `workflow_dispatch` included, and any future
+  trigger this workflow does not yet have, hits an explicit default branch that
   fails the job outright (`echo "::error::..."; fail=1`).
 
 A manual or unrecognized trigger can therefore never produce a "skipped" conclusion

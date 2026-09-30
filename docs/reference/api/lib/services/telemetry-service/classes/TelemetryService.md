@@ -97,7 +97,7 @@ actually accepted so callers never present a dropped event as durable.
 
 ### rollupAndPruneRawEvents()
 
-> `static` **rollupAndPruneRawEvents**(`before`): `Promise`\<\{ `rawEventsDeleted`: `number`; `rollupsUpserted`: `number`; \}\>
+> `static` **rollupAndPruneRawEvents**(`before`): `Promise`\<[`TelemetryRetentionResult`](../type-aliases/TelemetryRetentionResult.md)\>
 
 Rolls raw events older than the cutoff into daily aggregates and removes
 only the rows committed by the same database transaction.
@@ -110,13 +110,13 @@ only the rows committed by the same database transaction.
 
 #### Returns
 
-`Promise`\<\{ `rawEventsDeleted`: `number`; `rollupsUpserted`: `number`; \}\>
+`Promise`\<[`TelemetryRetentionResult`](../type-aliases/TelemetryRetentionResult.md)\>
 
 ***
 
 ### syncBufferedEvents()
 
-> `static` **syncBufferedEvents**(`batchSize`): `Promise`\<\{ `inserted`: `number`; `processed`: `number`; \}\>
+> `static` **syncBufferedEvents**(`batchSize`): `Promise`\<[`TelemetrySyncResult`](../type-aliases/TelemetrySyncResult.md)\>
 
 Synchronizes buffered telemetry events from Redis into PostgreSQL.
 
@@ -135,4 +135,4 @@ batch survives. Re-processing is idempotent through the explicit event id.
 
 #### Returns
 
-`Promise`\<\{ `inserted`: `number`; `processed`: `number`; \}\>
+`Promise`\<[`TelemetrySyncResult`](../type-aliases/TelemetrySyncResult.md)\>

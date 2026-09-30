@@ -319,13 +319,53 @@ describe("BlogPostService - Two-Tier Redis Compute Shield & Reaction Buffering",
 
       const result = await BlogPostService.flushBufferedReactionsToDatabase();
 
-      expect(result).toEqual({ processed: 0, inserted: 0 });
+      expect(result).toEqual({
+        success: true,
+        data: { processed: 0, inserted: 0 },
+      });
       expect(mockRedisLrange).not.toHaveBeenCalled();
       expect(prisma.blogPostReaction.createMany).not.toHaveBeenCalled();
     });
   });
 
   describe("Scheduled Maintenance: flushBufferedReactionsToDatabase", () => {
+    it("returns PERSISTENCE_FAILED and keeps events queued when the DB write fails (#1532)", async () => {
+      const pending = {
+        id: "evt-fail",
+        blogPostSlug: "cdisc-crf-compiler-architecture",
+        reactionType: "insightful",
+        connectionHash: "hash-fail",
+        createdAt: new Date().toISOString(),
+      };
+      mockRedisLrange.mockResolvedValueOnce([pending]);
+      const dbError = new Error("Database connection failure");
+      vi.mocked(prisma.blogPostReaction.createMany).mockRejectedValueOnce(
+        dbError
+      );
+
+      const result = await BlogPostService.flushBufferedReactionsToDatabase();
+
+      expect(result).toMatchObject({
+        success: false,
+        error: { code: "PERSISTENCE_FAILED", details: dbError },
+      });
+      expect(mockRedisLrem).not.toHaveBeenCalled();
+      expect(mockRedisHincrby).not.toHaveBeenCalled();
+    });
+
+    it("returns FLUSH_FAILED when Redis cannot be read (#1532)", async () => {
+      const redisError = new Error("Redis connection refused");
+      mockRedisLrange.mockRejectedValueOnce(redisError);
+
+      const result = await BlogPostService.flushBufferedReactionsToDatabase();
+
+      expect(result).toMatchObject({
+        success: false,
+        error: { code: "FLUSH_FAILED", details: redisError },
+      });
+      expect(prisma.blogPostReaction.createMany).not.toHaveBeenCalled();
+    });
+
     it("pops buffered reaction events via atomic LMOVE, inserts into Postgres, and adjusts buffer", async () => {
       mockRedisLrange.mockResolvedValueOnce([]); // No items in processing
       mockRedisLlen.mockResolvedValueOnce(2); // 2 queued items
@@ -356,7 +396,10 @@ describe("BlogPostService - Two-Tier Redis Compute Shield & Reaction Buffering",
 
       const result = await BlogPostService.flushBufferedReactionsToDatabase(50);
 
-      expect(result).toEqual({ processed: 2, inserted: 2 });
+      expect(result).toEqual({
+        success: true,
+        data: { processed: 2, inserted: 2 },
+      });
       expect(prisma.blogPostReaction.createMany).toHaveBeenCalledWith({
         data: expect.arrayContaining([
           expect.objectContaining({

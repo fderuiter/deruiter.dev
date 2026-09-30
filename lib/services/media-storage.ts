@@ -1,6 +1,31 @@
 import fs from "node:fs";
 import path from "node:path";
+import { z } from "zod";
 import { getEnv } from "@/lib/env";
+import {
+  createFailure,
+  createSuccess,
+  type ServiceResult,
+} from "@/lib/services/service-result";
+
+/**
+ * Error codes returned by media storage providers (ADR 0028, ADR 0043).
+ *
+ * `STORAGE_UNCONFIGURED` means no provider can serve this deployment, for
+ * example a production or preview deployment without `BLOB_READ_WRITE_TOKEN`.
+ * It fails closed instead of writing to ephemeral local disk. The remaining
+ * codes are provider I/O failures.
+ */
+export const MediaStorageErrorCode = z.enum([
+  "STORAGE_UNCONFIGURED",
+  "UPLOAD_FAILED",
+  "DELETE_FAILED",
+  "READ_FAILED",
+]);
+export type MediaStorageErrorCode = z.infer<typeof MediaStorageErrorCode>;
+
+/** Result envelope returned by every media storage operation. */
+export type MediaStorageResult<T> = ServiceResult<T, MediaStorageErrorCode>;
 
 /**
  * Result of a media upload operation.
@@ -21,17 +46,23 @@ export interface MediaAssetRecord {
 
 /**
  * Pluggable media storage provider contract per ADR 0043.
+ *
+ * Operations return a {@link MediaStorageResult} instead of throwing. A missing
+ * asset is a success with `null` data, not a failure.
  */
 export interface MediaStorageProvider {
   upload(
     file: Buffer,
     filename: string,
     contentType: string
-  ): Promise<MediaUploadResult>;
-  delete(key: string): Promise<void>;
+  ): Promise<MediaStorageResult<MediaUploadResult>>;
+  delete(key: string): Promise<MediaStorageResult<null>>;
   getUrl(key: string): string;
-  getAsset?(key: string): Promise<MediaAssetRecord | null>;
+  getAsset?(key: string): Promise<MediaStorageResult<MediaAssetRecord | null>>;
 }
+
+const MISSING_BLOB_TOKEN_MESSAGE =
+  "BLOB_READ_WRITE_TOKEN is required for VercelBlobStorageProvider";
 
 /**
  * Maps common file extensions to standard image MIME types.
@@ -82,42 +113,54 @@ export class LocalStorageProvider implements MediaStorageProvider {
     file: Buffer,
     filename: string,
     _contentType: string
-  ): Promise<MediaUploadResult> {
-    this.ensureDir();
-    const filePath = this.getFilePath(filename);
-    await fs.promises.writeFile(filePath, file);
-    return {
+  ): Promise<MediaStorageResult<MediaUploadResult>> {
+    try {
+      this.ensureDir();
+      const filePath = this.getFilePath(filename);
+      await fs.promises.writeFile(filePath, file);
+    } catch (error) {
+      return createFailure(
+        "UPLOAD_FAILED",
+        "Local media storage could not write the asset",
+        { details: error }
+      );
+    }
+    return createSuccess({
       url: `/api/media/${filename}`,
       key: filename,
-    };
+    });
   }
 
-  async delete(key: string): Promise<void> {
+  async delete(key: string): Promise<MediaStorageResult<null>> {
     const filePath = this.getFilePath(key);
     try {
       await fs.promises.unlink(filePath);
     } catch {
       // Ignored if file does not exist
     }
+    return createSuccess(null);
   }
 
   getUrl(key: string): string {
     return `/api/media/${key}`;
   }
 
-  async getAsset(key: string): Promise<MediaAssetRecord | null> {
+  async getAsset(
+    key: string
+  ): Promise<MediaStorageResult<MediaAssetRecord | null>> {
     const filePath = this.getFilePath(key);
     try {
       const buffer = await fs.promises.readFile(filePath);
       const ext = path.extname(key).replace(/^\./, "").toLowerCase();
       const contentType = getMimeTypeForExtension(ext);
-      return {
+      return createSuccess({
         buffer,
         contentType,
         createdAt: new Date(),
-      };
+      });
     } catch {
-      return null;
+      // An unreadable local file is served as a missing asset.
+      return createSuccess(null);
     }
   }
 }
@@ -125,57 +168,93 @@ export class LocalStorageProvider implements MediaStorageProvider {
 /**
  * Cloud storage provider directing media uploads to Vercel Blob.
  * Active in preview and production environments with BLOB_READ_WRITE_TOKEN.
+ *
+ * Constructed without a token, explicit or from the environment, every
+ * operation returns `STORAGE_UNCONFIGURED` without making a request.
  */
 export class VercelBlobStorageProvider implements MediaStorageProvider {
   private token: string;
 
   constructor(token?: string) {
     this.token = token || getEnv().BLOB_READ_WRITE_TOKEN || "";
-    if (!this.token) {
-      throw new Error(
-        "BLOB_READ_WRITE_TOKEN is required for VercelBlobStorageProvider"
-      );
-    }
+  }
+
+  /** Whether a Blob read-write token is available to this provider. */
+  isConfigured(): boolean {
+    return this.token.length > 0;
   }
 
   async upload(
     file: Buffer,
     filename: string,
     contentType: string
-  ): Promise<MediaUploadResult> {
-    const res = await fetch(`https://blob.vercel-storage.com/${filename}`, {
-      method: "PUT",
-      headers: {
-        authorization: `Bearer ${this.token}`,
-        "x-content-type": contentType,
-        "x-add-random-suffix": "false",
-      },
-      body: new Uint8Array(file),
-    });
-
-    if (!res.ok) {
-      throw new Error(`Vercel Blob upload failed: ${res.statusText}`);
+  ): Promise<MediaStorageResult<MediaUploadResult>> {
+    if (!this.isConfigured()) {
+      return createFailure("STORAGE_UNCONFIGURED", MISSING_BLOB_TOKEN_MESSAGE, {
+        recoverable: false,
+      });
     }
 
-    const data = (await res.json()) as { url: string; pathname?: string };
-    return {
-      url: data.url,
-      key: data.pathname || filename,
-    };
+    try {
+      const res = await fetch(`https://blob.vercel-storage.com/${filename}`, {
+        method: "PUT",
+        headers: {
+          authorization: `Bearer ${this.token}`,
+          "x-content-type": contentType,
+          "x-add-random-suffix": "false",
+        },
+        body: new Uint8Array(file),
+      });
+
+      if (!res.ok) {
+        return createFailure(
+          "UPLOAD_FAILED",
+          `Vercel Blob upload failed: ${res.statusText}`,
+          { details: { status: res.status } }
+        );
+      }
+
+      const data = (await res.json()) as { url: string; pathname?: string };
+      return createSuccess({
+        url: data.url,
+        key: data.pathname || filename,
+      });
+    } catch (error) {
+      return createFailure("UPLOAD_FAILED", "Vercel Blob upload failed", {
+        details: error,
+      });
+    }
   }
 
-  async delete(key: string): Promise<void> {
-    const res = await fetch("https://blob.vercel-storage.com/delete", {
-      method: "POST",
-      headers: {
-        authorization: `Bearer ${this.token}`,
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({ urls: [key] }),
-    });
+  async delete(key: string): Promise<MediaStorageResult<null>> {
+    if (!this.isConfigured()) {
+      return createFailure("STORAGE_UNCONFIGURED", MISSING_BLOB_TOKEN_MESSAGE, {
+        recoverable: false,
+      });
+    }
 
-    if (!res.ok) {
-      throw new Error(`Vercel Blob delete failed: ${res.statusText}`);
+    try {
+      const res = await fetch("https://blob.vercel-storage.com/delete", {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${this.token}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ urls: [key] }),
+      });
+
+      if (!res.ok) {
+        return createFailure(
+          "DELETE_FAILED",
+          `Vercel Blob delete failed: ${res.statusText}`,
+          { details: { status: res.status } }
+        );
+      }
+      return createSuccess(null);
+    } catch (error) {
+      return createFailure("DELETE_FAILED", "Vercel Blob delete failed", {
+        details: error,
+      });
     }
   }
 
@@ -190,16 +269,19 @@ export class VercelBlobStorageProvider implements MediaStorageProvider {
 let activeProvider: MediaStorageProvider | null = null;
 
 /**
- * Returns the active MediaStorageProvider instance based on environment configuration.
+ * Resolves the active MediaStorageProvider from environment configuration.
+ *
+ * A production or preview deployment without `BLOB_READ_WRITE_TOKEN` resolves
+ * to `STORAGE_UNCONFIGURED` instead of falling back to ephemeral local disk.
  */
-export function getMediaStorageProvider(): MediaStorageProvider {
+export function getMediaStorageProvider(): MediaStorageResult<MediaStorageProvider> {
   if (activeProvider) {
-    return activeProvider;
+    return createSuccess(activeProvider);
   }
 
   const { BLOB_READ_WRITE_TOKEN: token, NODE_ENV, VERCEL_ENV } = getEnv();
   if (token && token.trim().length > 0) {
-    return new VercelBlobStorageProvider(token);
+    return createSuccess(new VercelBlobStorageProvider(token));
   }
 
   if (
@@ -207,12 +289,14 @@ export function getMediaStorageProvider(): MediaStorageProvider {
     VERCEL_ENV === "production" ||
     VERCEL_ENV === "preview"
   ) {
-    throw new Error(
-      "BLOB_READ_WRITE_TOKEN is required for media storage in production or preview environments"
+    return createFailure(
+      "STORAGE_UNCONFIGURED",
+      "BLOB_READ_WRITE_TOKEN is required for media storage in production or preview environments",
+      { recoverable: false }
     );
   }
 
-  return new LocalStorageProvider();
+  return createSuccess(new LocalStorageProvider());
 }
 
 /**

@@ -10,7 +10,7 @@
 
 ### dispatchNewsletter()
 
-> **dispatchNewsletter**(`now`): `Promise`\<`Record`\<`string`, `number` \| `null`\>\>
+> **dispatchNewsletter**(`now`): `Promise`\<[`MaintenancePhaseResult`](../type-aliases/MaintenancePhaseResult.md)\>
 
 #### Parameters
 
@@ -20,13 +20,13 @@
 
 #### Returns
 
-`Promise`\<`Record`\<`string`, `number` \| `null`\>\>
+`Promise`\<[`MaintenancePhaseResult`](../type-aliases/MaintenancePhaseResult.md)\>
 
 ***
 
 ### processEmailRetry()
 
-> **processEmailRetry**(`now`): `Promise`\<`Record`\<`string`, `number` \| `null`\>\>
+> **processEmailRetry**(`now`): `Promise`\<[`MaintenancePhaseResult`](../type-aliases/MaintenancePhaseResult.md)\>
 
 #### Parameters
 
@@ -36,13 +36,13 @@
 
 #### Returns
 
-`Promise`\<`Record`\<`string`, `number` \| `null`\>\>
+`Promise`\<[`MaintenancePhaseResult`](../type-aliases/MaintenancePhaseResult.md)\>
 
 ***
 
 ### runRetention()
 
-> **runRetention**(`now`): `Promise`\<`Record`\<`string`, `number` \| `null`\>\>
+> **runRetention**(`now`): `Promise`\<[`MaintenancePhaseResult`](../type-aliases/MaintenancePhaseResult.md)\>
 
 #### Parameters
 
@@ -52,13 +52,13 @@
 
 #### Returns
 
-`Promise`\<`Record`\<`string`, `number` \| `null`\>\>
+`Promise`\<[`MaintenancePhaseResult`](../type-aliases/MaintenancePhaseResult.md)\>
 
 ***
 
 ### syncTelemetry()
 
-> **syncTelemetry**(`batchSize`): `Promise`\<`Record`\<`string`, `number` \| `null`\>\>
+> **syncTelemetry**(`batchSize`): `Promise`\<[`MaintenancePhaseResult`](../type-aliases/MaintenancePhaseResult.md)\>
 
 #### Parameters
 
@@ -68,4 +68,4 @@
 
 #### Returns
 
-`Promise`\<`Record`\<`string`, `number` \| `null`\>\>
+`Promise`\<[`MaintenancePhaseResult`](../type-aliases/MaintenancePhaseResult.md)\>

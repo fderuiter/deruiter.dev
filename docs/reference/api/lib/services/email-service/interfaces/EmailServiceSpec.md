@@ -111,7 +111,7 @@ Conforms to ADR 0028 Typed Service Contract (Spec & Handler Pattern).
 
 ### processRetryQueue()
 
-> **processRetryQueue**(`options?`): `Promise`\<\{ `failed`: `number`; `processed`: `number`; `succeeded`: `number`; \}\>
+> **processRetryQueue**(`options?`): `Promise`\<[`EmailRetryResult`](../type-aliases/EmailRetryResult.md)\>
 
 #### Parameters
 
@@ -131,7 +131,7 @@ Conforms to ADR 0028 Typed Service Contract (Spec & Handler Pattern).
 
 #### Returns
 
-`Promise`\<\{ `failed`: `number`; `processed`: `number`; `succeeded`: `number`; \}\>
+`Promise`\<[`EmailRetryResult`](../type-aliases/EmailRetryResult.md)\>
 
 ***
 

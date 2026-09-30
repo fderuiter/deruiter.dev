@@ -10,6 +10,7 @@ const {
   mockDel,
   mockCreateMany,
   mockCaptureException,
+  mockTransaction,
 } = vi.hoisted(() => ({
   mockLpush: vi.fn(),
   mockExpire: vi.fn(),
@@ -20,6 +21,7 @@ const {
   mockDel: vi.fn(),
   mockCreateMany: vi.fn().mockResolvedValue({ count: 0 }),
   mockCaptureException: vi.fn(),
+  mockTransaction: vi.fn(),
 }));
 
 vi.mock("@/lib/db", () => ({
@@ -29,6 +31,7 @@ vi.mock("@/lib/db", () => ({
       groupBy: vi.fn(),
       create: vi.fn(),
     },
+    $transaction: mockTransaction,
   },
 }));
 
@@ -102,7 +105,10 @@ describe("Telemetry buffer ownership across concurrent sync and enqueue failure 
 
       const result = await TelemetryService.syncBufferedEvents(3);
 
-      expect(result).toEqual({ processed: 2, inserted: 2 });
+      expect(result).toEqual({
+        success: true,
+        data: { processed: 2, inserted: 2 },
+      });
 
       // A concurrent worker may LMOVE further events into the processing queue
       // between this worker's read and its acknowledgement. Deleting the whole
@@ -126,9 +132,12 @@ describe("Telemetry buffer ownership across concurrent sync and enqueue failure 
       mockExec.mockResolvedValueOnce([]);
       mockCreateMany.mockRejectedValueOnce(new Error("Database Write Failed"));
 
-      await expect(TelemetryService.syncBufferedEvents(5)).rejects.toThrow(
-        "Database Write Failed"
-      );
+      await expect(
+        TelemetryService.syncBufferedEvents(5)
+      ).resolves.toMatchObject({
+        success: false,
+        error: { code: "PERSISTENCE_FAILED" },
+      });
 
       expect(mockLrem).not.toHaveBeenCalled();
       expect(mockDel).not.toHaveBeenCalledWith(PROCESSING_KEY);
@@ -140,9 +149,75 @@ describe("Telemetry buffer ownership across concurrent sync and enqueue failure 
 
       const result = await TelemetryService.syncBufferedEvents(2);
 
-      expect(result).toEqual({ processed: 0, inserted: 0 });
+      expect(result).toEqual({
+        success: true,
+        data: { processed: 0, inserted: 0 },
+      });
       expect(mockLrem).not.toHaveBeenCalled();
       expect(mockDel).not.toHaveBeenCalledWith(PROCESSING_KEY);
+    });
+
+    it("returns QUEUE_UNAVAILABLE instead of throwing when Redis cannot be read (#1532)", async () => {
+      const redisError = new Error("Redis connection refused");
+      mockLrange.mockRejectedValueOnce(redisError);
+
+      const result = await TelemetryService.syncBufferedEvents(5);
+
+      expect(result).toMatchObject({
+        success: false,
+        error: { code: "QUEUE_UNAVAILABLE", details: redisError },
+      });
+      expect(mockCreateMany).not.toHaveBeenCalled();
+    });
+
+    it("returns ACKNOWLEDGEMENT_FAILED when the batch persisted but LREM failed (#1532)", async () => {
+      const pending = {
+        id: "evt-persisted",
+        projectSlug: "/stack",
+        eventType: "page_view",
+        createdAt: new Date().toISOString(),
+      };
+      mockLrange.mockResolvedValueOnce([pending]);
+      mockExec
+        .mockResolvedValueOnce([])
+        .mockRejectedValueOnce(new Error("ack pipeline dropped"));
+      mockCreateMany.mockResolvedValueOnce({ count: 1 });
+
+      const result = await TelemetryService.syncBufferedEvents(5);
+
+      expect(result).toMatchObject({
+        success: false,
+        error: { code: "ACKNOWLEDGEMENT_FAILED" },
+      });
+      expect(mockCreateMany).toHaveBeenCalledOnce();
+    });
+  });
+
+  describe("rollupAndPruneRawEvents (#1532)", () => {
+    it("returns the committed counts", async () => {
+      mockTransaction.mockResolvedValueOnce({
+        rollupsUpserted: 3,
+        rawEventsDeleted: 40,
+      });
+
+      await expect(
+        TelemetryService.rollupAndPruneRawEvents(new Date())
+      ).resolves.toEqual({
+        success: true,
+        data: { rollupsUpserted: 3, rawEventsDeleted: 40 },
+      });
+    });
+
+    it("returns RETENTION_FAILED instead of throwing when the transaction rolls back", async () => {
+      const txError = new Error("serialization failure");
+      mockTransaction.mockRejectedValueOnce(txError);
+
+      await expect(
+        TelemetryService.rollupAndPruneRawEvents(new Date())
+      ).resolves.toMatchObject({
+        success: false,
+        error: { code: "RETENTION_FAILED", details: txError },
+      });
     });
   });
 

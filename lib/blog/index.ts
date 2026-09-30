@@ -3,16 +3,12 @@ export * from "./presets";
 export * from "./headings";
 export * from "./related";
 
-import {
-  BlogPostService,
-  isValidBlogPost,
-  parseBlogPostDates,
-} from "@/lib/services/blog-service";
+import { BlogPostService, toValidBlogPosts } from "@/lib/services/blog-service";
 import type { BlogPostData } from "@/lib/fallback-blog-posts";
 import type { BlogPost, BlogPostSummary, ContentPillar } from "./types";
 
-function toBlogPostSummary(data: BlogPostData): BlogPostSummary {
-  const parsed = parseBlogPostDates(data);
+/** Maps a post whose dates `toValidBlogPosts` has already coerced. */
+function toBlogPostSummary(parsed: BlogPostData): BlogPostSummary {
   return {
     slug: parsed.slug,
     title: parsed.title,
@@ -46,8 +42,7 @@ function toBlogPostSummary(data: BlogPostData): BlogPostSummary {
  */
 export async function getAllPublishedBlogPosts(): Promise<BlogPostSummary[]> {
   const posts = await BlogPostService.getAllPublishedBlogPosts();
-  return posts
-    .filter(isValidBlogPost)
+  return toValidBlogPosts(posts)
     .map(toBlogPostSummary)
     .sort((a, b) => {
       const timeDiff = b.publishedAt.getTime() - a.publishedAt.getTime();
@@ -69,11 +64,12 @@ export async function getBlogPostBySlug(
     return null;
   }
   const post = await BlogPostService.getBlogPostBySlug(slug);
-  if (!post || !isValidBlogPost(post)) {
+  const [parsed] = post ? toValidBlogPosts([post]) : [];
+  if (!parsed) {
     return null;
   }
   return {
-    ...toBlogPostSummary(post),
-    body: post.body,
+    ...toBlogPostSummary(parsed),
+    body: parsed.body,
   };
 }

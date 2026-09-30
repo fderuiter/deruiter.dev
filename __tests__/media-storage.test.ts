@@ -10,6 +10,7 @@ import {
   type MediaStorageProvider,
 } from "@/lib/services/media-storage";
 import { ProjectImageService } from "@/lib/services/project-image-service";
+import { createFailure, createSuccess } from "@/lib/services/service-result";
 import * as envModule from "@/lib/env";
 
 describe("Media Storage Provider Test Suite", () => {
@@ -86,10 +87,12 @@ describe("Media Storage Provider Test Suite", () => {
         path.join(mockDir, "test-image.png"),
         fileBuffer
       );
-      expect(result).toEqual({
-        url: "/api/media/test-image.png",
-        key: "test-image.png",
-      });
+      expect(result).toEqual(
+        createSuccess({
+          url: "/api/media/test-image.png",
+          key: "test-image.png",
+        })
+      );
     });
 
     it("skips creating directory if it already exists", async () => {
@@ -123,7 +126,7 @@ describe("Media Storage Provider Test Suite", () => {
         path.join(mockDir, "passwd.png"),
         expect.any(Buffer)
       );
-      expect(result.key).toBe("../../etc/passwd.png");
+      expect(result.success && result.data.key).toBe("../../etc/passwd.png");
     });
 
     it("deletes existing file cleanly", async () => {
@@ -132,7 +135,9 @@ describe("Media Storage Provider Test Suite", () => {
         .mockResolvedValue(undefined);
 
       const provider = new LocalStorageProvider(mockDir);
-      await provider.delete("file-to-delete.png");
+      await expect(provider.delete("file-to-delete.png")).resolves.toEqual(
+        createSuccess(null)
+      );
 
       expect(unlinkSpy).toHaveBeenCalledWith(
         path.join(mockDir, "file-to-delete.png")
@@ -145,7 +150,9 @@ describe("Media Storage Provider Test Suite", () => {
       );
 
       const provider = new LocalStorageProvider(mockDir);
-      await expect(provider.delete("non-existent.png")).resolves.not.toThrow();
+      await expect(provider.delete("non-existent.png")).resolves.toEqual(
+        createSuccess(null)
+      );
     });
 
     it("generates local media URLs correctly", () => {
@@ -160,7 +167,8 @@ describe("Media Storage Provider Test Suite", () => {
       vi.spyOn(fs.promises, "readFile").mockResolvedValue(contentBuffer);
 
       const provider = new LocalStorageProvider(mockDir);
-      const asset = await provider.getAsset("hero-banner.jpg");
+      const result = await provider.getAsset("hero-banner.jpg");
+      const asset = result.success ? result.data : null;
 
       expect(asset).not.toBeNull();
       expect(asset?.buffer).toEqual(contentBuffer);
@@ -168,28 +176,63 @@ describe("Media Storage Provider Test Suite", () => {
       expect(asset?.createdAt).toBeInstanceOf(Date);
     });
 
+    it("returns an upload failure instead of throwing when the disk write fails", async () => {
+      vi.spyOn(fs, "existsSync").mockReturnValue(true);
+      const diskError = new Error("EACCES: permission denied");
+      vi.spyOn(fs.promises, "writeFile").mockRejectedValue(diskError);
+
+      const provider = new LocalStorageProvider(mockDir);
+      const result = await provider.upload(
+        Buffer.from("data"),
+        "locked.png",
+        "image/png"
+      );
+
+      expect(result).toMatchObject({
+        success: false,
+        error: { code: "UPLOAD_FAILED", details: diskError },
+      });
+    });
+
     it("returns null when reading asset fails", async () => {
       vi.spyOn(fs.promises, "readFile").mockRejectedValue(new Error("ENOENT"));
 
       const provider = new LocalStorageProvider(mockDir);
-      const asset = await provider.getAsset("missing.png");
+      const result = await provider.getAsset("missing.png");
 
-      expect(asset).toBeNull();
+      expect(result).toEqual(createSuccess(null));
     });
   });
 
   describe("VercelBlobStorageProvider", () => {
     const testToken = "vercel_blob_rw_test_token_12345";
 
-    it("throws an error when constructor is called without token or BLOB_READ_WRITE_TOKEN in env", () => {
+    it("returns STORAGE_UNCONFIGURED without a request when no token is available", async () => {
       vi.spyOn(envModule, "getEnv").mockReturnValue({
         ...envModule.getEnv(),
         BLOB_READ_WRITE_TOKEN: undefined,
       });
+      const fetchSpy = vi.spyOn(globalThis, "fetch");
 
-      expect(() => new VercelBlobStorageProvider("")).toThrow(
-        "BLOB_READ_WRITE_TOKEN is required for VercelBlobStorageProvider"
+      const provider = new VercelBlobStorageProvider("");
+      expect(provider.isConfigured()).toBe(false);
+
+      const expected = {
+        success: false,
+        error: {
+          code: "STORAGE_UNCONFIGURED",
+          message:
+            "BLOB_READ_WRITE_TOKEN is required for VercelBlobStorageProvider",
+          recoverable: false,
+        },
+      };
+      await expect(
+        provider.upload(Buffer.from("data"), "hero.png", "image/png")
+      ).resolves.toMatchObject(expected);
+      await expect(provider.delete("hero.png")).resolves.toMatchObject(
+        expected
       );
+      expect(fetchSpy).not.toHaveBeenCalled();
     });
 
     it("initializes successfully when token is supplied explicitly", () => {
@@ -244,10 +287,12 @@ describe("Media Storage Provider Test Suite", () => {
         }
       );
 
-      expect(result).toEqual({
-        url: "https://abc.public.blob.vercel-storage.com/cloud-hero.png",
-        key: "cloud-hero.png",
-      });
+      expect(result).toEqual(
+        createSuccess({
+          url: "https://abc.public.blob.vercel-storage.com/cloud-hero.png",
+          key: "cloud-hero.png",
+        })
+      );
     });
 
     it("uses filename as key if response does not contain pathname", async () => {
@@ -267,10 +312,10 @@ describe("Media Storage Provider Test Suite", () => {
         "file.jpg",
         "image/jpeg"
       );
-      expect(result.key).toBe("file.jpg");
+      expect(result.success && result.data.key).toBe("file.jpg");
     });
 
-    it("throws error when Vercel Blob upload HTTP request fails", async () => {
+    it("returns UPLOAD_FAILED when Vercel Blob upload HTTP request fails", async () => {
       const provider = new VercelBlobStorageProvider(testToken);
 
       vi.spyOn(globalThis, "fetch").mockResolvedValue(
@@ -282,7 +327,41 @@ describe("Media Storage Provider Test Suite", () => {
 
       await expect(
         provider.upload(Buffer.from("data"), "hero.png", "image/png")
-      ).rejects.toThrow("Vercel Blob upload failed: Unauthorized");
+      ).resolves.toMatchObject({
+        success: false,
+        error: {
+          code: "UPLOAD_FAILED",
+          message: "Vercel Blob upload failed: Unauthorized",
+        },
+      });
+    });
+
+    it("returns UPLOAD_FAILED instead of throwing on a network error", async () => {
+      const provider = new VercelBlobStorageProvider(testToken);
+      const networkError = new TypeError("fetch failed");
+      vi.spyOn(globalThis, "fetch").mockRejectedValue(networkError);
+
+      await expect(
+        provider.upload(Buffer.from("data"), "hero.png", "image/png")
+      ).resolves.toMatchObject({
+        success: false,
+        error: { code: "UPLOAD_FAILED", details: networkError },
+      });
+    });
+
+    it("returns DELETE_FAILED when Vercel Blob delete HTTP request fails", async () => {
+      const provider = new VercelBlobStorageProvider(testToken);
+      vi.spyOn(globalThis, "fetch").mockResolvedValue(
+        new Response("{}", { status: 503, statusText: "Service Unavailable" })
+      );
+
+      await expect(provider.delete("hero.png")).resolves.toMatchObject({
+        success: false,
+        error: {
+          code: "DELETE_FAILED",
+          message: "Vercel Blob delete failed: Service Unavailable",
+        },
+      });
     });
 
     it("deletes file from Vercel Blob storage via POST request", async () => {
@@ -295,9 +374,11 @@ describe("Media Storage Provider Test Suite", () => {
         })
       );
 
-      await provider.delete(
-        "https://abc.public.blob.vercel-storage.com/cloud-hero.png"
-      );
+      await expect(
+        provider.delete(
+          "https://abc.public.blob.vercel-storage.com/cloud-hero.png"
+        )
+      ).resolves.toEqual(createSuccess(null));
 
       expect(fetchSpy).toHaveBeenCalledWith(
         "https://blob.vercel-storage.com/delete",
@@ -340,7 +421,9 @@ describe("Media Storage Provider Test Suite", () => {
       });
 
       const provider = getMediaStorageProvider();
-      expect(provider).toBeInstanceOf(LocalStorageProvider);
+      expect(provider.success && provider.data).toBeInstanceOf(
+        LocalStorageProvider
+      );
     });
 
     it("returns VercelBlobStorageProvider when BLOB_READ_WRITE_TOKEN is configured in env", () => {
@@ -350,7 +433,9 @@ describe("Media Storage Provider Test Suite", () => {
       });
 
       const provider = getMediaStorageProvider();
-      expect(provider).toBeInstanceOf(VercelBlobStorageProvider);
+      expect(provider.success && provider.data).toBeInstanceOf(
+        VercelBlobStorageProvider
+      );
     });
 
     it("allows overriding active provider via setMediaStorageProvider", () => {
@@ -363,8 +448,8 @@ describe("Media Storage Provider Test Suite", () => {
       setMediaStorageProvider(customProvider);
       const active = getMediaStorageProvider();
 
-      expect(active).toBe(customProvider);
-      expect(active.getUrl("asset.png")).toBe(
+      expect(active).toEqual(createSuccess(customProvider));
+      expect(active.success && active.data.getUrl("asset.png")).toBe(
         "https://custom-cdn.com/asset.png"
       );
     });
@@ -377,7 +462,7 @@ describe("Media Storage Provider Test Suite", () => {
       };
 
       setMediaStorageProvider(customProvider);
-      expect(getMediaStorageProvider()).toBe(customProvider);
+      expect(getMediaStorageProvider()).toEqual(createSuccess(customProvider));
 
       setMediaStorageProvider(null);
       vi.spyOn(envModule, "getEnv").mockReturnValue({
@@ -385,7 +470,10 @@ describe("Media Storage Provider Test Suite", () => {
         BLOB_READ_WRITE_TOKEN: undefined,
       });
 
-      expect(getMediaStorageProvider()).toBeInstanceOf(LocalStorageProvider);
+      const restored = getMediaStorageProvider();
+      expect(restored.success && restored.data).toBeInstanceOf(
+        LocalStorageProvider
+      );
     });
   });
 
@@ -397,7 +485,9 @@ describe("Media Storage Provider Test Suite", () => {
         BLOB_READ_WRITE_TOKEN: "",
       });
 
-      const activeProvider = getMediaStorageProvider();
+      const resolved = getMediaStorageProvider();
+      if (!resolved.success) throw new Error("expected a local provider");
+      const activeProvider = resolved.data;
       expect(activeProvider).toBeInstanceOf(LocalStorageProvider);
 
       // Verify file operations work cleanly using local fallback
@@ -412,7 +502,9 @@ describe("Media Storage Provider Test Suite", () => {
         "image/png"
       );
 
-      expect(result.url).toBe("/api/media/fallback-image.png");
+      expect(result.success && result.data.url).toBe(
+        "/api/media/fallback-image.png"
+      );
       expect(writeFileSpy).toHaveBeenCalledWith(
         expect.stringContaining("fallback-image.png"),
         expect.any(Buffer)
@@ -443,7 +535,13 @@ describe("Media Storage Provider Test Suite", () => {
           fileBuffer,
           "image/png"
         )
-      ).rejects.toThrow("Vercel Blob upload failed: Internal Server Error");
+      ).resolves.toMatchObject({
+        success: false,
+        error: {
+          code: "UPLOAD_FAILED",
+          message: "Vercel Blob upload failed: Internal Server Error",
+        },
+      });
 
       expect(writeFileSpy).not.toHaveBeenCalled();
     });
@@ -456,9 +554,15 @@ describe("Media Storage Provider Test Suite", () => {
         BLOB_READ_WRITE_TOKEN: undefined,
       });
 
-      expect(() => getMediaStorageProvider()).toThrow(
-        "BLOB_READ_WRITE_TOKEN is required for media storage in production or preview environments"
-      );
+      expect(getMediaStorageProvider()).toMatchObject({
+        success: false,
+        error: {
+          code: "STORAGE_UNCONFIGURED",
+          message:
+            "BLOB_READ_WRITE_TOKEN is required for media storage in production or preview environments",
+          recoverable: false,
+        },
+      });
     });
 
     it("returns no asset for cloud providers without read support instead of reading local disk", async () => {
@@ -474,12 +578,12 @@ describe("Media Storage Provider Test Suite", () => {
 
       await expect(
         ProjectImageService.getMediaAsset("project-laser-loon.png")
-      ).resolves.toBeNull();
+      ).resolves.toEqual(createSuccess(null));
 
       expect(localReadSpy).not.toHaveBeenCalled();
     });
 
-    it("propagates cloud read errors without retrying against local disk", async () => {
+    it("returns cloud read errors as READ_FAILED without retrying against local disk", async () => {
       vi.spyOn(envModule, "getEnv").mockReturnValue({
         ...envModule.getEnv(),
         NODE_ENV: "production",
@@ -491,7 +595,11 @@ describe("Media Storage Provider Test Suite", () => {
         upload: vi.fn(),
         delete: vi.fn(),
         getUrl: (key) => `https://cdn.example.com/${key}`,
-        getAsset: vi.fn().mockRejectedValue(readFailure),
+        getAsset: vi.fn().mockResolvedValue(
+          createFailure("READ_FAILED", "Cloud media read failed", {
+            details: readFailure,
+          })
+        ),
       };
       setMediaStorageProvider(cloudProvider);
       const localReadSpy = vi
@@ -500,12 +608,48 @@ describe("Media Storage Provider Test Suite", () => {
 
       await expect(
         ProjectImageService.getMediaAsset("project-laser-loon.png")
-      ).rejects.toBe(readFailure);
+      ).resolves.toMatchObject({
+        success: false,
+        error: { code: "READ_FAILED", details: readFailure },
+      });
 
       expect(localReadSpy).not.toHaveBeenCalled();
     });
 
-    it("returns false for production cloud delete failures without deleting from local disk", async () => {
+    it("contains a provider that throws despite the result contract", async () => {
+      const providerError = new Error("custom provider exploded");
+      setMediaStorageProvider({
+        upload: vi.fn().mockRejectedValue(providerError),
+        delete: vi.fn().mockRejectedValue(providerError),
+        getUrl: (key) => key,
+        getAsset: vi.fn().mockRejectedValue(providerError),
+      });
+
+      await expect(
+        ProjectImageService.saveMediaAsset(
+          "a.png",
+          Buffer.from("x"),
+          "image/png"
+        )
+      ).resolves.toMatchObject({
+        success: false,
+        error: { code: "UPLOAD_FAILED", details: providerError },
+      });
+      await expect(
+        ProjectImageService.getMediaAsset("a.png")
+      ).resolves.toMatchObject({
+        success: false,
+        error: { code: "READ_FAILED", details: providerError },
+      });
+      await expect(
+        ProjectImageService.deleteMediaAsset("a.png")
+      ).resolves.toMatchObject({
+        success: false,
+        error: { code: "DELETE_FAILED", details: providerError },
+      });
+    });
+
+    it("returns DELETE_FAILED for production cloud delete failures without deleting from local disk", async () => {
       vi.spyOn(envModule, "getEnv").mockReturnValue({
         ...envModule.getEnv(),
         NODE_ENV: "production",
@@ -526,12 +670,15 @@ describe("Media Storage Provider Test Suite", () => {
         ProjectImageService.deleteMediaAsset(
           "https://abc.public.blob.vercel-storage.com/project-laser-loon.png"
         )
-      ).resolves.toBe(false);
+      ).resolves.toMatchObject({
+        success: false,
+        error: { code: "DELETE_FAILED" },
+      });
 
       expect(localDeleteSpy).not.toHaveBeenCalled();
     });
 
-    it("continues to reject production delete when cloud storage credentials are missing", async () => {
+    it("continues to fail production delete closed when cloud storage credentials are missing", async () => {
       vi.spyOn(envModule, "getEnv").mockReturnValue({
         ...envModule.getEnv(),
         NODE_ENV: "production",
@@ -541,9 +688,14 @@ describe("Media Storage Provider Test Suite", () => {
 
       await expect(
         ProjectImageService.deleteMediaAsset("project-laser-loon.png")
-      ).rejects.toThrow(
-        "BLOB_READ_WRITE_TOKEN is required for media storage in production or preview environments"
-      );
+      ).resolves.toMatchObject({
+        success: false,
+        error: {
+          code: "STORAGE_UNCONFIGURED",
+          message:
+            "BLOB_READ_WRITE_TOKEN is required for media storage in production or preview environments",
+        },
+      });
     });
   });
 });

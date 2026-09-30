@@ -20,12 +20,15 @@
 ## Type Aliases
 
 - [CaseStudyImageErrorCode](type-aliases/CaseStudyImageErrorCode.md)
+- [CaseStudyReactionFlushErrorCode](type-aliases/CaseStudyReactionFlushErrorCode.md)
+- [CaseStudyReactionFlushResult](type-aliases/CaseStudyReactionFlushResult.md)
 - [CaseStudySearchSummary](type-aliases/CaseStudySearchSummary.md)
 - [UpdateCaseStudyImageResult](type-aliases/UpdateCaseStudyImageResult.md)
 
 ## Variables
 
 - [CaseStudyImageErrorCode](variables/CaseStudyImageErrorCode.md)
+- [CaseStudyReactionFlushErrorCode](variables/CaseStudyReactionFlushErrorCode.md)
 
 ## References
 

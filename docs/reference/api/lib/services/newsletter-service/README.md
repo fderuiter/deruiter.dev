@@ -17,11 +17,14 @@
 
 ## Type Aliases
 
+- [NewsletterDispatchErrorCode](type-aliases/NewsletterDispatchErrorCode.md)
+- [NewsletterDispatchResult](type-aliases/NewsletterDispatchResult.md)
 - [NewsletterTokenOutcome](type-aliases/NewsletterTokenOutcome.md)
 
 ## Variables
 
 - [NEWSLETTER\_DISPATCH\_CAP](variables/NEWSLETTER_DISPATCH_CAP.md)
+- [NewsletterDispatchErrorCode](variables/NewsletterDispatchErrorCode.md)
 
 ## Functions
 

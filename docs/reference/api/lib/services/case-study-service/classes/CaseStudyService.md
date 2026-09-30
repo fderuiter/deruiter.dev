@@ -39,10 +39,13 @@ and dispatches on-demand Next.js ISR tag revalidations.
 
 ### flushBufferedReactionsToDatabase()
 
-> `static` **flushBufferedReactionsToDatabase**(`batchSize?`): `Promise`\<\{ `inserted`: `number`; `processed`: `number`; \}\>
+> `static` **flushBufferedReactionsToDatabase**(`batchSize?`): `Promise`\<[`CaseStudyReactionFlushResult`](../type-aliases/CaseStudyReactionFlushResult.md)\>
 
 Flushes buffered reactions from Upstash Redis to Neon Postgres in batches.
 Designed for execution during scheduled maintenance (ADR 0036).
+
+Never throws: failures are returned as a typed
+[CaseStudyReactionFlushErrorCode](../variables/CaseStudyReactionFlushErrorCode.md).
 
 #### Parameters
 
@@ -52,7 +55,7 @@ Designed for execution during scheduled maintenance (ADR 0036).
 
 #### Returns
 
-`Promise`\<\{ `inserted`: `number`; `processed`: `number`; \}\>
+`Promise`\<[`CaseStudyReactionFlushResult`](../type-aliases/CaseStudyReactionFlushResult.md)\>
 
 ***
 

@@ -1,4 +1,3 @@
-import * as Sentry from "@sentry/nextjs";
 import { sanitizeError, sanitizeString } from "@/lib/error-sanitization";
 
 /**
@@ -72,6 +71,8 @@ function sanitizeMetaValue(
 function sanitizeMeta(meta: Record<string, unknown>): Record<string, unknown> {
   return sanitizeMetaValue(meta, 0, new WeakSet()) as Record<string, unknown>;
 }
+
+let sentryModule: typeof import("@sentry/nextjs") | null = null;
 
 /**
  * Centralized Telemetry Logger Wrapper.
@@ -201,7 +202,7 @@ export class StructuredLogger {
     error?: unknown,
     meta?: Record<string, unknown>
   ): void {
-    try {
+    const doDispatch = (Sentry: typeof import("@sentry/nextjs")) => {
       if (level === "error") {
         if (error) {
           Sentry.captureException(error, {
@@ -235,9 +236,25 @@ export class StructuredLogger {
           data: meta,
         });
       }
-    } catch {
-      // Telemetry dispatch safety guard
+    };
+
+    if (sentryModule) {
+      try {
+        doDispatch(sentryModule);
+      } catch {
+        // Telemetry dispatch safety guard
+      }
+      return;
     }
+
+    import("@sentry/nextjs")
+      .then((mod) => {
+        sentryModule = mod;
+        doDispatch(mod);
+      })
+      .catch(() => {
+        // Telemetry dispatch safety guard
+      });
   }
 
   private writeToConsole(

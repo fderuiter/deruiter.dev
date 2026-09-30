@@ -91,6 +91,7 @@ describe("EmailService (Spec & Handler)", () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toBe("Domain not verified");
+      await new Promise((r) => setTimeout(r, 0));
       expect(Sentry.captureException).toHaveBeenCalled();
     });
   });
@@ -111,7 +112,10 @@ describe("EmailService (Spec & Handler)", () => {
         message: "Let us build an engine together!",
       };
 
-      const result = await EmailService.sendContactInquiry(submission, "hash_123");
+      const result = await EmailService.sendContactInquiry(
+        submission,
+        "hash_123"
+      );
 
       expect(result.success).toBe(true);
       expect(result.adminResult.success).toBe(true);

@@ -320,9 +320,13 @@ export default function SchedulePage() {
             </p>
             <div className="flex items-center justify-center sm:justify-start gap-3 text-[11px] font-mono text-brand-cyan">
               <span>● Based in Minnesota</span>
-              <span className="text-zinc-600">/</span>
+              <span className="text-zinc-400" aria-hidden="true">
+                /
+              </span>
               <span>● Google Meet</span>
-              <span className="text-zinc-600">/</span>
+              <span className="text-zinc-400" aria-hidden="true">
+                /
+              </span>
               <span>● 30-min chat</span>
             </div>
           </div>
@@ -457,7 +461,7 @@ export default function SchedulePage() {
                           className={`text-[10px] px-1.5 py-0.5 rounded font-mono shrink-0 ${
                             active
                               ? "bg-brand-cyan/30 text-brand-cyan"
-                              : "bg-zinc-900 text-zinc-500"
+                              : "bg-zinc-900 text-zinc-400"
                           }`}
                         >
                           +{subtopic.duration}m
@@ -587,7 +591,7 @@ export default function SchedulePage() {
             >
               <IconCheck className="w-4 h-4 text-brand-cyan" />
               <span>LinkedIn Profile</span>
-              <IconExternalLink className="w-3.5 h-3.5 text-zinc-500" />
+              <IconExternalLink className="w-3.5 h-3.5 text-zinc-400" />
             </a>
           </div>
 

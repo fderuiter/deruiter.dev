@@ -213,4 +213,54 @@ test.describe("Visual Regression & Drift Detection", () => {
       )
     ).toBeLessThanOrEqual(0);
   });
+
+  // #1643: media queries ignore the page's root font size, so at 200% text a
+  // 1440px viewport still matches `xl` while the desktop link group needs
+  // twice the room. The header row's container query hands over to the
+  // mobile bar instead, so every navbar control stays inside the viewport.
+  test("Navbar controls stay within the viewport at 200% text on Desktop 1440px", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto("/");
+    await page.waitForLoadState("domcontentloaded");
+    await page.evaluate(() => {
+      document.documentElement.style.fontSize = "200%";
+    });
+
+    const offscreen = await page.evaluate(() => {
+      const clientWidth = document.documentElement.clientWidth;
+      const header = document.querySelector("header");
+      return Array.from(
+        header?.querySelectorAll("a, button, [role='group']") ?? []
+      )
+        .filter((el) => {
+          const rect = el.getBoundingClientRect();
+          return (
+            rect.width > 0 &&
+            rect.height > 0 &&
+            window.getComputedStyle(el).visibility !== "hidden"
+          );
+        })
+        .map((el) => ({
+          label: (el.getAttribute("aria-label") ?? el.textContent ?? "").slice(
+            0,
+            40
+          ),
+          left: Math.round(el.getBoundingClientRect().left),
+          right: Math.round(el.getBoundingClientRect().right),
+        }))
+        .filter((c) => c.left < -1 || c.right > clientWidth + 1);
+    });
+
+    expect(
+      offscreen,
+      "Navbar controls outside the 1440px viewport at 200% text"
+    ).toEqual([]);
+    await expect(page.getByTestId("navbar-mobile-bar")).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Open navigation menu" })
+    ).toBeVisible();
+    expect(await findOverflowingElements(page)).toEqual([]);
+  });
 });

@@ -405,7 +405,7 @@ export const Navbar: React.FC = () => {
       >
         <div
           ref={navContainerRef}
-          className="max-w-6xl mx-auto px-4 sm:px-6 md:px-10 flex flex-wrap justify-between items-center w-full gap-4 sm:gap-6 lg:gap-8"
+          className="@container max-w-6xl mx-auto px-4 sm:px-6 md:px-10 flex flex-wrap justify-between items-center w-full gap-4 sm:gap-6 lg:gap-8"
         >
           {/* Logo / Wordmark */}
           <Link
@@ -422,8 +422,17 @@ export const Navbar: React.FC = () => {
             <span className="tracking-wider">FDERUITER</span>
           </Link>
 
-          {/* Desktop Navigation Links */}
-          <div className="hidden xl:flex items-center gap-2.5 lg:gap-3.5 2xl:gap-5 shrink-0">
+          {/* Desktop Navigation Links. Media queries ignore the page's root
+              font size, so at 200% text a 1440px viewport still matches xl
+              while the group needs twice the room (#1643). The group therefore
+              also requires 66rem of header row, measured in the root font
+              size by the container query: the widest (2xl) group is about
+              65.6rem, and the row is 67rem at 100% text on every xl width.
+              Otherwise the mobile bar below takes over. */}
+          <div
+            data-testid="navbar-desktop-group"
+            className="hidden xl:@min-[66rem]:flex items-center gap-2.5 lg:gap-3.5 2xl:gap-5 shrink-0"
+          >
             <nav
               className="flex items-center gap-2.5 md:gap-3.5 lg:gap-4.5 shrink-0"
               aria-label="Main Navigation"
@@ -1069,7 +1078,7 @@ export const Navbar: React.FC = () => {
           {/* Mobile Header Actions (Search Button + Hamburger) */}
           <div
             data-testid="navbar-mobile-bar"
-            className="xl:hidden flex flex-wrap items-center justify-end gap-2 min-w-0 max-w-full ml-auto relative z-50"
+            className="xl:@min-[66rem]:hidden flex flex-wrap items-center justify-end gap-2 min-w-0 max-w-full ml-auto relative z-50"
           >
             <button
               type="button"

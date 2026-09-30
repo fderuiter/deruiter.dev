@@ -106,11 +106,11 @@ release reconciles 74 commits of `dev` work into `main`; the version jumps from
 Two migrations ship with this release and were applied to production before the
 deployment, in the expand order they were authored:
 
-- `20261015000000_add_email_resilience` — adds `SuppressionList` and
+- `20261015000000_add_email_resilience`: adds `SuppressionList` and
   `OutboundEmailQueue`.
-- `20261016000000_enforce_email_contracts` — adds the `SuppressionReason` and
+- `20261016000000_enforce_email_contracts`: adds the `SuppressionReason` and
   `OutboundEmailStatus` enums and constrains the columns above to them.
-- `20261016000001_telemetry_daily_rollup` — adds the additive
+- `20261016000001_telemetry_daily_rollup`: adds the additive
   `TelemetryDailyRollup` aggregate table.
 
 All three are additive and backward compatible with the previously deployed

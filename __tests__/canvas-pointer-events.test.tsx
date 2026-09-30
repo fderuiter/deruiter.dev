@@ -57,6 +57,23 @@ const mockCtx = {
   // LaserLoon paints its act backdrop with drawImage once the art loads; a
   // frame that lands mid-test otherwise throws an unhandled TypeError.
   drawImage: vi.fn(),
+  getLineDash: vi.fn(() => []),
+  clip: vi.fn(),
+  strokeText: vi.fn(),
+  setTransform: vi.fn(),
+  resetTransform: vi.fn(),
+  createPattern: vi.fn(() => null),
+  createImageData: vi.fn((w: number, h: number) => ({
+    width: w,
+    height: h,
+    data: new Uint8ClampedArray(w * h * 4),
+  })),
+  getImageData: vi.fn((_x: number, _y: number, w: number, h: number) => ({
+    width: w,
+    height: h,
+    data: new Uint8ClampedArray(w * h * 4),
+  })),
+  putImageData: vi.fn(),
 };
 
 HTMLCanvasElement.prototype.getContext = vi.fn(() => fromAny(mockCtx));

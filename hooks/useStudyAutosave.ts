@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import type { StudyProtocol } from "@/lib/crf/types";
 import { saveStudyDraft } from "@/lib/crf/study-draft-storage";
+import { downloadFile } from "@/lib/download";
 
 const AUTOSAVE_DEBOUNCE_MS = 800;
 
@@ -73,18 +74,11 @@ export function useStudyAutosave(study: StudyProtocol): UseStudyAutosaveResult {
   }, [study]);
 
   const downloadDraft = useCallback(() => {
-    if (typeof document === "undefined") return;
-    const blob = new Blob([JSON.stringify(studyRef.current, null, 2)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${studyRef.current.id || "crf-study"}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    downloadFile(
+      JSON.stringify(studyRef.current, null, 2),
+      `${studyRef.current.id || "crf-study"}.json`,
+      { mimeType: "application/json" }
+    );
   }, []);
 
   return { status, savedAt, errorMessage, downloadDraft };

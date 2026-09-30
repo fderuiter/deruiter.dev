@@ -44,6 +44,8 @@ describe("Trial & Error Field Manual controls (#1080)", () => {
     "components/trial-and-error/CardTable.tsx",
     "components/trial-and-error/QcDesk.tsx",
     "components/trial-and-error/FigureDesk.tsx",
+    // The Hand's key policy (#997).
+    "lib/trial-and-error/internal/hand-input.ts",
   ];
   /** How the manual writes a key that the code spells out. */
   const LABELS: Record<string, string> = {

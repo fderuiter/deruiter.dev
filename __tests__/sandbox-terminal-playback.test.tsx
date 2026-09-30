@@ -3,7 +3,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 // Configure React 19 act environment
-(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+(
+  globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true;
 
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -11,7 +13,10 @@ import { SandboxTerminal } from "@/components/SandboxTerminal";
 
 // Mock audio and announcer providers
 vi.mock("@/components/providers/AudioProvider", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/components/providers/AudioProvider")>();
+  const actual =
+    await importOriginal<
+      typeof import("@/components/providers/AudioProvider")
+    >();
   return {
     ...actual,
     useAudio: () => ({
@@ -103,11 +108,15 @@ describe("SandboxTerminal Playback & Step Player Controller Suite", () => {
   it("should render the Incident Playback Controller and use passed-in commands", async () => {
     await act(async () => {
       root = createRoot(container);
-      root.render(<SandboxTerminal commands={mockCommands} playback={mockPlayback} />);
+      root.render(
+        <SandboxTerminal commands={mockCommands} playback={mockPlayback} />
+      );
     });
 
     // Verify dynamic badges are rendered
-    const badgeList = Array.from(container.querySelectorAll("button")).map(el => el.textContent?.trim());
+    const badgeList = Array.from(container.querySelectorAll("button")).map(
+      (el) => el.textContent?.trim()
+    );
     expect(badgeList).toContain("test studies list");
     expect(badgeList).toContain("test subjects get");
     expect(badgeList).not.toContain("imednet studies list"); // Should not show default ones
@@ -115,16 +124,22 @@ describe("SandboxTerminal Playback & Step Player Controller Suite", () => {
     // Verify playback controller panel is shown
     const panelTitle = container.textContent;
     expect(panelTitle).toContain("Incident Playback Controller");
-    expect(panelTitle).toContain("Ready to start step-by-step diagnostic sequence.");
+    expect(panelTitle).toContain(
+      "Ready to start step-by-step diagnostic sequence."
+    );
   });
 
   it("should handle Step Forward correctly (typing and execution simulation)", async () => {
     await act(async () => {
       root = createRoot(container);
-      root.render(<SandboxTerminal commands={mockCommands} playback={mockPlayback} />);
+      root.render(
+        <SandboxTerminal commands={mockCommands} playback={mockPlayback} />
+      );
     });
 
-    const stepForwardBtn = container.querySelector('button[title="Step Forward"]') as HTMLButtonElement;
+    const stepForwardBtn = container.querySelector(
+      'button[title="Step Forward"]'
+    ) as HTMLButtonElement;
     expect(stepForwardBtn).toBeDefined();
 
     // Trigger step forward
@@ -148,10 +163,14 @@ describe("SandboxTerminal Playback & Step Player Controller Suite", () => {
   it("should handle Play and Pause cycle smoothly", async () => {
     await act(async () => {
       root = createRoot(container);
-      root.render(<SandboxTerminal commands={mockCommands} playback={mockPlayback} />);
+      root.render(
+        <SandboxTerminal commands={mockCommands} playback={mockPlayback} />
+      );
     });
 
-    const playBtn = container.querySelector('button[title="Play Sequence"]') as HTMLButtonElement;
+    const playBtn = container.querySelector(
+      'button[title="Play Sequence"]'
+    ) as HTMLButtonElement;
     expect(playBtn).toBeDefined();
 
     // Start auto-playback
@@ -169,7 +188,9 @@ describe("SandboxTerminal Playback & Step Player Controller Suite", () => {
     expect(logEl!.textContent).toContain("test studies list");
 
     // Pause playback (playback delay between steps is 1500ms)
-    const pauseBtn = container.querySelector('button[title="Pause Playback"]') as HTMLButtonElement;
+    const pauseBtn = container.querySelector(
+      'button[title="Pause Playback"]'
+    ) as HTMLButtonElement;
     expect(pauseBtn).toBeDefined();
 
     await act(async () => {
@@ -188,11 +209,17 @@ describe("SandboxTerminal Playback & Step Player Controller Suite", () => {
   it("should handle Step Backward with rolling back logs cleanly", async () => {
     await act(async () => {
       root = createRoot(container);
-      root.render(<SandboxTerminal commands={mockCommands} playback={mockPlayback} />);
+      root.render(
+        <SandboxTerminal commands={mockCommands} playback={mockPlayback} />
+      );
     });
 
-    const stepForwardBtn = container.querySelector('button[title="Step Forward"]') as HTMLButtonElement;
-    const stepBackBtn = container.querySelector('button[title="Step Back"]') as HTMLButtonElement;
+    const stepForwardBtn = container.querySelector(
+      'button[title="Step Forward"]'
+    ) as HTMLButtonElement;
+    const stepBackBtn = container.querySelector(
+      'button[title="Step Back"]'
+    ) as HTMLButtonElement;
 
     // Run step 1
     await act(async () => {
@@ -227,11 +254,17 @@ describe("SandboxTerminal Playback & Step Player Controller Suite", () => {
   it("should handle Reset to initial state completely", async () => {
     await act(async () => {
       root = createRoot(container);
-      root.render(<SandboxTerminal commands={mockCommands} playback={mockPlayback} />);
+      root.render(
+        <SandboxTerminal commands={mockCommands} playback={mockPlayback} />
+      );
     });
 
-    const stepForwardBtn = container.querySelector('button[title="Step Forward"]') as HTMLButtonElement;
-    const resetBtn = container.querySelector('button[title="Reset"]') as HTMLButtonElement;
+    const stepForwardBtn = container.querySelector(
+      'button[title="Step Forward"]'
+    ) as HTMLButtonElement;
+    const resetBtn = container.querySelector(
+      'button[title="Reset"]'
+    ) as HTMLButtonElement;
 
     // Run step 1
     await act(async () => {
@@ -253,5 +286,33 @@ describe("SandboxTerminal Playback & Step Player Controller Suite", () => {
     // Logs are back to initial greeting, commands removed
     expect(logEl!.textContent).not.toContain("test studies list");
     expect(logEl!.textContent).toContain("iMednet Python SDK CLI Sandbox");
+  });
+
+  it("cancels a pending command response when unmounted mid-execution (#1136)", async () => {
+    await act(async () => {
+      root = createRoot(container);
+      root.render(
+        <SandboxTerminal commands={mockCommands} playback={mockPlayback} />
+      );
+    });
+
+    const stepForwardBtn = container.querySelector(
+      'button[title="Step Forward"]'
+    ) as HTMLButtonElement;
+    await act(async () => {
+      stepForwardBtn.click();
+    });
+
+    // Typing ends near 720ms and the 150ms hand-off follows, so at 900ms only
+    // the 450ms simulated response lag is still pending.
+    await act(async () => {
+      vi.advanceTimersByTime(900);
+    });
+    expect(vi.getTimerCount()).toBeGreaterThan(0);
+
+    act(() => {
+      root.unmount();
+    });
+    expect(vi.getTimerCount()).toBe(0);
   });
 });

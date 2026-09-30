@@ -8,7 +8,7 @@ import React, {
   useRef,
 } from "react";
 import Link from "next/link";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { getMatchMediaMatches } from "@/hooks/useMediaQuery";
 import {
   MEME_QUOTES,
@@ -26,6 +26,7 @@ import { clamp } from "@/lib/game-utils";
 import { playMemeSound, getMemeSoundDuration } from "@/lib/meme-audio";
 import { useAnnouncer } from "@/components/providers/A11yProvider";
 import { CopyButton } from "@/components/ui/CopyButton";
+import { useToast } from "@/hooks/useToast";
 import {
   IconSparkles,
   IconTrophy,
@@ -35,7 +36,6 @@ import {
   IconTerminal,
   IconArrowLeft,
   IconActivity,
-  IconX,
 } from "@tabler/icons-react";
 
 function subscribeAchievements(callback: () => void) {
@@ -156,6 +156,7 @@ const AudioWaveformVisualizer: React.FC<{
 
 export const MemeVaultClient: React.FC = () => {
   const { announce } = useAnnouncer();
+  const toast = useToast();
   const prefersReducedMotion = useReducedMotion();
 
   const rawAchievements = useSyncExternalStore(
@@ -179,9 +180,6 @@ export const MemeVaultClient: React.FC = () => {
     "cowsay" | "duck" | "loon" | "train"
   >("cowsay");
   const [reactions, setReactions] = useState<Record<string, number>>({});
-  const [celebrationAchievement, setCelebrationAchievement] = useState<
-    string | null
-  >(null);
   const soundTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -191,6 +189,22 @@ export const MemeVaultClient: React.FC = () => {
       }
     };
   }, []);
+
+  // Every trophy unlock, from this page or anywhere else while it is open,
+  // gets the same self-dismissing toast (#1328).
+  useEffect(() => {
+    const handleUnlock = (event: Event) => {
+      const id = (event as CustomEvent<{ id?: string }>).detail?.id;
+      const achievement = EASTER_EGG_ACHIEVEMENTS.find((a) => a.id === id);
+      if (!achievement) return;
+      toast.success(`Trophy unlocked: ${achievement.title}`, {
+        description: achievement.description,
+      });
+    };
+    window.addEventListener("meme_achievement_unlocked", handleUnlock);
+    return () =>
+      window.removeEventListener("meme_achievement_unlocked", handleUnlock);
+  }, [toast]);
 
   // Trigger soundboard sound
   const handlePlaySound = (button: SoundboardButton) => {
@@ -220,11 +234,10 @@ export const MemeVaultClient: React.FC = () => {
     playMemeSound("laser");
   };
 
-  // Trigger Retro Chaos Mode
+  // Trigger Retro Chaos Mode. The button is a shortcut, so it does not award
+  // the Konami trophy: only typing the code does (#1328).
   const triggerChaosMode = useCallback(() => {
-    unlockAchievement("konami-hero");
     playMemeSound("fanfare");
-    setCelebrationAchievement("Konami Retro Hero Unlocked!");
     if (typeof window !== "undefined") {
       window.dispatchEvent(new CustomEvent("trigger_retro_chaos"));
     }
@@ -253,39 +266,6 @@ export const MemeVaultClient: React.FC = () => {
 
   return (
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 font-mono text-slate-100">
-      {/* Unlock Celebration Toast Modal */}
-      <AnimatePresence>
-        {celebrationAchievement && (
-          <motion.div
-            initial={{ opacity: 0, y: -20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -20, scale: 0.95 }}
-            className="fixed top-20 right-4 sm:right-8 z-50 p-4 rounded-2xl bg-gradient-to-r from-emerald-950 via-slate-900 to-amber-950 border border-amber-400/50 shadow-[0_0_30px_rgba(245,158,11,0.3)] max-w-md"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl animate-bounce">🏆</span>
-                <div>
-                  <h4 className="text-xs uppercase tracking-wider text-amber-400 font-bold">
-                    Secret Achievement Unlocked!
-                  </h4>
-                  <p className="text-sm text-white font-semibold">
-                    {celebrationAchievement}
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setCelebrationAchievement(null)}
-                className="p-1 text-zinc-400 hover:text-white transition-colors"
-                aria-label="Close celebration toast"
-              >
-                <IconX className="w-4 h-4" />
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Navigation Breadcrumb & Chaos Trigger */}
       <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
         <Link
@@ -501,10 +481,16 @@ export const MemeVaultClient: React.FC = () => {
           </div>
 
           {/* Category Filter Pills */}
-          <div className="flex flex-wrap gap-1.5 p-1 rounded-xl bg-slate-900/90 border border-slate-800 text-xs">
+          <div
+            role="group"
+            aria-label="Filter quotes by category"
+            className="flex flex-wrap gap-1.5 p-1 rounded-xl bg-slate-900/90 border border-slate-800 text-xs"
+          >
             {["all", "dev", "medtech", "lore", "classic"].map((cat) => (
               <button
                 key={cat}
+                type="button"
+                aria-pressed={selectedCategory === cat}
                 onClick={() => setSelectedCategory(cat)}
                 className={`px-3 py-1 rounded-lg capitalize font-semibold transition-colors active:scale-95 ${
                   selectedCategory === cat
@@ -577,10 +563,16 @@ export const MemeVaultClient: React.FC = () => {
             </h2>
           </div>
 
-          <div className="flex flex-wrap gap-1.5 p-1 rounded-xl bg-slate-900 border border-slate-800 text-xs">
+          <div
+            role="group"
+            aria-label="ASCII art"
+            className="flex flex-wrap gap-1.5 p-1 rounded-xl bg-slate-900 border border-slate-800 text-xs"
+          >
             {(["cowsay", "duck", "loon", "train"] as const).map((tab) => (
               <button
                 key={tab}
+                type="button"
+                aria-pressed={asciiTab === tab}
                 onClick={() => setAsciiTab(tab)}
                 className={`px-3 py-1 rounded-lg uppercase tracking-wider text-[10px] font-bold transition-colors active:scale-95 ${
                   asciiTab === tab

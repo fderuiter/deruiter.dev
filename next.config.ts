@@ -1,5 +1,5 @@
 import withSerwistInit from "@serwist/next";
-import { withSentryConfig } from "@sentry/nextjs";
+import { withSentryConfig } from "@sentry/nextjs/config";
 import type { NextConfig } from "next";
 import { ChunkCycleGuardPlugin } from "./lib/dx/chunk-cycle-guard";
 

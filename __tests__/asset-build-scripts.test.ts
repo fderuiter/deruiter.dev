@@ -200,6 +200,6 @@ describe("asset generation and staging workflow", () => {
     const packageJson = JSON.parse(
       fs.readFileSync(path.join(workspaceRoot, "package.json"), "utf8")
     );
-    expect(packageJson.scripts.pretest).toBe("npx prisma generate");
+    expect(packageJson.scripts.pretest).toBe("prisma generate");
   });
 });

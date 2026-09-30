@@ -7,6 +7,8 @@ import { IconArrowLeft, IconClipboardCheck } from "@tabler/icons-react";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { PlayCabinet } from "@/components/arcade/PlayCabinet";
 import { DesktopOnlyGate } from "@/components/arcade/DesktopOnlyGate";
+import { NextPrevNav } from "@/components/ui/NextPrevNav";
+import { getArcadeNeighbors } from "@/lib/arcade";
 
 const StudyDirectorLoader = () =>
   import("@/components/study-director/StudyDirectorGame").then(
@@ -80,6 +82,10 @@ export const StudyDirectorClient: React.FC = () => (
           </PlayCabinet>
         </DesktopOnlyGate>
       </div>
+      <NextPrevNav
+        {...getArcadeNeighbors("/arcade/study-director")}
+        backToHub={{ title: "All Arcade Games", href: "/arcade" }}
+      />
     </div>
   </div>
 );

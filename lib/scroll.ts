@@ -35,6 +35,31 @@ export interface ScrollToElementOptions {
   updateHash?: ScrollHashMode;
 }
 
+/** The parts of a mouse event that say whether a click was modified. */
+export type ClickModifiers = Pick<
+  MouseEvent,
+  "button" | "metaKey" | "ctrlKey" | "shiftKey" | "altKey"
+>;
+
+/**
+ * Whether a click should be left to the browser rather than handled in page.
+ *
+ * A click with a modifier key or a non-primary button asks for the link in a
+ * new tab or window, so an in-page scroll handler must not cancel it.
+ *
+ * @param event - A DOM or React mouse event.
+ * @returns True for a modified or non-primary click.
+ */
+export function isModifiedClick(event: ClickModifiers): boolean {
+  return (
+    event.button !== 0 ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.shiftKey ||
+    event.altKey
+  );
+}
+
 const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 
 /**

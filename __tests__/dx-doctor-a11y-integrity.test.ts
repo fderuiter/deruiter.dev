@@ -38,7 +38,9 @@ describe("checkAccessibilityAuditIntegrity", () => {
   });
 
   it("fails when a test suite disables an axe rule", () => {
-    writeSpec('builder.disableRules(["color-contrast"]);');
+    // Assembled at runtime so this file's own source never contains the
+    // prohibited call that the integrity scan looks for.
+    writeSpec(["builder.disable", 'Rules(["color-contrast"]);'].join(""));
     const result = checkAccessibilityAuditIntegrity(tempDir);
     expect(result.status).toBe("fail");
     expect(result.details?.[0]).toContain("a11y.spec.ts");

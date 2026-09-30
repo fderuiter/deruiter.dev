@@ -232,6 +232,12 @@ Re-exports [drawOutfitAvatar](outfits/functions/drawOutfitAvatar.md)
 
 ***
 
+### EMPTY\_QUEUE\_SPAWN\_DELAY\_SECONDS
+
+Re-exports [EMPTY_QUEUE_SPAWN_DELAY_SECONDS](engine/variables/EMPTY_QUEUE_SPAWN_DELAY_SECONDS.md)
+
+***
+
 ### exportToCDISCODMXML
 
 Re-exports [exportToCDISCODMXML](engine/functions/exportToCDISCODMXML.md)
@@ -310,6 +316,12 @@ Re-exports [getFollowUpSubject](sponsor/functions/getFollowUpSubject.md)
 
 ***
 
+### getNextShiftScoreState
+
+Re-exports [getNextShiftScoreState](engine/functions/getNextShiftScoreState.md)
+
+***
+
 ### getObservationChoices
 
 Re-exports [getObservationChoices](engine/functions/getObservationChoices.md)
@@ -331,6 +343,18 @@ Re-exports [getOutfitById](outfits/functions/getOutfitById.md)
 ### getRoutingReadiness
 
 Re-exports [getRoutingReadiness](engine/functions/getRoutingReadiness.md)
+
+***
+
+### getSpawnIntervalSeconds
+
+Re-exports [getSpawnIntervalSeconds](engine/functions/getSpawnIntervalSeconds.md)
+
+***
+
+### getSponsorMoodDecayPerSecond
+
+Re-exports [getSponsorMoodDecayPerSecond](sponsor/functions/getSponsorMoodDecayPerSecond.md)
 
 ***
 
@@ -361,6 +385,12 @@ Re-exports [INITIAL_STATIONS](scenarios/variables/INITIAL_STATIONS.md)
 ### isSubjectFullyCompliant
 
 Re-exports [isSubjectFullyCompliant](engine/functions/isSubjectFullyCompliant.md)
+
+***
+
+### MAX\_CONVEYOR\_SUBJECTS
+
+Re-exports [MAX_CONVEYOR_SUBJECTS](engine/variables/MAX_CONVEYOR_SUBJECTS.md)
 
 ***
 
@@ -580,6 +610,18 @@ Re-exports [SignatureReason](types/type-aliases/SignatureReason.md)
 
 ***
 
+### SPAWN\_INTERVAL\_BY\_PHASE
+
+Re-exports [SPAWN_INTERVAL_BY_PHASE](engine/variables/SPAWN_INTERVAL_BY_PHASE.md)
+
+***
+
+### SPONSOR\_BOOST\_TAPER\_START
+
+Re-exports [SPONSOR_BOOST_TAPER_START](sponsor/variables/SPONSOR_BOOST_TAPER_START.md)
+
+***
+
 ### SPONSOR\_DROPPED\_MOOD\_PENALTY
 
 Re-exports [SPONSOR_DROPPED_MOOD_PENALTY](sponsor/variables/SPONSOR_DROPPED_MOOD_PENALTY.md)
@@ -595,6 +637,12 @@ Re-exports [SPONSOR_FOLLOW_UP_MOOD_PENALTY](sponsor/variables/SPONSOR_FOLLOW_UP_
 ### SPONSOR\_MAX\_FOLLOW\_UPS
 
 Re-exports [SPONSOR_MAX_FOLLOW_UPS](sponsor/variables/SPONSOR_MAX_FOLLOW_UPS.md)
+
+***
+
+### SPONSOR\_MOOD\_DECAY\_BY\_PHASE
+
+Re-exports [SPONSOR_MOOD_DECAY_BY_PHASE](sponsor/variables/SPONSOR_MOOD_DECAY_BY_PHASE.md)
 
 ***
 

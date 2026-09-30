@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import Image from "next/image";
+import { formatBytes } from "@/lib/utils";
 import {
   IconUpload,
   IconX,
@@ -447,7 +448,12 @@ export function ProjectImageUploader({
                 {file.name}
               </span>
               <span className="text-[10px] font-mono text-zinc-400">
-                {(file.size / (1024 * 1024)).toFixed(2)} MB • {file.type}
+                {formatBytes(file.size, {
+                  unit: "MB",
+                  decimals: 2,
+                  trimZeros: false,
+                })}{" "}
+                • {file.type}
               </span>
             </div>
           </div>

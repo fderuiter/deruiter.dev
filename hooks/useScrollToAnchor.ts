@@ -2,7 +2,11 @@
 
 import { useCallback } from "react";
 import type React from "react";
-import { scrollToElement, type ScrollToElementOptions } from "@/lib/scroll";
+import {
+  isModifiedClick,
+  scrollToElement,
+  type ScrollToElementOptions,
+} from "@/lib/scroll";
 
 export type { ScrollHashMode, ScrollToElementOptions } from "@/lib/scroll";
 
@@ -20,16 +24,6 @@ export type ScrollToAnchorHandler = (
   event: React.MouseEvent<HTMLElement>,
   id: string
 ) => void;
-
-function isModifiedClick(event: React.MouseEvent<HTMLElement>): boolean {
-  return (
-    event.button !== 0 ||
-    event.metaKey ||
-    event.ctrlKey ||
-    event.shiftKey ||
-    event.altKey
-  );
-}
 
 /**
  * Click handler for in-page anchor links.

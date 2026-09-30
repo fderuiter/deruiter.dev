@@ -16,6 +16,7 @@ import { isProductionEnvironment } from "@/lib/env";
 import { useOfflineQueue, getOfflineQueue } from "@/hooks/useOfflineQueue";
 import { validateConstructiveContent } from "@/lib/moderation";
 import { logger } from "@/lib/logger";
+import { apiClient } from "@/lib/api-client";
 
 interface CaseStudyFeedbackSectionProps {
   slug: string;
@@ -31,6 +32,19 @@ export const PREDEFINED_TAKEAWAYS = [
 ] as const;
 
 type ReactionType = "insightful" | "mind_blowing" | "actionable" | "thorough";
+
+interface ReactionsResponse {
+  counts?: Record<string, number>;
+  userReactions?: string[];
+}
+
+interface FeedbackStatusResponse {
+  hasSubmitted?: boolean;
+}
+
+interface FeedbackSubmitResponse {
+  message?: string;
+}
 
 interface ReactionConfig {
   type: ReactionType;
@@ -76,33 +90,33 @@ export function CaseStudyFeedbackSection({
     async function loadReactionsAndStatus() {
       try {
         const [rxRes, fbRes] = await Promise.all([
-          fetch(`/api/case-studies/reactions?slug=${encodeURIComponent(slug)}`),
-          fetch(`/api/case-studies/feedback?slug=${encodeURIComponent(slug)}`),
+          apiClient.get<ReactionsResponse>(
+            `/api/case-studies/reactions?slug=${encodeURIComponent(slug)}`
+          ),
+          apiClient.get<FeedbackStatusResponse>(
+            `/api/case-studies/feedback?slug=${encodeURIComponent(slug)}`
+          ),
         ]);
 
-        if (rxRes.ok) {
-          const data = await rxRes.json();
-          if (isMounted) {
-            if (data.counts) {
-              setCounts(data.counts);
-            }
-            if (data.userReactions) {
-              setUserReactions(data.userReactions);
-            }
+        if (rxRes.data && isMounted) {
+          if (rxRes.data.counts) {
+            setCounts(rxRes.data.counts);
+          }
+          if (rxRes.data.userReactions) {
+            setUserReactions(rxRes.data.userReactions);
           }
         }
 
-        if (fbRes.ok) {
-          const fbData = await fbRes.json();
-          if (isMounted && fbData.hasSubmitted) {
-            setHasSubmittedFeedback(true);
-          }
+        if (fbRes.data?.hasSubmitted && isMounted) {
+          setHasSubmittedFeedback(true);
         }
-      } catch (err) {
-        if (!isProductionEnvironment()) {
+
+        if (
+          (rxRes.networkError || fbRes.networkError) &&
+          !isProductionEnvironment()
+        ) {
           logger.error(
-            "Failed to load case study reaction/feedback status:",
-            err
+            "Failed to load case study reaction/feedback status: network error"
           );
         }
       } finally {
@@ -172,37 +186,26 @@ export function CaseStudyFeedbackSection({
       return;
     }
 
-    try {
-      const res = await fetch("/api/case-studies/reactions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ caseStudySlug: slug, reactionType: type }),
-      });
+    const res = await apiClient.post<ReactionsResponse>(
+      "/api/case-studies/reactions",
+      { caseStudySlug: slug, reactionType: type }
+    );
 
-      if (res.ok) {
-        const data = await res.json();
-        if (data.counts) {
-          setCounts(data.counts);
-        }
-        if (data.userReactions) {
-          setUserReactions(data.userReactions);
-        }
-      } else {
-        enqueue({
-          type: "reaction",
-          endpoint: "/api/case-studies/reactions",
-          body: { caseStudySlug: slug, reactionType: type },
-        });
+    if (res.ok) {
+      if (res.data?.counts) {
+        setCounts(res.data.counts);
       }
-    } catch {
+      if (res.data?.userReactions) {
+        setUserReactions(res.data.userReactions);
+      }
+    } else {
       enqueue({
         type: "reaction",
         endpoint: "/api/case-studies/reactions",
         body: { caseStudySlug: slug, reactionType: type },
       });
-    } finally {
-      setReactionLoading(null);
     }
+    setReactionLoading(null);
   };
 
   // Toggle takeaway selection
@@ -263,42 +266,27 @@ export function CaseStudyFeedbackSection({
       return;
     }
 
-    try {
-      const res = await fetch("/api/case-studies/feedback", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+    const res = await apiClient.post<FeedbackSubmitResponse>(
+      "/api/case-studies/feedback",
+      payload
+    );
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        if (res.status >= 400 && res.status < 500) {
-          const detailMsg =
-            data.details?.[0]?.message || data.error || "Submission rejected.";
-          setErrorMsg(detailMsg);
-          setHasSubmittedFeedback(false);
-          setSuccessMsg(null);
-        } else {
-          enqueue({
-            type: "feedback",
-            endpoint: "/api/case-studies/feedback",
-            body: payload,
-          });
-          setHasSubmittedFeedback(true);
-          setSuccessMsg("Thank you! Your learning feedback has been recorded.");
-          setSelectedTakeaways([]);
-          setComments("");
-        }
-      } else {
-        setHasSubmittedFeedback(true);
-        setSuccessMsg(
-          data.message || "Thank you! Your learning feedback has been recorded."
-        );
-        setSelectedTakeaways([]);
-        setComments("");
-      }
-    } catch {
+    if (res.ok) {
+      setHasSubmittedFeedback(true);
+      setSuccessMsg(
+        res.data?.message ||
+          "Thank you! Your learning feedback has been recorded."
+      );
+      setSelectedTakeaways([]);
+      setComments("");
+    } else if (res.status >= 400 && res.status < 500) {
+      const detailMsg =
+        res.details[0]?.message || res.error || "Submission rejected.";
+      setErrorMsg(detailMsg);
+      setHasSubmittedFeedback(false);
+      setSuccessMsg(null);
+    } else {
+      // Network failure or 5xx: queue for background retry.
       enqueue({
         type: "feedback",
         endpoint: "/api/case-studies/feedback",
@@ -308,9 +296,8 @@ export function CaseStudyFeedbackSection({
       setSuccessMsg("Thank you! Your learning feedback has been recorded.");
       setSelectedTakeaways([]);
       setComments("");
-    } finally {
-      setSubmitting(false);
     }
+    setSubmitting(false);
   };
 
   return (

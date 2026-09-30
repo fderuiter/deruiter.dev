@@ -1,6 +1,9 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { describe, it, expect } from "vitest";
 import {
   MAX_PRODUCTION_TRACES_SAMPLE_RATE,
+  SENTRY_DATA_COLLECTION,
   isBenignClientNoise,
   isReportableEnvironment,
   resolveTracesSampleRate,
@@ -102,6 +105,28 @@ describe("Sentry quota and noise policy", () => {
           new Error("Redis buffer enqueue timed out after 2000ms")
         )
       ).toBe(false);
+    });
+  });
+
+  describe("data collection (Sentry 11 replaces sendDefaultPii)", () => {
+    it("collects no user info, cookies, headers, bodies or query params", () => {
+      expect(SENTRY_DATA_COLLECTION).toEqual({
+        userInfo: false,
+        cookies: false,
+        httpHeaders: false,
+        httpBodies: [],
+        urlQueryParams: false,
+      });
+    });
+
+    it.each([
+      "lib/client-sentry.ts",
+      "sentry.server.config.ts",
+      "sentry.edge.config.ts",
+    ])("%s opts out of PII through the shared policy", (file) => {
+      const source = readFileSync(path.resolve(process.cwd(), file), "utf8");
+      expect(source).toContain("dataCollection: SENTRY_DATA_COLLECTION");
+      expect(source).not.toContain("sendDefaultPii");
     });
   });
 });

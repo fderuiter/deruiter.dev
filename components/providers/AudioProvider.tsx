@@ -3,8 +3,20 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { getSoundEngine } from "@/lib/audio/sound-engine";
 import { getMatchMediaMatches } from "@/hooks/useMediaQuery";
+import { safeGetItem, safeSetRawItem } from "@/lib/safe-storage";
 
 export type AudioProfile = "8-bit" | "90s-retro" | "ambient";
+
+/**
+ * Storage key for the synth profile. The value is stored as the bare profile
+ * name (not a safeStorage envelope) so preferences saved by earlier releases
+ * keep working; write it only through `safeSetRawItem`.
+ */
+const SOUND_PROFILE_KEY = "sound_profile";
+
+function isAudioProfile(value: unknown): value is AudioProfile {
+  return value === "8-bit" || value === "90s-retro" || value === "ambient";
+}
 
 const audioCleanupRegistry = new Set<() => void>();
 
@@ -81,17 +93,16 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     if (typeof window === "undefined") return;
 
     const engine = getSoundEngine();
-    // SoundEngine delegates persistence for localStorage.getItem("sound_volume"),
-    // localStorage.getItem("sound_muted"), localStorage.setItem("sound_volume", ...),
-    // and localStorage.setItem("sound_muted", ...).
-    const savedProfile = localStorage.getItem("sound_profile");
+    // SoundEngine persists "sound_volume" and "sound_muted" itself; only the
+    // synth profile is stored here.
+    const savedProfile = safeGetItem<unknown>(SOUND_PROFILE_KEY);
 
     setTimeout(() => {
       setVolumeState(engine.getVolume());
       setMutedState(engine.isMuted());
       setBypassActive(engine.isBypassActive());
-      if (savedProfile !== null) {
-        setProfileState(savedProfile as AudioProfile);
+      if (isAudioProfile(savedProfile)) {
+        setProfileState(savedProfile);
       }
     }, 0);
   }, []);
@@ -253,9 +264,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
   const handleSetProfile = (p: AudioProfile) => {
     setProfileState(p);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("sound_profile", p);
-    }
+    safeSetRawItem(SOUND_PROFILE_KEY, p);
 
     // Play sound confirmation for swapped profile
     setTimeout(() => {

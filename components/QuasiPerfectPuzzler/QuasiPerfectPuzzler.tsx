@@ -1206,12 +1206,15 @@ export const QuasiPerfectPuzzler: React.FC = () => {
                       key={id + "-" + idx}
                       type="button"
                       onClick={() => {
+                        // These buttons are the screen-reader route, so they
+                        // apply the tactic to the whole active goal rather
+                        // than only selecting it (#1324).
                         setSelectedTacticIndex(idx);
-                        announce(`Selected tactic: ${label}`, "polite");
+                        executeTacticOnNode(idx, null);
+                        announce(`Applied tactic: ${label}`, "polite");
                       }}
-                      aria-pressed={selectedTacticIndex === idx}
                     >
-                      Apply Tactic: {label}
+                      Apply Tactic: {label} to the goal
                     </button>
                   );
                 })}

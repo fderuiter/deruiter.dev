@@ -39,6 +39,8 @@ import {
   DEFAULT_RUN_TUNING,
   startGame,
   jettisonOldestVariable,
+  pauseGame,
+  resumeGame,
   wipeScreenFog,
   updateGameSimulation,
   renderCanvasFrame,
@@ -46,7 +48,12 @@ import {
   CANVAS_SIZE,
   GameEngineState,
   CrashReport,
+  allocateFlashVariable,
+  clearFlashStorage,
 } from "@/lib/garmin-engine";
+
+/** Flash written by the Write NV Flash button; matches its label. */
+const NV_WRITE_KB = 8;
 
 /** What the crash overlay says for each cause, and how to avoid it next run. */
 const CRASH_LABELS: Record<
@@ -72,6 +79,10 @@ const CRASH_LABELS: Record<
   "Symbol Not Found": {
     title: "SYMBOL NOT FOUND",
     hint: "You ran into a missing symbol. Jump (Up) over bugs.",
+  },
+  "Stack Overflow": {
+    title: "STACK OVERFLOW",
+    hint: "You ran into runaway recursion. Jump (Up) over bugs.",
   },
   "Power Loss": {
     title: "POWER LOSS",
@@ -118,8 +129,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
   const { playNote, playSuccess } = useAudio();
   const { recordEvent } = useTelemetry();
   const { announce } = useAnnouncer();
-  const { allocateMemory, garbageCollect, syncFlashStorage } =
-    useGarminService();
+  const { garbageCollect } = useGarminService();
   const [alertMessage, setAlertMessage] = useState<string>("");
 
   // Pre-Game Setup Wizard choices from the hosting cabinet (null standalone).
@@ -280,58 +290,32 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     }
   }, [playBeep, applyTransition, garbageCollect]);
 
-  // Save Persistent Variable to Flash NVRAM
+  // Save Persistent Variable to Flash NVRAM (+8KB flash, RAM untouched)
   const handleSaveFlash = useCallback(() => {
     playBeep(800, 0.03);
     const current = stateRef.current;
-    const result = allocateMemory({
-      state: current,
-      type: "float",
-      name: `nvram_${Date.now()}`,
-    });
-    if (result.success) {
-      applyTransition(() => result.data.state);
-    } else {
-      syncFlashStorage({
-        action: "save",
-        variables: [
-          ...current.flashVariables,
-          {
-            id: Date.now(),
-            name: `nvram_${current.flashVariables.length + 1}`,
-            sizeKb: 8.0,
-            allocatedAt: Date.now(),
-          },
-        ],
-      }).then((res) => {
-        if (res.success) {
-          applyTransition((state) => ({
-            ...state,
-            flashVariables: res.data.variables,
-            allocatedFlashKb: res.data.totalAllocatedKb,
-          }));
-        } else if (res.error?.message) {
-          setAlertMessage(res.error.message);
-        }
-      });
+    const result = allocateFlashVariable(
+      current,
+      NV_WRITE_KB,
+      `nvram_${current.flashVariables.length + 1}.dat`
+    );
+    if (result.crashed) {
+      // A manual write that does not fit is refused with the flash-specific
+      // reason; only in-run flash tokens crash the run (#1210).
+      const report = result.state.crashReport;
+      setAlertMessage(
+        `Out of Storage: ${report?.flashUsedKb ?? "?"}KB / ${report?.flashLimitKb ?? "?"}KB flash limit exceeded. Clear flash storage first.`
+      );
+      return;
     }
-  }, [playBeep, applyTransition, allocateMemory, syncFlashStorage]);
+    applyTransition(() => result.state);
+  }, [playBeep, applyTransition]);
 
-  // Clear NVRAM Flash Storage
+  // Clear NVRAM Flash Storage (flashVariables, flashFiles, meter, persisted)
   const handleClearFlash = useCallback(() => {
     playBeep(500, 0.04);
-    syncFlashStorage({ action: "clear" }).then((res) => {
-      if (res.success) {
-        applyTransition((state) => ({
-          ...state,
-          flashStorage: [],
-          allocatedFlashKb: 0,
-        }));
-      } else if (res.error?.message) {
-        setAlertMessage(res.error.message);
-      }
-    });
-  }, [playBeep, applyTransition, syncFlashStorage]);
+    applyTransition((state) => clearFlashStorage(state));
+  }, [playBeep, applyTransition]);
 
   // Drain Battery for Power Loss Testing
   const handleDrainBattery = useCallback(() => {
@@ -357,9 +341,9 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       recordEvent("garmin_simulator_start", "project_click").catch(() => {});
       playSuccess();
     } else if (current.gameState === "playing") {
-      applyTransition((state) => ({ ...state, gameState: "paused" as const }));
+      applyTransition((state) => pauseGame(state));
     } else if (current.gameState === "paused") {
-      applyTransition((state) => ({ ...state, gameState: "playing" as const }));
+      applyTransition((state) => resumeGame(state));
     }
   }, [
     deviceTarget,
@@ -413,24 +397,29 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     if (isSetupOpen) {
       if (stateRef.current.gameState === "playing") {
         pausedBySetupRef.current = true;
-        applyTransition((state) => ({
-          ...state,
-          gameState: "paused" as const,
-        }));
+        applyTransition((state) => pauseGame(state));
       }
     } else if (pausedBySetupRef.current) {
       pausedBySetupRef.current = false;
       if (stateRef.current.gameState === "paused") {
-        applyTransition((state) => ({
-          ...state,
-          gameState: "playing" as const,
-        }));
+        applyTransition((state) => resumeGame(state));
       }
     }
   }, [isSetupOpen, applyTransition]);
 
   // Switch Device Profile
   const handleSelectDevice = (target: DeviceTarget) => {
+    if (target === stateRef.current.device) return;
+    const midRun =
+      stateRef.current.gameState === "playing" ||
+      stateRef.current.gameState === "paused";
+    if (
+      midRun &&
+      typeof window.confirm === "function" &&
+      !window.confirm("Switch device? This ends the current run.")
+    ) {
+      return;
+    }
     triggerHaptic(15);
     playButtonTone();
     setDeviceTarget(target);
@@ -477,7 +466,8 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       "w",
       "W",
       "Enter",
-      "Escape",
+      "g",
+      "G",
       "Backspace",
     ];
 
@@ -493,7 +483,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       handleToggleLight();
     } else if (e.key.toLowerCase() === "w") {
       handleWipeFog();
-    } else if (e.key === "Backspace" || e.key === "Escape") {
+    } else if (e.key === "Backspace" || e.key.toLowerCase() === "g") {
       handleForceGc();
     } else if (e.key === "Enter" || e.key === " ") {
       handleStartStop();
@@ -836,6 +826,16 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
         ? "gc"
         : "none";
 
+  // What the START button does right now, shown on the bezel (#1216).
+  const startAction =
+    gameState.gameState === "playing"
+      ? "Pause"
+      : gameState.gameState === "paused"
+        ? "Resume"
+        : gameState.gameState === "idle"
+          ? "Start"
+          : "Restart";
+
   return (
     <div
       ref={outerContainerRef}
@@ -963,7 +963,13 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
         data-keyboard-boundary="true"
         data-garmin-shake={shakeLevel}
         data-garmin-shake-event={shakeEvent}
-        className={`garmin-chassis relative w-full max-w-[336px] aspect-square h-auto rounded-full bg-gradient-to-br p-6 flex items-center justify-center border-4 select-none outline-none transition-all duration-300 ${getThemeChassis()} ${
+        className={`garmin-chassis relative w-full ${
+          // Grow with the screen in fullscreen, whether the game or its
+          // hosting cabinet owns it (#1318).
+          isFullscreen
+            ? "max-w-[max(336px,min(90vw,calc(100dvh-22rem),640px))]"
+            : "max-w-[336px] [[data-fullscreen=true]_&]:max-w-[max(336px,min(90vw,calc(100dvh-22rem),640px))]"
+        } aspect-square h-auto rounded-full bg-gradient-to-br p-6 flex items-center justify-center border-4 select-none outline-none transition-all duration-300 ${getThemeChassis()} ${
           isFocused
             ? "ring-4 ring-brand-cyan/20 shadow-[0_0_40px_rgba(34,211,238,0.25)] scale-[1.01]"
             : "shadow-2xl"
@@ -1023,10 +1029,11 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
             handleStartStop();
             containerRef.current?.focus({ preventScroll: true });
           }}
-          title="Start / Pause / Restart (Enter / Space)"
+          title={`${startAction} (Enter / Space)`}
+          aria-label={`${startAction} (Enter / Space)`}
           className="absolute -right-3.5 top-[30%] px-2.5 py-1.5 bg-gradient-to-l from-zinc-700 to-zinc-800 hover:from-emerald-500 hover:to-emerald-600 text-[8px] font-bold text-zinc-300 hover:text-black rounded-r-md border-y border-r border-zinc-600 active:scale-95 transition-all shadow-md cursor-pointer flex flex-col items-center"
         >
-          <span>START</span>
+          <span>{startAction.toUpperCase()}</span>
           <span className="text-[6px] text-emerald-300/80">[ENTER]</span>
         </button>
 
@@ -1038,11 +1045,11 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
             handleForceGc();
             containerRef.current?.focus({ preventScroll: true });
           }}
-          title={`Force Garbage Collection (Backspace / Escape): ${gcFreezeMs}ms Freeze`}
+          title={`Force Garbage Collection (G / Backspace): ${gcFreezeMs}ms Freeze`}
           className="absolute -right-3.5 top-[62%] px-2.5 py-1.5 bg-gradient-to-l from-zinc-700 to-zinc-800 hover:from-purple-500 hover:to-purple-600 text-[8px] font-bold text-zinc-300 hover:text-black rounded-r-md border-y border-r border-zinc-600 active:scale-95 transition-all shadow-md cursor-pointer flex flex-col items-center"
         >
           <span>BACK</span>
-          <span className="text-[6px] text-purple-300/80">[GC]</span>
+          <span className="text-[6px] text-purple-300/80">[G]</span>
         </button>
 
         {/* Outer Circular Bezel Dial with Compass / Memory Markers */}
@@ -1064,7 +1071,13 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
         </div>
 
         {/* Watch Inner Circular 280x280 Screen Display */}
-        <div className="relative w-full max-w-[280px] aspect-square h-auto rounded-full overflow-hidden border-2 border-zinc-800 bg-black shadow-[inset_0_0_20px_rgba(0,0,0,0.9)] flex items-center justify-center">
+        <div
+          className={`relative w-full ${
+            isFullscreen
+              ? "max-w-none"
+              : "max-w-[280px] [[data-fullscreen=true]_&]:max-w-none"
+          } aspect-square h-auto rounded-full overflow-hidden border-2 border-zinc-800 bg-black shadow-[inset_0_0_20px_rgba(0,0,0,0.9)] flex items-center justify-center`}
+        >
           <canvas
             ref={canvasRef}
             width={CANVAS_SIZE}
@@ -1148,23 +1161,23 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
                   Power loss score penalty applied (-50 PTS)
                 </div>
               )}
+              <button
+                onClick={handleStartStop}
+                className="mt-1 px-3 py-1 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-[9px] rounded-full flex items-center gap-1 shadow-lg cursor-pointer transition-all active:scale-95"
+              >
+                <IconPlayerPlay className="w-3 h-3" />
+                <span>Reboot &amp; Restart</span>
+              </button>
               <a
                 href="/schedule"
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => recordEvent("garmin_simulator", "project_click")}
-                className="mt-1 px-3 py-1 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-[9px] rounded-full flex items-center gap-1 shadow-lg cursor-pointer transition-all active:scale-95"
-              >
-                <IconCalendar className="w-3 h-3" />
-                <span>Book Consultation</span>
-              </a>
-              <button
-                onClick={handleStartStop}
                 className="px-2.5 py-0.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold text-[8px] rounded-full flex items-center gap-1 shadow cursor-pointer transition-all active:scale-95"
               >
-                <IconPlayerPlay className="w-2.5 h-2.5" />
-                <span>Reboot &amp; Restart</span>
-              </button>
+                <IconCalendar className="w-2.5 h-2.5" />
+                <span>Book Consultation</span>
+              </a>
             </div>
           )}
 
@@ -1296,8 +1309,8 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
           <strong className="text-zinc-300">DOWN / ▼:</strong> Pop Heap Variable
         </span>
         <span className="px-2 py-0.5 bg-zinc-900 border border-zinc-800 rounded">
-          <strong className="text-zinc-300">BACK / [GC]:</strong> Trigger
-          Garbage Collector
+          <strong className="text-zinc-300">BACK / [G]:</strong> Trigger Garbage
+          Collector
         </span>
         <span className="px-2 py-0.5 bg-zinc-900 border border-zinc-800 rounded">
           <strong className="text-zinc-300">LIGHT / [L]:</strong> Backlight

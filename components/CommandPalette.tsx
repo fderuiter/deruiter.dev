@@ -38,6 +38,7 @@ import { filterFuzzySearch } from "@/lib/search-utils";
 import { useSearch } from "@/components/providers/SearchProvider";
 import { useAudio } from "@/components/providers/AudioProvider";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { scrollToElement } from "@/lib/scroll";
 import { unlockAchievement, setVaultUnlocked } from "@/lib/meme-data";
 import { playMemeSound } from "@/lib/meme-audio";
 import { useFontPreference } from "@/hooks/useFontPreference";
@@ -158,6 +159,22 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
     return () => {
       document.body.style.overflow = "";
       clearTimeout(timer);
+    };
+  }, []);
+
+  // A homepage section picked while the homepage is open is scrolled to once
+  // the palette has unmounted: until then the rest of the page is inert and
+  // cannot take focus. The focus trap's cleanup runs first and queues a focus
+  // restoration to the element that opened the palette; this timer is queued
+  // after it, so focus ends on the section.
+  const pendingAnchorRef = useRef<string | null>(null);
+  useEffect(() => {
+    const pendingAnchor = pendingAnchorRef;
+    return () => {
+      const targetId = pendingAnchor.current;
+      if (targetId) {
+        setTimeout(() => scrollToElement(targetId), 0);
+      }
     };
   }, []);
 
@@ -1301,22 +1318,17 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
       return;
     }
 
-    // Handle in-page dynamic smooth scrolls
-    if (item.url.startsWith("/#")) {
+    // On the homepage a homepage section is scrolled to in page. From any
+    // other page the palette navigates, and the router scrolls to the hash
+    // once the homepage has rendered.
+    if (item.url.startsWith("/#") && window.location.pathname === "/") {
       const targetId = item.url.substring(2);
-      const targetElement = document.getElementById(targetId);
-      if (targetElement) {
-        router.push("/");
-        // Allow thread transition to complete
-        setTimeout(() => {
-          targetElement.scrollIntoView({ behavior: "smooth" });
-        }, 100);
-      } else {
-        router.push(item.url);
+      if (document.getElementById(targetId)) {
+        pendingAnchorRef.current = targetId;
+        return;
       }
-    } else {
-      router.push(item.url);
     }
+    router.push(item.url);
   };
 
   // Close when clicking directly on the backdrop container

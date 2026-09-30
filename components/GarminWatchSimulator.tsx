@@ -1131,11 +1131,16 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
             </div>
           )}
 
-          {/* Game Over / Power Loss Shutdown / Completion Overlay */}
+          {/* Game Over / Power Loss Shutdown / Completion Overlay.
+              Opaque: the canvas draws its own crash and shutdown screens
+              underneath, and a translucent card showed both titles (#1557). */}
           {(gameState.gameState === "crashed" ||
             gameState.gameState === "shutdown" ||
             gameState.gameState === "summary") && (
-            <div className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center p-3 text-center z-30 font-mono space-y-1.5">
+            <div
+              data-testid="garmin-end-overlay"
+              className="absolute inset-0 rounded-full bg-black flex flex-col items-center justify-center p-3 text-center z-30 font-mono space-y-1.5"
+            >
               <span className="text-[11px] font-extrabold text-rose-400 tracking-wider uppercase">
                 {gameState.gameState === "shutdown"
                   ? "⚡ BROWNOUT SHUTDOWN"

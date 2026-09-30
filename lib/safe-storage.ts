@@ -609,6 +609,28 @@ export const safeGetRawItem = (key: string): string | null =>
 export const safeRemoveItem = (key: string): void =>
   safeStorage.removeItem(key);
 
+/**
+ * The subset of the Web Storage API that `safeRawStorage` provides.
+ */
+export type RawStorage = Pick<Storage, "getItem" | "setItem" | "removeItem">;
+
+/**
+ * localStorage through this module, shaped like the Web Storage API for code
+ * that takes an injectable storage dependency. Values are stored exactly as
+ * given, without an envelope, and are never kept in memory, so reads see only
+ * what localStorage holds. `setItem` throws when the value does not reach
+ * localStorage, as `Storage.setItem` does, so callers keep their own handling.
+ */
+export const safeRawStorage: RawStorage = {
+  getItem: (key) => safeStorage.getRawItem(key),
+  setItem: (key, value) => {
+    if (!safeStorage.setRawItem(key, value, { retainInMemory: false })) {
+      throw new Error(`SafeStorage: localStorage rejected key "${key}"`);
+    }
+  },
+  removeItem: (key) => safeStorage.removeItem(key),
+};
+
 export const safeClear = (): void => safeStorage.clear();
 
 export const safeGetEnvelope = <T = any>(

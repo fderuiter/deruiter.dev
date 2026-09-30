@@ -27,6 +27,62 @@ const clipboardRestriction = {
     "Do not access navigator.clipboard directly. Use copyToClipboard from @/lib/clipboard, useClipboard hook from @/hooks/useClipboard, or <CopyButton /> component instead.",
 };
 
+const vibrateRestriction = {
+  object: "navigator",
+  property: "vibrate",
+  message:
+    "Do not call navigator.vibrate directly. Use triggerHaptic from @/lib/haptics, which handles SSR, unsupported browsers and permission errors.",
+};
+
+const storageMessage =
+  "Do not access Web Storage directly. Use safeGetItem, safeSetItem, safeGetRawItem, safeSetRawItem or safeRemoveItem from @/lib/safe-storage, or the usePersistentState hook from @/hooks/usePersistentState, which handle SSR, blocked storage and quota errors.";
+
+const storagePropertyRestrictions = ["window", "globalThis"].flatMap((object) =>
+  ["localStorage", "sessionStorage"].map((property) => ({
+    object,
+    property,
+    message: storageMessage,
+  }))
+);
+
+const storageGlobalRestrictions = ["localStorage", "sessionStorage"].map(
+  (name) => ({ name, message: storageMessage })
+);
+
+// Files where direct Web Storage access is deliberate (#1631). Add a file here
+// only when lib/safe-storage genuinely cannot be used, with its reason:
+//   lib/safe-storage.ts        the wrapper itself.
+//   lib/garmin-engine.ts       also bundled alone into public/garmin-engine.js as
+//                              a browser IIFE (scripts/build-standalone-engine.ts);
+//                              lib/safe-storage pulls in the logger, Sentry and
+//                              Next.js code that bundle cannot resolve (#1633).
+//   components/patrol/MedicalDisclaimerBanner.tsx
+//                              the dismissal is per browser session by design,
+//                              and lib/safe-storage wraps localStorage only.
+// app/layout.tsx needs no entry: its pre-hydration font-mode script reads
+// localStorage inside a string literal, which these rules do not inspect.
+const storageExemptFiles = [
+  "lib/safe-storage.ts",
+  "lib/garmin-engine.ts",
+  "components/patrol/MedicalDisclaimerBanner.tsx",
+];
+
+// TEMPORARY (#1631): files owned by other work lanes that still call Web
+// Storage directly. Each lane migrates its file onto lib/safe-storage and
+// removes it from this list. Do not add new files here.
+const pendingStorageMigrationFiles = [
+  "components/QuasiPerfectPuzzler/QuasiPerfectPuzzler.tsx",
+  "components/study-director/career.ts",
+  "components/study-director/useStudySave.ts",
+  "lib/crf/personal-library.ts",
+  "lib/crf/study-draft-storage.ts",
+];
+
+const storageUnrestrictedFiles = [
+  ...storageExemptFiles,
+  ...pendingStorageMigrationFiles,
+];
+
 // The files that implement what the global restrictions point callers to.
 // lib/arcade/utils.ts holds clamp() itself; lib/game-utils.ts re-exports it.
 const restrictedSyntaxHelperFiles = [
@@ -103,29 +159,36 @@ const eslintConfig = defineConfig([
       "no-console": "error",
     },
   },
-  // Haptics go through triggerHaptic (#1130). This uses no-restricted-properties
-  // rather than no-restricted-syntax because flat config replaces a rule's
-  // options when a later block matching the same file sets that rule again, so a
-  // selector added to the no-restricted-syntax blocks below would be silently
-  // dropped for application modules.
+  // Haptics go through triggerHaptic (#1130) and Web Storage goes through
+  // lib/safe-storage (#1631). These use no-restricted-properties rather than
+  // no-restricted-syntax because flat config replaces a rule's options when a
+  // later block matching the same file sets that rule again, so a selector added
+  // to the no-restricted-syntax blocks below would be silently dropped for
+  // application modules. For the same reason each of the next three blocks
+  // restates every restriction that applies to its files.
   {
-    files: [
-      "app/**/*.{ts,tsx,js,jsx}",
-      "lib/**/*.{ts,tsx,js,jsx}",
-      "components/**/*.{ts,tsx,js,jsx}",
-      "hooks/**/*.{ts,tsx,js,jsx}",
-    ],
-    ignores: ["lib/haptics.ts"],
+    files: applicationModuleFiles,
+    ignores: ["lib/haptics.ts", ...storageUnrestrictedFiles],
     rules: {
       "no-restricted-properties": [
         "error",
-        {
-          object: "navigator",
-          property: "vibrate",
-          message:
-            "Do not call navigator.vibrate directly. Use triggerHaptic from @/lib/haptics, which handles SSR, unsupported browsers and permission errors.",
-        },
+        vibrateRestriction,
+        ...storagePropertyRestrictions,
       ],
+      "no-restricted-globals": ["error", ...storageGlobalRestrictions],
+    },
+  },
+  {
+    files: storageUnrestrictedFiles,
+    rules: {
+      "no-restricted-properties": ["error", vibrateRestriction],
+    },
+  },
+  {
+    files: ["lib/haptics.ts"],
+    rules: {
+      "no-restricted-properties": ["error", ...storagePropertyRestrictions],
+      "no-restricted-globals": ["error", ...storageGlobalRestrictions],
     },
   },
   {

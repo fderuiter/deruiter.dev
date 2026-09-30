@@ -1,6 +1,6 @@
 import { sanitizeError } from "@/lib/error-sanitization";
 import { logger } from "@/lib/logger";
-import { safeIsAvailable } from "@/lib/safe-storage";
+import { safeIsAvailable, safeRawStorage } from "@/lib/safe-storage";
 
 /**
  * Default maximum number of queued items retained in the outbox.
@@ -159,9 +159,7 @@ export class TelemetryOutbox {
     if (config && "storage" in config) {
       this.storage = config.storage ?? null;
     } else if (safeIsAvailable()) {
-      // safeIsAvailable() guards the property access itself, which throws a
-      // SecurityError when storage is blocked (sandboxed iframes, strict privacy).
-      this.storage = window.localStorage;
+      this.storage = safeRawStorage;
     } else {
       this.storage = null;
     }

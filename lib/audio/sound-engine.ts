@@ -7,6 +7,11 @@
 
 import { getMatchMediaMatches } from "@/hooks/useMediaQuery";
 import { clamp } from "@/lib/game-utils";
+import {
+  safeIsAvailable,
+  safeRawStorage,
+  type RawStorage,
+} from "@/lib/safe-storage";
 
 export type WaveformType = OscillatorType;
 
@@ -15,7 +20,7 @@ export interface SoundEngineOptions {
   initialVolume?: number;
   /** Initial mute state. If omitted, loads from storage or defaults to true */
   initialMuted?: boolean;
-  /** Custom storage provider (defaults to globalThis.localStorage when available) */
+  /** Custom storage provider (defaults to localStorage through lib/safe-storage when available) */
   storage?: Storage | null;
   /** Custom AudioContext constructor or instance (useful for dependency injection in testing) */
   audioContext?: AudioContext | null;
@@ -99,7 +104,7 @@ export interface NoiseOptions {
 export class SoundEngine {
   private volume: number;
   private muted: boolean;
-  private storage: Storage | null;
+  private storage: RawStorage | null;
   private audioCtx: AudioContext | null = null;
   private activeSources = new Set<AudioScheduledSourceNode>();
   private activeSequenceTimeouts = new Set<NodeJS.Timeout | number>();
@@ -108,9 +113,8 @@ export class SoundEngine {
     this.storage =
       options.storage !== undefined
         ? options.storage
-        : typeof globalThis !== "undefined" &&
-            typeof globalThis.localStorage?.getItem === "function"
-          ? globalThis.localStorage
+        : safeIsAvailable()
+          ? safeRawStorage
           : null;
 
     if (options.audioContext) {

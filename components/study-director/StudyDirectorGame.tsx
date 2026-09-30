@@ -37,6 +37,7 @@ import {
 import { InboxPanel } from "./InboxPanel";
 import { PhaseTimeline } from "./PhaseTimeline";
 import { PHASE_LABELS } from "./labels";
+import { ShortcutSheet } from "./ShortcutSheet";
 import { StatusBar } from "./StatusBar";
 import { ReportView } from "./ReportView";
 import { clearStudySave, loadStudySave, saveStudy } from "./useStudySave";
@@ -60,6 +61,7 @@ export const StudyDirectorGame: React.FC = () => {
   const [notice, setNotice] = useState("");
   // Why the last action could not happen; shown until the next one does.
   const [alert, setAlert] = useState("");
+  const [showShortcuts, setShowShortcuts] = useState(false);
   // Meters at the start of the current day, so the desk can show drift.
   const [baseline, setBaseline] = useState<Meters | null>(null);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
@@ -131,6 +133,9 @@ export const StudyDirectorGame: React.FC = () => {
       setState(result.state);
       setSelectedId(null);
       setDocumented(false);
+      // The clicked option unmounts with its message; keep focus on the desk
+      // so the keyboard shortcuts keep working.
+      rootRef.current?.focus({ preventScroll: true });
       setNotice(
         `${label}. ${documented ? "Documented." : "Not documented."} ${describeChanges(changes)} ${result.state.attention} attention left.`
       );
@@ -242,13 +247,26 @@ export const StudyDirectorGame: React.FC = () => {
     if (
       !state ||
       state.status !== "running" ||
+      showShortcuts ||
       e.metaKey ||
       e.ctrlKey ||
       e.altKey
     )
       return;
     const key = e.key.toLowerCase();
-    if (key === "e") {
+    const step =
+      key === "j" || key === "arrowdown"
+        ? 1
+        : key === "k" || key === "arrowup"
+          ? -1
+          : 0;
+    if (key === "?") {
+      e.preventDefault();
+      setShowShortcuts(true);
+    } else if (key === "escape" && outcome) {
+      e.preventDefault();
+      setOutcome(null);
+    } else if (key === "e") {
       e.preventDefault();
       finishDay();
     } else if (key === "n" && events.length === 0) {
@@ -257,14 +275,13 @@ export const StudyDirectorGame: React.FC = () => {
     } else if (key === "d") {
       e.preventDefault();
       setDocumented((v) => !v);
-    } else if ((key === "j" || key === "k") && events.length > 0) {
+    } else if (step !== 0 && events.length > 0) {
       e.preventDefault();
       const index = Math.max(
         0,
         events.findIndex((x) => x.id === selected?.id)
       );
-      const next =
-        (index + (key === "j" ? 1 : events.length - 1)) % events.length;
+      const next = (index + step + events.length) % events.length;
       setSelectedId(events[next].id);
     } else if (/^[1-5]$/.test(key) && selected) {
       const option = selected.options[Number(key) - 1];
@@ -328,6 +345,15 @@ export const StudyDirectorGame: React.FC = () => {
           Skip to next message
         </button>
       ) : null}
+      <button
+        type="button"
+        onClick={() => setShowShortcuts(true)}
+        aria-label="Keyboard shortcuts"
+        title="Keyboard shortcuts (?)"
+        className="min-h-[44px] min-w-[44px] border border-zinc-700 text-sm text-zinc-300 hover:border-[var(--sd-amber)] hover:text-[var(--sd-amber)]"
+      >
+        ?
+      </button>
       <div className="min-w-0 flex-1 basis-56">
         <p
           className={`text-[11px] ${criticalOpen > 0 ? "font-semibold text-red-400" : "text-[var(--sd-muted)]"}`}
@@ -335,8 +361,8 @@ export const StudyDirectorGame: React.FC = () => {
           {criticalOpen > 0
             ? `${criticalOpen} critical message${criticalOpen === 1 ? "" : "s"} will lapse if you end the day.`
             : events.length === 0
-              ? "Nothing is waiting. Keys: E end day, N skip to the next message."
-              : "Keys: 1-5 choose, D document, J/K move, E end day."}
+              ? "Nothing is waiting. Keys: E end day, N skip to the next message, ? all keys."
+              : "Keys: 1-5 choose, D document, J/K move, E end day, ? all keys."}
         </p>
         {alert ? (
           <p className="mt-0.5 text-[11px] font-semibold text-red-400">
@@ -359,6 +385,9 @@ export const StudyDirectorGame: React.FC = () => {
       <div role="status" aria-live="polite" className="sr-only">
         {notice}
       </div>
+      {showShortcuts ? (
+        <ShortcutSheet onClose={() => setShowShortcuts(false)} />
+      ) : null}
 
       <StatusBar state={state} />
       <PhaseTimeline state={state} />

@@ -490,6 +490,24 @@ describe("Defect Remediation & Regression Verification Suite (Invariant #11)", (
       expect(stepDuckGame(endless).ticks).toBe(1);
     });
 
+    // #1550: Zoomies and Potty preempted each other every tick when both
+    // meters were full, so neither timer counted down and the game froze.
+    it("full Excitement and Bladder no longer deadlock the urgent-state triggers (#1550)", () => {
+      let state: WorkingWithDuckState = {
+        ...createInitialDuckGameState(1, "campaign"),
+        status: "running",
+        excitement: 100,
+        bladder: 100,
+      };
+      const countdowns: number[] = [];
+      for (let tick = 0; tick < 5; tick++) {
+        state = stepDuckGame(state);
+        countdowns.push(state.duck.sniffCountdown);
+      }
+      expect(state.duck.state).toBe("SNIFFING_POTTY");
+      expect(countdowns[4]).toBeLessThan(countdowns[0]);
+    });
+
     // #1307: holding a trick key finished Sprint 1 in about 12 s for 45,000
     // points, and mashing Space finished it in about 7 s.
     it("trick spam neither finishes a sprint nor farms points (#1307)", () => {

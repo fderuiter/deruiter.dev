@@ -110,7 +110,17 @@ Object.defineProperty(globalThis, "localStorage", {
 });
 
 vi.mock("@/components/arcade/PlayCabinet", () => ({
-  PlayCabinet: () => null,
+  PlayCabinet: ({
+    controls,
+  }: {
+    controls: Array<{ key: string; action: string }>;
+  }) => (
+    <ul data-testid="cabinet-controls">
+      {controls.map((c) => (
+        <li key={c.key}>{`${c.key}: ${c.action}`}</li>
+      ))}
+    </ul>
+  ),
 }));
 
 import { WorkingWithDuck } from "@/components/WorkingWithDuck";
@@ -158,5 +168,31 @@ describe("Working With Duck labels (#1316)", () => {
     );
     expect(text).toContain("press Space to jump hurdles");
     expect(text).not.toMatch(/Spacebar to steer/i);
+  });
+
+  // #1555: the cabinet controls said "Space: Steer Duck".
+  it("lists Space as the work sprint and Park jump, and W or the arrows as steering (#1555)", async () => {
+    await act(async () => {
+      root.render(<WorkingWithDuckClient />);
+    });
+    const items = Array.from(
+      container.querySelectorAll('[data-testid="cabinet-controls"] li')
+    ).map((li) => li.textContent);
+    expect(items).toContain("Space: Work Sprint (Park: Jump)");
+    expect(items).toContain("W / ↑ ↓: Steer in the Park");
+    expect(items).not.toContain("Space: Steer Duck");
+  });
+
+  // #1555: the W trick was "Paw" on its key but "High Five" everywhere else,
+  // and "Total Score" reset every sprint.
+  it("names the W trick High Five and calls the per-sprint score Sprint Score (#1555)", async () => {
+    await act(async () => {
+      root.render(<WorkingWithDuck />);
+    });
+    const text = container.textContent ?? "";
+    expect(text).toContain("High Five 🐾");
+    expect(text).not.toContain("Paw 🐾");
+    expect(text).toContain("Sprint Score:");
+    expect(text).not.toContain("Total Score");
   });
 });

@@ -151,7 +151,7 @@ describe("Working With Duck - UI & Component Suite", () => {
     expect(container.textContent).toContain("Squeaky");
     expect(container.textContent).toContain("Treat 🍖");
     expect(container.textContent).toContain("Sit 🪑");
-    expect(container.textContent).toContain("Paw 🐾");
+    expect(container.textContent).toContain("High Five 🐾");
     expect(container.textContent).toContain("Drop It ✋");
     expect(container.textContent).toContain("Spin 🌀");
     expect(container.textContent).toContain("Focus Work Sprint (Space)");

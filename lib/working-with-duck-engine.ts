@@ -932,32 +932,9 @@ export function stepDuckGame(
     duck.maxStateTimer = 180;
   }
 
-  // Check 100% Excitement -> Trigger Zoomies
-  if (
-    nextExcitement >= 99 &&
-    duck.state !== "ZOOMIES" &&
-    duck.state !== "DRAGGED" &&
-    duck.state !== "NAP_TIME" &&
-    duck.state !== "PERFORMING_TRICK"
-  ) {
-    duck.state = "ZOOMIES";
-    duck.stateTimer = 240; // 4 seconds of wild zoomies
-    duck.maxStateTimer = 240;
-    duck.vx = 6.5;
-    duck.vy = 5.5;
-    soundCues.push("bark");
-    alerts.push({
-      id: state.nextAlertId,
-      x: duck.x,
-      y: duck.y - 30,
-      text: "⚡ ZOOMIES!!!",
-      color: "#f59e0b",
-      alpha: 1,
-      vy: -1.2,
-    });
-  }
-
-  // Check 100% Bladder -> Trigger Potty Sniff Countdown
+  // Check 100% Bladder -> Trigger Potty Sniff Countdown. Potty takes
+  // priority over Zoomies: it is checked first and may interrupt them, while
+  // the Zoomies trigger below waits for the countdown to resolve (#1550).
   if (
     nextBladder >= 99 &&
     duck.state !== "SNIFFING_POTTY" &&
@@ -977,6 +954,33 @@ export function stepDuckGame(
       color: "#ef4444",
       alpha: 1,
       vy: -1.5,
+    });
+  }
+
+  // Check 100% Excitement -> Trigger Zoomies. Zoomies never preempt an
+  // active potty countdown, so each urgent state runs its timer out (#1550).
+  if (
+    nextExcitement >= 99 &&
+    duck.state !== "ZOOMIES" &&
+    duck.state !== "SNIFFING_POTTY" &&
+    duck.state !== "DRAGGED" &&
+    duck.state !== "NAP_TIME" &&
+    duck.state !== "PERFORMING_TRICK"
+  ) {
+    duck.state = "ZOOMIES";
+    duck.stateTimer = 240; // 4 seconds of wild zoomies
+    duck.maxStateTimer = 240;
+    duck.vx = 6.5;
+    duck.vy = 5.5;
+    soundCues.push("bark");
+    alerts.push({
+      id: state.nextAlertId,
+      x: duck.x,
+      y: duck.y - 30,
+      text: "⚡ ZOOMIES!!!",
+      color: "#f59e0b",
+      alpha: 1,
+      vy: -1.2,
     });
   }
 

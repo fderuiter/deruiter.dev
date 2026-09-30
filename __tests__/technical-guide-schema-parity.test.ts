@@ -34,7 +34,7 @@ describe("Technical Guide Schema & Environment Parity", () => {
     );
     expect(uniqueDir).toBeDefined();
     expect(uniqueDir?.normalized).toBe(
-      "@@unique([caseStudySlug, reactionType, connectionHash])"
+      "@@unique([caseStudySlug, connectionHash, reactionType])"
     );
   });
 

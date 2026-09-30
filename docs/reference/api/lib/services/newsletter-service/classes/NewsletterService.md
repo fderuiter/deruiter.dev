@@ -47,13 +47,16 @@ welcome email and the admin alert.
 
 ### dispatchDue()
 
-> `static` **dispatchDue**(`now?`): `Promise`\<[`NewsletterDispatchCounts`](../interfaces/NewsletterDispatchCounts.md)\>
+> `static` **dispatchDue**(`now?`): `Promise`\<[`NewsletterDispatchResult`](../type-aliases/NewsletterDispatchResult.md)\>
 
 Maintenance phase: enqueues announcement emails for open dispatches into
 the outbound queue, oldest dispatch first. Only subscribers who were
 CONFIRMED when the post was queued receive it, the suppression list is
 rechecked for every recipient, and no run enqueues more than
 `NEWSLETTER_DISPATCH_CAP` or the queue's remaining room in one batch.
+
+Never throws: failures are returned as a typed
+[NewsletterDispatchErrorCode](../variables/NewsletterDispatchErrorCode.md).
 
 #### Parameters
 
@@ -63,7 +66,7 @@ rechecked for every recipient, and no run enqueues more than
 
 #### Returns
 
-`Promise`\<[`NewsletterDispatchCounts`](../interfaces/NewsletterDispatchCounts.md)\>
+`Promise`\<[`NewsletterDispatchResult`](../type-aliases/NewsletterDispatchResult.md)\>
 
 ***
 

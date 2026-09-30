@@ -35,3 +35,15 @@
 ### MediaAssetRecord
 
 Re-exports [MediaAssetRecord](../media-storage/interfaces/MediaAssetRecord.md)
+
+***
+
+### MediaStorageErrorCode
+
+Re-exports [MediaStorageErrorCode](../media-storage/variables/MediaStorageErrorCode.md)
+
+***
+
+### MediaStorageResult
+
+Re-exports [MediaStorageResult](../media-storage/type-aliases/MediaStorageResult.md)

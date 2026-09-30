@@ -12,6 +12,8 @@ import { generateId } from "@/lib/utils";
 import {
   getMediaStorageProvider,
   type MediaAssetRecord,
+  type MediaStorageErrorCode,
+  type MediaStorageResult,
 } from "@/lib/services/media-storage";
 
 /**
@@ -60,7 +62,7 @@ export const ALLOWED_IMAGE_MIME_TYPES = new Set([
   "image/avif",
 ]);
 
-export type { MediaAssetRecord };
+export type { MediaAssetRecord, MediaStorageErrorCode, MediaStorageResult };
 
 /**
  * Sanitizes SVG XML strings using DOMPurify defense-in-depth, stripping
@@ -262,6 +264,23 @@ export function extractMediaKeyFromUrl(
   }
 }
 
+/**
+ * Runs a provider operation and converts an exception from a provider that
+ * breaks the result contract (for example a custom override) into a failure,
+ * so the media boundary never throws.
+ */
+async function guardProviderCall<T>(
+  code: MediaStorageErrorCode,
+  message: string,
+  operation: () => Promise<MediaStorageResult<T>>
+): Promise<MediaStorageResult<T>> {
+  try {
+    return await operation();
+  } catch (error) {
+    return createFailure(code, message, { details: error });
+  }
+}
+
 export class ProjectImageService {
   /**
    * Extracts the storage key from a media asset URL or path.
@@ -272,41 +291,57 @@ export class ProjectImageService {
 
   /**
    * Saves a validated media buffer to the active storage provider and returns
-   * its asset URL. Upload failures are propagated so callers never persist a
-   * URL for an asset that was not stored durably.
+   * its asset URL. A failure means the asset was not stored durably, so the
+   * caller must not persist a URL for it.
    */
   static async saveMediaAsset(
     key: string,
     buffer: Buffer,
     contentType: string
-  ): Promise<string> {
+  ): Promise<MediaStorageResult<string>> {
     const provider = getMediaStorageProvider();
-    const result = await provider.upload(buffer, key, contentType);
-    return result.url;
+    if (!provider.success) return provider;
+    const uploaded = await guardProviderCall(
+      "UPLOAD_FAILED",
+      "Could not store the media asset",
+      () => provider.data.upload(buffer, key, contentType)
+    );
+    return uploaded.success ? createSuccess(uploaded.data.url) : uploaded;
   }
 
   /**
-   * Retrieves a media asset from storage by key.
+   * Retrieves a media asset from storage by key. A provider without read
+   * support, or a missing asset, resolves to `null` data.
    */
-  static async getMediaAsset(key: string): Promise<MediaAssetRecord | null> {
+  static async getMediaAsset(
+    key: string
+  ): Promise<MediaStorageResult<MediaAssetRecord | null>> {
     const provider = getMediaStorageProvider();
-    if (!provider.getAsset) return null;
-    return await provider.getAsset(key);
+    if (!provider.success) return provider;
+    const reader = provider.data;
+    if (!reader.getAsset) return createSuccess(null);
+    return guardProviderCall(
+      "READ_FAILED",
+      "Could not read the media asset",
+      () => reader.getAsset!(key)
+    );
   }
 
   /**
-   * Deletes a media asset from the active provider by key.
-   * Returns false when deletion fails. Provider selection/configuration errors
-   * remain exceptions so missing production credentials fail closed.
+   * Deletes a media asset from the active provider by key. A deployment with
+   * no configured provider resolves to `STORAGE_UNCONFIGURED`, so missing
+   * production credentials still fail closed.
    */
-  static async deleteMediaAsset(key: string): Promise<boolean> {
+  static async deleteMediaAsset(
+    key: string
+  ): Promise<MediaStorageResult<null>> {
     const provider = getMediaStorageProvider();
-    try {
-      await provider.delete(key);
-      return true;
-    } catch {
-      return false;
-    }
+    if (!provider.success) return provider;
+    return guardProviderCall(
+      "DELETE_FAILED",
+      "Could not delete the media asset",
+      () => provider.data.delete(key)
+    );
   }
 
   /**
@@ -357,20 +392,19 @@ export class ProjectImageService {
     // 4. Generate key and save media asset using provider
     const ext = getExtensionForMimeType(mimeType);
     const key = `${generateId(`project-${slug}`, { timestamp: true })}.${ext}`;
-    let assetUrl: string;
-    try {
-      assetUrl = await ProjectImageService.saveMediaAsset(
-        key,
-        fileBuffer,
-        mimeType
-      );
-    } catch (error) {
+    const stored = await ProjectImageService.saveMediaAsset(
+      key,
+      fileBuffer,
+      mimeType
+    );
+    if (!stored.success) {
       return createFailure(
         "STORAGE_FAILED",
         "Could not store the project image asset",
-        { details: error }
+        { details: stored.error }
       );
     }
+    const assetUrl = stored.data;
 
     // 5. Persist the new asset reference before cleaning up the prior asset.
     const persisted = await CaseStudyService.updateCaseStudyImage(
@@ -378,21 +412,14 @@ export class ProjectImageService {
       assetUrl
     );
     if (!persisted.success) {
-      // 6. On persistence failure, clean up the new asset and restore the prior reference.
-      try {
-        const deleted = await ProjectImageService.deleteMediaAsset(key);
-        if (!deleted) {
-          logger.warn(
-            "Project image upload rollback could not clean up the new asset.",
-            { slug }
-          );
-        }
-      } catch (cleanupError) {
-        // Best-effort cleanup must not mask the original persistence failure.
+      // 6. On persistence failure, clean up the new asset and restore the prior
+      // reference. Cleanup is best-effort and never masks the original failure.
+      const cleanup = await ProjectImageService.deleteMediaAsset(key);
+      if (!cleanup.success) {
         logger.warn(
           "Project image upload rollback could not clean up the new asset.",
-          sanitizeError(cleanupError),
-          { slug }
+          sanitizeError(cleanup.error.details),
+          { slug, code: cleanup.error.code }
         );
       }
       if (existing) {
@@ -405,19 +432,12 @@ export class ProjectImageService {
     // 7. Cleanup is post-commit and best-effort: a provider outage must not
     // report failure after the new image reference has already been persisted.
     if (priorKey && priorKey !== key) {
-      try {
-        const deleted = await ProjectImageService.deleteMediaAsset(priorKey);
-        if (!deleted) {
-          logger.warn(
-            "Project image was replaced, but prior asset cleanup failed.",
-            { slug }
-          );
-        }
-      } catch (error) {
+      const cleanup = await ProjectImageService.deleteMediaAsset(priorKey);
+      if (!cleanup.success) {
         logger.warn(
           "Project image was replaced, but prior asset cleanup failed.",
-          sanitizeError(error),
-          { slug }
+          sanitizeError(cleanup.error.details),
+          { slug, code: cleanup.error.code }
         );
       }
     }

@@ -407,8 +407,8 @@ describe("API Admin Project Image Upload Route", () => {
   });
 
   it("returns a generic 500 when media storage rejects the upload", async () => {
-    vi.spyOn(ProjectImageService, "saveMediaAsset").mockRejectedValue(
-      new Error("Invalid token: Vercel Blob upload failed")
+    vi.spyOn(ProjectImageService, "saveMediaAsset").mockResolvedValue(
+      createFailure("UPLOAD_FAILED", "Invalid token: Vercel Blob upload failed")
     );
     const errorSpy = vi.spyOn(logger, "error");
 
@@ -463,11 +463,13 @@ describe("API Admin Project Image Upload Route", () => {
     const newAssetUrl =
       "https://abc.public.blob.vercel-storage.com/project-laser-loon-new.png";
     vi.spyOn(ProjectImageService, "saveMediaAsset").mockResolvedValue(
-      newAssetUrl
+      createSuccess(newAssetUrl)
     );
     const deleteSpy = vi
       .spyOn(ProjectImageService, "deleteMediaAsset")
-      .mockResolvedValue(false);
+      .mockResolvedValue(
+        createFailure("DELETE_FAILED", "Vercel Blob delete failed")
+      );
     const warningSpy = vi.spyOn(logger, "warn");
 
     const req = createMultipartRequest(
@@ -496,7 +498,8 @@ describe("API Admin Project Image Upload Route", () => {
     expect(deleteSpy).toHaveBeenCalledWith("project-laser-loon-old.png");
     expect(warningSpy).toHaveBeenCalledWith(
       "Project image was replaced, but prior asset cleanup failed.",
-      { slug: "laser-loon" }
+      undefined,
+      { slug: "laser-loon", code: "DELETE_FAILED" }
     );
   });
 
@@ -526,8 +529,10 @@ describe("API Admin Project Image Upload Route", () => {
   });
 
   it("keeps a cleared project image successful when blob cleanup fails", async () => {
-    vi.spyOn(ProjectImageService, "deleteMediaAsset").mockRejectedValue(
-      new Error("Blob cleanup unavailable")
+    vi.spyOn(ProjectImageService, "deleteMediaAsset").mockResolvedValue(
+      createFailure("DELETE_FAILED", "Vercel Blob delete failed", {
+        details: new Error("Blob cleanup unavailable"),
+      })
     );
     const req = new NextRequest(
       "http://localhost:3000/api/admin/projects/laser-loon/image",
@@ -548,8 +553,10 @@ describe("API Admin Project Image Upload Route", () => {
     );
   });
 
-  it("warns when clearing succeeds but media deletion returns false", async () => {
-    vi.spyOn(ProjectImageService, "deleteMediaAsset").mockResolvedValue(false);
+  it("warns when clearing succeeds but media deletion fails", async () => {
+    vi.spyOn(ProjectImageService, "deleteMediaAsset").mockResolvedValue(
+      createFailure("STORAGE_UNCONFIGURED", "BLOB_READ_WRITE_TOKEN is required")
+    );
     const warningSpy = vi.spyOn(logger, "warn");
     const req = new NextRequest(
       "http://localhost:3000/api/admin/projects/laser-loon/image",
@@ -563,8 +570,46 @@ describe("API Admin Project Image Upload Route", () => {
     expect(res.status).toBe(200);
     expect(warningSpy).toHaveBeenCalledWith(
       "Project image reference was cleared, but media cleanup failed.",
-      { slug: "laser-loon" }
+      undefined,
+      { slug: "laser-loon", code: "STORAGE_UNCONFIGURED" }
     );
+  });
+
+  it("answers 500 from the media route when the storage read fails", async () => {
+    vi.spyOn(ProjectImageService, "getMediaAsset").mockResolvedValue(
+      createFailure(
+        "STORAGE_UNCONFIGURED",
+        "BLOB_READ_WRITE_TOKEN is required for media storage in production or preview environments"
+      )
+    );
+    const errorSpy = vi.spyOn(logger, "error");
+
+    const res = await getMediaAssetRoute(
+      new NextRequest("http://localhost:3000/api/media/hero.png"),
+      { params: Promise.resolve({ key: "hero.png" }) }
+    );
+
+    expect(res.status).toBe(500);
+    await expect(res.json()).resolves.toEqual({
+      error: "Media asset could not be read",
+    });
+    expect(errorSpy).toHaveBeenCalledWith(
+      "Media asset read failed (STORAGE_UNCONFIGURED):",
+      expect.anything()
+    );
+  });
+
+  it("answers 404 from the media route when the asset is missing", async () => {
+    vi.spyOn(ProjectImageService, "getMediaAsset").mockResolvedValue(
+      createSuccess(null)
+    );
+
+    const res = await getMediaAssetRoute(
+      new NextRequest("http://localhost:3000/api/media/missing.png"),
+      { params: Promise.resolve({ key: "missing.png" }) }
+    );
+
+    expect(res.status).toBe(404);
   });
 
   it("returns 404 on DELETE request when case study slug does not exist", async () => {

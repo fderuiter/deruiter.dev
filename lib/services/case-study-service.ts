@@ -263,6 +263,29 @@ export type UpdateCaseStudyImageResult = ServiceResult<
   CaseStudyImageErrorCode
 >;
 
+/**
+ * Error codes returned by {@link CaseStudyService.flushBufferedReactionsToDatabase}
+ * (ADR 0028 typed service contract).
+ *
+ * `PERSISTENCE_FAILED` means the batch did not reach Postgres and stays in the
+ * processing queue for the next run. `FLUSH_FAILED` covers the Redis queue
+ * reads and acknowledgement around it; persisted events that were not
+ * acknowledged are replayed idempotently through their pinned ids.
+ */
+export const CaseStudyReactionFlushErrorCode = z.enum([
+  "PERSISTENCE_FAILED",
+  "FLUSH_FAILED",
+]);
+export type CaseStudyReactionFlushErrorCode = z.infer<
+  typeof CaseStudyReactionFlushErrorCode
+>;
+
+/** Result envelope of {@link CaseStudyService.flushBufferedReactionsToDatabase}. */
+export type CaseStudyReactionFlushResult = ServiceResult<
+  { processed: number; inserted: number },
+  CaseStudyReactionFlushErrorCode
+>;
+
 export class CaseStudyService {
   /**
    * Retrieves all published case studies combining database records with static fallbacks.
@@ -1183,10 +1206,13 @@ export class CaseStudyService {
   /**
    * Flushes buffered reactions from Upstash Redis to Neon Postgres in batches.
    * Designed for execution during scheduled maintenance (ADR 0036).
+   *
+   * Never throws: failures are returned as a typed
+   * {@link CaseStudyReactionFlushErrorCode}.
    */
   static async flushBufferedReactionsToDatabase(
     batchSize = 500
-  ): Promise<{ processed: number; inserted: number }> {
+  ): Promise<CaseStudyReactionFlushResult> {
     const queueKey = getScopedRedisKey("cs:reactions_queue");
     const processingKey = getScopedRedisKey("cs:reactions_processing");
     const dirtyKey = getScopedRedisKey("cs:dirty_reactions");
@@ -1194,7 +1220,7 @@ export class CaseStudyService {
     // Nothing can have been buffered without Redis, so the daily cron should
     // not spend a round trip against a dummy endpoint.
     if (!isRedisConfigured()) {
-      return { processed: 0, inserted: 0 };
+      return createSuccess({ processed: 0, inserted: 0 });
     }
 
     try {
@@ -1236,7 +1262,7 @@ export class CaseStudyService {
       }
 
       if (events.length === 0) {
-        return { processed: 0, inserted: 0 };
+        return createSuccess({ processed: 0, inserted: 0 });
       }
 
       // 3. Persist events to Postgres in batch
@@ -1260,7 +1286,11 @@ export class CaseStudyService {
           "CaseStudyService.flushBufferedReactionsToDatabase: DB write failed; events remain in processing queue:",
           dbErr
         );
-        throw dbErr;
+        return createFailure(
+          "PERSISTENCE_FAILED",
+          "Buffered case study reactions could not be written to the database",
+          { details: dbErr }
+        );
       }
 
       // 4. Acknowledge persisted events from processing queue and reconcile buffer counters
@@ -1331,10 +1361,10 @@ export class CaseStudyService {
         }
       }
 
-      return {
+      return createSuccess({
         processed: events.length,
         inserted: createResult.count,
-      };
+      });
     } catch (err) {
       if (env.VERCEL_ENV === "production" && !isBuildPhase()) {
         logger.warn(
@@ -1342,7 +1372,11 @@ export class CaseStudyService {
           err
         );
       }
-      return { processed: 0, inserted: 0 };
+      return createFailure(
+        "FLUSH_FAILED",
+        "Buffered case study reactions could not be flushed from Redis",
+        { details: err }
+      );
     }
   }
 }

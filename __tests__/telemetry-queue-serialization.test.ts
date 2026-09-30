@@ -174,7 +174,10 @@ describe("Telemetry queue acknowledgement against Upstash serialization (#695)",
 
     const result = await TelemetryService.syncBufferedEvents(10);
 
-    expect(result).toEqual({ processed: 2, inserted: 2 });
+    expect(result).toEqual({
+      success: true,
+      data: { processed: 2, inserted: 2 },
+    });
     // The decisive assertion: LREM matched the stored strings, so both keys are
     // drained. A serialization mismatch would leave the processing queue full.
     expect(fake.lists.get(PROCESSING) ?? []).toEqual([]);
@@ -201,7 +204,7 @@ describe("Telemetry queue acknowledgement against Upstash serialization (#695)",
     released();
 
     const result = await workerA;
-    expect(result.processed).toBe(2);
+    expect(result.success && result.data.processed).toBe(2);
 
     // The late event must still be queued, and must be the only thing left.
     const remaining = (fake.lists.get(PROCESSING) ?? []).map((raw) =>
@@ -215,9 +218,12 @@ describe("Telemetry queue acknowledgement against Upstash serialization (#695)",
     fake.lpush(BUFFER, event("a"), event("b"));
     mockCreateMany.mockRejectedValueOnce(new Error("connection terminated"));
 
-    await expect(TelemetryService.syncBufferedEvents(10)).rejects.toThrow(
-      "connection terminated"
-    );
+    await expect(
+      TelemetryService.syncBufferedEvents(10)
+    ).resolves.toMatchObject({
+      success: false,
+      error: { code: "PERSISTENCE_FAILED" },
+    });
 
     expect(fake.lists.get(PROCESSING) ?? []).toHaveLength(2);
   });
@@ -225,11 +231,16 @@ describe("Telemetry queue acknowledgement against Upstash serialization (#695)",
   it("drains a batch left behind by a previous failed run without duplicating it", async () => {
     fake.lpush(BUFFER, event("a"));
     mockCreateMany.mockRejectedValueOnce(new Error("connection terminated"));
-    await expect(TelemetryService.syncBufferedEvents(10)).rejects.toThrow();
+    await expect(
+      TelemetryService.syncBufferedEvents(10)
+    ).resolves.toMatchObject({ success: false });
 
     const recovered = await TelemetryService.syncBufferedEvents(10);
 
-    expect(recovered).toEqual({ processed: 1, inserted: 1 });
+    expect(recovered).toEqual({
+      success: true,
+      data: { processed: 1, inserted: 1 },
+    });
     expect(fake.lists.get(PROCESSING) ?? []).toEqual([]);
   });
 
@@ -241,7 +252,7 @@ describe("Telemetry queue acknowledgement against Upstash serialization (#695)",
 
     const result = await TelemetryService.syncBufferedEvents(10);
 
-    expect(result.processed).toBe(1);
+    expect(result.success && result.data.processed).toBe(1);
     expect(fake.lists.get(PROCESSING) ?? []).toEqual([]);
   });
 });

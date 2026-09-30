@@ -16,6 +16,13 @@
 - [LocalCacheEntry](interfaces/LocalCacheEntry.md)
 - [TelemetryEventInput](interfaces/TelemetryEventInput.md)
 
+## Type Aliases
+
+- [TelemetryMaintenanceErrorCode](type-aliases/TelemetryMaintenanceErrorCode.md)
+- [TelemetryRetentionResult](type-aliases/TelemetryRetentionResult.md)
+- [TelemetrySyncResult](type-aliases/TelemetrySyncResult.md)
+
 ## Variables
 
 - [\_testCache](variables/testCache.md)
+- [TelemetryMaintenanceErrorCode](variables/TelemetryMaintenanceErrorCode.md)

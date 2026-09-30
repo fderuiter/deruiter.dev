@@ -84,10 +84,13 @@ True if the Redis cache keys were successfully deleted; false if Redis
 
 ### flushBufferedReactionsToDatabase()
 
-> `static` **flushBufferedReactionsToDatabase**(`batchSize?`): `Promise`\<\{ `inserted`: `number`; `processed`: `number`; \}\>
+> `static` **flushBufferedReactionsToDatabase**(`batchSize?`): `Promise`\<[`BlogReactionFlushResult`](../type-aliases/BlogReactionFlushResult.md)\>
 
 Flushes buffered blog post reactions from Upstash Redis to Neon Postgres in batches.
 Executed during scheduled maintenance.
+
+Never throws: failures are returned as a typed
+[BlogReactionFlushErrorCode](../variables/BlogReactionFlushErrorCode.md).
 
 #### Parameters
 
@@ -97,7 +100,7 @@ Executed during scheduled maintenance.
 
 #### Returns
 
-`Promise`\<\{ `inserted`: `number`; `processed`: `number`; \}\>
+`Promise`\<[`BlogReactionFlushResult`](../type-aliases/BlogReactionFlushResult.md)\>
 
 ***
 

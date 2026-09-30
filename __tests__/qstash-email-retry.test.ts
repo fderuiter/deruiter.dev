@@ -21,6 +21,7 @@ vi.mock("@/lib/services/email-service", () => ({
   },
 }));
 
+import { createFailure, createSuccess } from "@/lib/services/service-result";
 import { POST } from "@/app/api/webhooks/qstash/retry/route";
 import {
   getQStashRetryDelaySeconds,
@@ -167,11 +168,9 @@ describe("QStash email retry", () => {
     });
 
     it("accepts the current key and the next key (rotation)", async () => {
-      processRetryQueue.mockResolvedValue({
-        processed: 1,
-        succeeded: 1,
-        failed: 0,
-      });
+      processRetryQueue.mockResolvedValue(
+        createSuccess({ processed: 1, succeeded: 1, failed: 0 })
+      );
       for (const key of [CURRENT, NEXT]) {
         const res = await POST(request(BODY, sign(BODY, key)));
         expect(res.status).toBe(200);
@@ -182,11 +181,9 @@ describe("QStash email retry", () => {
 
   describe("webhook behaviour", () => {
     it("runs a targeted retry for the signed queue id", async () => {
-      processRetryQueue.mockResolvedValue({
-        processed: 1,
-        succeeded: 1,
-        failed: 0,
-      });
+      processRetryQueue.mockResolvedValue(
+        createSuccess({ processed: 1, succeeded: 1, failed: 0 })
+      );
       const res = await POST(request(BODY, sign(BODY, CURRENT)));
       expect(res.status).toBe(200);
       expect(processRetryQueue).toHaveBeenCalledWith(
@@ -201,11 +198,9 @@ describe("QStash email retry", () => {
     });
 
     it("schedules the next attempt while the row is still retrying", async () => {
-      processRetryQueue.mockResolvedValue({
-        processed: 1,
-        succeeded: 0,
-        failed: 1,
-      });
+      processRetryQueue.mockResolvedValue(
+        createSuccess({ processed: 1, succeeded: 0, failed: 1 })
+      );
       getQueueEntryState.mockResolvedValue({ status: "RETRYING", attempts: 2 });
       const res = await POST(request(BODY, sign(BODY, CURRENT)));
       expect(await res.json()).toMatchObject({ rescheduled: true });
@@ -215,11 +210,9 @@ describe("QStash email retry", () => {
     });
 
     it("does not reschedule a terminally failed row", async () => {
-      processRetryQueue.mockResolvedValue({
-        processed: 1,
-        succeeded: 0,
-        failed: 1,
-      });
+      processRetryQueue.mockResolvedValue(
+        createSuccess({ processed: 1, succeeded: 0, failed: 1 })
+      );
       getQueueEntryState.mockResolvedValue({ status: "FAILED", attempts: 5 });
       const res = await POST(request(BODY, sign(BODY, CURRENT)));
       expect(await res.json()).toMatchObject({ rescheduled: false });
@@ -236,6 +229,22 @@ describe("QStash email retry", () => {
       processRetryQueue.mockRejectedValue(new Error("db asleep"));
       const res = await POST(request(BODY, sign(BODY, CURRENT)));
       expect(res.status).toBe(500);
+    });
+
+    it("answers 500 so QStash redelivers when the retry returns a failure (#1532)", async () => {
+      processRetryQueue.mockResolvedValue(
+        createFailure(
+          "QUEUE_LEASE_FAILED",
+          "Could not lease due rows from the outbound email queue"
+        )
+      );
+      const res = await POST(request(BODY, sign(BODY, CURRENT)));
+      expect(res.status).toBe(500);
+      await expect(res.json()).resolves.toEqual({
+        error: "Failed to process email retry",
+      });
+      expect(getQueueEntryState).not.toHaveBeenCalled();
+      expect(publishJSON).not.toHaveBeenCalled();
     });
 
     it("ignores validly signed deliveries on non-production deployments", async () => {

@@ -209,8 +209,10 @@ describe("Next.js 16 Proxy & Modular Domain Services Suite", () => {
 
       const result = await TelemetryService.syncBufferedEvents(10);
 
-      expect(result.processed).toBe(2);
-      expect(result.inserted).toBe(2);
+      expect(result).toEqual({
+        success: true,
+        data: { processed: 2, inserted: 2 },
+      });
       expect(mockCreateMany).toHaveBeenCalledWith({
         data: expect.arrayContaining([
           expect.objectContaining({ id: "e-1" }),

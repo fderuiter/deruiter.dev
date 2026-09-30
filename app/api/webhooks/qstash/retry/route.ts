@@ -69,10 +69,22 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const { queueId } = parsed.data;
 
   try {
-    const result = await EmailService.processRetryQueue({
+    const retry = await EmailService.processRetryQueue({
       queueId,
       maxBatchSize: 1,
     });
+    if (!retry.success) {
+      // Non-2xx lets QStash redeliver; the row lease makes that safe.
+      logger.error(
+        `QStash email retry failed (${retry.error.code}):`,
+        retry.error.details
+      );
+      return NextResponse.json(
+        { error: "Failed to process email retry" },
+        { status: 500 }
+      );
+    }
+    const result = retry.data;
 
     let rescheduled = false;
     if (result.processed > 0 && result.succeeded === 0) {

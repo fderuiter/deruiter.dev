@@ -205,19 +205,12 @@ export const DELETE = createApiHandler(
       }
 
       if (priorKey) {
-        try {
-          const deleted = await ProjectImageService.deleteMediaAsset(priorKey);
-          if (!deleted) {
-            logger.warn(
-              "Project image reference was cleared, but media cleanup failed.",
-              { slug }
-            );
-          }
-        } catch (err) {
+        const cleanup = await ProjectImageService.deleteMediaAsset(priorKey);
+        if (!cleanup.success) {
           logger.warn(
             "Project image reference was cleared, but media cleanup failed.",
-            sanitizeError(err),
-            { slug }
+            sanitizeError(cleanup.error.details),
+            { slug, code: cleanup.error.code }
           );
         }
       }

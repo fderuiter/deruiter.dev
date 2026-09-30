@@ -103,8 +103,10 @@ describe("Atomic LMOVE Queue, Passive Timer & Lazy DB Health Check Acceptance Cr
 
     const result = await TelemetryService.syncBufferedEvents(50);
 
-    expect(result.processed).toBe(2);
-    expect(result.inserted).toBe(2);
+    expect(result).toEqual({
+      success: true,
+      data: { processed: 2, inserted: 2 },
+    });
 
     // Verify LMOVE was used instead of RPOP
     expect(mockLmove).toHaveBeenCalledWith(
@@ -199,9 +201,12 @@ describe("Atomic LMOVE Queue, Passive Timer & Lazy DB Health Check Acceptance Cr
     const dbError = new Error("Database Write Failed / Connection Timeout");
     mockCreateMany.mockRejectedValueOnce(dbError);
 
-    await expect(TelemetryService.syncBufferedEvents(10)).rejects.toThrow(
-      "Database Write Failed / Connection Timeout"
-    );
+    await expect(
+      TelemetryService.syncBufferedEvents(10)
+    ).resolves.toMatchObject({
+      success: false,
+      error: { code: "PERSISTENCE_FAILED", details: dbError },
+    });
 
     // Processing queue must NOT be deleted on error
     expect(mockDel).not.toHaveBeenCalledWith("telemetry_processing");

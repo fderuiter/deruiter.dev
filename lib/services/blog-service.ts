@@ -7,6 +7,12 @@ import { CONTENT_PILLARS, type ContentPillar } from "@/lib/blog/types";
 import { sanitizeContentHtmlLazy } from "@/lib/content-sanitizer-lazy";
 import { ALLOWED_REACTIONS } from "@/lib/schemas";
 import { logger } from "@/lib/logger";
+import { z } from "zod";
+import {
+  createFailure,
+  createSuccess,
+  type ServiceResult,
+} from "@/lib/services/service-result";
 
 export type { BlogPostData };
 
@@ -326,22 +332,78 @@ export function isValidBlogPost(item: unknown): item is BlogPostData {
 }
 
 /**
- * Coerces created_at and updated_at on a BlogPostData record into validated Date instances.
- * Throws a TypeError if either date is invalid.
+ * Error codes returned by {@link parseBlogPostDates} (ADR 0028).
  */
-export function parseBlogPostDates(post: BlogPostData): BlogPostData {
-  const createdAt = parseValidDate(post.created_at);
-  const updatedAt = parseValidDate(post.updated_at);
+export const BlogPostDateErrorCode = z.enum(["INVALID_DATE_CONTRACT"]);
+export type BlogPostDateErrorCode = z.infer<typeof BlogPostDateErrorCode>;
+
+/** Result envelope of {@link parseBlogPostDates}. */
+export type BlogPostDatesResult = ServiceResult<
+  BlogPostData,
+  BlogPostDateErrorCode
+>;
+
+/**
+ * Error codes returned by {@link BlogPostService.flushBufferedReactionsToDatabase}
+ * (ADR 0028).
+ *
+ * `PERSISTENCE_FAILED` means the batch did not reach Postgres and stays in the
+ * processing queue for the next run. `FLUSH_FAILED` covers the Redis queue
+ * reads and acknowledgement around it; persisted events that were not
+ * acknowledged are replayed idempotently through their pinned ids.
+ */
+export const BlogReactionFlushErrorCode = z.enum([
+  "PERSISTENCE_FAILED",
+  "FLUSH_FAILED",
+]);
+export type BlogReactionFlushErrorCode = z.infer<
+  typeof BlogReactionFlushErrorCode
+>;
+
+/** Result envelope of {@link BlogPostService.flushBufferedReactionsToDatabase}. */
+export type BlogReactionFlushResult = ServiceResult<
+  { processed: number; inserted: number },
+  BlogReactionFlushErrorCode
+>;
+
+/**
+ * Coerces created_at and updated_at on a BlogPostData record into validated
+ * Date instances. Returns `INVALID_DATE_CONTRACT` when either date is invalid.
+ */
+export function parseBlogPostDates(post: BlogPostData): BlogPostDatesResult {
+  const createdAt = parseValidDate(post?.created_at);
+  const updatedAt = parseValidDate(post?.updated_at);
   if (!createdAt || !updatedAt) {
-    throw new TypeError(
-      `parseBlogPostDates: Invalid date contract for blog post "${post?.slug ?? "unknown"}"`
+    return createFailure(
+      "INVALID_DATE_CONTRACT",
+      `parseBlogPostDates: Invalid date contract for blog post "${post?.slug ?? "unknown"}"`,
+      { recoverable: false }
     );
   }
-  return {
+  return createSuccess({
     ...post,
     created_at: createdAt,
     updated_at: updatedAt,
-  };
+  });
+}
+
+/**
+ * Validates candidate records and returns the valid ones with coerced dates,
+ * preserving input order. Records failing either check are dropped.
+ */
+export function toValidBlogPosts(items: readonly unknown[]): BlogPostData[] {
+  const posts: BlogPostData[] = [];
+  for (const item of items) {
+    if (!isValidBlogPost(item)) continue;
+    const parsed = parseBlogPostDates(item);
+    if (parsed.success) posts.push(parsed.data);
+  }
+  return posts;
+}
+
+/** Returns the post with coerced dates, or null when the record is invalid. */
+function toValidBlogPost(item: unknown): BlogPostData | null {
+  return toValidBlogPosts([item])[0] ?? null;
 }
 
 /**
@@ -640,7 +702,7 @@ export class BlogPostService {
           if (cached.length === 0) {
             return [];
           }
-          const valid = cached.filter(isValidBlogPost).map(parseBlogPostDates);
+          const valid = toValidBlogPosts(cached);
           if (valid.length > 0) {
             valid.sort(compareBlogPostsNewestFirst);
             return valid;
@@ -679,9 +741,7 @@ export class BlogPostService {
             created_at: new Date(r.created_at),
             updated_at: new Date(r.updated_at),
           };
-          if (isValidBlogPost(rawItem)) {
-            dbPosts.push(parseBlogPostDates(rawItem));
-          }
+          dbPosts.push(...toValidBlogPosts([rawItem]));
         }
       }
     } catch (err) {
@@ -695,11 +755,9 @@ export class BlogPostService {
         "BlogPostService.getAllPublishedBlogPosts",
         err
       );
-      return FALLBACK_BLOG_POSTS.filter(
-        (p) => p.published && isValidBlogPost(p)
-      )
-        .map(parseBlogPostDates)
-        .sort(compareBlogPostsNewestFirst);
+      return toValidBlogPosts(
+        FALLBACK_BLOG_POSTS.filter((p) => p.published)
+      ).sort(compareBlogPostsNewestFirst);
     }
 
     const merged: BlogPostData[] = [...dbPosts];
@@ -710,7 +768,7 @@ export class BlogPostService {
         !dbSlugs.has(fallback.slug) &&
         isValidBlogPost(fallback)
       ) {
-        merged.push(parseBlogPostDates(fallback));
+        merged.push(...toValidBlogPosts([fallback]));
         dbSlugs.add(fallback.slug);
       }
     }
@@ -761,7 +819,7 @@ export class BlogPostService {
           cached.slug === trimmedSlug &&
           cached.published === true
         ) {
-          return parseBlogPostDates(cached);
+          return toValidBlogPost(cached);
         }
       }
     } catch (cacheErr) {
@@ -797,9 +855,7 @@ export class BlogPostService {
             created_at: new Date(r.created_at),
             updated_at: new Date(r.updated_at),
           };
-          if (isValidBlogPost(rawItem)) {
-            dbResult = parseBlogPostDates(rawItem);
-          }
+          dbResult = toValidBlogPost(rawItem);
         }
       }
     } catch (err) {
@@ -814,7 +870,7 @@ export class BlogPostService {
         (p) =>
           p.slug === trimmedSlug && p.published === true && isValidBlogPost(p)
       );
-      return fallback ? parseBlogPostDates(fallback) : null;
+      return fallback ? toValidBlogPost(fallback) : null;
     }
 
     if (dbRecordFound) {
@@ -839,7 +895,7 @@ export class BlogPostService {
       (p) =>
         p.slug === trimmedSlug && p.published === true && isValidBlogPost(p)
     );
-    const finalResult = fallback ? parseBlogPostDates(fallback) : null;
+    const finalResult = fallback ? toValidBlogPost(fallback) : null;
 
     if (finalResult && isRedisConfigured()) {
       try {
@@ -1158,16 +1214,19 @@ export class BlogPostService {
   /**
    * Flushes buffered blog post reactions from Upstash Redis to Neon Postgres in batches.
    * Executed during scheduled maintenance.
+   *
+   * Never throws: failures are returned as a typed
+   * {@link BlogReactionFlushErrorCode}.
    */
   static async flushBufferedReactionsToDatabase(
     batchSize = 500
-  ): Promise<{ processed: number; inserted: number }> {
+  ): Promise<BlogReactionFlushResult> {
     const queueKey = getScopedRedisKey("blog:reactions_queue");
     const processingKey = getScopedRedisKey("blog:reactions_processing");
     const dirtyKey = getScopedRedisKey("blog:dirty_reactions");
 
     if (!isRedisConfigured()) {
-      return { processed: 0, inserted: 0 };
+      return createSuccess({ processed: 0, inserted: 0 });
     }
 
     try {
@@ -1206,7 +1265,7 @@ export class BlogPostService {
       }
 
       if (events.length === 0) {
-        return { processed: 0, inserted: 0 };
+        return createSuccess({ processed: 0, inserted: 0 });
       }
 
       let createResult: { count: number };
@@ -1226,7 +1285,11 @@ export class BlogPostService {
           "BlogPostService.flushBufferedReactionsToDatabase: DB write failed; events remain in processing queue:",
           dbErr
         );
-        throw dbErr;
+        return createFailure(
+          "PERSISTENCE_FAILED",
+          "Buffered blog reactions could not be written to the database",
+          { details: dbErr }
+        );
       }
 
       const flushedCountsBySlug: Record<string, Record<string, number>> = {};
@@ -1282,10 +1345,10 @@ export class BlogPostService {
         await BlogPostService.hydrateBlogReactionCounts(slug);
       }
 
-      return {
+      return createSuccess({
         processed: events.length,
         inserted: createResult.count,
-      };
+      });
     } catch (err) {
       if (env.VERCEL_ENV === "production" && !isBuildPhase()) {
         logger.error(
@@ -1293,7 +1356,11 @@ export class BlogPostService {
           err
         );
       }
-      return { processed: 0, inserted: 0 };
+      return createFailure(
+        "FLUSH_FAILED",
+        "Buffered blog reactions could not be flushed from Redis",
+        { details: err }
+      );
     }
   }
 

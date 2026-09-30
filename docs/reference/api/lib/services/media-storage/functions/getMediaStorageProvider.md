@@ -6,10 +6,13 @@
 
 # Function: getMediaStorageProvider()
 
-> **getMediaStorageProvider**(): [`MediaStorageProvider`](../interfaces/MediaStorageProvider.md)
+> **getMediaStorageProvider**(): [`MediaStorageResult`](../type-aliases/MediaStorageResult.md)\<[`MediaStorageProvider`](../interfaces/MediaStorageProvider.md)\>
 
-Returns the active MediaStorageProvider instance based on environment configuration.
+Resolves the active MediaStorageProvider from environment configuration.
+
+A production or preview deployment without `BLOB_READ_WRITE_TOKEN` resolves
+to `STORAGE_UNCONFIGURED` instead of falling back to ephemeral local disk.
 
 ## Returns
 
-[`MediaStorageProvider`](../interfaces/MediaStorageProvider.md)
+[`MediaStorageResult`](../type-aliases/MediaStorageResult.md)\<[`MediaStorageProvider`](../interfaces/MediaStorageProvider.md)\>

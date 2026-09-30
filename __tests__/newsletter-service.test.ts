@@ -77,9 +77,8 @@ vi.mock("@/lib/db", () => {
         findUnique: vi.fn(async ({ where }: { where: Where }) => {
           const [key, value] = Object.entries(where)[0];
           return (
-            db.subscribers.find(
-              (s) => s[key as keyof Subscriber] === value
-            ) ?? null
+            db.subscribers.find((s) => s[key as keyof Subscriber] === value) ??
+            null
           );
         }),
         create: vi.fn(async ({ data }: { data: Partial<Subscriber> }) => {
@@ -285,6 +284,15 @@ import {
 
 const HOUR = 60 * 60 * 1000;
 
+/** Runs the dispatch phase and unwraps its counts, failing on an error result. */
+async function dispatchCounts(now?: Date) {
+  const result = await NewsletterService.dispatchDue(now);
+  if (!result.success) {
+    throw new Error(`Dispatch failed: ${result.error.code}`);
+  }
+  return result.data;
+}
+
 function confirmed(email: string, confirmedAt: Date): Subscriber {
   const row: Subscriber = {
     id: `sub_${email}`,
@@ -451,7 +459,7 @@ describe("NewsletterService (#841)", () => {
         unsubscribeToken: "pending-unsub-token",
       });
 
-      const counts = await NewsletterService.dispatchDue();
+      const counts = await dispatchCounts();
 
       expect(counts).toMatchObject({
         queued: 1,
@@ -469,7 +477,7 @@ describe("NewsletterService (#841)", () => {
 
       // A replayed run sends nothing twice.
       await NewsletterService.queuePostAnnouncement("p1");
-      const again = await NewsletterService.dispatchDue();
+      const again = await dispatchCounts();
       expect(again.queued).toBe(0);
       expect(db.queue).toHaveLength(1);
     });
@@ -483,7 +491,7 @@ describe("NewsletterService (#841)", () => {
         await NewsletterService.queuePostAnnouncement(post);
       }
 
-      const first = await NewsletterService.dispatchDue();
+      const first = await dispatchCounts();
       expect(first.queued).toBe(NEWSLETTER_DISPATCH_CAP);
       expect(db.queue).toHaveLength(NEWSLETTER_DISPATCH_CAP);
       expect(first.completedDispatches).toBe(0);
@@ -504,7 +512,7 @@ describe("NewsletterService (#841)", () => {
       publishPost("p1");
       await NewsletterService.queuePostAnnouncement("p1");
 
-      const counts = await NewsletterService.dispatchDue();
+      const counts = await dispatchCounts();
       // Batch of 15 minus 10 already waiting leaves 5.
       expect(counts.capacity).toBe(5);
       expect(counts.queued).toBe(5);
@@ -528,11 +536,45 @@ describe("NewsletterService (#841)", () => {
         created_at: new Date(now.getTime() - 30 * 24 * HOUR),
       });
 
-      const counts = await NewsletterService.dispatchDue(now);
+      const counts = await dispatchCounts(now);
 
       expect(db.dispatches.map((d) => d.blogPostId)).toEqual(["fresh"]);
       expect(counts.queued).toBe(1);
       expect(db.queue[0].subject).toBe("New dispatch: Fresh");
+    });
+
+    it("returns ENQUEUE_FAILED and releases the claim when the outbound queue write fails (#1532)", async () => {
+      publishPost("p1");
+      confirmed("reader@example.com", new Date(0));
+      await NewsletterService.queuePostAnnouncement("p1");
+      vi.spyOn(EmailService, "enqueueEmail").mockResolvedValueOnce(null);
+
+      const result = await NewsletterService.dispatchDue();
+
+      expect(result).toMatchObject({
+        success: false,
+        error: {
+          code: "ENQUEUE_FAILED",
+          message: "Could not enqueue a newsletter dispatch email",
+        },
+      });
+      // The claim is released so the next run retries this recipient.
+      expect(db.deliveries).toHaveLength(0);
+      expect(db.dispatches[0].completedAt ?? null).toBeNull();
+
+      const retried = await dispatchCounts();
+      expect(retried.queued).toBe(1);
+    });
+
+    it("returns DISPATCH_FAILED instead of throwing when a database read fails (#1532)", async () => {
+      const { prisma } = await import("@/lib/db");
+      const dbError = new Error("Neon compute suspended");
+      vi.spyOn(prisma.blogPost, "findMany").mockRejectedValueOnce(dbError);
+
+      await expect(NewsletterService.dispatchDue()).resolves.toMatchObject({
+        success: false,
+        error: { code: "DISPATCH_FAILED", details: dbError },
+      });
     });
 
     it("closes a dispatch whose post was unpublished without sending", async () => {
@@ -540,7 +582,7 @@ describe("NewsletterService (#841)", () => {
       publishPost("p1", false);
       await NewsletterService.queuePostAnnouncement("p1");
 
-      const counts = await NewsletterService.dispatchDue();
+      const counts = await dispatchCounts();
       expect(counts).toMatchObject({ queued: 0, completedDispatches: 1 });
       expect(db.dispatches[0].completedAt).not.toBeNull();
     });

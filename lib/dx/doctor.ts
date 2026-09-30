@@ -2883,15 +2883,22 @@ export function checkSectionStructures(
 }
 
 /**
- * Service modules that still throw raw exceptions across their public boundary
- * and are exempt from the raw-throw scan until they migrate to ServiceResult
- * (#1140). Every other service module is scanned, so a new service cannot
- * inherit the exemption; remove an entry once its module is migrated.
+ * A statement that throws across a service boundary: a new error object
+ * (`throw new Error(...)`, `throw new ValidationError(...)`) or a rethrow of a
+ * caught value (`throw err;`). Both escape the ServiceResult envelope (#1532).
  */
-const SERVICE_RESULT_PENDING_MIGRATION: ReadonlySet<string> = new Set([
-  "lib/services/blog-service.ts",
-  "lib/services/newsletter-service.ts",
-]);
+const RAW_SERVICE_THROW =
+  /\bthrow\s+new\s+(?:[A-Za-z_$][\w$]*)?(?:Error|Exception)\b/;
+const SERVICE_RETHROW = /\bthrow\s+[A-Za-z_$][\w$]*\s*(?:;|$)/;
+
+function isCommentLine(line: string): boolean {
+  const trimmed = line.trim();
+  return (
+    trimmed.startsWith("//") ||
+    trimmed.startsWith("*") ||
+    trimmed.startsWith("/*")
+  );
+}
 
 /**
  * Check Typed Service Contracts & Result Envelopes Guard (ADR-0028)
@@ -2937,24 +2944,23 @@ export function checkServiceResultTypes(
             "Service layer module does not declare typed ServiceResult or result envelope structure",
         });
       }
-
-      lines.forEach((line, idx) => {
-        if (
-          /throw\s+new\s+(Error|TypeError|Exception)\b/.test(line) &&
-          !/createFailure/.test(line) &&
-          !relative.includes("spec.test") &&
-          !SERVICE_RESULT_PENDING_MIGRATION.has(
-            relative.split(path.sep).join("/")
-          )
-        ) {
-          violations.push({
-            file: relative,
-            line: idx + 1,
-            issue: `Raw exception thrown directly (${line.trim()}). Migrate to ServiceResult createFailure() envelope.`,
-          });
-        }
-      });
     }
+
+    // Every module under lib/services/ is a service boundary, including the
+    // media storage providers, so the throw scan is not limited to the
+    // envelope-shaped files above.
+    if (relative.includes(".test.")) continue;
+    lines.forEach((line, idx) => {
+      if (isCommentLine(line) || /createFailure/.test(line)) return;
+      const rethrow = SERVICE_RETHROW.test(line);
+      if (RAW_SERVICE_THROW.test(line) || rethrow) {
+        violations.push({
+          file: relative,
+          line: idx + 1,
+          issue: `${rethrow ? "Caught error rethrown" : "Raw exception thrown"} across the service boundary (${line.trim()}). Return a ServiceResult createFailure() envelope instead.`,
+        });
+      }
+    });
   }
 
   if (violations.length === 0) {

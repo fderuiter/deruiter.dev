@@ -45,8 +45,8 @@ import {
   getDescentCommitIntervalMs,
 } from "@/lib/patrol";
 import { AmbientEventToast } from "./AmbientEventToast";
+import { ModalContainer } from "@/components/ui/ModalContainer";
 import { clamp } from "@/lib/game-utils";
-import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useIsMobileViewport } from "@/hooks/useIsMobileViewport";
 
 /**
@@ -136,10 +136,6 @@ export const MountainMap: React.FC<MountainMapProps> = ({
   const [isNightMode, setIsNightMode] = useState<boolean>(false);
   const [isResponsibilityModalOpen, setIsResponsibilityModalOpen] =
     useState<boolean>(false);
-  const modalRef = useFocusTrap<HTMLDivElement>(isResponsibilityModalOpen, {
-    onEscape: () => setIsResponsibilityModalOpen(false),
-    returnFocus: true,
-  });
   const [isMinimapExpanded, setIsMinimapExpanded] = useState<boolean>(true);
 
   // Inspector & Simulation State
@@ -2161,74 +2157,73 @@ export const MountainMap: React.FC<MountainMapProps> = ({
       {/* ------------------------------------------------------------- */}
       {/* 5. NSAA RESPONSIBILITY CODE ACCESSIBLE MODAL */}
       {/* ------------------------------------------------------------- */}
-      {isResponsibilityModalOpen && (
-        <div
-          ref={modalRef}
-          className="fixed inset-0 z-50 bg-black/90 md:bg-black/80 md:backdrop-blur-sm flex items-center justify-center p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="responsibility-modal-title"
-        >
-          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl max-w-2xl w-full p-6 space-y-4 shadow-2xl max-h-[85vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
-              <div className="flex items-center gap-2">
-                <IconShieldCheck className="w-6 h-6 text-emerald-400" />
-                <h3
-                  id="responsibility-modal-title"
-                  className="font-mono font-bold text-white text-base sm:text-lg"
-                >
-                  Your Responsibility Code
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsResponsibilityModalOpen(false)}
-                className="min-h-[44px] min-w-[44px] p-2 text-zinc-400 hover:text-white rounded-lg flex items-center justify-center cursor-pointer"
-                aria-label="Close Safety Code"
-              >
-                <IconX className="w-5 h-5" />
-              </button>
-            </div>
-
-            <p className="text-xs text-zinc-400 font-mono">
-              National Ski Areas Association (NSAA) 10-Point Safety Rules.
-              Patrol monitors and promotes these guidelines across all Welch
-              Village terrain.
-            </p>
-
-            <div className="space-y-2.5">
-              {RESPONSIBILITY_CODE.map((item) => (
-                <div
-                  key={item.id}
-                  className="p-3 rounded-xl bg-zinc-900/60 border border-zinc-800/80 flex items-start gap-3"
-                >
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 font-mono text-xs font-bold flex items-center justify-center border border-emerald-500/30">
-                    {item.number}
-                  </span>
-                  <div className="space-y-0.5">
-                    <h4 className="text-xs font-mono font-bold text-zinc-200">
-                      {item.title}
-                    </h4>
-                    <p className="text-xs font-sans text-zinc-400 leading-relaxed">
-                      {item.rule}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="pt-2 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setIsResponsibilityModalOpen(false)}
-                className="min-h-[44px] min-w-[44px] px-5 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-white font-mono text-xs font-bold cursor-pointer"
-              >
-                Close Safety Code
-              </button>
-            </div>
+      <ModalContainer
+        isOpen={isResponsibilityModalOpen}
+        onClose={() => setIsResponsibilityModalOpen(false)}
+        titleId="responsibility-modal-title"
+        maxWidth="max-w-2xl"
+        // Mobile skips the backdrop blur (GPU rasterization cost while
+        // scrolling) and uses a denser scrim instead.
+        overlayClassName="bg-black/90 md:bg-black/80 backdrop-blur-none md:backdrop-blur-sm"
+        className="block p-6 space-y-4"
+      >
+        <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+          <div className="flex items-center gap-2">
+            <IconShieldCheck className="w-6 h-6 text-emerald-400" />
+            <h3
+              id="responsibility-modal-title"
+              className="font-mono font-bold text-white text-base sm:text-lg"
+            >
+              Your Responsibility Code
+            </h3>
           </div>
+          <button
+            type="button"
+            onClick={() => setIsResponsibilityModalOpen(false)}
+            className="min-h-[44px] min-w-[44px] p-2 text-zinc-400 hover:text-white rounded-lg flex items-center justify-center cursor-pointer"
+            aria-label="Close Safety Code"
+          >
+            <IconX className="w-5 h-5" />
+          </button>
         </div>
-      )}
+
+        <p className="text-xs text-zinc-400 font-mono">
+          National Ski Areas Association (NSAA) 10-Point Safety Rules. Patrol
+          monitors and promotes these guidelines across all Welch Village
+          terrain.
+        </p>
+
+        <div className="space-y-2.5">
+          {RESPONSIBILITY_CODE.map((item) => (
+            <div
+              key={item.id}
+              className="p-3 rounded-xl bg-zinc-900/60 border border-zinc-800/80 flex items-start gap-3"
+            >
+              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 font-mono text-xs font-bold flex items-center justify-center border border-emerald-500/30">
+                {item.number}
+              </span>
+              <div className="space-y-0.5">
+                <h4 className="text-xs font-mono font-bold text-zinc-200">
+                  {item.title}
+                </h4>
+                <p className="text-xs font-sans text-zinc-400 leading-relaxed">
+                  {item.rule}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="pt-2 flex justify-end">
+          <button
+            type="button"
+            onClick={() => setIsResponsibilityModalOpen(false)}
+            className="min-h-[44px] min-w-[44px] px-5 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-white font-mono text-xs font-bold cursor-pointer"
+          >
+            Close Safety Code
+          </button>
+        </div>
+      </ModalContainer>
     </div>
   );
 };

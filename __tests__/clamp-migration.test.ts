@@ -53,6 +53,24 @@ describe("no-restricted-syntax configuration (#1119, #1123)", () => {
   }, 60_000);
 });
 
+describe("nested Math.min/max exemptions (#1441)", () => {
+  it("keeps no inline no-restricted-syntax exemption in the Neuro studio", async () => {
+    const eslint = new ESLint({ cwd: repoRoot });
+    const [result] = await eslint.lintFiles([
+      path.join(repoRoot, "components/neuro/ProgressHUD.tsx"),
+    ]);
+    // With inline directives honored, a disable comment hides the ban. The
+    // suppressed list shows whether any site is still exempted that way.
+    const suppressed = (result.suppressedMessages ?? []).filter(
+      (m) => m.ruleId === "no-restricted-syntax"
+    );
+    expect(suppressed).toEqual([]);
+    expect(
+      result.messages.filter((m) => m.ruleId === "no-restricted-syntax")
+    ).toEqual([]);
+  }, 60_000);
+});
+
 describe("clamp migration preserves edge-case behavior", () => {
   it("keeps the CRF formula clamp() semantics for inverted bounds and in-range values", () => {
     expect(evaluateFormula("clamp(50, 0, 100)", {}, [])).toBe(50);

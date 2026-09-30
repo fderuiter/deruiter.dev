@@ -79,7 +79,7 @@
   "packageManager": "npm@10.9.2",
   "overrides": {
     "typedoc": {
-      "brace-expansion": "^5.0.8"
+      "brace-expansion": "^5.0.12"
     },
     "eslint": {
       "@eslint/eslintrc": {

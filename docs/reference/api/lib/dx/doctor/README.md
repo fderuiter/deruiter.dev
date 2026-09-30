@@ -37,6 +37,7 @@
 - [checkRouteIndexing](functions/checkRouteIndexing.md)
 - [checkSecretLeaks](functions/checkSecretLeaks.md)
 - [checkSectionStructures](functions/checkSectionStructures.md)
+- [checkSeoSocialIntegrity](functions/checkSeoSocialIntegrity.md)
 - [checkServiceResultTypes](functions/checkServiceResultTypes.md)
 - [checkSubRoutePerformance](functions/checkSubRoutePerformance.md)
 - [checkTechnicalGuideSchemaParity](functions/checkTechnicalGuideSchemaParity.md)

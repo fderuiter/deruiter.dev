@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { useClipboard } from "@/hooks/useClipboard";
 import {
   getSuggestion,
@@ -27,6 +26,8 @@ import {
 import { createCustomTheorem } from "@/lib/proof-custom";
 import { useAudio } from "@/components/providers/AudioProvider";
 import { useStudioHashParams } from "@/hooks/useStudioHashParams";
+import { useHotkeys } from "@/hooks/useHotkeys";
+import { useToast } from "@/hooks/useToast";
 import { NextPrevNav } from "@/components/ui/NextPrevNav";
 import { ProofHeader } from "@/components/proof/ProofHeader";
 import { ProofCanvas } from "@/components/proof/ProofCanvas";
@@ -38,7 +39,15 @@ import {
 import { ProofExportModal } from "@/components/proof/ProofExportModal";
 import { ProofCustomModal } from "@/components/proof/ProofCustomModal";
 
-function readCustomSession(serialized: string | null | undefined) {
+type CustomSession = {
+  serialized: string;
+  formulas: string[];
+  theorem: ReturnType<typeof createCustomTheorem>;
+};
+
+function readCustomSession(
+  serialized: string | null | undefined
+): CustomSession | null {
   if (!serialized || serialized.length > 2048) return null;
   try {
     const formulas: unknown = JSON.parse(serialized);
@@ -55,63 +64,78 @@ function readCustomSession(serialized: string | null | undefined) {
   }
 }
 
+type ProofTab = "ledger" | "systems" | "fallacy";
+const PROOF_TABS: readonly string[] = ["ledger", "systems", "fallacy"];
+
+function tabFromHash(raw: string | undefined): ProofTab {
+  return raw && PROOF_TABS.includes(raw) ? (raw as ProofTab) : "ledger";
+}
+
+function theoremFromHash(raw: string | undefined): TheoremId {
+  return raw && Object.hasOwn(THEOREMS, raw)
+    ? (raw as TheoremId)
+    : "modus-ponens";
+}
+
+/** Toasts share the old in-page toast's lifetime for every variant. */
+const TOAST_DURATION_MS = 4000;
+
+/** Snapping toggles on G with every Ctrl, Alt and Meta combination; Shift is not checked, so G and Shift+G both match. */
+const SNAPPING_HOTKEYS: readonly string[] = [
+  "g",
+  "Ctrl+g",
+  "Alt+g",
+  "Meta+g",
+  "Ctrl+Alt+g",
+  "Ctrl+Meta+g",
+  "Alt+Meta+g",
+  "Ctrl+Alt+Meta+g",
+];
+
+/** The console toggles on Ctrl+Backslash or Ctrl+Backquote, with or without Alt and Meta. */
+const CONSOLE_HOTKEYS: readonly string[] = ["\\", "`"].flatMap((key) => [
+  `Ctrl+${key}`,
+  `Ctrl+Alt+${key}`,
+  `Ctrl+Meta+${key}`,
+  `Ctrl+Alt+Meta+${key}`,
+]);
+
 export function ProofWorkspaceClient() {
   const { params, setParam, setParams } = useStudioHashParams();
+  const toast = useToast();
 
-  const [activeTheoremId, setActiveTheoremId] = useState<TheoremId>(() => {
-    if (typeof window !== "undefined") {
-      const rawTh = new URLSearchParams(window.location.hash.slice(1)).get(
-        "theorem"
-      ) as TheoremId;
-      if (rawTh && THEOREMS[rawTh]) {
-        return rawTh;
-      }
-    }
-    return "modus-ponens";
-  });
-  const [customSession, setCustomSession] = useState(() =>
-    readCustomSession(
-      typeof window === "undefined"
-        ? null
-        : new URLSearchParams(window.location.hash.slice(1)).get("custom")
-    )
+  // Theorem, tab and inspected node are derived from the hash rather than
+  // parsed from window.location on startup, so the first client render
+  // matches the SSR markup and deep links, in-app changes and Back/Forward
+  // all flow through useStudioHashParams. The custom session stays in state
+  // because it outlives the hash when the user switches to another theorem.
+  const activeTheoremId = useMemo(
+    () => theoremFromHash(params.theorem),
+    [params.theorem]
   );
-  const activeTheorem =
-    activeTheoremId === "custom" && customSession
-      ? customSession.theorem
-      : THEOREMS[activeTheoremId];
+  const hashSession = useMemo(
+    () =>
+      activeTheoremId === "custom" ? readCustomSession(params.custom) : null,
+    [activeTheoremId, params.custom]
+  );
+  // Seeded from the hash snapshot: empty during SSR and hydration (the
+  // adjustment below then adopts a deep link), current on a client mount.
+  const [customSession, setCustomSession] = useState<CustomSession | null>(
+    hashSession
+  );
+  const activeSession =
+    activeTheoremId === "custom" ? (hashSession ?? customSession) : null;
+  const activeTheorem = activeSession
+    ? activeSession.theorem
+    : THEOREMS[activeTheoremId];
+  const activeTab = useMemo(() => tabFromHash(params.tab), [params.tab]);
+  const inspectedNodeId = params.inspect || activeTheorem.targetNodeId;
 
   const [edges, setEdges] = useState<Edge[]>(activeTheorem.initialEdges);
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
-  const [inspectedNodeId, setInspectedNodeIdState] = useState<string>(() => {
-    if (typeof window !== "undefined") {
-      const rawNode = new URLSearchParams(window.location.hash.slice(1)).get(
-        "inspect"
-      );
-      if (rawNode) return rawNode;
-    }
-    return activeTheorem.targetNodeId || "E";
-  });
-  const [activeTab, setActiveTabState] = useState<
-    "ledger" | "systems" | "fallacy"
-  >(() => {
-    if (typeof window !== "undefined") {
-      const rawTab = new URLSearchParams(window.location.hash.slice(1)).get(
-        "tab"
-      ) as "ledger" | "systems" | "fallacy";
-      if (rawTab && ["ledger", "systems", "fallacy"].includes(rawTab)) {
-        return rawTab;
-      }
-    }
-    return "ledger";
-  });
   const [mobileActiveView, setMobileActiveView] = useState<
     "canvas" | "ledger" | "systems" | "fallacy" | "terminal"
   >("canvas");
-  const [feedbackToast, setFeedbackToast] = useState<{
-    message: string;
-    type: "success" | "error" | "info";
-  } | null>(null);
   const [currentFallacy, setCurrentFallacy] = useState<FallacyDiagnosis | null>(
     null
   );
@@ -138,7 +162,7 @@ export function ProofWorkspaceClient() {
 
   // Custom Studio modal state
   const [isCustomStudioOpen, setIsCustomStudioOpen] = useState(
-    activeTheoremId === "custom" && !customSession
+    activeTheoremId === "custom" && !activeSession
   );
   const [customPremise1, setCustomPremise1] = useState(
     customSession?.formulas[0] ?? "P"
@@ -152,6 +176,35 @@ export function ProofWorkspaceClient() {
   const [customGoal, setCustomGoal] = useState(
     customSession?.formulas[3] ?? "R"
   );
+
+  // When the hash moves to another theorem or custom session (a deep link
+  // after hydration, Back/Forward, or an in-app switch), adopt a shared
+  // custom session and reset the per-theorem workspace. This adjusts state
+  // during render, React's documented alternative to a sync effect, so the
+  // new theorem is never painted with the previous theorem's edges.
+  const theoremKey =
+    activeTheoremId === "custom"
+      ? `custom:${activeSession?.serialized ?? ""}`
+      : activeTheoremId;
+  const [appliedTheoremKey, setAppliedTheoremKey] = useState(theoremKey);
+  if (appliedTheoremKey !== theoremKey) {
+    setAppliedTheoremKey(theoremKey);
+    if (hashSession && hashSession.serialized !== customSession?.serialized) {
+      setCustomSession(hashSession);
+      setCustomPremise1(hashSession.formulas[0]);
+      setCustomPremise2(hashSession.formulas[1]);
+      setCustomPremise3(hashSession.formulas[2]);
+      setCustomGoal(hashSession.formulas[3]);
+    }
+    setEdges(activeTheorem.initialEdges);
+    setSelectedNodeIds([]);
+    setNodeOffsets({});
+    setCurrentFallacy(null);
+    // A custom deep link without valid formulas opens the studio to enter them.
+    if (activeTheoremId === "custom" && !activeSession) {
+      setIsCustomStudioOpen(true);
+    }
+  }
 
   const [customError, setCustomError] = useState<string | null>(null);
 
@@ -255,78 +308,25 @@ export function ProofWorkspaceClient() {
     }, 10);
   }, []);
 
+  // Toasts go through the shared ToastProvider. Most call sites already
+  // speak their own message through announceToScreenReader, so they pass
+  // announce: false and every message is spoken exactly once.
   const showToast = React.useCallback(
-    (message: string, type: "success" | "error" | "info" = "info") => {
-      setFeedbackToast({ message, type });
-      setTimeout(() => {
-        setFeedbackToast((prev) => (prev?.message === message ? null : prev));
-      }, 4000);
+    (
+      message: string,
+      type: "success" | "error" | "info" = "info",
+      options: { announce?: boolean } = {}
+    ) => {
+      toast[type](message, {
+        duration: TOAST_DURATION_MS,
+        announce: options.announce ?? true,
+      });
     },
-    []
+    [toast]
   );
 
-  // Synchronize incoming hash state on mount or browser Back/Forward navigation
-  useEffect(() => {
-    const targetTh =
-      (params.theorem as TheoremId | undefined) || "modus-ponens";
-    const sharedSession =
-      targetTh === "custom" ? readCustomSession(params.custom) : null;
-    const sessionChanged =
-      targetTh === "custom" &&
-      sharedSession &&
-      sharedSession.serialized !== customSession?.serialized;
-    if (
-      THEOREMS[targetTh] &&
-      (targetTh !== activeTheoremId || sessionChanged)
-    ) {
-      const nextTh = sharedSession?.theorem ?? THEOREMS[targetTh];
-      if (sharedSession) {
-        // Hydrate a newly navigated share URL into the editable custom session.
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setCustomSession(sharedSession);
-        setCustomPremise1(sharedSession.formulas[0]);
-        setCustomPremise2(sharedSession.formulas[1]);
-        setCustomPremise3(sharedSession.formulas[2]);
-        setCustomGoal(sharedSession.formulas[3]);
-      }
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setActiveTheoremId(targetTh);
-      setEdges(nextTh.initialEdges);
-      setSelectedNodeIds([]);
-      setInspectedNodeIdState(nextTh.targetNodeId);
-      setNodeOffsets({});
-      setCurrentFallacy(null);
-    }
-
-    const targetTab =
-      (params.tab as "ledger" | "systems" | "fallacy" | undefined) || "ledger";
-    if (
-      ["ledger", "systems", "fallacy"].includes(targetTab) &&
-      targetTab !== activeTab
-    ) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setActiveTabState(targetTab);
-    }
-
-    const currentTh =
-      sharedSession?.theorem ?? THEOREMS[targetTh] ?? activeTheorem;
-    const targetInspect = params.inspect || currentTh.targetNodeId;
-    if (targetInspect !== inspectedNodeId) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setInspectedNodeIdState(targetInspect);
-    }
-  }, [
-    params,
-    activeTheoremId,
-    activeTab,
-    inspectedNodeId,
-    activeTheorem,
-    customSession,
-  ]);
-
   const setActiveTab = React.useCallback(
-    (tab: "ledger" | "systems" | "fallacy") => {
-      setActiveTabState(tab);
+    (tab: ProofTab) => {
       setParam("tab", tab === "ledger" ? null : tab, { replace: true });
     },
     [setParam]
@@ -334,7 +334,6 @@ export function ProofWorkspaceClient() {
 
   const setInspectedNodeId = React.useCallback(
     (nodeId: string) => {
-      setInspectedNodeIdState(nodeId);
       setParam(
         "inspect",
         nodeId === activeTheorem.targetNodeId ? null : nodeId,
@@ -353,7 +352,8 @@ export function ProofWorkspaceClient() {
       } catch {}
       showToast(
         "Proof Studio link copied to clipboard with current theorem & tab!",
-        "success"
+        "success",
+        { announce: false }
       );
     },
   });
@@ -380,47 +380,32 @@ export function ProofWorkspaceClient() {
   );
 
   const toggleSnapping = React.useCallback(() => {
-    setIsSnappingEnabled((prev) => {
-      const next = !prev;
-      try {
-        playAutocomplete();
-      } catch {}
-      showToast(
-        next
-          ? "Magnetic Snapping enabled (20px grid & alignment crosshairs)"
-          : "Magnetic Snapping disabled (freeform drag)",
-        "info"
-      );
-      announceToScreenReader(
-        next
-          ? "Magnetic snapping and alignment guides enabled."
-          : "Magnetic snapping disabled."
-      );
-      return next;
-    });
-  }, [playAutocomplete, showToast, announceToScreenReader]);
+    // The toast and announcement run beside the state update, never inside
+    // a setState updater (AGENTS.md section 4).
+    const next = !isSnappingEnabled;
+    setIsSnappingEnabled(next);
+    try {
+      playAutocomplete();
+    } catch {}
+    showToast(
+      next
+        ? "Magnetic Snapping enabled (20px grid & alignment crosshairs)"
+        : "Magnetic Snapping disabled (freeform drag)",
+      "info",
+      { announce: false }
+    );
+    announceToScreenReader(
+      next
+        ? "Magnetic snapping and alignment guides enabled."
+        : "Magnetic snapping disabled."
+    );
+  }, [isSnappingEnabled, playAutocomplete, showToast, announceToScreenReader]);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const targetEl = e.target as HTMLElement | null;
-      const targetTag = targetEl?.tagName?.toLowerCase();
-      if (
-        targetTag === "input" ||
-        targetTag === "textarea" ||
-        targetEl?.isContentEditable ||
-        targetEl?.closest?.("[data-keyboard-boundary]")
-      ) {
-        return;
-      }
-      if (e.key === "g" || e.key === "G") {
-        e.preventDefault();
-        toggleSnapping();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [toggleSnapping]);
+  // G toggles snapping, except while typing or inside a keyboard boundary
+  // such as the terminal.
+  useHotkeys(SNAPPING_HOTKEYS, () => toggleSnapping(), {
+    preventDefault: true,
+  });
 
   const toggleConsole = React.useCallback(() => {
     setIsConsoleOpen((prev) => {
@@ -600,25 +585,27 @@ export function ProofWorkspaceClient() {
     }
   }, [consoleLogs]);
 
-  useEffect(() => {
-    const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey && e.key === "\\") || (e.ctrlKey && e.key === "`")) {
-        e.preventDefault();
-        if (!isConsoleOpen) {
-          toggleConsole();
-        } else {
-          if (document.activeElement !== consoleInputRef.current) {
-            consoleInputRef.current?.focus({ preventScroll: true });
-            announceToScreenReader("Focused terminal command input.");
-          } else {
-            toggleConsole();
-          }
-        }
+  // Ctrl+Backslash and Ctrl+Backquote open the console, focus its input,
+  // or close it when the input already has focus. They work from inside
+  // inputs and the terminal's keyboard boundary.
+  useHotkeys(
+    CONSOLE_HOTKEYS,
+    () => {
+      if (!isConsoleOpen) {
+        toggleConsole();
+      } else if (document.activeElement !== consoleInputRef.current) {
+        consoleInputRef.current?.focus({ preventScroll: true });
+        announceToScreenReader("Focused terminal command input.");
+      } else {
+        toggleConsole();
       }
-    };
-    window.addEventListener("keydown", handleGlobalKeyDown);
-    return () => window.removeEventListener("keydown", handleGlobalKeyDown);
-  }, [toggleConsole, isConsoleOpen, announceToScreenReader]);
+    },
+    {
+      preventDefault: true,
+      allowInInputs: true,
+      allowInKeyboardBoundary: true,
+    }
+  );
 
   const handleSwitchTheorem = (newTheoremId: TheoremId) => {
     if (newTheoremId === activeTheoremId) return;
@@ -640,10 +627,8 @@ export function ProofWorkspaceClient() {
       clearWatchdog();
     }
 
-    setActiveTheoremId(newTheoremId);
     setEdges(nextTh.initialEdges);
     setSelectedNodeIds([]);
-    setInspectedNodeIdState(nextTh.targetNodeId);
     setNodeOffsets({});
     setCurrentFallacy(null);
 
@@ -663,7 +648,9 @@ export function ProofWorkspaceClient() {
       playAutocomplete();
     } catch {}
 
-    showToast(`Switched active theorem scenario to '${nextTh.title}'`, "info");
+    showToast(`Switched active theorem scenario to '${nextTh.title}'`, "info", {
+      announce: false,
+    });
     announceToScreenReader(`Switched theorem to ${nextTh.title}.`);
 
     setConsoleLogs((prev) => [
@@ -959,7 +946,8 @@ export function ProofWorkspaceClient() {
         } catch {}
         showToast(
           `Connected Node ${sId} to Node ${tId} (${dragConnection.ruleBadge || "Inference"})`,
-          "success"
+          "success",
+          { announce: false }
         );
         announceToScreenReader(
           `Connected Node ${sId} to Node ${tId} via ${dragConnection.ruleBadge || "deductive rule"}.`
@@ -978,7 +966,9 @@ export function ProofWorkspaceClient() {
         const fallacy = getFallacyDiagnosis(sId, tId, edges, activeTheorem);
         setCurrentFallacy(fallacy);
         setActiveTab("fallacy");
-        showToast(`Invalid Connection: ${fallacy.fallacyName}`, "error");
+        showToast(`Invalid Connection: ${fallacy.fallacyName}`, "error", {
+          announce: false,
+        });
         announceToScreenReader(`Connection rejected: ${fallacy.fallacyName}`);
       }
 
@@ -1006,7 +996,9 @@ export function ProofWorkspaceClient() {
     try {
       playAutocomplete();
     } catch {}
-    showToast("Workspace state reset to default layout.", "info");
+    showToast("Workspace state reset to default layout.", "info", {
+      announce: false,
+    });
     announceToScreenReader("Workspace state reset to default layout.");
   };
 
@@ -1022,7 +1014,9 @@ export function ProofWorkspaceClient() {
       setCurrentFallacy(fallacy);
       setActiveTab("fallacy");
 
-      showToast(`Invalid Connection: ${fallacy.fallacyName}`, "error");
+      showToast(`Invalid Connection: ${fallacy.fallacyName}`, "error", {
+        announce: false,
+      });
       announceToScreenReader(
         `Connection rejected: ${fallacy.fallacyName}. ${validation.reason}`
       );
@@ -1049,7 +1043,8 @@ export function ProofWorkspaceClient() {
 
     showToast(
       `✔ Connected Node ${newEdge.source} → Node ${newEdge.target}!`,
-      "success"
+      "success",
+      { announce: false }
     );
     announceToScreenReader(
       `Successfully connected Node ${newEdge.source} to Node ${newEdge.target}.`
@@ -1088,7 +1083,7 @@ export function ProofWorkspaceClient() {
           : [...selectedNodeIds, nodeId]
       );
       const message = `${wasSelected ? "Deselected" : "Selected"} Node ${nodeId} for rule application.`;
-      showToast(message, "info");
+      showToast(message, "info", { announce: false });
       announceToScreenReader(message);
       return;
     }
@@ -1097,7 +1092,8 @@ export function ProofWorkspaceClient() {
       setSelectedNodeIds([nodeId]);
       showToast(
         `Selected Node ${nodeId}. Pick another node or choose an Inference Rule.`,
-        "info"
+        "info",
+        { announce: false }
       );
       announceToScreenReader(`Selected Node ${nodeId}.`);
       return;
@@ -1105,7 +1101,7 @@ export function ProofWorkspaceClient() {
 
     if (selectedNodeIds.includes(nodeId)) {
       setSelectedNodeIds((prev) => prev.filter((id) => id !== nodeId));
-      showToast(`Deselected Node ${nodeId}.`, "info");
+      showToast(`Deselected Node ${nodeId}.`, "info", { announce: false });
       announceToScreenReader(`Deselected Node ${nodeId}.`);
       return;
     }
@@ -1187,7 +1183,7 @@ export function ProofWorkspaceClient() {
 
       setSelectedNodeIds([]);
       setCurrentFallacy(null);
-      showToast(`✔ ${ruleResult.explanation}`, "success");
+      showToast(`✔ ${ruleResult.explanation}`, "success", { announce: false });
       announceToScreenReader(
         `Applied rule ${ruleId.toUpperCase()}: ${ruleResult.explanation}`
       );
@@ -1214,7 +1210,8 @@ export function ProofWorkspaceClient() {
 
       showToast(
         `Rule Application Failed: ${ruleResult.explanation || fallacy.fallacyName}`,
-        "error"
+        "error",
+        { announce: false }
       );
       announceToScreenReader(
         `Rule failed: ${ruleResult.explanation || fallacy.fallacyName}`
@@ -1269,7 +1266,7 @@ export function ProofWorkspaceClient() {
   const handleDeleteStep = (stepOrNode: number | string) => {
     const result = pruneStepOrNode(stepOrNode, edges, activeTheorem);
     if (!result.success) {
-      showToast(result.reason, "error");
+      showToast(result.reason, "error", { announce: false });
       announceToScreenReader(result.reason);
       setConsoleLogs((prev) => [
         ...prev,
@@ -1284,7 +1281,7 @@ export function ProofWorkspaceClient() {
 
     setEdges(result.newEdges);
     setCurrentFallacy(null);
-    showToast(`✔ ${result.reason}`, "info");
+    showToast(`✔ ${result.reason}`, "info", { announce: false });
     announceToScreenReader(result.reason);
 
     try {
@@ -1663,15 +1660,20 @@ export function ProofWorkspaceClient() {
         setConsoleInput("");
       }
     } else if (e.key === "Tab") {
-      e.preventDefault();
+      // Tab completes only while a suggestion is showing. Shift+Tab, a Tab
+      // with nothing to complete and browser chords (Ctrl/Alt/Meta+Tab) are
+      // left alone so focus moves on normally (#1616, WCAG 2.1.2).
+      if (e.shiftKey || e.ctrlKey || e.altKey || e.metaKey) return;
       const suggestion = getSuggestion(consoleInput);
-      if (suggestion) {
-        setConsoleInput(suggestion);
-        try {
-          playAutocomplete();
-        } catch {}
-      }
+      if (!suggestion) return;
+      e.preventDefault();
+      setConsoleInput(suggestion);
+      try {
+        playAutocomplete();
+      } catch {}
     } else if (e.key === "Escape") {
+      // A single Escape leaves the input and lands on the console toggle, so
+      // focus stays in a predictable place rather than dropping to the body.
       e.preventDefault();
       consoleInputRef.current?.blur();
       toggleBtnRef.current?.focus();
@@ -1760,26 +1762,6 @@ export function ProofWorkspaceClient() {
           terminalLogsContainerRef={terminalLogsContainerRef}
         />
 
-        {/* Feedback Toast */}
-        <AnimatePresence>
-          {feedbackToast && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              className={`fixed bottom-6 right-6 z-50 px-4 py-3 rounded-xl border text-xs font-medium shadow-2xl flex items-center gap-2 ${
-                feedbackToast.type === "success"
-                  ? "bg-emerald-950 border-emerald-700 text-emerald-200"
-                  : feedbackToast.type === "error"
-                    ? "bg-red-950 border-red-700 text-red-200"
-                    : "bg-slate-900 border-slate-700 text-slate-200"
-              }`}
-            >
-              <span>{feedbackToast.message}</span>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
         <ProofExportModal
           isOpen={isExportModalOpen}
           onClose={() => setIsExportModalOpen(false)}
@@ -1824,10 +1806,8 @@ export function ProofWorkspaceClient() {
               setSimulationProgress(null);
               clearWatchdog();
               setCustomSession({ serialized, formulas, theorem });
-              setActiveTheoremId("custom");
               setEdges([]);
               setSelectedNodeIds([]);
-              setInspectedNodeIdState(theorem.targetNodeId);
               setNodeOffsets({});
               setCurrentFallacy(null);
               setCustomError(null);

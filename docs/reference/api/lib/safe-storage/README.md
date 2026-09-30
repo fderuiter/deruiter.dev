@@ -16,8 +16,13 @@
 - [StorageEnvelope](interfaces/StorageEnvelope.md)
 - [StorageOptions](interfaces/StorageOptions.md)
 
+## Type Aliases
+
+- [RawStorage](type-aliases/RawStorage.md)
+
 ## Variables
 
+- [safeRawStorage](variables/safeRawStorage.md)
 - [safeStorage](variables/safeStorage.md)
 - [STORAGE\_CHANGE\_EVENT](variables/STORAGE_CHANGE_EVENT.md)
 

@@ -18,6 +18,11 @@ export interface UseFocusTrapOptions {
    */
   returnFocus?: boolean;
   /**
+   * Fallback element to focus on close when the element that was focused at
+   * activation is no longer connected to the document.
+   */
+  returnFocusTo?: React.RefObject<HTMLElement | null>;
+  /**
    * Custom keydown handler to process shortcuts (e.g., Arrow keys, letter hotkeys)
    * while the trap is active before or along with standard trap behavior.
    */
@@ -34,6 +39,13 @@ export interface UseFocusTrapOptions {
 // "is any dialog currently open" signal is the only reliable way to give
 // the topmost dialog exclusive ownership of Escape.
 let activeFocusTrapCount = 0;
+
+// Restore target of the trap that most recently deactivated, kept until the
+// next macrotask. A dialog that hands off to another (closing itself and
+// opening the next in one handler) unmounts its own focused button, so the
+// incoming trap sees <body> as the active element. It inherits this target
+// instead, which is the control that opened the outgoing dialog.
+let handoffTarget: HTMLElement | null = null;
 
 /** True while at least one useFocusTrap instance is currently active. */
 export function isAnyFocusTrapActive(): boolean {
@@ -67,15 +79,23 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>(
 ): React.RefObject<T | null> {
   const containerRef = useRef<T | null>(null);
   const previousActiveElementRef = useRef<HTMLElement | null>(null);
-  const { initialFocusRef, onEscape, returnFocus = true, onKeyDown } = options;
+  const {
+    initialFocusRef,
+    onEscape,
+    returnFocus = true,
+    returnFocusTo,
+    onKeyDown,
+  } = options;
 
   const onEscapeRef = useRef(onEscape);
   const onKeyDownRef = useRef(onKeyDown);
+  const returnFocusToRef = useRef(returnFocusTo);
 
   useEffect(() => {
     onEscapeRef.current = onEscape;
     onKeyDownRef.current = onKeyDown;
-  }, [onEscape, onKeyDown]);
+    returnFocusToRef.current = returnFocusTo;
+  }, [onEscape, onKeyDown, returnFocusTo]);
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
@@ -155,8 +175,11 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>(
     activeFocusTrapCount++;
 
     if (typeof document !== "undefined") {
+      const current = document.activeElement as HTMLElement | null;
+      const usable =
+        current && current !== document.body && current.isConnected;
       previousActiveElementRef.current =
-        document.activeElement as HTMLElement | null;
+        usable || !handoffTarget?.isConnected ? current : handoffTarget;
     }
 
     const timer = setTimeout(() => {
@@ -183,9 +206,18 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>(
       if (typeof window !== "undefined") {
         window.removeEventListener("keydown", handleKeyDown);
       }
-      if (returnFocus && previousActiveElementRef.current) {
-        const target = previousActiveElementRef.current;
+      const recorded = previousActiveElementRef.current;
+      if (returnFocus && (recorded || returnFocusToRef.current)) {
+        if (recorded && recorded !== document.body) {
+          handoffTarget = recorded;
+          setTimeout(() => {
+            if (handoffTarget === recorded) handoffTarget = null;
+          }, 0);
+        }
         setTimeout(() => {
+          const target = recorded?.isConnected
+            ? recorded
+            : (returnFocusToRef.current?.current ?? recorded);
           if (target && typeof target.focus === "function") {
             target.focus();
           }

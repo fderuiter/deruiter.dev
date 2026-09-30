@@ -53,3 +53,12 @@ while the trap is active before or along with standard trap behavior.
 
 Whether to restore focus to previously active element upon unmount or deactivation.
 Defaults to true.
+
+***
+
+### returnFocusTo?
+
+> `optional` **returnFocusTo?**: `RefObject`\<`HTMLElement` \| `null`\>
+
+Fallback element to focus on close when the element that was focused at
+activation is no longer connected to the document.

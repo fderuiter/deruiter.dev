@@ -9,6 +9,7 @@ import React, {
 import { safeStorage, STORAGE_CHANGE_EVENT } from "@/lib/safe-storage";
 import { IconSparkles, IconX, IconPlayerPlay } from "@tabler/icons-react";
 
+/** Storage key for tracking whether the first-time proof tutorial coach tour has been seen. */
 export const TUTORIAL_SEEN_KEY = "proof:tutorial-seen";
 
 // Helpers for useSyncExternalStore
@@ -40,6 +41,7 @@ function getTutorialSeenServerSnapshot(): boolean {
   return false;
 }
 
+/** Props for the ProofCoachTour component. */
 export interface ProofCoachTourProps {
   selectedNodeIds: string[];
   edges: Array<{ source: string; target: string; ruleApplied?: string }>;
@@ -58,6 +60,10 @@ interface TargetBox {
   height: number;
 }
 
+/**
+ * Interactive contextual coach mark tour overlay for the Proof Studio workspace.
+ * Guides first-time users step-by-step through Modus Ponens formal logic deduction.
+ */
 export const ProofCoachTour: React.FC<ProofCoachTourProps> = ({
   selectedNodeIds,
   edges,

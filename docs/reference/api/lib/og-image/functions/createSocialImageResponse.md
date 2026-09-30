@@ -6,7 +6,7 @@
 
 # Function: createSocialImageResponse()
 
-> **createSocialImageResponse**(`options`): `ImageResponse`
+> **createSocialImageResponse**(`options`): `Response`
 
 Generates an OpenGraph / Twitter Social Preview Card ImageResponse
 featuring the Frederick de Ruiter systems architecture visual identity.
@@ -19,4 +19,4 @@ featuring the Frederick de Ruiter systems architecture visual identity.
 
 ## Returns
 
-`ImageResponse`
+`Response`

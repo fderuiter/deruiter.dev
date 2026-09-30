@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { ImageResponse } from "next/og";
+import { logger } from "@/lib/logger";
 
 export const OG_IMAGE_SIZE = {
   width: 1200,
@@ -30,7 +31,11 @@ interface OgFont {
   style: "normal";
 }
 
+/** Static asset served when no brand font can be loaded (public/, so never subject to file tracing). */
+export const OG_FALLBACK_IMAGE_PATH = "/icon-512.png";
+
 let fontCache: OgFont[] | null = null;
+let fontFailureLogged = false;
 let laserLoonPreviewCache: string | null = null;
 
 function readAsset(...segments: string[]): Buffer {
@@ -53,7 +58,18 @@ export function getOgFonts(): OgFont[] {
       style: "normal" as const,
     }));
     return fontCache;
-  } catch {
+  } catch (error) {
+    // Log once per process: a missing bundle asset would otherwise repeat on every request.
+    if (!fontFailureLogged) {
+      fontFailureLogged = true;
+      logger.error(
+        "OG brand fonts could not be read; serving fallback image",
+        error,
+        {
+          directory: OG_FONT_DIRECTORY.join("/"),
+        }
+      );
+    }
     return [];
   }
 }
@@ -490,7 +506,20 @@ function renderArtifact(
  */
 export function createSocialImageResponse(
   options: SocialImageOptions
-): ImageResponse {
+): Response {
+  // Satori throws "No fonts are loaded" while streaming, after the 200 has
+  // started, so a font failure must be caught here. Redirect crawlers to a
+  // static PNG instead of a 500, without letting the redirect be cached.
+  const fonts = getOgFonts();
+  if (fonts.length === 0) {
+    return new Response(null, {
+      status: 302,
+      headers: {
+        Location: OG_FALLBACK_IMAGE_PATH,
+        "Cache-Control": "no-store",
+      },
+    });
+  }
   const presetConfig = options.preset
     ? PRESET_CONFIGS[options.preset]
     : undefined;
@@ -827,7 +856,7 @@ export function createSocialImageResponse(
     </div>,
     {
       ...OG_IMAGE_SIZE,
-      fonts: getOgFonts(),
+      fonts,
       headers: {
         "Cache-Control":
           "public, max-age=31536000, s-maxage=31536000, stale-while-revalidate=86400",

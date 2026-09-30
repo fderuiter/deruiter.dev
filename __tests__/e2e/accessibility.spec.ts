@@ -80,6 +80,26 @@ function formatViolationsForLog(
 }
 
 /**
+ * Waits for the /simulator step card to finish its fade-in. The card is a
+ * framer-motion section that enters from opacity 0, and its text appears in
+ * the DOM before the fade ends, so an axe scan taken on the first frame
+ * measures the partially transparent text as a contrast failure. Waiting for
+ * exactly one card (the AnimatePresence exit has finished) at full opacity
+ * audits the step at rest, as a reader sees it.
+ */
+async function settleSimulatorStep(page: Page): Promise<void> {
+  await page.waitForFunction(() => {
+    const sections = document.querySelectorAll<HTMLElement>(
+      'section[aria-labelledby="simulator-step-heading"], section[aria-labelledby="simulator-result-heading"]'
+    );
+    return (
+      sections.length === 1 &&
+      Number(window.getComputedStyle(sections[0]).opacity) === 1
+    );
+  });
+}
+
+/**
  * Common helper to execute AxeBuilder audit with strict WCAG 2.1 AA rules and zero tolerance.
  */
 async function auditAndAssert(
@@ -518,6 +538,7 @@ test.describe("Continuous Accessibility (a11y) & WCAG 2.1 AA Audit Suite", () =>
     });
 
     // 1. Initial / Default Stage 1 Audit
+    await settleSimulatorStep(page);
     await auditAndAssert(
       page,
       testInfo,
@@ -537,6 +558,7 @@ test.describe("Continuous Accessibility (a11y) & WCAG 2.1 AA Audit Suite", () =>
         "text=2. Live Incident Commander: Production Latency Spike",
         { timeout: 10000 }
       );
+      await settleSimulatorStep(page);
       await auditAndAssert(
         page,
         testInfo,
@@ -553,6 +575,7 @@ test.describe("Continuous Accessibility (a11y) & WCAG 2.1 AA Audit Suite", () =>
         await page.waitForSelector("text=3. Code Review Speed Challenge", {
           timeout: 10000,
         });
+        await settleSimulatorStep(page);
         await auditAndAssert(
           page,
           testInfo,
@@ -565,6 +588,7 @@ test.describe("Continuous Accessibility (a11y) & WCAG 2.1 AA Audit Suite", () =>
           .first()
           .click();
         await page.waitForSelector("text=Decision stats", { timeout: 10000 });
+        await settleSimulatorStep(page);
         await auditAndAssert(
           page,
           testInfo,

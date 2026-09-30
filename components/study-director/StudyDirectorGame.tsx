@@ -8,9 +8,7 @@ import React, {
   useState,
 } from "react";
 import {
-  ATTENTION_PER_DAY,
   AUDIT_ATTENTION,
-  DOCUMENTATION_ATTENTION,
   STUDY_24_081,
   STUDY_24_081_SITES,
   STUDY_24_081_TEAM,
@@ -27,6 +25,7 @@ import {
   type StudyState,
 } from "@/lib/study-director";
 import { DashboardPanel, MetersPanel, SitesPanel, TeamPanel } from "./Panels";
+import { BriefingView } from "./BriefingView";
 import { DecisionPanel } from "./DecisionPanel";
 import { OutcomeStrip, type Outcome } from "./OutcomeStrip";
 import {
@@ -39,7 +38,6 @@ import { InboxPanel } from "./InboxPanel";
 import { PhaseTimeline } from "./PhaseTimeline";
 import { PHASE_LABELS } from "./labels";
 import { StatusBar } from "./StatusBar";
-import { money } from "./format";
 import { ReportView } from "./ReportView";
 import { clearStudySave, loadStudySave, saveStudy } from "./useStudySave";
 
@@ -279,68 +277,33 @@ export const StudyDirectorGame: React.FC = () => {
 
   if (!state) {
     return (
-      <div
-        className="space-y-4 p-4 font-mono text-zinc-200"
-        data-testid="study-briefing"
-      >
-        <h2 className="text-lg font-bold text-zinc-100">
-          Study {STUDY_24_081.id}: {STUDY_24_081.design}
-        </h2>
-        <dl className="grid max-w-xl grid-cols-2 gap-x-4 gap-y-1 text-xs">
-          <dt className="text-zinc-400">Sponsor</dt>
-          <dd>{STUDY_24_081.sponsor.name} (first-time biotech)</dd>
-          <dt className="text-zinc-400">Phase</dt>
-          <dd>{STUDY_24_081.clinicalPhase}</dd>
-          <dt className="text-zinc-400">Sites / subjects</dt>
-          <dd>3 sites, {STUDY_24_081.subjects} subjects</dd>
-          <dt className="text-zinc-400">Timeline / budget</dt>
-          <dd>
-            {Math.round(STUDY_24_081.durationDays / 7)} weeks,{" "}
-            {money(STUDY_24_081.budget)}
-          </dd>
-          <dt className="text-zinc-400">Protocol</dt>
-          <dd>Questionable maturity, high operational complexity</dd>
-        </dl>
-        <ul className="max-w-xl list-inside list-disc space-y-1 text-xs text-zinc-300">
-          <li>
-            You have {ATTENTION_PER_DAY} attention each day. Answering,
-            delegating and auditing all spend it.
-          </li>
-          <li>
-            Documenting a decision costs {DOCUMENTATION_ATTENTION} more. Skipped
-            documentation comes back at the FDA inspection.
-          </li>
-          <li>
-            A backlog of open queries and unrecorded decisions takes attention
-            before you decide anything. Dashed pips show it.
-          </li>
-          <li>
-            The dashboard shows what people report. Audit a site to see what is
-            true.
-          </li>
-          <li>You cannot keep all six meters high. Choose what to protect.</li>
-        </ul>
-        <div className="flex flex-wrap gap-3">
-          <button
-            type="button"
-            ref={saved && saved.status === "running" ? undefined : primaryRef}
-            onClick={() => start(newStudy())}
-            className="min-h-[44px] border border-amber-500 bg-amber-500/10 px-4 text-sm font-bold text-amber-300 hover:bg-amber-500/20"
-          >
-            Start the study
-          </button>
-          {saved && saved.status === "running" ? (
+      <BriefingView
+        setup={STUDY_24_081}
+        sites={STUDY_24_081_SITES}
+        team={STUDY_24_081_TEAM}
+        actions={
+          <>
             <button
               type="button"
-              ref={primaryRef}
-              onClick={() => start(saved)}
-              className="min-h-[44px] border border-zinc-600 px-4 text-sm text-zinc-200 hover:border-amber-500"
+              ref={saved && saved.status === "running" ? undefined : primaryRef}
+              onClick={() => start(newStudy())}
+              className="min-h-[44px] border border-amber-500 bg-amber-500/10 px-4 text-sm font-bold text-amber-300 hover:bg-amber-500/20"
             >
-              Resume day {saved.day}
+              Start the study
             </button>
-          ) : null}
-        </div>
-      </div>
+            {saved && saved.status === "running" ? (
+              <button
+                type="button"
+                ref={primaryRef}
+                onClick={() => start(saved)}
+                className="min-h-[44px] border border-zinc-600 px-4 text-sm text-zinc-200 hover:border-amber-500"
+              >
+                Resume day {saved.day}
+              </button>
+            ) : null}
+          </>
+        }
+      />
     );
   }
 

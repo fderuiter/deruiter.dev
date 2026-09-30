@@ -50,16 +50,37 @@ vi.mock("@/lib/garmin-engine", async (importOriginal) => {
   };
 });
 
+// Clinical Chaos timer-bar scenario (#1639): when set, the first sponsor
+// email arrives after one second and the next amendment as soon as the
+// office allows, so every timer bar is on the board within a few seconds.
+const chaosClocks = vi.hoisted(() => ({ fastEvents: false }));
+
 vi.mock("@/lib/clinical-trial-chaos", async (importOriginal) => {
   const actual =
     await importOriginal<typeof import("@/lib/clinical-trial-chaos")>();
-  return { ...actual, tickShiftClocks: vi.fn(actual.tickShiftClocks) };
+  return {
+    ...actual,
+    tickShiftClocks: vi.fn(actual.tickShiftClocks),
+    createInitialSponsorState: (firstRequestDelay?: number) =>
+      actual.createInitialSponsorState(
+        chaosClocks.fastEvents ? 1 : firstRequestDelay
+      ),
+    getAmendmentIntervalSeconds: (
+      phase: Parameters<typeof actual.getAmendmentIntervalSeconds>[0]
+    ) =>
+      chaosClocks.fastEvents ? 1 : actual.getAmendmentIntervalSeconds(phase),
+  };
 });
 
 // Retro Labyrinth hover scenario (#1628): when set, each run is three open
 // rooms whose exit sits beside the start, and only runs after the first put
-// a TSP room at index 2, the room where the canvas tracks the cursor.
-const labyrinthCampaign = vi.hoisted(() => ({ openRuns: false, runs: 0 }));
+// a TSP room at index 2, the room the player reaches last.
+// `lastRoomId` names that third room.
+const labyrinthCampaign = vi.hoisted(() => ({
+  openRuns: false,
+  runs: 0,
+  lastRoomId: "tsp",
+}));
 
 // Retro Labyrinth: a stationary drone beside the start, and an enemy AI that
 // never hurts the player, so the loop can be stepped without ending the run.
@@ -96,7 +117,10 @@ vi.mock("@/lib/dungeon", async (importOriginal) => {
           openRoom(1),
           {
             ...openRoom(2),
-            id: labyrinthCampaign.runs > 1 ? "tsp" : base.id,
+            id:
+              labyrinthCampaign.runs > 1
+                ? labyrinthCampaign.lastRoomId
+                : base.id,
           },
         ];
       }
@@ -214,6 +238,54 @@ function installCanvasContext() {
   vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(() =>
     fromAny(ctx)
   );
+}
+
+/**
+ * Replaces the canvas context with one that remembers its fill style and
+ * counts the Retro Labyrinth hover highlight's fills.
+ */
+function countLabyrinthHoverFills() {
+  const hoverFill = "rgba(34, 211, 238, 0.2)";
+  let hoverFills = 0;
+  const style: Record<string | symbol, unknown> = {};
+  const ctx = new Proxy(style, {
+    get: (target, prop) => {
+      if (prop === "fillRect") {
+        return () => {
+          if (target.fillStyle === hoverFill) hoverFills += 1;
+        };
+      }
+      if (prop === "measureText") {
+        return (text: string) => ({ width: (text || "").length * 8 });
+      }
+      if (prop === "createRadialGradient" || prop === "createLinearGradient") {
+        return () => ({ addColorStop: () => {} });
+      }
+      if (prop === "getImageData" || prop === "createImageData") {
+        return () => ({
+          width: 1,
+          height: 1,
+          data: new Uint8ClampedArray(4),
+        });
+      }
+      if (prop === "getLineDash") return () => [];
+      if (prop in target) return target[prop];
+      return () => {};
+    },
+    set: (target, prop, value) => {
+      target[prop] = value;
+      return true;
+    },
+  });
+  vi.mocked(HTMLCanvasElement.prototype.getContext).mockImplementation(() =>
+    fromAny(ctx)
+  );
+  return {
+    count: () => hoverFills,
+    reset: () => {
+      hoverFills = 0;
+    },
+  };
 }
 
 function installStorage() {
@@ -579,6 +651,7 @@ describe("arcade loops read current state (#1628)", () => {
   afterEach(() => {
     labyrinthCampaign.openRuns = false;
     labyrinthCampaign.runs = 0;
+    labyrinthCampaign.lastRoomId = "tsp";
   });
 
   function labyrinthBoard(container: HTMLElement) {
@@ -612,44 +685,7 @@ describe("arcade loops read current state (#1628)", () => {
 
   it("draws the TSP hover highlight from the current run's rooms", () => {
     labyrinthCampaign.openRuns = true;
-    const hoverFill = "rgba(34, 211, 238, 0.2)";
-    let hoverFills = 0;
-    const style: Record<string | symbol, unknown> = {};
-    const ctx = new Proxy(style, {
-      get: (target, prop) => {
-        if (prop === "fillRect") {
-          return () => {
-            if (target.fillStyle === hoverFill) hoverFills += 1;
-          };
-        }
-        if (prop === "measureText") {
-          return (text: string) => ({ width: (text || "").length * 8 });
-        }
-        if (
-          prop === "createRadialGradient" ||
-          prop === "createLinearGradient"
-        ) {
-          return () => ({ addColorStop: () => {} });
-        }
-        if (prop === "getImageData" || prop === "createImageData") {
-          return () => ({
-            width: 1,
-            height: 1,
-            data: new Uint8ClampedArray(4),
-          });
-        }
-        if (prop === "getLineDash") return () => [];
-        if (prop in target) return target[prop];
-        return () => {};
-      },
-      set: (target, prop, value) => {
-        target[prop] = value;
-        return true;
-      },
-    });
-    vi.mocked(HTMLCanvasElement.prototype.getContext).mockImplementation(() =>
-      fromAny(ctx)
-    );
+    const hover = countLabyrinthHoverFills();
 
     const { container } = render(<RetroLabyrinth isMounted={true} />);
     vi.spyOn(Math, "random").mockReturnValue(0.5);
@@ -672,9 +708,9 @@ describe("arcade loops read current state (#1628)", () => {
     );
     fireEvent.mouseMove(canvas, { clientX: 30, clientY: 30 });
 
-    hoverFills = 0;
+    hover.reset();
     scheduler.tick(16);
-    expect(hoverFills).toBe(1);
+    expect(hover.count()).toBe(1);
   });
 
   it("re-renders Clinical Trial Chaos only when a visible second changes", () => {
@@ -715,5 +751,155 @@ describe("arcade loops read current state (#1628)", () => {
       scheduler.tick(3000 + frame * 100);
     }
     expect(commits).toBeGreaterThan(0);
+  });
+});
+
+// #1639: the TSP room's hover highlight never drew in the real campaign, and
+// Clinical Chaos timer bars held still between once-a-second commits.
+describe("arcade hover and timer bars (#1639)", () => {
+  afterEach(() => {
+    labyrinthCampaign.openRuns = false;
+    labyrinthCampaign.runs = 0;
+    labyrinthCampaign.lastRoomId = "tsp";
+    chaosClocks.fastEvents = false;
+  });
+
+  function labyrinthBoard(container: HTMLElement) {
+    const board = container.querySelector<HTMLElement>(
+      '[data-keyboard-boundary="true"]'
+    );
+    if (!board) throw new Error("labyrinth keyboard boundary not rendered");
+    return board;
+  }
+
+  function labyrinthCanvas(container: HTMLElement) {
+    const canvas = container.querySelector("canvas");
+    if (!canvas) throw new Error("labyrinth canvas not rendered");
+    // One 16 px cell per grid square on the 240 x 144 canvas.
+    vi.spyOn(canvas, "getBoundingClientRect").mockReturnValue(
+      fromPartial({ left: 0, top: 0, width: 240, height: 144 })
+    );
+    return canvas;
+  }
+
+  function playerLocation(container: HTMLElement) {
+    return /Player Location: Grid \((\d+), (\d+)\)/
+      .exec(container.textContent ?? "")
+      ?.slice(1, 3);
+  }
+
+  it("highlights the hovered tile in the campaign's first room, the TSP room", () => {
+    const hover = countLabyrinthHoverFills();
+    const { container } = render(<RetroLabyrinth isMounted={true} />);
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    scheduler.tick(0);
+    expect(container.textContent).toContain("Zero-Trust Enclave");
+
+    const canvas = labyrinthCanvas(container);
+    fireEvent.mouseMove(canvas, { clientX: 24, clientY: 120 });
+    hover.reset();
+    scheduler.tick(16);
+    expect(hover.count()).toBe(1);
+
+    // Leaving the canvas clears the highlight.
+    fireEvent.mouseLeave(canvas);
+    hover.reset();
+    scheduler.tick(32);
+    expect(hover.count()).toBe(0);
+  });
+
+  it("does not steer the player towards the cursor in the TSP room", () => {
+    const { container } = render(<RetroLabyrinth isMounted={true} />);
+    // Every mouse move would pass BlinkBrowse's 20% steering roll.
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    scheduler.tick(0);
+    expect(playerLocation(container)).toEqual(["1", "1"]);
+
+    // The cursor sits on an open cell six rows below the start.
+    const canvas = labyrinthCanvas(container);
+    for (let i = 0; i < 5; i++) {
+      fireEvent.mouseMove(canvas, { clientX: 24, clientY: 120 });
+    }
+    expect(playerLocation(container)).toEqual(["1", "1"]);
+  });
+
+  it("still steers the player towards the cursor in BlinkBrowse", () => {
+    labyrinthCampaign.openRuns = true;
+    labyrinthCampaign.lastRoomId = "blinkbrowse";
+    const { container } = render(<RetroLabyrinth isMounted={true} />);
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    scheduler.tick(0);
+
+    const board = labyrinthBoard(container);
+    for (let room = 0; room < 2; room++) {
+      fireEvent.keyDown(board, { key: "ArrowRight" });
+      fireEvent.keyDown(board, { key: "Enter" });
+    }
+    expect(playerLocation(container)).toEqual(["12", "7"]);
+
+    // The cursor is on the player's row, to the left.
+    fireEvent.mouseMove(labyrinthCanvas(container), {
+      clientX: 40,
+      clientY: 120,
+    });
+    expect(playerLocation(container)).toEqual(["11", "7"]);
+  });
+
+  it("gives each linear timer bar a transition as long as its longest hold", () => {
+    chaosClocks.fastEvents = true;
+    let now = 50_000;
+    vi.spyOn(Date, "now").mockImplementation(() => now);
+    const { container } = render(<ClinicalTrialChaos />);
+    clickButton(container, "Start Phase 1");
+    clickButton(container, "Skip calibration");
+
+    // When each linear timer bar's width changed, by element.
+    const history = new Map<Element, { width: string; at: number[] }>();
+    const sample = (t: number) => {
+      container
+        .querySelectorAll('[class*="transition-[width]"][class*="ease-linear"]')
+        .forEach((bar) => {
+          const width = (bar as HTMLElement).style.width;
+          const seen = history.get(bar);
+          if (!seen) {
+            history.set(bar, { width, at: [] });
+          } else if (seen.width !== width) {
+            seen.width = width;
+            seen.at.push(t);
+          }
+        });
+    };
+
+    // Nine simulated seconds of 50 ms frames. The sponsor writes after one
+    // second and the first amendment arrives at the office's five-second
+    // floor; later amendments wait the phase's usual interval.
+    for (let t = 50; t <= 9000; t += 50) {
+      now += 50;
+      scheduler.tick(t);
+      if (container.textContent?.includes("Protocol amendment:")) {
+        chaosClocks.fastEvents = false;
+      }
+      sample(t);
+    }
+
+    const checked = new Set<string>();
+    for (const [bar, { at }] of history) {
+      if (at.length < 3) continue;
+      const kind = bar.closest('[aria-label="Sponsor email"]')
+        ? "sponsor"
+        : bar.closest("li")
+          ? "subject"
+          : "amendment";
+      checked.add(kind);
+      const className = bar.getAttribute("class") ?? "";
+      const holds = at.slice(1).map((t, i) => t - at[i]);
+      const duration = Number(/\bduration-(\d+)\b/.exec(className)?.[1]);
+      // A shorter transition finishes early, and the bar then holds still
+      // until the next commit.
+      expect(duration, kind).toBeGreaterThanOrEqual(Math.max(...holds));
+      // Reduced motion keeps the stepped bar.
+      expect(className, kind).toContain("motion-reduce:transition-none");
+    }
+    expect(checked).toEqual(new Set(["subject", "sponsor", "amendment"]));
   });
 });

@@ -1745,7 +1745,7 @@ export function CardTable({
               {view.deviation?.fresh && (
                 <DeviationCard deviation={view.deviation} />
               )}
-              <div className="mt-3 flex items-end justify-between gap-2 text-[10px] uppercase tracking-wider text-zinc-400">
+              <div className="mt-3 flex flex-wrap items-end justify-between gap-2 text-[10px] uppercase tracking-wider text-zinc-400">
                 <div
                   className="flex items-center gap-2"
                   data-testid="discard-stack"

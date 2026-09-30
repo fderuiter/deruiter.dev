@@ -522,6 +522,16 @@ export interface WorkingWithDuckState {
   tutorialStep: number;
 }
 
+/**
+ * A paused sprint freezes play: every player action is a no-op until the
+ * sprint resumes, so the meters and score cannot move with the clock
+ * stopped (#1645). Equipping an accessory stays allowed because the
+ * wardrobe dialog pauses the sprint itself.
+ */
+function isSprintPaused(state: WorkingWithDuckState): boolean {
+  return state.status === "paused";
+}
+
 export function clampBounds(x: number, y: number): { x: number; y: number } {
   const safeX = Number.isFinite(x) ? x : CANVAS_WIDTH / 2;
   const safeY = Number.isFinite(y) ? y : CANVAS_HEIGHT / 2;
@@ -1524,6 +1534,7 @@ export function performTrick(
   state: WorkingWithDuckState,
   trick: DuckTrick
 ): WorkingWithDuckState {
+  if (isSprintPaused(state)) return state;
   if (
     state.duck.state === "NAP_TIME" ||
     state.inDogPark ||
@@ -1785,6 +1796,7 @@ export function interactStation(
   state: WorkingWithDuckState,
   stationId: "water" | "food" | "bed" | "bath"
 ): WorkingWithDuckState {
+  if (isSprintPaused(state)) return state;
   const stations = { ...state.officeStations };
   const alerts = [...state.floatingAlerts];
   const soundCues: Array<SoundCue> = [];
@@ -1857,6 +1869,7 @@ export function interactStation(
 export function enterBathtub(
   state: WorkingWithDuckState
 ): WorkingWithDuckState {
+  if (isSprintPaused(state)) return state;
   return {
     ...state,
     inBathtub: true,
@@ -1880,6 +1893,7 @@ export function scrubBathtub(
   x: number,
   y: number
 ): WorkingWithDuckState {
+  if (isSprintPaused(state)) return state;
   if (!state.inBathtub || state.bathtubState.soapLather >= 100) return state;
 
   const bath = { ...state.bathtubState };
@@ -1918,6 +1932,7 @@ export function scrubBathtub(
 export function rinseBathtub(
   state: WorkingWithDuckState
 ): WorkingWithDuckState {
+  if (isSprintPaused(state)) return state;
   if (!state.inBathtub) return state;
 
   const bath = { ...state.bathtubState };
@@ -1983,6 +1998,7 @@ export function stepBathtubGame(
 }
 
 export function exitBathtub(state: WorkingWithDuckState): WorkingWithDuckState {
+  if (isSprintPaused(state)) return state;
   const isClean =
     state.bathtubState.status === "clean" ||
     state.bathtubState.rinseLevel >= 100;
@@ -2037,6 +2053,7 @@ export function throwBall(
   targetX: number,
   targetY: number
 ): WorkingWithDuckState {
+  if (isSprintPaused(state)) return state;
   if (state.duck.state === "NAP_TIME" || state.inDogPark || state.inBathtub)
     return state;
 
@@ -2069,6 +2086,7 @@ export function applySqueakyToy(
   x: number,
   y: number
 ): WorkingWithDuckState {
+  if (isSprintPaused(state)) return state;
   let nextNaughtyVsGood = state.naughtyVsGood;
   let activeToast = state.activeSkillToast;
   let activeHazard = state.activeHazardTarget;
@@ -2129,6 +2147,7 @@ export function applyKongToy(
   x: number,
   y: number
 ): WorkingWithDuckState {
+  if (isSprintPaused(state)) return state;
   const clamped = clampBounds(x, y);
   let activeHazard = state.activeHazardTarget;
   let activeToast = state.activeSkillToast;
@@ -2178,6 +2197,7 @@ export function applyKongToy(
  * Player Action: Trade Treat for Ball ("No Take, Only Throw") or Direct Treat Reward
  */
 export function giveTreat(state: WorkingWithDuckState): WorkingWithDuckState {
+  if (isSprintPaused(state)) return state;
   if (state.duck.state === "NO_TAKE_THROW") {
     const comboStreak = state.comboStreak + 1;
     const soundCues: Array<SoundCue> = ["ding"];
@@ -2232,6 +2252,7 @@ export function scrubBelly(
   x: number,
   y: number
 ): WorkingWithDuckState {
+  if (isSprintPaused(state)) return state;
   if (state.duck.state !== "THE_FLOP") return state;
 
   const dx = x - state.duck.x;
@@ -2315,6 +2336,7 @@ export function mopIndoorPuddle(
   x: number,
   y: number
 ): WorkingWithDuckState {
+  if (isSprintPaused(state)) return state;
   if (!state.indoorPuddles || state.indoorPuddles.length === 0) return state;
 
   const soundCues: Array<SoundCue> = [];
@@ -2389,6 +2411,7 @@ export function mopIndoorPuddle(
 export function startDraggingDuck(
   state: WorkingWithDuckState
 ): WorkingWithDuckState {
+  if (isSprintPaused(state)) return state;
   if (state.duck.state === "NAP_TIME" || state.inBathtub) return state;
   return {
     ...state,
@@ -2407,6 +2430,7 @@ export function dragDuckTo(
   x: number,
   y: number
 ): WorkingWithDuckState {
+  if (isSprintPaused(state)) return state;
   const clamped = clampBounds(x, y);
   return {
     ...state,
@@ -2423,6 +2447,7 @@ export function dragDuckTo(
  * Player Action: Release Duck
  */
 export function releaseDuck(state: WorkingWithDuckState): WorkingWithDuckState {
+  if (isSprintPaused(state)) return state;
   if (state.duck.state !== "DRAGGED") return state;
 
   // Dropped at back door
@@ -2493,6 +2518,7 @@ export function enterDogPark(
   state: WorkingWithDuckState,
   mode: "ball" | "frisbee" = "ball"
 ): WorkingWithDuckState {
+  if (isSprintPaused(state)) return state;
   return {
     ...state,
     inDogPark: true,
@@ -2556,6 +2582,7 @@ export function throwParkBall(
   powerX: number,
   powerY: number
 ): WorkingWithDuckState {
+  if (isSprintPaused(state)) return state;
   if (!state.inDogPark || state.parkState.status !== "aim") return state;
 
   const isFrisbee = state.parkState.mode === "frisbee";
@@ -2579,6 +2606,7 @@ export function throwParkBall(
 export function jumpParkHurdle(
   state: WorkingWithDuckState
 ): WorkingWithDuckState {
+  if (isSprintPaused(state)) return state;
   if (!state.inDogPark) return state;
 
   return {
@@ -2596,6 +2624,7 @@ export function steerParkDuck(
   state: WorkingWithDuckState,
   targetY: number
 ): WorkingWithDuckState {
+  if (isSprintPaused(state)) return state;
   if (!state.inDogPark || state.parkState.status !== "retrieving") return state;
 
   const clampedY = clamp(targetY, 50, CANVAS_HEIGHT - 50);
@@ -2611,6 +2640,7 @@ export function steerParkDuck(
 export function tapParkWhistle(
   state: WorkingWithDuckState
 ): WorkingWithDuckState {
+  if (isSprintPaused(state)) return state;
   if (!state.inDogPark) return state;
 
   const park = state.parkState;
@@ -2787,6 +2817,7 @@ export function exitDogPark(
   state: WorkingWithDuckState,
   isSuccess: boolean
 ): WorkingWithDuckState {
+  if (isSprintPaused(state)) return state;
   const nextExcitement = 0;
   const nextBladder = 0;
   const bonusFromBones = state.parkState.bonesCollected * 10;

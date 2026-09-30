@@ -1134,10 +1134,12 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     }
   }, [selectedClass.starterWeapons, activeWeaponId, weapons, handleFireWeapon]);
 
-  // BlinkBrowse cursor movement handler
+  // Cursor tracking for every campaign room: the TSP room draws a hover
+  // highlight from it, and BlinkBrowse also steers the player towards it.
+  // Rooms are matched by id, not position, so reordering the campaign
+  // cannot strand either mechanic (#1639).
   const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (gameMode !== "roguelike" || roomIndex !== 2 || gameStatus !== "playing")
-      return;
+    if (gameMode !== "roguelike" || gameStatus !== "playing") return;
 
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -1166,6 +1168,8 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     const gridY = clamp(rawGridY, 0, rows - 1);
 
     cursorGridPosRef.current = { x: gridX, y: gridY };
+
+    if (campaignRooms[roomIndex]?.id !== "blinkbrowse") return;
 
     if (Math.random() < 0.2) {
       const dx =

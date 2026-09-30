@@ -37,7 +37,12 @@ const SETTINGS_EVENT = "te:audio-change";
 // Music stays off until the viewer turns it on; SFX follow the site mute.
 const DEFAULT_SETTINGS = "sfx=1;music=0";
 
+// The viewer's last switch when storage refused to keep it: it holds for
+// this page, and the next successful write hands control back to storage.
+let pageOnlySettings: string | null = null;
+
 function readSettingsRaw(): string {
+  if (pageOnlySettings !== null) return pageOnlySettings;
   const stored = safeGetRawItem(SETTINGS_KEY);
   return stored && /^sfx=[01];music=[01]$/.test(stored)
     ? stored
@@ -49,13 +54,14 @@ function parseSettings(raw: string): TeAudioSettings {
 }
 
 function writeSettings(settings: TeAudioSettings): void {
-  // Storage unavailable: the write is dropped and reads fall back to the
-  // defaults, exactly as a failed localStorage call did.
-  safeSetRawItem(
-    SETTINGS_KEY,
-    `sfx=${settings.sfx ? 1 : 0};music=${settings.music ? 1 : 0}`,
-    { retainInMemory: false }
-  );
+  const raw = `sfx=${settings.sfx ? 1 : 0};music=${settings.music ? 1 : 0}`;
+  // Storage unavailable or full: the choice lasts for this page only (#925).
+  // It is kept here rather than in the shared memory cache, so a stale value
+  // storage still holds cannot win over it.
+  const persisted = safeSetRawItem(SETTINGS_KEY, raw, {
+    retainInMemory: false,
+  });
+  pageOnlySettings = persisted ? null : raw;
   window.dispatchEvent(new Event(SETTINGS_EVENT));
 }
 

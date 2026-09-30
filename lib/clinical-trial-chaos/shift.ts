@@ -323,6 +323,45 @@ export function applySubmissionScore(
   };
 }
 
+/** A verified submission scored, applied and checked against the phase. */
+export interface SettledSubmission {
+  /** Points, combo and multiplier the submission earned. */
+  submission: SubmissionScore;
+  /** Score state after the submission, including its clean tally. */
+  scoreState: GameScoreState;
+  /** Whether the submission cleared the campaign phase. */
+  phaseCleared: boolean;
+}
+
+/**
+ * Scores a verified submission, applies it, and checks whether it clears the
+ * phase. A phase-clear report must grade `scoreState`, the tallies after this
+ * submission, so the final CRF's clean count is included (#1609).
+ *
+ * @param score - The score state before the submission.
+ * @param subject - The submitted subject.
+ * @param allClean - Whether every observation was resolved.
+ * @param gameMode - The running mode.
+ * @param phase - The running phase.
+ * @param adjustPoints - Adjusts the points, for example for the office.
+ * @returns The submission, the updated score state and the phase check.
+ */
+export function settleSubmission(
+  score: GameScoreState,
+  subject: ClinicalSubject,
+  allClean: boolean,
+  gameMode: GameMode,
+  phase: GamePhase,
+  adjustPoints: (points: number) => number = (points) => points
+): SettledSubmission {
+  const submission = scoreSubmission(score, subject, allClean, adjustPoints);
+  return {
+    submission,
+    scoreState: applySubmissionScore(score, submission, allClean),
+    phaseCleared: isPhaseCleared(gameMode, phase, score.subjectsSubmitted),
+  };
+}
+
 /**
  * Lifeline charge a verified submission earns, before any office adjustment.
  *
@@ -485,14 +524,17 @@ export function startCoffeeBreak(auditor: AuditorState): AuditorState {
 }
 
 /**
- * Brings the auditor back from a coffee break. An auditor whose behavior has
- * already changed is left as it is.
+ * Brings the auditor back from a coffee break. The auditor resumes patrol
+ * even when a wrong fix during the break made it suspicious, because that
+ * auditor is still paused and would otherwise stay frozen for the rest of the
+ * shift (#1610). An auditor already writing a Form 483 is left as it is: the
+ * shift is ending.
  *
  * @param auditor - The auditor when the break runs out.
  * @returns The auditor back on patrol.
  */
 export function endCoffeeBreak(auditor: AuditorState): AuditorState {
-  if (auditor.behavior !== "coffee_break") return auditor;
+  if (auditor.behavior === "issuing_483") return auditor;
   return { ...auditor, behavior: "patrolling", isPaused: false };
 }
 

@@ -446,6 +446,90 @@ Re-exports [ClockView](internal/table/interfaces/ClockView.md)
 
 ***
 
+### Codex
+
+Re-exports [Codex](internal/codex/type-aliases/Codex.md)
+
+***
+
+### CODEX\_CATEGORIES
+
+Re-exports [CODEX_CATEGORIES](internal/codex/variables/CODEX_CATEGORIES.md)
+
+***
+
+### CODEX\_CATEGORY\_LABELS
+
+Re-exports [CODEX_CATEGORY_LABELS](internal/codex/variables/CODEX_CATEGORY_LABELS.md)
+
+***
+
+### CODEX\_VERSION
+
+Re-exports [CODEX_VERSION](internal/codex/variables/CODEX_VERSION.md)
+
+***
+
+### CodexCategory
+
+Re-exports [CodexCategory](internal/codex/type-aliases/CodexCategory.md)
+
+***
+
+### CodexEntry
+
+Re-exports [CodexEntry](internal/codex/type-aliases/CodexEntry.md)
+
+***
+
+### CodexEntrySchema
+
+Re-exports [CodexEntrySchema](internal/codex/variables/CodexEntrySchema.md)
+
+***
+
+### CodexEntryView
+
+Re-exports [CodexEntryView](internal/codex/interfaces/CodexEntryView.md)
+
+***
+
+### CodexRead
+
+Re-exports [CodexRead](internal/codex/interfaces/CodexRead.md)
+
+***
+
+### CodexReadStatus
+
+Re-exports [CodexReadStatus](internal/codex/type-aliases/CodexReadStatus.md)
+
+***
+
+### CodexRunRef
+
+Re-exports [CodexRunRef](internal/codex/type-aliases/CodexRunRef.md)
+
+***
+
+### CodexRunRefSchema
+
+Re-exports [CodexRunRefSchema](internal/codex/variables/CodexRunRefSchema.md)
+
+***
+
+### CodexSchema
+
+Re-exports [CodexSchema](internal/codex/variables/CodexSchema.md)
+
+***
+
+### CodexSectionView
+
+Re-exports [CodexSectionView](internal/codex/interfaces/CodexSectionView.md)
+
+***
+
 ### ColumnArm
 
 Re-exports [ColumnArm](types/type-aliases/ColumnArm.md)
@@ -692,6 +776,12 @@ Re-exports [DEMOGRAPHICS_SCENARIO](scenarios/variables/DEMOGRAPHICS_SCENARIO.md)
 
 ***
 
+### deriveCodexView
+
+Re-exports [deriveCodexView](internal/codex/functions/deriveCodexView.md)
+
+***
+
 ### deriveDeskView
 
 Re-exports [deriveDeskView](internal/desk/functions/deriveDeskView.md)
@@ -770,6 +860,24 @@ Re-exports [DeviationView](internal/table/interfaces/DeviationView.md)
 
 ***
 
+### DISCOVERY\_SOURCE\_LABELS
+
+Re-exports [DISCOVERY_SOURCE_LABELS](internal/codex/variables/DISCOVERY_SOURCE_LABELS.md)
+
+***
+
+### DISCOVERY\_SOURCES
+
+Re-exports [DISCOVERY_SOURCES](internal/codex/variables/DISCOVERY_SOURCES.md)
+
+***
+
+### DiscoverySource
+
+Re-exports [DiscoverySource](internal/codex/type-aliases/DiscoverySource.md)
+
+***
+
 ### DMC\_MILESTONE\_SCENARIO
 
 Re-exports [DMC_MILESTONE_SCENARIO](scenarios/variables/DMC_MILESTONE_SCENARIO.md)
@@ -821,6 +929,12 @@ Re-exports [drawInt](internal/rng/functions/drawInt.md)
 ### EMPTY\_SHELL\_ALERT
 
 Re-exports [EMPTY_SHELL_ALERT](internal/table/variables/EMPTY_SHELL_ALERT.md)
+
+***
+
+### emptyCodex
+
+Re-exports [emptyCodex](internal/codex/functions/emptyCodex.md)
 
 ***
 
@@ -1382,6 +1496,12 @@ Re-exports [membership](internal/snapshots/functions/membership.md)
 
 ***
 
+### migrateCodex
+
+Re-exports [migrateCodex](internal/codex/functions/migrateCodex.md)
+
+***
+
 ### MILESTONE\_WEIGHTS
 
 Re-exports [MILESTONE_WEIGHTS](internal/package/variables/MILESTONE_WEIGHTS.md)
@@ -1409,6 +1529,12 @@ Re-exports [normalizeSeed](internal/seed/functions/normalizeSeed.md)
 ### OpenedPack
 
 Re-exports [OpenedPack](internal/run/interfaces/OpenedPack.md)
+
+***
+
+### originLabel
+
+Re-exports [originLabel](internal/codex/functions/originLabel.md)
 
 ***
 
@@ -1493,6 +1619,12 @@ Re-exports [PackSlot](internal/run/interfaces/PackSlot.md)
 ### parseChallengeHash
 
 Re-exports [parseChallengeHash](internal/seed/functions/parseChallengeHash.md)
+
+***
+
+### parseCodex
+
+Re-exports [parseCodex](internal/codex/functions/parseCodex.md)
 
 ***
 
@@ -1673,6 +1805,18 @@ Re-exports [raiseQuotas](internal/quotas/functions/raiseQuotas.md)
 ### reconcilePackage
 
 Re-exports [reconcilePackage](internal/package/functions/reconcilePackage.md)
+
+***
+
+### recordDiscoveries
+
+Re-exports [recordDiscoveries](internal/codex/functions/recordDiscoveries.md)
+
+***
+
+### recordRun
+
+Re-exports [recordRun](internal/codex/functions/recordRun.md)
 
 ***
 
@@ -1868,6 +2012,12 @@ Re-exports [ruleResultsFor](internal/scoring/functions/ruleResultsFor.md)
 
 ***
 
+### RUN\_HISTORY\_LIMIT
+
+Re-exports [RUN_HISTORY_LIMIT](internal/codex/variables/RUN_HISTORY_LIMIT.md)
+
+***
+
 ### RUN\_SAVE\_VERSION
 
 Re-exports [RUN_SAVE_VERSION](types/variables/RUN_SAVE_VERSION.md)
@@ -1913,6 +2063,18 @@ Re-exports [RunChoice](internal/run-rules/interfaces/RunChoice.md)
 ### RunDraw
 
 Re-exports [RunDraw](internal/run/interfaces/RunDraw.md)
+
+***
+
+### RunHistoryEntry
+
+Re-exports [RunHistoryEntry](internal/codex/type-aliases/RunHistoryEntry.md)
+
+***
+
+### RunHistoryEntrySchema
+
+Re-exports [RunHistoryEntrySchema](internal/codex/variables/RunHistoryEntrySchema.md)
 
 ***
 
@@ -2123,6 +2285,12 @@ Re-exports [seedFromBytes](internal/seed/functions/seedFromBytes.md)
 ### sellValue
 
 Re-exports [sellValue](internal/shop/functions/sellValue.md)
+
+***
+
+### serializeCodex
+
+Re-exports [serializeCodex](internal/codex/functions/serializeCodex.md)
 
 ***
 
@@ -2435,6 +2603,12 @@ Re-exports [Subject](types/type-aliases/Subject.md)
 ### SubjectSchema
 
 Re-exports [SubjectSchema](types/variables/SubjectSchema.md)
+
+***
+
+### summarizeRun
+
+Re-exports [summarizeRun](internal/codex/functions/summarizeRun.md)
 
 ***
 

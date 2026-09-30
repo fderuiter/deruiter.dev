@@ -8,6 +8,7 @@
 
 ## Interfaces
 
+- [SettledSubmission](interfaces/SettledSubmission.md)
 - [ShiftClocks](interfaces/ShiftClocks.md)
 - [ShiftClockTick](interfaces/ShiftClockTick.md)
 - [SponsorEventNotice](interfaces/SponsorEventNotice.md)
@@ -52,6 +53,7 @@
 - [replaceObservation](functions/replaceObservation.md)
 - [scoreSubmission](functions/scoreSubmission.md)
 - [selectNextDossier](functions/selectNextDossier.md)
+- [settleSubmission](functions/settleSubmission.md)
 - [spendPowerUp](functions/spendPowerUp.md)
 - [startCoffeeBreak](functions/startCoffeeBreak.md)
 - [tickShiftClocks](functions/tickShiftClocks.md)

@@ -9,6 +9,9 @@
 Cloud storage provider directing media uploads to Vercel Blob.
 Active in preview and production environments with BLOB_READ_WRITE_TOKEN.
 
+Constructed without a token, explicit or from the environment, every
+operation returns `STORAGE_UNCONFIGURED` without making a request.
+
 ## Implements
 
 - [`MediaStorageProvider`](../interfaces/MediaStorageProvider.md)
@@ -33,7 +36,7 @@ Active in preview and production environments with BLOB_READ_WRITE_TOKEN.
 
 ### delete()
 
-> **delete**(`key`): `Promise`\<`void`\>
+> **delete**(`key`): `Promise`\<[`MediaStorageResult`](../type-aliases/MediaStorageResult.md)\<`null`\>\>
 
 #### Parameters
 
@@ -43,7 +46,7 @@ Active in preview and production environments with BLOB_READ_WRITE_TOKEN.
 
 #### Returns
 
-`Promise`\<`void`\>
+`Promise`\<[`MediaStorageResult`](../type-aliases/MediaStorageResult.md)\<`null`\>\>
 
 #### Implementation of
 
@@ -71,9 +74,21 @@ Active in preview and production environments with BLOB_READ_WRITE_TOKEN.
 
 ***
 
+### isConfigured()
+
+> **isConfigured**(): `boolean`
+
+Whether a Blob read-write token is available to this provider.
+
+#### Returns
+
+`boolean`
+
+***
+
 ### upload()
 
-> **upload**(`file`, `filename`, `contentType`): `Promise`\<[`MediaUploadResult`](../interfaces/MediaUploadResult.md)\>
+> **upload**(`file`, `filename`, `contentType`): `Promise`\<[`MediaStorageResult`](../type-aliases/MediaStorageResult.md)\<[`MediaUploadResult`](../interfaces/MediaUploadResult.md)\>\>
 
 #### Parameters
 
@@ -91,7 +106,7 @@ Active in preview and production environments with BLOB_READ_WRITE_TOKEN.
 
 #### Returns
 
-`Promise`\<[`MediaUploadResult`](../interfaces/MediaUploadResult.md)\>
+`Promise`\<[`MediaStorageResult`](../type-aliases/MediaStorageResult.md)\<[`MediaUploadResult`](../interfaces/MediaUploadResult.md)\>\>
 
 #### Implementation of
 

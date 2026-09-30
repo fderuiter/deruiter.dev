@@ -1,30 +1,49 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
-import { MaintenanceService } from "@/lib/services/maintenance-service";
+import {
+  MaintenanceService,
+  type MaintenancePhaseResult,
+} from "@/lib/services/maintenance-service";
 import { GET, maxDuration } from "@/app/api/cron/maintenance/route";
 import { logger } from "@/lib/logger";
+import { createFailure, createSuccess } from "@/lib/services/service-result";
+import { TelemetryService } from "@/lib/services/telemetry-service";
+import { CaseStudyService } from "@/lib/services/case-study-service";
+import { BlogPostService } from "@/lib/services/blog-service";
+import { NewsletterService } from "@/lib/services/newsletter-service";
+import { EmailService } from "@/lib/services/email-service";
+
+type PhaseTask = () => Promise<MaintenancePhaseResult>;
 
 function adapters(
   overrides?: Partial<{
-    syncTelemetry: () => Promise<Record<string, number | null>>;
-    dispatchNewsletter: () => Promise<Record<string, number | null>>;
-    processEmailRetry: () => Promise<Record<string, number | null>>;
-    runRetention: () => Promise<Record<string, number | null>>;
+    syncTelemetry: PhaseTask;
+    dispatchNewsletter: PhaseTask;
+    processEmailRetry: PhaseTask;
+    runRetention: PhaseTask;
   }>
 ) {
   return {
     syncTelemetry:
       overrides?.syncTelemetry ||
-      vi.fn().mockResolvedValue({ processed: 4, inserted: 4 }),
+      vi.fn().mockResolvedValue(createSuccess({ processed: 4, inserted: 4 })),
     dispatchNewsletter:
       overrides?.dispatchNewsletter ||
-      vi.fn().mockResolvedValue({ queued: 0, capacity: 10 }),
+      vi.fn().mockResolvedValue(createSuccess({ queued: 0, capacity: 10 })),
     processEmailRetry:
       overrides?.processEmailRetry ||
-      vi.fn().mockResolvedValue({ processed: 1, succeeded: 1, failed: 0 }),
+      vi
+        .fn()
+        .mockResolvedValue(
+          createSuccess({ processed: 1, succeeded: 1, failed: 0 })
+        ),
     runRetention:
       overrides?.runRetention ||
-      vi.fn().mockResolvedValue({ rollupsUpserted: 2, rawEventsDeleted: 20 }),
+      vi
+        .fn()
+        .mockResolvedValue(
+          createSuccess({ rollupsUpserted: 2, rawEventsDeleted: 20 })
+        ),
   };
 }
 
@@ -46,19 +65,19 @@ describe("unified maintenance pipeline (#714)", () => {
       adapters: adapters({
         syncTelemetry: vi.fn(async () => {
           calls.push("telemetry");
-          return { processed: 4, inserted: 4 };
+          return createSuccess({ processed: 4, inserted: 4 });
         }),
         dispatchNewsletter: vi.fn(async () => {
           calls.push("newsletter");
-          return { queued: 3, capacity: 10 };
+          return createSuccess({ queued: 3, capacity: 10 });
         }),
         processEmailRetry: vi.fn(async () => {
           calls.push("emailRetry");
-          return { processed: 1, succeeded: 1, failed: 0 };
+          return createSuccess({ processed: 1, succeeded: 1, failed: 0 });
         }),
         runRetention: vi.fn(async () => {
           calls.push("retention");
-          return { rollupsUpserted: 2, rawEventsDeleted: 20 };
+          return createSuccess({ rollupsUpserted: 2, rawEventsDeleted: 20 });
         }),
       }),
     });
@@ -79,9 +98,13 @@ describe("unified maintenance pipeline (#714)", () => {
     expect(result.phases.retention.counts.rawEventsDeleted).toBe(20);
   });
 
-  it("isolates a failed phase and continues with later maintenance", async () => {
-    const emailRetry = vi.fn().mockResolvedValue({ processed: 0 });
-    const retention = vi.fn().mockResolvedValue({ rawEventsDeleted: 0 });
+  it("isolates a thrown phase error and continues with later maintenance", async () => {
+    const emailRetry = vi
+      .fn()
+      .mockResolvedValue(createSuccess({ processed: 0 }));
+    const retention = vi
+      .fn()
+      .mockResolvedValue(createSuccess({ rawEventsDeleted: 0 }));
     const result = await MaintenanceService.run({
       adapters: adapters({
         syncTelemetry: vi.fn().mockRejectedValue(new Error("redis offline")),
@@ -98,20 +121,61 @@ describe("unified maintenance pipeline (#714)", () => {
     expect(retention).toHaveBeenCalledOnce();
   });
 
+  it("records a returned failure result as a failed phase (#1532)", async () => {
+    const warn = vi.spyOn(logger, "warn");
+    const retention = vi
+      .fn()
+      .mockResolvedValue(createSuccess({ rawEventsDeleted: 0 }));
+    const result = await MaintenanceService.run({
+      adapters: adapters({
+        dispatchNewsletter: vi
+          .fn()
+          .mockResolvedValue(
+            createFailure(
+              "ENQUEUE_FAILED",
+              "Could not enqueue a newsletter dispatch email"
+            )
+          ),
+        runRetention: retention,
+      }),
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.partial).toBe(true);
+    expect(result.phases.newsletter).toMatchObject({
+      status: "failed",
+      counts: {},
+      error: "Could not enqueue a newsletter dispatch email",
+    });
+    expect(result.phases.telemetry.status).toBe("completed");
+    expect(result.phases.emailRetry.status).toBe("completed");
+    expect(retention).toHaveBeenCalledOnce();
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining("[maintenance:newsletter] ENQUEUE_FAILED"),
+      undefined,
+      expect.objectContaining({
+        maintenancePhase: "newsletter",
+        errorCode: "ENQUEUE_FAILED",
+      })
+    );
+  });
+
   it("skips remaining work when the response reserve reaches the deadline", async () => {
     let currentTime = 1_000;
-    const retention = vi.fn().mockResolvedValue({ rawEventsDeleted: 0 });
+    const retention = vi
+      .fn()
+      .mockResolvedValue(createSuccess({ rawEventsDeleted: 0 }));
     const result = await MaintenanceService.run({
       deadlineMs: 500,
       clock: () => currentTime,
       adapters: adapters({
         syncTelemetry: vi.fn(async () => {
           currentTime += 260;
-          return { processed: 1 };
+          return createSuccess({ processed: 1 });
         }),
         processEmailRetry: vi.fn(async () => {
           currentTime += 10;
-          return { processed: 0 };
+          return createSuccess({ processed: 0 });
         }),
         runRetention: retention,
       }),
@@ -123,6 +187,160 @@ describe("unified maintenance pipeline (#714)", () => {
     expect(result.phases.emailRetry.status).toBe("skipped");
     expect(result.phases.retention.status).toBe("skipped");
     expect(retention).not.toHaveBeenCalled();
+  });
+
+  describe("production adapters (#1532)", () => {
+    const counts = createSuccess({ processed: 2, inserted: 2 });
+    const empty = createSuccess({ processed: 0, inserted: 0 });
+
+    function stubOtherPhases() {
+      vi.spyOn(NewsletterService, "dispatchDue").mockResolvedValue(
+        createSuccess({
+          openDispatches: 0,
+          queued: 0,
+          skippedSuppressed: 0,
+          completedDispatches: 0,
+          capacity: 10,
+        })
+      );
+      vi.spyOn(EmailService, "processRetryQueue").mockResolvedValue(
+        createSuccess({ processed: 0, succeeded: 0, failed: 0 })
+      );
+      vi.spyOn(EmailService, "getRetryQueueHealth").mockResolvedValue({
+        depth: 0,
+        oldestPendingAgeMs: null,
+        terminalFailures: 0,
+        retryExhausted: 0,
+      });
+      vi.spyOn(TelemetryService, "rollupAndPruneRawEvents").mockResolvedValue(
+        createSuccess({ rollupsUpserted: 0, rawEventsDeleted: 0 })
+      );
+    }
+
+    it("reports every counter when all services succeed", async () => {
+      stubOtherPhases();
+      vi.spyOn(TelemetryService, "syncBufferedEvents").mockResolvedValue(
+        counts
+      );
+      vi.spyOn(
+        CaseStudyService,
+        "flushBufferedReactionsToDatabase"
+      ).mockResolvedValue(counts);
+      vi.spyOn(
+        BlogPostService,
+        "flushBufferedReactionsToDatabase"
+      ).mockResolvedValue(createSuccess({ processed: 1, inserted: 1 }));
+
+      const result = await MaintenanceService.run();
+
+      expect(result.success).toBe(true);
+      expect(result.phases.telemetry.counts).toEqual({
+        processed: 2,
+        inserted: 2,
+        reactionsProcessed: 2,
+        reactionsInserted: 2,
+        blogReactionsProcessed: 1,
+        blogReactionsInserted: 1,
+      });
+      expect(result.phases.retention.counts).toEqual({
+        rollupsUpserted: 0,
+        rawEventsDeleted: 0,
+        providerExpiredKeysDeleted: 0,
+      });
+    });
+
+    it("fails the phase on a reaction flush failure after draining both queues", async () => {
+      stubOtherPhases();
+      vi.spyOn(TelemetryService, "syncBufferedEvents").mockResolvedValue(
+        counts
+      );
+      vi.spyOn(
+        CaseStudyService,
+        "flushBufferedReactionsToDatabase"
+      ).mockResolvedValue(
+        createFailure(
+          "PERSISTENCE_FAILED",
+          "Buffered case study reactions could not be written to the database"
+        )
+      );
+      const blogFlush = vi
+        .spyOn(BlogPostService, "flushBufferedReactionsToDatabase")
+        .mockResolvedValue(counts);
+
+      const result = await MaintenanceService.run();
+
+      expect(blogFlush).toHaveBeenCalledOnce();
+      expect(result.partial).toBe(true);
+      expect(result.phases.telemetry).toMatchObject({
+        status: "failed",
+        error:
+          "Buffered case study reactions could not be written to the database",
+      });
+      expect(result.phases.retention.status).toBe("completed");
+    });
+
+    it("stops the telemetry phase at a sync failure without flushing reactions", async () => {
+      stubOtherPhases();
+      vi.spyOn(TelemetryService, "syncBufferedEvents").mockResolvedValue(
+        createFailure(
+          "QUEUE_UNAVAILABLE",
+          "Telemetry buffer could not be read from Redis"
+        )
+      );
+      const caseStudyFlush = vi.spyOn(
+        CaseStudyService,
+        "flushBufferedReactionsToDatabase"
+      );
+
+      const result = await MaintenanceService.run();
+
+      expect(caseStudyFlush).not.toHaveBeenCalled();
+      expect(result.phases.telemetry.status).toBe("failed");
+      expect(result.phases.newsletter.status).toBe("completed");
+    });
+
+    it("records newsletter, email retry and retention failures from their results", async () => {
+      stubOtherPhases();
+      vi.spyOn(TelemetryService, "syncBufferedEvents").mockResolvedValue(empty);
+      vi.spyOn(
+        CaseStudyService,
+        "flushBufferedReactionsToDatabase"
+      ).mockResolvedValue(empty);
+      vi.spyOn(
+        BlogPostService,
+        "flushBufferedReactionsToDatabase"
+      ).mockResolvedValue(empty);
+      vi.spyOn(NewsletterService, "dispatchDue").mockResolvedValue(
+        createFailure(
+          "DISPATCH_FAILED",
+          "Newsletter dispatch phase could not complete"
+        )
+      );
+      vi.spyOn(EmailService, "processRetryQueue").mockResolvedValue(
+        createFailure(
+          "QUEUE_LEASE_FAILED",
+          "Could not lease due rows from the outbound email queue"
+        )
+      );
+      const health = vi.spyOn(EmailService, "getRetryQueueHealth");
+      vi.spyOn(TelemetryService, "rollupAndPruneRawEvents").mockResolvedValue(
+        createFailure(
+          "RETENTION_FAILED",
+          "Telemetry rollup and prune transaction failed"
+        )
+      );
+
+      const result = await MaintenanceService.run();
+
+      expect(result.phases.telemetry.status).toBe("completed");
+      expect(result.phases.newsletter.status).toBe("failed");
+      expect(result.phases.emailRetry).toMatchObject({
+        status: "failed",
+        error: "Could not lease due rows from the outbound email queue",
+      });
+      expect(health).not.toHaveBeenCalled();
+      expect(result.phases.retention.status).toBe("failed");
+    });
   });
 
   it("rejects an unauthorized cron request before invoking the runner", async () => {

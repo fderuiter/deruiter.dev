@@ -9,6 +9,7 @@ import {
   isValidPillar,
   parseValidDate,
   parseBlogPostDates,
+  toValidBlogPosts,
   compareBlogPostsNewestFirst,
 } from "@/lib/services/blog-service";
 import {
@@ -386,27 +387,51 @@ describe("Blog Cache Contracts & Concrete Invalidation Suite", () => {
     };
 
     it("coerces string dates into validated Date instances", () => {
-      const parsed = parseBlogPostDates(rawPost);
+      const result = parseBlogPostDates(rawPost);
+      if (!result.success) throw new Error("expected valid dates");
+      const parsed = result.data;
       expect(parsed.created_at).toBeInstanceOf(Date);
       expect(parsed.updated_at).toBeInstanceOf(Date);
       expect(parsed.created_at.toISOString()).toBe("2026-05-01T00:00:00.000Z");
       expect(parsed.updated_at.toISOString()).toBe("2026-05-02T00:00:00.000Z");
     });
 
-    it("throws TypeError when post has unparsable or invalid dates", () => {
-      expect(() =>
+    it("returns INVALID_DATE_CONTRACT instead of throwing for unparsable or invalid dates (#1532)", () => {
+      const invalidDateFailure = {
+        success: false,
+        error: {
+          code: "INVALID_DATE_CONTRACT",
+          message:
+            'parseBlogPostDates: Invalid date contract for blog post "raw-slug"',
+          recoverable: false,
+        },
+      };
+
+      expect(
         parseBlogPostDates({
           ...rawPost,
           created_at: fromAny<Date, unknown>("unparsable-garbage"),
         })
-      ).toThrow(TypeError);
+      ).toMatchObject(invalidDateFailure);
 
-      expect(() =>
+      expect(
         parseBlogPostDates({
           ...rawPost,
           updated_at: new Date(NaN),
         })
-      ).toThrow(TypeError);
+      ).toMatchObject(invalidDateFailure);
+    });
+
+    it("keeps only valid records, with coerced dates, in toValidBlogPosts", () => {
+      const posts = toValidBlogPosts([
+        rawPost,
+        { ...rawPost, slug: "bad-date", created_at: "garbage" },
+        { slug: "not-a-post" },
+        null,
+      ]);
+
+      expect(posts.map((p) => p.slug)).toEqual(["raw-slug"]);
+      expect(posts[0].created_at).toBeInstanceOf(Date);
     });
   });
 

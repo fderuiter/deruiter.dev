@@ -6,10 +6,10 @@
 
 # Function: parseBlogPostDates()
 
-> **parseBlogPostDates**(`post`): [`BlogPostData`](../../../fallback-blog-posts/interfaces/BlogPostData.md)
+> **parseBlogPostDates**(`post`): [`BlogPostDatesResult`](../type-aliases/BlogPostDatesResult.md)
 
-Coerces created_at and updated_at on a BlogPostData record into validated Date instances.
-Throws a TypeError if either date is invalid.
+Coerces created_at and updated_at on a BlogPostData record into validated
+Date instances. Returns `INVALID_DATE_CONTRACT` when either date is invalid.
 
 ## Parameters
 
@@ -19,4 +19,4 @@ Throws a TypeError if either date is invalid.
 
 ## Returns
 
-[`BlogPostData`](../../../fallback-blog-posts/interfaces/BlogPostData.md)
+[`BlogPostDatesResult`](../type-aliases/BlogPostDatesResult.md)

@@ -6,6 +6,12 @@ import { generateId } from "@/lib/utils";
 import { env, getEnv } from "@/lib/env";
 import { scheduleEmailRetry } from "@/lib/qstash-retry";
 import { prisma, SuppressionReason, OutboundEmailStatus } from "@/lib/db";
+import { z } from "zod";
+import {
+  createFailure,
+  createSuccess,
+  type ServiceResult,
+} from "@/lib/services/service-result";
 
 export type { SuppressionReason, OutboundEmailStatus };
 import { ContactSubmission, ResendWebhookEvent } from "@/lib/schemas";
@@ -38,6 +44,32 @@ export interface EmailDispatchResult {
   queueId?: string;
 }
 
+/**
+ * Error codes returned by {@link EmailService.processRetryQueue} (ADR 0028).
+ *
+ * `QUEUE_LEASE_FAILED` means no rows were leased, so nothing was attempted.
+ * `QUEUE_UPDATE_FAILED` means a queue row could not be updated mid-run; rows
+ * not yet updated keep their lease and become due again when it expires.
+ */
+export const EmailRetryErrorCode = z.enum([
+  "QUEUE_LEASE_FAILED",
+  "QUEUE_UPDATE_FAILED",
+]);
+export type EmailRetryErrorCode = z.infer<typeof EmailRetryErrorCode>;
+
+/** Counts reported by one retry-queue run. */
+export interface EmailRetryCounts {
+  processed: number;
+  succeeded: number;
+  failed: number;
+}
+
+/** Result envelope of {@link EmailService.processRetryQueue}. */
+export type EmailRetryResult = ServiceResult<
+  EmailRetryCounts,
+  EmailRetryErrorCode
+>;
+
 export interface ContactDispatchResult {
   success: boolean;
   adminResult: EmailDispatchResult;
@@ -68,7 +100,7 @@ export interface EmailServiceSpec {
     maxBatchSize?: number;
     now?: Date;
     queueId?: string;
-  }): Promise<{ processed: number; succeeded: number; failed: number }>;
+  }): Promise<EmailRetryResult>;
   getRetryQueueHealth(now?: Date): Promise<{
     retryingCount: number;
     oldestDueAgeSeconds: number;
@@ -472,13 +504,16 @@ export class EmailService {
 
   /**
    * Processes due items from OutboundEmailQueue with exponential backoff.
+   *
+   * Never throws: a lease or queue-update failure is returned as a typed
+   * {@link EmailRetryErrorCode}.
    */
   static async processRetryQueue(options?: {
     maxBatchSize?: number;
     now?: Date;
     /** Restrict the run to one queue row (QStash-targeted retry). */
     queueId?: string;
-  }): Promise<{ processed: number; succeeded: number; failed: number }> {
+  }): Promise<EmailRetryResult> {
     const limit = clamp(
       options?.maxBatchSize || MAX_RETRY_BATCH_SIZE,
       1,
@@ -496,90 +531,131 @@ export class EmailService {
         queueId: options?.queueId || null,
       });
     } catch (err) {
-      console.error("Error reading OutboundEmailQueue:", err);
-      throw err;
+      logger.error("Error reading OutboundEmailQueue:", err);
+      return createFailure(
+        "QUEUE_LEASE_FAILED",
+        "Could not lease due rows from the outbound email queue",
+        { details: err }
+      );
     }
 
     let succeeded = 0;
     let failed = 0;
 
-    for (const item of items) {
-      const client = getResendClient();
-      const rawOptions: RawEmailOptions = {
-        to: item.to.includes(",")
-          ? item.to.split(",").map((s) => s.trim())
-          : item.to,
-        from: item.from,
-        replyTo: item.replyTo || undefined,
-        subject: item.subject,
-        html: item.html,
-        text: item.text || undefined,
-        tags: this.parseQueuedTags(item.tags),
-        headers: this.parseQueuedHeaders(item.headers),
-        skipQueue: true,
-      };
+    try {
+      for (const item of items) {
+        const client = getResendClient();
+        const rawOptions: RawEmailOptions = {
+          to: item.to.includes(",")
+            ? item.to.split(",").map((s) => s.trim())
+            : item.to,
+          from: item.from,
+          replyTo: item.replyTo || undefined,
+          subject: item.subject,
+          html: item.html,
+          text: item.text || undefined,
+          tags: this.parseQueuedTags(item.tags),
+          headers: this.parseQueuedHeaders(item.headers),
+          skipQueue: true,
+        };
 
-      // Suppression check
-      const toRecipients = Array.isArray(rawOptions.to)
-        ? rawOptions.to
-        : [rawOptions.to];
-      let isAnySuppressed = false;
-      for (const rec of toRecipients) {
-        const check = await this.isSuppressed(rec);
-        if (check.suppressed) {
-          isAnySuppressed = true;
-          break;
+        // Suppression check
+        const toRecipients = Array.isArray(rawOptions.to)
+          ? rawOptions.to
+          : [rawOptions.to];
+        let isAnySuppressed = false;
+        for (const rec of toRecipients) {
+          const check = await this.isSuppressed(rec);
+          if (check.suppressed) {
+            isAnySuppressed = true;
+            break;
+          }
         }
-      }
 
-      if (isAnySuppressed) {
-        await prisma.outboundEmailQueue.update({
-          where: { id: item.id },
-          data: {
-            status: "FAILED",
-            lastError: "Recipient is on suppression list",
-          },
-        });
-        failed++;
-        continue;
-      }
+        if (isAnySuppressed) {
+          await prisma.outboundEmailQueue.update({
+            where: { id: item.id },
+            data: {
+              status: "FAILED",
+              lastError: "Recipient is on suppression list",
+            },
+          });
+          failed++;
+          continue;
+        }
 
-      const apiKey = getEnv().RESEND_API_KEY || env.RESEND_API_KEY;
-      // Preview/development are always simulated, even if a production-like
-      // API key is accidentally attached to the deployment.
-      if (!client || shouldSimulateEmailDelivery(apiKey)) {
-        await prisma.outboundEmailQueue.update({
-          where: { id: item.id },
-          data: { status: "DELIVERED", updatedAt: new Date() },
-        });
-        succeeded++;
-        continue;
-      }
+        const apiKey = getEnv().RESEND_API_KEY || env.RESEND_API_KEY;
+        // Preview/development are always simulated, even if a production-like
+        // API key is accidentally attached to the deployment.
+        if (!client || shouldSimulateEmailDelivery(apiKey)) {
+          await prisma.outboundEmailQueue.update({
+            where: { id: item.id },
+            data: { status: "DELIVERED", updatedAt: new Date() },
+          });
+          succeeded++;
+          continue;
+        }
 
-      try {
-        const { error } = await client.emails.send(
-          {
-            from: item.from,
-            to: rawOptions.to,
-            replyTo: item.replyTo || undefined,
-            subject: item.subject,
-            html: item.html,
-            text: item.text || undefined,
-            tags: rawOptions.tags,
-            headers: rawOptions.headers,
-          },
-          { idempotencyKey: `portfolio-email-${item.id}` }
-        );
+        try {
+          const { error } = await client.emails.send(
+            {
+              from: item.from,
+              to: rawOptions.to,
+              replyTo: item.replyTo || undefined,
+              subject: item.subject,
+              html: item.html,
+              text: item.text || undefined,
+              tags: rawOptions.tags,
+              headers: rawOptions.headers,
+            },
+            { idempotencyKey: `portfolio-email-${item.id}` }
+          );
 
-        if (error) {
+          if (error) {
+            const nextAttempts = item.attempts + 1;
+            if (nextAttempts >= MAX_RETRY_ATTEMPTS) {
+              await prisma.outboundEmailQueue.update({
+                where: { id: item.id },
+                data: {
+                  status: "FAILED",
+                  attempts: nextAttempts,
+                  lastError: error.message,
+                },
+              });
+              failed++;
+            } else {
+              const delay = getRetryDelayMs(item.id, nextAttempts);
+              await prisma.outboundEmailQueue.update({
+                where: { id: item.id },
+                data: {
+                  status: "RETRYING",
+                  attempts: nextAttempts,
+                  nextRetryAt: new Date(now.getTime() + delay),
+                  lastError: error.message,
+                },
+              });
+              failed++;
+            }
+          } else {
+            await prisma.outboundEmailQueue.update({
+              where: { id: item.id },
+              data: { status: "DELIVERED", updatedAt: new Date() },
+            });
+            succeeded++;
+          }
+        } catch (sendErr) {
           const nextAttempts = item.attempts + 1;
+          const msg =
+            sendErr instanceof Error
+              ? sendErr.message
+              : "Network dispatch failure";
           if (nextAttempts >= MAX_RETRY_ATTEMPTS) {
             await prisma.outboundEmailQueue.update({
               where: { id: item.id },
               data: {
                 status: "FAILED",
                 attempts: nextAttempts,
-                lastError: error.message,
+                lastError: msg,
               },
             });
             failed++;
@@ -591,51 +667,23 @@ export class EmailService {
                 status: "RETRYING",
                 attempts: nextAttempts,
                 nextRetryAt: new Date(now.getTime() + delay),
-                lastError: error.message,
+                lastError: msg,
               },
             });
             failed++;
           }
-        } else {
-          await prisma.outboundEmailQueue.update({
-            where: { id: item.id },
-            data: { status: "DELIVERED", updatedAt: new Date() },
-          });
-          succeeded++;
-        }
-      } catch (sendErr) {
-        const nextAttempts = item.attempts + 1;
-        const msg =
-          sendErr instanceof Error
-            ? sendErr.message
-            : "Network dispatch failure";
-        if (nextAttempts >= MAX_RETRY_ATTEMPTS) {
-          await prisma.outboundEmailQueue.update({
-            where: { id: item.id },
-            data: {
-              status: "FAILED",
-              attempts: nextAttempts,
-              lastError: msg,
-            },
-          });
-          failed++;
-        } else {
-          const delay = getRetryDelayMs(item.id, nextAttempts);
-          await prisma.outboundEmailQueue.update({
-            where: { id: item.id },
-            data: {
-              status: "RETRYING",
-              attempts: nextAttempts,
-              nextRetryAt: new Date(now.getTime() + delay),
-              lastError: msg,
-            },
-          });
-          failed++;
         }
       }
+    } catch (err) {
+      logger.error("Error updating OutboundEmailQueue during retry:", err);
+      return createFailure(
+        "QUEUE_UPDATE_FAILED",
+        "An outbound email queue row could not be updated during retry",
+        { details: { error: err, succeeded, failed, leased: items.length } }
+      );
     }
 
-    return { processed: items.length, succeeded, failed };
+    return createSuccess({ processed: items.length, succeeded, failed });
   }
 
   /**

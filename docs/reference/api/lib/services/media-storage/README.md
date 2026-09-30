@@ -17,6 +17,15 @@
 - [MediaStorageProvider](interfaces/MediaStorageProvider.md)
 - [MediaUploadResult](interfaces/MediaUploadResult.md)
 
+## Type Aliases
+
+- [MediaStorageErrorCode](type-aliases/MediaStorageErrorCode.md)
+- [MediaStorageResult](type-aliases/MediaStorageResult.md)
+
+## Variables
+
+- [MediaStorageErrorCode](variables/MediaStorageErrorCode.md)
+
 ## Functions
 
 - [getMediaStorageProvider](functions/getMediaStorageProvider.md)

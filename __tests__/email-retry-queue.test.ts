@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { EmailService, RawEmailOptions } from "@/lib/services/email-service";
+import {
+  EmailService,
+  RawEmailOptions,
+  type EmailRetryCounts,
+  type EmailRetryResult,
+} from "@/lib/services/email-service";
 import { prisma } from "@/lib/db";
 
 // In-memory mock store for OutboundEmailQueue & SuppressionList
@@ -155,6 +160,16 @@ vi.mock("resend", () => {
   };
 });
 
+async function retryCounts(
+  pending: Promise<EmailRetryResult>
+): Promise<EmailRetryCounts> {
+  const result = await pending;
+  if (!result.success) {
+    throw new Error(`Retry run failed: ${result.error.code}`);
+  }
+  return result.data;
+}
+
 describe("Outbound Email Queue & Resilient Backoff Retry Engine (#546)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -263,9 +278,11 @@ describe("Outbound Email Queue & Resilient Backoff Retry Engine (#546)", () => {
         error: null,
       });
 
-      const summary = await EmailService.processRetryQueue({
-        now: new Date(Date.now() + 5000),
-      });
+      const summary = await retryCounts(
+        EmailService.processRetryQueue({
+          now: new Date(Date.now() + 5000),
+        })
+      );
 
       expect(summary.processed).toBe(1);
       expect(summary.succeeded).toBe(1);
@@ -298,8 +315,8 @@ describe("Outbound Email Queue & Resilient Backoff Retry Engine (#546)", () => {
       const now = new Date(Date.now() + 5000);
 
       const [workerA, workerB] = await Promise.all([
-        EmailService.processRetryQueue({ now }),
-        EmailService.processRetryQueue({ now }),
+        retryCounts(EmailService.processRetryQueue({ now })),
+        retryCounts(EmailService.processRetryQueue({ now })),
       ]);
 
       expect(queueId).not.toBeNull();
@@ -328,9 +345,11 @@ describe("Outbound Email Queue & Resilient Backoff Retry Engine (#546)", () => {
       }
       mockSendFn.mockResolvedValue({ data: { id: "msg" }, error: null });
 
-      const summary = await EmailService.processRetryQueue({
-        maxBatchSize: 100,
-      });
+      const summary = await retryCounts(
+        EmailService.processRetryQueue({
+          maxBatchSize: 100,
+        })
+      );
 
       expect(summary.processed).toBe(20);
       expect(mockSendFn).toHaveBeenCalledTimes(20);
@@ -361,7 +380,7 @@ describe("Outbound Email Queue & Resilient Backoff Retry Engine (#546)", () => {
         }
         mockSendFn.mockResolvedValue({ data: { id: "msg" }, error: null });
 
-        const summary = await EmailService.processRetryQueue();
+        const summary = await retryCounts(EmailService.processRetryQueue());
 
         expect(summary.processed).toBe(5);
         expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
@@ -380,8 +399,12 @@ describe("Outbound Email Queue & Resilient Backoff Retry Engine (#546)", () => {
         mockSendFn.mockRejectedValueOnce(new Error("socket hang up"));
         const now = new Date(1000);
 
-        const first = await EmailService.processRetryQueue({ now });
-        const second = await EmailService.processRetryQueue({ now });
+        const first = await retryCounts(
+          EmailService.processRetryQueue({ now })
+        );
+        const second = await retryCounts(
+          EmailService.processRetryQueue({ now })
+        );
 
         expect(first.processed).toBe(1);
         expect(second.processed).toBe(0);
@@ -414,13 +437,36 @@ describe("Outbound Email Queue & Resilient Backoff Retry Engine (#546)", () => {
           .spyOn(console, "error")
           .mockImplementation(() => undefined);
 
-        await expect(EmailService.processRetryQueue()).rejects.toThrow(
-          "db asleep"
-        );
+        await expect(EmailService.processRetryQueue()).resolves.toMatchObject({
+          success: false,
+          error: { code: "QUEUE_LEASE_FAILED" },
+        });
         expect(mockSendFn).not.toHaveBeenCalled();
         expect(mockQueueStore.get("unleased")?.nextRetryAt).toEqual(
           new Date(0)
         );
+        consoleError.mockRestore();
+      });
+
+      it("returns QUEUE_UPDATE_FAILED instead of throwing when a row update fails (#1532)", async () => {
+        seedDue("stuck", new Date(0));
+        mockSendFn.mockResolvedValue({ data: { id: "msg" }, error: null });
+        // The DELIVERED write fails inside the send guard, then the RETRYING
+        // fallback write fails too, which is what escapes the row loop.
+        vi.mocked(prisma.outboundEmailQueue.update)
+          .mockRejectedValueOnce(new Error("db asleep mid-run"))
+          .mockRejectedValueOnce(new Error("db asleep mid-run"));
+        const consoleError = vi
+          .spyOn(console, "error")
+          .mockImplementation(() => undefined);
+
+        await expect(EmailService.processRetryQueue()).resolves.toMatchObject({
+          success: false,
+          error: {
+            code: "QUEUE_UPDATE_FAILED",
+            details: { succeeded: 0, failed: 0, leased: 1 },
+          },
+        });
         consoleError.mockRestore();
       });
     });
@@ -465,7 +511,7 @@ describe("Outbound Email Queue & Resilient Backoff Retry Engine (#546)", () => {
         error: { message: "Rate limit 429", name: "rate_limit_exceeded" },
       });
 
-      const summary = await EmailService.processRetryQueue();
+      const summary = await retryCounts(EmailService.processRetryQueue());
 
       expect(summary.processed).toBe(1);
       expect(summary.failed).toBe(1);
@@ -497,9 +543,11 @@ describe("Outbound Email Queue & Resilient Backoff Retry Engine (#546)", () => {
       });
       mockSendFn.mockClear();
 
-      const summary = await EmailService.processRetryQueue({
-        now: new Date(Date.now() + 5000),
-      });
+      const summary = await retryCounts(
+        EmailService.processRetryQueue({
+          now: new Date(Date.now() + 5000),
+        })
+      );
 
       expect(summary.processed).toBe(1);
       expect(summary.failed).toBe(1);

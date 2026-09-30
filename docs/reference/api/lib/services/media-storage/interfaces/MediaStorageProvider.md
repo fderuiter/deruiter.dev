@@ -8,11 +8,14 @@
 
 Pluggable media storage provider contract per ADR 0043.
 
+Operations return a [MediaStorageResult](../type-aliases/MediaStorageResult.md) instead of throwing. A missing
+asset is a success with `null` data, not a failure.
+
 ## Methods
 
 ### delete()
 
-> **delete**(`key`): `Promise`\<`void`\>
+> **delete**(`key`): `Promise`\<[`MediaStorageResult`](../type-aliases/MediaStorageResult.md)\<`null`\>\>
 
 #### Parameters
 
@@ -22,13 +25,13 @@ Pluggable media storage provider contract per ADR 0043.
 
 #### Returns
 
-`Promise`\<`void`\>
+`Promise`\<[`MediaStorageResult`](../type-aliases/MediaStorageResult.md)\<`null`\>\>
 
 ***
 
 ### getAsset()?
 
-> `optional` **getAsset**(`key`): `Promise`\<[`MediaAssetRecord`](MediaAssetRecord.md) \| `null`\>
+> `optional` **getAsset**(`key`): `Promise`\<[`MediaStorageResult`](../type-aliases/MediaStorageResult.md)\<[`MediaAssetRecord`](MediaAssetRecord.md) \| `null`\>\>
 
 #### Parameters
 
@@ -38,7 +41,7 @@ Pluggable media storage provider contract per ADR 0043.
 
 #### Returns
 
-`Promise`\<[`MediaAssetRecord`](MediaAssetRecord.md) \| `null`\>
+`Promise`\<[`MediaStorageResult`](../type-aliases/MediaStorageResult.md)\<[`MediaAssetRecord`](MediaAssetRecord.md) \| `null`\>\>
 
 ***
 
@@ -60,7 +63,7 @@ Pluggable media storage provider contract per ADR 0043.
 
 ### upload()
 
-> **upload**(`file`, `filename`, `contentType`): `Promise`\<[`MediaUploadResult`](MediaUploadResult.md)\>
+> **upload**(`file`, `filename`, `contentType`): `Promise`\<[`MediaStorageResult`](../type-aliases/MediaStorageResult.md)\<[`MediaUploadResult`](MediaUploadResult.md)\>\>
 
 #### Parameters
 
@@ -78,4 +81,4 @@ Pluggable media storage provider contract per ADR 0043.
 
 #### Returns
 
-`Promise`\<[`MediaUploadResult`](MediaUploadResult.md)\>
+`Promise`\<[`MediaStorageResult`](../type-aliases/MediaStorageResult.md)\<[`MediaUploadResult`](MediaUploadResult.md)\>\>

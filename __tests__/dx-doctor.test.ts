@@ -722,22 +722,77 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       expect(result.status).toBe("pass");
     });
 
-    it("scans *-service.ts modules for raw throws unless they are pending migration", () => {
+    it("scans every service module for raw throws, with no pending-migration exemption (#1532)", () => {
       const serviceDir = path.join(tempDir, "lib", "services");
       fs.mkdirSync(serviceDir, { recursive: true });
       const body =
         'import type { ServiceResult } from "./service-result";\nexport function run(): ServiceResult<number> { throw new Error("boom"); }\n';
       fs.writeFileSync(path.join(serviceDir, "widget-service.ts"), body);
-      // Listed as pending migration (#1140), so its raw throw is tolerated.
+      // Formerly exempt while it migrated (#1140); the exemption is gone.
       fs.writeFileSync(path.join(serviceDir, "blog-service.ts"), body);
 
       const result = checkServiceResultTypes(tempDir, false);
       expect(result.status).toBe("fail");
       expect(result.details).toEqual([
         expect.stringContaining(
+          `${path.join("lib", "services", "blog-service.ts")}:2`
+        ),
+        expect.stringContaining(
           `${path.join("lib", "services", "widget-service.ts")}:2`
         ),
       ]);
+    });
+
+    it("flags rethrown errors and custom error classes, but not comments (#1532)", () => {
+      const serviceDir = path.join(tempDir, "lib", "services");
+      fs.mkdirSync(serviceDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(serviceDir, "queue-service.ts"),
+        [
+          'import type { ServiceResult } from "./service-result";',
+          "/** Never throws: failures are returned as a result. */",
+          "export async function run(): Promise<ServiceResult<number>> {",
+          "  try {",
+          "    return await work();",
+          "  } catch (dbErr) {",
+          "    throw dbErr;",
+          "  }",
+          "}",
+          'export function bad() { throw new ValidationError("x"); }',
+          "// throw err;",
+          "",
+        ].join("\n")
+      );
+
+      const result = checkServiceResultTypes(tempDir, false);
+      expect(result.status).toBe("fail");
+      expect(result.details).toEqual([
+        expect.stringMatching(/queue-service\.ts:7 -> Caught error rethrown/),
+        expect.stringMatching(/queue-service\.ts:10 -> Raw exception thrown/),
+      ]);
+    });
+
+    it("scans non-envelope modules such as the media storage providers (#1532)", () => {
+      const serviceDir = path.join(tempDir, "lib", "services");
+      fs.mkdirSync(serviceDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(serviceDir, "media-storage.ts"),
+        'export function upload() { throw new Error("Vercel Blob upload failed"); }\n'
+      );
+
+      const result = checkServiceResultTypes(tempDir, false);
+      expect(result.status).toBe("fail");
+      expect(result.details).toEqual([
+        expect.stringContaining(
+          `${path.join("lib", "services", "media-storage.ts")}:1`
+        ),
+      ]);
+    });
+
+    it("passes on the repository's own service layer", () => {
+      const result = checkServiceResultTypes(process.cwd(), false);
+      expect(result.details ?? []).toEqual([]);
+      expect(result.status).toBe("pass");
     });
   });
 

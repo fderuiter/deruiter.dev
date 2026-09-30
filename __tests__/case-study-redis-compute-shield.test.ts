@@ -548,20 +548,39 @@ describe("CaseStudyService - Two-Tier Redis Compute Shield & Reaction Buffering"
 
       const result = await CaseStudyService.flushBufferedReactionsToDatabase();
 
-      expect(result).toEqual({ processed: 0, inserted: 0 });
+      expect(result).toEqual({
+        success: true,
+        data: { processed: 0, inserted: 0 },
+      });
       expect(mockRedisLrange).not.toHaveBeenCalled();
       expect(prisma.caseStudyReaction.createMany).not.toHaveBeenCalled();
     });
   });
 
   describe("Scheduled Maintenance: flushBufferedReactionsToDatabase", () => {
+    it("returns FLUSH_FAILED instead of an empty success when Redis cannot be read (#1532)", async () => {
+      const redisError = new Error("Redis connection refused");
+      mockRedisLrange.mockRejectedValueOnce(redisError);
+
+      const result = await CaseStudyService.flushBufferedReactionsToDatabase();
+
+      expect(result).toMatchObject({
+        success: false,
+        error: { code: "FLUSH_FAILED", details: redisError },
+      });
+      expect(prisma.caseStudyReaction.createMany).not.toHaveBeenCalled();
+    });
+
     it("returns { processed: 0, inserted: 0 } when no events in queue", async () => {
       mockRedisLrange.mockResolvedValueOnce([]); // no pending in processing
       mockRedisLlen.mockResolvedValueOnce(0); // queue is empty
 
       const result = await CaseStudyService.flushBufferedReactionsToDatabase();
 
-      expect(result).toEqual({ processed: 0, inserted: 0 });
+      expect(result).toEqual({
+        success: true,
+        data: { processed: 0, inserted: 0 },
+      });
       expect(prisma.caseStudyReaction.createMany).not.toHaveBeenCalled();
       // An empty queue must not spend a single LMOVE against the daily budget.
       expect(mockPipelineExec).not.toHaveBeenCalled();
@@ -605,7 +624,10 @@ describe("CaseStudyService - Two-Tier Redis Compute Shield & Reaction Buffering"
       const result =
         await CaseStudyService.flushBufferedReactionsToDatabase(100);
 
-      expect(result).toEqual({ processed: 3, inserted: 3 });
+      expect(result).toEqual({
+        success: true,
+        data: { processed: 3, inserted: 3 },
+      });
       expect(prisma.caseStudyReaction.createMany).toHaveBeenCalledWith({
         data: expect.arrayContaining([
           expect.objectContaining({
@@ -666,7 +688,10 @@ describe("CaseStudyService - Two-Tier Redis Compute Shield & Reaction Buffering"
         ],
         skipDuplicates: true,
       });
-      expect(result).toEqual({ processed: 1, inserted: 0 });
+      expect(result).toEqual({
+        success: true,
+        data: { processed: 1, inserted: 0 },
+      });
     });
 
     it("leaves events in processing queue if Prisma batch insert throws", async () => {
@@ -687,7 +712,11 @@ describe("CaseStudyService - Two-Tier Redis Compute Shield & Reaction Buffering"
 
       const result = await CaseStudyService.flushBufferedReactionsToDatabase();
 
-      expect(result).toEqual({ processed: 0, inserted: 0 });
+      // #1532: the DB failure is reported instead of reading as an empty run.
+      expect(result).toMatchObject({
+        success: false,
+        error: { code: "PERSISTENCE_FAILED" },
+      });
       // Verify buffer was NOT decremented when DB write failed
       expect(mockRedisHincrby).not.toHaveBeenCalled();
       // Verify processing items were NOT removed via lrem

@@ -70,3 +70,7 @@
 - [TelemetrySyncResponseSchema](variables/TelemetrySyncResponseSchema.md)
 - [ValidationErrorItemSchema](variables/ValidationErrorItemSchema.md)
 - [ValidationErrorSchema](variables/ValidationErrorSchema.md)
+
+## Functions
+
+- [toFieldErrors](functions/toFieldErrors.md)

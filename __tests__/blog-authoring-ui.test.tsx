@@ -36,6 +36,16 @@ vi.mock("@/lib/redis", () => ({
 
 global.fetch = vi.fn();
 
+/** A draft that satisfies the shared BlogDraft contracts, so submits reach fetch. */
+const VALID_DRAFT = {
+  title: "Valid Draft Title",
+  slug: "valid-draft-title",
+  dek: "A standfirst long enough to pass validation.",
+  body: "<p>Body copy.</p>",
+  pillar: "field-notes" as const,
+  tags: "testing",
+};
+
 describe("BlogAuthoringForm UI", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -117,7 +127,7 @@ describe("BlogAuthoringForm UI", () => {
         { status: 409 }
       )
     );
-    render(<BlogAuthoringForm isNew={true} />);
+    render(<BlogAuthoringForm isNew={true} initialData={VALID_DRAFT} />);
 
     fireEvent.click(screen.getByRole("button", { name: /Save Draft/i }));
 
@@ -135,17 +145,7 @@ describe("BlogAuthoringForm UI", () => {
       new Response("<html>502</html>", { status: 502 })
     );
     render(
-      <BlogAuthoringForm
-        initialData={{
-          id: "post-1",
-          title: "T",
-          slug: "t",
-          dek: "d",
-          body: "b",
-          pillar: "field-notes",
-          tags: "",
-        }}
-      />
+      <BlogAuthoringForm initialData={{ ...VALID_DRAFT, id: "post-1" }} />
     );
 
     fireEvent.click(screen.getByRole("button", { name: /Publish Post/i }));
@@ -163,7 +163,7 @@ describe("BlogAuthoringForm UI", () => {
         new Response(JSON.stringify({ data: { id: "new-1" } }), { status: 201 })
       )
       .mockRejectedValueOnce(new TypeError("Failed to fetch"));
-    render(<BlogAuthoringForm isNew={true} />);
+    render(<BlogAuthoringForm isNew={true} initialData={VALID_DRAFT} />);
 
     fireEvent.click(screen.getByRole("button", { name: /Publish Post/i }));
 

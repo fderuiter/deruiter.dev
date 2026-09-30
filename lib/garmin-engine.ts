@@ -4,7 +4,6 @@
  * thermal overheating, crash reports, and 16-color pixel canvas rendering.
  */
 import { clamp } from "./game-utils";
-import { safeGetRawItem, safeSetRawItem } from "./safe-storage";
 
 export type DeviceTarget = "fenix" | "forerunner" | "edge";
 export type VariableType = "int" | "float" | "string" | "array";
@@ -91,6 +90,11 @@ export interface FlashVariable {
 
 export const FLASH_STORAGE_KEY = "garmin_simulator_flash_storage";
 
+// This module is also bundled on its own into public/garmin-engine.js
+// (scripts/build-standalone-engine.ts), so it guards localStorage directly
+// instead of importing lib/safe-storage, whose logger pulls in Sentry and
+// Next.js server code that a browser IIFE bundle cannot resolve.
+
 /**
  * Reads persisted flash. Returns null when nothing was ever saved (first
  * boot) and an array, possibly empty, once the player has written or
@@ -100,17 +104,17 @@ export const FLASH_STORAGE_KEY = "garmin_simulator_flash_storage";
 function readPersistedFlashStorage(): FlashVariable[] | null {
   if (typeof window === "undefined") return null;
   try {
-    // The key holds a bare JSON array (no safe-storage envelope), so it is
-    // read raw to keep every existing save readable.
-    const raw = safeGetRawItem(FLASH_STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        return parsed;
+    if (typeof window.localStorage?.getItem === "function") {
+      const raw = window.localStorage.getItem(FLASH_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          return parsed;
+        }
       }
     }
   } catch {
-    // Fall back safely when the stored value is not valid JSON
+    // Fall back safely when browser local storage is unavailable
   }
   return null;
 }
@@ -121,11 +125,13 @@ export function loadPersistedFlashStorage(): FlashVariable[] {
 
 export function savePersistedFlashStorage(flashVars: FlashVariable[]): void {
   if (typeof window === "undefined") return;
-  // safeSetRawItem never throws; a write that cannot reach storage is dropped
-  // so reads fall back exactly as they did with direct localStorage calls.
-  safeSetRawItem(FLASH_STORAGE_KEY, JSON.stringify(flashVars), {
-    retainInMemory: false,
-  });
+  try {
+    if (typeof window.localStorage?.setItem === "function") {
+      window.localStorage.setItem(FLASH_STORAGE_KEY, JSON.stringify(flashVars));
+    }
+  } catch {
+    // Fall back safely when browser local storage is unavailable
+  }
 }
 
 export interface Obstacle {

@@ -7,6 +7,7 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { chromium, type Browser, type LaunchOptions } from "@playwright/test";
+import { getEnv } from "../env";
 
 /**
  * Launches Chromium via Playwright, retrying against an unversioned browser
@@ -25,7 +26,7 @@ export async function launchChromiumWithFallback(
   try {
     return await chromium.launch(options);
   } catch (error) {
-    const browsersPath = process.env.PLAYWRIGHT_BROWSERS_PATH;
+    const browsersPath = getEnv().PLAYWRIGHT_BROWSERS_PATH;
     const fallbackExecutable = browsersPath
       ? path.join(browsersPath, "chromium")
       : undefined;

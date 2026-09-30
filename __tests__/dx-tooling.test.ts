@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import path from "path";
 import fs from "fs";
-import { validateEnv } from "../lib/env";
+import { validateEnv, getEnv } from "../lib/env";
 import {
   validateCommitMessage,
   validateBranchName,
@@ -12,6 +12,7 @@ import {
   parseEnvFile,
   generateEnvExampleContent,
   checkEnvironmentVariables,
+  checkRawEnvironmentAccess,
 } from "../lib/dx/env-guard";
 import {
   extractExports,
@@ -54,12 +55,30 @@ describe("Developer Experience (DX) Tooling Suite", () => {
       expect(result.errors["NEXT_PUBLIC_APP_URL"]).toBeDefined();
     });
 
-    it("extracts all declared schema keys", () => {
+    it("extracts all declared schema keys including DX keys", () => {
       const { serverKeys, clientKeys, allKeys } = getDeclaredEnvKeys();
       expect(serverKeys).toContain("DATABASE_URL");
       expect(serverKeys).toContain("CRON_SECRET");
+      expect(serverKeys).toContain("npm_config_user_agent");
+      expect(serverKeys).toContain("PLAYWRIGHT_BROWSERS_PATH");
       expect(clientKeys).toContain("NEXT_PUBLIC_APP_URL");
       expect(allKeys.length).toBeGreaterThan(5);
+    });
+
+    it("parses DX environment keys cleanly via validateEnv and getEnv", () => {
+      const mockDxEnv = {
+        npm_config_user_agent: "npm/10.8.2 node/v22.0.0 linux x64",
+        PLAYWRIGHT_BROWSERS_PATH: "/ms-playwright",
+      };
+
+      const result = validateEnv(mockDxEnv);
+      expect(result.success).toBe(true);
+      expect(result.data.npm_config_user_agent).toBe(
+        "npm/10.8.2 node/v22.0.0 linux x64"
+      );
+      expect(result.data.PLAYWRIGHT_BROWSERS_PATH).toBe("/ms-playwright");
+
+      expect(getEnv()).toBeDefined();
     });
 
     it("parses .env key-value pairs accurately", () => {
@@ -92,6 +111,30 @@ describe("Developer Experience (DX) Tooling Suite", () => {
       const result = checkEnvironmentVariables(root, false);
       expect(result.status).toBe("pass");
       expect(result.id).toBe("env-schema-parity");
+    });
+
+    it("verifies zero raw process.env accesses across app, lib, components, and hooks", () => {
+      const result = checkRawEnvironmentAccess(root);
+      expect(result.violations).toEqual([]);
+    });
+
+    it("audits lib/dx/ modules and flags raw process.env accesses", () => {
+      const tempDir = path.join(root, "scratch", "temp-env-audit-test");
+      const tempDxFile = path.join(tempDir, "lib", "dx", "mock-tool.ts");
+      fs.mkdirSync(path.dirname(tempDxFile), { recursive: true });
+      fs.writeFileSync(
+        tempDxFile,
+        "export const agent = process.env.npm_config_user_agent;\n",
+        "utf-8"
+      );
+
+      try {
+        const result = checkRawEnvironmentAccess(tempDir);
+        expect(result.violations.length).toBeGreaterThan(0);
+        expect(result.violations[0]).toContain("lib/dx/mock-tool.ts");
+      } finally {
+        fs.rmSync(tempDir, { recursive: true, force: true });
+      }
     });
   });
 

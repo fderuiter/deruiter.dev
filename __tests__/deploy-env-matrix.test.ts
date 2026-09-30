@@ -34,7 +34,7 @@ function matrixRows(markdown: string): MatrixRow[] {
   const rows: MatrixRow[] = [];
   for (const line of section.split("\n")) {
     const cells = line.split("|").map((cell) => cell.trim());
-    const match = cells[1]?.match(/^`([A-Z0-9_]+)`$/);
+    const match = cells[1]?.match(/^`([a-zA-Z0-9_]+)`$/);
     if (match) rows.push({ name: match[1], cls: cells[2], scope: cells[3] });
   }
   return rows;

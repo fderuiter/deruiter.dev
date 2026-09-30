@@ -75,6 +75,30 @@
   box-shadow: 0 0 30px color-mix(in srgb, var(--game-accent) 12%, transparent);
 }
 
+/* Laser Loon boss plate intro slam (#1598): one transform/opacity pass
+ * when a boss arrives, never a loop, and none for reduced motion or phones. */
+@keyframes loon-boss-slam {
+  0% {
+    opacity: 0;
+    transform: translateY(-12px) scaleY(1.6);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(2px) scaleY(0.92);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
+  .loon-boss-plate {
+    animation: loon-boss-slam 320ms cubic-bezier(0.2, 0.9, 0.3, 1.2) 1;
+    transform-origin: top center;
+  }
+}
+
 /* Trial & Error: Biostat Ops cabinet tokens (ADR 0046 amendment, #942).
  * Scoped to [data-te-cabinet] so nothing leaks into the portfolio frame.
  * "Calm at rest, loud when scoring": .te-loud-* layers only apply while the
@@ -466,11 +490,20 @@
   min-height: 0;
   height: 100%;
   width: 100%;
+  max-width: none;
+  background: transparent;
   aspect-ratio: auto;
   container-type: size;
 }
+/* The HUD strip matches the canvas width, so the pair reads as one stage. */
+.arcade-cabinet[data-fullscreen="true"] .arcade-shooter-playfield .arcade-hud {
+  width: min(100cqw, calc((100cqh - 3rem) * 768 / 420));
+  margin-inline: auto;
+}
+/* The HUD strip (#1598) sits above the canvas inside the playfield, so the
+ * canvas gets the height left under it. */
 .arcade-cabinet[data-fullscreen="true"] .arcade-shooter-playfield canvas {
-  width: min(100cqw, calc(100cqh * 768 / 420));
+  width: min(100cqw, calc((100cqh - 3rem) * 768 / 420));
   height: auto;
   max-height: 100%;
   margin: auto;

@@ -140,8 +140,9 @@ describe("LaserLoon React Component UI Suite", () => {
     expect(container.textContent).toContain("Zero-G Sandbox");
     expect(container.textContent).toContain("Ruby (1)");
     expect(container.textContent).toContain("Pulse (2)");
-    expect(container.textContent).toContain("SCORE:");
-    expect(container.textContent).toContain("HI:");
+    const hud = container.querySelector('[aria-label="Game status"]');
+    expect(hud?.textContent).toContain("Score");
+    expect(hud?.textContent).toContain("Hi");
   });
 
   it("should enforce keyboard boundary attribute on container", async () => {

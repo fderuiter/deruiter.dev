@@ -46,6 +46,8 @@ import {
   drawLoon,
 } from "@/components/laser-loon/scene-art";
 import { PauseMenu } from "@/components/laser-loon/PauseMenu";
+import { ArcadeHud } from "@/components/arcade/ArcadeHud";
+import { useArcadeFx } from "@/hooks/useArcadeFx";
 import { safeGetRawItem, safeSetRawItem } from "@/lib/safe-storage";
 import {
   LaserMode,
@@ -156,6 +158,8 @@ export const LaserLoon: React.FC = () => {
   const [screenShakeEnabled, setScreenShakeEnabled] = useState<boolean>(() => {
     return !getMatchMediaMatches("(prefers-reduced-motion: reduce)");
   });
+  const fx = useArcadeFx({ enabled: screenShakeEnabled });
+  const { stageRef: fxStageRef, flashRef: fxFlashRef } = fx;
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [gravity, setGravity] = useState<number>(0.15); // for sandbox mode
   const [showMuseum, setShowMuseum] = useState(false);
@@ -234,7 +238,8 @@ export const LaserLoon: React.FC = () => {
   const lastComboTimeRef = useRef(0);
   const comboRef = useRef(0);
   const animFrameIdRef = useRef<number | null>(null);
-  const shakeIntensityRef = useRef(0);
+  const lastBossHpRef = useRef(0);
+  const bossHitFlashUntilRef = useRef(0);
   const actKillsRef = useRef(0);
   const hitsLeftRef = useRef(LOON_MAX_HITS);
   const invulnerableUntilRef = useRef(0);
@@ -494,9 +499,9 @@ export const LaserLoon: React.FC = () => {
         `⚠️ BOSS: ${boss.label.toUpperCase()} ⚠️`,
         "#ef4444"
       );
-      if (screenShakeEnabled) shakeIntensityRef.current = 8;
+      fx.shake(8);
     },
-    [currentActNum, screenShakeEnabled, addFloatingText]
+    [currentActNum, fx, addFloatingText]
   );
 
   // Spawn Power-Up
@@ -590,7 +595,8 @@ export const LaserLoon: React.FC = () => {
     ultimateMeterRef.current = 0;
     setUltimateMeter(0);
     playSynthesizedLoonTremolo();
-    if (screenShakeEnabled) shakeIntensityRef.current = 14;
+    fx.shake(14);
+    fx.flash("#67e8f9");
 
     const loon = loonPosRef.current;
     const w = DEFAULT_CANVAS_WIDTH;
@@ -629,8 +635,8 @@ export const LaserLoon: React.FC = () => {
 
     addFloatingText(w * 0.5, 120, "THE HAUNTING LOON TREMOLO!", "#22d3ee");
   }, [
+    fx,
     mode,
-    screenShakeEnabled,
     playSynthesizedLoonTremolo,
     addScore,
     spawnExplosion,
@@ -848,8 +854,11 @@ export const LaserLoon: React.FC = () => {
     if (hitResult.killedTargets.length > 0) {
       const hasKilledBoss = hitResult.killedTargets.some((t) => t.isBoss);
       playExplodeSound(hasKilledBoss);
-      if (screenShakeEnabled)
-        shakeIntensityRef.current = hasKilledBoss ? 12 : 6;
+      fx.shake(hasKilledBoss ? 12 : 6);
+      if (hasKilledBoss) {
+        fx.hitStop(140);
+        fx.flash("#fef3c7");
+      }
 
       hitResult.killedTargets.forEach((t) => {
         spawnExplosion(t.x, t.y, t.color, t.isBoss ? 50 : 24, false, t.isBoss);
@@ -857,16 +866,12 @@ export const LaserLoon: React.FC = () => {
         addFloatingText(t.x, t.y, `+${pts}`, t.color);
         recordCampaignKill(t);
       });
-    } else if (
-      hitResult.hitAny &&
-      screenShakeEnabled &&
-      shakeIntensityRef.current === 0
-    ) {
-      shakeIntensityRef.current = 2;
+    } else if (hitResult.hitAny) {
+      fx.shake(2);
     }
   }, [
+    fx,
     laserType,
-    screenShakeEnabled,
     playLaserSound,
     playExplodeSound,
     spawnExplosion,
@@ -918,6 +923,12 @@ export const LaserLoon: React.FC = () => {
 
     const renderLoop = (time: number) => {
       if (isContextLost || isHalted) return;
+      // Hit stop holds the last frame for a beat after a boss falls.
+      if (fx.isHitStopped()) {
+        lastFrameTime = time;
+        animFrameIdRef.current = requestAnimationFrame(renderLoop);
+        return;
+      }
       const dt = Math.min(32, time - lastFrameTime) / 16.666;
       lastFrameTime = time;
 
@@ -926,25 +937,12 @@ export const LaserLoon: React.FC = () => {
       const scale = canvasScaleRef.current;
       applyCanvasScale(ctx, scale);
 
-      // Screen shake calculation
-      let shakeOffsetX = 0;
-      let shakeOffsetY = 0;
-      if (shakeIntensityRef.current > 0) {
-        shakeOffsetX = (Math.random() - 0.5) * shakeIntensityRef.current;
-        shakeOffsetY = (Math.random() - 0.5) * shakeIntensityRef.current;
-        shakeIntensityRef.current = Math.max(
-          0,
-          shakeIntensityRef.current - 0.35 * dt
-        );
-      }
-
       ctx.save();
-      ctx.translate(shakeOffsetX, shakeOffsetY);
 
-      // 1. Act backdrop: sky plus three parallax layers (#1597). The dark
-      // fill under it covers the margin that screen shake can expose.
+      // 1. Act backdrop: sky plus three parallax layers (#1597). Shake moves
+      // the stage element (useArcadeFx), so the canvas never offsets.
       ctx.fillStyle = "#090d16";
-      ctx.fillRect(-10, -10, width + 20, height + 20);
+      ctx.fillRect(0, 0, width, height);
       drawActBackdrop(ctx, backdropTheme, width, height, time, {
         scale,
         animate: !prefersReducedMotion,
@@ -1059,7 +1057,8 @@ export const LaserLoon: React.FC = () => {
           invulnerableUntilRef.current = contact.invulnerableUntil;
           setHitsLeft(contact.hitsLeft);
           playLoonHitSound();
-          if (screenShakeEnabled) shakeIntensityRef.current = 10;
+          fx.shake(10);
+          fx.flash("#f43f5e");
           if (contact.contact) {
             spawnExplosion(contact.contact.x, contact.contact.y, "#f43f5e", 18);
           }
@@ -1126,7 +1125,7 @@ export const LaserLoon: React.FC = () => {
       iceResult.shatteredBlocks.forEach((pt) => {
         playIceShatterSound();
         spawnExplosion(pt.x, pt.y, "#38bdf8", 18, true);
-        if (screenShakeEnabled) shakeIntensityRef.current = 4;
+        fx.shake(4);
       });
 
       iceResult.frozenTargets.forEach((t) => {
@@ -1230,6 +1229,27 @@ export const LaserLoon: React.FC = () => {
         // Shape-coded silhouette sized to the hit radius (#1597).
         drawEnemySilhouette(ctx, t);
 
+        // A boss flashes white for a moment whenever it loses HP (#1598).
+        if (t.isBoss) {
+          if (t.hp < lastBossHpRef.current) {
+            bossHitFlashUntilRef.current = time + 90;
+          }
+          lastBossHpRef.current = t.hp;
+          if (time < bossHitFlashUntilRef.current) {
+            ctx.save();
+            ctx.globalAlpha = 0.3;
+            ctx.fillStyle = "#ffffff";
+            ctx.strokeStyle = "#ffffff";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(t.x, t.y, t.radius * 0.9, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 0.8;
+            ctx.stroke();
+            ctx.restore();
+          }
+        }
+
         // Wind-up ring before a boss volley
         if (t.isBoss && isBossTelegraphing(t, currentActNum)) {
           ctx.strokeStyle = "#f59e0b";
@@ -1284,14 +1304,8 @@ export const LaserLoon: React.FC = () => {
           ctx.stroke();
         }
 
-        // Minions read by shape alone; a boss keeps its full name under it.
-        if (t.isBoss) {
-          ctx.fillStyle = "#f4f4f6";
-          ctx.font = "bold 10px monospace";
-          ctx.textAlign = "center";
-          ctx.textBaseline = "top";
-          ctx.fillText(t.label, t.x, t.y + t.radius + 12);
-        }
+        // Enemies read by shape alone; the boss's name is on the docked
+        // plate above the arena (#1598).
 
         ctx.restore();
       });
@@ -1499,6 +1513,7 @@ export const LaserLoon: React.FC = () => {
       }
     };
   }, [
+    fx,
     isMounted,
     canvasScaleRef,
     gameState,
@@ -1814,7 +1829,7 @@ export const LaserLoon: React.FC = () => {
   }
 
   return (
-    <div className="arcade-shooter w-full min-w-0 flex flex-col items-center select-none my-6">
+    <div className="arcade-shooter w-full min-w-0 flex flex-col items-center select-none my-3">
       {/* Tablet Orientation Recommendation */}
       <TabletOrientationHint className="w-full max-w-3xl" />
 
@@ -1936,19 +1951,6 @@ export const LaserLoon: React.FC = () => {
               onToggle={toggleFullscreen}
               variant="header"
             />
-
-            <div className="flex items-center gap-1.5 px-3 py-1 bg-neutral-900 border border-neutral-800 rounded-xl text-neutral-300">
-              <IconTrophy className="w-3.5 h-3.5 text-amber-400" />
-              <span className="text-[10px] text-neutral-500">HI:</span>
-              <span className="font-bold text-amber-400">
-                {effectiveHighScore}
-              </span>
-            </div>
-
-            <div className="flex items-center gap-1.5 px-3 py-1 bg-neutral-900 border border-neutral-800 rounded-xl text-neutral-300">
-              <span className="text-[10px] text-neutral-500">SCORE:</span>
-              <span className="font-bold text-red-400">{score}</span>
-            </div>
           </div>
         </div>
       </details>
@@ -1961,14 +1963,10 @@ export const LaserLoon: React.FC = () => {
         onKeyDown={handleKeyDown}
         onKeyUp={handleKeyUp}
         data-keyboard-boundary="true"
-        className={`arcade-shooter-playfield relative outline-none shadow-2xl flex flex-col justify-between ${
+        className={`arcade-shooter-playfield relative outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--game-accent)] flex flex-col justify-center ${
           isFullscreen
             ? "fixed inset-0 z-50 w-full h-[100dvh] max-h-[100dvh] max-w-none rounded-none border-none bg-black p-2 sm:p-4 overflow-hidden select-none touch-none"
-            : `w-full max-w-3xl h-auto aspect-[768/420] bg-neutral-950 border rounded-3xl overflow-hidden ${
-                isFocused
-                  ? "border-red-500 ring-4 ring-red-500/20 shadow-[0_0_40px_rgba(239,68,68,0.25)]"
-                  : "border-neutral-800 hover:border-neutral-700"
-              }`
+            : "w-full max-w-[min(100%,calc((100dvh_-_340px)*768/420))] bg-neutral-950 overflow-hidden"
         }`}
       >
         <FullscreenButton
@@ -1976,195 +1974,193 @@ export const LaserLoon: React.FC = () => {
           onToggle={toggleFullscreen}
           variant="floating"
         />
-        {/* Top Floating HUD */}
-        <div className="absolute top-4 left-4 right-4 z-20 flex justify-between items-center pointer-events-none">
-          <div className="flex items-center gap-2">
-            <span
-              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-mono text-[10px] font-bold uppercase tracking-wider border backdrop-blur-md pointer-events-auto ${
-                isFocused
-                  ? "bg-red-500/10 text-red-400 border-red-500/30 shadow-[0_0_10px_rgba(239,68,68,0.2)]"
-                  : "bg-neutral-900/80 text-neutral-500 border-neutral-800"
-              }`}
-            >
-              <span
-                className={`w-2 h-2 rounded-full ${
-                  isFocused ? "bg-red-400 animate-ping" : "bg-neutral-600"
-                }`}
-              />
-              {isFocused
-                ? "Loon Controls: ACTIVE"
-                : "Click to Aim & Shoot Lasers"}
-            </span>
-
-            {combo > 1 && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full font-mono text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse">
-                <IconFlame className="w-3 h-3 text-amber-400" />
-                {combo}x Combo ({multiplier}x pts)
-              </span>
-            )}
-
-            {activePowerUpType && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full font-mono text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 animate-pulse">
-                <IconSparkles className="w-3 h-3 text-emerald-400" />
-                {POWER_UP_CONFIGS[activePowerUpType]?.label} (
-                {Math.ceil(activePowerUpTimeMs / 1000)}s)
-              </span>
-            )}
-          </div>
-
-          {/* Campaign Stage / Arcade Timer Progress */}
-          <div className="flex items-center gap-2 pointer-events-auto">
-            {mode === "campaign" && gameState === "playing" && (
-              <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-neutral-900/90 border border-neutral-800 font-mono text-xs text-neutral-200">
-                <span className="text-red-400 font-bold">
-                  ACT {currentActNum}/4
+        {/* One HUD strip above the stage keeps the arena clear (#1598). */}
+        <ArcadeHud
+          stats={[
+            { label: "Score", value: score, accent: true },
+            { label: "Hi", value: effectiveHighScore },
+            ...(mode === "campaign"
+              ? [
+                  { label: "Act", value: `${currentActNum}/4` },
+                  {
+                    label: bossActive ? "Boss" : "Kills",
+                    value: bossActive
+                      ? "Engaged"
+                      : `${actKills}/${currentAct.requiredMinionKills}`,
+                  },
+                  {
+                    label: "Hits",
+                    value: (
+                      <span
+                        className="flex items-center gap-0.5"
+                        role="img"
+                        aria-label={`Hits left: ${hitsLeft} of ${LOON_MAX_HITS}`}
+                      >
+                        {Array.from({ length: LOON_MAX_HITS }, (_, i) => (
+                          <IconHeart
+                            key={i}
+                            aria-hidden="true"
+                            className={`w-3.5 h-3.5 ${
+                              i < hitsLeft
+                                ? "text-rose-400 fill-rose-400"
+                                : "text-neutral-600"
+                            }`}
+                          />
+                        ))}
+                      </span>
+                    ),
+                  },
+                ]
+              : []),
+            ...(mode === "arcade"
+              ? [
+                  {
+                    label: "Time",
+                    value: (
+                      <span
+                        className={timeLeft <= 10 ? "text-rose-400" : undefined}
+                      >
+                        {timeLeft}s
+                      </span>
+                    ),
+                  },
+                ]
+              : []),
+          ]}
+          callouts={
+            <>
+              {combo > 1 && (
+                <span className="inline-flex items-center gap-1 whitespace-nowrap text-amber-300">
+                  <IconFlame
+                    aria-hidden="true"
+                    className="w-3 h-3 text-amber-400"
+                  />
+                  {combo}x combo ({multiplier}x pts)
                 </span>
-                <span className="text-neutral-500">|</span>
-                <span className="text-neutral-400">
-                  {bossActive
-                    ? "BOSS BATTLE"
-                    : `Kills: ${actKills}/${currentAct.requiredMinionKills}`}
+              )}
+              {activePowerUpType && (
+                <span className="inline-flex items-center gap-1 whitespace-nowrap text-emerald-300">
+                  <IconSparkles
+                    aria-hidden="true"
+                    className="w-3 h-3 text-emerald-400"
+                  />
+                  {POWER_UP_CONFIGS[activePowerUpType]?.label} (
+                  {Math.ceil(activePowerUpTimeMs / 1000)}s)
                 </span>
-                <span className="text-neutral-500">|</span>
-                <span
-                  className="flex items-center gap-0.5"
-                  role="img"
-                  aria-label={`Hits left: ${hitsLeft} of ${LOON_MAX_HITS}`}
-                >
-                  {Array.from({ length: LOON_MAX_HITS }, (_, i) => (
-                    <IconHeart
-                      key={i}
-                      aria-hidden="true"
-                      className={`w-3.5 h-3.5 ${
-                        i < hitsLeft
-                          ? "text-rose-400 fill-rose-400"
-                          : "text-neutral-600"
-                      }`}
-                    />
-                  ))}
+              )}
+              {!isFocused && gameState === "playing" && (
+                <span className="whitespace-nowrap text-zinc-500">
+                  Click the arena to aim
                 </span>
-              </div>
-            )}
-
-            {mode === "arcade" && gameState === "playing" && (
-              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-neutral-900/90 border border-neutral-800 font-mono text-xs font-bold text-neutral-200">
-                <span>TIME:</span>
-                <span
-                  className={
-                    timeLeft <= 10
-                      ? "text-rose-400 animate-ping font-extrabold"
-                      : "text-red-400"
-                  }
-                >
-                  {timeLeft}s
-                </span>
-              </div>
-            )}
-
-            {/* Fullscreen hides the footer strip, so Pause stays in the HUD
-                there; elsewhere it lives below the playfield, out of the
-                firing area (#1551). */}
-            {isFullscreen && (gameState === "playing" || isPaused) && (
+              )}
+            </>
+          }
+          meter={
+            gameState === "playing"
+              ? {
+                  label: "Tremolo",
+                  percent: mode === "sandbox" ? 100 : ultimateMeter,
+                  ready: ultimateMeter >= 100 || mode === "sandbox",
+                  onActivate: fireUltimateTremolo,
+                  hotkey: "U",
+                }
+              : undefined
+          }
+          trailing={
+            /* Fullscreen hides the footer strip, so Pause stays in the HUD
+               there; elsewhere it lives below the playfield, out of the
+               firing area (#1551). */
+            isFullscreen && (gameState === "playing" || isPaused) ? (
               <button
                 type="button"
                 onClick={togglePause}
                 aria-label={isPaused ? "Resume Game" : "Pause Game"}
-                className="min-h-[44px] min-w-[44px] px-3 py-1 rounded-full bg-neutral-900/90 border border-neutral-800 hover:border-red-500/50 text-neutral-200 hover:text-red-400 font-mono text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:outline-none"
+                className="min-h-[44px] min-w-[44px] px-2 rounded-md text-zinc-200 hover:bg-white/[0.06] font-mono text-[11px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer focus-visible:ring-2 focus-visible:ring-[var(--game-accent)] focus-visible:outline-none"
               >
                 {isPaused ? (
-                  <IconPlayerPlay className="w-3.5 h-3.5 fill-current text-red-400" />
+                  <IconPlayerPlay className="w-3.5 h-3.5 fill-current" />
                 ) : (
-                  <IconPlayerPause className="w-3.5 h-3.5 text-red-400" />
+                  <IconPlayerPause className="w-3.5 h-3.5" />
                 )}
-                <span className="hidden sm:inline">
-                  {isPaused ? "Resume" : "Pause"} [P]
-                </span>
+                <span>{isPaused ? "Resume" : "Pause"} [P]</span>
               </button>
-            )}
-          </div>
-        </div>
-
-        {/* Boss Health Bar HUD */}
-        {bossActive && (
-          <div className="absolute top-14 left-1/2 -translate-x-1/2 z-20 w-80 max-w-[90%] bg-neutral-900/90 border border-red-500/40 rounded-2xl p-2.5 backdrop-blur-md shadow-[0_0_20px_rgba(239,68,68,0.2)]">
-            <div className="flex justify-between items-center text-[10px] font-mono font-bold text-neutral-300 mb-1">
-              <span className="text-red-400">{bossName.toUpperCase()}</span>
-              <span>
-                {Math.max(0, Math.ceil(bossHp))} / {bossMaxHp} HP
-              </span>
-            </div>
-            <div
-              role="progressbar"
-              aria-valuenow={Math.max(
-                0,
-                Math.round((bossHp / bossMaxHp) * 100)
-              )}
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-label={`${bossName} Health`}
-              className="w-full h-2.5 bg-neutral-950 rounded-full overflow-hidden border border-neutral-800"
-            >
-              <div
-                className="h-full w-full bg-gradient-to-r from-red-500 to-amber-500 origin-left transform-gpu"
-                style={{
-                  transform: `scaleX(${clamp(bossHp / bossMaxHp, 0, 1)})`,
-                  transformOrigin: "left",
-                  willChange: "transform",
-                }}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Ultimate Meter (Haunting Loon Tremolo) */}
-        {gameState === "playing" && (
-          <div className="absolute bottom-4 left-4 z-20 flex items-center gap-2 pointer-events-auto">
-            <button
-              onClick={fireUltimateTremolo}
-              disabled={ultimateMeter < 100 && mode !== "sandbox"}
-              role="progressbar"
-              aria-valuenow={ultimateMeter}
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-label="Ultimate Tremolo Meter"
-              className={`min-h-[44px] min-w-[44px] px-3 py-1.5 rounded-xl font-mono text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer touch-manipulation select-none active:scale-95 shadow-lg ${
-                ultimateMeter >= 100 || mode === "sandbox"
-                  ? "bg-gradient-to-r from-cyan-400 to-sky-500 text-black shadow-[0_0_20px_rgba(34,211,238,0.6)] animate-bounce"
-                  : "bg-neutral-900/80 text-neutral-500 border border-neutral-800 cursor-not-allowed opacity-80"
-              }`}
-            >
-              <IconSparkles className="w-4 h-4" />
-              <span>LOON TREMOLO [U] ({ultimateMeter}%)</span>
-            </button>
-          </div>
-        )}
-
-        {/* Game Canvas */}
-        <canvas
-          ref={canvasRef}
-          width={768}
-          height={420}
-          onPointerDown={handleCanvasPointerDown}
-          onPointerMove={handleCanvasPointerMove}
-          onPointerUp={handleCanvasPointerUp}
-          onPointerCancel={handleCanvasPointerCancel}
-          onMouseMove={handleCanvasMouseMove}
-          onMouseDown={handleCanvasMouseDown}
-          onMouseUp={handleCanvasMouseUp}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-          onTouchCancel={handleTouchEnd}
-          style={{ touchAction: "none" }}
-          role="application"
-          aria-label="Laser Loon Arcade Game. Use arrow keys to reposition the loon, spacebar or enter to fire weapons, and number keys 1 to 4 to select weapons."
-          tabIndex={0}
-          className={
-            isFullscreen
-              ? "max-h-[var(--layout-viewport-budget,calc(100dvh-var(--header-height,80px)-var(--footer-height,48px)))] max-h-[calc(100dvh-var(--header-height,80px)-var(--footer-height,48px))] max-w-full aspect-[768/420] object-contain block cursor-crosshair touch-none my-auto focus:outline-none focus:ring-2 focus:ring-red-500/50"
-              : "w-full h-auto aspect-[768/420] block cursor-crosshair touch-none focus:outline-none focus:ring-2 focus:ring-red-500/50"
+            ) : undefined
           }
         />
+
+        {/* Stage: the canvas fills the bezel; shake moves this element. */}
+        <div
+          ref={fxStageRef}
+          className={`relative w-full min-w-0 ${
+            isFullscreen ? "flex justify-center" : ""
+          }`}
+        >
+          {/* Docked boss plate: full name and HP, clear of the arena. */}
+          {bossActive && (
+            <div
+              key={`boss-plate-${bossName}`}
+              className="loon-boss-plate absolute top-0 inset-x-0 z-20 flex items-center gap-3 px-3 py-1.5 bg-gradient-to-b from-black/80 to-black/0 font-mono text-[11px] font-bold pointer-events-none"
+            >
+              <span className="shrink-0 uppercase tracking-wider text-rose-300">
+                {bossName}
+              </span>
+              <div
+                role="progressbar"
+                aria-valuenow={Math.max(
+                  0,
+                  Math.round((bossHp / bossMaxHp) * 100)
+                )}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label={`${bossName} Health`}
+                className="flex-1 min-w-0 h-2 bg-neutral-900 rounded-full overflow-hidden border border-white/[0.08]"
+              >
+                <div
+                  className="h-full w-full bg-rose-500 origin-left transition-transform duration-150"
+                  style={{
+                    transform: `scaleX(${clamp(bossHp / bossMaxHp, 0, 1)})`,
+                  }}
+                />
+              </div>
+              <span className="shrink-0 tabular-nums text-zinc-300">
+                {Math.max(0, Math.ceil(bossHp))} / {bossMaxHp}
+              </span>
+            </div>
+          )}
+
+          <div
+            ref={fxFlashRef}
+            aria-hidden="true"
+            className="absolute inset-0 z-10 opacity-0 pointer-events-none"
+          />
+
+          {/* Game Canvas */}
+          <canvas
+            ref={canvasRef}
+            width={768}
+            height={420}
+            onPointerDown={handleCanvasPointerDown}
+            onPointerMove={handleCanvasPointerMove}
+            onPointerUp={handleCanvasPointerUp}
+            onPointerCancel={handleCanvasPointerCancel}
+            onMouseMove={handleCanvasMouseMove}
+            onMouseDown={handleCanvasMouseDown}
+            onMouseUp={handleCanvasMouseUp}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onTouchCancel={handleTouchEnd}
+            style={{ touchAction: "none" }}
+            role="application"
+            aria-label="Laser Loon Arcade Game. Use arrow keys to reposition the loon, spacebar or enter to fire weapons, and number keys 1 to 4 to select weapons."
+            tabIndex={0}
+            className={
+              isFullscreen
+                ? "max-h-[var(--layout-viewport-budget,calc(100dvh-var(--header-height,80px)-var(--footer-height,48px)))] max-h-[calc(100dvh-var(--header-height,80px)-var(--footer-height,48px))] max-w-full aspect-[768/420] object-contain block cursor-crosshair touch-none focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--game-accent)]"
+                : "w-full h-auto aspect-[768/420] block cursor-crosshair touch-none focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--game-accent)]"
+            }
+          />
+        </div>
 
         {/* Pause Overlay Screen */}
         {isPaused && (

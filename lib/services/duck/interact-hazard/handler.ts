@@ -23,6 +23,16 @@ export class InteractHazardHandler implements InteractHazardSpec {
       );
     }
 
+    // A paused sprint freezes play (#1645): the toys are already no-ops in
+    // the engine, and fixing a hazard must not bank points either.
+    if (input.state.status === "paused") {
+      return createSuccess({
+        state: input.state,
+        activeHazardTarget: input.state.activeHazardTarget,
+        scoreBonus: 0,
+      });
+    }
+
     try {
       let nextState: WorkingWithDuckState = input.state;
       const initialScore = input.state.totalScore ?? 0;

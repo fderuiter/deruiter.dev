@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { headers } from "next/headers";
 import { Lexend, Atkinson_Hyperlegible, Geist_Mono } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
@@ -123,11 +124,19 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  let nonce: string | undefined;
+  try {
+    const headersList = await headers();
+    nonce = headersList.get("x-nonce") ?? undefined;
+  } catch {
+    nonce = undefined;
+  }
+
   return (
     <html
       lang="en"
@@ -137,6 +146,7 @@ export default function RootLayout({
       <head>
         <script
           type="application/ld+json"
+          nonce={nonce}
           dangerouslySetInnerHTML={{
             __html: getUnifiedGraphSchema([getPersonNode(), getWebsiteNode()]),
           }}
@@ -148,6 +158,7 @@ export default function RootLayout({
           href="/blog/rss.xml"
         />
         <script
+          nonce={nonce}
           dangerouslySetInnerHTML={{
             __html: `
                 (function() {
@@ -161,6 +172,20 @@ export default function RootLayout({
                 })();
               `,
           }}
+        />
+        <script
+          src="https://va.vercel-scripts.com/v1/script.js"
+          defer
+          integrity="sha384-BZkUlnHxIcBvxJPoeKYfzzACTHqHtpUJ0qHirqeslo4I3k8wEaoSnJyPGyguandz"
+          crossOrigin="anonymous"
+          nonce={nonce}
+        />
+        <script
+          src="https://va.vercel-scripts.com/v1/speed-insights/script.js"
+          defer
+          integrity="sha384-+0Qu2ywcjV4AEzNpfUDkt+pgMgvC6r5/Dv3PULLimAa3Jk5UCiQ0plSg53uQkjBn"
+          crossOrigin="anonymous"
+          nonce={nonce}
         />
       </head>
       <body className="min-h-full flex flex-col bg-zinc-950 text-foreground antialiased">

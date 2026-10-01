@@ -1,5 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createHash } from "crypto";
 import { getEnv } from "@/lib/env";
+
+/** Generates a cryptographically random SHA-256 base64-encoded nonce string. */
+export function generateNonce(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(32));
+  return createHash("sha256").update(bytes).digest("base64");
+}
 
 // A publishable key contains the instance hostname; never allow every Clerk tenant.
 function clerkOrigin(): string {
@@ -27,11 +34,15 @@ function isAdminSurface(pathname: string): boolean {
   return ADMIN_SURFACE_PATTERN.test(pathname);
 }
 
-function buildContentSecurityPolicy(admin: boolean): string {
+export function buildContentSecurityPolicy(
+  admin: boolean,
+  nonce?: string
+): string {
+  const currentNonce = nonce || generateNonce();
   const scriptSrc = [
     "'self'",
-    "'unsafe-inline'",
-    "'unsafe-eval'",
+    `'nonce-${currentNonce}'`,
+    "'strict-dynamic'",
     "https://va.vercel-scripts.com",
   ];
   const connectSrc = ["'self'", "https://vitals.vercel-insights.com"];
@@ -70,7 +81,11 @@ function buildContentSecurityPolicy(admin: boolean): string {
   );
 }
 
-function buildSecurityHeaders(admin: boolean): Record<string, string> {
+export function buildSecurityHeaders(
+  admin: boolean,
+  nonce?: string
+): Record<string, string> {
+  const currentNonce = nonce || generateNonce();
   return {
     "X-Content-Type-Options": "nosniff",
     "X-Frame-Options": "DENY",
@@ -78,7 +93,8 @@ function buildSecurityHeaders(admin: boolean): Record<string, string> {
     "Referrer-Policy": "strict-origin-when-cross-origin",
     "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
     "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
-    "Content-Security-Policy": buildContentSecurityPolicy(admin),
+    "Content-Security-Policy": buildContentSecurityPolicy(admin, currentNonce),
+    "x-nonce": currentNonce,
   };
 }
 
@@ -98,11 +114,17 @@ export const ADMIN_SECURITY_HEADERS: Record<string, string> =
  */
 export function applySecurityHeaders(
   res: NextResponse,
-  req?: NextRequest
+  req?: NextRequest,
+  explicitNonce?: string
 ): NextResponse {
-  const headers = isAdminSurface(req?.nextUrl.pathname ?? "")
-    ? ADMIN_SECURITY_HEADERS
-    : SECURITY_HEADERS;
+  const nonce =
+    explicitNonce ||
+    req?.headers.get("x-nonce") ||
+    res.headers.get("x-nonce") ||
+    generateNonce();
+
+  const admin = isAdminSurface(req?.nextUrl.pathname ?? "");
+  const headers = buildSecurityHeaders(admin, nonce);
   Object.entries(headers).forEach(([key, value]) => {
     res.headers.set(key, value);
   });

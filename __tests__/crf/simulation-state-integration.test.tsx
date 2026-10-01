@@ -7,7 +7,10 @@ import {
   fireEvent,
   act,
   cleanup,
+  configure,
 } from "@testing-library/react";
+
+configure({ asyncUtilTimeout: 5000 });
 import { CRFStudioContainer } from "@/components/crf/CRFStudioContainer";
 import {
   loadStudyDraft,
@@ -35,11 +38,9 @@ describe("EDC Simulation State Integration", () => {
     render(<CRFStudioContainer />);
 
     // Switch to Part 11 Audit Trail tab inside EDC Simulator
-    const auditTabBtn = await screen.findByRole(
-      "button",
-      { name: /Part 11 Audit Trail/i },
-      { timeout: 5000 }
-    );
+    const auditTabBtn = await screen.findByRole("button", {
+      name: /Part 11 Audit Trail/i,
+    });
     fireEvent.click(auditTabBtn);
 
     // Initial default audit log entry is visible

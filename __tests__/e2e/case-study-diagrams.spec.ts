@@ -94,7 +94,7 @@ test.describe("Case-study architecture diagrams", () => {
     // Every case study now carries an architecture diagram (#928), so this
     // uses a blog dispatch: the same RichNarrative renderer, no Mermaid source.
     await page.goto("/blog/the-cost-of-being-wrong-quietly", {
-      waitUntil: "load",
+      waitUntil: "domcontentloaded",
     });
     await expect(page.locator("article").first()).toBeVisible();
 
@@ -111,10 +111,7 @@ test.describe("Case-study architecture diagrams", () => {
   }) => {
     await page.setContent("<!doctype html><html><body></body></html>");
     await page.addScriptTag({
-      path: path.join(
-        process.cwd(),
-        "node_modules/mermaid/dist/mermaid.min.js"
-      ),
+      path: require.resolve("mermaid/dist/mermaid.min.js"),
     });
 
     const rejected = await page.evaluate(async () => {

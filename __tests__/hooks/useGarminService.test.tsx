@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useGarminService } from "@/hooks/useGarminService";
 import { createInitialState } from "@/lib/garmin-engine";
@@ -99,5 +99,36 @@ describe("useGarminService Hook", () => {
     });
 
     expect(clearRes?.success).toBe(true);
+  });
+
+  it("returns STORAGE_UNAVAILABLE service failure when local storage write encounters quota error", async () => {
+    const { result } = renderHook(() => useGarminService());
+
+    const setItemSpy = vi
+      .spyOn(Storage.prototype, "setItem")
+      .mockImplementation(() => {
+        throw new DOMException("QuotaExceededError", "QuotaExceededError");
+      });
+
+    let saveRes:
+      Awaited<ReturnType<typeof result.current.syncFlashStorage>> | undefined;
+    await act(async () => {
+      saveRes = await result.current.syncFlashStorage({
+        action: "save",
+        variables: [
+          { id: 1, name: "var1", sizeKb: 4, allocatedAt: Date.now() },
+        ],
+      });
+    });
+
+    expect(saveRes?.success).toBe(false);
+    if (saveRes && !saveRes.success) {
+      expect(saveRes.error.code).toBe("STORAGE_UNAVAILABLE");
+      expect(saveRes.error.suggestion).toBe(
+        "Check localStorage availability and quota limits"
+      );
+    }
+
+    setItemSpy.mockRestore();
   });
 });

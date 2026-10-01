@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { SyncFlashStorageHandler } from "@/lib/services";
 
 describe("SyncFlashStorageHandler (Logic Test)", () => {
@@ -37,5 +37,57 @@ describe("SyncFlashStorageHandler (Logic Test)", () => {
     if (!result.success) {
       expect(result.error.code).toBe("INVALID_PAYLOAD");
     }
+  });
+
+  it("returns STORAGE_UNAVAILABLE when localStorage.setItem encounters quota errors during save", async () => {
+    const setItemSpy = vi
+      .spyOn(Storage.prototype, "setItem")
+      .mockImplementation(() => {
+        throw new DOMException(
+          "The quota has been exceeded.",
+          "QuotaExceededError"
+        );
+      });
+
+    const result = await handler.execute({
+      action: "save",
+      variables: [
+        { id: 1, name: "quota_test.fit", sizeKb: 50, allocatedAt: Date.now() },
+      ],
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.code).toBe("STORAGE_UNAVAILABLE");
+      expect(result.error.message).toContain("quota");
+      expect(result.error.suggestion).toBe(
+        "Check localStorage availability and quota limits"
+      );
+    }
+
+    setItemSpy.mockRestore();
+  });
+
+  it("returns STORAGE_UNAVAILABLE when localStorage.setItem encounters quota errors during clear", async () => {
+    const setItemSpy = vi
+      .spyOn(Storage.prototype, "setItem")
+      .mockImplementation(() => {
+        throw new DOMException(
+          "The quota has been exceeded.",
+          "QuotaExceededError"
+        );
+      });
+
+    const result = await handler.execute({ action: "clear" });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.code).toBe("STORAGE_UNAVAILABLE");
+      expect(result.error.suggestion).toBe(
+        "Check localStorage availability and quota limits"
+      );
+    }
+
+    setItemSpy.mockRestore();
   });
 });

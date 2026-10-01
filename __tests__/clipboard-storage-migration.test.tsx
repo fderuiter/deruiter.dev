@@ -193,11 +193,14 @@ describe("Garmin flash storage (#1514)", () => {
   it.each([
     ["throws", () => new ThrowingStorage()],
     ["is missing", () => undefined],
-  ])("falls back to empty flash when storage %s", (_label, make) => {
-    installStorage(make());
-    expect(() => savePersistedFlashStorage(vars)).not.toThrow();
-    expect(loadPersistedFlashStorage()).toEqual([]);
-  });
+  ])(
+    "propagates error when saving and falls back to empty flash when storage %s",
+    (_label, make) => {
+      installStorage(make());
+      expect(() => savePersistedFlashStorage(vars)).toThrow();
+      expect(loadPersistedFlashStorage()).toEqual([]);
+    }
+  );
 
   it("ignores a corrupt value", () => {
     window.localStorage.setItem(FLASH_STORAGE_KEY, "{not json");

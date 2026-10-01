@@ -578,16 +578,16 @@ export const MultiPlanarSliceViewer: React.FC<MultiPlanarSliceViewerProps> = ({
             </div>
             <div className="flex-1 flex items-center justify-center relative overflow-hidden rounded-lg bg-black">
               {/* Anatomical Compass Badges */}
-              <span className="absolute top-1 left-1/2 -translate-x-1/2 text-[10px] font-mono font-bold text-zinc-500 bg-zinc-950/80 px-1 rounded pointer-events-none z-10">
+              <span className="absolute top-1 left-1/2 -translate-x-1/2 text-[10px] font-mono font-bold text-zinc-400 bg-zinc-950/80 px-1 rounded pointer-events-none z-10">
                 S
               </span>
-              <span className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[10px] font-mono font-bold text-zinc-500 bg-zinc-950/80 px-1 rounded pointer-events-none z-10">
+              <span className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[10px] font-mono font-bold text-zinc-400 bg-zinc-950/80 px-1 rounded pointer-events-none z-10">
                 I
               </span>
-              <span className="absolute left-1 top-1/2 -translate-y-1/2 text-[10px] font-mono font-bold text-zinc-500 bg-zinc-950/80 px-1 rounded pointer-events-none z-10">
+              <span className="absolute left-1 top-1/2 -translate-y-1/2 text-[10px] font-mono font-bold text-zinc-400 bg-zinc-950/80 px-1 rounded pointer-events-none z-10">
                 R
               </span>
-              <span className="absolute right-1 top-1/2 -translate-y-1/2 text-[10px] font-mono font-bold text-zinc-500 bg-zinc-950/80 px-1 rounded pointer-events-none z-10">
+              <span className="absolute right-1 top-1/2 -translate-y-1/2 text-[10px] font-mono font-bold text-zinc-400 bg-zinc-950/80 px-1 rounded pointer-events-none z-10">
                 L
               </span>
               <canvas
@@ -632,16 +632,16 @@ export const MultiPlanarSliceViewer: React.FC<MultiPlanarSliceViewerProps> = ({
             </div>
             <div className="flex-1 flex items-center justify-center relative overflow-hidden rounded-lg bg-black">
               {/* Anatomical Compass Badges */}
-              <span className="absolute top-1 left-1/2 -translate-x-1/2 text-[10px] font-mono font-bold text-zinc-500 bg-zinc-950/80 px-1 rounded pointer-events-none z-10">
+              <span className="absolute top-1 left-1/2 -translate-x-1/2 text-[10px] font-mono font-bold text-zinc-400 bg-zinc-950/80 px-1 rounded pointer-events-none z-10">
                 A
               </span>
-              <span className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[10px] font-mono font-bold text-zinc-500 bg-zinc-950/80 px-1 rounded pointer-events-none z-10">
+              <span className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[10px] font-mono font-bold text-zinc-400 bg-zinc-950/80 px-1 rounded pointer-events-none z-10">
                 P
               </span>
-              <span className="absolute left-1 top-1/2 -translate-y-1/2 text-[10px] font-mono font-bold text-zinc-500 bg-zinc-950/80 px-1 rounded pointer-events-none z-10">
+              <span className="absolute left-1 top-1/2 -translate-y-1/2 text-[10px] font-mono font-bold text-zinc-400 bg-zinc-950/80 px-1 rounded pointer-events-none z-10">
                 R
               </span>
-              <span className="absolute right-1 top-1/2 -translate-y-1/2 text-[10px] font-mono font-bold text-zinc-500 bg-zinc-950/80 px-1 rounded pointer-events-none z-10">
+              <span className="absolute right-1 top-1/2 -translate-y-1/2 text-[10px] font-mono font-bold text-zinc-400 bg-zinc-950/80 px-1 rounded pointer-events-none z-10">
                 L
               </span>
               <canvas
@@ -686,16 +686,16 @@ export const MultiPlanarSliceViewer: React.FC<MultiPlanarSliceViewerProps> = ({
             </div>
             <div className="flex-1 flex items-center justify-center relative overflow-hidden rounded-lg bg-black">
               {/* Anatomical Compass Badges */}
-              <span className="absolute top-1 left-1/2 -translate-x-1/2 text-[10px] font-mono font-bold text-zinc-500 bg-zinc-950/80 px-1 rounded pointer-events-none z-10">
+              <span className="absolute top-1 left-1/2 -translate-x-1/2 text-[10px] font-mono font-bold text-zinc-400 bg-zinc-950/80 px-1 rounded pointer-events-none z-10">
                 S
               </span>
-              <span className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[10px] font-mono font-bold text-zinc-500 bg-zinc-950/80 px-1 rounded pointer-events-none z-10">
+              <span className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[10px] font-mono font-bold text-zinc-400 bg-zinc-950/80 px-1 rounded pointer-events-none z-10">
                 I
               </span>
-              <span className="absolute left-1 top-1/2 -translate-y-1/2 text-[10px] font-mono font-bold text-zinc-500 bg-zinc-950/80 px-1 rounded pointer-events-none z-10">
+              <span className="absolute left-1 top-1/2 -translate-y-1/2 text-[10px] font-mono font-bold text-zinc-400 bg-zinc-950/80 px-1 rounded pointer-events-none z-10">
                 A
               </span>
-              <span className="absolute right-1 top-1/2 -translate-y-1/2 text-[10px] font-mono font-bold text-zinc-500 bg-zinc-950/80 px-1 rounded pointer-events-none z-10">
+              <span className="absolute right-1 top-1/2 -translate-y-1/2 text-[10px] font-mono font-bold text-zinc-400 bg-zinc-950/80 px-1 rounded pointer-events-none z-10">
                 P
               </span>
               <canvas

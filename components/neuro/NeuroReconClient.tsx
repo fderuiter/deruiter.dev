@@ -89,7 +89,7 @@ const Brain3DViewerSkeleton: React.FC = () => {
       </div>
 
       {/* Skeleton Footer */}
-      <div className="flex items-center justify-between text-xs font-mono text-zinc-500 bg-zinc-900/40 backdrop-blur-md px-3 py-1.5 rounded-xl border border-zinc-800/60 w-full mt-auto">
+      <div className="flex items-center justify-between text-xs font-mono text-zinc-400 bg-zinc-900/40 backdrop-blur-md px-3 py-1.5 rounded-xl border border-zinc-800/60 w-full mt-auto">
         <span>PREPARING T1 MESH BUFFER</span>
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-brand-cyan/30 animate-pulse" />

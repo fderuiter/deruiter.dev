@@ -133,26 +133,26 @@ export const ROIAnalyticsPanel: React.FC<ROIAnalyticsPanelProps> = ({
           {histogram ? (
             <div className="grid grid-cols-3 gap-2 text-[11px] pt-1">
               <div className="bg-zinc-950 p-2 rounded-lg border border-zinc-800/60">
-                <div className="text-zinc-500 text-[9px]">MEAN ± STD</div>
+                <div className="text-zinc-400 text-[9px]">MEAN ± STD</div>
                 <div className="font-bold text-white">
                   {histogram.mean} ± {histogram.stdDev}
                 </div>
               </div>
               <div className="bg-zinc-950 p-2 rounded-lg border border-zinc-800/60">
-                <div className="text-zinc-500 text-[9px]">MEDIAN INT</div>
+                <div className="text-zinc-400 text-[9px]">MEDIAN INT</div>
                 <div className="font-bold text-brand-cyan">
                   {histogram.median}
                 </div>
               </div>
               <div className="bg-zinc-950 p-2 rounded-lg border border-zinc-800/60">
-                <div className="text-zinc-500 text-[9px]">MIN / MAX</div>
+                <div className="text-zinc-400 text-[9px]">MIN / MAX</div>
                 <div className="font-bold text-amber-400">
                   {histogram.min} / {histogram.max}
                 </div>
               </div>
             </div>
           ) : (
-            <div className="text-center text-zinc-500 text-xs py-3">
+            <div className="text-center text-zinc-400 text-xs py-3">
               Calculating 256-bin signal histogram...
             </div>
           )}
@@ -179,13 +179,13 @@ export const ROIAnalyticsPanel: React.FC<ROIAnalyticsPanelProps> = ({
 
               <div className="grid grid-cols-2 gap-2 text-[11px]">
                 <div className="bg-zinc-950 p-2 rounded-lg border border-zinc-800/60">
-                  <div className="text-zinc-500 text-[9px]">ROI VOLUME</div>
+                  <div className="text-zinc-400 text-[9px]">ROI VOLUME</div>
                   <div className="font-bold text-emerald-400">
                     {formatNumber(roiStats.volumeMm3)} mm³
                   </div>
                 </div>
                 <div className="bg-zinc-950 p-2 rounded-lg border border-zinc-800/60">
-                  <div className="text-zinc-500 text-[9px]">VOXEL COUNT</div>
+                  <div className="text-zinc-400 text-[9px]">VOXEL COUNT</div>
                   <div className="font-bold text-white">
                     {formatNumber(roiStats.voxelCount)} voxels
                   </div>
@@ -193,15 +193,15 @@ export const ROIAnalyticsPanel: React.FC<ROIAnalyticsPanelProps> = ({
               </div>
 
               <div className="bg-zinc-950 p-2 rounded-lg border border-zinc-800/60 text-[11px] flex justify-between">
-                <span className="text-zinc-500">ROI MEAN INTENSITY:</span>
+                <span className="text-zinc-400">ROI MEAN INTENSITY:</span>
                 <span className="font-bold text-brand-cyan">
                   {roiStats.meanIntensity} ± {roiStats.stdDevIntensity}
                 </span>
               </div>
             </div>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center p-4 text-center text-zinc-500 gap-1.5">
-              <IconMapPin className="w-6 h-6 text-zinc-600" />
+            <div className="flex-1 flex flex-col items-center justify-center p-4 text-center text-zinc-400 gap-1.5">
+              <IconMapPin className="w-6 h-6 text-zinc-400" />
               <p className="text-xs font-bold text-zinc-400">
                 No Seed Voxel Selected
               </p>
@@ -244,6 +244,7 @@ export const ROIAnalyticsPanel: React.FC<ROIAnalyticsPanelProps> = ({
 
                     {onJumpToCoord && (
                       <button
+                        type="button"
                         onClick={() => onJumpToCoord(alert.voxelCoord)}
                         className="px-2 py-0.5 rounded bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-brand-cyan hover:text-white text-[10px] font-bold transition-all flex items-center gap-1 shrink-0"
                       >

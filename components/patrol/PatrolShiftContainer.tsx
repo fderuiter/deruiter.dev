@@ -10,6 +10,7 @@ import {
   type PatrolShiftEngine,
 } from "@/lib/patrol";
 import { useAnnouncer } from "@/hooks/useAnnouncer";
+import { usePatrolTriageHotkeys } from "@/hooks/usePatrolTriageHotkeys";
 import { FieldManualButton } from "@/components/FieldManualButton";
 import { playPatrolCue, type PatrolSoundName } from "@/lib/game-audio";
 import { IconShieldCheck, IconClock, IconRefresh } from "@tabler/icons-react";
@@ -159,6 +160,41 @@ export const PatrolShiftContainer: React.FC<PatrolShiftContainerProps> = ({
     activeEngine.dispatch({ type: "RESET" });
   };
 
+  usePatrolTriageHotkeys({
+    phase: shiftState.phase,
+    onAdvancePhase: () => {
+      if (shiftState.phase === "INTRO") {
+        activeEngine.dispatch({ type: "START_SHIFT" });
+      } else if (
+        shiftState.phase === "BRIEFING" ||
+        shiftState.phase === "briefing"
+      ) {
+        activeEngine.dispatch({ type: "COMPLETE_BRIEFING" });
+      } else if (shiftState.phase === "HANDOFF") {
+        activeEngine.dispatch({ type: "COMPLETE_HANDOFF" });
+      } else if (
+        shiftState.phase === "DEBRIEF" ||
+        shiftState.phase === "debrief"
+      ) {
+        activeEngine.dispatch({ type: "FINISH_DEBRIEF" });
+      } else if (
+        shiftState.phase === "SHIFT_COMPLETE" ||
+        shiftState.phase === "completed"
+      ) {
+        handleReset();
+      }
+    },
+    enabled:
+      shiftState.phase === "INTRO" ||
+      shiftState.phase === "BRIEFING" ||
+      shiftState.phase === "briefing" ||
+      shiftState.phase === "HANDOFF" ||
+      shiftState.phase === "DEBRIEF" ||
+      shiftState.phase === "debrief" ||
+      shiftState.phase === "SHIFT_COMPLETE" ||
+      shiftState.phase === "completed",
+  });
+
   return (
     <div
       className="w-full bg-zinc-950 rounded-3xl border border-zinc-800/80 p-4 sm:p-6 shadow-2xl flex flex-col gap-6"
@@ -188,6 +224,20 @@ export const PatrolShiftContainer: React.FC<PatrolShiftContainerProps> = ({
 
         {/* Status Pills */}
         <div className="flex items-center gap-2.5 text-xs font-mono">
+          <div
+            data-testid="triage-hotkeys-pill"
+            className="hidden lg:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-[11px] font-mono text-zinc-400"
+          >
+            <span className="text-brand-cyan font-bold">[j/k]</span>
+            <span>Nav</span>
+            <span className="text-zinc-600">&bull;</span>
+            <span className="text-brand-cyan font-bold">[1-9]</span>
+            <span>Select</span>
+            <span className="text-zinc-600">&bull;</span>
+            <span className="text-brand-cyan font-bold">[Enter]</span>
+            <span>Action</span>
+          </div>
+
           <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-300">
             <IconClock className="w-4 h-4 text-brand-cyan" />
             <span>Shift: {shiftState.timeElapsedMinutes} min</span>

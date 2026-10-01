@@ -2,6 +2,7 @@
 
 import React from "react";
 import type { PatrolScenario } from "@/lib/patrol";
+import { usePatrolTriageHotkeys } from "@/hooks/usePatrolTriageHotkeys";
 import {
   IconRadio,
   IconAlertTriangle,
@@ -14,11 +15,15 @@ import {
 /**
  * Props for the DispatchOverlay component.
  */
-interface DispatchOverlayProps {
+export interface DispatchOverlayProps {
   /** The active scenario being dispatched, or null if unselected. */
   scenario: PatrolScenario | null;
   /** Callback triggered when the patroller acknowledges dispatch and initiates response. */
   onAcknowledge: () => void;
+  /** Focused button index override from parent container. */
+  focusedIndex?: number;
+  /** Whether hotkey listeners are active. */
+  isHotkeyActive?: boolean;
 }
 
 /**
@@ -28,10 +33,25 @@ interface DispatchOverlayProps {
 export const DispatchOverlay: React.FC<DispatchOverlayProps> = ({
   scenario,
   onAcknowledge,
+  focusedIndex: externalFocusedIndex,
+  isHotkeyActive = true,
 }) => {
   const dispatchPrompt =
     scenario?.dispatchPrompt ??
     "Patrol 4, Base Dispatch. Respond to skier down on Dan's Dive, East Slopes. Guest reports painful lower extremity injury, unable to bear weight. Respond 10-2 with toboggan.";
+
+  const { focusedIndex: internalFocusedIndex, getHotkeyBadge } =
+    usePatrolTriageHotkeys({
+      itemsCount: 1,
+      onSelectItem: () => onAcknowledge(),
+      onAdvancePhase: () => onAcknowledge(),
+      phase: scenario?.id ?? "dispatch",
+      enabled: isHotkeyActive,
+    });
+
+  const activeFocusedIndex = externalFocusedIndex ?? internalFocusedIndex;
+  const isFocused = activeFocusedIndex === 0;
+  const badge = getHotkeyBadge(0);
 
   return (
     <div
@@ -141,10 +161,24 @@ export const DispatchOverlay: React.FC<DispatchOverlayProps> = ({
         <button
           type="button"
           onClick={onAcknowledge}
-          className="min-h-[44px] min-w-[44px] px-6 py-2.5 rounded-xl bg-brand-cyan hover:bg-brand-cyan/90 active:scale-[0.98] text-zinc-950 font-mono text-xs font-bold transition-all cursor-pointer inline-flex items-center justify-center gap-2 shadow-lg shadow-brand-cyan/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+          data-testid="dispatch-acknowledge-btn"
+          className={`min-h-[44px] min-w-[44px] px-6 py-2.5 rounded-xl bg-brand-cyan hover:bg-brand-cyan/90 active:scale-[0.98] text-zinc-950 font-mono text-xs font-bold transition-all cursor-pointer inline-flex items-center justify-center gap-2 shadow-lg shadow-brand-cyan/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white ${
+            isFocused ? "ring-2 ring-white scale-[1.02]" : ""
+          }`}
         >
+          {badge && (
+            <span
+              data-testid="dispatch-hotkey-badge"
+              className="px-1.5 py-0.5 rounded bg-zinc-950 text-brand-cyan text-[10px] font-mono font-bold border border-brand-cyan/40"
+            >
+              {badge}
+            </span>
+          )}
           <IconCheck className="w-4 h-4" />
           <span>Acknowledge &amp; Respond</span>
+          <span className="px-1.5 py-0.5 rounded bg-zinc-950/40 text-zinc-800 text-[10px] font-mono font-bold">
+            [Enter]
+          </span>
         </button>
       </div>
     </div>

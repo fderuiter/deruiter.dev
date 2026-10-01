@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import type { DialogueMoment, DialogueOption, PatrolEvent } from "@/lib/patrol";
 import { createDialogueChoiceEvent, findDialogueOption } from "@/lib/patrol";
+import { usePatrolTriageHotkeys } from "@/hooks/usePatrolTriageHotkeys";
 import {
   IconMessageCircle2,
   IconCheck,
@@ -12,7 +13,7 @@ import {
 /**
  * Props for the DialogueChoice component.
  */
-interface DialogueChoiceProps {
+export interface DialogueChoiceProps {
   /** ID of the scenario this dialogue moment belongs to (recorded on the logged event). */
   scenarioId: string;
   /** The dialogue moment to present. */
@@ -23,6 +24,10 @@ interface DialogueChoiceProps {
   resolvedOptionId?: string;
   /** Optional CSS class overrides. */
   className?: string;
+  /** Focused option index override from parent container. */
+  focusedIndex?: number;
+  /** Whether hotkey listeners are active for this dialogue choice. */
+  isHotkeyActive?: boolean;
 }
 
 /**
@@ -44,6 +49,8 @@ export const DialogueChoice: React.FC<DialogueChoiceProps> = ({
   onChoose,
   resolvedOptionId,
   className = "",
+  focusedIndex: externalFocusedIndex,
+  isHotkeyActive = true,
 }) => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const effectiveSelectedId = resolvedOptionId ?? selectedId;
@@ -58,6 +65,19 @@ export const DialogueChoice: React.FC<DialogueChoiceProps> = ({
     const event = createDialogueChoiceEvent(scenarioId, moment, option);
     onChoose?.(event, option);
   };
+
+  const { focusedIndex: internalFocusedIndex, getHotkeyBadge } =
+    usePatrolTriageHotkeys({
+      items: moment.options,
+      isItemSelectable: () => !effectiveSelectedId,
+      onSelectItem: (_index, option) => {
+        if (option) handleSelect(option);
+      },
+      phase: moment.id,
+      enabled: isHotkeyActive && !effectiveSelectedId,
+    });
+
+  const activeFocusedIndex = externalFocusedIndex ?? internalFocusedIndex;
 
   return (
     <div
@@ -86,9 +106,13 @@ export const DialogueChoice: React.FC<DialogueChoiceProps> = ({
       </div>
 
       <div className="flex flex-col gap-2">
-        {moment.options.map((option) => {
+        {moment.options.map((option, optIdx) => {
           const isSelected = effectiveSelectedId === option.id;
           const isDisabled = Boolean(effectiveSelectedId) && !isSelected;
+          const isFocused =
+            activeFocusedIndex === optIdx && !effectiveSelectedId;
+          const badge = getHotkeyBadge(optIdx);
+
           return (
             <button
               key={option.id}
@@ -97,20 +121,24 @@ export const DialogueChoice: React.FC<DialogueChoiceProps> = ({
               disabled={isDisabled}
               aria-pressed={isSelected}
               onClick={() => handleSelect(option)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault();
-                  handleSelect(option);
-                }
-              }}
               className={`min-h-[44px] min-w-[44px] text-left px-3.5 py-2.5 rounded-xl border transition-all active:scale-[0.98] flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-cyan ${
                 isSelected
                   ? "bg-brand-cyan/10 border-brand-cyan/50 text-white"
-                  : isDisabled
-                    ? "bg-zinc-950/40 border-zinc-800/40 text-zinc-400 cursor-not-allowed opacity-60"
-                    : "bg-zinc-900 border-zinc-800 hover:border-zinc-700 text-zinc-200 hover:text-white cursor-pointer"
+                  : isFocused
+                    ? "ring-2 ring-brand-cyan border-brand-cyan bg-brand-cyan/10 shadow-lg shadow-brand-cyan/10"
+                    : isDisabled
+                      ? "bg-zinc-950/40 border-zinc-800/40 text-zinc-400 cursor-not-allowed opacity-60"
+                      : "bg-zinc-900 border-zinc-800 hover:border-zinc-700 text-zinc-200 hover:text-white cursor-pointer"
               }`}
             >
+              {badge && !effectiveSelectedId && (
+                <span
+                  data-testid={`dialogue-hotkey-badge-${option.id}`}
+                  className="px-1.5 py-0.5 rounded bg-zinc-800 text-brand-cyan text-[10px] font-mono font-bold border border-brand-cyan/30 shrink-0"
+                >
+                  {badge}
+                </span>
+              )}
               <span className="text-xs font-sans leading-snug flex-1">
                 {option.text}
               </span>

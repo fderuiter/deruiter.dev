@@ -29,6 +29,7 @@
 - [hooks/useMasonryLayout](hooks/useMasonryLayout/README.md)
 - [hooks/useMediaQuery](hooks/useMediaQuery/README.md)
 - [hooks/useOfflineQueue](hooks/useOfflineQueue/README.md)
+- [hooks/usePatrolTriageHotkeys](hooks/usePatrolTriageHotkeys/README.md)
 - [hooks/usePersistentState](hooks/usePersistentState/README.md)
 - [hooks/usePretextLayout](hooks/usePretextLayout/README.md)
 - [hooks/useResizeObserver](hooks/useResizeObserver/README.md)

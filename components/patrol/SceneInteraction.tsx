@@ -11,6 +11,7 @@ import type {
   PatrolEvent,
 } from "@/lib/patrol";
 import { getUnlockedDialogueMoments } from "@/lib/patrol";
+import { usePatrolTriageHotkeys } from "@/hooks/usePatrolTriageHotkeys";
 import {
   IconMapPin,
   IconClock,
@@ -61,6 +62,10 @@ export interface SceneInteractionProps {
   onAssessSceneSafety?: () => void;
   /** Optional callback when a dialogue moment is resolved, receiving the rich PatrolEvent to log. */
   onDialogueChoice?: (event: PatrolEvent) => void;
+  /** Focused action index override from parent container. */
+  focusedIndex?: number;
+  /** Whether keyboard hotkeys are active. */
+  isHotkeyActive?: boolean;
 }
 
 /**
@@ -88,6 +93,8 @@ export const SceneInteraction: React.FC<SceneInteractionProps> = ({
   onCheckVitals,
   onAssessSceneSafety,
   onDialogueChoice,
+  focusedIndex: externalFocusedIndex,
+  isHotkeyActive = true,
 }) => {
   const executedIds = useMemo(
     () => new Set(actionHistory.map((a) => a.id)),
@@ -95,6 +102,31 @@ export const SceneInteraction: React.FC<SceneInteractionProps> = ({
   );
 
   const actions = useMemo(() => scenario?.actions ?? [], [scenario?.actions]);
+
+  const { focusedIndex: internalFocusedIndex, getHotkeyBadge } =
+    usePatrolTriageHotkeys({
+      items: actions,
+      isItemSelectable: (action) => {
+        if (!action) return false;
+        const hasExecuted = executedIds.has(action.id);
+        const preconditions =
+          action.preconditions ?? action.prerequisites ?? [];
+        const arePreconditionsMet = preconditions.every((pid) =>
+          executedIds.has(pid)
+        );
+        return !hasExecuted && arePreconditionsMet;
+      },
+      onSelectItem: (_idx, action) => {
+        if (action) {
+          onExecuteAction(action);
+        }
+      },
+      onAdvancePhase: onPrepareTransport,
+      phase: scenario?.id,
+      enabled: isHotkeyActive,
+    });
+
+  const activeFocusedIndex = externalFocusedIndex ?? internalFocusedIndex;
 
   const unlockedDialogueMoments = useMemo(
     () => getUnlockedDialogueMoments(scenario?.dialogueMoments, actionHistory),
@@ -281,7 +313,7 @@ export const SceneInteraction: React.FC<SceneInteractionProps> = ({
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {actions.map((action) => {
+            {actions.map((action, actionIdx) => {
               const hasExecuted = executedIds.has(action.id);
               const preconditions =
                 action.preconditions ?? action.prerequisites ?? [];
@@ -289,6 +321,9 @@ export const SceneInteraction: React.FC<SceneInteractionProps> = ({
                 executedIds.has(pid)
               );
               const isLocked = !hasExecuted && !arePreconditionsMet;
+              const isFocused =
+                activeFocusedIndex === actionIdx && !hasExecuted && !isLocked;
+              const hotkeyBadge = getHotkeyBadge(actionIdx);
 
               // Unmet precondition labels
               const unmetLabels = preconditions
@@ -308,18 +343,30 @@ export const SceneInteraction: React.FC<SceneInteractionProps> = ({
                     }
                   }}
                   className={`min-h-[44px] min-w-[44px] text-left p-3.5 rounded-xl border transition-all flex flex-col justify-between gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-cyan ${
-                    hasExecuted
-                      ? "bg-brand-cyan/10 border-brand-cyan/40 text-white shadow-sm cursor-default"
-                      : isLocked
-                        ? "bg-zinc-950/40 border-zinc-800/40 text-zinc-400 cursor-not-allowed opacity-60"
-                        : "bg-zinc-950 border-zinc-800 hover:border-zinc-700 text-zinc-200 hover:text-white cursor-pointer hover:shadow-lg hover:shadow-brand-cyan/5"
+                    isFocused
+                      ? "ring-2 ring-brand-cyan border-brand-cyan bg-brand-cyan/10 shadow-lg shadow-brand-cyan/10 scale-[1.01]"
+                      : hasExecuted
+                        ? "bg-brand-cyan/10 border-brand-cyan/40 text-white shadow-sm cursor-default"
+                        : isLocked
+                          ? "bg-zinc-950/40 border-zinc-800/40 text-zinc-400 cursor-not-allowed opacity-60"
+                          : "bg-zinc-950 border-zinc-800 hover:border-zinc-700 text-zinc-200 hover:text-white cursor-pointer hover:shadow-lg hover:shadow-brand-cyan/5"
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2 min-w-0">
                     <div className="space-y-0.5 min-w-0">
-                      <span className="text-xs font-mono font-bold block">
-                        {action.label}
-                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-mono font-bold block">
+                          {action.label}
+                        </span>
+                        {hotkeyBadge && !hasExecuted && !isLocked && (
+                          <span
+                            data-testid={`action-hotkey-badge-${action.id}`}
+                            className="px-1.5 py-0.5 rounded bg-zinc-800 text-brand-cyan text-[10px] font-mono font-bold border border-brand-cyan/30 shrink-0"
+                          >
+                            {hotkeyBadge}
+                          </span>
+                        )}
+                      </div>
                       {action.category && (
                         <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400">
                           [{action.category}]

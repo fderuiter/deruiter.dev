@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useCallback, useMemo } from "react";
 import { useAnimationFrame } from "@/hooks/useAnimationFrame";
+import { usePatrolTriageHotkeys } from "@/hooks/usePatrolTriageHotkeys";
 import {
   IconRadio,
   IconCheck,
@@ -132,6 +133,14 @@ export const MountainMap: React.FC<MountainMapProps> = ({
   const [isResponsibilityModalOpen, setIsResponsibilityModalOpen] =
     useState<boolean>(false);
   const [isMinimapExpanded, setIsMinimapExpanded] = useState<boolean>(true);
+
+  usePatrolTriageHotkeys({
+    itemsCount: 1,
+    onSelectItem: () => onAwaitDispatch(),
+    onAdvancePhase: () => onAwaitDispatch(),
+    phase: "mountain_map",
+    enabled: !activeAmbientEvent && !isResponsibilityModalOpen,
+  });
 
   // Inspector & Simulation State
   const [selectedTrail, setSelectedTrail] = useState<WelchTrail | null>(null);
@@ -2142,8 +2151,12 @@ export const MountainMap: React.FC<MountainMapProps> = ({
           <button
             type="button"
             onClick={onAwaitDispatch}
+            data-testid="map-await-dispatch-btn"
             className="w-full sm:w-auto min-h-[44px] min-w-[44px] px-6 py-2.5 rounded-xl bg-brand-cyan hover:bg-brand-cyan/90 active:scale-[0.98] text-zinc-950 font-mono text-xs font-bold transition-all cursor-pointer inline-flex items-center justify-center gap-2 shadow-lg shadow-brand-cyan/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
           >
+            <span className="px-1.5 py-0.5 rounded bg-zinc-950 text-brand-cyan text-[10px] font-mono font-bold border border-brand-cyan/40">
+              [1]
+            </span>
             <IconRadio className="w-4 h-4" />
             <span>Standby on Hill / Await Dispatch</span>
           </button>

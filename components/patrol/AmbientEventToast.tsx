@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import type { AmbientEvent } from "@/lib/patrol";
+import { usePatrolTriageHotkeys } from "@/hooks/usePatrolTriageHotkeys";
 import {
   IconRadio,
   IconMapPin,
@@ -47,6 +48,16 @@ export const AmbientEventToast: React.FC<AmbientEventToastProps> = ({
     setSelectedOptionId(optionId);
     onResolveOption(optionId);
   };
+
+  const { focusedIndex, getHotkeyBadge } = usePatrolTriageHotkeys({
+    items: event.options,
+    isItemSelectable: () => !selectedOptionId,
+    onSelectItem: (_index, option) => {
+      if (option) handleSelectOption(option.id);
+    },
+    phase: event.id,
+    enabled: !selectedOptionId,
+  });
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Escape") {
@@ -114,8 +125,11 @@ export const AmbientEventToast: React.FC<AmbientEventToastProps> = ({
         </span>
 
         <div className="flex flex-col gap-2">
-          {event.options.map((option) => {
+          {event.options.map((option, optIdx) => {
             const isSelected = selectedOptionId === option.id;
+            const isFocused = focusedIndex === optIdx && !selectedOptionId;
+            const badge = getHotkeyBadge(optIdx);
+
             return (
               <button
                 key={option.id}
@@ -125,13 +139,25 @@ export const AmbientEventToast: React.FC<AmbientEventToastProps> = ({
                 className={`min-h-[44px] min-w-[44px] text-left px-3.5 py-2.5 rounded-xl border transition-all active:scale-[0.98] flex flex-col gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-cyan ${
                   isSelected
                     ? "bg-brand-cyan/15 border-brand-cyan/50 text-white"
-                    : "bg-zinc-900/90 border-zinc-800 hover:border-zinc-700 hover:bg-zinc-850 text-zinc-200 hover:text-white cursor-pointer"
+                    : isFocused
+                      ? "ring-2 ring-brand-cyan border-brand-cyan bg-brand-cyan/10 shadow-lg shadow-brand-cyan/10"
+                      : "bg-zinc-900/90 border-zinc-800 hover:border-zinc-700 hover:bg-zinc-850 text-zinc-200 hover:text-white cursor-pointer"
                 }`}
               >
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-mono font-bold leading-tight flex-1">
-                    {option.label}
-                  </span>
+                  <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                    {badge && !selectedOptionId && (
+                      <span
+                        data-testid={`ambient-hotkey-badge-${option.id}`}
+                        className="px-1.5 py-0.5 rounded bg-zinc-800 text-brand-cyan text-[10px] font-mono font-bold border border-brand-cyan/30 shrink-0"
+                      >
+                        {badge}
+                      </span>
+                    )}
+                    <span className="text-xs font-mono font-bold leading-tight truncate">
+                      {option.label}
+                    </span>
+                  </div>
                   {isSelected && (
                     <IconCheck className="w-3.5 h-3.5 text-brand-cyan shrink-0" />
                   )}

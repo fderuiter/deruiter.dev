@@ -293,8 +293,82 @@ describe("Compound Tabs Primitive System Suite", () => {
     });
 
     expect(trigB.getAttribute("aria-selected")).toBe("true");
-    expect(container.querySelector('[role="tabpanel"]')?.textContent).toBe(
-      "Panel B"
+    expect(
+      Array.from(container.querySelectorAll('[role="tabpanel"]')).find(
+        (p) => !p.hasAttribute("hidden")
+      )?.textContent
+    ).toBe("Panel B");
+  });
+
+  it("renders tabpanel DOM nodes for inactive TabsContent to satisfy aria-controls DOM presence", async () => {
+    await act(async () => {
+      root = createRoot(container);
+      root.render(
+        <Tabs defaultValue="tab1" id="dom-presence">
+          <TabsList aria-label="Presence Test">
+            <TabsTrigger value="tab1">Tab 1</TabsTrigger>
+            <TabsTrigger value="tab2">Tab 2</TabsTrigger>
+          </TabsList>
+          <TabsContent value="tab1">Content 1</TabsContent>
+          <TabsContent value="tab2">Content 2</TabsContent>
+        </Tabs>
+      );
+    });
+
+    const panels = Array.from(
+      container.querySelectorAll<HTMLDivElement>('[role="tabpanel"]')
     );
+    expect(panels).toHaveLength(2);
+
+    const [panel1, panel2] = panels;
+    expect(panel1.id).toBe("dom-presence-content-tab1");
+    expect(panel1.hasAttribute("hidden")).toBe(false);
+    expect(panel1.style.display).toBe("");
+
+    expect(panel2.id).toBe("dom-presence-content-tab2");
+    expect(panel2.hasAttribute("hidden")).toBe(true);
+    expect(panel2.style.display).toBe("none");
+
+    // Both triggers should reference existing panel elements in the DOM
+    expect(document.getElementById("dom-presence-content-tab1")).not.toBeNull();
+    expect(document.getElementById("dom-presence-content-tab2")).not.toBeNull();
+  });
+
+  it("omits aria-controls on TabsTrigger when no matching TabsContent panel is registered", async () => {
+    await act(async () => {
+      root = createRoot(container);
+      root.render(
+        <Tabs defaultValue="mode1">
+          <TabsList aria-label="Mode Switcher">
+            <TabsTrigger value="mode1">Mode 1</TabsTrigger>
+            <TabsTrigger value="mode2">Mode 2</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      );
+    });
+
+    const triggers = Array.from(
+      container.querySelectorAll<HTMLButtonElement>('[role="tab"]')
+    );
+    expect(triggers[0].getAttribute("aria-controls")).toBeNull();
+    expect(triggers[1].getAttribute("aria-controls")).toBeNull();
+  });
+
+  it("allows explicit aria-controls prop override on TabsTrigger", async () => {
+    await act(async () => {
+      root = createRoot(container);
+      root.render(
+        <Tabs defaultValue="custom">
+          <TabsList aria-label="Custom Controls">
+            <TabsTrigger value="custom" aria-controls="external-panel">
+              Custom Trigger
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      );
+    });
+
+    const trigger = container.querySelector<HTMLButtonElement>('[role="tab"]');
+    expect(trigger?.getAttribute("aria-controls")).toBe("external-panel");
   });
 });

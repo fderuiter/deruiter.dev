@@ -9,6 +9,7 @@ import React, {
   useRef,
   useImperativeHandle,
   forwardRef,
+  useEffect,
 } from "react";
 
 export interface TabsContextValue {
@@ -18,6 +19,8 @@ export interface TabsContextValue {
   baseId: string;
   getTriggerId: (value: string) => string;
   getContentId: (value: string) => string;
+  registerContent?: (value: string) => () => void;
+  isContentRegistered?: (value: string) => boolean;
 }
 
 const TabsContext = createContext<TabsContextValue | null>(null);
@@ -61,6 +64,9 @@ export const Tabs = forwardRef<HTMLDivElement, TabsProps>(
     const [uncontrolledValue, setUncontrolledValue] = useState<string>(
       defaultValue || ""
     );
+    const [registeredContents, setRegisteredContents] = useState<
+      Record<string, boolean>
+    >({});
 
     const isControlled = controlledValue !== undefined;
     const value = isControlled ? controlledValue : uncontrolledValue;
@@ -73,6 +79,26 @@ export const Tabs = forwardRef<HTMLDivElement, TabsProps>(
         onValueChange?.(newValue);
       },
       [isControlled, onValueChange]
+    );
+
+    const registerContent = useCallback((val: string) => {
+      setRegisteredContents((prev) => {
+        if (prev[val]) return prev;
+        return { ...prev, [val]: true };
+      });
+      return () => {
+        setRegisteredContents((prev) => {
+          if (!prev[val]) return prev;
+          const copy = { ...prev };
+          delete copy[val];
+          return copy;
+        });
+      };
+    }, []);
+
+    const isContentRegistered = useCallback(
+      (val: string) => Boolean(registeredContents[val]),
+      [registeredContents]
     );
 
     const getTriggerId = useCallback(
@@ -92,6 +118,8 @@ export const Tabs = forwardRef<HTMLDivElement, TabsProps>(
       baseId,
       getTriggerId,
       getContentId,
+      registerContent,
+      isContentRegistered,
     };
 
     return (
@@ -219,11 +247,22 @@ export const TabsTrigger = forwardRef<HTMLButtonElement, TabsTriggerProps>(
       onValueChange,
       getTriggerId,
       getContentId,
+      isContentRegistered,
     } = useTabsContext();
 
     const isSelected = selectedValue === triggerValue;
     const triggerId = getTriggerId(triggerValue);
     const contentId = getContentId(triggerValue);
+    const hasContent = isContentRegistered
+      ? isContentRegistered(triggerValue)
+      : false;
+
+    const computedAriaControls =
+      props["aria-controls"] !== undefined
+        ? props["aria-controls"]
+        : hasContent
+          ? contentId
+          : undefined;
 
     const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
       onClick?.(event);
@@ -238,7 +277,7 @@ export const TabsTrigger = forwardRef<HTMLButtonElement, TabsTriggerProps>(
         type="button"
         role="tab"
         id={triggerId}
-        aria-controls={contentId}
+        aria-controls={computedAriaControls}
         aria-selected={isSelected}
         tabIndex={isSelected ? 0 : -1}
         disabled={disabled}
@@ -269,15 +308,18 @@ export const TabsContent = forwardRef<HTMLDivElement, TabsContentProps>(
       value: selectedValue,
       getTriggerId,
       getContentId,
+      registerContent,
     } = useTabsContext();
+
+    useEffect(() => {
+      if (registerContent) {
+        return registerContent(contentValue);
+      }
+    }, [registerContent, contentValue]);
 
     const isSelected = selectedValue === contentValue;
     const triggerId = getTriggerId(contentValue);
     const contentId = getContentId(contentValue);
-
-    if (!isSelected && !forceMount) {
-      return null;
-    }
 
     return (
       <div
@@ -287,10 +329,11 @@ export const TabsContent = forwardRef<HTMLDivElement, TabsContentProps>(
         aria-labelledby={triggerId}
         tabIndex={0}
         hidden={!isSelected}
+        style={!isSelected && !forceMount ? { display: "none" } : props.style}
         className={className}
         {...props}
       >
-        {children}
+        {isSelected || forceMount ? children : null}
       </div>
     );
   }

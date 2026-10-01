@@ -74,9 +74,21 @@ Re-exports [AstConditionSchema](universal-schema/variables/AstConditionSchema.md
 
 ***
 
+### AstDebugStep
+
+Re-exports [AstDebugStep](ast-debugger/interfaces/AstDebugStep.md)
+
+***
+
 ### AstOperator
 
 Re-exports [AstOperator](types/type-aliases/AstOperator.md)
+
+***
+
+### AstRuleDebugTrace
+
+Re-exports [AstRuleDebugTrace](ast-debugger/interfaces/AstRuleDebugTrace.md)
 
 ***
 
@@ -1148,6 +1160,12 @@ Re-exports [generateRDataStepForForm](export-r/functions/generateRDataStepForFor
 
 ***
 
+### generateRuleDebugTrace
+
+Re-exports [generateRuleDebugTrace](ast-debugger/functions/generateRuleDebugTrace.md)
+
+***
+
 ### generateSasProcFormat
 
 Re-exports [generateSasProcFormat](export-sas/functions/generateSasProcFormat.md)
@@ -1739,6 +1757,18 @@ Re-exports [runScenario](test-scenarios/functions/runScenario.md)
 ### runScenariosForForm
 
 Re-exports [runScenariosForForm](test-scenarios/functions/runScenariosForForm.md)
+
+***
+
+### SAMPLE\_SUBJECT\_PROFILES
+
+Re-exports [SAMPLE_SUBJECT_PROFILES](ast-debugger/variables/SAMPLE_SUBJECT_PROFILES.md)
+
+***
+
+### SampleSubjectProfile
+
+Re-exports [SampleSubjectProfile](ast-debugger/interfaces/SampleSubjectProfile.md)
 
 ***
 

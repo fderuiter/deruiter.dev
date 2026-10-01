@@ -87,6 +87,7 @@
 - [lib/content-sanitizer](lib/content-sanitizer/README.md)
 - [lib/content-sanitizer-lazy](lib/content-sanitizer-lazy/README.md)
 - [lib/crf](lib/crf/README.md)
+- [lib/crf/ast-debugger](lib/crf/ast-debugger/README.md)
 - [lib/crf/ast-evaluator](lib/crf/ast-evaluator/README.md)
 - [lib/crf/branding-defaults](lib/crf/branding-defaults/README.md)
 - [lib/crf/cdash-domain-templates](lib/crf/cdash-domain-templates/README.md)

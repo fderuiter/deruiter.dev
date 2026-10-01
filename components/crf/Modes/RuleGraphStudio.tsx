@@ -10,6 +10,7 @@ import {
   IconAlertTriangle,
   IconHierarchy,
 } from "@tabler/icons-react";
+import { AstStepDebugger } from "@/components/crf/Debugger/AstStepDebugger";
 
 interface RuleGraphStudioProps {
   study: StudyProtocol;
@@ -263,6 +264,15 @@ export const RuleGraphStudio: React.FC<RuleGraphStudioProps> = ({ study }) => {
                     <p className="text-[11px] text-zinc-400 font-sans mt-2.5 pt-2 border-t border-zinc-850">
                       Query Message: &quot;{rule.queryMessage}&quot;
                     </p>
+                  )}
+
+                  {isSelected && (
+                    <div
+                      className="mt-4 pt-4 border-t border-zinc-800"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <AstStepDebugger rule={rule} fields={allFields} />
+                    </div>
                   )}
                 </div>
               );

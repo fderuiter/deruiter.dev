@@ -10,6 +10,7 @@ export * from "./formula-linter";
 export * from "./formula-presets";
 export * from "./form-linter";
 export * from "./ast-evaluator";
+export * from "./ast-debugger";
 export * from "./conditional-logic";
 export * from "./form-test-harness";
 export * from "./test-scenarios";

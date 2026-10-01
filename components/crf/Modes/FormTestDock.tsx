@@ -10,6 +10,9 @@ import {
   IconCircleCheck,
   IconEyeOff,
   IconHelpCircle,
+  IconChevronDown,
+  IconChevronUp,
+  IconBug,
 } from "@tabler/icons-react";
 import type { CRFField, CRFForm, CodelistDefinition } from "@/lib/crf/types";
 import {
@@ -19,9 +22,11 @@ import {
   setScopedValue,
   getScopedValue,
   buildScopedKey,
+  SAMPLE_SUBJECT_PROFILES,
   type FormTestScope,
   type ConditionalFieldValues,
 } from "@/lib/crf";
+import { AstStepDebugger } from "@/components/crf/Debugger/AstStepDebugger";
 
 interface FormTestDockProps {
   isOpen: boolean;
@@ -83,6 +88,36 @@ export const FormTestDock: React.FC<FormTestDockProps> = ({
   const report = useMemo(
     () => (form ? runFormTest(form, values, scope) : null),
     [form, values, scope]
+  );
+
+  const [expandedRuleIds, setExpandedRuleIds] = React.useState<
+    Record<string, boolean>
+  >({});
+
+  const toggleRuleExpansion = useCallback((ruleId: string) => {
+    setExpandedRuleIds((prev) => ({
+      ...prev,
+      [ruleId]: !prev[ruleId],
+    }));
+  }, []);
+
+  const handleApplyProfile = useCallback(
+    (profileValues: Record<string, string | number | boolean | null>) => {
+      if (!form) return;
+      let next = { ...values };
+      const fieldsList = (form.sections || []).flatMap((s) => s.fields);
+      fieldsList.forEach((field) => {
+        const profileVal =
+          profileValues[field.id] ??
+          profileValues[field.variableName] ??
+          profileValues[field.variableName.toLowerCase()];
+        if (profileVal !== undefined) {
+          next = setScopedValue(next, scope, field.id, profileVal);
+        }
+      });
+      onChangeValues(next);
+    },
+    [form, onChangeValues, scope, values]
   );
 
   const handleFieldChange = useCallback(
@@ -162,6 +197,22 @@ export const FormTestDock: React.FC<FormTestDockProps> = ({
         visit <span className="font-mono text-zinc-400">{scope.visitId}</span>.
         Other subjects and visits are untouched.
       </p>
+
+      {/* Sample Subject Data Profile presets */}
+      <div className="px-3 sm:px-4 py-1 border-b border-zinc-900 bg-zinc-900/40 text-[10px] font-mono flex items-center gap-2 overflow-x-auto shrink-0 scrollbar-none">
+        <span className="text-zinc-500 whitespace-nowrap">Load Profile:</span>
+        {SAMPLE_SUBJECT_PROFILES.map((p) => (
+          <button
+            key={p.id}
+            type="button"
+            onClick={() => handleApplyProfile(p.values)}
+            className="px-2 py-0.5 rounded bg-zinc-950 hover:bg-zinc-800 text-zinc-300 hover:text-brand-cyan border border-zinc-800 whitespace-nowrap transition-colors"
+            title={p.description}
+          >
+            {p.name}
+          </button>
+        ))}
+      </div>
 
       {/* Status strip */}
       <div className="flex items-center gap-3 px-3 sm:px-4 py-1.5 border-b border-zinc-900 text-[10px] font-mono shrink-0 overflow-x-auto scrollbar-none">
@@ -294,33 +345,75 @@ export const FormTestDock: React.FC<FormTestDockProps> = ({
           </div>
 
           <div>
-            <h3 className="text-[10px] font-mono uppercase tracking-wide text-zinc-500 mb-1.5">
-              Rules
-            </h3>
+            <div className="flex items-center justify-between mb-1.5">
+              <h3 className="text-[10px] font-mono uppercase tracking-wide text-zinc-500">
+                Rules
+              </h3>
+              <span className="text-[10px] font-mono text-zinc-600">
+                Click a rule to inspect AST Trace & Debugger
+              </span>
+            </div>
             {report.rules.length === 0 ? (
               <p className="text-[11px] text-zinc-600">
                 This form has no rules yet.
               </p>
             ) : (
               <ul className="space-y-1.5">
-                {report.rules.map((rule) => (
-                  <li
-                    key={rule.ruleId}
-                    className={`rounded-lg border p-2 min-w-0 ${RESULT_TONE[rule.result]}`}
-                  >
-                    <div className="flex items-center justify-between gap-2 flex-wrap">
-                      <span className="text-[11px] break-words min-w-0">
-                        {rule.ruleName}
-                      </span>
-                      <span className="text-[10px] font-mono shrink-0">
-                        {RESULT_LABEL[rule.result]}
-                      </span>
-                    </div>
-                    <p className="text-[10px] text-zinc-400 mt-1 break-words">
-                      {rule.explanation.summary}
-                    </p>
-                  </li>
-                ))}
+                {report.rules.map((rule) => {
+                  const isExpanded = !!expandedRuleIds[rule.ruleId];
+                  const rawRule = (form.rules || []).find(
+                    (r) => r.id === rule.ruleId
+                  );
+
+                  return (
+                    <li
+                      key={rule.ruleId}
+                      className={`rounded-lg border p-2.5 min-w-0 transition-all ${RESULT_TONE[rule.result]}`}
+                    >
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <span className="text-[11px] font-semibold break-words min-w-0">
+                          {rule.ruleName}
+                        </span>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className="text-[10px] font-mono">
+                            {RESULT_LABEL[rule.result]}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => toggleRuleExpansion(rule.ruleId)}
+                            className="px-2 py-0.5 rounded text-[10px] font-mono bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-700 flex items-center gap-1 transition-colors"
+                            aria-expanded={isExpanded}
+                            aria-label={`Toggle AST trace for ${rule.ruleName}`}
+                          >
+                            <IconBug className="w-3 h-3 text-brand-cyan" />
+                            <span>
+                              {isExpanded ? "Hide AST Trace" : "AST Trace"}
+                            </span>
+                            {isExpanded ? (
+                              <IconChevronUp className="w-3 h-3" />
+                            ) : (
+                              <IconChevronDown className="w-3 h-3" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-zinc-400 mt-1 break-words">
+                        {rule.explanation.summary}
+                      </p>
+
+                      {/* Expanded AST Condition Trace Breakdown & Stepper */}
+                      {isExpanded && rawRule && (
+                        <div className="mt-3 pt-3 border-t border-zinc-800">
+                          <AstStepDebugger
+                            rule={rawRule}
+                            fields={fields}
+                            compact={true}
+                          />
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </div>

@@ -84,6 +84,19 @@ export interface AppEventMap {
   meme_vault_unlocked_change: { unlocked: boolean };
   /** The arcade CRT calibration was saved. */
   "crt-calibration-changed": undefined;
+  /** An arcade game score or milestone was updated. */
+  arcade_score_updated: {
+    gameId: string;
+    score: number;
+    metadata?: Record<string, unknown>;
+  };
+  /** An arcade trophy or achievement was unlocked. */
+  arcade_trophy_unlocked: {
+    trophyId: string;
+    gameId: string;
+    title: string;
+    unlockedAt: number;
+  };
 
   /** Registers a sub-tool contextual workspace action. */
   "workspace:register_action": WorkspaceActionPayload;

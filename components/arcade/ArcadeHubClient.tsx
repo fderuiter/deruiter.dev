@@ -22,6 +22,7 @@ import { FieldManualButton } from "@/components/FieldManualButton";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { ARCADE_GAME_COUNT } from "@/lib/arcade";
 import { safeGetRawItem } from "@/lib/safe-storage";
+import { ArcadeTrophyCabinet } from "@/components/arcade/ArcadeTrophyCabinet";
 
 interface ArcadeGameCard {
   id: string;
@@ -217,6 +218,7 @@ const ARCADE_GAMES: ArcadeGameCard[] = [
     accentColor: "from-amber-500/20 via-amber-500/5 to-transparent",
     borderHover: "hover:border-amber-400/50",
     badgeBg: "bg-amber-500/10 text-amber-300 border-amber-500/30",
+    storageKey: "trial_and_error_high_score",
     route: "/arcade/trial-and-error",
   },
   {
@@ -242,6 +244,7 @@ const ARCADE_GAMES: ArcadeGameCard[] = [
     accentColor: "from-amber-500/20 via-amber-500/5 to-transparent",
     borderHover: "hover:border-amber-400/50",
     badgeBg: "bg-amber-500/10 text-amber-300 border-amber-500/30",
+    storageKey: "study_director_high_score",
     route: "/arcade/study-director",
   },
   {
@@ -479,6 +482,9 @@ export const ArcadeHubClient: React.FC = () => {
             <GameCard key={game.id} game={game} index={index} />
           ))}
         </div>
+
+        {/* Interactive Trophy Cabinet & Score Dashboard */}
+        <ArcadeTrophyCabinet />
 
         {/* Easter Egg Meme Vault Discovery Card */}
         <motion.div

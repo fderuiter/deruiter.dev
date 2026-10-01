@@ -49,6 +49,7 @@
 - [lib/accessibility-utils](lib/accessibility-utils/README.md)
 - [lib/api-client](lib/api-client/README.md)
 - [lib/arcade](lib/arcade/README.md)
+- [lib/arcade-achievements](lib/arcade-achievements/README.md)
 - [lib/arcade-data](lib/arcade-data/README.md)
 - [lib/arcade/core](lib/arcade/core/README.md)
 - [lib/arcade/core/engine](lib/arcade/core/engine/README.md)

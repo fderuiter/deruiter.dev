@@ -9,7 +9,7 @@ import {
   IconCpu,
   IconRefresh,
   IconCheck,
-  IconCircleDot
+  IconCircleDot,
 } from "@tabler/icons-react";
 
 interface Node {
@@ -78,27 +78,35 @@ const DEFAULT_NODES: Node[] = [
     description: "Goal R: Database schema is correct and optimal.",
     x: 620,
     y: 260,
-  }
+  },
 ];
 
-const DEFAULT_EDGES: Edge[] = [
-  { source: "A", target: "C" }
-];
+const DEFAULT_EDGES: Edge[] = [{ source: "A", target: "C" }];
 
 export default function SchemaFlowWorkspace() {
   const [nodes] = useState<Node[]>(DEFAULT_NODES);
   const [edges, setEdges] = useState<Edge[]>(DEFAULT_EDGES);
   const [history, setHistory] = useState<Edge[][]>([]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  
+  const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
+
+  const hoveredNode = hoveredNodeId
+    ? nodes.find((n) => n.id === hoveredNodeId)
+    : null;
+  const activeInspectorNode = hoveredNode
+    ? hoveredNode
+    : selectedNodeId
+      ? nodes.find((n) => n.id === selectedNodeId)
+      : null;
+
   // CLI State
   const [consoleInput, setConsoleInput] = useState("");
   const [consoleLogs, setConsoleLogs] = useState<ConsoleLog[]>([
     {
       id: "welcome",
       type: "info",
-      text: "Logical Proof Assistant CLI v2.4\nType 'help' to review syntax. Hover nodes to read specifications."
-    }
+      text: "Logical Proof Assistant CLI v2.4\nType 'help' to review syntax. Hover or tap nodes to read specifications.",
+    },
   ]);
   const [cliHistory, setCliHistory] = useState<string[]>([]);
   const [cliHistoryIdx, setCliHistoryIdx] = useState(-1);
@@ -120,7 +128,7 @@ export default function SchemaFlowWorkspace() {
         id: `log-${Date.now()}-${Math.random()}`,
         type,
         text,
-      }
+      },
     ]);
   };
 
@@ -143,7 +151,10 @@ export default function SchemaFlowWorkspace() {
     setIsSolverLoopActive((prev) => {
       const next = newState !== undefined ? newState : !prev;
       if (next) {
-        addLog("info", "High-frequency mathematical solver loop initiated. RAM Telemetry active.");
+        addLog(
+          "info",
+          "High-frequency mathematical solver loop initiated. RAM Telemetry active."
+        );
       } else {
         addLog("info", "Solver loop telemetry simulation suspended.");
       }
@@ -160,12 +171,22 @@ export default function SchemaFlowWorkspace() {
         tick += 1;
         // Fluctuating RAM simulating real solver calculation cycles
         const noise = Math.sin(tick * 0.4) * 8 + Math.cos(tick * 0.15) * 4;
-        const newPercent = clamp(baseVal + noise + (tick % 7 === 0 ? 10 : 0) - (tick % 11 === 0 ? 8 : 0), 30.2, 98.4);
+        const newPercent = clamp(
+          baseVal +
+            noise +
+            (tick % 7 === 0 ? 10 : 0) -
+            (tick % 11 === 0 ? 8 : 0),
+          30.2,
+          98.4
+        );
         ramValRef.current = newPercent;
 
         // Direct DOM mutations to transient telemetry UI metrics - zero Virtual DOM re-renders
         if (gaugeContainerRef.current) {
-          gaugeContainerRef.current.style.setProperty("--gauge-progress", newPercent.toString());
+          gaugeContainerRef.current.style.setProperty(
+            "--gauge-progress",
+            newPercent.toString()
+          );
         }
         if (ramTextRef.current) {
           ramTextRef.current.textContent = `${newPercent.toFixed(0)}%`;
@@ -189,7 +210,8 @@ export default function SchemaFlowWorkspace() {
   // Scroll console internally to bottom without shifting viewport
   useEffect(() => {
     if (terminalLogsContainerRef.current) {
-      terminalLogsContainerRef.current.scrollTop = terminalLogsContainerRef.current.scrollHeight;
+      terminalLogsContainerRef.current.scrollTop =
+        terminalLogsContainerRef.current.scrollHeight;
     }
   }, [consoleLogs]);
 
@@ -197,7 +219,11 @@ export default function SchemaFlowWorkspace() {
   const connectNodes = (src: string, tgt: string, quiet = false) => {
     const validIds = nodes.map((n) => n.id);
     if (!validIds.includes(src) || !validIds.includes(tgt)) {
-      if (!quiet) addLog("error", `Invalid node IDs: [${src}, ${tgt}]. Use A, B, C, D, E.`);
+      if (!quiet)
+        addLog(
+          "error",
+          `Invalid node IDs: [${src}, ${tgt}]. Use A, B, C, D, E.`
+        );
       return;
     }
     if (src === tgt) {
@@ -206,10 +232,14 @@ export default function SchemaFlowWorkspace() {
     }
     // Prevent reverse connections or duplicates
     const alreadyConnected = edges.some(
-      (e) => (e.source === src && e.target === tgt)
+      (e) => e.source === src && e.target === tgt
     );
     if (alreadyConnected) {
-      if (!quiet) addLog("error", `Pathway from Node ${src} to Node ${tgt} is already active.`);
+      if (!quiet)
+        addLog(
+          "error",
+          `Pathway from Node ${src} to Node ${tgt} is already active.`
+        );
       return;
     }
 
@@ -228,7 +258,10 @@ export default function SchemaFlowWorkspace() {
     );
 
     if (edgeIndex === -1) {
-      addLog("error", `No active pathway from Node ${src} to Node ${tgt} exists.`);
+      addLog(
+        "error",
+        `No active pathway from Node ${src} to Node ${tgt} exists.`
+      );
       return;
     }
 
@@ -244,7 +277,10 @@ export default function SchemaFlowWorkspace() {
       const previousEdges = history[history.length - 1];
       setHistory((prev) => prev.slice(0, -1));
       setEdges(previousEdges);
-      addLog("success", "Successfully rolled back proof connection configuration to previous state.");
+      addLog(
+        "success",
+        "Successfully rolled back proof connection configuration to previous state."
+      );
     } else {
       addLog("error", "Rollback failed: No historical step state recorded.");
     }
@@ -254,7 +290,10 @@ export default function SchemaFlowWorkspace() {
   const handleNodeClick = (nodeId: string) => {
     if (selectedNodeId === null) {
       setSelectedNodeId(nodeId);
-      addLog("info", `Selected Node ${nodeId}. Click another node to establish a directed pathway.`);
+      addLog(
+        "info",
+        `Selected Node ${nodeId}. Click another node to establish a directed pathway.`
+      );
     } else {
       if (selectedNodeId === nodeId) {
         setSelectedNodeId(null);
@@ -273,7 +312,10 @@ export default function SchemaFlowWorkspace() {
     if (!trimmed) return;
 
     // Log command
-    setConsoleLogs((prev) => [...prev, { id: `cmd-${Date.now()}`, type: "command", text: trimmed }]);
+    setConsoleLogs((prev) => [
+      ...prev,
+      { id: `cmd-${Date.now()}`, type: "command", text: trimmed },
+    ]);
     setConsoleInput("");
 
     // History queue
@@ -292,6 +334,7 @@ export default function SchemaFlowWorkspace() {
       addLog(
         "info",
         "Command Reference Checklist:\n" +
+          "  Hover or tap nodes to inspect specifications and formulas.\n" +
           "  connect <S> <T>    - Establish pathway from Node S to Node T (e.g. connect A C)\n" +
           "  disconnect <S> <T> - Sever pathway from Node S to Node T\n" +
           "  rollback           - Roll back to previous connection structure\n" +
@@ -319,7 +362,10 @@ export default function SchemaFlowWorkspace() {
 
     if (op === "connect") {
       if (!arg1 || !arg2) {
-        addLog("error", "Syntax Error: 'connect' requires source and target. Example: connect A C");
+        addLog(
+          "error",
+          "Syntax Error: 'connect' requires source and target. Example: connect A C"
+        );
         return;
       }
       connectNodes(arg1, arg2);
@@ -328,21 +374,34 @@ export default function SchemaFlowWorkspace() {
 
     if (op === "disconnect") {
       if (!arg1 || !arg2) {
-        addLog("error", "Syntax Error: 'disconnect' requires source and target. Example: disconnect A C");
+        addLog(
+          "error",
+          "Syntax Error: 'disconnect' requires source and target. Example: disconnect A C"
+        );
         return;
       }
       disconnectNodes(arg1, arg2);
       return;
     }
 
-    addLog("error", `Unrecognized command: '${tokens[0]}'. Type 'help' for registry references.`);
+    addLog(
+      "error",
+      `Unrecognized command: '${tokens[0]}'. Type 'help' for registry references.`
+    );
   };
 
   // Auto-complete suggestion
   const getSuggestion = (inputVal: string): string => {
     const val = inputVal.trim().toLowerCase();
     if (!val) return "";
-    const commands = ["connect", "disconnect", "rollback", "simulate", "clear", "help"];
+    const commands = [
+      "connect",
+      "disconnect",
+      "rollback",
+      "simulate",
+      "clear",
+      "help",
+    ];
     const match = commands.find((c) => c.startsWith(val));
     return match ? match : "";
   };
@@ -362,7 +421,10 @@ export default function SchemaFlowWorkspace() {
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       if (cliHistory.length === 0) return;
-      const nextIdx = cliHistoryIdx === -1 ? cliHistory.length - 1 : Math.max(0, cliHistoryIdx - 1);
+      const nextIdx =
+        cliHistoryIdx === -1
+          ? cliHistory.length - 1
+          : Math.max(0, cliHistoryIdx - 1);
       setCliHistoryIdx(nextIdx);
       setConsoleInput(cliHistory[nextIdx]);
     } else if (e.key === "ArrowDown") {
@@ -394,11 +456,15 @@ export default function SchemaFlowWorkspace() {
         }
         .gauge-fill {
           stroke-dasharray: 251.2;
-          stroke-dashoffset: calc(251.2 - (251.2 * var(--gauge-progress)) / 100);
+          stroke-dashoffset: calc(
+            251.2 - (251.2 * var(--gauge-progress)) / 100
+          );
           transition: stroke-dashoffset 80ms linear;
         }
         .svg-node {
-          transition: filter 0.25s ease, stroke 0.25s ease;
+          transition:
+            filter 0.25s ease,
+            stroke 0.25s ease;
         }
         .svg-node:hover {
           filter: drop-shadow(0px 0px 8px rgba(6, 182, 212, 0.45));
@@ -407,10 +473,8 @@ export default function SchemaFlowWorkspace() {
 
       {/* Main split dashboard workspace */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch h-auto min-h-[520px]">
-        
         {/* Left Side: Proof Canvas & Telemetry */}
         <div className="lg:col-span-8 flex flex-col gap-5 bg-zinc-950 border border-zinc-900 rounded-3xl p-5 relative overflow-hidden">
-          
           {/* Header row */}
           <div className="flex justify-between items-center border-b border-zinc-900 pb-3">
             <div>
@@ -422,7 +486,7 @@ export default function SchemaFlowWorkspace() {
                 Proof Tactic Vector Canvas
               </h3>
             </div>
-            
+
             {/* Reset / Rollback quick actions */}
             <div className="flex gap-2">
               <button
@@ -449,13 +513,13 @@ export default function SchemaFlowWorkspace() {
           </div>
 
           {/* Interactive Declarative SVG Proof Tree */}
-          <div 
+          <div
             className="w-full h-[360px] bg-zinc-900/40 rounded-2xl border border-zinc-900 relative"
             role="region"
             aria-label="Mathematical Logic Tree Canvas. Clicking nodes executes directed connections."
           >
-            <svg 
-              className="w-full h-full select-none" 
+            <svg
+              className="w-full h-full select-none"
               viewBox="0 0 800 420"
               xmlns="http://www.w3.org/2000/svg"
             >
@@ -498,8 +562,10 @@ export default function SchemaFlowWorkspace() {
                 const y2 = t.y + 40;
 
                 // Double check if connection is part of proven proof branch
-                const isC_Active = isC_Proven && (edge.source === "C" || edge.target === "C");
-                const pathColor = isC_Active || isE_Proven ? "#06b6d4" : "#0891b2";
+                const isC_Active =
+                  isC_Proven && (edge.source === "C" || edge.target === "C");
+                const pathColor =
+                  isC_Active || isE_Proven ? "#06b6d4" : "#0891b2";
 
                 return (
                   <path
@@ -517,7 +583,7 @@ export default function SchemaFlowWorkspace() {
               {/* Declarative Nodes as Groups (Completely layout-calculation free!) */}
               {nodes.map((node) => {
                 const isSelected = selectedNodeId === node.id;
-                
+
                 // Determine proven/active state dynamically
                 let isProven = true; // Premises default true
                 if (node.id === "C") isProven = isC_Proven;
@@ -529,8 +595,11 @@ export default function SchemaFlowWorkspace() {
                 return (
                   <g
                     key={node.id}
+                    data-testid={`node-${node.id}`}
                     transform={`translate(${node.x}, ${node.y})`}
                     onClick={() => handleNodeClick(node.id)}
+                    onMouseEnter={() => setHoveredNodeId(node.id)}
+                    onMouseLeave={() => setHoveredNodeId(null)}
                     className="cursor-pointer svg-node focus:outline-none"
                     tabIndex={0}
                     role="button"
@@ -552,12 +621,12 @@ export default function SchemaFlowWorkspace() {
                         isSelected
                           ? "#06b6d4"
                           : isProven
-                          ? "#10b981"
-                          : "#27272a"
+                            ? "#10b981"
+                            : "#27272a"
                       }
                       strokeWidth={isSelected ? "2.5" : "1.5"}
                       style={{
-                        strokeDasharray: isSelected ? "4" : "none"
+                        strokeDasharray: isSelected ? "4" : "none",
                       }}
                     />
 
@@ -607,14 +676,55 @@ export default function SchemaFlowWorkspace() {
                   </g>
                 );
               })}
+
+              {/* Floating Specification Tooltip Overlay */}
+              {hoveredNode &&
+                (() => {
+                  const tooltipX = clamp(hoveredNode.x - 20, 10, 520);
+                  const tooltipY =
+                    hoveredNode.y > 100
+                      ? hoveredNode.y - 52
+                      : hoveredNode.y + 88;
+
+                  return (
+                    <g
+                      data-testid="node-tooltip"
+                      role="tooltip"
+                      className="pointer-events-none transition-opacity duration-150"
+                    >
+                      <foreignObject
+                        x={tooltipX}
+                        y={tooltipY}
+                        width="280"
+                        height="52"
+                        className="overflow-visible"
+                      >
+                        <div className="bg-zinc-950/95 border border-brand-cyan/70 rounded-xl p-2.5 shadow-xl shadow-black/90 backdrop-blur-md text-[10px] font-mono text-cyan-200 leading-tight select-none">
+                          <div className="flex items-center justify-between mb-1 gap-2">
+                            <span className="font-extrabold text-white flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-brand-cyan animate-ping"></span>
+                              {hoveredNode.label} SPECIFICATION
+                            </span>
+                            <span className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-300">
+                              {hoveredNode.type}
+                            </span>
+                          </div>
+                          <div className="text-zinc-200 text-[9.5px] leading-snug break-words">
+                            {hoveredNode.description}
+                          </div>
+                        </div>
+                      </foreignObject>
+                    </g>
+                  );
+                })()}
             </svg>
 
             {/* Floating click prompt guidance label */}
             <div className="absolute bottom-3 left-3 right-3 bg-zinc-950/80 border border-zinc-900 rounded-xl p-2.5 flex items-center justify-between select-none">
               <span className="text-[10px] font-mono text-muted leading-none">
-                {selectedNodeId 
-                  ? `👉 Selected NODE ${selectedNodeId}. Click target node to draw directed branch.` 
-                  : "💡 Click a node, then click another node to connect them dynamically."}
+                {selectedNodeId
+                  ? `👉 Selected NODE ${selectedNodeId}. Click target node to draw directed branch.`
+                  : "💡 Hover or tap nodes to inspect specifications; tap two nodes to connect them."}
               </span>
               <span className="text-[9px] font-mono bg-zinc-900 px-2 py-0.5 border border-zinc-850 rounded text-brand-cyan font-bold">
                 GRAPHICS ACCELERATION // ON
@@ -622,18 +732,134 @@ export default function SchemaFlowWorkspace() {
             </div>
           </div>
 
+          {/* Contextual Node Inspection Panel */}
+          <div
+            data-testid="node-inspector-panel"
+            role="region"
+            aria-label="Contextual Node Inspection Panel"
+            className="w-full min-w-0 bg-zinc-900/40 border border-zinc-900 rounded-2xl p-4 transition-all duration-200 select-none"
+          >
+            <div className="flex items-center justify-between border-b border-zinc-900 pb-2.5 mb-3 min-w-0 gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <div
+                  className={`w-2 h-2 rounded-full ${activeInspectorNode ? "bg-brand-cyan animate-pulse" : "bg-zinc-600"}`}
+                />
+                <h4 className="text-xs font-mono font-extrabold uppercase tracking-wider text-zinc-200 truncate">
+                  {activeInspectorNode
+                    ? `INSPECTOR // ${activeInspectorNode.label}`
+                    : "CONTEXTUAL NODE INSPECTOR"}
+                </h4>
+              </div>
+              <span className="text-[9px] font-mono uppercase px-2 py-0.5 rounded border border-zinc-800 bg-zinc-950 text-zinc-400 font-bold shrink-0">
+                {hoveredNodeId
+                  ? "HOVER PREVIEW"
+                  : selectedNodeId
+                    ? "TAP / SELECTED"
+                    : "TOUCH & POINTER READY"}
+              </span>
+            </div>
+
+            {activeInspectorNode ? (
+              (() => {
+                let isProven = true;
+                if (activeInspectorNode.id === "C") isProven = isC_Proven;
+                if (activeInspectorNode.id === "E") isProven = isE_Proven;
+
+                return (
+                  <div className="flex flex-col gap-3 min-w-0">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono min-w-0">
+                      <div className="bg-zinc-950/80 border border-zinc-900 rounded-xl p-2 min-w-0">
+                        <span className="text-[9px] text-muted block uppercase tracking-wider mb-0.5">
+                          Label
+                        </span>
+                        <span
+                          data-testid="inspector-node-label"
+                          className="font-extrabold text-white truncate block"
+                        >
+                          {activeInspectorNode.label}
+                        </span>
+                      </div>
+
+                      <div className="bg-zinc-950/80 border border-zinc-900 rounded-xl p-2 min-w-0">
+                        <span className="text-[9px] text-muted block uppercase tracking-wider mb-0.5">
+                          Formula
+                        </span>
+                        <span
+                          data-testid="inspector-node-formula"
+                          className="font-extrabold text-brand-cyan truncate block"
+                        >
+                          {activeInspectorNode.formula}
+                        </span>
+                      </div>
+
+                      <div className="bg-zinc-950/80 border border-zinc-900 rounded-xl p-2 min-w-0">
+                        <span className="text-[9px] text-muted block uppercase tracking-wider mb-0.5">
+                          Type
+                        </span>
+                        <span
+                          data-testid="inspector-node-type"
+                          className="font-bold text-zinc-300 uppercase truncate block"
+                        >
+                          {activeInspectorNode.type}
+                        </span>
+                      </div>
+
+                      <div className="bg-zinc-950/80 border border-zinc-900 rounded-xl p-2 min-w-0">
+                        <span className="text-[9px] text-muted block uppercase tracking-wider mb-0.5">
+                          Status
+                        </span>
+                        <span
+                          data-testid="inspector-node-status"
+                          className={`font-extrabold uppercase truncate block ${
+                            isProven ? "text-emerald-400" : "text-amber-400"
+                          }`}
+                        >
+                          {isProven ? "PROVEN" : "UNPROVEN"}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="bg-zinc-950/90 border border-zinc-900 rounded-xl p-3 min-w-0">
+                      <span className="text-[9px] font-mono text-muted uppercase tracking-wider block mb-1">
+                        Specification Description
+                      </span>
+                      <p
+                        data-testid="inspector-node-description"
+                        className="text-xs text-zinc-200 leading-relaxed font-sans break-words"
+                      >
+                        {activeInspectorNode.description}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })()
+            ) : (
+              <div className="py-2 text-[11px] text-muted font-mono leading-relaxed flex items-center justify-between gap-2">
+                <span>
+                  💡 Hover or tap any node on the proof canvas above to inspect
+                  domain rules, formulas, and clinical specifications.
+                </span>
+              </div>
+            )}
+          </div>
+
           {/* Telemetry and Goal Status Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            
             {/* Goal completion monitor */}
             <div className="bg-zinc-900/20 border border-zinc-900 rounded-2xl p-4 flex flex-col justify-between select-none">
               <div className="flex items-center gap-3">
-                <div className={`w-8 h-8 rounded-xl flex items-center justify-center border ${
-                  isE_Proven 
-                    ? "bg-emerald-950/40 text-emerald-400 border-emerald-900/60" 
-                    : "bg-zinc-900/50 text-muted border-zinc-850"
-                }`}>
-                  {isE_Proven ? <IconCheck className="w-4 h-4" /> : <IconCircleDot className="w-4 h-4 animate-pulse" />}
+                <div
+                  className={`w-8 h-8 rounded-xl flex items-center justify-center border ${
+                    isE_Proven
+                      ? "bg-emerald-950/40 text-emerald-400 border-emerald-900/60"
+                      : "bg-zinc-900/50 text-muted border-zinc-850"
+                  }`}
+                >
+                  {isE_Proven ? (
+                    <IconCheck className="w-4 h-4" />
+                  ) : (
+                    <IconCircleDot className="w-4 h-4 animate-pulse" />
+                  )}
                 </div>
                 <div>
                   <h4 className="text-xs font-black uppercase text-zinc-300 tracking-wider">
@@ -643,29 +869,35 @@ export default function SchemaFlowWorkspace() {
                     {isE_Proven
                       ? "Success: Conclusion verified successfully on GPU."
                       : isC_Proven
-                      ? "Intermediate Q proven. Establish C → E & D → E pathways."
-                      : "Required: Establish pathways (A & B) → C and (C & D) → E."}
+                        ? "Intermediate Q proven. Establish C → E & D → E pathways."
+                        : "Required: Establish pathways (A & B) → C and (C & D) → E."}
                   </p>
                 </div>
               </div>
               <div className="mt-3 pt-3 border-t border-zinc-900 flex justify-between text-[10px] font-mono text-muted">
                 <span>PATHWAYS ACTIVE:</span>
-                <span className="text-brand-cyan font-extrabold">{edges.length}</span>
+                <span className="text-brand-cyan font-extrabold">
+                  {edges.length}
+                </span>
               </div>
             </div>
 
             {/* RAM Progress Telemetry Gauge (Compositor css variables updates!) */}
             <div className="bg-zinc-900/20 border border-zinc-900 rounded-2xl p-4 flex gap-4 items-center relative select-none">
-              
               {/* Radial gauge element */}
-              <div 
+              <div
                 ref={gaugeContainerRef}
                 className="relative w-16 h-16 flex items-center justify-center shrink-0"
-                style={{
-                  "--gauge-progress": 42.5,
-                } as React.CSSProperties}
+                style={
+                  {
+                    "--gauge-progress": 42.5,
+                  } as React.CSSProperties
+                }
               >
-                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                <svg
+                  className="w-full h-full transform -rotate-90"
+                  viewBox="0 0 100 100"
+                >
                   <circle
                     cx="50"
                     cy="50"
@@ -687,7 +919,10 @@ export default function SchemaFlowWorkspace() {
                 </svg>
                 {/* Embedded dynamic percent */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center leading-none">
-                  <span ref={ramTextRef} className="text-[10px] font-mono font-bold text-white">
+                  <span
+                    ref={ramTextRef}
+                    className="text-[10px] font-mono font-bold text-white"
+                  >
                     42%
                   </span>
                 </div>
@@ -701,7 +936,8 @@ export default function SchemaFlowWorkspace() {
                     Solver RAM Telemetry
                   </h4>
                   <p className="text-[10px] text-muted mt-0.5 leading-relaxed">
-                    Compositor thread updates. Zero main-thread layout thrashing.
+                    Compositor thread updates. Zero main-thread layout
+                    thrashing.
                   </p>
                 </div>
 
@@ -714,7 +950,9 @@ export default function SchemaFlowWorkspace() {
                         : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700"
                     }`}
                   >
-                    {isSolverLoopActive ? "■ Stop Solver Loop" : "▶ Start Solver Loop"}
+                    {isSolverLoopActive
+                      ? "■ Stop Solver Loop"
+                      : "▶ Start Solver Loop"}
                   </button>
                   <span className="text-[9px] font-mono text-muted">
                     60FPS SECURE
@@ -722,13 +960,11 @@ export default function SchemaFlowWorkspace() {
                 </div>
               </div>
             </div>
-
           </div>
-
         </div>
 
         {/* Right Side: Accessible Command CLI Terminal */}
-        <div 
+        <div
           className="lg:col-span-4 flex flex-col bg-zinc-950 border border-zinc-900 rounded-3xl overflow-hidden relative"
           role="region"
           aria-label="Accessible command log console"
@@ -747,7 +983,7 @@ export default function SchemaFlowWorkspace() {
           </div>
 
           {/* Console logs output */}
-          <div 
+          <div
             ref={terminalLogsContainerRef}
             className="flex-1 p-4 font-mono text-[10px] leading-normal overflow-y-auto max-h-[300px] lg:max-h-[350px] min-h-[220px] space-y-3 scrollbar-thin text-zinc-300 select-text min-w-0"
             role="log"
@@ -759,7 +995,9 @@ export default function SchemaFlowWorkspace() {
                   <div className="flex items-center gap-1.5 text-muted font-bold select-none min-w-0">
                     <span className="text-zinc-700 font-bold shrink-0">~</span>
                     <span className="text-muted shrink-0">tactic-cli $</span>
-                    <span className="text-zinc-100 font-bold select-text min-w-0 break-all">{log.text}</span>
+                    <span className="text-zinc-100 font-bold select-text min-w-0 break-all">
+                      {log.text}
+                    </span>
                   </div>
                 )}
                 {log.type === "info" && (
@@ -789,9 +1027,13 @@ export default function SchemaFlowWorkspace() {
           {/* Input Prompt panel */}
           <div className="border-t border-zinc-900 bg-zinc-950 px-4 py-3 flex flex-col gap-1.5 min-w-0">
             <div className="flex items-center gap-2 relative min-w-0">
-              <span className="text-zinc-700 font-bold font-mono text-[10px] select-none shrink-0">~</span>
-              <span className="text-muted font-bold font-mono text-[10px] select-none shrink-0 truncate max-w-[90px] xs:max-w-none">tactic-cli $</span>
-              
+              <span className="text-zinc-700 font-bold font-mono text-[10px] select-none shrink-0">
+                ~
+              </span>
+              <span className="text-muted font-bold font-mono text-[10px] select-none shrink-0 truncate max-w-[90px] xs:max-w-none">
+                tactic-cli $
+              </span>
+
               <div className="flex-1 relative flex items-center min-h-[1.5rem] min-w-0">
                 {suggestion && (
                   <div className="absolute inset-0 pointer-events-none font-mono text-[10px] text-zinc-700 flex items-center select-none z-0 truncate">
@@ -799,7 +1041,7 @@ export default function SchemaFlowWorkspace() {
                     <span>{suggestion.substring(consoleInput.length)}</span>
                   </div>
                 )}
-                
+
                 <input
                   ref={consoleInputRef}
                   type="text"
@@ -861,7 +1103,6 @@ export default function SchemaFlowWorkspace() {
             </div>
           </div>
         </div>
-
       </div>
     </div>
   );

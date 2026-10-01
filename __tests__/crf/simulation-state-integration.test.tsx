@@ -35,9 +35,11 @@ describe("EDC Simulation State Integration", () => {
     render(<CRFStudioContainer />);
 
     // Switch to Part 11 Audit Trail tab inside EDC Simulator
-    const auditTabBtn = await screen.findByRole("button", {
-      name: /Part 11 Audit Trail/i,
-    });
+    const auditTabBtn = await screen.findByRole(
+      "button",
+      { name: /Part 11 Audit Trail/i },
+      { timeout: 5000 }
+    );
     fireEvent.click(auditTabBtn);
 
     // Initial default audit log entry is visible

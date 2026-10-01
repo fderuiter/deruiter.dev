@@ -24,6 +24,8 @@ describe("SchemaFlowWorkspace Component Architectural & Logical Validation", () 
 
   afterEach(() => {
     cleanup();
+    vi.clearAllTimers();
+    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 

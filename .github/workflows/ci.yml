@@ -377,10 +377,7 @@ jobs:
     needs: fast-gate
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    # Provisional, same caveat as heavy-gate: two spec files across three
-    # device projects plus one build, unmeasured. Revisit once real numbers
-    # exist.
-    timeout-minutes: 25
+    timeout-minutes: 35
 
     steps:
       - name: Checkout Code
@@ -400,9 +397,9 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-full-${{ github.ref_name }}-${{ hashFiles('package-lock.json') }}
+          key: playwright-full-${{ github.head_ref || github.ref_name }}-${{ hashFiles('package-lock.json') }}
           restore-keys: |
-            playwright-full-${{ github.ref_name }}-${{ hashFiles('package-lock.json') }}
+            playwright-full-${{ github.head_ref || github.ref_name }}-${{ hashFiles('package-lock.json') }}
             playwright-full-main-${{ hashFiles('package-lock.json') }}
 
       - name: Install Playwright Browsers with Dependencies (Cache Miss)

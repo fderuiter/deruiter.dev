@@ -83,7 +83,7 @@ describe("CI Workflow Dual Caching and Isolation Suite", () => {
 
       for (const section of fullSections) {
         expect(section).toMatch(
-          /key:\s*playwright-full-\$\{\{\s*github\.ref_name\s*\}\}-\$\{\{\s*hashFiles\(['"]package-lock\.json['"]\)\s*\}\}/
+          /key:\s*playwright-full-\$\{\{\s*(?:github\.head_ref\s*\|\|\s*)?github\.ref_name\s*\}\}-\$\{\{\s*hashFiles\(['"]package-lock\.json['"]\)\s*\}\}/
         );
 
         const restoreKeys = extractRestoreKeys(section);
@@ -94,7 +94,7 @@ describe("CI Workflow Dual Caching and Isolation Suite", () => {
           // unchecked additional key is unsafe, not merely redundant.
           expect(restoreKeys.length).toBe(2);
           expect(restoreKeys[0]).toMatch(
-            /playwright-full-\$\{\{\s*github\.ref_name\s*\}\}-\$\{\{\s*hashFiles\(['"]package-lock\.json['"]\)\s*\}\}/
+            /playwright-full-\$\{\{\s*(?:github\.head_ref\s*\|\|\s*)?github\.ref_name\s*\}\}-\$\{\{\s*hashFiles\(['"]package-lock\.json['"]\)\s*\}\}/
           );
           expect(restoreKeys[1]).toMatch(
             /playwright-full-main-\$\{\{\s*hashFiles\(['"]package-lock\.json['"]\)\s*\}\}/
@@ -122,7 +122,7 @@ describe("CI Workflow Dual Caching and Isolation Suite", () => {
       const chromiumKeyPattern =
         /key:\s*playwright-chromium-\$\{\{\s*github\.head_ref\s*\|\|\s*github\.ref_name\s*\}\}-\$\{\{\s*hashFiles\(['"]package-lock\.json['"]\)\s*\}\}/;
       const fullKeyPattern =
-        /key:\s*playwright-full-\$\{\{\s*github\.ref_name\s*\}\}-\$\{\{\s*hashFiles\(['"]package-lock\.json['"]\)\s*\}\}/;
+        /key:\s*playwright-full-\$\{\{\s*(?:github\.head_ref\s*\|\|\s*)?github\.ref_name\s*\}\}-\$\{\{\s*hashFiles\(['"]package-lock\.json['"]\)\s*\}\}/;
 
       it("should reject a chromium key fixture that is missing the lockfile hash", () => {
         const missingHashFixture =
@@ -153,8 +153,11 @@ describe("CI Workflow Dual Caching and Isolation Suite", () => {
           "          key: playwright-chromium-${{ github.head_ref || github.ref_name }}-${{ hashFiles('package-lock.json') }}\n";
         const fullFixture =
           "          key: playwright-full-${{ github.ref_name }}-${{ hashFiles('package-lock.json') }}\n";
+        const fullPRFixture =
+          "          key: playwright-full-${{ github.head_ref || github.ref_name }}-${{ hashFiles('package-lock.json') }}\n";
         expect(chromiumKeyPattern.test(chromiumFixture)).toBe(true);
         expect(fullKeyPattern.test(fullFixture)).toBe(true);
+        expect(fullKeyPattern.test(fullPRFixture)).toBe(true);
       });
 
       it("should reject a restore-keys fixture carrying an unsafe unscoped third fallback key", () => {

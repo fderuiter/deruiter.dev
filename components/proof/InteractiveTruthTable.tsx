@@ -83,7 +83,6 @@ function AstTraceView({
  */
 export function InteractiveTruthTable({
   diagnosis,
-  onClear,
   onRollback,
 }: InteractiveTruthTableProps) {
   // Extract all distinct variables involved in the fallacy (defaulting to P and Q)

@@ -121,9 +121,12 @@ function visibleScore(container: HTMLElement): number {
 }
 
 function dockButton(container: HTMLElement, title: string): HTMLButtonElement {
-  const btn = container.querySelector<HTMLButtonElement>(
-    `[data-testid="duck-action-dock"] button[title="${title}"]`
-  );
+  const dock = container.querySelector('[data-testid="duck-action-dock"]');
+  const btn = dock
+    ? (Array.from(dock.querySelectorAll<HTMLButtonElement>("button")).find(
+        (b) => b.getAttribute("title") === title
+      ) ?? null)
+    : null;
   expect(btn).not.toBeNull();
   return btn!;
 }

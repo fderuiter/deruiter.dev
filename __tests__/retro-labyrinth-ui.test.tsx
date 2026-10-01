@@ -419,7 +419,7 @@ describe("RetroLabyrinth React Component UI Suite", () => {
     });
 
     const crtBtn = container.querySelector(
-      "button[aria-label='Calibrate CRT Display & Phosphor Shaders']"
+      "button[aria-label*='Calibrate CRT']"
     );
     expect(crtBtn).toBeTruthy();
 

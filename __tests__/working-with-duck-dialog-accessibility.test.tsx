@@ -114,7 +114,10 @@ Object.defineProperty(globalThis, "localStorage", {
 });
 
 function firstByTitle(container: HTMLElement, title: string): HTMLElement {
-  const el = container.querySelector<HTMLElement>(`[title="${title}"]`);
+  const el =
+    Array.from(container.querySelectorAll<HTMLElement>("[title]")).find(
+      (e) => e.getAttribute("title") === title
+    ) ?? null;
   expect(el).not.toBeNull();
   return el!;
 }

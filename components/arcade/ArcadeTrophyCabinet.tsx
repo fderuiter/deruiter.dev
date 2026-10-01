@@ -210,7 +210,7 @@ export const ArcadeTrophyCabinet: React.FC = () => {
                     <h4 className="text-xs font-mono font-bold text-white truncate">
                       {game.title}
                     </h4>
-                    <span className="text-[10px] font-mono text-zinc-400">
+                    <span className="text-[10px] font-mono text-zinc-300">
                       {game.genre}
                     </span>
                   </div>

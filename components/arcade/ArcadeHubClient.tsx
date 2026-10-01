@@ -312,9 +312,7 @@ function GameCard({ game, index }: { game: ArcadeGameCard; index: number }) {
       className={`group relative flex flex-col justify-between rounded-3xl border border-zinc-800/80 bg-zinc-900/40 p-6 md:p-8 backdrop-blur-xl transition-all duration-300 ${game.borderHover} hover:shadow-[0_0_30px_rgba(0,0,0,0.8)]`}
     >
       {/* Ambient background glow on card */}
-      <div
-        className={`absolute inset-0 rounded-3xl bg-gradient-to-b ${game.accentColor} opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none`}
-      />
+      <div className="absolute inset-0 rounded-3xl bg-gradient-to-b from-cyan-500/5 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none" />
 
       <div className="relative z-10">
         {/* Gameplay thumbnail. The Play Game link below is the keyboard path,
@@ -418,7 +416,7 @@ function GameCard({ game, index }: { game: ArcadeGameCard; index: number }) {
 
         <Link
           href={game.route}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-cyan text-black font-mono text-xs font-bold transition-all duration-200 hover:bg-white hover:scale-105 active:scale-95 shadow-[0_0_15px_rgba(6,182,212,0.3)] cursor-pointer"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-cyan-400 text-zinc-950 font-mono text-xs font-bold transition-all duration-200 hover:bg-white hover:scale-105 active:scale-95 shadow-[0_0_15px_rgba(6,182,212,0.3)] cursor-pointer"
         >
           <IconPlayerPlay className="w-3.5 h-3.5 fill-current" />
           <span>Play Game</span>

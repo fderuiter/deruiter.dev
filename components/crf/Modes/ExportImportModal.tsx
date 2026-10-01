@@ -673,15 +673,32 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
               }
             >
               <table className="w-full text-left border-collapse text-xs font-mono">
+                <caption className="sr-only">
+                  SDTM Mapping Specifications
+                </caption>
                 <thead>
                   <tr className="border-b border-zinc-800 bg-zinc-950/80 text-zinc-400">
-                    <th className="p-3">Domain</th>
-                    <th className="p-3">Form</th>
-                    <th className="p-3">Variable (CDASH)</th>
-                    <th className="p-3">Label</th>
-                    <th className="p-3">Data Type</th>
-                    <th className="p-3">Core</th>
-                    <th className="p-3">aCRF Overlay Tag</th>
+                    <th scope="col" className="p-3">
+                      Domain
+                    </th>
+                    <th scope="col" className="p-3">
+                      Form
+                    </th>
+                    <th scope="col" className="p-3">
+                      Variable (CDASH)
+                    </th>
+                    <th scope="col" className="p-3">
+                      Label
+                    </th>
+                    <th scope="col" className="p-3">
+                      Data Type
+                    </th>
+                    <th scope="col" className="p-3">
+                      Core
+                    </th>
+                    <th scope="col" className="p-3">
+                      aCRF Overlay Tag
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-850">

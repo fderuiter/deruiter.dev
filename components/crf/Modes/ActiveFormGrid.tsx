@@ -903,14 +903,19 @@ export const ActiveFormGrid: React.FC<ActiveFormGridProps> = ({
       {/* Spreadsheet Table Container */}
       <div className="flex-1 overflow-auto rounded-xl border border-zinc-800/80 bg-zinc-950 shadow-inner">
         <table className="w-full text-left border-collapse font-mono text-xs text-zinc-300">
+          <caption className="sr-only">Form Fields Spreadsheet Grid</caption>
           <thead>
             <tr className="bg-zinc-900/90 text-zinc-400 border-b border-zinc-800 text-[11px] uppercase tracking-wider sticky top-0 z-10">
-              <th className="py-2.5 px-3 font-semibold text-zinc-500 border-r border-zinc-800 w-10 text-center">
+              <th
+                scope="col"
+                className="py-2.5 px-3 font-semibold text-zinc-500 border-r border-zinc-800 w-10 text-center"
+              >
                 #
               </th>
               {columns.map((col) => (
                 <th
                   key={col.key}
+                  scope="col"
                   className={`py-2.5 px-3 font-semibold border-r border-zinc-800/80 ${col.width}`}
                 >
                   {col.label}
@@ -1143,19 +1148,26 @@ export const ActiveFormGrid: React.FC<ActiveFormGridProps> = ({
               {/* Updates Table Preview */}
               <div className="border border-zinc-800 rounded-xl overflow-hidden max-h-60 overflow-y-auto">
                 <table className="w-full text-left font-mono text-xs text-zinc-300">
+                  <caption className="sr-only">
+                    Batch Paste Preview Updates
+                  </caption>
                   <thead className="bg-zinc-900 text-zinc-400 text-[10px] uppercase">
                     <tr>
-                      <th className="p-2 border-r border-zinc-800">
+                      <th scope="col" className="p-2 border-r border-zinc-800">
                         Target Field
                       </th>
-                      <th className="p-2 border-r border-zinc-800">Column</th>
-                      <th className="p-2 border-r border-zinc-800">
+                      <th scope="col" className="p-2 border-r border-zinc-800">
+                        Column
+                      </th>
+                      <th scope="col" className="p-2 border-r border-zinc-800">
                         Current Value
                       </th>
-                      <th className="p-2 border-r border-zinc-800">
+                      <th scope="col" className="p-2 border-r border-zinc-800">
                         Pasted Value
                       </th>
-                      <th className="p-2">Status</th>
+                      <th scope="col" className="p-2">
+                        Status
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-850">

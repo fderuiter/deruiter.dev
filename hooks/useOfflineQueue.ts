@@ -395,7 +395,7 @@ export async function flushOfflineQueue(): Promise<{
         res.status !== 408
       ) {
         failed++;
-        let failureReason = `HTTP ${res.status}: Client Error`;
+        let failureReason = res.error || `HTTP ${res.status}: Client Error`;
         try {
           const resObj = res as unknown as {
             clone?: () => unknown;

@@ -331,12 +331,21 @@ export const AcrfOverlayViewer: React.FC<AcrfOverlayViewerProps> = ({
               Table of Contents
             </h3>
             <table className="w-full text-left font-mono text-xs">
+              <caption className="sr-only">aCRF Book Table of Contents</caption>
               <thead>
                 <tr className="border-b border-zinc-300 bg-zinc-100">
-                  <th className="p-2">Section #</th>
-                  <th className="p-2">Domain</th>
-                  <th className="p-2">Form Title</th>
-                  <th className="p-2 text-right">Fields</th>
+                  <th scope="col" className="p-2">
+                    Section #
+                  </th>
+                  <th scope="col" className="p-2">
+                    Domain
+                  </th>
+                  <th scope="col" className="p-2">
+                    Form Title
+                  </th>
+                  <th scope="col" className="p-2 text-right">
+                    Fields
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-200">
@@ -378,16 +387,35 @@ export const AcrfOverlayViewer: React.FC<AcrfOverlayViewerProps> = ({
 
           <div className="overflow-x-auto">
             <table className="w-full text-left font-mono text-xs border-collapse">
+              <caption className="sr-only">
+                CDISC SDTMIG v3.4 Target Variable Mapping Matrix
+              </caption>
               <thead>
                 <tr className="border-b border-zinc-800 bg-zinc-950/60 text-zinc-400">
-                  <th className="p-2.5">Domain</th>
-                  <th className="p-2.5">Variable</th>
-                  <th className="p-2.5">CDASH Label / Question Prompt</th>
-                  <th className="p-2.5">Data Type</th>
-                  <th className="p-2.5">SDTM Target</th>
-                  <th className="p-2.5">Origin</th>
-                  <th className="p-2.5">Core</th>
-                  <th className="p-2.5">NCI C-Code</th>
+                  <th scope="col" className="p-2.5">
+                    Domain
+                  </th>
+                  <th scope="col" className="p-2.5">
+                    Variable
+                  </th>
+                  <th scope="col" className="p-2.5">
+                    CDASH Label / Question Prompt
+                  </th>
+                  <th scope="col" className="p-2.5">
+                    Data Type
+                  </th>
+                  <th scope="col" className="p-2.5">
+                    SDTM Target
+                  </th>
+                  <th scope="col" className="p-2.5">
+                    Origin
+                  </th>
+                  <th scope="col" className="p-2.5">
+                    Core
+                  </th>
+                  <th scope="col" className="p-2.5">
+                    NCI C-Code
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-850">

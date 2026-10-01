@@ -1825,6 +1825,9 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
               role="grid"
               aria-label="Subject Status Progression Matrix"
             >
+              <caption className="sr-only">
+                Subject Status Progression Matrix
+              </caption>
               <thead>
                 <tr
                   className="border-b border-zinc-800 bg-zinc-950/60 text-zinc-400"
@@ -1999,15 +2002,32 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
 
           <div className="overflow-x-auto">
             <table className="w-full text-left font-mono text-xs border-collapse">
+              <caption className="sr-only">
+                21 CFR Part 11 Immutable Audit Trail Log
+              </caption>
               <thead>
                 <tr className="border-b border-zinc-800 bg-zinc-950/60 text-zinc-400">
-                  <th className="p-2.5">Timestamp</th>
-                  <th className="p-2.5">Subject</th>
-                  <th className="p-2.5">Variable</th>
-                  <th className="p-2.5">Previous Value</th>
-                  <th className="p-2.5">New Value</th>
-                  <th className="p-2.5">User Role</th>
-                  <th className="p-2.5">Justification Reason</th>
+                  <th scope="col" className="p-2.5">
+                    Timestamp
+                  </th>
+                  <th scope="col" className="p-2.5">
+                    Subject
+                  </th>
+                  <th scope="col" className="p-2.5">
+                    Variable
+                  </th>
+                  <th scope="col" className="p-2.5">
+                    Previous Value
+                  </th>
+                  <th scope="col" className="p-2.5">
+                    New Value
+                  </th>
+                  <th scope="col" className="p-2.5">
+                    User Role
+                  </th>
+                  <th scope="col" className="p-2.5">
+                    Justification Reason
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-850">

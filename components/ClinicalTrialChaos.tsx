@@ -4012,16 +4012,33 @@ export const ClinicalTrialChaos: React.FC = () => {
           {/* SDTM Table */}
           <div className="overflow-x-auto max-h-72 border border-zinc-800 rounded-lg">
             <table className="w-full text-left text-xs font-mono">
+              <caption className="sr-only">Clinical Trial SDTM Dataset</caption>
               <thead className="bg-zinc-950 text-zinc-400 uppercase text-[10px] border-b border-zinc-800 sticky top-0">
                 <tr>
-                  <th className="p-2.5">STUDYID</th>
-                  <th className="p-2.5">DOMAIN</th>
-                  <th className="p-2.5">USUBJID</th>
-                  <th className="p-2.5">TESTCD</th>
-                  <th className="p-2.5">TEST NAME</th>
-                  <th className="p-2.5">RAW (ORRES)</th>
-                  <th className="p-2.5">STANDARDIZED (STRESC)</th>
-                  <th className="p-2.5">STATUS</th>
+                  <th scope="col" className="p-2.5">
+                    STUDYID
+                  </th>
+                  <th scope="col" className="p-2.5">
+                    DOMAIN
+                  </th>
+                  <th scope="col" className="p-2.5">
+                    USUBJID
+                  </th>
+                  <th scope="col" className="p-2.5">
+                    TESTCD
+                  </th>
+                  <th scope="col" className="p-2.5">
+                    TEST NAME
+                  </th>
+                  <th scope="col" className="p-2.5">
+                    RAW (ORRES)
+                  </th>
+                  <th scope="col" className="p-2.5">
+                    STANDARDIZED (STRESC)
+                  </th>
+                  <th scope="col" className="p-2.5">
+                    STATUS
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-800/60 bg-zinc-900/40">

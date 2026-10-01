@@ -25,6 +25,7 @@
 - [checkDocumentationParity](functions/checkDocumentationParity.md)
 - [checkHydrationSafety](functions/checkHydrationSafety.md)
 - [checkLayoutTextClippingInvariants](functions/checkLayoutTextClippingInvariants.md)
+- [checkLicenseCompliance](functions/checkLicenseCompliance.md)
 - [checkLlmsManifestsDrift](functions/checkLlmsManifestsDrift.md)
 - [checkMigrationGuard](functions/checkMigrationGuard.md)
 - [checkModuleBoundaries](functions/checkModuleBoundaries.md)

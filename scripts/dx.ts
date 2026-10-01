@@ -27,6 +27,7 @@ import { runPreflight } from "../lib/dx/preflight";
 import { runSetupWorkflow } from "../lib/dx/setup";
 import { scanDeadCode, printDeadCodeDocument } from "../lib/dx/dead-code";
 import { inspectBundleChunks, printBundleReport } from "../lib/dx/bundle-guard";
+import { runLicenseAudit } from "./license-audit";
 import {
   parseCliArgs,
   createDxEnvelope,
@@ -52,6 +53,9 @@ function printUsage(): void {
   );
   console.log(
     `  ${colors.cyan}verify [--json]${colors.reset}               Strict invariant check for CI / pre-commit (exits 1 on failure)`
+  );
+  console.log(
+    `  ${colors.cyan}audit:licenses [--json]${colors.reset}       Audit lockfile package SPDX licenses against policy`
   );
   console.log(
     `  ${colors.cyan}dead-code [--limit n] [--json]${colors.reset} Scan for unused exports and orphaned modules`
@@ -344,6 +348,85 @@ export function handlePreflightCommand(parsed: ParsedCliArgs): void {
   }
 
   if (!report.ready) {
+    process.exit(1);
+  }
+}
+
+export function handleAuditLicensesCommand(parsed: ParsedCliArgs): void {
+  const isJson = Boolean(parsed.flags.json || parsed.flags.j);
+  const startTime = Date.now();
+  const report = runLicenseAudit({ workspaceRoot });
+  const durationMs = Date.now() - startTime;
+
+  if (isJson) {
+    printJsonEnvelope(
+      createDxEnvelope({
+        command: "audit:licenses",
+        success: report.passed,
+        durationMs,
+        data: report,
+        remediations: report.passed
+          ? []
+          : [
+              {
+                id: "license-audit-fix",
+                title:
+                  "Review unapproved dependency licenses and update license-policy.json exceptions",
+                command: "npm run audit:licenses",
+                autoFixable: false,
+                scope: "security",
+              },
+            ],
+      })
+    );
+  } else {
+    console.log(
+      formatHeader(
+        "DX License Compliance Sentinel",
+        "SPDX • license-policy.json"
+      )
+    );
+    console.log(`Packages Scanned: ${report.totalPackagesScanned}`);
+    console.log(`Compliant Packages: ${report.totalCompliantPackages}`);
+    console.log(`Active Policy Exceptions: ${report.activeExceptionsCount}`);
+    console.log(`Scan Duration: ${durationMs}ms`);
+
+    if (report.invalidExceptions.length > 0) {
+      console.error(
+        `\n${colors.brightRed}❌ Invalid or Expired Exception Policies (${report.invalidExceptions.length}):${colors.reset}`
+      );
+      for (const ie of report.invalidExceptions) {
+        console.error(
+          `  ${colors.red}• ${ie.packageName}: ${ie.reason}${colors.reset}`
+        );
+      }
+    }
+
+    if (report.violations.length > 0) {
+      console.error(
+        `\n${colors.brightRed}❌ License Policy Violations (${report.violations.length}):${colors.reset}`
+      );
+      for (const v of report.violations) {
+        console.error(
+          `  ${colors.red}• ${v.packageName}@${v.version} (${v.packagePath})${colors.reset}`
+        );
+        console.error(`    License: ${v.licenseExpression}`);
+        console.error(`    Unapproved: ${v.unapprovedLicenses.join(", ")}`);
+      }
+    }
+
+    if (report.passed) {
+      console.log(
+        `\n${colors.brightGreen}✅ All lockfile dependency licenses comply with license-policy.json.${colors.reset}\n`
+      );
+    } else {
+      console.error(
+        `\n${colors.brightRed}❌ License audit failed. Resolve unapproved licenses or update license-policy.json.${colors.reset}\n`
+      );
+    }
+  }
+
+  if (!report.passed) {
     process.exit(1);
   }
 }
@@ -1269,6 +1352,11 @@ export async function main(): Promise<void> {
     case "verify":
     case "check":
       await handleVerifyCommand(parsed);
+      break;
+    case "audit:licenses":
+    case "license-audit":
+    case "licenses":
+      handleAuditLicensesCommand(parsed);
       break;
     case "commit":
     case "cz":

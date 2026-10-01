@@ -1,0 +1,152 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "version": "1.0.0",
+  "allowedLicenses": [
+    "0BSD",
+    "Apache-2.0",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "BlueOak-1.0.0",
+    "CC-BY-4.0",
+    "CC0-1.0",
+    "EPL-2.0",
+    "ISC",
+    "MIT",
+    "MIT-0",
+    "MPL-2.0",
+    "OFL-1.1",
+    "Python-2.0",
+    "Unlicense",
+    "Zlib"
+  ],
+  "exceptions": [
+    {
+      "packageName": "khroma",
+      "license": "UNKNOWN",
+      "expiresAt": "2026-12-30",
+      "riskOwner": "devsecops@deruiter.dev",
+      "ticket": "SEC-8237",
+      "rationale": "Transitive dependency of mermaid without license field in lockfile; verified MIT upstream."
+    },
+    {
+      "packageName": "sentry",
+      "license": "FSL-1.1-Apache-2.0",
+      "expiresAt": "2026-12-30",
+      "riskOwner": "devsecops@deruiter.dev",
+      "ticket": "SEC-8237",
+      "rationale": "Sentry CLI utility wrapper under Functional Source License 1.1; internal build tool usage only."
+    },
+    {
+      "packageName": "@img/sharp-libvips-darwin-arm64",
+      "license": "LGPL-3.0-or-later",
+      "expiresAt": "2026-12-30",
+      "riskOwner": "devsecops@deruiter.dev",
+      "ticket": "SEC-8237",
+      "rationale": "Prebuilt libvips binary binding for sharp image processing; dynamically linked C library."
+    },
+    {
+      "packageName": "@img/sharp-libvips-darwin-x64",
+      "license": "LGPL-3.0-or-later",
+      "expiresAt": "2026-12-30",
+      "riskOwner": "devsecops@deruiter.dev",
+      "ticket": "SEC-8237",
+      "rationale": "Prebuilt libvips binary binding for sharp image processing; dynamically linked C library."
+    },
+    {
+      "packageName": "@img/sharp-libvips-linux-arm",
+      "license": "LGPL-3.0-or-later",
+      "expiresAt": "2026-12-30",
+      "riskOwner": "devsecops@deruiter.dev",
+      "ticket": "SEC-8237",
+      "rationale": "Prebuilt libvips binary binding for sharp image processing; dynamically linked C library."
+    },
+    {
+      "packageName": "@img/sharp-libvips-linux-arm64",
+      "license": "LGPL-3.0-or-later",
+      "expiresAt": "2026-12-30",
+      "riskOwner": "devsecops@deruiter.dev",
+      "ticket": "SEC-8237",
+      "rationale": "Prebuilt libvips binary binding for sharp image processing; dynamically linked C library."
+    },
+    {
+      "packageName": "@img/sharp-libvips-linux-ppc64",
+      "license": "LGPL-3.0-or-later",
+      "expiresAt": "2026-12-30",
+      "riskOwner": "devsecops@deruiter.dev",
+      "ticket": "SEC-8237",
+      "rationale": "Prebuilt libvips binary binding for sharp image processing; dynamically linked C library."
+    },
+    {
+      "packageName": "@img/sharp-libvips-linux-riscv64",
+      "license": "LGPL-3.0-or-later",
+      "expiresAt": "2026-12-30",
+      "riskOwner": "devsecops@deruiter.dev",
+      "ticket": "SEC-8237",
+      "rationale": "Prebuilt libvips binary binding for sharp image processing; dynamically linked C library."
+    },
+    {
+      "packageName": "@img/sharp-libvips-linux-s390x",
+      "license": "LGPL-3.0-or-later",
+      "expiresAt": "2026-12-30",
+      "riskOwner": "devsecops@deruiter.dev",
+      "ticket": "SEC-8237",
+      "rationale": "Prebuilt libvips binary binding for sharp image processing; dynamically linked C library."
+    },
+    {
+      "packageName": "@img/sharp-libvips-linux-x64",
+      "license": "LGPL-3.0-or-later",
+      "expiresAt": "2026-12-30",
+      "riskOwner": "devsecops@deruiter.dev",
+      "ticket": "SEC-8237",
+      "rationale": "Prebuilt libvips binary binding for sharp image processing; dynamically linked C library."
+    },
+    {
+      "packageName": "@img/sharp-libvips-linuxmusl-arm64",
+      "license": "LGPL-3.0-or-later",
+      "expiresAt": "2026-12-30",
+      "riskOwner": "devsecops@deruiter.dev",
+      "ticket": "SEC-8237",
+      "rationale": "Prebuilt libvips binary binding for sharp image processing; dynamically linked C library."
+    },
+    {
+      "packageName": "@img/sharp-libvips-linuxmusl-x64",
+      "license": "LGPL-3.0-or-later",
+      "expiresAt": "2026-12-30",
+      "riskOwner": "devsecops@deruiter.dev",
+      "ticket": "SEC-8237",
+      "rationale": "Prebuilt libvips binary binding for sharp image processing; dynamically linked C library."
+    },
+    {
+      "packageName": "@img/sharp-wasm32",
+      "license": "LGPL-3.0-or-later",
+      "expiresAt": "2026-12-30",
+      "riskOwner": "devsecops@deruiter.dev",
+      "ticket": "SEC-8237",
+      "rationale": "Prebuilt libvips binary binding for sharp image processing; dynamically linked C library."
+    },
+    {
+      "packageName": "@img/sharp-win32-arm64",
+      "license": "LGPL-3.0-or-later",
+      "expiresAt": "2026-12-30",
+      "riskOwner": "devsecops@deruiter.dev",
+      "ticket": "SEC-8237",
+      "rationale": "Prebuilt libvips binary binding for sharp image processing; dynamically linked C library."
+    },
+    {
+      "packageName": "@img/sharp-win32-ia32",
+      "license": "LGPL-3.0-or-later",
+      "expiresAt": "2026-12-30",
+      "riskOwner": "devsecops@deruiter.dev",
+      "ticket": "SEC-8237",
+      "rationale": "Prebuilt libvips binary binding for sharp image processing; dynamically linked C library."
+    },
+    {
+      "packageName": "@img/sharp-win32-x64",
+      "license": "LGPL-3.0-or-later",
+      "expiresAt": "2026-12-30",
+      "riskOwner": "devsecops@deruiter.dev",
+      "ticket": "SEC-8237",
+      "rationale": "Prebuilt libvips binary binding for sharp image processing; dynamically linked C library."
+    }
+  ]
+}

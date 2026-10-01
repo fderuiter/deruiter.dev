@@ -3,7 +3,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 // Configure React 19 act environment
-(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+(
+  globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true;
 
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -11,7 +13,10 @@ import { SandboxTerminal } from "@/components/SandboxTerminal";
 
 // Mock audio and announcer providers
 vi.mock("@/components/providers/AudioProvider", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/components/providers/AudioProvider")>();
+  const actual =
+    await importOriginal<
+      typeof import("@/components/providers/AudioProvider")
+    >();
   return {
     ...actual,
     useAudio: () => ({
@@ -31,7 +36,10 @@ vi.mock("@/components/providers/A11yProvider", () => ({
 }));
 
 const setInputValue = (inputEl: HTMLInputElement, value: string) => {
-  const valueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set;
+  const valueSetter = Object.getOwnPropertyDescriptor(
+    window.HTMLInputElement.prototype,
+    "value"
+  )?.set;
   valueSetter?.call(inputEl, value);
   inputEl.dispatchEvent(new Event("change", { bubbles: true }));
 };
@@ -134,8 +142,12 @@ describe("SandboxTerminal JSDOM Emulator States", () => {
     });
 
     // Loading indicator should be gone, and help logs should be displayed
-    expect(container.textContent).not.toContain("Executing clinical API query...");
-    expect(container.textContent).toContain("Available Curated Clinical EDC SDK Commands");
+    expect(container.textContent).not.toContain(
+      "Executing clinical API query..."
+    );
+    expect(container.textContent).toContain(
+      "Available Curated Clinical EDC SDK Commands"
+    );
     const logViewport = container.querySelector('[role="log"]');
     expect(logViewport).toBeDefined();
   });
@@ -323,5 +335,78 @@ describe("SandboxTerminal JSDOM Emulator States", () => {
     });
 
     expect(container.textContent).toContain("try 'loon', 'cowsay', or 'duck'");
+  });
+
+  it("should copy JSON payload to clipboard when CopyButton is clicked", async () => {
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText: writeTextMock },
+      configurable: true,
+      writable: true,
+    });
+
+    await act(async () => {
+      root = createRoot(container);
+      root.render(<SandboxTerminal />);
+    });
+
+    const inputEl = container.querySelector("input") as HTMLInputElement;
+
+    await act(async () => {
+      setInputValue(inputEl, "imednet studies list");
+    });
+
+    await act(async () => {
+      inputEl.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: "Enter",
+          code: "Enter",
+          keyCode: 13,
+          which: 13,
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(450);
+    });
+
+    const copyBtn = container.querySelector(
+      'button[aria-label="Copy JSON payload"]'
+    ) as HTMLButtonElement;
+    expect(copyBtn).not.toBeNull();
+
+    await act(async () => {
+      copyBtn.click();
+    });
+
+    expect(writeTextMock).toHaveBeenCalled();
+    const copiedText = writeTextMock.mock.calls[0][0];
+    expect(copiedText).toContain("BRIGHT-01");
+    expect(JSON.parse(copiedText)).toEqual([
+      {
+        studyID: "BRIGHT-01",
+        name: "Phase III Pediatric Leukemia Study",
+        status: "ACTIVE",
+        subjectsCount: 142,
+        version: "v4.2.1",
+      },
+      {
+        studyID: "ONCO-2026",
+        name: "Advanced Melanoma Immunotherapy Trial",
+        status: "ENROLLING",
+        subjectsCount: 89,
+        version: "v1.0.8",
+      },
+      {
+        studyID: "CARDIO-REF",
+        name: "Congestive Heart Failure Observational Registry",
+        status: "COMPLETED",
+        subjectsCount: 310,
+        version: "v2.5.0",
+      },
+    ]);
   });
 });

@@ -258,6 +258,16 @@ export default function SchemaFlowWorkspace() {
   const [edges, setEdges] = useState<Edge[]>(DEFAULT_EDGES);
   const [history, setHistory] = useState<Edge[][]>([]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
+
+  const hoveredNode = hoveredNodeId
+    ? nodes.find((n) => n.id === hoveredNodeId)
+    : null;
+  const activeInspectorNode = hoveredNode
+    ? hoveredNode
+    : selectedNodeId
+      ? nodes.find((n) => n.id === selectedNodeId)
+      : null;
 
   // Initial baseline snapshot for SDTM structural diff comparisons
   const [baselineSnapshot, setBaselineSnapshot] = useState<StudyProtocol>(() =>
@@ -279,7 +289,7 @@ export default function SchemaFlowWorkspace() {
     {
       id: "welcome",
       type: "info",
-      text: "Logical Proof Assistant CLI v2.4\nType 'help' to review syntax. Hover nodes to read specifications.",
+      text: "Logical Proof Assistant CLI v2.4\nType 'help' to review syntax. Hover or tap nodes to read specifications.",
     },
   ]);
   const [cliHistory, setCliHistory] = useState<string[]>([]);
@@ -387,8 +397,12 @@ export default function SchemaFlowWorkspace() {
         ramValRef.current = newPercent;
 
         // Direct DOM mutations to transient telemetry UI metrics - zero Virtual DOM re-renders
-        // prettier-ignore
-        if (gaugeContainerRef.current) { gaugeContainerRef.current.style.setProperty("--gauge-progress", newPercent.toString()); }
+        if (gaugeContainerRef.current) {
+          gaugeContainerRef.current.style.setProperty(
+            "--gauge-progress",
+            newPercent.toString()
+          );
+        }
         if (ramTextRef.current) {
           ramTextRef.current.textContent = `${newPercent.toFixed(0)}%`;
         }
@@ -599,6 +613,7 @@ export default function SchemaFlowWorkspace() {
       addLog(
         "info",
         "Command Reference Checklist:\n" +
+          "  Hover or tap nodes to inspect specifications and formulas.\n" +
           "  connect <S> <T>        - Establish pathway from Node S to Node T (e.g. connect A C)\n" +
           "  disconnect <S> <T>     - Sever pathway from Node S to Node T\n" +
           "  export [json|yaml|odm] - Export compiled schema in JSON, YAML, or CDISC ODM XML\n" +
@@ -816,7 +831,6 @@ export default function SchemaFlowWorkspace() {
                   </span>
                 )}
               </button>
-
               <button
                 onClick={executeRollback}
                 disabled={history.length === 0}
@@ -924,8 +938,11 @@ export default function SchemaFlowWorkspace() {
                 return (
                   <g
                     key={node.id}
+                    data-testid={`node-${node.id}`}
                     transform={`translate(${node.x}, ${node.y})`}
                     onClick={() => handleNodeClick(node.id)}
+                    onMouseEnter={() => setHoveredNodeId(node.id)}
+                    onMouseLeave={() => setHoveredNodeId(null)}
                     className="cursor-pointer svg-node focus:outline-none"
                     tabIndex={0}
                     role="button"
@@ -1002,6 +1019,47 @@ export default function SchemaFlowWorkspace() {
                   </g>
                 );
               })}
+
+              {/* Floating Specification Tooltip Overlay */}
+              {hoveredNode &&
+                (() => {
+                  const tooltipX = clamp(hoveredNode.x - 20, 10, 520);
+                  const tooltipY =
+                    hoveredNode.y > 100
+                      ? hoveredNode.y - 52
+                      : hoveredNode.y + 88;
+
+                  return (
+                    <g
+                      data-testid="node-tooltip"
+                      role="tooltip"
+                      className="pointer-events-none transition-opacity duration-150"
+                    >
+                      <foreignObject
+                        x={tooltipX}
+                        y={tooltipY}
+                        width="280"
+                        height="52"
+                        className="overflow-visible"
+                      >
+                        <div className="bg-zinc-950/95 border border-brand-cyan/70 rounded-xl p-2.5 shadow-xl shadow-black/90 backdrop-blur-md text-[10px] font-mono text-cyan-200 leading-tight select-none">
+                          <div className="flex items-center justify-between mb-1 gap-2">
+                            <span className="font-extrabold text-white flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-brand-cyan animate-ping"></span>
+                              {hoveredNode.label} SPECIFICATION
+                            </span>
+                            <span className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-300">
+                              {hoveredNode.type}
+                            </span>
+                          </div>
+                          <div className="text-zinc-200 text-[9.5px] leading-snug break-words">
+                            {hoveredNode.description}
+                          </div>
+                        </div>
+                      </foreignObject>
+                    </g>
+                  );
+                })()}
             </svg>
 
             {/* Floating click prompt guidance label */}
@@ -1009,12 +1067,123 @@ export default function SchemaFlowWorkspace() {
               <span className="text-[10px] font-mono text-muted leading-none">
                 {selectedNodeId
                   ? `👉 Selected NODE ${selectedNodeId}. Click target node to draw directed branch.`
-                  : "💡 Click a node, then click another node to connect them dynamically."}
+                  : "💡 Hover or tap nodes to inspect specifications; tap two nodes to connect them."}
               </span>
               <span className="text-[9px] font-mono bg-zinc-900 px-2 py-0.5 border border-zinc-850 rounded text-brand-cyan font-bold">
                 GRAPHICS ACCELERATION // ON
               </span>
             </div>
+          </div>
+
+          {/* Contextual Node Inspection Panel */}
+          <div
+            data-testid="node-inspector-panel"
+            role="region"
+            aria-label="Contextual Node Inspection Panel"
+            className="w-full min-w-0 bg-zinc-900/40 border border-zinc-900 rounded-2xl p-4 transition-all duration-200 select-none"
+          >
+            <div className="flex items-center justify-between border-b border-zinc-900 pb-2.5 mb-3 min-w-0 gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <div
+                  className={`w-2 h-2 rounded-full ${activeInspectorNode ? "bg-brand-cyan animate-pulse" : "bg-zinc-600"}`}
+                />
+                <h4 className="text-xs font-mono font-extrabold uppercase tracking-wider text-zinc-200 truncate">
+                  {activeInspectorNode
+                    ? `INSPECTOR // ${activeInspectorNode.label}`
+                    : "CONTEXTUAL NODE INSPECTOR"}
+                </h4>
+              </div>
+              <span className="text-[9px] font-mono uppercase px-2 py-0.5 rounded border border-zinc-800 bg-zinc-950 text-zinc-400 font-bold shrink-0">
+                {hoveredNodeId
+                  ? "HOVER PREVIEW"
+                  : selectedNodeId
+                    ? "TAP / SELECTED"
+                    : "TOUCH & POINTER READY"}
+              </span>
+            </div>
+
+            {activeInspectorNode ? (
+              (() => {
+                let isProven = true;
+                if (activeInspectorNode.id === "C") isProven = isC_Proven;
+                if (activeInspectorNode.id === "E") isProven = isE_Proven;
+
+                return (
+                  <div className="flex flex-col gap-3 min-w-0">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono min-w-0">
+                      <div className="bg-zinc-950/80 border border-zinc-900 rounded-xl p-2 min-w-0">
+                        <span className="text-[9px] text-muted block uppercase tracking-wider mb-0.5">
+                          Label
+                        </span>
+                        <span
+                          data-testid="inspector-node-label"
+                          className="font-extrabold text-white truncate block"
+                        >
+                          {activeInspectorNode.label}
+                        </span>
+                      </div>
+
+                      <div className="bg-zinc-950/80 border border-zinc-900 rounded-xl p-2 min-w-0">
+                        <span className="text-[9px] text-muted block uppercase tracking-wider mb-0.5">
+                          Formula
+                        </span>
+                        <span
+                          data-testid="inspector-node-formula"
+                          className="font-extrabold text-brand-cyan truncate block"
+                        >
+                          {activeInspectorNode.formula}
+                        </span>
+                      </div>
+
+                      <div className="bg-zinc-950/80 border border-zinc-900 rounded-xl p-2 min-w-0">
+                        <span className="text-[9px] text-muted block uppercase tracking-wider mb-0.5">
+                          Type
+                        </span>
+                        <span
+                          data-testid="inspector-node-type"
+                          className="font-bold text-zinc-300 uppercase truncate block"
+                        >
+                          {activeInspectorNode.type}
+                        </span>
+                      </div>
+
+                      <div className="bg-zinc-950/80 border border-zinc-900 rounded-xl p-2 min-w-0">
+                        <span className="text-[9px] text-muted block uppercase tracking-wider mb-0.5">
+                          Status
+                        </span>
+                        <span
+                          data-testid="inspector-node-status"
+                          className={`font-extrabold uppercase truncate block ${
+                            isProven ? "text-emerald-400" : "text-amber-400"
+                          }`}
+                        >
+                          {isProven ? "PROVEN" : "UNPROVEN"}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="bg-zinc-950/90 border border-zinc-900 rounded-xl p-3 min-w-0">
+                      <span className="text-[9px] font-mono text-muted uppercase tracking-wider block mb-1">
+                        Specification Description
+                      </span>
+                      <p
+                        data-testid="inspector-node-description"
+                        className="text-xs text-zinc-200 leading-relaxed font-sans break-words"
+                      >
+                        {activeInspectorNode.description}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })()
+            ) : (
+              <div className="py-2 text-[11px] text-muted font-mono leading-relaxed flex items-center justify-between gap-2">
+                <span>
+                  💡 Hover or tap any node on the proof canvas above to inspect
+                  domain rules, formulas, and clinical specifications.
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Telemetry and Goal Status Cards */}

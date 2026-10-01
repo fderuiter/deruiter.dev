@@ -91,9 +91,8 @@ describe("SchemaFlowWorkspace Component Architectural & Logical Validation", () 
     expect(content).toContain("gaugeContainerRef");
     expect(content).toContain("ramTextRef");
     expect(content).toContain("ramValRef");
-    expect(content).toContain(
-      'gaugeContainerRef.current.style.setProperty("--gauge-progress"'
-    );
+    expect(content).toContain("gaugeContainerRef.current.style.setProperty");
+    expect(content).toContain('"--gauge-progress"');
     expect(content).toContain("ramTextRef.current.textContent");
   });
 

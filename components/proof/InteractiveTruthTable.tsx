@@ -20,6 +20,7 @@ import {
 interface InteractiveTruthTableProps {
   diagnosis: FallacyDiagnosis;
   onClear?: () => void;
+  onRollback?: () => void;
 }
 
 /**
@@ -82,6 +83,8 @@ function AstTraceView({
  */
 export function InteractiveTruthTable({
   diagnosis,
+  onClear,
+  onRollback,
 }: InteractiveTruthTableProps) {
   // Extract all distinct variables involved in the fallacy (defaulting to P and Q)
   const variables = useMemo(() => {
@@ -260,7 +263,7 @@ export function InteractiveTruthTable({
   return (
     <div className="space-y-3.5 text-xs">
       {/* Header Diagnostic Card */}
-      <div className="p-3 rounded-lg bg-red-950/40 border border-red-800/60 text-red-300 space-y-1">
+      <div className="p-3 rounded-lg bg-red-950/40 border border-red-800/60 text-red-300 space-y-2">
         <div className="flex items-start justify-between gap-2">
           <span className="font-bold block text-sm">
             {diagnosis.fallacyName}
@@ -272,6 +275,19 @@ export function InteractiveTruthTable({
         <div className="font-mono text-[11px] text-red-400 bg-red-950/80 px-2 py-1 rounded border border-red-900/60 inline-block">
           {diagnosis.formalFormula}
         </div>
+        {onRollback && (
+          <div className="pt-1">
+            <button
+              type="button"
+              onClick={onRollback}
+              className="w-full py-2 px-3 rounded-lg bg-red-600 hover:bg-red-500 text-white font-mono font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-red-950/50 transition cursor-pointer active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-red-400"
+              aria-label="Rollback Step: Remove invalid edge and reset fallacy"
+            >
+              <IconRefresh className="w-4 h-4" />
+              <span>Rollback Step</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Narrative Explanation */}

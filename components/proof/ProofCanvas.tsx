@@ -17,6 +17,7 @@ import {
   INFERENCE_RULES,
   getCompatibleTargets,
   evaluateProofStatus,
+  FallacyDiagnosis,
 } from "@/lib/proof-utils";
 
 interface ProofCanvasProps {
@@ -55,6 +56,8 @@ interface ProofCanvasProps {
   canvasWrapperRef: RefObject<HTMLDivElement | null>;
   svgCanvasRef: RefObject<SVGSVGElement | null>;
   mobileActiveView: "canvas" | "ledger" | "systems" | "fallacy" | "terminal";
+  currentFallacy?: FallacyDiagnosis | null;
+  handleRollback?: () => void;
 }
 
 export const ProofCanvas: React.FC<ProofCanvasProps> = ({
@@ -84,6 +87,8 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
   canvasWrapperRef,
   svgCanvasRef,
   mobileActiveView,
+  currentFallacy,
+  handleRollback,
 }) => {
   const proofStatus = evaluateProofStatus(edges, activeTheorem);
   const [containerWidth, setContainerWidth] = React.useState<number>(760);
@@ -232,6 +237,41 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
           onPointerUp={handleCanvasPointerUp}
           className="relative w-full h-[420px] bg-gradient-to-b from-slate-950/60 via-slate-900 to-slate-950 select-none overflow-hidden"
         >
+          {/* Floating Canvas Error Action Banner */}
+          {currentFallacy && (
+            <div className="absolute top-3 left-4 right-4 z-30 pointer-events-none flex justify-center">
+              <div className="pointer-events-auto max-w-xl w-full p-3 rounded-xl border border-red-800/80 bg-red-950/90 backdrop-blur-md shadow-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-red-200">
+                <div className="flex items-start gap-2.5 min-w-0">
+                  <IconAlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+                  <div className="flex flex-col min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-bold text-red-100 text-xs">
+                        {currentFallacy.fallacyName}
+                      </span>
+                      <span className="px-1.5 py-0.2 text-[9px] font-mono font-bold bg-red-900/80 text-red-200 rounded border border-red-700/80">
+                        FALLACY DETECTED
+                      </span>
+                    </div>
+                    <span className="text-[11px] text-red-300/90 font-mono truncate">
+                      {currentFallacy.formalFormula}
+                    </span>
+                  </div>
+                </div>
+                {handleRollback && (
+                  <button
+                    type="button"
+                    onClick={handleRollback}
+                    className="shrink-0 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white font-mono font-bold text-xs flex items-center gap-1.5 shadow-md shadow-red-950/80 transition cursor-pointer active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-red-300"
+                    aria-label="Revert Edge: Strip invalid edge and clear fallacy diagnosis"
+                  >
+                    <IconRefresh className="w-3.5 h-3.5" />
+                    <span>Revert Edge</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="relative w-full h-full">
             <svg
               ref={svgCanvasRef}

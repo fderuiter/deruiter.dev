@@ -9,6 +9,7 @@ import React, {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
+import { recordArcadeScore } from "@/lib/arcade-achievements";
 import { AnimatePresence, Reorder } from "framer-motion";
 import {
   BIOSTAT_OPS_CAMPAIGN,
@@ -583,6 +584,13 @@ export function CardTable({
     playing &&
     progress?.crossed === true &&
     playback.shown === (timeline?.length ?? 0);
+
+  // Sync round score with the arcade achievements system
+  useEffect(() => {
+    if (view.roundScore > 0) {
+      recordArcadeScore("trial-and-error", view.roundScore);
+    }
+  }, [view.roundScore]);
 
   const [detailId, setDetailId] = useState<string | null>(null);
   const [runInfoOpen, setRunInfoOpen] = useState(false);

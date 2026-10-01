@@ -16,6 +16,7 @@ import { useAnnouncer } from "@/hooks/useAnnouncer";
 import { cloneDeep } from "@/lib/utils";
 import { clamp } from "@/lib/game-utils";
 import { downloadFile } from "@/lib/download";
+import { recordArcadeScore } from "@/lib/arcade-achievements";
 import { getMatchMediaMatches } from "@/hooks/useMediaQuery";
 import {
   IconAlertTriangle,
@@ -945,6 +946,7 @@ export const ClinicalTrialChaos: React.FC = () => {
         "clinical_chaos_highscore",
         settledScore.highScore.toString()
       );
+      recordArcadeScore("clinical-chaos", settledScore.highScore);
       setPowerUps((pu) =>
         chargePowerUps(
           pu,

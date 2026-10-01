@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   IconSend,
   IconCheck,
@@ -20,6 +20,18 @@ import {
 import { logger } from "@/lib/logger";
 import { apiClient } from "@/lib/api-client";
 import { useAnnouncer } from "@/hooks/useAnnouncer";
+import { usePersistentState } from "@/hooks/usePersistentState";
+import { safeRemoveItem } from "@/lib/safe-storage";
+
+interface ContactFormDraft {
+  name: string;
+  email: string;
+  intent: ContactIntent;
+  subject: string;
+  message: string;
+}
+
+export const CONTACT_FORM_DRAFT_KEY = "portfolio_contact_form_draft";
 
 interface ContactFormProps {
   initialIntent?: ContactIntent;
@@ -36,11 +48,39 @@ export function ContactForm({
   className = "",
   onSuccess,
 }: ContactFormProps) {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [intent, setIntent] = useState<ContactIntent>(initialIntent);
-  const [subject, setSubject] = useState(initialSubject);
-  const [message, setMessage] = useState(initialMessage);
+  const defaultDraft: ContactFormDraft = useMemo(
+    () => ({
+      name: "",
+      email: "",
+      intent: initialIntent,
+      subject: initialSubject,
+      message: initialMessage,
+    }),
+    [initialIntent, initialSubject, initialMessage]
+  );
+
+  const [draft, setDraft] = usePersistentState<ContactFormDraft>(
+    CONTACT_FORM_DRAFT_KEY,
+    defaultDraft
+  );
+
+  const name = draft?.name ?? "";
+  const email = draft?.email ?? "";
+  const intent = draft?.intent ?? initialIntent;
+  const subject = draft?.subject ?? initialSubject;
+  const message = draft?.message ?? initialMessage;
+
+  const setName = (val: string) =>
+    setDraft((prev) => ({ ...(prev || defaultDraft), name: val }));
+  const setEmail = (val: string) =>
+    setDraft((prev) => ({ ...(prev || defaultDraft), email: val }));
+  const setIntent = (val: ContactIntent) =>
+    setDraft((prev) => ({ ...(prev || defaultDraft), intent: val }));
+  const setSubject = (val: string) =>
+    setDraft((prev) => ({ ...(prev || defaultDraft), subject: val }));
+  const setMessage = (val: string) =>
+    setDraft((prev) => ({ ...(prev || defaultDraft), message: val }));
+
   const [gotcha, setGotcha] = useState(""); // Honeypot field
 
   const [mountedAt, setMountedAt] = useState<number>(0);
@@ -63,20 +103,6 @@ export function ContactForm({
       setMountedAt(Date.now());
     }
   }, []);
-
-  useEffect(() => {
-    if (initialSubject) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setSubject(initialSubject);
-    }
-  }, [initialSubject]);
-
-  useEffect(() => {
-    if (initialMessage) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setMessage(initialMessage);
-    }
-  }, [initialMessage]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -144,6 +170,7 @@ export function ContactForm({
     }
 
     setStatus("success");
+    safeRemoveItem(CONTACT_FORM_DRAFT_KEY);
     // The success card replaces the form, so a live region on it would be
     // mounted with its text already present and skipped by most screen
     // readers. Announce through the persistent root regions instead.
@@ -155,11 +182,7 @@ export function ContactForm({
   };
 
   const handleReset = () => {
-    setName("");
-    setEmail("");
-    setIntent(initialIntent);
-    setSubject(initialSubject);
-    setMessage(initialMessage);
+    safeRemoveItem(CONTACT_FORM_DRAFT_KEY);
     setGotcha("");
     setStatus("idle");
     setErrorMessage(null);

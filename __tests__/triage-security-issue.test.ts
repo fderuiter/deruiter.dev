@@ -193,7 +193,7 @@ describe("Triage Security Issue Script", () => {
         );
 
       const result = await triageSecurityIssues({
-        token: "fake-token",
+        token: "example_dev_token",
         repo: "fderuiter/portfolio",
         now: fixedNow,
       });
@@ -269,7 +269,7 @@ describe("Triage Security Issue Script", () => {
         );
 
       const result = await triageSecurityIssues({
-        token: "fake-token",
+        token: "example_dev_token",
         repo: "fderuiter/portfolio",
         now: fixedNow,
       });

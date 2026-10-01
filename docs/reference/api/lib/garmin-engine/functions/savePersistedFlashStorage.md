@@ -6,7 +6,7 @@
 
 # Function: savePersistedFlashStorage()
 
-> **savePersistedFlashStorage**(`flashVars`): `void`
+> **savePersistedFlashStorage**(`flashVars`): `boolean`
 
 ## Parameters
 
@@ -16,4 +16,4 @@
 
 ## Returns
 
-`void`
+`boolean`

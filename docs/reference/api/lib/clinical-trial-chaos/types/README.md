@@ -21,11 +21,14 @@
 - [SDTMRow](interfaces/SDTMRow.md)
 - [SignatureModalState](interfaces/SignatureModalState.md)
 - [StationConfig](interfaces/StationConfig.md)
+- [StressParameters](interfaces/StressParameters.md)
+- [StressPreset](interfaces/StressPreset.md)
 
 ## Type Aliases
 
 - [AmendmentType](type-aliases/AmendmentType.md)
 - [AuditorBehavior](type-aliases/AuditorBehavior.md)
+- [BIMOComplianceTrend](type-aliases/BIMOComplianceTrend.md)
 - [CDISCDomain](type-aliases/CDISCDomain.md)
 - [GameMode](type-aliases/GameMode.md)
 - [GamePhase](type-aliases/GamePhase.md)
@@ -33,5 +36,6 @@
 - [PowerUpInventory](type-aliases/PowerUpInventory.md)
 - [PowerUpType](type-aliases/PowerUpType.md)
 - [SignatureReason](type-aliases/SignatureReason.md)
+- [StressPresetId](type-aliases/StressPresetId.md)
 - [ValidationErrorType](type-aliases/ValidationErrorType.md)
 - [VendorSystem](type-aliases/VendorSystem.md)

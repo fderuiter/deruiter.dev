@@ -450,17 +450,21 @@ export function tickSubjectTimers(
 export function tickAuditor(
   auditor: AuditorState,
   deltaSeconds: number,
-  unresolvedBacklogCount: number
+  unresolvedBacklogCount: number,
+  auditorPacingMultiplier = 1.0
 ): AuditorState {
   if (auditor.isPaused || auditor.behavior === "coffee_break") {
     return auditor;
   }
 
+  const pacing = Math.max(0.1, auditorPacingMultiplier);
+  const effectiveDelta = deltaSeconds * pacing;
+
   const { suspicion } = auditor;
   let { x, direction, behavior, inspectTimer, total483Citations } = auditor;
 
   // 1. Move patrol position across floor
-  x += direction * 0.12 * deltaSeconds;
+  x += direction * 0.12 * effectiveDelta;
   if (x >= 0.9) {
     x = 0.9;
     direction = -1;
@@ -471,19 +475,19 @@ export function tickAuditor(
 
   // 2. State machine transitions
   if (behavior === "patrolling") {
-    inspectTimer += deltaSeconds;
+    inspectTimer += effectiveDelta;
     if (inspectTimer > 8) {
       behavior = "inspecting";
       inspectTimer = 0;
     }
   } else if (behavior === "inspecting") {
-    inspectTimer += deltaSeconds;
+    inspectTimer += effectiveDelta;
     if (inspectTimer > 3) {
       behavior = suspicion > 50 ? "suspicious" : "patrolling";
       inspectTimer = 0;
     }
   } else if (behavior === "suspicious") {
-    inspectTimer += deltaSeconds;
+    inspectTimer += effectiveDelta;
     if (inspectTimer > 5 && suspicion < 40) {
       behavior = "patrolling";
       inspectTimer = 0;
@@ -491,10 +495,11 @@ export function tickAuditor(
   }
 
   // 3. Passive suspicion decay and backlog pressure
-  let nextSuspicion = suspicion - auditor.suspicionDecayRate * deltaSeconds;
+  let nextSuspicion =
+    suspicion - auditor.suspicionDecayRate * deltaSeconds * pacing;
   if (unresolvedBacklogCount > 4) {
     // Backlog increases audit scrutiny
-    nextSuspicion += (unresolvedBacklogCount - 4) * 0.8 * deltaSeconds;
+    nextSuspicion += (unresolvedBacklogCount - 4) * 0.8 * effectiveDelta;
   }
 
   nextSuspicion = clamp(nextSuspicion, 0, 100);
@@ -649,10 +654,12 @@ export const SPAWN_INTERVAL_BY_PHASE: Readonly<Record<GamePhase, number>> = {
 export function getSpawnIntervalSeconds(
   phase: GamePhase,
   queueLength: number,
-  scale: (seconds: number) => number = (seconds) => seconds
+  scale: (seconds: number) => number = (seconds) => seconds,
+  arrivalRateMultiplier = 1.0
 ): number {
-  if (queueLength <= 0) return EMPTY_QUEUE_SPAWN_DELAY_SECONDS;
-  const base = SPAWN_INTERVAL_BY_PHASE[phase];
+  const safeMult = Math.max(0.1, arrivalRateMultiplier);
+  if (queueLength <= 0) return EMPTY_QUEUE_SPAWN_DELAY_SECONDS / safeMult;
+  const base = SPAWN_INTERVAL_BY_PHASE[phase] / safeMult;
   return scale(queueLength === 1 ? base / 2 : base);
 }
 

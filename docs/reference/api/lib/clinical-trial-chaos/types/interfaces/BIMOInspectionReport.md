@@ -56,6 +56,12 @@ Subjects that expired on the conveyor and were never submitted (#1670).
 
 ***
 
+### scoreTrend?
+
+> `optional` **scoreTrend?**: [`BIMOComplianceTrend`](../type-aliases/BIMOComplianceTrend.md)
+
+***
+
 ### submittedCRFs
 
 > **submittedCRFs**: `number`

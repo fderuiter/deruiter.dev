@@ -8,9 +8,15 @@
 
 ## Properties
 
+### actionableGuidance?
+
+> `optional` **actionableGuidance?**: `string`
+
+***
+
 ### category
 
-> **category**: `"Data Integrity"` \| `"Protocol Compliance"` \| `"21 CFR Part 11"` \| `"Adverse Event Reporting"`
+> **category**: `"Data Integrity"` \| `"Protocol Compliance"` \| `"21 CFR Part 11"` \| `"Adverse Event Reporting"` \| `"21 CFR 812 Device Rules"`
 
 ***
 
@@ -35,3 +41,9 @@
 ### severity
 
 > **severity**: `"Critical"` \| `"Major"` \| `"Minor"`
+
+***
+
+### timestamp?
+
+> `optional` **timestamp?**: `string`

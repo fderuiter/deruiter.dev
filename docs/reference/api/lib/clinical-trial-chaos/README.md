@@ -140,6 +140,12 @@ Re-exports [AvatarCanvas](outfits/type-aliases/AvatarCanvas.md)
 
 ***
 
+### BIMOComplianceTrend
+
+Re-exports [BIMOComplianceTrend](types/type-aliases/BIMOComplianceTrend.md)
+
+***
+
 ### BIMOFinding
 
 Re-exports [BIMOFinding](types/interfaces/BIMOFinding.md)
@@ -281,6 +287,12 @@ Re-exports [DEFAULT_OFFICE_ID](offices/variables/DEFAULT_OFFICE_ID.md)
 ### DEFAULT\_OUTFIT\_ID
 
 Re-exports [DEFAULT_OUTFIT_ID](outfits/variables/DEFAULT_OUTFIT_ID.md)
+
+***
+
+### DEFAULT\_STRESS\_PARAMS
+
+Re-exports [DEFAULT_STRESS_PARAMS](scenarios/variables/DEFAULT_STRESS_PARAMS.md)
 
 ***
 
@@ -1031,6 +1043,30 @@ Re-exports [StationConfig](types/interfaces/StationConfig.md)
 ### stopProceduralBGM
 
 Re-exports [stopProceduralBGM](sound-effects/functions/stopProceduralBGM.md)
+
+***
+
+### STRESS\_PRESETS
+
+Re-exports [STRESS_PRESETS](scenarios/variables/STRESS_PRESETS.md)
+
+***
+
+### StressParameters
+
+Re-exports [StressParameters](types/interfaces/StressParameters.md)
+
+***
+
+### StressPreset
+
+Re-exports [StressPreset](types/interfaces/StressPreset.md)
+
+***
+
+### StressPresetId
+
+Re-exports [StressPresetId](types/type-aliases/StressPresetId.md)
 
 ***
 

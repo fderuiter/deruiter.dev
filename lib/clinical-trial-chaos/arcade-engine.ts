@@ -34,6 +34,7 @@ import {
   tickShiftClocks,
   EXPIRY_SUSPICION,
 } from "./shift";
+import { DEFAULT_STRESS_PARAMS, STRESS_PRESETS } from "./scenarios";
 import type {
   AuditLogEntry,
   AuditorState,
@@ -45,12 +46,15 @@ import type {
   ProtocolAmendment,
   RecordedRuleViolation,
   SignatureReason,
+  StressParameters,
+  StressPresetId,
 } from "./types";
 
 export interface ClinicalTrialChaosState {
   scoreState: GameScoreState;
   auditorState: AuditorState;
   powerUps: PowerUpInventory;
+  stressParams: StressParameters;
   isPaused: boolean;
   isModalPaused: boolean;
   /** The Field Manual is open, which holds the clocks still (#1672). */
@@ -90,6 +94,7 @@ export class ClinicalTrialChaosEngine extends ArcadeEngine<
       scoreState: createInitialScoreState(),
       auditorState: createInitialAuditorState(),
       powerUps: createInitialPowerUpInventory(),
+      stressParams: { ...DEFAULT_STRESS_PARAMS },
       isPaused: false,
       isModalPaused: false,
       isManualOpen: false,
@@ -106,6 +111,7 @@ export class ClinicalTrialChaosEngine extends ArcadeEngine<
     this.state.scoreState = createInitialScoreState();
     this.state.auditorState = createInitialAuditorState();
     this.state.powerUps = createInitialPowerUpInventory();
+    this.state.stressParams = { ...DEFAULT_STRESS_PARAMS };
     this.state.isPaused = false;
     this.state.isModalPaused = false;
     this.state.isManualOpen = false;
@@ -115,6 +121,27 @@ export class ClinicalTrialChaosEngine extends ArcadeEngine<
     this.state.submittedHistory = [];
     this.state.auditLogs = [];
     this.notifySubscribers();
+  }
+
+  public setStressParameters(params: Partial<StressParameters>): void {
+    this.state.stressParams = { ...this.state.stressParams, ...params };
+    this.notifySubscribers();
+  }
+
+  public applyStressPreset(presetId: StressPresetId): void {
+    const preset = STRESS_PRESETS[presetId];
+    if (preset) {
+      this.state.stressParams = { ...preset.params };
+      this.notifySubscribers();
+    }
+  }
+
+  public getState(): ClinicalTrialChaosState {
+    return this.state;
+  }
+
+  public getStressParams(): StressParameters {
+    return this.state.stressParams;
   }
 
   public setPaused(paused: boolean): void {

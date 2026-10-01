@@ -70,6 +70,12 @@ The Field Manual is open, which holds the clocks still (#1672).
 
 ***
 
+### stressParams
+
+> **stressParams**: [`StressParameters`](../../types/interfaces/StressParameters.md)
+
+***
+
 ### subjects
 
 > **subjects**: [`ClinicalSubject`](../../types/interfaces/ClinicalSubject.md)[]

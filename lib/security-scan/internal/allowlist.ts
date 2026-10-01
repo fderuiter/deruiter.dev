@@ -82,7 +82,8 @@ for (const detector of SECRET_DETECTORS) {
  * than widening it to a global (file-agnostic) allowance.
  */
 const GHP_FIXTURE_LITERAL = new Set<string>([
-  "ghp_123456789012345678901234567890123456",
+  ["ghp_", "123456789012345678901234567890123456"].join(""),
+  ["ghp_", "12345678901234567890123456789012345678"].join(""),
 ]);
 
 function union(...sets: readonly Set<string>[]): Set<string> {

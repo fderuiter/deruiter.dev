@@ -210,7 +210,7 @@ export const ArcadeTrophyCabinet: React.FC = () => {
                     <h4 className="text-xs font-mono font-bold text-white truncate">
                       {game.title}
                     </h4>
-                    <span className="text-[10px] font-mono text-zinc-500">
+                    <span className="text-[10px] font-mono text-zinc-400">
                       {game.genre}
                     </span>
                   </div>
@@ -283,7 +283,7 @@ export const ArcadeTrophyCabinet: React.FC = () => {
 
         {/* Game Filter Dropdown */}
         <div className="flex items-center gap-2 text-xs font-mono text-zinc-400 w-full sm:w-auto">
-          <IconFilter className="w-4 h-4 shrink-0 text-zinc-500" />
+          <IconFilter className="w-4 h-4 shrink-0 text-zinc-400" />
           <select
             value={gameFilter}
             onChange={(e) => setGameFilter(e.target.value)}
@@ -328,7 +328,7 @@ export const ArcadeTrophyCabinet: React.FC = () => {
                       className={`flex h-10 w-10 items-center justify-center rounded-xl border ${
                         isUnlocked
                           ? "border-amber-500/30 bg-amber-500/10 text-amber-400"
-                          : "border-zinc-800 bg-zinc-950 text-zinc-500"
+                          : "border-zinc-800 bg-zinc-950 text-zinc-400"
                       }`}
                     >
                       {getTrophyIcon(trophy.icon)}

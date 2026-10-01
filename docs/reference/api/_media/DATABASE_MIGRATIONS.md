@@ -6,7 +6,7 @@ changes the schema without adding an entry to Prisma's migration history.
 
 ## Active migrations
 
-The repository contains seventeen active Prisma migrations:
+The repository contains eighteen active Prisma migrations:
 
 1. `20260417215437_init`: Initial database baseline and core models.
 2. `20260528000000_add_telemetry_event`: Telemetry event ingestion table.
@@ -25,6 +25,7 @@ The repository contains seventeen active Prisma migrations:
 15. `20261024000000_add_case_study_and_blog_post_composite_indexes`: Adds composite indexes `CaseStudy(published, created_at)` (#1112), `CaseStudyFeedback(caseStudySlug, createdAt)` and `(caseStudySlug, connectionHash, createdAt)` (#1117), and `BlogPost(published, created_at)` and `(published, updated_at)` (#1118).
 16. `20261024000000_add_telemetry_event_compound_idx`: Adds a compound index on `TelemetryEvent(eventType, projectSlug)` for accelerated grouping queries.
 17. `20261025000000_reorder_blog_post_reaction_unique_constraint`: Reorders unique constraint columns on `BlogPostReaction` to `(blogPostSlug, connectionHash, reactionType)` to enable prefix index matching.
+18. `20261026000000_reorder_case_study_reaction_unique_constraint`: Reorders unique constraint columns on `CaseStudyReaction` to `(caseStudySlug, connectionHash, reactionType)` to enable prefix index matching.
 
 ## Normal workflow
 

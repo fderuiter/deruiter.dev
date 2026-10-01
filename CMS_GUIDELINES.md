@@ -60,7 +60,7 @@ model CaseStudyReaction {
   connectionHash String
   createdAt      DateTime @default(now())
 
-  @@unique([caseStudySlug, reactionType, connectionHash])
+  @@unique([caseStudySlug, connectionHash, reactionType])
   @@index([caseStudySlug])
   @@index([caseStudySlug, reactionType])
   @@index([connectionHash])

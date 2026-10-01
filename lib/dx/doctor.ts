@@ -27,6 +27,7 @@ import {
   writeLlmsManifests,
 } from "../../scripts/generate-llms-txt";
 import { runLicenseAudit } from "../../scripts/license-audit";
+import { checkDeprecations } from "../../scripts/check-deprecations";
 
 export interface DiagnosticCheckResult {
   id: string;
@@ -2452,6 +2453,50 @@ export function checkPackageLockfile(root: string): DiagnosticCheckResult {
   };
 }
 
+export function checkLockfileDeprecations(root: string): DiagnosticCheckResult {
+  try {
+    const report = checkDeprecations(root);
+    if (report.success) {
+      return {
+        id: "lockfile-deprecations",
+        name: "Dependency Supply Chain Deprecation Invariant",
+        category: "architecture",
+        status: "pass",
+        message: `Zero deprecated or discontinued packages found across ${report.totalPackages} dependencies in package-lock.json.`,
+      };
+    }
+
+    return {
+      id: "lockfile-deprecations",
+      name: "Dependency Supply Chain Deprecation Invariant",
+      category: "architecture",
+      status: "fail",
+      message: `${report.deprecatedCount} deprecated package(s) found in package-lock.json: ${report.deprecatedPackages.map((p) => p.name).join(", ")}`,
+      details: report.deprecatedPackages.map(
+        (p) => `${p.name}@${p.version} (${p.location}): ${p.reason}`
+      ),
+      fixable: false,
+      remediation: {
+        id: "fix-lockfile-deprecations",
+        title: "Update or prune deprecated packages from package.json",
+        command: "npm run dx audit:deps",
+        autoFixable: false,
+        scope: "architecture",
+      },
+    };
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return {
+      id: "lockfile-deprecations",
+      name: "Dependency Supply Chain Deprecation Invariant",
+      category: "architecture",
+      status: "fail",
+      message: `Failed to audit package-lock.json deprecations: ${msg}`,
+      fixable: false,
+    };
+  }
+}
+
 /**
  * Check SEO and social preview integrity (ADR 0053, #1256).
  *
@@ -3214,6 +3259,7 @@ export async function runDiagnostics(
     checkGitHygieneConfig(root, fix),
     checkWorkspaceIdeConfig(root, fix),
     checkPackageLockfile(root),
+    checkLockfileDeprecations(root),
     checkSeoSocialIntegrity(root),
     checkDesignTokens(root),
     checkDeadCode(root),

@@ -1,4 +1,4 @@
-import { Client, Receiver } from "@upstash/qstash";
+import crypto from "crypto";
 import { getEnv } from "@/lib/env";
 import { resolveBaseUrl } from "@/lib/domain";
 import { logger } from "@/lib/logger";
@@ -58,24 +58,85 @@ export async function scheduleEmailRetry(
   if (!isQStashPublishingEnabled()) return false;
   const e = getEnv();
   try {
-    const client = new Client({
-      token: e.QSTASH_TOKEN as string,
-      ...(e.QSTASH_URL?.trim() ? { baseUrl: e.QSTASH_URL.trim() } : {}),
+    const baseUrl = e.QSTASH_URL?.trim() || "https://qstash.upstash.io";
+    const targetUrl = getQStashRetryUrl();
+    const delaySeconds = getQStashRetryDelaySeconds(attempts);
+
+    const publishEndpoint = `${baseUrl.replace(/\/$/, "")}/v2/publish/${targetUrl}`;
+    const response = await fetch(publishEndpoint, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${e.QSTASH_TOKEN}`,
+        "Content-Type": "application/json",
+        "Upstash-Delay": `${delaySeconds}s`,
+        "Upstash-Retries": "0",
+      },
+      body: JSON.stringify({ queueId }),
     });
-    await client.publishJSON({
-      url: getQStashRetryUrl(),
-      body: { queueId },
-      delay: getQStashRetryDelaySeconds(attempts),
-      // Retries beyond the first delivery attempt consume the daily message
-      // budget; the handler reschedules explicitly instead.
-      retries: 0,
-    });
+
+    if (!response.ok) {
+      throw new Error(`QStash publish HTTP ${response.status}`);
+    }
     return true;
   } catch (err) {
     logger.warn("QStash publish failed; daily maintenance will retry", {
       queueId,
       error: err instanceof Error ? err.message : String(err),
     });
+    return false;
+  }
+}
+
+/**
+ * Verifies a JWT signature against a single signing key using HMAC-SHA256.
+ */
+function verifySingleKey(
+  parts: string[],
+  body: string,
+  key: string,
+  targetUrl: string
+): boolean {
+  const [headerB64, payloadB64, sigB64] = parts;
+
+  // Compute expected HMAC-SHA256 signature
+  const expectedSig = crypto
+    .createHmac("sha256", key)
+    .update(`${headerB64}.${payloadB64}`)
+    .digest("base64url");
+
+  // Constant-time signature comparison
+  const sigBuf = Buffer.from(sigB64);
+  const expectedBuf = Buffer.from(expectedSig);
+  if (sigBuf.length !== expectedBuf.length) {
+    return false;
+  }
+  if (!crypto.timingSafeEqual(sigBuf, expectedBuf)) {
+    return false;
+  }
+
+  // Parse payload JSON
+  try {
+    const payloadJson = Buffer.from(payloadB64, "base64url").toString("utf-8");
+    const payload = JSON.parse(payloadJson);
+
+    // Verify claims
+    if (payload.iss !== "Upstash") return false;
+    if (payload.sub !== targetUrl) return false;
+
+    // Verify body hash
+    const bodyHash = crypto
+      .createHash("sha256")
+      .update(body)
+      .digest("base64url");
+    if (payload.body !== bodyHash) return false;
+
+    // Verify exp / nbf if present
+    const now = Math.floor(Date.now() / 1000);
+    if (typeof payload.exp === "number" && now > payload.exp) return false;
+    if (typeof payload.nbf === "number" && now < payload.nbf - 10) return false;
+
+    return true;
+  } catch {
     return false;
   }
 }
@@ -90,18 +151,23 @@ export async function verifyQStashSignature(
   body: string
 ): Promise<boolean> {
   if (!signature || !isQStashReceivingConfigured()) return false;
+
+  const parts = signature.split(".");
+  if (parts.length !== 3) return false;
+
   const e = getEnv();
-  try {
-    const receiver = new Receiver({
-      currentSigningKey: e.QSTASH_CURRENT_SIGNING_KEY as string,
-      nextSigningKey: e.QSTASH_NEXT_SIGNING_KEY as string,
-    });
-    return await receiver.verify({
-      signature,
-      body,
-      url: getQStashRetryUrl(),
-    });
-  } catch {
-    return false;
+  const targetUrl = getQStashRetryUrl();
+
+  const keys = [
+    e.QSTASH_CURRENT_SIGNING_KEY as string,
+    e.QSTASH_NEXT_SIGNING_KEY as string,
+  ].filter(Boolean);
+
+  for (const key of keys) {
+    if (verifySingleKey(parts, body, key, targetUrl)) {
+      return true;
+    }
   }
+
+  return false;
 }

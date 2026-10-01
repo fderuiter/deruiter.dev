@@ -27,6 +27,7 @@
 - [checkLayoutTextClippingInvariants](functions/checkLayoutTextClippingInvariants.md)
 - [checkLicenseCompliance](functions/checkLicenseCompliance.md)
 - [checkLlmsManifestsDrift](functions/checkLlmsManifestsDrift.md)
+- [checkLockfileDeprecations](functions/checkLockfileDeprecations.md)
 - [checkMigrationGuard](functions/checkMigrationGuard.md)
 - [checkModuleBoundaries](functions/checkModuleBoundaries.md)
 - [checkNavbarHierarchy](functions/checkNavbarHierarchy.md)

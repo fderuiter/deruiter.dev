@@ -2,16 +2,6 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import crypto from "crypto";
 import { NextRequest } from "next/server";
 
-const publishJSON = vi.fn();
-vi.mock("@upstash/qstash", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@upstash/qstash")>();
-  class MockClient {
-    constructor(public config: unknown) {}
-    publishJSON = publishJSON;
-  }
-  return { ...actual, Client: MockClient };
-});
-
 const processRetryQueue = vi.fn();
 const getQueueEntryState = vi.fn();
 vi.mock("@/lib/services/email-service", () => ({
@@ -28,6 +18,8 @@ import {
   getQStashRetryUrl,
   scheduleEmailRetry,
 } from "@/lib/qstash-retry";
+
+const fetchSpy = vi.spyOn(globalThis, "fetch");
 
 const CURRENT = "current-signing-key";
 const NEXT = "next-signing-key";
@@ -86,8 +78,11 @@ describe("QStash email retry", () => {
     vi.stubEnv("QSTASH_NEXT_SIGNING_KEY", NEXT);
     processRetryQueue.mockReset();
     getQueueEntryState.mockReset();
-    publishJSON.mockReset();
-    publishJSON.mockResolvedValue({ messageId: "m1" });
+    fetchSpy.mockReset();
+    fetchSpy.mockImplementation(
+      async () =>
+        new Response(JSON.stringify({ messageId: "m1" }), { status: 200 })
+    );
   });
 
   afterEach(() => {
@@ -98,11 +93,15 @@ describe("QStash email retry", () => {
   describe("publishing", () => {
     it("publishes one delayed message targeting the webhook", async () => {
       expect(await scheduleEmailRetry("q_123", 1)).toBe(true);
-      expect(publishJSON).toHaveBeenCalledWith(
+      expect(fetchSpy).toHaveBeenCalledWith(
+        `https://qstash.upstash.io/v2/publish/${getQStashRetryUrl()}`,
         expect.objectContaining({
-          url: getQStashRetryUrl(),
-          body: { queueId: "q_123" },
-          delay: 300,
+          method: "POST",
+          headers: expect.objectContaining({
+            Authorization: "Bearer qtok",
+            "Upstash-Delay": "300s",
+          }),
+          body: JSON.stringify({ queueId: "q_123" }),
         })
       );
     });
@@ -116,17 +115,17 @@ describe("QStash email retry", () => {
     it("does nothing when QStash is not configured", async () => {
       vi.stubEnv("QSTASH_TOKEN", "");
       expect(await scheduleEmailRetry("q_123", 1)).toBe(false);
-      expect(publishJSON).not.toHaveBeenCalled();
+      expect(fetchSpy).not.toHaveBeenCalled();
     });
 
     it("does not publish from preview deployments", async () => {
       vi.stubEnv("VERCEL_ENV", "preview");
       expect(await scheduleEmailRetry("q_123", 1)).toBe(false);
-      expect(publishJSON).not.toHaveBeenCalled();
+      expect(fetchSpy).not.toHaveBeenCalled();
     });
 
     it("swallows publish failures so the daily cron stays the fallback", async () => {
-      publishJSON.mockRejectedValue(new Error("qstash down"));
+      fetchSpy.mockRejectedValueOnce(new Error("qstash down"));
       await expect(scheduleEmailRetry("q_123", 1)).resolves.toBe(false);
     });
   });
@@ -189,7 +188,7 @@ describe("QStash email retry", () => {
       expect(processRetryQueue).toHaveBeenCalledWith(
         expect.objectContaining({ queueId: "q_123", maxBatchSize: 1 })
       );
-      expect(publishJSON).not.toHaveBeenCalled();
+      expect(fetchSpy).not.toHaveBeenCalled();
       expect(await res.json()).toMatchObject({
         received: true,
         queueId: "q_123",
@@ -204,8 +203,11 @@ describe("QStash email retry", () => {
       getQueueEntryState.mockResolvedValue({ status: "RETRYING", attempts: 2 });
       const res = await POST(request(BODY, sign(BODY, CURRENT)));
       expect(await res.json()).toMatchObject({ rescheduled: true });
-      expect(publishJSON).toHaveBeenCalledWith(
-        expect.objectContaining({ delay: 900 })
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          headers: expect.objectContaining({ "Upstash-Delay": "900s" }),
+        })
       );
     });
 
@@ -216,7 +218,7 @@ describe("QStash email retry", () => {
       getQueueEntryState.mockResolvedValue({ status: "FAILED", attempts: 5 });
       const res = await POST(request(BODY, sign(BODY, CURRENT)));
       expect(await res.json()).toMatchObject({ rescheduled: false });
-      expect(publishJSON).not.toHaveBeenCalled();
+      expect(fetchSpy).not.toHaveBeenCalled();
     });
 
     it("rejects a signed payload that fails schema validation", async () => {
@@ -244,7 +246,7 @@ describe("QStash email retry", () => {
         error: "Failed to process email retry",
       });
       expect(getQueueEntryState).not.toHaveBeenCalled();
-      expect(publishJSON).not.toHaveBeenCalled();
+      expect(fetchSpy).not.toHaveBeenCalled();
     });
 
     it("ignores validly signed deliveries on non-production deployments", async () => {

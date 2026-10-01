@@ -36,6 +36,7 @@ import {
   COMMAND_REGISTRY,
   type ParsedCliArgs,
 } from "../lib/dx/cli-parser";
+import { checkDeprecations } from "./check-deprecations";
 
 const workspaceRoot = path.resolve(__dirname, "..");
 
@@ -316,6 +317,59 @@ export async function handleEnvCommand(parsed: ParsedCliArgs): Promise<void> {
  * browser probes). Meant to turn a broken environment into one clear,
  * actionable report instead of a confusing wall of downstream failures.
  */
+export function handleAuditDepsCommand(parsed: ParsedCliArgs): void {
+  const isJson = Boolean(parsed.flags.json || parsed.flags.j);
+  const startTime = Date.now();
+  const report = checkDeprecations(workspaceRoot);
+  const durationMs = Date.now() - startTime;
+
+  if (isJson) {
+    printJsonEnvelope(
+      createDxEnvelope({
+        command: "audit:deps",
+        success: report.success,
+        durationMs,
+        data: report,
+        remediations: report.success
+          ? []
+          : [
+              {
+                id: "update-deprecated-deps",
+                title:
+                  "Update or prune deprecated dependencies in package.json",
+                command: "npm install",
+                autoFixable: false,
+                scope: "diagnostics",
+              },
+            ],
+      })
+    );
+  } else {
+    if (report.success) {
+      console.log(
+        `\n${badge("AUDIT", "pass")} Lockfile audited in ${durationMs}ms: Zero deprecated packages found across ${report.totalPackages} total dependencies.\n`
+      );
+    } else {
+      console.error(
+        `\n${badge("AUDIT", "fail")} Lockfile deprecation check failed (${report.deprecatedCount} deprecated package(s) found):\n`
+      );
+      for (const pkg of report.deprecatedPackages) {
+        console.error(
+          `  • ${colors.brightCyan}${pkg.name}@${pkg.version}${colors.reset} (${pkg.location})`
+        );
+        console.error(`    Reason: ${pkg.reason}`);
+      }
+      console.error(
+        `\nRemediation: Update or remove deprecated dependencies from package.json and run 'npm install'.\n`
+      );
+    }
+  }
+
+  if (!report.success) {
+    process.exit(1);
+  }
+}
+
 export function handlePreflightCommand(parsed: ParsedCliArgs): void {
   const isJson = Boolean(parsed.flags.json || parsed.flags.j);
   const startTime = Date.now();
@@ -1370,6 +1424,12 @@ export async function main(): Promise<void> {
       break;
     case "preflight":
       handlePreflightCommand(parsed);
+      break;
+    case "audit:deps":
+    case "audit-deps":
+    case "check:deps":
+    case "check-deprecations":
+      handleAuditDepsCommand(parsed);
       break;
     case "dead-code":
     case "unused":

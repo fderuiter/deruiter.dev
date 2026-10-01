@@ -272,6 +272,25 @@ export const COMMAND_REGISTRY: CommandDescriptor[] = [
     ],
   },
   {
+    name: "audit:deps",
+    aliases: ["audit-deps", "check:deps", "check-deprecations"],
+    summary: "Scan package-lock.json for deprecated or discontinued packages",
+    description:
+      "Audits package-lock.json to assert zero deprecated dependencies exist in active supply chain.",
+    category: "diagnostics",
+    isMutating: false,
+    options: [
+      {
+        name: "json",
+        alias: "j",
+        type: "boolean",
+        description: "Emit structured JSON envelope",
+        default: false,
+      },
+    ],
+    examples: ["npm run dx audit:deps", "npm run dx audit:deps -- --json"],
+  },
+  {
     name: "dead-code",
     aliases: ["unused"],
     summary: "Scan for unused exports and orphaned modules",

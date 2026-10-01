@@ -14,3 +14,6 @@
 ## Functions
 
 - [applySecurityHeaders](functions/applySecurityHeaders.md)
+- [buildContentSecurityPolicy](functions/buildContentSecurityPolicy.md)
+- [buildSecurityHeaders](functions/buildSecurityHeaders.md)
+- [generateNonce](functions/generateNonce.md)

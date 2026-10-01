@@ -1,6 +1,6 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextFetchEvent, NextRequest, NextResponse } from "next/server";
-import { applySecurityHeaders } from "@/lib/security-headers";
+import { applySecurityHeaders, generateNonce } from "@/lib/security-headers";
 import {
   generateClientConnectionHash,
   extractClientIp,
@@ -45,6 +45,12 @@ export function isClerkRoute(req: NextRequest): boolean {
 async function decorateRequest(req: NextRequest): Promise<NextResponse> {
   const requestHeaders = new Headers(req.headers);
 
+  let nonce = req.headers.get("x-nonce");
+  if (!nonce) {
+    nonce = generateNonce();
+    requestHeaders.set("x-nonce", nonce);
+  }
+
   if (req.nextUrl.pathname.startsWith("/api")) {
     const ip = extractClientIp(req);
     const userAgent = req.headers.get("user-agent") || "";
@@ -60,7 +66,7 @@ async function decorateRequest(req: NextRequest): Promise<NextResponse> {
     },
   });
 
-  return applySecurityHeaders(response, req);
+  return applySecurityHeaders(response, req, nonce);
 }
 
 const authMiddleware = clerkMiddleware(async (auth, req: NextRequest) => {

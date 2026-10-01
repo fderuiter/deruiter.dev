@@ -114,6 +114,8 @@ export interface FallacyDiagnosis {
   conclusion?: FallacyFormulaAst;
   variables?: string[];
   counterexampleValuation?: Record<string, boolean>;
+  sourceId?: string;
+  targetId?: string;
 }
 
 export interface TheoremDefinition {
@@ -2528,6 +2530,8 @@ export function getFallacyDiagnosis(
           "A dependent operation needs all of its prerequisites.",
         premises,
         conclusion,
+        sourceId: s,
+        targetId: t,
         ...table,
       };
     }
@@ -2568,6 +2572,8 @@ export function getFallacyDiagnosis(
       variables,
       truthTable: enhancedTable,
       counterexampleValuation: { P: false, Q: false },
+      sourceId: s,
+      targetId: t,
     };
   }
 
@@ -2610,6 +2616,8 @@ export function getFallacyDiagnosis(
       variables,
       truthTable,
       counterexampleValuation: counterexampleValuation || { P: false, Q: true },
+      sourceId: s,
+      targetId: t,
     };
   }
 
@@ -2650,6 +2658,8 @@ export function getFallacyDiagnosis(
       variables,
       truthTable,
       counterexampleValuation: counterexampleValuation || { P: false, Q: true },
+      sourceId: s,
+      targetId: t,
     };
   }
 
@@ -2687,6 +2697,8 @@ export function getFallacyDiagnosis(
     variables,
     truthTable,
     counterexampleValuation: counterexampleValuation || { P: true, Q: false },
+    sourceId: s,
+    targetId: t,
   };
 }
 

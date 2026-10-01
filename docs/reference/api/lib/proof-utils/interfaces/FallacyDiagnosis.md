@@ -50,6 +50,18 @@
 
 ***
 
+### sourceId?
+
+> `optional` **sourceId?**: `string`
+
+***
+
+### targetId?
+
+> `optional` **targetId?**: `string`
+
+***
+
 ### truthTable
 
 > **truthTable**: [`TruthTableRow`](TruthTableRow.md)[]

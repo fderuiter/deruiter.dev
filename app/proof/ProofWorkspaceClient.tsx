@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  useCallback,
+} from "react";
 import { useClipboard } from "@/hooks/useClipboard";
 import {
   getSuggestion,
@@ -1344,6 +1350,88 @@ export function ProofWorkspaceClient() {
     ]);
   };
 
+  const handleRollback = useCallback(() => {
+    if (!currentFallacy) return;
+
+    const sId = currentFallacy.sourceId;
+    const tId = currentFallacy.targetId;
+
+    let updatedEdges = [...edges];
+
+    if (tId) {
+      const targetNode = activeTheorem.nodes.find(
+        (n) => n.id.toUpperCase() === tId.toUpperCase()
+      );
+      const isPremise =
+        targetNode?.type === "premise" ||
+        ["A", "B", "D"].includes(tId.toUpperCase());
+
+      if (!isPremise && targetNode) {
+        const pruneRes = pruneStepOrNode(tId, edges, activeTheorem);
+        if (pruneRes.success) {
+          updatedEdges = pruneRes.newEdges;
+        } else if (sId) {
+          updatedEdges = edges.filter(
+            (e) =>
+              !(
+                e.source.toUpperCase() === sId.toUpperCase() &&
+                e.target.toUpperCase() === tId.toUpperCase()
+              ) &&
+              !(
+                e.source.toUpperCase() === tId.toUpperCase() &&
+                e.target.toUpperCase() === sId.toUpperCase()
+              )
+          );
+        }
+      } else if (sId) {
+        updatedEdges = edges.filter(
+          (e) =>
+            !(
+              e.source.toUpperCase() === sId.toUpperCase() &&
+              e.target.toUpperCase() === tId.toUpperCase()
+            ) &&
+            !(
+              e.source.toUpperCase() === tId.toUpperCase() &&
+              e.target.toUpperCase() === sId.toUpperCase()
+            )
+        );
+      }
+    } else if (updatedEdges.length > 0) {
+      updatedEdges = updatedEdges.slice(0, -1);
+    }
+
+    setEdges(updatedEdges);
+    setCurrentFallacy(null);
+
+    const rollbackMsg =
+      sId && tId
+        ? `Rolled back step (${sId} → ${tId}) and cleared fallacy diagnosis.`
+        : "Rolled back invalid step and cleared fallacy diagnosis.";
+
+    showToast(`✔ ${rollbackMsg}`, "info", { announce: false });
+    announceToScreenReader(rollbackMsg);
+
+    try {
+      playAutocomplete();
+    } catch {}
+
+    setConsoleLogs((prev) => [
+      ...prev,
+      {
+        id: `rollback-${Date.now()}`,
+        type: "info",
+        text: `✔ [ROLLBACK] ${rollbackMsg}`,
+      },
+    ]);
+  }, [
+    currentFallacy,
+    edges,
+    activeTheorem,
+    announceToScreenReader,
+    showToast,
+    playAutocomplete,
+  ]);
+
   const handleStartSimulation = (mode: "normal" | "loop" = "normal") => {
     if (isSimulating) return;
     if (activeTheoremId === "custom" && !customSession) {
@@ -1778,6 +1866,8 @@ export function ProofWorkspaceClient() {
             canvasWrapperRef={canvasWrapperRef}
             svgCanvasRef={svgCanvasRef}
             mobileActiveView={mobileActiveView}
+            currentFallacy={currentFallacy}
+            handleRollback={handleRollback}
           />
 
           <ProofLedger
@@ -1790,6 +1880,7 @@ export function ProofWorkspaceClient() {
             activeTheorem={activeTheorem}
             currentFallacy={currentFallacy}
             setCurrentFallacy={setCurrentFallacy}
+            handleRollback={handleRollback}
           />
         </div>
 

@@ -7,6 +7,7 @@ import {
   getNextTacticHint,
   getDeductionLedger,
   pruneStepOrNode,
+  getFallacyDiagnosis,
   type Edge,
 } from "../lib/proof-utils";
 
@@ -265,9 +266,43 @@ describe("Logic Proof Workspace Utilities", () => {
       const ledgerFull = getDeductionLedger(fullEdges, "modus-ponens");
       expect(ledgerFull[0].isDeletable).toBe(false); // Premise 1
       expect(ledgerFull[1].isDeletable).toBe(false); // Premise 2
-      expect(ledgerFull[2].isDeletable).toBe(true);  // Proven Lemma (Step 3)
+      expect(ledgerFull[2].isDeletable).toBe(true); // Proven Lemma (Step 3)
       expect(ledgerFull[3].isDeletable).toBe(false); // Premise 3
-      expect(ledgerFull[4].isDeletable).toBe(true);  // Proven Conclusion (Step 5)
+      expect(ledgerFull[4].isDeletable).toBe(true); // Proven Conclusion (Step 5)
+    });
+  });
+
+  describe("Fallacy Diagnostics and Rollback Integration", () => {
+    it("attaches sourceId and targetId to FallacyDiagnosis for 1-click rollback controls", () => {
+      const diagnosis = getFallacyDiagnosis("C", "A", []);
+      expect(diagnosis.sourceId).toBe("C");
+      expect(diagnosis.targetId).toBe("A");
+      expect(diagnosis.fallacyName).toBe("Fallacy of Affirming the Consequent");
+    });
+
+    it("correctly identifies non-sequitur connections with source and target binding", () => {
+      const diagnosis = getFallacyDiagnosis("A", "E", []);
+      expect(diagnosis.sourceId).toBe("A");
+      expect(diagnosis.targetId).toBe("E");
+      expect(diagnosis.fallacyName).toContain("Non Sequitur");
+    });
+
+    it("prunes invalid derived steps without deleting foundational premise axioms", () => {
+      const edges: Edge[] = [
+        { source: "A", target: "C" },
+        { source: "B", target: "C" },
+        { source: "C", target: "E" },
+      ];
+
+      // Pruning step target 'C' removes edges connected to C
+      const pruneRes = pruneStepOrNode("C", edges, "modus-ponens");
+      expect(pruneRes.success).toBe(true);
+      expect(pruneRes.newEdges).toEqual([]);
+
+      // Premise 'A' cannot be pruned
+      const premiseRes = pruneStepOrNode("A", edges, "modus-ponens");
+      expect(premiseRes.success).toBe(false);
+      expect(premiseRes.reason).toContain("immutable axiom");
     });
   });
 });

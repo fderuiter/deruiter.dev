@@ -221,6 +221,9 @@ jobs:
       - name: Execute Security Audit Gate
         run: npm run audit:security -- --fail-on-warning --severity=moderate
 
+      - name: Verify Lockfile Dependency Licenses
+        run: npm run audit:licenses
+
       - name: Scan Reachable Git History for Secrets
         run: npm run audit:secrets
 

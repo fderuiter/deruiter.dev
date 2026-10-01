@@ -250,6 +250,28 @@ export const COMMAND_REGISTRY: CommandDescriptor[] = [
     examples: ["npm run dx verify", "npm run dx verify -- --json"],
   },
   {
+    name: "audit:licenses",
+    aliases: ["license-audit", "licenses"],
+    summary: "Audit lockfile package SPDX licenses against license-policy.json",
+    description:
+      "Parses package-lock.json directly to evaluate SPDX license compliance against license-policy.json and active exception bounds.",
+    category: "diagnostics",
+    isMutating: false,
+    options: [
+      {
+        name: "json",
+        alias: "j",
+        type: "boolean",
+        description: "Emit structured JSON envelope",
+        default: false,
+      },
+    ],
+    examples: [
+      "npm run dx audit:licenses",
+      "npm run dx audit:licenses -- --json",
+    ],
+  },
+  {
     name: "dead-code",
     aliases: ["unused"],
     summary: "Scan for unused exports and orphaned modules",

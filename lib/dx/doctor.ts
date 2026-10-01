@@ -26,6 +26,7 @@ import {
   buildLlmsManifests,
   writeLlmsManifests,
 } from "../../scripts/generate-llms-txt";
+import { runLicenseAudit } from "../../scripts/license-audit";
 
 export interface DiagnosticCheckResult {
   id: string;
@@ -3115,6 +3116,54 @@ export function checkServiceResultTypes(
   };
 }
 
+/**
+ * Check Lockfile Dependency License Compliance Guard
+ */
+export function checkLicenseCompliance(root: string): DiagnosticCheckResult {
+  try {
+    const report = runLicenseAudit({ workspaceRoot: root });
+    if (report.passed) {
+      return {
+        id: "security-license-compliance",
+        name: "Lockfile License Compliance Guard",
+        category: "security",
+        status: "pass",
+        message: `All ${report.totalPackagesScanned} dependencies in package-lock.json satisfy license policy (${report.activeExceptionsCount} active exception(s)).`,
+      };
+    }
+
+    const details: string[] = [];
+    for (const ie of report.invalidExceptions) {
+      details.push(`Invalid exception for ${ie.packageName}: ${ie.reason}`);
+    }
+    for (const v of report.violations) {
+      details.push(
+        `Unapproved license '${v.licenseExpression}' for package '${v.packageName}@${v.version}' (${v.packagePath})`
+      );
+    }
+
+    return {
+      id: "security-license-compliance",
+      name: "Lockfile License Compliance Guard",
+      category: "security",
+      status: "fail",
+      message: `Detected ${report.totalViolations} license violation(s) and ${report.invalidExceptions.length} invalid exception policy issue(s) in package-lock.json.`,
+      details,
+      fixable: false,
+    };
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return {
+      id: "security-license-compliance",
+      name: "Lockfile License Compliance Guard",
+      category: "security",
+      status: "fail",
+      message: `Failed to execute license audit: ${msg}`,
+      fixable: false,
+    };
+  }
+}
+
 export interface DiagnosticSummary {
   results: DiagnosticCheckResult[];
   hasFailures: boolean;
@@ -3143,6 +3192,7 @@ export async function runDiagnostics(
     checkTestPathResolution(root),
     checkTestFixtureHygiene(root),
     checkSecretLeaks(root),
+    checkLicenseCompliance(root),
 
     checkMigrationGuard(root),
     checkDocumentationParity(root, fix),

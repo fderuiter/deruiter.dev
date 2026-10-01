@@ -186,7 +186,7 @@ mindmap
 
 - **PE Pillar**: Simple Design
 - **Sub-Principle**: Harmonious
-- **Target Surface**: CRF Studio (`components/crf/Modes/ExportImportModal.tsx`, `lib/crf/exporters/`)
+- **Target Surface**: CRF Studio (`components/crf/Modes/ExportImportModal.tsx`, `lib/crf/export-sas.ts`)
 - **Motivating Description**:
   Seamlessly bridge the gap between clinical form design and statistical analysis by generating automated SAS dataset creation scripts (`PROC FORMAT`, `DATA step`, CDASH variable attributes) and R `tibble` scaffolding directly alongside CDISC ODM-XML and FHIR SDC exports. Integrating directly into biostatisticians' everyday statistical programming environments harmonizes their end-to-end clinical trial data pipeline, saving hours of manual programming and ensuring absolute specification fidelity.
 - **Strategic Impact**:

@@ -397,32 +397,49 @@ export async function flushOfflineQueue(): Promise<{
         failed++;
         let failureReason = `HTTP ${res.status}: Client Error`;
         try {
-          const targetRes = typeof res.clone === "function" ? res.clone() : res;
-          let data: unknown;
-          if (typeof targetRes.json === "function") {
-            try {
-              data = await targetRes.json();
-            } catch {
-              if (typeof targetRes.text === "function") {
-                data = await targetRes.text();
+          const resObj = res as unknown as {
+            clone?: () => unknown;
+            json?: () => Promise<unknown>;
+            text?: () => Promise<unknown>;
+            error?: string | null;
+            body?: unknown;
+          };
+          if (
+            typeof resObj.error === "string" &&
+            resObj.error.trim().length > 0
+          ) {
+            failureReason = resObj.error;
+          } else {
+            const targetRes =
+              typeof resObj.clone === "function"
+                ? (resObj.clone() as typeof resObj)
+                : resObj;
+            let data: unknown = resObj.body;
+            if (!data && typeof targetRes.json === "function") {
+              try {
+                data = await targetRes.json();
+              } catch {
+                if (typeof targetRes.text === "function") {
+                  data = await targetRes.text();
+                }
               }
+            } else if (!data && typeof targetRes.text === "function") {
+              data = await targetRes.text();
             }
-          } else if (typeof targetRes.text === "function") {
-            data = await targetRes.text();
-          }
 
-          if (data && typeof data === "object") {
-            const obj = data as Record<string, unknown>;
-            if (typeof obj.message === "string") failureReason = obj.message;
-            else if (typeof obj.error === "string") failureReason = obj.error;
-            else if (
-              Array.isArray(obj.details) &&
-              typeof obj.details[0]?.message === "string"
-            ) {
-              failureReason = obj.details[0].message;
+            if (data && typeof data === "object") {
+              const obj = data as Record<string, unknown>;
+              if (typeof obj.message === "string") failureReason = obj.message;
+              else if (typeof obj.error === "string") failureReason = obj.error;
+              else if (
+                Array.isArray(obj.details) &&
+                typeof obj.details[0]?.message === "string"
+              ) {
+                failureReason = obj.details[0].message as string;
+              }
+            } else if (typeof data === "string" && data.trim().length > 0) {
+              failureReason = data;
             }
-          } else if (typeof data === "string" && data.trim().length > 0) {
-            failureReason = data;
           }
         } catch {
           // Fallback to default failureReason if reading fails

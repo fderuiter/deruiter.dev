@@ -68,6 +68,12 @@ function readCustomSession(
 type ProofTab = "ledger" | "systems" | "fallacy";
 const PROOF_TABS: readonly string[] = ["ledger", "systems", "fallacy"];
 
+let proofLogCounter = 0;
+function makeLogId(prefix: string): string {
+  proofLogCounter += 1;
+  return `${prefix}-${Date.now()}-${proofLogCounter}`;
+}
+
 function tabFromHash(raw: string | undefined): ProofTab {
   return raw && PROOF_TABS.includes(raw) ? (raw as ProofTab) : "ledger";
 }
@@ -495,7 +501,7 @@ export function ProofWorkspaceClient() {
 
         if (message.type === "progress") {
           pendingLogsRef.current.push({
-            id: `sim-${Date.now()}-${Math.random()}`,
+            id: makeLogId("sim"),
             type: "output",
             text: message.log,
           });
@@ -508,7 +514,7 @@ export function ProofWorkspaceClient() {
           setConsoleLogs((prev) => [
             ...prev,
             {
-              id: `sim-done-${Date.now()}`,
+              id: makeLogId("sim-done"),
               type: "success",
               text: `✔ Background Simulation completed successfully with ${message.stepsCompleted} steps.`,
             },
@@ -524,7 +530,7 @@ export function ProofWorkspaceClient() {
           setConsoleLogs((prev) => [
             ...prev,
             {
-              id: `sim-err-${Date.now()}`,
+              id: makeLogId("sim-err"),
               type: "error",
               text: `Background Simulation error: ${message.message}`,
             },
@@ -657,7 +663,7 @@ export function ProofWorkspaceClient() {
     setConsoleLogs((prev) => [
       ...prev,
       {
-        id: `switch-${Date.now()}`,
+        id: makeLogId("switch"),
         type: "info",
         text: `Switched active theorem to [${nextTh.title}] · ${nextTh.ruleName}\nGoal: ${nextTh.goalDescription}`,
       },
@@ -956,7 +962,7 @@ export function ProofWorkspaceClient() {
         setConsoleLogs((prev) => [
           ...prev,
           {
-            id: `drag-conn-${Date.now()}`,
+            id: makeLogId("drag-conn"),
             type: "success",
             text: `Connected Node ${sId} → Node ${tId} via interactive drag cord. Rule: ${dragConnection.ruleBadge || "Inference"}`,
           },
@@ -1024,7 +1030,7 @@ export function ProofWorkspaceClient() {
       setConsoleLogs((prev) => [
         ...prev,
         {
-          id: `err-${Date.now()}`,
+          id: makeLogId("err"),
           type: "error",
           text: `[FALLACY DETECTED] ${fallacy.fallacyName}: ${validation.reason}\nFormula: ${fallacy.formalFormula}\nAnalogy: ${fallacy.softwareAnalogy}`,
         },
@@ -1057,12 +1063,12 @@ export function ProofWorkspaceClient() {
     setConsoleLogs((prev) => [
       ...prev,
       {
-        id: `cmd-${Date.now()}`,
+        id: makeLogId("cmd"),
         type: "command",
         text: `connect ${newEdge.source} ${newEdge.target}`,
       },
       {
-        id: `out-${Date.now()}`,
+        id: makeLogId("out"),
         type: "success",
         text: `✔ Established edge: Node ${newEdge.source} (${sNode?.label}) → Node ${newEdge.target} (${tNode?.label})`,
       },
@@ -1192,12 +1198,12 @@ export function ProofWorkspaceClient() {
       setConsoleLogs((prev) => [
         ...prev,
         {
-          id: `cmd-${Date.now()}`,
+          id: makeLogId("cmd"),
           type: "command",
           text: `apply ${ruleId} ${nodeIds.join(" ")}`,
         },
         {
-          id: `out-${Date.now()}`,
+          id: makeLogId("out"),
           type: "success",
           text: `✔ ${ruleResult.explanation}`,
         },
@@ -1221,7 +1227,7 @@ export function ProofWorkspaceClient() {
       setConsoleLogs((prev) => [
         ...prev,
         {
-          id: `err-${Date.now()}`,
+          id: makeLogId("err"),
           type: "error",
           text: `[RULE ERROR] ${ruleResult.explanation || fallacy.fallacyName}\n${fallacy.plainEnglish}`,
         },
@@ -1311,7 +1317,7 @@ export function ProofWorkspaceClient() {
       setConsoleLogs((prev) => [
         ...prev,
         {
-          id: `err-${Date.now()}`,
+          id: makeLogId("err"),
           type: "error",
           text: `[PRUNE ERROR] ${result.reason}`,
         },
@@ -1331,7 +1337,7 @@ export function ProofWorkspaceClient() {
     setConsoleLogs((prev) => [
       ...prev,
       {
-        id: `prune-${Date.now()}`,
+        id: makeLogId("prune"),
         type: "info",
         text: `✔ ${result.reason}`,
       },
@@ -1344,7 +1350,7 @@ export function ProofWorkspaceClient() {
       setConsoleLogs((prev) => [
         ...prev,
         {
-          id: `sim-unavailable-${Date.now()}`,
+          id: makeLogId("sim-unavailable"),
           type: "info",
           text: "Custom simulation unavailable: entered formulas are not yet loaded into the graph.",
         },
@@ -1366,7 +1372,7 @@ export function ProofWorkspaceClient() {
     setConsoleLogs((prev) => [
       ...prev,
       {
-        id: `sim-start-${Date.now()}`,
+        id: makeLogId("sim-start"),
         type: "info",
         text: `Starting Proof Graph Simulation for [${activeTheorem.title}] in mode '${mode}'...`,
       },
@@ -1395,7 +1401,7 @@ export function ProofWorkspaceClient() {
     setConsoleLogs((prev) => [
       ...prev,
       {
-        id: `cmd-${Date.now()}`,
+        id: makeLogId("cmd"),
         type: "command",
         text: rawInput,
       },

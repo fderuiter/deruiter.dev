@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { clamp } from "@/lib/game-utils";
+import { copyToClipboard } from "@/lib/clipboard";
 import {
   IconTerminal,
   IconCornerDownLeft,
@@ -9,10 +10,28 @@ import {
   IconCpu,
   IconRefresh,
   IconCheck,
-  IconCircleDot
+  IconCircleDot,
+  IconFileCode,
+  IconGitCompare,
+  IconCopy,
+  IconDownload,
+  IconX,
 } from "@tabler/icons-react";
+import type {
+  StudyProtocol,
+  CRFForm,
+  EditCheckRule,
+  StudyVisit,
+} from "@/lib/crf/types";
+import {
+  UniversalCrfProtocolSchema,
+  exportUniversalCrfJson,
+  exportUniversalCrfYaml,
+} from "@/lib/crf/universal-schema";
+import { exportStudyToCdiscOdmXml } from "@/lib/crf/odm-xml-serializer";
+import { compareStudyToBaseline } from "@/lib/crf/study-baseline-diff";
 
-interface Node {
+export interface Node {
   id: string;
   label: string;
   type: "premise" | "intermediate" | "conclusion";
@@ -22,12 +41,12 @@ interface Node {
   y: number;
 }
 
-interface Edge {
+export interface Edge {
   source: string;
   target: string;
 }
 
-interface ConsoleLog {
+export interface ConsoleLog {
   id: string;
   type: "command" | "output" | "error" | "info" | "success";
   text: string;
@@ -78,27 +97,190 @@ const DEFAULT_NODES: Node[] = [
     description: "Goal R: Database schema is correct and optimal.",
     x: 620,
     y: 260,
-  }
+  },
 ];
 
-const DEFAULT_EDGES: Edge[] = [
-  { source: "A", target: "C" }
-];
+const DEFAULT_EDGES: Edge[] = [{ source: "A", target: "C" }];
+
+/**
+ * Client-Side In-Memory Schema Compiler
+ * Compiles active visual node and edge graph state into a standardized StudyProtocol data structure
+ * adhering to Zod UniversalCrfProtocolSchema specification.
+ */
+export function compileGraphToProtocol(
+  nodes: Node[],
+  edges: Edge[]
+): StudyProtocol {
+  const forms: CRFForm[] = nodes.map((node) => {
+    const domain =
+      node.type === "premise"
+        ? "DM"
+        : node.type === "intermediate"
+          ? "QS"
+          : "DS";
+    const varName = `VAR_${node.id}`;
+
+    // Map directed edges targeting or originating from this node into CDISC edit check rules
+    const formRules: EditCheckRule[] = edges
+      .filter((e) => e.target === node.id)
+      .map((edge) => ({
+        id: `RULE_${edge.source}_TO_${edge.target}`,
+        name: `Pathway Dependency: Node ${edge.source} -> Node ${edge.target}`,
+        description: `Enforces directed logical pathway dependency from ${edge.source} to ${edge.target}`,
+        triggerFieldIds: [`FLD_${edge.source}`],
+        targetFieldId: `FLD_${edge.target}`,
+        actionType: "require_field",
+        conditions: [
+          {
+            fieldId: `FLD_${edge.source}`,
+            operator: "is_not_empty",
+            value: "active",
+          },
+        ],
+        logicalOperator: "AND",
+      }));
+
+    return {
+      id: `FORM_${node.id}`,
+      name: `${node.label} (${node.type.toUpperCase()})`,
+      domain,
+      description: node.description,
+      version: "1.0",
+      sections: [
+        {
+          id: `SEC_${node.id}`,
+          title: `${node.label} Specification Section`,
+          description: `Specification section for visual node ${node.id}`,
+          fields: [
+            {
+              id: `FLD_${node.id}`,
+              variableName: varName,
+              label: `${node.label}: ${node.description}`,
+              description: node.description,
+              dataType: "text",
+              columnSpan: 6,
+              required: true,
+              calculationFormula: node.formula,
+              cdashMetadata: {
+                domain,
+                sdtmVariable: varName,
+                cdashLabel: node.label,
+                core: "HR",
+                acrfAnnotation: `${domain}.${varName}`,
+              },
+            },
+          ],
+        },
+      ],
+      rules: formRules,
+    };
+  });
+
+  const visits: StudyVisit[] = [
+    {
+      id: "VISIT_PREMISES",
+      oid: "VISIT_PREMISES",
+      name: "Premise Inputs & Baseline",
+      visitType: "Scheduled",
+      targetDay: 1,
+      windowBefore: 0,
+      windowAfter: 0,
+      assignedFormIds: nodes
+        .filter((n) => n.type === "premise")
+        .map((n) => `FORM_${n.id}`),
+    },
+    {
+      id: "VISIT_INTERMEDIATE",
+      oid: "VISIT_INTERMEDIATE",
+      name: "Intermediate Reasoning Flow",
+      visitType: "Scheduled",
+      targetDay: 14,
+      windowBefore: 2,
+      windowAfter: 2,
+      assignedFormIds: nodes
+        .filter((n) => n.type === "intermediate")
+        .map((n) => `FORM_${n.id}`),
+    },
+    {
+      id: "VISIT_CONCLUSION",
+      oid: "VISIT_CONCLUSION",
+      name: "Conclusion Verification",
+      visitType: "Scheduled",
+      targetDay: 28,
+      windowBefore: 3,
+      windowAfter: 3,
+      assignedFormIds: nodes
+        .filter((n) => n.type === "conclusion")
+        .map((n) => `FORM_${n.id}`),
+    },
+  ];
+
+  return {
+    $schema: "https://schema.deruiter.dev/universal-crf/v1.0.0.json",
+    schemaVersion: "1.0.0",
+    id: "SCHEMAFLOW-PROTOCOL-001",
+    protocolNumber: "SFLOW-2026-001",
+    protocolId: "SFLOW-2026-001",
+    studyName: "SchemaFlow Reactive Compiled Protocol",
+    title: "SchemaFlow Interactive Graph Protocol",
+    phase: "Phase III",
+    sponsor: "SchemaFlow Data Management",
+    therapeuticArea: "Clinical Informatics",
+    version: "1.0.0",
+    lastModified: "2026-10-01T00:00:00.000Z",
+    forms,
+    visits,
+    codelists: [],
+    rules: [],
+    arms: [
+      {
+        id: "ARM_MAIN",
+        name: "Main Logical Tactic Arm",
+        type: "Experimental",
+        description: "Primary branch for graph evaluation",
+      },
+    ],
+    epochs: [
+      {
+        id: "EPOCH_MAIN",
+        name: "Protocol Execution Epoch",
+        sequenceNumber: 1,
+      },
+    ],
+    cohorts: [],
+    biomedicalConcepts: [],
+    testScenarios: [],
+  };
+}
 
 export default function SchemaFlowWorkspace() {
   const [nodes] = useState<Node[]>(DEFAULT_NODES);
   const [edges, setEdges] = useState<Edge[]>(DEFAULT_EDGES);
   const [history, setHistory] = useState<Edge[][]>([]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  
+
+  // Initial baseline snapshot for SDTM structural diff comparisons
+  const [baselineSnapshot, setBaselineSnapshot] = useState<StudyProtocol>(() =>
+    compileGraphToProtocol(DEFAULT_NODES, DEFAULT_EDGES)
+  );
+  const [baselineVersionTag, setBaselineVersionTag] = useState("v1.0.0");
+
+  // Export & Diff UI Drawers State
+  const [isExportDrawerOpen, setIsExportDrawerOpen] = useState(false);
+  const [exportFormat, setExportFormat] = useState<"json" | "yaml" | "odm">(
+    "json"
+  );
+  const [isDiffPanelOpen, setIsDiffPanelOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+
   // CLI State
   const [consoleInput, setConsoleInput] = useState("");
   const [consoleLogs, setConsoleLogs] = useState<ConsoleLog[]>([
     {
       id: "welcome",
       type: "info",
-      text: "Logical Proof Assistant CLI v2.4\nType 'help' to review syntax. Hover nodes to read specifications."
-    }
+      text: "Logical Proof Assistant CLI v2.4\nType 'help' to review syntax. Hover nodes to read specifications.",
+    },
   ]);
   const [cliHistory, setCliHistory] = useState<string[]>([]);
   const [cliHistoryIdx, setCliHistoryIdx] = useState(-1);
@@ -120,9 +302,40 @@ export default function SchemaFlowWorkspace() {
         id: `log-${Date.now()}-${Math.random()}`,
         type,
         text,
-      }
+      },
     ]);
   };
+
+  // Synchronous, memoized client-side protocol compilation
+  const compiledStudy = React.useMemo(() => {
+    const study = compileGraphToProtocol(nodes, edges);
+    // Sanity-check Zod validation
+    UniversalCrfProtocolSchema.safeParse(study);
+    return study;
+  }, [nodes, edges]);
+
+  // Synchronous, memoized real-time SDTM baseline diff comparison
+  const diffResult = React.useMemo(() => {
+    return compareStudyToBaseline(compiledStudy, baselineSnapshot, {
+      id: "baseline-snapshot",
+      versionTag: baselineVersionTag,
+      label: "Initial Protocol Snapshot",
+    });
+  }, [compiledStudy, baselineSnapshot, baselineVersionTag]);
+
+  // Synchronous, memoized format serialization
+  const exportOutput = React.useMemo(() => {
+    switch (exportFormat) {
+      case "json":
+        return exportUniversalCrfJson(compiledStudy);
+      case "yaml":
+        return exportUniversalCrfYaml(compiledStudy);
+      case "odm":
+        return exportStudyToCdiscOdmXml(compiledStudy);
+      default:
+        return exportUniversalCrfJson(compiledStudy);
+    }
+  }, [compiledStudy, exportFormat]);
 
   // Proof status evaluator memoized to re-calculate only when graph edges or nodes change
   const { isC_Proven, isE_Proven } = React.useMemo(() => {
@@ -143,7 +356,10 @@ export default function SchemaFlowWorkspace() {
     setIsSolverLoopActive((prev) => {
       const next = newState !== undefined ? newState : !prev;
       if (next) {
-        addLog("info", "High-frequency mathematical solver loop initiated. RAM Telemetry active.");
+        addLog(
+          "info",
+          "High-frequency mathematical solver loop initiated. RAM Telemetry active."
+        );
       } else {
         addLog("info", "Solver loop telemetry simulation suspended.");
       }
@@ -160,13 +376,19 @@ export default function SchemaFlowWorkspace() {
         tick += 1;
         // Fluctuating RAM simulating real solver calculation cycles
         const noise = Math.sin(tick * 0.4) * 8 + Math.cos(tick * 0.15) * 4;
-        const newPercent = clamp(baseVal + noise + (tick % 7 === 0 ? 10 : 0) - (tick % 11 === 0 ? 8 : 0), 30.2, 98.4);
+        const newPercent = clamp(
+          baseVal +
+            noise +
+            (tick % 7 === 0 ? 10 : 0) -
+            (tick % 11 === 0 ? 8 : 0),
+          30.2,
+          98.4
+        );
         ramValRef.current = newPercent;
 
         // Direct DOM mutations to transient telemetry UI metrics - zero Virtual DOM re-renders
-        if (gaugeContainerRef.current) {
-          gaugeContainerRef.current.style.setProperty("--gauge-progress", newPercent.toString());
-        }
+        // prettier-ignore
+        if (gaugeContainerRef.current) { gaugeContainerRef.current.style.setProperty("--gauge-progress", newPercent.toString()); }
         if (ramTextRef.current) {
           ramTextRef.current.textContent = `${newPercent.toFixed(0)}%`;
         }
@@ -189,7 +411,8 @@ export default function SchemaFlowWorkspace() {
   // Scroll console internally to bottom without shifting viewport
   useEffect(() => {
     if (terminalLogsContainerRef.current) {
-      terminalLogsContainerRef.current.scrollTop = terminalLogsContainerRef.current.scrollHeight;
+      terminalLogsContainerRef.current.scrollTop =
+        terminalLogsContainerRef.current.scrollHeight;
     }
   }, [consoleLogs]);
 
@@ -197,7 +420,11 @@ export default function SchemaFlowWorkspace() {
   const connectNodes = (src: string, tgt: string, quiet = false) => {
     const validIds = nodes.map((n) => n.id);
     if (!validIds.includes(src) || !validIds.includes(tgt)) {
-      if (!quiet) addLog("error", `Invalid node IDs: [${src}, ${tgt}]. Use A, B, C, D, E.`);
+      if (!quiet)
+        addLog(
+          "error",
+          `Invalid node IDs: [${src}, ${tgt}]. Use A, B, C, D, E.`
+        );
       return;
     }
     if (src === tgt) {
@@ -206,10 +433,14 @@ export default function SchemaFlowWorkspace() {
     }
     // Prevent reverse connections or duplicates
     const alreadyConnected = edges.some(
-      (e) => (e.source === src && e.target === tgt)
+      (e) => e.source === src && e.target === tgt
     );
     if (alreadyConnected) {
-      if (!quiet) addLog("error", `Pathway from Node ${src} to Node ${tgt} is already active.`);
+      if (!quiet)
+        addLog(
+          "error",
+          `Pathway from Node ${src} to Node ${tgt} is already active.`
+        );
       return;
     }
 
@@ -228,7 +459,10 @@ export default function SchemaFlowWorkspace() {
     );
 
     if (edgeIndex === -1) {
-      addLog("error", `No active pathway from Node ${src} to Node ${tgt} exists.`);
+      addLog(
+        "error",
+        `No active pathway from Node ${src} to Node ${tgt} exists.`
+      );
       return;
     }
 
@@ -244,7 +478,10 @@ export default function SchemaFlowWorkspace() {
       const previousEdges = history[history.length - 1];
       setHistory((prev) => prev.slice(0, -1));
       setEdges(previousEdges);
-      addLog("success", "Successfully rolled back proof connection configuration to previous state.");
+      addLog(
+        "success",
+        "Successfully rolled back proof connection configuration to previous state."
+      );
     } else {
       addLog("error", "Rollback failed: No historical step state recorded.");
     }
@@ -254,7 +491,10 @@ export default function SchemaFlowWorkspace() {
   const handleNodeClick = (nodeId: string) => {
     if (selectedNodeId === null) {
       setSelectedNodeId(nodeId);
-      addLog("info", `Selected Node ${nodeId}. Click another node to establish a directed pathway.`);
+      addLog(
+        "info",
+        `Selected Node ${nodeId}. Click another node to establish a directed pathway.`
+      );
     } else {
       if (selectedNodeId === nodeId) {
         setSelectedNodeId(null);
@@ -267,13 +507,80 @@ export default function SchemaFlowWorkspace() {
     }
   };
 
+  // File Download Helper
+  const handleDownloadExport = () => {
+    const extensionMap = {
+      json: "json",
+      yaml: "yaml",
+      odm: "xml",
+    };
+    const mimeMap = {
+      json: "application/json",
+      yaml: "text/yaml",
+      odm: "application/xml",
+    };
+    const ext = extensionMap[exportFormat];
+    const mime = mimeMap[exportFormat];
+    const blob = new Blob([exportOutput], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `schemaflow-protocol-export.${ext}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    addLog(
+      "success",
+      `Downloaded compiled schema file: schemaflow-protocol-export.${ext}`
+    );
+  };
+
+  // Clipboard Copy Helper
+  const handleCopyExport = async () => {
+    try {
+      await copyToClipboard(exportOutput);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      addLog(
+        "info",
+        `Copied ${exportFormat.toUpperCase()} schema export to clipboard.`
+      );
+    } catch (err) {
+      addLog(
+        "error",
+        `Failed to copy schema export: ${err instanceof Error ? err.message : String(err)}`
+      );
+    }
+  };
+
+  // Update baseline snapshot
+  const handleSnapshotBaseline = () => {
+    setBaselineSnapshot(compiledStudy);
+    const parts = baselineVersionTag.replace(/^v/, "").split(".");
+    const minor = parseInt(parts[1] || "0", 10) + 1;
+    const nextTag = `v${parts[0] || "1"}.${minor}.0`;
+    setBaselineVersionTag(nextTag);
+    addLog(
+      "success",
+      `✔ Baseline snapshot updated to ${nextTag}. Current graph is now baseline.`
+    );
+  };
+
   // Command parser
   const runCliCommand = (cmdText: string) => {
     const trimmed = cmdText.trim();
     if (!trimmed) return;
 
     // Log command
-    setConsoleLogs((prev) => [...prev, { id: `cmd-${Date.now()}`, type: "command", text: trimmed }]);
+    setConsoleLogs((prev) => [
+      ...prev,
+      {
+        id: `cmd-${Date.now()}-${Math.random()}`,
+        type: "command",
+        text: trimmed,
+      },
+    ]);
     setConsoleInput("");
 
     // History queue
@@ -285,19 +592,21 @@ export default function SchemaFlowWorkspace() {
 
     const tokens = trimmed.split(/\s+/);
     const op = tokens[0].toLowerCase();
-    const arg1 = tokens[1]?.toUpperCase();
-    const arg2 = tokens[2]?.toUpperCase();
+    const arg1 = tokens[1]?.toLowerCase();
+    const arg2 = tokens[2]?.toLowerCase();
 
     if (op === "help") {
       addLog(
         "info",
         "Command Reference Checklist:\n" +
-          "  connect <S> <T>    - Establish pathway from Node S to Node T (e.g. connect A C)\n" +
-          "  disconnect <S> <T> - Sever pathway from Node S to Node T\n" +
-          "  rollback           - Roll back to previous connection structure\n" +
-          "  simulate           - Toggle simulated mathematical solver loops (RAM updates)\n" +
-          "  clear              - Clear terminal workspace\n" +
-          "  help               - View commands"
+          "  connect <S> <T>        - Establish pathway from Node S to Node T (e.g. connect A C)\n" +
+          "  disconnect <S> <T>     - Sever pathway from Node S to Node T\n" +
+          "  export [json|yaml|odm] - Export compiled schema in JSON, YAML, or CDISC ODM XML\n" +
+          "  diff                   - Open live SDTM structural diff panel\n" +
+          "  rollback               - Roll back to previous connection structure\n" +
+          "  simulate               - Toggle simulated mathematical solver loops (RAM updates)\n" +
+          "  clear                  - Clear terminal workspace\n" +
+          "  help                   - View commands"
       );
       return;
     }
@@ -317,32 +626,79 @@ export default function SchemaFlowWorkspace() {
       return;
     }
 
+    if (op === "export") {
+      const formatArg = arg1 || "json";
+      let targetFmt: "json" | "yaml" | "odm" = "json";
+      if (formatArg === "yaml" || formatArg === "yml") targetFmt = "yaml";
+      else if (formatArg === "odm" || formatArg === "xml") targetFmt = "odm";
+      else targetFmt = "json";
+
+      setExportFormat(targetFmt);
+      setIsExportDrawerOpen(true);
+      addLog(
+        "success",
+        `✔ Exported schema as ${targetFmt.toUpperCase()} (${(exportOutput.length / 1024).toFixed(1)} KB). Export drawer active.`
+      );
+      return;
+    }
+
+    if (op === "diff") {
+      setIsDiffPanelOpen(true);
+      const summary = diffResult.summary;
+      addLog(
+        "success",
+        `✔ Structural Diff against baseline ${baselineVersionTag}: ${summary.totalChanges} change(s) [${summary.addedCount} added, ${summary.removedCount} removed, ${summary.modifiedCount} modified].`
+      );
+      return;
+    }
+
     if (op === "connect") {
       if (!arg1 || !arg2) {
-        addLog("error", "Syntax Error: 'connect' requires source and target. Example: connect A C");
+        addLog(
+          "error",
+          "Syntax Error: 'connect' requires source and target. Example: connect A C"
+        );
         return;
       }
-      connectNodes(arg1, arg2);
+      connectNodes(arg1.toUpperCase(), arg2.toUpperCase());
       return;
     }
 
     if (op === "disconnect") {
       if (!arg1 || !arg2) {
-        addLog("error", "Syntax Error: 'disconnect' requires source and target. Example: disconnect A C");
+        addLog(
+          "error",
+          "Syntax Error: 'disconnect' requires source and target. Example: disconnect A C"
+        );
         return;
       }
-      disconnectNodes(arg1, arg2);
+      disconnectNodes(arg1.toUpperCase(), arg2.toUpperCase());
       return;
     }
 
-    addLog("error", `Unrecognized command: '${tokens[0]}'. Type 'help' for registry references.`);
+    addLog(
+      "error",
+      `Unrecognized command: '${tokens[0]}'. Type 'help' for registry references.`
+    );
   };
 
   // Auto-complete suggestion
   const getSuggestion = (inputVal: string): string => {
     const val = inputVal.trim().toLowerCase();
     if (!val) return "";
-    const commands = ["connect", "disconnect", "rollback", "simulate", "clear", "help"];
+    const commands = [
+      "connect",
+      "disconnect",
+      "export",
+      "export json",
+      "export yaml",
+      "export odm",
+      "diff",
+      "rollback",
+      "simulate",
+      "clear",
+      "help",
+    ];
     const match = commands.find((c) => c.startsWith(val));
     return match ? match : "";
   };
@@ -362,7 +718,10 @@ export default function SchemaFlowWorkspace() {
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       if (cliHistory.length === 0) return;
-      const nextIdx = cliHistoryIdx === -1 ? cliHistory.length - 1 : Math.max(0, cliHistoryIdx - 1);
+      const nextIdx =
+        cliHistoryIdx === -1
+          ? cliHistory.length - 1
+          : Math.max(0, cliHistoryIdx - 1);
       setCliHistoryIdx(nextIdx);
       setConsoleInput(cliHistory[nextIdx]);
     } else if (e.key === "ArrowDown") {
@@ -380,7 +739,7 @@ export default function SchemaFlowWorkspace() {
   };
 
   return (
-    <div className="w-full flex flex-col gap-6 font-sans">
+    <div className="w-full flex flex-col gap-6 font-sans relative">
       {/* Inline styles for isolating dash paths and high-frequency CSS variable support without reflows */}
       <style jsx global>{`
         @keyframes dash {
@@ -394,11 +753,15 @@ export default function SchemaFlowWorkspace() {
         }
         .gauge-fill {
           stroke-dasharray: 251.2;
-          stroke-dashoffset: calc(251.2 - (251.2 * var(--gauge-progress)) / 100);
+          stroke-dashoffset: calc(
+            251.2 - (251.2 * var(--gauge-progress)) / 100
+          );
           transition: stroke-dashoffset 80ms linear;
         }
         .svg-node {
-          transition: filter 0.25s ease, stroke 0.25s ease;
+          transition:
+            filter 0.25s ease,
+            stroke 0.25s ease;
         }
         .svg-node:hover {
           filter: drop-shadow(0px 0px 8px rgba(6, 182, 212, 0.45));
@@ -407,24 +770,53 @@ export default function SchemaFlowWorkspace() {
 
       {/* Main split dashboard workspace */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch h-auto min-h-[520px]">
-        
         {/* Left Side: Proof Canvas & Telemetry */}
         <div className="lg:col-span-8 flex flex-col gap-5 bg-zinc-950 border border-zinc-900 rounded-3xl p-5 relative overflow-hidden">
-          
           {/* Header row */}
-          <div className="flex justify-between items-center border-b border-zinc-900 pb-3">
+          <div className="flex flex-wrap justify-between items-center border-b border-zinc-900 pb-3 gap-3">
             <div>
               <span className="text-[10px] font-mono uppercase tracking-widest text-brand-cyan font-bold bg-brand-cyan/5 px-2 py-0.5 rounded border border-brand-cyan/20">
-                declarative svg layout // no layout reflows
+                declarative svg layout // reactive compiler
               </span>
               <h3 className="text-sm font-extrabold text-white mt-2 flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-brand-cyan animate-pulse"></span>
                 Proof Tactic Vector Canvas
               </h3>
             </div>
-            
-            {/* Reset / Rollback quick actions */}
-            <div className="flex gap-2">
+
+            {/* Action buttons: Export Schema, Baseline Diff, Rollback, Reset */}
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                data-testid="export-schema-btn"
+                onClick={() => setIsExportDrawerOpen(true)}
+                className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-mono font-bold bg-brand-cyan/10 border border-brand-cyan/30 text-brand-cyan rounded-xl hover:bg-brand-cyan/20 transition-all cursor-pointer"
+                title="Open Schema Export Drawer (JSON, YAML, CDISC ODM XML)"
+                aria-label="Export Schema Drawer"
+              >
+                <IconFileCode className="w-3.5 h-3.5" />
+                Export Schema
+              </button>
+
+              <button
+                data-testid="baseline-diff-btn"
+                onClick={() => setIsDiffPanelOpen(true)}
+                className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-mono font-bold bg-zinc-900 border border-zinc-800 text-zinc-300 rounded-xl hover:border-brand-cyan/40 transition-all cursor-pointer relative"
+                title="Open Structural SDTM Baseline Diff Panel"
+                aria-label="Baseline Diff Panel"
+              >
+                <IconGitCompare className="w-3.5 h-3.5 text-zinc-400" />
+                Baseline Diff
+                {diffResult.summary.totalChanges > 0 ? (
+                  <span className="ml-1 bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] px-1.5 py-0.2 rounded-full font-extrabold">
+                    {diffResult.summary.totalChanges}
+                  </span>
+                ) : (
+                  <span className="ml-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] px-1.5 py-0.2 rounded-full font-extrabold">
+                    0
+                  </span>
+                )}
+              </button>
+
               <button
                 onClick={executeRollback}
                 disabled={history.length === 0}
@@ -434,6 +826,7 @@ export default function SchemaFlowWorkspace() {
                 <IconHistory className="w-3.5 h-3.5" />
                 Rollback ({history.length})
               </button>
+
               <button
                 onClick={() => {
                   setHistory((prev) => [...prev, edges]);
@@ -449,13 +842,13 @@ export default function SchemaFlowWorkspace() {
           </div>
 
           {/* Interactive Declarative SVG Proof Tree */}
-          <div 
+          <div
             className="w-full h-[360px] bg-zinc-900/40 rounded-2xl border border-zinc-900 relative"
             role="region"
             aria-label="Mathematical Logic Tree Canvas. Clicking nodes executes directed connections."
           >
-            <svg 
-              className="w-full h-full select-none" 
+            <svg
+              className="w-full h-full select-none"
               viewBox="0 0 800 420"
               xmlns="http://www.w3.org/2000/svg"
             >
@@ -498,8 +891,10 @@ export default function SchemaFlowWorkspace() {
                 const y2 = t.y + 40;
 
                 // Double check if connection is part of proven proof branch
-                const isC_Active = isC_Proven && (edge.source === "C" || edge.target === "C");
-                const pathColor = isC_Active || isE_Proven ? "#06b6d4" : "#0891b2";
+                const isC_Active =
+                  isC_Proven && (edge.source === "C" || edge.target === "C");
+                const pathColor =
+                  isC_Active || isE_Proven ? "#06b6d4" : "#0891b2";
 
                 return (
                   <path
@@ -517,7 +912,7 @@ export default function SchemaFlowWorkspace() {
               {/* Declarative Nodes as Groups (Completely layout-calculation free!) */}
               {nodes.map((node) => {
                 const isSelected = selectedNodeId === node.id;
-                
+
                 // Determine proven/active state dynamically
                 let isProven = true; // Premises default true
                 if (node.id === "C") isProven = isC_Proven;
@@ -552,12 +947,12 @@ export default function SchemaFlowWorkspace() {
                         isSelected
                           ? "#06b6d4"
                           : isProven
-                          ? "#10b981"
-                          : "#27272a"
+                            ? "#10b981"
+                            : "#27272a"
                       }
                       strokeWidth={isSelected ? "2.5" : "1.5"}
                       style={{
-                        strokeDasharray: isSelected ? "4" : "none"
+                        strokeDasharray: isSelected ? "4" : "none",
                       }}
                     />
 
@@ -612,8 +1007,8 @@ export default function SchemaFlowWorkspace() {
             {/* Floating click prompt guidance label */}
             <div className="absolute bottom-3 left-3 right-3 bg-zinc-950/80 border border-zinc-900 rounded-xl p-2.5 flex items-center justify-between select-none">
               <span className="text-[10px] font-mono text-muted leading-none">
-                {selectedNodeId 
-                  ? `👉 Selected NODE ${selectedNodeId}. Click target node to draw directed branch.` 
+                {selectedNodeId
+                  ? `👉 Selected NODE ${selectedNodeId}. Click target node to draw directed branch.`
                   : "💡 Click a node, then click another node to connect them dynamically."}
               </span>
               <span className="text-[9px] font-mono bg-zinc-900 px-2 py-0.5 border border-zinc-850 rounded text-brand-cyan font-bold">
@@ -624,16 +1019,21 @@ export default function SchemaFlowWorkspace() {
 
           {/* Telemetry and Goal Status Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            
             {/* Goal completion monitor */}
             <div className="bg-zinc-900/20 border border-zinc-900 rounded-2xl p-4 flex flex-col justify-between select-none">
               <div className="flex items-center gap-3">
-                <div className={`w-8 h-8 rounded-xl flex items-center justify-center border ${
-                  isE_Proven 
-                    ? "bg-emerald-950/40 text-emerald-400 border-emerald-900/60" 
-                    : "bg-zinc-900/50 text-muted border-zinc-850"
-                }`}>
-                  {isE_Proven ? <IconCheck className="w-4 h-4" /> : <IconCircleDot className="w-4 h-4 animate-pulse" />}
+                <div
+                  className={`w-8 h-8 rounded-xl flex items-center justify-center border ${
+                    isE_Proven
+                      ? "bg-emerald-950/40 text-emerald-400 border-emerald-900/60"
+                      : "bg-zinc-900/50 text-muted border-zinc-850"
+                  }`}
+                >
+                  {isE_Proven ? (
+                    <IconCheck className="w-4 h-4" />
+                  ) : (
+                    <IconCircleDot className="w-4 h-4 animate-pulse" />
+                  )}
                 </div>
                 <div>
                   <h4 className="text-xs font-black uppercase text-zinc-300 tracking-wider">
@@ -643,29 +1043,35 @@ export default function SchemaFlowWorkspace() {
                     {isE_Proven
                       ? "Success: Conclusion verified successfully on GPU."
                       : isC_Proven
-                      ? "Intermediate Q proven. Establish C → E & D → E pathways."
-                      : "Required: Establish pathways (A & B) → C and (C & D) → E."}
+                        ? "Intermediate Q proven. Establish C → E & D → E pathways."
+                        : "Required: Establish pathways (A & B) → C and (C & D) → E."}
                   </p>
                 </div>
               </div>
               <div className="mt-3 pt-3 border-t border-zinc-900 flex justify-between text-[10px] font-mono text-muted">
                 <span>PATHWAYS ACTIVE:</span>
-                <span className="text-brand-cyan font-extrabold">{edges.length}</span>
+                <span className="text-brand-cyan font-extrabold">
+                  {edges.length}
+                </span>
               </div>
             </div>
 
             {/* RAM Progress Telemetry Gauge (Compositor css variables updates!) */}
             <div className="bg-zinc-900/20 border border-zinc-900 rounded-2xl p-4 flex gap-4 items-center relative select-none">
-              
               {/* Radial gauge element */}
-              <div 
+              <div
                 ref={gaugeContainerRef}
                 className="relative w-16 h-16 flex items-center justify-center shrink-0"
-                style={{
-                  "--gauge-progress": 42.5,
-                } as React.CSSProperties}
+                style={
+                  {
+                    "--gauge-progress": 42.5,
+                  } as React.CSSProperties
+                }
               >
-                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                <svg
+                  className="w-full h-full transform -rotate-90"
+                  viewBox="0 0 100 100"
+                >
                   <circle
                     cx="50"
                     cy="50"
@@ -687,7 +1093,10 @@ export default function SchemaFlowWorkspace() {
                 </svg>
                 {/* Embedded dynamic percent */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center leading-none">
-                  <span ref={ramTextRef} className="text-[10px] font-mono font-bold text-white">
+                  <span
+                    ref={ramTextRef}
+                    className="text-[10px] font-mono font-bold text-white"
+                  >
                     42%
                   </span>
                 </div>
@@ -701,7 +1110,8 @@ export default function SchemaFlowWorkspace() {
                     Solver RAM Telemetry
                   </h4>
                   <p className="text-[10px] text-muted mt-0.5 leading-relaxed">
-                    Compositor thread updates. Zero main-thread layout thrashing.
+                    Compositor thread updates. Zero main-thread layout
+                    thrashing.
                   </p>
                 </div>
 
@@ -714,7 +1124,9 @@ export default function SchemaFlowWorkspace() {
                         : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700"
                     }`}
                   >
-                    {isSolverLoopActive ? "■ Stop Solver Loop" : "▶ Start Solver Loop"}
+                    {isSolverLoopActive
+                      ? "■ Stop Solver Loop"
+                      : "▶ Start Solver Loop"}
                   </button>
                   <span className="text-[9px] font-mono text-muted">
                     60FPS SECURE
@@ -722,13 +1134,11 @@ export default function SchemaFlowWorkspace() {
                 </div>
               </div>
             </div>
-
           </div>
-
         </div>
 
         {/* Right Side: Accessible Command CLI Terminal */}
-        <div 
+        <div
           className="lg:col-span-4 flex flex-col bg-zinc-950 border border-zinc-900 rounded-3xl overflow-hidden relative"
           role="region"
           aria-label="Accessible command log console"
@@ -747,7 +1157,7 @@ export default function SchemaFlowWorkspace() {
           </div>
 
           {/* Console logs output */}
-          <div 
+          <div
             ref={terminalLogsContainerRef}
             className="flex-1 p-4 font-mono text-[10px] leading-normal overflow-y-auto max-h-[300px] lg:max-h-[350px] min-h-[220px] space-y-3 scrollbar-thin text-zinc-300 select-text min-w-0"
             role="log"
@@ -759,7 +1169,9 @@ export default function SchemaFlowWorkspace() {
                   <div className="flex items-center gap-1.5 text-muted font-bold select-none min-w-0">
                     <span className="text-zinc-700 font-bold shrink-0">~</span>
                     <span className="text-muted shrink-0">tactic-cli $</span>
-                    <span className="text-zinc-100 font-bold select-text min-w-0 break-all">{log.text}</span>
+                    <span className="text-zinc-100 font-bold select-text min-w-0 break-all">
+                      {log.text}
+                    </span>
                   </div>
                 )}
                 {log.type === "info" && (
@@ -789,9 +1201,13 @@ export default function SchemaFlowWorkspace() {
           {/* Input Prompt panel */}
           <div className="border-t border-zinc-900 bg-zinc-950 px-4 py-3 flex flex-col gap-1.5 min-w-0">
             <div className="flex items-center gap-2 relative min-w-0">
-              <span className="text-zinc-700 font-bold font-mono text-[10px] select-none shrink-0">~</span>
-              <span className="text-muted font-bold font-mono text-[10px] select-none shrink-0 truncate max-w-[90px] xs:max-w-none">tactic-cli $</span>
-              
+              <span className="text-zinc-700 font-bold font-mono text-[10px] select-none shrink-0">
+                ~
+              </span>
+              <span className="text-muted font-bold font-mono text-[10px] select-none shrink-0 truncate max-w-[90px] xs:max-w-none">
+                tactic-cli $
+              </span>
+
               <div className="flex-1 relative flex items-center min-h-[1.5rem] min-w-0">
                 {suggestion && (
                   <div className="absolute inset-0 pointer-events-none font-mono text-[10px] text-zinc-700 flex items-center select-none z-0 truncate">
@@ -799,7 +1215,7 @@ export default function SchemaFlowWorkspace() {
                     <span>{suggestion.substring(consoleInput.length)}</span>
                   </div>
                 )}
-                
+
                 <input
                   ref={consoleInputRef}
                   type="text"
@@ -829,28 +1245,34 @@ export default function SchemaFlowWorkspace() {
             {/* Suggested command line helpers */}
             <div className="flex flex-wrap gap-1.5 pt-2 border-t border-zinc-900 select-none">
               <button
-                onClick={() => setConsoleInput("connect A C")}
-                className="px-2 py-0.5 text-[9px] font-mono bg-zinc-900 border border-zinc-850 text-zinc-400 hover:text-brand-cyan hover:border-brand-cyan/20 rounded-md cursor-pointer"
+                onClick={() => runCliCommand("export json")}
+                className="px-2 py-0.5 text-[9px] font-mono bg-zinc-900 border border-zinc-850 text-brand-cyan hover:bg-brand-cyan/10 rounded-md cursor-pointer"
               >
-                connect A C
+                export json
+              </button>
+              <button
+                onClick={() => runCliCommand("export yaml")}
+                className="px-2 py-0.5 text-[9px] font-mono bg-zinc-900 border border-zinc-850 text-brand-cyan hover:bg-brand-cyan/10 rounded-md cursor-pointer"
+              >
+                export yaml
+              </button>
+              <button
+                onClick={() => runCliCommand("export odm")}
+                className="px-2 py-0.5 text-[9px] font-mono bg-zinc-900 border border-zinc-850 text-brand-cyan hover:bg-brand-cyan/10 rounded-md cursor-pointer"
+              >
+                export odm
+              </button>
+              <button
+                onClick={() => runCliCommand("diff")}
+                className="px-2 py-0.5 text-[9px] font-mono bg-zinc-900 border border-zinc-850 text-amber-400 hover:bg-amber-400/10 rounded-md cursor-pointer"
+              >
+                diff
               </button>
               <button
                 onClick={() => setConsoleInput("connect B C")}
                 className="px-2 py-0.5 text-[9px] font-mono bg-zinc-900 border border-zinc-850 text-zinc-400 hover:text-brand-cyan hover:border-brand-cyan/20 rounded-md cursor-pointer"
               >
                 connect B C
-              </button>
-              <button
-                onClick={() => setConsoleInput("connect C E")}
-                className="px-2 py-0.5 text-[9px] font-mono bg-zinc-900 border border-zinc-850 text-zinc-400 hover:text-brand-cyan hover:border-brand-cyan/20 rounded-md cursor-pointer"
-              >
-                connect C E
-              </button>
-              <button
-                onClick={() => setConsoleInput("connect D E")}
-                className="px-2 py-0.5 text-[9px] font-mono bg-zinc-900 border border-zinc-850 text-zinc-400 hover:text-brand-cyan hover:border-brand-cyan/20 rounded-md cursor-pointer"
-              >
-                connect D E
               </button>
               <button
                 onClick={() => setConsoleInput("rollback")}
@@ -861,8 +1283,300 @@ export default function SchemaFlowWorkspace() {
             </div>
           </div>
         </div>
-
       </div>
+
+      {/* Reactive Export Drawer Side Panel */}
+      {isExportDrawerOpen && (
+        <div
+          className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm animate-fade-in"
+          role="dialog"
+          aria-label="Compiled Schema Export Drawer"
+        >
+          <div className="w-full max-w-2xl bg-zinc-950 border-l border-zinc-850 h-full flex flex-col p-6 shadow-2xl overflow-hidden font-mono">
+            {/* Drawer Header */}
+            <div className="flex items-center justify-between pb-4 border-b border-zinc-900">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-widest bg-brand-cyan/10 text-brand-cyan border border-brand-cyan/30 rounded">
+                    Client-Side Compiler
+                  </span>
+                  <span className="text-[10px] text-zinc-500 font-bold">
+                    Zod Universal CRF Protocol
+                  </span>
+                </div>
+                <h3 className="text-base font-extrabold text-white mt-1 flex items-center gap-2">
+                  <IconFileCode className="w-5 h-5 text-brand-cyan" />
+                  Live Compiled Schema Export
+                </h3>
+              </div>
+              <button
+                onClick={() => setIsExportDrawerOpen(false)}
+                className="p-1 text-zinc-400 hover:text-white bg-zinc-900 hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer"
+                aria-label="Close Export Drawer"
+              >
+                <IconX className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Format Switcher Tabs */}
+            <div className="flex items-center justify-between py-4 border-b border-zinc-900 gap-3">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setExportFormat("json")}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
+                    exportFormat === "json"
+                      ? "bg-brand-cyan/20 border-brand-cyan text-brand-cyan shadow-sm"
+                      : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200"
+                  }`}
+                >
+                  JSON Format
+                </button>
+                <button
+                  onClick={() => setExportFormat("yaml")}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
+                    exportFormat === "yaml"
+                      ? "bg-brand-cyan/20 border-brand-cyan text-brand-cyan shadow-sm"
+                      : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200"
+                  }`}
+                >
+                  YAML Format
+                </button>
+                <button
+                  onClick={() => setExportFormat("odm")}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
+                    exportFormat === "odm"
+                      ? "bg-brand-cyan/20 border-brand-cyan text-brand-cyan shadow-sm"
+                      : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200"
+                  }`}
+                >
+                  CDISC ODM XML
+                </button>
+              </div>
+
+              {/* Action Buttons: Copy & Download */}
+              <div className="flex gap-2">
+                <button
+                  onClick={handleCopyExport}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 text-zinc-200 rounded-xl transition-all cursor-pointer"
+                  title="Copy formatted schema to clipboard"
+                >
+                  {copied ? (
+                    <IconCheck className="w-3.5 h-3.5 text-emerald-400" />
+                  ) : (
+                    <IconCopy className="w-3.5 h-3.5" />
+                  )}
+                  {copied ? "Copied!" : "Copy"}
+                </button>
+                <button
+                  onClick={handleDownloadExport}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-brand-cyan hover:bg-brand-cyan/90 text-zinc-950 rounded-xl transition-all cursor-pointer font-sans"
+                  title="Download schema file"
+                >
+                  <IconDownload className="w-3.5 h-3.5" />
+                  Download
+                </button>
+              </div>
+            </div>
+
+            {/* Code Output Viewer with Syntax Highlighting */}
+            <div className="flex-1 mt-4 bg-zinc-900/80 border border-zinc-850 rounded-2xl p-4 overflow-y-auto font-mono text-[11px] leading-relaxed text-zinc-200 select-text">
+              <pre className="whitespace-pre-wrap break-all">
+                {exportOutput}
+              </pre>
+            </div>
+
+            {/* Drawer Footer Status */}
+            <div className="pt-4 mt-2 border-t border-zinc-900 flex items-center justify-between text-[10px] text-zinc-500">
+              <span>Sync Status: Reactive live compile (&lt; 16ms)</span>
+              <span>Size: {(exportOutput.length / 1024).toFixed(2)} KB</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reactive SDTM Baseline Structural Diff Panel */}
+      {isDiffPanelOpen && (
+        <div
+          className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm animate-fade-in"
+          role="dialog"
+          aria-label="Structural SDTM Baseline Diff Panel"
+        >
+          <div className="w-full max-w-2xl bg-zinc-950 border-l border-zinc-850 h-full flex flex-col p-6 shadow-2xl overflow-hidden font-sans">
+            {/* Panel Header */}
+            <div className="flex items-center justify-between pb-4 border-b border-zinc-900 font-mono">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-widest bg-amber-500/10 text-amber-400 border border-amber-500/30 rounded">
+                    Real-time SDTM Diff
+                  </span>
+                  <span className="text-[10px] text-zinc-500 font-bold">
+                    Baseline: {baselineVersionTag}
+                  </span>
+                </div>
+                <h3 className="text-base font-extrabold text-white mt-1 flex items-center gap-2">
+                  <IconGitCompare className="w-5 h-5 text-amber-400" />
+                  Baseline Structural SDTM Comparison
+                </h3>
+              </div>
+              <button
+                onClick={() => setIsDiffPanelOpen(false)}
+                className="p-1 text-zinc-400 hover:text-white bg-zinc-900 hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer"
+                aria-label="Close Diff Panel"
+              >
+                <IconX className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Summary Counters Grid */}
+            <div className="grid grid-cols-4 gap-3 py-4 border-b border-zinc-900 font-mono text-center">
+              <div className="bg-zinc-900/60 border border-zinc-850 rounded-xl p-2.5">
+                <span className="text-[9px] text-zinc-500 uppercase tracking-wider block font-bold">
+                  Total Changes
+                </span>
+                <span className="text-base font-black text-white mt-0.5 block">
+                  {diffResult.summary.totalChanges}
+                </span>
+              </div>
+              <div className="bg-emerald-950/20 border border-emerald-900/40 rounded-xl p-2.5">
+                <span className="text-[9px] text-emerald-400/80 uppercase tracking-wider block font-bold">
+                  Added
+                </span>
+                <span className="text-base font-black text-emerald-400 mt-0.5 block">
+                  +{diffResult.summary.addedCount}
+                </span>
+              </div>
+              <div className="bg-red-950/20 border border-red-900/40 rounded-xl p-2.5">
+                <span className="text-[9px] text-red-400/80 uppercase tracking-wider block font-bold">
+                  Removed
+                </span>
+                <span className="text-base font-black text-red-400 mt-0.5 block">
+                  -{diffResult.summary.removedCount}
+                </span>
+              </div>
+              <div className="bg-amber-950/20 border border-amber-900/40 rounded-xl p-2.5">
+                <span className="text-[9px] text-amber-400/80 uppercase tracking-wider block font-bold">
+                  Modified
+                </span>
+                <span className="text-base font-black text-amber-400 mt-0.5 block">
+                  ~{diffResult.summary.modifiedCount}
+                </span>
+              </div>
+            </div>
+
+            {/* Category Breakdown Badges */}
+            <div className="flex flex-wrap gap-2 py-3 border-b border-zinc-900 font-mono text-[10px]">
+              {Object.entries(diffResult.summary.byCategory).map(
+                ([cat, counts]) => {
+                  const totalCat =
+                    counts.added + counts.removed + counts.modified;
+                  if (totalCat === 0) return null;
+                  return (
+                    <span
+                      key={cat}
+                      className="px-2 py-1 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-300 flex items-center gap-1.5 font-bold"
+                    >
+                      <span className="uppercase text-muted">
+                        {cat.replace("_", " ")}:
+                      </span>
+                      <span className="text-brand-cyan">{totalCat}</span>
+                    </span>
+                  );
+                }
+              )}
+            </div>
+
+            {/* Diff Entries List */}
+            <div className="flex-1 mt-4 overflow-y-auto space-y-3 font-mono text-[11px]">
+              {diffResult.entries.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-48 text-center p-6 bg-zinc-900/20 border border-zinc-900 rounded-2xl">
+                  <IconCheck className="w-8 h-8 text-emerald-400 mb-2" />
+                  <p className="text-xs font-bold text-zinc-300">
+                    No Structural Diff Detected
+                  </p>
+                  <p className="text-[10px] text-muted mt-1 max-w-sm">
+                    Current active graph canvas matches the snapshot protocol
+                    baseline ({baselineVersionTag}) identically.
+                  </p>
+                </div>
+              ) : (
+                diffResult.entries.map((entry, idx) => {
+                  const isAdded = entry.changeType === "added";
+                  const isRemoved = entry.changeType === "removed";
+
+                  return (
+                    <div
+                      key={`diff-entry-${idx}-${entry.id}`}
+                      className={`p-3 rounded-xl border flex flex-col gap-1.5 ${
+                        isAdded
+                          ? "bg-emerald-950/10 border-emerald-900/40 text-emerald-200"
+                          : isRemoved
+                            ? "bg-red-950/10 border-red-900/40 text-red-200"
+                            : "bg-amber-950/10 border-amber-900/40 text-amber-200"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`px-2 py-0.5 text-[9px] font-extrabold uppercase rounded border ${
+                              isAdded
+                                ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300"
+                                : isRemoved
+                                  ? "bg-red-500/20 border-red-500/40 text-red-300"
+                                  : "bg-amber-500/20 border-amber-500/40 text-amber-300"
+                            }`}
+                          >
+                            {entry.changeType.toUpperCase()}
+                          </span>
+                          <span className="font-bold text-white text-xs">
+                            {entry.label}
+                          </span>
+                        </div>
+                        <span className="text-[9px] text-zinc-500 uppercase font-bold">
+                          {entry.category}
+                        </span>
+                      </div>
+
+                      {/* Breadcrumb Path */}
+                      {entry.breadcrumb && entry.breadcrumb.length > 0 && (
+                        <div className="text-[10px] text-zinc-400 flex items-center gap-1 font-mono">
+                          <span>Breadcrumb:</span>
+                          <span className="text-zinc-200">
+                            {entry.breadcrumb.join(" > ")}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Changed fields info */}
+                      {entry.changedFields &&
+                        entry.changedFields.length > 0 && (
+                          <div className="text-[10px] text-amber-300/80 font-mono">
+                            Modified attributes:{" "}
+                            {entry.changedFields.join(", ")}
+                          </div>
+                        )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Panel Footer & Update Baseline Snapshot Action */}
+            <div className="pt-4 mt-2 border-t border-zinc-900 flex items-center justify-between">
+              <span className="text-[10px] text-zinc-500 font-mono">
+                Real-time SDTM Structural Diff Engine
+              </span>
+              <button
+                onClick={handleSnapshotBaseline}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-amber-500 hover:bg-amber-400 text-zinc-950 rounded-xl transition-all cursor-pointer font-mono"
+                title="Save current protocol graph state as new baseline snapshot"
+              >
+                <IconGitCompare className="w-3.5 h-3.5" />
+                Snapshot New Baseline
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

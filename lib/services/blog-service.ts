@@ -519,6 +519,7 @@ export class BlogPostService {
           err
         );
       }
+      failBuildOnDataSourceError("BlogPostService.getAllBlogPostsAdmin", err);
       return [];
     }
   }
@@ -587,6 +588,7 @@ export class BlogPostService {
           err
         );
       }
+      failBuildOnDataSourceError("BlogPostService.getBlogPostById", err);
       return null;
     }
   }

@@ -1,5 +1,4 @@
 import { expect, test } from "@playwright/test";
-import path from "path";
 
 test.describe("Case-study architecture diagrams", () => {
   test.describe.configure({ mode: "serial" });

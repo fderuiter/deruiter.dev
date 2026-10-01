@@ -6,7 +6,7 @@
 
 # Function: tickAuditor()
 
-> **tickAuditor**(`auditor`, `deltaSeconds`, `unresolvedBacklogCount`): [`AuditorState`](../../types/interfaces/AuditorState.md)
+> **tickAuditor**(`auditor`, `deltaSeconds`, `unresolvedBacklogCount`, `auditorPacingMultiplier?`): [`AuditorState`](../../types/interfaces/AuditorState.md)
 
 Updates Auditor AI physics and state machine.
 
@@ -23,6 +23,10 @@ Updates Auditor AI physics and state machine.
 ### unresolvedBacklogCount
 
 `number`
+
+### auditorPacingMultiplier?
+
+`number` = `1.0`
 
 ## Returns
 

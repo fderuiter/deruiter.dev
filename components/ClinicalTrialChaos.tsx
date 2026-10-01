@@ -70,6 +70,9 @@ import {
   RecordedRuleViolation,
   SDTMRow,
   BIMOInspectionReport,
+  StressParameters,
+  StressPresetId,
+  BIMOComplianceTrend,
 } from "@/lib/clinical-trial-chaos/types";
 import { StudyProtocol } from "@/lib/crf/types";
 
@@ -91,6 +94,7 @@ import {
   generateSDTMDataset,
   exportToCDISCODMXML,
   exportToSDTMCSV,
+  generateBIMOReport,
 } from "@/lib/clinical-trial-chaos/engine";
 
 import {
@@ -98,6 +102,8 @@ import {
   SEEDED_SCENARIOS,
   generateClinicalSubject,
   generateClinicalSubjectFromProtocol,
+  DEFAULT_STRESS_PARAMS,
+  STRESS_PRESETS,
 } from "@/lib/clinical-trial-chaos/scenarios";
 
 import {
@@ -168,7 +174,6 @@ import {
   getFastTrackDomain,
   tickShiftClocks,
   getAmendmentIntervalSeconds,
-  getSubjectErrorChance,
   getSAEChance,
   describeSponsorEvent,
   SHIFT_END_LOGS,
@@ -471,6 +476,40 @@ export const ClinicalTrialChaos: React.FC = () => {
   const [ruleViolations, setRuleViolations] = useState<RecordedRuleViolation[]>(
     []
   );
+
+  // 3b. Interactive Stress Controls & Live BIMO Compliance Stream
+  const [stressParams, setStressParams] = useState<StressParameters>(
+    DEFAULT_STRESS_PARAMS
+  );
+  const stressParamsRef = useRef<StressParameters>(stressParams);
+  useEffect(() => {
+    stressParamsRef.current = stressParams;
+  }, [stressParams]);
+
+  const [isStressDrawerOpen, setIsStressDrawerOpen] = useState(false);
+
+  // Live BIMO Inspection Report & Compliance Score Trend
+  const liveBimoReport = useMemo(() => {
+    return generateBIMOReport(
+      scoreState,
+      auditor,
+      auditLogs,
+      ruleViolations,
+      activeProtocol
+    );
+  }, [scoreState, auditor, auditLogs, ruleViolations, activeProtocol]);
+
+  const prevLiveScoreRef = useRef(liveBimoReport.overallScore);
+  const [scoreTrend, setScoreTrend] = useState<BIMOComplianceTrend>("stable");
+
+  useEffect(() => {
+    if (liveBimoReport.overallScore > prevLiveScoreRef.current) {
+      setScoreTrend("improving");
+    } else if (liveBimoReport.overallScore < prevLiveScoreRef.current) {
+      setScoreTrend("declining");
+    }
+    prevLiveScoreRef.current = liveBimoReport.overallScore;
+  }, [liveBimoReport.overallScore]);
 
   // 4. DOM & Canvas references
   const containerRef = useRef<HTMLDivElement>(null);
@@ -1532,7 +1571,8 @@ export const ClinicalTrialChaos: React.FC = () => {
           powerUps: powerUpsRef.current,
           amendment: activeAmendmentRef.current,
         },
-        deltaSeconds
+        deltaSeconds,
+        stressParamsRef.current.auditorPacingMultiplier
       );
       conveyorSubjectsRef.current = tick.subjects;
       auditorRef.current = tick.auditor;
@@ -1618,7 +1658,8 @@ export const ClinicalTrialChaos: React.FC = () => {
       const spawnInterval = getSpawnIntervalSeconds(
         phaseRef.current,
         conveyorSubjectsRef.current.length,
-        (seconds) => applyOfficeSpawnInterval(seconds, officeRef.current)
+        (seconds) => applyOfficeSpawnInterval(seconds, officeRef.current),
+        stressParamsRef.current.arrivalRateMultiplier
       );
       if (
         spawnTimerRef.current > spawnInterval &&
@@ -1626,8 +1667,9 @@ export const ClinicalTrialChaos: React.FC = () => {
       ) {
         uiNeedsSync = true;
         spawnTimerRef.current = 0;
+        const baseErrorChance = stressParamsRef.current.errorChance;
         const errorChance = applyOfficeErrorChance(
-          getSubjectErrorChance(phaseRef.current),
+          baseErrorChance,
           officeRef.current
         );
         const isSAE = Math.random() < getSAEChance(phaseRef.current);
@@ -2484,6 +2526,37 @@ export const ClinicalTrialChaos: React.FC = () => {
               )}
             </button>
           ))}
+
+          {/* Stress Control & BIMO Stream Toggle Button */}
+          <button
+            type="button"
+            onClick={() => setIsStressDrawerOpen((prev) => !prev)}
+            aria-expanded={isStressDrawerOpen}
+            aria-label="Toggle Interactive Stress Control Panel and Live BIMO Stream"
+            className={`flex min-h-[44px] shrink-0 items-center gap-1.5 rounded-lg px-3 text-xs font-bold transition border ${
+              isStressDrawerOpen
+                ? "border-amber-500 bg-amber-500/20 text-amber-200"
+                : "border-zinc-700 bg-zinc-800/80 text-zinc-300 hover:border-zinc-600 hover:text-white"
+            }`}
+          >
+            <IconBolt className="h-4 w-4 text-amber-400" />
+            <span className="hidden sm:inline">Stress & BIMO Stream</span>
+            <span className="sm:hidden">Stress</span>
+            {liveBimoReport && (
+              <span
+                className={`rounded px-1.5 py-0.5 text-[10px] font-semibold tabular-nums ${
+                  liveBimoReport.verdict.startsWith("NAI")
+                    ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+                    : liveBimoReport.verdict.startsWith("VAI")
+                      ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                      : "bg-rose-500/20 text-rose-300 border border-rose-500/30"
+                }`}
+              >
+                {liveBimoReport.overallScore}% (
+                {liveBimoReport.verdict.split(" ")[0]})
+              </span>
+            )}
+          </button>
         </div>
         <span className="hidden min-w-0 items-center gap-1.5 text-[10px] text-zinc-400 sm:flex">
           <span
@@ -4661,6 +4734,315 @@ export const ClinicalTrialChaos: React.FC = () => {
             <IconExternalLink className="h-3.5 w-3.5" />
           </Link>
         </div>
+      )}
+
+      {/* Interactive Stress Control Panel & Live BIMO Stream Drawer */}
+      {isStressDrawerOpen && (
+        <aside
+          aria-label="Interactive Stress Control Panel and Live BIMO Stream"
+          className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l border-zinc-800 bg-zinc-950/95 p-4 text-zinc-100 backdrop-blur-md shadow-2xl transition-all sm:w-96"
+        >
+          {/* Drawer Header */}
+          <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+            <div className="flex items-center gap-2">
+              <IconBolt className="h-5 w-5 text-amber-400" />
+              <h2 className="text-sm font-bold text-zinc-100">
+                Stress Control & BIMO Stream
+              </h2>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsStressDrawerOpen(false)}
+              className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg p-1 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+              aria-label="Close Stress Control Drawer"
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto py-3 space-y-5 pr-1">
+            {/* 1. Stress Parameter Overrides & Presets */}
+            <section className="space-y-4 rounded-xl border border-zinc-800 bg-zinc-900/60 p-3.5">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-amber-400">
+                  ⚡ Stress Parameters
+                </h3>
+                <span className="text-[10px] text-zinc-400 font-mono">
+                  21 CFR § 11 / § 812
+                </span>
+              </div>
+
+              {/* Presets */}
+              <div>
+                <label className="block text-[11px] font-medium text-zinc-400 mb-1.5">
+                  Scenario Presets:
+                </label>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {(Object.keys(STRESS_PRESETS) as StressPresetId[]).map(
+                    (key) => {
+                      const preset = STRESS_PRESETS[key];
+                      const isActive =
+                        stressParams.arrivalRateMultiplier ===
+                          preset.params.arrivalRateMultiplier &&
+                        stressParams.errorChance ===
+                          preset.params.errorChance &&
+                        stressParams.auditorPacingMultiplier ===
+                          preset.params.auditorPacingMultiplier;
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => setStressParams({ ...preset.params })}
+                          className={`min-h-[44px] rounded-lg px-2.5 py-1.5 text-left text-xs transition border ${
+                            isActive
+                              ? "border-amber-500 bg-amber-500/20 text-amber-200 font-bold"
+                              : "border-zinc-800 bg-zinc-800/50 text-zinc-300 hover:border-zinc-700 hover:bg-zinc-800"
+                          }`}
+                        >
+                          <div className="font-semibold">{preset.name}</div>
+                          <div className="text-[10px] text-zinc-400 line-clamp-1">
+                            {preset.description}
+                          </div>
+                        </button>
+                      );
+                    }
+                  )}
+                </div>
+              </div>
+
+              {/* Sliders */}
+              <div className="space-y-3 pt-2">
+                {/* Arrival Rate */}
+                <div>
+                  <div className="flex justify-between text-xs font-medium mb-1">
+                    <span className="text-zinc-300">Subject Arrival Rate</span>
+                    <span className="tabular-nums text-amber-400 font-bold">
+                      {stressParams.arrivalRateMultiplier.toFixed(1)}x
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0.5"
+                    max="3.0"
+                    step="0.1"
+                    value={stressParams.arrivalRateMultiplier}
+                    onChange={(e) =>
+                      setStressParams((prev) => ({
+                        ...prev,
+                        arrivalRateMultiplier: parseFloat(e.target.value),
+                      }))
+                    }
+                    aria-label="Subject Arrival Rate Slider"
+                    className="w-full accent-amber-500 h-1.5 bg-zinc-800 rounded-lg cursor-pointer"
+                  />
+                  <div className="flex justify-between text-[10px] text-zinc-500 mt-0.5">
+                    <span>0.5x (Slow)</span>
+                    <span>1.0x (Normal)</span>
+                    <span>3.0x (Surge)</span>
+                  </div>
+                </div>
+
+                {/* Error Chance */}
+                <div>
+                  <div className="flex justify-between text-xs font-medium mb-1">
+                    <span className="text-zinc-300">
+                      Observation Error Chance
+                    </span>
+                    <span className="tabular-nums text-amber-400 font-bold">
+                      {Math.round(stressParams.errorChance * 100)}%
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1.0"
+                    step="0.05"
+                    value={stressParams.errorChance}
+                    onChange={(e) =>
+                      setStressParams((prev) => ({
+                        ...prev,
+                        errorChance: parseFloat(e.target.value),
+                      }))
+                    }
+                    aria-label="Observation Error Chance Slider"
+                    className="w-full accent-amber-500 h-1.5 bg-zinc-800 rounded-lg cursor-pointer"
+                  />
+                  <div className="flex justify-between text-[10px] text-zinc-500 mt-0.5">
+                    <span>0% (Clean)</span>
+                    <span>50% (Standard)</span>
+                    <span>100% (High Error)</span>
+                  </div>
+                </div>
+
+                {/* Auditor Pacing */}
+                <div>
+                  <div className="flex justify-between text-xs font-medium mb-1">
+                    <span className="text-zinc-300">
+                      Auditor Inspection Pacing
+                    </span>
+                    <span className="tabular-nums text-amber-400 font-bold">
+                      {stressParams.auditorPacingMultiplier.toFixed(1)}x
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0.5"
+                    max="3.0"
+                    step="0.1"
+                    value={stressParams.auditorPacingMultiplier}
+                    onChange={(e) =>
+                      setStressParams((prev) => ({
+                        ...prev,
+                        auditorPacingMultiplier: parseFloat(e.target.value),
+                      }))
+                    }
+                    aria-label="Auditor Inspection Pacing Slider"
+                    className="w-full accent-amber-500 h-1.5 bg-zinc-800 rounded-lg cursor-pointer"
+                  />
+                  <div className="flex justify-between text-[10px] text-zinc-500 mt-0.5">
+                    <span>0.5x (Relaxed)</span>
+                    <span>1.0x (Standard)</span>
+                    <span>3.0x (Intense Patrol)</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* 2. Live BIMO Compliance Stream */}
+            <section className="space-y-3 rounded-xl border border-zinc-800 bg-zinc-900/60 p-3.5">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                  Live BIMO Stream
+                </h3>
+                <span className="text-[10px] tabular-nums font-mono text-zinc-400">
+                  Score: {liveBimoReport.overallScore}%
+                </span>
+              </div>
+
+              {/* Score & Verdict Header */}
+              <div className="flex items-center justify-between rounded-lg bg-zinc-950 p-2.5 border border-zinc-800">
+                <div>
+                  <div className="text-[10px] text-zinc-400 uppercase tracking-wider">
+                    Score &amp; Trend
+                  </div>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-lg font-bold tabular-nums text-white">
+                      {liveBimoReport.overallScore}/100
+                    </span>
+                    <span
+                      className={`text-xs font-semibold flex items-center gap-0.5 ${
+                        scoreTrend === "improving"
+                          ? "text-emerald-400"
+                          : scoreTrend === "declining"
+                            ? "text-rose-400"
+                            : "text-zinc-400"
+                      }`}
+                    >
+                      {scoreTrend === "improving" && "▲ Improving"}
+                      {scoreTrend === "declining" && "▼ Declining"}
+                      {scoreTrend === "stable" && "▶ Stable"}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="text-right">
+                  <div className="text-[10px] text-zinc-400 uppercase tracking-wider">
+                    Verdict Status
+                  </div>
+                  <div
+                    className={`text-xs font-bold mt-0.5 rounded px-2 py-0.5 inline-block ${
+                      liveBimoReport.verdict.startsWith("NAI")
+                        ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+                        : liveBimoReport.verdict.startsWith("VAI")
+                          ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                          : "bg-rose-500/20 text-rose-300 border border-rose-500/30"
+                    }`}
+                  >
+                    {liveBimoReport.verdict.split(" ")[0]}
+                  </div>
+                </div>
+              </div>
+
+              {/* Warning Banner if threshold violations occur */}
+              {(liveBimoReport.verdict.startsWith("OAI") ||
+                liveBimoReport.findings.some(
+                  (f) => f.severity === "Critical"
+                )) && (
+                <div className="rounded-lg border border-rose-500/40 bg-rose-950/40 p-2.5 text-xs text-rose-200 flex items-start gap-2 animate-pulse">
+                  <IconAlertTriangle className="h-5 w-5 shrink-0 text-rose-400 mt-0.5" />
+                  <div>
+                    <div className="font-bold text-rose-300">
+                      REGULATORY THRESHOLD VIOLATION
+                    </div>
+                    <div className="text-[11px] text-rose-200/80 mt-0.5">
+                      Immediate corrective action required under 21 CFR § 312.44
+                      &amp; 21 CFR § 812. Form 483 risk elevated.
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Findings Stream */}
+              <div>
+                <div className="text-[11px] font-semibold text-zinc-400 mb-2 flex justify-between">
+                  <span>
+                    Regulatory Findings ({liveBimoReport.findings.length}):
+                  </span>
+                  <span className="text-[10px] text-zinc-500">Live Feed</span>
+                </div>
+
+                {liveBimoReport.findings.length === 0 ? (
+                  <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-3 text-center text-xs text-zinc-400">
+                    <IconShieldCheck className="mx-auto h-5 w-5 text-emerald-400 mb-1" />
+                    No regulatory violations detected. Site systems compliant.
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                    {liveBimoReport.findings.map((f, i) => (
+                      <div
+                        key={f.id || i}
+                        className="rounded-lg border border-zinc-800 bg-zinc-950 p-2.5 space-y-1 text-left"
+                      >
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-mono font-bold text-zinc-300">
+                            {f.id}
+                          </span>
+                          <span
+                            className={`rounded px-1.5 py-0.2 text-[10px] font-semibold ${
+                              f.severity === "Critical"
+                                ? "bg-rose-500/20 text-rose-300 border border-rose-500/30"
+                                : f.severity === "Major"
+                                  ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                                  : "bg-blue-500/20 text-blue-300 border border-blue-500/30"
+                            }`}
+                          >
+                            {f.severity}
+                          </span>
+                        </div>
+                        <p className="text-xs text-zinc-300 leading-snug">
+                          {f.description}
+                        </p>
+                        <div className="text-[10px] text-amber-400/90 font-mono">
+                          📜 {f.regulation}
+                        </div>
+                        {f.actionableGuidance && (
+                          <div className="text-[10px] text-emerald-300/90 bg-emerald-950/40 border border-emerald-800/40 rounded p-1 mt-1">
+                            💡 <strong>Guidance:</strong> {f.actionableGuidance}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </section>
+          </div>
+        </aside>
       )}
     </div>
   );

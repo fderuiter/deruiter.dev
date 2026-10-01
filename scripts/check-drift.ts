@@ -234,7 +234,7 @@ export function checkDrift(
       "\n";
   }
 
-  console.log("Validating cross-quadrant documentation markdown links...");
+  console.log("Validating repository documentation markdown links...");
   const markdownLinkResult = dependencies.checkMarkdownLinks();
   if (markdownLinkResult.status === "fail") {
     docsDrift = true;

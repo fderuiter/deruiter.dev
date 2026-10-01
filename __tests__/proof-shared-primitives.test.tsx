@@ -324,6 +324,37 @@ describe("Proof toasts through the shared ToastProvider", () => {
     expect(screen.getAllByText("Magnetic snapping disabled.")).toHaveLength(1);
   });
 
+  it("displays inline counterexample badge on target canvas node when an invalid connection is drawn", () => {
+    render(
+      <ToastProvider>
+        <ProofWorkspaceClient />
+      </ToastProvider>
+    );
+    const input = consoleInput() as HTMLInputElement;
+    // Drawing an invalid connection C -> A triggers Affirming the Consequent fallacy
+    fireEvent.change(input, { target: { value: "connect C A" } });
+    fireEvent.submit(input.closest("form") as HTMLFormElement);
+
+    const badge = screen.getByRole("button", {
+      name: /Counterexample badge for Node A/i,
+    });
+    expect(badge).toBeTruthy();
+
+    // Click badge to toggle popover showing variable assignments and sub-expressions
+    fireEvent.click(badge);
+
+    expect(
+      screen.getByRole("dialog", {
+        name: /Counterexample diagnostics popover for Node A/i,
+      })
+    ).toBeTruthy();
+    expect(
+      screen.getAllByText(/Fallacy of Affirming the Consequent/i).length
+    ).toBeGreaterThan(0);
+    expect(screen.getAllByText(/P = FALSE/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Q = TRUE/i).length).toBeGreaterThan(0);
+  });
+
   it("announces a toast exactly once when nothing else speaks it", () => {
     const announceSpy = renderWithProviders();
     fireEvent.click(screen.getByRole("button", { name: /Auto-Step/ }));

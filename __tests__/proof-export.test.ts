@@ -6,6 +6,7 @@ import {
   exportProofToMermaid,
   exportWorkspaceProof,
 } from "../lib/proof-utils";
+import { createCustomTheorem } from "../lib/proof-custom";
 
 describe("Proof Export Generators (Lean 4, LaTeX, Markdown, Mermaid)", () => {
   it("withholds a Lean proof template until the current graph is complete", () => {
@@ -84,5 +85,32 @@ describe("Proof Export Generators (Lean 4, LaTeX, Markdown, Mermaid)", () => {
     expect(mermaid).toContain("graph LR");
     expect(mermaid).toContain("Node_A --> Node_C");
     expect(mermaid).toContain("classDef proven");
+  });
+
+  it("exports complete LaTeX prooftrees and Mermaid graph TD flowcharts for custom theorems", () => {
+    const customTheorem = createCustomTheorem(["P", "P -> Q", "Q -> R"], "R");
+    const edges = customTheorem.validPairs.map(([source, target]) => ({
+      source,
+      target,
+    }));
+
+    const latex = exportWorkspaceProof("latex", edges, customTheorem);
+    expect(latex).toContain("\\begin{prooftree}");
+    expect(latex).toContain("\\end{prooftree}");
+    expect(latex).toContain("MP");
+
+    const mermaid = exportWorkspaceProof("mermaid", edges, customTheorem);
+    expect(mermaid).toContain("graph TD");
+    expect(mermaid).toContain("Node_A");
+    expect(mermaid).toContain("Node_E");
+    expect(mermaid).toContain("classDef proven");
+
+    const lean = exportWorkspaceProof("lean", edges, customTheorem);
+    expect(lean).toContain("theorem custom_proof");
+    expect(lean).toContain("«P»");
+
+    const markdown = exportWorkspaceProof("markdown", edges, customTheorem);
+    expect(markdown).toContain("# Proof Workspace Export: Custom Proof");
+    expect(markdown).toContain("| Step | Proposition | Inference Rule |");
   });
 });

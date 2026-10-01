@@ -1842,6 +1842,7 @@ export function ProofWorkspaceClient() {
           <ProofCanvas
             activeTheorem={activeTheorem}
             edges={edges}
+            currentFallacy={currentFallacy}
             nodeOffsets={nodeOffsets}
             selectedNodeIds={selectedNodeIds}
             inspectedNodeId={inspectedNodeId}
@@ -1866,7 +1867,6 @@ export function ProofWorkspaceClient() {
             canvasWrapperRef={canvasWrapperRef}
             svgCanvasRef={svgCanvasRef}
             mobileActiveView={mobileActiveView}
-            currentFallacy={currentFallacy}
             handleRollback={handleRollback}
           />
 

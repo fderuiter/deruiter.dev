@@ -380,7 +380,10 @@ jobs:
     needs: fast-gate
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    # Provisional, same caveat as heavy-gate: two spec files across three
+    # device projects plus one build, unmeasured. Revisit once real numbers
+    # exist.
+    timeout-minutes: 40
 
     steps:
       - name: Checkout Code

@@ -14,9 +14,19 @@ import {
   IconRotate,
   IconCopy,
   IconCheck,
+  IconDownload,
+  IconTrash,
+  IconCode,
+  IconChevronDown,
+  IconFileCode,
 } from "@tabler/icons-react";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { usePersistentState } from "@/hooks/usePersistentState";
+import { useStudioHashParams } from "@/hooks/useStudioHashParams";
+import {
+  generateBashScript,
+  generatePythonScript,
+} from "@/lib/terminal-script-generator";
 import { useSafeTimeout, type SafeTimeoutId } from "@/hooks/useSafeTimeout";
 import { logger } from "@/lib/logger";
 import { emitAppEvent } from "@/lib/event-bus";
@@ -154,6 +164,15 @@ function generateLogId(): string {
   return `log-entry-${idCounter}`;
 }
 
+const INITIAL_LOG_ITEM: LogItem = {
+  id: "init",
+  type: "info",
+  text: "iMednet Python SDK CLI Sandbox [Version 2.3.1]\nType 'help' to list available commands. Click the badges below for instant inputs.",
+};
+
+const DEFAULT_LOGS: LogItem[] = [INITIAL_LOG_ITEM];
+const EMPTY_COMMAND_HISTORY: string[] = [];
+
 interface SandboxTerminalProps {
   slug?: string;
   commands?: Record<string, { description: string; payload: unknown }>;
@@ -169,20 +188,53 @@ export const SandboxTerminal: React.FC<SandboxTerminalProps> = ({
   const { playKeystroke, playAutocomplete, playSuccess } = useAudio();
   // Response lag, post-typing and between-step delays are cleared on unmount.
   const { setSafeTimeout, clearSafeTimeout } = useSafeTimeout();
+  const { getParam, setParam } = useStudioHashParams();
   const [input, setInput] = useState("");
-  const [logs, setLogs] = useState<LogItem[]>([
-    {
-      id: "init",
-      type: "info",
-      text: "iMednet Python SDK CLI Sandbox [Version 2.3.1]\nType 'help' to list available commands. Click the badges below for instant inputs.",
+
+  const logStorageKey = `sandbox_terminal_logs_${slug || "default"}`;
+  const [persistentLogs, setPersistentLogs] = usePersistentState<LogItem[]>(
+    logStorageKey,
+    DEFAULT_LOGS
+  );
+
+  const setLogs = React.useCallback(
+    (value: LogItem[] | ((prev: LogItem[]) => LogItem[])) => {
+      setPersistentLogs((prev) => {
+        const next = typeof value === "function" ? value(prev) : value;
+        if (next.length > 100) {
+          return next.slice(-100);
+        }
+        return next;
+      });
     },
-  ]);
+    [setPersistentLogs]
+  );
+
+  const logs = persistentLogs;
+
   const [commandHistory, setCommandHistory] = usePersistentState<string[]>(
     "sandbox_terminal_history",
-    []
+    EMPTY_COMMAND_HISTORY
   );
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [isExecuting, setIsExecuting] = useState(false);
+
+  // Export Menu Dropdown State
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const exportDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        exportDropdownRef.current &&
+        !exportDropdownRef.current.contains(event.target as Node)
+      ) {
+        setShowExportMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Playback Step Player states
   const [currentStepIndex, setCurrentStepIndex] = useState(-1);
@@ -231,6 +283,9 @@ export const SandboxTerminal: React.FC<SandboxTerminalProps> = ({
       const trimmed = cmdText.trim();
       if (!trimmed) return;
 
+      // Synchronize active command state to URL hash parameter outside functional setState updaters
+      setParam("terminal_cmd", trimmed);
+
       // Add command to output log
       const cmdId = generateLogId();
       setLogs((prev) => [
@@ -254,6 +309,7 @@ export const SandboxTerminal: React.FC<SandboxTerminalProps> = ({
         const outputId = generateLogId();
 
         if (trimmed === "clear") {
+          setParam("terminal_cmd", null);
           setLogs([]);
           announce("Console cleared", "polite");
           return;
@@ -508,6 +564,7 @@ export const SandboxTerminal: React.FC<SandboxTerminalProps> = ({
       }, 450);
     },
     [
+      setParam,
       setCommandHistory,
       setHistoryIndex,
       setIsExecuting,
@@ -519,6 +576,68 @@ export const SandboxTerminal: React.FC<SandboxTerminalProps> = ({
       setSafeTimeout,
     ]
   );
+
+  // Auto-populate or execute command specified in URL hash parameters on initial mount
+  const hasInitializedHashRef = useRef(false);
+  useEffect(() => {
+    if (hasInitializedHashRef.current) return;
+    hasInitializedHashRef.current = true;
+    const initialUrlCmd = getParam("terminal_cmd");
+    if (!initialUrlCmd || !initialUrlCmd.trim()) return;
+
+    const trimmedCmd = initialUrlCmd.trim();
+    const hasCommandLogs = logs.some((l) => l.type === "command");
+    if (hasCommandLogs) return;
+
+    setSafeTimeout(() => {
+      executeCommand(trimmedCmd);
+    }, 0);
+  }, [getParam, executeCommand, logs, setSafeTimeout]);
+
+  // Handler to clear console and local storage log state
+  const handleClearHistory = () => {
+    setParam("terminal_cmd", null);
+    setLogs([]);
+    announce("Console and local storage log state cleared", "polite");
+  };
+
+  // Handler to generate and download .sh or .py executable pipeline script
+  const handleExportScript = (format: "sh" | "py") => {
+    setShowExportMenu(false);
+    const executedCmds = logs
+      .filter((l) => l.type === "command")
+      .map((l) => l.text);
+    const historyToExport =
+      executedCmds.length > 0
+        ? executedCmds
+        : commandHistory.length > 0
+          ? commandHistory
+          : Object.keys(activeRegistry);
+
+    const targetSlug = slug || "imednet-python-sdk";
+    const scriptContent =
+      format === "sh"
+        ? generateBashScript(historyToExport, { slug: targetSlug })
+        : generatePythonScript(historyToExport, { slug: targetSlug });
+
+    const filename = `imednet_pipeline_${targetSlug.replace(/[^a-z0-9_-]/gi, "_")}.${format}`;
+    const mimeType = format === "sh" ? "text/x-shellscript" : "text/x-python";
+
+    const blob = new Blob([scriptContent], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    announce(
+      `Exported terminal session history as executable .${format} script`,
+      "polite"
+    );
+  };
 
   // Unified typing simulation engine
   const typeAndExecute = React.useCallback(
@@ -686,6 +805,7 @@ export const SandboxTerminal: React.FC<SandboxTerminalProps> = ({
     ];
 
     if (prevIdx === -1) {
+      setParam("terminal_cmd", null);
       setLogs(initialLogs);
       return;
     }
@@ -717,6 +837,7 @@ export const SandboxTerminal: React.FC<SandboxTerminalProps> = ({
       }
     }
     setLogs(updatedLogs);
+    setParam("terminal_cmd", activePlayback[prevIdx].command);
   };
 
   // Reset handler
@@ -733,13 +854,8 @@ export const SandboxTerminal: React.FC<SandboxTerminalProps> = ({
     setIsTyping(false);
     setCurrentStepIndex(-1);
     setInput("");
-    setLogs([
-      {
-        id: "init",
-        type: "info",
-        text: "iMednet Python SDK CLI Sandbox [Version 2.3.1]\nType 'help' to list available commands. Click the badges below for instant inputs.",
-      },
-    ]);
+    setParam("terminal_cmd", null);
+    setLogs([INITIAL_LOG_ITEM]);
   };
 
   // Setup/Teardown interactive console API and custom greeting log
@@ -1054,7 +1170,68 @@ export const SandboxTerminal: React.FC<SandboxTerminalProps> = ({
               imednet-python-sdk // interactive CLI shell
             </span>
           </div>
-          <IconTerminal className="w-4 h-4 text-zinc-600 shrink-0" />
+
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Clear History Control */}
+            <button
+              onClick={handleClearHistory}
+              className="px-2.5 py-1 text-[10px] font-mono font-bold text-zinc-400 hover:text-red-400 bg-zinc-900/60 hover:bg-red-500/10 border border-zinc-800 hover:border-red-500/30 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer focus:outline-none"
+              title="Clear Terminal Logs & History"
+            >
+              <IconTrash className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Clear History</span>
+            </button>
+
+            {/* Export Script Dropdown Control */}
+            <div className="relative" ref={exportDropdownRef}>
+              <button
+                onClick={() => setShowExportMenu((prev) => !prev)}
+                className="px-2.5 py-1 text-[10px] font-mono font-bold text-brand-cyan hover:text-brand-cyan bg-brand-cyan/10 hover:bg-brand-cyan/20 border border-brand-cyan/30 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer focus:outline-none"
+                title="Export Executed Commands as Pipeline Script"
+                aria-expanded={showExportMenu}
+                aria-haspopup="true"
+              >
+                <IconDownload className="w-3.5 h-3.5" />
+                <span>Export Script</span>
+                <IconChevronDown className="w-3 h-3" />
+              </button>
+
+              {showExportMenu && (
+                <div className="absolute right-0 mt-2 w-56 bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl py-1.5 z-50 flex flex-col font-mono text-xs">
+                  <button
+                    onClick={() => handleExportScript("sh")}
+                    className="px-3 py-2 text-left hover:bg-zinc-900 text-zinc-200 hover:text-brand-cyan flex items-center gap-2.5 cursor-pointer border-b border-zinc-900/80"
+                  >
+                    <IconCode className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <div>
+                      <div className="font-bold text-[11px]">
+                        Bash Script (.sh)
+                      </div>
+                      <div className="text-[9px] text-muted">
+                        curl / CLI pipeline execution
+                      </div>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => handleExportScript("py")}
+                    className="px-3 py-2 text-left hover:bg-zinc-900 text-zinc-200 hover:text-brand-cyan flex items-center gap-2.5 cursor-pointer"
+                  >
+                    <IconFileCode className="w-4 h-4 text-blue-400 shrink-0" />
+                    <div>
+                      <div className="font-bold text-[11px]">
+                        Python Script (.py)
+                      </div>
+                      <div className="text-[9px] text-muted">
+                        requests / SDK pipeline execution
+                      </div>
+                    </div>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <IconTerminal className="w-4 h-4 text-zinc-600 shrink-0 ml-1" />
+          </div>
         </div>
 
         {/* Console logs output viewport */}

@@ -176,7 +176,7 @@ export const DispatchOverlay: React.FC<DispatchOverlayProps> = ({
           )}
           <IconCheck className="w-4 h-4" />
           <span>Acknowledge &amp; Respond</span>
-          <span className="px-1.5 py-0.5 rounded bg-zinc-950/40 text-zinc-800 text-[10px] font-mono font-bold">
+          <span className="px-1.5 py-0.5 rounded bg-zinc-950 text-brand-cyan text-[10px] font-mono font-bold border border-brand-cyan/40">
             [Enter]
           </span>
         </button>

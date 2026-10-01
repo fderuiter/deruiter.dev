@@ -934,7 +934,7 @@ Re-exports [DOSE_ESCALATION_SCENARIO](scenarios/variables/DOSE_ESCALATION_SCENAR
 
 ### drawInt
 
-Re-exports [drawInt](internal/rng/functions/drawInt.md)
+Re-exports [drawInt](../utils/prng/functions/drawInt.md)
 
 ***
 
@@ -2854,7 +2854,7 @@ Re-exports [UNBLINDING_RULE_ID](internal/blinding/variables/UNBLINDING_RULE_ID.m
 
 ### uniformAt
 
-Re-exports [uniformAt](internal/rng/functions/uniformAt.md)
+Re-exports [uniformAt](../utils/prng/functions/uniformAt.md)
 
 ***
 

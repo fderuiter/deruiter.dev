@@ -178,16 +178,37 @@ export interface SDTMRow {
   STATUS: "COMPLIANT" | "QUERY";
 }
 
+export interface StressParameters {
+  arrivalRateMultiplier: number; // e.g. 0.5 to 3.0, default 1.0
+  errorChance: number; // e.g. 0.0 to 1.0, default phase base
+  auditorPacingMultiplier: number; // e.g. 0.5 to 3.0, default 1.0
+}
+
+export type StressPresetId =
+  "baseline" | "audit_rush" | "influx_surge" | "extreme_chaos";
+
+export interface StressPreset {
+  id: StressPresetId;
+  name: string;
+  description: string;
+  params: StressParameters;
+}
+
+export type BIMOComplianceTrend = "improving" | "stable" | "declining";
+
 export interface BIMOFinding {
   id: string;
   category:
     | "Data Integrity"
     | "Protocol Compliance"
     | "21 CFR Part 11"
-    | "Adverse Event Reporting";
+    | "Adverse Event Reporting"
+    | "21 CFR 812 Device Rules";
   severity: "Critical" | "Major" | "Minor";
   description: string;
   regulation: string;
+  timestamp?: string;
+  actionableGuidance?: string;
 }
 
 export interface RecordedRuleViolation {
@@ -206,6 +227,7 @@ export interface BIMOInspectionReport {
   runId: string;
   auditDate: string;
   overallScore: number;
+  scoreTrend?: BIMOComplianceTrend;
   verdict:
     | "NAI (No Action Indicated - Approved)"
     | "VAI (Voluntary Action Indicated)"

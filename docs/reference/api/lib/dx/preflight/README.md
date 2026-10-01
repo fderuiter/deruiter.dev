@@ -13,6 +13,7 @@
 
 ## Functions
 
+- [checkInstallScriptAllowlist](functions/checkInstallScriptAllowlist.md)
 - [checkNodeVersion](functions/checkNodeVersion.md)
 - [checkNpmVersion](functions/checkNpmVersion.md)
 - [checkPrismaClientGenerated](functions/checkPrismaClientGenerated.md)

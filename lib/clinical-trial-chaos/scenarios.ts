@@ -6,6 +6,9 @@ import {
   GamePhase,
   ProtocolAmendment,
   StationConfig,
+  StressParameters,
+  StressPreset,
+  StressPresetId,
   ValidationErrorType,
 } from "./types";
 import { CRFField, EditCheckRule, StudyProtocol } from "../crf/types";
@@ -1264,3 +1267,56 @@ export const SEEDED_SCENARIOS: readonly ClinicalSubject[] = [
     ],
   },
 ];
+
+export const DEFAULT_STRESS_PARAMS: StressParameters = {
+  arrivalRateMultiplier: 1.0,
+  errorChance: 0.5,
+  auditorPacingMultiplier: 1.0,
+};
+
+export const STRESS_PRESETS: Record<StressPresetId, StressPreset> = {
+  baseline: {
+    id: "baseline",
+    name: "Standard Baseline",
+    description:
+      "Standard protocol operating parameters under normal site monitoring.",
+    params: {
+      arrivalRateMultiplier: 1.0,
+      errorChance: 0.5,
+      auditorPacingMultiplier: 1.0,
+    },
+  },
+  audit_rush: {
+    id: "audit_rush",
+    name: "21 CFR Audit Rush",
+    description:
+      "Accelerated FDA auditor inspection pacing with heightened scrutiny and faster suspicion escalation.",
+    params: {
+      arrivalRateMultiplier: 1.5,
+      errorChance: 0.6,
+      auditorPacingMultiplier: 2.2,
+    },
+  },
+  influx_surge: {
+    id: "influx_surge",
+    name: "Multi-Site Influx Surge",
+    description:
+      "Rapid subject recruitment influx causing high conveyor volume and increased observation error density.",
+    params: {
+      arrivalRateMultiplier: 2.5,
+      errorChance: 0.75,
+      auditorPacingMultiplier: 1.2,
+    },
+  },
+  extreme_chaos: {
+    id: "extreme_chaos",
+    name: "Extreme Protocol Stress",
+    description:
+      "Maximum trial chaos: intense subject influx, elevated error rate, and relentless auditor inspection.",
+    params: {
+      arrivalRateMultiplier: 3.0,
+      errorChance: 0.9,
+      auditorPacingMultiplier: 2.5,
+    },
+  },
+};

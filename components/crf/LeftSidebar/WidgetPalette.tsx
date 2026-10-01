@@ -294,8 +294,27 @@ export const WidgetPalette: React.FC<WidgetPaletteProps> = ({ onAddField }) => {
               {items.map((widget) => (
                 <button
                   key={widget.type}
+                  draggable
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData(
+                      "application/json",
+                      JSON.stringify({
+                        type: "widget",
+                        widgetType: widget.type,
+                        defaultField: widget.defaultField,
+                      })
+                    );
+                    e.dataTransfer.setData(
+                      "text/plain",
+                      JSON.stringify({
+                        type: "widget",
+                        widgetType: widget.type,
+                        defaultField: widget.defaultField,
+                      })
+                    );
+                  }}
                   onClick={() => handleAdd(widget)}
-                  className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg bg-zinc-950/60 border border-zinc-800/80 hover:border-brand-cyan/40 hover:bg-zinc-900 text-left transition-all group"
+                  className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg bg-zinc-950/60 border border-zinc-800/80 hover:border-brand-cyan/40 hover:bg-zinc-900 text-left transition-all group cursor-grab active:cursor-grabbing"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
                     <span className="p-1 rounded bg-zinc-900 border border-zinc-800 group-hover:border-zinc-700 transition-colors">

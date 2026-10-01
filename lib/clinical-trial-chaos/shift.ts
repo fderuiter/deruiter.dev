@@ -857,7 +857,8 @@ export function formatExpiryLog(subject: ClinicalSubject): string {
  */
 export function tickShiftClocks(
   clocks: ShiftClocks,
-  deltaSeconds: number
+  deltaSeconds: number,
+  auditorPacingMultiplier = 1.0
 ): ShiftClockTick {
   const { updatedSubjects: subjects, expiredSubjects: expired } =
     tickSubjectTimers(clocks.subjects, deltaSeconds);
@@ -873,7 +874,12 @@ export function tickShiftClocks(
     scoreState = recordExpiredSubjects(scoreState, expired.length);
   }
 
-  auditor = tickAuditor(auditor, deltaSeconds, subjects.length);
+  auditor = tickAuditor(
+    auditor,
+    deltaSeconds,
+    subjects.length,
+    auditorPacingMultiplier
+  );
   const suspicionMaxed = auditor.suspicion >= 100;
 
   const powerUps = tickPowerUps(clocks.powerUps, deltaSeconds);

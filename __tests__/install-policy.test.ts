@@ -1,6 +1,12 @@
 import fs from "fs";
 import path from "path";
 import { describe, expect, it } from "vitest";
+import { checkInstallScriptAllowlist } from "../lib/dx/preflight";
+import {
+  parseIgnoreRules,
+  matchAdvisoryRule,
+  type Advisory,
+} from "../scripts/security-audit";
 
 // #854: installs must be reproducible. Vercel picks the newest Node major that
 // satisfies engines.node, so an open-ended range silently moves production to
@@ -89,5 +95,43 @@ describe("reproducible install policy (#854)", () => {
     )) {
       expect(enabled, `allowScripts entry for ${name} must be true`).toBe(true);
     }
+  });
+
+  it("validates lifecycle script allowlist through preflight check", () => {
+    const result = checkInstallScriptAllowlist(root);
+    expect(result.status).toBe("pass");
+    expect(result.message).toContain("allowScripts matches");
+  });
+
+  it("evaluates expanded moderate severity gate and override rules", () => {
+    const fixedNow = new Date("2026-10-01T00:00:00Z");
+    const modRuleInput = [
+      {
+        advisory: "GHSA-hrr3-gc8f-f4qj",
+        package: "fast-uri",
+        expiresAt: "2026-11-15T00:00:00Z",
+        createdAt: "2026-10-01T00:00:00Z",
+        severity: "moderate",
+        reason:
+          "URL parser case normalization flaw in non-critical dev tool dependency",
+        owner: "security-team",
+        followUp: "#1401",
+      },
+    ];
+
+    const rules = parseIgnoreRules(modRuleInput, fixedNow);
+    expect(rules).toHaveLength(1);
+    expect(rules[0].isValid).toBe(true);
+    expect(rules[0].severity).toBe("moderate");
+    expect(rules[0].remainingDays).toBe(45);
+
+    const adv: Advisory = {
+      source: "GHSA-hrr3-gc8f-f4qj",
+      name: "fast-uri",
+      severity: "moderate",
+      title: "fast-uri host case normalization",
+    };
+
+    expect(matchAdvisoryRule(rules[0], adv, "fast-uri")).toBe(true);
   });
 });

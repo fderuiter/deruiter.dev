@@ -23,6 +23,7 @@ import Link from "next/link";
 import { CommitSparkline } from "@/components/CommitSparkline";
 import { useBentoLayout } from "@/components/providers/BentoLayoutContext";
 import { useTerminology } from "@/components/providers/TerminologyProvider";
+import { usePersona } from "@/components/providers/PersonaProvider";
 import { compileTerms } from "@/lib/term-compiler";
 import { parsePretextBlocks } from "@/lib/pretext-block-parser";
 
@@ -302,6 +303,7 @@ const FormattedMarkdownText: React.FC<{ text: string; className?: string }> = ({
 
 interface CaseStudyBentoCardProps {
   study: BaseCaseStudy & { githubStats: GitHubStats | null };
+  activePersona?: "recruiter" | "technical" | "all";
   className?: string;
   preCalculatedHeight?: number;
   preCalculatedRealityHeight?: number;
@@ -337,11 +339,16 @@ const DEFAULT_COLOR = {
 
 export const CaseStudyBentoCard: React.FC<CaseStudyBentoCardProps> = ({
   study,
+  activePersona,
   className,
   preCalculatedHeight,
   preCalculatedRealityHeight,
   headingTag,
 }) => {
+  const { persona } = usePersona();
+  const effectivePersona =
+    activePersona && activePersona !== "all" ? activePersona : persona;
+
   const { githubStats } = study;
   const tagsList = study.tags ? study.tags.split(",").map((t) => t.trim()) : [];
   const langColor = LANGUAGE_COLORS[study.primary_language] || DEFAULT_COLOR;
@@ -352,7 +359,19 @@ export const CaseStudyBentoCard: React.FC<CaseStudyBentoCardProps> = ({
     clearHeightOverride,
     setTransitioning,
   } = useBentoLayout();
-  const [mode, setMode] = React.useState<"pitch" | "reality">("pitch");
+
+  const [prevPersona, setPrevPersona] = React.useState(effectivePersona);
+  const [overrideMode, setOverrideMode] = React.useState<
+    "pitch" | "reality" | null
+  >(null);
+
+  if (prevPersona !== effectivePersona) {
+    setPrevPersona(effectivePersona);
+    setOverrideMode(null);
+  }
+
+  const mode =
+    overrideMode ?? (effectivePersona === "technical" ? "reality" : "pitch");
 
   const effectiveRealityHeight =
     preCalculatedRealityHeight ||
@@ -363,7 +382,7 @@ export const CaseStudyBentoCard: React.FC<CaseStudyBentoCardProps> = ({
     if (newMode === mode) return;
 
     setTransitioning(study.id, true);
-    setMode(newMode);
+    setOverrideMode(newMode);
 
     if (newMode === "pitch") {
       clearHeightOverride(study.id);

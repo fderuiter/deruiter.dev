@@ -608,6 +608,12 @@ Re-exports [describeFieldConditionalState](conditional-logic/functions/describeF
 
 ***
 
+### detectAndParseStudyFile
+
+Re-exports [detectAndParseStudyFile](file-ingestion/functions/detectAndParseStudyFile.md)
+
+***
+
 ### deterministicStringify
 
 Re-exports [deterministicStringify](study-draft-storage/functions/deterministicStringify.md)
@@ -1304,6 +1310,18 @@ Re-exports [importBaselinesBundle](study-baselines/functions/importBaselinesBund
 
 ***
 
+### importStudyFromCdiscOdmXml
+
+Re-exports [importStudyFromCdiscOdmXml](odm-xml-parser/functions/importStudyFromCdiscOdmXml.md)
+
+***
+
+### importStudyFromCsvSpec
+
+Re-exports [importStudyFromCsvSpec](csv-spec-parser/functions/importStudyFromCsvSpec.md)
+
+***
+
 ### importStudyFromUsdm
 
 Re-exports [importStudyFromUsdm](usdm-adapter/functions/importStudyFromUsdm.md)
@@ -1496,6 +1514,12 @@ Re-exports [LoadStudyDraftResult](study-draft-storage/type-aliases/LoadStudyDraf
 
 ***
 
+### mapOdmDataTypeToClinical
+
+Re-exports [mapOdmDataTypeToClinical](odm-xml-parser/functions/mapOdmDataTypeToClinical.md)
+
+***
+
 ### mapPresetToFormVariables
 
 Re-exports [mapPresetToFormVariables](formula-presets/functions/mapPresetToFormVariables.md)
@@ -1535,6 +1559,12 @@ Re-exports [ONCOLOGY_RECIST_PRESET](presets/oncology-recist/variables/ONCOLOGY_R
 ### ParsedPrecisionDate
 
 Re-exports [ParsedPrecisionDate](precision-date/interfaces/ParsedPrecisionDate.md)
+
+***
+
+### ParsedStudyFileResult
+
+Re-exports [ParsedStudyFileResult](file-ingestion/interfaces/ParsedStudyFileResult.md)
 
 ***
 

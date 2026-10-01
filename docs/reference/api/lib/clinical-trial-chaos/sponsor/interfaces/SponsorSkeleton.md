@@ -13,7 +13,7 @@ during the shift and surface as findings in the end-of-phase BIMO report.
 
 ### category
 
-> **category**: `"Data Integrity"` \| `"Protocol Compliance"` \| `"21 CFR Part 11"` \| `"Adverse Event Reporting"`
+> **category**: `"Data Integrity"` \| `"Protocol Compliance"` \| `"21 CFR Part 11"` \| `"Adverse Event Reporting"` \| `"21 CFR 812 Device Rules"`
 
 ***
 

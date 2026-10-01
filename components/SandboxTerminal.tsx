@@ -12,7 +12,10 @@ import {
   IconPlayerSkipForward,
   IconPlayerSkipBack,
   IconRotate,
+  IconCopy,
+  IconCheck,
 } from "@tabler/icons-react";
+import { CopyButton } from "@/components/ui/CopyButton";
 import { usePersistentState } from "@/hooks/usePersistentState";
 import { useSafeTimeout, type SafeTimeoutId } from "@/hooks/useSafeTimeout";
 import { logger } from "@/lib/logger";
@@ -1090,7 +1093,31 @@ export const SandboxTerminal: React.FC<SandboxTerminalProps> = ({
                     <span className="truncate">
                       200 OK // TRANSACTION RETRUSTED
                     </span>
-                    <span className="shrink-0">JSON PAYLOAD</span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="shrink-0">JSON PAYLOAD</span>
+                      <CopyButton
+                        text={() => {
+                          try {
+                            return JSON.stringify(log.jsonPayload, null, 2);
+                          } catch {
+                            return String(log.jsonPayload);
+                          }
+                        }}
+                        aria-label="Copy JSON payload"
+                        label="Copy"
+                        copiedLabel="Copied!"
+                        icon={
+                          <IconCopy className="w-3 h-3" aria-hidden="true" />
+                        }
+                        copiedIcon={
+                          <IconCheck
+                            className="w-3 h-3 text-emerald-400"
+                            aria-hidden="true"
+                          />
+                        }
+                        className="px-2 py-0.5 text-[9px] font-mono font-medium rounded border border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors flex items-center gap-1 cursor-pointer focus:outline-none focus:ring-1 focus:ring-brand-cyan/50"
+                      />
+                    </div>
                   </div>
                   {renderJsonPayload(log.jsonPayload)}
                 </div>

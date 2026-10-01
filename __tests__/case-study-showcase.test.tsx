@@ -23,6 +23,7 @@ vi.mock("@/hooks/useMasonryLayout", () => ({
 }));
 
 import { CaseStudyShowcase } from "@/components/CaseStudyShowcase";
+import { PersonaProvider } from "@/components/providers/PersonaProvider";
 
 // Regression coverage for #581: the filter tab list was hardcoded to
 // ["All", "TypeScript", "Python"], so real entries like Rust or "Graphic
@@ -30,12 +31,40 @@ import { CaseStudyShowcase } from "@/components/CaseStudyShowcase";
 // lived only in local useState — a browser Back from a case-study detail
 // page (a fresh mount of this component) always reset it to "All".
 const mockCaseStudies = [
-  { id: "1", slug: "a", primary_language: "TypeScript", githubStats: null },
-  { id: "2", slug: "b", primary_language: "Rust", githubStats: null },
+  {
+    id: "1",
+    slug: "a",
+    title: "Project Alpha",
+    primary_language: "TypeScript",
+    editorial_content: "Executive summary for Alpha",
+    architectural_narrative: "Deep architecture for Alpha",
+    tags: "TypeScript, React",
+    published: true,
+    simulated_telemetry: false,
+    githubStats: null,
+  },
+  {
+    id: "2",
+    slug: "b",
+    title: "Project Beta",
+    primary_language: "Rust",
+    editorial_content: "Executive summary for Beta",
+    architectural_narrative: "Deep architecture for Beta",
+    tags: "Rust, Systems",
+    published: true,
+    simulated_telemetry: false,
+    githubStats: null,
+  },
   {
     id: "3",
     slug: "c",
+    title: "Project Gamma",
     primary_language: "Graphic Design",
+    editorial_content: "Executive summary for Gamma",
+    architectural_narrative: "Deep architecture for Gamma",
+    tags: "Design, UI",
+    published: true,
+    simulated_telemetry: false,
     githubStats: null,
   },
 ] as any;
@@ -117,5 +146,78 @@ describe("CaseStudyShowcase filtering (#581)", () => {
     });
 
     expect(window.location.hash).toBe("");
+  });
+
+  it("includes dedicated persona filter tabs in the primary filter control bar", async () => {
+    await act(async () => {
+      root.render(
+        <PersonaProvider>
+          <CaseStudyShowcase caseStudies={mockCaseStudies} />
+        </PersonaProvider>
+      );
+    });
+
+    const buttons = Array.from(container.querySelectorAll("button"));
+    const buttonTexts = buttons.map((b) => b.textContent);
+
+    expect(buttonTexts).toContain("ALL ROLES");
+    expect(buttonTexts).toContain("RECRUITER / HIGHLIGHTS");
+    expect(buttonTexts).toContain("TECHNICAL / ARCHITECTURE");
+  });
+
+  it("updates URL hash and persona mode when selecting Recruiter or Technical tabs", async () => {
+    await act(async () => {
+      root.render(
+        <PersonaProvider>
+          <CaseStudyShowcase caseStudies={mockCaseStudies} />
+        </PersonaProvider>
+      );
+    });
+
+    const techTab = Array.from(container.querySelectorAll("button")).find((b) =>
+      b.textContent?.includes("TECHNICAL / ARCHITECTURE")
+    );
+    expect(techTab).toBeTruthy();
+
+    await act(async () => {
+      techTab!.click();
+    });
+
+    expect(window.location.hash).toContain("role=technical");
+
+    const recruiterTab = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.includes("RECRUITER / HIGHLIGHTS")
+    );
+    expect(recruiterTab).toBeTruthy();
+
+    await act(async () => {
+      recruiterTab!.click();
+    });
+
+    expect(window.location.hash).toContain("role=recruiter");
+  });
+
+  it("allows language filtering and persona filtering to operate simultaneously without state collision", async () => {
+    window.history.replaceState(null, "", "/case-studies#role=technical");
+
+    await act(async () => {
+      root.render(
+        <PersonaProvider>
+          <CaseStudyShowcase caseStudies={mockCaseStudies} />
+        </PersonaProvider>
+      );
+    });
+
+    const rustTab = Array.from(container.querySelectorAll("button")).find((b) =>
+      b.textContent?.includes("RUST")
+    );
+    expect(rustTab).toBeTruthy();
+
+    await act(async () => {
+      rustTab!.click();
+    });
+
+    expect(window.location.hash).toContain("role=technical");
+    expect(window.location.hash).toContain("lang=Rust");
   });
 });

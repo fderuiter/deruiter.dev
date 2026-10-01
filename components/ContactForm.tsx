@@ -23,20 +23,24 @@ import { useAnnouncer } from "@/hooks/useAnnouncer";
 
 interface ContactFormProps {
   initialIntent?: ContactIntent;
+  initialSubject?: string;
+  initialMessage?: string;
   className?: string;
   onSuccess?: () => void;
 }
 
 export function ContactForm({
   initialIntent = "general",
+  initialSubject = "",
+  initialMessage = "",
   className = "",
   onSuccess,
 }: ContactFormProps) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [intent, setIntent] = useState<ContactIntent>(initialIntent);
-  const [subject, setSubject] = useState("");
-  const [message, setMessage] = useState("");
+  const [subject, setSubject] = useState(initialSubject);
+  const [message, setMessage] = useState(initialMessage);
   const [gotcha, setGotcha] = useState(""); // Honeypot field
 
   const [mountedAt, setMountedAt] = useState<number>(0);
@@ -59,6 +63,20 @@ export function ContactForm({
       setMountedAt(Date.now());
     }
   }, []);
+
+  useEffect(() => {
+    if (initialSubject) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setSubject(initialSubject);
+    }
+  }, [initialSubject]);
+
+  useEffect(() => {
+    if (initialMessage) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setMessage(initialMessage);
+    }
+  }, [initialMessage]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -140,8 +158,8 @@ export function ContactForm({
     setName("");
     setEmail("");
     setIntent(initialIntent);
-    setSubject("");
-    setMessage("");
+    setSubject(initialSubject);
+    setMessage(initialMessage);
     setGotcha("");
     setStatus("idle");
     setErrorMessage(null);

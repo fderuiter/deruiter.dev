@@ -13,7 +13,7 @@ export interface SecurityTriageItem {
   type: "unhandled" | "expired_rule" | "invalid_rule";
   advisoryId: string;
   pkgName?: string;
-  severity: "critical" | "high";
+  severity: "critical" | "high" | "moderate";
   title?: string;
   url?: string;
   range?: string;

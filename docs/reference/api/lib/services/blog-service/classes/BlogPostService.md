@@ -104,6 +104,19 @@ Never throws: failures are returned as a typed
 
 ***
 
+### getAllBlogPostsAdmin()
+
+> `static` **getAllBlogPostsAdmin**(): `Promise`\<`object`[]\>
+
+Retrieves all persisted blog posts (published and drafts) ordered by update timestamp
+for administrative display.
+
+#### Returns
+
+`Promise`\<`object`[]\>
+
+***
+
 ### getAllPublishedBlogPosts()
 
 > `static` **getAllPublishedBlogPosts**(): `Promise`\<[`BlogPostData`](../../../fallback-blog-posts/interfaces/BlogPostData.md)[]\>

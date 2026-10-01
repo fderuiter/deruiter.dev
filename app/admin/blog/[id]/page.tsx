@@ -4,7 +4,7 @@ import { PageLayout } from "@/components/PageLayout";
 import { getAdminAuthSession } from "@/lib/auth/admin";
 import { AdminAccessDenied } from "@/components/admin/AdminAccessDenied";
 import { BlogAuthoringForm } from "@/components/admin/BlogAuthoringForm";
-import { prisma } from "@/lib/db";
+import { BlogPostService } from "@/lib/services/blog-service";
 import { type ContentPillar } from "@/lib/blog/types";
 
 export const metadata: Metadata = {
@@ -41,14 +41,7 @@ export default async function EditBlogPostPage({
 
   const { id } = await params;
 
-  let post = null;
-  try {
-    post = await prisma.blogPost.findUnique({
-      where: { id },
-    });
-  } catch {
-    post = null;
-  }
+  const post = await BlogPostService.getBlogPostById(id);
 
   if (!post) {
     notFound();

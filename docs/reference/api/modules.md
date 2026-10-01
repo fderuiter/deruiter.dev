@@ -314,6 +314,7 @@
 - [lib/telemetry/outbox](lib/telemetry/outbox/README.md)
 - [lib/term-compiler](lib/term-compiler/README.md)
 - [lib/term-glossary](lib/term-glossary/README.md)
+- [lib/terminal-script-generator](lib/terminal-script-generator/README.md)
 - [lib/trial-and-error](lib/trial-and-error/README.md)
 - [lib/trial-and-error/internal/amendments](lib/trial-and-error/internal/amendments/README.md)
 - [lib/trial-and-error/internal/blinding](lib/trial-and-error/internal/blinding/README.md)

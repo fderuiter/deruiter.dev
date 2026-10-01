@@ -1300,7 +1300,7 @@ export default function SchemaFlowWorkspace() {
                   <span className="px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-widest bg-brand-cyan/10 text-brand-cyan border border-brand-cyan/30 rounded">
                     Client-Side Compiler
                   </span>
-                  <span className="text-[10px] text-zinc-500 font-bold">
+                  <span className="text-[10px] text-zinc-400 font-bold">
                     Zod Universal CRF Protocol
                   </span>
                 </div>
@@ -1386,7 +1386,7 @@ export default function SchemaFlowWorkspace() {
             </div>
 
             {/* Drawer Footer Status */}
-            <div className="pt-4 mt-2 border-t border-zinc-900 flex items-center justify-between text-[10px] text-zinc-500">
+            <div className="pt-4 mt-2 border-t border-zinc-900 flex items-center justify-between text-[10px] text-zinc-400">
               <span>Sync Status: Reactive live compile (&lt; 16ms)</span>
               <span>Size: {(exportOutput.length / 1024).toFixed(2)} KB</span>
             </div>
@@ -1409,7 +1409,7 @@ export default function SchemaFlowWorkspace() {
                   <span className="px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-widest bg-amber-500/10 text-amber-400 border border-amber-500/30 rounded">
                     Real-time SDTM Diff
                   </span>
-                  <span className="text-[10px] text-zinc-500 font-bold">
+                  <span className="text-[10px] text-zinc-400 font-bold">
                     Baseline: {baselineVersionTag}
                   </span>
                 </div>
@@ -1430,7 +1430,7 @@ export default function SchemaFlowWorkspace() {
             {/* Summary Counters Grid */}
             <div className="grid grid-cols-4 gap-3 py-4 border-b border-zinc-900 font-mono text-center">
               <div className="bg-zinc-900/60 border border-zinc-850 rounded-xl p-2.5">
-                <span className="text-[9px] text-zinc-500 uppercase tracking-wider block font-bold">
+                <span className="text-[9px] text-zinc-400 uppercase tracking-wider block font-bold">
                   Total Changes
                 </span>
                 <span className="text-base font-black text-white mt-0.5 block">
@@ -1531,7 +1531,7 @@ export default function SchemaFlowWorkspace() {
                             {entry.label}
                           </span>
                         </div>
-                        <span className="text-[9px] text-zinc-500 uppercase font-bold">
+                        <span className="text-[9px] text-zinc-400 uppercase font-bold">
                           {entry.category}
                         </span>
                       </div>
@@ -1562,7 +1562,7 @@ export default function SchemaFlowWorkspace() {
 
             {/* Panel Footer & Update Baseline Snapshot Action */}
             <div className="pt-4 mt-2 border-t border-zinc-900 flex items-center justify-between">
-              <span className="text-[10px] text-zinc-500 font-mono">
+              <span className="text-[10px] text-zinc-400 font-mono">
                 Real-time SDTM Structural Diff Engine
               </span>
               <button

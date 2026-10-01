@@ -3,7 +3,7 @@ import Link from "next/link";
 import { PageLayout } from "@/components/PageLayout";
 import { getAdminAuthSession } from "@/lib/auth/admin";
 import { AdminAccessDenied } from "@/components/admin/AdminAccessDenied";
-import { prisma } from "@/lib/db";
+import { BlogPostService } from "@/lib/services/blog-service";
 import {
   IconPlus,
   IconEdit,
@@ -39,23 +39,7 @@ export default async function AdminBlogPage() {
     );
   }
 
-  let posts: Array<{
-    id: string;
-    slug: string;
-    title: string;
-    pillar: string;
-    published: boolean;
-    created_at: Date;
-    updated_at: Date;
-  }> = [];
-
-  try {
-    posts = await prisma.blogPost.findMany({
-      orderBy: [{ updated_at: "desc" }, { id: "asc" }],
-    });
-  } catch {
-    posts = [];
-  }
+  const posts = await BlogPostService.getAllBlogPostsAdmin();
 
   return (
     <PageLayout variant="standard">

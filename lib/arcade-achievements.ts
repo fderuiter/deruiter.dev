@@ -399,12 +399,31 @@ export function migrateLegacyArcadeScores(progress: ArcadeProgress): boolean {
   return migrated;
 }
 
+let cachedProgress: ArcadeProgress | null = null;
+let cachedProgressHash: string = "";
+
+function getStorageHash(): string {
+  if (typeof window === "undefined") return "";
+  const unifiedRaw = safeGetRawItem(ARCADE_UNIFIED_PROGRESS_KEY) || "";
+  let individualScores = "";
+  for (const key of Object.values(ARCADE_STORAGE_KEYS)) {
+    individualScores += `${key}:${safeGetRawItem(key) || ""};`;
+  }
+  return `${unifiedRaw}|${individualScores}`;
+}
+
 /**
  * Reads the current Arcade progress from SafeStorage.
  */
 export function getArcadeProgress(): ArcadeProgress {
   const fallback = getDefaultArcadeProgress();
   if (typeof window === "undefined") return fallback;
+
+  const currentHash = getStorageHash();
+
+  if (cachedProgress && cachedProgressHash === currentHash) {
+    return cachedProgress;
+  }
 
   let progress = safeGetItem<ArcadeProgress>(
     ARCADE_UNIFIED_PROGRESS_KEY,
@@ -422,6 +441,9 @@ export function getArcadeProgress(): ArcadeProgress {
     safeSetItem(ARCADE_UNIFIED_PROGRESS_KEY, progress);
   }
 
+  cachedProgress = progress;
+  cachedProgressHash = getStorageHash();
+
   return progress;
 }
 
@@ -431,7 +453,10 @@ export function getArcadeProgress(): ArcadeProgress {
 export function saveArcadeProgress(progress: ArcadeProgress): boolean {
   if (typeof window === "undefined") return false;
   progress.updatedAt = Date.now();
-  return safeSetItem(ARCADE_UNIFIED_PROGRESS_KEY, progress);
+  const ok = safeSetItem(ARCADE_UNIFIED_PROGRESS_KEY, progress);
+  cachedProgress = progress;
+  cachedProgressHash = getStorageHash();
+  return ok;
 }
 
 /**

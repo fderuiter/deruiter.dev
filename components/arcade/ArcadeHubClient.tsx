@@ -23,6 +23,7 @@ import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { ARCADE_GAME_COUNT } from "@/lib/arcade";
 import { safeGetRawItem } from "@/lib/safe-storage";
 import { ArcadeTrophyCabinet } from "@/components/arcade/ArcadeTrophyCabinet";
+import { onAppEvent } from "@/lib/event-bus";
 
 interface ArcadeGameCard {
   id: string;
@@ -43,8 +44,13 @@ interface ArcadeGameCard {
 
 const subscribeStorage = (callback: () => void) => {
   if (typeof window === "undefined") return () => {};
-  window.addEventListener("storage", callback);
-  return () => window.removeEventListener("storage", callback);
+  const cleanupScore = onAppEvent("arcade_score_updated", callback);
+  const handleStorage = () => callback();
+  window.addEventListener("storage", handleStorage);
+  return () => {
+    cleanupScore();
+    window.removeEventListener("storage", handleStorage);
+  };
 };
 
 const getScore = (key?: string) => () => {
@@ -276,9 +282,14 @@ const ARCADE_GAMES: ArcadeGameCard[] = [
 ];
 
 function GameCard({ game, index }: { game: ArcadeGameCard; index: number }) {
+  const getSnapshot = React.useCallback(
+    () => getScore(game.storageKey)(),
+    [game.storageKey]
+  );
+
   const rawScore = useSyncExternalStore(
     subscribeStorage,
-    getScore(game.storageKey),
+    getSnapshot,
     getServerScore
   );
 

@@ -23,7 +23,7 @@ import { useAnnouncer } from "@/hooks/useAnnouncer";
 import { usePersistentState } from "@/hooks/usePersistentState";
 import { safeRemoveItem } from "@/lib/safe-storage";
 
-export interface ContactFormDraft {
+interface ContactFormDraft {
   name: string;
   email: string;
   intent: ContactIntent;

@@ -22,6 +22,7 @@ import {
 } from "@/lib/crf/types";
 import { FieldRenderer } from "./FieldRenderer";
 import { ViewportSwitcher } from "./ViewportSwitcher";
+import { generateId } from "@/lib/utils";
 
 interface FormCanvasProps {
   form: CRFForm;
@@ -186,6 +187,68 @@ export const FormCanvas: React.FC<FormCanvasProps> = ({
   ) => {
     e.preventDefault();
     e.stopPropagation();
+
+    // Check for widget drop payload from WidgetPalette
+    let payload: {
+      type?: string;
+      widgetType?: string;
+      defaultField?: Partial<CRFField>;
+    } | null = null;
+    let jsonStr = "";
+    try {
+      const dt =
+        e.dataTransfer ||
+        (e.nativeEvent as unknown as { dataTransfer?: DataTransfer })
+          .dataTransfer;
+      jsonStr =
+        dt?.getData("application/json") || dt?.getData("text/plain") || "";
+      if (jsonStr) {
+        payload = JSON.parse(jsonStr);
+      }
+    } catch {
+      // Ignore JSON parse errors
+    }
+
+    if (payload?.type === "widget" && payload.widgetType) {
+      try {
+        const widgetType = payload.widgetType;
+        const defaultField = payload.defaultField || {};
+        const newField: CRFField = {
+          id: generateId(`f_${widgetType}`),
+          variableName: defaultField.variableName || "FIELD",
+          label: defaultField.label || "New Question",
+          dataType: widgetType as CRFField["dataType"],
+          columnSpan: defaultField.columnSpan || 6,
+          required: !!defaultField.required,
+          readOnly: defaultField.readOnly,
+          placeholder: defaultField.placeholder,
+          unit: defaultField.unit,
+          minValue: defaultField.minValue,
+          maxValue: defaultField.maxValue,
+          codelistId: defaultField.codelistId,
+          customOptions: defaultField.customOptions
+            ? defaultField.customOptions.map((o) => ({ ...o }))
+            : undefined,
+          calculationFormula: defaultField.calculationFormula,
+          scaleMinLabel: defaultField.scaleMinLabel,
+          scaleMaxLabel: defaultField.scaleMaxLabel,
+        };
+
+        const updatedSections = form.sections.map((section) => {
+          if (section.id !== targetSectionId) return section;
+          const fields = [...section.fields];
+          fields.splice(targetIndex, 0, newField);
+          return { ...section, fields };
+        });
+
+        onUpdateFormMeta({ sections: updatedSections });
+        setDraggedFieldInfo(null);
+        setDropTargetInfo(null);
+      } catch {
+        // Ignore drop errors
+      }
+      return;
+    }
 
     if (!draggedFieldInfo) {
       setDropTargetInfo(null);

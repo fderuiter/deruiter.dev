@@ -41,6 +41,7 @@
 - [hooks/useThrottle](hooks/useThrottle/README.md)
 - [hooks/useTimelineState](hooks/useTimelineState/README.md)
 - [hooks/useToast](hooks/useToast/README.md)
+- [hooks/useTouchDragAndDrop](hooks/useTouchDragAndDrop/README.md)
 - [hooks/useWebGLContextLoss](hooks/useWebGLContextLoss/README.md)
 - [hooks/useWorkspaceAction](hooks/useWorkspaceAction/README.md)
 - [hooks/useWorkspaceCommands](hooks/useWorkspaceCommands/README.md)

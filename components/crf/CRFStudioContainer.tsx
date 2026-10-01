@@ -144,6 +144,7 @@ const WorkflowWizardModal = dynamic(
 );
 import { useStudioHashParams } from "@/hooks/useStudioHashParams";
 import { useAudio } from "@/components/providers/AudioProvider";
+import { useTouchDragAndDrop } from "@/hooks/useTouchDragAndDrop";
 import {
   IconFileSpreadsheet,
   IconLayoutGrid,
@@ -153,6 +154,9 @@ import {
 } from "@tabler/icons-react";
 
 export const CRFStudioContainer: React.FC = () => {
+  // Polyfill touch drag-and-drop support across CRF Studio
+  useTouchDragAndDrop();
+
   // Recover the most recently acknowledged local draft (forms, visits, codelists,
   // rules, and branding together) before falling back to the built-in example so
   // a refresh never silently loses an author's in-progress study.

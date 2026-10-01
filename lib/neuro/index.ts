@@ -16,3 +16,5 @@ export * from "./qa-engine";
 export * from "./volume-generator";
 export * from "./mesh-generator";
 export * from "./mesh-worker";
+export * from "./roi-analytics";
+export * from "./roi-analytics-worker";

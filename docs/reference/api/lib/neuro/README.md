@@ -26,6 +26,18 @@ Re-exports [AssetProgressEvent](progress-bus/interfaces/AssetProgressEvent.md)
 
 ***
 
+### compute256BinHistogram
+
+Re-exports [compute256BinHistogram](internal/roi-algorithms/functions/compute256BinHistogram.md)
+
+***
+
+### computeMarchingSquares
+
+Re-exports [computeMarchingSquares](internal/roi-algorithms/functions/computeMarchingSquares.md)
+
+***
+
 ### computeQAMetrics
 
 Re-exports [computeQAMetrics](loader/functions/computeQAMetrics.md)
@@ -47,6 +59,12 @@ Re-exports [computeSyntheticVolume](loader/functions/computeSyntheticVolume.md)
 ### computeSyntheticVolumeSync
 
 Re-exports [computeSyntheticVolumeSync](loader/functions/computeSyntheticVolumeSync.md)
+
+***
+
+### ContourSegment
+
+Re-exports [ContourSegment](types/interfaces/ContourSegment.md)
 
 ***
 
@@ -254,6 +272,12 @@ Re-exports [handleMeshWorkerMessage](mesh-worker/functions/handleMeshWorkerMessa
 
 ***
 
+### handleROIWorkerMessage
+
+Re-exports [handleROIWorkerMessage](roi-analytics-worker/functions/handleROIWorkerMessage.md)
+
+***
+
 ### HemisphereBufferTransfer
 
 Re-exports [HemisphereBufferTransfer](types/interfaces/HemisphereBufferTransfer.md)
@@ -263,6 +287,12 @@ Re-exports [HemisphereBufferTransfer](types/interfaces/HemisphereBufferTransfer.
 ### HemisphereFilter
 
 Re-exports [HemisphereFilter](types/type-aliases/HemisphereFilter.md)
+
+***
+
+### HistogramStats
+
+Re-exports [HistogramStats](types/interfaces/HistogramStats.md)
 
 ***
 
@@ -386,9 +416,21 @@ Re-exports [parseReconAllCommand](terminal/functions/parseReconAllCommand.md)
 
 ***
 
+### Point2D
+
+Re-exports [Point2D](types/interfaces/Point2D.md)
+
+***
+
 ### processMeshWorkerRequest
 
 Re-exports [processMeshWorkerRequest](mesh-worker/functions/processMeshWorkerRequest.md)
+
+***
+
+### processROIWorkerRequest
+
+Re-exports [processROIWorkerRequest](roi-analytics-worker/functions/processROIWorkerRequest.md)
 
 ***
 
@@ -407,6 +449,12 @@ Re-exports [ProgressBus](progress-bus/classes/ProgressBus.md)
 ### ProgressSubscriber
 
 Re-exports [ProgressSubscriber](progress-bus/type-aliases/ProgressSubscriber.md)
+
+***
+
+### QAAnomalyAlert
+
+Re-exports [QAAnomalyAlert](types/interfaces/QAAnomalyAlert.md)
 
 ***
 
@@ -434,9 +482,81 @@ Re-exports [registerMeshWorker](mesh-worker/functions/registerMeshWorker.md)
 
 ***
 
+### registerROIWorker
+
+Re-exports [registerROIWorker](roi-analytics-worker/functions/registerROIWorker.md)
+
+***
+
+### requestHistogramAsync
+
+Re-exports [requestHistogramAsync](roi-analytics/functions/requestHistogramAsync.md)
+
+***
+
+### requestMarchingSquaresAsync
+
+Re-exports [requestMarchingSquaresAsync](roi-analytics/functions/requestMarchingSquaresAsync.md)
+
+***
+
+### requestROISegmentationAsync
+
+Re-exports [requestROISegmentationAsync](roi-analytics/functions/requestROISegmentationAsync.md)
+
+***
+
+### requestVolumeQAScanAsync
+
+Re-exports [requestVolumeQAScanAsync](roi-analytics/functions/requestVolumeQAScanAsync.md)
+
+***
+
 ### resolveNeuroHotkey
 
 Re-exports [resolveNeuroHotkey](hotkeys/functions/resolveNeuroHotkey.md)
+
+***
+
+### ROIRegionStats
+
+Re-exports [ROIRegionStats](types/interfaces/ROIRegionStats.md)
+
+***
+
+### ROISegmentationResult
+
+Re-exports [ROISegmentationResult](types/interfaces/ROISegmentationResult.md)
+
+***
+
+### ROIWorkerRequest
+
+Re-exports [ROIWorkerRequest](types/interfaces/ROIWorkerRequest.md)
+
+***
+
+### ROIWorkerResponse
+
+Re-exports [ROIWorkerResponse](types/interfaces/ROIWorkerResponse.md)
+
+***
+
+### ROIWorkerTarget
+
+Re-exports [ROIWorkerTarget](roi-analytics-worker/interfaces/ROIWorkerTarget.md)
+
+***
+
+### runRegionGrowing
+
+Re-exports [runRegionGrowing](internal/roi-algorithms/functions/runRegionGrowing.md)
+
+***
+
+### scanVolumeQAAnomalies
+
+Re-exports [scanVolumeQAAnomalies](internal/roi-algorithms/functions/scanVolumeQAAnomalies.md)
 
 ***
 
@@ -515,6 +635,12 @@ Re-exports [TissueSegmentLabels](types/interfaces/TissueSegmentLabels.md)
 ### ToolMode
 
 Re-exports [ToolMode](types/type-aliases/ToolMode.md)
+
+***
+
+### VectorContourPath
+
+Re-exports [VectorContourPath](types/interfaces/VectorContourPath.md)
 
 ***
 

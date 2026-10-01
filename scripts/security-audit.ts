@@ -6,7 +6,23 @@ import { colors } from "../lib/dx/utils";
 
 export const WARN_THRESHOLD_DAYS = 14;
 
-export type Severity = "critical" | "high";
+export type Severity = "critical" | "high" | "moderate";
+
+export const SEVERITY_LEVELS: Record<string, number> = {
+  critical: 3,
+  high: 2,
+  moderate: 1,
+  low: 0,
+};
+
+export function isSeverityAtLeast(
+  vulnSeverity: string,
+  minSeverity: Severity
+): boolean {
+  const vulnLevel = SEVERITY_LEVELS[vulnSeverity.toLowerCase()] ?? 0;
+  const minLevel = SEVERITY_LEVELS[minSeverity.toLowerCase()] ?? 2;
+  return vulnLevel >= minLevel;
+}
 
 export interface IgnoreRule {
   advisory?: string;
@@ -47,6 +63,7 @@ export interface SecurityAuditOptions {
   warnOnApproachingExpiration?: boolean;
   failOnWarning?: boolean;
   warnThresholdDays?: number;
+  severity?: Severity;
 }
 
 // Fail closed by default. Temporary exceptions must live in the reviewed policy
@@ -113,7 +130,11 @@ export function parseIgnoreRules(
 
     let severity: Severity = "critical";
     if (severityInput) {
-      if (severityInput === "critical" || severityInput === "high") {
+      if (
+        severityInput === "critical" ||
+        severityInput === "high" ||
+        severityInput === "moderate"
+      ) {
         severity = severityInput;
       } else {
         rules.push({
@@ -128,7 +149,7 @@ export function parseIgnoreRules(
           isValid: false,
           isExpired: false,
           isApproachingExpiration: false,
-          validationError: `Exception for advisory "${advisory || pkg || "unknown"}" has an invalid severity ("${severityRaw}"). Expected "critical" or "high".`,
+          validationError: `Exception for advisory "${advisory || pkg || "unknown"}" has an invalid severity ("${severityRaw}"). Expected "critical", "high", or "moderate".`,
         });
         return;
       }
@@ -216,7 +237,8 @@ export function parseIgnoreRules(
       }
     }
 
-    const maxDays = severity === "high" ? 30 : 14;
+    const maxDays =
+      severity === "moderate" ? 90 : severity === "high" ? 30 : 14;
     const maxMs = maxDays * 24 * 60 * 60 * 1000;
 
     if (expDate.getTime() > now.getTime() + maxMs) {
@@ -263,7 +285,7 @@ export function parseIgnoreRules(
     const ruleWarnThreshold =
       warnThresholdDays !== WARN_THRESHOLD_DAYS
         ? warnThresholdDays
-        : severity === "high"
+        : severity === "high" || severity === "moderate"
           ? 14
           : 7;
 
@@ -518,7 +540,11 @@ export function matchAdvisoryRule(
   if (!rule.isValid || rule.isExpired) return false;
 
   const advSeverity = (adv.severity || "").toLowerCase();
-  if (advSeverity === "critical" && rule.severity === "high") {
+  const ruleSeverity = (rule.severity || "").toLowerCase();
+  const advLevel = SEVERITY_LEVELS[advSeverity] ?? 0;
+  const ruleLevel = SEVERITY_LEVELS[ruleSeverity] ?? 3;
+
+  if (advLevel > ruleLevel) {
     return false;
   }
 
@@ -568,6 +594,26 @@ export function runSecurityAudit(options: SecurityAuditOptions = {}): boolean {
     options.warnOnApproachingExpiration ??
     cliFailOnWarning;
   const warnThresholdDays = options.warnThresholdDays ?? WARN_THRESHOLD_DAYS;
+
+  let cliSeverity: Severity | undefined;
+  for (let i = 0; i < cliArgs.length; i++) {
+    const arg = cliArgs[i];
+    if (arg.startsWith("--severity=")) {
+      const val = arg.split("=")[1]?.toLowerCase();
+      if (val === "critical" || val === "high" || val === "moderate") {
+        cliSeverity = val as Severity;
+      }
+    } else if (arg === "--severity" && i + 1 < cliArgs.length) {
+      const val = cliArgs[i + 1]?.toLowerCase();
+      if (val === "critical" || val === "high" || val === "moderate") {
+        cliSeverity = val as Severity;
+      }
+    }
+  }
+
+  const minSeverity: Severity = options.severity
+    ? (options.severity.toLowerCase() as Severity)
+    : (cliSeverity ?? "high");
 
   const now = options.now || new Date();
   const ignoreRules = loadIgnoreList(now, warnThresholdDays);
@@ -680,7 +726,7 @@ export function runSecurityAudit(options: SecurityAuditOptions = {}): boolean {
     const vuln = info as VulnerabilityInfo;
     const severity = (vuln.severity || "").toLowerCase();
 
-    if (severity === "high" || severity === "critical") {
+    if (isSeverityAtLeast(severity, minSeverity)) {
       if (isPretextRelated(pkgName, vuln)) {
         pretextVulnerabilitiesFound = true;
       } else {
@@ -777,7 +823,12 @@ export function runSecurityAudit(options: SecurityAuditOptions = {}): boolean {
       (item) => (item.info.severity || "").toLowerCase() === "critical"
     );
     const highUnhandled = uniqueUnhandled.filter(
-      (item) => (item.info.severity || "").toLowerCase() !== "critical"
+      (item) => (item.info.severity || "").toLowerCase() === "high"
+    );
+    const moderateUnhandled = uniqueUnhandled.filter(
+      (item) =>
+        (item.info.severity || "").toLowerCase() !== "critical" &&
+        (item.info.severity || "").toLowerCase() !== "high"
     );
 
     if (criticalUnhandled.length > 0) {
@@ -837,6 +888,35 @@ export function runSecurityAudit(options: SecurityAuditOptions = {}): boolean {
         console.error("");
       }
     }
+
+    if (moderateUnhandled.length > 0) {
+      console.error(
+        `${colors.brightRed}${colors.bold}❌ Blocked Moderate severity dependency vulnerabilities:${colors.reset}\n`
+      );
+      for (const { pkgName, info, advisory } of moderateUnhandled) {
+        console.error(
+          `${colors.bold}${colors.brightYellow}• Package:${colors.reset} ${colors.bold}${pkgName}${colors.reset}`
+        );
+        console.error(
+          `  ${colors.bold}Severity:${colors.reset} ${(info.severity || "").toUpperCase()}`
+        );
+        if (advisory) {
+          const advId =
+            getAdvisoryIdentifiers(advisory)[0] || advisory.title || "N/A";
+          console.error(`  ${colors.bold}Advisory ID:${colors.reset} ${advId}`);
+          console.error(
+            `  ${colors.bold}Advisory Title:${colors.reset} ${advisory.title || "N/A"}`
+          );
+          console.error(
+            `  ${colors.bold}Advisory URL:${colors.reset} ${advisory.url || "N/A"}`
+          );
+          console.error(
+            `  ${colors.bold}Vulnerable Range:${colors.reset} ${advisory.range || "N/A"}`
+          );
+        }
+        console.error("");
+      }
+    }
     failed = true;
   }
 
@@ -852,7 +932,7 @@ export function runSecurityAudit(options: SecurityAuditOptions = {}): boolean {
       `${colors.brightRed}${colors.bold}✖ Security status check failed.${colors.reset}`
     );
     console.error(
-      `${colors.gray}Vulnerable third-party packages must be fixed or approved (added to ignore list with explicit advisory ID, valid severity, expiration date <= 14d for critical or 30d for high, and justification) to pass this gate.${colors.reset}`
+      `${colors.gray}Vulnerable third-party packages must be fixed or approved (added to ignore list with explicit advisory ID, valid severity, expiration date <= 14d for critical, 30d for high, or 90d for moderate, and justification) to pass this gate.${colors.reset}`
     );
     if (options.throwOnError) {
       throw new Error(
@@ -865,7 +945,13 @@ export function runSecurityAudit(options: SecurityAuditOptions = {}): boolean {
       `${colors.brightGreen}${colors.bold}✔ Security check passed successfully.${colors.reset}`
     );
     console.log(
-      `${colors.gray}No unignored high or critical vulnerabilities found in third-party packages.${colors.reset}`
+      `${colors.gray}No unignored ${
+        minSeverity === "moderate"
+          ? "moderate, high, or critical"
+          : minSeverity === "critical"
+            ? "critical"
+            : "high or critical"
+      } vulnerabilities found in third-party packages.${colors.reset}`
     );
     if (options.throwOnError) {
       return true;
@@ -956,7 +1042,12 @@ export function writeStepSummary(
         (item) => (item.info.severity || "").toLowerCase() === "critical"
       );
       const highUnhandled = uniqueUnhandled.filter(
-        (item) => (item.info.severity || "").toLowerCase() !== "critical"
+        (item) => (item.info.severity || "").toLowerCase() === "high"
+      );
+      const moderateUnhandled = uniqueUnhandled.filter(
+        (item) =>
+          (item.info.severity || "").toLowerCase() !== "critical" &&
+          (item.info.severity || "").toLowerCase() !== "high"
       );
 
       if (criticalUnhandled.length > 0) {
@@ -1002,12 +1093,34 @@ export function writeStepSummary(
         }
         lines.push("");
       }
+
+      if (moderateUnhandled.length > 0) {
+        lines.push("#### Moderate Severity Vulnerabilities");
+        lines.push("");
+        lines.push(
+          "| Package | Severity | Advisory ID | Advisory Title | Vulnerable Range | Link |"
+        );
+        lines.push("| --- | --- | --- | --- | --- | --- |");
+        for (const { pkgName, info, advisory } of moderateUnhandled) {
+          const advId = advisory
+            ? getAdvisoryIdentifiers(advisory)[0] || "N/A"
+            : "N/A";
+          const title = advisory?.title || "N/A";
+          const severity = (info.severity || "").toUpperCase();
+          const range = advisory?.range || info.range || "N/A";
+          const url = advisory?.url ? `[Advisory](${advisory.url})` : "N/A";
+          lines.push(
+            `| \`${pkgName}\` | ${severity} | \`${advId}\` | ${title} | \`${range}\` | ${url} |`
+          );
+        }
+        lines.push("");
+      }
     }
   } else {
     lines.push("### ✅ Security Scan Passed");
     lines.push("");
     lines.push(
-      "No unhandled high or critical vulnerabilities found in third-party dependencies."
+      "No unhandled moderate, high, or critical vulnerabilities found in third-party dependencies."
     );
     lines.push("");
   }
@@ -1019,6 +1132,7 @@ export function writeStepSummary(
 
     const criticalActive = activeRules.filter((r) => r.severity === "critical");
     const highActive = activeRules.filter((r) => r.severity === "high");
+    const moderateActive = activeRules.filter((r) => r.severity === "moderate");
 
     if (criticalActive.length > 0) {
       lines.push("#### Critical Severity Overrides");
@@ -1043,6 +1157,21 @@ export function writeStepSummary(
       );
       lines.push("| --- | --- | --- | --- | --- | --- |");
       for (const rule of highActive) {
+        lines.push(
+          `| \`${rule.advisory}\` | \`${rule.package || "all"}\` | ${rule.remainingDays}d | ${rule.owner} | ${rule.followUp} | ${rule.reason} |`
+        );
+      }
+      lines.push("");
+    }
+
+    if (moderateActive.length > 0) {
+      lines.push("#### Moderate Severity Overrides");
+      lines.push("");
+      lines.push(
+        "| Advisory | Package | Remaining Days | Owner | Follow-up | Reason |"
+      );
+      lines.push("| --- | --- | --- | --- | --- | --- |");
+      for (const rule of moderateActive) {
         lines.push(
           `| \`${rule.advisory}\` | \`${rule.package || "all"}\` | ${rule.remainingDays}d | ${rule.owner} | ${rule.followUp} | ${rule.reason} |`
         );

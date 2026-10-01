@@ -219,7 +219,7 @@ jobs:
         run: npm ci
 
       - name: Execute Security Audit Gate
-        run: npm run audit:security
+        run: npm run audit:security -- --fail-on-warning --severity=moderate
 
       - name: Scan Reachable Git History for Secrets
         run: npm run audit:secrets

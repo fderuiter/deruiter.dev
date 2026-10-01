@@ -203,6 +203,99 @@ export function checkTsxExecution(root: string): PreflightCheckResult {
 }
 
 /**
+ * Verifies that package.json allowScripts matches scripts/install-script-allowlist.json
+ * and that all third-party dependencies with install scripts are reviewed and allowlisted.
+ */
+export function checkInstallScriptAllowlist(
+  root: string
+): PreflightCheckResult {
+  const pkgPath = path.join(root, "package.json");
+  const allowlistPath = path.join(
+    root,
+    "scripts",
+    "install-script-allowlist.json"
+  );
+  const lockPath = path.join(root, "package-lock.json");
+
+  if (!fs.existsSync(pkgPath) || !fs.existsSync(allowlistPath)) {
+    return {
+      id: "install-script-allowlist",
+      label: "Lifecycle script allowlist",
+      status: "fail",
+      message: "Missing package.json or scripts/install-script-allowlist.json.",
+    };
+  }
+
+  try {
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
+    const allowlist = JSON.parse(fs.readFileSync(allowlistPath, "utf8"));
+
+    if (!pkg.allowScripts || typeof pkg.allowScripts !== "object") {
+      return {
+        id: "install-script-allowlist",
+        label: "Lifecycle script allowlist",
+        status: "fail",
+        message: "package.json is missing 'allowScripts' object.",
+      };
+    }
+
+    const allowScriptsKeys = Object.keys(pkg.allowScripts).sort();
+    const allowlistKeys = Object.keys(allowlist).sort();
+
+    if (JSON.stringify(allowScriptsKeys) !== JSON.stringify(allowlistKeys)) {
+      return {
+        id: "install-script-allowlist",
+        label: "Lifecycle script allowlist",
+        status: "fail",
+        message: `package.json allowScripts (${allowScriptsKeys.join(", ")}) does not match install-script-allowlist.json (${allowlistKeys.join(", ")}).`,
+      };
+    }
+
+    if (fs.existsSync(lockPath)) {
+      const lock = JSON.parse(fs.readFileSync(lockPath, "utf8"));
+      if (lock.packages && typeof lock.packages === "object") {
+        const withInstallScripts = new Set(
+          Object.entries(
+            lock.packages as Record<string, { hasInstallScript?: boolean }>
+          )
+            .filter(
+              ([key, meta]) => key !== "" && meta && meta.hasInstallScript
+            )
+            .map(([key]) => key.slice(key.lastIndexOf("node_modules/") + 13))
+        );
+
+        const unreviewed = [...withInstallScripts].filter(
+          (n) => !(n in allowlist)
+        );
+        if (unreviewed.length > 0) {
+          return {
+            id: "install-script-allowlist",
+            label: "Lifecycle script allowlist",
+            status: "fail",
+            message: `Unreviewed lifecycle script(s) found in package-lock.json: ${unreviewed.join(", ")}.`,
+          };
+        }
+      }
+    }
+
+    return {
+      id: "install-script-allowlist",
+      label: "Lifecycle script allowlist",
+      status: "pass",
+      message:
+        "package.json allowScripts matches scripts/install-script-allowlist.json.",
+    };
+  } catch (error) {
+    return {
+      id: "install-script-allowlist",
+      label: "Lifecycle script allowlist",
+      status: "fail",
+      message: `Failed to validate lifecycle script allowlist: ${(error as Error).message}`,
+    };
+  }
+}
+
+/**
  * Runs every preflight probe and reports whether the environment is
  * ready for real work. Intended to be run once, cheaply, before an
  * agent or developer starts an expensive verification pass (tests,
@@ -217,6 +310,7 @@ export function runPreflight(root: string): PreflightReport {
     checkNpmVersion(root),
     checkPrismaClientGenerated(root),
     checkTsxExecution(root),
+    checkInstallScriptAllowlist(root),
   ];
 
   const ready = checks.every((check) => check.status !== "fail");

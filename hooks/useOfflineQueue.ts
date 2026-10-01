@@ -396,6 +396,7 @@ export async function flushOfflineQueue(): Promise<{
       ) {
         failed++;
         let failureReason = `HTTP ${res.status}: Client Error`;
+
         try {
           const resObj = res as unknown as {
             clone?: () => unknown;
@@ -404,18 +405,34 @@ export async function flushOfflineQueue(): Promise<{
             error?: string | null;
             body?: unknown;
           };
+
           if (
             typeof resObj.error === "string" &&
             resObj.error.trim().length > 0
           ) {
             failureReason = resObj.error;
+          } else if (resObj.body && typeof resObj.body === "object") {
+            const obj = resObj.body as Record<string, unknown>;
+
+            if (typeof obj.message === "string") {
+              failureReason = obj.message;
+            } else if (typeof obj.error === "string") {
+              failureReason = obj.error;
+            } else if (
+              Array.isArray(obj.details) &&
+              typeof obj.details[0]?.message === "string"
+            ) {
+              failureReason = obj.details[0].message;
+            }
           } else {
             const targetRes =
               typeof resObj.clone === "function"
                 ? (resObj.clone() as typeof resObj)
                 : resObj;
-            let data: unknown = resObj.body;
-            if (!data && typeof targetRes.json === "function") {
+
+            let data: unknown;
+
+            if (typeof targetRes.json === "function") {
               try {
                 data = await targetRes.json();
               } catch {
@@ -423,19 +440,22 @@ export async function flushOfflineQueue(): Promise<{
                   data = await targetRes.text();
                 }
               }
-            } else if (!data && typeof targetRes.text === "function") {
+            } else if (typeof targetRes.text === "function") {
               data = await targetRes.text();
             }
 
             if (data && typeof data === "object") {
               const obj = data as Record<string, unknown>;
-              if (typeof obj.message === "string") failureReason = obj.message;
-              else if (typeof obj.error === "string") failureReason = obj.error;
-              else if (
+
+              if (typeof obj.message === "string") {
+                failureReason = obj.message;
+              } else if (typeof obj.error === "string") {
+                failureReason = obj.error;
+              } else if (
                 Array.isArray(obj.details) &&
                 typeof obj.details[0]?.message === "string"
               ) {
-                failureReason = obj.details[0].message as string;
+                failureReason = obj.details[0].message;
               }
             } else if (typeof data === "string" && data.trim().length > 0) {
               failureReason = data;

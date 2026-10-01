@@ -22,6 +22,10 @@ import { getEnv } from "../env";
 import { inspectSourceState } from "./source-state";
 import { FALLBACK_CASE_STUDIES } from "../case-studies-data";
 import { FALLBACK_BLOG_POSTS } from "../fallback-blog-posts";
+import {
+  buildLlmsManifests,
+  writeLlmsManifests,
+} from "../../scripts/generate-llms-txt";
 
 export interface DiagnosticCheckResult {
   id: string;
@@ -1401,6 +1405,132 @@ export function checkTechnicalGuideSchemaParity(
     status: "pass",
     message:
       "All markdown guide Prisma snippets and environment variable documentation match canonical source definitions.",
+  };
+}
+
+/**
+ * Check LLM Discovery Manifest Drift (public/llms.txt & public/llms-full.txt vs buildLlmsManifests)
+ */
+export function checkLlmsManifestsDrift(
+  root: string,
+  fix = false
+): DiagnosticCheckResult {
+  const llmsPath = path.join(root, "public", "llms.txt");
+  const llmsFullPath = path.join(root, "public", "llms-full.txt");
+
+  if (!fs.existsSync(llmsPath) || !fs.existsSync(llmsFullPath)) {
+    if (fix) {
+      try {
+        writeLlmsManifests(root);
+        return {
+          id: "docs-llms-manifests-drift",
+          name: "LLM Discovery Manifests Alignment",
+          category: "docs",
+          status: "fixed",
+          message:
+            "Generated missing public/llms.txt and/or public/llms-full.txt discovery manifests.",
+          details: [
+            !fs.existsSync(llmsPath) ? "Generated missing public/llms.txt" : "",
+            !fs.existsSync(llmsFullPath)
+              ? "Generated missing public/llms-full.txt"
+              : "",
+          ].filter(Boolean),
+        };
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        return {
+          id: "docs-llms-manifests-drift",
+          name: "LLM Discovery Manifests Alignment",
+          category: "docs",
+          status: "fail",
+          message: `Failed to write public LLM manifests: ${msg}`,
+        };
+      }
+    }
+    return {
+      id: "docs-llms-manifests-drift",
+      name: "LLM Discovery Manifests Alignment",
+      category: "docs",
+      status: "fail",
+      message:
+        "public/llms.txt or public/llms-full.txt missing. Run 'npm run generate:llms' or 'npm run doctor:fix'.",
+      details: [
+        !fs.existsSync(llmsPath) ? "Missing public/llms.txt" : "",
+        !fs.existsSync(llmsFullPath) ? "Missing public/llms-full.txt" : "",
+      ].filter(Boolean),
+      fixable: true,
+    };
+  }
+
+  const { llms: expectedLlms, full: expectedFull } = buildLlmsManifests();
+
+  const normalize = (str: string) => str.replace(/\r/g, "");
+
+  const actualLlms = normalize(fs.readFileSync(llmsPath, "utf-8"));
+  const actualFull = normalize(fs.readFileSync(llmsFullPath, "utf-8"));
+
+  const llmsDrift = actualLlms !== normalize(expectedLlms);
+  const fullDrift = actualFull !== normalize(expectedFull);
+
+  if (!llmsDrift && !fullDrift) {
+    return {
+      id: "docs-llms-manifests-drift",
+      name: "LLM Discovery Manifests Alignment",
+      category: "docs",
+      status: "pass",
+      message:
+        "public/llms.txt and public/llms-full.txt match canonical route metadata and case study sources.",
+    };
+  }
+
+  if (fix) {
+    try {
+      writeLlmsManifests(root);
+      const fixedDetails: string[] = [];
+      if (llmsDrift) fixedDetails.push("Regenerated public/llms.txt");
+      if (fullDrift) fixedDetails.push("Regenerated public/llms-full.txt");
+      return {
+        id: "docs-llms-manifests-drift",
+        name: "LLM Discovery Manifests Alignment",
+        category: "docs",
+        status: "fixed",
+        message:
+          "Auto-remediated LLM discovery manifest drift in public/llms.txt and/or public/llms-full.txt.",
+        details: fixedDetails,
+      };
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return {
+        id: "docs-llms-manifests-drift",
+        name: "LLM Discovery Manifests Alignment",
+        category: "docs",
+        status: "fail",
+        message: `Failed to regenerate public LLM manifests: ${msg}`,
+      };
+    }
+  }
+
+  const details: string[] = [];
+  if (llmsDrift) {
+    details.push(
+      "public/llms.txt is out of sync with route metadata or case studies"
+    );
+  }
+  if (fullDrift) {
+    details.push(
+      "public/llms-full.txt is out of sync with route metadata or case studies"
+    );
+  }
+
+  return {
+    id: "docs-llms-manifests-drift",
+    name: "LLM Discovery Manifests Alignment",
+    category: "docs",
+    status: "fail",
+    message:
+      "LLM discovery manifest drift detected in public/llms.txt and/or public/llms-full.txt. Run 'npm run generate:llms' or 'npm run doctor:fix'.",
+    details,
+    fixable: true,
   };
 }
 
@@ -3016,6 +3146,7 @@ export async function runDiagnostics(
 
     checkMigrationGuard(root),
     checkDocumentationParity(root, fix),
+    checkLlmsManifestsDrift(root, fix),
     checkTechnicalGuideSchemaParity(root, fix),
     checkOnboardingDocsDrift(root, fix),
     checkDirectoryTopology(root),

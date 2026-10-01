@@ -25,7 +25,7 @@ function git(args: string[]): string {
 function candidatesFor(detector: SecretDetector): Candidate[] {
   const output = git([
     "log",
-    "--all",
+    "HEAD",
     "--full-history",
     `-G${detector.gitPattern}`,
     "--format=commit:%H",
@@ -127,7 +127,7 @@ export function auditCurrentTree(): HistoryFinding[] {
 }
 
 function main(): void {
-  const commitCount = git(["rev-list", "--all", "--count"]).trim();
+  const commitCount = git(["rev-list", "HEAD", "--count"]).trim();
   const detectorCount = getDetectorsForSurface("historyAudit").length;
   console.log(
     `Scanning the current worktree and ${commitCount} reachable commits for ${detectorCount} high-confidence secret patterns...`

@@ -1,4 +1,5 @@
 import type { FinalReport, StudyDirectorProfile } from "@/lib/study-director";
+import { recordArcadeScore } from "@/lib/arcade-achievements";
 
 type Grade = FinalReport["evaluations"]["regulatory"]["grade"];
 
@@ -225,6 +226,8 @@ export function loadCareer(): CareerFile {
 export function saveCareer(career: CareerFile): void {
   try {
     storage()?.setItem(CAREER_KEY, JSON.stringify(career));
+    const score = career.finished * 100 + career.bestStars * 50;
+    recordArcadeScore("study-director", score);
   } catch {
     // The career is a keepsake; the game runs without it.
   }

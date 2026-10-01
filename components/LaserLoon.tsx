@@ -28,6 +28,7 @@ import {
   IconHeart,
 } from "@tabler/icons-react";
 import { FieldManualButton } from "@/components/FieldManualButton";
+import { recordArcadeScore } from "@/lib/arcade-achievements";
 import { FullscreenButton } from "@/components/arcade/FullscreenButton";
 import { DynamicTabletOrientationHint as TabletOrientationHint } from "@/components/arcade/DynamicTabletOrientationHint";
 import { useGameFullscreen as useFullscreen } from "@/components/arcade/CabinetFullscreen";
@@ -449,6 +450,7 @@ export const LaserLoon: React.FC = () => {
         bestScoreRef.current = next;
         setHighScore(next);
         safeSetRawItem("laser_loon_high_score", next.toString());
+        recordArcadeScore("laser-loon", next);
       }
     },
     [loadedHighScore]

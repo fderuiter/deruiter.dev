@@ -27,6 +27,7 @@ import {
   safeGetRawItem,
   safeSetRawItem,
 } from "@/lib/safe-storage";
+import { recordArcadeScore } from "@/lib/arcade-achievements";
 import {
   CompilerLogEntry,
   GameMode,
@@ -102,6 +103,8 @@ function writeStoredProgress(progress: GameProgressState): void {
   safeSetRawItem(STORAGE_KEY, JSON.stringify(progress), {
     retainInMemory: false,
   });
+  const completedCount = Object.keys(progress.completedLevels || {}).length;
+  recordArcadeScore("quasi-puzzler", completedCount * 100);
 }
 
 function isGameMode(value: string | null): value is GameMode {

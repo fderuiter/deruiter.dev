@@ -12,6 +12,7 @@ import { useTelemetry } from "@/hooks/useTelemetry";
 import { logger } from "@/lib/logger";
 import { useAnnouncer } from "@/hooks/useAnnouncer";
 import { safeGetRawItem, safeSetRawItem } from "@/lib/safe-storage";
+import { recordArcadeScore } from "@/lib/arcade-achievements";
 import { clamp } from "@/lib/game-utils";
 import { useAudio } from "@/components/providers/AudioProvider";
 import {
@@ -466,6 +467,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setHighScore(score);
     safeSetRawItem(RETRO_LABYRINTH_HIGH_SCORE_KEY, score.toString());
+    recordArcadeScore("retro-labyrinth", score);
   }, [gameStatus, score, effectiveHighScore]);
 
   // Restart current stage
@@ -892,6 +894,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
               RETRO_LABYRINTH_HIGH_SCORE_KEY,
               finalScore.toString()
             );
+            recordArcadeScore("retro-labyrinth", finalScore);
           }
 
           const updatedProf: CyberdeckProfile = {

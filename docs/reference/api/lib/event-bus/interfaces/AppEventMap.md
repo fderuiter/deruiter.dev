@@ -12,6 +12,50 @@ emitted without a detail.
 
 ## Properties
 
+### arcade\_score\_updated
+
+> **arcade\_score\_updated**: `object`
+
+An arcade game score or milestone was updated.
+
+#### gameId
+
+> **gameId**: `string`
+
+#### metadata?
+
+> `optional` **metadata?**: `Record`\<`string`, `unknown`\>
+
+#### score
+
+> **score**: `number`
+
+***
+
+### arcade\_trophy\_unlocked
+
+> **arcade\_trophy\_unlocked**: `object`
+
+An arcade trophy or achievement was unlocked.
+
+#### gameId
+
+> **gameId**: `string`
+
+#### title
+
+> **title**: `string`
+
+#### trophyId
+
+> **trophyId**: `string`
+
+#### unlockedAt
+
+> **unlockedAt**: `number`
+
+***
+
 ### crt-calibration-changed
 
 > **crt-calibration-changed**: `undefined`

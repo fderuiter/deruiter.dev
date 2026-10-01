@@ -23,6 +23,7 @@ import {
   safeGetRawItem,
   safeSetRawItem,
 } from "@/lib/safe-storage";
+import { recordArcadeScore } from "@/lib/arcade-achievements";
 import { useDuckService } from "@/hooks/useDuckService";
 import { useResponsiveCanvas } from "@/hooks/useResponsiveCanvas";
 import { useCanvasResolution } from "@/hooks/useCanvasResolution";
@@ -1094,17 +1095,19 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
     return () => clearInterval(interval);
   }, [muted, isMusicMuted, uiState.status, playNote]);
 
-  // Sync high scores safely to localStorage
+  // Sync high scores safely to localStorage and emit score events
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
-      // Raw writes keep the stored bytes: a bare numeric string and a plain
-      // JSON array, exactly as before safeStorage.
+      if (uiState.totalScore > 0) {
+        recordArcadeScore("working-with-duck", uiState.totalScore);
+      }
       if (uiState.highScore > loadedHighScore) {
         safeSetRawItem(
           "working_with_duck_high_score",
           String(uiState.highScore)
         );
+        recordArcadeScore("working-with-duck", uiState.highScore);
       }
       if (uiState.unlockedFacts.length > 0) {
         safeSetRawItem(
@@ -1113,7 +1116,12 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
         );
       }
     } catch {}
-  }, [uiState.highScore, uiState.unlockedFacts, loadedHighScore]);
+  }, [
+    uiState.highScore,
+    uiState.totalScore,
+    uiState.unlockedFacts,
+    loadedHighScore,
+  ]);
 
   // Main 60 FPS Canvas Game Loop
   //

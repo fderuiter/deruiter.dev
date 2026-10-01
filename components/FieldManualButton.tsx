@@ -282,7 +282,7 @@ export function FieldManualButton({
           aria-label={`Open Field Manual for ${manual.title}`}
           aria-haspopup="dialog"
           aria-expanded={isOpen}
-          className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 min-h-[44px] min-w-[44px] rounded-xl text-xs font-mono font-medium text-zinc-400 hover:text-cyan-300 bg-zinc-900/60 hover:bg-zinc-850 border border-zinc-800 transition-all cursor-pointer touch-manipulation select-none active:scale-95 ${className}`}
+          className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 min-h-[44px] min-w-[44px] rounded-xl text-xs font-mono font-medium text-zinc-300 hover:text-cyan-300 bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 transition-all cursor-pointer touch-manipulation select-none active:scale-95 ${className}`}
         >
           <IconHelp className="w-3.5 h-3.5 text-cyan-400" />
           <span>Manual</span>
@@ -313,7 +313,7 @@ export function FieldManualButton({
         >
           <IconBook2 className="w-4 h-4 text-cyan-400" />
           <span>{label}</span>
-          <kbd className="text-[10px] text-zinc-500 bg-zinc-950 px-1.5 py-0.5 rounded border border-zinc-800">
+          <kbd className="text-[10px] text-zinc-400 bg-zinc-950 px-1.5 py-0.5 rounded border border-zinc-800">
             ?
           </kbd>
         </button>
@@ -348,7 +348,7 @@ export function FieldManualButton({
         >
           <IconHelp className="w-4 h-4 text-cyan-400 group-hover:rotate-12 transition-transform" />
           <span className="hidden sm:inline">{label}</span>
-          <kbd className="hidden sm:inline-block text-[10px] text-zinc-500 group-hover:text-zinc-400 bg-zinc-950 px-1.5 py-0.5 rounded border border-zinc-800">
+          <kbd className="hidden sm:inline-block text-[10px] text-zinc-400 group-hover:text-zinc-300 bg-zinc-950 px-1.5 py-0.5 rounded border border-zinc-800">
             ?
           </kbd>
         </button>

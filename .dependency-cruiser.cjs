@@ -4,7 +4,7 @@
  *
  * Each package under `lib/` is a DEEP MODULE:
  * 1. Root files (e.g. lib/crf/index.ts, lib/crf/types.ts) are PUBLIC ENTRY POINTS.
- * 2. Nested subfolders (e.g. lib/crf/exporters/*, lib/crf/internal/*, lib/neuro/workers/*) are PRIVATE INTERNALS.
+ * 2. Nested subfolders (e.g. lib/crf/presets/*, lib/crf/internal/*, lib/neuro/workers/*) are PRIVATE INTERNALS.
  * 3. Unit and integration tests must import only through public entry points.
  * 4. Zero circular dependencies across the entire repository.
  */

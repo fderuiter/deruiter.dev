@@ -346,6 +346,7 @@
 - [lib/utils](lib/utils/README.md)
 - [lib/utils/clone](lib/utils/clone/README.md)
 - [lib/utils/number-format](lib/utils/number-format/README.md)
+- [lib/utils/prng](lib/utils/prng/README.md)
 - [lib/webgl/context-manager](lib/webgl/context-manager/README.md)
 - [lib/working-with-duck-engine](lib/working-with-duck-engine/README.md)
 - [lib/workspace-command-registry](lib/workspace-command-registry/README.md)

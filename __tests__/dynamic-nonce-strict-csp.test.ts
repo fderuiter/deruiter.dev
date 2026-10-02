@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, vi } from "vitest";
 import { NextRequest, type NextFetchEvent } from "next/server";
 import { fromPartial } from "@total-typescript/shoehorn";

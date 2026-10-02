@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 // In-memory stand-in for the Prisma models the newsletter touches (#841).

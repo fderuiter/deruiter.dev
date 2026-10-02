@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from "vitest";
 import { compareStudyToBaseline } from "@/lib/crf/study-baseline-diff";
 import type {

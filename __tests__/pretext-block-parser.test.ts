@@ -1,9 +1,10 @@
+// @vitest-environment node
 import { describe, it, expect, vi } from "vitest";
-import { 
-  parsePretextBlocks, 
-  calculateBlockHeight, 
+import {
+  parsePretextBlocks,
+  calculateBlockHeight,
   preparePretextBlocks,
-  BLOCK_LAYOUT_CONFIG 
+  BLOCK_LAYOUT_CONFIG,
 } from "@/lib/pretext-block-parser";
 import { calculateMasonryLayout, type MasonryConfig } from "@/lib/masonry";
 
@@ -101,7 +102,8 @@ Here is the diff that resolved the issue:
     const height = calculateBlockHeight(logBlock, width, 20);
 
     // 5 lines * 18px line height + 18px block padding = 108px
-    const expectedHeight = 5 * BLOCK_LAYOUT_CONFIG.LINE_HEIGHT + BLOCK_LAYOUT_CONFIG.BLOCK_PADDING;
+    const expectedHeight =
+      5 * BLOCK_LAYOUT_CONFIG.LINE_HEIGHT + BLOCK_LAYOUT_CONFIG.BLOCK_PADDING;
     expect(height).toBe(expectedHeight);
   });
 
@@ -129,7 +131,9 @@ Code changes:
 \`\`\`
 `);
 
-    const preparedPlain = preparePretextBlocks("Standard single paragraph card text.");
+    const preparedPlain = preparePretextBlocks(
+      "Standard single paragraph card text."
+    );
 
     const preparedData = {
       "card-log": { blocks: preparedLog, paddingHeight: 100 },
@@ -137,13 +141,21 @@ Code changes:
       "card-plain": { blocks: preparedPlain, paddingHeight: 100 },
     };
 
-    const layoutResult = calculateMasonryLayout(800, items, preparedData, MOCK_CONFIG);
+    const layoutResult = calculateMasonryLayout(
+      800,
+      items,
+      preparedData,
+      MOCK_CONFIG
+    );
 
     expect(layoutResult.colCount).toBe(2);
     expect(layoutResult.columns).toHaveLength(2);
 
     // Verify all 3 cards are distributed into columns
-    const totalPlaced = layoutResult.columns.reduce((sum, col) => sum + col.length, 0);
+    const totalPlaced = layoutResult.columns.reduce(
+      (sum, col) => sum + col.length,
+      0
+    );
     expect(totalPlaced).toBe(3);
 
     // Card heights should be greater than zero and accurately pre-measured

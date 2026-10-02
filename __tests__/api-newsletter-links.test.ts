@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { NextRequest } from "next/server";
 import { GET as confirmGet } from "@/app/api/newsletter/confirm/route";

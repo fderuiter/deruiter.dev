@@ -1,3 +1,4 @@
+// @vitest-environment node
 // #1311: renderASTString never added parentheses, so Level 4's goal
 // (a + b) + c = a + (b + c) printed as "a + b + c = a + b + c" and the rfl
 // error message showed two identical strings.

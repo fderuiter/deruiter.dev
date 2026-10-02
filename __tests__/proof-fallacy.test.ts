@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from "vitest";
 import {
   getFallacyDiagnosis,
@@ -82,24 +83,36 @@ describe("Formal Fallacy Diagnostic Engine & Truth Tables", () => {
         left: { type: "var", name: "A" },
         right: { type: "var", name: "B" },
       };
-      expect(evaluateAstWithTrace(andAst, { A: true, B: true }).value).toBe(true);
-      expect(evaluateAstWithTrace(andAst, { A: true, B: false }).value).toBe(false);
+      expect(evaluateAstWithTrace(andAst, { A: true, B: true }).value).toBe(
+        true
+      );
+      expect(evaluateAstWithTrace(andAst, { A: true, B: false }).value).toBe(
+        false
+      );
 
       const orAst: PropAst = {
         type: "or",
         left: { type: "var", name: "A" },
         right: { type: "var", name: "B" },
       };
-      expect(evaluateAstWithTrace(orAst, { A: false, B: true }).value).toBe(true);
-      expect(evaluateAstWithTrace(orAst, { A: false, B: false }).value).toBe(false);
+      expect(evaluateAstWithTrace(orAst, { A: false, B: true }).value).toBe(
+        true
+      );
+      expect(evaluateAstWithTrace(orAst, { A: false, B: false }).value).toBe(
+        false
+      );
 
       const iffAst: PropAst = {
         type: "iff",
         left: { type: "var", name: "A" },
         right: { type: "var", name: "B" },
       };
-      expect(evaluateAstWithTrace(iffAst, { A: true, B: true }).value).toBe(true);
-      expect(evaluateAstWithTrace(iffAst, { A: true, B: false }).value).toBe(false);
+      expect(evaluateAstWithTrace(iffAst, { A: true, B: true }).value).toBe(
+        true
+      );
+      expect(evaluateAstWithTrace(iffAst, { A: true, B: false }).value).toBe(
+        false
+      );
     });
   });
 
@@ -129,7 +142,9 @@ describe("Formal Fallacy Diagnostic Engine & Truth Tables", () => {
       expect(result.variables).toEqual(["P", "Q"]);
       expect(result.counterexampleValuation).toEqual({ P: false, Q: true });
 
-      const counterexampleRow = result.truthTable.find((r) => r.isCounterexample);
+      const counterexampleRow = result.truthTable.find(
+        (r) => r.isCounterexample
+      );
       expect(counterexampleRow).toBeDefined();
       expect(counterexampleRow?.p).toBe(false);
       expect(counterexampleRow?.q).toBe(true);

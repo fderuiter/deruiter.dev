@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { POST as telemetryPOST } from "@/app/api/telemetry/route";
 import { GET as syncGET } from "@/app/api/telemetry/sync/route";

@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from "vitest";
 import fs from "fs";
 import path from "path";
@@ -38,6 +39,20 @@ describe("GitHub Actions SHA Pinning & Dependabot Verification", () => {
       }
 
       expect(unpinnedActions).toEqual([]);
+    }
+  );
+
+  it.each(workflowFiles)(
+    "%s pins every container and service image by sha256 digest",
+    (file) => {
+      const content = fs.readFileSync(path.join(workflowDir, file), "utf8");
+      const images = [...content.matchAll(/^\s+image:\s*(\S+)\s*$/gm)].map(
+        (match) => match[1]
+      );
+      const unpinned = images.filter(
+        (image) => !/^[\w.\-/]+:[\w.\-]+@sha256:[0-9a-f]{64}$/.test(image)
+      );
+      expect(unpinned).toEqual([]);
     }
   );
 

@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from "vitest";
 import fs from "fs";
 import path from "path";
@@ -11,232 +12,117 @@ describe("CI Workflow Dual Caching and Isolation Suite", () => {
 
   const content = fs.readFileSync(workflowPath, "utf8");
 
-  describe("Playwright Browser Caching Config", () => {
-    // PR #775 split the single `playwright-*` cache key into browser-family
-    // scoped keys: `playwright-chromium-*` for the single-browser Heavy Gate
-    // job and `playwright-full-*` for jobs that install chromium + webkit
-    // (post-merge device smoke and the on-demand cross-device matrix). A
-    // browser-family mismatch would silently restore the wrong browser set
-    // from cache, so every "Cache Playwright Browsers" block must be
-    // checked, not just the first one in the file.
-    const cacheSections = content
-      .split("- name:")
-      .filter(
-        (section) =>
-          section.includes("Cache Playwright Browsers") &&
-          section.includes("path: ~/.cache/ms-playwright")
-      );
+  /**
+   * #1771: browser caches never warmed (PR caches are scoped to
+   * refs/pull/N/merge, and nothing wrote the `main` fallback), so a new PR's
+   * Device Gate downloaded Chromium and WebKit and ran apt, once for 18
+   * minutes. The browser jobs now run in the official Playwright image,
+   * pinned by digest, so there is no browser cache to key or restore.
+   */
+  describe("Playwright browsers come from the pinned image (#1771)", () => {
+    const syntheticContent = fs.readFileSync(
+      path.join(process.cwd(), ".github/workflows/synthetic-probes.yml"),
+      "utf8"
+    );
 
-    const extractRestoreKeys = (section: string) => {
-      const restoreKeysMatch = section.match(
-        /restore-keys:\s*\|((?:\n\s{12,}\S.*)+)/
-      );
-      return restoreKeysMatch
-        ? restoreKeysMatch[1]
-            .trim()
-            .split("\n")
-            .map((k) => k.trim())
-        : null;
-    };
-
-    it("should find at least one chromium-scoped and one full-browser-scoped cache block", () => {
-      expect(cacheSections.length).toBeGreaterThanOrEqual(3);
+    it.each([
+      ["ci.yml", content],
+      ["synthetic-probes.yml", syntheticContent],
+    ])("%s keeps no browser cache and installs no browser", (_name, text) => {
+      expect(text).not.toMatch(/ms-playwright/);
+      expect(text).not.toMatch(/key:\s*playwright-/);
+      expect(text).not.toMatch(/playwright install/);
     });
 
-    it("should configure branch-isolated, lockfile-invalidated caching for the chromium-only cache (Heavy Gate)", () => {
-      const chromiumSections = cacheSections.filter((section) =>
-        /key:\s*playwright-chromium-/.test(section)
-      );
-      expect(chromiumSections.length).toBeGreaterThanOrEqual(1);
-
-      for (const section of chromiumSections) {
-        expect(section).toMatch(
-          /key:\s*playwright-chromium-\$\{\{\s*github\.head_ref\s*\|\|\s*github\.ref_name\s*\}\}-\$\{\{\s*hashFiles\(['"]package-lock\.json['"]\)\s*\}\}/
-        );
-
-        const restoreKeys = extractRestoreKeys(section);
-        expect(restoreKeys).not.toBeNull();
-
-        if (restoreKeys) {
-          // Exact, not >=: an unchecked third restore key -- e.g. an
-          // unscoped `playwright-chromium-` fallback with no branch or
-          // lockfile hash -- would silently restore *any* cache entry
-          // sharing that prefix, from any branch or lockfile version,
-          // defeating both isolation guarantees below without this test
-          // ever looking at it.
-          expect(restoreKeys.length).toBe(2);
-          expect(restoreKeys[0]).toMatch(
-            /playwright-chromium-\$\{\{\s*github\.head_ref\s*\|\|\s*github\.ref_name\s*\}\}-\$\{\{\s*hashFiles\(['"]package-lock\.json['"]\)\s*\}\}/
-          );
-          expect(restoreKeys[1]).toMatch(
-            /playwright-chromium-main-\$\{\{\s*hashFiles\(['"]package-lock\.json['"]\)\s*\}\}/
-          );
-        }
-      }
-    });
-
-    it("should configure branch-isolated, lockfile-invalidated caching for the full multi-browser cache (Post-Merge Device Smoke / Cross-Device Matrix)", () => {
-      const fullSections = cacheSections.filter((section) =>
-        /key:\s*playwright-full-/.test(section)
-      );
-      expect(fullSections.length).toBeGreaterThanOrEqual(2);
-
-      for (const section of fullSections) {
-        expect(section).toMatch(
-          /key:\s*playwright-full-\$\{\{\s*(?:github\.head_ref\s*\|\|\s*)?github\.ref_name\s*\}\}-\$\{\{\s*hashFiles\(['"]package-lock\.json['"]\)\s*\}\}/
-        );
-
-        const restoreKeys = extractRestoreKeys(section);
-        expect(restoreKeys).not.toBeNull();
-
-        if (restoreKeys) {
-          // Exact, not >=: see the chromium block above for why an
-          // unchecked additional key is unsafe, not merely redundant.
-          expect(restoreKeys.length).toBe(2);
-          expect(restoreKeys[0]).toMatch(
-            /playwright-full-\$\{\{\s*(?:github\.head_ref\s*\|\|\s*)?github\.ref_name\s*\}\}-\$\{\{\s*hashFiles\(['"]package-lock\.json['"]\)\s*\}\}/
-          );
-          expect(restoreKeys[1]).toMatch(
-            /playwright-full-main-\$\{\{\s*hashFiles\(['"]package-lock\.json['"]\)\s*\}\}/
-          );
-        }
-      }
-    });
-
-    it("should never mix browser-family prefixes across cache keys", () => {
-      const keys = cacheSections
-        .map((section) => section.match(/key:\s*(\S+)/)?.[1])
-        .filter((key): key is string => Boolean(key));
-
-      expect(keys.length).toBe(cacheSections.length);
-      expect(
-        keys.every(
-          (key) =>
-            key.startsWith("playwright-chromium-") ||
-            key.startsWith("playwright-full-")
-        )
-      ).toBe(true);
-    });
-
-    describe("Regex contract fixtures (in-memory, do not require workflow changes)", () => {
-      const chromiumKeyPattern =
-        /key:\s*playwright-chromium-\$\{\{\s*github\.head_ref\s*\|\|\s*github\.ref_name\s*\}\}-\$\{\{\s*hashFiles\(['"]package-lock\.json['"]\)\s*\}\}/;
-      const fullKeyPattern =
-        /key:\s*playwright-full-\$\{\{\s*(?:github\.head_ref\s*\|\|\s*)?github\.ref_name\s*\}\}-\$\{\{\s*hashFiles\(['"]package-lock\.json['"]\)\s*\}\}/;
-
-      it("should reject a chromium key fixture that is missing the lockfile hash", () => {
-        const missingHashFixture =
-          "          key: playwright-chromium-${{ github.head_ref || github.ref_name }}\n";
-        expect(chromiumKeyPattern.test(missingHashFixture)).toBe(false);
-      });
-
-      it("should reject a chromium key fixture using the wrong browser-family prefix", () => {
-        const mismatchedFamilyFixture =
-          "          key: playwright-full-${{ github.head_ref || github.ref_name }}-${{ hashFiles('package-lock.json') }}\n";
-        expect(chromiumKeyPattern.test(mismatchedFamilyFixture)).toBe(false);
-      });
-
-      it("should reject a full-browser key fixture that is missing the lockfile hash", () => {
-        const missingHashFixture =
-          "          key: playwright-full-${{ github.ref_name }}\n";
-        expect(fullKeyPattern.test(missingHashFixture)).toBe(false);
-      });
-
-      it("should reject a full-browser key fixture using the wrong browser-family prefix", () => {
-        const mismatchedFamilyFixture =
-          "          key: playwright-chromium-${{ github.ref_name }}-${{ hashFiles('package-lock.json') }}\n";
-        expect(fullKeyPattern.test(mismatchedFamilyFixture)).toBe(false);
-      });
-
-      it("should accept the canonical chromium and full-browser key fixtures", () => {
-        const chromiumFixture =
-          "          key: playwright-chromium-${{ github.head_ref || github.ref_name }}-${{ hashFiles('package-lock.json') }}\n";
-        const fullFixture =
-          "          key: playwright-full-${{ github.ref_name }}-${{ hashFiles('package-lock.json') }}\n";
-        const fullPRFixture =
-          "          key: playwright-full-${{ github.head_ref || github.ref_name }}-${{ hashFiles('package-lock.json') }}\n";
-        expect(chromiumKeyPattern.test(chromiumFixture)).toBe(true);
-        expect(fullKeyPattern.test(fullFixture)).toBe(true);
-        expect(fullKeyPattern.test(fullPRFixture)).toBe(true);
-      });
-
-      it("should reject a restore-keys fixture carrying an unsafe unscoped third fallback key", () => {
-        // The real assertions above used to accept `restoreKeys.length >=
-        // 2` and only ever looked at index 0 and 1, so a third key --
-        // however unsafe -- would never fail the test. `extractRestoreKeys`
-        // itself has no opinion on count; this fixture proves the parser
-        // faithfully returns all three lines, so the `toHaveLength(2)`
-        // assertions on the real cache blocks above are what must (and now
-        // do) reject this shape rather than silently accepting it.
-        const unsafeThirdKeyFixture =
-          "        restore-keys: |\n" +
-          "            playwright-chromium-${{ github.head_ref || github.ref_name }}-${{ hashFiles('package-lock.json') }}\n" +
-          "            playwright-chromium-main-${{ hashFiles('package-lock.json') }}\n" +
-          "            playwright-chromium-\n";
-
-        const restoreKeys = extractRestoreKeys(unsafeThirdKeyFixture);
-        expect(restoreKeys).not.toBeNull();
-        // A third, branch/lockfile-unscoped fallback like
-        // `playwright-chromium-` would restore *any* cache entry sharing
-        // that prefix -- any branch, any lockfile version -- silently
-        // reintroducing stale or cross-branch browser binaries.
-        expect(restoreKeys).toHaveLength(3);
-        expect(restoreKeys?.[2]).toBe("playwright-chromium-");
-      });
+    it("never restores a cache through an unscoped playwright- prefix", () => {
+      expect(content).not.toMatch(/^\s+playwright-[a-z-]*\s*$/m);
+      expect(syntheticContent).not.toMatch(/^\s+playwright-[a-z-]*\s*$/m);
     });
   });
 
+  /**
+   * #1769: the old key (`nextjs-<branch>-<lockfile>`) had no source hash, so
+   * a branch's first entry was hit exactly on every later push and never
+   * refreshed, and nothing wrote the `main` fallback. The key now carries a
+   * source hash with a lockfile-scoped prefix fallback; pull requests only
+   * restore, and the cache-warm job saves from each main push.
+   */
   describe("Next.js Build Caching Config", () => {
-    it("should configure branch-isolated incremental caching with lockfile-based invalidation for Next.js", () => {
-      // Find the Next.js cache block
-      const nextjsSection = content
-        .split("- name:")
-        .find((section) => section.includes("Next.js Cache"));
-      expect(nextjsSection).toBeDefined();
+    const sourceKey =
+      "nextjs-${{ hashFiles('package-lock.json') }}-${{ hashFiles('app/**', 'components/**', 'lib/**', 'hooks/**', '*.config.*') }}";
+    const prefixKey = "nextjs-${{ hashFiles('package-lock.json') }}-";
 
-      if (nextjsSection) {
-        // Path should be correct
-        expect(nextjsSection).toContain(
-          "path: ${{ github.workspace }}/.next/cache"
-        );
+    const nextSections = content
+      .split("- name:")
+      .filter((section) =>
+        section.includes("path: ${{ github.workspace }}/.next/cache")
+      );
 
-        // Key should be branch-isolated and lockfile hash dependent (excluding github.sha to allow cache hits across sequential commits)
-        expect(nextjsSection).toMatch(
-          /key:\s*nextjs-\$\{\{\s*github\.head_ref\s*\|\|\s*github\.ref_name\s*\}\}-\$\{\{\s*hashFiles\(['"]package-lock\.json['"]\)\s*\}\}/
-        );
-
-        // Restore keys should fallback to same branch or main branch, with lockfile hash prefix for complete invalidation on lockfile changes
-        const restoreKeysMatch = nextjsSection.match(
-          /restore-keys:\s*\|((?:\n\s{12,}\S.*)+)/
-        );
-        expect(restoreKeysMatch).not.toBeNull();
-
-        if (restoreKeysMatch) {
-          const restoreKeys = restoreKeysMatch[1]
-            .trim()
-            .split("\n")
-            .map((k) => k.trim());
-
-          // Should have at least two restore keys: branch specific with hash and main specific with hash
-          expect(restoreKeys.length).toBeGreaterThanOrEqual(2);
-
-          // Branch specific restore key prefix with hash
-          const branchSpecificRestoreKey = restoreKeys[0];
-          expect(branchSpecificRestoreKey).toMatch(
-            /nextjs-\$\{\{\s*github\.head_ref\s*\|\|\s*github\.ref_name\s*\}\}-\$\{\{\s*hashFiles\(['"]package-lock\.json['"]\)\s*\}\}/
-          );
-
-          // Main specific fallback restore key prefix with hash
-          const mainSpecificRestoreKey = restoreKeys[1];
-          expect(mainSpecificRestoreKey).toMatch(
-            /nextjs-main-\$\{\{\s*hashFiles\(['"]package-lock\.json['"]\)\s*\}\}/
-          );
-        }
+    it("restores the webpack cache in the PR build and saves it only from cache-warm", () => {
+      // build: restore; cache-warm: restore + save.
+      expect(nextSections.length).toBe(3);
+      for (const section of nextSections) {
+        expect(section).toContain(`key: ${sourceKey}`);
+        expect(section).not.toMatch(/uses: actions\/cache@/);
       }
+      const saves = nextSections.filter((s) => /actions\/cache\/save@/.test(s));
+      expect(saves).toHaveLength(1);
+      expect(saves[0]).toContain("Save Next.js Cache");
+    });
+
+    it("falls back only to a lockfile-scoped prefix", () => {
+      const restores = nextSections.filter((s) =>
+        /actions\/cache\/restore@/.test(s)
+      );
+      expect(restores).toHaveLength(2);
+      for (const section of restores) {
+        const restoreKeys = section
+          .match(/restore-keys:\s*\|((?:\n\s{12,}\S.*)+)/)?.[1]
+          .trim()
+          .split("\n")
+          .map((k) => k.trim());
+        expect(restoreKeys).toEqual([prefixKey]);
+      }
+    });
+
+    it("never restores a cache whose key ignores the lockfile", () => {
+      expect(content).not.toMatch(/^\s+nextjs-\s*$/m);
+      expect(content).not.toMatch(
+        /nextjs-\$\{\{\s*github\.(head_ref|ref_name)/
+      );
     });
   });
 
-  describe("Synthetic Probes Workflow Caching and Dependency Suite", () => {
+  /**
+   * #1769: cache-warm writes the `main` webpack cache from each main push.
+   * It warms nothing else: browsers ship in the Playwright image (#1771).
+   */
+  describe("cache-warm (#1769)", () => {
+    const lines = content.split("\n");
+    const start = lines.findIndex((line) => line === "  cache-warm:");
+    const end = lines.findIndex(
+      (line, index) => index > start && /^ {2}[a-z][a-z0-9-]*:$/.test(line)
+    );
+    const block = lines
+      .slice(start, end === -1 ? lines.length : end)
+      .join("\n");
+
+    it("runs only on a push to main", () => {
+      expect(start).toBeGreaterThan(-1);
+      expect(block).toMatch(
+        /if: github\.event_name == 'push' && github\.ref == 'refs\/heads\/main'/
+      );
+    });
+
+    it("saves only the Next.js cache, through the shipped build entrypoint", () => {
+      const saves = [...block.matchAll(/uses: actions\/cache\/save@/g)];
+      expect(saves).toHaveLength(1);
+      expect(block).toMatch(/run: npm run build\n/);
+      expect(block).toContain("path: ${{ github.workspace }}/.next/cache");
+    });
+  });
+
+  describe("Synthetic Probes Workflow (#1771)", () => {
     const syntheticWorkflowPath = path.join(
       process.cwd(),
       ".github/workflows/synthetic-probes.yml"
@@ -246,55 +132,15 @@ describe("CI Workflow Dual Caching and Isolation Suite", () => {
       expect(fs.existsSync(syntheticWorkflowPath)).toBe(true);
     });
 
-    const syntheticContent = fs.readFileSync(syntheticWorkflowPath, "utf8");
-
-    it("should configure Playwright cache and conditional host dependency installation on cache hit", () => {
-      // Find the Playwright cache block in synthetic probes
-      const playwrightCacheSection = syntheticContent
-        .split("- name:")
-        .find((section) => section.includes("Cache Playwright Browsers"));
-      expect(playwrightCacheSection).toBeDefined();
-
-      if (playwrightCacheSection) {
-        expect(playwrightCacheSection).toContain(
-          "path: ~/.cache/ms-playwright"
-        );
-        expect(playwrightCacheSection).toMatch(
-          /key:\s*playwright-synthetic-\$\{\{\s*hashFiles\(['"]package-lock\.json['"]\)\s*\}\}/
-        );
-      }
-
-      // Check cache miss installation step
-      const cacheMissSection = syntheticContent
-        .split("- name:")
-        .find((section) =>
-          section.includes("Install Playwright Browsers (Cache Miss)")
-        );
-      expect(cacheMissSection).toBeDefined();
-      if (cacheMissSection) {
-        expect(cacheMissSection).toContain(
-          "if: steps.playwright-cache.outputs.cache-hit != 'true'"
-        );
-        expect(cacheMissSection).toContain(
-          "run: npx --no-install playwright install chromium --with-deps"
-        );
-      }
-
-      // Check cache hit dependency-only installation step
-      const cacheHitSection = syntheticContent
-        .split("- name:")
-        .find((section) =>
-          section.includes("Install Playwright Dependencies Only (Cache Hit)")
-        );
-      expect(cacheHitSection).toBeDefined();
-      if (cacheHitSection) {
-        expect(cacheHitSection).toContain(
-          "if: steps.playwright-cache.outputs.cache-hit == 'true'"
-        );
-        expect(cacheHitSection).toContain(
-          "run: npx --no-install playwright install-deps chromium"
-        );
-      }
+    it("runs the probes in the same pinned Playwright image as ci.yml", () => {
+      const syntheticContent = fs.readFileSync(syntheticWorkflowPath, "utf8");
+      const image = /image: (mcr\.microsoft\.com\/playwright:\S+)/;
+      const ciImage = content.match(image)?.[1];
+      expect(ciImage).toMatch(/@sha256:[0-9a-f]{64}$/);
+      expect(syntheticContent.match(image)?.[1]).toBe(ciImage);
+      expect(syntheticContent.indexOf("container:")).toBeLessThan(
+        syntheticContent.indexOf("playwright test")
+      );
     });
   });
 });

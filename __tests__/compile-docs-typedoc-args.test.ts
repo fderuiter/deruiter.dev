@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it, vi } from "vitest";
 
 const { execFileSyncMock } = vi.hoisted(() => ({ execFileSyncMock: vi.fn() }));

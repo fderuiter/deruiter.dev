@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from "vitest";
 import {
   cloneAST,
@@ -61,7 +62,11 @@ describe("Quasi-Perfect Extended: Tactics & Ring Invariant Suite", () => {
           { id: "rhs", type: "Constant", value: 2 },
         ],
       };
-      const updated = replaceNode(tree, "lhs", { id: "new-lhs", type: "Constant", value: 2 });
+      const updated = replaceNode(tree, "lhs", {
+        id: "new-lhs",
+        type: "Constant",
+        value: 2,
+      });
       expect(updated.children![0].value).toBe(2);
     });
 
@@ -178,8 +183,20 @@ describe("Quasi-Perfect Extended: Tactics & Ring Invariant Suite", () => {
       expect(isProofComplete(completeNode)).toBe(true);
 
       const subgoals: SubGoal[] = [
-        { id: "sg1", label: "Goal 1", goal: { id: "g1", type: "Boolean", value: true }, hypotheses: [], isCompleted: true },
-        { id: "sg2", label: "Goal 2", goal: { id: "g2", type: "Boolean", value: true }, hypotheses: [], isCompleted: true },
+        {
+          id: "sg1",
+          label: "Goal 1",
+          goal: { id: "g1", type: "Boolean", value: true },
+          hypotheses: [],
+          isCompleted: true,
+        },
+        {
+          id: "sg2",
+          label: "Goal 2",
+          goal: { id: "g2", type: "Boolean", value: true },
+          hypotheses: [],
+          isCompleted: true,
+        },
       ];
       expect(areAllSubgoalsClosed(subgoals)).toBe(true);
     });
@@ -207,10 +224,28 @@ describe("Quasi-Perfect Extended: Tactics & Ring Invariant Suite", () => {
     });
 
     it("generates formatted Lean 4 proof scripts from executed tactic steps", () => {
-      const script = generateLeanProofScript(puzzleLevels[0], [
-        { id: "1", tacticId: "intro", leanLine: "intro x", explanation: "Introduce x", goalBefore: "∀ x, x = x", goalAfter: "x = x" },
-        { id: "2", tacticId: "rfl", leanLine: "rfl", explanation: "Reflexivity", goalBefore: "x = x", goalAfter: "No goals" },
-      ], true);
+      const script = generateLeanProofScript(
+        puzzleLevels[0],
+        [
+          {
+            id: "1",
+            tacticId: "intro",
+            leanLine: "intro x",
+            explanation: "Introduce x",
+            goalBefore: "∀ x, x = x",
+            goalAfter: "x = x",
+          },
+          {
+            id: "2",
+            tacticId: "rfl",
+            leanLine: "rfl",
+            explanation: "Reflexivity",
+            goalBefore: "x = x",
+            goalAfter: "No goals",
+          },
+        ],
+        true
+      );
       expect(script).toContain("intro x");
       expect(script).toContain("rfl");
       expect(script).toContain("Q.E.D.");

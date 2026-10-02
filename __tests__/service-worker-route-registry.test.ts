@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { CANONICAL_ROUTES } from "@/lib/dx/page-bench";
 import { PUBLIC_ROUTE_REGISTRY } from "@/lib/public-routes";

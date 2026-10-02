@@ -1,8 +1,7 @@
+// @vitest-environment node
 import { describe, it, expect } from "vitest";
 import * as THREE from "three";
-import {
-  getAnatomicalParcelAtCoordinate,
-} from "@/lib/neuro/mesh-generator";
+import { getAnatomicalParcelAtCoordinate } from "@/lib/neuro/mesh-generator";
 import { createCorticalSurfaceMesh } from "@/lib/neuro/engine-loader";
 import { loadExternalBrainMesh } from "@/lib/neuro/asset-loader";
 
@@ -95,7 +94,11 @@ describe("NeuroRecon 3D High-Fidelity Brain Model & Desikan-Killiany Atlas Engin
       expect(rightOnly.children.length).toBe(1);
       expect(rightOnly.children[0].name).toBe("rh_surface");
 
-      const subcorticalLeftOnly = createCorticalSurfaceMesh("aseg", false, "lh");
+      const subcorticalLeftOnly = createCorticalSurfaceMesh(
+        "aseg",
+        false,
+        "lh"
+      );
       const subGroup = subcorticalLeftOnly.children[0] as THREE.Group;
       const structureNames = subGroup.children.map((c) => c.name);
       expect(structureNames).toContain("Left-Lateral-Ventricle");
@@ -105,42 +108,63 @@ describe("NeuroRecon 3D High-Fidelity Brain Model & Desikan-Killiany Atlas Engin
 
   describe("getAnatomicalParcelAtCoordinate", () => {
     it("identifies Precentral Gyrus (Primary Motor Cortex) in peri-central coordinates", () => {
-      const parcel = getAnatomicalParcelAtCoordinate({ x: 0.8, y: 0.05, z: 0.2 }, true);
+      const parcel = getAnatomicalParcelAtCoordinate(
+        { x: 0.8, y: 0.05, z: 0.2 },
+        true
+      );
       expect(parcel.name).toContain("Precentral Gyrus");
       expect(parcel.lobe).toBe("Frontal");
     });
 
     it("identifies Postcentral Gyrus (Primary Somatosensory Cortex) in post-central coordinates", () => {
-      const parcel = getAnatomicalParcelAtCoordinate({ x: 0.8, y: -0.2, z: 0.2 }, true);
+      const parcel = getAnatomicalParcelAtCoordinate(
+        { x: 0.8, y: -0.2, z: 0.2 },
+        true
+      );
       expect(parcel.name).toContain("Postcentral Gyrus");
       expect(parcel.lobe).toBe("Parietal");
     });
 
     it("identifies Superior Frontal Gyrus at dorsal anterior coordinates", () => {
-      const parcel = getAnatomicalParcelAtCoordinate({ x: 0.5, y: 0.5, z: 0.6 }, true);
+      const parcel = getAnatomicalParcelAtCoordinate(
+        { x: 0.5, y: 0.5, z: 0.6 },
+        true
+      );
       expect(parcel.name).toContain("Superior Frontal");
       expect(parcel.lobe).toBe("Frontal");
     });
 
     it("identifies Frontal Pole at extreme anterior coordinates", () => {
-      const parcel = getAnatomicalParcelAtCoordinate({ x: 0.3, y: 1.3, z: 0.1 }, true);
+      const parcel = getAnatomicalParcelAtCoordinate(
+        { x: 0.3, y: 1.3, z: 0.1 },
+        true
+      );
       expect(parcel.name).toContain("Frontal Pole");
       expect(parcel.lobe).toBe("Frontal");
     });
 
     it("identifies Superior Temporal Gyrus in lateral Sylvian fissure territory", () => {
-      const parcel = getAnatomicalParcelAtCoordinate({ x: 1.1, y: -0.1, z: -0.05 }, true);
+      const parcel = getAnatomicalParcelAtCoordinate(
+        { x: 1.1, y: -0.1, z: -0.05 },
+        true
+      );
       expect(parcel.name).toContain("Superior Temporal");
       expect(parcel.lobe).toBe("Temporal");
     });
 
     it("identifies Occipital cortex at posterior coordinates", () => {
-      const parcel = getAnatomicalParcelAtCoordinate({ x: 0.7, y: -1.1, z: -0.1 }, true);
+      const parcel = getAnatomicalParcelAtCoordinate(
+        { x: 0.7, y: -1.1, z: -0.1 },
+        true
+      );
       expect(parcel.lobe).toBe("Occipital");
     });
 
     it("identifies Cingulate cortex at medial coordinates", () => {
-      const parcel = getAnatomicalParcelAtCoordinate({ x: 0.1, y: 0.5, z: 0.1 }, true);
+      const parcel = getAnatomicalParcelAtCoordinate(
+        { x: 0.1, y: 0.5, z: 0.1 },
+        true
+      );
       expect(parcel.name).toContain("Anterior Cingulate");
       expect(parcel.lobe).toBe("Cingulate");
     });
@@ -148,14 +172,26 @@ describe("NeuroRecon 3D High-Fidelity Brain Model & Desikan-Killiany Atlas Engin
 
   describe("loadExternalBrainMesh with Fallback & Caching", () => {
     it("falls back cleanly to high-fidelity procedural cortical surface when external URL is missing/unreachable", async () => {
-      const mesh = await loadExternalBrainMesh("/nonexistent/model.glb", "aparc", "both");
+      const mesh = await loadExternalBrainMesh(
+        "/nonexistent/model.glb",
+        "aparc",
+        "both"
+      );
       expect(mesh).toBeInstanceOf(THREE.Group);
       expect(mesh.children.length).toBe(2);
     });
 
     it("caches loaded meshes across multiple requests", async () => {
-      const mesh1 = await loadExternalBrainMesh("/nonexistent/cached-model.glb", "pial", "both");
-      const mesh2 = await loadExternalBrainMesh("/nonexistent/cached-model.glb", "pial", "both");
+      const mesh1 = await loadExternalBrainMesh(
+        "/nonexistent/cached-model.glb",
+        "pial",
+        "both"
+      );
+      const mesh2 = await loadExternalBrainMesh(
+        "/nonexistent/cached-model.glb",
+        "pial",
+        "both"
+      );
       expect(mesh1).toBeInstanceOf(THREE.Group);
       expect(mesh2).toBeInstanceOf(THREE.Group);
     });

@@ -1,4 +1,6 @@
+// @vitest-environment node
 import { describe, it, expect } from "vitest";
+import { fromPartial } from "@total-typescript/shoehorn";
 import { spawnSync } from "child_process";
 import fs from "fs";
 import path from "path";
@@ -8,24 +10,24 @@ import path from "path";
  * non-chromium visual/touch coverage (`visual.spec.ts`, `touch-controls.spec.ts`
  * against Tablet Safari / Mobile Safari / Mobile Chrome) ran only in a
  * `push`-only job (`post-merge-device-smoke`), *after* a squash-merge had
- * already landed the change on `main`. A PR could merge with a device-engine
- * regression nothing had caught yet. These tests pin the fix: that coverage
+ * already landed the change on `main`. These tests pin the fix: that coverage
  * must be part of the pull_request execution graph, and a single required
  * job (`merge-gate`) must be unable to report success unless every job that
  * gates the merge actually succeeded -- not merely "didn't block" by being
  * skipped or cancelled.
  *
  * CI-03 (#779 follow-up): `merge-gate` originally excluded itself on
- * `workflow_dispatch` (`if: always() && github.event_name !=
- * 'workflow_dispatch'`), which is the same skip-is-a-pass hazard one level
- * up -- a job skipped by its own `if:` still posts a "skipped" conclusion
- * under the required check name, and GitHub treats that as satisfied. The
- * "merge-gate script" describe block below does not just check substrings:
- * it extracts the job's literal `run: |` script, substitutes concrete
- * values for its `${{ }}` expressions the same way GitHub does before the
- * runner sees it, and actually executes the result with bash, asserting on
- * the real exit code for pull_request, push, workflow_dispatch, and
- * unrecognized events alike.
+ * `workflow_dispatch`, which is the same skip-is-a-pass hazard one level up.
+ * The "merge-gate script" describe block below does not just check
+ * substrings: it extracts the job's literal `run: |` script and its `env:`
+ * mapping, supplies concrete values the way GitHub does before the runner
+ * sees them, and executes the result with bash, asserting on the real exit
+ * code for pull_request, push, workflow_dispatch, and unrecognized events.
+ *
+ * #1767 split the old fast/heavy gates into parallel jobs, and #1773 added
+ * the docs-only, draft and bot-branch policies. The script tests cover each:
+ * a skipped browser gate passes only for a docs-only change that `changes`
+ * itself reported successfully; a draft and an unpromoted bot PR always fail.
  *
  * No YAML parser is used here (js-yaml is present only as a transitive
  * `overrides` pin for eslint, not a direct dependency this repo can rely on
@@ -71,15 +73,13 @@ describe("CI Execution Policy", () => {
   const field = (block: string, key: string): string | undefined =>
     block.match(new RegExp(`^ {4}${key}:\\s*(.+)$`, "m"))?.[1].trim();
 
-  /** Normalizes a `needs:` field (bare id or `[a, b, c]`) to a string array. */
+  /** Normalizes a `needs:` field (bare id, `[a, b]`, or a wrapped list). */
   const needsList = (block: string): string[] => {
-    const raw = field(block, "needs");
-    if (!raw) return [];
-    return raw
-      .replace(/^\[/, "")
-      .replace(/\]$/, "")
+    const match = block.match(/^ {4}needs:\s*([\s\S]*?)\n {4}[a-z-]+:/m);
+    if (!match) return [];
+    return match[1]
+      .replace(/[[\]\s]/g, "")
       .split(",")
-      .map((s) => s.trim())
       .filter(Boolean);
   };
 
@@ -94,6 +94,9 @@ describe("CI Execution Policy", () => {
     '--project="Mobile Chrome"',
   ];
 
+  const BROWSER_GATE_IF =
+    "github.event_name == 'pull_request' && needs.changes.outputs.run_browser == 'true'";
+
   const jobNames = jobHeaders.map((h) => h.name);
 
   describe("regression: targeted device coverage is present on pull_request", () => {
@@ -107,12 +110,8 @@ describe("CI Execution Policy", () => {
     });
 
     it("requires every job running those specs against the non-chromium projects to trigger on pull_request", () => {
-      // This is the actual regression guard: whatever job (by whatever name)
-      // owns this coverage, it must be reachable from a PR push. A push-only
-      // or workflow_dispatch-only `if:` here silently reintroduces the CI-02
-      // gap even if the specs and projects are still correct.
       const deviceSpecJobs = jobNames.filter((name) => {
-        if (name === "cross-device-matrix") return false; // full matrix is a distinct, deliberately manual concern
+        if (name === "cross-device-matrix") return false;
         const block = jobBlock(name);
         return (
           DEVICE_SPECS.every((spec) => block.includes(spec)) &&
@@ -131,9 +130,6 @@ describe("CI Execution Policy", () => {
     });
 
     it("does not leave a duplicate push-triggered run of the same targeted device suite", () => {
-      // Guards the "no duplicate full-matrix execution" constraint: the
-      // targeted suite should gate the merge exactly once, not run again on
-      // the post-merge push against identical code.
       const pushTriggeredDuplicates = jobNames.filter((name) => {
         if (name === "cross-device-matrix") return false;
         const block = jobBlock(name);
@@ -153,10 +149,10 @@ describe("CI Execution Policy", () => {
   describe("device-gate", () => {
     const block = jobBlock("device-gate");
 
-    it("exists, needs fast-gate, and gates on pull_request only", () => {
+    it("exists, needs only the run policy and the shared build, and gates on pull_request", () => {
       expect(block).not.toBe("");
-      expect(needsList(block)).toEqual(["fast-gate"]);
-      expect(field(block, "if")).toBe("github.event_name == 'pull_request'");
+      expect(needsList(block)).toEqual(["changes", "build"]);
+      expect(field(block, "if")).toBe(BROWSER_GATE_IF);
     });
 
     it("scopes to the three non-chromium projects, not chromium", () => {
@@ -175,12 +171,121 @@ describe("CI Execution Policy", () => {
   describe("heavy-gate keeps full chromium PR coverage", () => {
     const block = jobBlock("heavy-gate");
 
-    it("still gates on pull_request only", () => {
-      expect(field(block, "if")).toBe("github.event_name == 'pull_request'");
+    it("still gates on pull_request only, after the shared build", () => {
+      expect(field(block, "if")).toBe(BROWSER_GATE_IF);
+      expect(needsList(block)).toEqual(["changes", "build"]);
     });
 
     it("still runs the full e2e suite against chromium", () => {
       expect(block).toMatch(/playwright test --project=chromium\b/);
+    });
+  });
+
+  describe("#1768: the old fast gate is three parallel jobs", () => {
+    it("removes fast-gate", () => {
+      expect(jobNames).not.toContain("fast-gate");
+    });
+
+    it("static-gate runs every trigger, needs nothing, and owns the drift, docs, typecheck and lint checks", () => {
+      const block = jobBlock("static-gate");
+      expect(field(block, "if")).toBeUndefined();
+      expect(needsList(block)).toEqual([]);
+      for (const command of [
+        "npm run migration:replay",
+        "npm run check:migrations:drift",
+        "npm run check-docs-drift",
+        "npm run lint:docs",
+        "npm run typecheck",
+        "npm run lint",
+        "npm run verify -- --skip-benchmark-evidence",
+      ]) {
+        expect(block, command).toContain(command);
+      }
+      expect(block).toMatch(/services:\s*\n\s+postgres:/);
+    });
+
+    it("unit-gate and mutation-gate run whenever the policy allows unit work", () => {
+      for (const job of ["unit-gate", "mutation-gate"]) {
+        const block = jobBlock(job);
+        expect(needsList(block)).toEqual(["changes"]);
+        expect(field(block, "if")).toBe(
+          "needs.changes.outputs.run_unit == 'true'"
+        );
+      }
+      expect(jobBlock("mutation-gate")).toContain("npm run test:mutation");
+    });
+
+    it("runs property fuzzing inside the unit suite rather than as a second step", () => {
+      expect(ci).not.toContain("npm run test:fuzz");
+      const config = fs.readFileSync(
+        path.join(process.cwd(), "vitest.config.ts"),
+        "utf8"
+      );
+      expect(config).toContain(
+        'include: ["__tests__/**/*.{test,spec}.{ts,tsx}"]'
+      );
+      expect(
+        fs.existsSync(
+          path.join(process.cwd(), "__tests__/property-fuzz.test.ts")
+        )
+      ).toBe(true);
+    });
+
+    it("keeps typecheck and lint incremental only through content-keyed caches", () => {
+      const block = jobBlock("static-gate");
+      expect(block).toContain("npm run typecheck -- --incremental");
+      expect(block).toContain(
+        "npm run lint -- --cache --cache-strategy content --cache-location .eslintcache"
+      );
+      expect(block).toMatch(
+        /key: static-incremental-\$\{\{ hashFiles\('package-lock\.json'\) \}\}-\$\{\{ github\.sha \}\}/
+      );
+    });
+  });
+
+  describe("#1772: Stryker runs incrementally without weakening the gate", () => {
+    const block = jobBlock("mutation-gate");
+
+    it("restores main's incremental report and saves only from a main push", () => {
+      expect(block).toMatch(
+        /uses: actions\/cache\/restore@[0-9a-f]{40} # v6\.1\.0\n\s+with:\n\s+path: reports\/stryker-incremental\.json\n\s+key: stryker-incremental-\$\{\{ github\.sha \}\}\n\s+restore-keys: \|\n\s+stryker-incremental-\n/
+      );
+      const save = block.slice(
+        block.indexOf("Save Stryker Incremental Report")
+      );
+      expect(save).toMatch(
+        /if: github\.event_name == 'push' && github\.ref == 'refs\/heads\/main'/
+      );
+      expect(save).toMatch(/uses: actions\/cache\/save@/);
+      // No step in this job uses the combined restore+save action, which
+      // would save a PR-scoped (possibly fork-written) report.
+      expect(block).not.toMatch(/uses: actions\/cache@/);
+    });
+
+    it("runs incrementally except on manual dispatch, and forces a full run when Stryker's inputs change", () => {
+      expect(block).toContain(
+        'if [ "${EVENT_NAME}" != "workflow_dispatch" ]; then'
+      );
+      expect(block).toContain("args+=(--incremental)");
+      expect(block).toContain("args+=(--force)");
+      expect(block).toContain('npm run test:mutation -- "${args[@]}"');
+      expect(block).toContain('if [ "${STRYKER_FORCE}" = "true" ]; then');
+      expect(block).toContain(
+        "STRYKER_FORCE: ${{ needs.changes.outputs.stryker_force }}"
+      );
+    });
+
+    it("keeps a weekly and on-demand full run that refreshes the baseline", () => {
+      const weekly = fs.readFileSync(
+        path.join(process.cwd(), ".github/workflows/mutation-weekly.yml"),
+        "utf8"
+      );
+      expect(weekly).toMatch(/schedule:\s*\n\s+- cron: /);
+      expect(weekly).toMatch(/workflow_dispatch:/);
+      expect(weekly).toContain(
+        "npm run test:mutation -- --incremental --force"
+      );
+      expect(weekly).toMatch(/timeout-minutes: \d+/);
     });
   });
 
@@ -201,66 +306,60 @@ describe("CI Execution Policy", () => {
     });
   });
 
+  /** Every job merge-gate must wait for, in `needs:` order. */
+  const GATES = [
+    "changes",
+    "static-gate",
+    "unit-gate",
+    "unit-coverage",
+    "mutation-gate",
+    "security-gate",
+    "build",
+    "heavy-gate",
+    "bench-gate",
+    "heavy-gate-report",
+    "device-gate",
+  ] as const;
+  type Gate = (typeof GATES)[number];
+  const BROWSER_GATES: Gate[] = [
+    "build",
+    "heavy-gate",
+    "bench-gate",
+    "heavy-gate-report",
+    "device-gate",
+  ];
+  const ALWAYS_ON_PR: Gate[] = ["changes", "static-gate", "security-gate"];
+  const UNIT_GATES: Gate[] = ["unit-gate", "unit-coverage", "mutation-gate"];
+
   describe("merge-gate aggregates every job required for a passing merge", () => {
     const block = jobBlock("merge-gate");
 
-    it("exists and needs every gating job from both the fast and heavy paths", () => {
+    it("exists and needs every gating job", () => {
       expect(block).not.toBe("");
-      expect(needsList(block).sort()).toEqual(
-        ["device-gate", "fast-gate", "heavy-gate", "security-gate"].sort()
-      );
+      expect(needsList(block).sort()).toEqual([...GATES].sort());
     });
 
     it("runs with if: always(), unconditionally for every trigger (no event carve-out)", () => {
-      // CI-03 regression guard: this used to read
-      // `always() && github.event_name != 'workflow_dispatch'`, which made
-      // the whole job skip itself on a manual dispatch -- and a job skipped
-      // by its own `if:` still posts a "skipped" conclusion under this
-      // exact required check name, which required-status-checks treats as
-      // satisfied rather than blocking. The condition must be exactly
-      // `always()`, not `always()` narrowed by any event exclusion, so the
-      // job -- and therefore the shell script's own fail-closed default,
-      // exercised for real below -- always gets to run and report a real
-      // conclusion.
       expect(field(block, "if")).toBe("always()");
     });
 
     it("inspects every required predecessor's actual .result rather than trusting needs: alone", () => {
-      for (const dep of [
-        "fast-gate",
-        "security-gate",
-        "heavy-gate",
-        "device-gate",
-      ]) {
+      for (const dep of GATES) {
         expect(block).toContain(`needs.${dep}.result`);
       }
     });
 
     it("treats any non-success result as fatal, covering failure, cancellation, and skip alike", () => {
-      // `!= "success"` catches "failure", "cancelled", and "skipped" in one
-      // comparison -- there is no allowlist of "acceptable" non-success
-      // states for a required predecessor.
-      expect(block).toContain('!= "success"');
+      expect(block).toContain('if [ "${result}" != "success" ]; then');
       expect(block).toMatch(/exit\s+"?\$\{fail\}"?/);
     });
 
-    it("only requires heavy-gate/device-gate to have succeeded when the event is pull_request", () => {
-      const marker = "pull_request)";
-      const start = block.indexOf(marker);
-      expect(start).toBeGreaterThan(-1);
-      const end = block.indexOf(";;", start);
-      expect(end).toBeGreaterThan(start);
-      const guardedBlock = block.slice(start, end);
-      expect(guardedBlock).toContain("heavy-gate");
-      expect(guardedBlock).toContain("device-gate");
+    it("passes values through env, never interpolating ${{ }} into the script", () => {
+      const script = block.slice(block.indexOf("run: |"));
+      expect(script).not.toMatch(/\$\{\{/);
     });
 
     it("declares an explicit catch-all default that fails closed for any other event", () => {
-      // Belt-and-suspenders string check alongside the real-execution suite
-      // below: the case statement must dispatch on the literal event value
-      // and carry a `*)` default arm that sets fail=1, not merely omit
-      // handling for unrecognized events (which is what let workflow_dispatch
-      // slip through before CI-03 -- the job simply never ran for it).
       expect(block).toContain('case "${event}" in');
       const defaultStart = block.indexOf("\n            *)");
       expect(defaultStart).toBeGreaterThan(-1);
@@ -276,23 +375,9 @@ describe("CI Execution Policy", () => {
   });
 
   describe("merge-gate script: real execution against controlled event/result inputs", () => {
-    // Everything above only checks that certain substrings exist in the
-    // YAML -- it would not notice if, say, someone flipped `!=` to `==`, or
-    // dropped the default case's `fail=1`, while leaving every string this
-    // file already asserts on intact. This suite extracts the literal shell
-    // script GitHub Actions would run, substitutes concrete values for its
-    // `${{ }}` expressions the same way GitHub itself does before the
-    // runner ever sees the script, and actually executes the result with
-    // bash, asserting on the real exit code -- the only way to prove
-    // failure actually propagates rather than merely reading as if it
-    // should.
     const block = jobBlock("merge-gate");
 
-    /**
-     * Extracts the body of the single `run: |` step in a job block, using
-     * the step's own indentation (10 spaces here) to find where the script
-     * starts and ends.
-     */
+    /** Body of the single `run: |` step, de-indented by its 10 spaces. */
     const extractRunScript = (jobBlockText: string): string => {
       const marker = "run: |\n";
       const idx = jobBlockText.indexOf(marker);
@@ -313,7 +398,21 @@ describe("CI Execution Policy", () => {
       return scriptLines.join("\n");
     };
 
+    /** The step's `env:` mapping: variable name -> GitHub expression. */
+    const extractEnv = (jobBlockText: string): Record<string, string> => {
+      const start = jobBlockText.indexOf("        env:\n");
+      const end = jobBlockText.indexOf("        run: |");
+      const env: Record<string, string> = {};
+      for (const match of jobBlockText
+        .slice(start, end)
+        .matchAll(/^ {10}([A-Z_]+): \$\{\{ (.+?) \}\}$/gm)) {
+        env[match[1]] = match[2];
+      }
+      return env;
+    };
+
     const script = extractRunScript(block);
+    const envMapping = extractEnv(block);
 
     it("extracted a non-trivial script containing the fail-closed default", () => {
       expect(script.length).toBeGreaterThan(0);
@@ -321,134 +420,286 @@ describe("CI Execution Policy", () => {
       expect(script).toContain('exit "${fail}"');
     });
 
-    type ResultsMap = Record<
-      "fast-gate" | "security-gate" | "heavy-gate" | "device-gate",
-      string
-    >;
-
-    const ALL_SUCCESS: ResultsMap = {
-      "fast-gate": "success",
-      "security-gate": "success",
-      "heavy-gate": "success",
-      "device-gate": "success",
-    };
-
-    /** Substitutes GitHub Actions `${{ }}` expressions with literal test values. */
-    const renderScript = (event: string, results: ResultsMap): string => {
-      let out = script.replace(/\$\{\{\s*github\.event_name\s*\}\}/g, event);
-      for (const job of Object.keys(results) as (keyof ResultsMap)[]) {
-        const re = new RegExp(
-          `\\$\\{\\{\\s*needs\\.${job}\\.result\\s*\\}\\}`,
-          "g"
-        );
-        out = out.replace(re, results[job]);
+    it("maps every gate's result and the policy outputs into the script's environment", () => {
+      for (const gate of GATES) {
+        const variable = `RESULT_${gate.toUpperCase().replace(/-/g, "_")}`;
+        expect(envMapping[variable], variable).toBe(`needs.${gate}.result`);
+        expect(script).toContain(`"\${${variable}}"`);
       }
-      // Any remaining `${{ }}` means a substitution above missed an
-      // expression the real script actually contains -- fail loudly here
-      // rather than letting bash choke on invalid `${{` syntax with a
-      // confusing error.
-      if (/\$\{\{/.test(out)) {
-        throw new Error(
-          `unsubstituted GitHub Actions expression remains in rendered script:\n${out}`
-        );
-      }
-      return out;
-    };
+      expect(envMapping).toMatchObject({
+        EVENT_NAME: "github.event_name",
+        PR_DRAFT: "github.event.pull_request.draft",
+        APP_CHANGED: "needs.changes.outputs.app_changed",
+        BOT_PR: "needs.changes.outputs.bot_pr",
+        PROMOTED: "needs.changes.outputs.promoted",
+      });
+    });
 
-    const runScript = (
-      event: string,
-      results: ResultsMap
-    ): { status: number | null; stderr: string } => {
-      const rendered = renderScript(event, results);
-      const result = spawnSync("bash", ["-c", rendered], { encoding: "utf-8" });
+    type ResultsMap = Record<Gate, string>;
+
+    const ALL_SUCCESS = Object.fromEntries(
+      GATES.map((gate) => [gate, "success"])
+    ) as ResultsMap;
+
+    interface Scenario {
+      event: string;
+      results: ResultsMap;
+      draft?: string;
+      appChanged?: string;
+      botPr?: string;
+      promoted?: string;
+    }
+
+    /** Runs the script with the environment GitHub would give it. */
+    const runScript = ({
+      event,
+      results,
+      draft = "false",
+      appChanged = "true",
+      botPr = "false",
+      promoted = "false",
+    }: Scenario): { status: number | null; stdout: string } => {
+      const env: Record<string, string> = {
+        PATH: process.env.PATH ?? "/usr/bin:/bin",
+        EVENT_NAME: event,
+        PR_DRAFT: draft,
+        APP_CHANGED: appChanged,
+        BOT_PR: botPr,
+        PROMOTED: promoted,
+      };
+      for (const gate of GATES) {
+        env[`RESULT_${gate.toUpperCase().replace(/-/g, "_")}`] = results[gate];
+      }
+      const result = spawnSync("bash", ["-c", script], {
+        encoding: "utf-8",
+        env: fromPartial<NodeJS.ProcessEnv>(env),
+      });
       if (result.error) {
         throw result.error;
       }
-      return { status: result.status, stderr: result.stderr };
+      return { status: result.status, stdout: result.stdout };
     };
 
     const FAILURE_MODES = ["failure", "cancelled", "skipped"] as const;
 
-    describe("pull_request", () => {
+    const BROWSER_SKIPPED = {
+      ...ALL_SUCCESS,
+      ...Object.fromEntries(BROWSER_GATES.map((gate) => [gate, "skipped"])),
+    } as ResultsMap;
+
+    describe("pull_request: code change", () => {
       it("exits 0 when every required predecessor succeeded", () => {
-        expect(runScript("pull_request", ALL_SUCCESS).status).toBe(0);
+        expect(
+          runScript({ event: "pull_request", results: ALL_SUCCESS }).status
+        ).toBe(0);
       });
 
-      const prRequiredJobs = [
-        "fast-gate",
-        "security-gate",
-        "heavy-gate",
-        "device-gate",
-      ] as const;
-      const prFailureCases = prRequiredJobs.flatMap((job) =>
-        FAILURE_MODES.map((mode) => [job, mode] as const)
-      );
-
-      it.each(prFailureCases)(
+      it.each(GATES.flatMap((job) => FAILURE_MODES.map((mode) => [job, mode])))(
         "exits 1 (never 0) when %s reports %s",
         (job, result) => {
-          const results: ResultsMap = { ...ALL_SUCCESS, [job]: result };
-          expect(runScript("pull_request", results).status).toBe(1);
+          const results = { ...ALL_SUCCESS, [job]: result } as ResultsMap;
+          expect(runScript({ event: "pull_request", results }).status).toBe(1);
+        }
+      );
+
+      it("exits 1 when an unset result variable reaches the script", () => {
+        const env = {
+          PATH: process.env.PATH ?? "/usr/bin:/bin",
+          EVENT_NAME: "pull_request",
+        };
+        const outcome = spawnSync("bash", ["-c", script], {
+          encoding: "utf-8",
+          env: fromPartial<NodeJS.ProcessEnv>(env),
+        });
+        expect(outcome.status).not.toBe(0);
+      });
+    });
+
+    describe("pull_request: docs-only change (#1773)", () => {
+      it("exits 0 when the browser gates were skipped by the docs-only policy", () => {
+        expect(
+          runScript({
+            event: "pull_request",
+            results: BROWSER_SKIPPED,
+            appChanged: "false",
+          }).status
+        ).toBe(0);
+      });
+
+      it.each(BROWSER_GATES)(
+        "still exits 1 when %s failed on a docs-only change",
+        (job) => {
+          const results = {
+            ...BROWSER_SKIPPED,
+            [job]: "failure",
+          } as ResultsMap;
+          expect(
+            runScript({ event: "pull_request", results, appChanged: "false" })
+              .status
+          ).toBe(1);
+        }
+      );
+
+      it.each([...ALWAYS_ON_PR, ...UNIT_GATES])(
+        "still requires %s on a docs-only change",
+        (job) => {
+          for (const mode of FAILURE_MODES) {
+            const results = { ...BROWSER_SKIPPED, [job]: mode } as ResultsMap;
+            expect(
+              runScript({ event: "pull_request", results, appChanged: "false" })
+                .status
+            ).toBe(1);
+          }
+        }
+      );
+
+      it.each(["failure", "cancelled", "skipped"])(
+        "requires every browser gate when the changes job itself reported %s",
+        (mode) => {
+          // Outputs of a failed job are empty, but even a stale "false"
+          // must not excuse a skipped gate.
+          const results = { ...BROWSER_SKIPPED, changes: mode } as ResultsMap;
+          expect(
+            runScript({ event: "pull_request", results, appChanged: "false" })
+              .status
+          ).toBe(1);
+          const unknown = runScript({
+            event: "pull_request",
+            results: { ...BROWSER_SKIPPED, changes: "success" } as ResultsMap,
+            appChanged: "",
+          });
+          expect(unknown.status).toBe(1);
         }
       );
     });
 
-    describe("push", () => {
-      it("exits 0 when fast-gate/security-gate succeed even though heavy-gate/device-gate are skipped", () => {
-        const results: ResultsMap = {
-          ...ALL_SUCCESS,
-          "heavy-gate": "skipped",
-          "device-gate": "skipped",
-        };
-        expect(runScript("push", results).status).toBe(0);
+    describe("pull_request: draft (#1773)", () => {
+      it("fails on a draft even when every gate that ran passed", () => {
+        const outcome = runScript({
+          event: "pull_request",
+          results: BROWSER_SKIPPED,
+          draft: "true",
+        });
+        expect(outcome.status).toBe(1);
+        expect(outcome.stdout).toContain("draft PR");
       });
 
-      const pushRequiredJobs = ["fast-gate", "security-gate"] as const;
-      const pushFailureCases = pushRequiredJobs.flatMap((job) =>
-        FAILURE_MODES.map((mode) => [job, mode] as const)
-      );
+      it("fails on a draft even if every gate somehow succeeded", () => {
+        expect(
+          runScript({
+            event: "pull_request",
+            results: ALL_SUCCESS,
+            draft: "true",
+          }).status
+        ).toBe(1);
+      });
+    });
 
-      it.each(pushFailureCases)(
-        "exits 1 (never 0) when %s reports %s, regardless of heavy-gate/device-gate",
+    describe("pull_request: bot branch (#1773)", () => {
+      const QUICK_ONLY = {
+        ...ALL_SUCCESS,
+        ...Object.fromEntries(
+          [...UNIT_GATES, ...BROWSER_GATES].map((gate) => [gate, "skipped"])
+        ),
+      } as ResultsMap;
+
+      it("fails an unpromoted bot PR with the documented message", () => {
+        const outcome = runScript({
+          event: "pull_request",
+          results: QUICK_ONLY,
+          botPr: "true",
+        });
+        expect(outcome.status).toBe(1);
+        expect(outcome.stdout).toContain(
+          "bot PR: full suite runs when marked ready"
+        );
+      });
+
+      it("fails an unpromoted bot PR even if every gate somehow succeeded", () => {
+        expect(
+          runScript({
+            event: "pull_request",
+            results: ALL_SUCCESS,
+            botPr: "true",
+          }).status
+        ).toBe(1);
+      });
+
+      it("fails an unpromoted docs-only bot PR", () => {
+        expect(
+          runScript({
+            event: "pull_request",
+            results: QUICK_ONLY,
+            botPr: "true",
+            appChanged: "false",
+          }).status
+        ).toBe(1);
+      });
+
+      it("passes a promoted bot PR once the full suite succeeded", () => {
+        expect(
+          runScript({
+            event: "pull_request",
+            results: ALL_SUCCESS,
+            botPr: "true",
+            promoted: "true",
+          }).status
+        ).toBe(0);
+      });
+
+      it("fails a promoted bot PR whose unit gate was skipped", () => {
+        expect(
+          runScript({
+            event: "pull_request",
+            results: { ...ALL_SUCCESS, "unit-gate": "skipped" },
+            botPr: "true",
+            promoted: "true",
+          }).status
+        ).toBe(1);
+      });
+    });
+
+    describe("push", () => {
+      it("exits 0 when the push gates succeed even though the browser gates are skipped", () => {
+        expect(
+          runScript({ event: "push", results: BROWSER_SKIPPED }).status
+        ).toBe(0);
+      });
+
+      const pushRequiredJobs: Gate[] = [
+        "changes",
+        "static-gate",
+        "unit-gate",
+        "unit-coverage",
+        "mutation-gate",
+        "security-gate",
+      ];
+
+      it.each(
+        pushRequiredJobs.flatMap((job) =>
+          FAILURE_MODES.map((mode) => [job, mode])
+        )
+      )(
+        "exits 1 (never 0) when %s reports %s, regardless of the browser gates",
         (job, result) => {
-          const results: ResultsMap = {
-            ...ALL_SUCCESS,
-            "heavy-gate": "skipped",
-            "device-gate": "skipped",
-            [job]: result,
-          };
-          expect(runScript("push", results).status).toBe(1);
+          const results = { ...BROWSER_SKIPPED, [job]: result } as ResultsMap;
+          expect(runScript({ event: "push", results }).status).toBe(1);
         }
       );
     });
 
     describe("workflow_dispatch (manual execution) -- CI-03 regression", () => {
       it("fails closed (exit 1, never skipped/0) even when every job that ran actually succeeded", () => {
-        // This is the exact scenario the bug allowed: an operator manually
-        // dispatches the workflow against a ref that also has an open PR
-        // pointing at the same commit. fast-gate/security-gate run and pass
-        // (they carry no `if:`); heavy-gate/device-gate are skipped by their
-        // own pull_request-only `if:`. Before CI-03, the whole merge-gate
-        // job was itself skipped for this event, which posts a "skipped"
-        // conclusion for the required check name -- and required-status-checks
-        // treats a skipped required check as satisfied, not blocking. The
-        // fix must make this scenario a hard failure, not a skip and not a
-        // pass.
-        const results: ResultsMap = {
-          ...ALL_SUCCESS,
-          "heavy-gate": "skipped",
-          "device-gate": "skipped",
-        };
-        const outcome = runScript("workflow_dispatch", results);
-        expect(outcome.status).toBe(1);
+        expect(
+          runScript({ event: "workflow_dispatch", results: BROWSER_SKIPPED })
+            .status
+        ).toBe(1);
       });
 
       it("fails closed even when every job improbably reports success", () => {
-        // Belt-and-suspenders: even if every predecessor somehow reported
-        // success, a bare manual dispatch must still not be able to satisfy
-        // this required check -- there is no event-specific validation
-        // branch for workflow_dispatch at all, by design.
-        expect(runScript("workflow_dispatch", ALL_SUCCESS).status).toBe(1);
+        expect(
+          runScript({ event: "workflow_dispatch", results: ALL_SUCCESS }).status
+        ).toBe(1);
       });
     });
 
@@ -456,31 +707,51 @@ describe("CI Execution Policy", () => {
       it.each(["schedule", "repository_dispatch", "made_up_event"])(
         "fails closed (exit 1) for event '%s' even when every job succeeded",
         (event) => {
-          expect(runScript(event, ALL_SUCCESS).status).toBe(1);
+          expect(runScript({ event, results: ALL_SUCCESS }).status).toBe(1);
         }
       );
     });
 
     it("never lets every-job-failed exit 0 on the event with the most required predecessors", () => {
-      const results: ResultsMap = {
-        "fast-gate": "failure",
-        "security-gate": "failure",
-        "heavy-gate": "failure",
-        "device-gate": "failure",
-      };
-      expect(runScript("pull_request", results).status).toBe(1);
+      const results = Object.fromEntries(
+        GATES.map((gate) => [gate, "failure"])
+      ) as ResultsMap;
+      expect(runScript({ event: "pull_request", results }).status).toBe(1);
     });
   });
 
+  describe("#1773: triggers and policy wiring", () => {
+    it("runs pull requests on the activity types that can change the verdict", () => {
+      expect(ci).toMatch(
+        /pull_request:\n\s+branches: \["main"\]\n(?:\s+#.*\n)*\s+types: \[opened, synchronize, reopened, ready_for_review, labeled\]/
+      );
+    });
+
+    it("runs the policy before installing anything, with untrusted values passed through env", () => {
+      const block = jobBlock("changes");
+      expect(block).toContain("run: node scripts/ci-run-policy.mjs");
+      expect(block).not.toContain("npm ci");
+      expect(block).toMatch(/fetch-depth: 2/);
+      expect(block).toContain("HEAD_REF: ${{ github.head_ref }}");
+      expect(block).not.toMatch(/run: .*\$\{\{/);
+    });
+
+    it.each(["build", "heavy-gate", "bench-gate", "device-gate"])(
+      "%s runs only when the policy allows browser work",
+      (job) => {
+        expect(field(jobBlock(job), "if")).toBe(BROWSER_GATE_IF);
+      }
+    );
+  });
+
   describe("main-push confirmation stays bounded", () => {
-    it("fast-gate and security-gate remain unconditional (the direct-push safety net)", () => {
-      expect(field(jobBlock("fast-gate"), "if")).toBeUndefined();
+    it("static-gate and security-gate remain unconditional (the direct-push safety net)", () => {
+      expect(field(jobBlock("static-gate"), "if")).toBeUndefined();
       expect(field(jobBlock("security-gate"), "if")).toBeUndefined();
     });
 
-    it("no job newly runs the full build+Playwright heavy path on a bare push", () => {
+    it("no gate runs the build+Playwright heavy path on a bare push; only the non-gating cache warm builds", () => {
       const heavyOnPush = jobNames.filter((name) => {
-        if (name === "fast-gate" || name === "security-gate") return false;
         if (name === "cross-device-matrix") return false;
         const block = jobBlock(name);
         const ifCondition = field(block, "if");
@@ -488,19 +759,21 @@ describe("CI Execution Policy", () => {
           ifCondition === undefined || /\bpush\b/.test(ifCondition);
         return runsOnPush && block.includes("npm run build");
       });
-      expect(heavyOnPush).toEqual([]);
+      expect(heavyOnPush).toEqual(["cache-warm"]);
+      expect(field(jobBlock("cache-warm"), "if")).toBe(
+        "github.event_name == 'push' && github.ref == 'refs/heads/main'"
+      );
+      expect(jobBlock("cache-warm")).not.toContain("playwright test");
+      expect(needsList(jobBlock("merge-gate"))).not.toContain("cache-warm");
     });
   });
 
   /**
    * ADR 0039 (Correction 2026-09-18): `cancel-in-progress` was
    * `${{ github.event_name == 'pull_request' }}`, which evaluates false on
-   * `main` pushes. Consecutive merges therefore each got a complete,
-   * non-superseding run -- fourteen of them on 2026-09-13, against what is
-   * actually a 2,000-minute Free-plan allowance rather than the 3,000 the
-   * ADR originally claimed. Superseding is strictly cheaper than letting a
-   * stale run finish, because GitHub bills a cancelled job's elapsed time
-   * rather than its full cap.
+   * `main` pushes. Superseding is strictly cheaper than letting a stale run
+   * finish, because GitHub bills a cancelled job's elapsed time rather than
+   * its full cap.
    */
   describe("redundant runs supersede rather than accumulate", () => {
     const concurrency = ci.slice(
@@ -522,15 +795,18 @@ describe("CI Execution Policy", () => {
 
   /**
    * ADR 0039 requires every job to declare a `timeout-minutes` bound so one
-   * hang cannot consume a large fraction of the monthly allowance. The
-   * specific caps stay provisional pending measurement under #733; that an
-   * unbounded job never reappears is enforceable today.
+   * hang cannot consume a large fraction of the monthly allowance, on a
+   * standard hosted runner.
    */
   describe("every job bounds its own cost", () => {
-    it.each(jobNames)("%s declares timeout-minutes", (name) => {
-      const timeout = field(jobBlock(name), "timeout-minutes");
-      expect(timeout).toBeDefined();
-      expect(Number(timeout)).toBeGreaterThan(0);
-    });
+    it.each(jobNames)(
+      "%s declares timeout-minutes on ubuntu-latest",
+      (name) => {
+        const timeout = field(jobBlock(name), "timeout-minutes");
+        expect(timeout).toBeDefined();
+        expect(Number(timeout)).toBeGreaterThan(0);
+        expect(field(jobBlock(name), "runs-on")).toBe("ubuntu-latest");
+      }
+    );
   });
 });

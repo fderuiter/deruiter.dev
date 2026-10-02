@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import path from "path";
 import fs from "fs";
@@ -14,7 +15,9 @@ describe("DX Universal Scaffolder - Interactive & Validation Expansion", () => {
   let tempDir: string;
 
   beforeEach(() => {
-    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "dx-scaffold-interactive-test-"));
+    tempDir = fs.mkdtempSync(
+      path.join(os.tmpdir(), "dx-scaffold-interactive-test-")
+    );
   });
 
   afterEach(() => {
@@ -65,7 +68,11 @@ describe("DX Universal Scaffolder - Interactive & Validation Expansion", () => {
     expect(generated.length).toBe(2);
 
     const hookFile = path.join(tempDir, "hooks", "useTelemetryFilter.ts");
-    const testFile = path.join(tempDir, "__tests__", "telemetry-filter-hook.test.ts");
+    const testFile = path.join(
+      tempDir,
+      "__tests__",
+      "telemetry-filter-hook.test.ts"
+    );
 
     expect(fs.existsSync(hookFile)).toBe(true);
     expect(fs.existsSync(testFile)).toBe(true);
@@ -74,8 +81,8 @@ describe("DX Universal Scaffolder - Interactive & Validation Expansion", () => {
     expect(hookContent).toContain("export function useTelemetryFilter");
 
     const testContent = fs.readFileSync(testFile, "utf-8");
-    expect(testContent).toContain('renderHook');
-    expect(testContent).toContain('useTelemetryFilter');
+    expect(testContent).toContain("renderHook");
+    expect(testContent).toContain("useTelemetryFilter");
   });
 
   it("scaffolds case study with page and companion unit test file", () => {
@@ -93,8 +100,18 @@ describe("DX Universal Scaffolder - Interactive & Validation Expansion", () => {
     });
     expect(generated.length).toBeGreaterThan(0);
 
-    const routeFile = path.join(tempDir, "app", "case-studies", "quantum-compiler", "page.tsx");
-    const testFile = path.join(tempDir, "__tests__", "quantum-compiler-case-study.test.ts");
+    const routeFile = path.join(
+      tempDir,
+      "app",
+      "case-studies",
+      "quantum-compiler",
+      "page.tsx"
+    );
+    const testFile = path.join(
+      tempDir,
+      "__tests__",
+      "quantum-compiler-case-study.test.ts"
+    );
 
     expect(fs.existsSync(routeFile)).toBe(true);
     expect(fs.existsSync(testFile)).toBe(true);

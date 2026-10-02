@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { BlogPostService } from "@/lib/services/blog-service";
 import { prisma } from "@/lib/db";

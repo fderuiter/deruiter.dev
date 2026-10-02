@@ -8,7 +8,11 @@ import readline from "readline";
 import path from "path";
 import fs from "fs";
 import { execSync, execFileSync } from "child_process";
-import { runDiagnostics, printDoctorReport } from "../lib/dx/doctor";
+import {
+  runDiagnostics,
+  printDoctorReport,
+  type DiagnosticSummary,
+} from "../lib/dx/doctor";
 import {
   scaffold,
   type ScaffoldType,
@@ -53,6 +57,9 @@ function printUsage(): void {
   );
   console.log(
     `  ${colors.cyan}verify [--json]${colors.reset}               Strict invariant check for CI / pre-commit (exits 1 on failure)`
+  );
+  console.log(
+    `  ${colors.cyan}verify --skip-benchmark-evidence${colors.reset} Every invariant except the Web Vitals evidence check (CI static gate)`
   );
   console.log(
     `  ${colors.cyan}audit:licenses [--json]${colors.reset}       Audit lockfile package SPDX licenses against policy`
@@ -209,12 +216,58 @@ export async function handleDoctorCommand(
   }
 }
 
+/** The doctor check that needs `bench:pages --assert` evidence (#1773). */
+export const BENCHMARK_EVIDENCE_CHECK_ID = "quality-subroute-performance";
+
+/**
+ * Drops the benchmark-evidence check from a summary and recomputes its
+ * totals. CI's static gate uses this to run every other invariant before any
+ * build exists, including on docs-only PRs whose browser gates are skipped;
+ * the full `npm run verify` still runs once a PR's bench evidence exists.
+ */
+export function withoutBenchmarkEvidenceCheck(
+  summary: DiagnosticSummary
+): DiagnosticSummary {
+  const results = summary.results.filter(
+    (check) => check.id !== BENCHMARK_EVIDENCE_CHECK_ID
+  );
+  const count = (status: string) =>
+    results.filter((check) => check.status === status).length;
+  const totalFailed = count("fail");
+  const totalWarned = count("warn");
+  return {
+    ...summary,
+    results,
+    totalPassed: count("pass"),
+    totalFailed,
+    totalWarned,
+    totalFixed: count("fixed"),
+    hasFailures: totalFailed > 0,
+    hasWarnings: totalWarned > 0,
+  };
+}
+
 export async function handleVerifyCommand(
   parsed: ParsedCliArgs
 ): Promise<void> {
   const isJson = Boolean(parsed.flags.json || parsed.flags.j);
+  const skipBenchmarkEvidence = Boolean(
+    parsed.flags["skip-benchmark-evidence"]
+  );
   const startTime = Date.now();
-  const summary = await runDiagnostics({ workspaceRoot, fix: false, ci: true });
+  const fullSummary = await runDiagnostics({
+    workspaceRoot,
+    fix: false,
+    ci: true,
+  });
+  const summary = skipBenchmarkEvidence
+    ? withoutBenchmarkEvidenceCheck(fullSummary)
+    : fullSummary;
+  if (skipBenchmarkEvidence && !isJson) {
+    console.log(
+      `${colors.dim}Skipping '${BENCHMARK_EVIDENCE_CHECK_ID}': benchmark evidence is checked by the full verify after bench:pages --assert.${colors.reset}`
+    );
+  }
   const durationMs = Date.now() - startTime;
 
   if (isJson) {

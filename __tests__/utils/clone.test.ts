@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from "vitest";
 import { cloneDeep } from "@/lib/utils";
 import type { StudyProtocol, CRFForm, CRFField } from "@/lib/crf/types";

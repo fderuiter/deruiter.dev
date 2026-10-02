@@ -1,3 +1,4 @@
+// @vitest-environment node
 // #1313: bosses hovered at the far edge and never attacked, and minions
 // stopped spawning, so each act's boss fight was its easiest part.
 import { describe, it, expect } from "vitest";

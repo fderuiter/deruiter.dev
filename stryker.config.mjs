@@ -29,8 +29,13 @@ const config = {
     "/.vercel/**",
     "/coverage/**",
     "/playwright-report/**",
+    "/reports/**",
     "/test-results/**",
   ],
+  // #1772: `npm run test:mutation -- --incremental` reuses results recorded
+  // here for unchanged mutants. CI restores the newest copy a `main` push
+  // saved and only ever saves from `main`. The path is gitignored (/reports).
+  incrementalFile: "reports/stryker-incremental.json",
   mutate: [
     "lib/proof-utils.ts:270-350",
     "lib/masonry.ts",

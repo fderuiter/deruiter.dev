@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from "vitest";
 import { exportStudyToCdiscOdmXml } from "@/lib/crf/odm-xml-serializer";
 import { ONCOLOGY_RECIST_PRESET } from "@/lib/crf/presets";

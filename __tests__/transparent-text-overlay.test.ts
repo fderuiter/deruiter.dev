@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from "vitest";
 import fs from "fs";
 import path from "path";
@@ -76,7 +77,9 @@ describe("Transparent Continuous Overlay Layer Compliance", () => {
     expect(content).toContain("fluid-heading-hero");
 
     // Transparent twin overlays eliminated in Hero components
-    expect(content).not.toContain("absolute inset-0 select-text bg-transparent");
+    expect(content).not.toContain(
+      "absolute inset-0 select-text bg-transparent"
+    );
     expect(content).not.toContain('color: "transparent"');
   });
 

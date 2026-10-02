@@ -7,46 +7,58 @@ name: CI Pipeline
 # matrix on every PR push AND again identically on the post-merge `main` push,
 # which exhausted a month's allowance in one active dev day while the repository
 # was private (see #733). This file splits fast checks from the expensive
-# Playwright/Web-Vitals gate and scopes device-matrix breadth by trigger instead
+# Playwright/Web-Vitals gates and scopes device-matrix breadth by trigger instead
 # of running the same full suite twice per merge.
 #
-# CI-02 (#733 follow-up): the split above originally left `device-gate`'s
-# targeted non-chromium coverage running only after a squash-merge landed on
-# `main` (as `post-merge-device-smoke`), so a device-specific visual or touch
-# regression could reach `main` before anything caught it. `device-gate` now
-# runs on the pull request itself, alongside `heavy-gate`, so both the
-# chromium suite and the targeted device coverage gate the merge — without
-# reintroducing the four-device-on-every-push cost #733 eliminated. `main`
-# push confirmation stays bounded to `fast-gate`/`security-gate` (a safety
-# net for a direct push that bypasses PR review, per #732), and the full
-# four-device matrix stays a one-click `workflow_dispatch` job
-# (`cross-device-matrix`), not something that runs automatically anywhere.
+# CI-02 (#733 follow-up): targeted non-chromium device coverage (`device-gate`)
+# runs on the pull request itself, so a device-specific visual or touch
+# regression is caught before merge. The full four-device matrix stays a
+# one-click `workflow_dispatch` job (`cross-device-matrix`).
+#
+# #1767 (cut PR CI from ~33 to ~15 minutes without dropping a gate) reshaped
+# the graph into parallel jobs:
+#
+#   changes ──┬─ unit-gate (3 Vitest shards) ── unit-coverage (merged thresholds)
+#             └─ mutation-gate (Stryker, incremental against main's report)
+#   static-gate (drift, docs, typecheck, lint, verify) ── build (once per PR)
+#        build ──┬─ heavy-gate (3 Playwright chromium shards) ─┐
+#                ├─ bench-gate (Web Vitals, then verify) ──────┴─ heavy-gate-report
+#                └─ device-gate (Tablet Safari, Mobile Safari, Mobile Chrome)
+#   security-gate
+#   merge-gate (the single required check) needs every job above.
+#
+# Every browser job (unit-gate for the Mermaid corpus, the Playwright shards,
+# bench-gate, device-gate) runs in the digest-pinned Playwright image (#1771).
+#
+# `changes` (#1773) runs scripts/ci-run-policy.mjs: docs-only PRs skip the
+# browser gates, draft PRs skip them until marked ready, and bot-branch PRs
+# (stitch/, jules/) run only static-gate and security-gate until a
+# maintainer applies the `ci:full` label. Merge Gate fails on a draft and on
+# an unpromoted bot PR, so neither can merge on partial checks.
 #
 # `merge-gate` is the single job branch protection (#732) should require: a
-# job skipped via `if:` (e.g. `heavy-gate`/`device-gate` outside a PR) or
-# skipped because a `needs:` predecessor failed reports a neutral/skipped
-# conclusion, which a required-status-check rule treats as passing rather
-# than blocking. `merge-gate` inspects every gating job's actual result
-# with `if: always()` so a failed, cancelled, or skipped required
-# predecessor can never leave the merge gate green. See
-# docs/how-to/monitor-github-actions-minutes.md for the exact check name to
-# require.
+# job skipped via `if:` or skipped because a `needs:` predecessor failed
+# reports a neutral/skipped conclusion, which a required-status-check rule
+# treats as passing rather than blocking. `merge-gate` inspects every gating
+# job's actual result with `if: always()` so a failed, cancelled, or skipped
+# required predecessor can never leave the merge gate green. It accepts a
+# skipped browser gate only when `changes` itself succeeded and reported a
+# docs-only change. See docs/how-to/monitor-github-actions-minutes.md for the
+# exact check name to require.
 #
-# CI-03: `merge-gate` itself used to carry `&& github.event_name !=
-# 'workflow_dispatch'`, so a manual dispatch made the job skip entirely --
-# which still posts a "skipped" conclusion under this exact required check
-# name, and GitHub treats that as satisfied, not blocking (the same
-# skip-is-a-pass gap the paragraph above closes for its predecessors, one
-# level up). `merge-gate` now runs unconditionally and fails closed for any
-# event it has no defined validation for (workflow_dispatch included), so
-# this required check can never be satisfied by a skip, and a manual
-# trigger can never manufacture a silent pass either.
+# CI-03: `merge-gate` runs unconditionally and fails closed for any event it
+# has no defined validation for (workflow_dispatch included), so this
+# required check can never be satisfied by a skip, and a manual trigger can
+# never manufacture a silent pass either.
 
 on:
   push:
     branches: ["main"]
   pull_request:
     branches: ["main"]
+    # #1773: ready_for_review re-runs a draft with every gate; labeled lets a
+    # maintainer promote a bot PR with the `ci:full` label.
+    types: [opened, synchronize, reopened, ready_for_review, labeled]
   workflow_dispatch:
     inputs:
       cross_device_matrix:
@@ -73,23 +85,55 @@ permissions:
   contents: read
 
 jobs:
-  # Typecheck, lint, docs/schema drift, unit tests and property fuzzing. This
-  # is the ~10-11 minute slice of the old single job that never needed a
-  # built app, so it runs first and gates the expensive jobs below via
-  # `needs:` — a broken build fails here before any Playwright e2e minutes
-  # are spent. It does install a cached Chromium for one Vitest suite that
-  # renders the Mermaid corpus in a real browser (#954).
-  fast-gate:
-    name: Fast Gate (Typecheck, Lint, Docs, Unit, Fuzz)
+  # #1773: decides which gate groups this run executes. Plain Node, no
+  # install, so it costs seconds. Unknown paths count as code changes, and a
+  # failure here makes Merge Gate require every gate.
+  changes:
+    name: Change Detection & Run Policy
     runs-on: ubuntu-latest
-    # Main run 36542102062 passed every check, including mutation testing,
-    # but hit the 20-minute cap during cleanup. Allow bounded cleanup
-    # headroom without changing the runner, checks, or concurrency.
-    timeout-minutes: 25
+    timeout-minutes: 5
+    outputs:
+      app_changed: ${{ steps.policy.outputs.app_changed }}
+      bot_pr: ${{ steps.policy.outputs.bot_pr }}
+      promoted: ${{ steps.policy.outputs.promoted }}
+      draft: ${{ steps.policy.outputs.draft }}
+      run_unit: ${{ steps.policy.outputs.run_unit }}
+      run_browser: ${{ steps.policy.outputs.run_browser }}
+      stryker_force: ${{ steps.policy.outputs.stryker_force }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The pull_request merge commit and both parents, so the policy can
+          # diff the PR against its base.
+          fetch-depth: 2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+
+      - name: Compute Run Policy
+        id: policy
+        run: node scripts/ci-run-policy.mjs
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          HEAD_REF: ${{ github.head_ref }}
+          PR_DRAFT: ${{ github.event.pull_request.draft }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+
+  # #1768: the static slice of the old Fast Gate. It never needs a built app
+  # or a browser, runs on every trigger, and gates the build.
+  static-gate:
+    name: Static Gate (Drift, Docs, Typecheck, Lint, Invariants)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     services:
       postgres:
-        image: postgres:17
+        image: postgres:17@sha256:d74eeac9a635390a49bc21bd49fccd973de707e2a53a76ac49b552b8712ec46f
         env:
           POSTGRES_DB: portfolio_ci
           POSTGRES_PASSWORD: postgres
@@ -115,30 +159,6 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      # #954: `__tests__/mermaid-corpus.test.ts` renders the Mermaid corpus in
-      # a real Chromium (validateCorpus -> launchChromiumWithFallback), and it
-      # runs here under `npm run test:ci`. Without a browser the job failed on
-      # every PR and on `main`. This mirrors the Heavy Gate's cached install and
-      # shares its branch-scoped cache key, so a warm cache costs only the
-      # host-dependency step.
-      - name: Cache Playwright Browsers
-        id: playwright-cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-chromium-${{ github.head_ref || github.ref_name }}-${{ hashFiles('package-lock.json') }}
-          restore-keys: |
-            playwright-chromium-${{ github.head_ref || github.ref_name }}-${{ hashFiles('package-lock.json') }}
-            playwright-chromium-main-${{ hashFiles('package-lock.json') }}
-
-      - name: Install Playwright Browser with Dependencies (Cache Miss)
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx --no-install playwright install chromium --with-deps
-
-      - name: Install Playwright Dependencies Only (Cache Hit)
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: npx --no-install playwright install-deps chromium
-
       - name: Generate Theme and Prisma Schema (Pre-build steps)
         run: |
           npx --no-install tsx scripts/generate-theme.ts
@@ -162,42 +182,192 @@ jobs:
       - name: Lint Documentation
         run: npm run lint:docs
 
+      # tsc's incremental state records a content hash per file, and ESLint's
+      # cache uses the content strategy, so a restored entry only skips work
+      # on files whose bytes are unchanged; it can never hide a new error.
+      # The config here is not type-aware, so a file's lint result depends on
+      # that file alone.
+      - name: Cache TypeScript and ESLint Incremental State
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            tsconfig.tsbuildinfo
+            .eslintcache
+          key: static-incremental-${{ hashFiles('package-lock.json') }}-${{ github.sha }}
+          restore-keys: |
+            static-incremental-${{ hashFiles('package-lock.json') }}-
+
       - name: Type Check & Lint
         run: |
-          npm run typecheck
-          npm run lint
+          npm run typecheck -- --incremental
+          npm run lint -- --cache --cache-strategy content --cache-location .eslintcache
 
-      - name: Run Logic Tests (Vitest)
-        id: vitest
-        run: npm run test:ci
+      # The full `npm run verify` runs in heavy-gate-report, after the bench
+      # writes its evidence. This early pass runs every other invariant on
+      # every PR, including docs-only and bot PRs that skip the browser gates,
+      # so a Markdown change that breaks a doctor check still fails here.
+      - name: Verify ADR Invariants (Without Benchmark Evidence)
+        run: npm run verify -- --skip-benchmark-evidence
+
+  # #1768 / #1775: Vitest with coverage, split three ways. Each shard writes a
+  # blob; unit-coverage merges them and enforces vitest.config.ts thresholds
+  # on the combined result. Property fuzzing (`__tests__/property-fuzz.test.ts`)
+  # runs inside this suite.
+  unit-gate:
+    name: Unit Gate (Vitest shard ${{ matrix.shard }}/3)
+    needs: changes
+    if: needs.changes.outputs.run_unit == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # #1771: browsers and their OS libraries ship in the official Playwright
+    # image, pinned by digest to the locked @playwright/test version
+    # (__tests__/ci-toolchain-pinning.test.ts keeps them equal), so this job
+    # neither downloads a browser nor runs apt. uid 1001 is the hosted
+    # runner's user, which owns the workspace and HOME mounts. #954:
+    # `__tests__/mermaid-corpus.test.ts` renders the Mermaid corpus in this
+    # real Chromium, in whichever shard runs it.
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
+      options: --user 1001 --ipc=host
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Generate Theme and Prisma Schema (Pre-build steps)
+        run: |
+          npx --no-install tsx scripts/generate-theme.ts
+          npx --no-install prisma generate
+
+      - name: Run Logic Tests (Vitest shard)
+        # test:ci:shard is `vitest run --coverage --reporter=blob` with the
+        # coverage thresholds deferred to unit-coverage's merged run.
+        run: npm run test:ci:shard -- --shard=${{ matrix.shard }}/3
         env:
           # Unit tests mock @/lib/db, but several suites bypass the mock and
           # import the real client whenever DATABASE_URL names something other
           # than a dummy host. The real client is @neondatabase/serverless over
-          # a WebSocket, which cannot speak to the plain Postgres container
-          # above, so pointing this at the service made 25 tests exercise a
-          # database they can never reach. The container exists for the Prisma
-          # CLI steps (migrate deploy / migrate diff), which use the native
-          # migration engine and do connect.
+          # a WebSocket, which cannot reach any Postgres here, so it stays on a
+          # port with no listener.
           DATABASE_URL: "postgresql://dummy:dummy@127.0.0.1:59999/dummy"
 
-      - name: Run Shift-Left Property Fuzz Testing Gate
-        id: fuzz
-        run: npm run test:fuzz
+      - name: Upload Vitest Blob Report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: vitest-blob-${{ matrix.shard }}
+          path: .vitest-reports/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+  # #1775: one coverage verdict for the whole suite. Merging the shards'
+  # blobs reapplies the thresholds from vitest.config.ts to the combined
+  # coverage, exactly as the unsharded `npm run test:ci` did.
+  unit-coverage:
+    name: Unit Gate (Merged Coverage Thresholds)
+    needs: [changes, unit-gate]
+    if: ${{ always() && needs.changes.outputs.run_unit == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Download Vitest Blob Reports
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: vitest-blob-*
+          path: .vitest-reports
+          merge-multiple: true
+
+      - name: Merge Shards and Enforce Coverage Thresholds
+        run: npm run test:ci:merge
+
+  # #1768 / #1772: Stryker on its own runner. Pull requests and main pushes
+  # run incrementally against the newest report a main push saved; a manual
+  # dispatch runs every mutant, and so does a PR that changes Stryker's own
+  # configuration or dependencies (`--force`). The weekly full run lives in
+  # mutation-weekly.yml. thresholds.break in stryker.config.mjs is unchanged.
+  mutation-gate:
+    name: Mutation Gate (Stryker)
+    needs: changes
+    if: needs.changes.outputs.run_unit == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Generate Theme and Prisma Schema (Pre-build steps)
+        run: |
+          npx --no-install tsx scripts/generate-theme.ts
+          npx --no-install prisma generate
+
+      # Restore only: pull requests, forks included, read main's report but
+      # never write one. Only a push to main saves (below).
+      - name: Restore Stryker Incremental Report
+        if: github.event_name != 'workflow_dispatch'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: reports/stryker-incremental.json
+          key: stryker-incremental-${{ github.sha }}
+          restore-keys: |
+            stryker-incremental-
 
       - name: Run Stryker Mutation Gate
-        id: mutation
-        run: npm run test:mutation
-
-      - name: Fast Gate Summary
-        if: always()
         run: |
-          echo "### ⚡ Fast Gate" >> $GITHUB_STEP_SUMMARY
-          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "| --- | --- |" >> $GITHUB_STEP_SUMMARY
-          echo "| Logic Tests (Vitest) | ${{ steps.vitest.outcome == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Property Fuzz Gate | ${{ steps.fuzz.outcome == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Stryker Mutation Gate | ${{ steps.mutation.outcome == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          args=()
+          if [ "${EVENT_NAME}" != "workflow_dispatch" ]; then
+            args+=(--incremental)
+          fi
+          if [ "${STRYKER_FORCE}" = "true" ]; then
+            args+=(--force)
+          fi
+          npm run test:mutation -- "${args[@]}"
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          STRYKER_FORCE: ${{ needs.changes.outputs.stryker_force }}
+
+      - name: Save Stryker Incremental Report (main only)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: reports/stryker-incremental.json
+          key: stryker-incremental-${{ github.sha }}
 
   security-gate:
     name: Security Gate (Vulnerability Audit)
@@ -227,24 +397,15 @@ jobs:
       - name: Scan Reachable Git History for Secrets
         run: npm run audit:secrets
 
-  # Part of the PR merge gate for build/visual/performance concerns. Runs only
-  # chromium against the full e2e suite — most specs in __tests__/e2e/ are not
-  # meaningfully device-dependent, and running all four configured Playwright
-  # projects here multiplies wall-clock (and billed) time by four for little
-  # additional signal on an ordinary PR push. Genuine cross-device coverage
-  # runs alongside this job, pre-merge, in `device-gate` (below), and the full
-  # four-device breadth remains available on demand via `cross-device-matrix`.
-  heavy-gate:
-    name: Heavy Gate (Build, Bundle, Playwright, Web Vitals)
-    needs: fast-gate
-    if: github.event_name == 'pull_request'
+  # #1769: the one production build per PR. Every browser job downloads this
+  # artifact instead of rebuilding, and bench-gate accepts it through the
+  # provenance record scripts/build.js writes (.next/build-provenance.json).
+  build:
+    name: Build (Production Artifact, Bundle Budgets)
+    needs: [changes, static-gate]
+    if: github.event_name == 'pull_request' && needs.changes.outputs.run_browser == 'true'
     runs-on: ubuntu-latest
-    # Provisional: this used to be part of a single 70-minute job dominated by
-    # a 4-device Playwright run; scoping to one device should cut that
-    # substantially, but the number below is not yet backed by a measured run
-    # (Actions minutes were exhausted while #733 was authored — see ADR 0039).
-    # Revisit once a clean run is available rather than guessing further.
-    timeout-minutes: 40
+    timeout-minutes: 25
 
     steps:
       - name: Checkout Code
@@ -259,37 +420,21 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      - name: Cache Playwright Browsers
-        id: playwright-cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-chromium-${{ github.head_ref || github.ref_name }}-${{ hashFiles('package-lock.json') }}
-          restore-keys: |
-            playwright-chromium-${{ github.head_ref || github.ref_name }}-${{ hashFiles('package-lock.json') }}
-            playwright-chromium-main-${{ hashFiles('package-lock.json') }}
-
-      - name: Install Playwright Browser with Dependencies (Cache Miss)
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx --no-install playwright install chromium --with-deps
-
-      - name: Install Playwright Dependencies Only (Cache Hit)
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: npx --no-install playwright install-deps chromium
-
       - name: Generate Theme and Prisma Schema (Pre-build steps)
         run: |
           npx --no-install tsx scripts/generate-theme.ts
           npx --no-install prisma generate
 
+      # Restore only. cache-warm saves this key from every main push, so a PR
+      # starts from a recent main webpack cache; PR-scoped entries would be
+      # invisible to other PRs and only crowd the cache quota.
       - name: Next.js Cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ github.workspace }}/.next/cache
-          key: nextjs-${{ github.head_ref || github.ref_name }}-${{ hashFiles('package-lock.json') }}
+          key: nextjs-${{ hashFiles('package-lock.json') }}-${{ hashFiles('app/**', 'components/**', 'lib/**', 'hooks/**', '*.config.*') }}
           restore-keys: |
-            nextjs-${{ github.head_ref || github.ref_name }}-${{ hashFiles('package-lock.json') }}
-            nextjs-main-${{ hashFiles('package-lock.json') }}
+            nextjs-${{ hashFiles('package-lock.json') }}-
 
       - name: Build Production
         # Must be the same entrypoint Vercel runs. `npx next build` defaults to
@@ -301,89 +446,58 @@ jobs:
         run: npm run build
         env:
           # Port 59999 has no listener, so @neondatabase/serverless fails fast and
-          # static generation falls back. Pointing this at localhost:5432 reaches
-          # the Postgres service container above: the Neon driver opens a
-          # WebSocket handshake against a server that speaks the Postgres wire
-          # protocol, gets no HTTP response, and waits forever with no timeout.
+          # static generation falls back. Never point this at a Postgres service:
+          # the Neon driver opens a WebSocket handshake against a server that
+          # speaks the Postgres wire protocol, gets no HTTP response, and waits
+          # forever with no timeout.
           DATABASE_URL: "postgresql://dummy:dummy@127.0.0.1:59999/dummy"
 
       - name: Verify Bundle Performance Budgets
         id: bundle
         run: npm run analyze:bundle -- --strict
 
-      - name: Run Visual & Drift Detection (Playwright, chromium)
-        id: playwright
-        run: npx --no-install playwright test --project=chromium
-        env:
-          DATABASE_URL: "postgresql://dummy:dummy@127.0.0.1:59999/dummy"
-          CRON_SECRET: "ci_placeholder_cron_secret"
+      # Everything `next start` serves: the build output (never its webpack
+      # cache) and the public/ files the build generates. No .env file is
+      # ever part of it.
+      - name: Upload Production Build Artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: production-build
+          path: |
+            .next/
+            !.next/cache/
+            !**/.env*
+            public/sw.js
+            public/sw.js.map
+            public/garmin-engine.js
+            public/monkey-c-mayhem.js
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
 
-      - name: Run Real-Browser Sub-Route Web Vitals Performance Gate
-        id: page-bench
-        run: npm run bench:pages -- --assert
-        env:
-          DATABASE_URL: "postgresql://dummy:dummy@127.0.0.1:59999/dummy"
-          CRON_SECRET: "ci_placeholder_cron_secret"
-
-      - name: Verify ADR Invariants & Doctor Health Diagnostics
-        run: npm run verify
-
-      - name: Generate Centralized Health Dashboard
-        if: always()
-        run: |
-          # Generate accessibility summary and status files
-          node scripts/generate-accessibility-report.js
-
-          # Read accessibility status
-          ACC_STATUS="❌ Fail"
-          if [ -f playwright-report/accessibility-status.txt ]; then
-            ACC_STATUS=$(cat playwright-report/accessibility-status.txt)
-          elif [ "${{ steps.playwright.outcome }}" = "success" ]; then
-            ACC_STATUS="✅ Pass"
-          fi
-
-          if [ "$ACC_STATUS" != "✅ Pass" ]; then
-            echo "::error::Accessibility audit gate failed: WCAG violations or unhandled accessibility issues detected."
-            exit 1
-          fi
-
-          echo "# 🛡️ Rigor Ecosystem Health Report" >> $GITHUB_STEP_SUMMARY
-          echo "### Commit: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Verification Layer | Status | Description |" >> $GITHUB_STEP_SUMMARY
-          echo "| --- | --- | --- |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Visual & Drift Guard** (Playwright, chromium) | ${{ steps.playwright.outcome == 'success' && '✅ Pass' || '❌ Fail' }} | Sub-pixel pixel matching & layout constant sync |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Accessibility Audits** (Playwright-Axe) | $ACC_STATUS | Automated WCAG compliance scans on interactive states |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Sub-Route Real-Browser Performance Gate** | ${{ steps.page-bench.outcome == 'success' && '✅ Pass' || '❌ Fail' }} | Real-browser Core Web Vitals (LCP, CLS, TTFB) SLA assertions across sub-routes |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Bundle Performance Budgets** | ${{ steps.bundle.outcome == 'success' && '✅ Pass' || '❌ Fail' }} | Initial bundle & chunk gzip performance limits |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "*(chromium only — see device-gate and the manual cross-device-matrix job for other devices)*" >> $GITHUB_STEP_SUMMARY
-
-          if [ -f playwright-report/accessibility-summary.md ]; then
-            echo "" >> $GITHUB_STEP_SUMMARY
-            cat playwright-report/accessibility-summary.md >> $GITHUB_STEP_SUMMARY
-          fi
-
-  # Runs on the pull request itself, alongside heavy-gate, so a device-engine
-  # regression is caught before merge instead of after (CI-02 / #733
-  # follow-up). heavy-gate already runs the full e2e suite on chromium; this
-  # job does not repeat that build+bundle+full-suite+bench work. It adds only
-  # the coverage heavy-gate's single chromium project does NOT have: the two
-  # specs that are genuinely device-engine dependent (pixel-diffing and
-  # touch-input emulation) against the three non-chromium projects. Because
-  # this now runs pre-merge, there is no separate post-merge repeat of it —
-  # the PR that produced the merged tree already carries this result, so
-  # re-running it on the `main` push would check nothing new (the same
-  # reasoning ADR 0039 applies to heavy-gate).
-  device-gate:
-    name: Device Coverage Gate (Tablet Safari, Mobile Safari, Mobile Chrome)
-    needs: fast-gate
-    if: github.event_name == 'pull_request'
+  # Part of the PR merge gate for build/visual concerns. Runs only chromium
+  # against the full e2e suite, split into three shards (#1770) that each keep
+  # the config's two workers and retries. heavy-gate-report merges their blob
+  # reports into one. Cross-device coverage runs in `device-gate`, and the
+  # full four-device breadth remains available via `cross-device-matrix`.
+  heavy-gate:
+    name: Heavy Gate (Playwright chromium shard ${{ matrix.shard }}/3)
+    needs: [changes, build]
+    if: github.event_name == 'pull_request' && needs.changes.outputs.run_browser == 'true'
     runs-on: ubuntu-latest
-    # Provisional, same caveat as heavy-gate: two spec files across three
-    # device projects plus one build, unmeasured. Revisit once real numbers
-    # exist.
-    timeout-minutes: 40
+    timeout-minutes: 30
+    # #1771: browsers and their OS libraries ship in the official Playwright
+    # image, pinned by digest to the locked @playwright/test version
+    # (__tests__/ci-toolchain-pinning.test.ts keeps them equal), so this job
+    # neither downloads a browser nor runs apt. uid 1001 is the
+    # hosted runner's user, which owns the workspace and HOME mounts.
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
+      options: --user 1001 --ipc=host
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
 
     steps:
       - name: Checkout Code
@@ -398,33 +512,262 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      - name: Cache Playwright Browsers
-        id: playwright-cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - name: Generate Theme and Prisma Schema (Pre-build steps)
+        run: |
+          npx --no-install tsx scripts/generate-theme.ts
+          npx --no-install prisma generate
+
+      - name: Download Production Build Artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          path: ~/.cache/ms-playwright
-          key: playwright-full-${{ github.head_ref || github.ref_name }}-${{ hashFiles('package-lock.json') }}
-          restore-keys: |
-            playwright-full-${{ github.head_ref || github.ref_name }}-${{ hashFiles('package-lock.json') }}
-            playwright-full-main-${{ hashFiles('package-lock.json') }}
+          name: production-build
 
-      - name: Install Playwright Browsers with Dependencies (Cache Miss)
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx --no-install playwright install chromium webkit --with-deps
+      - name: Run Visual & Drift Detection (Playwright, chromium shard)
+        run: npx --no-install playwright test --project=chromium --shard=${{ matrix.shard }}/3 --reporter=github,blob
+        env:
+          DATABASE_URL: "postgresql://dummy:dummy@127.0.0.1:59999/dummy"
+          CRON_SECRET: "ci_placeholder_cron_secret"
 
-      - name: Install Playwright Dependencies Only (Cache Hit)
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: npx --no-install playwright install-deps chromium webkit
+      - name: Upload Playwright Blob Report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-blob-${{ matrix.shard }}
+          path: blob-report/
+          if-no-files-found: error
+          retention-days: 3
+
+      - name: Upload Accessibility Scan Results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-a11y-${{ matrix.shard }}
+          path: playwright-report/accessibility-results/
+          if-no-files-found: ignore
+          retention-days: 3
+
+  # #1770: the Web Vitals SLA on its own runner, against the same build the
+  # shards test. `--assert` still proves a clean, fresh, owned production
+  # build of this exact revision: it validates .next/build-provenance.json
+  # against the checkout and only rebuilds when the record does not match.
+  # `npm run verify` follows the bench here, so the evidence check reads
+  # evidence this runner wrote moments earlier.
+  bench-gate:
+    name: Bench Gate (Real-Browser Sub-Route Web Vitals)
+    needs: [changes, build]
+    if: github.event_name == 'pull_request' && needs.changes.outputs.run_browser == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # #1771: browsers and their OS libraries ship in the official Playwright
+    # image, pinned by digest to the locked @playwright/test version
+    # (__tests__/ci-toolchain-pinning.test.ts keeps them equal), so this job
+    # neither downloads a browser nor runs apt. uid 1001 is the
+    # hosted runner's user, which owns the workspace and HOME mounts.
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
+      options: --user 1001 --ipc=host
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci
 
       - name: Generate Theme and Prisma Schema (Pre-build steps)
         run: |
           npx --no-install tsx scripts/generate-theme.ts
           npx --no-install prisma generate
 
-      - name: Build Production
-        run: npm run build
+      - name: Download Production Build Artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: production-build
+
+      - name: Run Real-Browser Sub-Route Web Vitals Performance Gate
+        run: npm run bench:pages -- --assert
         env:
           DATABASE_URL: "postgresql://dummy:dummy@127.0.0.1:59999/dummy"
+          CRON_SECRET: "ci_placeholder_cron_secret"
+
+      # The full verify, benchmark evidence included, on the runner that just
+      # wrote that evidence: it is at most 15 minutes old by construction, and
+      # no shard's duration or another job's queue time can age it out.
+      - name: Verify ADR Invariants & Doctor Health Diagnostics
+        run: npm run verify
+
+      - name: Upload Benchmark Evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: bench-evidence
+          path: .benchmark-results/
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 3
+
+  # #1770: merges the shard reports so the accessibility report and the
+  # health dashboard read one result, lists tests that passed only on retry,
+  # and re-runs the doctor over the merged accessibility scans (the full
+  # verify, with benchmark evidence, runs in bench-gate). It fails unless
+  # every shard and the bench succeeded.
+  heavy-gate-report:
+    name: Heavy Gate (Merged Report, Accessibility, Verify)
+    needs: [changes, build, heavy-gate, bench-gate]
+    if: ${{ always() && github.event_name == 'pull_request' && needs.changes.outputs.run_browser == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Generate Theme and Prisma Schema (Pre-build steps)
+        run: |
+          npx --no-install tsx scripts/generate-theme.ts
+          npx --no-install prisma generate
+
+      # Both land under the gitignored playwright-report/ directory.
+      - name: Download Playwright Blob Reports
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: playwright-blob-*
+          path: playwright-report/blob-shards
+          merge-multiple: true
+
+      - name: Download Accessibility Scan Results
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: playwright-a11y-*
+          path: playwright-report/accessibility-results
+          merge-multiple: true
+
+      - name: Merge Playwright Shard Reports
+        id: merge
+        run: npx --no-install playwright merge-reports --reporter=json playwright-report/blob-shards
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: playwright-report/merged-report.json
+
+      - name: Report Tests That Passed Only on Retry
+        run: node scripts/report-playwright-flaky.js playwright-report/merged-report.json
+
+      # The doctor's a11y-audit-integrity check fails on any WCAG violation
+      # in playwright-report/accessibility-results/, which now holds every
+      # shard's scans. Benchmark evidence was verified in bench-gate.
+      - name: Verify Accessibility Scan Integrity (Doctor, All Shards)
+        run: npm run verify -- --skip-benchmark-evidence
+
+      - name: Generate Centralized Health Dashboard
+        if: always()
+        run: |
+          # Generate accessibility summary and status files
+          node scripts/generate-accessibility-report.js
+
+          ACC_STATUS="❌ Fail"
+          if [ -f playwright-report/accessibility-status.txt ]; then
+            ACC_STATUS=$(cat playwright-report/accessibility-status.txt)
+          fi
+
+          echo "# 🛡️ Rigor Ecosystem Health Report" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Commit: ${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Verification Layer | Status | Description |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| --- | --- | --- |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **Visual & Drift Guard** (Playwright, chromium, 3 shards) | ${{ needs.heavy-gate.result == 'success' && '✅ Pass' || '❌ Fail' }} | Sub-pixel pixel matching & layout constant sync |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **Accessibility Audits** (Playwright-Axe) | $ACC_STATUS | Automated WCAG compliance scans on interactive states |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **Sub-Route Real-Browser Performance Gate** | ${{ needs.bench-gate.result == 'success' && '✅ Pass' || '❌ Fail' }} | Real-browser Core Web Vitals (LCP, CLS, TTFB) SLA assertions across sub-routes |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **Bundle Performance Budgets** | ${{ needs.build.result == 'success' && '✅ Pass' || '❌ Fail' }} | Initial bundle & chunk gzip performance limits |" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "*(chromium only — see device-gate and the manual cross-device-matrix job for other devices)*" >> "$GITHUB_STEP_SUMMARY"
+
+          if [ -f playwright-report/accessibility-summary.md ]; then
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            cat playwright-report/accessibility-summary.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          if [ "$ACC_STATUS" != "✅ Pass" ]; then
+            echo "::error::Accessibility audit gate failed: WCAG violations or unhandled accessibility issues detected."
+            exit 1
+          fi
+          if [ "${{ needs.heavy-gate.result }}" != "success" ]; then
+            echo "::error::A Playwright shard did not succeed (result: ${{ needs.heavy-gate.result }})."
+            exit 1
+          fi
+          if [ "${{ needs.bench-gate.result }}" != "success" ]; then
+            echo "::error::Bench Gate did not succeed (result: ${{ needs.bench-gate.result }})."
+            exit 1
+          fi
+
+      - name: Upload Merged Playwright Report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-merged-report
+          path: |
+            playwright-report/merged-report.json
+            playwright-report/accessibility-summary.md
+          if-no-files-found: ignore
+          retention-days: 7
+
+  # Runs on the pull request itself, alongside heavy-gate, so a device-engine
+  # regression is caught before merge instead of after (CI-02 / #733
+  # follow-up). It reuses the PR's one build (#1769) and adds only the
+  # coverage heavy-gate's single chromium project does NOT have: the two
+  # specs that are genuinely device-engine dependent (pixel-diffing and
+  # touch-input emulation) against the three non-chromium projects. There is
+  # no post-merge repeat of it on the `main` push.
+  device-gate:
+    name: Device Coverage Gate (Tablet Safari, Mobile Safari, Mobile Chrome)
+    needs: [changes, build]
+    if: github.event_name == 'pull_request' && needs.changes.outputs.run_browser == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    # #1771: browsers and their OS libraries ship in the official Playwright
+    # image, pinned by digest to the locked @playwright/test version
+    # (__tests__/ci-toolchain-pinning.test.ts keeps them equal), so this job
+    # neither downloads a browser nor runs apt. uid 1001 is the
+    # hosted runner's user, which owns the workspace and HOME mounts.
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
+      options: --user 1001 --ipc=host
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Generate Theme and Prisma Schema (Pre-build steps)
+        run: |
+          npx --no-install tsx scripts/generate-theme.ts
+          npx --no-install prisma generate
+
+      - name: Download Production Build Artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: production-build
 
       - name: Run Device-Dependent Specs (Tablet Safari, Mobile Safari, Mobile Chrome)
         run: |
@@ -437,31 +780,56 @@ jobs:
   # The single required status check branch protection (#732) should point
   # at. GitHub's required-status-checks rule only understands a job's own
   # reported conclusion for the commit under review: a job skipped by its own
-  # `if:` (heavy-gate/device-gate outside a pull_request) or skipped as a
-  # side effect of a failed `needs:` predecessor reports "skipped", and a
-  # required-status-check rule treats "skipped" as satisfied, not blocking.
-  # That would let a cancelled Playwright run or a failed fast-gate silently
-  # produce a mergeable PR. This job runs with `if: always()` -- unconditionally,
-  # for every trigger this workflow has, including workflow_dispatch -- so it
-  # still executes when an upstream job failed, was cancelled, or never ran,
-  # then fails deliberately unless every predecessor required for this event
-  # actually reported "success". CI-03: the step below only knows how to
-  # validate `pull_request` and `push`; any other event (workflow_dispatch's
-  # manual runs included) hits an explicit default branch that fails the job
-  # outright, so a manual trigger can produce neither a "skipped" conclusion
-  # (satisfied by default under required-status-checks) nor an accidental
-  # "success" from a partial validation -- a merge can never go green on
-  # anything other than a real pass of every required predecessor for a
-  # recognized event.
+  # `if:` or skipped as a side effect of a failed `needs:` predecessor reports
+  # "skipped", and a required-status-check rule treats "skipped" as
+  # satisfied, not blocking. This job runs with `if: always()` --
+  # unconditionally, for every trigger this workflow has, including
+  # workflow_dispatch -- then fails deliberately unless every predecessor
+  # required for this event actually reported "success". The only skip it
+  # accepts is a browser gate on a pull_request that `changes` (which must
+  # itself have succeeded) classified as docs-only. A draft PR and a bot PR
+  # without the `ci:full` label always fail here. CI-03: any event other than
+  # `pull_request` and `push` hits an explicit default branch that fails.
+  # Values reach the script through env, never interpolated into its text.
   merge-gate:
     name: Merge Gate (Required Checks Summary)
-    needs: [fast-gate, security-gate, heavy-gate, device-gate]
+    needs:
+      [
+        changes,
+        static-gate,
+        unit-gate,
+        unit-coverage,
+        mutation-gate,
+        security-gate,
+        build,
+        heavy-gate,
+        bench-gate,
+        heavy-gate-report,
+        device-gate,
+      ]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
     steps:
       - name: Evaluate required job results
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_DRAFT: ${{ github.event.pull_request.draft }}
+          APP_CHANGED: ${{ needs.changes.outputs.app_changed }}
+          BOT_PR: ${{ needs.changes.outputs.bot_pr }}
+          PROMOTED: ${{ needs.changes.outputs.promoted }}
+          RESULT_CHANGES: ${{ needs.changes.result }}
+          RESULT_STATIC_GATE: ${{ needs.static-gate.result }}
+          RESULT_UNIT_GATE: ${{ needs.unit-gate.result }}
+          RESULT_UNIT_COVERAGE: ${{ needs.unit-coverage.result }}
+          RESULT_MUTATION_GATE: ${{ needs.mutation-gate.result }}
+          RESULT_SECURITY_GATE: ${{ needs.security-gate.result }}
+          RESULT_BUILD: ${{ needs.build.result }}
+          RESULT_HEAVY_GATE: ${{ needs.heavy-gate.result }}
+          RESULT_BENCH_GATE: ${{ needs.bench-gate.result }}
+          RESULT_HEAVY_GATE_REPORT: ${{ needs.heavy-gate-report.result }}
+          RESULT_DEVICE_GATE: ${{ needs.device-gate.result }}
         run: |
           set -u
 
@@ -474,47 +842,73 @@ jobs:
               fail=1
             fi
           }
+          # Only for browser gates on a PR that `changes` classified as
+          # docs-only: they are skipped by design, and anything other than a
+          # skip or a pass is still a failure.
+          check_skippable() {
+            local job="$1" result="$2"
+            echo "${job}: ${result} (docs-only change: skipped accepted)"
+            if [ "${result}" != "success" ] && [ "${result}" != "skipped" ]; then
+              echo "::error::Job '${job}' did not succeed (result: ${result})"
+              fail=1
+            fi
+          }
 
-          event="${{ github.event_name }}"
+          event="${EVENT_NAME}"
 
           case "${event}" in
             pull_request)
-              # fast-gate and security-gate have no `if:` -- they run, and
-              # must succeed, on every trigger this job runs for. heavy-gate
-              # and device-gate are pull_request-only by design (the
-              # reduced-scope split from #733/#775); on a PR trigger they are
-              # the pre-merge device and full-suite-chromium coverage this
-              # task exists to require, so a skip here is exactly the failure
-              # mode this job guards against, not an expected outcome.
-              check_required "fast-gate" "${{ needs.fast-gate.result }}"
-              check_required "security-gate" "${{ needs.security-gate.result }}"
-              check_required "heavy-gate" "${{ needs.heavy-gate.result }}"
-              check_required "device-gate" "${{ needs.device-gate.result }}"
+              check_required "changes" "${RESULT_CHANGES}"
+              check_required "static-gate" "${RESULT_STATIC_GATE}"
+              check_required "security-gate" "${RESULT_SECURITY_GATE}"
+              if [ "${PR_DRAFT}" = "true" ]; then
+                echo "::error::draft PR: Merge Gate fails until the PR is marked ready for review, which re-runs CI with every gate."
+                fail=1
+              fi
+              if [ "${BOT_PR}" = "true" ] && [ "${PROMOTED}" != "true" ]; then
+                echo "::error::bot PR: full suite runs when marked ready (a maintainer applies the 'ci:full' label)."
+                fail=1
+              fi
+              check_required "unit-gate" "${RESULT_UNIT_GATE}"
+              check_required "unit-coverage" "${RESULT_UNIT_COVERAGE}"
+              check_required "mutation-gate" "${RESULT_MUTATION_GATE}"
+              if [ "${RESULT_CHANGES}" = "success" ] && [ "${APP_CHANGED}" = "false" ]; then
+                check_skippable "build" "${RESULT_BUILD}"
+                check_skippable "heavy-gate" "${RESULT_HEAVY_GATE}"
+                check_skippable "bench-gate" "${RESULT_BENCH_GATE}"
+                check_skippable "heavy-gate-report" "${RESULT_HEAVY_GATE_REPORT}"
+                check_skippable "device-gate" "${RESULT_DEVICE_GATE}"
+              else
+                check_required "build" "${RESULT_BUILD}"
+                check_required "heavy-gate" "${RESULT_HEAVY_GATE}"
+                check_required "bench-gate" "${RESULT_BENCH_GATE}"
+                check_required "heavy-gate-report" "${RESULT_HEAVY_GATE_REPORT}"
+                check_required "device-gate" "${RESULT_DEVICE_GATE}"
+              fi
               ;;
             push)
               # Bounded main-push confirmation (#732's direct-push safety
-              # net): heavy-gate/device-gate are expected to report "skipped"
-              # here (their own `if:` excludes this event) -- the merged PR
-              # already required both to succeed before this push could
-              # happen, so re-requiring them adds no signal, only cost.
-              check_required "fast-gate" "${{ needs.fast-gate.result }}"
-              check_required "security-gate" "${{ needs.security-gate.result }}"
-              echo "heavy-gate: ${{ needs.heavy-gate.result }} (not required outside pull_request)"
-              echo "device-gate: ${{ needs.device-gate.result }} (not required outside pull_request)"
+              # net). The browser gates are pull_request-only: the merged PR
+              # already required them to succeed before this push existed.
+              check_required "changes" "${RESULT_CHANGES}"
+              check_required "static-gate" "${RESULT_STATIC_GATE}"
+              check_required "unit-gate" "${RESULT_UNIT_GATE}"
+              check_required "unit-coverage" "${RESULT_UNIT_COVERAGE}"
+              check_required "mutation-gate" "${RESULT_MUTATION_GATE}"
+              check_required "security-gate" "${RESULT_SECURITY_GATE}"
+              echo "build: ${RESULT_BUILD} (not required outside pull_request)"
+              echo "heavy-gate: ${RESULT_HEAVY_GATE} (not required outside pull_request)"
+              echo "bench-gate: ${RESULT_BENCH_GATE} (not required outside pull_request)"
+              echo "heavy-gate-report: ${RESULT_HEAVY_GATE_REPORT} (not required outside pull_request)"
+              echo "device-gate: ${RESULT_DEVICE_GATE} (not required outside pull_request)"
               ;;
             *)
               # CI-03: every other trigger -- workflow_dispatch (a manual run,
               # with or without the cross_device_matrix input) and any
               # future/unrecognized event -- has no defined validation here.
-              # Without this branch, an unhandled event previously left this
-              # job's own `if:` excluding it entirely, so GitHub recorded a
-              # "skipped" conclusion for the exact check name branch
-              # protection requires, and GitHub treats a skipped required
-              # check as satisfied rather than blocking. Failing here
-              # deliberately means a manual or unrecognized trigger can never
-              # produce a "skipped" result, and can never produce an
-              # accidental "success" either, for this shared required
-              # context.
+              # Failing deliberately means a manual or unrecognized trigger
+              # can never produce a "skipped" result, and can never produce an
+              # accidental "success" either, for this shared required context.
               echo "::error::Merge Gate has no defined validation for event '${event}'; failing closed so this required check can never be satisfied by an unsupported trigger."
               fail=1
               ;;
@@ -531,6 +925,14 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && inputs.cross_device_matrix
     runs-on: ubuntu-latest
     timeout-minutes: 70
+    # #1771: browsers and their OS libraries ship in the official Playwright
+    # image, pinned by digest to the locked @playwright/test version
+    # (__tests__/ci-toolchain-pinning.test.ts keeps them equal), so this job
+    # neither downloads a browser nor runs apt. uid 1001 is the
+    # hosted runner's user, which owns the workspace and HOME mounts.
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
+      options: --user 1001 --ipc=host
 
     steps:
       - name: Checkout Code
@@ -544,24 +946,6 @@ jobs:
 
       - name: Install Dependencies
         run: npm ci
-
-      - name: Cache Playwright Browsers
-        id: playwright-cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-full-${{ github.ref_name }}-${{ hashFiles('package-lock.json') }}
-          restore-keys: |
-            playwright-full-${{ github.ref_name }}-${{ hashFiles('package-lock.json') }}
-            playwright-full-main-${{ hashFiles('package-lock.json') }}
-
-      - name: Install Playwright Browsers with Dependencies (Cache Miss)
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx --no-install playwright install chromium webkit --with-deps
-
-      - name: Install Playwright Dependencies Only (Cache Hit)
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: npx --no-install playwright install-deps chromium webkit
 
       - name: Generate Theme and Prisma Schema (Pre-build steps)
         run: |
@@ -578,3 +962,56 @@ jobs:
         env:
           DATABASE_URL: "postgresql://dummy:dummy@127.0.0.1:59999/dummy"
           CRON_SECRET: "ci_placeholder_cron_secret"
+
+  # #1769: not a gate and not required by merge-gate. Pull-request caches are
+  # scoped to refs/pull/N/merge and invisible to other PRs, so nothing used
+  # to write the `main` webpack cache every PR build falls back to. This job
+  # writes it from each main push, with the same `npm run build` entrypoint
+  # as every other build. Browsers need no warming: the browser jobs run in
+  # the digest-pinned Playwright image (#1771).
+  cache-warm:
+    name: Cache Warm (main push, not a gate)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Restore Next.js Cache
+        id: nextjs-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ github.workspace }}/.next/cache
+          key: nextjs-${{ hashFiles('package-lock.json') }}-${{ hashFiles('app/**', 'components/**', 'lib/**', 'hooks/**', '*.config.*') }}
+          restore-keys: |
+            nextjs-${{ hashFiles('package-lock.json') }}-
+
+      - name: Generate Theme and Prisma Schema (Pre-build steps)
+        if: steps.nextjs-cache.outputs.cache-hit != 'true'
+        run: |
+          npx --no-install tsx scripts/generate-theme.ts
+          npx --no-install prisma generate
+
+      - name: Build Production (Warm Next.js Cache)
+        if: steps.nextjs-cache.outputs.cache-hit != 'true'
+        run: npm run build
+        env:
+          DATABASE_URL: "postgresql://dummy:dummy@127.0.0.1:59999/dummy"
+
+      - name: Save Next.js Cache
+        if: steps.nextjs-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ github.workspace }}/.next/cache
+          key: nextjs-${{ hashFiles('package-lock.json') }}-${{ hashFiles('app/**', 'components/**', 'lib/**', 'hooks/**', '*.config.*') }}

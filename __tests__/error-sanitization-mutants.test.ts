@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, afterEach } from "vitest";
 import { fromAny } from "@total-typescript/shoehorn";
 import { sanitizeError, sanitizeString } from "@/lib/error-sanitization";

@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { execFileSync } from "child_process";
 import fs from "fs";

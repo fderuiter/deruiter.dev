@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from "vitest";
 import fs from "fs";
 import path from "path";
@@ -105,5 +106,69 @@ describe("CI Workflow Toolchain Pinning", () => {
       fs.readFileSync(path.join(process.cwd(), "package.json"), "utf8")
     ) as { scripts: Record<string, string> };
     expect(pkg.scripts.typecheck).toBe("tsc --noEmit");
+  });
+
+  /**
+   * #1771: the browser jobs run in the official Playwright image instead of
+   * downloading browsers. The image's browsers must be the ones the locked
+   * @playwright/test drives, so a Dependabot bump of either one fails here
+   * until the other follows.
+   */
+  describe("Playwright container image (#1771)", () => {
+    const lock = JSON.parse(
+      fs.readFileSync(path.join(process.cwd(), "package-lock.json"), "utf8")
+    ) as { packages: Record<string, { version?: string }> };
+    const locked = lock.packages["node_modules/@playwright/test"]?.version;
+    const imagePattern =
+      /image: mcr\.microsoft\.com\/playwright:v([\d.]+)-noble@sha256:[0-9a-f]{64}$/gm;
+
+    it("finds the locked @playwright/test version", () => {
+      expect(locked).toMatch(/^\d+\.\d+\.\d+$/);
+    });
+
+    it.each(workflowFiles)(
+      "%s uses an image tag equal to the locked @playwright/test version",
+      (file) => {
+        const content = fs.readFileSync(path.join(workflowDir, file), "utf8");
+        for (const match of content.matchAll(imagePattern)) {
+          expect(match[1]).toBe(locked);
+        }
+        expect(content).not.toMatch(
+          /mcr\.microsoft\.com\/playwright:(?!v[\d.]+-noble@sha256:)/
+        );
+      }
+    );
+
+    it("runs every ci.yml job that drives a browser inside that image", () => {
+      const ci = fs.readFileSync(path.join(workflowDir, "ci.yml"), "utf8");
+      const lines = ci.split("\n");
+      const headers = lines
+        .map((line, index) => ({ line, index }))
+        .filter(({ line }) => /^ {2}[a-z][a-z0-9-]*:$/.test(line));
+      const browserJobs = headers
+        .map(({ line, index }, i) => ({
+          job: line.trim().replace(/:$/, ""),
+          block: lines
+            .slice(index, headers[i + 1]?.index ?? lines.length)
+            .join("\n"),
+        }))
+        .filter(({ block }) =>
+          /playwright test|bench:pages|test:ci:shard/.test(block)
+        );
+      expect(browserJobs.map(({ job }) => job).sort()).toEqual(
+        [
+          "bench-gate",
+          "cross-device-matrix",
+          "device-gate",
+          "heavy-gate",
+          "unit-gate",
+        ].sort()
+      );
+      for (const { job, block } of browserJobs) {
+        expect(block, job).toMatch(imagePattern);
+        expect(block, job).toMatch(/options: --user 1001 --ipc=host/);
+        expect(block, job).toMatch(/runs-on: ubuntu-latest/);
+      }
+    });
   });
 });

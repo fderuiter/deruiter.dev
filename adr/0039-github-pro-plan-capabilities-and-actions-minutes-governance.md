@@ -309,3 +309,35 @@ These current facts are supported by GitHub's
 [Actions billing documentation](https://docs.github.com/en/billing/concepts/product-billing/github-actions),
 [protected branches documentation](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches),
 and [rulesets documentation](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/about-rulesets).
+
+## Amendment 2026-10-02 — Parallel Gates and One Build per Pull Request (#1767)
+
+The job names above describe the pipeline as it was. #1767 reshaped it to
+cut the pull request critical path from about 33 minutes to a target of 13
+to 16, without removing a gate or lowering a threshold:
+
+- `fast-gate` became `static-gate`, `unit-gate` (three Vitest shards, merged
+  by `unit-coverage`, which enforces the coverage thresholds) and
+  `mutation-gate` (Stryker, incremental against `main`'s report, with a
+  weekly full run in `mutation-weekly.yml`).
+- A `build` job runs `npm run build` once per pull request. `heavy-gate`
+  (three chromium shards), `bench-gate` and `device-gate` use its artifact.
+  `bench-gate` runs the full `npm run verify` right after it writes the
+  benchmark evidence, and `heavy-gate-report` merges the shard reports and
+  applies the accessibility gate.
+- Every browser job runs in the official Playwright image, pinned by digest
+  to the locked `@playwright/test` version, so no job downloads browsers or
+  runs apt (#1771). The Postgres service image is pinned by digest too.
+- A `changes` job applies the run policy in `scripts/ci-run-policy.mjs`:
+  docs-only pull requests skip the browser gates, drafts skip them until
+  marked ready, and bot branches run only `static-gate` and `security-gate`
+  until a maintainer applies the `ci:full` label.
+- A non-gating `cache-warm` job writes the `main` webpack cache that pull
+  request builds fall back to.
+
+The invariants of this ADR are unchanged: `Merge Gate (Required Checks
+Summary)` stays the single required check and fails closed, every job runs
+on `ubuntu-latest` with `timeout-minutes`, third-party actions are pinned by
+SHA and container images by digest, and the concurrency group still matches `cancel-closed-pr-ci.yml`.
+[Monitor GitHub Actions Minutes](../docs/how-to/monitor-github-actions-minutes.md)
+lists the current jobs and which pull requests run which gates.

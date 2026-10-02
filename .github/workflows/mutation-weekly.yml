@@ -1,0 +1,55 @@
+name: Mutation Testing (Weekly Full Run)
+
+# #1772: `ci.yml`'s mutation gate runs Stryker incrementally, reusing results
+# for mutants whose source and covering tests did not change. Incremental
+# mode cannot see a change in a file that is neither mutated nor a test, so
+# once a week (and on demand) every mutant runs again. `--incremental
+# --force` runs all of them and rewrites the incremental report, which is
+# saved under the default branch so the next pull requests start from it.
+# The break threshold in stryker.config.mjs applies exactly as in ci.yml.
+
+on:
+  schedule:
+    - cron: "41 5 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: mutation-weekly-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  mutation-full:
+    name: Mutation Gate (Full Stryker Run)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Generate Theme and Prisma Schema (Pre-build steps)
+        run: |
+          npx --no-install tsx scripts/generate-theme.ts
+          npx --no-install prisma generate
+
+      - name: Run Every Mutant
+        run: npm run test:mutation -- --incremental --force
+
+      - name: Save Stryker Incremental Report (default branch only)
+        if: github.ref == 'refs/heads/main'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: reports/stryker-incremental.json
+          key: stryker-incremental-${{ github.sha }}-full-${{ github.run_id }}

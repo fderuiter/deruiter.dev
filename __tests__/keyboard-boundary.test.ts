@@ -1,9 +1,17 @@
+// @vitest-environment node
 import { describe, it, expect, vi } from "vitest";
 
 // Helper function equivalent to the ones in our components
 const isWithinBoundary = (target: unknown) => {
-  if (target && typeof target === "object" && "closest" in target && typeof (target as { closest: unknown }).closest === "function") {
-    return !!(target as { closest: (selector: string) => unknown }).closest("[data-keyboard-boundary]");
+  if (
+    target &&
+    typeof target === "object" &&
+    "closest" in target &&
+    typeof (target as { closest: unknown }).closest === "function"
+  ) {
+    return !!(target as { closest: (selector: string) => unknown }).closest(
+      "[data-keyboard-boundary]"
+    );
   }
   return false;
 };
@@ -21,7 +29,9 @@ describe("Keyboard Boundary Exclusion Logic", () => {
     };
 
     expect(isWithinBoundary(mockElementInside)).toBe(true);
-    expect(mockElementInside.closest).toHaveBeenCalledWith("[data-keyboard-boundary]");
+    expect(mockElementInside.closest).toHaveBeenCalledWith(
+      "[data-keyboard-boundary]"
+    );
   });
 
   it("should detect when an element is NOT inside a keyboard boundary", () => {
@@ -31,7 +41,9 @@ describe("Keyboard Boundary Exclusion Logic", () => {
     };
 
     expect(isWithinBoundary(mockElementOutside)).toBe(false);
-    expect(mockElementOutside.closest).toHaveBeenCalledWith("[data-keyboard-boundary]");
+    expect(mockElementOutside.closest).toHaveBeenCalledWith(
+      "[data-keyboard-boundary]"
+    );
   });
 
   it("should handle null or invalid event targets gracefully", () => {
@@ -102,7 +114,8 @@ describe("Global Command Palette Listener", () => {
     };
 
     const mockTargetInsideBoundary = {
-      closest: (selector: string) => (selector === "[data-keyboard-boundary]" ? {} : null),
+      closest: (selector: string) =>
+        selector === "[data-keyboard-boundary]" ? {} : null,
     };
 
     simulateGlobalKeydown({

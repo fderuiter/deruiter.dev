@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from "vitest";
 import {
   getActAvailableEnemies,
@@ -16,11 +17,37 @@ import {
 
 describe("Laser Loon Physics, Geometry & Simulation Fixtures", () => {
   it("generates correct enemy pools for all acts and default fallback", () => {
-    expect(getActAvailableEnemies(1)).toEqual(["mosquito", "hailstorm", "jetski"]);
-    expect(getActAvailableEnemies(2)).toEqual(["butter-bomb", "pronto-pup-rogue", "livestock-decoy", "mosquito"]);
-    expect(getActAvailableEnemies(3)).toEqual(["red-tape", "veto-stamp", "tricolor-rival", "clipboard"]);
-    expect(getActAvailableEnemies(4)).toEqual(["legislative-amendment", "seal-guardian", "polar-vortex", "red-tape"]);
-    expect(getActAvailableEnemies(99)).toEqual(["mosquito", "hailstorm", "butter-bomb", "red-tape", "veto-stamp", "tricolor-rival"]);
+    expect(getActAvailableEnemies(1)).toEqual([
+      "mosquito",
+      "hailstorm",
+      "jetski",
+    ]);
+    expect(getActAvailableEnemies(2)).toEqual([
+      "butter-bomb",
+      "pronto-pup-rogue",
+      "livestock-decoy",
+      "mosquito",
+    ]);
+    expect(getActAvailableEnemies(3)).toEqual([
+      "red-tape",
+      "veto-stamp",
+      "tricolor-rival",
+      "clipboard",
+    ]);
+    expect(getActAvailableEnemies(4)).toEqual([
+      "legislative-amendment",
+      "seal-guardian",
+      "polar-vortex",
+      "red-tape",
+    ]);
+    expect(getActAvailableEnemies(99)).toEqual([
+      "mosquito",
+      "hailstorm",
+      "butter-bomb",
+      "red-tape",
+      "veto-stamp",
+      "tricolor-rival",
+    ]);
   });
 
   it("spawns targets from top edge, bottom edge, and default right edge", () => {
@@ -29,7 +56,14 @@ describe("Laser Loon Physics, Geometry & Simulation Fixtures", () => {
     let nextId = 1;
 
     for (let i = 0; i < 20; i++) {
-      const res = spawnTarget(targets, nextId, 800, 500, undefined, (i % 4) + 1);
+      const res = spawnTarget(
+        targets,
+        nextId,
+        800,
+        500,
+        undefined,
+        (i % 4) + 1
+      );
       nextId = res.nextId;
       targets.push(res.newTarget);
     }
@@ -48,7 +82,14 @@ describe("Laser Loon Physics, Geometry & Simulation Fixtures", () => {
     // Run multi-tick physics
     let currentBoss = boss;
     for (let tick = 0; tick < 100; tick++) {
-      const updated = updateTargetsPosition([currentBoss], 1, "campaign", 0.15, 500, 800);
+      const updated = updateTargetsPosition(
+        [currentBoss],
+        1,
+        "campaign",
+        0.15,
+        500,
+        800
+      );
       currentBoss = updated[0];
       expect(currentBoss.y).toBeGreaterThanOrEqual(80);
       expect(currentBoss.y).toBeLessThanOrEqual(420);
@@ -76,16 +117,28 @@ describe("Laser Loon Physics, Geometry & Simulation Fixtures", () => {
     };
 
     // Cyan pulse
-    const resQuantum = checkLaserRayHit(100, 200, 500, 200, "cyan-pulse", [target]);
+    const resQuantum = checkLaserRayHit(100, 200, 500, 200, "cyan-pulse", [
+      target,
+    ]);
     expect(resQuantum.hitAny).toBe(true);
     expect(resQuantum.damagedPoints.length).toBe(1);
 
     // Ice cannon
-    const resCryo = checkLaserRayHit(100, 200, 500, 200, "ice-cannon", [target]);
+    const resCryo = checkLaserRayHit(100, 200, 500, 200, "ice-cannon", [
+      target,
+    ]);
     expect(resCryo.hitAny).toBe(true);
 
     // Ruby laser with overcharge
-    const resRuby = checkLaserRayHit(100, 200, 500, 200, "ruby-laser", [target], true);
+    const resRuby = checkLaserRayHit(
+      100,
+      200,
+      500,
+      200,
+      "ruby-laser",
+      [target],
+      true
+    );
     expect(resRuby.hitAny).toBe(true);
   });
 
@@ -93,7 +146,15 @@ describe("Laser Loon Physics, Geometry & Simulation Fixtures", () => {
     const { iceBlock } = createIceBlock(100, 10, 400, -100, 1, 10);
     iceBlock.vy = -10; // Moving up towards top wall
 
-    const res = updateIceBlocksAndCollisions([iceBlock], [], 1, "sandbox", 0.5, 800, 500);
+    const res = updateIceBlocksAndCollisions(
+      [iceBlock],
+      [],
+      1,
+      "sandbox",
+      0.5,
+      800,
+      500
+    );
 
     expect(res.shatteredBlocks.length).toBeGreaterThan(0); // Bounced and left shatter effect
     expect(res.updatedIceBlocks.length).toBe(1);
@@ -104,7 +165,15 @@ describe("Laser Loon Physics, Geometry & Simulation Fixtures", () => {
     const { iceBlock } = createIceBlock(100, 495, 400, 600, 1, 10);
     iceBlock.vy = 10; // Moving down towards bottom wall
 
-    const res = updateIceBlocksAndCollisions([iceBlock], [], 1, "sandbox", 0.5, 800, 500);
+    const res = updateIceBlocksAndCollisions(
+      [iceBlock],
+      [],
+      1,
+      "sandbox",
+      0.5,
+      800,
+      500
+    );
 
     expect(res.shatteredBlocks.length).toBeGreaterThan(0);
     expect(res.updatedIceBlocks[0].vy).toBeLessThan(0); // Inverted direction upward
@@ -145,7 +214,14 @@ describe("Laser Loon Physics, Geometry & Simulation Fixtures", () => {
   });
 
   it("creates star explosion particles and updates particle fading lifecycle", () => {
-    const starParticles = createExplosionParticles(200, 200, "#f59e0b", 8, false, true);
+    const starParticles = createExplosionParticles(
+      200,
+      200,
+      "#f59e0b",
+      8,
+      false,
+      true
+    );
     expect(starParticles).toHaveLength(8);
     expect(starParticles[0].shape).toBe("star");
 

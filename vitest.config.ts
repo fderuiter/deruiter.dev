@@ -4,6 +4,17 @@ import { defineConfig } from "vitest/config";
 import path from "path";
 import os from "os";
 
+/**
+ * #1775: CI runs the suite as three shards, each writing a blob report, and
+ * a follow-up job merges them (`npm run test:ci:merge`). A shard covers a
+ * third of the files, so it cannot meet thresholds meant for the whole
+ * suite; `npm run test:ci:shard` sets this variable to defer them to the
+ * merge, which applies exactly the thresholds below to the combined
+ * coverage. Every other run, local or CI, enforces them directly.
+ */
+const coverageThresholdsDeferred =
+  process.env.VITEST_COVERAGE_THRESHOLDS === "deferred-to-merge";
+
 export default defineConfig({
   test: {
     environment: "jsdom",
@@ -57,43 +68,45 @@ export default defineConfig({
         "lib/telemetry/index.ts",
         "lib/trial-and-error/index.ts",
       ],
-      thresholds: {
-        "lib/**": {
-          lines: 80,
-          functions: 80,
-          statements: 80,
-          branches: 70,
-        },
-        "hooks/**": {
-          lines: 80,
-          functions: 80,
-          statements: 80,
-          branches: 70,
-        },
-        "proxy.ts": {
-          lines: 80,
-          functions: 80,
-          statements: 80,
-          branches: 70,
-        },
-        "components/**": {
-          statements: 60,
-        },
-        "app/**": {
-          statements: 50,
-        },
-        // Trial & Error validation and scoring carry a stricter gate (#890, #909).
-        "lib/trial-and-error/**": {
-          statements: 95,
-          branches: 95,
-          functions: 95,
-          lines: 95,
-        },
-        "scripts/**": {
-          lines: 80,
-          functions: 80,
-        },
-      },
+      thresholds: coverageThresholdsDeferred
+        ? undefined
+        : {
+            "lib/**": {
+              lines: 80,
+              functions: 80,
+              statements: 80,
+              branches: 70,
+            },
+            "hooks/**": {
+              lines: 80,
+              functions: 80,
+              statements: 80,
+              branches: 70,
+            },
+            "proxy.ts": {
+              lines: 80,
+              functions: 80,
+              statements: 80,
+              branches: 70,
+            },
+            "components/**": {
+              statements: 60,
+            },
+            "app/**": {
+              statements: 50,
+            },
+            // Trial & Error validation and scoring carry a stricter gate (#890, #909).
+            "lib/trial-and-error/**": {
+              statements: 95,
+              branches: 95,
+              functions: 95,
+              lines: 95,
+            },
+            "scripts/**": {
+              lines: 80,
+              functions: 80,
+            },
+          },
     },
   },
   resolve: {

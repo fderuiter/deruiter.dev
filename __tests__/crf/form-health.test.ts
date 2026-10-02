@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from "vitest";
 import { computeFormHealthMetrics } from "@/lib/crf/form-health";
 import { CRFForm } from "@/lib/crf/types";

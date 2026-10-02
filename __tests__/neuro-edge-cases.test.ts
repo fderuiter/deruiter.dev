@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from "vitest";
 import {
   generateSyntheticVolume,
@@ -5,7 +6,11 @@ import {
   VOLUME_SIZE,
 } from "@/lib/neuro/volume-generator";
 import { evaluateQAMetrics } from "@/lib/neuro/qa-engine";
-import { SCENARIOS, SCENARIO_LIST, DATASET_CONFIGS } from "@/lib/neuro/scenarios";
+import {
+  SCENARIOS,
+  SCENARIO_LIST,
+  DATASET_CONFIGS,
+} from "@/lib/neuro/scenarios";
 import { VoxelEdit } from "@/lib/neuro/types";
 import { loadExternalBrainMesh } from "@/lib/neuro/asset-loader";
 
@@ -53,9 +58,15 @@ describe("NeuroRecon: Edge Cases & Mathematical Invariants", () => {
         expect(volume.dimensions.depth).toBe(VOLUME_SIZE);
 
         if (scId !== "sandbox") {
-          expect(volume.defectRegion.max.x).toBeGreaterThan(volume.defectRegion.min.x);
-          expect(volume.defectRegion.max.y).toBeGreaterThan(volume.defectRegion.min.y);
-          expect(volume.defectRegion.max.z).toBeGreaterThan(volume.defectRegion.min.z);
+          expect(volume.defectRegion.max.x).toBeGreaterThan(
+            volume.defectRegion.min.x
+          );
+          expect(volume.defectRegion.max.y).toBeGreaterThan(
+            volume.defectRegion.min.y
+          );
+          expect(volume.defectRegion.max.z).toBeGreaterThan(
+            volume.defectRegion.min.z
+          );
         }
 
         const metrics = evaluateQAMetrics(scenario, volume, [], []);
@@ -94,7 +105,9 @@ describe("NeuroRecon: Edge Cases & Mathematical Invariants", () => {
 
       const resolvedMetrics = evaluateQAMetrics(scenario, volume, [], edits);
       expect(resolvedMetrics.defectCount).toBe(0);
-      expect(resolvedMetrics.diceScore).toBeGreaterThanOrEqual(scenario.targetDice);
+      expect(resolvedMetrics.diceScore).toBeGreaterThanOrEqual(
+        scenario.targetDice
+      );
       expect(resolvedMetrics.isResolved).toBe(true);
     });
 
@@ -112,7 +125,10 @@ describe("NeuroRecon: Edge Cases & Mathematical Invariants", () => {
 
   describe("Asset Loader Cache & Resilience", () => {
     it("handles non-existent model URLs gracefully with fallback to procedural mesh", async () => {
-      const fallbackGroup = await loadExternalBrainMesh("/models/non-existent.glb", "pial");
+      const fallbackGroup = await loadExternalBrainMesh(
+        "/models/non-existent.glb",
+        "pial"
+      );
       expect(fallbackGroup).toBeDefined();
       expect(fallbackGroup.children.length).toBeGreaterThan(0);
     });

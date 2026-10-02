@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from "vitest";
 import { GAME_MANUALS } from "@/lib/game-manuals";
 import { DEVICE_PROFILES } from "@/lib/garmin-engine";

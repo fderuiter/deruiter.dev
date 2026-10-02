@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, beforeEach } from "vitest";
 import {
   validateConstructiveContent,
@@ -6,7 +7,10 @@ import {
   resetSubmissionAttemptRateLimit,
   COMMUNITY_TONE_ERROR_MESSAGE,
 } from "@/lib/moderation";
-import { CaseStudySubmissionSchema, FeedbackSubmissionSchema } from "@/lib/schemas";
+import {
+  CaseStudySubmissionSchema,
+  FeedbackSubmissionSchema,
+} from "@/lib/schemas";
 
 describe("Synchronous Rule-Based Profanity & Rant Barrier", () => {
   beforeEach(() => {
@@ -79,7 +83,8 @@ describe("Synchronous Rule-Based Profanity & Rant Barrier", () => {
     });
 
     it("executes content moderation checks within strict latency threshold (< 15ms)", () => {
-      const testText = "The architecture was well designed with clean modularity and strong error sanitization.";
+      const testText =
+        "The architecture was well designed with clean modularity and strong error sanitization.";
       const start = performance.now();
       for (let i = 0; i < 1000; i++) {
         validateConstructiveContent(testText);
@@ -105,8 +110,10 @@ describe("Synchronous Rule-Based Profanity & Rant Barrier", () => {
           title: "Resilient Microservices Outage Post-Mortem",
           slug: "resilient-microservices-post-mortem",
           primary_language: "TypeScript",
-          editorial_content: "In-depth review of transaction rollback mechanisms during partition.",
-          architectural_narrative: "<h3>System Design</h3><p>Using Neon Postgres with connection pooling.</p>",
+          editorial_content:
+            "In-depth review of transaction rollback mechanisms during partition.",
+          architectural_narrative:
+            "<h3>System Design</h3><p>Using Neon Postgres with connection pooling.</p>",
           tags: ["resilience", "post-mortem", "typescript"],
         };
 
@@ -127,7 +134,11 @@ describe("Synchronous Rule-Based Profanity & Rant Barrier", () => {
         const result = CaseStudySubmissionSchema.safeParse(payload);
         expect(result.success).toBe(false);
         if (!result.success) {
-          expect(result.error.issues.some((i) => i.message.includes("violates community tone standards"))).toBe(true);
+          expect(
+            result.error.issues.some((i) =>
+              i.message.includes("violates community tone standards")
+            )
+          ).toBe(true);
         }
       });
 
@@ -137,14 +148,19 @@ describe("Synchronous Rule-Based Profanity & Rant Barrier", () => {
           slug: "database-failover-study",
           primary_language: "Go",
           editorial_content: "Summary of failover benchmarks.",
-          architectural_narrative: "<p>The previous architecture was fucking broken.</p>",
+          architectural_narrative:
+            "<p>The previous architecture was fucking broken.</p>",
           tags: "database",
         };
 
         const result = CaseStudySubmissionSchema.safeParse(payload);
         expect(result.success).toBe(false);
         if (!result.success) {
-          expect(result.error.issues.some((i) => i.path.includes("architectural_narrative"))).toBe(true);
+          expect(
+            result.error.issues.some((i) =>
+              i.path.includes("architectural_narrative")
+            )
+          ).toBe(true);
         }
       });
     });
@@ -153,8 +169,12 @@ describe("Synchronous Rule-Based Profanity & Rant Barrier", () => {
       it("accepts constructive feedback comments", () => {
         const validFeedback = {
           caseStudySlug: "clinical-data-mapper",
-          takeaways: ["Architecture & System Design", "Error Handling & Resilience"],
-          comments: "Excellent explanation of CDISC SDTM mappings and validation pipelines.",
+          takeaways: [
+            "Architecture & System Design",
+            "Error Handling & Resilience",
+          ],
+          comments:
+            "Excellent explanation of CDISC SDTM mappings and validation pipelines.",
         };
 
         const result = FeedbackSubmissionSchema.safeParse(validFeedback);
@@ -165,13 +185,16 @@ describe("Synchronous Rule-Based Profanity & Rant Barrier", () => {
         const toxicFeedback = {
           caseStudySlug: "clinical-data-mapper",
           takeaways: ["Architecture & System Design"],
-          comments: "This whole article is complete garbage and a waste of time.",
+          comments:
+            "This whole article is complete garbage and a waste of time.",
         };
 
         const result = FeedbackSubmissionSchema.safeParse(toxicFeedback);
         expect(result.success).toBe(false);
         if (!result.success) {
-          const commentIssue = result.error.issues.find((i) => i.path.includes("comments"));
+          const commentIssue = result.error.issues.find((i) =>
+            i.path.includes("comments")
+          );
           expect(commentIssue).toBeDefined();
           expect(commentIssue?.message).toBe(COMMUNITY_TONE_ERROR_MESSAGE);
         }
@@ -187,7 +210,9 @@ describe("Synchronous Rule-Based Profanity & Rant Barrier", () => {
         const result = FeedbackSubmissionSchema.safeParse(profaneFeedback);
         expect(result.success).toBe(false);
         if (!result.success) {
-          const commentIssue = result.error.issues.find((i) => i.path.includes("comments"));
+          const commentIssue = result.error.issues.find((i) =>
+            i.path.includes("comments")
+          );
           expect(commentIssue).toBeDefined();
         }
       });
@@ -196,22 +221,32 @@ describe("Synchronous Rule-Based Profanity & Rant Barrier", () => {
 
   describe("3. Anonymous Rate Limiting & Privacy Safeguards", () => {
     it("enforces rate limits on submission attempts per anonymous connection hash", () => {
-      const anonHash = "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3";
+      const anonHash =
+        "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3";
       const maxAllowed = 3;
 
       for (let i = 0; i < maxAllowed; i++) {
-        const check = checkSubmissionAttemptRateLimit(anonHash, maxAllowed, 60000);
+        const check = checkSubmissionAttemptRateLimit(
+          anonHash,
+          maxAllowed,
+          60000
+        );
         expect(check.isRateLimited).toBe(false);
       }
 
       // Exceed max attempts
-      const exceededCheck = checkSubmissionAttemptRateLimit(anonHash, maxAllowed, 60000);
+      const exceededCheck = checkSubmissionAttemptRateLimit(
+        anonHash,
+        maxAllowed,
+        60000
+      );
       expect(exceededCheck.isRateLimited).toBe(true);
       expect(exceededCheck.remaining).toBe(0);
     });
 
     it("operates without storing or logging personal user data (PII)", () => {
-      const sampleHash = "7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069";
+      const sampleHash =
+        "7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069";
       const check = checkSubmissionAttemptRateLimit(sampleHash, 10, 60000);
       expect(check.isRateLimited).toBe(false);
       // Hash is synthetic SHA-256 token, preserving 100% privacy

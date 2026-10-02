@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from "vitest";
 import {
   runFormTest,
@@ -214,7 +215,9 @@ describe("[#541] In-builder form test harness", () => {
         dataType: "single_select",
         codelistId: "cl_phq",
       });
-      const codelists = [codelist("cl_phq", ["0", "1", "2"], "PHQ-9 frequency")];
+      const codelists = [
+        codelist("cl_phq", ["0", "1", "2"], "PHQ-9 frequency"),
+      ];
 
       const value = buildSampleValue(coded, 1, codelists);
       expect(["0", "1", "2"]).toContain(value);
@@ -265,7 +268,9 @@ describe("[#541] In-builder form test harness", () => {
         domain: "QS",
         description: "",
         version: "1.0",
-        sections: [{ id: "s", title: "s", fields: [item("q1"), item("q2"), total] }],
+        sections: [
+          { id: "s", title: "s", fields: [item("q1"), item("q2"), total] },
+        ],
         rules: [],
       };
       const codelists = [codelist("cl_score", ["2", "3"], "Score")];

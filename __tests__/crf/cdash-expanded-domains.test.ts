@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from "vitest";
 import {
   scaffoldCdashDomain,
@@ -22,28 +23,31 @@ describe("CDASH Expanded Domain Library (13 Standard Domains)", () => {
     "DS",
   ] as const;
 
-  it.each(domains)("scaffolds domain '%s' with valid sections and fields", (domainCode) => {
-    const form = scaffoldCdashDomain(domainCode);
-    expect(form.id).toBeDefined();
-    expect(form.name).toBeTruthy();
-    expect(form.sections.length).toBeGreaterThan(0);
+  it.each(domains)(
+    "scaffolds domain '%s' with valid sections and fields",
+    (domainCode) => {
+      const form = scaffoldCdashDomain(domainCode);
+      expect(form.id).toBeDefined();
+      expect(form.name).toBeTruthy();
+      expect(form.sections.length).toBeGreaterThan(0);
 
-    const fields = form.sections.flatMap((s) => s.fields);
-    expect(fields.length).toBeGreaterThan(0);
+      const fields = form.sections.flatMap((s) => s.fields);
+      expect(fields.length).toBeGreaterThan(0);
 
-    fields.forEach((f) => {
-      expect(f.id).toBeDefined();
-      expect(f.variableName).toBeTruthy();
-      expect(f.variableName.length).toBeLessThanOrEqual(8);
-      expect(f.label).toBeTruthy();
-    });
+      fields.forEach((f) => {
+        expect(f.id).toBeDefined();
+        expect(f.variableName).toBeTruthy();
+        expect(f.variableName.length).toBeLessThanOrEqual(8);
+        expect(f.label).toBeTruthy();
+      });
 
-    // Verify domain catalog in CDASH_STANDARD_VARIABLES
-    if (domainCode !== "RECIST") {
-      expect(CDASH_STANDARD_VARIABLES[domainCode]).toBeDefined();
-      expect(CDASH_STANDARD_VARIABLES[domainCode].length).toBeGreaterThan(0);
+      // Verify domain catalog in CDASH_STANDARD_VARIABLES
+      if (domainCode !== "RECIST") {
+        expect(CDASH_STANDARD_VARIABLES[domainCode]).toBeDefined();
+        expect(CDASH_STANDARD_VARIABLES[domainCode].length).toBeGreaterThan(0);
+      }
     }
-  });
+  );
 
   it("provides standard Drug Accountability (DA) variables & compliance formula", () => {
     const form = scaffoldCdashDomain("DA");

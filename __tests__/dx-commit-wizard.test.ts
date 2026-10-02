@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import readline from "readline";
 import { fromPartial } from "@total-typescript/shoehorn";

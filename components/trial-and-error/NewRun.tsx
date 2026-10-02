@@ -13,6 +13,7 @@ import {
   stakeOptions,
   unlockedStake,
   type Challenge,
+  type CustomScenarioSpec,
   type RunChoice,
   type RunOrigin,
   type SponsorId,
@@ -23,6 +24,7 @@ import {
   freshSeed,
   useUtcToday,
 } from "@/components/trial-and-error/useChallenge";
+import { DeckBuilder } from "@/components/trial-and-error/DeckBuilder";
 
 type Choice = "RANDOM" | "SEEDED" | "DAILY";
 
@@ -43,7 +45,12 @@ interface NewRunProps {
   unlocks: Unlocks;
   /** The current run's sponsor and stake, pre-selected when still open. */
   current?: RunChoice;
-  onStart: (seed: string, origin: RunOrigin, choice: RunChoice) => void;
+  onStart: (
+    seed: string,
+    origin: RunOrigin,
+    choice: RunChoice,
+    customScenario?: CustomScenarioSpec
+  ) => void;
   onClose: () => void;
 }
 
@@ -111,9 +118,11 @@ export function NewRun({
   const [choice, setChoice] = useState<Choice>(challenge ? "SEEDED" : "RANDOM");
   const [typed, setTyped] = useState(challenge?.seed ?? "");
   const [error, setError] = useState<string | null>(null);
+  const [deckBuilderOpen, setDeckBuilderOpen] = useState(false);
   const [runChoice, setRunChoice] = useState<RunChoice>(() =>
     initialChoice(unlocks, linked, current)
   );
+
   const inputRef = useRef<HTMLInputElement>(null);
   const firstRef = useRef<HTMLInputElement>(null);
   const ref = useFocusTrap<HTMLDivElement>(true, {
@@ -177,7 +186,8 @@ export function NewRun({
     onStart(
       seed,
       origin,
-      origin.kind === "DAILY" ? DEFAULT_RUN_CHOICE : runChoice
+      origin.kind === "DAILY" ? DEFAULT_RUN_CHOICE : runChoice,
+      challenge?.customScenario
     );
   };
 
@@ -449,6 +459,14 @@ export function NewRun({
             </button>
             <button
               type="button"
+              onClick={() => setDeckBuilderOpen(true)}
+              className={`${BUTTON} border-amber-500/60 bg-amber-500/20 text-amber-300 hover:bg-amber-500/30`}
+              data-testid="open-deck-builder-btn"
+            >
+              Deck Builder
+            </button>
+            <button
+              type="button"
               onClick={onClose}
               className={`${BUTTON} border-zinc-600 text-zinc-300 hover:bg-zinc-800`}
             >
@@ -456,8 +474,19 @@ export function NewRun({
             </button>
           </div>
         </form>
+        {deckBuilderOpen && (
+          <DeckBuilder
+            initialSpec={challenge?.customScenario}
+            onStartCustomRun={(spec) => {
+              onClose();
+              onStart(freshSeed(), { kind: "SEEDED" }, runChoice, spec);
+            }}
+            onClose={() => setDeckBuilderOpen(false)}
+          />
+        )}
       </div>
     </div>,
+
     document.fullscreenElement ?? document.body
   );
 }

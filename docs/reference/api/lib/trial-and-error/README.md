@@ -620,6 +620,12 @@ Re-exports [cpuReducer](internal/cpu/functions/cpuReducer.md)
 
 ***
 
+### createCustomScenario
+
+Re-exports [createCustomScenario](internal/scenario-compression/functions/createCustomScenario.md)
+
+***
+
 ### createDeskState
 
 Re-exports [createDeskState](internal/desk/functions/createDeskState.md)
@@ -740,6 +746,18 @@ Re-exports [CsrStageSchema](types/variables/CsrStageSchema.md)
 
 ***
 
+### CustomScenarioSpec
+
+Re-exports [CustomScenarioSpec](types/type-aliases/CustomScenarioSpec.md)
+
+***
+
+### CustomScenarioSpecSchema
+
+Re-exports [CustomScenarioSpecSchema](types/variables/CustomScenarioSpecSchema.md)
+
+***
+
 ### dailySeed
 
 Re-exports [dailySeed](internal/seed/functions/dailySeed.md)
@@ -749,6 +767,12 @@ Re-exports [dailySeed](internal/seed/functions/dailySeed.md)
 ### decimalPlaces
 
 Re-exports [decimalPlaces](internal/rounding/functions/decimalPlaces.md)
+
+***
+
+### decodeCustomScenario
+
+Re-exports [decodeCustomScenario](internal/scenario-compression/functions/decodeCustomScenario.md)
 
 ***
 
@@ -950,6 +974,12 @@ Re-exports [emptyCodex](internal/codex/functions/emptyCodex.md)
 
 ***
 
+### encodeCustomScenario
+
+Re-exports [encodeCustomScenario](internal/scenario-compression/functions/encodeCustomScenario.md)
+
+***
+
 ### Encounter
 
 Re-exports [Encounter](types/type-aliases/Encounter.md)
@@ -1019,6 +1049,12 @@ Re-exports [ENROLLMENT_AFTER_HANDS](internal/table/variables/ENROLLMENT_AFTER_HA
 ### evaluateHand
 
 Re-exports [evaluateHand](internal/scoring/functions/evaluateHand.md)
+
+***
+
+### exportScenarioJson
+
+Re-exports [exportScenarioJson](internal/scenario-compression/functions/exportScenarioJson.md)
 
 ***
 
@@ -1103,6 +1139,12 @@ Re-exports [FootnoteSealSchema](types/variables/FootnoteSealSchema.md)
 ### freeDiscards
 
 Re-exports [freeDiscards](internal/relics/functions/freeDiscards.md)
+
+***
+
+### getAllCodexCards
+
+Re-exports [getAllCodexCards](internal/scenario-compression/functions/getAllCodexCards.md)
 
 ***
 
@@ -1289,6 +1331,12 @@ Re-exports [HandType](types/variables/HandType.md)
 ### HandTypeSchema
 
 Re-exports [HandTypeSchema](types/variables/HandTypeSchema.md)
+
+***
+
+### importScenarioJson
+
+Re-exports [importScenarioJson](internal/scenario-compression/functions/importScenarioJson.md)
 
 ***
 

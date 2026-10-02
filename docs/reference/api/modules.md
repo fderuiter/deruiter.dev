@@ -341,6 +341,7 @@
 - [lib/trial-and-error/internal/run](lib/trial-and-error/internal/run/README.md)
 - [lib/trial-and-error/internal/run-rules](lib/trial-and-error/internal/run-rules/README.md)
 - [lib/trial-and-error/internal/save](lib/trial-and-error/internal/save/README.md)
+- [lib/trial-and-error/internal/scenario-compression](lib/trial-and-error/internal/scenario-compression/README.md)
 - [lib/trial-and-error/internal/scoring](lib/trial-and-error/internal/scoring/README.md)
 - [lib/trial-and-error/internal/seed](lib/trial-and-error/internal/seed/README.md)
 - [lib/trial-and-error/internal/shop](lib/trial-and-error/internal/shop/README.md)

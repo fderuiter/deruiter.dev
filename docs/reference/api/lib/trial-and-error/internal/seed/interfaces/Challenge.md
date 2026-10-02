@@ -10,6 +10,66 @@ What a challenge link carries.
 
 ## Properties
 
+### customScenario?
+
+> `optional` **customScenario?**: `object`
+
+An encoded custom scenario specification, if present.
+
+#### cardIds
+
+> **cardIds**: `string`[]
+
+#### events?
+
+> `optional` **events?**: `object`[]
+
+#### id?
+
+> `optional` **id?**: `string`
+
+#### intro?
+
+> `optional` **intro?**: `string`
+
+#### quota
+
+> **quota**: `number`
+
+#### rulebook
+
+> **rulebook**: `object`
+
+##### rulebook.meanPrecision
+
+> **meanPrecision**: `number`
+
+##### rulebook.percentPrecision
+
+> **percentPrecision**: `number`
+
+##### rulebook.populationSuit?
+
+> `optional` **populationSuit?**: `"SCREENED"` \| `"ITT"` \| `"SAFETY"` \| `"PER_PROTOCOL"` \| `"FAS"`
+
+##### rulebook.roundingMode
+
+> **roundingMode**: `"HALF_EVEN"` \| `"HALF_AWAY_FROM_ZERO"` \| `"TRUNCATE"` = `RoundingModeSchema`
+
+#### startingCpu
+
+> **startingCpu**: `number`
+
+#### summary?
+
+> `optional` **summary?**: `string`
+
+#### title
+
+> **title**: `string`
+
+***
+
 ### daily
 
 > **daily**: `string` \| `null`

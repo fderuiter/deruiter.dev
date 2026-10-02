@@ -1,5 +1,9 @@
-import type { SponsorId, Stake } from "../types";
+import type { CustomScenarioSpec, SponsorId, Stake } from "../types";
 import { SponsorIdSchema } from "../types";
+import {
+  decodeCustomScenario,
+  encodeCustomScenario,
+} from "./scenario-compression";
 import { uniformAt } from "./rng";
 import type { RunChoice } from "./run-rules";
 import { DEFAULT_SPONSOR_ID } from "./sponsors";
@@ -115,6 +119,8 @@ export interface Challenge {
   sponsorId?: SponsorId;
   /** The run's stake (#950). Absent means stake 1. */
   stake?: Stake;
+  /** An encoded custom scenario specification, if present. */
+  customScenario?: CustomScenarioSpec;
 }
 
 /** A stake as a link writes it: one digit on the ladder, nothing else. */
@@ -130,7 +136,8 @@ const STAKE_PARAM = new RegExp(`^[1-${MAX_STAKE}]$`);
 export function challengeHash(
   seed: string,
   origin: RunOrigin,
-  choice: Partial<RunChoice> = {}
+  choice: Partial<RunChoice> = {},
+  customScenario?: CustomScenarioSpec
 ): string {
   const params = new URLSearchParams({ seed });
   if (origin.kind === "DAILY") {
@@ -142,6 +149,9 @@ export function challengeHash(
     }
     if (stake !== undefined && stake !== DEFAULT_STAKE) {
       params.set("stake", String(stake));
+    }
+    if (customScenario) {
+      params.set("custom", encodeCustomScenario(customScenario));
     }
   }
   return `#${params.toString()}`;
@@ -160,24 +170,39 @@ export function challengeHash(
 export function parseChallengeHash(hash: string): Challenge | null {
   const params = new URLSearchParams(hash.replace(/^#/, ""));
   const raw = params.get("seed");
-  const seed = raw === null ? null : parseSeed(raw);
+  const customParam = params.get("custom") ?? params.get("scenario");
+  const customScenario = customParam ? decodeCustomScenario(customParam) : null;
+
+  let seed = raw === null ? null : parseSeed(raw);
+  if (!seed && customScenario) {
+    seed = "7K3M-Q9PX";
+  }
   if (!seed) return null;
+
   const date = params.get("daily");
   const daily =
     date !== null && isIsoDate(date) && dailySeed(date) === seed ? date : null;
-  if (daily) return { seed, daily };
+  if (daily)
+    return {
+      seed,
+      daily,
+      ...(customScenario ? { customScenario: customScenario } : {}),
+    };
+
   const sponsor = SponsorIdSchema.safeParse(params.get("sponsor"));
   const stakeParam = params.get("stake");
   const stake =
     stakeParam !== null && STAKE_PARAM.test(stakeParam)
       ? Number(stakeParam)
       : DEFAULT_STAKE;
+
   return {
     seed,
     daily,
     ...(sponsor.success &&
       sponsor.data !== DEFAULT_SPONSOR_ID && { sponsorId: sponsor.data }),
     ...(stake !== DEFAULT_STAKE && { stake }),
+    ...(customScenario ? { customScenario } : {}),
   };
 }
 

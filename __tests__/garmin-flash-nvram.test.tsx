@@ -5,6 +5,9 @@ import { GarminWatchSimulator } from "@/components/GarminWatchSimulator";
 import {
   FLASH_STORAGE_KEY,
   createInitialState,
+  savePersistedFlashStorage,
+  allocateFlashVariable,
+  clearFlashStorage,
   type GameEngineState,
 } from "@/lib/garmin-engine";
 
@@ -104,5 +107,35 @@ describe("Garmin NV flash write and clear (#1210)", () => {
     expect(store[FLASH_STORAGE_KEY]).toBe("[]");
     expect(createInitialState("fenix", 0).allocatedFlashKb).toBe(0);
     expect(createInitialState("fenix", 0).flashFiles).toEqual([]);
+  });
+
+  it("savePersistedFlashStorage throws when localStorage.setItem encounters quota error", () => {
+    const setItemSpy = vi
+      .spyOn(window.localStorage, "setItem")
+      .mockImplementation(() => {
+        throw new DOMException("QuotaExceededError", "QuotaExceededError");
+      });
+
+    expect(() => savePersistedFlashStorage([])).toThrow("QuotaExceededError");
+
+    setItemSpy.mockRestore();
+  });
+
+  it("allocateFlashVariable and clearFlashStorage handle savePersistedFlashStorage exceptions gracefully", () => {
+    const setItemSpy = vi
+      .spyOn(window.localStorage, "setItem")
+      .mockImplementation(() => {
+        throw new DOMException("QuotaExceededError", "QuotaExceededError");
+      });
+
+    const state = createInitialState("fenix", 0);
+    const result = allocateFlashVariable(state, 4, "test.dat");
+    expect(result.crashed).toBe(false);
+    expect(result.state.flashVariables.length).toBeGreaterThan(0);
+
+    const clearedState = clearFlashStorage(result.state);
+    expect(clearedState.flashVariables.length).toBe(0);
+
+    setItemSpy.mockRestore();
   });
 });

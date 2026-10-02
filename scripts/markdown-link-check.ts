@@ -10,21 +10,103 @@ export interface MarkdownLinkCheckResult {
 // its internal cross-links are produced (and kept internally consistent)
 // by typedoc-plugin-markdown itself, and staleness there is already caught
 // by the generated-vs-checked-in byte comparison in documentation-drift.ts.
-const SKIP_DIRECTORY_NAMES = new Set(["reference"]);
+// Heavy build folders and non-doc folders are also skipped when scanning directories.
+const SKIP_DIRECTORY_NAMES = new Set([
+  "reference",
+  "node_modules",
+  ".next",
+  "coverage",
+  ".git",
+  ".agents",
+  "scratch",
+  "tmp",
+  "test-results",
+]);
 
 const INLINE_LINK_PATTERN = /\[[^\]]*\]\(([^)]+)\)/g;
 
-function listMarkdownFiles(directory: string): string[] {
-  if (!fs.existsSync(directory)) return [];
-  return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-    const absolutePath = path.join(directory, entry.name);
-    if (entry.isDirectory()) {
-      return SKIP_DIRECTORY_NAMES.has(entry.name)
-        ? []
-        : listMarkdownFiles(absolutePath);
+/**
+ * Lists markdown files starting from target path(s).
+ * Accepts file paths, directory paths, or arrays thereof.
+ */
+export function listMarkdownFiles(
+  targetPath: string | string[],
+  workspaceRoot?: string
+): string[] {
+  if (Array.isArray(targetPath)) {
+    const allFiles = targetPath.flatMap((tp) =>
+      listMarkdownFiles(tp, workspaceRoot)
+    );
+    return Array.from(new Set(allFiles));
+  }
+
+  const resolvedPath =
+    workspaceRoot && !path.isAbsolute(targetPath)
+      ? path.resolve(workspaceRoot, targetPath)
+      : path.resolve(targetPath);
+
+  if (!fs.existsSync(resolvedPath)) return [];
+
+  const stat = fs.statSync(resolvedPath);
+  if (stat.isFile()) {
+    const lowerName = resolvedPath.toLowerCase();
+    return lowerName.endsWith(".md") || lowerName.endsWith(".markdown")
+      ? [resolvedPath]
+      : [];
+  }
+
+  if (stat.isDirectory()) {
+    if (SKIP_DIRECTORY_NAMES.has(path.basename(resolvedPath))) return [];
+
+    return fs
+      .readdirSync(resolvedPath, { withFileTypes: true })
+      .flatMap((entry) => {
+        const absolutePath = path.join(resolvedPath, entry.name);
+        if (entry.isDirectory()) {
+          return SKIP_DIRECTORY_NAMES.has(entry.name)
+            ? []
+            : listMarkdownFiles(absolutePath, workspaceRoot);
+        }
+        const lowerName = entry.name.toLowerCase();
+        return lowerName.endsWith(".md") || lowerName.endsWith(".markdown")
+          ? [absolutePath]
+          : [];
+      });
+  }
+
+  return [];
+}
+
+function getDefaultTargetPaths(workspaceRoot: string): string[] {
+  const targets: string[] = [];
+
+  // Top-level workspace root markdown files
+  if (fs.existsSync(workspaceRoot)) {
+    for (const entry of fs.readdirSync(workspaceRoot, {
+      withFileTypes: true,
+    })) {
+      if (
+        entry.isFile() &&
+        (entry.name.toLowerCase().endsWith(".md") ||
+          entry.name.toLowerCase().endsWith(".markdown"))
+      ) {
+        targets.push(path.join(workspaceRoot, entry.name));
+      }
     }
-    return entry.name.toLowerCase().endsWith(".md") ? [absolutePath] : [];
-  });
+  }
+
+  // docs/ and adr/ subtrees
+  const docsDir = path.join(workspaceRoot, "docs");
+  if (fs.existsSync(docsDir)) {
+    targets.push(docsDir);
+  }
+
+  const adrDir = path.join(workspaceRoot, "adr");
+  if (fs.existsSync(adrDir)) {
+    targets.push(adrDir);
+  }
+
+  return targets;
 }
 
 // Any URL scheme (http:, https:, mailto:, etc.), protocol-relative URLs, and
@@ -42,18 +124,26 @@ function stripFragmentAndQuery(url: string): string {
 }
 
 /**
- * Validates that relative inline markdown links inside hand-authored docs/
- * quadrants (tutorials/, how-to/, explanation/, agents/, and root-level
- * docs pages) resolve to real files on disk, so a moved or renamed guide
- * doesn't silently orphan a cross-quadrant link (ADR 0023).
+ * Validates that relative inline markdown links inside configured target paths
+ * (defaulting to workspace root markdown files, docs/, and adr/) resolve to
+ * real files on disk, so a moved or renamed guide doesn't silently orphan a link.
  */
 export function checkMarkdownLinkIntegrity(
   workspaceRoot: string,
-  docsRoot: string = path.join(workspaceRoot, "docs")
+  targetPaths?: string | string[]
 ): MarkdownLinkCheckResult {
   const details: string[] = [];
 
-  for (const filePath of listMarkdownFiles(docsRoot)) {
+  const targets =
+    targetPaths !== undefined
+      ? typeof targetPaths === "string"
+        ? [targetPaths]
+        : targetPaths
+      : getDefaultTargetPaths(workspaceRoot);
+
+  const markdownFiles = listMarkdownFiles(targets, workspaceRoot);
+
+  for (const filePath of markdownFiles) {
     const content = fs.readFileSync(filePath, "utf-8");
     for (const match of content.matchAll(INLINE_LINK_PATTERN)) {
       const rawUrl = match[1].trim();

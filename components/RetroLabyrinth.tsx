@@ -12,6 +12,7 @@ import { useTelemetry } from "@/hooks/useTelemetry";
 import { logger } from "@/lib/logger";
 import { useAnnouncer } from "@/hooks/useAnnouncer";
 import { safeGetRawItem, safeSetRawItem } from "@/lib/safe-storage";
+import { recordArcadeScore } from "@/lib/arcade-achievements";
 import { clamp } from "@/lib/game-utils";
 import { useAudio } from "@/components/providers/AudioProvider";
 import {
@@ -67,6 +68,10 @@ import {
   updateEnemyAI,
   updateFaceForgeBoss,
   getExitLockState,
+  grantAmmoForLoadout,
+  computeRoomExitScore,
+  ENEMY_STEP_INTERVAL_MS,
+  type AmmoGrantResult,
   updateTSPMovingWalls,
   retroAudio,
   CRT_THEMES,
@@ -89,6 +94,32 @@ const EXIT_Y = 7;
 const BOSS_LEAD_WINDOW_MS = 600;
 /** HP a drone takes when it and the player share a tile. */
 const DRONE_CONTACT_DAMAGE = 25;
+/**
+ * Real time between classic Stage 2 drone steps. It used to be a 4% chance
+ * per frame, which ran twice as fast on a 120 Hz display (#1665).
+ */
+const CLASSIC_DRONE_STEP_INTERVAL_MS = 400;
+
+/**
+ * Keys a non-playing overlay swallows so they do not scroll the page (#1669).
+ */
+const OVERLAY_CONSUMED_KEYS = new Set([
+  "ArrowUp",
+  "ArrowDown",
+  "ArrowLeft",
+  "ArrowRight",
+  "PageUp",
+  "PageDown",
+  " ",
+  "w",
+  "a",
+  "s",
+  "d",
+  "W",
+  "A",
+  "S",
+  "D",
+]);
 
 const WEAPON_SHORT_LABELS: Record<WeaponId, string> = {
   npm_install: "npm i",
@@ -112,6 +143,40 @@ interface Drone {
 
 interface RetroLabyrinthProps {
   isMounted?: boolean;
+}
+
+type GameStatus =
+  | "playing"
+  | "paused"
+  | "victory"
+  | "caught"
+  | "timesheet"
+  | "hacking"
+  | "darknet_shop"
+  | "class_select";
+
+/**
+ * The floating line for an ammo pickup or purchase, naming what the player's
+ * class actually received (#1667).
+ */
+function describeAmmoGrants(grants: AmmoGrantResult[]): string {
+  const totals = new Map<WeaponId, number>();
+  for (const grant of grants) {
+    if (grant.weaponId && grant.charges > 0) {
+      totals.set(
+        grant.weaponId,
+        (totals.get(grant.weaponId) ?? 0) + grant.charges
+      );
+    }
+  }
+  if (totals.size === 0) {
+    return grants.some((grant) => grant.weaponId)
+      ? "Ammo already full"
+      : "No weapon on this class can use this";
+  }
+  return Array.from(totals)
+    .map(([id, charges]) => `+${charges} ${WEAPON_SHORT_LABELS[id]}`)
+    .join(", ");
 }
 
 const subscribeHighScore = (callback: () => void) => {
@@ -186,6 +251,13 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   const [currentRam, setCurrentRam] = useState(selectedClass.baseRam);
   const [maxRam, setMaxRam] = useState(selectedClass.baseRam);
   const [cryptoBounty, setCryptoBounty] = useState(0);
+  // Crypto earned in the current room. Only this counts toward the room's
+  // exit bonus, so a coin never scores twice (#1668).
+  const [roomCrypto, setRoomCrypto] = useState(0);
+  // The Market's CVE Threat Feed, once bought, exposes CVEs on every room
+  // entry for the rest of the run (#1668).
+  const [cveFeedActive, setCveFeedActive] = useState(false);
+  const cveFeedRef = useRef(false);
   const [bypassChips, setBypassChips] = useState(
     selectedClass.startBypassChips
   );
@@ -197,16 +269,10 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   const [movesCount, setMovesCount] = useState(0);
 
   // Game lifecycle status & Modals
-  const [gameStatus, setGameStatus] = useState<
-    | "playing"
-    | "paused"
-    | "victory"
-    | "caught"
-    | "timesheet"
-    | "hacking"
-    | "darknet_shop"
-    | "class_select"
-  >("playing");
+  const [gameStatus, setGameStatus] = useState<GameStatus>("playing");
+  // Where the Market or class overlay returns to when it closes. A room that
+  // was running comes back paused, so nothing hits the player unseen (#1669).
+  const overlayReturnStatusRef = useRef<GameStatus>("paused");
   const [isFocused, setIsFocused] = useState(false);
 
   // Hacking Minigame State
@@ -289,6 +355,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         },
       ];
       setMovesCount(0);
+      setRoomCrypto(0);
       setDronesStunned(false);
       setActiveSideEffect(null);
       setGameStatus("playing");
@@ -320,7 +387,11 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         setStage(idx + 1);
         setCurrentMaze(currentRoom.grid);
         setPlayerPosition({ x: currentRoom.startX, y: currentRoom.startY });
-        setEnemies(currentRoom.enemies);
+        setEnemies(
+          cveFeedRef.current
+            ? currentRoom.enemies.map((e) => ({ ...e, cveExposed: true }))
+            : currentRoom.enemies
+        );
         setItems(currentRoom.items);
         setBoss(currentRoom.boss);
         setTspNodes(currentRoom.tspNodes || []);
@@ -337,17 +408,10 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
           };
         }
         setTspWalls(currentRoom.tspMovingWalls || []);
-        setDrones(
-          currentRoom.enemies
-            .filter((e) => e.type === "drone")
-            .map((d) => ({
-              x: d.x,
-              y: d.y,
-              dir: d.patrolDir,
-              minX: d.minX ?? 0,
-              maxX: d.maxX ?? 14,
-            }))
-        );
+        // Campaign drones are enemies, moved and drawn with the rest. The
+        // classic-mode drone list stays empty so no static copy is left on
+        // the spawn tile (#1665).
+        setDrones([]);
 
         const fov = calculateFOV(
           currentRoom.grid,
@@ -362,14 +426,17 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     []
   );
 
-  // HP, RAM, score and crypto as the player entered the current room. Retry
-  // restores these, so a breach that ended at 0 HP doesn't restart at 0 HP,
-  // and dying then retrying can't bank the room's points twice (#1552).
+  // HP, RAM, score, crypto, weapon ammo and the Threat Feed as the player
+  // entered the current room. Retry restores these, so a breach that ended at
+  // 0 HP doesn't restart at 0 HP, dying then retrying can't bank the room's
+  // points twice (#1552), and a boss retry has the ammo to win (#1667).
   const roomEntryVitalsRef = useRef({
     hp: selectedClass.baseHp,
     ram: selectedClass.baseRam,
     score: 0,
     cryptoBounty: 0,
+    weapons: DEFAULT_WEAPONS,
+    cveFeed: false,
   });
 
   // Switch Stage (classic support)
@@ -379,10 +446,11 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         ...roomEntryVitalsRef.current,
         score,
         cryptoBounty,
+        weapons,
       };
       loadRoom("classic", stgNum);
     },
-    [loadRoom, score, cryptoBounty]
+    [loadRoom, score, cryptoBounty, weapons]
   );
 
   // Load the opening room on mount so the maze, fog and HUD match the room
@@ -399,43 +467,25 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setHighScore(score);
     safeSetRawItem(RETRO_LABYRINTH_HIGH_SCORE_KEY, score.toString());
+    recordArcadeScore("retro-labyrinth", score);
   }, [gameStatus, score, effectiveHighScore]);
 
   // Restart current stage
   const handleRestart = useCallback(() => {
-    setPlayerHp(roomEntryVitalsRef.current.hp);
-    setCurrentRam(roomEntryVitalsRef.current.ram);
-    setScore(roomEntryVitalsRef.current.score);
-    setCryptoBounty(roomEntryVitalsRef.current.cryptoBounty);
+    const entry = roomEntryVitalsRef.current;
+    setPlayerHp(entry.hp);
+    setCurrentRam(entry.ram);
+    setScore(entry.score);
+    setCryptoBounty(entry.cryptoBounty);
+    setWeapons(entry.weapons);
+    cveFeedRef.current = entry.cveFeed;
+    setCveFeedActive(entry.cveFeed);
     if (gameMode === "classic") {
       loadRoom("classic", stage);
     } else {
       loadRoom("roguelike", roomIndex);
     }
   }, [gameMode, stage, roomIndex, loadRoom]);
-
-  // Advance to next room in roguelike campaign
-  const handleNextRoom = useCallback(() => {
-    roomEntryVitalsRef.current = {
-      hp: playerHp,
-      ram: currentRam,
-      score,
-      cryptoBounty,
-    };
-    if (roomIndex < campaignRooms.length - 1) {
-      loadRoom("roguelike", roomIndex + 1);
-    } else {
-      loadRoom("roguelike", 0);
-    }
-  }, [
-    roomIndex,
-    campaignRooms.length,
-    loadRoom,
-    playerHp,
-    currentRam,
-    score,
-    cryptoBounty,
-  ]);
 
   // Start Roguelike Campaign with chosen Cyberdeck Class
   const startRoguelikeCampaign = useCallback(() => {
@@ -452,14 +502,55 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     }
     setScore(0);
     setCryptoBounty(0);
+    cveFeedRef.current = false;
+    setCveFeedActive(false);
     roomEntryVitalsRef.current = {
       hp: chosenClass.baseHp,
       ram: chosenClass.baseRam,
       score: 0,
       cryptoBounty: 0,
+      weapons: DEFAULT_WEAPONS,
+      cveFeed: false,
     };
     loadRoom("roguelike", 0);
   }, [selectedClassId, loadRoom]);
+
+  // Advance to next room in roguelike campaign. After the last room the run
+  // is complete, and continuing starts a new run from Room 01 (#1668).
+  const handleNextRoom = useCallback(() => {
+    if (roomIndex >= campaignRooms.length - 1) {
+      startRoguelikeCampaign();
+      return;
+    }
+    roomEntryVitalsRef.current = {
+      hp: playerHp,
+      ram: currentRam,
+      score,
+      cryptoBounty,
+      weapons,
+      cveFeed: cveFeedActive,
+    };
+    loadRoom("roguelike", roomIndex + 1);
+  }, [
+    roomIndex,
+    campaignRooms.length,
+    loadRoom,
+    startRoguelikeCampaign,
+    playerHp,
+    currentRam,
+    score,
+    cryptoBounty,
+    weapons,
+    cveFeedActive,
+  ]);
+
+  // Crypto the player earns (not spends) counts toward this room's exit
+  // bonus as well as the balance (#1668).
+  const earnCrypto = useCallback((amount: number) => {
+    if (amount <= 0) return;
+    setCryptoBounty((c) => c + amount);
+    setRoomCrypto((r) => r + amount);
+  }, []);
 
   // Grid position of the hacking terminal the player is working on.
   const hackTerminalPosRef = useRef<{ x: number; y: number } | null>(null);
@@ -483,7 +574,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
 
       if (res.soundType === "match") {
         retroAudio.playHackSuccess();
-        setCryptoBounty((c) => c + res.puzzle.rewardCrypto);
+        earnCrypto(res.puzzle.rewardCrypto);
         setScore((s) => s + res.puzzle.rewardCrypto * 2);
         if (res.puzzle.rewardBypassChips > 0) {
           setBypassChips((b) => b + res.puzzle.rewardBypassChips);
@@ -494,7 +585,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         retroAudio.playTone(800, 40, "sine", 0.05);
       }
     },
-    [hexPuzzle]
+    [hexPuzzle, earnCrypto]
   );
 
   // Use Bypass Chip in Minigame
@@ -505,9 +596,9 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     setHexPuzzle(solved);
     setHackingFeedback("HARDWARE BYPASS VERIFIED! Terminal Decrypted.");
     retroAudio.playHackSuccess();
-    setCryptoBounty((c) => c + solved.rewardCrypto);
+    earnCrypto(solved.rewardCrypto);
     setScore((s) => s + solved.rewardCrypto * 2);
-  }, [hexPuzzle, bypassChips]);
+  }, [hexPuzzle, bypassChips, earnCrypto]);
 
   // Close Hacking Minigame Modal. A decrypted terminal goes dark, so the
   // player can walk on without reopening it.
@@ -546,21 +637,42 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       } else if (item.category === "chip") {
         setBypassChips((b) => b + 1);
       } else if (item.category === "weapon") {
-        setWeapons((w) => ({
-          ...w,
-          zero_day: {
-            ...w.zero_day,
-            ammo: w.zero_day.ammo + 2,
-          },
-        }));
+        // 0-Day ammo, or the same damage in a weapon this class can fire.
+        const grant = grantAmmoForLoadout(
+          weapons,
+          selectedClass.starterWeapons,
+          "zero_day",
+          2,
+          false
+        );
+        setWeapons(grant.updatedWeapons);
+        floatingTextsRef.current.push({
+          id: `market-ammo-${Date.now()}`,
+          x: playerPosition.x,
+          y: playerPosition.y,
+          text: describeAmmoGrants([grant]),
+          color: "#ec4899",
+          alpha: 1.5,
+          vy: -0.02,
+        });
       } else if (item.category === "heal") {
         setPlayerHp((hp) => Math.min(maxPlayerHp, hp + 50));
         setActiveSideEffect(null);
       } else if (item.category === "firmware") {
+        // Applies now and on every later room entry this run (#1668).
+        cveFeedRef.current = true;
+        setCveFeedActive(true);
         setEnemies((prev) => prev.map((e) => ({ ...e, cveExposed: true })));
       }
     },
-    [cryptoBounty, maxPlayerHp]
+    [
+      cryptoBounty,
+      maxPlayerHp,
+      weapons,
+      selectedClass.starterWeapons,
+      playerPosition.x,
+      playerPosition.y,
+    ]
   );
 
   // Attempt player move
@@ -580,11 +692,18 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         currentMaze[nextY][nextX] !== "#" &&
         currentMaze[nextY][nextX] !== "W"
       ) {
-        // Walking into a drone costs HP and leaves the player where they
-        // were, rather than ending the run outright.
+        // Walking into a drone or another live enemy costs HP and leaves
+        // the player where they were, rather than ending the run outright.
         if (
           !dronesStunned &&
-          drones.some((d) => d.x === nextX && d.y === nextY)
+          (drones.some((d) => d.x === nextX && d.y === nextY) ||
+            enemies.some(
+              (e) =>
+                e.x === nextX &&
+                e.y === nextY &&
+                e.state !== "stunned" &&
+                e.state !== "frozen"
+            ))
         ) {
           setPlayerHp((hp) => {
             const nextHp = hp - DRONE_CONTACT_DAMAGE;
@@ -655,7 +774,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                 playSuccess();
                 retroAudio.playPickup();
                 setScore((s) => s + 200);
-                setCryptoBounty((c) => c + 50);
+                earnCrypto(50);
                 floatingTextsRef.current.push({
                   id: `tsp-node-${Date.now()}`,
                   x: nextX,
@@ -672,72 +791,78 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
           );
         }
 
-        // Item Collection check
-        setItems((prevItems) =>
-          prevItems.map((item) => {
-            if (!item.collected && item.x === nextX && item.y === nextY) {
-              retroAudio.playPickup();
-              playNote(784, 0.1);
-              if (item.itemId === "node_modules") {
-                setWeapons((w) => ({
-                  ...w,
-                  npm_install: {
-                    ...w.npm_install,
-                    ammo: Math.min(
-                      w.npm_install.maxAmmo,
-                      w.npm_install.ammo + 4
-                    ),
-                  },
-                }));
-                setScore((s) => s + 100);
-              } else if (item.itemId === "coffee") {
-                setPlayerHp((hp) => Math.min(maxPlayerHp, hp + 25));
-                setScore((s) => s + 100);
-              } else if (item.itemId === "git_stash") {
-                setWeapons((w) => ({
-                  ...w,
-                  git_force_push: {
-                    ...w.git_force_push,
-                    ammo: Math.min(
-                      w.git_force_push.maxAmmo,
-                      w.git_force_push.ammo + 1
-                    ),
-                  },
-                  zero_day: {
-                    ...w.zero_day,
-                    ammo: Math.min(w.zero_day.maxAmmo, w.zero_day.ammo + 1),
-                  },
-                }));
-                setScore((s) => s + 200);
-              } else if (item.itemId === "commit_token") {
-                setScore((s) => s + 500);
-                setCryptoBounty((c) => c + 150);
-              } else if (item.itemId === "ram_expansion") {
-                setMaxRam((r) => r + 16);
-                setCurrentRam((r) => r + 16);
-                setScore((s) => s + 250);
-              } else if (item.itemId === "crypto_stash") {
-                setCryptoBounty((c) => c + 150);
-                setScore((s) => s + 300);
-              } else if (item.itemId === "bypass_chip") {
-                setBypassChips((b) => b + 1);
-              }
-
-              floatingTextsRef.current.push({
-                id: `pickup-${Date.now()}`,
-                x: nextX,
-                y: nextY,
-                text: item.name,
-                color: item.color,
-                alpha: 1,
-                vy: -0.03,
-              });
-
-              return { ...item, collected: true };
-            }
-            return item;
-          })
+        // Item Collection check. Ammo goes to a weapon this class can
+        // fire, and the floating line says which (#1667).
+        const pickup = items.find(
+          (item) => !item.collected && item.x === nextX && item.y === nextY
         );
+        if (pickup) {
+          retroAudio.playPickup();
+          playNote(784, 0.1);
+          let pickupText = pickup.name;
+          const loadout = selectedClass.starterWeapons;
+          if (pickup.itemId === "node_modules") {
+            const grant = grantAmmoForLoadout(
+              weapons,
+              loadout,
+              "npm_install",
+              4,
+              true
+            );
+            setWeapons(grant.updatedWeapons);
+            pickupText = describeAmmoGrants([grant]);
+            setScore((s) => s + 100);
+          } else if (pickup.itemId === "coffee") {
+            setPlayerHp((hp) => Math.min(maxPlayerHp, hp + 25));
+            setScore((s) => s + 100);
+          } else if (pickup.itemId === "git_stash") {
+            const pushGrant = grantAmmoForLoadout(
+              weapons,
+              loadout,
+              "git_force_push",
+              1,
+              true
+            );
+            const zeroDayGrant = grantAmmoForLoadout(
+              pushGrant.updatedWeapons,
+              loadout,
+              "zero_day",
+              1,
+              true
+            );
+            setWeapons(zeroDayGrant.updatedWeapons);
+            pickupText = describeAmmoGrants([pushGrant, zeroDayGrant]);
+            setScore((s) => s + 200);
+          } else if (pickup.itemId === "commit_token") {
+            setScore((s) => s + 500);
+            earnCrypto(150);
+          } else if (pickup.itemId === "ram_expansion") {
+            setMaxRam((r) => r + 16);
+            setCurrentRam((r) => r + 16);
+            setScore((s) => s + 250);
+          } else if (pickup.itemId === "crypto_stash") {
+            earnCrypto(150);
+            setScore((s) => s + 300);
+          } else if (pickup.itemId === "bypass_chip") {
+            setBypassChips((b) => b + 1);
+          }
+
+          floatingTextsRef.current.push({
+            id: `pickup-${Date.now()}`,
+            x: nextX,
+            y: nextY,
+            text: pickupText,
+            color: pickup.color,
+            alpha: 1,
+            vy: -0.03,
+          });
+
+          setItems((prevItems) =>
+            prevItems.map((item) =>
+              item.id === pickup.id ? { ...item, collected: true } : item
+            )
+          );
+        }
 
         // Terminal / Chest Intercept: "T" is the timesheet-locked repo chest,
         // "H" a hex-matrix hacking terminal.
@@ -755,37 +880,12 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
           return;
         }
 
-        // Enemy collision check
-        if (!dronesStunned) {
-          const hitEnemy = enemies.find(
-            (e) =>
-              e.x === nextX &&
-              e.y === nextY &&
-              e.state !== "stunned" &&
-              e.state !== "frozen"
-          );
-          if (hitEnemy) {
-            setPlayerHp((hp) => {
-              const nextHp = hp - 25;
-              if (nextHp <= 0) {
-                setGameStatus("caught");
-                retroAudio.playAlertPulse();
-                playNote(200, 0.25);
-                return 0;
-              }
-              return nextHp;
-            });
-            playNote(220, 0.2);
-          }
-        }
-
         // Exit reached
         if (nextX === EXIT_X && nextY === EXIT_Y) {
           setGameStatus("victory");
           playSuccess();
           retroAudio.playHackSuccess();
-          const finalScore =
-            score + Math.max(100, 1000 - nextMoves * 20) + cryptoBounty;
+          const finalScore = computeRoomExitScore(score, nextMoves, roomCrypto);
           setScore(finalScore);
           if (finalScore > effectiveHighScore) {
             setHighScore(finalScore);
@@ -794,11 +894,12 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
               RETRO_LABYRINTH_HIGH_SCORE_KEY,
               finalScore.toString()
             );
+            recordArcadeScore("retro-labyrinth", finalScore);
           }
 
           const updatedProf: CyberdeckProfile = {
             ...profile,
-            totalCrypto: profile.totalCrypto + cryptoBounty,
+            totalCrypto: profile.totalCrypto + roomCrypto,
             highScore: Math.max(profile.highScore, finalScore),
             runsCompleted: profile.runsCompleted + 1,
           };
@@ -831,13 +932,16 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       dronesStunned,
       enemies,
       drones,
+      items,
+      weapons,
       score,
       effectiveHighScore,
       maxPlayerHp,
       maxRam,
       selectedClass,
       currentTheme,
-      cryptoBounty,
+      roomCrypto,
+      earnCrypto,
       profile,
       recordEvent,
       openHackingTerminal,
@@ -888,7 +992,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       setPlayerHp(res.updatedPlayerHp);
       setScore((s) => s + res.scoreGained);
       if (res.cryptoGained) {
-        setCryptoBounty((c) => c + res.cryptoGained);
+        earnCrypto(res.cryptoGained);
       }
 
       // Audio feedback
@@ -937,6 +1041,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       currentTheme,
       playNote,
       playSuccess,
+      earnCrypto,
     ]
   );
 
@@ -946,7 +1051,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     playSuccess();
     retroAudio.playHackSuccess();
     setScore((s) => s + 500);
-    setCryptoBounty((c) => c + 150);
+    earnCrypto(150);
 
     const updatedGrid = currentMaze.map((row) =>
       row.map((cell) => (cell === "T" ? " " : cell))
@@ -962,7 +1067,13 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       alpha: 1,
       vy: -0.03,
     });
-  }, [currentMaze, playSuccess, playerPosition.x, playerPosition.y]);
+  }, [
+    currentMaze,
+    playSuccess,
+    playerPosition.x,
+    playerPosition.y,
+    earnCrypto,
+  ]);
 
   // Keyboard controls
   const handleKeyDown = useCallback(
@@ -992,13 +1103,22 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
           handleRestart();
         } else if (gameStatus === "victory" && e.key === "Enter") {
           e.preventDefault();
-          if (
-            gameMode === "roguelike" &&
-            roomIndex < campaignRooms.length - 1
-          ) {
+          if (gameMode === "roguelike") {
+            // After the last room this starts a new run (#1668).
             handleNextRoom();
           } else {
             handleRestart();
+          }
+        } else if (OVERLAY_CONSUMED_KEYS.has(e.key)) {
+          // Game keys on an overlay do nothing, and must not scroll the page
+          // away from the cabinet. A focused button keeps its native Space
+          // (#1669).
+          const target = e.target as HTMLElement | null;
+          const onControl =
+            target !== e.currentTarget &&
+            !!target?.closest?.("button, a, input, select, textarea");
+          if (!(e.key === " " && onControl)) {
+            e.preventDefault();
           }
         }
         return;
@@ -1081,8 +1201,6 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       activeSideEffect,
       gameStatus,
       gameMode,
-      roomIndex,
-      campaignRooms.length,
       selectedClass,
       weapons,
       handleFireWeapon,
@@ -1191,6 +1309,71 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     [gameMode, boss, tspNodes]
   );
 
+  // Opening the Market or class overlay pauses a running room; closing it
+  // returns there paused, or to the result screen it was opened from (#1669).
+  const openOverlay = useCallback(
+    (overlay: "darknet_shop" | "class_select") => {
+      if (gameStatus === overlay) return;
+      if (gameStatus !== "darknet_shop" && gameStatus !== "class_select") {
+        overlayReturnStatusRef.current =
+          gameStatus === "playing" ? "paused" : gameStatus;
+      }
+      setGameStatus(overlay);
+      // Focus the board now: its focus styles shift the layout, and doing
+      // that on the first press of an overlay button moved the button out
+      // from under the pointer before the click landed.
+      containerRef.current?.focus({ preventScroll: true });
+    },
+    [gameStatus]
+  );
+
+  const closeOverlay = useCallback(() => {
+    setGameStatus(overlayReturnStatusRef.current);
+    containerRef.current?.focus({ preventScroll: true });
+  }, []);
+
+  // Choosing a class gives its fresh loadout and restarts the room paused, so
+  // nothing fires at the player before they look back at the board. On a
+  // room-cleared screen the loadout carries into the next room instead
+  // (#1669).
+  const chooseClass = useCallback(
+    (classId: CyberdeckClassId) => {
+      const cls = CYBERDECK_CLASSES[classId] || CYBERDECK_CLASSES.script_kiddie;
+      setSelectedClassId(cls.id);
+      if (cls.starterWeapons?.[0]) {
+        setActiveWeaponId(cls.starterWeapons[0]);
+      }
+      setMaxPlayerHp(cls.baseHp);
+      setMaxRam(cls.baseRam);
+      setBypassChips(cls.startBypassChips);
+      if (overlayReturnStatusRef.current === "victory") {
+        setPlayerHp(cls.baseHp);
+        setCurrentRam(cls.baseRam);
+        setWeapons(DEFAULT_WEAPONS);
+        setGameStatus("victory");
+        containerRef.current?.focus({ preventScroll: true });
+        return;
+      }
+      roomEntryVitalsRef.current = {
+        ...roomEntryVitalsRef.current,
+        hp: cls.baseHp,
+        ram: cls.baseRam,
+        weapons: DEFAULT_WEAPONS,
+      };
+      handleRestart();
+      setGameStatus("paused");
+      containerRef.current?.focus({ preventScroll: true });
+    },
+    [handleRestart]
+  );
+
+  // The Field Manual pauses a running room, the way P does (#1669).
+  const handleManualOpenChange = useCallback((isOpen: boolean) => {
+    if (isOpen) {
+      setGameStatus((status) => (status === "playing" ? "paused" : status));
+    }
+  }, []);
+
   // Memoized Traveling Salesman Pathfinding Tour
   const tspTour = useMemo(() => {
     return computeShortestTour(
@@ -1263,6 +1446,11 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   const frameAnchorRef = useRef<number | null>(null);
   // Phosphor shimmer phase for renderCRTEffects: one step per frame.
   const crtFrameRef = useRef(0);
+  // Play time since the last enemy step and classic drone step. Enemies move
+  // on elapsed time, not frame count, so a 144 Hz display does not double
+  // their speed (#1665).
+  const enemyStepElapsedRef = useRef(0);
+  const droneStepElapsedRef = useRef(0);
   // The TSP hover highlight reads the rendered campaign, so a new run's
   // rooms replace the old layout on the next frame (#1628).
   const campaignRoomsRef = useRef(campaignRooms);
@@ -1345,29 +1533,41 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         setActiveSideEffect(null);
       }
 
-      // 2. Update Enemy AI
+      // 2. Update Enemy AI, one step per ENEMY_STEP_INTERVAL_MS of play.
+      // Contact costs HP; the run ends only when HP reaches 0 (#1665).
       if (gameStatus === "playing" && enemies.length > 0 && deltaMs > 0) {
-        if (Math.random() < 0.05) {
-          const { updatedEnemies, damageToPlayer, caughtPlayer } =
-            updateEnemyAI(
-              enemies,
-              currentMaze,
-              playerPosition.x,
-              playerPosition.y,
-              deltaMs
-            );
+        enemyStepElapsedRef.current += deltaMs;
+        if (enemyStepElapsedRef.current >= ENEMY_STEP_INTERVAL_MS) {
+          const stepElapsedMs = enemyStepElapsedRef.current;
+          enemyStepElapsedRef.current = 0;
+          const { updatedEnemies, damageToPlayer } = updateEnemyAI(
+            enemies,
+            currentMaze,
+            playerPosition.x,
+            playerPosition.y,
+            stepElapsedMs
+          );
           setEnemies(updatedEnemies);
 
           if (damageToPlayer > 0) {
             setPlayerHp((hp) => {
               const nextHp = hp - damageToPlayer;
-              if (nextHp <= 0 || caughtPlayer) {
+              if (nextHp <= 0) {
                 setGameStatus("caught");
                 return 0;
               }
               return nextHp;
             });
             playNote(220, 0.1);
+            floatingTextsRef.current.push({
+              id: `enemy-hit-${timestamp}`,
+              x: playerPosition.x,
+              y: playerPosition.y,
+              text: `-${damageToPlayer} HP`,
+              color: "#ef4444",
+              alpha: 1,
+              vy: -0.02,
+            });
           }
         }
       }
@@ -1389,7 +1589,8 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
           lastHeadingRef.current &&
             Date.now() - lastHeadingRef.current.at < BOSS_LEAD_WINDOW_MS
             ? lastHeadingRef.current
-            : undefined
+            : undefined,
+          deltaMs
         );
         setBoss(updatedBoss);
 
@@ -1415,14 +1616,17 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         }
       }
 
-      // 4. Update Classic Drones
+      // 4. Update Classic Drones, one step per
+      // CLASSIC_DRONE_STEP_INTERVAL_MS of play.
       if (
         gameStatus === "playing" &&
         !dronesStunned &&
         drones.length > 0 &&
         gameMode === "classic"
       ) {
-        if (Math.random() < 0.04) {
+        droneStepElapsedRef.current += deltaMs;
+        if (droneStepElapsedRef.current >= CLASSIC_DRONE_STEP_INTERVAL_MS) {
+          droneStepElapsedRef.current = 0;
           setDrones((prev) =>
             prev.map((d) => {
               let nextX = d.x;
@@ -1843,6 +2047,26 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     );
   }
 
+  // A class without a 0-Day slot gets the same damage in a weapon it can
+  // fire, and the Market card says so (#1667).
+  const marketAmmoNote = (category: string) => {
+    if (category !== "weapon") return null;
+    if (selectedClass.starterWeapons.includes("zero_day")) return null;
+    const grant = grantAmmoForLoadout(
+      weapons,
+      selectedClass.starterWeapons,
+      "zero_day",
+      2,
+      false
+    );
+    return grant.weaponId
+      ? ` Your class has no 0-Day slot, so you get ${describeAmmoGrants([grant])} instead.`
+      : " Your class has no weapon that can use it.";
+  };
+
+  const isFinalRoom =
+    gameMode === "roguelike" && roomIndex >= campaignRooms.length - 1;
+
   const currentRoom =
     gameMode === "roguelike"
       ? campaignRooms[roomIndex] || campaignRooms[0]
@@ -1883,7 +2107,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
 
             {/* Class Badge */}
             <button
-              onClick={() => setGameStatus("class_select")}
+              onClick={() => openOverlay("class_select")}
               className="px-2.5 py-1 bg-neutral-900/90 hover:bg-neutral-800 border border-neutral-800 text-neutral-300 rounded-full flex items-center gap-1 cursor-pointer transition-colors"
               title="Change Cyberdeck Class"
             >
@@ -1896,7 +2120,11 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
 
           {/* Mode Selector, CRT Palette & Expand */}
           <div className="flex flex-wrap items-center justify-end gap-1.5">
-            <FieldManualButton manualId="retro-labyrinth" label="Manual" />
+            <FieldManualButton
+              manualId="retro-labyrinth"
+              label="Manual"
+              onOpenChange={handleManualOpenChange}
+            />
             <FullscreenButton
               isFullscreen={isFullscreen}
               onToggle={toggleFullscreen}
@@ -2006,6 +2234,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
         data-keyboard-boundary="true"
+        data-field-manual="retro-labyrinth"
         className={`arcade-labyrinth-playfield relative w-full ${
           isFullscreen
             ? "fixed inset-0 z-50 w-full h-[100vh] h-[100dvh] max-h-[100vh] max-h-[100dvh] max-w-none rounded-none border-none bg-black flex flex-col items-center justify-between p-1.5 sm:p-4 select-none touch-none overflow-hidden"
@@ -2036,6 +2265,27 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
           </div>
 
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            {/* Boss HP: the only other feedback is the mesh colour (#1667) */}
+            {gameMode === "roguelike" && boss && (
+              <div
+                className="flex items-center gap-1 text-[9px]"
+                data-testid="labyrinth-boss-hp"
+              >
+                <span className="text-rose-400">BOSS</span>
+                <div className="w-14 h-2 bg-neutral-900 rounded-full overflow-hidden border border-neutral-800">
+                  <div
+                    className="h-full bg-rose-500 transition-all duration-200"
+                    style={{
+                      width: `${Math.max(0, (boss.hp / boss.maxHp) * 100)}%`,
+                    }}
+                  />
+                </div>
+                <span className="text-neutral-300 font-bold">
+                  {boss.defeated ? "DOWN" : boss.hp}
+                </span>
+              </div>
+            )}
+
             {/* Player HP */}
             <div className="flex items-center gap-1 text-[9px]">
               <span className="text-neutral-500">HP</span>
@@ -2186,6 +2436,13 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                 <output htmlFor="retro-hp">
                   Cyberdeck Integrity: {playerHp} / {maxPlayerHp} HP
                 </output>
+                {gameMode === "roguelike" && boss && (
+                  <output htmlFor="retro-boss-hp">
+                    {boss.defeated
+                      ? "Boss defeated."
+                      : `Boss HP: ${boss.hp} / ${boss.maxHp}`}
+                  </output>
+                )}
                 <output htmlFor="retro-weapon">
                   Active Cyberdeck Weapon: {activeWeaponId}
                 </output>
@@ -2299,30 +2556,42 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
             </fieldset>
           </div>
 
-          {/* Victory Overlay */}
+          {/* Victory Overlay. Clearing the last campaign room ends the run
+              with its own card and a new run from Room 01 (#1668). */}
           {gameStatus === "victory" && (
             <div className="absolute inset-0 bg-neutral-950/95 backdrop-blur-sm flex flex-col items-center justify-center text-center p-3 rounded-lg border border-brand-cyan/30 z-30">
               <div className="w-7 h-7 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center mb-1 text-emerald-400 animate-bounce">
                 <IconTrophy className="w-4 h-4" />
               </div>
               <h3 className="text-emerald-400 font-bold text-xs uppercase tracking-widest">
-                MAINFRAME TIER BREACHED
+                {isFinalRoom ? "RUN COMPLETE" : "MAINFRAME TIER BREACHED"}
               </h3>
+              {isFinalRoom && (
+                <p className="text-[9px] text-neutral-400 mt-0.5">
+                  All {campaignRooms.length} rooms cleared.
+                </p>
+              )}
               <p className="text-[9px] text-neutral-400 mt-0.5 leading-relaxed">
                 Infiltrated in{" "}
                 <span className="font-bold text-brand-cyan">{movesCount}</span>{" "}
                 moves. Crypto Harvested:{" "}
-                <span className="font-bold text-amber-400">
-                  +{cryptoBounty}
-                </span>
+                <span className="font-bold text-amber-400">+{roomCrypto}</span>
               </p>
               <p className="text-[9px] text-neutral-400">
                 Final Score:{" "}
                 <span className="font-bold text-brand-cyan">{score}</span>
+                {isFinalRoom && (
+                  <>
+                    {" "}
+                    · High Score:{" "}
+                    <span className="font-bold text-amber-400">
+                      {effectiveHighScore}
+                    </span>
+                  </>
+                )}
               </p>
               <div className="flex gap-2 mt-2">
-                {gameMode === "roguelike" &&
-                roomIndex < campaignRooms.length - 1 ? (
+                {gameMode === "roguelike" && !isFinalRoom ? (
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -2338,18 +2607,24 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleRestart();
+                      if (isFinalRoom) {
+                        startRoguelikeCampaign();
+                      } else {
+                        handleRestart();
+                      }
                       containerRef.current?.focus({ preventScroll: true });
                     }}
                     className="inline-flex items-center gap-1 px-3 py-1 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 hover:border-brand-cyan/40 text-neutral-200 hover:text-brand-cyan text-[9px] font-bold rounded-lg transition-all cursor-pointer"
                   >
                     <IconRefresh className="w-3 h-3" />
-                    Play Again
+                    {isFinalRoom ? "New Run" : "Play Again"}
                   </button>
                 )}
               </div>
               <p className="text-[8px] text-neutral-500 mt-1">
-                Enter to continue · R to retry this room
+                {isFinalRoom
+                  ? "Enter for a new run from Room 01 · R to retry this room"
+                  : "Enter to continue · R to retry this room"}
               </p>
             </div>
           )}
@@ -2521,23 +2796,29 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                         </div>
                         <div className="text-neutral-400 text-[7px]">
                           {item.description}
+                          {marketAmmoNote(item.category)}
                         </div>
                       </div>
                     </div>
 
                     <button
                       onClick={() => buyDarknetItem(item.id)}
-                      disabled={cryptoBounty < item.cost}
+                      disabled={
+                        cryptoBounty < item.cost ||
+                        (item.category === "firmware" && cveFeedActive)
+                      }
                       className="px-2 py-0.5 rounded bg-pink-500/20 text-pink-300 border border-pink-500/40 hover:bg-pink-500/40 disabled:opacity-40 font-bold cursor-pointer whitespace-nowrap"
                     >
-                      🪙 {item.cost}
+                      {item.category === "firmware" && cveFeedActive
+                        ? "Active"
+                        : `🪙 ${item.cost}`}
                     </button>
                   </div>
                 ))}
               </div>
 
               <button
-                onClick={() => setGameStatus("playing")}
+                onClick={closeOverlay}
                 className="w-full py-0.5 bg-neutral-800 text-neutral-300 hover:bg-neutral-700 rounded text-[8px] font-bold cursor-pointer"
               >
                 Close Darknet Market
@@ -2556,24 +2837,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                 {Object.values(CYBERDECK_CLASSES).map((cls) => (
                   <button
                     key={cls.id}
-                    onClick={() => {
-                      setSelectedClassId(cls.id);
-                      if (cls.starterWeapons?.[0]) {
-                        setActiveWeaponId(cls.starterWeapons[0]);
-                      }
-                      setPlayerHp(cls.baseHp);
-                      setMaxPlayerHp(cls.baseHp);
-                      setCurrentRam(cls.baseRam);
-                      roomEntryVitalsRef.current = {
-                        ...roomEntryVitalsRef.current,
-                        hp: cls.baseHp,
-                        ram: cls.baseRam,
-                      };
-                      setMaxRam(cls.baseRam);
-                      setBypassChips(cls.startBypassChips);
-                      setWeapons(DEFAULT_WEAPONS);
-                      setGameStatus("playing");
-                    }}
+                    onClick={() => chooseClass(cls.id)}
                     className={`p-1.5 rounded border text-left flex flex-col justify-between transition-all cursor-pointer ${
                       selectedClassId === cls.id
                         ? "bg-cyan-500/20 border-cyan-400 text-cyan-200"
@@ -2596,7 +2860,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
               </div>
 
               <button
-                onClick={() => setGameStatus("playing")}
+                onClick={closeOverlay}
                 className="w-full py-0.5 bg-neutral-800 text-neutral-300 rounded text-[8px] font-bold cursor-pointer"
               >
                 Confirm Loadout & Hack
@@ -2718,7 +2982,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
               </button>
 
               <button
-                onClick={() => setGameStatus("darknet_shop")}
+                onClick={() => openOverlay("darknet_shop")}
                 className="px-1.5 py-0.5 rounded border bg-pink-950/60 text-pink-300 border-pink-700/60 hover:bg-pink-900 cursor-pointer font-bold"
               >
                 🛒 Market

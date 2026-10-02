@@ -6,4 +6,4 @@
 
 # Type Alias: ToolMode
 
-> **ToolMode** = `"inspect"` \| `"control_point"` \| `"paint"` \| `"erase"`
+> **ToolMode** = `"inspect"` \| `"control_point"` \| `"paint"` \| `"erase"` \| `"roi_select"`

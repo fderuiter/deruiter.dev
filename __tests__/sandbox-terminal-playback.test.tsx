@@ -10,6 +10,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { SandboxTerminal } from "@/components/SandboxTerminal";
+import { safeStorage } from "@/lib/safe-storage";
+import { writeHashParams } from "@/hooks/useStudioHashParams";
 
 // Mock audio and announcer providers
 vi.mock("@/components/providers/AudioProvider", async (importOriginal) => {
@@ -87,6 +89,8 @@ describe("SandboxTerminal Playback & Step Player Controller Suite", () => {
       writable: true,
       configurable: true,
     });
+    safeStorage.clear();
+    writeHashParams({ terminal_cmd: null });
     container = document.createElement("div");
     document.body.appendChild(container);
 

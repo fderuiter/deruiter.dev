@@ -96,6 +96,7 @@ export const ClinicalChaosClient: React.FC = () => {
                 { key: "1–8", action: "Pick answer / route to station" },
                 { key: "Q W E R", action: "Lifelines" },
                 { key: "← →", action: "Change subject" },
+                { key: "P", action: "Pause" },
               ]}
               importComponent={ClinicalTrialChaosLoader}
             >

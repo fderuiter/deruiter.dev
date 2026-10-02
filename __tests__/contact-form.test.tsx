@@ -7,16 +7,19 @@ import {
   waitFor,
   cleanup,
 } from "@testing-library/react";
-import { ContactForm } from "@/components/ContactForm";
+import { ContactForm, CONTACT_FORM_DRAFT_KEY } from "@/components/ContactForm";
+import { safeStorage } from "@/lib/safe-storage";
 
 describe("ContactForm Component", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     global.fetch = vi.fn();
+    safeStorage.clear();
   });
 
   afterEach(() => {
     cleanup();
+    safeStorage.clear();
   });
 
   it("should render all form controls and honeypot trap correctly", () => {
@@ -250,6 +253,139 @@ describe("ContactForm Component", () => {
           .getByRole("button", { name: /Send Message/i })
           .hasAttribute("disabled")
       ).toBe(false);
+    });
+  });
+
+  describe("persistent draft state", () => {
+    it("saves draft inputs to safeStorage and retains them upon network failure", async () => {
+      (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+        new TypeError("Failed to fetch")
+      );
+
+      render(<ContactForm />);
+
+      fireEvent.change(screen.getByLabelText(/Your Name/i), {
+        target: { value: "Ada Lovelace" },
+      });
+      fireEvent.change(screen.getByLabelText(/Email Address/i), {
+        target: { value: "ada@example.com" },
+      });
+      fireEvent.change(screen.getByLabelText(/Subject/i), {
+        target: { value: "Resilient Draft Subject" },
+      });
+      fireEvent.change(screen.getByLabelText(/Message/i), {
+        target: {
+          value: "This text should be preserved even when network fails.",
+        },
+      });
+
+      const submitBtn = screen.getByRole("button", { name: /Send Message/i });
+      fireEvent.click(submitBtn);
+
+      await screen.findByRole("alert");
+
+      const storedDraft = safeStorage.getItem(CONTACT_FORM_DRAFT_KEY);
+      expect(storedDraft).toMatchObject({
+        name: "Ada Lovelace",
+        email: "ada@example.com",
+        subject: "Resilient Draft Subject",
+        message: "This text should be preserved even when network fails.",
+      });
+    });
+
+    it("clears saved draft state from safeStorage when submission succeeds", async () => {
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ success: true }),
+      });
+
+      render(<ContactForm />);
+
+      fireEvent.change(screen.getByLabelText(/Your Name/i), {
+        target: { value: "Ada Lovelace" },
+      });
+      fireEvent.change(screen.getByLabelText(/Email Address/i), {
+        target: { value: "ada@example.com" },
+      });
+      fireEvent.change(screen.getByLabelText(/Subject/i), {
+        target: { value: "Success Draft Test" },
+      });
+      fireEvent.change(screen.getByLabelText(/Message/i), {
+        target: { value: "Message that will succeed and clear the draft." },
+      });
+
+      expect(safeStorage.getItem(CONTACT_FORM_DRAFT_KEY)).not.toBeNull();
+
+      const submitBtn = screen.getByRole("button", { name: /Send Message/i });
+      fireEvent.click(submitBtn);
+
+      await screen.findByTestId("contact-form-success");
+
+      expect(safeStorage.getItem(CONTACT_FORM_DRAFT_KEY)).toBeNull();
+    });
+
+    it("clears saved draft state from safeStorage on manual reset", async () => {
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ success: true }),
+      });
+
+      render(<ContactForm />);
+
+      fireEvent.change(screen.getByLabelText(/Your Name/i), {
+        target: { value: "Ada Lovelace" },
+      });
+      fireEvent.change(screen.getByLabelText(/Email Address/i), {
+        target: { value: "ada@example.com" },
+      });
+      fireEvent.change(screen.getByLabelText(/Subject/i), {
+        target: { value: "Reset Test Subject" },
+      });
+      fireEvent.change(screen.getByLabelText(/Message/i), {
+        target: { value: "Reset Test Message Body" },
+      });
+
+      const submitBtn = screen.getByRole("button", { name: /Send Message/i });
+      fireEvent.click(submitBtn);
+
+      await screen.findByTestId("contact-form-success");
+
+      const resetBtn = screen.getByRole("button", {
+        name: /Send Another Message/i,
+      });
+      fireEvent.click(resetBtn);
+
+      expect(safeStorage.getItem(CONTACT_FORM_DRAFT_KEY)).toBeNull();
+      expect(
+        (screen.getByLabelText(/Your Name/i) as HTMLInputElement).value
+      ).toBe("");
+    });
+
+    it("prioritizes active saved draft over default initial props", () => {
+      safeStorage.setItem(CONTACT_FORM_DRAFT_KEY, {
+        name: "Saved Name",
+        email: "saved@example.com",
+        intent: "consulting",
+        subject: "Saved Subject",
+        message: "Saved Message Content",
+      });
+
+      render(
+        <ContactForm
+          initialSubject="Pre-filled Prop Subject"
+          initialMessage="Pre-filled Prop Message"
+        />
+      );
+
+      expect(
+        (screen.getByLabelText(/Your Name/i) as HTMLInputElement).value
+      ).toBe("Saved Name");
+      expect(
+        (screen.getByLabelText(/Subject/i) as HTMLInputElement).value
+      ).toBe("Saved Subject");
+      expect(
+        (screen.getByLabelText(/Message/i) as HTMLTextAreaElement).value
+      ).toBe("Saved Message Content");
     });
   });
 });

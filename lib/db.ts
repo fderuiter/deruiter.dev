@@ -72,34 +72,10 @@ const createPrismaClient = () => {
         const activeEnv = getEnv();
         if (activeEnv.PLAYWRIGHT_TEST === "true") {
           const operation = (rest as Record<string, unknown>).operation;
-          const model = (rest as Record<string, unknown>).model;
-          if (
-            operation === "findMany" ||
-            operation === "findFirst" ||
-            operation === "findUnique"
-          ) {
-            if (model === "CaseStudy") {
-              return [
-                {
-                  id: "clinical-data-mapper",
-                  slug: "clinical-data-mapper",
-                  title: "Clinical Data Mapper",
-                  primary_language: "TypeScript",
-                  tags: "clinical, edc, mapping",
-                  published: true,
-                  created_at: new Date(),
-                  updated_at: new Date(),
-                  description: "Clinical Data Mapper Description",
-                  editorial_content: "Clinical Data Mapper Editorial Content",
-                  github_url:
-                    "https://github.com/fderuiter/clinical-data-mapper",
-                  simulated_telemetry: false,
-                },
-              ];
-            }
-            return [];
+          if (operation === "findUnique" || operation === "findFirst") {
+            return null;
           }
-          if (operation === "groupBy") {
+          if (operation === "findMany" || operation === "groupBy") {
             return [];
           }
           if (operation === "count") {

@@ -11,6 +11,7 @@ Accepted
 Web applications spanning diverse content types (marketing hero sections, Bento grids, multi-panel clinical data editors, formal proof graph assistants, and canvas simulators) frequently suffer from visual clipping, text overlapping, and layout distortion when viewed on variable screen widths (320px to 4K), under localized content expansion (e.g. German translations +40%), or when dynamic mobile browser bars expand and contract.
 
 These defects stem from four primary root causes:
+
 1. **Rigid Container Heights**: Using fixed heights (`h-48`, `h-64`, `height: 250px`) causes multi-line or wrapped text to spill out or be truncated abruptly.
 2. **Flexbox/Grid Intrinsic Min-Width**: By default, flex and grid items have `min-width: auto`, preventing children from shrinking below their intrinsic content width and pushing neighboring columns or buttons out of bounds.
 3. **Unmanaged Z-Index Wars**: Arbitrary z-index inflation (`z-[9999]`) causes unexpected layering bugs across dialogs, command palettes, and background decorations.
@@ -53,6 +54,11 @@ We establish five core architectural standards across all layout wrappers, pages
 - Static AST/regex inspection rule in `lib/dx/doctor.ts` (`checkLayoutTextClippingInvariants`) scanning for uncalibrated magic numbers, missing `min-w-0`, rigid heights, and rogue z-indexes.
 - Vitest dynamic content stress suite (`__tests__/defensive-css-stress.test.tsx`) rendering components with +40% text expansion, 100-character unbroken tokens, and 200% font zoom simulations.
 - Playwright viewport test probes asserting `element.scrollWidth <= element.clientWidth` across 320px–1280px viewports.
+
+### 6. Fluid Responsive SVG Viewports & Dynamic Coordinate Boundaries
+
+- Interactive SVG viewports and canvas workspace wrappers (`ProofCanvas`, `ProofWorkspaceSkeleton`, `VectorComparisonViewer`) eliminate fixed horizontal width limits (`min-w-[760px]`, `min-w-[800px]`) in favor of fluid `w-full` sizing and container query width units (`w-[100cqw]`).
+- Coordinate alignment guides (`maxGuideX`) and gesture boundaries dynamically observe container dimensions via `ResizeObserver` and `clientWidth`, providing accurate bounding calculations on mobile (375px) and desktop viewports without horizontal clipping or scrollbar locks.
 
 ## Consequences
 

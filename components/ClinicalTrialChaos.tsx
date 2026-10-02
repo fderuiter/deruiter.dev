@@ -16,12 +16,14 @@ import { useAnnouncer } from "@/hooks/useAnnouncer";
 import { cloneDeep } from "@/lib/utils";
 import { clamp } from "@/lib/game-utils";
 import { downloadFile } from "@/lib/download";
+import { recordArcadeScore } from "@/lib/arcade-achievements";
 import { getMatchMediaMatches } from "@/hooks/useMediaQuery";
 import {
   IconAlertTriangle,
   IconCheck,
   IconRefresh,
   IconPlayerPlay,
+  IconPlayerPause,
   IconTrophy,
   IconFileText,
   IconShieldCheck,
@@ -48,6 +50,7 @@ import { DynamicTabletOrientationHint as TabletOrientationHint } from "@/compone
 import { useGameFullscreen as useFullscreen } from "@/components/arcade/CabinetFullscreen";
 import { applyCanvasScale, computeCanvasResolution } from "@/lib/arcade";
 import { useAnimationFrame } from "@/hooks/useAnimationFrame";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 
 import {
   CDISCDomain,
@@ -68,6 +71,9 @@ import {
   RecordedRuleViolation,
   SDTMRow,
   BIMOInspectionReport,
+  StressParameters,
+  StressPresetId,
+  BIMOComplianceTrend,
 } from "@/lib/clinical-trial-chaos/types";
 import { StudyProtocol } from "@/lib/crf/types";
 
@@ -89,6 +95,7 @@ import {
   generateSDTMDataset,
   exportToCDISCODMXML,
   exportToSDTMCSV,
+  generateBIMOReport,
 } from "@/lib/clinical-trial-chaos/engine";
 
 import {
@@ -96,6 +103,8 @@ import {
   SEEDED_SCENARIOS,
   generateClinicalSubject,
   generateClinicalSubjectFromProtocol,
+  DEFAULT_STRESS_PARAMS,
+  STRESS_PRESETS,
 } from "@/lib/clinical-trial-chaos/scenarios";
 
 import {
@@ -151,7 +160,14 @@ import {
   selectNextDossier,
   formatNextDossierCue,
   buildInspectionReport,
-  canActivatePowerUp,
+  getPowerUpRefusal,
+  describePowerUpRefusal,
+  POWER_UP_REFUSAL_LABELS,
+  getPhaseProgress,
+  getPhaseLockTarget,
+  getViolationBreakdown,
+  isShiftClockHalted,
+  getShiftTickSeconds,
   spendPowerUp,
   startCoffeeBreak,
   extendSubjectDeadlines,
@@ -159,7 +175,6 @@ import {
   getFastTrackDomain,
   tickShiftClocks,
   getAmendmentIntervalSeconds,
-  getSubjectErrorChance,
   getSAEChance,
   describeSponsorEvent,
   SHIFT_END_LOGS,
@@ -344,6 +359,10 @@ export const ClinicalTrialChaos: React.FC = () => {
   const [gameMode, setGameMode] = useState<GameMode>("campaign");
   const [phase, setPhase] = useState<GamePhase>(1);
   const [playState, setPlayState] = useState<PlayState>("idle");
+  // A player pause (P or the Pause button) and an open Field Manual both hold
+  // the shift clocks still, as they do in the other arcade games (#1672).
+  const [isPaused, setIsPaused] = useState(false);
+  const [isManualOpen, setIsManualOpen] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   // Bitmap size of the conveyor canvas; changes trigger an idle redraw
   const [canvasSize, setCanvasSize] = useState("");
@@ -459,6 +478,40 @@ export const ClinicalTrialChaos: React.FC = () => {
     []
   );
 
+  // 3b. Interactive Stress Controls & Live BIMO Compliance Stream
+  const [stressParams, setStressParams] = useState<StressParameters>(
+    DEFAULT_STRESS_PARAMS
+  );
+  const stressParamsRef = useRef<StressParameters>(stressParams);
+  useEffect(() => {
+    stressParamsRef.current = stressParams;
+  }, [stressParams]);
+
+  const [isStressDrawerOpen, setIsStressDrawerOpen] = useState(false);
+
+  // Live BIMO Inspection Report & Compliance Score Trend
+  const liveBimoReport = useMemo(() => {
+    return generateBIMOReport(
+      scoreState,
+      auditor,
+      auditLogs,
+      ruleViolations,
+      activeProtocol
+    );
+  }, [scoreState, auditor, auditLogs, ruleViolations, activeProtocol]);
+
+  const prevLiveScoreRef = useRef(liveBimoReport.overallScore);
+  const [scoreTrend, setScoreTrend] = useState<BIMOComplianceTrend>("stable");
+
+  useEffect(() => {
+    if (liveBimoReport.overallScore > prevLiveScoreRef.current) {
+      setScoreTrend("improving");
+    } else if (liveBimoReport.overallScore < prevLiveScoreRef.current) {
+      setScoreTrend("declining");
+    }
+    prevLiveScoreRef.current = liveBimoReport.overallScore;
+  }, [liveBimoReport.overallScore]);
+
   // 4. DOM & Canvas references
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -567,6 +620,7 @@ export const ClinicalTrialChaos: React.FC = () => {
       setGameMode(mode);
       setPhase(targetPhase);
       setPlayState("playing");
+      setIsPaused(false);
       setAuditor(applyOfficeToAuditor(createInitialAuditorState(), office));
       ambientTimerRef.current = 0;
       const freshSponsor = createInitialSponsorState();
@@ -710,6 +764,21 @@ export const ClinicalTrialChaos: React.FC = () => {
       setPowerUps,
     ]
   );
+
+  // 8b. Pause and resume a running shift (#1672). The loop keeps drawing but
+  // advances no clock; the resume stamp keeps the first frame from jumping.
+  const togglePause = useCallback(() => {
+    if (playState !== "playing") return;
+    const next = !isPaused;
+    if (!next) lastTickTimeRef.current = Date.now();
+    setIsPaused(next);
+    announce(
+      next
+        ? "Shift paused. Every clock is stopped. Press P or Resume to continue."
+        : "Shift resumed.",
+      "assertive"
+    );
+  }, [playState, isPaused, announce]);
 
   // 9. Active Subject in Dossier
   const activeSubject = useMemo(() => {
@@ -877,6 +946,7 @@ export const ClinicalTrialChaos: React.FC = () => {
         "clinical_chaos_highscore",
         settledScore.highScore.toString()
       );
+      recordArcadeScore("clinical-chaos", settledScore.highScore);
       setPowerUps((pu) =>
         chargePowerUps(
           pu,
@@ -960,16 +1030,21 @@ export const ClinicalTrialChaos: React.FC = () => {
   // 13. Power-Up Trigger Execution
   const triggerPowerUp = useCallback(
     (type: PowerUpType) => {
-      if (
-        !canActivatePowerUp(
-          powerUps,
-          type,
-          playState === "playing",
-          !!activeSubject
-        )
-      )
-        return;
       const p = powerUps[type];
+      const refusal = getPowerUpRefusal(
+        powerUps,
+        type,
+        playState === "playing",
+        activeSubject
+      );
+      if (refusal) {
+        // Say why, and keep the charge: a lifeline that cannot change the
+        // dossier is never spent on it (#1673).
+        if (playState === "playing" && p) {
+          announce(describePowerUpRefusal(refusal, p.name), "polite");
+        }
+        return;
+      }
 
       triggerSound("powerup");
 
@@ -1345,6 +1420,8 @@ export const ClinicalTrialChaos: React.FC = () => {
   const renderConveyorCanvasRef = useRef(renderConveyorCanvas);
   const validatingObsRef = useRef(validatingObs);
   const signatureModalRef = useRef(signatureModal);
+  const isPausedRef = useRef(isPaused);
+  const isManualOpenRef = useRef(isManualOpen);
 
   // Sync refs on every render
   useEffect(() => {
@@ -1365,6 +1442,8 @@ export const ClinicalTrialChaos: React.FC = () => {
     renderConveyorCanvasRef.current = renderConveyorCanvas;
     validatingObsRef.current = validatingObs;
     signatureModalRef.current = signatureModal;
+    isPausedRef.current = isPaused;
+    isManualOpenRef.current = isManualOpen;
     activeProtocolRef.current = activeProtocol;
     ruleViolationsRef.current = ruleViolations;
   });
@@ -1467,12 +1546,19 @@ export const ClinicalTrialChaos: React.FC = () => {
       };
 
       const now = Date.now();
-      const isPausedByModal =
-        !!validatingObsRef.current ||
-        !!signatureModalRef.current?.isOpen ||
-        calibrationActiveRef.current;
-      const deltaMs = Math.min(100, now - lastTickTimeRef.current);
-      const deltaSeconds = isPausedByModal ? 0 : deltaMs / 1000;
+      // A pause, the Field Manual, a fix or signature dialog and calibration
+      // all hold every clock still through the shared rule (#1672).
+      const halted = isShiftClockHalted({
+        userPaused: isPausedRef.current,
+        manualOpen: isManualOpenRef.current,
+        dialogOpen:
+          !!validatingObsRef.current || !!signatureModalRef.current?.isOpen,
+        calibrating: calibrationActiveRef.current,
+      });
+      const deltaSeconds = getShiftTickSeconds(
+        now - lastTickTimeRef.current,
+        halted
+      );
       lastTickTimeRef.current = now;
 
       let uiNeedsSync = false;
@@ -1487,7 +1573,8 @@ export const ClinicalTrialChaos: React.FC = () => {
           powerUps: powerUpsRef.current,
           amendment: activeAmendmentRef.current,
         },
-        deltaSeconds
+        deltaSeconds,
+        stressParamsRef.current.auditorPacingMultiplier
       );
       conveyorSubjectsRef.current = tick.subjects;
       auditorRef.current = tick.auditor;
@@ -1573,7 +1660,8 @@ export const ClinicalTrialChaos: React.FC = () => {
       const spawnInterval = getSpawnIntervalSeconds(
         phaseRef.current,
         conveyorSubjectsRef.current.length,
-        (seconds) => applyOfficeSpawnInterval(seconds, officeRef.current)
+        (seconds) => applyOfficeSpawnInterval(seconds, officeRef.current),
+        stressParamsRef.current.arrivalRateMultiplier
       );
       if (
         spawnTimerRef.current > spawnInterval &&
@@ -1581,8 +1669,9 @@ export const ClinicalTrialChaos: React.FC = () => {
       ) {
         uiNeedsSync = true;
         spawnTimerRef.current = 0;
+        const baseErrorChance = stressParamsRef.current.errorChance;
         const errorChance = applyOfficeErrorChance(
-          getSubjectErrorChance(phaseRef.current),
+          baseErrorChance,
           officeRef.current
         );
         const isSAE = Math.random() < getSAEChance(phaseRef.current);
@@ -1702,6 +1791,62 @@ export const ClinicalTrialChaos: React.FC = () => {
       board.focus({ preventScroll: true });
     }
   }, [playState, validatingObs, signatureModal.isOpen]);
+
+  // 17a2. Modal dialogs (#1671): each traps Tab and Shift+Tab, closes on
+  // Escape and hands focus back to the board. The board's own key handler
+  // still sees their keys, so the number keys and Enter keep working.
+  const fixDialogOpen = !!validatingObs && playState === "playing";
+  const signatureDialogOpen =
+    signatureModal.isOpen &&
+    !!signatureModal.subject &&
+    playState === "playing";
+  const pauseDialogOpen = isPaused && playState === "playing";
+  const firstFixOptionRef = useRef<HTMLButtonElement | null>(null);
+  const signButtonRef = useRef<HTMLButtonElement | null>(null);
+  const resumeButtonRef = useRef<HTMLButtonElement | null>(null);
+  const fixDialogRef = useFocusTrap<HTMLDivElement>(fixDialogOpen, {
+    initialFocusRef: firstFixOptionRef,
+    onEscape: () => setValidatingObs(null),
+    returnFocusTo: containerRef,
+  });
+  const signatureDialogRef = useFocusTrap<HTMLDivElement>(signatureDialogOpen, {
+    initialFocusRef: signButtonRef,
+    onEscape: () => setSignatureModal((prev) => ({ ...prev, isOpen: false })),
+    returnFocusTo: containerRef,
+  });
+  const pauseDialogRef = useFocusTrap<HTMLDivElement>(pauseDialogOpen, {
+    initialFocusRef: resumeButtonRef,
+    onEscape: togglePause,
+    returnFocusTo: containerRef,
+  });
+
+  // A wrong pick disables the focused answer; move focus to the next open
+  // answer so it never falls back to the page behind the dialog.
+  useEffect(() => {
+    if (!fixDialogOpen) return;
+    const dialog = fixDialogRef.current;
+    const active = document.activeElement as HTMLElement | null;
+    if (
+      dialog &&
+      (!active || !dialog.contains(active) || active.hasAttribute("disabled"))
+    ) {
+      firstFixOptionRef.current?.focus();
+    }
+  }, [fixDialogOpen, fixDialogRef, rejectedChoices]);
+
+  // Everything behind an open dialog is inert, so neither Tab nor a pointer
+  // reaches the controls under the backdrop (#1671).
+  const anyTrappedDialogOpen =
+    fixDialogOpen || signatureDialogOpen || pauseDialogOpen;
+  useEffect(() => {
+    const board = containerRef.current;
+    if (!board || !anyTrappedDialogOpen) return;
+    const background = Array.from(board.children).filter(
+      (el) => !el.hasAttribute("data-cc-modal") && !el.hasAttribute("inert")
+    );
+    background.forEach((el) => el.setAttribute("inert", ""));
+    return () => background.forEach((el) => el.removeAttribute("inert"));
+  }, [anyTrappedDialogOpen]);
 
   // 17b. Draw a single static frame while the shift is not running
   useEffect(() => {
@@ -1824,6 +1969,18 @@ export const ClinicalTrialChaos: React.FC = () => {
       }
       return;
     }
+
+    // The Field Manual holds the shift; no game key acts behind it (#1672).
+    if (isManualOpen) return;
+
+    // P pauses and resumes the shift, as in the other arcade games (#1672).
+    if (key === "P") {
+      e.preventDefault();
+      togglePause();
+      return;
+    }
+    // While paused only P, or Escape and Resume in the pause dialog, act.
+    if (isPaused) return;
 
     // Enter performs the next step: fix the next flagged field, or route a clean CRF
     if (key === "ENTER" && activeSubject && e.target === e.currentTarget) {
@@ -2053,7 +2210,13 @@ export const ClinicalTrialChaos: React.FC = () => {
   );
 
   // Derived guidance for the "what do I do next" flow: fix → route → sign
-  const phaseTarget = PHASE_TARGETS[phase];
+  // The header counts this phase's locks against this phase's target (#1673).
+  const phaseProgress = getPhaseProgress(scoreState, gameMode, phase);
+  const phaseTarget = phaseProgress.target ?? getPhaseLockTarget(phase);
+  const violationBreakdown = getViolationBreakdown(
+    scoreState,
+    ruleViolations.length
+  );
   const flaggedObs =
     activeSubject?.observations.filter((o) => !o.isResolved) ?? [];
   const nextFlaggedObs = flaggedObs[0] ?? null;
@@ -2231,29 +2394,55 @@ export const ClinicalTrialChaos: React.FC = () => {
             <span
               className="flex items-center gap-1"
               role="img"
-              aria-label={`${Math.min(scoreState.subjectsSubmitted, phaseTarget)} of ${phaseTarget} CRFs locked`}
+              aria-label={`${Math.min(phaseProgress.locked, phaseTarget)} of ${phaseTarget} CRFs locked in this phase`}
             >
               {Array.from({ length: phaseTarget }, (_, i) => (
                 <span
                   key={i}
                   className={`h-2 w-2 rounded-sm transition-colors ${
-                    i < scoreState.subjectsSubmitted
-                      ? "bg-emerald-400"
-                      : "bg-zinc-700"
+                    i < phaseProgress.locked ? "bg-emerald-400" : "bg-zinc-700"
                   }`}
                 />
               ))}
             </span>
           )}
           <span className="tabular-nums text-zinc-300">
-            {scoreState.subjectsSubmitted}
+            {phaseProgress.locked}
             {gameMode === "campaign" ? `/${phaseTarget}` : ""}
             <span className="hidden sm:inline"> locked</span>
           </span>
         </div>
 
         <div className="ml-auto flex items-center gap-1.5">
-          <FieldManualButton manualId="clinical-chaos" label="Manual" />
+          {playState === "playing" && (
+            // Compact, like the audio toggles beside it, so the header keeps
+            // one row with a four-digit score at 1280px.
+            <button
+              type="button"
+              onClick={togglePause}
+              aria-label={isPaused ? "Resume shift" : "Pause shift"}
+              aria-keyshortcuts="P"
+              title={isPaused ? "Resume the shift (P)" : "Pause the shift (P)"}
+              className="flex h-11 min-h-[44px] min-w-[44px] items-center justify-center gap-1 rounded-lg border border-zinc-800 bg-[#13151a] px-2 text-xs font-bold text-zinc-300 transition hover:text-white"
+            >
+              {isPaused ? (
+                <IconPlayerPlay className="h-4 w-4" aria-hidden="true" />
+              ) : (
+                <IconPlayerPause className="h-4 w-4" aria-hidden="true" />
+              )}
+              <kbd
+                aria-hidden="true"
+                className="rounded border border-zinc-700 px-1 text-[10px] font-normal text-zinc-400"
+              >
+                P
+              </kbd>
+            </button>
+          )}
+          <FieldManualButton
+            manualId="clinical-chaos"
+            label="Manual"
+            onOpenChange={setIsManualOpen}
+          />
           <button
             type="button"
             onClick={() => setBgmEnabled(!bgmEnabled)}
@@ -2339,6 +2528,37 @@ export const ClinicalTrialChaos: React.FC = () => {
               )}
             </button>
           ))}
+
+          {/* Stress Control & BIMO Stream Toggle Button */}
+          <button
+            type="button"
+            onClick={() => setIsStressDrawerOpen((prev) => !prev)}
+            aria-expanded={isStressDrawerOpen}
+            aria-label="Toggle Interactive Stress Control Panel and Live BIMO Stream"
+            className={`flex min-h-[44px] shrink-0 items-center gap-1.5 rounded-lg px-3 text-xs font-bold transition border ${
+              isStressDrawerOpen
+                ? "border-amber-500 bg-amber-500/20 text-amber-200"
+                : "border-zinc-700 bg-zinc-800/80 text-zinc-300 hover:border-zinc-600 hover:text-white"
+            }`}
+          >
+            <IconBolt className="h-4 w-4 text-amber-400" />
+            <span className="hidden sm:inline">Stress & BIMO Stream</span>
+            <span className="sm:hidden">Stress</span>
+            {liveBimoReport && (
+              <span
+                className={`rounded px-1.5 py-0.5 text-[10px] font-semibold tabular-nums ${
+                  liveBimoReport.verdict.startsWith("NAI")
+                    ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+                    : liveBimoReport.verdict.startsWith("VAI")
+                      ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                      : "bg-rose-500/20 text-rose-300 border border-rose-500/30"
+                }`}
+              >
+                {liveBimoReport.overallScore}% (
+                {liveBimoReport.verdict.split(" ")[0]})
+              </span>
+            )}
+          </button>
         </div>
         <span className="hidden min-w-0 items-center gap-1.5 text-[10px] text-zinc-400 sm:flex">
           <span
@@ -2561,6 +2781,16 @@ export const ClinicalTrialChaos: React.FC = () => {
                   <output htmlFor="clinical-playstate">
                     Play State: {playState}
                   </output>
+                  <output htmlFor="clinical-paused">
+                    Shift clocks:{" "}
+                    {playState !== "playing"
+                      ? "stopped"
+                      : isPaused
+                        ? "paused"
+                        : isManualOpen
+                          ? "paused while the Field Manual is open"
+                          : "running"}
+                  </output>
                   <output htmlFor="clinical-auditor">
                     BIMO Auditor Behavior: {auditor.behavior} (Suspicion:{" "}
                     {Math.round(auditor.suspicion)}%)
@@ -2593,6 +2823,15 @@ export const ClinicalTrialChaos: React.FC = () => {
                     {playState === "phase_cleared"
                       ? `Start Phase ${phase < 3 ? phase + 1 : 1}`
                       : "Start Phase 1"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={togglePause}
+                    disabled={playState !== "playing"}
+                    aria-pressed={isPaused}
+                  >
+                    {isPaused ? "Resume Shift" : "Pause Shift"} (P)
                   </button>
 
                   <button
@@ -2661,22 +2900,29 @@ export const ClinicalTrialChaos: React.FC = () => {
                       ["query-extension", "Query Extension"],
                       ["fast-sign", "Fast-Track"],
                     ] as const
-                  ).map(([type, label]) => (
-                    <button
-                      key={type}
-                      type="button"
-                      onClick={() => triggerPowerUp(type)}
-                      disabled={
-                        playState !== "playing" ||
-                        powerUps[type].charge < powerUps[type].maxCharge ||
-                        ((type === "auto-clean" || type === "fast-sign") &&
-                          !activeSubject)
-                      }
-                    >
-                      Activate {label} ({powerUps[type].charge} of{" "}
-                      {powerUps[type].maxCharge} charge)
-                    </button>
-                  ))}
+                  ).map(([type, label]) => {
+                    const refusal = getPowerUpRefusal(
+                      powerUps,
+                      type,
+                      playState === "playing",
+                      activeSubject
+                    );
+                    return (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => triggerPowerUp(type)}
+                        disabled={refusal !== null}
+                      >
+                        Activate {label} ({powerUps[type].charge} of{" "}
+                        {powerUps[type].maxCharge} charge)
+                        {refusal === "nothing_to_clean" ||
+                        refusal === "no_dossier"
+                          ? `: ${POWER_UP_REFUSAL_LABELS[refusal]}`
+                          : ""}
+                      </button>
+                    );
+                  })}
                 </div>
               </fieldset>
             </div>
@@ -3231,17 +3477,30 @@ export const ClinicalTrialChaos: React.FC = () => {
                       const p = powerUps[type];
                       const isReady = p.charge >= p.maxCharge;
                       const isActive = p.activeSecondsRemaining > 0;
+                      // A charged lifeline that cannot change the open
+                      // dossier says why instead of READY (#1673).
+                      const refusal = getPowerUpRefusal(
+                        powerUps,
+                        type,
+                        true,
+                        activeSubject
+                      );
+                      const blockedLabel =
+                        refusal === "nothing_to_clean" ||
+                        refusal === "no_dossier"
+                          ? POWER_UP_REFUSAL_LABELS[refusal]
+                          : null;
                       return (
                         <button
                           key={type}
                           type="button"
                           onClick={() => triggerPowerUp(type)}
-                          disabled={
-                            !isReady ||
-                            ((type === "auto-clean" || type === "fast-sign") &&
-                              !activeSubject)
+                          disabled={refusal !== null}
+                          title={
+                            refusal && blockedLabel
+                              ? describePowerUpRefusal(refusal, p.name)
+                              : p.description
                           }
-                          title={p.description}
                           className={`flex min-h-[56px] min-w-0 flex-col justify-between rounded-lg border p-2 text-left transition active:scale-[0.98] ${
                             isActive
                               ? "border-violet-400/60 bg-violet-500/10"
@@ -3292,9 +3551,11 @@ export const ClinicalTrialChaos: React.FC = () => {
                             >
                               {isActive
                                 ? `${Math.ceil(p.activeSecondsRemaining)}s`
-                                : isReady
-                                  ? "READY"
-                                  : `${p.charge}/${p.maxCharge}`}
+                                : blockedLabel
+                                  ? blockedLabel.toUpperCase()
+                                  : isReady
+                                    ? "READY"
+                                    : `${p.charge}/${p.maxCharge}`}
                             </span>
                           </span>
                         </button>
@@ -3322,7 +3583,7 @@ export const ClinicalTrialChaos: React.FC = () => {
                   </h3>
                   <p className="mt-1 text-[11px] text-zinc-400">
                     {gameMode === "campaign"
-                      ? `Lock ${PHASE_TARGETS[1]} CRFs to clear Phase 1. Three phases, each busier than the last.`
+                      ? `Lock ${getPhaseLockTarget(1)} CRFs to clear Phase 1, then ${getPhaseLockTarget(2)} more in Phase 2 and ${getPhaseLockTarget(3)} more in Phase 3. Each phase is busier than the last.`
                       : "No finish line. Lock as many CRFs as you can before someone ends your career."}
                   </p>
                 </div>
@@ -3659,7 +3920,7 @@ export const ClinicalTrialChaos: React.FC = () => {
               <p className="mx-auto mt-1 max-w-md text-xs text-zinc-400">
                 {playState === "phase_cleared"
                   ? phase < 3
-                    ? `Phase ${phase + 1} opens more EDC stations and a faster conveyor.`
+                    ? `Phase ${phase + 1} opens more EDC stations and a faster conveyor, and asks for ${getPhaseLockTarget((phase + 1) as GamePhase)} more locks. Your score carries over.`
                     : "Database locked. All trial data validated and archived."
                   : gameOverReason === "sponsor"
                     ? "Sponsor satisfaction hit 0%. They 'decided to go in a different direction' and awarded the study to a vendor whose bid was 40% cheaper and entirely hypothetical."
@@ -3679,10 +3940,11 @@ export const ClinicalTrialChaos: React.FC = () => {
                     tone: "text-emerald-300",
                   },
                   {
-                    // Wrong fixes are recorded as rule violations and missed
-                    // or misrouted CRFs as audit violations; count both (#1325).
+                    // Expired subjects, misrouted CRFs and wrong fixes, the
+                    // same breakdown the inspection report uses (#1670).
                     label: "Violations",
-                    value: scoreState.auditViolations + ruleViolations.length,
+                    value: violationBreakdown.total,
+                    detail: `${violationBreakdown.expired} expired · ${violationBreakdown.misrouted} misrouted · ${violationBreakdown.wrongFixes} wrong ${violationBreakdown.wrongFixes === 1 ? "fix" : "fixes"}`,
                     tone: "text-rose-300",
                   },
                   {
@@ -3703,6 +3965,11 @@ export const ClinicalTrialChaos: React.FC = () => {
                     >
                       {stat.value}
                     </dd>
+                    {stat.detail && (
+                      <dd className="mt-0.5 text-[10px] leading-snug text-zinc-400 break-words">
+                        {stat.detail}
+                      </dd>
+                    )}
                   </div>
                 ))}
               </dl>
@@ -3820,16 +4087,33 @@ export const ClinicalTrialChaos: React.FC = () => {
           {/* SDTM Table */}
           <div className="overflow-x-auto max-h-72 border border-zinc-800 rounded-lg">
             <table className="w-full text-left text-xs font-mono">
+              <caption className="sr-only">Clinical Trial SDTM Dataset</caption>
               <thead className="bg-zinc-950 text-zinc-400 uppercase text-[10px] border-b border-zinc-800 sticky top-0">
                 <tr>
-                  <th className="p-2.5">STUDYID</th>
-                  <th className="p-2.5">DOMAIN</th>
-                  <th className="p-2.5">USUBJID</th>
-                  <th className="p-2.5">TESTCD</th>
-                  <th className="p-2.5">TEST NAME</th>
-                  <th className="p-2.5">RAW (ORRES)</th>
-                  <th className="p-2.5">STANDARDIZED (STRESC)</th>
-                  <th className="p-2.5">STATUS</th>
+                  <th scope="col" className="p-2.5">
+                    STUDYID
+                  </th>
+                  <th scope="col" className="p-2.5">
+                    DOMAIN
+                  </th>
+                  <th scope="col" className="p-2.5">
+                    USUBJID
+                  </th>
+                  <th scope="col" className="p-2.5">
+                    TESTCD
+                  </th>
+                  <th scope="col" className="p-2.5">
+                    TEST NAME
+                  </th>
+                  <th scope="col" className="p-2.5">
+                    RAW (ORRES)
+                  </th>
+                  <th scope="col" className="p-2.5">
+                    STANDARDIZED (STRESC)
+                  </th>
+                  <th scope="col" className="p-2.5">
+                    STATUS
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-800/60 bg-zinc-900/40">
@@ -3933,10 +4217,59 @@ export const ClinicalTrialChaos: React.FC = () => {
         </div>
       )}
 
+      {/* Shift pause (#1672): every clock stops until the player resumes. */}
+      {pauseDialogOpen && (
+        <div
+          data-cc-modal="true"
+          className="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        >
+          <div
+            ref={pauseDialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cc-pause-dialog-title"
+            aria-describedby="cc-pause-dialog-desc"
+            className="max-w-sm w-full rounded-2xl border border-zinc-700 bg-zinc-950 p-6 text-center shadow-2xl"
+          >
+            <IconPlayerPause
+              className="mx-auto h-6 w-6 text-amber-400"
+              aria-hidden="true"
+            />
+            <h2
+              id="cc-pause-dialog-title"
+              className="mt-2 text-base font-bold text-white"
+            >
+              Shift paused
+            </h2>
+            <p
+              id="cc-pause-dialog-desc"
+              className="mt-1 text-xs leading-relaxed text-zinc-400"
+            >
+              Subject timers, the auditor, the sponsor and your lifelines are
+              all stopped. Press P or Resume to continue.
+            </p>
+            <button
+              ref={resumeButtonRef}
+              type="button"
+              onClick={togglePause}
+              aria-keyshortcuts="P"
+              className="mt-4 inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-emerald-500 px-5 text-xs font-bold uppercase tracking-wider text-black transition hover:bg-emerald-400 active:scale-[0.98]"
+            >
+              <IconPlayerPlay className="h-4 w-4" aria-hidden="true" />
+              Resume shift (P)
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Multi-Choice Regulatory Validation Drawer Modal */}
       {validatingObs && playState === "playing" && (
-        <div className="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div
+          data-cc-modal="true"
+          className="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        >
           <div
+            ref={fixDialogRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="cc-fix-dialog-title"
@@ -3945,12 +4278,12 @@ export const ClinicalTrialChaos: React.FC = () => {
             <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
               <div className="flex items-center gap-2">
                 <IconHelp className="h-5 w-5 text-amber-400" />
-                <h3
+                <h2
                   id="cc-fix-dialog-title"
                   className="text-base font-bold text-white"
                 >
                   CDISC Controlled Terminology Validation
-                </h3>
+                </h2>
               </div>
               <button
                 onClick={() => setValidatingObs(null)}
@@ -3995,14 +4328,21 @@ export const ClinicalTrialChaos: React.FC = () => {
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {getObservationChoices(validatingObs.obs).map(
-                    (opt, optIdx) => {
-                      const isRejected =
+                    (opt, optIdx, options) => {
+                      const rejectedHere =
                         rejectedChoices[
                           `${validatingObs.subjectId}:${validatingObs.obs.id}`
-                        ]?.includes(opt) ?? false;
+                        ] ?? [];
+                      const isRejected = rejectedHere.includes(opt);
+                      // Focus lands on the first answer still open (#1671).
+                      const isFirstOpen =
+                        !isRejected &&
+                        options.findIndex((o) => !rejectedHere.includes(o)) ===
+                          optIdx;
                       return (
                         <button
                           key={opt}
+                          ref={isFirstOpen ? firstFixOptionRef : undefined}
                           type="button"
                           onClick={() => handleSelectChoice(opt)}
                           disabled={isRejected}
@@ -4071,8 +4411,12 @@ export const ClinicalTrialChaos: React.FC = () => {
       {signatureModal.isOpen &&
         signatureModal.subject &&
         playState === "playing" && (
-          <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div
+            data-cc-modal="true"
+            className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4"
+          >
             <div
+              ref={signatureDialogRef}
               role="dialog"
               aria-modal="true"
               aria-labelledby="cc-sign-dialog-title"
@@ -4081,12 +4425,12 @@ export const ClinicalTrialChaos: React.FC = () => {
               <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
                 <div className="flex items-center gap-2">
                   <IconLock className="h-5 w-5 text-brand-cyan" />
-                  <h3
+                  <h2
                     id="cc-sign-dialog-title"
                     className="text-base font-bold text-white"
                   >
                     21 CFR Part 11 Electronic Signature
-                  </h3>
+                  </h2>
                 </div>
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">
                   {targetRoutingStation} EDC LOCK
@@ -4187,6 +4531,7 @@ export const ClinicalTrialChaos: React.FC = () => {
                   Cancel (Esc)
                 </button>
                 <button
+                  ref={signButtonRef}
                   onClick={handleConfirmSignature}
                   className="flex min-h-[44px] items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold text-xs uppercase tracking-wider hover:opacity-90 transition shadow-lg shadow-cyan-500/20"
                 >
@@ -4231,7 +4576,7 @@ export const ClinicalTrialChaos: React.FC = () => {
             </div>
 
             <div className="mt-4 space-y-4 text-xs font-mono">
-              <div className="grid grid-cols-3 gap-3 bg-zinc-900/80 p-3 rounded-xl border border-zinc-800">
+              <div className="grid grid-cols-2 gap-3 bg-zinc-900/80 p-3 rounded-xl border border-zinc-800 sm:grid-cols-4">
                 <div>
                   <span className="text-[10px] text-zinc-400 uppercase block">
                     Compliance Score
@@ -4256,6 +4601,22 @@ export const ClinicalTrialChaos: React.FC = () => {
                   </span>
                   <span className="text-lg font-bold text-white">
                     {bimoReport.submittedCRFs}
+                  </span>
+                </div>
+                <div>
+                  {/* Expired subjects were never processed, so they sit
+                      beside the clean rate rather than inside it (#1670). */}
+                  <span className="text-[10px] text-zinc-400 block uppercase">
+                    Expired
+                  </span>
+                  <span
+                    className={`text-lg font-bold ${
+                      bimoReport.expiredCRFs > 0
+                        ? "text-rose-300"
+                        : "text-white"
+                    }`}
+                  >
+                    {bimoReport.expiredCRFs}
                   </span>
                 </div>
               </div>
@@ -4375,6 +4736,315 @@ export const ClinicalTrialChaos: React.FC = () => {
             <IconExternalLink className="h-3.5 w-3.5" />
           </Link>
         </div>
+      )}
+
+      {/* Interactive Stress Control Panel & Live BIMO Stream Drawer */}
+      {isStressDrawerOpen && (
+        <aside
+          aria-label="Interactive Stress Control Panel and Live BIMO Stream"
+          className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l border-zinc-800 bg-zinc-950/95 p-4 text-zinc-100 backdrop-blur-md shadow-2xl transition-all sm:w-96"
+        >
+          {/* Drawer Header */}
+          <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+            <div className="flex items-center gap-2">
+              <IconBolt className="h-5 w-5 text-amber-400" />
+              <h2 className="text-sm font-bold text-zinc-100">
+                Stress Control & BIMO Stream
+              </h2>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsStressDrawerOpen(false)}
+              className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg p-1 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+              aria-label="Close Stress Control Drawer"
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto py-3 space-y-5 pr-1">
+            {/* 1. Stress Parameter Overrides & Presets */}
+            <section className="space-y-4 rounded-xl border border-zinc-800 bg-zinc-900/60 p-3.5">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-amber-400">
+                  ⚡ Stress Parameters
+                </h3>
+                <span className="text-[10px] text-zinc-400 font-mono">
+                  21 CFR § 11 / § 812
+                </span>
+              </div>
+
+              {/* Presets */}
+              <div>
+                <label className="block text-[11px] font-medium text-zinc-400 mb-1.5">
+                  Scenario Presets:
+                </label>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {(Object.keys(STRESS_PRESETS) as StressPresetId[]).map(
+                    (key) => {
+                      const preset = STRESS_PRESETS[key];
+                      const isActive =
+                        stressParams.arrivalRateMultiplier ===
+                          preset.params.arrivalRateMultiplier &&
+                        stressParams.errorChance ===
+                          preset.params.errorChance &&
+                        stressParams.auditorPacingMultiplier ===
+                          preset.params.auditorPacingMultiplier;
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => setStressParams({ ...preset.params })}
+                          className={`min-h-[44px] rounded-lg px-2.5 py-1.5 text-left text-xs transition border ${
+                            isActive
+                              ? "border-amber-500 bg-amber-500/20 text-amber-200 font-bold"
+                              : "border-zinc-800 bg-zinc-800/50 text-zinc-300 hover:border-zinc-700 hover:bg-zinc-800"
+                          }`}
+                        >
+                          <div className="font-semibold">{preset.name}</div>
+                          <div className="text-[10px] text-zinc-400 line-clamp-1">
+                            {preset.description}
+                          </div>
+                        </button>
+                      );
+                    }
+                  )}
+                </div>
+              </div>
+
+              {/* Sliders */}
+              <div className="space-y-3 pt-2">
+                {/* Arrival Rate */}
+                <div>
+                  <div className="flex justify-between text-xs font-medium mb-1">
+                    <span className="text-zinc-300">Subject Arrival Rate</span>
+                    <span className="tabular-nums text-amber-400 font-bold">
+                      {stressParams.arrivalRateMultiplier.toFixed(1)}x
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0.5"
+                    max="3.0"
+                    step="0.1"
+                    value={stressParams.arrivalRateMultiplier}
+                    onChange={(e) =>
+                      setStressParams((prev) => ({
+                        ...prev,
+                        arrivalRateMultiplier: parseFloat(e.target.value),
+                      }))
+                    }
+                    aria-label="Subject Arrival Rate Slider"
+                    className="w-full accent-amber-500 h-1.5 bg-zinc-800 rounded-lg cursor-pointer"
+                  />
+                  <div className="flex justify-between text-[10px] text-zinc-500 mt-0.5">
+                    <span>0.5x (Slow)</span>
+                    <span>1.0x (Normal)</span>
+                    <span>3.0x (Surge)</span>
+                  </div>
+                </div>
+
+                {/* Error Chance */}
+                <div>
+                  <div className="flex justify-between text-xs font-medium mb-1">
+                    <span className="text-zinc-300">
+                      Observation Error Chance
+                    </span>
+                    <span className="tabular-nums text-amber-400 font-bold">
+                      {Math.round(stressParams.errorChance * 100)}%
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1.0"
+                    step="0.05"
+                    value={stressParams.errorChance}
+                    onChange={(e) =>
+                      setStressParams((prev) => ({
+                        ...prev,
+                        errorChance: parseFloat(e.target.value),
+                      }))
+                    }
+                    aria-label="Observation Error Chance Slider"
+                    className="w-full accent-amber-500 h-1.5 bg-zinc-800 rounded-lg cursor-pointer"
+                  />
+                  <div className="flex justify-between text-[10px] text-zinc-500 mt-0.5">
+                    <span>0% (Clean)</span>
+                    <span>50% (Standard)</span>
+                    <span>100% (High Error)</span>
+                  </div>
+                </div>
+
+                {/* Auditor Pacing */}
+                <div>
+                  <div className="flex justify-between text-xs font-medium mb-1">
+                    <span className="text-zinc-300">
+                      Auditor Inspection Pacing
+                    </span>
+                    <span className="tabular-nums text-amber-400 font-bold">
+                      {stressParams.auditorPacingMultiplier.toFixed(1)}x
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0.5"
+                    max="3.0"
+                    step="0.1"
+                    value={stressParams.auditorPacingMultiplier}
+                    onChange={(e) =>
+                      setStressParams((prev) => ({
+                        ...prev,
+                        auditorPacingMultiplier: parseFloat(e.target.value),
+                      }))
+                    }
+                    aria-label="Auditor Inspection Pacing Slider"
+                    className="w-full accent-amber-500 h-1.5 bg-zinc-800 rounded-lg cursor-pointer"
+                  />
+                  <div className="flex justify-between text-[10px] text-zinc-500 mt-0.5">
+                    <span>0.5x (Relaxed)</span>
+                    <span>1.0x (Standard)</span>
+                    <span>3.0x (Intense Patrol)</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* 2. Live BIMO Compliance Stream */}
+            <section className="space-y-3 rounded-xl border border-zinc-800 bg-zinc-900/60 p-3.5">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                  Live BIMO Stream
+                </h3>
+                <span className="text-[10px] tabular-nums font-mono text-zinc-400">
+                  Score: {liveBimoReport.overallScore}%
+                </span>
+              </div>
+
+              {/* Score & Verdict Header */}
+              <div className="flex items-center justify-between rounded-lg bg-zinc-950 p-2.5 border border-zinc-800">
+                <div>
+                  <div className="text-[10px] text-zinc-400 uppercase tracking-wider">
+                    Score &amp; Trend
+                  </div>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-lg font-bold tabular-nums text-white">
+                      {liveBimoReport.overallScore}/100
+                    </span>
+                    <span
+                      className={`text-xs font-semibold flex items-center gap-0.5 ${
+                        scoreTrend === "improving"
+                          ? "text-emerald-400"
+                          : scoreTrend === "declining"
+                            ? "text-rose-400"
+                            : "text-zinc-400"
+                      }`}
+                    >
+                      {scoreTrend === "improving" && "▲ Improving"}
+                      {scoreTrend === "declining" && "▼ Declining"}
+                      {scoreTrend === "stable" && "▶ Stable"}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="text-right">
+                  <div className="text-[10px] text-zinc-400 uppercase tracking-wider">
+                    Verdict Status
+                  </div>
+                  <div
+                    className={`text-xs font-bold mt-0.5 rounded px-2 py-0.5 inline-block ${
+                      liveBimoReport.verdict.startsWith("NAI")
+                        ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+                        : liveBimoReport.verdict.startsWith("VAI")
+                          ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                          : "bg-rose-500/20 text-rose-300 border border-rose-500/30"
+                    }`}
+                  >
+                    {liveBimoReport.verdict.split(" ")[0]}
+                  </div>
+                </div>
+              </div>
+
+              {/* Warning Banner if threshold violations occur */}
+              {(liveBimoReport.verdict.startsWith("OAI") ||
+                liveBimoReport.findings.some(
+                  (f) => f.severity === "Critical"
+                )) && (
+                <div className="rounded-lg border border-rose-500/40 bg-rose-950/40 p-2.5 text-xs text-rose-200 flex items-start gap-2 animate-pulse">
+                  <IconAlertTriangle className="h-5 w-5 shrink-0 text-rose-400 mt-0.5" />
+                  <div>
+                    <div className="font-bold text-rose-300">
+                      REGULATORY THRESHOLD VIOLATION
+                    </div>
+                    <div className="text-[11px] text-rose-200/80 mt-0.5">
+                      Immediate corrective action required under 21 CFR § 312.44
+                      &amp; 21 CFR § 812. Form 483 risk elevated.
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Findings Stream */}
+              <div>
+                <div className="text-[11px] font-semibold text-zinc-400 mb-2 flex justify-between">
+                  <span>
+                    Regulatory Findings ({liveBimoReport.findings.length}):
+                  </span>
+                  <span className="text-[10px] text-zinc-500">Live Feed</span>
+                </div>
+
+                {liveBimoReport.findings.length === 0 ? (
+                  <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-3 text-center text-xs text-zinc-400">
+                    <IconShieldCheck className="mx-auto h-5 w-5 text-emerald-400 mb-1" />
+                    No regulatory violations detected. Site systems compliant.
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                    {liveBimoReport.findings.map((f, i) => (
+                      <div
+                        key={f.id || i}
+                        className="rounded-lg border border-zinc-800 bg-zinc-950 p-2.5 space-y-1 text-left"
+                      >
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-mono font-bold text-zinc-300">
+                            {f.id}
+                          </span>
+                          <span
+                            className={`rounded px-1.5 py-0.2 text-[10px] font-semibold ${
+                              f.severity === "Critical"
+                                ? "bg-rose-500/20 text-rose-300 border border-rose-500/30"
+                                : f.severity === "Major"
+                                  ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                                  : "bg-blue-500/20 text-blue-300 border border-blue-500/30"
+                            }`}
+                          >
+                            {f.severity}
+                          </span>
+                        </div>
+                        <p className="text-xs text-zinc-300 leading-snug">
+                          {f.description}
+                        </p>
+                        <div className="text-[10px] text-amber-400/90 font-mono">
+                          📜 {f.regulation}
+                        </div>
+                        {f.actionableGuidance && (
+                          <div className="text-[10px] text-emerald-300/90 bg-emerald-950/40 border border-emerald-800/40 rounded p-1 mt-1">
+                            💡 <strong>Guidance:</strong> {f.actionableGuidance}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </section>
+          </div>
+        </aside>
       )}
     </div>
   );

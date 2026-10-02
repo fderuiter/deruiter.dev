@@ -227,7 +227,7 @@ describe("Dungeon Master AI & Wireframe Boss Engine", () => {
 
       // Player at (5, 4) - enemy will step to (5, 4)
       const res = updateEnemyAI([enemy], openGrid, 5, 4, 100);
-      expect(res.caughtPlayer).toBe(true);
+      expect(res.contactedPlayer).toBe(true);
       expect(res.damageToPlayer).toBe(25);
     });
   });

@@ -114,6 +114,8 @@ export interface FallacyDiagnosis {
   conclusion?: FallacyFormulaAst;
   variables?: string[];
   counterexampleValuation?: Record<string, boolean>;
+  sourceId?: string;
+  targetId?: string;
 }
 
 export interface TheoremDefinition {
@@ -2528,6 +2530,8 @@ export function getFallacyDiagnosis(
           "A dependent operation needs all of its prerequisites.",
         premises,
         conclusion,
+        sourceId: s,
+        targetId: t,
         ...table,
       };
     }
@@ -2568,6 +2572,8 @@ export function getFallacyDiagnosis(
       variables,
       truthTable: enhancedTable,
       counterexampleValuation: { P: false, Q: false },
+      sourceId: s,
+      targetId: t,
     };
   }
 
@@ -2610,6 +2616,8 @@ export function getFallacyDiagnosis(
       variables,
       truthTable,
       counterexampleValuation: counterexampleValuation || { P: false, Q: true },
+      sourceId: s,
+      targetId: t,
     };
   }
 
@@ -2650,6 +2658,8 @@ export function getFallacyDiagnosis(
       variables,
       truthTable,
       counterexampleValuation: counterexampleValuation || { P: false, Q: true },
+      sourceId: s,
+      targetId: t,
     };
   }
 
@@ -2687,6 +2697,8 @@ export function getFallacyDiagnosis(
     variables,
     truthTable,
     counterexampleValuation: counterexampleValuation || { P: true, Q: false },
+    sourceId: s,
+    targetId: t,
   };
 }
 
@@ -3241,7 +3253,7 @@ export function exportWorkspaceProof(
   edges: Edge[],
   theoremId: TheoremId | TheoremDefinition = "modus-ponens"
 ): string {
-  if (theoremId === "custom") {
+  if (typeof theoremId === "string" && theoremId === "custom") {
     return "CUSTOM WORKSPACE UNAVAILABLE: Entered formulas are not yet loaded into the proof graph, so no faithful export can be generated.";
   }
 
@@ -3309,19 +3321,58 @@ export function exportProofToMermaid(
       : THEOREMS[theoremId] || THEOREMS["modus-ponens"];
   const { isC_Proven, isE_Proven } = evaluateProofStatus(edges, theoremId);
 
+  const interId = th.intermediateNodeId || "C";
+  const targetId = th.targetNodeId || "E";
+
   const nodeDefs = th.nodes
     .map((n) => {
       let isProven = true;
-      if (n.id === "C") isProven = isC_Proven;
-      if (n.id === "E") isProven = isE_Proven;
+      if (n.id === interId) isProven = isC_Proven;
+      if (n.id === targetId) isProven = isE_Proven;
       const statusIcon = isProven ? "✔" : "⏳";
-      return `    Node_${n.id}["${statusIcon} [Node ${n.id}] ${n.label}\\n${n.type.toUpperCase()}"]`;
+      const cleanLabel = n.label.replace(/"/g, '\\"');
+      return `    Node_${n.id}["${statusIcon} [Node ${n.id}] ${cleanLabel}\\n${n.type.toUpperCase()}"]`;
     })
     .join("\n");
 
   const edgeDefs = edges
     .map((e) => `    Node_${e.source} --> Node_${e.target}`)
     .join("\n");
+
+  if (th.id === "custom") {
+    const provenNodes = th.nodes
+      .filter(
+        (n) =>
+          n.type === "premise" ||
+          (n.id === interId && isC_Proven) ||
+          (n.id === targetId && isE_Proven)
+      )
+      .map((n) => `Node_${n.id}`);
+
+    const pendingNodes = th.nodes
+      .filter((n) => !provenNodes.includes(`Node_${n.id}`))
+      .map((n) => `Node_${n.id}`);
+
+    const provenClassLine =
+      provenNodes.length > 0
+        ? `    class ${provenNodes.join(",")} proven;`
+        : "";
+    const pendingClassLine =
+      pendingNodes.length > 0
+        ? `    class ${pendingNodes.join(",")} pending;`
+        : "";
+
+    return `graph TD
+    %% Workspace status: ${isE_Proven ? "GRAPH COMPLETE (local simulation)" : "INCOMPLETE"}
+    %% Formal Logic Proof Graph: ${th.title}
+${nodeDefs}
+${edgeDefs}
+    classDef proven fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#ecfdf5;
+    classDef pending fill:#18181b,stroke:#52525b,stroke-width:1px,color:#a1a1aa;
+${provenClassLine}
+${pendingClassLine}
+`;
+  }
 
   return `graph LR
     %% Workspace status: ${isE_Proven ? "GRAPH COMPLETE (local simulation)" : "INCOMPLETE"}

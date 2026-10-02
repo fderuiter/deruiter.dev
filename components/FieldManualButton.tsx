@@ -110,8 +110,16 @@ function handleGlobalCoordinatorKeyDown(e: KeyboardEvent) {
 
   // Filter candidates that allow hotkeys and are not blocked by a foreign keyboard boundary
   const targetBoundary = target?.closest?.("[data-keyboard-boundary]");
+  // A game's playfield can name its own manual, so ? opens that manual from
+  // the focused board even when its trigger sits outside the boundary or in a
+  // collapsed panel (#1669).
+  const boundaryManualId =
+    targetBoundary?.getAttribute("data-field-manual") || null;
+  const isBoundaryManual = (inst: ManualInstance) =>
+    boundaryManualId !== null && inst.manualId === boundaryManualId;
   const candidates = registeredInstances.filter((inst) => {
     if (!inst.isHotkeyOwner) return false;
+    if (isBoundaryManual(inst)) return true;
     if (targetBoundary) {
       const instBoundary = inst.buttonRef.current?.closest?.(
         "[data-keyboard-boundary]"
@@ -128,11 +136,13 @@ function handleGlobalCoordinatorKeyDown(e: KeyboardEvent) {
   }
 
   // Check visible candidates only: hidden controls cannot capture the shortcut
-  const visibleCandidates = candidates.filter((inst) =>
-    isElementVisible(inst.buttonRef.current)
+  const visibleCandidates = candidates.filter(
+    (inst) => isBoundaryManual(inst) || isElementVisible(inst.buttonRef.current)
   );
 
-  const targetInstance = selectCandidate(visibleCandidates);
+  const targetInstance =
+    selectCandidate(visibleCandidates.filter(isBoundaryManual)) ??
+    selectCandidate(visibleCandidates);
 
   if (targetInstance) {
     e.preventDefault();
@@ -272,7 +282,7 @@ export function FieldManualButton({
           aria-label={`Open Field Manual for ${manual.title}`}
           aria-haspopup="dialog"
           aria-expanded={isOpen}
-          className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 min-h-[44px] min-w-[44px] rounded-xl text-xs font-mono font-medium text-zinc-400 hover:text-cyan-300 bg-zinc-900/60 hover:bg-zinc-850 border border-zinc-800 transition-all cursor-pointer touch-manipulation select-none active:scale-95 ${className}`}
+          className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 min-h-[44px] min-w-[44px] rounded-xl text-xs font-mono font-medium text-zinc-300 hover:text-cyan-300 bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 transition-all cursor-pointer touch-manipulation select-none active:scale-95 ${className}`}
         >
           <IconHelp className="w-3.5 h-3.5 text-cyan-400" />
           <span>Manual</span>
@@ -303,7 +313,7 @@ export function FieldManualButton({
         >
           <IconBook2 className="w-4 h-4 text-cyan-400" />
           <span>{label}</span>
-          <kbd className="text-[10px] text-zinc-500 bg-zinc-950 px-1.5 py-0.5 rounded border border-zinc-800">
+          <kbd className="text-[10px] text-zinc-400 bg-zinc-950 px-1.5 py-0.5 rounded border border-zinc-800">
             ?
           </kbd>
         </button>
@@ -338,7 +348,7 @@ export function FieldManualButton({
         >
           <IconHelp className="w-4 h-4 text-cyan-400 group-hover:rotate-12 transition-transform" />
           <span className="hidden sm:inline">{label}</span>
-          <kbd className="hidden sm:inline-block text-[10px] text-zinc-500 group-hover:text-zinc-400 bg-zinc-950 px-1.5 py-0.5 rounded border border-zinc-800">
+          <kbd className="hidden sm:inline-block text-[10px] text-zinc-400 group-hover:text-zinc-300 bg-zinc-950 px-1.5 py-0.5 rounded border border-zinc-800">
             ?
           </kbd>
         </button>

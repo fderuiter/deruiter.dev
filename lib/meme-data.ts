@@ -10,6 +10,7 @@ import {
   safeSetRawItem,
 } from "@/lib/safe-storage";
 import { emitAppEvent } from "@/lib/event-bus";
+import { recordArcadeScore } from "@/lib/arcade-achievements";
 
 export interface MemeQuote {
   id: string;
@@ -410,6 +411,7 @@ export function unlockAchievement(achievementId: string): boolean {
         return false;
       }
       emitAppEvent("meme_achievement_unlocked", { id: achievementId });
+      recordArcadeScore("meme-vault", next.length * 100);
       return true;
     }
     return false;

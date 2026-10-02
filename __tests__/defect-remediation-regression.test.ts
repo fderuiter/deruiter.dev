@@ -2122,3 +2122,225 @@ describe("Working With Duck - a paused sprint ignores player actions (#1645)", (
     ).toBeGreaterThan(1046);
   });
 });
+
+describe("Retro Labyrinth pass-4 playtest (#1665, #1667, #1668, #1669)", () => {
+  const labyrinth = () =>
+    fs.readFileSync(
+      path.resolve(__dirname, "../components/RetroLabyrinth.tsx"),
+      "utf-8"
+    );
+
+  it("charges HP for enemy contact without ending the run (#1665)", async () => {
+    const { updateEnemyAI } = await import("@/lib/dungeon");
+    const grid = Array.from({ length: 9 }, () => Array(15).fill(" "));
+    const res = updateEnemyAI(
+      [
+        fromPartial({
+          id: "d",
+          type: "drone",
+          x: 4,
+          y: 4,
+          hp: 40,
+          maxHp: 40,
+          state: "patrol",
+          patrolDir: "right",
+        }),
+      ],
+      grid,
+      5,
+      4,
+      333
+    );
+    expect(res.damageToPlayer).toBe(25);
+    expect(res.updatedEnemies[0]).toMatchObject({ x: 4, y: 4 });
+    expect(labyrinth()).not.toContain("caughtPlayer");
+  });
+
+  it("keeps patrols on the floor and moves up patrols up (#1665)", async () => {
+    const { updateEnemyAI, isEnemyWalkable, generateRoguelikeCampaign } =
+      await import("@/lib/dungeon");
+    for (const room of generateRoguelikeCampaign()) {
+      let enemies = room.enemies;
+      for (let step = 0; step < 60; step++) {
+        enemies = updateEnemyAI(enemies, room.grid, 0, 0, 333).updatedEnemies;
+        for (const e of enemies) {
+          expect(isEnemyWalkable(room.grid, e.x, e.y), room.id).toBe(true);
+        }
+      }
+    }
+  });
+
+  it("leaves no static drone copy in campaign rooms (#1665)", () => {
+    const code = labyrinth();
+    const roguelikeBranch = code.slice(
+      code.indexOf("const campaign = generateRoguelikeCampaign();"),
+      code.indexOf("const fov = calculateFOV(")
+    );
+    expect(roguelikeBranch).toContain("setDrones([]);");
+    expect(roguelikeBranch).not.toContain('filter((e) => e.type === "drone")');
+  });
+
+  it("moves enemies and boss volleys on elapsed time (#1665)", async () => {
+    const {
+      createFaceForgeBoss,
+      updateFaceForgeBoss,
+      BOSS_REFERENCE_FRAME_MS,
+    } = await import("@/lib/dungeon");
+    const fired = updateFaceForgeBoss(
+      createFaceForgeBoss(7, 4),
+      1,
+      4,
+      5000,
+      15,
+      9,
+      undefined,
+      0
+    ).updatedBoss;
+    const full = updateFaceForgeBoss(
+      fired,
+      1,
+      4,
+      5001,
+      15,
+      9,
+      undefined,
+      BOSS_REFERENCE_FRAME_MS
+    );
+    const half = updateFaceForgeBoss(
+      fired,
+      1,
+      4,
+      5001,
+      15,
+      9,
+      undefined,
+      BOSS_REFERENCE_FRAME_MS / 2
+    );
+    const dFull = Math.abs(
+      full.updatedBoss.projectiles[0].x - fired.projectiles[0].x
+    );
+    const dHalf = Math.abs(
+      half.updatedBoss.projectiles[0].x - fired.projectiles[0].x
+    );
+    expect(dHalf).toBeCloseTo(dFull / 2, 6);
+    expect(labyrinth()).not.toContain("Math.random() < 0.05");
+    expect(labyrinth()).not.toContain("Math.random() < 0.04");
+  });
+
+  it("restores weapon ammo on retry (#1667)", () => {
+    const code = labyrinth();
+    const restart = code.slice(
+      code.indexOf("const handleRestart = useCallback("),
+      code.indexOf("}, [gameMode, stage, roomIndex, loadRoom]);")
+    );
+    expect(restart).toContain("setWeapons(entry.weapons);");
+  });
+
+  it("scores each crypto coin once at the exit (#1668)", async () => {
+    const { computeRoomExitScore } = await import("@/lib/dungeon");
+    const room1 = computeRoomExitScore(900, 5, 200);
+    expect(computeRoomExitScore(room1, 5, 0)).toBe(room1 + 900);
+    expect(labyrinth()).not.toContain(
+      "score + Math.max(100, 1000 - nextMoves * 20) + cryptoBounty"
+    );
+  });
+
+  it("pauses for the manual and swallows overlay keys (#1669)", () => {
+    const code = labyrinth();
+    expect(code).toContain('data-field-manual="retro-labyrinth"');
+    expect(code).toContain("onOpenChange={handleManualOpenChange}");
+    expect(code).toContain("OVERLAY_CONSUMED_KEYS.has(e.key)");
+  });
+});
+
+describe("Clinical Trial Chaos pass-4 fixes (#1670, #1671, #1672, #1673)", () => {
+  const readChaos = () =>
+    fs.readFileSync(
+      path.resolve(__dirname, "../components/ClinicalTrialChaos.tsx"),
+      "utf-8"
+    );
+
+  it("#1670: reports expired subjects as expiries, not as submissions", async () => {
+    const {
+      createInitialAuditorState,
+      createInitialScoreState,
+      generateBIMOReport,
+      getViolationBreakdown,
+      recordExpiredSubjects,
+    } = await import("@/lib/clinical-trial-chaos");
+    const score = recordExpiredSubjects(
+      {
+        ...createInitialScoreState(),
+        subjectsSubmitted: 5,
+        cleanSubmissions: 5,
+      },
+      4
+    );
+    const report = generateBIMOReport(score, createInitialAuditorState(), []);
+    expect(report.expiredCRFs).toBe(4);
+    expect(report.findings.map((f) => f.description).join(" ")).not.toContain(
+      "submitted with unresolved"
+    );
+    expect(getViolationBreakdown(score, 0)).toMatchObject({
+      expired: 4,
+      misrouted: 0,
+      total: 4,
+    });
+  });
+
+  it("#1671: the fix, signature and pause dialogs use the shared focus trap", () => {
+    const code = readChaos();
+    expect(code).toContain('from "@/hooks/useFocusTrap"');
+    for (const ref of [
+      "ref={fixDialogRef}",
+      "ref={signatureDialogRef}",
+      "ref={pauseDialogRef}",
+    ]) {
+      expect(code).toContain(ref);
+    }
+  });
+
+  it("#1672: a pause or the Field Manual holds the shift clocks", async () => {
+    const { getShiftTickSeconds, isShiftClockHalted } =
+      await import("@/lib/clinical-trial-chaos");
+    expect(
+      getShiftTickSeconds(80, isShiftClockHalted({ userPaused: true }))
+    ).toBe(0);
+    expect(
+      getShiftTickSeconds(80, isShiftClockHalted({ manualOpen: true }))
+    ).toBe(0);
+    expect(readChaos()).toContain("onOpenChange={setIsManualOpen}");
+  });
+
+  it("#1673: lifelines skip a clean dossier and each phase counts from zero", async () => {
+    const {
+      canActivatePowerUp,
+      createInitialPowerUpInventory,
+      createInitialScoreState,
+      getNextShiftScoreState,
+      getPhaseProgress,
+      PHASE_TARGETS,
+    } = await import("@/lib/clinical-trial-chaos");
+    const inventory = createInitialPowerUpInventory();
+    inventory["auto-clean"] = {
+      ...inventory["auto-clean"],
+      charge: inventory["auto-clean"].maxCharge,
+    };
+    expect(
+      canActivatePowerUp(inventory, "auto-clean", true, { observations: [] })
+    ).toBe(false);
+    const phase2 = getNextShiftScoreState(
+      {
+        ...createInitialScoreState(),
+        subjectsSubmitted: 5,
+      },
+      true,
+      0
+    );
+    // Only the display is per phase: Phase 2 still clears at 8 in total.
+    expect(getPhaseProgress(phase2, "campaign", 2)).toEqual({
+      locked: 0,
+      target: PHASE_TARGETS[2] - PHASE_TARGETS[1],
+    });
+  });
+});

@@ -349,7 +349,17 @@ export function getBossAimPoint(
 }
 
 /**
+ * The frame length boss projectile speeds and mesh spin rates are tuned for:
+ * a projectile's `vx` and `vy` are tiles per 60 Hz frame.
+ */
+export const BOSS_REFERENCE_FRAME_MS = 1000 / 60;
+
+/**
  * Updates boss animations, attack patterns, and projectile trajectories.
+ *
+ * @param frameDeltaMs - Real time since the previous update. Projectiles and
+ * mesh spin advance in proportion to it, so volleys travel at the same speed
+ * on a 60 Hz and a 144 Hz display (#1665). Defaults to one 60 Hz frame.
  */
 export function updateFaceForgeBoss(
   boss: BossState,
@@ -358,7 +368,8 @@ export function updateFaceForgeBoss(
   nowMs: number,
   gridWidth: number,
   gridHeight: number,
-  playerHeading?: { dx: number; dy: number }
+  playerHeading?: { dx: number; dy: number },
+  frameDeltaMs: number = BOSS_REFERENCE_FRAME_MS
 ): {
   updatedBoss: BossState;
   spawnedDamage: number;
@@ -368,13 +379,14 @@ export function updateFaceForgeBoss(
   // #1321: aim where the player is heading, not where they stand, so a
   // player walking past the boss is not missed by every shot.
   const aim = getBossAimPoint(boss, playerX, playerY, playerHeading);
+  const frames = Math.max(0, frameDeltaMs) / BOSS_REFERENCE_FRAME_MS;
 
   const nextMesh: WireframeMesh = {
     ...boss.mesh,
     rotation: {
-      x: boss.mesh.rotation.x + boss.mesh.rotSpeed.x,
-      y: boss.mesh.rotation.y + boss.mesh.rotSpeed.y,
-      z: boss.mesh.rotation.z + boss.mesh.rotSpeed.z,
+      x: boss.mesh.rotation.x + boss.mesh.rotSpeed.x * frames,
+      y: boss.mesh.rotation.y + boss.mesh.rotSpeed.y * frames,
+      z: boss.mesh.rotation.z + boss.mesh.rotSpeed.z * frames,
     },
   };
 
@@ -467,8 +479,8 @@ export function updateFaceForgeBoss(
   newProjectiles.forEach((p) => {
     if (!p.alive) return;
 
-    const nextX = p.x + p.vx;
-    const nextY = p.y + p.vy;
+    const nextX = p.x + p.vx * frames;
+    const nextY = p.y + p.vy * frames;
 
     if (nextX < 0 || nextX >= gridWidth || nextY < 0 || nextY >= gridHeight) {
       return;
@@ -483,9 +495,9 @@ export function updateFaceForgeBoss(
     const pRotMesh: WireframeMesh = {
       ...p.mesh,
       rotation: {
-        x: p.mesh.rotation.x + p.mesh.rotSpeed.x,
-        y: p.mesh.rotation.y + p.mesh.rotSpeed.y,
-        z: p.mesh.rotation.z + p.mesh.rotSpeed.z,
+        x: p.mesh.rotation.x + p.mesh.rotSpeed.x * frames,
+        y: p.mesh.rotation.y + p.mesh.rotSpeed.y * frames,
+        z: p.mesh.rotation.z + p.mesh.rotSpeed.z * frames,
       },
     };
 

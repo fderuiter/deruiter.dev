@@ -13,6 +13,7 @@ import { createPortal } from "react-dom";
 import { hexToRgba } from "@/lib/utils";
 import { designManifest } from "@/lib/design-manifest";
 import { logger } from "@/lib/logger";
+import { apiClient } from "@/lib/api-client";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import {
@@ -33,6 +34,8 @@ import {
   IconShieldCheck,
   IconCamera,
   IconClipboardCheck,
+  IconPlayerPlay,
+  IconCircleDot,
 } from "@tabler/icons-react";
 import { filterFuzzySearch } from "@/lib/search-utils";
 import { useSearch } from "@/components/providers/SearchProvider";
@@ -47,6 +50,9 @@ import { useFontPreference } from "@/hooks/useFontPreference";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useThrottledCallback } from "@/hooks/useThrottle";
 import { useAnnouncer } from "@/components/providers/A11yProvider";
+import { useWorkspaceCommands } from "@/hooks/useWorkspaceCommands";
+import { useMacroEngine } from "@/hooks/useMacroEngine";
+import { workspaceCommandRegistry } from "@/lib/workspace-command-registry";
 
 /** True under React's act() test environment, where timing gates collapse to 0ms. */
 function isActEnvironment(): boolean {
@@ -100,6 +106,18 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
   const { playHover, playSubmit } = useAudio();
   const { isDyslexic, toggleDyslexiaMode } = useFontPreference();
   const { announce } = useAnnouncer();
+
+  const workspaceActions = useWorkspaceCommands();
+  const {
+    isRecording,
+    recordingName,
+    recordedStepsCount,
+    savedMacros,
+    startRecording,
+    stopRecording,
+    saveMacro,
+    executeMacro,
+  } = useMacroEngine();
 
   const router = useRouter();
   const backdropRef = useRef<HTMLDivElement | null>(null);
@@ -182,6 +200,90 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
 
   // 2. Compile indexable items from static navigations and Neon DB records
   const allItems = useMemo(() => {
+    const workspaceActionItems: PaletteItem[] = workspaceActions.map(
+      (action) => ({
+        id: `workspace-action-${action.id}`,
+        title: action.title,
+        subtitle:
+          action.description || `${action.subToolName} Contextual Action`,
+        category: "navigation",
+        url: `action:workspace:${action.id}`,
+        icon: <IconTerminal className="w-4 h-4 text-amber-400" />,
+        badge: action.badge || action.subToolName,
+        status: action.shortcut
+          ? `Shortcut: ${action.shortcut}`
+          : "Active Action",
+        description:
+          action.description ||
+          `Execute ${action.title} on ${action.subToolName}`,
+        techStack: [action.subToolName, ...(action.tags || [])],
+        highlights: [
+          `Sub-Tool: ${action.subToolName}`,
+          ...(action.shortcut ? [`Shortcut: ${action.shortcut}`] : []),
+        ],
+      })
+    );
+
+    const macroControlItems: PaletteItem[] = [];
+    if (isRecording) {
+      macroControlItems.push({
+        id: "action-macro-stop-save",
+        title: `🔴 Stop & Save Macro Recording ("${recordingName}")`,
+        subtitle: `${recordedStepsCount} step(s) recorded. Click to save macro.`,
+        category: "navigation",
+        url: "action:macro:stop-and-save",
+        icon: <IconCircleDot className="w-4 h-4 text-rose-400 animate-pulse" />,
+        badge: "Recording",
+        status: `${recordedStepsCount} Steps`,
+        description:
+          "Conclude active macro recording session and save sequence to browser storage",
+        techStack: ["Macro Engine", "portfolio_macros_v1"],
+        highlights: [
+          `${recordedStepsCount} steps captured`,
+          "Safety Interlock: Max 20 steps",
+        ],
+      });
+    } else {
+      macroControlItems.push({
+        id: "action-macro-start",
+        title: "⏺ Start Macro Recording",
+        subtitle: "Record ordered sequence of sub-tool workspace actions",
+        category: "navigation",
+        url: "action:macro:start",
+        icon: <IconCircleDot className="w-4 h-4 text-rose-400" />,
+        badge: "Macro Tool",
+        status: "Macro Engine",
+        description:
+          "Capture subsequent workspace action dispatches into a reusable macro sequence",
+        techStack: ["Macro Engine", "Event Bus"],
+        highlights: [
+          "Cross-tool automation",
+          "Persisted in local browser storage",
+        ],
+      });
+    }
+
+    const savedMacroItems: PaletteItem[] = savedMacros.map((macro) => ({
+      id: `macro-${macro.id}`,
+      title: `▶ Macro: ${macro.name}`,
+      subtitle: `${macro.steps.length} step(s) · ${
+        macro.description || "Saved workspace macro"
+      }`,
+      category: "navigation",
+      url: `action:macro:execute:${macro.id}`,
+      icon: <IconPlayerPlay className="w-4 h-4 text-emerald-400" />,
+      badge: "Macro",
+      status: `${macro.steps.length} Steps`,
+      description: `Executes sequence: ${macro.steps
+        .map((s) => s.actionId)
+        .join(" → ")}`,
+      techStack: ["Saved Macro", "Sequential Async Execution"],
+      highlights: [
+        `${macro.steps.length} ordered action steps`,
+        "Safety interlock: Max 20 steps",
+      ],
+    }));
+
     const staticNavs: PaletteItem[] = [
       {
         id: "nav-work",
@@ -1085,8 +1187,22 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
       };
     });
 
-    return [...staticNavs, ...studyItems];
-  }, [studies, isDyslexic]);
+    return [
+      ...staticNavs,
+      ...workspaceActionItems,
+      ...macroControlItems,
+      ...savedMacroItems,
+      ...studyItems,
+    ];
+  }, [
+    workspaceActions,
+    isRecording,
+    recordingName,
+    recordedStepsCount,
+    savedMacros,
+    studies,
+    isDyslexic,
+  ]);
 
   // 3. In-Memory Fuzzy filtering matching queries against titles, tags, and secret easter egg triggers
   const filteredItems = useMemo(() => {
@@ -1283,6 +1399,47 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
     // Handle special easter egg action commands
     if (item.url.startsWith("action:")) {
       const actionType = item.url.replace("action:", "");
+      if (actionType.startsWith("workspace:")) {
+        const actionId = actionType.replace("workspace:", "");
+        workspaceCommandRegistry.executeAction(actionId);
+        announce(`Executed workspace action "${item.title}".`, "polite");
+        return;
+      }
+      if (actionType === "macro:start") {
+        const defaultName = `Macro ${savedMacros.length + 1}`;
+        startRecording(defaultName);
+        announce(`Started macro recording "${defaultName}".`, "polite");
+        return;
+      }
+      if (actionType === "macro:stop-and-save") {
+        let customName: string | null = "Validate & Verify Workflow";
+        if (
+          typeof window !== "undefined" &&
+          typeof window.prompt === "function"
+        ) {
+          customName = window.prompt(
+            "Enter a name for this macro sequence:",
+            recordingName || "Validate & Verify Workflow"
+          );
+        }
+        if (customName) {
+          saveMacro(customName.trim() || "Validate & Verify Workflow");
+          announce(
+            `Saved macro "${customName}" with ${recordedStepsCount} steps.`,
+            "polite"
+          );
+        } else {
+          stopRecording();
+          announce("Stopped macro recording.", "polite");
+        }
+        return;
+      }
+      if (actionType.startsWith("macro:execute:")) {
+        const macroId = actionType.replace("macro:execute:", "");
+        executeMacro(macroId);
+        announce(`Executing macro "${item.title}".`, "polite");
+        return;
+      }
       if (actionType === "toggle-dyslexia") {
         toggleDyslexiaMode();
         announce(
@@ -1391,6 +1548,12 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
             aria-label="Spotlight command palette search"
             className="w-full bg-transparent text-sm sm:text-base text-neutral-100 placeholder-zinc-500 focus:outline-none font-sans"
           />
+          {isRecording && (
+            <span className="hidden sm:flex items-center gap-1.5 text-[10px] font-mono font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2 py-1 rounded-lg flex-shrink-0 select-none">
+              <span className="w-2 h-2 rounded-full bg-rose-400 animate-ping" />
+              REC ({recordedStepsCount})
+            </span>
+          )}
           <button
             type="button"
             onClick={onClose}
@@ -1718,11 +1881,10 @@ export const CommandPalette: React.FC = () => {
 
     const loadStudies = async () => {
       try {
-        const res = await fetch("/api/case-studies");
-        if (res.ok && isSubscribed) {
-          const data = await res.json();
-          if (Array.isArray(data)) {
-            setStudies(data);
+        const res = await apiClient.get<SearchCaseStudy[]>("/api/case-studies");
+        if (res.ok && isSubscribed && res.data) {
+          if (Array.isArray(res.data)) {
+            setStudies(res.data);
           }
         }
       } catch (err) {

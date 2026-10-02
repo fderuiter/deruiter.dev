@@ -504,6 +504,27 @@ async function safeRevalidateTag(tag: string): Promise<void> {
 
 export class BlogPostService {
   /**
+   * Retrieves all persisted blog posts (published and drafts) ordered by update timestamp
+   * for administrative display.
+   */
+  static async getAllBlogPostsAdmin() {
+    try {
+      return await prisma.blogPost.findMany({
+        orderBy: [{ updated_at: "desc" }, { id: "asc" }],
+      });
+    } catch (err) {
+      if (env.VERCEL_ENV === "production" && !isBuildPhase()) {
+        logger.warn(
+          "BlogPostService.getAllBlogPostsAdmin: Database query failed:",
+          err
+        );
+      }
+      failBuildOnDataSourceError("BlogPostService.getAllBlogPostsAdmin", err);
+      return [];
+    }
+  }
+
+  /**
    * Retrieves only persisted unpublished drafts for the authenticated admin
    * collection. This intentionally never consults the public fallback data.
    */
@@ -556,9 +577,20 @@ export class BlogPostService {
    * Retrieves a persisted blog post by ID (published or draft) for admin inspection.
    */
   static async getBlogPostById(id: string) {
-    return prisma.blogPost.findUnique({
-      where: { id },
-    });
+    try {
+      return await prisma.blogPost.findUnique({
+        where: { id },
+      });
+    } catch (err) {
+      if (env.VERCEL_ENV === "production" && !isBuildPhase()) {
+        logger.warn(
+          `BlogPostService.getBlogPostById: Database query failed for ID "${id}":`,
+          err
+        );
+      }
+      failBuildOnDataSourceError("BlogPostService.getBlogPostById", err);
+      return null;
+    }
   }
 
   /**

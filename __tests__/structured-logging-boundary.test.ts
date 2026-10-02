@@ -78,6 +78,7 @@ describe("Service fallbacks log through the StructuredLogger (#1137)", () => {
     expect(loggedError.message).toBe("connect failed while loading [scrubbed]");
     expect(loggedError.message).not.toContain("/home/deploy");
 
+    await new Promise((r) => setTimeout(r, 0));
     expect(Sentry.captureException).toHaveBeenCalledWith(
       dbError,
       expect.objectContaining({ level: "warning" })
@@ -107,6 +108,8 @@ describe("ESLint no-console boundary (#1137)", () => {
     "hooks/useProbe.ts",
     "app/probe/page.tsx",
     "components/ProbeWidget.tsx",
+    "lib/client-sentry.ts",
+    "instrumentation-client.ts",
   ])(
     "flags direct console calls in %s",
     async (file) => {
@@ -122,10 +125,8 @@ describe("ESLint no-console boundary (#1137)", () => {
     "lib/dx/probe-bench.ts",
     "lib/logger.ts",
     "lib/env.ts",
-    "lib/client-sentry.ts",
     "lib/build-integrity.ts",
     "hooks/useConsoleArt.ts",
-    "instrumentation-client.ts",
   ])(
     "allows console output in %s",
     async (file) => {

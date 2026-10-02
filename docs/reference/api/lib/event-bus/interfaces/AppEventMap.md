@@ -12,11 +12,111 @@ emitted without a detail.
 
 ## Properties
 
+### arcade\_score\_updated
+
+> **arcade\_score\_updated**: `object`
+
+An arcade game score or milestone was updated.
+
+#### gameId
+
+> **gameId**: `string`
+
+#### metadata?
+
+> `optional` **metadata?**: `Record`\<`string`, `unknown`\>
+
+#### score
+
+> **score**: `number`
+
+***
+
+### arcade\_trophy\_unlocked
+
+> **arcade\_trophy\_unlocked**: `object`
+
+An arcade trophy or achievement was unlocked.
+
+#### gameId
+
+> **gameId**: `string`
+
+#### title
+
+> **title**: `string`
+
+#### trophyId
+
+> **trophyId**: `string`
+
+#### unlockedAt
+
+> **unlockedAt**: `number`
+
+***
+
 ### crt-calibration-changed
 
 > **crt-calibration-changed**: `undefined`
 
 The arcade CRT calibration was saved.
+
+***
+
+### macro:execute
+
+> **macro:execute**: [`MacroExecutePayload`](MacroExecutePayload.md)
+
+Executes a saved macro by ID.
+
+***
+
+### macro:record\_step
+
+> **macro:record\_step**: [`MacroRecordStepPayload`](MacroRecordStepPayload.md)
+
+Records a single action step into the active macro recording.
+
+***
+
+### macro:save
+
+> **macro:save**: [`MacroSavePayload`](MacroSavePayload.md)
+
+Saves a named macro sequence to persistent browser storage.
+
+***
+
+### macro:start\_recording
+
+> **macro:start\_recording**: \{ `name?`: `string`; \} \| `undefined`
+
+Starts recording a new macro sequence.
+
+***
+
+### macro:state\_changed
+
+> **macro:state\_changed**: [`MacroStatePayload`](MacroStatePayload.md)
+
+Emitted whenever macro recording state changes.
+
+***
+
+### macro:stop\_recording
+
+> **macro:stop\_recording**: `undefined`
+
+Stops the active macro recording session.
+
+***
+
+### macro:toggle\_recording
+
+> **macro:toggle\_recording**: \{ `name?`: `string`; \} \| `undefined`
+
+Toggles macro recording mode on/off.
 
 ***
 
@@ -69,3 +169,27 @@ Asks the on-page sandbox terminal to type and run a command.
 > **trigger\_retro\_chaos**: `undefined`
 
 Opens the Retro Chaos overlay from a shortcut (Command Palette, terminal, Meme Vault).
+
+***
+
+### workspace:execute\_action
+
+> **workspace:execute\_action**: [`WorkspaceExecutePayload`](WorkspaceExecutePayload.md)
+
+Triggers execution of a registered workspace action.
+
+***
+
+### workspace:register\_action
+
+> **workspace:register\_action**: [`WorkspaceActionPayload`](WorkspaceActionPayload.md)
+
+Registers a sub-tool contextual workspace action.
+
+***
+
+### workspace:unregister\_action
+
+> **workspace:unregister\_action**: [`WorkspaceUnregisterPayload`](WorkspaceUnregisterPayload.md)
+
+Unregisters a sub-tool contextual workspace action.

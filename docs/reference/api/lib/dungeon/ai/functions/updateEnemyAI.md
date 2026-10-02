@@ -10,6 +10,10 @@
 
 Updates AI states (patrol, chase, stunned, confused, frozen) and positions for all active enemies.
 
+An enemy never moves onto the player. One that would instead touches them:
+the player loses `ENEMY_CONTACT_DAMAGE` HP, and the enemy stays where it is
+and holds still for `ENEMY_CONTACT_RECOIL_MS`.
+
 ## Parameters
 
 ### enemies
@@ -31,6 +35,9 @@ Updates AI states (patrol, chase, stunned, confused, frozen) and positions for a
 ### deltaMs
 
 `number`
+
+Real time since the previous call, which counts down the
+stun, freeze and confusion timers.
 
 ## Returns
 

@@ -116,6 +116,22 @@ component uses (#901); this class only holds the state and emits events.
 
 ***
 
+### applyStressPreset()
+
+> **applyStressPreset**(`presetId`): `void`
+
+#### Parameters
+
+##### presetId
+
+[`StressPresetId`](../../types/type-aliases/StressPresetId.md)
+
+#### Returns
+
+`void`
+
+***
+
 ### createSnapshot()
 
 > **createSnapshot**(): [`ClinicalTrialChaosSnapshot`](../interfaces/ClinicalTrialChaosSnapshot.md)
@@ -194,6 +210,26 @@ Reference is preserved until notifySubscribers() is explicitly called.
 #### Inherited from
 
 [`ArcadeEngine`](../../../arcade/core/engine/classes/ArcadeEngine.md).[`getSnapshot`](../../../arcade/core/engine/classes/ArcadeEngine.md#getsnapshot)
+
+***
+
+### getState()
+
+> **getState**(): [`ClinicalTrialChaosState`](../interfaces/ClinicalTrialChaosState.md)
+
+#### Returns
+
+[`ClinicalTrialChaosState`](../interfaces/ClinicalTrialChaosState.md)
+
+***
+
+### getStressParams()
+
+> **getStressParams**(): [`StressParameters`](../../types/interfaces/StressParameters.md)
+
+#### Returns
+
+[`StressParameters`](../../types/interfaces/StressParameters.md)
 
 ***
 
@@ -375,6 +411,22 @@ Handles canvas dimension and device pixel ratio resize events.
 
 ***
 
+### setManualOpen()
+
+> **setManualOpen**(`open`): `void`
+
+#### Parameters
+
+##### open
+
+`boolean`
+
+#### Returns
+
+`void`
+
+***
+
 ### setModalPause()
 
 > **setModalPause**(`paused`): `void`
@@ -400,6 +452,22 @@ Handles canvas dimension and device pixel ratio resize events.
 ##### paused
 
 `boolean`
+
+#### Returns
+
+`void`
+
+***
+
+### setStressParameters()
+
+> **setStressParameters**(`params`): `void`
+
+#### Parameters
+
+##### params
+
+`Partial`\<[`StressParameters`](../../types/interfaces/StressParameters.md)\>
 
 #### Returns
 

@@ -22,6 +22,8 @@ import { FieldManualButton } from "@/components/FieldManualButton";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { ARCADE_GAME_COUNT } from "@/lib/arcade";
 import { safeGetRawItem } from "@/lib/safe-storage";
+import { ArcadeTrophyCabinet } from "@/components/arcade/ArcadeTrophyCabinet";
+import { onAppEvent } from "@/lib/event-bus";
 
 interface ArcadeGameCard {
   id: string;
@@ -42,8 +44,13 @@ interface ArcadeGameCard {
 
 const subscribeStorage = (callback: () => void) => {
   if (typeof window === "undefined") return () => {};
-  window.addEventListener("storage", callback);
-  return () => window.removeEventListener("storage", callback);
+  const cleanupScore = onAppEvent("arcade_score_updated", callback);
+  const handleStorage = () => callback();
+  window.addEventListener("storage", handleStorage);
+  return () => {
+    cleanupScore();
+    window.removeEventListener("storage", handleStorage);
+  };
 };
 
 const getScore = (key?: string) => () => {
@@ -217,6 +224,7 @@ const ARCADE_GAMES: ArcadeGameCard[] = [
     accentColor: "from-amber-500/20 via-amber-500/5 to-transparent",
     borderHover: "hover:border-amber-400/50",
     badgeBg: "bg-amber-500/10 text-amber-300 border-amber-500/30",
+    storageKey: "trial_and_error_high_score",
     route: "/arcade/trial-and-error",
   },
   {
@@ -242,6 +250,7 @@ const ARCADE_GAMES: ArcadeGameCard[] = [
     accentColor: "from-amber-500/20 via-amber-500/5 to-transparent",
     borderHover: "hover:border-amber-400/50",
     badgeBg: "bg-amber-500/10 text-amber-300 border-amber-500/30",
+    storageKey: "study_director_high_score",
     route: "/arcade/study-director",
   },
   {
@@ -273,9 +282,14 @@ const ARCADE_GAMES: ArcadeGameCard[] = [
 ];
 
 function GameCard({ game, index }: { game: ArcadeGameCard; index: number }) {
+  const getSnapshot = React.useCallback(
+    () => getScore(game.storageKey)(),
+    [game.storageKey]
+  );
+
   const rawScore = useSyncExternalStore(
     subscribeStorage,
-    getScore(game.storageKey),
+    getSnapshot,
     getServerScore
   );
 
@@ -298,9 +312,7 @@ function GameCard({ game, index }: { game: ArcadeGameCard; index: number }) {
       className={`group relative flex flex-col justify-between rounded-3xl border border-zinc-800/80 bg-zinc-900/40 p-6 md:p-8 backdrop-blur-xl transition-all duration-300 ${game.borderHover} hover:shadow-[0_0_30px_rgba(0,0,0,0.8)]`}
     >
       {/* Ambient background glow on card */}
-      <div
-        className={`absolute inset-0 rounded-3xl bg-gradient-to-b ${game.accentColor} opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none`}
-      />
+      <div className="absolute inset-0 rounded-3xl bg-gradient-to-b from-cyan-500/5 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none" />
 
       <div className="relative z-10">
         {/* Gameplay thumbnail. The Play Game link below is the keyboard path,
@@ -355,7 +367,7 @@ function GameCard({ game, index }: { game: ArcadeGameCard; index: number }) {
         <h2 className="text-xl md:text-2xl font-bold font-mono tracking-tight text-white group-hover:text-brand-cyan transition-colors">
           {game.title}
         </h2>
-        <p className="mt-1 text-xs font-mono text-zinc-400 font-medium">
+        <p className="mt-1 text-xs font-mono text-zinc-300 font-medium">
           {game.subtitle}
         </p>
 
@@ -365,14 +377,14 @@ function GameCard({ game, index }: { game: ArcadeGameCard; index: number }) {
 
         {/* Mechanics Chips */}
         <div className="mt-5">
-          <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-400 font-bold block mb-2">
+          <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-300 font-bold block mb-2">
             How to Play
           </span>
           <div className="flex flex-wrap gap-1.5">
             {game.mechanics.map((m) => (
               <span
                 key={m}
-                className="px-2 py-0.5 rounded-md bg-zinc-950/70 border border-zinc-800 text-[11px] font-mono text-zinc-400"
+                className="px-2 py-0.5 rounded-md bg-zinc-950/70 border border-zinc-800 text-[11px] font-mono text-zinc-300"
               >
                 {m}
               </span>
@@ -382,14 +394,14 @@ function GameCard({ game, index }: { game: ArcadeGameCard; index: number }) {
 
         {/* Tech Stack Chips */}
         <div className="mt-3">
-          <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-400 font-bold block mb-2">
+          <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-300 font-bold block mb-2">
             Built With
           </span>
           <div className="flex flex-wrap gap-1.5">
             {game.techStack.map((t) => (
               <span
                 key={t}
-                className="px-2 py-0.5 rounded-md bg-brand-cyan/5 border border-brand-cyan/20 text-[11px] font-mono text-brand-cyan/90"
+                className="px-2 py-0.5 rounded-md bg-brand-cyan/5 border border-brand-cyan/20 text-[11px] font-mono text-cyan-300"
               >
                 {t}
               </span>
@@ -404,7 +416,7 @@ function GameCard({ game, index }: { game: ArcadeGameCard; index: number }) {
 
         <Link
           href={game.route}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-cyan text-black font-mono text-xs font-bold transition-all duration-200 hover:bg-white hover:scale-105 active:scale-95 shadow-[0_0_15px_rgba(6,182,212,0.3)] cursor-pointer"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-cyan-400 text-zinc-950 font-mono text-xs font-bold transition-all duration-200 hover:bg-white hover:scale-105 active:scale-95 shadow-[0_0_15px_rgba(6,182,212,0.3)] cursor-pointer"
         >
           <IconPlayerPlay className="w-3.5 h-3.5 fill-current" />
           <span>Play Game</span>
@@ -480,6 +492,9 @@ export const ArcadeHubClient: React.FC = () => {
           ))}
         </div>
 
+        {/* Interactive Trophy Cabinet & Score Dashboard */}
+        <ArcadeTrophyCabinet />
+
         {/* Easter Egg Meme Vault Discovery Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -512,7 +527,7 @@ export const ArcadeHubClient: React.FC = () => {
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase border bg-emerald-500/10 text-emerald-300 border-emerald-500/30">
                   Meme Soundboard
                 </span>
-                <span className="text-xs font-mono text-zinc-400">
+                <span className="text-xs font-mono text-zinc-300">
                   SOUNDS &amp; EASTER EGGS
                 </span>
               </div>

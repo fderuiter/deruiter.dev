@@ -38,7 +38,14 @@ export interface AnatomicalParcel {
   id: number;
   name: string;
   shortName: string;
-  lobe: "Frontal" | "Parietal" | "Temporal" | "Occipital" | "Cingulate" | "Insular" | "Subcortical";
+  lobe:
+    | "Frontal"
+    | "Parietal"
+    | "Temporal"
+    | "Occipital"
+    | "Cingulate"
+    | "Insular"
+    | "Subcortical";
   color: number; // Hex color matching FreeSurfer ColorLUT
   rgb: [number, number, number]; // 0-255 RGB
   normRgb: [number, number, number]; // 0-1 normalized RGB
@@ -54,7 +61,8 @@ export const DESIKAN_KILLIANY_PARCELS: Record<string, AnatomicalParcel> = {
     color: 0x14dca0,
     rgb: [20, 220, 160],
     normRgb: [20 / 255, 220 / 255, 160 / 255],
-    description: "Involved in self-awareness, working memory execution, and cognitive control.",
+    description:
+      "Involved in self-awareness, working memory execution, and cognitive control.",
   },
   rostralmiddlefrontal: {
     id: 1027,
@@ -64,7 +72,8 @@ export const DESIKAN_KILLIANY_PARCELS: Record<string, AnatomicalParcel> = {
     color: 0x4b327d,
     rgb: [75, 50, 125],
     normRgb: [75 / 255, 50 / 255, 125 / 255],
-    description: "Anterior dorsolateral prefrontal cortex critical for goal-driven executive attention.",
+    description:
+      "Anterior dorsolateral prefrontal cortex critical for goal-driven executive attention.",
   },
   caudalmiddlefrontal: {
     id: 1003,
@@ -74,7 +83,8 @@ export const DESIKAN_KILLIANY_PARCELS: Record<string, AnatomicalParcel> = {
     color: 0x641900,
     rgb: [100, 25, 0],
     normRgb: [100 / 255, 25 / 255, 0 / 255],
-    description: "Posterior premotor region coordinating voluntary eye movements and motor planning.",
+    description:
+      "Posterior premotor region coordinating voluntary eye movements and motor planning.",
   },
   parsopercularis: {
     id: 1018,
@@ -84,7 +94,8 @@ export const DESIKAN_KILLIANY_PARCELS: Record<string, AnatomicalParcel> = {
     color: 0xdcb48c,
     rgb: [220, 180, 140],
     normRgb: [220 / 255, 180 / 255, 140 / 255],
-    description: "Dominant hemisphere language production and phonological syntactic sequencing.",
+    description:
+      "Dominant hemisphere language production and phonological syntactic sequencing.",
   },
   parstriangularis: {
     id: 1020,
@@ -94,7 +105,8 @@ export const DESIKAN_KILLIANY_PARCELS: Record<string, AnatomicalParcel> = {
     color: 0xdc3c14,
     rgb: [220, 60, 20],
     normRgb: [220 / 255, 60 / 255, 20 / 255],
-    description: "Semantic processing and lexical retrieval inside the inferior frontal gyrus.",
+    description:
+      "Semantic processing and lexical retrieval inside the inferior frontal gyrus.",
   },
   parsorbitalis: {
     id: 1019,
@@ -104,7 +116,8 @@ export const DESIKAN_KILLIANY_PARCELS: Record<string, AnatomicalParcel> = {
     color: 0x146432,
     rgb: [20, 100, 50],
     normRgb: [20 / 255, 100 / 255, 50 / 255],
-    description: "Ventral inferior frontal cortex participating in social cognition and language semantics.",
+    description:
+      "Ventral inferior frontal cortex participating in social cognition and language semantics.",
   },
   lateralorbitofrontal: {
     id: 1012,
@@ -114,7 +127,8 @@ export const DESIKAN_KILLIANY_PARCELS: Record<string, AnatomicalParcel> = {
     color: 0x234b32,
     rgb: [35, 75, 50],
     normRgb: [35 / 255, 75 / 255, 50 / 255],
-    description: "Evaluates reward expectations, punishment avoidance, and behavioral inhibition.",
+    description:
+      "Evaluates reward expectations, punishment avoidance, and behavioral inhibition.",
   },
   medialorbitofrontal: {
     id: 1014,
@@ -124,7 +138,8 @@ export const DESIKAN_KILLIANY_PARCELS: Record<string, AnatomicalParcel> = {
     color: 0xc8234b,
     rgb: [200, 35, 75],
     normRgb: [200 / 255, 35 / 255, 75 / 255],
-    description: "Ventromedial prefrontal hub mediating subjective value and emotion regulation.",
+    description:
+      "Ventromedial prefrontal hub mediating subjective value and emotion regulation.",
   },
   precentral: {
     id: 1024,
@@ -134,7 +149,8 @@ export const DESIKAN_KILLIANY_PARCELS: Record<string, AnatomicalParcel> = {
     color: 0x3c14dc,
     rgb: [60, 20, 220],
     normRgb: [60 / 255, 20 / 255, 220 / 255],
-    description: "Brodmann Area 4 motor homunculus executing somatotopic voluntary movement.",
+    description:
+      "Brodmann Area 4 motor homunculus executing somatotopic voluntary movement.",
   },
   paracentral: {
     id: 1017,
@@ -144,7 +160,8 @@ export const DESIKAN_KILLIANY_PARCELS: Record<string, AnatomicalParcel> = {
     color: 0x3cdc3c,
     rgb: [60, 220, 60],
     normRgb: [60 / 255, 220 / 255, 60 / 255],
-    description: "Medial motor and somatosensory control for lower extremities and sphincter tone.",
+    description:
+      "Medial motor and somatosensory control for lower extremities and sphincter tone.",
   },
   frontalpole: {
     id: 1032,
@@ -154,7 +171,8 @@ export const DESIKAN_KILLIANY_PARCELS: Record<string, AnatomicalParcel> = {
     color: 0x64197d,
     rgb: [100, 25, 125],
     normRgb: [100 / 255, 25 / 255, 125 / 255],
-    description: "Most rostral prefrontal mantle overseeing multi-task coordination and meta-cognition.",
+    description:
+      "Most rostral prefrontal mantle overseeing multi-task coordination and meta-cognition.",
   },
   postcentral: {
     id: 1022,
@@ -164,7 +182,8 @@ export const DESIKAN_KILLIANY_PARCELS: Record<string, AnatomicalParcel> = {
     color: 0xdc1414,
     rgb: [220, 20, 20],
     normRgb: [220 / 255, 20 / 255, 20 / 255],
-    description: "Brodmann Areas 3, 1, 2 processing tactile, proprioceptive, and thermal afferents.",
+    description:
+      "Brodmann Areas 3, 1, 2 processing tactile, proprioceptive, and thermal afferents.",
   },
   superiorparietal: {
     id: 1029,
@@ -174,7 +193,8 @@ export const DESIKAN_KILLIANY_PARCELS: Record<string, AnatomicalParcel> = {
     color: 0x14b48c,
     rgb: [20, 180, 140],
     normRgb: [20 / 255, 180 / 255, 140 / 255],
-    description: "Spatial orientation, visuospatial attention, and sensorimotor integration.",
+    description:
+      "Spatial orientation, visuospatial attention, and sensorimotor integration.",
   },
   inferiorparietal: {
     id: 1008,
@@ -184,7 +204,8 @@ export const DESIKAN_KILLIANY_PARCELS: Record<string, AnatomicalParcel> = {
     color: 0xdc3cdc,
     rgb: [220, 60, 220],
     normRgb: [220 / 255, 60 / 255, 220 / 255],
-    description: "Heteromodal association area integrating multimodal sensory information and mathematics.",
+    description:
+      "Heteromodal association area integrating multimodal sensory information and mathematics.",
   },
   supramarginal: {
     id: 1031,
@@ -194,7 +215,8 @@ export const DESIKAN_KILLIANY_PARCELS: Record<string, AnatomicalParcel> = {
     color: 0x50a014,
     rgb: [80, 160, 20],
     normRgb: [80 / 255, 160 / 255, 20 / 255],
-    description: "Somatosensory language association and empathy/theory of mind processing.",
+    description:
+      "Somatosensory language association and empathy/theory of mind processing.",
   },
   precuneus: {
     id: 1025,
@@ -204,7 +226,8 @@ export const DESIKAN_KILLIANY_PARCELS: Record<string, AnatomicalParcel> = {
     color: 0xa08cb4,
     rgb: [160, 140, 180],
     normRgb: [160 / 255, 140 / 255, 180 / 255],
-    description: "Core node of Default Mode Network (DMN) supporting autobiographical memory and self-reflection.",
+    description:
+      "Core node of Default Mode Network (DMN) supporting autobiographical memory and self-reflection.",
   },
   superiortemporal: {
     id: 1030,
@@ -214,7 +237,8 @@ export const DESIKAN_KILLIANY_PARCELS: Record<string, AnatomicalParcel> = {
     color: 0x8cdcdc,
     rgb: [140, 220, 220],
     normRgb: [140 / 255, 220 / 255, 220 / 255],
-    description: "Primary auditory cortex (Heschl's gyrus) and Wernicke's auditory receptive area.",
+    description:
+      "Primary auditory cortex (Heschl's gyrus) and Wernicke's auditory receptive area.",
   },
   middletemporal: {
     id: 1015,
@@ -224,7 +248,8 @@ export const DESIKAN_KILLIANY_PARCELS: Record<string, AnatomicalParcel> = {
     color: 0xa06432,
     rgb: [160, 100, 50],
     normRgb: [160 / 255, 100 / 255, 50 / 255],
-    description: "Multimodal semantic comprehension, facial recognition, and distance perception.",
+    description:
+      "Multimodal semantic comprehension, facial recognition, and distance perception.",
   },
   inferiortemporal: {
     id: 1009,
@@ -234,7 +259,8 @@ export const DESIKAN_KILLIANY_PARCELS: Record<string, AnatomicalParcel> = {
     color: 0xb42878,
     rgb: [180, 40, 120],
     normRgb: [180 / 255, 40 / 255, 120 / 255],
-    description: "Ventral visual stream hub executing complex visual shape and object recognition.",
+    description:
+      "Ventral visual stream hub executing complex visual shape and object recognition.",
   },
   fusiform: {
     id: 1007,
@@ -254,7 +280,8 @@ export const DESIKAN_KILLIANY_PARCELS: Record<string, AnatomicalParcel> = {
     color: 0xdc140a,
     rgb: [220, 20, 10],
     normRgb: [220 / 255, 20 / 255, 10 / 255],
-    description: "Primary interface between neocortex and hippocampal formation; earliest site of Alzheimer's tau neurodegeneration.",
+    description:
+      "Primary interface between neocortex and hippocampal formation; earliest site of Alzheimer's tau neurodegeneration.",
   },
   temporalpole: {
     id: 1033,
@@ -264,7 +291,8 @@ export const DESIKAN_KILLIANY_PARCELS: Record<string, AnatomicalParcel> = {
     color: 0x464646,
     rgb: [70, 70, 70],
     normRgb: [70 / 255, 70 / 255, 70 / 255],
-    description: "Anterior temporal tip binding visceral emotion to complex autobiographical memory.",
+    description:
+      "Anterior temporal tip binding visceral emotion to complex autobiographical memory.",
   },
   lateraloccipital: {
     id: 1011,
@@ -274,7 +302,8 @@ export const DESIKAN_KILLIANY_PARCELS: Record<string, AnatomicalParcel> = {
     color: 0x141e8c,
     rgb: [20, 30, 140],
     normRgb: [20 / 255, 30 / 255, 140 / 255],
-    description: "Secondary visual cortex processing retinotopic object contours and motion trajectories.",
+    description:
+      "Secondary visual cortex processing retinotopic object contours and motion trajectories.",
   },
   cuneus: {
     id: 1005,
@@ -284,7 +313,8 @@ export const DESIKAN_KILLIANY_PARCELS: Record<string, AnatomicalParcel> = {
     color: 0xdc1464,
     rgb: [220, 20, 100],
     normRgb: [220 / 255, 20 / 255, 100 / 255],
-    description: "Medial occipital cortex superior to calcarine fissure processing lower visual field quadrant.",
+    description:
+      "Medial occipital cortex superior to calcarine fissure processing lower visual field quadrant.",
   },
   lingual: {
     id: 1013,
@@ -294,7 +324,8 @@ export const DESIKAN_KILLIANY_PARCELS: Record<string, AnatomicalParcel> = {
     color: 0xe18c8c,
     rgb: [225, 140, 140],
     normRgb: [225 / 255, 140 / 255, 140 / 255],
-    description: "Medial occipital/temporal transitional cortex critical for color processing (V4) and encoding word forms.",
+    description:
+      "Medial occipital/temporal transitional cortex critical for color processing (V4) and encoding word forms.",
   },
   pericalcarine: {
     id: 1021,
@@ -304,7 +335,8 @@ export const DESIKAN_KILLIANY_PARCELS: Record<string, AnatomicalParcel> = {
     color: 0x78643c,
     rgb: [120, 100, 60],
     normRgb: [120 / 255, 100 / 255, 60 / 255],
-    description: "Striate cortex along the calcarine fissure receiving direct lateral geniculate nucleus optic radiations.",
+    description:
+      "Striate cortex along the calcarine fissure receiving direct lateral geniculate nucleus optic radiations.",
   },
   rostralanteriorcingulate: {
     id: 1026,
@@ -314,7 +346,8 @@ export const DESIKAN_KILLIANY_PARCELS: Record<string, AnatomicalParcel> = {
     color: 0x50148c,
     rgb: [80, 20, 140],
     normRgb: [80 / 255, 20 / 255, 140 / 255],
-    description: "Affective division of the cingulate involved in conflict monitoring and emotional appraisal.",
+    description:
+      "Affective division of the cingulate involved in conflict monitoring and emotional appraisal.",
   },
   caudalanteriorcingulate: {
     id: 1002,
@@ -324,7 +357,8 @@ export const DESIKAN_KILLIANY_PARCELS: Record<string, AnatomicalParcel> = {
     color: 0x7d8219,
     rgb: [125, 130, 25],
     normRgb: [125 / 255, 130 / 255, 25 / 255],
-    description: "Cognitive division of the cingulate driving error detection and cognitive response override.",
+    description:
+      "Cognitive division of the cingulate driving error detection and cognitive response override.",
   },
   posteriorcingulate: {
     id: 1023,
@@ -334,7 +368,8 @@ export const DESIKAN_KILLIANY_PARCELS: Record<string, AnatomicalParcel> = {
     color: 0xdcb4dc,
     rgb: [220, 180, 220],
     normRgb: [220 / 255, 180 / 255, 220 / 255],
-    description: "Highly connected metabolic hub and default mode network anchor for focused consciousness.",
+    description:
+      "Highly connected metabolic hub and default mode network anchor for focused consciousness.",
   },
   isthmuscingulate: {
     id: 1010,
@@ -344,7 +379,8 @@ export const DESIKAN_KILLIANY_PARCELS: Record<string, AnatomicalParcel> = {
     color: 0x8c148c,
     rgb: [140, 20, 140],
     normRgb: [140 / 255, 20 / 255, 140 / 255],
-    description: "Transitional zone connecting the cingulate gyrus to the parahippocampal gyrus.",
+    description:
+      "Transitional zone connecting the cingulate gyrus to the parahippocampal gyrus.",
   },
   insula: {
     id: 1035,
@@ -354,11 +390,13 @@ export const DESIKAN_KILLIANY_PARCELS: Record<string, AnatomicalParcel> = {
     color: 0xffc020,
     rgb: [255, 192, 32],
     normRgb: [1, 192 / 255, 32 / 255],
-    description: "Deep within the lateral sulcus, mediating interoceptive awareness, gustation, and pain processing.",
+    description:
+      "Deep within the lateral sulcus, mediating interoceptive awareness, gustation, and pain processing.",
   },
 };
 
-export type ToolMode = "inspect" | "control_point" | "paint" | "erase";
+export type ToolMode =
+  "inspect" | "control_point" | "paint" | "erase" | "roi_select";
 
 export type ScenarioId =
   | "dura_inclusion"
@@ -497,4 +535,99 @@ export interface MeshWorkerResponse {
   wireframe: boolean;
   buffers: RawGeometryBuffer[];
   isSubcortical?: boolean;
+}
+
+export interface Point2D {
+  x: number;
+  y: number;
+}
+
+export interface ContourSegment {
+  p1: Point2D;
+  p2: Point2D;
+}
+
+export interface VectorContourPath {
+  id: string;
+  label?: string;
+  segments: ContourSegment[];
+  svgPathData: string;
+  isClosed: boolean;
+  color?: string;
+}
+
+export interface HistogramStats {
+  bins: Uint32Array;
+  min: number;
+  max: number;
+  mean: number;
+  stdDev: number;
+  median: number;
+  mode: number;
+  totalVoxels: number;
+  volumeMm3: number;
+}
+
+export interface QAAnomalyAlert {
+  id: string;
+  type:
+    | "signal_dropout"
+    | "dura_inclusion"
+    | "skull_strip_erosion"
+    | "topological_handle"
+    | "intensity_spike";
+  severity: "critical" | "warning" | "info";
+  sliceIndex: number;
+  plane: SlicePlane;
+  voxelCoord: VoxelCoord;
+  description: string;
+  metricValue?: number;
+  suggestedAction: string;
+}
+
+export interface ROIRegionStats {
+  seed: VoxelCoord;
+  voxelCount: number;
+  volumeMm3: number;
+  meanIntensity: number;
+  stdDevIntensity: number;
+  minIntensity: number;
+  maxIntensity: number;
+}
+
+export interface ROISegmentationResult {
+  roiMask: Uint8Array;
+  stats: ROIRegionStats;
+  contours: VectorContourPath[];
+}
+
+export interface ROIWorkerRequest {
+  id: string;
+  seq: number;
+  type: "region_grow" | "marching_squares" | "histogram" | "qa_scan";
+  seed?: VoxelCoord;
+  intensityTolerance?: number;
+  sliceIndex?: number;
+  plane?: SlicePlane;
+  isovalue?: number;
+  rawT1?: Uint8Array;
+  brainmask?: Uint8Array;
+  wmMask?: Uint8Array;
+  roiMask?: Uint8Array;
+  dimensions?: { width: number; height: number; depth: number };
+  scenarioId?: ScenarioId;
+}
+
+export interface ROIWorkerResponse {
+  id: string;
+  seq: number;
+  type: "region_grow" | "marching_squares" | "histogram" | "qa_scan";
+  success: boolean;
+  error?: string;
+  segmentation?: ROISegmentationResult;
+  contours?: VectorContourPath[];
+  histogram?: HistogramStats;
+  qaAlerts?: QAAnomalyAlert[];
+  scanDurationMs?: number;
+  roiMask?: Uint8Array;
 }

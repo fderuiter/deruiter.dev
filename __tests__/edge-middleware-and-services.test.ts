@@ -113,8 +113,19 @@ describe("Next.js 16 Proxy & Modular Domain Services Suite", () => {
 
       expect(res).toBeDefined();
       Object.entries(SECURITY_HEADERS).forEach(([header, value]) => {
-        expect(res?.headers.get(header)).toBe(value);
+        if (header === "Content-Security-Policy" || header === "x-nonce") {
+          expect(res?.headers.get(header)).toBeTruthy();
+        } else {
+          expect(res?.headers.get(header)).toBe(value);
+        }
       });
+      const csp = res?.headers.get("Content-Security-Policy");
+      const scriptDirective = csp
+        ?.split(";")
+        .find((d) => d.trim().startsWith("script-src"));
+      expect(scriptDirective).toContain("'strict-dynamic'");
+      expect(scriptDirective).not.toContain("'unsafe-inline'");
+      expect(scriptDirective).not.toContain("'unsafe-eval'");
     });
 
     it("generates privacy-preserving SHA-256 client token without leaking raw IP address", async () => {

@@ -128,9 +128,9 @@ export function ProofWorkspaceSkeleton() {
                 tabIndex={0}
                 role="region"
                 aria-label="Proof workspace canvas skeleton"
-                className="relative w-full h-[420px] bg-gradient-to-b from-slate-950/60 via-slate-900 to-slate-950 select-none overflow-x-auto overflow-y-hidden"
+                className="relative w-full h-[420px] bg-gradient-to-b from-slate-950/60 via-slate-900 to-slate-950 select-none overflow-hidden"
               >
-                <div className="relative min-w-[760px] h-full flex items-center justify-center">
+                <div className="relative w-full h-full flex items-center justify-center">
                   <svg className="absolute inset-0 w-full h-full pointer-events-none">
                     <defs>
                       <pattern

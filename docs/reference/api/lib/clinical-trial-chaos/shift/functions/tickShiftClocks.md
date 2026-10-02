@@ -6,7 +6,7 @@
 
 # Function: tickShiftClocks()
 
-> **tickShiftClocks**(`clocks`, `deltaSeconds`): [`ShiftClockTick`](../interfaces/ShiftClockTick.md)
+> **tickShiftClocks**(`clocks`, `deltaSeconds`, `auditorPacingMultiplier?`): [`ShiftClockTick`](../interfaces/ShiftClockTick.md)
 
 Advances the deterministic per-frame clocks by one step, in order: subject
 deadlines (expiries raise suspicion and break the combo), the auditor
@@ -27,6 +27,10 @@ The state before the frame.
 `number`
 
 Seconds to advance; 0 while a dialog pauses play.
+
+### auditorPacingMultiplier?
+
+`number` = `1.0`
 
 ## Returns
 

@@ -1,8 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { StudyProtocol, StudyVisit } from "@/lib/crf/types";
-import { formatVisitWindow } from "@/lib/crf/visit-window";
+import {
+  formatVisitWindow,
+  evaluateVisitWindowConflicts,
+  calculateScheduleBounds,
+  calculateBaselineDrift,
+  calculateMilestoneForecasts,
+  CohortForecastParameters,
+} from "@/lib/crf/visit-window";
 import {
   IconCalendar,
   IconPlus,
@@ -11,6 +18,11 @@ import {
   IconTable,
   IconCards,
   IconEdit,
+  IconAlertTriangle,
+  IconChartBar,
+  IconClock,
+  IconX,
+  IconInfoCircle,
 } from "@tabler/icons-react";
 
 interface VisitMatrixEditorProps {
@@ -28,10 +40,38 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
   const [selectedCardVisitId, setSelectedCardVisitId] = useState<string>(
     study.visits[0]?.id || ""
   );
+  const [isIntelligenceOpen, setIsIntelligenceOpen] = useState<boolean>(false);
+  const [forecastParams, setForecastParams] =
+    useState<CohortForecastParameters>({
+      startDate: new Date().toISOString().slice(0, 10),
+      cohortSize: 50,
+      enrollmentDurationDays: 90,
+      expectedAttritionRate: 10,
+    });
 
   const arms = study.arms || [];
   const epochs = study.epochs || [];
   const epochMap = new Map(epochs.map((e) => [e.id, e.name]));
+
+  // Evaluate real-time visit window conflicts
+  const conflictSummary = useMemo(() => {
+    return evaluateVisitWindowConflicts(study.visits, selectedArmId);
+  }, [study.visits, selectedArmId]);
+
+  // Calculate cumulative schedule bounds (target duration, max expansion, max contraction)
+  const scheduleBounds = useMemo(() => {
+    return calculateScheduleBounds(study.visits);
+  }, [study.visits]);
+
+  // Calculate baseline schedule drift (with graceful fallback if no baseline exists)
+  const baselineDrift = useMemo(() => {
+    return calculateBaselineDrift(study.visits);
+  }, [study.visits]);
+
+  // Compute deterministic subject milestone forecasts
+  const milestoneForecast = useMemo(() => {
+    return calculateMilestoneForecasts(study.visits, forecastParams);
+  }, [study.visits, forecastParams]);
 
   const getFormAssignment = (visit: StudyVisit, formId: string) => {
     if (selectedArmId !== "all" && visit.armFormAssignments?.[selectedArmId]) {
@@ -103,6 +143,10 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
   const currentCardVisit =
     study.visits.find((v) => v.id === selectedCardVisitId) || study.visits[0];
 
+  const currentCardConflicts = currentCardVisit
+    ? conflictSummary.conflictsByVisitId[currentCardVisit.id] || []
+    : [];
+
   return (
     <div className="flex-1 flex flex-col h-full bg-zinc-950 p-3 sm:p-6 overflow-y-auto">
       {/* Header Banner */}
@@ -117,13 +161,31 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
             </h2>
           </div>
           <p className="text-xs text-zinc-400 font-sans mt-1">
-            Map clinical forms to protocol visits and configure allowable window
-            tolerances before and after each target day across study arms and
-            epochs.
+            Map clinical forms to protocol visits, analyze real-time window
+            conflicts, and review timeline bounds and milestone projections.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Schedule Intelligence Drawer Toggle */}
+          <button
+            onClick={() => setIsIntelligenceOpen(!isIntelligenceOpen)}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 sm:py-2 rounded-xl text-xs font-mono font-bold transition-all border ${
+              isIntelligenceOpen
+                ? "bg-purple-500/20 border-purple-500 text-purple-300"
+                : "bg-zinc-900 border-zinc-800 text-zinc-300 hover:border-zinc-700"
+            }`}
+            title="Toggle Schedule Intelligence & Forecasting Drawer"
+          >
+            <IconChartBar className="w-4 h-4 text-purple-400" />
+            <span>Schedule Intelligence</span>
+            {conflictSummary.hasConflicts && (
+              <span className="ml-1 px-1.5 py-0.2 rounded-full bg-amber-500 text-black text-[10px] font-extrabold">
+                {conflictSummary.totalConflicts}
+              </span>
+            )}
+          </button>
+
           {/* Mobile/Tablet Format Switcher */}
           <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-xl p-0.5">
             <button
@@ -198,6 +260,314 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
         </div>
       )}
 
+      {/* Schedule Intelligence Drawer / Panel */}
+      {isIntelligenceOpen && (
+        <div className="mb-6 p-4 sm:p-5 rounded-2xl bg-zinc-900/90 border border-purple-500/30 space-y-5 shadow-2xl">
+          <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+            <div className="flex items-center gap-2">
+              <IconChartBar className="w-5 h-5 text-purple-400" />
+              <h3 className="text-sm sm:text-base font-bold text-white font-mono">
+                Schedule Intelligence & Milestone Forecasting Engine
+              </h3>
+            </div>
+            <button
+              onClick={() => setIsIntelligenceOpen(false)}
+              className="p-1.5 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white"
+              title="Close Drawer"
+            >
+              <IconX className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Key Metrics Overview Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="p-3 rounded-xl bg-zinc-950 border border-zinc-800">
+              <div className="text-[10px] font-mono uppercase text-zinc-400">
+                Target Schedule Span
+              </div>
+              <div className="text-base sm:text-lg font-bold text-white font-mono mt-1">
+                {scheduleBounds.targetDurationDays}{" "}
+                <span className="text-xs text-zinc-400">days</span>
+              </div>
+            </div>
+
+            <div className="p-3 rounded-xl bg-zinc-950 border border-zinc-800">
+              <div className="text-[10px] font-mono uppercase text-zinc-400">
+                Max Expansion Bounds
+              </div>
+              <div className="text-base sm:text-lg font-bold text-purple-300 font-mono mt-1">
+                {scheduleBounds.maxExpansionDays}{" "}
+                <span className="text-xs text-zinc-400">days</span>
+              </div>
+              <div className="text-[10px] font-mono text-zinc-500">
+                +
+                {scheduleBounds.maxExpansionDays -
+                  scheduleBounds.targetDurationDays}
+                d expansion window
+              </div>
+            </div>
+
+            <div className="p-3 rounded-xl bg-zinc-950 border border-zinc-800">
+              <div className="text-[10px] font-mono uppercase text-zinc-400">
+                Max Contraction Bounds
+              </div>
+              <div className="text-base sm:text-lg font-bold text-brand-cyan font-mono mt-1">
+                {scheduleBounds.maxContractionDays}{" "}
+                <span className="text-xs text-zinc-400">days</span>
+              </div>
+              <div className="text-[10px] font-mono text-zinc-500">
+                -
+                {scheduleBounds.targetDurationDays -
+                  scheduleBounds.maxContractionDays}
+                d contraction window
+              </div>
+            </div>
+
+            <div className="p-3 rounded-xl bg-zinc-950 border border-zinc-800">
+              <div className="text-[10px] font-mono uppercase text-zinc-400">
+                Window Overlap Conflicts
+              </div>
+              <div
+                className={`text-base sm:text-lg font-bold font-mono mt-1 ${
+                  conflictSummary.hasConflicts
+                    ? "text-amber-400"
+                    : "text-emerald-400"
+                }`}
+              >
+                {conflictSummary.totalConflicts}{" "}
+                <span className="text-xs text-zinc-400">
+                  {conflictSummary.hasConflicts ? "detected" : "none"}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Window Conflicts List */}
+          {conflictSummary.hasConflicts && (
+            <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-2">
+              <div className="flex items-center gap-2 text-amber-400 font-mono font-bold text-xs">
+                <IconAlertTriangle className="w-4 h-4 shrink-0" />
+                <span>
+                  Detected Window Overlap Warnings (
+                  {conflictSummary.totalConflicts})
+                </span>
+              </div>
+              <div className="space-y-1.5 text-xs font-mono">
+                {conflictSummary.conflicts.map((conflict, idx) => (
+                  <div
+                    key={idx}
+                    className="p-2 rounded-lg bg-zinc-950/80 border border-amber-500/20 text-amber-200 flex flex-wrap items-center justify-between gap-2"
+                  >
+                    <span>{conflict.message}</span>
+                    <button
+                      onClick={() => {
+                        setEditingVisitId(conflict.visitIdA);
+                        setSelectedCardVisitId(conflict.visitIdA);
+                      }}
+                      className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 text-[10px] font-bold"
+                    >
+                      Configure Visit
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Schedule Drift & Baseline Analysis */}
+          <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-800 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs font-bold text-white font-mono">
+                <IconClock className="w-4 h-4 text-brand-cyan" />
+                <span>Baseline Schedule Drift Bounds</span>
+              </div>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-400">
+                {baselineDrift.hasBaseline
+                  ? baselineDrift.baselineLabel
+                  : "Current Protocol Baseline (Active)"}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs font-mono">
+              <div className="p-2.5 rounded-lg bg-zinc-900 border border-zinc-800">
+                <span className="text-[10px] text-zinc-400 block">
+                  Target Duration Drift
+                </span>
+                <span className="text-sm font-bold text-white">
+                  {baselineDrift.targetDurationDriftDays > 0 ? "+" : ""}
+                  {baselineDrift.targetDurationDriftDays} days
+                </span>
+              </div>
+              <div className="p-2.5 rounded-lg bg-zinc-900 border border-zinc-800">
+                <span className="text-[10px] text-zinc-400 block">
+                  Max Expansion Drift
+                </span>
+                <span className="text-sm font-bold text-purple-300">
+                  {baselineDrift.maxExpansionDriftDays > 0 ? "+" : ""}
+                  {baselineDrift.maxExpansionDriftDays} days
+                </span>
+              </div>
+              <div className="p-2.5 rounded-lg bg-zinc-900 border border-zinc-800">
+                <span className="text-[10px] text-zinc-400 block">
+                  Max Contraction Drift
+                </span>
+                <span className="text-sm font-bold text-brand-cyan">
+                  {baselineDrift.maxContractionDriftDays > 0 ? "+" : ""}
+                  {baselineDrift.maxContractionDriftDays} days
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Deterministic Milestone Forecasting */}
+          <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-800 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs font-bold text-white font-mono">
+                <IconInfoCircle className="w-4 h-4 text-purple-400" />
+                <span>Subject Milestone Forecasting Controls</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs font-mono">
+              <div>
+                <label className="block text-[10px] text-zinc-400 mb-1">
+                  Study / FSI Start Date
+                </label>
+                <input
+                  type="date"
+                  value={forecastParams.startDate}
+                  onChange={(e) =>
+                    setForecastParams({
+                      ...forecastParams,
+                      startDate:
+                        e.target.value || new Date().toISOString().slice(0, 10),
+                    })
+                  }
+                  className="w-full px-2.5 py-1.5 bg-zinc-900 border border-zinc-700 rounded-lg text-white font-mono text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] text-zinc-400 mb-1">
+                  Planned Cohort Size
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  value={forecastParams.cohortSize}
+                  onChange={(e) =>
+                    setForecastParams({
+                      ...forecastParams,
+                      cohortSize: parseInt(e.target.value, 10) || 1,
+                    })
+                  }
+                  className="w-full px-2.5 py-1.5 bg-zinc-900 border border-zinc-700 rounded-lg text-white font-mono text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] text-zinc-400 mb-1">
+                  Enrollment Window (Days)
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  value={forecastParams.enrollmentDurationDays}
+                  onChange={(e) =>
+                    setForecastParams({
+                      ...forecastParams,
+                      enrollmentDurationDays: parseInt(e.target.value, 10) || 0,
+                    })
+                  }
+                  className="w-full px-2.5 py-1.5 bg-zinc-900 border border-zinc-700 rounded-lg text-white font-mono text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] text-zinc-400 mb-1">
+                  Expected Attrition (%)
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={forecastParams.expectedAttritionRate}
+                  onChange={(e) =>
+                    setForecastParams({
+                      ...forecastParams,
+                      expectedAttritionRate: parseInt(e.target.value, 10) || 0,
+                    })
+                  }
+                  className="w-full px-2.5 py-1.5 bg-zinc-900 border border-zinc-700 rounded-lg text-white font-mono text-xs"
+                />
+              </div>
+            </div>
+
+            {/* Projected Milestone Dates Table */}
+            <div className="pt-2 space-y-2">
+              <div className="text-[11px] font-mono font-bold text-purple-300">
+                Calculated Protocol Milestone Projections
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono">
+                <div className="p-2.5 rounded-lg bg-zinc-900 border border-zinc-800">
+                  <span className="text-[10px] text-zinc-400 block">
+                    First Subject In (FSI)
+                  </span>
+                  <span className="font-bold text-white">
+                    {milestoneForecast.fsiDate}
+                  </span>
+                </div>
+                <div className="p-2.5 rounded-lg bg-zinc-900 border border-zinc-800">
+                  <span className="text-[10px] text-zinc-400 block">
+                    Last Subject In (LSI)
+                  </span>
+                  <span className="font-bold text-white">
+                    {milestoneForecast.lsiDate}
+                  </span>
+                </div>
+                <div className="p-2.5 rounded-lg bg-zinc-900 border border-zinc-800">
+                  <span className="text-[10px] text-zinc-400 block">
+                    First Subject Last Visit
+                  </span>
+                  <span className="font-bold text-white">
+                    {milestoneForecast.fslvDate}
+                  </span>
+                </div>
+                <div className="p-2.5 rounded-lg bg-zinc-900 border border-zinc-800">
+                  <span className="text-[10px] text-zinc-400 block">
+                    Last Subject Last Visit (LSLV)
+                  </span>
+                  <span className="font-bold text-brand-cyan">
+                    {milestoneForecast.lslvDate}
+                  </span>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-lg bg-zinc-900 border border-zinc-800 flex flex-wrap items-center justify-between text-xs font-mono text-zinc-300 gap-2">
+                <div>
+                  <span className="text-zinc-400">
+                    Total Study Completion Bounds (LSLV):{" "}
+                  </span>
+                  <span className="font-bold text-white">
+                    {milestoneForecast.earliestStudyCompletionDate} to{" "}
+                    {milestoneForecast.latestStudyCompletionDate}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-zinc-400">
+                    Completing Cohort Estimate:{" "}
+                  </span>
+                  <span className="font-bold text-emerald-400">
+                    {milestoneForecast.projectedCompletingSubjects} /{" "}
+                    {milestoneForecast.cohortSize} subjects
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Cards View (Optimized for Mobile Phones & Small Tablets) */}
       {viewFormat === "cards" ? (
         <div className="space-y-4 max-w-2xl mx-auto w-full">
@@ -205,17 +575,27 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
           <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
             {study.visits.map((visit) => {
               const isSelected = visit.id === selectedCardVisitId;
+              const visitConflicts =
+                conflictSummary.conflictsByVisitId[visit.id] || [];
+              const hasWarning = visitConflicts.length > 0;
+
               return (
                 <button
                   key={visit.id}
                   onClick={() => setSelectedCardVisitId(visit.id)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-mono whitespace-nowrap transition-all border ${
+                  className={`px-3 py-1.5 rounded-xl text-xs font-mono whitespace-nowrap transition-all border flex items-center gap-1.5 ${
                     isSelected
                       ? "bg-brand-cyan/20 border-brand-cyan text-brand-cyan font-bold"
                       : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200"
                   }`}
                 >
-                  {visit.name}
+                  <span>{visit.name}</span>
+                  {hasWarning && (
+                    <span
+                      className="w-2 h-2 rounded-full bg-amber-400 shrink-0"
+                      title="Window Overlap Conflict"
+                    />
+                  )}
                 </button>
               );
             })}
@@ -225,9 +605,17 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
             <div className="p-4 sm:p-5 rounded-2xl bg-zinc-900/60 border border-zinc-800 space-y-4">
               <div className="flex items-start justify-between gap-3 border-b border-zinc-800 pb-3">
                 <div>
-                  <h2 className="text-sm sm:text-base font-bold text-white font-mono">
-                    {currentCardVisit.name}
-                  </h2>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-sm sm:text-base font-bold text-white font-mono">
+                      {currentCardVisit.name}
+                    </h2>
+                    {currentCardConflicts.length > 0 && (
+                      <span className="px-2 py-0.5 rounded bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[10px] font-bold font-mono inline-flex items-center gap-1">
+                        <IconAlertTriangle className="w-3 h-3" />
+                        <span>Conflict</span>
+                      </span>
+                    )}
+                  </div>
                   <div className="text-xs text-brand-cyan font-mono mt-0.5">
                     Target Day {currentCardVisit.targetDay} (
                     {formatVisitWindow(currentCardVisit)} window)
@@ -265,6 +653,21 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
                   )}
                 </div>
               </div>
+
+              {/* Conflict Alert Box for Current Card Visit */}
+              {currentCardConflicts.length > 0 && (
+                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs font-mono space-y-1">
+                  <div className="flex items-center gap-1.5 font-bold text-amber-400">
+                    <IconAlertTriangle className="w-4 h-4 shrink-0" />
+                    <span>Visit Window Overlap Detected</span>
+                  </div>
+                  <ul className="list-disc list-inside space-y-0.5 text-[11px] text-amber-300">
+                    {currentCardConflicts.map((c, idx) => (
+                      <li key={idx}>{c.message}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               {/* Form Checkboxes for this Visit */}
               <div className="space-y-2">
@@ -342,49 +745,85 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
                 >
                   Forms ({study.forms.length})
                 </th>
-                {study.visits.map((visit) => (
-                  <th
-                    key={visit.id}
-                    scope="col"
-                    role="columnheader"
-                    className="p-3 text-center border-l border-zinc-800/80 min-w-[130px]"
-                  >
-                    <div className="space-y-1">
-                      <div className="text-xs font-bold font-mono text-white truncate max-w-[140px] mx-auto">
-                        {visit.name}
-                      </div>
-                      <div className="text-[10px] font-mono text-brand-cyan">
-                        Day {visit.targetDay} ({formatVisitWindow(visit)})
-                      </div>
-                      {visit.epochId && epochMap.has(visit.epochId) && (
-                        <div className="text-[9px] font-mono text-purple-400">
-                          {epochMap.get(visit.epochId)}
+                {study.visits.map((visit) => {
+                  const visitConflicts =
+                    conflictSummary.conflictsByVisitId[visit.id] || [];
+                  const hasError = visitConflicts.some(
+                    (c) => c.severity === "error"
+                  );
+                  const hasWarning = visitConflicts.length > 0;
+
+                  return (
+                    <th
+                      key={visit.id}
+                      scope="col"
+                      role="columnheader"
+                      className={`p-3 text-center border-l min-w-[140px] transition-colors ${
+                        hasError
+                          ? "border-red-500/40 bg-red-950/20"
+                          : hasWarning
+                            ? "border-amber-500/40 bg-amber-950/20"
+                            : "border-zinc-800/80"
+                      }`}
+                    >
+                      <div className="space-y-1">
+                        <div className="text-xs font-bold font-mono text-white truncate max-w-[140px] mx-auto">
+                          {visit.name}
                         </div>
-                      )}
-                      <div className="flex items-center justify-center gap-1.5 pt-1">
-                        <button
-                          onClick={() =>
-                            setEditingVisitId(
-                              editingVisitId === visit.id ? null : visit.id
-                            )
-                          }
-                          className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-zinc-800 hover:bg-zinc-750 text-zinc-300"
-                        >
-                          {editingVisitId === visit.id ? "Done" : "Edit"}
-                        </button>
-                        {study.visits.length > 1 && (
-                          <button
-                            onClick={() => handleDeleteVisit(visit.id)}
-                            className="text-[9px] font-mono text-zinc-500 hover:text-red-400 p-0.5"
-                            title="Delete Visit"
-                          >
-                            <IconTrash className="w-3 h-3" />
-                          </button>
+                        <div className="text-[10px] font-mono text-brand-cyan">
+                          Day {visit.targetDay} ({formatVisitWindow(visit)})
+                        </div>
+                        {visit.epochId && epochMap.has(visit.epochId) && (
+                          <div className="text-[9px] font-mono text-purple-400">
+                            {epochMap.get(visit.epochId)}
+                          </div>
                         )}
+
+                        {/* Visual Conflict Warning Badge */}
+                        {hasWarning && (
+                          <div
+                            className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold font-mono border cursor-help ${
+                              hasError
+                                ? "bg-red-500/20 border-red-500/50 text-red-300"
+                                : "bg-amber-500/20 border-amber-500/50 text-amber-300"
+                            }`}
+                            title={visitConflicts
+                              .map((c) => c.message)
+                              .join("\n")}
+                            data-testid={`visit-conflict-badge-${visit.id}`}
+                          >
+                            <IconAlertTriangle className="w-3 h-3 shrink-0" />
+                            <span>
+                              {hasError ? "Overlap Error" : "Overlap Warning"}
+                            </span>
+                          </div>
+                        )}
+
+                        <div className="flex items-center justify-center gap-1.5 pt-1">
+                          <button
+                            onClick={() =>
+                              setEditingVisitId(
+                                editingVisitId === visit.id ? null : visit.id
+                              )
+                            }
+                            className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-zinc-800 hover:bg-zinc-750 text-zinc-300"
+                          >
+                            {editingVisitId === visit.id ? "Done" : "Edit"}
+                          </button>
+                          {study.visits.length > 1 && (
+                            <button
+                              onClick={() => handleDeleteVisit(visit.id)}
+                              className="text-[9px] font-mono text-zinc-500 hover:text-red-400 p-0.5"
+                              title="Delete Visit"
+                            >
+                              <IconTrash className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  </th>
-                ))}
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800/60 font-mono text-xs">

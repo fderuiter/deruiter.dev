@@ -1,3 +1,5 @@
+import os from "node:os";
+
 // @ts-check
 /** @type {import('@stryker-mutator/api/core').PartialStrykerOptions} */
 const config = {
@@ -49,7 +51,7 @@ const config = {
     low: 75,
     break: 75,
   },
-  concurrency: 4,
+  concurrency: Math.max(1, Math.min(4, os.cpus().length)),
   timeoutMS: 2000,
   timeoutFactor: 1.5,
   tempDirName: ".stryker-tmp",

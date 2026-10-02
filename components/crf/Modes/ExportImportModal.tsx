@@ -28,6 +28,8 @@ import {
 } from "@tabler/icons-react";
 
 import { exportUniversalCrfJson } from "@/lib/crf/universal-schema";
+import { ImportDropzone } from "../ImportDropzone";
+import type { ParsedStudyFileResult } from "@/lib/crf/file-ingestion";
 
 interface ExportImportModalProps {
   study: StudyProtocol;
@@ -293,13 +295,50 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
     };
   };
 
+  const handleStudyParsed = async (
+    parsedResult: ParsedStudyFileResult,
+    rawText: string
+  ) => {
+    setImportError(null);
+    setPreflightViolations([]);
+    setPendingStudy(null);
+    setImportJsonText(rawText);
+
+    try {
+      const { validateStudyCompliance } =
+        await import("@/lib/crf/cdisc-conformance-linter");
+      const violations = validateStudyCompliance(parsedResult.study);
+
+      if (violations.length > 0) {
+        setPreflightViolations(violations);
+        setPendingStudy(parsedResult.study);
+        return;
+      }
+
+      const studyWithProvenance = attachProvenance(parsedResult.study);
+      onImportStudy(studyWithProvenance);
+      setImportJsonText("");
+      setPreflightViolations([]);
+      setPendingStudy(null);
+    } catch (err: unknown) {
+      setImportError(
+        (err as Error).message || "Failed to validate imported study protocol"
+      );
+    }
+  };
+
   const handlePerformImport = async () => {
     setImportError(null);
     setPreflightViolations([]);
     setPendingStudy(null);
     try {
-      const { importStudyFromUsdm } = await import("@/lib/crf/usdm-adapter");
-      const imported = importStudyFromUsdm(importJsonText);
+      const { detectAndParseStudyFile } =
+        await import("@/lib/crf/file-ingestion");
+      const result = detectAndParseStudyFile(
+        importJsonText,
+        "pasted_protocol.json"
+      );
+      const imported = result.study;
 
       const { validateStudyCompliance } =
         await import("@/lib/crf/cdisc-conformance-linter");
@@ -318,7 +357,8 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
       setPendingStudy(null);
     } catch (err: unknown) {
       setImportError(
-        (err as Error).message || "Invalid Protocol or USDM JSON syntax"
+        (err as Error).message ||
+          "Invalid Protocol, USDM JSON, ODM XML, or CSV syntax"
       );
     }
   };
@@ -673,15 +713,32 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
               }
             >
               <table className="w-full text-left border-collapse text-xs font-mono">
+                <caption className="sr-only">
+                  SDTM Mapping Specifications
+                </caption>
                 <thead>
                   <tr className="border-b border-zinc-800 bg-zinc-950/80 text-zinc-400">
-                    <th className="p-3">Domain</th>
-                    <th className="p-3">Form</th>
-                    <th className="p-3">Variable (CDASH)</th>
-                    <th className="p-3">Label</th>
-                    <th className="p-3">Data Type</th>
-                    <th className="p-3">Core</th>
-                    <th className="p-3">aCRF Overlay Tag</th>
+                    <th scope="col" className="p-3">
+                      Domain
+                    </th>
+                    <th scope="col" className="p-3">
+                      Form
+                    </th>
+                    <th scope="col" className="p-3">
+                      Variable (CDASH)
+                    </th>
+                    <th scope="col" className="p-3">
+                      Label
+                    </th>
+                    <th scope="col" className="p-3">
+                      Data Type
+                    </th>
+                    <th scope="col" className="p-3">
+                      Core
+                    </th>
+                    <th scope="col" className="p-3">
+                      aCRF Overlay Tag
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-850">
@@ -756,21 +813,31 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
       })}
 
       {/* Import Section */}
-      <div className="p-5 rounded-2xl bg-zinc-900/40 border border-zinc-800 space-y-3">
+      <div className="p-5 rounded-2xl bg-zinc-900/40 border border-zinc-800 space-y-4">
         <div className="flex items-center gap-2">
           <IconUpload className="w-4 h-4 text-brand-cyan" />
           <h2 className="text-xs font-bold text-white font-mono uppercase">
-            Lossless Protocol Import (JSON Study Bundle)
+            Multi-Format Protocol Import &amp; Ingestion
           </h2>
         </div>
 
-        <textarea
-          rows={3}
-          value={importJsonText}
-          onChange={(e) => setImportJsonText(e.target.value)}
-          placeholder="Paste exported StudyProtocol JSON here to load..."
-          className="w-full p-3 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-mono text-zinc-300 focus:border-brand-cyan focus:outline-none"
+        <ImportDropzone
+          onFileParsed={handleStudyParsed}
+          onError={(err) => setImportError(err)}
         />
+
+        <div className="space-y-1.5 pt-1">
+          <label className="text-[11px] font-mono text-zinc-400 block">
+            Or paste raw JSON / XML / CSV text directly:
+          </label>
+          <textarea
+            rows={3}
+            value={importJsonText}
+            onChange={(e) => setImportJsonText(e.target.value)}
+            placeholder="Paste exported StudyProtocol JSON here to load..."
+            className="w-full p-3 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-mono text-zinc-300 focus:border-brand-cyan focus:outline-none"
+          />
+        </div>
 
         {importError && (
           <div className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/30 text-xs text-red-400 font-mono">

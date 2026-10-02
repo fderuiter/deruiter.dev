@@ -123,15 +123,13 @@ export function loadPersistedFlashStorage(): FlashVariable[] {
   return readPersistedFlashStorage() ?? [];
 }
 
-export function savePersistedFlashStorage(flashVars: FlashVariable[]): void {
-  if (typeof window === "undefined") return;
-  try {
-    if (typeof window.localStorage?.setItem === "function") {
-      window.localStorage.setItem(FLASH_STORAGE_KEY, JSON.stringify(flashVars));
-    }
-  } catch {
-    // Fall back safely when browser local storage is unavailable
+export function savePersistedFlashStorage(flashVars: FlashVariable[]): boolean {
+  if (typeof window === "undefined") return true;
+  if (typeof window.localStorage?.setItem !== "function") {
+    throw new Error("localStorage is unavailable");
   }
+  window.localStorage.setItem(FLASH_STORAGE_KEY, JSON.stringify(flashVars));
+  return true;
 }
 
 export interface Obstacle {
@@ -693,7 +691,11 @@ export function allocateFlashVariable(
   }
 
   const nextFlashVars = [...state.flashVariables, newVar];
-  savePersistedFlashStorage(nextFlashVars);
+  try {
+    savePersistedFlashStorage(nextFlashVars);
+  } catch {
+    // Engine in-memory state continues safely even if browser storage write fails
+  }
 
   return {
     state: {
@@ -710,7 +712,11 @@ export function allocateFlashVariable(
  * Clears persistent NV Flash storage and resets local storage
  */
 export function clearFlashStorage(state: GameEngineState): GameEngineState {
-  savePersistedFlashStorage([]);
+  try {
+    savePersistedFlashStorage([]);
+  } catch {
+    // Engine in-memory state continues safely even if browser storage write fails
+  }
   return {
     ...state,
     flashVariables: [],

@@ -10,6 +10,7 @@ export * from "./formula-linter";
 export * from "./formula-presets";
 export * from "./form-linter";
 export * from "./ast-evaluator";
+export * from "./ast-debugger";
 export * from "./conditional-logic";
 export * from "./form-test-harness";
 export * from "./test-scenarios";
@@ -34,6 +35,9 @@ export {
 } from "./export-sas";
 export * from "./fhir-questionnaire";
 export * from "./odm-xml-serializer";
+export * from "./odm-xml-parser";
+export * from "./csv-spec-parser";
+export * from "./file-ingestion";
 export * from "./usdm-adapter";
 export * from "./precision-date";
 export * from "./visit-window";

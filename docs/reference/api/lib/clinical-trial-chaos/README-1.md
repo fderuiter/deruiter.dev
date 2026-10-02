@@ -148,6 +148,12 @@ Re-exports [AvatarCanvas](outfits/type-aliases/AvatarCanvas.md)
 
 ***
 
+### BIMOComplianceTrend
+
+Re-exports [BIMOComplianceTrend](types/type-aliases/BIMOComplianceTrend.md)
+
+***
+
 ### BIMOFinding
 
 Re-exports [BIMOFinding](types/interfaces/BIMOFinding.md)
@@ -289,6 +295,18 @@ Re-exports [DEFAULT_OFFICE_ID](offices/variables/DEFAULT_OFFICE_ID.md)
 ### DEFAULT\_OUTFIT\_ID
 
 Re-exports [DEFAULT_OUTFIT_ID](outfits/variables/DEFAULT_OUTFIT_ID.md)
+
+***
+
+### DEFAULT\_STRESS\_PARAMS
+
+Re-exports [DEFAULT_STRESS_PARAMS](scenarios/variables/DEFAULT_STRESS_PARAMS.md)
+
+***
+
+### describePowerUpRefusal
+
+Re-exports [describePowerUpRefusal](shift/functions/describePowerUpRefusal.md)
 
 ***
 
@@ -472,6 +490,24 @@ Re-exports [getOutfitById](outfits/functions/getOutfitById.md)
 
 ***
 
+### getPhaseLockTarget
+
+Re-exports [getPhaseLockTarget](shift/functions/getPhaseLockTarget.md)
+
+***
+
+### getPhaseProgress
+
+Re-exports [getPhaseProgress](shift/functions/getPhaseProgress.md)
+
+***
+
+### getPowerUpRefusal
+
+Re-exports [getPowerUpRefusal](shift/functions/getPowerUpRefusal.md)
+
+***
+
 ### getRoutingReadiness
 
 Re-exports [getRoutingReadiness](engine/functions/getRoutingReadiness.md)
@@ -481,6 +517,12 @@ Re-exports [getRoutingReadiness](engine/functions/getRoutingReadiness.md)
 ### getSAEChance
 
 Re-exports [getSAEChance](shift/functions/getSAEChance.md)
+
+***
+
+### getShiftTickSeconds
+
+Re-exports [getShiftTickSeconds](shift/functions/getShiftTickSeconds.md)
 
 ***
 
@@ -526,6 +568,12 @@ Re-exports [getSubmissionMode](engine/functions/getSubmissionMode.md)
 
 ***
 
+### getViolationBreakdown
+
+Re-exports [getViolationBreakdown](shift/functions/getViolationBreakdown.md)
+
+***
+
 ### INITIAL\_STATIONS
 
 Re-exports [INITIAL_STATIONS](scenarios/variables/INITIAL_STATIONS.md)
@@ -538,6 +586,12 @@ Re-exports [isPhaseCleared](shift/functions/isPhaseCleared.md)
 
 ***
 
+### isShiftClockHalted
+
+Re-exports [isShiftClockHalted](shift/functions/isShiftClockHalted.md)
+
+***
+
 ### isSubjectFullyCompliant
 
 Re-exports [isSubjectFullyCompliant](engine/functions/isSubjectFullyCompliant.md)
@@ -547,6 +601,12 @@ Re-exports [isSubjectFullyCompliant](engine/functions/isSubjectFullyCompliant.md
 ### MAX\_CONVEYOR\_SUBJECTS
 
 Re-exports [MAX_CONVEYOR_SUBJECTS](engine/variables/MAX_CONVEYOR_SUBJECTS.md)
+
+***
+
+### MAX\_SHIFT\_TICK\_MS
+
+Re-exports [MAX_SHIFT_TICK_MS](shift/variables/MAX_SHIFT_TICK_MS.md)
 
 ***
 
@@ -622,6 +682,12 @@ Re-exports [PHASE_TARGETS](shift/variables/PHASE_TARGETS.md)
 
 ***
 
+### PhaseProgress
+
+Re-exports [PhaseProgress](shift/interfaces/PhaseProgress.md)
+
+***
+
 ### pickOfficeAmbientEvent
 
 Re-exports [pickOfficeAmbientEvent](offices/functions/pickOfficeAmbientEvent.md)
@@ -694,9 +760,21 @@ Re-exports [playValidationSound](sound-effects/functions/playValidationSound.md)
 
 ***
 
+### POWER\_UP\_REFUSAL\_LABELS
+
+Re-exports [POWER_UP_REFUSAL_LABELS](shift/variables/POWER_UP_REFUSAL_LABELS.md)
+
+***
+
 ### PowerUpInventory
 
 Re-exports [PowerUpInventory](types/type-aliases/PowerUpInventory.md)
+
+***
+
+### PowerUpRefusal
+
+Re-exports [PowerUpRefusal](shift/type-aliases/PowerUpRefusal.md)
 
 ***
 
@@ -733,6 +811,12 @@ Re-exports [raiseAuditorSuspicion](shift/functions/raiseAuditorSuspicion.md)
 ### RecordedRuleViolation
 
 Re-exports [RecordedRuleViolation](types/interfaces/RecordedRuleViolation.md)
+
+***
+
+### recordExpiredSubjects
+
+Re-exports [recordExpiredSubjects](shift/functions/recordExpiredSubjects.md)
 
 ***
 
@@ -817,6 +901,12 @@ Re-exports [ShiftClocks](shift/interfaces/ShiftClocks.md)
 ### ShiftClockTick
 
 Re-exports [ShiftClockTick](shift/interfaces/ShiftClockTick.md)
+
+***
+
+### ShiftPauseState
+
+Re-exports [ShiftPauseState](shift/interfaces/ShiftPauseState.md)
 
 ***
 
@@ -964,6 +1054,30 @@ Re-exports [stopProceduralBGM](sound-effects/functions/stopProceduralBGM.md)
 
 ***
 
+### STRESS\_PRESETS
+
+Re-exports [STRESS_PRESETS](scenarios/variables/STRESS_PRESETS.md)
+
+***
+
+### StressParameters
+
+Re-exports [StressParameters](types/interfaces/StressParameters.md)
+
+***
+
+### StressPreset
+
+Re-exports [StressPreset](types/interfaces/StressPreset.md)
+
+***
+
+### StressPresetId
+
+Re-exports [StressPresetId](types/type-aliases/StressPresetId.md)
+
+***
+
 ### SubmissionScore
 
 Re-exports [SubmissionScore](shift/interfaces/SubmissionScore.md)
@@ -1045,3 +1159,9 @@ Re-exports [VendorSystem](types/type-aliases/VendorSystem.md)
 ### verify21CFRSubmission
 
 Re-exports [verify21CFRSubmission](engine/functions/verify21CFRSubmission.md)
+
+***
+
+### ViolationBreakdown
+
+Re-exports [ViolationBreakdown](shift/interfaces/ViolationBreakdown.md)

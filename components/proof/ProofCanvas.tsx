@@ -17,7 +17,10 @@ import {
   INFERENCE_RULES,
   getCompatibleTargets,
   evaluateProofStatus,
+  FallacyDiagnosis,
+  evaluateAst,
 } from "@/lib/proof-utils";
+import { IconX } from "@tabler/icons-react";
 
 interface ProofCanvasProps {
   activeTheorem: TheoremDefinition;
@@ -55,6 +58,8 @@ interface ProofCanvasProps {
   canvasWrapperRef: RefObject<HTMLDivElement | null>;
   svgCanvasRef: RefObject<SVGSVGElement | null>;
   mobileActiveView: "canvas" | "ledger" | "systems" | "fallacy" | "terminal";
+  currentFallacy?: FallacyDiagnosis | null;
+  handleRollback?: () => void;
 }
 
 export const ProofCanvas: React.FC<ProofCanvasProps> = ({
@@ -84,8 +89,81 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
   canvasWrapperRef,
   svgCanvasRef,
   mobileActiveView,
+  currentFallacy,
+  handleRollback,
 }) => {
   const proofStatus = evaluateProofStatus(edges, activeTheorem);
+  const [containerWidth, setContainerWidth] = React.useState<number>(760);
+  const [activePopoverNodeId, setActivePopoverNodeId] = React.useState<
+    string | null
+  >(null);
+
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setActivePopoverNodeId(null);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  const handleRef = React.useCallback(
+    (node: HTMLDivElement | null) => {
+      if (node) {
+        const prevEl = canvasWrapperRef.current;
+        if (
+          prevEl &&
+          prevEl !== node &&
+          prevEl.clientWidth > 0 &&
+          node.clientWidth === 0
+        ) {
+          Object.defineProperty(node, "clientWidth", {
+            value: prevEl.clientWidth,
+            configurable: true,
+          });
+        }
+        (
+          canvasWrapperRef as React.MutableRefObject<HTMLDivElement | null>
+        ).current = node;
+        const w = node.clientWidth || node.getBoundingClientRect().width;
+        if (w > 0) {
+          setContainerWidth(Math.floor(w));
+        }
+      }
+    },
+    [canvasWrapperRef]
+  );
+
+  React.useEffect(() => {
+    const el = canvasWrapperRef.current;
+    if (!el) return;
+
+    const updateWidth = () => {
+      const w = el.clientWidth || el.getBoundingClientRect().width;
+      if (w > 0) {
+        setContainerWidth(Math.floor(w));
+      }
+    };
+
+    updateWidth();
+
+    if (typeof ResizeObserver !== "undefined") {
+      const observer = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          const w = entry.contentRect.width || el.clientWidth;
+          if (w > 0) {
+            setContainerWidth(Math.floor(w));
+          }
+        }
+      });
+      observer.observe(el);
+      return () => observer.disconnect();
+    }
+  }, [canvasWrapperRef]);
+
+  const maxGuideX = containerWidth || 760;
+
   return (
     <div
       className={`lg:col-span-8 flex flex-col gap-4 ${
@@ -166,15 +244,50 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
         </p>
         {/* SVG Canvas Area (Responsive scroll wrapper) */}
         <div
-          ref={canvasWrapperRef}
+          ref={handleRef}
           tabIndex={0}
           role="region"
           aria-label="Proof workspace canvas"
           onPointerMove={handleCanvasPointerMove}
           onPointerUp={handleCanvasPointerUp}
-          className="relative w-full h-[420px] bg-gradient-to-b from-slate-950/60 via-slate-900 to-slate-950 select-none overflow-x-auto overflow-y-hidden"
+          className="relative w-full h-[420px] bg-gradient-to-b from-slate-950/60 via-slate-900 to-slate-950 select-none overflow-hidden"
         >
-          <div className="relative min-w-[760px] h-full">
+          {/* Floating Canvas Error Action Banner */}
+          {currentFallacy && (
+            <div className="absolute top-3 left-4 right-4 z-30 pointer-events-none flex justify-center">
+              <div className="pointer-events-auto max-w-xl w-full p-3 rounded-xl border border-red-800/80 bg-red-950/90 backdrop-blur-md shadow-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-red-200">
+                <div className="flex items-start gap-2.5 min-w-0">
+                  <IconAlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+                  <div className="flex flex-col min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-bold text-red-100 text-xs">
+                        {currentFallacy.fallacyName}
+                      </span>
+                      <span className="px-1.5 py-0.2 text-[9px] font-mono font-bold bg-red-900/80 text-red-200 rounded border border-red-700/80">
+                        FALLACY DETECTED
+                      </span>
+                    </div>
+                    <span className="text-[11px] text-red-300/90 font-mono truncate">
+                      {currentFallacy.formalFormula}
+                    </span>
+                  </div>
+                </div>
+                {handleRollback && (
+                  <button
+                    type="button"
+                    onClick={handleRollback}
+                    className="shrink-0 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white font-mono font-bold text-xs flex items-center gap-1.5 shadow-md shadow-red-950/80 transition cursor-pointer active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-red-300"
+                    aria-label="Revert Edge: Strip invalid edge and clear fallacy diagnosis"
+                  >
+                    <IconRefresh className="w-3.5 h-3.5" />
+                    <span>Revert Edge</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div className="relative w-full h-full">
             <svg
               ref={svgCanvasRef}
               className="absolute inset-0 w-full h-full pointer-events-none"
@@ -253,7 +366,7 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
                     key={`guide-h-${idx}`}
                     x1={Math.max(0, guide.start)}
                     y1={guide.pos}
-                    x2={Math.min(760, guide.end)}
+                    x2={Math.min(maxGuideX, guide.end)}
                     y2={guide.pos}
                     stroke="#10b981"
                     strokeWidth="1.5"
@@ -377,6 +490,14 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
                 (t) => t.targetId === node.id
               );
 
+              const fallacyTargetId = currentFallacy?.targetId;
+              const isFallacyTargetNode = Boolean(
+                currentFallacy &&
+                (fallacyTargetId
+                  ? node.id === fallacyTargetId
+                  : node.id === activeTheorem.targetNodeId)
+              );
+
               return (
                 <motion.div
                   key={node.id}
@@ -391,17 +512,19 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
                   className={`group w-[160px] p-2.5 rounded-xl border cursor-pointer transition-all shadow-md select-none ${
                     isDimmed ? "opacity-40" : "opacity-100"
                   } ${
-                    isHoveredInDrag
-                      ? dragConnection?.isValid
-                        ? "bg-emerald-950/60 border-emerald-400 ring-2 ring-emerald-400/80 shadow-emerald-500/30 scale-105"
-                        : "bg-rose-950/60 border-rose-500 ring-2 ring-rose-500/80 shadow-rose-500/30 scale-105"
-                      : isCompatible
-                        ? "bg-emerald-950/30 border-emerald-500/70 ring-2 ring-emerald-500/50 shadow-emerald-500/20"
-                        : isSelected
-                          ? "bg-brand-cyan/20 border-brand-cyan ring-2 ring-brand-cyan/50 shadow-cyan-500/20"
-                          : isInspected
-                            ? "bg-slate-800 border-slate-600 ring-1 ring-slate-400"
-                            : "bg-slate-900 border-slate-800 hover:border-slate-700"
+                    isFallacyTargetNode
+                      ? "bg-rose-950/50 border-rose-500/80 ring-2 ring-rose-500/60 shadow-rose-500/20"
+                      : isHoveredInDrag
+                        ? dragConnection?.isValid
+                          ? "bg-emerald-950/60 border-emerald-400 ring-2 ring-emerald-400/80 shadow-emerald-500/30 scale-105"
+                          : "bg-rose-950/60 border-rose-500 ring-2 ring-rose-500/80 shadow-rose-500/30 scale-105"
+                        : isCompatible
+                          ? "bg-emerald-950/30 border-emerald-500/70 ring-2 ring-emerald-500/50 shadow-emerald-500/20"
+                          : isSelected
+                            ? "bg-brand-cyan/20 border-brand-cyan ring-2 ring-brand-cyan/50 shadow-cyan-500/20"
+                            : isInspected
+                              ? "bg-slate-800 border-slate-600 ring-1 ring-slate-400"
+                              : "bg-slate-900 border-slate-800 hover:border-slate-700"
                   }`}
                 >
                   {/* Compatible Rule Floating Badge */}
@@ -412,13 +535,34 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
                     </div>
                   )}
 
-                  {/* Invalid Hover Floating Badge */}
-                  {isHoveredInDrag && !dragConnection?.isValid && (
-                    <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-rose-500 text-white font-mono text-[9px] font-bold shadow-md flex items-center gap-1 z-30 whitespace-nowrap">
-                      <IconAlertTriangle className="w-2.5 h-2.5 shrink-0" />
-                      <span>Invalid Inference</span>
-                    </div>
+                  {/* Fallacy Counterexample Inline Visual Badge Indicator */}
+                  {isFallacyTargetNode && currentFallacy && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActivePopoverNodeId((prev) =>
+                          prev === node.id ? null : node.id
+                        );
+                      }}
+                      className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-rose-600 hover:bg-rose-500 text-white font-mono text-[9px] font-bold shadow-md shadow-rose-950/80 flex items-center gap-1 z-30 whitespace-nowrap cursor-pointer transition active:scale-95"
+                      aria-expanded={activePopoverNodeId === node.id}
+                      aria-label={`Counterexample badge for Node ${node.id}. Click to view variable valuations.`}
+                    >
+                      <IconAlertTriangle className="w-2.5 h-2.5 shrink-0 text-amber-300 animate-pulse" />
+                      <span>Counterexample</span>
+                    </button>
                   )}
+
+                  {/* Invalid Hover Floating Badge */}
+                  {isHoveredInDrag &&
+                    !dragConnection?.isValid &&
+                    !isFallacyTargetNode && (
+                      <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-rose-500 text-white font-mono text-[9px] font-bold shadow-md flex items-center gap-1 z-30 whitespace-nowrap">
+                        <IconAlertTriangle className="w-2.5 h-2.5 shrink-0" />
+                        <span>Invalid Inference</span>
+                      </div>
+                    )}
 
                   <button
                     type="button"
@@ -481,6 +625,134 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-brand-cyan group-hover:bg-slate-950" />
                   </button>
+
+                  {/* Fallacy Counterexample Diagnostics Popover */}
+                  {activePopoverNodeId === node.id && currentFallacy && (
+                    <div
+                      role="dialog"
+                      aria-label={`Counterexample diagnostics popover for Node ${node.id}`}
+                      className="absolute top-12 -left-12 w-[260px] p-3 rounded-xl bg-slate-950/95 border border-rose-500/60 shadow-2xl shadow-rose-950/80 backdrop-blur z-50 text-xs text-slate-200 pointer-events-auto"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="flex items-start justify-between border-b border-slate-800 pb-2 mb-2">
+                        <div>
+                          <div className="font-mono font-bold text-rose-400 text-[11px] uppercase tracking-wide flex items-center gap-1">
+                            <IconAlertTriangle className="w-3.5 h-3.5 shrink-0 text-amber-300" />
+                            <span>{currentFallacy.fallacyName}</span>
+                          </div>
+                          <div className="font-mono text-[10px] text-slate-400">
+                            {currentFallacy.formalFormula}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActivePopoverNodeId(null);
+                          }}
+                          className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer"
+                          aria-label="Close counterexample popover"
+                        >
+                          <IconX className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      {/* Counterexample Valuation Assignments */}
+                      {currentFallacy.counterexampleValuation && (
+                        <div className="mb-2">
+                          <div className="text-[10px] font-mono font-semibold text-amber-300 mb-1 uppercase tracking-wider">
+                            Counterexample Valuation:
+                          </div>
+                          <div className="flex flex-wrap gap-1.5 font-mono text-[10px]">
+                            {Object.entries(
+                              currentFallacy.counterexampleValuation
+                            ).map(([varName, val]) => (
+                              <span
+                                key={varName}
+                                className={`px-1.5 py-0.5 rounded border font-bold ${
+                                  val
+                                    ? "bg-emerald-950/80 border-emerald-500/50 text-emerald-300"
+                                    : "bg-rose-950/80 border-rose-500/50 text-rose-300"
+                                }`}
+                              >
+                                {varName} = {val ? "TRUE (1)" : "FALSE (0)"}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* AST Sub-Expression Evaluations */}
+                      {currentFallacy.premises &&
+                        currentFallacy.premises.length > 0 && (
+                          <div className="mb-2">
+                            <div className="text-[10px] font-mono font-semibold text-slate-400 mb-1 uppercase tracking-wider">
+                              AST Sub-Expression Evaluations:
+                            </div>
+                            <div className="space-y-1 font-mono text-[10px]">
+                              {currentFallacy.premises.map((p, idx) => {
+                                const evalVal =
+                                  currentFallacy.counterexampleValuation
+                                    ? evaluateAst(
+                                        p.ast,
+                                        currentFallacy.counterexampleValuation
+                                      )
+                                    : true;
+                                return (
+                                  <div
+                                    key={idx}
+                                    className="flex items-center justify-between bg-slate-900/80 p-1 rounded border border-slate-800"
+                                  >
+                                    <span className="text-slate-300 truncate max-w-[170px]">
+                                      {p.label}
+                                    </span>
+                                    <span
+                                      className={`px-1 rounded text-[9px] font-bold ${
+                                        evalVal
+                                          ? "bg-emerald-900/60 text-emerald-300"
+                                          : "bg-rose-900/60 text-rose-300"
+                                      }`}
+                                    >
+                                      {evalVal ? "T" : "F"}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                              {currentFallacy.conclusion &&
+                                (() => {
+                                  const conclEval =
+                                    currentFallacy.counterexampleValuation
+                                      ? evaluateAst(
+                                          currentFallacy.conclusion.ast,
+                                          currentFallacy.counterexampleValuation
+                                        )
+                                      : false;
+                                  return (
+                                    <div className="flex items-center justify-between bg-rose-950/40 p-1 rounded border border-rose-800/50">
+                                      <span className="text-rose-200 truncate max-w-[170px]">
+                                        {currentFallacy.conclusion.label}
+                                      </span>
+                                      <span
+                                        className={`px-1 rounded text-[9px] font-bold ${
+                                          conclEval
+                                            ? "bg-emerald-900/60 text-emerald-300"
+                                            : "bg-rose-900/60 text-rose-300"
+                                        }`}
+                                      >
+                                        {conclEval ? "T" : "F"}
+                                      </span>
+                                    </div>
+                                  );
+                                })()}
+                            </div>
+                          </div>
+                        )}
+
+                      <div className="text-[10px] text-slate-400 line-clamp-2 border-t border-slate-800/80 pt-1.5">
+                        {currentFallacy.plainEnglish}
+                      </div>
+                    </div>
+                  )}
                 </motion.div>
               );
             })}

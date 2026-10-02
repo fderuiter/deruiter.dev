@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  useCallback,
+} from "react";
 import { useClipboard } from "@/hooks/useClipboard";
 import {
   getSuggestion,
@@ -28,6 +34,7 @@ import { useAudio } from "@/components/providers/AudioProvider";
 import { useStudioHashParams } from "@/hooks/useStudioHashParams";
 import { useHotkeys } from "@/hooks/useHotkeys";
 import { useToast } from "@/hooks/useToast";
+import { useWorkspaceAction } from "@/hooks/useWorkspaceAction";
 import { NextPrevNav } from "@/components/ui/NextPrevNav";
 import { ProofHeader } from "@/components/proof/ProofHeader";
 import { ProofCanvas } from "@/components/proof/ProofCanvas";
@@ -66,6 +73,12 @@ function readCustomSession(
 
 type ProofTab = "ledger" | "systems" | "fallacy";
 const PROOF_TABS: readonly string[] = ["ledger", "systems", "fallacy"];
+
+let proofLogCounter = 0;
+function makeLogId(prefix: string): string {
+  proofLogCounter += 1;
+  return `${prefix}-${Date.now()}-${proofLogCounter}`;
+}
 
 function tabFromHash(raw: string | undefined): ProofTab {
   return raw && PROOF_TABS.includes(raw) ? (raw as ProofTab) : "ledger";
@@ -494,7 +507,7 @@ export function ProofWorkspaceClient() {
 
         if (message.type === "progress") {
           pendingLogsRef.current.push({
-            id: `sim-${Date.now()}-${Math.random()}`,
+            id: makeLogId("sim"),
             type: "output",
             text: message.log,
           });
@@ -507,7 +520,7 @@ export function ProofWorkspaceClient() {
           setConsoleLogs((prev) => [
             ...prev,
             {
-              id: `sim-done-${Date.now()}`,
+              id: makeLogId("sim-done"),
               type: "success",
               text: `✔ Background Simulation completed successfully with ${message.stepsCompleted} steps.`,
             },
@@ -523,7 +536,7 @@ export function ProofWorkspaceClient() {
           setConsoleLogs((prev) => [
             ...prev,
             {
-              id: `sim-err-${Date.now()}`,
+              id: makeLogId("sim-err"),
               type: "error",
               text: `Background Simulation error: ${message.message}`,
             },
@@ -656,7 +669,7 @@ export function ProofWorkspaceClient() {
     setConsoleLogs((prev) => [
       ...prev,
       {
-        id: `switch-${Date.now()}`,
+        id: makeLogId("switch"),
         type: "info",
         text: `Switched active theorem to [${nextTh.title}] · ${nextTh.ruleName}\nGoal: ${nextTh.goalDescription}`,
       },
@@ -955,7 +968,7 @@ export function ProofWorkspaceClient() {
         setConsoleLogs((prev) => [
           ...prev,
           {
-            id: `drag-conn-${Date.now()}`,
+            id: makeLogId("drag-conn"),
             type: "success",
             text: `Connected Node ${sId} → Node ${tId} via interactive drag cord. Rule: ${dragConnection.ruleBadge || "Inference"}`,
           },
@@ -1023,7 +1036,7 @@ export function ProofWorkspaceClient() {
       setConsoleLogs((prev) => [
         ...prev,
         {
-          id: `err-${Date.now()}`,
+          id: makeLogId("err"),
           type: "error",
           text: `[FALLACY DETECTED] ${fallacy.fallacyName}: ${validation.reason}\nFormula: ${fallacy.formalFormula}\nAnalogy: ${fallacy.softwareAnalogy}`,
         },
@@ -1056,12 +1069,12 @@ export function ProofWorkspaceClient() {
     setConsoleLogs((prev) => [
       ...prev,
       {
-        id: `cmd-${Date.now()}`,
+        id: makeLogId("cmd"),
         type: "command",
         text: `connect ${newEdge.source} ${newEdge.target}`,
       },
       {
-        id: `out-${Date.now()}`,
+        id: makeLogId("out"),
         type: "success",
         text: `✔ Established edge: Node ${newEdge.source} (${sNode?.label}) → Node ${newEdge.target} (${tNode?.label})`,
       },
@@ -1191,12 +1204,12 @@ export function ProofWorkspaceClient() {
       setConsoleLogs((prev) => [
         ...prev,
         {
-          id: `cmd-${Date.now()}`,
+          id: makeLogId("cmd"),
           type: "command",
           text: `apply ${ruleId} ${nodeIds.join(" ")}`,
         },
         {
-          id: `out-${Date.now()}`,
+          id: makeLogId("out"),
           type: "success",
           text: `✔ ${ruleResult.explanation}`,
         },
@@ -1220,7 +1233,7 @@ export function ProofWorkspaceClient() {
       setConsoleLogs((prev) => [
         ...prev,
         {
-          id: `err-${Date.now()}`,
+          id: makeLogId("err"),
           type: "error",
           text: `[RULE ERROR] ${ruleResult.explanation || fallacy.fallacyName}\n${fallacy.plainEnglish}`,
         },
@@ -1263,6 +1276,45 @@ export function ProofWorkspaceClient() {
     } catch {}
   };
 
+  useWorkspaceAction({
+    id: "proof:verify-premises",
+    title: "Proof Canvas: Verify Premises & Auto-Step Tactic",
+    description:
+      "Automatically discharge compatible deduction rules on active proof tree",
+    subToolId: "proof-canvas",
+    subToolName: "Proof Canvas",
+    badge: "Tactic Step",
+    tags: ["proof", "tactic", "logic", "verification"],
+    shortcut: "Alt+A",
+    handler: handleAutoStep,
+  });
+
+  useWorkspaceAction({
+    id: "proof:reset-layout",
+    title: "Proof Canvas: Reset Proof Node Layout",
+    description:
+      "Reset layout positions and alignment guides on active proof canvas",
+    subToolId: "proof-canvas",
+    subToolName: "Proof Canvas",
+    badge: "Layout",
+    tags: ["proof", "layout", "reset"],
+    shortcut: "Alt+R",
+    handler: handleResetLayout,
+  });
+
+  useWorkspaceAction({
+    id: "proof:toggle-snapping",
+    title: "Proof Canvas: Toggle Magnetic Snap-To-Grid",
+    description:
+      "Toggle magnetic grid snapping for proof canvas node positioning",
+    subToolId: "proof-canvas",
+    subToolName: "Proof Canvas",
+    badge: "Grid",
+    tags: ["proof", "snapping", "grid"],
+    shortcut: "G",
+    handler: toggleSnapping,
+  });
+
   const handleDeleteStep = (stepOrNode: number | string) => {
     const result = pruneStepOrNode(stepOrNode, edges, activeTheorem);
     if (!result.success) {
@@ -1271,7 +1323,7 @@ export function ProofWorkspaceClient() {
       setConsoleLogs((prev) => [
         ...prev,
         {
-          id: `err-${Date.now()}`,
+          id: makeLogId("err"),
           type: "error",
           text: `[PRUNE ERROR] ${result.reason}`,
         },
@@ -1291,12 +1343,94 @@ export function ProofWorkspaceClient() {
     setConsoleLogs((prev) => [
       ...prev,
       {
-        id: `prune-${Date.now()}`,
+        id: makeLogId("prune"),
         type: "info",
         text: `✔ ${result.reason}`,
       },
     ]);
   };
+
+  const handleRollback = useCallback(() => {
+    if (!currentFallacy) return;
+
+    const sId = currentFallacy.sourceId;
+    const tId = currentFallacy.targetId;
+
+    let updatedEdges = [...edges];
+
+    if (tId) {
+      const targetNode = activeTheorem.nodes.find(
+        (n) => n.id.toUpperCase() === tId.toUpperCase()
+      );
+      const isPremise =
+        targetNode?.type === "premise" ||
+        ["A", "B", "D"].includes(tId.toUpperCase());
+
+      if (!isPremise && targetNode) {
+        const pruneRes = pruneStepOrNode(tId, edges, activeTheorem);
+        if (pruneRes.success) {
+          updatedEdges = pruneRes.newEdges;
+        } else if (sId) {
+          updatedEdges = edges.filter(
+            (e) =>
+              !(
+                e.source.toUpperCase() === sId.toUpperCase() &&
+                e.target.toUpperCase() === tId.toUpperCase()
+              ) &&
+              !(
+                e.source.toUpperCase() === tId.toUpperCase() &&
+                e.target.toUpperCase() === sId.toUpperCase()
+              )
+          );
+        }
+      } else if (sId) {
+        updatedEdges = edges.filter(
+          (e) =>
+            !(
+              e.source.toUpperCase() === sId.toUpperCase() &&
+              e.target.toUpperCase() === tId.toUpperCase()
+            ) &&
+            !(
+              e.source.toUpperCase() === tId.toUpperCase() &&
+              e.target.toUpperCase() === sId.toUpperCase()
+            )
+        );
+      }
+    } else if (updatedEdges.length > 0) {
+      updatedEdges = updatedEdges.slice(0, -1);
+    }
+
+    setEdges(updatedEdges);
+    setCurrentFallacy(null);
+
+    const rollbackMsg =
+      sId && tId
+        ? `Rolled back step (${sId} → ${tId}) and cleared fallacy diagnosis.`
+        : "Rolled back invalid step and cleared fallacy diagnosis.";
+
+    showToast(`✔ ${rollbackMsg}`, "info", { announce: false });
+    announceToScreenReader(rollbackMsg);
+
+    try {
+      playAutocomplete();
+    } catch {}
+
+    setConsoleLogs((prev) => [
+      ...prev,
+      {
+        id: `rollback-${Date.now()}`,
+        type: "info",
+        text: `✔ [ROLLBACK] ${rollbackMsg}`,
+      },
+    ]);
+  }, [
+    currentFallacy,
+    edges,
+    activeTheorem,
+    announceToScreenReader,
+    showToast,
+    playAutocomplete,
+  ]);
 
   const handleStartSimulation = (mode: "normal" | "loop" = "normal") => {
     if (isSimulating) return;
@@ -1304,7 +1438,7 @@ export function ProofWorkspaceClient() {
       setConsoleLogs((prev) => [
         ...prev,
         {
-          id: `sim-unavailable-${Date.now()}`,
+          id: makeLogId("sim-unavailable"),
           type: "info",
           text: "Custom simulation unavailable: entered formulas are not yet loaded into the graph.",
         },
@@ -1326,7 +1460,7 @@ export function ProofWorkspaceClient() {
     setConsoleLogs((prev) => [
       ...prev,
       {
-        id: `sim-start-${Date.now()}`,
+        id: makeLogId("sim-start"),
         type: "info",
         text: `Starting Proof Graph Simulation for [${activeTheorem.title}] in mode '${mode}'...`,
       },
@@ -1355,7 +1489,7 @@ export function ProofWorkspaceClient() {
     setConsoleLogs((prev) => [
       ...prev,
       {
-        id: `cmd-${Date.now()}`,
+        id: makeLogId("cmd"),
         type: "command",
         text: rawInput,
       },
@@ -1708,6 +1842,7 @@ export function ProofWorkspaceClient() {
           <ProofCanvas
             activeTheorem={activeTheorem}
             edges={edges}
+            currentFallacy={currentFallacy}
             nodeOffsets={nodeOffsets}
             selectedNodeIds={selectedNodeIds}
             inspectedNodeId={inspectedNodeId}
@@ -1732,6 +1867,7 @@ export function ProofWorkspaceClient() {
             canvasWrapperRef={canvasWrapperRef}
             svgCanvasRef={svgCanvasRef}
             mobileActiveView={mobileActiveView}
+            handleRollback={handleRollback}
           />
 
           <ProofLedger
@@ -1744,6 +1880,7 @@ export function ProofWorkspaceClient() {
             activeTheorem={activeTheorem}
             currentFallacy={currentFallacy}
             setCurrentFallacy={setCurrentFallacy}
+            handleRollback={handleRollback}
           />
         </div>
 

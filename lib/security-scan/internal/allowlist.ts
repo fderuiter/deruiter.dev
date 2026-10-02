@@ -92,6 +92,7 @@ function union(...sets: readonly Set<string>[]): Set<string> {
 const SAFE_FILE_VALUES = new Map<string, Set<string>>([
   ["__tests__/husky-hook-wiring.test.ts", HUSKY_HOOK_LITERALS],
   ["__tests__/migration-replay.test.ts", MIGRATION_REPLAY_FIXTURES],
+  ["__tests__/triage-security-issue.test.ts", GHP_FIXTURE_LITERAL],
   [FIXTURES_FILE, FIXTURE_LITERALS],
   // This module's own literal Neon and GitHub-token fixtures (see
   // MIGRATION_REPLAY_FIXTURES and GHP_FIXTURE_LITERAL above).
@@ -105,25 +106,40 @@ const SAFE_FILE_VALUES = new Map<string, Set<string>>([
     "scripts/audit-secret-history.ts",
     union(MIGRATION_REPLAY_FIXTURES, GHP_FIXTURE_LITERAL),
   ],
+  ["__tests__/triage-security-issue.test.ts", GHP_FIXTURE_LITERAL],
   ["__tests__/validation.test.ts", GHP_FIXTURE_LITERAL],
 ]);
 
 /**
- * Credentials that were committed, then revoked, and that history still
- * holds. They are keyed by SHA-256 fingerprint rather than by value so the
+ * Credentials and historic synthetic fixtures that were committed, and that history
+ * still holds. They are keyed by SHA-256 fingerprint rather than by value so the
  * plaintext never re-enters the tree, and scoped to the one file that held
- * each. A fingerprint belongs here only after the credential has been
- * rotated at its provider.
+ * each. A fingerprint belongs here for rotated credentials or historic
+ * synthetic token fixtures from earlier revisions.
  *
  * - `__tests__/dx-tooling.test.ts`: a Neon role password embedded in a
  *   `.env.example` assertion from 2026-08-16 until 2026-09-24. The role's
  *   password was reset on 2026-09-24.
+ * - `__tests__/triage-security-issue.test.ts` & `lib/security-scan/internal/allowlist.ts`:
+ *   historic synthetic GHP token fixture from earlier revisions in immutable Git history.
  */
 const ROTATED_CREDENTIAL_FINGERPRINTS = new Map<string, ReadonlySet<string>>([
   [
     "__tests__/dx-tooling.test.ts",
     new Set([
       "71a564baa010cb4cb8ab1c6503c326d2e8bb1cf9b6d2c5c3d70bbc8fe2fc4925",
+    ]),
+  ],
+  [
+    "__tests__/triage-security-issue.test.ts",
+    new Set([
+      "bb42d423729303461cdb69afcc081e8601d73e40d7f6ab33ac55857da39d9ac8",
+    ]),
+  ],
+  [
+    "lib/security-scan/internal/allowlist.ts",
+    new Set([
+      "bb42d423729303461cdb69afcc081e8601d73e40d7f6ab33ac55857da39d9ac8",
     ]),
   ],
 ]);

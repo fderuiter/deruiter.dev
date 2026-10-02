@@ -30,6 +30,12 @@ export const NEURO_TOOL_HOTKEYS: Record<ToolMode, NeuroToolHotkey> = {
   },
   paint: { tool: "paint", digit: "3", letter: "B", name: "Voxel Paint" },
   erase: { tool: "erase", digit: "4", letter: "E", name: "Voxel Erase" },
+  roi_select: {
+    tool: "roi_select",
+    digit: "5",
+    letter: "G",
+    name: "ROI Region Grow",
+  },
 };
 
 /** Letter key that runs the recon-all pipeline (Space also works). */

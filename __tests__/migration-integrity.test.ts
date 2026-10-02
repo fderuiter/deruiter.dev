@@ -64,6 +64,7 @@ describe("Prisma migration integrity", () => {
     "20261024000000_add_case_study_and_blog_post_composite_indexes",
     "20261024000000_add_telemetry_event_compound_idx",
     "20261025000000_reorder_blog_post_reaction_unique_constraint",
+    "20261026000000_reorder_case_study_reaction_unique_constraint",
   ];
 
   it("validates every checked-in migration file", () => {
@@ -245,6 +246,20 @@ describe("Prisma migration integrity", () => {
     );
     expect(migration).toContain(
       'CREATE UNIQUE INDEX "BlogPostReaction_blogPostSlug_connectionHash_reactionType_key" ON "BlogPostReaction"("blogPostSlug", "connectionHash", "reactionType")'
+    );
+    expect(migration).not.toMatch(/\bDROP\s+(?:TABLE|COLUMN)\b/i);
+  });
+
+  it("reorders the CaseStudyReaction unique constraint to enable prefix index matching", () => {
+    const migration = readMigrationSql(
+      "20261026000000_reorder_case_study_reaction_unique_constraint"
+    );
+
+    expect(migration).toContain(
+      'DROP INDEX "CaseStudyReaction_caseStudySlug_reactionType_connectionHash_key"'
+    );
+    expect(migration).toContain(
+      'CREATE UNIQUE INDEX "CaseStudyReaction_caseStudySlug_connectionHash_reactionType_key" ON "CaseStudyReaction"("caseStudySlug", "connectionHash", "reactionType")'
     );
     expect(migration).not.toMatch(/\bDROP\s+(?:TABLE|COLUMN)\b/i);
   });

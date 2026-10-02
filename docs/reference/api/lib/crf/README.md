@@ -20,6 +20,12 @@ Re-exports [ActorContext](study-engine/type-aliases/ActorContext.md)
 
 ***
 
+### addDaysToIsoDate
+
+Re-exports [addDaysToIsoDate](visit-window/functions/addDaysToIsoDate.md)
+
+***
+
 ### ALL\_SLASH\_COMMANDS
 
 Re-exports [ALL_SLASH_COMMANDS](smart-blocks-engine/variables/ALL_SLASH_COMMANDS.md)
@@ -68,9 +74,21 @@ Re-exports [AstConditionSchema](universal-schema/variables/AstConditionSchema.md
 
 ***
 
+### AstDebugStep
+
+Re-exports [AstDebugStep](ast-debugger/interfaces/AstDebugStep.md)
+
+***
+
 ### AstOperator
 
 Re-exports [AstOperator](types/type-aliases/AstOperator.md)
+
+***
+
+### AstRuleDebugTrace
+
+Re-exports [AstRuleDebugTrace](ast-debugger/interfaces/AstRuleDebugTrace.md)
 
 ***
 
@@ -152,6 +170,12 @@ Re-exports [BaselineDiffEntry](study-baseline-diff/interfaces/BaselineDiffEntry.
 
 ***
 
+### BaselineDriftComparison
+
+Re-exports [BaselineDriftComparison](visit-window/interfaces/BaselineDriftComparison.md)
+
+***
+
 ### BaselinesExportBundle
 
 Re-exports [BaselinesExportBundle](study-baselines/interfaces/BaselinesExportBundle.md)
@@ -206,6 +230,12 @@ Re-exports [buildScopedKey](form-test-harness/functions/buildScopedKey.md)
 
 ***
 
+### calculateBaselineDrift
+
+Re-exports [calculateBaselineDrift](visit-window/functions/calculateBaselineDrift.md)
+
+***
+
 ### calculateBazettQTc
 
 Re-exports [calculateBazettQTc](expression-evaluator/functions/calculateBazettQTc.md)
@@ -236,6 +266,12 @@ Re-exports [calculateFridericiaQTc](expression-evaluator/functions/calculateFrid
 
 ***
 
+### calculateMilestoneForecasts
+
+Re-exports [calculateMilestoneForecasts](visit-window/functions/calculateMilestoneForecasts.md)
+
+***
+
 ### calculateMostellerBSA
 
 Re-exports [calculateMostellerBSA](expression-evaluator/functions/calculateMostellerBSA.md)
@@ -245,6 +281,12 @@ Re-exports [calculateMostellerBSA](expression-evaluator/functions/calculateMoste
 ### calculateRecistSldChange
 
 Re-exports [calculateRecistSldChange](expression-evaluator/functions/calculateRecistSldChange.md)
+
+***
+
+### calculateScheduleBounds
+
+Re-exports [calculateScheduleBounds](visit-window/functions/calculateScheduleBounds.md)
 
 ***
 
@@ -389,6 +431,12 @@ Re-exports [CodelistOption](types/interfaces/CodelistOption.md)
 ### CodelistOptionSchema
 
 Re-exports [CodelistOptionSchema](universal-schema/variables/CodelistOptionSchema.md)
+
+***
+
+### CohortForecastParameters
+
+Re-exports [CohortForecastParameters](visit-window/interfaces/CohortForecastParameters.md)
 
 ***
 
@@ -572,6 +620,12 @@ Re-exports [describeFieldConditionalState](conditional-logic/functions/describeF
 
 ***
 
+### detectAndParseStudyFile
+
+Re-exports [detectAndParseStudyFile](file-ingestion/functions/detectAndParseStudyFile.md)
+
+***
+
 ### deterministicStringify
 
 Re-exports [deterministicStringify](study-draft-storage/functions/deterministicStringify.md)
@@ -719,6 +773,12 @@ Re-exports [evaluateRule](expression-evaluator/functions/evaluateRule.md)
 ### evaluateRuleResult
 
 Re-exports [evaluateRuleResult](expression-evaluator/functions/evaluateRuleResult.md)
+
+***
+
+### evaluateVisitWindowConflicts
+
+Re-exports [evaluateVisitWindowConflicts](visit-window/functions/evaluateVisitWindowConflicts.md)
 
 ***
 
@@ -1106,6 +1166,12 @@ Re-exports [generateRDataStepForForm](export-r/functions/generateRDataStepForFor
 
 ***
 
+### generateRuleDebugTrace
+
+Re-exports [generateRuleDebugTrace](ast-debugger/functions/generateRuleDebugTrace.md)
+
+***
+
 ### generateSasProcFormat
 
 Re-exports [generateSasProcFormat](export-sas/functions/generateSasProcFormat.md)
@@ -1259,6 +1325,18 @@ Re-exports [HighlightToken](formula-linter/interfaces/HighlightToken.md)
 ### importBaselinesBundle
 
 Re-exports [importBaselinesBundle](study-baselines/functions/importBaselinesBundle.md)
+
+***
+
+### importStudyFromCdiscOdmXml
+
+Re-exports [importStudyFromCdiscOdmXml](odm-xml-parser/functions/importStudyFromCdiscOdmXml.md)
+
+***
+
+### importStudyFromCsvSpec
+
+Re-exports [importStudyFromCsvSpec](csv-spec-parser/functions/importStudyFromCsvSpec.md)
 
 ***
 
@@ -1454,6 +1532,12 @@ Re-exports [LoadStudyDraftResult](study-draft-storage/type-aliases/LoadStudyDraf
 
 ***
 
+### mapOdmDataTypeToClinical
+
+Re-exports [mapOdmDataTypeToClinical](odm-xml-parser/functions/mapOdmDataTypeToClinical.md)
+
+***
+
 ### mapPresetToFormVariables
 
 Re-exports [mapPresetToFormVariables](formula-presets/functions/mapPresetToFormVariables.md)
@@ -1493,6 +1577,12 @@ Re-exports [ONCOLOGY_RECIST_PRESET](presets/oncology-recist/variables/ONCOLOGY_R
 ### ParsedPrecisionDate
 
 Re-exports [ParsedPrecisionDate](precision-date/interfaces/ParsedPrecisionDate.md)
+
+***
+
+### ParsedStudyFileResult
+
+Re-exports [ParsedStudyFileResult](file-ingestion/interfaces/ParsedStudyFileResult.md)
 
 ***
 
@@ -1700,6 +1790,18 @@ Re-exports [runScenariosForForm](test-scenarios/functions/runScenariosForForm.md
 
 ***
 
+### SAMPLE\_SUBJECT\_PROFILES
+
+Re-exports [SAMPLE_SUBJECT_PROFILES](ast-debugger/variables/SAMPLE_SUBJECT_PROFILES.md)
+
+***
+
+### SampleSubjectProfile
+
+Re-exports [SampleSubjectProfile](ast-debugger/interfaces/SampleSubjectProfile.md)
+
+***
+
 ### sanitizeRName
 
 Re-exports [sanitizeRName](export-r/functions/sanitizeRName.md)
@@ -1805,6 +1907,18 @@ Re-exports [ScenarioRunEvidenceSchema](universal-schema/variables/ScenarioRunEvi
 ### ScenarioStanding
 
 Re-exports [ScenarioStanding](test-scenarios/type-aliases/ScenarioStanding.md)
+
+***
+
+### ScheduleBounds
+
+Re-exports [ScheduleBounds](visit-window/interfaces/ScheduleBounds.md)
+
+***
+
+### ScheduleDriftAnalysis
+
+Re-exports [ScheduleDriftAnalysis](visit-window/interfaces/ScheduleDriftAnalysis.md)
 
 ***
 
@@ -2039,6 +2153,12 @@ Re-exports [StudyEpoch](types/interfaces/StudyEpoch.md)
 ### StudyEpochSchema
 
 Re-exports [StudyEpochSchema](universal-schema/variables/StudyEpochSchema.md)
+
+***
+
+### StudyMilestoneForecast
+
+Re-exports [StudyMilestoneForecast](visit-window/interfaces/StudyMilestoneForecast.md)
 
 ***
 
@@ -2495,3 +2615,21 @@ Re-exports [validateUniversalCrf](universal-schema/functions/validateUniversalCr
 ### ValidationIssue
 
 Re-exports [ValidationIssue](study-engine/interfaces/ValidationIssue.md)
+
+***
+
+### VisitConflictSummary
+
+Re-exports [VisitConflictSummary](visit-window/interfaces/VisitConflictSummary.md)
+
+***
+
+### VisitMilestoneProjection
+
+Re-exports [VisitMilestoneProjection](visit-window/interfaces/VisitMilestoneProjection.md)
+
+***
+
+### VisitWindowConflict
+
+Re-exports [VisitWindowConflict](visit-window/interfaces/VisitWindowConflict.md)

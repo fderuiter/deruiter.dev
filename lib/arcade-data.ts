@@ -33,7 +33,7 @@ export const ARCADE_GAMES_METADATA: ArcadeGameMetadata[] = [
     borderHover:
       "hover:border-amber-500/50 hover:shadow-[0_0_30px_rgba(245,158,11,0.15)]",
     badgeBg: "bg-amber-500/10 text-amber-300 border-amber-500/30",
-    storageKey: "working_duck_high_score",
+    storageKey: "working_with_duck_high_score",
     route: "/arcade/working-with-duck",
   },
   {
@@ -80,7 +80,7 @@ export const ARCADE_GAMES_METADATA: ArcadeGameMetadata[] = [
     borderHover:
       "hover:border-purple-500/50 hover:shadow-[0_0_30px_rgba(168,85,247,0.15)]",
     badgeBg: "bg-purple-500/10 text-purple-300 border-purple-500/30",
-    storageKey: "quasi_puzzle_high_score",
+    storageKey: "quasi_perfect_puzzler_progress_v1",
     route: "/arcade/quasi-puzzler",
   },
   {
@@ -105,7 +105,7 @@ export const ARCADE_GAMES_METADATA: ArcadeGameMetadata[] = [
     borderHover:
       "hover:border-amber-500/50 hover:shadow-[0_0_30px_rgba(245,158,11,0.15)]",
     badgeBg: "bg-amber-500/10 text-amber-300 border-amber-500/30",
-    storageKey: "garmin_runner_high_score",
+    storageKey: "garmin_simulator_high_score",
     route: "/arcade/garmin-watch",
   },
   {
@@ -130,7 +130,7 @@ export const ARCADE_GAMES_METADATA: ArcadeGameMetadata[] = [
     borderHover:
       "hover:border-emerald-500/50 hover:shadow-[0_0_30px_rgba(16,185,129,0.15)]",
     badgeBg: "bg-emerald-500/10 text-emerald-300 border-emerald-500/30",
-    storageKey: "clinical_chaos_high_score",
+    storageKey: "clinical_chaos_highscore",
     route: "/arcade/clinical-chaos",
   },
   {
@@ -150,6 +150,7 @@ export const ARCADE_GAMES_METADATA: ArcadeGameMetadata[] = [
     accentColor: "text-amber-400",
     borderHover: "hover:border-amber-500/50",
     badgeBg: "bg-amber-500/10 text-amber-300 border-amber-500/30",
+    storageKey: "trial_and_error_high_score",
     route: "/arcade/trial-and-error",
   },
   {
@@ -174,6 +175,7 @@ export const ARCADE_GAMES_METADATA: ArcadeGameMetadata[] = [
     accentColor: "text-amber-400",
     borderHover: "hover:border-amber-500/50",
     badgeBg: "bg-amber-500/10 text-amber-300 border-amber-500/30",
+    storageKey: "study_director_high_score",
     route: "/arcade/study-director",
   },
   {

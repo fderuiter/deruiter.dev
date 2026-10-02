@@ -16,6 +16,7 @@ import { FieldManualButton } from "@/components/FieldManualButton";
 import { FullscreenButton } from "@/components/arcade/FullscreenButton";
 import { ResultCard } from "@/components/arcade/ResultCard";
 import { useArcadeFx } from "@/hooks/useArcadeFx";
+import { ArcadeHud } from "@/components/arcade/ArcadeHud";
 import { DynamicTabletOrientationHint as TabletOrientationHint } from "@/components/arcade/DynamicTabletOrientationHint";
 import { useGameFullscreen as useFullscreen } from "@/components/arcade/CabinetFullscreen";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
@@ -25,6 +26,7 @@ import {
   safeGetRawItem,
   safeSetRawItem,
 } from "@/lib/safe-storage";
+import { recordArcadeScore } from "@/lib/arcade-achievements";
 import { useDuckService } from "@/hooks/useDuckService";
 import { useResponsiveCanvas } from "@/hooks/useResponsiveCanvas";
 import { useCanvasResolution } from "@/hooks/useCanvasResolution";
@@ -37,15 +39,11 @@ import {
   IconRotate,
   IconBone,
   IconBallTennis,
-  IconSparkles,
   IconTrees,
-  IconHeart,
-  IconBriefcase,
   IconVolume,
   IconVolumeOff,
   IconBook,
   IconX,
-  IconAlertTriangle,
   IconPhoto,
   IconPalette,
   IconMusic,
@@ -760,6 +758,22 @@ function DuckSprintResult({
     </ResultCard>
   );
 }
+// Action dock styles (#1676): graphite keys, amber for the held toy,
+// emerald for tricks, and the cabinet accent for the one primary action.
+const DOCK_BUTTON =
+  "disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-2.5 py-1.5 rounded-xl border text-xs font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300";
+const TOY_IDLE =
+  "border-white/[0.08] bg-[#13151a] text-zinc-300 hover:border-white/20 hover:text-white";
+const TOY_SELECTED = "border-amber-400/70 bg-amber-400/15 text-amber-200";
+const TRICK_BUTTON =
+  "border-white/[0.08] bg-[#13151a] text-zinc-200 hover:border-emerald-400/50 hover:bg-emerald-400/10 hover:text-emerald-100";
+const DOCK_KEY =
+  "inline-flex h-5 min-w-5 items-center justify-center rounded border border-b-2 border-white/15 bg-[#0d0e11] px-1 font-mono text-[10px] font-bold text-zinc-300";
+const TRICK_KEY =
+  "inline-flex h-5 min-w-5 items-center justify-center rounded border border-b-2 border-emerald-400/30 bg-[#0d0e11] px-1 font-mono text-[10px] font-bold text-emerald-300";
+const DOCK_GROUP = "flex min-w-0 flex-wrap items-center gap-1";
+const DOCK_CAPTION =
+  "pr-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400";
 
 export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
   initialState,
@@ -804,6 +818,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
   );
   const fx = useArcadeFx();
   const { stageRef: fxStageRef, flashRef: fxFlashRef } = fx;
+  const [dismissedTip, setDismissedTip] = useState<string | null>(null);
   const isDraggingDuckStateRef = useRef(false);
   // A pointer drag that ends while the sprint is paused cannot drop Duck
   // (releaseDuck is a no-op while paused, #1645), so the drop waits for the
@@ -1235,17 +1250,19 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
     return () => clearInterval(interval);
   }, [muted, isMusicMuted, uiState.status, playNote]);
 
-  // Sync high scores safely to localStorage
+  // Sync high scores safely to localStorage and emit score events
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
-      // Raw writes keep the stored bytes: a bare numeric string and a plain
-      // JSON array, exactly as before safeStorage.
+      if (uiState.totalScore > 0) {
+        recordArcadeScore("working-with-duck", uiState.totalScore);
+      }
       if (uiState.highScore > loadedHighScore) {
         safeSetRawItem(
           "working_with_duck_high_score",
           String(uiState.highScore)
         );
+        recordArcadeScore("working-with-duck", uiState.highScore);
       }
       if (uiState.unlockedFacts.length > 0) {
         safeSetRawItem(
@@ -1254,7 +1271,12 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
         );
       }
     } catch {}
-  }, [uiState.highScore, uiState.unlockedFacts, loadedHighScore]);
+  }, [
+    uiState.highScore,
+    uiState.totalScore,
+    uiState.unlockedFacts,
+    loadedHighScore,
+  ]);
 
   // Main 60 FPS Canvas Game Loop
   //
@@ -2116,32 +2138,32 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
   if (uiState.status === "running" && uiState.inDogPark) {
     // Scene tips show on every sprint: the controls change with the scene.
     tutorialHint =
-      "🌲 Dog Park: drag on the field and let go to throw, steer Duck with the mouse, W or the arrow keys, and press Space to jump. Work, Excitement and Bladder pause until you return to the office.";
+      "Dog Park: drag on the field and let go to throw, steer Duck with the mouse, W or the arrow keys, and press Space to jump. Work, Excitement and Bladder pause until you return to the office.";
   } else if (uiState.status === "running" && uiState.inBathtub) {
     tutorialHint =
-      "🛁 Bath time: move your cursor over the tub to lather Duck, then Rinse until he's clean and Finish Bath. Work, Excitement and Bladder pause until you're back in the office.";
+      "Bath time: move your cursor over the tub to lather Duck, then Rinse until he's clean and Finish Bath. Work, Excitement and Bladder pause until you're back in the office.";
   } else if (uiState.currentLevel === 1 && uiState.status === "running") {
     if (uiState.duck.state === "THE_FLOP") {
       tutorialHint =
-        "💖 Duck flopped on his back! Move your cursor back & forth over his belly!";
+        "Duck flopped on his back! Move your cursor back & forth over his belly!";
     } else if (
       uiState.duck.state === "SNIFFING_POTTY" ||
       uiState.bladder > 80
     ) {
       tutorialHint =
-        "🚽 Duck needs to go! Click and drag Duck over to the Back Door!";
+        "Duck needs to go! Click and drag Duck over to the Back Door!";
     } else if (uiState.duck.state === "SNEAKY_CHEW") {
       tutorialHint =
-        "⚠️ Duck is eyeing your work! Drop a Kong (2) or Call Drop It (E) to save it!";
+        "Duck is eyeing your work! Drop a Kong (2) or Call Drop It (E) to save it!";
     } else if (uiState.duck.state === "NO_TAKE_THROW") {
       tutorialHint =
-        "🎾 Duck caught the ball! Press (4) to trade a treat or (E) for Drop It!";
+        "Duck caught the ball! Press (4) to trade a treat or (E) for Drop It!";
     } else if (uiState.excitement > 80) {
       tutorialHint =
-        "⚡ Excitement is high! Call Sit (Q) or take a Dog Park trip!";
+        "Excitement is high! Call Sit (Q) or take a Dog Park trip!";
     } else {
       tutorialHint =
-        "💡 Tip: Work advances automatically. Press Space for active coding bursts & try training tricks (Q-W-E-R)!";
+        "Tip: Work advances automatically. Press Space for active coding bursts & try training tricks (Q-W-E-R)!";
     }
   }
 
@@ -2170,6 +2192,34 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
       return next;
     });
   };
+  // A dismissed tip stays hidden until the advice changes.
+  const visibleTip =
+    tutorialHint && tutorialHint !== dismissedTip ? tutorialHint : null;
+
+  const workPercent = Math.min(
+    100,
+    Math.round((uiState.workProgress / uiState.targetWorkProgress) * 100)
+  );
+
+  // The most urgent state gets one word in the HUD; the tip explains it.
+  const hudCallout =
+    uiState.duck.state === "SNIFFING_POTTY"
+      ? {
+          text: "To the door",
+          className: "border-rose-400/40 bg-rose-400/10 text-rose-200",
+        }
+      : uiState.excitement > 85
+        ? {
+            text: "Zoomies",
+            className: "border-amber-400/40 bg-amber-400/10 text-amber-200",
+          }
+        : uiState.calmBuffTimer > 0
+          ? {
+              text: "Calm",
+              className:
+                "border-emerald-400/40 bg-emerald-400/10 text-emerald-200",
+            }
+          : null;
 
   const sessionLabel = uiState.mode === "endless" ? "Run" : "Sprint";
   const displayedHighScore = Math.max(uiState.highScore, loadedHighScore);
@@ -2232,234 +2282,94 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
       {/* Tablet Orientation Recommendation */}
       <TabletOrientationHint />
 
-      {/* Top Status & Meters HUD */}
+      {/* One slim status bar (#1676): the four needs, the pace and the score */}
       <div
         data-testid="duck-hud-meters"
-        className="mb-3 sm:mb-4 grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 [@media(max-height:650px)]:mb-1.5 [@media(max-height:650px)]:grid-cols-4 [@media(max-height:650px)]:gap-1.5"
+        className="mb-2 overflow-hidden rounded-xl border border-white/[0.08] [@media(max-height:650px)]:mb-1.5"
       >
-        {/* Work Progress Meter */}
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/80 p-2.5 sm:p-3.5 backdrop-blur-md [@media(max-height:650px)]:p-1.5">
-          <div className="flex items-center justify-between text-[11px] sm:text-xs font-mono mb-1">
-            <span className="text-zinc-400 font-bold flex items-center gap-1 sm:gap-1.5 truncate">
-              <IconBriefcase className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-cyan-400 shrink-0" />
-              <span>Work Progress</span>
-            </span>
-            <span className="text-brand-cyan font-bold shrink-0 ml-1">
-              {Math.min(
-                100,
-                Math.round(
-                  (uiState.workProgress / uiState.targetWorkProgress) * 100
-                )
-              )}
-              %
-            </span>
-          </div>
-          <div
-            role="progressbar"
-            aria-valuenow={Math.min(
-              100,
-              Math.round(
-                (uiState.workProgress / uiState.targetWorkProgress) * 100
-              )
-            )}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-label="Work Progress"
-            className="w-full bg-zinc-950 rounded-full h-2 sm:h-2.5 overflow-hidden border border-zinc-800"
-          >
-            <div
-              className="h-full w-full bg-gradient-to-r from-cyan-500 to-teal-400 origin-left transform-gpu"
-              style={{
-                transform: `scaleX(${Math.min(1, uiState.workProgress / uiState.targetWorkProgress)})`,
-                transformOrigin: "left",
-                willChange: "transform",
-              }}
-            />
-          </div>
-          <div className="flex justify-between items-center mt-1 text-[9px] sm:text-[10px] font-mono text-zinc-400 [@media(max-height:650px)]:hidden">
-            <span className="truncate">
-              {uiState.mode === "endless"
-                ? "Endless Mode"
-                : currentSprint.title.split(":")[0]}
-            </span>
-            <span className="text-teal-400 font-bold shrink-0 ml-1">
-              {uiState.multiplier.toFixed(1)}× Speed
-            </span>
-          </div>
-        </div>
-
-        {/* Excitement / Zoomies Meter */}
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/80 p-2.5 sm:p-3.5 backdrop-blur-md [@media(max-height:650px)]:p-1.5">
-          <div className="flex items-center justify-between text-[11px] sm:text-xs font-mono mb-1">
-            <span className="text-zinc-400 font-bold flex items-center gap-1 sm:gap-1.5 truncate">
-              <IconSparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400 shrink-0" />
-              <span>Excitement</span>
-            </span>
-            <span
-              className={`font-bold shrink-0 ml-1 ${
-                uiState.excitement > 80
-                  ? "text-amber-400 animate-pulse"
-                  : "text-zinc-300"
-              }`}
-            >
-              {Math.round(uiState.excitement)}%
-            </span>
-          </div>
-          <div
-            role="progressbar"
-            aria-valuenow={Math.round(uiState.excitement)}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-label="Duck Excitement Meter"
-            className="w-full bg-zinc-950 rounded-full h-2 sm:h-2.5 overflow-hidden border border-zinc-800"
-          >
-            <div
-              className={`h-full w-full origin-left transform-gpu ${
-                uiState.excitement > 80
-                  ? "bg-gradient-to-r from-amber-500 to-rose-500"
-                  : "bg-gradient-to-r from-sky-400 to-amber-400"
-              }`}
-              style={{
-                transform: `scaleX(${clamp(uiState.excitement / 100, 0, 1)})`,
-                transformOrigin: "left",
-                willChange: "transform",
-              }}
-            />
-          </div>
-          <div className="flex justify-between items-center mt-1 text-[9px] sm:text-[10px] font-mono text-zinc-400 [@media(max-height:650px)]:hidden">
-            <span className="truncate">
-              {uiState.excitement > 85 ? "⚠️ ZOOMIES" : "Fetch / Sit"}
-            </span>
-            {uiState.calmBuffTimer > 0 && (
-              <span className="text-emerald-400 shrink-0 ml-1">
-                Calm Active
+        <ArcadeHud
+          stats={[
+            {
+              label: uiState.mode === "endless" ? "Mode" : "Sprint",
+              value:
+                uiState.mode === "endless" ? "Endless" : uiState.currentLevel,
+            },
+          ]}
+          gauges={[
+            {
+              label: "Work",
+              ariaLabel: "Work Progress",
+              value: workPercent,
+              display: `${workPercent}%`,
+            },
+            {
+              label: "Excitement",
+              ariaLabel: "Duck Excitement Meter",
+              value: uiState.excitement,
+              display: `${Math.round(uiState.excitement)}%`,
+              tone: uiState.excitement > 80 ? "warn" : "good",
+            },
+            {
+              label: "Bladder",
+              ariaLabel: "Duck Bladder Clock Meter",
+              value: uiState.bladder,
+              display: `${Math.round(uiState.bladder)}%`,
+              tone: uiState.bladder > 80 ? "danger" : "good",
+            },
+            {
+              label: "Good Boy",
+              ariaLabel: "Naughty versus Good Boy Scale",
+              value: uiState.naughtyVsGood,
+              min: -100,
+              max: 100,
+              display: Math.round(uiState.naughtyVsGood),
+              tone: uiState.naughtyVsGood < 0 ? "danger" : "good",
+              centerTick: true,
+            },
+          ]}
+          callouts={
+            hudCallout ? (
+              <span
+                className={`rounded-md border px-1.5 py-0.5 font-bold uppercase tracking-wider ${hudCallout.className}`}
+              >
+                {hudCallout.text}
               </span>
-            )}
-          </div>
-        </div>
-
-        {/* Bladder / Potty Meter */}
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/80 p-2.5 sm:p-3.5 backdrop-blur-md [@media(max-height:650px)]:p-1.5">
-          <div className="flex items-center justify-between text-[11px] sm:text-xs font-mono mb-1">
-            <span className="text-zinc-400 font-bold flex items-center gap-1 sm:gap-1.5 truncate">
-              <IconAlertTriangle
-                className={`w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 ${uiState.bladder > 80 ? "text-rose-400 animate-bounce" : "text-sky-400"}`}
-              />
-              <span>Bladder Clock</span>
-            </span>
+            ) : undefined
+          }
+          trailing={
+            // Running Score (#1646): mirrors the sr-only outputs below
             <span
-              className={`font-bold shrink-0 ml-1 ${uiState.bladder > 80 ? "text-rose-400" : "text-zinc-300"}`}
+              data-testid="duck-hud-score"
+              aria-hidden="true"
+              className="inline-flex items-center gap-3 tabular-nums"
             >
-              {Math.round(uiState.bladder)}%
+              <span className="whitespace-nowrap uppercase tracking-wider text-zinc-400">
+                Score{" "}
+                <span
+                  data-testid="duck-hud-score-value"
+                  className="arcade-accent-text font-bold"
+                >
+                  {uiState.totalScore}
+                </span>
+              </span>
+              <span className="whitespace-nowrap uppercase tracking-wider text-zinc-400">
+                Best{" "}
+                <span
+                  data-testid="duck-hud-highscore-value"
+                  className="font-bold text-zinc-100"
+                >
+                  {displayedHighScore}
+                </span>
+              </span>
             </span>
-          </div>
-          <div
-            role="progressbar"
-            aria-valuenow={Math.round(uiState.bladder)}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-label="Duck Bladder Clock Meter"
-            className="w-full bg-zinc-950 rounded-full h-2 sm:h-2.5 overflow-hidden border border-zinc-800"
-          >
-            <div
-              className={`h-full w-full origin-left transform-gpu ${
-                uiState.bladder > 85
-                  ? "bg-rose-500 animate-pulse"
-                  : "bg-gradient-to-r from-cyan-400 to-sky-500"
-              }`}
-              style={{
-                transform: `scaleX(${clamp(uiState.bladder / 100, 0, 1)})`,
-                transformOrigin: "left",
-                willChange: "transform",
-              }}
-            />
-          </div>
-          <div className="flex justify-between items-center mt-1 text-[9px] sm:text-[10px] font-mono text-zinc-400 [@media(max-height:650px)]:hidden">
-            <span className="truncate">
-              {uiState.duck.state === "SNIFFING_POTTY"
-                ? "🚨 TO DOOR!"
-                : "Drag to Door"}
-            </span>
-          </div>
-        </div>
-
-        {/* Naughty vs Good Boy Scale */}
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/80 p-2.5 sm:p-3.5 backdrop-blur-md [@media(max-height:650px)]:p-1.5">
-          <div className="flex items-center justify-between text-[11px] sm:text-xs font-mono mb-1">
-            <span className="text-zinc-400 font-bold flex items-center gap-1 sm:gap-1.5 truncate">
-              <IconHeart className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-rose-400 shrink-0" />
-              <span>Good Boy Scale</span>
-            </span>
-            <span className="text-amber-300 font-bold shrink-0 ml-1">
-              {Math.round(uiState.naughtyVsGood)}
-            </span>
-          </div>
-          <div
-            role="progressbar"
-            aria-valuenow={Math.round(uiState.naughtyVsGood)}
-            aria-valuemin={-100}
-            aria-valuemax={100}
-            aria-label="Naughty versus Good Boy Scale"
-            className="w-full bg-zinc-950 rounded-full h-2 sm:h-2.5 overflow-hidden border border-zinc-800 relative"
-          >
-            <div
-              className="h-full w-full bg-gradient-to-r from-rose-500 via-amber-400 to-emerald-400 origin-left transform-gpu"
-              style={{
-                transform: `scaleX(${clamp((uiState.naughtyVsGood + 100) / 200, 0, 1)})`,
-                transformOrigin: "left",
-                willChange: "transform",
-              }}
-            />
-            {/* Center line */}
-            <div className="absolute top-0 bottom-0 left-1/2 w-0.5 bg-white/40" />
-          </div>
-          <div className="flex justify-between items-center mt-1 text-[9px] sm:text-[10px] font-mono">
-            <span className="text-rose-400 font-semibold">Naughty</span>
-            <span className="text-emerald-400 font-semibold">
-              Good Boy (2.5×)
-            </span>
-          </div>
-        </div>
+          }
+        />
       </div>
-
-      {/* Running Score (#1646): mirrors the sr-only outputs below */}
-      <div
-        data-testid="duck-hud-score"
-        aria-hidden="true"
-        className="mb-2 sm:mb-3 flex items-center justify-end gap-3 text-[11px] sm:text-xs font-mono tabular-nums [@media(max-height:650px)]:mb-1.5"
-      >
-        <span className="min-w-0 text-zinc-400">
-          Score{" "}
-          <span
-            data-testid="duck-hud-score-value"
-            className="text-amber-300 font-bold"
-          >
-            {uiState.totalScore}
-          </span>
-        </span>
-        <span className="min-w-0 text-zinc-400">
-          High Score{" "}
-          <span
-            data-testid="duck-hud-highscore-value"
-            className="text-emerald-400 font-bold"
-          >
-            {displayedHighScore}
-          </span>
-        </span>
-      </div>
-
-      {/* Guided Tutorial Hint Banner */}
-      {tutorialHint && (
-        <div className="mb-3 px-4 py-2 rounded-xl border border-brand-cyan/30 bg-brand-cyan/10 backdrop-blur-md flex items-center gap-2 text-xs font-mono text-brand-cyan animate-fadeIn [@media(max-height:500px)]:hidden">
-          <IconInfoCircle className="w-4 h-4 shrink-0" />
-          <span>{tutorialHint}</span>
-        </div>
-      )}
 
       {/* Main Canvas Screen Container */}
       <div
         ref={fxStageRef}
-        className="relative rounded-3xl border border-zinc-800 bg-zinc-950 overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)]"
+        className="relative rounded-2xl border border-white/[0.08] bg-[#0d0e11] overflow-hidden"
       >
         <div
           ref={fxFlashRef}
@@ -2492,25 +2402,54 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
           tabIndex={0}
           className={
             isFullscreen
-              ? "max-h-[var(--layout-viewport-budget,calc(100dvh-var(--header-height,80px)-var(--layout-dock-height,64px)))] max-h-[calc(100dvh-var(--header-height,80px)-var(--footer-height,48px))] max-w-full aspect-[800/500] object-contain block cursor-crosshair touch-none my-auto mx-auto [@media(max-height:500px)]:max-h-[45dvh] focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
-              : "w-[min(100%,max(28rem,calc((100dvh-29rem)*1.6)))] mx-auto h-auto aspect-[800/500] cursor-crosshair block touch-none [@media(max-height:500px)]:w-auto [@media(max-height:500px)]:max-w-full [@media(max-height:500px)]:max-h-[52dvh] [@media(max-height:500px)]:mx-auto focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
+              ? "max-h-[var(--layout-viewport-budget,calc(100dvh-var(--header-height,80px)-var(--layout-dock-height,64px)))] max-h-[calc(100dvh-var(--header-height,80px)-var(--footer-height,48px))] max-w-full aspect-[800/500] object-contain block cursor-crosshair touch-none my-auto mx-auto [@media(max-height:500px)]:max-h-[45dvh] focus:outline-none focus:ring-2 focus:ring-amber-300/60"
+              : "w-[min(100%,max(28rem,calc((100dvh-24rem)*1.6)))] mx-auto h-auto aspect-[800/500] cursor-crosshair block touch-none [@media(max-height:500px)]:w-auto [@media(max-height:500px)]:max-w-full [@media(max-height:500px)]:max-h-[52dvh] [@media(max-height:500px)]:mx-auto focus:outline-none focus:ring-2 focus:ring-amber-300/60"
           }
         />
 
+        {/* Guided tip (#1676): clear of the targets, dismissible, never blocks a drag */}
+        {visibleTip && (
+          <div
+            data-testid="duck-tip"
+            className={`pointer-events-none absolute inset-x-12 z-10 flex justify-center [@media(max-height:500px)]:hidden ${
+              isAwayFromOffice ? "bottom-2 sm:bottom-3" : "top-2 sm:top-3"
+            }`}
+          >
+            <div className="flex max-w-2xl items-start gap-2 rounded-lg border border-amber-400/30 bg-[#0d0e11]/90 py-1.5 pl-2.5 pr-1 font-mono text-[11px] leading-snug text-amber-100 shadow-lg sm:text-xs">
+              <IconInfoCircle
+                aria-hidden="true"
+                className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-300"
+              />
+              <span>{visibleTip}</span>
+              <button
+                type="button"
+                onClick={() => setDismissedTip(visibleTip)}
+                aria-label="Dismiss tip"
+                title="Dismiss tip"
+                className="pointer-events-auto -my-1 inline-flex min-h-[28px] min-w-[28px] shrink-0 cursor-pointer items-center justify-center rounded-md text-zinc-400 hover:bg-white/[0.06] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
+              >
+                <IconX className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Start Overlay Screen */}
         {uiState.status === "idle" && (
-          <div className="absolute inset-0 bg-black/85 backdrop-blur-md flex flex-col items-center justify-center p-4 sm:p-6 text-center z-20 overflow-y-auto">
-            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-brand-cyan/10 border border-brand-cyan/30 flex items-center justify-center text-brand-cyan mb-2 sm:mb-4 shrink-0">
-              <IconBone className="w-6 h-6 sm:w-8 sm:h-8" />
-            </div>
-            <h2 className="text-xl sm:text-3xl font-extrabold font-mono text-white mb-1 sm:mb-2">
-              Working With <span className="text-brand-cyan">Duck</span>
-            </h2>
-            <p className="text-[11px] sm:text-xs font-mono text-amber-300 font-bold mb-1 sm:mb-2">
+          <div
+            data-testid="duck-sprint-briefing"
+            className="absolute inset-0 bg-[#0d0e11]/80 flex flex-col items-center justify-center p-4 sm:p-6 text-center z-20 overflow-y-auto"
+          >
+            <p className="arcade-accent-text mb-1 sm:mb-2 text-[10px] sm:text-[11px] font-mono font-bold uppercase tracking-[0.2em]">
               {uiState.mode === "endless"
-                ? "Endless Mode · High Score Challenge"
-                : currentSprint.title}
+                ? "Endless mode briefing"
+                : `Sprint ${uiState.currentLevel} of ${SPRINTS.length} · Briefing`}
             </p>
+            <h2 className="mb-1 sm:mb-2 text-lg sm:text-2xl font-extrabold font-mono tracking-[-0.035em] text-zinc-50">
+              {uiState.mode === "endless"
+                ? "High Score Challenge"
+                : currentSprint.title}
+            </h2>
             <p className="max-w-md text-[11px] sm:text-sm text-zinc-300 font-mono mb-4 sm:mb-6 leading-relaxed line-clamp-3 sm:line-clamp-none">
               {uiState.mode === "endless"
                 ? "Infinite sprints with accelerating puppy impulses. Keep Duck entertained and protect the codebase!"
@@ -2521,7 +2460,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
               className="-mt-2 mb-4 sm:-mt-3 sm:mb-6 text-[11px] sm:text-xs font-mono tabular-nums text-zinc-400"
             >
               High Score{" "}
-              <span className="text-emerald-400 font-bold">
+              <span className="text-zinc-100 font-bold">
                 {displayedHighScore}
               </span>
             </p>
@@ -2535,7 +2474,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                     () => {}
                   );
                 }}
-                className="px-5 py-2.5 sm:px-6 sm:py-3 rounded-xl bg-brand-cyan text-black font-mono font-bold text-xs sm:text-sm hover:bg-white hover:scale-105 active:scale-95 transition-all shadow-[0_0_20px_rgba(6,182,212,0.4)] flex items-center gap-2 cursor-pointer min-h-[44px]"
+                className="arcade-launch-button px-5 py-2.5 sm:px-6 sm:py-3 rounded-xl border text-zinc-950 font-mono font-bold text-xs sm:text-sm transition-colors active:scale-[0.98] flex items-center gap-2 cursor-pointer min-h-[44px]"
               >
                 <IconPlayerPlay className="w-4 h-4 fill-current" />
                 <span>
@@ -2547,7 +2486,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
 
               <button
                 onClick={openScrapbook}
-                className="px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-xl border border-zinc-700 bg-zinc-900 text-zinc-300 font-mono text-xs hover:text-white hover:border-zinc-500 transition-colors flex items-center gap-1.5 cursor-pointer min-h-[44px]"
+                className="px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-xl border border-white/[0.08] bg-[#13151a] text-zinc-300 font-mono text-xs hover:text-white hover:border-white/20 transition-colors flex items-center gap-1.5 cursor-pointer min-h-[44px]"
               >
                 <IconBook className="w-4 h-4" />
                 <span>Duck Scrapbook</span>
@@ -2555,9 +2494,9 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
 
               <button
                 onClick={openWardrobe}
-                className="px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-xl border border-zinc-700 bg-zinc-900 text-zinc-300 font-mono text-xs hover:text-white hover:border-zinc-500 transition-colors flex items-center gap-1.5 cursor-pointer min-h-[44px]"
+                className="px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-xl border border-white/[0.08] bg-[#13151a] text-zinc-300 font-mono text-xs hover:text-white hover:border-white/20 transition-colors flex items-center gap-1.5 cursor-pointer min-h-[44px]"
               >
-                <IconShirt className="w-4 h-4 text-amber-400" />
+                <IconShirt aria-hidden="true" className="w-4 h-4" />
                 <span>Wardrobe</span>
               </button>
 
@@ -2618,14 +2557,14 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
 
         {/* Combo Streak Notification Overlay */}
         {uiState.comboStreak >= 2 && (
-          <div className="absolute top-4 right-4 z-20 px-3.5 py-1.5 rounded-xl border border-amber-400/40 bg-zinc-900/90 text-amber-300 font-mono text-xs font-bold shadow-2xl flex items-center gap-1.5 animate-pulse">
+          <div className="absolute top-4 right-4 z-20 px-3.5 py-1.5 rounded-xl border border-amber-400/40 bg-zinc-900/90 text-amber-300 font-mono text-xs font-bold shadow-2xl flex items-center gap-1.5">
             <span>⚡ {uiState.comboStreak}× COMBO STREAK</span>
           </div>
         )}
 
         {/* Skill Toast Easter Egg */}
         {uiState.activeSkillToast && (
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 px-4 py-2 rounded-xl border border-emerald-500/40 bg-zinc-900/90 backdrop-blur-md text-white shadow-2xl flex items-center gap-2.5 animate-bounce">
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 px-4 py-2 rounded-xl border border-emerald-500/40 bg-[#0d0e11]/90 text-white shadow-2xl flex items-center gap-2.5">
             <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 font-mono text-[10px] font-bold uppercase">
               {uiState.activeSkillToast.badge}
             </span>
@@ -2639,7 +2578,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
       {/* Unified Tactile Action Dock */}
       <div
         data-testid="duck-action-dock"
-        className="mt-3 sm:mt-4 flex flex-col gap-2.5 font-mono [@media(max-height:650px)]:mt-1.5 [@media(max-height:650px)]:gap-1.5"
+        className="mt-2 flex flex-col gap-2 font-mono [@media(max-height:650px)]:mt-1.5 [@media(max-height:650px)]:gap-1.5"
       >
         <span id="duck-paused-reason" className="sr-only">
           {sessionLabel} paused. Press P or Resume {sessionLabel} to continue.
@@ -2651,18 +2590,21 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
         {/* --- MOBILE VIEWPORT CONTROL DECK (<md, or any short/landscape viewport) --- */}
         <div className="flex [@media(min-width:768px)_and_(min-height:560px)]:hidden flex-col gap-2">
           {/* Segmented Switcher Tabs */}
-          <div className="grid grid-cols-3 p-1 rounded-2xl bg-zinc-900/90 border border-zinc-800 gap-1 text-xs font-bold">
+          <div className="grid grid-cols-3 p-1 rounded-2xl bg-[#0d0e11] border border-white/[0.08] gap-1 text-xs font-bold">
             <button
               onClick={() => setMobileTab("toys")}
               className={`py-2 px-2 rounded-xl transition-all flex items-center justify-center gap-1 min-h-[44px] min-w-[44px] cursor-pointer touch-manipulation select-none active:scale-95 ${
                 mobileTab === "toys"
-                  ? "bg-brand-cyan text-black shadow-md font-bold"
+                  ? "bg-amber-400 text-zinc-950 font-bold"
                   : "text-zinc-400 hover:text-white"
               }`}
             >
-              <span>🧸 Toys</span>
+              <span>Toys</span>
               {uiState.duck.state === "NO_TAKE_THROW" && (
-                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                <span
+                  aria-hidden="true"
+                  className="w-2 h-2 rounded-full bg-rose-400"
+                />
               )}
             </button>
 
@@ -2670,13 +2612,16 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
               onClick={() => setMobileTab("tricks")}
               className={`py-2 px-2 rounded-xl transition-all flex items-center justify-center gap-1 min-h-[44px] min-w-[44px] cursor-pointer touch-manipulation select-none active:scale-95 ${
                 mobileTab === "tricks"
-                  ? "bg-brand-cyan text-black shadow-md font-bold"
+                  ? "bg-amber-400 text-zinc-950 font-bold"
                   : "text-zinc-400 hover:text-white"
               }`}
             >
-              <span>✨ Tricks</span>
+              <span>Tricks</span>
               {uiState.excitement > 80 && (
-                <span className="w-2 h-2 rounded-full bg-sky-400 animate-ping" />
+                <span
+                  aria-hidden="true"
+                  className="w-2 h-2 rounded-full bg-amber-300"
+                />
               )}
             </button>
 
@@ -2684,13 +2629,16 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
               onClick={() => setMobileTab("actions")}
               className={`py-2 px-2 rounded-xl transition-all flex items-center justify-center gap-1 min-h-[44px] min-w-[44px] cursor-pointer touch-manipulation select-none active:scale-95 ${
                 mobileTab === "actions"
-                  ? "bg-brand-cyan text-black shadow-md font-bold"
+                  ? "bg-amber-400 text-zinc-950 font-bold"
                   : "text-zinc-400 hover:text-white"
               }`}
             >
-              <span>⚡ Actions</span>
+              <span>Actions</span>
               {(uiState.inDogPark || uiState.inBathtub || uiState.isMuddy) && (
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span
+                  aria-hidden="true"
+                  className="w-2 h-2 rounded-full bg-emerald-400"
+                />
               )}
             </button>
           </div>
@@ -2709,11 +2657,14 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                 }}
                 className={`disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border text-xs font-bold transition-all flex items-center justify-center gap-2 min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-95 ${
                   uiState.selectedItem === "tennis-ball"
-                    ? "border-brand-cyan bg-brand-cyan/25 text-brand-cyan shadow-[0_0_12px_rgba(6,182,212,0.3)]"
-                    : "border-zinc-800 bg-zinc-900/80 text-zinc-300 active:bg-zinc-800"
+                    ? TOY_SELECTED
+                    : TOY_IDLE
                 }`}
               >
-                <IconBallTennis className="w-4 h-4 text-lime-400 shrink-0" />
+                <IconBallTennis
+                  aria-hidden="true"
+                  className="w-4 h-4 shrink-0"
+                />
                 <span>Tennis Ball</span>
               </button>
 
@@ -2727,12 +2678,10 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                   }));
                 }}
                 className={`disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border text-xs font-bold transition-all flex items-center justify-center gap-2 min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-95 ${
-                  uiState.selectedItem === "kong"
-                    ? "border-brand-cyan bg-brand-cyan/25 text-brand-cyan shadow-[0_0_12px_rgba(6,182,212,0.3)]"
-                    : "border-zinc-800 bg-zinc-900/80 text-zinc-300 active:bg-zinc-800"
+                  uiState.selectedItem === "kong" ? TOY_SELECTED : TOY_IDLE
                 }`}
               >
-                <span>🦴 Kong Chew</span>
+                <span>Kong Chew</span>
               </button>
 
               <button
@@ -2746,11 +2695,11 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                 }}
                 className={`disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border text-xs font-bold transition-all flex items-center justify-center gap-2 min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-95 ${
                   uiState.selectedItem === "squeaky-toy"
-                    ? "border-brand-cyan bg-brand-cyan/25 text-brand-cyan shadow-[0_0_12px_rgba(6,182,212,0.3)]"
-                    : "border-zinc-800 bg-zinc-900/80 text-zinc-300 active:bg-zinc-800"
+                    ? TOY_SELECTED
+                    : TOY_IDLE
                 }`}
               >
-                <IconBone className="w-4 h-4 text-amber-400 shrink-0" />
+                <IconBone aria-hidden="true" className="w-4 h-4 shrink-0" />
                 <span>Squeaky</span>
               </button>
 
@@ -2758,9 +2707,9 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                 disabled={isPlayFrozen}
                 aria-describedby={pausedReasonId}
                 onClick={handleGiveTreat}
-                className="disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border border-amber-500/40 bg-amber-500/10 text-amber-300 active:bg-amber-500/20 text-xs font-bold transition-all flex items-center justify-center gap-2 min-h-[48px] min-w-[44px] cursor-pointer touch-manipulation select-none active:scale-[0.98]"
+                className={`disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border text-xs font-bold transition-colors flex items-center justify-center gap-2 min-h-[48px] min-w-[44px] cursor-pointer touch-manipulation select-none active:scale-[0.98] ${TOY_IDLE}`}
               >
-                <span>🍖 Give Treat</span>
+                <span>Treat</span>
               </button>
             </div>
           )}
@@ -2772,36 +2721,36 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                 disabled={officeOnlyDisabled}
                 aria-describedby={officeOnlyReasonId}
                 onClick={() => handlePerformTrick("SIT")}
-                className="disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border border-sky-500/40 bg-sky-500/10 text-sky-300 active:bg-sky-500/20 text-xs font-bold transition-all flex items-center justify-center gap-2 min-h-[48px] min-w-[44px] cursor-pointer touch-manipulation select-none active:scale-[0.98]"
+                className={`disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border text-xs font-bold transition-colors flex items-center justify-center gap-2 min-h-[48px] min-w-[44px] cursor-pointer touch-manipulation select-none active:scale-[0.98] ${TRICK_BUTTON}`}
               >
-                <span>🪑 Sit (Calm)</span>
+                <span>Sit (Calm)</span>
               </button>
 
               <button
                 disabled={officeOnlyDisabled}
                 aria-describedby={officeOnlyReasonId}
                 onClick={() => handlePerformTrick("HIGH_FIVE")}
-                className="disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border border-pink-500/40 bg-pink-500/10 text-pink-300 active:bg-pink-500/20 text-xs font-bold transition-all flex items-center justify-center gap-2 min-h-[48px] min-w-[44px] cursor-pointer touch-manipulation select-none active:scale-[0.98]"
+                className={`disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border text-xs font-bold transition-colors flex items-center justify-center gap-2 min-h-[48px] min-w-[44px] cursor-pointer touch-manipulation select-none active:scale-[0.98] ${TRICK_BUTTON}`}
               >
-                <span>🐾 High Five</span>
+                <span>High Five</span>
               </button>
 
               <button
                 disabled={officeOnlyDisabled}
                 aria-describedby={officeOnlyReasonId}
                 onClick={() => handlePerformTrick("DROP_IT")}
-                className="disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-300 active:bg-emerald-500/20 text-xs font-bold transition-all flex items-center justify-center gap-2 min-h-[48px] min-w-[44px] cursor-pointer touch-manipulation select-none active:scale-[0.98]"
+                className={`disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border text-xs font-bold transition-colors flex items-center justify-center gap-2 min-h-[48px] min-w-[44px] cursor-pointer touch-manipulation select-none active:scale-[0.98] ${TRICK_BUTTON}`}
               >
-                <span>✋ Drop It!</span>
+                <span>Drop It!</span>
               </button>
 
               <button
                 disabled={officeOnlyDisabled}
                 aria-describedby={officeOnlyReasonId}
                 onClick={() => handlePerformTrick("SPIN")}
-                className="disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border border-purple-500/40 bg-purple-500/10 text-purple-300 active:bg-purple-500/20 text-xs font-bold transition-all flex items-center justify-center gap-2 min-h-[48px] min-w-[44px] cursor-pointer touch-manipulation select-none active:scale-[0.98]"
+                className={`disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border text-xs font-bold transition-colors flex items-center justify-center gap-2 min-h-[48px] min-w-[44px] cursor-pointer touch-manipulation select-none active:scale-[0.98] ${TRICK_BUTTON}`}
               >
-                <span>🌀 Spin Trick</span>
+                <span>Spin Trick</span>
               </button>
             </div>
           )}
@@ -2817,9 +2766,9 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                     onClick={() => {
                       applyTransition((state) => activeCodeBurst(state));
                     }}
-                    className="disabled:opacity-40 disabled:cursor-not-allowed w-full py-3 px-4 rounded-2xl bg-cyan-500 text-black font-bold text-xs hover:bg-cyan-400 active:scale-95 transition-all shadow-[0_0_15px_rgba(6,182,212,0.3)] flex items-center justify-center gap-2 min-h-[48px] cursor-pointer touch-manipulation select-none"
+                    className="arcade-launch-button disabled:opacity-40 disabled:cursor-not-allowed w-full py-3 px-4 rounded-2xl border text-zinc-950 font-bold text-xs transition-colors active:scale-[0.98] flex items-center justify-center gap-2 min-h-[48px] cursor-pointer touch-manipulation select-none"
                   >
-                    <IconCode className="w-4 h-4" />
+                    <IconCode aria-hidden="true" className="w-4 h-4" />
                     <span>Focus Work Sprint</span>
                   </button>
 
@@ -2830,10 +2779,10 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                       onClick={() => {
                         applyTransition((state) => enterDogPark(state));
                       }}
-                      className="disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-300 active:bg-emerald-500/20 text-xs font-bold transition-all flex items-center justify-center gap-1.5 min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-95"
+                      className="disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border border-emerald-400/40 bg-emerald-400/10 text-emerald-200 active:bg-emerald-400/20 text-xs font-bold transition-colors flex items-center justify-center gap-1.5 min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-[0.98]"
                     >
-                      <IconTrees className="w-4 h-4" />
-                      <span>Dog Park 🌲</span>
+                      <IconTrees aria-hidden="true" className="w-4 h-4" />
+                      <span>Dog Park</span>
                     </button>
 
                     <button
@@ -2843,13 +2792,13 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                         applyTransition((state) => enterBathtub(state));
                       }}
                       className={`disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-95 ${
-                        uiState.isMuddy
-                          ? "border-sky-400 bg-sky-500/20 text-sky-300 animate-pulse"
-                          : "border-zinc-800 bg-zinc-900 text-zinc-400 active:text-white"
+                        uiState.isMuddy ? TOY_SELECTED : TOY_IDLE
                       }`}
                     >
-                      <IconDroplet className="w-4 h-4 text-sky-400" />
-                      <span>Bathtub 🛁</span>
+                      <IconDroplet aria-hidden="true" className="w-4 h-4" />
+                      <span>
+                        {uiState.isMuddy ? "Bath: muddy!" : "Bathtub"}
+                      </span>
                     </button>
                   </div>
                 </>
@@ -2861,10 +2810,10 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                     onClick={() => {
                       applyTransition((state) => rinseBathtub(state));
                     }}
-                    className="disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl bg-sky-500 text-black font-bold text-xs active:bg-sky-400 transition-all flex items-center justify-center gap-1.5 min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-95 shadow-[0_0_15px_rgba(56,189,248,0.3)]"
+                    className="arcade-launch-button disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border text-zinc-950 font-bold text-xs transition-colors flex items-center justify-center gap-1.5 min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-[0.98]"
                   >
                     <IconDroplet className="w-4 h-4" />
-                    <span>Rinse Spray 🚿</span>
+                    <span>Rinse Spray</span>
                   </button>
 
                   <button
@@ -2875,7 +2824,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                     }}
                     className="disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border border-zinc-700 bg-zinc-900 text-zinc-200 text-xs active:bg-zinc-800 transition-colors flex items-center justify-center min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-95"
                   >
-                    <span>Finish Bath →</span>
+                    <span>Finish Bath</span>
                   </button>
                 </div>
               ) : (
@@ -2887,9 +2836,9 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                       onClick={() => {
                         applyTransition((state) => jumpParkHurdle(state));
                       }}
-                      className="disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl bg-amber-400 text-black font-bold text-xs active:bg-amber-300 transition-all flex items-center justify-center gap-1.5 min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-95 shadow-[0_0_12px_rgba(250,204,21,0.3)]"
+                      className="arcade-launch-button disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border text-zinc-950 font-bold text-xs transition-colors flex items-center justify-center gap-1.5 min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-[0.98]"
                     >
-                      <span>🦘 Jump Hurdle</span>
+                      <span>Jump Hurdle</span>
                     </button>
 
                     <button
@@ -2900,7 +2849,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                       }}
                       className="disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border border-amber-500/40 bg-amber-500/10 text-amber-300 text-xs font-bold transition-all flex items-center justify-center min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-95"
                     >
-                      <span>Whistle 📢</span>
+                      <span>Whistle</span>
                     </button>
                   </div>
 
@@ -2913,7 +2862,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                     }}
                     className="disabled:opacity-40 disabled:cursor-not-allowed w-full py-2.5 rounded-2xl border border-zinc-700 bg-zinc-900 text-zinc-200 text-xs active:bg-zinc-800 transition-colors flex items-center justify-center min-h-[44px] cursor-pointer touch-manipulation select-none active:scale-95"
                   >
-                    <span>Return to Office →</span>
+                    <span>Return to Office</span>
                   </button>
                 </div>
               )}
@@ -2960,7 +2909,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
               {muted ? (
                 <IconVolumeOff className="w-4 h-4" />
               ) : (
-                <IconVolume className="w-4 h-4 text-brand-cyan" />
+                <IconVolume className="w-4 h-4 text-zinc-200" />
               )}
             </button>
 
@@ -2979,11 +2928,14 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
         </div>
 
         {/* --- DESKTOP VIEWPORT HOTBAR (>=md and tall enough to fit 3 rows) --- */}
-        <div className="hidden [@media(min-width:768px)_and_(min-height:560px)]:flex flex-col gap-3">
+        <div className="hidden [@media(min-width:768px)_and_(min-height:560px)]:flex flex-col gap-2">
           {/* Desktop Row 1: Toys [1-4] + Tricks [Q-W-E-R] */}
-          <div className="flex flex-wrap items-center justify-between gap-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             {/* Toys & Treats */}
-            <div className="flex items-center gap-1.5 flex-wrap">
+            <div role="group" aria-label="Toys" className={DOCK_GROUP}>
+              <span aria-hidden="true" className={DOCK_CAPTION}>
+                Toys
+              </span>
               <button
                 disabled={officeOnlyDisabled}
                 aria-describedby={officeOnlyReasonId}
@@ -2994,17 +2946,11 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                   }));
                 }}
                 aria-pressed={uiState.selectedItem === "tennis-ball"}
-                className={`disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none active:scale-95 ${
-                  uiState.selectedItem === "tennis-ball"
-                    ? "border-brand-cyan bg-brand-cyan/20 text-brand-cyan shadow-[0_0_12px_rgba(6,182,212,0.3)]"
-                    : "border-zinc-800 bg-zinc-900/70 text-zinc-400 hover:text-white"
-                }`}
+                className={`${DOCK_BUTTON} ${uiState.selectedItem === "tennis-ball" ? TOY_SELECTED : TOY_IDLE}`}
                 title="Throw ball to play fetch & drain Excitement"
               >
-                <span className="px-1 py-0.5 rounded bg-zinc-950 text-[9px] text-zinc-500">
-                  1
-                </span>
-                <IconBallTennis className="w-3.5 h-3.5 text-lime-400" />
+                <kbd className={DOCK_KEY}>1</kbd>
+                <IconBallTennis aria-hidden="true" className="w-3.5 h-3.5" />
                 <span>Tennis Ball</span>
               </button>
 
@@ -3018,16 +2964,10 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                   }));
                 }}
                 aria-pressed={uiState.selectedItem === "kong"}
-                className={`disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none active:scale-95 ${
-                  uiState.selectedItem === "kong"
-                    ? "border-brand-cyan bg-brand-cyan/20 text-brand-cyan shadow-[0_0_12px_rgba(6,182,212,0.3)]"
-                    : "border-zinc-800 bg-zinc-900/70 text-zinc-400 hover:text-white"
-                }`}
+                className={`${DOCK_BUTTON} ${uiState.selectedItem === "kong" ? TOY_SELECTED : TOY_IDLE}`}
                 title="Drop chew toy to distract Duck away from desk hazards"
               >
-                <span className="px-1 py-0.5 rounded bg-zinc-950 text-[9px] text-zinc-500">
-                  2
-                </span>
+                <kbd className={DOCK_KEY}>2</kbd>
                 <span>Kong Chew</span>
               </button>
 
@@ -3041,17 +2981,11 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                   }));
                 }}
                 aria-pressed={uiState.selectedItem === "squeaky-toy"}
-                className={`disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none active:scale-95 ${
-                  uiState.selectedItem === "squeaky-toy"
-                    ? "border-brand-cyan bg-brand-cyan/20 text-brand-cyan shadow-[0_0_12px_rgba(6,182,212,0.3)]"
-                    : "border-zinc-800 bg-zinc-900/70 text-zinc-400 hover:text-white"
-                }`}
+                className={`${DOCK_BUTTON} ${uiState.selectedItem === "squeaky-toy" ? TOY_SELECTED : TOY_IDLE}`}
                 title="Squeak to instantly get Duck's attention and recall"
               >
-                <span className="px-1 py-0.5 rounded bg-zinc-950 text-[9px] text-zinc-500">
-                  3
-                </span>
-                <IconBone className="w-3.5 h-3.5" />
+                <kbd className={DOCK_KEY}>3</kbd>
+                <IconBone aria-hidden="true" className="w-3.5 h-3.5" />
                 <span>Squeaky</span>
               </button>
 
@@ -3060,74 +2994,67 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                 aria-describedby={pausedReasonId}
                 onClick={handleGiveTreat}
                 aria-pressed={uiState.selectedItem === "treat"}
-                className="disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-3 py-1.5 rounded-xl border border-zinc-800 bg-zinc-900/70 text-amber-300 hover:border-amber-500/40 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none active:scale-95"
+                className={`${DOCK_BUTTON} ${TOY_IDLE}`}
                 title="Give treat (trades ball during No Take Only Throw)"
               >
-                <span className="px-1 py-0.5 rounded bg-zinc-950 text-[9px] text-zinc-500">
-                  4
-                </span>
-                <span>Treat 🍖</span>
+                <kbd className={DOCK_KEY}>4</kbd>
+                <span>Treat</span>
               </button>
             </div>
 
             {/* Training Tricks [Q-W-E-R] */}
-            <div className="flex items-center gap-1.5 flex-wrap">
+            <div role="group" aria-label="Tricks" className={DOCK_GROUP}>
+              <span aria-hidden="true" className={DOCK_CAPTION}>
+                Tricks
+              </span>
               <button
                 disabled={officeOnlyDisabled}
                 aria-describedby={officeOnlyReasonId}
                 onClick={() => handlePerformTrick("SIT")}
-                className="disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-3 py-1.5 rounded-xl border border-sky-500/40 bg-sky-500/10 text-sky-300 hover:bg-sky-500/20 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none active:scale-[0.98]"
+                className={`${DOCK_BUTTON} ${TRICK_BUTTON}`}
                 title="Command Sit: Calms Excitement (-20) & boosts Good Boy scale"
               >
-                <span className="px-1 py-0.5 rounded bg-zinc-950 text-[9px] text-sky-400">
-                  Q
-                </span>
-                <span>Sit 🪑</span>
+                <kbd className={TRICK_KEY}>Q</kbd>
+                <span>Sit</span>
               </button>
 
               <button
                 disabled={officeOnlyDisabled}
                 aria-describedby={officeOnlyReasonId}
                 onClick={() => handlePerformTrick("HIGH_FIVE")}
-                className="disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-3 py-1.5 rounded-xl border border-pink-500/40 bg-pink-500/10 text-pink-300 hover:bg-pink-500/20 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none active:scale-[0.98]"
+                className={`${DOCK_BUTTON} ${TRICK_BUTTON}`}
                 title="Command High Five: Morale boost (+45 pts) & tail wag"
               >
-                <span className="px-1 py-0.5 rounded bg-zinc-950 text-[9px] text-pink-400">
-                  W
-                </span>
-                <span>High Five 🐾</span>
+                <kbd className={TRICK_KEY}>W</kbd>
+                <span>High Five</span>
               </button>
 
               <button
                 disabled={officeOnlyDisabled}
                 aria-describedby={officeOnlyReasonId}
                 onClick={() => handlePerformTrick("DROP_IT")}
-                className="disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-3 py-1.5 rounded-xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none active:scale-[0.98]"
+                className={`${DOCK_BUTTON} ${TRICK_BUTTON}`}
                 title="Command Drop It: Immediately drops stolen hazards or ball (+60-75 pts)"
               >
-                <span className="px-1 py-0.5 rounded bg-zinc-950 text-[9px] text-emerald-400">
-                  E
-                </span>
-                <span>Drop It ✋</span>
+                <kbd className={TRICK_KEY}>E</kbd>
+                <span>Drop It</span>
               </button>
 
               <button
                 disabled={officeOnlyDisabled}
                 aria-describedby={officeOnlyReasonId}
                 onClick={() => handlePerformTrick("SPIN")}
-                className="disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-3 py-1.5 rounded-xl border border-purple-500/40 bg-purple-500/10 text-purple-300 hover:bg-purple-500/20 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none active:scale-[0.98]"
+                className={`${DOCK_BUTTON} ${TRICK_BUTTON}`}
                 title="Command Spin: Playful trick (+50 pts) with 360 rotation"
               >
-                <span className="px-1 py-0.5 rounded bg-zinc-950 text-[9px] text-purple-400">
-                  R
-                </span>
-                <span>Spin 🌀</span>
+                <kbd className={TRICK_KEY}>R</kbd>
+                <span>Spin</span>
               </button>
             </div>
           </div>
 
           {/* Desktop Row 2: Active Desk Coding + Office Stations + Dog Park + Meta */}
-          <div className="flex flex-wrap items-center justify-between gap-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             {/* Active Action Button */}
             <div className="flex items-center gap-2">
               {!uiState.inDogPark && !uiState.inBathtub ? (
@@ -3137,11 +3064,14 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                   onClick={() => {
                     applyTransition((state) => activeCodeBurst(state));
                   }}
-                  className="disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-4 py-2 rounded-xl bg-cyan-500 text-black font-bold text-xs hover:bg-cyan-400 active:scale-95 transition-all shadow-[0_0_15px_rgba(6,182,212,0.3)] flex items-center justify-center gap-2 cursor-pointer touch-manipulation select-none"
+                  className="arcade-launch-button disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-4 py-2 rounded-xl border text-zinc-950 font-bold text-xs transition-colors active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer touch-manipulation select-none"
                   title="Focus work sprint at desk (Spacebar)"
                 >
-                  <IconCode className="w-4 h-4" />
-                  <span>Focus Work Sprint (Space)</span>
+                  <IconCode aria-hidden="true" className="w-4 h-4" />
+                  <span>Focus Work Sprint</span>
+                  <kbd className="rounded border border-black/20 bg-black/10 px-1 font-mono text-[10px]">
+                    Space
+                  </kbd>
                 </button>
               ) : uiState.inBathtub ? (
                 <div className="flex items-center gap-2">
@@ -3151,10 +3081,10 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                     onClick={() => {
                       applyTransition((state) => rinseBathtub(state));
                     }}
-                    className="disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-4 py-2 rounded-xl bg-sky-500 text-black font-bold text-xs hover:bg-sky-400 active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none shadow-[0_0_15px_rgba(56,189,248,0.3)]"
+                    className="arcade-launch-button disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-4 py-2 rounded-xl border text-zinc-950 font-bold text-xs transition-colors active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer touch-manipulation select-none"
                   >
                     <IconDroplet className="w-4 h-4" />
-                    <span>Shower Rinse Spray 🚿</span>
+                    <span>Rinse Spray</span>
                   </button>
 
                   <button
@@ -3165,7 +3095,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                     }}
                     className="disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-4 py-2 rounded-xl border border-zinc-700 bg-zinc-900 text-zinc-200 text-xs hover:bg-zinc-800 transition-colors cursor-pointer touch-manipulation select-none active:scale-95 flex items-center justify-center"
                   >
-                    <span>Finish Bath &amp; Return →</span>
+                    <span>Finish Bath</span>
                   </button>
                 </div>
               ) : (
@@ -3176,9 +3106,12 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                     onClick={() => {
                       applyTransition((state) => jumpParkHurdle(state));
                     }}
-                    className="disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-4 py-2 rounded-xl bg-amber-400 text-black font-bold text-xs hover:bg-amber-300 active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none shadow-[0_0_12px_rgba(250,204,21,0.3)]"
+                    className="arcade-launch-button disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-4 py-2 rounded-xl border text-zinc-950 font-bold text-xs transition-colors active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer touch-manipulation select-none"
                   >
-                    <span>🦘 Agility Jump (Space)</span>
+                    <span>Agility Jump</span>
+                    <kbd className="rounded border border-black/20 bg-black/10 px-1 font-mono text-[10px]">
+                      Space
+                    </kbd>
                   </button>
 
                   <button
@@ -3189,7 +3122,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                     }}
                     className="disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-3.5 py-2 rounded-xl border border-amber-500/40 bg-amber-500/10 text-amber-300 text-xs font-bold transition-all cursor-pointer touch-manipulation select-none active:scale-95 flex items-center justify-center"
                   >
-                    <span>Whistle 📢</span>
+                    <span>Whistle</span>
                   </button>
 
                   <button
@@ -3201,7 +3134,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                     }}
                     className="disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-3.5 py-2 rounded-xl border border-zinc-700 bg-zinc-900 text-zinc-200 text-xs hover:bg-zinc-800 transition-colors cursor-pointer touch-manipulation select-none active:scale-95 flex items-center justify-center"
                   >
-                    <span>Return to Office →</span>
+                    <span>Return to Office</span>
                   </button>
                 </div>
               )}
@@ -3214,10 +3147,10 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                     onClick={() => {
                       applyTransition((state) => enterDogPark(state));
                     }}
-                    className="disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-3.5 py-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none active:scale-95"
+                    className={`${DOCK_BUTTON} border-emerald-400/40 bg-emerald-400/10 text-emerald-200 hover:bg-emerald-400/20`}
                   >
-                    <IconTrees className="w-4 h-4" />
-                    <span>Dog Park 🌲</span>
+                    <IconTrees aria-hidden="true" className="w-4 h-4" />
+                    <span>Dog Park</span>
                   </button>
 
                   <button
@@ -3226,14 +3159,12 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                     onClick={() => {
                       applyTransition((state) => enterBathtub(state));
                     }}
-                    className={`disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-3.5 py-2 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none active:scale-95 ${
-                      uiState.isMuddy
-                        ? "border-sky-400 bg-sky-500/20 text-sky-300 animate-pulse"
-                        : "border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-white"
+                    className={`${DOCK_BUTTON} ${
+                      uiState.isMuddy ? TOY_SELECTED : TOY_IDLE
                     }`}
                   >
-                    <IconDroplet className="w-4 h-4 text-sky-400" />
-                    <span>Bathtub 🛁</span>
+                    <IconDroplet aria-hidden="true" className="w-4 h-4" />
+                    <span>{uiState.isMuddy ? "Bath: muddy!" : "Bathtub"}</span>
                   </button>
                 </>
               )}
@@ -3279,7 +3210,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                 {muted ? (
                   <IconVolumeOff className="w-4 h-4" />
                 ) : (
-                  <IconVolume className="w-4 h-4 text-brand-cyan" />
+                  <IconVolume className="w-4 h-4 text-zinc-200" />
                 )}
               </button>
 

@@ -30,6 +30,14 @@ Percentage of submitted CRFs that were clean, or `null` when none were submitted
 
 ***
 
+### expiredCRFs
+
+> **expiredCRFs**: `number`
+
+Subjects that expired on the conveyor and were never submitted (#1670).
+
+***
+
 ### findings
 
 > **findings**: [`BIMOFinding`](BIMOFinding.md)[]
@@ -45,6 +53,12 @@ Percentage of submitted CRFs that were clean, or `null` when none were submitted
 ### runId
 
 > **runId**: `string`
+
+***
+
+### scoreTrend?
+
+> `optional` **scoreTrend?**: [`BIMOComplianceTrend`](../type-aliases/BIMOComplianceTrend.md)
 
 ***
 

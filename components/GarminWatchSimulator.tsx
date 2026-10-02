@@ -17,6 +17,7 @@ import {
   IconCalendar,
 } from "@tabler/icons-react";
 import { FieldManualButton } from "@/components/FieldManualButton";
+import { recordArcadeScore } from "@/lib/arcade-achievements";
 import { FullscreenButton } from "@/components/arcade/FullscreenButton";
 import { DynamicTabletOrientationHint as TabletOrientationHint } from "@/components/arcade/DynamicTabletOrientationHint";
 import { useGameFullscreen as useFullscreen } from "@/components/arcade/CabinetFullscreen";
@@ -783,6 +784,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
             safeSetRawItem(HIGH_SCORE_KEY, nextState.highScore.toString(), {
               retainInMemory: false,
             });
+            recordArcadeScore("garmin-watch", nextState.highScore);
           }
         }
       }

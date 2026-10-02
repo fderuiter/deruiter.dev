@@ -35,6 +35,7 @@ export function createInitialScoreState(): GameScoreState {
     correctionsMade: 0,
     cleanSubmissions: 0,
     auditViolations: 0,
+    expiredSubjects: 0,
   };
 }
 
@@ -65,6 +66,7 @@ export function getNextShiftScoreState(
     correctionsMade: prev.correctionsMade,
     cleanSubmissions: prev.cleanSubmissions,
     auditViolations: prev.auditViolations,
+    expiredSubjects: prev.expiredSubjects,
     highScore: Math.max(highScore, prev.score),
   };
 }
@@ -448,17 +450,21 @@ export function tickSubjectTimers(
 export function tickAuditor(
   auditor: AuditorState,
   deltaSeconds: number,
-  unresolvedBacklogCount: number
+  unresolvedBacklogCount: number,
+  auditorPacingMultiplier = 1.0
 ): AuditorState {
   if (auditor.isPaused || auditor.behavior === "coffee_break") {
     return auditor;
   }
 
+  const pacing = Math.max(0.1, auditorPacingMultiplier);
+  const effectiveDelta = deltaSeconds * pacing;
+
   const { suspicion } = auditor;
   let { x, direction, behavior, inspectTimer, total483Citations } = auditor;
 
   // 1. Move patrol position across floor
-  x += direction * 0.12 * deltaSeconds;
+  x += direction * 0.12 * effectiveDelta;
   if (x >= 0.9) {
     x = 0.9;
     direction = -1;
@@ -469,19 +475,19 @@ export function tickAuditor(
 
   // 2. State machine transitions
   if (behavior === "patrolling") {
-    inspectTimer += deltaSeconds;
+    inspectTimer += effectiveDelta;
     if (inspectTimer > 8) {
       behavior = "inspecting";
       inspectTimer = 0;
     }
   } else if (behavior === "inspecting") {
-    inspectTimer += deltaSeconds;
+    inspectTimer += effectiveDelta;
     if (inspectTimer > 3) {
       behavior = suspicion > 50 ? "suspicious" : "patrolling";
       inspectTimer = 0;
     }
   } else if (behavior === "suspicious") {
-    inspectTimer += deltaSeconds;
+    inspectTimer += effectiveDelta;
     if (inspectTimer > 5 && suspicion < 40) {
       behavior = "patrolling";
       inspectTimer = 0;
@@ -489,10 +495,11 @@ export function tickAuditor(
   }
 
   // 3. Passive suspicion decay and backlog pressure
-  let nextSuspicion = suspicion - auditor.suspicionDecayRate * deltaSeconds;
+  let nextSuspicion =
+    suspicion - auditor.suspicionDecayRate * deltaSeconds * pacing;
   if (unresolvedBacklogCount > 4) {
     // Backlog increases audit scrutiny
-    nextSuspicion += (unresolvedBacklogCount - 4) * 0.8 * deltaSeconds;
+    nextSuspicion += (unresolvedBacklogCount - 4) * 0.8 * effectiveDelta;
   }
 
   nextSuspicion = clamp(nextSuspicion, 0, 100);
@@ -647,10 +654,12 @@ export const SPAWN_INTERVAL_BY_PHASE: Readonly<Record<GamePhase, number>> = {
 export function getSpawnIntervalSeconds(
   phase: GamePhase,
   queueLength: number,
-  scale: (seconds: number) => number = (seconds) => seconds
+  scale: (seconds: number) => number = (seconds) => seconds,
+  arrivalRateMultiplier = 1.0
 ): number {
-  if (queueLength <= 0) return EMPTY_QUEUE_SPAWN_DELAY_SECONDS;
-  const base = SPAWN_INTERVAL_BY_PHASE[phase];
+  const safeMult = Math.max(0.1, arrivalRateMultiplier);
+  if (queueLength <= 0) return EMPTY_QUEUE_SPAWN_DELAY_SECONDS / safeMult;
+  const base = SPAWN_INTERVAL_BY_PHASE[phase] / safeMult;
   return scale(queueLength === 1 ? base / 2 : base);
 }
 
@@ -1001,13 +1010,35 @@ export function generateBIMOReport(
     });
   }
 
-  if (violations > 0 && findings.length === 0) {
+  // Expired subjects never reached a station, so they are reported as
+  // expiries, apart from CRFs a station rejected (#1670). Each finding keeps
+  // the old severity threshold, so the verdict rules below are unchanged
+  // (#899): three or more of either kind already meets the OAI threshold.
+  const expired = Math.min(violations, scoreState.expiredSubjects);
+  const misrouted = violations - expired;
+  if (misrouted > 0) {
     findings.push({
       id: "FND-001",
       category: "Data Integrity",
-      severity: violations >= 3 ? "Critical" : "Major",
-      description: `${violations} Case Report Forms submitted with unresolved raw data entries or domain mismatch.`,
+      severity: misrouted >= 3 ? "Critical" : "Major",
+      description:
+        misrouted === 1
+          ? "1 Case Report Form was rejected at an EDC station that does not match its domain."
+          : `${misrouted} Case Report Forms were rejected at EDC stations that do not match their domain.`,
       regulation: "21 CFR § 11.10(a) - System validation & record authenticity",
+    });
+  }
+  if (expired > 0) {
+    findings.push({
+      id: "FND-004",
+      category: "Data Integrity",
+      severity: expired >= 3 ? "Critical" : "Major",
+      description:
+        expired === 1
+          ? "1 subject expired on the conveyor before source data verification."
+          : `${expired} subjects expired on the conveyor before source data verification.`,
+      regulation:
+        "ICH GCP E6(R2) § 5.18.4 - Timely source data verification by the monitor",
     });
   }
 
@@ -1071,6 +1102,7 @@ export function generateBIMOReport(
     findings,
     submittedCRFs: totalSubmissions,
     cleanRate: cleanRate === null ? null : Math.round(cleanRate),
+    expiredCRFs: expired,
     summary,
   };
 }

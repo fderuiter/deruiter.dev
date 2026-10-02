@@ -6,7 +6,7 @@
 
 # Function: getSpawnIntervalSeconds()
 
-> **getSpawnIntervalSeconds**(`phase`, `queueLength`, `scale?`): `number`
+> **getSpawnIntervalSeconds**(`phase`, `queueLength`, `scale?`, `arrivalRateMultiplier?`): `number`
 
 Seconds until the next subject spawns. An empty queue refills almost at
 once and a queue with one subject left fills at twice the phase rate, so a
@@ -27,6 +27,10 @@ it.
 ### scale?
 
 (`seconds`) => `number`
+
+### arrivalRateMultiplier?
+
+`number` = `1.0`
 
 ## Returns
 

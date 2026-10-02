@@ -27,6 +27,7 @@ interface ProofLedgerProps {
   activeTheorem: TheoremDefinition;
   currentFallacy: FallacyDiagnosis | null;
   setCurrentFallacy: (fallacy: FallacyDiagnosis | null) => void;
+  handleRollback?: () => void;
 }
 
 export const ProofLedger: React.FC<ProofLedgerProps> = ({
@@ -39,6 +40,7 @@ export const ProofLedger: React.FC<ProofLedgerProps> = ({
   activeTheorem,
   currentFallacy,
   setCurrentFallacy,
+  handleRollback,
 }) => {
   return (
     <div
@@ -212,6 +214,7 @@ export const ProofLedger: React.FC<ProofLedgerProps> = ({
                 <InteractiveTruthTable
                   diagnosis={currentFallacy}
                   onClear={() => setCurrentFallacy(null)}
+                  onRollback={handleRollback}
                 />
               ) : (
                 <div className="flex flex-col items-center justify-center text-center p-8 text-slate-500 gap-2">

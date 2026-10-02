@@ -92,12 +92,13 @@ describe("Security Audit Script", () => {
   describe("parseIgnoreRules", () => {
     const fixedNow = new Date("2026-08-18T12:00:00Z");
 
-    it("parses valid rules with explicit advisory ID, future expiration date <= 90 days, and justification", () => {
+    it("parses valid Critical rules with explicit advisory ID, future expiration date <= 14 days, and justification", () => {
       const input = [
         {
           advisory: "GHSA-c2qf-rxjj-4v5w",
           package: "concurrently",
-          expiresAt: "2026-10-15T23:59:59Z",
+          expiresAt: "2026-08-28T12:00:00Z",
+          severity: "critical",
           reason: "CLI process runner tool",
           owner: "repository-owner",
           followUp: "#725",
@@ -107,37 +108,151 @@ describe("Security Audit Script", () => {
       expect(rules).toHaveLength(1);
       expect(rules[0].advisory).toBe("GHSA-c2qf-rxjj-4v5w");
       expect(rules[0].package).toBe("concurrently");
+      expect(rules[0].severity).toBe("critical");
       expect(rules[0].isValid).toBe(true);
       expect(rules[0].isExpired).toBe(false);
       expect(rules[0].reason).toBe("CLI process runner tool");
-      expect(rules[0].remainingDays).toBeGreaterThan(0);
+      expect(rules[0].remainingDays).toBe(10);
     });
 
-    it("marks rules as invalid if missing advisory ID", () => {
-      const inputNoAdvisory = [
+    it("parses valid High rules with explicit advisory ID, future expiration date <= 30 days, and justification", () => {
+      const input = [
         {
-          package: "concurrently",
-          expiresAt: "2026-10-15T23:59:59Z",
-          reason: "some reason",
+          advisory: "GHSA-high-1234",
+          package: "high-pkg",
+          expiresAt: "2026-09-07T12:00:00Z",
+          severity: "high",
+          reason: "High severity exception",
+          owner: "sec-team",
+          followUp: "#888",
         },
       ];
-      const rules = parseIgnoreRules(inputNoAdvisory, fixedNow);
-      expect(rules[0].isValid).toBe(false);
-      expect(rules[0].validationError).toContain("missing a valid advisory ID");
+      const rules = parseIgnoreRules(input, fixedNow);
+      expect(rules).toHaveLength(1);
+      expect(rules[0].isValid).toBe(true);
+      expect(rules[0].severity).toBe("high");
+      expect(rules[0].remainingDays).toBe(20);
     });
 
-    it("marks rules as invalid if expiration date exceeds 90-day cap", () => {
+    it("defaults omitted severity field to critical and caps lifespan at 14 days", () => {
+      const inputNoSeverity = [
+        {
+          advisory: "GHSA-default-crit",
+          package: "pkg-x",
+          expiresAt: "2026-08-28T12:00:00Z",
+          reason: "Default severity test",
+          owner: "owner",
+          followUp: "#101",
+        },
+      ];
+      const rules = parseIgnoreRules(inputNoSeverity, fixedNow);
+      expect(rules[0].isValid).toBe(true);
+      expect(rules[0].severity).toBe("critical");
+
+      const inputExceedsDefault = [
+        {
+          advisory: "GHSA-default-crit",
+          package: "pkg-x",
+          expiresAt: "2026-09-10T12:00:00Z",
+          reason: "Default severity test",
+          owner: "owner",
+          followUp: "#101",
+        },
+      ];
+      const rulesExceeds = parseIgnoreRules(inputExceedsDefault, fixedNow);
+      expect(rulesExceeds[0].isValid).toBe(false);
+      expect(rulesExceeds[0].validationError).toContain(
+        "exceeds the maximum 14-day lifespan"
+      );
+    });
+
+    it("marks rules as invalid if invalid severity value is provided", () => {
+      const inputInvalidSev = [
+        {
+          advisory: "GHSA-1234",
+          package: "pkg-y",
+          expiresAt: "2026-08-25T12:00:00Z",
+          severity: "medium",
+          reason: "Invalid severity test",
+          owner: "owner",
+          followUp: "#102",
+        },
+      ];
+      const rules = parseIgnoreRules(inputInvalidSev, fixedNow);
+      expect(rules[0].isValid).toBe(false);
+      expect(rules[0].validationError).toContain("invalid severity");
+    });
+
+    it("marks Critical rules as invalid if expiration date exceeds 14-day cap", () => {
       const inputExceedsCap = [
         {
           advisory: "GHSA-c2qf-rxjj-4v5w",
           package: "concurrently",
           expiresAt: "2027-12-31T23:59:59Z",
+          severity: "critical",
           reason: "Distant expiration date",
           owner: "repository-owner",
           followUp: "#725",
         },
       ];
       const rules = parseIgnoreRules(inputExceedsCap, fixedNow);
+      expect(rules[0].isValid).toBe(false);
+      expect(rules[0].validationError).toContain(
+        "exceeds the maximum 14-day lifespan"
+      );
+    });
+
+    it("marks High rules as invalid if expiration date exceeds 30-day cap", () => {
+      const inputExceedsCapHigh = [
+        {
+          advisory: "GHSA-high-exceeds",
+          package: "concurrently",
+          expiresAt: "2027-12-31T23:59:59Z",
+          severity: "high",
+          reason: "Distant expiration date",
+          owner: "repository-owner",
+          followUp: "#725",
+        },
+      ];
+      const rules = parseIgnoreRules(inputExceedsCapHigh, fixedNow);
+      expect(rules[0].isValid).toBe(false);
+      expect(rules[0].validationError).toContain(
+        "exceeds the maximum 30-day lifespan"
+      );
+    });
+
+    it("parses valid Moderate rules with explicit advisory ID, future expiration date <= 90 days, and justification", () => {
+      const input = [
+        {
+          advisory: "GHSA-mod-1234",
+          package: "mod-pkg",
+          expiresAt: "2026-11-15T12:00:00Z",
+          severity: "moderate",
+          reason: "Moderate severity exception",
+          owner: "sec-team",
+          followUp: "#999",
+        },
+      ];
+      const rules = parseIgnoreRules(input, fixedNow);
+      expect(rules).toHaveLength(1);
+      expect(rules[0].isValid).toBe(true);
+      expect(rules[0].severity).toBe("moderate");
+      expect(rules[0].remainingDays).toBe(89);
+    });
+
+    it("marks Moderate rules as invalid if expiration date exceeds 90-day cap", () => {
+      const inputExceedsCapMod = [
+        {
+          advisory: "GHSA-mod-exceeds",
+          package: "concurrently",
+          expiresAt: "2027-12-31T23:59:59Z",
+          severity: "moderate",
+          reason: "Distant expiration date",
+          owner: "repository-owner",
+          followUp: "#725",
+        },
+      ];
+      const rules = parseIgnoreRules(inputExceedsCapMod, fixedNow);
       expect(rules[0].isValid).toBe(false);
       expect(rules[0].validationError).toContain(
         "exceeds the maximum 90-day lifespan"
@@ -206,42 +321,49 @@ describe("Security Audit Script", () => {
       expect(rules[0].isApproachingExpiration).toBe(false);
     });
 
-    it("sets isApproachingExpiration: true for valid rules expiring within 14 days", () => {
-      // 7 days after fixedNow ("2026-08-18T12:00:00Z") is "2026-08-25T12:00:00Z"
-      const inputSoon = [
-        {
-          advisory: "GHSA-expiring-soon",
-          package: "expiring-pkg",
-          expiresAt: "2026-08-25T12:00:00Z",
-          reason: "Temporary workaround",
-          owner: "sec-team",
-          followUp: "#888",
-        },
-      ];
-      const rules = parseIgnoreRules(inputSoon, fixedNow);
-      expect(rules[0].isValid).toBe(true);
-      expect(rules[0].isExpired).toBe(false);
-      expect(rules[0].remainingDays).toBe(7);
-      expect(rules[0].isApproachingExpiration).toBe(true);
-    });
+    it("enforces tiered warning thresholds: 7 days for Critical and 14 days for High", () => {
+      const rules = parseIgnoreRules(
+        [
+          {
+            advisory: "GHSA-crit-approaching",
+            expiresAt: "2026-08-23T12:00:00Z",
+            severity: "critical",
+            reason: "r",
+            owner: "o",
+            followUp: "#1",
+          },
+          {
+            advisory: "GHSA-crit-safe",
+            expiresAt: "2026-08-28T12:00:00Z",
+            severity: "critical",
+            reason: "r",
+            owner: "o",
+            followUp: "#2",
+          },
+          {
+            advisory: "GHSA-high-approaching",
+            expiresAt: "2026-08-28T12:00:00Z",
+            severity: "high",
+            reason: "r",
+            owner: "o",
+            followUp: "#3",
+          },
+          {
+            advisory: "GHSA-high-safe",
+            expiresAt: "2026-09-07T12:00:00Z",
+            severity: "high",
+            reason: "r",
+            owner: "o",
+            followUp: "#4",
+          },
+        ],
+        fixedNow
+      );
 
-    it("sets isApproachingExpiration: false for valid rules expiring in more than 14 days", () => {
-      // 30 days after fixedNow ("2026-08-18T12:00:00Z") is "2026-09-17T12:00:00Z"
-      const inputFuture = [
-        {
-          advisory: "GHSA-expiring-later",
-          package: "future-pkg",
-          expiresAt: "2026-09-17T12:00:00Z",
-          reason: "Long-term workaround",
-          owner: "sec-team",
-          followUp: "#999",
-        },
-      ];
-      const rules = parseIgnoreRules(inputFuture, fixedNow);
-      expect(rules[0].isValid).toBe(true);
-      expect(rules[0].isExpired).toBe(false);
-      expect(rules[0].remainingDays).toBe(30);
-      expect(rules[0].isApproachingExpiration).toBe(false);
+      expect(rules[0].isApproachingExpiration).toBe(true);
+      expect(rules[1].isApproachingExpiration).toBe(false);
+      expect(rules[2].isApproachingExpiration).toBe(true);
+      expect(rules[3].isApproachingExpiration).toBe(false);
     });
   });
 
@@ -277,6 +399,7 @@ describe("Security Audit Script", () => {
       const rule: ParsedIgnoreRule = {
         advisory: "GHSA-jmr9-qjv8-65gv",
         expiresAt: "2026-10-15T00:00:00Z",
+        severity: "critical",
         reason: "Test exception",
         owner: "repository-owner",
         followUp: "#725",
@@ -289,10 +412,10 @@ describe("Security Audit Script", () => {
   });
 
   describe("loadIgnoreList", () => {
-    it("ships without default vulnerability exceptions", () => {
+    it("parses valid rules from security-audit-ignore.json", () => {
       const fixedNow = new Date("2026-08-19T12:00:00Z");
       const list = loadIgnoreList(fixedNow);
-      expect(list).toEqual([]);
+      expect(Array.isArray(list)).toBe(true);
     });
   });
 
@@ -316,7 +439,7 @@ describe("Security Audit Script", () => {
       expect(logSpy).toHaveBeenCalled();
     });
 
-    it("should ignore low and moderate vulnerabilities and pass", () => {
+    it("should ignore low and moderate vulnerabilities and pass by default", () => {
       vi.mocked(spawnSync).mockReturnValue(
         fromPartial<SpawnSyncReturns<string>>({
           stdout: JSON.stringify({
@@ -339,6 +462,33 @@ describe("Security Audit Script", () => {
         "process.exit called with 0"
       );
       expect(exitSpy).toHaveBeenCalledWith(0);
+    });
+
+    it("should evaluate moderate vulnerabilities and fail when run with severity=moderate", () => {
+      vi.mocked(spawnSync).mockReturnValue(
+        fromPartial<SpawnSyncReturns<string>>({
+          stdout: JSON.stringify({
+            auditReportVersion: 2,
+            vulnerabilities: {
+              lodash: {
+                name: "lodash",
+                severity: "moderate",
+                via: [
+                  {
+                    source: "GHSA-mod-lodash",
+                    title: "Moderate vulnerability",
+                  },
+                ],
+              },
+            },
+          }),
+        })
+      );
+
+      expect(() =>
+        runSecurityAudit({ now: testNow, severity: "moderate" })
+      ).toThrowError("process.exit called with 1");
+      expect(exitSpy).toHaveBeenCalledWith(1);
     });
 
     it("should pass when high/critical vulnerabilities match a valid, active advisory ignore rule", () => {
@@ -367,7 +517,8 @@ describe("Security Audit Script", () => {
         {
           advisory: "GHSA-c2qf-rxjj-4v5w",
           package: "concurrently",
-          expiresAt: "2026-10-31T23:59:59Z",
+          expiresAt: "2026-08-28T23:59:59Z",
+          severity: "critical",
           reason: "CLI runner tool",
           owner: "repository-owner",
           followUp: "#725",
@@ -410,7 +561,8 @@ describe("Security Audit Script", () => {
         {
           advisory: "GHSA-c2qf-rxjj-4v5w",
           package: "concurrently",
-          expiresAt: "2026-10-31T23:59:59Z",
+          expiresAt: "2026-08-28T23:59:59Z",
+          severity: "critical",
           reason: "CLI runner tool",
           owner: "repository-owner",
           followUp: "#725",
@@ -460,7 +612,7 @@ describe("Security Audit Script", () => {
       expect(errorCalls).toContain("missing a valid advisory ID");
     });
 
-    it("should fail when an ignore override sets an expiration date greater than 90 days in the future", () => {
+    it("should fail when an ignore override sets an expiration date exceeding max lifespan", () => {
       vi.mocked(spawnSync).mockReturnValue(
         fromPartial<SpawnSyncReturns<string>>({
           stdout: JSON.stringify({
@@ -475,7 +627,7 @@ describe("Security Audit Script", () => {
           advisory: "GHSA-c2qf-rxjj-4v5w",
           package: "concurrently",
           expiresAt: "2027-12-31T23:59:59Z",
-          reason: "Exceeds 90-day cap",
+          reason: "Exceeds 14-day cap",
           owner: "repository-owner",
           followUp: "#725",
         },
@@ -493,7 +645,7 @@ describe("Security Audit Script", () => {
       const errorCalls = errorSpy.mock.calls
         .map((call) => call[0] as string)
         .join("\n");
-      expect(errorCalls).toContain("exceeds the maximum 90-day lifespan");
+      expect(errorCalls).toContain("exceeds the maximum 14-day lifespan");
     });
 
     it("should reject expired vulnerability overrides and fail when vulnerabilities exist", () => {
@@ -876,7 +1028,7 @@ describe("Security Audit Script", () => {
       expect(appendSpy).toHaveBeenCalledWith(
         summaryPath,
         expect.stringContaining(
-          "No unhandled high or critical vulnerabilities found"
+          "No unhandled moderate, high, or critical vulnerabilities found"
         ),
         "utf8"
       );

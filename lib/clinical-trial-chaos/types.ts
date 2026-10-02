@@ -121,10 +121,14 @@ export interface GameScoreState {
   combo: number;
   maxCombo: number;
   multiplier: number;
+  /** CRFs locked across the whole campaign run. */
   subjectsSubmitted: number;
   correctionsMade: number;
   cleanSubmissions: number;
+  /** Every missed or misrouted CRF: expired subjects plus station rejections. */
   auditViolations: number;
+  /** Subjects that expired on the conveyor, a subset of `auditViolations` (#1670). */
+  expiredSubjects: number;
 }
 
 export interface SignatureModalState {
@@ -174,16 +178,37 @@ export interface SDTMRow {
   STATUS: "COMPLIANT" | "QUERY";
 }
 
+export interface StressParameters {
+  arrivalRateMultiplier: number; // e.g. 0.5 to 3.0, default 1.0
+  errorChance: number; // e.g. 0.0 to 1.0, default phase base
+  auditorPacingMultiplier: number; // e.g. 0.5 to 3.0, default 1.0
+}
+
+export type StressPresetId =
+  "baseline" | "audit_rush" | "influx_surge" | "extreme_chaos";
+
+export interface StressPreset {
+  id: StressPresetId;
+  name: string;
+  description: string;
+  params: StressParameters;
+}
+
+export type BIMOComplianceTrend = "improving" | "stable" | "declining";
+
 export interface BIMOFinding {
   id: string;
   category:
     | "Data Integrity"
     | "Protocol Compliance"
     | "21 CFR Part 11"
-    | "Adverse Event Reporting";
+    | "Adverse Event Reporting"
+    | "21 CFR 812 Device Rules";
   severity: "Critical" | "Major" | "Minor";
   description: string;
   regulation: string;
+  timestamp?: string;
+  actionableGuidance?: string;
 }
 
 export interface RecordedRuleViolation {
@@ -202,6 +227,7 @@ export interface BIMOInspectionReport {
   runId: string;
   auditDate: string;
   overallScore: number;
+  scoreTrend?: BIMOComplianceTrend;
   verdict:
     | "NAI (No Action Indicated - Approved)"
     | "VAI (Voluntary Action Indicated)"
@@ -212,5 +238,7 @@ export interface BIMOInspectionReport {
   submittedCRFs: number;
   /** Percentage of submitted CRFs that were clean, or `null` when none were submitted. */
   cleanRate: number | null;
+  /** Subjects that expired on the conveyor and were never submitted (#1670). */
+  expiredCRFs: number;
   summary: string;
 }

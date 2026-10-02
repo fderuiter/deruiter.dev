@@ -13,7 +13,11 @@ import {
   IconLoader2,
 } from "@tabler/icons-react";
 import { isProductionEnvironment } from "@/lib/env";
-import { useOfflineQueue, getOfflineQueue } from "@/hooks/useOfflineQueue";
+import {
+  useOfflineQueue,
+  getOfflineQueue,
+  type DeadLetterItem,
+} from "@/hooks/useOfflineQueue";
 import { FeedbackSubmissionSchema } from "@/lib/schemas";
 import { logger } from "@/lib/logger";
 import { apiClient } from "@/lib/api-client";
@@ -62,7 +66,7 @@ const REACTIONS: ReactionConfig[] = [
 export function CaseStudyFeedbackSection({
   slug,
 }: CaseStudyFeedbackSectionProps) {
-  const { enqueue } = useOfflineQueue();
+  const { enqueue, dlqQueue } = useOfflineQueue();
 
   // Reactions state
   const [counts, setCounts] = useState<Record<string, number>>({
@@ -82,6 +86,63 @@ export function CaseStudyFeedbackSection({
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [hasSubmittedFeedback, setHasSubmittedFeedback] =
     useState<boolean>(false);
+
+  // Listen for DLQ failure events
+  useEffect(() => {
+    const handleDLQError = (e: Event) => {
+      const customEvent = e as CustomEvent<DeadLetterItem>;
+      const item = customEvent.detail;
+      if (item && item.body && typeof item.body === "object") {
+        const body = item.body as { caseStudySlug?: string };
+        if (body.caseStudySlug === slug) {
+          setErrorMsg(item.failureReason || "Queued request failed.");
+          if (
+            item.endpoint === "/api/case-studies/feedback" ||
+            item.type === "feedback"
+          ) {
+            setHasSubmittedFeedback(false);
+            setSuccessMsg(null);
+          }
+        }
+      }
+    };
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("portfolio-offline-queue-error", handleDLQError);
+    }
+    return () => {
+      if (typeof window !== "undefined") {
+        window.removeEventListener(
+          "portfolio-offline-queue-error",
+          handleDLQError
+        );
+      }
+    };
+  }, [slug]);
+
+  // Sync with DLQ items in store on mount or update
+  useEffect(() => {
+    const item = dlqQueue.find((i) => {
+      if (i.body && typeof i.body === "object") {
+        const body = i.body as { caseStudySlug?: string };
+        return body.caseStudySlug === slug;
+      }
+      return false;
+    });
+
+    if (item) {
+      queueMicrotask(() => {
+        setErrorMsg(item.failureReason || "Queued request failed.");
+        if (
+          item.endpoint === "/api/case-studies/feedback" ||
+          item.type === "feedback"
+        ) {
+          setHasSubmittedFeedback(false);
+          setSuccessMsg(null);
+        }
+      });
+    }
+  }, [dlqQueue, slug]);
 
   // Initial fetch for reaction counts and submission status
   useEffect(() => {

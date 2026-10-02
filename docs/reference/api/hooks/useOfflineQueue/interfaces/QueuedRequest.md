@@ -6,6 +6,10 @@
 
 # Interface: QueuedRequest\<T\>
 
+## Extended by
+
+- [`DeadLetterItem`](DeadLetterItem.md)
+
 ## Type Parameters
 
 ### T

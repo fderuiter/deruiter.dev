@@ -284,6 +284,8 @@ them.
 | `GITHUB_ACTIONS` | Platform | None | Set by GitHub Actions. |
 | `VITEST` | Platform | None | Set by Vitest. |
 | `PLAYWRIGHT_TEST` | Platform | None | Set by the end-to-end harness. |
+| `PLAYWRIGHT_BROWSERS_PATH` | Optional | None | Custom directory path for Playwright browser binaries. |
+| `npm_config_user_agent` | Platform | None | Package manager user agent string set by npm/bun/pnpm. |
 | `ALLOW_FALLBACK_PRODUCTION_BUILD` | Optional | None | Emergency override that lets a build ship fallback content. Set it for one build only, then remove it. |
 | `ALLOW_DESTRUCTIVE_MIGRATIONS` | Optional | None | Emergency override for the migration safety check. Set it for one build only, then remove it. |
 

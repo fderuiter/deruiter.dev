@@ -12,7 +12,7 @@ type MermaidModule = typeof import("mermaid");
 
 const MERMAID_CONFIG = {
   startOnLoad: false,
-  securityLevel: "strict",
+  securityLevel: "antiscript",
   theme: "base",
   fontFamily: "var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace",
   themeVariables: {

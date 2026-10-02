@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { StudyProtocol, StudyBranding } from "@/lib/crf/types";
 import { getStudyBranding } from "@/lib/crf/branding-defaults";
 import { ModalContainer } from "@/components/ui/ModalContainer";
@@ -19,6 +19,8 @@ import {
   IconListCheck,
   IconLoader2,
   IconCalendar,
+  IconAlertTriangle,
+  IconRefresh,
 } from "@tabler/icons-react";
 
 interface ExportDocumentModalProps {
@@ -47,6 +49,23 @@ export const ExportDocumentModal: React.FC<ExportDocumentModalProps> = ({
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [docxSuccess, setDocxSuccess] = useState(false);
   const [pdfSuccess, setPdfSuccess] = useState(false);
+  const [exportError, setExportError] = useState<{
+    message: string;
+    format: "docx" | "pdf";
+  } | null>(null);
+
+  const isMounted = useRef(true);
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
+  const handleClose = () => {
+    setExportError(null);
+    onClose();
+  };
 
   const branding: StudyBranding = getStudyBranding(study);
   const activeForm =
@@ -76,37 +95,69 @@ export const ExportDocumentModal: React.FC<ExportDocumentModalProps> = ({
 
   const handleDownloadDocx = async () => {
     try {
-      setIsExportingDocx(true);
+      if (isMounted.current) {
+        setIsExportingDocx(true);
+        setExportError(null);
+      }
       recordEvent("crf", "project_click");
       const options = getEffectiveOptions();
       const { generateStudyDocx } = await import("@/lib/crf/export-docx");
       const blob = await generateStudyDocx(study, options);
       const filename = `${study.protocolNumber}-${exportMode === "annotated" ? "aCRF" : "CRF"}-book.docx`;
       downloadFile(blob, filename);
-      setDocxSuccess(true);
-      setTimeout(() => setDocxSuccess(false), 2500);
+      if (isMounted.current) {
+        setDocxSuccess(true);
+        setTimeout(() => {
+          if (isMounted.current) setDocxSuccess(false);
+        }, 2500);
+      }
     } catch (err) {
       logger.error("Failed to generate Word document:", err);
+      if (isMounted.current) {
+        setExportError({
+          message:
+            "Failed to generate Word document (.docx). Please check study configuration and retry.",
+          format: "docx",
+        });
+      }
     } finally {
-      setIsExportingDocx(false);
+      if (isMounted.current) {
+        setIsExportingDocx(false);
+      }
     }
   };
 
   const handleDownloadPdf = async () => {
     try {
-      setIsExportingPdf(true);
+      if (isMounted.current) {
+        setIsExportingPdf(true);
+        setExportError(null);
+      }
       recordEvent("crf", "project_click");
       const options = getEffectiveOptions();
       const { generateStudyPdf } = await import("@/lib/crf/export-pdf");
       const blob = await generateStudyPdf(study, options);
       const filename = `${study.protocolNumber}-${exportMode === "annotated" ? "aCRF" : "CRF"}-book.pdf`;
       downloadFile(blob, filename);
-      setPdfSuccess(true);
-      setTimeout(() => setPdfSuccess(false), 2500);
+      if (isMounted.current) {
+        setPdfSuccess(true);
+        setTimeout(() => {
+          if (isMounted.current) setPdfSuccess(false);
+        }, 2500);
+      }
     } catch (err) {
       logger.error("Failed to generate PDF document:", err);
+      if (isMounted.current) {
+        setExportError({
+          message:
+            "Failed to generate PDF document (.pdf). Please check study configuration and retry.",
+          format: "pdf",
+        });
+      }
     } finally {
-      setIsExportingPdf(false);
+      if (isMounted.current) {
+        setIsExportingPdf(false);
+      }
     }
   };
 
@@ -141,7 +192,7 @@ export const ExportDocumentModal: React.FC<ExportDocumentModalProps> = ({
   return (
     <ModalContainer
       isOpen={true}
-      onClose={onClose}
+      onClose={handleClose}
       titleId="export-modal-title"
       maxWidth="max-w-3xl"
       className="bg-zinc-900 border-zinc-750"
@@ -166,7 +217,7 @@ export const ExportDocumentModal: React.FC<ExportDocumentModalProps> = ({
           </div>
         </div>
         <button
-          onClick={onClose}
+          onClick={handleClose}
           className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
         >
           <IconX className="w-5 h-5" />
@@ -175,6 +226,43 @@ export const ExportDocumentModal: React.FC<ExportDocumentModalProps> = ({
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        {/* Error Banner */}
+        {exportError && (
+          <div
+            role="alert"
+            className="p-3.5 rounded-xl bg-red-950/50 border border-red-800/60 text-red-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs font-mono"
+          >
+            <div className="flex items-center gap-2.5">
+              <IconAlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
+              <span>{exportError.message}</span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+              <button
+                type="button"
+                onClick={() => {
+                  if (exportError.format === "docx") {
+                    handleDownloadDocx();
+                  } else {
+                    handleDownloadPdf();
+                  }
+                }}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-900/60 hover:bg-red-800/80 border border-red-700/60 text-red-100 font-mono text-xs font-bold transition-colors"
+              >
+                <IconRefresh className="w-3.5 h-3.5" />
+                <span>Retry</span>
+              </button>
+              <button
+                type="button"
+                aria-label="Dismiss error"
+                onClick={() => setExportError(null)}
+                className="p-1 rounded-lg text-red-400 hover:text-red-200 hover:bg-red-900/40 transition-colors"
+              >
+                <IconX className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Active Branding Strip */}
         <div className="p-3.5 rounded-xl bg-zinc-950 border border-zinc-800 flex items-center justify-between">
           <div className="flex items-center gap-3">

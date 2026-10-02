@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect } from "react";
 import { CaseStudyBentoCard } from "@/components/ui/CaseStudyBentoCard";
 import { BaseCaseStudy } from "@/types/domain";
 import { hexToRgba } from "@/lib/utils";
@@ -10,6 +10,7 @@ import { designManifest } from "@/lib/design-manifest";
 import { useMasonryLayout } from "@/hooks/useMasonryLayout";
 import { useStudioHashParams } from "@/hooks/useStudioHashParams";
 import { BentoLayoutProvider } from "@/components/providers/BentoLayoutContext";
+import { usePersona } from "@/components/providers/PersonaProvider";
 
 interface HydratedCaseStudy extends BaseCaseStudy {
   githubStats: GitHubStats | null;
@@ -20,10 +21,20 @@ interface CaseStudyShowcaseProps {
 }
 
 const FILTER_PARAM = "lang";
+const ROLE_PARAM = "role";
+
+const PERSONA_TABS = [
+  { id: "all", label: "ALL ROLES" },
+  { id: "recruiter", label: "RECRUITER / HIGHLIGHTS" },
+  { id: "technical", label: "TECHNICAL / ARCHITECTURE" },
+] as const;
 
 const CaseStudyShowcaseInner: React.FC<CaseStudyShowcaseProps> = ({
   caseStudies,
 }) => {
+  const { persona, setPersona } = usePersona();
+  const { getParam, setParam } = useStudioHashParams();
+
   // Filter tabs are bounded to whatever primary_language values actually appear in
   // the collection today, so a real Rust, Graphic Design, or Angular/TypeScript
   // case study is always reachable instead of being silently unfilterable.
@@ -40,7 +51,6 @@ const CaseStudyShowcaseInner: React.FC<CaseStudyShowcaseProps> = ({
   // browser Back from a case-study detail page and can be shared as a deep link —
   // without pulling in next/navigation's useSearchParams, which would force this
   // static page's card content out of the prerendered HTML behind a Suspense boundary.
-  const { getParam, setParam } = useStudioHashParams();
   const requestedFilter = getParam(FILTER_PARAM, "All");
   const selectedFilter = filterTabs.includes(requestedFilter)
     ? requestedFilter
@@ -50,52 +60,163 @@ const CaseStudyShowcaseInner: React.FC<CaseStudyShowcaseProps> = ({
     setParam(FILTER_PARAM, tab === "All" ? null : tab, { replace: true });
   };
 
-  // Client-side interactive filter
+  const rawRoleParam = getParam(
+    ROLE_PARAM,
+    getParam("persona", "")
+  ).toLowerCase();
+  const selectedRole =
+    rawRoleParam === "recruiter"
+      ? "recruiter"
+      : rawRoleParam === "technical"
+        ? "technical"
+        : rawRoleParam === "all"
+          ? "all"
+          : "all";
+
+  // Sync PersonaProvider context when role hash param is explicitly set
+  useEffect(() => {
+    if (selectedRole === "recruiter" && persona !== "recruiter") {
+      setPersona("recruiter");
+    } else if (selectedRole === "technical" && persona !== "technical") {
+      setPersona("technical");
+    }
+  }, [selectedRole, persona, setPersona]);
+
+  const handleRoleSelect = (roleId: string) => {
+    if (roleId === "recruiter") {
+      setPersona("recruiter");
+      setParam(ROLE_PARAM, "recruiter", { replace: true });
+    } else if (roleId === "technical") {
+      setPersona("technical");
+      setParam(ROLE_PARAM, "technical", { replace: true });
+    } else {
+      setParam(ROLE_PARAM, null, { replace: true });
+    }
+  };
+
+  // Client-side interactive filter & prioritization
   const filteredStudies = useMemo(() => {
-    return selectedFilter === "All"
-      ? caseStudies
-      : caseStudies.filter(
-          (study) => study.primary_language === selectedFilter
-        );
-  }, [caseStudies, selectedFilter]);
+    let studies = caseStudies;
+
+    if (selectedFilter !== "All") {
+      studies = studies.filter(
+        (study) => study.primary_language === selectedFilter
+      );
+    }
+
+    if (selectedRole === "recruiter") {
+      // Prioritize studies with published telemetry, rich editorial summaries, or high-level highlights
+      studies = [...studies].sort((a, b) => {
+        const aScore =
+          (a.hero_image_url ? 2 : 0) + (a.simulated_telemetry ? 1 : 0);
+        const bScore =
+          (b.hero_image_url ? 2 : 0) + (b.simulated_telemetry ? 1 : 0);
+        return bScore - aScore;
+      });
+    } else if (selectedRole === "technical") {
+      // Prioritize studies with deep architectural narratives and complex telemetry
+      studies = [...studies].sort((a, b) => {
+        const aLen = (a.architectural_narrative || "").length;
+        const bLen = (b.architectural_narrative || "").length;
+        return bLen - aLen;
+      });
+    }
+
+    return studies;
+  }, [caseStudies, selectedFilter, selectedRole]);
 
   const { containerRef, layoutState } = useMasonryLayout(
     caseStudies,
     filteredStudies
   );
 
+  const effectiveCardPersona: "recruiter" | "technical" =
+    selectedRole === "recruiter"
+      ? "recruiter"
+      : selectedRole === "technical"
+        ? "technical"
+        : persona;
+
   return (
     <div className="w-full flex flex-col items-center">
-      {/* Premium Staggered Filtering Tabs */}
-      <div className="flex max-w-full overflow-x-auto gap-1.5 mb-8 sm:mb-12 bg-zinc-900/40 p-1.5 rounded-2xl border border-zinc-900/60 backdrop-blur-md relative z-20 scrollbar-none">
-        {filterTabs.map((tab) => {
-          const isActive = selectedFilter === tab;
-          return (
-            <button
-              key={tab}
-              onClick={() => setSelectedFilter(tab)}
-              className={`relative px-3.5 sm:px-4 py-2.5 sm:py-2 min-h-[40px] sm:min-h-0 flex items-center justify-center text-xs font-mono font-bold transition-colors duration-300 rounded-xl cursor-pointer select-none shrink-0 ${
-                isActive
-                  ? "text-brand-cyan"
-                  : "text-zinc-400 hover:text-zinc-200"
-              }`}
-            >
-              {isActive && (
-                <motion.div
-                  layoutId="activeTab"
-                  style={
-                    {
-                      "--tab-glow": `0 0 15px ${hexToRgba(designManifest.colors["brand-cyan"], 0.12)}`,
-                    } as React.CSSProperties
-                  }
-                  className="absolute inset-0 bg-zinc-950 border border-zinc-800/80 rounded-xl -z-10 shadow-[var(--tab-glow)]"
-                  transition={designManifest.motion.springs.snappy}
-                />
-              )}
-              {tab === "All" ? "ALL PROJECTS" : tab.toUpperCase()}
-            </button>
-          );
-        })}
+      {/* Primary Showcase Filter Control Bar */}
+      <div className="flex max-w-full overflow-x-auto items-center gap-2 mb-8 sm:mb-12 bg-zinc-900/40 p-1.5 rounded-2xl border border-zinc-900/60 backdrop-blur-md relative z-20 scrollbar-none">
+        {/* Persona Role Filter Tabs */}
+        <div
+          className="flex items-center gap-1 shrink-0"
+          role="tablist"
+          aria-label="Persona view filter"
+        >
+          {PERSONA_TABS.map((pTab) => {
+            const isActive = selectedRole === pTab.id;
+            return (
+              <button
+                key={pTab.id}
+                onClick={() => handleRoleSelect(pTab.id)}
+                aria-pressed={isActive}
+                className={`relative px-3.5 sm:px-4 py-2.5 sm:py-2 min-h-[40px] sm:min-h-0 flex items-center justify-center text-xs font-mono font-bold transition-colors duration-300 rounded-xl cursor-pointer select-none shrink-0 ${
+                  isActive
+                    ? "text-brand-cyan"
+                    : "text-zinc-400 hover:text-zinc-200"
+                }`}
+              >
+                {isActive && (
+                  <motion.div
+                    layoutId="activePersonaTab"
+                    style={
+                      {
+                        "--tab-glow": `0 0 15px ${hexToRgba(designManifest.colors["brand-cyan"], 0.12)}`,
+                      } as React.CSSProperties
+                    }
+                    className="absolute inset-0 bg-zinc-950 border border-zinc-800/80 rounded-xl -z-10 shadow-[var(--tab-glow)]"
+                    transition={designManifest.motion.springs.snappy}
+                  />
+                )}
+                {pTab.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Section Divider */}
+        <div className="w-px h-5 bg-zinc-800/80 shrink-0 mx-0.5" />
+
+        {/* Language Filter Tabs */}
+        <div
+          className="flex items-center gap-1 shrink-0"
+          role="tablist"
+          aria-label="Language filter"
+        >
+          {filterTabs.map((tab) => {
+            const isActive = selectedFilter === tab;
+            return (
+              <button
+                key={tab}
+                onClick={() => setSelectedFilter(tab)}
+                aria-pressed={isActive}
+                className={`relative px-3.5 sm:px-4 py-2.5 sm:py-2 min-h-[40px] sm:min-h-0 flex items-center justify-center text-xs font-mono font-bold transition-colors duration-300 rounded-xl cursor-pointer select-none shrink-0 ${
+                  isActive
+                    ? "text-brand-cyan"
+                    : "text-zinc-400 hover:text-zinc-200"
+                }`}
+              >
+                {isActive && (
+                  <motion.div
+                    layoutId="activeLangTab"
+                    style={
+                      {
+                        "--tab-glow": `0 0 15px ${hexToRgba(designManifest.colors["brand-cyan"], 0.12)}`,
+                      } as React.CSSProperties
+                    }
+                    className="absolute inset-0 bg-zinc-950 border border-zinc-800/80 rounded-xl -z-10 shadow-[var(--tab-glow)]"
+                    transition={designManifest.motion.springs.snappy}
+                  />
+                )}
+                {tab === "All" ? "ALL PROJECTS" : tab.toUpperCase()}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Dynamic Masonry Bento Grid */}
@@ -119,6 +240,7 @@ const CaseStudyShowcaseInner: React.FC<CaseStudyShowcaseProps> = ({
                   >
                     <CaseStudyBentoCard
                       study={study}
+                      activePersona={effectiveCardPersona}
                       preCalculatedHeight={study.height}
                       preCalculatedRealityHeight={
                         study.preCalculatedRealityHeight
@@ -135,7 +257,11 @@ const CaseStudyShowcaseInner: React.FC<CaseStudyShowcaseProps> = ({
           /* SSR Safe Parallel Layout Fallback */
           <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-4">
             {caseStudies.map((study) => (
-              <CaseStudyBentoCard key={study.id} study={study} />
+              <CaseStudyBentoCard
+                key={study.id}
+                study={study}
+                activePersona={effectiveCardPersona}
+              />
             ))}
           </div>
         )}
@@ -149,8 +275,7 @@ const CaseStudyShowcaseInner: React.FC<CaseStudyShowcaseProps> = ({
           className="text-center py-16 px-6 bg-zinc-900/10 border border-zinc-900/40 border-dashed rounded-2xl w-full max-w-lg mt-4"
         >
           <p className="text-sm text-zinc-500 italic">
-            No projects found matching language filter &quot;{selectedFilter}
-            &quot;.
+            No projects found matching the active filter criteria.
           </p>
         </motion.div>
       )}

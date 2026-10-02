@@ -40,6 +40,7 @@
 - [Meters](type-aliases/Meters.md)
 - [Phase](type-aliases/Phase.md)
 - [SponsorArchetype](type-aliases/SponsorArchetype.md)
+- [StudyBudget](type-aliases/StudyBudget.md)
 - [StudyDirectorProfile](type-aliases/StudyDirectorProfile.md)
 - [TeamRole](type-aliases/TeamRole.md)
 - [Urgency](type-aliases/Urgency.md)

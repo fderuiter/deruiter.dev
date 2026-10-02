@@ -22,7 +22,22 @@ export interface WorkspaceActionPayload {
   badge?: string;
   tags?: string[];
   shortcut?: string;
-  handler?: () => void | Promise<void>;
+  cliName?: string;
+  flags?: Record<
+    string,
+    {
+      type?: string;
+      description?: string;
+      required?: boolean;
+      default?: unknown;
+    }
+  >;
+  parameters?: Record<string, unknown>;
+  schema?: unknown;
+  responseSchema?: unknown;
+  payload?: unknown;
+  handler?: (args?: Record<string, unknown>) => void | Promise<void>;
+  cliHandler?: (args: Record<string, unknown>) => unknown;
 }
 
 /** Payload for unregistering a workspace action. */

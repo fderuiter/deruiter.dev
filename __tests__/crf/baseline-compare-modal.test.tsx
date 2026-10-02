@@ -1,9 +1,21 @@
 import React from "react";
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import {
+  render,
+  screen,
+  fireEvent,
+  cleanup,
+  waitFor,
+} from "@testing-library/react";
 import { BaselineCompareModal } from "@/components/crf/BaselineCompareModal";
 import { saveStudyBaseline } from "@/lib/crf/study-baselines";
 import type { StudyProtocol, CRFForm } from "@/lib/crf/types";
+
+vi.mock("@/lib/download", () => ({
+  downloadFile: vi.fn().mockReturnValue(true),
+}));
+
+import { downloadFile } from "@/lib/download";
 
 // Regression coverage for #676: authors must be able to open the baseline
 // comparison panel, pick a saved baseline, see a readable diff grouped by
@@ -233,5 +245,149 @@ describe("BaselineCompareModal (#676)", () => {
     // The category tab bar itself is always visible, but the study-metadata
     // diff row should now be filtered out of the entry list.
     expect(screen.queryByText(/Study Metadata › Study Name/i)).toBeNull();
+  });
+
+  it("keeps export toolbar buttons disabled when there are no differences", () => {
+    const storage = new MockStorage();
+    const study = buildTestStudy();
+    saveStudyBaseline(
+      study,
+      { versionTag: "v1.0", label: "Lock", actor: { name: "Author" } },
+      storage
+    );
+
+    render(
+      <BaselineCompareModal
+        isOpen={true}
+        onClose={vi.fn()}
+        study={study}
+        onSelectBaseline={vi.fn()}
+        onNavigate={vi.fn()}
+        storage={storage}
+      />
+    );
+
+    const csvButton = screen.getByRole("button", {
+      name: "Export CSV",
+    }) as HTMLButtonElement;
+    const jsonButton = screen.getByRole("button", {
+      name: "Export JSON",
+    }) as HTMLButtonElement;
+    const textButton = screen.getByRole("button", {
+      name: "Export Text",
+    }) as HTMLButtonElement;
+    const copyButton = screen.getByRole("button", {
+      name: "Copy Summary",
+    }) as HTMLButtonElement;
+
+    expect(csvButton.disabled).toBe(true);
+    expect(jsonButton.disabled).toBe(true);
+    expect(textButton.disabled).toBe(true);
+    expect(copyButton.disabled).toBe(true);
+  });
+
+  it("enables export toolbar buttons and triggers downloads on click when differences exist", () => {
+    const storage = new MockStorage();
+    const baselineStudy = buildTestStudy();
+    saveStudyBaseline(
+      baselineStudy,
+      { versionTag: "v1.0", label: "Lock", actor: { name: "Author" } },
+      storage
+    );
+
+    const amendedStudy: StudyProtocol = {
+      ...baselineStudy,
+      studyName: "Phase III Study (Amendment 1)",
+    };
+
+    render(
+      <BaselineCompareModal
+        isOpen={true}
+        onClose={vi.fn()}
+        study={amendedStudy}
+        onSelectBaseline={vi.fn()}
+        onNavigate={vi.fn()}
+        storage={storage}
+      />
+    );
+
+    const csvButton = screen.getByRole("button", {
+      name: "Export CSV",
+    }) as HTMLButtonElement;
+    const jsonButton = screen.getByRole("button", {
+      name: "Export JSON",
+    }) as HTMLButtonElement;
+    const textButton = screen.getByRole("button", {
+      name: "Export Text",
+    }) as HTMLButtonElement;
+
+    expect(csvButton.disabled).toBe(false);
+    expect(jsonButton.disabled).toBe(false);
+    expect(textButton.disabled).toBe(false);
+
+    fireEvent.click(csvButton);
+    expect(downloadFile).toHaveBeenCalledWith(
+      expect.stringContaining('"Category","Change Type"'),
+      expect.stringMatching(/\.csv$/),
+      { mimeType: "text/csv;charset=utf-8" }
+    );
+
+    fireEvent.click(jsonButton);
+    expect(downloadFile).toHaveBeenCalledWith(
+      expect.stringContaining('"baselineId"'),
+      expect.stringMatching(/\.json$/),
+      { mimeType: "application/json;charset=utf-8" }
+    );
+
+    fireEvent.click(textButton);
+    expect(downloadFile).toHaveBeenCalledWith(
+      expect.stringContaining("PROTOCOL AMENDMENT BASELINE COMPARISON REPORT"),
+      expect.stringMatching(/\.txt$/),
+      { mimeType: "text/plain;charset=utf-8" }
+    );
+  });
+
+  it("copies plain text summary report to clipboard on Copy Summary click", async () => {
+    const storage = new MockStorage();
+    const baselineStudy = buildTestStudy();
+    saveStudyBaseline(
+      baselineStudy,
+      { versionTag: "v1.0", label: "Lock", actor: { name: "Author" } },
+      storage
+    );
+
+    const amendedStudy: StudyProtocol = {
+      ...baselineStudy,
+      studyName: "Phase III Study (Amendment 1)",
+    };
+
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: writeTextMock,
+      },
+    });
+
+    render(
+      <BaselineCompareModal
+        isOpen={true}
+        onClose={vi.fn()}
+        study={amendedStudy}
+        onSelectBaseline={vi.fn()}
+        onNavigate={vi.fn()}
+        storage={storage}
+      />
+    );
+
+    const copyButton = screen.getByRole("button", { name: "Copy Summary" });
+    expect((copyButton as HTMLButtonElement).disabled).toBe(false);
+
+    fireEvent.click(copyButton);
+
+    await waitFor(() => {
+      expect(writeTextMock).toHaveBeenCalledWith(
+        expect.stringContaining("PROTOCOL AMENDMENT BASELINE COMPARISON REPORT")
+      );
+    });
   });
 });

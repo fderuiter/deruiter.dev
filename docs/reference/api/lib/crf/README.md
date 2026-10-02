@@ -884,6 +884,24 @@ Re-exports [explainRule](expression-evaluator/functions/explainRule.md)
 
 ***
 
+### exportBaselineDiffCsv
+
+Re-exports [exportBaselineDiffCsv](export-baseline-diff/functions/exportBaselineDiffCsv.md)
+
+***
+
+### exportBaselineDiffJson
+
+Re-exports [exportBaselineDiffJson](export-baseline-diff/functions/exportBaselineDiffJson.md)
+
+***
+
+### exportBaselineDiffText
+
+Re-exports [exportBaselineDiffText](export-baseline-diff/functions/exportBaselineDiffText.md)
+
+***
+
 ### exportBaselinesBundle
 
 Re-exports [exportBaselinesBundle](study-baselines/functions/exportBaselinesBundle.md)
@@ -1139,6 +1157,12 @@ Re-exports [generateCliCommandForForm](universal-schema/functions/generateCliCom
 ### generateEngineId
 
 Re-exports [generateEngineId](precision-date/functions/generateEngineId.md)
+
+***
+
+### generateExportFilename
+
+Re-exports [generateExportFilename](export-baseline-diff/functions/generateExportFilename.md)
 
 ***
 
@@ -1973,6 +1997,24 @@ Re-exports [searchSlashCommands](smart-blocks-engine/functions/searchSlashComman
 ### SectionImpactPreview
 
 Re-exports [SectionImpactPreview](study-engine/interfaces/SectionImpactPreview.md)
+
+***
+
+### serializeBaselineDiffToCsv
+
+Re-exports [serializeBaselineDiffToCsv](export-baseline-diff/functions/serializeBaselineDiffToCsv.md)
+
+***
+
+### serializeBaselineDiffToJson
+
+Re-exports [serializeBaselineDiffToJson](export-baseline-diff/functions/serializeBaselineDiffToJson.md)
+
+***
+
+### serializeBaselineDiffToText
+
+Re-exports [serializeBaselineDiffToText](export-baseline-diff/functions/serializeBaselineDiffToText.md)
 
 ***
 

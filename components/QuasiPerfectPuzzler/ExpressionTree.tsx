@@ -65,6 +65,7 @@ export const ExpressionTree: React.FC<ExpressionTreeProps> = ({
                   key={hyp.id}
                   data-node-id={hyp.id}
                   data-target-eligible={isTargetEligible ? "true" : undefined}
+                  aria-label={`${hypName}: ${hypFormula}`}
                   onClick={() => onSelectTarget(hyp.id)}
                   onMouseEnter={() => onHoverTarget(hyp.id)}
                   onMouseLeave={() => onHoverTarget(null)}

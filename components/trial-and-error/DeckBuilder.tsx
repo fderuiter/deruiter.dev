@@ -545,7 +545,12 @@ export function DeckBuilder({
         {/* Action Controls */}
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-zinc-800 pt-3">
           <div className="flex flex-wrap items-center gap-2">
-            <button type="button" onClick={handleExportJson} className={BUTTON}>
+            <button
+              type="button"
+              onClick={handleExportJson}
+              className={BUTTON}
+              title="Download this scenario as a JSON file"
+            >
               Export JSON
             </button>
             <button
@@ -562,7 +567,12 @@ export function DeckBuilder({
               className="hidden"
               onChange={handleImportJson}
             />
-            <button type="button" onClick={handleCopyLink} className={BUTTON}>
+            <button
+              type="button"
+              onClick={handleCopyLink}
+              className={BUTTON}
+              title="Copy a link that opens this scenario"
+            >
               Copy Challenge Link
             </button>
           </div>

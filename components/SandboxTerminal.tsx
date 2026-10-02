@@ -45,7 +45,7 @@ import {
 import { playMemeSound } from "@/lib/meme-audio";
 import { workspaceCommandRegistry } from "@/lib/workspace-command-registry";
 
-export interface ParsedCliFlags {
+interface ParsedCliFlags {
   commandName: string;
   flags: Record<string, string | boolean>;
 }

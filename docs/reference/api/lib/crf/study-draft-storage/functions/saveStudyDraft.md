@@ -20,7 +20,7 @@ can keep the in-memory draft and offer a native download instead.
 
 ### storage?
 
-`Storage`
+[`RawStorage`](../../../safe-storage/type-aliases/RawStorage.md)
 
 ## Returns
 

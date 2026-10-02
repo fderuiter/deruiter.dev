@@ -47,6 +47,27 @@ function readPackageJson(root: string): Record<string, unknown> {
 }
 
 /**
+ * Verifies the operating system is one this repository supports. Scripts,
+ * Husky hooks, the git guardrail and several tests assume a POSIX shell and
+ * POSIX tools (`bash`, `unzip`, `VAR=value` prefixes, `/` paths), and CI and
+ * Vercel both run Linux. Native Windows is therefore unsupported; WSL 2
+ * reports `linux` and passes (#939).
+ */
+export function checkSupportedPlatform(
+  platform: NodeJS.Platform = process.platform
+): PreflightCheckResult {
+  const supported = platform !== "win32";
+  return {
+    id: "platform",
+    label: "Supported platform",
+    status: supported ? "pass" : "fail",
+    message: supported
+      ? `${platform} is a supported POSIX platform.`
+      : "Native Windows is not supported: scripts, hooks and tests need a POSIX shell. Clone and run the repository inside WSL 2 (Ubuntu) instead. See CONTRIBUTING.md, Prerequisites.",
+  };
+}
+
+/**
  * Verifies the running Node.js version satisfies this repository's
  * declared `engines.node` requirement in `package.json`.
  */
@@ -306,6 +327,7 @@ export function checkInstallScriptAllowlist(
  */
 export function runPreflight(root: string): PreflightReport {
   const checks: PreflightCheckResult[] = [
+    checkSupportedPlatform(),
     checkNodeVersion(root),
     checkNpmVersion(root),
     checkPrismaClientGenerated(root),

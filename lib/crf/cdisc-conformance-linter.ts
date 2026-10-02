@@ -3,12 +3,11 @@
  * Validates CDASH 2.2 / SDTMIG v3.4 rules with 1-Click Auto-Fix remediation.
  */
 
+import { StudyProtocol, CRFField, ComplianceViolation } from "./types";
 import {
-  StudyProtocol,
-  CRFField,
-  ComplianceViolation,
-} from "./types";
-import { CDASH_STANDARD_VARIABLES, STANDARD_CODELISTS } from "./cdisc-cdash-library";
+  CDASH_STANDARD_VARIABLES,
+  STANDARD_CODELISTS,
+} from "./cdisc-cdash-library";
 
 /**
  * Generates a high-entropy cryptographic UUID string for CDISC compliance auto-fix remediation.
@@ -28,7 +27,9 @@ function generateCryptoUuid(): string {
         globalThis.crypto.getRandomValues(bytes);
         bytes[6] = (bytes[6] & 0x0f) | 0x40;
         bytes[8] = (bytes[8] & 0x3f) | 0x80;
-        const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+        const hex = Array.from(bytes, (b) =>
+          b.toString(16).padStart(2, "0")
+        ).join("");
         return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
       } catch {
         // Fall through
@@ -47,7 +48,10 @@ function generateCryptoUuid(): string {
     // Fall through
   }
 
-  const rHex = () => Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
+  const rHex = () =>
+    Math.floor((1 + Math.random()) * 0x10000)
+      .toString(16)
+      .substring(1);
   return `${rHex()}${rHex()}-${rHex()}-4${rHex().substring(1)}-8${rHex().substring(1)}-${rHex()}${rHex()}${rHex()}`;
 }
 
@@ -57,7 +61,9 @@ function generateCryptoUuid(): string {
  * @param study - The study protocol to validate
  * @returns Array of compliance violations found across forms, fields, and visits
  */
-export function validateStudyCompliance(study: StudyProtocol): ComplianceViolation[] {
+export function validateStudyCompliance(
+  study: StudyProtocol
+): ComplianceViolation[] {
   const violations: ComplianceViolation[] = [];
 
   // Index of all forms assigned across visits
@@ -72,7 +78,8 @@ export function validateStudyCompliance(study: StudyProtocol): ComplianceViolati
       violations.push({
         id: `viol_sd0005_${form.id}`,
         ruleId: "SD0005",
-        ruleDescription: "Form is not assigned to any visit in Schedule of Activities (SoA)",
+        ruleDescription:
+          "Form is not assigned to any visit in Schedule of Activities (SoA)",
         severity: "warning",
         formId: form.id,
         formName: form.name,
@@ -88,7 +95,9 @@ export function validateStudyCompliance(study: StudyProtocol): ComplianceViolati
     const domainUpper = form.domain.toUpperCase();
     const standardVarsForDomain = CDASH_STANDARD_VARIABLES[domainUpper] || [];
     const fieldsInForm = form.sections.flatMap((s) => s.fields);
-    const existingVariables = new Set(fieldsInForm.map((f) => f.variableName.toUpperCase()));
+    const existingVariables = new Set(
+      fieldsInForm.map((f) => f.variableName.toUpperCase())
+    );
 
     // Rule SD0001: Variable Name Length Check (<= 8 characters for CDISC/SDTM target)
     fieldsInForm.forEach((field) => {
@@ -97,7 +106,8 @@ export function validateStudyCompliance(study: StudyProtocol): ComplianceViolati
         violations.push({
           id: `viol_sd0001_${form.id}_${field.id}`,
           ruleId: "SD0001",
-          ruleDescription: "Variable name exceeds 8-character CDISC SDTM length limit",
+          ruleDescription:
+            "Variable name exceeds 8-character CDISC SDTM length limit",
           severity: "error",
           formId: form.id,
           formName: form.name,
@@ -122,7 +132,8 @@ export function validateStudyCompliance(study: StudyProtocol): ComplianceViolati
         violations.push({
           id: `viol_sd0003_${form.id}_${field.id}`,
           ruleId: "SD0003",
-          ruleDescription: "Codelist selection missing controlled terminology binding",
+          ruleDescription:
+            "Codelist selection missing controlled terminology binding",
           severity: "warning",
           formId: form.id,
           formName: form.name,
@@ -143,7 +154,9 @@ export function validateStudyCompliance(study: StudyProtocol): ComplianceViolati
           field.dataType === "precision_date") &&
         field.defaultValue &&
         typeof field.defaultValue === "string" &&
-        !/^\d{4}(-\d{2}(-\d{2}(T\d{2}:\d{2}(:\d{2})?)?)?)?$/.test(field.defaultValue) &&
+        !/^\d{4}(-\d{2}(-\d{2}(T\d{2}:\d{2}(:\d{2})?)?)?)?$/.test(
+          field.defaultValue
+        ) &&
         !/^\d{4}(-\d{2})?(-UNK)?$/.test(field.defaultValue) &&
         field.defaultValue !== "ND" &&
         field.defaultValue !== "NA" &&
@@ -152,7 +165,8 @@ export function validateStudyCompliance(study: StudyProtocol): ComplianceViolati
         violations.push({
           id: `viol_sd0004_${form.id}_${field.id}`,
           ruleId: "SD0004",
-          ruleDescription: "Default date value does not conform to ISO 8601 standard (YYYY-MM-DD)",
+          ruleDescription:
+            "Default date value does not conform to ISO 8601 standard (YYYY-MM-DD)",
           severity: "error",
           formId: form.id,
           formName: form.name,
@@ -215,7 +229,10 @@ export function autoFixViolation(
         const updatedSections = form.sections.map((section) => ({
           ...section,
           fields: section.fields.map((field) => {
-            if (field.id === violation.fieldId && field.variableName.length > 8) {
+            if (
+              field.id === violation.fieldId &&
+              field.variableName.length > 8
+            ) {
               return {
                 ...field,
                 variableName: field.variableName.slice(0, 8).toUpperCase(),
@@ -232,11 +249,15 @@ export function autoFixViolation(
           ...section,
           fields: section.fields.map((field) => {
             if (field.id === violation.fieldId) {
-              const nyCodelist = STANDARD_CODELISTS.find((c) => c.id === "CL_NY");
+              const nyCodelist = STANDARD_CODELISTS.find(
+                (c) => c.id === "CL_NY"
+              );
               return {
                 ...field,
                 codelistId: "CL_NY",
-                customOptions: nyCodelist ? nyCodelist.options : field.customOptions,
+                customOptions: nyCodelist
+                  ? nyCodelist.options
+                  : field.customOptions,
               };
             }
             return field;
@@ -265,7 +286,9 @@ export function autoFixViolation(
         if (!violation.variableName) return form;
         const domainUpper = form.domain.toUpperCase();
         const stdVar = CDASH_STANDARD_VARIABLES[domainUpper]?.find(
-          (v) => v.sdtmVariable.toUpperCase() === violation.variableName?.toUpperCase()
+          (v) =>
+            v.sdtmVariable.toUpperCase() ===
+            violation.variableName?.toUpperCase()
         );
 
         if (!stdVar) return form;
@@ -278,12 +301,14 @@ export function autoFixViolation(
             stdVar.dataCategory === "Timing"
               ? "date"
               : stdVar.nciConceptId
-              ? "single_select"
-              : "text",
+                ? "single_select"
+                : "text",
           columnSpan: 6,
           required: stdVar.core === "R",
           codelistId: stdVar.nciConceptId
-            ? STANDARD_CODELISTS.find((c) => c.nciCodelistCode === stdVar.nciConceptId)?.id
+            ? STANDARD_CODELISTS.find(
+                (c) => c.nciCodelistCode === stdVar.nciConceptId
+              )?.id
             : undefined,
           cdashMetadata: stdVar,
         };
@@ -294,11 +319,12 @@ export function autoFixViolation(
           fields: [],
         };
 
-        const updatedSections = form.sections.length > 0
-          ? form.sections.map((sec, idx) =>
-              idx === 0 ? { ...sec, fields: [...sec.fields, newField] } : sec
-            )
-          : [{ ...targetSection, fields: [newField] }];
+        const updatedSections =
+          form.sections.length > 0
+            ? form.sections.map((sec, idx) =>
+                idx === 0 ? { ...sec, fields: [...sec.fields, newField] } : sec
+              )
+            : [{ ...targetSection, fields: [newField] }];
 
         return { ...form, sections: updatedSections };
       }
@@ -309,7 +335,10 @@ export function autoFixViolation(
   });
 
   // Handle visit assignment auto-fix (SD0005)
-  if (violation.autoFixType === "assign_visit_form" && study.visits.length > 0) {
+  if (
+    violation.autoFixType === "assign_visit_form" &&
+    study.visits.length > 0
+  ) {
     const updatedVisits = study.visits.map((visit, idx) => {
       if (idx === 0 && !visit.assignedFormIds.includes(violation.formId)) {
         return {

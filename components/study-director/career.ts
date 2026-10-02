@@ -1,3 +1,8 @@
+import {
+  safeIsAvailable,
+  safeRawStorage,
+  type RawStorage,
+} from "@/lib/safe-storage";
 import type { FinalReport, StudyDirectorProfile } from "@/lib/study-director";
 import { recordArcadeScore } from "@/lib/arcade-achievements";
 
@@ -203,15 +208,8 @@ export function mergeCareers(a: CareerFile, b: CareerFile): CareerFile {
   };
 }
 
-function storage(): Storage | null {
-  if (
-    typeof window === "undefined" ||
-    typeof window.localStorage?.getItem !== "function" ||
-    typeof window.localStorage?.setItem !== "function"
-  ) {
-    return null;
-  }
-  return window.localStorage;
+function storage(): RawStorage | null {
+  return safeIsAvailable() ? safeRawStorage : null;
 }
 
 export function loadCareer(): CareerFile {

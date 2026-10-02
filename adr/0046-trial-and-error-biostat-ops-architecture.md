@@ -122,7 +122,7 @@ A test asserts that serialized state contains no blinded value.
 
 - Scenario data can be validated at runtime with the same schemas the
   compiler checks, and schema tests cover acceptance and rejection.
-- `vitest.config.ts` enforces a per-glob threshold of 95% statements,
+- `vitest.config.mts` enforces a per-glob threshold of 95% statements,
   branches, functions and lines for `lib/trial-and-error/**`, above the
   repository-wide gate. The type-only barrel `index.ts` is excluded. `types.ts`
   holds runtime schemas, so it stays measured.

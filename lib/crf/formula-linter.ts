@@ -103,14 +103,24 @@ export function tokenizeWithSpans(input: string): HighlightToken[] {
       continue;
     }
 
-    if (ch === "+" || ch === "-" || ch === "*" || ch === "/" || ch === "%" || ch === "^") {
+    if (
+      ch === "+" ||
+      ch === "-" ||
+      ch === "*" ||
+      ch === "/" ||
+      ch === "%" ||
+      ch === "^"
+    ) {
       rawTokens.push({ type: "OP", value: ch, start, end: start + 1 });
       i++;
       continue;
     }
 
     // Numbers (integers or decimals)
-    if (/[0-9]/.test(ch) || (ch === "." && i + 1 < input.length && /[0-9]/.test(input[i + 1]))) {
+    if (
+      /[0-9]/.test(ch) ||
+      (ch === "." && i + 1 < input.length && /[0-9]/.test(input[i + 1]))
+    ) {
       let numStr = "";
       while (i < input.length && (/[0-9]/.test(input[i]) || input[i] === ".")) {
         numStr += input[i];
@@ -201,7 +211,8 @@ export function lintFormula(
       diagnostics: [
         {
           severity: "info",
-          message: "Formula is empty. Enter an arithmetic expression or choose a clinical preset.",
+          message:
+            "Formula is empty. Enter an arithmetic expression or choose a clinical preset.",
           start: 0,
           end: 0,
           code: "EMPTY_FORMULA",
@@ -266,7 +277,8 @@ export function lintFormula(
         unmatchedBracketIndices.push(token.start);
         diagnostics.push({
           severity: "error",
-          message: "Unexpected closing parenthesis ')' with no matching opening '('",
+          message:
+            "Unexpected closing parenthesis ')' with no matching opening '('",
           start: token.start,
           end: token.end,
           code: "UNMATCHED_RPAREN",
@@ -275,11 +287,7 @@ export function lintFormula(
     }
 
     if (token.type === "OP") {
-      if (
-        nextToken &&
-        nextToken.type === "OP" &&
-        nextToken.value !== "-"
-      ) {
+      if (nextToken && nextToken.type === "OP" && nextToken.value !== "-") {
         diagnostics.push({
           severity: "error",
           message: `Consecutive operators "${token.value} ${nextToken.value}" are not permitted`,
@@ -289,7 +297,12 @@ export function lintFormula(
         });
       }
 
-      if (token.value === "/" && nextToken && nextToken.type === "NUMBER" && parseFloat(nextToken.value) === 0) {
+      if (
+        token.value === "/" &&
+        nextToken &&
+        nextToken.type === "NUMBER" &&
+        parseFloat(nextToken.value) === 0
+      ) {
         diagnostics.push({
           severity: "error",
           message: "Static division by zero (/ 0)",
@@ -307,7 +320,8 @@ export function lintFormula(
       if (
         currentFieldId &&
         (varKey === currentFieldId.toLowerCase() ||
-          (matchedField && matchedField.id.toLowerCase() === currentFieldId.toLowerCase()))
+          (matchedField &&
+            matchedField.id.toLowerCase() === currentFieldId.toLowerCase()))
       ) {
         diagnostics.push({
           severity: "error",
@@ -415,7 +429,14 @@ export function lintFormula(
               end: tokens[endIdx]?.end ?? token.end,
               code: "INVALID_ARITY",
             });
-          } else if ((fnName === "abs" || fnName === "floor" || fnName === "ceil" || fnName === "exp" || fnName === "log") && argCount !== 1) {
+          } else if (
+            (fnName === "abs" ||
+              fnName === "floor" ||
+              fnName === "ceil" ||
+              fnName === "exp" ||
+              fnName === "log") &&
+            argCount !== 1
+          ) {
             diagnostics.push({
               severity: "error",
               message: `Function "${fnName}(x)" expects exactly 1 argument, but received ${argCount}`,

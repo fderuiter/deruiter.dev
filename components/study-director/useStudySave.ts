@@ -1,16 +1,14 @@
+import {
+  safeIsAvailable,
+  safeRawStorage,
+  type RawStorage,
+} from "@/lib/safe-storage";
 import type { StudyState } from "@/lib/study-director";
 
 const SAVE_KEY = "study_director_save_v1";
 
-function storage(): Storage | null {
-  if (
-    typeof window === "undefined" ||
-    typeof window.localStorage?.getItem !== "function" ||
-    typeof window.localStorage?.setItem !== "function"
-  ) {
-    return null;
-  }
-  return window.localStorage;
+function storage(): RawStorage | null {
+  return safeIsAvailable() ? safeRawStorage : null;
 }
 
 function isStudyState(value: unknown): value is StudyState {

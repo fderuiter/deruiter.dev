@@ -163,10 +163,21 @@ describe("Guidance cards in the tray (T&E-UX-05)", () => {
     );
     const plate = screen.getByTestId("level-up");
     expect(plate.textContent).toContain("[15] × [1]");
+    // useAnimationFrame anchors its clock on the first frame (#1589), so the
+    // tick starts there and lands once 600 ms of frames have passed.
+    act(() => {
+      frames.splice(0).forEach((cb) => cb(16));
+    });
+    expect(plate.textContent).toContain("[15] × [1]");
     act(() => {
       frames.splice(0).forEach((cb) => cb(10_000));
     });
     expect(plate.textContent).toContain("[25] × [2]");
+    // The numbers have landed, so the loop stops asking for frames.
+    act(() => {
+      frames.splice(0).forEach((cb) => cb(10_016));
+    });
+    expect(frames).toHaveLength(0);
     raf.mockRestore();
     now.mockRestore();
   });

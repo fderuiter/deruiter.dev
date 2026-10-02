@@ -18,7 +18,7 @@ Imports a JSON bundle of baselines into local storage, skipping duplicates.
 
 ### storage?
 
-`Storage`
+[`RawStorage`](../../../safe-storage/type-aliases/RawStorage.md)
 
 ## Returns
 

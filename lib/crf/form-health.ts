@@ -31,18 +31,25 @@ export function computeFormHealthMetrics(form: CRFForm): FormHealthMetrics {
   const allFields = sections.flatMap((s) => s?.fields || []).filter(Boolean);
   const totalFields = allFields.length;
   const mandatoryFields = allFields.filter((f) => Boolean(f?.required)).length;
-  const codelistsAttached = allFields.filter(
-    (f) => Boolean(f?.codelistId || (f?.customOptions && f.customOptions.length > 0))
+  const codelistsAttached = allFields.filter((f) =>
+    Boolean(f?.codelistId || (f?.customOptions && f.customOptions.length > 0))
   ).length;
-  const sdvVerifiedCount = allFields.filter((f) => Boolean(f?.sdvVerified)).length;
-  const sdvReadinessPercentage = totalFields > 0 ? Math.round((sdvVerifiedCount / totalFields) * 100) : 0;
+  const sdvVerifiedCount = allFields.filter((f) =>
+    Boolean(f?.sdvVerified)
+  ).length;
+  const sdvReadinessPercentage =
+    totalFields > 0 ? Math.round((sdvVerifiedCount / totalFields) * 100) : 0;
 
   const domain = (form?.domain || "").toUpperCase();
   const coreVars = CDASH_CORE_DOMAIN_VARIABLES[domain] || [];
 
   const presentVarNames = new Set(
     allFields
-      .map((f) => (f && typeof f.variableName === "string" ? f.variableName.trim().toUpperCase() : ""))
+      .map((f) =>
+        f && typeof f.variableName === "string"
+          ? f.variableName.trim().toUpperCase()
+          : ""
+      )
       .filter((v) => v.length > 0)
   );
   const missingCoreVariables = coreVars.filter((v) => !presentVarNames.has(v));
@@ -50,7 +57,9 @@ export function computeFormHealthMetrics(form: CRFForm): FormHealthMetrics {
   let cdashConformancePercentage = 100;
   if (coreVars.length > 0) {
     const presentCoreCount = coreVars.length - missingCoreVariables.length;
-    cdashConformancePercentage = Math.round((presentCoreCount / coreVars.length) * 100);
+    cdashConformancePercentage = Math.round(
+      (presentCoreCount / coreVars.length) * 100
+    );
   }
 
   return {

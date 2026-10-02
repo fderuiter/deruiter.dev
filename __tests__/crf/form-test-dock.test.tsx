@@ -317,21 +317,18 @@ describe("[#541] Studio wiring", () => {
   });
 
   it("binds a shortcut that no other studio binding claims", () => {
-    expect(containerSource).toContain('e.key === "\\\\"');
-
-    const bindings = containerSource.match(
-      /e\.key(?:\.toLowerCase\(\))? === "([^"]+)"/g
-    );
-    const backslashBindings = (bindings || []).filter((b) =>
-      b.includes('"\\\\"')
-    );
-    expect(backslashBindings).toHaveLength(1);
+    // The studio's shortcuts dispatch on the lower-cased key through
+    // useHotkeys (#1589); exactly one case claims the backslash.
+    const backslashCases = containerSource.match(/case "\\\\":/g) || [];
+    expect(backslashCases).toHaveLength(1);
+    const cases = containerSource.match(/case "([^"]+)":/g) || [];
+    expect(new Set(cases).size).toBe(cases.length);
   });
 
   it("closes the dock on Escape alongside the other dismissables", () => {
     const escapeBlock = containerSource.slice(
-      containerSource.indexOf('if (e.key === "Escape")'),
-      containerSource.indexOf("if (isInput)")
+      containerSource.indexOf("ESCAPE_HOTKEYS,"),
+      containerSource.indexOf("useHotkeys(STUDIO_HOTKEYS")
     );
     expect(escapeBlock).toContain("setIsTestDockOpen(false)");
   });

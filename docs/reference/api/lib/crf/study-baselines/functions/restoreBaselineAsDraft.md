@@ -24,7 +24,7 @@ The restored study receives clear provenance metadata documenting its origin.
 
 ### storage?
 
-`Storage`
+[`RawStorage`](../../../safe-storage/type-aliases/RawStorage.md)
 
 ## Returns
 

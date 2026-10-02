@@ -1,4 +1,9 @@
 import type { StudyProtocol } from "./types";
+import {
+  safeIsAvailable,
+  safeRawStorage,
+  type RawStorage,
+} from "../safe-storage";
 
 /**
  * localStorage key holding the author's most recently acknowledged CRF Studio
@@ -56,13 +61,9 @@ function isStudyDraftEnvelopeShape(
   );
 }
 
-export function resolveStorage(storage?: Storage): Storage | undefined {
+export function resolveStorage(storage?: RawStorage): RawStorage | undefined {
   if (storage) return storage;
-  if (typeof window === "undefined") return undefined;
-  return typeof window.localStorage?.getItem === "function" &&
-    typeof window.localStorage?.setItem === "function"
-    ? window.localStorage
-    : undefined;
+  return safeIsAvailable() ? safeRawStorage : undefined;
 }
 
 /**
@@ -72,7 +73,7 @@ export function resolveStorage(storage?: Storage): Storage | undefined {
  */
 export function saveStudyDraft(
   study: StudyProtocol,
-  storage?: Storage
+  storage?: RawStorage
 ): SaveStudyDraftResult {
   const target = resolveStorage(storage);
   if (!target) return { status: "unavailable" };
@@ -100,7 +101,7 @@ export function saveStudyDraft(
  * version-mismatched entry is copied to {@link STUDY_DRAFT_CORRUPT_BACKUP_KEY}
  * for manual recovery rather than being silently overwritten or discarded.
  */
-export function loadStudyDraft(storage?: Storage): LoadStudyDraftResult {
+export function loadStudyDraft(storage?: RawStorage): LoadStudyDraftResult {
   const target = resolveStorage(storage);
   if (!target) return { status: "empty" };
 
@@ -138,7 +139,7 @@ export function loadStudyDraft(storage?: Storage): LoadStudyDraftResult {
   };
 }
 
-function preserveCorruptDraft(storage: Storage, raw: string): void {
+function preserveCorruptDraft(storage: RawStorage, raw: string): void {
   try {
     storage.setItem(STUDY_DRAFT_CORRUPT_BACKUP_KEY, raw);
   } catch {
@@ -181,7 +182,7 @@ function generateSnapshotId(): string {
 export function saveStudySnapshot(
   study: StudyProtocol,
   label?: string,
-  storage?: Storage
+  storage?: RawStorage
 ): SaveStudySnapshotResult {
   const target = resolveStorage(storage);
   if (!target) return { status: "unavailable" };
@@ -211,7 +212,7 @@ export function saveStudySnapshot(
 /**
  * Lists all persisted study snapshots in reverse chronological order.
  */
-export function listStudySnapshots(storage?: Storage): StudySnapshot[] {
+export function listStudySnapshots(storage?: RawStorage): StudySnapshot[] {
   const target = resolveStorage(storage);
   if (!target) return [];
 
@@ -263,7 +264,7 @@ export function normalizeStudyForComparison(study: StudyProtocol): string {
 export function isDraftDirty(
   current: StudyProtocol,
   baseline?: StudyProtocol | null,
-  storage?: Storage
+  storage?: RawStorage
 ): boolean {
   let targetBaseline = baseline;
   if (!targetBaseline) {

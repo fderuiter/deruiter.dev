@@ -23,7 +23,7 @@ Retains the 20 most recent snapshots to prevent storage exhaustion.
 
 ### storage?
 
-`Storage`
+[`RawStorage`](../../../safe-storage/type-aliases/RawStorage.md)
 
 ## Returns
 

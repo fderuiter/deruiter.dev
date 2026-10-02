@@ -15,7 +15,7 @@ const config = {
     ],
   },
   vitest: {
-    configFile: "vitest.stryker.config.ts",
+    configFile: "vitest.stryker.config.mts",
     related: false,
   },
   htmlReporter: {
@@ -48,13 +48,14 @@ const config = {
     "lib/crf/cross-visit-rules.ts",
     "lib/crf/form-health.ts",
   ],
-  // Ratchet (#960, #968): break was 45, then 53, then 65; raised to 75 after
-  // CI and local runs both measured 79.64% on 2026-09-30 (about 4.6 points of
-  // headroom for timeout-classified mutants). Never lower it; target is 80.
+  // Ratchet (#960, #968): break went 45, 53, 65, 75, and reached the 80
+  // target on 2026-10-02, when CI and a full local run both measured 82.24%
+  // (532 killed, 33 timed out, 110 survived, 12 without coverage). Never
+  // lower it.
   thresholds: {
     high: 85,
-    low: 75,
-    break: 75,
+    low: 80,
+    break: 80,
   },
   concurrency: Math.max(1, Math.min(4, os.cpus().length)),
   timeoutMS: 2000,

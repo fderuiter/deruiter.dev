@@ -14,7 +14,7 @@ Lists all persisted study snapshots in reverse chronological order.
 
 ### storage?
 
-`Storage`
+[`RawStorage`](../../../safe-storage/type-aliases/RawStorage.md)
 
 ## Returns
 

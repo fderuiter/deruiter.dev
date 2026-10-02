@@ -14,7 +14,7 @@ Lists all persisted study baselines in reverse chronological order.
 
 ### storage?
 
-`Storage`
+[`RawStorage`](../../../safe-storage/type-aliases/RawStorage.md)
 
 ## Returns
 

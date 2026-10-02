@@ -372,7 +372,7 @@ describe("CI Gate Ordering", () => {
 
   /**
    * #1775: the unit suite runs as three shards; one follow-up job merges
-   * their blobs and enforces the vitest.config.ts thresholds on the result.
+   * their blobs and enforces the vitest.config.mts thresholds on the result.
    */
   describe("sharded Vitest with merged coverage (#1775)", () => {
     const pkg = JSON.parse(
@@ -386,7 +386,7 @@ describe("CI Gate Ordering", () => {
         "run: npm run test:ci:shard -- --shard=${{ matrix.shard }}/3"
       );
       expect(pkg.scripts["test:ci:shard"]).toBe(
-        "VITE_CONFIG_NATIVE_IGNORE_WARNING=1 VITEST_COVERAGE_THRESHOLDS=deferred-to-merge vitest run --coverage --reporter=blob --reporter=github-actions --reporter=dot"
+        "VITEST_COVERAGE_THRESHOLDS=deferred-to-merge vitest run --coverage --reporter=blob --reporter=github-actions --reporter=dot"
       );
       expect(block).toMatch(/name: vitest-blob-\$\{\{ matrix\.shard \}\}/);
     });
@@ -414,11 +414,9 @@ describe("CI Gate Ordering", () => {
       expect(block).toContain("run: npm run test:ci:merge");
       expect(block).not.toContain("VITEST_COVERAGE_THRESHOLDS");
       expect(pkg.scripts["test:ci:merge"]).toBe(
-        "VITE_CONFIG_NATIVE_IGNORE_WARNING=1 vitest --merge-reports --coverage"
+        "vitest --merge-reports --coverage"
       );
-      expect(pkg.scripts["test:ci"]).toBe(
-        "VITE_CONFIG_NATIVE_IGNORE_WARNING=1 vitest run --coverage"
-      );
+      expect(pkg.scripts["test:ci"]).toBe("vitest run --coverage");
     });
 
     it("defers thresholds only when a shard asks, and keeps them otherwise", async () => {
@@ -428,7 +426,7 @@ describe("CI Gate Ordering", () => {
         else process.env.VITEST_COVERAGE_THRESHOLDS = value;
         try {
           vi.resetModules();
-          const mod = (await import("../vitest.config")) as {
+          const mod = (await import("../vitest.config.mjs")) as {
             default: {
               test: { coverage: { thresholds?: Record<string, unknown> } };
             };

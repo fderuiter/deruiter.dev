@@ -133,7 +133,7 @@ export function isBotBranch(headRef) {
 /** Files whose change invalidates Stryker's incremental report (#1772). */
 const STRYKER_INPUTS = [
   "stryker.config.mjs",
-  "vitest.stryker.config.ts",
+  "vitest.stryker.config.mts",
   "package.json",
   "package-lock.json",
 ];

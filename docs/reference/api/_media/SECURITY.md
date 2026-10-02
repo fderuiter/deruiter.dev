@@ -90,3 +90,20 @@ During local, CI, or scheduled daily execution, the audit tool validates all act
   - **High Overrides:** Warning triggered when **14 days** or fewer remain.
 - **Categorized Reporting:** CLI console logs and GitHub Step Summaries categorize vulnerabilities and overrides into distinct Critical and High severity reporting tables.
 - **Automated Issue Triage Escalation:** Daily scheduled audit failures in `.github/workflows/scheduled-security-audit.yml` automatically create or update dedicated GitHub issues labeled `security-triage`, deduplicated by advisory identifier.
+
+## npm Package Overrides
+
+The `overrides` block in `package.json` pins transitive dependencies that an upstream package would otherwise resolve to a vulnerable or incompatible version. Each pin was re-audited on 2026-10-02 (#1109) by removing it in a scratch copy, regenerating the lockfile with `npm install --package-lock-only`, and running `npm audit`. With every pin in place, `npm audit` reports only the three moderate advisories already tracked in `security-audit-ignore.json` (fast-uri, js-yaml, markdownlint-cli).
+
+| Override       | Pinned to | Pulled in by                        | Resolves to without the pin | Effect of removing it                             |
+| -------------- | --------- | ----------------------------------- | --------------------------- | ------------------------------------------------- |
+| `deepmerge-ts` | `^8.0.1`  | `prisma` through `@prisma/config`   | 7.1.5                       | 3 new high advisories                             |
+| `browserslist` | `^4.28.8` | `@serwist` build tooling            | 4.28.6                      | 2 new high advisories                             |
+| `mysql2`       | `^3.24.3` | `prisma`                            | 3.15.3                      | 1 new high and 1 new moderate advisory            |
+| `lodash-es`    | `^4.18.1` | `mermaid` through `chevrotain`      | 4.17.23                     | 5 new high advisories                             |
+| `qs`           | `6.16.0`  | Stryker through `typed-rest-client` | 6.15.1                      | 2 new moderate advisories                         |
+| `jsdom`        | `26.1.0`  | `isomorphic-dompurify`              | a second copy at 30.1.1     | no new advisories; kept for runtime compatibility |
+
+The `jsdom` pin is not a vulnerability fix. jsdom 27 and later depend on the ESM-only `@exodus/bytes`, which made serverless functions fail with `ERR_REQUIRE_ESM` (#995). `next.config.ts` keeps those packages out of the server bundle and `__tests__/deploy-config.test.ts` guards that, but lifting the pin also needs a deployed check of the routes that sanitize HTML, so it stays until that check is done.
+
+Review this table whenever a pinned package's parent is upgraded: remove the pin in a scratch copy, rerun the audit, and drop the override only when the unpinned tree adds no advisories. `__tests__/package-overrides-documented.test.ts` fails when an override is added without a row here.

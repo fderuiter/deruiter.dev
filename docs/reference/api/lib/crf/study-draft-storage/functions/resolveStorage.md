@@ -6,14 +6,14 @@
 
 # Function: resolveStorage()
 
-> **resolveStorage**(`storage?`): `Storage` \| `undefined`
+> **resolveStorage**(`storage?`): [`RawStorage`](../../../safe-storage/type-aliases/RawStorage.md) \| `undefined`
 
 ## Parameters
 
 ### storage?
 
-`Storage`
+[`RawStorage`](../../../safe-storage/type-aliases/RawStorage.md)
 
 ## Returns
 
-`Storage` \| `undefined`
+[`RawStorage`](../../../safe-storage/type-aliases/RawStorage.md) \| `undefined`

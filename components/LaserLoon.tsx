@@ -9,7 +9,11 @@ import React, {
 } from "react";
 import { useAudio } from "@/components/providers/AudioProvider";
 import { getSoundEngine } from "@/lib/audio/sound-engine";
-import { getMatchMediaMatches } from "@/hooks/useMediaQuery";
+import {
+  getMatchMediaMatches,
+  usePrefersReducedMotion,
+} from "@/hooks/useMediaQuery";
+import { useAnimationFrame } from "@/hooks/useAnimationFrame";
 import { useTelemetry } from "@/hooks/useTelemetry";
 import { clamp } from "@/lib/game-utils";
 import {
@@ -238,7 +242,6 @@ export const LaserLoon: React.FC = () => {
   const lastFireTimeRef = useRef(0);
   const lastComboTimeRef = useRef(0);
   const comboRef = useRef(0);
-  const animFrameIdRef = useRef<number | null>(null);
   const lastBossHpRef = useRef(0);
   const bossHitFlashUntilRef = useRef(0);
   const actKillsRef = useRef(0);
@@ -886,54 +889,42 @@ export const LaserLoon: React.FC = () => {
     isHalted,
   ]);
 
-  // Main Canvas Render & Physics Loop
+  // A lost 2D context stops the loop until the browser restores it.
+  const [isContextLost, setIsContextLost] = useState(false);
   useEffect(() => {
-    if (!isMounted || !canvasRef.current) return;
-
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    let isContextLost = false;
-    let lastFrameTime = performance.now();
-    const prefersReducedMotion = getMatchMediaMatches(
-      "(prefers-reduced-motion: reduce)"
-    );
-    const backdropTheme =
-      mode === "campaign"
-        ? (CAMPAIGN_ACTS.find((a) => a.actNumber === currentActNum)
-            ?.backgroundTheme ?? "lake")
-        : "lake";
-
+    if (!isMounted || !canvas) return;
     const handleContextLost = (e: Event) => {
       e.preventDefault();
-      isContextLost = true;
-      if (animFrameIdRef.current) {
-        cancelAnimationFrame(animFrameIdRef.current);
-      }
+      setIsContextLost(true);
     };
-
-    const handleContextRestored = () => {
-      isContextLost = false;
-      lastFrameTime = performance.now();
-      if (!isHalted) {
-        animFrameIdRef.current = requestAnimationFrame(renderLoop);
-      }
-    };
-
+    const handleContextRestored = () => setIsContextLost(false);
     canvas.addEventListener("contextlost", handleContextLost);
     canvas.addEventListener("contextrestored", handleContextRestored);
+    return () => {
+      canvas.removeEventListener("contextlost", handleContextLost);
+      canvas.removeEventListener("contextrestored", handleContextRestored);
+    };
+  }, [isMounted]);
 
-    const renderLoop = (time: number) => {
-      if (isContextLost || isHalted) return;
+  const prefersReducedMotion = usePrefersReducedMotion();
+  const backdropTheme =
+    mode === "campaign"
+      ? (CAMPAIGN_ACTS.find((a) => a.actNumber === currentActNum)
+          ?.backgroundTheme ?? "lake")
+      : "lake";
+
+  // Main Canvas Render & Physics Loop. Frame deltas are clamped to 32 ms, as
+  // the hand-rolled loop did, and normalised to 60 fps steps.
+  useAnimationFrame(
+    (deltaMs) => {
+      const ctx = canvasRef.current?.getContext("2d");
+      if (!ctx) return;
       // Hit stop holds the last frame for a beat after a boss falls.
-      if (fx.isHitStopped()) {
-        lastFrameTime = time;
-        animFrameIdRef.current = requestAnimationFrame(renderLoop);
-        return;
-      }
-      const dt = Math.min(32, time - lastFrameTime) / 16.666;
-      lastFrameTime = time;
+      if (fx.isHitStopped()) return;
+      // The backdrop parallax and boss hit flash run on wall-clock time.
+      const time = performance.now();
+      const dt = deltaMs / 16.666;
 
       const width = DEFAULT_CANVAS_WIDTH;
       const height = DEFAULT_CANVAS_HEIGHT;
@@ -1498,47 +1489,12 @@ export const LaserLoon: React.FC = () => {
       });
 
       ctx.restore();
-
-      if (!isHalted) {
-        animFrameIdRef.current = requestAnimationFrame(renderLoop);
-      }
-    };
-
-    if (!isHalted) {
-      animFrameIdRef.current = requestAnimationFrame(renderLoop);
+    },
+    {
+      isActive: isMounted && !isHalted && !isContextLost,
+      maxDeltaMs: 32,
     }
-
-    return () => {
-      canvas.removeEventListener("contextlost", handleContextLost);
-      canvas.removeEventListener("contextrestored", handleContextRestored);
-      if (animFrameIdRef.current) {
-        cancelAnimationFrame(animFrameIdRef.current);
-      }
-    };
-  }, [
-    fx,
-    isMounted,
-    canvasScaleRef,
-    gameState,
-    mode,
-    currentActNum,
-    laserType,
-    gravity,
-    screenShakeEnabled,
-    spawnTarget,
-    triggerBossEncounter,
-    spawnRandomPowerUp,
-    fireWeapon,
-    playIceShatterSound,
-    playPowerUpSound,
-    playLoonHitSound,
-    playLaserSound,
-    spawnExplosion,
-    addFloatingText,
-    addScore,
-    addUltimateMeter,
-    isHalted,
-  ]);
+  );
 
   // Pointer / Mouse / Touch Controls
   const updatePointerAim = (clientX: number, clientY: number) => {

@@ -143,6 +143,7 @@ const WorkflowWizardModal = dynamic(
   }
 );
 import { useStudioHashParams } from "@/hooks/useStudioHashParams";
+import { useHotkeys } from "@/hooks/useHotkeys";
 import { useAudio } from "@/components/providers/AudioProvider";
 import { useTouchDragAndDrop } from "@/hooks/useTouchDragAndDrop";
 import {
@@ -152,6 +153,98 @@ import {
   IconSparkles,
   IconX,
 } from "@tabler/icons-react";
+
+const STARTUP_MODES: readonly StudioMode[] = [
+  "designer",
+  "grid",
+  "matrix",
+  "rules",
+  "edc",
+  "acrf",
+  "export",
+];
+
+const LEFT_SIDEBAR_TABS: readonly LeftSidebarTab[] = [
+  "spine",
+  "forms",
+  "palette",
+];
+
+/** The studio state a deep link restores on first render (#1451). */
+interface StartupHashState {
+  mode: StudioMode | null;
+  form: string | null;
+  field: string | null;
+  theme: StudioTheme | null;
+  compare: string | null;
+  visit: string;
+  tab: LeftSidebarTab | null;
+}
+
+function readStartupHashState(
+  params: Record<string, string>
+): StartupHashState {
+  const mode = params.mode as StudioMode | undefined;
+  const theme = params.theme;
+  const tab = params.tab as LeftSidebarTab | undefined;
+  return {
+    mode: mode && STARTUP_MODES.includes(mode) ? mode : null,
+    form: params.form || null,
+    field: params.field || null,
+    theme: theme === "light" || theme === "dark" ? theme : null,
+    compare: params.compare || null,
+    visit: params.visit || "",
+    tab: tab && LEFT_SIDEBAR_TABS.includes(tab) ? tab : null,
+  };
+}
+
+// Every Ctrl/Meta/Alt combination, so a binding fires regardless of held
+// modifiers exactly as the raw listener did. Shift is matched leniently.
+const ANY_MODIFIER_PREFIXES: readonly string[] = [
+  "",
+  "Ctrl+",
+  "Meta+",
+  "Alt+",
+  "Ctrl+Meta+",
+  "Ctrl+Alt+",
+  "Meta+Alt+",
+  "Ctrl+Meta+Alt+",
+];
+
+// Ctrl or Meta (either, or both), with or without Alt.
+const CTRL_OR_META_PREFIXES: readonly string[] = [
+  "Ctrl+",
+  "Meta+",
+  "Ctrl+Meta+",
+  "Ctrl+Alt+",
+  "Meta+Alt+",
+  "Ctrl+Meta+Alt+",
+];
+
+const ESCAPE_HOTKEYS: readonly string[] = ANY_MODIFIER_PREFIXES.map(
+  (prefix) => `${prefix}Escape`
+);
+
+const MODE_BY_KEY: Readonly<Record<string, StudioMode>> = {
+  "1": "designer",
+  "2": "grid",
+  "3": "matrix",
+  "4": "rules",
+  "5": "edc",
+  "6": "acrf",
+  "7": "export",
+};
+
+const STUDIO_HOTKEYS: readonly string[] = [
+  "/",
+  ...["z", "b", "i", "j", "\\"].flatMap((key) =>
+    CTRL_OR_META_PREFIXES.map((prefix) => `${prefix}${key}`)
+  ),
+  ...["`", "F1"].flatMap((key) =>
+    ANY_MODIFIER_PREFIXES.map((prefix) => `${prefix}${key}`)
+  ),
+  ...Object.keys(MODE_BY_KEY),
+];
 
 export const CRFStudioContainer: React.FC = () => {
   // Polyfill touch drag-and-drop support across CRF Studio
@@ -238,72 +331,42 @@ export const CRFStudioContainer: React.FC = () => {
   );
 
   const { params, setParam, setParams } = useStudioHashParams();
+  // Deep-link state is read from the shared hash store rather than parsed
+  // from window.location.hash; the useState initializers below only consult
+  // it on first render.
+  const startupHash = useMemo(() => readStartupHashState(params), [params]);
   const { playSuccess } = useAudio();
   const toast = useToast();
 
   // Studio Navigation & Selection State
-  const [activeMode, setActiveModeState] = useState<StudioMode>(() => {
-    if (typeof window !== "undefined") {
-      const rawMode = new URLSearchParams(window.location.hash.slice(1)).get(
-        "mode"
-      ) as StudioMode;
-      if (
-        rawMode &&
-        [
-          "designer",
-          "grid",
-          "matrix",
-          "rules",
-          "edc",
-          "acrf",
-          "export",
-        ].includes(rawMode)
-      ) {
-        return rawMode;
-      }
-    }
-    return "designer";
-  });
+  const [activeMode, setActiveModeState] = useState<StudioMode>(
+    () => startupHash.mode ?? "designer"
+  );
 
   const [activeFormId, setActiveFormIdState] = useState<string>("");
 
+  const hashFormId = startupHash.form;
   useEffect(() => {
     if (study && !activeFormId) {
-      if (typeof window !== "undefined") {
-        const rawForm = new URLSearchParams(window.location.hash.slice(1)).get(
-          "form"
-        );
-        if (rawForm && study.forms.some((f) => f.id === rawForm)) {
-          // eslint-disable-next-line react-hooks/set-state-in-effect
-          setActiveFormIdState(rawForm);
-          return;
-        }
+      if (hashFormId && study.forms.some((f) => f.id === hashFormId)) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setActiveFormIdState(hashFormId);
+        return;
       }
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setActiveFormIdState(study.forms[0]?.id || "");
     }
-  }, [study, activeFormId]);
+  }, [study, activeFormId, hashFormId]);
 
   const [selectedFieldId, setSelectedFieldIdState] = useState<string | null>(
-    () => {
-      if (typeof window !== "undefined") {
-        return (
-          new URLSearchParams(window.location.hash.slice(1)).get("field") ||
-          null
-        );
-      }
-      return null;
-    }
+    () => startupHash.field
   );
 
   const [theme, setTheme] = useState<StudioTheme>(() => {
+    if (startupHash.theme) {
+      return startupHash.theme;
+    }
     if (typeof window !== "undefined") {
-      const rawTheme = new URLSearchParams(window.location.hash.slice(1)).get(
-        "theme"
-      ) as StudioTheme;
-      if (rawTheme === "light" || rawTheme === "dark") {
-        return rawTheme;
-      }
       const cached = safeGetRawItem("crf_studio_theme");
       if (cached === "light" || cached === "dark") {
         return cached;
@@ -359,30 +422,16 @@ export const CRFStudioContainer: React.FC = () => {
   // instead of silently dropping which baseline was being reviewed.
   const [compareBaselineId, setCompareBaselineIdState] = useState<
     string | null
-  >(() => {
-    if (typeof window !== "undefined") {
-      return (
-        new URLSearchParams(window.location.hash.slice(1)).get("compare") ||
-        null
-      );
-    }
-    return null;
-  });
+  >(() => startupHash.compare);
   const [slashTargetSectionId, setSlashTargetSectionId] = useState<
     string | undefined
   >();
   const [slashTargetIndex, setSlashTargetIndex] = useState<
     number | undefined
   >();
-  const [activeVisitId, setActiveVisitIdState] = useState<string>(() => {
-    if (typeof window !== "undefined") {
-      const rawVisit = new URLSearchParams(window.location.hash.slice(1)).get(
-        "visit"
-      );
-      if (rawVisit) return rawVisit;
-    }
-    return "";
-  });
+  const [activeVisitId, setActiveVisitIdState] = useState<string>(
+    () => startupHash.visit
+  );
 
   useEffect(() => {
     if (study && !activeVisitId && study.visits[0]) {
@@ -391,16 +440,9 @@ export const CRFStudioContainer: React.FC = () => {
     }
   }, [study, activeVisitId]);
 
-  const [leftTab, setLeftTabState] = useState<LeftSidebarTab>(() => {
-    if (typeof window !== "undefined") {
-      const rawTab = new URLSearchParams(window.location.hash.slice(1)).get(
-        "tab"
-      ) as LeftSidebarTab | null;
-      if (rawTab && ["spine", "forms", "palette"].includes(rawTab))
-        return rawTab;
-    }
-    return "spine";
-  });
+  const [leftTab, setLeftTabState] = useState<LeftSidebarTab>(
+    () => startupHash.tab ?? "spine"
+  );
 
   // Synchronize incoming hash state on mount or browser Back/Forward navigation
   useEffect(() => {
@@ -741,122 +783,86 @@ export const CRFStudioContainer: React.FC = () => {
     setIsSpotlightTourOpen(true);
   };
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement | null;
-      const isInput =
-        target?.tagName === "INPUT" ||
-        target?.tagName === "TEXTAREA" ||
-        target?.tagName === "SELECT" ||
-        target?.isContentEditable ||
-        !!target?.closest?.("[data-keyboard-boundary]");
-
-      // Escape key to close mobile drawers, slash palette, or clear selection. Runs regardless of
-      // focus so it can still dismiss a drawer while a field inside it is focused.
-      if (e.key === "Escape") {
-        setIsMobileWidgetDrawerOpen(false);
-        setIsSlashPaletteOpen(false);
-        setIsTestDockOpen(false);
-        if (selectedFieldId) {
-          setSelectedFieldId(null);
-        }
+  // Escape closes mobile drawers, the slash palette and the test dock, and
+  // clears the selection. It runs regardless of focus, inside inputs and the
+  // studio's own keyboard boundary, so it can still dismiss a drawer while a
+  // field inside it is focused.
+  useHotkeys(
+    ESCAPE_HOTKEYS,
+    () => {
+      setIsMobileWidgetDrawerOpen(false);
+      setIsSlashPaletteOpen(false);
+      setIsTestDockOpen(false);
+      if (selectedFieldId) {
+        setSelectedFieldId(null);
       }
+    },
+    { allowInInputs: true, allowInKeyboardBoundary: true }
+  );
 
-      // Studio-level shortcuts below must never fire while a text editor (or a
-      // dialog/select) owns focus: Ctrl/Cmd+Z is native undo, Ctrl/Cmd+B and
-      // Ctrl/Cmd+I are native bold/italic in rich-text fields, and none of the
-      // others should hijack keystrokes meant for whatever the author is typing.
-      if (isInput) {
-        return;
-      }
-
+  // Studio-level shortcuts must never fire while a text editor (or a
+  // dialog/select) owns focus: Ctrl/Cmd+Z is native undo, Ctrl/Cmd+B and
+  // Ctrl/Cmd+I are native bold/italic in rich-text fields, and none of the
+  // others should hijack keystrokes meant for whatever the author is typing.
+  // They also stay out of every [data-keyboard-boundary] region, the studio
+  // root included, as the raw listener they replace did, so they fire only
+  // while focus sits outside the studio.
+  useHotkeys(STUDIO_HOTKEYS, (e) => {
+    const key = e.key.toLowerCase();
+    switch (key) {
       // Slash Command Palette (/)
-      if (e.key === "/" && !e.metaKey && !e.ctrlKey && !e.altKey) {
+      case "/":
         e.preventDefault();
         setSlashTargetSectionId(undefined);
         setSlashTargetIndex(undefined);
         setIsSlashPaletteOpen(true);
         return;
-      }
-
-      // Undo / Redo
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z") {
+      // Undo / Redo (⌘Z / Ctrl+Z, with Shift to redo)
+      case "z":
+        e.preventDefault();
         if (e.shiftKey) {
-          e.preventDefault();
           handleRedo();
         } else {
-          e.preventDefault();
           handleUndo();
         }
         return;
-      }
-
       // ⌘K / Ctrl+K stays with the site-wide search palette so the shortcut
       // means the same thing on every page (#1208); the scaffolder has its
       // own "+ CDASH Form" button in the studio header.
-
       // Toggle Left Sidebar (⌘B / Ctrl+B)
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "b") {
+      case "b":
         e.preventDefault();
         setIsLeftSidebarOpen((prev) => !prev);
         return;
-      }
-
       // Toggle Right Inspector (⌘I / Ctrl+I)
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "i") {
+      case "i":
         e.preventDefault();
         setIsRightInspectorOpen((prev) => !prev);
         return;
-      }
-
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "j") {
+      case "j":
+      case "`":
         e.preventDefault();
         setIsTerminalOpen((prev) => !prev);
         return;
-      }
-
       // Form Test Dock (⌘\ / Ctrl+\). Chosen because it is unclaimed by the
       // browser and by the studio's existing bindings.
-      if ((e.metaKey || e.ctrlKey) && e.key === "\\") {
+      case "\\":
         e.preventDefault();
         setIsTestDockOpen((prev) => !prev);
         return;
-      }
-
-      if (e.key === "`") {
-        e.preventDefault();
-        setIsTerminalOpen((prev) => !prev);
-        return;
-      }
       // "?" belongs to the page's Studio Guide (FieldManualButton), which
       // listens site-wide; F1 alone opens the protocol wizard (#1208).
-      if (e.key === "F1") {
+      case "f1":
         e.preventDefault();
         setIsWizardOpen((prev) => !prev);
-      } else if (!e.metaKey && !e.ctrlKey && !e.altKey) {
+        return;
+      default: {
         // Same order and numbers as the mode bar's shortcut badges.
-        const modeByKey: Record<string, StudioMode> = {
-          "1": "designer",
-          "2": "grid",
-          "3": "matrix",
-          "4": "rules",
-          "5": "edc",
-          "6": "acrf",
-          "7": "export",
-        };
-        const mode = modeByKey[e.key];
+        const mode = MODE_BY_KEY[key];
         if (mode) setActiveMode(mode);
       }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [
-    handleUndo,
-    handleRedo,
-    selectedFieldId,
-    setActiveMode,
-    setSelectedFieldId,
-  ]);
+    }
+  });
 
   const handleSaveCodelist = useCallback(
     (newCodelist: CodelistDefinition) => {

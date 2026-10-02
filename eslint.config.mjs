@@ -67,20 +67,7 @@ const storageExemptFiles = [
   "components/patrol/MedicalDisclaimerBanner.tsx",
 ];
 
-// TEMPORARY (#1631): files owned by other work lanes that still call Web
-// Storage directly. Each lane migrates its file onto lib/safe-storage and
-// removes it from this list. Do not add new files here.
-const pendingStorageMigrationFiles = [
-  "components/study-director/career.ts",
-  "components/study-director/useStudySave.ts",
-  "lib/crf/personal-library.ts",
-  "lib/crf/study-draft-storage.ts",
-];
-
-const storageUnrestrictedFiles = [
-  ...storageExemptFiles,
-  ...pendingStorageMigrationFiles,
-];
+const storageUnrestrictedFiles = storageExemptFiles;
 
 // The files that implement what the global restrictions point callers to.
 // lib/arcade/utils.ts holds clamp() itself; lib/game-utils.ts re-exports it.

@@ -37,6 +37,7 @@ import type {
   IrQuestion,
   Site,
 } from "../types";
+import { clamp } from "../../game-utils";
 import { HandTypeSchema, POPULATION_LABELS } from "../types";
 import { amendRulebook, amendedRule } from "./amendments";
 import { compileDraft, compileShell } from "./compile";
@@ -3071,10 +3072,10 @@ function applyTableAction(
     case "MOVE_CARD": {
       const from = state.hand.indexOf(action.cardId);
       if (from === -1) return refuse(state, "That card is not in your hand.");
-      const to = Math.max(
+      const to = clamp(
+        Math.trunc(action.toIndex) || 0,
         0,
-        // eslint-disable-next-line no-restricted-syntax -- #1119: file has open-PR/branch changes in flight; swap to clamp() after they land
-        Math.min(state.hand.length - 1, Math.trunc(action.toIndex) || 0)
+        state.hand.length - 1
       );
       const card = cardById(scenario, state, action.cardId) as TlfCard;
       if (to === from) {

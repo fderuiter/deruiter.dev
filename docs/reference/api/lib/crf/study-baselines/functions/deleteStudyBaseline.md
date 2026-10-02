@@ -18,7 +18,7 @@ Removes a specific baseline from storage by ID.
 
 ### storage?
 
-`Storage`
+[`RawStorage`](../../../safe-storage/type-aliases/RawStorage.md)
 
 ## Returns
 

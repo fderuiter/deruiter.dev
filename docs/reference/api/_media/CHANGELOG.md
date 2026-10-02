@@ -84,6 +84,53 @@ Not yet in production; these ship with the next manual release.
 - Dependencies: TypeScript 6.0.3 and `eslint-config-next` aligned with Next
   16.3.6 (#1602, #1630); the `ServiceResult` migration is finished for
   maintenance services and media storage (#1584).
+- Study Director world simulation: ADR 0055 and the world kernel with clock,
+  energy, focus and the day loop (#1694).
+- Proof and terminal: inline canvas counterexample badges and a custom proof
+  serializer, a contextual node inspection panel, inline fallacy rollback
+  controls, and a terminal with persistent logs, hash sync, script export and
+  a one-click JSON copy button (#1737, #1740, #1746, #1747, #1750).
+- CRF Studio: an interactive AST step debugger with form test trace, a
+  multi-format import dropzone for USDM JSON, CDISC ODM XML and CSV specs, an
+  export error banner with retry, touch drag and drop, and an in-place visit
+  window conflict evaluator (#1708, #1733, #1736, #1749, #1751).
+- Arcade and games: an event-driven achievement and local leaderboard
+  registry, a Clinical Chaos stress control panel with a live BIMO compliance
+  stream, a Working with Duck illustrated home office and single HUD bar, and
+  fixes for Retro Labyrinth fairness and scoring, Clinical Chaos expired
+  CRFs, dialog focus and pause, Quasi-Puzzler resume and 0 GB rule, Garmin
+  Watch fog swipes and flash quota errors (#1654, #1656, #1660, #1664,
+  #1680, #1682, #1683, #1692, #1722, #1735, #1742).
+- Site: a schedule agenda customizer, persona tab filtering in the showcase
+  control bar, a persisted contact form draft, workspace command registry
+  and macros in the command palette, and time-sliced idle rehydration for
+  `RichNarrative` (#1696, #1697, #1710, #1732, #1738).
+- Navigation, layout and a11y: the compact navbar takes over when the desktop
+  links do not fit at larger text sizes while a one-row desktop navbar holds
+  at 1536px and wider, mobile routes pass through to the dynamic viewport
+  container, SVG viewports are fluid, tables gain `scope="col"` and captions,
+  and OG fonts are traced with a fallback when they cannot load (#1661,
+  #1666, #1681, #1698, #1699, #1718).
+- Neuro Simulator: a worker-based mesh and contour analytics pipeline
+  (#1723).
+- Security and CI: strict CSP with dynamic nonces and hash pinning, a
+  lockfile-native license audit, expanded audit severity gates with a
+  lifecycle script allowlist, tiered override expiry caps, automated GitHub
+  security triage issues, Actions pinned to full commit SHAs with Dependabot
+  configured, and an LLM discovery manifest drift check in doctor (#1701,
+  #1712, #1713, #1726, #1741, #1744, #1745).
+- Core refactors: a dead-letter queue and failure events for offline
+  requests, `apiClient` extended for `FormData`, Sentry decoupled from the
+  logger core, dx environment variables centralized in `lib/env.ts`,
+  centralized PRNG in `lib/utils/prng.ts`, admin queries consolidated into
+  `BlogPostService`, and unreferenced modules removed (#1700, #1703, #1704,
+  #1705, #1711, #1716, #1717, #1725, #1734).
+- Performance and dependencies: the `CaseStudyReaction` unique index is
+  reordered for prefix matching, and `dompurify` and the setup-node,
+  checkout and cache actions are bumped (#1709, #1715, #1727, #1728, #1729).
+- Tests and tooling: repository markdown link verification takes
+  configurable target paths, and the `/simulator` axe scan and canvas mock
+  stabilized (#1657, #1679, #1731).
 - Test stability: the seo-and-navigation settle wait ignores decorative SVG
   opacity, the mobile drawer test waits for the deferred hash scroll, and the
   drag-reorder e2e aims at the middle of its drop window (#1506, #1562,

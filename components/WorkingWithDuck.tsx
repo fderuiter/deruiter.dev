@@ -631,7 +631,7 @@ interface DuckSprintResultProps {
 }
 
 const RESULT_LINK =
-  "inline-flex min-h-[40px] items-center rounded-xl border border-white/[0.08] px-2.5 font-mono text-[11px] text-zinc-200 transition-colors hover:border-white/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300";
+  "inline-flex min-h-[48px] items-center rounded-xl border border-white/[0.08] px-3 font-mono text-[11px] text-zinc-200 transition-colors hover:border-white/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300";
 
 /**
  * The end of a sprint on the shared arcade result card: what shipped, how
@@ -739,7 +739,11 @@ function DuckSprintResult({
       )}
       <div className="mt-4 flex flex-wrap items-center gap-1.5">
         {level < 5 && (
-          <button type="button" onClick={onEndless} className={RESULT_LINK}>
+          <button
+            type="button"
+            onClick={onEndless}
+            className={`${RESULT_LINK} min-w-[48px]`}
+          >
             <span>Play Endless Mode</span>
           </button>
         )}

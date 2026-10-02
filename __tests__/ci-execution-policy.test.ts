@@ -218,7 +218,7 @@ describe("CI Execution Policy", () => {
     it("runs property fuzzing inside the unit suite rather than as a second step", () => {
       expect(ci).not.toContain("npm run test:fuzz");
       const config = fs.readFileSync(
-        path.join(process.cwd(), "vitest.config.ts"),
+        path.join(process.cwd(), "vitest.config.mts"),
         "utf8"
       );
       expect(config).toContain(

@@ -2,7 +2,7 @@
 import { describe, it, expect, beforeAll, vi } from "vitest";
 import path from "path";
 import fs from "fs";
-import type defaultConfig from "../vitest.config";
+import type defaultConfig from "../vitest.config.mjs";
 
 /**
  * CI's sharded unit runs (#1775) set VITEST_COVERAGE_THRESHOLDS so each shard
@@ -16,7 +16,7 @@ beforeAll(async () => {
   delete process.env.VITEST_COVERAGE_THRESHOLDS;
   try {
     vi.resetModules();
-    vitestConfig = (await import("../vitest.config")).default;
+    vitestConfig = (await import("../vitest.config.mjs")).default;
   } finally {
     if (deferred !== undefined) {
       process.env.VITEST_COVERAGE_THRESHOLDS = deferred;
@@ -79,9 +79,9 @@ describe("Coverage Policy Governance & Threshold Guardrails", () => {
     expect(trialAndError.branches).toBeGreaterThanOrEqual(95);
   });
 
-  it("prevents silent degradation or un-scoped global threshold overrides in vitest.config.ts", () => {
+  it("prevents silent degradation or un-scoped global threshold overrides in vitest.config.mts", () => {
     const configContent = fs.readFileSync(
-      path.join(workspaceRoot, "vitest.config.ts"),
+      path.join(workspaceRoot, "vitest.config.mts"),
       "utf8"
     );
 

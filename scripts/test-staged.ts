@@ -123,10 +123,7 @@ export function runStagedTests(cwd: string): void {
   // staged index above, then remove them from the test process: tests that
   // initialize a temporary repository must not modify this checkout's Git
   // configuration or index. Git supplies the authoritative variable list.
-  const testEnv: NodeJS.ProcessEnv = {
-    ...process.env,
-    VITE_CONFIG_NATIVE_IGNORE_WARNING: "1",
-  };
+  const testEnv: NodeJS.ProcessEnv = { ...process.env };
   const gitLocalVariables = execFileSync(
     "git",
     ["rev-parse", "--local-env-vars"],

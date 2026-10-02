@@ -210,7 +210,7 @@ jobs:
         run: npm run verify -- --skip-benchmark-evidence
 
   # #1768 / #1775: Vitest with coverage, split three ways. Each shard writes a
-  # blob; unit-coverage merges them and enforces vitest.config.ts thresholds
+  # blob; unit-coverage merges them and enforces vitest.config.mts thresholds
   # on the combined result. Property fuzzing (`__tests__/property-fuzz.test.ts`)
   # runs inside this suite.
   unit-gate:
@@ -282,7 +282,7 @@ jobs:
           retention-days: 1
 
   # #1775: one coverage verdict for the whole suite. Merging the shards'
-  # blobs reapplies the thresholds from vitest.config.ts to the combined
+  # blobs reapplies the thresholds from vitest.config.mts to the combined
   # coverage, exactly as the unsharded `npm run test:ci` did.
   unit-coverage:
     name: Unit Gate (Merged Coverage Thresholds)

@@ -2105,7 +2105,7 @@ describe("Working With Duck - a paused sprint ignores player actions (#1645)", (
     expect(enterDogPark(state)).toBe(state);
   });
 
-it("does not bank the Back Door potty bonus while paused", () => {
+  it("does not bank the Back Door potty bonus while paused", () => {
     const base = paused();
     const held: WorkingWithDuckState = {
       ...base,

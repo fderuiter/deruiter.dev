@@ -31,6 +31,12 @@ interface ResultCardProps {
   previousBest?: number;
   primary: ResultAction;
   secondary?: ResultAction;
+  /** Extra content under the numbers, such as an unlocked reward. */
+  children?: ReactNode;
+  /** A stable id for the title, when tests or the game refer to it. */
+  headingId?: string;
+  /** Escape is left to the cabinet unless the game handles it here. */
+  onEscape?: () => void;
 }
 
 const ROLL_UP_MS = 700;
@@ -110,7 +116,7 @@ function bestLine(score: number, previousBest: number): ReactNode {
  * round's numbers, a best-score line and Replay / Next actions.
  *
  * It is a modal dialog that traps focus and starts on the primary action.
- * Escape is left to the cabinet. The roll-up and the stamp's entrance are
+ * Escape is left to the cabinet unless `onEscape` is given. The roll-up and the stamp's entrance are
  * skipped under reduced motion.
  */
 export function ResultCard({
@@ -123,8 +129,12 @@ export function ResultCard({
   previousBest,
   primary,
   secondary,
+  children,
+  headingId,
+  onEscape,
 }: ResultCardProps) {
-  const titleId = useId();
+  const generatedId = useId();
+  const titleId = headingId ?? generatedId;
   const best =
     score !== undefined && previousBest !== undefined
       ? bestLine(score, previousBest)
@@ -132,6 +142,7 @@ export function ResultCard({
   const primaryRef = useRef<HTMLButtonElement>(null);
   const trapRef = useFocusTrap<HTMLDivElement>(true, {
     initialFocusRef: primaryRef,
+    onEscape,
   });
 
   return (
@@ -184,6 +195,8 @@ export function ResultCard({
         </dl>
 
         {best && <p className="mt-3 font-mono text-[11px]">{best}</p>}
+
+        {children}
 
         <div className="mt-6 flex flex-wrap items-center justify-end gap-2 font-mono text-xs font-bold uppercase tracking-wider">
           {secondary && (

@@ -55,6 +55,24 @@ throwing uncaught exceptions.
 
 ***
 
+### findCommandByCli()
+
+> **findCommandByCli**(`cliNameOrId`): [`WorkspaceActionPayload`](../../event-bus/interfaces/WorkspaceActionPayload.md) \| `undefined`
+
+Finds a registered command by its CLI name or ID.
+
+#### Parameters
+
+##### cliNameOrId
+
+`string`
+
+#### Returns
+
+[`WorkspaceActionPayload`](../../event-bus/interfaces/WorkspaceActionPayload.md) \| `undefined`
+
+***
+
 ### getAction()
 
 > **getAction**(`id`): [`WorkspaceActionPayload`](../../event-bus/interfaces/WorkspaceActionPayload.md) \| `undefined`
@@ -91,6 +109,24 @@ Returns a stable cached array reference for useSyncExternalStore.
 > **registerAction**(`action`): `void`
 
 Registers a contextual workspace action.
+
+#### Parameters
+
+##### action
+
+[`WorkspaceActionPayload`](../../event-bus/interfaces/WorkspaceActionPayload.md)
+
+#### Returns
+
+`void`
+
+***
+
+### registerCommand()
+
+> **registerCommand**(`action`): `void`
+
+Registers a dynamic CLI command definition into the workspace registry.
 
 #### Parameters
 

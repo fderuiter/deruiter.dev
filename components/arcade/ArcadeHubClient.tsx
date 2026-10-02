@@ -3,7 +3,7 @@
 import React, { useSyncExternalStore } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import {
   IconCrosshair,
   IconBrain,
@@ -282,6 +282,7 @@ const ARCADE_GAMES: ArcadeGameCard[] = [
 ];
 
 function GameCard({ game, index }: { game: ArcadeGameCard; index: number }) {
+  const shouldReduceMotion = useReducedMotion();
   const getSnapshot = React.useCallback(
     () => getScore(game.storageKey)(),
     [game.storageKey]
@@ -306,9 +307,15 @@ function GameCard({ game, index }: { game: ArcadeGameCard; index: number }) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={
+        shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }
+      }
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.08, duration: 0.4 }}
+      transition={
+        shouldReduceMotion
+          ? { duration: 0 }
+          : { delay: index * 0.08, duration: 0.4 }
+      }
       className={`group relative flex flex-col justify-between rounded-3xl border border-zinc-800/80 bg-zinc-900/40 p-6 md:p-8 backdrop-blur-xl transition-all duration-300 ${game.borderHover} hover:shadow-[0_0_30px_rgba(0,0,0,0.8)]`}
     >
       {/* Ambient background glow on card */}
@@ -428,6 +435,7 @@ function GameCard({ game, index }: { game: ArcadeGameCard; index: number }) {
 }
 
 export const ArcadeHubClient: React.FC = () => {
+  const shouldReduceMotion = useReducedMotion();
   return (
     <div className="min-h-screen text-white pb-24 px-4 sm:px-6 lg:px-8">
       {/* Top Ambient Glows */}
@@ -497,9 +505,13 @@ export const ArcadeHubClient: React.FC = () => {
 
         {/* Easter Egg Meme Vault Discovery Card */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={
+            shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }
+          }
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5, duration: 0.4 }}
+          transition={
+            shouldReduceMotion ? { duration: 0 } : { delay: 0.5, duration: 0.4 }
+          }
           className="relative rounded-3xl border border-emerald-500/30 bg-gradient-to-r from-emerald-950/40 via-slate-900/60 to-slate-950/80 p-6 sm:p-8 backdrop-blur-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 overflow-hidden shadow-[0_0_30px_rgba(16,185,129,0.1)] hover:border-emerald-500/50 transition-all"
         >
           <div className="flex min-w-0 items-center gap-4">

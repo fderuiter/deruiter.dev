@@ -2,7 +2,7 @@
 
 import React, { useState, useSyncExternalStore, useId } from "react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   IconTrophy,
   IconSparkles,
@@ -88,6 +88,7 @@ function getTrophyIcon(iconName: string) {
 }
 
 export const ArcadeTrophyCabinet: React.FC = () => {
+  const shouldReduceMotion = useReducedMotion();
   const progress = useSyncExternalStore(
     subscribeArcadeStorage,
     getSnapshot,
@@ -311,10 +312,16 @@ export const ArcadeTrophyCabinet: React.FC = () => {
               <motion.div
                 key={trophy.id}
                 layout
-                initial={{ opacity: 0, scale: 0.95 }}
+                initial={
+                  shouldReduceMotion
+                    ? { opacity: 1, scale: 1 }
+                    : { opacity: 0, scale: 0.95 }
+                }
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.2 }}
+                transition={
+                  shouldReduceMotion ? { duration: 0 } : { duration: 0.2 }
+                }
                 className={`relative flex flex-col justify-between rounded-2xl border p-5 transition-all ${
                   isUnlocked
                     ? "border-amber-500/40 bg-gradient-to-br from-amber-950/20 via-zinc-900/60 to-zinc-950 shadow-[0_0_20px_rgba(245,158,11,0.1)]"

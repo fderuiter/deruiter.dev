@@ -94,7 +94,7 @@ export class WorkspaceCommandRegistry {
 
     try {
       // Execute asynchronously on main thread without blocking
-      await Promise.resolve().then(() => action.handler!());
+      await Promise.resolve().then(() => action.handler!(args));
 
       // If step execution succeeded, notify macro recording channel
       emitAppEvent("macro:record_step", {
@@ -126,6 +126,34 @@ export class WorkspaceCommandRegistry {
    */
   public getAction(id: string): WorkspaceAction | undefined {
     return this.actions.get(id);
+  }
+
+  /**
+   * Registers a dynamic CLI command definition into the workspace registry.
+   */
+  public registerCommand(action: WorkspaceAction): void {
+    this.registerAction(action);
+  }
+
+  /**
+   * Finds a registered command by its CLI name or ID.
+   */
+  public findCommandByCli(cliNameOrId: string): WorkspaceAction | undefined {
+    if (!cliNameOrId) return undefined;
+    const trimmed = cliNameOrId.trim();
+    const directMatch = this.actions.get(trimmed);
+    if (directMatch) return directMatch;
+
+    for (const action of this.actions.values()) {
+      if (
+        action.cliName &&
+        (action.cliName.toLowerCase() === trimmed.toLowerCase() ||
+          trimmed.toLowerCase().startsWith(action.cliName.toLowerCase()))
+      ) {
+        return action;
+      }
+    }
+    return undefined;
   }
 
   /**

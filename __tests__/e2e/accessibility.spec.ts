@@ -657,7 +657,7 @@ test.describe("Continuous Accessibility (a11y) & WCAG 2.1 AA Audit Suite", () =>
   test("Audit: Arcade Hub & Game Suite", async ({ page }, testInfo) => {
     await page.goto("/arcade");
     await page.waitForLoadState("networkidle");
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(800);
 
     await auditAndAssert(page, testInfo, "Arcade Hub Default State");
   });

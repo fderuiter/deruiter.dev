@@ -43,6 +43,58 @@ import {
   setVaultUnlocked,
 } from "@/lib/meme-data";
 import { playMemeSound } from "@/lib/meme-audio";
+import { workspaceCommandRegistry } from "@/lib/workspace-command-registry";
+
+export interface ParsedCliFlags {
+  commandName: string;
+  flags: Record<string, string | boolean>;
+}
+
+export function parseCliFlags(cmdText: string): ParsedCliFlags {
+  const parts = cmdText.trim().split(/\s+/);
+  const commandTokens: string[] = [];
+  const flags: Record<string, string | boolean> = {};
+
+  for (let i = 0; i < parts.length; i++) {
+    const part = parts[i];
+    if (part.startsWith("--")) {
+      const eqIdx = part.indexOf("=");
+      if (eqIdx !== -1) {
+        const flagName = part.substring(2, eqIdx);
+        let val = part.substring(eqIdx + 1);
+        if (
+          (val.startsWith('"') && val.endsWith('"')) ||
+          (val.startsWith("'") && val.endsWith("'"))
+        ) {
+          val = val.slice(1, -1);
+        }
+        flags[flagName] = val;
+      } else {
+        const flagName = part.substring(2);
+        if (i + 1 < parts.length && !parts[i + 1].startsWith("-")) {
+          let val = parts[i + 1];
+          if (
+            (val.startsWith('"') && val.endsWith('"')) ||
+            (val.startsWith("'") && val.endsWith("'"))
+          ) {
+            val = val.slice(1, -1);
+          }
+          flags[flagName] = val;
+          i++;
+        } else {
+          flags[flagName] = true;
+        }
+      }
+    } else {
+      commandTokens.push(part);
+    }
+  }
+
+  return {
+    commandName: commandTokens.join(" "),
+    flags,
+  };
+}
 
 interface LogItem {
   id: string;
@@ -524,15 +576,111 @@ export const SandboxTerminal: React.FC<SandboxTerminalProps> = ({
           return;
         }
 
-        const match = activeRegistry[trimmed];
-        if (match) {
+        // Emit step event for macro recording
+        emitAppEvent("macro:record_step", {
+          actionId: `terminal:cmd:${trimmed}`,
+          timestamp: Date.now(),
+          args: { command: trimmed },
+        });
+
+        const exactMatch = activeRegistry[trimmed];
+        const parsed = parseCliFlags(trimmed);
+        const registeredAction =
+          workspaceCommandRegistry.findCommandByCli(trimmed) ||
+          workspaceCommandRegistry.findCommandByCli(parsed.commandName);
+
+        let jsonPayload: unknown = null;
+        let matchedCommand = false;
+
+        if (exactMatch) {
+          jsonPayload = exactMatch.payload;
+          matchedCommand = true;
+        } else if (parsed.commandName === "imednet studies list") {
+          jsonPayload = COMMAND_REGISTRY["imednet studies list"].payload;
+          matchedCommand = true;
+        } else if (
+          parsed.commandName === "imednet subjects get" ||
+          parsed.commandName.startsWith("imednet subjects get")
+        ) {
+          const subId = parsed.flags.id ? String(parsed.flags.id) : "123";
+          const basePayload = COMMAND_REGISTRY["imednet subjects get --id 123"]
+            .payload as Record<string, unknown>;
+          jsonPayload = {
+            ...basePayload,
+            subjectID: subId.startsWith("SUB-") ? subId : `SUB-${subId}`,
+          };
+          matchedCommand = true;
+        } else if (
+          parsed.commandName === "imednet records search" ||
+          parsed.commandName.startsWith("imednet records search")
+        ) {
+          const studyId = parsed.flags.study
+            ? String(parsed.flags.study)
+            : "BRIGHT-01";
+          const basePayload = COMMAND_REGISTRY[
+            "imednet records search --study BRIGHT-01"
+          ].payload as Record<string, unknown>;
+          jsonPayload = {
+            ...basePayload,
+            studyID: studyId,
+          };
+          matchedCommand = true;
+        } else if (registeredAction) {
+          // Validate flag parameter bindings
+          if (registeredAction.flags) {
+            const missingFlags: string[] = [];
+            for (const [flagKey, flagDef] of Object.entries(
+              registeredAction.flags
+            )) {
+              if (
+                flagDef.required &&
+                (parsed.flags[flagKey] === undefined ||
+                  parsed.flags[flagKey] === "")
+              ) {
+                missingFlags.push(`--${flagKey}`);
+              }
+            }
+            if (missingFlags.length > 0) {
+              setLogs((prev) => [
+                ...prev,
+                {
+                  id: outputId,
+                  type: "error",
+                  text: `✖ Parameter validation error: Missing required flag(s) ${missingFlags.join(", ")} for '${registeredAction.cliName || registeredAction.title}'.`,
+                },
+              ]);
+              announce(
+                `Parameter validation failed for command '${trimmed}'.`,
+                "polite"
+              );
+              return;
+            }
+          }
+
+          if (typeof registeredAction.cliHandler === "function") {
+            jsonPayload = registeredAction.cliHandler(parsed.flags);
+          } else if (registeredAction.payload) {
+            jsonPayload = registeredAction.payload;
+          } else {
+            jsonPayload = {
+              actionId: registeredAction.id,
+              cliName: registeredAction.cliName || registeredAction.title,
+              args: parsed.flags,
+              status: "EXECUTED",
+              timestamp: new Date().toISOString(),
+            };
+          }
+          matchedCommand = true;
+        }
+
+        if (matchedCommand) {
           setLogs((prev) => [
             ...prev,
             {
               id: outputId,
               type: "output",
               text: "",
-              jsonPayload: match.payload,
+              jsonPayload,
             },
           ]);
           playSuccess();
@@ -688,6 +836,35 @@ export const SandboxTerminal: React.FC<SandboxTerminalProps> = ({
     },
     [executeCommand, playKeystroke, setSafeTimeout]
   );
+
+  // Register terminal actions into workspaceCommandRegistry on mount
+  useEffect(() => {
+    const registeredIds: string[] = [];
+    Object.entries(activeRegistry).forEach(([cmdKey, info]) => {
+      const actionId = `terminal:cmd:${cmdKey}`;
+      registeredIds.push(actionId);
+      workspaceCommandRegistry.registerAction({
+        id: actionId,
+        title: cmdKey,
+        description: info.description,
+        cliName: cmdKey,
+        subToolId: "sandbox-terminal",
+        subToolName: "Sandbox Terminal",
+        badge: "CLI",
+        payload: info.payload,
+        handler: (args) => {
+          const targetCmd = (args?.command as string) || cmdKey;
+          typeAndExecute(targetCmd);
+        },
+      });
+    });
+
+    return () => {
+      registeredIds.forEach((id) =>
+        workspaceCommandRegistry.unregisterAction(id)
+      );
+    };
+  }, [activeRegistry, typeAndExecute]);
 
   // Automated step playback runner loop
   const startPlaybackLoop = React.useCallback(

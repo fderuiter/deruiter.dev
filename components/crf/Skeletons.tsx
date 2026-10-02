@@ -253,7 +253,7 @@ export const CRFStudioSkeleton: React.FC = () => {
             <div className="h-12 bg-zinc-800/60 rounded-xl" />
             <div className="h-12 bg-zinc-800/60 rounded-xl" />
           </div>
-          <div className="flex items-center justify-between text-xs font-mono text-zinc-500">
+          <div className="flex items-center justify-between text-xs font-mono text-zinc-400">
             <span>LOADING CRF STUDIO WORKSPACE...</span>
             <span>INITIALIZING PRESETS</span>
           </div>

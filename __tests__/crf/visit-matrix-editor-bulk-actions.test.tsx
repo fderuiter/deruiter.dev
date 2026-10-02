@@ -140,6 +140,45 @@ describe("VisitMatrixEditor Bulk Actions and Tri-State Logic", () => {
     expect(rowBtnVitals).not.toBeNull();
   });
 
+  it("exposes each toggle as a tri-state checkbox with a descriptive name", async () => {
+    const onUpdateVisits = vi.fn();
+
+    await act(async () => {
+      root?.render(
+        <VisitMatrixEditor study={mockStudy} onUpdateVisits={onUpdateVisits} />
+      );
+    });
+
+    const byTestId = (id: string) =>
+      container?.querySelector(`[data-testid="${id}"]`);
+
+    // v1 has 1 of 3 forms, v2 has none, Demographics is at 1 of 2 visits.
+    expect(byTestId("bulk-column-toggle-v1")?.getAttribute("role")).toBe(
+      "checkbox"
+    );
+    expect(
+      byTestId("bulk-column-toggle-v1")?.getAttribute("aria-checked")
+    ).toBe("mixed");
+    expect(
+      byTestId("bulk-column-toggle-v2")?.getAttribute("aria-checked")
+    ).toBe("false");
+    expect(
+      byTestId("bulk-row-toggle-form_demog")?.getAttribute("aria-checked")
+    ).toBe("mixed");
+    expect(
+      byTestId("bulk-row-toggle-form_lab")?.getAttribute("aria-checked")
+    ).toBe("false");
+    expect(byTestId("bulk-global-toggle")?.getAttribute("aria-checked")).toBe(
+      "mixed"
+    );
+    expect(byTestId("bulk-column-toggle-v1")?.getAttribute("aria-label")).toBe(
+      "All forms at Visit 1"
+    );
+    expect(
+      byTestId("bulk-row-toggle-form_demog")?.getAttribute("aria-label")
+    ).toBe("Demographics at every visit");
+  });
+
   it("toggles column bulk action: fills column when partial/empty, clears column when full", async () => {
     const onUpdateVisits = vi.fn();
 

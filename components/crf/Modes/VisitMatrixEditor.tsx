@@ -26,6 +26,8 @@ import {
   IconInfoCircle,
 } from "@tabler/icons-react";
 
+type FillState = "full" | "partial" | "none";
+
 interface VisitMatrixEditorProps {
   study: StudyProtocol;
   onUpdateVisits: (visits: StudyVisit[]) => void;
@@ -111,53 +113,41 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
     onUpdateVisits(updated);
   };
 
-  const getColumnFillState = (
-    visit: StudyVisit
-  ): "full" | "none" | "partial" => {
-    if (study.forms.length === 0) return "none";
+  const fillStateOf = (assigned: number, total: number): FillState =>
+    total === 0 || assigned === 0
+      ? "none"
+      : assigned === total
+        ? "full"
+        : "partial";
+
+  // Each cell is read once per render; the toggles below look these up.
+  const columnFillStates: Record<string, FillState> = {};
+  const rowAssignedCounts: Record<string, number> = {};
+  for (const visit of study.visits) {
     let assignedCount = 0;
     for (const form of study.forms) {
       if (getFormAssignment(visit, form.id)) {
         assignedCount++;
+        rowAssignedCounts[form.id] = (rowAssignedCounts[form.id] ?? 0) + 1;
       }
     }
-    if (assignedCount === study.forms.length) return "full";
-    if (assignedCount === 0) return "none";
-    return "partial";
-  };
-
-  const getRowFillState = (formId: string): "full" | "none" | "partial" => {
-    if (study.visits.length === 0) return "none";
-    let assignedCount = 0;
-    for (const visit of study.visits) {
-      if (getFormAssignment(visit, formId)) {
-        assignedCount++;
-      }
-    }
-    if (assignedCount === study.visits.length) return "full";
-    if (assignedCount === 0) return "none";
-    return "partial";
-  };
-
-  const getGlobalFillState = (): "full" | "none" | "partial" => {
-    if (study.forms.length === 0 || study.visits.length === 0) return "none";
-    let fullColumns = 0;
-    let emptyColumns = 0;
-    for (const visit of study.visits) {
-      const state = getColumnFillState(visit);
-      if (state === "full") fullColumns++;
-      else if (state === "none") emptyColumns++;
-    }
-    if (fullColumns === study.visits.length) return "full";
-    if (emptyColumns === study.visits.length) return "none";
-    return "partial";
-  };
+    columnFillStates[visit.id] = fillStateOf(assignedCount, study.forms.length);
+  }
+  const rowFillStates: Record<string, FillState> = {};
+  for (const form of study.forms) {
+    rowFillStates[form.id] = fillStateOf(
+      rowAssignedCounts[form.id] ?? 0,
+      study.visits.length
+    );
+  }
+  const globalFillState = fillStateOf(
+    Object.values(rowAssignedCounts).reduce((sum, n) => sum + n, 0),
+    study.forms.length * study.visits.length
+  );
 
   const handleBulkToggleColumn = (visitId: string) => {
-    const visit = study.visits.find((v) => v.id === visitId);
-    if (!visit) return;
-
-    const fillState = getColumnFillState(visit);
+    const fillState = columnFillStates[visitId];
+    if (!fillState) return;
     const targetFormIds =
       fillState === "full" ? [] : study.forms.map((f) => f.id);
 
@@ -184,7 +174,7 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
   };
 
   const handleBulkToggleRow = (formId: string) => {
-    const fillState = getRowFillState(formId);
+    const fillState = rowFillStates[formId];
     const shouldRemove = fillState === "full";
 
     const updated = study.visits.map((v) => {
@@ -220,9 +210,8 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
   };
 
   const handleBulkToggleGlobal = () => {
-    const fillState = getGlobalFillState();
     const targetFormIds =
-      fillState === "full" ? [] : study.forms.map((f) => f.id);
+      globalFillState === "full" ? [] : study.forms.map((f) => f.id);
 
     const updated = study.visits.map((v) => {
       if (selectedArmId !== "all") {
@@ -879,37 +868,12 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span>Forms ({study.forms.length})</span>
-                    <button
-                      onClick={handleBulkToggleGlobal}
-                      data-testid="bulk-global-toggle"
-                      aria-label={`Master matrix toggle: ${
-                        getGlobalFillState() === "full"
-                          ? "Clear all forms"
-                          : "Assign all forms"
-                      }`}
-                      title={
-                        getGlobalFillState() === "full"
-                          ? "Unassign all forms across all visits"
-                          : "Assign all forms across all visits"
-                      }
-                      className={`p-1 rounded-lg border transition-all flex items-center justify-center ${
-                        getGlobalFillState() === "full"
-                          ? "bg-brand-cyan border-brand-cyan text-black font-bold shadow-sm"
-                          : getGlobalFillState() === "partial"
-                            ? "bg-brand-cyan/20 border-brand-cyan/60 text-brand-cyan"
-                            : "bg-zinc-900 border-zinc-750 text-zinc-500 hover:text-zinc-300 hover:border-zinc-600"
-                      }`}
-                    >
-                      {getGlobalFillState() === "full" && (
-                        <IconCheck className="w-3.5 h-3.5 stroke-[3]" />
-                      )}
-                      {getGlobalFillState() === "partial" && (
-                        <IconMinus className="w-3.5 h-3.5 stroke-[3]" />
-                      )}
-                      {getGlobalFillState() === "none" && (
-                        <div className="w-3.5 h-3.5" />
-                      )}
-                    </button>
+                    <BulkToggle
+                      state={globalFillState}
+                      onToggle={handleBulkToggleGlobal}
+                      label="All forms at all visits"
+                      testId="bulk-global-toggle"
+                    />
                   </div>
                 </th>
                 {study.visits.map((visit) => {
@@ -967,37 +931,12 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
                         )}
 
                         <div className="flex items-center justify-center gap-1.5 pt-1">
-                          <button
-                            onClick={() => handleBulkToggleColumn(visit.id)}
-                            data-testid={`bulk-column-toggle-${visit.id}`}
-                            aria-label={`Bulk toggle visit ${visit.name}: ${
-                              getColumnFillState(visit) === "full"
-                                ? "Clear all forms for this visit"
-                                : "Assign all forms for this visit"
-                            }`}
-                            title={
-                              getColumnFillState(visit) === "full"
-                                ? "Unassign all forms for this visit"
-                                : "Assign all forms for this visit"
-                            }
-                            className={`p-1 rounded-lg border transition-all flex items-center justify-center ${
-                              getColumnFillState(visit) === "full"
-                                ? "bg-brand-cyan border-brand-cyan text-black font-bold shadow-sm"
-                                : getColumnFillState(visit) === "partial"
-                                  ? "bg-brand-cyan/20 border-brand-cyan/60 text-brand-cyan"
-                                  : "bg-zinc-900 border-zinc-750 text-zinc-500 hover:text-zinc-300 hover:border-zinc-600"
-                            }`}
-                          >
-                            {getColumnFillState(visit) === "full" && (
-                              <IconCheck className="w-3.5 h-3.5 stroke-[3]" />
-                            )}
-                            {getColumnFillState(visit) === "partial" && (
-                              <IconMinus className="w-3.5 h-3.5 stroke-[3]" />
-                            )}
-                            {getColumnFillState(visit) === "none" && (
-                              <div className="w-3.5 h-3.5" />
-                            )}
-                          </button>
+                          <BulkToggle
+                            state={columnFillStates[visit.id] ?? "none"}
+                            onToggle={() => handleBulkToggleColumn(visit.id)}
+                            label={`All forms at ${visit.name}`}
+                            testId={`bulk-column-toggle-${visit.id}`}
+                          />
                           <button
                             onClick={() =>
                               setEditingVisitId(
@@ -1051,37 +990,12 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
                         )}
                       </div>
 
-                      <button
-                        onClick={() => handleBulkToggleRow(form.id)}
-                        data-testid={`bulk-row-toggle-${form.id}`}
-                        aria-label={`Bulk toggle form ${form.name}: ${
-                          getRowFillState(form.id) === "full"
-                            ? "Clear form across all visits"
-                            : "Assign form across all visits"
-                        }`}
-                        title={
-                          getRowFillState(form.id) === "full"
-                            ? "Unassign this form across all visits"
-                            : "Assign this form across all visits"
-                        }
-                        className={`p-1 rounded-lg border transition-all flex items-center justify-center shrink-0 ${
-                          getRowFillState(form.id) === "full"
-                            ? "bg-brand-cyan border-brand-cyan text-black font-bold shadow-sm"
-                            : getRowFillState(form.id) === "partial"
-                              ? "bg-brand-cyan/20 border-brand-cyan/60 text-brand-cyan"
-                              : "bg-zinc-900 border-zinc-750 text-zinc-500 hover:text-zinc-300 hover:border-zinc-600"
-                        }`}
-                      >
-                        {getRowFillState(form.id) === "full" && (
-                          <IconCheck className="w-3.5 h-3.5 stroke-[3]" />
-                        )}
-                        {getRowFillState(form.id) === "partial" && (
-                          <IconMinus className="w-3.5 h-3.5 stroke-[3]" />
-                        )}
-                        {getRowFillState(form.id) === "none" && (
-                          <div className="w-3.5 h-3.5" />
-                        )}
-                      </button>
+                      <BulkToggle
+                        state={rowFillStates[form.id] ?? "none"}
+                        onToggle={() => handleBulkToggleRow(form.id)}
+                        label={`${form.name} at every visit`}
+                        testId={`bulk-row-toggle-${form.id}`}
+                      />
                     </div>
                   </th>
 
@@ -1218,3 +1132,48 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
     </div>
   );
 };
+
+/**
+ * Tri-state checkbox that assigns or clears a whole row, column or the
+ * matrix. "partial" is announced as aria-checked="mixed".
+ */
+function BulkToggle({
+  state,
+  onToggle,
+  label,
+  testId,
+}: {
+  state: FillState;
+  onToggle: () => void;
+  label: string;
+  testId: string;
+}) {
+  const ariaChecked =
+    state === "full" ? true : state === "partial" ? "mixed" : false;
+  return (
+    <button
+      type="button"
+      role="checkbox"
+      aria-checked={ariaChecked}
+      aria-label={label}
+      title={state === "full" ? `Clear ${label}` : `Assign ${label}`}
+      onClick={onToggle}
+      data-testid={testId}
+      className={`p-1 rounded-md border transition-colors flex items-center justify-center shrink-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-cyan ${
+        state === "full"
+          ? "bg-brand-cyan border-brand-cyan text-black"
+          : state === "partial"
+            ? "bg-brand-cyan/20 border-brand-cyan/60 text-brand-cyan"
+            : "bg-zinc-900 border-zinc-600 text-zinc-500 hover:text-zinc-300 hover:border-zinc-400"
+      }`}
+    >
+      {state === "full" ? (
+        <IconCheck className="w-3.5 h-3.5 stroke-[3]" aria-hidden="true" />
+      ) : state === "partial" ? (
+        <IconMinus className="w-3.5 h-3.5 stroke-[3]" aria-hidden="true" />
+      ) : (
+        <IconPlus className="w-3.5 h-3.5" aria-hidden="true" />
+      )}
+    </button>
+  );
+}

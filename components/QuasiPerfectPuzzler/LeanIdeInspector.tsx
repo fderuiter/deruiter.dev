@@ -244,7 +244,7 @@ export const LeanIdeInspector: React.FC<LeanIdeInspectorProps> = ({
               )}
 
               {effectiveVerifyResult.executionTimeMs !== undefined && (
-                <span className="text-[10px] text-zinc-500">
+                <span className="text-[10px] text-zinc-400">
                   ({effectiveVerifyResult.executionTimeMs}ms)
                 </span>
               )}
@@ -353,7 +353,7 @@ export const LeanIdeInspector: React.FC<LeanIdeInspectorProps> = ({
                 return (
                   <div key={idx} className="space-y-1">
                     <div className={`flex items-start gap-2 ${colorClass}`}>
-                      <span className="text-[10px] text-zinc-600 select-none w-5 text-right font-mono">
+                      <span className="text-[10px] text-zinc-400 select-none w-5 text-right font-mono">
                         {lineNum}
                       </span>
                       <span>{line}</span>

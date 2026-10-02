@@ -15,6 +15,7 @@ import {
   IconPlus,
   IconTrash,
   IconCheck,
+  IconMinus,
   IconTable,
   IconCards,
   IconEdit,
@@ -24,6 +25,8 @@ import {
   IconX,
   IconInfoCircle,
 } from "@tabler/icons-react";
+
+type FillState = "full" | "partial" | "none";
 
 interface VisitMatrixEditorProps {
   study: StudyProtocol;
@@ -107,6 +110,126 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
         return { ...v, assignedFormIds: assigned };
       }
     });
+    onUpdateVisits(updated);
+  };
+
+  const fillStateOf = (assigned: number, total: number): FillState =>
+    total === 0 || assigned === 0
+      ? "none"
+      : assigned === total
+        ? "full"
+        : "partial";
+
+  // Each cell is read once per render; the toggles below look these up.
+  const columnFillStates: Record<string, FillState> = {};
+  const rowAssignedCounts: Record<string, number> = {};
+  for (const visit of study.visits) {
+    let assignedCount = 0;
+    for (const form of study.forms) {
+      if (getFormAssignment(visit, form.id)) {
+        assignedCount++;
+        rowAssignedCounts[form.id] = (rowAssignedCounts[form.id] ?? 0) + 1;
+      }
+    }
+    columnFillStates[visit.id] = fillStateOf(assignedCount, study.forms.length);
+  }
+  const rowFillStates: Record<string, FillState> = {};
+  for (const form of study.forms) {
+    rowFillStates[form.id] = fillStateOf(
+      rowAssignedCounts[form.id] ?? 0,
+      study.visits.length
+    );
+  }
+  const globalFillState = fillStateOf(
+    Object.values(rowAssignedCounts).reduce((sum, n) => sum + n, 0),
+    study.forms.length * study.visits.length
+  );
+
+  const handleBulkToggleColumn = (visitId: string) => {
+    const fillState = columnFillStates[visitId];
+    if (!fillState) return;
+    const targetFormIds =
+      fillState === "full" ? [] : study.forms.map((f) => f.id);
+
+    const updated = study.visits.map((v) => {
+      if (v.id !== visitId) return v;
+
+      if (selectedArmId !== "all") {
+        const armAssignments = { ...(v.armFormAssignments || {}) };
+        armAssignments[selectedArmId] = targetFormIds;
+        return {
+          ...v,
+          armFormAssignments: armAssignments,
+          armIds: Array.from(new Set([...(v.armIds || []), selectedArmId])),
+        };
+      } else {
+        return {
+          ...v,
+          assignedFormIds: targetFormIds,
+        };
+      }
+    });
+
+    onUpdateVisits(updated);
+  };
+
+  const handleBulkToggleRow = (formId: string) => {
+    const fillState = rowFillStates[formId];
+    const shouldRemove = fillState === "full";
+
+    const updated = study.visits.map((v) => {
+      if (selectedArmId !== "all") {
+        const currentArmForms = v.armFormAssignments?.[selectedArmId] ?? [
+          ...v.assignedFormIds,
+        ];
+        const nextArmForms = shouldRemove
+          ? currentArmForms.filter((id) => id !== formId)
+          : Array.from(new Set([...currentArmForms, formId]));
+
+        const armAssignments = { ...(v.armFormAssignments || {}) };
+        armAssignments[selectedArmId] = nextArmForms;
+
+        return {
+          ...v,
+          armFormAssignments: armAssignments,
+          armIds: Array.from(new Set([...(v.armIds || []), selectedArmId])),
+        };
+      } else {
+        const nextAssigned = shouldRemove
+          ? v.assignedFormIds.filter((id) => id !== formId)
+          : Array.from(new Set([...v.assignedFormIds, formId]));
+
+        return {
+          ...v,
+          assignedFormIds: nextAssigned,
+        };
+      }
+    });
+
+    onUpdateVisits(updated);
+  };
+
+  const handleBulkToggleGlobal = () => {
+    const targetFormIds =
+      globalFillState === "full" ? [] : study.forms.map((f) => f.id);
+
+    const updated = study.visits.map((v) => {
+      if (selectedArmId !== "all") {
+        const armAssignments = { ...(v.armFormAssignments || {}) };
+        armAssignments[selectedArmId] = targetFormIds;
+        return {
+          ...v,
+          armFormAssignments: armAssignments,
+          armIds: Array.from(new Set([...(v.armIds || []), selectedArmId])),
+        };
+      } else {
+        return {
+          ...v,
+          assignedFormIds: targetFormIds,
+        };
+      }
+    });
+
     onUpdateVisits(updated);
   };
 
@@ -743,7 +866,15 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
                   role="columnheader"
                   className="p-3.5 sm:p-4 text-xs font-mono font-bold text-zinc-400 w-60 sm:w-64 uppercase tracking-wider sticky left-0 bg-zinc-950 z-30 border-r border-zinc-850"
                 >
-                  Forms ({study.forms.length})
+                  <div className="flex items-center justify-between gap-2">
+                    <span>Forms ({study.forms.length})</span>
+                    <BulkToggle
+                      state={globalFillState}
+                      onToggle={handleBulkToggleGlobal}
+                      label="All forms at all visits"
+                      testId="bulk-global-toggle"
+                    />
+                  </div>
                 </th>
                 {study.visits.map((visit) => {
                   const visitConflicts =
@@ -800,6 +931,12 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
                         )}
 
                         <div className="flex items-center justify-center gap-1.5 pt-1">
+                          <BulkToggle
+                            state={columnFillStates[visit.id] ?? "none"}
+                            onToggle={() => handleBulkToggleColumn(visit.id)}
+                            label={`All forms at ${visit.name}`}
+                            testId={`bulk-column-toggle-${visit.id}`}
+                          />
                           <button
                             onClick={() =>
                               setEditingVisitId(
@@ -838,18 +975,27 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
                     role="rowheader"
                     className="p-3 sm:p-3.5 pl-3 sm:pl-4 sticky left-0 bg-zinc-950/95 z-10 border-r border-zinc-850 font-normal text-left"
                   >
-                    <div className="flex items-center gap-2">
-                      <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-zinc-900 border border-zinc-800 text-brand-cyan">
-                        {form.domain}
-                      </span>
-                      <span className="font-sans font-semibold text-zinc-200 text-xs truncate max-w-[160px] sm:max-w-none">
-                        {form.name}
-                      </span>
-                      {form.isLogForm && (
-                        <span className="text-[9px] font-mono text-purple-400 bg-purple-500/10 px-1 rounded border border-purple-500/20">
-                          LOG
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-zinc-900 border border-zinc-800 text-brand-cyan shrink-0">
+                          {form.domain}
                         </span>
-                      )}
+                        <span className="font-sans font-semibold text-zinc-200 text-xs truncate max-w-[140px] sm:max-w-none">
+                          {form.name}
+                        </span>
+                        {form.isLogForm && (
+                          <span className="text-[9px] font-mono text-purple-400 bg-purple-500/10 px-1 rounded border border-purple-500/20 shrink-0">
+                            LOG
+                          </span>
+                        )}
+                      </div>
+
+                      <BulkToggle
+                        state={rowFillStates[form.id] ?? "none"}
+                        onToggle={() => handleBulkToggleRow(form.id)}
+                        label={`${form.name} at every visit`}
+                        testId={`bulk-row-toggle-${form.id}`}
+                      />
                     </div>
                   </th>
 
@@ -986,3 +1132,48 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
     </div>
   );
 };
+
+/**
+ * Tri-state checkbox that assigns or clears a whole row, column or the
+ * matrix. "partial" is announced as aria-checked="mixed".
+ */
+function BulkToggle({
+  state,
+  onToggle,
+  label,
+  testId,
+}: {
+  state: FillState;
+  onToggle: () => void;
+  label: string;
+  testId: string;
+}) {
+  const ariaChecked =
+    state === "full" ? true : state === "partial" ? "mixed" : false;
+  return (
+    <button
+      type="button"
+      role="checkbox"
+      aria-checked={ariaChecked}
+      aria-label={label}
+      title={state === "full" ? `Clear ${label}` : `Assign ${label}`}
+      onClick={onToggle}
+      data-testid={testId}
+      className={`p-1 rounded-md border transition-colors flex items-center justify-center shrink-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-cyan ${
+        state === "full"
+          ? "bg-brand-cyan border-brand-cyan text-black"
+          : state === "partial"
+            ? "bg-brand-cyan/20 border-brand-cyan/60 text-brand-cyan"
+            : "bg-zinc-900 border-zinc-600 text-zinc-500 hover:text-zinc-300 hover:border-zinc-400"
+      }`}
+    >
+      {state === "full" ? (
+        <IconCheck className="w-3.5 h-3.5 stroke-[3]" aria-hidden="true" />
+      ) : state === "partial" ? (
+        <IconMinus className="w-3.5 h-3.5 stroke-[3]" aria-hidden="true" />
+      ) : (
+        <IconPlus className="w-3.5 h-3.5" aria-hidden="true" />
+      )}
+    </button>
+  );
+}

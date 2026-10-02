@@ -1703,6 +1703,44 @@
           }
         }
       }
+    },
+    "/api/quasi-perfect/lean-verify": {
+      "post": {
+        "summary": "Verify Lean 4 theorem script or simulate local proof state",
+        "description": "Accepts theorem AST and proof steps to execute against Lean 4 server or local fallback simulator.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuasiPerfectLeanVerify"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Verification results with structured diagnostics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuasiPerfectLeanVerifyResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -3208,6 +3246,129 @@
         },
         "required": [
           "received"
+        ],
+        "additionalProperties": false
+      },
+      "QuasiPerfectLeanVerify": {
+        "type": "object",
+        "properties": {
+          "theoremName": {
+            "default": "custom_theorem",
+            "type": "string",
+            "maxLength": 100
+          },
+          "typeSignature": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "leanScript": {
+            "type": "string",
+            "maxLength": 10000
+          },
+          "proofSteps": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "tacticId": {
+                  "type": "string"
+                },
+                "leanLine": {
+                  "type": "string"
+                },
+                "goalBefore": {
+                  "type": "string"
+                },
+                "goalAfter": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "tacticId",
+                "leanLine"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "theoremName",
+          "leanScript"
+        ],
+        "additionalProperties": false
+      },
+      "QuasiPerfectLeanVerifyResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "verified",
+              "error",
+              "in_progress",
+              "fallback_simulated"
+            ]
+          },
+          "diagnostics": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "column": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "severity": {
+                  "type": "string",
+                  "enum": [
+                    "error",
+                    "warning",
+                    "info"
+                  ]
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "line",
+                "severity",
+                "message"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "goalState": {
+            "type": "string"
+          },
+          "executionTimeMs": {
+            "type": "number"
+          },
+          "engine": {
+            "type": "string",
+            "enum": [
+              "lean4_kernel",
+              "fallback_simulator"
+            ]
+          }
+        },
+        "required": [
+          "success",
+          "status",
+          "diagnostics",
+          "executionTimeMs",
+          "engine"
         ],
         "additionalProperties": false
       }

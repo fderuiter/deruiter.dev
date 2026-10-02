@@ -2590,6 +2590,9 @@ export function checkDirectoryTopology(root: string): DiagnosticCheckResult {
     "scratch",
     "test-results",
     "playwright-report",
+    // Gitignored CI outputs: Stryker's incremental report and Playwright shard blobs (#1767).
+    "reports",
+    "blob-report",
     ".agents",
     ".husky",
     ".vscode",

@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from "vitest";
 import { FALLBACK_CASE_STUDIES } from "@/lib/case-studies-data";
 import { scanText } from "@/lib/security-scan";

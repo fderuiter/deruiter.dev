@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from "vitest";
 import { GET } from "@/app/schemas/crf/v1/universal-crf.schema.json/route";
 import {

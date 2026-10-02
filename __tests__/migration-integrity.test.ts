@@ -1,3 +1,4 @@
+// @vitest-environment node
 /* eslint-disable @typescript-eslint/no-require-imports */
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";

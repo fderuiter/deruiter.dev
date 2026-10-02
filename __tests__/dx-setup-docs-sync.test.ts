@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import path from "path";
 import fs from "fs";
@@ -37,7 +38,9 @@ describe("Interactive DX Setup Command & Documentation Sync", () => {
       // Empty directory
       const check1 = validateLockfiles(tempDir);
       expect(check1.valid).toBe(false);
-      expect(check1.errors).toContain("Missing primary package-lock.json file.");
+      expect(check1.errors).toContain(
+        "Missing primary package-lock.json file."
+      );
 
       // Add valid package-lock.json
       fs.writeFileSync(path.join(tempDir, "package-lock.json"), "{}");
@@ -55,8 +58,14 @@ describe("Interactive DX Setup Command & Documentation Sync", () => {
   describe("runSetupWorkflow", () => {
     it("creates .env.local from .env.example if missing", async () => {
       fs.writeFileSync(path.join(tempDir, "package-lock.json"), "{}");
-      fs.writeFileSync(path.join(tempDir, "package.json"), JSON.stringify({ name: "test-app", engines: { node: "22.x" } }));
-      fs.writeFileSync(path.join(tempDir, ".env.example"), 'DATABASE_URL="postgresql://localhost:5432/db"');
+      fs.writeFileSync(
+        path.join(tempDir, "package.json"),
+        JSON.stringify({ name: "test-app", engines: { node: "22.x" } })
+      );
+      fs.writeFileSync(
+        path.join(tempDir, ".env.example"),
+        'DATABASE_URL="postgresql://localhost:5432/db"'
+      );
 
       const result = await runSetupWorkflow({
         workspaceRoot: tempDir,
@@ -66,15 +75,29 @@ describe("Interactive DX Setup Command & Documentation Sync", () => {
 
       expect(result.envCreatedOrValidated).toBe(true);
       expect(fs.existsSync(path.join(tempDir, ".env.local"))).toBe(true);
-      const content = fs.readFileSync(path.join(tempDir, ".env.local"), "utf-8");
-      expect(content).toContain('DATABASE_URL="postgresql://localhost:5432/db"');
+      const content = fs.readFileSync(
+        path.join(tempDir, ".env.local"),
+        "utf-8"
+      );
+      expect(content).toContain(
+        'DATABASE_URL="postgresql://localhost:5432/db"'
+      );
     });
 
     it("does not overwrite existing .env.local without forceEnv in non-interactive mode", async () => {
       fs.writeFileSync(path.join(tempDir, "package-lock.json"), "{}");
-      fs.writeFileSync(path.join(tempDir, "package.json"), JSON.stringify({ name: "test-app" }));
-      fs.writeFileSync(path.join(tempDir, ".env.example"), 'DATABASE_URL="new_value"');
-      fs.writeFileSync(path.join(tempDir, ".env.local"), 'DATABASE_URL="custom_existing_value"');
+      fs.writeFileSync(
+        path.join(tempDir, "package.json"),
+        JSON.stringify({ name: "test-app" })
+      );
+      fs.writeFileSync(
+        path.join(tempDir, ".env.example"),
+        'DATABASE_URL="new_value"'
+      );
+      fs.writeFileSync(
+        path.join(tempDir, ".env.local"),
+        'DATABASE_URL="custom_existing_value"'
+      );
 
       await runSetupWorkflow({
         workspaceRoot: tempDir,
@@ -82,15 +105,27 @@ describe("Interactive DX Setup Command & Documentation Sync", () => {
         skipDb: true,
       });
 
-      const content = fs.readFileSync(path.join(tempDir, ".env.local"), "utf-8");
+      const content = fs.readFileSync(
+        path.join(tempDir, ".env.local"),
+        "utf-8"
+      );
       expect(content).toContain("custom_existing_value");
     });
 
     it("overwrites existing .env.local when forceEnv is true", async () => {
       fs.writeFileSync(path.join(tempDir, "package-lock.json"), "{}");
-      fs.writeFileSync(path.join(tempDir, "package.json"), JSON.stringify({ name: "test-app" }));
-      fs.writeFileSync(path.join(tempDir, ".env.example"), 'DATABASE_URL="new_value"');
-      fs.writeFileSync(path.join(tempDir, ".env.local"), 'DATABASE_URL="custom_existing_value"');
+      fs.writeFileSync(
+        path.join(tempDir, "package.json"),
+        JSON.stringify({ name: "test-app" })
+      );
+      fs.writeFileSync(
+        path.join(tempDir, ".env.example"),
+        'DATABASE_URL="new_value"'
+      );
+      fs.writeFileSync(
+        path.join(tempDir, ".env.local"),
+        'DATABASE_URL="custom_existing_value"'
+      );
 
       await runSetupWorkflow({
         workspaceRoot: tempDir,
@@ -99,7 +134,10 @@ describe("Interactive DX Setup Command & Documentation Sync", () => {
         forceEnv: true,
       });
 
-      const content = fs.readFileSync(path.join(tempDir, ".env.local"), "utf-8");
+      const content = fs.readFileSync(
+        path.join(tempDir, ".env.local"),
+        "utf-8"
+      );
       expect(content).toContain("new_value");
     });
   });
@@ -111,7 +149,11 @@ describe("Interactive DX Setup Command & Documentation Sync", () => {
 
       const result = checkOnboardingDocsDrift(tempDir);
       expect(result.status).toBe("fail");
-      expect(result.details?.some((d) => d.includes("Obsolete Python technology badge"))).toBe(true);
+      expect(
+        result.details?.some((d) =>
+          d.includes("Obsolete Python technology badge")
+        )
+      ).toBe(true);
     });
 
     it("fails when invalid environment template .env.local.example is referenced", () => {
@@ -120,7 +162,9 @@ describe("Interactive DX Setup Command & Documentation Sync", () => {
 
       const result = checkOnboardingDocsDrift(tempDir);
       expect(result.status).toBe("fail");
-      expect(result.details?.some((d) => d.includes(".env.local.example"))).toBe(true);
+      expect(
+        result.details?.some((d) => d.includes(".env.local.example"))
+      ).toBe(true);
     });
 
     it("fails when prisma db push is missing before prisma db seed", () => {
@@ -129,7 +173,9 @@ describe("Interactive DX Setup Command & Documentation Sync", () => {
 
       const result = checkOnboardingDocsDrift(tempDir);
       expect(result.status).toBe("fail");
-      expect(result.details?.some((d) => d.includes("prisma db push"))).toBe(true);
+      expect(result.details?.some((d) => d.includes("prisma db push"))).toBe(
+        true
+      );
     });
 
     it("passes when README.md contains accurate prerequisites, env references, and db push sequence", () => {

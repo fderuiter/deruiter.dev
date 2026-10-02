@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from "vitest";
 import {
   THEOREMS,
@@ -75,7 +76,10 @@ describe("Formal Theorem Library & Multi-Theorem Validation", () => {
       expect(hint1.suggestedTarget).toBe("C");
 
       // Has req1 but missing req2
-      const hint1b = getNextTacticHint([{ source: "A", target: "C" }], "hypothetical-syllogism");
+      const hint1b = getNextTacticHint(
+        [{ source: "A", target: "C" }],
+        "hypothetical-syllogism"
+      );
       expect(hint1b.stepNumber).toBe(1);
       expect(hint1b.suggestedSource).toBe("B");
 
@@ -116,13 +120,25 @@ describe("Formal Theorem Library & Multi-Theorem Validation", () => {
 
   describe("Disjunctive Syllogism (Consensus Failover)", () => {
     it("allows valid pairs and rejects invalid connections", () => {
-      expect(canConnect("A", "C", [], "disjunctive-syllogism").allowed).toBe(true);
-      expect(canConnect("B", "C", [], "disjunctive-syllogism").allowed).toBe(true);
-      expect(canConnect("C", "E", [], "disjunctive-syllogism").allowed).toBe(true);
-      expect(canConnect("D", "E", [], "disjunctive-syllogism").allowed).toBe(true);
+      expect(canConnect("A", "C", [], "disjunctive-syllogism").allowed).toBe(
+        true
+      );
+      expect(canConnect("B", "C", [], "disjunctive-syllogism").allowed).toBe(
+        true
+      );
+      expect(canConnect("C", "E", [], "disjunctive-syllogism").allowed).toBe(
+        true
+      );
+      expect(canConnect("D", "E", [], "disjunctive-syllogism").allowed).toBe(
+        true
+      );
 
-      expect(canConnect("A", "E", [], "disjunctive-syllogism").allowed).toBe(false);
-      expect(canConnect("B", "D", [], "disjunctive-syllogism").allowed).toBe(false);
+      expect(canConnect("A", "E", [], "disjunctive-syllogism").allowed).toBe(
+        false
+      );
+      expect(canConnect("B", "D", [], "disjunctive-syllogism").allowed).toBe(
+        false
+      );
     });
   });
 
@@ -239,9 +255,14 @@ describe("Formal Theorem Library & Multi-Theorem Validation", () => {
       expect(nodeE?.label).toBe("ValueChosen");
 
       // Verify AST Conjunction Intro
-      const andIntroResult = applyRuleToAsts("and_intro", [nodeA!.ast!, nodeB!.ast!]);
+      const andIntroResult = applyRuleToAsts("and_intro", [
+        nodeA!.ast!,
+        nodeB!.ast!,
+      ]);
       expect(andIntroResult.success).toBe(true);
-      expect(formatFormula(andIntroResult.resultAst!)).toBe("PromiseB ∧ AcceptReqB");
+      expect(formatFormula(andIntroResult.resultAst!)).toBe(
+        "PromiseB ∧ AcceptReqB"
+      );
 
       const edges = [
         { source: "A", target: "C" },

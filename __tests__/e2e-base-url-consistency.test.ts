@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from "vitest";
 import fs from "fs";
 import path from "path";
@@ -17,7 +18,10 @@ describe("E2E Base URL Consistency", () => {
   const specs = fs
     .readdirSync(e2eDir)
     .filter((f) => f.endsWith(".spec.ts"))
-    .map((f) => ({ name: f, source: fs.readFileSync(path.join(e2eDir, f), "utf-8") }));
+    .map((f) => ({
+      name: f,
+      source: fs.readFileSync(path.join(e2eDir, f), "utf-8"),
+    }));
 
   it("finds the e2e specs", () => {
     expect(specs.length).toBeGreaterThan(5);

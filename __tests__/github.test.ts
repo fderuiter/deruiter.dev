@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { getGitHubStats, parseGitHubUrl } from "@/lib/github";
 import { unstable_cache } from "next/cache";
@@ -24,7 +25,10 @@ describe("GitHub Telemetry & Caching Suite", () => {
     it("should correctly parse valid GitHub URLs", () => {
       const url = "https://github.com/fderuiter/imednet-python-sdk";
       const parsed = parseGitHubUrl(url);
-      expect(parsed).toEqual({ owner: "fderuiter", repo: "imednet-python-sdk" });
+      expect(parsed).toEqual({
+        owner: "fderuiter",
+        repo: "imednet-python-sdk",
+      });
     });
 
     it("should sanitize trailing .git from repository name", () => {
@@ -48,7 +52,10 @@ describe("GitHub Telemetry & Caching Suite", () => {
       vi.spyOn(global, "fetch").mockImplementation(async (url) => {
         const urlStr = url.toString();
         if (urlStr.includes("/languages")) {
-          return { ok: true, json: async () => ({ TypeScript: 80, JavaScript: 20 }) } as Response;
+          return {
+            ok: true,
+            json: async () => ({ TypeScript: 80, JavaScript: 20 }),
+          } as Response;
         }
         if (urlStr.includes("/commits")) {
           return { ok: true, json: async () => [] } as Response;
@@ -90,13 +97,18 @@ describe("GitHub Telemetry & Caching Suite", () => {
     it("should fallback gracefully to live fetching if unstable_cache throws", async () => {
       // Mock unstable_cache to throw an error simulating unsupported/missing cache environment
       vi.mocked(unstable_cache).mockImplementation(() => {
-        throw new Error("unstable_cache is not supported or incrementalCache missing");
+        throw new Error(
+          "unstable_cache is not supported or incrementalCache missing"
+        );
       });
 
       vi.spyOn(global, "fetch").mockImplementation(async (url) => {
         const urlStr = url.toString();
         if (urlStr.includes("/languages")) {
-          return { ok: true, json: async () => ({ TypeScript: 100 }) } as Response;
+          return {
+            ok: true,
+            json: async () => ({ TypeScript: 100 }),
+          } as Response;
         }
         if (urlStr.includes("/commits")) {
           return { ok: true, json: async () => [] } as Response;
@@ -129,7 +141,11 @@ describe("GitHub Telemetry & Caching Suite", () => {
         status: 404,
       } as Response);
 
-      const stats = await getGitHubStats("nonexistent-owner", "nonexistent-repo", "TypeScript");
+      const stats = await getGitHubStats(
+        "nonexistent-owner",
+        "nonexistent-repo",
+        "TypeScript"
+      );
 
       expect(stats).not.toBeNull();
       expect(stats?.stars).toBe(148);
@@ -142,7 +158,11 @@ describe("GitHub Telemetry & Caching Suite", () => {
         status: 403,
       } as Response);
 
-      const stats = await getGitHubStats("rate-limited-owner", "rate-limited-repo", "Python");
+      const stats = await getGitHubStats(
+        "rate-limited-owner",
+        "rate-limited-repo",
+        "Python"
+      );
 
       expect(stats).not.toBeNull();
       expect(stats?.stars).toBe(112);
@@ -155,7 +175,10 @@ describe("GitHub Telemetry & Caching Suite", () => {
         status: 404,
       } as Response);
 
-      const stats = await getGitHubStats("nonexistent-owner", "nonexistent-repo");
+      const stats = await getGitHubStats(
+        "nonexistent-owner",
+        "nonexistent-repo"
+      );
 
       expect(stats).toBeNull();
     });

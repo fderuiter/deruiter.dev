@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from "vitest";
 import {
   RETRO_LABYRINTH_HIGH_SCORE_KEY,

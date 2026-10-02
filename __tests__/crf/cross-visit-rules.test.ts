@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from "vitest";
 import {
   calculateBMI,
@@ -69,9 +70,9 @@ describe("AST Clinical Calculations & Cross-Visit Logic Engine", () => {
     ];
 
     const values = {
-      "v_screen_f_weight": 80,
-      "v_w4_f_weight": 70,
-      "f_weight": 70,
+      v_screen_f_weight: 80,
+      v_w4_f_weight: 70,
+      f_weight: 70,
     };
 
     // Check baseline weight condition
@@ -86,7 +87,12 @@ describe("AST Clinical Calculations & Cross-Visit Logic Engine", () => {
     expect(isTrue).toBe(true);
 
     const isFalse = evaluateCondition(
-      { fieldId: "f_weight", crossVisitId: "v_screen", operator: "lt" as const, value: 75 },
+      {
+        fieldId: "f_weight",
+        crossVisitId: "v_screen",
+        operator: "lt" as const,
+        value: 75,
+      },
       values,
       fieldsList
     );
@@ -95,8 +101,22 @@ describe("AST Clinical Calculations & Cross-Visit Logic Engine", () => {
 
   it("should evaluate full edit check rules with logical operators", () => {
     const fieldsList: CRFField[] = [
-      { id: "f_age", variableName: "AGE", label: "Age", dataType: "integer", columnSpan: 6, required: true },
-      { id: "f_ic", variableName: "ICYN", label: "Informed Consent", dataType: "radio", columnSpan: 6, required: true },
+      {
+        id: "f_age",
+        variableName: "AGE",
+        label: "Age",
+        dataType: "integer",
+        columnSpan: 6,
+        required: true,
+      },
+      {
+        id: "f_ic",
+        variableName: "ICYN",
+        label: "Informed Consent",
+        dataType: "radio",
+        columnSpan: 6,
+        required: true,
+      },
     ];
 
     const rule: EditCheckRule = {
@@ -114,8 +134,12 @@ describe("AST Clinical Calculations & Cross-Visit Logic Engine", () => {
     };
 
     expect(evaluateRule(rule, { f_age: 25, f_ic: "Y" }, fieldsList)).toBe(true);
-    expect(evaluateRule(rule, { f_age: 16, f_ic: "Y" }, fieldsList)).toBe(false);
-    expect(evaluateRule(rule, { f_age: 25, f_ic: "N" }, fieldsList)).toBe(false);
+    expect(evaluateRule(rule, { f_age: 16, f_ic: "Y" }, fieldsList)).toBe(
+      false
+    );
+    expect(evaluateRule(rule, { f_age: 25, f_ic: "N" }, fieldsList)).toBe(
+      false
+    );
   });
 
   it("evaluates matrix-level conditional form obligations across study visits", () => {
@@ -161,12 +185,26 @@ describe("AST Clinical Calculations & Cross-Visit Logic Engine", () => {
     ];
 
     // When subject is on Active ARM, PK form is added to Week 1 and Week 4
-    const resolvedActive = evaluateMatrixFormObligations(studyVisits, conditionalRules, { ARM: "Active" });
-    expect(resolvedActive.find((v) => v.id === "v_w1")?.assignedFormIds).toContain("f_pk");
-    expect(resolvedActive.find((v) => v.id === "v_screen")?.assignedFormIds).not.toContain("f_pk");
+    const resolvedActive = evaluateMatrixFormObligations(
+      studyVisits,
+      conditionalRules,
+      { ARM: "Active" }
+    );
+    expect(
+      resolvedActive.find((v) => v.id === "v_w1")?.assignedFormIds
+    ).toContain("f_pk");
+    expect(
+      resolvedActive.find((v) => v.id === "v_screen")?.assignedFormIds
+    ).not.toContain("f_pk");
 
     // When subject is on Placebo, PK form is not added
-    const resolvedPlacebo = evaluateMatrixFormObligations(studyVisits, conditionalRules, { ARM: "Placebo" });
-    expect(resolvedPlacebo.find((v) => v.id === "v_w1")?.assignedFormIds).not.toContain("f_pk");
+    const resolvedPlacebo = evaluateMatrixFormObligations(
+      studyVisits,
+      conditionalRules,
+      { ARM: "Placebo" }
+    );
+    expect(
+      resolvedPlacebo.find((v) => v.id === "v_w1")?.assignedFormIds
+    ).not.toContain("f_pk");
   });
 });

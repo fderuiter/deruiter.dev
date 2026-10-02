@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { createRequire } from "module";
 import { execFileSync } from "node:child_process";
 import { afterEach, describe, expect, it, vi } from "vitest";

@@ -1,3 +1,4 @@
+// @vitest-environment node
 /* eslint-disable */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import child_process from "child_process";

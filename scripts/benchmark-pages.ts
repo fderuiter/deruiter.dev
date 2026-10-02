@@ -21,9 +21,11 @@ import {
   type BenchmarkTarget,
 } from "../lib/dx/benchmark-evidence";
 import {
+  BUILD_PROVENANCE_FILE,
   runProductionBenchmark,
   type BenchmarkExecutionDependencies,
   type OwnedBenchmarkServer,
+  type PrebuiltProduction,
 } from "../lib/dx/benchmark-runner";
 import { colors, formatHeader } from "../lib/dx/utils";
 
@@ -35,6 +37,7 @@ interface BenchmarkCliOptions {
   throttled: boolean;
   routeFilter: string | null;
   outputDirectory: string;
+  rebuild: boolean;
 }
 
 function appendDiagnostics(current: string, chunk: Buffer | string): string {
@@ -183,6 +186,7 @@ function parseOptions(args: string[]): BenchmarkCliOptions | null {
     throttled: false,
     routeFilter: null,
     outputDirectory: path.resolve(DEFAULT_BENCHMARK_EVIDENCE_DIRECTORY),
+    rebuild: false,
   };
 
   for (let index = 0; index < args.length; index++) {
@@ -202,6 +206,8 @@ function parseOptions(args: string[]): BenchmarkCliOptions | null {
       options.assertBudget = true;
     } else if (argument === "--mobile" || argument === "-m") {
       options.isMobile = true;
+    } else if (argument === "--rebuild") {
+      options.rebuild = true;
     } else if (argument === "--throttled") {
       options.throttled = true;
     } else if (argument === "--routes") {
@@ -245,6 +251,9 @@ function parseOptions(args: string[]): BenchmarkCliOptions | null {
       console.log(
         `  --output <dir>     Evidence directory (default: .benchmark-results)`
       );
+      console.log(
+        `  --rebuild          With --assert, ignore ${BUILD_PROVENANCE_FILE} and always build`
+      );
       console.log(`  --help, -h         Show this help menu\n`);
       return null;
     } else {
@@ -265,12 +274,37 @@ function selectRoutes(routeFilter: string | null): PageBenchmarkRoute[] {
   return selected;
 }
 
+/**
+ * The build `npm run build` left in `.next/`, with the provenance record
+ * scripts/build.js wrote for it. The runner decides whether it is reusable.
+ */
+function loadPrebuiltProduction(): PrebuiltProduction | null {
+  const provenancePath = path.join(process.cwd(), BUILD_PROVENANCE_FILE);
+  if (!fs.existsSync(provenancePath)) return null;
+  let provenance: unknown = null;
+  try {
+    provenance = JSON.parse(fs.readFileSync(provenancePath, "utf-8"));
+  } catch {
+    provenance = null;
+  }
+  const buildIdPath = path.join(process.cwd(), ".next", "BUILD_ID");
+  const buildId = fs.existsSync(buildIdPath)
+    ? fs.readFileSync(buildIdPath, "utf-8").trim()
+    : null;
+  return { provenance, buildId };
+}
+
 function createProductionDependencies(
-  routes: PageBenchmarkRoute[]
+  routes: PageBenchmarkRoute[],
+  options: { rebuild: boolean }
 ): BenchmarkExecutionDependencies {
   let server: OwnedBenchmarkServer | null = null;
   return {
     inspectSource,
+    loadPrebuiltProduction: options.rebuild
+      ? undefined
+      : loadPrebuiltProduction,
+    report: (message) => console.log(`${colors.dim}${message}${colors.reset}`),
     async buildProduction() {
       const result = await runProcess(
         "npm",
@@ -408,7 +442,7 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
           isMobile: options.isMobile,
           throttled: options.throttled,
         },
-        createProductionDependencies(routes)
+        createProductionDependencies(routes, { rebuild: options.rebuild })
       )
     : await runExploratoryBenchmark(options, routes);
   printPageBenchmarkReport(evidence.routes, evidence.target.url);

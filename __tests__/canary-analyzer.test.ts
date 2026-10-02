@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, vi } from "vitest";
 import {
   evaluateCanaryRollout,
@@ -41,7 +42,11 @@ describe("Automated Canary Analysis (ACA) & Anomaly Detection", () => {
     const result = evaluateCanaryRollout(degradedCanary, healthyBaseline);
     expect(result.decision).toBe("DEGRADED");
     expect(result.rollbackTriggered).toBe(false);
-    expect(result.reasons.some((r) => r.includes("WARNING: p95 latency increased by"))).toBe(true);
+    expect(
+      result.reasons.some((r) =>
+        r.includes("WARNING: p95 latency increased by")
+      )
+    ).toBe(true);
   });
 
   it("triggers ROLLBACK_REQUIRED when 5xx error rate breaches 0.5% threshold", () => {
@@ -56,7 +61,9 @@ describe("Automated Canary Analysis (ACA) & Anomaly Detection", () => {
     const result = evaluateCanaryRollout(errorSpikeCanary, healthyBaseline);
     expect(result.decision).toBe("ROLLBACK_REQUIRED");
     expect(result.rollbackTriggered).toBe(true);
-    expect(result.reasons.some((r) => r.includes("CRITICAL: Canary 5xx error rate"))).toBe(true);
+    expect(
+      result.reasons.some((r) => r.includes("CRITICAL: Canary 5xx error rate"))
+    ).toBe(true);
   });
 
   it("triggers ROLLBACK_REQUIRED when p95 latency breaches hard SLA limit (800ms)", () => {
@@ -71,7 +78,9 @@ describe("Automated Canary Analysis (ACA) & Anomaly Detection", () => {
     const result = evaluateCanaryRollout(laggyCanary, healthyBaseline);
     expect(result.decision).toBe("ROLLBACK_REQUIRED");
     expect(result.rollbackTriggered).toBe(true);
-    expect(result.reasons.some((r) => r.includes("breached hard latency SLA"))).toBe(true);
+    expect(
+      result.reasons.some((r) => r.includes("breached hard latency SLA"))
+    ).toBe(true);
   });
 
   it("triggers ROLLBACK_REQUIRED when Sentry exception count spikes vs baseline", () => {
@@ -86,7 +95,9 @@ describe("Automated Canary Analysis (ACA) & Anomaly Detection", () => {
     const result = evaluateCanaryRollout(buggylCanary, healthyBaseline);
     expect(result.decision).toBe("ROLLBACK_REQUIRED");
     expect(result.rollbackTriggered).toBe(true);
-    expect(result.reasons.some((r) => r.includes("Sentry exception count spiked"))).toBe(true);
+    expect(
+      result.reasons.some((r) => r.includes("Sentry exception count spiked"))
+    ).toBe(true);
   });
 
   it("triggers ROLLBACK_REQUIRED on duration mismatch when canary has lower total exceptions but higher rate per minute", () => {
@@ -113,9 +124,16 @@ describe("Automated Canary Analysis (ACA) & Anomaly Detection", () => {
     expect(result.decision).toBe("ROLLBACK_REQUIRED");
     expect(result.rollbackTriggered).toBe(true);
     expect(result.canaryMetrics.exceptionRatePerMinute).toBe(1.0);
-    expect(result.baselineMetrics?.exceptionRatePerMinute).toBeCloseTo(0.3333, 4);
+    expect(result.baselineMetrics?.exceptionRatePerMinute).toBeCloseTo(
+      0.3333,
+      4
+    );
     expect(result.metricsComparison.exceptionRatio).toBeCloseTo(3.0, 1);
-    expect(result.reasons.some((r) => r.includes("Sentry exception count spiked by 3.0x"))).toBe(true);
+    expect(
+      result.reasons.some((r) =>
+        r.includes("Sentry exception count spiked by 3.0x")
+      )
+    ).toBe(true);
   });
 
   it("applies standard default durations when windowDurationMinutes is missing or non-positive", () => {
@@ -135,7 +153,10 @@ describe("Automated Canary Analysis (ACA) & Anomaly Detection", () => {
       windowDurationMinutes: 0, // Defaults to 60 min -> 0.2/min
     };
 
-    const result = evaluateCanaryRollout(canaryWithoutDuration, baselineWithInvalidDuration);
+    const result = evaluateCanaryRollout(
+      canaryWithoutDuration,
+      baselineWithInvalidDuration
+    );
     expect(result.canaryMetrics.exceptionRatePerMinute).toBe(1.0); // 15 / 15 min
     expect(result.baselineMetrics?.exceptionRatePerMinute).toBe(0.2); // 12 / 60 min
     expect(result.metricsComparison.exceptionRatio).toBe(5.0); // 1.0 / 0.2
@@ -155,7 +176,10 @@ describe("Automated Canary Analysis (ACA) & Anomaly Detection", () => {
     expect(result.canaryMetrics).toHaveProperty("exceptionRatePerMinute");
     expect(result.canaryMetrics.exceptionRatePerMinute).toBe(0.4); // 6 / 15
     expect(result.baselineMetrics).toHaveProperty("exceptionRatePerMinute");
-    expect(result.baselineMetrics?.exceptionRatePerMinute).toBeCloseTo(0.0333, 4); // 2 / 60
+    expect(result.baselineMetrics?.exceptionRatePerMinute).toBeCloseTo(
+      0.0333,
+      4
+    ); // 2 / 60
   });
 
   describe("executeAutomatedRollback", () => {
@@ -188,9 +212,13 @@ describe("Automated Canary Analysis (ACA) & Anomaly Detection", () => {
         healthyBaseline
       );
 
-      const rollbackRes = await executeAutomatedRollback(evaluation, { dryRun: true });
+      const rollbackRes = await executeAutomatedRollback(evaluation, {
+        dryRun: true,
+      });
       expect(rollbackRes.success).toBe(true);
-      expect(rollbackRes.message).toContain("[DRY RUN] Automated rollback payload prepared");
+      expect(rollbackRes.message).toContain(
+        "[DRY RUN] Automated rollback payload prepared"
+      );
     });
 
     it("dispatches webhook payload to remote URL", async () => {

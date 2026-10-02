@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from "vitest";
 import {
   createInitialDuckGameState,
@@ -127,7 +128,10 @@ describe("Working With Duck Extended: Engine State & Mini-Game Suite", () => {
     });
 
     it("supports frisbee mode and mud puddle collision protection with rain boots", () => {
-      let state = createInitialDuckGameState(4, "campaign", ["none", "rain-boots"]);
+      let state = createInitialDuckGameState(4, "campaign", [
+        "none",
+        "rain-boots",
+      ]);
       state = equipAccessory(state, "rain-boots");
       expect(state.activeAccessory).toBe("rain-boots");
 
@@ -174,7 +178,9 @@ describe("Working With Duck Extended: Engine State & Mini-Game Suite", () => {
 
     it("mops indoor puddles and handles duck dragging mechanics", () => {
       let state = createInitialDuckGameState(1, "campaign");
-      state.indoorPuddles = [{ id: 1, x: 200, y: 200, radius: 25, mopProgress: 0 }];
+      state.indoorPuddles = [
+        { id: 1, x: 200, y: 200, radius: 25, mopProgress: 0 },
+      ];
 
       state = mopIndoorPuddle(state, 200, 200);
       expect(state.indoorPuddles[0]?.mopProgress).toBeGreaterThan(0);

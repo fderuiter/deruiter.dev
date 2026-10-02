@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { POST } from "@/app/api/contact/route";
 import { NextRequest } from "next/server";
@@ -10,7 +11,10 @@ describe("API: /api/contact Route Handler", () => {
     resetSubmissionAttemptRateLimit();
   });
 
-  const createRequest = (body: unknown, headers: Record<string, string> = {}) => {
+  const createRequest = (
+    body: unknown,
+    headers: Record<string, string> = {}
+  ) => {
     return new NextRequest("http://localhost:3000/api/contact", {
       method: "POST",
       headers: {
@@ -57,7 +61,8 @@ describe("API: /api/contact Route Handler", () => {
       email: "troll@example.com",
       intent: "general",
       subject: "Terrible Website",
-      message: "This site is a complete piece of shit garbage code waste of time.",
+      message:
+        "This site is a complete piece of shit garbage code waste of time.",
     });
 
     const res = await POST(req);
@@ -72,7 +77,8 @@ describe("API: /api/contact Route Handler", () => {
       email: "john@example.com",
       intent: "consulting",
       subject: "Consulting Project Inquiry",
-      message: "Hello, I would like to hire you for a clinical EDC consulting project.",
+      message:
+        "Hello, I would like to hire you for a clinical EDC consulting project.",
       _clientTimestamp: Date.now() - 5000,
     };
 
@@ -131,25 +137,28 @@ describe("API: /api/contact Route Handler", () => {
   });
 
   it("should process valid submission and return 201", async () => {
-    const spy = vi.spyOn(EmailService, "sendContactInquiry").mockResolvedValueOnce({
-      success: true,
-      adminResult: {
+    const spy = vi
+      .spyOn(EmailService, "sendContactInquiry")
+      .mockResolvedValueOnce({
         success: true,
-        data: { id: "msg_contact_success" },
-        simulated: true,
-      },
-      confirmationResult: {
-        success: true,
-        data: { id: "msg_confirm_success" },
-      },
-    });
+        adminResult: {
+          success: true,
+          data: { id: "msg_contact_success" },
+          simulated: true,
+        },
+        confirmationResult: {
+          success: true,
+          data: { id: "msg_confirm_success" },
+        },
+      });
 
     const req = createRequest({
       name: "Grace Hopper",
       email: "grace@navy.mil",
       intent: "collaboration",
       subject: "Compiler & Proof Architecture",
-      message: "Let us discuss the deductive logic AST engine and nanosecond verification.",
+      message:
+        "Let us discuss the deductive logic AST engine and nanosecond verification.",
       _clientTimestamp: Date.now() - 5000,
     });
 

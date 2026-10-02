@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from "vitest";
 import { calculateFOV, hasLineOfSight, resetFogOfWar } from "@/lib/dungeon";
 import { RetroLabyrinthEngine } from "@/lib/retro-labyrinth";

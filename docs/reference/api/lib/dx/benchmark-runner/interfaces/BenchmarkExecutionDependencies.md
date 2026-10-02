@@ -36,6 +36,19 @@ Injectable side effects keep production lifecycle behavior testable.
 
 ***
 
+### loadPrebuiltProduction?
+
+> `optional` **loadPrebuiltProduction?**: () => [`PrebuiltProduction`](PrebuiltProduction.md) \| `null`
+
+Returns the production build already on disk, if any. When its provenance
+validates, the benchmark measures it instead of building again.
+
+#### Returns
+
+[`PrebuiltProduction`](PrebuiltProduction.md) \| `null`
+
+***
+
 ### now?
 
 > `optional` **now?**: () => `Date`
@@ -43,6 +56,24 @@ Injectable side effects keep production lifecycle behavior testable.
 #### Returns
 
 `Date`
+
+***
+
+### report?
+
+> `optional` **report?**: (`message`) => `void`
+
+Receives progress notes, such as why a prebuilt build was not reused.
+
+#### Parameters
+
+##### message
+
+`string`
+
+#### Returns
+
+`void`
 
 ***
 

@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from "vitest";
 import { z } from "zod";
 import { zodToOpenApi } from "@/lib/zod-to-openapi";

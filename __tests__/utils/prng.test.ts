@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it } from "vitest";
 import { drawInt, fnv1a, mulberry32, uniformAt } from "@/lib/utils/prng";
 

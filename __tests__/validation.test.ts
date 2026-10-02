@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from "vitest";
 import { scanText, scanFile } from "../lib/security-scan";
 import { shouldScanFile } from "../scripts/validate-commit";

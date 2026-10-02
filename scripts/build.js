@@ -48,7 +48,18 @@ const {
   shouldRunPreflight,
   verifyUpstashCredentials,
 } = require("./vercel-production-preflight");
+const {
+  captureSourceState,
+  clearBuildProvenance,
+  writeBuildProvenance,
+} = require("./build-provenance");
 async function runBuildPipeline() {
+  // Build provenance (#1769): note the source state before any phase can
+  // rewrite a file, and drop the previous build's record so a build that
+  // fails part-way can never be mistaken for a finished one.
+  const sourceBeforeBuild = captureSourceState();
+  clearBuildProvenance();
+
   if (!runVercelProductionPreflight(process.env)) {
     process.exit(1);
   }
@@ -182,6 +193,11 @@ async function runBuildPipeline() {
   // 4. Application Compilation Phase (Phase 2)
   console.log("\n--- Phase 2: Compiling Frontend Application ---");
   runStep("npx", ["next", "build", "--webpack"]);
+
+  // 5. Build Provenance (Phase 3, #1769): lets `bench:pages --assert` reuse
+  // this build instead of rebuilding, but only when the record proves a clean
+  // build of the exact revision it is about to measure.
+  writeBuildProvenance(sourceBeforeBuild);
 
   console.log("\n--- Build Pipeline Completed Successfully! ---");
   process.exit(0);

@@ -1,8 +1,7 @@
+// @vitest-environment node
 import { describe, it, expect, vi } from "vitest";
 import * as THREE from "three";
-import {
-  generateHemisphereBuffers,
-} from "@/lib/neuro/mesh-generator";
+import { generateHemisphereBuffers } from "@/lib/neuro/mesh-generator";
 import {
   createHemisphereGeometryFromBuffers,
   createCorticalSurfaceMeshFromBuffers,
@@ -88,12 +87,16 @@ describe("NeuroRecon Web Worker Mesh Generator & Zero-Copy ArrayBuffer Transfer 
   });
 
   it("handles Web Worker messages and transfers ArrayBuffers with zero-copy ownership transfer", async () => {
-    let _workerHandler: ((e: MessageEvent<MeshWorkerRequest>) => void) | null = null;
+    let _workerHandler: ((e: MessageEvent<MeshWorkerRequest>) => void) | null =
+      null;
     const postMessageSpy = vi.fn();
 
     // Mock Worker scope environment
     const mockWorkerSelf = {
-      addEventListener: (type: string, handler: (e: MessageEvent<MeshWorkerRequest>) => void) => {
+      addEventListener: (
+        type: string,
+        handler: (e: MessageEvent<MeshWorkerRequest>) => void
+      ) => {
         if (type === "message") {
           _workerHandler = handler;
         }
@@ -139,7 +142,11 @@ describe("NeuroRecon Web Worker Mesh Generator & Zero-Copy ArrayBuffer Transfer 
   });
 
   it("resolves createCorticalSurfaceMeshAsync via Web Worker or fallback", async () => {
-    const meshGroup = await createCorticalSurfaceMeshAsync("pial", false, "both");
+    const meshGroup = await createCorticalSurfaceMeshAsync(
+      "pial",
+      false,
+      "both"
+    );
     expect(meshGroup).toBeInstanceOf(THREE.Group);
     expect(meshGroup.children.length).toBe(2);
   });

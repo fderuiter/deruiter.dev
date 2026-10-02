@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from "vitest";
 import { calculateRelatedReading, normalizeTag } from "@/lib/blog/related";
 import type { BlogPostSummary } from "@/lib/blog/types";

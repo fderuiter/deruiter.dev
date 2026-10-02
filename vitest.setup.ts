@@ -83,8 +83,13 @@ if (typeof globalThis.IntersectionObserver === "undefined") {
     MockIntersectionObserver as unknown as typeof IntersectionObserver;
 }
 
-// Polyfill PointerEvent (unsupported by jsdom@26, pinned in package.json overrides)
-if (typeof globalThis.PointerEvent === "undefined") {
+// Polyfill PointerEvent (unsupported by jsdom@26, pinned in package.json overrides).
+// DOM-free suites run under `// @vitest-environment node` (#1775), where
+// MouseEvent does not exist, so the DOM-only setup below is guarded.
+if (
+  typeof globalThis.MouseEvent !== "undefined" &&
+  typeof globalThis.PointerEvent === "undefined"
+) {
   class PointerEventPolyfill extends MouseEvent {
     pointerId: number;
     width: number;
@@ -115,121 +120,127 @@ if (typeof globalThis.PointerEvent === "undefined") {
     PointerEventPolyfill as unknown as typeof PointerEvent;
 }
 
-// Mock Canvas 2D and WebGL contexts
-const originalGetContext = HTMLCanvasElement.prototype.getContext;
+// Mock Canvas 2D and WebGL contexts (DOM environments only).
+function installCanvasContextMocks(): void {
+  const originalGetContext = HTMLCanvasElement.prototype.getContext;
 
-HTMLCanvasElement.prototype.getContext = function (
-  this: HTMLCanvasElement,
-  contextId: string,
-  ...args: unknown[]
-): RenderingContext | null {
-  if (contextId === "2d") {
-    const el = this as HTMLCanvasElement & { _ctx2d?: RenderingContext };
-    if (!el._ctx2d) {
-      el._ctx2d = {
-        canvas: this,
-        font: "16px sans-serif",
-        fillStyle: "#ffffff",
-        strokeStyle: "#000000",
-        lineWidth: 1,
-        globalAlpha: 1,
-        fillRect: vi.fn(),
-        strokeRect: vi.fn(),
-        clearRect: vi.fn(),
-        setLineDash: vi.fn(),
-        getLineDash: vi.fn(() => []),
-        clip: vi.fn(),
-        ellipse: vi.fn(),
-        createLinearGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
-        createRadialGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
-        createPattern: vi.fn(),
-        getImageData: vi.fn(
-          (_sx?: number, _sy?: number, sw?: number, sh?: number) => {
-            const width = typeof sw === "number" && sw > 0 ? sw : 256;
-            const height = typeof sh === "number" && sh > 0 ? sh : 256;
+  HTMLCanvasElement.prototype.getContext = function (
+    this: HTMLCanvasElement,
+    contextId: string,
+    ...args: unknown[]
+  ): RenderingContext | null {
+    if (contextId === "2d") {
+      const el = this as HTMLCanvasElement & { _ctx2d?: RenderingContext };
+      if (!el._ctx2d) {
+        el._ctx2d = {
+          canvas: this,
+          font: "16px sans-serif",
+          fillStyle: "#ffffff",
+          strokeStyle: "#000000",
+          lineWidth: 1,
+          globalAlpha: 1,
+          fillRect: vi.fn(),
+          strokeRect: vi.fn(),
+          clearRect: vi.fn(),
+          setLineDash: vi.fn(),
+          getLineDash: vi.fn(() => []),
+          clip: vi.fn(),
+          ellipse: vi.fn(),
+          createLinearGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
+          createRadialGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
+          createPattern: vi.fn(),
+          getImageData: vi.fn(
+            (_sx?: number, _sy?: number, sw?: number, sh?: number) => {
+              const width = typeof sw === "number" && sw > 0 ? sw : 256;
+              const height = typeof sh === "number" && sh > 0 ? sh : 256;
+              return {
+                width,
+                height,
+                data: new Uint8ClampedArray(width * height * 4),
+              };
+            }
+          ),
+          putImageData: vi.fn(),
+          createImageData: vi.fn((w?: number | ImageData, h?: number) => {
+            const width = typeof w === "number" && w > 0 ? w : 256;
+            const height = typeof h === "number" && h > 0 ? h : 256;
             return {
               width,
               height,
               data: new Uint8ClampedArray(width * height * 4),
             };
-          }
-        ),
-        putImageData: vi.fn(),
-        createImageData: vi.fn((w?: number | ImageData, h?: number) => {
-          const width = typeof w === "number" && w > 0 ? w : 256;
-          const height = typeof h === "number" && h > 0 ? h : 256;
-          return {
-            width,
-            height,
-            data: new Uint8ClampedArray(width * height * 4),
-          };
-        }),
-        drawImage: vi.fn(),
-        save: vi.fn(),
-        fillText: vi.fn(),
-        strokeText: vi.fn(),
-        restore: vi.fn(),
-        beginPath: vi.fn(),
-        moveTo: vi.fn(),
-        lineTo: vi.fn(),
-        closePath: vi.fn(),
-        stroke: vi.fn(),
-        translate: vi.fn(),
-        scale: vi.fn(),
-        rotate: vi.fn(),
-        arc: vi.fn(),
-        arcTo: vi.fn(),
-        fill: vi.fn(),
-        rect: vi.fn(),
-        quadraticCurveTo: vi.fn(),
-        bezierCurveTo: vi.fn(),
-        roundRect: vi.fn(),
-        measureText: vi.fn((text: string) => ({
-          width: (text || "").length * 8,
-          height: 16,
-        })),
-        transform: vi.fn(),
-        resetTransform: vi.fn(),
+          }),
+          drawImage: vi.fn(),
+          save: vi.fn(),
+          fillText: vi.fn(),
+          strokeText: vi.fn(),
+          restore: vi.fn(),
+          beginPath: vi.fn(),
+          moveTo: vi.fn(),
+          lineTo: vi.fn(),
+          closePath: vi.fn(),
+          stroke: vi.fn(),
+          translate: vi.fn(),
+          scale: vi.fn(),
+          rotate: vi.fn(),
+          arc: vi.fn(),
+          arcTo: vi.fn(),
+          fill: vi.fn(),
+          rect: vi.fn(),
+          quadraticCurveTo: vi.fn(),
+          bezierCurveTo: vi.fn(),
+          roundRect: vi.fn(),
+          measureText: vi.fn((text: string) => ({
+            width: (text || "").length * 8,
+            height: 16,
+          })),
+          transform: vi.fn(),
+          resetTransform: vi.fn(),
+        } as unknown as RenderingContext;
+      }
+      return el._ctx2d;
+    }
+
+    if (
+      contextId === "webgl" ||
+      contextId === "webgl2" ||
+      contextId === "experimental-webgl"
+    ) {
+      return {
+        canvas: this,
+        getExtension: vi.fn(),
+        getParameter: vi.fn(() => "Mock WebGL"),
+        createBuffer: vi.fn(),
+        bindBuffer: vi.fn(),
+        bufferData: vi.fn(),
+        createShader: vi.fn(),
+        shaderSource: vi.fn(),
+        compileShader: vi.fn(),
+        createProgram: vi.fn(),
+        attachShader: vi.fn(),
+        linkProgram: vi.fn(),
+        useProgram: vi.fn(),
+        viewport: vi.fn(),
+        clear: vi.fn(),
+        clearColor: vi.fn(),
+        enable: vi.fn(),
+        disable: vi.fn(),
+        isContextLost: vi.fn(() => false),
       } as unknown as RenderingContext;
     }
-    return el._ctx2d;
-  }
 
-  if (
-    contextId === "webgl" ||
-    contextId === "webgl2" ||
-    contextId === "experimental-webgl"
-  ) {
-    return {
-      canvas: this,
-      getExtension: vi.fn(),
-      getParameter: vi.fn(() => "Mock WebGL"),
-      createBuffer: vi.fn(),
-      bindBuffer: vi.fn(),
-      bufferData: vi.fn(),
-      createShader: vi.fn(),
-      shaderSource: vi.fn(),
-      compileShader: vi.fn(),
-      createProgram: vi.fn(),
-      attachShader: vi.fn(),
-      linkProgram: vi.fn(),
-      useProgram: vi.fn(),
-      viewport: vi.fn(),
-      clear: vi.fn(),
-      clearColor: vi.fn(),
-      enable: vi.fn(),
-      disable: vi.fn(),
-      isContextLost: vi.fn(() => false),
-    } as unknown as RenderingContext;
-  }
+    if (typeof originalGetContext === "function") {
+      return (
+        originalGetContext as (...a: unknown[]) => RenderingContext | null
+      ).apply(this, [contextId, ...args]);
+    }
+    return null;
+  } as typeof HTMLCanvasElement.prototype.getContext;
+}
 
-  if (typeof originalGetContext === "function") {
-    return (
-      originalGetContext as (...a: unknown[]) => RenderingContext | null
-    ).apply(this, [contextId, ...args]);
-  }
-  return null;
-} as typeof HTMLCanvasElement.prototype.getContext;
+if (typeof globalThis.HTMLCanvasElement !== "undefined") {
+  installCanvasContextMocks();
+}
 
 // Mock Clerk Next.js client and server modules for offline testing
 vi.mock("@clerk/nextjs", () => {

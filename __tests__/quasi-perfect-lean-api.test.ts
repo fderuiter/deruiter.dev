@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from "vitest";
 import { POST } from "@/app/api/quasi-perfect/lean-verify/route";
 

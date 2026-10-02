@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from "vitest";
 import { generateStudyDocx } from "@/lib/crf/export-docx";
 import { generateStudyPdf } from "@/lib/crf/export-pdf";
@@ -58,7 +59,8 @@ describe("CRF Studio - Exhaustive Clinical Stress & Edge-Case Test Suite", () =>
         organizationName: "Fault Tolerance Test Lab",
         primaryColor: "#0284c7",
         accentColor: "#0ea5e9",
-        logoBase64: "data:image/png;base64,CORRUPTED_GARBAGE_NOT_A_PNG_HEADER_!@#$%",
+        logoBase64:
+          "data:image/png;base64,CORRUPTED_GARBAGE_NOT_A_PNG_HEADER_!@#$%",
       };
 
       const preset = STUDY_PRESETS[0];
@@ -77,7 +79,8 @@ describe("CRF Studio - Exhaustive Clinical Stress & Edge-Case Test Suite", () =>
         organizationName: "Fault Tolerance Test Lab",
         primaryColor: "#0284c7",
         accentColor: "#0ea5e9",
-        logoBase64: "data:image/png;base64,CORRUPTED_GARBAGE_NOT_A_PNG_HEADER_!@#$%",
+        logoBase64:
+          "data:image/png;base64,CORRUPTED_GARBAGE_NOT_A_PNG_HEADER_!@#$%",
       };
 
       const preset = STUDY_PRESETS[0];
@@ -154,7 +157,8 @@ describe("CRF Studio - Exhaustive Clinical Stress & Edge-Case Test Suite", () =>
       const largeStudy: StudyProtocol = {
         id: "study_scale_bench",
         protocolNumber: "SCALE-2026-MAX",
-        studyName: "Large Scale Multi-Center Registry Protocol (25 Observation Forms)",
+        studyName:
+          "Large Scale Multi-Center Registry Protocol (25 Observation Forms)",
         phase: "Phase III",
         sponsor: "MegaPharma International",
         therapeuticArea: "Multi-Disciplinary",

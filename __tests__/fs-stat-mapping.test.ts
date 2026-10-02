@@ -1,7 +1,11 @@
+// @vitest-environment node
 import { describe, it, expect } from "vitest";
 import fs from "fs";
 import path from "path";
-import { getRouteSourceFilePath, getRouteLastModified } from "@/lib/fs-stat-mapping";
+import {
+  getRouteSourceFilePath,
+  getRouteLastModified,
+} from "@/lib/fs-stat-mapping";
 
 describe("Runtime File System Stat Mapping Utilities", () => {
   it("maps configured static route paths to corresponding page source files on disk", () => {
@@ -12,7 +16,9 @@ describe("Runtime File System Stat Mapping Utilities", () => {
     expect(arcadePath).toBe(path.resolve(process.cwd(), "app/arcade/page.tsx"));
 
     const laserLoonPath = getRouteSourceFilePath("/work/laser-loon");
-    expect(laserLoonPath).toBe(path.resolve(process.cwd(), "app/work/laser-loon/page.tsx"));
+    expect(laserLoonPath).toBe(
+      path.resolve(process.cwd(), "app/work/laser-loon/page.tsx")
+    );
   });
 
   it("inspects source file modification times dynamically during sitemap generation", () => {
@@ -20,21 +26,29 @@ describe("Runtime File System Stat Mapping Utilities", () => {
     const rootLastModified = getRouteLastModified("/");
     expect(rootLastModified.getTime()).toBe(rootStat.mtime.getTime());
 
-    const arcadeStat = fs.statSync(path.resolve(process.cwd(), "app/arcade/page.tsx"));
+    const arcadeStat = fs.statSync(
+      path.resolve(process.cwd(), "app/arcade/page.tsx")
+    );
     const arcadeLastModified = getRouteLastModified("/arcade");
     expect(arcadeLastModified.getTime()).toBe(arcadeStat.mtime.getTime());
   });
 
   it("falls back to server boot or generation timestamp if a page source file cannot be statted", () => {
     const fallbackDate = new Date("2026-08-21T12:00:00Z");
-    const unresolvable = getRouteLastModified("/unresolvable/virtual/route", fallbackDate);
+    const unresolvable = getRouteLastModified(
+      "/unresolvable/virtual/route",
+      fallbackDate
+    );
     expect(unresolvable).toEqual(fallbackDate);
   });
 
   it("fails open gracefully without throwing exceptions for missing file paths", () => {
     const fallbackDate = new Date();
     expect(() => {
-      const result = getRouteLastModified("/nonexistent-path-abc-123", fallbackDate);
+      const result = getRouteLastModified(
+        "/nonexistent-path-abc-123",
+        fallbackDate
+      );
       expect(result).toBeDefined();
     }).not.toThrow();
   });

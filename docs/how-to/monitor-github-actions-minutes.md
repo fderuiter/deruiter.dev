@@ -1,7 +1,7 @@
 # Monitor GitHub Actions Minutes
 
-Last verified: 2026-09-24 against GitHub repository metadata and current
-workflow configuration. The repository is public; standard hosted-runner
+Last verified: 2026-10-02 against GitHub repository metadata and current
+workflow configuration (the #1767 job split). The repository is public; standard hosted-runner
 minutes are free for public repositories.
 
 Governing policy: [ADR 0039](../../adr/0039-github-pro-plan-capabilities-and-actions-minutes-governance.md).
@@ -57,7 +57,7 @@ runs, repeated pushes while chasing a flaky test):
 2. Confirm standard GitHub-hosted runners remain selected. Public-repository
    runner minutes are free; larger runners and artifact/cache storage may
    still incur costs or hit separate limits.
-3. Prefer `heavy-gate`'s single-device PR run over dispatching
+3. Prefer `heavy-gate`'s single-device PR shards over dispatching
    `cross-device-matrix` unless the change specifically needs the full matrix.
    Validate speculative fixes locally first (`npm run typecheck && npm run
    lint && npx playwright test --project=chromium <file>`).
@@ -65,26 +65,55 @@ runs, repeated pushes while chasing a flaky test):
    runner allowance does not make an unbounded job or artifact accumulation
    operationally safe.
 
-## What changed to reduce cost (ADR 0039 / #733)
+## What changed to reduce cost (ADR 0039 / #733 / #1767)
 
-- `fast-gate` (typecheck, lint, docs/schema drift, unit tests, property
-  fuzzing) runs on `main` pushes and pull requests targeting `main`, 
-  cheap, and gates the expensive jobs below via `needs:`.
-- `security-gate` (vulnerability audit) runs on `main` pushes and pull requests
-  targeting `main`, independent and fast.
-- `heavy-gate` (build, bundle budget, Playwright, Web Vitals) runs only on
-  PR pushes, and only against the `chromium` Playwright project instead of
-  all four configured device projects.
-- `device-gate` runs only on PR pushes, alongside `heavy-gate`, and runs the
-  two genuinely device-engine-dependent specs (`visual.spec.ts`,
-  `touch-controls.spec.ts`) against the three non-chromium projects, 
-  coverage `heavy-gate`'s single `chromium` project does not have. This used
-  to be a separate `post-merge-device-smoke` job that ran only after a
-  squash-merge landed on `main` (see CI-02 below); it does not repeat the
-  full suite a second time on identical code.
-- `merge-gate` is a required-checks summary job: it `needs:` every job above
-  and fails deliberately unless each one that is supposed to run for the
-  triggering event actually reported success. See the [required check
+Issue #1767 cut the pull request critical path from about 33 minutes to a target
+of 13 to 16 by running work in parallel and building once, without removing
+a gate or lowering a threshold:
+
+- `changes` (Change Detection & Run Policy) runs
+  `scripts/ci-run-policy.mjs` first, with no install. It decides whether the
+  PR changes code, whether it is a draft, and whether it comes from a bot
+  branch (#1773).
+- `static-gate` (migration replay, schema drift, docs drift, `lint:docs`,
+  typecheck, lint, and `npm run verify -- --skip-benchmark-evidence`) runs on
+  every trigger with the Postgres service. It caches `tsconfig.tsbuildinfo`
+  and `.eslintcache`; both are content-keyed, so a stale entry only skips
+  unchanged files.
+- `unit-gate` runs Vitest with coverage in three shards (`npm run
+  test:ci:shard`), each with Chromium for the Mermaid corpus suite (#954).
+  `unit-coverage` merges their blobs (`npm run test:ci:merge`) and enforces
+  the `vitest.config.ts` thresholds on the combined result. Property fuzzing
+  runs inside this suite.
+- `mutation-gate` runs Stryker. PRs and `main` pushes run incrementally
+  against the newest report a `main` push saved; a PR that changes Stryker's
+  configuration or the lockfile forces a full run, and
+  `mutation-weekly.yml` runs every mutant weekly (#1772).
+- `security-gate` (vulnerability, license and secret audits) runs on every
+  trigger.
+- `build` runs `npm run build` once per PR after `static-gate`, checks the
+  bundle budgets, and uploads the build as an artifact (#1769).
+- `heavy-gate` runs the full chromium e2e suite in three shards against that
+  artifact (#1770). `bench-gate` measures Web Vitals on the same build:
+  `bench:pages --assert` validates `.next/build-provenance.json` instead of
+  rebuilding, then runs the full `npm run verify` while that evidence is
+  minutes old. `heavy-gate-report` merges the shard reports, lists tests
+  that passed only on retry, and applies the accessibility gate.
+- The browser jobs (`unit-gate` for the Mermaid corpus suite, the
+  `heavy-gate` shards, `bench-gate`, `device-gate`, `cross-device-matrix`)
+  run in `mcr.microsoft.com/playwright`, pinned by digest to the locked
+  `@playwright/test` version, so none of them downloads a browser or runs
+  apt (#1771). `__tests__/ci-toolchain-pinning.test.ts` fails when the image
+  tag and the lockfile disagree, so bump them together.
+- `device-gate` runs the two device-engine-dependent specs
+  (`visual.spec.ts`, `touch-controls.spec.ts`) against the three non-chromium
+  projects, on the same artifact.
+- `cache-warm` runs only on `main` pushes and is not a gate. It saves the
+  `main` webpack cache that PR builds fall back to, because a PR's own
+  caches are invisible to other PRs (#1769).
+- `merge-gate` is the required-checks summary job: it `needs:` every gate
+  above and fails unless each one that should run for the event reported
+  success. See the [required check
   contract](#required-check-contract-for-branch-protection-732) below.
 - `cross-device-matrix` (the full four-device matrix against the full suite)
   is `workflow_dispatch`-only, for a release or a device-sensitive change
@@ -92,6 +121,25 @@ runs, repeated pushes while chasing a flaky test):
 - The one-time Jules consolidation PR (#1029) used the same required pre-merge
   gates as other changes and has landed. All work targets `main`; the retired
   `dev` branch is not a CI target (see [ADR 0050](../../adr/0050-jules-consolidation-release.md)).
+
+### Which gates run for which pull request (#1773)
+
+| Pull request | Runs | Merge Gate |
+| --- | --- | --- |
+| Code change, ready for review | Every gate | Green when every gate passes |
+| Docs-only change | Every gate except `build`, `heavy-gate`, `bench-gate`, `heavy-gate-report`, `device-gate` | Green when the rest pass |
+| Draft | Static, unit, mutation and security gates | Red until marked ready, which re-runs everything |
+| Bot branch (`stitch/`, `jules/`) without `ci:full` | Static and security gates only | Red: "bot PR: full suite runs when marked ready" |
+| Bot branch with the `ci:full` label | Every gate the change needs | Green when they pass |
+
+A change is docs-only when every changed file is on the explicit allowlist
+in `scripts/ci-run-policy.mjs`: Markdown outside the app source directories,
+`adr/`, `docs/`, `.github/ISSUE_TEMPLATE/`, `.agents/skills/`, and a few
+named files. Any other path counts as code. To promote a bot PR, a
+maintainer applies the `ci:full` label; the `labeled` trigger re-runs CI.
+Adding any label re-runs the whole workflow, because the new run cancels the
+one in progress. The bot prefix list lives in `scripts/ci-run-policy.mjs`,
+and `__tests__/ci-run-policy.test.ts` ties it to `validateBranchName()`.
 
 ## CI-02: targeted device coverage gates pull requests to `main`
 
@@ -107,8 +155,10 @@ targeted suite a second time on the post-merge push, the reduced-scope
 split from #733/#775 (one four-device matrix run per merge, not per push and
 per PR) is unchanged, just relocated to before the merge instead of after.
 
-`main`-push confirmation stays deliberately bounded to `fast-gate` and
+`main`-push confirmation stays deliberately bounded to `changes`,
+`static-gate`, `unit-gate`, `unit-coverage`, `mutation-gate` and
 `security-gate`, a safety net for a direct push that bypasses PR review.
+The non-gating `cache-warm` job also runs on `main` pushes.
 Branch protection is available for this public repository, but its current
 dashboard configuration has not been verified; #732 tracks that human check.
 The bounded push jobs are not a repeat of the build/Playwright work the merged
@@ -131,21 +181,22 @@ same `main` rule.
 This replaces the two check names #732 originally listed
 (`Rigor Ecosystem (Logic, Visual, Performance)` and
 `Security Gate (Vulnerability Audit)`), the first no longer exists under
-that name since #775 split it into `fast-gate`/`heavy-gate`/`device-gate`.
-Requiring the individual job names directly does not work correctly here:
-`heavy-gate` and `device-gate` both carry an `if: github.event_name ==
-'pull_request'` condition, and GitHub's required-status-checks rule treats a
+that name since #775 split it, and #1767 split it further. Requiring the
+individual job names directly does not work correctly here: the browser
+gates carry `if:` conditions (pull requests only, and only when the run
+policy allows them), and GitHub's required-status-checks rule treats a
 job skipped by its own `if:` (or skipped as a side effect of a failed
 `needs:` predecessor) the same as a job that never applied, a "skipped"
 conclusion satisfies the requirement instead of blocking it. `merge-gate`
 runs with `if: always()` specifically to stay unaffected by that, then
 inspects `needs.<job>.result` for every job that should have run for the
 current event and fails unless each one is literally `"success"`, so a
-cancelled Playwright run, a failed `fast-gate`, or an unexpectedly skipped
-`device-gate` cannot produce a passing `merge-gate`, and requiring that one
-check is sufficient; requiring the four upstream jobs individually as well
-is redundant (harmless, but adds nothing `merge-gate` doesn't already
-depend on).
+cancelled Playwright shard, a failed `static-gate`, or an unexpectedly
+skipped `device-gate` cannot produce a passing `merge-gate`, and requiring
+that one check is sufficient. The one skip it accepts is a browser gate on a
+pull request that `changes` itself classified, successfully, as docs-only;
+if `changes` failed or was skipped, every gate is required. A matrix job
+(`unit-gate`, `heavy-gate`) reports success only when every shard did.
 
 `security-gate` remains unconditional (no `if:`), so its `"Security Gate
 (Vulnerability Audit)"` check name is safe to require directly as well if the
@@ -185,10 +236,14 @@ as documented in official GitHub guidance on
 To eliminate this gap, `merge-gate` runs unconditionally (`if: always()`, no
 event exclusion), and its shell script dispatches explicitly on `github.event_name`:
 
-- `pull_request`: requires all four predecessor jobs (`fast-gate`, `security-gate`,
-  `heavy-gate`, `device-gate`) to report literal `"success"`.
-- `push`: requires `fast-gate` and `security-gate` only (the bounded main-push
-  confirmation, since PR review already validated heavy-gate and device-gate).
+- `pull_request`: requires `changes`, `static-gate`, `security-gate`,
+  `unit-gate`, `unit-coverage` and `mutation-gate`, plus every browser gate
+  (`build`, `heavy-gate`, `bench-gate`, `heavy-gate-report`,
+  `device-gate`) unless the change is docs-only. It fails on a draft and on
+  a bot PR without the `ci:full` label.
+- `push`: requires `changes`, `static-gate`, `unit-gate`, `unit-coverage`,
+  `mutation-gate` and `security-gate` (the bounded main-push confirmation,
+  since PR review already validated the browser gates).
 - `*` (default): any other event: `workflow_dispatch` included, and any future
   trigger this workflow does not yet have, hits an explicit default branch that
   fails the job outright (`echo "::error::..."; fail=1`).
@@ -218,9 +273,12 @@ need verification:
   environment deploys. During the manual hold, an operator starts Production from
   the Vercel Dashboard after CI passes ([ADR 0051](../../adr/0051-manual-production-releases.md)).
   Keep the hold until a replacement release policy is approved and verified.
-- **Runtime measurements**: The `timeout-minutes` values on `fast-gate` (20),
-  `security-gate` (15), `heavy-gate` (40), `device-gate` (25), and `merge-gate` (5)
-  remain upper bounds, not measured runtimes. Review successful GitHub run
+- **Runtime measurements**: The `timeout-minutes` values (`changes` 5,
+  `static-gate` 20, `unit-gate` 20 per shard, `unit-coverage` 10,
+  `mutation-gate` 20, `security-gate` 15, `build` 25, `heavy-gate` 30 per
+  shard, `bench-gate` 20, `heavy-gate-report` 15, `device-gate` 25,
+  `merge-gate` 5, `cache-warm` 30) remain upper bounds, not measured runtimes.
+  The #1767 baseline (run 37025796528) took about 33 minutes to Merge Gate. Review successful GitHub run
   durations before tightening them; standard public-runner minutes are free,
   while larger runners and artifact/cache storage have separate billing.
 - **Historical outage**: The private-repository allowance was exhausted in

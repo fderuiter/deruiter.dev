@@ -1,3 +1,4 @@
+// @vitest-environment node
 // Reproduction for #1645: while a sprint is paused, every state-changing
 // player action must be a no-op, so a paused player cannot defuse the
 // meters or bank points with the clock stopped.

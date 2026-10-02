@@ -1,7 +1,28 @@
-import { describe, it, expect } from "vitest";
+// @vitest-environment node
+import { describe, it, expect, beforeAll, vi } from "vitest";
 import path from "path";
 import fs from "fs";
-import vitestConfig from "../vitest.config";
+import type defaultConfig from "../vitest.config";
+
+/**
+ * CI's sharded unit runs (#1775) set VITEST_COVERAGE_THRESHOLDS so each shard
+ * defers thresholds to the merge job; this suite may run inside such a shard.
+ * It governs the thresholds every unsharded run and the merge enforce, so it
+ * loads the config with that variable cleared.
+ */
+let vitestConfig: typeof defaultConfig;
+beforeAll(async () => {
+  const deferred = process.env.VITEST_COVERAGE_THRESHOLDS;
+  delete process.env.VITEST_COVERAGE_THRESHOLDS;
+  try {
+    vi.resetModules();
+    vitestConfig = (await import("../vitest.config")).default;
+  } finally {
+    if (deferred !== undefined) {
+      process.env.VITEST_COVERAGE_THRESHOLDS = deferred;
+    }
+  }
+});
 
 const workspaceRoot = path.resolve(__dirname, "..");
 

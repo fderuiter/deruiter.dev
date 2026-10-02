@@ -1,3 +1,4 @@
+// @vitest-environment node
 /**
  * Balance harness (T&E-14, #1074). The bot in `utils/trial-and-error-bot.ts`
  * plays every Blind through the public reducers in four styles, and this

@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import path from "path";
 import fs from "fs";
@@ -36,22 +37,36 @@ describe("DX Universal Scaffolder", () => {
     // Verify engine file
     const engineFile = path.join(tempDir, "lib", "cyber-vault-engine.ts");
     expect(fs.existsSync(engineFile)).toBe(true);
-    expect(fs.readFileSync(engineFile, "utf-8")).toContain("createInitialCyberVaultState");
+    expect(fs.readFileSync(engineFile, "utf-8")).toContain(
+      "createInitialCyberVaultState"
+    );
 
     // Verify UI file
     const uiFile = path.join(tempDir, "components", "CyberVault.tsx");
     expect(fs.existsSync(uiFile)).toBe(true);
-    expect(fs.readFileSync(uiFile, "utf-8")).toContain("export const CyberVault");
+    expect(fs.readFileSync(uiFile, "utf-8")).toContain(
+      "export const CyberVault"
+    );
 
     // Verify route file has pt-28 and NO Navbar
-    const routeFile = path.join(tempDir, "app", "arcade", "cyber-vault", "page.tsx");
+    const routeFile = path.join(
+      tempDir,
+      "app",
+      "arcade",
+      "cyber-vault",
+      "page.tsx"
+    );
     expect(fs.existsSync(routeFile)).toBe(true);
     const routeContent = fs.readFileSync(routeFile, "utf-8");
     expect(routeContent).toContain("pt-28");
     expect(routeContent).not.toContain("<Navbar");
 
     // Verify tests
-    const engineTest = path.join(tempDir, "__tests__", "cyber-vault-engine.test.ts");
+    const engineTest = path.join(
+      tempDir,
+      "__tests__",
+      "cyber-vault-engine.test.ts"
+    );
     expect(fs.existsSync(engineTest)).toBe(true);
 
     // Verify CommandPalette updated
@@ -63,8 +78,18 @@ describe("DX Universal Scaffolder", () => {
     const generated = scaffoldApiRoute(tempDir, "telemetry-stream", false);
     expect(generated.length).toBe(2);
 
-    const routeFile = path.join(tempDir, "app", "api", "telemetry-stream", "route.ts");
-    const testFile = path.join(tempDir, "__tests__", "telemetry-stream-api.test.ts");
+    const routeFile = path.join(
+      tempDir,
+      "app",
+      "api",
+      "telemetry-stream",
+      "route.ts"
+    );
+    const testFile = path.join(
+      tempDir,
+      "__tests__",
+      "telemetry-stream-api.test.ts"
+    );
 
     expect(fs.existsSync(routeFile)).toBe(true);
     expect(fs.existsSync(testFile)).toBe(true);
@@ -104,10 +129,20 @@ describe("DX Universal Scaffolder", () => {
       'const staticNavs: PaletteItem[] = [\n      { id: "nav-work", url: "/#work" }\n    ];'
     );
 
-    const generated = scaffoldCaseStudy(tempDir, "high-frequency-compiler", false);
+    const generated = scaffoldCaseStudy(
+      tempDir,
+      "high-frequency-compiler",
+      false
+    );
     expect(generated.length).toBeGreaterThanOrEqual(1);
 
-    const routeFile = path.join(tempDir, "app", "case-studies", "high-frequency-compiler", "page.tsx");
+    const routeFile = path.join(
+      tempDir,
+      "app",
+      "case-studies",
+      "high-frequency-compiler",
+      "page.tsx"
+    );
     expect(fs.existsSync(routeFile)).toBe(true);
   });
 

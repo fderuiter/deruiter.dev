@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, vi } from "vitest";
 import { calculatePostMd5, syncBlogPosts } from "../scripts/sync-blog-posts";
 import type { BlogPostData } from "@/lib/fallback-blog-posts";

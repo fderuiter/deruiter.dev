@@ -1,3 +1,4 @@
+// @vitest-environment node
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { sanitizeError, sanitizeString } from "@/lib/error-sanitization";

@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it } from "vitest";
 import { spawnSync } from "child_process";
 import fs from "fs";

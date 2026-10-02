@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from "vitest";
 import { DuckCommandHandler } from "@/lib/services";
 import { createInitialDuckGameState } from "@/lib/working-with-duck-engine";

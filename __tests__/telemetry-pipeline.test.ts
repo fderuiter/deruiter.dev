@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 // 1. Hoisted mocks definition
@@ -452,6 +453,9 @@ describe("Telemetry Robustness & Pipeline Test Suite", () => {
 
       // The execution successfully ran the finally sweep block without raising errors
       dateSpy.mockRestore();
-    });
+      // 5,006 sequential route calls take about 9 s alone and exceeded the
+      // 15 s default under a fully loaded coverage run, so this one test
+      // carries its own bound. The assertions are unchanged.
+    }, 45_000);
   });
 });

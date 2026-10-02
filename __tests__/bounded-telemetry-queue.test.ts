@@ -1,3 +1,4 @@
+// @vitest-environment node
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import {
@@ -44,16 +45,32 @@ describe("In-Memory Bounded FIFO Telemetry Queue", () => {
   it("should evict oldest event (FIFO) and retain newest event when full", () => {
     setQueueCapacity(3);
 
-    enqueueRetryItem({ projectSlug: "event-1", eventType: "page_view", retries: 0 });
-    enqueueRetryItem({ projectSlug: "event-2", eventType: "project_click", retries: 1 });
-    enqueueRetryItem({ projectSlug: "event-3", eventType: "route_error", retries: 2 });
+    enqueueRetryItem({
+      projectSlug: "event-1",
+      eventType: "page_view",
+      retries: 0,
+    });
+    enqueueRetryItem({
+      projectSlug: "event-2",
+      eventType: "project_click",
+      retries: 1,
+    });
+    enqueueRetryItem({
+      projectSlug: "event-3",
+      eventType: "route_error",
+      retries: 2,
+    });
 
     expect(getRetryQueueLength()).toBe(3);
     const initialQueue = getRetryQueue();
     expect(initialQueue[0].projectSlug).toBe("event-1");
 
     // Add 4th event to full queue
-    enqueueRetryItem({ projectSlug: "event-4", eventType: "page_view", retries: 0 });
+    enqueueRetryItem({
+      projectSlug: "event-4",
+      eventType: "page_view",
+      retries: 0,
+    });
 
     expect(getRetryQueueLength()).toBe(3);
     const updatedQueue = getRetryQueue();
@@ -65,24 +82,56 @@ describe("In-Memory Bounded FIFO Telemetry Queue", () => {
   it("should preserve existing retry attempt counts and ordering for un-evicted items", () => {
     setQueueCapacity(3);
 
-    enqueueRetryItem({ projectSlug: "evicted", eventType: "page_view", retries: 0 });
-    enqueueRetryItem({ projectSlug: "stay-1", eventType: "project_click", retries: 2 });
-    enqueueRetryItem({ projectSlug: "stay-2", eventType: "route_error", retries: 1 });
+    enqueueRetryItem({
+      projectSlug: "evicted",
+      eventType: "page_view",
+      retries: 0,
+    });
+    enqueueRetryItem({
+      projectSlug: "stay-1",
+      eventType: "project_click",
+      retries: 2,
+    });
+    enqueueRetryItem({
+      projectSlug: "stay-2",
+      eventType: "route_error",
+      retries: 1,
+    });
 
     // Evict oldest item
-    enqueueRetryItem({ projectSlug: "new-item", eventType: "page_view", retries: 0 });
+    enqueueRetryItem({
+      projectSlug: "new-item",
+      eventType: "page_view",
+      retries: 0,
+    });
 
     const queue = getRetryQueue();
     expect(queue.length).toBe(3);
-    expect(queue[0]).toEqual({ projectSlug: "stay-1", eventType: "project_click", retries: 2 });
-    expect(queue[1]).toEqual({ projectSlug: "stay-2", eventType: "route_error", retries: 1 });
-    expect(queue[2]).toEqual({ projectSlug: "new-item", eventType: "page_view", retries: 0 });
+    expect(queue[0]).toEqual({
+      projectSlug: "stay-1",
+      eventType: "project_click",
+      retries: 2,
+    });
+    expect(queue[1]).toEqual({
+      projectSlug: "stay-2",
+      eventType: "route_error",
+      retries: 1,
+    });
+    expect(queue[2]).toEqual({
+      projectSlug: "new-item",
+      eventType: "page_view",
+      retries: 0,
+    });
   });
 
   it("should dynamically trim queue from oldest end when reducing queue capacity", () => {
     setQueueCapacity(10);
     for (let i = 1; i <= 10; i++) {
-      enqueueRetryItem({ projectSlug: `event-${i}`, eventType: "page_view", retries: 0 });
+      enqueueRetryItem({
+        projectSlug: `event-${i}`,
+        eventType: "page_view",
+        retries: 0,
+      });
     }
     expect(getRetryQueueLength()).toBe(10);
 
@@ -102,7 +151,11 @@ describe("In-Memory Bounded FIFO Telemetry Queue", () => {
   });
 
   it("should clear retry queue and reset length synchronously when requested", () => {
-    enqueueRetryItem({ projectSlug: "test", eventType: "page_view", retries: 0 });
+    enqueueRetryItem({
+      projectSlug: "test",
+      eventType: "page_view",
+      retries: 0,
+    });
     expect(getRetryQueueLength()).toBe(1);
 
     clearRetryQueue();

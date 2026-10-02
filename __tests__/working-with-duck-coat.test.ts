@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { fromAny } from "@total-typescript/shoehorn";
 import { describe, expect, it } from "vitest";
 import { drawBathtubScene } from "@/components/working-with-duck/bath-art";

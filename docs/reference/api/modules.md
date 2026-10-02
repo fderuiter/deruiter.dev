@@ -101,6 +101,7 @@
 - [lib/crf/csv-spec-parser](lib/crf/csv-spec-parser/README.md)
 - [lib/crf/export-acrf](lib/crf/export-acrf/README.md)
 - [lib/crf/export-annotations](lib/crf/export-annotations/README.md)
+- [lib/crf/export-baseline-diff](lib/crf/export-baseline-diff/README.md)
 - [lib/crf/export-docx](lib/crf/export-docx/README.md)
 - [lib/crf/export-pdf](lib/crf/export-pdf/README.md)
 - [lib/crf/export-r](lib/crf/export-r/README.md)

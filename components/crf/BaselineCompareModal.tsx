@@ -9,8 +9,14 @@ import {
   IconPencil,
   IconArrowRight,
   IconCircleCheck,
+  IconFileSpreadsheet,
+  IconFileCode,
+  IconFileText,
+  IconCopy,
+  IconCheck,
 } from "@tabler/icons-react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { CopyButton } from "@/components/ui/CopyButton";
 import { StudyProtocol, StudyBaseline } from "@/lib/crf/types";
 import { listStudyBaselines } from "@/lib/crf/study-baselines";
 import {
@@ -21,6 +27,12 @@ import {
   type BaselineDiffCategory,
   type BaselineComparisonResult,
 } from "@/lib/crf/study-baseline-diff";
+import {
+  exportBaselineDiffCsv,
+  exportBaselineDiffJson,
+  exportBaselineDiffText,
+  serializeBaselineDiffToText,
+} from "@/lib/crf/export-baseline-diff";
 
 export interface BaselineCompareNavigationTarget {
   mode: "designer" | "rules" | "matrix";
@@ -217,6 +229,23 @@ export const BaselineCompareModal: React.FC<BaselineCompareModalProps> = ({
     onClose();
   };
 
+  const hasChanges = Boolean(comparison?.summary.hasChanges);
+
+  const handleExportCsv = () => {
+    if (!comparison) return;
+    exportBaselineDiffCsv(comparison);
+  };
+
+  const handleExportJson = () => {
+    if (!comparison) return;
+    exportBaselineDiffJson(comparison);
+  };
+
+  const handleExportText = () => {
+    if (!comparison) return;
+    exportBaselineDiffText(comparison);
+  };
+
   if (!isOpen) return null;
 
   const visibleEntries =
@@ -266,33 +295,107 @@ export const BaselineCompareModal: React.FC<BaselineCompareModalProps> = ({
           </button>
         </div>
 
-        {/* Baseline picker */}
-        <div className="px-4 sm:px-5 py-3 border-b border-zinc-850 bg-zinc-950 flex items-center gap-3 flex-wrap">
-          <label
-            htmlFor="baseline-compare-select"
-            className="text-xs font-mono font-semibold text-zinc-300 shrink-0"
-          >
-            Compare current draft against:
-          </label>
-          {baselines.length === 0 ? (
-            <span className="text-xs text-zinc-500">
-              No saved baselines yet: create one from &quot;Baselines&quot;
-              first.
-            </span>
-          ) : (
-            <select
-              id="baseline-compare-select"
-              value={selectedBaselineId || ""}
-              onChange={(e) => handleSelectBaseline(e.target.value)}
-              className="px-2.5 py-1.5 bg-zinc-900 border border-zinc-700/80 rounded-lg text-xs font-mono text-white focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
+        {/* Baseline picker & Export Toolbar */}
+        <div className="px-4 sm:px-5 py-3 border-b border-zinc-850 bg-zinc-950 flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-3 flex-wrap">
+            <label
+              htmlFor="baseline-compare-select"
+              className="text-xs font-mono font-semibold text-zinc-300 shrink-0"
             >
-              {baselines.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.versionTag}: {b.label}
-                </option>
-              ))}
-            </select>
-          )}
+              Compare current draft against:
+            </label>
+            {baselines.length === 0 ? (
+              <span className="text-xs text-zinc-500">
+                No saved baselines yet: create one from &quot;Baselines&quot;
+                first.
+              </span>
+            ) : (
+              <select
+                id="baseline-compare-select"
+                value={selectedBaselineId || ""}
+                onChange={(e) => handleSelectBaseline(e.target.value)}
+                className="px-2.5 py-1.5 bg-zinc-900 border border-zinc-700/80 rounded-lg text-xs font-mono text-white focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
+              >
+                {baselines.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.versionTag}: {b.label}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          {/* Export Toolbar */}
+          <div
+            className="flex items-center gap-2 flex-wrap"
+            role="toolbar"
+            aria-label="Export controls"
+          >
+            <button
+              type="button"
+              onClick={handleExportCsv}
+              disabled={!selectedBaseline || !hasChanges}
+              aria-label="Export CSV"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-zinc-900 hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed border border-zinc-750 rounded-lg text-xs font-mono font-semibold text-zinc-200 hover:text-white transition-all focus:outline-none focus:ring-1 focus:ring-brand-cyan"
+            >
+              <IconFileSpreadsheet
+                className="w-3.5 h-3.5 text-emerald-400"
+                aria-hidden="true"
+              />
+              <span>Export CSV</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleExportJson}
+              disabled={!selectedBaseline || !hasChanges}
+              aria-label="Export JSON"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-zinc-900 hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed border border-zinc-750 rounded-lg text-xs font-mono font-semibold text-zinc-200 hover:text-white transition-all focus:outline-none focus:ring-1 focus:ring-brand-cyan"
+            >
+              <IconFileCode
+                className="w-3.5 h-3.5 text-sky-400"
+                aria-hidden="true"
+              />
+              <span>Export JSON</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleExportText}
+              disabled={!selectedBaseline || !hasChanges}
+              aria-label="Export Text"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-zinc-900 hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed border border-zinc-750 rounded-lg text-xs font-mono font-semibold text-zinc-200 hover:text-white transition-all focus:outline-none focus:ring-1 focus:ring-brand-cyan"
+            >
+              <IconFileText
+                className="w-3.5 h-3.5 text-amber-400"
+                aria-hidden="true"
+              />
+              <span>Export Text</span>
+            </button>
+
+            <CopyButton
+              text={() =>
+                comparison ? serializeBaselineDiffToText(comparison) : ""
+              }
+              disabled={!selectedBaseline || !hasChanges}
+              aria-label="Copy Summary"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-zinc-900 hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed border border-zinc-750 rounded-lg text-xs font-mono font-semibold text-zinc-200 hover:text-white transition-all focus:outline-none focus:ring-1 focus:ring-brand-cyan"
+              label="Copy Summary"
+              copiedLabel="Copied!"
+              icon={
+                <IconCopy
+                  className="w-3.5 h-3.5 text-zinc-300"
+                  aria-hidden="true"
+                />
+              }
+              copiedIcon={
+                <IconCheck
+                  className="w-3.5 h-3.5 text-emerald-400"
+                  aria-hidden="true"
+                />
+              }
+            />
+          </div>
         </div>
 
         {/* Category filter tabs + summary */}

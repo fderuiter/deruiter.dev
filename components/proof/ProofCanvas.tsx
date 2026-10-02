@@ -784,7 +784,7 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
                         : "bg-brand-cyan/20 border-brand-cyan text-white shadow-lg shadow-cyan-500/20 ring-1 ring-brand-cyan/60"
                       : "border-slate-800 bg-slate-900 text-slate-400 hover:text-slate-200 hover:bg-slate-800 opacity-80 hover:opacity-100"
                   }`}
-                  title={match?.explanation || `${rule.name}: ${rule.template}`}
+                  title={`${rule.name}: ${match?.explanation || rule.template}`}
                   aria-label={`${rule.name}: ${isApplicable ? `Applicable deriving ${match?.resultFormula}` : match?.explanation || rule.template}`}
                 >
                   <span

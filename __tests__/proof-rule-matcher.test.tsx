@@ -1,9 +1,16 @@
-import { describe, it, expect } from "vitest";
+import React from "react";
+import { describe, it, expect, afterEach } from "vitest";
+import { render, screen, cleanup } from "@testing-library/react";
+import { ProofCanvas } from "../components/proof/ProofCanvas";
 import {
   scanApplicableRules,
   solveNextDeductionStep,
   THEOREMS,
 } from "../lib/proof-utils";
+
+afterEach(() => {
+  cleanup();
+});
 
 describe("AST Rule Matcher & Solver Engine", () => {
   const mpTheorem = THEOREMS["modus-ponens"];
@@ -85,5 +92,50 @@ describe("AST Rule Matcher & Solver Engine", () => {
     expect(autoStep.message).toContain(
       "Goal already fully discharged (Q.E.D.)!"
     );
+  });
+
+  it("renders rule palette buttons with titles prefixed with rule name when ruleMatches are present", () => {
+    const selectedNodeIds = ["C", "D"];
+    const matches = scanApplicableRules(
+      mpTheorem.nodes,
+      selectedNodeIds,
+      mpTheorem.targetNodeId
+    );
+
+    render(
+      <ProofCanvas
+        activeTheorem={mpTheorem}
+        edges={mpTheorem.initialEdges}
+        nodeOffsets={{}}
+        selectedNodeIds={selectedNodeIds}
+        inspectedNodeId=""
+        isSnappingEnabled={true}
+        activeGuides={[]}
+        dragConnection={null}
+        isSimulating={false}
+        simulationProgress={null}
+        toggleSnapping={() => {}}
+        handleAutoStep={() => {}}
+        handleResetLayout={() => {}}
+        activeTacticHint={{ title: "Test", hint: "Hint" }}
+        handleNodePointerDown={() => {}}
+        handleNodePointerMove={() => {}}
+        handleNodePointerUp={() => {}}
+        handleNodeClick={() => {}}
+        handleHandlePointerDown={() => {}}
+        handleCanvasPointerMove={() => {}}
+        handleCanvasPointerUp={() => {}}
+        handleApplyRule={() => {}}
+        handleStartSimulation={() => {}}
+        canvasWrapperRef={{ current: null }}
+        svgCanvasRef={{ current: null }}
+        mobileActiveView="canvas"
+        ruleMatches={matches}
+      />
+    );
+
+    const mpBtn = screen.getByTitle(/^Modus Ponens:/);
+    expect(mpBtn).toBeDefined();
+    expect(mpBtn.getAttribute("title")).toMatch(/^Modus Ponens:/);
   });
 });

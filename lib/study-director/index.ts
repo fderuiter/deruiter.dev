@@ -44,3 +44,5 @@ export {
   lockDatabase,
   runInspection,
 } from "./internal/endgame";
+export * from "./export";
+export * from "./scenario";

@@ -1,12 +1,20 @@
 "use client";
 
 import React from "react";
-import { computeMeters, type FinalReport } from "@/lib/study-director";
+import {
+  computeMeters,
+  exportAuditFindingsCsv,
+  exportDecisionLogCsv,
+  exportMeterTrajectoryCsv,
+  exportRetrospectiveJson,
+  type FinalReport,
+} from "@/lib/study-director";
 import { Card } from "./Panels";
 import { HealthRadar } from "./HealthRadar";
 import { DecisionTimeline } from "./DecisionTimeline";
 import { verdictFor } from "./closeout";
 import { DIFFICULTY_TEXT } from "./DifficultyPicker";
+import { downloadFile } from "./ScenarioBuilder";
 
 const OUTCOME_STYLE = {
   closed: "border-emerald-500/50 text-emerald-400",
@@ -103,6 +111,70 @@ export const ReportView: React.FC<{
         </div>
       </section>
       {share}
+
+      <Card title="Export Retrospective & Audit Data" hint="JSON & CSV Formats">
+        <div
+          className="flex flex-wrap items-center gap-2 pt-1"
+          data-testid="export-actions"
+        >
+          <button
+            type="button"
+            onClick={() => {
+              const json = exportRetrospectiveJson(report);
+              downloadFile(
+                `study-${state.setup.id}-retrospective.json`,
+                json,
+                "application/json"
+              );
+            }}
+            className="border border-amber-500/80 bg-amber-500/10 px-3 py-1.5 text-xs font-bold text-amber-300 hover:bg-amber-500/20"
+          >
+            Download Retrospective JSON
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const csv = exportDecisionLogCsv(report);
+              downloadFile(
+                `study-${state.setup.id}-decisions.csv`,
+                csv,
+                "text/csv"
+              );
+            }}
+            className="border border-zinc-700 bg-zinc-800/80 px-3 py-1.5 text-xs font-bold text-zinc-200 hover:border-amber-400 hover:text-amber-300"
+          >
+            Export Decisions CSV
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const csv = exportMeterTrajectoryCsv(report);
+              downloadFile(
+                `study-${state.setup.id}-meters.csv`,
+                csv,
+                "text/csv"
+              );
+            }}
+            className="border border-zinc-700 bg-zinc-800/80 px-3 py-1.5 text-xs font-bold text-zinc-200 hover:border-amber-400 hover:text-amber-300"
+          >
+            Export Meter Trajectory CSV
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const csv = exportAuditFindingsCsv(report);
+              downloadFile(
+                `study-${state.setup.id}-findings.csv`,
+                csv,
+                "text/csv"
+              );
+            }}
+            className="border border-zinc-700 bg-zinc-800/80 px-3 py-1.5 text-xs font-bold text-zinc-200 hover:border-amber-400 hover:text-amber-300"
+          >
+            Export Findings CSV
+          </button>
+        </div>
+      </Card>
 
       <div className="grid gap-3 lg:grid-cols-[minmax(0,280px)_minmax(0,1fr)]">
         <Card title="Final study health">

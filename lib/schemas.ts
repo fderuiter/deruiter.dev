@@ -786,6 +786,46 @@ export const ProjectSlugParamSchema = z.object({
   slug: z.string().trim().min(1, "Project slug is required"),
 });
 
+export const QuasiPerfectLeanVerifySchema = z
+  .object({
+    theoremName: z
+      .string()
+      .trim()
+      .max(100)
+      .optional()
+      .default("custom_theorem"),
+    typeSignature: z.string().trim().max(500).optional(),
+    leanScript: z.string().trim().max(10_000),
+    proofSteps: z
+      .array(
+        z.object({
+          id: z.string(),
+          tacticId: z.string(),
+          leanLine: z.string(),
+          goalBefore: z.string().optional(),
+          goalAfter: z.string().optional(),
+        })
+      )
+      .optional(),
+  })
+  .strict();
+
+export const LeanDiagnosticSchema = z.object({
+  line: z.number().int().min(1),
+  column: z.number().int().min(1).optional(),
+  severity: z.enum(["error", "warning", "info"]),
+  message: z.string(),
+});
+
+export const QuasiPerfectLeanVerifyResponseSchema = z.object({
+  success: z.boolean(),
+  status: z.enum(["verified", "error", "in_progress", "fallback_simulated"]),
+  diagnostics: z.array(LeanDiagnosticSchema),
+  goalState: z.string().optional(),
+  executionTimeMs: z.number(),
+  engine: z.enum(["lean4_kernel", "fallback_simulator"]),
+});
+
 /**
  * Collapses a Zod validation error into one message per top-level field, the
  * shape client forms render inline beside each input. Nested issues (such as

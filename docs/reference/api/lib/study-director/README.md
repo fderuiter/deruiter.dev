@@ -74,6 +74,12 @@ Re-exports [beginStudy](internal/events/functions/beginStudy.md)
 
 ***
 
+### buildRetrospectiveExport
+
+Re-exports [buildRetrospectiveExport](export/functions/buildRetrospectiveExport.md)
+
+***
+
 ### classifyProfile
 
 Re-exports [classifyProfile](internal/endgame/functions/classifyProfile.md)
@@ -92,9 +98,27 @@ Re-exports [CoordinatorArchetype](types/type-aliases/CoordinatorArchetype.md)
 
 ***
 
+### CoordinatorArchetypeSchema
+
+Re-exports [CoordinatorArchetypeSchema](scenario/variables/CoordinatorArchetypeSchema.md)
+
+***
+
+### createScenarioFromPreset
+
+Re-exports [createScenarioFromPreset](scenario/functions/createScenarioFromPreset.md)
+
+***
+
 ### createStudy
 
 Re-exports [createStudy](internal/model/functions/createStudy.md)
+
+***
+
+### createStudyFromScenario
+
+Re-exports [createStudyFromScenario](scenario/functions/createStudyFromScenario.md)
 
 ***
 
@@ -125,6 +149,12 @@ Re-exports [DecisionInput](types/interfaces/DecisionInput.md)
 ### DecisionRecord
 
 Re-exports [DecisionRecord](types/interfaces/DecisionRecord.md)
+
+***
+
+### DEFAULT\_SCENARIO
+
+Re-exports [DEFAULT_SCENARIO](scenario/variables/DEFAULT_SCENARIO.md)
 
 ***
 
@@ -176,6 +206,36 @@ Re-exports [EventOption](types/interfaces/EventOption.md)
 
 ***
 
+### exportAuditFindingsCsv
+
+Re-exports [exportAuditFindingsCsv](export/functions/exportAuditFindingsCsv.md)
+
+***
+
+### exportDecisionLogCsv
+
+Re-exports [exportDecisionLogCsv](export/functions/exportDecisionLogCsv.md)
+
+***
+
+### exportMeterTrajectoryCsv
+
+Re-exports [exportMeterTrajectoryCsv](export/functions/exportMeterTrajectoryCsv.md)
+
+***
+
+### exportRetrospectiveJson
+
+Re-exports [exportRetrospectiveJson](export/functions/exportRetrospectiveJson.md)
+
+***
+
+### exportScenarioJson
+
+Re-exports [exportScenarioJson](scenario/functions/exportScenarioJson.md)
+
+***
+
 ### finalizeStudy
 
 Re-exports [finalizeStudy](internal/endgame/functions/finalizeStudy.md)
@@ -185,6 +245,12 @@ Re-exports [finalizeStudy](internal/endgame/functions/finalizeStudy.md)
 ### FinalReport
 
 Re-exports [FinalReport](types/interfaces/FinalReport.md)
+
+***
+
+### generateMeterHistory
+
+Re-exports [generateMeterHistory](export/functions/generateMeterHistory.md)
 
 ***
 
@@ -248,6 +314,12 @@ Re-exports [MemberArchetype](types/type-aliases/MemberArchetype.md)
 
 ***
 
+### MemberArchetypeSchema
+
+Re-exports [MemberArchetypeSchema](scenario/variables/MemberArchetypeSchema.md)
+
+***
+
 ### METER\_IDS
 
 Re-exports [METER_IDS](types/variables/METER_IDS.md)
@@ -263,6 +335,12 @@ Re-exports [MeterId](types/type-aliases/MeterId.md)
 ### Meters
 
 Re-exports [Meters](types/type-aliases/Meters.md)
+
+***
+
+### parseScenarioJson
+
+Re-exports [parseScenarioJson](scenario/functions/parseScenarioJson.md)
 
 ***
 
@@ -296,6 +374,18 @@ Re-exports [projectedFinishDay](internal/model/functions/projectedFinishDay.md)
 
 ***
 
+### ProtocolMaturitySchema
+
+Re-exports [ProtocolMaturitySchema](scenario/variables/ProtocolMaturitySchema.md)
+
+***
+
+### RegulatoryRiskSchema
+
+Re-exports [RegulatoryRiskSchema](scenario/variables/RegulatoryRiskSchema.md)
+
+***
+
 ### resolveDecision
 
 Re-exports [resolveDecision](internal/model/functions/resolveDecision.md)
@@ -305,6 +395,18 @@ Re-exports [resolveDecision](internal/model/functions/resolveDecision.md)
 ### resolveEvent
 
 Re-exports [resolveEvent](internal/events/functions/resolveEvent.md)
+
+***
+
+### RetrospectiveJson
+
+Re-exports [RetrospectiveJson](export/interfaces/RetrospectiveJson.md)
+
+***
+
+### RetrospectiveMeterPoint
+
+Re-exports [RetrospectiveMeterPoint](export/interfaces/RetrospectiveMeterPoint.md)
 
 ***
 
@@ -338,9 +440,21 @@ Re-exports [SiteState](types/interfaces/SiteState.md)
 
 ***
 
+### SiteStateSchema
+
+Re-exports [SiteStateSchema](scenario/variables/SiteStateSchema.md)
+
+***
+
 ### SponsorArchetype
 
 Re-exports [SponsorArchetype](types/type-aliases/SponsorArchetype.md)
+
+***
+
+### SponsorArchetypeSchema
+
+Re-exports [SponsorArchetypeSchema](scenario/variables/SponsorArchetypeSchema.md)
 
 ***
 
@@ -386,9 +500,27 @@ Re-exports [StudyEvent](types/interfaces/StudyEvent.md)
 
 ***
 
+### StudyScenario
+
+Re-exports [StudyScenario](scenario/type-aliases/StudyScenario.md)
+
+***
+
+### StudyScenarioSchema
+
+Re-exports [StudyScenarioSchema](scenario/variables/StudyScenarioSchema.md)
+
+***
+
 ### StudySetup
 
 Re-exports [StudySetup](types/interfaces/StudySetup.md)
+
+***
+
+### StudySetupSchema
+
+Re-exports [StudySetupSchema](scenario/variables/StudySetupSchema.md)
 
 ***
 
@@ -404,9 +536,21 @@ Re-exports [TeamMember](types/interfaces/TeamMember.md)
 
 ***
 
+### TeamMemberSchema
+
+Re-exports [TeamMemberSchema](scenario/variables/TeamMemberSchema.md)
+
+***
+
 ### TeamRole
 
 Re-exports [TeamRole](types/type-aliases/TeamRole.md)
+
+***
+
+### TeamRoleSchema
+
+Re-exports [TeamRoleSchema](scenario/variables/TeamRoleSchema.md)
 
 ***
 
@@ -419,6 +563,12 @@ Re-exports [totalOpenQueries](internal/model/functions/totalOpenQueries.md)
 ### Urgency
 
 Re-exports [Urgency](types/type-aliases/Urgency.md)
+
+***
+
+### validateScenario
+
+Re-exports [validateScenario](scenario/functions/validateScenario.md)
 
 ***
 

@@ -11,14 +11,10 @@ import React, {
 import {
   ATTENTION_PER_DAY,
   AUDIT_ATTENTION,
-  STUDY_24_081,
-  STUDY_24_081_SITES,
-  STUDY_24_081_TEAM,
-  applyDifficulty,
+  DEFAULT_SCENARIO,
   auditSite,
-  beginStudy,
   computeMeters,
-  createStudy,
+  createStudyFromScenario,
   endDay,
   finalizeStudy,
   inbox,
@@ -26,6 +22,7 @@ import {
   type Difficulty,
   type Meters,
   type StudyEvent,
+  type StudyScenario,
   type StudyState,
 } from "@/lib/study-director";
 import { DashboardPanel, MetersPanel, SitesPanel, TeamPanel } from "./Panels";
@@ -63,18 +60,14 @@ import { SharePanel } from "./ShareCard";
 import { DifficultyPicker } from "./DifficultyPicker";
 
 function newStudy(
+  scenario: StudyScenario,
   sharedSeed: string | null,
   difficulty: Difficulty
 ): StudyState {
   const seed =
     sharedSeed ??
     `sd-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`;
-  return beginStudy(
-    applyDifficulty(
-      createStudy(seed, STUDY_24_081, STUDY_24_081_SITES, STUDY_24_081_TEAM),
-      difficulty
-    )
-  );
+  return createStudyFromScenario(scenario, seed, difficulty);
 }
 
 const SEED_PATTERN = /(?:^#|&)seed=([\w-]{1,60})(?:&|$)/;
@@ -106,6 +99,7 @@ function hashDifficulty(): Difficulty | null {
 export const StudyDirectorGame: React.FC = () => {
   const [state, setState] = useState<StudyState | null>(null);
   const [saved, setSaved] = useState<StudyState | null>(() => loadStudySave());
+  const [scenario, setScenario] = useState<StudyScenario>(DEFAULT_SCENARIO);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [documented, setDocumented] = useState(false);
   const [notice, setNotice] = useState("");
@@ -200,8 +194,8 @@ export const StudyDirectorGame: React.FC = () => {
         window.location.pathname + window.location.search
       );
     }
-    start(newStudy(sharedSeed, difficulty));
-  }, [career, sharedSeed, difficulty, start, updateCareer]);
+    start(newStudy(scenario, sharedSeed, difficulty));
+  }, [career, scenario, sharedSeed, difficulty, start, updateCareer]);
 
   /** Files a finished study in the career, once per seed. */
   const closeOut = useCallback(
@@ -408,9 +402,11 @@ export const StudyDirectorGame: React.FC = () => {
   if (!state) {
     return (
       <BriefingView
-        setup={STUDY_24_081}
-        sites={STUDY_24_081_SITES}
-        team={STUDY_24_081_TEAM}
+        setup={scenario.setup}
+        sites={scenario.sites}
+        team={scenario.team}
+        scenario={scenario}
+        onScenarioChange={setScenario}
         actions={
           <>
             <DifficultyPicker

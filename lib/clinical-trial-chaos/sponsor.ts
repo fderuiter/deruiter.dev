@@ -732,3 +732,29 @@ export function applySponsorSkeletonsToReport(
     findings: [...report.findings, ...findings],
   };
 }
+
+/**
+ * Explains a phase-clear inspection that still ended in a Form 483. The phase
+ * advances either way; the end panel uses this to own the verdict instead of
+ * claiming the audit passed. Returns `null` unless the verdict is OAI.
+ *
+ * @param report - The phase's final inspection report, sponsor skeletons applied.
+ * @param auditViolations - Missed or misrouted CRFs counted during the phase.
+ * @returns One plain-language line per cause, or `null` for NAI and VAI.
+ */
+export function describePhaseClearForm483(
+  report: BIMOInspectionReport,
+  auditViolations: number
+): string[] | null {
+  if (!report.verdict.startsWith("OAI")) return null;
+
+  const causes = report.findings
+    .filter((f) => f.severity === "Critical")
+    .map((f) => f.description);
+  if (auditViolations >= 3) {
+    causes.push(
+      `${auditViolations} audit violations this phase (3 or more triggers a 483).`
+    );
+  }
+  return causes;
+}

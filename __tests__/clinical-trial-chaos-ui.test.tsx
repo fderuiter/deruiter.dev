@@ -156,6 +156,20 @@ vi.mock("@/lib/clinical-trial-chaos/scenarios", async (importOriginal) => {
   };
 });
 
+// Lets a test end a phase with an OAI inspection report (#899) without
+// steering the sponsor inbox into a Critical skeleton first.
+const phaseForm483 = vi.hoisted(() => ({ causes: null as string[] | null }));
+vi.mock("@/lib/clinical-trial-chaos/sponsor", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@/lib/clinical-trial-chaos/sponsor")>();
+  return {
+    ...actual,
+    describePhaseClearForm483: (
+      ...args: Parameters<typeof actual.describePhaseClearForm483>
+    ) => phaseForm483.causes ?? actual.describePhaseClearForm483(...args),
+  };
+});
+
 const mockRecordEvent = vi.fn().mockResolvedValue(true);
 vi.mock("@/hooks/useTelemetry", () => ({
   useTelemetry: () => ({
@@ -1258,6 +1272,64 @@ describe("ClinicalTrialChaos React Component UI Suite", () => {
     } finally {
       fastTrackLifeline.alwaysCharged = false;
       spawnFlags.alwaysFlagged = false;
+      vi.useRealTimers();
+    }
+  });
+
+  it("owns a Form 483 on the phase-clear panel instead of claiming the audit passed (#899)", async () => {
+    vi.useFakeTimers();
+    fastTrackLifeline.alwaysCharged = true;
+    spawnFlags.alwaysFlagged = true;
+    phaseForm483.causes = [
+      "Closed 312 open queries as 'Confirmed per site' without source review.",
+    ];
+    try {
+      await act(async () => {
+        root.render(<ClinicalTrialChaos />);
+      });
+      const startBtn = Array.from(container.querySelectorAll("button")).find(
+        (b) => b.textContent?.includes("Start 3-Phase Campaign")
+      );
+      await act(async () => {
+        startBtn?.click();
+      });
+      const board = container.querySelector(
+        '[data-keyboard-boundary="true"]'
+      ) as HTMLElement;
+      for (let n = 0; n < 5; n++) {
+        for (
+          let i = 0;
+          i < 30 &&
+          container.textContent?.includes("Waiting for the next packet");
+          i++
+        ) {
+          await act(async () => {
+            vi.advanceTimersByTime(1000);
+          });
+        }
+        await act(async () => {
+          board.dispatchEvent(
+            new KeyboardEvent("keydown", { key: "r", bubbles: true })
+          );
+        });
+      }
+
+      expect(container.textContent).toContain(
+        "PHASE 1 LOCKED… AND A 483 IS IN THE MAIL"
+      );
+      expect(container.textContent).not.toContain("COMPLIANCE AUDIT PASSED");
+      const panel = container.querySelector('[data-testid="cc-phase-483"]');
+      expect(panel?.textContent).toContain("Closed 312 open queries");
+      // The phase still advances (option b).
+      expect(
+        Array.from(container.querySelectorAll("button")).some((b) =>
+          b.textContent?.includes("Phase 2")
+        )
+      ).toBe(true);
+    } finally {
+      fastTrackLifeline.alwaysCharged = false;
+      spawnFlags.alwaysFlagged = false;
+      phaseForm483.causes = null;
       vi.useRealTimers();
     }
   });

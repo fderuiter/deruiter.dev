@@ -15,6 +15,7 @@ import {
   IconPlus,
   IconTrash,
   IconCheck,
+  IconMinus,
   IconTable,
   IconCards,
   IconEdit,
@@ -107,6 +108,139 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
         return { ...v, assignedFormIds: assigned };
       }
     });
+    onUpdateVisits(updated);
+  };
+
+  const getColumnFillState = (
+    visit: StudyVisit
+  ): "full" | "none" | "partial" => {
+    if (study.forms.length === 0) return "none";
+    let assignedCount = 0;
+    for (const form of study.forms) {
+      if (getFormAssignment(visit, form.id)) {
+        assignedCount++;
+      }
+    }
+    if (assignedCount === study.forms.length) return "full";
+    if (assignedCount === 0) return "none";
+    return "partial";
+  };
+
+  const getRowFillState = (formId: string): "full" | "none" | "partial" => {
+    if (study.visits.length === 0) return "none";
+    let assignedCount = 0;
+    for (const visit of study.visits) {
+      if (getFormAssignment(visit, formId)) {
+        assignedCount++;
+      }
+    }
+    if (assignedCount === study.visits.length) return "full";
+    if (assignedCount === 0) return "none";
+    return "partial";
+  };
+
+  const getGlobalFillState = (): "full" | "none" | "partial" => {
+    if (study.forms.length === 0 || study.visits.length === 0) return "none";
+    let fullColumns = 0;
+    let emptyColumns = 0;
+    for (const visit of study.visits) {
+      const state = getColumnFillState(visit);
+      if (state === "full") fullColumns++;
+      else if (state === "none") emptyColumns++;
+    }
+    if (fullColumns === study.visits.length) return "full";
+    if (emptyColumns === study.visits.length) return "none";
+    return "partial";
+  };
+
+  const handleBulkToggleColumn = (visitId: string) => {
+    const visit = study.visits.find((v) => v.id === visitId);
+    if (!visit) return;
+
+    const fillState = getColumnFillState(visit);
+    const targetFormIds =
+      fillState === "full" ? [] : study.forms.map((f) => f.id);
+
+    const updated = study.visits.map((v) => {
+      if (v.id !== visitId) return v;
+
+      if (selectedArmId !== "all") {
+        const armAssignments = { ...(v.armFormAssignments || {}) };
+        armAssignments[selectedArmId] = targetFormIds;
+        return {
+          ...v,
+          armFormAssignments: armAssignments,
+          armIds: Array.from(new Set([...(v.armIds || []), selectedArmId])),
+        };
+      } else {
+        return {
+          ...v,
+          assignedFormIds: targetFormIds,
+        };
+      }
+    });
+
+    onUpdateVisits(updated);
+  };
+
+  const handleBulkToggleRow = (formId: string) => {
+    const fillState = getRowFillState(formId);
+    const shouldRemove = fillState === "full";
+
+    const updated = study.visits.map((v) => {
+      if (selectedArmId !== "all") {
+        const currentArmForms = v.armFormAssignments?.[selectedArmId] ?? [
+          ...v.assignedFormIds,
+        ];
+        const nextArmForms = shouldRemove
+          ? currentArmForms.filter((id) => id !== formId)
+          : Array.from(new Set([...currentArmForms, formId]));
+
+        const armAssignments = { ...(v.armFormAssignments || {}) };
+        armAssignments[selectedArmId] = nextArmForms;
+
+        return {
+          ...v,
+          armFormAssignments: armAssignments,
+          armIds: Array.from(new Set([...(v.armIds || []), selectedArmId])),
+        };
+      } else {
+        const nextAssigned = shouldRemove
+          ? v.assignedFormIds.filter((id) => id !== formId)
+          : Array.from(new Set([...v.assignedFormIds, formId]));
+
+        return {
+          ...v,
+          assignedFormIds: nextAssigned,
+        };
+      }
+    });
+
+    onUpdateVisits(updated);
+  };
+
+  const handleBulkToggleGlobal = () => {
+    const fillState = getGlobalFillState();
+    const targetFormIds =
+      fillState === "full" ? [] : study.forms.map((f) => f.id);
+
+    const updated = study.visits.map((v) => {
+      if (selectedArmId !== "all") {
+        const armAssignments = { ...(v.armFormAssignments || {}) };
+        armAssignments[selectedArmId] = targetFormIds;
+        return {
+          ...v,
+          armFormAssignments: armAssignments,
+          armIds: Array.from(new Set([...(v.armIds || []), selectedArmId])),
+        };
+      } else {
+        return {
+          ...v,
+          assignedFormIds: targetFormIds,
+        };
+      }
+    });
+
     onUpdateVisits(updated);
   };
 
@@ -743,7 +877,40 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
                   role="columnheader"
                   className="p-3.5 sm:p-4 text-xs font-mono font-bold text-zinc-400 w-60 sm:w-64 uppercase tracking-wider sticky left-0 bg-zinc-950 z-30 border-r border-zinc-850"
                 >
-                  Forms ({study.forms.length})
+                  <div className="flex items-center justify-between gap-2">
+                    <span>Forms ({study.forms.length})</span>
+                    <button
+                      onClick={handleBulkToggleGlobal}
+                      data-testid="bulk-global-toggle"
+                      aria-label={`Master matrix toggle: ${
+                        getGlobalFillState() === "full"
+                          ? "Clear all forms"
+                          : "Assign all forms"
+                      }`}
+                      title={
+                        getGlobalFillState() === "full"
+                          ? "Unassign all forms across all visits"
+                          : "Assign all forms across all visits"
+                      }
+                      className={`p-1 rounded-lg border transition-all flex items-center justify-center ${
+                        getGlobalFillState() === "full"
+                          ? "bg-brand-cyan border-brand-cyan text-black font-bold shadow-sm"
+                          : getGlobalFillState() === "partial"
+                            ? "bg-brand-cyan/20 border-brand-cyan/60 text-brand-cyan"
+                            : "bg-zinc-900 border-zinc-750 text-zinc-500 hover:text-zinc-300 hover:border-zinc-600"
+                      }`}
+                    >
+                      {getGlobalFillState() === "full" && (
+                        <IconCheck className="w-3.5 h-3.5 stroke-[3]" />
+                      )}
+                      {getGlobalFillState() === "partial" && (
+                        <IconMinus className="w-3.5 h-3.5 stroke-[3]" />
+                      )}
+                      {getGlobalFillState() === "none" && (
+                        <div className="w-3.5 h-3.5" />
+                      )}
+                    </button>
+                  </div>
                 </th>
                 {study.visits.map((visit) => {
                   const visitConflicts =
@@ -801,6 +968,37 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
 
                         <div className="flex items-center justify-center gap-1.5 pt-1">
                           <button
+                            onClick={() => handleBulkToggleColumn(visit.id)}
+                            data-testid={`bulk-column-toggle-${visit.id}`}
+                            aria-label={`Bulk toggle visit ${visit.name}: ${
+                              getColumnFillState(visit) === "full"
+                                ? "Clear all forms for this visit"
+                                : "Assign all forms for this visit"
+                            }`}
+                            title={
+                              getColumnFillState(visit) === "full"
+                                ? "Unassign all forms for this visit"
+                                : "Assign all forms for this visit"
+                            }
+                            className={`p-1 rounded-lg border transition-all flex items-center justify-center ${
+                              getColumnFillState(visit) === "full"
+                                ? "bg-brand-cyan border-brand-cyan text-black font-bold shadow-sm"
+                                : getColumnFillState(visit) === "partial"
+                                  ? "bg-brand-cyan/20 border-brand-cyan/60 text-brand-cyan"
+                                  : "bg-zinc-900 border-zinc-750 text-zinc-500 hover:text-zinc-300 hover:border-zinc-600"
+                            }`}
+                          >
+                            {getColumnFillState(visit) === "full" && (
+                              <IconCheck className="w-3.5 h-3.5 stroke-[3]" />
+                            )}
+                            {getColumnFillState(visit) === "partial" && (
+                              <IconMinus className="w-3.5 h-3.5 stroke-[3]" />
+                            )}
+                            {getColumnFillState(visit) === "none" && (
+                              <div className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+                          <button
                             onClick={() =>
                               setEditingVisitId(
                                 editingVisitId === visit.id ? null : visit.id
@@ -838,18 +1036,52 @@ export const VisitMatrixEditor: React.FC<VisitMatrixEditorProps> = ({
                     role="rowheader"
                     className="p-3 sm:p-3.5 pl-3 sm:pl-4 sticky left-0 bg-zinc-950/95 z-10 border-r border-zinc-850 font-normal text-left"
                   >
-                    <div className="flex items-center gap-2">
-                      <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-zinc-900 border border-zinc-800 text-brand-cyan">
-                        {form.domain}
-                      </span>
-                      <span className="font-sans font-semibold text-zinc-200 text-xs truncate max-w-[160px] sm:max-w-none">
-                        {form.name}
-                      </span>
-                      {form.isLogForm && (
-                        <span className="text-[9px] font-mono text-purple-400 bg-purple-500/10 px-1 rounded border border-purple-500/20">
-                          LOG
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-zinc-900 border border-zinc-800 text-brand-cyan shrink-0">
+                          {form.domain}
                         </span>
-                      )}
+                        <span className="font-sans font-semibold text-zinc-200 text-xs truncate max-w-[140px] sm:max-w-none">
+                          {form.name}
+                        </span>
+                        {form.isLogForm && (
+                          <span className="text-[9px] font-mono text-purple-400 bg-purple-500/10 px-1 rounded border border-purple-500/20 shrink-0">
+                            LOG
+                          </span>
+                        )}
+                      </div>
+
+                      <button
+                        onClick={() => handleBulkToggleRow(form.id)}
+                        data-testid={`bulk-row-toggle-${form.id}`}
+                        aria-label={`Bulk toggle form ${form.name}: ${
+                          getRowFillState(form.id) === "full"
+                            ? "Clear form across all visits"
+                            : "Assign form across all visits"
+                        }`}
+                        title={
+                          getRowFillState(form.id) === "full"
+                            ? "Unassign this form across all visits"
+                            : "Assign this form across all visits"
+                        }
+                        className={`p-1 rounded-lg border transition-all flex items-center justify-center shrink-0 ${
+                          getRowFillState(form.id) === "full"
+                            ? "bg-brand-cyan border-brand-cyan text-black font-bold shadow-sm"
+                            : getRowFillState(form.id) === "partial"
+                              ? "bg-brand-cyan/20 border-brand-cyan/60 text-brand-cyan"
+                              : "bg-zinc-900 border-zinc-750 text-zinc-500 hover:text-zinc-300 hover:border-zinc-600"
+                        }`}
+                      >
+                        {getRowFillState(form.id) === "full" && (
+                          <IconCheck className="w-3.5 h-3.5 stroke-[3]" />
+                        )}
+                        {getRowFillState(form.id) === "partial" && (
+                          <IconMinus className="w-3.5 h-3.5 stroke-[3]" />
+                        )}
+                        {getRowFillState(form.id) === "none" && (
+                          <div className="w-3.5 h-3.5" />
+                        )}
+                      </button>
                     </div>
                   </th>
 

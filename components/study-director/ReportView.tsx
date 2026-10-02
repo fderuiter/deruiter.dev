@@ -14,7 +14,7 @@ import { HealthRadar } from "./HealthRadar";
 import { DecisionTimeline } from "./DecisionTimeline";
 import { verdictFor } from "./closeout";
 import { DIFFICULTY_TEXT } from "./DifficultyPicker";
-import { downloadFile } from "./ScenarioBuilder";
+import { downloadFile } from "@/lib/download";
 
 const OUTCOME_STYLE = {
   closed: "border-emerald-500/50 text-emerald-400",
@@ -122,9 +122,9 @@ export const ReportView: React.FC<{
             onClick={() => {
               const json = exportRetrospectiveJson(report);
               downloadFile(
-                `study-${state.setup.id}-retrospective.json`,
                 json,
-                "application/json"
+                `study-${state.setup.id}-retrospective.json`,
+                { mimeType: "application/json" }
               );
             }}
             className="border border-amber-500/80 bg-amber-500/10 px-3 py-1.5 text-xs font-bold text-amber-300 hover:bg-amber-500/20"
@@ -136,9 +136,9 @@ export const ReportView: React.FC<{
             onClick={() => {
               const csv = exportDecisionLogCsv(report);
               downloadFile(
-                `study-${state.setup.id}-decisions.csv`,
                 csv,
-                "text/csv"
+                `study-${state.setup.id}-decisions.csv`,
+                { mimeType: "text/csv" }
               );
             }}
             className="border border-zinc-700 bg-zinc-800/80 px-3 py-1.5 text-xs font-bold text-zinc-200 hover:border-amber-400 hover:text-amber-300"
@@ -150,9 +150,9 @@ export const ReportView: React.FC<{
             onClick={() => {
               const csv = exportMeterTrajectoryCsv(report);
               downloadFile(
-                `study-${state.setup.id}-meters.csv`,
                 csv,
-                "text/csv"
+                `study-${state.setup.id}-meters.csv`,
+                { mimeType: "text/csv" }
               );
             }}
             className="border border-zinc-700 bg-zinc-800/80 px-3 py-1.5 text-xs font-bold text-zinc-200 hover:border-amber-400 hover:text-amber-300"
@@ -164,9 +164,9 @@ export const ReportView: React.FC<{
             onClick={() => {
               const csv = exportAuditFindingsCsv(report);
               downloadFile(
-                `study-${state.setup.id}-findings.csv`,
                 csv,
-                "text/csv"
+                `study-${state.setup.id}-findings.csv`,
+                { mimeType: "text/csv" }
               );
             }}
             className="border border-zinc-700 bg-zinc-800/80 px-3 py-1.5 text-xs font-bold text-zinc-200 hover:border-amber-400 hover:text-amber-300"

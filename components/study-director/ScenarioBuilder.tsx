@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef, useState } from "react";
+import { downloadFile } from "@/lib/download";
 import { clamp } from "@/lib/game-utils";
 import {
   DEFAULT_SCENARIO,
@@ -11,23 +12,7 @@ import {
   type StudyScenario,
 } from "@/lib/study-director";
 
-export function downloadFile(
-  filename: string,
-  content: string,
-  mimeType: string
-): void {
-  const blob = new Blob([content], { type: mimeType });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-
-export interface ScenarioBuilderProps {
+interface ScenarioBuilderProps {
   scenario: StudyScenario;
   onChange: (next: StudyScenario) => void;
   onClose?: () => void;
@@ -70,7 +55,7 @@ export const ScenarioBuilder: React.FC<ScenarioBuilderProps> = ({
   const handleExport = () => {
     const jsonText = exportScenarioJson(scenario);
     const filename = `${scenario.id || "custom"}.scenario.json`;
-    downloadFile(filename, jsonText, "application/json");
+    downloadFile(jsonText, filename, { mimeType: "application/json" });
   };
 
   const updateSetup = <K extends keyof StudyScenario["setup"]>(

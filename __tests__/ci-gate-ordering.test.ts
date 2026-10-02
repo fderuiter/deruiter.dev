@@ -399,6 +399,14 @@ describe("CI Gate Ordering", () => {
       expect(pkg.scripts["test:ci:shard"]).toMatch(/--reporter=dot/);
     });
 
+    // Blob reports store absolute paths, so the merge must run in the same
+    // container workspace as the shards or it finds no test files.
+    it("merges in the same container image as the shards", () => {
+      const imageOf = (job: string) => jobBlock(job).match(/image: (\S+)/)?.[1];
+      expect(imageOf("unit-coverage")).toBeDefined();
+      expect(imageOf("unit-coverage")).toBe(imageOf("unit-gate"));
+    });
+
     it("merges the shards and enforces thresholds without deferring them", () => {
       const block = jobBlock("unit-coverage");
       expect(needsOf("unit-coverage")).toContain("unit-gate");

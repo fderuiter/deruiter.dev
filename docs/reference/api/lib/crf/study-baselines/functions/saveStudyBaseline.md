@@ -24,7 +24,7 @@ cannot alter the historical baseline.
 
 ### storage?
 
-`Storage`
+[`RawStorage`](../../../safe-storage/type-aliases/RawStorage.md)
 
 ## Returns
 

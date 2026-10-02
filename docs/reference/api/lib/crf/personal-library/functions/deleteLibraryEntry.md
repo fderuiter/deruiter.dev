@@ -18,7 +18,7 @@ Removes an entry. Studies that already inserted it keep their copies.
 
 ### storage?
 
-`Storage`
+[`RawStorage`](../../../safe-storage/type-aliases/RawStorage.md)
 
 ## Returns
 

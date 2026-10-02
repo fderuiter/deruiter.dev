@@ -16,7 +16,7 @@ for manual recovery rather than being silently overwritten or discarded.
 
 ### storage?
 
-`Storage`
+[`RawStorage`](../../../safe-storage/type-aliases/RawStorage.md)
 
 ## Returns
 

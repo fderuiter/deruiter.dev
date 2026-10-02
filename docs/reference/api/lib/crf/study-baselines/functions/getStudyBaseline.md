@@ -18,7 +18,7 @@ Retrieves a single persisted study baseline by its unique ID or exact version ta
 
 ### storage?
 
-`Storage`
+[`RawStorage`](../../../safe-storage/type-aliases/RawStorage.md)
 
 ## Returns
 

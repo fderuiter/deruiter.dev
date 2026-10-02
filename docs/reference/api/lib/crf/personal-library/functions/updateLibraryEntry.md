@@ -25,7 +25,7 @@ their own deep copies with their own identities.
 
 ### storage?
 
-`Storage`
+[`RawStorage`](../../../safe-storage/type-aliases/RawStorage.md)
 
 ### now?
 

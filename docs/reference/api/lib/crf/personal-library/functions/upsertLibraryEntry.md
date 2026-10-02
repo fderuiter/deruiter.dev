@@ -18,7 +18,7 @@ Adds an entry to the library, replacing any entry with the same id.
 
 ### storage?
 
-`Storage`
+[`RawStorage`](../../../safe-storage/type-aliases/RawStorage.md)
 
 ## Returns
 

@@ -3,125 +3,767 @@ import { CdashVariableMetadata, CRFForm } from "./types";
 /**
  * Standard CDASH 2.2 Domain Variable Catalog
  */
-export const CDASH_STANDARD_VARIABLES: Record<string, CdashVariableMetadata[]> = {
-  DM: [
-    { domain: "DM", sdtmVariable: "BRTHYR", cdashLabel: "Year of Birth", core: "HR", acrfAnnotation: "DM.BRTHYR", dataCategory: "Topic" },
-    { domain: "DM", sdtmVariable: "AGE", cdashLabel: "Age", core: "HR", acrfAnnotation: "DM.AGE", dataCategory: "Qualifier" },
-    { domain: "DM", sdtmVariable: "AGEU", cdashLabel: "Age Units", core: "O", acrfAnnotation: "DM.AGEU", dataCategory: "Qualifier" },
-    { domain: "DM", sdtmVariable: "SEX", cdashLabel: "Sex", core: "R", acrfAnnotation: "DM.SEX", dataCategory: "Topic", nciConceptId: "C66742" },
-    { domain: "DM", sdtmVariable: "RACE", cdashLabel: "Race", core: "HR", acrfAnnotation: "DM.RACE", dataCategory: "Topic", nciConceptId: "C74457" },
-    { domain: "DM", sdtmVariable: "ETHNIC", cdashLabel: "Ethnicity", core: "HR", acrfAnnotation: "DM.ETHNIC", dataCategory: "Topic", nciConceptId: "C66790" },
-    { domain: "DM", sdtmVariable: "ICDAT", cdashLabel: "Informed Consent Date", core: "R", acrfAnnotation: "DS.DSSTDTC [DSDECOD=INFORMED CONSENT OBTAINED]", dataCategory: "Timing" },
-  ],
-  VS: [
-    { domain: "VS", sdtmVariable: "VSDAT", cdashLabel: "Vital Signs Assessment Date", core: "R", acrfAnnotation: "VS.VSDTC", dataCategory: "Timing" },
-    { domain: "VS", sdtmVariable: "HEIGHT", cdashLabel: "Height", core: "HR", acrfAnnotation: "VS.VSSTRESN [VSTESTCD=HEIGHT]", dataCategory: "Topic" },
-    { domain: "VS", sdtmVariable: "WEIGHT", cdashLabel: "Weight", core: "HR", acrfAnnotation: "VS.VSSTRESN [VSTESTCD=WEIGHT]", dataCategory: "Topic" },
-    { domain: "VS", sdtmVariable: "BMI", cdashLabel: "Body Mass Index", core: "HR", acrfAnnotation: "VS.VSSTRESN [VSTESTCD=BMI]", dataCategory: "Derived" },
-    { domain: "VS", sdtmVariable: "SYSBP", cdashLabel: "Systolic Blood Pressure", core: "HR", acrfAnnotation: "VS.VSSTRESN [VSTESTCD=SYSBP]", dataCategory: "Topic" },
-    { domain: "VS", sdtmVariable: "DIABP", cdashLabel: "Diastolic Blood Pressure", core: "HR", acrfAnnotation: "VS.VSSTRESN [VSTESTCD=DIABP]", dataCategory: "Topic" },
-    { domain: "VS", sdtmVariable: "PULSE", cdashLabel: "Pulse Rate", core: "HR", acrfAnnotation: "VS.VSSTRESN [VSTESTCD=PULSE]", dataCategory: "Topic" },
-    { domain: "VS", sdtmVariable: "TEMP", cdashLabel: "Temperature", core: "HR", acrfAnnotation: "VS.VSSTRESN [VSTESTCD=TEMP]", dataCategory: "Topic" },
-    { domain: "VS", sdtmVariable: "RESP", cdashLabel: "Respiratory Rate", core: "O", acrfAnnotation: "VS.VSSTRESN [VSTESTCD=RESP]", dataCategory: "Topic" },
-  ],
-  AE: [
-    { domain: "AE", sdtmVariable: "AETERM", cdashLabel: "Reported Term for Adverse Event", core: "R", acrfAnnotation: "AE.AETERM", dataCategory: "Topic" },
-    { domain: "AE", sdtmVariable: "AESTDTC", cdashLabel: "AE Start Date/Time", core: "R", acrfAnnotation: "AE.AESTDTC", dataCategory: "Timing" },
-    { domain: "AE", sdtmVariable: "AEENDTC", cdashLabel: "AE End Date/Time", core: "HR", acrfAnnotation: "AE.AEENDTC", dataCategory: "Timing" },
-    { domain: "AE", sdtmVariable: "AEONGO", cdashLabel: "Ongoing Adverse Event", core: "HR", acrfAnnotation: "AE.AEENRTPT [AEENRTPT=ONGOING]", dataCategory: "Qualifier" },
-    { domain: "AE", sdtmVariable: "AESEV", cdashLabel: "Severity / Grade", core: "R", acrfAnnotation: "AE.AESEV", dataCategory: "Qualifier", nciConceptId: "C66769" },
-    { domain: "AE", sdtmVariable: "AESER", cdashLabel: "Serious Event", core: "R", acrfAnnotation: "AE.AESER", dataCategory: "Qualifier", nciConceptId: "C66741" },
-    { domain: "AE", sdtmVariable: "AEREL", cdashLabel: "Causality / Relatedness", core: "R", acrfAnnotation: "AE.AEREL", dataCategory: "Qualifier", nciConceptId: "C66768" },
-    { domain: "AE", sdtmVariable: "AEACN", cdashLabel: "Action Taken with Study Treatment", core: "R", acrfAnnotation: "AE.AEACN", dataCategory: "Qualifier" },
-    { domain: "AE", sdtmVariable: "AEOUT", cdashLabel: "Outcome of Event", core: "R", acrfAnnotation: "AE.AEOUT", dataCategory: "Qualifier", nciConceptId: "C66767" },
-  ],
-  CM: [
-    { domain: "CM", sdtmVariable: "CMTRT", cdashLabel: "Reported Name of Drug / Therapy", core: "R", acrfAnnotation: "CM.CMTRT", dataCategory: "Topic" },
-    { domain: "CM", sdtmVariable: "CMINDC", cdashLabel: "Indication", core: "HR", acrfAnnotation: "CM.CMINDC", dataCategory: "Qualifier" },
-    { domain: "CM", sdtmVariable: "CMDOSE", cdashLabel: "Dose per Administration", core: "HR", acrfAnnotation: "CM.CMDOSE", dataCategory: "Qualifier" },
-    { domain: "CM", sdtmVariable: "CMDOSU", cdashLabel: "Dose Units", core: "HR", acrfAnnotation: "CM.CMDOSU", dataCategory: "Qualifier" },
-    { domain: "CM", sdtmVariable: "CMROUTE", cdashLabel: "Route", core: "HR", acrfAnnotation: "CM.CMROUTE", dataCategory: "Qualifier", nciConceptId: "C66729" },
-    { domain: "CM", sdtmVariable: "CMSTDTC", cdashLabel: "Medication Start Date", core: "R", acrfAnnotation: "CM.CMSTDTC", dataCategory: "Timing" },
-    { domain: "CM", sdtmVariable: "CMENDTC", cdashLabel: "Medication End Date", core: "O", acrfAnnotation: "CM.CMENDTC", dataCategory: "Timing" },
-    { domain: "CM", sdtmVariable: "CMONGO", cdashLabel: "Ongoing Medication", core: "O", acrfAnnotation: "CM.CMENRTPT [CMENRTPT=ONGOING]", dataCategory: "Qualifier" },
-  ],
-  LB: [
-    { domain: "LB", sdtmVariable: "LBDAT", cdashLabel: "Sample Collection Date", core: "R", acrfAnnotation: "LB.LBDTC", dataCategory: "Timing" },
-    { domain: "LB", sdtmVariable: "LBTEST", cdashLabel: "Lab Test Name", core: "O", acrfAnnotation: "LB.LBTEST", dataCategory: "Topic" },
-    { domain: "LB", sdtmVariable: "LBORRES", cdashLabel: "Result Value", core: "O", acrfAnnotation: "LB.LBORRES", dataCategory: "Result" },
-    { domain: "LB", sdtmVariable: "LBORRESU", cdashLabel: "Units", core: "O", acrfAnnotation: "LB.LBORRESU", dataCategory: "Qualifier" },
-    { domain: "LB", sdtmVariable: "LBNRIND", cdashLabel: "Reference Range Indicator", core: "O", acrfAnnotation: "LB.LBNRIND", dataCategory: "Qualifier" },
-    { domain: "LB", sdtmVariable: "LBCLSIG", cdashLabel: "Clinically Significant (Y/N)", core: "O", acrfAnnotation: "LB.SUPPLB.LBCLSIG", dataCategory: "Qualifier" },
-  ],
-  DI: [
-    { domain: "DI", sdtmVariable: "DITERM", cdashLabel: "Device Reported Name", core: "R", acrfAnnotation: "DI.DITERM", dataCategory: "Topic" },
-    { domain: "DI", sdtmVariable: "DIBRN", cdashLabel: "Device Brand / Trade Name", core: "HR", acrfAnnotation: "DI.DIBRN", dataCategory: "Qualifier" },
-    { domain: "DI", sdtmVariable: "DIMODN", cdashLabel: "Device Model Number", core: "HR", acrfAnnotation: "DI.DIMODN", dataCategory: "Qualifier" },
-    { domain: "DI", sdtmVariable: "DILOTN", cdashLabel: "Lot / Batch Number", core: "HR", acrfAnnotation: "DI.DILOTN", dataCategory: "Qualifier" },
-    { domain: "DI", sdtmVariable: "DISERN", cdashLabel: "Serial Number", core: "HR", acrfAnnotation: "DI.DISERN", dataCategory: "Qualifier" },
-    { domain: "DI", sdtmVariable: "DIUDI", cdashLabel: "Unique Device Identifier (UDI)", core: "HR", acrfAnnotation: "DI.DIUDI", dataCategory: "Identifier" },
-    { domain: "DI", sdtmVariable: "DISFTV", cdashLabel: "Software / Firmware Version", core: "O", acrfAnnotation: "DI.DISFTV", dataCategory: "Qualifier" },
-    { domain: "DI", sdtmVariable: "DIEXPDTC", cdashLabel: "Device Expiration Date", core: "HR", acrfAnnotation: "DI.DIEXPDTC", dataCategory: "Timing" },
-    { domain: "DI", sdtmVariable: "DISTAT", cdashLabel: "Device Tracking Status", core: "R", acrfAnnotation: "DI.DISTAT", dataCategory: "Qualifier", nciConceptId: "C112033" },
-  ],
-  DU: [
-    { domain: "DU", sdtmVariable: "DUTEST", cdashLabel: "Device Activity / Procedure Name", core: "R", acrfAnnotation: "DU.DUTEST", dataCategory: "Topic" },
-    { domain: "DU", sdtmVariable: "DUORRES", cdashLabel: "Procedural Deployment Outcome", core: "R", acrfAnnotation: "DU.DUORRES", dataCategory: "Result", nciConceptId: "C112037" },
-    { domain: "DU", sdtmVariable: "DUSTDTC", cdashLabel: "Procedure Start Date & Time", core: "R", acrfAnnotation: "DU.DUSTDTC", dataCategory: "Timing" },
-    { domain: "DU", sdtmVariable: "DUENDTC", cdashLabel: "Procedure End Date & Time", core: "HR", acrfAnnotation: "DU.DUENDTC", dataCategory: "Timing" },
-    { domain: "DU", sdtmVariable: "DULOC", cdashLabel: "Anatomical Site / Location", core: "HR", acrfAnnotation: "DU.DULOC", dataCategory: "Qualifier" },
-    { domain: "DU", sdtmVariable: "DUDUR", cdashLabel: "Procedure Duration (Minutes)", core: "O", acrfAnnotation: "DU.DUDUR", dataCategory: "Timing" },
-  ],
-  DE: [
-    { domain: "DE", sdtmVariable: "DETERM", cdashLabel: "Device Incident / Deficiency Description", core: "R", acrfAnnotation: "DE.DETERM", dataCategory: "Topic" },
-    { domain: "DE", sdtmVariable: "DESTDTC", cdashLabel: "Incident Start Date/Time", core: "R", acrfAnnotation: "DE.DESTDTC", dataCategory: "Timing" },
-    { domain: "DE", sdtmVariable: "DEDEFIC", cdashLabel: "Deficiency Classification", core: "R", acrfAnnotation: "DE.DEDEFIC", dataCategory: "Qualifier", nciConceptId: "C112023" },
-    { domain: "DE", sdtmVariable: "DESEV", cdashLabel: "Incident Severity", core: "HR", acrfAnnotation: "DE.DESEV", dataCategory: "Qualifier" },
-    { domain: "DE", sdtmVariable: "DESER", cdashLabel: "Serious Health Deterioration (SAE)", core: "R", acrfAnnotation: "DE.DESER", dataCategory: "Qualifier", nciConceptId: "C66741" },
-    { domain: "DE", sdtmVariable: "DEREL", cdashLabel: "Device Relationship", core: "R", acrfAnnotation: "DE.DEREL", dataCategory: "Qualifier", nciConceptId: "C112024" },
-    { domain: "DE", sdtmVariable: "DEACT", cdashLabel: "Action Taken with Medical Device", core: "R", acrfAnnotation: "DE.DEACT", dataCategory: "Qualifier", nciConceptId: "C112028" },
-    { domain: "DE", sdtmVariable: "DEOUT", cdashLabel: "Incident Outcome", core: "R", acrfAnnotation: "DE.DEOUT", dataCategory: "Qualifier" },
-  ],
-  DA: [
-    { domain: "DA", sdtmVariable: "DATEST", cdashLabel: "Accountability Assessment / Kit ID", core: "R", acrfAnnotation: "DA.DATEST", dataCategory: "Topic" },
-    { domain: "DA", sdtmVariable: "DASTDTC", cdashLabel: "Dispensation Date", core: "R", acrfAnnotation: "DA.DASTDTC", dataCategory: "Timing" },
-    { domain: "DA", sdtmVariable: "DAENDTC", cdashLabel: "Return Date", core: "HR", acrfAnnotation: "DA.DAENDTC", dataCategory: "Timing" },
-    { domain: "DA", sdtmVariable: "DASPNO", cdashLabel: "Units Dispensed", core: "R", acrfAnnotation: "DA.DAORRES [DAPARM=DISPENSED]", dataCategory: "Result" },
-    { domain: "DA", sdtmVariable: "DARETNO", cdashLabel: "Units Returned", core: "HR", acrfAnnotation: "DA.DAORRES [DAPARM=RETURNED]", dataCategory: "Result" },
-    { domain: "DA", sdtmVariable: "DAUSEDN", cdashLabel: "Units Administered", core: "HR", acrfAnnotation: "DA.DAORRES [DAPARM=USED]", dataCategory: "Result" },
-    { domain: "DA", sdtmVariable: "DACOMPL", cdashLabel: "Compliance Rate (%)", core: "HR", acrfAnnotation: "DA.DASTRESN [DAPARM=COMPLIANCE]", dataCategory: "Derived" },
-    { domain: "DA", sdtmVariable: "DARECON", cdashLabel: "Reconciliation Status", core: "R", acrfAnnotation: "DA.DARECON", dataCategory: "Qualifier", nciConceptId: "C66736" },
-  ],
-  EX: [
-    { domain: "EX", sdtmVariable: "EXTRT", cdashLabel: "Investigational Product Name", core: "R", acrfAnnotation: "EX.EXTRT", dataCategory: "Topic" },
-    { domain: "EX", sdtmVariable: "EXDOSE", cdashLabel: "Dose Administered", core: "R", acrfAnnotation: "EX.EXDOSE", dataCategory: "Qualifier" },
-    { domain: "EX", sdtmVariable: "EXDOSU", cdashLabel: "Dose Units", core: "R", acrfAnnotation: "EX.EXDOSU", dataCategory: "Qualifier", nciConceptId: "C71620" },
-    { domain: "EX", sdtmVariable: "EXDOSFRM", cdashLabel: "Dose Form", core: "HR", acrfAnnotation: "EX.EXDOSFRM", dataCategory: "Qualifier" },
-    { domain: "EX", sdtmVariable: "EXROUTE", cdashLabel: "Route of Administration", core: "R", acrfAnnotation: "EX.EXROUTE", dataCategory: "Qualifier", nciConceptId: "C66729" },
-    { domain: "EX", sdtmVariable: "EXSTDTC", cdashLabel: "Administration Start Date/Time", core: "R", acrfAnnotation: "EX.EXSTDTC", dataCategory: "Timing" },
-    { domain: "EX", sdtmVariable: "EXENDTC", cdashLabel: "Administration End Date/Time", core: "HR", acrfAnnotation: "EX.EXENDTC", dataCategory: "Timing" },
-    { domain: "EX", sdtmVariable: "EXADJ", cdashLabel: "Dose Modification / Interruption Reason", core: "O", acrfAnnotation: "EX.EXADJ", dataCategory: "Qualifier" },
-  ],
-  MH: [
-    { domain: "MH", sdtmVariable: "MHTERM", cdashLabel: "Medical History Condition / Diagnosis", core: "R", acrfAnnotation: "MH.MHTERM", dataCategory: "Topic" },
-    { domain: "MH", sdtmVariable: "MHCAT", cdashLabel: "Body System / Category", core: "HR", acrfAnnotation: "MH.MHCAT", dataCategory: "Qualifier", nciConceptId: "C66737" },
-    { domain: "MH", sdtmVariable: "MHSTDTC", cdashLabel: "Onset / Diagnosis Date", core: "HR", acrfAnnotation: "MH.MHSTDTC", dataCategory: "Timing" },
-    { domain: "MH", sdtmVariable: "MHONGO", cdashLabel: "Condition is Ongoing", core: "R", acrfAnnotation: "MH.MHENRTPT [MHENRTPT=ONGOING]", dataCategory: "Qualifier" },
-    { domain: "MH", sdtmVariable: "MHENDTC", cdashLabel: "Resolution Date", core: "O", acrfAnnotation: "MH.MHENDTC", dataCategory: "Timing" },
-  ],
-  DS: [
-    { domain: "DS", sdtmVariable: "DSTERM", cdashLabel: "Disposition Event / Status", core: "R", acrfAnnotation: "DS.DSTERM", dataCategory: "Topic" },
-    { domain: "DS", sdtmVariable: "DSDECOD", cdashLabel: "Standardized Disposition Reason", core: "R", acrfAnnotation: "DS.DSDECOD", dataCategory: "Qualifier", nciConceptId: "C66735" },
-    { domain: "DS", sdtmVariable: "DSCAT", cdashLabel: "Milestone Category", core: "HR", acrfAnnotation: "DS.DSCAT", dataCategory: "Qualifier" },
-    { domain: "DS", sdtmVariable: "DSSTDTC", cdashLabel: "Disposition Effective Date", core: "R", acrfAnnotation: "DS.DSSTDTC", dataCategory: "Timing" },
-  ],
-};
+export const CDASH_STANDARD_VARIABLES: Record<string, CdashVariableMetadata[]> =
+  {
+    DM: [
+      {
+        domain: "DM",
+        sdtmVariable: "BRTHYR",
+        cdashLabel: "Year of Birth",
+        core: "HR",
+        acrfAnnotation: "DM.BRTHYR",
+        dataCategory: "Topic",
+      },
+      {
+        domain: "DM",
+        sdtmVariable: "AGE",
+        cdashLabel: "Age",
+        core: "HR",
+        acrfAnnotation: "DM.AGE",
+        dataCategory: "Qualifier",
+      },
+      {
+        domain: "DM",
+        sdtmVariable: "AGEU",
+        cdashLabel: "Age Units",
+        core: "O",
+        acrfAnnotation: "DM.AGEU",
+        dataCategory: "Qualifier",
+      },
+      {
+        domain: "DM",
+        sdtmVariable: "SEX",
+        cdashLabel: "Sex",
+        core: "R",
+        acrfAnnotation: "DM.SEX",
+        dataCategory: "Topic",
+        nciConceptId: "C66742",
+      },
+      {
+        domain: "DM",
+        sdtmVariable: "RACE",
+        cdashLabel: "Race",
+        core: "HR",
+        acrfAnnotation: "DM.RACE",
+        dataCategory: "Topic",
+        nciConceptId: "C74457",
+      },
+      {
+        domain: "DM",
+        sdtmVariable: "ETHNIC",
+        cdashLabel: "Ethnicity",
+        core: "HR",
+        acrfAnnotation: "DM.ETHNIC",
+        dataCategory: "Topic",
+        nciConceptId: "C66790",
+      },
+      {
+        domain: "DM",
+        sdtmVariable: "ICDAT",
+        cdashLabel: "Informed Consent Date",
+        core: "R",
+        acrfAnnotation: "DS.DSSTDTC [DSDECOD=INFORMED CONSENT OBTAINED]",
+        dataCategory: "Timing",
+      },
+    ],
+    VS: [
+      {
+        domain: "VS",
+        sdtmVariable: "VSDAT",
+        cdashLabel: "Vital Signs Assessment Date",
+        core: "R",
+        acrfAnnotation: "VS.VSDTC",
+        dataCategory: "Timing",
+      },
+      {
+        domain: "VS",
+        sdtmVariable: "HEIGHT",
+        cdashLabel: "Height",
+        core: "HR",
+        acrfAnnotation: "VS.VSSTRESN [VSTESTCD=HEIGHT]",
+        dataCategory: "Topic",
+      },
+      {
+        domain: "VS",
+        sdtmVariable: "WEIGHT",
+        cdashLabel: "Weight",
+        core: "HR",
+        acrfAnnotation: "VS.VSSTRESN [VSTESTCD=WEIGHT]",
+        dataCategory: "Topic",
+      },
+      {
+        domain: "VS",
+        sdtmVariable: "BMI",
+        cdashLabel: "Body Mass Index",
+        core: "HR",
+        acrfAnnotation: "VS.VSSTRESN [VSTESTCD=BMI]",
+        dataCategory: "Derived",
+      },
+      {
+        domain: "VS",
+        sdtmVariable: "SYSBP",
+        cdashLabel: "Systolic Blood Pressure",
+        core: "HR",
+        acrfAnnotation: "VS.VSSTRESN [VSTESTCD=SYSBP]",
+        dataCategory: "Topic",
+      },
+      {
+        domain: "VS",
+        sdtmVariable: "DIABP",
+        cdashLabel: "Diastolic Blood Pressure",
+        core: "HR",
+        acrfAnnotation: "VS.VSSTRESN [VSTESTCD=DIABP]",
+        dataCategory: "Topic",
+      },
+      {
+        domain: "VS",
+        sdtmVariable: "PULSE",
+        cdashLabel: "Pulse Rate",
+        core: "HR",
+        acrfAnnotation: "VS.VSSTRESN [VSTESTCD=PULSE]",
+        dataCategory: "Topic",
+      },
+      {
+        domain: "VS",
+        sdtmVariable: "TEMP",
+        cdashLabel: "Temperature",
+        core: "HR",
+        acrfAnnotation: "VS.VSSTRESN [VSTESTCD=TEMP]",
+        dataCategory: "Topic",
+      },
+      {
+        domain: "VS",
+        sdtmVariable: "RESP",
+        cdashLabel: "Respiratory Rate",
+        core: "O",
+        acrfAnnotation: "VS.VSSTRESN [VSTESTCD=RESP]",
+        dataCategory: "Topic",
+      },
+    ],
+    AE: [
+      {
+        domain: "AE",
+        sdtmVariable: "AETERM",
+        cdashLabel: "Reported Term for Adverse Event",
+        core: "R",
+        acrfAnnotation: "AE.AETERM",
+        dataCategory: "Topic",
+      },
+      {
+        domain: "AE",
+        sdtmVariable: "AESTDTC",
+        cdashLabel: "AE Start Date/Time",
+        core: "R",
+        acrfAnnotation: "AE.AESTDTC",
+        dataCategory: "Timing",
+      },
+      {
+        domain: "AE",
+        sdtmVariable: "AEENDTC",
+        cdashLabel: "AE End Date/Time",
+        core: "HR",
+        acrfAnnotation: "AE.AEENDTC",
+        dataCategory: "Timing",
+      },
+      {
+        domain: "AE",
+        sdtmVariable: "AEONGO",
+        cdashLabel: "Ongoing Adverse Event",
+        core: "HR",
+        acrfAnnotation: "AE.AEENRTPT [AEENRTPT=ONGOING]",
+        dataCategory: "Qualifier",
+      },
+      {
+        domain: "AE",
+        sdtmVariable: "AESEV",
+        cdashLabel: "Severity / Grade",
+        core: "R",
+        acrfAnnotation: "AE.AESEV",
+        dataCategory: "Qualifier",
+        nciConceptId: "C66769",
+      },
+      {
+        domain: "AE",
+        sdtmVariable: "AESER",
+        cdashLabel: "Serious Event",
+        core: "R",
+        acrfAnnotation: "AE.AESER",
+        dataCategory: "Qualifier",
+        nciConceptId: "C66741",
+      },
+      {
+        domain: "AE",
+        sdtmVariable: "AEREL",
+        cdashLabel: "Causality / Relatedness",
+        core: "R",
+        acrfAnnotation: "AE.AEREL",
+        dataCategory: "Qualifier",
+        nciConceptId: "C66768",
+      },
+      {
+        domain: "AE",
+        sdtmVariable: "AEACN",
+        cdashLabel: "Action Taken with Study Treatment",
+        core: "R",
+        acrfAnnotation: "AE.AEACN",
+        dataCategory: "Qualifier",
+      },
+      {
+        domain: "AE",
+        sdtmVariable: "AEOUT",
+        cdashLabel: "Outcome of Event",
+        core: "R",
+        acrfAnnotation: "AE.AEOUT",
+        dataCategory: "Qualifier",
+        nciConceptId: "C66767",
+      },
+    ],
+    CM: [
+      {
+        domain: "CM",
+        sdtmVariable: "CMTRT",
+        cdashLabel: "Reported Name of Drug / Therapy",
+        core: "R",
+        acrfAnnotation: "CM.CMTRT",
+        dataCategory: "Topic",
+      },
+      {
+        domain: "CM",
+        sdtmVariable: "CMINDC",
+        cdashLabel: "Indication",
+        core: "HR",
+        acrfAnnotation: "CM.CMINDC",
+        dataCategory: "Qualifier",
+      },
+      {
+        domain: "CM",
+        sdtmVariable: "CMDOSE",
+        cdashLabel: "Dose per Administration",
+        core: "HR",
+        acrfAnnotation: "CM.CMDOSE",
+        dataCategory: "Qualifier",
+      },
+      {
+        domain: "CM",
+        sdtmVariable: "CMDOSU",
+        cdashLabel: "Dose Units",
+        core: "HR",
+        acrfAnnotation: "CM.CMDOSU",
+        dataCategory: "Qualifier",
+      },
+      {
+        domain: "CM",
+        sdtmVariable: "CMROUTE",
+        cdashLabel: "Route",
+        core: "HR",
+        acrfAnnotation: "CM.CMROUTE",
+        dataCategory: "Qualifier",
+        nciConceptId: "C66729",
+      },
+      {
+        domain: "CM",
+        sdtmVariable: "CMSTDTC",
+        cdashLabel: "Medication Start Date",
+        core: "R",
+        acrfAnnotation: "CM.CMSTDTC",
+        dataCategory: "Timing",
+      },
+      {
+        domain: "CM",
+        sdtmVariable: "CMENDTC",
+        cdashLabel: "Medication End Date",
+        core: "O",
+        acrfAnnotation: "CM.CMENDTC",
+        dataCategory: "Timing",
+      },
+      {
+        domain: "CM",
+        sdtmVariable: "CMONGO",
+        cdashLabel: "Ongoing Medication",
+        core: "O",
+        acrfAnnotation: "CM.CMENRTPT [CMENRTPT=ONGOING]",
+        dataCategory: "Qualifier",
+      },
+    ],
+    LB: [
+      {
+        domain: "LB",
+        sdtmVariable: "LBDAT",
+        cdashLabel: "Sample Collection Date",
+        core: "R",
+        acrfAnnotation: "LB.LBDTC",
+        dataCategory: "Timing",
+      },
+      {
+        domain: "LB",
+        sdtmVariable: "LBTEST",
+        cdashLabel: "Lab Test Name",
+        core: "O",
+        acrfAnnotation: "LB.LBTEST",
+        dataCategory: "Topic",
+      },
+      {
+        domain: "LB",
+        sdtmVariable: "LBORRES",
+        cdashLabel: "Result Value",
+        core: "O",
+        acrfAnnotation: "LB.LBORRES",
+        dataCategory: "Result",
+      },
+      {
+        domain: "LB",
+        sdtmVariable: "LBORRESU",
+        cdashLabel: "Units",
+        core: "O",
+        acrfAnnotation: "LB.LBORRESU",
+        dataCategory: "Qualifier",
+      },
+      {
+        domain: "LB",
+        sdtmVariable: "LBNRIND",
+        cdashLabel: "Reference Range Indicator",
+        core: "O",
+        acrfAnnotation: "LB.LBNRIND",
+        dataCategory: "Qualifier",
+      },
+      {
+        domain: "LB",
+        sdtmVariable: "LBCLSIG",
+        cdashLabel: "Clinically Significant (Y/N)",
+        core: "O",
+        acrfAnnotation: "LB.SUPPLB.LBCLSIG",
+        dataCategory: "Qualifier",
+      },
+    ],
+    DI: [
+      {
+        domain: "DI",
+        sdtmVariable: "DITERM",
+        cdashLabel: "Device Reported Name",
+        core: "R",
+        acrfAnnotation: "DI.DITERM",
+        dataCategory: "Topic",
+      },
+      {
+        domain: "DI",
+        sdtmVariable: "DIBRN",
+        cdashLabel: "Device Brand / Trade Name",
+        core: "HR",
+        acrfAnnotation: "DI.DIBRN",
+        dataCategory: "Qualifier",
+      },
+      {
+        domain: "DI",
+        sdtmVariable: "DIMODN",
+        cdashLabel: "Device Model Number",
+        core: "HR",
+        acrfAnnotation: "DI.DIMODN",
+        dataCategory: "Qualifier",
+      },
+      {
+        domain: "DI",
+        sdtmVariable: "DILOTN",
+        cdashLabel: "Lot / Batch Number",
+        core: "HR",
+        acrfAnnotation: "DI.DILOTN",
+        dataCategory: "Qualifier",
+      },
+      {
+        domain: "DI",
+        sdtmVariable: "DISERN",
+        cdashLabel: "Serial Number",
+        core: "HR",
+        acrfAnnotation: "DI.DISERN",
+        dataCategory: "Qualifier",
+      },
+      {
+        domain: "DI",
+        sdtmVariable: "DIUDI",
+        cdashLabel: "Unique Device Identifier (UDI)",
+        core: "HR",
+        acrfAnnotation: "DI.DIUDI",
+        dataCategory: "Identifier",
+      },
+      {
+        domain: "DI",
+        sdtmVariable: "DISFTV",
+        cdashLabel: "Software / Firmware Version",
+        core: "O",
+        acrfAnnotation: "DI.DISFTV",
+        dataCategory: "Qualifier",
+      },
+      {
+        domain: "DI",
+        sdtmVariable: "DIEXPDTC",
+        cdashLabel: "Device Expiration Date",
+        core: "HR",
+        acrfAnnotation: "DI.DIEXPDTC",
+        dataCategory: "Timing",
+      },
+      {
+        domain: "DI",
+        sdtmVariable: "DISTAT",
+        cdashLabel: "Device Tracking Status",
+        core: "R",
+        acrfAnnotation: "DI.DISTAT",
+        dataCategory: "Qualifier",
+        nciConceptId: "C112033",
+      },
+    ],
+    DU: [
+      {
+        domain: "DU",
+        sdtmVariable: "DUTEST",
+        cdashLabel: "Device Activity / Procedure Name",
+        core: "R",
+        acrfAnnotation: "DU.DUTEST",
+        dataCategory: "Topic",
+      },
+      {
+        domain: "DU",
+        sdtmVariable: "DUORRES",
+        cdashLabel: "Procedural Deployment Outcome",
+        core: "R",
+        acrfAnnotation: "DU.DUORRES",
+        dataCategory: "Result",
+        nciConceptId: "C112037",
+      },
+      {
+        domain: "DU",
+        sdtmVariable: "DUSTDTC",
+        cdashLabel: "Procedure Start Date & Time",
+        core: "R",
+        acrfAnnotation: "DU.DUSTDTC",
+        dataCategory: "Timing",
+      },
+      {
+        domain: "DU",
+        sdtmVariable: "DUENDTC",
+        cdashLabel: "Procedure End Date & Time",
+        core: "HR",
+        acrfAnnotation: "DU.DUENDTC",
+        dataCategory: "Timing",
+      },
+      {
+        domain: "DU",
+        sdtmVariable: "DULOC",
+        cdashLabel: "Anatomical Site / Location",
+        core: "HR",
+        acrfAnnotation: "DU.DULOC",
+        dataCategory: "Qualifier",
+      },
+      {
+        domain: "DU",
+        sdtmVariable: "DUDUR",
+        cdashLabel: "Procedure Duration (Minutes)",
+        core: "O",
+        acrfAnnotation: "DU.DUDUR",
+        dataCategory: "Timing",
+      },
+    ],
+    DE: [
+      {
+        domain: "DE",
+        sdtmVariable: "DETERM",
+        cdashLabel: "Device Incident / Deficiency Description",
+        core: "R",
+        acrfAnnotation: "DE.DETERM",
+        dataCategory: "Topic",
+      },
+      {
+        domain: "DE",
+        sdtmVariable: "DESTDTC",
+        cdashLabel: "Incident Start Date/Time",
+        core: "R",
+        acrfAnnotation: "DE.DESTDTC",
+        dataCategory: "Timing",
+      },
+      {
+        domain: "DE",
+        sdtmVariable: "DEDEFIC",
+        cdashLabel: "Deficiency Classification",
+        core: "R",
+        acrfAnnotation: "DE.DEDEFIC",
+        dataCategory: "Qualifier",
+        nciConceptId: "C112023",
+      },
+      {
+        domain: "DE",
+        sdtmVariable: "DESEV",
+        cdashLabel: "Incident Severity",
+        core: "HR",
+        acrfAnnotation: "DE.DESEV",
+        dataCategory: "Qualifier",
+      },
+      {
+        domain: "DE",
+        sdtmVariable: "DESER",
+        cdashLabel: "Serious Health Deterioration (SAE)",
+        core: "R",
+        acrfAnnotation: "DE.DESER",
+        dataCategory: "Qualifier",
+        nciConceptId: "C66741",
+      },
+      {
+        domain: "DE",
+        sdtmVariable: "DEREL",
+        cdashLabel: "Device Relationship",
+        core: "R",
+        acrfAnnotation: "DE.DEREL",
+        dataCategory: "Qualifier",
+        nciConceptId: "C112024",
+      },
+      {
+        domain: "DE",
+        sdtmVariable: "DEACT",
+        cdashLabel: "Action Taken with Medical Device",
+        core: "R",
+        acrfAnnotation: "DE.DEACT",
+        dataCategory: "Qualifier",
+        nciConceptId: "C112028",
+      },
+      {
+        domain: "DE",
+        sdtmVariable: "DEOUT",
+        cdashLabel: "Incident Outcome",
+        core: "R",
+        acrfAnnotation: "DE.DEOUT",
+        dataCategory: "Qualifier",
+      },
+    ],
+    DA: [
+      {
+        domain: "DA",
+        sdtmVariable: "DATEST",
+        cdashLabel: "Accountability Assessment / Kit ID",
+        core: "R",
+        acrfAnnotation: "DA.DATEST",
+        dataCategory: "Topic",
+      },
+      {
+        domain: "DA",
+        sdtmVariable: "DASTDTC",
+        cdashLabel: "Dispensation Date",
+        core: "R",
+        acrfAnnotation: "DA.DASTDTC",
+        dataCategory: "Timing",
+      },
+      {
+        domain: "DA",
+        sdtmVariable: "DAENDTC",
+        cdashLabel: "Return Date",
+        core: "HR",
+        acrfAnnotation: "DA.DAENDTC",
+        dataCategory: "Timing",
+      },
+      {
+        domain: "DA",
+        sdtmVariable: "DASPNO",
+        cdashLabel: "Units Dispensed",
+        core: "R",
+        acrfAnnotation: "DA.DAORRES [DAPARM=DISPENSED]",
+        dataCategory: "Result",
+      },
+      {
+        domain: "DA",
+        sdtmVariable: "DARETNO",
+        cdashLabel: "Units Returned",
+        core: "HR",
+        acrfAnnotation: "DA.DAORRES [DAPARM=RETURNED]",
+        dataCategory: "Result",
+      },
+      {
+        domain: "DA",
+        sdtmVariable: "DAUSEDN",
+        cdashLabel: "Units Administered",
+        core: "HR",
+        acrfAnnotation: "DA.DAORRES [DAPARM=USED]",
+        dataCategory: "Result",
+      },
+      {
+        domain: "DA",
+        sdtmVariable: "DACOMPL",
+        cdashLabel: "Compliance Rate (%)",
+        core: "HR",
+        acrfAnnotation: "DA.DASTRESN [DAPARM=COMPLIANCE]",
+        dataCategory: "Derived",
+      },
+      {
+        domain: "DA",
+        sdtmVariable: "DARECON",
+        cdashLabel: "Reconciliation Status",
+        core: "R",
+        acrfAnnotation: "DA.DARECON",
+        dataCategory: "Qualifier",
+        nciConceptId: "C66736",
+      },
+    ],
+    EX: [
+      {
+        domain: "EX",
+        sdtmVariable: "EXTRT",
+        cdashLabel: "Investigational Product Name",
+        core: "R",
+        acrfAnnotation: "EX.EXTRT",
+        dataCategory: "Topic",
+      },
+      {
+        domain: "EX",
+        sdtmVariable: "EXDOSE",
+        cdashLabel: "Dose Administered",
+        core: "R",
+        acrfAnnotation: "EX.EXDOSE",
+        dataCategory: "Qualifier",
+      },
+      {
+        domain: "EX",
+        sdtmVariable: "EXDOSU",
+        cdashLabel: "Dose Units",
+        core: "R",
+        acrfAnnotation: "EX.EXDOSU",
+        dataCategory: "Qualifier",
+        nciConceptId: "C71620",
+      },
+      {
+        domain: "EX",
+        sdtmVariable: "EXDOSFRM",
+        cdashLabel: "Dose Form",
+        core: "HR",
+        acrfAnnotation: "EX.EXDOSFRM",
+        dataCategory: "Qualifier",
+      },
+      {
+        domain: "EX",
+        sdtmVariable: "EXROUTE",
+        cdashLabel: "Route of Administration",
+        core: "R",
+        acrfAnnotation: "EX.EXROUTE",
+        dataCategory: "Qualifier",
+        nciConceptId: "C66729",
+      },
+      {
+        domain: "EX",
+        sdtmVariable: "EXSTDTC",
+        cdashLabel: "Administration Start Date/Time",
+        core: "R",
+        acrfAnnotation: "EX.EXSTDTC",
+        dataCategory: "Timing",
+      },
+      {
+        domain: "EX",
+        sdtmVariable: "EXENDTC",
+        cdashLabel: "Administration End Date/Time",
+        core: "HR",
+        acrfAnnotation: "EX.EXENDTC",
+        dataCategory: "Timing",
+      },
+      {
+        domain: "EX",
+        sdtmVariable: "EXADJ",
+        cdashLabel: "Dose Modification / Interruption Reason",
+        core: "O",
+        acrfAnnotation: "EX.EXADJ",
+        dataCategory: "Qualifier",
+      },
+    ],
+    MH: [
+      {
+        domain: "MH",
+        sdtmVariable: "MHTERM",
+        cdashLabel: "Medical History Condition / Diagnosis",
+        core: "R",
+        acrfAnnotation: "MH.MHTERM",
+        dataCategory: "Topic",
+      },
+      {
+        domain: "MH",
+        sdtmVariable: "MHCAT",
+        cdashLabel: "Body System / Category",
+        core: "HR",
+        acrfAnnotation: "MH.MHCAT",
+        dataCategory: "Qualifier",
+        nciConceptId: "C66737",
+      },
+      {
+        domain: "MH",
+        sdtmVariable: "MHSTDTC",
+        cdashLabel: "Onset / Diagnosis Date",
+        core: "HR",
+        acrfAnnotation: "MH.MHSTDTC",
+        dataCategory: "Timing",
+      },
+      {
+        domain: "MH",
+        sdtmVariable: "MHONGO",
+        cdashLabel: "Condition is Ongoing",
+        core: "R",
+        acrfAnnotation: "MH.MHENRTPT [MHENRTPT=ONGOING]",
+        dataCategory: "Qualifier",
+      },
+      {
+        domain: "MH",
+        sdtmVariable: "MHENDTC",
+        cdashLabel: "Resolution Date",
+        core: "O",
+        acrfAnnotation: "MH.MHENDTC",
+        dataCategory: "Timing",
+      },
+    ],
+    DS: [
+      {
+        domain: "DS",
+        sdtmVariable: "DSTERM",
+        cdashLabel: "Disposition Event / Status",
+        core: "R",
+        acrfAnnotation: "DS.DSTERM",
+        dataCategory: "Topic",
+      },
+      {
+        domain: "DS",
+        sdtmVariable: "DSDECOD",
+        cdashLabel: "Standardized Disposition Reason",
+        core: "R",
+        acrfAnnotation: "DS.DSDECOD",
+        dataCategory: "Qualifier",
+        nciConceptId: "C66735",
+      },
+      {
+        domain: "DS",
+        sdtmVariable: "DSCAT",
+        cdashLabel: "Milestone Category",
+        core: "HR",
+        acrfAnnotation: "DS.DSCAT",
+        dataCategory: "Qualifier",
+      },
+      {
+        domain: "DS",
+        sdtmVariable: "DSSTDTC",
+        cdashLabel: "Disposition Effective Date",
+        core: "R",
+        acrfAnnotation: "DS.DSSTDTC",
+        dataCategory: "Timing",
+      },
+    ],
+  };
 
 /**
  * 1-Click CDASH Domain Auto-Scaffolder Generator
  */
 export function scaffoldCdashDomain(
-  domainCode: "DM" | "VS" | "AE" | "CM" | "LB" | "RECIST" | "DI" | "DU" | "DE" | "DA" | "EX" | "MH" | "DS"
+  domainCode:
+    | "DM"
+    | "VS"
+    | "AE"
+    | "CM"
+    | "LB"
+    | "RECIST"
+    | "DI"
+    | "DU"
+    | "DE"
+    | "DA"
+    | "EX"
+    | "MH"
+    | "DS"
 ): CRFForm {
   const formId = `form_${domainCode.toLowerCase()}_${Date.now()}`;
 
@@ -131,7 +773,8 @@ export function scaffoldCdashDomain(
         id: formId,
         name: "Demographics & Informed Consent",
         domain: "DM",
-        description: "Subject baseline characteristics, demographics, and consent tracking",
+        description:
+          "Subject baseline characteristics, demographics, and consent tracking",
         version: "1.0",
         rules: [],
         sections: [
@@ -146,12 +789,15 @@ export function scaffoldCdashDomain(
                 dataType: "date",
                 columnSpan: 6,
                 required: true,
-                cdashMetadata: CDASH_STANDARD_VARIABLES.DM.find((v) => v.sdtmVariable === "ICDAT"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.DM.find(
+                  (v) => v.sdtmVariable === "ICDAT"
+                ),
               },
               {
                 id: `f_icyn_${Date.now()}`,
                 variableName: "ICYN",
-                label: "Did subject provide written consent prior to any protocol procedures?",
+                label:
+                  "Did subject provide written consent prior to any protocol procedures?",
                 dataType: "radio",
                 columnSpan: 6,
                 required: true,
@@ -173,7 +819,9 @@ export function scaffoldCdashDomain(
                 minValue: 1900,
                 maxValue: 2026,
                 placeholder: "e.g. 1985",
-                cdashMetadata: CDASH_STANDARD_VARIABLES.DM.find((v) => v.sdtmVariable === "BRTHYR"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.DM.find(
+                  (v) => v.sdtmVariable === "BRTHYR"
+                ),
               },
               {
                 id: `f_age_${Date.now() + 1}`,
@@ -185,7 +833,9 @@ export function scaffoldCdashDomain(
                 minValue: 18,
                 maxValue: 120,
                 unit: "Years",
-                cdashMetadata: CDASH_STANDARD_VARIABLES.DM.find((v) => v.sdtmVariable === "AGE"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.DM.find(
+                  (v) => v.sdtmVariable === "AGE"
+                ),
               },
               {
                 id: `f_sex_${Date.now() + 2}`,
@@ -195,7 +845,9 @@ export function scaffoldCdashDomain(
                 columnSpan: 4,
                 required: true,
                 codelistId: "CL_SEX",
-                cdashMetadata: CDASH_STANDARD_VARIABLES.DM.find((v) => v.sdtmVariable === "SEX"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.DM.find(
+                  (v) => v.sdtmVariable === "SEX"
+                ),
               },
               {
                 id: `f_race_${Date.now() + 3}`,
@@ -205,7 +857,9 @@ export function scaffoldCdashDomain(
                 columnSpan: 6,
                 required: true,
                 codelistId: "CL_RACE",
-                cdashMetadata: CDASH_STANDARD_VARIABLES.DM.find((v) => v.sdtmVariable === "RACE"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.DM.find(
+                  (v) => v.sdtmVariable === "RACE"
+                ),
               },
               {
                 id: `f_ethnic_${Date.now() + 4}`,
@@ -215,7 +869,9 @@ export function scaffoldCdashDomain(
                 columnSpan: 6,
                 required: true,
                 codelistId: "CL_ETHNIC",
-                cdashMetadata: CDASH_STANDARD_VARIABLES.DM.find((v) => v.sdtmVariable === "ETHNIC"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.DM.find(
+                  (v) => v.sdtmVariable === "ETHNIC"
+                ),
               },
             ],
           },
@@ -227,13 +883,15 @@ export function scaffoldCdashDomain(
         id: formId,
         name: "Vital Signs & Physical Metrics",
         domain: "VS",
-        description: "Sitting blood pressure, pulse, temperature, height, weight, and automated BMI",
+        description:
+          "Sitting blood pressure, pulse, temperature, height, weight, and automated BMI",
         version: "1.0",
         rules: [
           {
             id: `rule_bmi_${Date.now()}`,
             name: "Automated BMI Derivation",
-            description: "Calculate BMI automatically when height and weight are entered",
+            description:
+              "Calculate BMI automatically when height and weight are entered",
             triggerFieldIds: ["f_height", "f_weight"],
             actionType: "set_value",
             targetFieldId: "f_bmi",
@@ -242,21 +900,22 @@ export function scaffoldCdashDomain(
               { fieldId: "f_weight", operator: "gt", value: 0 },
             ],
             logicalOperator: "AND",
-            formulaExpression: "round(weight / ((height / 100) * (height / 100)), 1)",
+            formulaExpression:
+              "round(weight / ((height / 100) * (height / 100)), 1)",
           },
           {
             id: `rule_sysbp_check_${Date.now() + 1}`,
             name: "Severe Hypertension Range Alert",
-            description: "Raise query if Systolic BP > 180 mmHg or Diastolic > 110 mmHg",
+            description:
+              "Raise query if Systolic BP > 180 mmHg or Diastolic > 110 mmHg",
             triggerFieldIds: ["f_sysbp", "f_diabp"],
             actionType: "raise_query",
             targetFieldId: "f_sysbp",
-            conditions: [
-              { fieldId: "f_sysbp", operator: "gt", value: 180 },
-            ],
+            conditions: [{ fieldId: "f_sysbp", operator: "gt", value: 180 }],
             logicalOperator: "OR",
             querySeverity: "warning",
-            queryMessage: "Systolic Blood Pressure > 180 mmHg exceeds protocol threshold. Please confirm repeat measurement.",
+            queryMessage:
+              "Systolic Blood Pressure > 180 mmHg exceeds protocol threshold. Please confirm repeat measurement.",
           },
         ],
         sections: [
@@ -271,7 +930,9 @@ export function scaffoldCdashDomain(
                 dataType: "datetime",
                 columnSpan: 6,
                 required: true,
-                cdashMetadata: CDASH_STANDARD_VARIABLES.VS.find((v) => v.sdtmVariable === "VSDAT"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.VS.find(
+                  (v) => v.sdtmVariable === "VSDAT"
+                ),
               },
               {
                 id: "f_height",
@@ -283,7 +944,9 @@ export function scaffoldCdashDomain(
                 unit: "cm",
                 minValue: 50,
                 maxValue: 250,
-                cdashMetadata: CDASH_STANDARD_VARIABLES.VS.find((v) => v.sdtmVariable === "HEIGHT"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.VS.find(
+                  (v) => v.sdtmVariable === "HEIGHT"
+                ),
               },
               {
                 id: "f_weight",
@@ -295,7 +958,9 @@ export function scaffoldCdashDomain(
                 unit: "kg",
                 minValue: 20,
                 maxValue: 300,
-                cdashMetadata: CDASH_STANDARD_VARIABLES.VS.find((v) => v.sdtmVariable === "WEIGHT"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.VS.find(
+                  (v) => v.sdtmVariable === "WEIGHT"
+                ),
               },
               {
                 id: "f_bmi",
@@ -307,7 +972,9 @@ export function scaffoldCdashDomain(
                 readOnly: true,
                 unit: "kg/m²",
                 calculationFormula: "weight / ((height/100) * (height/100))",
-                cdashMetadata: CDASH_STANDARD_VARIABLES.VS.find((v) => v.sdtmVariable === "BMI"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.VS.find(
+                  (v) => v.sdtmVariable === "BMI"
+                ),
               },
               {
                 id: "f_sysbp",
@@ -319,7 +986,9 @@ export function scaffoldCdashDomain(
                 unit: "mmHg",
                 minValue: 60,
                 maxValue: 260,
-                cdashMetadata: CDASH_STANDARD_VARIABLES.VS.find((v) => v.sdtmVariable === "SYSBP"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.VS.find(
+                  (v) => v.sdtmVariable === "SYSBP"
+                ),
               },
               {
                 id: "f_diabp",
@@ -331,7 +1000,9 @@ export function scaffoldCdashDomain(
                 unit: "mmHg",
                 minValue: 30,
                 maxValue: 160,
-                cdashMetadata: CDASH_STANDARD_VARIABLES.VS.find((v) => v.sdtmVariable === "DIABP"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.VS.find(
+                  (v) => v.sdtmVariable === "DIABP"
+                ),
               },
               {
                 id: "f_pulse",
@@ -343,7 +1014,9 @@ export function scaffoldCdashDomain(
                 unit: "beats/min",
                 minValue: 30,
                 maxValue: 220,
-                cdashMetadata: CDASH_STANDARD_VARIABLES.VS.find((v) => v.sdtmVariable === "PULSE"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.VS.find(
+                  (v) => v.sdtmVariable === "PULSE"
+                ),
               },
               {
                 id: "f_temp",
@@ -355,7 +1028,9 @@ export function scaffoldCdashDomain(
                 unit: "°C",
                 minValue: 32.0,
                 maxValue: 43.0,
-                cdashMetadata: CDASH_STANDARD_VARIABLES.VS.find((v) => v.sdtmVariable === "TEMP"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.VS.find(
+                  (v) => v.sdtmVariable === "TEMP"
+                ),
               },
               {
                 id: "f_resp",
@@ -367,7 +1042,9 @@ export function scaffoldCdashDomain(
                 unit: "breaths/min",
                 minValue: 8,
                 maxValue: 60,
-                cdashMetadata: CDASH_STANDARD_VARIABLES.VS.find((v) => v.sdtmVariable === "RESP"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.VS.find(
+                  (v) => v.sdtmVariable === "RESP"
+                ),
               },
             ],
           },
@@ -379,7 +1056,8 @@ export function scaffoldCdashDomain(
         id: formId,
         name: "Adverse Events Log",
         domain: "AE",
-        description: "Continuous log form for capturing adverse events, CTCAE grading, seriousness, and attribution",
+        description:
+          "Continuous log form for capturing adverse events, CTCAE grading, seriousness, and attribution",
         version: "1.0",
         isLogForm: true,
         rules: [
@@ -402,12 +1080,15 @@ export function scaffoldCdashDomain(
               {
                 id: "f_ae_term",
                 variableName: "AETERM",
-                label: "Adverse Event Reported Term (Diagnosis or Sign/Symptom)",
+                label:
+                  "Adverse Event Reported Term (Diagnosis or Sign/Symptom)",
                 dataType: "text",
                 columnSpan: 12,
                 required: true,
                 placeholder: "e.g. Febrile Neutropenia, Peripheral Neuropathy",
-                cdashMetadata: CDASH_STANDARD_VARIABLES.AE.find((v) => v.sdtmVariable === "AETERM"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.AE.find(
+                  (v) => v.sdtmVariable === "AETERM"
+                ),
               },
               {
                 id: "f_ae_stdtc",
@@ -416,7 +1097,9 @@ export function scaffoldCdashDomain(
                 dataType: "partial_date",
                 columnSpan: 4,
                 required: true,
-                cdashMetadata: CDASH_STANDARD_VARIABLES.AE.find((v) => v.sdtmVariable === "AESTDTC"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.AE.find(
+                  (v) => v.sdtmVariable === "AESTDTC"
+                ),
               },
               {
                 id: "f_ae_endtc",
@@ -425,7 +1108,9 @@ export function scaffoldCdashDomain(
                 dataType: "partial_date",
                 columnSpan: 4,
                 required: false,
-                cdashMetadata: CDASH_STANDARD_VARIABLES.AE.find((v) => v.sdtmVariable === "AEENDTC"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.AE.find(
+                  (v) => v.sdtmVariable === "AEENDTC"
+                ),
               },
               {
                 id: "f_ae_ongo",
@@ -435,7 +1120,9 @@ export function scaffoldCdashDomain(
                 columnSpan: 4,
                 required: false,
                 codelistId: "CL_NY",
-                cdashMetadata: CDASH_STANDARD_VARIABLES.AE.find((v) => v.sdtmVariable === "AEONGO"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.AE.find(
+                  (v) => v.sdtmVariable === "AEONGO"
+                ),
               },
               {
                 id: "f_ae_sev",
@@ -445,7 +1132,9 @@ export function scaffoldCdashDomain(
                 columnSpan: 6,
                 required: true,
                 codelistId: "CL_AESEV",
-                cdashMetadata: CDASH_STANDARD_VARIABLES.AE.find((v) => v.sdtmVariable === "AESEV"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.AE.find(
+                  (v) => v.sdtmVariable === "AESEV"
+                ),
               },
               {
                 id: "f_ae_ser",
@@ -455,7 +1144,9 @@ export function scaffoldCdashDomain(
                 columnSpan: 6,
                 required: true,
                 codelistId: "CL_NY",
-                cdashMetadata: CDASH_STANDARD_VARIABLES.AE.find((v) => v.sdtmVariable === "AESER"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.AE.find(
+                  (v) => v.sdtmVariable === "AESER"
+                ),
               },
               {
                 id: "f_ae_rel",
@@ -465,7 +1156,9 @@ export function scaffoldCdashDomain(
                 columnSpan: 6,
                 required: true,
                 codelistId: "CL_AEREL",
-                cdashMetadata: CDASH_STANDARD_VARIABLES.AE.find((v) => v.sdtmVariable === "AEREL"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.AE.find(
+                  (v) => v.sdtmVariable === "AEREL"
+                ),
               },
               {
                 id: "f_ae_acn",
@@ -475,13 +1168,23 @@ export function scaffoldCdashDomain(
                 columnSpan: 6,
                 required: true,
                 customOptions: [
-                  { code: "DOSE NOT CHANGED", label: "Dose Not Changed", order: 1 },
+                  {
+                    code: "DOSE NOT CHANGED",
+                    label: "Dose Not Changed",
+                    order: 1,
+                  },
                   { code: "DOSE REDUCED", label: "Dose Reduced", order: 2 },
-                  { code: "DRUG INTERRUPTED", label: "Drug Interrupted", order: 3 },
+                  {
+                    code: "DRUG INTERRUPTED",
+                    label: "Drug Interrupted",
+                    order: 3,
+                  },
                   { code: "DRUG WITHDRAWN", label: "Drug Withdrawn", order: 4 },
                   { code: "NOT APPLICABLE", label: "Not Applicable", order: 5 },
                 ],
-                cdashMetadata: CDASH_STANDARD_VARIABLES.AE.find((v) => v.sdtmVariable === "AEACN"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.AE.find(
+                  (v) => v.sdtmVariable === "AEACN"
+                ),
               },
               {
                 id: "f_ae_out",
@@ -491,7 +1194,9 @@ export function scaffoldCdashDomain(
                 columnSpan: 6,
                 required: true,
                 codelistId: "CL_AEOUT",
-                cdashMetadata: CDASH_STANDARD_VARIABLES.AE.find((v) => v.sdtmVariable === "AEOUT"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.AE.find(
+                  (v) => v.sdtmVariable === "AEOUT"
+                ),
               },
             ],
           },
@@ -503,7 +1208,8 @@ export function scaffoldCdashDomain(
         id: formId,
         name: "Prior & Concomitant Medications",
         domain: "CM",
-        description: "Log of prescription drugs, over-the-counter medications, and supplements",
+        description:
+          "Log of prescription drugs, over-the-counter medications, and supplements",
         version: "1.0",
         isLogForm: true,
         rules: [],
@@ -520,7 +1226,9 @@ export function scaffoldCdashDomain(
                 columnSpan: 6,
                 required: true,
                 placeholder: "e.g. Paracetamol, Pembrolizumab",
-                cdashMetadata: CDASH_STANDARD_VARIABLES.CM.find((v) => v.sdtmVariable === "CMTRT"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.CM.find(
+                  (v) => v.sdtmVariable === "CMTRT"
+                ),
               },
               {
                 id: "f_cm_indc",
@@ -530,7 +1238,9 @@ export function scaffoldCdashDomain(
                 columnSpan: 6,
                 required: true,
                 placeholder: "e.g. Headache, Cancer Pain",
-                cdashMetadata: CDASH_STANDARD_VARIABLES.CM.find((v) => v.sdtmVariable === "CMINDC"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.CM.find(
+                  (v) => v.sdtmVariable === "CMINDC"
+                ),
               },
               {
                 id: "f_cm_dose",
@@ -540,7 +1250,9 @@ export function scaffoldCdashDomain(
                 columnSpan: 3,
                 required: true,
                 minValue: 0.1,
-                cdashMetadata: CDASH_STANDARD_VARIABLES.CM.find((v) => v.sdtmVariable === "CMDOSE"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.CM.find(
+                  (v) => v.sdtmVariable === "CMDOSE"
+                ),
               },
               {
                 id: "f_cm_dosu",
@@ -550,7 +1262,9 @@ export function scaffoldCdashDomain(
                 columnSpan: 3,
                 required: true,
                 placeholder: "mg, mL, IU",
-                cdashMetadata: CDASH_STANDARD_VARIABLES.CM.find((v) => v.sdtmVariable === "CMDOSU"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.CM.find(
+                  (v) => v.sdtmVariable === "CMDOSU"
+                ),
               },
               {
                 id: "f_cm_route",
@@ -560,7 +1274,9 @@ export function scaffoldCdashDomain(
                 columnSpan: 6,
                 required: true,
                 codelistId: "CL_ROUTE",
-                cdashMetadata: CDASH_STANDARD_VARIABLES.CM.find((v) => v.sdtmVariable === "CMROUTE"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.CM.find(
+                  (v) => v.sdtmVariable === "CMROUTE"
+                ),
               },
               {
                 id: "f_cm_stdtc",
@@ -569,7 +1285,9 @@ export function scaffoldCdashDomain(
                 dataType: "partial_date",
                 columnSpan: 6,
                 required: true,
-                cdashMetadata: CDASH_STANDARD_VARIABLES.CM.find((v) => v.sdtmVariable === "CMSTDTC"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.CM.find(
+                  (v) => v.sdtmVariable === "CMSTDTC"
+                ),
               },
               {
                 id: "f_cm_endtc",
@@ -578,7 +1296,9 @@ export function scaffoldCdashDomain(
                 dataType: "partial_date",
                 columnSpan: 6,
                 required: false,
-                cdashMetadata: CDASH_STANDARD_VARIABLES.CM.find((v) => v.sdtmVariable === "CMENDTC"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.CM.find(
+                  (v) => v.sdtmVariable === "CMENDTC"
+                ),
               },
             ],
           },
@@ -605,7 +1325,9 @@ export function scaffoldCdashDomain(
                 dataType: "datetime",
                 columnSpan: 6,
                 required: true,
-                cdashMetadata: CDASH_STANDARD_VARIABLES.LB.find((v) => v.sdtmVariable === "LBDAT"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.LB.find(
+                  (v) => v.sdtmVariable === "LBDAT"
+                ),
               },
               {
                 id: "f_lb_fast",
@@ -692,17 +1414,25 @@ export function scaffoldCdashDomain(
         id: formId,
         name: "Oncology RECIST 1.1 Tumor Assessment",
         domain: "TR",
-        description: "Target & non-target lesion tracking with automated sum of longest diameters (SLD) and percent change from baseline",
+        description:
+          "Target & non-target lesion tracking with automated sum of longest diameters (SLD) and percent change from baseline",
         version: "1.0",
         rules: [
           {
             id: `rule_recist_resp_${Date.now()}`,
             name: "RECIST 1.1 Target Lesion Response Auto-Evaluation",
-            description: "Derive response (PD >= +20% SLD increase, PR <= -30% SLD decrease, CR = 0mm)",
+            description:
+              "Derive response (PD >= +20% SLD increase, PR <= -30% SLD decrease, CR = 0mm)",
             triggerFieldIds: ["f_recist_change"],
             actionType: "set_value",
             targetFieldId: "f_recist_resp",
-            conditions: [{ fieldId: "f_recist_change", operator: "is_not_empty", value: "" }],
+            conditions: [
+              {
+                fieldId: "f_recist_change",
+                operator: "is_not_empty",
+                value: "",
+              },
+            ],
             logicalOperator: "AND",
           },
         ],
@@ -741,7 +1471,8 @@ export function scaffoldCdashDomain(
               {
                 id: "f_recist_t1",
                 variableName: "TRL1",
-                label: "Target Lesion 1: Longest Diameter (mm) & Anatomical Site",
+                label:
+                  "Target Lesion 1: Longest Diameter (mm) & Anatomical Site",
                 dataType: "number",
                 columnSpan: 6,
                 required: true,
@@ -753,7 +1484,8 @@ export function scaffoldCdashDomain(
               {
                 id: "f_recist_t2",
                 variableName: "TRL2",
-                label: "Target Lesion 2: Longest Diameter (mm) & Anatomical Site",
+                label:
+                  "Target Lesion 2: Longest Diameter (mm) & Anatomical Site",
                 dataType: "number",
                 columnSpan: 6,
                 required: false,
@@ -791,7 +1523,8 @@ export function scaffoldCdashDomain(
                 required: false,
                 readOnly: true,
                 unit: "%",
-                calculationFormula: "round(((trl1 + trl2 - trsldbas) / trsldbas) * 100, 1)",
+                calculationFormula:
+                  "round(((trl1 + trl2 - trsldbas) / trsldbas) * 100, 1)",
               },
               {
                 id: "f_recist_resp",
@@ -812,7 +1545,8 @@ export function scaffoldCdashDomain(
         id: formId,
         name: "Medical Device Identification & Traceability",
         domain: "DI",
-        description: "ISO 14155 / FDA 21 CFR 812 medical device identification, model, lot, and Unique Device Identifier (UDI) tracking",
+        description:
+          "ISO 14155 / FDA 21 CFR 812 medical device identification, model, lot, and Unique Device Identifier (UDI) tracking",
         version: "1.0",
         rules: [],
         sections: [
@@ -828,7 +1562,9 @@ export function scaffoldCdashDomain(
                 columnSpan: 6,
                 required: true,
                 placeholder: "e.g. Transcatheter Aortic Heart Valve",
-                cdashMetadata: CDASH_STANDARD_VARIABLES.DI.find((v) => v.sdtmVariable === "DITERM"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.DI.find(
+                  (v) => v.sdtmVariable === "DITERM"
+                ),
               },
               {
                 id: "f_di_brn",
@@ -838,7 +1574,9 @@ export function scaffoldCdashDomain(
                 columnSpan: 6,
                 required: true,
                 placeholder: "e.g. NeoValve-X Implantation System",
-                cdashMetadata: CDASH_STANDARD_VARIABLES.DI.find((v) => v.sdtmVariable === "DIBRN"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.DI.find(
+                  (v) => v.sdtmVariable === "DIBRN"
+                ),
               },
               {
                 id: "f_di_modn",
@@ -848,7 +1586,9 @@ export function scaffoldCdashDomain(
                 columnSpan: 4,
                 required: true,
                 placeholder: "e.g. NVX-26MM",
-                cdashMetadata: CDASH_STANDARD_VARIABLES.DI.find((v) => v.sdtmVariable === "DIMODN"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.DI.find(
+                  (v) => v.sdtmVariable === "DIMODN"
+                ),
               },
               {
                 id: "f_di_lotn",
@@ -858,7 +1598,9 @@ export function scaffoldCdashDomain(
                 columnSpan: 4,
                 required: true,
                 placeholder: "e.g. LOT-2026-A4",
-                cdashMetadata: CDASH_STANDARD_VARIABLES.DI.find((v) => v.sdtmVariable === "DILOTN"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.DI.find(
+                  (v) => v.sdtmVariable === "DILOTN"
+                ),
               },
               {
                 id: "f_di_sern",
@@ -868,7 +1610,9 @@ export function scaffoldCdashDomain(
                 columnSpan: 4,
                 required: false,
                 placeholder: "e.g. SN-8839210",
-                cdashMetadata: CDASH_STANDARD_VARIABLES.DI.find((v) => v.sdtmVariable === "DISERN"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.DI.find(
+                  (v) => v.sdtmVariable === "DISERN"
+                ),
               },
               {
                 id: "f_di_udi",
@@ -878,7 +1622,9 @@ export function scaffoldCdashDomain(
                 columnSpan: 6,
                 required: true,
                 placeholder: "(01)00850012345678(17)280815(10)LOT-2026-A4",
-                cdashMetadata: CDASH_STANDARD_VARIABLES.DI.find((v) => v.sdtmVariable === "DIUDI"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.DI.find(
+                  (v) => v.sdtmVariable === "DIUDI"
+                ),
               },
               {
                 id: "f_di_sftv",
@@ -888,7 +1634,9 @@ export function scaffoldCdashDomain(
                 columnSpan: 3,
                 required: false,
                 placeholder: "e.g. v2.4.1",
-                cdashMetadata: CDASH_STANDARD_VARIABLES.DI.find((v) => v.sdtmVariable === "DISFTV"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.DI.find(
+                  (v) => v.sdtmVariable === "DISFTV"
+                ),
               },
               {
                 id: "f_di_expdtc",
@@ -897,7 +1645,9 @@ export function scaffoldCdashDomain(
                 dataType: "date",
                 columnSpan: 3,
                 required: true,
-                cdashMetadata: CDASH_STANDARD_VARIABLES.DI.find((v) => v.sdtmVariable === "DIEXPDTC"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.DI.find(
+                  (v) => v.sdtmVariable === "DIEXPDTC"
+                ),
               },
               {
                 id: "f_di_stat",
@@ -907,7 +1657,9 @@ export function scaffoldCdashDomain(
                 columnSpan: 6,
                 required: true,
                 codelistId: "CL_DISTAT",
-                cdashMetadata: CDASH_STANDARD_VARIABLES.DI.find((v) => v.sdtmVariable === "DISTAT"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.DI.find(
+                  (v) => v.sdtmVariable === "DISTAT"
+                ),
               },
             ],
           },
@@ -919,7 +1671,8 @@ export function scaffoldCdashDomain(
         id: formId,
         name: "Device Implantation & Utilization Procedure",
         domain: "DU",
-        description: "Intra-procedural delivery, anatomical site access, deployment outcome, and fluoroscopy duration",
+        description:
+          "Intra-procedural delivery, anatomical site access, deployment outcome, and fluoroscopy duration",
         version: "1.0",
         rules: [],
         sections: [
@@ -935,7 +1688,9 @@ export function scaffoldCdashDomain(
                 columnSpan: 6,
                 required: true,
                 placeholder: "e.g. Transfemoral TAVR Implantation",
-                cdashMetadata: CDASH_STANDARD_VARIABLES.DU.find((v) => v.sdtmVariable === "DUTEST"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.DU.find(
+                  (v) => v.sdtmVariable === "DUTEST"
+                ),
               },
               {
                 id: "f_du_loc",
@@ -945,7 +1700,9 @@ export function scaffoldCdashDomain(
                 columnSpan: 6,
                 required: true,
                 placeholder: "e.g. Native Aortic Annulus",
-                cdashMetadata: CDASH_STANDARD_VARIABLES.DU.find((v) => v.sdtmVariable === "DULOC"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.DU.find(
+                  (v) => v.sdtmVariable === "DULOC"
+                ),
               },
               {
                 id: "f_du_stdtc",
@@ -954,7 +1711,9 @@ export function scaffoldCdashDomain(
                 dataType: "datetime",
                 columnSpan: 4,
                 required: true,
-                cdashMetadata: CDASH_STANDARD_VARIABLES.DU.find((v) => v.sdtmVariable === "DUSTDTC"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.DU.find(
+                  (v) => v.sdtmVariable === "DUSTDTC"
+                ),
               },
               {
                 id: "f_du_endtc",
@@ -963,7 +1722,9 @@ export function scaffoldCdashDomain(
                 dataType: "datetime",
                 columnSpan: 4,
                 required: true,
-                cdashMetadata: CDASH_STANDARD_VARIABLES.DU.find((v) => v.sdtmVariable === "DUENDTC"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.DU.find(
+                  (v) => v.sdtmVariable === "DUENDTC"
+                ),
               },
               {
                 id: "f_du_dur",
@@ -974,7 +1735,9 @@ export function scaffoldCdashDomain(
                 required: false,
                 unit: "min",
                 minValue: 1,
-                cdashMetadata: CDASH_STANDARD_VARIABLES.DU.find((v) => v.sdtmVariable === "DUDUR"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.DU.find(
+                  (v) => v.sdtmVariable === "DUDUR"
+                ),
               },
               {
                 id: "f_du_proc",
@@ -984,7 +1747,9 @@ export function scaffoldCdashDomain(
                 columnSpan: 12,
                 required: true,
                 codelistId: "CL_DUPROC",
-                cdashMetadata: CDASH_STANDARD_VARIABLES.DU.find((v) => v.sdtmVariable === "DUORRES"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.DU.find(
+                  (v) => v.sdtmVariable === "DUORRES"
+                ),
               },
             ],
           },
@@ -996,7 +1761,8 @@ export function scaffoldCdashDomain(
         id: formId,
         name: "Device Deficiencies & Incidents Log",
         domain: "DE",
-        description: "Continuous log for ISO 14155 / FDA 21 CFR 812 device malfunctions, use errors, and serious adverse incidents",
+        description:
+          "Continuous log for ISO 14155 / FDA 21 CFR 812 device malfunctions, use errors, and serious adverse incidents",
         version: "1.0",
         isLogForm: true,
         rules: [],
@@ -1012,8 +1778,11 @@ export function scaffoldCdashDomain(
                 dataType: "text",
                 columnSpan: 12,
                 required: true,
-                placeholder: "e.g. Balloon rupture during deployment, Valve migration, Delivery catheter kink",
-                cdashMetadata: CDASH_STANDARD_VARIABLES.DE.find((v) => v.sdtmVariable === "DETERM"),
+                placeholder:
+                  "e.g. Balloon rupture during deployment, Valve migration, Delivery catheter kink",
+                cdashMetadata: CDASH_STANDARD_VARIABLES.DE.find(
+                  (v) => v.sdtmVariable === "DETERM"
+                ),
               },
               {
                 id: "f_de_stdtc",
@@ -1022,7 +1791,9 @@ export function scaffoldCdashDomain(
                 dataType: "datetime",
                 columnSpan: 6,
                 required: true,
-                cdashMetadata: CDASH_STANDARD_VARIABLES.DE.find((v) => v.sdtmVariable === "DESTDTC"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.DE.find(
+                  (v) => v.sdtmVariable === "DESTDTC"
+                ),
               },
               {
                 id: "f_de_defic",
@@ -1032,7 +1803,9 @@ export function scaffoldCdashDomain(
                 columnSpan: 6,
                 required: true,
                 codelistId: "CL_DEDEF",
-                cdashMetadata: CDASH_STANDARD_VARIABLES.DE.find((v) => v.sdtmVariable === "DEDEFIC"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.DE.find(
+                  (v) => v.sdtmVariable === "DEDEFIC"
+                ),
               },
               {
                 id: "f_de_sev",
@@ -1042,17 +1815,22 @@ export function scaffoldCdashDomain(
                 columnSpan: 6,
                 required: true,
                 codelistId: "CL_AESEV",
-                cdashMetadata: CDASH_STANDARD_VARIABLES.DE.find((v) => v.sdtmVariable === "DESEV"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.DE.find(
+                  (v) => v.sdtmVariable === "DESEV"
+                ),
               },
               {
                 id: "f_de_ser",
                 variableName: "DESER",
-                label: "Did this lead to Serious Deterioration in Health (SAE)?",
+                label:
+                  "Did this lead to Serious Deterioration in Health (SAE)?",
                 dataType: "radio",
                 columnSpan: 6,
                 required: true,
                 codelistId: "CL_NY",
-                cdashMetadata: CDASH_STANDARD_VARIABLES.DE.find((v) => v.sdtmVariable === "DESER"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.DE.find(
+                  (v) => v.sdtmVariable === "DESER"
+                ),
               },
               {
                 id: "f_de_rel",
@@ -1062,7 +1840,9 @@ export function scaffoldCdashDomain(
                 columnSpan: 6,
                 required: true,
                 codelistId: "CL_DEREL",
-                cdashMetadata: CDASH_STANDARD_VARIABLES.DE.find((v) => v.sdtmVariable === "DEREL"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.DE.find(
+                  (v) => v.sdtmVariable === "DEREL"
+                ),
               },
               {
                 id: "f_de_act",
@@ -1072,7 +1852,9 @@ export function scaffoldCdashDomain(
                 columnSpan: 6,
                 required: true,
                 codelistId: "CL_DEACT",
-                cdashMetadata: CDASH_STANDARD_VARIABLES.DE.find((v) => v.sdtmVariable === "DEACT"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.DE.find(
+                  (v) => v.sdtmVariable === "DEACT"
+                ),
               },
               {
                 id: "f_de_out",
@@ -1082,7 +1864,9 @@ export function scaffoldCdashDomain(
                 columnSpan: 12,
                 required: true,
                 codelistId: "CL_AEOUT",
-                cdashMetadata: CDASH_STANDARD_VARIABLES.DE.find((v) => v.sdtmVariable === "DEOUT"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.DE.find(
+                  (v) => v.sdtmVariable === "DEOUT"
+                ),
               },
             ],
           },
@@ -1094,13 +1878,15 @@ export function scaffoldCdashDomain(
         id: formId,
         name: "Drug Accountability & Dispensation",
         domain: "DA",
-        description: "Investigational product kit tracking, units dispensed, returns, and compliance calculations",
+        description:
+          "Investigational product kit tracking, units dispensed, returns, and compliance calculations",
         version: "1.0",
         rules: [
           {
             id: `rule_da_compl_${Date.now()}`,
             name: "Calculate Dosing Compliance Percentage",
-            description: "Calculate compliance = (Units Used / Expected Units) * 100",
+            description:
+              "Calculate compliance = (Units Used / Expected Units) * 100",
             triggerFieldIds: ["f_da_usedn", "f_da_spno"],
             actionType: "set_value",
             targetFieldId: "f_da_compl",
@@ -1125,7 +1911,9 @@ export function scaffoldCdashDomain(
                 columnSpan: 6,
                 required: true,
                 placeholder: "e.g. KIT-90421",
-                cdashMetadata: CDASH_STANDARD_VARIABLES.DA.find((v) => v.sdtmVariable === "DATEST"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.DA.find(
+                  (v) => v.sdtmVariable === "DATEST"
+                ),
               },
               {
                 id: "f_da_stdtc",
@@ -1134,7 +1922,9 @@ export function scaffoldCdashDomain(
                 dataType: "date",
                 columnSpan: 3,
                 required: true,
-                cdashMetadata: CDASH_STANDARD_VARIABLES.DA.find((v) => v.sdtmVariable === "DASTDTC"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.DA.find(
+                  (v) => v.sdtmVariable === "DASTDTC"
+                ),
               },
               {
                 id: "f_da_endtc",
@@ -1143,7 +1933,9 @@ export function scaffoldCdashDomain(
                 dataType: "date",
                 columnSpan: 3,
                 required: false,
-                cdashMetadata: CDASH_STANDARD_VARIABLES.DA.find((v) => v.sdtmVariable === "DAENDTC"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.DA.find(
+                  (v) => v.sdtmVariable === "DAENDTC"
+                ),
               },
               {
                 id: "f_da_spno",
@@ -1153,7 +1945,9 @@ export function scaffoldCdashDomain(
                 columnSpan: 3,
                 required: true,
                 minValue: 1,
-                cdashMetadata: CDASH_STANDARD_VARIABLES.DA.find((v) => v.sdtmVariable === "DASPNO"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.DA.find(
+                  (v) => v.sdtmVariable === "DASPNO"
+                ),
               },
               {
                 id: "f_da_retno",
@@ -1163,7 +1957,9 @@ export function scaffoldCdashDomain(
                 columnSpan: 3,
                 required: false,
                 minValue: 0,
-                cdashMetadata: CDASH_STANDARD_VARIABLES.DA.find((v) => v.sdtmVariable === "DARETNO"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.DA.find(
+                  (v) => v.sdtmVariable === "DARETNO"
+                ),
               },
               {
                 id: "f_da_usedn",
@@ -1173,7 +1969,9 @@ export function scaffoldCdashDomain(
                 columnSpan: 3,
                 required: true,
                 minValue: 0,
-                cdashMetadata: CDASH_STANDARD_VARIABLES.DA.find((v) => v.sdtmVariable === "DAUSEDN"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.DA.find(
+                  (v) => v.sdtmVariable === "DAUSEDN"
+                ),
               },
               {
                 id: "f_da_compl",
@@ -1185,7 +1983,9 @@ export function scaffoldCdashDomain(
                 readOnly: true,
                 unit: "%",
                 calculationFormula: "round((dausedn / daspno) * 100, 1)",
-                cdashMetadata: CDASH_STANDARD_VARIABLES.DA.find((v) => v.sdtmVariable === "DACOMPL"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.DA.find(
+                  (v) => v.sdtmVariable === "DACOMPL"
+                ),
               },
               {
                 id: "f_da_recon",
@@ -1195,7 +1995,9 @@ export function scaffoldCdashDomain(
                 columnSpan: 12,
                 required: true,
                 codelistId: "CL_DARECON",
-                cdashMetadata: CDASH_STANDARD_VARIABLES.DA.find((v) => v.sdtmVariable === "DARECON"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.DA.find(
+                  (v) => v.sdtmVariable === "DARECON"
+                ),
               },
             ],
           },
@@ -1207,7 +2009,8 @@ export function scaffoldCdashDomain(
         id: formId,
         name: "Study Treatment Administration & Exposure",
         domain: "EX",
-        description: "Investigational Product (IP) dosage, administration route, infusion timing, and dose modifications",
+        description:
+          "Investigational Product (IP) dosage, administration route, infusion timing, and dose modifications",
         version: "1.0",
         rules: [],
         sections: [
@@ -1223,7 +2026,9 @@ export function scaffoldCdashDomain(
                 columnSpan: 6,
                 required: true,
                 placeholder: "e.g. Study Drug AB-101 / Placebo",
-                cdashMetadata: CDASH_STANDARD_VARIABLES.EX.find((v) => v.sdtmVariable === "EXTRT"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.EX.find(
+                  (v) => v.sdtmVariable === "EXTRT"
+                ),
               },
               {
                 id: "f_ex_dose",
@@ -1233,7 +2038,9 @@ export function scaffoldCdashDomain(
                 columnSpan: 3,
                 required: true,
                 minValue: 0,
-                cdashMetadata: CDASH_STANDARD_VARIABLES.EX.find((v) => v.sdtmVariable === "EXDOSE"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.EX.find(
+                  (v) => v.sdtmVariable === "EXDOSE"
+                ),
               },
               {
                 id: "f_ex_dosu",
@@ -1243,7 +2050,9 @@ export function scaffoldCdashDomain(
                 columnSpan: 3,
                 required: true,
                 codelistId: "CL_DOSU",
-                cdashMetadata: CDASH_STANDARD_VARIABLES.EX.find((v) => v.sdtmVariable === "EXDOSU"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.EX.find(
+                  (v) => v.sdtmVariable === "EXDOSU"
+                ),
               },
               {
                 id: "f_ex_route",
@@ -1253,7 +2062,9 @@ export function scaffoldCdashDomain(
                 columnSpan: 6,
                 required: true,
                 codelistId: "CL_ROUTE",
-                cdashMetadata: CDASH_STANDARD_VARIABLES.EX.find((v) => v.sdtmVariable === "EXROUTE"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.EX.find(
+                  (v) => v.sdtmVariable === "EXROUTE"
+                ),
               },
               {
                 id: "f_ex_dosfrm",
@@ -1263,7 +2074,9 @@ export function scaffoldCdashDomain(
                 columnSpan: 6,
                 required: false,
                 placeholder: "e.g. Solution for IV Infusion, Oral Capsule",
-                cdashMetadata: CDASH_STANDARD_VARIABLES.EX.find((v) => v.sdtmVariable === "EXDOSFRM"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.EX.find(
+                  (v) => v.sdtmVariable === "EXDOSFRM"
+                ),
               },
               {
                 id: "f_ex_stdtc",
@@ -1272,7 +2085,9 @@ export function scaffoldCdashDomain(
                 dataType: "datetime",
                 columnSpan: 6,
                 required: true,
-                cdashMetadata: CDASH_STANDARD_VARIABLES.EX.find((v) => v.sdtmVariable === "EXSTDTC"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.EX.find(
+                  (v) => v.sdtmVariable === "EXSTDTC"
+                ),
               },
               {
                 id: "f_ex_endtc",
@@ -1281,7 +2096,9 @@ export function scaffoldCdashDomain(
                 dataType: "datetime",
                 columnSpan: 6,
                 required: false,
-                cdashMetadata: CDASH_STANDARD_VARIABLES.EX.find((v) => v.sdtmVariable === "EXENDTC"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.EX.find(
+                  (v) => v.sdtmVariable === "EXENDTC"
+                ),
               },
               {
                 id: "f_ex_adj",
@@ -1291,7 +2108,9 @@ export function scaffoldCdashDomain(
                 columnSpan: 12,
                 required: false,
                 placeholder: "e.g. Dose delayed due to Grade 3 neutropenia",
-                cdashMetadata: CDASH_STANDARD_VARIABLES.EX.find((v) => v.sdtmVariable === "EXADJ"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.EX.find(
+                  (v) => v.sdtmVariable === "EXADJ"
+                ),
               },
             ],
           },
@@ -1303,7 +2122,8 @@ export function scaffoldCdashDomain(
         id: formId,
         name: "General Medical History",
         domain: "MH",
-        description: "Baseline medical history, prior diagnoses, and surgical history by body system",
+        description:
+          "Baseline medical history, prior diagnoses, and surgical history by body system",
         version: "1.0",
         isLogForm: true,
         rules: [],
@@ -1320,7 +2140,9 @@ export function scaffoldCdashDomain(
                 columnSpan: 6,
                 required: true,
                 placeholder: "e.g. Essential Hypertension, Type 2 Diabetes",
-                cdashMetadata: CDASH_STANDARD_VARIABLES.MH.find((v) => v.sdtmVariable === "MHTERM"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.MH.find(
+                  (v) => v.sdtmVariable === "MHTERM"
+                ),
               },
               {
                 id: "f_mh_cat",
@@ -1330,7 +2152,9 @@ export function scaffoldCdashDomain(
                 columnSpan: 6,
                 required: true,
                 codelistId: "CL_MHCAT",
-                cdashMetadata: CDASH_STANDARD_VARIABLES.MH.find((v) => v.sdtmVariable === "MHCAT"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.MH.find(
+                  (v) => v.sdtmVariable === "MHCAT"
+                ),
               },
               {
                 id: "f_mh_stdtc",
@@ -1339,7 +2163,9 @@ export function scaffoldCdashDomain(
                 dataType: "partial_date",
                 columnSpan: 4,
                 required: true,
-                cdashMetadata: CDASH_STANDARD_VARIABLES.MH.find((v) => v.sdtmVariable === "MHSTDTC"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.MH.find(
+                  (v) => v.sdtmVariable === "MHSTDTC"
+                ),
               },
               {
                 id: "f_mh_ongo",
@@ -1349,7 +2175,9 @@ export function scaffoldCdashDomain(
                 columnSpan: 4,
                 required: true,
                 codelistId: "CL_NY",
-                cdashMetadata: CDASH_STANDARD_VARIABLES.MH.find((v) => v.sdtmVariable === "MHONGO"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.MH.find(
+                  (v) => v.sdtmVariable === "MHONGO"
+                ),
               },
               {
                 id: "f_mh_endtc",
@@ -1358,7 +2186,9 @@ export function scaffoldCdashDomain(
                 dataType: "partial_date",
                 columnSpan: 4,
                 required: false,
-                cdashMetadata: CDASH_STANDARD_VARIABLES.MH.find((v) => v.sdtmVariable === "MHENDTC"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.MH.find(
+                  (v) => v.sdtmVariable === "MHENDTC"
+                ),
               },
             ],
           },
@@ -1370,7 +2200,8 @@ export function scaffoldCdashDomain(
         id: formId,
         name: "Subject Disposition & Milestone Status",
         domain: "DS",
-        description: "Study completion, discontinuation reasons, and protocol milestone tracking",
+        description:
+          "Study completion, discontinuation reasons, and protocol milestone tracking",
         version: "1.0",
         rules: [],
         sections: [
@@ -1386,7 +2217,9 @@ export function scaffoldCdashDomain(
                 columnSpan: 6,
                 required: true,
                 placeholder: "e.g. Treatment Epoch, Study Completion",
-                cdashMetadata: CDASH_STANDARD_VARIABLES.DS.find((v) => v.sdtmVariable === "DSCAT"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.DS.find(
+                  (v) => v.sdtmVariable === "DSCAT"
+                ),
               },
               {
                 id: "f_ds_decod",
@@ -1396,7 +2229,9 @@ export function scaffoldCdashDomain(
                 columnSpan: 6,
                 required: true,
                 codelistId: "CL_DSCONT",
-                cdashMetadata: CDASH_STANDARD_VARIABLES.DS.find((v) => v.sdtmVariable === "DSDECOD"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.DS.find(
+                  (v) => v.sdtmVariable === "DSDECOD"
+                ),
               },
               {
                 id: "f_ds_stdtc",
@@ -1405,7 +2240,9 @@ export function scaffoldCdashDomain(
                 dataType: "date",
                 columnSpan: 6,
                 required: true,
-                cdashMetadata: CDASH_STANDARD_VARIABLES.DS.find((v) => v.sdtmVariable === "DSSTDTC"),
+                cdashMetadata: CDASH_STANDARD_VARIABLES.DS.find(
+                  (v) => v.sdtmVariable === "DSSTDTC"
+                ),
               },
               {
                 id: "f_ds_term",
@@ -1414,8 +2251,11 @@ export function scaffoldCdashDomain(
                 dataType: "textarea",
                 columnSpan: 12,
                 required: false,
-                placeholder: "Provide additional details regarding the disposition reason...",
-                cdashMetadata: CDASH_STANDARD_VARIABLES.DS.find((v) => v.sdtmVariable === "DSTERM"),
+                placeholder:
+                  "Provide additional details regarding the disposition reason...",
+                cdashMetadata: CDASH_STANDARD_VARIABLES.DS.find(
+                  (v) => v.sdtmVariable === "DSTERM"
+                ),
               },
             ],
           },

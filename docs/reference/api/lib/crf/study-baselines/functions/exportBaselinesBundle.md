@@ -14,7 +14,7 @@ Exports all persisted study baselines as a serialized JSON bundle.
 
 ### storage?
 
-`Storage`
+[`RawStorage`](../../../safe-storage/type-aliases/RawStorage.md)
 
 ## Returns
 

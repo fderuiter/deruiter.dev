@@ -6,6 +6,7 @@ import {
 } from "./study-draft-storage";
 import { generateEngineId } from "./precision-date";
 import { cloneDeep } from "../utils";
+import type { RawStorage } from "../safe-storage";
 
 /**
  * localStorage key holding the author's immutable, version-tagged study baseline snapshots.
@@ -117,7 +118,7 @@ export function incrementStudyVersion(version: string): string {
 /**
  * Backs up unparseable or corrupted baselines storage content before recovery.
  */
-function preserveCorruptBaselines(storage: Storage, raw: string): void {
+function preserveCorruptBaselines(storage: RawStorage, raw: string): void {
   try {
     storage.setItem(STUDY_BASELINES_CORRUPT_BACKUP_KEY, raw);
   } catch {
@@ -128,7 +129,7 @@ function preserveCorruptBaselines(storage: Storage, raw: string): void {
 /**
  * Lists all persisted study baselines in reverse chronological order.
  */
-export function listStudyBaselines(storage?: Storage): StudyBaseline[] {
+export function listStudyBaselines(storage?: RawStorage): StudyBaseline[] {
   const target = resolveStorage(storage);
   if (!target) return [];
 
@@ -164,7 +165,7 @@ export function listStudyBaselines(storage?: Storage): StudyBaseline[] {
  */
 export function getStudyBaseline(
   baselineIdOrTag: string,
-  storage?: Storage
+  storage?: RawStorage
 ): StudyBaseline | null {
   const baselines = listStudyBaselines(storage);
   return (
@@ -182,7 +183,7 @@ export function getStudyBaseline(
 export function saveStudyBaseline(
   study: StudyProtocol,
   options: SaveStudyBaselineOptions,
-  storage?: Storage
+  storage?: RawStorage
 ): SaveStudyBaselineResult {
   const target = resolveStorage(storage);
   if (!target) return { status: "unavailable" };
@@ -285,7 +286,7 @@ export function saveStudyBaseline(
 export function restoreBaselineAsDraft(
   baselineOrId: StudyBaseline | string,
   options?: RestoreStudyBaselineOptions,
-  storage?: Storage
+  storage?: RawStorage
 ): RestoreStudyBaselineResult {
   let baseline: StudyBaseline | null = null;
   if (typeof baselineOrId === "string") {
@@ -343,7 +344,7 @@ export function restoreBaselineAsDraft(
  */
 export function deleteStudyBaseline(
   baselineId: string,
-  storage?: Storage
+  storage?: RawStorage
 ): boolean {
   const target = resolveStorage(storage);
   if (!target) return false;
@@ -362,7 +363,7 @@ export function deleteStudyBaseline(
 /**
  * Clears all stored study baselines from storage.
  */
-export function clearStudyBaselines(storage?: Storage): void {
+export function clearStudyBaselines(storage?: RawStorage): void {
   const target = resolveStorage(storage);
   if (!target) return;
   try {
@@ -375,7 +376,7 @@ export function clearStudyBaselines(storage?: Storage): void {
 /**
  * Exports all persisted study baselines as a serialized JSON bundle.
  */
-export function exportBaselinesBundle(storage?: Storage): string {
+export function exportBaselinesBundle(storage?: RawStorage): string {
   const baselines = listStudyBaselines(storage);
   const bundle: BaselinesExportBundle = {
     bundleVersion: 1,
@@ -391,7 +392,7 @@ export function exportBaselinesBundle(storage?: Storage): string {
  */
 export function importBaselinesBundle(
   rawJson: string,
-  storage?: Storage
+  storage?: RawStorage
 ): { imported: number; skipped: number } {
   const target = resolveStorage(storage);
   if (!target) return { imported: 0, skipped: 0 };

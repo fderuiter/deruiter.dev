@@ -19,7 +19,7 @@ a status so the caller can keep working in memory.
 
 ### storage?
 
-`Storage`
+[`RawStorage`](../../../safe-storage/type-aliases/RawStorage.md)
 
 ### now?
 

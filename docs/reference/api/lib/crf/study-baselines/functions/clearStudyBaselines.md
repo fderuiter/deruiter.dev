@@ -14,7 +14,7 @@ Clears all stored study baselines from storage.
 
 ### storage?
 
-`Storage`
+[`RawStorage`](../../../safe-storage/type-aliases/RawStorage.md)
 
 ## Returns
 

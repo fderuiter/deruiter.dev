@@ -6,7 +6,7 @@
 
 # Function: resolveLibraryStorage()
 
-> **resolveLibraryStorage**(`storage?`): `Storage` \| `undefined`
+> **resolveLibraryStorage**(`storage?`): [`RawStorage`](../../../safe-storage/type-aliases/RawStorage.md) \| `undefined`
 
 Resolves a usable Storage, defensively checking that the browser actually
 exposes working accessors rather than assuming `window.localStorage` is
@@ -16,8 +16,8 @@ present and functional.
 
 ### storage?
 
-`Storage`
+[`RawStorage`](../../../safe-storage/type-aliases/RawStorage.md)
 
 ## Returns
 
-`Storage` \| `undefined`
+[`RawStorage`](../../../safe-storage/type-aliases/RawStorage.md) \| `undefined`

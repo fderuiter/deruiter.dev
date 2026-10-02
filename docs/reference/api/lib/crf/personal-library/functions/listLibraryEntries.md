@@ -15,7 +15,7 @@ empty list so callers can render without special-casing.
 
 ### storage?
 
-`Storage`
+[`RawStorage`](../../../safe-storage/type-aliases/RawStorage.md)
 
 ## Returns
 

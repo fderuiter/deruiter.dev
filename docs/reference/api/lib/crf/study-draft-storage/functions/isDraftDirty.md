@@ -23,7 +23,7 @@ or the active storage draft if baseline is not explicitly provided.
 
 ### storage?
 
-`Storage`
+[`RawStorage`](../../../safe-storage/type-aliases/RawStorage.md)
 
 ## Returns
 

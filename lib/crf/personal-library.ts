@@ -33,6 +33,11 @@ import type {
 } from "./types";
 import { generateEngineId, generateCdashVariableName } from "./precision-date";
 import { cloneDeep } from "../utils";
+import {
+  safeIsAvailable,
+  safeRawStorage,
+  type RawStorage,
+} from "../safe-storage";
 
 /** localStorage key holding the author's personal block library. */
 export const PERSONAL_LIBRARY_STORAGE_KEY = "crf_studio_personal_library_v1";
@@ -183,13 +188,11 @@ function isLibraryEnvelopeShape(
  * exposes working accessors rather than assuming `window.localStorage` is
  * present and functional.
  */
-export function resolveLibraryStorage(storage?: Storage): Storage | undefined {
+export function resolveLibraryStorage(
+  storage?: RawStorage
+): RawStorage | undefined {
   if (storage) return storage;
-  if (typeof window === "undefined") return undefined;
-  return typeof window.localStorage?.getItem === "function" &&
-    typeof window.localStorage?.setItem === "function"
-    ? window.localStorage
-    : undefined;
+  return safeIsAvailable() ? safeRawStorage : undefined;
 }
 
 /**
@@ -299,7 +302,7 @@ export function captureLibraryEntry(options: {
  * {@link PERSONAL_LIBRARY_CORRUPT_BACKUP_KEY} for manual recovery rather than
  * being silently overwritten.
  */
-export function loadPersonalLibrary(storage?: Storage): LoadLibraryResult {
+export function loadPersonalLibrary(storage?: RawStorage): LoadLibraryResult {
   const target = resolveLibraryStorage(storage);
   if (!target) return { status: "empty" };
 
@@ -335,7 +338,7 @@ export function loadPersonalLibrary(storage?: Storage): LoadLibraryResult {
   };
 }
 
-function preserveCorruptLibrary(target: Storage, raw: string): void {
+function preserveCorruptLibrary(target: RawStorage, raw: string): void {
   try {
     target.setItem(PERSONAL_LIBRARY_CORRUPT_BACKUP_KEY, raw);
   } catch {
@@ -350,7 +353,7 @@ function preserveCorruptLibrary(target: Storage, raw: string): void {
  */
 export function savePersonalLibrary(
   entries: PersonalLibraryEntry[],
-  storage?: Storage,
+  storage?: RawStorage,
   now?: Date
 ): SaveLibraryResult {
   const target = resolveLibraryStorage(storage);
@@ -378,7 +381,9 @@ export function savePersonalLibrary(
  * Lists saved entries, newest first. A corrupt or absent library reads as an
  * empty list so callers can render without special-casing.
  */
-export function listLibraryEntries(storage?: Storage): PersonalLibraryEntry[] {
+export function listLibraryEntries(
+  storage?: RawStorage
+): PersonalLibraryEntry[] {
   const result = loadPersonalLibrary(storage);
   if (result.status !== "loaded") return [];
   return [...result.entries].sort((a, b) =>
@@ -391,7 +396,7 @@ export function listLibraryEntries(storage?: Storage): PersonalLibraryEntry[] {
  */
 export function upsertLibraryEntry(
   entry: PersonalLibraryEntry,
-  storage?: Storage
+  storage?: RawStorage
 ): SaveLibraryResult {
   const existing = listLibraryEntries(storage);
   const next = existing.filter((candidate) => candidate.id !== entry.id);
@@ -413,7 +418,7 @@ export function updateLibraryEntry(
       "name" | "description" | "assumptions" | "section" | "rules" | "codelists"
     >
   >,
-  storage?: Storage,
+  storage?: RawStorage,
   now?: Date
 ): { status: "updated"; entry: PersonalLibraryEntry } | { status: "missing" } {
   const entries = listLibraryEntries(storage);
@@ -436,7 +441,7 @@ export function updateLibraryEntry(
  */
 export function deleteLibraryEntry(
   entryId: string,
-  storage?: Storage
+  storage?: RawStorage
 ): SaveLibraryResult {
   const remaining = listLibraryEntries(storage).filter(
     (candidate) => candidate.id !== entryId

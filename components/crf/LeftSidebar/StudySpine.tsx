@@ -541,7 +541,8 @@ export const StudySpine: React.FC<StudySpineProps> = ({
                                                 );
                                               }}
                                               className="p-0.5 rounded text-zinc-500 hover:text-red-400 hover:bg-zinc-800 transition-colors"
-                                              title="Unassign form from this visit"
+                                              title={`Unassign ${form.name} from ${visit.name}`}
+                                              aria-label={`Unassign ${form.name} from ${visit.name}`}
                                             >
                                               <IconLayersSubtract className="w-3 h-3" />
                                             </button>

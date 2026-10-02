@@ -296,6 +296,12 @@ Re-exports [DEFAULT_STRESS_PARAMS](scenarios/variables/DEFAULT_STRESS_PARAMS.md)
 
 ***
 
+### describePhaseClearForm483
+
+Re-exports [describePhaseClearForm483](sponsor/functions/describePhaseClearForm483.md)
+
+***
+
 ### describePowerUpRefusal
 
 Re-exports [describePowerUpRefusal](shift/functions/describePowerUpRefusal.md)

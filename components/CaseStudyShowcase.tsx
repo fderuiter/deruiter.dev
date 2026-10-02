@@ -144,7 +144,7 @@ const CaseStudyShowcaseInner: React.FC<CaseStudyShowcaseProps> = ({
         {/* Persona Role Filter Tabs */}
         <div
           className="flex items-center gap-1 shrink-0"
-          role="tablist"
+          role="group"
           aria-label="Persona view filter"
         >
           {PERSONA_TABS.map((pTab) => {
@@ -184,7 +184,7 @@ const CaseStudyShowcaseInner: React.FC<CaseStudyShowcaseProps> = ({
         {/* Language Filter Tabs */}
         <div
           className="flex items-center gap-1 shrink-0"
-          role="tablist"
+          role="group"
           aria-label="Language filter"
         >
           {filterTabs.map((tab) => {

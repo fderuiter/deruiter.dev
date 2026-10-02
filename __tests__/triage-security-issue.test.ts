@@ -35,6 +35,7 @@ describe("Triage Security Issue Script", () => {
     logSpy.mockRestore();
     warnSpy.mockRestore();
     globalFetchSpy.mockRestore();
+    vi.unstubAllEnvs();
   });
 
   describe("collectTriageItems", () => {
@@ -136,6 +137,9 @@ describe("Triage Security Issue Script", () => {
 
   describe("triageSecurityIssues", () => {
     it("logs warning if GH_TOKEN is missing", async () => {
+      // Cloud sessions and CI export a token; the empty option falls back to it.
+      vi.stubEnv("GH_TOKEN", "");
+      vi.stubEnv("GITHUB_TOKEN", "");
       const result = await triageSecurityIssues({
         token: "",
         repo: "fderuiter/portfolio",

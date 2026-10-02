@@ -35,6 +35,7 @@
 - [applySponsorSkeletonsToReport](functions/applySponsorSkeletonsToReport.md)
 - [applySponsorSubmissionBoost](functions/applySponsorSubmissionBoost.md)
 - [createInitialSponsorState](functions/createInitialSponsorState.md)
+- [describePhaseClearForm483](functions/describePhaseClearForm483.md)
 - [getFollowUpSubject](functions/getFollowUpSubject.md)
 - [getSponsorMoodDecayPerSecond](functions/getSponsorMoodDecayPerSecond.md)
 - [getSponsorMoodLabel](functions/getSponsorMoodLabel.md)

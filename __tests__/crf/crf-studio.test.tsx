@@ -143,6 +143,22 @@ describe("CRFStudioContainer Component", () => {
     expect(container.textContent).toContain("Live 21 CFR EDC");
   });
 
+  // #1632: loadStudyDraft read localStorage unguarded, so a store that
+  // throws on access sent the whole studio to the error boundary.
+  it("mounts with the built-in study when localStorage.getItem throws", async () => {
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+      throw new DOMException("The operation is insecure.", "SecurityError");
+    });
+
+    await act(async () => {
+      root = createRoot(container);
+      root.render(<CRFStudioContainer />);
+    });
+
+    expect(container.textContent).toContain("CRF Studio");
+    expect(container.textContent).toContain("Form Designer");
+  });
+
   it(
     "switches studio modes when clicking header tabs",
     { timeout: 45000 },

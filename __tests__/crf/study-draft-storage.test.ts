@@ -7,6 +7,8 @@ import {
   STUDY_DRAFT_ENVELOPE_VERSION,
 } from "@/lib/crf/study-draft-storage";
 import type { StudyProtocol } from "@/lib/crf/types";
+import { listStudyBaselines } from "@/lib/crf/study-baselines";
+import { loadPersonalLibrary } from "@/lib/crf/personal-library";
 
 // Regression coverage for #657: authors must be able to recover their most
 // recently acknowledged local draft after a refresh, and a corrupt or
@@ -32,6 +34,12 @@ class MockStorage implements Storage {
   }
   setItem(key: string, value: string): void {
     this.store.set(key, value);
+  }
+}
+
+class ThrowingReadStorage extends MockStorage {
+  getItem(): string | null {
+    throw new DOMException("The operation is insecure.", "SecurityError");
   }
 }
 
@@ -126,5 +134,14 @@ describe("study draft storage (#657)", () => {
     if (result.status === "error") {
       expect(result.message).toBeTruthy();
     }
+  });
+
+  it("returns empty instead of throwing when reading storage throws (#1632)", () => {
+    const throwing = new ThrowingReadStorage();
+    expect(() => loadStudyDraft(throwing)).not.toThrow();
+    expect(loadStudyDraft(throwing)).toEqual({ status: "empty" });
+    // The baseline manager and personal library read on the same mount.
+    expect(listStudyBaselines(throwing)).toEqual([]);
+    expect(loadPersonalLibrary(throwing)).toEqual({ status: "empty" });
   });
 });

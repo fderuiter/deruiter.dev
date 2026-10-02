@@ -161,8 +161,10 @@ describe("StudySpine Component (Left Sidebar & Global Library)", () => {
       );
     });
 
+    const visit = normalizedStudy.visits[0];
+    const form = normalizedStudy.forms[0];
     const unassignBtn = container.querySelector(
-      'button[title*="Unassign form from this visit"]'
+      `button[aria-label="Unassign ${form.name} from ${visit.name}"]`
     ) as HTMLButtonElement;
     expect(unassignBtn).not.toBeNull();
 
@@ -174,6 +176,31 @@ describe("StudySpine Component (Left Sidebar & Global Library)", () => {
       normalizedStudy.visits[0].id,
       normalizedStudy.forms[0].id
     );
+  });
+
+  // #1617: every unassign button used to share one generic name, so a
+  // screen reader could not tell which form or visit it affected.
+  it("gives each unassign button a unique name naming its form and visit", async () => {
+    await act(async () => {
+      root = createRoot(container);
+      root.render(<StudySpine {...defaultProps} activeTab="spine" />);
+    });
+
+    const visit = normalizedStudy.visits[0];
+    const names = Array.from(
+      container.querySelectorAll<HTMLButtonElement>(
+        'button[aria-label^="Unassign "]'
+      )
+    ).map((b) => b.getAttribute("aria-label"));
+
+    expect(names).toContain(
+      `Unassign ${normalizedStudy.forms[0].name} from ${visit.name}`
+    );
+    expect(names).toContain(
+      `Unassign ${normalizedStudy.forms[1].name} from ${visit.name}`
+    );
+    expect(names.length).toBeGreaterThanOrEqual(2);
+    expect(new Set(names).size).toBe(names.length);
   });
 
   it("renders active forms and global CDASH library templates when in 'forms' tab", async () => {

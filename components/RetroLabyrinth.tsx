@@ -1319,9 +1319,8 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
           gameStatus === "playing" ? "paused" : gameStatus;
       }
       setGameStatus(overlay);
-      // Focus the board now: its focus styles shift the layout, and doing
-      // that on the first press of an overlay button moved the button out
-      // from under the pointer before the click landed.
+      // Focus the board so the overlay's keyboard controls work at once.
+      // Focus no longer changes the board's size (#1693).
       containerRef.current?.focus({ preventScroll: true });
     },
     [gameStatus]
@@ -2100,9 +2099,21 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                     : "bg-neutral-700"
                 }`}
               />
-              {isFocused
-                ? "Netrunner Breach: ACTIVE"
-                : "Click Subnet to Focus & Hack"}
+              {/* Both labels share one grid cell, so the pill keeps the
+                  width of the longer one and focusing the board never
+                  reflows the row under the pointer (#1693). */}
+              <span className="grid">
+                <span
+                  className={`col-start-1 row-start-1 ${isFocused ? "" : "invisible"}`}
+                >
+                  Netrunner Breach: ACTIVE
+                </span>
+                <span
+                  className={`col-start-1 row-start-1 ${isFocused ? "invisible" : ""}`}
+                >
+                  Click Subnet to Focus &amp; Hack
+                </span>
+              </span>
             </span>
 
             {/* Class Badge */}
@@ -2241,7 +2252,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
             : "h-auto max-h-[100vh] max-h-[100dvh]"
         } bg-neutral-950/90 border rounded-2xl flex flex-col items-center justify-between p-2.5 overflow-hidden outline-none transition-all duration-300 ${
           isFocused
-            ? "border-brand-cyan ring-2 ring-brand-cyan/10 shadow-[0_0_20px_rgba(34,211,238,0.1)] scale-[1.005]"
+            ? "border-brand-cyan ring-2 ring-brand-cyan/10 shadow-[0_0_20px_rgba(34,211,238,0.1)]"
             : "border-neutral-900"
         }`}
       >

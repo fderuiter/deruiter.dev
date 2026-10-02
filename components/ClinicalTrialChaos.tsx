@@ -177,6 +177,7 @@ import {
   getAmendmentIntervalSeconds,
   getSAEChance,
   describeSponsorEvent,
+  describePhaseClearForm483,
   SHIFT_END_LOGS,
 } from "@/lib/clinical-trial-chaos";
 
@@ -561,6 +562,12 @@ export const ClinicalTrialChaos: React.FC = () => {
   );
   const [lastBimoReport, setLastBimoReport] =
     useState<BIMOInspectionReport | null>(null);
+  // A phase can lock its data and still draw a Form 483 (#899): the end panel
+  // then owns that verdict and its causes instead of claiming a pass.
+  const phaseClearForm483 =
+    playState === "phase_cleared" && lastBimoReport
+      ? describePhaseClearForm483(lastBimoReport, scoreState.auditViolations)
+      : null;
 
   // 5. Audit Logger
   const addAuditLog = useCallback(
@@ -3910,9 +3917,13 @@ export const ClinicalTrialChaos: React.FC = () => {
                 }`}
               >
                 {playState === "phase_cleared"
-                  ? phase < 3
-                    ? `PHASE ${phase} COMPLIANCE AUDIT PASSED!`
-                    : "STUDY PROTOCOL APPROVED FOR NDA SUBMISSION!"
+                  ? phaseClearForm483
+                    ? phase < 3
+                      ? `PHASE ${phase} LOCKED… AND A 483 IS IN THE MAIL`
+                      : "DATABASE LOCKED… AND A 483 IS IN THE MAIL"
+                    : phase < 3
+                      ? `PHASE ${phase} COMPLIANCE AUDIT PASSED!`
+                      : "STUDY PROTOCOL APPROVED FOR NDA SUBMISSION!"
                   : gameOverReason === "sponsor"
                     ? "CONTRACT TERMINATED · STUDY MOVED TO ANOTHER CRO"
                     : "FDA FORM 483 ISSUED · TRIAL TERMINATED"}
@@ -3926,6 +3937,24 @@ export const ClinicalTrialChaos: React.FC = () => {
                     ? "Sponsor satisfaction hit 0%. They 'decided to go in a different direction' and awarded the study to a vendor whose bid was 40% cheaper and entirely hypothetical."
                     : "Auditor suspicion reached 100%. Major source data validation discrepancies triggered clinical hold under 21 CFR § 312.44."}
               </p>
+              {phaseClearForm483 && (
+                <div
+                  className="mx-auto mt-3 max-w-md rounded-lg border border-rose-500/40 bg-rose-500/5 p-3 text-left"
+                  data-testid="cc-phase-483"
+                >
+                  <p className="text-xs font-bold text-rose-300">
+                    The data locked, but the inspection verdict is OAI: FDA
+                    Form 483 issued.
+                  </p>
+                  {phaseClearForm483.length > 0 && (
+                    <ul className="mt-1.5 list-disc space-y-0.5 pl-4 text-[11px] leading-snug text-zinc-300 break-words">
+                      {phaseClearForm483.map((cause) => (
+                        <li key={cause}>{cause}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
 
               <dl className="mx-auto mt-4 grid max-w-lg grid-cols-2 gap-2 text-left sm:grid-cols-4">
                 {[

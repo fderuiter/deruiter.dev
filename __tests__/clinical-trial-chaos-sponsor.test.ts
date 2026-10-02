@@ -13,6 +13,7 @@ import {
   getSponsorMoodLabel,
   applySponsorSubmissionBoost,
   applySponsorSkeletonsToReport,
+  describePhaseClearForm483,
   getSponsorMoodDecayPerSecond,
   SPONSOR_BOOST_TAPER_START,
   SPONSOR_MOOD_DECAY_PER_SECOND,
@@ -213,5 +214,41 @@ describe("Clinical Trial Chaos - Sponsor inbox", () => {
     const criticalReport = applySponsorSkeletonsToReport(clean, critical);
     expect(criticalReport.verdict).toMatch(/^OAI/);
     expect(criticalReport.summary).toContain("sponsor-pleasing shortcut");
+  });
+
+  // #899 (option b): a phase can clear with an OAI report. The end panel must
+  // own that verdict and list what caused it rather than say "audit passed".
+  it("explains a phase-clear Form 483 from Critical skeletons and audit violations", () => {
+    const clean = generateBIMOReport(
+      createInitialScoreState(),
+      createInitialAuditorState()
+    );
+    expect(describePhaseClearForm483(clean, 0)).toBeNull();
+
+    const skeletons = SPONSOR_REQUESTS.flatMap((r) =>
+      r.choices.flatMap((c) => (c.effects.skeleton ? [c.effects.skeleton] : []))
+    );
+    const minor = skeletons.filter((s) => s.severity === "Minor");
+    const critical = skeletons.filter((s) => s.severity === "Critical");
+
+    // VAI keeps today's wording.
+    expect(
+      describePhaseClearForm483(
+        applySponsorSkeletonsToReport(clean, minor.slice(0, 1)),
+        0
+      )
+    ).toBeNull();
+
+    const oai = applySponsorSkeletonsToReport(clean, critical.slice(0, 1));
+    expect(describePhaseClearForm483(oai, 0)).toEqual([
+      critical[0].description,
+    ]);
+
+    const violations = generateBIMOReport(
+      { ...createInitialScoreState(), auditViolations: 3 },
+      createInitialAuditorState()
+    );
+    const causes = describePhaseClearForm483(violations, 3);
+    expect(causes?.at(-1)).toContain("3 audit violations");
   });
 });

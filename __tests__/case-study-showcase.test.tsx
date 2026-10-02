@@ -148,6 +148,30 @@ describe("CaseStudyShowcase filtering (#581)", () => {
     expect(window.location.hash).toBe("");
   });
 
+  // #1755: a tablist must own role=tab children (axe aria-required-children).
+  // These are toggle filters, not tabs that switch panels, so they are a
+  // labelled group of aria-pressed buttons.
+  it("exposes the persona and language filters as labelled groups of toggle buttons", async () => {
+    await act(async () => {
+      root.render(
+        <PersonaProvider>
+          <CaseStudyShowcase caseStudies={mockCaseStudies} />
+        </PersonaProvider>
+      );
+    });
+
+    expect(container.querySelector('[role="tablist"]')).toBeNull();
+    for (const label of ["Persona view filter", "Language filter"]) {
+      const group = container.querySelector(`[aria-label="${label}"]`);
+      expect(group?.getAttribute("role")).toBe("group");
+      const buttons = Array.from(group!.querySelectorAll("button"));
+      expect(buttons.length).toBeGreaterThan(1);
+      for (const button of buttons) {
+        expect(button.hasAttribute("aria-pressed")).toBe(true);
+      }
+    }
+  });
+
   it("includes dedicated persona filter tabs in the primary filter control bar", async () => {
     await act(async () => {
       root.render(

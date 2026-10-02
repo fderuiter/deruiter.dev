@@ -303,7 +303,13 @@ export function loadPersonalLibrary(storage?: Storage): LoadLibraryResult {
   const target = resolveLibraryStorage(storage);
   if (!target) return { status: "empty" };
 
-  const raw = target.getItem(PERSONAL_LIBRARY_STORAGE_KEY);
+  // A store that throws on access reads as empty, never as a crash (#1632).
+  let raw: string | null;
+  try {
+    raw = target.getItem(PERSONAL_LIBRARY_STORAGE_KEY);
+  } catch {
+    return { status: "empty" };
+  }
   if (!raw) return { status: "empty" };
 
   let parsed: unknown;

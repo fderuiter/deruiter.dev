@@ -104,7 +104,15 @@ export function loadStudyDraft(storage?: Storage): LoadStudyDraftResult {
   const target = resolveStorage(storage);
   if (!target) return { status: "empty" };
 
-  const raw = target.getItem(STUDY_DRAFT_STORAGE_KEY);
+  // Storage can exist yet throw on access (Safari private mode, storage
+  // disabled by policy, some embedded browsers). Start from an empty draft
+  // rather than crashing the studio on mount (#1632).
+  let raw: string | null;
+  try {
+    raw = target.getItem(STUDY_DRAFT_STORAGE_KEY);
+  } catch {
+    return { status: "empty" };
+  }
   if (!raw) return { status: "empty" };
 
   let parsed: unknown;

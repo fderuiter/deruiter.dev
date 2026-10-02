@@ -12,6 +12,7 @@ import {
   challengeHash,
   parseChallengeHash,
   getAllCodexCards,
+  SCENARIOS,
 } from "@/lib/trial-and-error";
 import { DeckBuilder } from "@/components/trial-and-error/DeckBuilder";
 
@@ -80,6 +81,96 @@ describe("Custom Scenario & Deck Builder Engine", () => {
 
     const imported = importScenarioJson(jsonStr);
     expect(imported).toEqual(validSpec);
+  });
+});
+
+// Branch coverage for the payload engine's optional fields and fallbacks:
+// every optional key must survive a round trip, a bare payload must stay
+// bare, and anything that is not an encoded spec object decodes to null.
+describe("Custom scenario payload edge cases", () => {
+  const cards = getAllCodexCards();
+  const scenarioEvents = Object.values(SCENARIOS).find(
+    (s) => (s.events?.length ?? 0) > 0
+  )?.events;
+
+  const fullSpec: CustomScenarioSpec = {
+    id: "custom-oncology",
+    title: "Full Spec",
+    summary: "Every optional field set.",
+    intro: "Read the SAP first.",
+    quota: 500,
+    startingCpu: 12,
+    rulebook: {
+      percentPrecision: 1,
+      meanPrecision: 2,
+      roundingMode: "TRUNCATE",
+      populationSuit: "SAFETY",
+    },
+    cardIds: cards.slice(0, 5).map((c) => c.id),
+    ...(scenarioEvents ? { events: scenarioEvents } : {}),
+  };
+
+  const bareSpec: CustomScenarioSpec = {
+    title: "Bare Spec",
+    quota: 50,
+    startingCpu: 1,
+    rulebook: {
+      percentPrecision: 0,
+      meanPrecision: 0,
+      roundingMode: "HALF_AWAY_FROM_ZERO",
+    },
+    cardIds: ["not-a-card-1", "not-a-card-2", "x3", "x4", "x5"],
+  };
+
+  it("round-trips every optional field, and keeps a bare spec bare", () => {
+    expect(scenarioEvents?.length).toBeGreaterThan(0);
+    expect(decodeCustomScenario(encodeCustomScenario(fullSpec))).toEqual(
+      fullSpec
+    );
+    expect(decodeCustomScenario(encodeCustomScenario(bareSpec))).toEqual(
+      bareSpec
+    );
+  });
+
+  it("decodes non-object and schema-invalid payloads to null", () => {
+    const encode = (value: string) =>
+      Buffer.from(value, "utf8")
+        .toString("base64")
+        .replace(/\+/g, "-")
+        .replace(/\//g, "_")
+        .replace(/=+$/, "");
+    expect(decodeCustomScenario(encode("null"))).toBeNull();
+    expect(decodeCustomScenario(encode("42"))).toBeNull();
+    expect(
+      decodeCustomScenario(
+        encode(JSON.stringify({ t: "x", q: 1, cpu: 1, r: {}, c: [] }))
+      )
+    ).toBeNull();
+  });
+
+  it("builds a scenario with the spec's id, defaults and placeholder cards", () => {
+    const full = createCustomScenario(fullSpec);
+    expect(full.id).toBe("custom-oncology");
+    expect(full.summary).toBe("Every optional field set.");
+    expect(full.intro).toBe("Read the SAP first.");
+    expect(full.rulebook.populationSuit).toBe("SAFETY");
+    expect(full.events).toEqual(scenarioEvents);
+
+    const bare = createCustomScenario(bareSpec);
+    expect(bare.id).toMatch(/^custom-scenario-/);
+    expect(bare.summary).toContain("Deck Builder");
+    expect(bare.intro).toContain("50 study quota");
+    expect(bare.events).toBeUndefined();
+    expect(bare.deck.map((c) => c.id)).toEqual(bareSpec.cardIds);
+    expect(bare.deck[0].title).toBe("Custom Output 1");
+  });
+
+  it("opens a custom-only challenge link on the default seed", () => {
+    const encoded = encodeCustomScenario(bareSpec);
+    const parsed = parseChallengeHash(`#scenario=${encoded}`);
+    expect(parsed?.seed).toBe("7K3M-Q9PX");
+    expect(parsed?.customScenario).toEqual(bareSpec);
+    expect(parseChallengeHash("#custom=garbage")).toBeNull();
   });
 });
 

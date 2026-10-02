@@ -204,6 +204,35 @@ describe("RetroLabyrinth React Component UI Suite", () => {
     expect(boundary?.getAttribute("tabIndex")).toBe("0");
   });
 
+  // #1693: mouse-down focused the board, and its focus styles (a scale and a
+  // status pill that changed width) moved in-board buttons before mouse-up,
+  // so the first click could miss. Focus must not change size or layout.
+  it("keeps the board's size and the status pill's width when it gains focus", async () => {
+    await act(async () => {
+      root.render(<RetroLabyrinth isMounted={true} />);
+    });
+
+    const board = container.querySelector(
+      '[data-keyboard-boundary="true"]'
+    ) as HTMLElement;
+    await act(async () => {
+      board.focus();
+    });
+    expect(board.className).toContain("border-brand-cyan");
+    expect(board.className).not.toMatch(/(^|\s)scale-/);
+
+    // Both pill labels stay rendered in one grid cell; only visibility flips.
+    const active = Array.from(container.querySelectorAll("span")).find(
+      (el) => el.textContent === "Netrunner Breach: ACTIVE"
+    );
+    const idle = Array.from(container.querySelectorAll("span")).find(
+      (el) => el.textContent === "Click Subnet to Focus & Hack"
+    );
+    expect(active?.className).not.toContain("invisible");
+    expect(idle?.className).toContain("invisible");
+    expect(active?.parentElement).toBe(idle?.parentElement);
+  });
+
   it("should handle weapon switching via hotkeys", async () => {
     await act(async () => {
       root.render(<RetroLabyrinth isMounted={true} />);

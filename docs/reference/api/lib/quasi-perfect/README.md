@@ -170,9 +170,33 @@ Re-exports [NodeType](types/type-aliases/NodeType.md)
 
 ***
 
+### ParseError
+
+Re-exports [ParseError](compiler/classes/ParseError.md)
+
+***
+
+### parseFormula
+
+Re-exports [parseFormula](compiler/functions/parseFormula.md)
+
+***
+
+### parseFormulaWithError
+
+Re-exports [parseFormulaWithError](compiler/functions/parseFormulaWithError.md)
+
+***
+
 ### parseGameProgress
 
 Re-exports [parseGameProgress](progress/functions/parseGameProgress.md)
+
+***
+
+### parseHypotheses
+
+Re-exports [parseHypotheses](compiler/functions/parseHypotheses.md)
 
 ***
 
@@ -197,6 +221,12 @@ Re-exports [renderASTString](engine/functions/renderASTString.md)
 ### replaceNode
 
 Re-exports [replaceNode](engine/functions/replaceNode.md)
+
+***
+
+### resetNodeCounter
+
+Re-exports [resetNodeCounter](compiler/functions/resetNodeCounter.md)
 
 ***
 
@@ -263,3 +293,21 @@ Re-exports [TacticId](types/type-aliases/TacticId.md)
 ### TacticResult
 
 Re-exports [TacticResult](types/interfaces/TacticResult.md)
+
+***
+
+### Token
+
+Re-exports [Token](compiler/interfaces/Token.md)
+
+***
+
+### tokenizeFormula
+
+Re-exports [tokenizeFormula](compiler/functions/tokenizeFormula.md)
+
+***
+
+### TokenType
+
+Re-exports [TokenType](compiler/type-aliases/TokenType.md)

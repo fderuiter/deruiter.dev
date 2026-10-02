@@ -8,11 +8,14 @@ import React, {
   useCallback,
 } from "react";
 import Link from "next/link";
+import { clamp } from "@/lib/game-utils";
 import Image from "next/image";
 import { useAudio } from "@/components/providers/AudioProvider";
 import { useTelemetry } from "@/hooks/useTelemetry";
 import { FieldManualButton } from "@/components/FieldManualButton";
 import { FullscreenButton } from "@/components/arcade/FullscreenButton";
+import { ResultCard } from "@/components/arcade/ResultCard";
+import { useArcadeFx } from "@/hooks/useArcadeFx";
 import { ArcadeHud } from "@/components/arcade/ArcadeHud";
 import { DynamicTabletOrientationHint as TabletOrientationHint } from "@/components/arcade/DynamicTabletOrientationHint";
 import { useGameFullscreen as useFullscreen } from "@/components/arcade/CabinetFullscreen";
@@ -36,16 +39,11 @@ import {
   IconRotate,
   IconBone,
   IconBallTennis,
-  IconSparkles,
   IconTrees,
-  IconBrandGithub,
-  IconInfinity,
-  IconBriefcase,
   IconVolume,
   IconVolumeOff,
   IconBook,
   IconX,
-  IconAlertTriangle,
   IconPhoto,
   IconPalette,
   IconMusic,
@@ -478,6 +476,148 @@ interface WorkingWithDuckProps {
   initialState?: WorkingWithDuckState;
 }
 
+interface DuckSprintResultProps {
+  state: WorkingWithDuckState;
+  sprintTitle: string;
+  /** The saved best, read before this run's score is written over it. */
+  storedBest: number;
+  onNext: () => void;
+  onReplay: () => void;
+  onEndless: () => void;
+}
+
+const RESULT_LINK =
+  "inline-flex min-h-[48px] items-center rounded-xl border border-white/[0.08] px-3 font-mono text-[11px] text-zinc-200 transition-colors hover:border-white/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300";
+
+/**
+ * The end of a sprint on the shared arcade result card: what shipped, how
+ * good Duck was, the scrapbook photo it earned, and Next or Retry.
+ */
+function DuckSprintResult({
+  state,
+  sprintTitle,
+  storedBest,
+  onNext,
+  onReplay,
+  onEndless,
+}: DuckSprintResultProps) {
+  // Captured when the card opens; the save that follows a win would
+  // otherwise read as "tied your best".
+  const [previousBest] = useState(storedBest);
+  const won = state.status === "won";
+  const level = state.currentLevel;
+  const workPercent = clamp(
+    Math.round((state.workProgress / state.targetWorkProgress) * 100),
+    0,
+    100
+  );
+  const propsSaved = state.hazards.filter((h) => !h.isChewed).length;
+  const stats = [
+    { label: "Score", value: state.totalScore },
+    { label: "Work shipped", value: workPercent, suffix: "%" },
+    { label: "Good Boy", value: Math.round(state.naughtyVsGood) },
+    {
+      label: "Props saved",
+      value: propsSaved,
+      suffix: `/${state.hazards.length}`,
+    },
+  ];
+
+  if (!won) {
+    return (
+      <ResultCard
+        headingId="duck-fail-dialog-heading"
+        title="Duck Got a Time-Out!"
+        stamp="Time-out"
+        verdict="loss"
+        message="Too many sneaky chews and missed potty breaks tilted the scale fully red. Take a breath and try again!"
+        stats={stats}
+        score={state.totalScore}
+        previousBest={previousBest}
+        primary={{
+          label: `Retry Sprint ${level}`,
+          onClick: onReplay,
+          icon: <IconRotate aria-hidden="true" className="h-4 w-4" />,
+        }}
+        onEscape={onReplay}
+      />
+    );
+  }
+
+  const fact = state.latestUnlockedFact;
+  return (
+    <ResultCard
+      headingId="duck-win-dialog-heading"
+      title="Duck is Asleep & Work is Done"
+      stamp="Shipped"
+      verdict="win"
+      message={`${
+        state.mode === "endless" ? "Endless Milestone" : sprintTitle
+      } Completed! Every cable survived, the puppy pads held, and the office budget spreadsheet is still unchewed.`}
+      stats={stats}
+      score={state.totalScore}
+      previousBest={previousBest}
+      primary={{
+        label:
+          level < 5 ? `Proceed to Sprint ${level + 1}` : "Play Endless Mode",
+        onClick: onNext,
+      }}
+      secondary={{
+        label: `Replay Sprint ${level}`,
+        onClick: onReplay,
+        icon: <IconRotate aria-hidden="true" className="h-4 w-4" />,
+      }}
+      onEscape={onNext}
+    >
+      {fact && (
+        <figure className="mt-4 flex items-center gap-3 rounded-xl border border-white/[0.08] bg-[#0d0e11] p-2.5">
+          <div className="relative h-20 w-20 shrink-0 -rotate-2 overflow-hidden rounded-sm border-4 border-b-[10px] border-[#f4f4f6] bg-amber-50 shadow-lg">
+            <Image
+              src={fact.photoUrl}
+              alt={fact.title}
+              fill
+              className="object-cover"
+              sizes="80px"
+            />
+          </div>
+          <figcaption className="min-w-0">
+            <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-amber-300">
+              New scrapbook photo
+            </p>
+            <p className="mt-0.5 font-mono text-xs font-bold text-zinc-100">
+              {fact.title}
+            </p>
+            <p className="mt-0.5 line-clamp-3 text-[11px] leading-snug text-zinc-400">
+              {fact.fact}
+            </p>
+          </figcaption>
+        </figure>
+      )}
+      <div className="mt-4 flex flex-wrap items-center gap-1.5">
+        {level < 5 && (
+          <button
+            type="button"
+            onClick={onEndless}
+            className={`${RESULT_LINK} min-w-[48px]`}
+          >
+            <span>Play Endless Mode</span>
+          </button>
+        )}
+        <Link href="/case-studies" className={RESULT_LINK}>
+          <span>Browse Case Studies</span>
+        </Link>
+        <a
+          href="https://github.com/fderuiter"
+          target="_blank"
+          rel="noopener noreferrer"
+          className={RESULT_LINK}
+        >
+          <span>GitHub</span>
+        </a>
+      </div>
+    </ResultCard>
+  );
+}
 // Action dock styles (#1676): graphite keys, amber for the held toy,
 // emerald for tricks, and the cabinet accent for the one primary action.
 const DOCK_BUTTON =
@@ -536,6 +676,8 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
   const [mobileTab, setMobileTab] = useState<"toys" | "tricks" | "actions">(
     "toys"
   );
+  const fx = useArcadeFx();
+  const { stageRef: fxStageRef, flashRef: fxFlashRef } = fx;
   const [dismissedTip, setDismissedTip] = useState<string | null>(null);
   const isDraggingDuckStateRef = useRef(false);
   // A pointer drag that ends while the sprint is paused cannot drop Duck
@@ -735,6 +877,47 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
     };
   }, [addInterruption, removeInterruption]);
 
+  // Loud moments (#1677): a chewed prop, an accident, the zoomies, a
+  // surprise at the window, and the end of a sprint nudge the stage.
+  // useArcadeFx skips all of it under reduced motion and below 768px.
+  const chewedCount = (uiState.hazards ?? []).filter((h) => h.isChewed).length;
+  const puddleCount = uiState.indoorPuddles?.length ?? 0;
+  const hasZoomies = uiState.duck.state === "ZOOMIES";
+  const hasSurprise = uiState.activeSurpriseEvent !== null;
+  const fxPrevRef = useRef({
+    chewedCount,
+    puddleCount,
+    hasZoomies,
+    hasSurprise,
+    status: uiState.status,
+  });
+  useEffect(() => {
+    const prev = fxPrevRef.current;
+    if (uiState.status === "failed" && prev.status !== "failed") {
+      fx.shake(5);
+      fx.flash("#fb7185");
+    } else if (uiState.status === "won" && prev.status !== "won") {
+      fx.flash("#fbbf24");
+    } else if (chewedCount > prev.chewedCount) {
+      fx.shake(4);
+      fx.flash("#fb7185");
+    } else if (puddleCount > prev.puddleCount) {
+      fx.shake(3);
+    } else if (
+      (hasZoomies && !prev.hasZoomies) ||
+      (hasSurprise && !prev.hasSurprise)
+    ) {
+      fx.shake(2);
+    }
+    fxPrevRef.current = {
+      chewedCount,
+      puddleCount,
+      hasZoomies,
+      hasSurprise,
+      status: uiState.status,
+    };
+  }, [fx, uiState.status, chewedCount, puddleCount, hasZoomies, hasSurprise]);
+
   // Reset interruption state when session concludes or returns to idle
   useEffect(() => {
     if (
@@ -747,30 +930,6 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
       openManualsCountRef.current = 0;
     }
   }, [uiState.status]);
-
-  const winTrapRef = useFocusTrap<HTMLDivElement>(uiState.status === "won", {
-    onEscape: () => {
-      handleAdvanceLevel();
-    },
-  });
-
-  const failTrapRef = useFocusTrap<HTMLDivElement>(
-    uiState.status === "failed",
-    {
-      onEscape: () => {
-        applyTransition(() => {
-          const next = createInitialDuckGameState(
-            uiState.currentLevel,
-            uiState.mode,
-            undefined,
-            uiState.unlockedFacts
-          );
-          next.status = "running";
-          return next;
-        });
-      },
-    }
-  );
 
   const wardrobeTrapRef = useFocusTrap<HTMLDivElement>(isWardrobeOpen, {
     onEscape: () => closeWardrobe(),
@@ -1868,6 +2027,31 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
     }
   }
 
+  const restartSprint = () => {
+    applyTransition(() => {
+      const next = createInitialDuckGameState(
+        uiState.currentLevel,
+        uiState.mode,
+        undefined,
+        uiState.unlockedFacts
+      );
+      next.status = "running";
+      return next;
+    });
+  };
+
+  const startEndlessRun = () => {
+    applyTransition((state) => {
+      const next = createInitialDuckGameState(
+        5,
+        "endless",
+        state.unlockedAccessories,
+        state.unlockedFacts
+      );
+      next.status = "running";
+      return next;
+    });
+  };
   // A dismissed tip stays hidden until the advice changes.
   const visibleTip =
     tutorialHint && tutorialHint !== dismissedTip ? tutorialHint : null;
@@ -2043,7 +2227,15 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
       </div>
 
       {/* Main Canvas Screen Container */}
-      <div className="relative rounded-2xl border border-white/[0.08] bg-[#0d0e11] overflow-hidden">
+      <div
+        ref={fxStageRef}
+        className="relative rounded-2xl border border-white/[0.08] bg-[#0d0e11] overflow-hidden"
+      >
+        <div
+          ref={fxFlashRef}
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 z-10 opacity-0"
+        />
         <FullscreenButton
           isFullscreen={isFullscreen}
           onToggle={toggleFullscreen}
@@ -2898,177 +3090,16 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
         </div>
       </div>
 
-      {/* Win / Nap Time Modal */}
-      {uiState.status === "won" && (
-        <div className="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 z-50 animate-fadeIn">
-          <div
-            ref={winTrapRef}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="duck-win-dialog-heading"
-            className="max-w-lg w-full max-h-[90dvh] overflow-y-auto rounded-3xl border border-brand-cyan/40 bg-zinc-950 p-4 sm:p-8 shadow-[0_0_50px_rgba(6,182,212,0.2)] text-center font-mono"
-          >
-            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 mx-auto flex items-center justify-center mb-3">
-              <IconSparkles className="w-6 h-6 sm:w-8 sm:h-8 animate-pulse" />
-            </div>
-
-            <span className="px-2.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-[11px] sm:text-xs font-bold uppercase tracking-wider">
-              {uiState.mode === "endless"
-                ? "Endless Milestone"
-                : currentSprint.title}{" "}
-              Completed!
-            </span>
-
-            <h3
-              id="duck-win-dialog-heading"
-              className="text-xl sm:text-2xl font-bold text-white mt-2 sm:mt-3 mb-1 sm:mb-2"
-            >
-              Duck is Asleep &amp; Work is Done! 💤
-            </h3>
-
-            <p className="text-xs text-zinc-400 leading-relaxed mb-4">
-              Sprint Score:{" "}
-              <strong className="text-amber-300 font-bold">
-                {uiState.totalScore}
-              </strong>{" "}
-              · High Score:{" "}
-              <strong className="text-brand-cyan">{displayedHighScore}</strong>
-            </p>
-
-            {/* Unlocked Polaroid Card */}
-            {uiState.latestUnlockedFact && (
-              <div className="mb-4 sm:mb-6 rounded-2xl bg-white p-2.5 sm:p-3 shadow-2xl text-black rotate-1 max-w-[220px] sm:max-w-xs mx-auto">
-                <div className="relative w-full aspect-[4/3] sm:aspect-square rounded-lg overflow-hidden bg-amber-50 mb-2 border border-zinc-200">
-                  <Image
-                    src={uiState.latestUnlockedFact.photoUrl}
-                    alt={uiState.latestUnlockedFact.title}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 640px) 220px, 320px"
-                  />
-                </div>
-                <h4 className="font-bold text-xs text-zinc-900">
-                  {uiState.latestUnlockedFact.title}
-                </h4>
-                <p className="text-[10px] sm:text-[11px] text-zinc-600 font-sans mt-1 leading-snug line-clamp-3 sm:line-clamp-none">
-                  {uiState.latestUnlockedFact.fact}
-                </p>
-              </div>
-            )}
-
-            {/* Progression CTA - Immediate & Prominent on Mobile */}
-            <div className="mb-4">
-              <button
-                onClick={handleAdvanceLevel}
-                className="w-full py-3 px-4 rounded-xl bg-brand-cyan text-black font-bold text-xs sm:text-sm hover:bg-white active:scale-[0.98] transition-all shadow-[0_0_20px_rgba(6,182,212,0.4)] flex items-center justify-center gap-2 cursor-pointer min-h-[44px] touch-manipulation select-none"
-              >
-                <span>
-                  {uiState.currentLevel < 5
-                    ? `Proceed to Sprint ${uiState.currentLevel + 1} →`
-                    : "Play Endless Mode →"}
-                </span>
-              </button>
-            </div>
-
-            {/* Victory lap: replay or explore */}
-            <div className="pt-4 border-t border-zinc-800/80">
-              <p className="text-[11px] sm:text-xs text-zinc-300 mb-3 font-sans leading-relaxed">
-                Every cable survived, the puppy pads held, and the office budget
-                spreadsheet is still unchewed. Duck has earned a nap, and you
-                have earned a victory lap.
-              </p>
-
-              <div className="flex flex-wrap items-center justify-center gap-2">
-                {uiState.currentLevel < 5 && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      applyTransition((state) => {
-                        const next = createInitialDuckGameState(
-                          5,
-                          "endless",
-                          state.unlockedAccessories,
-                          state.unlockedFacts
-                        );
-                        next.status = "running";
-                        return next;
-                      });
-                    }}
-                    className="px-3.5 py-2 rounded-xl bg-brand-cyan/20 border border-brand-cyan/50 text-cyan-300 hover:bg-brand-cyan hover:text-black font-bold text-xs transition-all flex items-center gap-1.5 min-h-[40px] cursor-pointer active:scale-[0.98]"
-                  >
-                    <IconInfinity className="w-3.5 h-3.5" />
-                    <span>Play Endless Mode</span>
-                  </button>
-                )}
-
-                <Link
-                  href="/case-studies"
-                  className="px-3.5 py-2 rounded-xl border border-zinc-800 bg-zinc-900 text-zinc-200 text-xs hover:border-zinc-600 transition-colors flex items-center gap-1.5 min-h-[40px]"
-                >
-                  <IconBriefcase className="w-3.5 h-3.5" />
-                  <span>Browse Case Studies</span>
-                </Link>
-
-                <a
-                  href="https://github.com/fderuiter"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-3.5 py-2 rounded-xl border border-zinc-800 bg-zinc-900 text-zinc-200 text-xs hover:border-zinc-600 transition-colors flex items-center gap-1.5 min-h-[40px]"
-                >
-                  <IconBrandGithub className="w-3.5 h-3.5" />
-                  <span>GitHub</span>
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Fail / Time Out Modal */}
-      {uiState.status === "failed" && (
-        <div className="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 z-50 animate-fadeIn">
-          <div
-            ref={failTrapRef}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="duck-fail-dialog-heading"
-            className="max-w-md w-full max-h-[90dvh] overflow-y-auto rounded-3xl border border-rose-500/40 bg-zinc-950 p-6 sm:p-8 shadow-[0_0_50px_rgba(244,63,94,0.2)] text-center font-mono"
-          >
-            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-400 mx-auto flex items-center justify-center mb-4">
-              <IconAlertTriangle className="w-7 h-7 sm:w-8 sm:h-8" />
-            </div>
-
-            <h3
-              id="duck-fail-dialog-heading"
-              className="text-xl sm:text-2xl font-bold text-white mb-2"
-            >
-              Duck Got a Time-Out! 🐾
-            </h3>
-            <p className="text-xs text-zinc-400 leading-relaxed mb-6 font-sans">
-              Too many sneaky chews and missed potty breaks tilted the scale
-              fully red. Take a breath and try again!
-            </p>
-
-            <button
-              onClick={() => {
-                applyTransition(() => {
-                  const next = createInitialDuckGameState(
-                    uiState.currentLevel,
-                    uiState.mode,
-                    undefined,
-                    uiState.unlockedFacts
-                  );
-                  next.status = "running";
-                  return next;
-                });
-              }}
-              className="w-full py-3 rounded-xl bg-rose-500 text-white font-mono font-bold text-xs sm:text-sm hover:bg-rose-400 active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2 min-h-[44px] min-w-[44px] touch-manipulation select-none"
-            >
-              <IconRotate className="w-4 h-4" />
-              <span>Retry Sprint {uiState.currentLevel}</span>
-            </button>
-          </div>
-        </div>
+      {/* Sprint result (#1677): the shared arcade card with this run's recap */}
+      {(uiState.status === "won" || uiState.status === "failed") && (
+        <DuckSprintResult
+          state={uiState}
+          sprintTitle={currentSprint.title}
+          storedBest={loadedHighScore}
+          onNext={handleAdvanceLevel}
+          onReplay={restartSprint}
+          onEndless={startEndlessRun}
+        />
       )}
 
       {/* Accessory Wardrobe Modal */}

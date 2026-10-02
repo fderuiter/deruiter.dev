@@ -157,6 +157,29 @@ export interface RuleDefinition {
   softwareMeaning: string;
 }
 
+export interface RuleMatch {
+  ruleId: string;
+  ruleName: string;
+  ruleSymbol: string;
+  isApplicable: boolean;
+  resultAst?: PropAst;
+  resultFormula?: string;
+  explanation: string;
+  isRecommended?: boolean;
+}
+
+export interface AutoStepResult {
+  success: boolean;
+  ruleId?: string;
+  ruleName?: string;
+  sourceNodeIds?: string[];
+  targetNodeId?: string;
+  derivedAst?: PropAst;
+  explanation?: string;
+  newEdges?: Edge[];
+  message?: string;
+}
+
 export const INFERENCE_RULES: RuleDefinition[] = [
   {
     id: "mp",
@@ -3215,7 +3238,362 @@ export function applyRuleToAsts(
     };
   }
 
+  // De Morgan's Laws: ¬(P ∧ Q) => ¬P ∨ ¬Q  or  ¬(P ∨ Q) => ¬P ∧ ¬Q
+  if (normRule === "demorgan" || normRule === "de-morgans-laws") {
+    if (inputs.length !== 1) {
+      return {
+        success: false,
+        explanation:
+          "De Morgan's Laws require exactly 1 negated conjunction or disjunction.",
+      };
+    }
+    const [p] = inputs;
+    if (p.type === "not") {
+      if (p.operand.type === "and") {
+        const resAst: PropAst = {
+          type: "or",
+          left: { type: "not", operand: p.operand.left },
+          right: { type: "not", operand: p.operand.right },
+        };
+        return {
+          success: true,
+          resultAst: resAst,
+          explanation: `Derived ${formatFormula(resAst)} via De Morgan's Laws.`,
+        };
+      }
+      if (p.operand.type === "or") {
+        const resAst: PropAst = {
+          type: "and",
+          left: { type: "not", operand: p.operand.left },
+          right: { type: "not", operand: p.operand.right },
+        };
+        return {
+          success: true,
+          resultAst: resAst,
+          explanation: `Derived ${formatFormula(resAst)} via De Morgan's Laws.`,
+        };
+      }
+    }
+    return {
+      success: false,
+      explanation:
+        "Premise does not match De Morgan form (¬(P ∧ Q) or ¬(P ∨ Q)).",
+    };
+  }
+
+  // Conjunction Elimination: P ∧ Q => P (or Q)
+  if (normRule === "and_elim" || normRule === "conjunction-elim") {
+    if (inputs.length !== 1) {
+      return {
+        success: false,
+        explanation:
+          "Conjunction Elimination requires exactly 1 conjunction premise.",
+      };
+    }
+    const [p] = inputs;
+    if (p.type === "and") {
+      return {
+        success: true,
+        resultAst: p.left,
+        explanation: `Extracted ${formatFormula(p.left)} via Conjunction Elimination.`,
+      };
+    }
+    return {
+      success: false,
+      explanation:
+        "Premise does not match Conjunction Elimination form (P ∧ Q).",
+    };
+  }
+
+  // Reductio Ad Absurdum: P → ⊥ => ¬P
+  if (normRule === "raa" || normRule === "reductio-ad-absurdum") {
+    if (inputs.length !== 1) {
+      return {
+        success: false,
+        explanation:
+          "Reductio Ad Absurdum requires 1 implication leading to contradiction (P → ⊥).",
+      };
+    }
+    const [p] = inputs;
+    if (p.type === "implies" && p.right.type === "bottom") {
+      const resAst: PropAst = { type: "not", operand: p.left };
+      return {
+        success: true,
+        resultAst: resAst,
+        explanation: `Derived ${formatFormula(resAst)} via Reductio Ad Absurdum.`,
+      };
+    }
+    return {
+      success: false,
+      explanation: "Premise does not match Reductio Ad Absurdum form (P → ⊥).",
+    };
+  }
+
   return { success: false, explanation: `Unknown rule '${ruleId}'.` };
+}
+
+/**
+ * Evaluates selected node ASTs against all rules in INFERENCE_RULES using applyRuleToAsts.
+ */
+export function scanApplicableRules(
+  nodes: ProofNode[],
+  selectedNodeIds: string[],
+  targetNodeId?: string
+): RuleMatch[] {
+  const selectedNodes = selectedNodeIds
+    .map((id) => nodes.find((n) => n.id === id))
+    .filter((n): n is ProofNode => Boolean(n));
+
+  const selectedAsts = selectedNodes
+    .map((n) => n.ast || parseFormula(n.label))
+    .filter((ast): ast is PropAst => Boolean(ast));
+
+  const targetNode = targetNodeId
+    ? nodes.find((n) => n.id === targetNodeId)
+    : null;
+  const targetAst = targetNode
+    ? targetNode.ast || parseFormula(targetNode.label)
+    : null;
+
+  return INFERENCE_RULES.map((rule) => {
+    if (selectedNodeIds.length === 0) {
+      return {
+        ruleId: rule.id,
+        ruleName: rule.name,
+        ruleSymbol: rule.symbol,
+        isApplicable: false,
+        explanation: `${rule.name} (${rule.template}): Select ${rule.arity} premise node${rule.arity > 1 ? "s" : ""} to test rule applicability.`,
+      };
+    }
+
+    if (selectedAsts.length !== selectedNodeIds.length) {
+      return {
+        ruleId: rule.id,
+        ruleName: rule.name,
+        ruleSymbol: rule.symbol,
+        isApplicable: false,
+        explanation: `Selected nodes contain invalid formula expressions.`,
+      };
+    }
+
+    if (selectedAsts.length !== rule.arity) {
+      return {
+        ruleId: rule.id,
+        ruleName: rule.name,
+        ruleSymbol: rule.symbol,
+        isApplicable: false,
+        explanation: `${rule.name} requires ${rule.arity} premise${rule.arity > 1 ? "s" : ""}, but ${selectedAsts.length} ${selectedAsts.length === 1 ? "is" : "are"} selected.`,
+      };
+    }
+
+    // Try applying rule in given order, or reverse order if arity == 2
+    let res = applyRuleToAsts(rule.id, selectedAsts);
+    if (!res.success && rule.arity === 2 && selectedAsts.length === 2) {
+      const revRes = applyRuleToAsts(rule.id, [
+        selectedAsts[1],
+        selectedAsts[0],
+      ]);
+      if (revRes.success) {
+        res = revRes;
+      }
+    }
+
+    if (res.success && res.resultAst) {
+      const resultFormula = formatFormula(res.resultAst);
+      let isRecommended = false;
+      if (targetAst && areAstsEqual(res.resultAst, targetAst)) {
+        isRecommended = true;
+      } else if (
+        nodes.some((n) => {
+          const ast = n.ast || parseFormula(n.label);
+          return ast ? areAstsEqual(ast, res.resultAst!) : false;
+        })
+      ) {
+        isRecommended = true;
+      }
+
+      return {
+        ruleId: rule.id,
+        ruleName: rule.name,
+        ruleSymbol: rule.symbol,
+        isApplicable: true,
+        resultAst: res.resultAst,
+        resultFormula,
+        explanation:
+          res.explanation || `Derived ${resultFormula} via ${rule.name}.`,
+        isRecommended,
+      };
+    }
+
+    return {
+      ruleId: rule.id,
+      ruleName: rule.name,
+      ruleSymbol: rule.symbol,
+      isApplicable: false,
+      explanation:
+        res.explanation ||
+        `Selected premises do not satisfy ${rule.name} (${rule.template}).`,
+    };
+  });
+}
+
+/**
+ * Finds the next valid deduction step via forward-chaining deduction engine
+ * without referencing hardcoded theorem graph edges.
+ */
+export function solveNextDeductionStep(
+  nodes: ProofNode[],
+  edges: Edge[],
+  targetNodeId: string
+): AutoStepResult {
+  const provenNodeIds = new Set<string>();
+
+  // Iteratively compute proven nodes until fixpoint
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const node of nodes) {
+      if (provenNodeIds.has(node.id)) continue;
+
+      if (node.type === "premise") {
+        provenNodeIds.add(node.id);
+        changed = true;
+        continue;
+      }
+
+      // Check incoming edges to node
+      const incomingEdges = edges.filter((e) => e.target === node.id);
+      if (incomingEdges.length === 0) continue;
+
+      const sourceIds = incomingEdges.map((e) => e.source);
+      const allSourcesProven = sourceIds.every((sId) => provenNodeIds.has(sId));
+      if (allSourcesProven && sourceIds.length > 0) {
+        provenNodeIds.add(node.id);
+        changed = true;
+      }
+    }
+  }
+
+  if (provenNodeIds.has(targetNodeId)) {
+    return {
+      success: false,
+      message: "Goal already fully discharged (Q.E.D.)!",
+    };
+  }
+
+  const unprovenNodes = nodes.filter((n) => !provenNodeIds.has(n.id));
+  const provenNodes = nodes.filter((n) => provenNodeIds.has(n.id));
+
+  const candidateSteps: {
+    rule: RuleDefinition;
+    sources: ProofNode[];
+    targetNode: ProofNode;
+    derivedAst: PropAst;
+    explanation: string;
+    priority: number;
+  }[] = [];
+
+  // Single premise rules
+  for (const pNode of provenNodes) {
+    const pAst = pNode.ast || parseFormula(pNode.label);
+    if (!pAst) continue;
+
+    for (const rule of INFERENCE_RULES.filter((r) => r.arity === 1)) {
+      const res = applyRuleToAsts(rule.id, [pAst]);
+      if (res.success && res.resultAst) {
+        for (const unp of unprovenNodes) {
+          const unpAst = unp.ast || parseFormula(unp.label);
+          if (unpAst && areAstsEqual(res.resultAst, unpAst)) {
+            const alreadyConnected = edges.some(
+              (e) => e.source === pNode.id && e.target === unp.id
+            );
+            if (!alreadyConnected) {
+              const priority = unp.id === targetNodeId ? 10 : 5;
+              candidateSteps.push({
+                rule,
+                sources: [pNode],
+                targetNode: unp,
+                derivedAst: res.resultAst,
+                explanation:
+                  res.explanation || `Derived ${unp.label} via ${rule.name}`,
+                priority,
+              });
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Two premise rules
+  for (let i = 0; i < provenNodes.length; i++) {
+    for (let j = 0; j < provenNodes.length; j++) {
+      if (i === j) continue;
+      const n1 = provenNodes[i];
+      const n2 = provenNodes[j];
+      const ast1 = n1.ast || parseFormula(n1.label);
+      const ast2 = n2.ast || parseFormula(n2.label);
+      if (!ast1 || !ast2) continue;
+
+      for (const rule of INFERENCE_RULES.filter((r) => r.arity === 2)) {
+        const res = applyRuleToAsts(rule.id, [ast1, ast2]);
+        if (res.success && res.resultAst) {
+          for (const unp of unprovenNodes) {
+            const unpAst = unp.ast || parseFormula(unp.label);
+            if (unpAst && areAstsEqual(res.resultAst, unpAst)) {
+              const hasEdge1 = edges.some(
+                (e) => e.source === n1.id && e.target === unp.id
+              );
+              const hasEdge2 = edges.some(
+                (e) => e.source === n2.id && e.target === unp.id
+              );
+              if (!hasEdge1 || !hasEdge2) {
+                const priority = unp.id === targetNodeId ? 10 : 5;
+                candidateSteps.push({
+                  rule,
+                  sources: [n1, n2],
+                  targetNode: unp,
+                  derivedAst: res.resultAst,
+                  explanation:
+                    res.explanation || `Derived ${unp.label} via ${rule.name}`,
+                  priority,
+                });
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  if (candidateSteps.length === 0) {
+    return {
+      success: false,
+      message:
+        "No valid forward deduction step found for currently proven nodes.",
+    };
+  }
+
+  candidateSteps.sort((a, b) => b.priority - a.priority);
+  const bestStep = candidateSteps[0];
+
+  const sourceIds = bestStep.sources.map((s) => s.id);
+  const newEdges: Edge[] = sourceIds.map((sId) => ({
+    source: sId,
+    target: bestStep.targetNode.id,
+    ruleApplied: bestStep.rule.symbol,
+  }));
+
+  return {
+    success: true,
+    ruleId: bestStep.rule.id,
+    ruleName: bestStep.rule.name,
+    sourceNodeIds: sourceIds,
+    targetNodeId: bestStep.targetNode.id,
+    derivedAst: bestStep.derivedAst,
+    explanation: bestStep.explanation,
+    newEdges,
+  };
 }
 
 /**

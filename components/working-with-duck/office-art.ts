@@ -1727,6 +1727,106 @@ function heart(ctx: Ctx, x: number, y: number, size: number) {
   ctx.fill();
 }
 
+/** How many light steps a sprint passes through, so gradients are reused. */
+const DAYLIGHT_STEPS = 24;
+
+interface DaylightLayer {
+  wash: CanvasGradient | null;
+  lamp: CanvasGradient | null;
+  /** Sunset over the window glass, with its opacity. */
+  sky: { fill: CanvasGradient; alpha: number } | null;
+}
+
+/** The window glass in the cached room (see paintWindow). */
+const WINDOW_GLASS = { x: 362, y: 12, width: 81, height: 42 };
+
+const daylightCache = new WeakMap<Ctx, Map<number, DaylightLayer>>();
+
+/**
+ * The day passes over the sprint (#1677): gold morning light from the
+ * window at the start, plain daylight at midday, then a dusky blue wash
+ * with a desk-lamp pool as the deadline nears. Gradients are built once per
+ * step and context, and a context without gradients skips the light.
+ */
+function drawDaylight(ctx: Ctx, progress: number) {
+  if (
+    typeof ctx.createLinearGradient !== "function" ||
+    typeof ctx.createRadialGradient !== "function"
+  ) {
+    return;
+  }
+  const step = Math.round(clamp(progress, 0, 1) * DAYLIGHT_STEPS);
+  let byStep = daylightCache.get(ctx);
+  if (!byStep) {
+    byStep = new Map();
+    daylightCache.set(ctx, byStep);
+  }
+  let layer = byStep.get(step);
+  if (!layer) {
+    const t = step / DAYLIGHT_STEPS;
+    const morning = clamp(1 - t / 0.35, 0, 1);
+    const dusk = clamp((t - 0.55) / 0.45, 0, 1);
+    let wash: CanvasGradient | null = null;
+    if (morning > 0 || dusk > 0) {
+      wash = ctx.createLinearGradient(0, 0, 0, CANVAS_HEIGHT);
+      wash.addColorStop(
+        0,
+        `rgba(${morning > 0 ? "251, 191, 36" : "249, 115, 22"}, ${(
+          0.12 * Math.max(morning, dusk)
+        ).toFixed(3)})`
+      );
+      wash.addColorStop(
+        1,
+        dusk > 0
+          ? `rgba(15, 23, 42, ${(0.3 * dusk).toFixed(3)})`
+          : "rgba(251, 191, 36, 0)"
+      );
+    }
+    let lamp: CanvasGradient | null = null;
+    if (dusk > 0) {
+      const cx = DESK_BOUNDS.x + DESK_BOUNDS.width / 2;
+      const cy = DESK_BOUNDS.y + DESK_BOUNDS.height / 2;
+      lamp = ctx.createRadialGradient(cx, cy, 10, cx, cy, 150);
+      lamp.addColorStop(0, `rgba(251, 191, 36, ${(0.16 * dusk).toFixed(3)})`);
+      lamp.addColorStop(1, "rgba(251, 191, 36, 0)");
+    }
+    let sky: DaylightLayer["sky"] = null;
+    if (dusk > 0) {
+      const fill = ctx.createLinearGradient(
+        0,
+        WINDOW_GLASS.y,
+        0,
+        WINDOW_GLASS.y + WINDOW_GLASS.height
+      );
+      fill.addColorStop(0, "#1e3a5f");
+      fill.addColorStop(1, "#f97316");
+      sky = { fill, alpha: 0.75 * dusk };
+    }
+    layer = { wash, lamp, sky };
+    byStep.set(step, layer);
+  }
+  if (layer.sky) {
+    ctx.save();
+    ctx.globalAlpha = layer.sky.alpha;
+    ctx.fillStyle = layer.sky.fill;
+    ctx.fillRect(
+      WINDOW_GLASS.x,
+      WINDOW_GLASS.y,
+      WINDOW_GLASS.width,
+      WINDOW_GLASS.height
+    );
+    ctx.restore();
+  }
+  if (layer.wash) {
+    ctx.fillStyle = layer.wash;
+    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+  }
+  if (layer.lamp) {
+    ctx.fillStyle = layer.lamp;
+    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+  }
+}
+
 /**
  * Paints the whole office for one frame: the cached room, then everything
  * that changes with the game state, then Duck, particles and alerts.
@@ -1744,6 +1844,7 @@ export function drawOfficeScene(
     ctx.fillStyle = "#4d3524";
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
   }
+  drawDaylight(ctx, state.workProgress / (state.targetWorkProgress || 1));
 
   // Squirrel at the window
   if (state.activeSurpriseEvent?.type === "squirrel-window") {

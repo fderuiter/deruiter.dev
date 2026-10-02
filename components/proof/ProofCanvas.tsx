@@ -19,6 +19,7 @@ import {
   evaluateProofStatus,
   FallacyDiagnosis,
   evaluateAst,
+  RuleMatch,
 } from "@/lib/proof-utils";
 import { IconX } from "@tabler/icons-react";
 
@@ -60,6 +61,7 @@ interface ProofCanvasProps {
   mobileActiveView: "canvas" | "ledger" | "systems" | "fallacy" | "terminal";
   currentFallacy?: FallacyDiagnosis | null;
   handleRollback?: () => void;
+  ruleMatches?: RuleMatch[];
 }
 
 export const ProofCanvas: React.FC<ProofCanvasProps> = ({
@@ -91,6 +93,7 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
   mobileActiveView,
   currentFallacy,
   handleRollback,
+  ruleMatches,
 }) => {
   const proofStatus = evaluateProofStatus(edges, activeTheorem);
   const [containerWidth, setContainerWidth] = React.useState<number>(760);
@@ -765,19 +768,53 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
             <span className="text-[10px] font-mono uppercase text-slate-400 mr-1">
               Rule Palette:
             </span>
-            {INFERENCE_RULES.slice(0, 6).map((rule) => (
-              <button
-                key={rule.id}
-                onClick={() => handleApplyRule(rule.id)}
-                className="min-h-8 px-2.5 py-1 rounded-lg border border-slate-800 bg-slate-900 hover:bg-slate-800 text-xs font-mono text-slate-300 hover:text-white transition flex items-center gap-1 cursor-pointer active:scale-[0.98]"
-                title={`${rule.name}: ${rule.template}`}
-              >
-                <span className="text-brand-cyan font-bold">{rule.symbol}</span>
-                <span className="text-[11px] text-slate-400 hidden sm:inline">
-                  {rule.name}
-                </span>
-              </button>
-            ))}
+            {INFERENCE_RULES.map((rule) => {
+              const match = ruleMatches?.find((m) => m.ruleId === rule.id);
+              const isApplicable = Boolean(match?.isApplicable);
+              const isRecommended = Boolean(match?.isRecommended);
+
+              return (
+                <button
+                  key={rule.id}
+                  onClick={() => handleApplyRule(rule.id)}
+                  className={`min-h-8 px-2.5 py-1 rounded-lg border text-xs font-mono transition-all flex items-center gap-1.5 cursor-pointer active:scale-[0.98] ${
+                    isApplicable
+                      ? isRecommended
+                        ? "bg-emerald-950/80 border-emerald-400 text-emerald-200 shadow-lg shadow-emerald-500/20 ring-1 ring-emerald-400/80"
+                        : "bg-brand-cyan/20 border-brand-cyan text-white shadow-lg shadow-cyan-500/20 ring-1 ring-brand-cyan/60"
+                      : "border-slate-800 bg-slate-900 text-slate-400 hover:text-slate-200 hover:bg-slate-800 opacity-80 hover:opacity-100"
+                  }`}
+                  title={`${rule.name}: ${match?.explanation || rule.template}`}
+                  aria-label={`${rule.name}: ${isApplicable ? `Applicable deriving ${match?.resultFormula}` : match?.explanation || rule.template}`}
+                >
+                  <span
+                    className={
+                      isApplicable
+                        ? isRecommended
+                          ? "text-emerald-300 font-extrabold"
+                          : "text-brand-cyan font-extrabold"
+                        : "text-brand-cyan font-bold"
+                    }
+                  >
+                    {rule.symbol}
+                  </span>
+                  <span className="text-[11px] text-slate-300 hidden sm:inline font-medium">
+                    {rule.name}
+                  </span>
+                  {isApplicable && match?.resultFormula && (
+                    <span
+                      className={`px-1.5 py-0.5 text-[10px] font-bold rounded font-mono ${
+                        isRecommended
+                          ? "bg-emerald-400 text-slate-950"
+                          : "bg-brand-cyan text-slate-950"
+                      }`}
+                    >
+                      → {match.resultFormula}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
           <div className="flex items-center gap-2">
             <button

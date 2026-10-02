@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
+import { useAnimationFrame } from "@/hooks/useAnimationFrame";
+import { clamp } from "@/lib/game-utils";
 import { HAND_NAMES, type LevelUp } from "@/lib/trial-and-error";
 import { LOUD_PRESETS } from "@/components/trial-and-error/LoudLayer";
 
@@ -26,19 +28,20 @@ export function LevelUpPlate({
   loud,
 }: LevelUpPlateProps) {
   const [progress, setProgress] = useState(reducedMotion ? 1 : 0);
+  // A change to reducedMotion restarts the tick from zero, as the effect
+  // this replaced did when it re-ran.
+  const [tickedFor, setTickedFor] = useState(reducedMotion);
+  if (tickedFor !== reducedMotion) {
+    setTickedFor(reducedMotion);
+    setProgress(0);
+  }
 
-  useEffect(() => {
-    if (reducedMotion) return;
-    let frame = 0;
-    const start = performance.now();
-    const tick = (now: number) => {
-      const t = Math.min(1, (now - start) / TICK_MS);
-      setProgress(t);
-      if (t < 1) frame = requestAnimationFrame(tick);
-    };
-    frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
-  }, [reducedMotion]);
+  // Wall-clock time since the first frame drives the tick, so delta clamping
+  // is off; the loop stops once the numbers land.
+  useAnimationFrame(
+    (_deltaMs, elapsedMs) => setProgress(clamp(elapsedMs / TICK_MS, 0, 1)),
+    { isActive: !reducedMotion && progress < 1, maxDeltaMs: Infinity }
+  );
 
   const shown = reducedMotion ? 1 : progress;
   const tween = (from: number, to: number) =>

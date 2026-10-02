@@ -53,6 +53,7 @@ import {
 } from "@/lib/trial-and-error";
 import { useAnnouncer } from "@/hooks/useAnnouncer";
 import { isAnyFocusTrapActive, useFocusTrap } from "@/hooks/useFocusTrap";
+import { useHotkeys } from "@/hooks/useHotkeys";
 import { FieldManualButton } from "@/components/FieldManualButton";
 import { QcDesk } from "@/components/trial-and-error/QcDesk";
 import { FigureDesk } from "@/components/trial-and-error/FigureDesk";
@@ -261,6 +262,10 @@ function initialSeed(): { seed: string; origin?: RunOrigin } {
 }
 
 const SPEEDS = [1, 2, 4] as const;
+/** Shift+R opens Run Info; Ctrl, Meta and Alt must be up. */
+const RUN_INFO_HOTKEYS: readonly string[] = ["Shift+R"];
+/** H toggles the hand cheat sheet; Ctrl, Meta and Alt must be up. */
+const HAND_SHEET_HOTKEYS: readonly string[] = ["h"];
 const FIGURE_SPACE = "\u2007";
 
 const BUTTON_BASE =
@@ -816,46 +821,46 @@ export function CardTable({
   }, [view.lastEvent?.sequence, status, handIds, hasCrisis, playing, shopOpen]);
 
   // Shift+R opens Run Info from anywhere in the table; a plain R on a card
-  // stays Recompile. A dialog already open keeps the key to itself.
-  const onWindowKeyDown = useEffectEvent((event: KeyboardEvent) => {
-    if (event.key !== "R" || !event.shiftKey) return;
-    if (event.metaKey || event.ctrlKey || event.altKey) return;
-    if (runInfoOpen || isAnyFocusTrapActive()) return;
-    const focused = document.activeElement;
-    if (!focused || !sectionRef.current?.contains(focused)) return;
-    if (focused.closest("input, textarea, select, [contenteditable]")) return;
-    event.preventDefault();
-    setRunInfoOpen(true);
-  });
-  useEffect(() => {
-    const listener = (event: KeyboardEvent) => onWindowKeyDown(event);
-    window.addEventListener("keydown", listener);
-    return () => window.removeEventListener("keydown", listener);
-  }, []);
+  // stays Recompile. A dialog already open keeps the key to itself. The
+  // handler keeps the exact checks of the raw listener it replaced: an
+  // upper-case "R", focus inside the table and not in a text field.
+  useHotkeys(
+    RUN_INFO_HOTKEYS,
+    (event) => {
+      if (event.key !== "R") return;
+      if (runInfoOpen || isAnyFocusTrapActive()) return;
+      const focused = document.activeElement;
+      if (!focused || !sectionRef.current?.contains(focused)) return;
+      if (focused.closest("input, textarea, select, [contenteditable]")) return;
+      event.preventDefault();
+      setRunInfoOpen(true);
+    },
+    { allowInInputs: true, allowInKeyboardBoundary: true }
+  );
 
   // H opens the hand cheat sheet from anywhere in the table. Elsewhere on the
-  // site H opens the Field Manual from a window listener; this one sits on
-  // the table itself and stops the key there, so inside the table H is the
-  // cheat sheet and ? (off a card) or the Manual button is the manual. The
-  // sheet closes itself on H.
-  const onSectionKeyDown = useEffectEvent((event: KeyboardEvent) => {
-    if (event.key.toLowerCase() !== "h" || event.shiftKey) return;
-    if (event.metaKey || event.ctrlKey || event.altKey) return;
-    const target = event.target as HTMLElement | null;
-    if (target?.closest("input, textarea, select, [contenteditable]")) return;
-    if (!handSheetOpen && isAnyFocusTrapActive()) return;
-    event.preventDefault();
-    event.stopPropagation();
-    setHandSheetOpen((open) => !open);
-  });
-  useEffect(() => {
-    const section = sectionRef.current;
-    if (!section) return;
-    const listener = (event: KeyboardEvent) => onSectionKeyDown(event);
-    section.addEventListener("keydown", listener);
-    return () => section.removeEventListener("keydown", listener);
-    // The resume prompt renders in place of the table, so attach once it goes.
-  }, [offerResume]);
+  // site H opens the Field Manual from a window listener; this one listens on
+  // the document, scoped to the table, and stops the key there so it never
+  // reaches the window: inside the table H is the cheat sheet and ? (off a
+  // card) or the Manual button is the manual. The sheet closes itself on H.
+  useHotkeys(
+    HAND_SHEET_HOTKEYS,
+    (event) => {
+      if (event.shiftKey) return;
+      const target = event.target as HTMLElement | null;
+      if (target?.closest("input, textarea, select, [contenteditable]")) return;
+      if (!handSheetOpen && isAnyFocusTrapActive()) return;
+      event.preventDefault();
+      event.stopPropagation();
+      setHandSheetOpen((open) => !open);
+    },
+    {
+      allowInInputs: true,
+      allowInKeyboardBoundary: true,
+      target: "document",
+      targetRef: sectionRef,
+    }
+  );
 
   const amending = amendingId
     ? (view.amendmentPreviews.find(

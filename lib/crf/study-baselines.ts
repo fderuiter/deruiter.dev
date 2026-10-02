@@ -132,7 +132,13 @@ export function listStudyBaselines(storage?: Storage): StudyBaseline[] {
   const target = resolveStorage(storage);
   if (!target) return [];
 
-  const raw = target.getItem(STUDY_BASELINES_STORAGE_KEY);
+  // A store that throws on access reads as empty, never as a crash (#1632).
+  let raw: string | null;
+  try {
+    raw = target.getItem(STUDY_BASELINES_STORAGE_KEY);
+  } catch {
+    return [];
+  }
   if (!raw) return [];
 
   let parsed: unknown;

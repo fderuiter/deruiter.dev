@@ -229,6 +229,13 @@ jobs:
     container:
       image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
       options: --user 1001 --ipc=host
+      # The image ships no unzip, which
+      # `__tests__/extract-zip-remediation.test.ts` runs against a symlink
+      # archive. The hosted runner's Info-ZIP is mounted rather than
+      # installed with apt; both are Ubuntu noble, so the binary and its one
+      # library (libbz2, a dpkg dependency) match.
+      volumes:
+        - /usr/bin/unzip:/usr/local/bin/unzip:ro
     strategy:
       fail-fast: false
       matrix:

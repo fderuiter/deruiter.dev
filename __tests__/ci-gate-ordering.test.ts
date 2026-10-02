@@ -362,6 +362,12 @@ describe("CI Gate Ordering", () => {
       expect(block).not.toMatch(/playwright install/);
       expect(block).not.toMatch(/ms-playwright/);
     });
+
+    // The Playwright image has no unzip, and the extract-zip remediation
+    // test runs the real binary, so the runner's copy is mounted in.
+    it("mounts the runner's unzip for the extract-zip remediation test", () => {
+      expect(block).toContain("- /usr/bin/unzip:/usr/local/bin/unzip:ro");
+    });
   });
 
   /**
@@ -380,9 +386,17 @@ describe("CI Gate Ordering", () => {
         "run: npm run test:ci:shard -- --shard=${{ matrix.shard }}/3"
       );
       expect(pkg.scripts["test:ci:shard"]).toBe(
-        "VITE_CONFIG_NATIVE_IGNORE_WARNING=1 VITEST_COVERAGE_THRESHOLDS=deferred-to-merge vitest run --coverage --reporter=blob"
+        "VITE_CONFIG_NATIVE_IGNORE_WARNING=1 VITEST_COVERAGE_THRESHOLDS=deferred-to-merge vitest run --coverage --reporter=blob --reporter=github-actions --reporter=dot"
       );
       expect(block).toMatch(/name: vitest-blob-\$\{\{ matrix\.shard \}\}/);
+    });
+
+    // A blob report alone prints nothing on failure, so a red shard said
+    // only "exit code 1". The shard also names its failing tests in the log
+    // and as annotations.
+    it("names failing tests in the shard log, not only in the blob", () => {
+      expect(pkg.scripts["test:ci:shard"]).toMatch(/--reporter=github-actions/);
+      expect(pkg.scripts["test:ci:shard"]).toMatch(/--reporter=dot/);
     });
 
     it("merges the shards and enforces thresholds without deferring them", () => {

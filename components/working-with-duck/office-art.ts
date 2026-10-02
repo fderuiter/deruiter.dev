@@ -1,6 +1,7 @@
 /**
  * Working With Duck office art (#1675): an illustrated top-down home office
- * and a 3/4-view golden retriever with a pose per behaviour. Everything is
+ * and a 3/4-view Duck, an English Cream golden retriever, with a pose per
+ * behaviour. His coat and face come from `duck-art.ts` (#1707). Everything is
  * drawn with canvas paths, so there are no image assets to load.
  *
  * The room's furniture never moves, so it is painted once per pixel ratio
@@ -26,6 +27,14 @@ import {
   type PortfolioHazard,
   type WorkingWithDuckState,
 } from "@/lib/working-with-duck-engine";
+import {
+  DUCK_COAT,
+  drawDuckEye,
+  drawDuckNose,
+  paintMudInPath,
+  type DuckCoat,
+  type MudBlob,
+} from "./duck-art";
 
 type Ctx = CanvasRenderingContext2D;
 
@@ -44,7 +53,7 @@ function tone(color: string): string {
 
 let reducedMotionQuery: MediaQueryList | null | undefined;
 
-function prefersReducedMotion(): boolean {
+export function prefersReducedMotion(): boolean {
   if (reducedMotionQuery === undefined) {
     reducedMotionQuery =
       typeof window !== "undefined" && typeof window.matchMedia === "function"
@@ -212,10 +221,16 @@ function paintWall(g: Ctx) {
   g.fillRect(546, 16, 44, 12);
   g.fillStyle = "#5f8f3a";
   g.fillRect(546, 28, 44, 8);
-  g.fillStyle = "#e0a458";
+  g.fillStyle = DUCK_COAT.base;
   ellipse(g, 568, 28, 9, 6);
   g.fill();
   ellipse(g, 575, 23, 5, 5);
+  g.fill();
+  g.fillStyle = DUCK_COAT.ear;
+  ellipse(g, 573, 24, 2, 3);
+  g.fill();
+  g.fillStyle = "#151210";
+  ellipse(g, 579.5, 23.5, 1, 1);
   g.fill();
 
   g.fillStyle = "#e7e5e4";
@@ -911,22 +926,13 @@ function drawHazard(
 
 // --- Duck ---
 
-const FUR = {
-  base: "#e0a458",
-  light: "#f3c98b",
-  shade: "#b9793a",
-  ear: "#c98a45",
-  outline: "#6b4423",
-};
-const MUDDY = {
-  base: "#8a6a45",
-  light: "#a88660",
-  shade: "#5e4630",
-  ear: "#6f5236",
-  outline: "#3b2a1e",
-};
+type Fur = DuckCoat;
 
-type Fur = typeof FUR;
+/**
+ * How muddy the Duck being drawn is, 0 to 1. One Duck is drawn at a time,
+ * so drawDuck sets it and the part painters read it.
+ */
+let mud = 0;
 
 interface DuckSprite {
   x: number;
@@ -993,11 +999,28 @@ function leg(
   ctx.strokeStyle = fur.base;
   ctx.lineWidth = 6.5;
   ctx.stroke();
-  ctx.fillStyle = fur.light;
-  ellipse(ctx, x + lean + 1, bottom + 0.5, 4.5, 2.6);
+  if (mud > 0) {
+    // Mud climbs the lower half of the leg from the paw
+    ctx.globalAlpha = mud * 0.8;
+    ctx.strokeStyle = DUCK_MUD_LEG;
+    ctx.lineWidth = 6.5;
+    ctx.beginPath();
+    ctx.moveTo(x + lean * 0.5, (top + bottom) / 2 + 1);
+    ctx.lineTo(x + lean, bottom);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+  ctx.fillStyle = mud > 0.5 ? DUCK_MUD_PAW : fur.light;
+  ctx.strokeStyle = fur.outline;
+  ctx.lineWidth = 1;
+  ellipse(ctx, x + lean + 1.5, bottom + 0.5, 5.5, 3.2);
   ctx.fill();
+  ctx.stroke();
   ctx.lineCap = "butt";
 }
+
+const DUCK_MUD_LEG = "#6f4c2c";
+const DUCK_MUD_PAW = "#5c3f24";
 
 function tail(ctx: Ctx, fur: Fur, x: number, y: number, wag: number, lift = 0) {
   ctx.save();
@@ -1014,14 +1037,29 @@ function tail(ctx: Ctx, fur: Fur, x: number, y: number, wag: number, lift = 0) {
   ctx.closePath();
   ctx.fill();
   ctx.stroke();
+  paintMudInPath(ctx, TAIL_MUD, mud);
+  // Feathering along the underside
   ctx.fillStyle = fur.light;
   ctx.beginPath();
   ctx.moveTo(-6, 3);
   ctx.bezierCurveTo(-12, 6, -18, 7, -22, 8);
   ctx.bezierCurveTo(-14, 5, -10, 3, -6, 1);
   ctx.fill();
+  ctx.strokeStyle = fur.shade;
+  ctx.lineWidth = 1;
+  for (const tx of [-9, -14, -19]) {
+    ctx.beginPath();
+    ctx.moveTo(tx, 5);
+    ctx.lineTo(tx - 2, 9);
+    ctx.stroke();
+  }
   ctx.restore();
 }
+
+const TAIL_MUD: MudBlob[] = [
+  [-22, 5, 6, 4],
+  [-14, 6, 4, 3],
+];
 
 function head(
   ctx: Ctx,
@@ -1049,9 +1087,15 @@ function head(
   ctx.fillStyle = fur.base;
   ctx.strokeStyle = fur.outline;
   ctx.lineWidth = 1.5;
-  ellipse(ctx, 0, 0, 14, 13);
+  ellipse(ctx, 0, 0, 15, 13.5);
   ctx.fill();
   ctx.stroke();
+  // Soft shading under the brow keeps the pale face readable
+  ctx.fillStyle = fur.shade;
+  ctx.globalAlpha = 0.45;
+  ellipse(ctx, -3, 5, 9, 5);
+  ctx.fill();
+  ctx.globalAlpha = 1;
 
   // Muzzle
   ctx.fillStyle = fur.light;
@@ -1064,13 +1108,7 @@ function head(
   ctx.fill();
 
   // Nose, mouth and tongue
-  ctx.fillStyle = "#2b1d14";
-  ctx.beginPath();
-  ctx.ellipse(21, 2.5, 3.8, 3, 0.2, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
-  ellipse(ctx, 20, 1.5, 1.2, 0.8);
-  ctx.fill();
+  drawDuckNose(ctx, 21, 2.5, 4.2, 3.3, 0.2);
   ctx.strokeStyle = fur.outline;
   ctx.lineWidth = 1.2;
   ctx.beginPath();
@@ -1103,12 +1141,7 @@ function head(
   // Eye and brow
   const eyes = opts.eyes ?? "open";
   if (eyes === "open") {
-    ctx.fillStyle = "#1c1917";
-    ellipse(ctx, 5, -4, 2.8, 3.2);
-    ctx.fill();
-    ctx.fillStyle = "#ffffff";
-    ellipse(ctx, 4, -5.2, 1.1, 1.1);
-    ctx.fill();
+    drawDuckEye(ctx, 5, -4, 2.8);
     ctx.strokeStyle = fur.shade;
     ctx.lineWidth = 1.4;
     ctx.beginPath();
@@ -1137,6 +1170,12 @@ function head(
   ctx.bezierCurveTo(1, 20, 4, 10, 4, 0);
   ctx.closePath();
   ctx.fill();
+  ctx.stroke();
+  ctx.strokeStyle = fur.shade;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(-6, 6);
+  ctx.quadraticCurveTo(-7, 12, -4, 16);
   ctx.stroke();
   ctx.restore();
 
@@ -1270,11 +1309,41 @@ function body(
   ctx.ellipse(x + 2, y + ry * 0.45, rx * 0.72, ry * 0.4, tilt, 0, Math.PI * 2);
   ctx.fill();
   ctx.fillStyle = fur.shade;
-  ctx.globalAlpha = 0.35;
+  ctx.globalAlpha = 0.45;
   ctx.beginPath();
   ctx.ellipse(x - 2, y - ry * 0.5, rx * 0.7, ry * 0.3, tilt, 0, Math.PI * 2);
   ctx.fill();
   ctx.globalAlpha = 1;
+  // A few fur strokes give the pale coat some form
+  ctx.strokeStyle = fur.shade;
+  ctx.lineWidth = 1;
+  for (const f of [-0.45, -0.1, 0.25]) {
+    ctx.beginPath();
+    ctx.moveTo(x + rx * f, y - ry * 0.15);
+    ctx.quadraticCurveTo(
+      x + rx * f - 3,
+      y + ry * 0.2,
+      x + rx * f - 1,
+      y + ry * 0.45
+    );
+    ctx.stroke();
+  }
+  if (mud > 0) {
+    ctx.beginPath();
+    ctx.ellipse(x, y, rx, ry, tilt, 0, Math.PI * 2);
+    paintMudInPath(
+      ctx,
+      [
+        [x - rx * 0.5, y + ry * 0.95, rx * 0.45, ry * 0.4],
+        [x + rx * 0.25, y + ry * 1.0, rx * 0.5, ry * 0.38],
+        [x - rx * 0.9, y + ry * 0.55, rx * 0.2, ry * 0.3],
+        [x + rx * 0.05, y + ry * 0.45, rx * 0.05, ry * 0.08],
+        [x - rx * 0.3, y + ry * 0.35, rx * 0.04, ry * 0.07],
+        [x + rx * 0.5, y + ry * 0.5, rx * 0.06, ry * 0.08],
+      ],
+      mud
+    );
+  }
 }
 
 function drawStanding(
@@ -1354,6 +1423,14 @@ function drawSitting(
   ellipse(ctx, -8, 10, 17, 14);
   ctx.fill();
   ctx.stroke();
+  paintMudInPath(
+    ctx,
+    [
+      [-12, 23, 12, 5],
+      [-20, 14, 2, 2.5],
+    ],
+    mud
+  );
   ctx.fillStyle = fur.light;
   ellipse(ctx, -10, 20, 11, 4);
   ctx.fill();
@@ -1473,13 +1550,15 @@ function drawFlop(ctx: Ctx, fur: Fur, ticks: number, calm: boolean) {
 }
 
 /**
- * Draws Duck at `duck.x, duck.y`: a 3/4-view golden retriever that faces
- * the way he's heading and holds a pose for his behaviour. Status labels
+ * Draws Duck at `duck.x, duck.y`: a 3/4-view English Cream golden retriever
+ * that faces the way he's heading and holds a pose for his behaviour. When
+ * he's muddy the mud sits on his cream coat as patches. Status labels
  * float above him on dark pills.
  */
 export function drawDuck(ctx: Ctx, duck: DuckSprite, options: DuckDrawOptions) {
   const calm = prefersReducedMotion();
-  const fur = options.isMuddy ? MUDDY : FUR;
+  const fur = DUCK_COAT;
+  mud = options.isMuddy ? 1 : 0;
   const trick = options.trick ?? null;
   const pose = poseFor(duck.state, trick);
   const ticks = options.ticks;

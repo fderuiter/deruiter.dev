@@ -52,13 +52,15 @@ const getSnapshot = (): ArcadeProgress => {
   return getArcadeProgress();
 };
 
-const getServerSnapshot = (): ArcadeProgress => {
-  return {
-    highScores: {},
-    unlockedTrophies: {},
-    updatedAt: 0,
-  };
+// useSyncExternalStore compares snapshots by identity, so the server
+// snapshot must be one stable object rather than a fresh literal per call.
+const SERVER_SNAPSHOT: ArcadeProgress = {
+  highScores: {},
+  unlockedTrophies: {},
+  updatedAt: 0,
 };
+
+const getServerSnapshot = (): ArcadeProgress => SERVER_SNAPSHOT;
 
 function getTrophyIcon(iconName: string) {
   switch (iconName) {

@@ -10,6 +10,7 @@
 
 - [AlignmentGuide](interfaces/AlignmentGuide.md)
 - [AstTraceNode](interfaces/AstTraceNode.md)
+- [AutoStepResult](interfaces/AutoStepResult.md)
 - [CompatibleTargetInfo](interfaces/CompatibleTargetInfo.md)
 - [Edge](interfaces/Edge.md)
 - [FallacyDiagnosis](interfaces/FallacyDiagnosis.md)
@@ -18,6 +19,7 @@
 - [ProofNode](interfaces/ProofNode.md)
 - [PruneResult](interfaces/PruneResult.md)
 - [RuleDefinition](interfaces/RuleDefinition.md)
+- [RuleMatch](interfaces/RuleMatch.md)
 - [SnapResult](interfaces/SnapResult.md)
 - [TacticHint](interfaces/TacticHint.md)
 - [TheoremDefinition](interfaces/TheoremDefinition.md)
@@ -62,3 +64,5 @@
 - [isValidNode](functions/isValidNode.md)
 - [parseFormula](functions/parseFormula.md)
 - [pruneStepOrNode](functions/pruneStepOrNode.md)
+- [scanApplicableRules](functions/scanApplicableRules.md)
+- [solveNextDeductionStep](functions/solveNextDeductionStep.md)

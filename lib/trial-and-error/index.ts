@@ -237,6 +237,14 @@ export {
   type RunOrigin,
 } from "./internal/seed";
 export {
+  createCustomScenario,
+  decodeCustomScenario,
+  encodeCustomScenario,
+  exportScenarioJson,
+  getAllCodexCards,
+  importScenarioJson,
+} from "./internal/scenario-compression";
+export {
   scoreTimeline,
   type TimelineContext,
   type TimelineRunning,

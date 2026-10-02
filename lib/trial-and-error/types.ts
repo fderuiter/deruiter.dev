@@ -2035,3 +2035,27 @@ export const RunSaveSchema = z.object({
 });
 /** A saved run, as stored. */
 export type RunSave = z.infer<typeof RunSaveSchema>;
+
+/**
+ * A custom scenario specification created in the Deck Builder or imported.
+ * Supports custom card decks, study quota, starting CPU, rulebook settings,
+ * and protocol events.
+ */
+export const CustomScenarioSpecSchema = z.object({
+  id: identifier.optional(),
+  title: z.string().trim().min(1).max(100),
+  summary: z.string().trim().min(1).max(280).optional(),
+  intro: z.string().trim().min(1).max(280).optional(),
+  quota: z.number().int().min(50).max(10000),
+  startingCpu: z.number().int().min(1).max(100),
+  rulebook: z.object({
+    percentPrecision: z.number().int().min(0).max(6),
+    meanPrecision: z.number().int().min(0).max(6),
+    roundingMode: RoundingModeSchema,
+    populationSuit: PopulationTypeSchema.optional(),
+  }),
+  cardIds: z.array(z.string().trim().min(1)).min(5),
+  events: z.array(StudyEventSchema).optional(),
+});
+/** A custom scenario specification. */
+export type CustomScenarioSpec = z.infer<typeof CustomScenarioSpecSchema>;

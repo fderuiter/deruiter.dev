@@ -22,6 +22,7 @@ import {
   cardShortName,
   consumableSellValue,
   costOf,
+  createCustomScenario,
   createRunState,
   parseSeed,
   planActs,
@@ -29,6 +30,7 @@ import {
   previewAllocation,
   type ClockAction,
   type CpuAction,
+  type CustomScenarioSpec,
   type FootnoteSeal,
   type RestoredRun,
   SEAL_DRAG_TYPE,
@@ -63,6 +65,7 @@ import {
 } from "@/components/trial-and-error/useRunSave";
 import { RunInfo } from "@/components/trial-and-error/RunInfo";
 import { NewRun } from "@/components/trial-and-error/NewRun";
+import { DeckBuilder } from "@/components/trial-and-error/DeckBuilder";
 import { Codex } from "@/components/trial-and-error/Codex";
 import { updateCodex, useCodex } from "@/components/trial-and-error/useCodex";
 import { SeedShare } from "@/components/trial-and-error/SeedShare";
@@ -165,7 +168,13 @@ interface LoggedRun {
 type TableIntent =
   | RunAction
   | { type: "LOAD_SAVED"; saved: RestoredRun }
-  | { type: "NEW_RUN"; seed: string; origin: RunOrigin; choice: RunChoice };
+  | {
+      type: "NEW_RUN";
+      seed: string;
+      origin: RunOrigin;
+      choice: RunChoice;
+      customScenario?: CustomScenarioSpec;
+    };
 
 /**
  * The sponsor and stake a run log records: only what differs from the
@@ -188,11 +197,20 @@ function logRun(
     return { run: intent.saved.run, log: intent.saved.log };
   }
   if (intent.type === "NEW_RUN") {
-    // RESTART_RUN keeps the run's own sponsor and stake, so it restarts a
-    // fresh run under the chosen ones, keeping the table's event sequence.
-    const chosen = createRunState(act, intent.seed, intent.choice);
+    const customScenarioObj = intent.customScenario
+      ? createCustomScenario(intent.customScenario)
+      : null;
+    const effectiveAct: RunPlan = customScenarioObj
+      ? {
+          id: customScenarioObj.id,
+          title: customScenarioObj.title,
+          blinds: [customScenarioObj],
+        }
+      : act;
+
+    const chosen = createRunState(effectiveAct, intent.seed, intent.choice);
     const run = advanceRun(
-      act,
+      effectiveAct,
       {
         ...chosen,
         table: { ...chosen.table, lastEvent: current.run.table.lastEvent },
@@ -202,7 +220,7 @@ function logRun(
     return {
       run,
       log: {
-        actId: act.id,
+        actId: effectiveAct.id,
         seed: run.seed,
         ...loggedChoice(run),
         origin: intent.origin,
@@ -210,6 +228,7 @@ function logRun(
       },
     };
   }
+
   const run = advanceRun(act, current.run, intent);
   // A new run starts a new log; every other move joins the current one.
   if (intent.type === "RESTART_RUN") {
@@ -595,7 +614,9 @@ export function CardTable({
   const [detailId, setDetailId] = useState<string | null>(null);
   const [runInfoOpen, setRunInfoOpen] = useState(false);
   const [newRunOpen, setNewRunOpen] = useState(false);
+  const [deckBuilderOpen, setDeckBuilderOpen] = useState(false);
   /** Where the Codex was opened from, while it is open. */
+
   const [codexFrom, setCodexFrom] = useState<"RUN_INFO" | "END" | null>(null);
   const runInfoButtonRef = useRef<HTMLButtonElement>(null);
   const closeCodex = () => {
@@ -711,17 +732,27 @@ export function CardTable({
   const startNewRun = (
     nextSeed: string,
     origin: RunOrigin,
-    choice: RunChoice
+    choice: RunChoice,
+    customScenario?: CustomScenarioSpec
   ) => {
     closeNewRun();
+    setDeckBuilderOpen(false);
     setFocusIndex(0);
     setSellRelicId(null);
     pendingFocus.current = { kind: "hand", index: 0 };
-    dispatch({ type: "NEW_RUN", seed: nextSeed, origin, choice });
+    dispatch({
+      type: "NEW_RUN",
+      seed: nextSeed,
+      origin,
+      choice,
+      ...(customScenario ? { customScenario } : {}),
+    });
     announce(
-      origin.kind === "DAILY"
-        ? `Daily Protocol for ${origin.date} started.`
-        : `New run started on seed ${nextSeed}.`
+      customScenario
+        ? `Custom scenario "${customScenario.title}" started.`
+        : origin.kind === "DAILY"
+          ? `Daily Protocol for ${origin.date} started.`
+          : `New run started on seed ${nextSeed}.`
     );
   };
 
@@ -1059,6 +1090,16 @@ export function CardTable({
           >
             Run Info [Shift+R]
           </button>
+          <button
+            type="button"
+            onClick={() => setDeckBuilderOpen(true)}
+            aria-haspopup="dialog"
+            className="min-h-[44px] border border-amber-500/70 bg-amber-500/10 px-3 text-[10px] font-bold uppercase tracking-wider text-amber-300 touch-manipulation hover:bg-amber-500/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 active:scale-[0.98]"
+            data-testid="deck-builder-button"
+          >
+            Deck Builder
+          </button>
+
           <button
             type="button"
             onClick={() => setHandSheetOpen(true)}
@@ -2468,6 +2509,16 @@ export function CardTable({
           current={runView.choice}
           onStart={startNewRun}
           onClose={closeNewRun}
+        />
+      )}
+
+      {deckBuilderOpen && (
+        <DeckBuilder
+          initialSpec={challenge?.customScenario}
+          onStartCustomRun={(spec) => {
+            startNewRun(freshSeed(), { kind: "SEEDED" }, runView.choice, spec);
+          }}
+          onClose={() => setDeckBuilderOpen(false)}
         />
       )}
 

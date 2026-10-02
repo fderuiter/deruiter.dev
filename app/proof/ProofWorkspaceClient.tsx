@@ -18,6 +18,8 @@ import {
   pruneStepOrNode,
   exportWorkspaceProof,
   applyRuleToAsts,
+  scanApplicableRules,
+  solveNextDeductionStep,
   areAstsEqual,
   parseFormula,
   getCompatibleTargets,
@@ -146,6 +148,15 @@ export function ProofWorkspaceClient() {
 
   const [edges, setEdges] = useState<Edge[]>(activeTheorem.initialEdges);
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
+  const ruleMatches = useMemo(
+    () =>
+      scanApplicableRules(
+        activeTheorem.nodes,
+        selectedNodeIds,
+        activeTheorem.targetNodeId
+      ),
+    [activeTheorem.nodes, selectedNodeIds, activeTheorem.targetNodeId]
+  );
   const [mobileActiveView, setMobileActiveView] = useState<
     "canvas" | "ledger" | "systems" | "fallacy" | "terminal"
   >("canvas");
@@ -377,7 +388,7 @@ export function ProofWorkspaceClient() {
     }
   };
 
-  const { isC_Proven, isE_Proven } = useMemo(
+  const { isE_Proven } = useMemo(
     () => evaluateProofStatus(edges, activeTheorem),
     [edges, activeTheorem]
   );
@@ -1130,7 +1141,7 @@ export function ProofWorkspaceClient() {
   const handleApplyRule = (ruleId: string, nodeIds = selectedNodeIds) => {
     if (nodeIds.length === 0) {
       showToast(
-        "Select at least 1 premise/lemma node before applying a rule.",
+        "Select premise/lemma nodes before applying an inference rule.",
         "info"
       );
       return;
@@ -1152,34 +1163,19 @@ export function ProofWorkspaceClient() {
       } catch {}
 
       const autoTarget = activeTheorem.nodes.find((node) => {
-        if (
-          node.type === "premise" ||
-          !node.ast ||
-          !areAstsEqual(node.ast, ruleResult.resultAst!)
-        )
-          return false;
-        const required =
-          node.id === activeTheorem.intermediateNodeId
-            ? activeTheorem.intermediateRequires
-            : activeTheorem.conclusionRequires;
-        return (
-          required.length === nodeIds.length &&
-          required.every((id) => nodeIds.includes(id)) &&
-          nodeIds.every(
-            (source) =>
-              edges.some(
-                (edge) => edge.source === source && edge.target === node.id
-              ) || canConnect(source, node.id, edges, activeTheorem).allowed
-          )
-        );
+        if (node.type === "premise") return false;
+        const nodeAst = node.ast || parseFormula(node.label);
+        return nodeAst ? areAstsEqual(nodeAst, ruleResult.resultAst!) : false;
       });
+
       if (!autoTarget) {
         showToast(
-          "The derived formula does not match an available workspace step. Select that step's required premises.",
+          "The derived formula does not match an available workspace step.",
           "info"
         );
         return;
       }
+
       const newEdges: Edge[] = nodeIds
         .filter(
           (source) =>
@@ -1192,8 +1188,8 @@ export function ProofWorkspaceClient() {
           target: autoTarget.id,
           ruleApplied: ruleId.toUpperCase(),
         }));
-      setEdges((prev) => [...prev, ...newEdges]);
 
+      setEdges((prev) => [...prev, ...newEdges]);
       setSelectedNodeIds([]);
       setCurrentFallacy(null);
       showToast(`✔ ${ruleResult.explanation}`, "success", { announce: false });
@@ -1242,38 +1238,40 @@ export function ProofWorkspaceClient() {
   };
 
   const handleAutoStep = () => {
-    if (isE_Proven) {
-      showToast("Goal already fully discharged (Q.E.D.)!", "success");
-      return;
-    }
+    const autoStep = solveNextDeductionStep(
+      activeTheorem.nodes,
+      edges,
+      activeTheorem.targetNodeId
+    );
 
-    if (!isC_Proven) {
-      const [r1, r2] = activeTheorem.intermediateRequires;
-      const newEdges: Edge[] = [
-        { source: r1, target: activeTheorem.intermediateNodeId },
-        { source: r2, target: activeTheorem.intermediateNodeId },
-      ];
-      setEdges((prev) => [...prev, ...newEdges]);
+    if (autoStep.success && autoStep.newEdges && autoStep.newEdges.length > 0) {
+      setEdges((prev) => [...prev, ...autoStep.newEdges!]);
       showToast(
-        `Auto-Step: Connected premises to intermediate Node ${activeTheorem.intermediateNodeId}`,
+        `Auto-Step: Connected premises to Node ${autoStep.targetNodeId} (${autoStep.explanation})`,
         "success"
       );
+      try {
+        playSuccess();
+      } catch {}
+
+      setConsoleLogs((prev) => [
+        ...prev,
+        {
+          id: makeLogId("cmd"),
+          type: "command",
+          text: `autostep`,
+        },
+        {
+          id: makeLogId("out"),
+          type: "success",
+          text: `✔ ${autoStep.explanation}`,
+        },
+      ]);
+    } else if (autoStep.message) {
+      showToast(autoStep.message, "info");
     } else {
-      const [cr1, cr2] = activeTheorem.conclusionRequires;
-      const newEdges: Edge[] = [
-        { source: cr1, target: activeTheorem.targetNodeId },
-        { source: cr2, target: activeTheorem.targetNodeId },
-      ];
-      setEdges((prev) => [...prev, ...newEdges]);
-      showToast(
-        `Auto-Step: Connected intermediate and premise to Target Node ${activeTheorem.targetNodeId}`,
-        "success"
-      );
+      showToast("Goal already fully discharged (Q.E.D.)!", "success");
     }
-
-    try {
-      playSuccess();
-    } catch {}
   };
 
   useWorkspaceAction({
@@ -1868,6 +1866,7 @@ export function ProofWorkspaceClient() {
             svgCanvasRef={svgCanvasRef}
             mobileActiveView={mobileActiveView}
             handleRollback={handleRollback}
+            ruleMatches={ruleMatches}
           />
 
           <ProofLedger

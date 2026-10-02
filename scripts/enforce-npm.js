@@ -26,6 +26,17 @@ if (agent && !agent.startsWith("npm/")) {
   process.exit(1);
 }
 
+// 1b. Native Windows is unsupported (#939): scripts, hooks and tests need a
+// POSIX shell. Warn instead of blocking so a dev server can still install.
+if (process.platform === "win32") {
+  console.warn(
+    "\n⚠️  WARNING: native Windows is not a supported environment for this repository."
+  );
+  console.warn(
+    "Tests, git hooks and quality gates need a POSIX shell. Clone and work inside WSL 2 instead (see CONTRIBUTING.md, Prerequisites).\n"
+  );
+}
+
 // 2. Enforce Node.js and npm engine versions
 const packageJsonPath = path.join(__dirname, "../package.json");
 if (fs.existsSync(packageJsonPath)) {

@@ -75,5 +75,22 @@ describe("Package Manager Configuration Invariants", () => {
         require("../scripts/enforce-npm.js");
       }).toThrow("Process exited with code 1");
     });
+    it("warns but does not block an install on native Windows (#939)", () => {
+      process.env.npm_config_user_agent = "npm/10.9.2 node/v22.0.0 win32 x64";
+      const platform = vi
+        .spyOn(process, "platform", "get")
+        .mockReturnValue("win32");
+      const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+      delete require.cache[require.resolve("../scripts/enforce-npm.js")];
+      try {
+        expect(() => {
+          require("../scripts/enforce-npm.js");
+        }).not.toThrow();
+        expect(warn.mock.calls.flat().join(" ")).toContain("WSL 2");
+      } finally {
+        platform.mockRestore();
+        warn.mockRestore();
+      }
+    });
   });
 });

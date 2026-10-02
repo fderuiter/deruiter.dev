@@ -8,6 +8,7 @@ import {
   checkNodeVersion,
   checkNpmVersion,
   checkPrismaClientGenerated,
+  checkSupportedPlatform,
   checkTsxExecution,
   runPreflight,
 } from "../lib/dx/preflight";
@@ -135,6 +136,24 @@ describe("DX Runtime Preflight (#612)", () => {
       expect(result.message.toLowerCase()).toMatch(
         /sandbox|environment|restriction/
       );
+    });
+  });
+
+  describe("checkSupportedPlatform (#939)", () => {
+    it.each(["linux", "darwin"] as const)("passes on %s", (platform) => {
+      expect(checkSupportedPlatform(platform).status).toBe("pass");
+    });
+
+    it("fails on native Windows and points at WSL 2", () => {
+      const result = checkSupportedPlatform("win32");
+      expect(result.status).toBe("fail");
+      expect(result.message).toContain("WSL 2");
+      expect(result.message).toContain("CONTRIBUTING.md");
+    });
+
+    it("runs as part of the preflight report", () => {
+      const report = runPreflight(path.resolve(process.cwd()));
+      expect(report.checks.map((c) => c.id)).toContain("platform");
     });
   });
 

@@ -30,6 +30,8 @@ node -v  # Must be >= v22.0.0
 npm -v   # Must be >= 10.0.0
 ```
 
+Work on Linux or macOS. On Windows, clone and run the repository inside [WSL 2](https://learn.microsoft.com/windows/wsl/install) (Ubuntu), not in PowerShell, Command Prompt or Git Bash. The npm scripts, Husky hooks, the git guardrail and several tests assume a POSIX shell and tools such as `bash` and `unzip`, and CI and Vercel both run Linux. `npm run preflight` fails on native Windows, and `npm install` prints a warning there (#939).
+
 ### Automated Interactive Setup
 
 Run the developer onboarding setup wizard:

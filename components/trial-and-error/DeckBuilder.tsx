@@ -21,10 +21,10 @@ import { useAnnouncer } from "@/hooks/useAnnouncer";
 import { CHALLENGE_PATH } from "@/components/trial-and-error/useChallenge";
 
 const BUTTON =
-  "min-h-[44px] border border-zinc-700 bg-zinc-800/80 px-3 py-2 text-xs font-bold uppercase tracking-wider text-zinc-200 touch-manipulation hover:bg-zinc-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none";
+  "min-h-[48px] min-w-[48px] border border-zinc-700 bg-zinc-800/80 px-3 py-2 text-xs font-bold uppercase tracking-wider text-zinc-200 touch-manipulation hover:bg-zinc-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none";
 
 const PRIMARY_BUTTON =
-  "min-h-[44px] border border-amber-500 bg-amber-500/20 px-4 py-2 text-xs font-bold uppercase tracking-wider text-amber-300 touch-manipulation hover:bg-amber-500/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none";
+  "min-h-[48px] min-w-[48px] border border-amber-500 bg-amber-500/20 px-4 py-2 text-xs font-bold uppercase tracking-wider text-amber-300 touch-manipulation hover:bg-amber-500/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none";
 
 const INPUT =
   "w-full border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs font-mono text-zinc-100 focus:border-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-400";

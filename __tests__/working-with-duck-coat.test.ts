@@ -1,3 +1,4 @@
+import { fromAny } from "@total-typescript/shoehorn";
 import { describe, expect, it } from "vitest";
 import { drawBathtubScene } from "@/components/working-with-duck/bath-art";
 import {
@@ -33,7 +34,7 @@ function recordingContext() {
       return true;
     },
   });
-  return { ctx: ctx as unknown as CanvasRenderingContext2D, fills };
+  return { ctx: fromAny<CanvasRenderingContext2D, typeof ctx>(ctx), fills };
 }
 
 /** Lightness and chroma (0 to 1): gold has high chroma, cream has little. */

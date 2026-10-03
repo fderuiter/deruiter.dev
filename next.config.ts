@@ -8,6 +8,9 @@ const withSerwist = withSerwistInit({
   swDest: "public/sw.js",
   disable: process.env.NODE_ENV === "development",
   reloadOnOnline: true,
+  // Precache all of public/ except videos: the arcade trailer is several
+  // megabytes and plays on demand, so every visitor shouldn't download it (#1788).
+  globPublicPatterns: ["*", "!(videos)/**/*"],
 });
 
 /** Route globs (picomatch, so bracketed segments match via wildcards) for every metadata image route. */

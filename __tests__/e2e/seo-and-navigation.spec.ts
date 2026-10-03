@@ -167,4 +167,12 @@ test.describe("SEO & Navigation Full-Spectrum Suite", () => {
     await page.waitForURL("**/proof");
     expect(page.url()).toContain("/proof");
   });
+
+  test("Redirect: Retired /case-studies/equipose permanently redirects to the verified case study", async ({
+    page,
+  }) => {
+    await page.goto("/case-studies/equipose");
+    await page.waitForURL("**/case-studies/equipose-randomization");
+    expect(page.url()).toContain("/case-studies/equipose-randomization");
+  });
 });

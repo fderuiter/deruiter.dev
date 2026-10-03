@@ -2076,13 +2076,19 @@ export async function runEvalSuite(
   // would have destroyed both, and with six-hour history retention and no
   // snapshot schedule that would have been permanent. Do not remove them
   // without first confirming the content exists somewhere else.
+  //
+  // `equipose` is unpublished (#1781): it claims 21 CFR Part 11 / HIPAA
+  // compliance and crypto.getRandomValues allocation that the Equipose source
+  // does not support. The verified write-up is `equipose-randomization`, and
+  // next.config.ts redirects /case-studies/equipose there. The row stays here
+  // so the recovered content is kept and a seed run sets `published: false`.
   {
     slug: "equipose",
     title:
       "Equipose: Biostatistics Randomization & Clinical Trial Allocation Engine",
     primary_language: "TypeScript",
     github_url: "https://github.com/fderuiter/Equipose",
-    published: true,
+    published: false,
     simulated_telemetry: false,
     tags: "TypeScript, Angular, Biostatistics, Randomization, Clinical Trials, HIPAA, Cryptography",
     editorial_content:

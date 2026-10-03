@@ -172,12 +172,13 @@ which branch is named `main`.
 
 ### 7. Verify production end to end
 
-Two case-study slugs exist **only in the database** and in none of the 22 static
-fallbacks in `lib/case-studies-data.ts`. They are the only reliable way to tell a
-database-backed render from a fallback render:
+One published case-study slug exists **only in the database** and in none of
+the static fallbacks in `lib/case-studies-data.ts`. It is the only reliable way to
+tell a database-backed render from a fallback render. (`equipose` was the other
+one; since #1781 it is unpublished and `/case-studies/equipose` redirects, so it
+answers `308` either way.)
 
 ```bash
-curl -sS -o /dev/null -w "%{http_code}\n" https://deruiter.dev/case-studies/equipose
 curl -sS -o /dev/null -w "%{http_code}\n" https://deruiter.dev/case-studies/qrcraftly
 ```
 

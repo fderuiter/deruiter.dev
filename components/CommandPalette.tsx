@@ -27,6 +27,7 @@ import {
   IconBrain,
   IconFileSpreadsheet,
   IconCpu,
+  IconHeartHandshake,
   IconDeviceGamepad2,
   IconSparkles,
   IconCoffee,
@@ -720,12 +721,12 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           "Adobe Illustrator",
           "Adobe Photoshop",
           "Vector Optics",
-          "CC BY 4.0",
+          "CC0",
         ],
         highlights: [
           "Side-by-side vector pass comparison viewer",
           "7 production file classifications + 1-click ZIP archive",
-          "Creative Commons CC BY 4.0 open source license",
+          "Creative Commons CC0 public domain dedication",
         ],
       },
       {
@@ -1012,6 +1013,30 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           "Real-time Pretext vs DOM reflow benchmark",
           "Zero-asset procedural audio soundboard",
           "12 verified architectural quality invariants",
+        ],
+      },
+      {
+        id: "nav-acknowledgments",
+        title: "Open Source Credits and Licenses",
+        subtitle:
+          "The open source projects this site is built on, with versions, licenses and links to each project.",
+        category: "navigation",
+        url: "/acknowledgments",
+        icon: <IconHeartHandshake className="w-4 h-4 text-emerald-400" />,
+        badge: "Credits",
+        status: "License Compliant",
+        description:
+          "The open source projects this site is built on, with versions, licenses and links to each project.",
+        techStack: [
+          "npm",
+          "SPDX Licenses",
+          "Third-Party Notices",
+          "Next.js 16",
+        ],
+        highlights: [
+          "Direct dependencies grouped by purpose",
+          "Searchable list of every shipped package",
+          "Full license texts in third-party notices",
         ],
       },
       {

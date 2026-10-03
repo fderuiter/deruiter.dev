@@ -808,7 +808,7 @@ def stage_and_commit_move(self, src: str, dest_dir: str) -> str:
 </table>
 
 <h3>Open Source &amp; Licensing Guidelines</h3>
-<p>The Laser Loon design asset suite is released under the <strong>Creative Commons Attribution 4.0 International (CC BY 4.0)</strong> license. Individuals, civic groups, screen printers, and software developers are free to share, adapt, and build upon the artwork for personal or commercial applications with appropriate credit to the original creator.</p>
+<p>The Laser Loon design asset suite is dedicated to the public domain under <strong>Creative Commons CC0 1.0</strong>. Individuals, civic groups, screen printers, and software developers are free to share, adapt, and build upon the artwork for personal or commercial applications without asking; a credit to the original creator is appreciated.</p>
     `.trim(),
   },
   {

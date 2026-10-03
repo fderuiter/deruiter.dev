@@ -91,7 +91,7 @@ map to them. Please report security issues privately as described in
 The application source is licensed under the [Apache License 2.0](LICENSE). The repository ships three kinds of material under three different terms, and [`NOTICE`](NOTICE) is the authoritative scope statement:
 
 - **Application source**: Apache-2.0. `app/`, `components/`, `hooks/`, `lib/`, `types/`, `prisma/`, `scripts/`, `__tests__/`, root configuration, and the generated `docs/` and `openapi.json`.
-- **Laser Loon brand artwork** (`public/files/`): [CC BY 4.0](public/files/LICENSE.txt), unchanged.
+- **Laser Loon brand artwork** (`public/files/`): [CC0 1.0](public/files/LICENSE.txt) public domain dedication.
 - **Editorial content, biography, resume data, photography, and the `Frederick de Ruiter` / `deruiter.dev` marks**: all rights reserved.
 
 Fork the engineering freely; replace the writing and the branding before you deploy.

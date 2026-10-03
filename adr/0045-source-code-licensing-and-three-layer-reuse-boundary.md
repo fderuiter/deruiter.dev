@@ -124,3 +124,18 @@ The layer boundary requires ongoing judgment. Editorial copy embedded in
 `.tsx` page source sits inside files that are otherwise Apache-2.0, and no
 automated check can classify a string literal as prose or as interface text.
 `NOTICE` names the ambiguity rather than pretending the split is mechanical.
+
+## Amendment 2026-10-03: the artwork layer is CC0
+
+The owner confirmed that the Laser Loon artwork is his own work and is
+dedicated to the public domain. `public/files/LICENSE.txt`, `NOTICE`, the
+README, `CONTRIBUTING.md` and the asset hub now say CC0 1.0 instead of
+CC BY 4.0, and the pinned hashes in
+`__tests__/public-repository-readiness.test.ts` were updated with the edit.
+
+Nothing else in this decision changes: the artwork is still scoped to
+`public/files/`, and the editorial and identity layer stays all rights
+reserved. Copies obtained while the CC BY 4.0 grant was in force remain usable
+under its terms; CC0 is strictly more permissive, so no recipient loses
+anything. Third-party open source is covered separately by
+[ADR 0057](0057-open-source-acknowledgments-and-license-compliance.md).

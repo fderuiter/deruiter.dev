@@ -406,6 +406,7 @@ The approach: Next.js Server Actions handle submissions, Zod checks the inputs, 
 
 ## Systems and studios
 
+- [Open Source Credits and Licenses](https://deruiter.dev/acknowledgments): The open source projects this site is built on, each linked to its home, with versions, licenses and why it is used. Full license texts are included.
 - [CRF Studio: Clinical Form Designer](https://deruiter.dev/crf): Build clinical research forms, add validation rules, and try them with sample data. Explore a browser-based study designer by Fred de Ruiter.
 - [NeuroRecon Studio: Brain Viewer](https://deruiter.dev/neuro): Explore brain surfaces and MRI slices, place control points, and work through simulated reconstruction problems in a FreeSurfer-style pipeline simulator.
 - [Ski Patrol Shift Studio Simulation](https://deruiter.dev/patrol): An interactive Midwest ski-patrol judgment simulation foundation powered by deterministic FSM transitions and operational dispatch routines.

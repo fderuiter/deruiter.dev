@@ -269,7 +269,8 @@ export const AssetDistributionHub: React.FC<AssetDistributionHubProps> = ({
           </h2>
           <p className="text-xs sm:text-sm text-zinc-400 font-mono mt-1 max-w-2xl">
             Print it, put it on a website, or make something of your own. Pick
-            the format you need below; the artwork is shared under CC BY 4.0.
+            the format you need below; the artwork is dedicated to the public
+            domain (CC0).
           </p>
         </div>
 
@@ -409,25 +410,26 @@ export const AssetDistributionHub: React.FC<AssetDistributionHubProps> = ({
           </div>
           <div>
             <h4 className="text-sm font-bold font-mono text-white flex items-center gap-2">
-              <span>Creative Commons CC BY 4.0 Open License</span>
+              <span>Creative Commons CC0 Public Domain Dedication</span>
               <IconShieldCheck className="w-4 h-4 text-emerald-400" />
             </h4>
             <p className="text-xs text-zinc-400 font-mono mt-1 leading-relaxed">
               Free for commercial print, screen printing, vinyl plotting,
-              merchandise, digital publications, and software development.
-              Requires attribution to{" "}
-              <strong>Frederick de Ruiter / Laser Loon Project</strong>.
+              merchandise, digital publications, and software development. No
+              permission or attribution is required; a credit to{" "}
+              <strong>Frederick de Ruiter / Laser Loon Project</strong> is
+              appreciated.
             </p>
           </div>
         </div>
 
         <a
-          href="https://creativecommons.org/licenses/by/4.0/"
+          href="https://creativecommons.org/publicdomain/zero/1.0/"
           target="_blank"
           rel="noopener noreferrer"
           className="text-xs font-mono text-amber-400 hover:text-amber-300 underline shrink-0 whitespace-nowrap"
         >
-          View Full CC BY 4.0 Terms ↗
+          View Full CC0 1.0 Terms ↗
         </a>
       </div>
     </div>

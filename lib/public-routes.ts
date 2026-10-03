@@ -44,6 +44,11 @@ export const PUBLIC_ROUTE_REGISTRY = [
   { path: "/contact", name: "Contact", category: "top-level" },
   { path: "/stack", name: "Architecture & Stack", category: "top-level" },
   {
+    path: "/acknowledgments",
+    name: "Open Source Acknowledgments",
+    category: "top-level",
+  },
+  {
     path: "/offline",
     name: "Offline Fallback View",
     category: "top-level",

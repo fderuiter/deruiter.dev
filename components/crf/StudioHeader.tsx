@@ -35,6 +35,8 @@ import {
   IconTerminal2,
   IconFlask2,
   IconGitCompare,
+  IconBooks,
+  IconSearch,
 } from "@tabler/icons-react";
 import { getStudyBranding } from "@/lib/crf/branding-defaults";
 import { safeSetRawItem } from "@/lib/safe-storage";
@@ -64,7 +66,10 @@ interface StudioHeaderProps {
   onOpenExportDocument: () => void;
   onOpenBaselines?: () => void;
   onOpenCompareBaseline?: () => void;
+  onOpenLibraryUpgrades?: () => void;
   onOpenWizard: () => void;
+  /** Opens the Study Omnibar (#544): find forms, fields, visits and actions. */
+  onOpenOmnibar?: () => void;
   onStartSpotlightTour?: () => void;
   onCopyShareLink?: () => void;
 }
@@ -94,7 +99,9 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
   onOpenExportDocument,
   onOpenBaselines,
   onOpenCompareBaseline,
+  onOpenLibraryUpgrades,
   onOpenWizard,
+  onOpenOmnibar,
   onStartSpotlightTour,
   onCopyShareLink,
 }) => {
@@ -286,6 +293,24 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
               <IconArrowForwardUp className="w-3.5 h-3.5" />
             </button>
           </div>
+
+          {/* Study Omnibar Trigger (#544) */}
+          {onOpenOmnibar && (
+            <button
+              type="button"
+              onClick={onOpenOmnibar}
+              className="p-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 transition-colors inline-flex items-center gap-1 text-[11px] font-mono shrink-0 active:scale-[0.98]"
+              title="Find forms, fields, visits and actions (F)"
+              aria-label="Find in study"
+              aria-keyshortcuts="F"
+            >
+              <IconSearch className="w-3.5 h-3.5" aria-hidden />
+              <span className="hidden lg:inline">Find</span>
+              <kbd className="hidden lg:inline-block text-[9px] px-1 rounded bg-zinc-950 border border-zinc-700 text-zinc-400">
+                F
+              </kbd>
+            </button>
+          )}
 
           {/* Theme Toggle (Dark / Light) */}
           {onToggleTheme && (
@@ -592,6 +617,24 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
                         </div>
                         <div className="text-[10px] text-zinc-500">
                           Review changes since a saved snapshot
+                        </div>
+                      </div>
+                    </button>
+                  )}
+
+                  {onOpenLibraryUpgrades && (
+                    <button
+                      onClick={() => {
+                        setIsMoreMenuOpen(false);
+                        onOpenLibraryUpgrades();
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-xs font-mono rounded-xl bg-zinc-950 hover:bg-zinc-800 text-zinc-200 transition-colors"
+                    >
+                      <IconBooks className="w-4 h-4 text-brand-cyan" />
+                      <div className="flex-1">
+                        <div className="font-bold">Library Block Upgrades</div>
+                        <div className="text-[10px] text-zinc-500">
+                          Preview &amp; apply newer library versions
                         </div>
                       </div>
                     </button>

@@ -83,6 +83,28 @@ export interface PersonalLibraryEntry {
   codelists: CodelistDefinition[];
   createdAt: string;
   updatedAt: string;
+  /**
+   * Content of every earlier version, oldest first (#681). Written by
+   * {@link updateLibraryEntry} so a study that used an older version can be
+   * compared three ways against the newest one. Entries saved before this
+   * field existed simply have no history; their earlier versions are unknown.
+   */
+  revisions?: PersonalLibraryEntryRevision[];
+}
+
+/**
+ * The content of one earlier version of a library entry, kept so an upgrade
+ * can compare what a study used with what the library holds now.
+ */
+export interface PersonalLibraryEntryRevision {
+  version: number;
+  name: string;
+  description?: string;
+  assumptions?: string;
+  section: CRFSection;
+  rules: EditCheckRule[];
+  codelists: CodelistDefinition[];
+  updatedAt: string;
 }
 
 export interface PersonalLibraryEnvelope {
@@ -430,10 +452,44 @@ export function updateLibraryEntry(
     ...changes,
     version: current.version + 1,
     updatedAt: (now || new Date()).toISOString(),
+    // The outgoing version is kept, so studies that used it can still be
+    // compared against the new one (#681).
+    revisions: [...(current.revisions || []), snapshotRevision(current)],
   };
 
   upsertLibraryEntry(updated, storage);
   return { status: "updated", entry: updated };
+}
+
+function snapshotRevision(
+  entry: PersonalLibraryEntry
+): PersonalLibraryEntryRevision {
+  return deepClone({
+    version: entry.version,
+    name: entry.name,
+    description: entry.description,
+    assumptions: entry.assumptions,
+    section: entry.section,
+    rules: entry.rules,
+    codelists: entry.codelists,
+    updatedAt: entry.updatedAt,
+  });
+}
+
+/**
+ * Returns the content of one version of an entry: the entry itself when the
+ * version is current, an earlier revision when one was kept, and `undefined`
+ * when that version's content is not known.
+ */
+export function getLibraryEntryRevision(
+  entry: PersonalLibraryEntry,
+  version: number
+): PersonalLibraryEntryRevision | undefined {
+  if (version === entry.version) return snapshotRevision(entry);
+  const revision = (entry.revisions || []).find(
+    (candidate) => candidate.version === version
+  );
+  return revision ? deepClone(revision) : undefined;
 }
 
 /**

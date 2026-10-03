@@ -14,6 +14,7 @@ export * from "./ast-debugger";
 export * from "./conditional-logic";
 export * from "./form-test-harness";
 export * from "./test-scenarios";
+export * from "./scenario-impact";
 export * from "./cdisc-controlled-terminology";
 export * from "./cdash-domain-templates";
 export * from "./cdisc-cdash-library";
@@ -41,6 +42,7 @@ export * from "./file-ingestion";
 export * from "./usdm-adapter";
 export * from "./precision-date";
 export * from "./visit-window";
+export * from "./form-variants";
 export {
   computeFormHealthMetrics,
   CDASH_CORE_DOMAIN_VARIABLES,
@@ -51,3 +53,4 @@ export * from "./export-baseline-diff";
 export * from "./smart-blocks-engine";
 export * from "./presets";
 export * from "./study-engine";
+export * from "./review-package";

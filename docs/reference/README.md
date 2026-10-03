@@ -25,6 +25,12 @@ lookup rather than sequential reading.
 - [Vercel retention inventory](vercel-retention-inventory.md), deployment and
   retention baseline.
 
+## Performance Evidence
+
+- [CRF Studio workload capacity](crf-workload-capacity.md), measured latency,
+  responsiveness, memory and storage headroom of the CRF authoring workflows
+  on small, typical and stress studies (`npm run bench:crf`).
+
 Provider inventories are dated snapshots. Re-run their documented commands
 before making an operational decision; do not infer live provider state from an
 old snapshot.

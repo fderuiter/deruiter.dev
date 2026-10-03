@@ -15,6 +15,7 @@ import {
   IconComponents,
   IconLayersSubtract,
   IconX,
+  IconGitFork,
 } from "@tabler/icons-react";
 import { StudyProtocol, CRFForm } from "@/lib/crf/types";
 import { formatVisitWindow } from "@/lib/crf/visit-window";
@@ -25,6 +26,8 @@ import {
 import { scaffoldCdashDomain } from "@/lib/crf/cdash-domain-templates";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { WidgetPalette } from "./WidgetPalette";
+import { FormVariantModal } from "./FormVariantModal";
+import { getFormUses } from "@/lib/crf/form-variants";
 
 export type LeftSidebarTab = "spine" | "forms" | "palette";
 
@@ -48,6 +51,8 @@ interface StudySpineProps {
   onAssignFormToVisit: (visitId: string, formId: string) => void;
   onUnassignFormFromVisit: (visitId: string, formId: string) => void;
   onInjectCdashForm: (form: CRFForm, targetVisitId?: string) => void;
+  /** Commits a form variant transaction (#675) as one undoable change. */
+  onCommitFormVariant?: (study: StudyProtocol, variantFormId: string) => void;
 }
 
 export const StudySpine: React.FC<StudySpineProps> = ({
@@ -68,6 +73,7 @@ export const StudySpine: React.FC<StudySpineProps> = ({
   onAssignFormToVisit,
   onUnassignFormFromVisit,
   onInjectCdashForm,
+  onCommitFormVariant,
 }) => {
   const [collapsedEpochs, setCollapsedEpochs] = useState<
     Record<string, boolean>
@@ -85,6 +91,15 @@ export const StudySpine: React.FC<StudySpineProps> = ({
       onEscape: () => setFormPendingDeletion(null),
     }
   );
+
+  const [variantFormId, setVariantFormId] = useState<string | null>(null);
+  const formUseCounts = useMemo(
+    () =>
+      new Map(study.forms.map((f) => [f.id, getFormUses(study, f.id).length])),
+    [study]
+  );
+  const activeFormUseCount = formUseCounts.get(activeFormId) ?? 0;
+  const activeFormName = study.forms.find((f) => f.id === activeFormId)?.name;
 
   const tabRefs = React.useRef<
     Record<LeftSidebarTab, HTMLButtonElement | null>
@@ -651,12 +666,33 @@ export const StudySpine: React.FC<StudySpineProps> = ({
                             <span className="text-[10px] text-zinc-500 font-mono">
                               {fieldCount} fields
                             </span>
+                            {(formUseCounts.get(form.id) ?? 0) > 1 && (
+                              <span
+                                className="text-[10px] text-amber-400 font-mono"
+                                data-testid={`form-use-count-${form.id}`}
+                              >
+                                shared · {formUseCounts.get(form.id)} uses
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
 
                       {/* Actions */}
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
+                        {onCommitFormVariant && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setVariantFormId(form.id);
+                            }}
+                            className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white"
+                            title="Visit uses & variants"
+                            aria-label={`Inspect visit uses of form ${form.name}`}
+                          >
+                            <IconGitFork className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -687,6 +723,30 @@ export const StudySpine: React.FC<StudySpineProps> = ({
                 );
               })}
             </div>
+            {activeFormUseCount > 1 && (
+              <p
+                className="px-1 text-[11px] text-zinc-400 leading-relaxed break-words"
+                data-testid="shared-form-notice"
+              >
+                Edits to{" "}
+                <span className="font-mono text-zinc-200">
+                  {activeFormName}
+                </span>{" "}
+                change all {activeFormUseCount} of its visit uses.
+                {onCommitFormVariant && (
+                  <>
+                    {" "}
+                    <button
+                      type="button"
+                      onClick={() => setVariantFormId(activeFormId)}
+                      className="font-mono text-amber-400 hover:text-amber-300 underline underline-offset-2"
+                    >
+                      Inspect uses
+                    </button>
+                  </>
+                )}
+              </p>
+            )}
           </div>
 
           {/* Global CDASH Library Section */}
@@ -780,6 +840,18 @@ export const StudySpine: React.FC<StudySpineProps> = ({
           <WidgetPalette onAddField={onAddField} />
         </div>
       </div>
+
+      {variantFormId && onCommitFormVariant && (
+        <FormVariantModal
+          study={study}
+          formId={variantFormId}
+          onCancel={() => setVariantFormId(null)}
+          onCommit={(nextStudy, newFormId) => {
+            setVariantFormId(null);
+            onCommitFormVariant(nextStudy, newFormId);
+          }}
+        />
+      )}
 
       {/* Confirmation Dialog Previewing Affected Visits & Arms */}
       {formPendingDeletion && formDeletionPreview && (

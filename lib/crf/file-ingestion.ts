@@ -7,6 +7,7 @@ import { StudyProtocol } from "./types";
 import { importStudyFromUsdm } from "./usdm-adapter";
 import { importStudyFromCdiscOdmXml } from "./odm-xml-parser";
 import { importStudyFromCsvSpec } from "./csv-spec-parser";
+import { isUniversalCrfSchemaUrl } from "./universal-schema";
 
 export interface ParsedStudyFileResult {
   study: StudyProtocol;
@@ -70,9 +71,14 @@ export function detectAndParseStudyFile(
       const parsedJson = JSON.parse(fileContent);
       const study = importStudyFromUsdm(parsedJson);
 
-      const isUsdm = Boolean(
-        parsedJson.study || parsedJson.studyDesigns || parsedJson.$schema
-      );
+      // Native Universal CRF JSON also carries `$schema`, so recognise it by
+      // its own schema identifier before treating `$schema` as a USDM signal.
+      const isNative = isUniversalCrfSchemaUrl(parsedJson?.$schema);
+      const isUsdm =
+        !isNative &&
+        Boolean(
+          parsedJson.study || parsedJson.studyDesigns || parsedJson.$schema
+        );
       const format = isUsdm ? "json_usdm" : "json_universal";
       const formatLabel = isUsdm
         ? "CDISC USDM JSON Graph"

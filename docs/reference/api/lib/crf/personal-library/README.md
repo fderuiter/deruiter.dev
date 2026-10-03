@@ -15,6 +15,7 @@
 - [LibraryInsertionPreview](interfaces/LibraryInsertionPreview.md)
 - [LibrarySourceRef](interfaces/LibrarySourceRef.md)
 - [PersonalLibraryEntry](interfaces/PersonalLibraryEntry.md)
+- [PersonalLibraryEntryRevision](interfaces/PersonalLibraryEntryRevision.md)
 - [PersonalLibraryEnvelope](interfaces/PersonalLibraryEnvelope.md)
 
 ## Type Aliases
@@ -32,6 +33,7 @@
 
 - [captureLibraryEntry](functions/captureLibraryEntry.md)
 - [deleteLibraryEntry](functions/deleteLibraryEntry.md)
+- [getLibraryEntryRevision](functions/getLibraryEntryRevision.md)
 - [insertLibraryEntryIntoStudy](functions/insertLibraryEntryIntoStudy.md)
 - [instantiateLibraryEntry](functions/instantiateLibraryEntry.md)
 - [listLibraryEntries](functions/listLibraryEntries.md)

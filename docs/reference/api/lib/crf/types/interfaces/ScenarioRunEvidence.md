@@ -8,6 +8,16 @@
 
 ## Properties
 
+### dependencies?
+
+> `optional` **dependencies?**: [`ScenarioDependencySnapshot`](ScenarioDependencySnapshot.md)
+
+Per-dependency fingerprints recorded at run time (#679), so an amendment
+can be attributed to the specific field, rule, codelist or visit it
+touched. Absent on evidence recorded before dependency tracking existed.
+
+***
+
 ### failed
 
 > **failed**: `number`

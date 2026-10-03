@@ -2343,4 +2343,22 @@ describe("Clinical Trial Chaos pass-4 fixes (#1670, #1671, #1672, #1673)", () =>
       target: PHASE_TARGETS[2] - PHASE_TARGETS[1],
     });
   });
+  describe("CRF native Universal JSON format detection (#1785)", () => {
+    it("labels the studio's own JSON export as Universal CRF JSON, not USDM", async () => {
+      const {
+        detectAndParseStudyFile,
+        exportUniversalCrfJson,
+        exportStudyToUsdm,
+      } = await import("@/lib/crf");
+      const native = exportUniversalCrfJson(ONCOLOGY_RECIST_PRESET);
+      const nativeResult = detectAndParseStudyFile(native, "study.json");
+      expect(nativeResult.format).toBe("json_universal");
+      expect(nativeResult.formatLabel).toBe("Universal CRF JSON");
+
+      const usdm = exportStudyToUsdm(ONCOLOGY_RECIST_PRESET);
+      expect(detectAndParseStudyFile(usdm, "study.json").format).toBe(
+        "json_usdm"
+      );
+    });
+  });
 });

@@ -82,6 +82,16 @@ Protocol-level audit trail history across authoring and review lifecycle.
 
 ***
 
+### libraryUses?
+
+> `optional` **libraryUses?**: [`StudyLibraryUse`](StudyLibraryUse.md)[]
+
+Personal-library blocks this study contains, with the version each was
+taken from (#681). Carried on the study so an upgrade can be previewed
+after native export and reopen.
+
+***
+
 ### phase
 
 > **phase**: `"Phase I"` \| `"Phase I/II"` \| `"Phase II"` \| `"Phase III"` \| `"Phase IV"` \| `"Registry"`

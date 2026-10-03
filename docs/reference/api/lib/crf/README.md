@@ -32,6 +32,18 @@ Re-exports [ALL_SLASH_COMMANDS](smart-blocks-engine/variables/ALL_SLASH_COMMANDS
 
 ***
 
+### AmendedObjectImpact
+
+Re-exports [AmendedObjectImpact](scenario-impact/interfaces/AmendedObjectImpact.md)
+
+***
+
+### analyzeScenarioImpact
+
+Re-exports [analyzeScenarioImpact](scenario-impact/functions/analyzeScenarioImpact.md)
+
+***
+
 ### ANNOTATED\_COL\_WIDTH\_1
 
 Re-exports [ANNOTATED_COL_WIDTH_1](export-docx/variables/ANNOTATED_COL_WIDTH_1.md)
@@ -59,6 +71,12 @@ Re-exports [ansi](cli-engine/variables/ansi.md)
 ### appendProtocolAuditEntry
 
 Re-exports [appendProtocolAuditEntry](study-engine/functions/appendProtocolAuditEntry.md)
+
+***
+
+### assessScenarioFreshness
+
+Re-exports [assessScenarioFreshness](scenario-impact/functions/assessScenarioFreshness.md)
 
 ***
 
@@ -215,6 +233,18 @@ Re-exports [BRANDING_PRESETS](branding-defaults/variables/BRANDING_PRESETS.md)
 ### BrandingPalettePreset
 
 Re-exports [BrandingPalettePreset](branding-defaults/interfaces/BrandingPalettePreset.md)
+
+***
+
+### buildReviewPackage
+
+Re-exports [buildReviewPackage](review-package/functions/buildReviewPackage.md)
+
+***
+
+### BuildReviewPackageOptions
+
+Re-exports [BuildReviewPackageOptions](review-package/interfaces/BuildReviewPackageOptions.md)
 
 ***
 
@@ -440,6 +470,24 @@ Re-exports [CohortForecastParameters](visit-window/interfaces/CohortForecastPara
 
 ***
 
+### collectFormIdentities
+
+Re-exports [collectFormIdentities](form-variants/functions/collectFormIdentities.md)
+
+***
+
+### collectReviewPackageFindings
+
+Re-exports [collectReviewPackageFindings](review-package/functions/collectReviewPackageFindings.md)
+
+***
+
+### collectScenarioDependencies
+
+Re-exports [collectScenarioDependencies](scenario-impact/functions/collectScenarioDependencies.md)
+
+***
+
 ### combineConditionResults
 
 Re-exports [combineConditionResults](expression-evaluator/functions/combineConditionResults.md)
@@ -515,6 +563,18 @@ Re-exports [ConditionGroup](types/interfaces/ConditionGroup.md)
 ### ConditionResult
 
 Re-exports [ConditionResult](types/type-aliases/ConditionResult.md)
+
+***
+
+### createFormVariant
+
+Re-exports [createFormVariant](form-variants/functions/createFormVariant.md)
+
+***
+
+### createReviewPackageSnapshot
+
+Re-exports [createReviewPackageSnapshot](review-package/functions/createReviewPackageSnapshot.md)
 
 ***
 
@@ -1046,6 +1106,12 @@ Re-exports [findCodelistByNciCode](cdisc-controlled-terminology/functions/findCo
 
 ***
 
+### findFormReferenceIssues
+
+Re-exports [findFormReferenceIssues](form-variants/functions/findFormReferenceIssues.md)
+
+***
+
 ### findOptionByCode
 
 Re-exports [findOptionByCode](cdisc-controlled-terminology/functions/findOptionByCode.md)
@@ -1061,6 +1127,12 @@ Re-exports [findOptionByNciCode](cdisc-controlled-terminology/functions/findOpti
 ### fingerprintForm
 
 Re-exports [fingerprintForm](test-scenarios/functions/fingerprintForm.md)
+
+***
+
+### fingerprintScenarioDependencies
+
+Re-exports [fingerprintScenarioDependencies](scenario-impact/functions/fingerprintScenarioDependencies.md)
 
 ***
 
@@ -1100,6 +1172,18 @@ Re-exports [FormHealthMetrics](study-auditor/interfaces/FormHealthMetrics.md)
 
 ***
 
+### FormReferenceIssue
+
+Re-exports [FormReferenceIssue](form-variants/interfaces/FormReferenceIssue.md)
+
+***
+
+### FormReferenceLocation
+
+Re-exports [FormReferenceLocation](form-variants/type-aliases/FormReferenceLocation.md)
+
+***
+
 ### FormTestReport
 
 Re-exports [FormTestReport](form-test-harness/interfaces/FormTestReport.md)
@@ -1127,6 +1211,54 @@ Re-exports [FormulaLintResult](formula-linter/interfaces/FormulaLintResult.md)
 ### FormulaTokenType
 
 Re-exports [FormulaTokenType](formula-linter/type-aliases/FormulaTokenType.md)
+
+***
+
+### FormUse
+
+Re-exports [FormUse](form-variants/interfaces/FormUse.md)
+
+***
+
+### formUseKey
+
+Re-exports [formUseKey](form-variants/functions/formUseKey.md)
+
+***
+
+### FormUseKind
+
+Re-exports [FormUseKind](form-variants/type-aliases/FormUseKind.md)
+
+***
+
+### FormUseOutcome
+
+Re-exports [FormUseOutcome](form-variants/type-aliases/FormUseOutcome.md)
+
+***
+
+### FormVariantOptions
+
+Re-exports [FormVariantOptions](form-variants/interfaces/FormVariantOptions.md)
+
+***
+
+### FormVariantPreview
+
+Re-exports [FormVariantPreview](form-variants/interfaces/FormVariantPreview.md)
+
+***
+
+### FormVariantResult
+
+Re-exports [FormVariantResult](form-variants/interfaces/FormVariantResult.md)
+
+***
+
+### FormVariantUseChange
+
+Re-exports [FormVariantUseChange](form-variants/interfaces/FormVariantUseChange.md)
 
 ***
 
@@ -1235,6 +1367,18 @@ Re-exports [getExpandedRFields](export-r/functions/getExpandedRFields.md)
 ### getFieldOptions
 
 Re-exports [getFieldOptions](export-r/functions/getFieldOptions.md)
+
+***
+
+### getFormUses
+
+Re-exports [getFormUses](form-variants/functions/getFormUses.md)
+
+***
+
+### getLibraryEntryRevision
+
+Re-exports [getLibraryEntryRevision](personal-library/functions/getLibraryEntryRevision.md)
 
 ***
 
@@ -1466,6 +1610,12 @@ Re-exports [isStudyProtocolShape](study-draft-storage/functions/isStudyProtocolS
 
 ***
 
+### isUniversalCrfSchemaUrl
+
+Re-exports [isUniversalCrfSchemaUrl](universal-schema/functions/isUniversalCrfSchemaUrl.md)
+
+***
+
 ### KNOWN\_MATH\_FUNCTIONS
 
 Re-exports [KNOWN_MATH_FUNCTIONS](formula-linter/variables/KNOWN_MATH_FUNCTIONS.md)
@@ -1598,6 +1748,18 @@ Re-exports [ONCOLOGY_RECIST_PRESET](presets/oncology-recist/variables/ONCOLOGY_R
 
 ***
 
+### OpenedReviewPackage
+
+Re-exports [OpenedReviewPackage](review-package/interfaces/OpenedReviewPackage.md)
+
+***
+
+### openReviewPackage
+
+Re-exports [openReviewPackage](review-package/functions/openReviewPackage.md)
+
+***
+
 ### ParsedPrecisionDate
 
 Re-exports [ParsedPrecisionDate](precision-date/interfaces/ParsedPrecisionDate.md)
@@ -1652,6 +1814,12 @@ Re-exports [PersonalLibraryEntry](personal-library/interfaces/PersonalLibraryEnt
 
 ***
 
+### PersonalLibraryEntryRevision
+
+Re-exports [PersonalLibraryEntryRevision](personal-library/interfaces/PersonalLibraryEntryRevision.md)
+
+***
+
 ### PersonalLibraryEnvelope
 
 Re-exports [PersonalLibraryEnvelope](personal-library/interfaces/PersonalLibraryEnvelope.md)
@@ -1682,9 +1850,21 @@ Re-exports [PresetCatalogItem](presets/interfaces/PresetCatalogItem.md)
 
 ***
 
+### previewFormVariant
+
+Re-exports [previewFormVariant](form-variants/functions/previewFormVariant.md)
+
+***
+
 ### previewLibraryInsertion
 
 Re-exports [previewLibraryInsertion](personal-library/functions/previewLibraryInsertion.md)
+
+***
+
+### previewReviewPackage
+
+Re-exports [previewReviewPackage](review-package/functions/previewReviewPackage.md)
 
 ***
 
@@ -1721,6 +1901,12 @@ Re-exports [ProtocolValidationResult](study-engine/interfaces/ProtocolValidation
 ### removeScenario
 
 Re-exports [removeScenario](test-scenarios/functions/removeScenario.md)
+
+***
+
+### rerunScenarios
+
+Re-exports [rerunScenarios](scenario-impact/functions/rerunScenarios.md)
 
 ***
 
@@ -1778,6 +1964,168 @@ Re-exports [RestoreStudyBaselineResult](study-baselines/type-aliases/RestoreStud
 
 ***
 
+### REVIEW\_PACKAGE\_FORMAT
+
+Re-exports [REVIEW_PACKAGE_FORMAT](review-package/variables/REVIEW_PACKAGE_FORMAT.md)
+
+***
+
+### REVIEW\_PACKAGE\_FORMAT\_VERSION
+
+Re-exports [REVIEW_PACKAGE_FORMAT_VERSION](review-package/variables/REVIEW_PACKAGE_FORMAT_VERSION.md)
+
+***
+
+### REVIEW\_PACKAGE\_GENERATOR
+
+Re-exports [REVIEW_PACKAGE_GENERATOR](review-package/variables/REVIEW_PACKAGE_GENERATOR.md)
+
+***
+
+### REVIEW\_PACKAGE\_MANIFEST\_PATH
+
+Re-exports [REVIEW_PACKAGE_MANIFEST_PATH](review-package/variables/REVIEW_PACKAGE_MANIFEST_PATH.md)
+
+***
+
+### REVIEW\_PACKAGE\_README\_PATH
+
+Re-exports [REVIEW_PACKAGE_README_PATH](review-package/variables/REVIEW_PACKAGE_README_PATH.md)
+
+***
+
+### ReviewPackageArtifact
+
+Re-exports [ReviewPackageArtifact](review-package/interfaces/ReviewPackageArtifact.md)
+
+***
+
+### ReviewPackageArtifactId
+
+Re-exports [ReviewPackageArtifactId](review-package/type-aliases/ReviewPackageArtifactId.md)
+
+***
+
+### ReviewPackageBaseline
+
+Re-exports [ReviewPackageBaseline](review-package/interfaces/ReviewPackageBaseline.md)
+
+***
+
+### ReviewPackageBuildError
+
+Re-exports [ReviewPackageBuildError](review-package/classes/ReviewPackageBuildError.md)
+
+***
+
+### reviewPackageFilename
+
+Re-exports [reviewPackageFilename](review-package/functions/reviewPackageFilename.md)
+
+***
+
+### ReviewPackageFindings
+
+Re-exports [ReviewPackageFindings](review-package/interfaces/ReviewPackageFindings.md)
+
+***
+
+### ReviewPackageManifest
+
+Re-exports [ReviewPackageManifest](review-package/interfaces/ReviewPackageManifest.md)
+
+***
+
+### ReviewPackageNativeSourceCheck
+
+Re-exports [ReviewPackageNativeSourceCheck](review-package/interfaces/ReviewPackageNativeSourceCheck.md)
+
+***
+
+### ReviewPackageOpenThread
+
+Re-exports [ReviewPackageOpenThread](review-package/interfaces/ReviewPackageOpenThread.md)
+
+***
+
+### ReviewPackageOptionalArtifactId
+
+Re-exports [ReviewPackageOptionalArtifactId](review-package/type-aliases/ReviewPackageOptionalArtifactId.md)
+
+***
+
+### ReviewPackageOptions
+
+Re-exports [ReviewPackageOptions](review-package/interfaces/ReviewPackageOptions.md)
+
+***
+
+### ReviewPackagePlanEntry
+
+Re-exports [ReviewPackagePlanEntry](review-package/interfaces/ReviewPackagePlanEntry.md)
+
+***
+
+### ReviewPackagePreview
+
+Re-exports [ReviewPackagePreview](review-package/interfaces/ReviewPackagePreview.md)
+
+***
+
+### ReviewPackageProgress
+
+Re-exports [ReviewPackageProgress](review-package/interfaces/ReviewPackageProgress.md)
+
+***
+
+### ReviewPackageReadinessFinding
+
+Re-exports [ReviewPackageReadinessFinding](review-package/interfaces/ReviewPackageReadinessFinding.md)
+
+***
+
+### ReviewPackageResult
+
+Re-exports [ReviewPackageResult](review-package/interfaces/ReviewPackageResult.md)
+
+***
+
+### ReviewPackageRevision
+
+Re-exports [ReviewPackageRevision](review-package/interfaces/ReviewPackageRevision.md)
+
+***
+
+### ReviewPackageScenarioFinding
+
+Re-exports [ReviewPackageScenarioFinding](review-package/interfaces/ReviewPackageScenarioFinding.md)
+
+***
+
+### ReviewPackageScope
+
+Re-exports [ReviewPackageScope](review-package/interfaces/ReviewPackageScope.md)
+
+***
+
+### ReviewPackageSnapshot
+
+Re-exports [ReviewPackageSnapshot](review-package/interfaces/ReviewPackageSnapshot.md)
+
+***
+
+### ReviewPackageStaleness
+
+Re-exports [ReviewPackageStaleness](review-package/type-aliases/ReviewPackageStaleness.md)
+
+***
+
+### ReviewPackageStalenessResolver
+
+Re-exports [ReviewPackageStalenessResolver](review-package/type-aliases/ReviewPackageStalenessResolver.md)
+
+***
+
 ### RuleAttribution
 
 Re-exports [RuleAttribution](conditional-logic/interfaces/RuleAttribution.md)
@@ -1814,6 +2162,12 @@ Re-exports [runScenariosForForm](test-scenarios/functions/runScenariosForForm.md
 
 ***
 
+### runScenarioWithDependencies
+
+Re-exports [runScenarioWithDependencies](scenario-impact/functions/runScenarioWithDependencies.md)
+
+***
+
 ### SAMPLE\_SUBJECT\_PROFILES
 
 Re-exports [SAMPLE_SUBJECT_PROFILES](ast-debugger/variables/SAMPLE_SUBJECT_PROFILES.md)
@@ -1847,6 +2201,12 @@ Re-exports [SaveLibraryResult](personal-library/type-aliases/SaveLibraryResult.m
 ### savePersonalLibrary
 
 Re-exports [savePersonalLibrary](personal-library/functions/savePersonalLibrary.md)
+
+***
+
+### saveScenarioFromReport
+
+Re-exports [saveScenarioFromReport](scenario-impact/functions/saveScenarioFromReport.md)
 
 ***
 
@@ -1898,6 +2258,36 @@ Re-exports [scaffoldCdashDomain](cdash-domain-templates/functions/scaffoldCdashD
 
 ***
 
+### SCENARIO\_DEPENDENCY\_VERSION
+
+Re-exports [SCENARIO_DEPENDENCY_VERSION](scenario-impact/variables/SCENARIO_DEPENDENCY_VERSION.md)
+
+***
+
+### ScenarioDependencyChange
+
+Re-exports [ScenarioDependencyChange](scenario-impact/type-aliases/ScenarioDependencyChange.md)
+
+***
+
+### ScenarioDependencyKind
+
+Re-exports [ScenarioDependencyKind](scenario-impact/type-aliases/ScenarioDependencyKind.md)
+
+***
+
+### ScenarioDependencyRef
+
+Re-exports [ScenarioDependencyRef](scenario-impact/interfaces/ScenarioDependencyRef.md)
+
+***
+
+### ScenarioDependencySnapshot
+
+Re-exports [ScenarioDependencySnapshot](types/interfaces/ScenarioDependencySnapshot.md)
+
+***
+
 ### ScenarioExpectation
 
 Re-exports [ScenarioExpectation](types/type-aliases/ScenarioExpectation.md)
@@ -1916,6 +2306,42 @@ Re-exports [ScenarioExpectationSchema](universal-schema/variables/ScenarioExpect
 
 ***
 
+### ScenarioFreshness
+
+Re-exports [ScenarioFreshness](scenario-impact/type-aliases/ScenarioFreshness.md)
+
+***
+
+### ScenarioFreshnessAssessment
+
+Re-exports [ScenarioFreshnessAssessment](scenario-impact/interfaces/ScenarioFreshnessAssessment.md)
+
+***
+
+### ScenarioImpactNavigationTarget
+
+Re-exports [ScenarioImpactNavigationTarget](scenario-impact/interfaces/ScenarioImpactNavigationTarget.md)
+
+***
+
+### ScenarioImpactReport
+
+Re-exports [ScenarioImpactReport](scenario-impact/interfaces/ScenarioImpactReport.md)
+
+***
+
+### ScenarioImpactStanding
+
+Re-exports [ScenarioImpactStanding](scenario-impact/type-aliases/ScenarioImpactStanding.md)
+
+***
+
+### ScenarioRerunSummary
+
+Re-exports [ScenarioRerunSummary](scenario-impact/interfaces/ScenarioRerunSummary.md)
+
+***
+
 ### ScenarioRunEvidence
 
 Re-exports [ScenarioRunEvidence](types/interfaces/ScenarioRunEvidence.md)
@@ -1925,6 +2351,12 @@ Re-exports [ScenarioRunEvidence](types/interfaces/ScenarioRunEvidence.md)
 ### ScenarioRunEvidenceSchema
 
 Re-exports [ScenarioRunEvidenceSchema](universal-schema/variables/ScenarioRunEvidenceSchema.md)
+
+***
+
+### ScenarioStaleReason
+
+Re-exports [ScenarioStaleReason](scenario-impact/interfaces/ScenarioStaleReason.md)
 
 ***
 
@@ -2039,6 +2471,12 @@ Re-exports [SlashCommandCategory](smart-blocks-engine/type-aliases/SlashCommandC
 ### SlashCommandItem
 
 Re-exports [SlashCommandItem](smart-blocks-engine/interfaces/SlashCommandItem.md)
+
+***
+
+### snapshotExpectationsFromReport
+
+Re-exports [snapshotExpectationsFromReport](scenario-impact/functions/snapshotExpectationsFromReport.md)
 
 ***
 
@@ -2195,6 +2633,24 @@ Re-exports [StudyEpoch](types/interfaces/StudyEpoch.md)
 ### StudyEpochSchema
 
 Re-exports [StudyEpochSchema](universal-schema/variables/StudyEpochSchema.md)
+
+***
+
+### StudyLibraryUpgradeRecord
+
+Re-exports [StudyLibraryUpgradeRecord](types/interfaces/StudyLibraryUpgradeRecord.md)
+
+***
+
+### StudyLibraryUse
+
+Re-exports [StudyLibraryUse](types/interfaces/StudyLibraryUse.md)
+
+***
+
+### StudyLibraryUseSchema
+
+Re-exports [StudyLibraryUseSchema](universal-schema/variables/StudyLibraryUseSchema.md)
 
 ***
 
@@ -2675,3 +3131,9 @@ Re-exports [VisitMilestoneProjection](visit-window/interfaces/VisitMilestoneProj
 ### VisitWindowConflict
 
 Re-exports [VisitWindowConflict](visit-window/interfaces/VisitWindowConflict.md)
+
+***
+
+### zipReviewPackage
+
+Re-exports [zipReviewPackage](review-package/functions/zipReviewPackage.md)

@@ -459,8 +459,12 @@ export async function generateStudyPdf(
 
     // Running Footer
     doc.line(margin, pageHeight - 11, pageWidth - margin, pageHeight - 11);
+    const consultationSuffix =
+      options.includeConsultationLink === false
+        ? ""
+        : ` • Schedule Consultation: ${consultationUrl()}`;
     doc.text(
-      `${branding.footerText || "CRF Studio"} • CDISC CDASH 2.2 • Schedule Consultation: ${consultationUrl()}`,
+      `${branding.footerText || "CRF Studio"} • CDISC CDASH 2.2${consultationSuffix}`,
       margin,
       pageHeight - 7
     );

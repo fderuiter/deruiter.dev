@@ -277,6 +277,12 @@ export interface ExportPdfOptions {
   includeTableOfContents?: boolean;
   includeSdtmAppendix?: boolean;
   branding?: StudyBranding;
+  /**
+   * Whether page footers carry the portfolio consultation link. Defaults to
+   * true; the review package (#680) turns it off so clinical content carries
+   * no portfolio promotion.
+   */
+  includeConsultationLink?: boolean;
 }
 
 export interface ExportSasOptions {
@@ -336,6 +342,12 @@ export interface StudyProtocol {
   simulationState?: EdcSimulationState;
   /** Protocol-level audit trail history across authoring and review lifecycle. */
   auditTrail?: AuditTrailEntry[];
+  /**
+   * Personal-library blocks this study contains, with the version each was
+   * taken from (#681). Carried on the study so an upgrade can be previewed
+   * after native export and reopen.
+   */
+  libraryUses?: StudyLibraryUse[];
   auditLog?: AuditTrailEntry[];
 }
 
@@ -441,6 +453,22 @@ export interface ScenarioRunEvidence {
   results: ScenarioExpectationResult[];
   passed: number;
   failed: number;
+  /**
+   * Per-dependency fingerprints recorded at run time (#679), so an amendment
+   * can be attributed to the specific field, rule, codelist or visit it
+   * touched. Absent on evidence recorded before dependency tracking existed.
+   */
+  dependencies?: ScenarioDependencySnapshot;
+}
+
+/**
+ * Fingerprints of every study object a scenario's outcome depended on when it
+ * ran (#679), keyed `kind:id/aspect` (for example `field:bmi/formula`).
+ */
+export interface ScenarioDependencySnapshot {
+  /** Version of the fingerprint material; a mismatch makes evidence unverifiable rather than current. */
+  version: number;
+  fingerprints: Record<string, string>;
 }
 
 export interface EDCQuery {
@@ -578,6 +606,48 @@ export type StudioMode =
 export type DeviceViewport = "desktop" | "tablet" | "mobile";
 
 export type StudioTheme = "dark" | "light";
+
+/**
+ * Lineage of one personal-library block inside a study (#681): which entry
+ * and version it came from, and how the library's identities map onto the
+ * study's, so a later version can be compared three ways.
+ */
+export interface StudyLibraryUse {
+  id: string;
+  entryId: string;
+  entryName: string;
+  /** The library version the study's copy is currently based on. */
+  entryVersion: number;
+  /** When the block was first inserted. Kept unchanged across upgrades. */
+  insertedAt: string;
+  formId: string;
+  /** The study section holding the block. */
+  sectionId: string;
+  /** Library identity to study identity, for the section, fields and rules. */
+  idMap: Record<string, string>;
+  /**
+   * Library variable name to study variable name, for names the study took
+   * from the library. A name the author customized has no entry.
+   */
+  variableMap: Record<string, string>;
+  /** Earlier upgrades, oldest first. */
+  upgradeHistory?: StudyLibraryUpgradeRecord[];
+}
+
+/** Provenance of one applied personal-library upgrade (#681). */
+export interface StudyLibraryUpgradeRecord {
+  fromVersion: number;
+  toVersion: number;
+  appliedAt: string;
+  /** Lineage maps before the upgrade, so the earlier state stays explainable. */
+  previousIdMap: Record<string, string>;
+  previousVariableMap: Record<string, string>;
+  /** The author's choice for every conflict, by change id. */
+  resolutions: Record<string, "current" | "incoming">;
+  incomingChangeCount: number;
+  localCustomizationCount: number;
+  conflictCount: number;
+}
 
 /**
  * Historical lineage and provenance tracking for studies restored from baselines or external sources.

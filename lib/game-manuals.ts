@@ -1283,6 +1283,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         key: "1 to 7",
       },
       {
+        action: "Find in the study",
+        description:
+          "Click Find in the studio header, or press F outside a text box, to search forms, fields and visits by name or variable and jump to them, insert a starter block, or open an export.",
+        key: "F",
+      },
+      {
         action: "Undo and redo",
         description: "Undo or redo the last change to the study.",
         key: "Ctrl/⌘ + Z",

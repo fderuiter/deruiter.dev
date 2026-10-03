@@ -80,10 +80,14 @@ test.describe("Visual Regression & Drift Detection", () => {
 
     for (const card of cardElements) {
       await expect(card).toBeVisible();
-      const box = await card.boundingBox();
-      expect(box).not.toBeNull();
-      expect(box!.width).toBeGreaterThan(0);
-      expect(box!.height).toBeGreaterThan(0);
+      // WebKit can return a null box when hydration swaps the node between
+      // the visibility check and the measurement, so measure until it settles.
+      await expect
+        .poll(async () => {
+          const box = await card.boundingBox();
+          return box ? Math.min(box.width, box.height) : 0;
+        })
+        .toBeGreaterThan(0);
     }
   });
 

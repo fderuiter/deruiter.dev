@@ -69,6 +69,11 @@ const ExportDocumentModal = dynamic(
   { ssr: false }
 );
 
+const ReviewPackageModal = dynamic(
+  () => import("./ReviewPackageModal").then((mod) => mod.ReviewPackageModal),
+  { ssr: false }
+);
+
 const BrandingConfigModal = dynamic(
   () =>
     import("./Branding/BrandingConfigModal").then(
@@ -92,13 +97,22 @@ const SpotlightTourOverlay = dynamic(
 
 import { StudioTerminal } from "./Terminal/StudioTerminal";
 import { FormTestDock } from "./Modes/FormTestDock";
-import { DEFAULT_TEST_SCOPE, type ConditionalFieldValues } from "@/lib/crf";
+import { ScenarioImpactPanel } from "./Modes/ScenarioImpactPanel";
+import {
+  DEFAULT_TEST_SCOPE,
+  assessScenarioFreshness,
+  type ConditionalFieldValues,
+  type TestScenario,
+} from "@/lib/crf";
 import { SlashPaletteModal } from "./SlashPaletteModal";
+import { StudyOmnibar } from "./StudyOmnibar";
+import type { OmnibarAction } from "@/lib/crf/study-omnibar";
 import { BaselineManagerModal } from "./BaselineManagerModal";
 import {
   BaselineCompareModal,
   type BaselineCompareNavigationTarget,
 } from "./BaselineCompareModal";
+import { LibraryUpgradeModal } from "./LibraryUpgradeModal";
 import {
   VisitMatrixEditorSkeleton,
   RuleGraphStudioSkeleton,
@@ -405,6 +419,7 @@ export const CRFStudioContainer: React.FC = () => {
   const [isDiagnosticsOpen, setIsDiagnosticsOpen] = useState(false);
   const [isBrandingOpen, setIsBrandingOpen] = useState(false);
   const [isExportDocModalOpen, setIsExportDocModalOpen] = useState(false);
+  const [isReviewPackageOpen, setIsReviewPackageOpen] = useState(false);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [isSpotlightTourOpen, setIsSpotlightTourOpen] = useState(false);
   const [isTerminalOpen, setIsTerminalOpen] = useState(false);
@@ -415,8 +430,10 @@ export const CRFStudioContainer: React.FC = () => {
     {}
   );
   const [isSlashPaletteOpen, setIsSlashPaletteOpen] = useState(false);
+  const [isOmnibarOpen, setIsOmnibarOpen] = useState(false);
   const [isBaselinesModalOpen, setIsBaselinesModalOpen] = useState(false);
   const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
+  const [isLibraryUpgradesOpen, setIsLibraryUpgradesOpen] = useState(false);
   // Selected baseline for the comparison panel, seeded from the URL hash so
   // reloading or reopening the page (#676) restores an equivalent comparison
   // instead of silently dropping which baseline was being reviewed.
@@ -952,6 +969,16 @@ export const CRFStudioContainer: React.FC = () => {
     setMobileActiveView("canvas");
   };
 
+  // Form variant (#675): creation and reassignment land as one history entry.
+  const handleCommitFormVariant = (
+    updatedStudy: StudyProtocol,
+    variantFormId: string
+  ) => {
+    updateStudyWithHistory(updatedStudy);
+    setActiveFormId(variantFormId);
+    setSelectedFieldId(null);
+  };
+
   const handleDeleteForm = (formId: string) => {
     if (study.forms.length <= 1) return;
     const { study: updatedStudy, removedForm } = StudyProtocolEngine.removeForm(
@@ -1303,6 +1330,67 @@ export const CRFStudioContainer: React.FC = () => {
     }
   };
 
+  // Study Omnibar (#544). Insertions clear any stale slash target so they
+  // resolve exactly as the slash palette does (after the selected field, else
+  // the form's first section) and run through handleSelectSlashCommand.
+  const handleOpenOmnibar = () => {
+    setSlashTargetSectionId(undefined);
+    setSlashTargetIndex(undefined);
+    setIsSlashPaletteOpen(false);
+    setIsOmnibarOpen(true);
+  };
+
+  const handleRunOmnibarAction = (action: OmnibarAction) => {
+    const showDesigner = () => {
+      if (activeMode !== "designer") setActiveMode("designer");
+    };
+    switch (action.kind) {
+      case "open_form":
+        showDesigner();
+        setActiveFormId(action.formId);
+        setSelectedFieldId(null);
+        setMobileActiveView("canvas");
+        return;
+      case "open_field":
+        showDesigner();
+        if (action.formId !== activeForm?.id) setActiveFormId(action.formId);
+        handleSelectField(action.fieldId);
+        return;
+      case "open_visit":
+        showDesigner();
+        setIsLeftSidebarOpen(true);
+        setLeftTab("spine");
+        setActiveVisitId(action.visitId);
+        setMobileActiveView("forms");
+        return;
+      case "insert":
+        showDesigner();
+        handleSelectSlashCommand(action.command);
+        return;
+      case "switch_mode":
+        setActiveMode(action.mode);
+        return;
+      case "open_export_document":
+        setIsExportDocModalOpen(true);
+        return;
+      case "open_review_package":
+        setIsReviewPackageOpen(true);
+        return;
+    }
+  };
+
+  // Review packages (#680) label tests with the per-dependency freshness from
+  // #679; never-run tests fall back to the package's own fingerprint check.
+  const resolveReviewPackageStaleness = (scenario: TestScenario) => {
+    const assessment = assessScenarioFreshness(scenario, study);
+    if (assessment.freshness === "never_run") return undefined;
+    if (assessment.freshness === "current") return { stale: false };
+    return {
+      stale: true,
+      reason: assessment.reasons[0]?.message ?? assessment.label,
+    };
+  };
+
   const handleUpdateField = (fieldId: string, updates: Partial<CRFField>) => {
     if (!activeForm) return;
     const res = StudyProtocolEngine.updateField(
@@ -1526,7 +1614,9 @@ export const CRFStudioContainer: React.FC = () => {
         onOpenExportDocument={() => setIsExportDocModalOpen(true)}
         onOpenBaselines={() => setIsBaselinesModalOpen(true)}
         onOpenCompareBaseline={() => setIsCompareModalOpen(true)}
+        onOpenLibraryUpgrades={() => setIsLibraryUpgradesOpen(true)}
         onOpenWizard={() => setIsWizardOpen(true)}
+        onOpenOmnibar={handleOpenOmnibar}
         onStartSpotlightTour={startSpotlightTour}
         onCopyShareLink={handleCopyShareLink}
       />
@@ -1600,6 +1690,7 @@ export const CRFStudioContainer: React.FC = () => {
                   onAssignFormToVisit={handleAssignFormToVisit}
                   onUnassignFormFromVisit={handleUnassignFormFromVisit}
                   onInjectCdashForm={handleInjectCdashForm}
+                  onCommitFormVariant={handleCommitFormVariant}
                 />
               </aside>
             )}
@@ -1636,6 +1727,7 @@ export const CRFStudioContainer: React.FC = () => {
                     onAssignFormToVisit={handleAssignFormToVisit}
                     onUnassignFormFromVisit={handleUnassignFormFromVisit}
                     onInjectCdashForm={handleInjectCdashForm}
+                    onCommitFormVariant={handleCommitFormVariant}
                   />
                 </div>
               )}
@@ -1866,6 +1958,7 @@ export const CRFStudioContainer: React.FC = () => {
             }}
             onOpenExportDocument={() => setIsExportDocModalOpen(true)}
             onOpenBranding={() => setIsBrandingOpen(true)}
+            onOpenReviewPackage={() => setIsReviewPackageOpen(true)}
           />
         )}
       </div>
@@ -1880,6 +1973,19 @@ export const CRFStudioContainer: React.FC = () => {
         onChangeValues={setTestDockValues}
         onClose={() => setIsTestDockOpen(false)}
       />
+
+      {/* Saved test impact of amendments (#679) */}
+      {isTestDockOpen && (
+        <ScenarioImpactPanel
+          study={study}
+          form={activeForm || null}
+          values={testDockValues}
+          scope={DEFAULT_TEST_SCOPE}
+          activeVisitId={activeVisitId}
+          onUpdateStudy={updateStudyWithHistory}
+          onNavigate={handleNavigateFromCompare}
+        />
+      )}
 
       {/* In-Studio Interactive Terminal Drawer */}
       <StudioTerminal
@@ -2034,6 +2140,14 @@ export const CRFStudioContainer: React.FC = () => {
             setIsExportDocModalOpen(false);
             setIsBrandingOpen(true);
           }}
+        />
+      )}
+
+      {isReviewPackageOpen && (
+        <ReviewPackageModal
+          study={study}
+          isScenarioStale={resolveReviewPackageStaleness}
+          onClose={() => setIsReviewPackageOpen(false)}
         />
       )}
 
@@ -2284,6 +2398,16 @@ export const CRFStudioContainer: React.FC = () => {
         targetIndex={slashTargetIndex}
       />
 
+      <StudyOmnibar
+        isOpen={isOmnibarOpen}
+        onOpen={handleOpenOmnibar}
+        onClose={() => setIsOmnibarOpen(false)}
+        study={study}
+        activeFormId={activeForm?.id}
+        selectedFieldId={selectedFieldId}
+        onRunAction={handleRunOmnibarAction}
+      />
+
       {/* Study Baselines & Version History Manager (#672) */}
       <BaselineManagerModal
         isOpen={isBaselinesModalOpen}
@@ -2299,6 +2423,15 @@ export const CRFStudioContainer: React.FC = () => {
         initialBaselineId={compareBaselineId}
         onSelectBaseline={setCompareBaselineId}
         onNavigate={handleNavigateFromCompare}
+      />
+
+      {/* Personal-library block upgrades: preview, resolve, apply, undo (#681) */}
+      <LibraryUpgradeModal
+        isOpen={isLibraryUpgradesOpen}
+        onClose={() => setIsLibraryUpgradesOpen(false)}
+        study={study}
+        onApplyUpgrade={updateStudyWithHistory}
+        onUndoUpgrade={handleUndo}
       />
     </div>
   );

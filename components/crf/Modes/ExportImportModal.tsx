@@ -25,6 +25,7 @@ import {
   IconLoader2,
   IconAlertCircle,
   IconWand,
+  IconArchive,
 } from "@tabler/icons-react";
 
 import { exportUniversalCrfJson } from "@/lib/crf/universal-schema";
@@ -36,6 +37,8 @@ interface ExportImportModalProps {
   onImportStudy: (importedStudy: StudyProtocol) => void;
   onOpenExportDocument?: () => void;
   onOpenBranding?: () => void;
+  /** Opens the one-revision review package flow (#680). */
+  onOpenReviewPackage?: () => void;
 }
 
 type ExportTab =
@@ -92,6 +95,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
   onImportStudy,
   onOpenExportDocument,
   onOpenBranding,
+  onOpenReviewPackage,
 }) => {
   const { recordEvent } = useTelemetry();
   const [activeTab, setActiveTab] = useState<ExportTab>("universal");
@@ -402,7 +406,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-zinc-950 p-4 sm:p-6 overflow-y-auto space-y-6">
+    <div className="flex-1 min-w-0 min-h-0 flex flex-col h-full bg-zinc-950 p-4 sm:p-6 overflow-y-auto space-y-6">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4 pb-6 border-b border-zinc-800">
         <div>
@@ -450,6 +454,17 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
             >
               <IconFileText className="w-4 h-4" />
               <span>Export Word / PDF</span>
+            </button>
+          )}
+
+          {onOpenReviewPackage && (
+            <button
+              type="button"
+              onClick={onOpenReviewPackage}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-200 font-mono text-xs font-bold transition-all"
+            >
+              <IconArchive className="w-4 h-4 text-amber-400" />
+              <span>Review Package</span>
             </button>
           )}
 
@@ -512,9 +527,11 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
         </div>
       </div>
 
-      {/* Tabs */}
+      {/* Tabs. Children of this scrolling flex column that clip their own
+          overflow resolve min-height to 0, so without shrink-0 they collapse
+          to fit the viewport instead of letting the column scroll (#1784). */}
       <div
-        className="flex border-b border-zinc-800 gap-2 overflow-x-auto"
+        className="flex shrink-0 min-w-0 border-b border-zinc-800 gap-2 overflow-x-auto"
         role="tablist"
         aria-label="Export Format Tabs"
       >
@@ -708,7 +725,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
               hidden={activeTab !== "sdtm_spec"}
               className={
                 activeTab === "sdtm_spec"
-                  ? "rounded-2xl border border-zinc-800 bg-zinc-900/50 overflow-x-auto shadow-xl"
+                  ? "shrink-0 min-w-0 rounded-2xl border border-zinc-800 bg-zinc-900/50 overflow-x-auto shadow-xl"
                   : "hidden"
               }
             >
@@ -793,7 +810,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
             hidden={activeTab !== tabId}
             className={
               activeTab === tabId
-                ? "rounded-2xl border border-zinc-800 bg-zinc-950 p-4 font-mono text-xs overflow-x-auto max-h-[450px]"
+                ? "shrink-0 min-w-0 h-auto rounded-2xl border border-zinc-800 bg-zinc-950 p-4 font-mono text-xs overflow-x-auto max-h-[450px]"
                 : "hidden"
             }
           >

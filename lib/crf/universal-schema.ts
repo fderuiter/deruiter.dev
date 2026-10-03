@@ -14,6 +14,17 @@ export function getUniversalCrfSchemaUrl(): string {
   return `${resolveBaseUrl()}${UNIVERSAL_CRF_SCHEMA_PATH}`;
 }
 
+/**
+ * Reports whether a `$schema` value names the Universal CRF schema.
+ * Matches on the schema path rather than the full URL, so files exported
+ * from a preview or local host are still recognised as native.
+ */
+export function isUniversalCrfSchemaUrl(value: unknown): boolean {
+  if (typeof value !== "string") return false;
+  const withoutQuery = value.trim().split(/[?#]/)[0];
+  return withoutQuery.endsWith(UNIVERSAL_CRF_SCHEMA_PATH);
+}
+
 // 1. Clinical Data Types
 export const UniversalClinicalDataTypeSchema = z.enum([
   "text",
@@ -331,6 +342,12 @@ export const ScenarioRunEvidenceSchema = z.object({
     .default([]),
   passed: z.number().default(0),
   failed: z.number().default(0),
+  dependencies: z
+    .object({
+      version: z.number(),
+      fingerprints: z.record(z.string(), z.string()),
+    })
+    .optional(),
 });
 
 export const TestScenarioSchema = z.object({
@@ -512,6 +529,34 @@ export const StudyProvenanceSchema = z.object({
 });
 export type UniversalStudyProvenance = z.infer<typeof StudyProvenanceSchema>;
 
+/** Lineage of a personal-library block inside a study (#681). */
+export const StudyLibraryUseSchema = z.object({
+  id: z.string().min(1),
+  entryId: z.string().min(1),
+  entryName: z.string(),
+  entryVersion: z.number(),
+  insertedAt: z.string(),
+  formId: z.string(),
+  sectionId: z.string(),
+  idMap: z.record(z.string(), z.string()),
+  variableMap: z.record(z.string(), z.string()),
+  upgradeHistory: z
+    .array(
+      z.object({
+        fromVersion: z.number(),
+        toVersion: z.number(),
+        appliedAt: z.string(),
+        previousIdMap: z.record(z.string(), z.string()),
+        previousVariableMap: z.record(z.string(), z.string()),
+        resolutions: z.record(z.string(), z.enum(["current", "incoming"])),
+        incomingChangeCount: z.number(),
+        localCustomizationCount: z.number(),
+        conflictCount: z.number(),
+      })
+    )
+    .optional(),
+});
+
 // 9. Root Universal Study Protocol Schema
 export const UniversalCrfProtocolSchema = z.object({
   $schema: z.string().optional(),
@@ -541,6 +586,7 @@ export const UniversalCrfProtocolSchema = z.object({
   provenance: StudyProvenanceSchema.optional(),
   auditTrail: z.array(AuditTrailEntrySchema).optional(),
   auditLog: z.array(AuditTrailEntrySchema).optional(),
+  libraryUses: z.array(StudyLibraryUseSchema).optional(),
 });
 export type UniversalCrfProtocol = z.infer<typeof UniversalCrfProtocolSchema>;
 export const UniversalStudyProtocolSchema = UniversalCrfProtocolSchema;

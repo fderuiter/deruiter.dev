@@ -11,6 +11,8 @@ import {
 import { explainRule } from "@/lib/crf/ast-evaluator";
 import { IconPlus, IconTrash } from "@tabler/icons-react";
 import { AstRuleEditor } from "./AstRuleEditor";
+import { describeRuleLogic } from "@/lib/crf/rule-wires";
+import { RuleWireEditor } from "./RuleWireEditor";
 
 interface LogicRulesTabProps {
   form: CRFForm;
@@ -51,6 +53,8 @@ export const LogicRulesTab: React.FC<LogicRulesTabProps> = ({
 }) => {
   const allFields = form.sections.flatMap((s) => s.fields);
   const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
+  // Optional visual-wire view over the same rules (#674).
+  const [view, setView] = useState<"sentences" | "wires">("sentences");
 
   const handleAddRule = () => {
     const newRule: EditCheckRule = {
@@ -252,7 +256,35 @@ export const LogicRulesTab: React.FC<LogicRulesTabProps> = ({
         </button>
       </div>
 
-      {relevantRules.length === 0 ? (
+      <div
+        role="group"
+        aria-label="Rule view"
+        className="inline-flex rounded-lg border border-zinc-800 p-0.5"
+      >
+        {(["sentences", "wires"] as const).map((v) => (
+          <button
+            key={v}
+            type="button"
+            aria-pressed={view === v}
+            onClick={() => setView(v)}
+            className={`px-2 py-0.5 rounded font-mono text-[11px] ${
+              view === v
+                ? "bg-zinc-800 text-white"
+                : "text-zinc-400 hover:text-zinc-200"
+            }`}
+          >
+            {v === "sentences" ? "Sentences" : "Visual wires"}
+          </button>
+        ))}
+      </div>
+
+      {view === "wires" ? (
+        <RuleWireEditor
+          form={form}
+          selectedField={selectedField}
+          onUpdateRules={onUpdateRules}
+        />
+      ) : relevantRules.length === 0 ? (
         <div className="p-6 rounded-xl border border-dashed border-zinc-800 text-center space-y-2">
           <p className="text-zinc-400 font-mono text-xs">
             No active edit checks or logic rules.
@@ -308,6 +340,12 @@ export const LogicRulesTab: React.FC<LogicRulesTabProps> = ({
                         </span>
                       )}
                     </div>
+                    <p
+                      className="text-[11px] text-zinc-400 break-words"
+                      data-testid="rule-sentence"
+                    >
+                      {describeRuleLogic(rule, allFields)}
+                    </p>
                   </div>
 
                   <div className="flex items-center gap-1">

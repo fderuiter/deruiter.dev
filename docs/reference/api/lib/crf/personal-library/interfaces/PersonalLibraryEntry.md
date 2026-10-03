@@ -56,6 +56,17 @@ assumptions, units, populations it is valid for.
 
 ***
 
+### revisions?
+
+> `optional` **revisions?**: [`PersonalLibraryEntryRevision`](PersonalLibraryEntryRevision.md)[]
+
+Content of every earlier version, oldest first (#681). Written by
+[updateLibraryEntry](../functions/updateLibraryEntry.md) so a study that used an older version can be
+compared three ways against the newest one. Entries saved before this
+field existed simply have no history; their earlier versions are unknown.
+
+***
+
 ### rules
 
 > **rules**: [`EditCheckRule`](../../types/interfaces/EditCheckRule.md)[]

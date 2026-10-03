@@ -20,8 +20,10 @@
   --crf-input-border: #cbd5e1;
   --crf-pill-bg: #e2e8f0;
   --crf-pill-text: #1e293b;
-  --crf-shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
-  --crf-shadow-elevated: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --crf-shadow-card:
+    0 1px 3px 0 rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
+  --crf-shadow-elevated:
+    0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
 }
 
 [data-studio-theme="dark"] {
@@ -141,4 +143,19 @@
 
 [data-studio-theme="light"] .crf-field-card:hover {
   border-color: #cbd5e1 !important;
+}
+
+/* Library upgrade dialog semantic accents (#681): readable on both themes. */
+[data-library-upgrade] {
+  --lu-warn: #fcd34d;
+  --lu-ok: #6ee7b7;
+  --lu-info: #7dd3fc;
+  --lu-error: #fda4af;
+}
+
+[data-studio-theme="light"] [data-library-upgrade] {
+  --lu-warn: #b45309;
+  --lu-ok: #047857;
+  --lu-info: #0369a1;
+  --lu-error: #be123c;
 }

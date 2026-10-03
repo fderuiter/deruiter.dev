@@ -14,6 +14,16 @@
 
 ***
 
+### includeConsultationLink?
+
+> `optional` **includeConsultationLink?**: `boolean`
+
+Whether page footers carry the portfolio consultation link. Defaults to
+true; the review package (#680) turns it off so clinical content carries
+no portfolio promotion.
+
+***
+
 ### includeSdtmAppendix?
 
 > `optional` **includeSdtmAppendix?**: `boolean`
@@ -34,7 +44,7 @@
 
 ### scope
 
-> **scope**: `"single"` \| `"all"` \| `"selected"`
+> **scope**: `"all"` \| `"single"` \| `"selected"`
 
 ***
 

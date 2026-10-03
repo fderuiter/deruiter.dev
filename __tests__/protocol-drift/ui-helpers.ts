@@ -1,3 +1,4 @@
+import { fromAny } from "@total-typescript/shoehorn";
 import { vi } from "vitest";
 
 /**
@@ -28,7 +29,7 @@ export function installFlowMocks(): void {
             contentRect: { width: 1200, height: 600 } as DOMRectReadOnly,
           } as ResizeObserverEntry,
         ],
-        this as unknown as ResizeObserver
+        fromAny<ResizeObserver, unknown>(this)
       );
     }
     unobserve() {}

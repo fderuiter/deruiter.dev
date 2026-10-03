@@ -1,3 +1,4 @@
+import { fromAny } from "@total-typescript/shoehorn";
 import React from "react";
 import { act, cleanup, render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -37,18 +38,20 @@ function mockMotion(reduced: boolean) {
   );
 }
 
-const edgeProps = {
-  id: "a.out->b.in",
-  source: "a",
-  target: "b",
-  sourceX: 0,
-  sourceY: 0,
-  targetX: 200,
-  targetY: 100,
-  sourcePosition: "right",
-  targetPosition: "left",
-  selected: false,
-} as unknown as React.ComponentProps<typeof PacketEdgeView>;
+const edgeProps = fromAny<React.ComponentProps<typeof PacketEdgeView>, unknown>(
+  {
+    id: "a.out->b.in",
+    source: "a",
+    target: "b",
+    sourceX: 0,
+    sourceY: 0,
+    targetX: 200,
+    targetY: 100,
+    sourcePosition: "right",
+    targetPosition: "left",
+    selected: false,
+  }
+);
 
 function renderEdge() {
   return render(
@@ -98,7 +101,7 @@ describe("packet motion", () => {
     expect(container.querySelectorAll("circle")).toHaveLength(2);
     expect(container.querySelector("[data-testid='wire-counter']")).toBeNull();
     expect(animate).toHaveBeenCalledTimes(2);
-    const frames = (animate.mock.calls[0] as unknown as [Keyframe[]])[0];
+    const frames = fromAny<[Keyframe[]], unknown>(animate.mock.calls[0])[0];
     for (const frame of frames) {
       expect(Object.keys(frame).sort()).toEqual([
         "offset",

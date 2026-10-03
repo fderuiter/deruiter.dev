@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { fromAny } from "@total-typescript/shoehorn";
 import { describe, expect, it } from "vitest";
 import { deepFreeze, snapshotHandoff } from "@/lib/protocol-drift";
 import { vsRecord } from "./helpers";
@@ -42,7 +43,7 @@ describe("SnapshotHandoff", () => {
     expect(() => {
       (snap[0] as { VSSTRESN: number }).VSSTRESN = 999;
     }).toThrow(TypeError);
-    expect(() => (snap as unknown as unknown[]).push(1)).toThrow(TypeError);
+    expect(() => fromAny<unknown[], unknown>(snap).push(1)).toThrow(TypeError);
     expect(ledger[0].VSSTRESN).toBe(120);
     expect(Object.isFrozen(ledger[0])).toBe(false);
   });

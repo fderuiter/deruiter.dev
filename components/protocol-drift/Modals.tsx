@@ -18,9 +18,9 @@ import { readAutosave } from "./persistence";
 import { useProtocolDriftStore } from "./store";
 
 const PRIMARY =
-  "min-h-10 border border-amber-500 px-4 font-mono text-xs text-amber-400 hover:bg-amber-500/10 disabled:cursor-not-allowed disabled:border-zinc-700 disabled:text-zinc-400 active:scale-[0.98]";
+  "min-h-11 min-w-11 border border-amber-500 px-4 font-mono text-xs text-amber-400 hover:bg-amber-500/10 disabled:cursor-not-allowed disabled:border-zinc-700 disabled:text-zinc-400 active:scale-[0.98]";
 const SECONDARY =
-  "min-h-10 border border-zinc-700 px-4 font-mono text-xs text-zinc-200 hover:border-amber-500 active:scale-[0.98]";
+  "min-h-11 min-w-11 border border-zinc-700 px-4 font-mono text-xs text-zinc-200 hover:border-amber-500 active:scale-[0.98]";
 
 function ModalShell({
   title,

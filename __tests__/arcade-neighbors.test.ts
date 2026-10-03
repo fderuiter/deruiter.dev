@@ -34,6 +34,15 @@ describe("arcade previous/next ring (#1330)", () => {
     expect(te.next.href).toBe("/arcade/study-director");
   });
 
+  it("puts Protocol Drift between Study Director and Retro Labyrinth", () => {
+    expect(getArcadeNeighbors("/arcade/study-director").next.href).toBe(
+      "/arcade/protocol-drift"
+    );
+    const pd = getArcadeNeighbors("/arcade/protocol-drift");
+    expect(pd.prev.href).toBe("/arcade/study-director");
+    expect(pd.next.href).toBe("/arcade/retro-labyrinth");
+  });
+
   it("takes titles and tags from the shared game metadata", () => {
     const { next } = getArcadeNeighbors("/arcade/clinical-chaos");
     const meta = ARCADE_GAMES_METADATA.find(
@@ -52,6 +61,7 @@ describe("arcade previous/next ring (#1330)", () => {
       "ClinicalChaos",
       "TrialAndError",
       "StudyDirector",
+      "ProtocolDrift",
       "RetroLabyrinth",
     ];
     for (const name of clients) {

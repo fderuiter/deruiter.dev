@@ -815,6 +815,32 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         ],
       },
       {
+        id: "nav-protocol-drift",
+        title: "Protocol Drift: Regulatory Simulation Workbench",
+        subtitle:
+          "Design the trial. Debug reality. A node-graph pipeline simulation across CDISC SDTM and ADaM, coordinator fatigue and a protocol amendment.",
+        category: "navigation",
+        url: "/arcade/protocol-drift",
+        icon: <IconShieldCheck className="w-4 h-4 text-amber-400" />,
+        badge: "Simulation",
+        status: "CDISC Architecture",
+        description:
+          "Browser-native systems simulation puzzle. Construct a clinical data pipeline, query sites with evidence, survive a mid-flight protocol amendment and clear a dual Database Lock.",
+        techStack: [
+          "Next.js 16",
+          "React 19",
+          "@xyflow/react",
+          "Web Workers",
+          "Web Audio API",
+          "CDISC SDTM/ADaM",
+        ],
+        highlights: [
+          "Pure TypeScript deterministic simulation Web Worker",
+          "Dual-lane Tabulation (SDTM) and Analysis (ADaM) pipeline canvas",
+          "Evidence-linked query engine with coordinator fatigue modeling",
+        ],
+      },
+      {
         id: "nav-garmin-watch",
         title: "Monkey C Mayhem: Garmin Schvitz App",
         subtitle:

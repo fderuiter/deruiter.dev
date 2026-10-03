@@ -16,7 +16,7 @@ one ring that matches the hub (#1330).
 
 ### route
 
-`"/arcade/working-with-duck"` \| `"/arcade/laser-loon"` \| `"/arcade/quasi-puzzler"` \| `"/arcade/garmin-watch"` \| `"/arcade/clinical-chaos"` \| `"/arcade/trial-and-error"` \| `"/arcade/study-director"` \| `"/arcade/retro-labyrinth"`
+`"/arcade/working-with-duck"` \| `"/arcade/laser-loon"` \| `"/arcade/quasi-puzzler"` \| `"/arcade/garmin-watch"` \| `"/arcade/clinical-chaos"` \| `"/arcade/trial-and-error"` \| `"/arcade/study-director"` \| `"/arcade/protocol-drift"` \| `"/arcade/retro-labyrinth"`
 
 ## Returns
 

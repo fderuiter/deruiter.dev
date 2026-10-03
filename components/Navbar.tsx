@@ -9,6 +9,7 @@ import { isModifiedClick, scrollToElement } from "@/lib/scroll";
 import { useAudio } from "@/components/providers/AudioProvider";
 import { useSearch } from "@/components/providers/SearchProvider";
 import { usePersona } from "@/components/providers/PersonaProvider";
+import { ARCADE_GAME_COUNT } from "@/lib/arcade";
 import { PERSONA_ANNOUNCEMENTS, type PersonaType } from "@/lib/persona";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useHotkeys } from "@/hooks/useHotkeys";
@@ -85,6 +86,12 @@ const ARCADE_ITEMS: SubNavItem[] = [
     subtitle: "Run a clinical study. Everything is fine.",
     href: "/arcade/study-director",
     icon: <IconClipboardCheck className="w-4 h-4 text-brand-cyan" />,
+  },
+  {
+    title: "Protocol Drift",
+    subtitle: "Clinical regulatory systems simulator",
+    href: "/arcade/protocol-drift",
+    icon: <IconShieldCheck className="w-4 h-4 text-amber-400" />,
   },
   {
     title: "Retro Labyrinth",
@@ -1312,7 +1319,7 @@ export const Navbar: React.FC = () => {
                       <span className="truncate">Arcade</span>
                     </span>
                     <span className="text-xs font-mono text-brand-cyan shrink-0">
-                      6 Games
+                      {ARCADE_GAME_COUNT} Games
                     </span>
                   </Link>
                 </div>

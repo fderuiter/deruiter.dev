@@ -157,8 +157,8 @@ export default async function PortfolioHomePage() {
       {/* 2. Philosophy TextReveal Highlight */}
       <div className="bg-[#0d0e11] border-t border-white/10">
         <TextReveal>
-          The person using your software has a job to do. Figuring out your
-          software should be the small part.
+          The person using your software is trying to get something done.
+          Figuring out your software should be the small part.
         </TextReveal>
       </div>
 
@@ -169,7 +169,7 @@ export default async function PortfolioHomePage() {
       >
         <div className="relative z-10 w-full max-w-6xl flex flex-col items-center">
           <div className="inline-flex items-center gap-2 px-3 py-1 mb-4 rounded-full bg-white/[0.04] border border-white/10 text-[10px] sm:text-xs font-mono font-bold text-amber-300 uppercase tracking-widest">
-            <span>SECTION 02 // WHAT I BRING</span>
+            <span>SECTION 02 // WHAT I WORK WITH</span>
           </div>
 
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-white text-center mb-2 heading-editorial">
@@ -222,8 +222,8 @@ export default async function PortfolioHomePage() {
             What are you working on?
           </h2>
           <p className="text-sm sm:text-base text-zinc-300 mb-8 sm:mb-12 text-center max-w-md leading-relaxed">
-            A project, a job, a question, or a bug with a suspiciously good
-            sense of timing. Tell me about it.
+            A side project, a technical question, or an open-source bug with a
+            suspiciously good sense of timing. Tell me about it.
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 w-full max-w-6xl justify-center items-stretch">
@@ -247,7 +247,7 @@ export default async function PortfolioHomePage() {
             {/* Schedule 1:1 */}
             <Link
               href="/schedule"
-              aria-label="Schedule a 1:1 meeting with Frederick de Ruiter on Google Calendar"
+              aria-label="Book a 30-minute coffee chat or tech talk with Frederick de Ruiter about clinical software or side projects on Google Calendar"
               className="group min-w-0 break-words flex flex-col items-center justify-center p-5 sm:p-6 bg-amber-500/5 border border-amber-500/30 rounded-2xl transition-all duration-200 hover:border-amber-400 hover:bg-amber-500/10 active:scale-[0.98] text-center cursor-pointer relative overflow-hidden min-h-[110px] shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0d0e11]"
             >
               <div className="absolute top-2.5 right-2.5 px-1.5 py-0.5 bg-amber-500/20 border border-amber-500/40 rounded text-[9px] font-mono text-amber-300 uppercase tracking-wider">
@@ -257,7 +257,7 @@ export default async function PortfolioHomePage() {
                 <IconCalendar className="w-4 h-4" />
               </span>
               <span className="text-xs font-mono font-bold text-white mb-1">
-                Quick 30-Min Chat
+                Coffee Chat / Tech Talk
               </span>
               <span className="text-xs font-mono text-amber-300">
                 Book on Calendar ↗

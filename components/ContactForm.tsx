@@ -23,6 +23,14 @@ import { useAnnouncer } from "@/hooks/useAnnouncer";
 import { usePersistentState } from "@/hooks/usePersistentState";
 import { safeRemoveItem } from "@/lib/safe-storage";
 
+// The API still accepts every CONTACT_INTENTS value so older drafts and queued
+// submissions validate, but the form no longer offers a hiring intent: the
+// site is a peer engineering showcase (ADR 0047).
+const RETIRED_INTENTS: readonly ContactIntent[] = ["recruiting"];
+const SELECTABLE_INTENTS = CONTACT_INTENTS.filter(
+  (item) => !RETIRED_INTENTS.includes(item)
+);
+
 interface ContactFormDraft {
   name: string;
   email: string;
@@ -352,7 +360,7 @@ export function ContactForm({
           <span>What’s this about?</span>
         </label>
         <div className="flex flex-wrap gap-2">
-          {CONTACT_INTENTS.map((item) => {
+          {SELECTABLE_INTENTS.map((item) => {
             const isSelected = intent === item;
             return (
               <button

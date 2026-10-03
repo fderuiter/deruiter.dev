@@ -11,6 +11,11 @@ import { useMasonryLayout } from "@/hooks/useMasonryLayout";
 import { useStudioHashParams } from "@/hooks/useStudioHashParams";
 import { BentoLayoutProvider } from "@/components/providers/BentoLayoutContext";
 import { usePersona } from "@/components/providers/PersonaProvider";
+import {
+  isLegacyPersonaValue,
+  normalizePersona,
+  type PersonaType,
+} from "@/lib/persona";
 
 interface HydratedCaseStudy extends BaseCaseStudy {
   githubStats: GitHubStats | null;
@@ -24,9 +29,9 @@ const FILTER_PARAM = "lang";
 const ROLE_PARAM = "role";
 
 const PERSONA_TABS = [
-  { id: "all", label: "ALL ROLES" },
-  { id: "recruiter", label: "RECRUITER / HIGHLIGHTS" },
-  { id: "technical", label: "TECHNICAL / ARCHITECTURE" },
+  { id: "all", label: "ALL VIEWS" },
+  { id: "professional", label: "PROFESSIONAL / HIGHLIGHTS" },
+  { id: "behind-the-scenes", label: "BEHIND THE SCENES / ARCHITECTURE" },
 ] as const;
 
 const CaseStudyShowcaseInner: React.FC<CaseStudyShowcaseProps> = ({
@@ -64,31 +69,26 @@ const CaseStudyShowcaseInner: React.FC<CaseStudyShowcaseProps> = ({
     ROLE_PARAM,
     getParam("persona", "")
   ).toLowerCase();
-  const selectedRole =
-    rawRoleParam === "recruiter"
-      ? "recruiter"
-      : rawRoleParam === "technical"
-        ? "technical"
-        : rawRoleParam === "all"
-          ? "all"
-          : "all";
+  // Deep links shared before the ADR 0047 rename carry the legacy values;
+  // they resolve to the renamed mode instead of falling back to "all".
+  const selectedRole: PersonaType | "all" =
+    rawRoleParam === "professional" ||
+    rawRoleParam === "behind-the-scenes" ||
+    isLegacyPersonaValue(rawRoleParam)
+      ? normalizePersona(rawRoleParam)
+      : "all";
 
   // Sync PersonaProvider context when role hash param is explicitly set
   useEffect(() => {
-    if (selectedRole === "recruiter" && persona !== "recruiter") {
-      setPersona("recruiter");
-    } else if (selectedRole === "technical" && persona !== "technical") {
-      setPersona("technical");
+    if (selectedRole !== "all" && persona !== selectedRole) {
+      setPersona(selectedRole);
     }
   }, [selectedRole, persona, setPersona]);
 
   const handleRoleSelect = (roleId: string) => {
-    if (roleId === "recruiter") {
-      setPersona("recruiter");
-      setParam(ROLE_PARAM, "recruiter", { replace: true });
-    } else if (roleId === "technical") {
-      setPersona("technical");
-      setParam(ROLE_PARAM, "technical", { replace: true });
+    if (roleId === "professional" || roleId === "behind-the-scenes") {
+      setPersona(roleId);
+      setParam(ROLE_PARAM, roleId, { replace: true });
     } else {
       setParam(ROLE_PARAM, null, { replace: true });
     }
@@ -104,7 +104,7 @@ const CaseStudyShowcaseInner: React.FC<CaseStudyShowcaseProps> = ({
       );
     }
 
-    if (selectedRole === "recruiter") {
+    if (selectedRole === "professional") {
       // Prioritize studies with published telemetry, rich editorial summaries, or high-level highlights
       studies = [...studies].sort((a, b) => {
         const aScore =
@@ -113,7 +113,7 @@ const CaseStudyShowcaseInner: React.FC<CaseStudyShowcaseProps> = ({
           (b.hero_image_url ? 2 : 0) + (b.simulated_telemetry ? 1 : 0);
         return bScore - aScore;
       });
-    } else if (selectedRole === "technical") {
+    } else if (selectedRole === "behind-the-scenes") {
       // Prioritize studies with deep architectural narratives and complex telemetry
       studies = [...studies].sort((a, b) => {
         const aLen = (a.architectural_narrative || "").length;
@@ -130,12 +130,8 @@ const CaseStudyShowcaseInner: React.FC<CaseStudyShowcaseProps> = ({
     filteredStudies
   );
 
-  const effectiveCardPersona: "recruiter" | "technical" =
-    selectedRole === "recruiter"
-      ? "recruiter"
-      : selectedRole === "technical"
-        ? "technical"
-        : persona;
+  const effectiveCardPersona: PersonaType =
+    selectedRole === "all" ? persona : selectedRole;
 
   return (
     <div className="w-full flex flex-col items-center">

@@ -52,8 +52,8 @@ export default function ContactPage() {
             Let’s talk.
           </h1>
           <p className="text-sm sm:text-base font-mono text-zinc-400 leading-relaxed">
-            Have something you want to build, a role I might fit, or a question
-            about a project? I’d like to hear it.
+            Working on an interesting build, an open-source idea, or a clinical
+            data problem that will not sit still? I’d like to hear about it.
           </p>
         </div>
 

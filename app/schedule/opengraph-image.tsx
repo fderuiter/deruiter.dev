@@ -1,18 +1,28 @@
-import { createSocialImageResponse, OG_IMAGE_SIZE, OG_IMAGE_CONTENT_TYPE } from "@/lib/og-image";
+import {
+  createSocialImageResponse,
+  OG_IMAGE_SIZE,
+  OG_IMAGE_CONTENT_TYPE,
+} from "@/lib/og-image";
 
 export const runtime = "nodejs";
-export const alt = "Schedule Technical Consultation | Frederick de Ruiter";
+export const alt = "Book a Coffee Chat or Tech Talk | Frederick de Ruiter";
 export const size = OG_IMAGE_SIZE;
 export const contentType = OG_IMAGE_CONTENT_TYPE;
 
 export default function Image() {
   return createSocialImageResponse({
-    category: "TECHNICAL CONSULTATION & ARCHITECTURE SYNC",
-    title: "Schedule a Systems Architecture & Strategy Sync",
+    category: "COFFEE CHAT // TECH TALK",
+    title: "Book a Coffee Chat or Tech Talk",
     description:
-      "Direct technical consultation on high-performance frontend architecture, serverless data pipelines, and CDISC regulatory systems.",
+      "Thirty minutes on clinical software, side projects, open-source ideas, or a bug that will not stay fixed.",
     badge: "CALENDAR // SYNC",
-    tags: ["Systems Design", "Technical Advisory", "Frontend Architecture", "Clinical Data", "Mentorship"],
+    tags: [
+      "Clinical Software",
+      "Side Projects",
+      "Open Source",
+      "Systems Design",
+      "Clinical Data",
+    ],
     systemStatus: "CALENDAR OPEN",
   });
 }

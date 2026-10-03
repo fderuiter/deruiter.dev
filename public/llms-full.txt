@@ -445,7 +445,7 @@ The approach: Next.js Server Actions handle submissions, Zod checks the inputs, 
 ## Writing and contact
 
 - [Engineering Dispatches: Blog](https://deruiter.dev/blog): Cross-project retrospectives and technique write-ups on clinical data engineering, formal verification, accessibility, and browser graphics by Fred de Ruiter.
-- [Contact Fred: Projects and Roles](https://deruiter.dev/contact): Have a project, a role, or a question in mind? Send Fred de Ruiter a note about what you’re working on, or pick a time to talk it through by video.
+- [Contact Fred: Builds, Bugs, Questions](https://deruiter.dev/contact): Working on something interesting, found an open-source bug, or have a clinical data question? Send Fred de Ruiter a note, or book a video chat to talk it over.
 - [Book a 30-Minute Chat With Fred](https://deruiter.dev/schedule): Pick a time on Google Calendar to talk about a project, ask a question, or say hello. Each booking is a 30-minute Google Meet chat with Fred de Ruiter.
 
 ## Mobile and utility routes

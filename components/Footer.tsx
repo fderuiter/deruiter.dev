@@ -93,9 +93,7 @@ export const Footer: React.FC = () => {
 
       <div className="max-w-6xl mx-auto px-6 md:px-12 pt-12 pb-[max(4rem,env(safe-area-inset-bottom)+2rem)]">
         {/* Main Grid */}
-        <div
-          className={`grid grid-cols-1 sm:grid-cols-2 ${persona === "technical" ? "lg:grid-cols-4" : "lg:grid-cols-5"} gap-10 lg:gap-8 mb-16`}
-        >
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-8 mb-16">
           {/* Col 1: Brand & Bio */}
           <div className="lg:col-span-2 flex flex-col justify-between space-y-6">
             <div className="space-y-3">
@@ -134,115 +132,113 @@ export const Footer: React.FC = () => {
           </div>
 
           {/* Col 2: Interactive Arcade */}
-          {persona !== "technical" && (
-            <div className="space-y-4">
-              <span className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
-                <IconSparkles className="w-3.5 h-3.5 text-brand-cyan" />
-                Arcade
-              </span>
-              <ul className="space-y-2 text-xs font-mono">
-                <li>
-                  <Link
-                    href="/arcade"
-                    onMouseEnter={handleHover}
-                    className="text-zinc-400 hover:text-brand-cyan transition-colors"
-                  >
-                    Arcade ↗
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/arcade/laser-loon"
-                    onMouseEnter={handleHover}
-                    className="text-zinc-400 hover:text-brand-cyan transition-colors flex items-center gap-1.5"
-                  >
-                    <IconCrosshair className="w-3 h-3 text-cyan-400" />
-                    Laser Loon
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/arcade/quasi-puzzler"
-                    onMouseEnter={handleHover}
-                    className="text-zinc-400 hover:text-brand-cyan transition-colors flex items-center gap-1.5"
-                  >
-                    <IconBrain className="w-3 h-3 text-cyan-400" />
-                    Quasi-Puzzler
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/arcade/garmin-watch"
-                    onMouseEnter={handleHover}
-                    className="text-zinc-400 hover:text-brand-cyan transition-colors flex items-center gap-1.5"
-                  >
-                    <IconCpu className="w-3 h-3 text-cyan-400" />
-                    Monkey C Mayhem: Garmin Schvitz App
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/arcade/clinical-chaos"
-                    onMouseEnter={handleHover}
-                    className="text-zinc-400 hover:text-brand-cyan transition-colors flex items-center gap-1.5"
-                  >
-                    <IconShieldCheck className="w-3 h-3 text-cyan-400" />
-                    Clinical Trial Chaos
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/arcade/trial-and-error"
-                    onMouseEnter={handleHover}
-                    className="text-zinc-400 hover:text-brand-cyan transition-colors flex items-center gap-1.5"
-                  >
-                    <IconCards className="w-3 h-3 text-cyan-400" />
-                    Trial &amp; Error
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/arcade/study-director"
-                    onMouseEnter={handleHover}
-                    className="text-zinc-400 hover:text-brand-cyan transition-colors flex items-center gap-1.5"
-                  >
-                    <IconClipboardCheck className="w-3 h-3 text-cyan-400" />
-                    Study Director
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/arcade/retro-labyrinth"
-                    onMouseEnter={handleHover}
-                    className="text-zinc-400 hover:text-brand-cyan transition-colors flex items-center gap-1.5"
-                  >
-                    <IconTerminal className="w-3 h-3 text-cyan-400" />
-                    Retro Labyrinth
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/arcade/working-with-duck"
-                    onMouseEnter={handleHover}
-                    className="text-zinc-400 hover:text-brand-cyan transition-colors flex items-center gap-1.5"
-                  >
-                    <IconBone className="w-3 h-3 text-amber-400" />
-                    Working With Duck
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/arcade/meme-vault"
-                    onMouseEnter={handleHover}
-                    className="text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1.5"
-                  >
-                    <IconDeviceGamepad2 className="w-3 h-3 text-emerald-400" />
-                    Meme Vault 🔓
-                  </Link>
-                </li>
-              </ul>
-            </div>
-          )}
+          <div className="space-y-4">
+            <span className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
+              <IconSparkles className="w-3.5 h-3.5 text-brand-cyan" />
+              Arcade
+            </span>
+            <ul className="space-y-2 text-xs font-mono">
+              <li>
+                <Link
+                  href="/arcade"
+                  onMouseEnter={handleHover}
+                  className="text-zinc-400 hover:text-brand-cyan transition-colors"
+                >
+                  Arcade ↗
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/arcade/laser-loon"
+                  onMouseEnter={handleHover}
+                  className="text-zinc-400 hover:text-brand-cyan transition-colors flex items-center gap-1.5"
+                >
+                  <IconCrosshair className="w-3 h-3 text-cyan-400" />
+                  Laser Loon
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/arcade/quasi-puzzler"
+                  onMouseEnter={handleHover}
+                  className="text-zinc-400 hover:text-brand-cyan transition-colors flex items-center gap-1.5"
+                >
+                  <IconBrain className="w-3 h-3 text-cyan-400" />
+                  Quasi-Puzzler
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/arcade/garmin-watch"
+                  onMouseEnter={handleHover}
+                  className="text-zinc-400 hover:text-brand-cyan transition-colors flex items-center gap-1.5"
+                >
+                  <IconCpu className="w-3 h-3 text-cyan-400" />
+                  Monkey C Mayhem: Garmin Schvitz App
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/arcade/clinical-chaos"
+                  onMouseEnter={handleHover}
+                  className="text-zinc-400 hover:text-brand-cyan transition-colors flex items-center gap-1.5"
+                >
+                  <IconShieldCheck className="w-3 h-3 text-cyan-400" />
+                  Clinical Trial Chaos
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/arcade/trial-and-error"
+                  onMouseEnter={handleHover}
+                  className="text-zinc-400 hover:text-brand-cyan transition-colors flex items-center gap-1.5"
+                >
+                  <IconCards className="w-3 h-3 text-cyan-400" />
+                  Trial &amp; Error
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/arcade/study-director"
+                  onMouseEnter={handleHover}
+                  className="text-zinc-400 hover:text-brand-cyan transition-colors flex items-center gap-1.5"
+                >
+                  <IconClipboardCheck className="w-3 h-3 text-cyan-400" />
+                  Study Director
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/arcade/retro-labyrinth"
+                  onMouseEnter={handleHover}
+                  className="text-zinc-400 hover:text-brand-cyan transition-colors flex items-center gap-1.5"
+                >
+                  <IconTerminal className="w-3 h-3 text-cyan-400" />
+                  Retro Labyrinth
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/arcade/working-with-duck"
+                  onMouseEnter={handleHover}
+                  className="text-zinc-400 hover:text-brand-cyan transition-colors flex items-center gap-1.5"
+                >
+                  <IconBone className="w-3 h-3 text-amber-400" />
+                  Working With Duck
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/arcade/meme-vault"
+                  onMouseEnter={handleHover}
+                  className="text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1.5"
+                >
+                  <IconDeviceGamepad2 className="w-3 h-3 text-emerald-400" />
+                  Meme Vault 🔓
+                </Link>
+              </li>
+            </ul>
+          </div>
 
           {/* Col 3: Systems & Verification */}
           <div className="space-y-4">
@@ -330,7 +326,7 @@ export const Footer: React.FC = () => {
                   NeuroRecon Studio
                 </Link>
               </li>
-              {persona !== "technical" && (
+              {persona !== "behind-the-scenes" && (
                 <li>
                   <Link
                     href="/simulator"

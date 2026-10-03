@@ -338,11 +338,11 @@ describe("SEO Architecture & JSON-LD Schemas", () => {
     // No site name: app/layout.tsx templates it on as "%s | Frederick de
     // Ruiter". This previously asserted the branded string, which is what let
     // ten routes ship with the name rendered twice in the browser tab.
-    expect(metadata.title).toBe("Contact Fred: Projects and Roles");
+    expect(metadata.title).toBe("Contact Fred: Builds, Bugs, Questions");
     expect(metadata.description).toContain("Send Fred de Ruiter a note");
     // OpenGraph is not templated, so it is branded by buildRouteMetadata.
     expect(metadata.openGraph?.title).toBe(
-      "Contact Fred: Projects and Roles | Frederick de Ruiter"
+      "Contact Fred: Builds, Bugs, Questions | Frederick de Ruiter"
     );
     expect(metadata.openGraph?.description).toBe(metadata.description);
 

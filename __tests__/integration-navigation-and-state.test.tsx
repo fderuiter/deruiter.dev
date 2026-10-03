@@ -50,7 +50,8 @@ vi.mock("@/components/providers/SearchProvider", () => ({
 }));
 
 // Mock PersonaProvider
-let mockPersona: "technical" | "recruiter" | "default" = "technical";
+let mockPersona: "behind-the-scenes" | "professional" | "default" =
+  "behind-the-scenes";
 const mockSetPersona = vi.fn((p) => {
   mockPersona = p;
 });
@@ -81,7 +82,7 @@ describe("Navigation & Global State Integration Suite", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockPathname = "/";
-    mockPersona = "technical";
+    mockPersona = "behind-the-scenes";
     mockSearchOpen = false;
     document.body.style.overflow = "";
 
@@ -234,7 +235,7 @@ describe("Navigation & Global State Integration Suite", () => {
   });
 
   describe("3. Persona Perspective Switching & Synchronization", () => {
-    it("toggles persona state between technical and recruiter modes", async () => {
+    it("toggles persona state between Behind the Scenes and Professional modes", async () => {
       await act(async () => {
         root.render(<Navbar />);
       });
@@ -247,16 +248,16 @@ describe("Navigation & Global State Integration Suite", () => {
         hamburgerBtn.click();
       });
 
-      const recruiterButtons = Array.from(
+      const professionalButtons = Array.from(
         document.querySelectorAll("button")
-      ).filter((b) => b.textContent?.includes("RECRUITER"));
-      expect(recruiterButtons.length).toBeGreaterThan(0);
+      ).filter((b) => b.textContent?.includes("PROFESSIONAL"));
+      expect(professionalButtons.length).toBeGreaterThan(0);
 
       await act(async () => {
-        recruiterButtons[0].click();
+        professionalButtons[0].click();
       });
 
-      expect(mockSetPersona).toHaveBeenCalledWith("recruiter");
+      expect(mockSetPersona).toHaveBeenCalledWith("professional");
     });
   });
 });

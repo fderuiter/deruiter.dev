@@ -1,4 +1,8 @@
-import { createSocialImageResponse, OG_IMAGE_SIZE, OG_IMAGE_CONTENT_TYPE } from "@/lib/og-image";
+import {
+  createSocialImageResponse,
+  OG_IMAGE_SIZE,
+  OG_IMAGE_CONTENT_TYPE,
+} from "@/lib/og-image";
 
 export const runtime = "nodejs";
 export const alt = "Contact & Direct Inquiries | Frederick de Ruiter";
@@ -10,9 +14,15 @@ export default function Image() {
     category: "DIRECT CHANNEL // ENCRYPTED RELAY",
     title: "Direct Inquiries & Technical Collaboration",
     description:
-      "Send a direct message for systems engineering inquiries, consulting opportunities, or clinical data architecture discussions.",
+      "Send a note about an interesting build, an open-source idea, or a clinical data question.",
     badge: "DIRECT // RELAY",
-    tags: ["Inquiries", "Collaboration", "Consulting", "Architecture", "Engineering"],
+    tags: [
+      "Inquiries",
+      "Collaboration",
+      "Open Source",
+      "Architecture",
+      "Clinical Data",
+    ],
     systemStatus: "RELAY ACTIVE",
   });
 }

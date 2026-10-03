@@ -22,6 +22,15 @@ describe("ContactForm Component", () => {
     safeStorage.clear();
   });
 
+  it("offers peer intents only and no hiring intent (ADR 0047)", () => {
+    render(<ContactForm />);
+
+    for (const intent of ["general", "collaboration", "consulting", "other"]) {
+      expect(screen.getByRole("button", { name: intent })).toBeDefined();
+    }
+    expect(screen.queryByRole("button", { name: /recruit/i })).toBeNull();
+  });
+
   it("should render all form controls and honeypot trap correctly", () => {
     render(<ContactForm />);
 

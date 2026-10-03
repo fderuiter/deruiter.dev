@@ -6,4 +6,8 @@
 
 # Type Alias: TimelineMode
 
-> **TimelineMode** = `"recruiter"` \| `"reality"`
+> **TimelineMode** = [`PersonaType`](../../../lib/persona/type-aliases/PersonaType.md)
+
+Timeline reading perspective. Shares its values with the site-wide reading
+mode: "professional" renders the Professional Summary and
+"behind-the-scenes" renders the Behind the Scenes Reality.

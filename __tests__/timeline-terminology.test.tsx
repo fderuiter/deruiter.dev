@@ -144,7 +144,7 @@ describe("Timeline Inline-Marked RichNarrative Integration", () => {
 
     const buttons = Array.from(container.querySelectorAll("button"));
     const realityBtn = buttons.find((btn) =>
-      btn.textContent?.includes("HANDS-ON REALITY")
+      btn.textContent?.includes("BEHIND THE SCENES REALITY")
     );
     expect(realityBtn).toBeDefined();
 
@@ -156,23 +156,25 @@ describe("Timeline Inline-Marked RichNarrative Integration", () => {
     expect(container.textContent).toContain(
       "A study protocol can run to 150 pages."
     );
-    expect(container.textContent).not.toContain("I design eCRFs");
+    expect(container.textContent).not.toContain(
+      "I build and maintain the clinical databases"
+    );
   });
 
-  it("should toggle to formal recruiter view and render GxP and eCRF marked terms", async () => {
+  it("should toggle to the Professional Summary and render GxP and eCRF marked terms", async () => {
     await act(async () => {
       root.render(<Timeline />);
     });
 
-    // Find and click 'FORMAL SUMMARY' button
+    // Find and click the 'PROFESSIONAL SUMMARY' button
     const buttons = Array.from(container.querySelectorAll("button"));
-    const recruiterBtn = buttons.find((btn) =>
-      btn.textContent?.includes("FORMAL SUMMARY")
+    const professionalBtn = buttons.find((btn) =>
+      btn.textContent?.includes("PROFESSIONAL SUMMARY")
     );
-    expect(recruiterBtn).toBeDefined();
+    expect(professionalBtn).toBeDefined();
 
     await act(async () => {
-      recruiterBtn?.click();
+      professionalBtn?.click();
     });
 
     // GxP and eCRF should now be rendered inside interactive tooltip trigger spans
@@ -188,6 +190,35 @@ describe("Timeline Inline-Marked RichNarrative Integration", () => {
     expect(triggerTexts).toContain("Source Document Verification (SDV)");
   });
 
+  it("presents the current BRIGHT role as ongoing work in Professional mode and keeps the candid story behind the scenes", async () => {
+    await act(async () => {
+      root.render(<Timeline />);
+    });
+
+    // Professional is the default perspective.
+    const pressed = container.querySelector(
+      '[aria-label="Timeline Reading Perspective"] [aria-pressed="true"]'
+    );
+    expect(pressed?.textContent).toBe("PROFESSIONAL SUMMARY");
+    expect(container.textContent).toContain(
+      "I build and maintain the clinical databases behind active GxP research studies"
+    );
+
+    // The card-level toggle flips only that card to the candid version.
+    const cardToggle = container.querySelector(
+      'button[aria-label^="Professional view of Clinical Data Specialist"]'
+    ) as HTMLButtonElement;
+    expect(cardToggle?.textContent).toBe("Professional");
+    await act(async () => {
+      cardToggle.click();
+    });
+    expect(cardToggle.textContent).toBe("Behind the Scenes");
+    expect(container.textContent).toContain(
+      "The footnotes tend to earn their keep."
+    );
+    expect(container.textContent).toContain("I used Epic SlicerDicer");
+  });
+
   it("should dynamically translate terms and render simplified timeline dictionary slice when simplified-terminology switch is toggled", async () => {
     // Enable simplified-terminology in mock localStorage
     mockStorage.setItem("simplified-terminology", JSON.stringify(true));
@@ -196,13 +227,13 @@ describe("Timeline Inline-Marked RichNarrative Integration", () => {
       root.render(<Timeline />);
     });
 
-    // Switch to Formal Summary
+    // Switch to the Professional Summary
     const buttons = Array.from(container.querySelectorAll("button"));
-    const recruiterBtn = buttons.find((btn) =>
-      btn.textContent?.includes("FORMAL SUMMARY")
+    const professionalBtn = buttons.find((btn) =>
+      btn.textContent?.includes("PROFESSIONAL SUMMARY")
     );
     await act(async () => {
-      recruiterBtn?.click();
+      professionalBtn?.click();
     });
 
     // Timeline entries should display content from the simplified timeline dictionary slice
@@ -224,12 +255,12 @@ describe("Timeline Inline-Marked RichNarrative Integration", () => {
       root.render(<Timeline />);
     });
 
-    // Switch to recruiter mode
-    const recruiterBtn = Array.from(container.querySelectorAll("button")).find(
-      (btn) => btn.textContent?.includes("FORMAL SUMMARY")
-    );
+    // Switch to the Professional Summary
+    const professionalBtn = Array.from(
+      container.querySelectorAll("button")
+    ).find((btn) => btn.textContent?.includes("PROFESSIONAL SUMMARY"));
     await act(async () => {
-      recruiterBtn?.click();
+      professionalBtn?.click();
     });
 
     // Find the GxP trigger

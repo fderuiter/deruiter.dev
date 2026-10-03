@@ -24,6 +24,7 @@ import { CommitSparkline } from "@/components/CommitSparkline";
 import { useBentoLayout } from "@/components/providers/BentoLayoutContext";
 import { useTerminology } from "@/components/providers/TerminologyProvider";
 import { usePersona } from "@/components/providers/PersonaProvider";
+import type { PersonaType } from "@/lib/persona";
 import { compileTerms } from "@/lib/term-compiler";
 import { parsePretextBlocks } from "@/lib/pretext-block-parser";
 
@@ -303,7 +304,7 @@ const FormattedMarkdownText: React.FC<{ text: string; className?: string }> = ({
 
 interface CaseStudyBentoCardProps {
   study: BaseCaseStudy & { githubStats: GitHubStats | null };
-  activePersona?: "recruiter" | "technical" | "all";
+  activePersona?: PersonaType | "all";
   className?: string;
   preCalculatedHeight?: number;
   preCalculatedRealityHeight?: number;
@@ -371,7 +372,8 @@ export const CaseStudyBentoCard: React.FC<CaseStudyBentoCardProps> = ({
   }
 
   const mode =
-    overrideMode ?? (effectivePersona === "technical" ? "reality" : "pitch");
+    overrideMode ??
+    (effectivePersona === "behind-the-scenes" ? "reality" : "pitch");
 
   const effectiveRealityHeight =
     preCalculatedRealityHeight ||

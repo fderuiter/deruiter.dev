@@ -258,7 +258,7 @@ describe("Mobile Navigation Drawer & Touch Interaction Suite", () => {
   });
 
   it("includes the Incident Simulator route in the mobile drawer, matching desktop and footer coverage", async () => {
-    mockPersona = "recruiter";
+    mockPersona = "professional";
     await act(async () => {
       root.render(<Navbar />);
     });
@@ -276,8 +276,8 @@ describe("Mobile Navigation Drawer & Touch Interaction Suite", () => {
     expect(simulatorLink?.textContent).toContain("Incident Simulator");
   });
 
-  it("hides the Incident Simulator route in the mobile drawer for the technical persona, matching desktop", async () => {
-    mockPersona = "technical";
+  it("hides the Incident Simulator route in the mobile drawer for the Behind the Scenes persona, matching desktop", async () => {
+    mockPersona = "behind-the-scenes";
     await act(async () => {
       root.render(<Navbar />);
     });

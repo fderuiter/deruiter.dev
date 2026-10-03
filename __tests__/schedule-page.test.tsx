@@ -98,7 +98,7 @@ describe("SchedulePage Component & Interactive Agenda Customizer", () => {
 
     // Initially no subtopics selected -> default 30-min settings
     expect(container?.textContent).toContain("Default 30-min settings");
-    expect(container?.textContent).toContain("30-Min General Consultation");
+    expect(container?.textContent).toContain("30-Min General Chat");
     expect(container?.textContent).toContain("Est. 30 Mins");
 
     // Click subtopic button
@@ -115,7 +115,7 @@ describe("SchedulePage Component & Interactive Agenda Customizer", () => {
 
     expect(container?.textContent).toContain("1 item selected");
     expect(container?.textContent).toContain(
-      "Consultation Agenda: Code, Systems & Web Craft"
+      "Chat Agenda: Code, Systems & Web Craft"
     );
     expect(container?.textContent).toContain("Est. 10 Mins");
 
@@ -156,7 +156,7 @@ describe("SchedulePage Component & Interactive Agenda Customizer", () => {
     });
 
     expect(container?.textContent).toContain("Default 30-min settings");
-    expect(container?.textContent).toContain("30-Min General Consultation");
+    expect(container?.textContent).toContain("30-Min General Chat");
     expect(container?.textContent).toContain("Est. 30 Mins");
   });
 
@@ -209,8 +209,8 @@ describe("SchedulePage Component & Interactive Agenda Customizer", () => {
     expect(subjectInput).not.toBeNull();
     expect(messageInput).not.toBeNull();
 
-    expect(subjectInput.value).toBe("30-Min General Consultation");
-    expect(messageInput.value).toContain("30-minute general consultation call");
+    expect(subjectInput.value).toBe("30-Min General Chat");
+    expect(messageInput.value).toContain("30-minute general chat");
 
     // Toggle a subtopic
     const subtopicBtn = Array.from(
@@ -221,9 +221,7 @@ describe("SchedulePage Component & Interactive Agenda Customizer", () => {
       subtopicBtn?.click();
     });
 
-    expect(subjectInput.value).toBe(
-      "Consultation Agenda: Code, Systems & Web Craft"
-    );
+    expect(subjectInput.value).toBe("Chat Agenda: Code, Systems & Web Craft");
     expect(messageInput.value).toContain("Open-Source Tooling & DX (10m)");
   });
 
@@ -242,7 +240,7 @@ describe("SchedulePage Component & Interactive Agenda Customizer", () => {
     });
 
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
-      expect.stringContaining("30-minute general consultation call")
+      expect.stringContaining("30-minute general chat")
     );
   });
 });

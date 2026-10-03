@@ -32,7 +32,7 @@ vi.mock("@/components/providers/SearchProvider", () => ({
   }),
 }));
 
-let mockPersona: "technical" | "recruiter" = "recruiter";
+let mockPersona: "behind-the-scenes" | "professional" = "professional";
 vi.mock("@/components/providers/PersonaProvider", () => ({
   usePersona: () => ({
     persona: mockPersona,
@@ -63,7 +63,7 @@ describe("Navbar mobile drawer & Footer Systems route parity", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockPersona = "recruiter";
+    mockPersona = "professional";
     document.body.style.overflow = "";
 
     global.IntersectionObserver = class {
@@ -85,7 +85,7 @@ describe("Navbar mobile drawer & Footer Systems route parity", () => {
     document.body.style.overflow = "";
   });
 
-  it("shows the same Systems routes in the mobile drawer and the footer for the recruiter persona", async () => {
+  it("shows the same Systems routes in the mobile drawer and the footer for the Professional persona", async () => {
     await act(async () => {
       root.render(
         <>
@@ -122,8 +122,8 @@ describe("Navbar mobile drawer & Footer Systems route parity", () => {
     }
   });
 
-  it("hides the technical-persona-gated Incident Simulator route consistently in both the drawer and the footer", async () => {
-    mockPersona = "technical";
+  it("hides the Behind-the-Scenes-gated Incident Simulator route consistently in both the drawer and the footer", async () => {
+    mockPersona = "behind-the-scenes";
 
     await act(async () => {
       root.render(

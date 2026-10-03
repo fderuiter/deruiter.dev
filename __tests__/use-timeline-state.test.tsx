@@ -43,10 +43,10 @@ describe("useTimelineState Hook - Complete Unit & Coverage Suite", () => {
   it("1. should initialize with default state", () => {
     const { result, unmount } = renderHookHelper(() => useTimelineState());
 
-    expect(result.current.globalMode).toBe("reality");
+    expect(result.current.globalMode).toBe("behind-the-scenes");
     expect(result.current.cardOverrides).toEqual({});
-    expect(result.current.getCardMode(0)).toBe("reality");
-    expect(result.current.getCardMode(1)).toBe("reality");
+    expect(result.current.getCardMode(0)).toBe("behind-the-scenes");
+    expect(result.current.getCardMode(1)).toBe("behind-the-scenes");
 
     unmount();
   });
@@ -58,16 +58,16 @@ describe("useTimelineState Hook - Complete Unit & Coverage Suite", () => {
     act(() => {
       result.current.handleCardToggle(1);
     });
-    expect(result.current.cardOverrides).toEqual({ 1: "recruiter" });
-    expect(result.current.getCardMode(1)).toBe("recruiter");
+    expect(result.current.cardOverrides).toEqual({ 1: "professional" });
+    expect(result.current.getCardMode(1)).toBe("professional");
 
-    // Toggle global mode to recruiter
+    // Toggle global mode to professional
     act(() => {
-      result.current.handleGlobalToggle("recruiter");
+      result.current.handleGlobalToggle("professional");
     });
-    expect(result.current.globalMode).toBe("recruiter");
+    expect(result.current.globalMode).toBe("professional");
     expect(result.current.cardOverrides).toEqual({});
-    expect(result.current.getCardMode(1)).toBe("recruiter"); // Falls back to global recruiter because overrides are empty
+    expect(result.current.getCardMode(1)).toBe("professional"); // Falls back to global professional because overrides are empty
 
     unmount();
   });
@@ -75,50 +75,50 @@ describe("useTimelineState Hook - Complete Unit & Coverage Suite", () => {
   it("3. should correctly toggle card-level override", () => {
     const { result, unmount } = renderHookHelper(() => useTimelineState());
 
-    // Initially global mode is reality, card 2 is reality (fallback)
-    expect(result.current.getCardMode(2)).toBe("reality");
+    // Initially global mode is behind-the-scenes, card 2 is behind-the-scenes (fallback)
+    expect(result.current.getCardMode(2)).toBe("behind-the-scenes");
 
-    // Toggle card 2 -> overrides to recruiter
+    // Toggle card 2 -> overrides to professional
     act(() => {
       result.current.handleCardToggle(2);
     });
-    expect(result.current.getCardMode(2)).toBe("recruiter");
-    expect(result.current.cardOverrides[2]).toBe("recruiter");
+    expect(result.current.getCardMode(2)).toBe("professional");
+    expect(result.current.cardOverrides[2]).toBe("professional");
 
-    // Toggle card 2 again -> overrides to reality (opposite of previous override recruiter)
+    // Toggle card 2 again -> overrides to behind-the-scenes (opposite of previous override professional)
     act(() => {
       result.current.handleCardToggle(2);
     });
-    expect(result.current.getCardMode(2)).toBe("reality");
-    expect(result.current.cardOverrides[2]).toBe("reality");
+    expect(result.current.getCardMode(2)).toBe("behind-the-scenes");
+    expect(result.current.cardOverrides[2]).toBe("behind-the-scenes");
 
     // Verify un-overridden card still falls back to global
-    expect(result.current.getCardMode(5)).toBe("reality");
+    expect(result.current.getCardMode(5)).toBe("behind-the-scenes");
 
     unmount();
   });
 
-  it("4. should fallback correctly to recruiter when global is recruiter and card toggle transitions are active", () => {
+  it("4. should fallback correctly to professional when global is professional and card toggle transitions are active", () => {
     const { result, unmount } = renderHookHelper(() => useTimelineState());
 
     act(() => {
-      result.current.handleGlobalToggle("recruiter");
+      result.current.handleGlobalToggle("professional");
     });
-    expect(result.current.getCardMode(3)).toBe("recruiter");
+    expect(result.current.getCardMode(3)).toBe("professional");
 
-    // Toggle card 3 -> override to reality (opposite of global recruiter)
+    // Toggle card 3 -> override to behind-the-scenes (opposite of global professional)
     act(() => {
       result.current.handleCardToggle(3);
     });
-    expect(result.current.getCardMode(3)).toBe("reality");
-    expect(result.current.cardOverrides[3]).toBe("reality");
+    expect(result.current.getCardMode(3)).toBe("behind-the-scenes");
+    expect(result.current.cardOverrides[3]).toBe("behind-the-scenes");
 
-    // Toggle card 3 again -> opposite of override reality is recruiter
+    // Toggle card 3 again -> opposite of override behind-the-scenes is professional
     act(() => {
       result.current.handleCardToggle(3);
     });
-    expect(result.current.getCardMode(3)).toBe("recruiter");
-    expect(result.current.cardOverrides[3]).toBe("recruiter");
+    expect(result.current.getCardMode(3)).toBe("professional");
+    expect(result.current.cardOverrides[3]).toBe("professional");
 
     unmount();
   });

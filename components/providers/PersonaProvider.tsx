@@ -1,10 +1,21 @@
 "use client";
 
-import React, { createContext, useContext, useMemo, useCallback } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useCallback,
+} from "react";
 import { usePersistentState } from "@/hooks/usePersistentState";
 import { safeGetItem } from "@/lib/safe-storage";
-
-type PersonaType = "recruiter" | "technical";
+import {
+  DEFAULT_PERSONA,
+  PERSONA_STORAGE_KEY,
+  isLegacyPersonaValue,
+  normalizePersona,
+  type PersonaType,
+} from "@/lib/persona";
 
 interface PersonaContextType {
   persona: PersonaType;
@@ -14,10 +25,22 @@ interface PersonaContextType {
 const PersonaContext = createContext<PersonaContextType | null>(null);
 
 export function PersonaProvider({ children }: { children: React.ReactNode }) {
-  const [persona, setPersistentPersona] = usePersistentState<PersonaType>(
-    "global-persona",
-    "recruiter"
+  // Stored as a plain string so values written before the ADR 0047 rename
+  // (see LEGACY_*_PERSONA_VALUE in lib/persona) still resolve through
+  // normalizePersona.
+  const [storedPersona, setPersistentPersona] = usePersistentState<string>(
+    PERSONA_STORAGE_KEY,
+    DEFAULT_PERSONA
   );
+  const persona = normalizePersona(storedPersona);
+
+  // Rewrite a legacy value once so storage only ever holds current names.
+  // The visitor's mode is unchanged; only its spelling is.
+  useEffect(() => {
+    if (isLegacyPersonaValue(storedPersona)) {
+      setPersistentPersona(normalizePersona(storedPersona));
+    }
+  }, [storedPersona, setPersistentPersona]);
 
   const setPersona = useCallback(
     (newPersona: PersonaType) => {
@@ -25,7 +48,7 @@ export function PersonaProvider({ children }: { children: React.ReactNode }) {
       if (typeof window !== "undefined") {
         scrollY = window.scrollY;
       }
-      setPersistentPersona(newPersona);
+      setPersistentPersona(normalizePersona(newPersona));
       if (
         typeof window !== "undefined" &&
         typeof window.scrollTo === "function"
@@ -44,10 +67,7 @@ export function PersonaProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo(
     () => ({
-      persona:
-        persona === "technical" || persona === "recruiter"
-          ? persona
-          : "recruiter",
+      persona,
       setPersona,
     }),
     [persona, setPersona]
@@ -63,9 +83,7 @@ export function usePersona() {
   if (!context) {
     // Read through safeStorage so the envelope written by usePersistentState
     // (and any legacy bare string) resolves, and blocked storage cannot throw.
-    const stored = safeGetItem<unknown>("global-persona");
-    const persona: PersonaType =
-      stored === "technical" ? "technical" : "recruiter";
+    const persona = normalizePersona(safeGetItem<unknown>(PERSONA_STORAGE_KEY));
     return {
       persona,
       setPersona: () => {},

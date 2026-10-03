@@ -25,10 +25,13 @@ function extractStringsFromObject(obj: unknown): string[] {
 
 function extractSeedNarratives(fileContent: string): string[] {
   const narratives: string[] = [];
-  const payloadsBlockMatch = fileContent.match(/const\s+SEED_PAYLOADS\s*=([\s\S]*?);\s*(?:async\s+)?function/);
+  const payloadsBlockMatch = fileContent.match(
+    /const\s+SEED_PAYLOADS\s*=([\s\S]*?);\s*(?:async\s+)?function/
+  );
   const blockToParse = payloadsBlockMatch ? payloadsBlockMatch[1] : fileContent;
 
-  const fieldRegex = /(?:architectural_narrative|editorial_content)\s*:\s*([`"'])([\s\S]*?)\1/g;
+  const fieldRegex =
+    /(?:architectural_narrative|editorial_content)\s*:\s*([`"'])([\s\S]*?)\1/g;
   let match;
   while ((match = fieldRegex.exec(blockToParse)) !== null) {
     narratives.push(match[2]);
@@ -42,8 +45,10 @@ export function checkDictionaryDuplication(): string[] {
 
   const detailedTimelineStrings = new Set<string>();
   dictionary.detailed.timeline.forEach((item) => {
-    if (item.recruiterDescription) detailedTimelineStrings.add(item.recruiterDescription.trim());
-    if (item.realityDescription) detailedTimelineStrings.add(item.realityDescription.trim());
+    if (item.professionalDescription)
+      detailedTimelineStrings.add(item.professionalDescription.trim());
+    if (item.realityDescription)
+      detailedTimelineStrings.add(item.realityDescription.trim());
   });
 
   const detailedDomainStrings = new Set<string>();
@@ -53,9 +58,9 @@ export function checkDictionaryDuplication(): string[] {
   });
 
   dictionary.simplified.timeline.forEach((item, idx) => {
-    if (detailedTimelineStrings.has(item.recruiterDescription.trim())) {
+    if (detailedTimelineStrings.has(item.professionalDescription.trim())) {
       errors.push(
-        `[lib/i18n-dictionary.ts] Simplified timeline item [index=${idx}].recruiterDescription is duplicate of detailed timeline content: "${item.recruiterDescription}"`
+        `[lib/i18n-dictionary.ts] Simplified timeline item [index=${idx}].professionalDescription is duplicate of detailed timeline content: "${item.professionalDescription}"`
       );
     }
     if (detailedTimelineStrings.has(item.realityDescription.trim())) {
@@ -81,14 +86,25 @@ export function checkDictionaryDuplication(): string[] {
   return errors;
 }
 
-export function runTerminologyVerification(): { success: boolean; errors: string[] } {
+export function runTerminologyVerification(): {
+  success: boolean;
+  errors: string[];
+} {
   const errors: string[] = [];
 
   // 1. Verify i18n-dictionary
   const dictionaryStrings = extractStringsFromObject(dictionary);
   dictionaryStrings.forEach((str, idx) => {
-    if (str.includes("data-key") || str.includes("data-term") || str.includes("data-definition")) {
-      const res = validateTermTags(str, undefined, `lib/i18n-dictionary.ts[index=${idx}]`);
+    if (
+      str.includes("data-key") ||
+      str.includes("data-term") ||
+      str.includes("data-definition")
+    ) {
+      const res = validateTermTags(
+        str,
+        undefined,
+        `lib/i18n-dictionary.ts[index=${idx}]`
+      );
       if (!res.valid) {
         errors.push(...res.errors);
       }
@@ -142,8 +158,13 @@ export function runTerminologyVerification(): { success: boolean; errors: string
   };
 }
 
-if (require.main === module || (typeof process !== "undefined" && process.argv[1]?.includes("verify-terms"))) {
-  console.log("--- Verifying Terminology Glossary Keys & Tag Schema Integrity ---");
+if (
+  require.main === module ||
+  (typeof process !== "undefined" && process.argv[1]?.includes("verify-terms"))
+) {
+  console.log(
+    "--- Verifying Terminology Glossary Keys & Tag Schema Integrity ---"
+  );
   const result = runTerminologyVerification();
 
   if (!result.success) {

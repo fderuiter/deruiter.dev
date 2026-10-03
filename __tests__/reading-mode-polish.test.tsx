@@ -12,6 +12,8 @@ import {
   PersonaProvider,
   usePersona,
 } from "@/components/providers/PersonaProvider";
+import type { PersonaType } from "@/lib/persona";
+import { LiveAnnouncer } from "@/lib/a11y/announcer";
 import { Navbar } from "@/components/Navbar";
 import { Timeline } from "@/components/Timeline";
 import { A11yProvider } from "@/components/providers/A11yProvider";
@@ -112,25 +114,25 @@ describe("Reading Mode Polish (#634) Visitor Journey Suite", () => {
     });
 
     // Check desktop header buttons
-    const techBtn = container.querySelector(
-      'button[aria-label*="Technical Reading Mode"]'
+    const storyBtn = container.querySelector(
+      'button[aria-label*="Switch to Behind the Scenes Mode"]'
     ) as HTMLButtonElement;
-    const recruiterBtn = container.querySelector(
-      'button[aria-label*="Recruiter Reading Mode"]'
+    const professionalBtn = container.querySelector(
+      'button[aria-label*="Switch to Professional Mode"]'
     ) as HTMLButtonElement;
 
-    expect(techBtn).toBeTruthy();
-    expect(recruiterBtn).toBeTruthy();
-    expect(techBtn.getAttribute("aria-pressed")).toBe("false");
-    expect(recruiterBtn.getAttribute("aria-pressed")).toBe("true");
+    expect(storyBtn).toBeTruthy();
+    expect(professionalBtn).toBeTruthy();
+    expect(storyBtn.getAttribute("aria-pressed")).toBe("false");
+    expect(professionalBtn.getAttribute("aria-pressed")).toBe("true");
 
-    // Click technical mode button
+    // Click the Behind the Scenes button
     await act(async () => {
-      techBtn.click();
+      storyBtn.click();
     });
 
-    expect(techBtn.getAttribute("aria-pressed")).toBe("true");
-    expect(recruiterBtn.getAttribute("aria-pressed")).toBe("false");
+    expect(storyBtn.getAttribute("aria-pressed")).toBe("true");
+    expect(professionalBtn.getAttribute("aria-pressed")).toBe("false");
   });
 
   it("exposes detailed reading mode descriptions in preferences and mobile drawer", async () => {
@@ -154,19 +156,19 @@ describe("Reading Mode Polish (#634) Visitor Journey Suite", () => {
 
     const mobileDesc = document.getElementById("mobile-reading-mode-desc");
     expect(mobileDesc).toBeTruthy();
-    expect(mobileDesc?.textContent).toContain("Recruiter Mode");
+    expect(mobileDesc?.textContent).toContain("Professional Mode");
 
-    // Toggle to technical mode in mobile drawer
-    const mobileTechBtn = container.querySelector(
-      '#mobile-navigation button[aria-label*="Technical Reading Mode"]'
+    // Toggle to Behind the Scenes in the mobile drawer
+    const mobileStoryBtn = container.querySelector(
+      '#mobile-navigation button[aria-label*="Switch to Behind the Scenes Mode"]'
     ) as HTMLButtonElement;
-    expect(mobileTechBtn).toBeTruthy();
+    expect(mobileStoryBtn).toBeTruthy();
 
     await act(async () => {
-      mobileTechBtn.click();
+      mobileStoryBtn.click();
     });
 
-    expect(mobileDesc?.textContent).toContain("Technical Mode");
+    expect(mobileDesc?.textContent).toContain("Behind the Scenes Mode");
   });
 
   it("maintains focus on the active button when toggling reading mode", async () => {
@@ -180,19 +182,19 @@ describe("Reading Mode Polish (#634) Visitor Journey Suite", () => {
       );
     });
 
-    const techBtn = container.querySelector(
-      'button[aria-label*="Technical Reading Mode"]'
+    const storyBtn = container.querySelector(
+      'button[aria-label*="Switch to Behind the Scenes Mode"]'
     ) as HTMLButtonElement;
 
-    techBtn.focus();
-    expect(document.activeElement).toBe(techBtn);
+    storyBtn.focus();
+    expect(document.activeElement).toBe(storyBtn);
 
     await act(async () => {
-      techBtn.click();
+      storyBtn.click();
     });
 
-    // Focus must remain on the technical button and not drop to body
-    expect(document.activeElement).toBe(techBtn);
+    // Focus must remain on the Behind the Scenes button and not drop to body
+    expect(document.activeElement).toBe(storyBtn);
   });
 
   it("persists selection to storage and respects default state", async () => {
@@ -213,9 +215,9 @@ describe("Reading Mode Polish (#634) Visitor Journey Suite", () => {
       );
     });
 
-    expect(activePersona).toBe("recruiter");
+    expect(activePersona).toBe("professional");
 
-    // Pre-set stored preference
+    // Pre-set stored preference (a pre-rename bare value)
     mockStorage.setItem("global-persona", "technical");
 
     await act(async () => {
@@ -226,10 +228,10 @@ describe("Reading Mode Polish (#634) Visitor Journey Suite", () => {
       );
     });
 
-    expect(activePersona).toBe("technical");
+    expect(activePersona).toBe("behind-the-scenes");
   });
 
-  it("falls back safely to recruiter mode when storage throws an error", async () => {
+  it("falls back safely to Professional mode when storage throws an error", async () => {
     safeStorage.clear();
     vi.spyOn(mockStorage, "getItem").mockImplementation(() => {
       throw new Error("SecurityError: Access is denied");
@@ -250,7 +252,7 @@ describe("Reading Mode Polish (#634) Visitor Journey Suite", () => {
       );
     });
 
-    expect(activePersona).toBe("recruiter");
+    expect(activePersona).toBe("professional");
   });
 
   it("preserves scroll position during reading mode transitions", async () => {
@@ -262,7 +264,7 @@ describe("Reading Mode Polish (#634) Visitor Journey Suite", () => {
       writable: true,
     });
 
-    let triggerSetPersona: (p: "recruiter" | "technical") => void = () => {};
+    let triggerSetPersona: (p: PersonaType) => void = () => {};
 
     const TestComponent = () => {
       const { persona, setPersona } = usePersona();
@@ -279,7 +281,7 @@ describe("Reading Mode Polish (#634) Visitor Journey Suite", () => {
     });
 
     await act(async () => {
-      triggerSetPersona("technical");
+      triggerSetPersona("behind-the-scenes");
       // Execute any pending animation frames
       await new Promise((resolve) => requestAnimationFrame(resolve));
     });
@@ -290,9 +292,11 @@ describe("Reading Mode Polish (#634) Visitor Journey Suite", () => {
   });
 
   it("announces perspective mode changes in the career Timeline", async () => {
+    const announcer = new LiveAnnouncer();
+    vi.spyOn(announcer, "announce");
     await act(async () => {
       root.render(
-        <A11yProvider>
+        <A11yProvider announcer={announcer}>
           <PersonaProvider>
             <Timeline />
           </PersonaProvider>
@@ -301,7 +305,7 @@ describe("Reading Mode Polish (#634) Visitor Journey Suite", () => {
     });
 
     const realityBtn = container.querySelector(
-      'button[aria-label*="Hands-On Reality Mode"]'
+      'button[aria-label*="Behind the Scenes Reality"]'
     ) as HTMLButtonElement;
     expect(realityBtn).toBeTruthy();
 
@@ -310,8 +314,22 @@ describe("Reading Mode Polish (#634) Visitor Journey Suite", () => {
     });
 
     expect(realityBtn.getAttribute("aria-pressed")).toBe("true");
+    expect(announcer.announce).toHaveBeenLastCalledWith(
+      expect.stringContaining("Timeline switched to Behind the Scenes Reality"),
+      "assertive"
+    );
 
-    const liveRegion = container.querySelector('div[aria-live="assertive"]');
-    expect(liveRegion?.textContent).toContain("Technical");
+    // A card-level flip describes which role changed and to what.
+    const cardToggle = container.querySelector(
+      'button[aria-label^="Behind the Scenes view of Clinical Data Specialist"]'
+    ) as HTMLButtonElement;
+    expect(cardToggle).toBeTruthy();
+    await act(async () => {
+      cardToggle.click();
+    });
+    expect(announcer.announce).toHaveBeenLastCalledWith(
+      "Clinical Data Specialist now shows Professional Summary.",
+      "polite"
+    );
   });
 });

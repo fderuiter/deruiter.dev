@@ -390,7 +390,7 @@ To prevent Stored Cross-Site Scripting (XSS) attacks when rendering complex HTML
 
 ## SEO, Open Graph & Crawling Optimization (Issue #36)
 
-To optimize discovering technical showcase materials for recruiters and crawler bots, we integrate Next.js 16 native metadata features:
+To optimize discovering technical showcase materials for peer engineers and crawler bots, we integrate Next.js 16 native metadata features:
 
 - **Canonical Alternates:** Automatically generates unique dynamic `<link rel="canonical">` elements on per-page view states using Next.js Metadata API.
 - **Dynamic Case Study Serialization:** Implements custom `generateMetadata()` on `/case-studies/[slug]` routes to dynamically extract and construct SEO/Open Graph descriptions, article tags, and published timelines directly from Prisma database schemas.

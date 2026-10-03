@@ -4,6 +4,8 @@
 
 Accepted on 2026-09-13. Governs epic #757 and its child tickets (#758–#767). Builds on the **Resilient Hybrid Fallback** and **Free-Tier Offloading Architecture** established for `CaseStudy` (ADR 0036) and the **High-Assurance Systems Case Study Standard** (`CONTEXT.md`).
 
+The recruiter audience named below was retired by [ADR 0047](0047-peer-engineering-narrative-and-dual-layer-perspective.md): the site now writes for peer engineers.
+
 ## Context
 
 The portfolio's SEO strategy already promises a **Systems Dispatch Newsletter** ("periodic technical retrospectives on formal verification, AST compilers, CDISC clinical data systems, and browser physics" in `lib/services/email-service.ts`, `/api/newsletter`), but nothing indexes, permalinks, or archives that writing. There is no crawlable surface for it, and no RSS feed for the technical readers (recruiters, engineers) this site is built for.

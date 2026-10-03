@@ -206,16 +206,16 @@ export default function SchedulePage() {
 
   const computedSubject = useMemo(() => {
     if (selectedCategories.length === 0) {
-      return "30-Min General Consultation";
+      return "30-Min General Chat";
     }
     const topicStr = selectedCategories.join(", ");
-    const subject = `Consultation Agenda: ${topicStr}`;
+    const subject = `Chat Agenda: ${topicStr}`;
     return subject.length > 150 ? subject.slice(0, 147) + "..." : subject;
   }, [selectedCategories]);
 
   const computedMessage = useMemo(() => {
     if (selectedSubtopicsList.length === 0) {
-      return `30-minute general consultation call (Timezone: ${selectedTimeZone}). Looking forward to connecting!`;
+      return `30-minute general chat (Timezone: ${selectedTimeZone}). Looking forward to connecting!`;
     }
 
     const grouped: Record<string, string[]> = {};
@@ -342,8 +342,7 @@ export default function SchedulePage() {
               </h2>
             </div>
             <p className="text-xs text-zinc-400">
-              Select topics &amp; sub-items to structure our 30-minute
-              consultation.
+              Select topics &amp; sub-items to structure our 30-minute chat.
             </p>
           </div>
 
@@ -597,7 +596,7 @@ export default function SchedulePage() {
 
           <div className="w-full max-w-2xl text-left">
             <ContactForm
-              initialIntent="consulting"
+              initialIntent="collaboration"
               initialSubject={computedSubject}
               initialMessage={computedMessage}
             />

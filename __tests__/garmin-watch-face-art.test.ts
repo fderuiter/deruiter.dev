@@ -1,3 +1,4 @@
+import { fromAny } from "@total-typescript/shoehorn";
 // Monkey C Mayhem watch art (#1520): the data-field ring stays off the lane
 // and inside the round screen, obstacles map to pictograms, the crash face
 // is one layer, and the hardware geometry keeps the canvas on the screen.
@@ -53,34 +54,38 @@ function recordingCtx() {
     textAlign: "start" as CanvasTextAlign,
   };
   const gradient = { addColorStop: vi.fn() };
-  const ctx = new Proxy(state as Record<string, unknown>, {
-    get(target, key: string) {
-      if (key in target) return target[key];
-      if (key === "fillText") {
-        return (text: string, x: number, y: number) => {
-          const px = Number(/([\d.]+)px/.exec(String(target.font))?.[1] ?? 10);
-          calls.push({
-            text,
-            x,
-            y,
-            px,
-            align: target.textAlign as CanvasTextAlign,
-          });
-        };
-      }
-      if (key === "measureText") {
-        return (text: string) => ({ width: text.length * 6 });
-      }
-      if (key === "createLinearGradient" || key === "createRadialGradient") {
-        return () => gradient;
-      }
-      return () => {};
-    },
-    set(target, key: string, value) {
-      target[key] = value;
-      return true;
-    },
-  }) as unknown as CanvasRenderingContext2D;
+  const ctx = fromAny<CanvasRenderingContext2D, unknown>(
+    new Proxy(state as Record<string, unknown>, {
+      get(target, key: string) {
+        if (key in target) return target[key];
+        if (key === "fillText") {
+          return (text: string, x: number, y: number) => {
+            const px = Number(
+              /([\d.]+)px/.exec(String(target.font))?.[1] ?? 10
+            );
+            calls.push({
+              text,
+              x,
+              y,
+              px,
+              align: target.textAlign as CanvasTextAlign,
+            });
+          };
+        }
+        if (key === "measureText") {
+          return (text: string) => ({ width: text.length * 6 });
+        }
+        if (key === "createLinearGradient" || key === "createRadialGradient") {
+          return () => gradient;
+        }
+        return () => {};
+      },
+      set(target, key: string, value) {
+        target[key] = value;
+        return true;
+      },
+    })
+  );
   return { ctx, calls };
 }
 

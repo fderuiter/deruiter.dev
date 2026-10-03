@@ -16,6 +16,8 @@ export const GAME_FONT_FALLBACK_STACK =
 export const GAME_FONT_VARIABLE = "--font-geist-mono";
 
 let cachedFamily: string | null = null;
+let lastEmptyRead = Number.NEGATIVE_INFINITY;
+const EMPTY_RETRY_MS = 1000;
 
 /**
  * Builds a canvas `font` shorthand from a size, weight and family list.
@@ -56,13 +58,20 @@ export function resolveGameFontFamily(): string {
   if (cachedFamily) return cachedFamily;
   if (typeof document === "undefined" || typeof getComputedStyle !== "function")
     return "";
+  // Canvas games call this every frame. While the variable is still unset,
+  // re-read it at most once a second rather than forcing a style recalc on
+  // every text draw.
+  const now = Date.now();
+  if (now - lastEmptyRead < EMPTY_RETRY_MS) return "";
   try {
     const value = getComputedStyle(document.documentElement)
       .getPropertyValue(GAME_FONT_VARIABLE)
       .trim();
     if (value) cachedFamily = value;
+    else lastEmptyRead = now;
     return value;
   } catch {
+    lastEmptyRead = now;
     return "";
   }
 }

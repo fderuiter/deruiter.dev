@@ -1,4 +1,4 @@
-import { clamp, gameFont } from "@/lib/game-utils";
+import { buildGameFont, clamp, resolveGameFontFamily } from "@/lib/game-utils";
 import {
   drawOutfitAvatar,
   isSubjectFullyCompliant,
@@ -47,10 +47,22 @@ export interface FloorAnimState {
   lastDrawAt: number;
   fx: FolderFx[];
   chuteFlash: { domain: CDISCDomain; until: number; tone: "good" | "bad" }[];
+  /**
+   * Pre-rendered static art (wall, catwalk, floor, chutes, the player), one
+   * bitmap per layer, rebuilt only when what it shows changes. Redrawing it
+   * every frame cost far more than the moving parts.
+   */
+  layers: Map<string, { key: string; canvas: HTMLCanvasElement }>;
 }
 
 export function createFloorAnimState(): FloorAnimState {
-  return { folderX: new Map(), lastDrawAt: 0, fx: [], chuteFlash: [] };
+  return {
+    folderX: new Map(),
+    lastDrawAt: 0,
+    fx: [],
+    chuteFlash: [],
+    layers: new Map(),
+  };
 }
 
 /** What the floor frame shows beyond the simulation state. */
@@ -72,11 +84,68 @@ export interface ConveyorDrawOptions {
    */
   calm: boolean;
   anim: FloorAnimState;
+  /** Device pixels per logical pixel, so cached layers stay sharp. */
+  pixelRatio?: number;
+}
+
+// The page's Geist Mono family, read once and then reused. While the
+// variable is unset (before fonts load, or in a test DOM) it is re-read at
+// most once a second, never per text draw: each read is a style recalc.
+let fontFamily = "";
+let fontCheckedAt = -Infinity;
+
+function refreshFontFamily(now: number): void {
+  if (fontFamily || now - fontCheckedAt < 1000) return;
+  fontCheckedAt = now;
+  fontFamily = resolveGameFontFamily();
 }
 
 /** Geist Mono, as loaded by the page, so canvas and DOM type match. */
 function monoFont(size: number, weight = 700): string {
-  return gameFont(size, weight);
+  return buildGameFont(size, weight, fontFamily);
+}
+
+/**
+ * Draws a static layer from its cached bitmap, painting it first when its
+ * key (everything the layer depends on) has changed. Falls back to painting
+ * straight onto the frame where no offscreen canvas can be made.
+ */
+function cachedLayer(
+  anim: FloorAnimState,
+  name: string,
+  key: string,
+  width: number,
+  height: number,
+  pixelRatio: number,
+  paint: (layer: CanvasRenderingContext2D) => void
+): HTMLCanvasElement | null {
+  const entry = anim.layers.get(name);
+  if (entry && entry.key === key) return entry.canvas;
+  const canvas =
+    typeof document !== "undefined" ? document.createElement("canvas") : null;
+  const layer = canvas?.getContext("2d") ?? null;
+  if (!canvas || !layer) return null;
+  canvas.width = Math.max(1, Math.round(width * pixelRatio));
+  canvas.height = Math.max(1, Math.round(height * pixelRatio));
+  layer.scale(pixelRatio, pixelRatio);
+  paint(layer);
+  anim.layers.set(name, { key, canvas });
+  return canvas;
+}
+
+function drawLayer(
+  ctx: CanvasRenderingContext2D,
+  anim: FloorAnimState,
+  name: string,
+  key: string,
+  width: number,
+  height: number,
+  pixelRatio: number,
+  paint: (layer: CanvasRenderingContext2D) => void
+): void {
+  const canvas = cachedLayer(anim, name, key, width, height, pixelRatio, paint);
+  if (canvas) ctx.drawImage(canvas, 0, 0, width, height);
+  else paint(ctx);
 }
 
 function roundRect(
@@ -383,11 +452,11 @@ function drawCatwalk(
   for (let x = left; x < width - 8; x += 52) ctx.fillRect(x, y - 18, 2, 18);
 }
 
-function drawBelt(
+/** The belt's static frame: legs, surface, rollers and the inbound hatch. */
+function drawBeltBase(
   ctx: CanvasRenderingContext2D,
   width: number,
-  g: ConveyorGeometry,
-  beltOffset: number
+  g: ConveyorGeometry
 ) {
   const x0 = g.beltLeft - 4;
   const x1 = g.beltRight + 4;
@@ -399,41 +468,22 @@ function drawBelt(
     ctx.fillRect(x, frameTop, 5, g.floorY - frameTop);
   }
 
-  // Belt surface: tread marks travel left, toward the desk.
+  // Belt surface; its tread marks move, so they are drawn per frame.
   ctx.fillStyle = "#121419";
   ctx.fillRect(x0, g.beltY, x1 - x0, 5);
-  ctx.save();
-  ctx.beginPath();
-  ctx.rect(x0, g.beltY, x1 - x0, 5);
-  ctx.clip();
-  ctx.fillStyle = "#262a33";
-  const shift = ((beltOffset % 14) + 14) % 14;
-  for (let x = x0 - shift; x < x1 + 14; x += 14) {
-    ctx.fillRect(x, g.beltY + 1, 6, 2);
-  }
-  ctx.restore();
 
   // Frame with rollers.
   ctx.fillStyle = "#22262f";
   ctx.fillRect(x0, frameTop, x1 - x0, g.beltHeight - 5);
   ctx.fillStyle = "rgba(255,255,255,0.08)";
   ctx.fillRect(x0, frameTop, x1 - x0, 1);
-  const r = Math.max(3, (g.beltHeight - 5) / 2 - 2);
-  const cy = frameTop + (g.beltHeight - 5) / 2;
-  const angle = -beltOffset / r;
+  const { r, cy } = rollerMetrics(g);
+  ctx.fillStyle = "#2f3440";
   for (let x = x0 + 12; x < x1 - 6; x += 26) {
-    ctx.fillStyle = "#2f3440";
     ctx.beginPath();
     ctx.arc(x, cy, r, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = "#4b5260";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(x - Math.cos(angle) * r, cy - Math.sin(angle) * r);
-    ctx.lineTo(x + Math.cos(angle) * r, cy + Math.sin(angle) * r);
-    ctx.stroke();
   }
-
   // Inbound hatch on the right: new folders arrive from the sites.
   const hx = width - 12;
   ctx.fillStyle = "#07080a";
@@ -442,14 +492,78 @@ function drawBelt(
   ctx.fillRect(hx - 2, g.subjectTop - 14, 14, 3);
 }
 
+function rollerMetrics(g: ConveyorGeometry): { r: number; cy: number } {
+  const frameTop = g.beltY + 5;
+  return {
+    r: Math.max(3, (g.beltHeight - 5) / 2 - 2),
+    cy: frameTop + (g.beltHeight - 5) / 2,
+  };
+}
+
+const TREAD_PITCH = 14;
+
+/**
+ * The moving part of the belt: tread marks travelling left toward the desk
+ * (one cached strip, shifted) and a spoke on each roller turning with it.
+ */
+function drawBeltMotion(
+  ctx: CanvasRenderingContext2D,
+  g: ConveyorGeometry,
+  beltOffset: number,
+  anim: FloorAnimState,
+  pixelRatio: number
+) {
+  const x0 = g.beltLeft - 4;
+  const x1 = g.beltRight + 4;
+  const span = x1 - x0 + TREAD_PITCH;
+  const paintTreads = (layer: CanvasRenderingContext2D, dx: number) => {
+    layer.fillStyle = "#262a33";
+    for (let x = dx; x < dx + span; x += TREAD_PITCH) {
+      layer.fillRect(x, 1, 6, 2);
+    }
+  };
+  const shift = ((beltOffset % TREAD_PITCH) + TREAD_PITCH) % TREAD_PITCH;
+  const strip = cachedLayer(
+    anim,
+    "treads",
+    `${span}@${pixelRatio}`,
+    span,
+    5,
+    pixelRatio,
+    (layer) => paintTreads(layer, 0)
+  );
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x0, g.beltY, x1 - x0, 5);
+  ctx.clip();
+  if (strip) {
+    ctx.drawImage(strip, x0 - shift, g.beltY, span, 5);
+  } else {
+    ctx.translate(0, g.beltY);
+    paintTreads(ctx, x0 - shift);
+  }
+  ctx.restore();
+
+  const { r, cy } = rollerMetrics(g);
+  const angle = -beltOffset / r;
+  const dx = Math.cos(angle) * r;
+  const dy = Math.sin(angle) * r;
+  ctx.strokeStyle = "#4b5260";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let x = x0 + 12; x < x1 - 6; x += 26) {
+    ctx.moveTo(x - dx, cy - dy);
+    ctx.lineTo(x + dx, cy + dy);
+  }
+  ctx.stroke();
+}
+
 function drawChutes(
   ctx: CanvasRenderingContext2D,
   width: number,
   g: ConveyorGeometry,
   stations: readonly { id: CDISCDomain; color: string }[],
-  accepting: readonly CDISCDomain[],
-  anim: FloorAnimState,
-  now: number
+  accepting: readonly CDISCDomain[]
 ) {
   const slots = getChuteSlots(width, stations.length, g.beltLeft);
   slots.forEach((slot, i) => {
@@ -457,9 +571,6 @@ function drawChutes(
     const top = g.chuteTop;
     const half = slot.mouth / 2;
     const tube = slot.mouth * 0.42;
-    const flash = anim.chuteFlash.find(
-      (f) => f.domain === station.id && f.until > now
-    );
 
     // Pneumatic tube down into the floor, with a cool glass highlight.
     ctx.fillStyle = "#1a1d24";
@@ -476,11 +587,7 @@ function drawChutes(
     ctx.lineTo(slot.cx + tube / 2, top + 15);
     ctx.lineTo(slot.cx - tube / 2, top + 15);
     ctx.closePath();
-    ctx.fillStyle = flash
-      ? flash.tone === "good"
-        ? "rgba(16,185,129,0.55)"
-        : "rgba(239,68,68,0.55)"
-      : "#23272f";
+    ctx.fillStyle = "#23272f";
     ctx.fill();
     ctx.fillStyle = station.color;
     ctx.fillRect(slot.cx - half, top - 1, slot.mouth, 3);
@@ -517,6 +624,37 @@ function drawChutes(
     ctx.textAlign = "center";
     ctx.fillText(`${i + 1} ${station.id}`, slot.cx, plateY + 11);
     ctx.textAlign = "left";
+  });
+}
+
+/** A routed or rejected folder lights its chute mouth for a moment. */
+function drawChuteFlashes(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  g: ConveyorGeometry,
+  stations: readonly { id: CDISCDomain; color: string }[],
+  anim: FloorAnimState,
+  now: number
+) {
+  if (anim.chuteFlash.length === 0) return;
+  const slots = getChuteSlots(width, stations.length, g.beltLeft);
+  slots.forEach((slot, i) => {
+    const flash = anim.chuteFlash.find(
+      (f) => f.domain === stations[i].id && f.until > now
+    );
+    if (!flash) return;
+    const top = g.chuteTop;
+    const half = slot.mouth / 2;
+    const tube = slot.mouth * 0.42;
+    ctx.beginPath();
+    ctx.moveTo(slot.cx - half, top + 2);
+    ctx.lineTo(slot.cx + half, top + 2);
+    ctx.lineTo(slot.cx + tube / 2, top + 15);
+    ctx.lineTo(slot.cx - tube / 2, top + 15);
+    ctx.closePath();
+    ctx.fillStyle =
+      flash.tone === "good" ? "rgba(16,185,129,0.55)" : "rgba(239,68,68,0.55)";
+    ctx.fill();
   });
 }
 
@@ -923,6 +1061,7 @@ export function drawConveyor(
   opts: ConveyorDrawOptions
 ): void {
   const { anim, now, calm, stations, selectedSubjectId } = opts;
+  refreshFontFamily(now);
   const g = getConveyorGeometry(width, height);
   const style = getOfficeFloorStyle(opts.officeId, opts.floorColor);
   const dt = anim.lastDrawAt > 0 ? (now - anim.lastDrawAt) / 1000 : 1;
@@ -950,15 +1089,40 @@ export function drawConveyor(
     ctx.fillText(`QUEUE ${subjects.length}/5`, width - 24, 20);
     ctx.textAlign = "left";
   } else {
-    drawWall(ctx, width, g, style);
-    drawCatwalk(ctx, width, g, "deck");
+    const ratio = opts.pixelRatio ?? 1;
+    const size = `${width}x${height}@${ratio}`;
+    const office = `${size}|${opts.officeId}|${opts.floorColor}|${fontFamily}`;
+    drawLayer(ctx, anim, "back", office, width, height, ratio, (layer) => {
+      drawWall(layer, width, g, style);
+      drawCatwalk(layer, width, g, "deck");
+    });
     if (cone) drawSightCone(ctx, cone);
     drawAuditor(ctx, width, g, auditorState);
-    drawCatwalk(ctx, width, g, "rail");
-    drawFloor(ctx, width, height, g, style);
-    drawBelt(ctx, width, g, opts.beltOffset);
-    drawChutes(ctx, width, g, stations, opts.acceptingDomains, anim, now);
-    drawPlayer(ctx, g, opts.outfit);
+    drawLayer(ctx, anim, "front", office, width, height, ratio, (layer) => {
+      drawCatwalk(layer, width, g, "rail");
+      drawFloor(layer, width, height, g, style);
+    });
+    drawLayer(ctx, anim, "belt", size, width, height, ratio, (layer) =>
+      drawBeltBase(layer, width, g)
+    );
+    drawBeltMotion(ctx, g, opts.beltOffset, anim, ratio);
+    const chuteKey = `${size}|${fontFamily}|${stations
+      .map((s) => `${s.id}${s.color}`)
+      .join(",")}|${opts.acceptingDomains.join(",")}`;
+    drawLayer(ctx, anim, "chutes", chuteKey, width, height, ratio, (layer) =>
+      drawChutes(layer, width, g, stations, opts.acceptingDomains)
+    );
+    drawChuteFlashes(ctx, width, g, stations, anim, now);
+    drawLayer(
+      ctx,
+      anim,
+      "player",
+      `${size}|${opts.outfit.id}|${fontFamily}`,
+      width,
+      height,
+      ratio,
+      (layer) => drawPlayer(layer, g, opts.outfit)
+    );
   }
 
   // Folders resting on the belt. Each eases toward its slot so the belt

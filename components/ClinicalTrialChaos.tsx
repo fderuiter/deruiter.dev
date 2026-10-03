@@ -1449,6 +1449,7 @@ export const ClinicalTrialChaos: React.FC = () => {
         now: performance.now(),
         calm: still || prefersCalmMotion(),
         anim: floorAnimRef.current,
+        pixelRatio: conveyorViewRef.current.scale,
       }),
     [
       selectedSubjectId,

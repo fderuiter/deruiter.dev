@@ -1,3 +1,4 @@
+import { fromPartial } from "@total-typescript/shoehorn";
 // @vitest-environment jsdom
 //
 // #1526: the Meme Vault sampler face. Pure geometry for the pads, ring and
@@ -181,11 +182,11 @@ describe("Meme Vault sampler face (#1526)", () => {
       for (let i = 0; i < buf.length; i++) buf[i] = Math.sin(i / 8);
     });
     return {
-      node: {
+      node: fromPartial<AnalyserNode>({
         fftSize: 256,
         context: { sampleRate: 48000 },
         getFloatTimeDomainData,
-      } as unknown as AnalyserNode,
+      }),
       getFloatTimeDomainData,
     };
   }

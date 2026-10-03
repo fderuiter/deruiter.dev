@@ -263,7 +263,7 @@ export const MemeVaultClient: React.FC = () => {
               className="inline-flex min-h-[40px] items-center gap-2 rounded-md border border-white/[0.08] bg-[#13151a] px-3 text-xs font-semibold text-zinc-300 transition-colors hover:border-white/[0.16] hover:text-zinc-100 active:scale-[0.98]"
             >
               {muted ? (
-                <IconVolumeOff className="h-4 w-4 text-zinc-500" />
+                <IconVolumeOff className="h-4 w-4 text-zinc-400" />
               ) : (
                 <IconVolume className="h-4 w-4 text-emerald-400" />
               )}
@@ -283,19 +283,19 @@ export const MemeVaultClient: React.FC = () => {
               />
               <dl className="mt-3 hidden grid-cols-2 gap-px overflow-hidden rounded-lg border border-white/[0.08] bg-white/[0.08] font-mono text-[11px] tabular-nums xl:grid">
                 <div className="bg-[#0d0e11] p-2.5">
-                  <dt className="uppercase tracking-wider text-zinc-500">
+                  <dt className="uppercase tracking-wider text-zinc-400">
                     Pads
                   </dt>
                   <dd className="mt-0.5 text-zinc-200">8 · keys 1–8</dd>
                 </div>
                 <div className="bg-[#0d0e11] p-2.5">
-                  <dt className="uppercase tracking-wider text-zinc-500">
+                  <dt className="uppercase tracking-wider text-zinc-400">
                     Output
                   </dt>
                   <dd className="mt-0.5 text-zinc-200">1 ch mono</dd>
                 </div>
                 <div className="col-span-2 bg-[#0d0e11] p-2.5">
-                  <dt className="uppercase tracking-wider text-zinc-500">
+                  <dt className="uppercase tracking-wider text-zinc-400">
                     Last pad
                   </dt>
                   <dd className="mt-0.5 truncate text-zinc-200">
@@ -413,7 +413,7 @@ export const MemeVaultClient: React.FC = () => {
                 </div>
 
                 <div className="flex items-center justify-between pt-3 border-t border-white/[0.06] text-xs">
-                  <cite className="text-zinc-500 text-[11px] truncate max-w-[200px] sm:max-w-xs not-italic">
+                  <cite className="text-zinc-400 text-[11px] truncate max-w-[200px] sm:max-w-xs not-italic">
                     by {q.author}
                   </cite>
                   <button

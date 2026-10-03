@@ -175,22 +175,47 @@ describe("ScorePlayer on the Card Table", () => {
     expect(screen.getByTestId("blind-cleared-flash").textContent).toBe("");
   });
 
-  it("shakes on the zero-score rule when loud effects are on, and not below 768px", () => {
-    render(<CardTable />);
-    playZeroedPair();
-    for (let i = 0; i < 20 && !screen.queryByTestId("zero-slam"); i++) {
-      advance(450);
-    }
-    expect(player()!.querySelector(".te-loud-shake")).not.toBeNull();
-    cleanup();
+  it("shakes and flashes the stage through useArcadeFx on the zero-score rule, and not below 768px", () => {
+    // The Arcade Kit shakes with the Web Animations API (#1524), which jsdom
+    // lacks; a stub records which element each animation ran on.
+    const animate = vi.fn(
+      (_keyframes: Keyframe[], _options?: KeyframeAnimationOptions) =>
+        ({}) as Animation
+    );
+    Object.defineProperty(HTMLElement.prototype, "animate", {
+      configurable: true,
+      writable: true,
+      value: animate,
+    });
+    /** Transforms the score player's own stage was animated through. */
+    const stageMoves = () => {
+      const stage = player()!.firstElementChild;
+      return animate.mock.contexts.flatMap((target, i) =>
+        target === stage
+          ? animate.mock.calls[i][0].map((frame) => String(frame.transform))
+          : []
+      );
+    };
+    try {
+      render(<CardTable />);
+      playZeroedPair();
+      for (let i = 0; i < 20 && !screen.queryByTestId("zero-slam"); i++) {
+        advance(450);
+      }
+      expect(stageMoves().some((t) => t.startsWith("translate("))).toBe(true);
+      cleanup();
+      animate.mockClear();
 
-    mockMedia({ compact: true });
-    render(<CardTable />);
-    playZeroedPair();
-    for (let i = 0; i < 20 && !screen.queryByTestId("zero-slam"); i++) {
-      advance(450);
+      mockMedia({ compact: true });
+      render(<CardTable />);
+      playZeroedPair();
+      for (let i = 0; i < 20 && !screen.queryByTestId("zero-slam"); i++) {
+        advance(450);
+      }
+      expect(stageMoves()).toEqual([]);
+    } finally {
+      delete (HTMLElement.prototype as { animate?: unknown }).animate;
     }
-    expect(player()!.querySelector(".te-loud-shake")).toBeNull();
   });
 
   it("skip, by button or plate click, lands on the identical final state", () => {
@@ -267,7 +292,7 @@ describe("ScorePlayer on the Card Table", () => {
     const summary = breakdown.querySelector("summary")!;
     expect(summary.textContent).toBe("Last hand breakdown");
     expect(announce).toHaveBeenCalledTimes(1);
-    expect(document.querySelector(".te-loud-shake, .te-loud-fire")).toBeNull();
+    expect(document.querySelector("[class*='te-loud-']")).toBeNull();
   });
 });
 

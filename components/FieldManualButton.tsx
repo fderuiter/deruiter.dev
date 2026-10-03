@@ -282,9 +282,9 @@ export function FieldManualButton({
           aria-label={`Open Field Manual for ${manual.title}`}
           aria-haspopup="dialog"
           aria-expanded={isOpen}
-          className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 min-h-[44px] min-w-[44px] rounded-xl text-xs font-mono font-medium text-zinc-300 hover:text-cyan-300 bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 transition-all cursor-pointer touch-manipulation select-none active:scale-95 ${className}`}
+          className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 min-h-[44px] min-w-[44px] rounded-xl text-xs font-mono font-medium text-zinc-300 hover:text-[var(--game-accent,#67e8f9)] bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 transition-all cursor-pointer touch-manipulation select-none active:scale-95 ${className}`}
         >
-          <IconHelp className="w-3.5 h-3.5 text-cyan-400" />
+          <IconHelp className="w-3.5 h-3.5 text-[var(--game-accent,#22d3ee)]" />
           <span>Manual</span>
         </button>
 
@@ -309,9 +309,9 @@ export function FieldManualButton({
           aria-label={`Open Field Manual for ${manual.title}`}
           aria-haspopup="dialog"
           aria-expanded={isOpen}
-          className={`inline-flex items-center justify-center gap-2 px-3 py-1.5 min-h-[44px] min-w-[44px] text-xs font-mono font-semibold rounded-xl bg-zinc-900/80 hover:bg-zinc-800 text-zinc-300 hover:text-cyan-400 border border-zinc-800 hover:border-cyan-500/30 transition-all cursor-pointer touch-manipulation select-none active:scale-95 ${className}`}
+          className={`inline-flex items-center justify-center gap-2 px-3 py-1.5 min-h-[44px] min-w-[44px] text-xs font-mono font-semibold rounded-xl bg-zinc-900/80 hover:bg-zinc-800 text-zinc-300 hover:text-[var(--game-accent,#22d3ee)] border border-zinc-800 hover:border-zinc-600 transition-all cursor-pointer touch-manipulation select-none active:scale-95 ${className}`}
         >
-          <IconBook2 className="w-4 h-4 text-cyan-400" />
+          <IconBook2 className="w-4 h-4 text-[var(--game-accent,#22d3ee)]" />
           <span>{label}</span>
           <kbd className="text-[10px] text-zinc-400 bg-zinc-950 px-1.5 py-0.5 rounded border border-zinc-800">
             ?
@@ -342,11 +342,11 @@ export function FieldManualButton({
           aria-expanded={isOpen}
           className={`group flex items-center justify-center gap-2 px-3.5 py-1.5 min-h-[44px] min-w-[44px] text-xs font-mono font-bold rounded-xl transition-all border cursor-pointer touch-manipulation select-none active:scale-95 ${
             !hasSeenGuide
-              ? "bg-cyan-950/40 text-cyan-300 border-cyan-500/40 shadow-sm shadow-cyan-500/10"
-              : "bg-zinc-900/60 hover:bg-zinc-850 text-zinc-300 hover:text-cyan-300 border-zinc-800 hover:border-cyan-500/40"
+              ? "bg-zinc-900/80 text-[var(--game-accent,#67e8f9)] border-[color:var(--game-accent,#06b6d4)]"
+              : "bg-zinc-900/60 hover:bg-zinc-850 text-zinc-300 hover:text-[var(--game-accent,#67e8f9)] border-zinc-800 hover:border-zinc-600"
           } ${className}`}
         >
-          <IconHelp className="w-4 h-4 text-cyan-400 group-hover:rotate-12 transition-transform" />
+          <IconHelp className="w-4 h-4 text-[var(--game-accent,#22d3ee)] group-hover:rotate-12 transition-transform" />
           <span className="hidden sm:inline">{label}</span>
           <kbd className="hidden sm:inline-block text-[10px] text-zinc-400 group-hover:text-zinc-300 bg-zinc-950 px-1.5 py-0.5 rounded border border-zinc-800">
             ?
@@ -355,8 +355,8 @@ export function FieldManualButton({
 
         {!hasSeenGuide && (
           <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-            <span className="animate-ping-settle absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-500"></span>
+            <span className="animate-ping-settle absolute inline-flex h-full w-full rounded-full bg-[var(--game-accent,#22d3ee)] opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[var(--game-accent,#06b6d4)]"></span>
           </span>
         )}
       </div>

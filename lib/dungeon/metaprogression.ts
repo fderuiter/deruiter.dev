@@ -98,16 +98,6 @@ export const CRT_THEMES: Record<CRTThemeId, CRTThemeConfig> = {
     textColor: "#fde68a",
     scanlineAlpha: 0.18,
   },
-  synthwave: {
-    id: "synthwave",
-    name: "Synthwave Neon (Cyberpunk)",
-    primaryColor: "#ec4899",
-    accentColor: "#38bdf8",
-    bgDark: "#0c0517",
-    glowColor: "rgba(236, 72, 153, 0.45)",
-    textColor: "#f472b6",
-    scanlineAlpha: 0.12,
-  },
   matrix: {
     id: "matrix",
     name: "Matrix Rain (Kernel Terminal)",

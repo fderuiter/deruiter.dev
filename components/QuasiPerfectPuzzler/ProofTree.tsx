@@ -96,7 +96,7 @@ export const ProofTree: React.FC<ProofTreeProps> = ({
           return "border-amber-500/60 bg-amber-950/40 text-amber-300";
         case "open":
         default:
-          return "border-cyan-500/60 bg-cyan-950/40 text-cyan-200";
+          return "border-[color:var(--qp-accent-line)] bg-[color:var(--qp-accent-soft)] qp-text-accent-strong";
       }
     };
 
@@ -117,7 +117,7 @@ export const ProofTree: React.FC<ProofTreeProps> = ({
               aria-label={`Toggle expand for node ${node.label}`}
               aria-expanded={expanded}
               onClick={(e) => handleToggleNode(node, e)}
-              className="shrink-0 p-1 rounded hover:bg-zinc-800/60 text-zinc-400 hover:text-white transition-colors active:scale-[0.98] focus:outline-none focus:ring-1 focus:ring-cyan-400 disabled:cursor-not-allowed"
+              className="shrink-0 p-1 rounded hover:bg-zinc-800/60 text-zinc-400 hover:text-white transition-colors active:scale-[0.98] focus:outline-none focus:ring-1 focus:ring-[color:var(--qp-accent)] disabled:cursor-not-allowed"
             >
               {expanded ? (
                 <IconChevronDown className="w-3.5 h-3.5" />
@@ -142,9 +142,9 @@ export const ProofTree: React.FC<ProofTreeProps> = ({
             aria-pressed={isSelected}
             data-testid="proof-tree-node"
             onClick={() => handleNodeClick(node.id)}
-            className={`group flex min-w-0 flex-1 items-center justify-between gap-3 rounded-xl border px-3 py-2 text-xs transition-all cursor-pointer active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-cyan-400 disabled:cursor-not-allowed ${getStatusStyle()} ${
+            className={`group flex min-w-0 flex-1 items-center justify-between gap-3 rounded-xl border px-3 py-2 text-xs transition-all cursor-pointer active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-[color:var(--qp-accent)] disabled:cursor-not-allowed ${getStatusStyle()} ${
               isSelected
-                ? "ring-2 ring-cyan-400 bg-cyan-900/60 shadow-[0_0_12px_rgba(6,182,212,0.5)]"
+                ? "ring-2 ring-[color:var(--qp-accent)] bg-[color:var(--qp-accent-soft)]"
                 : "hover:border-zinc-500"
             }`}
           >
@@ -165,7 +165,7 @@ export const ProofTree: React.FC<ProofTreeProps> = ({
                   <IconCheck className="w-3 h-3" /> Q.E.D.
                 </span>
               ) : (
-                <span className="flex items-center gap-1 text-cyan-400">
+                <span className="flex items-center gap-1 qp-text-accent-strong">
                   <IconCircleDot className="w-3 h-3 animate-pulse" />{" "}
                   {node.status || "open"}
                 </span>

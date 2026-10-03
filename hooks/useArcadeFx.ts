@@ -2,6 +2,11 @@
 
 import { useCallback, useMemo, useRef, type RefObject } from "react";
 import { useCabinetSetup } from "@/components/arcade/CabinetSetupContext";
+import {
+  crtCalibrationForFilter,
+  type CabinetCrtFilter,
+  type CRTCalibrationConfig,
+} from "@/lib/arcade";
 
 /** Largest shake offset, in CSS pixels, whatever a game asks for. */
 export const ARCADE_FX_MAX_SHAKE_PX = 6;
@@ -44,6 +49,18 @@ export interface ArcadeFx {
   hitStop: (ms: number) => void;
   /** True while a hit stop is running. Call it from the game loop. */
   isHitStopped: () => boolean;
+  /**
+   * The Setup Wizard's CRT setting, or `off` outside a cabinet. The cabinet
+   * draws the CRT layer itself; a game reads this only to match it, for
+   * example to skip a CRT pass of its own.
+   */
+  crtFilter: CabinetCrtFilter;
+  /**
+   * The calibration for `crtFilter` from `lib/arcade/crt-pipeline.ts`, for a
+   * game that draws its CRT inside its canvas with `renderCRTEffects`.
+   * Null when the setting is `off`.
+   */
+  crtCalibration: CRTCalibrationConfig | null;
 }
 
 function prefersCalmEffects(): boolean {
@@ -56,13 +73,16 @@ function prefersCalmEffects(): boolean {
 }
 
 /**
- * Shared arcade feedback: screen shake, a colour flash and hit stop.
+ * Shared arcade feedback: screen shake, a colour flash and hit stop, plus the
+ * Setup Wizard's CRT setting.
  *
  * Shake and flash animate only `transform` and `opacity` through the Web
  * Animations API, so they cost no React renders and no game-loop work. Both
  * are skipped under `prefers-reduced-motion`, below a 768px viewport, and
  * when the cabinet's Setup Wizard sets screen shake to none. Hit stop is a
  * timestamp the game loop checks, so a game decides what freezing means.
+ * Both wizard settings, `screenShake` and `crtFilter`, are read through
+ * the cabinet's setup context.
  *
  * @param options - The game's own effects toggle.
  * @returns Refs to attach and the effect triggers.
@@ -71,6 +91,11 @@ export function useArcadeFx(options: ArcadeFxOptions = {}): ArcadeFx {
   const { enabled = true } = options;
   const setup = useCabinetSetup();
   const shakeScale = SHAKE_SCALE[setup?.config.screenShake ?? "subtle"];
+  const crtFilter: CabinetCrtFilter = setup?.config.crtFilter ?? "off";
+  const crtCalibration = useMemo(
+    () => crtCalibrationForFilter(crtFilter),
+    [crtFilter]
+  );
   const stageRef = useRef<HTMLDivElement | null>(null);
   const flashRef = useRef<HTMLDivElement | null>(null);
   const hitStopUntilRef = useRef(0);
@@ -123,7 +148,16 @@ export function useArcadeFx(options: ArcadeFxOptions = {}): ArcadeFx {
   );
 
   return useMemo(
-    () => ({ stageRef, flashRef, shake, flash, hitStop, isHitStopped }),
-    [shake, flash, hitStop, isHitStopped]
+    () => ({
+      stageRef,
+      flashRef,
+      shake,
+      flash,
+      hitStop,
+      isHitStopped,
+      crtFilter,
+      crtCalibration,
+    }),
+    [shake, flash, hitStop, isHitStopped, crtFilter, crtCalibration]
   );
 }

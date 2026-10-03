@@ -8,9 +8,6 @@ import React, {
   useRef,
 } from "react";
 import Link from "next/link";
-import { motion, useReducedMotion } from "framer-motion";
-import { useMediaQuery } from "@/hooks/useMediaQuery";
-import { useAnimationFrame } from "@/hooks/useAnimationFrame";
 import {
   MEME_QUOTES,
   SOUNDBOARD_BUTTONS,
@@ -24,8 +21,13 @@ import {
   SANDBOX_TERMINAL_HREF,
   type SoundboardButton,
 } from "@/lib/meme-data";
-import { clamp } from "@/lib/game-utils";
-import { playMemeSound, getMemeSoundDuration } from "@/lib/meme-audio";
+import {
+  playMemeSound,
+  getMemeSoundDuration,
+  connectMemeAnalyser,
+  releaseMemeAnalyser,
+} from "@/lib/meme-audio";
+import { useAudio } from "@/components/providers/AudioProvider";
 import { useAnnouncer } from "@/components/providers/A11yProvider";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { useToast } from "@/hooks/useToast";
@@ -35,12 +37,21 @@ import {
   IconSparkles,
   IconTrophy,
   IconVolume,
+  IconVolumeOff,
   IconCopy,
   IconCheck,
   IconTerminal,
   IconArrowLeft,
-  IconActivity,
+  IconRocket,
+  IconMessage2,
 } from "@tabler/icons-react";
+import { Oscilloscope } from "@/components/arcade/meme-vault/Oscilloscope";
+import { SamplerPads } from "@/components/arcade/meme-vault/SamplerPads";
+import { TrophyShelf } from "@/components/arcade/meme-vault/TrophyShelf";
+import { VaultHero } from "@/components/arcade/meme-vault/VaultHero";
+
+/** How long a newly unlocked trophy keeps its stamp class. */
+const STAMP_MS = 900;
 
 function subscribeAchievements(callback: () => void) {
   if (typeof window === "undefined") return () => {};
@@ -60,112 +71,10 @@ function getAchievementsServerSnapshot(): string {
   return "[]";
 }
 
-// 24-Bar Architectural Web Audio Spectrum Visualizer
-const AudioWaveformVisualizer: React.FC<{
-  isPlaying: boolean;
-  soundLabel?: string;
-}> = ({ isPlaying, soundLabel }) => {
-  const barRefs = useRef<Array<HTMLDivElement | null>>([]);
-  // Frame time origin: the loop's clock counts from its first frame, so the
-  // performance.now() reading there turns it back into a frame timestamp.
-  const frameTimeOriginRef = useRef(0);
-  const prefersReduced = useMediaQuery("(prefers-reduced-motion: reduce)");
-
-  useEffect(() => {
-    if (!prefersReduced) return;
-    for (let i = 0; i < 24; i++) {
-      const el = barRefs.current[i];
-      if (el) {
-        el.style.setProperty("--bar-scale", "0.15");
-      }
-    }
-  }, [prefersReduced, isPlaying]);
-
-  useAnimationFrame(
-    (_deltaMs, elapsedMs) => {
-      if (elapsedMs === 0) {
-        frameTimeOriginRef.current = performance.now();
-      }
-      const currentTime = frameTimeOriginRef.current + elapsedMs;
-      for (let i = 0; i < 24; i++) {
-        const el = barRefs.current[i];
-        if (!el) continue;
-        let scaleVal: number;
-        if (isPlaying) {
-          const base = 0.25 + Math.sin(currentTime * 0.01 + i * 0.4) * 0.2;
-          const spike = Math.random() * 0.55;
-          scaleVal = clamp(base + spike, 0.15, 1.0);
-        } else {
-          // Idle ambient breath
-          scaleVal = 0.1 + Math.sin(currentTime * 0.002 + i * 0.3) * 0.06;
-        }
-        el.style.setProperty("--bar-scale", scaleVal.toFixed(4));
-      }
-    },
-    {
-      isActive: !prefersReduced,
-      maxDeltaMs: Infinity,
-      restartKey: isPlaying,
-    }
-  );
-
-  return (
-    <div className="relative rounded-2xl border border-emerald-500/20 bg-slate-950/80 p-4 sm:p-5 backdrop-blur-md overflow-hidden mb-8">
-      <div className="flex items-center justify-between gap-3 mb-3 text-xs">
-        <div className="flex items-center gap-2 text-emerald-400 font-bold">
-          <IconActivity
-            className={`w-4 h-4 ${isPlaying ? "animate-pulse" : ""}`}
-          />
-          <span className="uppercase tracking-wider text-[11px]">
-            {isPlaying
-              ? `Synthesizing Waveform: ${soundLabel}`
-              : "Web Audio Synthesis Engine (Idle)"}
-          </span>
-        </div>
-        <span className="font-mono text-[10px] text-muted">
-          24-Channel DSP · 44.1kHz
-        </span>
-      </div>
-
-      {/* Spectrum Waveform Bars */}
-      <div className="flex items-end justify-between gap-1 sm:gap-1.5 h-14 sm:h-16 w-full px-1">
-        {Array.from({ length: 24 }).map((_, idx) => (
-          <div
-            key={idx}
-            className="flex-1 flex flex-col items-center justify-end h-full"
-          >
-            <div
-              className={`w-full h-full rounded-t-sm overflow-hidden ${
-                isPlaying ? "shadow-[0_0_8px_rgba(16,185,129,0.5)]" : ""
-              }`}
-            >
-              <div
-                ref={(el) => {
-                  barRefs.current[idx] = el;
-                }}
-                className={`w-full h-full origin-bottom transform-gpu ${
-                  isPlaying
-                    ? "bg-gradient-to-t from-emerald-500 via-teal-400 to-cyan-300"
-                    : "bg-emerald-950/50 hover:bg-emerald-800/40"
-                }`}
-                style={{
-                  transform: "scaleY(var(--bar-scale, 0.15))",
-                  transformOrigin: "bottom",
-                  willChange: "transform",
-                }}
-              />
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
 export const MemeVaultClient: React.FC = () => {
   const { announce } = useAnnouncer();
   const toast = useToast();
-  const prefersReducedMotion = useReducedMotion();
+  const { muted, setMuted, bypassActive } = useAudio();
 
   const rawAchievements = useSyncExternalStore(
     subscribeAchievements,
@@ -188,13 +97,20 @@ export const MemeVaultClient: React.FC = () => {
     "cowsay" | "duck" | "loon" | "train"
   >("cowsay");
   const [reactions, setReactions] = useState<Record<string, number>>({});
+  const [analyser, setAnalyser] = useState<AnalyserNode | null>(null);
+  const [stampId, setStampId] = useState<string | null>(null);
   const soundTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const stampTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     return () => {
       if (soundTimeoutRef.current) {
         clearTimeout(soundTimeoutRef.current);
       }
+      if (stampTimeoutRef.current) {
+        clearTimeout(stampTimeoutRef.current);
+      }
+      releaseMemeAnalyser();
     };
   }, []);
 
@@ -205,29 +121,40 @@ export const MemeVaultClient: React.FC = () => {
       (a) => a.id === detail?.id
     );
     if (!achievement) return;
+    if (stampTimeoutRef.current) clearTimeout(stampTimeoutRef.current);
+    setStampId(achievement.id);
+    stampTimeoutRef.current = setTimeout(() => {
+      setStampId(null);
+      stampTimeoutRef.current = null;
+    }, STAMP_MS);
     toast.success(`Trophy unlocked: ${achievement.title}`, {
       description: achievement.description,
     });
   });
 
   // Trigger soundboard sound
-  const handlePlaySound = (button: SoundboardButton) => {
-    if (soundTimeoutRef.current) {
-      clearTimeout(soundTimeoutRef.current);
-    }
+  const handlePlaySound = useCallback(
+    (button: SoundboardButton) => {
+      if (soundTimeoutRef.current) {
+        clearTimeout(soundTimeoutRef.current);
+      }
 
-    setActiveSound(button.id);
-    setActiveSoundLabel(button.label);
-    playMemeSound(button.synthType);
-    unlockAchievement("soundboard-maestro");
-    announce(`Played sound: ${button.label}`, "polite");
+      setActiveSound(button.id);
+      setActiveSoundLabel(button.label);
+      // The scope's tap goes in before the sound's nodes connect.
+      setAnalyser(connectMemeAnalyser());
+      playMemeSound(button.synthType);
+      unlockAchievement("soundboard-maestro");
+      announce(`Played sound: ${button.label}`, "polite");
 
-    const duration = getMemeSoundDuration(button.synthType);
-    soundTimeoutRef.current = setTimeout(() => {
-      setActiveSound(null);
-      soundTimeoutRef.current = null;
-    }, duration);
-  };
+      const duration = getMemeSoundDuration(button.synthType);
+      soundTimeoutRef.current = setTimeout(() => {
+        setActiveSound(null);
+        soundTimeoutRef.current = null;
+      }, duration);
+    },
+    [announce]
+  );
 
   // React to meme card
   const handleReaction = (id: string) => {
@@ -249,9 +176,25 @@ export const MemeVaultClient: React.FC = () => {
     (q) => selectedCategory === "all" || q.category === selectedCategory
   );
 
-  const unlockedCount = unlockedIds.length;
+  const unlockedCount = EASTER_EGG_ACHIEVEMENTS.filter((a) =>
+    unlockedIds.includes(a.id)
+  ).length;
   const totalAchievements = EASTER_EGG_ACHIEVEMENTS.length;
-  const progressPercent = Math.round((unlockedCount / totalAchievements) * 100);
+
+  const silentReason: React.ReactNode = bypassActive ? (
+    "Sound is off while reduced motion or high contrast is on."
+  ) : muted ? (
+    <>
+      Sound is off.{" "}
+      <button
+        type="button"
+        onClick={() => setMuted(false)}
+        className="font-semibold text-emerald-400 underline underline-offset-2 hover:text-emerald-300"
+      >
+        Turn sound on
+      </button>
+    </>
+  ) : null;
 
   const getAsciiContent = () => {
     switch (asciiTab) {
@@ -267,12 +210,15 @@ export const MemeVaultClient: React.FC = () => {
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 font-mono text-slate-100">
+    <div
+      data-game="meme-vault"
+      className="meme-vault w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 font-mono text-zinc-100"
+    >
       {/* Navigation Breadcrumb & Chaos Trigger */}
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <Link
           href="/arcade"
-          className="inline-flex items-center gap-2 text-xs text-zinc-400 hover:text-emerald-400 transition-colors"
+          className="inline-flex items-center gap-2 text-xs text-zinc-400 hover:text-zinc-100 transition-colors"
         >
           <IconArrowLeft className="w-4 h-4" />
           <span>Back to Arcade Hub</span>
@@ -280,213 +226,131 @@ export const MemeVaultClient: React.FC = () => {
 
         <button
           onClick={triggerChaosMode}
-          className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-xs font-semibold shadow-lg shadow-emerald-500/10 transition-all hover:scale-105 active:scale-95"
+          className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-md bg-[#13151a] hover:bg-[#1a1d24] text-zinc-200 border border-white/[0.08] hover:border-white/[0.16] text-xs font-semibold transition-colors active:scale-[0.98]"
         >
-          <IconSparkles className="w-4 h-4 animate-spin" />
+          <IconSparkles className="w-4 h-4 text-amber-400" />
           <span>Launch Retro Chaos Mode</span>
         </button>
       </div>
 
-      {/* Header Banner */}
-      <div className="relative rounded-3xl border border-emerald-500/30 bg-gradient-to-b from-emerald-950/40 via-slate-900/80 to-slate-950/90 p-6 sm:p-10 mb-12 shadow-[0_0_50px_rgba(16,185,129,0.1)] overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
-        <div className="relative z-10 max-w-3xl">
-          <div className="flex items-center gap-2.5 mb-3">
-            <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-[11px] font-bold uppercase tracking-wider">
-              Meme Soundboard & Trophy Room
-            </span>
-            <span className="text-xs text-slate-400 font-sans">v2.4.0</span>
-          </div>
+      <VaultHero unlocked={unlockedCount} total={totalAchievements} />
 
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white mb-4">
-            Developer Soundboard &amp; Meme Vault
-          </h1>
-
-          <p className="text-sm sm:text-base text-slate-300 font-sans leading-relaxed mb-6">
-            A soundboard, hidden trophies, and jokes for people who have spent
-            too long looking at error messages.
-          </p>
-
-          {/* Achievement Progress Bar */}
-          <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 max-w-xl">
-            <div className="flex items-center justify-between text-xs mb-2">
-              <span className="flex items-center gap-1.5 text-amber-300 font-bold">
-                <IconTrophy className="w-4 h-4 text-amber-400" />
-                Easter Egg Completion
-              </span>
-              <span className="text-slate-400">
-                {unlockedCount} of {totalAchievements} ({progressPercent}%)
-              </span>
+      {/* Section 1: The sampler face: oscilloscope and eight pads */}
+      <section className="mb-14" aria-labelledby="meme-sampler-heading">
+        <div className="flex flex-wrap items-end justify-between gap-3 mb-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="p-2 rounded-md bg-[#13151a] border border-white/[0.08] text-emerald-400">
+              <IconVolume className="w-5 h-5" />
             </div>
-            <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
-              <motion.div
-                initial={{ scaleX: 0 }}
-                animate={{ scaleX: progressPercent / 100 }}
-                transition={
-                  prefersReducedMotion
-                    ? { duration: 0 }
-                    : { duration: 0.8, ease: "easeOut" }
-                }
-                className="h-full w-full bg-gradient-to-r from-emerald-500 via-cyan-400 to-amber-400 rounded-full origin-left transform-gpu"
-                style={{ transformOrigin: "left", willChange: "transform" }}
+            <div className="min-w-0">
+              <h2
+                id="meme-sampler-heading"
+                className="text-xl sm:text-2xl font-semibold tracking-[-0.02em] text-[#f4f4f6]"
+              >
+                8-Pad Retro Sampler
+              </h2>
+              <p className="text-xs text-zinc-400 font-sans">
+                Every sound is generated in your browser. Press a pad, or keys 1
+                to 8.
+              </p>
+            </div>
+          </div>
+          {!bypassActive && (
+            <button
+              type="button"
+              onClick={() => setMuted(!muted)}
+              aria-pressed={!muted}
+              className="inline-flex min-h-[40px] items-center gap-2 rounded-md border border-white/[0.08] bg-[#13151a] px-3 text-xs font-semibold text-zinc-300 transition-colors hover:border-white/[0.16] hover:text-zinc-100 active:scale-[0.98]"
+            >
+              {muted ? (
+                <IconVolumeOff className="h-4 w-4 text-zinc-400" />
+              ) : (
+                <IconVolume className="h-4 w-4 text-emerald-400" />
+              )}
+              <span>{muted ? "Sound off" : "Sound on"}</span>
+            </button>
+          )}
+        </div>
+
+        <div className="rounded-xl border border-white/[0.08] bg-[#13151a] p-3 sm:p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] xl:gap-5">
+            <div className="min-w-0 xl:order-2">
+              <Oscilloscope
+                analyser={analyser}
+                isPlaying={activeSound !== null}
+                soundLabel={activeSoundLabel}
+                silentReason={silentReason}
+              />
+              <dl className="mt-3 hidden grid-cols-2 gap-px overflow-hidden rounded-lg border border-white/[0.08] bg-white/[0.08] font-mono text-[11px] tabular-nums xl:grid">
+                <div className="bg-[#0d0e11] p-2.5">
+                  <dt className="uppercase tracking-wider text-zinc-400">
+                    Pads
+                  </dt>
+                  <dd className="mt-0.5 text-zinc-200">8 · keys 1–8</dd>
+                </div>
+                <div className="bg-[#0d0e11] p-2.5">
+                  <dt className="uppercase tracking-wider text-zinc-400">
+                    Output
+                  </dt>
+                  <dd className="mt-0.5 text-zinc-200">1 ch mono</dd>
+                </div>
+                <div className="col-span-2 bg-[#0d0e11] p-2.5">
+                  <dt className="uppercase tracking-wider text-zinc-400">
+                    Last pad
+                  </dt>
+                  <dd className="mt-0.5 truncate text-zinc-200">
+                    {activeSoundLabel || "None yet"}
+                  </dd>
+                </div>
+              </dl>
+            </div>
+            <div className="min-w-0 xl:order-1">
+              <SamplerPads
+                pads={SOUNDBOARD_BUTTONS}
+                activeId={activeSound}
+                onPress={handlePlaySound}
               />
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Section 1: Synthesized Web Audio Soundboard & Waveform Visualizer */}
-      <section className="mb-16">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
-            <IconVolume className="w-5 h-5" />
-          </div>
-          <div>
-            <h2 className="text-xl sm:text-2xl font-bold text-white">
-              8-Channel Retro Soundboard
-            </h2>
-            <p className="text-xs text-slate-400 font-sans">
-              Every sound is generated in your browser.
-            </p>
-          </div>
-        </div>
-
-        {/* Dynamic Waveform Visualizer */}
-        <AudioWaveformVisualizer
-          isPlaying={activeSound !== null}
-          soundLabel={activeSoundLabel}
-        />
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-          {SOUNDBOARD_BUTTONS.map((btn) => {
-            const isPlaying = activeSound === btn.id;
-            return (
-              <button
-                key={btn.id}
-                type="button"
-                onClick={() => handlePlaySound(btn)}
-                className={`relative flex flex-col items-start p-4 sm:p-5 rounded-2xl border bg-gradient-to-b ${btn.accent} transition-all duration-200 text-left focus:outline-none focus:ring-2 focus:ring-emerald-400 shadow-md hover:scale-[1.02] active:scale-[0.96] cursor-pointer ${
-                  isPlaying
-                    ? "ring-2 ring-white shadow-[0_0_25px_rgba(255,255,255,0.3)]"
-                    : ""
-                }`}
-                aria-label={`Play ${btn.label}`}
-              >
-                <div className="flex items-center justify-between w-full mb-3">
-                  <span className="text-2xl sm:text-3xl">{btn.emoji}</span>
-                  <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-black/40 text-slate-300 border border-white/10">
-                    {btn.category}
-                  </span>
-                </div>
-                <h3 className="font-bold text-sm sm:text-base text-white mb-1">
-                  {btn.label}
-                </h3>
-                <p className="text-xs text-slate-300/80 font-sans leading-snug">
-                  {btn.description}
-                </p>
-
-                {isPlaying && (
-                  <motion.div
-                    layoutId="sound-indicator"
-                    className="absolute top-2 right-2 flex gap-0.5 items-end h-3"
-                  >
-                    <span className="w-1 h-3 bg-emerald-400 rounded-full animate-bounce" />
-                    <span className="w-1 h-2 bg-emerald-400 rounded-full animate-bounce delay-75" />
-                    <span className="w-1 h-3.5 bg-emerald-400 rounded-full animate-bounce delay-150" />
-                  </motion.div>
-                )}
-              </button>
-            );
-          })}
-        </div>
       </section>
 
-      {/* Section 2: Easter Egg Trophy Room */}
-      <section className="mb-16">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400">
+      {/* Section 2: Easter Egg Trophy Shelf */}
+      <section className="mb-14">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="p-2 rounded-md bg-[#13151a] border border-white/[0.08] text-amber-400">
             <IconTrophy className="w-5 h-5" />
           </div>
-          <div>
-            <h2 className="text-xl sm:text-2xl font-bold text-white">
+          <div className="min-w-0">
+            <h2 className="text-xl sm:text-2xl font-semibold tracking-[-0.02em] text-[#f4f4f6]">
               Easter Egg Trophy Case
             </h2>
-            <p className="text-xs text-slate-400 font-sans">
+            <p className="text-xs text-zinc-400 font-sans">
               Discover secret interactions across the terminal, footer, command
               palette, and games.
             </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {EASTER_EGG_ACHIEVEMENTS.map((ach) => {
-            const isUnlocked = unlockedIds.includes(ach.id);
-            return (
-              <div
-                key={ach.id}
-                className={`p-5 rounded-2xl border transition-all ${
-                  isUnlocked
-                    ? "bg-slate-900/90 border-emerald-500/40 shadow-[0_0_20px_rgba(16,185,129,0.1)]"
-                    : "bg-slate-950/60 border-slate-800/80"
-                }`}
-              >
-                <div className="flex items-start justify-between gap-3 mb-3">
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl p-2 rounded-xl bg-slate-800/80 border border-slate-700">
-                      {ach.icon}
-                    </span>
-                    <div>
-                      <h3 className="font-bold text-sm text-white">
-                        {ach.title}
-                      </h3>
-                      <span className="text-[10px] uppercase font-bold tracking-wider text-slate-300">
-                        {isUnlocked ? "Unlocked 🏆" : "Locked 🔒"}
-                      </span>
-                    </div>
-                  </div>
-                  {isUnlocked && (
-                    <span className="p-1 rounded-full bg-emerald-500/20 text-emerald-400">
-                      <IconCheck className="w-4 h-4" />
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs text-slate-300 font-sans leading-relaxed mb-2">
-                  {ach.description}
-                </p>
-                {!isUnlocked && (
-                  <p className="text-[11px] text-amber-400/90 italic font-sans">
-                    Hint: {ach.hint}
-                    {ach.hintLink && (
-                      <>
-                        {" "}
-                        <Link
-                          href={ach.hintLink.href}
-                          className="underline underline-offset-2"
-                        >
-                          {ach.hintLink.label}
-                        </Link>
-                      </>
-                    )}
-                  </p>
-                )}
-              </div>
-            );
-          })}
-        </div>
+        <TrophyShelf
+          achievements={EASTER_EGG_ACHIEVEMENTS}
+          unlockedIds={unlockedIds}
+          stampId={stampId}
+        />
       </section>
 
       {/* Section 3: Interactive Meme Deck */}
-      <section className="mb-16">
+      <section className="mb-14">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400">
-              <IconSparkles className="w-5 h-5" />
+            <div className="p-2 rounded-md bg-[#13151a] border border-white/[0.08] text-slate-400">
+              <IconMessage2 className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-xl sm:text-2xl font-bold text-white">
+              <h2 className="text-xl sm:text-2xl font-semibold tracking-[-0.02em] text-[#f4f4f6]">
                 Engineering Meme Deck
               </h2>
-              <p className="text-xs text-slate-400 font-sans">
+              <p className="text-xs text-zinc-400 font-sans">
                 A few jokes about code, clinical data, and getting through the
                 workday.
               </p>
@@ -497,7 +361,7 @@ export const MemeVaultClient: React.FC = () => {
           <div
             role="group"
             aria-label="Filter quotes by category"
-            className="flex flex-wrap gap-1.5 p-1 rounded-xl bg-slate-900/90 border border-slate-800 text-xs"
+            className="flex flex-wrap gap-1.5 p-1 rounded-md bg-[#13151a] border border-white/[0.08] text-xs"
           >
             {["all", "dev", "medtech", "lore", "classic"].map((cat) => (
               <button
@@ -505,10 +369,10 @@ export const MemeVaultClient: React.FC = () => {
                 type="button"
                 aria-pressed={selectedCategory === cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-3 py-1 rounded-lg capitalize font-semibold transition-colors active:scale-95 ${
+                className={`px-3 py-1 rounded capitalize font-semibold transition-colors active:scale-95 ${
                   selectedCategory === cat
-                    ? "bg-emerald-500 text-slate-950"
-                    : "text-slate-400 hover:text-white"
+                    ? "bg-[#1a1d24] text-emerald-400 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.45)]"
+                    : "text-zinc-400 hover:text-zinc-100"
                 }`}
               >
                 {cat}
@@ -523,11 +387,11 @@ export const MemeVaultClient: React.FC = () => {
             return (
               <div
                 key={q.id}
-                className="p-5 rounded-2xl border border-slate-800/90 bg-slate-900/70 hover:border-slate-700 transition-all flex flex-col justify-between"
+                className="p-5 rounded-lg border border-white/[0.08] bg-[#13151a] hover:border-white/[0.16] transition-colors flex min-w-0 flex-col justify-between"
               >
                 <div>
-                  <div className="flex items-center justify-between text-xs text-slate-400 mb-3">
-                    <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 uppercase tracking-wider text-[10px] font-bold">
+                  <div className="flex items-center justify-between text-xs text-zinc-400 mb-3">
+                    <span className="px-2 py-0.5 rounded-sm border border-white/[0.08] text-zinc-400 font-mono uppercase tracking-wider text-[10px] font-bold">
                       {q.tagline || q.category}
                     </span>
                     <CopyButton
@@ -536,27 +400,30 @@ export const MemeVaultClient: React.FC = () => {
                       copiedIcon={
                         <IconCheck className="w-4 h-4 text-emerald-400" />
                       }
-                      className="p-1.5 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                      className="p-1.5 rounded-lg hover:bg-white/5 text-zinc-400 hover:text-zinc-100 transition-colors cursor-pointer"
                       title="Copy Quote"
                       aria-label="Copy Quote"
                       successMessage="Copied quote to clipboard"
                     />
                   </div>
 
-                  <blockquote className="text-sm font-sans text-slate-100 font-medium leading-relaxed mb-4">
+                  <blockquote className="text-sm font-sans text-zinc-100 font-medium leading-relaxed mb-4">
                     &ldquo;{q.quote}&rdquo;
                   </blockquote>
                 </div>
 
-                <div className="flex items-center justify-between pt-3 border-t border-slate-800/60 text-xs">
-                  <cite className="text-slate-400 text-[11px] truncate max-w-[200px] sm:max-w-xs not-italic">
+                <div className="flex items-center justify-between pt-3 border-t border-white/[0.06] text-xs">
+                  <cite className="text-zinc-400 text-[11px] truncate max-w-[200px] sm:max-w-xs not-italic">
                     by {q.author}
                   </cite>
                   <button
                     onClick={() => handleReaction(q.id)}
-                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 text-[11px] transition-transform active:scale-95"
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-white/[0.08] bg-[#1a1d24] hover:border-white/[0.16] text-zinc-300 text-[11px] transition-transform active:scale-95"
                   >
-                    <span>🚀</span>
+                    <IconRocket
+                      aria-hidden="true"
+                      className="w-3.5 h-3.5 text-zinc-400"
+                    />
                     <span>{rxCount > 0 ? rxCount : "React"}</span>
                   </button>
                 </div>
@@ -571,7 +438,7 @@ export const MemeVaultClient: React.FC = () => {
         <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
           <div className="flex items-center gap-2.5">
             <IconTerminal className="w-5 h-5 text-emerald-400" />
-            <h2 className="text-lg font-bold text-white">
+            <h2 className="text-lg font-semibold tracking-[-0.02em] text-[#f4f4f6]">
               ASCII Terminal Studio
             </h2>
           </div>
@@ -579,7 +446,7 @@ export const MemeVaultClient: React.FC = () => {
           <div
             role="group"
             aria-label="ASCII art"
-            className="flex flex-wrap gap-1.5 p-1 rounded-xl bg-slate-900 border border-slate-800 text-xs"
+            className="flex flex-wrap gap-1.5 p-1 rounded-md bg-[#13151a] border border-white/[0.08] text-xs"
           >
             {(["cowsay", "duck", "loon", "train"] as const).map((tab) => (
               <button
@@ -587,10 +454,10 @@ export const MemeVaultClient: React.FC = () => {
                 type="button"
                 aria-pressed={asciiTab === tab}
                 onClick={() => setAsciiTab(tab)}
-                className={`px-3 py-1 rounded-lg uppercase tracking-wider text-[10px] font-bold transition-colors active:scale-95 ${
+                className={`px-3 py-1 rounded uppercase tracking-wider text-[10px] font-bold transition-colors active:scale-95 ${
                   asciiTab === tab
-                    ? "bg-emerald-500 text-slate-950"
-                    : "text-slate-400 hover:text-white"
+                    ? "bg-[#1a1d24] text-emerald-400 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.45)]"
+                    : "text-zinc-400 hover:text-zinc-100"
                 }`}
               >
                 {tab === "loon" ? "laser loon" : tab}
@@ -599,7 +466,7 @@ export const MemeVaultClient: React.FC = () => {
           </div>
         </div>
 
-        <p className="mb-4 text-xs text-slate-400 font-sans">
+        <p className="mb-4 text-xs text-zinc-400 font-sans">
           A gallery of the terminal&apos;s ASCII art. It does not award
           trophies. Type the commands in the{" "}
           <Link
@@ -611,12 +478,12 @@ export const MemeVaultClient: React.FC = () => {
           to earn them.
         </p>
 
-        <div className="relative rounded-2xl border border-slate-800 bg-slate-950 p-4 sm:p-6 overflow-x-auto shadow-inner">
+        <div className="relative rounded-lg border border-white/[0.08] bg-[#0d0e11] p-4 sm:p-6 overflow-x-auto shadow-inner">
           <CopyButton
             text={() => getAsciiContent()}
             icon={<IconCopy className="w-4 h-4" />}
             copiedIcon={<IconCheck className="w-4 h-4 text-emerald-400" />}
-            className="absolute top-4 right-4 p-2 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-700 transition-colors cursor-pointer"
+            className="absolute top-4 right-4 p-2 rounded-lg bg-[#13151a] hover:bg-[#1a1d24] text-zinc-400 hover:text-zinc-100 border border-white/[0.08] transition-colors cursor-pointer"
             title="Copy ASCII Art"
             aria-label="Copy ASCII Art"
             successMessage="Copied ASCII art to clipboard"

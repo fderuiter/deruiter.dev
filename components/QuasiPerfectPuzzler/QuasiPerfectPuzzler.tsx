@@ -53,18 +53,22 @@ import { DiagnosticDrawers } from "./DiagnosticDrawers";
 import { HintSystem } from "./HintSystem";
 import { SandboxMode } from "./SandboxMode";
 import { TheoryBriefingModal } from "./TheoryBriefingModal";
+import { LevelMap } from "./LevelMap";
+import { useArcadeFx } from "@/hooks/useArcadeFx";
 import { FieldManualButton } from "@/components/FieldManualButton";
 import { FullscreenButton } from "@/components/arcade/FullscreenButton";
 import { DynamicTabletOrientationHint as TabletOrientationHint } from "@/components/arcade/DynamicTabletOrientationHint";
 import { useGameFullscreen as useFullscreen } from "@/components/arcade/CabinetFullscreen";
 import {
   IconBulb,
-  IconCode,
+  IconChevronDown,
   IconFlask,
+  IconRoute,
   IconRotate,
   IconArrowBackUp,
   IconArrowForwardUp,
   IconSparkles,
+  IconX,
 } from "@tabler/icons-react";
 
 const STORAGE_KEY = "quasi_perfect_puzzler_progress_v1";
@@ -122,18 +126,18 @@ interface StepHistory {
 export const QuasiPerfectPuzzler: React.FC = () => {
   const { playNote, playSuccess } = useAudio();
   const { announce } = useAnnouncer();
+  // Event-only board feedback: a small shake on a failed tactic, an emerald
+  // flash when a goal closes. Off under reduced motion, below 768px and when
+  // the cabinet's Setup Wizard turns screen shake off.
+  const fx = useArcadeFx();
+  const { stageRef: fxStageRef, flashRef: fxFlashRef } = fx;
 
   const [activeTab, setActiveTab] = useState<"campaign" | "sandbox">(
     "campaign"
   );
-  const [selectedChapter, setSelectedChapter] = useState<number | "all">("all");
   const [showHints, setShowHints] = useState<boolean>(false);
-  const [showLeanInspector, setShowLeanInspector] = useState<boolean>(() => {
-    if (typeof window !== "undefined" && window.innerWidth < 768) {
-      return false;
-    }
-    return true;
-  });
+  // Board first (#1519): the Lean inspector starts collapsed at every width.
+  const [showLeanInspector, setShowLeanInspector] = useState<boolean>(false);
   const [showBriefingModal, setShowBriefingModal] = useState<boolean>(false);
 
   // Dual Game Mode State (Story/Casual vs Hacker/Speedrun)
@@ -270,9 +274,6 @@ export const QuasiPerfectPuzzler: React.FC = () => {
       setLevelSolved(false);
       setCurrentScore(null);
       setShowHints(false);
-      if (typeof window !== "undefined" && window.innerWidth < 768) {
-        setShowLeanInspector(false);
-      }
       setLogs([
         {
           id: `lvl-${targetLvl.id}-${Date.now()}`,
@@ -466,6 +467,9 @@ export const QuasiPerfectPuzzler: React.FC = () => {
 
         // Check if all subgoals are closed
         const allClosed = areAllSubgoalsClosed(updatedSubgoals);
+        if (allClosed || updatedSubgoals[activeGoalIndex]?.isCompleted) {
+          fx.flash(tactic.id === "sorry" ? "#f59e0b" : "#10b981");
+        }
 
         if (allClosed) {
           setLevelSolved(true);
@@ -540,6 +544,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
         setCurrentRam(nextRam);
         addLog(result.message, "error");
         playNote(130.81, 0.2); // Low error buzz
+        fx.shake(4);
 
         if (nextRam <= 0) {
           addLog(
@@ -566,6 +571,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
       playSuccess,
       saveProgress,
       announce,
+      fx,
     ]
   );
 
@@ -711,12 +717,6 @@ export const QuasiPerfectPuzzler: React.FC = () => {
   const isOOM = currentRam <= 0 && !levelSolved;
   const modeRules = describeModeRules(gameMode, currentLevel);
 
-  // Filtered levels based on chapter tab
-  const filteredLevels = useMemo(() => {
-    if (selectedChapter === "all") return puzzleLevels;
-    return puzzleLevels.filter((lvl) => lvl.chapter === selectedChapter);
-  }, [selectedChapter]);
-
   const generatedLeanScript = useMemo(
     () => generateLeanProofScript(currentLevel, proofSteps, levelSolved),
     [currentLevel, proofSteps, levelSolved]
@@ -726,6 +726,31 @@ export const QuasiPerfectPuzzler: React.FC = () => {
   const levelHeadingRef = useRef<HTMLHeadingElement | null>(null);
   const [levelIndexOpen, setLevelIndexOpen] = useState<boolean>(false);
   const [modeRulesOpen, setModeRulesOpen] = useState<boolean>(false);
+  const levelToggleRef = useRef<HTMLButtonElement | null>(null);
+  const headerRowRef = useRef<HTMLDivElement | null>(null);
+  // The drawer drops from just under the header row, which wraps to two
+  // lines on narrower cabinets, so its offset is measured when it opens.
+  const [drawerTop, setDrawerTop] = useState<number>(52);
+  const currentLevelButtonRef = useRef<HTMLButtonElement | null>(null);
+
+  // Opening the level drawer moves focus to the current level on the map;
+  // Escape or Close returns it to the toggle.
+  const toggleLevelDrawer = useCallback(() => {
+    const next = !levelIndexOpen;
+    setLevelIndexOpen(next);
+    if (next) {
+      const headerHeight = headerRowRef.current?.offsetHeight;
+      if (headerHeight) setDrawerTop(headerHeight + 8);
+      requestAnimationFrame(() => {
+        currentLevelButtonRef.current?.focus({ preventScroll: true });
+      });
+    }
+  }, [levelIndexOpen]);
+
+  const closeLevelDrawer = useCallback(() => {
+    setLevelIndexOpen(false);
+    levelToggleRef.current?.focus({ preventScroll: true });
+  }, []);
 
   // Choosing a level from the index collapses it again (small screens) and
   // moves focus and scroll to the active task so keyboard and screen-reader
@@ -748,6 +773,14 @@ export const QuasiPerfectPuzzler: React.FC = () => {
   );
   const { isFullscreen, toggleFullscreen } = useFullscreen(containerRef);
 
+  const latestLog = logs.length > 1 ? logs[logs.length - 1] : undefined;
+  const modeButtonClass = (isOn: boolean) =>
+    `qp-focus min-h-[40px] px-3 text-xs font-bold rounded-md transition-colors flex items-center justify-center gap-1 ${
+      isOn ? "qp-btn-primary" : "text-zinc-300 hover:text-zinc-100"
+    }`;
+  const quietButtonClass =
+    "qp-btn-quiet qp-focus min-h-[40px] flex items-center justify-center gap-1.5 rounded-lg px-3 text-xs font-bold transition-colors active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed";
+
   return (
     <section
       ref={containerRef}
@@ -755,10 +788,10 @@ export const QuasiPerfectPuzzler: React.FC = () => {
       tabIndex={0}
       data-keyboard-boundary="true"
       onKeyDown={handleKeyDown}
-      className={`relative font-mono outline-none transition-all ${
+      className={`qp-root relative w-full font-mono outline-none ${
         isFullscreen
-          ? "fixed inset-0 z-50 w-full h-[100dvh] max-h-[100dvh] max-w-none rounded-none border-none bg-black p-3 sm:p-6 overflow-y-auto select-none"
-          : "rounded-2xl border border-brand-cyan/30 bg-zinc-950/90 p-5 shadow-[0_0_35px_-10px_rgba(6,182,212,0.35)] focus:border-brand-cyan"
+          ? "fixed inset-0 z-50 h-[100dvh] max-h-[100dvh] max-w-none bg-[color:var(--qp-stage)] p-3 sm:p-6 overflow-y-auto select-none"
+          : "bg-[color:var(--qp-stage)] p-3 sm:p-4"
       }`}
     >
       <FullscreenButton
@@ -767,127 +800,135 @@ export const QuasiPerfectPuzzler: React.FC = () => {
         variant="floating"
       />
 
+      <h2 id="quasi-puzzler-heading" className="sr-only">
+        Quasi-Perfect Puzzler
+      </h2>
+
       {/* Tablet Orientation Recommendation */}
       <TabletOrientationHint className="w-full mb-3" />
 
-      {/* 1. Header & Mode Switcher */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800/80 pb-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-brand-cyan">
-              Formal Methods Arcade · Lean 4 Simulator
-            </span>
-            <span className="rounded-full bg-purple-500/10 border border-purple-500/30 px-2 py-0.2 text-[9px] font-semibold text-purple-300">
-              18-Level 3-Chapter Curriculum
-            </span>
-          </div>
-          <h2
-            id="quasi-puzzler-heading"
-            className="mt-1 text-2xl font-bold text-zinc-100"
-          >
-            Quasi-Perfect Puzzler
-          </h2>
-        </div>
+      <div className="relative">
+        {/* 1. Compact header: level drawer, mode, campaign/sandbox, tools */}
+        <div ref={headerRowRef} className="flex flex-wrap items-center gap-2">
+          {activeTab === "campaign" && (
+            <button
+              ref={levelToggleRef}
+              type="button"
+              aria-expanded={levelIndexOpen}
+              aria-controls="quasi-level-index"
+              onClick={toggleLevelDrawer}
+              className={`${quietButtonClass} ${levelIndexOpen ? "border-[color:var(--qp-accent)]" : ""}`}
+            >
+              <IconRoute className="w-4 h-4 qp-text-accent" />
+              <span className="sr-only">
+                {levelIndexOpen ? "Hide levels" : "Browse levels"} ·{" "}
+              </span>
+              <span className="tabular-nums">
+                <span className="hidden xl:inline">
+                  Ch {currentLevel.chapter} ·{" "}
+                </span>
+                Level {currentLevel.id} of {puzzleLevels.length}
+              </span>
+              <IconChevronDown
+                aria-hidden="true"
+                className={`w-3.5 h-3.5 text-zinc-400 ${levelIndexOpen ? "rotate-180" : ""}`}
+              />
+            </button>
+          )}
 
-        {/* Campaign vs Sandbox Mode Switch & Field Manual */}
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Game Mode (Story / Casual vs Hacker / Speedrun) */}
-          <div className="bg-zinc-900/90 p-1 rounded-xl border border-zinc-800 flex items-center gap-1">
+          <div
+            role="group"
+            aria-label="Game mode"
+            className="flex items-center gap-0.5 rounded-lg border border-[color:var(--qp-hairline)] bg-[color:var(--qp-panel)] p-0.5"
+          >
             <button
               type="button"
               onClick={() => handleToggleMode("story")}
               aria-pressed={gameMode === "story"}
-              className={`min-h-[44px] px-3 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center focus-visible:ring-2 focus-visible:ring-brand-cyan focus-visible:outline-none ${
-                gameMode === "story"
-                  ? "bg-brand-cyan text-black shadow-[0_0_10px_rgba(6,182,212,0.4)]"
-                  : "text-zinc-400 hover:text-zinc-200"
-              }`}
+              className={modeButtonClass(gameMode === "story")}
             >
-              Story Mode
+              Story<span className="sr-only"> Mode</span>
             </button>
             <button
               type="button"
               onClick={() => handleToggleMode("hacker")}
               aria-pressed={gameMode === "hacker"}
-              className={`min-h-[44px] px-3 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none ${
-                gameMode === "hacker"
-                  ? "bg-amber-400 text-black shadow-[0_0_10px_rgba(251,191,36,0.4)] font-extrabold"
-                  : "text-zinc-400 hover:text-zinc-200"
-              }`}
+              className={modeButtonClass(gameMode === "hacker")}
             >
-              Hacker Mode
+              Hacker<span className="sr-only"> Mode</span>
             </button>
           </div>
 
-          <div className="bg-zinc-900 p-1 rounded-xl border border-zinc-800 flex items-center gap-1">
+          <div
+            role="group"
+            aria-label="Campaign or sandbox"
+            className="flex items-center gap-0.5 rounded-lg border border-[color:var(--qp-hairline)] bg-[color:var(--qp-panel)] p-0.5"
+          >
             <button
               type="button"
               onClick={() => setActiveTab("campaign")}
-              className={`min-h-[44px] px-3 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:outline-none ${
-                activeTab === "campaign"
-                  ? "bg-purple-600 text-white shadow-[0_0_10px_rgba(168,85,247,0.4)]"
-                  : "text-zinc-400 hover:text-zinc-200"
-              }`}
+              aria-pressed={activeTab === "campaign"}
+              className={modeButtonClass(activeTab === "campaign")}
             >
               Campaign
             </button>
             <button
               type="button"
               onClick={() => setActiveTab("sandbox")}
-              className={`min-h-[44px] flex items-center justify-center gap-1 px-3 py-2 text-xs font-bold rounded-lg transition-all focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:outline-none ${
-                activeTab === "sandbox"
-                  ? "bg-emerald-500 text-black shadow-[0_0_10px_rgba(16,185,129,0.4)]"
-                  : "text-zinc-400 hover:text-zinc-200"
-              }`}
+              aria-pressed={activeTab === "sandbox"}
+              className={modeButtonClass(activeTab === "sandbox")}
             >
-              <IconFlask className="w-3.5 h-3.5" />
+              <IconFlask className="hidden xl:block w-3.5 h-3.5" />
               <span>Sandbox</span>
             </button>
           </div>
 
-          <FieldManualButton manualId="quasi-puzzler" label="Manual" />
-          <FullscreenButton
-            isFullscreen={isFullscreen}
-            onToggle={toggleFullscreen}
-            variant="header"
-          />
+          <div className="ml-auto flex flex-wrap items-center gap-1.5">
+            {activeTab === "campaign" && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setShowBriefingModal(true)}
+                  className={quietButtonClass}
+                >
+                  <IconSparkles className="w-3.5 h-3.5 qp-text-accent" />
+                  <span>
+                    <span className="sr-only">Theory </span>Briefing
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowHints((prev) => !prev)}
+                  aria-pressed={showHints}
+                  className={`${quietButtonClass} ${showHints ? "border-amber-500/60 text-amber-200" : ""}`}
+                >
+                  <IconBulb
+                    className={`w-3.5 h-3.5 ${showHints ? "text-amber-300" : ""}`}
+                  />
+                  <span>
+                    Hints
+                    <span className="hidden xl:inline">
+                      {showHints ? " On" : " Off"}
+                    </span>
+                  </span>
+                </button>
+              </>
+            )}
+            <FieldManualButton manualId="quasi-puzzler" label="Manual" />
+            <FullscreenButton
+              isFullscreen={isFullscreen}
+              onToggle={toggleFullscreen}
+              variant="header"
+            />
+          </div>
         </div>
-      </div>
 
-      {/* Active mode rules and mid-proof mode-change confirmation */}
-      <div className="mt-3 min-w-0 space-y-2" data-testid="mode-rules">
-        <p
-          id="quasi-mode-rules-text"
-          className={`text-xs text-zinc-400 break-words ${
-            modeRulesOpen ? "" : "line-clamp-2 md:line-clamp-none"
-          }`}
-        >
-          <span
-            className={`font-bold ${
-              gameMode === "story" ? "text-emerald-400" : "text-amber-400"
-            }`}
-          >
-            {modeRules.heading}
-          </span>{" "}
-          {modeRules.budget} {modeRules.failure} {modeRules.exhaustion}{" "}
-          {modeRules.scoring} Changing mode mid-proof restarts the level.
-        </p>
-        {/* Small screens show two lines of the rules so the active level stays near the top */}
-        <button
-          type="button"
-          aria-expanded={modeRulesOpen}
-          aria-controls="quasi-mode-rules-text"
-          onClick={() => setModeRulesOpen((prev) => !prev)}
-          className="md:hidden min-h-[44px] px-1 text-xs font-bold text-brand-cyan underline underline-offset-2 focus-visible:ring-2 focus-visible:ring-brand-cyan focus-visible:outline-none rounded"
-        >
-          {modeRulesOpen ? "Show fewer rules" : "Read all mode rules"}
-        </button>
         {pendingMode && (
           <div
             role="alertdialog"
             aria-labelledby="mode-change-title"
             aria-describedby="mode-change-desc"
-            className="rounded-xl border border-amber-500/40 bg-amber-950/30 p-3"
+            className="mt-3 rounded-xl border border-amber-500/40 bg-amber-950/30 p-3"
           >
             <p
               id="mode-change-title"
@@ -908,214 +949,187 @@ export const QuasiPerfectPuzzler: React.FC = () => {
               <button
                 type="button"
                 onClick={handleConfirmModeChange}
-                className="min-h-[44px] px-3 py-2 text-xs font-bold rounded-lg bg-amber-400 text-black focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none"
+                className="qp-focus min-h-[44px] px-3 py-2 text-xs font-bold rounded-lg bg-amber-400 text-black"
               >
                 Restart in {pendingMode === "story" ? "Story" : "Hacker"} Mode
               </button>
               <button
                 type="button"
                 onClick={handleCancelModeChange}
-                className="min-h-[44px] px-3 py-2 text-xs font-bold rounded-lg border border-zinc-700 text-zinc-300 hover:text-zinc-100 focus-visible:ring-2 focus-visible:ring-brand-cyan focus-visible:outline-none"
+                className={quietButtonClass}
               >
                 Keep current proof
               </button>
             </div>
           </div>
         )}
-      </div>
 
-      {/* 2. Sandbox View (if selected) */}
-      {activeTab === "sandbox" ? (
-        <div className="mt-4">
-          <SandboxMode />
-        </div>
-      ) : (
-        /* 3. Campaign View */
-        <>
-          {/* Level Header & Controls */}
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 bg-zinc-900/40 border border-zinc-850 rounded-xl p-3.5">
-            <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-brand-cyan">
-                  Chapter {currentLevel.chapter} · {currentLevel.chapterTitle}
-                </span>
-                <span className="text-zinc-400">|</span>
-                <span className="text-[10px] font-bold text-purple-400">
-                  {currentLevel.subtitle}
-                </span>
-                {gameMode === "story" && (
-                  <span className="text-[9px] font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-500/30 px-1.5 py-0.2 rounded">
-                    STORY MODE · {STORY_RAM_MULTIPLIER}× RAM
+        {/* 2. Sandbox View (if selected) */}
+        {activeTab === "sandbox" ? (
+          <div className="mt-4">
+            <SandboxMode />
+          </div>
+        ) : (
+          <>
+            {/* Task row: the level, the RAM stick, undo/redo/reset */}
+            <div className="mt-3 grid grid-cols-1 items-center gap-3 md:grid-cols-[minmax(0,1fr)_13rem_auto]">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] font-bold">
+                  <span className="qp-text-accent-strong uppercase tracking-wider">
+                    Chapter {currentLevel.chapter} · {currentLevel.chapterTitle}
                   </span>
-                )}
+                  <span className="text-zinc-400" aria-hidden="true">
+                    |
+                  </span>
+                  <span className="text-zinc-300">{currentLevel.subtitle}</span>
+                  {gameMode === "story" ? (
+                    <span className="rounded border border-[color:var(--qp-hairline)] px-1.5 text-[9px] text-zinc-300">
+                      STORY MODE · {STORY_RAM_MULTIPLIER}× RAM
+                    </span>
+                  ) : (
+                    <span className="rounded border border-amber-500/40 px-1.5 text-[9px] text-amber-300">
+                      HACKER MODE
+                    </span>
+                  )}
+                </div>
+                <h3
+                  ref={levelHeadingRef}
+                  tabIndex={-1}
+                  id="quasi-current-level-heading"
+                  className="scroll-mt-24 mt-0.5 rounded-sm text-lg font-bold tracking-[-0.02em] text-zinc-100 outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--qp-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
+                >
+                  {currentLevel.title}
+                </h3>
+                <p
+                  title={currentLevel.description}
+                  className="text-xs text-zinc-400 break-words line-clamp-2 xl:line-clamp-1"
+                >
+                  {currentLevel.description}
+                </p>
               </div>
-              <h3
-                ref={levelHeadingRef}
-                tabIndex={-1}
-                id="quasi-current-level-heading"
-                className="scroll-mt-24 rounded-sm text-base font-bold text-zinc-100 mt-0.5 outline-none focus-visible:ring-2 focus-visible:ring-brand-cyan focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
-              >
-                {currentLevel.title}
-              </h3>
-              <p className="mt-0.5 text-xs text-zinc-400 max-w-xl">
-                {currentLevel.description}
-              </p>
-            </div>
 
-            <div className="flex items-center gap-2 flex-wrap">
-              <button
-                type="button"
-                onClick={handleUndo}
-                disabled={history.length === 0 || levelSolved}
-                className="min-h-[44px] min-w-[44px] flex items-center justify-center gap-1 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-xs font-bold text-zinc-300 hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors focus-visible:ring-2 focus-visible:ring-brand-cyan focus-visible:outline-none"
-              >
-                <IconArrowBackUp className="w-3.5 h-3.5" />
-                <span>Undo</span>
-              </button>
-              <button
-                type="button"
-                onClick={handleRedo}
-                disabled={redoHistory.length === 0 || levelSolved}
-                className="min-h-[44px] min-w-[44px] flex items-center justify-center gap-1 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-xs font-bold text-zinc-300 hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors focus-visible:ring-2 focus-visible:ring-brand-cyan focus-visible:outline-none"
-              >
-                <IconArrowForwardUp className="w-3.5 h-3.5" />
-                <span>Redo</span>
-              </button>
-              <button
-                type="button"
-                onClick={handleResetLevel}
-                className="min-h-[44px] min-w-[44px] flex items-center justify-center gap-1 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-xs font-bold text-zinc-300 hover:bg-zinc-800 transition-colors focus-visible:ring-2 focus-visible:ring-brand-cyan focus-visible:outline-none"
-              >
-                <IconRotate className="w-3.5 h-3.5" />
-                <span>Reset</span>
-              </button>
-            </div>
-          </div>
+              <RAMGauge
+                currentRam={currentRam}
+                initialRam={getStartingRam(currentLevel, gameMode)}
+              />
 
-          {/* Tools */}
-          <div className="mt-3">
-            {/* Tools Toggles */}
-            <div className="grid grid-cols-3 gap-1.5 sm:flex sm:flex-wrap sm:items-center">
-              <button
-                type="button"
-                onClick={() => setShowBriefingModal(true)}
-                className="min-h-[44px] flex flex-col sm:flex-row items-center justify-center gap-1 px-2 sm:px-3 py-1.5 text-center text-xs font-bold rounded-lg border border-brand-cyan/40 bg-brand-cyan/10 text-brand-cyan hover:bg-brand-cyan/20 transition-all focus-visible:ring-2 focus-visible:ring-brand-cyan focus-visible:outline-none"
-              >
-                <IconSparkles className="w-3.5 h-3.5" />
-                <span>Theory Briefing</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowHints((prev) => !prev)}
-                className={`min-h-[44px] flex flex-col sm:flex-row items-center justify-center gap-1 px-2 sm:px-3 py-1.5 text-center text-xs font-bold rounded-lg border transition-all focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none ${
-                  showHints
-                    ? "bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-[0_0_10px_rgba(245,158,11,0.3)]"
-                    : "bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-zinc-200"
-                }`}
-              >
-                <IconBulb className="w-3.5 h-3.5" />
-                <span>Hints {showHints ? "On" : "Off"}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowLeanInspector((prev) => !prev)}
-                className={`min-h-[44px] flex flex-col sm:flex-row items-center justify-center gap-1 px-2 sm:px-3 py-1.5 text-center text-xs font-bold rounded-lg border transition-all focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:outline-none ${
-                  showLeanInspector
-                    ? "bg-purple-500/20 text-purple-300 border-purple-500/50 shadow-[0_0_10px_rgba(168,85,247,0.3)]"
-                    : "bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-zinc-200"
-                }`}
-              >
-                <IconCode className="w-3.5 h-3.5" />
-                <span>Lean IDE {showLeanInspector ? "Open" : "Closed"}</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Level index: collapsed behind a disclosure on small screens so the active task stays in reach */}
-          <div className="mt-3 md:hidden">
-            <button
-              type="button"
-              aria-expanded={levelIndexOpen}
-              aria-controls="quasi-level-index"
-              onClick={() => setLevelIndexOpen((prev) => !prev)}
-              className="min-h-[44px] w-full flex items-center justify-between gap-2 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-xs font-bold text-zinc-200 hover:bg-zinc-800 focus-visible:ring-2 focus-visible:ring-brand-cyan focus-visible:outline-none"
-            >
-              <span>
-                {levelIndexOpen ? "Hide levels" : "Browse levels"} · Level{" "}
-                {currentLevel.id} of {puzzleLevels.length}
-              </span>
-              <span aria-hidden="true">{levelIndexOpen ? "−" : "+"}</span>
-            </button>
-          </div>
-          <div
-            id="quasi-level-index"
-            data-testid="quasi-level-index"
-            className={`mt-3 space-y-2.5 ${levelIndexOpen ? "block" : "hidden md:block"}`}
-          >
-            {/* Chapter Tabs */}
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[10px] uppercase font-bold text-zinc-400 mr-1">
-                Chapter:
-              </span>
-              {[
-                { id: "all", label: "All Levels (18)" },
-                { id: 1, label: "Ch 1: Equational (1-6)" },
-                { id: 2, label: "Ch 2: Logic (7-12)" },
-                { id: 3, label: "Ch 3: Quasiperfect (13-18)" },
-              ].map((chap) => (
+              <div className="flex items-center gap-1.5">
                 <button
-                  key={chap.id}
                   type="button"
-                  onClick={() => setSelectedChapter(chap.id as number | "all")}
-                  className={`min-h-[44px] px-3 py-1.5 rounded text-[11px] font-bold transition-all flex items-center justify-center focus-visible:ring-2 focus-visible:ring-brand-cyan focus-visible:outline-none ${
-                    selectedChapter === chap.id
-                      ? "bg-zinc-800 text-brand-cyan border border-brand-cyan/40"
-                      : "text-zinc-400 hover:text-zinc-300"
+                  onClick={handleUndo}
+                  disabled={history.length === 0 || levelSolved}
+                  className={quietButtonClass}
+                >
+                  <IconArrowBackUp className="w-3.5 h-3.5" />
+                  <span>Undo</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRedo}
+                  disabled={redoHistory.length === 0 || levelSolved}
+                  className={quietButtonClass}
+                >
+                  <IconArrowForwardUp className="w-3.5 h-3.5" />
+                  <span>Redo</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleResetLevel}
+                  className={quietButtonClass}
+                >
+                  <IconRotate className="w-3.5 h-3.5" />
+                  <span>Reset</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Level drawer: the chapter map and the mode rules, over the board */}
+            <div
+              id="quasi-level-index"
+              data-testid="quasi-level-index"
+              role="region"
+              aria-label="Level map"
+              style={{ top: drawerTop }}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  closeLevelDrawer();
+                }
+              }}
+              className={`${
+                levelIndexOpen ? "block" : "hidden"
+              } absolute inset-x-0 z-30 rounded-2xl border border-[color:var(--qp-hairline)] bg-[color:var(--qp-panel)] p-4 shadow-[0_24px_60px_-20px_rgba(0,0,0,0.9)]`}
+            >
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm font-bold text-zinc-100">
+                    Level Map
+                  </span>
+                  <span className="qp-chip-accent rounded-full border px-2 py-0.5 text-[10px] font-semibold">
+                    18-Level 3-Chapter Curriculum
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={closeLevelDrawer}
+                  className={quietButtonClass}
+                >
+                  <IconX className="w-3.5 h-3.5" />
+                  <span>Close</span>
+                </button>
+              </div>
+
+              <LevelMap
+                levels={puzzleLevels}
+                currentLevelIndex={currentLevelIndex}
+                progress={parsedProgress}
+                onSelectLevel={handleSelectLevel}
+                currentButtonRef={currentLevelButtonRef}
+              />
+
+              <div
+                className="mt-3 min-w-0 border-t border-[color:var(--qp-hairline)] pt-3"
+                data-testid="mode-rules"
+              >
+                <p
+                  id="quasi-mode-rules-text"
+                  className={`text-xs text-zinc-400 break-words ${
+                    modeRulesOpen ? "" : "line-clamp-2"
                   }`}
                 >
-                  {chap.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Level Selector Buttons */}
-            <div className="flex flex-wrap items-center gap-1.5 p-2 bg-zinc-900/50 rounded-xl border border-zinc-850">
-              {filteredLevels.map((lvl) => {
-                const actualIdx = puzzleLevels.findIndex(
-                  (l) => l.id === lvl.id
-                );
-                const isCurrent = actualIdx === currentLevelIndex;
-                const lvlProgress = parsedProgress.completedLevels?.[lvl.id];
-
-                return (
-                  <button
-                    key={lvl.id}
-                    type="button"
-                    onClick={() => handleSelectLevel(actualIdx)}
-                    className={`min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg px-3 py-1.5 text-xs font-bold transition-all focus-visible:ring-2 focus-visible:ring-brand-cyan focus-visible:outline-none ${
-                      isCurrent
-                        ? "bg-brand-cyan text-black shadow-[0_0_10px_rgba(6,182,212,0.5)] font-extrabold"
-                        : lvlProgress?.completed
-                          ? "bg-zinc-800 text-emerald-300 hover:bg-zinc-700"
-                          : "bg-zinc-900 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+                  <span
+                    className={`font-bold ${
+                      gameMode === "story" ? "text-zinc-100" : "text-amber-300"
                     }`}
                   >
-                    L{lvl.id}
-                    {lvlProgress?.completed && !lvlProgress.usedSorry && (
-                      <span className="ml-1 text-[10px] text-amber-400">★</span>
-                    )}
-                    {lvlProgress?.usedSorry && (
-                      <span className="ml-1 text-[10px] text-rose-400">⚠</span>
-                    )}
-                  </button>
-                );
-              })}
+                    {modeRules.heading}
+                  </span>{" "}
+                  {modeRules.budget} {modeRules.failure} {modeRules.exhaustion}{" "}
+                  {modeRules.scoring} Changing mode mid-proof restarts the
+                  level.
+                </p>
+                <button
+                  type="button"
+                  aria-expanded={modeRulesOpen}
+                  aria-controls="quasi-mode-rules-text"
+                  onClick={() => setModeRulesOpen((prev) => !prev)}
+                  className="qp-focus qp-text-accent-strong min-h-[36px] px-1 text-xs font-bold underline underline-offset-2 rounded"
+                >
+                  {modeRulesOpen ? "Show fewer rules" : "Read all mode rules"}
+                </button>
+              </div>
             </div>
-          </div>
+          </>
+        )}
+      </div>
 
+      {activeTab === "campaign" && (
+        /* 3. Campaign View */
+        <>
           {/* Progressive Hints Drawer (if toggled) */}
           {showHints && (
-            <div className="mt-4">
+            <div className="mt-3">
               <HintSystem
                 hints={currentLevel.hints}
                 onClose={() => setShowHints(false)}
@@ -1123,17 +1137,9 @@ export const QuasiPerfectPuzzler: React.FC = () => {
             </div>
           )}
 
-          {/* Lean Server RAM Gauge (Story Mode gets a double budget) */}
-          <div className="mt-4">
-            <RAMGauge
-              currentRam={currentRam}
-              initialRam={getStartingRam(currentLevel, gameMode)}
-            />
-          </div>
-
           {/* OOM Server Crash Alert */}
           {isOOM && (
-            <div className="mt-4 rounded-xl border border-rose-500/50 bg-rose-950/40 p-4 text-center">
+            <div className="mt-3 rounded-xl border border-rose-500/50 bg-rose-950/40 p-4 text-center">
               <p className="text-sm font-bold text-rose-300">
                 💥 SIMULATED RAM EXHAUSTED
               </p>
@@ -1145,16 +1151,16 @@ export const QuasiPerfectPuzzler: React.FC = () => {
               <button
                 type="button"
                 onClick={handleResetLevel}
-                className="mt-3 rounded-lg bg-rose-600 px-4 py-1.5 text-xs font-bold text-white hover:bg-rose-500 transition-colors"
+                className="qp-focus mt-3 rounded-lg bg-rose-600 px-4 py-1.5 text-xs font-bold text-white hover:bg-rose-500 transition-colors"
               >
                 Reset Simulation &amp; Retry Level
               </button>
             </div>
           )}
 
-          {/* Multi-Goal Branch Tabs */}
+          {/* Multi-Goal Branch Tabs: the split, drawn as a fork */}
           {subgoals.length > 1 && (
-            <div className="mt-4">
+            <div className="mt-3">
               <MultiGoalTabs
                 subgoals={subgoals}
                 activeGoalIndex={activeGoalIndex}
@@ -1163,47 +1169,54 @@ export const QuasiPerfectPuzzler: React.FC = () => {
             </div>
           )}
 
-          {/* Main Proof Expression Tree Canvas Panels */}
-          {subgoals.map((sg, idx) => {
-            const isActive = idx === activeGoalIndex;
-            return (
-              <div
-                key={sg.id}
-                id={`subgoal-panel-${sg.id}`}
-                role={subgoals.length > 1 ? "tabpanel" : undefined}
-                aria-labelledby={
-                  subgoals.length > 1 ? `subgoal-tab-${sg.id}` : undefined
-                }
-                tabIndex={subgoals.length > 1 ? 0 : undefined}
-                hidden={!isActive}
-                className={isActive ? "mt-4" : "hidden"}
-              >
-                {isActive && (
-                  <ExpressionTree
-                    goalAST={goalAST}
-                    hypotheses={activeHypotheses}
-                    selectedTargetId={selectedTargetId}
-                    hoveredTargetId={hoveredTargetId}
-                    onSelectTarget={(nodeId) => {
-                      playNote(440, 0.05);
-                      if (selectedTacticIndex !== null) {
-                        executeTacticOnNode(selectedTacticIndex, nodeId);
-                      } else {
-                        setSelectedTargetId((prev) =>
-                          prev === nodeId ? null : nodeId
-                        );
-                      }
-                    }}
-                    onHoverTarget={setHoveredTargetId}
-                    isProofComplete={levelSolved || activeSubgoal.isCompleted}
-                    isTacticActive={selectedTacticIndex !== null}
-                    targetingHint={targetingHint}
-                  />
-                )}
-              </div>
-            );
-          })}
-
+          {/* The proof board */}
+          <div ref={fxStageRef} className="relative mt-3">
+            {subgoals.map((sg, idx) => {
+              const isActive = idx === activeGoalIndex;
+              return (
+                <div
+                  key={sg.id}
+                  id={`subgoal-panel-${sg.id}`}
+                  role={subgoals.length > 1 ? "tabpanel" : undefined}
+                  aria-labelledby={
+                    subgoals.length > 1 ? `subgoal-tab-${sg.id}` : undefined
+                  }
+                  tabIndex={subgoals.length > 1 ? 0 : undefined}
+                  hidden={!isActive}
+                  className={isActive ? "" : "hidden"}
+                >
+                  {isActive && (
+                    <ExpressionTree
+                      goalAST={goalAST}
+                      hypotheses={activeHypotheses}
+                      selectedTargetId={selectedTargetId}
+                      hoveredTargetId={hoveredTargetId}
+                      onSelectTarget={(nodeId) => {
+                        playNote(440, 0.05);
+                        if (selectedTacticIndex !== null) {
+                          executeTacticOnNode(selectedTacticIndex, nodeId);
+                        } else {
+                          setSelectedTargetId((prev) =>
+                            prev === nodeId ? null : nodeId
+                          );
+                        }
+                      }}
+                      onHoverTarget={setHoveredTargetId}
+                      isProofComplete={levelSolved || activeSubgoal.isCompleted}
+                      isTacticActive={selectedTacticIndex !== null}
+                      targetingHint={targetingHint}
+                      statusMessage={latestLog}
+                    />
+                  )}
+                </div>
+              );
+            })}
+            <div
+              ref={fxFlashRef}
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 rounded-2xl opacity-0"
+            />
+          </div>
           {/* Off-screen Accessible DOM Fallback Subtree */}
           <div
             className="sr-only"
@@ -1299,8 +1312,8 @@ export const QuasiPerfectPuzzler: React.FC = () => {
             </fieldset>
           </div>
 
-          {/* Tactic Hand */}
-          <div className="mt-4">
+          {/* Tactic Hand, fanned under the board */}
+          <div className="mt-1">
             <TacticHand
               availableTactics={currentLevel.availableTactics}
               currentRam={currentRam}

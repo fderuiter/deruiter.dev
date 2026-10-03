@@ -8,13 +8,16 @@
 
 > **useArcadeFx**(`options?`): [`ArcadeFx`](../interfaces/ArcadeFx.md)
 
-Shared arcade feedback: screen shake, a colour flash and hit stop.
+Shared arcade feedback: screen shake, a colour flash and hit stop, plus the
+Setup Wizard's CRT setting.
 
 Shake and flash animate only `transform` and `opacity` through the Web
 Animations API, so they cost no React renders and no game-loop work. Both
 are skipped under `prefers-reduced-motion`, below a 768px viewport, and
 when the cabinet's Setup Wizard sets screen shake to none. Hit stop is a
 timestamp the game loop checks, so a game decides what freezing means.
+Both wizard settings, `screenShake` and `crtFilter`, are read through
+the cabinet's setup context.
 
 ## Parameters
 

@@ -137,20 +137,24 @@ describe("Garmin Watch crash overlay names the real cause (#1177)", () => {
     }
   );
 
-  // #1557: the canvas paints its own crash screen underneath; a translucent
-  // overlay let that title show through behind the HTML one.
-  it("covers the canvas crash screen with an opaque overlay", async () => {
+  // #1557: a translucent DOM card over the canvas crash screen let both
+  // titles show at once. The crash now has one layer (#1520): the canvas
+  // draws the IQ! error face and no DOM text sits over the watch screen;
+  // the words live in the result card beside the watch.
+  it("draws the crash on the watch screen in one layer", async () => {
     await act(async () => {
       root.render(
         <GarminWatchSimulator initialState={crashedWith("Null Pointer")} />
       );
     });
-    const overlay = container.querySelector(
-      '[data-testid="garmin-end-overlay"]'
-    );
-    expect(overlay).not.toBeNull();
-    const classes = (overlay?.className ?? "").split(/\s+/);
-    expect(classes).toContain("bg-black");
-    expect(classes.some((c) => /^bg-black\/\d+$/.test(c))).toBe(false);
+    const screen = container.querySelector('[data-testid="garmin-screen"]');
+    expect(screen).not.toBeNull();
+    expect(screen?.textContent?.trim()).toBe("");
+    expect(
+      container.querySelector('[data-testid="garmin-end-overlay"]')
+    ).toBeNull();
+    const dialog = container.querySelector('[role="dialog"]');
+    expect(dialog?.textContent).toContain("NULL POINTER");
+    expect(screen?.contains(dialog)).toBe(false);
   });
 });

@@ -8,7 +8,7 @@ import React, {
   useCallback,
 } from "react";
 import Link from "next/link";
-import { clamp } from "@/lib/game-utils";
+import { clamp, gameFont } from "@/lib/game-utils";
 import Image from "next/image";
 import { useAudio } from "@/components/providers/AudioProvider";
 import { useTelemetry } from "@/hooks/useTelemetry";
@@ -16,6 +16,7 @@ import { FieldManualButton } from "@/components/FieldManualButton";
 import { FullscreenButton } from "@/components/arcade/FullscreenButton";
 import { ResultCard } from "@/components/arcade/ResultCard";
 import { useArcadeFx } from "@/hooks/useArcadeFx";
+import { useSkipTitleScreen } from "@/components/arcade/CabinetSetupContext";
 import { ArcadeHud } from "@/components/arcade/ArcadeHud";
 import { DynamicTabletOrientationHint as TabletOrientationHint } from "@/components/arcade/DynamicTabletOrientationHint";
 import { useGameFullscreen as useFullscreen } from "@/components/arcade/CabinetFullscreen";
@@ -237,7 +238,7 @@ function drawDogParkScene(
     ctx.fill();
 
     ctx.fillStyle = "#fde68a";
-    ctx.font = "bold 10px monospace";
+    ctx.font = gameFont(10, "bold");
     ctx.textAlign = "center";
     ctx.fillText("MUD PUDDLE!", puddle.x, puddle.y + 4);
   });
@@ -261,7 +262,7 @@ function drawDogParkScene(
     );
 
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 9px monospace";
+    ctx.font = gameFont(9, "bold");
     ctx.textAlign = "center";
     ctx.fillText(
       hurdle.cleared ? "CLEARED" : "JUMP (SPACE)",
@@ -284,7 +285,7 @@ function drawDogParkScene(
     ctx.fillText(friend.breed === "corgi" ? "🦊" : "🐕", 0, 4);
 
     ctx.fillStyle = friend.greeted ? "#4ade80" : "#ffffff";
-    ctx.font = "bold 9px monospace";
+    ctx.font = gameFont(9, "bold");
     ctx.fillText(friend.greeted ? `❤️ ${friend.name}` : friend.name, 0, 22);
     ctx.restore();
   });
@@ -323,7 +324,7 @@ function drawDogParkScene(
   ctx.stroke();
 
   ctx.fillStyle = "#ffffff";
-  ctx.font = "bold 10px monospace";
+  ctx.font = gameFont(10, "bold");
   ctx.textAlign = "center";
   ctx.fillText("YOU", 80, 254);
 
@@ -386,7 +387,7 @@ function drawDogParkScene(
   ctx.strokeRect(CANVAS_WIDTH / 2 - 220, 15, 440, 52);
 
   ctx.fillStyle = "#ffffff";
-  ctx.font = "bold 11px monospace";
+  ctx.font = gameFont(11, "bold");
   ctx.textAlign = "center";
   if (park.status === "aim") {
     ctx.fillText(
@@ -803,6 +804,27 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
     [applyTransition]
   );
 
+  const startSprint = useCallback(() => {
+    activeInterruptionsRef.current.clear();
+    wasRunningBeforeInterruptionRef.current = false;
+    applyTransition((state) => ({ ...state, status: "running" }));
+    recordEvent("working-with-duck", "project_click").catch(() => {});
+  }, [applyTransition, recordEvent]);
+
+  // One title screen per game (#1516): inside a cabinet, the attract screen
+  // was the title, so Launch starts Sprint 1 at once. Sprint 1's guided hints
+  // carry its instructions, and Scrapbook, Wardrobe and the Manual stay in
+  // the action dock. Later sprints keep their briefing as a short intro.
+  const skipTitleScreen = useSkipTitleScreen();
+
+  const autoStartedRef = useRef(false);
+  useEffect(() => {
+    if (!skipTitleScreen || autoStartedRef.current) return;
+    autoStartedRef.current = true;
+    const state = gameStateRef.current;
+    if (state.status === "idle" && state.currentLevel === 1) startSprint();
+  }, [skipTitleScreen, startSprint]);
+
   const toggleManualPause = useCallback(() => {
     const currentStatus = gameStateRef.current.status;
     if (currentStatus === "running") {
@@ -971,6 +993,33 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
     },
   });
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // One-screen rule (#1516): the windowed canvas takes the cabinet's stage
+  // budget minus Duck's own chrome, the HUD above it and the action dock
+  // below, so the dock's rows stay on screen when they wrap at 1024px.
+  // Written straight to a CSS variable, so resizing costs no renders.
+  const hudRef = useRef<HTMLDivElement>(null);
+  const dockRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const container = containerRef.current;
+    const hud = hudRef.current;
+    const dock = dockRef.current;
+    if (!container || !hud || !dock) return;
+    const measure = () => {
+      // 8px margins sit between the HUD, the canvas and the dock.
+      const chrome =
+        hud.getBoundingClientRect().height +
+        dock.getBoundingClientRect().height +
+        16;
+      container.style.setProperty("--duck-chrome", `${Math.ceil(chrome)}px`);
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(hud);
+    observer.observe(dock);
+    return () => observer.disconnect();
+  }, []);
 
   const [_isNearViewport, setIsNearViewport] = useState<boolean>(() => {
     if (
@@ -2144,6 +2193,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
 
       {/* One slim status bar (#1676): the four needs, the pace and the score */}
       <div
+        ref={hudRef}
         data-testid="duck-hud-meters"
         className="mb-2 overflow-hidden rounded-xl border border-white/[0.08] [@media(max-height:650px)]:mb-1.5"
       >
@@ -2263,7 +2313,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
           className={
             isFullscreen
               ? "max-h-[var(--layout-viewport-budget,calc(100dvh-var(--header-height,80px)-var(--layout-dock-height,64px)))] max-h-[calc(100dvh-var(--header-height,80px)-var(--footer-height,48px))] max-w-full aspect-[800/500] object-contain block cursor-crosshair touch-none my-auto mx-auto [@media(max-height:500px)]:max-h-[45dvh] focus:outline-none focus:ring-2 focus:ring-amber-300/60"
-              : "w-[min(100%,max(28rem,calc((100dvh-24rem)*1.6)))] mx-auto h-auto aspect-[800/500] cursor-crosshair block touch-none [@media(max-height:500px)]:w-auto [@media(max-height:500px)]:max-w-full [@media(max-height:500px)]:max-h-[52dvh] [@media(max-height:500px)]:mx-auto focus:outline-none focus:ring-2 focus:ring-amber-300/60"
+              : "w-[min(100%,max(20rem,calc((var(--arcade-stage-budget,calc(100dvh-10rem))-var(--duck-chrome,14rem)-0.5rem)*1.6)))] mx-auto h-auto aspect-[800/500] cursor-crosshair block touch-none [@media(max-height:500px)]:w-auto [@media(max-height:500px)]:max-w-full [@media(max-height:500px)]:max-h-[52dvh] [@media(max-height:500px)]:mx-auto focus:outline-none focus:ring-2 focus:ring-amber-300/60"
           }
         />
 
@@ -2326,14 +2376,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
             </p>
             <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
               <button
-                onClick={() => {
-                  activeInterruptionsRef.current.clear();
-                  wasRunningBeforeInterruptionRef.current = false;
-                  applyTransition((state) => ({ ...state, status: "running" }));
-                  recordEvent("working-with-duck", "project_click").catch(
-                    () => {}
-                  );
-                }}
+                onClick={startSprint}
                 className="arcade-launch-button px-5 py-2.5 sm:px-6 sm:py-3 rounded-xl border text-zinc-950 font-mono font-bold text-xs sm:text-sm transition-colors active:scale-[0.98] flex items-center gap-2 cursor-pointer min-h-[44px]"
               >
                 <IconPlayerPlay className="w-4 h-4 fill-current" />
@@ -2437,6 +2480,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
 
       {/* Unified Tactile Action Dock */}
       <div
+        ref={dockRef}
         data-testid="duck-action-dock"
         className="mt-2 flex flex-col gap-2 font-mono [@media(max-height:650px)]:mt-1.5 [@media(max-height:650px)]:gap-1.5"
       >

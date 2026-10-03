@@ -10,7 +10,7 @@
  * Decorative motion (squash and stretch, zoomies bob, pulsing rings) is
  * skipped under `prefers-reduced-motion`.
  */
-import { clamp } from "@/lib/game-utils";
+import { clamp, gameFont } from "@/lib/game-utils";
 import {
   BACK_DOOR_BOUNDS,
   BATHTUB_BOUNDS,
@@ -38,8 +38,9 @@ import {
 
 type Ctx = CanvasRenderingContext2D;
 
-const LABEL_FONT = "bold 10px ui-monospace, SFMono-Regular, Menlo, monospace";
-const SMALL_FONT = "9px ui-monospace, SFMono-Regular, Menlo, monospace";
+// Geist Mono, resolved at draw time so canvas labels match the DOM HUD.
+const labelFont = () => gameFont(10, "bold");
+const smallFont = () => gameFont(9);
 
 /** Engine colours that fall outside the arcade palette, mapped at draw time. */
 const TONE_MAP: Record<string, string> = {
@@ -116,7 +117,7 @@ function pill(
   x: number,
   y: number,
   color: string,
-  font = LABEL_FONT
+  font = labelFont()
 ) {
   ctx.save();
   ctx.font = font;
@@ -476,7 +477,7 @@ function paintDesk(g: Ctx) {
   ellipse(g, px + 12, py - 24, 3.5, 3.5);
   g.fill();
   g.fillStyle = "#a8a29e";
-  g.font = SMALL_FONT;
+  g.font = smallFont();
   g.textAlign = "center";
   g.fillText("you", px, py + 34);
 }
@@ -532,7 +533,7 @@ function paintDogBed(g: Ctx) {
   g.restore();
 
   g.fillStyle = "#f5e6cc";
-  g.font = SMALL_FONT;
+  g.font = smallFont();
   g.textAlign = "center";
   g.fillText("Duck's bed", cx, cy + ry - 5);
 }
@@ -1667,7 +1668,7 @@ export function drawDuck(ctx: Ctx, duck: DuckSprite, options: DuckDrawOptions) {
   if (pose === "nap") {
     ctx.save();
     ctx.fillStyle = "#cbd5e1";
-    ctx.font = "bold 14px ui-monospace, monospace";
+    ctx.font = gameFont(14, "bold");
     ctx.textAlign = "center";
     const drift = calm ? 0 : Math.sin(ticks * 0.08) * 4;
     ctx.fillText("z z z", duck.x + facing * 12, duck.y - 30 - drift);
@@ -1876,7 +1877,7 @@ export function drawOfficeScene(
     DESK_BOUNDS.x + 85,
     DESK_BOUNDS.y + 146,
     state.activeCodeBursts > 0 ? "#34d399" : "#a8a29e",
-    SMALL_FONT
+    smallFont()
   );
 
   // Bowl levels
@@ -1947,10 +1948,10 @@ export function drawOfficeScene(
       bathX,
       BATHTUB_BOUNDS.y + 80,
       "#fbbf24",
-      SMALL_FONT
+      smallFont()
     );
   } else {
-    pill(ctx, "Bathtub", bathX, BATHTUB_BOUNDS.y + 80, "#cbd5e1", SMALL_FONT);
+    pill(ctx, "Bathtub", bathX, BATHTUB_BOUNDS.y + 80, "#cbd5e1", smallFont());
   }
 
   // Back door
@@ -1987,7 +1988,7 @@ export function drawOfficeScene(
     doorX,
     BACK_DOOR_BOUNDS.y + 92,
     isPottyUrgent ? "#4ade80" : "#a7f3d0",
-    SMALL_FONT
+    smallFont()
   );
 
   // A parcel at the door
@@ -2006,14 +2007,14 @@ export function drawOfficeScene(
       BACK_DOOR_BOUNDS.x - 30,
       BACK_DOOR_BOUNDS.y + 22,
       "#fbbf24",
-      SMALL_FONT
+      smallFont()
     );
   }
 
   state.hazards.forEach((hazard) => drawHazard(ctx, hazard, state, calm));
 
   ctx.save();
-  ctx.font = SMALL_FONT;
+  ctx.font = smallFont();
   ctx.textAlign = "center";
   ctx.fillStyle = water < 0.25 ? "#fbbf24" : "#e7e5e4";
   ctx.fillText(
@@ -2074,7 +2075,7 @@ export function drawOfficeScene(
       puddle.x,
       puddle.y + puddle.radius + 10,
       "#fde68a",
-      SMALL_FONT
+      smallFont()
     );
   });
 
@@ -2112,7 +2113,7 @@ export function drawOfficeScene(
     if (p.shape === "heart") {
       heart(ctx, p.x, p.y, p.size);
     } else if (p.shape === "star" && p.color.toLowerCase() === SNORE_COLOR) {
-      ctx.font = `bold ${p.size}px ui-monospace, monospace`;
+      ctx.font = gameFont(p.size, "bold");
       ctx.textAlign = "center";
       ctx.fillText("z", p.x, p.y);
     } else if (p.shape === "star") {
@@ -2128,7 +2129,7 @@ export function drawOfficeScene(
     ctx.save();
     ctx.globalAlpha = a.alpha;
     ctx.fillStyle = tone(a.color);
-    ctx.font = "bold 12px ui-monospace, monospace";
+    ctx.font = gameFont(12, "bold");
     ctx.textAlign = "center";
     ctx.shadowColor = "#000000";
     ctx.shadowBlur = 6;

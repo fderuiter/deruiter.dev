@@ -155,7 +155,7 @@ export const LeanIdeInspector: React.FC<LeanIdeInspectorProps> = ({
             onClick={() => setActiveTab("code")}
             className={`flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-lg transition-all ${
               activeTab === "code"
-                ? "bg-purple-600 text-white shadow-[0_0_10px_rgba(168,85,247,0.4)]"
+                ? "qp-btn-primary"
                 : "text-zinc-400 hover:text-zinc-200"
             }`}
           >
@@ -167,7 +167,7 @@ export const LeanIdeInspector: React.FC<LeanIdeInspectorProps> = ({
             onClick={() => setActiveTab("encyclopedia")}
             className={`flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-lg transition-all ${
               activeTab === "encyclopedia"
-                ? "bg-brand-cyan text-black shadow-[0_0_10px_rgba(6,182,212,0.4)]"
+                ? "qp-btn-primary"
                 : "text-zinc-400 hover:text-zinc-200"
             }`}
           >
@@ -219,7 +219,7 @@ export const LeanIdeInspector: React.FC<LeanIdeInspectorProps> = ({
             <div className="flex items-center gap-2">
               <span className="text-zinc-400 font-bold">Kernel Status:</span>
               {isSyncing ? (
-                <span className="text-cyan-400 font-bold flex items-center gap-1">
+                <span className="qp-text-accent-strong font-bold flex items-center gap-1">
                   <IconRefresh className="w-3.5 h-3.5 animate-spin" />{" "}
                   Verifying...
                 </span>
@@ -258,10 +258,10 @@ export const LeanIdeInspector: React.FC<LeanIdeInspectorProps> = ({
           </div>
 
           {/* Level Theory Card */}
-          <div className="rounded-xl border border-purple-500/20 bg-purple-950/20 p-3">
+          <div className="rounded-xl border border-[color:var(--qp-accent-line)] bg-[color:var(--qp-accent-soft)] p-3">
             <div className="flex items-center justify-between gap-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-purple-300 flex items-center gap-1.5">
-                <IconSparkles className="w-3.5 h-3.5 text-purple-400" />
+              <span className="text-[11px] font-bold uppercase tracking-wider qp-text-accent-strong flex items-center gap-1.5">
+                <IconSparkles className="w-3.5 h-3.5 qp-text-accent-strong" />
                 {level.educationalConcept.title}
               </span>
               {level.educationalConcept.mathNotation && (
@@ -274,7 +274,7 @@ export const LeanIdeInspector: React.FC<LeanIdeInspectorProps> = ({
               {level.educationalConcept.summary}
             </p>
             <div className="mt-2 text-[10px] text-zinc-400 flex items-center gap-1">
-              <span className="text-brand-cyan font-semibold">
+              <span className="qp-text-accent-strong font-semibold">
                 Real-World Application:
               </span>
               <span>{level.educationalConcept.realWorldApplication}</span>
@@ -283,12 +283,12 @@ export const LeanIdeInspector: React.FC<LeanIdeInspectorProps> = ({
 
           {/* Active Kernel Goal State Panel */}
           {effectiveVerifyResult.goalState && (
-            <div className="rounded-xl border border-cyan-500/20 bg-cyan-950/20 p-3 text-xs space-y-1">
-              <div className="flex items-center gap-1.5 text-brand-cyan font-bold text-[11px] uppercase tracking-wider">
+            <div className="rounded-xl border border-[color:var(--qp-accent-line)] bg-[color:var(--qp-accent-soft)] p-3 text-xs space-y-1">
+              <div className="flex items-center gap-1.5 qp-text-accent-strong font-bold text-[11px] uppercase tracking-wider">
                 <IconTerminal className="w-3.5 h-3.5" />
                 <span>Active Kernel Goal State</span>
               </div>
-              <div className="font-mono text-cyan-200 bg-black/60 p-2 rounded border border-cyan-500/20">
+              <div className="font-mono qp-text-accent-strong bg-black/60 p-2 rounded border border-[color:var(--qp-accent-line)]">
                 {effectiveVerifyResult.goalState}
               </div>
             </div>
@@ -324,7 +324,7 @@ export const LeanIdeInspector: React.FC<LeanIdeInspectorProps> = ({
                 let colorClass = "text-zinc-300";
                 if (line.startsWith("--")) colorClass = "text-zinc-400 italic";
                 else if (line.startsWith("theorem"))
-                  colorClass = "text-purple-400 font-bold";
+                  colorClass = "qp-text-accent-strong font-bold";
                 else if (
                   line.trim().startsWith("rfl") ||
                   line.trim().startsWith("ring") ||
@@ -341,7 +341,7 @@ export const LeanIdeInspector: React.FC<LeanIdeInspectorProps> = ({
                   line.trim().startsWith("right") ||
                   line.trim().startsWith("constructor")
                 )
-                  colorClass = "text-brand-cyan font-semibold";
+                  colorClass = "qp-text-accent-strong font-semibold";
                 else if (
                   line.trim().startsWith("rw") ||
                   line.trim().startsWith("simp")
@@ -367,7 +367,7 @@ export const LeanIdeInspector: React.FC<LeanIdeInspectorProps> = ({
                             ? "bg-rose-950/60 border-rose-500/40 text-rose-300"
                             : diag.severity === "warning"
                               ? "bg-amber-950/60 border-amber-500/40 text-amber-300"
-                              : "bg-cyan-950/60 border-cyan-500/40 text-cyan-300"
+                              : "bg-[color:var(--qp-accent-soft)] border-[color:var(--qp-accent-line)] qp-text-accent-strong"
                         }`}
                       >
                         <IconAlertTriangle className="w-3.5 h-3.5 shrink-0" />
@@ -397,7 +397,7 @@ export const LeanIdeInspector: React.FC<LeanIdeInspectorProps> = ({
                 onClick={() => setSelectedTactic(tac.id)}
                 className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-between ${
                   selectedTactic === tac.id
-                    ? "bg-brand-cyan text-black"
+                    ? "qp-btn-primary"
                     : "bg-zinc-900 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
                 }`}
               >
@@ -418,9 +418,9 @@ export const LeanIdeInspector: React.FC<LeanIdeInspectorProps> = ({
               return (
                 <>
                   <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-bold text-brand-cyan flex items-center gap-2">
+                    <h4 className="text-sm font-bold qp-text-accent-strong flex items-center gap-2">
                       <span>tactic</span>
-                      <code className="bg-cyan-950/60 text-cyan-300 border border-cyan-500/40 px-1.5 py-0.5 rounded text-xs">
+                      <code className="bg-[color:var(--qp-accent-soft)] qp-text-accent-strong border border-[color:var(--qp-accent-line)] px-1.5 py-0.5 rounded text-xs">
                         {tac.name}
                       </code>
                     </h4>

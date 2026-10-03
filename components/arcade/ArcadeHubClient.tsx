@@ -14,7 +14,6 @@ import {
   IconTrophy,
   IconPlayerPlay,
   IconBone,
-  IconSparkles,
   IconCards,
   IconClipboardCheck,
 } from "@tabler/icons-react";
@@ -517,12 +516,13 @@ export const ArcadeHubClient: React.FC = () => {
           }
           className="relative rounded-3xl border border-emerald-500/30 bg-gradient-to-r from-emerald-950/40 via-slate-900/60 to-slate-950/80 p-6 sm:p-8 backdrop-blur-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 overflow-hidden shadow-[0_0_30px_rgba(16,185,129,0.1)] hover:border-emerald-500/50 transition-all"
         >
-          <div className="flex min-w-0 items-center gap-4">
+          <div className="flex w-full min-w-0 flex-col items-start gap-4 sm:w-auto sm:flex-row sm:items-center">
+            {/* 16:10 still at every width, like the game cards (#1516). */}
             <Link
               href="/arcade/meme-vault"
               tabIndex={-1}
               aria-hidden="true"
-              className="hidden shrink-0 overflow-hidden rounded-2xl border border-emerald-500/30 sm:block"
+              className="block w-full shrink-0 overflow-hidden rounded-2xl border border-emerald-500/30 sm:w-40"
             >
               <Image
                 src="/images/arcade/previews/meme-vault.webp"
@@ -531,12 +531,9 @@ export const ArcadeHubClient: React.FC = () => {
                 height={500}
                 loading="lazy"
                 unoptimized
-                className="block aspect-[16/10] h-auto w-40 object-cover object-top"
+                className="block aspect-[16/10] h-auto w-full object-cover object-top"
               />
             </Link>
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 sm:hidden">
-              <IconSparkles className="w-7 h-7" />
-            </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2 mb-1">
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase border bg-emerald-500/10 text-emerald-300 border-emerald-500/30">

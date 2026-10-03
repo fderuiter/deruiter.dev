@@ -37,7 +37,7 @@ const DynamicGarminWatchSimulator = dynamic(GarminWatchSimulatorLoader, {
 export const GarminWatchClient: React.FC = () => {
   return (
     <div className="min-h-screen text-white pb-24 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         {/* Navigation Breadcrumb */}
         <div className="flex items-center justify-between gap-4 mb-6 border-b border-zinc-800/80 pb-4 flex-wrap">
           <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
@@ -84,13 +84,16 @@ export const GarminWatchClient: React.FC = () => {
         </div>
 
         {/* Game Container */}
-        <div className="rounded-3xl border border-zinc-800 bg-zinc-950/90 p-4 sm:p-6 shadow-[0_0_50px_rgba(245,158,11,0.1)] flex flex-col items-center">
+        <div className="rounded-3xl border border-zinc-800 bg-zinc-950/90 p-4 sm:p-6 flex flex-col items-center">
           <DesktopOnlyGate gameId="garmin-watch" gameTitle="Monkey C Mayhem">
+            {/* The watch waits on its own START button like a real app, so
+                a runner never starts before the player is ready. */}
             <PlayCabinet
               gameId="garmin-watch"
+              singleTitleScreen={false}
               title="Monkey C Mayhem: Garmin Schvitz App"
               subtitle="A Small Watch With a Lot Going On"
-              icon={<IconDeviceWatch className="w-8 h-8 text-amber-400" />}
+              icon={<IconDeviceWatch className="w-8 h-8" />}
               instructions="An endless run for a high score. Keep a simulated Garmin Schvitz App running inside its memory budget (32 KB on Fēnix, up to 128 KB on Edge): jump the bugs, free memory before the heap fills, and wipe the fog off the screen before the watch has a very bad day."
               controls={[
                 { key: "Enter", action: "Start / Pause" },
@@ -124,7 +127,7 @@ export const GarminWatchClient: React.FC = () => {
           </div>
 
           <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
-            <div className="flex items-center gap-2 text-purple-400 font-bold mb-2">
+            <div className="flex items-center gap-2 text-slate-300 font-bold mb-2">
               <IconBolt className="w-4 h-4" />
               <span>Garbage Collector [GC] Freeze</span>
             </div>

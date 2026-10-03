@@ -26,7 +26,6 @@ import {
   IconDeviceTv,
 } from "@tabler/icons-react";
 import { DpadActionDock } from "@/components/arcade/ControlDocks";
-import { useResponsiveCanvas } from "@/hooks/useResponsiveCanvas";
 import { useAnimationFrame } from "@/hooks/useAnimationFrame";
 import { FieldManualButton } from "@/components/FieldManualButton";
 import { FullscreenButton } from "@/components/arcade/FullscreenButton";
@@ -34,10 +33,49 @@ import { DynamicTabletOrientationHint as TabletOrientationHint } from "@/compone
 import { DynamicCRTCalibrationModal as CRTCalibrationModal } from "@/components/arcade/DynamicCRTCalibrationModal";
 import {
   CRTCalibrationConfig,
+  CRT_CALIBRATION_STORAGE_KEY,
   loadCRTCalibration,
   saveCRTCalibration,
   renderCRTEffects,
 } from "@/lib/arcade/crt-pipeline";
+import { useCabinetSetup } from "@/components/arcade/CabinetSetupContext";
+import {
+  GRID_COLS,
+  GRID_ROWS,
+  LABYRINTH_INK,
+  LOGICAL_HEIGHT,
+  LOGICAL_WIDTH,
+  TILE,
+  boardSafeColor,
+  clampLabelCenter,
+  computeIntegerCanvasSize,
+  fitFontSize,
+  enemySprite,
+  enemyTint,
+  floorVariant,
+  isSolidWallRow,
+  itemArt,
+  plateOnWall,
+  roomPlateText,
+  routeDots,
+  routeTiles,
+  tilePaletteFor,
+  wallEdgeMask,
+  type IntegerCanvasSize,
+} from "@/components/retro-labyrinth/labyrinth-art";
+import {
+  ATLAS,
+  drawPlate,
+  drawSprite,
+  drawTile,
+  getTileAtlas,
+  labyrinthFont,
+  paintFogCanvas,
+} from "@/components/retro-labyrinth/labyrinth-atlas";
+import {
+  isCrtIdle,
+  resolveLabyrinthCrt,
+} from "@/components/retro-labyrinth/labyrinth-crt";
 import { useGameFullscreen as useFullscreen } from "@/components/arcade/CabinetFullscreen";
 import {
   ActiveSideEffect,
@@ -120,6 +158,13 @@ const OVERLAY_CONSUMED_KEYS = new Set([
   "S",
   "D",
 ]);
+
+/** The phosphor themes the display menu offers, default first. */
+const PHOSPHOR_THEME_OPTIONS: { id: CRTThemeId; label: string }[] = [
+  { id: "emerald", label: "Emerald" },
+  { id: "amber", label: "Amber" },
+  { id: "matrix", label: "Matrix" },
+];
 
 const WEAPON_SHORT_LABELS: Record<WeaponId, string> = {
   npm_install: "npm i",
@@ -220,10 +265,20 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   const selectedClass =
     CYBERDECK_CLASSES[selectedClassId] || CYBERDECK_CLASSES.script_kiddie;
 
-  // CRT Phosphor Theme & Calibration
+  // CRT Phosphor Theme & Calibration. Emerald phosphor is the default
+  // theme (#1522). The CRT follows the cabinet's Setup Wizard filter, Soft
+  // by default, unless the player saved their own calibration in the CRT
+  // modal or with the C key.
   const [crtThemeId, setCrtThemeId] = useState<CRTThemeId>("emerald");
-  const [crtCalibration, setCrtCalibration] = useState<CRTCalibrationConfig>(
-    () => loadCRTCalibration()
+  const cabinetSetup = useCabinetSetup();
+  const cabinetCrtFilter = cabinetSetup?.config.crtFilter;
+  const [savedCrtCalibration, setSavedCrtCalibration] =
+    useState<CRTCalibrationConfig | null>(() =>
+      safeGetRawItem(CRT_CALIBRATION_STORAGE_KEY) ? loadCRTCalibration() : null
+    );
+  const crtCalibration = useMemo(
+    () => resolveLabyrinthCrt(cabinetCrtFilter, savedCrtCalibration),
+    [cabinetCrtFilter, savedCrtCalibration]
   );
   const [isCRTModalOpen, setIsCRTModalOpen] = useState(false);
   const currentTheme = CRT_THEMES[crtThemeId] || CRT_THEMES.emerald;
@@ -325,12 +380,45 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
 
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  useResponsiveCanvas({
-    canvasRef,
-    internalWidth: 240,
-    internalHeight: 144,
-    maxDpr: 1.5,
-  });
+  // The canvas is sized to a whole number of device pixels per art pixel,
+  // the largest that fits its frame, so nearest-neighbour stamping stays
+  // crisp at any devicePixelRatio (#1522).
+  const canvasFrameRef = useRef<HTMLDivElement>(null);
+  const [canvasSize, setCanvasSize] = useState<IntegerCanvasSize | null>(null);
+  useEffect(() => {
+    const frame = canvasFrameRef.current;
+    if (!isMounted || !frame) return;
+    const measure = () => {
+      const rect = frame.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) return;
+      const next = computeIntegerCanvasSize(
+        rect.width,
+        rect.height,
+        window.devicePixelRatio || 1
+      );
+      setCanvasSize((prev) =>
+        prev &&
+        prev.backingWidth === next.backingWidth &&
+        prev.cssWidth === next.cssWidth &&
+        prev.cssHeight === next.cssHeight
+          ? prev
+          : next
+      );
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(frame);
+    return () => observer.disconnect();
+  }, [isMounted]);
+  // The fog texture and the maps it was painted from, rebuilt only when the
+  // field of view changes.
+  const fogRef = useRef<{
+    canvas: HTMLCanvasElement | null;
+    visible: boolean[][] | null;
+    explored: boolean[][] | null;
+    hasFog: boolean;
+  }>({ canvas: null, visible: null, explored: null, hasFog: false });
   const { isFullscreen, toggleFullscreen } = useFullscreen(containerRef);
   const { recordEvent } = useTelemetry();
   const { playNote, playSuccess } = useAudio();
@@ -1182,11 +1270,13 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       } else if (key === " ") {
         handleFireWeapon("emp_blast");
       } else if (key.toLowerCase() === "c") {
-        setCrtCalibration((prev) => {
-          const next = { ...prev, scanlinesEnabled: !prev.scanlinesEnabled };
-          saveCRTCalibration(next);
-          return next;
-        });
+        // Toggling scanlines saves the player's own calibration.
+        const next = {
+          ...crtCalibration,
+          scanlinesEnabled: !crtCalibration.scanlinesEnabled,
+        };
+        saveCRTCalibration(next);
+        setSavedCrtCalibration(next);
       } else if (key === "ArrowUp" || key.toLowerCase() === "w") {
         tryMove(0, isScrambled ? 1 : -1);
       } else if (key === "ArrowDown" || key.toLowerCase() === "s") {
@@ -1209,6 +1299,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       handleRestart,
       handleNextRoom,
       tryMove,
+      crtCalibration,
     ]
   );
 
@@ -1664,268 +1755,258 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         }
       }
 
-      // 5. Draw Canvas Frame
+      // 5. Draw Canvas Frame. Everything is drawn in art pixels (16 per
+      // tile) under one whole-number scale: tiles and sprites are stamped
+      // from offscreen canvases with nearest-neighbour sampling, and text is
+      // drawn at the full backing resolution (#1522).
       const canvas = canvasRef.current;
       if (canvas) {
         const ctx = canvas.getContext("2d");
         if (ctx) {
           const width = canvas.width;
           const height = canvas.height;
-          const cols = currentMaze[0]?.length || 15;
-          const rows = currentMaze.length || 9;
-          const cellW = width / cols;
-          const cellH = height / rows;
+          const cols = currentMaze[0]?.length || GRID_COLS;
+          const rows = currentMaze.length || GRID_ROWS;
+          const scale = width / (cols * TILE);
+          const palette = tilePaletteFor(currentTheme);
+          const atlas = getTileAtlas(palette);
+          const hasFog = gameMode === "roguelike";
 
-          // Background Fill using Theme Color
-          ctx.fillStyle = currentTheme.bgDark;
+          ctx.save();
+          ctx.imageSmoothingEnabled = false;
+          ctx.fillStyle = LABYRINTH_INK.stage;
           ctx.fillRect(0, 0, width, height);
+          ctx.scale(scale, scale);
 
-          // Draw Grid Tiles with Fog of War
+          // Tiles from the atlas
           for (let y = 0; y < rows; y++) {
             for (let x = 0; x < cols; x++) {
               const cell = currentMaze[y][x];
-              const px = x * cellW;
-              const py = y * cellH;
-
-              const isVis = visibleMap[y]?.[x] ?? true;
-              const isExp = exploredMap[y]?.[x] ?? true;
-
-              if (!isExp && gameMode === "roguelike") {
-                ctx.fillStyle = "#010804";
-                ctx.fillRect(px, py, cellW, cellH);
-                continue;
-              }
-
+              let slot: number = ATLAS.FLOOR + floorVariant(x, y);
               if (cell === "#") {
-                ctx.fillStyle = isVis ? "#1b2a24" : "#101714";
-                ctx.fillRect(px, py, cellW, cellH);
-
-                ctx.strokeStyle = isVis
-                  ? currentTheme.primaryColor
-                  : "rgba(255, 255, 255, 0.14)";
-                ctx.lineWidth = 1;
-                ctx.strokeRect(px + 0.5, py + 0.5, cellW - 1, cellH - 1);
+                slot = ATLAS.WALL + wallEdgeMask(currentMaze, x, y);
               } else if (cell === "W") {
-                ctx.fillStyle = isVis ? "rgba(168, 85, 247, 0.3)" : "#180829";
-                ctx.fillRect(px, py, cellW, cellH);
-                ctx.strokeStyle = "#c084fc";
-                ctx.lineWidth = 1.5;
-                ctx.strokeRect(px + 1, py + 1, cellW - 2, cellH - 2);
-
-                ctx.fillStyle = "#e9d5ff";
-                ctx.font = "bold 7px monospace";
-                ctx.textAlign = "center";
-                ctx.textBaseline = "middle";
-                ctx.fillText("AIRGAP", px + cellW / 2, py + cellH / 2);
-              } else if (cell === "T" || cell === "H") {
-                ctx.fillStyle = "rgba(245, 158, 11, 0.2)";
-                ctx.fillRect(px, py, cellW, cellH);
-                ctx.strokeStyle = "#f59e0b";
-                ctx.strokeRect(px + 2, py + 2, cellW - 4, cellH - 4);
-                ctx.font = "10px monospace";
-                ctx.textAlign = "center";
-                ctx.textBaseline = "middle";
-                ctx.fillText(
-                  cell === "T" ? "🧰" : "💻",
-                  px + cellW / 2,
-                  py + cellH / 2
-                );
+                slot = ATLAS.AIRGAP;
+              } else if (cell === "H") {
+                slot = ATLAS.TERMINAL;
+              } else if (cell === "T") {
+                slot = ATLAS.CHEST;
               } else if (x === EXIT_X && y === EXIT_Y) {
-                const exitColor = exitLocked
-                  ? "#ef4444"
-                  : currentTheme.primaryColor;
-                ctx.fillStyle = exitLocked
-                  ? "rgba(239, 68, 68, 0.2)"
-                  : "rgba(16, 185, 129, 0.25)";
-                ctx.fillRect(px, py, cellW, cellH);
-
-                ctx.strokeStyle = exitColor;
-                ctx.lineWidth = 1.5;
-                ctx.strokeRect(px + 1.5, py + 1.5, cellW - 3, cellH - 3);
-
-                ctx.fillStyle = exitColor;
-                ctx.font = "bold 9px monospace";
-                ctx.textAlign = "center";
-                ctx.textBaseline = "middle";
-                ctx.fillText(
-                  exitLocked ? "LOCK" : "EXIT",
-                  px + cellW / 2,
-                  py + cellH / 2
-                );
-              } else {
-                ctx.fillStyle = isVis
-                  ? currentTheme.glowColor
-                  : "rgba(255, 255, 255, 0.08)";
-                ctx.beginPath();
-                ctx.arc(px + cellW / 2, py + cellH / 2, 1.2, 0, Math.PI * 2);
-                ctx.fill();
+                slot = exitLocked ? ATLAS.EXIT_LOCKED : ATLAS.EXIT_OPEN;
               }
+              if (atlas) drawTile(ctx, atlas, slot, x, y);
             }
+          }
+
+          // Fog of war: flat inside, soft only at its edge
+          const fog = fogRef.current;
+          if (
+            fog.visible !== visibleMap ||
+            fog.explored !== exploredMap ||
+            fog.hasFog !== hasFog
+          ) {
+            fog.canvas = paintFogCanvas(
+              fog.canvas,
+              exploredMap,
+              visibleMap,
+              hasFog,
+              cols,
+              rows
+            );
+            fog.visible = visibleMap;
+            fog.explored = exploredMap;
+            fog.hasFog = hasFog;
+          }
+          if (hasFog && fog.canvas) {
+            ctx.imageSmoothingEnabled = true;
+            ctx.drawImage(
+              fog.canvas,
+              0,
+              0,
+              fog.canvas.width,
+              fog.canvas.height,
+              0,
+              0,
+              cols * TILE,
+              rows * TILE
+            );
+            ctx.imageSmoothingEnabled = false;
           }
 
           // C: the exit stays marked through the fog so there is always a goal
-          if (
-            gameMode === "roguelike" &&
-            !(exploredMap[EXIT_Y]?.[EXIT_X] ?? true)
-          ) {
-            const ex = EXIT_X * cellW;
-            const ey = EXIT_Y * cellH;
+          if (hasFog && !(exploredMap[EXIT_Y]?.[EXIT_X] ?? true)) {
             ctx.save();
-            ctx.setLineDash([2, 2]);
-            ctx.strokeStyle = "#f59e0b";
-            ctx.lineWidth = 1;
-            ctx.strokeRect(ex + 1.5, ey + 1.5, cellW - 3, cellH - 3);
-            ctx.fillStyle = "#f59e0b";
-            ctx.font = "bold 6px monospace";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillText(
-              exitLocked ? "LOCK" : "EXIT",
-              ex + cellW / 2,
-              ey + cellH / 2
-            );
+            ctx.globalAlpha = 0.55;
+            if (atlas) {
+              drawTile(
+                ctx,
+                atlas,
+                exitLocked ? ATLAS.EXIT_LOCKED : ATLAS.EXIT_OPEN,
+                EXIT_X,
+                EXIT_Y
+              );
+            }
             ctx.restore();
           }
 
-          // TSP Route Line in Room 1/3
+          // TSP route: a dotted path along the floor, stop by stop
           if (gameMode === "roguelike" && tspNodes.length > 0) {
-            const tour = tspTour;
-
+            ctx.fillStyle = currentTheme.accentColor;
             ctx.save();
-            ctx.strokeStyle = "rgba(56, 189, 248, 0.4)";
-            ctx.setLineDash([3, 3]);
-            ctx.lineWidth = 1.5;
-            ctx.beginPath();
-            tour.forEach((pt, idx) => {
-              const ptX = pt.x * cellW + cellW / 2;
-              const ptY = pt.y * cellH + cellH / 2;
-              if (idx === 0) ctx.moveTo(ptX, ptY);
-              else ctx.lineTo(ptX, ptY);
+            ctx.globalAlpha = 0.55;
+            const tour = tspTour;
+            routeDots(routeTiles(currentMaze, tour)).forEach((dot) => {
+              ctx.fillRect(dot.x - 1, dot.y - 1, 2, 2);
             });
-            ctx.stroke();
             ctx.restore();
 
             tspNodes.forEach((node) => {
-              const nx = node.x * cellW + cellW / 2;
-              const ny = node.y * cellH + cellH / 2;
-              ctx.fillStyle = node.visited
-                ? "#10b981"
-                : currentTheme.accentColor;
-              ctx.beginPath();
-              ctx.arc(nx, ny, 3.5, 0, Math.PI * 2);
-              ctx.fill();
+              drawSprite(
+                ctx,
+                "node",
+                node.visited ? LABYRINTH_INK.emerald : LABYRINTH_INK.amber,
+                node.x * TILE + TILE / 2,
+                node.y * TILE + TILE / 2
+              );
             });
           }
 
-          // Draw Pickups
+          // Pickups
           items.forEach((item) => {
             if (item.collected) return;
-            const ix = item.x * cellW + cellW / 2;
-            const iy = item.y * cellH + cellH / 2;
-            ctx.font = "10px monospace";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillText(item.symbol, ix, iy);
+            const art = itemArt(item.itemId);
+            drawSprite(
+              ctx,
+              art.sprite,
+              art.tint,
+              item.x * TILE + TILE / 2,
+              item.y * TILE + TILE / 2
+            );
           });
 
-          // Draw Enemies with CVE Badges
+          // Enemies, coloured by what they are doing, with CVE plates
+          ctx.font = labyrinthFont(5);
           enemies.forEach((enemy) => {
-            const ex = enemy.x * cellW + cellW / 2;
-            const ey = enemy.y * cellH + cellH / 2;
+            const ex = enemy.x * TILE + TILE / 2;
+            const ey = enemy.y * TILE + TILE / 2;
+            drawSprite(
+              ctx,
+              enemySprite(enemy.type),
+              enemyTint(enemy.state),
+              ex,
+              ey
+            );
 
-            ctx.fillStyle =
-              enemy.state === "frozen"
-                ? "rgba(56, 189, 248, 0.5)"
-                : enemy.state === "confused"
-                  ? "rgba(236, 72, 153, 0.4)"
-                  : enemy.state === "stunned"
-                    ? "rgba(56, 189, 248, 0.3)"
-                    : enemy.state === "chase"
-                      ? "rgba(239, 68, 68, 0.4)"
-                      : "rgba(245, 158, 11, 0.3)";
-            ctx.beginPath();
-            ctx.arc(ex, ey, 8, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.fillStyle =
-              enemy.state === "frozen"
-                ? "#38bdf8"
-                : enemy.state === "confused"
-                  ? "#ec4899"
-                  : enemy.color;
-            ctx.beginPath();
-            ctx.arc(ex, ey, 3.5, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Exposed CVE indicator
             if (enemy.cveExposed && enemy.cve) {
-              ctx.save();
-              ctx.fillStyle = "#ec4899";
-              ctx.font = "bold 6px monospace";
-              ctx.textAlign = "center";
-              ctx.fillText(enemy.cve.substring(0, 4), ex, ey - 6);
-              ctx.restore();
+              const label = enemy.cve.substring(0, 4);
+              const labelWidth = ctx.measureText(label).width;
+              const box = {
+                x: Math.round(
+                  clampLabelCenter(ex, labelWidth + 4, cols * TILE) -
+                    (labelWidth + 4) / 2
+                ),
+                y: Math.max(0, Math.round(ey - TILE / 2 - 6)),
+                width: Math.ceil(labelWidth + 4),
+                height: 7,
+              };
+              drawPlate(ctx, box, label, LABYRINTH_INK.red);
             }
           });
 
-          // Draw Classic Stage 2 Drones
+          // Classic Stage 2 drones
           drones.forEach((d) => {
-            const dX = d.x * cellW + cellW / 2;
-            const dY = d.y * cellH + cellH / 2;
-
-            ctx.fillStyle = dronesStunned
-              ? "rgba(56, 189, 248, 0.3)"
-              : "rgba(239, 68, 68, 0.3)";
-            ctx.beginPath();
-            ctx.arc(dX, dY, 8, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.fillStyle = dronesStunned ? "#38bdf8" : "#ef4444";
-            ctx.beginPath();
-            ctx.arc(dX, dY, 3.5, 0, Math.PI * 2);
-            ctx.fill();
+            drawSprite(
+              ctx,
+              "drone",
+              dronesStunned ? LABYRINTH_INK.ice : LABYRINTH_INK.red,
+              d.x * TILE + TILE / 2,
+              d.y * TILE + TILE / 2
+            );
           });
 
-          // Draw 3D Wireframe Boss
+          // The wireframe 3D boss, the room's showpiece
           if (boss && !boss.defeated && gameMode === "roguelike") {
-            const bossCenterX = boss.x * cellW + cellW / 2;
-            const bossCenterY = boss.y * cellH + cellH / 2;
+            const bossCenterX = boss.x * TILE + TILE / 2;
+            const bossCenterY = boss.y * TILE + TILE / 2;
             renderWireframeMesh(ctx, boss.mesh, bossCenterX, bossCenterY, true);
 
             boss.projectiles.forEach((p) => {
               if (!p.alive) return;
-              const pX = p.x * cellW + cellW / 2;
-              const pY = p.y * cellH + cellH / 2;
+              const pX = p.x * TILE + TILE / 2;
+              const pY = p.y * TILE + TILE / 2;
               renderWireframeMesh(ctx, p.mesh, pX, pY, false);
             });
           }
 
-          // Draw Player Netrunner Avatar
-          const pX = playerPosition.x * cellW + cellW / 2;
-          const pY = playerPosition.y * cellH + cellH / 2;
-
-          // An amber "@" cursor block, unlike any node, enemy or pickup
-          const blockW = cellW * 0.72;
-          const blockH = cellH * 0.72;
-          ctx.save();
-          ctx.fillStyle = "#f59e0b";
-          ctx.fillRect(pX - blockW / 2, pY - blockH / 2, blockW, blockH);
-          ctx.strokeStyle = "#fde68a";
-          ctx.lineWidth = 1;
-          ctx.strokeRect(
-            pX - blockW / 2 - 0.5,
-            pY - blockH / 2 - 0.5,
-            blockW + 1,
-            blockH + 1
+          // The player: a hooded netrunner sprite, unlike any node, enemy
+          // or pickup
+          drawSprite(
+            ctx,
+            "player",
+            LABYRINTH_INK.text,
+            playerPosition.x * TILE + TILE / 2,
+            playerPosition.y * TILE + TILE / 2
           );
-          ctx.fillStyle = "#0d0e11";
-          ctx.font = "bold 10px monospace";
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.fillText("@", pX, pY + 0.5);
-          ctx.restore();
 
-          // Draw Particles
+          // Plates on the outer wall: the room name on top, and the exit's
+          // state just below the exit, so no label sits inside a 16px tile
+          ctx.font = labyrinthFont(6);
+          const roomBadge =
+            gameMode === "roguelike"
+              ? formatCampaignRoomBadge(
+                  campaignRooms[roomIndex]?.badge ?? "",
+                  roomIndex
+                )
+              : "";
+          if (roomBadge && isSolidWallRow(currentMaze, 0)) {
+            const roomText = roomPlateText(roomBadge);
+            drawPlate(
+              ctx,
+              plateOnWall(
+                (cols * TILE) / 2,
+                ctx.measureText(roomText).width,
+                0
+              ),
+              roomText,
+              currentTheme.primaryColor
+            );
+          }
+          if (
+            currentMaze.some((row) => row.includes("W")) &&
+            isSolidWallRow(currentMaze, 0)
+          ) {
+            const airgapText = "AIRGAP";
+            const airgapBox = plateOnWall(
+              cols * TILE - TILE * 2,
+              ctx.measureText(airgapText).width + 5,
+              0
+            );
+            // A swatch keys the plate to the striped airgap tiles.
+            drawPlate(
+              ctx,
+              airgapBox,
+              airgapText,
+              LABYRINTH_INK.steel,
+              LABYRINTH_INK.text,
+              LABYRINTH_INK.steel
+            );
+          }
+          if (EXIT_Y + 1 < rows) {
+            const exitText = exitLocked ? "LOCK" : "EXIT";
+            drawPlate(
+              ctx,
+              plateOnWall(
+                EXIT_X * TILE + TILE / 2,
+                ctx.measureText(exitText).width,
+                EXIT_Y + 1
+              ),
+              exitText,
+              exitLocked ? LABYRINTH_INK.red : currentTheme.primaryColor,
+              exitLocked ? LABYRINTH_INK.red : currentTheme.textColor
+            );
+          }
+
+          // Particles: square art pixels, fading out after each event
           particlesRef.current = particlesRef.current.filter((p) => {
             p.x += p.vx * 0.05;
             p.y += p.vy * 0.05;
@@ -1933,42 +2014,65 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
 
             if (p.alpha <= 0) return false;
 
-            const partX = p.x * cellW + cellW / 2;
-            const partY = p.y * cellH + cellH / 2;
+            const partX = p.x * TILE + TILE / 2;
+            const partY = p.y * TILE + TILE / 2;
+            const color = boardSafeColor(p.color);
 
             ctx.save();
-            ctx.globalAlpha = Math.max(0, p.alpha);
+            ctx.globalAlpha = clamp(p.alpha, 0, 1);
+            ctx.fillStyle = color;
             if (p.char) {
-              ctx.fillStyle = p.color;
-              ctx.font = "bold 7px monospace";
+              ctx.font = labyrinthFont(5);
+              ctx.textAlign = "center";
+              ctx.textBaseline = "middle";
               ctx.fillText(p.char, partX, partY);
             } else {
-              ctx.fillStyle = p.color;
-              ctx.beginPath();
-              ctx.arc(partX, partY, p.radius, 0, Math.PI * 2);
-              ctx.fill();
+              const size = Math.max(1, Math.round(p.radius));
+              ctx.fillRect(
+                Math.round(partX - size / 2),
+                Math.round(partY - size / 2),
+                size,
+                size
+              );
             }
             ctx.restore();
 
             return true;
           });
 
-          // Draw Floating Text Notifications
+          // Floating text, outlined and kept inside the board
+          ctx.font = labyrinthFont(7);
           floatingTextsRef.current = floatingTextsRef.current.filter((ft) => {
             ft.y += ft.vy;
             ft.alpha -= 0.02;
 
             if (ft.alpha <= 0) return false;
 
-            const tX = ft.x * cellW + cellW / 2;
-            const tY = ft.y * cellH + cellH / 2;
+            ctx.font = labyrinthFont(7);
+            let textWidth = ctx.measureText(ft.text).width;
+            const maxTextWidth = cols * TILE - 8;
+            const fitted = fitFontSize(7, textWidth, maxTextWidth);
+            if (fitted !== 7) {
+              ctx.font = labyrinthFont(fitted);
+              textWidth = ctx.measureText(ft.text).width;
+            }
+            const tX = clampLabelCenter(
+              ft.x * TILE + TILE / 2,
+              Math.min(textWidth, maxTextWidth),
+              cols * TILE
+            );
+            const tY = Math.max(6, ft.y * TILE + TILE / 2);
 
             ctx.save();
-            ctx.globalAlpha = Math.max(0, ft.alpha);
-            ctx.fillStyle = ft.color;
-            ctx.font = "bold 8px monospace";
+            ctx.globalAlpha = clamp(ft.alpha, 0, 1);
             ctx.textAlign = "center";
-            ctx.fillText(ft.text, tX, tY);
+            ctx.textBaseline = "middle";
+            ctx.lineWidth = 2;
+            ctx.lineJoin = "round";
+            ctx.strokeStyle = LABYRINTH_INK.stage;
+            ctx.strokeText(ft.text, tX, tY, maxTextWidth);
+            ctx.fillStyle = boardSafeColor(ft.color);
+            ctx.fillText(ft.text, tX, tY, maxTextWidth);
             ctx.restore();
 
             return true;
@@ -1983,27 +2087,32 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
           ) {
             const { x: hx, y: hy } = cursorGridPosRef.current;
             if (hx >= 0 && hx < cols && hy >= 0 && hy < rows) {
-              const hpx = hx * cellW;
-              const hpy = hy * cellH;
+              const hpx = hx * TILE;
+              const hpy = hy * TILE;
               ctx.save();
               ctx.fillStyle = "rgba(34, 211, 238, 0.2)";
-              ctx.fillRect(hpx, hpy, cellW, cellH);
-              ctx.strokeStyle = currentTheme.accentColor || "#22d3ee";
-              ctx.lineWidth = 1.5;
-              ctx.strokeRect(hpx + 0.5, hpy + 0.5, cellW - 1, cellH - 1);
+              ctx.fillRect(hpx, hpy, TILE, TILE);
+              ctx.strokeStyle = currentTheme.accentColor;
+              ctx.lineWidth = 1;
+              ctx.strokeRect(hpx + 0.5, hpy + 0.5, TILE - 1, TILE - 1);
               ctx.restore();
             }
           }
 
-          // Calibrated CRT Post-Processing Pipeline (Phosphor mask, Scanlines, Bloom, Vignette)
-          renderCRTEffects(
-            ctx,
-            width,
-            height,
-            crtCalibration,
-            currentTheme,
-            crtFrameRef.current
-          );
+          ctx.restore();
+
+          // The CRT polish layer, at the backing resolution. The default is
+          // Soft: a faint raster and vignette, no phosphor mask or bloom.
+          if (!isCrtIdle(crtCalibration)) {
+            renderCRTEffects(
+              ctx,
+              width,
+              height,
+              crtCalibration,
+              currentTheme,
+              crtFrameRef.current
+            );
+          }
         }
       }
     },
@@ -2035,7 +2144,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
           <span className="text-neutral-600">OFFLINE</span>
         </div>
 
-        <pre className="text-[10px] sm:text-[11px] leading-4 tracking-normal text-brand-cyan/60 font-mono select-none text-center p-2">
+        <pre className="text-[10px] sm:text-[11px] leading-4 tracking-normal text-emerald-400/60 font-mono select-none text-center p-2">
           {renderAsciiFallback()}
         </pre>
 
@@ -2083,20 +2192,18 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
           Game mode, class & display
         </summary>
         {/* Top HUD Banner: Mode, Class, CRT Theme & Expand Toggle */}
-        <div className="mb-2 w-full flex flex-wrap items-center justify-between gap-2 px-1 text-[10px]">
+        <div className="mb-2 w-full flex flex-wrap items-center justify-between gap-2 px-1 text-xs">
           <div className="flex items-center gap-2">
             <span
               className={`inline-flex items-center gap-2 px-3 py-1 rounded-full font-bold uppercase tracking-wider border transition-all duration-300 ${
                 isFocused
-                  ? "bg-brand-cyan/10 text-brand-cyan border-brand-cyan/30 shadow-[0_0_10px_rgba(34,211,238,0.15)] animate-pulse"
+                  ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/30"
                   : "bg-neutral-950 text-neutral-500 border-neutral-900"
               }`}
             >
               <span
                 className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                  isFocused
-                    ? "bg-brand-cyan shadow-[0_0_8px_rgba(6,182,212,0.8)]"
-                    : "bg-neutral-700"
+                  isFocused ? "bg-emerald-400" : "bg-neutral-700"
                 }`}
               />
               {/* Both labels share one grid cell, so the pill keeps the
@@ -2123,7 +2230,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
               title="Change Cyberdeck Class"
             >
               <span>{selectedClass.icon}</span>
-              <span className="font-bold text-brand-cyan">
+              <span className="font-bold text-zinc-100">
                 {selectedClass.name}
               </span>
             </button>
@@ -2142,52 +2249,36 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
               variant="header"
             />
 
-            {/* CRT Theme Switcher */}
-            <div className="flex items-center gap-0.5 bg-neutral-900 p-0.5 rounded-lg text-[9px]">
-              <button
-                onClick={() => setCrtThemeId("emerald")}
-                title="Emerald Green (VT220)"
-                className={`px-1.5 py-0.5 rounded cursor-pointer ${
-                  crtThemeId === "emerald"
-                    ? "bg-emerald-500 text-black font-bold"
-                    : "text-neutral-400"
-                }`}
-              >
-                🟢
-              </button>
-              <button
-                onClick={() => setCrtThemeId("amber")}
-                title="Amber Hacker (IBM 3270)"
-                className={`px-1.5 py-0.5 rounded cursor-pointer ${
-                  crtThemeId === "amber"
-                    ? "bg-amber-500 text-black font-bold"
-                    : "text-neutral-400"
-                }`}
-              >
-                🟠
-              </button>
-              <button
-                onClick={() => setCrtThemeId("synthwave")}
-                title="Synthwave Neon"
-                className={`px-1.5 py-0.5 rounded cursor-pointer ${
-                  crtThemeId === "synthwave"
-                    ? "bg-pink-500 text-black font-bold"
-                    : "text-neutral-400"
-                }`}
-              >
-                🟣
-              </button>
-              <button
-                onClick={() => setCrtThemeId("matrix")}
-                title="Matrix Terminal"
-                className={`px-1.5 py-0.5 rounded cursor-pointer ${
-                  crtThemeId === "matrix"
-                    ? "bg-green-600 text-black font-bold"
-                    : "text-neutral-400"
-                }`}
-              >
-                🟩
-              </button>
+            {/* Phosphor theme: emerald by default, amber as an option
+                (#1522). Synthwave pink is gone (AGENTS.md section 20). */}
+            <div
+              role="group"
+              aria-label="Phosphor theme"
+              className="flex items-center gap-0.5 bg-neutral-900 p-0.5 rounded-lg text-xs"
+            >
+              {PHOSPHOR_THEME_OPTIONS.map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => setCrtThemeId(option.id)}
+                  title={CRT_THEMES[option.id].name}
+                  aria-pressed={crtThemeId === option.id}
+                  className={`px-2 py-1 rounded cursor-pointer inline-flex items-center gap-1.5 ${
+                    crtThemeId === option.id
+                      ? "bg-neutral-800 text-zinc-100 font-bold"
+                      : "text-neutral-400 hover:text-zinc-200"
+                  }`}
+                >
+                  <span
+                    aria-hidden="true"
+                    className="w-2 h-2 rounded-sm"
+                    style={{
+                      backgroundColor: CRT_THEMES[option.id].primaryColor,
+                    }}
+                  />
+                  {option.label}
+                </button>
+              ))}
 
               {/* CRT Calibration Trigger */}
               <span className="w-px h-3 bg-neutral-800 mx-0.5" />
@@ -2202,12 +2293,12 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
               </button>
             </div>
 
-            <div className="flex items-center gap-1 bg-neutral-900 p-0.5 rounded-lg text-[9px]">
+            <div className="flex items-center gap-1 bg-neutral-900 p-0.5 rounded-lg text-xs">
               <button
                 onClick={startRoguelikeCampaign}
                 className={`px-2 py-0.5 rounded cursor-pointer transition-colors ${
                   gameMode === "roguelike"
-                    ? "bg-brand-cyan text-black font-bold"
+                    ? "bg-amber-500 text-black font-bold"
                     : "text-neutral-400 hover:text-white"
                 }`}
               >
@@ -2217,7 +2308,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                 onClick={() => switchStage(1)}
                 className={`px-2 py-0.5 rounded cursor-pointer transition-colors ${
                   gameMode === "classic" && stage === 1
-                    ? "bg-brand-cyan text-black font-bold"
+                    ? "bg-amber-500 text-black font-bold"
                     : "text-neutral-400 hover:text-white"
                 }`}
               >
@@ -2227,7 +2318,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                 onClick={() => switchStage(2)}
                 className={`px-2 py-0.5 rounded cursor-pointer transition-colors ${
                   gameMode === "classic" && stage === 2
-                    ? "bg-brand-cyan text-black font-bold"
+                    ? "bg-amber-500 text-black font-bold"
                     : "text-neutral-400 hover:text-white"
                 }`}
               >
@@ -2252,7 +2343,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
             : "h-auto max-h-[100vh] max-h-[100dvh]"
         } bg-neutral-950/90 border rounded-2xl flex flex-col items-center justify-between p-2.5 overflow-hidden outline-none transition-all duration-300 ${
           isFocused
-            ? "border-brand-cyan ring-2 ring-brand-cyan/10 shadow-[0_0_20px_rgba(34,211,238,0.1)]"
+            ? "border-amber-500/60 ring-2 ring-amber-500/10"
             : "border-neutral-900"
         }`}
       >
@@ -2262,7 +2353,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
           variant="floating"
         />
         {/* Header HUD: Subnet Badge, HP, RAM, Crypto, Score */}
-        <div className="w-full flex flex-wrap justify-between items-center gap-x-3 gap-y-1 text-[10px] font-bold px-2 py-0.5 border-b border-neutral-900/60">
+        <div className="w-full flex flex-wrap justify-between items-center gap-x-3 gap-y-1 text-xs font-bold px-2 py-0.5 border-b border-neutral-900/60">
           <div className="flex items-center gap-2">
             <span className="text-neutral-400">
               SYSTEM_LABYRINTH.EXE ·{" "}
@@ -2270,7 +2361,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                 ? formatCampaignRoomBadge(currentRoom.badge, roomIndex)
                 : currentRoom.badge}
             </span>
-            <span className="text-brand-cyan/80 text-[9px] hidden sm:inline truncate max-w-[150px]">
+            <span className="text-zinc-400 text-xs hidden sm:inline truncate max-w-[150px]">
               [{currentRoom.title}]
             </span>
           </div>
@@ -2279,7 +2370,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
             {/* Boss HP: the only other feedback is the mesh colour (#1667) */}
             {gameMode === "roguelike" && boss && (
               <div
-                className="flex items-center gap-1 text-[9px]"
+                className="flex items-center gap-1 text-xs"
                 data-testid="labyrinth-boss-hp"
               >
                 <span className="text-rose-400">BOSS</span>
@@ -2298,7 +2389,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
             )}
 
             {/* Player HP */}
-            <div className="flex items-center gap-1 text-[9px]">
+            <div className="flex items-center gap-1 text-xs">
               <span className="text-neutral-500">HP</span>
               <div className="w-14 h-2 bg-neutral-900 rounded-full overflow-hidden border border-neutral-800">
                 <div
@@ -2307,7 +2398,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                       ? "bg-emerald-500"
                       : playerHp > 25
                         ? "bg-amber-500"
-                        : "bg-rose-500 animate-pulse"
+                        : "bg-rose-500"
                   }`}
                   style={{
                     width: `${Math.max(0, (playerHp / maxPlayerHp) * 100)}%`,
@@ -2318,11 +2409,11 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
             </div>
 
             {/* Cyberdeck RAM */}
-            <div className="flex items-center gap-1 text-[9px]">
-              <span className="text-cyan-500">RAM</span>
+            <div className="flex items-center gap-1 text-xs">
+              <span className="text-slate-400">RAM</span>
               <div className="w-14 h-2 bg-neutral-900 rounded-full overflow-hidden border border-neutral-800">
                 <div
-                  className="h-full bg-cyan-500 transition-all duration-200"
+                  className="h-full bg-slate-400 transition-all duration-200"
                   style={{
                     width: `${Math.max(0, (currentRam / maxRam) * 100)}%`,
                   }}
@@ -2333,7 +2424,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
 
             {/* Crypto Balance */}
             <div
-              className="flex items-center gap-1 text-[9px] font-mono text-amber-400 font-bold"
+              className="flex items-center gap-1 text-xs font-mono text-amber-400 font-bold"
               title="Crypto"
             >
               <span aria-hidden="true">🪙</span>
@@ -2342,7 +2433,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
 
             {/* Total Score & High Score */}
             <div
-              className="flex items-center gap-1 text-[9px] font-mono text-brand-cyan font-bold"
+              className="flex items-center gap-1 text-xs font-mono text-zinc-100 font-bold"
               title="Score"
             >
               <span>SCORE: {score}</span>
@@ -2358,7 +2449,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         {/* Objective: always say what winning looks like. Short landscape
             screens need every row for the maze, and the in-maze
             "REACH THE EXIT" prompt already carries the goal there. */}
-        <p className="w-full px-2 py-0.5 text-[9px] font-bold text-neutral-400 truncate [@media(max-height:500px)]:hidden">
+        <p className="w-full px-2 py-0.5 text-xs font-bold text-neutral-400 truncate [@media(max-height:500px)]:hidden">
           <span className="text-amber-400">OBJECTIVE</span> ·{" "}
           {roomExitLock.locked ? (
             <>
@@ -2366,12 +2457,13 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                 {roomExitLock.objective}
               </span>{" "}
               to unlock the <span className="text-amber-400">EXIT</span> (bottom
-              right), then guide the <span className="text-amber-400">@</span>{" "}
-              there. Bugs and drones cost HP.
+              right), then guide your{" "}
+              <span className="text-zinc-100">netrunner</span> there. Bugs and
+              drones cost HP.
             </>
           ) : (
             <>
-              Guide the <span className="text-amber-400">@</span> to the{" "}
+              Guide your <span className="text-zinc-100">netrunner</span> to the{" "}
               <span className="text-amber-400">EXIT</span> (bottom right). Bugs
               and drones cost HP.
             </>
@@ -2380,7 +2472,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
 
         {/* Active Side-Effect Warning Banner */}
         {activeSideEffect && (
-          <div className="w-full bg-rose-950/60 border border-rose-800/60 rounded px-2 py-0.5 my-0.5 flex items-center justify-between text-[9px] text-rose-300 animate-pulse">
+          <div className="w-full bg-rose-950/60 border border-rose-800/60 rounded px-2 py-0.5 my-0.5 flex items-center justify-between text-xs text-rose-300">
             <span>
               ⚠️ {activeSideEffect.title}: {activeSideEffect.description}
             </span>
@@ -2392,6 +2484,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
             cabinet header, HUD rows and the hotbar below, so the whole
             stage fits a launched 1280x800 viewport (#1552). */}
         <div
+          ref={canvasFrameRef}
           className={`arcade-labyrinth-canvas relative ${
             isFullscreen
               ? "w-full flex-1 max-h-[var(--layout-viewport-budget,calc(100vh-var(--header-height,80px)-var(--footer-height,48px)))] max-h-[var(--layout-viewport-budget,calc(100dvh-var(--header-height,80px)-var(--footer-height,48px)))] max-h-[calc(100vh-var(--header-height,80px)-var(--footer-height,48px))] max-h-[calc(100dvh-var(--header-height,80px)-var(--footer-height,48px))] aspect-[240/144] min-h-0"
@@ -2408,8 +2501,17 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         >
           <canvas
             ref={canvasRef}
-            width={240}
-            height={144}
+            width={canvasSize?.backingWidth ?? LOGICAL_WIDTH}
+            height={canvasSize?.backingHeight ?? LOGICAL_HEIGHT}
+            style={
+              canvasSize
+                ? {
+                    width: `${canvasSize.cssWidth}px`,
+                    height: `${canvasSize.cssHeight}px`,
+                  }
+                : undefined
+            }
+            data-pixel-scale={canvasSize?.scale ?? 1}
             onMouseMove={handleCanvasMouseMove}
             onMouseLeave={() => {
               cursorGridPosRef.current = null;
@@ -2418,10 +2520,12 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
             aria-label="Retro Labyrinth Cyberdeck Dungeon Crawl. Use arrow keys or WASD to navigate, and Tab to access accessible controls."
             tabIndex={0}
             className={`block ${
-              isFullscreen
-                ? "max-w-full max-h-full aspect-[240/144] object-contain"
-                : "w-full aspect-[240/144] h-auto"
-            } [image-rendering:pixelated] rounded-lg border border-neutral-900/60 bg-neutral-950 cursor-crosshair focus:outline-none focus:ring-2 focus:ring-emerald-500/50`}
+              canvasSize
+                ? "shrink-0"
+                : isFullscreen
+                  ? "max-w-full max-h-full aspect-[240/144] object-contain"
+                  : "w-full aspect-[240/144] h-auto"
+            } [image-rendering:pixelated] bg-[#0d0e11] cursor-crosshair focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/60`}
           />
 
           {/* Off-screen Accessible DOM Fallback Subtree */}
@@ -2570,27 +2674,27 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
           {/* Victory Overlay. Clearing the last campaign room ends the run
               with its own card and a new run from Room 01 (#1668). */}
           {gameStatus === "victory" && (
-            <div className="absolute inset-0 bg-neutral-950/95 backdrop-blur-sm flex flex-col items-center justify-center text-center p-3 rounded-lg border border-brand-cyan/30 z-30">
-              <div className="w-7 h-7 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center mb-1 text-emerald-400 animate-bounce">
+            <div className="absolute inset-0 bg-neutral-950/95 backdrop-blur-sm flex flex-col items-center justify-center text-center p-3 rounded-lg border border-zinc-700 z-30">
+              <div className="w-7 h-7 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center mb-1 text-emerald-400">
                 <IconTrophy className="w-4 h-4" />
               </div>
               <h3 className="text-emerald-400 font-bold text-xs uppercase tracking-widest">
                 {isFinalRoom ? "RUN COMPLETE" : "MAINFRAME TIER BREACHED"}
               </h3>
               {isFinalRoom && (
-                <p className="text-[9px] text-neutral-400 mt-0.5">
+                <p className="text-xs text-neutral-400 mt-0.5">
                   All {campaignRooms.length} rooms cleared.
                 </p>
               )}
-              <p className="text-[9px] text-neutral-400 mt-0.5 leading-relaxed">
+              <p className="text-xs text-neutral-400 mt-0.5 leading-relaxed">
                 Infiltrated in{" "}
-                <span className="font-bold text-brand-cyan">{movesCount}</span>{" "}
+                <span className="font-bold text-zinc-100">{movesCount}</span>{" "}
                 moves. Crypto Harvested:{" "}
                 <span className="font-bold text-amber-400">+{roomCrypto}</span>
               </p>
-              <p className="text-[9px] text-neutral-400">
+              <p className="text-xs text-neutral-400">
                 Final Score:{" "}
-                <span className="font-bold text-brand-cyan">{score}</span>
+                <span className="font-bold text-zinc-100">{score}</span>
                 {isFinalRoom && (
                   <>
                     {" "}
@@ -2609,7 +2713,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                       handleNextRoom();
                       containerRef.current?.focus({ preventScroll: true });
                     }}
-                    className="inline-flex items-center gap-1 px-3 py-1 bg-brand-cyan hover:bg-cyan-400 text-black text-[9px] font-bold rounded-lg transition-all cursor-pointer shadow-md"
+                    className="inline-flex items-center gap-1 px-3 py-1 bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold rounded-lg transition-all cursor-pointer shadow-md"
                   >
                     <span>Next Room</span>
                     <IconArrowRight className="w-3 h-3" />
@@ -2625,14 +2729,14 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                       }
                       containerRef.current?.focus({ preventScroll: true });
                     }}
-                    className="inline-flex items-center gap-1 px-3 py-1 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 hover:border-brand-cyan/40 text-neutral-200 hover:text-brand-cyan text-[9px] font-bold rounded-lg transition-all cursor-pointer"
+                    className="inline-flex items-center gap-1 px-3 py-1 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 hover:border-amber-500/40 text-neutral-200 hover:text-amber-300 text-xs font-bold rounded-lg transition-all cursor-pointer"
                   >
                     <IconRefresh className="w-3 h-3" />
                     {isFinalRoom ? "New Run" : "Play Again"}
                   </button>
                 )}
               </div>
-              <p className="text-[8px] text-neutral-500 mt-1">
+              <p className="text-xs text-neutral-500 mt-1">
                 {isFinalRoom
                   ? "Enter for a new run from Room 01 · R to retry this room"
                   : "Enter to continue · R to retry this room"}
@@ -2642,8 +2746,8 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
 
           {/* Pause Overlay */}
           {gameStatus === "paused" && (
-            <div className="absolute inset-0 bg-neutral-950/90 backdrop-blur-sm flex flex-col items-center justify-center text-center p-3 rounded-lg border border-brand-cyan/30 z-30">
-              <h3 className="text-brand-cyan font-bold text-xs uppercase tracking-widest">
+            <div className="absolute inset-0 bg-neutral-950/90 backdrop-blur-sm flex flex-col items-center justify-center text-center p-3 rounded-lg border border-zinc-700 z-30">
+              <h3 className="text-zinc-100 font-bold text-xs uppercase tracking-widest">
                 PAUSED
               </h3>
               <button
@@ -2653,11 +2757,11 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                   setGameStatus("playing");
                   containerRef.current?.focus({ preventScroll: true });
                 }}
-                className="mt-2 px-3 py-1 bg-brand-cyan hover:bg-cyan-400 text-black text-[9px] font-bold rounded-lg transition-all cursor-pointer"
+                className="mt-2 px-3 py-1 bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold rounded-lg transition-all cursor-pointer"
               >
                 Resume
               </button>
-              <p className="text-[8px] text-neutral-500 mt-1">
+              <p className="text-xs text-neutral-500 mt-1">
                 P or Enter to resume
               </p>
             </div>
@@ -2669,7 +2773,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
               <h3 className="text-rose-400 font-bold text-xs uppercase tracking-widest">
                 IP TRACE INTERCEPTED
               </h3>
-              <p className="text-[9px] text-neutral-400 mt-1">
+              <p className="text-xs text-neutral-400 mt-1">
                 EDR Sentinel Daemons severed your cyberdeck proxy tunnel.
               </p>
               <button
@@ -2678,11 +2782,11 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                   handleRestart();
                   containerRef.current?.focus({ preventScroll: true });
                 }}
-                className="mt-2 px-3 py-1 bg-neutral-900 text-rose-300 border border-rose-800 hover:bg-rose-950 text-[9px] font-bold rounded cursor-pointer transition-colors"
+                className="mt-2 px-3 py-1 bg-neutral-900 text-rose-300 border border-rose-800 hover:bg-rose-950 text-xs font-bold rounded cursor-pointer transition-colors"
               >
                 RETRY BREACH
               </button>
-              <p className="text-[8px] text-neutral-500 mt-1">
+              <p className="text-xs text-neutral-500 mt-1">
                 Enter or R to retry
               </p>
             </div>
@@ -2690,10 +2794,10 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
 
           {/* Interactive Hex Matrix Hacking Modal Overlay */}
           {gameStatus === "hacking" && hexPuzzle && (
-            <div className="absolute inset-0 bg-neutral-950/98 backdrop-blur-md flex flex-col items-center justify-between p-2 rounded-lg border border-cyan-500/40 z-40">
-              <div className="w-full flex justify-between items-center text-[9px] font-bold text-cyan-400 border-b border-cyan-900/60 pb-1">
+            <div className="absolute inset-0 bg-neutral-950/98 backdrop-blur-md flex flex-col items-center justify-between p-2 rounded-lg border border-zinc-700 z-40">
+              <div className="w-full flex justify-between items-center text-xs font-bold text-amber-400 border-b border-zinc-800 pb-1">
                 <div className="flex items-center gap-1">
-                  <IconTerminal2 className="w-3.5 h-3.5 text-cyan-400" />
+                  <IconTerminal2 className="w-3.5 h-3.5 text-amber-400" />
                   <span>HEX BUFFER BYPASS MATRIX</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -2705,17 +2809,17 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
               </div>
 
               {/* Buffer Bar */}
-              <div className="w-full flex items-center justify-between px-2 py-0.5 text-[8px] bg-neutral-900/80 rounded border border-neutral-800">
+              <div className="w-full flex items-center justify-between px-2 py-0.5 text-xs bg-neutral-900/80 rounded border border-neutral-800">
                 <span className="text-neutral-400">
                   BUFFER [{hexPuzzle.currentInput.length}/
                   {hexPuzzle.maxBufferSize}]:
                 </span>
-                <span className="text-cyan-300 font-bold">
+                <span className="text-zinc-100 font-bold">
                   {hexPuzzle.currentInput.length > 0
                     ? hexPuzzle.currentInput.join(" ")
                     : "(EMPTY)"}
                 </span>
-                <span className="text-pink-400 font-bold">
+                <span className="text-amber-300 font-bold">
                   AXIS:{" "}
                   {hexPuzzle.activeAxis === "row"
                     ? `ROW ${hexPuzzle.activeIndex + 1}`
@@ -2740,11 +2844,11 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                         disabled={
                           cell.selected || hexPuzzle.solved || hexPuzzle.failed
                         }
-                        className={`w-7 h-6 rounded flex items-center justify-center text-[9px] font-bold transition-all cursor-pointer ${
+                        className={`w-7 h-6 rounded flex items-center justify-center text-xs font-bold transition-all cursor-pointer ${
                           cell.selected
                             ? "bg-neutral-900 text-neutral-600 border border-neutral-800"
                             : isSelectable
-                              ? "bg-cyan-500/20 text-cyan-200 border border-cyan-400 hover:bg-cyan-500/40 animate-pulse"
+                              ? "bg-amber-500/15 text-amber-200 border border-amber-400 hover:bg-amber-500/30"
                               : "bg-neutral-900/60 text-neutral-500 border border-neutral-900"
                         }`}
                       >
@@ -2756,12 +2860,12 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
               </div>
 
               {/* Feedback text */}
-              <div className="text-[8px] font-bold text-center text-cyan-300 px-2 truncate w-full">
+              <div className="text-xs font-bold text-center text-zinc-100 px-2 truncate w-full">
                 {hackingFeedback}
               </div>
 
               {/* Minigame Action Footer */}
-              <div className="w-full flex items-center justify-between gap-1 pt-1 border-t border-neutral-900/60 text-[8px]">
+              <div className="w-full flex items-center justify-between gap-1 pt-1 border-t border-neutral-900/60 text-xs">
                 <button
                   onClick={handleUseBypassChip}
                   disabled={bypassChips <= 0 || hexPuzzle.solved}
@@ -2782,8 +2886,8 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
 
           {/* Darknet Vendor Shop Modal */}
           {gameStatus === "darknet_shop" && (
-            <div className="absolute inset-0 bg-neutral-950/98 backdrop-blur-md flex flex-col items-center justify-between p-2.5 rounded-lg border border-pink-500/40 z-40">
-              <div className="w-full flex justify-between items-center text-[9px] font-bold text-pink-400 border-b border-pink-900/60 pb-1">
+            <div className="absolute inset-0 bg-neutral-950/98 backdrop-blur-md flex flex-col items-center justify-between p-2.5 rounded-lg border border-zinc-700 z-40">
+              <div className="w-full flex justify-between items-center text-xs font-bold text-amber-300 border-b border-zinc-800 pb-1">
                 <div className="flex items-center gap-1">
                   <IconShoppingCart className="w-3.5 h-3.5" />
                   <span>DARKNET EXPLOIT BLACK-MARKET</span>
@@ -2793,11 +2897,11 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                 </span>
               </div>
 
-              <div className="w-full flex flex-col gap-1 my-1 overflow-y-auto max-h-[140px] pr-1">
+              <div className="w-full flex flex-col gap-1 my-1 overflow-y-auto flex-1 min-h-0 pr-1">
                 {DARKNET_VENDOR_CATALOG.map((item) => (
                   <div
                     key={item.id}
-                    className="flex items-center justify-between p-1 bg-neutral-900/80 border border-neutral-800 rounded text-[8px]"
+                    className="flex items-center justify-between p-1 bg-neutral-900/80 border border-neutral-800 rounded text-xs"
                   >
                     <div className="flex items-center gap-1">
                       <span>{item.icon}</span>
@@ -2805,7 +2909,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                         <div className="text-neutral-200 font-bold">
                           {item.name}
                         </div>
-                        <div className="text-neutral-400 text-[7px]">
+                        <div className="text-neutral-400 text-xs">
                           {item.description}
                           {marketAmmoNote(item.category)}
                         </div>
@@ -2818,7 +2922,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                         cryptoBounty < item.cost ||
                         (item.category === "firmware" && cveFeedActive)
                       }
-                      className="px-2 py-0.5 rounded bg-pink-500/20 text-pink-300 border border-pink-500/40 hover:bg-pink-500/40 disabled:opacity-40 font-bold cursor-pointer whitespace-nowrap"
+                      className="px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 disabled:opacity-40 font-bold cursor-pointer whitespace-nowrap"
                     >
                       {item.category === "firmware" && cveFeedActive
                         ? "Active"
@@ -2830,7 +2934,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
 
               <button
                 onClick={closeOverlay}
-                className="w-full py-0.5 bg-neutral-800 text-neutral-300 hover:bg-neutral-700 rounded text-[8px] font-bold cursor-pointer"
+                className="w-full py-0.5 bg-neutral-800 text-neutral-300 hover:bg-neutral-700 rounded text-xs font-bold cursor-pointer"
               >
                 Close Darknet Market
               </button>
@@ -2839,31 +2943,31 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
 
           {/* Cyberdeck Class Select Modal */}
           {gameStatus === "class_select" && (
-            <div className="absolute inset-0 bg-neutral-950/98 backdrop-blur-md flex flex-col items-center justify-between p-2.5 rounded-lg border border-cyan-500/40 z-40">
-              <div className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider">
+            <div className="absolute inset-0 bg-neutral-950/98 backdrop-blur-md flex flex-col items-center justify-between p-2.5 rounded-lg border border-zinc-700 z-40">
+              <div className="text-xs font-bold text-amber-400 uppercase tracking-wider">
                 SELECT CYBERDECK FIRMWARE ARCHETYPE
               </div>
 
-              <div className="grid grid-cols-2 gap-1.5 my-1 w-full max-h-[150px] overflow-y-auto">
+              <div className="grid grid-cols-2 gap-1.5 my-1 w-full flex-1 min-h-0 content-start overflow-y-auto">
                 {Object.values(CYBERDECK_CLASSES).map((cls) => (
                   <button
                     key={cls.id}
                     onClick={() => chooseClass(cls.id)}
                     className={`p-1.5 rounded border text-left flex flex-col justify-between transition-all cursor-pointer ${
                       selectedClassId === cls.id
-                        ? "bg-cyan-500/20 border-cyan-400 text-cyan-200"
+                        ? "bg-amber-500/15 border-amber-400 text-amber-100"
                         : "bg-neutral-900 border-neutral-800 text-neutral-400 hover:border-neutral-700"
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-[9px] text-white">
+                      <span className="font-bold text-xs text-white">
                         {cls.icon} {cls.name}
                       </span>
-                      <span className="text-[7px] text-cyan-400">
+                      <span className="text-xs text-amber-400">
                         {cls.baseRam}GB RAM
                       </span>
                     </div>
-                    <div className="text-[7px] text-neutral-400 mt-0.5 leading-tight">
+                    <div className="text-xs text-neutral-400 mt-0.5 leading-tight">
                       {cls.passiveBonus}
                     </div>
                   </button>
@@ -2872,7 +2976,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
 
               <button
                 onClick={closeOverlay}
-                className="w-full py-0.5 bg-neutral-800 text-neutral-300 rounded text-[8px] font-bold cursor-pointer"
+                className="w-full py-0.5 bg-neutral-800 text-neutral-300 rounded text-xs font-bold cursor-pointer"
               >
                 Confirm Loadout & Hack
               </button>
@@ -2888,14 +2992,14 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
               <h3 className="text-amber-400 font-bold text-xs uppercase tracking-wider">
                 BILLABLE HOURS INTERRUPT
               </h3>
-              <p className="text-[9px] text-neutral-400 mt-0.5 leading-tight">
+              <p className="text-xs text-neutral-400 mt-0.5 leading-tight">
                 Opening this abandoned repo chest requires logging 0.25h of
                 admin work.
               </p>
-              <div className="w-full max-w-[210px] bg-neutral-900/90 border border-neutral-800 rounded p-1.5 my-1.5 text-left text-[8px] space-y-0.5 text-neutral-300">
+              <div className="w-full max-w-[210px] bg-neutral-900/90 border border-neutral-800 rounded p-1.5 my-1.5 text-left text-xs space-y-0.5 text-neutral-300">
                 <div>
                   CLIENT:{" "}
-                  <span className="text-brand-cyan">Abandoned Repos LLC</span>
+                  <span className="text-zinc-100">Abandoned Repos LLC</span>
                 </div>
                 <div>
                   TASK:{" "}
@@ -2916,7 +3020,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                   handleSubmitTimesheet();
                   containerRef.current?.focus({ preventScroll: true });
                 }}
-                className="inline-flex items-center gap-1 px-3 py-1 bg-amber-500 hover:bg-amber-400 text-black text-[9px] font-bold rounded-md transition-all cursor-pointer shadow-md"
+                className="inline-flex items-center gap-1 px-3 py-1 bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold rounded-md transition-all cursor-pointer shadow-md"
               >
                 <IconCheck className="w-3 h-3" />
                 Submit Timesheet & Open Vault [ENTER]
@@ -2927,7 +3031,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
 
         {/* Weapons Hotbar & Controls Footer */}
         <div className="arcade-labyrinth-controls w-full flex flex-col gap-1 px-2 pt-1 border-t border-neutral-900/60">
-          <div className="flex flex-wrap items-center justify-between gap-1 text-[8px]">
+          <div className="flex flex-wrap items-center justify-between gap-1 text-xs">
             {/* Weapon Hotkeys */}
             <div className="flex items-center gap-1 flex-wrap">
               {[0, 1, 2, 3, 4].map((slotIdx) => {
@@ -2987,14 +3091,14 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
 
               <button
                 onClick={() => handleFireWeapon("emp_blast")}
-                className="px-1.5 py-0.5 rounded border bg-neutral-900 text-cyan-400 border-cyan-800/40 hover:bg-cyan-950 cursor-pointer font-bold"
+                className="px-1.5 py-0.5 rounded border bg-neutral-900 text-slate-300 border-slate-700 hover:bg-slate-900 cursor-pointer font-bold"
               >
                 [SPACE] EMP
               </button>
 
               <button
                 onClick={() => openOverlay("darknet_shop")}
-                className="px-1.5 py-0.5 rounded border bg-pink-950/60 text-pink-300 border-pink-700/60 hover:bg-pink-900 cursor-pointer font-bold"
+                className="px-1.5 py-0.5 rounded border bg-amber-950/40 text-amber-300 border-amber-700/50 hover:bg-amber-900/40 cursor-pointer font-bold"
               >
                 🛒 Market
               </button>
@@ -3025,7 +3129,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         isOpen={isCRTModalOpen}
         onClose={() => setIsCRTModalOpen(false)}
         config={crtCalibration}
-        onChange={setCrtCalibration}
+        onChange={setSavedCrtCalibration}
         themePrimaryColor={currentTheme.primaryColor}
       />
     </div>

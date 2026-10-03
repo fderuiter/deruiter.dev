@@ -28,23 +28,10 @@ async function launchAndStartDuck(page: import("@playwright/test").Page) {
     if (await launchBtn.isVisible()) {
       await launchBtn.click({ force: true });
     }
-    const startBtn = page.getByRole("button", {
-      name: /Start (Sprint|Endless Mode)/i,
-    });
-    await expect(startBtn).toBeVisible({ timeout: 2000 });
-  }).toPass({ timeout: 20000 });
-
-  // 2. Start sprint with hydration-safe polling
-  await expect(async () => {
-    const startBtn = page.getByRole("button", {
-      name: /Start (Sprint|Endless Mode)/i,
-    });
-    if (await startBtn.isVisible()) {
-      await startBtn.click({ force: true });
-    }
+    // The attract screen is the title (#1516): Launch starts Sprint 1.
     const progressMeter = page.locator('[aria-label="Work Progress"]');
     await expect(progressMeter).toBeVisible({ timeout: 2000 });
-  }).toPass({ timeout: 15000 });
+  }).toPass({ timeout: 20000 });
 
   // 3. Wait until simulation is actively advancing
   await expect(async () => {

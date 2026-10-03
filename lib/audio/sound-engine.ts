@@ -108,6 +108,7 @@ export class SoundEngine {
   private audioCtx: AudioContext | null = null;
   private activeSources = new Set<AudioScheduledSourceNode>();
   private activeSequenceTimeouts = new Set<NodeJS.Timeout | number>();
+  private outputTap: AudioNode | null = null;
 
   constructor(options: SoundEngineOptions = {}) {
     this.storage =
@@ -202,6 +203,32 @@ export class SoundEngine {
     } catch {
       return null;
     }
+  }
+
+  /**
+   * Routes every sound played after this call through `node` instead of
+   * straight to the speakers, so a visualizer can read the mixed output. The
+   * caller owns `node` and must connect it onward to the destination; pass
+   * null to restore direct output. A tap from a different AudioContext is
+   * ignored, so a stale node can never swallow sound.
+   *
+   * @param node - The node sounds connect to, such as an AnalyserNode, or
+   *   null to remove the tap.
+   */
+  public setOutputTap(node: AudioNode | null): void {
+    this.outputTap = node;
+  }
+
+  /**
+   * Returns the node set with {@link SoundEngine.setOutputTap}, or null.
+   */
+  public getOutputTap(): AudioNode | null {
+    return this.outputTap;
+  }
+
+  private outputFor(ctx: AudioContext): AudioNode {
+    const tap = this.outputTap;
+    return tap && tap.context === ctx ? tap : ctx.destination;
   }
 
   /**
@@ -446,7 +473,7 @@ export class SoundEngine {
         } catch {}
       }
 
-      lastNode.connect(ctx.destination);
+      lastNode.connect(this.outputFor(ctx));
       osc.connect(gainNode);
 
       osc.start(startTime);
@@ -600,7 +627,7 @@ export class SoundEngine {
         } catch {}
       }
 
-      lastNode.connect(ctx.destination);
+      lastNode.connect(this.outputFor(ctx));
 
       source.start(startTime);
       source.stop(startTime + options.duration);

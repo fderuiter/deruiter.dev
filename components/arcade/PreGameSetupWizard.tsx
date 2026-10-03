@@ -6,6 +6,11 @@ import { useAudio } from "@/components/providers/AudioProvider";
 import { useAnnouncer } from "@/hooks/useAnnouncer";
 import { safeGetItem, safeSetRawItem } from "@/lib/safe-storage";
 import {
+  getDefaultCrtFilter,
+  isCabinetCrtFilter,
+  type CabinetCrtFilter,
+} from "@/lib/arcade";
+import {
   IconCheck,
   IconChevronRight,
   IconChevronLeft,
@@ -18,7 +23,7 @@ import {
 
 type DifficultyMode = "casual" | "normal" | "hard";
 type ScreenShakeIntensity = "none" | "subtle" | "high";
-type CRTFilterPreset = "off" | "soft" | "arcade" | "scanlines";
+type CRTFilterPreset = CabinetCrtFilter;
 type BezelStyle = "classic" | "neon" | "woodgrain" | "minimal";
 
 export interface GameSetupConfig {
@@ -284,7 +289,7 @@ const CRT_FILTER_OPTIONS: {
   {
     id: "arcade",
     label: "Arcade CRT",
-    desc: "Authentic arcade cabinet tube curvature & phosphor mask",
+    desc: "Phosphor mask, firmer scanlines and a deeper vignette",
   },
   {
     id: "scanlines",
@@ -331,7 +336,8 @@ export function getSavedSetupConfig(gameId: string): GameSetupConfig {
     difficulty: "normal",
     loadout: loadouts[0].id,
     screenShake: "subtle",
-    crtFilter: "soft",
+    // Soft for canvas games, Off for DOM games (#1516).
+    crtFilter: getDefaultCrtFilter(gameId),
     bezelStyle: "classic",
   };
 
@@ -354,9 +360,7 @@ export function getSavedSetupConfig(gameId: string): GameSetupConfig {
         screenShake: ["none", "subtle", "high"].includes(parsed.screenShake)
           ? parsed.screenShake
           : defaultConfig.screenShake,
-        crtFilter: ["off", "soft", "arcade", "scanlines"].includes(
-          parsed.crtFilter
-        )
+        crtFilter: isCabinetCrtFilter(parsed.crtFilter)
           ? parsed.crtFilter
           : defaultConfig.crtFilter,
         bezelStyle: ["classic", "neon", "woodgrain", "minimal"].includes(

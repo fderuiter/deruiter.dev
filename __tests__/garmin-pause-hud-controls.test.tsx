@@ -285,15 +285,29 @@ describe("Garmin controls (#1318)", () => {
         },
       })
     );
-    const actions = Array.from(container.querySelectorAll("button, a")).filter(
-      (el) => /Reboot|Book Consultation/.test(el.textContent || "")
-    );
-    expect(actions.map((el) => el.textContent?.trim())).toEqual([
-      "Reboot & Restart",
-      "Book Consultation",
-    ]);
-    expect(actions[0].className).toContain("bg-emerald-500");
-    expect(actions[1].className).not.toContain("bg-emerald-500");
+    // The game-over actions live in the shared result card (#1520): Reboot
+    // is its primary button and takes focus, and Book Consultation is a
+    // quiet text link, never a competing button.
+    const dialog = container.querySelector('[role="dialog"]')!;
+    expect(dialog).not.toBeNull();
+    const reboot = Array.from(dialog.querySelectorAll("button")).find((b) =>
+      /Reboot & Restart/.test(b.textContent || "")
+    )!;
+    expect(reboot.className).toContain("arcade-launch-button");
+    const book = Array.from(dialog.querySelectorAll("a")).find((a) =>
+      /Book Consultation/.test(a.textContent || "")
+    )!;
+    expect(book).toBeDefined();
+    expect(book.className).not.toContain("arcade-launch-button");
+    expect(
+      Array.from(dialog.querySelectorAll("button")).some((b) =>
+        /Book Consultation/.test(b.textContent || "")
+      )
+    ).toBe(false);
+    await act(async () => {
+      vi.advanceTimersByTime(60);
+    });
+    expect(document.activeElement).toBe(reboot);
   });
 
   it("asks before switching device mid-run and keeps the run on Cancel", async () => {

@@ -24,8 +24,8 @@ const QuasiPerfectPuzzlerLoader = () =>
 const DynamicQuasiPerfectPuzzler = dynamic(QuasiPerfectPuzzlerLoader, {
   ssr: false,
   loading: () => (
-    <div className="flex flex-col items-center justify-center p-8 min-h-[380px] font-mono text-xs text-zinc-500 animate-pulse">
-      <div className="w-8 h-8 border-2 border-purple-500/30 border-t-purple-500 rounded-full animate-spin mb-4" />
+    <div className="flex flex-col items-center justify-center p-8 min-h-[380px] font-mono text-xs text-zinc-400">
+      <div className="w-8 h-8 border-2 border-indigo-400/30 border-t-indigo-400 rounded-full animate-spin mb-4" />
       <span>Loading the puzzles...</span>
     </div>
   ),
@@ -40,7 +40,7 @@ export const QuasiPuzzlerClient: React.FC = () => {
           <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
             <Link
               href="/arcade"
-              className="inline-flex items-center gap-1.5 text-xs font-mono text-zinc-400 hover:text-purple-400 transition-colors"
+              className="inline-flex items-center gap-1.5 text-xs font-mono text-zinc-400 hover:text-indigo-300 transition-colors"
             >
               <IconArrowLeft className="w-3.5 h-3.5" />
               <span>Back to Arcade Hub</span>
@@ -54,7 +54,7 @@ export const QuasiPuzzlerClient: React.FC = () => {
             />
           </div>
           <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-purple-500/10 text-purple-300 border border-purple-500/30">
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-zinc-900 text-zinc-300 border border-zinc-800">
               Formal Verification / Lean 4 Simulator
             </span>
           </div>
@@ -63,12 +63,12 @@ export const QuasiPuzzlerClient: React.FC = () => {
         {/* Title Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl border border-purple-500/30 bg-purple-500/10 text-purple-400">
+            <div className="p-2.5 rounded-xl border border-zinc-800 bg-zinc-900 text-indigo-400">
               <IconBrain className="w-6 h-6" />
             </div>
             <div>
-              <h1 className="text-3xl sm:text-4xl font-extrabold font-mono text-white tracking-tight">
-                Quasi-Perfect <span className="text-purple-400">Puzzler</span>
+              <h1 className="text-3xl sm:text-4xl font-extrabold font-mono text-white tracking-[-0.035em]">
+                Quasi-Perfect <span className="text-indigo-400">Puzzler</span>
               </h1>
               <p className="text-xs sm:text-sm text-zinc-400 font-mono mt-1">
                 Apply tactics to a proof tree and work your way to a complete
@@ -80,7 +80,7 @@ export const QuasiPuzzlerClient: React.FC = () => {
         </div>
 
         {/* Game Container */}
-        <div className="rounded-3xl border border-zinc-800 bg-zinc-950/90 p-4 sm:p-6 shadow-[0_0_50px_rgba(168,85,247,0.1)]">
+        <div className="rounded-3xl border border-zinc-800 bg-zinc-950/90 p-4 sm:p-6 shadow-[0_24px_60px_-30px_rgba(0,0,0,0.9)]">
           <DesktopOnlyGate
             gameId="quasi-puzzler"
             gameTitle="Quasi-Perfect Puzzler"
@@ -89,7 +89,7 @@ export const QuasiPuzzlerClient: React.FC = () => {
               gameId="quasi-puzzler"
               title="Quasi-Perfect Puzzler"
               subtitle="Small Proofs, Limited Memory"
-              icon={<IconBrain className="w-8 h-8 text-purple-400" />}
+              icon={<IconBrain className="w-8 h-8 text-indigo-400" />}
               instructions="Apply tactics to a proof tree and work your way to a complete proof. You can skip a goal with “sorry,” but the score will notice."
               controls={[
                 { key: "Click / Drag", action: "Apply Tactic" },
@@ -108,7 +108,7 @@ export const QuasiPuzzlerClient: React.FC = () => {
         {/* Instructions & Controls Reference */}
         <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4 font-mono text-xs text-zinc-400">
           <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
-            <div className="flex items-center gap-2 text-purple-400 font-bold mb-2">
+            <div className="flex items-center gap-2 text-indigo-300 font-bold mb-2">
               <IconChecklist className="w-4 h-4" />
               <span>Tactics &amp; AST Nodes</span>
             </div>
@@ -119,7 +119,7 @@ export const QuasiPuzzlerClient: React.FC = () => {
           </div>
 
           <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
-            <div className="flex items-center gap-2 text-brand-cyan font-bold mb-2">
+            <div className="flex items-center gap-2 text-zinc-200 font-bold mb-2">
               <IconCpu className="w-4 h-4" />
               <span>Lean Server RAM Limits</span>
             </div>

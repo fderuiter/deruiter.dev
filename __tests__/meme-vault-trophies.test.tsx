@@ -25,6 +25,8 @@ vi.mock("@/lib/meme-audio", () => ({
   playMemeSound: vi.fn(),
   getMemeSoundDuration: () => 500,
   isSoundAllowed: () => false,
+  connectMemeAnalyser: () => null,
+  releaseMemeAnalyser: vi.fn(),
 }));
 
 // Exit animations keep removed nodes mounted; render plain list items so

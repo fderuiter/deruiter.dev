@@ -51,7 +51,7 @@ export const TheoryBriefingModal: React.FC<TheoryBriefingModalProps> = ({
       onKeyDown={handleKeyDown}
       titleId="briefing-title"
       maxWidth="max-w-2xl"
-      className="border-brand-cyan/40 bg-zinc-950 p-6 font-mono text-zinc-200 shadow-[0_0_50px_-10px_rgba(6,182,212,0.3)] animate-in fade-in duration-200"
+      className="border-[color:var(--qp-accent-line)] bg-zinc-950 p-6 font-mono text-zinc-200 animate-in fade-in duration-200"
     >
       {/* Close Button */}
       <button
@@ -66,7 +66,7 @@ export const TheoryBriefingModal: React.FC<TheoryBriefingModalProps> = ({
       {/* Header Badges & Title */}
       <div className="border-b border-zinc-800 pb-4">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="rounded bg-brand-cyan/10 border border-brand-cyan/30 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-brand-cyan">
+          <span className="rounded bg-[color:var(--qp-accent-soft)] border border-[color:var(--qp-accent-line)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider qp-text-accent-strong">
             Chapter {level.chapter} · {level.chapterTitle}
           </span>
           <span className="text-zinc-400">/</span>
@@ -78,7 +78,7 @@ export const TheoryBriefingModal: React.FC<TheoryBriefingModalProps> = ({
           id="briefing-title"
           className="mt-2 text-xl font-extrabold text-zinc-100 flex items-center gap-2"
         >
-          <IconSparkles className="w-5 h-5 text-brand-cyan" />
+          <IconSparkles className="w-5 h-5 qp-text-accent-strong" />
           <span>{concept.title}</span>
         </h3>
         <p className="mt-1 text-xs text-zinc-400 leading-relaxed">
@@ -90,7 +90,7 @@ export const TheoryBriefingModal: React.FC<TheoryBriefingModalProps> = ({
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3 bg-zinc-900/60 p-3 rounded-xl border border-zinc-800">
         <div>
           <div className="text-xs font-bold text-zinc-200 flex items-center gap-1.5">
-            <IconCpu className="w-4 h-4 text-brand-cyan" />
+            <IconCpu className="w-4 h-4 qp-text-accent-strong" />
             <span>Current Simulation Mode</span>
           </div>
           <p className="text-[11px] text-zinc-400">
@@ -106,7 +106,7 @@ export const TheoryBriefingModal: React.FC<TheoryBriefingModalProps> = ({
             onClick={() => onToggleMode("story")}
             className={`px-2.5 py-1 text-xs font-bold rounded transition-all ${
               gameMode === "story"
-                ? "bg-brand-cyan text-black"
+                ? "qp-btn-primary"
                 : "text-zinc-400 hover:text-zinc-200"
             }`}
           >
@@ -131,12 +131,12 @@ export const TheoryBriefingModal: React.FC<TheoryBriefingModalProps> = ({
         {/* 1. Mathematical Intuition */}
         <div className="rounded-xl border border-zinc-800/80 bg-zinc-900/40 p-4 space-y-2">
           <div className="flex items-center justify-between">
-            <span className="font-bold text-brand-cyan flex items-center gap-1.5 uppercase tracking-wide text-[11px]">
+            <span className="font-bold qp-text-accent-strong flex items-center gap-1.5 uppercase tracking-wide text-[11px]">
               <IconBook className="w-4 h-4" />
               <span>1. Mathematical Intuition</span>
             </span>
             {concept.mathNotation && (
-              <span className="rounded bg-black/60 border border-brand-cyan/30 px-2 py-0.5 text-xs text-amber-300 font-semibold">
+              <span className="rounded bg-black/60 border border-[color:var(--qp-accent-line)] px-2 py-0.5 text-xs text-amber-300 font-semibold">
                 {concept.mathNotation}
               </span>
             )}
@@ -149,7 +149,7 @@ export const TheoryBriefingModal: React.FC<TheoryBriefingModalProps> = ({
         {/* 2. Formal Methods & Lean 4 Analogy */}
         <div className="rounded-xl border border-zinc-800/80 bg-zinc-900/40 p-4 space-y-2">
           <div className="flex items-center justify-between">
-            <span className="font-bold text-purple-400 flex items-center gap-1.5 uppercase tracking-wide text-[11px]">
+            <span className="font-bold qp-text-accent-strong flex items-center gap-1.5 uppercase tracking-wide text-[11px]">
               <IconShieldCheck className="w-4 h-4" />
               <span>2. Formal Proof Assistant Analogy (Lean 4)</span>
             </span>
@@ -165,7 +165,7 @@ export const TheoryBriefingModal: React.FC<TheoryBriefingModalProps> = ({
             This playable level runs in a local TypeScript simulator; it does
             not invoke Lean.
           </p>
-          <div className="bg-zinc-950/80 rounded-lg p-2 font-mono text-[11px] text-purple-300 border border-purple-500/20">
+          <div className="bg-zinc-950/80 rounded-lg p-2 font-mono text-[11px] qp-text-accent-strong border border-[color:var(--qp-accent-line)]">
             <code>
               theorem {level.leanTheoremName} {level.leanTypeSignature}
             </code>
@@ -205,7 +205,7 @@ export const TheoryBriefingModal: React.FC<TheoryBriefingModalProps> = ({
         <button
           type="button"
           onClick={onClose}
-          className="flex items-center gap-2 rounded-xl bg-brand-cyan px-5 py-2 text-xs font-bold text-black shadow-[0_0_15px_rgba(6,182,212,0.4)] hover:bg-cyan-400 transition-all font-extrabold"
+          className="flex items-center gap-2 qp-btn-primary qp-focus rounded-xl px-5 py-2 text-xs font-extrabold transition-colors"
         >
           <span>Start Proving</span>
           <span>→</span>

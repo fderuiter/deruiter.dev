@@ -15,7 +15,8 @@ import {
 } from "@/hooks/useMediaQuery";
 import { useAnimationFrame } from "@/hooks/useAnimationFrame";
 import { useTelemetry } from "@/hooks/useTelemetry";
-import { clamp } from "@/lib/game-utils";
+import { clamp, gameFont } from "@/lib/game-utils";
+import { useSkipTitleScreen } from "@/components/arcade/CabinetSetupContext";
 import {
   IconFlame,
   IconRefresh,
@@ -704,6 +705,19 @@ export const LaserLoon: React.FC = () => {
 
     recordEvent("laser_loon_start", "project_click").catch(() => {});
   }, [mode, recordEvent, loadedHighScore]);
+
+  // One title screen per game (#1516): inside a cabinet, the attract screen
+  // was the title, so Launch opens the campaign straight on the Act 1
+  // newspaper intro. Modes, weapons and the Flag Museum stay in the options
+  // disclosure (and M opens the museum); switching mode returns to the start
+  // screen, which then works as a mode-change confirmation.
+  const skipTitleScreen = useSkipTitleScreen();
+  const autoStartedRef = useRef(false);
+  useEffect(() => {
+    if (!skipTitleScreen || autoStartedRef.current) return;
+    autoStartedRef.current = true;
+    if (gameState === "idle") startGame();
+  }, [skipTitleScreen, gameState, startGame]);
 
   // Reset Game
   const resetGame = useCallback(() => {
@@ -1480,7 +1494,7 @@ export const LaserLoon: React.FC = () => {
         ctx.save();
         ctx.globalAlpha = Math.max(0, f.alpha);
         ctx.fillStyle = f.color;
-        ctx.font = "bold 12px monospace";
+        ctx.font = gameFont(12, "bold");
         ctx.textAlign = "center";
         ctx.shadowColor = f.color;
         ctx.shadowBlur = 8;

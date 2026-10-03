@@ -98,6 +98,11 @@ describe("RetroLabyrinth React Component UI Suite", () => {
       fill: vi.fn(),
       stroke: vi.fn(),
       fillText: vi.fn(),
+      strokeText: vi.fn(),
+      drawImage: vi.fn(),
+      measureText: vi.fn((text: string) => ({
+        width: (text || "").length * 4,
+      })),
       createRadialGradient: vi.fn(() => ({
         addColorStop: vi.fn(),
       })),
@@ -160,9 +165,17 @@ describe("RetroLabyrinth React Component UI Suite", () => {
 
     const ctx = HTMLCanvasElement.prototype.getContext("2d") as unknown as {
       fillText: ReturnType<typeof vi.fn>;
+      drawImage: ReturnType<typeof vi.fn>;
     };
     const drawn = ctx.fillText.mock.calls.map((call) => call[0]);
-    expect(drawn).toContain("@");
+    // The player is a 12px netrunner sprite (14px with its outline), stamped
+    // from an offscreen canvas rather than an "@" glyph (#1522).
+    const stamped = ctx.drawImage.mock.calls.map(
+      (call) => call[0] as HTMLCanvasElement
+    );
+    expect(
+      stamped.some((source) => source.width === 14 && source.height === 14)
+    ).toBe(true);
     // Room 1 opens with its route nodes unvisited, so the exit is marked
     // locked and the prompt names the objective instead (#1321).
     expect(drawn).toContain("LOCK");
@@ -178,7 +191,7 @@ describe("RetroLabyrinth React Component UI Suite", () => {
       '[data-testid="labyrinth-objective"]'
     );
     expect(objective?.textContent).toBe("VISIT THE ROUTE NODES (0/4)");
-    expect(container.textContent).toContain("then guide the");
+    expect(container.textContent).toContain("then guide your netrunner");
     // The exit tile reads LOCK until then, so the copy says it unlocks (#1552).
     expect(container.textContent).toContain("to unlock the EXIT");
   });
@@ -218,7 +231,7 @@ describe("RetroLabyrinth React Component UI Suite", () => {
     await act(async () => {
       board.focus();
     });
-    expect(board.className).toContain("border-brand-cyan");
+    expect(board.className).toContain("border-amber-500/60");
     expect(board.className).not.toMatch(/(^|\s)scale-/);
 
     // Both pill labels stay rendered in one grid cell; only visibility flips.
@@ -440,6 +453,23 @@ describe("RetroLabyrinth React Component UI Suite", () => {
     expect(container.textContent).toContain("DARKNET EXPLOIT BLACK-MARKET");
     expect(container.textContent).toContain("Overclocked 16GB DDR5 RAM");
     expect(container.textContent).toContain("Hardware Jumper Bypass Chip");
+  });
+
+  it("defaults to the emerald phosphor theme, keeps amber and drops synthwave (#1522)", async () => {
+    await act(async () => {
+      root.render(<RetroLabyrinth isMounted={true} />);
+    });
+
+    const group = container.querySelector('[aria-label="Phosphor theme"]');
+    expect(group).not.toBeNull();
+    const labels = Array.from(
+      group?.querySelectorAll("button[aria-pressed]") ?? []
+    ).map((button) => button.textContent);
+    expect(labels).toEqual(["Emerald", "Amber", "Matrix"]);
+    expect(
+      group?.querySelector('button[aria-pressed="true"]')?.textContent
+    ).toBe("Emerald");
+    expect(container.innerHTML).not.toMatch(/synthwave|pink-/i);
   });
 
   it("should open CRT calibration modal and permit switching display presets", async () => {

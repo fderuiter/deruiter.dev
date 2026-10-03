@@ -8,12 +8,6 @@
 
 ## Properties
 
-### accent
-
-> **accent**: `string`
-
-***
-
 ### category
 
 > **category**: `"dev"` \| `"medtech"` \| `"lore"` \| `"classic"` \| `"retro"`

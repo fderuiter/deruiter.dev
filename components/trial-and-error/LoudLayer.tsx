@@ -1,5 +1,4 @@
 import React from "react";
-import { clamp } from "@/lib/game-utils";
 
 /** Named loud-moment presets for the surfaces that use them. */
 export const LOUD_PRESETS = {
@@ -14,15 +13,6 @@ export const LOUD_PRESETS = {
   /** A Guidance card levels a hand's plate up. */
   levelUp: "te-loud-level",
 } as const;
-
-/** Screen-shake amplitude is capped so no intensity can exceed it. */
-export const MAX_SHAKE_PX = 6;
-
-/** A CSS shake amplitude for an intensity, clamped to [0, MAX_SHAKE_PX]. */
-export function shakeAmplitude(intensity: number): string {
-  const px = Number.isFinite(intensity) ? clamp(intensity, 0, MAX_SHAKE_PX) : 0;
-  return `${px}px`;
-}
 
 interface LoudLayerProps {
   /** A loud moment is happening (score resolution, a Blind cleared or failed). */

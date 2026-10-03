@@ -48,6 +48,18 @@ Lazily resolves or instantiates the active AudioContext.
 
 ***
 
+### getOutputTap()
+
+> **getOutputTap**(): `AudioNode` \| `null`
+
+Returns the node set with [SoundEngine.setOutputTap](#setoutputtap), or null.
+
+#### Returns
+
+`AudioNode` \| `null`
+
+***
+
 ### getVolume()
 
 > **getVolume**(): `number`
@@ -200,6 +212,31 @@ Sets mute status, persists to storage, and halts active audio on mute.
 ##### muted
 
 `boolean`
+
+#### Returns
+
+`void`
+
+***
+
+### setOutputTap()
+
+> **setOutputTap**(`node`): `void`
+
+Routes every sound played after this call through `node` instead of
+straight to the speakers, so a visualizer can read the mixed output. The
+caller owns `node` and must connect it onward to the destination; pass
+null to restore direct output. A tap from a different AudioContext is
+ignored, so a stale node can never swallow sound.
+
+#### Parameters
+
+##### node
+
+`AudioNode` \| `null`
+
+The node sounds connect to, such as an AnalyserNode, or
+  null to remove the tap.
 
 #### Returns
 

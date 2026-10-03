@@ -173,40 +173,6 @@
   --te-suit-screened: #94a3b8;
 }
 
-/* Shake amplitude comes from --te-shake-amp (default 3px), which the
- * LoudLayer helper clamps to at most 6px. */
-@keyframes te-loud-shake {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0);
-  }
-  25% {
-    transform: translate3d(
-      calc(var(--te-shake-amp, 3px) * -1),
-      calc(var(--te-shake-amp, 3px) / 3),
-      0
-    );
-  }
-  50% {
-    transform: translate3d(
-      calc(var(--te-shake-amp, 3px) * 0.67),
-      calc(var(--te-shake-amp, 3px) * -0.67),
-      0
-    );
-  }
-  75% {
-    transform: translate3d(
-      calc(var(--te-shake-amp, 3px) / -3),
-      calc(var(--te-shake-amp, 3px) * 0.67),
-      0
-    );
-  }
-}
-
-[data-te-cabinet][data-te-loud="on"] .te-loud-shake {
-  animation: te-loud-shake 240ms ease-out 1;
-}
-
 /* CRT: scanlines, a vignette, and a slight barrel curvature from a radial
  * mask. Gradients and a mask only; no blur, no canvas. */
 [data-te-cabinet][data-te-loud="on"] .te-loud-crt {
@@ -703,9 +669,7 @@
 }
 
 /* Monkey C Mayhem (Garmin watch): Pre-Game Setup visual options. The CRT
- * overlay is static; the shake animates transform only, fires once per
- * discrete impact (crash, or GC on "high"), and never runs under reduced
- * motion. */
+ * overlay is static. */
 .garmin-crt[data-garmin-crt="soft"] {
   background:
     radial-gradient(circle, transparent 62%, rgba(0, 0, 0, 0.28) 100%),
@@ -746,50 +710,25 @@
   );
 }
 
-@keyframes garmin-shake-subtle {
-  0%,
-  100% {
-    transform: translate(0, 0);
-  }
-  25% {
-    transform: translate(-2px, 1px);
-  }
-  50% {
-    transform: translate(2px, -1px);
-  }
-  75% {
-    transform: translate(-1px, 1px);
-  }
+/* ---- garmin-watch (phase 7) ---- */
+/* The watch render (#1520) is a 520 x 580 SVG box. It grows to about 34rem
+ * and never taller than the viewport allows, so the whole watch and its
+ * pushers fit on one screen; in fullscreen it grows further. Impact shake and
+ * flash come from useArcadeFx, which animates transform and opacity only. */
+.garmin-watch-frame {
+  width: min(100%, 34rem, calc((100dvh - 12rem) * 0.8966));
 }
 
-@keyframes garmin-shake-high {
-  0%,
-  100% {
-    transform: translate(0, 0);
-  }
-  20% {
-    transform: translate(-6px, 3px);
-  }
-  40% {
-    transform: translate(5px, -4px);
-  }
-  60% {
-    transform: translate(-4px, 2px);
-  }
-  80% {
-    transform: translate(3px, -2px);
-  }
+[data-fullscreen="true"] .garmin-watch-frame,
+.garmin-sim[data-game-fullscreen="true"] .garmin-watch-frame {
+  width: min(100%, 46rem, calc((100dvh - 9rem) * 0.8966));
 }
-
-@media (prefers-reduced-motion: no-preference) {
-  .garmin-chassis[data-garmin-shake="subtle"][data-garmin-shake-event="crash"] {
-    animation: garmin-shake-subtle 320ms ease-out 1;
-  }
-  .garmin-chassis[data-garmin-shake="high"][data-garmin-shake-event="crash"],
-  .garmin-chassis[data-garmin-shake="high"][data-garmin-shake-event="gc"] {
-    animation: garmin-shake-high 380ms ease-out 1;
-  }
+/* The watch draws its own round focus ring on the case (WatchHardware), so
+ * the square global outline would only box the strap. */
+.garmin-chassis:focus-visible {
+  outline: none;
 }
+/* ---- end garmin-watch (phase 7) ---- */
 
 /* Study Director desk tokens (ADR 0054, #1496).
  * Scoped to [data-sd-desk]: graphite surfaces, hairlines and the semantic
@@ -914,4 +853,486 @@
   [data-sd-desk] .sd-flicker {
     animation: none;
   }
+}
+
+/* ---- quasi-puzzler (phase 7) ---- */
+/* Quasi-Perfect Puzzler board (#1519). Proof indigo is the game's one
+ * identity hue (--game-accent from the cabinet, #818cf8 outside it); emerald,
+ * amber and red stay signals. Motion is event-only: a node grows in when a
+ * tactic splits the goal, a stamp lands when a goal closes, a card lifts on
+ * hover. All of it is transform/opacity, and none of it runs under
+ * prefers-reduced-motion or below 768px. */
+.qp-root {
+  --qp-accent: var(--game-accent, #818cf8);
+  --qp-accent-strong: color-mix(in srgb, var(--qp-accent) 62%, white);
+  --qp-accent-soft: color-mix(in srgb, var(--qp-accent) 13%, transparent);
+  --qp-accent-line: color-mix(in srgb, var(--qp-accent) 42%, transparent);
+  --qp-stage: var(--arcade-stage, #0d0e11);
+  --qp-panel: var(--arcade-panel, #13151a);
+  --qp-raised: var(--arcade-raised, #1a1d24);
+  --qp-hairline: var(--arcade-hairline, rgba(255, 255, 255, 0.08));
+  --qp-steel: var(--arcade-steel, #94a3b8);
+  --qp-math:
+    "STIX Two Math", "Cambria Math", "Latin Modern Math", "Times New Roman",
+    Georgia, serif;
+}
+
+.qp-text-accent {
+  color: var(--qp-accent);
+}
+.qp-text-accent-strong {
+  color: var(--qp-accent-strong);
+}
+.qp-chip-accent {
+  color: var(--qp-accent-strong);
+  background-color: var(--qp-accent-soft);
+  border-color: var(--qp-accent-line);
+}
+.qp-border-accent {
+  border-color: var(--qp-accent-line);
+}
+.qp-focus:focus-visible {
+  outline: 2px solid var(--qp-accent);
+  outline-offset: 2px;
+}
+
+/* One primary button style: accent fill, graphite ink. */
+.qp-btn-primary {
+  background-color: var(--qp-accent);
+  border: 1px solid color-mix(in srgb, var(--qp-accent) 60%, black);
+  color: #0d0e11;
+}
+.qp-btn-primary:hover {
+  background-color: color-mix(in srgb, var(--qp-accent) 85%, white);
+}
+/* Everything else is a quiet graphite control. */
+.qp-btn-quiet {
+  background-color: var(--qp-panel);
+  border: 1px solid var(--qp-hairline);
+  color: #d4d4d8;
+}
+.qp-btn-quiet:hover:not(:disabled) {
+  background-color: var(--qp-raised);
+  color: #f4f4f6;
+}
+
+/* Proof board: a blueprint grid on the stage colour, drawn once. */
+.qp-board {
+  background-color: var(--qp-stage);
+  background-image:
+    linear-gradient(
+      color-mix(in srgb, var(--qp-accent) 7%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--qp-accent) 7%, transparent) 1px,
+      transparent 1px
+    );
+  background-size: 24px 24px;
+  background-position: -1px -1px;
+  border: 1px solid var(--qp-hairline);
+}
+
+.qp-math {
+  font-family: var(--qp-math);
+  font-feature-settings: "ss01";
+}
+.qp-math-var {
+  font-family: var(--qp-math);
+  font-style: italic;
+}
+
+/* AST nodes on the board. */
+.qp-node {
+  background-color: var(--qp-raised);
+  border: 1px solid var(--qp-hairline);
+  color: #f4f4f6;
+}
+.qp-node[data-family="logic"] {
+  border-color: var(--qp-accent-line);
+  color: var(--qp-accent-strong);
+}
+.qp-node[data-family="arith"] {
+  color: #cbd5e1;
+  border-color: color-mix(in srgb, var(--qp-steel) 35%, transparent);
+}
+.qp-node[data-family="true"] {
+  border-color: rgba(16, 185, 129, 0.55);
+  color: #6ee7b7;
+}
+.qp-node[data-family="false"] {
+  border-color: rgba(239, 68, 68, 0.55);
+  color: #fca5a5;
+}
+.qp-node[data-goal="true"] {
+  background-color: color-mix(in srgb, var(--qp-accent) 16%, var(--qp-raised));
+  border: 2px solid var(--qp-accent);
+  color: #f4f4f6;
+}
+.qp-node[data-eligible="true"] {
+  outline: 1px dashed var(--qp-accent);
+  outline-offset: 3px;
+}
+.qp-node[data-active="true"] {
+  outline: 2px solid var(--qp-accent);
+  outline-offset: 3px;
+}
+.qp-node[data-closed="true"] {
+  border-color: rgba(16, 185, 129, 0.6);
+}
+
+/* Q.E.D. stamp when a goal closes. */
+@keyframes qp-stamp-in {
+  0% {
+    opacity: 0;
+    transform: rotate(-8deg) scale(1.9);
+  }
+  65% {
+    opacity: 1;
+    transform: rotate(-8deg) scale(0.94);
+  }
+  100% {
+    opacity: 1;
+    transform: rotate(-8deg) scale(1);
+  }
+}
+.qp-stamp {
+  transform: rotate(-8deg);
+  color: #34d399;
+  border: 2px solid rgba(16, 185, 129, 0.7);
+  background-color: color-mix(in srgb, #10b981 10%, var(--qp-stage));
+}
+
+/* Tactic cards. The rarity edge is the card's top band. */
+.qp-card {
+  background-color: var(--qp-panel);
+  border: 1px solid var(--qp-hairline);
+  color: #f4f4f6;
+}
+.qp-card[data-rarity="common"] {
+  --qp-edge: var(--qp-steel);
+}
+.qp-card[data-rarity="uncommon"] {
+  --qp-edge: var(--qp-accent);
+}
+.qp-card[data-rarity="rare"] {
+  --qp-edge: var(--arcade-amber, #f59e0b);
+}
+.qp-card[data-rarity="cursed"] {
+  --qp-edge: var(--arcade-red, #ef4444);
+}
+.qp-card-edge {
+  background-color: var(--qp-edge);
+}
+.qp-card-glyph {
+  color: color-mix(in srgb, var(--qp-edge) 70%, white);
+}
+.qp-card[data-selected="true"] {
+  border-color: var(--qp-accent);
+  box-shadow: 0 0 0 1px var(--qp-accent);
+}
+.qp-pip {
+  background-color: var(--qp-edge);
+}
+.qp-pip[data-on="false"] {
+  background-color: transparent;
+  box-shadow: inset 0 0 0 1px
+    color-mix(in srgb, var(--qp-edge) 55%, transparent);
+}
+
+/* The armed card stays raised, with or without motion. */
+.qp-card-lift[data-selected="true"] {
+  transform: translateY(-14px);
+}
+
+/* Memory-stick RAM meter. */
+.qp-stick {
+  background-color: var(--qp-panel);
+  border: 1px solid var(--qp-hairline);
+}
+.qp-stick-chip {
+  background-color: #0b0c0f;
+  border: 1px solid var(--qp-hairline);
+}
+.qp-stick-fill[data-tone="nominal"] {
+  background-color: var(--qp-accent);
+}
+.qp-stick-fill[data-tone="low"] {
+  background-color: var(--arcade-amber, #f59e0b);
+}
+.qp-stick-fill[data-tone="out"] {
+  background-color: var(--arcade-red, #ef4444);
+}
+.qp-stick-pins {
+  background-image: repeating-linear-gradient(
+    90deg,
+    color-mix(in srgb, #f59e0b 45%, transparent) 0 3px,
+    transparent 3px 6px
+  );
+}
+
+/* Chapter level map. */
+.qp-map-node {
+  background-color: var(--qp-raised);
+  border: 1px solid var(--qp-hairline);
+  color: #d4d4d8;
+}
+.qp-map-node[data-state="solved"] {
+  border-color: rgba(16, 185, 129, 0.6);
+  color: #a7f3d0;
+}
+.qp-map-node[data-state="admitted"] {
+  border-color: rgba(251, 113, 133, 0.6);
+  color: #fecdd3;
+}
+.qp-map-node[data-current="true"] {
+  background-color: var(--qp-accent);
+  border-color: var(--qp-accent);
+  color: #0d0e11;
+}
+
+/* A new branch tab drops in when a tactic splits the goal. */
+@keyframes qp-branch-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* A new edge fades in once its nodes have moved into place. */
+@keyframes qp-edge-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
+  .qp-edge {
+    animation: qp-edge-in 240ms ease-out 120ms both;
+  }
+  .qp-branch {
+    animation: qp-branch-in 260ms cubic-bezier(0.2, 0.9, 0.3, 1.2) 1 both;
+  }
+  .qp-stamp[data-animate="true"] {
+    animation: qp-stamp-in 300ms cubic-bezier(0.2, 0.9, 0.3, 1.2) 1 both;
+  }
+  .qp-card-lift {
+    transition: transform 160ms ease-out;
+  }
+  .qp-card-lift:hover,
+  .qp-card-lift:focus-within {
+    transform: translateY(-14px);
+  }
+  .qp-stick-fill {
+    transition: transform 300ms ease-out;
+  }
+}
+
+/* ---- clinical-chaos (phase 7) ---- */
+/* Phase lock and shift end (#1521): the inspection verdict stamp presses
+ * onto the floor once. Transform and opacity only; reduced motion and
+ * phones get the stamp without the press. */
+.cc-verdict-stamp {
+  transform: rotate(-8deg);
+  background-color: rgba(13, 14, 17, 0.82);
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+@keyframes cc-verdict-slam {
+  0% {
+    opacity: 0;
+    transform: rotate(-8deg) scale(2.2);
+  }
+  65% {
+    opacity: 1;
+    transform: rotate(-8deg) scale(0.94);
+  }
+  100% {
+    opacity: 1;
+    transform: rotate(-8deg) scale(1);
+  }
+}
+
+@media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
+  .cc-verdict-stamp {
+    animation: cc-verdict-slam 300ms cubic-bezier(0.2, 0.9, 0.3, 1.2) 120ms both;
+  }
+}
+/* ---- end clinical-chaos (phase 7) ---- */
+
+/* ---- meme-vault (phase 7) ---- */
+/* Sampler pad press glow (#1526): one emerald layer per pad whose opacity
+ * follows data-lit while the pad's sound plays. It is state, not ambience:
+ * nothing moves at rest, and the fade is dropped for reduced motion and
+ * below 768px, where the glow switches on and off instantly. */
+.meme-pad-glow {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  background:
+    radial-gradient(
+      120% 90% at 50% 45%,
+      rgba(16, 185, 129, 0.22) 0%,
+      rgba(16, 185, 129, 0.08) 55%,
+      rgba(16, 185, 129, 0) 100%
+    ),
+    #16201d;
+  box-shadow:
+    inset 0 0 0 1px rgba(16, 185, 129, 0.6),
+    inset 0 0 18px rgba(16, 185, 129, 0.18);
+}
+.meme-pad[data-lit="true"] .meme-pad-glow {
+  opacity: 1;
+}
+@media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
+  .meme-pad-glow {
+    transition: opacity 260ms ease-out;
+  }
+  .meme-pad[data-lit="true"] .meme-pad-glow {
+    transition-duration: 40ms;
+  }
+}
+
+/* Trophy unlock stamp (#1526): the badge slams onto the shelf once when a
+ * trophy unlocks while the page is open. Transform and opacity only, never
+ * a loop, and none for reduced motion or phones. */
+@keyframes meme-trophy-stamp {
+  0% {
+    opacity: 0;
+    transform: scale(1.6) rotate(-12deg);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(0.92) rotate(2deg);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes meme-trophy-stamp-label {
+  0%,
+  45% {
+    opacity: 0;
+    transform: scale(1.8) rotate(-8deg);
+  }
+  75% {
+    opacity: 1;
+    transform: scale(0.95) rotate(-8deg);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
+  .meme-trophy-stamp {
+    animation: meme-trophy-stamp 420ms cubic-bezier(0.2, 0.9, 0.3, 1.2) 1;
+  }
+  .meme-trophy-stamp-label {
+    display: inline-block;
+    animation: meme-trophy-stamp-label 700ms cubic-bezier(0.2, 0.9, 0.3, 1.2) 1;
+  }
+}
+/* ---- end meme-vault (phase 7) ---- */
+
+/* ---- trial-and-error (phase 7) ---- */
+/* One-screen card table (#1524). At 768px and up the Blind panel runs down
+ * the left; the play zone and a slim relic rail sit across the top; the hand
+ * docks along the bottom. Scoped to the cabinet, so a table rendered outside
+ * it (tests, embeds) simply stacks. The shake that used to live here is the
+ * Arcade Kit's useArcadeFx now. */
+@media (min-width: 768px) {
+  [data-te-cabinet] .te-table-grid {
+    grid-template-columns: 13rem minmax(0, 1fr);
+    grid-template-rows: auto auto 1fr;
+    grid-template-areas:
+      "blind play"
+      "blind rail"
+      "blind hand";
+  }
+  /* The Blind panel scrolls inside its column instead of setting the
+   * table's height: its brief and score log grow, the hand stays put. */
+  [data-te-cabinet] .te-area-blind {
+    grid-area: blind;
+    contain: size;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
+  [data-te-cabinet] .te-area-play {
+    grid-area: play;
+  }
+  [data-te-cabinet] .te-area-rail {
+    grid-area: rail;
+  }
+  [data-te-cabinet] .te-area-hand {
+    grid-area: hand;
+  }
+}
+
+@media (min-width: 1024px) {
+  [data-te-cabinet] .te-table-grid {
+    grid-template-columns: 13rem minmax(0, 1fr) 12rem;
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+      "blind play rail"
+      "blind hand hand";
+  }
+  /* The rail takes the play zone's height and scrolls past it, so relics
+   * and consumables never push the hand down. */
+  [data-te-cabinet] .te-area-rail {
+    contain: size;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
+}
+
+/* The target bar fills toward the Blind's target: a transform tween on the
+ * one event that moves it, never a loop. Instant under reduced motion and
+ * below 768px. */
+@media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
+  [data-te-cabinet] .te-target-fill {
+    transition: transform 420ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+}
+
+/* CLEARED slams onto the target bar, and a Blind's result stamp lands, once.
+ * Loud cabinets only, transform and opacity only. */
+@keyframes te-target-slam {
+  0% {
+    opacity: 0;
+    transform: scale(2.2) rotate(-8deg);
+  }
+  65% {
+    opacity: 1;
+    transform: scale(0.92) rotate(-2deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(-2deg);
+  }
+}
+
+/* The Arcade Kit's ResultCard labels its stats in zinc-500, under AA
+ * contrast at 10px on its #0d0e11 tiles; T&E lifts them to zinc-400 until
+ * the kit does (#1524). */
+.te-result dt {
+  color: #a1a1aa;
+}
+
+[data-te-cabinet][data-te-loud="on"] .te-loud-target-slam {
+  animation: te-target-slam 300ms cubic-bezier(0.2, 0.9, 0.3, 1.2) 1 both;
 }

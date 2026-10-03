@@ -122,9 +122,11 @@ describe("site chrome is calm at rest (#1596)", () => {
     const badge = container.querySelector(".animate-ping-settle");
     expect(badge).not.toBeNull();
     // The solid dot stays, so the badge still reads without motion.
-    expect(badge?.nextElementSibling?.classList.contains("bg-cyan-500")).toBe(
-      true
-    );
+    expect(
+      badge?.nextElementSibling?.classList.contains(
+        "bg-[var(--game-accent,#06b6d4)]"
+      )
+    ).toBe(true);
     expect(infiniteLoopElements(container)).toEqual([]);
   });
 

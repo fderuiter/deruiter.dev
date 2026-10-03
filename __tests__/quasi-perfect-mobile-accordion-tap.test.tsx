@@ -123,7 +123,7 @@ describe("Adaptive Mobile Accordion Drawers & Tap-Select Interaction Suite", () 
     expect(container.querySelector("#terminal-log-drawer-content")).toBeNull();
   });
 
-  it("Requirement 1: Renders secondary IDE panels expanded by default on desktop viewports (>= 768px)", async () => {
+  it("Keeps secondary IDE panels collapsed on desktop too, so the proof board comes first (#1519)", async () => {
     Object.defineProperty(window, "innerWidth", {
       value: 1024,
       writable: true,
@@ -145,12 +145,17 @@ describe("Adaptive Mobile Accordion Drawers & Tap-Select Interaction Suite", () 
       b.textContent?.includes("Local Tactic Diagnostics & TTY Feedback Log")
     );
 
+    expect(leanDrawerBtn?.getAttribute("aria-expanded")).toBe("false");
+    expect(terminalDrawerBtn?.getAttribute("aria-expanded")).toBe("false");
+    expect(container.querySelector("#lean-ide-drawer-content")).toBeNull();
+    expect(container.querySelector("#terminal-log-drawer-content")).toBeNull();
+
+    // One click still opens the inspector on demand.
+    await act(async () => {
+      leanDrawerBtn?.click();
+    });
     expect(leanDrawerBtn?.getAttribute("aria-expanded")).toBe("true");
-    expect(terminalDrawerBtn?.getAttribute("aria-expanded")).toBe("true");
     expect(container.querySelector("#lean-ide-drawer-content")).not.toBeNull();
-    expect(
-      container.querySelector("#terminal-log-drawer-content")
-    ).not.toBeNull();
   });
 
   it("Requirement 1 & AC 2: Expanding and collapsing individual diagnostic drawers preserves current level progress and state", async () => {

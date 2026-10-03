@@ -9,6 +9,10 @@ import {
   getMemeSoundDuration,
   isSoundAllowed,
   stopAllMemeSounds,
+  getMemeAnalyser,
+  connectMemeAnalyser,
+  releaseMemeAnalyser,
+  MEME_SCOPE_FFT_SIZE,
   useMemeAudioCleanup,
   type MemeSoundType,
 } from "@/lib/meme-audio";
@@ -114,7 +118,14 @@ describe("Meme Audio & SoundEngine Core Integration (__tests__/meme-audio.test.t
     createBiquadFilter: ReturnType<typeof vi.fn>;
     createBufferSource: ReturnType<typeof vi.fn>;
     createBuffer: ReturnType<typeof vi.fn>;
+    createAnalyser: ReturnType<typeof vi.fn>;
   };
+  let createdAnalysers: Array<{
+    context: unknown;
+    fftSize: number;
+    smoothingTimeConstant: number;
+    connect: ReturnType<typeof vi.fn>;
+  }>;
 
   const createMockOscillator = (): MockOscillator => {
     const osc: MockOscillator = {
@@ -191,6 +202,7 @@ describe("Meme Audio & SoundEngine Core Integration (__tests__/meme-audio.test.t
     createdBufferSources = [];
     createdGains = [];
     createdFilters = [];
+    createdAnalysers = [];
 
     mockStorage.setItem("sound_muted", "false");
     mockStorage.setItem("sound_volume", "0.5");
@@ -213,6 +225,18 @@ describe("Meme Audio & SoundEngine Core Integration (__tests__/meme-audio.test.t
       createGain: vi.fn().mockImplementation(createMockGain),
       createBiquadFilter: vi.fn().mockImplementation(createMockFilter),
       createBufferSource: vi.fn().mockImplementation(createMockBufferSource),
+      // The engine keeps the first context it made, so the analyser reports
+      // whichever context it was created on.
+      createAnalyser: vi.fn(function (this: unknown) {
+        const analyser = {
+          context: this,
+          fftSize: 2048,
+          smoothingTimeConstant: 0.8,
+          connect: vi.fn(),
+        };
+        createdAnalysers.push(analyser);
+        return analyser;
+      }),
       createBuffer: vi
         .fn()
         .mockImplementation(
@@ -264,6 +288,7 @@ describe("Meme Audio & SoundEngine Core Integration (__tests__/meme-audio.test.t
   });
 
   afterEach(() => {
+    releaseMemeAnalyser();
     stopAllMemeSounds();
     getSoundEngine().stopAll();
     vi.runOnlyPendingTimers();
@@ -428,6 +453,64 @@ describe("Meme Audio & SoundEngine Core Integration (__tests__/meme-audio.test.t
 
       expect(createdOscillators.length).toBe(0);
       expect(createdBufferSources.length).toBe(0);
+    });
+  });
+  describe("4. Oscilloscope tap (#1526)", () => {
+    it("opens no analyser when other pages play meme sounds", () => {
+      playMemeSound("laser");
+      expect(getMemeAnalyser()).toBeNull();
+      expect(getSoundEngine().getOutputTap()).toBeNull();
+      expect(createdAnalysers).toHaveLength(0);
+    });
+
+    it("routes sounds through one analyser once the vault connects it", () => {
+      const analyser = connectMemeAnalyser();
+      expect(analyser).not.toBeNull();
+      expect(getMemeAnalyser()).toBe(analyser);
+      expect(createdAnalysers).toHaveLength(1);
+      const made = createdAnalysers[0];
+      expect(made.fftSize).toBe(MEME_SCOPE_FFT_SIZE);
+      expect(made.smoothingTimeConstant).toBe(0);
+      const ctx = getSoundEngine().getAudioContext();
+      expect(made.connect).toHaveBeenCalledWith(ctx?.destination);
+      expect(getSoundEngine().getOutputTap()).toBe(analyser);
+
+      playMemeSound("laser");
+      // The laser's gain stage feeds the analyser, not the speakers.
+      expect(createdGains.at(-1)?.connect).toHaveBeenCalledWith(analyser);
+
+      expect(connectMemeAnalyser()).toBe(analyser);
+      expect(createdAnalysers).toHaveLength(1);
+    });
+
+    it("opens nothing while muted", () => {
+      getSoundEngine().setMuted(true);
+      expect(connectMemeAnalyser()).toBeNull();
+      expect(createdAnalysers).toHaveLength(0);
+    });
+
+    it("restores direct output on release", () => {
+      connectMemeAnalyser();
+      releaseMemeAnalyser();
+      expect(getMemeAnalyser()).toBeNull();
+      expect(getSoundEngine().getOutputTap()).toBeNull();
+      playMemeSound("fda-siren");
+      const ctx = getSoundEngine().getAudioContext();
+      expect(createdGains.at(-1)?.connect).toHaveBeenCalledWith(
+        ctx?.destination
+      );
+    });
+
+    it("ignores a tap from another context", () => {
+      getSoundEngine().setOutputTap(
+        fromPartial<AudioNode>({ context: fromPartial<BaseAudioContext>({}) })
+      );
+      playMemeSound("fda-siren");
+      const ctx = getSoundEngine().getAudioContext();
+      expect(createdGains.at(-1)?.connect).toHaveBeenCalledWith(
+        ctx?.destination
+      );
+      getSoundEngine().setOutputTap(null);
     });
   });
 });

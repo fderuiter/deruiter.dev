@@ -6,6 +6,21 @@
 
 # lib/game-utils
 
+## Type Aliases
+
+- [GameFontWeight](type-aliases/GameFontWeight.md)
+
+## Variables
+
+- [GAME\_FONT\_FALLBACK\_STACK](variables/GAME_FONT_FALLBACK_STACK.md)
+- [GAME\_FONT\_VARIABLE](variables/GAME_FONT_VARIABLE.md)
+
+## Functions
+
+- [buildGameFont](functions/buildGameFont.md)
+- [gameFont](functions/gameFont.md)
+- [resolveGameFontFamily](functions/resolveGameFontFamily.md)
+
 ## References
 
 ### BoundingBox

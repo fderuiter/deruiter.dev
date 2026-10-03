@@ -81,7 +81,8 @@ for (const view of views) {
         );
       }
       if (game === "laser-loon") {
-        await cabinet.getByRole("button", { name: /START CAMPAIGN/ }).click();
+        // The cabinet's attract screen is the title (#1516), so Launch
+        // opens straight on the Act 1 newspaper intro.
         await cabinet.getByRole("button", { name: /engage stage/i }).click();
         const fire = cabinet.getByRole("button", {
           name: "Primary Fire",

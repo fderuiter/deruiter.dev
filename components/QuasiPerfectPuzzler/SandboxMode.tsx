@@ -358,7 +358,7 @@ export const SandboxMode: React.FC = () => {
       {/* Sandbox Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 bg-zinc-900/60 border border-zinc-800 rounded-xl p-3.5">
         <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+          <div className="p-2 rounded-lg bg-[color:var(--qp-accent-soft)] border border-[color:var(--qp-accent-line)] qp-text-accent-strong">
             <IconFlask className="w-5 h-5" />
           </div>
           <div>
@@ -384,7 +384,7 @@ export const SandboxMode: React.FC = () => {
               onClick={() => loadPreset(idx)}
               className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all ${
                 idx === selectedPresetIdx
-                  ? "bg-emerald-500 text-black shadow-[0_0_10px_rgba(16,185,129,0.4)]"
+                  ? "qp-btn-primary"
                   : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200"
               }`}
             >
@@ -398,8 +398,8 @@ export const SandboxMode: React.FC = () => {
             aria-controls="custom-formula-drawer"
             className={`flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-lg border transition-all ${
               isDrawerOpen
-                ? "bg-purple-600 text-white border-purple-400 shadow-[0_0_10px_rgba(168,85,247,0.4)]"
-                : "border-purple-500/40 bg-purple-950/30 text-purple-300 hover:bg-purple-900/50"
+                ? "qp-btn-primary border-[color:var(--qp-accent-line)]"
+                : "border-[color:var(--qp-accent-line)] bg-[color:var(--qp-accent-soft)] qp-text-accent-strong hover:bg-[color:var(--qp-accent-soft)]"
             }`}
           >
             <IconEdit className="w-3.5 h-3.5" />
@@ -423,12 +423,12 @@ export const SandboxMode: React.FC = () => {
       {isDrawerOpen && (
         <div
           id="custom-formula-drawer"
-          className="rounded-xl border border-purple-500/30 bg-purple-950/20 p-4 space-y-3.5"
+          className="rounded-xl border border-[color:var(--qp-accent-line)] bg-[color:var(--qp-accent-soft)] p-4 space-y-3.5"
         >
-          <div className="flex items-center justify-between border-b border-purple-500/20 pb-2">
+          <div className="flex items-center justify-between border-b border-[color:var(--qp-accent-line)] pb-2">
             <div className="flex items-center gap-2">
-              <IconCode className="w-4 h-4 text-purple-400" />
-              <h4 className="text-xs font-bold text-purple-200 uppercase tracking-wider">
+              <IconCode className="w-4 h-4 qp-text-accent-strong" />
+              <h4 className="text-xs font-bold qp-text-accent-strong uppercase tracking-wider">
                 Custom Formula Pratt Compiler &amp; Editor
               </h4>
             </div>
@@ -444,7 +444,7 @@ export const SandboxMode: React.FC = () => {
 
           {/* Quick Shortcuts */}
           <div className="space-y-1.5">
-            <span className="text-[11px] font-bold text-purple-300">
+            <span className="text-[11px] font-bold qp-text-accent-strong">
               Preset Formula Shortcuts:
             </span>
             <div className="flex flex-wrap gap-1.5">
@@ -456,7 +456,7 @@ export const SandboxMode: React.FC = () => {
                     setCustomGoalInput(shortcut.formula);
                     setCustomHypothesesInput(shortcut.hypotheses);
                   }}
-                  className="px-2 py-0.5 text-[11px] font-semibold rounded bg-zinc-900 border border-purple-500/20 text-purple-300 hover:bg-purple-900/40 transition-all"
+                  className="px-2 py-0.5 text-[11px] font-semibold rounded bg-zinc-900 border border-[color:var(--qp-accent-line)] qp-text-accent-strong hover:bg-[color:var(--qp-accent-soft)] transition-all"
                 >
                   {shortcut.label}
                 </button>
@@ -496,7 +496,7 @@ export const SandboxMode: React.FC = () => {
                 value={customGoalInput}
                 onChange={(e) => setCustomGoalInput(e.target.value)}
                 placeholder="e.g. (a + b)^2 = a^2 + 2*a*b + b^2"
-                className="w-full px-3 py-1.5 text-xs font-mono rounded-lg border border-zinc-700 bg-zinc-900 text-zinc-100 focus:outline-none focus:border-purple-500"
+                className="w-full px-3 py-1.5 text-xs font-mono rounded-lg border border-zinc-700 bg-zinc-900 text-zinc-100 focus:outline-none focus:border-[color:var(--qp-accent-line)]"
               />
             </div>
             <div className="space-y-1">
@@ -512,7 +512,7 @@ export const SandboxMode: React.FC = () => {
                 value={customHypothesesInput}
                 onChange={(e) => setCustomHypothesesInput(e.target.value)}
                 placeholder="e.g. h1: a = b, h2: b = c"
-                className="w-full px-3 py-1.5 text-xs font-mono rounded-lg border border-zinc-700 bg-zinc-900 text-zinc-100 focus:outline-none focus:border-purple-500"
+                className="w-full px-3 py-1.5 text-xs font-mono rounded-lg border border-zinc-700 bg-zinc-900 text-zinc-100 focus:outline-none focus:border-[color:var(--qp-accent-line)]"
               />
             </div>
           </div>
@@ -545,7 +545,7 @@ export const SandboxMode: React.FC = () => {
                   {renderASTString(parseResult.ast)}
                 </div>
                 {parsedHypothesesList.length > 0 && (
-                  <div className="mt-1 text-purple-300 text-[11px]">
+                  <div className="mt-1 qp-text-accent-strong text-[11px]">
                     <strong>Hypotheses ({parsedHypothesesList.length}):</strong>{" "}
                     {parsedHypothesesList
                       .map(
@@ -574,7 +574,7 @@ export const SandboxMode: React.FC = () => {
               type="button"
               onClick={handleApplyCustomFormula}
               disabled={!parseResult.ast || !!hypError}
-              className="px-4 py-1.5 text-xs font-bold rounded-lg bg-emerald-500 text-black hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_10px_rgba(16,185,129,0.3)] transition-all flex items-center gap-1.5"
+              className="qp-btn-primary qp-focus px-4 py-1.5 text-xs font-bold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
             >
               <IconSparkles className="w-3.5 h-3.5" />
               <span>Compile &amp; Set Active Goal</span>

@@ -182,11 +182,24 @@ import {
 } from "@/lib/clinical-trial-chaos";
 
 import {
+  createFloorAnimState,
+  createFolderFx,
   drawConveyor,
   getConveyorGeometry,
   getVisibleSubjects,
-  type Particle,
+  type FloorAnimState,
 } from "@/components/clinical-trial-chaos/conveyor-canvas";
+import {
+  DESK_FRACTION,
+  FOLDER_FX_MS,
+  getChuteIndexAt,
+  getChuteSlots,
+  getConveyorLogicalSize,
+  getFolderIndexAt,
+  getSlotX,
+  getVerdictStamp,
+} from "@/components/clinical-trial-chaos/floor-scene";
+import { useArcadeFx } from "@/hooks/useArcadeFx";
 import {
   safeGetItem,
   safeGetRawItem,
@@ -232,6 +245,18 @@ const AUDITOR_BEHAVIOR_LABELS: Record<AuditorState["behavior"], string> = {
   issuing_483: "Writing a 483",
   coffee_break: "☕ Coffee break",
 };
+
+/** Reduced motion or a phone: folder events snap instead of flying. */
+function prefersCalmMotion(): boolean {
+  if (typeof window === "undefined") return true;
+  return (
+    window.innerWidth < 768 ||
+    getMatchMediaMatches("(prefers-reduced-motion: reduce)")
+  );
+}
+
+/** Belt travel per running second, in logical pixels. */
+const BELT_SPEED = 18;
 
 function timerBarColor(ratio: number): string {
   if (ratio > 0.5) return "bg-emerald-500";
@@ -531,7 +556,12 @@ export const ClinicalTrialChaos: React.FC = () => {
   // Source of truth for the sponsor simulation; `sponsor` state mirrors it for rendering.
   const sponsorRef = useRef<SponsorState>(sponsor);
   const terminalContainerRef = useRef<HTMLDivElement>(null);
-  const particlesRef = useRef<Particle[]>([]);
+  // Floor scene animation: eased folder positions, folder events in flight
+  // and chute flashes (#1521). The belt only travels while clocks run.
+  const floorAnimRef = useRef<FloorAnimState>(createFloorAnimState());
+  const beltOffsetRef = useRef(0);
+  const fx = useArcadeFx();
+  const { stageRef: fxStageRef, flashRef: fxFlashRef } = fx;
   const submittedSubjectIdsRef = useRef<Set<string>>(new Set());
   const activeProtocolRef = useRef<StudyProtocol | null>(activeProtocol);
   const ruleViolationsRef = useRef<RecordedRuleViolation[]>(ruleViolations);
@@ -806,25 +836,64 @@ export const ClinicalTrialChaos: React.FC = () => {
     return sdtmDataset.filter((r) => r.DOMAIN === sdtmFilterDomain);
   }, [sdtmDataset, sdtmFilterDomain]);
 
-  // 11. Spawn Canvas Sparkle Particles
-  const spawnSparkles = useCallback(
-    (x: number, y: number, color = "#10b981") => {
-      for (let i = 0; i < 16; i++) {
-        const angle = Math.random() * Math.PI * 2;
-        const speed = Math.random() * 3 + 1;
-        particlesRef.current.push({
-          x,
-          y,
-          vx: Math.cos(angle) * speed,
-          vy: Math.sin(angle) * speed,
-          color,
-          alpha: 1,
-          size: Math.random() * 3 + 2,
-          life: 1,
+  // 11. Floor feedback (#1521): a routed folder drops into its chute, a
+  // wrong route bounces back with a red stamp, an expired one slides off.
+  // Reduced motion and phones keep only the stamp and the chute flash.
+  const queueFolderFx = useCallback(
+    (
+      kind: "drop" | "bounce" | "expire",
+      subj: ClinicalSubject,
+      domain: CDISCDomain | null,
+      selectedId: string | null,
+      sortedStations: readonly StationConfig[]
+    ) => {
+      const view = conveyorViewRef.current;
+      const g = getConveyorGeometry(view.width, view.height);
+      const anim = floorAnimRef.current;
+      const now = performance.now();
+      const calm = prefersCalmMotion();
+      const visible = getVisibleSubjects(
+        conveyorSubjectsRef.current,
+        selectedId,
+        g.visibleSlots
+      );
+      const index = visible.findIndex((s) => s.id === subj.id);
+      const fromX =
+        anim.folderX.get(subj.id) ??
+        (index >= 0 ? getSlotX(g, index) : undefined);
+      const chuteIndex = domain
+        ? sortedStations.findIndex((s) => s.id === domain)
+        : -1;
+      if (domain && chuteIndex >= 0 && !g.compact) {
+        anim.chuteFlash.push({
+          domain,
+          tone: kind === "drop" ? "good" : "bad",
+          until:
+            now + (kind === "drop" && !calm ? FOLDER_FX_MS.drop + 360 : 520),
         });
       }
+      if (fromX === undefined) return;
+      if (kind !== "bounce" && (calm || g.compact)) return;
+      const toX =
+        chuteIndex >= 0
+          ? getChuteSlots(view.width, sortedStations.length, g.beltLeft)[
+              chuteIndex
+            ].cx
+          : fromX;
+      anim.fx = anim.fx.filter((f) => f.subjectId !== subj.id);
+      anim.fx.push(
+        createFolderFx(
+          kind,
+          subj,
+          sortedStations,
+          fromX,
+          toX,
+          now,
+          calm ? 0 : undefined
+        )
+      );
     },
-    []
+    [conveyorSubjectsRef]
   );
 
   // 12. Handle Multi-Choice Validation Selection
@@ -939,6 +1008,13 @@ export const ClinicalTrialChaos: React.FC = () => {
         suspicionDelta,
       }: { allClean: boolean; suspicionDelta: number }
     ) => {
+      queueFolderFx(
+        "drop",
+        subj,
+        domain,
+        selectedSubjectId,
+        [...stations].sort((a, b) => a.positionIndex - b.positionIndex)
+      );
       const {
         submission,
         scoreState: settledScore,
@@ -1025,6 +1101,9 @@ export const ClinicalTrialChaos: React.FC = () => {
       phase,
       conveyorSubjects,
       calibrationSubjectId,
+      selectedSubjectId,
+      stations,
+      queueFolderFx,
       pushScorePop,
       playSuccess,
       announce,
@@ -1207,12 +1286,6 @@ export const ClinicalTrialChaos: React.FC = () => {
         submittedSubjectIdsRef.current.add(subj.id);
         triggerSound("sign");
         triggerSound("chute");
-        const view = conveyorViewRef.current;
-        spawnSparkles(
-          view.width / 2,
-          getConveyorGeometry(view.width, view.height).beltY,
-          "#38bdf8"
-        );
         setFlashStationId(domain);
         setTimeout(() => setFlashStationId(null), 700);
         addAuditLog(
@@ -1244,6 +1317,17 @@ export const ClinicalTrialChaos: React.FC = () => {
           message: rejection,
         });
         announce(rejection, "assertive");
+        // On the floor: the folder bounces back off the chute with a red
+        // REJECTED stamp, and the stage shakes once (#1521).
+        queueFolderFx(
+          "bounce",
+          subj,
+          domain,
+          selectedSubjectId,
+          [...stations].sort((a, b) => a.positionIndex - b.positionIndex)
+        );
+        fx.shake(4);
+        fx.flash("#ef4444");
 
         setScoreState((prev) => breakCombo(prev));
         setAuditor((prev) =>
@@ -1254,7 +1338,9 @@ export const ClinicalTrialChaos: React.FC = () => {
     },
     [
       triggerSound,
-      spawnSparkles,
+      queueFolderFx,
+      fx,
+      selectedSubjectId,
       addAuditLog,
       completeSubmission,
       announce,
@@ -1333,7 +1419,16 @@ export const ClinicalTrialChaos: React.FC = () => {
     );
   }, [signatureModal, targetRoutingStation, submitDossier]);
 
-  // 16. Canvas 2D Simulation Renderer
+  // 16. Canvas 2D floor scene renderer (#1521)
+  const hotkeyStations = useMemo(
+    () => [...stations].sort((a, b) => a.positionIndex - b.positionIndex),
+    [stations]
+  );
+  const acceptingDomains = useMemo(() => {
+    if (playState !== "playing" || !activeSubject) return [];
+    const readiness = getRoutingReadiness(activeSubject, stations);
+    return readiness.unresolvedCount === 0 ? readiness.matchingDomains : [];
+  }, [playState, activeSubject, stations]);
   const renderConveyorCanvas = useCallback(
     (
       ctx: CanvasRenderingContext2D,
@@ -1341,14 +1436,29 @@ export const ClinicalTrialChaos: React.FC = () => {
       height: number,
       auditorState: AuditorState,
       subjects: ClinicalSubject[],
-      particles: Particle[]
+      still = false
     ) =>
-      drawConveyor(ctx, width, height, auditorState, subjects, particles, {
+      drawConveyor(ctx, width, height, auditorState, subjects, {
         selectedSubjectId,
+        officeId: office.id,
         floorColor: office.floorColor,
         outfit,
+        stations: hotkeyStations,
+        acceptingDomains,
+        beltOffset: beltOffsetRef.current,
+        now: performance.now(),
+        calm: still || prefersCalmMotion(),
+        anim: floorAnimRef.current,
+        pixelRatio: conveyorViewRef.current.scale,
       }),
-    [selectedSubjectId, office.floorColor, outfit]
+    [
+      selectedSubjectId,
+      office.id,
+      office.floorColor,
+      outfit,
+      hotkeyStations,
+      acceptingDomains,
+    ]
   );
 
   useEffect(() => {
@@ -1359,9 +1469,8 @@ export const ClinicalTrialChaos: React.FC = () => {
     const resizeCanvas = () => {
       const displayWidth = Math.floor(canvas.getBoundingClientRect().width);
       if (displayWidth <= 0) return;
-      const logicalWidth = displayWidth < 768 ? displayWidth : 760;
-      const logicalHeight =
-        displayWidth < 768 ? Math.round((displayWidth * 5) / 13) : 150;
+      const { width: logicalWidth, height: logicalHeight } =
+        getConveyorLogicalSize(displayWidth);
       const resolution = computeCanvasResolution(
         logicalWidth,
         logicalHeight,
@@ -1587,9 +1696,19 @@ export const ClinicalTrialChaos: React.FC = () => {
       auditorRef.current = tick.auditor;
       powerUpsRef.current = tick.powerUps;
 
+      if (!prefersCalmMotion())
+        beltOffsetRef.current += deltaSeconds * BELT_SPEED;
+
       if (tick.expired.length > 0) {
         uiNeedsSync = true;
         tick.expired.forEach((exp) => {
+          queueFolderFx(
+            "expire",
+            exp,
+            null,
+            selectedSubjectIdRef.current,
+            stationsRef.current
+          );
           triggerSoundRef.current("error");
           addAuditLogRef.current(
             formatExpiryLog(exp),
@@ -1775,8 +1894,7 @@ export const ClinicalTrialChaos: React.FC = () => {
             view.width,
             view.height,
             auditorRef.current,
-            conveyorSubjectsRef.current,
-            particlesRef.current
+            conveyorSubjectsRef.current
           );
         }
       }
@@ -1786,6 +1904,14 @@ export const ClinicalTrialChaos: React.FC = () => {
       maxDeltaMs: Infinity,
     }
   );
+
+  // 17a0. The verdict stamp lands on a phase lock or a shift end: one small
+  // shake as it presses down (#1521). useArcadeFx skips it when calm.
+  useEffect(() => {
+    if (playState !== "phase_cleared" && playState !== "game_over") return;
+    const timer = setTimeout(() => fx.shake(5), 380);
+    return () => clearTimeout(timer);
+  }, [playState, fx]);
 
   // 17a. Keep hotkeys working: return focus to the board when a dialog closes
   useEffect(() => {
@@ -1869,7 +1995,7 @@ export const ClinicalTrialChaos: React.FC = () => {
         view.height,
         auditor,
         conveyorSubjects,
-        particlesRef.current
+        true
       );
     }
   }, [
@@ -2084,29 +2210,43 @@ export const ClinicalTrialChaos: React.FC = () => {
     );
   }
 
-  const handleCanvasClickOrTouch = (clientX: number, clientY: number) => {
+  // A tap on a folder selects it; a tap on a chute routes the active folder
+  // there, exactly like its station button. Dragging only selects.
+  const sortedStations = hotkeyStations;
+
+  const handleCanvasClickOrTouch = (
+    clientX: number,
+    clientY: number,
+    allowRoute = true
+  ) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
     const view = conveyorViewRef.current;
     const x = (clientX - rect.left) * (view.width / rect.width);
     const y = (clientY - rect.top) * (view.height / rect.height);
-    const { subjectTop, subjectHeight, visibleSlots, slotWidth } =
-      getConveyorGeometry(view.width, view.height);
-
-    if (y >= subjectTop && y <= subjectTop + subjectHeight) {
-      getVisibleSubjects(
-        conveyorSubjects,
-        selectedSubjectId,
-        visibleSlots
-      ).forEach((subj, idx) => {
-        const px = 28 + idx * slotWidth;
-        if (x >= px && x <= px + slotWidth - 10) {
-          setSelectedSubjectId(subj.id);
-          triggerSound("validate");
-        }
-      });
+    const geometry = getConveyorGeometry(view.width, view.height);
+    const visible = getVisibleSubjects(
+      conveyorSubjects,
+      selectedSubjectId,
+      geometry.visibleSlots
+    );
+    const folderIndex = getFolderIndexAt(geometry, x, y, visible.length);
+    if (folderIndex >= 0) {
+      setSelectedSubjectId(visible[folderIndex].id);
+      triggerSound("validate");
+      return;
     }
+    if (!allowRoute || playState !== "playing" || isPaused) return;
+    const chuteIndex = getChuteIndexAt(
+      geometry,
+      view.width,
+      sortedStations.length,
+      x,
+      y
+    );
+    if (chuteIndex >= 0)
+      handleInitiateSubmission(sortedStations[chuteIndex].id);
   };
 
   const preventCancelable = (e: React.SyntheticEvent) => {
@@ -2137,7 +2277,7 @@ export const ClinicalTrialChaos: React.FC = () => {
       const now = Date.now();
       if (now - lastTouchTimeRef.current < 100) return;
       lastPointerTimeRef.current = now;
-      handleCanvasClickOrTouch(e.clientX, e.clientY);
+      handleCanvasClickOrTouch(e.clientX, e.clientY, false);
     }
   };
 
@@ -2186,7 +2326,7 @@ export const ClinicalTrialChaos: React.FC = () => {
       lastTouchTimeRef.current = now;
       const touch = e.touches[0];
       if (touch) {
-        handleCanvasClickOrTouch(touch.clientX, touch.clientY);
+        handleCanvasClickOrTouch(touch.clientX, touch.clientY, false);
       }
     }
   };
@@ -2211,10 +2351,6 @@ export const ClinicalTrialChaos: React.FC = () => {
     }
     handleCanvasClickOrTouch(e.clientX, e.clientY);
   };
-
-  const sortedStations = [...stations].sort(
-    (a, b) => a.positionIndex - b.positionIndex
-  );
 
   // Derived guidance for the "what do I do next" flow: fix → route → sign
   // The header counts this phase's locks against this phase's target (#1673).
@@ -2316,6 +2452,196 @@ export const ClinicalTrialChaos: React.FC = () => {
     ) : null;
   const sponsorEmailCard = renderSponsorEmailCard(false);
 
+  // A protocol amendment in force, shown with the work it changes.
+  const amendmentBanner =
+    playState === "playing" && activeAmendment && activeAmendment.active ? (
+      <div
+        role="status"
+        className="overflow-hidden rounded-xl border border-amber-500/40 bg-amber-500/5"
+      >
+        <div className="flex items-start justify-between gap-3 px-3 py-2">
+          <div className="flex min-w-0 items-start gap-2">
+            <IconArrowsShuffle
+              className="mt-0.5 h-4 w-4 shrink-0 text-amber-400"
+              aria-hidden="true"
+            />
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-amber-300 break-words">
+                Protocol amendment: {activeAmendment.title}
+              </p>
+              <p className="text-[11px] text-zinc-400 break-words">
+                {activeAmendment.description}
+              </p>
+            </div>
+          </div>
+          <span className="shrink-0 text-xs font-bold tabular-nums text-amber-300">
+            {Math.ceil(activeAmendment.timeRemaining)}s
+          </span>
+        </div>
+        <div className="h-1 bg-zinc-800">
+          {/* Committed once per displayed second: glide for the whole second (#1639). */}
+          <div
+            className="h-full bg-amber-500 transition-[width] duration-1000 ease-linear motion-reduce:transition-none"
+            style={{
+              width: `${Math.max(0, (activeAmendment.timeRemaining / activeAmendment.durationSeconds) * 100)}%`,
+            }}
+          />
+        </div>
+      </div>
+    ) : null;
+
+  // The two ways to lose, as segmented gauges with their losing zone marked.
+  const GAUGE_SEGMENTS = 20;
+  const suspicionLit = Math.round(
+    (clamp(auditor.suspicion, 0, 100) / 100) * GAUGE_SEGMENTS
+  );
+  const suspicionTone =
+    auditor.suspicion > 75
+      ? "rose"
+      : auditor.suspicion > 40
+        ? "amber"
+        : "emerald";
+  const moodLit = Math.round(
+    (clamp(sponsor.mood, 0, 100) / 100) * GAUGE_SEGMENTS
+  );
+  const moodTone =
+    sponsor.mood < 25 ? "rose" : sponsor.mood < 45 ? "amber" : "emerald";
+  const GAUGE_FILL = {
+    rose: "bg-rose-500",
+    amber: "bg-amber-500",
+    emerald: "bg-emerald-500",
+  } as const;
+  const GAUGE_TEXT = {
+    rose: "text-rose-400",
+    amber: "text-amber-300",
+    emerald: "text-emerald-400",
+  } as const;
+  const pressureMeters = (
+    <>
+      <div className="min-w-0 rounded-xl border border-white/[0.08] bg-[#13151a] px-2.5 py-2">
+        <div className="flex items-center justify-between gap-2 text-[10px]">
+          <span className="flex min-w-0 items-center gap-1.5">
+            <IconShieldCheck
+              className={`h-3.5 w-3.5 shrink-0 ${
+                auditor.suspicion > 60 ? "text-rose-400" : "text-zinc-400"
+              }`}
+              aria-hidden="true"
+            />
+            <span className="truncate font-bold uppercase tracking-wider text-zinc-300">
+              FDA
+              <span className="hidden sm:inline"> AUDITOR SCRUTINY</span>
+            </span>
+          </span>
+          <span
+            className={`shrink-0 text-sm font-bold tabular-nums ${GAUGE_TEXT[suspicionTone]}`}
+          >
+            {Math.round(auditor.suspicion)}%
+          </span>
+        </div>
+        <div
+          className="mt-1.5 flex h-2.5 gap-[2px]"
+          role="meter"
+          aria-label="FDA auditor suspicion"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(auditor.suspicion)}
+        >
+          {Array.from({ length: GAUGE_SEGMENTS }, (_, i) => (
+            <span
+              key={i}
+              aria-hidden="true"
+              className={`min-w-0 flex-1 rounded-[1px] ${
+                i < suspicionLit
+                  ? GAUGE_FILL[suspicionTone]
+                  : i >= GAUGE_SEGMENTS * 0.75
+                    ? "bg-rose-500/20"
+                    : "bg-zinc-800"
+              }`}
+            />
+          ))}
+        </div>
+        <div className="mt-1.5 flex items-center justify-between gap-2">
+          <span
+            className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold ${
+              auditor.behavior === "issuing_483"
+                ? "bg-rose-600 text-white"
+                : auditor.behavior === "suspicious"
+                  ? "bg-amber-500/15 text-amber-300"
+                  : "bg-zinc-800 text-zinc-400"
+            }`}
+          >
+            {AUDITOR_BEHAVIOR_LABELS[auditor.behavior]}
+          </span>
+          <span className="hidden truncate text-[9px] text-zinc-500 sm:inline">
+            100% = Form 483
+          </span>
+        </div>
+      </div>
+
+      <div className="min-w-0 rounded-xl border border-white/[0.08] bg-[#13151a] px-2.5 py-2">
+        <div className="flex items-center justify-between gap-2 text-[10px]">
+          <span className="flex min-w-0 items-center gap-1.5">
+            <IconMail
+              className={`h-3.5 w-3.5 shrink-0 ${
+                sponsor.mood < 25 ? "text-rose-400" : "text-zinc-400"
+              }`}
+              aria-hidden="true"
+            />
+            <span className="truncate font-bold uppercase tracking-wider text-zinc-300">
+              SPONSOR
+              <span className="hidden sm:inline"> SATISFACTION</span>
+            </span>
+          </span>
+          <span className="flex shrink-0 items-center gap-2">
+            <span
+              className="hidden text-[10px] tabular-nums text-zinc-400 sm:inline"
+              title="Shortcuts you took to please the sponsor. The inspector will find them."
+            >
+              🦴 {sponsor.skeletons.length}
+            </span>
+            <span
+              className={`text-sm font-bold tabular-nums ${GAUGE_TEXT[moodTone]}`}
+            >
+              {Math.round(sponsor.mood)}%
+            </span>
+          </span>
+        </div>
+        <div
+          className="mt-1.5 flex h-2.5 gap-[2px]"
+          role="meter"
+          aria-label="Sponsor satisfaction"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(sponsor.mood)}
+        >
+          {Array.from({ length: GAUGE_SEGMENTS }, (_, i) => (
+            <span
+              key={i}
+              aria-hidden="true"
+              className={`min-w-0 flex-1 rounded-[1px] ${
+                i < moodLit
+                  ? GAUGE_FILL[moodTone]
+                  : i < GAUGE_SEGMENTS * 0.25
+                    ? "bg-rose-500/20"
+                    : "bg-zinc-800"
+              }`}
+            />
+          ))}
+        </div>
+        <p className="mt-1.5 truncate text-[10px] italic text-zinc-400">
+          {getSponsorMoodLabel(sponsor.mood)}
+        </p>
+      </div>
+    </>
+  );
+
+  // Phase lock or shift end: the inspection verdict as a stamp (#1521).
+  const verdictStamp = getVerdictStamp(
+    playState,
+    lastBimoReport?.verdict,
+    gameOverReason
+  );
+
   return (
     <div
       ref={containerRef}
@@ -2324,8 +2650,8 @@ export const ClinicalTrialChaos: React.FC = () => {
       onKeyDown={handleKeyDown}
       className={`@container relative w-full font-mono focus:outline-none transition-all ${
         isFullscreen
-          ? "fixed inset-0 z-50 w-full h-[100dvh] max-h-[100dvh] max-w-none rounded-none border-none bg-black p-3 sm:p-6 overflow-y-auto select-none"
-          : "rounded-2xl border border-blue-500/30 bg-zinc-950 p-2.5 sm:p-4 md:p-6 shadow-2xl focus:ring-1 focus:ring-brand-cyan"
+          ? "fixed inset-0 z-50 w-full h-[100dvh] max-h-[100dvh] max-w-none rounded-none border-none bg-[#0d0e11] p-3 sm:p-4 overflow-y-auto select-none"
+          : "rounded-2xl border border-white/[0.08] bg-[#0d0e11] p-2.5 sm:p-4 focus-visible:ring-1 focus-visible:ring-amber-500/50"
       }`}
     >
       <FullscreenButton
@@ -2341,7 +2667,7 @@ export const ClinicalTrialChaos: React.FC = () => {
       <h2 id="clinical-chaos-heading" className="sr-only">
         Clinical Trial Chaos: CDISC Compliance
       </h2>
-      <div className="flex flex-wrap items-center gap-2 border-b border-zinc-800 pb-3 text-xs">
+      <div className="flex flex-wrap items-center gap-2 border-b border-zinc-800 pb-2 text-xs">
         <div className="relative flex min-h-[44px] items-center gap-2 rounded-lg border border-zinc-800 bg-[#13151a] px-2.5 sm:px-3">
           <IconTrophy className="h-4 w-4 text-amber-400" aria-hidden="true" />
           <span className="sr-only text-[10px] uppercase text-zinc-400 sm:not-sr-only">
@@ -2487,7 +2813,7 @@ export const ClinicalTrialChaos: React.FC = () => {
       </div>
 
       {/* View switcher */}
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
         <div className="flex gap-1 overflow-x-auto" aria-label="Game views">
           {(
             [
@@ -2598,500 +2924,412 @@ export const ClinicalTrialChaos: React.FC = () => {
         )}
       </div>
 
-      {/* Board and pressure meters: side by side on a wide cabinet so the
-          work below still fits a 900px-tall screen (#1327). */}
-      <div
-        className={`mt-3 grid grid-cols-1 gap-3 ${
-          activeTab === "conveyor" && playState !== "idle"
-            ? "@5xl:grid-cols-[minmax(0,1fr)_20rem]"
-            : ""
-        }`}
-      >
-        {/* The core tension: FDA auditor vs sponsor */}
-        {playState !== "idle" && (
-          <div className="grid grid-cols-2 gap-2 @5xl:col-start-2 @5xl:row-start-1 @5xl:grid-cols-1 @5xl:content-center">
-            <div className="min-w-0 rounded-xl border border-zinc-800 bg-[#13151a] p-3">
-              <div className="flex items-center justify-between gap-2 text-xs">
-                <span className="flex min-w-0 items-center gap-2">
-                  <IconShieldCheck
-                    className={`h-4 w-4 shrink-0 ${
-                      auditor.suspicion > 60 ? "text-rose-400" : "text-zinc-400"
-                    }`}
-                    aria-hidden="true"
-                  />
-                  <span className="truncate font-bold text-zinc-300">
-                    FDA
-                    <span className="hidden sm:inline"> AUDITOR SCRUTINY</span>
-                  </span>
-                </span>
-                <span className="flex shrink-0 items-center gap-2">
-                  <span
-                    className={`font-bold tabular-nums ${
-                      auditor.suspicion > 75
-                        ? "text-rose-400"
-                        : auditor.suspicion > 40
-                          ? "text-amber-300"
-                          : "text-emerald-400"
-                    }`}
-                  >
-                    {Math.round(auditor.suspicion)}%
-                  </span>
-                </span>
-              </div>
-              <div
-                className="relative mt-2 h-2 overflow-hidden rounded-full bg-zinc-800"
-                role="meter"
-                aria-label="FDA auditor suspicion"
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-valuenow={Math.round(auditor.suspicion)}
-              >
-                <div
-                  aria-hidden="true"
-                  className="absolute inset-y-0 right-0 w-1/4 bg-rose-500/15"
-                />
-                <div
-                  className={`relative h-full rounded-full transition-[width] duration-300 ${
-                    auditor.suspicion > 75
-                      ? "bg-rose-500"
-                      : auditor.suspicion > 40
-                        ? "bg-amber-500"
-                        : "bg-emerald-500"
-                  }`}
-                  style={{ width: `${Math.min(100, auditor.suspicion)}%` }}
-                />
-              </div>
-              <div className="mt-1.5 flex items-center gap-2">
-                <span
-                  className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold ${
-                    auditor.behavior === "issuing_483"
-                      ? "bg-rose-600 text-white"
-                      : auditor.behavior === "suspicious"
-                        ? "bg-amber-500/15 text-amber-300"
-                        : "bg-zinc-800 text-zinc-400"
-                  }`}
-                >
-                  {AUDITOR_BEHAVIOR_LABELS[auditor.behavior]}
-                </span>
-                <p className="hidden min-w-0 truncate text-[10px] text-zinc-400 sm:block @5xl:whitespace-normal">
-                  Bad data and expired subjects raise it. 100% = Form 483.
-                </p>
-              </div>
-            </div>
-
-            <div className="min-w-0 rounded-xl border border-zinc-800 bg-[#13151a] p-3">
-              <div className="flex items-center justify-between gap-2 text-xs">
-                <span className="flex min-w-0 items-center gap-2">
-                  <IconMail
-                    className={`h-4 w-4 shrink-0 ${
-                      sponsor.mood < 25 ? "text-rose-400" : "text-zinc-400"
-                    }`}
-                    aria-hidden="true"
-                  />
-                  <span className="truncate font-bold text-zinc-300">
-                    SPONSOR
-                    <span className="hidden sm:inline"> SATISFACTION</span>
-                  </span>
-                </span>
-                <span className="flex shrink-0 items-center gap-2">
-                  <span
-                    className="hidden text-[10px] tabular-nums text-zinc-400 sm:inline"
-                    title="Shortcuts you took to please the sponsor. The inspector will find them."
-                  >
-                    🦴 {sponsor.skeletons.length}
-                  </span>
-                  <span
-                    className={`font-bold tabular-nums ${
-                      sponsor.mood < 25
-                        ? "text-rose-400"
-                        : sponsor.mood < 45
-                          ? "text-amber-300"
-                          : "text-emerald-400"
-                    }`}
-                  >
-                    {Math.round(sponsor.mood)}%
-                  </span>
-                </span>
-              </div>
-              <div
-                className="relative mt-2 h-2 overflow-hidden rounded-full bg-zinc-800"
-                role="meter"
-                aria-label="Sponsor satisfaction"
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-valuenow={Math.round(sponsor.mood)}
-              >
-                <div
-                  aria-hidden="true"
-                  className="absolute inset-y-0 left-0 w-1/4 bg-rose-500/15"
-                />
-                <div
-                  className={`relative h-full rounded-full transition-[width] duration-300 ${
-                    sponsor.mood >= 45
-                      ? "bg-emerald-500"
-                      : sponsor.mood >= 25
-                        ? "bg-amber-500"
-                        : "bg-rose-500"
-                  }`}
-                  style={{ width: `${Math.round(sponsor.mood)}%` }}
-                />
-              </div>
-              <p className="mt-1.5 truncate py-0.5 text-[10px] italic text-zinc-400">
-                {getSponsorMoodLabel(sponsor.mood)}
-              </p>
-            </div>
-          </div>
-        )}
-        {activeTab === "conveyor" && (
-          <div className="relative rounded-xl @5xl:col-start-1 @5xl:row-start-1 border border-zinc-800 bg-black overflow-hidden">
-            <canvas
-              ref={canvasRef}
-              width={760}
-              height={150}
-              onPointerDown={handleCanvasPointerDown}
-              onPointerMove={handleCanvasPointerMove}
-              onPointerUp={handleCanvasPointerUp}
-              onPointerCancel={handleCanvasPointerCancel}
-              onTouchStart={handleCanvasTouchStart}
-              onTouchMove={handleCanvasTouchMove}
-              onTouchEnd={handleCanvasTouchEnd}
-              onTouchCancel={handleCanvasTouchCancel}
-              onClick={handleCanvasClick}
-              style={{ touchAction: "none" }}
-              role="application"
-              aria-label="Clinical Trial Chaos Simulation Canvas. Left and right arrows change the selected subject, Enter takes the next step, and Tab moves to the game's other controls."
-              tabIndex={0}
-              className="block w-full aspect-[13/5] cursor-pointer touch-none focus:outline-none focus:ring-2 focus:ring-emerald-500/50 md:aspect-[760/150]"
-            />
-
-            {/* Off-screen Accessible DOM Fallback Subtree */}
-            <div
-              className="sr-only"
-              aria-label="Clinical Trial Chaos Accessible Subtree"
-            >
-              <fieldset>
-                <legend>
-                  Clinical Trial Chaos SDTM Simulator State and Controls
-                </legend>
-
-                <div
-                  role="group"
-                  aria-label="Clinical Trial Telemetry and Status"
-                >
-                  <output htmlFor="clinical-score">
-                    Score: {scoreState.score}
-                  </output>
-                  <output htmlFor="clinical-highscore">
-                    High Score: {effectiveHighScore}
-                  </output>
-                  <output htmlFor="clinical-phase">Phase: {phase} of 3</output>
-                  <output htmlFor="clinical-playstate">
-                    Play State: {playState}
-                  </output>
-                  <output htmlFor="clinical-paused">
-                    Shift clocks:{" "}
-                    {playState !== "playing"
-                      ? "stopped"
-                      : isPaused
-                        ? "paused"
-                        : isManualOpen
-                          ? "paused while the Field Manual is open"
-                          : "running"}
-                  </output>
-                  <output htmlFor="clinical-auditor">
-                    BIMO Auditor Behavior: {auditor.behavior} (Suspicion:{" "}
-                    {Math.round(auditor.suspicion)}%)
-                  </output>
-                  <output htmlFor="clinical-protocol">
-                    Protocol: {activeProtocol?.protocolId || "P-001"} v
-                    {activeProtocol?.version || "1.0"}
-                  </output>
-                  <output htmlFor="clinical-active-subjects">
-                    Active Subjects on Conveyor: {conveyorSubjects.length}
-                  </output>
-                </div>
-
-                <div
-                  role="group"
-                  aria-label="Interactive Clinical Trial Actions"
-                >
-                  <button
-                    type="button"
-                    onClick={() =>
-                      playState === "phase_cleared"
-                        ? startGame(
-                            "campaign",
-                            (phase < 3 ? phase + 1 : 1) as GamePhase
-                          )
-                        : startGame(gameMode, 1)
-                    }
-                    disabled={playState === "playing"}
-                  >
-                    {playState === "phase_cleared"
-                      ? `Start Phase ${phase < 3 ? phase + 1 : 1}`
-                      : "Start Phase 1"}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={togglePause}
-                    disabled={playState !== "playing"}
-                    aria-pressed={isPaused}
-                  >
-                    {isPaused ? "Resume Shift" : "Pause Shift"} (P)
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setGameMode("campaign");
-                      announce("Switched mode to Campaign", "polite");
-                    }}
-                    aria-pressed={gameMode === "campaign"}
-                  >
-                    Campaign Mode
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setGameMode("endless");
-                      announce("Switched mode to Endless BIMO Audit", "polite");
-                    }}
-                    aria-pressed={gameMode === "endless"}
-                  >
-                    Endless BIMO Audit Mode
-                  </button>
-
-                  {/* Active Conveyor Subject Controls */}
-                  {conveyorSubjects.map((sub) => (
-                    <div
-                      key={sub.id}
-                      id={`sub-${sub.id}`}
-                      role="group"
-                      aria-label={`Subject ${sub.subjectLabel} Controls`}
-                    >
-                      <output htmlFor={`sub-${sub.id}`}>
-                        Subject {sub.subjectLabel} ({sub.studySite}): Time
-                        Remaining {Math.round(sub.timeRemaining)}s
-                      </output>
-                      {sub.observations.map((obs) => (
-                        <button
-                          key={obs.id}
-                          type="button"
-                          onClick={() => {
-                            setValidatingObs({
-                              subjectId: sub.id,
-                              obs,
-                              selectedChoice: undefined,
-                              feedback: undefined,
-                            });
-                            announce(
-                              `Selected observation ${obs.destination} for Subject ${sub.subjectLabel}`,
-                              "polite"
-                            );
-                          }}
-                        >
-                          Inspect Observation: {obs.destination} -{" "}
-                          {obs.rawValue}
-                        </button>
-                      ))}
-                    </div>
-                  ))}
-
-                  {/* These use the same action and readiness rules as the visible lifelines. */}
-                  {(
-                    [
-                      ["fda-coffee-break", "Coffee Break"],
-                      ["auto-clean", "Auto Clean"],
-                      ["query-extension", "Query Extension"],
-                      ["fast-sign", "Fast-Track"],
-                    ] as const
-                  ).map(([type, label]) => {
-                    const refusal = getPowerUpRefusal(
-                      powerUps,
-                      type,
-                      playState === "playing",
-                      activeSubject
-                    );
-                    return (
-                      <button
-                        key={type}
-                        type="button"
-                        onClick={() => triggerPowerUp(type)}
-                        disabled={refusal !== null}
-                      >
-                        Activate {label} ({powerUps[type].charge} of{" "}
-                        {powerUps[type].maxCharge} charge)
-                        {refusal === "nothing_to_clean" ||
-                        refusal === "no_dossier"
-                          ? `: ${POWER_UP_REFUSAL_LABELS[refusal]}`
-                          : ""}
-                      </button>
-                    );
-                  })}
-                </div>
-              </fieldset>
-            </div>
-
-            {playState === "playing" && sponsor.activeRequest && (
-              <div className="absolute inset-x-2 top-2 hidden max-h-[calc(100%-1rem)] overflow-y-auto rounded-xl bg-[#13151a] shadow-2xl @5xl:block">
-                {renderSponsorEmailCard(true)}
-              </div>
-            )}
-
-            {/* Canvas status caption while the conveyor is stopped */}
-            {playState !== "playing" && (
-              <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/55">
-                <span className="rounded-full border border-zinc-700 bg-[#0d0e11]/90 px-3 py-1 text-[11px] text-zinc-300">
-                  {playState === "idle"
-                    ? "Conveyor idle · clock in below"
-                    : playState === "phase_cleared"
-                      ? "Phase cleared · conveyor stopped"
-                      : "Shift over · conveyor stopped"}
-                </span>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Active Protocol Amendment Banner */}
-      {playState === "playing" && activeAmendment && activeAmendment.active && (
-        <div
-          role="status"
-          className="mt-3 overflow-hidden rounded-xl border border-amber-500/40 bg-amber-500/5"
-        >
-          <div className="flex items-start justify-between gap-3 p-3">
-            <div className="flex min-w-0 items-start gap-2">
-              <IconArrowsShuffle
-                className="mt-0.5 h-4 w-4 shrink-0 text-amber-400"
-                aria-hidden="true"
-              />
-              <div className="min-w-0">
-                <p className="text-xs font-bold text-amber-300 break-words">
-                  Protocol amendment: {activeAmendment.title}
-                </p>
-                <p className="text-[11px] text-zinc-400 break-words">
-                  {activeAmendment.description}
-                </p>
-              </div>
-            </div>
-            <span className="shrink-0 text-xs font-bold tabular-nums text-amber-300">
-              {Math.ceil(activeAmendment.timeRemaining)}s
-            </span>
-          </div>
-          <div className="h-1 bg-zinc-800">
-            {/* Committed once per displayed second: glide for the whole second (#1639). */}
-            <div
-              className="h-full bg-amber-500 transition-[width] duration-1000 ease-linear motion-reduce:transition-none"
-              style={{
-                width: `${Math.max(0, (activeAmendment.timeRemaining / activeAmendment.durationSeconds) * 100)}%`,
-              }}
-            />
-          </div>
-        </div>
+      {/* Other views keep the two pressure meters and the amendment in view. */}
+      {activeTab !== "conveyor" && playState !== "idle" && (
+        <div className="mt-3 grid grid-cols-2 gap-2">{pressureMeters}</div>
+      )}
+      {activeTab !== "conveyor" && amendmentBanner && (
+        <div className="mt-3">{amendmentBanner}</div>
       )}
 
-      {/* TAB 1: Conveyor Floor View */}
+      {/* TAB 1: the floor (#1521). The belt and its chutes fill the top, the
+          active CRF sits on a clipboard below, and the queue, lifelines and
+          meters live in a slim side rail, so the whole shift fits one
+          1280x800 screen. */}
       {activeTab === "conveyor" && (
-        <>
-          {/* HTML5 Canvas Simulation */}
-
-          {playState === "playing" ? (
-            <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-12 lg:items-start">
-              {/* Mobile: urgent sponsor email sits above the work */}
-              {sponsorEmailCard && (
-                <div className="lg:hidden">{sponsorEmailCard}</div>
-              )}
-
-              {/* Left column: queue + active CRF */}
-              <section
-                aria-labelledby="cc-dossier-title"
-                className="min-w-0 rounded-xl border border-zinc-800 bg-[#13151a] p-3 sm:p-4 lg:col-span-7"
+        <div
+          className={`mt-2 grid grid-cols-1 gap-3 ${
+            playState !== "idle" ? "@3xl:grid-cols-[minmax(0,1fr)_15.5rem]" : ""
+          }`}
+        >
+          <div className="flex min-w-0 flex-col gap-2">
+            <div className="mx-auto w-full max-w-[56rem]">
+              <div
+                ref={fxStageRef}
+                className="relative isolate overflow-hidden rounded-xl border border-white/[0.08] bg-[#0d0e11]"
               >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
-                    Queue · {conveyorSubjects.length}/{MAX_CONVEYOR_SUBJECTS}
-                  </span>
-                  <span className="hidden text-[10px] text-zinc-400 sm:inline">
-                    ← → to cycle
-                  </span>
+                <canvas
+                  ref={canvasRef}
+                  width={760}
+                  height={260}
+                  onPointerDown={handleCanvasPointerDown}
+                  onPointerMove={handleCanvasPointerMove}
+                  onPointerUp={handleCanvasPointerUp}
+                  onPointerCancel={handleCanvasPointerCancel}
+                  onTouchStart={handleCanvasTouchStart}
+                  onTouchMove={handleCanvasTouchMove}
+                  onTouchEnd={handleCanvasTouchEnd}
+                  onTouchCancel={handleCanvasTouchCancel}
+                  onClick={handleCanvasClick}
+                  style={{ touchAction: "none" }}
+                  role="application"
+                  aria-label="Clinical Trial Chaos floor. Tap a folder to select it or a chute to route the active folder. Left and right arrows change the selected subject, Enter takes the next step, and Tab moves to the game's other controls."
+                  tabIndex={0}
+                  className="block w-full aspect-[13/5] cursor-pointer touch-none focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/60 md:aspect-[760/260]"
+                />
+
+                {/* Off-screen Accessible DOM Fallback Subtree */}
+                <div
+                  className="sr-only"
+                  aria-label="Clinical Trial Chaos Accessible Subtree"
+                >
+                  <fieldset>
+                    <legend>
+                      Clinical Trial Chaos SDTM Simulator State and Controls
+                    </legend>
+
+                    <div
+                      role="group"
+                      aria-label="Clinical Trial Telemetry and Status"
+                    >
+                      <output htmlFor="clinical-score">
+                        Score: {scoreState.score}
+                      </output>
+                      <output htmlFor="clinical-highscore">
+                        High Score: {effectiveHighScore}
+                      </output>
+                      <output htmlFor="clinical-phase">
+                        Phase: {phase} of 3
+                      </output>
+                      <output htmlFor="clinical-playstate">
+                        Play State: {playState}
+                      </output>
+                      <output htmlFor="clinical-paused">
+                        Shift clocks:{" "}
+                        {playState !== "playing"
+                          ? "stopped"
+                          : isPaused
+                            ? "paused"
+                            : isManualOpen
+                              ? "paused while the Field Manual is open"
+                              : "running"}
+                      </output>
+                      <output htmlFor="clinical-auditor">
+                        BIMO Auditor Behavior: {auditor.behavior} (Suspicion:{" "}
+                        {Math.round(auditor.suspicion)}%)
+                      </output>
+                      <output htmlFor="clinical-protocol">
+                        Protocol: {activeProtocol?.protocolId || "P-001"} v
+                        {activeProtocol?.version || "1.0"}
+                      </output>
+                      <output htmlFor="clinical-active-subjects">
+                        Active Subjects on Conveyor: {conveyorSubjects.length}
+                      </output>
+                    </div>
+
+                    <div
+                      role="group"
+                      aria-label="Interactive Clinical Trial Actions"
+                    >
+                      <button
+                        type="button"
+                        onClick={() =>
+                          playState === "phase_cleared"
+                            ? startGame(
+                                "campaign",
+                                (phase < 3 ? phase + 1 : 1) as GamePhase
+                              )
+                            : startGame(gameMode, 1)
+                        }
+                        disabled={playState === "playing"}
+                      >
+                        {playState === "phase_cleared"
+                          ? `Start Phase ${phase < 3 ? phase + 1 : 1}`
+                          : "Start Phase 1"}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={togglePause}
+                        disabled={playState !== "playing"}
+                        aria-pressed={isPaused}
+                      >
+                        {isPaused ? "Resume Shift" : "Pause Shift"} (P)
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setGameMode("campaign");
+                          announce("Switched mode to Campaign", "polite");
+                        }}
+                        aria-pressed={gameMode === "campaign"}
+                      >
+                        Campaign Mode
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setGameMode("endless");
+                          announce(
+                            "Switched mode to Endless BIMO Audit",
+                            "polite"
+                          );
+                        }}
+                        aria-pressed={gameMode === "endless"}
+                      >
+                        Endless BIMO Audit Mode
+                      </button>
+
+                      {/* Active Conveyor Subject Controls */}
+                      {conveyorSubjects.map((sub) => (
+                        <div
+                          key={sub.id}
+                          id={`sub-${sub.id}`}
+                          role="group"
+                          aria-label={`Subject ${sub.subjectLabel} Controls`}
+                        >
+                          <output htmlFor={`sub-${sub.id}`}>
+                            Subject {sub.subjectLabel} ({sub.studySite}): Time
+                            Remaining {Math.round(sub.timeRemaining)}s
+                          </output>
+                          {sub.observations.map((obs) => (
+                            <button
+                              key={obs.id}
+                              type="button"
+                              onClick={() => {
+                                setValidatingObs({
+                                  subjectId: sub.id,
+                                  obs,
+                                  selectedChoice: undefined,
+                                  feedback: undefined,
+                                });
+                                announce(
+                                  `Selected observation ${obs.destination} for Subject ${sub.subjectLabel}`,
+                                  "polite"
+                                );
+                              }}
+                            >
+                              Inspect Observation: {obs.destination} -{" "}
+                              {obs.rawValue}
+                            </button>
+                          ))}
+                        </div>
+                      ))}
+
+                      {/* These use the same action and readiness rules as the visible lifelines. */}
+                      {(
+                        [
+                          ["fda-coffee-break", "Coffee Break"],
+                          ["auto-clean", "Auto Clean"],
+                          ["query-extension", "Query Extension"],
+                          ["fast-sign", "Fast-Track"],
+                        ] as const
+                      ).map(([type, label]) => {
+                        const refusal = getPowerUpRefusal(
+                          powerUps,
+                          type,
+                          playState === "playing",
+                          activeSubject
+                        );
+                        return (
+                          <button
+                            key={type}
+                            type="button"
+                            onClick={() => triggerPowerUp(type)}
+                            disabled={refusal !== null}
+                          >
+                            Activate {label} ({powerUps[type].charge} of{" "}
+                            {powerUps[type].maxCharge} charge)
+                            {refusal === "nothing_to_clean" ||
+                            refusal === "no_dossier"
+                              ? `: ${POWER_UP_REFUSAL_LABELS[refusal]}`
+                              : ""}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </fieldset>
                 </div>
-                <ul className="mt-2 flex gap-2 overflow-x-auto pb-1">
-                  {conveyorSubjects.length === 0 && (
-                    <li className="py-3 text-[11px] text-zinc-400">
-                      Waiting for the next packet from site…
-                    </li>
-                  )}
-                  {conveyorSubjects.map((sub) => {
-                    const left = sub.observations.filter(
-                      (o) => !o.isResolved
-                    ).length;
-                    const ratio =
-                      sub.maxTime > 0 ? sub.timeRemaining / sub.maxTime : 0;
-                    const isSelected = sub.id === activeSubject?.id;
-                    return (
-                      <li key={sub.id} className="shrink-0">
+
+                {/* Kit flash layer for a wrong route (useArcadeFx). */}
+                <div
+                  ref={fxFlashRef}
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0 opacity-0"
+                />
+
+                {playState === "playing" && sponsor.activeRequest && (
+                  <div className="absolute inset-x-2 top-2 hidden max-h-[calc(100%-1rem)] overflow-y-auto rounded-xl bg-[#13151a] shadow-2xl @3xl:block">
+                    {renderSponsorEmailCard(true)}
+                  </div>
+                )}
+
+                {playState === "idle" && (
+                  <div className="pointer-events-none absolute inset-x-0 bottom-2 flex justify-center">
+                    <span className="rounded-full border border-white/[0.08] bg-[#0d0e11]/90 px-3 py-1 text-[11px] text-zinc-300">
+                      Conveyor idle · clock in below
+                    </span>
+                  </div>
+                )}
+
+                {/* Phase lock or shift end: the verdict slams onto the floor. */}
+                {verdictStamp && (
+                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/45">
+                    <div
+                      key={`${playState}-${phase}-${verdictStamp.code}`}
+                      data-testid="cc-verdict-stamp"
+                      role="img"
+                      aria-label={`${verdictStamp.code}: ${verdictStamp.caption}`}
+                      className={`cc-verdict-stamp flex flex-col items-center rounded-lg border-[3px] px-5 py-2 ${
+                        verdictStamp.tone === "good"
+                          ? "border-emerald-400 text-emerald-300"
+                          : verdictStamp.tone === "warn"
+                            ? "border-amber-400 text-amber-300"
+                            : "border-rose-500 text-rose-400"
+                      }`}
+                    >
+                      <span className="text-4xl font-extrabold leading-none tracking-[0.08em]">
+                        {verdictStamp.code}
+                      </span>
+                      <span className="mt-1 text-[10px] font-bold uppercase tracking-[0.18em]">
+                        {verdictStamp.caption}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Station strip: one button per chute, lined up under it. */}
+              {playState === "playing" && (
+                <section aria-label="EDC stations" className="relative mt-1.5">
+                  <h3 className="sr-only">
+                    Route to station, keys 1 to {sortedStations.length}
+                  </h3>
+                  {routingNotice &&
+                    routingNotice.subjectId === activeSubject?.id &&
+                    routingNotice.unresolvedCount ===
+                      routingReadiness.unresolvedCount && (
+                      <p
+                        className={`absolute bottom-full left-[10%] right-0 z-10 mb-1.5 rounded-lg border px-2.5 py-2 text-xs shadow-xl ${
+                          routingNotice.unresolvedCount > 0
+                            ? "border-amber-500/50 bg-[#1f1a10] text-amber-200"
+                            : "border-rose-500/60 bg-[#221214] text-rose-200"
+                        }`}
+                      >
+                        {routingNotice.message}
+                      </p>
+                    )}
+                  <div
+                    className="relative grid gap-1"
+                    style={{
+                      paddingLeft: `${DESK_FRACTION * 100}%`,
+                      gridTemplateColumns: `repeat(${sortedStations.length}, minmax(0, 1fr))`,
+                    }}
+                  >
+                    <span
+                      aria-hidden="true"
+                      className="absolute left-0 top-1/2 w-[10%] -translate-y-1/2 pr-1 text-center text-[9px] font-bold uppercase leading-tight tracking-wider text-zinc-500"
+                    >
+                      Route
+                      <br />
+                      1–{sortedStations.length}
+                    </span>
+                    {sortedStations.map((station, index) => {
+                      const matches =
+                        !!activeSubject &&
+                        routingReadiness.matchingDomains.includes(station.id);
+                      const accepts = matches && flowStep === 2;
+                      const isFlashing = flashStationId === station.id;
+                      return (
                         <button
+                          key={station.id}
                           type="button"
-                          onClick={() => setSelectedSubjectId(sub.id)}
-                          aria-pressed={isSelected}
-                          className={`flex min-h-[56px] w-[7.5rem] flex-col justify-between rounded-lg border p-2 text-left transition active:scale-[0.98] ${
-                            isSelected
-                              ? "border-cyan-400/80 bg-cyan-950/30"
-                              : sub.isSAE
-                                ? "border-rose-500/40 bg-[#0d0e11] hover:border-rose-400"
-                                : "border-zinc-800 bg-[#0d0e11] hover:border-zinc-600"
+                          onClick={() => handleInitiateSubmission(station.id)}
+                          title={`${station.label}: ${station.name}`}
+                          className={`group relative min-h-[48px] min-w-0 overflow-hidden rounded-lg border px-2 pb-1.5 pt-2 text-left transition active:scale-[0.98] ${
+                            isFlashing
+                              ? "border-emerald-400 bg-emerald-500/20"
+                              : accepts
+                                ? "border-emerald-500/70 bg-emerald-500/10"
+                                : matches
+                                  ? "border-amber-500/60 bg-amber-500/10"
+                                  : activeSubject
+                                    ? "border-white/[0.06] bg-[#0d0e11] [&_h4]:text-zinc-400"
+                                    : "border-white/[0.08] bg-[#13151a] hover:border-zinc-600"
                           }`}
                         >
+                          <span
+                            aria-hidden="true"
+                            className="absolute inset-x-0 top-0 h-[3px]"
+                            style={{ backgroundColor: station.color }}
+                          />
                           <span className="flex items-center justify-between gap-1">
-                            <span
-                              className={`text-[11px] font-bold ${
-                                isSelected ? "text-cyan-200" : "text-zinc-200"
-                              }`}
-                            >
-                              {sub.subjectLabel}
+                            <span className="flex min-w-0 items-center gap-1.5">
+                              <kbd className="rounded border border-zinc-700 px-1 text-[10px] text-zinc-400">
+                                {index + 1}
+                              </kbd>
+                              <h4 className="min-w-0 truncate text-xs font-bold text-white">
+                                <span aria-hidden="true">{station.id}</span>
+                                <span className="sr-only">{station.label}</span>
+                              </h4>
                             </span>
-                            {sub.isSAE && (
-                              <span className="rounded bg-rose-500/20 px-1 text-[9px] font-bold text-rose-300">
-                                SAE
-                              </span>
-                            )}
+                            <span
+                              className="shrink-0 text-[10px] font-bold tabular-nums text-emerald-400"
+                              title="CRFs submitted here"
+                            >
+                              <span className="sr-only">Submits:</span>
+                              {station.processedCount}
+                            </span>
                           </span>
                           <span
-                            className={`text-[10px] ${
-                              left > 0 ? "text-amber-300" : "text-emerald-400"
+                            className={`mt-0.5 block truncate text-[9px] ${
+                              accepts
+                                ? "font-bold text-emerald-300"
+                                : matches
+                                  ? "font-bold text-amber-300"
+                                  : "text-zinc-500"
                             }`}
                           >
-                            {left > 0 ? `${left} to fix` : "Ready ✓"}
-                          </span>
-                          <span className="mt-1 block h-1 overflow-hidden rounded-full bg-zinc-800">
-                            {/* Subject clocks commit every half second (whole
-                                and rounded seconds), matching this 500 ms glide (#1639). */}
-                            <span
-                              className={`block h-full transition-[width] duration-500 ease-linear motion-reduce:transition-none ${timerBarColor(ratio)}`}
-                              style={{
-                                width: `${clamp(ratio * 100, 0, 100)}%`,
-                              }}
-                            />
+                            {accepts
+                              ? "Accepts ✓"
+                              : matches
+                                ? "Fix first"
+                                : activeSubject
+                                  ? "Other domain"
+                                  : station.name}
                           </span>
                         </button>
-                      </li>
-                    );
-                  })}
-                </ul>
+                      );
+                    })}
+                  </div>
+                </section>
+              )}
+            </div>
 
+            {amendmentBanner}
+
+            {/* Narrow cabinets: the urgent sponsor email sits above the work */}
+            {playState === "playing" && sponsorEmailCard && (
+              <div className="@3xl:hidden">{sponsorEmailCard}</div>
+            )}
+
+            {playState === "playing" ? (
+              <section
+                aria-labelledby="cc-dossier-title"
+                className="relative min-w-0 rounded-xl border border-white/[0.08] bg-[#13151a] px-3 pb-3 pt-4"
+              >
+                {/* The clipboard's clip. */}
+                <span
+                  aria-hidden="true"
+                  className="absolute left-1/2 top-0 h-3 w-20 -translate-x-1/2 -translate-y-1/2 rounded-md border border-zinc-500/60 bg-gradient-to-b from-zinc-500 to-zinc-700"
+                />
                 {activeSubject ? (
-                  <div className="mt-3 border-t border-zinc-800 pt-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
-                          Active CRF
+                  <div>
+                    {/* The timer stays the header's second child, after the
+                        title block; the stepper sits between them visually. */}
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                      <div className="order-1 min-w-0">
+                        <span className="block truncate text-[10px] text-zinc-400">
+                          <span className="font-bold uppercase tracking-wider">
+                            Active CRF
+                          </span>{" "}
+                          · {activeSubject.studySite}
                         </span>
                         <h3
                           id="cc-dossier-title"
-                          className="flex flex-wrap items-center gap-2 text-base font-bold text-white"
+                          className="flex flex-wrap items-center gap-2 text-base font-bold tracking-[-0.02em] text-white"
                         >
                           {activeSubject.subjectLabel}
                           {activeSubject.isSAE && (
@@ -3100,9 +3338,6 @@ export const ClinicalTrialChaos: React.FC = () => {
                             </span>
                           )}
                         </h3>
-                        <p className="truncate text-[10px] text-zinc-400">
-                          {activeSubject.studySite}
-                        </p>
                         {nextDossierCue?.subjectId === activeSubject.id && (
                           <p className="mt-1 text-[10px] font-bold text-emerald-300">
                             {nextDossierCue.text}
@@ -3110,7 +3345,7 @@ export const ClinicalTrialChaos: React.FC = () => {
                         )}
                       </div>
                       <span
-                        className={`flex shrink-0 items-center gap-1 text-sm font-bold tabular-nums ${
+                        className={`order-3 flex shrink-0 items-center gap-1 text-sm font-bold tabular-nums ${
                           activeSubject.timeRemaining / activeSubject.maxTime <
                           0.25
                             ? "text-rose-400"
@@ -3120,47 +3355,48 @@ export const ClinicalTrialChaos: React.FC = () => {
                         <IconClock className="h-4 w-4" aria-hidden="true" />
                         {Math.ceil(activeSubject.timeRemaining)}s
                       </span>
+                      {/* Fix → Route → Dispatch stepper */}
+                      <ol
+                        className="order-2 ml-auto flex gap-1 text-[10px]"
+                        aria-label="CRF progress"
+                      >
+                        {[
+                          {
+                            label:
+                              flaggedObs.length > 0
+                                ? `Fix (${flaggedObs.length})`
+                                : "Clean",
+                            done: flowStep > 1,
+                            current: flowStep === 1,
+                          },
+                          {
+                            label: "Route",
+                            done: false,
+                            current: flowStep === 2,
+                          },
+                          { label: "Dispatch", done: false, current: false },
+                        ].map((step, i) => (
+                          <li
+                            key={step.label}
+                            aria-current={step.current ? "step" : undefined}
+                            className={`flex items-center gap-1 rounded-md border px-1.5 py-1 ${
+                              step.current
+                                ? "border-amber-500/50 bg-amber-500/10 text-amber-200"
+                                : step.done
+                                  ? "border-emerald-500/30 bg-emerald-500/5 text-emerald-300"
+                                  : "border-white/[0.08] text-zinc-400"
+                            }`}
+                          >
+                            <span className="font-bold tabular-nums">
+                              {step.done ? "✓" : i + 1}
+                            </span>
+                            <span className="whitespace-nowrap">
+                              {step.label}
+                            </span>
+                          </li>
+                        ))}
+                      </ol>
                     </div>
-
-                    {/* Fix → Route → Dispatch stepper */}
-                    <ol
-                      className="mt-3 grid grid-cols-3 gap-1.5 text-[10px]"
-                      aria-label="CRF progress"
-                    >
-                      {[
-                        {
-                          label:
-                            flaggedObs.length > 0
-                              ? `Fix (${flaggedObs.length})`
-                              : "Clean",
-                          done: flowStep > 1,
-                          current: flowStep === 1,
-                        },
-                        {
-                          label: "Route",
-                          done: false,
-                          current: flowStep === 2,
-                        },
-                        { label: "Dispatch", done: false, current: false },
-                      ].map((step, i) => (
-                        <li
-                          key={step.label}
-                          aria-current={step.current ? "step" : undefined}
-                          className={`flex items-center gap-1.5 rounded-md border px-2 py-1.5 ${
-                            step.current
-                              ? "border-amber-500/50 bg-amber-500/10 text-amber-200"
-                              : step.done
-                                ? "border-emerald-500/30 bg-emerald-500/5 text-emerald-300"
-                                : "border-zinc-800 text-zinc-400"
-                          }`}
-                        >
-                          <span className="font-bold tabular-nums">
-                            {step.done ? "✓" : i + 1}
-                          </span>
-                          <span className="truncate">{step.label}</span>
-                        </li>
-                      ))}
-                    </ol>
 
                     {/* Next action */}
                     {nextFlaggedObs ? (
@@ -3172,7 +3408,7 @@ export const ClinicalTrialChaos: React.FC = () => {
                             obs: nextFlaggedObs,
                           })
                         }
-                        className="mt-3 flex min-h-[48px] w-full items-center justify-between gap-3 rounded-lg border border-amber-500/50 bg-amber-500/10 px-3 py-2 text-left transition hover:bg-amber-500/15 active:scale-[0.99]"
+                        className="mt-2 flex min-h-[48px] w-full items-center justify-between gap-3 rounded-lg border border-amber-500/50 bg-amber-500/10 px-3 py-2 text-left transition hover:bg-amber-500/15 active:scale-[0.99]"
                       >
                         <span className="min-w-0 text-xs text-zinc-200">
                           <span className="font-bold text-amber-300">
@@ -3191,7 +3427,7 @@ export const ClinicalTrialChaos: React.FC = () => {
                         </span>
                       </button>
                     ) : (
-                      <div className="mt-3 rounded-lg border border-emerald-500/40 bg-emerald-500/5 p-3">
+                      <div className="mt-2 rounded-lg border border-emerald-500/40 bg-emerald-500/5 p-2.5">
                         <p className="text-xs text-zinc-200">
                           <span className="font-bold text-emerald-300">
                             Clean.
@@ -3222,60 +3458,64 @@ export const ClinicalTrialChaos: React.FC = () => {
                       <section
                         aria-label="First-shift calibration"
                         data-testid="cc-calibration"
-                        className="mt-3 rounded-lg border border-sky-500/40 bg-sky-500/5 p-3"
+                        className="mt-2 rounded-lg border border-blue-400/40 bg-blue-400/5 px-3 py-2"
                       >
-                        <div className="flex flex-wrap items-start justify-between gap-2">
-                          <p className="min-w-0 text-[10px] font-bold uppercase tracking-wider text-sky-300">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="min-w-0 text-[10px] font-bold uppercase tracking-wider text-blue-300">
                             First-shift calibration · clocks paused
                           </p>
+                          <ol
+                            className="flex gap-1 text-[10px]"
+                            aria-label="Calibration steps"
+                          >
+                            {(
+                              [
+                                ["fix", "1 Fix"],
+                                ["route", "2 Route"],
+                                ["sign", "3 Sign"],
+                              ] as const
+                            ).map(([step, label]) => {
+                              const current = calibrationStep === step;
+                              const done =
+                                step === "fix" && calibrationStep === "route";
+                              return (
+                                <li
+                                  key={step}
+                                  aria-current={current ? "step" : undefined}
+                                  className={`rounded-md border px-1.5 py-0.5 ${
+                                    current
+                                      ? "border-blue-300/60 bg-blue-400/15 font-bold text-white"
+                                      : done
+                                        ? "border-emerald-500/30 text-emerald-300"
+                                        : "border-white/[0.08] text-zinc-400"
+                                  }`}
+                                >
+                                  {done ? "✓ " : ""}
+                                  {label}
+                                </li>
+                              );
+                            })}
+                          </ol>
                           <button
                             type="button"
                             onClick={skipCalibration}
-                            className="min-h-[44px] shrink-0 rounded-lg border border-zinc-700 px-3 text-xs font-bold text-zinc-200 hover:border-zinc-500 hover:text-white active:scale-[0.98]"
+                            className="ml-auto min-h-9 shrink-0 rounded-lg border border-zinc-700 px-3 text-xs font-bold text-zinc-200 hover:border-zinc-500 hover:text-white active:scale-[0.98]"
                           >
                             Skip calibration
                           </button>
                         </div>
-                        <ol className="mt-2 space-y-1 text-xs text-zinc-200">
-                          <li
-                            aria-current={
-                              calibrationStep === "fix" ? "step" : undefined
-                            }
-                            className={
-                              calibrationStep === "fix"
-                                ? "font-bold text-white"
-                                : "text-zinc-400"
-                            }
-                          >
-                            {calibrationStep === "fix" ? "▸" : "✓"} 1. Fix: open
-                            the flagged field and pick the compliant value
-                            (Enter, then 1–4).
-                          </li>
-                          <li
-                            aria-current={
-                              calibrationStep === "route" ? "step" : undefined
-                            }
-                            className={
-                              calibrationStep === "route"
-                                ? "font-bold text-white"
-                                : "text-zinc-400"
-                            }
-                          >
-                            {calibrationStep === "route" ? "▸" : "·"} 2. Route:
-                            send the clean CRF to its matching station.
-                          </li>
-                          <li className="text-zinc-400">
-                            · 3. Sign: routine packets dispatch at once; SAE and
-                            phase-lock packets open the signature review.
-                          </li>
-                        </ol>
+                        <p className="mt-1 text-[11px] leading-snug text-zinc-200">
+                          {calibrationStep === "fix"
+                            ? "Fix: open the flagged field and pick the compliant value (Enter, then 1–4)."
+                            : "Route: send the clean CRF to its matching chute. Routine packets dispatch at once; SAE and phase-lock packets open the signature review."}
+                        </p>
                         {activeSubject.id !== calibrationSubject.id && (
                           <button
                             type="button"
                             onClick={() =>
                               setSelectedSubjectId(calibrationSubject.id)
                             }
-                            className="mt-2 min-h-[44px] rounded-lg border border-sky-500/40 px-3 text-xs font-bold text-sky-200 hover:bg-sky-500/10 active:scale-[0.98]"
+                            className="mt-2 min-h-9 rounded-lg border border-blue-400/40 px-3 text-xs font-bold text-blue-200 hover:bg-blue-400/10 active:scale-[0.98]"
                           >
                             Back to {calibrationSubject.subjectLabel}
                           </button>
@@ -3284,7 +3524,7 @@ export const ClinicalTrialChaos: React.FC = () => {
                     )}
 
                     {/* Observations */}
-                    <div className="mt-3 grid gap-2 sm:grid-cols-2 @5xl:grid-cols-3">
+                    <div className="mt-2 grid gap-1.5 sm:grid-cols-2 @3xl:grid-cols-3">
                       {activeSubject.observations.map((obs) => (
                         <button
                           key={obs.id}
@@ -3295,10 +3535,10 @@ export const ClinicalTrialChaos: React.FC = () => {
                               obs,
                             })
                           }
-                          className={`cursor-pointer min-h-[44px] min-w-0 rounded-lg border p-3 text-left transition active:scale-[0.99] ${
+                          className={`cursor-pointer min-h-[44px] min-w-0 rounded-lg border px-2.5 py-2 text-left transition active:scale-[0.99] ${
                             !obs.isResolved
                               ? "border-amber-500/50 bg-amber-500/5 hover:border-amber-400"
-                              : "border-zinc-800 bg-[#0d0e11] hover:border-zinc-700"
+                              : "border-white/[0.08] bg-[#0d0e11] hover:border-zinc-700"
                           }`}
                         >
                           <span className="flex items-center justify-between gap-2">
@@ -3350,129 +3590,595 @@ export const ClinicalTrialChaos: React.FC = () => {
                     </div>
                   </div>
                 ) : (
-                  <p className="mt-3 border-t border-zinc-800 py-6 text-center text-xs text-zinc-400">
+                  <p className="py-4 text-center text-xs text-zinc-400">
                     Queue clear. Enjoy the silence while it lasts.
                   </p>
                 )}
               </section>
+            ) : playState === "idle" ? (
+              <section
+                aria-labelledby="cc-briefing-title"
+                className="@container rounded-xl border border-white/[0.08] bg-[#13151a] p-4 sm:p-5"
+              >
+                <div className="flex flex-wrap items-end justify-between gap-4">
+                  <div className="min-w-0 max-w-xl">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-amber-400">
+                      Shift briefing
+                    </p>
+                    <h3
+                      id="cc-briefing-title"
+                      className="mt-1 text-lg font-bold tracking-[-0.02em] text-zinc-100"
+                    >
+                      Clean the data. Lock the CRFs. Keep everyone happy.
+                    </h3>
+                    <p className="mt-1 text-[11px] text-zinc-400">
+                      {gameMode === "campaign"
+                        ? `Lock ${getPhaseLockTarget(1)} CRFs to clear Phase 1, then ${getPhaseLockTarget(2)} more in Phase 2 and ${getPhaseLockTarget(3)} more in Phase 3. Each phase is busier than the last.`
+                        : "No finish line. Lock as many CRFs as you can before someone ends your career."}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div
+                      className="flex rounded-lg border border-zinc-800 bg-[#0d0e11] p-0.5"
+                      role="group"
+                      aria-label="Game mode"
+                    >
+                      {(["campaign", "endless"] as GameMode[]).map((mode) => (
+                        <button
+                          key={mode}
+                          type="button"
+                          onClick={() => setGameMode(mode)}
+                          aria-pressed={gameMode === mode}
+                          className={`min-h-[44px] rounded-md px-3 text-xs font-bold transition ${
+                            gameMode === mode
+                              ? "bg-zinc-800 text-zinc-100"
+                              : "text-zinc-400 hover:text-zinc-300"
+                          }`}
+                        >
+                          {mode === "campaign" ? "Campaign" : "Endless"}
+                        </button>
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => startGame(gameMode, 1)}
+                      className="flex min-h-[48px] items-center gap-2 rounded-xl bg-amber-500 px-5 text-xs font-bold uppercase tracking-wider text-black transition hover:bg-amber-400 active:scale-[0.98]"
+                    >
+                      <IconPlayerPlay className="h-4 w-4" aria-hidden="true" />
+                      {gameMode === "campaign"
+                        ? "Start 3-Phase Campaign"
+                        : "Start Endless Sprint"}
+                    </button>
+                  </div>
+                </div>
 
-              {/* Right column: email, stations, lifelines */}
-              <div className="flex min-w-0 flex-col gap-3 lg:col-span-5">
-                {sponsorEmailCard && (
-                  <div className="hidden lg:block @5xl:hidden">
-                    {sponsorEmailCard}
+                {/* How a shift works, shown rather than told */}
+                <ol className="mt-5 grid grid-cols-1 gap-2 @2xl:grid-cols-3">
+                  <li className="rounded-lg border border-zinc-800 bg-[#0d0e11] p-3">
+                    <p className="text-[10px] font-bold uppercase text-zinc-400">
+                      1 · Fix
+                    </p>
+                    <div
+                      className="mt-2 flex items-center gap-2 rounded-md border border-amber-500/40 bg-amber-500/5 px-2 py-1.5 text-xs"
+                      aria-hidden="true"
+                    >
+                      <span className="text-zinc-400">Height</span>
+                      <span className="font-bold text-rose-300 line-through">
+                        180 m
+                      </span>
+                      <span className="text-zinc-400">→</span>
+                      <span className="font-bold text-emerald-300">180 cm</span>
+                    </div>
+                    <p className="mt-2 text-[11px] text-zinc-400">
+                      Click the flagged field and pick the CDISC-standard value.
+                    </p>
+                  </li>
+                  <li className="rounded-lg border border-zinc-800 bg-[#0d0e11] p-3">
+                    <p className="text-[10px] font-bold uppercase text-zinc-400">
+                      2 · Route
+                    </p>
+                    <div
+                      className="mt-2 flex items-center gap-2 text-xs"
+                      aria-hidden="true"
+                    >
+                      <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-bold text-emerald-300">
+                        VS
+                      </span>
+                      <span className="text-zinc-400">→</span>
+                      <span className="rounded-md border border-emerald-500/70 bg-emerald-500/10 px-2 py-1 font-bold text-zinc-100">
+                        VS Station{" "}
+                        <span className="text-[9px] text-emerald-300">✓</span>
+                      </span>
+                    </div>
+                    <p className="mt-2 text-[11px] text-zinc-400">
+                      Send the clean CRF to a station that matches its data.
+                      Matching stations light up.
+                    </p>
+                  </li>
+                  <li className="rounded-lg border border-zinc-800 bg-[#0d0e11] p-3">
+                    <p className="text-[10px] font-bold uppercase text-zinc-400">
+                      3 · Sign
+                    </p>
+                    <div
+                      className="mt-2 flex items-center gap-2 text-xs"
+                      aria-hidden="true"
+                    >
+                      <IconLock className="h-4 w-4 text-brand-cyan" />
+                      <span className="rounded-md border border-cyan-500/50 bg-cyan-950/40 px-2 py-1 font-bold text-cyan-200">
+                        Intent to Submit
+                      </span>
+                    </div>
+                    <p className="mt-2 text-[11px] text-zinc-400">
+                      Pick a valid signature reason. Back-to-back locks build
+                      your combo.
+                    </p>
+                  </li>
+                </ol>
+
+                {/* The two ways to lose */}
+                <div
+                  className="mt-2 grid grid-cols-1 gap-2 @xl:grid-cols-2"
+                  aria-label="How you lose"
+                >
+                  <div className="flex items-center gap-3 rounded-lg border border-zinc-800 bg-[#0d0e11] p-3">
+                    <IconShieldCheck
+                      className="h-4 w-4 shrink-0 text-zinc-400"
+                      aria-hidden="true"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11px] text-zinc-300">
+                        FDA auditor hits{" "}
+                        <span className="font-bold text-rose-300">100%</span> →
+                        Form 483
+                      </p>
+                      <div
+                        className="mt-1 h-1 rounded-full bg-gradient-to-r from-emerald-500/60 via-amber-500/60 to-rose-500"
+                        aria-hidden="true"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 rounded-lg border border-zinc-800 bg-[#0d0e11] p-3">
+                    <IconMail
+                      className="h-4 w-4 shrink-0 text-zinc-400"
+                      aria-hidden="true"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11px] text-zinc-300">
+                        Sponsor hits{" "}
+                        <span className="font-bold text-rose-300">0%</span> →
+                        study moves to another CRO
+                      </p>
+                      <div
+                        className="mt-1 h-1 rounded-full bg-gradient-to-r from-rose-500 via-amber-500/60 to-emerald-500/60"
+                        aria-hidden="true"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Office picker */}
+                <div className="mt-5 flex flex-wrap items-baseline justify-between gap-2">
+                  <h4
+                    id="clinical-office-picker-heading"
+                    className="text-xs font-bold uppercase tracking-wider text-zinc-300"
+                  >
+                    Pick your office
+                  </h4>
+                  <span className="text-[10px] text-zinc-400">
+                    Each one bends the rules
+                  </span>
+                </div>
+                <div
+                  role="radiogroup"
+                  aria-labelledby="clinical-office-picker-heading"
+                  className="mt-2 grid grid-cols-1 gap-2 @md:grid-cols-2 @3xl:grid-cols-3"
+                >
+                  {OFFICES.map((o) => {
+                    const isSelected = o.id === officeId;
+                    return (
+                      <button
+                        key={o.id}
+                        type="button"
+                        role="radio"
+                        aria-checked={isSelected}
+                        onClick={() => {
+                          setOfficeId(o.id);
+                          announce(`Office set to ${o.name}`, "polite");
+                        }}
+                        className={`min-h-[44px] min-w-0 rounded-lg border p-3 text-left transition active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/60 ${
+                          isSelected
+                            ? "border-amber-500/70 bg-amber-500/5"
+                            : "border-zinc-800 bg-[#0d0e11] hover:border-zinc-600"
+                        }`}
+                      >
+                        <span className="flex items-start justify-between gap-2">
+                          <span className="flex min-w-0 items-center gap-2">
+                            <span
+                              aria-hidden="true"
+                              className="h-2 w-2 shrink-0 rounded-full"
+                              style={{ backgroundColor: o.accentColor }}
+                            />
+                            <span className="min-w-0 text-xs font-bold text-zinc-100 break-words">
+                              {o.name}
+                            </span>
+                          </span>
+                          <span className="shrink-0 text-[9px] uppercase text-zinc-400">
+                            {o.difficulty}
+                          </span>
+                        </span>
+                        <span className="mt-1 block text-[11px] italic text-zinc-400 break-words">
+                          {o.tagline}
+                        </span>
+                        <span className="mt-2 block text-[10px] text-amber-300/90 break-words">
+                          {o.quirk}
+                        </span>
+                        <span className="mt-1 block text-[10px] tabular-nums text-zinc-400">
+                          {o.modifiers.scoreMultiplier}× score
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Outfit picker (cosmetic) */}
+                <div className="mt-5 flex flex-wrap items-baseline justify-between gap-2">
+                  <h4
+                    id="clinical-outfit-picker-heading"
+                    className="text-xs font-bold uppercase tracking-wider text-zinc-300"
+                  >
+                    Pick your outfit
+                  </h4>
+                  <span className="text-[10px] text-zinc-400">
+                    Cosmetic only. The auditor judges you anyway.
+                  </span>
+                </div>
+                <div
+                  role="radiogroup"
+                  aria-labelledby="clinical-outfit-picker-heading"
+                  className="mt-2 grid grid-cols-1 gap-2 @md:grid-cols-2 @3xl:grid-cols-3"
+                >
+                  {OUTFITS.map((o) => {
+                    const isSelected = o.id === outfitId;
+                    return (
+                      <button
+                        key={o.id}
+                        type="button"
+                        role="radio"
+                        aria-checked={isSelected}
+                        onClick={() => {
+                          selectOutfit(o.id);
+                          announce(`Outfit set to ${o.name}`, "polite");
+                        }}
+                        className={`flex min-h-[44px] min-w-0 items-center gap-3 rounded-lg border p-2.5 text-left transition active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/60 ${
+                          isSelected
+                            ? "border-amber-500/70 bg-amber-500/5"
+                            : "border-zinc-800 bg-[#0d0e11] hover:border-zinc-600"
+                        }`}
+                      >
+                        <OutfitPreview outfit={o} />
+                        <span className="min-w-0">
+                          <span className="block text-xs font-bold text-zinc-100 break-words">
+                            {o.name}
+                          </span>
+                          <span className="mt-0.5 block text-[11px] italic text-zinc-400 break-words">
+                            {o.tagline}
+                          </span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Authored protocol hand-off */}
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-zinc-800 pt-3 text-[11px] text-zinc-400">
+                  <span className="min-w-0 break-words">
+                    {activeProtocol
+                      ? `Using your authored protocol ${activeProtocol.protocolNumber} (${activeProtocol.forms?.length || 0} forms).`
+                      : "Using built-in scenarios. Authored a study in CRF Studio? Play it here."}
+                  </span>
+                  {!activeProtocol && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const stored = readStoredProtocol();
+                        if (stored) {
+                          setActiveProtocol(stored);
+                          addAuditLog(
+                            `Loaded active protocol ${stored.protocolNumber} into simulation.`,
+                            "COMPLIANT"
+                          );
+                          announce("Authored protocol loaded", "polite");
+                          return;
+                        }
+                        announce(
+                          "No authored protocol found. Author one in CRF Studio first.",
+                          "polite"
+                        );
+                        addAuditLog(
+                          "No authored protocol found. Author one in CRF Studio and click 'Simulate Protocol'.",
+                          "WARN"
+                        );
+                      }}
+                      className="min-h-[44px] rounded-lg border border-zinc-700 px-3 font-bold text-zinc-300 transition hover:bg-zinc-800"
+                    >
+                      Load Authored Protocol
+                    </button>
+                  )}
+                </div>
+              </section>
+            ) : (
+              <section
+                aria-labelledby="cc-end-title"
+                className={`rounded-xl border p-5 text-center ${
+                  playState === "phase_cleared"
+                    ? "border-emerald-500/40 bg-emerald-500/5"
+                    : "border-rose-500/40 bg-rose-500/5"
+                }`}
+              >
+                <div
+                  className={`mx-auto flex h-10 w-10 items-center justify-center rounded-full ${
+                    playState === "phase_cleared"
+                      ? "bg-emerald-500/15 text-emerald-300"
+                      : "bg-rose-500/15 text-rose-300"
+                  }`}
+                  aria-hidden="true"
+                >
+                  {playState === "phase_cleared" ? (
+                    <IconShieldCheck className="h-5 w-5" />
+                  ) : gameOverReason === "sponsor" ? (
+                    <IconMail className="h-5 w-5" />
+                  ) : (
+                    <IconAlertTriangle className="h-5 w-5" />
+                  )}
+                </div>
+                <h3
+                  id="cc-end-title"
+                  className={`mt-3 text-base font-bold tracking-[-0.02em] ${
+                    playState === "phase_cleared"
+                      ? "text-emerald-300"
+                      : "text-rose-300"
+                  }`}
+                >
+                  {playState === "phase_cleared"
+                    ? phaseClearForm483
+                      ? phase < 3
+                        ? `PHASE ${phase} LOCKED… AND A 483 IS IN THE MAIL`
+                        : "DATABASE LOCKED… AND A 483 IS IN THE MAIL"
+                      : phase < 3
+                        ? `PHASE ${phase} COMPLIANCE AUDIT PASSED!`
+                        : "STUDY PROTOCOL APPROVED FOR NDA SUBMISSION!"
+                    : gameOverReason === "sponsor"
+                      ? "CONTRACT TERMINATED · STUDY MOVED TO ANOTHER CRO"
+                      : "FDA FORM 483 ISSUED · TRIAL TERMINATED"}
+                </h3>
+                <p className="mx-auto mt-1 max-w-md text-xs text-zinc-400">
+                  {playState === "phase_cleared"
+                    ? phase < 3
+                      ? `Phase ${phase + 1} opens more EDC stations and a faster conveyor, and asks for ${getPhaseLockTarget((phase + 1) as GamePhase)} more locks. Your score carries over.`
+                      : "Database locked. All trial data validated and archived."
+                    : gameOverReason === "sponsor"
+                      ? "Sponsor satisfaction hit 0%. They 'decided to go in a different direction' and awarded the study to a vendor whose bid was 40% cheaper and entirely hypothetical."
+                      : "Auditor suspicion reached 100%. Major source data validation discrepancies triggered clinical hold under 21 CFR § 312.44."}
+                </p>
+                {phaseClearForm483 && (
+                  <div
+                    className="mx-auto mt-3 max-w-md rounded-lg border border-rose-500/40 bg-rose-500/5 p-3 text-left"
+                    data-testid="cc-phase-483"
+                  >
+                    <p className="text-xs font-bold text-rose-300">
+                      The data locked, but the inspection verdict is OAI: FDA
+                      Form 483 issued.
+                    </p>
+                    {phaseClearForm483.length > 0 && (
+                      <ul className="mt-1.5 list-disc space-y-0.5 pl-4 text-[11px] leading-snug text-zinc-300 break-words">
+                        {phaseClearForm483.map((cause) => (
+                          <li key={cause}>{cause}</li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
                 )}
 
-                <section
-                  aria-label="EDC stations"
-                  className="rounded-xl border border-zinc-800 bg-[#13151a] p-3"
-                >
-                  <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-zinc-400">
-                    <span>Route to station</span>
-                    <span className="font-normal normal-case text-zinc-400">
-                      Keys 1–{sortedStations.length}
-                    </span>
-                  </div>
-                  {routingNotice &&
-                    routingNotice.subjectId === activeSubject?.id &&
-                    routingNotice.unresolvedCount ===
-                      routingReadiness.unresolvedCount && (
-                      <p className="mt-2 rounded border border-amber-500/40 bg-amber-500/10 px-2.5 py-2 text-xs text-amber-200">
-                        {routingNotice.message}
-                      </p>
-                    )}
-                  <div
-                    className={`mt-2 grid gap-2 ${
-                      sortedStations.length > 4
-                        ? "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4"
-                        : "grid-cols-2"
-                    }`}
+                <dl className="mx-auto mt-4 grid max-w-lg grid-cols-2 gap-2 text-left sm:grid-cols-4">
+                  {[
+                    {
+                      label:
+                        gameMode === "campaign" ? "Campaign score" : "Score",
+                      value: scoreState.score,
+                      tone: "text-white",
+                    },
+                    {
+                      label: "CRFs locked",
+                      value: scoreState.subjectsSubmitted,
+                      tone: "text-emerald-300",
+                    },
+                    {
+                      // Expired subjects, misrouted CRFs and wrong fixes, the
+                      // same breakdown the inspection report uses (#1670).
+                      label: "Violations",
+                      value: violationBreakdown.total,
+                      detail: `${violationBreakdown.expired} expired · ${violationBreakdown.misrouted} misrouted · ${violationBreakdown.wrongFixes} wrong ${violationBreakdown.wrongFixes === 1 ? "fix" : "fixes"}`,
+                      tone: "text-rose-300",
+                    },
+                    {
+                      label: "Skeletons",
+                      value: sponsor.skeletons.length,
+                      tone: "text-amber-300",
+                    },
+                  ].map((stat) => (
+                    <div
+                      key={stat.label}
+                      className="rounded-lg border border-zinc-800 bg-[#0d0e11] p-2"
+                    >
+                      <dt className="text-[10px] uppercase text-zinc-400">
+                        {stat.label}
+                      </dt>
+                      <dd
+                        className={`text-sm font-bold tabular-nums ${stat.tone}`}
+                      >
+                        {stat.value}
+                      </dd>
+                      {stat.detail && (
+                        <dd className="mt-0.5 text-[10px] leading-snug text-zinc-400 break-words">
+                          {stat.detail}
+                        </dd>
+                      )}
+                    </div>
+                  ))}
+                </dl>
+
+                <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                  {playState === "phase_cleared" ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        startGame(
+                          "campaign",
+                          (phase < 3 ? phase + 1 : 1) as GamePhase
+                        )
+                      }
+                      className="flex min-h-[48px] items-center gap-2 rounded-xl bg-emerald-500 px-5 text-xs font-bold uppercase tracking-wider text-black transition hover:bg-emerald-400 active:scale-[0.98]"
+                    >
+                      <IconPlayerPlay className="h-4 w-4" aria-hidden="true" />
+                      {phase < 3
+                        ? `Advance to Phase ${phase + 1}`
+                        : "Play Victory Lap / Re-run"}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => startGame(gameMode, 1)}
+                      className="flex min-h-[48px] items-center gap-2 rounded-xl bg-amber-500 px-5 text-xs font-bold uppercase tracking-wider text-black transition hover:bg-amber-400 active:scale-[0.98]"
+                    >
+                      <IconRefresh className="h-4 w-4" aria-hidden="true" />
+                      {gameMode === "campaign"
+                        ? "Restart Phase I"
+                        : "Restart Endless Sprint"}
+                    </button>
+                  )}
+                  {lastBimoReport && (
+                    <button
+                      type="button"
+                      onClick={() => setBimoReport(lastBimoReport)}
+                      className="flex min-h-[48px] items-center gap-2 rounded-xl border border-zinc-700 px-4 text-xs font-bold text-zinc-200 transition hover:bg-zinc-800"
+                    >
+                      <IconFileText className="h-4 w-4" aria-hidden="true" />
+                      Inspection report
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setPlayState("idle")}
+                    className="min-h-[48px] rounded-xl px-4 text-xs font-bold text-zinc-400 transition hover:text-zinc-200"
                   >
-                    {sortedStations.map((station, index) => {
-                      const matches =
-                        !!activeSubject &&
-                        routingReadiness.matchingDomains.includes(station.id);
-                      const accepts = matches && flowStep === 2;
-                      const isFlashing = flashStationId === station.id;
+                    Change office
+                  </button>
+                </div>
+              </section>
+            )}
+          </div>
+
+          {/* Side rail: meters, queue and lifelines. */}
+          {playState !== "idle" && (
+            <aside
+              aria-label="Shift status"
+              className="flex min-w-0 flex-col gap-2"
+            >
+              <div className="grid grid-cols-2 gap-2 @3xl:grid-cols-1">
+                {pressureMeters}
+              </div>
+
+              {playState === "playing" && (
+                <section
+                  aria-label="Queue"
+                  className="rounded-xl border border-white/[0.08] bg-[#13151a] p-2.5"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+                      Queue · {conveyorSubjects.length}/{MAX_CONVEYOR_SUBJECTS}
+                    </span>
+                    <span className="text-[10px] text-zinc-500">← → cycle</span>
+                  </div>
+                  <ul className="mt-2 grid grid-cols-2 gap-1.5 @3xl:grid-cols-2">
+                    {conveyorSubjects.length === 0 && (
+                      <li className="col-span-2 py-3 text-[11px] text-zinc-400">
+                        Waiting for the next packet from site…
+                      </li>
+                    )}
+                    {conveyorSubjects.map((sub) => {
+                      const left = sub.observations.filter(
+                        (o) => !o.isResolved
+                      ).length;
+                      const ratio =
+                        sub.maxTime > 0 ? sub.timeRemaining / sub.maxTime : 0;
+                      const isSelected = sub.id === activeSubject?.id;
                       return (
-                        <button
-                          key={station.id}
-                          type="button"
-                          onClick={() => handleInitiateSubmission(station.id)}
-                          className={`group min-h-[44px] min-w-0 rounded-lg border p-2.5 text-left transition active:scale-[0.98] ${
-                            isFlashing
-                              ? "border-emerald-400 bg-emerald-500/20"
-                              : accepts
-                                ? "border-emerald-500/70 bg-emerald-500/10 shadow-[0_0_0_1px_rgba(16,185,129,0.35)]"
-                                : matches
-                                  ? "border-amber-500/60 bg-amber-500/10"
-                                  : activeSubject
-                                    ? "border-zinc-900 bg-zinc-950/80 [&_h4]:text-zinc-300"
-                                    : "border-zinc-800 bg-[#0d0e11] hover:border-zinc-600"
-                          }`}
-                        >
-                          <span className="flex items-center justify-between gap-1">
-                            <kbd className="rounded border border-zinc-700 px-1 text-[10px] text-zinc-400">
-                              {index + 1}
-                            </kbd>
-                            {accepts ? (
-                              <span className="text-[9px] font-bold text-emerald-300">
-                                Accepts ✓
-                              </span>
-                            ) : matches || activeSubject ? (
-                              <span className="flex min-w-0 items-center gap-1">
-                                <span
-                                  className={`text-[9px] ${matches ? "font-bold text-amber-300" : "font-medium text-zinc-300"}`}
-                                >
-                                  {matches ? "Fix first" : "Other domain"}
-                                </span>
-                                <span
-                                  aria-hidden="true"
-                                  className="h-2 w-2 shrink-0 rounded-full"
-                                  style={{ backgroundColor: station.color }}
-                                />
-                              </span>
-                            ) : (
+                        <li key={sub.id} className="min-w-0">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedSubjectId(sub.id)}
+                            aria-pressed={isSelected}
+                            className={`flex min-h-[48px] w-full min-w-0 flex-col justify-between rounded-lg border px-2 py-1.5 text-left transition active:scale-[0.98] ${
+                              isSelected
+                                ? "border-amber-500/70 bg-amber-500/10"
+                                : sub.isSAE
+                                  ? "border-rose-500/40 bg-[#0d0e11] hover:border-rose-400"
+                                  : "border-white/[0.08] bg-[#0d0e11] hover:border-zinc-600"
+                            }`}
+                          >
+                            <span className="flex items-center justify-between gap-1">
                               <span
-                                aria-hidden="true"
-                                className="h-2 w-2 rounded-full"
-                                style={{ backgroundColor: station.color }}
-                              />
-                            )}
-                          </span>
-                          <span className="mt-1 flex items-baseline justify-between gap-1">
-                            <h4 className="min-w-0 truncate text-xs font-bold text-white">
-                              {station.label}
-                            </h4>
-                            <span
-                              className="shrink-0 text-[10px] font-bold tabular-nums text-emerald-400"
-                              title="CRFs submitted here"
-                            >
-                              <span className="sr-only">Submits:</span>
-                              {station.processedCount}
+                                className={`truncate text-[11px] font-bold ${
+                                  isSelected
+                                    ? "text-amber-100"
+                                    : "text-zinc-200"
+                                }`}
+                              >
+                                {sub.subjectLabel}
+                              </span>
+                              {sub.isSAE && (
+                                <span className="shrink-0 rounded bg-rose-500/20 px-1 text-[9px] font-bold text-rose-300">
+                                  SAE
+                                </span>
+                              )}
                             </span>
-                          </span>
-                          <span className="block truncate text-[10px] text-zinc-400">
-                            {station.name}
-                          </span>
-                        </button>
+                            <span
+                              className={`text-[10px] ${
+                                left > 0 ? "text-amber-300" : "text-emerald-400"
+                              }`}
+                            >
+                              {left > 0 ? `${left} to fix` : "Ready ✓"}
+                            </span>
+                            <span className="mt-1 block h-1 overflow-hidden rounded-full bg-zinc-800">
+                              {/* Subject clocks commit every half second (whole
+                                  and rounded seconds), matching this 500 ms glide (#1639). */}
+                              <span
+                                className={`block h-full transition-[width] duration-500 ease-linear motion-reduce:transition-none ${timerBarColor(ratio)}`}
+                                style={{
+                                  width: `${clamp(ratio * 100, 0, 100)}%`,
+                                }}
+                              />
+                            </span>
+                          </button>
+                        </li>
                       );
                     })}
-                  </div>
+                  </ul>
                 </section>
+              )}
 
+              {playState === "playing" && (
                 <section
                   aria-label="Lifelines"
-                  className="rounded-xl border border-zinc-800 bg-[#13151a] p-3"
+                  className="rounded-xl border border-white/[0.08] bg-[#13151a] p-2.5"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-x-2 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
                     <span>Lifelines</span>
-                    <span className="font-normal normal-case text-zinc-400">
-                      Charge by fixing and dispatching
+                    <span className="font-normal normal-case text-zinc-500">
+                      Charge by dispatching
                     </span>
                   </div>
-                  <div className="mt-2 grid grid-cols-2 gap-2">
+                  <div className="mt-2 grid grid-cols-1 gap-1">
                     {(
                       [
                         "fda-coffee-break",
@@ -3508,17 +4214,17 @@ export const ClinicalTrialChaos: React.FC = () => {
                               ? describePowerUpRefusal(refusal, p.name)
                               : p.description
                           }
-                          className={`flex min-h-[56px] min-w-0 flex-col justify-between rounded-lg border p-2 text-left transition active:scale-[0.98] ${
+                          className={`flex min-h-10 min-w-0 items-center gap-2 rounded-lg border px-2 py-1 text-left transition active:scale-[0.98] ${
                             isActive
-                              ? "border-violet-400/60 bg-violet-500/10"
+                              ? "border-blue-400/60 bg-blue-400/10"
                               : isReady
                                 ? "border-emerald-500/70 bg-emerald-500/10 hover:bg-emerald-500/15"
-                                : "border-zinc-800 bg-[#0d0e11] opacity-80"
+                                : "border-white/[0.08] bg-[#0d0e11] opacity-80"
                           }`}
                         >
-                          <span className="flex items-center justify-between gap-1">
+                          <span className="flex min-w-0 flex-1 items-center gap-1.5">
                             <span
-                              className={`flex min-w-0 items-center gap-1.5 text-[11px] font-bold leading-tight ${
+                              className={`flex min-w-0 flex-1 items-center gap-1.5 text-[11px] font-bold leading-tight ${
                                 isReady ? "text-emerald-200" : "text-zinc-300"
                               }`}
                             >
@@ -3534,14 +4240,16 @@ export const ClinicalTrialChaos: React.FC = () => {
                               {type === "fast-sign" && (
                                 <IconBolt className="h-3.5 w-3.5 shrink-0" />
                               )}
-                              <span className="break-words">{p.name}</span>
+                              <span className="min-w-0 break-words">
+                                {p.name}
+                              </span>
                             </span>
                             <kbd className="shrink-0 rounded border border-zinc-700 px-1 text-[10px] text-zinc-400">
                               {p.hotkey}
                             </kbd>
                           </span>
-                          <span className="mt-1.5 flex items-center gap-2">
-                            <span className="block h-1 flex-1 overflow-hidden rounded-full bg-zinc-800">
+                          <span className="flex w-[4.5rem] shrink-0 flex-col items-end gap-1">
+                            <span className="block h-1 w-full overflow-hidden rounded-full bg-zinc-800">
                               <span
                                 className={`block h-full transition-[width] duration-300 ${
                                   isReady ? "bg-emerald-400" : "bg-zinc-500"
@@ -3552,7 +4260,7 @@ export const ClinicalTrialChaos: React.FC = () => {
                               />
                             </span>
                             <span
-                              className={`text-[9px] font-bold tabular-nums ${
+                              className={`text-right text-[9px] font-bold leading-tight tabular-nums ${
                                 isReady ? "text-emerald-300" : "text-zinc-400"
                               }`}
                             >
@@ -3570,489 +4278,10 @@ export const ClinicalTrialChaos: React.FC = () => {
                     })}
                   </div>
                 </section>
-              </div>
-            </div>
-          ) : playState === "idle" ? (
-            <section
-              aria-labelledby="cc-briefing-title"
-              className="@container mt-3 rounded-xl border border-zinc-800 bg-[#13151a] p-4 sm:p-5"
-            >
-              <div className="flex flex-wrap items-end justify-between gap-4">
-                <div className="min-w-0 max-w-xl">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-amber-400">
-                    Shift briefing
-                  </p>
-                  <h3
-                    id="cc-briefing-title"
-                    className="mt-1 text-lg font-bold tracking-[-0.02em] text-zinc-100"
-                  >
-                    Clean the data. Lock the CRFs. Keep everyone happy.
-                  </h3>
-                  <p className="mt-1 text-[11px] text-zinc-400">
-                    {gameMode === "campaign"
-                      ? `Lock ${getPhaseLockTarget(1)} CRFs to clear Phase 1, then ${getPhaseLockTarget(2)} more in Phase 2 and ${getPhaseLockTarget(3)} more in Phase 3. Each phase is busier than the last.`
-                      : "No finish line. Lock as many CRFs as you can before someone ends your career."}
-                  </p>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <div
-                    className="flex rounded-lg border border-zinc-800 bg-[#0d0e11] p-0.5"
-                    role="group"
-                    aria-label="Game mode"
-                  >
-                    {(["campaign", "endless"] as GameMode[]).map((mode) => (
-                      <button
-                        key={mode}
-                        type="button"
-                        onClick={() => setGameMode(mode)}
-                        aria-pressed={gameMode === mode}
-                        className={`min-h-[44px] rounded-md px-3 text-xs font-bold transition ${
-                          gameMode === mode
-                            ? "bg-zinc-800 text-zinc-100"
-                            : "text-zinc-400 hover:text-zinc-300"
-                        }`}
-                      >
-                        {mode === "campaign" ? "Campaign" : "Endless"}
-                      </button>
-                    ))}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => startGame(gameMode, 1)}
-                    className="flex min-h-[48px] items-center gap-2 rounded-xl bg-amber-500 px-5 text-xs font-bold uppercase tracking-wider text-black transition hover:bg-amber-400 active:scale-[0.98]"
-                  >
-                    <IconPlayerPlay className="h-4 w-4" aria-hidden="true" />
-                    {gameMode === "campaign"
-                      ? "Start 3-Phase Campaign"
-                      : "Start Endless Sprint"}
-                  </button>
-                </div>
-              </div>
-
-              {/* How a shift works, shown rather than told */}
-              <ol className="mt-5 grid grid-cols-1 gap-2 @2xl:grid-cols-3">
-                <li className="rounded-lg border border-zinc-800 bg-[#0d0e11] p-3">
-                  <p className="text-[10px] font-bold uppercase text-zinc-400">
-                    1 · Fix
-                  </p>
-                  <div
-                    className="mt-2 flex items-center gap-2 rounded-md border border-amber-500/40 bg-amber-500/5 px-2 py-1.5 text-xs"
-                    aria-hidden="true"
-                  >
-                    <span className="text-zinc-400">Height</span>
-                    <span className="font-bold text-rose-300 line-through">
-                      180 m
-                    </span>
-                    <span className="text-zinc-400">→</span>
-                    <span className="font-bold text-emerald-300">180 cm</span>
-                  </div>
-                  <p className="mt-2 text-[11px] text-zinc-400">
-                    Click the flagged field and pick the CDISC-standard value.
-                  </p>
-                </li>
-                <li className="rounded-lg border border-zinc-800 bg-[#0d0e11] p-3">
-                  <p className="text-[10px] font-bold uppercase text-zinc-400">
-                    2 · Route
-                  </p>
-                  <div
-                    className="mt-2 flex items-center gap-2 text-xs"
-                    aria-hidden="true"
-                  >
-                    <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-bold text-emerald-300">
-                      VS
-                    </span>
-                    <span className="text-zinc-400">→</span>
-                    <span className="rounded-md border border-emerald-500/70 bg-emerald-500/10 px-2 py-1 font-bold text-zinc-100">
-                      VS Station{" "}
-                      <span className="text-[9px] text-emerald-300">✓</span>
-                    </span>
-                  </div>
-                  <p className="mt-2 text-[11px] text-zinc-400">
-                    Send the clean CRF to a station that matches its data.
-                    Matching stations light up.
-                  </p>
-                </li>
-                <li className="rounded-lg border border-zinc-800 bg-[#0d0e11] p-3">
-                  <p className="text-[10px] font-bold uppercase text-zinc-400">
-                    3 · Sign
-                  </p>
-                  <div
-                    className="mt-2 flex items-center gap-2 text-xs"
-                    aria-hidden="true"
-                  >
-                    <IconLock className="h-4 w-4 text-brand-cyan" />
-                    <span className="rounded-md border border-cyan-500/50 bg-cyan-950/40 px-2 py-1 font-bold text-cyan-200">
-                      Intent to Submit
-                    </span>
-                  </div>
-                  <p className="mt-2 text-[11px] text-zinc-400">
-                    Pick a valid signature reason. Back-to-back locks build your
-                    combo.
-                  </p>
-                </li>
-              </ol>
-
-              {/* The two ways to lose */}
-              <div
-                className="mt-2 grid grid-cols-1 gap-2 @xl:grid-cols-2"
-                aria-label="How you lose"
-              >
-                <div className="flex items-center gap-3 rounded-lg border border-zinc-800 bg-[#0d0e11] p-3">
-                  <IconShieldCheck
-                    className="h-4 w-4 shrink-0 text-zinc-400"
-                    aria-hidden="true"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[11px] text-zinc-300">
-                      FDA auditor hits{" "}
-                      <span className="font-bold text-rose-300">100%</span> →
-                      Form 483
-                    </p>
-                    <div
-                      className="mt-1 h-1 rounded-full bg-gradient-to-r from-emerald-500/60 via-amber-500/60 to-rose-500"
-                      aria-hidden="true"
-                    />
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 rounded-lg border border-zinc-800 bg-[#0d0e11] p-3">
-                  <IconMail
-                    className="h-4 w-4 shrink-0 text-zinc-400"
-                    aria-hidden="true"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[11px] text-zinc-300">
-                      Sponsor hits{" "}
-                      <span className="font-bold text-rose-300">0%</span> →
-                      study moves to another CRO
-                    </p>
-                    <div
-                      className="mt-1 h-1 rounded-full bg-gradient-to-r from-rose-500 via-amber-500/60 to-emerald-500/60"
-                      aria-hidden="true"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Office picker */}
-              <div className="mt-5 flex flex-wrap items-baseline justify-between gap-2">
-                <h4
-                  id="clinical-office-picker-heading"
-                  className="text-xs font-bold uppercase tracking-wider text-zinc-300"
-                >
-                  Pick your office
-                </h4>
-                <span className="text-[10px] text-zinc-400">
-                  Each one bends the rules
-                </span>
-              </div>
-              <div
-                role="radiogroup"
-                aria-labelledby="clinical-office-picker-heading"
-                className="mt-2 grid grid-cols-1 gap-2 @md:grid-cols-2 @3xl:grid-cols-3"
-              >
-                {OFFICES.map((o) => {
-                  const isSelected = o.id === officeId;
-                  return (
-                    <button
-                      key={o.id}
-                      type="button"
-                      role="radio"
-                      aria-checked={isSelected}
-                      onClick={() => {
-                        setOfficeId(o.id);
-                        announce(`Office set to ${o.name}`, "polite");
-                      }}
-                      className={`min-h-[44px] min-w-0 rounded-lg border p-3 text-left transition active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/60 ${
-                        isSelected
-                          ? "border-amber-500/70 bg-amber-500/5"
-                          : "border-zinc-800 bg-[#0d0e11] hover:border-zinc-600"
-                      }`}
-                    >
-                      <span className="flex items-start justify-between gap-2">
-                        <span className="flex min-w-0 items-center gap-2">
-                          <span
-                            aria-hidden="true"
-                            className="h-2 w-2 shrink-0 rounded-full"
-                            style={{ backgroundColor: o.accentColor }}
-                          />
-                          <span className="min-w-0 text-xs font-bold text-zinc-100 break-words">
-                            {o.name}
-                          </span>
-                        </span>
-                        <span className="shrink-0 text-[9px] uppercase text-zinc-400">
-                          {o.difficulty}
-                        </span>
-                      </span>
-                      <span className="mt-1 block text-[11px] italic text-zinc-400 break-words">
-                        {o.tagline}
-                      </span>
-                      <span className="mt-2 block text-[10px] text-amber-300/90 break-words">
-                        {o.quirk}
-                      </span>
-                      <span className="mt-1 block text-[10px] tabular-nums text-zinc-400">
-                        {o.modifiers.scoreMultiplier}× score
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Outfit picker (cosmetic) */}
-              <div className="mt-5 flex flex-wrap items-baseline justify-between gap-2">
-                <h4
-                  id="clinical-outfit-picker-heading"
-                  className="text-xs font-bold uppercase tracking-wider text-zinc-300"
-                >
-                  Pick your outfit
-                </h4>
-                <span className="text-[10px] text-zinc-400">
-                  Cosmetic only. The auditor judges you anyway.
-                </span>
-              </div>
-              <div
-                role="radiogroup"
-                aria-labelledby="clinical-outfit-picker-heading"
-                className="mt-2 grid grid-cols-1 gap-2 @md:grid-cols-2 @3xl:grid-cols-3"
-              >
-                {OUTFITS.map((o) => {
-                  const isSelected = o.id === outfitId;
-                  return (
-                    <button
-                      key={o.id}
-                      type="button"
-                      role="radio"
-                      aria-checked={isSelected}
-                      onClick={() => {
-                        selectOutfit(o.id);
-                        announce(`Outfit set to ${o.name}`, "polite");
-                      }}
-                      className={`flex min-h-[44px] min-w-0 items-center gap-3 rounded-lg border p-2.5 text-left transition active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/60 ${
-                        isSelected
-                          ? "border-amber-500/70 bg-amber-500/5"
-                          : "border-zinc-800 bg-[#0d0e11] hover:border-zinc-600"
-                      }`}
-                    >
-                      <OutfitPreview outfit={o} />
-                      <span className="min-w-0">
-                        <span className="block text-xs font-bold text-zinc-100 break-words">
-                          {o.name}
-                        </span>
-                        <span className="mt-0.5 block text-[11px] italic text-zinc-400 break-words">
-                          {o.tagline}
-                        </span>
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Authored protocol hand-off */}
-              <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-zinc-800 pt-3 text-[11px] text-zinc-400">
-                <span className="min-w-0 break-words">
-                  {activeProtocol
-                    ? `Using your authored protocol ${activeProtocol.protocolNumber} (${activeProtocol.forms?.length || 0} forms).`
-                    : "Using built-in scenarios. Authored a study in CRF Studio? Play it here."}
-                </span>
-                {!activeProtocol && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const stored = readStoredProtocol();
-                      if (stored) {
-                        setActiveProtocol(stored);
-                        addAuditLog(
-                          `Loaded active protocol ${stored.protocolNumber} into simulation.`,
-                          "COMPLIANT"
-                        );
-                        announce("Authored protocol loaded", "polite");
-                        return;
-                      }
-                      announce(
-                        "No authored protocol found. Author one in CRF Studio first.",
-                        "polite"
-                      );
-                      addAuditLog(
-                        "No authored protocol found. Author one in CRF Studio and click 'Simulate Protocol'.",
-                        "WARN"
-                      );
-                    }}
-                    className="min-h-[44px] rounded-lg border border-zinc-700 px-3 font-bold text-zinc-300 transition hover:bg-zinc-800"
-                  >
-                    Load Authored Protocol
-                  </button>
-                )}
-              </div>
-            </section>
-          ) : (
-            <section
-              aria-labelledby="cc-end-title"
-              className={`mt-3 rounded-xl border p-5 text-center ${
-                playState === "phase_cleared"
-                  ? "border-emerald-500/40 bg-emerald-500/5"
-                  : "border-rose-500/40 bg-rose-500/5"
-              }`}
-            >
-              <div
-                className={`mx-auto flex h-10 w-10 items-center justify-center rounded-full ${
-                  playState === "phase_cleared"
-                    ? "bg-emerald-500/15 text-emerald-300"
-                    : "bg-rose-500/15 text-rose-300"
-                }`}
-                aria-hidden="true"
-              >
-                {playState === "phase_cleared" ? (
-                  <IconShieldCheck className="h-5 w-5" />
-                ) : gameOverReason === "sponsor" ? (
-                  <IconMail className="h-5 w-5" />
-                ) : (
-                  <IconAlertTriangle className="h-5 w-5" />
-                )}
-              </div>
-              <h3
-                id="cc-end-title"
-                className={`mt-3 text-base font-bold tracking-[-0.02em] ${
-                  playState === "phase_cleared"
-                    ? "text-emerald-300"
-                    : "text-rose-300"
-                }`}
-              >
-                {playState === "phase_cleared"
-                  ? phaseClearForm483
-                    ? phase < 3
-                      ? `PHASE ${phase} LOCKED… AND A 483 IS IN THE MAIL`
-                      : "DATABASE LOCKED… AND A 483 IS IN THE MAIL"
-                    : phase < 3
-                      ? `PHASE ${phase} COMPLIANCE AUDIT PASSED!`
-                      : "STUDY PROTOCOL APPROVED FOR NDA SUBMISSION!"
-                  : gameOverReason === "sponsor"
-                    ? "CONTRACT TERMINATED · STUDY MOVED TO ANOTHER CRO"
-                    : "FDA FORM 483 ISSUED · TRIAL TERMINATED"}
-              </h3>
-              <p className="mx-auto mt-1 max-w-md text-xs text-zinc-400">
-                {playState === "phase_cleared"
-                  ? phase < 3
-                    ? `Phase ${phase + 1} opens more EDC stations and a faster conveyor, and asks for ${getPhaseLockTarget((phase + 1) as GamePhase)} more locks. Your score carries over.`
-                    : "Database locked. All trial data validated and archived."
-                  : gameOverReason === "sponsor"
-                    ? "Sponsor satisfaction hit 0%. They 'decided to go in a different direction' and awarded the study to a vendor whose bid was 40% cheaper and entirely hypothetical."
-                    : "Auditor suspicion reached 100%. Major source data validation discrepancies triggered clinical hold under 21 CFR § 312.44."}
-              </p>
-              {phaseClearForm483 && (
-                <div
-                  className="mx-auto mt-3 max-w-md rounded-lg border border-rose-500/40 bg-rose-500/5 p-3 text-left"
-                  data-testid="cc-phase-483"
-                >
-                  <p className="text-xs font-bold text-rose-300">
-                    The data locked, but the inspection verdict is OAI: FDA
-                    Form 483 issued.
-                  </p>
-                  {phaseClearForm483.length > 0 && (
-                    <ul className="mt-1.5 list-disc space-y-0.5 pl-4 text-[11px] leading-snug text-zinc-300 break-words">
-                      {phaseClearForm483.map((cause) => (
-                        <li key={cause}>{cause}</li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
               )}
-
-              <dl className="mx-auto mt-4 grid max-w-lg grid-cols-2 gap-2 text-left sm:grid-cols-4">
-                {[
-                  {
-                    label: gameMode === "campaign" ? "Campaign score" : "Score",
-                    value: scoreState.score,
-                    tone: "text-white",
-                  },
-                  {
-                    label: "CRFs locked",
-                    value: scoreState.subjectsSubmitted,
-                    tone: "text-emerald-300",
-                  },
-                  {
-                    // Expired subjects, misrouted CRFs and wrong fixes, the
-                    // same breakdown the inspection report uses (#1670).
-                    label: "Violations",
-                    value: violationBreakdown.total,
-                    detail: `${violationBreakdown.expired} expired · ${violationBreakdown.misrouted} misrouted · ${violationBreakdown.wrongFixes} wrong ${violationBreakdown.wrongFixes === 1 ? "fix" : "fixes"}`,
-                    tone: "text-rose-300",
-                  },
-                  {
-                    label: "Skeletons",
-                    value: sponsor.skeletons.length,
-                    tone: "text-amber-300",
-                  },
-                ].map((stat) => (
-                  <div
-                    key={stat.label}
-                    className="rounded-lg border border-zinc-800 bg-[#0d0e11] p-2"
-                  >
-                    <dt className="text-[10px] uppercase text-zinc-400">
-                      {stat.label}
-                    </dt>
-                    <dd
-                      className={`text-sm font-bold tabular-nums ${stat.tone}`}
-                    >
-                      {stat.value}
-                    </dd>
-                    {stat.detail && (
-                      <dd className="mt-0.5 text-[10px] leading-snug text-zinc-400 break-words">
-                        {stat.detail}
-                      </dd>
-                    )}
-                  </div>
-                ))}
-              </dl>
-
-              <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-                {playState === "phase_cleared" ? (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      startGame(
-                        "campaign",
-                        (phase < 3 ? phase + 1 : 1) as GamePhase
-                      )
-                    }
-                    className="flex min-h-[48px] items-center gap-2 rounded-xl bg-emerald-500 px-5 text-xs font-bold uppercase tracking-wider text-black transition hover:bg-emerald-400 active:scale-[0.98]"
-                  >
-                    <IconPlayerPlay className="h-4 w-4" aria-hidden="true" />
-                    {phase < 3
-                      ? `Advance to Phase ${phase + 1}`
-                      : "Play Victory Lap / Re-run"}
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => startGame(gameMode, 1)}
-                    className="flex min-h-[48px] items-center gap-2 rounded-xl bg-amber-500 px-5 text-xs font-bold uppercase tracking-wider text-black transition hover:bg-amber-400 active:scale-[0.98]"
-                  >
-                    <IconRefresh className="h-4 w-4" aria-hidden="true" />
-                    {gameMode === "campaign"
-                      ? "Restart Phase I"
-                      : "Restart Endless Sprint"}
-                  </button>
-                )}
-                {lastBimoReport && (
-                  <button
-                    type="button"
-                    onClick={() => setBimoReport(lastBimoReport)}
-                    className="flex min-h-[48px] items-center gap-2 rounded-xl border border-zinc-700 px-4 text-xs font-bold text-zinc-200 transition hover:bg-zinc-800"
-                  >
-                    <IconFileText className="h-4 w-4" aria-hidden="true" />
-                    Inspection report
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => setPlayState("idle")}
-                  className="min-h-[48px] rounded-xl px-4 text-xs font-bold text-zinc-400 transition hover:text-zinc-200"
-                >
-                  Change office
-                </button>
-              </div>
-            </section>
+            </aside>
           )}
-        </>
+        </div>
       )}
 
       {/* TAB 2: Live CDISC SDTM Studio & Dataset Inspector */}
@@ -4442,38 +4671,38 @@ export const ClinicalTrialChaos: React.FC = () => {
         playState === "playing" && (
           <div
             data-cc-modal="true"
-            className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 sm:backdrop-blur-sm"
           >
             <div
               ref={signatureDialogRef}
               role="dialog"
               aria-modal="true"
               aria-labelledby="cc-sign-dialog-title"
-              className="max-w-lg w-full rounded-2xl border border-brand-cyan/60 bg-zinc-950 p-6 shadow-2xl"
+              className="w-full max-w-lg rounded-2xl border border-white/[0.08] bg-[#13151a] p-6 shadow-2xl"
             >
-              <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+              <div className="flex items-center justify-between gap-3 border-b border-white/[0.08] pb-3">
                 <div className="flex items-center gap-2">
-                  <IconLock className="h-5 w-5 text-brand-cyan" />
+                  <IconLock className="h-5 w-5 shrink-0 text-blue-400" />
                   <h2
                     id="cc-sign-dialog-title"
-                    className="text-base font-bold text-white"
+                    className="text-base font-bold tracking-tight text-[#f4f4f6]"
                   >
                     21 CFR Part 11 Electronic Signature
                   </h2>
                 </div>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                <span className="shrink-0 rounded border border-white/[0.08] bg-[#0d0e11] px-2 py-0.5 font-mono text-[10px] text-zinc-300">
                   {targetRoutingStation} EDC LOCK
                 </span>
               </div>
 
               <div className="mt-4 space-y-4 text-xs font-mono">
-                <div className="bg-zinc-900/80 p-3 rounded-xl border border-zinc-800">
-                  <p className="text-zinc-400">
+                <div className="rounded-xl border border-white/[0.08] bg-[#0d0e11] p-3">
+                  <p className="text-zinc-200">
                     <span className="text-zinc-400">SUBJECT:</span>{" "}
                     {signatureModal.subject.subjectLabel} (
                     {signatureModal.subject.studySite})
                   </p>
-                  <p className="text-zinc-400 mt-1">
+                  <p className="mt-1 text-zinc-200">
                     <span className="text-zinc-400">TARGET EDC:</span>{" "}
                     {targetRoutingStation} Domain Desk (
                     {
@@ -4484,11 +4713,14 @@ export const ClinicalTrialChaos: React.FC = () => {
                   </p>
                 </div>
 
-                <div>
-                  <label className="block text-[10px] font-bold uppercase text-zinc-400 mb-1.5">
+                <div role="group" aria-labelledby="cc-sign-reason-label">
+                  <p
+                    id="cc-sign-reason-label"
+                    className="mb-1.5 block text-[10px] font-bold uppercase text-zinc-400"
+                  >
                     Select Legal Signature Reason [21 CFR § 11.50]
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  </p>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                     {(
                       [
                         "Intent to Submit",
@@ -4500,16 +4732,17 @@ export const ClinicalTrialChaos: React.FC = () => {
                       <button
                         key={r}
                         type="button"
+                        aria-pressed={signatureModal.selectedReason === r}
                         onClick={() =>
                           setSignatureModal((prev) => ({
                             ...prev,
                             selectedReason: r,
                           }))
                         }
-                        className={`p-2 min-h-[44px] rounded-lg text-left text-[11px] border transition ${
+                        className={`min-h-[44px] rounded-lg border p-2 text-left text-[11px] transition active:scale-[0.98] ${
                           signatureModal.selectedReason === r
-                            ? "border-brand-cyan bg-cyan-950/60 text-cyan-300 font-bold"
-                            : "border-zinc-800 bg-zinc-900 text-zinc-400 hover:border-zinc-700"
+                            ? "border-blue-400/70 bg-blue-400/10 font-bold text-blue-100"
+                            : "border-white/[0.08] bg-[#0d0e11] text-zinc-300 hover:border-white/20"
                         }`}
                       >
                         {r}
@@ -4535,11 +4768,11 @@ export const ClinicalTrialChaos: React.FC = () => {
                         passwordInput: e.target.value,
                       }))
                     }
-                    className="w-full min-h-[44px] rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-zinc-200 focus:border-brand-cyan focus:outline-none"
+                    className="min-h-[44px] w-full rounded-lg border border-white/[0.08] bg-[#0d0e11] px-3 py-2 text-zinc-200 focus:border-blue-400 focus:outline-none focus-visible:ring-1 focus-visible:ring-blue-400/60"
                   />
                 </div>
 
-                <p className="text-[10px] text-zinc-400 leading-relaxed italic">
+                <p className="text-[10px] italic leading-relaxed text-zinc-400">
                   By executing this signature, I legally attest that all
                   clinical data points conform to CDISC Controlled Terminology
                   and ICH GCP E6(R2) standards.
@@ -4548,6 +4781,7 @@ export const ClinicalTrialChaos: React.FC = () => {
 
               <div className="mt-6 flex items-center justify-end gap-2">
                 <button
+                  type="button"
                   onClick={() =>
                     setSignatureModal((prev) => ({
                       ...prev,
@@ -4555,14 +4789,15 @@ export const ClinicalTrialChaos: React.FC = () => {
                       subject: null,
                     }))
                   }
-                  className="px-4 py-2.5 min-h-[44px] rounded-xl border border-zinc-800 bg-zinc-900 text-xs text-zinc-400 hover:text-white"
+                  className="min-h-[44px] rounded-xl border border-white/[0.08] bg-[#0d0e11] px-4 py-2.5 text-xs text-zinc-300 transition hover:border-white/20 hover:text-white active:scale-[0.98]"
                 >
                   Cancel (Esc)
                 </button>
                 <button
+                  type="button"
                   ref={signButtonRef}
                   onClick={handleConfirmSignature}
-                  className="flex min-h-[44px] items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold text-xs uppercase tracking-wider hover:opacity-90 transition shadow-lg shadow-cyan-500/20"
+                  className="flex min-h-[44px] items-center gap-2 rounded-xl bg-emerald-500 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-[#0d0e11] transition hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 active:scale-[0.98]"
                 >
                   <IconShieldCheck className="h-4 w-4" /> Sign &amp; Lock CRF
                   (Enter)

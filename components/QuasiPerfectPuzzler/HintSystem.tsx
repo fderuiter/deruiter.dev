@@ -29,13 +29,21 @@ export const HintSystem: React.FC<HintSystemProps> = ({
   };
 
   const tierLabels = [
-    { tier: 1, title: "Tier 1 · Strategy Clue", color: "text-brand-cyan" },
+    {
+      tier: 1,
+      title: "Tier 1 · Strategy Clue",
+      color: "qp-text-accent-strong",
+    },
     {
       tier: 2,
       title: "Tier 2 · Subtree Target Focus",
       color: "text-amber-400",
     },
-    { tier: 3, title: "Tier 3 · Recommended Tactic", color: "text-purple-400" },
+    {
+      tier: 3,
+      title: "Tier 3 · Recommended Tactic",
+      color: "qp-text-accent-strong",
+    },
   ];
 
   return (

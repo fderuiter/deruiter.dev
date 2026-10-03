@@ -8,23 +8,28 @@ import { CabinetSetupContext } from "@/components/arcade/CabinetSetupContext";
 import type { GameSetupConfig } from "@/components/arcade/PreGameSetupWizard";
 
 const config = (
-  screenShake: GameSetupConfig["screenShake"]
+  screenShake: GameSetupConfig["screenShake"],
+  crtFilter: GameSetupConfig["crtFilter"] = "off"
 ): GameSetupConfig => ({
   difficulty: "normal",
   loadout: "",
   screenShake,
-  crtFilter: "off",
+  crtFilter,
   bezelStyle: "classic",
 });
 
-function withSetup(screenShake: GameSetupConfig["screenShake"]) {
+function withSetup(
+  screenShake: GameSetupConfig["screenShake"],
+  crtFilter: GameSetupConfig["crtFilter"] = "off"
+) {
   return function SetupWrapper({ children }: { children: React.ReactNode }) {
     return (
       <CabinetSetupContext.Provider
         value={{
-          config: config(screenShake),
+          config: config(screenShake, crtFilter),
           runRevision: 0,
           isSetupOpen: false,
+          skipTitleScreen: true,
         }}
       >
         {children}
@@ -73,6 +78,23 @@ function attach(fx: ReturnType<typeof useArcadeFx>) {
 describe("useArcadeFx (#1598)", () => {
   beforeEach(() => setMotion(false));
   afterEach(cleanup);
+
+  it("reads the wizard's crtFilter and maps it onto the CRT pipeline", () => {
+    const { result } = renderHook(() => useArcadeFx(), {
+      wrapper: withSetup("subtle", "scanlines"),
+    });
+    expect(result.current.crtFilter).toBe("scanlines");
+    expect(result.current.crtCalibration?.scanlinesEnabled).toBe(true);
+    expect(result.current.crtCalibration?.scanlineIntensity).toBeGreaterThan(
+      0.3
+    );
+  });
+
+  it("reports CRT off outside a cabinet", () => {
+    const { result } = renderHook(() => useArcadeFx());
+    expect(result.current.crtFilter).toBe("off");
+    expect(result.current.crtCalibration).toBeNull();
+  });
 
   it("caps shake at 6px however hard a game asks", () => {
     const { result } = renderHook(() => useArcadeFx(), {

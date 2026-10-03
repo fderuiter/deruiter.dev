@@ -2,7 +2,8 @@
  * Types & Domain Models for the Roguelike Repository Graveyard & Cyberpunk Netrunner Crawler
  */
 
-export type TileType = "#" | " " | "E" | "D" | "T" | "B" | "S" | "W" | "@" | "H" | "V";
+export type TileType =
+  "#" | " " | "E" | "D" | "T" | "B" | "S" | "W" | "@" | "H" | "V";
 
 export type RoomThemeId =
   | "classic_1"
@@ -96,7 +97,8 @@ export type EnemyType =
   | "kernel_titan"
   | "neural_warden";
 
-export type EnemyState = "patrol" | "chase" | "attack" | "stunned" | "confused" | "frozen";
+export type EnemyState =
+  "patrol" | "chase" | "attack" | "stunned" | "confused" | "frozen";
 
 export interface Enemy {
   id: string;
@@ -171,7 +173,12 @@ export interface MeshProjectile {
 }
 
 export interface ActiveSideEffect {
-  type: "lag_spike" | "scrambled_keys" | "history_rewritten" | "cursor_drift" | "memory_leak";
+  type:
+    | "lag_spike"
+    | "scrambled_keys"
+    | "history_rewritten"
+    | "cursor_drift"
+    | "memory_leak";
   title: string;
   description: string;
   expiresAt: number;
@@ -270,10 +277,7 @@ export interface HexMatrixPuzzle {
 // ----------------------------------------------------
 
 export type CyberdeckClassId =
-  | "script_kiddie"
-  | "cryptanalyst"
-  | "apt_specialist"
-  | "hardware_hacker";
+  "script_kiddie" | "cryptanalyst" | "apt_specialist" | "hardware_hacker";
 
 export interface CyberdeckClass {
   id: CyberdeckClassId;
@@ -313,7 +317,11 @@ export interface DarknetItem {
   icon: string;
 }
 
-export type CRTThemeId = "emerald" | "amber" | "synthwave" | "matrix";
+/**
+ * Phosphor themes for the board. Emerald is the default; synthwave pink was
+ * dropped in #1522 (AGENTS.md section 20 rules out purple and pink on dark).
+ */
+export type CRTThemeId = "emerald" | "amber" | "matrix";
 
 export interface CRTThemeConfig {
   id: CRTThemeId;

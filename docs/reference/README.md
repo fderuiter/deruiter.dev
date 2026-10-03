@@ -10,6 +10,8 @@ lookup rather than sequential reading.
 - [`openapi.json`](../../openapi.json), generated HTTP API contract.
 - [Integration catalog](integrations-catalog.md), external services and their
   environment boundaries.
+- [Setup wizard](setup.md), the fresh-clone command, its flags, profiles,
+  mutation boundaries and recovery steps.
 
 ## Operations and Release Evidence
 

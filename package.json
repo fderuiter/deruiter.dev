@@ -17,6 +17,7 @@
     "crf": "tsx scripts/crf.ts",
     "setup": "tsx scripts/dx.ts setup",
     "setup:clerk": "./scripts/setup-clerk-wizard.sh",
+    "bootstrap": "bash scripts/setup.sh",
     "doctor": "tsx scripts/dx.ts doctor",
     "doctor:fix": "tsx scripts/dx.ts doctor --fix",
     "verify": "tsx scripts/dx.ts verify",

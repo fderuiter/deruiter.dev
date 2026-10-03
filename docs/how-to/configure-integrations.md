@@ -34,9 +34,14 @@ one is present and correctly shaped.
 npm run setup:clerk
 ```
 
-This runs `scripts/setup-clerk-wizard.sh`, an interactive helper that walks
-through creating `CLERK_SECRET_KEY`, `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, and
-the `ADMIN_USER_IDS`/`ADMIN_EMAILS` allowlist in `.env.local`. See
+This runs the setup wizard's Clerk adapter (`scripts/setup-clerk-wizard.sh`
+delegates to `./scripts/setup.sh --integrations clerk --skip-db`). It walks
+through the Clerk dashboard steps and writes `CLERK_SECRET_KEY`,
+`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, and the `ADMIN_USER_IDS`/`ADMIN_EMAILS`
+allowlist to `.env.local`, reading the secret key with hidden input. To also
+publish the keys to a deployment, add `-- --publish vercel --publish-env
+preview`; it asks before writing anything. See the
+[setup reference](../reference/setup.md#publishing-to-github-or-vercel). See
 [ADR 0014](../../adr/0014-clerk-auth-admin-portal.md) for why the admin
 surface is gated this way, and
 [`lib/auth/admin.ts`](../../lib/auth/admin.ts) for the authorization

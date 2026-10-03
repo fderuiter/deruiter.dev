@@ -43,6 +43,9 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
+# setup progress (stage outcomes only, never values; scripts/setup.sh)
+/.setup-state.json
+
 # env files (can opt-in for committing if needed)
 .env*
 !.env.example

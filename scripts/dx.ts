@@ -28,7 +28,18 @@ import {
 } from "../lib/dx/git-guard";
 import { checkEnvironmentVariables } from "../lib/dx/env-guard";
 import { runPreflight } from "../lib/dx/preflight";
-import { runSetupWorkflow } from "../lib/dx/setup";
+import {
+  createNonInteractivePrompter,
+  createTerminalPrompter,
+  isSetupProfileId,
+  parseShellStages,
+  parseVerifyFlag,
+  runSetupWorkflow,
+  SETUP_PROFILES,
+  VERIFICATION_LEVELS,
+  type PublishDestination,
+  type SetupProfileId,
+} from "../lib/dx/setup";
 import { scanDeadCode, printDeadCodeDocument } from "../lib/dx/dead-code";
 import { inspectBundleChunks, printBundleReport } from "../lib/dx/bundle-guard";
 import { runLicenseAudit } from "./license-audit";
@@ -86,7 +97,7 @@ function printUsage(): void {
     `  ${colors.cyan}bench [--pages] [--json]${colors.reset}      Run Pretext, Masonry, and Security micro-benchmarks`
   );
   console.log(
-    `  ${colors.cyan}setup [--yes] [--json]${colors.reset}        Developer onboarding & environment setup`
+    `  ${colors.cyan}setup [--profile] [--yes] [--json]${colors.reset} Fresh-clone setup (see ./scripts/setup.sh --help)`
   );
   console.log(
     `  ${colors.cyan}describe${colors.reset}                       Schema introspection registry for AI agents (JSON)`
@@ -142,22 +153,87 @@ function printUsage(): void {
 }
 
 export async function handleSetupCommand(parsed: ParsedCliArgs): Promise<void> {
-  const isYes = Boolean(parsed.flags.yes || parsed.flags.y);
-  const skipDb = Boolean(parsed.flags["skip-db"]);
-  const skipDbSeed = Boolean(parsed.flags["skip-db-seed"]);
-  const forceEnv = Boolean(parsed.flags["force-env"]);
-  const isJson = Boolean(parsed.flags.json || parsed.flags.j);
+  const flag = (name: string) => parsed.flags[name];
+  const text = (name: string): string | undefined => {
+    const value = flag(name);
+    return typeof value === "string" ? value : undefined;
+  };
+  const isJson = Boolean(flag("json") || flag("j"));
+  const acceptDefaults = Boolean(flag("yes") || flag("y"));
+  const interactive =
+    !acceptDefaults &&
+    !flag("non-interactive") &&
+    !isJson &&
+    Boolean(process.stdin.isTTY) &&
+    !process.env.CI;
+  // With --json, stdout carries only the envelope; progress goes to stderr.
+  const log = (line: string) =>
+    isJson ? process.stderr.write(`${line}\n`) : console.log(`  ${line}`);
+
+  const problems: string[] = [];
+  const profile = text("profile");
+  if (profile !== undefined && !isSetupProfileId(profile)) {
+    problems.push(
+      `Unknown profile "${profile}". Use one of: ${Object.keys(SETUP_PROFILES).join(", ")}.`
+    );
+  }
+  const verify = parseVerifyFlag(
+    flag("verify") as string | boolean | undefined
+  );
+  if (verify.unknown.length > 0) {
+    problems.push(
+      `Unknown verification level(s): ${verify.unknown.join(", ")}. Use: ${VERIFICATION_LEVELS.join(", ")}.`
+    );
+  }
+  const publish = text("publish");
+  if (publish !== undefined && publish !== "github" && publish !== "vercel") {
+    problems.push(`--publish must be github or vercel.`);
+  }
+  if (problems.length > 0) {
+    for (const problem of problems) console.error(problem);
+    process.exit(1);
+  }
+
+  if (!isJson) {
+    console.log(
+      formatHeader(
+        "Setup",
+        "Environment profile, integrations, database and verification"
+      )
+    );
+  }
 
   const startTime = Date.now();
   const result = await runSetupWorkflow({
     workspaceRoot,
-    interactive: !isYes,
-    skipDb,
-    skipDbSeed,
-    forceEnv,
+    processEnv: process.env,
+    interactive,
+    acceptDefaults,
+    prompter: interactive
+      ? createTerminalPrompter()
+      : createNonInteractivePrompter(acceptDefaults),
+    profile: profile as SetupProfileId | undefined,
+    dryRun: Boolean(flag("dry-run")),
+    resume: Boolean(flag("resume")),
+    skipDb: Boolean(flag("skip-db")),
+    skipDbSeed: Boolean(flag("skip-db-seed")),
+    skipIntegrations: Boolean(flag("skip-integrations")),
+    integrations: text("integrations")
+      ?.split(",")
+      .map((id) => id.trim())
+      .filter(Boolean),
+    applySchema: Boolean(flag("apply-schema")),
+    seed: Boolean(flag("seed")),
+    allowProductionDb: text("allow-production-db"),
+    forceEnv: Boolean(flag("force-env")),
+    verify: verify.levels,
+    publish: publish as PublishDestination | undefined,
+    publishEnvironment: text("publish-env"),
+    shellStages: parseShellStages(text("shell-stages")),
+    log,
   });
-
   const durationMs = Date.now() - startTime;
+  const pending = result.summary.manual.length > 0;
 
   if (isJson) {
     printJsonEnvelope(
@@ -170,19 +246,48 @@ export async function handleSetupCommand(parsed: ParsedCliArgs): Promise<void> {
           ? []
           : [
               {
-                id: "setup-retry",
-                title: "Rerun setup workflow with verbose logging",
-                command: "npm run setup",
+                id: "setup-resume",
+                title: "Fix the failed stage, then resume setup",
+                command: "./scripts/setup.sh --resume",
                 autoFixable: false,
               },
             ],
       })
     );
+  } else {
+    console.log("");
+    for (const stage of result.stages) {
+      const kind =
+        stage.status === "completed"
+          ? "pass"
+          : stage.status === "failed" || stage.status === "cancelled"
+            ? "fail"
+            : stage.status === "manual"
+              ? "warn"
+              : "info";
+      console.log(
+        `${badge(`[${stage.id}]`, kind)} ${stage.status}: ${stage.detail}`
+      );
+    }
+    for (const check of result.verification) {
+      if (check.status !== "not-checked") {
+        console.log(`  ${check.label}: ${check.status}. ${check.detail}`);
+      }
+    }
+    console.log(
+      result.success
+        ? pending
+          ? "\nSetup finished with manual steps pending (listed above)."
+          : "\nSetup finished. Run 'npm run dev' to start the site."
+        : "\nSetup stopped. Fix the failed stage, then run './scripts/setup.sh --resume'."
+    );
   }
 
-  if (!result.success) {
-    process.exit(1);
+  if (result.stages.some((stage) => stage.status === "cancelled")) {
+    process.exit(130);
   }
+  if (!result.success) process.exit(1);
+  if (pending) process.exit(2);
 }
 
 export async function handleDoctorCommand(

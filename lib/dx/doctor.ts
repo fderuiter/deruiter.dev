@@ -19,6 +19,8 @@ import {
 } from "./benchmark-evidence";
 import { type RemediationAction } from "./cli-parser";
 import { getEnv } from "../env";
+import { SETUP_PROFILE_IDS } from "./setup/types";
+import { VERIFICATION_LEVELS } from "./setup/verification";
 import { inspectSourceState } from "./source-state";
 import { FALLBACK_CASE_STUDIES } from "../case-studies-data";
 import { FALLBACK_BLOG_POSTS } from "../fallback-blog-posts";
@@ -1535,6 +1537,107 @@ export function checkLlmsManifestsDrift(
   };
 }
 
+/** The one fresh-clone command every onboarding page presents first (#986). */
+export const CANONICAL_SETUP_COMMAND = "./scripts/setup.sh";
+
+/**
+ * Keeps the setup documentation in step with the setup implementation.
+ * Applies only to a workspace that ships `scripts/setup.sh`. Onboarding
+ * pages must present the canonical command before any manual install
+ * command, and `docs/reference/setup.md` must state the engines and
+ * packageManager values from `package.json` verbatim, name every profile and
+ * verification level, document the production override, and list the
+ * database steps in the order the wizard runs them.
+ */
+export function checkSetupContractDocs(
+  root: string,
+  onboardingFiles: readonly string[]
+): string[] {
+  if (!fs.existsSync(path.join(root, "scripts", "setup.sh"))) return [];
+  const failures: string[] = [];
+
+  for (const filePath of onboardingFiles) {
+    if (!fs.existsSync(filePath)) continue;
+    const relative = path.relative(root, filePath);
+    const content = fs.readFileSync(filePath, "utf-8");
+    const canonical = content.indexOf(CANONICAL_SETUP_COMMAND);
+    const manual = content.search(/^npm (install|ci)\b/m);
+    if (canonical === -1) {
+      failures.push(
+        `${relative}: Missing the canonical fresh-clone command '${CANONICAL_SETUP_COMMAND}'.`
+      );
+    } else if (manual !== -1 && manual < canonical) {
+      failures.push(
+        `${relative}: Presents a manual install command before '${CANONICAL_SETUP_COMMAND}'.`
+      );
+    }
+  }
+
+  const referencePath = path.join(root, "docs", "reference", "setup.md");
+  if (!fs.existsSync(referencePath)) {
+    failures.push("docs/reference/setup.md: Missing setup reference.");
+    return failures;
+  }
+  const reference = fs.readFileSync(referencePath, "utf-8");
+  const relative = "docs/reference/setup.md";
+
+  let pkg: { engines?: Record<string, string>; packageManager?: string } = {};
+  try {
+    pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf-8"));
+  } catch {
+    // A missing package.json is reported by other checks.
+  }
+  const declared = [
+    ["engines.node", pkg.engines?.node],
+    ["engines.npm", pkg.engines?.npm],
+    ["packageManager", pkg.packageManager],
+  ] as const;
+  for (const [name, value] of declared) {
+    if (value && !reference.includes(`\`${value}\``)) {
+      failures.push(
+        `${relative}: Does not state package.json ${name} ('${value}') verbatim.`
+      );
+    }
+  }
+  for (const profile of SETUP_PROFILE_IDS) {
+    if (!reference.includes(`\`${profile}\``)) {
+      failures.push(`${relative}: Missing environment profile '${profile}'.`);
+    }
+  }
+  for (const level of VERIFICATION_LEVELS) {
+    if (!reference.includes(`\`${level}\``)) {
+      failures.push(`${relative}: Missing verification level '${level}'.`);
+    }
+  }
+  if (!reference.includes("--allow-production-db")) {
+    failures.push(
+      `${relative}: Missing the production database override '--allow-production-db'.`
+    );
+  }
+  const sequence = [
+    "npx prisma generate",
+    "npx prisma db push",
+    "npx prisma migrate deploy",
+    "npx prisma db seed",
+  ];
+  const positions = sequence.map((command) => reference.indexOf(command));
+  const missing = sequence.filter((_, index) => positions[index] === -1);
+  if (missing.length > 0) {
+    failures.push(
+      `${relative}: Database sequence is missing ${missing.join(", ")}.`
+    );
+  } else if (
+    positions.some(
+      (position, index) => index > 0 && position < positions[index - 1]
+    )
+  ) {
+    failures.push(
+      `${relative}: Database steps must appear in the order the wizard runs them: ${sequence.join(", then ")}.`
+    );
+  }
+  return failures;
+}
+
 /**
  * Onboarding Documentation & Engine Constraint Drift Check
  */
@@ -1637,6 +1740,8 @@ export function checkOnboardingDocsDrift(
     }
   }
 
+  failures.push(...checkSetupContractDocs(root, targetFiles));
+
   if (failures.length > 0) {
     if (fix) {
       try {
@@ -1663,7 +1768,7 @@ export function checkOnboardingDocsDrift(
     category: "docs",
     status: "pass",
     message:
-      "Onboarding documentation matches Node.js 22.x/npm engine constraints, environment templates, and database setup sequence.",
+      "Onboarding documentation matches the engine constraints, environment templates, setup command, profiles and database setup sequence.",
   };
 }
 

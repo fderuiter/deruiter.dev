@@ -570,46 +570,132 @@ export const COMMAND_REGISTRY: CommandDescriptor[] = [
   {
     name: "setup",
     aliases: ["init", "onboard"],
-    summary: "Developer onboarding & environment setup",
+    summary:
+      "Fresh-clone setup: profiles, integrations, database, verification",
     description:
-      "Guides initial setup of .env, database migrations, seed data, and tool dependencies.",
+      "Creates .env.local for an environment profile, configures optional integrations, applies the database schema behind a production guard, and runs requested verification. ./scripts/setup.sh runs the toolchain and dependency stages first.",
     category: "system",
     isMutating: true,
     options: [
       {
+        name: "profile",
+        type: "string",
+        description:
+          "Environment profile: local-minimal (default), hosted-development or deployment",
+        default: "",
+      },
+      {
         name: "yes",
         alias: "y",
         type: "boolean",
-        description: "Execute non-interactively with safe defaults",
+        description:
+          "Run without prompts and accept each question's safe default (never publishes or touches a hosted database)",
+        default: false,
+      },
+      {
+        name: "non-interactive",
+        type: "boolean",
+        description: "Run without prompts and decline every optional step",
+        default: false,
+      },
+      {
+        name: "dry-run",
+        type: "boolean",
+        description:
+          "Show what would change without writing files or running mutating commands",
+        default: false,
+      },
+      {
+        name: "resume",
+        type: "boolean",
+        description:
+          "Skip stages that completed in an earlier run (.setup-state.json)",
         default: false,
       },
       {
         name: "skip-db",
         type: "boolean",
-        description: "Skip database connection verification",
+        description: "Skip Prisma generation, schema and seed",
         default: false,
       },
       {
         name: "skip-db-seed",
         type: "boolean",
-        description: "Skip database seeding",
+        description: "Skip loading sample data",
         default: false,
+      },
+      {
+        name: "skip-integrations",
+        type: "boolean",
+        description: "Leave every optional integration in its degraded mode",
+        default: false,
+      },
+      {
+        name: "integrations",
+        type: "string",
+        description: "Comma-separated adapters to configure, e.g. clerk,resend",
+        default: "",
+      },
+      {
+        name: "apply-schema",
+        type: "boolean",
+        description: "Apply the schema without asking (non-interactive opt-in)",
+        default: false,
+      },
+      {
+        name: "seed",
+        type: "boolean",
+        description: "Load sample data without asking (non-interactive opt-in)",
+        default: false,
+      },
+      {
+        name: "allow-production-db",
+        type: "string",
+        description:
+          "Exact host allowed despite production markers; still asks you to type it",
+        default: "",
       },
       {
         name: "force-env",
         type: "boolean",
-        description: "Overwrite .env with fresh template",
+        description: "Back up .env.local, then replace it with the template",
         default: false,
+      },
+      {
+        name: "verify",
+        type: "string",
+        description:
+          "Comma-separated checks: static, env, prisma, db, providers, doctor, quality (bare flag = all)",
+        default: "",
+      },
+      {
+        name: "publish",
+        type: "string",
+        description:
+          "Offer to publish integration values to github or vercel (always asks first)",
+        default: "",
+      },
+      {
+        name: "publish-env",
+        type: "string",
+        description:
+          "Vercel environment or GitHub Actions environment for --publish",
+        default: "",
       },
       {
         name: "json",
         alias: "j",
         type: "boolean",
-        description: "Emit structured JSON outcome",
+        description: "Emit the structured JSON summary on stdout",
         default: false,
       },
     ],
-    examples: ["npm run dx setup", "npm run dx setup -- --yes --skip-db"],
+    examples: [
+      "./scripts/setup.sh",
+      "./scripts/setup.sh --non-interactive --skip-db --json",
+      "npm run setup -- --profile hosted-development --integrations clerk",
+      "npm run setup -- --verify static,env,prisma",
+    ],
   },
   {
     name: "describe",

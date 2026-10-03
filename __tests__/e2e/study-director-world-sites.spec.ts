@@ -52,13 +52,44 @@ async function tabTo(page: Page, control: Locator) {
   throw new Error("Could not reach the control with Tab");
 }
 
+/**
+ * Sends a ringing office phone to voicemail from the keyboard. Calls ring on
+ * a seeded schedule (#1689), and a ringing phone holds the directory.
+ */
+async function letThePhoneGo(page: Page) {
+  const ringing = page.getByRole("alertdialog", {
+    name: /The phone is ringing/,
+  });
+  // Calls already due ring one after another, so keep going until it stops.
+  for (let call = 0; call < 6 && (await ringing.isVisible()); call += 1) {
+    const subject = await ringing.textContent();
+    await tabTo(
+      page,
+      ringing.getByRole("button", { name: "Send to voicemail" })
+    );
+    await page.keyboard.press("Enter");
+    await expect(ringing.filter({ hasText: subject ?? "" })).toBeHidden();
+  }
+  await expect(ringing).toBeHidden();
+}
+
 /** Chooses a directory entry with the keyboard and waits for the walk. */
 async function walkTo(page: Page, name: RegExp, facing: RegExp) {
-  await tabTo(page, page.getByRole("button", { name }));
-  await page.keyboard.press("Enter");
-  await expect(page.getByTestId("world-room")).toContainText(facing, {
-    timeout: 15000,
+  const room = page.getByTestId("world-room");
+  const ringing = page.getByRole("alertdialog", {
+    name: /The phone is ringing/,
   });
+  // A call can ring mid-walk and stop it; let it go and walk on.
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    await letThePhoneGo(page);
+    await tabTo(page, page.getByRole("button", { name }));
+    await page.keyboard.press("Enter");
+    await expect(room.filter({ hasText: facing }).or(ringing)).toBeVisible({
+      timeout: 15000,
+    });
+    if (!(await ringing.isVisible())) break;
+  }
+  await expect(room).toContainText(facing);
   await expect(page.getByTestId("world-playfield")).toBeFocused();
 }
 

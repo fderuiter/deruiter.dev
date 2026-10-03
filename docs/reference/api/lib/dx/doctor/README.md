@@ -15,6 +15,10 @@
 - [DiagnosticSummary](interfaces/DiagnosticSummary.md)
 - [DoctorOptions](interfaces/DoctorOptions.md)
 
+## Variables
+
+- [CANONICAL\_SETUP\_COMMAND](variables/CANONICAL_SETUP_COMMAND.md)
+
 ## Functions
 
 - [checkAccessibilityAuditIntegrity](functions/checkAccessibilityAuditIntegrity.md)
@@ -41,6 +45,7 @@
 - [checkSectionStructures](functions/checkSectionStructures.md)
 - [checkSeoSocialIntegrity](functions/checkSeoSocialIntegrity.md)
 - [checkServiceResultTypes](functions/checkServiceResultTypes.md)
+- [checkSetupContractDocs](functions/checkSetupContractDocs.md)
 - [checkSubRoutePerformance](functions/checkSubRoutePerformance.md)
 - [checkTechnicalGuideSchemaParity](functions/checkTechnicalGuideSchemaParity.md)
 - [checkTestFixtureHygiene](functions/checkTestFixtureHygiene.md)

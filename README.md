@@ -41,14 +41,20 @@ stops before the next major) and **npm 10 or newer**. npm is the only supported
 package manager. Dependency install scripts are allowlisted in
 `scripts/install-script-allowlist.json`.
 
-The quickest path is the interactive setup, which checks your toolchain,
-creates `.env.local`, pushes the schema, and seeds sample data:
+From a fresh clone, run the setup wizard. It checks your toolchain against
+`package.json`, installs dependencies with `npm ci`, creates `.env.local`
+for the profile you pick, offers each optional integration, and asks before
+it applies the schema or loads sample data:
 
 ```bash
-npm install
-npm run setup
+./scripts/setup.sh
 npm run dev
 ```
+
+Agents and CI use the same command without prompts, for example
+`./scripts/setup.sh --non-interactive --skip-db --json`. The
+[setup reference](docs/reference/setup.md) lists every flag, profile and
+safeguard.
 
 Or step by step:
 

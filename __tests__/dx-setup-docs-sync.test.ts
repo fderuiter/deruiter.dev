@@ -9,7 +9,11 @@ import {
   validateLockfiles,
   runSetupWorkflow,
 } from "@/lib/dx/setup";
-import { checkOnboardingDocsDrift } from "@/lib/dx/doctor";
+import {
+  CANONICAL_SETUP_COMMAND,
+  checkOnboardingDocsDrift,
+  checkSetupContractDocs,
+} from "@/lib/dx/doctor";
 
 describe("Interactive DX Setup Command & Documentation Sync", () => {
   let tempDir: string;
@@ -60,7 +64,7 @@ describe("Interactive DX Setup Command & Documentation Sync", () => {
       fs.writeFileSync(path.join(tempDir, "package-lock.json"), "{}");
       fs.writeFileSync(
         path.join(tempDir, "package.json"),
-        JSON.stringify({ name: "test-app", engines: { node: "22.x" } })
+        JSON.stringify({ name: "test-app", engines: { node: ">=18.0.0" } })
       );
       fs.writeFileSync(
         path.join(tempDir, ".env.example"),
@@ -71,9 +75,11 @@ describe("Interactive DX Setup Command & Documentation Sync", () => {
         workspaceRoot: tempDir,
         interactive: false,
         skipDb: true,
+        log: () => undefined,
       });
 
-      expect(result.envCreatedOrValidated).toBe(true);
+      expect(result.environment?.templateCreated).toBe(true);
+      expect(result.environment?.schemaValid).toBe(true);
       expect(fs.existsSync(path.join(tempDir, ".env.local"))).toBe(true);
       const content = fs.readFileSync(
         path.join(tempDir, ".env.local"),
@@ -103,6 +109,7 @@ describe("Interactive DX Setup Command & Documentation Sync", () => {
         workspaceRoot: tempDir,
         interactive: false,
         skipDb: true,
+        log: () => undefined,
       });
 
       const content = fs.readFileSync(
@@ -132,6 +139,7 @@ describe("Interactive DX Setup Command & Documentation Sync", () => {
         interactive: false,
         skipDb: true,
         forceEnv: true,
+        log: () => undefined,
       });
 
       const content = fs.readFileSync(
@@ -184,6 +192,100 @@ describe("Interactive DX Setup Command & Documentation Sync", () => {
 
       const result = checkOnboardingDocsDrift(tempDir);
       expect(result.status).toBe("pass");
+    });
+  });
+  describe("setup contract drift (#986)", () => {
+    const repo = process.cwd();
+    const reference = fs.readFileSync(
+      path.join(repo, "docs", "reference", "setup.md"),
+      "utf-8"
+    );
+    const readme = `# App\n\n${CANONICAL_SETUP_COMMAND}\n\nOr: npm install\n`;
+
+    const seed = (files: Record<string, string>) => {
+      fs.mkdirSync(path.join(tempDir, "scripts"), { recursive: true });
+      fs.mkdirSync(path.join(tempDir, "docs", "reference"), {
+        recursive: true,
+      });
+      fs.writeFileSync(
+        path.join(tempDir, "scripts", "setup.sh"),
+        "#!/bin/sh\n"
+      );
+      fs.copyFileSync(
+        path.join(repo, "package.json"),
+        path.join(tempDir, "package.json")
+      );
+      for (const [name, content] of Object.entries(files)) {
+        fs.writeFileSync(path.join(tempDir, name), content);
+      }
+      return [path.join(tempDir, "README.md")];
+    };
+
+    it("passes for the repository's own documentation", () => {
+      const result = checkOnboardingDocsDrift(repo);
+      expect(result.details ?? []).toEqual([]);
+      expect(result.status).toBe("pass");
+    });
+
+    it("does not apply to a workspace without scripts/setup.sh", () => {
+      fs.writeFileSync(path.join(tempDir, "README.md"), "# App\n");
+      expect(
+        checkSetupContractDocs(tempDir, [path.join(tempDir, "README.md")])
+      ).toEqual([]);
+    });
+
+    it("requires the canonical command before any manual install", () => {
+      const files = seed({
+        "README.md": "npm install\n\nthen ./scripts/setup.sh\n",
+        "docs/reference/setup.md": reference,
+      });
+      expect(checkSetupContractDocs(tempDir, files)).toEqual([
+        "README.md: Presents a manual install command before './scripts/setup.sh'.",
+      ]);
+      fs.writeFileSync(path.join(tempDir, "README.md"), "# App\n");
+      expect(checkSetupContractDocs(tempDir, files)[0]).toMatch(
+        /Missing the canonical fresh-clone command/
+      );
+    });
+
+    it("fails when the engines range in package.json changes without the reference", () => {
+      const files = seed({
+        "README.md": readme,
+        "docs/reference/setup.md": reference,
+      });
+      const pkg = JSON.parse(
+        fs.readFileSync(path.join(tempDir, "package.json"), "utf-8")
+      );
+      pkg.engines.node = ">=22.0.0 <27.0.0";
+      fs.writeFileSync(path.join(tempDir, "package.json"), JSON.stringify(pkg));
+      expect(checkSetupContractDocs(tempDir, files)).toEqual([
+        "docs/reference/setup.md: Does not state package.json engines.node ('>=22.0.0 <27.0.0') verbatim.",
+      ]);
+    });
+
+    it("fails when a profile, a verification level or the production override is undocumented", () => {
+      const files = seed({
+        "README.md": readme,
+        "docs/reference/setup.md": reference
+          .replaceAll("`hosted-development`", "hosted development")
+          .replaceAll("`quality`", "quality")
+          .replaceAll("--allow-production-db", "--override"),
+      });
+      expect(checkSetupContractDocs(tempDir, files)).toEqual([
+        "docs/reference/setup.md: Missing environment profile 'hosted-development'.",
+        "docs/reference/setup.md: Missing verification level 'quality'.",
+        "docs/reference/setup.md: Missing the production database override '--allow-production-db'.",
+      ]);
+    });
+
+    it("fails when the database steps are out of order", () => {
+      const files = seed({
+        "README.md": readme,
+        "docs/reference/setup.md": "npx prisma db seed\n" + reference,
+      });
+      expect(checkSetupContractDocs(tempDir, files)[0]).toMatch(
+        /must appear in the order/
+      );
     });
   });
 });

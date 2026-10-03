@@ -41,6 +41,125 @@ export function meetsMinVersion(actual: string, required: string): boolean {
   return actualPatch >= reqPatch;
 }
 
+type Triple = [number, number, number];
+
+function toTriple(version: string): Triple {
+  const match = version
+    .replace(/^v/, "")
+    .match(/^(\d+)(?:\.(\d+))?(?:\.(\d+))?/);
+  return match
+    ? [Number(match[1]), Number(match[2] ?? 0), Number(match[3] ?? 0)]
+    : [0, 0, 0];
+}
+
+function compareTriples(left: Triple, right: Triple): number {
+  for (let index = 0; index < 3; index++) {
+    if (left[index] !== right[index]) return left[index] - right[index];
+  }
+  return 0;
+}
+
+/** Version with part `index` incremented and every later part zeroed. */
+function bump(parts: Triple, index: number): Triple {
+  const next: Triple = [...parts];
+  next[index] += 1;
+  for (let later = index + 1; later < 3; later++) next[later] = 0;
+  return next;
+}
+
+/**
+ * Desugars one comparator into primitive bounds, following npm semver:
+ * a partial version is an x-range (`22`, `22.x` and `=22` all mean
+ * `>=22.0.0 <23.0.0`), `^` allows changes that keep the left-most non-zero
+ * part, and `~` allows patch changes (minor changes when only a major is
+ * given). Returns null for anything it cannot read.
+ */
+function desugar(comparator: string): [string, Triple][] | null {
+  const match = comparator.match(
+    /^(>=|<=|>|<|=|\^|~)?v?(\d+|[xX*])(?:\.(\d+|[xX*]))?(?:\.(\d+|[xX*]))?$/
+  );
+  if (!match) return null;
+  const operator = match[1] ?? "";
+  const raw = [match[2], match[3], match[4]];
+  let given = 0;
+  while (
+    given < 3 &&
+    raw[given] !== undefined &&
+    /^\d+$/.test(raw[given] as string)
+  ) {
+    given++;
+  }
+  const lower: Triple = [0, 1, 2].map((index) =>
+    index < given ? Number(raw[index]) : 0
+  ) as Triple;
+  if (given === 0) return [];
+  const upper = bump(lower, given - 1);
+  switch (operator) {
+    case ">=":
+      return [[">=", lower]];
+    case "<":
+      return [["<", lower]];
+    case ">":
+      return given === 3 ? [[">", lower]] : [[">=", upper]];
+    case "<=":
+      return given === 3 ? [["<=", lower]] : [["<", upper]];
+    case "^": {
+      const keep =
+        lower[0] > 0 || given === 1 ? 0 : lower[1] > 0 || given === 2 ? 1 : 2;
+      return [
+        [">=", lower],
+        ["<", bump(lower, keep)],
+      ];
+    }
+    case "~":
+      return [
+        [">=", lower],
+        ["<", bump(lower, given >= 2 ? 1 : 0)],
+      ];
+    default:
+      return given === 3
+        ? [["=", lower]]
+        : [
+            [">=", lower],
+            ["<", upper],
+          ];
+  }
+}
+
+/**
+ * Evaluates a package.json `engines` range with npm semver semantics:
+ * space-separated comparators that must all hold, `||` between
+ * alternatives, x-ranges (`22.x`, `*`), and `^`/`~`. Pre-release tags are
+ * ignored. `scripts/lib/setup-checks.sh` implements the same grammar for the
+ * shell entrypoint, and a test runs both on the same cases.
+ */
+export function satisfiesVersionRange(actual: string, range: string): boolean {
+  const version = toTriple(actual);
+  return range.split("||").some((alternative) => {
+    const comparators = alternative.trim().split(/\s+/).filter(Boolean);
+    if (comparators.length === 0) return false;
+    return comparators.every((comparator) => {
+      const bounds = desugar(comparator);
+      if (bounds === null) return false;
+      return bounds.every(([operator, bound]) => {
+        const difference = compareTriples(version, bound);
+        switch (operator) {
+          case ">=":
+            return difference >= 0;
+          case ">":
+            return difference > 0;
+          case "<=":
+            return difference <= 0;
+          case "<":
+            return difference < 0;
+          default:
+            return difference === 0;
+        }
+      });
+    });
+  });
+}
+
 function readPackageJson(root: string): Record<string, unknown> {
   const raw = fs.readFileSync(path.join(root, "package.json"), "utf-8");
   return JSON.parse(raw) as Record<string, unknown>;
@@ -86,7 +205,7 @@ export function checkNodeVersion(root: string): PreflightCheckResult {
     };
   }
 
-  const ok = meetsMinVersion(actual, required);
+  const ok = satisfiesVersionRange(actual, required);
   return {
     id: "node-version",
     label: "Node.js version",
@@ -130,7 +249,7 @@ export function checkNpmVersion(root: string): PreflightCheckResult {
     };
   }
 
-  const ok = meetsMinVersion(actual, required);
+  const ok = satisfiesVersionRange(actual, required);
   return {
     id: "npm-version",
     label: "npm version",

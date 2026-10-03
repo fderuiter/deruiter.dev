@@ -23,28 +23,39 @@ To prevent route drift, unindexed navigation entries, and architectural regressi
 
 ### Prerequisites
 
-Ensure Node.js 22+ and npm 10+ are installed on your system:
+Setup checks these for you and prints the install command for your platform
+when something is missing. You need git, Node.js `>=22.0.0 <25.0.0` (Node 22
+or 24 LTS; CI runs Node 24) and npm 10 or newer (`packageManager` pins
+`npm@10.9.2`):
 
 ```bash
-node -v  # Must be >= v22.0.0
+node -v  # Must be >= v22.0.0 and below v25
 npm -v   # Must be >= 10.0.0
 ```
 
 Work on Linux or macOS. On Windows, clone and run the repository inside [WSL 2](https://learn.microsoft.com/windows/wsl/install) (Ubuntu), not in PowerShell, Command Prompt or Git Bash. The npm scripts, Husky hooks, the git guardrail and several tests assume a POSIX shell and tools such as `bash` and `unzip`, and CI and Vercel both run Linux. `npm run preflight` fails on native Windows, and `npm install` prints a warning there (#939).
 
-### Automated Interactive Setup
+### Automated Setup
 
-Run the developer onboarding setup wizard:
+From a fresh clone, run:
 
 ```bash
-npm run setup
+./scripts/setup.sh
 ```
 
-This automated workflow checks Node/npm versions, syncs `.env.example` to `.env.local` if missing, initializes the Prisma database schema, seeds default clinical trial case study data, and verifies workspace health.
+It checks the toolchain, installs dependencies with `npm ci`, creates `.env.local` for the profile you choose (`local-minimal`, `hosted-development` or `deployment`), offers each optional integration, asks separately before applying the schema and before loading sample data, and offers verification checks from cheapest to most expensive. It never prints a secret, never publishes a credential without your confirmation, and refuses to mutate an obvious production database. `npm run setup` runs the same stages after dependencies are installed.
+
+Agents and CI run it without prompts:
+
+```bash
+./scripts/setup.sh --non-interactive --skip-db --json
+```
+
+The [setup reference](docs/reference/setup.md) documents every flag, the profiles, which stages mutate files, databases or deployment settings, and how to resume, repair or roll back a partial run.
 
 ### Secondary Services & Environment Setup
 
-- To configure optional Clerk authentication and author access allowlists interactively:
+- To configure optional Clerk authentication and author access allowlists interactively (this runs only the setup wizard's Clerk adapter):
   ```bash
   npm run setup:clerk
   ```

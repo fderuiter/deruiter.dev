@@ -6,10 +6,16 @@
 
 # Function: validateNodeRuntime()
 
-> **validateNodeRuntime**(): `object`
+> **validateNodeRuntime**(`root?`): `object`
 
-Validate the Node.js runtime floor. Node 22 LTS and Node 24 LTS are both
-supported, matching engines.node and the version CI runs.
+Checks the running Node.js against `engines.node` in the workspace's
+`package.json`. Without a declared range, Node 22 or newer is accepted.
+
+## Parameters
+
+### root?
+
+`string`
 
 ## Returns
 
@@ -18,6 +24,10 @@ supported, matching engines.node and the version CI runs.
 ### currentVersion
 
 > **currentVersion**: `string`
+
+### required
+
+> **required**: `string`
 
 ### valid
 

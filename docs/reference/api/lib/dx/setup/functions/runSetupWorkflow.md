@@ -6,9 +6,12 @@
 
 # Function: runSetupWorkflow()
 
-> **runSetupWorkflow**(`options?`): `Promise`\<[`SetupResult`](../interfaces/SetupResult.md)\>
+> **runSetupWorkflow**(`options?`): `Promise`\<[`SetupResult`](../types/interfaces/SetupResult.md)\>
 
-Run Interactive DX Setup Routine
+Runs the application-level setup stages in order: toolchain, lockfile,
+environment, integrations, database, verification. Each stage records a
+status, the run never prints a credential value, and `.setup-state.json`
+keeps non-secret progress so `--resume` can skip finished stages.
 
 ## Parameters
 
@@ -18,4 +21,4 @@ Run Interactive DX Setup Routine
 
 ## Returns
 
-`Promise`\<[`SetupResult`](../interfaces/SetupResult.md)\>
+`Promise`\<[`SetupResult`](../types/interfaces/SetupResult.md)\>

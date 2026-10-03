@@ -21,3 +21,4 @@
 - [checkTsxExecution](functions/checkTsxExecution.md)
 - [meetsMinVersion](functions/meetsMinVersion.md)
 - [runPreflight](functions/runPreflight.md)
+- [satisfiesVersionRange](functions/satisfiesVersionRange.md)

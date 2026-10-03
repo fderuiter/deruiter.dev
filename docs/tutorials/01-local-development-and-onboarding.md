@@ -8,28 +8,55 @@ specific recurring tasks instead.
 
 ## 1. Prerequisites
 
-- **Node.js >= 22.0.0** (Node 22 LTS and Node 24 LTS are both supported;
-  CI runs Node 24)
+- **git**, on Linux, macOS, or Windows through WSL 2 (Ubuntu)
+- **Node.js `>=22.0.0 <25.0.0`** (Node 22 LTS and Node 24 LTS are both
+  supported; CI runs Node 24)
 - **npm >= 10.0.0** (the sole supported package manager; bun, yarn, and
   pnpm are unsupported)
 - A Postgres connection string (a free [Neon](https://neon.tech) serverless
   Postgres project works well for local development)
 
-## 2. Install dependencies
+You don't need to check these by hand: the setup wizard reads them from
+`package.json` and prints the install command for your platform when one is
+missing.
+
+## 2. Run the setup wizard
+
+From the repository root:
 
 ```bash
-npm install
+./scripts/setup.sh
 ```
 
-`npm install` runs `npx prisma generate` automatically via a `postinstall`
-hook, so the Prisma client is ready immediately: `npx tsc --noEmit` and
-other type-checks work right after install with no extra step.
+It runs these stages in order and tells you what each one did:
 
-## 3. Configure your environment
+1. **Platform and toolchain**: detects your OS and checks git, Node.js and
+   npm against `package.json`.
+2. **Dependencies**: `npm ci`, which installs exactly what
+   `package-lock.json` records. A `postinstall` hook runs
+   `npx prisma generate`, so the Prisma client is ready immediately.
+3. **Environment**: pick a profile. `local-minimal` is right for a first
+   run. The wizard creates `.env.local` from `.env.example`, generates
+   `CRON_SECRET`, and asks (with hidden input) for `DATABASE_URL`.
+4. **Integrations**: Clerk, Resend, Upstash, Sentry and the rest are
+   optional. Skip them now; each runs in a documented degraded mode.
+5. **Database**: asks before applying the schema, then separately before
+   loading sample data. It refuses anything that looks like a production
+   database.
+6. **Verification**: offers checks from cheapest (toolchain) to most
+   expensive (`npm run quality`). Say no to stop.
 
-Copy the example environment file and fill in your own values:
+If you stop partway, `./scripts/setup.sh --resume` picks up where you left
+off. The [setup reference](../reference/setup.md) documents every flag,
+including the non-interactive mode agents and CI use.
+
+## 3. Or configure the environment by hand
+
+The wizard is a convenience over these steps. Copy the example environment
+file and fill in your own values:
 
 ```bash
+npm ci
 cp .env.example .env.local
 ```
 
@@ -46,7 +73,7 @@ npm run env:check
 ```
 
 If you need Clerk authentication configured for the admin surfaces, run the
-interactive setup instead of hand-editing values:
+wizard's Clerk adapter on its own instead of hand-editing values:
 
 ```bash
 npm run setup:clerk
@@ -54,7 +81,8 @@ npm run setup:clerk
 
 ## 4. Migrate the database with Prisma
 
-Push the committed schema to your database:
+Skip this if the wizard applied the schema for you. Otherwise, push the
+committed schema to your local database:
 
 ```bash
 npx prisma db push

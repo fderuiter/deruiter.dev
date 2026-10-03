@@ -457,6 +457,7 @@ describe("SEO Architecture & JSON-LD Schemas", () => {
     expect(urls).toContain(`${expectedBase}/arcade/quasi-puzzler`);
     expect(urls).toContain(`${expectedBase}/arcade/garmin-watch`);
     expect(urls).toContain(`${expectedBase}/arcade/clinical-chaos`);
+    expect(urls).toContain(`${expectedBase}/arcade/protocol-drift`);
     expect(urls).toContain(`${expectedBase}/arcade/retro-labyrinth`);
     expect(urls).toContain(`${expectedBase}/arcade/working-with-duck`);
     expect(urls).toContain(`${expectedBase}/proof`);
@@ -772,7 +773,7 @@ describe("SEO Architecture & JSON-LD Schemas", () => {
     }
   });
 
-  it("all 9 targeted showcase, asset hub, and arcade route social preview cards exist and return edge-cached image responses", async () => {
+  it("all 10 targeted showcase, asset hub, and arcade route social preview cards exist and return edge-cached image responses", async () => {
     const { default: crfOg } = await import("@/app/crf/opengraph-image");
     const { default: neuroOg } = await import("@/app/neuro/opengraph-image");
     const { default: clinicalChaosOg } =
@@ -783,6 +784,8 @@ describe("SEO Architecture & JSON-LD Schemas", () => {
       await import("@/app/arcade/laser-loon/opengraph-image");
     const { default: laserLoonWorkOg } =
       await import("@/app/work/laser-loon/opengraph-image");
+    const { default: protocolDriftOg } =
+      await import("@/app/arcade/protocol-drift/opengraph-image");
     const { default: quasiPuzzlerOg } =
       await import("@/app/arcade/quasi-puzzler/opengraph-image");
     const { default: retroLabyrinthOg } =
@@ -814,6 +817,11 @@ describe("SEO Architecture & JSON-LD Schemas", () => {
         routeKey: "laserLoonCaseStudy",
       },
       {
+        name: "/arcade/protocol-drift",
+        generator: protocolDriftOg,
+        routeKey: "protocolDrift",
+      },
+      {
         name: "/arcade/quasi-puzzler",
         generator: quasiPuzzlerOg,
         routeKey: "quasiPuzzler",
@@ -830,7 +838,7 @@ describe("SEO Architecture & JSON-LD Schemas", () => {
       },
     ];
 
-    expect(targetedGenerators).toHaveLength(9);
+    expect(targetedGenerators).toHaveLength(10);
 
     for (const item of targetedGenerators) {
       const res = item.generator();

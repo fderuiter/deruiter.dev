@@ -79,3 +79,29 @@ it too is left to its own ADR.
 - The preview stills go stale when a game's look changes. Retake them from a
   desktop fullscreen cabinet when that happens.
 - Gating or un-gating a game is a one-line change in its `*Client.tsx`.
+
+## Amendment 2026-10-03: Protocol Drift and the current gated list
+
+Protocol Drift ([ADR 0056](0056-protocol-drift-architecture.md)) opts into the
+gate for the same reason as the original six: its pipeline canvas, tri-pane
+Forensic Inspector and lock checklists need a pointer and a wide viewport. The
+rule is unchanged, `(pointer: coarse) and (max-width: 1023px)` through
+`DesktopOnlyGate`, and so is the escape hatch.
+
+The gated games are now:
+
+| Game                  | `gameId`            | Added                     |
+| --------------------- | ------------------- | ------------------------- |
+| Working With Duck     | `working-with-duck` | This ADR                  |
+| Laser Loon            | `laser-loon`        | This ADR                  |
+| Quasi-Perfect Puzzler | `quasi-puzzler`     | This ADR                  |
+| Monkey C Mayhem       | `garmin-watch`      | This ADR                  |
+| Clinical Trial Chaos  | `clinical-chaos`    | This ADR                  |
+| Retro Labyrinth       | `retro-labyrinth`   | This ADR                  |
+| Study Director        | `study-director`    | ADR 0054                  |
+| Protocol Drift        | `protocol-drift`    | This amendment (ADR 0056) |
+
+Protocol Drift ships a preview still at
+`public/images/arcade/previews/protocol-drift.webp` (800x500) and is covered by
+the Playwright gate spec's game list in `__tests__/e2e/desktop-only-gate.spec.ts`.
+Trial & Error stays ungated, as above.

@@ -26,6 +26,7 @@ export const ARCADE_STORAGE_KEYS: Record<string, string> = {
   "clinical-chaos": "clinical_chaos_highscore",
   "trial-and-error": "trial_and_error_high_score",
   "study-director": "study_director_high_score",
+  "protocol-drift": "protocol_drift_high_score",
   "retro-labyrinth": "retro_labyrinth_highscore",
   "meme-vault": "unlocked_meme_vault",
 };
@@ -221,6 +222,32 @@ export const ARCADE_TROPHIES: ArcadeTrophy[] = [
     category: "mastery",
     targetScore: 500,
     conditionDescription: "Reach 500+ points in Study Director",
+  },
+
+  // Protocol Drift
+  {
+    id: "protocol_drift_locked",
+    gameId: "protocol-drift",
+    title: "Database Locked",
+    subtitle: "Protocol Drift",
+    description: "Clear both Database Lock gates for Study PD-101.",
+    icon: "ShieldCheck",
+    category: "gameplay",
+    targetScore: 100,
+    conditionDescription: "Lock the Protocol Drift database",
+  },
+  {
+    id: "protocol_drift_defensible",
+    gameId: "protocol-drift",
+    title: "Defensible Lock",
+    subtitle: "Protocol Drift",
+    description:
+      "Lock the database and earn all three preventative badges without fabricating data.",
+    icon: "Trophy",
+    category: "mastery",
+    targetScore: 400,
+    conditionDescription:
+      "Earn every Protocol Drift preventative badge at lock",
   },
 
   // Retro Labyrinth

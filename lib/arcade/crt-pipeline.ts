@@ -488,6 +488,7 @@ export const CABINET_CRT_PROFILES: Readonly<Record<string, CabinetCrtProfile>> =
     "clinical-chaos": { surface: "dom", gameDrawsCrt: false },
     "trial-and-error": { surface: "dom", gameDrawsCrt: false },
     "study-director": { surface: "dom", gameDrawsCrt: false },
+    "protocol-drift": { surface: "dom", gameDrawsCrt: false },
     "meme-vault": { surface: "dom", gameDrawsCrt: false },
   };
 

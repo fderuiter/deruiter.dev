@@ -209,6 +209,16 @@ export const Footer: React.FC = () => {
               </li>
               <li>
                 <Link
+                  href="/arcade/protocol-drift"
+                  onMouseEnter={handleHover}
+                  className="text-zinc-400 hover:text-brand-cyan transition-colors flex items-center gap-1.5"
+                >
+                  <IconShieldCheck className="w-3 h-3 text-amber-400" />
+                  Protocol Drift
+                </Link>
+              </li>
+              <li>
+                <Link
                   href="/arcade/retro-labyrinth"
                   onMouseEnter={handleHover}
                   className="text-zinc-400 hover:text-brand-cyan transition-colors flex items-center gap-1.5"

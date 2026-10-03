@@ -18,5 +18,15 @@
     "reason": "YAML parser CPU consumption issue in markdownlint build tooling",
     "owner": "security-team",
     "followUp": "#1402"
+  },
+  {
+    "advisory": "GHSA-vfj7-8cjw-p6xm",
+    "package": "braces",
+    "expiresAt": "2026-11-01T00:00:00Z",
+    "createdAt": "2026-10-03T00:00:00Z",
+    "severity": "high",
+    "reason": "Stack exhaustion in braces@3.0.3, reached only through eslint-config-next lint tooling (fast-glob, micromatch) expanding repository-controlled glob patterns; no patched braces release exists yet",
+    "owner": "security-team",
+    "followUp": "#1783"
   }
 ]

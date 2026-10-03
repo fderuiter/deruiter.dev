@@ -423,6 +423,14 @@ describe("Security Audit Script", () => {
   describe("runSecurityAudit", () => {
     const testNow = new Date("2026-08-19T12:00:00Z");
 
+    // The clock is frozen, so the repository's real ignore list would be
+    // judged against a date months before its exceptions were written. Tests
+    // that exercise ignore rules supply their own list over this empty one.
+    beforeEach(() => {
+      vi.spyOn(fs, "readFileSync").mockReturnValue("[]");
+      vi.spyOn(fs, "existsSync").mockReturnValue(true);
+    });
+
     it("should pass when there are no vulnerabilities", () => {
       vi.mocked(spawnSync).mockReturnValue(
         fromPartial<SpawnSyncReturns<string>>({

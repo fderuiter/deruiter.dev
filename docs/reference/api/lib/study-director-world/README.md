@@ -26,9 +26,159 @@ Re-exports [ActionCost](types/interfaces/ActionCost.md)
 
 ***
 
+### adjustTrust
+
+Re-exports [adjustTrust](internal/team/functions/adjustTrust.md)
+
+***
+
+### answerCall
+
+Re-exports [answerCall](internal/channels/functions/answerCall.md)
+
+***
+
+### Assignment
+
+Re-exports [Assignment](types/interfaces/Assignment.md)
+
+***
+
+### ASSIGNMENT\_LOAD
+
+Re-exports [ASSIGNMENT_LOAD](internal/delegation/variables/ASSIGNMENT_LOAD.md)
+
+***
+
+### assignmentsFor
+
+Re-exports [assignmentsFor](internal/delegation/functions/assignmentsFor.md)
+
+***
+
+### BIN\_FIRE\_BELOW
+
+Re-exports [BIN_FIRE_BELOW](internal/dressing/variables/BIN_FIRE_BELOW.md)
+
+***
+
+### BIN\_SMOKE\_BELOW
+
+Re-exports [BIN_SMOKE_BELOW](internal/dressing/variables/BIN_SMOKE_BELOW.md)
+
+***
+
+### binFor
+
+Re-exports [binFor](internal/dressing/functions/binFor.md)
+
+***
+
+### BinState
+
+Re-exports [BinState](types/type-aliases/BinState.md)
+
+***
+
+### Bond
+
+Re-exports [Bond](types/interfaces/Bond.md)
+
+***
+
+### bondFor
+
+Re-exports [bondFor](internal/team/functions/bondFor.md)
+
+***
+
+### brushOff
+
+Re-exports [brushOff](internal/channels/functions/brushOff.md)
+
+***
+
+### CallRecord
+
+Re-exports [CallRecord](types/interfaces/CallRecord.md)
+
+***
+
+### carOutcome
+
+Re-exports [carOutcome](internal/sites/functions/carOutcome.md)
+
+***
+
+### Channel
+
+Re-exports [Channel](types/type-aliases/Channel.md)
+
+***
+
+### channelFor
+
+Re-exports [channelFor](internal/channels/functions/channelFor.md)
+
+***
+
+### checkAtStation
+
+Re-exports [checkAtStation](internal/sites/functions/checkAtStation.md)
+
+***
+
+### checkBlocker
+
+Re-exports [checkBlocker](internal/sites/functions/checkBlocker.md)
+
+***
+
+### closeVisit
+
+Re-exports [closeVisit](internal/sites/functions/closeVisit.md)
+
+***
+
+### coordinatorProfile
+
+Re-exports [coordinatorProfile](internal/sites/functions/coordinatorProfile.md)
+
+***
+
+### CoordinatorProfile
+
+Re-exports [CoordinatorProfile](types/interfaces/CoordinatorProfile.md)
+
+***
+
+### CoordinatorTrait
+
+Re-exports [CoordinatorTrait](types/interfaces/CoordinatorTrait.md)
+
+***
+
+### countMarks
+
+Re-exports [countMarks](internal/dressing/functions/countMarks.md)
+
+***
+
 ### createWorld
 
 Re-exports [createWorld](internal/day/functions/createWorld.md)
+
+***
+
+### CRO\_FLOOR
+
+Re-exports [CRO_FLOOR](internal/floor/variables/CRO_FLOOR.md)
+
+***
+
+### currentMap
+
+Re-exports [currentMap](internal/sites/functions/currentMap.md)
 
 ***
 
@@ -44,9 +194,129 @@ Re-exports [DAY_START](types/variables/DAY_START.md)
 
 ***
 
+### daySchedule
+
+Re-exports [daySchedule](internal/team/functions/daySchedule.md)
+
+***
+
+### DaySchedule
+
+Re-exports [DaySchedule](types/interfaces/DaySchedule.md)
+
+***
+
+### decide
+
+Re-exports [decide](internal/channels/functions/decide.md)
+
+***
+
+### DEFAULT\_INTERACTIONS
+
+Re-exports [DEFAULT_INTERACTIONS](internal/interact/variables/DEFAULT_INTERACTIONS.md)
+
+***
+
+### delegate
+
+Re-exports [delegate](internal/delegation/functions/delegate.md)
+
+***
+
+### DELEGATION\_VERBS
+
+Re-exports [DELEGATION_VERBS](types/variables/DELEGATION_VERBS.md)
+
+***
+
+### DelegationOutcome
+
+Re-exports [DelegationOutcome](types/interfaces/DelegationOutcome.md)
+
+***
+
+### DelegationVerb
+
+Re-exports [DelegationVerb](types/type-aliases/DelegationVerb.md)
+
+***
+
+### describeDressing
+
+Re-exports [describeDressing](internal/dressing/functions/describeDressing.md)
+
+***
+
+### describePerson
+
+Re-exports [describePerson](internal/team/functions/describePerson.md)
+
+***
+
+### describeSurroundings
+
+Re-exports [describeSurroundings](internal/interact/functions/describeSurroundings.md)
+
+***
+
+### deskView
+
+Re-exports [deskView](internal/channels/functions/deskView.md)
+
+***
+
+### DeskView
+
+Re-exports [DeskView](types/interfaces/DeskView.md)
+
+***
+
+### DialogueLine
+
+Re-exports [DialogueLine](types/interfaces/DialogueLine.md)
+
+***
+
+### dialogueLines
+
+Re-exports [dialogueLines](internal/dialogue/functions/dialogueLines.md)
+
+***
+
 ### DigestLine
 
 Re-exports [DigestLine](types/interfaces/DigestLine.md)
+
+***
+
+### DirectoryEntry
+
+Re-exports [DirectoryEntry](types/interfaces/DirectoryEntry.md)
+
+***
+
+### DirectoryTarget
+
+Re-exports [DirectoryTarget](types/type-aliases/DirectoryTarget.md)
+
+***
+
+### documentAtDesk
+
+Re-exports [documentAtDesk](internal/channels/functions/documentAtDesk.md)
+
+***
+
+### dressFloor
+
+Re-exports [dressFloor](internal/dressing/functions/dressFloor.md)
+
+***
+
+### DressingInput
+
+Re-exports [DressingInput](internal/dressing/type-aliases/DressingInput.md)
 
 ***
 
@@ -56,9 +326,87 @@ Re-exports [drinkCoffee](internal/clock/functions/drinkCoffee.md)
 
 ***
 
+### EdcRow
+
+Re-exports [EdcRow](types/interfaces/EdcRow.md)
+
+***
+
+### edcScreen
+
+Re-exports [edcScreen](internal/channels/functions/edcScreen.md)
+
+***
+
+### endMeeting
+
+Re-exports [endMeeting](internal/meetings/functions/endMeeting.md)
+
+***
+
+### eventDialogue
+
+Re-exports [eventDialogue](internal/channels/functions/eventDialogue.md)
+
+***
+
+### EventDialogue
+
+Re-exports [EventDialogue](types/interfaces/EventDialogue.md)
+
+***
+
+### EventVia
+
+Re-exports [EventVia](types/type-aliases/EventVia.md)
+
+***
+
+### examineSelf
+
+Re-exports [examineSelf](internal/dressing/functions/examineSelf.md)
+
+***
+
+### Facing
+
+Re-exports [Facing](types/type-aliases/Facing.md)
+
+***
+
+### FACINGS
+
+Re-exports [FACINGS](types/variables/FACINGS.md)
+
+***
+
+### facingToward
+
+Re-exports [facingToward](internal/movement/functions/facingToward.md)
+
+***
+
 ### fatigueFrom
 
 Re-exports [fatigueFrom](internal/clock/functions/fatigueFrom.md)
+
+***
+
+### FloorDressing
+
+Re-exports [FloorDressing](types/interfaces/FloorDressing.md)
+
+***
+
+### FloorMood
+
+Re-exports [FloorMood](types/type-aliases/FloorMood.md)
+
+***
+
+### followRoute
+
+Re-exports [followRoute](internal/movement/functions/followRoute.md)
 
 ***
 
@@ -68,15 +416,147 @@ Re-exports [formatClock](internal/clock/functions/formatClock.md)
 
 ***
 
+### getRoom
+
+Re-exports [getRoom](internal/floor/functions/getRoom.md)
+
+***
+
+### getStation
+
+Re-exports [getStation](internal/floor/functions/getStation.md)
+
+***
+
 ### goHome
 
 Re-exports [goHome](internal/day/functions/goHome.md)
 
 ***
 
+### hallwayCatch
+
+Re-exports [hallwayCatch](internal/channels/functions/hallwayCatch.md)
+
+***
+
 ### HARD\_STOP
 
 Re-exports [HARD_STOP](types/variables/HARD_STOP.md)
+
+***
+
+### hudReadout
+
+Re-exports [hudReadout](internal/interact/functions/hudReadout.md)
+
+***
+
+### HudReadout
+
+Re-exports [HudReadout](types/interfaces/HudReadout.md)
+
+***
+
+### ignoreCall
+
+Re-exports [ignoreCall](internal/channels/functions/ignoreCall.md)
+
+***
+
+### initialBond
+
+Re-exports [initialBond](internal/team/functions/initialBond.md)
+
+***
+
+### interact
+
+Re-exports [interact](internal/interact/functions/interact.md)
+
+***
+
+### InteractionHandler
+
+Re-exports [InteractionHandler](types/type-aliases/InteractionHandler.md)
+
+***
+
+### InteractionHandlers
+
+Re-exports [InteractionHandlers](types/interfaces/InteractionHandlers.md)
+
+***
+
+### InteractionOutcome
+
+Re-exports [InteractionOutcome](types/interfaces/InteractionOutcome.md)
+
+***
+
+### isBlocked
+
+Re-exports [isBlocked](internal/movement/functions/isBlocked.md)
+
+***
+
+### isWalkable
+
+Re-exports [isWalkable](internal/floor/functions/isWalkable.md)
+
+***
+
+### LineKind
+
+Re-exports [LineKind](types/type-aliases/LineKind.md)
+
+***
+
+### lowestMeter
+
+Re-exports [lowestMeter](internal/dressing/functions/lowestMeter.md)
+
+***
+
+### markRaised
+
+Re-exports [markRaised](internal/channels/functions/markRaised.md)
+
+***
+
+### Meeting
+
+Re-exports [Meeting](types/interfaces/Meeting.md)
+
+***
+
+### MEETING\_MINUTES
+
+Re-exports [MEETING_MINUTES](internal/meetings/variables/MEETING_MINUTES.md)
+
+***
+
+### MeetingReport
+
+Re-exports [MeetingReport](types/interfaces/MeetingReport.md)
+
+***
+
+### messagesFrom
+
+Re-exports [messagesFrom](internal/channels/functions/messagesFrom.md)
+
+***
+
+### Mood
+
+Re-exports [Mood](types/type-aliases/Mood.md)
+
+***
+
+### moodFor
+
+Re-exports [moodFor](internal/dressing/functions/moodFor.md)
 
 ***
 
@@ -92,6 +572,42 @@ Re-exports [newWorld](internal/day/functions/newWorld.md)
 
 ***
 
+### nightlyCapacity
+
+Re-exports [nightlyCapacity](internal/delegation/functions/nightlyCapacity.md)
+
+***
+
+### Observation
+
+Re-exports [Observation](types/interfaces/Observation.md)
+
+***
+
+### observe
+
+Re-exports [observe](internal/team/functions/observe.md)
+
+***
+
+### officeDirectory
+
+Re-exports [officeDirectory](internal/interact/functions/officeDirectory.md)
+
+***
+
+### OPEN\_TRUST
+
+Re-exports [OPEN_TRUST](internal/team/variables/OPEN_TRUST.md)
+
+***
+
+### openAtDesk
+
+Re-exports [openAtDesk](internal/channels/functions/openAtDesk.md)
+
+***
+
 ### OvernightLine
 
 Re-exports [OvernightLine](types/interfaces/OvernightLine.md)
@@ -104,9 +620,201 @@ Re-exports [OvernightReport](types/interfaces/OvernightReport.md)
 
 ***
 
+### OWNERSHIP\_COACHING
+
+Re-exports [OWNERSHIP_COACHING](internal/delegation/variables/OWNERSHIP_COACHING.md)
+
+***
+
+### OWNERSHIP\_TRUST
+
+Re-exports [OWNERSHIP_TRUST](internal/delegation/variables/OWNERSHIP_TRUST.md)
+
+***
+
+### paperStacksFor
+
+Re-exports [paperStacksFor](internal/dressing/functions/paperStacksFor.md)
+
+***
+
 ### parseWorld
 
 Re-exports [parseWorld](internal/save/functions/parseWorld.md)
+
+***
+
+### pendingFrom
+
+Re-exports [pendingFrom](internal/team/functions/pendingFrom.md)
+
+***
+
+### performCheck
+
+Re-exports [performCheck](internal/sites/functions/performCheck.md)
+
+***
+
+### PersonActivity
+
+Re-exports [PersonActivity](types/type-aliases/PersonActivity.md)
+
+***
+
+### PersonPlacement
+
+Re-exports [PersonPlacement](types/interfaces/PersonPlacement.md)
+
+***
+
+### personState
+
+Re-exports [personState](internal/team/functions/personState.md)
+
+***
+
+### PersonState
+
+Re-exports [PersonState](types/interfaces/PersonState.md)
+
+***
+
+### PhoneCall
+
+Re-exports [PhoneCall](types/interfaces/PhoneCall.md)
+
+***
+
+### phoneCalls
+
+Re-exports [phoneCalls](internal/channels/functions/phoneCalls.md)
+
+***
+
+### PI\_LEAVES
+
+Re-exports [PI_LEAVES](internal/sites/variables/PI_LEAVES.md)
+
+***
+
+### placePeople
+
+Re-exports [placePeople](internal/team/functions/placePeople.md)
+
+***
+
+### placeTeam
+
+Re-exports [placeTeam](internal/people/functions/placeTeam.md)
+
+***
+
+### planRoute
+
+Re-exports [planRoute](internal/movement/functions/planRoute.md)
+
+***
+
+### plantFor
+
+Re-exports [plantFor](internal/dressing/functions/plantFor.md)
+
+***
+
+### PLAYER\_MUG
+
+Re-exports [PLAYER_MUG](internal/dressing/variables/PLAYER_MUG.md)
+
+***
+
+### PlayerState
+
+Re-exports [PlayerState](types/interfaces/PlayerState.md)
+
+***
+
+### positionAt
+
+Re-exports [positionAt](internal/team/functions/positionAt.md)
+
+***
+
+### redMarksFor
+
+Re-exports [redMarksFor](internal/dressing/functions/redMarksFor.md)
+
+***
+
+### relationshipCard
+
+Re-exports [relationshipCard](internal/team/functions/relationshipCard.md)
+
+***
+
+### RelationshipCard
+
+Re-exports [RelationshipCard](types/interfaces/RelationshipCard.md)
+
+***
+
+### RETRY\_MINUTES
+
+Re-exports [RETRY_MINUTES](internal/channels/variables/RETRY_MINUTES.md)
+
+***
+
+### ringingCall
+
+Re-exports [ringingCall](internal/channels/functions/ringingCall.md)
+
+***
+
+### ROLE\_LABEL
+
+Re-exports [ROLE_LABEL](internal/team/variables/ROLE_LABEL.md)
+
+***
+
+### Room
+
+Re-exports [Room](types/interfaces/Room.md)
+
+***
+
+### ROOM\_IDS
+
+Re-exports [ROOM_IDS](types/variables/ROOM_IDS.md)
+
+***
+
+### roomAt
+
+Re-exports [roomAt](internal/floor/functions/roomAt.md)
+
+***
+
+### RoomCondition
+
+Re-exports [RoomCondition](types/interfaces/RoomCondition.md)
+
+***
+
+### roomConditions
+
+Re-exports [roomConditions](internal/people/functions/roomConditions.md)
+
+***
+
+### RoomId
+
+Re-exports [RoomId](types/type-aliases/RoomId.md)
+
+***
+
+### Route
+
+Re-exports [Route](types/interfaces/Route.md)
 
 ***
 
@@ -116,9 +824,147 @@ Re-exports [ROUTINE_MINUTES_PER_POINT](types/variables/ROUTINE_MINUTES_PER_POINT
 
 ***
 
+### ScheduleBlock
+
+Re-exports [ScheduleBlock](types/interfaces/ScheduleBlock.md)
+
+***
+
+### senderOf
+
+Re-exports [senderOf](internal/team/functions/senderOf.md)
+
+***
+
+### sendToVoicemail
+
+Re-exports [sendToVoicemail](internal/channels/functions/sendToVoicemail.md)
+
+***
+
 ### serializeWorld
 
 Re-exports [serializeWorld](internal/save/functions/serializeWorld.md)
+
+***
+
+### SET\_DRESSING\_MARKS
+
+Re-exports [SET_DRESSING_MARKS](types/variables/SET_DRESSING_MARKS.md)
+
+***
+
+### SetDressingMark
+
+Re-exports [SetDressingMark](types/type-aliases/SetDressingMark.md)
+
+***
+
+### SITE\_CHECK\_IDS
+
+Re-exports [SITE_CHECK_IDS](types/variables/SITE_CHECK_IDS.md)
+
+***
+
+### SITE\_CHECKS
+
+Re-exports [SITE_CHECKS](internal/sites/variables/SITE_CHECKS.md)
+
+***
+
+### SITE\_CLOSES
+
+Re-exports [SITE_CLOSES](internal/sites/variables/SITE_CLOSES.md)
+
+***
+
+### SITE\_IDS
+
+Re-exports [SITE_IDS](internal/site-maps/variables/SITE_IDS.md)
+
+***
+
+### SITE\_INTERACTIONS
+
+Re-exports [SITE_INTERACTIONS](internal/sites/variables/SITE_INTERACTIONS.md)
+
+***
+
+### SITE\_MAPS
+
+Re-exports [SITE_MAPS](internal/site-maps/variables/SITE_MAPS.md)
+
+***
+
+### SITE\_ROOM\_IDS
+
+Re-exports [SITE_ROOM_IDS](types/variables/SITE_ROOM_IDS.md)
+
+***
+
+### SITE\_STATION\_IDS
+
+Re-exports [SITE_STATION_IDS](types/variables/SITE_STATION_IDS.md)
+
+***
+
+### SiteCheck
+
+Re-exports [SiteCheck](types/interfaces/SiteCheck.md)
+
+***
+
+### SiteCheckId
+
+Re-exports [SiteCheckId](types/type-aliases/SiteCheckId.md)
+
+***
+
+### SiteFinding
+
+Re-exports [SiteFinding](types/interfaces/SiteFinding.md)
+
+***
+
+### SiteFindingField
+
+Re-exports [SiteFindingField](types/type-aliases/SiteFindingField.md)
+
+***
+
+### SiteObservation
+
+Re-exports [SiteObservation](types/interfaces/SiteObservation.md)
+
+***
+
+### SiteRefusal
+
+Re-exports [SiteRefusal](types/type-aliases/SiteRefusal.md)
+
+***
+
+### siteRefusalText
+
+Re-exports [siteRefusalText](internal/sites/functions/siteRefusalText.md)
+
+***
+
+### SiteResult
+
+Re-exports [SiteResult](types/type-aliases/SiteResult.md)
+
+***
+
+### SiteVisit
+
+Re-exports [SiteVisit](types/interfaces/SiteVisit.md)
+
+***
+
+### SiteVisitReport
+
+Re-exports [SiteVisitReport](types/interfaces/SiteVisitReport.md)
 
 ***
 
@@ -128,9 +974,189 @@ Re-exports [spend](internal/clock/functions/spend.md)
 
 ***
 
+### sponsorAgenda
+
+Re-exports [sponsorAgenda](internal/meetings/functions/sponsorAgenda.md)
+
+***
+
 ### startDay
 
 Re-exports [startDay](internal/day/functions/startDay.md)
+
+***
+
+### startMeeting
+
+Re-exports [startMeeting](internal/meetings/functions/startMeeting.md)
+
+***
+
+### Station
+
+Re-exports [Station](types/interfaces/Station.md)
+
+***
+
+### STATION\_IDS
+
+Re-exports [STATION_IDS](types/variables/STATION_IDS.md)
+
+***
+
+### stationAt
+
+Re-exports [stationAt](internal/floor/functions/stationAt.md)
+
+***
+
+### StationId
+
+Re-exports [StationId](types/type-aliases/StationId.md)
+
+***
+
+### step
+
+Re-exports [step](internal/movement/functions/step.md)
+
+***
+
+### stepFrom
+
+Re-exports [stepFrom](internal/floor/functions/stepFrom.md)
+
+***
+
+### stickyNotesFor
+
+Re-exports [stickyNotesFor](internal/dressing/functions/stickyNotesFor.md)
+
+***
+
+### STREAM\_FOR\_ROLE
+
+Re-exports [STREAM_FOR_ROLE](internal/team/variables/STREAM_FOR_ROLE.md)
+
+***
+
+### STREAM\_LABEL
+
+Re-exports [STREAM_LABEL](internal/team/variables/STREAM_LABEL.md)
+
+***
+
+### talk
+
+Re-exports [talk](internal/dialogue/functions/talk.md)
+
+***
+
+### targetInFront
+
+Re-exports [targetInFront](internal/interact/functions/targetInFront.md)
+
+***
+
+### TEAM\_INTERACTIONS
+
+Re-exports [TEAM_INTERACTIONS](internal/handlers/variables/TEAM_INTERACTIONS.md)
+
+***
+
+### teamHours
+
+Re-exports [teamHours](internal/dressing/functions/teamHours.md)
+
+***
+
+### TeamHoursHint
+
+Re-exports [TeamHoursHint](types/interfaces/TeamHoursHint.md)
+
+***
+
+### TIDY\_ROOM
+
+Re-exports [TIDY_ROOM](internal/people/variables/TIDY_ROOM.md)
+
+***
+
+### tileAt
+
+Re-exports [tileAt](internal/floor/functions/tileAt.md)
+
+***
+
+### TileKind
+
+Re-exports [TileKind](types/type-aliases/TileKind.md)
+
+***
+
+### TilePoint
+
+Re-exports [TilePoint](types/interfaces/TilePoint.md)
+
+***
+
+### travel
+
+Re-exports [travel](internal/sites/functions/travel.md)
+
+***
+
+### travelMinutes
+
+Re-exports [travelMinutes](internal/sites/functions/travelMinutes.md)
+
+***
+
+### TravelOption
+
+Re-exports [TravelOption](types/interfaces/TravelOption.md)
+
+***
+
+### travelOptions
+
+Re-exports [travelOptions](internal/sites/functions/travelOptions.md)
+
+***
+
+### TRUST\_EFFECTS
+
+Re-exports [TRUST_EFFECTS](internal/team/variables/TRUST_EFFECTS.md)
+
+***
+
+### TrustCause
+
+Re-exports [TrustCause](types/type-aliases/TrustCause.md)
+
+***
+
+### undocumentedDecisions
+
+Re-exports [undocumentedDecisions](internal/dialogue/functions/undocumentedDecisions.md)
+
+***
+
+### WALK\_MINUTES\_PER\_TILE
+
+Re-exports [WALK_MINUTES_PER_TILE](internal/movement/variables/WALK_MINUTES_PER_TILE.md)
+
+***
+
+### walkPath
+
+Re-exports [walkPath](internal/team/functions/walkPath.md)
+
+***
+
+### WARY\_TRUST
+
+Re-exports [WARY_TRUST](internal/team/variables/WARY_TRUST.md)
 
 ***
 
@@ -140,9 +1166,45 @@ Re-exports [weekdayFor](internal/clock/functions/weekdayFor.md)
 
 ***
 
+### withBond
+
+Re-exports [withBond](internal/team/functions/withBond.md)
+
+***
+
+### WORK\_STREAMS
+
+Re-exports [WORK_STREAMS](types/variables/WORK_STREAMS.md)
+
+***
+
+### workHours
+
+Re-exports [workHours](internal/dressing/functions/workHours.md)
+
+***
+
+### WorkStream
+
+Re-exports [WorkStream](types/type-aliases/WorkStream.md)
+
+***
+
+### workTheNight
+
+Re-exports [workTheNight](internal/delegation/functions/workTheNight.md)
+
+***
+
 ### WORLD\_ACTIONS
 
 Re-exports [WORLD_ACTIONS](types/variables/WORLD_ACTIONS.md)
+
+***
+
+### WORLD\_MAPS
+
+Re-exports [WORLD_MAPS](internal/floor/variables/WORLD_MAPS.md)
 
 ***
 
@@ -155,6 +1217,18 @@ Re-exports [WORLD_SAVE_KEY](internal/save/variables/WORLD_SAVE_KEY.md)
 ### WorldActionKind
 
 Re-exports [WorldActionKind](types/type-aliases/WorldActionKind.md)
+
+***
+
+### WorldMap
+
+Re-exports [WorldMap](types/interfaces/WorldMap.md)
+
+***
+
+### WorldPanel
+
+Re-exports [WorldPanel](types/type-aliases/WorldPanel.md)
 
 ***
 
@@ -173,3 +1247,9 @@ Re-exports [WorldResult](types/type-aliases/WorldResult.md)
 ### WorldState
 
 Re-exports [WorldState](types/interfaces/WorldState.md)
+
+***
+
+### WorldTarget
+
+Re-exports [WorldTarget](types/type-aliases/WorldTarget.md)

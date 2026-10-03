@@ -16,6 +16,10 @@ import {
   type StudyState,
 } from "@/lib/study-director";
 import { fatigueFrom, weekdayFor } from "./clock";
+import { undocumentedDecisions } from "./dialogue";
+import { workTheNight } from "./delegation";
+import { CRO_FLOOR } from "./floor";
+import { adjustTrust, senderOf } from "./team";
 import {
   DAY_START,
   ROUTINE_MINUTES_PER_POINT,
@@ -44,7 +48,11 @@ export function createWorld(study: StudyState): WorldState {
     overtime: 0,
     fatigue: 0,
     location: ARRIVAL,
+    player: { ...CRO_FLOOR.spawn },
+    walked: 0,
     known: [],
+    map: CRO_FLOOR.id,
+    visit: null,
   };
 }
 
@@ -107,6 +115,7 @@ export function startDay(world: WorldState): {
       text: `Still tired from last night: energy ${energy}`,
       tone: "bad",
     });
+  lines.push(...teamDigest(study));
   return {
     world: {
       ...world,
@@ -116,6 +125,10 @@ export function startDay(world: WorldState): {
       coffees: 0,
       overtime: 0,
       location: ARRIVAL,
+      player: { ...CRO_FLOOR.spawn },
+      walked: 0,
+      map: CRO_FLOOR.id,
+      visit: null,
     },
     digest: {
       day: study.day,
@@ -127,6 +140,31 @@ export function startDay(world: WorldState): {
       lines,
     },
   };
+}
+
+/**
+ * What the morning says about the team (#1688, #1689): who wants a word and
+ * what is still not written up. Who is struggling the player has to see.
+ */
+function teamDigest(study: StudyState): DigestLine[] {
+  const lines: DigestLine[] = [];
+  const asking = new Set<string>();
+  for (const event of inbox(study)) {
+    const member = senderOf(study, event);
+    if (member) asking.add(member.name);
+  }
+  if (asking.size > 0)
+    lines.push({
+      text: `${[...asking].join(" and ")} ${asking.size === 1 ? "wants" : "want"} a word`,
+      tone: "neutral",
+    });
+  const unwritten = undocumentedDecisions(study).length;
+  if (unwritten > 0)
+    lines.push({
+      text: `${plural(unwritten, "decision")} still to write up at your desk`,
+      tone: "bad",
+    });
+  return lines;
 }
 
 const AREA_LABEL: Record<AreaId, string> = {
@@ -211,20 +249,29 @@ export function goHome(world: WorldState): {
   world: WorldState;
   report: OvernightReport;
 } {
-  const before = world.study;
+  const night = workTheNight({ ...world, meeting: null });
+  const before = night.world.study;
   const after = endDay(before);
   const fromPhase = phaseForDay(before.day, before.setup.durationDays);
   const toPhase = phaseForDay(after.day, after.setup.durationDays);
+  let next: WorldState = {
+    ...night.world,
+    study: after,
+    fatigue: fatigueFrom(world.overtime),
+    location: "home",
+  };
+  // A team member whose message ran out of time unanswered was ignored.
+  for (const record of after.log.slice(before.log.length)) {
+    if (record.optionId !== "ignored") continue;
+    const event = getEvent(record.eventId);
+    const member = event ? senderOf(after, event) : null;
+    if (member) next = adjustTrust(next, member.id, "ignore").world;
+  }
   return {
-    world: {
-      ...world,
-      study: after,
-      fatigue: fatigueFrom(world.overtime),
-      location: "home",
-    },
+    world: next,
     report: {
       day: before.day,
-      lines: overnightLines(before, after),
+      lines: [...night.lines, ...overnightLines(before, after)],
       newPhase: toPhase !== fromPhase ? toPhase : null,
       complete: after.status === "complete",
     },

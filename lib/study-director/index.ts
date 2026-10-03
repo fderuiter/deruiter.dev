@@ -14,6 +14,7 @@ export {
   DOCUMENTATION_ATTENTION,
   advanceDay,
   applyDifficulty,
+  applyEffects,
   auditSite,
   computeMeters,
   createStudy,
@@ -21,8 +22,10 @@ export {
   dataManagerCapacity,
   phaseForDay,
   projectedFinishDay,
+  reportedSite,
   resolveDecision,
   routineLoad,
+  siteVisibility,
   totalOpenQueries,
 } from "./internal/model";
 export { STUDY_24_081, STUDY_24_081_SITES, STUDY_24_081_TEAM } from "./presets";
@@ -30,6 +33,7 @@ export { STUDY_EVENTS } from "./internal/events-data";
 export {
   WILDCARDS_PER_RUN,
   beginStudy,
+  documentDecision,
   endDay,
   getEvent,
   inbox,

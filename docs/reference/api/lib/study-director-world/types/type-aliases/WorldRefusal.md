@@ -6,4 +6,4 @@
 
 # Type Alias: WorldRefusal
 
-> **WorldRefusal** = `"too-late"` \| `"too-tired"` \| `"unknown-action"` \| `"study-complete"`
+> **WorldRefusal** = `"too-late"` \| `"too-tired"` \| `"unknown-action"` \| `"study-complete"` \| `"unreachable"`

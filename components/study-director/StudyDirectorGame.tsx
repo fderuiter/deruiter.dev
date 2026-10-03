@@ -8,6 +8,7 @@ import React, {
   useState,
   useSyncExternalStore,
 } from "react";
+import dynamic from "next/dynamic";
 import {
   ATTENTION_PER_DAY,
   AUDIT_ATTENTION,
@@ -59,6 +60,22 @@ import { PersonnelFile } from "./PersonnelFile";
 import { SharePanel } from "./ShareCard";
 import { DifficultyPicker } from "./DifficultyPicker";
 
+/** The walkable world (ADR 0055), loaded only when `#mode=world` asks for it. */
+const StudyDirectorWorld = dynamic(
+  () =>
+    import("@/components/study-director-world/StudyDirectorWorld").then(
+      (mod) => mod.StudyDirectorWorld
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <p className="p-8 font-mono text-xs text-zinc-400">
+        Unlocking the office…
+      </p>
+    ),
+  }
+);
+
 function newStudy(
   scenario: StudyScenario,
   sharedSeed: string | null,
@@ -80,6 +97,28 @@ function subscribeHash(onChange: () => void): () => void {
 /** A seed shared by link (`#seed=...`), or null. */
 function hashSeed(): string | null {
   return SEED_PATTERN.exec(window.location.hash)?.[1] ?? null;
+}
+
+const WORLD_PATTERN = /(?:^#|&)mode=world(?:&|$)/;
+
+/** True when the link asks for the walkable world instead of the desk. */
+function hashWorld(): boolean {
+  return WORLD_PATTERN.test(window.location.hash);
+}
+
+/** Opens the world preview; the hash change switches the view. */
+function enterWorld(): void {
+  window.location.hash = "mode=world";
+}
+
+/** Returns to the classic desk, dropping the mode from the link. */
+function leaveWorld(): void {
+  window.history.replaceState(
+    null,
+    "",
+    window.location.pathname + window.location.search
+  );
+  window.dispatchEvent(new HashChangeEvent("hashchange"));
 }
 
 const DIFFICULTY_PATTERN = /(?:^#|&)difficulty=(calm|standard|rescue)(?:&|$)/;
@@ -112,7 +151,11 @@ export const StudyDirectorGame: React.FC = () => {
   const [career, setCareer] = useState<CareerFile>(() => loadCareer());
   const [news, setNews] = useState<CareerNews | null>(null);
   const [confirmAbandon, setConfirmAbandon] = useState(false);
+  // A study finished in the world, shown in the classic closeout. It is not
+  // saved over the desk's own run (saves are separate per mode, ADR 0055).
+  const [fromWorld, setFromWorld] = useState(false);
   const sharedSeed = useSyncExternalStore(subscribeHash, hashSeed, () => null);
+  const worldMode = useSyncExternalStore(subscribeHash, hashWorld, () => false);
   const sharedDifficulty = useSyncExternalStore(
     subscribeHash,
     hashDifficulty,
@@ -130,8 +173,8 @@ export const StudyDirectorGame: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (state) saveStudy(state);
-  }, [state]);
+    if (state && !fromWorld) saveStudy(state);
+  }, [state, fromWorld]);
 
   const rootRef = useRef<HTMLDivElement>(null);
   const primaryRef = useRef<HTMLButtonElement>(null);
@@ -173,6 +216,7 @@ export const StudyDirectorGame: React.FC = () => {
   );
 
   const start = useCallback((next: StudyState) => {
+    setFromWorld(false);
     setState(next);
     setBaseline(computeMeters(next));
     setOutcome(null);
@@ -207,6 +251,25 @@ export const StudyDirectorGame: React.FC = () => {
       setNews(result.news);
     },
     [career, updateCareer]
+  );
+
+  /**
+   * A world run ends where a classic run does: the report, the verdict and
+   * the share card, filed in the career like any other study.
+   */
+  const closeWorldRun = useCallback(
+    (done: StudyState) => {
+      leaveWorld();
+      setFromWorld(true);
+      setState(done);
+      setBaseline(computeMeters(done));
+      setOutcome(null);
+      setSelectedId(null);
+      setConfirmAbandon(false);
+      closeOut(done);
+      setNotice("The study is complete.");
+    },
+    [closeOut]
   );
 
   const choose = useCallback(
@@ -342,13 +405,19 @@ export const StudyDirectorGame: React.FC = () => {
   }, [state, reportNight, closeOut]);
 
   const restart = useCallback(() => {
-    clearStudySave();
+    if (fromWorld) {
+      // The desk's own run, if any, is still there to resume.
+      setFromWorld(false);
+      setSaved(loadStudySave());
+    } else {
+      clearStudySave();
+      setSaved(null);
+    }
     setState(null);
-    setSaved(null);
     setNews(null);
     setConfirmAbandon(false);
     setNotice("");
-  }, []);
+  }, [fromWorld]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (
@@ -399,6 +468,11 @@ export const StudyDirectorGame: React.FC = () => {
     }
   };
 
+  if (worldMode)
+    return (
+      <StudyDirectorWorld onExit={leaveWorld} onCloseout={closeWorldRun} />
+    );
+
   if (!state) {
     return (
       <BriefingView
@@ -420,6 +494,13 @@ export const StudyDirectorGame: React.FC = () => {
               className="min-h-[44px] border border-amber-500 bg-amber-500/10 px-4 text-sm font-bold text-amber-300 hover:bg-amber-500/20"
             >
               Start the study
+            </button>
+            <button
+              type="button"
+              onClick={enterWorld}
+              className="min-h-[44px] border border-zinc-600 px-4 text-sm text-zinc-200 hover:border-amber-500"
+            >
+              Preview: walk the office
             </button>
             {saved && saved.status === "running" ? (
               <button

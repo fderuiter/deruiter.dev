@@ -389,6 +389,11 @@ export function advanceDay(input: StudyState): StudyState {
   return state;
 }
 
+/**
+ * Applies a set of effects to the study without recording a decision. The
+ * world layer uses it for work that lands over time (#1689): an assignment
+ * a team member clears night by night, or a meeting's cost to the team.
+ */
 export function applyEffects(state: StudyState, effects: Effects): StudyState {
   const adjust = { ...state.adjust };
   for (const id of METER_IDS) {
@@ -525,7 +530,11 @@ export function computeMeters(state: StudyState): Meters {
   return out;
 }
 
-function siteVisibility(state: StudyState, site: SiteState): number {
+/**
+ * The share of a site's problems the dashboard shows, 0 to 1: everything for
+ * a recently audited site, otherwise what its coordinator tends to report.
+ */
+export function siteVisibility(state: StudyState, site: SiteState): number {
   if (
     site.lastAuditedDay !== null &&
     state.day - site.lastAuditedDay <= AUDIT_WINDOW_DAYS
@@ -599,6 +608,30 @@ export function dashboard(state: StudyState): Dashboard {
       health: grade(late, 1, 5),
       summary: late > 0 ? `${late} days behind` : "On plan",
     },
+  };
+}
+
+/**
+ * What the dashboard is being told about one site: each count scaled by the
+ * share of problems the site surfaces (all of them inside an audit window).
+ * Training is reported as current unless the site surfaces that it is not.
+ * Returns null for an unknown site. The true state is what `auditSite`
+ * reports.
+ */
+export function reportedSite(
+  state: StudyState,
+  siteId: string
+): SiteAuditReport | null {
+  const site = state.sites.find((s) => s.id === siteId);
+  if (!site) return null;
+  const share = siteVisibility(state, site);
+  return {
+    siteId,
+    openQueries: Math.round(site.openQueries * share),
+    deviations: Math.round(site.deviations * share),
+    unsignedSource: Math.round(site.unsignedSource * share),
+    eligibilityConcerns: Math.round(site.eligibilityConcerns * share),
+    trainingCurrent: site.trainingCurrent || share < 0.5,
   };
 }
 

@@ -304,3 +304,41 @@ describe("Equipose case study: slug resolves consistently", () => {
     expect(studies.map((s) => s.slug)).toContain(SLUG);
   });
 });
+
+describe("Equipose case study: legacy /case-studies/equipose page is retired (#1781)", () => {
+  const LEGACY_SLUG = "equipose";
+
+  it("keeps the recovered seed row but unpublishes it", () => {
+    const legacy = loadSeedPayloads().find((p) => p.slug === LEGACY_SLUG);
+    expect(legacy, "the recovered row must stay in the seed").toBeDefined();
+    expect((legacy as Record<string, unknown>).published).toBe(false);
+  });
+
+  it("permanently redirects the legacy path to the verified case study", async () => {
+    const { default: nextConfig } = await import("@/next.config");
+    const redirects = await nextConfig.redirects!();
+    expect(redirects).toContainEqual(
+      expect.objectContaining({
+        source: `/case-studies/${LEGACY_SLUG}`,
+        destination: PATH,
+        permanent: true,
+      })
+    );
+  });
+
+  it("is not listed among published case studies when the seeded rows answer", async () => {
+    vi.mocked(prisma.caseStudy.findMany).mockImplementation((async (args?: {
+      where?: { published?: boolean };
+    }) =>
+      loadSeedPayloads()
+        .filter(
+          (p) =>
+            args?.where?.published === undefined ||
+            (p as Record<string, unknown>).published === args.where.published
+        )
+        .map((p) => ({ ...p, id: `db-${p.slug}` }))) as never);
+
+    const studies = await CaseStudyService.getAllPublishedCaseStudies();
+    expect(studies.map((s) => s.slug)).not.toContain(LEGACY_SLUG);
+  });
+});

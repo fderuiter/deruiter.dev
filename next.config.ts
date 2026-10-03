@@ -121,6 +121,13 @@ const nextConfig: NextConfig = {
         destination: "/proof",
         permanent: true,
       },
+      {
+        // Retired duplicate of the Equipose case study, which made compliance
+        // claims the source does not support. Its seed row is unpublished (#1781).
+        source: "/case-studies/equipose",
+        destination: "/case-studies/equipose-randomization",
+        permanent: true,
+      },
     ];
   },
 };

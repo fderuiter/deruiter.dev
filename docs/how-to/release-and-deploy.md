@@ -360,11 +360,11 @@ succeeds: the data-source guard (`failBuildOnDataSourceError` in
    VERCEL_ENV=production npm run build
    ```
 
-3. Inspect the output, not the logs. The database-backed case studies from
-   #870 exist only when the database was read, so
-   `.next/server/app/case-studies/equipose.html` and `qrcraftly.html` must be
-   present. A fallback-only build has neither (`equipose-randomization.html`
-   is a different, static page). The blog cannot tell the two builds apart,
+3. Inspect the output, not the logs. The database-backed case study from
+   #870 exists only when the database was read, so
+   `.next/server/app/case-studies/qrcraftly.html` must be present. A
+   fallback-only build does not have it. (`equipose`, the other database-only
+   row, is unpublished and redirected since #1781, so it is no longer built.) The blog cannot tell the two builds apart,
    because missing posts are filled from fallbacks on the success path.
 
 **Two things that do not work:**

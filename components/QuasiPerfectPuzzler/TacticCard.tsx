@@ -3,6 +3,7 @@
 import React from "react";
 import { motion, PanInfo } from "framer-motion";
 import { TacticDef } from "@/lib/quasi-perfect/types";
+import { tacticCardArt } from "./boardArt";
 
 interface TacticCardProps {
   tactic: TacticDef;
@@ -12,9 +13,26 @@ interface TacticCardProps {
   disabled: boolean;
   onSelect: () => void;
   onDragStart?: () => void;
-  onDragEnd?: (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => void;
+  onDragEnd?: (
+    event: MouseEvent | TouchEvent | PointerEvent,
+    info: PanInfo
+  ) => void;
+  /** Smaller card for wide hands such as the sandbox's full deck. */
+  compact?: boolean;
 }
 
+const RARITY_LABEL = {
+  common: "Common",
+  uncommon: "Uncommon",
+  rare: "Rare",
+  cursed: "Cursed",
+} as const;
+
+/**
+ * A tactic as a playing card: a rarity edge along the top, the glyph and
+ * RAM cost in the corner, a large glyph in the middle, the tactic's name and
+ * a one-line description. It can be tapped or dragged onto a board node.
+ */
 export const TacticCard: React.FC<TacticCardProps> = ({
   tactic,
   labelOverride,
@@ -24,29 +42,29 @@ export const TacticCard: React.FC<TacticCardProps> = ({
   onSelect,
   onDragStart,
   onDragEnd,
+  compact = false,
 }) => {
-  const isSorry = tactic.id === "sorry";
   const displayLabel = labelOverride || tactic.label || tactic.name;
+  const art = tacticCardArt(tactic.id, tactic.baseRamCost);
 
   return (
     <motion.div
       drag={!disabled}
       dragSnapToOrigin={true}
       whileDrag={{ scale: 1.08, zIndex: 50, cursor: "grabbing" }}
-      whileHover={!disabled ? { scale: 1.04, y: -2 } : {}}
-      whileTap={!disabled ? { scale: 0.96 } : {}}
+      whileTap={!disabled ? { scale: 0.97 } : {}}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
       data-tactic-id={tactic.id}
       data-tactic-arg={hypothesisTarget}
-      className={`relative cursor-grab active:cursor-grabbing rounded-xl border p-3 font-mono transition-colors duration-150 select-none ${
+      data-rarity={art.rarity}
+      data-selected={isSelected ? "true" : undefined}
+      className={`qp-card qp-focus relative flex flex-col overflow-hidden rounded-xl font-mono select-none shadow-[0_10px_24px_-14px_rgba(0,0,0,0.9)] ${
+        compact ? "h-[128px] w-[96px]" : "h-[140px] w-[108px]"
+      } ${
         disabled
-          ? "border-zinc-800/60 bg-zinc-950/40 opacity-40 cursor-not-allowed"
-          : isSorry
-          ? "border-rose-500/40 bg-rose-950/30 text-rose-300 hover:border-rose-500/70 hover:shadow-[0_0_15px_rgba(244,63,94,0.3)]"
-          : isSelected
-          ? "border-brand-cyan bg-cyan-950/50 text-cyan-200 shadow-[0_0_20px_rgba(6,182,212,0.4)] ring-2 ring-brand-cyan"
-          : "border-zinc-700 bg-zinc-900/80 text-zinc-100 hover:border-brand-cyan/60 hover:bg-zinc-850"
+          ? "opacity-45 grayscale cursor-not-allowed"
+          : "cursor-grab active:cursor-grabbing"
       }`}
       onClick={(e) => {
         e.stopPropagation();
@@ -54,6 +72,8 @@ export const TacticCard: React.FC<TacticCardProps> = ({
       }}
       role="button"
       tabIndex={disabled ? -1 : 0}
+      aria-disabled={disabled || undefined}
+      aria-pressed={isSelected}
       onKeyDown={(e) => {
         if ((e.key === "Enter" || e.key === " ") && !disabled) {
           e.preventDefault();
@@ -62,38 +82,66 @@ export const TacticCard: React.FC<TacticCardProps> = ({
       }}
       aria-label={`Tactic ${displayLabel}. Costs ${tactic.baseRamCost} GB RAM. ${tactic.description}`}
     >
-      <div className="flex flex-wrap items-center justify-between gap-1 sm:gap-2">
-        <span
-          className={`text-xs sm:text-sm font-bold tracking-tight break-words min-w-0 max-w-full ${
-            isSorry ? "text-rose-400" : isSelected ? "text-brand-cyan" : "text-zinc-100"
-          }`}
-        >
-          {displayLabel}
-        </span>
+      {/* Rarity edge */}
+      <span aria-hidden="true" className="qp-card-edge h-1 w-full shrink-0" />
 
-        <span
-          className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-bold ${
-            isSorry
-              ? "bg-rose-500/20 text-rose-300"
-              : tactic.baseRamCost >= 6
-              ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
-              : "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
-          }`}
-        >
-          {tactic.baseRamCost} GB
+      {/* Corner index: glyph and RAM cost */}
+      <div
+        aria-hidden="true"
+        className="flex items-start justify-between px-2 pt-1.5"
+      >
+        <span className="qp-card-glyph qp-math text-sm leading-none">
+          {art.glyph}
+        </span>
+        <span className="text-[13px] font-bold leading-none tabular-nums text-zinc-100">
+          {tactic.baseRamCost}
+          <span className="text-[9px] font-bold tracking-wider text-zinc-400">
+            {" GB"}
+          </span>
         </span>
       </div>
 
-      <p className="mt-1.5 text-[10px] sm:text-[11px] leading-tight text-zinc-400 break-words line-clamp-2">
-        {tactic.description}
-      </p>
+      {/* Face */}
+      <div
+        aria-hidden="true"
+        className={`qp-card-glyph qp-math flex flex-1 items-center justify-center leading-none ${
+          compact ? "text-3xl" : "text-4xl"
+        }`}
+      >
+        {art.glyph}
+      </div>
 
-      {isSelected && (
-        <div className="mt-2 text-[9px] uppercase tracking-wider text-brand-cyan font-bold flex items-center gap-1">
-          <span className="w-1.5 h-1.5 rounded-full bg-brand-cyan animate-ping" />
-          Card Active · Tap Target Node
+      <div className="px-2 pb-2">
+        <span
+          className={`block min-w-0 truncate text-center text-xs font-bold tracking-tight ${
+            art.rarity === "cursed" ? "text-rose-300" : "text-zinc-100"
+          }`}
+          title={displayLabel}
+        >
+          {displayLabel}
+        </span>
+        <p
+          className={`mt-0.5 text-center text-[9px] leading-tight text-zinc-400 break-words ${
+            compact ? "line-clamp-1" : "line-clamp-2"
+          }`}
+        >
+          {tactic.description}
+        </p>
+        {/* Cost pips and rarity */}
+        <div
+          aria-hidden="true"
+          className="mt-1 flex items-center justify-center gap-1"
+          title={`${RARITY_LABEL[art.rarity]} card`}
+        >
+          {[1, 2, 3].map((pip) => (
+            <span
+              key={pip}
+              data-on={pip <= art.pips ? "true" : "false"}
+              className="qp-pip h-1.5 w-1.5 rounded-full"
+            />
+          ))}
         </div>
-      )}
+      </div>
     </motion.div>
   );
 };

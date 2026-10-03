@@ -26,7 +26,6 @@ export interface SoundboardButton {
   emoji: string;
   category: "dev" | "medtech" | "lore" | "retro" | "classic";
   description: string;
-  accent: string;
   synthType:
     | "bark"
     | "laser"
@@ -155,8 +154,6 @@ export const SOUNDBOARD_BUTTONS: SoundboardButton[] = [
     emoji: "🐾",
     category: "lore",
     description: "Synthesized golden retriever puppy bark from Duck.",
-    accent:
-      "from-amber-500/20 to-amber-600/20 text-amber-300 border-amber-500/40",
     synthType: "bark",
   },
   {
@@ -165,7 +162,6 @@ export const SOUNDBOARD_BUTTONS: SoundboardButton[] = [
     emoji: "🦆",
     category: "lore",
     description: "High-frequency Minnesota Laser Loon raycast blast.",
-    accent: "from-cyan-500/20 to-blue-600/20 text-cyan-300 border-cyan-500/40",
     synthType: "laser",
   },
   {
@@ -174,7 +170,6 @@ export const SOUNDBOARD_BUTTONS: SoundboardButton[] = [
     emoji: "🚨",
     category: "dev",
     description: "Siren warning triggered when pushing to main at 5 PM.",
-    accent: "from-red-500/20 to-rose-600/20 text-rose-300 border-red-500/40",
     synthType: "friday-alarm",
   },
   {
@@ -183,8 +178,6 @@ export const SOUNDBOARD_BUTTONS: SoundboardButton[] = [
     emoji: "💾",
     category: "retro",
     description: "Cyberpunk CRT digital cascade burst.",
-    accent:
-      "from-emerald-500/20 to-green-600/20 text-emerald-300 border-emerald-500/40",
     synthType: "matrix-glitch",
   },
   {
@@ -193,8 +186,6 @@ export const SOUNDBOARD_BUTTONS: SoundboardButton[] = [
     emoji: "🫖",
     category: "classic",
     description: "HTCPCP 1.0 whistle and pressure release steam.",
-    accent:
-      "from-teal-500/20 to-emerald-600/20 text-teal-300 border-teal-500/40",
     synthType: "teapot-whistle",
   },
   {
@@ -203,8 +194,6 @@ export const SOUNDBOARD_BUTTONS: SoundboardButton[] = [
     emoji: "📞",
     category: "retro",
     description: "Nostalgic 1996 V.90 modem negotiation frequencies.",
-    accent:
-      "from-indigo-500/20 to-purple-600/20 text-indigo-300 border-indigo-500/40",
     synthType: "modem",
   },
   {
@@ -213,8 +202,6 @@ export const SOUNDBOARD_BUTTONS: SoundboardButton[] = [
     emoji: "📋",
     category: "medtech",
     description: "High-voltage buzzer when CDISC validation fails.",
-    accent:
-      "from-yellow-500/20 to-amber-600/20 text-yellow-300 border-yellow-500/40",
     synthType: "fda-siren",
   },
   {
@@ -223,8 +210,6 @@ export const SOUNDBOARD_BUTTONS: SoundboardButton[] = [
     emoji: "⭐",
     category: "retro",
     description: "Arpeggiated 8-bit arcade triumph chime.",
-    accent:
-      "from-purple-500/20 to-pink-600/20 text-purple-300 border-purple-500/40",
     synthType: "level-up",
   },
 ];

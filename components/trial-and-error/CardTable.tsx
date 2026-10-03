@@ -108,6 +108,15 @@ import {
   ScorePlayer,
   useScorePlayback,
 } from "@/components/trial-and-error/ScorePlayer";
+import {
+  ScoreCounters,
+  TargetBar,
+} from "@/components/trial-and-error/ScoreStage";
+import {
+  COUNTER_MIN_CHARS,
+  selectionSlots,
+} from "@/components/trial-and-error/scoring-stage";
+import { ResultCard } from "@/components/arcade/ResultCard";
 import { useTeMotion } from "@/components/trial-and-error/useTeMotion";
 import {
   LOUD_PRESETS,
@@ -336,6 +345,11 @@ function cardLabel(view: TableCardView, partners: string[] = []): string {
   if (view.selected) parts.push("selected");
   return parts.join(", ");
 }
+
+/** A Blind panel number: a small hairline tile, label over value. */
+const STAT_TILE =
+  "min-w-0 border border-zinc-800 bg-[color:var(--te-surface-0)] px-1.5 py-1";
+const STAT_LABEL = "text-[9px] uppercase tracking-wider text-zinc-400";
 
 const PROMPT_BUTTON =
   "min-h-[44px] border px-4 text-xs font-bold uppercase touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 active:scale-[0.98]";
@@ -1008,6 +1022,40 @@ export function CardTable({
       .filter(Boolean)
       .join(" ") || undefined;
 
+  // The Blind's result, inline between Blinds and on the ResultCard when the
+  // run ends.
+  const resultTitle =
+    runView.phase === "RUN_WON" && view.csrLock?.lock
+      ? `CSR locked · ${wonLabel}`
+      : runView.phase === "RUN_WON"
+        ? wonLabel
+        : runView.phase === "BLIND_CLEARED" || runView.phase === "SHOP"
+          ? "Blind cleared"
+          : clock?.hold
+            ? `${CLINICAL_HOLD} · run over`
+            : "Blind failed · run over";
+  const resultStamp =
+    runView.phase === "RUN_WON"
+      ? view.csrLock?.lock
+        ? "Locked"
+        : "Won"
+      : clock?.hold
+        ? "Hold"
+        : "Failed";
+  const resultSummary = `${view.roundScore} of ${view.quota} · ${view.handsPlayed} hand${view.handsPlayed === 1 ? "" : "s"} played · ${view.discards} discard${view.discards === 1 ? "" : "s"} · ${view.cpu.spent} CPU spent`;
+  const showResultCard =
+    runOver &&
+    view.status !== "REVIEWING" &&
+    !playing &&
+    !newRunShown &&
+    codexFrom === null &&
+    !runInfoOpen &&
+    !deckBuilderOpen &&
+    !handSheetOpen;
+  /** Where a played card left the hand, for its trip into the play zone. */
+  const originOf = (cardId: string) =>
+    cardRefs.current.get(cardId)?.getBoundingClientRect() ?? null;
+
   if (offerResume && saved) {
     return (
       <ResumePrompt
@@ -1036,15 +1084,20 @@ export function CardTable({
       className="relative w-full min-w-0 bg-[color:var(--te-surface-0)] font-mono text-[color:var(--te-text)] border border-zinc-800 section-isolate"
     >
       <LoudLayer loud={playing} enabled={loudEffectsEnabled} />
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800 px-4 py-3">
-        <div className="min-w-0">
+      <header className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-zinc-800 px-3 py-2">
+        <div className="min-w-0 flex-1 basis-64">
           <h2
             id="card-table-heading"
             className="text-sm font-bold uppercase tracking-wider break-words"
           >
             Card Table · {scenario.title}
           </h2>
-          <p className="text-xs text-zinc-400 break-words">
+          {/* Two lines at most on a wide table, so the toolbar shares the
+              heading's row and the hand stays on screen (#1524). */}
+          <p
+            className="text-xs text-zinc-400 break-words lg:line-clamp-2"
+            title={scenario.summary}
+          >
             {scenario.summary}
           </p>
         </div>
@@ -1135,10 +1188,13 @@ export function CardTable({
         <div className="border-b border-zinc-800 p-3">{coach}</div>
       )}
 
-      <div className="grid gap-px bg-zinc-800 md:grid-cols-[minmax(0,14rem)_minmax(0,1fr)]">
+      {/* One screen at 1280x800 (#1524): the Blind panel down the left, the
+          play zone and a slim relic rail across the top, and the hand docked
+          along the bottom. The areas are laid out in arcade.css. */}
+      <div className="te-table-grid grid gap-px bg-zinc-800">
         <aside
           aria-label="Blind"
-          className="min-w-0 bg-[color:var(--te-surface-1)] p-3 text-xs"
+          className="te-area-blind min-w-0 bg-[color:var(--te-surface-1)] p-3 text-xs"
         >
           <p className="text-[10px] uppercase tracking-wider text-zinc-400 tabular-nums">
             {runView.act.title} · Blind {runView.blindIndex + 1} of{" "}
@@ -1151,6 +1207,90 @@ export function CardTable({
             {scenario.blind.name}
           </p>
           <RunChoiceBadges choice={runView.choice} className="mt-1" />
+          <dl className="mt-2 grid grid-cols-3 gap-1 tabular-nums">
+            <div className={STAT_TILE}>
+              <dt className={STAT_LABEL}>Target</dt>
+              <dd
+                className="text-[color:var(--te-plus-mult)]"
+                data-testid="round-target"
+              >
+                {view.quota}
+              </dd>
+            </div>
+            {/* In an FDA Information Request the clock is the counter. */}
+            {!clock && (
+              <div className={STAT_TILE}>
+                <dt className={STAT_LABEL}>Round</dt>
+                <dd data-testid="round-score">
+                  {/* Padded with figure spaces so the score keeps its
+                      position as digits arrive (no layout shift). */}
+                  {String(displayedRound).padStart(
+                    String(view.quota).length + 1,
+                    FIGURE_SPACE
+                  )}
+                </dd>
+              </div>
+            )}
+            <div className={STAT_TILE}>
+              <dt className={STAT_LABEL}>CPU</dt>
+              <dd data-testid="cpu-counter">
+                {view.cpu.available}/{view.cpuAllocation}
+              </dd>
+            </div>
+            <div className={STAT_TILE}>
+              <dt className={STAT_LABEL}>Hands</dt>
+              <dd data-testid="hands-affordable">{view.handsAffordable}</dd>
+            </div>
+            {view.handsLeft !== null && (
+              <div className={STAT_TILE}>
+                <dt className={STAT_LABEL}>Hand limit</dt>
+                <dd data-testid="hand-limit">{view.handsLeft} left</dd>
+              </div>
+            )}
+            <div className={STAT_TILE}>
+              <dt className={STAT_LABEL}>Discards</dt>
+              <dd>{view.discardsAffordable}</dd>
+            </div>
+            <div className={STAT_TILE}>
+              <dt className={STAT_LABEL}>Deck</dt>
+              <dd>{view.deckRemaining}</dd>
+            </div>
+            <div className={`${STAT_TILE} col-span-3`}>
+              <dt className={STAT_LABEL}>Snapshot</dt>
+              <dd
+                className="min-w-0 break-words"
+                data-testid="current-snapshot"
+              >
+                {view.snapshot.id}
+              </dd>
+            </div>
+          </dl>
+          <div
+            className="mt-2 flex flex-wrap gap-0.5"
+            aria-hidden="true"
+            data-testid="cpu-pips"
+          >
+            {cpuPips.map((on, i) => (
+              // Keyed on state, so a pip that empties remounts and its burst
+              // plays once: the spent CPU pops off its slot.
+              <span
+                key={`${i}:${on}`}
+                data-pip={on ? "on" : "spent"}
+                className={`relative h-3 w-2 border ${on ? "border-emerald-400 bg-emerald-400" : "border-zinc-700"}`}
+              >
+                {!on && (
+                  <span className="te-pip-burst absolute inset-0 bg-emerald-400" />
+                )}
+              </span>
+            ))}
+          </div>
+          <p
+            className={`mt-1 min-h-[1.25rem] font-bold uppercase tracking-wider text-emerald-300 ${flashCleared && loudEffectsEnabled ? LOUD_PRESETS.clearedBlind : ""}`}
+            aria-hidden="true"
+            data-testid="blind-cleared-flash"
+          >
+            {flashCleared ? "Cleared" : ""}
+          </p>
           {view.modifiers.map((modifier) => {
             const isBoss = modifier.id === scenario.boss?.id;
             return (
@@ -1291,103 +1431,6 @@ export function CardTable({
               {scenario.intro}
             </p>
           )}
-          <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 tabular-nums">
-            <dt className="text-zinc-400">Target</dt>
-            <dd
-              className="text-right text-[color:var(--te-plus-mult)]"
-              data-testid="round-target"
-            >
-              {view.quota}
-            </dd>
-            {/* In an FDA Information Request the clock is the counter. */}
-            {!clock && (
-              <>
-                <dt className="text-zinc-400">Round</dt>
-                <dd className="text-right" data-testid="round-score">
-                  {/* Padded with figure spaces so the right-aligned score
-                      keeps its position as digits arrive (no layout shift). */}
-                  {String(displayedRound).padStart(
-                    String(view.quota).length + 1,
-                    FIGURE_SPACE
-                  )}
-                </dd>
-              </>
-            )}
-            <dt className="text-zinc-400">CPU</dt>
-            <dd className="text-right" data-testid="cpu-counter">
-              {view.cpu.available}/{view.cpuAllocation}
-            </dd>
-            <dt className="text-zinc-400">Hands</dt>
-            <dd className="text-right" data-testid="hands-affordable">
-              {view.handsAffordable}
-            </dd>
-            {view.handsLeft !== null && (
-              <>
-                <dt className="text-zinc-400">Hand limit</dt>
-                <dd className="text-right" data-testid="hand-limit">
-                  {view.handsLeft} left
-                </dd>
-              </>
-            )}
-            <dt className="text-zinc-400">Discards</dt>
-            <dd className="text-right">{view.discardsAffordable}</dd>
-            <dt className="text-zinc-400">Deck</dt>
-            <dd className="text-right">{view.deckRemaining}</dd>
-            <dt className="text-zinc-400">Snapshot</dt>
-            <dd
-              className="min-w-0 text-right break-words"
-              data-testid="current-snapshot"
-            >
-              {view.snapshot.id}
-            </dd>
-          </dl>
-          <div
-            className="mt-2 flex flex-wrap gap-0.5"
-            aria-hidden="true"
-            data-testid="cpu-pips"
-          >
-            {cpuPips.map((on, i) => (
-              // Keyed on state, so a pip that empties remounts and its burst
-              // plays once: the spent CPU pops off its slot.
-              <span
-                key={`${i}:${on}`}
-                data-pip={on ? "on" : "spent"}
-                className={`relative h-3 w-2 border ${on ? "border-emerald-400 bg-emerald-400" : "border-zinc-700"}`}
-              >
-                {!on && (
-                  <span className="te-pip-burst absolute inset-0 bg-emerald-400" />
-                )}
-              </span>
-            ))}
-          </div>
-          <p
-            className={`mt-2 min-h-[1.25rem] font-bold uppercase tracking-wider text-emerald-300 ${flashCleared && loudEffectsEnabled ? LOUD_PRESETS.clearedBlind : ""}`}
-            aria-hidden="true"
-            data-testid="blind-cleared-flash"
-          >
-            {flashCleared ? "Cleared" : ""}
-          </p>
-          <div
-            role="group"
-            aria-label="Scoring speed"
-            className="mt-2 grid grid-cols-3 gap-1"
-          >
-            {SPEEDS.map((s) => (
-              <button
-                key={s}
-                type="button"
-                aria-pressed={speed === s}
-                onClick={() => setSpeed(s)}
-                className={`min-h-[44px] border text-xs font-bold tabular-nums touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${
-                  speed === s
-                    ? "border-amber-400 bg-amber-500/10 text-amber-300"
-                    : "border-zinc-700 text-zinc-300 hover:bg-zinc-800"
-                }`}
-              >
-                {s}×
-              </button>
-            ))}
-          </div>
           <ScoreLog
             // The hand being played joins the log once its playback ends.
             entries={playing ? view.scoreLog.slice(0, -1) : view.scoreLog}
@@ -1395,390 +1438,532 @@ export function CardTable({
           />
         </aside>
 
-        <div className="min-w-0 bg-[color:var(--te-surface-0)] p-3">
-          <ul
-            aria-label={`Relic rack: ${view.relics.length} of ${view.relicSlots} slots filled.${view.relics.length === 0 ? " Relics arrive with the Procurement Shop and Boss rewards." : ""}${shopView && view.relics.length > 0 ? " Press S on a relic to sell it." : ""}`}
-            tabIndex={0}
-            className="flex flex-wrap gap-2 outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
-            data-testid="relic-rack"
-          >
-            {Array.from({ length: view.relicSlots }, (_, i) => {
-              const relic = view.relics[i];
-              if (!relic) {
-                return (
-                  <li
-                    key={i}
-                    className="flex h-12 w-16 items-center justify-center border border-dashed border-zinc-700 text-[10px] uppercase text-zinc-400"
-                  >
-                    Empty
-                  </li>
-                );
-              }
-              const chip =
-                "flex h-12 min-w-0 max-w-[10rem] flex-col items-center justify-center border border-emerald-500/60 px-2 text-center text-[10px] font-bold uppercase text-emerald-300 break-words";
-              const phase = RELIC_PHASE_LABELS[relicPhase(relic)];
-              const face = (
-                <>
-                  <span className="min-w-0 break-words">{relic.id}</span>
-                  <span
-                    className="font-normal normal-case text-zinc-400"
-                    data-testid="relic-phase"
-                  >
-                    {phase}
-                  </span>
-                </>
-              );
-              return (
-                <li
-                  key={relic.id}
-                  title={`${relic.name} (${phase}): ${relic.description}`}
-                  className="min-w-0"
-                  data-testid="relic"
-                >
-                  {shopView ? (
-                    <button
-                      type="button"
-                      aria-label={`${relic.name}, ${phase}: ${relic.description} Sells for $${shopView.relicSellValues[relic.id]}k. Press S or Enter to sell.`}
-                      onClick={() => setSellRelicId(relic.id)}
-                      onKeyDown={(e) => {
-                        if (e.key === "s" || e.key === "S") {
-                          e.preventDefault();
-                          setSellRelicId(relic.id);
-                        }
-                      }}
-                      className={`${chip} touch-manipulation hover:bg-emerald-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 active:scale-[0.98]`}
-                      data-testid="relic-sell"
-                    >
-                      {face}
-                    </button>
-                  ) : (
-                    <span className={chip}>{face}</span>
+        <div
+          className="te-area-play min-w-0 bg-[color:var(--te-surface-0)] p-2"
+          data-testid="play-zone"
+        >
+          <div className="flex min-w-0 items-stretch gap-2">
+            <div
+              className="hidden w-9 shrink-0 flex-col items-center justify-center gap-1 text-[9px] uppercase tracking-wider text-zinc-400 sm:flex"
+              data-testid="discard-stack"
+            >
+              <span className="relative h-12 w-9">
+                {view.spentCount > 0 && (
+                  <CardBack
+                    card={{ slot: "discard-top", faceDown: true }}
+                    className="absolute inset-0 -rotate-6 opacity-60"
+                  />
+                )}
+                <span className="absolute inset-0 border border-dashed border-zinc-700" />
+              </span>
+              <span className="tabular-nums">Spent {view.spentCount}</span>
+            </div>
+            <div className="relative min-h-[7rem] min-w-0 flex-1">
+              {playing && timeline ? (
+                <ScorePlayer
+                  steps={timeline}
+                  shown={playback.shown}
+                  cards={(view.lastPlay?.cardIds ?? []).map((id) => {
+                    const played = scenario.deck.find((c) => c.id === id);
+                    return {
+                      id,
+                      number: played?.number ?? id,
+                      ...(played && {
+                        population: played.population,
+                        kind:
+                          played.cardType === "SUBJECT_TOKEN"
+                            ? "Token"
+                            : played.cardType,
+                      }),
+                    };
+                  })}
+                  slots={scenario.table.maxSelection}
+                  loudEffectsEnabled={loudEffectsEnabled}
+                  animate={animateCards}
+                  speed={speed}
+                  originOf={originOf}
+                  onSkip={playback.skip}
+                />
+              ) : (
+                <div className="h-full min-w-0" data-testid="hand-preview">
+                  {view.lastEvent?.levelUp && (
+                    <div className="mb-2">
+                      <LevelUpPlate
+                        key={view.lastEvent.sequence}
+                        levelUp={view.lastEvent.levelUp}
+                        reducedMotion={reducedMotion}
+                        loud={loudEffectsEnabled}
+                      />
+                    </div>
                   )}
-                </li>
-              );
-            })}
-          </ul>
-          {sellingRelic && shopView && (
+                  <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
+                    <ol
+                      aria-hidden="true"
+                      className="flex min-w-0 flex-wrap items-end gap-1.5"
+                      data-testid="selection-slots"
+                    >
+                      {selectionSlots(
+                        scenario.table.maxSelection,
+                        view.selected
+                      ).map((id, i) =>
+                        id ? (
+                          <li
+                            key={id}
+                            className="flex h-[4.5rem] w-12 shrink-0 sm:w-14 items-end border border-amber-400/70 bg-[#1f1a10] p-1 text-[9px] font-bold sm:text-[10px] leading-tight text-amber-200 break-words"
+                          >
+                            <span className="min-w-0">
+                              {view.hand.find((h) => h.card.id === id)?.card
+                                .number ?? id}
+                            </span>
+                          </li>
+                        ) : (
+                          <li
+                            key={`open-${i}`}
+                            className="h-[4.5rem] w-12 shrink-0 sm:w-14 border border-dashed border-zinc-800"
+                          />
+                        )
+                      )}
+                    </ol>
+                    <ScoreCounters
+                      chips={preview?.chips.total ?? 0}
+                      mult={preview?.finalMult ?? 0}
+                      score={preview ? preview.score : null}
+                      width={Math.max(
+                        COUNTER_MIN_CHARS,
+                        String(preview?.score ?? 0).length
+                      )}
+                      roll={false}
+                      muted={!preview}
+                      struckMult={slashed ? view.previewUnpenalizedMult : null}
+                      idPrefix="preview"
+                    />
+                  </div>
+                  <p className="mt-2 min-h-[2.5em] text-[11px] leading-[1.25em] text-zinc-400 break-words">
+                    {view.classification ? (
+                      <span className="font-bold uppercase tracking-wider text-zinc-100">
+                        {HAND_NAMES[view.classification.handType]}{" "}
+                        <span
+                          className="text-amber-300"
+                          data-testid="hand-level"
+                        >
+                          Lv.
+                          {view.handLevels[view.classification.handType].level}
+                        </span>
+                      </span>
+                    ) : (
+                      <span className="uppercase tracking-wider">
+                        {`Select up to ${scenario.table.maxSelection} cards`}
+                      </span>
+                    )}
+                    {view.previewUnverified && (
+                      <span
+                        className="ml-2 text-amber-300"
+                        data-testid="unverified-flag"
+                      >
+                        ? Unverified: an uninspected card may hide a fatal
+                        defect.
+                      </span>
+                    )}
+                  </p>
+                  {view.stageAccepts && view.encounter && (
+                    <p
+                      className={`mt-1 text-xs break-words ${
+                        stageRefuses ? "text-rose-300" : "text-zinc-300"
+                      }`}
+                      data-testid="stage-accepts"
+                    >
+                      Stage {view.encounter.current + 1} accepts:{" "}
+                      {view.stageAccepts.map((h) => HAND_NAMES[h]).join(", ")}.
+                      {stageRefuses &&
+                        ` ${HAND_NAMES[view.classification!.handType]} is not one of them.`}
+                    </p>
+                  )}
+                  {view.flushBrokenBy.length > 0 && (
+                    <p
+                      className="mt-1 text-xs text-rose-300 break-words"
+                      data-testid="flush-broken"
+                    >
+                      Population Flush broken: {numbersOf(view.flushBrokenBy)}{" "}
+                      {view.flushBrokenBy.length === 1 ? "is" : "are"} stale.
+                    </p>
+                  )}
+                  {view.staleSelected.length > 0 && view.playBlockedReason && (
+                    <p
+                      className="mt-1 text-xs text-rose-300 break-words"
+                      data-testid="stale-alert"
+                    >
+                      {view.playBlockedReason}
+                      {/* The flush line above already names the stale cards. */}
+                      {view.flushBrokenBy.length === 0 &&
+                        ` Stale: ${numbersOf(view.staleSelected)}.`}
+                    </p>
+                  )}
+                  {view.emptySelected.length > 0 && (
+                    <p
+                      className="mt-1 text-xs text-rose-300 break-words"
+                      data-testid="empty-alert"
+                    >
+                      Empty shell: {numbersOf(view.emptySelected)}. Allocate an
+                      analysis set to compile it first.
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+            <div
+              className="hidden w-9 shrink-0 flex-col items-center justify-center gap-1 text-[9px] uppercase tracking-wider text-zinc-400 sm:flex"
+              data-testid="draw-pile"
+            >
+              <span className="relative h-12 w-9">
+                {/* Only redacted slots reach the pile: no card data. */}
+                {view.drawPile.slice(0, 3).map((back, i) => (
+                  <span
+                    key={back.slot}
+                    className="absolute inset-0"
+                    style={{
+                      transform: `translate(${i * 2}px, ${-i * 2}px)`,
+                    }}
+                  >
+                    <CardBack card={back} className="h-full w-full" />
+                  </span>
+                ))}
+                {view.drawPile.length === 0 && (
+                  <span className="absolute inset-0 border border-dashed border-zinc-700" />
+                )}
+              </span>
+              <span className="tabular-nums">Deck {view.drawPile.length}</span>
+            </div>
+          </div>
+          <div className="mt-2 flex min-w-0 flex-wrap items-center gap-2">
+            {/* The bar takes its own line until the play zone is wide, so
+                the controls beside it never squeeze it into a column. */}
+            {!clock && (
+              <div className="flex min-w-0 basis-full xl:flex-1 xl:basis-0">
+                <TargetBar
+                  score={displayedRound}
+                  target={view.quota}
+                  cleared={
+                    displayedRound >= view.quota &&
+                    (flashCleared || view.status !== "REVIEWING")
+                  }
+                  slam={flashCleared && loudEffectsEnabled}
+                />
+              </div>
+            )}
+            {/* Skip's slot is held at rest too, so the bar never moves when
+                a hand starts scoring (#1038). */}
+            <div className="w-[6.5rem] shrink-0">
+              {playing && (
+                <button
+                  ref={skipRef}
+                  type="button"
+                  onClick={playback.skip}
+                  className="min-h-[44px] w-full border border-zinc-600 px-2 text-[10px] font-bold uppercase tracking-wider text-zinc-200 touch-manipulation hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 active:scale-[0.98]"
+                >
+                  Skip [Space]
+                </button>
+              )}
+            </div>
             <div
               role="group"
-              aria-label={`Sell ${sellingRelic.name}`}
-              className="mt-2 flex flex-wrap items-center gap-2 border border-amber-500/60 p-2 text-xs text-zinc-200"
-              data-testid="relic-sell-confirm"
+              aria-label="Scoring speed"
+              className="ml-auto grid grid-cols-3 gap-1"
             >
-              <span className="min-w-0 break-words">
-                Sell {sellingRelic.name} for $
-                {shopView.relicSellValues[sellingRelic.id]}k?
-              </span>
-              <button
-                type="button"
-                autoFocus
-                onClick={() => {
-                  setSellRelicId(null);
-                  send({ type: "SELL_RELIC", relicId: sellingRelic.id });
-                }}
-                className={`${BUTTON_BASE} border-amber-500 text-amber-300 hover:bg-amber-500/10`}
-              >
-                Sell
-              </button>
-              <button
-                type="button"
-                onClick={() => setSellRelicId(null)}
-                className={`${BUTTON_BASE} border-zinc-600 text-zinc-300 hover:bg-zinc-800`}
-              >
-                Keep
-              </button>
+              {SPEEDS.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  aria-pressed={speed === s}
+                  onClick={() => setSpeed(s)}
+                  className={`min-h-[44px] min-w-[44px] border text-xs font-bold tabular-nums touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${
+                    speed === s
+                      ? "border-amber-400 bg-amber-500/10 text-amber-300"
+                      : "border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+                  }`}
+                >
+                  {s}×
+                </button>
+              ))}
             </div>
-          )}
-          <div
-            role="group"
-            aria-label={`Consumables: ${view.consumables.length} of ${view.consumableSlots} slots filled. Study budget $${view.budget}k.`}
-            className="mt-2 flex flex-wrap items-stretch gap-2"
-            data-testid="consumable-tray"
-          >
-            {Array.from({ length: view.consumableSlots }, (_, i) => {
-              const item = view.consumables[i];
-              if (!item) {
-                return (
-                  <span
-                    key={`slot-${i}`}
-                    className="flex min-h-[48px] w-44 items-center justify-center border border-dashed border-zinc-700 text-[10px] uppercase text-zinc-400"
-                  >
-                    Empty slot
-                  </span>
+          </div>
+        </div>
+
+        <div
+          className="te-area-rail min-w-0 bg-[color:var(--te-surface-1)] p-2"
+          data-testid="relic-rail"
+        >
+          <p className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-2 text-[10px] uppercase tracking-wider text-zinc-400">
+            <span>
+              SOP relics {view.relics.length}/{view.relicSlots}
+            </span>
+            <span className="tabular-nums" data-testid="study-budget">
+              Budget ${view.budget}k
+            </span>
+          </p>
+          <div className="mt-1 flex min-w-0 flex-wrap items-start gap-2 lg:flex-col lg:flex-nowrap">
+            <ul
+              aria-label={`Relic rack: ${view.relics.length} of ${view.relicSlots} slots filled.${view.relics.length === 0 ? " Relics arrive with the Procurement Shop and Boss rewards." : ""}${shopView && view.relics.length > 0 ? " Press S on a relic to sell it." : ""}`}
+              tabIndex={0}
+              className="flex min-w-0 flex-wrap gap-1 outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+              data-testid="relic-rack"
+            >
+              {Array.from({ length: view.relicSlots }, (_, i) => {
+                const relic = view.relics[i];
+                if (!relic) {
+                  // A slim dashed pill: an empty slot holds no space it
+                  // does not need (#1524).
+                  return (
+                    <li
+                      key={i}
+                      className="h-10 w-3 border border-dashed border-zinc-700"
+                    >
+                      <span className="sr-only">Empty</span>
+                    </li>
+                  );
+                }
+                const chip =
+                  "flex h-10 w-[5.25rem] min-w-0 flex-col items-center justify-center border border-emerald-500/60 bg-emerald-500/5 px-1 text-center text-[10px] font-bold uppercase leading-tight text-emerald-300 break-words";
+                const phase = RELIC_PHASE_LABELS[relicPhase(relic)];
+                const face = (
+                  <>
+                    <span className="min-w-0 break-words">{relic.id}</span>
+                    <span
+                      className="text-[9px] font-normal normal-case text-zinc-400"
+                      data-testid="relic-phase"
+                    >
+                      {phase}
+                    </span>
+                  </>
                 );
-              }
-              const sellButton = (
+                return (
+                  <li
+                    key={relic.id}
+                    title={`${relic.name} (${phase}): ${relic.description}`}
+                    className="min-w-0"
+                    data-testid="relic"
+                  >
+                    {shopView ? (
+                      <button
+                        type="button"
+                        aria-label={`${relic.name}, ${phase}: ${relic.description} Sells for $${shopView.relicSellValues[relic.id]}k. Press S or Enter to sell.`}
+                        onClick={() => setSellRelicId(relic.id)}
+                        onKeyDown={(e) => {
+                          if (e.key === "s" || e.key === "S") {
+                            e.preventDefault();
+                            setSellRelicId(relic.id);
+                          }
+                        }}
+                        className={`${chip} touch-manipulation hover:bg-emerald-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 active:scale-[0.98]`}
+                        data-testid="relic-sell"
+                      >
+                        {face}
+                      </button>
+                    ) : (
+                      <span className={chip}>{face}</span>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+            {sellingRelic && shopView && (
+              <div
+                role="group"
+                aria-label={`Sell ${sellingRelic.name}`}
+                className="mt-2 flex flex-wrap items-center gap-2 border border-amber-500/60 p-2 text-xs text-zinc-200"
+                data-testid="relic-sell-confirm"
+              >
+                <span className="min-w-0 break-words">
+                  Sell {sellingRelic.name} for $
+                  {shopView.relicSellValues[sellingRelic.id]}k?
+                </span>
                 <button
                   type="button"
+                  autoFocus
                   onClick={() => {
-                    releaseSeal(item.id);
-                    send({ type: "SELL_CONSUMABLE", consumableId: item.id });
+                    setSellRelicId(null);
+                    send({ type: "SELL_RELIC", relicId: sellingRelic.id });
                   }}
-                  // The shop buys between Blinds too.
-                  disabled={
-                    (view.status !== "REVIEWING" && !shopView) || playing
-                  }
-                  className="min-h-[44px] border-t border-zinc-800 px-2 text-left uppercase tracking-wider text-zinc-300 touch-manipulation hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 disabled:text-zinc-500"
+                  className={`${BUTTON_BASE} border-amber-500 text-amber-300 hover:bg-amber-500/10`}
                 >
-                  Sell · ${consumableSellValue(item)}k
+                  Sell
                 </button>
-              );
-              if (item.kind === "AMENDMENT") {
-                const { amendment } = item;
-                const preview = view.amendmentPreviews.find(
-                  (p) => p.consumableId === item.id
+                <button
+                  type="button"
+                  onClick={() => setSellRelicId(null)}
+                  className={`${BUTTON_BASE} border-zinc-600 text-zinc-300 hover:bg-zinc-800`}
+                >
+                  Keep
+                </button>
+              </div>
+            )}
+            <div
+              role="group"
+              aria-label={`Consumables: ${view.consumables.length} of ${view.consumableSlots} slots filled. Study budget $${view.budget}k.`}
+              className="flex min-w-0 flex-wrap items-stretch gap-1.5 lg:w-full lg:flex-col"
+              data-testid="consumable-tray"
+            >
+              {Array.from({ length: view.consumableSlots }, (_, i) => {
+                const item = view.consumables[i];
+                if (!item) {
+                  return (
+                    <span
+                      key={`slot-${i}`}
+                      className="flex min-h-[44px] w-56 items-center justify-center border border-dashed border-zinc-700 text-[10px] uppercase text-zinc-400 lg:w-full"
+                    >
+                      Empty slot
+                    </span>
+                  );
+                }
+                const sellButton = (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      releaseSeal(item.id);
+                      send({ type: "SELL_CONSUMABLE", consumableId: item.id });
+                    }}
+                    // The shop buys between Blinds too.
+                    disabled={
+                      (view.status !== "REVIEWING" && !shopView) || playing
+                    }
+                    className="min-h-[44px] w-14 shrink-0 border-l border-zinc-800 px-1 text-center uppercase leading-tight tracking-wider text-zinc-300 touch-manipulation hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 disabled:text-zinc-500"
+                  >
+                    Sell · ${consumableSellValue(item)}k
+                  </button>
                 );
+                if (item.kind === "AMENDMENT") {
+                  const { amendment } = item;
+                  const preview = view.amendmentPreviews.find(
+                    (p) => p.consumableId === item.id
+                  );
+                  return (
+                    <span
+                      key={item.id}
+                      className="flex w-56 min-w-0 border border-amber-400/60 text-[10px] lg:w-full"
+                      data-testid="consumable"
+                      data-kind="amendment"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => setAmendingId(item.id)}
+                        disabled={
+                          view.status !== "REVIEWING" ||
+                          playing ||
+                          !preview ||
+                          preview.refusal !== null
+                        }
+                        title={preview?.refusal ?? amendment.description}
+                        aria-label={`Use ${amendment.name}: ${amendment.description}${preview?.refusal ? ` ${preview.refusal}` : ""}`}
+                        className="min-h-[44px] min-w-0 flex-1 px-2 py-1 text-left touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 disabled:text-zinc-400"
+                      >
+                        <span className="flex items-start gap-1 font-bold uppercase tracking-wider text-amber-300">
+                          <span
+                            aria-hidden="true"
+                            className="flex h-4 w-4 shrink-0 items-center justify-center border border-amber-400 bg-amber-950 text-[7px]"
+                          >
+                            {amendment.code}
+                          </span>
+                          <span className="min-w-0 break-words">
+                            {amendment.name}
+                          </span>
+                        </span>
+                        <span className="block text-zinc-300 break-words">
+                          {preview && preview.refusal === null
+                            ? `Use: ${preview.ruleLabel} +${preview.bonus.to} Mult · stales ${preview.staled.length}`
+                            : (preview?.refusal ?? amendment.description)}
+                        </span>
+                      </button>
+                      {sellButton}
+                    </span>
+                  );
+                }
+                if (item.kind === "GUIDANCE") {
+                  const { guidance } = item;
+                  const bonus = HAND_LEVEL_BONUS[guidance.handType];
+                  const level = view.handLevels[guidance.handType].level;
+                  return (
+                    <span
+                      key={item.id}
+                      className="flex w-56 min-w-0 border border-sky-400/60 text-[10px] lg:w-full"
+                      data-testid="consumable"
+                      data-kind="guidance"
+                    >
+                      <button
+                        type="button"
+                        onClick={() =>
+                          send(
+                            { type: "USE_GUIDANCE", consumableId: item.id },
+                            { kind: "hand", index: activeIndex }
+                          )
+                        }
+                        disabled={view.status !== "REVIEWING" || playing}
+                        title={`${guidance.document}. ${guidance.flavor}`}
+                        aria-label={`Use ${guidance.name}: level ${HAND_NAMES[guidance.handType]} up from Lv.${level} to Lv.${level + 1}, +${bonus.chips} Chips and +${bonus.mult} Mult.`}
+                        className="min-h-[44px] min-w-0 flex-1 px-2 py-1 text-left touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 disabled:text-zinc-400"
+                      >
+                        <span className="flex items-start gap-1 font-bold uppercase tracking-wider text-sky-300">
+                          <span
+                            aria-hidden="true"
+                            className="flex h-4 w-4 shrink-0 items-center justify-center border border-sky-400 bg-sky-950 text-[7px]"
+                          >
+                            GD
+                          </span>
+                          <span className="min-w-0 break-words">
+                            {guidance.name}
+                          </span>
+                        </span>
+                        <span className="block text-zinc-300 break-words">
+                          Use: {HAND_NAMES[guidance.handType]} Lv.{level + 1} ·
+                          +{bonus.chips} Chips +{bonus.mult} Mult
+                        </span>
+                      </button>
+                      {sellButton}
+                    </span>
+                  );
+                }
+                const { seal } = item;
+                const isArmed = armed?.id === item.id;
                 return (
                   <span
                     key={item.id}
-                    className="flex w-44 min-w-0 flex-col border border-amber-400/60 text-[10px]"
+                    className={`flex w-56 min-w-0 border text-[10px] lg:w-full ${isArmed ? "border-amber-400 bg-amber-500/10" : "border-zinc-700"}`}
                     data-testid="consumable"
-                    data-kind="amendment"
                   >
                     <button
                       type="button"
-                      onClick={() => setAmendingId(item.id)}
-                      disabled={
-                        view.status !== "REVIEWING" ||
-                        playing ||
-                        !preview ||
-                        preview.refusal !== null
-                      }
-                      title={preview?.refusal ?? amendment.description}
-                      aria-label={`Use ${amendment.name}: ${amendment.description}${preview?.refusal ? ` ${preview.refusal}` : ""}`}
-                      className="min-h-[44px] min-w-0 px-2 py-1 text-left touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 disabled:text-zinc-400"
+                      draggable={view.status === "REVIEWING"}
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData(SEAL_DRAG_TYPE, item.id);
+                        e.dataTransfer.effectAllowed = "copy";
+                      }}
+                      onClick={() => toggleArmed(item.id)}
+                      aria-pressed={isArmed}
+                      disabled={view.status !== "REVIEWING" || playing}
+                      title={seal.footnote}
+                      className="min-h-[44px] min-w-0 flex-1 px-2 py-1 text-left touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 disabled:text-zinc-400"
                     >
                       <span className="flex items-start gap-1 font-bold uppercase tracking-wider text-amber-300">
                         <span
                           aria-hidden="true"
-                          className="flex h-4 w-4 shrink-0 items-center justify-center border border-amber-400 bg-amber-950 text-[7px]"
+                          className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-amber-400 bg-amber-950 text-[7px]"
                         >
-                          {amendment.code}
+                          FN
                         </span>
-                        <span className="min-w-0 break-words">
-                          {amendment.name}
-                        </span>
+                        <span className="min-w-0 break-words">{seal.name}</span>
                       </span>
-                      <span className="block text-zinc-300 break-words">
-                        {preview && preview.refusal === null
-                          ? `Use: ${preview.ruleLabel} +${preview.bonus.to} Mult · stales ${preview.staled.length}`
-                          : (preview?.refusal ?? amendment.description)}
+                      <span className="block text-zinc-300">
+                        {sealSummary(seal)}
+                        {isArmed ? " · pick a card" : ""}
                       </span>
                     </button>
                     {sellButton}
                   </span>
                 );
-              }
-              if (item.kind === "GUIDANCE") {
-                const { guidance } = item;
-                const bonus = HAND_LEVEL_BONUS[guidance.handType];
-                const level = view.handLevels[guidance.handType].level;
-                return (
-                  <span
-                    key={item.id}
-                    className="flex w-44 min-w-0 flex-col border border-sky-400/60 text-[10px]"
-                    data-testid="consumable"
-                    data-kind="guidance"
-                  >
-                    <button
-                      type="button"
-                      onClick={() =>
-                        send(
-                          { type: "USE_GUIDANCE", consumableId: item.id },
-                          { kind: "hand", index: activeIndex }
-                        )
-                      }
-                      disabled={view.status !== "REVIEWING" || playing}
-                      title={`${guidance.document}. ${guidance.flavor}`}
-                      aria-label={`Use ${guidance.name}: level ${HAND_NAMES[guidance.handType]} up from Lv.${level} to Lv.${level + 1}, +${bonus.chips} Chips and +${bonus.mult} Mult.`}
-                      className="min-h-[44px] min-w-0 px-2 py-1 text-left touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 disabled:text-zinc-400"
-                    >
-                      <span className="flex items-start gap-1 font-bold uppercase tracking-wider text-sky-300">
-                        <span
-                          aria-hidden="true"
-                          className="flex h-4 w-4 shrink-0 items-center justify-center border border-sky-400 bg-sky-950 text-[7px]"
-                        >
-                          GD
-                        </span>
-                        <span className="min-w-0 break-words">
-                          {guidance.name}
-                        </span>
-                      </span>
-                      <span className="block text-zinc-300 break-words">
-                        Use: {HAND_NAMES[guidance.handType]} Lv.{level + 1} · +
-                        {bonus.chips} Chips +{bonus.mult} Mult
-                      </span>
-                    </button>
-                    {sellButton}
-                  </span>
-                );
-              }
-              const { seal } = item;
-              const isArmed = armed?.id === item.id;
-              return (
-                <span
-                  key={item.id}
-                  className={`flex w-44 min-w-0 flex-col border text-[10px] ${isArmed ? "border-amber-400 bg-amber-500/10" : "border-zinc-700"}`}
-                  data-testid="consumable"
-                >
-                  <button
-                    type="button"
-                    draggable={view.status === "REVIEWING"}
-                    onDragStart={(e) => {
-                      e.dataTransfer.setData(SEAL_DRAG_TYPE, item.id);
-                      e.dataTransfer.effectAllowed = "copy";
-                    }}
-                    onClick={() => toggleArmed(item.id)}
-                    aria-pressed={isArmed}
-                    disabled={view.status !== "REVIEWING" || playing}
-                    title={seal.footnote}
-                    className="min-h-[44px] min-w-0 px-2 py-1 text-left touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 disabled:text-zinc-400"
-                  >
-                    <span className="flex items-start gap-1 font-bold uppercase tracking-wider text-amber-300">
-                      <span
-                        aria-hidden="true"
-                        className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-amber-400 bg-amber-950 text-[7px]"
-                      >
-                        FN
-                      </span>
-                      <span className="min-w-0 break-words">{seal.name}</span>
-                    </span>
-                    <span className="block text-zinc-300">
-                      {sealSummary(seal)}
-                      {isArmed ? " · pick a card" : ""}
-                    </span>
-                  </button>
-                  {sellButton}
-                </span>
-              );
-            })}
-            <span
-              className="self-center text-[10px] uppercase tracking-wider text-zinc-400 tabular-nums"
-              data-testid="study-budget"
-            >
-              Budget ${view.budget}k
-            </span>
+              })}
+            </div>
           </div>
+        </div>
 
-          {playing && timeline ? (
-            <div className="mt-3 min-h-[13rem] border border-zinc-800 bg-[color:var(--te-surface-1)] px-3 py-2">
-              <ScorePlayer
-                steps={timeline}
-                shown={playback.shown}
-                cards={(view.lastPlay?.cardIds ?? []).map((id) => ({
-                  id,
-                  number:
-                    scenario.deck.find((card) => card.id === id)?.number ?? id,
-                }))}
-                loudEffectsEnabled={loudEffectsEnabled}
-                onSkip={playback.skip}
-                skipRef={skipRef}
-              />
-            </div>
-          ) : (
-            <div
-              className="mt-3 min-h-[13rem] border border-zinc-800 bg-[color:var(--te-surface-1)] px-3 py-2"
-              data-testid="hand-preview"
-            >
-              {view.lastEvent?.levelUp && (
-                <div className="mb-2">
-                  <LevelUpPlate
-                    key={view.lastEvent.sequence}
-                    levelUp={view.lastEvent.levelUp}
-                    reducedMotion={reducedMotion}
-                    loud={loudEffectsEnabled}
-                  />
-                </div>
-              )}
-              <p className="text-[10px] uppercase tracking-wider text-zinc-400">
-                {view.classification ? (
-                  <>
-                    {HAND_NAMES[view.classification.handType]}{" "}
-                    <span className="text-amber-300" data-testid="hand-level">
-                      Lv.{view.handLevels[view.classification.handType].level}
-                    </span>
-                  </>
-                ) : (
-                  `Select up to ${scenario.table.maxSelection} cards`
-                )}
-              </p>
-              {preview && (
-                <p className="mt-1 text-lg font-bold tabular-nums break-words">
-                  <span className="text-[color:var(--te-chips)]">
-                    [{preview.chips.total}]
-                  </span>{" "}
-                  × [
-                  {slashed && (
-                    <s className="text-zinc-400 decoration-rose-400 decoration-2">
-                      {view.previewUnpenalizedMult}
-                    </s>
-                  )}
-                  {slashed && " "}
-                  <span
-                    className={
-                      slashed
-                        ? "text-rose-300"
-                        : "text-[color:var(--te-plus-mult)]"
-                    }
-                  >
-                    {preview.finalMult}
-                  </span>
-                  ] = {preview.score}
-                </p>
-              )}
-              {view.stageAccepts && view.encounter && (
-                <p
-                  className={`mt-1 text-xs break-words ${
-                    stageRefuses ? "text-rose-300" : "text-zinc-300"
-                  }`}
-                  data-testid="stage-accepts"
-                >
-                  Stage {view.encounter.current + 1} accepts:{" "}
-                  {view.stageAccepts.map((h) => HAND_NAMES[h]).join(", ")}.
-                  {stageRefuses &&
-                    ` ${HAND_NAMES[view.classification!.handType]} is not one of them.`}
-                </p>
-              )}
-              {view.flushBrokenBy.length > 0 && (
-                <p
-                  className="mt-1 text-xs text-rose-300 break-words"
-                  data-testid="flush-broken"
-                >
-                  Population Flush broken: {numbersOf(view.flushBrokenBy)}{" "}
-                  {view.flushBrokenBy.length === 1 ? "is" : "are"} stale.
-                </p>
-              )}
-              {view.staleSelected.length > 0 && view.playBlockedReason && (
-                <p
-                  className="mt-1 text-xs text-rose-300 break-words"
-                  data-testid="stale-alert"
-                >
-                  {view.playBlockedReason}
-                  {/* The flush line above already names the stale cards. */}
-                  {view.flushBrokenBy.length === 0 &&
-                    ` Stale: ${numbersOf(view.staleSelected)}.`}
-                </p>
-              )}
-              {view.emptySelected.length > 0 && (
-                <p
-                  className="mt-1 text-xs text-rose-300 break-words"
-                  data-testid="empty-alert"
-                >
-                  Empty shell: {numbersOf(view.emptySelected)}. Allocate an
-                  analysis set to compile it first.
-                </p>
-              )}
-              {view.previewUnverified && (
-                <p
-                  className="mt-1 text-xs text-amber-300"
-                  data-testid="unverified-flag"
-                >
-                  ? Unverified: an uninspected card may hide a fatal defect.
-                </p>
-              )}
-            </div>
-          )}
-
+        <div className="te-area-hand min-w-0 bg-[color:var(--te-surface-0)] px-3 pb-3">
           {view.status === "REVIEWING" || playing ? (
             <div inert={playing}>
               {view.crisis && (
@@ -1799,48 +1984,6 @@ export function CardTable({
               {view.deviation?.fresh && (
                 <DeviationCard deviation={view.deviation} />
               )}
-              <div className="mt-3 flex flex-wrap items-end justify-between gap-2 text-[10px] uppercase tracking-wider text-zinc-400">
-                <div
-                  className="flex items-center gap-2"
-                  data-testid="discard-stack"
-                >
-                  <span className="relative h-12 w-9">
-                    {view.spentCount > 0 && (
-                      <CardBack
-                        card={{ slot: "discard-top", faceDown: true }}
-                        className="absolute inset-0 -rotate-6 opacity-60"
-                      />
-                    )}
-                    <span className="absolute inset-0 border border-dashed border-zinc-700" />
-                  </span>
-                  <span className="tabular-nums">Spent {view.spentCount}</span>
-                </div>
-                <div
-                  className="flex items-center gap-2"
-                  data-testid="draw-pile"
-                >
-                  <span className="tabular-nums">
-                    Deck {view.drawPile.length}
-                  </span>
-                  <span className="relative h-12 w-9">
-                    {/* Only redacted slots reach the pile: no card data. */}
-                    {view.drawPile.slice(0, 3).map((back, i) => (
-                      <span
-                        key={back.slot}
-                        className="absolute inset-0"
-                        style={{
-                          transform: `translate(${i * 2}px, ${-i * 2}px)`,
-                        }}
-                      >
-                        <CardBack card={back} className="h-full w-full" />
-                      </span>
-                    ))}
-                    {view.drawPile.length === 0 && (
-                      <span className="absolute inset-0 border border-dashed border-zinc-700" />
-                    )}
-                  </span>
-                </div>
-              </div>
               {view.csrLock && view.status === "REVIEWING" && (
                 <CsrSlots
                   slots={view.csrLock.report.slots}
@@ -1857,7 +2000,7 @@ export function CardTable({
                 role="group"
                 aria-label={`Hand of ${view.hand.length}. Arrow keys move, Space selects, Enter plays, D discards, I inspects, R recompiles a stale card, S runs structural QC on a face-down card, A allocates a blank shell, question mark reads the card, Alt with arrows reorders. With a footnote seal picked up, Enter affixes it and Escape puts it back. Shift+R opens Run Info, and H lists every hand.`}
                 ref={handRef}
-                className="-mx-3 mt-1 flex overflow-x-auto px-3 pb-3 pt-7 [scrollbar-width:thin]"
+                className="-mx-3 flex overflow-x-auto px-3 pb-3 pt-6 [scrollbar-width:thin]"
                 data-testid="hand"
               >
                 {animateCards ? (
@@ -2047,60 +2190,19 @@ export function CardTable({
                 </div>
               )}
             </div>
+          ) : runOver ? (
+            // Room for the run's result card, which covers the table.
+            <div aria-hidden="true" className="min-h-[32rem]" />
           ) : (
             <div className="mt-3 p-4 text-center" data-testid="blind-result">
               <p
-                className={`text-lg font-bold uppercase ${view.status === "CLEARED" ? "text-emerald-300" : "text-rose-300"}`}
+                className={`inline-block -rotate-2 border-2 px-3 py-1 text-lg font-bold uppercase tracking-wider ${view.status === "CLEARED" ? "border-emerald-400/70 text-emerald-300" : "border-rose-400/70 text-rose-300"} ${loudEffectsEnabled ? "te-loud-target-slam" : ""}`}
+                data-testid="result-stamp"
               >
-                {runView.phase === "RUN_WON" && view.csrLock?.lock
-                  ? `CSR locked · ${wonLabel}`
-                  : runView.phase === "RUN_WON"
-                    ? wonLabel
-                    : runView.phase === "BLIND_CLEARED" ||
-                        runView.phase === "SHOP"
-                      ? "Blind cleared"
-                      : clock?.hold
-                        ? `${CLINICAL_HOLD} · run over`
-                        : "Blind failed · run over"}
+                {resultTitle}
               </p>
-              {clock?.hold && (
-                <section
-                  aria-labelledby="clinical-hold-heading"
-                  className={`${LOUD_PRESETS.crisisSlam} mx-auto mt-3 max-w-md border-2 border-rose-400 bg-[color:var(--te-surface-1)] p-3 text-left text-xs break-words`}
-                  data-testid="clinical-hold"
-                >
-                  <p className="text-[10px] uppercase tracking-wider text-zinc-400">
-                    Regulatory correspondence (fictional study)
-                  </p>
-                  <h3
-                    id="clinical-hold-heading"
-                    className="mt-1 text-sm font-bold uppercase tracking-wider text-rose-300"
-                  >
-                    {CLINICAL_HOLD}
-                  </h3>
-                  <p className="mt-2 text-zinc-300">
-                    Your response to the End-of-Phase-2 Information Request was
-                    not received within {clock.totalHours} hours.{" "}
-                    {view.questions.filter((q) => !q.answered).length} of{" "}
-                    {view.questions.length} questions remain open. The program
-                    may not proceed to Phase III.
-                  </p>
-                  <ul className="mt-2 list-disc pl-5 text-zinc-400">
-                    {view.questions
-                      .filter((q) => !q.answered)
-                      .map((q) => (
-                        <li key={q.id}>
-                          {q.question} ({q.cardNumber})
-                        </li>
-                      ))}
-                  </ul>
-                </section>
-              )}
               <p className="mt-2 text-sm text-zinc-300 tabular-nums">
-                {view.roundScore} of {view.quota} · {view.handsPlayed} hand
-                {view.handsPlayed === 1 ? "" : "s"} played · {view.discards}{" "}
-                discard
-                {view.discards === 1 ? "" : "s"} · {view.cpu.spent} CPU spent
+                {resultSummary}
               </p>
               {view.csrLock?.lock && (
                 <CsrLockSummary
@@ -2296,77 +2398,7 @@ export function CardTable({
                     every quota each round, until a Blind fails.
                   </p>
                 </div>
-              ) : (
-                <>
-                  {runView.phase === "RUN_FAILED" &&
-                    runView.endless?.campaignWon && (
-                      <p
-                        className="mt-2 text-xs text-emerald-300 break-words"
-                        data-testid="endless-record"
-                      >
-                        {wonLabel} · {runView.endless.title} round{" "}
-                        {endlessRound ?? 0} reached
-                      </p>
-                    )}
-                  <div className="mt-4 flex flex-wrap justify-center gap-2">
-                    <button
-                      ref={restartRef}
-                      type="button"
-                      onClick={() => {
-                        if (endAction) {
-                          endAction(runView.phase === "RUN_WON").onSelect();
-                          return;
-                        }
-                        startNewRun(
-                          freshSeed(),
-                          { kind: "RANDOM" },
-                          runView.choice
-                        );
-                      }}
-                      className={`${BUTTON_BASE} border-amber-500 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20`}
-                    >
-                      {endAction
-                        ? endAction(runView.phase === "RUN_WON").label
-                        : runView.phase === "RUN_WON"
-                          ? "Play again"
-                          : "Restart run"}
-                    </button>
-                    {!endAction && (
-                      <button
-                        type="button"
-                        onClick={() => setNewRunOpen(true)}
-                        className={`${BUTTON_BASE} border-zinc-600 text-zinc-200 hover:bg-zinc-800`}
-                        data-testid="end-new-run"
-                      >
-                        New run…
-                      </button>
-                    )}
-                    {codexEnabled && (
-                      <button
-                        type="button"
-                        onClick={() => setCodexFrom("END")}
-                        aria-haspopup="dialog"
-                        className={`${BUTTON_BASE} border-zinc-600 text-zinc-200 hover:bg-zinc-800`}
-                        data-testid="end-codex"
-                      >
-                        Codex
-                      </button>
-                    )}
-                  </div>
-                  {!endAction && (
-                    <div className="mx-auto mt-4 max-w-sm text-left">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
-                        Challenge a friend to this run
-                      </p>
-                      <SeedShare
-                        seed={runView.seed}
-                        origin={runOrigin}
-                        choice={runView.choice}
-                      />
-                    </div>
-                  )}
-                </>
-              )}
+              ) : null}
             </div>
           )}
 
@@ -2386,6 +2418,167 @@ export function CardTable({
           {timeline && !playing && <ScoreBreakdown steps={timeline} />}
         </div>
       </div>
+      {showResultCard && (
+        // The run's end (#1524): the Arcade Kit's ResultCard over the table.
+        // It steps aside while a dialog it opened (New run, Codex) is up, so
+        // only one focus trap is ever active. The wrapper is the layer the
+        // card covers, so it has a box of its own to find and to style.
+        <div
+          className="te-result absolute inset-0 z-30"
+          data-testid="blind-result"
+        >
+          <ResultCard
+            title={resultTitle}
+            stamp={resultStamp}
+            verdict={runView.phase === "RUN_WON" ? "win" : "loss"}
+            message={resultSummary}
+            stats={[
+              { label: "Round score", value: view.roundScore },
+              { label: "Target", value: view.quota },
+              { label: "Hands", value: view.handsPlayed },
+              { label: "CPU spent", value: view.cpu.spent },
+            ]}
+            primary={{
+              label: endAction
+                ? endAction(runView.phase === "RUN_WON").label
+                : runView.phase === "RUN_WON"
+                  ? "Play again"
+                  : "Restart run",
+              onClick: () => {
+                if (endAction) {
+                  endAction(runView.phase === "RUN_WON").onSelect();
+                  return;
+                }
+                startNewRun(freshSeed(), { kind: "RANDOM" }, runView.choice);
+              },
+            }}
+          >
+            {clock?.hold && (
+              <section
+                aria-labelledby="clinical-hold-heading"
+                className={`${LOUD_PRESETS.crisisSlam} mx-auto mt-3 max-w-md border-2 border-rose-400 bg-[color:var(--te-surface-1)] p-3 text-left text-xs break-words`}
+                data-testid="clinical-hold"
+              >
+                <p className="text-[10px] uppercase tracking-wider text-zinc-400">
+                  Regulatory correspondence (fictional study)
+                </p>
+                <h3
+                  id="clinical-hold-heading"
+                  className="mt-1 text-sm font-bold uppercase tracking-wider text-rose-300"
+                >
+                  {CLINICAL_HOLD}
+                </h3>
+                <p className="mt-2 text-zinc-300">
+                  Your response to the End-of-Phase-2 Information Request was
+                  not received within {clock.totalHours} hours.{" "}
+                  {view.questions.filter((q) => !q.answered).length} of{" "}
+                  {view.questions.length} questions remain open. The program may
+                  not proceed to Phase III.
+                </p>
+                <ul className="mt-2 list-disc pl-5 text-zinc-400">
+                  {view.questions
+                    .filter((q) => !q.answered)
+                    .map((q) => (
+                      <li key={q.id}>
+                        {q.question} ({q.cardNumber})
+                      </li>
+                    ))}
+                </ul>
+              </section>
+            )}
+            {view.csrLock?.lock && (
+              <CsrLockSummary
+                lock={view.csrLock.lock}
+                amendRefusal={view.csrLock.amendRefusal}
+                seed={runView.seed}
+                handsPlayed={view.handsPlayed}
+                cpuSpent={view.cpu.spent}
+                loud={loudEffectsEnabled}
+                onAmend={() => {
+                  setFocusIndex(0);
+                  send({ type: "AMEND_PROTOCOL" }, { kind: "hand", index: 0 });
+                }}
+              />
+            )}
+            {view.reward && (
+              <PackOpening
+                title={
+                  view.reward.claimed
+                    ? "SOP relic claimed"
+                    : "Choose one SOP relic"
+                }
+                picksLeft={view.reward.claimed ? 0 : 1}
+                cards={view.reward.choices.map((relic): RevealCard => ({
+                  id: relic.id,
+                  kind: "Relic",
+                  name: relic.name,
+                  description: relic.description,
+                  picked: view.reward?.claimed === relic.id,
+                  refusal:
+                    view.reward?.claimed != null &&
+                    view.reward.claimed !== relic.id
+                      ? "Another relic was taken."
+                      : view.relics.length >= view.relicSlots
+                        ? `The relic rack holds ${view.relicSlots}.`
+                        : null,
+                  warning: null,
+                }))}
+                onPick={(relicId) => send({ type: "CLAIM_RELIC", relicId })}
+                animate={animateCards}
+                loud={loudEffectsEnabled}
+                testId="relic-reward"
+                cardTestId="relic-choice"
+              />
+            )}
+            {runView.phase === "RUN_FAILED" && runView.endless?.campaignWon && (
+              <p
+                className="mt-2 text-xs text-emerald-300 break-words"
+                data-testid="endless-record"
+              >
+                {wonLabel} · {runView.endless.title} round {endlessRound ?? 0}{" "}
+                reached
+              </p>
+            )}
+            {(!endAction || codexEnabled) && (
+              <div className="mt-4 flex flex-wrap gap-2">
+                {!endAction && (
+                  <button
+                    type="button"
+                    onClick={() => setNewRunOpen(true)}
+                    className={`${BUTTON_BASE} border-zinc-600 text-zinc-200 hover:bg-zinc-800`}
+                    data-testid="end-new-run"
+                  >
+                    New run…
+                  </button>
+                )}
+                {codexEnabled && (
+                  <button
+                    type="button"
+                    onClick={() => setCodexFrom("END")}
+                    aria-haspopup="dialog"
+                    className={`${BUTTON_BASE} border-zinc-600 text-zinc-200 hover:bg-zinc-800`}
+                    data-testid="end-codex"
+                  >
+                    Codex
+                  </button>
+                )}
+              </div>
+            )}
+            {!endAction && (
+              <div className="mt-4 text-left">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+                  Challenge a friend to this run
+                </p>
+                <SeedShare
+                  seed={runView.seed}
+                  origin={runOrigin}
+                  choice={runView.choice}
+                />
+              </div>
+            )}
+          </ResultCard>
+        </div>
+      )}
 
       {inspected &&
         // Portalled out of the table's isolated stacking context so the site

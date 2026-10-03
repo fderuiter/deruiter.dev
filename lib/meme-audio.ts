@@ -17,6 +17,64 @@ export function useMemeAudioCleanup(): void {
   }, []);
 }
 
+/** FFT size of the Meme Vault scope: 2048 time-domain samples per read. */
+export const MEME_SCOPE_FFT_SIZE = 2048;
+
+let memeAnalyser: AnalyserNode | null = null;
+
+/**
+ * Creates the Meme Vault scope's AnalyserNode on first use and routes the
+ * sound engine's output through it, returning the node (or null when sound is
+ * off or Web Audio is unavailable). Call it from a press handler, before
+ * {@link playMemeSound}: it does nothing while sound is muted or bypassed, so
+ * no AudioContext opens before the visitor has interacted and turned sound
+ * on. Other pages that play meme sounds never call it and keep direct output.
+ */
+export function connectMemeAnalyser(): AnalyserNode | null {
+  const engine = getSoundEngine();
+  if (!engine.isSoundAllowed()) return null;
+  const ctx = engine.getAudioContext();
+  if (!ctx || typeof ctx.createAnalyser !== "function") return null;
+  if (memeAnalyser && memeAnalyser.context === ctx) {
+    if (engine.getOutputTap() !== memeAnalyser) {
+      engine.setOutputTap(memeAnalyser);
+    }
+    return memeAnalyser;
+  }
+  try {
+    const analyser = ctx.createAnalyser();
+    analyser.fftSize = MEME_SCOPE_FFT_SIZE;
+    analyser.smoothingTimeConstant = 0;
+    analyser.connect(ctx.destination);
+    memeAnalyser = analyser;
+    engine.setOutputTap(analyser);
+    return analyser;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Returns the AnalyserNode that carries the soundboard's output, or null
+ * until {@link connectMemeAnalyser} has made one.
+ */
+export function getMemeAnalyser(): AnalyserNode | null {
+  return memeAnalyser;
+}
+
+/**
+ * Takes the scope's analyser out of the sound engine's path, for when the
+ * Meme Vault unmounts. Sounds already in flight finish through it; later
+ * sounds go straight to the speakers.
+ */
+export function releaseMemeAnalyser(): void {
+  const engine = getSoundEngine();
+  if (memeAnalyser && engine.getOutputTap() === memeAnalyser) {
+    engine.setOutputTap(null);
+  }
+  memeAnalyser = null;
+}
+
 export function isSoundAllowed(): boolean {
   return getSoundEngine().isSoundAllowed();
 }

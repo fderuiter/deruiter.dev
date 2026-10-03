@@ -30,11 +30,7 @@ import {
   useTeMusic,
   useTeSound,
 } from "@/components/trial-and-error/useTeSound";
-import {
-  LoudLayer,
-  MAX_SHAKE_PX,
-  shakeAmplitude,
-} from "@/components/trial-and-error/LoudLayer";
+import { LoudLayer } from "@/components/trial-and-error/LoudLayer";
 import { CardTable } from "@/components/trial-and-error/CardTable";
 
 vi.mock("@/hooks/useAnnouncer", () => ({
@@ -486,12 +482,8 @@ describe("LoudLayer", () => {
     }
   });
 
-  it("caps the screen-shake amplitude", () => {
-    expect(shakeAmplitude(3)).toBe("3px");
-    expect(shakeAmplitude(99)).toBe(`${MAX_SHAKE_PX}px`);
-    expect(shakeAmplitude(-2)).toBe("0px");
-    expect(shakeAmplitude(Number.NaN)).toBe("0px");
-  });
+  // The shake itself is the Arcade Kit's useArcadeFx (#1524), which caps it
+  // at ARCADE_FX_MAX_SHAKE_PX; arcade-fx-and-hud.test.tsx covers the cap.
 });
 
 describe("the Card Table's cues and loud layer", () => {

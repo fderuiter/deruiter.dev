@@ -145,6 +145,14 @@ describe("Garmin watch fog drag and Enter focus (#1648, #1649)", () => {
     });
   }
 
+  // A crashed run opens the result card over the companion panel; the
+  // panel's tools are reachable once the player puts it away (#1520).
+  async function inspectWatch() {
+    await act(async () => {
+      pointerClick(buttonByText(container, "Inspect watch"));
+    });
+  }
+
   function foggedRun(fogLevel: number): GameEngineState {
     return { ...startGame(createInitialState("fenix")), fogLevel };
   }
@@ -222,6 +230,7 @@ describe("Garmin watch fog drag and Enter focus (#1648, #1649)", () => {
         ...createInitialState("fenix"),
         gameState: "crashed",
       });
+      await inspectWatch();
       const flashLabel = () =>
         container.textContent?.match(/FLASH:\s*([\d.]+) \//)?.[1];
 
@@ -255,6 +264,7 @@ describe("Garmin watch fog drag and Enter focus (#1648, #1649)", () => {
         ...createInitialState("fenix"),
         gameState: "crashed",
       });
+      await inspectWatch();
       const write = buttonByText(container, "Write NV Flash");
       write.focus();
 

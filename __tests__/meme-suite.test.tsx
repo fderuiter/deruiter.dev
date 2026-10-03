@@ -310,7 +310,7 @@ describe("Meme UI Components Rendering", () => {
     expect(container.textContent).toContain(
       "Developer Soundboard & Meme Vault"
     );
-    expect(container.textContent).toContain("8-Channel Retro Soundboard");
+    expect(container.textContent).toContain("8-Pad Retro Sampler");
     expect(container.textContent).toContain("Easter Egg Trophy Case");
     expect(container.textContent).toContain("Web Audio Synthesis Engine");
 

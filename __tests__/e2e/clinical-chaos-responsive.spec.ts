@@ -33,7 +33,7 @@ test("desktop start keeps the Next instruction in view", async ({
   });
   const canvas = page.locator("canvas[role='application']");
   // The desktop layout; the bitmap itself is scaled for the screen (#1180).
-  await expect(canvas).toHaveAttribute("data-logical-height", "150");
+  await expect(canvas).toHaveAttribute("data-logical-height", "260");
   // #834: the first-shift walkthrough sits below the Next instruction.
   await expect(
     page.getByRole("region", { name: "First-shift calibration" })

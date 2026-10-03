@@ -269,6 +269,15 @@ describe("QuasiPerfectPuzzler UI Component Suite", () => {
       root.render(<QuasiPerfectPuzzler />);
     });
 
+    // The inspector starts collapsed (#1519); open it from its drawer.
+    expect(container.textContent).not.toContain("theorem identity_crisis");
+    const inspectorToggle = Array.from(
+      container.querySelectorAll("button")
+    ).find((b) => b.textContent?.includes("Generated Lean 4 Text"));
+    expect(inspectorToggle).toBeDefined();
+    await act(async () => {
+      inspectorToggle?.click();
+    });
     expect(container.textContent).toContain("theorem identity_crisis");
 
     // Switch to Encyclopedia tab
@@ -285,46 +294,37 @@ describe("QuasiPerfectPuzzler UI Component Suite", () => {
     expect(container.textContent).toContain("RAM Cost:");
   });
 
-  it("filters levels by chapter across all 18 levels", async () => {
+  it("lays all 18 levels out on the chapter map, six per chapter", async () => {
     await act(async () => {
       root = createRoot(container);
       root.render(<QuasiPerfectPuzzler />);
     });
 
-    const ch2Button = Array.from(container.querySelectorAll("button")).find(
-      (b) => b.textContent?.includes("Ch 2: Logic")
+    const index = container.querySelector(
+      '[data-testid="quasi-level-index"]'
+    ) as HTMLElement;
+    expect(index).not.toBeNull();
+
+    const chapterRanges: [number, string, number[]][] = [
+      [1, "Ch 1: Equational", [1, 2, 3, 4, 5, 6]],
+      [2, "Ch 2: Logic", [7, 8, 9, 10, 11, 12]],
+      [3, "Ch 3: Quasiperfect", [13, 14, 15, 16, 17, 18]],
+    ];
+    for (const [chapter, label] of chapterRanges) {
+      const caption = index.querySelector(
+        `[data-testid="level-map-chapter-${chapter}"]`
+      );
+      expect(caption?.textContent).toContain(label);
+    }
+
+    const levelButtons = Array.from(index.querySelectorAll("button")).filter(
+      (b) => /^L\d+$/.test(b.textContent?.trim() ?? "")
     );
-    expect(ch2Button).toBeDefined();
-
-    await act(async () => {
-      ch2Button?.click();
-    });
-
-    // Chapter 2 contains Levels 7-12
-    expect(container.textContent).toContain("L7");
-    expect(container.textContent).toContain("L8");
-    expect(container.textContent).toContain("L9");
-    expect(container.textContent).toContain("L10");
-    expect(container.textContent).toContain("L11");
-    expect(container.textContent).toContain("L12");
-
-    // Switch to Chapter 3
-    const ch3Button = Array.from(container.querySelectorAll("button")).find(
-      (b) => b.textContent?.includes("Ch 3: Quasiperfect")
+    expect(levelButtons.map((b) => b.textContent?.trim())).toEqual(
+      chapterRanges.flatMap(([, , ids]) => ids.map((id) => `L${id}`))
     );
-    expect(ch3Button).toBeDefined();
-
-    await act(async () => {
-      ch3Button?.click();
-    });
-
-    // Chapter 3 contains Levels 13-18
-    expect(container.textContent).toContain("L13");
-    expect(container.textContent).toContain("L14");
-    expect(container.textContent).toContain("L15");
-    expect(container.textContent).toContain("L16");
-    expect(container.textContent).toContain("L17");
-    expect(container.textContent).toContain("L18");
+    // The current level is marked on the map.
+    expect(levelButtons[0].getAttribute("aria-current")).toBe("step");
   });
 
   it("solves Level 11 with cases, right/left disjunction branching and exact in UI", async () => {

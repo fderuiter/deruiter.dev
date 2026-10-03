@@ -92,12 +92,12 @@ export const GridCanvas: React.FC<GridCanvasProps> = ({
     }
 
     if (isSelected) {
-      return "border-cyan-400 bg-cyan-950/80 text-cyan-200 ring-2 ring-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.5)]";
+      return "border-[color:var(--qp-accent-line)] bg-[color:var(--qp-accent-soft)] qp-text-accent-strong ring-2 ring-[color:var(--qp-accent)]";
     }
 
     switch (tile.status) {
       case "active":
-        return "border-cyan-500/60 bg-cyan-950/40 text-cyan-200 hover:border-cyan-400";
+        return "border-[color:var(--qp-accent-line)] bg-[color:var(--qp-accent-soft)] qp-text-accent-strong hover:border-[color:var(--qp-accent-line)]";
       case "completed":
         return "border-emerald-500/60 bg-emerald-950/40 text-emerald-300 hover:border-emerald-400";
       case "error":
@@ -105,7 +105,7 @@ export const GridCanvas: React.FC<GridCanvasProps> = ({
       default:
         switch (tile.type) {
           case "goal":
-            return "border-cyan-500/50 bg-cyan-950/30 text-cyan-300 hover:border-cyan-400";
+            return "border-[color:var(--qp-accent-line)] bg-[color:var(--qp-accent-soft)] qp-text-accent-strong hover:border-[color:var(--qp-accent-line)]";
           case "hypothesis":
             return "border-slate-500/50 bg-slate-950/30 text-slate-300 hover:border-slate-400";
           case "operator":
@@ -124,7 +124,7 @@ export const GridCanvas: React.FC<GridCanvasProps> = ({
     >
       <div className="flex items-center justify-between border-b border-zinc-800/80 pb-2">
         <div className="flex items-center gap-2">
-          <IconGridDots className="w-4 h-4 text-cyan-400" />
+          <IconGridDots className="w-4 h-4 qp-text-accent-strong" />
           <span className="text-xs font-bold uppercase tracking-wider text-zinc-300">
             Grid Canvas Control
           </span>
@@ -157,7 +157,7 @@ export const GridCanvas: React.FC<GridCanvasProps> = ({
               aria-label={`Tile ${tile.label || tile.id} at row ${tile.row + 1}, column ${tile.col + 1}${
                 isSelected ? ", selected" : ""
               }`}
-              className={`flex min-w-0 flex-col items-center justify-center min-h-[52px] rounded-xl border p-2 text-xs font-mono transition-all cursor-pointer active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-cyan-400 ${getTileStyling(
+              className={`flex min-w-0 flex-col items-center justify-center min-h-[52px] rounded-xl border p-2 text-xs font-mono transition-all cursor-pointer active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-[color:var(--qp-accent)] ${getTileStyling(
                 tile
               )}`}
             >

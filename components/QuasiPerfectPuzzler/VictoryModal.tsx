@@ -48,11 +48,11 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
       <div className="max-w-md w-full rounded-2xl border border-zinc-700 bg-zinc-950 p-6 text-center shadow-2xl font-mono">
         {/* Title Badge */}
         {isSorry ? (
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/20 border border-rose-500/40 text-rose-300 text-xs font-bold mb-3">
+          <div className="arcade-result-stamp inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/20 border border-rose-500/40 text-rose-300 text-xs font-bold mb-3">
             ⚠️ MATHEMATICAL MORALITY VIOLATION
           </div>
         ) : (
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold mb-3">
+          <div className="arcade-result-stamp inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold mb-3">
             <IconSparkles className="w-3.5 h-3.5" />
             <span>AST GOAL DISCHARGED · SIMULATED</span>
           </div>
@@ -98,7 +98,7 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
         <div className="grid grid-cols-2 gap-3 rounded-xl border border-zinc-800 bg-zinc-900/60 p-3 text-xs mb-4">
           <div className="flex flex-col">
             <span className="text-zinc-400">Remaining RAM</span>
-            <span className="font-bold text-brand-cyan text-sm">
+            <span className="font-bold qp-text-accent-strong text-sm">
               {score.remainingRam.toFixed(1)} GB
             </span>
           </div>
@@ -136,7 +136,7 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
                 copiedLabel="Copied!"
                 icon={<IconCopy className="w-3 h-3" />}
                 copiedIcon={<IconCheck className="w-3 h-3 text-emerald-400" />}
-                className="flex items-center gap-1 text-purple-400 hover:text-purple-300 font-bold cursor-pointer"
+                className="flex items-center gap-1 qp-text-accent-strong hover:text-zinc-100 font-bold cursor-pointer"
                 aria-label="Copy Lean 4 Script"
                 successMessage="Generated Lean text copied to clipboard"
               />
@@ -161,7 +161,7 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
             <button
               type="button"
               onClick={onNextLevel}
-              className="flex-1 rounded-xl bg-brand-cyan px-4 py-2.5 text-xs font-bold text-black hover:bg-cyan-300 transition-colors shadow-[0_0_15px_rgba(6,182,212,0.4)]"
+              className="qp-btn-primary qp-focus flex-1 rounded-xl px-4 py-2.5 text-xs font-bold transition-colors"
             >
               Next Level →
             </button>

@@ -626,44 +626,31 @@ describe("RetroLabyrinth loop on useAnimationFrame (#1624)", () => {
   });
 });
 
-describe("MemeVaultClient spectrum loop on useAnimationFrame (#1624)", () => {
-  function barScales(container: HTMLElement) {
-    return Array.from(
-      container.querySelectorAll<HTMLElement>('[style*="--bar-scale"]')
-    ).map((el) => el.style.getPropertyValue("--bar-scale"));
-  }
-
-  // The waveform is a function of time. The hook passes elapsed time rather
-  // than the frame timestamp, so the visualizer anchors its clock on
-  // performance.now() at the first frame; the phase advances by exactly the
-  // frame-to-frame gap, as it did with raw timestamps.
-  it("animates the idle breath on the frame clock", () => {
-    vi.spyOn(performance, "now").mockReturnValue(4000);
-    const { container } = render(<MemeVaultClient />);
-    expect(scheduler.pendingCount()).toBeGreaterThan(0);
-
-    scheduler.tick(100);
-    const breath = (t: number, i: number) =>
-      (0.1 + Math.sin(t * 0.002 + i * 0.3) * 0.06).toFixed(4);
-    expect(barScales(container).slice(0, 2)).toEqual([
-      breath(4000, 0),
-      breath(4000, 1),
-    ]);
-
-    scheduler.tick(350);
-    expect(barScales(container).slice(0, 2)).toEqual([
-      breath(4250, 0),
-      breath(4250, 1),
-    ]);
-  });
-
-  it("holds the bars still and runs no loop under reduced motion", () => {
-    mockReducedMotion(true);
+// #1526 replaced the always-on spectrum bars with an oscilloscope that only
+// animates while a pad is playing. At rest no frame is ever requested.
+describe("MemeVaultClient oscilloscope loop (#1624, #1526)", () => {
+  it("requests no animation frames at rest", () => {
     const { container } = render(<MemeVaultClient />);
     expect(scheduler.pendingCount()).toBe(0);
-    const scales = barScales(container);
-    expect(scales.length).toBe(24);
-    expect(new Set(scales)).toEqual(new Set(["0.15"]));
+    const scope = container.querySelector('[data-testid="meme-oscilloscope"]');
+    expect(scope?.getAttribute("data-live")).toBe("false");
+  });
+
+  it("stays still when a pad is pressed with sound off", () => {
+    const { container } = render(<MemeVaultClient />);
+    const pad = container.querySelector<HTMLButtonElement>(
+      "button[aria-label^='Play ']"
+    );
+    if (!pad) throw new Error("pad not rendered");
+    fireEvent.click(pad);
+    expect(pad.getAttribute("data-lit")).toBe("true");
+    expect(scheduler.pendingCount()).toBe(0);
+  });
+
+  it("runs no loop under reduced motion", () => {
+    mockReducedMotion(true);
+    render(<MemeVaultClient />);
+    expect(scheduler.pendingCount()).toBe(0);
   });
 });
 

@@ -6,7 +6,7 @@
  * bathtub state (mud until rinsed, lather while scrubbing, a spray while
  * rinsing, a clean ivory Duck at the end).
  */
-import { clamp } from "@/lib/game-utils";
+import { clamp, gameFont } from "@/lib/game-utils";
 import {
   CANVAS_HEIGHT,
   CANVAS_WIDTH,
@@ -521,13 +521,13 @@ function paintHud(ctx: Ctx, lather: number, rinse: number) {
 
   ctx.textAlign = "center";
   ctx.fillStyle = "#f4f4f6";
-  ctx.font = "bold 12px ui-monospace, SFMono-Regular, Menlo, monospace";
+  ctx.font = gameFont(12, "bold");
   ctx.fillText("DUCK'S BATH", CANVAS_WIDTH / 2, y + 18);
 
   const bar = (label: string, value: number, color: string, by: number) => {
     ctx.textAlign = "left";
     ctx.fillStyle = "#a1a1aa";
-    ctx.font = "bold 9px ui-monospace, SFMono-Regular, Menlo, monospace";
+    ctx.font = gameFont(9, "bold");
     ctx.fillText(label, x + 16, by + 7);
     ctx.fillStyle = "rgba(255, 255, 255, 0.12)";
     roundRect(ctx, x + 70, by, w - 130, 8, 4);
@@ -543,7 +543,7 @@ function paintHud(ctx: Ctx, lather: number, rinse: number) {
   bar("RINSE", rinse, "#34d399", y + 42);
 
   ctx.textAlign = "center";
-  ctx.font = "bold 10px ui-monospace, SFMono-Regular, Menlo, monospace";
+  ctx.font = gameFont(10, "bold");
   if (lather < 100) {
     ctx.fillStyle = "#e0f2fe";
     ctx.fillText(

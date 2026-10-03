@@ -28,6 +28,23 @@ export const SUIT_TEXT: Record<PopulationType, string> = {
   SCREENED: "text-[color:var(--te-suit-screened)]",
 };
 
+/** Each suit's left edge on a card, in its population colour. */
+export const SUIT_BORDER: Record<PopulationType, string> = {
+  ITT: "border-l-[color:var(--te-suit-itt)]",
+  SAFETY: "border-l-[color:var(--te-suit-safety)]",
+  PER_PROTOCOL: "border-l-[color:var(--te-suit-pp)]",
+  FAS: "border-l-[color:var(--te-suit-fas)]",
+  SCREENED: "border-l-[color:var(--te-suit-screened)]",
+};
+
+/**
+ * In the hand a card's right edge sits under its neighbour. Its number and
+ * title wrap inside the part still showing (`--te-covered`, set by the hand
+ * card), so every title stays readable in a tight fan (#1524). Elsewhere the
+ * variable is unset and the text uses the full face.
+ */
+const UNCOVERED = { maxWidth: "calc(100% - var(--te-covered, 0rem))" };
+
 /** The live mini-output: a miniature of the card's actual data. */
 export function MiniOutput({
   face,
@@ -101,6 +118,7 @@ export function CardFace({ view }: { view: TableCardView }) {
     <span aria-hidden="true" className="relative flex h-full flex-col gap-1">
       <span
         className={`flex items-center justify-between gap-1 text-[10px] uppercase tracking-wider text-zinc-400${dim}`}
+        style={UNCOVERED}
       >
         <span className="flex items-center gap-1">
           {card.cardType === "SUBJECT_TOKEN" ? "Token" : card.cardType}
@@ -133,10 +151,16 @@ export function CardFace({ view }: { view: TableCardView }) {
           </span>
         )}
       </span>
-      <span className={`block font-bold leading-tight break-words${dim}`}>
+      <span
+        className={`block font-bold leading-tight break-words${dim}`}
+        style={UNCOVERED}
+      >
         {card.number}
       </span>
-      <span className={`block truncate text-[10px] text-zinc-300${dim}`}>
+      <span
+        className={`block truncate text-[10px] text-zinc-300${dim}`}
+        style={UNCOVERED}
+      >
         {card.title}
       </span>
       <span
@@ -147,6 +171,7 @@ export function CardFace({ view }: { view: TableCardView }) {
       {view.figure && (
         <span
           className="flex items-center justify-between gap-1 text-[10px]"
+          style={UNCOVERED}
           data-testid="figure-dependency"
         >
           <span className="truncate text-zinc-400">← {view.figure.parent}</span>
@@ -164,7 +189,10 @@ export function CardFace({ view }: { view: TableCardView }) {
           </span>
         </span>
       )}
-      <span className="mt-auto flex items-center justify-between gap-1 text-[10px]">
+      <span
+        className="mt-auto flex flex-wrap items-center justify-between gap-x-1 text-[10px]"
+        style={UNCOVERED}
+      >
         {view.debuffed || view.stale ? (
           <span
             className="border border-rose-400/60 px-1 tabular-nums text-rose-300"

@@ -41,3 +41,21 @@ export function handOverlap({
   const fit = Math.min(most, Math.ceil(overlap * 10) / 10);
   return Math.max(fanned, fit);
 }
+
+/** Extra rem kept clear of a neighbour, for the fan's tilt and the hairline. */
+export const COVER_MARGIN_REM = 0.25;
+
+/**
+ * How much of a card's right edge its right-hand neighbour covers, in rem
+ * (#1524). The face's text wraps inside what is left, so a fanned title is
+ * never hidden under the next card. The last card is uncovered, and so is
+ * a hand that does not overlap.
+ */
+export function coveredRem(
+  index: number,
+  count: number,
+  overlap: number
+): number {
+  if (overlap <= 0 || index >= count - 1) return 0;
+  return +(overlap + COVER_MARGIN_REM).toFixed(2);
+}

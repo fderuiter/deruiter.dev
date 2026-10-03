@@ -193,20 +193,19 @@ function TutorialOffer({
   return (
     <section
       aria-labelledby="tutorial-offer-title"
-      className="mb-3 flex min-w-0 flex-wrap items-center justify-between gap-3 border border-amber-400/60 bg-[color:var(--te-surface-1)] p-3 font-mono text-xs"
+      className="mb-2 flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-2 border border-amber-400/60 bg-[color:var(--te-surface-1)] px-3 py-1.5 font-mono text-xs"
       data-testid="tutorial-offer"
     >
-      <div className="min-w-0">
+      {/* One slim strip, so the table still fits one screen (#1524). */}
+      <div className="min-w-0 flex-1 break-words text-zinc-300">
         <h3
           id="tutorial-offer-title"
-          className="font-bold uppercase tracking-wider text-amber-300 break-words"
+          className="mr-2 inline font-bold uppercase tracking-wider text-amber-300"
         >
           First time at the table?
         </h3>
-        <p className="mt-1 text-zinc-300 break-words">
-          Play a guided Blind: one hand, seven short steps, with a coach
-          pointing at each control.
-        </p>
+        Play a guided Blind: one hand, seven short steps, with a coach pointing
+        at each control.
       </div>
       <div className="flex flex-wrap gap-2">
         <TutorialButton primary onClick={onStart}>

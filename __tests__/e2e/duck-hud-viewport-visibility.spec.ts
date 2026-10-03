@@ -126,15 +126,11 @@ test.describe("Working With Duck: HUD meets WCAG AA contrast while running", () 
       if (await launchBtn.isVisible()) {
         await launchBtn.click({ force: true });
       }
-      const startBtn = page.getByRole("button", {
-        name: /Start (Sprint|Endless Mode)/i,
+      // The attract screen is the title (#1516): Launch starts Sprint 1.
+      await expect(page.getByTestId("duck-hud-meters")).toBeVisible({
+        timeout: 2000,
       });
-      await expect(startBtn).toBeVisible({ timeout: 2000 });
     }).toPass({ timeout: 20000 });
-
-    await page
-      .getByRole("button", { name: /Start (Sprint|Endless Mode)/i })
-      .click();
 
     const hud = page.getByTestId("duck-hud-meters");
     await expect(hud).toBeVisible({ timeout: 10000 });

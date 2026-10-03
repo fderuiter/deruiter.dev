@@ -44,11 +44,13 @@ export const MultiGoalTabs: React.FC<MultiGoalTabsProps> = ({
     tabRefs.current[nextIndex]?.focus();
   };
 
+  const forked = subgoals.length <= 4;
+
   return (
-    <div className="rounded-xl border border-purple-500/30 bg-purple-950/20 p-3 font-mono">
-      <div className="flex items-center justify-between gap-2 mb-2">
-        <div className="flex items-center gap-2 text-xs font-bold text-purple-300">
-          <IconGitBranch className="w-4 h-4 text-purple-400" />
+    <div className="rounded-xl border border-[color:var(--qp-hairline)] bg-[color:var(--qp-panel)] p-3 font-mono">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2 text-xs font-bold text-zinc-100">
+          <IconGitBranch className="w-4 h-4 qp-text-accent" />
           <span>
             Active Proof Branches ({completedCount}/{subgoals.length} closed)
           </span>
@@ -58,50 +60,85 @@ export const MultiGoalTabs: React.FC<MultiGoalTabsProps> = ({
         </span>
       </div>
 
-      <div
-        className="flex flex-wrap gap-2"
-        role="tablist"
-        aria-label="Active Proof Subgoals"
-      >
-        {subgoals.map((sg, idx) => {
-          const isActive = idx === activeGoalIndex;
-          const isDone = sg.isCompleted;
+      <div className="relative">
+        {/* The split: one goal forking into its branches */}
+        {forked && (
+          <svg
+            aria-hidden="true"
+            className="block h-5 w-full"
+            viewBox="0 0 100 20"
+            preserveAspectRatio="none"
+          >
+            {subgoals.map((sg, idx) => {
+              const x = ((idx + 0.5) / subgoals.length) * 100;
+              return (
+                <path
+                  key={sg.id}
+                  className="qp-edge"
+                  d={`M 50 0 C 50 10, ${x} 8, ${x} 20`}
+                  fill="none"
+                  stroke={sg.isCompleted ? "#10b981" : "#94a3b8"}
+                  strokeOpacity={sg.isCompleted ? 0.8 : 0.45}
+                  strokeWidth={1.5}
+                  vectorEffect="non-scaling-stroke"
+                />
+              );
+            })}
+          </svg>
+        )}
 
-          return (
-            <button
-              ref={(node) => {
-                tabRefs.current[idx] = node;
-              }}
-              key={sg.id}
-              type="button"
-              id={`subgoal-tab-${sg.id}`}
-              role="tab"
-              aria-selected={isActive}
-              aria-controls={`subgoal-panel-${sg.id}`}
-              tabIndex={isActive ? 0 : -1}
-              onClick={() => onSelectGoal(idx)}
-              onKeyDown={(e) => handleTabKeyDown(e, idx)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                isActive
-                  ? "bg-purple-600 text-white shadow-[0_0_12px_rgba(168,85,247,0.5)] border border-purple-400"
-                  : isDone
-                    ? "bg-emerald-950/60 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-900/60"
-                    : "bg-zinc-900 text-zinc-400 border border-zinc-800 hover:bg-zinc-800 hover:text-zinc-200"
-              }`}
-            >
-              {isDone ? (
-                <IconCheck className="w-3.5 h-3.5 text-emerald-400" />
-              ) : isActive ? (
-                <IconCircleDot className="w-3.5 h-3.5 text-purple-200 animate-pulse" />
-              ) : (
-                <span className="w-3.5 h-3.5 rounded-full border border-zinc-600 flex items-center justify-center text-[9px]">
-                  {idx + 1}
-                </span>
-              )}
-              <span>{sg.label}</span>
-            </button>
-          );
-        })}
+        <div
+          className={forked ? "grid gap-2" : "mt-2 flex flex-wrap gap-2"}
+          style={
+            forked
+              ? {
+                  gridTemplateColumns: `repeat(${subgoals.length}, minmax(0, 1fr))`,
+                }
+              : undefined
+          }
+          role="tablist"
+          aria-label="Active Proof Subgoals"
+        >
+          {subgoals.map((sg, idx) => {
+            const isActive = idx === activeGoalIndex;
+            const isDone = sg.isCompleted;
+
+            return (
+              <button
+                ref={(node) => {
+                  tabRefs.current[idx] = node;
+                }}
+                key={sg.id}
+                type="button"
+                id={`subgoal-tab-${sg.id}`}
+                role="tab"
+                aria-selected={isActive}
+                aria-controls={`subgoal-panel-${sg.id}`}
+                tabIndex={isActive ? 0 : -1}
+                onClick={() => onSelectGoal(idx)}
+                onKeyDown={(e) => handleTabKeyDown(e, idx)}
+                className={`qp-branch qp-focus flex min-w-0 items-center justify-center gap-2 rounded-lg border px-3 py-2 text-xs font-bold transition-colors ${
+                  isActive
+                    ? "border-[color:var(--qp-accent)] bg-[color:var(--qp-accent-soft)] text-zinc-100"
+                    : isDone
+                      ? "border-emerald-500/50 bg-emerald-950/40 text-emerald-200 hover:bg-emerald-900/40"
+                      : "border-[color:var(--qp-hairline)] bg-[color:var(--qp-raised)] text-zinc-300 hover:text-zinc-100"
+                }`}
+              >
+                {isDone ? (
+                  <IconCheck className="w-3.5 h-3.5 shrink-0 text-emerald-300" />
+                ) : isActive ? (
+                  <IconCircleDot className="w-3.5 h-3.5 shrink-0 qp-text-accent-strong" />
+                ) : (
+                  <span className="w-3.5 h-3.5 shrink-0 rounded-full border border-zinc-500 flex items-center justify-center text-[9px]">
+                    {idx + 1}
+                  </span>
+                )}
+                <span className="min-w-0 truncate">{sg.label}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

@@ -7,21 +7,26 @@ import {
   useDragControls,
   useMotionValue,
 } from "framer-motion";
-import type { PopulationType, TableCardView } from "@/lib/trial-and-error";
+import type { TableCardView } from "@/lib/trial-and-error";
 import { CardBack } from "@/components/trial-and-error/cards/CardBack";
-import { CardFace } from "@/components/trial-and-error/cards/CardFace";
+import {
+  CardFace,
+  SUIT_BORDER,
+} from "@/components/trial-and-error/cards/CardFace";
 import { CardFlip } from "@/components/trial-and-error/cards/CardFlip";
+import { coveredRem } from "@/components/trial-and-error/cards/hand-fit";
 import type { HandCardInteraction } from "@/components/trial-and-error/useHandInteraction";
 
-const SUIT_BORDER: Record<PopulationType, string> = {
-  ITT: "border-l-[color:var(--te-suit-itt)]",
-  SAFETY: "border-l-[color:var(--te-suit-safety)]",
-  PER_PROTOCOL: "border-l-[color:var(--te-suit-pp)]",
-  FAS: "border-l-[color:var(--te-suit-fas)]",
-  SCREENED: "border-l-[color:var(--te-suit-screened)]",
-};
-
 const TILT_DEG = 8;
+/** How far a hovered or focused card rises out of the fan, in px (#1524). */
+const HOVER_LIFT_PX = 12;
+/** How far a selected card stands proud of the hand, in px. */
+const SELECTED_LIFT_PX = 14;
+/** The fan's arc: px each card drops per squared step from the centre. */
+const ARC_DROP_PX = 1;
+/** The fan's tilt: degrees each card turns per step from the centre. Kept
+ * shallow so the edge cards' titles still read level (#1524). */
+const FAN_DEG = 1.5;
 
 interface HandCardProps {
   view: TableCardView;
@@ -69,7 +74,12 @@ export function HandCard({
   const [raised, setRaised] = useState(false);
 
   const offset = index - (count - 1) / 2;
-  const lift = (view.selected ? -14 : 0) + (raised && physical ? -8 : 0);
+  const lifted = raised && physical;
+  const lift =
+    (view.selected ? -SELECTED_LIFT_PX : 0) + (lifted ? -HOVER_LIFT_PX : 0);
+  // A lifted card stands in front of its neighbour, so its text uses the
+  // whole face; otherwise it wraps inside the strip left showing.
+  const covered = lifted ? 0 : coveredRem(index, count, overlap);
 
   return (
     <Reorder.Item
@@ -80,10 +90,13 @@ export function HandCard({
       dragControls={controls}
       onDragEnd={interaction.onDragEnd}
       className="relative w-36 shrink-0 md:w-40"
-      style={{
-        marginLeft: index > 0 && overlap > 0 ? `-${overlap}rem` : undefined,
-        zIndex: raised ? 20 : view.selected ? 10 : index + 1,
-      }}
+      style={
+        {
+          marginLeft: index > 0 && overlap > 0 ? `-${overlap}rem` : undefined,
+          zIndex: raised ? 20 : view.selected ? 10 : index + 1,
+          "--te-covered": `${covered}rem`,
+        } as React.CSSProperties
+      }
       initial={animate ? { opacity: 0, y: -24 } : false}
       animate={{ opacity: 1, y: 0 }}
       exit={
@@ -140,8 +153,9 @@ export function HandCard({
         onDragOver={interaction.onDragOver}
         onDrop={interaction.onDrop}
         animate={{
-          y: (physical ? offset * offset * 1.5 : 0) + lift,
-          rotate: physical && !raised ? offset * 2.5 : 0,
+          y: (physical ? offset * offset * ARC_DROP_PX : 0) + lift,
+          rotate: physical && !raised ? offset * FAN_DEG : 0,
+          scale: lifted ? 1.03 : 1,
         }}
         transition={
           animate
@@ -156,7 +170,7 @@ export function HandCard({
           view.selected
             ? "border-amber-400 bg-[#1f1a10]"
             : "border-zinc-700 bg-[color:var(--te-surface-1)]"
-        } ${raised && physical ? "shadow-lg shadow-black/60" : ""}`}
+        } ${lifted ? "shadow-xl shadow-black/70" : ""}`}
       >
         {view.pairedWith.length > 0 && (
           <span

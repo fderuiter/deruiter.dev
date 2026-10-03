@@ -80,6 +80,42 @@ Re-exports [boundingBoxOverlap](utils/functions/boundingBoxOverlap.md)
 
 ***
 
+### buildCrtOverlayBackground
+
+Re-exports [buildCrtOverlayBackground](crt-pipeline/functions/buildCrtOverlayBackground.md)
+
+***
+
+### CABINET\_CRT\_FILTERS
+
+Re-exports [CABINET_CRT_FILTERS](crt-pipeline/variables/CABINET_CRT_FILTERS.md)
+
+***
+
+### CABINET\_CRT\_PROFILES
+
+Re-exports [CABINET_CRT_PROFILES](crt-pipeline/variables/CABINET_CRT_PROFILES.md)
+
+***
+
+### CabinetCrtFilter
+
+Re-exports [CabinetCrtFilter](crt-pipeline/type-aliases/CabinetCrtFilter.md)
+
+***
+
+### CabinetCrtProfile
+
+Re-exports [CabinetCrtProfile](crt-pipeline/interfaces/CabinetCrtProfile.md)
+
+***
+
+### CabinetSurface
+
+Re-exports [CabinetSurface](crt-pipeline/type-aliases/CabinetSurface.md)
+
+***
+
 ### calculateScoreMultiplier
 
 Re-exports [calculateScoreMultiplier](utils/functions/calculateScoreMultiplier.md)
@@ -128,6 +164,12 @@ Re-exports [CRTCalibrationConfig](crt-pipeline/interfaces/CRTCalibrationConfig.m
 
 ***
 
+### crtCalibrationForFilter
+
+Re-exports [crtCalibrationForFilter](crt-pipeline/functions/crtCalibrationForFilter.md)
+
+***
+
 ### CRTPreset
 
 Re-exports [CRTPreset](crt-pipeline/interfaces/CRTPreset.md)
@@ -164,6 +206,18 @@ Re-exports [getArcadeNeighbors](games/functions/getArcadeNeighbors.md)
 
 ***
 
+### getCabinetCrtProfile
+
+Re-exports [getCabinetCrtProfile](crt-pipeline/functions/getCabinetCrtProfile.md)
+
+***
+
+### getDefaultCrtFilter
+
+Re-exports [getDefaultCrtFilter](crt-pipeline/functions/getDefaultCrtFilter.md)
+
+***
+
 ### getOrCreatePhosphorPattern
 
 Re-exports [getOrCreatePhosphorPattern](crt-pipeline/functions/getOrCreatePhosphorPattern.md)
@@ -173,6 +227,12 @@ Re-exports [getOrCreatePhosphorPattern](crt-pipeline/functions/getOrCreatePhosph
 ### InputSnapshot
 
 Re-exports [InputSnapshot](core/input/interfaces/InputSnapshot.md)
+
+***
+
+### isCabinetCrtFilter
+
+Re-exports [isCabinetCrtFilter](crt-pipeline/functions/isCabinetCrtFilter.md)
 
 ***
 
@@ -269,6 +329,12 @@ Re-exports [scaleScoreWithMultiplier](utils/functions/scaleScoreWithMultiplier.m
 ### screenToGameCoords
 
 Re-exports [screenToGameCoords](core/viewport/functions/screenToGameCoords.md)
+
+***
+
+### shouldCabinetDrawCrt
+
+Re-exports [shouldCabinetDrawCrt](crt-pipeline/functions/shouldCabinetDrawCrt.md)
 
 ***
 

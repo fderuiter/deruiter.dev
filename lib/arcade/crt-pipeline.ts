@@ -444,3 +444,193 @@ export function renderCRTEffects(
     ctx.restore();
   }
 }
+
+/* ---- Cabinet-level CRT layer (#1516 item 4) ---- */
+
+/** CRT setting a player picks in the Pre-Game Setup Wizard. */
+export type CabinetCrtFilter = "off" | "soft" | "arcade" | "scanlines";
+
+/** Every {@link CabinetCrtFilter}, in the order the wizard lists them. */
+export const CABINET_CRT_FILTERS: readonly CabinetCrtFilter[] = [
+  "off",
+  "soft",
+  "arcade",
+  "scanlines",
+];
+
+/** How a game draws its playfield, which decides its default CRT setting. */
+export type CabinetSurface = "canvas" | "dom";
+
+/** What the cabinet needs to know about a game to place its CRT layer. */
+export interface CabinetCrtProfile {
+  /** Canvas games default to Soft; DOM games (cards, forms, text) to Off. */
+  surface: CabinetSurface;
+  /**
+   * True when the game already draws its own CRT pass from the wizard's
+   * setting or its own calibration, so the cabinet must not add a second one.
+   */
+  gameDrawsCrt: boolean;
+}
+
+/**
+ * Per-game CRT profile, keyed by the cabinet's `gameId`. Retro Labyrinth
+ * renders the calibrated pipeline above inside its canvas, and Monkey C
+ * Mayhem paints its own `.garmin-crt` overlay from the wizard setting; the
+ * cabinet layer stands down for both until they hand it over.
+ */
+export const CABINET_CRT_PROFILES: Readonly<Record<string, CabinetCrtProfile>> =
+  {
+    "working-with-duck": { surface: "canvas", gameDrawsCrt: false },
+    "laser-loon": { surface: "canvas", gameDrawsCrt: false },
+    "garmin-watch": { surface: "canvas", gameDrawsCrt: true },
+    "retro-labyrinth": { surface: "canvas", gameDrawsCrt: true },
+    "quasi-puzzler": { surface: "dom", gameDrawsCrt: false },
+    "clinical-chaos": { surface: "dom", gameDrawsCrt: false },
+    "trial-and-error": { surface: "dom", gameDrawsCrt: false },
+    "study-director": { surface: "dom", gameDrawsCrt: false },
+    "meme-vault": { surface: "dom", gameDrawsCrt: false },
+  };
+
+const UNKNOWN_GAME_PROFILE: CabinetCrtProfile = {
+  surface: "dom",
+  gameDrawsCrt: false,
+};
+
+/**
+ * Returns a game's CRT profile. Unknown games are treated as DOM games that
+ * leave the CRT to the cabinet, so the default is no overlay.
+ *
+ * @param gameId - The cabinet's game id, such as `laser-loon`.
+ * @returns The game's surface type and whether it draws its own CRT.
+ */
+export function getCabinetCrtProfile(gameId: string): CabinetCrtProfile {
+  return CABINET_CRT_PROFILES[gameId] ?? UNKNOWN_GAME_PROFILE;
+}
+
+/**
+ * The wizard's CRT setting for a player who has not chosen one: Soft for
+ * canvas games and Off for DOM games, whose text a raster would only blur.
+ *
+ * @param gameId - The cabinet's game id.
+ * @returns `soft` or `off`.
+ */
+export function getDefaultCrtFilter(gameId: string): CabinetCrtFilter {
+  return getCabinetCrtProfile(gameId).surface === "canvas" ? "soft" : "off";
+}
+
+/** Narrows an unknown stored value to a {@link CabinetCrtFilter}. */
+export function isCabinetCrtFilter(value: unknown): value is CabinetCrtFilter {
+  return (
+    typeof value === "string" &&
+    (CABINET_CRT_FILTERS as readonly string[]).includes(value)
+  );
+}
+
+/**
+ * The cabinet layer is static: no shimmer and no curvature, so the same
+ * calibration works as a CSS overlay and as a canvas pass.
+ */
+const CABINET_CRT_CALIBRATION: Record<
+  Exclude<CabinetCrtFilter, "off">,
+  CRTCalibrationConfig
+> = {
+  soft: {
+    scanlinesEnabled: true,
+    scanlineIntensity: 0.12,
+    scanlineDensity: 3,
+    phosphorMask: "none",
+    phosphorIntensity: 0,
+    bloomIntensity: 0,
+    curvature: 0,
+    vignetteIntensity: 0.3,
+    flickerShimmer: false,
+  },
+  arcade: {
+    ...CRT_PRESETS["authentic-arcade"].config,
+    scanlineIntensity: 0.2,
+    phosphorIntensity: 0.1,
+    bloomIntensity: 0,
+    curvature: 0,
+    vignetteIntensity: 0.55,
+    flickerShimmer: false,
+  },
+  scanlines: {
+    scanlinesEnabled: true,
+    scanlineIntensity: 0.4,
+    scanlineDensity: 2,
+    phosphorMask: "none",
+    phosphorIntensity: 0,
+    bloomIntensity: 0,
+    curvature: 0,
+    vignetteIntensity: 0.15,
+    flickerShimmer: false,
+  },
+};
+
+/**
+ * Maps the wizard's CRT setting onto a calibration from this pipeline, so a
+ * game that draws its CRT in canvas (via {@link renderCRTEffects}) and the
+ * cabinet's CSS overlay use the same numbers.
+ *
+ * @param filter - The wizard's CRT setting.
+ * @returns A static calibration, or null for `off`.
+ */
+export function crtCalibrationForFilter(
+  filter: CabinetCrtFilter
+): CRTCalibrationConfig | null {
+  if (filter === "off") return null;
+  return { ...CABINET_CRT_CALIBRATION[filter] };
+}
+
+/**
+ * Builds the CSS `background-image` for a static CRT overlay from a
+ * calibration: a radial vignette, the scanline raster and, for a phosphor
+ * mask, faint RGB columns. Returns an empty string when nothing would show.
+ *
+ * @param config - CRT calibration, usually from {@link crtCalibrationForFilter}.
+ * @returns A comma-separated list of CSS gradients.
+ */
+export function buildCrtOverlayBackground(
+  config: CRTCalibrationConfig | null
+): string {
+  if (!config) return "";
+  const layers: string[] = [];
+  const vignette = clamp(config.vignetteIntensity, 0, 1);
+  if (vignette > 0.05) {
+    const alpha = (vignette * 0.85).toFixed(3);
+    const inner = Math.round(70 - vignette * 25);
+    layers.push(
+      `radial-gradient(ellipse at center, transparent ${inner}%, rgba(0, 0, 0, ${alpha}) 100%)`
+    );
+  }
+  const scan = clamp(config.scanlineIntensity, 0, 1);
+  if (config.scanlinesEnabled && scan > 0) {
+    const step = clamp(Math.round(config.scanlineDensity || 3), 2, 4);
+    const alpha = scan.toFixed(3);
+    layers.push(
+      `repeating-linear-gradient(0deg, rgba(0, 0, 0, ${alpha}) 0px, rgba(0, 0, 0, ${alpha}) 1px, transparent 1px, transparent ${step}px)`
+    );
+  }
+  const mask = clamp(config.phosphorIntensity, 0, 1);
+  if (config.phosphorMask !== "none" && mask > 0) {
+    const a = (mask * 0.5).toFixed(3);
+    layers.push(
+      `repeating-linear-gradient(90deg, rgba(255, 0, 0, ${a}) 0px, rgba(0, 255, 0, ${a}) 1px, rgba(0, 0, 255, ${a}) 2px, transparent 3px)`
+    );
+  }
+  return layers.join(", ");
+}
+
+/**
+ * Whether the cabinet should draw its CRT layer for a game and setting.
+ *
+ * @param gameId - The cabinet's game id.
+ * @param filter - The wizard's CRT setting.
+ * @returns False for `off` and for games that draw their own CRT.
+ */
+export function shouldCabinetDrawCrt(
+  gameId: string,
+  filter: CabinetCrtFilter
+): boolean {
+  return filter !== "off" && !getCabinetCrtProfile(gameId).gameDrawsCrt;
+}

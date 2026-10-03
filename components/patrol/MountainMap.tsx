@@ -861,7 +861,7 @@ export const MountainMap: React.FC<MountainMapProps> = ({
                   fill="#94a3b8"
                   fontSize="22"
                   fontWeight="bold"
-                  fontFamily="monospace"
+                  fontFamily="var(--font-geist-mono), monospace"
                   letterSpacing="4"
                   textAnchor="middle"
                   opacity="0.7"
@@ -874,7 +874,7 @@ export const MountainMap: React.FC<MountainMapProps> = ({
                   fill="#94a3b8"
                   fontSize="22"
                   fontWeight="bold"
-                  fontFamily="monospace"
+                  fontFamily="var(--font-geist-mono), monospace"
                   letterSpacing="4"
                   textAnchor="middle"
                   opacity="0.7"
@@ -889,7 +889,7 @@ export const MountainMap: React.FC<MountainMapProps> = ({
                 fill="#fda4af"
                 fontSize="22"
                 fontWeight="bold"
-                fontFamily="monospace"
+                fontFamily="var(--font-geist-mono), monospace"
                 letterSpacing="4"
                 textAnchor="middle"
                 opacity="0.8"
@@ -1088,7 +1088,7 @@ export const MountainMap: React.FC<MountainMapProps> = ({
                         fill="#fecaca"
                         fontSize="9"
                         fontWeight="bold"
-                        fontFamily="monospace"
+                        fontFamily="var(--font-geist-mono), monospace"
                         textAnchor="middle"
                       >
                         CLOSED
@@ -1103,7 +1103,7 @@ export const MountainMap: React.FC<MountainMapProps> = ({
                     fill={coreColor}
                     fontSize="10"
                     fontWeight="bold"
-                    fontFamily="monospace"
+                    fontFamily="var(--font-geist-mono), monospace"
                     textAnchor="middle"
                     className="select-none pointer-events-none drop-shadow"
                   >
@@ -1180,7 +1180,7 @@ export const MountainMap: React.FC<MountainMapProps> = ({
                           y={ty + 4}
                           fill="#94a3b8"
                           fontSize="9"
-                          fontFamily="monospace"
+                          fontFamily="var(--font-geist-mono), monospace"
                         >
                           T{idx + 1}
                         </text>
@@ -1265,7 +1265,7 @@ export const MountainMap: React.FC<MountainMapProps> = ({
                     y={lift.bottomTerminal.y + 24}
                     fill="#fde68a"
                     fontSize="9"
-                    fontFamily="monospace"
+                    fontFamily="var(--font-geist-mono), monospace"
                     fontWeight="bold"
                     textAnchor="middle"
                   >
@@ -1334,7 +1334,7 @@ export const MountainMap: React.FC<MountainMapProps> = ({
                   fill={poi.category === "medical" ? "#00f0ff" : "#bae6fd"}
                   fontSize="8.5"
                   fontWeight="bold"
-                  fontFamily="monospace"
+                  fontFamily="var(--font-geist-mono), monospace"
                   textAnchor="middle"
                 >
                   {poi.id === "summit-shack"
@@ -1348,7 +1348,7 @@ export const MountainMap: React.FC<MountainMapProps> = ({
                   y="10"
                   fill="#94a3b8"
                   fontSize="7"
-                  fontFamily="monospace"
+                  fontFamily="var(--font-geist-mono), monospace"
                   textAnchor="middle"
                 >
                   {poi.elevationFt} FT
@@ -1459,7 +1459,7 @@ export const MountainMap: React.FC<MountainMapProps> = ({
                   fill="#ffffff"
                   fontSize="11"
                   fontWeight="bold"
-                  fontFamily="monospace"
+                  fontFamily="var(--font-geist-mono), monospace"
                   textAnchor="middle"
                 >
                   !
@@ -1481,7 +1481,7 @@ export const MountainMap: React.FC<MountainMapProps> = ({
                     fill="#fee2e2"
                     fontSize="8"
                     fontWeight="bold"
-                    fontFamily="monospace"
+                    fontFamily="var(--font-geist-mono), monospace"
                     textAnchor="middle"
                   >
                     DISPATCH INCIDENT
@@ -1520,7 +1520,7 @@ export const MountainMap: React.FC<MountainMapProps> = ({
                   fill="#09090b"
                   fontSize="10"
                   fontWeight="bold"
-                  fontFamily="monospace"
+                  fontFamily="var(--font-geist-mono), monospace"
                   textAnchor="middle"
                 >
                   !
@@ -1543,7 +1543,7 @@ export const MountainMap: React.FC<MountainMapProps> = ({
                     fill="#fbbf24"
                     fontSize="7.5"
                     fontWeight="bold"
-                    fontFamily="monospace"
+                    fontFamily="var(--font-geist-mono), monospace"
                     textAnchor="middle"
                   >
                     OPERATIONS
@@ -1585,7 +1585,7 @@ export const MountainMap: React.FC<MountainMapProps> = ({
                 fill="#00f0ff"
                 fontSize="10"
                 fontWeight="bold"
-                fontFamily="monospace"
+                fontFamily="var(--font-geist-mono), monospace"
                 textAnchor="middle"
               >
                 N
@@ -2005,7 +2005,7 @@ export const MountainMap: React.FC<MountainMapProps> = ({
                   y="24"
                   fill="#94a3b8"
                   fontSize="8"
-                  fontFamily="monospace"
+                  fontFamily="var(--font-geist-mono), monospace"
                 >
                   {activeSelectedTrail.summitElevationFt}&apos;
                 </text>
@@ -2014,7 +2014,7 @@ export const MountainMap: React.FC<MountainMapProps> = ({
                   y="46"
                   fill="#94a3b8"
                   fontSize="8"
-                  fontFamily="monospace"
+                  fontFamily="var(--font-geist-mono), monospace"
                 >
                   {activeSelectedTrail.baseElevationFt}&apos;
                 </text>

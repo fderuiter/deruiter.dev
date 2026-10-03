@@ -70,14 +70,18 @@ describe("Roguelike Dungeon Generator & Rooms", () => {
   it("should generate Room 3 (BlinkBrowse) with gaze tracker enemies and items", () => {
     const blinkRoom = generateBlinkBrowseRoom();
     expect(blinkRoom.id).toBe("blinkbrowse");
-    expect(blinkRoom.enemies.some((e) => e.type === "slime" || e.type === "drone")).toBe(true);
+    expect(
+      blinkRoom.enemies.some((e) => e.type === "slime" || e.type === "drone")
+    ).toBe(true);
     expect(blinkRoom.items.length).toBeGreaterThan(0);
   });
 
   it("should generate Room 4 (Billable Hours) with treasure chests", () => {
     const billableRoom = generateBillableHoursRoom();
     expect(billableRoom.id).toBe("billable_hours");
-    expect(billableRoom.items.some((i) => i.itemId === "commit_token")).toBe(true);
+    expect(billableRoom.items.some((i) => i.itemId === "commit_token")).toBe(
+      true
+    );
   });
 
   it("should generate classic stages and Cyberpunk campaign", () => {
@@ -243,7 +247,9 @@ describe("Developer Weapons & Humorous Side Effects", () => {
     expect(res.success).toBe(true);
     expect(res.activeSideEffect?.type).toBe("history_rewritten");
     expect(res.updatedEnemies).toHaveLength(0);
-    expect(res.updatedWeapons.git_force_push.ammo).toBe(DEFAULT_WEAPONS.git_force_push.ammo - 1);
+    expect(res.updatedWeapons.git_force_push.ammo).toBe(
+      DEFAULT_WEAPONS.git_force_push.ammo - 1
+    );
   });
 
   it("executes Stack Overflow Copy-Paste, heals HP, and triggers keybind scramble", () => {
@@ -366,8 +372,8 @@ describe("Cyberdeck Archetypes, Meta-Progression & Themes", () => {
     expect(apt.baseRam).toBe(48);
   });
 
-  it("provides 4 distinct retro CRT phosphor theme configurations", () => {
-    expect(Object.keys(CRT_THEMES)).toEqual(["emerald", "amber", "synthwave", "matrix"]);
+  it("provides 3 retro CRT phosphor themes, emerald first and no synthwave (#1522)", () => {
+    expect(Object.keys(CRT_THEMES)).toEqual(["emerald", "amber", "matrix"]);
     expect(CRT_THEMES.emerald.primaryColor).toBe("#10b981");
     expect(CRT_THEMES.amber.primaryColor).toBe("#f59e0b");
   });
@@ -463,41 +469,129 @@ describe("Cybersecurity Weapons & CVE Synergies", () => {
     ];
 
     // npm_install
-    const npmRes = fireWeapon("npm_install", DEFAULT_WEAPONS, 1, 1, 100, 100, enemies, undefined, 1000, 32);
+    const npmRes = fireWeapon(
+      "npm_install",
+      DEFAULT_WEAPONS,
+      1,
+      1,
+      100,
+      100,
+      enemies,
+      undefined,
+      1000,
+      32
+    );
     expect(npmRes.success).toBe(true);
 
     // git_force_push
-    const gitRes = fireWeapon("git_force_push", DEFAULT_WEAPONS, 1, 1, 100, 100, enemies, undefined, 2000, 32);
+    const gitRes = fireWeapon(
+      "git_force_push",
+      DEFAULT_WEAPONS,
+      1,
+      1,
+      100,
+      100,
+      enemies,
+      undefined,
+      2000,
+      32
+    );
     expect(gitRes.success).toBe(true);
 
     // stack_overflow
-    const stackRes = fireWeapon("stack_overflow", DEFAULT_WEAPONS, 1, 1, 50, 100, enemies, undefined, 3000, 32);
+    const stackRes = fireWeapon(
+      "stack_overflow",
+      DEFAULT_WEAPONS,
+      1,
+      1,
+      50,
+      100,
+      enemies,
+      undefined,
+      3000,
+      32
+    );
     expect(stackRes.success).toBe(true);
     expect(stackRes.updatedPlayerHp).toBe(90);
 
     // zero_day
-    const zdRes = fireWeapon("zero_day", DEFAULT_WEAPONS, 1, 1, 100, 100, enemies, undefined, 4000, 32);
+    const zdRes = fireWeapon(
+      "zero_day",
+      DEFAULT_WEAPONS,
+      1,
+      1,
+      100,
+      100,
+      enemies,
+      undefined,
+      4000,
+      32
+    );
     expect(zdRes.success).toBe(true);
 
     // ransomware_lock
-    const rwRes = fireWeapon("ransomware_lock", DEFAULT_WEAPONS, 1, 1, 100, 100, enemies, undefined, 5000, 32);
+    const rwRes = fireWeapon(
+      "ransomware_lock",
+      DEFAULT_WEAPONS,
+      1,
+      1,
+      100,
+      100,
+      enemies,
+      undefined,
+      5000,
+      32
+    );
     expect(rwRes.success).toBe(true);
     expect(rwRes.cryptoGained).toBeGreaterThan(0);
 
     // emp_blast
-    const empRes = fireWeapon("emp_blast", DEFAULT_WEAPONS, 1, 1, 100, 100, enemies, undefined, 6000, 32);
+    const empRes = fireWeapon(
+      "emp_blast",
+      DEFAULT_WEAPONS,
+      1,
+      1,
+      100,
+      100,
+      enemies,
+      undefined,
+      6000,
+      32
+    );
     expect(empRes.success).toBe(true);
     expect(empRes.updatedEnemies[0].state).toBe("stunned");
 
     // git_force_push against low-HP boss
     const lowHpBoss = { ...createFaceForgeBoss(10, 10), hp: 10 };
-    const forceBossRes = fireWeapon("git_force_push", DEFAULT_WEAPONS, 1, 1, 100, 100, [], lowHpBoss, 7000, 32);
+    const forceBossRes = fireWeapon(
+      "git_force_push",
+      DEFAULT_WEAPONS,
+      1,
+      1,
+      100,
+      100,
+      [],
+      lowHpBoss,
+      7000,
+      32
+    );
     expect(forceBossRes.updatedBoss?.defeated).toBe(true);
   });
 
   it("handles weapons against FaceForge 3D boss and tests boss updates", () => {
     const boss = createFaceForgeBoss(10, 10);
-    const res = fireWeapon("zero_day", DEFAULT_WEAPONS, 1, 1, 100, 100, [], boss, 1000, 32);
+    const res = fireWeapon(
+      "zero_day",
+      DEFAULT_WEAPONS,
+      1,
+      1,
+      100,
+      100,
+      [],
+      boss,
+      1000,
+      32
+    );
     expect(res.success).toBe(true);
     expect(res.updatedBoss).toBeDefined();
 
@@ -575,7 +669,9 @@ describe("Cybersecurity Weapons & CVE Synergies", () => {
 
     const aiRes = updateEnemyAI(enemies, sampleGrid, 1, 3, 16.6);
     expect(aiRes.updatedEnemies.length).toBe(3);
-    expect(aiRes.updatedEnemies.find((e) => e.id === "stunned-drone")?.state).toBe("stunned");
+    expect(
+      aiRes.updatedEnemies.find((e) => e.id === "stunned-drone")?.state
+    ).toBe("stunned");
   });
 
   it("exercises retro audio synthesizer methods without error", () => {
@@ -603,9 +699,10 @@ describe("Cybersecurity Weapons & CVE Synergies", () => {
         connect: () => {},
       }),
     };
-    (globalThis as unknown as { AudioContext: unknown }).AudioContext = function () {
-      return mockCtx;
-    };
+    (globalThis as unknown as { AudioContext: unknown }).AudioContext =
+      function () {
+        return mockCtx;
+      };
 
     retroAudio.setMuted(false);
     expect(retroAudio.getMuted()).toBe(false);
@@ -658,4 +755,3 @@ describe("Cybersecurity Weapons & CVE Synergies", () => {
     expect(loaded.totalCrypto).toBe(500);
   });
 });
-

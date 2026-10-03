@@ -15,6 +15,7 @@ import {
   IconCheck,
 } from "@tabler/icons-react";
 import { useClipboard } from "@/hooks/useClipboard";
+import { gameFont } from "@/lib/game-utils";
 
 interface AssetFormatItem {
   filename: string;
@@ -209,7 +210,7 @@ export const AssetDistributionHub: React.FC<AssetDistributionHubProps> = ({
       }
 
       ctx.fillStyle = isActive || isHovered ? "#ffffff" : "#71717a";
-      ctx.font = "11px monospace";
+      ctx.font = gameFont(11);
       const text = cat.label;
       const metrics = ctx.measureText(text);
       const textX = cat.x + (cat.w - (metrics?.width || 100)) / 2;
@@ -218,7 +219,7 @@ export const AssetDistributionHub: React.FC<AssetDistributionHubProps> = ({
 
     // Active category status telemetry
     ctx.fillStyle = "#a1a1aa";
-    ctx.font = "10px monospace";
+    ctx.font = gameFont(10);
     const statusText = `ACTIVE: ${activeCategory.toUpperCase()}${
       hoveredCategory ? ` | HOVER: ${hoveredCategory.toUpperCase()}` : ""
     }`;

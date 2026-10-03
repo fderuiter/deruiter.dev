@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+} from "react";
 import Image from "next/image";
 import {
   IconPlayerPlay,
@@ -21,6 +27,11 @@ import {
   GameSetupConfig,
 } from "@/components/arcade/PreGameSetupWizard";
 import { logger } from "@/lib/logger";
+import {
+  buildCrtOverlayBackground,
+  crtCalibrationForFilter,
+  shouldCabinetDrawCrt,
+} from "@/lib/arcade";
 
 interface ControlItem {
   key: string;
@@ -39,7 +50,30 @@ interface PlayCabinetProps {
   controlDock?: React.ReactNode;
   onLaunch?: () => void;
   onExit?: () => void;
+  /**
+   * One title screen per game (#1516). When true (the default), the attract
+   * screen is the game's title screen and the cabinet tells the game, through
+   * `useSkipTitleScreen()`, to start straight into play after Launch. Pass
+   * false for a game whose own start screen carries a choice the attract
+   * screen cannot (a mode or character select).
+   */
+  singleTitleScreen?: boolean;
   children: React.ReactNode;
+}
+
+// Windowed cabinet chrome before it is measured: the marquee (min-h-12
+// buttons, py-2 padding, borders) and the controller bar under the stage.
+const DEFAULT_CHROME_PX = 136;
+const DEFAULT_HEADER_PX = 80;
+
+// Bottom edge of the site's fixed header, so the cabinet can sit just under
+// it. The header's --header-height variable measures its content box, which
+// leaves out the header's padding, so measure the element itself.
+function measureHeaderOffset(): number {
+  if (typeof document === "undefined") return DEFAULT_HEADER_PX;
+  const header = document.querySelector<HTMLElement>("body header");
+  const bottom = header?.getBoundingClientRect().bottom ?? 0;
+  return bottom > 0 && bottom < 240 ? Math.ceil(bottom) : DEFAULT_HEADER_PX;
 }
 
 function getKeyboardBoundary(cabinet: HTMLElement): HTMLElement | null {
@@ -66,6 +100,7 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
   controlDock,
   onLaunch,
   onExit,
+  singleTitleScreen = true,
   children,
 }) => {
   const gameId = rawGameId || title.toLowerCase().replace(/[^a-z0-9]/g, "-");
@@ -83,9 +118,34 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
 
   const [runRevision, setRunRevision] = useState(0);
   const setupValue = useMemo(
-    () => ({ config: setupConfig, runRevision, isSetupOpen: showWizard }),
-    [setupConfig, runRevision, showWizard]
+    () => ({
+      config: setupConfig,
+      runRevision,
+      isSetupOpen: showWizard,
+      skipTitleScreen: singleTitleScreen,
+    }),
+    [setupConfig, runRevision, showWizard, singleTitleScreen]
   );
+
+  // The one CRT layer (#1516): the Setup Wizard's crtFilter mapped onto
+  // lib/arcade/crt-pipeline.ts, drawn by the cabinet as a static overlay
+  // unless the game draws its own CRT pass.
+  const crtBackground = useMemo(
+    () =>
+      buildCrtOverlayBackground(crtCalibrationForFilter(setupConfig.crtFilter)),
+    [setupConfig.crtFilter]
+  );
+  const showCabinetCrt =
+    crtBackground !== "" && shouldCabinetDrawCrt(gameId, setupConfig.crtFilter);
+
+  // One-screen rule: measure the marquee so the stage budget the games size
+  // against (--layout-viewport-budget) is what is left of the viewport under
+  // the site header and the marquee.
+  const marqueeRef = useRef<HTMLDivElement>(null);
+  const footerRef = useRef<HTMLDivElement>(null);
+  // Marquee above the stage plus the controller bar below it (and its gap).
+  const [chromeHeight, setChromeHeight] = useState(DEFAULT_CHROME_PX);
+  const [headerOffset, setHeaderOffset] = useState(DEFAULT_HEADER_PX);
 
   const {
     isFullscreen,
@@ -128,6 +188,26 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
       document.body.style.overflow = previousOverflow;
     };
   }, [isFullscreen]);
+
+  useLayoutEffect(() => {
+    const marquee = marqueeRef.current;
+    if (!isLaunched || !marquee) return;
+    const footer = footerRef.current;
+    const measure = () => {
+      const top = marquee.getBoundingClientRect().height;
+      // The footer bar sits under a 12px (mt-3) gap.
+      const bottom = footer ? footer.getBoundingClientRect().height + 12 : 0;
+      const next = Math.ceil(top + bottom);
+      if (next > 0) setChromeHeight(next);
+      setHeaderOffset(measureHeaderOffset());
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(marquee);
+    if (footer) observer.observe(footer);
+    return () => observer.disconnect();
+  }, [isLaunched, isFullscreen]);
 
   const handlePrefetch = () => {
     if (!isPrefetched) {
@@ -183,10 +263,29 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
     const prefersReducedMotion =
       typeof window.matchMedia === "function" &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    cabinet.scrollIntoView?.({
-      block: "start",
-      behavior: prefersReducedMotion ? "auto" : "smooth",
-    });
+    // One-screen rule: put the marquee just under the site header, so the
+    // stage gets the rest of the viewport.
+    // The site header compacts once the page scrolls, so after the scroll
+    // settles, measure again and nudge the cabinet up to the compact header.
+    const alignUnderHeader = (
+      behavior: ScrollBehavior,
+      maxNudge = Infinity
+    ) => {
+      const headerOffset = measureHeaderOffset();
+      setHeaderOffset(headerOffset);
+      const delta = cabinet.getBoundingClientRect().top - headerOffset - 4;
+      // A larger gap after the first scroll means the player has scrolled
+      // on; leave them there.
+      if (Math.abs(delta) < 2 || Math.abs(delta) > maxNudge) return;
+      if (typeof window.scrollTo !== "function") return;
+      try {
+        window.scrollTo({ top: Math.max(0, window.scrollY + delta), behavior });
+      } catch {
+        cabinet.scrollIntoView?.({ block: "start" });
+      }
+    };
+    alignUnderHeader(prefersReducedMotion ? "auto" : "smooth");
+    const settleTimer = setTimeout(() => alignUnderHeader("auto", 48), 700);
     // Focus the cabinet so keys reach the game, then, since the game can
     // render a loading shell first, retry briefly until its keyboard boundary
     // exists. Stop as soon as the game has moved focus somewhere itself, such
@@ -210,7 +309,10 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
       }
       if (attempts >= 20) clearInterval(timer);
     }, 50);
-    return () => clearInterval(timer);
+    return () => {
+      clearInterval(timer);
+      clearTimeout(settleTimer);
+    };
   }, [isLaunched]);
 
   // Start buttons and game-over overlays unmount while focused, which drops
@@ -313,6 +415,16 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
         style={
           {
             "--layout-dock-height": controlDock ? "120px" : "0px",
+            // Windowed, the cabinet scrolls to sit under the site header on
+            // Launch, so the stage gets the viewport minus header, marquee
+            // and dock. Games already size their playfield against
+            // --layout-viewport-budget; overriding it here makes them fit.
+            ...(isFullscreen
+              ? {}
+              : {
+                  "--arcade-stage-budget": `calc(100dvh - ${headerOffset + 4}px - ${chromeHeight}px - var(--layout-dock-height, 0px) - 4px)`,
+                  "--layout-viewport-budget": "var(--arcade-stage-budget)",
+                }),
           } as React.CSSProperties
         }
       >
@@ -357,7 +469,10 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
           </div>
         ) : (
           /* Windowed Mode: Cabinet Marquee / Top Frame Bezel Header Bar */
-          <div className="w-full flex flex-wrap items-center justify-between px-3.5 py-2 bg-zinc-950/95 border border-zinc-800 rounded-t-2xl font-mono text-xs text-zinc-400 select-none backdrop-blur-md gap-2 shrink-0 z-20">
+          <div
+            ref={marqueeRef}
+            className="w-full flex flex-wrap items-center justify-between px-3.5 py-2 bg-zinc-950/95 border border-zinc-800 rounded-t-2xl font-mono text-xs text-zinc-400 select-none backdrop-blur-md gap-2 shrink-0 z-20"
+          >
             <div className="flex grow basis-12 items-center gap-2 min-w-0">
               <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0" />
               <span className="font-bold tracking-wider text-zinc-200 text-xs uppercase truncate">
@@ -401,30 +516,50 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
 
         {/* Game Area Container with Dynamic Viewport Height Budgeting */}
         <div
-          className={`arcade-cabinet-stage w-full relative min-h-0 min-w-0 ${
-            isFullscreen
-              ? "flex-1 rounded-2xl border-2"
-              : "border-2 border-t-0 rounded-b-2xl"
-          } overflow-y-auto overflow-x-hidden flex flex-col items-center justify-start bg-black ${bezelClasses}`}
+          className={`relative w-full min-w-0 flex flex-col ${
+            isFullscreen ? "flex-1 min-h-0" : ""
+          }`}
         >
-          <CabinetFullscreenContext.Provider value={toggleCabinetFullscreen}>
-            <CabinetSetupContext.Provider value={setupValue}>
-              {children}
-            </CabinetSetupContext.Provider>
-          </CabinetFullscreenContext.Provider>
+          <div
+            className={`arcade-cabinet-stage w-full relative min-h-0 min-w-0 ${
+              isFullscreen
+                ? "flex-1 rounded-2xl border-2"
+                : "border-2 border-t-0 rounded-b-2xl"
+            } overflow-y-auto overflow-x-hidden flex flex-col items-center justify-start bg-black ${bezelClasses}`}
+          >
+            <CabinetFullscreenContext.Provider value={toggleCabinetFullscreen}>
+              <CabinetSetupContext.Provider value={setupValue}>
+                {children}
+              </CabinetSetupContext.Provider>
+            </CabinetFullscreenContext.Provider>
 
-          {/* 3-Step Setup Wizard Overlay prior to active gameplay / when reconfiguring */}
-          <PreGameSetupWizard
-            gameId={gameId}
-            gameTitle={title}
-            isOpen={showWizard}
-            onComplete={(cfg) => {
-              setSetupConfig(cfg);
-              setRunRevision((revision) => revision + 1);
-              setShowWizard(false);
-            }}
-            onCancel={() => setShowWizard(false)}
-          />
+            {/* 3-Step Setup Wizard Overlay prior to active gameplay / when reconfiguring */}
+            <PreGameSetupWizard
+              gameId={gameId}
+              gameTitle={title}
+              isOpen={showWizard}
+              onComplete={(cfg) => {
+                setSetupConfig(cfg);
+                setRunRevision((revision) => revision + 1);
+                setShowWizard(false);
+              }}
+              onCancel={() => setShowWizard(false)}
+            />
+          </div>
+
+          {/* Cabinet CRT layer: static, above the game, never over the wizard
+            and never intercepting input. */}
+          {showCabinetCrt && !showWizard && (
+            <div
+              aria-hidden="true"
+              data-testid="cabinet-crt-layer"
+              data-crt-filter={setupConfig.crtFilter}
+              className={`pointer-events-none absolute inset-0 z-40 ${
+                isFullscreen ? "rounded-2xl" : "rounded-b-2xl"
+              }`}
+              style={{ backgroundImage: crtBackground }}
+            />
+          )}
         </div>
 
         {/* Optional Control Dock Slot (e.g. Virtual Gamepad, Bezel cluster) */}
@@ -436,7 +571,10 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
 
         {/* Discrete Retro Controller Menu (visible when not in full-screen) */}
         {!isFullscreen && (
-          <div className="mt-3 flex items-center justify-between w-full border border-zinc-800 bg-zinc-900/60 rounded-2xl px-4 py-2 font-mono text-xs text-zinc-400 flex-wrap gap-2 shrink-0">
+          <div
+            ref={footerRef}
+            className="mt-3 flex items-center justify-between w-full border border-zinc-800 bg-zinc-900/60 rounded-2xl px-4 py-2 font-mono text-xs text-zinc-400 flex-wrap gap-2 shrink-0"
+          >
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-emerald-500" />
               <span className="uppercase tracking-wider">Cabinet Engaged</span>
@@ -497,8 +635,16 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
           </>
         )}
 
-        {/* Scanlines Effect */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(255,255,255,0),rgba(255,255,255,0)_50%,rgba(0,0,0,0.45)_50%,rgba(0,0,0,0.45))] bg-[size:100%_4px] pointer-events-none z-10" />
+        {/* The same CRT layer the launched cabinet draws, so the attract
+            screen previews the player's setting. */}
+        {crtBackground && (
+          <div
+            aria-hidden="true"
+            data-testid="attract-crt-layer"
+            className="absolute inset-0 pointer-events-none z-10"
+            style={{ backgroundImage: crtBackground }}
+          />
+        )}
 
         {isWarmingUp ? (
           /* CRT Warming up / Booting Screen */

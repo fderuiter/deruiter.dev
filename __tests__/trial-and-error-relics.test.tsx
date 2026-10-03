@@ -64,24 +64,28 @@ describe("a card relic firing in the score player (#924)", () => {
     />
   );
 
-  it("pops and shakes the card it fires on, with the relic's number", () => {
+  it("pops the card it fires on, flipped to the Chips it scored", () => {
     const { container } = render(player(at, true));
     const card = container.querySelector("[data-relic-fired]");
-    expect(card?.textContent).toBe("Table 14.1.2");
-    expect(card?.className).toContain("te-loud-shake");
     expect(card?.className).toContain("motion-safe:scale-110");
+    // The played card has scored, so it shows its Chips side (#1524).
+    const played = card?.closest("[data-played-card]");
+    expect(played?.getAttribute("data-played-card")).toBe("T1");
+    expect(played?.hasAttribute("data-scored")).toBe(true);
+    expect(card?.textContent).toContain("Table 14.1.2");
+    expect(card?.textContent).toContain("+25");
     expect(
       screen.getByText("The ITT Purist on Table 14.1.2: +25 Chips, +1 Mult.")
     ).toBeTruthy();
-    expect(screen.getByTestId("player-counters").textContent).toBe(
-      "[65] × [3]"
-    );
+    const counters = screen.getByTestId("player-counters");
+    expect(counters.getAttribute("data-chips")).toBe("65");
+    expect(counters.getAttribute("data-mult")).toBe("3");
   });
 
-  it("pops without shaking when loud effects are off, and settles after", () => {
+  it("pops the same way when loud effects are off, and settles after", () => {
     const { container, rerender } = render(player(at, false));
-    const card = container.querySelector("[data-relic-fired]");
-    expect(card?.className).not.toContain("te-loud-shake");
+    expect(container.querySelector("[data-relic-fired]")).not.toBeNull();
+    expect(container.querySelector("[class*='te-loud-']")).toBeNull();
     rerender(player(at + 1, false));
     expect(container.querySelector("[data-relic-fired]")).toBeNull();
   });

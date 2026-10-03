@@ -10,6 +10,26 @@ Feedback effects returned by [useArcadeFx](../functions/useArcadeFx.md).
 
 ## Properties
 
+### crtCalibration
+
+> **crtCalibration**: [`CRTCalibrationConfig`](../../../lib/arcade/crt-pipeline/interfaces/CRTCalibrationConfig.md) \| `null`
+
+The calibration for `crtFilter` from `lib/arcade/crt-pipeline.ts`, for a
+game that draws its CRT inside its canvas with `renderCRTEffects`.
+Null when the setting is `off`.
+
+***
+
+### crtFilter
+
+> **crtFilter**: [`CabinetCrtFilter`](../../../lib/arcade/crt-pipeline/type-aliases/CabinetCrtFilter.md)
+
+The Setup Wizard's CRT setting, or `off` outside a cabinet. The cabinet
+draws the CRT layer itself; a game reads this only to match it, for
+example to skip a CRT pass of its own.
+
+***
+
 ### flash
 
 > **flash**: (`color?`) => `void`

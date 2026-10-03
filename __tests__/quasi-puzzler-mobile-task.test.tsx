@@ -56,8 +56,9 @@ describe("Quasi-Puzzler puts the active task within reach on mobile (#1236)", ()
     expect(toggle.getAttribute("aria-controls")).toBe("quasi-level-index");
     expect(toggle.textContent).toMatch(/Level 1 of 18/);
     const index = screen.getByTestId("quasi-level-index");
-    expect(index.className).toContain("hidden");
-    expect(index.className).toContain("md:block");
+    // A drawer at every width now (#1519), not only below md.
+    expect(index.className).toMatch(/(^|\s)hidden(\s|$)/);
+    expect(index.className).not.toContain("md:block");
 
     click(toggle);
     expect(toggle.getAttribute("aria-expanded")).toBe("true");

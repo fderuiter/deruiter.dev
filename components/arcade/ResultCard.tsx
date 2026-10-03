@@ -180,7 +180,7 @@ export function ResultCard({
         >
           {stats.map((stat) => (
             <div key={stat.label} className="bg-[#0d0e11] px-3 py-2.5">
-              <dt className="font-mono text-[10px] uppercase tracking-wider text-zinc-500">
+              <dt className="font-mono text-[10px] uppercase tracking-wider text-zinc-400">
                 {stat.label}
               </dt>
               <dd className="mt-0.5 font-mono text-lg font-bold text-[#f4f4f6]">

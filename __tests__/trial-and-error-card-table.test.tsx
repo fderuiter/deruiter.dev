@@ -128,7 +128,14 @@ describe("CardTable", () => {
     expect(card(DM_LISTING).getAttribute("aria-pressed")).toBe("true");
     const preview = screen.getByTestId("hand-preview");
     expect(preview.textContent).toContain("TLF Pair");
-    expect(preview.textContent).toContain("[92] × [3] = 276");
+    // The play zone's big counters (#1524): Chips × Mult = Score.
+    const counters = within(preview).getByTestId("preview-counters");
+    expect(counters.getAttribute("data-chips")).toBe("92");
+    expect(counters.getAttribute("data-mult")).toBe("3");
+    expect(counters.getAttribute("data-score")).toBe("276");
+    expect(within(preview).getByTestId("preview-score").textContent).toContain(
+      "276"
+    );
     expect(screen.getByTestId("unverified-flag")).toBeTruthy();
     expect(lastAnnouncement()).toBe(
       "Selected Listing 16.2.4 Demographic Data by Subject. 2 selected: TLF Pair."
@@ -371,7 +378,7 @@ describe("CardTable", () => {
     );
   });
 
-  it("shows the boss debuff on disabled cards and ends the run on a loss", () => {
+  it("shows the boss debuff on disabled cards and ends the run on a loss", async () => {
     render(<CardTable scenario={DOSE_ESCALATION_SCENARIO} />);
     expect(screen.getByTestId("boss-modifier").textContent).toContain(
       "Boss: Safety Set Only"
@@ -397,7 +404,10 @@ describe("CardTable", () => {
     const result = screen.getByTestId("blind-result");
     expect(result.textContent).toContain("Blind failed · run over");
     const restart = screen.getByRole("button", { name: "Restart run" });
-    expect(document.activeElement).toBe(restart);
+    // The run's end is the Arcade Kit's ResultCard (#1524), whose focus trap
+    // moves focus to its primary action.
+    expect(result.querySelector('[role="dialog"]')).not.toBeNull();
+    await waitFor(() => expect(document.activeElement).toBe(restart));
     fireEvent.click(restart);
     expect(screen.getByTestId("round-score").textContent?.trim()).toBe("0");
     expect(screen.getByTestId("blind-intro")).toBeTruthy();

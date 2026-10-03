@@ -80,13 +80,16 @@ export const ClinicalChaosClient: React.FC = () => {
         </div>
 
         {/* Game Container */}
-        <div className="rounded-3xl border border-zinc-800 bg-zinc-950/90 p-1.5 sm:p-6 shadow-[0_0_50px_rgba(16,185,129,0.1)]">
+        <div className="rounded-3xl border border-zinc-800 bg-zinc-950/90 p-1.5 sm:p-6">
           <DesktopOnlyGate
             gameId="clinical-chaos"
             gameTitle="Clinical Trial Chaos"
           >
+            {/* The shift briefing offers the Campaign or Endless choice, so
+                it stays as the game's one start step after Launch. */}
             <PlayCabinet
               gameId="clinical-chaos"
+              singleTitleScreen={false}
               title="Clinical Trial Chaos: CDISC Compliance"
               subtitle="Clinical Data, Against the Clock"
               icon={<IconShieldCheck className="w-8 h-8 text-emerald-400" />}

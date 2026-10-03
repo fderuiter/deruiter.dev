@@ -1,5 +1,5 @@
 import { ArcadeEngine, applyCanvasScale } from "@/lib/arcade";
-import { clamp } from "@/lib/game-utils";
+import { clamp, gameFont } from "@/lib/game-utils";
 import {
   countMarks,
   getRoom,
@@ -33,7 +33,6 @@ const GRAPHITE = "#0d0e11";
 const FLOOR = "#13151a";
 const CORRIDOR = "#161920";
 const WALL = "#1c1f26";
-const MONO = "ui-monospace, SFMono-Regular, Menlo, monospace";
 const PAPER = "#e7e5e4";
 const RED = "#ef4444";
 /** Seconds per flicker cycle of the bin fire. */
@@ -752,7 +751,7 @@ function drawStation(
       ctx.beginPath();
       ctx.arc(px + 10, py + 10, 6.5, 0, Math.PI * 2);
       ctx.stroke();
-      ctx.font = `700 8px ${MONO}`;
+      ctx.font = gameFont(8, 700);
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillStyle = STEEL;
@@ -820,7 +819,7 @@ function drawStations(ctx: CanvasRenderingContext2D, map: WorldMap) {
 }
 
 function drawLabels(ctx: CanvasRenderingContext2D, map: WorldMap) {
-  ctx.font = `600 8px ${MONO}`;
+  ctx.font = gameFont(8, 600);
   ctx.fillStyle = INK_SOFT;
   ctx.textBaseline = "bottom";
   for (const room of map.rooms) {
@@ -868,7 +867,7 @@ function drawFigure(
     ],
     color
   );
-  ctx.font = `700 8px ${MONO}`;
+  ctx.font = gameFont(8, 700);
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillStyle = filled ? GRAPHITE : color;

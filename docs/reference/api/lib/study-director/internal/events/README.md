@@ -13,6 +13,7 @@
 ## Functions
 
 - [beginStudy](functions/beginStudy.md)
+- [documentDecision](functions/documentDecision.md)
 - [endDay](functions/endDay.md)
 - [getEvent](functions/getEvent.md)
 - [inbox](functions/inbox.md)

@@ -794,7 +794,8 @@
 /* Study Director desk tokens (ADR 0054, #1496).
  * Scoped to [data-sd-desk]: graphite surfaces, hairlines and the semantic
  * status accents from the zero-trope palette. No glow, no gradients. */
-[data-sd-desk] {
+[data-sd-desk],
+[data-sd-world] {
   --sd-bg: #0d0e11;
   --sd-surface: #13151a;
   --sd-surface-2: #181b21;

@@ -1,5 +1,11 @@
 import type { Meters, StudyState } from "@/lib/study-director";
-import { METER_IDS } from "@/lib/study-director";
+import {
+  binFor,
+  paperStacksFor,
+  plantFor,
+  redMarksFor,
+  stickyNotesFor,
+} from "@/lib/study-director-world";
 import { clamp } from "@/lib/game-utils";
 
 /** How the office looks. Every field is driven by the study's real state. */
@@ -34,13 +40,6 @@ export interface SceneState {
   meters: Meters;
 }
 
-const SMOKE_BELOW = 35;
-const FIRE_BELOW = 20;
-
-function lowestMeter(meters: Meters): number {
-  return Math.min(...METER_IDS.map((id) => meters[id]));
-}
-
 /** The last day a logged decision added a deviation at any site. */
 function lastDeviationDay(state: StudyState): number | null {
   let last: number | null = null;
@@ -56,7 +55,10 @@ function openQueries(state: StudyState): number {
   return state.sites.reduce((sum, site) => sum + site.openQueries, 0);
 }
 
-/** Maps the study to the office scene. Pure, so it is tested without a DOM. */
+/**
+ * Maps the study to the office scene. Pure, so it is tested without a DOM.
+ * The decay rules are shared with the world's floor (`dressFloor`).
+ */
 export function sceneFor(
   state: StudyState,
   meters: Meters,
@@ -67,22 +69,21 @@ export function sceneFor(
     attentionPerDay?: number;
   } = {}
 ): SceneState {
-  const low = lowestMeter(meters);
+  const bin = binFor(meters);
   const perDay = options.attentionPerDay ?? 5;
   const spentToday = perDay - state.attention;
   const night = options.night ?? false;
   const lastDeviation = lastDeviationDay(state);
   return {
     day: state.day,
-    paperStacks: clamp(Math.floor(openQueries(state) / 12), 0, 4),
-    stickyNotes: clamp(Math.floor(state.documentationDebt / 12), 0, 6),
-    plant:
-      meters.team >= 60 ? "thriving" : meters.team >= 35 ? "droopy" : "wilted",
-    redMarks: clamp(Math.ceil(state.slipDays / 7), 0, 3),
+    paperStacks: paperStacksFor(openQueries(state)),
+    stickyNotes: stickyNotesFor(state.documentationDebt),
+    plant: plantFor(meters.team),
+    redMarks: redMarksFor(state.slipDays),
     cups: clamp(1 + spentToday, 1, 4),
     phoneBlink: (options.criticalCount ?? 0) > 0,
-    smoke: low < SMOKE_BELOW,
-    fire: low < FIRE_BELOW,
+    smoke: bin !== "calm",
+    fire: bin === "fire",
     night,
     hour: night ? 23.7 : 9 + (clamp(spentToday, 0, perDay) / perDay) * 8,
     daysSinceDeviation: state.day - (lastDeviation ?? 1),

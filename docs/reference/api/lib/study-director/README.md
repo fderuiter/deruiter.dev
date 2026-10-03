@@ -26,6 +26,12 @@ Re-exports [applyDifficulty](internal/model/functions/applyDifficulty.md)
 
 ***
 
+### applyEffects
+
+Re-exports [applyEffects](internal/model/functions/applyEffects.md)
+
+***
+
 ### AREA\_IDS
 
 Re-exports [AREA_IDS](types/variables/AREA_IDS.md)
@@ -173,6 +179,12 @@ Re-exports [Difficulty](types/type-aliases/Difficulty.md)
 ### DOCUMENTATION\_ATTENTION
 
 Re-exports [DOCUMENTATION_ATTENTION](internal/model/variables/DOCUMENTATION_ATTENTION.md)
+
+***
+
+### documentDecision
+
+Re-exports [documentDecision](internal/events/functions/documentDecision.md)
 
 ***
 
@@ -386,6 +398,12 @@ Re-exports [RegulatoryRiskSchema](scenario/variables/RegulatoryRiskSchema.md)
 
 ***
 
+### reportedSite
+
+Re-exports [reportedSite](internal/model/functions/reportedSite.md)
+
+***
+
 ### resolveDecision
 
 Re-exports [resolveDecision](internal/model/functions/resolveDecision.md)
@@ -443,6 +461,12 @@ Re-exports [SiteState](types/interfaces/SiteState.md)
 ### SiteStateSchema
 
 Re-exports [SiteStateSchema](scenario/variables/SiteStateSchema.md)
+
+***
+
+### siteVisibility
+
+Re-exports [siteVisibility](internal/model/functions/siteVisibility.md)
 
 ***
 

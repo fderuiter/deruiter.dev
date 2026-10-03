@@ -26,14 +26,14 @@ export const ACTION_COSTS: Record<WorldActionKind, ActionCost> = {
 };
 
 /** Energy work past the end of the office day costs, as a multiple. */
-const OVERTIME_ENERGY_FACTOR = 2;
+export const OVERTIME_ENERGY_FACTOR = 2;
 /** Cups after which coffee stops helping and starts costing focus. */
 const USEFUL_COFFEES = 4;
 /** Most energy a late night can keep from being recovered overnight. */
 const MAX_FATIGUE = 40;
 
 /** Minutes of the span from `start` to `end` that fall after the office day. */
-function lateMinutes(start: number, end: number): number {
+export function lateMinutes(start: number, end: number): number {
   const lateFrom = start > DAY_END ? start : DAY_END;
   return end > lateFrom ? end - lateFrom : 0;
 }

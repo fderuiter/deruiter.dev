@@ -1,6 +1,21 @@
 import { clamp } from "@/lib/game-utils";
 import type { StudyState } from "@/lib/study-director";
-import { DAY_START, HARD_STOP, type WorldState } from "../types";
+import { CRO_FLOOR, WORLD_MAPS, isWalkable } from "./floor";
+import { readVisit } from "./sites";
+import {
+  DAY_START,
+  FACINGS,
+  HARD_STOP,
+  WORK_STREAMS,
+  type Assignment,
+  type Bond,
+  type CallRecord,
+  type Meeting,
+  type Observation,
+  type PlayerState,
+  type WorldMap,
+  type WorldState,
+} from "../types";
 
 /** Storage key for a world run. Separate from the classic desk's save. */
 export const WORLD_SAVE_KEY = "study_director_world_v1";
@@ -33,10 +48,100 @@ function looksLikeStudy(value: unknown): value is StudyState {
   );
 }
 
+/** A saved position, if it is a free tile on its map; else the spawn. */
+function readPlayer(value: unknown, map: WorldMap = CRO_FLOOR): PlayerState {
+  if (
+    isRecord(value) &&
+    typeof value.x === "number" &&
+    typeof value.y === "number" &&
+    isWalkable(map, value.x, value.y)
+  ) {
+    const facing = FACINGS.find((f) => f === value.facing) ?? "down";
+    return { x: value.x, y: value.y, facing };
+  }
+  return { ...map.spawn };
+}
+
+const str = (v: unknown): v is string => typeof v === "string";
+const strings = (v: unknown): string[] =>
+  Array.isArray(v) ? v.filter(str) : [];
+
+function readBonds(value: unknown): Record<string, Bond> | undefined {
+  if (!isRecord(value)) return undefined;
+  const bonds: Record<string, Bond> = {};
+  for (const [id, raw] of Object.entries(value)) {
+    if (!isRecord(raw)) continue;
+    bonds[id] = {
+      trust: num(raw.trust, 50, 0, 100),
+      confidence: num(raw.confidence, 50, 0, 100),
+      coached: Math.floor(num(raw.coached, 0, 0, 1000)),
+      talkedDay: Math.floor(num(raw.talkedDay, 0, 0, 10_000)),
+      coachedDay: Math.floor(num(raw.coachedDay, 0, 0, 10_000)),
+      askedDay: Math.floor(num(raw.askedDay, 0, 0, 10_000)),
+      owns: WORK_STREAMS.find((w) => w === raw.owns) ?? null,
+    };
+  }
+  return bonds;
+}
+
+function readObservations(value: unknown): Observation[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  return value.filter(
+    (o): o is Observation =>
+      isRecord(o) &&
+      str(o.id) &&
+      str(o.text) &&
+      str(o.source) &&
+      typeof o.day === "number"
+  );
+}
+
+function readCalls(value: unknown): CallRecord[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  return value.filter(
+    (c): c is CallRecord =>
+      isRecord(c) &&
+      str(c.eventId) &&
+      typeof c.day === "number" &&
+      (c.status === "answered" ||
+        c.status === "ignored" ||
+        c.status === "voicemail")
+  );
+}
+
+function readAssignments(value: unknown): Assignment[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  return value.filter(
+    (a): a is Assignment =>
+      isRecord(a) &&
+      str(a.id) &&
+      str(a.memberId) &&
+      WORK_STREAMS.some((w) => w === a.stream) &&
+      typeof a.remaining === "number" &&
+      typeof a.amount === "number"
+  );
+}
+
+function readMeeting(value: unknown): Meeting | null {
+  if (
+    isRecord(value) &&
+    (value.kind === "team" || value.kind === "sponsor") &&
+    typeof value.startedAt === "number"
+  )
+    return {
+      kind: value.kind,
+      attendees: strings(value.attendees),
+      startedAt: value.startedAt,
+      logStart: Math.floor(num(value.logStart, 0, 0, 100_000)),
+    };
+  return null;
+}
+
 /**
  * Reads a saved world run. Anything unreadable, from another version, or
  * missing its study is dropped (returns null) rather than trusted; numbers
- * are clamped to their ranges.
+ * are clamped to their ranges, and a position that is not a free tile on the
+ * floor (or a save from before the floor existed) starts at the lobby.
  */
 export function parseWorld(text: string | null): WorldState | null {
   if (!text) return null;
@@ -48,7 +153,10 @@ export function parseWorld(text: string | null): WorldState | null {
   }
   if (!isRecord(raw) || raw.version !== 1 || !looksLikeStudy(raw.study))
     return null;
-  return {
+  // A site visit (#1690) is kept only while its map and site still exist.
+  const visit = readVisit(raw.visit, raw.study);
+  const map = visit ? WORLD_MAPS[visit.mapId] : CRO_FLOOR;
+  const world: WorldState = {
     version: 1,
     study: { ...raw.study, budget: "clock" },
     minute: num(raw.minute, DAY_START, 0, HARD_STOP),
@@ -58,8 +166,27 @@ export function parseWorld(text: string | null): WorldState | null {
     overtime: num(raw.overtime, 0, 0, 24 * 60),
     fatigue: num(raw.fatigue, 0, 0, 100),
     location: typeof raw.location === "string" ? raw.location : "lobby",
+    player: readPlayer(
+      (raw.map ?? CRO_FLOOR.id) === map.id ? raw.player : null,
+      map
+    ),
+    walked: Math.floor(num(raw.walked, 0, 0, 100_000)),
     known: Array.isArray(raw.known)
       ? raw.known.filter((k): k is string => typeof k === "string")
       : [],
+    map: map.id,
+    visit,
   };
+  // The team layer's fields are optional: keep only those the save has.
+  const observations = readObservations(raw.observations);
+  if (observations) world.observations = observations;
+  const bonds = readBonds(raw.bonds);
+  if (bonds) world.bonds = bonds;
+  const calls = readCalls(raw.calls);
+  if (calls) world.calls = calls;
+  if (Array.isArray(raw.raised)) world.raised = strings(raw.raised);
+  const assignments = readAssignments(raw.assignments);
+  if (assignments) world.assignments = assignments;
+  if ("meeting" in raw) world.meeting = readMeeting(raw.meeting);
+  return world;
 }

@@ -8,6 +8,10 @@
 
 > **applyEffects**(`state`, `effects`): [`StudyState`](../../../types/interfaces/StudyState.md)
 
+Applies a set of effects to the study without recording a decision. The
+world layer uses it for work that lands over time (#1689): an assignment
+a team member clears night by night, or a meeting's cost to the team.
+
 ## Parameters
 
 ### state

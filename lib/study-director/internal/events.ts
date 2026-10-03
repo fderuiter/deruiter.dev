@@ -1,5 +1,10 @@
 import { STUDY_EVENTS } from "./events-data";
-import { advanceDay, applyEffects, resolveDecision } from "./model";
+import {
+  DOCUMENTATION_ATTENTION,
+  advanceDay,
+  applyEffects,
+  resolveDecision,
+} from "./model";
 import { uniformAt } from "./rng";
 import type {
   ActionResult,
@@ -82,6 +87,49 @@ export function resolveEvent(
           day: next.day + s.inDays,
         })),
       ],
+    },
+  };
+}
+
+/**
+ * Writes up a decision after the fact (#1689): the latest undocumented
+ * answer to an event is marked documented and the documentation debt it
+ * added is repaid, in full the same day and by half on a later day, since
+ * notes written from memory are thinner. The record keeps the day it was
+ * decided. Refuses when there is nothing undocumented for the event.
+ */
+export function documentDecision(
+  state: StudyState,
+  eventId: string
+): ActionResult {
+  if (state.status !== "running")
+    return { ok: false, reason: "study-complete" };
+  let index = -1;
+  for (let i = state.log.length - 1; i >= 0; i -= 1) {
+    const r = state.log[i];
+    if (r.eventId === eventId && !r.documented && r.optionId !== "ignored") {
+      index = i;
+      break;
+    }
+  }
+  if (index < 0) return { ok: false, reason: "unknown-target" };
+  const record = state.log[index];
+  const debt =
+    byId.get(eventId)?.options.find((o) => o.id === record.optionId)
+      ?.debtIfUndocumented ?? 0;
+  const repaid = record.day === state.day ? debt : Math.ceil(debt / 2);
+  const log = state.log.slice();
+  log[index] = {
+    ...record,
+    documented: true,
+    attentionSpent: record.attentionSpent + DOCUMENTATION_ATTENTION,
+  };
+  return {
+    ok: true,
+    state: {
+      ...state,
+      log,
+      documentationDebt: Math.max(0, state.documentationDebt - repaid),
     },
   };
 }

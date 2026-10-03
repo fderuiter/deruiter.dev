@@ -25,6 +25,8 @@
 - [dataManagerCapacity](functions/dataManagerCapacity.md)
 - [phaseForDay](functions/phaseForDay.md)
 - [projectedFinishDay](functions/projectedFinishDay.md)
+- [reportedSite](functions/reportedSite.md)
 - [resolveDecision](functions/resolveDecision.md)
 - [routineLoad](functions/routineLoad.md)
+- [siteVisibility](functions/siteVisibility.md)
 - [totalOpenQueries](functions/totalOpenQueries.md)

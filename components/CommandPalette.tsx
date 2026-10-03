@@ -502,24 +502,24 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         title:
           "Equipose Randomization: Technical Breakdown & Portfolio Integration",
         subtitle:
-          "A browser-based tool for clinical trial allocation. It uses Mersenne Twister (MT19937) and generates code for Python, R, SAS, and Stata, making it easier to inspect and reproduce a randomization.",
+          "A browser-based tool for stratified block and minimization randomization. A seeded Mersenne Twister (MT19937) makes schedules reproducible, and they export as R, Python, SAS, and Stata scripts.",
         category: "navigation",
         url: "/case-studies/equipose-randomization",
         icon: <IconDirections className="w-4 h-4 text-brand-cyan" />,
         badge: "Case Study",
         status: "Angular / TS",
         description:
-          "A browser-based tool for clinical trial allocation. It uses Mersenne Twister (MT19937) and generates code for Python, R, SAS, and Stata, making it easier to inspect and reproduce a randomization.",
+          "A browser-based tool for stratified block and minimization randomization. A seeded Mersenne Twister (MT19937) makes schedules reproducible, and they export as R, Python, SAS, and Stata scripts.",
         techStack: [
           "Angular",
           "TypeScript",
           "Web Workers",
-          "CDISC ADaM-Lite",
-          "Transpiler",
+          "NgRx SignalStore",
+          "Code Generation",
         ],
         highlights: [
-          "Sub-10ms in-browser statistical code transpilation",
-          "Zero PHI data exfiltration via Web Workers",
+          "Seeded MT19937 schedules, reproducible from the seed",
+          "Client-side generation with an off-main-thread Web Worker",
           "Pocock-Simon covariate adaptive minimization",
         ],
       },

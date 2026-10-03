@@ -2,6 +2,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "fs";
 import { join } from "path";
+import { loadSeedPayloads } from "./helpers/seed-payloads";
 
 /**
  * The seed must never destroy content that exists only in the database.
@@ -47,57 +48,6 @@ describe("prisma seed is non-destructive", () => {
     expect(source).toMatch(/Preserved \$\{?/);
   });
 });
-
-/**
- * Extracts the SEED_PAYLOADS array literal and evaluates it in isolation.
- *
- * Importing the module is not an option (see above), so the array is located by
- * bracket matching and evaluated with the imported command/playback constants
- * stubbed out. Those stubs are only referenced by `commands_json` /
- * `playback_json`, neither of which this suite asserts on.
- */
-function loadSeedPayloads(source: string): Array<Record<string, string>> {
-  const start = source.indexOf("const SEED_PAYLOADS");
-  expect(start, "SEED_PAYLOADS should be declared").toBeGreaterThan(-1);
-
-  const open = source.indexOf("[", start);
-  let depth = 0;
-  let end = -1;
-  for (let i = open; i < source.length; i++) {
-    if (source[i] === "[") depth++;
-    else if (source[i] === "]") {
-      depth--;
-      if (depth === 0) {
-        end = i;
-        break;
-      }
-    }
-  }
-  expect(end, "SEED_PAYLOADS array should be bracket-balanced").toBeGreaterThan(
-    open
-  );
-
-  const stubNames = [
-    "IMEDNET_COMMANDS_OBJ",
-    "IMEDNET_PLAYBACK_OBJ",
-    "DUCKDEPLOY_COMMANDS_OBJ",
-    "DUCKDEPLOY_PLAYBACK_OBJ",
-    "CARDIAC_RISK_COMMANDS_OBJ",
-    "CARDIAC_RISK_PLAYBACK_OBJ",
-    "FOUR_GLORY_COMMANDS_OBJ",
-    "FOUR_GLORY_PLAYBACK_OBJ",
-    "CRF_XL_COMMANDS_OBJ",
-    "CRF_XL_PLAYBACK_OBJ",
-    "PROMPTOPS_COMMANDS_OBJ",
-    "PROMPTOPS_PLAYBACK_OBJ",
-  ];
-
-  const factory = new Function(
-    ...stubNames,
-    `return ${source.slice(open, end + 1)}`
-  );
-  return factory(...stubNames.map(() => ({})));
-}
 
 describe("recovered case studies remain version-controlled", () => {
   const source = readFileSync(join(process.cwd(), "prisma/seed.ts"), "utf-8");

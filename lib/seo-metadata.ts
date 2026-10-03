@@ -491,8 +491,8 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     keywords: [
       "Clinical Trial Randomization Engine",
       "Deterministic Mersenne Twister",
-      "Multi-Language Transpiler",
-      "CDISC ADaM Compliance",
+      "Pocock-Simon Minimization",
+      "R Python SAS Stata Code Export",
       "Angular",
       "Web Workers",
     ],

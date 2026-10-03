@@ -49,7 +49,7 @@ const REALITY_CONTENT: Record<string, string> = {
   clintrials:
     "Executing multi-arm stochastic Monte Carlo loops directly inside Pyodide Web Workers eliminates server infrastructure costs, but browser memory constraints and Web Worker serialization overhead required custom memory buffers and deterministic seed synchronization to maintain parity with CPython.",
   "equipose-randomization":
-    "Enforcing identical bitwise MT19937 seed parity across Python, R, SAS, and Stata required overcoming zero- versus one-indexed array seed mapping differences and floating-point rounding variations across statistical runtimes.",
+    "The project reports that exported R and Python scripts reproduce the browser's MT19937 sequence, but dynamic SAS and Stata scripts sort and round differently and do not guarantee the same sequence, so exact matches there come from static exports that embed the generated list.",
   "lambda-wave":
     "Combining Haskell's garbage-collected runtime with sub-10ms hard real-time medical device constraints required strict allocation control. We eliminated GC pauses in the raw data ingestion path by implementing C++ lock-free ring buffers over FFI, while automated struct alignment tests verified zero memory padding mismatches across language boundaries.",
 };

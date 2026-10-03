@@ -25,6 +25,7 @@ import {
   IconShieldCheck,
   IconTerminal,
   IconCpu,
+  IconHeartHandshake,
   IconCrosshair,
   IconBrain,
   IconBone,
@@ -119,6 +120,12 @@ const SYSTEMS_ITEMS: SubNavItem[] = [
     subtitle: "The tools and decisions behind this site",
     href: "/stack",
     icon: <IconCpu className="w-4 h-4 text-brand-cyan" />,
+  },
+  {
+    title: "Open Source Credits",
+    subtitle: "The projects and licenses this site is built on",
+    href: "/acknowledgments",
+    icon: <IconHeartHandshake className="w-4 h-4 text-emerald-400" />,
   },
   {
     title: "CRF Studio",
@@ -374,7 +381,8 @@ export const Navbar: React.FC = () => {
     pathname === "/patrol" ||
     pathname.startsWith("/patrol") ||
     pathname === "/neuro" ||
-    pathname === "/stack";
+    pathname === "/stack" ||
+    pathname === "/acknowledgments";
 
   const headerObserverRef = useResizeObserver<HTMLElement>(
     (entry) => {
@@ -1292,6 +1300,19 @@ export const Navbar: React.FC = () => {
                     </span>
                     <span className="text-[10px] font-mono text-brand-cyan px-1.5 py-0.5 rounded bg-brand-cyan/10 shrink-0">
                       Architecture
+                    </span>
+                  </Link>
+                  <Link
+                    href="/acknowledgments"
+                    onClick={(e) => handleNavClick(e, "/acknowledgments")}
+                    className="min-h-[48px] px-3.5 py-3 rounded-xl bg-zinc-900/40 border border-zinc-800/80 text-sm font-semibold text-neutral-200 hover:text-brand-cyan flex items-center justify-between gap-2 active:scale-[0.99] transition-all min-w-0"
+                  >
+                    <span className="flex items-center gap-2 min-w-0">
+                      <IconHeartHandshake className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span className="truncate">Open Source Credits</span>
+                    </span>
+                    <span className="text-[10px] font-mono text-emerald-400 px-1.5 py-0.5 rounded bg-emerald-500/10 shrink-0">
+                      Licenses
                     </span>
                   </Link>
                   {persona !== "behind-the-scenes" && (

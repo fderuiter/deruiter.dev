@@ -17,7 +17,7 @@ they are not licensed identically. Only the first is covered by LICENSE.
    configuration at the repository root, and the generated API reference in
    docs/ and openapi.json.
 
-2. Laser Loon brand artwork — Creative Commons Attribution 4.0 International.
+2. Laser Loon brand artwork — Creative Commons CC0 1.0 Universal (public domain dedication).
    public/files/ (see public/files/LICENSE.txt). Unchanged by this NOTICE.
 
 3. Editorial content and personal identity material — all rights reserved.
@@ -30,3 +30,12 @@ they are not licensed identically. Only the first is covered by LICENSE.
 
 The practical reading: fork the engineering freely, and replace the writing and
 the branding with your own before you deploy it.
+
+---
+
+Third-party software keeps its own licenses. The open source packages this site
+is built on are credited at https://deruiter.dev/acknowledgments, and their
+copyright notices and license texts are in public/third-party-notices.txt
+(regenerate with `npm run oss:credits`). Fonts bundled for social images in
+assets/og-fonts/ are under the SIL Open Font License 1.1; their license files
+sit beside them.

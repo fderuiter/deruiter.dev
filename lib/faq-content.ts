@@ -62,7 +62,7 @@ export const LASER_LOON_FAQ: readonly FAQItem[] = [
   {
     question: "Can I use the Laser Loon artwork?",
     answer:
-      "Yes. The artwork is shared under the Creative Commons Attribution 4.0 license (CC BY 4.0), so you may use and adapt it, including commercially, as long as you credit the author.",
+      "Yes. The artwork is dedicated to the public domain under Creative Commons CC0 1.0, so you may use and adapt it for any purpose, including commercially, without asking. A credit to the author is appreciated but not required.",
   },
   {
     question: "Which file formats are available?",

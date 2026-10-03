@@ -23,15 +23,15 @@ const sha256 = (content: string): string =>
  */
 const EXPECTED_HASHES: Record<string, string> = {
   LICENSE: "f8225b59f17909e08220e9dc57d38d8ec857a1e77cc780c03ea5176a7b2c120d",
-  NOTICE: "30e5df1986db9159232481b233c988d8ac3203e2459cd36b9ef06b3e39f12ccc",
+  NOTICE: "893e0ea6ea801fa264526003f04568d7d2fb8b4937837853aa6a1f7048afb58d",
   "public/files/LICENSE.txt":
-    "872c289131ae85e189558cf751182e9d315bd08710ab9696665e6567de4e5ce9",
+    "fe200206479d4485ef58d8a73d8bdc4a4bf6467619876701b3d08aa0f2fd1d98",
   "docs/reference/api/_media/LICENSE":
     "f8225b59f17909e08220e9dc57d38d8ec857a1e77cc780c03ea5176a7b2c120d",
   "docs/reference/api/_media/LICENSE.txt":
-    "872c289131ae85e189558cf751182e9d315bd08710ab9696665e6567de4e5ce9",
+    "fe200206479d4485ef58d8a73d8bdc4a4bf6467619876701b3d08aa0f2fd1d98",
   "docs/reference/api/_media/NOTICE":
-    "30e5df1986db9159232481b233c988d8ac3203e2459cd36b9ef06b3e39f12ccc",
+    "893e0ea6ea801fa264526003f04568d7d2fb8b4937837853aa6a1f7048afb58d",
 };
 
 const assertPinnedContent = (file: string): void => {
@@ -117,21 +117,26 @@ describe("public repository readiness contracts", () => {
     expect(license).toContain("6. Trademarks.");
   });
 
-  it("pins the complete CC BY 4.0 asset-license grant, not just its label", () => {
+  it("pins the complete CC0 asset dedication, not just its label", () => {
     assertPinnedContent("public/files/LICENSE.txt");
 
     const assetLicense = read("public/files/LICENSE.txt");
     expect(assetLicense).toContain(
-      "Creative Commons Attribution 4.0 International (CC BY 4.0)"
+      "Creative Commons CC0 1.0 Universal (CC0 1.0) Public Domain Dedication"
+    );
+    expect(assetLicense).toContain(
+      "has waived all copyright and related or neighboring rights"
     );
     expect(assetLicense).toContain(
       "Adapt — remix, transform, and build upon the material for any purpose, even commercially."
     );
+    expect(assetLicense).toContain("No attribution is required.");
     expect(assetLicense).toContain(
-      "Attribution — You must give appropriate credit to Frederick de Ruiter / The Laser Loon Project"
+      "https://creativecommons.org/publicdomain/zero/1.0/legalcode"
     );
+    // Copies obtained under the earlier grant keep their terms.
     expect(assetLicense).toContain(
-      "https://creativecommons.org/licenses/by/4.0/"
+      "first published under Creative Commons Attribution 4.0"
     );
   });
 
@@ -150,7 +155,7 @@ describe("public repository readiness contracts", () => {
 
     const notice = read("NOTICE");
     expect(notice).toContain(
-      "2. Laser Loon brand artwork — Creative Commons Attribution 4.0 International."
+      "2. Laser Loon brand artwork — Creative Commons CC0 1.0 Universal (public domain dedication)."
     );
     expect(notice).toContain("public/files/LICENSE.txt");
     expect(notice).toContain("Unchanged by this NOTICE.");

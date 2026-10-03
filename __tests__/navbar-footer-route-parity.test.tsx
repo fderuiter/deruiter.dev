@@ -55,7 +55,14 @@ vi.mock("next/navigation", () => ({
 // discovery surface per ticket #577 ("Synchronize destination names and
 // route coverage across header, mobile drawer, footer, search, and metadata
 // discovery contracts").
-const SYSTEMS_ROUTES = ["/crf", "/proof", "/neuro", "/stack", "/simulator"];
+const SYSTEMS_ROUTES = [
+  "/crf",
+  "/proof",
+  "/neuro",
+  "/stack",
+  "/simulator",
+  "/acknowledgments",
+];
 
 describe("Navbar mobile drawer & Footer Systems route parity", () => {
   let container: HTMLDivElement;

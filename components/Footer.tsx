@@ -20,6 +20,7 @@ import {
   IconCrosshair,
   IconBrain,
   IconCpu,
+  IconHeartHandshake,
   IconBone,
   IconSparkles,
   IconFileSpreadsheet,
@@ -294,6 +295,16 @@ export const Footer: React.FC = () => {
                 >
                   <IconCpu className="w-3 h-3 text-brand-cyan" />
                   Under the Hood (Stack)
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/acknowledgments"
+                  onMouseEnter={handleHover}
+                  className="text-zinc-400 hover:text-brand-cyan transition-colors flex items-center gap-1.5"
+                >
+                  <IconHeartHandshake className="w-3 h-3 text-emerald-400" />
+                  Open Source Credits
                 </Link>
               </li>
               <li>

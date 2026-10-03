@@ -36,6 +36,14 @@ export interface InvalidExceptionPolicy {
   reason: string;
 }
 
+export interface ExpiringException {
+  packageName: string;
+  expiresAt: string;
+  daysLeft: number;
+  riskOwner: string;
+  ticket: string;
+}
+
 export interface LicenseAuditReport {
   timestamp: string;
   durationMs: number;
@@ -43,10 +51,26 @@ export interface LicenseAuditReport {
   totalCompliantPackages: number;
   totalViolations: number;
   activeExceptionsCount: number;
+  /** Packages that reach visitors (production closure) and dev-only tooling. */
+  shippedPackages: number;
+  toolingPackages: number;
+  /** Exceptions that expire within EXPIRY_WARNING_DAYS; a warning, not a failure. */
+  expiringSoon: ExpiringException[];
+  /** Shipped name@version entries absent from public/third-party-notices.txt. */
+  noticesMissing: string[];
   violations: NonCompliantDependency[];
   invalidExceptions: InvalidExceptionPolicy[];
   passed: boolean;
 }
+
+/** Warn this many days before an exception expires. */
+export const EXPIRY_WARNING_DAYS = 30;
+
+/** Licenses whose copyleft reaches code shipped to visitors; never waivable. */
+const STRONG_COPYLEFT = /^(A?GPL|SSPL|OSL|EUPL|CPAL|RPL)/i;
+
+/** Where the generated third-party notices live (see scripts/oss-credits.ts). */
+export const NOTICES_FILE = "public/third-party-notices.txt";
 
 /**
  * Validates exception entries in license-policy.json.
@@ -262,6 +286,35 @@ interface PackageLockEntry {
   version?: string;
   license?: string | { type?: string };
   link?: boolean;
+  dev?: boolean;
+}
+
+/** Exceptions that remain valid for shipped code: no strong-copyleft or wildcard waivers. */
+export function shippedCodeExceptions(
+  exceptions: LicenseException[]
+): LicenseException[] {
+  return exceptions.filter(
+    (e) => e.license !== "*" && !STRONG_COPYLEFT.test(e.license)
+  );
+}
+
+export function findExpiringExceptions(
+  exceptions: LicenseException[],
+  now: Date
+): ExpiringException[] {
+  const day = 24 * 60 * 60 * 1000;
+  return exceptions
+    .map((e) => ({
+      packageName: e.packageName,
+      expiresAt: e.expiresAt,
+      daysLeft: Math.ceil(
+        (new Date(e.expiresAt).getTime() - now.getTime()) / day
+      ),
+      riskOwner: e.riskOwner,
+      ticket: e.ticket,
+    }))
+    .filter((e) => e.daysLeft <= EXPIRY_WARNING_DAYS)
+    .sort((a, b) => a.daysLeft - b.daysLeft);
 }
 
 /**
@@ -270,6 +323,8 @@ interface PackageLockEntry {
 export function runLicenseAudit(options?: {
   workspaceRoot?: string;
   now?: Date;
+  /** Fail when the notices file is absent. Defaults to checking it only if it exists. */
+  requireNotices?: boolean;
 }): LicenseAuditReport {
   const startTime = Date.now();
   const root = options?.workspaceRoot || path.resolve(__dirname, "..");
@@ -300,6 +355,9 @@ export function runLicenseAudit(options?: {
   const violations: NonCompliantDependency[] = [];
   let totalPackagesScanned = 0;
   let totalCompliantPackages = 0;
+  let shippedPackages = 0;
+  const shippedKeys = new Set<string>();
+  const shippedExceptions = shippedCodeExceptions(validExceptions);
 
   const packages: Record<string, PackageLockEntry> = lockJson.packages || {};
 
@@ -319,6 +377,12 @@ export function runLicenseAudit(options?: {
       licenseExpr = rawLicense.type || JSON.stringify(rawLicense);
     }
 
+    const shipped = !pkg.dev;
+    if (shipped) {
+      shippedPackages++;
+      shippedKeys.add(`${pkgName}@${version}`);
+    }
+
     const evalResult = evaluateSpdxExpression(
       licenseExpr,
       pkgName,
@@ -326,7 +390,30 @@ export function runLicenseAudit(options?: {
       validExceptions
     );
 
-    if (evalResult.compliant) {
+    // Shipped code may not lean on an exception for strong copyleft.
+    const shippedResult = shipped
+      ? evaluateSpdxExpression(
+          licenseExpr,
+          pkgName,
+          allowedLicensesSet,
+          shippedExceptions
+        )
+      : evalResult;
+    const copyleftWaived =
+      evalResult.compliant &&
+      !shippedResult.compliant &&
+      tokenizeSpdx(licenseExpr).some((t) => STRONG_COPYLEFT.test(t));
+
+    if (copyleftWaived) {
+      violations.push({
+        packageName: pkgName,
+        packagePath: pkgPath,
+        version,
+        licenseExpression: licenseExpr,
+        unapprovedLicenses: shippedResult.unapprovedTokens,
+        reason: `Strong copyleft '${licenseExpr}' ships to visitors and cannot be waived by an exception.`,
+      });
+    } else if (evalResult.compliant) {
       totalCompliantPackages++;
     } else {
       violations.push({
@@ -340,8 +427,23 @@ export function runLicenseAudit(options?: {
     }
   }
 
+  const noticesPath = path.join(root, NOTICES_FILE);
+  const noticesExist = fs.existsSync(noticesPath);
+  let noticesMissing: string[] = [];
+  if (noticesExist) {
+    const notices = fs.readFileSync(noticesPath, "utf-8");
+    noticesMissing = [...shippedKeys]
+      .filter((k) => !notices.includes(k))
+      .sort();
+  } else if (options?.requireNotices) {
+    noticesMissing = [...shippedKeys].sort();
+  }
+
   const durationMs = Date.now() - startTime;
-  const passed = violations.length === 0 && invalidExceptions.length === 0;
+  const passed =
+    violations.length === 0 &&
+    invalidExceptions.length === 0 &&
+    noticesMissing.length === 0;
 
   return {
     timestamp: now.toISOString(),
@@ -350,6 +452,10 @@ export function runLicenseAudit(options?: {
     totalCompliantPackages,
     totalViolations: violations.length,
     activeExceptionsCount: validExceptions.length,
+    shippedPackages,
+    toolingPackages: totalPackagesScanned - shippedPackages,
+    expiringSoon: findExpiringExceptions(validExceptions, now),
+    noticesMissing,
     violations,
     invalidExceptions,
     passed,
@@ -360,7 +466,7 @@ export function runLicenseAudit(options?: {
 if (typeof process.env.VITEST === "undefined" && require.main === module) {
   const isJson = process.argv.includes("--json") || process.argv.includes("-j");
   try {
-    const report = runLicenseAudit();
+    const report = runLicenseAudit({ requireNotices: true });
 
     if (isJson) {
       const envelope = {
@@ -387,8 +493,26 @@ if (typeof process.env.VITEST === "undefined" && require.main === module) {
       console.log(`\n--- Lockfile License Compliance Audit ---`);
       console.log(`Packages Scanned: ${report.totalPackagesScanned}`);
       console.log(`Compliant Packages: ${report.totalCompliantPackages}`);
+      console.log(
+        `Shipped to visitors: ${report.shippedPackages}, dev tooling: ${report.toolingPackages}`
+      );
       console.log(`Active Policy Exceptions: ${report.activeExceptionsCount}`);
       console.log(`Scan Duration: ${report.durationMs}ms`);
+
+      for (const e of report.expiringSoon) {
+        console.warn(
+          `⚠️  Exception for ${e.packageName} expires ${e.expiresAt} (${e.daysLeft} days; owner ${e.riskOwner}, ${e.ticket}). Renew or remove it.`
+        );
+      }
+
+      if (report.noticesMissing.length > 0) {
+        console.error(
+          `\n❌ ${report.noticesMissing.length} shipped package(s) missing from ${NOTICES_FILE}. Run: npm run oss:credits`
+        );
+        for (const k of report.noticesMissing.slice(0, 20)) {
+          console.error(`  • ${k}`);
+        }
+      }
 
       if (report.invalidExceptions.length > 0) {
         console.error(

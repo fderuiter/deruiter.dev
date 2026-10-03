@@ -196,7 +196,9 @@ describe("Laser Loon Subcomponents Test Suite", () => {
       expect(container.textContent).toContain("Laser_loon.ai");
       expect(container.textContent).toContain("Laser_loon.svg");
       expect(container.textContent).toContain("Laser_loon.psd");
-      expect(container.textContent).toContain("Creative Commons CC BY 4.0");
+      expect(container.textContent).toContain(
+        "Creative Commons CC0 Public Domain Dedication"
+      );
 
       const zipDownloadBtn = container.querySelector(
         'a[href="/files/laser-loon-assets.zip"]'

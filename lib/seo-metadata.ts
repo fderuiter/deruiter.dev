@@ -389,6 +389,22 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     locale: "en-US",
     isAccessibleForFree: true,
   },
+  acknowledgments: {
+    title: "Open Source Credits and Licenses",
+    description:
+      "The open source projects this site is built on, each linked to its home, with versions, licenses and why it is used. Full license texts are included.",
+    path: "/acknowledgments",
+    keywords: [
+      "Open Source Acknowledgments",
+      "Third-Party Licenses",
+      "Software Bill of Materials",
+      "License Compliance",
+      "Next.js React Dependencies",
+    ],
+    inLanguage: "en-US",
+    locale: "en-US",
+    isAccessibleForFree: true,
+  },
   memeVault: {
     title: "Meme Vault: Soundboard and Trophies",
     description:

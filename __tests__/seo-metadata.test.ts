@@ -466,6 +466,7 @@ describe("SEO Architecture & JSON-LD Schemas", () => {
     expect(urls).toContain(`${expectedBase}/crf`);
     expect(urls).toContain(`${expectedBase}/neuro`);
     expect(urls).toContain(`${expectedBase}/stack`);
+    expect(urls).toContain(`${expectedBase}/acknowledgments`);
 
     // Verify 100% route coverage from ROUTE_METADATA_CONFIGS (excluding /offline)
     for (const config of Object.values(ROUTE_METADATA_CONFIGS)) {
@@ -753,6 +754,8 @@ describe("SEO Architecture & JSON-LD Schemas", () => {
     const { default: simulatorOg } =
       await import("@/app/simulator/opengraph-image");
     const { default: stackOg } = await import("@/app/stack/opengraph-image");
+    const { default: acknowledgmentsOg } =
+      await import("@/app/acknowledgments/opengraph-image");
     const { default: scheduleOg } =
       await import("@/app/schedule/opengraph-image");
     const { default: caseStudiesOg } =
@@ -763,6 +766,7 @@ describe("SEO Architecture & JSON-LD Schemas", () => {
       proofOg,
       simulatorOg,
       stackOg,
+      acknowledgmentsOg,
       scheduleOg,
       caseStudiesOg,
     ]) {

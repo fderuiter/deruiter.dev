@@ -56,6 +56,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       config.path === "/work/laser-loon"
     ) {
       priority = 0.9;
+    } else if (config.path === "/acknowledgments") {
+      priority = 0.5;
+      changeFrequency = "monthly";
     } else if (config.path === "/schedule" || config.path === "/contact") {
       priority = 0.8;
       changeFrequency = "monthly";

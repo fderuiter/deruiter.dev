@@ -1678,7 +1678,7 @@ flowchart TD
     B --> C4[Lossless Web Alpha: Laser_loon.png / .jpg]
     C1 --> D1[In-App Portfolio Showcase: /work/laser-loon]
     C2 --> D2[Screen Printing & Physical Merchandising]
-    C3 & C4 --> D3[Creative Commons CC BY 4.0 Open Distribution]
+    C3 & C4 --> D3[Creative Commons CC0 Public Domain Distribution]
 </code></pre>
 
 <h3>Implementation notes</h3>
@@ -1729,7 +1729,7 @@ flowchart TD
 
 <h3>Tradeoffs and lessons</h3>
 <ul>
-  <li><strong>Creative Commons CC BY 4.0 Distribution:</strong> Open licensing accelerated grassroots community propagation and third-party merchandising without legal friction.</li>
+  <li><strong>Creative Commons CC0 Distribution:</strong> A public domain dedication accelerated grassroots community propagation and third-party merchandising without legal friction.</li>
   <li><strong>Color Gamut Clamping:</strong> Designed distinct color profiles for digital sRGB displays versus physical CMYK spot-color inks to prevent dull laser tones during commercial textile printing.</li>
 </ul>`,
     created_at: new Date("2026-03-05T00:00:00Z"),

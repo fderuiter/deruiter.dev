@@ -66,9 +66,15 @@ const SECTIONS: Section[] = [
   {
     heading: "Systems and studios",
     match: (p) =>
-      ["/crf", "/proof", "/simulator", "/neuro", "/patrol", "/stack"].includes(
-        p
-      ),
+      [
+        "/crf",
+        "/proof",
+        "/simulator",
+        "/neuro",
+        "/patrol",
+        "/stack",
+        "/acknowledgments",
+      ].includes(p),
   },
   {
     heading: "Arcade",

@@ -347,14 +347,14 @@ export default function SchedulePage() {
           </div>
 
           {/* Timezone Selector Badge */}
-          <div className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 px-3 py-1.5 rounded-xl text-xs font-mono text-zinc-300">
+          <div className="flex max-w-full min-w-0 items-center gap-2 bg-zinc-900 border border-zinc-800 px-3 py-1.5 rounded-xl text-xs font-mono text-zinc-300">
             <IconWorld className="w-4 h-4 text-brand-cyan shrink-0" />
             <span className="text-zinc-400 shrink-0">Time Zone:</span>
             <select
               aria-label="Select Timezone"
               value={selectedTimeZone}
               onChange={(e) => setSelectedTimeZone(e.target.value)}
-              className="bg-transparent text-white font-bold focus:outline-none cursor-pointer text-xs"
+              className="min-w-0 max-w-full truncate bg-transparent text-white font-bold focus:outline-none cursor-pointer text-xs"
               suppressHydrationWarning
             >
               {COMMON_TIMEZONES.map((tz) => (

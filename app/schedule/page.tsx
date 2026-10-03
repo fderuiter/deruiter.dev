@@ -206,16 +206,16 @@ export default function SchedulePage() {
 
   const computedSubject = useMemo(() => {
     if (selectedCategories.length === 0) {
-      return "30-Min General Consultation";
+      return "30-Min General Chat";
     }
     const topicStr = selectedCategories.join(", ");
-    const subject = `Consultation Agenda: ${topicStr}`;
+    const subject = `Chat Agenda: ${topicStr}`;
     return subject.length > 150 ? subject.slice(0, 147) + "..." : subject;
   }, [selectedCategories]);
 
   const computedMessage = useMemo(() => {
     if (selectedSubtopicsList.length === 0) {
-      return `30-minute general consultation call (Timezone: ${selectedTimeZone}). Looking forward to connecting!`;
+      return `30-minute general chat (Timezone: ${selectedTimeZone}). Looking forward to connecting!`;
     }
 
     const grouped: Record<string, string[]> = {};
@@ -342,20 +342,19 @@ export default function SchedulePage() {
               </h2>
             </div>
             <p className="text-xs text-zinc-400">
-              Select topics &amp; sub-items to structure our 30-minute
-              consultation.
+              Select topics &amp; sub-items to structure our 30-minute chat.
             </p>
           </div>
 
           {/* Timezone Selector Badge */}
-          <div className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 px-3 py-1.5 rounded-xl text-xs font-mono text-zinc-300">
+          <div className="flex max-w-full min-w-0 items-center gap-2 bg-zinc-900 border border-zinc-800 px-3 py-1.5 rounded-xl text-xs font-mono text-zinc-300">
             <IconWorld className="w-4 h-4 text-brand-cyan shrink-0" />
             <span className="text-zinc-400 shrink-0">Time Zone:</span>
             <select
               aria-label="Select Timezone"
               value={selectedTimeZone}
               onChange={(e) => setSelectedTimeZone(e.target.value)}
-              className="bg-transparent text-white font-bold focus:outline-none cursor-pointer text-xs"
+              className="min-w-0 max-w-full truncate bg-transparent text-white font-bold focus:outline-none cursor-pointer text-xs"
               suppressHydrationWarning
             >
               {COMMON_TIMEZONES.map((tz) => (
@@ -597,7 +596,7 @@ export default function SchedulePage() {
 
           <div className="w-full max-w-2xl text-left">
             <ContactForm
-              initialIntent="consulting"
+              initialIntent="collaboration"
               initialSubject={computedSubject}
               initialMessage={computedMessage}
             />

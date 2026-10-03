@@ -184,12 +184,12 @@ describe("CaseStudyShowcase filtering (#581)", () => {
     const buttons = Array.from(container.querySelectorAll("button"));
     const buttonTexts = buttons.map((b) => b.textContent);
 
-    expect(buttonTexts).toContain("ALL ROLES");
-    expect(buttonTexts).toContain("RECRUITER / HIGHLIGHTS");
-    expect(buttonTexts).toContain("TECHNICAL / ARCHITECTURE");
+    expect(buttonTexts).toContain("ALL VIEWS");
+    expect(buttonTexts).toContain("PROFESSIONAL / HIGHLIGHTS");
+    expect(buttonTexts).toContain("BEHIND THE SCENES / ARCHITECTURE");
   });
 
-  it("updates URL hash and persona mode when selecting Recruiter or Technical tabs", async () => {
+  it("updates URL hash and persona mode when selecting Professional or Behind the Scenes tabs", async () => {
     await act(async () => {
       root.render(
         <PersonaProvider>
@@ -198,31 +198,35 @@ describe("CaseStudyShowcase filtering (#581)", () => {
       );
     });
 
-    const techTab = Array.from(container.querySelectorAll("button")).find((b) =>
-      b.textContent?.includes("TECHNICAL / ARCHITECTURE")
+    const storyTab = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.includes("BEHIND THE SCENES / ARCHITECTURE")
     );
-    expect(techTab).toBeTruthy();
+    expect(storyTab).toBeTruthy();
 
     await act(async () => {
-      techTab!.click();
+      storyTab!.click();
     });
 
-    expect(window.location.hash).toContain("role=technical");
+    expect(window.location.hash).toContain("role=behind-the-scenes");
 
-    const recruiterTab = Array.from(container.querySelectorAll("button")).find(
-      (b) => b.textContent?.includes("RECRUITER / HIGHLIGHTS")
-    );
-    expect(recruiterTab).toBeTruthy();
+    const professionalTab = Array.from(
+      container.querySelectorAll("button")
+    ).find((b) => b.textContent?.includes("PROFESSIONAL / HIGHLIGHTS"));
+    expect(professionalTab).toBeTruthy();
 
     await act(async () => {
-      recruiterTab!.click();
+      professionalTab!.click();
     });
 
-    expect(window.location.hash).toContain("role=recruiter");
+    expect(window.location.hash).toContain("role=professional");
   });
 
   it("allows language filtering and persona filtering to operate simultaneously without state collision", async () => {
-    window.history.replaceState(null, "", "/case-studies#role=technical");
+    window.history.replaceState(
+      null,
+      "",
+      "/case-studies#role=behind-the-scenes"
+    );
 
     await act(async () => {
       root.render(
@@ -241,7 +245,30 @@ describe("CaseStudyShowcase filtering (#581)", () => {
       rustTab!.click();
     });
 
-    expect(window.location.hash).toContain("role=technical");
+    expect(window.location.hash).toContain("role=behind-the-scenes");
     expect(window.location.hash).toContain("lang=Rust");
   });
+
+  it.each([
+    ["technical", "BEHIND THE SCENES / ARCHITECTURE"],
+    ["recruiter", "PROFESSIONAL / HIGHLIGHTS"],
+  ])(
+    "resolves a pre-rename #role=%s deep link to the renamed tab",
+    async (legacy, label) => {
+      window.history.replaceState(null, "", `/case-studies#role=${legacy}`);
+
+      await act(async () => {
+        root.render(
+          <PersonaProvider>
+            <CaseStudyShowcase caseStudies={mockCaseStudies} />
+          </PersonaProvider>
+        );
+      });
+
+      const tab = Array.from(container.querySelectorAll("button")).find(
+        (b) => b.textContent === label
+      );
+      expect(tab?.getAttribute("aria-pressed")).toBe("true");
+    }
+  );
 });

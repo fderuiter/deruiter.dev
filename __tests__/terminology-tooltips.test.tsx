@@ -9,10 +9,29 @@ import { resolveTermSwap } from "@/components/RichNarrative";
 
 describe("Interactive Terminology Tooltips - Sanitization Layers", () => {
   const allowedTags = [
-    "h2", "h3", "h4", "p", "code", "pre", "strong", "em", "a", "ul", "ol", "li", "span", "abbr"
+    "h2",
+    "h3",
+    "h4",
+    "p",
+    "code",
+    "pre",
+    "strong",
+    "em",
+    "a",
+    "ul",
+    "ol",
+    "li",
+    "span",
+    "abbr",
   ];
   const allowedAttrs = [
-    "href", "target", "rel", "class", "data-term", "data-definition", "data-key"
+    "href",
+    "target",
+    "rel",
+    "class",
+    "data-term",
+    "data-definition",
+    "data-key",
   ];
 
   const sanitizeOptions = {
@@ -54,23 +73,35 @@ describe("Interactive Terminology Tooltips - Sanitization Layers", () => {
 });
 
 describe("Interactive Terminology Tooltips - Component Structures", () => {
-  const richNarrativePath = path.resolve(__dirname, "../components/RichNarrative.tsx");
-  const togglePath = path.resolve(__dirname, "../components/TerminologyToggle.tsx");
+  const richNarrativePath = path.resolve(
+    __dirname,
+    "../components/RichNarrative.tsx"
+  );
+  const togglePath = path.resolve(
+    __dirname,
+    "../components/TerminologyToggle.tsx"
+  );
   const tooltipPath = path.resolve(__dirname, "../components/ui/Tooltip.tsx");
 
   it("should have imported usePersistentState and implemented DOMParser rehydration in RichNarrative", () => {
     const content = fs.readFileSync(richNarrativePath, "utf-8");
-    expect(content).toContain('import { usePersistentState } from "@/hooks/usePersistentState";');
+    expect(content).toContain(
+      'import { usePersistentState } from "@/hooks/usePersistentState";'
+    );
     expect(content).toContain("new DOMParser()");
-    expect(content).toContain('parseFromString(`<div>${cleanHtml}</div>`, "text/html")');
+    expect(content).toContain(
+      'parseFromString(`<div>${cleanHtml}</div>`, "text/html")'
+    );
     expect(content).toContain("domToReact");
   });
 
   it("should implement Simplified Terminology option and standard accessibility attributes in TerminologyToggle", () => {
     const content = fs.readFileSync(togglePath, "utf-8");
-    expect(content).toContain('usePersistentState("simplified-terminology", false)');
+    expect(content).toContain(
+      'usePersistentState("simplified-terminology", false)'
+    );
     expect(content).toContain('role="switch"');
-    expect(content).toContain('aria-checked={simplified}');
+    expect(content).toContain("aria-checked={simplified}");
     expect(content).toContain('aria-label="Toggle simplified terminology"');
   });
 
@@ -91,8 +122,8 @@ describe("Interactive Terminology Tooltips - Component Structures", () => {
     expect(content).toContain('"aria-expanded"');
     expect(content).toContain('"aria-checked"');
     expect(content).toContain('name.startsWith("aria-")');
-    expect(content).toContain('props.role = attr.value');
-    expect(content).toContain('props.tabIndex =');
+    expect(content).toContain("props.role = attr.value");
+    expect(content).toContain("props.tabIndex =");
   });
 });
 
@@ -110,8 +141,12 @@ describe("Centralized i18n Static Context & Dictionary Keys", () => {
     // Check Timeline structure
     expect(dictionary.detailed.timeline.length).toBeGreaterThan(0);
     expect(dictionary.simplified.timeline.length).toBeGreaterThan(0);
-    expect(dictionary.detailed.timeline[0]).toHaveProperty("recruiterDescription");
-    expect(dictionary.detailed.timeline[0]).toHaveProperty("realityDescription");
+    expect(dictionary.detailed.timeline[0]).toHaveProperty(
+      "professionalDescription"
+    );
+    expect(dictionary.detailed.timeline[0]).toHaveProperty(
+      "realityDescription"
+    );
 
     // Check Domains/Skills structure
     expect(dictionary.detailed.domains.items.length).toBe(4);
@@ -137,8 +172,10 @@ describe("Synchronous Initial Term Swap Helper (resolveTermSwap)", () => {
   it("should substitute inner tag content with data-term value when simplified is true", () => {
     const html = `<p>Lead architect for <span data-key="gxp" data-term="industry-standard" data-definition="Good Practice standards">GxP</span> clinical trials.</p>`;
     const swapped = resolveTermSwap(html, true);
-    expect(swapped).toContain('<span data-key="gxp" data-term="industry-standard" data-definition="Good Practice standards">industry-standard</span>');
-    expect(swapped).not.toContain('>GxP<');
+    expect(swapped).toContain(
+      '<span data-key="gxp" data-term="industry-standard" data-definition="Good Practice standards">industry-standard</span>'
+    );
+    expect(swapped).not.toContain(">GxP<");
   });
 
   it("should unescape attribute HTML entities when resolving simplified terms", () => {
@@ -163,7 +200,8 @@ describe("Global CSS Pre-Hydration Fallback Styling Invariants", () => {
     expect(content).toContain("[data-definition]");
     expect(content).toContain("[data-key]");
     expect(content).toContain("cursor: help;");
-    expect(content).toContain("border-bottom: 1px dashed var(--muted, #71717a);");
+    expect(content).toContain(
+      "border-bottom: 1px dashed var(--muted, #71717a);"
+    );
   });
 });
-

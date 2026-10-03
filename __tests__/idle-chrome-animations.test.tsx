@@ -44,7 +44,7 @@ vi.mock("@/components/providers/SearchProvider", () => ({
 }));
 
 vi.mock("@/components/providers/PersonaProvider", () => ({
-  usePersona: () => ({ persona: "recruiter", setPersona: vi.fn() }),
+  usePersona: () => ({ persona: "professional", setPersona: vi.fn() }),
 }));
 
 // Dyslexia mode on, so the footer's "Dyslexia: ON" status dot renders.

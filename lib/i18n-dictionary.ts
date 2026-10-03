@@ -4,7 +4,9 @@ export interface TimelineItem {
   role: string;
   company: string;
   period: string;
-  recruiterDescription: string;
+  /** Professional Summary: a concise account of the responsibilities and systems involved. */
+  professionalDescription: string;
+  /** Behind the Scenes Reality: the candid version of the same role. */
   realityDescription: string;
   tags: string[];
 }
@@ -34,8 +36,8 @@ const rawTimelineDetailed: TimelineItem[] = [
     role: "Clinical Data Specialist",
     company: "BRIGHT Research Partners, Inc.",
     period: "March 2023 to Present",
-    recruiterDescription:
-      "I design eCRFs and clinical databases for GxP research from study protocols, including cross-form edit checks and validation rules. I also manage data management plans, SAE reconciliation, database locks, and investigational device accountability under 21 CFR 812.",
+    professionalDescription:
+      "I build and maintain the clinical databases behind active GxP research studies: eCRFs designed from the protocol, cross-form edit checks, and the validation evidence each build needs before it goes live. The same work carries through data management plans, SAE reconciliation, database locks, and investigational device accountability under 21 CFR 812.",
     realityDescription:
       "A study protocol can run to 150 pages. My job is to turn it into forms people can actually use, then write the checks that catch contradictions across them. The footnotes tend to earn their keep.",
     tags: [
@@ -52,7 +54,7 @@ const rawTimelineDetailed: TimelineItem[] = [
     role: "Research Program Coordinator",
     company: "Mayo Clinic",
     period: "July 2021 to March 2023",
-    recruiterDescription:
+    professionalDescription:
       "I used Epic SlicerDicer and MyChart to improve recruitment, helping monthly enrollment grow from 10 to 50+ participants while screen failures fell 25%. I also built REDCap databases, processed MRI scans with FreeSurfer, created 3D-printable brain models, and prepared NIH DSMB safety reports.",
     realityDescription:
       "I worked on recruitment queries, REDCap databases, MRI processing, and safety reports. We also 3D printed brain models for participants. That was a particularly good answer to “what did you do at work today?”",
@@ -71,7 +73,7 @@ const rawTimelineDetailed: TimelineItem[] = [
     role: "Clinical Research Coordinator",
     company: "Mayo Clinic",
     period: "October 2019 to July 2021",
-    recruiterDescription:
+    professionalDescription:
       "I coordinated NIH-funded studies from startup to closeout, prepared IRB submissions and consent documents, and checked study data through Source Document Verification (SDV). As an Epic Super User, I trained staff and helped clinical teams troubleshoot research workflows.",
     realityDescription:
       "I kept studies moving: approvals, paperwork, data checks, and helping people get Epic to do what they needed. A lot of research depends on someone patiently untangling the practical bits.",
@@ -89,7 +91,7 @@ const rawTimelineDetailed: TimelineItem[] = [
     role: "Desk Operations Specialist & Epic Super User",
     company: "Mayo Clinic",
     period: "February 2018 to October 2019",
-    recruiterDescription:
+    professionalDescription:
       "I helped the Division of Oncology move patient orders into a new EHR, supported staff during the transition, and worked with IT analysts to test system updates.",
     realityDescription:
       "Cancer treatment orders still need to be right during a software migration. I helped transfer and check them, then worked through the software problems with the clinical teams using it.",
@@ -106,7 +108,7 @@ const rawTimelineDetailed: TimelineItem[] = [
     role: "Summer Operations Coordinator & Vikings Training Camp Liaison",
     company: "Minnesota State University, Mankato",
     period: "July 2017 to February 2018",
-    recruiterDescription:
+    professionalDescription:
       "I was the university liaison for Minnesota Vikings Training Camp, coordinating facilities, broadcast, and security logistics. I also managed conference billing and helped secure free menstrual products in campus facilities.",
     realityDescription:
       "I helped get an NFL training camp onto a university campus and kept summer operations moving. I also worked on free menstrual products in campus bathrooms. Different scales of logistics; both worth getting right.",
@@ -123,7 +125,7 @@ const rawTimelineDetailed: TimelineItem[] = [
 
 const compiledTimelineDetailed = rawTimelineDetailed.map((item) => ({
   ...item,
-  recruiterDescription: compileTerms(item.recruiterDescription),
+  professionalDescription: compileTerms(item.professionalDescription),
   realityDescription: compileTerms(item.realityDescription),
   tags: item.tags,
 }));
@@ -133,8 +135,8 @@ const rawTimelineSimplified: TimelineItem[] = [
     role: "Clinical Data Specialist",
     company: "BRIGHT Research Partners, Inc.",
     period: "March 2023 to Present",
-    recruiterDescription:
-      "I turn study protocols into electronic forms and databases, with checks that catch missing or inconsistent entries. I help manage trial data from collection through database lock and track investigational medical devices.",
+    professionalDescription:
+      "I build and look after the electronic forms and databases for ongoing clinical studies, with checks that catch missing or inconsistent entries and testing that shows those checks work. I also manage trial data from collection through database lock and track investigational medical devices.",
     realityDescription:
       "I read long study plans, turn them into usable forms, and add checks for missing or conflicting answers. There is usually an exception tucked into a footnote.",
     tags: [
@@ -149,7 +151,7 @@ const rawTimelineSimplified: TimelineItem[] = [
     role: "Research Program Coordinator",
     company: "Mayo Clinic",
     period: "July 2021 to March 2023",
-    recruiterDescription:
+    professionalDescription:
       "I improved recruitment using hospital records, helping monthly enrollment grow fivefold while fewer people were ruled out during screening. I also built research databases and prepared study safety reports.",
     realityDescription:
       "I helped find study participants, organized research data, and made 3D-printed models of people’s brains from their MRI scans. The printer had an unusually interesting workload.",
@@ -165,7 +167,7 @@ const rawTimelineSimplified: TimelineItem[] = [
     role: "Clinical Research Coordinator",
     company: "Mayo Clinic",
     period: "October 2019 to July 2021",
-    recruiterDescription:
+    professionalDescription:
       "I managed the day-to-day work of clinical studies, including ethics approvals, consent documents, data checks, and staff training.",
     realityDescription:
       "I handled the approvals, forms, data checks, and software questions that keep a research study moving.",
@@ -180,7 +182,7 @@ const rawTimelineSimplified: TimelineItem[] = [
     role: "Desk Operations Specialist & Epic Super User",
     company: "Mayo Clinic",
     period: "February 2018 to October 2019",
-    recruiterDescription:
+    professionalDescription:
       "I helped move oncology records during a hospital software transition and supported the people using the new system.",
     realityDescription:
       "I helped clinical teams through a software change while keeping patient orders accurate. It was a good education in what software feels like from the other side of the desk.",
@@ -195,7 +197,7 @@ const rawTimelineSimplified: TimelineItem[] = [
     role: "Summer Operations Coordinator & Vikings Training Camp Liaison",
     company: "Minnesota State University, Mankato",
     period: "July 2017 to February 2018",
-    recruiterDescription:
+    professionalDescription:
       "I coordinated Vikings training camp and summer conference logistics, managed billing, and helped make menstrual products freely available on campus.",
     realityDescription:
       "I coordinated training camp logistics, summer events, and campus billing. I also helped get free menstrual products into campus bathrooms. Useful work comes in a lot of forms.",
@@ -210,7 +212,7 @@ const rawTimelineSimplified: TimelineItem[] = [
 
 const compiledTimelineSimplified = rawTimelineSimplified.map((item) => ({
   ...item,
-  recruiterDescription: compileTerms(item.recruiterDescription),
+  professionalDescription: compileTerms(item.professionalDescription),
   realityDescription: compileTerms(item.realityDescription),
   tags: item.tags,
 }));

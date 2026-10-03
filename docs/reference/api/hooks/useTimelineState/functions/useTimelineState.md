@@ -6,7 +6,19 @@
 
 # Function: useTimelineState()
 
-> **useTimelineState**(): `object`
+> **useTimelineState**(`initialMode?`): `object`
+
+Local state for a career timeline with a global perspective and per-card overrides.
+
+## Parameters
+
+### initialMode?
+
+[`PersonaType`](../../../lib/persona/type-aliases/PersonaType.md) = `"behind-the-scenes"`
+
+Perspective shown before the visitor chooses one. Defaults to
+Behind the Scenes, the hook's original starting perspective. The rendered timeline
+follows the site-wide reading mode instead, which defaults to Professional.
 
 ## Returns
 
@@ -14,11 +26,11 @@
 
 ### cardOverrides
 
-> **cardOverrides**: `Record`\<`number`, [`TimelineMode`](../type-aliases/TimelineMode.md)\>
+> **cardOverrides**: `Record`\<`number`, [`PersonaType`](../../../lib/persona/type-aliases/PersonaType.md)\>
 
 ### getCardMode
 
-> **getCardMode**: (`idx`) => [`TimelineMode`](../type-aliases/TimelineMode.md)
+> **getCardMode**: (`idx`) => [`PersonaType`](../../../lib/persona/type-aliases/PersonaType.md)
 
 #### Parameters
 
@@ -28,11 +40,11 @@
 
 #### Returns
 
-[`TimelineMode`](../type-aliases/TimelineMode.md)
+[`PersonaType`](../../../lib/persona/type-aliases/PersonaType.md)
 
 ### globalMode
 
-> **globalMode**: [`TimelineMode`](../type-aliases/TimelineMode.md)
+> **globalMode**: [`PersonaType`](../../../lib/persona/type-aliases/PersonaType.md)
 
 ### handleCardToggle
 
@@ -56,7 +68,7 @@
 
 ##### mode
 
-[`TimelineMode`](../type-aliases/TimelineMode.md)
+[`PersonaType`](../../../lib/persona/type-aliases/PersonaType.md)
 
 #### Returns
 

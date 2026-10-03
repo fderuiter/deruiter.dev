@@ -14,22 +14,32 @@ import { usePersona } from "@/components/providers/PersonaProvider";
 import { useTerminology } from "@/components/providers/TerminologyProvider";
 import { useAnnouncer } from "@/components/providers/A11yProvider";
 import { dictionary, TimelineItem } from "@/lib/i18n-dictionary";
+import type { TimelineMode } from "@/hooks/useTimelineState";
 
 export type { TimelineItem };
+
+const TIMELINE_ANNOUNCEMENTS: Record<TimelineMode, string> = {
+  professional:
+    "Timeline switched to Professional Summary: a concise overview of responsibilities and systems impact for each role.",
+  "behind-the-scenes":
+    "Timeline switched to Behind the Scenes Reality: the candid version of each role, engineering stories included.",
+};
+
+const MODE_LABELS: Record<TimelineMode, string> = {
+  professional: "Professional Summary",
+  "behind-the-scenes": "Behind the Scenes Reality",
+};
 
 export const Timeline: React.FC = () => {
   const { persona, setPersona } = usePersona();
   const { simplified } = useTerminology();
   const { announce } = useAnnouncer();
-  const [localMode, setLocalMode] = useState<"recruiter" | "reality" | null>(
-    null
-  );
+  const [localMode, setLocalMode] = useState<TimelineMode | null>(null);
   const [cardOverrides, setCardOverrides] = useState<
-    Record<number, "recruiter" | "reality">
+    Record<number, TimelineMode>
   >({});
 
-  const globalMode =
-    localMode ?? (persona === "technical" ? "reality" : "recruiter");
+  const globalMode: TimelineMode = localMode ?? persona;
 
   const [prevPersona, setPrevPersona] = useState(persona);
   if (persona !== prevPersona) {
@@ -38,29 +48,27 @@ export const Timeline: React.FC = () => {
     setCardOverrides({});
   }
 
-  const handleGlobalToggle = (mode: "recruiter" | "reality") => {
+  const handleGlobalToggle = (mode: TimelineMode) => {
     setLocalMode(mode);
-    setPersona(mode === "reality" ? "technical" : "recruiter");
+    setPersona(mode);
     setCardOverrides({});
-    announce(
-      mode === "reality"
-        ? "Switched timeline perspective to Hands-On Reality: Deep technical architecture details."
-        : "Switched timeline perspective to Formal Summary: Executive overview and key impact.",
-      "assertive"
-    );
+    announce(TIMELINE_ANNOUNCEMENTS[mode], "assertive");
   };
 
-  const handleCardToggle = (idx: number) => {
-    const currentCardMode = cardOverrides[idx] ?? globalMode;
-    const nextMode = currentCardMode === "recruiter" ? "reality" : "recruiter";
+  const getCardMode = (idx: number): TimelineMode => {
+    return cardOverrides[idx] ?? globalMode;
+  };
+
+  const handleCardToggle = (idx: number, role: string) => {
+    const nextMode: TimelineMode =
+      getCardMode(idx) === "professional"
+        ? "behind-the-scenes"
+        : "professional";
     setCardOverrides((prev) => ({
       ...prev,
       [idx]: nextMode,
     }));
-  };
-
-  const getCardMode = (idx: number) => {
-    return cardOverrides[idx] ?? globalMode;
+    announce(`${role} now shows ${MODE_LABELS[nextMode]}.`, "polite");
   };
 
   const dict = simplified ? dictionary.simplified : dictionary.detailed;
@@ -79,9 +87,9 @@ export const Timeline: React.FC = () => {
             id="timeline-perspective-desc"
             className="text-[11px] text-zinc-400"
           >
-            {globalMode === "reality"
-              ? "Deep technical architecture & execution"
-              : "Executive summary & leadership impact"}
+            {globalMode === "behind-the-scenes"
+              ? "The candid version, engineering stories included"
+              : "Responsibilities & systems impact"}
           </span>
         </div>
 
@@ -93,33 +101,35 @@ export const Timeline: React.FC = () => {
         >
           <button
             type="button"
-            onClick={() => handleGlobalToggle("reality")}
-            aria-pressed={globalMode === "reality"}
-            aria-label="Hands-On Reality Mode: Deep technical architecture and code implementation"
-            title="Hands-On Reality Mode: Deep technical architecture and code implementation"
+            onClick={() => handleGlobalToggle("behind-the-scenes")}
+            aria-pressed={globalMode === "behind-the-scenes"}
+            aria-label="Behind the Scenes Reality: Candid reality and engineering stories"
+            title="Behind the Scenes Reality: Candid reality and engineering stories"
             className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 min-h-[44px] px-3.5 py-2 rounded-lg font-bold transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${
-              globalMode === "reality"
+              globalMode === "behind-the-scenes"
                 ? "bg-[#1f232d] text-amber-300 border border-amber-500/40 shadow-sm"
                 : "text-zinc-400 hover:text-zinc-200 border border-transparent"
             }`}
           >
             <IconFlame className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-            <span className="text-[11px] sm:text-xs">HANDS-ON REALITY</span>
+            <span className="text-[11px] sm:text-xs">
+              BEHIND THE SCENES REALITY
+            </span>
           </button>
           <button
             type="button"
-            onClick={() => handleGlobalToggle("recruiter")}
-            aria-pressed={globalMode === "recruiter"}
-            aria-label="Formal Summary Mode: High-level executive overview and business outcomes"
-            title="Formal Summary Mode: High-level executive overview and business outcomes"
+            onClick={() => handleGlobalToggle("professional")}
+            aria-pressed={globalMode === "professional"}
+            aria-label="Professional Summary: Concise overview of technical responsibilities and systems impact"
+            title="Professional Summary: Concise overview of technical responsibilities and systems impact"
             className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 min-h-[44px] px-3.5 py-2 rounded-lg font-bold transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 ${
-              globalMode === "recruiter"
+              globalMode === "professional"
                 ? "bg-[#1f232d] text-cyan-300 border border-cyan-500/40 shadow-sm"
                 : "text-zinc-400 hover:text-zinc-200 border border-transparent"
             }`}
           >
             <IconBriefcase className="w-3.5 h-3.5 shrink-0" />
-            <span className="text-[11px] sm:text-xs">FORMAL SUMMARY</span>
+            <span className="text-[11px] sm:text-xs">PROFESSIONAL SUMMARY</span>
           </button>
         </div>
       </div>
@@ -131,7 +141,7 @@ export const Timeline: React.FC = () => {
         {activeTimeline.map((item, idx) => {
           const isLeft = idx % 2 === 0;
           const currentMode = getCardMode(idx);
-          const isReality = currentMode === "reality";
+          const isReality = currentMode === "behind-the-scenes";
 
           return (
             <motion.div
@@ -196,7 +206,9 @@ export const Timeline: React.FC = () => {
 
                     {/* Quick Flip Toggle Button */}
                     <button
-                      onClick={() => handleCardToggle(idx)}
+                      type="button"
+                      onClick={() => handleCardToggle(idx, item.role)}
+                      aria-label={`${isReality ? "Behind the Scenes" : "Professional"} view of ${item.role}. Switch to ${MODE_LABELS[isReality ? "professional" : "behind-the-scenes"]}`}
                       title="Toggle perspective for this role"
                       className={`inline-flex items-center gap-1 min-h-8 px-2.5 py-1 text-[10px] font-mono rounded-lg border transition-colors cursor-pointer ${
                         isReality
@@ -205,7 +217,9 @@ export const Timeline: React.FC = () => {
                       }`}
                     >
                       <IconSwitchHorizontal className="w-3 h-3 shrink-0" />
-                      <span>{isReality ? "Hands-On" : "Formal"}</span>
+                      <span>
+                        {isReality ? "Behind the Scenes" : "Professional"}
+                      </span>
                     </button>
                   </div>
 
@@ -220,7 +234,7 @@ export const Timeline: React.FC = () => {
                   <div className="mt-3 min-h-[70px]">
                     <AnimatePresence mode="wait">
                       <motion.div
-                        key={isReality ? "reality" : "recruiter"}
+                        key={currentMode}
                         initial={{ opacity: 0, y: 6 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -6 }}
@@ -235,7 +249,7 @@ export const Timeline: React.FC = () => {
                           html={
                             isReality
                               ? item.realityDescription
-                              : item.recruiterDescription
+                              : item.professionalDescription
                           }
                         />
                       </motion.div>

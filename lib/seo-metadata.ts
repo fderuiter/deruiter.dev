@@ -314,9 +314,9 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
       "Pick a time on Google Calendar to talk about a project, ask a question, or say hello. Each booking is a 30-minute Google Meet chat with Fred de Ruiter.",
     path: "/schedule",
     keywords: [
-      "Schedule Systems Consultation",
-      "1:1 Technical Architecture Sync",
-      "Engineering Advisory",
+      "Clinical Software Coffee Chat",
+      "Tech Talk",
+      "Side Project Feedback",
       "Frederick de Ruiter Calendar",
     ],
     inLanguage: "en-US",
@@ -324,14 +324,14 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     isAccessibleForFree: true,
   },
   contact: {
-    title: "Contact Fred: Projects and Roles",
+    title: "Contact Fred: Builds, Bugs, Questions",
     description:
-      "Have a project, a role, or a question in mind? Send Fred de Ruiter a note about what you’re working on, or pick a time to talk it through by video.",
+      "Working on something interesting, found an open-source bug, or have a clinical data question? Send Fred de Ruiter a note, or book a video chat to talk it over.",
     path: "/contact",
     keywords: [
       "Contact Frederick de Ruiter",
       "Direct Inquiries",
-      "Engineering Consultation",
+      "Open-Source Collaboration",
       "Clinical Data Systems",
       "Systems Architecture Collaboration",
     ],
@@ -491,8 +491,8 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     keywords: [
       "Clinical Trial Randomization Engine",
       "Deterministic Mersenne Twister",
-      "Multi-Language Transpiler",
-      "CDISC ADaM Compliance",
+      "Pocock-Simon Minimization",
+      "R Python SAS Stata Code Export",
       "Angular",
       "Web Workers",
     ],

@@ -111,21 +111,27 @@ describe("safeStorage migration (#1129)", () => {
 
   describe("usePersona fallback outside PersonaProvider", () => {
     it("reads the envelope that usePersistentState writes", () => {
+      mockStorage.setItem("global-persona", envelope("behind-the-scenes"));
+      const { result } = renderHook(() => usePersona());
+      expect(result.current.persona).toBe("behind-the-scenes");
+    });
+
+    it("maps a legacy enveloped pre-rename value to its renamed mode", () => {
       mockStorage.setItem("global-persona", envelope("technical"));
       const { result } = renderHook(() => usePersona());
-      expect(result.current.persona).toBe("technical");
+      expect(result.current.persona).toBe("behind-the-scenes");
     });
 
     it("still reads a legacy bare string", () => {
       mockStorage.setItem("global-persona", "technical");
       const { result } = renderHook(() => usePersona());
-      expect(result.current.persona).toBe("technical");
+      expect(result.current.persona).toBe("behind-the-scenes");
     });
 
-    it("falls back to recruiter when storage is blocked", () => {
+    it("falls back to Professional when storage is blocked", () => {
       blockStorage();
       const { result } = renderHook(() => usePersona());
-      expect(result.current.persona).toBe("recruiter");
+      expect(result.current.persona).toBe("professional");
     });
   });
 

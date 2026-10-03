@@ -50,7 +50,7 @@ vi.mock("@/components/providers/SearchProvider", () => ({
 }));
 
 vi.mock("@/components/providers/PersonaProvider", () => ({
-  usePersona: () => ({ persona: "recruiter", setPersona: vi.fn() }),
+  usePersona: () => ({ persona: "professional", setPersona: vi.fn() }),
 }));
 
 vi.mock("next/navigation", () => ({

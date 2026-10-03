@@ -9,6 +9,7 @@ import { isModifiedClick, scrollToElement } from "@/lib/scroll";
 import { useAudio } from "@/components/providers/AudioProvider";
 import { useSearch } from "@/components/providers/SearchProvider";
 import { usePersona } from "@/components/providers/PersonaProvider";
+import { PERSONA_ANNOUNCEMENTS, type PersonaType } from "@/lib/persona";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useHotkeys } from "@/hooks/useHotkeys";
 import { useResizeObserver } from "@/hooks/useResizeObserver";
@@ -175,14 +176,9 @@ export const Navbar: React.FC = () => {
     );
   };
 
-  const handlePersonaSelect = (newPersona: "recruiter" | "technical") => {
+  const handlePersonaSelect = (newPersona: PersonaType) => {
     setPersona(newPersona);
-    announce(
-      newPersona === "technical"
-        ? "Switched reading mode to Technical: Deep-dive architecture and engineering details."
-        : "Switched reading mode to Recruiter: Executive summary and business impact.",
-      "assertive"
-    );
+    announce(PERSONA_ANNOUNCEMENTS[newPersona], "assertive");
   };
 
   const pathname = usePathname();
@@ -608,7 +604,7 @@ export const Navbar: React.FC = () => {
                       {SYSTEMS_ITEMS.filter(
                         (item) =>
                           !(
-                            persona === "technical" &&
+                            persona === "behind-the-scenes" &&
                             item.href === "/simulator"
                           )
                       ).map((item) => {
@@ -721,37 +717,36 @@ export const Navbar: React.FC = () => {
             >
               <button
                 type="button"
-                onClick={() => handlePersonaSelect("technical")}
-                aria-pressed={persona === "technical"}
-                aria-label="Switch to Technical Reading Mode: Deep-dive architecture and engineering details"
-                title="Technical Reading Mode: Deep-dive architecture and engineering details"
+                onClick={() => handlePersonaSelect("behind-the-scenes")}
+                aria-pressed={persona === "behind-the-scenes"}
+                aria-label="Switch to Behind the Scenes Mode: Candid reality and engineering stories"
+                title="Behind the Scenes Mode: Candid reality and engineering stories"
                 className={cn(
                   "flex items-center justify-center gap-1 px-2 md:px-2.5 py-1.5 rounded-lg font-bold transition-all duration-200 cursor-pointer min-h-8 shrink-0 whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-1 focus-visible:ring-offset-zinc-950",
-                  persona === "technical"
+                  persona === "behind-the-scenes"
                     ? "bg-zinc-950 text-amber-400 border border-amber-400/20 shadow-[0_0_8px_rgba(251,191,36,0.15)]"
                     : "text-zinc-400 hover:text-zinc-200 border border-transparent"
                 )}
               >
                 <IconFlame className="w-3.5 h-3.5 shrink-0" />
-                <span className="hidden 2xl:inline">TECHNICAL</span>
-                <span className="hidden xl:inline 2xl:hidden">TECH</span>
+                <span>STORY</span>
               </button>
               <button
                 type="button"
-                onClick={() => handlePersonaSelect("recruiter")}
-                aria-pressed={persona === "recruiter"}
-                aria-label="Switch to Recruiter Reading Mode: Executive summary and business impact"
-                title="Recruiter Reading Mode: Executive summary and business impact"
+                onClick={() => handlePersonaSelect("professional")}
+                aria-pressed={persona === "professional"}
+                aria-label="Switch to Professional Mode: Concise overview of technical responsibilities and systems impact"
+                title="Professional Mode: Concise overview of technical responsibilities and systems impact"
                 className={cn(
                   "flex items-center justify-center gap-1 px-2 md:px-2.5 py-1.5 rounded-lg font-bold transition-all duration-200 cursor-pointer min-h-8 shrink-0 whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-cyan focus-visible:ring-offset-1 focus-visible:ring-offset-zinc-950",
-                  persona === "recruiter"
+                  persona === "professional"
                     ? "bg-zinc-950 text-brand-cyan border border-brand-cyan/20 shadow-[0_0_8px_rgba(6,182,212,0.15)]"
                     : "text-zinc-400 hover:text-zinc-200 border border-transparent"
                 )}
               >
                 <IconBriefcase className="w-3.5 h-3.5 shrink-0" />
-                <span className="hidden 2xl:inline">RECRUITER</span>
-                <span className="hidden xl:inline 2xl:hidden">REC</span>
+                <span className="hidden 2xl:inline">PROFESSIONAL</span>
+                <span className="hidden xl:inline 2xl:hidden">PRO</span>
               </button>
             </div>
 
@@ -943,9 +938,9 @@ export const Navbar: React.FC = () => {
                         id="reading-mode-help"
                         className="mt-1 text-[10px] font-sans text-zinc-400 leading-normal"
                       >
-                        {persona === "technical"
-                          ? "Technical Mode: Deep-dive architecture, code, and systems."
-                          : "Recruiter Mode: High-level overview, business impact, and leadership."}
+                        {persona === "behind-the-scenes"
+                          ? "Behind the Scenes Mode: The candid version, with the engineering stories left in."
+                          : "Professional Mode: A concise overview of responsibilities and systems impact."}
                       </p>
                     </div>
                     <div
@@ -956,35 +951,35 @@ export const Navbar: React.FC = () => {
                     >
                       <button
                         type="button"
-                        onClick={() => handlePersonaSelect("technical")}
-                        aria-pressed={persona === "technical"}
+                        onClick={() => handlePersonaSelect("behind-the-scenes")}
+                        aria-pressed={persona === "behind-the-scenes"}
                         className={cn(
                           "min-h-9 flex-1 rounded-lg px-2 font-bold flex items-center justify-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400",
-                          persona === "technical"
+                          persona === "behind-the-scenes"
                             ? "bg-zinc-950 text-amber-400"
                             : "text-zinc-500 hover:text-zinc-300"
                         )}
-                        aria-label="Switch to Technical Reading Mode: Deep-dive architecture and engineering details"
-                        title="Technical Reading Mode: Deep-dive architecture and engineering details"
+                        aria-label="Switch to Behind the Scenes Mode: Candid reality and engineering stories"
+                        title="Behind the Scenes Mode: Candid reality and engineering stories"
                       >
                         <IconFlame className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                        <span>TECH</span>
+                        <span>STORY</span>
                       </button>
                       <button
                         type="button"
-                        onClick={() => handlePersonaSelect("recruiter")}
-                        aria-pressed={persona === "recruiter"}
+                        onClick={() => handlePersonaSelect("professional")}
+                        aria-pressed={persona === "professional"}
                         className={cn(
                           "min-h-9 flex-1 rounded-lg px-2 font-bold flex items-center justify-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-cyan",
-                          persona === "recruiter"
+                          persona === "professional"
                             ? "bg-zinc-950 text-brand-cyan"
                             : "text-zinc-500 hover:text-zinc-300"
                         )}
-                        aria-label="Switch to Recruiter Reading Mode: Executive summary and business impact"
-                        title="Recruiter Reading Mode: Executive summary and business impact"
+                        aria-label="Switch to Professional Mode: Concise overview of technical responsibilities and systems impact"
+                        title="Professional Mode: Concise overview of technical responsibilities and systems impact"
                       >
                         <IconBriefcase className="w-3.5 h-3.5 text-brand-cyan shrink-0" />
-                        <span>RECRUITER</span>
+                        <span>PROFESSIONAL</span>
                       </button>
                     </div>
                     <div className="flex flex-col gap-2 border-t border-zinc-800 pt-3">
@@ -1292,7 +1287,7 @@ export const Navbar: React.FC = () => {
                       Architecture
                     </span>
                   </Link>
-                  {persona !== "technical" && (
+                  {persona !== "behind-the-scenes" && (
                     <Link
                       href="/simulator"
                       onClick={(e) => handleNavClick(e, "/simulator")}
@@ -1333,9 +1328,9 @@ export const Navbar: React.FC = () => {
                     id="mobile-reading-mode-desc"
                     className="text-[11px] font-sans text-zinc-400"
                   >
-                    {persona === "technical"
-                      ? "Technical Mode: Deep-dive architecture, code, and systems."
-                      : "Recruiter Mode: High-level overview, business impact, and leadership."}
+                    {persona === "behind-the-scenes"
+                      ? "Behind the Scenes Mode: The candid version, with the engineering stories left in."
+                      : "Professional Mode: A concise overview of responsibilities and systems impact."}
                   </span>
                 </div>
                 <div
@@ -1346,35 +1341,35 @@ export const Navbar: React.FC = () => {
                 >
                   <button
                     type="button"
-                    onClick={() => handlePersonaSelect("technical")}
-                    aria-pressed={persona === "technical"}
+                    onClick={() => handlePersonaSelect("behind-the-scenes")}
+                    aria-pressed={persona === "behind-the-scenes"}
                     className={cn(
                       "flex-1 flex items-center justify-center gap-1.5 min-h-11 py-2.5 rounded-xl font-bold transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400",
-                      persona === "technical"
+                      persona === "behind-the-scenes"
                         ? "bg-zinc-950 text-amber-400 border border-amber-400/20 shadow-[0_0_12px_rgba(251,191,36,0.15)]"
                         : "text-zinc-400 hover:text-zinc-200 border border-transparent"
                     )}
-                    aria-label="Switch to Technical Reading Mode: Deep-dive architecture and engineering details"
-                    title="Technical Reading Mode: Deep-dive architecture and engineering details"
+                    aria-label="Switch to Behind the Scenes Mode: Candid reality and engineering stories"
+                    title="Behind the Scenes Mode: Candid reality and engineering stories"
                   >
                     <IconFlame className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                    <span>TECHNICAL</span>
+                    <span>BEHIND THE SCENES</span>
                   </button>
                   <button
                     type="button"
-                    onClick={() => handlePersonaSelect("recruiter")}
-                    aria-pressed={persona === "recruiter"}
+                    onClick={() => handlePersonaSelect("professional")}
+                    aria-pressed={persona === "professional"}
                     className={cn(
                       "flex-1 flex items-center justify-center gap-1.5 min-h-11 py-2.5 rounded-xl font-bold transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-cyan",
-                      persona === "recruiter"
+                      persona === "professional"
                         ? "bg-zinc-950 text-brand-cyan border border-brand-cyan/20 shadow-[0_0_12px_rgba(6,182,212,0.15)]"
                         : "text-zinc-400 hover:text-zinc-200 border border-transparent"
                     )}
-                    aria-label="Switch to Recruiter Reading Mode: Executive summary and business impact"
-                    title="Recruiter Reading Mode: Executive summary and business impact"
+                    aria-label="Switch to Professional Mode: Concise overview of technical responsibilities and systems impact"
+                    title="Professional Mode: Concise overview of technical responsibilities and systems impact"
                   >
                     <IconBriefcase className="w-3.5 h-3.5 text-brand-cyan shrink-0" />
-                    <span>RECRUITER</span>
+                    <span>PROFESSIONAL</span>
                   </button>
                 </div>
               </div>

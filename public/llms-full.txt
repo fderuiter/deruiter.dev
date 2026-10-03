@@ -158,15 +158,15 @@ Source: https://github.com/fderuiter/equipose-randomization
 
 Abstract:
 
-A browser-based tool for clinical trial allocation. It uses **Mersenne Twister (MT19937)** and generates code for **Python, R, SAS, and Stata**, making it easier to inspect and reproduce a randomization.
+A browser-based tool for designing stratified block and **Pocock–Simon minimization** randomization schedules. A seeded **MT19937** generator makes each schedule reproducible from its seed, and the app exports it as **R, Python, SAS, and Stata** scripts for independent review.
 
 Architecture and trade-offs:
 
 The problem
 
-A randomization plan needs to be reproducible and inspectable. Equipose runs allocation logic in the browser and generates code for several statistical languages, with a focus on matching random-number behavior across runtimes.
+A trial randomization schedule has to be reproducible: anyone holding the seed and the study configuration should get the same subject-by-arm list, and a statistician should be able to read the allocation logic in a language they already use. Equipose is a free, open-source Angular app for designing stratified block and Pocock–Simon minimization schedules in the browser. It is deployed at equipose.org.
 
-The approach: MT19937 supplies the random sequence. Exported Python, R, SAS, and Stata implementations make the allocation logic available for independent inspection.
+The approach: A seeded MT19937 generator drives every random choice, so a schedule can be regenerated from its seed. The same configuration can be exported as an R, Python, SAS, or Stata script, either with the generated list embedded (static) or with the allocation logic re-implemented in the target language (dynamic).
 
 ### Hono-Kiln: A Starting Point for TypeScript Backends
 
@@ -445,7 +445,7 @@ The approach: Next.js Server Actions handle submissions, Zod checks the inputs, 
 ## Writing and contact
 
 - [Engineering Dispatches: Blog](https://deruiter.dev/blog): Cross-project retrospectives and technique write-ups on clinical data engineering, formal verification, accessibility, and browser graphics by Fred de Ruiter.
-- [Contact Fred: Projects and Roles](https://deruiter.dev/contact): Have a project, a role, or a question in mind? Send Fred de Ruiter a note about what you’re working on, or pick a time to talk it through by video.
+- [Contact Fred: Builds, Bugs, Questions](https://deruiter.dev/contact): Working on something interesting, found an open-source bug, or have a clinical data question? Send Fred de Ruiter a note, or book a video chat to talk it over.
 - [Book a 30-Minute Chat With Fred](https://deruiter.dev/schedule): Pick a time on Google Calendar to talk about a project, ask a question, or say hello. Each booking is a 30-minute Google Meet chat with Fred de Ruiter.
 
 ## Mobile and utility routes

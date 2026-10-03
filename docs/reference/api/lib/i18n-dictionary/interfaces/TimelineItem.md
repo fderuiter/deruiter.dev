@@ -20,15 +20,19 @@
 
 ***
 
+### professionalDescription
+
+> **professionalDescription**: `string`
+
+Professional Summary: a concise account of the responsibilities and systems involved.
+
+***
+
 ### realityDescription
 
 > **realityDescription**: `string`
 
-***
-
-### recruiterDescription
-
-> **recruiterDescription**: `string`
+Behind the Scenes Reality: the candid version of the same role.
 
 ***
 

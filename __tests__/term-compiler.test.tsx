@@ -230,7 +230,7 @@ describe("Centralized Term Template Compiler", () => {
 
       // Verify fallback timeline data carries 100% valid compiled terms
       const timelineRes = validateTermTags(
-        dictionary.detailed.timeline[0].recruiterDescription
+        dictionary.detailed.timeline[0].professionalDescription
       );
       expect(timelineRes.valid).toBe(true);
 
@@ -252,7 +252,7 @@ describe("Centralized Term Template Compiler", () => {
       }
 
       for (const item of dictionary.detailed.timeline) {
-        compileTerms(item.recruiterDescription);
+        compileTerms(item.professionalDescription);
         compileTerms(item.realityDescription);
       }
 

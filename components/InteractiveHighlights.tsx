@@ -2,16 +2,9 @@
 
 import React from "react";
 import Link from "next/link";
-import { usePersona } from "@/components/providers/PersonaProvider";
 import { IconDeviceGamepad2, IconArrowRight } from "@tabler/icons-react";
 
 export const InteractiveHighlights: React.FC = () => {
-  const { persona } = usePersona();
-
-  if (persona === "technical") {
-    return null;
-  }
-
   return (
     <div className="@container min-w-0 w-full mb-6 sm:mb-8 p-5 sm:p-7 bg-[#13151a]/90 border border-white/10 rounded-2xl relative overflow-hidden group hover:border-amber-500/40 transition-all duration-300 shadow-xl">
       <div className="absolute inset-y-0 left-0 w-px bg-amber-400/60 pointer-events-none" />

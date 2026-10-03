@@ -4,7 +4,9 @@ Date: 2026-08-19
 
 ## Status
 
-Accepted
+Accepted. The "Recruiter vs. Reality" toggle named below was renamed to the
+Professional / Behind the Scenes perspective by
+[ADR 0047](0047-peer-engineering-narrative-and-dual-layer-perspective.md).
 
 ## Context
 

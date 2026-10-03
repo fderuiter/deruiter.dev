@@ -421,6 +421,7 @@ export const TeamOverlay: React.FC<{
     const waiting = messagesFrom(world, c.memberId);
     return (
       <Overlay
+        key="person"
         titleId="sd-talk-title"
         title={member?.name ?? "Conversation"}
         subtitle={`${formatClock(world.minute)} · talking takes ten minutes`}
@@ -464,6 +465,7 @@ export const TeamOverlay: React.FC<{
     const { dialogue, after } = c;
     return (
       <Overlay
+        key="event"
         titleId="sd-event-title"
         title={`${dialogue.speaker}: ${dialogue.subject}`}
         subtitle={
@@ -546,6 +548,7 @@ export const TeamOverlay: React.FC<{
       );
     return (
       <Overlay
+        key="desk"
         titleId="sd-desk-title"
         title="Your desk"
         subtitle={`${formatClock(world.minute)} · reading takes ten minutes, writing up twenty`}
@@ -592,6 +595,7 @@ export const TeamOverlay: React.FC<{
     const rows = edcScreen(world);
     return (
       <Overlay
+        key="edc"
         titleId="sd-edc-title"
         title="EDC workstation"
         subtitle="What the sites report, beside what you have seen and been told."
@@ -665,6 +669,7 @@ export const TeamOverlay: React.FC<{
   const { report } = c;
   return (
     <Overlay
+      key="report"
       titleId="sd-meeting-report"
       title={report.kind === "team" ? "Meeting over" : "Sponsor call over"}
       subtitle={`${report.minutes} minutes, ${report.personMinutes} person-minutes${report.attendees.length > 0 ? ` with ${report.attendees.join(", ")}` : ""}.`}

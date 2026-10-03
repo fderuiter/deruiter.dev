@@ -5,6 +5,7 @@ import {
   fireEvent,
   render,
   screen,
+  waitFor,
   within,
 } from "@testing-library/react";
 import { StudyDirectorWorld } from "@/components/study-director-world/StudyDirectorWorld";
@@ -107,6 +108,35 @@ describe("Study Director world: team, phone and desk", () => {
     const after = current();
     expect(after?.study.log.at(-1)?.documented).toBe(true);
     expect(after?.minute).toBe(world.minute + 30);
+  });
+
+  it("keeps keyboard focus in the desk after a decision is written up", async () => {
+    const { playfield } = renderAt({ x: 4, y: 3, facing: "up" });
+    fireEvent.keyDown(playfield, { key: "e" });
+    fireEvent.click(
+      within(screen.getByRole("dialog", { name: "Your desk" })).getByRole(
+        "button",
+        { name: /Call: Arcadia/ }
+      )
+    );
+    const dialog = screen.getByRole("dialog", { name: /Exploratory/ });
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: /Decline: not in this/ })
+    );
+    // Once decided, focus settles on the dialog's close button.
+    await waitFor(() =>
+      expect(document.activeElement?.textContent).toMatch(/Leave it for later/)
+    );
+    // A real click focuses the button before it unmounts with the event.
+    const writeUp = within(dialog).getByRole("button", {
+      name: /Write it up now/,
+    });
+    writeUp.focus();
+    fireEvent.click(writeUp);
+    const desk = screen.getByRole("dialog", { name: "Your desk" });
+    await waitFor(() =>
+      expect(desk.contains(document.activeElement)).toBe(true)
+    );
   });
 
   it("shows the EDC dashboard beside what you have seen", () => {

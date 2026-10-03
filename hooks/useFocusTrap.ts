@@ -173,6 +173,7 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>(
     if (!active) return;
 
     activeFocusTrapCount++;
+    const container = containerRef.current;
 
     if (typeof document !== "undefined") {
       const current = document.activeElement as HTMLElement | null;
@@ -182,27 +183,12 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>(
         usable || !handoffTarget?.isConnected ? current : handoffTarget;
     }
 
-    const timer = setTimeout(() => {
-      if (initialFocusRef?.current) {
-        initialFocusRef.current.focus();
-      } else if (containerRef.current) {
-        const firstFocusable =
-          containerRef.current.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
-        if (firstFocusable) {
-          firstFocusable.focus();
-        } else {
-          containerRef.current.focus();
-        }
-      }
-    }, 50);
-
     if (typeof window !== "undefined") {
       window.addEventListener("keydown", handleKeyDown);
     }
 
     return () => {
       activeFocusTrapCount = Math.max(0, activeFocusTrapCount - 1);
-      clearTimeout(timer);
       if (typeof window !== "undefined") {
         window.removeEventListener("keydown", handleKeyDown);
       }
@@ -215,6 +201,18 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>(
           }, 0);
         }
         setTimeout(() => {
+          // Focus was put somewhere on purpose while the trap closed, by the
+          // close handler or by the user, so leave it there. Restoring only
+          // rescues focus that was lost with the dialog or left inside it.
+          const now = document.activeElement as HTMLElement | null;
+          if (
+            now &&
+            now !== document.body &&
+            now.isConnected &&
+            !container?.contains(now)
+          ) {
+            return;
+          }
           const target = recorded?.isConnected
             ? recorded
             : (returnFocusToRef.current?.current ?? recorded);
@@ -224,7 +222,35 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>(
         }, 0);
       }
     };
-  }, [active, handleKeyDown, initialFocusRef, returnFocus]);
+  }, [active, handleKeyDown, returnFocus]);
+
+  // Initial focus is its own effect so that a dialog changing which control
+  // should take focus (a new step, a decision made) moves focus there without
+  // deactivating and re-activating the whole trap. Focus already inside the
+  // container is never pulled away: whoever put it there got there first.
+  useEffect(() => {
+    if (!active) return;
+    const timer = setTimeout(() => {
+      const container = containerRef.current;
+      if (!container) return;
+      const current = document.activeElement;
+      if (current && current !== container && container.contains(current)) {
+        return;
+      }
+      if (initialFocusRef?.current) {
+        initialFocusRef.current.focus();
+      } else {
+        const firstFocusable =
+          container.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
+        if (firstFocusable) {
+          firstFocusable.focus();
+        } else {
+          container.focus();
+        }
+      }
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [active, initialFocusRef]);
 
   return containerRef;
 }

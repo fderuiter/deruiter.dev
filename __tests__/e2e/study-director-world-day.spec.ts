@@ -96,6 +96,14 @@ test.describe("Study Director world: a working day (#1688, #1689)", () => {
     const before = await clock.innerText();
     await activate(call.getByRole("button", { name: /Write it up now/ }));
     await expect(desk).toContainText("Written up and filed");
+    // Keyboard focus moves into the desk rather than dropping to the page.
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => !!document.activeElement?.closest("[data-testid=world-desk]")
+        )
+      )
+      .toBe(true);
     await expect(clock).not.toHaveText(before);
     await expectNoBlockingViolations(page, "[data-testid=world-desk]", "desk");
     await page.keyboard.press("Escape");

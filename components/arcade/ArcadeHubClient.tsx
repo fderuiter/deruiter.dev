@@ -23,6 +23,7 @@ import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { ARCADE_GAME_COUNT } from "@/lib/arcade";
 import { safeGetRawItem } from "@/lib/safe-storage";
 import { ArcadeTrophyCabinet } from "@/components/arcade/ArcadeTrophyCabinet";
+import { ArcadeTrailer } from "@/components/arcade/ArcadeTrailer";
 import { onAppEvent } from "@/lib/event-bus";
 
 interface ArcadeGameCard {
@@ -492,6 +493,8 @@ export const ArcadeHubClient: React.FC = () => {
             </span>
           </div>
         </div>
+
+        <ArcadeTrailer />
 
         {/* Games Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">

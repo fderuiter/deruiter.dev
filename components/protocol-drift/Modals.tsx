@@ -18,9 +18,9 @@ import { readAutosave } from "./persistence";
 import { useProtocolDriftStore } from "./store";
 
 const PRIMARY =
-  "min-h-11 min-w-11 border border-amber-500 px-4 font-mono text-xs text-amber-400 hover:bg-amber-500/10 disabled:cursor-not-allowed disabled:border-zinc-700 disabled:text-zinc-400 active:scale-[0.98]";
+  "border border-amber-500 px-4 font-mono text-xs text-amber-400 hover:bg-amber-500/10 disabled:cursor-not-allowed disabled:border-zinc-700 disabled:text-zinc-400 active:scale-[0.98]";
 const SECONDARY =
-  "min-h-11 min-w-11 border border-zinc-700 px-4 font-mono text-xs text-zinc-200 hover:border-amber-500 active:scale-[0.98]";
+  "border border-zinc-700 px-4 font-mono text-xs text-zinc-200 hover:border-amber-500 active:scale-[0.98]";
 
 function ModalShell({
   title,
@@ -238,7 +238,11 @@ export function WaveReviewModal({ summary }: { summary: WaveSummary }) {
         >
           Pause and inspect
         </button>
-        <button type="button" className={SECONDARY} onClick={dismiss}>
+        <button
+          type="button"
+          className={`${SECONDARY} min-h-12 min-w-12`}
+          onClick={dismiss}
+        >
           Close
         </button>
       </div>
@@ -271,7 +275,11 @@ export function AmendmentMemoModal() {
         of an older visit stays on its original version. The clock is paused so
         you can edit the pipeline.
       </p>
-      <button type="button" className={PRIMARY} onClick={dismiss}>
+      <button
+        type="button"
+        className={`${PRIMARY} min-h-12 min-w-12`}
+        onClick={dismiss}
+      >
         Acknowledge Memo
       </button>
     </ModalShell>
@@ -482,7 +490,11 @@ export function LockReviewModal({
         <p className="mb-3 text-emerald-400">ALL REGULATORY GATES CLEARED</p>
       )}
       <div className="flex flex-wrap gap-2">
-        <button type="button" className={SECONDARY} onClick={() => void back()}>
+        <button
+          type="button"
+          className={`${SECONDARY} min-h-12 min-w-12`}
+          onClick={() => void back()}
+        >
           Return to Workbench
         </button>
         <button
@@ -670,7 +682,11 @@ export function DebriefModal({
           </button>
         </div>
       </section>
-      <button type="button" className={PRIMARY} onClick={onClose}>
+      <button
+        type="button"
+        className={`${PRIMARY} min-h-12 min-w-12`}
+        onClick={onClose}
+      >
         View locked workbench
       </button>
       <p className="mt-2 text-zinc-300">

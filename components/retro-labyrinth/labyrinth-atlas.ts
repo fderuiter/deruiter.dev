@@ -237,7 +237,7 @@ export const SPRITES: Record<LabyrinthSpriteName, string[]> = {
 };
 
 /** A parsed 1-bit bitmap. */
-export interface SpriteBitmap {
+interface SpriteBitmap {
   width: number;
   height: number;
   ink: boolean[][];
@@ -291,7 +291,7 @@ const spriteCache = new Map<string, HTMLCanvasElement | null>();
  * The offscreen canvas for a sprite in one colour, built on first use and
  * cached. The canvas is the bitmap plus a one-pixel outline on each side.
  */
-export function getSpriteCanvas(
+function getSpriteCanvas(
   name: LabyrinthSpriteName,
   color: string
 ): HTMLCanvasElement | null {
@@ -563,7 +563,7 @@ export function drawPlate(
 }
 
 /** Fog texels per tile along each axis. */
-export const FOG_TEXELS_PER_TILE = 2;
+const FOG_TEXELS_PER_TILE = 2;
 
 /**
  * Paints the fog of war into a small texture, `FOG_TEXELS_PER_TILE` texels

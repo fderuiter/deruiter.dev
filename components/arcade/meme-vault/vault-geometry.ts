@@ -26,7 +26,7 @@ export function padKeyLabel(index: number): string {
   return String(index + 1);
 }
 
-export interface RingDash {
+interface RingDash {
   circumference: number;
   /** `stroke-dashoffset` that leaves `progress` of the ring drawn. */
   dashOffset: number;
@@ -86,7 +86,7 @@ export function scopeGain(samples: ArrayLike<number>): number {
   return clamp(0.85 / peak, 1, MAX_SCOPE_GAIN);
 }
 
-export interface ScopePoint {
+interface ScopePoint {
   x: number;
   y: number;
 }

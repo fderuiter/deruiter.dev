@@ -173,7 +173,7 @@ export function getFolderIndexAt(
 }
 
 /** One station's chute below the belt. */
-export interface ChuteSlot {
+interface ChuteSlot {
   /** Column left edge, matching the station strip under the canvas. */
   x: number;
   /** Column width. */
@@ -253,7 +253,7 @@ export function getFolderTabs(
 }
 
 /** The auditor's sight-cone, a triangle from the eye down onto the belt. */
-export interface SightCone {
+interface SightCone {
   apexX: number;
   apexY: number;
   nearX: number;
@@ -404,7 +404,7 @@ export interface FolderFx {
 }
 
 /** Where a folder animation puts its folder at `now`. */
-export interface FolderPose {
+interface FolderPose {
   /** Left edge. */
   x: number;
   /** Top edge. */
@@ -497,7 +497,7 @@ export function getFolderFxPose(
 }
 
 /** Verdict stamp for the end of a phase or shift. */
-export interface VerdictStamp {
+interface VerdictStamp {
   code: string;
   caption: string;
   tone: "good" | "warn" | "bad";

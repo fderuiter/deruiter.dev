@@ -94,7 +94,7 @@ export const EDGE_S = 4;
 export const EDGE_W = 8;
 
 /** True for the solid wall tile; moving airgap walls are drawn separately. */
-export function isSolidWall(cell: string | undefined): boolean {
+function isSolidWall(cell: string | undefined): boolean {
   return cell === "#";
 }
 
@@ -323,7 +323,7 @@ export function fogAlpha(
 }
 
 /** A grid tile. */
-export interface GridPoint {
+interface GridPoint {
   x: number;
   y: number;
 }

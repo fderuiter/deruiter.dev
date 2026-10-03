@@ -22,7 +22,7 @@ export const BEZEL_INNER_RADIUS = 200;
 /** Radius of the visible screen that the canvas fills. */
 export const SCREEN_RADIUS = 192;
 /** Radius at which the pusher stems are centred. */
-export const PUSHER_RADIUS = 241;
+const PUSHER_RADIUS = 241;
 
 export type PusherId = "light" | "up" | "down" | "start" | "back";
 

@@ -38,7 +38,7 @@ export const FACE_RADIUS = CANVAS_SIZE / 2 - 2;
 /** Radius the RAM and flash arcs are stroked at. */
 export const RING_RADIUS = 130;
 /** Stroke width of the RAM and flash arcs. */
-export const RING_WIDTH = 5;
+const RING_WIDTH = 5;
 
 const DEG = Math.PI / 180;
 
@@ -48,12 +48,12 @@ const DEG = Math.PI / 180;
  * Both end above the lane, whose top edge meets the rim at 150 and 30
  * degrees, so the meters never cross the track.
  */
-export const RAM_ARC_START_DEG = 165;
-export const FLASH_ARC_START_DEG = 15;
-export const RING_ARC_SWEEP_DEG = 90;
+const RAM_ARC_START_DEG = 165;
+const FLASH_ARC_START_DEG = 15;
+const RING_ARC_SWEEP_DEG = 90;
 
 /** Signal colours used on the face. Identity cyan is the world's own hue. */
-export const FACE_COLORS = {
+const FACE_COLORS = {
   identity: "#22d3ee",
   ok: "#22d3ee",
   good: "#10b981",
@@ -90,7 +90,7 @@ const TONE_COLOR: Record<MeterTone, string> = {
 };
 
 /** A filled stretch of a ring arc, in radians, ready for `ctx.arc`. */
-export interface ArcSpan {
+interface ArcSpan {
   from: number;
   to: number;
   anticlockwise: boolean;
@@ -129,7 +129,7 @@ export function parallaxOffset(
 }
 
 /** Limb angles in radians for the runner sprite; positive swings forward. */
-export interface RunnerPose {
+interface RunnerPose {
   frontLeg: number;
   backLeg: number;
   frontArm: number;
@@ -187,7 +187,7 @@ export const OBSTACLE_PICTOGRAMS: Record<ObstacleType, Pictogram> = {
 };
 
 /** The one-glyph type mark printed on a RAM chip token. */
-export const CHIP_MARKS: Record<VariableType, string> = {
+const CHIP_MARKS: Record<VariableType, string> = {
   int: "i",
   float: "f",
   string: "s",
@@ -201,7 +201,7 @@ export function stepsFor(distanceMeters: number): number {
 }
 
 /** What a full-screen end face says. */
-export interface EndFace {
+interface EndFace {
   kind: "crash" | "power" | "complete";
   headline: string;
   detail: string;

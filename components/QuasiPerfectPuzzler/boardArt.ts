@@ -70,7 +70,7 @@ export function isMathVariable(node: ASTNode): boolean {
 }
 
 /** Geometry options for {@link layoutProofTree}. */
-export interface ProofLayoutOptions {
+interface ProofLayoutOptions {
   /** Horizontal space given to each leaf, in CSS pixels. */
   slotWidth: number;
   /** Vertical distance between a parent's centre and its children's. */
@@ -97,7 +97,7 @@ export interface ProofLayoutNode {
 }
 
 /** One edge, from the bottom of a parent to the top of a child. */
-export interface ProofLayoutEdge {
+interface ProofLayoutEdge {
   id: string;
   fromId: string;
   toId: string;
@@ -247,10 +247,10 @@ export function fitSlotWidth(
 }
 
 /** Card rarity, read from a tactic's RAM cost. */
-export type TacticRarity = "common" | "uncommon" | "rare" | "cursed";
+type TacticRarity = "common" | "uncommon" | "rare" | "cursed";
 
 /** How a tactic card is drawn. */
-export interface TacticCardArt {
+interface TacticCardArt {
   /** Large symbol in the middle of the card. */
   glyph: string;
   rarity: TacticRarity;
@@ -299,7 +299,7 @@ export function tacticCardArt(
 }
 
 /** Static pose of one card in a fanned hand. */
-export interface FanPose {
+interface FanPose {
   /** Rotation in degrees, negative to the left. */
   rotate: number;
   /** Downward offset in pixels, so the fan curves. */
@@ -348,7 +348,7 @@ export function ramChipFill(
 }
 
 /** One node of the chapter level map. */
-export interface LevelMapNode {
+interface LevelMapNode {
   /** Index into the level list. */
   index: number;
   /** Chapter row, from 0. */
@@ -360,7 +360,7 @@ export interface LevelMapNode {
 }
 
 /** Result of {@link layoutLevelMap}. */
-export interface LevelMapLayout {
+interface LevelMapLayout {
   nodes: LevelMapNode[];
   /** SVG path through every node, in a 1000-unit-wide viewBox. */
   path: string;
@@ -431,7 +431,7 @@ export function layoutLevelMap(
 }
 
 /** How a level node reads on the map. */
-export interface LevelMapBadge {
+interface LevelMapBadge {
   /** 0 to 3 earned stars; 0 for an unplayed or admitted level. */
   stars: number;
   state: "unplayed" | "solved" | "admitted";

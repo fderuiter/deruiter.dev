@@ -66,7 +66,7 @@ export function createFloorAnimState(): FloorAnimState {
 }
 
 /** What the floor frame shows beyond the simulation state. */
-export interface ConveyorDrawOptions {
+interface ConveyorDrawOptions {
   selectedSubjectId: string | null;
   officeId: OfficeId;
   floorColor: string;

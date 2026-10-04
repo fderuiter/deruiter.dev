@@ -28,6 +28,7 @@ import {
   IconFileSpreadsheet,
   IconCpu,
   IconHeartHandshake,
+  IconShoppingBag,
   IconDeviceGamepad2,
   IconSparkles,
   IconCoffee,
@@ -1013,6 +1014,30 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           "Real-time Pretext vs DOM reflow benchmark",
           "Zero-asset procedural audio soundboard",
           "12 verified architectural quality invariants",
+        ],
+      },
+      {
+        id: "nav-merch",
+        title: "Laser Loon Merch",
+        subtitle:
+          "Flag stickers, shirts, desk mats, mugs and prints at base cost. Coming soon.",
+        category: "navigation",
+        url: "/merch",
+        icon: <IconShoppingBag className="w-4 h-4 text-amber-400" />,
+        badge: "Merch",
+        status: "Coming Soon",
+        description:
+          "Planned Laser Loon merchandise at base production cost through Redbubble, with no artist markup. The artwork is CC0.",
+        techStack: [
+          "Redbubble",
+          "CC0 Artwork",
+          "Next.js 16",
+          "Container Queries",
+        ],
+        highlights: [
+          "Five planned products with no checkout on this site",
+          "Priced at Redbubble base cost, no artist markup",
+          "Free vector files if you would rather print your own",
         ],
       },
       {

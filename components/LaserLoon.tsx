@@ -42,6 +42,7 @@ import { useAnnouncer } from "@/hooks/useAnnouncer";
 import { useResponsiveCanvas } from "@/hooks/useResponsiveCanvas";
 import { useCanvasResolution } from "@/hooks/useCanvasResolution";
 import { applyCanvasScale } from "@/lib/arcade";
+import { MerchPrompt } from "@/components/merch/MerchPrompt";
 import { TwinStickAimDock } from "@/components/arcade/ControlDocks";
 import {
   drawActBackdrop,
@@ -2530,7 +2531,9 @@ export const LaserLoon: React.FC = () => {
               icon: <IconBook className="w-4 h-4" />,
               onClick: () => setShowMuseum(true),
             }}
-          />
+          >
+            <MerchPrompt liveLabel="Get official Laser Loon swag at cost" />
+          </ResultCard>
         )}
 
         {gameState === "gameover" && (

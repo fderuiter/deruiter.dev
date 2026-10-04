@@ -21,6 +21,7 @@ import {
   IconBrain,
   IconCpu,
   IconHeartHandshake,
+  IconShoppingBag,
   IconBone,
   IconSparkles,
   IconFileSpreadsheet,
@@ -156,6 +157,16 @@ export const Footer: React.FC = () => {
                 >
                   <IconCrosshair className="w-3 h-3 text-cyan-400" />
                   Laser Loon
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/merch"
+                  onMouseEnter={handleHover}
+                  className="text-zinc-400 hover:text-brand-cyan transition-colors flex items-center gap-1.5"
+                >
+                  <IconShoppingBag className="w-3 h-3 text-amber-400" />
+                  Laser Loon Merch (soon)
                 </Link>
               </li>
               <li>

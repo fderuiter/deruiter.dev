@@ -169,8 +169,8 @@ quality evidence is recorded in the
 - **Application source licensing.** [PR #886](https://github.com/fderuiter/portfolio/pull/886)
   (merged to `main` as `7fb7e666`) added the Apache License 2.0 grant
   (`LICENSE`) and the three-layer `NOTICE` scope statement (application
-  source under Apache-2.0, `public/files/` artwork unchanged under CC BY 4.0,
-  editorial/identity content all rights reserved), as decided in
+  source under Apache-2.0, `public/files/` artwork under CC BY 4.0 at the time
+  and CC0 since 2026-10-03 per the ADR 0045 amendment, editorial/identity content all rights reserved), as decided in
   [ADR 0045](../../adr/0045-source-code-licensing-and-three-layer-reuse-boundary.md).
   The licensing surface is enforced by
   `__tests__/public-repository-readiness.test.ts`, which pins the license and

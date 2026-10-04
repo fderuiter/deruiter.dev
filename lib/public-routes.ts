@@ -49,6 +49,11 @@ export const PUBLIC_ROUTE_REGISTRY = [
     category: "top-level",
   },
   {
+    path: "/merch",
+    name: "Laser Loon Merch",
+    category: "top-level",
+  },
+  {
     path: "/offline",
     name: "Offline Fallback View",
     category: "top-level",

@@ -26,6 +26,7 @@ import {
   IconTerminal,
   IconCpu,
   IconHeartHandshake,
+  IconShoppingBag,
   IconCrosshair,
   IconBrain,
   IconBone,
@@ -57,6 +58,12 @@ const ARCADE_ITEMS: SubNavItem[] = [
     subtitle: "A loon, lasers, and a trip to the Capitol",
     href: "/arcade/laser-loon",
     icon: <IconCrosshair className="w-4 h-4 text-brand-cyan" />,
+  },
+  {
+    title: "Laser Loon Merch",
+    subtitle: "Flag stickers, shirts and prints at cost, coming soon",
+    href: "/merch",
+    icon: <IconShoppingBag className="w-4 h-4 text-amber-400" />,
   },
   {
     title: "Quasi-Perfect Puzzler",
@@ -1341,6 +1348,19 @@ export const Navbar: React.FC = () => {
                     </span>
                     <span className="text-xs font-mono text-brand-cyan shrink-0">
                       {ARCADE_GAME_COUNT} Games
+                    </span>
+                  </Link>
+                  <Link
+                    href="/merch"
+                    onClick={(e) => handleNavClick(e, "/merch")}
+                    className="min-h-[48px] px-3.5 py-3 rounded-xl bg-zinc-900/40 border border-zinc-800/80 text-sm font-semibold text-neutral-200 hover:text-brand-cyan flex items-center justify-between gap-2 active:scale-[0.99] transition-all min-w-0"
+                  >
+                    <span className="flex items-center gap-2 min-w-0">
+                      <IconShoppingBag className="w-4 h-4 text-amber-400 shrink-0" />
+                      <span className="truncate">Laser Loon Merch</span>
+                    </span>
+                    <span className="text-[10px] font-mono text-amber-400 px-1.5 py-0.5 rounded bg-amber-500/10 shrink-0">
+                      Coming soon
                     </span>
                   </Link>
                 </div>

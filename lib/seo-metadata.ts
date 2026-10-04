@@ -405,6 +405,22 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     locale: "en-US",
     isAccessibleForFree: true,
   },
+  merch: {
+    title: "Laser Loon Merch, Coming Soon",
+    description:
+      "Laser Loon stickers, shirts, desk mats, mugs and prints, planned at base production cost through Redbubble with no artist markup. The artwork is CC0.",
+    path: "/merch",
+    keywords: [
+      "Laser Loon Merch",
+      "Minnesota Flag F277",
+      "At-Cost Merchandise",
+      "Redbubble",
+      "CC0 Artwork",
+    ],
+    inLanguage: "en-US",
+    locale: "en-US",
+    isAccessibleForFree: true,
+  },
   memeVault: {
     title: "Meme Vault: Soundboard and Trophies",
     description:

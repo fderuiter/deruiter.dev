@@ -427,6 +427,7 @@ The approach: Next.js Server Actions handle submissions, Zod checks the inputs, 
 - [Study Director: Everything Is Fine](https://deruiter.dev/arcade/study-director): Run a clinical study from kickoff to closeout. Spend limited attention, audit the sites behind the green dashboard, and defend your decisions to the FDA.
 - [Trial & Error: Biostat Deckbuilder](https://deruiter.dev/arcade/trial-and-error): Clinical outputs are the cards. Review tables against the SAP, correct redlines for +Mult, and play Chips × Mult hands to beat the Blinds in this deckbuilder.
 - [Working With Duck: Pet Sim Arcade](https://deruiter.dev/arcade/working-with-duck): You have a deadline. Duck the puppy has a ball. Keep the project and the puppy happy with toys, treats, and park breaks in this browser game.
+- [Laser Loon Merch, Coming Soon](https://deruiter.dev/merch): Laser Loon stickers, shirts, desk mats, mugs and prints, planned at base production cost through Redbubble with no artist markup. The artwork is CC0.
 
 ## Case studies
 

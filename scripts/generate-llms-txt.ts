@@ -78,7 +78,7 @@ const SECTIONS: Section[] = [
   },
   {
     heading: "Arcade",
-    match: (p) => p === "/arcade" || p.startsWith("/arcade/"),
+    match: (p) => p === "/arcade" || p.startsWith("/arcade/") || p === "/merch",
   },
   {
     heading: "Case studies",

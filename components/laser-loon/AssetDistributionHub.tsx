@@ -16,6 +16,7 @@ import {
 } from "@tabler/icons-react";
 import { useClipboard } from "@/hooks/useClipboard";
 import { gameFont } from "@/lib/game-utils";
+import { MerchPrompt } from "@/components/merch/MerchPrompt";
 
 interface AssetFormatItem {
   filename: string;
@@ -400,6 +401,20 @@ export const AssetDistributionHub: React.FC<AssetDistributionHubProps> = ({
             )}
           </div>
         </div>
+      </div>
+
+      {/* Physical merchandise entry point */}
+      <div className="mt-10 p-5 rounded-2xl bg-zinc-900/60 border border-zinc-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative z-10">
+        <div className="min-w-0">
+          <h4 className="text-sm font-bold font-mono text-white">
+            Physical merch and swag
+          </h4>
+          <p className="text-xs text-zinc-400 font-mono mt-1 leading-relaxed break-words">
+            Want a printed flag instead of a vector file? Stickers, shirts and
+            prints are planned at base cost, with no artist markup.
+          </p>
+        </div>
+        <MerchPrompt liveLabel="Get Laser Loon swag at cost" />
       </div>
 
       {/* Creative Commons Licensing Guidelines Panel */}

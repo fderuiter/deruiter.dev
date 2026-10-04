@@ -2,21 +2,36 @@ export type {
   CreditPackage,
   CreditScope,
   CreditsDataset,
-  CreditsDrift,
   DirectAnnotation,
+  FactsDrift,
+  FactsStore,
+  LicenseTextKind,
+  LicenseTextRef,
+  LockedPackage,
   LockfileEntry,
   LockfileShape,
   NoticeSource,
-  PackageMeta,
+  PackageFacts,
   RootPackageShape,
 } from "./types";
 export {
   buildCreditsDataset,
   countByLicense,
-  diffCreditsAgainstLockfile,
   findUnannotatedDirect,
   groupDirectRuntimeByPurpose,
-  isDriftFree,
 } from "./internal/build";
-export { renderThirdPartyNotices } from "./internal/notices";
+export {
+  diffFactsAgainstLockfile,
+  fillSpdxTemplate,
+  isFactsDriftFree,
+  listLockedPackages,
+  noticeSourcesFromFacts,
+  spdxIdsOf,
+  templateNeedsHolder,
+} from "./internal/facts";
+export {
+  listNoticedPackages,
+  MIN_LICENSE_BODY_CHARS,
+  renderThirdPartyNotices,
+} from "./internal/notices";
 export { normalizeProjectUrl, npmPackageUrl } from "./internal/urls";

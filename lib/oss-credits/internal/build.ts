@@ -1,10 +1,9 @@
 import type {
   CreditPackage,
   CreditsDataset,
-  CreditsDrift,
   DirectAnnotation,
+  FactsStore,
   LockfileShape,
-  PackageMeta,
   RootPackageShape,
 } from "../types";
 import { normalizeProjectUrl } from "./urls";
@@ -17,15 +16,15 @@ function packageNameFromPath(lockPath: string): string | null {
 }
 
 /**
- * Build the credits dataset from a parsed lockfile. Pure: callers supply the
- * installed metadata reader so the module never touches the filesystem.
- * When a package is installed at several versions, each version is listed.
+ * Build the credits dataset from a parsed lockfile and the committed registry
+ * facts. Pure: it never touches the filesystem or the network. When a package
+ * is installed at several versions, each version is listed.
  */
 export function buildCreditsDataset(input: {
   lockfile: LockfileShape;
   root: RootPackageShape;
   annotations: Record<string, DirectAnnotation>;
-  readMeta: (lockPath: string) => PackageMeta | null;
+  facts: FactsStore;
 }): CreditsDataset {
   const direct = new Set([
     ...Object.keys(input.root.dependencies ?? {}),
@@ -42,7 +41,7 @@ export function buildCreditsDataset(input: {
     const isTopLevel = lockPath === `${NODE_MODULES}${name}`;
     // A direct dependency is always the top-level install of that name.
     const isDirect = isTopLevel && direct.has(name);
-    const meta = input.readMeta(lockPath);
+    const facts = input.facts.packages[`${name}@${entry.version}`];
     const scope = entry.dev ? "tooling" : "runtime";
     const existing = packages.find((p) => `${p.name}@${p.version}` === key);
     if (existing) {
@@ -53,10 +52,6 @@ export function buildCreditsDataset(input: {
     }
     if (seen.has(key)) continue;
     seen.add(key);
-    const repository =
-      typeof meta?.repository === "string"
-        ? meta.repository
-        : meta?.repository?.url;
     const annotation = isDirect ? input.annotations[name] : undefined;
     packages.push({
       name,
@@ -64,8 +59,8 @@ export function buildCreditsDataset(input: {
       license: entry.license?.trim() || "UNKNOWN",
       scope,
       direct: isDirect,
-      homepage: normalizeProjectUrl(meta?.homepage),
-      repository: normalizeProjectUrl(repository),
+      homepage: normalizeProjectUrl(facts?.homepage ?? undefined),
+      repository: normalizeProjectUrl(facts?.repository ?? undefined),
       ...(annotation
         ? { group: annotation.group, reason: annotation.reason }
         : {}),
@@ -94,44 +89,6 @@ export function findUnannotatedDirect(dataset: CreditsDataset): string[] {
   return dataset.packages
     .filter((p) => p.direct && (!p.group || !p.reason))
     .map((p) => p.name);
-}
-
-/**
- * Compare a committed dataset with the lockfile. Only name, version, license
- * and scope are compared, so the check needs no installed node_modules.
- */
-export function diffCreditsAgainstLockfile(
-  dataset: CreditsDataset,
-  lockfile: LockfileShape
-): CreditsDrift {
-  const expected = new Map<string, string>();
-  for (const [lockPath, entry] of Object.entries(lockfile.packages)) {
-    if (lockPath === "" || entry.link) continue;
-    const name = packageNameFromPath(lockPath);
-    if (!name || !entry.version) continue;
-    const key = `${name}@${entry.version}`;
-    const scope = entry.dev ? "tooling" : "runtime";
-    const license = entry.license?.trim() || "UNKNOWN";
-    const prior = expected.get(key);
-    const merged = prior && prior.endsWith("|runtime") ? "runtime" : scope;
-    expected.set(key, `${license}|${merged}`);
-  }
-  const actual = new Map(
-    dataset.packages.map((p) => [
-      `${p.name}@${p.version}`,
-      `${p.license}|${p.scope}`,
-    ])
-  );
-  const missing = [...expected.keys()].filter((k) => !actual.has(k)).sort();
-  const stale = [...actual.keys()].filter((k) => !expected.has(k)).sort();
-  const changed = [...expected.keys()]
-    .filter((k) => actual.has(k) && actual.get(k) !== expected.get(k))
-    .sort();
-  return { missing, stale, changed };
-}
-
-export function isDriftFree(drift: CreditsDrift): boolean {
-  return !drift.missing.length && !drift.stale.length && !drift.changed.length;
 }
 
 /** Group the direct runtime dependencies by purpose, in a stable order. */

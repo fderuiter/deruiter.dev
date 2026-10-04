@@ -6,7 +6,7 @@
 
 # Interface: CreditPackage
 
-One credited package. Every field comes from the lockfile or the installed package metadata.
+One credited package. Every field comes from the lockfile or the committed registry facts.
 
 ## Properties
 

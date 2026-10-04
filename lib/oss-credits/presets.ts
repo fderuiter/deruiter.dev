@@ -305,3 +305,39 @@ export const GROUP_ORDER: readonly string[] = [
   "Linting and docs",
   "Developer workflow",
 ];
+
+/**
+ * Packages that publish no license file of their own but come from a parent
+ * package that does (one repository, one license). They reuse the parent's text
+ * so the notice carries the real copyright holder. `prefix` matches the start of
+ * a package name; `name` matches exactly. The parent must be in the lockfile
+ * and ship a license file, or generation fails.
+ */
+export const LICENSE_TEXT_INHERITANCE: readonly {
+  prefix?: string;
+  name?: string;
+  parent: string;
+}[] = [
+  { prefix: "@rollup/rollup-", parent: "rollup" },
+  { prefix: "@next/swc-", parent: "next" },
+  { name: "@next/env", parent: "next" },
+  { prefix: "@oxc-parser/binding-", parent: "oxc-parser" },
+  { prefix: "@sentry/server-", parent: "@sentry/core" },
+  { name: "@radix-ui/react-compose-refs", parent: "@radix-ui/react-slot" },
+  {
+    name: "@radix-ui/react-use-layout-effect",
+    parent: "@radix-ui/react-slot",
+  },
+];
+
+/**
+ * Copyright holder for a package that ships no license file, declares no author
+ * and has no parent to inherit from. Without an entry here, generation fails
+ * rather than guess. Reviewed against each package's registry page.
+ */
+export const LICENSE_HOLDER_OVERRIDES: Record<string, string> = {
+  "client-only":
+    "client-only package authors (the package publishes no copyright line)",
+  "server-only":
+    "server-only package authors (the package publishes no copyright line)",
+};

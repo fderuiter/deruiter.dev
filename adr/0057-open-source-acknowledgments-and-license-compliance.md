@@ -27,22 +27,30 @@ its dependencies and its visitors:
 
 ## Decision
 
-**1. One committed dataset, generated from the lockfile.** `npm run oss:credits`
-(`scripts/oss-credits.ts`) writes
-`lib/oss-credits/internal/credits.generated.json` and
+**1. Committed outputs, generated from the lockfile and the registry, never
+from `node_modules`.** `npm run oss:credits` (`scripts/oss-credits.ts`) reads
+`package-lock.json` and, for each locked version, asks the npm registry for
+its metadata and (for shipped packages) its tarball, at the URL and against the
+integrity hash the lockfile records. A tarball is immutable, so the result is
+identical on every platform, including for platform-specific optional binaries
+that are not installed locally. It writes three committed files:
+`lib/oss-credits/internal/registry-facts.generated.json` (homepage, repository,
+author and every license text, keyed by `name@version` and pinned to the
+integrity hash), `credits.generated.json` (the page dataset) and
 `public/third-party-notices.txt`. The pure logic lives in the deep module
-`lib/oss-credits/`; only the script touches the filesystem. Every direct
-dependency needs a curated purpose group and one-line reason in
-`lib/oss-credits/presets.ts`, so the page says why each project is used,
-not only that it is.
+`lib/oss-credits/`; only the script touches the filesystem and the network.
+Every direct dependency needs a curated purpose group and one-line reason in
+`lib/oss-credits/presets.ts`, so the page says why each project is used.
 
-**2. Drift fails the tests, without needing `node_modules`.**
-`__tests__/oss-credits.test.ts` compares the committed dataset with
-`package-lock.json` on name, version, license and scope, checks that every
-direct dependency is annotated, and checks that the notices file names every
-shipped package. Regenerate with `npm run oss:credits` on Linux x64: platform
-binaries are installed per platform, which changes which of them ship a
-license file but never the package set.
+**2. Drift fails the tests, byte for byte, offline.**
+`__tests__/oss-credits.test.ts` re-renders the dataset and the notices from the
+committed facts and compares them with the committed files exactly, checks that
+the facts cover the lockfile (same versions, same integrity hashes), and checks
+that every direct dependency is annotated. It reads committed files only: no
+`node_modules`, no network. `npm run oss:credits -- --check` runs the same
+comparison, and `npm run oss:credits -- --verify-registry` refetches every
+package and compares with the committed facts, for a periodic or pre-release
+audit of the registry itself.
 
 **3. "Ships to visitors" is the production closure.** A lockfile entry
 without `dev: true` is shipped. Everything else is tooling. The audit
@@ -60,11 +68,17 @@ an owner and ticket.
 expiry and 90-day cap stay. The audit now also warns 30 days ahead, naming
 the owner and ticket.
 
-**6. Notices ship with the site.** `public/third-party-notices.txt` carries
-each shipped package's copyright lines and license text, deduplicated by
-identical text, plus Apache-2.0 `NOTICE` files (section 4(d)). Packages that
-distribute no license file are listed by SPDX identifier. The audit fails when
-a shipped package is missing from the file.
+**6. Notices ship with the site, with a full text for every package.**
+`public/third-party-notices.txt` carries each shipped package's copyright lines
+and license text, deduplicated by identical text, plus Apache-2.0 `NOTICE`
+files (section 4(d)). A package that ships no license file gets a text in this
+order, and generation fails if none applies: the same package family's parent
+text (`LICENSE_TEXT_INHERITANCE`, for example the rollup and Next.js platform
+binaries), then the SPDX template for its declared license with the copyright
+holder from its package metadata (`LICENSE_HOLDER_OVERRIDES` for the few with
+no author). There is no identifier-only exemption. The audit fails when a
+shipped package does not sit under a license text of real length, so a name or
+an SPDX identifier alone never satisfies it.
 
 **7. The `/acknowledgments` page is static.** It renders from the committed
 dataset: no database, no network, no client fetch for the main content. It

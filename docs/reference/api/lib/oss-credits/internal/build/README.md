@@ -10,7 +10,5 @@
 
 - [buildCreditsDataset](functions/buildCreditsDataset.md)
 - [countByLicense](functions/countByLicense.md)
-- [diffCreditsAgainstLockfile](functions/diffCreditsAgainstLockfile.md)
 - [findUnannotatedDirect](functions/findUnannotatedDirect.md)
 - [groupDirectRuntimeByPurpose](functions/groupDirectRuntimeByPurpose.md)
-- [isDriftFree](functions/isDriftFree.md)

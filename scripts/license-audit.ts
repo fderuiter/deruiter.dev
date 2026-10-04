@@ -6,6 +6,10 @@
 
 import fs from "fs";
 import path from "path";
+import {
+  listNoticedPackages,
+  MIN_LICENSE_BODY_CHARS,
+} from "../lib/oss-credits";
 
 export interface LicenseException {
   packageName: string;
@@ -431,9 +435,12 @@ export function runLicenseAudit(options?: {
   const noticesExist = fs.existsSync(noticesPath);
   let noticesMissing: string[] = [];
   if (noticesExist) {
-    const notices = fs.readFileSync(noticesPath, "utf-8");
+    // A package counts as noticed only when it sits under a real license text.
+    // Being named somewhere in the file, or listed by SPDX identifier alone,
+    // does not satisfy the license's requirement to reproduce the text.
+    const noticed = listNoticedPackages(fs.readFileSync(noticesPath, "utf-8"));
     noticesMissing = [...shippedKeys]
-      .filter((k) => !notices.includes(k))
+      .filter((k) => (noticed.get(k) ?? 0) < MIN_LICENSE_BODY_CHARS)
       .sort();
   } else if (options?.requireNotices) {
     noticesMissing = [...shippedKeys].sort();

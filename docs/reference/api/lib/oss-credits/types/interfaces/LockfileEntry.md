@@ -16,6 +16,14 @@ Subset of a lockfile entry the builder reads.
 
 ***
 
+### integrity?
+
+> `optional` **integrity?**: `string`
+
+Subresource integrity hash of that tarball.
+
+***
+
 ### license?
 
 > `optional` **license?**: `string`
@@ -25,6 +33,14 @@ Subset of a lockfile entry the builder reads.
 ### link?
 
 > `optional` **link?**: `boolean`
+
+***
+
+### resolved?
+
+> `optional` **resolved?**: `string`
+
+Registry tarball URL; locates the package in the registry.
 
 ***
 

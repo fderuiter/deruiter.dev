@@ -8,6 +8,14 @@
 
 ## Properties
 
+### label?
+
+> `optional` **label?**: `string`
+
+Distinguishes several texts for one package, for example the file name.
+
+***
+
 ### license
 
 > **license**: `string`

@@ -9,6 +9,7 @@ import {
   shippedCodeExceptions,
   type LicenseException,
 } from "../scripts/license-audit";
+import { renderThirdPartyNotices } from "../lib/oss-credits";
 
 const NOW = new Date("2026-10-03T12:00:00Z");
 
@@ -134,23 +135,72 @@ describe("license audit: notices", () => {
     "node_modules/b": { version: "2.0.0", license: "ISC" },
     "node_modules/dev-only": { version: "1.0.0", license: "MIT", dev: true },
   };
+  const LICENSE_BODY =
+    "Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files, to deal in the Software without restriction.";
+  const notices = (...entries: [string, string][]) =>
+    renderThirdPartyNotices(
+      entries.map(([name, version]) => ({
+        name,
+        version,
+        license: "MIT",
+        licenseText: `Copyright (c) Someone\n\n${LICENSE_BODY}`,
+      }))
+    );
 
-  it("passes when every shipped package is listed", () => {
-    const dir = workspace({ lock, notices: "a@1.0.0 (MIT)\nb@2.0.0 (ISC)\n" });
+  it("passes when every shipped package sits under a license text", () => {
+    const dir = workspace({
+      lock,
+      notices: notices(["a", "1.0.0"], ["b", "2.0.0"]),
+    });
     const report = runLicenseAudit({ workspaceRoot: dir, now: NOW });
     expect(report.noticesMissing).toEqual([]);
     expect(report.passed).toBe(true);
   });
 
   it("fails and names a shipped package missing from the notices", () => {
-    const dir = workspace({ lock, notices: "a@1.0.0 (MIT)\n" });
+    const dir = workspace({ lock, notices: notices(["a", "1.0.0"]) });
     const report = runLicenseAudit({ workspaceRoot: dir, now: NOW });
     expect(report.noticesMissing).toEqual(["b@2.0.0"]);
     expect(report.passed).toBe(false);
   });
 
+  it("fails a package that is only listed by SPDX identifier", () => {
+    // The shape the first generator produced: named, linked, no license text.
+    const identifierOnly = [
+      notices(["a", "1.0.0"]),
+      "PACKAGES THAT DISTRIBUTE NO LICENSE FILE",
+      "",
+      "b@2.0.0 (ISC)",
+      "",
+    ].join("\n");
+    const dir = workspace({ lock, notices: identifierOnly });
+    const report = runLicenseAudit({ workspaceRoot: dir, now: NOW });
+    expect(report.noticesMissing).toEqual(["b@2.0.0"]);
+    expect(report.passed).toBe(false);
+  });
+
+  it("fails a package whose entry has a heading but no text", () => {
+    const hollow = [
+      notices(["a", "1.0.0"]),
+      "=".repeat(78),
+      "LICENSE TEXT 2 of 2, applies to 1 package(s):",
+      "",
+      "- b@2.0.0 (ISC)",
+      "",
+      "ISC",
+      "",
+    ].join("\n");
+    const dir = workspace({ lock, notices: hollow });
+    expect(
+      runLicenseAudit({ workspaceRoot: dir, now: NOW }).noticesMissing
+    ).toEqual(["b@2.0.0"]);
+  });
+
   it("does not require dev-only packages in the notices", () => {
-    const dir = workspace({ lock, notices: "a@1.0.0\nb@2.0.0\n" });
+    const dir = workspace({
+      lock,
+      notices: notices(["a", "1.0.0"], ["b", "2.0.0"]),
+    });
     expect(
       runLicenseAudit({ workspaceRoot: dir, now: NOW }).noticesMissing
     ).toEqual([]);

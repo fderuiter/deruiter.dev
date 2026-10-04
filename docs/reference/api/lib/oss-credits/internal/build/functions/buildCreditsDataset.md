@@ -8,9 +8,9 @@
 
 > **buildCreditsDataset**(`input`): [`CreditsDataset`](../../../types/interfaces/CreditsDataset.md)
 
-Build the credits dataset from a parsed lockfile. Pure: callers supply the
-installed metadata reader so the module never touches the filesystem.
-When a package is installed at several versions, each version is listed.
+Build the credits dataset from a parsed lockfile and the committed registry
+facts. Pure: it never touches the filesystem or the network. When a package
+is installed at several versions, each version is listed.
 
 ## Parameters
 
@@ -20,13 +20,13 @@ When a package is installed at several versions, each version is listed.
 
 `Record`\<`string`, [`DirectAnnotation`](../../../types/interfaces/DirectAnnotation.md)\>
 
+#### facts
+
+[`FactsStore`](../../../types/interfaces/FactsStore.md)
+
 #### lockfile
 
 [`LockfileShape`](../../../types/interfaces/LockfileShape.md)
-
-#### readMeta
-
-(`lockPath`) => [`PackageMeta`](../../../types/interfaces/PackageMeta.md) \| `null`
 
 #### root
 

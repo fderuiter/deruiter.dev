@@ -14,7 +14,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/quick-lru",
       "repository": "https://github.com/sindresorhus/quick-lru"
     },
     {
@@ -41,7 +41,7 @@
       "license": "MPL-2.0",
       "scope": "tooling",
       "direct": true,
-      "homepage": null,
+      "homepage": "https://github.com/dequelabs/axe-core-npm",
       "repository": "https://github.com/dequelabs/axe-core-npm",
       "group": "Testing",
       "reason": "Automated accessibility checks in the browser."
@@ -538,7 +538,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/bcoe/v8-coverage",
       "repository": "https://github.com/bcoe/v8-coverage"
     },
     {
@@ -556,7 +556,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": true,
-      "homepage": null,
+      "homepage": "https://github.com/chenglou/pretext",
       "repository": "https://github.com/chenglou/pretext",
       "group": "Interface and motion",
       "reason": "Measures and lays out text without DOM reflow, for zero layout shift."
@@ -567,7 +567,7 @@
       "license": "Apache-2.0",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/Chevrotain/chevrotain",
       "repository": "https://github.com/Chevrotain/chevrotain"
     },
     {
@@ -576,7 +576,7 @@
       "license": "Apache-2.0",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/Chevrotain/chevrotain",
       "repository": "https://github.com/Chevrotain/chevrotain"
     },
     {
@@ -585,7 +585,7 @@
       "license": "Apache-2.0",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/Chevrotain/chevrotain",
       "repository": "https://github.com/Chevrotain/chevrotain"
     },
     {
@@ -603,7 +603,7 @@
       "license": "Apache-2.0",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/Chevrotain/chevrotain",
       "repository": "https://github.com/Chevrotain/chevrotain"
     },
     {
@@ -641,7 +641,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/clerk/javascript",
       "repository": "https://github.com/clerk/javascript"
     },
     {
@@ -650,7 +650,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/clerk/javascript",
       "repository": "https://github.com/clerk/javascript"
     },
     {
@@ -787,8 +787,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/evanw/esbuild",
+      "repository": "https://github.com/evanw/esbuild"
     },
     {
       "name": "@esbuild/android-arm",
@@ -796,8 +796,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/evanw/esbuild",
+      "repository": "https://github.com/evanw/esbuild"
     },
     {
       "name": "@esbuild/android-arm64",
@@ -805,8 +805,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/evanw/esbuild",
+      "repository": "https://github.com/evanw/esbuild"
     },
     {
       "name": "@esbuild/android-x64",
@@ -814,8 +814,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/evanw/esbuild",
+      "repository": "https://github.com/evanw/esbuild"
     },
     {
       "name": "@esbuild/darwin-arm64",
@@ -823,8 +823,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/evanw/esbuild",
+      "repository": "https://github.com/evanw/esbuild"
     },
     {
       "name": "@esbuild/darwin-x64",
@@ -832,8 +832,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/evanw/esbuild",
+      "repository": "https://github.com/evanw/esbuild"
     },
     {
       "name": "@esbuild/freebsd-arm64",
@@ -841,8 +841,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/evanw/esbuild",
+      "repository": "https://github.com/evanw/esbuild"
     },
     {
       "name": "@esbuild/freebsd-x64",
@@ -850,8 +850,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/evanw/esbuild",
+      "repository": "https://github.com/evanw/esbuild"
     },
     {
       "name": "@esbuild/linux-arm",
@@ -859,8 +859,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/evanw/esbuild",
+      "repository": "https://github.com/evanw/esbuild"
     },
     {
       "name": "@esbuild/linux-arm64",
@@ -868,8 +868,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/evanw/esbuild",
+      "repository": "https://github.com/evanw/esbuild"
     },
     {
       "name": "@esbuild/linux-ia32",
@@ -877,8 +877,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/evanw/esbuild",
+      "repository": "https://github.com/evanw/esbuild"
     },
     {
       "name": "@esbuild/linux-loong64",
@@ -886,8 +886,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/evanw/esbuild",
+      "repository": "https://github.com/evanw/esbuild"
     },
     {
       "name": "@esbuild/linux-mips64el",
@@ -895,8 +895,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/evanw/esbuild",
+      "repository": "https://github.com/evanw/esbuild"
     },
     {
       "name": "@esbuild/linux-ppc64",
@@ -904,8 +904,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/evanw/esbuild",
+      "repository": "https://github.com/evanw/esbuild"
     },
     {
       "name": "@esbuild/linux-riscv64",
@@ -913,8 +913,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/evanw/esbuild",
+      "repository": "https://github.com/evanw/esbuild"
     },
     {
       "name": "@esbuild/linux-s390x",
@@ -922,8 +922,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/evanw/esbuild",
+      "repository": "https://github.com/evanw/esbuild"
     },
     {
       "name": "@esbuild/linux-x64",
@@ -931,7 +931,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/evanw/esbuild",
       "repository": "https://github.com/evanw/esbuild"
     },
     {
@@ -940,8 +940,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/evanw/esbuild",
+      "repository": "https://github.com/evanw/esbuild"
     },
     {
       "name": "@esbuild/netbsd-x64",
@@ -949,8 +949,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/evanw/esbuild",
+      "repository": "https://github.com/evanw/esbuild"
     },
     {
       "name": "@esbuild/openbsd-arm64",
@@ -958,8 +958,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/evanw/esbuild",
+      "repository": "https://github.com/evanw/esbuild"
     },
     {
       "name": "@esbuild/openbsd-x64",
@@ -967,8 +967,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/evanw/esbuild",
+      "repository": "https://github.com/evanw/esbuild"
     },
     {
       "name": "@esbuild/openharmony-arm64",
@@ -976,8 +976,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/evanw/esbuild",
+      "repository": "https://github.com/evanw/esbuild"
     },
     {
       "name": "@esbuild/sunos-x64",
@@ -985,8 +985,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/evanw/esbuild",
+      "repository": "https://github.com/evanw/esbuild"
     },
     {
       "name": "@esbuild/win32-arm64",
@@ -994,8 +994,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/evanw/esbuild",
+      "repository": "https://github.com/evanw/esbuild"
     },
     {
       "name": "@esbuild/win32-ia32",
@@ -1003,8 +1003,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/evanw/esbuild",
+      "repository": "https://github.com/evanw/esbuild"
     },
     {
       "name": "@esbuild/win32-x64",
@@ -1012,8 +1012,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/evanw/esbuild",
+      "repository": "https://github.com/evanw/esbuild"
     },
     {
       "name": "@eslint-community/eslint-utils",
@@ -1113,7 +1113,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/Gerrit0/mini-shiki",
       "repository": "https://github.com/Gerrit0/mini-shiki"
     },
     {
@@ -1149,7 +1149,7 @@
       "license": "Apache-2.0",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/humanwhocodes/module-importer",
       "repository": "https://github.com/humanwhocodes/module-importer"
     },
     {
@@ -1158,7 +1158,7 @@
       "license": "Apache-2.0",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/humanwhocodes/retry",
       "repository": "https://github.com/humanwhocodes/retry"
     },
     {
@@ -1185,7 +1185,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/lovell/colour",
       "repository": "https://github.com/lovell/colour"
     },
     {
@@ -1194,8 +1194,8 @@
       "license": "Apache-2.0",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://sharp.pixelplumbing.com",
+      "repository": "https://github.com/lovell/sharp"
     },
     {
       "name": "@img/sharp-darwin-x64",
@@ -1203,8 +1203,8 @@
       "license": "Apache-2.0",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://sharp.pixelplumbing.com",
+      "repository": "https://github.com/lovell/sharp"
     },
     {
       "name": "@img/sharp-freebsd-wasm32",
@@ -1212,8 +1212,8 @@
       "license": "Apache-2.0",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://sharp.pixelplumbing.com",
+      "repository": "https://github.com/lovell/sharp"
     },
     {
       "name": "@img/sharp-libvips-darwin-arm64",
@@ -1221,8 +1221,8 @@
       "license": "LGPL-3.0-or-later",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://sharp.pixelplumbing.com",
+      "repository": "https://github.com/lovell/sharp-libvips"
     },
     {
       "name": "@img/sharp-libvips-darwin-x64",
@@ -1230,8 +1230,8 @@
       "license": "LGPL-3.0-or-later",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://sharp.pixelplumbing.com",
+      "repository": "https://github.com/lovell/sharp-libvips"
     },
     {
       "name": "@img/sharp-libvips-linux-arm",
@@ -1239,8 +1239,8 @@
       "license": "LGPL-3.0-or-later",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://sharp.pixelplumbing.com",
+      "repository": "https://github.com/lovell/sharp-libvips"
     },
     {
       "name": "@img/sharp-libvips-linux-arm64",
@@ -1248,8 +1248,8 @@
       "license": "LGPL-3.0-or-later",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://sharp.pixelplumbing.com",
+      "repository": "https://github.com/lovell/sharp-libvips"
     },
     {
       "name": "@img/sharp-libvips-linux-ppc64",
@@ -1257,8 +1257,8 @@
       "license": "LGPL-3.0-or-later",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://sharp.pixelplumbing.com",
+      "repository": "https://github.com/lovell/sharp-libvips"
     },
     {
       "name": "@img/sharp-libvips-linux-riscv64",
@@ -1266,8 +1266,8 @@
       "license": "LGPL-3.0-or-later",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://sharp.pixelplumbing.com",
+      "repository": "https://github.com/lovell/sharp-libvips"
     },
     {
       "name": "@img/sharp-libvips-linux-s390x",
@@ -1275,8 +1275,8 @@
       "license": "LGPL-3.0-or-later",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://sharp.pixelplumbing.com",
+      "repository": "https://github.com/lovell/sharp-libvips"
     },
     {
       "name": "@img/sharp-libvips-linux-x64",
@@ -1293,8 +1293,8 @@
       "license": "LGPL-3.0-or-later",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://sharp.pixelplumbing.com",
+      "repository": "https://github.com/lovell/sharp-libvips"
     },
     {
       "name": "@img/sharp-libvips-linuxmusl-x64",
@@ -1311,8 +1311,8 @@
       "license": "Apache-2.0",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://sharp.pixelplumbing.com",
+      "repository": "https://github.com/lovell/sharp"
     },
     {
       "name": "@img/sharp-linux-arm64",
@@ -1320,8 +1320,8 @@
       "license": "Apache-2.0",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://sharp.pixelplumbing.com",
+      "repository": "https://github.com/lovell/sharp"
     },
     {
       "name": "@img/sharp-linux-ppc64",
@@ -1329,8 +1329,8 @@
       "license": "Apache-2.0",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://sharp.pixelplumbing.com",
+      "repository": "https://github.com/lovell/sharp"
     },
     {
       "name": "@img/sharp-linux-riscv64",
@@ -1338,8 +1338,8 @@
       "license": "Apache-2.0",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://sharp.pixelplumbing.com",
+      "repository": "https://github.com/lovell/sharp"
     },
     {
       "name": "@img/sharp-linux-s390x",
@@ -1347,8 +1347,8 @@
       "license": "Apache-2.0",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://sharp.pixelplumbing.com",
+      "repository": "https://github.com/lovell/sharp"
     },
     {
       "name": "@img/sharp-linux-x64",
@@ -1365,8 +1365,8 @@
       "license": "Apache-2.0",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://sharp.pixelplumbing.com",
+      "repository": "https://github.com/lovell/sharp"
     },
     {
       "name": "@img/sharp-linuxmusl-x64",
@@ -1392,8 +1392,8 @@
       "license": "Apache-2.0",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://sharp.pixelplumbing.com",
+      "repository": "https://github.com/lovell/sharp"
     },
     {
       "name": "@img/sharp-win32-arm64",
@@ -1401,8 +1401,8 @@
       "license": "Apache-2.0 AND LGPL-3.0-or-later",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://sharp.pixelplumbing.com",
+      "repository": "https://github.com/lovell/sharp"
     },
     {
       "name": "@img/sharp-win32-ia32",
@@ -1410,8 +1410,8 @@
       "license": "Apache-2.0 AND LGPL-3.0-or-later",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://sharp.pixelplumbing.com",
+      "repository": "https://github.com/lovell/sharp"
     },
     {
       "name": "@img/sharp-win32-x64",
@@ -1419,8 +1419,8 @@
       "license": "Apache-2.0 AND LGPL-3.0-or-later",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://sharp.pixelplumbing.com",
+      "repository": "https://github.com/lovell/sharp"
     },
     {
       "name": "@inquirer/ansi",
@@ -1491,7 +1491,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/SBoudrias/Inquirer.js",
       "repository": "https://github.com/SBoudrias/Inquirer.js"
     },
     {
@@ -1563,7 +1563,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/SBoudrias/Inquirer.js",
       "repository": "https://github.com/SBoudrias/Inquirer.js"
     },
     {
@@ -1599,7 +1599,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/jridgewell/resolve-uri",
       "repository": "https://github.com/jridgewell/resolve-uri"
     },
     {
@@ -1655,7 +1655,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/vercel/next.js",
       "repository": "https://github.com/vercel/next.js"
     },
     {
@@ -1664,7 +1664,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/vercel/next.js",
       "repository": "https://github.com/vercel/next.js"
     },
     {
@@ -1673,8 +1673,8 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/vercel/next.js",
+      "repository": "https://github.com/vercel/next.js"
     },
     {
       "name": "@next/swc-darwin-x64",
@@ -1682,8 +1682,8 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/vercel/next.js",
+      "repository": "https://github.com/vercel/next.js"
     },
     {
       "name": "@next/swc-linux-arm64-gnu",
@@ -1691,8 +1691,8 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/vercel/next.js",
+      "repository": "https://github.com/vercel/next.js"
     },
     {
       "name": "@next/swc-linux-arm64-musl",
@@ -1700,8 +1700,8 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/vercel/next.js",
+      "repository": "https://github.com/vercel/next.js"
     },
     {
       "name": "@next/swc-linux-x64-gnu",
@@ -1709,7 +1709,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/vercel/next.js",
       "repository": "https://github.com/vercel/next.js"
     },
     {
@@ -1718,7 +1718,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/vercel/next.js",
       "repository": "https://github.com/vercel/next.js"
     },
     {
@@ -1727,8 +1727,8 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/vercel/next.js",
+      "repository": "https://github.com/vercel/next.js"
     },
     {
       "name": "@next/swc-win32-x64-msvc",
@@ -1736,8 +1736,8 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/vercel/next.js",
+      "repository": "https://github.com/vercel/next.js"
     },
     {
       "name": "@nodelib/fs.scandir",
@@ -1772,7 +1772,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/SukkaW/nolyfill",
       "repository": "https://github.com/SukkaW/nolyfill"
     },
     {
@@ -1790,8 +1790,8 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://oxc.rs/docs/guide/usage/parser",
+      "repository": "https://github.com/oxc-project/oxc"
     },
     {
       "name": "@oxc-parser/binding-android-arm64",
@@ -1799,8 +1799,8 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://oxc.rs/docs/guide/usage/parser",
+      "repository": "https://github.com/oxc-project/oxc"
     },
     {
       "name": "@oxc-parser/binding-darwin-arm64",
@@ -1808,8 +1808,8 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://oxc.rs/docs/guide/usage/parser",
+      "repository": "https://github.com/oxc-project/oxc"
     },
     {
       "name": "@oxc-parser/binding-darwin-x64",
@@ -1817,8 +1817,8 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://oxc.rs/docs/guide/usage/parser",
+      "repository": "https://github.com/oxc-project/oxc"
     },
     {
       "name": "@oxc-parser/binding-freebsd-x64",
@@ -1826,8 +1826,8 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://oxc.rs/docs/guide/usage/parser",
+      "repository": "https://github.com/oxc-project/oxc"
     },
     {
       "name": "@oxc-parser/binding-linux-arm-gnueabihf",
@@ -1835,8 +1835,8 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://oxc.rs/docs/guide/usage/parser",
+      "repository": "https://github.com/oxc-project/oxc"
     },
     {
       "name": "@oxc-parser/binding-linux-arm-musleabihf",
@@ -1844,8 +1844,8 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://oxc.rs/docs/guide/usage/parser",
+      "repository": "https://github.com/oxc-project/oxc"
     },
     {
       "name": "@oxc-parser/binding-linux-arm64-gnu",
@@ -1853,8 +1853,8 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://oxc.rs/docs/guide/usage/parser",
+      "repository": "https://github.com/oxc-project/oxc"
     },
     {
       "name": "@oxc-parser/binding-linux-arm64-musl",
@@ -1862,8 +1862,8 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://oxc.rs/docs/guide/usage/parser",
+      "repository": "https://github.com/oxc-project/oxc"
     },
     {
       "name": "@oxc-parser/binding-linux-ppc64-gnu",
@@ -1871,8 +1871,8 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://oxc.rs/docs/guide/usage/parser",
+      "repository": "https://github.com/oxc-project/oxc"
     },
     {
       "name": "@oxc-parser/binding-linux-riscv64-gnu",
@@ -1880,8 +1880,8 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://oxc.rs/docs/guide/usage/parser",
+      "repository": "https://github.com/oxc-project/oxc"
     },
     {
       "name": "@oxc-parser/binding-linux-riscv64-musl",
@@ -1889,8 +1889,8 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://oxc.rs/docs/guide/usage/parser",
+      "repository": "https://github.com/oxc-project/oxc"
     },
     {
       "name": "@oxc-parser/binding-linux-s390x-gnu",
@@ -1898,8 +1898,8 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://oxc.rs/docs/guide/usage/parser",
+      "repository": "https://github.com/oxc-project/oxc"
     },
     {
       "name": "@oxc-parser/binding-linux-x64-gnu",
@@ -1925,8 +1925,8 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://oxc.rs/docs/guide/usage/parser",
+      "repository": "https://github.com/oxc-project/oxc"
     },
     {
       "name": "@oxc-parser/binding-win32-arm64-msvc",
@@ -1934,8 +1934,8 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://oxc.rs/docs/guide/usage/parser",
+      "repository": "https://github.com/oxc-project/oxc"
     },
     {
       "name": "@oxc-parser/binding-win32-ia32-msvc",
@@ -1943,8 +1943,8 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://oxc.rs/docs/guide/usage/parser",
+      "repository": "https://github.com/oxc-project/oxc"
     },
     {
       "name": "@oxc-parser/binding-win32-x64-msvc",
@@ -1952,8 +1952,8 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://oxc.rs/docs/guide/usage/parser",
+      "repository": "https://github.com/oxc-project/oxc"
     },
     {
       "name": "@oxc-project/types",
@@ -2075,7 +2075,7 @@
       "license": "Apache-2.0",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/prisma/engines-wrapper",
       "repository": "https://github.com/prisma/engines-wrapper"
     },
     {
@@ -2111,7 +2111,7 @@
       "license": "Apache-2.0",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/prisma/prisma",
       "repository": "https://github.com/prisma/prisma"
     },
     {
@@ -2129,7 +2129,7 @@
       "license": "Apache-2.0",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/prisma/studio",
       "repository": "https://github.com/prisma/studio"
     },
     {
@@ -2210,8 +2210,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://rolldown.rs",
+      "repository": "https://github.com/rolldown/rolldown"
     },
     {
       "name": "@rolldown/binding-android-arm64",
@@ -2219,8 +2219,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://rolldown.rs",
+      "repository": "https://github.com/rolldown/rolldown"
     },
     {
       "name": "@rolldown/binding-darwin-arm64",
@@ -2228,8 +2228,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://rolldown.rs",
+      "repository": "https://github.com/rolldown/rolldown"
     },
     {
       "name": "@rolldown/binding-darwin-x64",
@@ -2237,8 +2237,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://rolldown.rs",
+      "repository": "https://github.com/rolldown/rolldown"
     },
     {
       "name": "@rolldown/binding-freebsd-x64",
@@ -2246,8 +2246,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://rolldown.rs",
+      "repository": "https://github.com/rolldown/rolldown"
     },
     {
       "name": "@rolldown/binding-linux-arm-gnueabihf",
@@ -2255,8 +2255,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://rolldown.rs",
+      "repository": "https://github.com/rolldown/rolldown"
     },
     {
       "name": "@rolldown/binding-linux-arm64-gnu",
@@ -2264,8 +2264,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://rolldown.rs",
+      "repository": "https://github.com/rolldown/rolldown"
     },
     {
       "name": "@rolldown/binding-linux-arm64-musl",
@@ -2273,8 +2273,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://rolldown.rs",
+      "repository": "https://github.com/rolldown/rolldown"
     },
     {
       "name": "@rolldown/binding-linux-ppc64-gnu",
@@ -2282,8 +2282,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://rolldown.rs",
+      "repository": "https://github.com/rolldown/rolldown"
     },
     {
       "name": "@rolldown/binding-linux-s390x-gnu",
@@ -2291,8 +2291,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://rolldown.rs",
+      "repository": "https://github.com/rolldown/rolldown"
     },
     {
       "name": "@rolldown/binding-linux-x64-gnu",
@@ -2318,8 +2318,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://rolldown.rs",
+      "repository": "https://github.com/rolldown/rolldown"
     },
     {
       "name": "@rolldown/binding-win32-arm64-msvc",
@@ -2327,8 +2327,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://rolldown.rs",
+      "repository": "https://github.com/rolldown/rolldown"
     },
     {
       "name": "@rolldown/binding-win32-x64-msvc",
@@ -2336,8 +2336,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://rolldown.rs",
+      "repository": "https://github.com/rolldown/rolldown"
     },
     {
       "name": "@rolldown/pluginutils",
@@ -2372,8 +2372,8 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://rollupjs.org",
+      "repository": "https://github.com/rollup/rollup"
     },
     {
       "name": "@rollup/rollup-android-arm64",
@@ -2381,8 +2381,8 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://rollupjs.org",
+      "repository": "https://github.com/rollup/rollup"
     },
     {
       "name": "@rollup/rollup-darwin-arm64",
@@ -2390,8 +2390,8 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://rollupjs.org",
+      "repository": "https://github.com/rollup/rollup"
     },
     {
       "name": "@rollup/rollup-darwin-x64",
@@ -2399,8 +2399,8 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://rollupjs.org",
+      "repository": "https://github.com/rollup/rollup"
     },
     {
       "name": "@rollup/rollup-freebsd-arm64",
@@ -2408,8 +2408,8 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://rollupjs.org",
+      "repository": "https://github.com/rollup/rollup"
     },
     {
       "name": "@rollup/rollup-freebsd-x64",
@@ -2417,8 +2417,8 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://rollupjs.org",
+      "repository": "https://github.com/rollup/rollup"
     },
     {
       "name": "@rollup/rollup-linux-arm-gnueabihf",
@@ -2426,8 +2426,8 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://rollupjs.org",
+      "repository": "https://github.com/rollup/rollup"
     },
     {
       "name": "@rollup/rollup-linux-arm-musleabihf",
@@ -2435,8 +2435,8 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://rollupjs.org",
+      "repository": "https://github.com/rollup/rollup"
     },
     {
       "name": "@rollup/rollup-linux-arm64-gnu",
@@ -2444,8 +2444,8 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://rollupjs.org",
+      "repository": "https://github.com/rollup/rollup"
     },
     {
       "name": "@rollup/rollup-linux-arm64-musl",
@@ -2453,8 +2453,8 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://rollupjs.org",
+      "repository": "https://github.com/rollup/rollup"
     },
     {
       "name": "@rollup/rollup-linux-loong64-gnu",
@@ -2462,8 +2462,8 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://rollupjs.org",
+      "repository": "https://github.com/rollup/rollup"
     },
     {
       "name": "@rollup/rollup-linux-loong64-musl",
@@ -2471,8 +2471,8 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://rollupjs.org",
+      "repository": "https://github.com/rollup/rollup"
     },
     {
       "name": "@rollup/rollup-linux-ppc64-gnu",
@@ -2480,8 +2480,8 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://rollupjs.org",
+      "repository": "https://github.com/rollup/rollup"
     },
     {
       "name": "@rollup/rollup-linux-ppc64-musl",
@@ -2489,8 +2489,8 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://rollupjs.org",
+      "repository": "https://github.com/rollup/rollup"
     },
     {
       "name": "@rollup/rollup-linux-riscv64-gnu",
@@ -2498,8 +2498,8 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://rollupjs.org",
+      "repository": "https://github.com/rollup/rollup"
     },
     {
       "name": "@rollup/rollup-linux-riscv64-musl",
@@ -2507,8 +2507,8 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://rollupjs.org",
+      "repository": "https://github.com/rollup/rollup"
     },
     {
       "name": "@rollup/rollup-linux-s390x-gnu",
@@ -2516,8 +2516,8 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://rollupjs.org",
+      "repository": "https://github.com/rollup/rollup"
     },
     {
       "name": "@rollup/rollup-linux-x64-gnu",
@@ -2543,8 +2543,8 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://rollupjs.org",
+      "repository": "https://github.com/rollup/rollup"
     },
     {
       "name": "@rollup/rollup-openharmony-arm64",
@@ -2552,8 +2552,8 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://rollupjs.org",
+      "repository": "https://github.com/rollup/rollup"
     },
     {
       "name": "@rollup/rollup-win32-arm64-msvc",
@@ -2561,8 +2561,8 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://rollupjs.org",
+      "repository": "https://github.com/rollup/rollup"
     },
     {
       "name": "@rollup/rollup-win32-ia32-msvc",
@@ -2570,8 +2570,8 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://rollupjs.org",
+      "repository": "https://github.com/rollup/rollup"
     },
     {
       "name": "@rollup/rollup-win32-x64-gnu",
@@ -2579,8 +2579,8 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://rollupjs.org",
+      "repository": "https://github.com/rollup/rollup"
     },
     {
       "name": "@rollup/rollup-win32-x64-msvc",
@@ -2588,8 +2588,8 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://rollupjs.org",
+      "repository": "https://github.com/rollup/rollup"
     },
     {
       "name": "@rtsao/scc",
@@ -2597,7 +2597,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/rtsao/scc",
       "repository": "https://github.com/rtsao/scc"
     },
     {
@@ -2846,7 +2846,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/shikijs/vscode-textmate",
       "repository": "https://github.com/shikijs/vscode-textmate"
     },
     {
@@ -2855,7 +2855,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/merge-streams",
       "repository": "https://github.com/sindresorhus/merge-streams"
     },
     {
@@ -2969,7 +2969,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/tailwindlabs/tailwindcss",
       "repository": "https://github.com/tailwindlabs/tailwindcss"
     },
     {
@@ -2978,8 +2978,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/tailwindlabs/tailwindcss",
+      "repository": "https://github.com/tailwindlabs/tailwindcss"
     },
     {
       "name": "@tailwindcss/oxide-darwin-arm64",
@@ -2987,8 +2987,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/tailwindlabs/tailwindcss",
+      "repository": "https://github.com/tailwindlabs/tailwindcss"
     },
     {
       "name": "@tailwindcss/oxide-darwin-x64",
@@ -2996,8 +2996,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/tailwindlabs/tailwindcss",
+      "repository": "https://github.com/tailwindlabs/tailwindcss"
     },
     {
       "name": "@tailwindcss/oxide-freebsd-x64",
@@ -3005,8 +3005,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/tailwindlabs/tailwindcss",
+      "repository": "https://github.com/tailwindlabs/tailwindcss"
     },
     {
       "name": "@tailwindcss/oxide-linux-arm-gnueabihf",
@@ -3014,8 +3014,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/tailwindlabs/tailwindcss",
+      "repository": "https://github.com/tailwindlabs/tailwindcss"
     },
     {
       "name": "@tailwindcss/oxide-linux-arm64-gnu",
@@ -3023,8 +3023,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/tailwindlabs/tailwindcss",
+      "repository": "https://github.com/tailwindlabs/tailwindcss"
     },
     {
       "name": "@tailwindcss/oxide-linux-arm64-musl",
@@ -3032,8 +3032,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/tailwindlabs/tailwindcss",
+      "repository": "https://github.com/tailwindlabs/tailwindcss"
     },
     {
       "name": "@tailwindcss/oxide-linux-x64-gnu",
@@ -3041,7 +3041,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/tailwindlabs/tailwindcss",
       "repository": "https://github.com/tailwindlabs/tailwindcss"
     },
     {
@@ -3050,7 +3050,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/tailwindlabs/tailwindcss",
       "repository": "https://github.com/tailwindlabs/tailwindcss"
     },
     {
@@ -3059,8 +3059,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/tailwindlabs/tailwindcss",
+      "repository": "https://github.com/tailwindlabs/tailwindcss"
     },
     {
       "name": "@tailwindcss/oxide-win32-arm64-msvc",
@@ -3068,8 +3068,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/tailwindlabs/tailwindcss",
+      "repository": "https://github.com/tailwindlabs/tailwindcss"
     },
     {
       "name": "@tailwindcss/oxide-win32-x64-msvc",
@@ -3077,8 +3077,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/tailwindlabs/tailwindcss",
+      "repository": "https://github.com/tailwindlabs/tailwindcss"
     },
     {
       "name": "@tailwindcss/postcss",
@@ -3128,7 +3128,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": true,
-      "homepage": null,
+      "homepage": "https://github.com/total-typescript/shoehorn",
       "repository": "https://github.com/total-typescript/shoehorn",
       "group": "Testing",
       "reason": "Type-safe partial mocks in tests."
@@ -3148,7 +3148,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/toyobayashi/wasm-util",
       "repository": "https://github.com/toyobayashi/wasm-util"
     },
     {
@@ -3817,8 +3817,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/unrs/unrs-resolver",
+      "repository": "https://github.com/unrs/unrs-resolver"
     },
     {
       "name": "@unrs/resolver-binding-android-arm64",
@@ -3826,8 +3826,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/unrs/unrs-resolver",
+      "repository": "https://github.com/unrs/unrs-resolver"
     },
     {
       "name": "@unrs/resolver-binding-darwin-arm64",
@@ -3835,8 +3835,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/unrs/unrs-resolver",
+      "repository": "https://github.com/unrs/unrs-resolver"
     },
     {
       "name": "@unrs/resolver-binding-darwin-x64",
@@ -3844,8 +3844,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/unrs/unrs-resolver",
+      "repository": "https://github.com/unrs/unrs-resolver"
     },
     {
       "name": "@unrs/resolver-binding-freebsd-x64",
@@ -3853,8 +3853,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/unrs/unrs-resolver",
+      "repository": "https://github.com/unrs/unrs-resolver"
     },
     {
       "name": "@unrs/resolver-binding-linux-arm-gnueabihf",
@@ -3862,8 +3862,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/unrs/unrs-resolver",
+      "repository": "https://github.com/unrs/unrs-resolver"
     },
     {
       "name": "@unrs/resolver-binding-linux-arm-musleabihf",
@@ -3871,8 +3871,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/unrs/unrs-resolver",
+      "repository": "https://github.com/unrs/unrs-resolver"
     },
     {
       "name": "@unrs/resolver-binding-linux-arm64-gnu",
@@ -3880,8 +3880,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/unrs/unrs-resolver",
+      "repository": "https://github.com/unrs/unrs-resolver"
     },
     {
       "name": "@unrs/resolver-binding-linux-arm64-musl",
@@ -3889,8 +3889,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/unrs/unrs-resolver",
+      "repository": "https://github.com/unrs/unrs-resolver"
     },
     {
       "name": "@unrs/resolver-binding-linux-loong64-gnu",
@@ -3898,8 +3898,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/unrs/unrs-resolver",
+      "repository": "https://github.com/unrs/unrs-resolver"
     },
     {
       "name": "@unrs/resolver-binding-linux-loong64-musl",
@@ -3907,8 +3907,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/unrs/unrs-resolver",
+      "repository": "https://github.com/unrs/unrs-resolver"
     },
     {
       "name": "@unrs/resolver-binding-linux-ppc64-gnu",
@@ -3916,8 +3916,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/unrs/unrs-resolver",
+      "repository": "https://github.com/unrs/unrs-resolver"
     },
     {
       "name": "@unrs/resolver-binding-linux-riscv64-gnu",
@@ -3925,8 +3925,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/unrs/unrs-resolver",
+      "repository": "https://github.com/unrs/unrs-resolver"
     },
     {
       "name": "@unrs/resolver-binding-linux-riscv64-musl",
@@ -3934,8 +3934,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/unrs/unrs-resolver",
+      "repository": "https://github.com/unrs/unrs-resolver"
     },
     {
       "name": "@unrs/resolver-binding-linux-s390x-gnu",
@@ -3943,8 +3943,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/unrs/unrs-resolver",
+      "repository": "https://github.com/unrs/unrs-resolver"
     },
     {
       "name": "@unrs/resolver-binding-linux-x64-gnu",
@@ -3970,8 +3970,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/unrs/unrs-resolver",
+      "repository": "https://github.com/unrs/unrs-resolver"
     },
     {
       "name": "@unrs/resolver-binding-wasm32-wasi",
@@ -3979,8 +3979,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/unrs/unrs-resolver",
+      "repository": "https://github.com/unrs/unrs-resolver"
     },
     {
       "name": "@unrs/resolver-binding-win32-arm64-msvc",
@@ -3988,8 +3988,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/unrs/unrs-resolver",
+      "repository": "https://github.com/unrs/unrs-resolver"
     },
     {
       "name": "@unrs/resolver-binding-win32-ia32-msvc",
@@ -3997,8 +3997,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/unrs/unrs-resolver",
+      "repository": "https://github.com/unrs/unrs-resolver"
     },
     {
       "name": "@unrs/resolver-binding-win32-x64-msvc",
@@ -4006,8 +4006,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/unrs/unrs-resolver",
+      "repository": "https://github.com/unrs/unrs-resolver"
     },
     {
       "name": "@upsetjs/venn.js",
@@ -4066,7 +4066,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": true,
-      "homepage": null,
+      "homepage": "https://github.com/vercel/analytics",
       "repository": "https://github.com/vercel/analytics",
       "group": "Observability and delivery",
       "reason": "Privacy-friendly page analytics."
@@ -4077,7 +4077,7 @@
       "license": "Apache-2.0",
       "scope": "runtime",
       "direct": true,
-      "homepage": null,
+      "homepage": "https://github.com/vercel/speed-insights",
       "repository": "https://github.com/vercel/speed-insights",
       "group": "Observability and delivery",
       "reason": "Real-user Core Web Vitals measurement."
@@ -4088,7 +4088,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/airbnb/visx",
       "repository": "https://github.com/airbnb/visx"
     },
     {
@@ -4124,7 +4124,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/airbnb/visx",
       "repository": "https://github.com/airbnb/visx"
     },
     {
@@ -4151,7 +4151,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/airbnb/visx",
       "repository": "https://github.com/airbnb/visx"
     },
     {
@@ -4160,7 +4160,7 @@
       "license": "MIT and ISC",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/airbnb/visx",
       "repository": "https://github.com/airbnb/visx"
     },
     {
@@ -4254,7 +4254,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/xyflow/xyflow",
       "repository": "https://github.com/xyflow/xyflow"
     },
     {
@@ -4281,7 +4281,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sderosiaux/acorn-jsx-walk",
       "repository": "https://github.com/sderosiaux/acorn-jsx-walk"
     },
     {
@@ -4308,7 +4308,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/TooTallNate/proxy-agents",
       "repository": "https://github.com/TooTallNate/proxy-agents"
     },
     {
@@ -4344,7 +4344,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/ansi-escapes",
       "repository": "https://github.com/sindresorhus/ansi-escapes"
     },
     {
@@ -4353,7 +4353,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/chalk/ansi-regex",
       "repository": "https://github.com/chalk/ansi-regex"
     },
     {
@@ -4362,7 +4362,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/chalk/ansi-regex",
       "repository": "https://github.com/chalk/ansi-regex"
     },
     {
@@ -4371,7 +4371,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/chalk/ansi-styles",
       "repository": "https://github.com/chalk/ansi-styles"
     },
     {
@@ -4380,7 +4380,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/chalk/ansi-styles",
       "repository": "https://github.com/chalk/ansi-styles"
     },
     {
@@ -4389,7 +4389,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/chalk/ansi-styles",
       "repository": "https://github.com/chalk/ansi-styles"
     },
     {
@@ -4398,7 +4398,7 @@
       "license": "Python-2.0",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/nodeca/argparse",
       "repository": "https://github.com/nodeca/argparse"
     },
     {
@@ -4434,7 +4434,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/es-shims/array-includes",
       "repository": "https://github.com/es-shims/array-includes"
     },
     {
@@ -4461,7 +4461,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/es-shims/Array.prototype.flat",
       "repository": "https://github.com/es-shims/Array.prototype.flat"
     },
     {
@@ -4470,7 +4470,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/es-shims/Array.prototype.flatMap",
       "repository": "https://github.com/es-shims/Array.prototype.flatMap"
     },
     {
@@ -4497,7 +4497,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/chaijs/assertion-error",
       "repository": "https://github.com/chaijs/assertion-error"
     },
     {
@@ -4542,7 +4542,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/mysqljs/aws-ssl-profiles",
       "repository": "https://github.com/mysqljs/aws-ssl-profiles"
     },
     {
@@ -4578,7 +4578,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/juliangruber/balanced-match",
       "repository": "https://github.com/juliangruber/balanced-match"
     },
     {
@@ -4596,7 +4596,7 @@
       "license": "Apache-2.0",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/web-platform-dx/baseline-browser-mapping",
       "repository": "https://github.com/web-platform-dx/baseline-browser-mapping"
     },
     {
@@ -4623,7 +4623,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/juliangruber/brace-expansion",
       "repository": "https://github.com/juliangruber/brace-expansion"
     },
     {
@@ -4641,7 +4641,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/browserslist/browserslist",
       "repository": "https://github.com/browserslist/browserslist"
     },
     {
@@ -4650,7 +4650,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/unjs/c12",
       "repository": "https://github.com/unjs/c12"
     },
     {
@@ -4686,7 +4686,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/callsites",
       "repository": "https://github.com/sindresorhus/callsites"
     },
     {
@@ -4695,7 +4695,7 @@
       "license": "CC-BY-4.0",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/browserslist/caniuse-lite",
       "repository": "https://github.com/browserslist/caniuse-lite"
     },
     {
@@ -4704,7 +4704,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/canvg/canvg",
       "repository": "https://github.com/canvg/canvg"
     },
     {
@@ -4722,7 +4722,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/chalk/chalk",
       "repository": "https://github.com/chalk/chalk"
     },
     {
@@ -4731,7 +4731,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/chalk/chalk",
       "repository": "https://github.com/chalk/chalk"
     },
     {
@@ -4740,7 +4740,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/wooorm/character-entities",
       "repository": "https://github.com/wooorm/character-entities"
     },
     {
@@ -4749,7 +4749,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/wooorm/character-entities-legacy",
       "repository": "https://github.com/wooorm/character-entities-legacy"
     },
     {
@@ -4758,7 +4758,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/wooorm/character-reference-invalid",
       "repository": "https://github.com/wooorm/character-reference-invalid"
     },
     {
@@ -4794,7 +4794,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/jorgebucaran/classcat",
       "repository": "https://github.com/jorgebucaran/classcat"
     },
     {
@@ -4803,7 +4803,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/JedWatson/classnames",
       "repository": "https://github.com/JedWatson/classnames"
     },
     {
@@ -4812,7 +4812,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/cli-cursor",
       "repository": "https://github.com/sindresorhus/cli-cursor"
     },
     {
@@ -4821,7 +4821,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/cli-truncate",
       "repository": "https://github.com/sindresorhus/cli-truncate"
     },
     {
@@ -4848,7 +4848,7 @@
       "license": "ISC",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/yargs/cliui",
       "repository": "https://github.com/yargs/cliui"
     },
     {
@@ -4857,7 +4857,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": true,
-      "homepage": null,
+      "homepage": "https://github.com/lukeed/clsx",
       "repository": "https://github.com/lukeed/clsx",
       "group": "Framework and runtime",
       "reason": "Composes conditional class names."
@@ -4868,7 +4868,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/Qix-/color-convert",
       "repository": "https://github.com/Qix-/color-convert"
     },
     {
@@ -4886,7 +4886,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/tj/commander.js",
       "repository": "https://github.com/tj/commander.js"
     },
     {
@@ -4895,7 +4895,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/tj/commander.js",
       "repository": "https://github.com/tj/commander.js"
     },
     {
@@ -4904,7 +4904,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/tj/commander.js",
       "repository": "https://github.com/tj/commander.js"
     },
     {
@@ -4913,7 +4913,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/tj/commander.js",
       "repository": "https://github.com/tj/commander.js"
     },
     {
@@ -4931,7 +4931,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/substack/node-commondir",
       "repository": "https://github.com/substack/node-commondir"
     },
     {
@@ -4940,7 +4940,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/substack/node-concat-map",
       "repository": "https://github.com/substack/node-concat-map"
     },
     {
@@ -4949,7 +4949,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": true,
-      "homepage": null,
+      "homepage": "https://github.com/open-cli-tools/concurrently",
       "repository": "https://github.com/open-cli-tools/concurrently",
       "group": "Developer workflow",
       "reason": "Runs the dev server and type checker together."
@@ -4960,7 +4960,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/unjs/confbox",
       "repository": "https://github.com/unjs/confbox"
     },
     {
@@ -4987,7 +4987,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/isaacs/core-util-is",
       "repository": "https://github.com/isaacs/core-util-is"
     },
     {
@@ -5050,7 +5050,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/frenic/csstype",
       "repository": "https://github.com/frenic/csstype"
     },
     {
@@ -5059,7 +5059,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/frenic/csstype",
       "repository": "https://github.com/frenic/csstype"
     },
     {
@@ -5419,7 +5419,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/tbo47/dagre-es",
       "repository": "https://github.com/tbo47/dagre-es"
     },
     {
@@ -5428,7 +5428,7 @@
       "license": "BSD-2-Clause",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/tad-lispy/node-damerau-levenshtein",
       "repository": "https://github.com/tad-lispy/node-damerau-levenshtein"
     },
     {
@@ -5437,7 +5437,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/jsdom/data-urls",
       "repository": "https://github.com/jsdom/data-urls"
     },
     {
@@ -5482,7 +5482,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/visionmedia/debug",
       "repository": "https://github.com/visionmedia/debug"
     },
     {
@@ -5491,7 +5491,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/debug-js/debug",
       "repository": "https://github.com/debug-js/debug"
     },
     {
@@ -5500,7 +5500,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/MikeMcl/decimal.js",
       "repository": "https://github.com/MikeMcl/decimal.js"
     },
     {
@@ -5509,7 +5509,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/wooorm/decode-named-character-reference",
       "repository": "https://github.com/wooorm/decode-named-character-reference"
     },
     {
@@ -5527,7 +5527,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/thlorenz/deep-is",
       "repository": "https://github.com/thlorenz/deep-is"
     },
     {
@@ -5554,7 +5554,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/ljharb/define-properties",
       "repository": "https://github.com/ljharb/define-properties"
     },
     {
@@ -5563,7 +5563,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/unjs/defu",
       "repository": "https://github.com/unjs/defu"
     },
     {
@@ -5572,7 +5572,7 @@
       "license": "ISC",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/mapbox/delaunator",
       "repository": "https://github.com/mapbox/delaunator"
     },
     {
@@ -5592,7 +5592,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/lukeed/dequal",
       "repository": "https://github.com/lukeed/dequal"
     },
     {
@@ -5610,7 +5610,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/unjs/destr",
       "repository": "https://github.com/unjs/destr"
     },
     {
@@ -5619,7 +5619,7 @@
       "license": "Apache-2.0",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/lovell/detect-libc",
       "repository": "https://github.com/lovell/detect-libc"
     },
     {
@@ -5628,7 +5628,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/wooorm/devlop",
       "repository": "https://github.com/wooorm/devlop"
     },
     {
@@ -5637,7 +5637,7 @@
       "license": "Apache-2.0",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/JackuB/diff-match-patch",
       "repository": "https://github.com/JackuB/diff-match-patch"
     },
     {
@@ -5666,7 +5666,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/eps1lon/dom-accessibility-api",
       "repository": "https://github.com/eps1lon/dom-accessibility-api"
     },
     {
@@ -5722,7 +5722,7 @@
       "license": "ISC",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/Kilian/electron-to-chromium",
       "repository": "https://github.com/Kilian/electron-to-chromium"
     },
     {
@@ -5731,7 +5731,7 @@
       "license": "EPL-2.0",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/kieler/elkjs",
       "repository": "https://github.com/kieler/elkjs"
     },
     {
@@ -5740,7 +5740,7 @@
       "license": "EPL-2.0",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/kieler/elkjs",
       "repository": "https://github.com/kieler/elkjs"
     },
     {
@@ -5767,7 +5767,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/lukeed/empathic",
       "repository": "https://github.com/lukeed/empathic"
     },
     {
@@ -5776,7 +5776,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/lukeed/empathic",
       "repository": "https://github.com/lukeed/empathic"
     },
     {
@@ -5794,7 +5794,7 @@
       "license": "BSD-2-Clause",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/fb55/entities",
       "repository": "https://github.com/fb55/entities"
     },
     {
@@ -5803,7 +5803,7 @@
       "license": "BSD-2-Clause",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/fb55/entities",
       "repository": "https://github.com/fb55/entities"
     },
     {
@@ -5812,7 +5812,7 @@
       "license": "BSD-2-Clause",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/fb55/entities",
       "repository": "https://github.com/fb55/entities"
     },
     {
@@ -5821,7 +5821,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/env-paths",
       "repository": "https://github.com/sindresorhus/env-paths"
     },
     {
@@ -5830,7 +5830,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/environment",
       "repository": "https://github.com/sindresorhus/environment"
     },
     {
@@ -5839,7 +5839,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/ljharb/es-abstract",
       "repository": "https://github.com/ljharb/es-abstract"
     },
     {
@@ -5911,7 +5911,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/ljharb/es-to-primitive",
       "repository": "https://github.com/ljharb/es-to-primitive"
     },
     {
@@ -5929,7 +5929,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": true,
-      "homepage": null,
+      "homepage": "https://github.com/evanw/esbuild",
       "repository": "https://github.com/evanw/esbuild",
       "group": "Build and types",
       "reason": "Bundles the standalone engine files."
@@ -5940,7 +5940,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/lukeed/escalade",
       "repository": "https://github.com/lukeed/escalade"
     },
     {
@@ -5949,7 +5949,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/escape-string-regexp",
       "repository": "https://github.com/sindresorhus/escape-string-regexp"
     },
     {
@@ -5989,7 +5989,7 @@
       "license": "ISC",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/import-js/eslint-import-resolver-typescript",
       "repository": "https://github.com/import-js/eslint-import-resolver-typescript"
     },
     {
@@ -6016,7 +6016,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/jsx-eslint/eslint-plugin-jsx-a11y",
       "repository": "https://github.com/jsx-eslint/eslint-plugin-jsx-a11y"
     },
     {
@@ -6117,7 +6117,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/Rich-Harris/estree-walker",
       "repository": "https://github.com/Rich-Harris/estree-walker"
     },
     {
@@ -6126,7 +6126,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/Rich-Harris/estree-walker",
       "repository": "https://github.com/Rich-Harris/estree-walker"
     },
     {
@@ -6144,7 +6144,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/primus/eventemitter3",
       "repository": "https://github.com/primus/eventemitter3"
     },
     {
@@ -6153,7 +6153,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/execa",
       "repository": "https://github.com/sindresorhus/execa"
     },
     {
@@ -6171,7 +6171,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/unjs/exsolve",
       "repository": "https://github.com/unjs/exsolve"
     },
     {
@@ -6218,7 +6218,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/mrmlnc/fast-glob",
       "repository": "https://github.com/mrmlnc/fast-glob"
     },
     {
@@ -6236,7 +6236,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/hiddentao/fast-levenshtein",
       "repository": "https://github.com/hiddentao/fast-levenshtein"
     },
     {
@@ -6254,7 +6254,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/anonrig/fast-querystring",
       "repository": "https://github.com/anonrig/fast-querystring"
     },
     {
@@ -6263,7 +6263,7 @@
       "license": "Unlicense",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/dchest/fast-sha256-js",
       "repository": "https://github.com/dchest/fast-sha256-js"
     },
     {
@@ -6272,7 +6272,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/fabiospampinato/fast-string-truncated-width",
       "repository": "https://github.com/fabiospampinato/fast-string-truncated-width"
     },
     {
@@ -6281,7 +6281,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/fabiospampinato/fast-string-width",
       "repository": "https://github.com/fabiospampinato/fast-string-width"
     },
     {
@@ -6335,7 +6335,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/figures",
       "repository": "https://github.com/sindresorhus/figures"
     },
     {
@@ -6371,7 +6371,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/find-up",
       "repository": "https://github.com/sindresorhus/find-up"
     },
     {
@@ -6398,7 +6398,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/lukeed/flru",
       "repository": "https://github.com/lukeed/flru"
     },
     {
@@ -6416,7 +6416,7 @@
       "license": "ISC",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/tapjs/foreground-child",
       "repository": "https://github.com/tapjs/foreground-child"
     },
     {
@@ -6425,7 +6425,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": true,
-      "homepage": null,
+      "homepage": "https://github.com/motiondivision/motion",
       "repository": "https://github.com/motiondivision/motion",
       "group": "Interface and motion",
       "reason": "Page, card and modal animation."
@@ -6436,8 +6436,8 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/fsevents/fsevents",
+      "repository": "https://github.com/fsevents/fsevents"
     },
     {
       "name": "function-bind",
@@ -6454,7 +6454,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/es-shims/Function.prototype.name",
       "repository": "https://github.com/es-shims/Function.prototype.name"
     },
     {
@@ -6508,7 +6508,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/get-east-asian-width",
       "repository": "https://github.com/sindresorhus/get-east-asian-width"
     },
     {
@@ -6526,7 +6526,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/unjs/get-port-please",
       "repository": "https://github.com/unjs/get-port-please"
     },
     {
@@ -6544,7 +6544,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/get-stream",
       "repository": "https://github.com/sindresorhus/get-stream"
     },
     {
@@ -6562,7 +6562,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/privatenumber/get-tsconfig",
       "repository": "https://github.com/privatenumber/get-tsconfig"
     },
     {
@@ -6571,7 +6571,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/unjs/giget",
       "repository": "https://github.com/unjs/giget"
     },
     {
@@ -6580,7 +6580,7 @@
       "license": "BlueOak-1.0.0",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/isaacs/node-glob",
       "repository": "https://github.com/isaacs/node-glob"
     },
     {
@@ -6589,7 +6589,7 @@
       "license": "ISC",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/gulpjs/glob-parent",
       "repository": "https://github.com/gulpjs/glob-parent"
     },
     {
@@ -6598,7 +6598,7 @@
       "license": "ISC",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/gulpjs/glob-parent",
       "repository": "https://github.com/gulpjs/glob-parent"
     },
     {
@@ -6607,7 +6607,7 @@
       "license": "BSD-2-Clause",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/fitzgen/glob-to-regexp",
       "repository": "https://github.com/fitzgen/glob-to-regexp"
     },
     {
@@ -6616,7 +6616,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/global-directory",
       "repository": "https://github.com/sindresorhus/global-directory"
     },
     {
@@ -6625,7 +6625,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/globals",
       "repository": "https://github.com/sindresorhus/globals"
     },
     {
@@ -6634,7 +6634,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/globals",
       "repository": "https://github.com/sindresorhus/globals"
     },
     {
@@ -6643,7 +6643,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/ljharb/System.global",
       "repository": "https://github.com/ljharb/System.global"
     },
     {
@@ -6661,7 +6661,7 @@
       "license": "ISC",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/isaacs/node-graceful-fs",
       "repository": "https://github.com/isaacs/node-graceful-fs"
     },
     {
@@ -6670,7 +6670,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/fabiospampinato/grammex",
       "repository": "https://github.com/fabiospampinato/grammex"
     },
     {
@@ -6679,7 +6679,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/fabiospampinato/graphmatch",
       "repository": "https://github.com/fabiospampinato/graphmatch"
     },
     {
@@ -6706,7 +6706,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/has-flag",
       "repository": "https://github.com/sindresorhus/has-flag"
     },
     {
@@ -6787,7 +6787,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/jsdom/html-encoding-sniffer",
       "repository": "https://github.com/jsdom/html-encoding-sniffer"
     },
     {
@@ -6814,7 +6814,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/TooTallNate/proxy-agents",
       "repository": "https://github.com/TooTallNate/proxy-agents"
     },
     {
@@ -6823,7 +6823,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/TooTallNate/proxy-agents",
       "repository": "https://github.com/TooTallNate/proxy-agents"
     },
     {
@@ -6841,7 +6841,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": true,
-      "homepage": null,
+      "homepage": "https://github.com/typicode/husky",
       "repository": "https://github.com/typicode/husky",
       "group": "Developer workflow",
       "reason": "Git hooks for commit, push and branch rules."
@@ -6870,7 +6870,7 @@
       "license": "ISC",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/jakearchibald/idb",
       "repository": "https://github.com/jakearchibald/idb"
     },
     {
@@ -6879,7 +6879,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/kaelzhang/node-ignore",
       "repository": "https://github.com/kaelzhang/node-ignore"
     },
     {
@@ -6888,7 +6888,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/kaelzhang/node-ignore",
       "repository": "https://github.com/kaelzhang/node-ignore"
     },
     {
@@ -6897,7 +6897,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/kaelzhang/node-ignore",
       "repository": "https://github.com/kaelzhang/node-ignore"
     },
     {
@@ -6906,7 +6906,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/kaelzhang/node-ignore",
       "repository": "https://github.com/kaelzhang/node-ignore"
     },
     {
@@ -6924,7 +6924,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/import-fresh",
       "repository": "https://github.com/sindresorhus/import-fresh"
     },
     {
@@ -6933,7 +6933,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/wooorm/import-meta-resolve",
       "repository": "https://github.com/wooorm/import-meta-resolve"
     },
     {
@@ -6951,7 +6951,7 @@
       "license": "ISC",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/isaacs/inherits",
       "repository": "https://github.com/isaacs/inherits"
     },
     {
@@ -6960,7 +6960,7 @@
       "license": "ISC",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/npm/ini",
       "repository": "https://github.com/npm/ini"
     },
     {
@@ -6969,7 +6969,7 @@
       "license": "ISC",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/npm/ini",
       "repository": "https://github.com/npm/ini"
     },
     {
@@ -7005,7 +7005,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/gulpjs/interpret",
       "repository": "https://github.com/gulpjs/interpret"
     },
     {
@@ -7023,7 +7023,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/wooorm/is-alphabetical",
       "repository": "https://github.com/wooorm/is-alphabetical"
     },
     {
@@ -7032,7 +7032,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/wooorm/is-alphanumerical",
       "repository": "https://github.com/wooorm/is-alphanumerical"
     },
     {
@@ -7050,7 +7050,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/inspect-js/is-async-function",
       "repository": "https://github.com/inspect-js/is-async-function"
     },
     {
@@ -7068,7 +7068,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/inspect-js/is-boolean-object",
       "repository": "https://github.com/inspect-js/is-boolean-object"
     },
     {
@@ -7086,7 +7086,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/inspect-js/is-callable",
       "repository": "https://github.com/inspect-js/is-callable"
     },
     {
@@ -7113,7 +7113,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/inspect-js/is-date-object",
       "repository": "https://github.com/inspect-js/is-date-object"
     },
     {
@@ -7122,7 +7122,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/wooorm/is-decimal",
       "repository": "https://github.com/wooorm/is-decimal"
     },
     {
@@ -7149,7 +7149,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/is-fullwidth-code-point",
       "repository": "https://github.com/sindresorhus/is-fullwidth-code-point"
     },
     {
@@ -7158,7 +7158,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/inspect-js/is-generator-function",
       "repository": "https://github.com/inspect-js/is-generator-function"
     },
     {
@@ -7176,7 +7176,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/wooorm/is-hexadecimal",
       "repository": "https://github.com/wooorm/is-hexadecimal"
     },
     {
@@ -7185,7 +7185,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/is-installed-globally",
       "repository": "https://github.com/sindresorhus/is-installed-globally"
     },
     {
@@ -7230,7 +7230,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/is-path-inside",
       "repository": "https://github.com/sindresorhus/is-path-inside"
     },
     {
@@ -7239,7 +7239,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/is-plain-obj",
       "repository": "https://github.com/sindresorhus/is-plain-obj"
     },
     {
@@ -7257,7 +7257,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/mikolalysenko/is-property",
       "repository": "https://github.com/mikolalysenko/is-property"
     },
     {
@@ -7302,7 +7302,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/is-stream",
       "repository": "https://github.com/sindresorhus/is-stream"
     },
     {
@@ -7311,7 +7311,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/inspect-js/is-string",
       "repository": "https://github.com/inspect-js/is-string"
     },
     {
@@ -7320,7 +7320,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/inspect-js/is-symbol",
       "repository": "https://github.com/inspect-js/is-symbol"
     },
     {
@@ -7329,7 +7329,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/inspect-js/is-typed-array",
       "repository": "https://github.com/inspect-js/is-typed-array"
     },
     {
@@ -7338,7 +7338,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/is-unicode-supported",
       "repository": "https://github.com/sindresorhus/is-unicode-supported"
     },
     {
@@ -7448,7 +7448,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/unjs/jiti",
       "repository": "https://github.com/unjs/jiti"
     },
     {
@@ -7466,7 +7466,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/js-cookie/js-cookie",
       "repository": "https://github.com/js-cookie/js-cookie"
     },
     {
@@ -7475,7 +7475,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/js-cookie/js-cookie",
       "repository": "https://github.com/js-cookie/js-cookie"
     },
     {
@@ -7493,7 +7493,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/lydell/js-tokens",
       "repository": "https://github.com/lydell/js-tokens"
     },
     {
@@ -7502,7 +7502,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/lydell/js-tokens",
       "repository": "https://github.com/lydell/js-tokens"
     },
     {
@@ -7511,7 +7511,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/nodeca/js-yaml",
       "repository": "https://github.com/nodeca/js-yaml"
     },
     {
@@ -7520,7 +7520,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/nodeca/js-yaml",
       "repository": "https://github.com/nodeca/js-yaml"
     },
     {
@@ -7529,7 +7529,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": true,
-      "homepage": null,
+      "homepage": "https://github.com/jsdom/jsdom",
       "repository": "https://github.com/jsdom/jsdom",
       "group": "Testing",
       "reason": "Browser-like DOM for unit tests and server-side sanitizing."
@@ -7612,7 +7612,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/microsoft/node-jsonc-parser",
       "repository": "https://github.com/microsoft/node-jsonc-parser"
     },
     {
@@ -7621,7 +7621,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/janl/node-jsonpointer",
       "repository": "https://github.com/janl/node-jsonpointer"
     },
     {
@@ -7652,7 +7652,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/jsx-eslint/jsx-ast-utils",
       "repository": "https://github.com/jsx-eslint/jsx-ast-utils"
     },
     {
@@ -7661,7 +7661,7 @@
       "license": "(MIT OR GPL-3.0-or-later)",
       "scope": "runtime",
       "direct": true,
-      "homepage": null,
+      "homepage": "https://github.com/Stuk/jszip",
       "repository": "https://github.com/Stuk/jszip",
       "group": "Documents and export",
       "reason": "Bundles review packages into a single ZIP."
@@ -7690,7 +7690,7 @@
       "license": "UNKNOWN",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/fabiospampinato/khroma",
       "repository": "https://github.com/fabiospampinato/khroma"
     },
     {
@@ -7699,7 +7699,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/lukeed/kleur",
       "repository": "https://github.com/lukeed/kleur"
     },
     {
@@ -7708,7 +7708,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/marvinhagemeister/kolorist",
       "repository": "https://github.com/marvinhagemeister/kolorist"
     },
     {
@@ -7762,7 +7762,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/calvinmetcalf/lie",
       "repository": "https://github.com/calvinmetcalf/lie"
     },
     {
@@ -7771,7 +7771,7 @@
       "license": "MPL-2.0",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/parcel-bundler/lightningcss",
       "repository": "https://github.com/parcel-bundler/lightningcss"
     },
     {
@@ -7780,7 +7780,7 @@
       "license": "MPL-2.0",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/parcel-bundler/lightningcss",
       "repository": "https://github.com/parcel-bundler/lightningcss"
     },
     {
@@ -7789,8 +7789,8 @@
       "license": "MPL-2.0",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/parcel-bundler/lightningcss",
+      "repository": "https://github.com/parcel-bundler/lightningcss"
     },
     {
       "name": "lightningcss-android-arm64",
@@ -7798,8 +7798,8 @@
       "license": "MPL-2.0",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/parcel-bundler/lightningcss",
+      "repository": "https://github.com/parcel-bundler/lightningcss"
     },
     {
       "name": "lightningcss-darwin-arm64",
@@ -7807,8 +7807,8 @@
       "license": "MPL-2.0",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/parcel-bundler/lightningcss",
+      "repository": "https://github.com/parcel-bundler/lightningcss"
     },
     {
       "name": "lightningcss-darwin-arm64",
@@ -7816,8 +7816,8 @@
       "license": "MPL-2.0",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/parcel-bundler/lightningcss",
+      "repository": "https://github.com/parcel-bundler/lightningcss"
     },
     {
       "name": "lightningcss-darwin-x64",
@@ -7825,8 +7825,8 @@
       "license": "MPL-2.0",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/parcel-bundler/lightningcss",
+      "repository": "https://github.com/parcel-bundler/lightningcss"
     },
     {
       "name": "lightningcss-darwin-x64",
@@ -7834,8 +7834,8 @@
       "license": "MPL-2.0",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/parcel-bundler/lightningcss",
+      "repository": "https://github.com/parcel-bundler/lightningcss"
     },
     {
       "name": "lightningcss-freebsd-x64",
@@ -7843,8 +7843,8 @@
       "license": "MPL-2.0",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/parcel-bundler/lightningcss",
+      "repository": "https://github.com/parcel-bundler/lightningcss"
     },
     {
       "name": "lightningcss-freebsd-x64",
@@ -7852,8 +7852,8 @@
       "license": "MPL-2.0",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/parcel-bundler/lightningcss",
+      "repository": "https://github.com/parcel-bundler/lightningcss"
     },
     {
       "name": "lightningcss-linux-arm-gnueabihf",
@@ -7861,8 +7861,8 @@
       "license": "MPL-2.0",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/parcel-bundler/lightningcss",
+      "repository": "https://github.com/parcel-bundler/lightningcss"
     },
     {
       "name": "lightningcss-linux-arm-gnueabihf",
@@ -7870,8 +7870,8 @@
       "license": "MPL-2.0",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/parcel-bundler/lightningcss",
+      "repository": "https://github.com/parcel-bundler/lightningcss"
     },
     {
       "name": "lightningcss-linux-arm64-gnu",
@@ -7879,8 +7879,8 @@
       "license": "MPL-2.0",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/parcel-bundler/lightningcss",
+      "repository": "https://github.com/parcel-bundler/lightningcss"
     },
     {
       "name": "lightningcss-linux-arm64-gnu",
@@ -7888,8 +7888,8 @@
       "license": "MPL-2.0",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/parcel-bundler/lightningcss",
+      "repository": "https://github.com/parcel-bundler/lightningcss"
     },
     {
       "name": "lightningcss-linux-arm64-musl",
@@ -7897,8 +7897,8 @@
       "license": "MPL-2.0",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/parcel-bundler/lightningcss",
+      "repository": "https://github.com/parcel-bundler/lightningcss"
     },
     {
       "name": "lightningcss-linux-arm64-musl",
@@ -7906,8 +7906,8 @@
       "license": "MPL-2.0",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/parcel-bundler/lightningcss",
+      "repository": "https://github.com/parcel-bundler/lightningcss"
     },
     {
       "name": "lightningcss-linux-x64-gnu",
@@ -7915,7 +7915,7 @@
       "license": "MPL-2.0",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/parcel-bundler/lightningcss",
       "repository": "https://github.com/parcel-bundler/lightningcss"
     },
     {
@@ -7924,7 +7924,7 @@
       "license": "MPL-2.0",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/parcel-bundler/lightningcss",
       "repository": "https://github.com/parcel-bundler/lightningcss"
     },
     {
@@ -7933,7 +7933,7 @@
       "license": "MPL-2.0",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/parcel-bundler/lightningcss",
       "repository": "https://github.com/parcel-bundler/lightningcss"
     },
     {
@@ -7942,7 +7942,7 @@
       "license": "MPL-2.0",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/parcel-bundler/lightningcss",
       "repository": "https://github.com/parcel-bundler/lightningcss"
     },
     {
@@ -7951,8 +7951,8 @@
       "license": "MPL-2.0",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/parcel-bundler/lightningcss",
+      "repository": "https://github.com/parcel-bundler/lightningcss"
     },
     {
       "name": "lightningcss-win32-arm64-msvc",
@@ -7960,8 +7960,8 @@
       "license": "MPL-2.0",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/parcel-bundler/lightningcss",
+      "repository": "https://github.com/parcel-bundler/lightningcss"
     },
     {
       "name": "lightningcss-win32-x64-msvc",
@@ -7969,8 +7969,8 @@
       "license": "MPL-2.0",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/parcel-bundler/lightningcss",
+      "repository": "https://github.com/parcel-bundler/lightningcss"
     },
     {
       "name": "lightningcss-win32-x64-msvc",
@@ -7978,8 +7978,8 @@
       "license": "MPL-2.0",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/parcel-bundler/lightningcss",
+      "repository": "https://github.com/parcel-bundler/lightningcss"
     },
     {
       "name": "linkify-it",
@@ -7987,7 +7987,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/markdown-it/linkify-it",
       "repository": "https://github.com/markdown-it/linkify-it"
     },
     {
@@ -8007,7 +8007,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/listr2/listr2",
       "repository": "https://github.com/listr2/listr2"
     },
     {
@@ -8016,7 +8016,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/locate-path",
       "repository": "https://github.com/sindresorhus/locate-path"
     },
     {
@@ -8061,7 +8061,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/log-update",
       "repository": "https://github.com/sindresorhus/log-update"
     },
     {
@@ -8070,7 +8070,7 @@
       "license": "Apache-2.0",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/dcodeIO/long.js",
       "repository": "https://github.com/dcodeIO/long.js"
     },
     {
@@ -8088,7 +8088,7 @@
       "license": "ISC",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/isaacs/node-lru-cache",
       "repository": "https://github.com/isaacs/node-lru-cache"
     },
     {
@@ -8097,7 +8097,7 @@
       "license": "BlueOak-1.0.0",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/isaacs/node-lru-cache",
       "repository": "https://github.com/isaacs/node-lru-cache"
     },
     {
@@ -8106,7 +8106,7 @@
       "license": "ISC",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/isaacs/node-lru-cache",
       "repository": "https://github.com/isaacs/node-lru-cache"
     },
     {
@@ -8115,7 +8115,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/wellwelwel/lru.min",
       "repository": "https://github.com/wellwelwel/lru.min"
     },
     {
@@ -8142,7 +8142,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/Rich-Harris/magic-string",
       "repository": "https://github.com/Rich-Harris/magic-string"
     },
     {
@@ -8151,7 +8151,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/unjs/magicast",
       "repository": "https://github.com/unjs/magicast"
     },
     {
@@ -8160,7 +8160,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/make-dir",
       "repository": "https://github.com/sindresorhus/make-dir"
     },
     {
@@ -8169,7 +8169,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/markdown-it/markdown-it",
       "repository": "https://github.com/markdown-it/markdown-it"
     },
     {
@@ -8216,7 +8216,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/markdown-it/mdurl",
       "repository": "https://github.com/markdown-it/mdurl"
     },
     {
@@ -8234,7 +8234,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": true,
-      "homepage": null,
+      "homepage": "https://github.com/mermaid-js/mermaid",
       "repository": "https://github.com/mermaid-js/mermaid",
       "group": "Visualization and 3D",
       "reason": "Renders proof diagrams in the Proof Workspace."
@@ -8254,8 +8254,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": "https://github.com/micromark/micromark/tree/main/packages/micromark"
+      "homepage": "https://github.com/micromark/micromark/tree/main",
+      "repository": "https://github.com/micromark/micromark"
     },
     {
       "name": "micromark-core-commonmark",
@@ -8263,8 +8263,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": "https://github.com/micromark/micromark/tree/main/packages/micromark-core-commonmark"
+      "homepage": "https://github.com/micromark/micromark/tree/main",
+      "repository": "https://github.com/micromark/micromark"
     },
     {
       "name": "micromark-extension-directive",
@@ -8272,7 +8272,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/micromark/micromark-extension-directive",
       "repository": "https://github.com/micromark/micromark-extension-directive"
     },
     {
@@ -8281,7 +8281,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/micromark/micromark-extension-gfm-autolink-literal",
       "repository": "https://github.com/micromark/micromark-extension-gfm-autolink-literal"
     },
     {
@@ -8290,7 +8290,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/micromark/micromark-extension-gfm-footnote",
       "repository": "https://github.com/micromark/micromark-extension-gfm-footnote"
     },
     {
@@ -8299,7 +8299,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/micromark/micromark-extension-gfm-table",
       "repository": "https://github.com/micromark/micromark-extension-gfm-table"
     },
     {
@@ -8308,7 +8308,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/micromark/micromark-extension-math",
       "repository": "https://github.com/micromark/micromark-extension-math"
     },
     {
@@ -8317,8 +8317,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": "https://github.com/micromark/micromark/tree/main/packages/micromark-factory-destination"
+      "homepage": "https://github.com/micromark/micromark/tree/main",
+      "repository": "https://github.com/micromark/micromark"
     },
     {
       "name": "micromark-factory-label",
@@ -8326,8 +8326,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": "https://github.com/micromark/micromark/tree/main/packages/micromark-factory-label"
+      "homepage": "https://github.com/micromark/micromark/tree/main",
+      "repository": "https://github.com/micromark/micromark"
     },
     {
       "name": "micromark-factory-space",
@@ -8335,8 +8335,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": "https://github.com/micromark/micromark/tree/main/packages/micromark-factory-space"
+      "homepage": "https://github.com/micromark/micromark/tree/main",
+      "repository": "https://github.com/micromark/micromark"
     },
     {
       "name": "micromark-factory-title",
@@ -8344,8 +8344,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": "https://github.com/micromark/micromark/tree/main/packages/micromark-factory-title"
+      "homepage": "https://github.com/micromark/micromark/tree/main",
+      "repository": "https://github.com/micromark/micromark"
     },
     {
       "name": "micromark-factory-whitespace",
@@ -8353,8 +8353,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": "https://github.com/micromark/micromark/tree/main/packages/micromark-factory-whitespace"
+      "homepage": "https://github.com/micromark/micromark/tree/main",
+      "repository": "https://github.com/micromark/micromark"
     },
     {
       "name": "micromark-util-character",
@@ -8362,8 +8362,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": "https://github.com/micromark/micromark/tree/main/packages/micromark-util-character"
+      "homepage": "https://github.com/micromark/micromark/tree/main",
+      "repository": "https://github.com/micromark/micromark"
     },
     {
       "name": "micromark-util-chunked",
@@ -8371,8 +8371,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": "https://github.com/micromark/micromark/tree/main/packages/micromark-util-chunked"
+      "homepage": "https://github.com/micromark/micromark/tree/main",
+      "repository": "https://github.com/micromark/micromark"
     },
     {
       "name": "micromark-util-classify-character",
@@ -8380,8 +8380,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": "https://github.com/micromark/micromark/tree/main/packages/micromark-util-classify-character"
+      "homepage": "https://github.com/micromark/micromark/tree/main",
+      "repository": "https://github.com/micromark/micromark"
     },
     {
       "name": "micromark-util-combine-extensions",
@@ -8389,8 +8389,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": "https://github.com/micromark/micromark/tree/main/packages/micromark-util-combine-extensions"
+      "homepage": "https://github.com/micromark/micromark/tree/main",
+      "repository": "https://github.com/micromark/micromark"
     },
     {
       "name": "micromark-util-decode-numeric-character-reference",
@@ -8398,8 +8398,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": "https://github.com/micromark/micromark/tree/main/packages/micromark-util-decode-numeric-character-reference"
+      "homepage": "https://github.com/micromark/micromark/tree/main",
+      "repository": "https://github.com/micromark/micromark"
     },
     {
       "name": "micromark-util-encode",
@@ -8407,8 +8407,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": "https://github.com/micromark/micromark/tree/main/packages/micromark-util-encode"
+      "homepage": "https://github.com/micromark/micromark/tree/main",
+      "repository": "https://github.com/micromark/micromark"
     },
     {
       "name": "micromark-util-html-tag-name",
@@ -8416,8 +8416,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": "https://github.com/micromark/micromark/tree/main/packages/micromark-util-html-tag-name"
+      "homepage": "https://github.com/micromark/micromark/tree/main",
+      "repository": "https://github.com/micromark/micromark"
     },
     {
       "name": "micromark-util-normalize-identifier",
@@ -8425,8 +8425,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": "https://github.com/micromark/micromark/tree/main/packages/micromark-util-normalize-identifier"
+      "homepage": "https://github.com/micromark/micromark/tree/main",
+      "repository": "https://github.com/micromark/micromark"
     },
     {
       "name": "micromark-util-resolve-all",
@@ -8434,8 +8434,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": "https://github.com/micromark/micromark/tree/main/packages/micromark-util-resolve-all"
+      "homepage": "https://github.com/micromark/micromark/tree/main",
+      "repository": "https://github.com/micromark/micromark"
     },
     {
       "name": "micromark-util-sanitize-uri",
@@ -8443,8 +8443,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": "https://github.com/micromark/micromark/tree/main/packages/micromark-util-sanitize-uri"
+      "homepage": "https://github.com/micromark/micromark/tree/main",
+      "repository": "https://github.com/micromark/micromark"
     },
     {
       "name": "micromark-util-subtokenize",
@@ -8452,8 +8452,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": "https://github.com/micromark/micromark/tree/main/packages/micromark-util-subtokenize"
+      "homepage": "https://github.com/micromark/micromark/tree/main",
+      "repository": "https://github.com/micromark/micromark"
     },
     {
       "name": "micromark-util-symbol",
@@ -8461,8 +8461,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": "https://github.com/micromark/micromark/tree/main/packages/micromark-util-symbol"
+      "homepage": "https://github.com/micromark/micromark/tree/main",
+      "repository": "https://github.com/micromark/micromark"
     },
     {
       "name": "micromark-util-types",
@@ -8470,8 +8470,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": "https://github.com/micromark/micromark/tree/main/packages/micromark-util-types"
+      "homepage": "https://github.com/micromark/micromark/tree/main",
+      "repository": "https://github.com/micromark/micromark"
     },
     {
       "name": "micromatch",
@@ -8488,7 +8488,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/mimic-function",
       "repository": "https://github.com/sindresorhus/mimic-function"
     },
     {
@@ -8506,7 +8506,7 @@
       "license": "BlueOak-1.0.0",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/isaacs/minimatch",
       "repository": "https://github.com/isaacs/minimatch"
     },
     {
@@ -8515,7 +8515,7 @@
       "license": "BlueOak-1.0.0",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/isaacs/minimatch",
       "repository": "https://github.com/isaacs/minimatch"
     },
     {
@@ -8524,7 +8524,7 @@
       "license": "ISC",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/isaacs/minimatch",
       "repository": "https://github.com/isaacs/minimatch"
     },
     {
@@ -8542,7 +8542,7 @@
       "license": "BlueOak-1.0.0",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/isaacs/minipass",
       "repository": "https://github.com/isaacs/minipass"
     },
     {
@@ -8551,7 +8551,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/motiondivision/motion",
       "repository": "https://github.com/motiondivision/motion"
     },
     {
@@ -8560,7 +8560,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/motiondivision/motion",
       "repository": "https://github.com/motiondivision/motion"
     },
     {
@@ -8569,7 +8569,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/vercel/ms",
       "repository": "https://github.com/vercel/ms"
     },
     {
@@ -8614,7 +8614,7 @@
       "license": "ISC",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/npm/mute-stream",
       "repository": "https://github.com/npm/mute-stream"
     },
     {
@@ -8632,7 +8632,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/mysqljs/named-placeholders",
       "repository": "https://github.com/mysqljs/named-placeholders"
     },
     {
@@ -8641,7 +8641,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/ai/nanoid",
       "repository": "https://github.com/ai/nanoid"
     },
     {
@@ -8650,7 +8650,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/ai/nanoid",
       "repository": "https://github.com/ai/nanoid"
     },
     {
@@ -8659,7 +8659,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/un-ts/napi-postinstall",
       "repository": "https://github.com/un-ts/napi-postinstall"
     },
     {
@@ -8668,7 +8668,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/litejs/natural-compare-lite",
       "repository": "https://github.com/litejs/natural-compare-lite"
     },
     {
@@ -8706,7 +8706,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/chicoxyzzy/node-releases",
       "repository": "https://github.com/chicoxyzzy/node-releases"
     },
     {
@@ -8715,7 +8715,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/npm-run-path",
       "repository": "https://github.com/sindresorhus/npm-run-path"
     },
     {
@@ -8733,7 +8733,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/object-assign",
       "repository": "https://github.com/sindresorhus/object-assign"
     },
     {
@@ -8751,7 +8751,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/ljharb/object-keys",
       "repository": "https://github.com/ljharb/object-keys"
     },
     {
@@ -8760,7 +8760,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/ljharb/object.assign",
       "repository": "https://github.com/ljharb/object.assign"
     },
     {
@@ -8769,7 +8769,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/es-shims/Object.entries",
       "repository": "https://github.com/es-shims/Object.entries"
     },
     {
@@ -8778,7 +8778,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/es-shims/Object.fromEntries",
       "repository": "https://github.com/es-shims/Object.fromEntries"
     },
     {
@@ -8796,7 +8796,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/es-shims/Object.values",
       "repository": "https://github.com/es-shims/Object.values"
     },
     {
@@ -8814,7 +8814,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/unjs/ohash",
       "repository": "https://github.com/unjs/ohash"
     },
     {
@@ -8823,7 +8823,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/onetime",
       "repository": "https://github.com/sindresorhus/onetime"
     },
     {
@@ -8859,7 +8859,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/p-limit",
       "repository": "https://github.com/sindresorhus/p-limit"
     },
     {
@@ -8868,7 +8868,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/p-locate",
       "repository": "https://github.com/sindresorhus/p-locate"
     },
     {
@@ -8895,7 +8895,7 @@
       "license": "(MIT AND Zlib)",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/nodeca/pako",
       "repository": "https://github.com/nodeca/pako"
     },
     {
@@ -8904,7 +8904,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/parent-module",
       "repository": "https://github.com/sindresorhus/parent-module"
     },
     {
@@ -8913,7 +8913,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/wooorm/parse-entities",
       "repository": "https://github.com/wooorm/parse-entities"
     },
     {
@@ -8922,7 +8922,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/parse-ms",
       "repository": "https://github.com/sindresorhus/parse-ms"
     },
     {
@@ -8958,7 +8958,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/path-exists",
       "repository": "https://github.com/sindresorhus/path-exists"
     },
     {
@@ -8967,7 +8967,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/path-key",
       "repository": "https://github.com/sindresorhus/path-key"
     },
     {
@@ -8976,7 +8976,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/path-key",
       "repository": "https://github.com/sindresorhus/path-key"
     },
     {
@@ -8994,7 +8994,7 @@
       "license": "BlueOak-1.0.0",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/isaacs/path-scurry",
       "repository": "https://github.com/isaacs/path-scurry"
     },
     {
@@ -9003,7 +9003,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/unjs/pathe",
       "repository": "https://github.com/unjs/pathe"
     },
     {
@@ -9012,7 +9012,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/unjs/perfect-debounce",
       "repository": "https://github.com/unjs/perfect-debounce"
     },
     {
@@ -9030,7 +9030,7 @@
       "license": "ISC",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/alexeyraspopov/picocolors",
       "repository": "https://github.com/alexeyraspopov/picocolors"
     },
     {
@@ -9066,7 +9066,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/unjs/pkg-types",
       "repository": "https://github.com/unjs/pkg-types"
     },
     {
@@ -9156,7 +9156,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/bendrucker/postgres-array",
       "repository": "https://github.com/bendrucker/postgres-array"
     },
     {
@@ -9185,7 +9185,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/pretty-bytes",
       "repository": "https://github.com/sindresorhus/pretty-bytes"
     },
     {
@@ -9194,7 +9194,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/facebook/jest",
       "repository": "https://github.com/facebook/jest"
     },
     {
@@ -9203,7 +9203,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/pretty-ms",
       "repository": "https://github.com/sindresorhus/pretty-ms"
     },
     {
@@ -9232,7 +9232,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/visionmedia/node-progress",
       "repository": "https://github.com/visionmedia/node-progress"
     },
     {
@@ -9241,7 +9241,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/terkelg/prompts",
       "repository": "https://github.com/terkelg/prompts"
     },
     {
@@ -9322,7 +9322,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/chrisdickinson/raf",
       "repository": "https://github.com/chrisdickinson/raf"
     },
     {
@@ -9331,7 +9331,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/unjs/rc9",
       "repository": "https://github.com/unjs/rc9"
     },
     {
@@ -9380,7 +9380,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/nodejs/readable-stream",
       "repository": "https://github.com/nodejs/readable-stream"
     },
     {
@@ -9398,7 +9398,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/gulpjs/rechoir",
       "repository": "https://github.com/gulpjs/rechoir"
     },
     {
@@ -9416,8 +9416,8 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": "https://github.com/facebook/regenerator/tree/main/packages/runtime"
+      "homepage": "https://github.com/facebook/regenerator/tree/main",
+      "repository": "https://github.com/facebook/regenerator"
     },
     {
       "name": "regexp-tree",
@@ -9434,7 +9434,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/es-shims/RegExp.prototype.flags",
       "repository": "https://github.com/es-shims/RegExp.prototype.flags"
     },
     {
@@ -9452,7 +9452,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/floatdrop/require-from-string",
       "repository": "https://github.com/floatdrop/require-from-string"
     },
     {
@@ -9472,8 +9472,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/browserify/resolve",
+      "repository": "https://github.com/browserify/resolve"
     },
     {
       "name": "resolve",
@@ -9481,8 +9481,8 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
-      "repository": null
+      "homepage": "https://github.com/browserify/resolve",
+      "repository": "https://github.com/browserify/resolve"
     },
     {
       "name": "resolve-from",
@@ -9490,7 +9490,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/resolve-from",
       "repository": "https://github.com/sindresorhus/resolve-from"
     },
     {
@@ -9499,7 +9499,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/privatenumber/resolve-pkg-maps",
       "repository": "https://github.com/privatenumber/resolve-pkg-maps"
     },
     {
@@ -9508,7 +9508,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/restore-cursor",
       "repository": "https://github.com/sindresorhus/restore-cursor"
     },
     {
@@ -9517,7 +9517,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/fent/ret.js",
       "repository": "https://github.com/fent/ret.js"
     },
     {
@@ -9553,7 +9553,7 @@
       "license": "MIT OR SEE LICENSE IN FEEL-FREE.md",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/yetzt/node-rgbcolor",
       "repository": "https://github.com/yetzt/node-rgbcolor"
     },
     {
@@ -9562,7 +9562,7 @@
       "license": "Unlicense",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/mourner/robust-predicates",
       "repository": "https://github.com/mourner/robust-predicates"
     },
     {
@@ -9598,7 +9598,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/rrweb-io/CSSOM",
       "repository": "https://github.com/rrweb-io/CSSOM"
     },
     {
@@ -9607,7 +9607,7 @@
       "license": "(BSD-2-Clause OR MIT OR Apache-2.0)",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/goatandsheep/rc",
       "repository": "https://github.com/goatandsheep/rc"
     },
     {
@@ -9697,7 +9697,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/ChALkeR/safer-buffer",
       "repository": "https://github.com/ChALkeR/safer-buffer"
     },
     {
@@ -9706,7 +9706,7 @@
       "license": "BlueOak-1.0.0",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/isaacs/sax-js",
       "repository": "https://github.com/isaacs/sax-js"
     },
     {
@@ -9715,7 +9715,7 @@
       "license": "ISC",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/lddubeau/saxes",
       "repository": "https://github.com/lddubeau/saxes"
     },
     {
@@ -9733,7 +9733,7 @@
       "license": "ISC",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/npm/node-semver",
       "repository": "https://github.com/npm/node-semver"
     },
     {
@@ -9742,7 +9742,7 @@
       "license": "ISC",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/npm/node-semver",
       "repository": "https://github.com/npm/node-semver"
     },
     {
@@ -9751,7 +9751,7 @@
       "license": "ISC",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/npm/node-semver",
       "repository": "https://github.com/npm/node-semver"
     },
     {
@@ -9760,7 +9760,7 @@
       "license": "FSL-1.1-Apache-2.0",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/getsentry/cli",
       "repository": "https://github.com/getsentry/cli"
     },
     {
@@ -9814,8 +9814,8 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
-      "repository": "https://github.com/YuzuJS/setImmediate"
+      "homepage": "https://github.com/yuzujs/setImmediate",
+      "repository": "https://github.com/yuzujs/setImmediate"
     },
     {
       "name": "sharp",
@@ -9832,7 +9832,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/kevva/shebang-command",
       "repository": "https://github.com/kevva/shebang-command"
     },
     {
@@ -9841,7 +9841,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/shebang-regex",
       "repository": "https://github.com/sindresorhus/shebang-regex"
     },
     {
@@ -9913,7 +9913,7 @@
       "license": "ISC",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/tapjs/signal-exit",
       "repository": "https://github.com/tapjs/signal-exit"
     },
     {
@@ -9922,7 +9922,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/terkelg/sisteransi",
       "repository": "https://github.com/terkelg/sisteransi"
     },
     {
@@ -9931,7 +9931,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/chalk/slice-ansi",
       "repository": "https://github.com/chalk/slice-ansi"
     },
     {
@@ -9940,7 +9940,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/chalk/slice-ansi",
       "repository": "https://github.com/chalk/slice-ansi"
     },
     {
@@ -9985,7 +9985,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/mysqljs/sql-escaper",
       "repository": "https://github.com/mysqljs/sql-escaper"
     },
     {
@@ -9994,7 +9994,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/shuding/stable-hash",
       "repository": "https://github.com/shuding/stable-hash"
     },
     {
@@ -10039,7 +10039,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/unjs/std-env",
       "repository": "https://github.com/unjs/std-env"
     },
     {
@@ -10048,7 +10048,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/unjs/std-env",
       "repository": "https://github.com/unjs/std-env"
     },
     {
@@ -10084,7 +10084,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/string-width",
       "repository": "https://github.com/sindresorhus/string-width"
     },
     {
@@ -10093,7 +10093,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/string-width",
       "repository": "https://github.com/sindresorhus/string-width"
     },
     {
@@ -10129,7 +10129,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/es-shims/String.prototype.trim",
       "repository": "https://github.com/es-shims/String.prototype.trim"
     },
     {
@@ -10138,7 +10138,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/es-shims/String.prototype.trimEnd",
       "repository": "https://github.com/es-shims/String.prototype.trimEnd"
     },
     {
@@ -10147,7 +10147,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/es-shims/String.prototype.trimStart",
       "repository": "https://github.com/es-shims/String.prototype.trimStart"
     },
     {
@@ -10156,7 +10156,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/chalk/strip-ansi",
       "repository": "https://github.com/chalk/strip-ansi"
     },
     {
@@ -10165,7 +10165,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/strip-bom",
       "repository": "https://github.com/sindresorhus/strip-bom"
     },
     {
@@ -10174,7 +10174,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/strip-final-newline",
       "repository": "https://github.com/sindresorhus/strip-final-newline"
     },
     {
@@ -10183,7 +10183,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/strip-json-comments",
       "repository": "https://github.com/sindresorhus/strip-json-comments"
     },
     {
@@ -10192,7 +10192,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/vercel/styled-jsx",
       "repository": "https://github.com/vercel/styled-jsx"
     },
     {
@@ -10210,7 +10210,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/chalk/supports-color",
       "repository": "https://github.com/chalk/supports-color"
     },
     {
@@ -10219,7 +10219,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/chalk/supports-color",
       "repository": "https://github.com/chalk/supports-color"
     },
     {
@@ -10228,7 +10228,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/chalk/supports-color",
       "repository": "https://github.com/chalk/supports-color"
     },
     {
@@ -10246,7 +10246,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/nfroidure/svg-pathdata",
       "repository": "https://github.com/nfroidure/svg-pathdata"
     },
     {
@@ -10273,7 +10273,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/tagged-tag",
       "repository": "https://github.com/sindresorhus/tagged-tag"
     },
     {
@@ -10333,7 +10333,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/tinylibs/tinybench",
       "repository": "https://github.com/tinylibs/tinybench"
     },
     {
@@ -10405,7 +10405,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/jsdom/tr46",
       "repository": "https://github.com/jsdom/tr46"
     },
     {
@@ -10423,7 +10423,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/JoshuaKGoldberg/ts-api-utils",
       "repository": "https://github.com/JoshuaKGoldberg/ts-api-utils"
     },
     {
@@ -10432,7 +10432,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/tamino-martinius/node-ts-dedent",
       "repository": "https://github.com/tamino-martinius/node-ts-dedent"
     },
     {
@@ -10450,7 +10450,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/dividab/tsconfig-paths",
       "repository": "https://github.com/dividab/tsconfig-paths"
     },
     {
@@ -10506,7 +10506,7 @@
       "license": "(MIT OR CC0-1.0)",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/type-fest",
       "repository": "https://github.com/sindresorhus/type-fest"
     },
     {
@@ -10515,7 +10515,7 @@
       "license": "(MIT OR CC0-1.0)",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/type-fest",
       "repository": "https://github.com/sindresorhus/type-fest"
     },
     {
@@ -10620,7 +10620,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/markdown-it/uc.micro",
       "repository": "https://github.com/markdown-it/uc.micro"
     },
     {
@@ -10638,7 +10638,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/unjs/uncrypto",
       "repository": "https://github.com/unjs/uncrypto"
     },
     {
@@ -10683,7 +10683,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/unicorn-magic",
       "repository": "https://github.com/sindresorhus/unicorn-magic"
     },
     {
@@ -10701,7 +10701,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/browserslist/update-db",
       "repository": "https://github.com/browserslist/update-db"
     },
     {
@@ -10719,7 +10719,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/facebook/react",
       "repository": "https://github.com/facebook/react"
     },
     {
@@ -10746,7 +10746,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/uuidjs/uuid",
       "repository": "https://github.com/uuidjs/uuid"
     },
     {
@@ -10793,7 +10793,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/jsdom/w3c-xmlserializer",
       "repository": "https://github.com/jsdom/w3c-xmlserializer"
     },
     {
@@ -10811,7 +10811,7 @@
       "license": "Apache-2.0",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/stryker-mutator/weapon-regex",
       "repository": "https://github.com/stryker-mutator/weapon-regex"
     },
     {
@@ -10820,7 +10820,7 @@
       "license": "Apache-2.0",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/GoogleChrome/web-vitals",
       "repository": "https://github.com/GoogleChrome/web-vitals"
     },
     {
@@ -10829,7 +10829,7 @@
       "license": "BSD-2-Clause",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/jsdom/webidl-conversions",
       "repository": "https://github.com/jsdom/webidl-conversions"
     },
     {
@@ -10838,7 +10838,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/jsdom/whatwg-encoding",
       "repository": "https://github.com/jsdom/whatwg-encoding"
     },
     {
@@ -10847,7 +10847,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/jsdom/whatwg-mimetype",
       "repository": "https://github.com/jsdom/whatwg-mimetype"
     },
     {
@@ -10856,7 +10856,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/jsdom/whatwg-url",
       "repository": "https://github.com/jsdom/whatwg-url"
     },
     {
@@ -10865,7 +10865,7 @@
       "license": "ISC",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/isaacs/node-which",
       "repository": "https://github.com/isaacs/node-which"
     },
     {
@@ -10901,7 +10901,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/inspect-js/which-typed-array",
       "repository": "https://github.com/inspect-js/which-typed-array"
     },
     {
@@ -10928,7 +10928,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/chalk/wrap-ansi",
       "repository": "https://github.com/chalk/wrap-ansi"
     },
     {
@@ -10937,7 +10937,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/chalk/wrap-ansi",
       "repository": "https://github.com/chalk/wrap-ansi"
     },
     {
@@ -10975,7 +10975,7 @@
       "license": "Apache-2.0",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/jsdom/xml-name-validator",
       "repository": "https://github.com/jsdom/xml-name-validator"
     },
     {
@@ -10984,7 +10984,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/lddubeau/xmlchars",
       "repository": "https://github.com/lddubeau/xmlchars"
     },
     {
@@ -11002,7 +11002,7 @@
       "license": "ISC",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/isaacs/yallist",
       "repository": "https://github.com/isaacs/yallist"
     },
     {
@@ -11029,7 +11029,7 @@
       "license": "ISC",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/yargs/yargs-parser",
       "repository": "https://github.com/yargs/yargs-parser"
     },
     {
@@ -11038,7 +11038,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/yocto-queue",
       "repository": "https://github.com/sindresorhus/yocto-queue"
     },
     {
@@ -11047,7 +11047,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/sindresorhus/yoctocolors",
       "repository": "https://github.com/sindresorhus/yoctocolors"
     },
     {
@@ -11056,7 +11056,7 @@
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/fabiospampinato/zeptomatch",
       "repository": "https://github.com/fabiospampinato/zeptomatch"
     },
     {
@@ -11085,7 +11085,7 @@
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": null,
+      "homepage": "https://github.com/causaly/zod-validation-error",
       "repository": "https://github.com/causaly/zod-validation-error"
     },
     {

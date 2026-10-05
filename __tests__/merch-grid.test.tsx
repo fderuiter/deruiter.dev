@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
-import { MerchGrid } from "@/components/merch/MerchGrid";
+import { AvailableMerch, MerchGrid } from "@/components/merch/MerchGrid";
 import { MerchView } from "@/components/merch/MerchView";
 import { MERCH_PRODUCTS, type MerchProductItem } from "@/lib/merch-data";
 
@@ -89,12 +89,42 @@ describe("MerchView", () => {
     render(<MerchView />);
     const h1 = screen.getByRole("heading", { level: 1 });
     expect(h1.textContent).toMatch(/coming soon/i);
-    expect(screen.getByText(/nothing here can be ordered today/i)).toBeTruthy();
+    expect(
+      screen.getByText(/nothing in it can be ordered today/i)
+    ).toBeTruthy();
     expect(
       screen.getByRole("heading", { name: /at-cost promise/i })
     ).toBeTruthy();
     expect(screen.getByText(/no artist markup/i)).toBeTruthy();
     expect(screen.getByText(/CC0/)).toBeTruthy();
     expect(document.body.textContent).not.toMatch(/CC BY/);
+  });
+});
+
+describe("AvailableMerch", () => {
+  afterEach(cleanup);
+
+  it("renders a safe, labelled outbound link to the Flags for Good flag", () => {
+    const { container } = render(<AvailableMerch />);
+    const links = container.querySelectorAll("a");
+    expect(links).toHaveLength(1);
+    const a = links[0];
+    expect(a.getAttribute("href")).toBe(
+      "https://flagsforgood.com/products/laser-loon-minnesota-flag"
+    );
+    expect(a.getAttribute("target")).toBe("_blank");
+    expect(a.getAttribute("rel")).toBe("noopener noreferrer");
+    expect(a.textContent).toContain("Buy on Flags for Good");
+    expect(a.textContent).toContain("opens in new window");
+  });
+
+  it("shows the flag as available while the Redbubble lineup stays coming soon", () => {
+    render(<MerchView />);
+    expect(
+      screen.getByRole("heading", { name: /available now/i })
+    ).toBeTruthy();
+    expect(screen.getAllByText("Coming soon")).toHaveLength(
+      MERCH_PRODUCTS.length
+    );
   });
 });

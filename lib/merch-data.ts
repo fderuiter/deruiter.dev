@@ -95,6 +95,46 @@ export const MERCH_PRODUCTS: readonly MerchProductItem[] = [
   },
 ];
 
+/** An item that can be bought today from a store other than Redbubble. */
+export interface AvailableMerchItem {
+  id: string;
+  title: string;
+  description: string;
+  /** Seller name shown on the card. */
+  seller: string;
+  /** Product page on the seller's own site (https, `flagsforgood.com`). */
+  url: string;
+  previewImage: string;
+  previewAlt: string;
+}
+
+/** Items on sale now. The Redbubble lineup above stays coming soon. */
+export const AVAILABLE_MERCH: readonly AvailableMerchItem[] = [
+  {
+    id: "minnesota-flag",
+    title: "Laser Loon Minnesota flag",
+    description:
+      "The F277 Laser Loon design as a full-size flag, sold by Flags for Good.",
+    seller: "Flags for Good",
+    url: "https://flagsforgood.com/products/laser-loon-minnesota-flag",
+    previewImage: ARTWORK,
+    previewAlt: ARTWORK_ALT,
+  },
+];
+
+const FLAGS_FOR_GOOD_HOST = /(^|\.)flagsforgood\.com$/i;
+
+/** True for an https URL on flagsforgood.com. */
+export function isFlagsForGoodUrl(value: string | null | undefined): boolean {
+  if (!value) return false;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && FLAGS_FOR_GOOD_HOST.test(url.hostname);
+  } catch {
+    return false;
+  }
+}
+
 const REDBUBBLE_HOST = /(^|\.)redbubble\.com$/i;
 
 /** True for an https URL on redbubble.com. */
@@ -127,6 +167,11 @@ export function validateMerchCatalog(
 ): string[] {
   const problems: string[] = [];
   const seen = new Set<string>();
+  for (const item of AVAILABLE_MERCH) {
+    if (!isFlagsForGoodUrl(item.url)) {
+      problems.push(`${item.id}: url must be https on flagsforgood.com`);
+    }
+  }
   for (const product of products) {
     if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(product.id)) {
       problems.push(`${product.id}: id must be kebab-case`);

@@ -17,7 +17,7 @@ export default function Image() {
     category: "ENGINEERING ARCADE // CLINICAL OPERATIONS",
     title: config.title,
     description: config.description,
-    badge: "8 ATTENTION // 6 METERS",
+    badge: "WALK THE OFFICE // 6 METERS",
     tags: [
       "Simulation",
       "Attention Budget",

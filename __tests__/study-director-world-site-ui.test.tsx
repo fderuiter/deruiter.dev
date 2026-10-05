@@ -27,8 +27,17 @@ function tick(times: number) {
     });
 }
 
+/** Opens the collapsed directory, if it is not open already. */
+function openDirectory() {
+  const toggle = screen
+    .getAllByRole("button", { name: /directory/i })
+    .find((b) => b.getAttribute("aria-expanded") === "false");
+  if (toggle) fireEvent.click(toggle);
+}
+
 /** Walks to a directory entry and waits for the walk to finish. */
 function walkTo(name: RegExp) {
+  openDirectory();
   fireEvent.click(screen.getByRole("button", { name }));
   tick(60);
 }
@@ -36,6 +45,7 @@ function walkTo(name: RegExp) {
 describe("StudyDirectorWorld site visits", () => {
   beforeEach(() => {
     globalThis.localStorage?.clear?.();
+    globalThis.localStorage?.setItem?.("study_director_world_intro_seen", "1");
     vi.spyOn(window, "scrollTo").mockImplementation(() => {});
     vi.useFakeTimers();
   });
@@ -60,7 +70,11 @@ describe("StudyDirectorWorld site visits", () => {
     ).toBeTruthy();
     expect(document.activeElement).toBe(playfield);
     const nav = screen.getByRole("navigation", { name: "Site directory" });
-    expect(within(nav).getAllByRole("button")).toHaveLength(
+    expect(
+      within(nav)
+        .getAllByRole("button")
+        .filter((b) => b.getAttribute("aria-expanded") === null)
+    ).toHaveLength(
       SITE_MAPS["site-02"].rooms.length + SITE_MAPS["site-02"].stations.length
     );
     const visit = screen.getByTestId("site-visit");

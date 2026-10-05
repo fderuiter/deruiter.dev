@@ -22,9 +22,18 @@ function renderWorld() {
   return { onExit, playfield: screen.getByTestId("world-playfield") };
 }
 
+/** Opens the collapsed directory, if it is not open already. */
+function openDirectory() {
+  const toggle = screen
+    .getAllByRole("button", { name: /directory/i })
+    .find((b) => b.getAttribute("aria-expanded") === "false");
+  if (toggle) fireEvent.click(toggle);
+}
+
 describe("StudyDirectorWorld", () => {
   beforeEach(() => {
     globalThis.localStorage?.clear?.();
+    globalThis.localStorage?.setItem?.("study_director_world_intro_seen", "1");
     vi.spyOn(window, "scrollTo").mockImplementation(() => {});
   });
   afterEach(() => {
@@ -55,8 +64,11 @@ describe("StudyDirectorWorld", () => {
 
   it("lists every room, person and station in the directory", () => {
     renderWorld();
+    openDirectory();
     const nav = screen.getByRole("navigation", { name: "Office directory" });
-    const buttons = within(nav).getAllByRole("button");
+    const buttons = within(nav)
+      .getAllByRole("button")
+      .filter((b) => b.getAttribute("aria-expanded") === null);
     expect(buttons).toHaveLength(
       CRO_FLOOR.rooms.length + 6 + CRO_FLOOR.stations.length
     );
@@ -95,6 +107,7 @@ describe("StudyDirectorWorld", () => {
   it("walks to the coffee machine from the directory and drinks at E", () => {
     vi.useFakeTimers();
     const { playfield } = renderWorld();
+    openDirectory();
     fireEvent.click(
       screen.getByRole("button", { name: /Walk to Coffee machine/ })
     );
@@ -114,6 +127,7 @@ describe("StudyDirectorWorld", () => {
   it("offers to go home at the car and starts the next morning", () => {
     vi.useFakeTimers();
     const { playfield } = renderWorld();
+    openDirectory();
     fireEvent.click(screen.getByRole("button", { name: /Walk to Your car/ }));
     for (let i = 0; i < 40; i += 1)
       act(() => {
@@ -136,18 +150,17 @@ describe("Study Director world entry points", () => {
   it("opens the world from the briefing and returns to the desk", async () => {
     vi.spyOn(window, "scrollTo").mockImplementation(() => {});
     globalThis.localStorage?.clear?.();
+    globalThis.localStorage?.setItem?.("study_director_world_intro_seen", "1");
     render(<StudyDirectorGame />);
     expect(screen.getByTestId("study-briefing")).toBeTruthy();
     act(() => {
-      fireEvent.click(
-        screen.getByRole("button", { name: "Preview: walk the office" })
-      );
+      fireEvent.click(screen.getByRole("button", { name: "Walk the office" }));
     });
     expect(window.location.hash).toBe("#mode=world");
     expect(await screen.findByTestId("world-hud")).toBeTruthy();
     act(() => {
       fireEvent.click(
-        screen.getAllByRole("button", { name: "Back to the desk" })[0]
+        screen.getAllByRole("button", { name: "Switch to the classic desk" })[0]
       );
     });
     expect(window.location.hash).toBe("");

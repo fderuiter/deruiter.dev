@@ -724,17 +724,34 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
     title: "Study Director: Everything Is Fine",
     subtitle: "Clinical Study Management Simulator",
     genre: "Management Simulation",
-    badge: "Attention Budget",
+    badge: "Walkable Office",
     route: "/arcade/study-director",
     accentColor: "from-amber-500/20 via-amber-500/5 to-transparent",
     badgeBg: "bg-amber-500/10 text-amber-300 border-amber-500/30",
     objective:
       "Take Study 24-081, a randomized PK study for a first-time biotech, from kickoff to closeout: a scientifically valid, compliant study, on time, without wrecking the budget, the sponsor relationship or your team. Six meters compete and you cannot keep them all high. At the end the sponsor, the company, the science and the regulator each give a verdict, and the FDA may come to ask about your decisions.",
     quickSummary:
-      "Each day you have 5 attention points. Answer messages in the inbox (1 to 5 choose an option), audit a site to see what the dashboard is hiding, then end the day. Documenting a decision costs 1 more attention. Skipped documentation adds documentation debt, which the inspection replays. Your run saves as you play.",
+      "The game opens in the CRO office. Walk the floor with W A S D, press E to use what you face or talk to a teammate, and drive out to the sites to see what the dashboard is hiding. Every action costs minutes and energy; go home when the day runs out. Prefer a dashboard? The classic desk gives you 5 attention points a day instead. Skipped documentation adds documentation debt, which the inspection replays. Your run saves as you play.",
     controls: [
       {
-        action: "Choose an option",
+        action: "Walk the office",
+        description:
+          "Moves one tile. Walking costs clock time, about four tiles a minute.",
+        key: "W A S D / Arrows",
+      },
+      {
+        action: "Use or talk",
+        description:
+          "Uses the station you face (EDC, phone, eTMF, coffee, your car) or talks to the teammate in front of you.",
+        key: "E",
+      },
+      {
+        action: "Ask yourself how it is going",
+        description: "It is fine.",
+        key: "F",
+      },
+      {
+        action: "Choose an option (classic desk)",
         description:
           "Answers the open message with the numbered option. Each option shows its attention cost.",
         key: "1 - 5",
@@ -751,7 +768,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         key: "J / K",
       },
       {
-        action: "End the day",
+        action: "End the day (classic desk)",
         description:
           "Unanswered messages whose time has run out apply their fallout, the study advances one day and attention refills to 5, less when a query backlog or documentation debt is taking routine work.",
         key: "E",
@@ -773,7 +790,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         title: "Attention is the resource",
         detail:
-          "You get 5 attention points a day and unspent points do not carry over. Answering, delegating and auditing all spend them, so some messages will go unanswered.",
+          "In the office, minutes and energy are the resource: the day starts at 8:00 and a late finish costs energy and morale. On the classic desk you get 5 attention points a day and unspent points do not carry over. Answering, delegating and auditing all spend them, so some messages will go unanswered.",
         badge: "Attention",
       },
       {

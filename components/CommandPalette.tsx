@@ -801,17 +801,18 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         id: "nav-study-director",
         title: "Study Director: Everything Is Fine",
         subtitle:
-          "Run a clinical study on five attention points a day and defend your decisions to the FDA.",
+          "Walk the floor of a CRO, run a clinical study from kickoff to closeout, and defend your decisions to the FDA.",
         category: "navigation",
         url: "/arcade/study-director",
         icon: <IconClipboardCheck className="w-4 h-4 text-brand-cyan" />,
         badge: "Simulation",
         status: "Playable",
         description:
-          "Shepherd one study from kickoff to database lock. Answer the inbox, delegate, audit the sites behind the green dashboard, and see which decisions the inspector asks about.",
+          "Shepherd one study from kickoff to database lock. Walk the office, talk to your team, visit the sites behind the green dashboard, and see which decisions the inspector asks about. The classic desk is one click away.",
         techStack: ["Seeded Simulation", "Causal Model", "Decision Log"],
         highlights: [
-          "Five attention points a day, six meters",
+          "A walkable office with a team on schedules",
+          "Site visits and a day that costs minutes and energy",
           "Documentation debt comes due at inspection",
           "Discover which kind of Study Director you are",
         ],

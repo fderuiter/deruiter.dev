@@ -233,7 +233,7 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
   studyDirector: {
     title: "Study Director: Everything Is Fine",
     description:
-      "Run a clinical study from kickoff to closeout. Spend limited attention, audit the sites behind the green dashboard, and defend your decisions to the FDA.",
+      "Walk the floor of a CRO and run a clinical study from kickoff to closeout. Talk to your team, visit the sites, and defend your decisions to the FDA.",
     path: "/arcade/study-director",
     keywords: [
       "Clinical Study Management Simulator",

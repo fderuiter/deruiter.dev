@@ -4,7 +4,19 @@ import AxeBuilder from "@axe-core/playwright";
 const WCAG_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"];
 const BLOCKING = new Set(["critical", "serious", "moderate"]);
 
+/** Opens the collapsed directory, if it is not open already. */
+async function openDirectory(page: Page) {
+  const toggle = page.getByRole("button", {
+    name: /^(Office|Site) directory$/,
+  });
+  if ((await toggle.getAttribute("aria-expanded")) === "false")
+    await toggle.click();
+}
+
 async function launchWorld(page: Page) {
+  await page.addInitScript(() => {
+    window.localStorage.setItem("study_director_world_intro_seen", "1");
+  });
   await page.goto("/arcade/study-director#mode=world");
   await page.waitForLoadState("domcontentloaded");
   await expect(async () => {
@@ -81,6 +93,7 @@ test.describe("Study Director world (/arcade/study-director#mode=world)", () => 
   test("walks to a station from the office directory", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await launchWorld(page);
+    await openDirectory(page);
     const edc = page.getByRole("button", { name: /Walk to EDC workstation/ });
     await edc.focus();
     await page.keyboard.press("Enter");
@@ -96,18 +109,19 @@ test.describe("Study Director world (/arcade/study-director#mode=world)", () => 
     ).toBeVisible();
   });
 
-  test("opens from the briefing and returns to the desk", async ({ page }) => {
-    await page.goto("/arcade/study-director");
+  test("switches between the classic desk and the office", async ({ page }) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem("study_director_world_intro_seen", "1");
+    });
+    await page.goto("/arcade/study-director#mode=desk");
     await page.waitForLoadState("domcontentloaded");
     await expect(async () => {
       await page.getByRole("button", { name: /Launch Cabinet/i }).click();
       await expect(
-        page.getByRole("button", { name: "Preview: walk the office" })
+        page.getByRole("button", { name: "Walk the office" })
       ).toBeVisible({ timeout: 2000 });
     }).toPass({ timeout: 15000 });
-    await page
-      .getByRole("button", { name: "Preview: walk the office" })
-      .focus();
+    await page.getByRole("button", { name: "Walk the office" }).focus();
     await page.keyboard.press("Enter");
     await expect(page.getByTestId("world-hud")).toBeVisible();
     expect(page.url()).toContain("#mode=world");
@@ -115,9 +129,40 @@ test.describe("Study Director world (/arcade/study-director#mode=world)", () => 
       () => document.documentElement.scrollWidth > window.innerWidth
     );
     expect(overflow).toBe(false);
-    await page.getByRole("button", { name: "Back to the desk" }).click();
+    await page
+      .getByRole("button", { name: "Switch to the classic desk" })
+      .click();
     await expect(
       page.getByRole("button", { name: /Start the study/i })
     ).toBeVisible();
+  });
+
+  test("opens in the office by default and remembers the desk choice", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem("study_director_world_intro_seen", "1");
+    });
+    await page.goto("/arcade/study-director");
+    await page.waitForLoadState("domcontentloaded");
+    await expect(async () => {
+      await page.getByRole("button", { name: /Launch Cabinet/i }).click();
+      await expect(page.getByTestId("world-hud")).toBeVisible({
+        timeout: 2000,
+      });
+    }).toPass({ timeout: 15000 });
+    await page
+      .getByRole("button", { name: "Switch to the classic desk" })
+      .click();
+    await expect(
+      page.getByRole("button", { name: /Start the study/i })
+    ).toBeVisible();
+    await page.reload();
+    await expect(async () => {
+      await page.getByRole("button", { name: /Launch Cabinet/i }).click();
+      await expect(
+        page.getByRole("button", { name: /Start the study/i })
+      ).toBeVisible({ timeout: 2000 });
+    }).toPass({ timeout: 15000 });
   });
 });

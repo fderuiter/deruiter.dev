@@ -31,6 +31,7 @@ function lastDayAtTheCar(): WorldState {
 describe("Study Director world: the FINE mug", () => {
   beforeEach(() => {
     globalThis.localStorage?.clear?.();
+    globalThis.localStorage?.setItem?.("study_director_world_intro_seen", "1");
   });
   afterEach(() => {
     cleanup();
@@ -54,6 +55,7 @@ describe("Study Director world: the FINE mug", () => {
 describe("Study Director world: closeout", () => {
   beforeEach(() => {
     globalThis.localStorage?.clear?.();
+    globalThis.localStorage?.setItem?.("study_director_world_intro_seen", "1");
     vi.spyOn(window, "scrollTo").mockImplementation(() => {});
   });
   afterEach(() => {
@@ -75,7 +77,8 @@ describe("Study Director world: closeout", () => {
     act(() => {
       fireEvent.click(screen.getByRole("button", { name: "See the closeout" }));
     });
-    expect(window.location.hash).toBe("");
+    // The closeout shows on the desk without changing the saved choice.
+    expect(window.location.hash).toBe("#mode=desk");
     expect(await screen.findByTestId("study-report")).toBeTruthy();
     // The desk's own save slot is left alone.
     expect(globalThis.localStorage.getItem("study_director_save_v1")).toBe(

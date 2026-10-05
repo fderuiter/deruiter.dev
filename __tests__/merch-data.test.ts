@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  AVAILABLE_MERCH,
   MERCH_PRODUCTS,
   MERCH_SHOP_URL,
   MERCH_STORE_STATUS,
   getOrderUrl,
+  isFlagsForGoodUrl,
   isRedbubbleUrl,
   validateMerchCatalog,
   type MerchProductItem,
@@ -101,5 +103,24 @@ describe("merch catalog", () => {
     );
     expect(problems).toContain("Bad_Id: id must be kebab-case");
     expect(problems).toContain("dup: duplicate id");
+  });
+
+  it("links the Minnesota flag to its Flags for Good product page", () => {
+    expect(AVAILABLE_MERCH.map((i) => i.url)).toContain(
+      "https://flagsforgood.com/products/laser-loon-minnesota-flag"
+    );
+    expect(AVAILABLE_MERCH.every((i) => isFlagsForGoodUrl(i.url))).toBe(true);
+  });
+
+  it("accepts only https URLs on flagsforgood.com", () => {
+    expect(isFlagsForGoodUrl("https://flagsforgood.com/products/x")).toBe(true);
+    expect(isFlagsForGoodUrl("https://www.flagsforgood.com/x")).toBe(true);
+    expect(isFlagsForGoodUrl("http://flagsforgood.com/x")).toBe(false);
+    expect(isFlagsForGoodUrl("https://flagsforgood.com.evil.example/x")).toBe(
+      false
+    );
+    expect(isFlagsForGoodUrl("https://evilflagsforgood.com/x")).toBe(false);
+    expect(isFlagsForGoodUrl("javascript:alert(1)")).toBe(false);
+    expect(isFlagsForGoodUrl(null)).toBe(false);
   });
 });

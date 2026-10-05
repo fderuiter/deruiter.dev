@@ -7,7 +7,7 @@ import {
   MERCH_STORE_STATUS,
   isRedbubbleUrl,
 } from "@/lib/merch-data";
-import { MerchGrid } from "./MerchGrid";
+import { AvailableMerch, MerchGrid } from "./MerchGrid";
 
 /** The /merch page body: status, the at-cost promise, then the product grid. */
 export function MerchView() {
@@ -32,7 +32,7 @@ export function MerchView() {
         <p className="mt-4 max-w-2xl break-words text-base text-zinc-400">
           {live
             ? "Stickers, shirts, desk mats, mugs and prints of the F277 flag, printed and shipped by Redbubble."
-            : "The shop is not open yet. This is the planned lineup. Nothing here can be ordered today, and nothing is reserved or on sale."}
+            : "The Redbubble shop is not open yet. The flag below is on sale now from Flags for Good. The rest of the lineup is planned: nothing in it can be ordered today, and nothing is reserved."}
         </p>
         {live && shopUrl && (
           <a
@@ -59,13 +59,16 @@ export function MerchView() {
         </h2>
         <ul className="space-y-2 text-sm text-zinc-300">
           <li className="break-words">
-            {live ? "Every item is priced" : "Every item will be priced"} at
-            Redbubble&apos;s base production cost, with no artist markup.
+            {live
+              ? "Every Redbubble item is priced"
+              : "Every Redbubble item will be priced"}{" "}
+            at Redbubble&apos;s base production cost, with no artist markup.
           </li>
           <li className="break-words">
             Redbubble is the seller. It handles checkout, printing, sales tax,
-            shipping, returns and support, so this site holds no inventory and
-            takes no payment.
+            shipping, returns and support for its items. Flags for Good does the
+            same for the flag. This site holds no inventory and takes no
+            payment.
           </li>
           <li className="break-words">
             The artwork is CC0, a public domain dedication. You can also print
@@ -81,6 +84,11 @@ export function MerchView() {
         </ul>
       </section>
 
+      <AvailableMerch />
+
+      <h2 className="mb-3 font-mono text-xs font-bold uppercase tracking-widest text-amber-400">
+        {live ? "Redbubble shop" : "Planned on Redbubble"}
+      </h2>
       <MerchGrid products={MERCH_PRODUCTS} status={MERCH_STORE_STATUS} />
 
       <p className="mt-8 break-words text-xs text-zinc-500">

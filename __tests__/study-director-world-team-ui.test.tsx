@@ -41,6 +41,7 @@ const current = () =>
 describe("Study Director world: team, phone and desk", () => {
   beforeEach(() => {
     globalThis.localStorage?.clear?.();
+    globalThis.localStorage?.setItem?.("study_director_world_intro_seen", "1");
     vi.spyOn(window, "scrollTo").mockImplementation(() => {});
   });
   afterEach(() => {

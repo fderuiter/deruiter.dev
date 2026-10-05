@@ -10,10 +10,15 @@ import { DesktopOnlyGate } from "@/components/arcade/DesktopOnlyGate";
 import { NextPrevNav } from "@/components/ui/NextPrevNav";
 import { getArcadeNeighbors } from "@/lib/arcade";
 
+/** The game opens in the walkable office; the classic desk is one click away. */
 const StudyDirectorLoader = () =>
-  import("@/components/study-director/StudyDirectorGame").then(
-    (mod) => mod.StudyDirectorGame
-  );
+  import("@/components/study-director/StudyDirectorGame").then((mod) => {
+    const { StudyDirectorGame } = mod;
+    const OfficeFirstStudyDirector: React.FC = () => (
+      <StudyDirectorGame officeFirst />
+    );
+    return OfficeFirstStudyDirector;
+  });
 
 const DynamicStudyDirector = dynamic(StudyDirectorLoader, {
   ssr: false,
@@ -49,10 +54,11 @@ export const StudyDirectorClient: React.FC = () => (
           <span className="text-amber-400">Everything Is Fine</span>
         </h1>
         <p className="mt-2 max-w-3xl font-mono text-xs text-zinc-300 sm:text-sm">
-          Shepherd one clinical study from kickoff to closeout. You have five
-          attention points a day, a team that is not always fine, and a
-          dashboard that says everything is. Every study, site and person here
-          is fictional; nothing is clinical or regulatory advice.
+          Walk the floor of a contract research organization and shepherd one
+          clinical study from kickoff to closeout. Talk to a team that is not
+          always fine, drive out to the sites, and watch the office show what
+          the dashboard will not. Every study, site and person here is
+          fictional; nothing is clinical or regulatory advice.
         </p>
       </div>
 
@@ -68,13 +74,13 @@ export const StudyDirectorClient: React.FC = () => (
                 aria-hidden="true"
               />
             }
-            instructions="Answer the inbox, spend your five daily attention points, and audit the sites behind the green dashboard. Documenting a decision costs one more attention; skipped documentation comes back at inspection."
+            instructions="Walk the office, talk to your team, and drive out to the sites behind the green dashboard. Every action costs minutes and energy, and skipped documentation comes back at inspection. Prefer the dashboard? The classic desk is one button away."
             controls={[
-              { key: "1 - 5", action: "Choose an option" },
-              { key: "D", action: "Document the decision (+1 attention)" },
-              { key: "J / K or ↑ / ↓", action: "Move through the inbox" },
-              { key: "E", action: "End the day" },
-              { key: "?", action: "Show every shortcut" },
+              { key: "W A S D or ↑ ← ↓ →", action: "Walk" },
+              { key: "E", action: "Use what you face, or talk" },
+              { key: "F", action: "Ask yourself how you are" },
+              { key: "Classic desk: 1 - 5", action: "Choose an option" },
+              { key: "Classic desk: E", action: "End the day" },
             ]}
             importComponent={StudyDirectorLoader}
           >

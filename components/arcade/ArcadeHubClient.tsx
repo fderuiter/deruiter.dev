@@ -234,15 +234,17 @@ const ARCADE_GAMES: ArcadeGameCard[] = [
     subtitle: "Clinical Study Management Simulator",
     genre: "Management Simulation",
     description:
-      "Shepherd one study from kickoff to closeout with five attention points a day. Delegate, audit the sites behind the green dashboard, and defend your decisions when the FDA arrives.",
+      "Walk the floor of a contract research organization and shepherd one study from kickoff to closeout. Talk to a team that is not always fine, drive out to the sites behind the green dashboard, and defend your decisions when the FDA arrives.",
     mechanics: [
-      "Daily Attention Budget",
+      "Walkable CRO Office",
+      "Team Trust and Schedules",
+      "Site Visits",
       "Documentation Debt",
-      "Site Audits",
       "FDA Inspection Replay",
     ],
     techStack: [
       "Seeded Deterministic Simulation",
+      "Canvas 2D Office",
       "Causal Risk Model",
       "Decision Log Replay",
     ],

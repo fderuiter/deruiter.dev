@@ -9,6 +9,7 @@ import React, {
   useSyncExternalStore,
 } from "react";
 import dynamic from "next/dynamic";
+import { safeIsAvailable, safeRawStorage } from "@/lib/safe-storage";
 import {
   ATTENTION_PER_DAY,
   AUDIT_ATTENTION,
@@ -100,25 +101,75 @@ function hashSeed(): string | null {
 }
 
 const WORLD_PATTERN = /(?:^#|&)mode=world(?:&|$)/;
+const DESK_PATTERN = /(?:^#|&)mode=desk(?:&|$)/;
+const MODE_KEY = "study_director_mode";
+const MODE_EVENT = "sd-mode-change";
 
-/** True when the link asks for the walkable world instead of the desk. */
-function hashWorld(): boolean {
-  return WORLD_PATTERN.test(window.location.hash);
+type PlayMode = "world" | "desk";
+
+/** The mode a player last chose by hand, or null if they never did. */
+function storedMode(): PlayMode | null {
+  try {
+    if (!safeIsAvailable()) return null;
+    const value = safeRawStorage.getItem(MODE_KEY);
+    return value === "world" || value === "desk" ? value : null;
+  } catch {
+    return null;
+  }
 }
 
-/** Opens the world preview; the hash change switches the view. */
+function rememberMode(mode: PlayMode): void {
+  try {
+    if (safeIsAvailable()) safeRawStorage.setItem(MODE_KEY, mode);
+  } catch {
+    // Storage blocked: the choice lasts for this page only.
+  }
+  window.dispatchEvent(new Event(MODE_EVENT));
+}
+
+function subscribeMode(onChange: () => void): () => void {
+  window.addEventListener("hashchange", onChange);
+  window.addEventListener(MODE_EVENT, onChange);
+  return () => {
+    window.removeEventListener("hashchange", onChange);
+    window.removeEventListener(MODE_EVENT, onChange);
+  };
+}
+
+/**
+ * Which view to show. A link decides first (`#mode=desk` or `#mode=world`),
+ * then the player's last choice, then the page's default (`officeFirst`).
+ */
+function currentMode(officeFirst: boolean): PlayMode {
+  const hash = window.location.hash;
+  if (DESK_PATTERN.test(hash)) return "desk";
+  if (WORLD_PATTERN.test(hash)) return "world";
+  return storedMode() ?? (officeFirst ? "world" : "desk");
+}
+
+/** Opens the walkable office and remembers the choice. */
 function enterWorld(): void {
+  rememberMode("world");
   window.location.hash = "mode=world";
 }
 
 /** Returns to the classic desk, dropping the mode from the link. */
 function leaveWorld(): void {
+  rememberMode("desk");
   window.history.replaceState(
     null,
     "",
     window.location.pathname + window.location.search
   );
   window.dispatchEvent(new HashChangeEvent("hashchange"));
+}
+
+/**
+ * Shows the closeout on the desk without changing the saved choice, so the
+ * next visit still opens in the office.
+ */
+function showCloseout(): void {
+  window.location.hash = "mode=desk";
 }
 
 const DIFFICULTY_PATTERN = /(?:^#|&)difficulty=(calm|standard|rescue)(?:&|$)/;
@@ -135,7 +186,9 @@ function hashDifficulty(): Difficulty | null {
  * The Study Director desk: dashboard, inbox, team, sites and a decision
  * panel. All rules live in `lib/study-director`; this is a thin adapter.
  */
-export const StudyDirectorGame: React.FC = () => {
+export const StudyDirectorGame: React.FC<{ officeFirst?: boolean }> = ({
+  officeFirst = false,
+}) => {
   const [state, setState] = useState<StudyState | null>(null);
   const [saved, setSaved] = useState<StudyState | null>(() => loadStudySave());
   const [scenario, setScenario] = useState<StudyScenario>(DEFAULT_SCENARIO);
@@ -155,7 +208,12 @@ export const StudyDirectorGame: React.FC = () => {
   // saved over the desk's own run (saves are separate per mode, ADR 0055).
   const [fromWorld, setFromWorld] = useState(false);
   const sharedSeed = useSyncExternalStore(subscribeHash, hashSeed, () => null);
-  const worldMode = useSyncExternalStore(subscribeHash, hashWorld, () => false);
+  const worldMode =
+    useSyncExternalStore(
+      subscribeMode,
+      () => currentMode(officeFirst),
+      () => "desk" as PlayMode
+    ) === "world";
   const sharedDifficulty = useSyncExternalStore(
     subscribeHash,
     hashDifficulty,
@@ -259,7 +317,7 @@ export const StudyDirectorGame: React.FC = () => {
    */
   const closeWorldRun = useCallback(
     (done: StudyState) => {
-      leaveWorld();
+      showCloseout();
       setFromWorld(true);
       setState(done);
       setBaseline(computeMeters(done));
@@ -493,14 +551,14 @@ export const StudyDirectorGame: React.FC = () => {
               onClick={startNew}
               className="min-h-[44px] border border-amber-500 bg-amber-500/10 px-4 text-sm font-bold text-amber-300 hover:bg-amber-500/20"
             >
-              Start the study
+              Start the study (classic desk)
             </button>
             <button
               type="button"
               onClick={enterWorld}
               className="min-h-[44px] border border-zinc-600 px-4 text-sm text-zinc-200 hover:border-amber-500"
             >
-              Preview: walk the office
+              Walk the office
             </button>
             {saved && saved.status === "running" ? (
               <button

@@ -133,6 +133,17 @@ pharmacy, work-from-home, work mini-games (source data verification, query
 writing, protocol review, database lock board), the inspector replayed as
 gameplay, organisational upgrades, and a career across studies.
 
+### Amendment 2026-10-05: the office is the default
+
+The owner expected a Stardew-style game and found the classic desk, so the
+default flips (epic #1816). The route opens in the walkable office. The
+classic desk stays one click away ("Switch to the classic desk") and keeps
+its own saves. The last choice is remembered in the browser; `#mode=desk`
+and `#mode=world` links always win, and a finished world run shows its
+closeout on the desk without changing the remembered choice. The
+"Preview" label is gone. A first-run dialog explains the controls, and the
+office directory starts collapsed so the stage gets the room.
+
 ## Consequences
 
 - The domain keeps one source of truth, so the classic desk and the world

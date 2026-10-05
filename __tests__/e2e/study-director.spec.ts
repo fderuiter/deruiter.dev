@@ -5,7 +5,7 @@ const WCAG_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"];
 const BLOCKING = new Set(["critical", "serious", "moderate"]);
 
 async function launch(page: Page) {
-  await page.goto("/arcade/study-director");
+  await page.goto("/arcade/study-director#mode=desk");
   await page.waitForLoadState("domcontentloaded");
   await expect(async () => {
     await page.getByRole("button", { name: /Launch Cabinet/i }).click();
@@ -36,7 +36,7 @@ test.describe("Study Director (/arcade/study-director)", () => {
   test("launches, answers a message, spends attention and ends the day", async ({
     page,
   }) => {
-    await page.goto("/arcade/study-director");
+    await page.goto("/arcade/study-director#mode=desk");
     await page.waitForLoadState("domcontentloaded");
 
     const overflow = await page.evaluate(

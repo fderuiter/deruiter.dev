@@ -53,6 +53,7 @@ import { OfficeDirectory } from "./OfficeDirectory";
 import { SiteVisitPanel, SiteVisitReportPanel } from "./SiteVisitPanel";
 import { MeetingSection, TeamOverlay, useTeamLayer } from "./TeamLayer";
 import { WorldHud } from "./WorldHud";
+import { WorldIntro } from "./WorldIntro";
 
 /** Milliseconds between steps when walking by directory or holding a key. */
 const STEP_MS = 110;
@@ -99,6 +100,24 @@ function loadWorld(): WorldState | null {
     return parseWorld(safeRawStorage.getItem(WORLD_SAVE_KEY));
   } catch {
     return null;
+  }
+}
+
+const INTRO_KEY = "study_director_world_intro_seen";
+
+function introSeen(): boolean {
+  try {
+    return safeIsAvailable() && safeRawStorage.getItem(INTRO_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function markIntroSeen(): void {
+  try {
+    if (safeIsAvailable()) safeRawStorage.setItem(INTRO_KEY, "1");
+  } catch {
+    // Storage blocked: the help shows again next visit.
   }
 }
 
@@ -155,6 +174,9 @@ export const StudyDirectorWorld: React.FC<{
   const [walk, setWalk] = useState<Walk | null>(null);
   const [visitReport, setVisitReport] = useState<SiteVisitReport | null>(null);
   const [notice, setNotice] = useState("");
+  // First-run help (#1819); the Controls button reopens it.
+  const [showIntro, setShowIntro] = useState(() => !introSeen());
+  const [acted, setActed] = useState(false);
   const reducedMotion = useSyncExternalStore(
     subscribeMotion,
     prefersReducedMotion,
@@ -242,6 +264,7 @@ export const StudyDirectorWorld: React.FC<{
     setWorld(result.world);
     setOutcome(result);
     setDigest(null);
+    setActed(true);
     setNotice(`${result.title}. ${result.lines.join(" ")}`);
   }, [world, map, people, team]);
 
@@ -348,7 +371,15 @@ export const StudyDirectorWorld: React.FC<{
   }, [world]);
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (away || team.blocking || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (
+      showIntro ||
+      away ||
+      team.blocking ||
+      e.metaKey ||
+      e.ctrlKey ||
+      e.altKey
+    )
+      return;
     const dir =
       KEY_DIRECTIONS[e.key] ?? KEY_DIRECTIONS[e.key.toLowerCase()] ?? null;
     if (dir) {
@@ -462,7 +493,7 @@ export const StudyDirectorWorld: React.FC<{
             onClick={() => (onCloseout ? onCloseout(study) : onExit())}
             className="min-h-[40px] border border-[var(--sd-amber)] px-3 text-xs font-bold text-amber-300"
           >
-            {onCloseout ? "See the closeout" : "Back to the desk"}
+            {onCloseout ? "See the closeout" : "Switch to the classic desk"}
           </button>
         ) : (
           <button
@@ -568,19 +599,34 @@ export const StudyDirectorWorld: React.FC<{
       </div>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-sm font-bold tracking-[-0.01em]">
-          {map.name ? `${map.name} visit` : "The CRO floor"}{" "}
-          <span className="ml-1 border border-[var(--sd-amber)]/50 px-1.5 py-px text-[10px] font-semibold tracking-wide text-[var(--sd-amber)] uppercase">
-            Preview
-          </span>
+          {map.name ? `${map.name} visit` : "The CRO floor"}
         </h2>
-        <button
-          type="button"
-          onClick={onExit}
-          className="min-h-[36px] border border-zinc-700 px-3 text-xs text-zinc-300 hover:border-[var(--sd-amber)] hover:text-[var(--sd-amber)]"
-        >
-          Back to the desk
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setShowIntro(true)}
+            className="min-h-12 border border-zinc-700 px-3 text-xs text-zinc-300 hover:border-[var(--sd-amber)] hover:text-[var(--sd-amber)]"
+          >
+            Controls
+          </button>
+          <button
+            type="button"
+            onClick={onExit}
+            className="min-h-12 border border-zinc-700 px-3 text-xs text-zinc-300 hover:border-[var(--sd-amber)] hover:text-[var(--sd-amber)]"
+          >
+            Switch to the classic desk
+          </button>
+        </div>
       </div>
+      {!acted && world.study.day === 1 && !onSite && !away ? (
+        <p
+          data-testid="world-goal"
+          className="border border-[var(--sd-hairline)] bg-[var(--sd-surface)] px-3 py-2 text-xs text-zinc-200"
+        >
+          <span className="font-bold text-[var(--sd-amber)]">Today: </span>
+          walk to the EDC workstation in your office and press E.
+        </p>
+      ) : null}
 
       <WorldHud hud={hud} />
 
@@ -670,6 +716,15 @@ export const StudyDirectorWorld: React.FC<{
         disabled={away || team.blocking || Boolean(world.meeting)}
         onWalk={walkTo}
       />
+      {showIntro ? (
+        <WorldIntro
+          onClose={() => {
+            markIntroSeen();
+            setShowIntro(false);
+            playfieldRef.current?.focus({ preventScroll: true });
+          }}
+        />
+      ) : null}
       {away ? null : (
         <TeamOverlay team={team} world={world} returnFocusTo={playfieldRef} />
       )}

@@ -8,7 +8,19 @@ const BLOCKING = new Set(["critical", "serious", "moderate"]);
 /** Where screenshots go when SD_SCREENSHOT_DIR is set; otherwise none. */
 const SHOTS = process.env.SD_SCREENSHOT_DIR;
 
+/** Opens the collapsed directory, if it is not open already. */
+async function openDirectory(page: Page) {
+  const toggle = page.getByRole("button", {
+    name: /^(Office|Site) directory$/,
+  });
+  if ((await toggle.getAttribute("aria-expanded")) === "false")
+    await toggle.click();
+}
+
 async function launchWorld(page: Page) {
+  await page.addInitScript(() => {
+    window.localStorage.setItem("study_director_world_intro_seen", "1");
+  });
   await page.goto("/arcade/study-director#mode=world");
   await page.waitForLoadState("domcontentloaded");
   await expect(async () => {
@@ -75,6 +87,7 @@ async function letThePhoneGo(page: Page) {
 
 /** Chooses a directory entry with the keyboard and waits for the walk. */
 async function walkTo(page: Page, name: RegExp, facing: RegExp) {
+  await openDirectory(page);
   const room = page.getByTestId("world-room");
   const ringing = page.getByRole("alertdialog", {
     name: /The phone is ringing/,

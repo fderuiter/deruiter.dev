@@ -5,7 +5,19 @@ const WCAG_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"];
 const BLOCKING = new Set(["critical", "serious", "moderate"]);
 const SAVE_KEY = "study_director_world_v1";
 
+/** Opens the collapsed directory, if it is not open already. */
+async function openDirectory(page: Page) {
+  const toggle = page.getByRole("button", {
+    name: /^(Office|Site) directory$/,
+  });
+  if ((await toggle.getAttribute("aria-expanded")) === "false")
+    await toggle.click();
+}
+
 async function launchWorld(page: Page) {
+  await page.addInitScript(() => {
+    window.localStorage.setItem("study_director_world_intro_seen", "1");
+  });
   await page.goto("/arcade/study-director#mode=world");
   await page.waitForLoadState("domcontentloaded");
   await expect(async () => {
@@ -42,6 +54,7 @@ async function activate(control: Locator) {
 }
 
 async function walkTo(page: Page, name: RegExp, facing: RegExp) {
+  await openDirectory(page);
   await activate(page.getByRole("button", { name }));
   await expect(page.getByTestId("world-room")).toContainText(facing, {
     timeout: 20000,

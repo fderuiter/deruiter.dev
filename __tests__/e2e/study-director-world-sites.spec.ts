@@ -87,7 +87,6 @@ async function letThePhoneGo(page: Page) {
 
 /** Chooses a directory entry with the keyboard and waits for the walk. */
 async function walkTo(page: Page, name: RegExp, facing: RegExp) {
-  await openDirectory(page);
   const room = page.getByTestId("world-room");
   const ringing = page.getByRole("alertdialog", {
     name: /The phone is ringing/,
@@ -95,6 +94,7 @@ async function walkTo(page: Page, name: RegExp, facing: RegExp) {
   // A call can ring mid-walk and stop it; let it go and walk on.
   for (let attempt = 0; attempt < 3; attempt += 1) {
     await letThePhoneGo(page);
+    await openDirectory(page);
     await tabTo(page, page.getByRole("button", { name }));
     await page.keyboard.press("Enter");
     await expect(room.filter({ hasText: facing }).or(ringing)).toBeVisible({

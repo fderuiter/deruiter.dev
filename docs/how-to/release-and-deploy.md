@@ -4,7 +4,7 @@ Last reconciled: 2026-09-28. Manual Production releases remain required under
 [ADR 0051](../../adr/0051-manual-production-releases.md) until a replacement
 release policy is approved and verified. The nightly-train proposal in
 [issue #1168](https://github.com/fderuiter/deruiter.dev/issues/1168) is scheduled
-for implementation on 2026-10-05; that date does not activate a release workflow.
+for implementation on 2026-10-25 (moved from 2026-10-05); that date does not activate a release workflow.
 
 **During the manual hold:** open a PR, let CI go green, squash-merge
 it, then have an operator create a Production deployment from the current

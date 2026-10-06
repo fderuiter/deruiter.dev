@@ -105,6 +105,7 @@
     "@neondatabase/serverless": "^1.1.0",
     "@prisma/adapter-neon": "^7.9.1",
     "@prisma/client": "^7.9.1",
+    "@react-three/fiber": "^9.8.1",
     "@sentry/nextjs": "^11.0.0",
     "@serwist/next": "^9.5.12",
     "@serwist/sw": "^9.5.12",
@@ -137,6 +138,7 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
     "@playwright/test": "^1.63.0",
+    "@react-three/test-renderer": "^9.1.1",
     "@stryker-mutator/core": "^10.0.0",
     "@stryker-mutator/vitest-runner": "^10.0.0",
     "@tailwindcss/postcss": "^4",

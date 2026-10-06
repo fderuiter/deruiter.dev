@@ -7,8 +7,10 @@ import { ModalContainer, ModalContainerProps } from "./ModalContainer";
 interface DefensiveFlexProps extends HTMLAttributes<HTMLElement> {
   /**
    * Underlying HTML element tag or custom component. Defaults to "div".
+   * Narrowed to elements that take HTML attributes, so the React Three Fiber
+   * scene elements (#1813) never join the union.
    */
-  as?: ElementType;
+  as?: ElementType<HTMLAttributes<HTMLElement>>;
   /**
    * Flex direction layout. Defaults to "row".
    */
@@ -108,7 +110,7 @@ interface TruncatedTextProps extends HTMLAttributes<HTMLElement> {
   /**
    * Underlying HTML element tag or custom component. Defaults to "span".
    */
-  as?: ElementType;
+  as?: ElementType<HTMLAttributes<HTMLElement>>;
   /**
    * Clamp mode: true or 1 for single-line truncate, or a number > 1 for line-clamp.
    */
@@ -141,8 +143,8 @@ export function TruncatedText({
   const clampClass = isLineClamp
     ? `line-clamp-${clamp} min-w-0`
     : isSingleLineTruncate
-    ? "min-w-0 truncate block"
-    : "min-w-0";
+      ? "min-w-0 truncate block"
+      : "min-w-0";
 
   const breakClass = breakWords ? "break-words text-token-break" : "";
 

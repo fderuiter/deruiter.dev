@@ -180,6 +180,33 @@ export const ARCADE_GAMES_METADATA: ArcadeGameMetadata[] = [
     storageKey: "study_director_high_score",
     route: "/arcade/study-director",
   },
+  {
+    id: "patty-drive-thru",
+    slug: "patty-drive-thru",
+    title: "Patty's Drive-Thru",
+    subtitle: "A Diary Entry From a First Job",
+    genre: "Autobiographical Simulation",
+    description:
+      "One shift at the drive-thru window of a first job, in first person. Take orders through the headset, fight a register that hides the easy things, re-enter the drinks the machine loses, and keep moving so the manager does not notice you.",
+    mechanics: [
+      "First-Person Booth",
+      "Kitchen Display Bands",
+      "A Register Built to Be Fought",
+      "Drink Dispenser Glitches",
+      "Idle Manager Pressure",
+    ],
+    techStack: [
+      "React Three Fiber",
+      "Seeded Deterministic Engine",
+      "Canvas Texture Order Screen",
+      "Panned Web Audio",
+    ],
+    accentColor: "text-lime-200",
+    borderHover: "hover:border-lime-200/50",
+    badgeBg: "bg-lime-200/10 text-lime-200 border-lime-200/30",
+    storageKey: "patty_drive_thru_high_score",
+    route: "/arcade/patty-drive-thru",
+  },
   // Protocol Drift lives with the simulators at /protocol-drift (#1841). It
   // keeps its entry here so its achievements and trophies stay in the cabinet;
   // the hub, previous/next ring and game count use ARCADE_GAME_ROUTES instead.

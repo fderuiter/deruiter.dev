@@ -488,6 +488,9 @@ export const CABINET_CRT_PROFILES: Readonly<Record<string, CabinetCrtProfile>> =
     "clinical-chaos": { surface: "dom", gameDrawsCrt: false },
     "trial-and-error": { surface: "dom", gameDrawsCrt: false },
     "study-director": { surface: "dom", gameDrawsCrt: false },
+    // A WebGL booth with its own fluorescent look (ADR 0059), so it starts
+    // with no CRT, as a DOM game does.
+    "patty-drive-thru": { surface: "dom", gameDrawsCrt: false },
     "protocol-drift": { surface: "dom", gameDrawsCrt: false },
     "meme-vault": { surface: "dom", gameDrawsCrt: false },
   };

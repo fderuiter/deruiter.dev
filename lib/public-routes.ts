@@ -199,6 +199,11 @@ export const PUBLIC_ROUTE_REGISTRY = [
     category: "arcade",
   },
   {
+    path: "/arcade/patty-drive-thru",
+    name: "Game: Patty's Drive-Thru",
+    category: "arcade",
+  },
+  {
     path: "/protocol-drift",
     name: "Protocol Drift Simulator",
     category: "tool",

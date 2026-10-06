@@ -154,3 +154,93 @@ export interface PayStub {
   readonly tillShortCents: number;
   readonly netCents: number;
 }
+
+/** Where one line of a ticket stands, as the kitchen display shows it. */
+export type TicketLineStatus =
+  /** Not rung up yet. */
+  | "to-ring"
+  /** Rung up. */
+  | "rung"
+  /** Rung up, but the dispenser dropped it; it must be re-entered. */
+  | "dropped"
+  /** Age-locked and nobody old enough has been flagged. */
+  | "locked"
+  /** A flagged coworker is still making it. */
+  | "brewing"
+  /** The coworker is done; it can be rung up now. */
+  | "ready-to-ring";
+
+export interface TicketLine {
+  readonly itemId: MenuItemId;
+  readonly label: string;
+  readonly modifier: ModifierId | null;
+  /** True while the line's modifier still has to be rung up. */
+  readonly modifierPending: boolean;
+  readonly status: TicketLineStatus;
+}
+
+/** The parts of a shift the kitchen display reads. */
+export type TicketSource = Pick<ShiftState, "time" | "orders" | "pos">;
+
+/** One order as the kitchen display and the POS ticket strip show it. */
+export interface KdsTicket {
+  readonly orderId: number;
+  readonly ageSec: number;
+  readonly band: KdsBand;
+  readonly lines: readonly TicketLine[];
+  /** True when the order can be bumped. */
+  readonly ready: boolean;
+  /** True when this is the order the POS is ringing up. */
+  readonly active: boolean;
+  /** True when an age-locked item is waiting and nobody has been flagged. */
+  readonly needsCoworker: boolean;
+  /** Seconds until a flagged coworker is done, or null. */
+  readonly coworkerReadyIn: number | null;
+}
+
+/** Which part of the booth the player is facing. */
+export type BoothFacing = "window" | "counter" | "kitchen";
+
+/** The player's head: where the camera points and where it is easing to. */
+export interface LookState {
+  /** Radians; positive turns left toward the window. */
+  readonly yaw: number;
+  /** Radians; positive looks up toward the order screen. */
+  readonly pitch: number;
+  readonly targetYaw: number;
+  readonly targetPitch: number;
+}
+
+/** Input gathered since the last look step. */
+export interface LookInput {
+  /** Held turn keys: 1 turns left, -1 turns right, 0 holds still. */
+  readonly turn: number;
+  /** Mouse drag since the last step, in radians, already scaled. */
+  readonly dragYaw: number;
+  readonly dragPitch: number;
+}
+
+/** A named view the camera can be aimed at. */
+export interface LookPreset {
+  readonly yaw: number;
+  readonly pitch: number;
+}
+
+/** The written intro shown before the player clocks in. */
+export interface DiaryIntro {
+  readonly title: string;
+  readonly dateline: string;
+  readonly paragraphs: readonly string[];
+}
+
+/** The people in the booth, renamed (ADR 0059, decision 9). */
+export interface BoothCrew {
+  /** The player, whose diary this is. */
+  readonly player: string;
+  /** The shift manager who cannot stand to see anyone idle. */
+  readonly manager: string;
+  /** The general manager, the kind one. */
+  readonly generalManager: string;
+  /** The adult coworker who is allowed to brew coffee. */
+  readonly coworker: string;
+}

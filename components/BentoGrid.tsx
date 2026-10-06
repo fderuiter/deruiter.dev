@@ -235,7 +235,9 @@ export const CardTitle = ({
     as && typeof as === "string" && validTags.includes(as.toLowerCase())
       ? as.toLowerCase()
       : "h3";
-  const Component = resolvedTag as React.ElementType;
+  const Component = resolvedTag as React.ElementType<
+    React.HTMLAttributes<HTMLElement>
+  >;
 
   return (
     <Component

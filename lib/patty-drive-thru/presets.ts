@@ -1,4 +1,11 @@
-import type { MenuItemId, PosNode, ShiftConfig } from "./types";
+import type {
+  BoothFacing,
+  LookPreset,
+  MenuItemId,
+  ModifierId,
+  PosNode,
+  ShiftConfig,
+} from "./types";
 
 /**
  * Orders turn yellow after this many seconds, and red after RED_AFTER_SEC.
@@ -137,3 +144,52 @@ export const UNIFORM_DEDUCTION_CENTS = 300;
 /** The break the player never got, taken back out of the check anyway. */
 export const BREAK_ADJUSTMENT_CENTS = 363;
 export const TILL_SHORT_PER_EXPIRED_CENTS = 129;
+
+/** How each menu item reads on the kitchen display and in captions. */
+export const MENU_ITEM_LABELS: Readonly<Record<MenuItemId, string>> = {
+  burger: "Burger",
+  cheeseburger: "Cheeseburger",
+  fries: "Fries",
+  nuggets: "Nuggets",
+  soda: "Soda",
+  shake: "Shake",
+  coffee: "Coffee",
+};
+
+/** How each buried modifier reads on the kitchen display. */
+export const MODIFIER_LABELS: Readonly<Record<ModifierId, string>> = {
+  "no-pickles": "No pickles",
+};
+
+/**
+ * The player stands still and pivots: half a turn either way reaches the
+ * drive-thru window on the left and the kitchen on the right.
+ */
+export const LOOK_YAW_LIMIT = Math.PI / 2;
+export const LOOK_PITCH_MIN = -0.75;
+export const LOOK_PITCH_MAX = 0.6;
+/** Radians per second while a turn key is held. */
+export const LOOK_TURN_SPEED = 1.9;
+/**
+ * How quickly the head catches up with where the player is turning it, per
+ * second. Lower is a heavier, more tired head.
+ */
+export const LOOK_EASE_PER_SEC = 9;
+/** Yaw beyond which the player counts as facing the window or the kitchen. */
+export const LOOK_SIDE_THRESHOLD = Math.PI / 4;
+
+/** Named views the camera can be aimed at. */
+export const LOOK_PRESETS: Readonly<
+  Record<BoothFacing | "register" | "order-screen", LookPreset>
+> = {
+  counter: { yaw: 0, pitch: 0 },
+  register: { yaw: 0.21, pitch: -0.42 },
+  "order-screen": { yaw: -0.04, pitch: 0.24 },
+  window: { yaw: 1.32, pitch: -0.18 },
+  kitchen: { yaw: -1.2, pitch: -0.2 },
+};
+
+/** Points per car served, the deduction for a late one, and the close-out bonus. */
+export const SCORE_PER_SERVED = 10;
+export const SCORE_LATE_PENALTY = 5;
+export const SCORE_COMPLETED_BONUS = 50;

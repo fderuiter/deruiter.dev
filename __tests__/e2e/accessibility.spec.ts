@@ -713,4 +713,14 @@ test.describe("Continuous Accessibility (a11y) & WCAG 2.1 AA Audit Suite", () =>
 
     await auditAndAssert(page, testInfo, "Arcade Game: Working With Duck");
   });
+
+  test("Audit: Arcade Game - Patty's Drive-Thru", async ({
+    page,
+  }, testInfo) => {
+    await page.goto("/arcade/patty-drive-thru");
+    await page.waitForLoadState("networkidle");
+    await page.waitForTimeout(400);
+
+    await auditAndAssert(page, testInfo, "Arcade Game: Patty's Drive-Thru");
+  });
 });

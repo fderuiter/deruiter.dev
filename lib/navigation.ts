@@ -21,6 +21,7 @@ export type NavIconKey =
   | "shield"
   | "cards"
   | "clipboard"
+  | "headset"
   | "terminal"
   | "duck"
   | "vault"
@@ -107,6 +108,14 @@ const ARCADE_ITEMS: NavItem[] = [
     subtitle: "Run a clinical study. Everything is fine.",
     href: "/arcade/study-director",
     icon: "clipboard",
+    tone: "cyan",
+  },
+  {
+    id: "patty-drive-thru",
+    title: "Patty's Drive-Thru",
+    subtitle: "One shift at my first job, in first person",
+    href: "/arcade/patty-drive-thru",
+    icon: "headset",
     tone: "cyan",
   },
   {

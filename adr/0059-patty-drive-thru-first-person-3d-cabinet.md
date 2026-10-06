@@ -93,6 +93,60 @@ three libraries are MIT, which ADR 0057 allows.
 - The visual exception adds one scoped token set to maintain and one more
   place the editorial rules do not apply.
 
+## Amendment (2026-10-06): booth build
+
+Recorded with the booth scene
+([#1813](https://github.com/fderuiter/deruiter.dev/issues/1813)). Building it
+changed decisions 2, 4 and 5. The engine/scene split, the fallbacks, the
+scoped palette, the audio rules and the brand rules above are unchanged.
+
+### No drei
+
+drei's `Html` mounts its DOM in a separate React root. Under React 19 that
+root unmounted during the scene's own render, which logged "synchronously
+unmount a root" and `removeChild` errors and left the POS mirror blank. No
+other drei helper was in use, so drei is not a dependency. The scene uses
+`@react-three/fiber` and `three` only.
+
+### Both screens are canvas textures; the register is a DOM overlay
+
+The KDS and the POS are drawn into canvas textures on unlit materials, and
+the drive-thru timer is a third. Each redraws on a 250 ms interval, and only
+when the data it shows has changed, so a ticking clock never re-uploads a
+texture. The textures are disposed on unmount.
+
+The operable register is a plain DOM overlay, the same component the flat
+view uses. It opens with Enter or Tab, or a click on the register screen in
+the booth, and moves focus to its first usable key. Escape closes it and
+returns focus to the cabinet. While it is open the camera turns to the
+register and narrows its field of view, which hides the lane.
+
+### Drag to look instead of pointer lock
+
+Looking around is a click-and-drag with a little rotational drag, plus A/D
+and the arrow keys. A click that moves less than 6 pixels counts as a click,
+not a drag. Pointer lock is not used, so there is nothing to release, and
+Escape only leaves the register.
+
+### Rendering on demand
+
+The canvas uses `frameloop="demand"`. It draws a frame when the store or the
+camera changes, so an idle booth costs no GPU time. A `webglcontextlost`
+event switches the cabinet to the flat view, except the one React Three Fiber
+fires itself after unmount.
+
+### Dependencies and chunk size
+
+One runtime dependency, `@react-three/fiber`, and one development
+dependency, `@react-three/test-renderer`, which renders the booth scene in
+Vitest without WebGL. Both are MIT and listed on the acknowledgments page.
+
+Measured on a production build on 2026-10-06, launching the cabinet loads
+47 kB gzip of game code. Clocking in to the 3D booth then loads five more lazy
+chunks, 245 kB gzip in total. The largest is the `three` core at 98 kB, well
+under the 350 kB single-chunk ceiling, so decision 3 holds without a
+dedicated budget entry. The flat view loads none of the 3D chunks.
+
 ## Alternatives considered
 
 - **Plain Three.js, as the neuro viewer does.** Lighter, with no new

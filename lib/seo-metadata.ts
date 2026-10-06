@@ -246,6 +246,22 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     locale: "en-US",
     isAccessibleForFree: true,
   },
+  pattyDriveThru: {
+    title: "Patty's Drive-Thru: A First-Job Diary",
+    description:
+      "One drive-thru shift from my first job, as a first-person 3D diary game. Fight the register, re-enter the drinks the machine loses, and never stand still.",
+    path: "/arcade/patty-drive-thru",
+    keywords: [
+      "First-Person 3D Game",
+      "Autobiographical Game",
+      "Drive-Thru Simulator",
+      "React Three Fiber",
+      "Diary Game",
+    ],
+    inLanguage: "en-US",
+    locale: "en-US",
+    isAccessibleForFree: true,
+  },
   protocolDrift: {
     title: "Protocol Drift: Data Pipeline Sim",
     description:

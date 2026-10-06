@@ -823,7 +823,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         subtitle:
           "Design the trial. Debug reality. A node-graph pipeline simulation across CDISC SDTM and ADaM, coordinator fatigue and a protocol amendment.",
         category: "navigation",
-        url: "/arcade/protocol-drift",
+        url: "/protocol-drift",
         icon: <IconShieldCheck className="w-4 h-4 text-amber-400" />,
         badge: "Simulation",
         status: "CDISC Architecture",

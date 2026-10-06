@@ -457,7 +457,7 @@ describe("SEO Architecture & JSON-LD Schemas", () => {
     expect(urls).toContain(`${expectedBase}/arcade/quasi-puzzler`);
     expect(urls).toContain(`${expectedBase}/arcade/garmin-watch`);
     expect(urls).toContain(`${expectedBase}/arcade/clinical-chaos`);
-    expect(urls).toContain(`${expectedBase}/arcade/protocol-drift`);
+    expect(urls).toContain(`${expectedBase}/protocol-drift`);
     expect(urls).toContain(`${expectedBase}/arcade/retro-labyrinth`);
     expect(urls).toContain(`${expectedBase}/arcade/working-with-duck`);
     expect(urls).toContain(`${expectedBase}/proof`);
@@ -789,7 +789,7 @@ describe("SEO Architecture & JSON-LD Schemas", () => {
     const { default: laserLoonWorkOg } =
       await import("@/app/work/laser-loon/opengraph-image");
     const { default: protocolDriftOg } =
-      await import("@/app/arcade/protocol-drift/opengraph-image");
+      await import("@/app/protocol-drift/opengraph-image");
     const { default: quasiPuzzlerOg } =
       await import("@/app/arcade/quasi-puzzler/opengraph-image");
     const { default: retroLabyrinthOg } =
@@ -821,7 +821,7 @@ describe("SEO Architecture & JSON-LD Schemas", () => {
         routeKey: "laserLoonCaseStudy",
       },
       {
-        name: "/arcade/protocol-drift",
+        name: "/protocol-drift",
         generator: protocolDriftOg,
         routeKey: "protocolDrift",
       },
@@ -906,7 +906,12 @@ describe("SEO Architecture & JSON-LD Schemas", () => {
 
     it("ARCADE_GAMES_METADATA entries align with ROUTE_METADATA_CONFIGS definitions", () => {
       for (const game of ARCADE_GAMES_METADATA) {
-        expect(game.route).toMatch(/^\/arcade/);
+        // Protocol Drift moved to the simulators and keeps its entry for trophies.
+        if (game.id === "protocol-drift") {
+          expect(game.route).toBe("/protocol-drift");
+        } else {
+          expect(game.route).toMatch(/^\/arcade/);
+        }
         expect(game.title).toBeTruthy();
         expect(game.description).toBeTruthy();
       }

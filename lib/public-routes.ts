@@ -199,9 +199,9 @@ export const PUBLIC_ROUTE_REGISTRY = [
     category: "arcade",
   },
   {
-    path: "/arcade/protocol-drift",
-    name: "Game: Protocol Drift",
-    category: "arcade",
+    path: "/protocol-drift",
+    name: "Protocol Drift Simulator",
+    category: "tool",
   },
   {
     path: "/arcade/retro-labyrinth",

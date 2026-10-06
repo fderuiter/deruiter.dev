@@ -250,7 +250,7 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     title: "Protocol Drift: Data Pipeline Sim",
     description:
       "A browser-first systems-engineering puzzle simulation exploring the friction between ideal regulatory specifications and messy human clinical data collection.",
-    path: "/arcade/protocol-drift",
+    path: "/protocol-drift",
     keywords: [
       "Protocol Drift",
       "Clinical Data Architecture",

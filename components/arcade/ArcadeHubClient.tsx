@@ -256,32 +256,6 @@ const ARCADE_GAMES: ArcadeGameCard[] = [
     route: "/arcade/study-director",
   },
   {
-    id: "protocol-drift",
-    slug: "protocol-drift",
-    title: "Protocol Drift",
-    subtitle: "Design the trial. Debug reality.",
-    genre: "Systems Simulation",
-    description:
-      "Wire a clinical data pipeline from site entry to CDISC SDTM and ADaM, then keep it honest through tired coordinators, a mid-flight protocol amendment and a dual Database Lock.",
-    mechanics: [
-      "Node-Graph Pipeline Canvas",
-      "Evidence-Linked Queries",
-      "Conservation Wall",
-      "Dual Database Lock",
-    ],
-    techStack: [
-      "Web Worker Simulation",
-      "Seeded Deterministic Engine",
-      "React Flow",
-    ],
-    icon: <IconShieldCheck className="w-6 h-6 text-amber-400" />,
-    accentColor: "from-amber-500/20 via-amber-500/5 to-transparent",
-    borderHover: "hover:border-amber-400/50",
-    badgeBg: "bg-amber-500/10 text-amber-300 border-amber-500/30",
-    storageKey: "protocol_drift_high_score",
-    route: "/arcade/protocol-drift",
-  },
-  {
     id: "retro-labyrinth",
     slug: "retro-labyrinth",
     title: "Retro Labyrinth: Graveyard Roguelike",
@@ -524,7 +498,10 @@ export const ArcadeHubClient: React.FC = () => {
         <ArcadeTrailer />
 
         {/* Games Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+        <div
+          data-testid="arcade-games-grid"
+          className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12"
+        >
           {ARCADE_GAMES.map((game, index) => (
             <GameCard key={game.id} game={game} index={index} />
           ))}

@@ -34,13 +34,14 @@ describe("arcade previous/next ring (#1330)", () => {
     expect(te.next.href).toBe("/arcade/study-director");
   });
 
-  it("puts Protocol Drift between Study Director and Retro Labyrinth", () => {
+  it("leaves Protocol Drift out of the ring, since it is a simulator (#1841)", () => {
+    expect(ARCADE_GAME_ROUTES).not.toContain("/protocol-drift");
     expect(getArcadeNeighbors("/arcade/study-director").next.href).toBe(
-      "/arcade/protocol-drift"
+      "/arcade/retro-labyrinth"
     );
-    const pd = getArcadeNeighbors("/arcade/protocol-drift");
-    expect(pd.prev.href).toBe("/arcade/study-director");
-    expect(pd.next.href).toBe("/arcade/retro-labyrinth");
+    expect(getArcadeNeighbors("/arcade/retro-labyrinth").prev.href).toBe(
+      "/arcade/study-director"
+    );
   });
 
   it("takes titles and tags from the shared game metadata", () => {
@@ -61,7 +62,6 @@ describe("arcade previous/next ring (#1330)", () => {
       "ClinicalChaos",
       "TrialAndError",
       "StudyDirector",
-      "ProtocolDrift",
       "RetroLabyrinth",
     ];
     for (const name of clients) {

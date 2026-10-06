@@ -105,3 +105,11 @@ Protocol Drift ships a preview still at
 `public/images/arcade/previews/protocol-drift.webp` (800x500) and is covered by
 the Playwright gate spec's game list in `__tests__/e2e/desktop-only-gate.spec.ts`.
 Trial & Error stays ungated, as above.
+
+## Amendment 2026-10-05: Protocol Drift moved to the simulators
+
+Protocol Drift now lives at `/protocol-drift`
+([ADR 0056](0056-protocol-drift-architecture.md), amended) and is no longer part
+of the arcade. It keeps the gate, with the same `gameId` (`protocol-drift`), the
+same rule and the same preview still. The Playwright gate spec lists its new
+route beside the `/arcade/*` games.

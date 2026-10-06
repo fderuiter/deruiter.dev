@@ -844,7 +844,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
     subtitle: "Design the trial. Debug reality.",
     genre: "Systems Simulation",
     badge: "Pipeline Canvas",
-    route: "/arcade/protocol-drift",
+    route: "/protocol-drift",
     accentColor: "from-amber-500/20 via-amber-500/5 to-transparent",
     badgeBg: "bg-amber-500/10 text-amber-300 border-amber-500/30",
     objective:

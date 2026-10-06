@@ -117,6 +117,13 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       {
+        // Protocol Drift is a workbench, so it moved from the arcade to the
+        // simulators (#1841). Old links, search results and bookmarks follow.
+        source: "/arcade/protocol-drift",
+        destination: "/protocol-drift",
+        permanent: true,
+      },
+      {
         source: "/transparency",
         destination: "/proof",
         permanent: true,

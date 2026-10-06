@@ -9,7 +9,9 @@ import { isModifiedClick, scrollToElement } from "@/lib/scroll";
 import { useAudio } from "@/components/providers/AudioProvider";
 import { useSearch } from "@/components/providers/SearchProvider";
 import { usePersona } from "@/components/providers/PersonaProvider";
-import { ARCADE_GAME_COUNT } from "@/lib/arcade";
+import { isNavGroupActive, isNavMenu, PRIMARY_NAV } from "@/lib/navigation";
+import { DesktopNavMenu } from "@/components/nav/DesktopNavMenu";
+import { MobileNavSections } from "@/components/nav/MobileNavSections";
 import { PERSONA_ANNOUNCEMENTS, type PersonaType } from "@/lib/persona";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useHotkeys } from "@/hooks/useHotkeys";
@@ -21,156 +23,9 @@ import {
   IconVolumeOff,
   IconChevronDown,
   IconSearch,
-  IconDeviceGamepad2,
-  IconShieldCheck,
-  IconTerminal,
-  IconCpu,
-  IconHeartHandshake,
-  IconShoppingBag,
-  IconCrosshair,
-  IconBrain,
-  IconBone,
-  IconFileSpreadsheet,
   IconBriefcase,
   IconFlame,
-  IconActivity,
-  IconCards,
-  IconClipboardCheck,
 } from "@tabler/icons-react";
-
-interface SubNavItem {
-  title: string;
-  subtitle: string;
-  href: string;
-  icon: React.ReactNode;
-  isExternal?: boolean;
-}
-
-const ARCADE_ITEMS: SubNavItem[] = [
-  {
-    title: "Arcade Hub",
-    subtitle: "Games, puzzles, and side projects",
-    href: "/arcade",
-    icon: <IconDeviceGamepad2 className="w-4 h-4 text-brand-cyan" />,
-  },
-  {
-    title: "Laser Loon",
-    subtitle: "A loon, lasers, and a trip to the Capitol",
-    href: "/arcade/laser-loon",
-    icon: <IconCrosshair className="w-4 h-4 text-brand-cyan" />,
-  },
-  {
-    title: "Laser Loon Merch",
-    subtitle: "Flag stickers, shirts and prints at cost, coming soon",
-    href: "/merch",
-    icon: <IconShoppingBag className="w-4 h-4 text-amber-400" />,
-  },
-  {
-    title: "Quasi-Perfect Puzzler",
-    subtitle: "Deductive logic puzzle assistant",
-    href: "/arcade/quasi-puzzler",
-    icon: <IconBrain className="w-4 h-4 text-brand-cyan" />,
-  },
-  {
-    title: "Monkey C Mayhem: Garmin Schvitz App",
-    subtitle: "Smartwatch hardware & Garmin Schvitz App simulator",
-    href: "/arcade/garmin-watch",
-    icon: <IconCpu className="w-4 h-4 text-brand-cyan" />,
-  },
-  {
-    title: "Clinical Trial Chaos",
-    subtitle: "Fast-paced medical trial simulator",
-    href: "/arcade/clinical-chaos",
-    icon: <IconShieldCheck className="w-4 h-4 text-brand-cyan" />,
-  },
-  {
-    title: "Trial & Error: Biostat Ops",
-    subtitle: "Clinical-output roguelike deckbuilder",
-    href: "/arcade/trial-and-error",
-    icon: <IconCards className="w-4 h-4 text-brand-cyan" />,
-  },
-  {
-    title: "Study Director",
-    subtitle: "Run a clinical study. Everything is fine.",
-    href: "/arcade/study-director",
-    icon: <IconClipboardCheck className="w-4 h-4 text-brand-cyan" />,
-  },
-  {
-    title: "Protocol Drift",
-    subtitle: "Clinical regulatory systems simulator",
-    href: "/arcade/protocol-drift",
-    icon: <IconShieldCheck className="w-4 h-4 text-amber-400" />,
-  },
-  {
-    title: "Retro Labyrinth",
-    subtitle: "Retro procedural dungeon crawler",
-    href: "/arcade/retro-labyrinth",
-    icon: <IconTerminal className="w-4 h-4 text-brand-cyan" />,
-  },
-  {
-    title: "Working With Duck",
-    subtitle: "You have work. Duck has other plans.",
-    href: "/arcade/working-with-duck",
-    icon: <IconBone className="w-4 h-4 text-brand-cyan" />,
-  },
-  {
-    title: "Meme Vault",
-    subtitle: "Soundboard & fun easter egg trophies",
-    href: "/arcade/meme-vault",
-    icon: <IconDeviceGamepad2 className="w-4 h-4 text-emerald-400" />,
-  },
-];
-
-const SYSTEMS_ITEMS: SubNavItem[] = [
-  {
-    title: "Under the Hood (Stack)",
-    subtitle: "The tools and decisions behind this site",
-    href: "/stack",
-    icon: <IconCpu className="w-4 h-4 text-brand-cyan" />,
-  },
-  {
-    title: "Open Source Credits",
-    subtitle: "The projects and licenses this site is built on",
-    href: "/acknowledgments",
-    icon: <IconHeartHandshake className="w-4 h-4 text-emerald-400" />,
-  },
-  {
-    title: "CRF Studio",
-    subtitle: "Clinical form designer & live trial simulator",
-    href: "/crf",
-    icon: <IconFileSpreadsheet className="w-4 h-4 text-brand-cyan" />,
-  },
-  {
-    title: "Patrol Shift",
-    subtitle: "Midwest ski-patrol operational judgment simulator",
-    href: "/patrol",
-    icon: <IconShieldCheck className="w-4 h-4 text-brand-cyan" />,
-  },
-  {
-    title: "Proof Workspace",
-    subtitle: "Build a proof, one step at a time",
-    href: "/proof",
-    icon: <IconBrain className="w-4 h-4 text-brand-cyan" />,
-  },
-  {
-    title: "NeuroRecon Studio",
-    subtitle: "Interactive 3D MRI brain viewer",
-    href: "/neuro",
-    icon: <IconBrain className="w-4 h-4 text-brand-cyan" />,
-  },
-  {
-    title: "Incident Simulator",
-    subtitle: "Architecture bias & outage triage",
-    href: "/simulator",
-    icon: <IconTerminal className="w-4 h-4 text-brand-cyan" />,
-  },
-  {
-    title: "Designing for My Brother",
-    subtitle: "Dyslexia-first typography & cognitive accessibility",
-    href: "/case-studies/designing-for-my-brother",
-    icon: <IconShieldCheck className="w-4 h-4 text-amber-400" />,
-  },
-];
 
 export const Navbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -220,8 +75,7 @@ export const Navbar: React.FC = () => {
   }, [pathname]);
 
   const triggerRef = useRef<HTMLButtonElement>(null);
-  const arcadeTriggerRef = useRef<HTMLButtonElement>(null);
-  const systemsTriggerRef = useRef<HTMLButtonElement>(null);
+  const menuTriggerRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const preferencesTriggerRef = useRef<HTMLButtonElement>(null);
   const navContainerRef = useRef<HTMLDivElement>(null);
 
@@ -337,10 +191,7 @@ export const Navbar: React.FC = () => {
       } else if (showAudioPanel) {
         setShowAudioPanel(false);
       } else if (activeDropdown) {
-        const trigger =
-          activeDropdown === "arcade"
-            ? arcadeTriggerRef.current
-            : systemsTriggerRef.current;
+        const trigger = menuTriggerRefs.current[activeDropdown];
         setActiveDropdown(null);
         trigger?.focus();
       }
@@ -379,17 +230,6 @@ export const Navbar: React.FC = () => {
       scrollToElement(targetId);
     }
   };
-
-  const isArcadeActive = pathname.startsWith("/arcade");
-  const isSystemsActive =
-    pathname === "/proof" ||
-    pathname === "/simulator" ||
-    pathname === "/crf" ||
-    pathname === "/patrol" ||
-    pathname.startsWith("/patrol") ||
-    pathname === "/neuro" ||
-    pathname === "/stack" ||
-    pathname === "/acknowledgments";
 
   const headerObserverRef = useResizeObserver<HTMLElement>(
     (entry) => {
@@ -459,261 +299,63 @@ export const Navbar: React.FC = () => {
               className="flex items-center gap-2.5 md:gap-3.5 lg:gap-4.5 shrink-0"
               aria-label="Main Navigation"
             >
-              {/* Work Pillar */}
-              <Link
-                href="/case-studies"
-                onClick={() => setActiveDropdown(null)}
-                onMouseEnter={handleLinkHover}
-                className={cn(
-                  "py-1 text-xs font-mono tracking-wider font-semibold transition-all duration-200 hover:text-foreground cursor-pointer flex items-center gap-1 whitespace-nowrap shrink-0",
-                  pathname === "/case-studies" ||
-                    pathname.startsWith("/case-studies/")
-                    ? "text-brand-cyan font-bold"
-                    : "text-muted"
-                )}
-              >
-                Work
-              </Link>
-
-              {/* Blog Pillar */}
-              <Link
-                href="/blog"
-                onClick={() => setActiveDropdown(null)}
-                onMouseEnter={handleLinkHover}
-                className={cn(
-                  "py-1 text-xs font-mono tracking-wider font-semibold transition-all duration-200 hover:text-foreground cursor-pointer flex items-center gap-1 whitespace-nowrap shrink-0",
-                  pathname === "/blog" || pathname.startsWith("/blog/")
-                    ? "text-brand-cyan font-bold"
-                    : "text-muted"
-                )}
-              >
-                Blog
-              </Link>
-
-              {/* Arcade Dropdown */}
-              <div className="relative shrink-0">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowPreferences(false);
-                    setActiveDropdown(
-                      activeDropdown === "arcade" ? null : "arcade"
-                    );
-                  }}
-                  onMouseEnter={handleLinkHover}
-                  className={cn(
-                    "py-1 text-xs font-mono tracking-wider font-semibold transition-all duration-200 hover:text-foreground cursor-pointer flex items-center gap-1 focus-visible:ring-1 focus-visible:ring-brand-cyan rounded whitespace-nowrap shrink-0",
-                    isArcadeActive || activeDropdown === "arcade"
-                      ? "text-brand-cyan font-bold"
-                      : "text-muted"
-                  )}
-                  aria-expanded={activeDropdown === "arcade"}
-                  ref={arcadeTriggerRef}
-                  aria-controls="arcade-navigation"
-                >
-                  <span className="whitespace-nowrap">Arcade</span>
-                  <IconChevronDown
-                    className={cn(
-                      "w-3 h-3 transition-transform duration-200 shrink-0",
-                      activeDropdown === "arcade"
-                        ? "rotate-180 text-brand-cyan"
-                        : "text-zinc-500"
-                    )}
-                  />
-                </button>
-
-                <AnimatePresence>
-                  {activeDropdown === "arcade" && (
-                    <motion.div
-                      key="arcade-navigation"
-                      initial={{ opacity: 0, y: 8, scale: 0.98 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 6, scale: 0.98 }}
-                      transition={{ duration: 0.15 }}
-                      className="absolute left-0 mt-3 w-[calc(100vw-2rem)] sm:w-80 max-w-[calc(100vw-2rem)] p-2.5 rounded-2xl border border-zinc-800 bg-zinc-950/95 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.9),0_0_20px_rgba(6,182,212,0.08)] z-50 flex flex-col gap-1"
-                      id="arcade-navigation"
-                    >
-                      <div className="px-3 py-1.5 border-b border-zinc-800/80 mb-1 flex items-center justify-between min-w-0">
-                        <span className="text-[10px] font-mono uppercase font-bold tracking-widest text-zinc-400 truncate">
-                          Arcade
-                        </span>
-                        <span className="text-[9px] font-mono text-brand-cyan shrink-0 ml-2">
-                          60 FPS
-                        </span>
-                      </div>
-                      {ARCADE_ITEMS.map((item) => {
-                        const isActive = pathname === item.href;
-                        return (
-                          <Link
-                            key={item.href}
-                            href={item.href}
-                            onClick={() => setActiveDropdown(null)}
-                            onMouseEnter={handleLinkHover}
-                            className={cn(
-                              "flex items-start gap-3 p-2.5 rounded-xl transition-all duration-150 group min-w-0",
-                              isActive
-                                ? "bg-brand-cyan/10 border border-brand-cyan/30 text-white"
-                                : "hover:bg-zinc-900/80 text-zinc-300 hover:text-white"
-                            )}
-                          >
-                            <div className="mt-0.5 p-1.5 rounded-lg bg-zinc-900 border border-zinc-800 group-hover:border-brand-cyan/30 transition-colors shrink-0">
-                              {item.icon}
-                            </div>
-                            <div className="flex flex-col min-w-0">
-                              <span className="text-xs font-mono font-bold tracking-tight text-neutral-200 group-hover:text-brand-cyan transition-colors truncate">
-                                {item.title}
-                              </span>
-                              <span className="text-[11px] font-sans text-zinc-400 truncate">
-                                {item.subtitle}
-                              </span>
-                            </div>
-                          </Link>
+              {PRIMARY_NAV.map((group) => {
+                if (isNavMenu(group)) {
+                  return (
+                    <DesktopNavMenu
+                      key={group.id}
+                      group={group}
+                      isCurrent={
+                        isNavGroupActive(group, pathname) ||
+                        (group.id === "about" &&
+                          pathname === "/" &&
+                          activeSection === "about")
+                      }
+                      isOpen={activeDropdown === group.id}
+                      pathname={pathname}
+                      persona={persona}
+                      onToggle={() => {
+                        setShowPreferences(false);
+                        setActiveDropdown(
+                          activeDropdown === group.id ? null : group.id
                         );
-                      })}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              {/* Systems & Proof Dropdown */}
-              <div className="relative shrink-0">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowPreferences(false);
-                    setActiveDropdown(
-                      activeDropdown === "systems" ? null : "systems"
-                    );
-                  }}
-                  onMouseEnter={handleLinkHover}
-                  className={cn(
-                    "py-1 text-xs font-mono tracking-wider font-semibold transition-all duration-200 hover:text-foreground cursor-pointer flex items-center gap-1 focus-visible:ring-1 focus-visible:ring-brand-cyan rounded whitespace-nowrap shrink-0",
-                    isSystemsActive || activeDropdown === "systems"
-                      ? "text-brand-cyan font-bold"
-                      : "text-muted"
-                  )}
-                  aria-expanded={activeDropdown === "systems"}
-                  ref={systemsTriggerRef}
-                  aria-controls="systems-navigation"
-                >
-                  <span className="whitespace-nowrap">Systems</span>
-                  <IconChevronDown
+                      }}
+                      onNavigate={handleNavClick}
+                      onLinkHover={handleLinkHover}
+                      triggerRef={(node) => {
+                        menuTriggerRefs.current[group.id] = node;
+                      }}
+                    />
+                  );
+                }
+                const isCurrent =
+                  isNavGroupActive(group, pathname) ||
+                  (group.id === "contact" &&
+                    pathname === "/" &&
+                    activeSection === "contact");
+                const onHome = group.id === "contact" && pathname === "/";
+                return (
+                  <Link
+                    key={group.id}
+                    href={onHome ? "/#contact" : group.href}
+                    aria-current={isCurrent ? "page" : undefined}
+                    onClick={(e) => {
+                      if (onHome) {
+                        handleNavClick(e, "/#contact");
+                      } else {
+                        setActiveDropdown(null);
+                      }
+                    }}
+                    onMouseEnter={handleLinkHover}
                     className={cn(
-                      "w-3 h-3 transition-transform duration-200 shrink-0",
-                      activeDropdown === "systems"
-                        ? "rotate-180 text-brand-cyan"
-                        : "text-zinc-500"
+                      "py-1 text-xs font-mono tracking-wider font-semibold transition-all duration-200 hover:text-foreground cursor-pointer flex items-center gap-1 whitespace-nowrap shrink-0",
+                      isCurrent ? "text-brand-cyan font-bold" : "text-muted"
                     )}
-                  />
-                </button>
-
-                <AnimatePresence>
-                  {activeDropdown === "systems" && (
-                    <motion.div
-                      key="systems-navigation"
-                      initial={{ opacity: 0, y: 8, scale: 0.98 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 6, scale: 0.98 }}
-                      transition={{ duration: 0.15 }}
-                      className="absolute left-0 mt-3 w-[calc(100vw-2rem)] sm:w-72 max-w-[calc(100vw-2rem)] p-2.5 rounded-2xl border border-zinc-800 bg-zinc-950/95 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.9),0_0_20px_rgba(6,182,212,0.08)] z-50 flex flex-col gap-1"
-                      id="systems-navigation"
-                    >
-                      <div className="px-3 py-1.5 border-b border-zinc-800/80 mb-1 min-w-0">
-                        <span className="text-[10px] font-mono uppercase font-bold tracking-widest text-zinc-400 truncate block">
-                          Workspaces &amp; Verification
-                        </span>
-                      </div>
-                      {SYSTEMS_ITEMS.filter(
-                        (item) =>
-                          !(
-                            persona === "behind-the-scenes" &&
-                            item.href === "/simulator"
-                          )
-                      ).map((item) => {
-                        const isActive = pathname === item.href;
-                        return (
-                          <Link
-                            key={item.href}
-                            href={item.href}
-                            onClick={() => setActiveDropdown(null)}
-                            onMouseEnter={handleLinkHover}
-                            className={cn(
-                              "flex items-start gap-3 p-2.5 rounded-xl transition-all duration-150 group min-w-0",
-                              isActive
-                                ? "bg-brand-cyan/10 border border-brand-cyan/30 text-white"
-                                : "hover:bg-zinc-900/80 text-zinc-300 hover:text-white"
-                            )}
-                          >
-                            <div className="mt-0.5 p-1.5 rounded-lg bg-zinc-900 border border-zinc-800 group-hover:border-brand-cyan/30 transition-colors shrink-0">
-                              {item.icon}
-                            </div>
-                            <div className="flex flex-col min-w-0">
-                              <span className="text-xs font-mono font-bold tracking-tight text-neutral-200 group-hover:text-brand-cyan transition-colors truncate">
-                                {item.title}
-                              </span>
-                              <span className="text-[11px] font-sans text-zinc-400 truncate">
-                                {item.subtitle}
-                              </span>
-                            </div>
-                          </Link>
-                        );
-                      })}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              {/* About Pillar */}
-              <Link
-                href="/#about"
-                onClick={(e) => handleNavClick(e, "/#about")}
-                onMouseEnter={handleLinkHover}
-                className={cn(
-                  "py-1 text-xs font-mono tracking-wider font-semibold transition-all duration-200 hover:text-foreground cursor-pointer flex items-center gap-1 whitespace-nowrap shrink-0",
-                  pathname === "/" && activeSection === "about"
-                    ? "text-brand-cyan font-bold"
-                    : "text-muted"
-                )}
-              >
-                About
-              </Link>
-
-              {/* Contact Pillar */}
-              <Link
-                href={pathname === "/" ? "/#contact" : "/contact"}
-                onClick={(e) => {
-                  if (pathname === "/") {
-                    handleNavClick(e, "/#contact");
-                  } else {
-                    setActiveDropdown(null);
-                  }
-                }}
-                onMouseEnter={handleLinkHover}
-                className={cn(
-                  "py-1 text-xs font-mono tracking-wider font-semibold transition-all duration-200 hover:text-foreground cursor-pointer flex items-center gap-1 whitespace-nowrap shrink-0",
-                  (pathname === "/" && activeSection === "contact") ||
-                    pathname === "/contact"
-                    ? "text-brand-cyan font-bold"
-                    : "text-muted"
-                )}
-              >
-                Contact
-              </Link>
-
-              {/* GitHub External */}
-              <a
-                href="https://github.com/fderuiter/portfolio"
-                target="_blank"
-                rel="noopener noreferrer"
-                onMouseEnter={handleLinkHover}
-                className="hidden 2xl:flex py-1 text-xs font-mono tracking-wider font-semibold text-muted hover:text-foreground transition-all duration-200 cursor-pointer items-center gap-1 group whitespace-nowrap shrink-0"
-                aria-label="View source repository on GitHub"
-              >
-                <span>GitHub</span>
-                <span className="text-[10px] text-zinc-600 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5">
-                  ↗
-                </span>
-              </a>
+                  >
+                    {group.label}
+                  </Link>
+                );
+              })}
             </nav>
 
             {/* Quick-Access ⌘K Command Palette Trigger Button */}
@@ -1190,181 +832,12 @@ export const Navbar: React.FC = () => {
             <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-80 h-80 rounded-full bg-brand-blue/5 blur-[130px] pointer-events-none hidden sm:block" />
 
             <div className="relative z-10 flex flex-col gap-6">
-              {/* Primary Navigation Sections */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Core Section */}
-                <div className="flex flex-col gap-2">
-                  <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-500 font-bold px-1">
-                    Primary Navigation
-                  </span>
-                  <Link
-                    href="/case-studies"
-                    onClick={() => setIsOpen(false)}
-                    className="min-h-[48px] px-3.5 py-3 rounded-xl bg-zinc-900/40 border border-zinc-800/80 text-base font-bold text-neutral-200 hover:text-brand-cyan hover:border-brand-cyan/30 flex items-center justify-between active:scale-[0.99] transition-all"
-                  >
-                    <span>Work</span>
-                    <span className="text-xs font-mono text-zinc-500">→</span>
-                  </Link>
-                  <Link
-                    href="/blog"
-                    onClick={() => setIsOpen(false)}
-                    className="min-h-[48px] px-3.5 py-3 rounded-xl bg-zinc-900/40 border border-zinc-800/80 text-base font-bold text-neutral-200 hover:text-brand-cyan hover:border-brand-cyan/30 flex items-center justify-between active:scale-[0.99] transition-all"
-                  >
-                    <span>Blog</span>
-                    <span className="text-xs font-mono text-zinc-500">→</span>
-                  </Link>
-                  <Link
-                    href="/#about"
-                    onClick={(e) => handleNavClick(e, "/#about")}
-                    className="min-h-[48px] px-3.5 py-3 rounded-xl bg-zinc-900/40 border border-zinc-800/80 text-base font-bold text-neutral-200 hover:text-brand-cyan hover:border-brand-cyan/30 flex items-center justify-between active:scale-[0.99] transition-all"
-                  >
-                    <span>About &amp; Experience</span>
-                    <span className="text-xs font-mono text-zinc-500">→</span>
-                  </Link>
-                  <Link
-                    href="/contact"
-                    onClick={(e) => handleNavClick(e, "/contact")}
-                    className="min-h-[48px] px-3.5 py-3 rounded-xl bg-zinc-900/40 border border-zinc-800/80 text-base font-bold text-neutral-200 hover:text-brand-cyan hover:border-brand-cyan/30 flex items-center justify-between active:scale-[0.99] transition-all"
-                  >
-                    <span>Contact</span>
-                    <span className="text-xs font-mono text-zinc-500">→</span>
-                  </Link>
-                  <Link
-                    href="/schedule"
-                    onClick={(e) => handleNavClick(e, "/schedule")}
-                    className="min-h-[48px] px-3.5 py-3 rounded-xl bg-zinc-900/40 border border-zinc-800/80 text-sm font-semibold text-neutral-300 hover:text-white flex items-center justify-between active:scale-[0.99] transition-all"
-                  >
-                    <span>Office Hours &amp; Schedule</span>
-                    <span className="text-xs font-mono text-zinc-500">→</span>
-                  </Link>
-                </div>
-
-                {/* Interactive Tools & Arcade */}
-                <div className="flex flex-col gap-2">
-                  <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-500 font-bold px-1">
-                    Systems
-                  </span>
-                  <Link
-                    href="/m/crf"
-                    onClick={(e) => handleNavClick(e, "/m/crf")}
-                    className="min-h-[48px] px-3.5 py-3 rounded-xl bg-zinc-900/40 border border-zinc-800/80 text-sm font-semibold text-neutral-200 hover:text-brand-cyan flex items-center justify-between gap-2 active:scale-[0.99] transition-all min-w-0"
-                  >
-                    <span className="flex items-center gap-2 min-w-0">
-                      <IconFileSpreadsheet className="w-4 h-4 text-brand-cyan shrink-0" />
-                      <span className="truncate">CRF Studio &amp; EDC</span>
-                    </span>
-                    <span className="text-[10px] font-mono text-brand-cyan px-1.5 py-0.5 rounded bg-brand-cyan/10 shrink-0">
-                      CDISC
-                    </span>
-                  </Link>
-                  <Link
-                    href="/m/patrol"
-                    onClick={(e) => handleNavClick(e, "/m/patrol")}
-                    className="min-h-[48px] px-3.5 py-3 rounded-xl bg-zinc-900/40 border border-zinc-800/80 text-sm font-semibold text-neutral-200 hover:text-brand-cyan flex items-center justify-between gap-2 active:scale-[0.99] transition-all min-w-0"
-                  >
-                    <span className="flex items-center gap-2 min-w-0">
-                      <IconShieldCheck className="w-4 h-4 text-brand-cyan shrink-0" />
-                      <span className="truncate">Patrol Shift</span>
-                    </span>
-                    <span className="text-[10px] font-mono text-brand-cyan px-1.5 py-0.5 rounded bg-brand-cyan/10 shrink-0">
-                      M1
-                    </span>
-                  </Link>
-                  <Link
-                    href="/m/proof"
-                    onClick={(e) => handleNavClick(e, "/m/proof")}
-                    className="min-h-[48px] px-3.5 py-3 rounded-xl bg-zinc-900/40 border border-zinc-800/80 text-sm font-semibold text-neutral-200 hover:text-brand-cyan flex items-center justify-between gap-2 active:scale-[0.99] transition-all min-w-0"
-                  >
-                    <span className="flex items-center gap-2 min-w-0">
-                      <IconBrain className="w-4 h-4 text-brand-purple shrink-0" />
-                      <span className="truncate">Proof Canvas</span>
-                    </span>
-                    <span className="text-[10px] font-mono text-brand-purple px-1.5 py-0.5 rounded bg-brand-purple/10 shrink-0">
-                      AST
-                    </span>
-                  </Link>
-                  <Link
-                    href="/m/neuro"
-                    onClick={(e) => handleNavClick(e, "/m/neuro")}
-                    className="min-h-[48px] px-3.5 py-3 rounded-xl bg-zinc-900/40 border border-zinc-800/80 text-sm font-semibold text-neutral-200 hover:text-brand-cyan flex items-center justify-between gap-2 active:scale-[0.99] transition-all min-w-0"
-                  >
-                    <span className="flex items-center gap-2 min-w-0">
-                      <IconBrain className="w-4 h-4 text-emerald-400 shrink-0" />
-                      <span className="truncate">NeuroRecon Studio</span>
-                    </span>
-                    <span className="text-[10px] font-mono text-emerald-400 px-1.5 py-0.5 rounded bg-emerald-500/10 shrink-0">
-                      3D MRI
-                    </span>
-                  </Link>
-                  <Link
-                    href="/stack"
-                    onClick={(e) => handleNavClick(e, "/stack")}
-                    className="min-h-[48px] px-3.5 py-3 rounded-xl bg-zinc-900/40 border border-zinc-800/80 text-sm font-semibold text-neutral-200 hover:text-brand-cyan flex items-center justify-between gap-2 active:scale-[0.99] transition-all min-w-0"
-                  >
-                    <span className="flex items-center gap-2 min-w-0">
-                      <IconCpu className="w-4 h-4 text-brand-cyan shrink-0" />
-                      <span className="truncate">Under the Hood (Stack)</span>
-                    </span>
-                    <span className="text-[10px] font-mono text-brand-cyan px-1.5 py-0.5 rounded bg-brand-cyan/10 shrink-0">
-                      Architecture
-                    </span>
-                  </Link>
-                  <Link
-                    href="/acknowledgments"
-                    onClick={(e) => handleNavClick(e, "/acknowledgments")}
-                    className="min-h-[48px] px-3.5 py-3 rounded-xl bg-zinc-900/40 border border-zinc-800/80 text-sm font-semibold text-neutral-200 hover:text-brand-cyan flex items-center justify-between gap-2 active:scale-[0.99] transition-all min-w-0"
-                  >
-                    <span className="flex items-center gap-2 min-w-0">
-                      <IconHeartHandshake className="w-4 h-4 text-emerald-400 shrink-0" />
-                      <span className="truncate">Open Source Credits</span>
-                    </span>
-                    <span className="text-[10px] font-mono text-emerald-400 px-1.5 py-0.5 rounded bg-emerald-500/10 shrink-0">
-                      Licenses
-                    </span>
-                  </Link>
-                  {persona !== "behind-the-scenes" && (
-                    <Link
-                      href="/simulator"
-                      onClick={(e) => handleNavClick(e, "/simulator")}
-                      className="min-h-[48px] px-3.5 py-3 rounded-xl bg-zinc-900/40 border border-zinc-800/80 text-sm font-semibold text-neutral-200 hover:text-brand-cyan flex items-center justify-between gap-2 active:scale-[0.99] transition-all min-w-0"
-                    >
-                      <span className="flex items-center gap-2 min-w-0">
-                        <IconActivity className="w-4 h-4 text-brand-cyan shrink-0" />
-                        <span className="truncate">Incident Simulator</span>
-                      </span>
-                      <span className="text-[10px] font-mono text-brand-cyan px-1.5 py-0.5 rounded bg-brand-cyan/10 shrink-0">
-                        Outage Drill
-                      </span>
-                    </Link>
-                  )}
-                  <Link
-                    href="/arcade"
-                    onClick={(e) => handleNavClick(e, "/arcade")}
-                    className="min-h-[48px] px-3.5 py-3 rounded-xl bg-zinc-900/40 border border-zinc-800/80 text-base font-bold text-brand-cyan hover:bg-brand-cyan/10 flex items-center justify-between gap-2 active:scale-[0.99] transition-all min-w-0"
-                  >
-                    <span className="flex items-center gap-2 min-w-0">
-                      <IconDeviceGamepad2 className="w-4 h-4 shrink-0" />
-                      <span className="truncate">Arcade</span>
-                    </span>
-                    <span className="text-xs font-mono text-brand-cyan shrink-0">
-                      {ARCADE_GAME_COUNT} Games
-                    </span>
-                  </Link>
-                  <Link
-                    href="/merch"
-                    onClick={(e) => handleNavClick(e, "/merch")}
-                    className="min-h-[48px] px-3.5 py-3 rounded-xl bg-zinc-900/40 border border-zinc-800/80 text-sm font-semibold text-neutral-200 hover:text-brand-cyan flex items-center justify-between gap-2 active:scale-[0.99] transition-all min-w-0"
-                  >
-                    <span className="flex items-center gap-2 min-w-0">
-                      <IconShoppingBag className="w-4 h-4 text-amber-400 shrink-0" />
-                      <span className="truncate">Laser Loon Merch</span>
-                    </span>
-                    <span className="text-[10px] font-mono text-amber-400 px-1.5 py-0.5 rounded bg-amber-500/10 shrink-0">
-                      Coming soon
-                    </span>
-                  </Link>
-                </div>
-              </div>
+              {/* Primary navigation: the same groups as the top bar */}
+              <MobileNavSections
+                pathname={pathname}
+                persona={persona}
+                onNavigate={handleNavClick}
+              />
 
               {/* Mobile Persona Toggle */}
               <div className="border-t border-zinc-900/80 pt-4 flex flex-col gap-2.5">

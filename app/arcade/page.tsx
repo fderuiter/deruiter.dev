@@ -1,14 +1,26 @@
 import type { Metadata } from "next";
 import { ArcadeHubClient } from "@/components/arcade/ArcadeHubClient";
 import { buildRouteMetadata, ROUTE_METADATA_CONFIGS } from "@/lib/seo-metadata";
-import { getCollectionPageSchema, getWebApplicationSchema, getBreadcrumbSchema } from "@/lib/seo";
+import {
+  getCollectionPageSchema,
+  getWebApplicationSchema,
+  getBreadcrumbSchema,
+} from "@/lib/seo";
 import { ARCADE_GAMES_METADATA } from "@/lib/arcade-data";
+import { ARCADE_GAME_ROUTES } from "@/lib/arcade";
 import { PageLayout } from "@/components/PageLayout";
 
-export const metadata: Metadata = buildRouteMetadata(ROUTE_METADATA_CONFIGS.arcade);
+export const metadata: Metadata = buildRouteMetadata(
+  ROUTE_METADATA_CONFIGS.arcade
+);
 
 export default function ArcadePage() {
-  const collectionItems = ARCADE_GAMES_METADATA.map((game) => ({
+  // Protocol Drift keeps its trophies in the cabinet but now lives with the
+  // simulators, so the hub's collection lists only the games on the hub.
+  const hubRoutes: readonly string[] = ARCADE_GAME_ROUTES;
+  const collectionItems = ARCADE_GAMES_METADATA.filter((game) =>
+    hubRoutes.includes(game.route)
+  ).map((game) => ({
     name: game.title,
     url: game.route,
     description: game.description,

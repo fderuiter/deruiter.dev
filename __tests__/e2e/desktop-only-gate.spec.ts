@@ -11,7 +11,12 @@ const GATED = [
   "clinical-chaos",
   "retro-labyrinth",
   "study-director",
-  "protocol-drift",
+];
+
+// Protocol Drift is a simulator now (#1841) and keeps the same desktop-only gate.
+const GATED_ROUTES = [
+  ...GATED.map((slug) => `/arcade/${slug}`),
+  "/protocol-drift",
 ];
 
 test.describe("Desktop-only arcade gate", () => {
@@ -22,13 +27,13 @@ test.describe("Desktop-only arcade gate", () => {
       isMobile: true,
     });
 
-    for (const slug of GATED) {
-      test(`${slug} shows the notice instead of the cabinet`, async ({
+    for (const route of GATED_ROUTES) {
+      test(`${route} shows the notice instead of the cabinet`, async ({
         page,
         browserName,
       }) => {
         test.skip(browserName === "firefox", "isMobile is unsupported");
-        await page.goto(`/arcade/${slug}`);
+        await page.goto(route);
         await expect(page.getByTestId("desktop-only-notice")).toBeVisible();
         await expect(
           page.getByRole("button", { name: /Launch Cabinet/i })

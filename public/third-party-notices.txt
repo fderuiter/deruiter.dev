@@ -479,7 +479,7 @@ LICENSE TEXT 2 of 85, applies to 51 package(s):
     Copyright (c) 2014, 2015, 2016, 2017, 2018 Simon Lydell
 - jspdf-autotable@5.0.8 (MIT)
     Copyright (c) 2014 Simon Bengtsson, https://github.com/simonbengtsson/jspdf-autotable
-- katex@0.16.47 (MIT)
+- katex@0.18.11 (MIT)
     Copyright (c) 2013-2020 Khan Academy and other contributors
 - khroma@2.1.0 (UNKNOWN)
     Copyright (c) 2019-present Fabio Spampinato, Andrew Maney
@@ -1929,39 +1929,39 @@ Repository: https://github.com/yargs/yargs-parser.git
 ==============================================================================
 LICENSE TEXT 8 of 85, applies to 17 package(s):
 
-- @img/sharp-darwin-arm64@0.35.4 (Apache-2.0)
+- @img/sharp-darwin-arm64@0.35.5 (Apache-2.0)
     Copyright [yyyy] [name of copyright owner]
-- @img/sharp-darwin-x64@0.35.4 (Apache-2.0)
+- @img/sharp-darwin-x64@0.35.5 (Apache-2.0)
     Copyright [yyyy] [name of copyright owner]
-- @img/sharp-freebsd-wasm32@0.35.4 (Apache-2.0)
+- @img/sharp-freebsd-wasm32@0.35.5 (Apache-2.0)
     Copyright [yyyy] [name of copyright owner]
-- @img/sharp-linux-arm@0.35.4 (Apache-2.0)
+- @img/sharp-linux-arm@0.35.5 (Apache-2.0)
     Copyright [yyyy] [name of copyright owner]
-- @img/sharp-linux-arm64@0.35.4 (Apache-2.0)
+- @img/sharp-linux-arm64@0.35.5 (Apache-2.0)
     Copyright [yyyy] [name of copyright owner]
-- @img/sharp-linux-ppc64@0.35.4 (Apache-2.0)
+- @img/sharp-linux-ppc64@0.35.5 (Apache-2.0)
     Copyright [yyyy] [name of copyright owner]
-- @img/sharp-linux-riscv64@0.35.4 (Apache-2.0)
+- @img/sharp-linux-riscv64@0.35.5 (Apache-2.0)
     Copyright [yyyy] [name of copyright owner]
-- @img/sharp-linux-s390x@0.35.4 (Apache-2.0)
+- @img/sharp-linux-s390x@0.35.5 (Apache-2.0)
     Copyright [yyyy] [name of copyright owner]
-- @img/sharp-linux-x64@0.35.4 (Apache-2.0)
+- @img/sharp-linux-x64@0.35.5 (Apache-2.0)
     Copyright [yyyy] [name of copyright owner]
-- @img/sharp-linuxmusl-arm64@0.35.4 (Apache-2.0)
+- @img/sharp-linuxmusl-arm64@0.35.5 (Apache-2.0)
     Copyright [yyyy] [name of copyright owner]
-- @img/sharp-linuxmusl-x64@0.35.4 (Apache-2.0)
+- @img/sharp-linuxmusl-x64@0.35.5 (Apache-2.0)
     Copyright [yyyy] [name of copyright owner]
-- @img/sharp-wasm32@0.35.4 (Apache-2.0 AND LGPL-3.0-or-later AND MIT)
+- @img/sharp-wasm32@0.35.5 (Apache-2.0 AND LGPL-3.0-or-later AND MIT)
     Copyright [yyyy] [name of copyright owner]
-- @img/sharp-webcontainers-wasm32@0.35.4 (Apache-2.0)
+- @img/sharp-webcontainers-wasm32@0.35.5 (Apache-2.0)
     Copyright [yyyy] [name of copyright owner]
-- @img/sharp-win32-arm64@0.35.4 (Apache-2.0 AND LGPL-3.0-or-later)
+- @img/sharp-win32-arm64@0.35.5 (Apache-2.0 AND LGPL-3.0-or-later)
     Copyright [yyyy] [name of copyright owner]
-- @img/sharp-win32-ia32@0.35.4 (Apache-2.0 AND LGPL-3.0-or-later)
+- @img/sharp-win32-ia32@0.35.5 (Apache-2.0 AND LGPL-3.0-or-later)
     Copyright [yyyy] [name of copyright owner]
-- @img/sharp-win32-x64@0.35.4 (Apache-2.0 AND LGPL-3.0-or-later)
+- @img/sharp-win32-x64@0.35.5 (Apache-2.0 AND LGPL-3.0-or-later)
     Copyright [yyyy] [name of copyright owner]
-- sharp@0.35.4 (Apache-2.0)
+- sharp@0.35.5 (Apache-2.0)
     Copyright [yyyy] [name of copyright owner]
 
 Apache License
@@ -2158,43 +2158,43 @@ third-party archives.
 ==============================================================================
 LICENSE TEXT 9 of 85, applies to 10 package(s):
 
-- @img/sharp-libvips-darwin-arm64@1.3.3 (LGPL-3.0-or-later)
+- @img/sharp-libvips-darwin-arm64@1.3.4 (LGPL-3.0-or-later)
     Copyright (C) 2007 Free Software Foundation, Inc. <http://fsf.org/>
     Copyright © 2007 Free Software Foundation, Inc. <http://fsf.org/>
     Copyright (C) <name of author>
-- @img/sharp-libvips-darwin-x64@1.3.3 (LGPL-3.0-or-later)
+- @img/sharp-libvips-darwin-x64@1.3.4 (LGPL-3.0-or-later)
     Copyright (C) 2007 Free Software Foundation, Inc. <http://fsf.org/>
     Copyright © 2007 Free Software Foundation, Inc. <http://fsf.org/>
     Copyright (C) <name of author>
-- @img/sharp-libvips-linux-arm@1.3.3 (LGPL-3.0-or-later)
+- @img/sharp-libvips-linux-arm@1.3.4 (LGPL-3.0-or-later)
     Copyright (C) 2007 Free Software Foundation, Inc. <http://fsf.org/>
     Copyright © 2007 Free Software Foundation, Inc. <http://fsf.org/>
     Copyright (C) <name of author>
-- @img/sharp-libvips-linux-arm64@1.3.3 (LGPL-3.0-or-later)
+- @img/sharp-libvips-linux-arm64@1.3.4 (LGPL-3.0-or-later)
     Copyright (C) 2007 Free Software Foundation, Inc. <http://fsf.org/>
     Copyright © 2007 Free Software Foundation, Inc. <http://fsf.org/>
     Copyright (C) <name of author>
-- @img/sharp-libvips-linux-ppc64@1.3.3 (LGPL-3.0-or-later)
+- @img/sharp-libvips-linux-ppc64@1.3.4 (LGPL-3.0-or-later)
     Copyright (C) 2007 Free Software Foundation, Inc. <http://fsf.org/>
     Copyright © 2007 Free Software Foundation, Inc. <http://fsf.org/>
     Copyright (C) <name of author>
-- @img/sharp-libvips-linux-riscv64@1.3.3 (LGPL-3.0-or-later)
+- @img/sharp-libvips-linux-riscv64@1.3.4 (LGPL-3.0-or-later)
     Copyright (C) 2007 Free Software Foundation, Inc. <http://fsf.org/>
     Copyright © 2007 Free Software Foundation, Inc. <http://fsf.org/>
     Copyright (C) <name of author>
-- @img/sharp-libvips-linux-s390x@1.3.3 (LGPL-3.0-or-later)
+- @img/sharp-libvips-linux-s390x@1.3.4 (LGPL-3.0-or-later)
     Copyright (C) 2007 Free Software Foundation, Inc. <http://fsf.org/>
     Copyright © 2007 Free Software Foundation, Inc. <http://fsf.org/>
     Copyright (C) <name of author>
-- @img/sharp-libvips-linux-x64@1.3.3 (LGPL-3.0-or-later)
+- @img/sharp-libvips-linux-x64@1.3.4 (LGPL-3.0-or-later)
     Copyright (C) 2007 Free Software Foundation, Inc. <http://fsf.org/>
     Copyright © 2007 Free Software Foundation, Inc. <http://fsf.org/>
     Copyright (C) <name of author>
-- @img/sharp-libvips-linuxmusl-arm64@1.3.3 (LGPL-3.0-or-later)
+- @img/sharp-libvips-linuxmusl-arm64@1.3.4 (LGPL-3.0-or-later)
     Copyright (C) 2007 Free Software Foundation, Inc. <http://fsf.org/>
     Copyright © 2007 Free Software Foundation, Inc. <http://fsf.org/>
     Copyright (C) <name of author>
-- @img/sharp-libvips-linuxmusl-x64@1.3.3 (LGPL-3.0-or-later)
+- @img/sharp-libvips-linuxmusl-x64@1.3.4 (LGPL-3.0-or-later)
     Copyright (C) 2007 Free Software Foundation, Inc. <http://fsf.org/>
     Copyright © 2007 Free Software Foundation, Inc. <http://fsf.org/>
     Copyright (C) <name of author>
@@ -2604,9 +2604,9 @@ LICENSE TEXT 12 of 85, applies to 7 package(s):
 
 - agent-base@7.1.4 (MIT)
     Copyright (c) 2013 Nathan Rajlich <nathan@tootallnate.net>
-- commander@7.2.0 (MIT)
+- commander@15.0.0 (MIT)
     Copyright (c) 2011 TJ Holowaychuk <tj@vision-media.ca>
-- commander@8.3.0 (MIT)
+- commander@7.2.0 (MIT)
     Copyright (c) 2011 TJ Holowaychuk <tj@vision-media.ca>
 - debug@4.4.3 (MIT)
     Copyright (c) 2014-2017 TJ Holowaychuk <tj@vision-media.ca>
@@ -3546,7 +3546,7 @@ LICENSE TEXT 22 of 85, applies to 2 package(s):
 
 - source-map@0.8.0 (BSD-3-Clause)
     Copyright (c) 2009-2011, Mozilla Foundation and contributors
-- source-map-js@1.2.1 (BSD-3-Clause)
+- source-map-js@1.2.2 (BSD-3-Clause)
     Copyright (c) 2009-2011, Mozilla Foundation and contributors
 
 All rights reserved.

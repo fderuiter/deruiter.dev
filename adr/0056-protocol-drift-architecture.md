@@ -113,3 +113,24 @@ the worker adopts it, so a tampered file changes nothing.
   toolbox order.
 - Everything in the game is fictional. No real sponsor, site or person is
   represented, and nothing here is clinical or regulatory advice.
+
+## Amendment 2026-10-05: Protocol Drift is a simulator, not an arcade game
+
+Protocol Drift is a workbench: a node-graph pipeline, an inspector and lock
+checklists. It sits with the other simulators and studios rather than with the
+games, so it moved from `/arcade/protocol-drift` to `/protocol-drift`
+([#1841](https://github.com/fderuiter/deruiter.dev/issues/1841), navigation
+epic [#1842](https://github.com/fderuiter/deruiter.dev/issues/1842)).
+
+- `next.config.ts` redirects the old URL to the new one permanently, so links,
+  search results and the 2026-10-03 release links keep working.
+- The page, its social image and its sitemap, SEO and route-registry entries use
+  `/protocol-drift`. It is listed under Simulators in the top bar, the drawer,
+  the footer and the command palette, and it no longer appears on the arcade
+  hub, in the arcade game count or in the previous/next ring.
+- Nothing about the game changed: the engine, the saves (`protocol_drift_high_score`
+  and the autosave keys), the trophies and the `PlayCabinet` launch flow are the
+  same. Its metadata entry stays in `lib/arcade-data.ts` so the trophy cabinet
+  still lists its achievements.
+- The desktop-only gate from ADR 0048 stays, because the canvas workbench needs a
+  pointer and a wide viewport.

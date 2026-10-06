@@ -9,16 +9,18 @@ import {
 import { GAME_MANUALS } from "@/lib/game-manuals";
 import { PUBLIC_ROUTE_PATHS } from "@/lib/public-routes";
 import { ROUTE_METADATA_CONFIGS } from "@/lib/seo-metadata";
+import { getAllNavHrefs } from "@/lib/navigation";
 
-const ROUTE = "/arcade/protocol-drift";
+const ROUTE = "/protocol-drift";
 const root = process.cwd();
 const read = (file: string) => fs.readFileSync(path.join(root, file), "utf8");
 
 describe("Protocol Drift discovery matrix", () => {
   it("is listed in the command palette, navbar and footer", () => {
     expect(read("components/CommandPalette.tsx")).toContain(`url: "${ROUTE}"`);
-    expect(read("components/Navbar.tsx")).toContain(`href: "${ROUTE}"`);
-    expect(read("components/Footer.tsx")).toContain(`href="${ROUTE}"`);
+    // The navbar and footer read the shared navigation data (#1843).
+    expect(read("lib/navigation.ts")).toContain(`href: "${ROUTE}"`);
+    expect(getAllNavHrefs()).toContain(ROUTE);
   });
 
   it("has canonical SEO metadata and a public route entry", () => {
@@ -28,9 +30,7 @@ describe("Protocol Drift discovery matrix", () => {
 
   it("ships an opengraph image and a preview thumbnail", () => {
     expect(
-      fs.existsSync(
-        path.join(root, "app/arcade/protocol-drift/opengraph-image.tsx")
-      )
+      fs.existsSync(path.join(root, "app/protocol-drift/opengraph-image.tsx"))
     ).toBe(true);
     expect(
       fs.existsSync(
@@ -40,7 +40,7 @@ describe("Protocol Drift discovery matrix", () => {
   });
 
   it("declares header clearance on the page and never renders a second Navbar", () => {
-    const page = read("app/arcade/protocol-drift/page.tsx");
+    const page = read("app/protocol-drift/page.tsx");
     expect(page).toContain("PageLayout");
     expect(page).toContain("pt-28");
     expect(page).not.toContain("<Navbar");
@@ -48,7 +48,7 @@ describe("Protocol Drift discovery matrix", () => {
 });
 
 describe("Protocol Drift arcade registrations", () => {
-  it("has a hub card, manual, storage key and trophies", () => {
+  it("keeps its card, manual, storage key and trophies", () => {
     const card = ARCADE_GAMES_METADATA.find((g) => g.id === "protocol-drift");
     expect(card?.route).toBe(ROUTE);
     expect(card?.storageKey).toBe(ARCADE_STORAGE_KEYS["protocol-drift"]);

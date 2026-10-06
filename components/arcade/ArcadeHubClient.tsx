@@ -498,7 +498,10 @@ export const ArcadeHubClient: React.FC = () => {
         <ArcadeTrailer />
 
         {/* Games Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+        <div
+          data-testid="arcade-games-grid"
+          className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12"
+        >
           {ARCADE_GAMES.map((game, index) => (
             <GameCard key={game.id} game={game} index={index} />
           ))}

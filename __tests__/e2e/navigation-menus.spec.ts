@@ -122,11 +122,18 @@ test.describe("Top bar and menus on a wide screen", () => {
     await expect(page.locator("h1")).toContainText("Protocol Drift");
   });
 
+  // The trophy cabinet further down still links Protocol Drift so its
+  // achievements stay reachable; only the game cards must leave it out. Waiting
+  // for a known card first keeps the zero count from passing before render.
   test("the arcade hub no longer lists Protocol Drift", async ({ page }) => {
     await page.goto("/arcade");
+    const grid = page.getByTestId("arcade-games-grid");
     await expect(
-      page.locator(
-        'main a[href="/arcade/protocol-drift"], main a[href="/protocol-drift"]'
+      grid.locator('a[href="/arcade/laser-loon"]').first()
+    ).toBeVisible();
+    await expect(
+      grid.locator(
+        'a[href="/arcade/protocol-drift"], a[href="/protocol-drift"]'
       )
     ).toHaveCount(0);
   });

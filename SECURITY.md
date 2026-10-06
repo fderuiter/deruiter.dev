@@ -106,6 +106,8 @@ The `overrides` block in `package.json` pins transitive dependencies that an ups
 | `source-map-js` | `^1.2.2`   | `postcss` through Next.js           | below 1.2.2                 | 1 new high advisory (GHSA-68fv-2mgg-jv7q)         |
 | `katex`         | `^0.18.11` | `markdownlint-cli`                  | below 0.18.11               | 1 new moderate advisory (GHSA-238p-pmpm-9mq7)     |
 | `smol-toml`     | `^1.9.0`   | `markdownlint-cli`                  | below 1.9.0                 | 1 new moderate advisory (GHSA-r4xh-jqrq-34v2)     |
+| `sharp`         | `^0.35.5`  | `next` (image optimization)         | 0.35.4                      | 1 new high advisory (GHSA-wq5f-xc86-pv6w)         |
+| `shell-quote`   | `^1.11.0`  | `concurrently`                      | 1.9.0                       | 1 new critical advisory (GHSA-pqg4-j6r4-53mv)     |
 
 The `jsdom` pin is not a vulnerability fix. jsdom 27 and later depend on the ESM-only `@exodus/bytes`, which made serverless functions fail with `ERR_REQUIRE_ESM` (#995). `next.config.ts` keeps those packages out of the server bundle and `__tests__/deploy-config.test.ts` guards that, but lifting the pin also needs a deployed check of the routes that sanitize HTML, so it stays until that check is done.
 

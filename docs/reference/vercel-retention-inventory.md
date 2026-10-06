@@ -7,8 +7,8 @@ Scope: `laser-loons-projects/portfolio`, Vercel Hobby, last 30 days
 Sources: Vercel usage dashboard, deployment API, and Vercel CLI
 
 This is the post-cleanup capacity and retention record for
-[Issue #691](https://github.com/fderuiter/portfolio/issues/691) and closed
-[Issue #692](https://github.com/fderuiter/portfolio/issues/692).
+[Issue #691](https://github.com/fderuiter/deruiter.dev/issues/691) and closed
+[Issue #692](https://github.com/fderuiter/deruiter.dev/issues/692).
 
 > [!WARNING]
 > This page is a dated snapshot, not current Vercel state. A 2026-09-22

@@ -5,7 +5,7 @@
 Accepted on 2026-09-24. Temporarily superseded for the manual-release period
 by [ADR 0051](0051-manual-production-releases.md) until a replacement release
 policy is approved and verified. The nightly-train proposal is tracked in
-[issue #1168](https://github.com/fderuiter/portfolio/issues/1168); its scheduled
+[issue #1168](https://github.com/fderuiter/deruiter.dev/issues/1168); its scheduled
 implementation date does not restore this ADR's trigger. Supersedes
 [ADR 0038](0038-protected-build-once-production-releases.md) and, for
 production builds only, the migration placement in

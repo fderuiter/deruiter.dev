@@ -2,11 +2,11 @@
 
 ## Status
 
-Accepted on 2026-09-23 with T&E-01 ([#909](https://github.com/fderuiter/portfolio/issues/909)),
-under the governing map [#890](https://github.com/fderuiter/portfolio/issues/890).
+Accepted on 2026-09-23 with T&E-01 ([#909](https://github.com/fderuiter/deruiter.dev/issues/909)),
+under the governing map [#890](https://github.com/fderuiter/deruiter.dev/issues/890).
 Later Trial & Error tickets amend this record rather than contradict it.
 Amended on 2026-09-23 for card-table presentation
-([#942](https://github.com/fderuiter/portfolio/issues/942)); see
+([#942](https://github.com/fderuiter/deruiter.dev/issues/942)); see
 [the amendment](#amendment-2026-09-23-card-table-presentation).
 Amended again on 2026-09-23 to fix the game's narrative frame; see
 [the narrative amendment](#amendment-2026-09-23-narrative-frame).
@@ -251,7 +251,7 @@ program.
 
 ## Amendment (2026-09-23): Card-table presentation
 
-Recorded by T&E-UX-00 ([#942](https://github.com/fderuiter/portfolio/issues/942))
+Recorded by T&E-UX-00 ([#942](https://github.com/fderuiter/deruiter.dev/issues/942))
 before any card-table UI is built. It changes presentation only. The
 determinism boundary, the scoring pipeline, the `HandEvaluation` shape and
 the blinding-in-state rule above are unchanged.
@@ -344,7 +344,7 @@ T&E-UX-08).
 
 ### Card Table implementation (T&E-UX-01)
 
-Recorded by [#943](https://github.com/fderuiter/portfolio/issues/943).
+Recorded by [#943](https://github.com/fderuiter/deruiter.dev/issues/943).
 
 - **Hand detection.** `classifyHand` enumerates every subset of up to five
   selected cards and returns the highest-ranked hand. Ties go to more Chips,
@@ -369,7 +369,7 @@ Recorded by [#943](https://github.com/fderuiter/portfolio/issues/943).
 
 ### Score timeline implementation (T&E-UX-02)
 
-Recorded by [#944](https://github.com/fderuiter/portfolio/issues/944).
+Recorded by [#944](https://github.com/fderuiter/deruiter.dev/issues/944).
 
 - **Domain.** `scoreTimeline(evaluation, context)` in `internal/timeline.ts`
   turns a `HandEvaluation` into ordered steps: hand base, each scored card,
@@ -403,7 +403,7 @@ Recorded by [#944](https://github.com/fderuiter/portfolio/issues/944).
 
 ### Card faces and physicality (T&E-UX-03)
 
-Recorded by [#945](https://github.com/fderuiter/portfolio/issues/945).
+Recorded by [#945](https://github.com/fderuiter/deruiter.dev/issues/945).
 
 - **Faces are data.** `TlfCard.face` is a Zod-validated `CardFace`: a Table
   miniature (2–3 columns, 3–5 rows), a Listing (3–4 subject rows), a Figure
@@ -442,7 +442,7 @@ Recorded by [#945](https://github.com/fderuiter/portfolio/issues/945).
 
 ### Juice kit (T&E-UX-04)
 
-Recorded by [#946](https://github.com/fderuiter/portfolio/issues/946).
+Recorded by [#946](https://github.com/fderuiter/deruiter.dev/issues/946).
 
 - **Named cues.** `useTeSound().play(cue)` covers the 18 cues in `TE_CUES`,
   from `chipTick` (pitch climbs per chip step, capped at an octave) to
@@ -516,7 +516,7 @@ played as three Blinds, following the narrative frame proposed in #962.
 
 T&E-03 (#912) makes the snapshot a versioned history, so the data can move
 under the outputs. The design readings are in
-[this comment on #912](https://github.com/fderuiter/portfolio/issues/912#issuecomment-5813704616).
+[this comment on #912](https://github.com/fderuiter/deruiter.dev/issues/912#issuecomment-5813704616).
 
 - **Versions.** `applyTransition(snapshot, transition)` applies one
   `PopulationTransition`: a subject joins or leaves named populations for a

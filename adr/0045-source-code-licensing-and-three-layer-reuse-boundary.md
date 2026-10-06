@@ -5,7 +5,7 @@
 Accepted on 2026-09-21.
 
 Completes the public-repository readiness work landed via
-[PR #886](https://github.com/fderuiter/portfolio/pull/886), merged to `main`
+[PR #886](https://github.com/fderuiter/deruiter.dev/pull/886), merged to `main`
 as `7fb7e666`, which shipped a code of conduct, issue templates, a security
 policy, public repository metadata, and this licensing decision together.
 Scopes, but does not modify, the pre-existing CC BY 4.0 grant on

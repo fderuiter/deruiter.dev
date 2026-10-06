@@ -6,36 +6,36 @@ Published 2026-09-08: 24 approved tickets. GitHub issue bodies, triage labels, a
 
 | Ticket | GitHub issue | Blocked by |
 | --- | --- | --- |
-| [UI/UX 01] Polish the homepage first impression | [#574](https://github.com/fderuiter/portfolio/issues/574) | None |
-| [UI/UX 02] Make the hero engineering demo usable on every input | [#575](https://github.com/fderuiter/portfolio/issues/575) | [#574](https://github.com/fderuiter/portfolio/issues/574) |
-| [UI/UX 03] Curate and polish featured project previews | [#576](https://github.com/fderuiter/portfolio/issues/576) | None |
-| [UI/UX 04] Simplify and verify global navigation | [#577](https://github.com/fderuiter/portfolio/issues/577) | None |
-| [UI/UX 05] Make reading-mode switching clear and predictable | [#578](https://github.com/fderuiter/portfolio/issues/578) | [#577](https://github.com/fderuiter/portfolio/issues/577) |
-| [UI/UX 06] Complete the search-to-destination journey | [#579](https://github.com/fderuiter/portfolio/issues/579) | [#577](https://github.com/fderuiter/portfolio/issues/577) |
-| [UI/UX 07] Polish the experience and skills narrative | [#580](https://github.com/fderuiter/portfolio/issues/580) | None |
-| [UI/UX 08] Improve case-study browsing and return navigation | [#581](https://github.com/fderuiter/portfolio/issues/581) | None |
-| [UI/UX 09] Standardize the case-study reading journey | [#582](https://github.com/fderuiter/portfolio/issues/582) | None |
-| [UI/UX 10] Unify contact entry points and form recovery | [#583](https://github.com/fderuiter/portfolio/issues/583) | None |
-| [UI/UX 11] Make scheduling resilient and understandable | [#584](https://github.com/fderuiter/portfolio/issues/584) | [#583](https://github.com/fderuiter/portfolio/issues/583) |
-| [UI/UX 12] Polish footer navigation and newsletter signup | [#585](https://github.com/fderuiter/portfolio/issues/585) | [#577](https://github.com/fderuiter/portfolio/issues/577) |
-| [UI/UX 13] Make loading transitions stable and accessible | [#586](https://github.com/fderuiter/portfolio/issues/586) | None |
-| [UI/UX 14] Make empty, error, offline, and missing-page states recoverable | [#587](https://github.com/fderuiter/portfolio/issues/587) | None |
-| [UI/UX 15] Isolate authentication from public portfolio journeys | [#588](https://github.com/fderuiter/portfolio/issues/588) | None |
-| [UI/UX 16] Polish Proof Workspace entry and editing | [#589](https://github.com/fderuiter/portfolio/issues/589) | None |
-| [UI/UX 17] Polish CRF Studio entry and editing | [#590](https://github.com/fderuiter/portfolio/issues/590) | None |
-| [UI/UX 18] Polish Incident Simulator entry and controls | [#591](https://github.com/fderuiter/portfolio/issues/591) | None |
-| [UI/UX 19] Polish Neuro workspace entry and controls | [#592](https://github.com/fderuiter/portfolio/issues/592) | None |
-| [UI/UX 20] Polish arcade discovery and launch expectations | [#593](https://github.com/fderuiter/portfolio/issues/593) | None |
-| [UI/UX 21] Polish Laser Loon and Quasi-Puzzler play sessions | [#594](https://github.com/fderuiter/portfolio/issues/594) | [#593](https://github.com/fderuiter/portfolio/issues/593) |
-| [UI/UX 22] Polish Garmin and Clinical Chaos play sessions | [#595](https://github.com/fderuiter/portfolio/issues/595) | [#593](https://github.com/fderuiter/portfolio/issues/593) |
-| [UI/UX 23] Polish Retro Labyrinth, Working With Duck, and Meme Vault sessions | [#596](https://github.com/fderuiter/portfolio/issues/596) | [#593](https://github.com/fderuiter/portfolio/issues/593) |
-| [UI/UX 24] Validate the complete portfolio across devices and access needs | [#597](https://github.com/fderuiter/portfolio/issues/597) | [#574](https://github.com/fderuiter/portfolio/issues/574), [#575](https://github.com/fderuiter/portfolio/issues/575), [#576](https://github.com/fderuiter/portfolio/issues/576), [#577](https://github.com/fderuiter/portfolio/issues/577), [#578](https://github.com/fderuiter/portfolio/issues/578), [#579](https://github.com/fderuiter/portfolio/issues/579), [#580](https://github.com/fderuiter/portfolio/issues/580), [#581](https://github.com/fderuiter/portfolio/issues/581), [#582](https://github.com/fderuiter/portfolio/issues/582), [#583](https://github.com/fderuiter/portfolio/issues/583), [#584](https://github.com/fderuiter/portfolio/issues/584), [#585](https://github.com/fderuiter/portfolio/issues/585), [#586](https://github.com/fderuiter/portfolio/issues/586), [#587](https://github.com/fderuiter/portfolio/issues/587), [#588](https://github.com/fderuiter/portfolio/issues/588), [#589](https://github.com/fderuiter/portfolio/issues/589), [#590](https://github.com/fderuiter/portfolio/issues/590), [#591](https://github.com/fderuiter/portfolio/issues/591), [#592](https://github.com/fderuiter/portfolio/issues/592), [#593](https://github.com/fderuiter/portfolio/issues/593), [#594](https://github.com/fderuiter/portfolio/issues/594), [#595](https://github.com/fderuiter/portfolio/issues/595), [#596](https://github.com/fderuiter/portfolio/issues/596) |
+| [UI/UX 01] Polish the homepage first impression | [#574](https://github.com/fderuiter/deruiter.dev/issues/574) | None |
+| [UI/UX 02] Make the hero engineering demo usable on every input | [#575](https://github.com/fderuiter/deruiter.dev/issues/575) | [#574](https://github.com/fderuiter/deruiter.dev/issues/574) |
+| [UI/UX 03] Curate and polish featured project previews | [#576](https://github.com/fderuiter/deruiter.dev/issues/576) | None |
+| [UI/UX 04] Simplify and verify global navigation | [#577](https://github.com/fderuiter/deruiter.dev/issues/577) | None |
+| [UI/UX 05] Make reading-mode switching clear and predictable | [#578](https://github.com/fderuiter/deruiter.dev/issues/578) | [#577](https://github.com/fderuiter/deruiter.dev/issues/577) |
+| [UI/UX 06] Complete the search-to-destination journey | [#579](https://github.com/fderuiter/deruiter.dev/issues/579) | [#577](https://github.com/fderuiter/deruiter.dev/issues/577) |
+| [UI/UX 07] Polish the experience and skills narrative | [#580](https://github.com/fderuiter/deruiter.dev/issues/580) | None |
+| [UI/UX 08] Improve case-study browsing and return navigation | [#581](https://github.com/fderuiter/deruiter.dev/issues/581) | None |
+| [UI/UX 09] Standardize the case-study reading journey | [#582](https://github.com/fderuiter/deruiter.dev/issues/582) | None |
+| [UI/UX 10] Unify contact entry points and form recovery | [#583](https://github.com/fderuiter/deruiter.dev/issues/583) | None |
+| [UI/UX 11] Make scheduling resilient and understandable | [#584](https://github.com/fderuiter/deruiter.dev/issues/584) | [#583](https://github.com/fderuiter/deruiter.dev/issues/583) |
+| [UI/UX 12] Polish footer navigation and newsletter signup | [#585](https://github.com/fderuiter/deruiter.dev/issues/585) | [#577](https://github.com/fderuiter/deruiter.dev/issues/577) |
+| [UI/UX 13] Make loading transitions stable and accessible | [#586](https://github.com/fderuiter/deruiter.dev/issues/586) | None |
+| [UI/UX 14] Make empty, error, offline, and missing-page states recoverable | [#587](https://github.com/fderuiter/deruiter.dev/issues/587) | None |
+| [UI/UX 15] Isolate authentication from public portfolio journeys | [#588](https://github.com/fderuiter/deruiter.dev/issues/588) | None |
+| [UI/UX 16] Polish Proof Workspace entry and editing | [#589](https://github.com/fderuiter/deruiter.dev/issues/589) | None |
+| [UI/UX 17] Polish CRF Studio entry and editing | [#590](https://github.com/fderuiter/deruiter.dev/issues/590) | None |
+| [UI/UX 18] Polish Incident Simulator entry and controls | [#591](https://github.com/fderuiter/deruiter.dev/issues/591) | None |
+| [UI/UX 19] Polish Neuro workspace entry and controls | [#592](https://github.com/fderuiter/deruiter.dev/issues/592) | None |
+| [UI/UX 20] Polish arcade discovery and launch expectations | [#593](https://github.com/fderuiter/deruiter.dev/issues/593) | None |
+| [UI/UX 21] Polish Laser Loon and Quasi-Puzzler play sessions | [#594](https://github.com/fderuiter/deruiter.dev/issues/594) | [#593](https://github.com/fderuiter/deruiter.dev/issues/593) |
+| [UI/UX 22] Polish Garmin and Clinical Chaos play sessions | [#595](https://github.com/fderuiter/deruiter.dev/issues/595) | [#593](https://github.com/fderuiter/deruiter.dev/issues/593) |
+| [UI/UX 23] Polish Retro Labyrinth, Working With Duck, and Meme Vault sessions | [#596](https://github.com/fderuiter/deruiter.dev/issues/596) | [#593](https://github.com/fderuiter/deruiter.dev/issues/593) |
+| [UI/UX 24] Validate the complete portfolio across devices and access needs | [#597](https://github.com/fderuiter/deruiter.dev/issues/597) | [#574](https://github.com/fderuiter/deruiter.dev/issues/574), [#575](https://github.com/fderuiter/deruiter.dev/issues/575), [#576](https://github.com/fderuiter/deruiter.dev/issues/576), [#577](https://github.com/fderuiter/deruiter.dev/issues/577), [#578](https://github.com/fderuiter/deruiter.dev/issues/578), [#579](https://github.com/fderuiter/deruiter.dev/issues/579), [#580](https://github.com/fderuiter/deruiter.dev/issues/580), [#581](https://github.com/fderuiter/deruiter.dev/issues/581), [#582](https://github.com/fderuiter/deruiter.dev/issues/582), [#583](https://github.com/fderuiter/deruiter.dev/issues/583), [#584](https://github.com/fderuiter/deruiter.dev/issues/584), [#585](https://github.com/fderuiter/deruiter.dev/issues/585), [#586](https://github.com/fderuiter/deruiter.dev/issues/586), [#587](https://github.com/fderuiter/deruiter.dev/issues/587), [#588](https://github.com/fderuiter/deruiter.dev/issues/588), [#589](https://github.com/fderuiter/deruiter.dev/issues/589), [#590](https://github.com/fderuiter/deruiter.dev/issues/590), [#591](https://github.com/fderuiter/deruiter.dev/issues/591), [#592](https://github.com/fderuiter/deruiter.dev/issues/592), [#593](https://github.com/fderuiter/deruiter.dev/issues/593), [#594](https://github.com/fderuiter/deruiter.dev/issues/594), [#595](https://github.com/fderuiter/deruiter.dev/issues/595), [#596](https://github.com/fderuiter/deruiter.dev/issues/596) |
 
 ## Full specifications
 
 ## [UI/UX 01] Polish the homepage first impression
 
-Published: [#574](https://github.com/fderuiter/portfolio/issues/574)
+Published: [#574](https://github.com/fderuiter/deruiter.dev/issues/574)
 
 <!-- portfolio-ui-polish-2026-09 ticket:01 -->
 
@@ -86,7 +86,7 @@ None (can start immediately).
 
 ## [UI/UX 02] Make the hero engineering demo usable on every input
 
-Published: [#575](https://github.com/fderuiter/portfolio/issues/575)
+Published: [#575](https://github.com/fderuiter/deruiter.dev/issues/575)
 
 <!-- portfolio-ui-polish-2026-09 ticket:02 -->
 
@@ -130,7 +130,7 @@ Keep this slice independently demoable. Preserve existing behavior that already 
 
 ## [UI/UX 03] Curate and polish featured project previews
 
-Published: [#576](https://github.com/fderuiter/portfolio/issues/576)
+Published: [#576](https://github.com/fderuiter/deruiter.dev/issues/576)
 
 <!-- portfolio-ui-polish-2026-09 ticket:03 -->
 
@@ -174,7 +174,7 @@ None (can start immediately).
 
 ## [UI/UX 04] Simplify and verify global navigation
 
-Published: [#577](https://github.com/fderuiter/portfolio/issues/577)
+Published: [#577](https://github.com/fderuiter/deruiter.dev/issues/577)
 
 <!-- portfolio-ui-polish-2026-09 ticket:04 -->
 
@@ -218,7 +218,7 @@ None (can start immediately).
 
 ## [UI/UX 05] Make reading-mode switching clear and predictable
 
-Published: [#578](https://github.com/fderuiter/portfolio/issues/578)
+Published: [#578](https://github.com/fderuiter/deruiter.dev/issues/578)
 
 <!-- portfolio-ui-polish-2026-09 ticket:05 -->
 
@@ -258,7 +258,7 @@ Keep this slice independently demoable. Preserve existing behavior that already 
 
 ## [UI/UX 06] Complete the search-to-destination journey
 
-Published: [#579](https://github.com/fderuiter/portfolio/issues/579)
+Published: [#579](https://github.com/fderuiter/deruiter.dev/issues/579)
 
 <!-- portfolio-ui-polish-2026-09 ticket:06 -->
 
@@ -298,7 +298,7 @@ Keep this slice independently demoable. Preserve existing behavior that already 
 
 ## [UI/UX 07] Polish the experience and skills narrative
 
-Published: [#580](https://github.com/fderuiter/portfolio/issues/580)
+Published: [#580](https://github.com/fderuiter/deruiter.dev/issues/580)
 
 <!-- portfolio-ui-polish-2026-09 ticket:07 -->
 
@@ -339,7 +339,7 @@ None (can start immediately).
 
 ## [UI/UX 08] Improve case-study browsing and return navigation
 
-Published: [#581](https://github.com/fderuiter/portfolio/issues/581)
+Published: [#581](https://github.com/fderuiter/deruiter.dev/issues/581)
 
 <!-- portfolio-ui-polish-2026-09 ticket:08 -->
 
@@ -380,7 +380,7 @@ None (can start immediately).
 
 ## [UI/UX 09] Standardize the case-study reading journey
 
-Published: [#582](https://github.com/fderuiter/portfolio/issues/582)
+Published: [#582](https://github.com/fderuiter/deruiter.dev/issues/582)
 
 <!-- portfolio-ui-polish-2026-09 ticket:09 -->
 
@@ -421,7 +421,7 @@ None (can start immediately).
 
 ## [UI/UX 10] Unify contact entry points and form recovery
 
-Published: [#583](https://github.com/fderuiter/portfolio/issues/583)
+Published: [#583](https://github.com/fderuiter/deruiter.dev/issues/583)
 
 <!-- portfolio-ui-polish-2026-09 ticket:10 -->
 
@@ -465,7 +465,7 @@ None (can start immediately).
 
 ## [UI/UX 11] Make scheduling resilient and understandable
 
-Published: [#584](https://github.com/fderuiter/portfolio/issues/584)
+Published: [#584](https://github.com/fderuiter/deruiter.dev/issues/584)
 
 <!-- portfolio-ui-polish-2026-09 ticket:11 -->
 
@@ -505,7 +505,7 @@ Keep this slice independently demoable. Preserve existing behavior that already 
 
 ## [UI/UX 12] Polish footer navigation and newsletter signup
 
-Published: [#585](https://github.com/fderuiter/portfolio/issues/585)
+Published: [#585](https://github.com/fderuiter/deruiter.dev/issues/585)
 
 <!-- portfolio-ui-polish-2026-09 ticket:12 -->
 
@@ -546,7 +546,7 @@ Keep this slice independently demoable. Preserve existing behavior that already 
 
 ## [UI/UX 13] Make loading transitions stable and accessible
 
-Published: [#586](https://github.com/fderuiter/portfolio/issues/586)
+Published: [#586](https://github.com/fderuiter/deruiter.dev/issues/586)
 
 <!-- portfolio-ui-polish-2026-09 ticket:13 -->
 
@@ -587,7 +587,7 @@ None (can start immediately).
 
 ## [UI/UX 14] Make empty, error, offline, and missing-page states recoverable
 
-Published: [#587](https://github.com/fderuiter/portfolio/issues/587)
+Published: [#587](https://github.com/fderuiter/deruiter.dev/issues/587)
 
 <!-- portfolio-ui-polish-2026-09 ticket:14 -->
 
@@ -628,7 +628,7 @@ None (can start immediately).
 
 ## [UI/UX 15] Isolate authentication from public portfolio journeys
 
-Published: [#588](https://github.com/fderuiter/portfolio/issues/588)
+Published: [#588](https://github.com/fderuiter/deruiter.dev/issues/588)
 
 <!-- portfolio-ui-polish-2026-09 ticket:15 -->
 
@@ -671,7 +671,7 @@ None (can start immediately).
 
 ## [UI/UX 16] Polish Proof Workspace entry and editing
 
-Published: [#589](https://github.com/fderuiter/portfolio/issues/589)
+Published: [#589](https://github.com/fderuiter/deruiter.dev/issues/589)
 
 <!-- portfolio-ui-polish-2026-09 ticket:16 -->
 
@@ -714,7 +714,7 @@ None (can start immediately).
 
 ## [UI/UX 17] Polish CRF Studio entry and editing
 
-Published: [#590](https://github.com/fderuiter/portfolio/issues/590)
+Published: [#590](https://github.com/fderuiter/deruiter.dev/issues/590)
 
 <!-- portfolio-ui-polish-2026-09 ticket:17 -->
 
@@ -759,7 +759,7 @@ None (can start immediately).
 
 ## [UI/UX 18] Polish Incident Simulator entry and controls
 
-Published: [#591](https://github.com/fderuiter/portfolio/issues/591)
+Published: [#591](https://github.com/fderuiter/deruiter.dev/issues/591)
 
 <!-- portfolio-ui-polish-2026-09 ticket:18 -->
 
@@ -802,7 +802,7 @@ None (can start immediately).
 
 ## [UI/UX 19] Polish Neuro workspace entry and controls
 
-Published: [#592](https://github.com/fderuiter/portfolio/issues/592)
+Published: [#592](https://github.com/fderuiter/deruiter.dev/issues/592)
 
 <!-- portfolio-ui-polish-2026-09 ticket:19 -->
 
@@ -845,7 +845,7 @@ None (can start immediately).
 
 ## [UI/UX 20] Polish arcade discovery and launch expectations
 
-Published: [#593](https://github.com/fderuiter/portfolio/issues/593)
+Published: [#593](https://github.com/fderuiter/deruiter.dev/issues/593)
 
 <!-- portfolio-ui-polish-2026-09 ticket:20 -->
 
@@ -888,7 +888,7 @@ None (can start immediately).
 
 ## [UI/UX 21] Polish Laser Loon and Quasi-Puzzler play sessions
 
-Published: [#594](https://github.com/fderuiter/portfolio/issues/594)
+Published: [#594](https://github.com/fderuiter/deruiter.dev/issues/594)
 
 <!-- portfolio-ui-polish-2026-09 ticket:21 -->
 
@@ -932,7 +932,7 @@ Related: #549, the arcade lifecycle and HUD architecture epic. Reuse its contrac
 
 ## [UI/UX 22] Polish Garmin and Clinical Chaos play sessions
 
-Published: [#595](https://github.com/fderuiter/portfolio/issues/595)
+Published: [#595](https://github.com/fderuiter/deruiter.dev/issues/595)
 
 <!-- portfolio-ui-polish-2026-09 ticket:22 -->
 
@@ -976,7 +976,7 @@ Related: #549, the arcade lifecycle and HUD architecture epic. Reuse its contrac
 
 ## [UI/UX 23] Polish Retro Labyrinth, Working With Duck, and Meme Vault sessions
 
-Published: [#596](https://github.com/fderuiter/portfolio/issues/596)
+Published: [#596](https://github.com/fderuiter/deruiter.dev/issues/596)
 
 <!-- portfolio-ui-polish-2026-09 ticket:23 -->
 
@@ -1020,7 +1020,7 @@ Related: #549, the arcade lifecycle and HUD architecture epic. Reuse its contrac
 
 ## [UI/UX 24] Validate the complete portfolio across devices and access needs
 
-Published: [#597](https://github.com/fderuiter/portfolio/issues/597)
+Published: [#597](https://github.com/fderuiter/deruiter.dev/issues/597)
 
 <!-- portfolio-ui-polish-2026-09 ticket:24 -->
 

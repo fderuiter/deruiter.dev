@@ -40,7 +40,7 @@ export interface EngineeringBridgeEntry {
 }
 
 export const ADR_REPOSITORY_URL =
-  "https://github.com/fderuiter/portfolio/blob/main/adr";
+  "https://github.com/fderuiter/deruiter.dev/blob/main/adr";
 
 export const ENGINEERING_BRIDGES: Readonly<
   Record<string, EngineeringBridgeEntry>

@@ -3,9 +3,9 @@
 ## Status
 
 Accepted on 2026-10-03, under the epic
-[#1076](https://github.com/fderuiter/portfolio/issues/1076) and sub-issues
-[#1091](https://github.com/fderuiter/portfolio/issues/1091) to
-[#1097](https://github.com/fderuiter/portfolio/issues/1097). The decisions below were settled on 2026-10-03;
+[#1076](https://github.com/fderuiter/deruiter.dev/issues/1076) and sub-issues
+[#1091](https://github.com/fderuiter/deruiter.dev/issues/1091) to
+[#1097](https://github.com/fderuiter/deruiter.dev/issues/1097). The decisions below were settled on 2026-10-03;
 this ADR keeps the ones that bind later work. ADR 0047 stays reserved for the
 narrative-design work in #927.
 
@@ -45,7 +45,7 @@ The engine runs inside `components/protocol-drift/engine.worker.ts`, created in
 imports the engine through `@/lib/protocol-drift` and a shared message core
 (`engine-core.ts`); it never imports the adapter that constructs it, so the
 worker's chunk cannot reach its own constructor and
-`ChunkCycleGuardPlugin` ([#853](https://github.com/fderuiter/portfolio/issues/853))
+`ChunkCycleGuardPlugin` ([#853](https://github.com/fderuiter/deruiter.dev/issues/853))
 stays quiet. Where `Worker` does not exist (jsdom, very old browsers) the same
 core runs in-thread behind the same asynchronous interface.
 

@@ -2,8 +2,8 @@
 
 ## Status
 
-Accepted on 2026-09-29 with [#1282](https://github.com/fderuiter/portfolio/issues/1282),
-under the epic [#1281](https://github.com/fderuiter/portfolio/issues/1281).
+Accepted on 2026-09-29 with [#1282](https://github.com/fderuiter/deruiter.dev/issues/1282),
+under the epic [#1281](https://github.com/fderuiter/deruiter.dev/issues/1281).
 Later Study Director tickets amend this record rather than contradict it.
 ADR 0047 stays reserved for the narrative-design work in #927.
 

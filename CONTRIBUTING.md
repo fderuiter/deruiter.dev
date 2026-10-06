@@ -128,15 +128,14 @@ Whenever a new first-class route, interactive mini-game, or case study page is i
 1. **Command Palette (`components/CommandPalette.tsx`)**:
    - Registered under `staticNavs` with Tabler icon, title, subtitle, category, and target URL.
    - _Note:_ The CLI scaffolder automatically registers `arcade` games and `case-study` pages into `CommandPalette.tsx` upon scaffolding!
-2. **Navbar Navigation (`components/Navbar.tsx`)**:
-   - Indexed under desktop dropdown menus (`SYSTEMS_ITEMS` / `ARCADE_ITEMS`) and mobile drawer.
-3. **Footer Navigation (`components/Footer.tsx`)**:
-   - Categorized under system/arcade links.
-4. **Sitemap & SEO Metadata (`app/sitemap.ts` & `lib/seo-metadata.ts`)**:
+2. **Site Navigation (`lib/navigation.ts`)**:
+   - One entry under the right group (Arcade, Simulators, Work, About). The top bar, desktop menus, mobile drawer and footer columns all render from this data ([ADR 0058](./adr/0058-site-navigation-information-architecture.md)).
+3. **Sitemap & SEO Metadata (`app/sitemap.ts` & `lib/seo-metadata.ts`)**:
    - Canonical path and change frequency added to `ROUTE_METADATA_CONFIGS`.
-   - Path registered in `CANONICAL_ROUTES` in `lib/dx/page-bench.ts`.
-5. **OpenGraph Social Preview (`app/<route>/opengraph-image.tsx`)**:
+4. **OpenGraph Social Preview (`app/<route>/opengraph-image.tsx`)**:
    - 1200x630 dynamic OpenGraph card generator matching design system (`lib/og-image.tsx`).
+5. **Page Benchmark (`lib/dx/page-bench.ts`)**:
+   - Path registered in `CANONICAL_ROUTES`.
 
 ---
 
@@ -177,7 +176,7 @@ Commit PR title. During the manual hold, an operator creates a Production
 deployment from the merged `main` SHA in the Vercel Dashboard. Keep this hold
 until a replacement release policy is approved and verified under
 [ADR 0051](./adr/0051-manual-production-releases.md); the nightly-train
-proposal is tracked in [#1168](https://github.com/fderuiter/portfolio/issues/1168). Feature branches do not deploy
+proposal is tracked in [#1168](https://github.com/fderuiter/deruiter.dev/issues/1168). Feature branches do not deploy
 automatically. See
 [Release and deployment workflow](./docs/how-to/release-and-deploy.md).
 

@@ -2942,7 +2942,7 @@ async function runEvalSuite(
     slug: "designing-for-my-brother",
     title: "Designing for My Brother: Accessible Typography & Cognitive UX",
     primary_language: "TypeScript",
-    github_url: "https://github.com/fderuiter/portfolio",
+    github_url: "https://github.com/fderuiter/deruiter.dev",
     published: true,
     simulated_telemetry: false,
     tags: "Accessibility, Next.js, Pretext, Canvas 2D, OpenDyslexic, Typography, WCAG 2.1 AA, ADR 0040",

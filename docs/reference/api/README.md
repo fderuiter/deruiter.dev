@@ -4,7 +4,7 @@
 
 # Portfolio Hub
 
-**Live at [deruiter.dev](https://deruiter.dev)** · [Architecture](_media/ARCHITECTURE.md) · [Decision records](https://github.com/fderuiter/portfolio/tree/main/adr) · [Contributing](_media/CONTRIBUTING.md)
+**Live at [deruiter.dev](https://deruiter.dev)** · [Architecture](_media/ARCHITECTURE.md) · [Decision records](https://github.com/fderuiter/deruiter.dev/tree/main/adr) · [Contributing](_media/CONTRIBUTING.md)
 
 The source for Frederick de Ruiter's interactive engineering portfolio. Instead
 of describing the work, most of the site lets you try it: a logic proof
@@ -16,27 +16,28 @@ and formal methods.
 
 ## What's inside
 
-| Area                        | What you can do                                                                                                              | Try it                                                                                  |
-| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| **Logical Proof Workspace** | Build a proof one step at a time, apply inference rules, and see where an argument breaks.                                   | [/proof](https://deruiter.dev/proof)                                                    |
-| **CRF Studio**              | Design clinical research forms, add validation rules, and test them against sample data.                                     | [/crf](https://deruiter.dev/crf)                                                        |
-| **NeuroRecon Studio**       | Explore brain surfaces and MRI slices, place control points, and work through simulated reconstruction problems.             | [/neuro](https://deruiter.dev/neuro)                                                    |
-| **Archetype Simulator**     | Pick an architecture bias, triage an outage, and see which architectural archetype your trade-offs map to.                   | [/simulator](https://deruiter.dev/simulator)                                            |
-| **Ski Patrol Shift Studio** | A Midwest ski-patrol judgment simulation driven by deterministic state machines.                                             | [/patrol](https://deruiter.dev/patrol)                                                  |
-| **Arcade**                  | Trial & Error: Biostat Ops, Clinical Trial Chaos, Laser Loon, Retro Labyrinth, Monkey C Mayhem, Working With Duck, and more. | [/arcade](https://deruiter.dev/arcade)                                                  |
-| **Case studies and blog**   | Write-ups of clinical data engineering, formal verification, accessibility, and browser graphics projects.                   | [/case-studies](https://deruiter.dev/case-studies) · [/blog](https://deruiter.dev/blog) |
-| **Under the Hood**          | How the site itself works: text layout, browser audio, the stack, and the checks behind it.                                  | [/stack](https://deruiter.dev/stack)                                                    |
+| Area                        | What you can do                                                                                                                                    | Try it                                                                                  |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| **Logical Proof Workspace** | Build a proof one step at a time, apply inference rules, and see where an argument breaks.                                                         | [/proof](https://deruiter.dev/proof)                                                    |
+| **CRF Studio**              | Design clinical research forms, add validation rules, and test them against sample data.                                                           | [/crf](https://deruiter.dev/crf)                                                        |
+| **NeuroRecon Studio**       | Explore brain surfaces and MRI slices, place control points, and work through simulated reconstruction problems.                                   | [/neuro](https://deruiter.dev/neuro)                                                    |
+| **Archetype Simulator**     | Pick an architecture bias, triage an outage, and see which architectural archetype your trade-offs map to.                                         | [/simulator](https://deruiter.dev/simulator)                                            |
+| **Ski Patrol Shift Studio** | A Midwest ski-patrol judgment simulation driven by deterministic state machines.                                                                   | [/patrol](https://deruiter.dev/patrol)                                                  |
+| **Protocol Drift**          | Wire a pipeline that carries site entries into CDISC SDTM, survive a mid-study amendment, and clear database lock.                                 | [/protocol-drift](https://deruiter.dev/protocol-drift)                                  |
+| **Arcade**                  | Study Director, Trial & Error: Biostat Ops, Clinical Trial Chaos, Laser Loon, Retro Labyrinth, Quasi-Perfect Puzzler, Working With Duck, and more. | [/arcade](https://deruiter.dev/arcade)                                                  |
+| **Case studies and blog**   | Write-ups of clinical data engineering, formal verification, accessibility, and browser graphics projects.                                         | [/case-studies](https://deruiter.dev/case-studies) · [/blog](https://deruiter.dev/blog) |
+| **Under the Hood**          | How the site itself works: text layout, browser audio, the stack, and the checks behind it.                                                        | [/stack](https://deruiter.dev/stack)                                                    |
 
 ## Built with
 
 - **App:** Next.js 16 (App Router, Turbopack), React 19, TypeScript, Tailwind CSS v4
 - **Rendering:** Canvas 2D and Three.js for the studios and games, [`@chenglou/pretext`](https://github.com/chenglou/pretext) for DOM-free text layout, Framer Motion for transitions
-- **Data:** Prisma 7 on Neon serverless Postgres, Upstash Redis for caching and rate limits, Zod contracts for every API route ([`openapi.json`](https://github.com/fderuiter/portfolio/blob/main/openapi.json))
+- **Data:** Prisma 7 on Neon serverless Postgres, Upstash Redis for caching and rate limits, Zod contracts for every API route ([`openapi.json`](https://github.com/fderuiter/deruiter.dev/blob/main/openapi.json))
 - **Services:** Clerk (admin auth), Resend (email), Sentry (errors and tracing), Vercel (hosting)
 - **Quality:** Vitest, fast-check property tests, Stryker mutation testing, Playwright visual, accessibility and synthetic probes, and a custom architecture linter (`npm run doctor`)
 
 The whole stack is designed to run inside free-tier provider limits; see
-[ADR 0036](https://github.com/fderuiter/portfolio/blob/main/adr/0036-free-tier-offloading-and-provider-quota-governance.md).
+[ADR 0036](https://github.com/fderuiter/deruiter.dev/blob/main/adr/0036-free-tier-offloading-and-provider-quota-governance.md).
 
 ## Run it locally
 
@@ -78,7 +79,7 @@ reports what is missing. The full walkthrough is in the
 ## Documentation
 
 - [`ARCHITECTURE.md`](_media/ARCHITECTURE.md): route tree, component hierarchy, and data flow
-- [`adr/`](https://github.com/fderuiter/portfolio/tree/main/adr): architecture decision records, one per significant design choice
+- [`adr/`](https://github.com/fderuiter/deruiter.dev/tree/main/adr): architecture decision records, one per significant design choice
 - [`docs/`](_media/README.md): tutorials, how-to guides, reference (including the TypeDoc API reference), and explanation
 - [`DEPLOYMENT.md`](_media/DEPLOYMENT.md) and [`DATABASE_MIGRATIONS.md`](_media/DATABASE_MIGRATIONS.md): release and schema-change runbooks
 - [`CHANGELOG.md`](_media/CHANGELOG.md): release history

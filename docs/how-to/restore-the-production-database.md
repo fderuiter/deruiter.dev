@@ -4,8 +4,8 @@ Last verified: 2026-09-19 16:11 UTC, by executing a full restore against the liv
 Neon project `neon-gray-drum` (`withered-tooth-11857430`).
 
 Governing policy: [ADR 0036](../../adr/0036-free-tier-offloading-and-provider-quota-governance.md),
-[Issue #700](https://github.com/fderuiter/portfolio/issues/700),
-[Issue #622](https://github.com/fderuiter/portfolio/issues/622).
+[Issue #700](https://github.com/fderuiter/deruiter.dev/issues/700),
+[Issue #622](https://github.com/fderuiter/deruiter.dev/issues/622).
 
 Every figure below was measured during that rehearsal. Nothing here is estimated.
 
@@ -63,10 +63,10 @@ database grows.
    snapshots are possible and expire; nothing creates them automatically.
 3. **One role, no least privilege.** `neondb_owner` has full read/write and is
    what the application runs as. There is no migration-only or read-only role.
-   See [#622](https://github.com/fderuiter/portfolio/issues/622).
+   See [#622](https://github.com/fderuiter/deruiter.dev/issues/622).
 4. **No network restriction.** `allowed_ips: []`, `block_public_connections: false`.
    A leaked credential is usable from anywhere, see
-   [#865](https://github.com/fderuiter/portfolio/issues/865).
+   [#865](https://github.com/fderuiter/deruiter.dev/issues/865).
 5. **Ten branches maximum** on the free plan. Rehearsal branches must be cleaned up.
 6. **The production branch is not protected.** `"protected": false`. Nothing at
    the provider prevents deleting it.
@@ -184,7 +184,7 @@ curl -sS -o /dev/null -w "%{http_code}\n" https://deruiter.dev/case-studies/qrcr
 
 `200` means the running deployment reached Neon. `404` means it is serving
 fallbacks, the failure mode of
-[#859](https://github.com/fderuiter/portfolio/issues/859), which otherwise looks
+[#859](https://github.com/fderuiter/deruiter.dev/issues/859), which otherwise looks
 like a healthy site.
 
 > [!NOTE]
@@ -227,7 +227,7 @@ all be updated in Vercel (Production **and** Preview) and in local `.env.local`:
 `POSTGRES_URL_NON_POOLING`, `POSTGRES_URL_NO_SSL`
 
 This is **not** the same set as the eight password-bearing variables in
-[#865](https://github.com/fderuiter/portfolio/issues/865). `PGPASSWORD` and
+[#865](https://github.com/fderuiter/deruiter.dev/issues/865). `PGPASSWORD` and
 `POSTGRES_PASSWORD` carry the password but no host; `PGHOST`, `PGHOST_UNPOOLED`
 and `POSTGRES_HOST` carry the host but no password. A rotation and an endpoint
 move touch overlapping but different lists.

@@ -202,7 +202,7 @@ describe("public repository readiness contracts", () => {
     expect(packageJson.license).toBe("Apache-2.0");
     expect(packageJson.description).toBeTruthy();
     expect(packageJson.homepage).toBe("https://deruiter.dev");
-    expect(packageJson.repository?.url).toContain("fderuiter/portfolio");
-    expect(packageJson.bugs?.url).toContain("fderuiter/portfolio/issues");
+    expect(packageJson.repository?.url).toContain("fderuiter/deruiter.dev");
+    expect(packageJson.bugs?.url).toContain("fderuiter/deruiter.dev/issues");
   });
 });

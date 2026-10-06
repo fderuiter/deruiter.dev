@@ -22,7 +22,7 @@ This is the evidence-backed capacity, connection hygiene, and retention record f
 | Project compute this cycle | **27,473 CPU-seconds** / 108,220s active | — | quota resets 2026-10-01 | Observed |
 | Point-in-time recovery | **6 hours** (21,600s) | — | — | **This is the effective RPO** |
 
-History retention is six hours. Any restore target older than that does not exist, which bounds what [#700](https://github.com/fderuiter/portfolio/issues/700) can rehearse.
+History retention is six hours. Any restore target older than that does not exist, which bounds what [#700](https://github.com/fderuiter/deruiter.dev/issues/700) can rehearse.
 
 Neon's free plan provides 0.5 GiB storage and auto-suspends compute after 5 minutes of inactivity. Direct un-cached public queries wake compute, adding 1–3s cold-start latency and consuming monthly compute hours.
 
@@ -38,7 +38,7 @@ Neon's free plan provides 0.5 GiB storage and auto-suspends compute after 5 minu
 > [!WARNING]
 > **Correction (2026-09-19).** The previous revision of this table stated that `main` had Protection Status **Protected** and that a `dev` branch existed and was **Protected**. Neither is true. `main` reports `"protected": false`, and there is no `dev` branch in the project; it was most likely removed under [ADR 0037](../../adr/0037-controlled-integration-and-release-deployments.md), which superseded the persistent dev environment, without this inventory being updated.
 >
-> Protecting the production branch is an unmet acceptance criterion of [#622](https://github.com/fderuiter/portfolio/issues/622), not a control in place. A document asserting governance that does not exist is worse than one recording the gap.
+> Protecting the production branch is an unmet acceptance criterion of [#622](https://github.com/fderuiter/deruiter.dev/issues/622), not a control in place. A document asserting governance that does not exist is worse than one recording the gap.
 
 A second correction landed the same day, from executing the restore rehearsal
 rather than from reading provider state:
@@ -46,9 +46,9 @@ rather than from reading provider state:
 > [!IMPORTANT]
 > **Production branch id changed (2026-09-19).** The canonical production branch is now `br-snowy-butterfly-apmzw7bd`. It was `br-shiny-dust-apixoyf1` from 2026-05-27 until 2026-09-19.
 >
-> The [#700](https://github.com/fderuiter/portfolio/issues/700) restore rehearsal called Neon's `restore_snapshot` with its default `finalize: true`. That is not an isolated restore. It is a **production cutover**: the restored branch takes the `main` name, the primary/default flags, and the production compute endpoint, while the previous branch is demoted and renamed. Data was verified byte-identical before and after (schema fingerprint `800a41c74b9eb8fb31798631812e007d`, case-study fingerprint `90eb59844b848b1cbe4ef4a8b45603e9`, 4/94/11 rows), and the newest write in the database predated the restore point by 34 days, so nothing was lost.
+> The [#700](https://github.com/fderuiter/deruiter.dev/issues/700) restore rehearsal called Neon's `restore_snapshot` with its default `finalize: true`. That is not an isolated restore. It is a **production cutover**: the restored branch takes the `main` name, the primary/default flags, and the production compute endpoint, while the previous branch is demoted and renamed. Data was verified byte-identical before and after (schema fingerprint `800a41c74b9eb8fb31798631812e007d`, case-study fingerprint `90eb59844b848b1cbe4ef4a8b45603e9`, 4/94/11 rows), and the newest write in the database predated the restore point by 34 days, so nothing was lost.
 >
-> **The compute endpoint is the thing production depends on, not the branch id.** `ep-young-mouse-ap1zkh0m` is named by nine environment variables (`DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `PGHOST`, `PGHOST_UNPOOLED`, `POSTGRES_HOST`, `POSTGRES_PRISMA_URL`, `POSTGRES_URL`, `POSTGRES_URL_NON_POOLING`, `POSTGRES_URL_NO_SSL`). This is a *different* set from the eight password-bearing variables listed in [#865](https://github.com/fderuiter/portfolio/issues/865). `set_default_branch` moves the default designation but **does not** move the endpoint, and Neon refuses both to delete the root branch's read-write endpoint and to add a second one to an occupied branch. The branch holding `ep-young-mouse-ap1zkh0m` was therefore renamed to `main` rather than relocating a live endpoint.
+> **The compute endpoint is the thing production depends on, not the branch id.** `ep-young-mouse-ap1zkh0m` is named by nine environment variables (`DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `PGHOST`, `PGHOST_UNPOOLED`, `POSTGRES_HOST`, `POSTGRES_PRISMA_URL`, `POSTGRES_URL`, `POSTGRES_URL_NON_POOLING`, `POSTGRES_URL_NO_SSL`). This is a *different* set from the eight password-bearing variables listed in [#865](https://github.com/fderuiter/deruiter.dev/issues/865). `set_default_branch` moves the default designation but **does not** move the endpoint, and Neon refuses both to delete the root branch's read-write endpoint and to add a second one to an occupied branch. The branch holding `ep-young-mouse-ap1zkh0m` was therefore renamed to `main` rather than relocating a live endpoint.
 >
 > `pre-rehearsal-main-2026-09-19` (`br-shiny-dust-apixoyf1`) is retained with identical data as a rollback copy and is safe to delete once this release is confirmed. Because history retention is six hours, its longer lineage confers no recovery advantage.
 

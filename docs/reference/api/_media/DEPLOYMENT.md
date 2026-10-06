@@ -4,7 +4,7 @@ During the manual hold, a person starts each Production deployment from the
 Vercel Dashboard after CI passes ([ADR 0051](adr/0051-manual-production-releases.md)).
 Keep the hold until a replacement release policy is approved and verified.
 The nightly-train proposal is tracked in
-[issue #1168](https://github.com/fderuiter/portfolio/issues/1168). The canonical, step-by-step release procedure is
+[issue #1168](https://github.com/fderuiter/deruiter.dev/issues/1168). The canonical, step-by-step release procedure is
 [`docs/how-to/release-and-deploy.md`](docs/how-to/release-and-deploy.md). This
 guide describes the controls around that flow, the manual canary-analysis
 tooling, and the triage runbooks for the scheduled synthetic probes.

@@ -271,7 +271,7 @@ const ABOUT_ITEMS: NavItem[] = [
     id: "github",
     title: "GitHub",
     subtitle: "The source for this site",
-    href: "https://github.com/fderuiter/portfolio",
+    href: "https://github.com/fderuiter/deruiter.dev",
     icon: "github",
     tone: "cyan",
     external: true,

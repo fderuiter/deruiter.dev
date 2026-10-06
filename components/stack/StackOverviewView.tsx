@@ -96,7 +96,7 @@ export const StackOverviewView: React.FC = () => {
             {/* Quick Links / GitHub */}
             <div className="flex sm:flex-col items-center sm:items-end gap-3 flex-wrap">
               <a
-                href="https://github.com/fderuiter/portfolio"
+                href="https://github.com/fderuiter/deruiter.dev"
                 target="_blank"
                 rel="noopener noreferrer"
                 onMouseEnter={() => playHover()}

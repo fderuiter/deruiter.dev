@@ -17,7 +17,7 @@ Upstash REST credentials also need a verified URL/token pair before another
 build can safely run its telemetry and rate limiting paths.
 
 The operator selected a nightly release train, with implementation scheduled
-for 2026-10-05 in [issue #1168](https://github.com/fderuiter/portfolio/issues/1168).
+for 2026-10-05 in [issue #1168](https://github.com/fderuiter/deruiter.dev/issues/1168).
 The original restoration deadline preceded that implementation. Keep the
 manual hold in force across this gap; the scheduled implementation date
 does not itself activate a release workflow.

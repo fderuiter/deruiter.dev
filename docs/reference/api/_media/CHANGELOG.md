@@ -14,7 +14,8 @@ version number is set when the release is tagged.
 
 ### Merged since the 2026-09-29 release
 
-Not yet in production; these ship with the next manual release.
+Production ran `aa85100` (#1805) as of 2026-10-05, so entries up to that
+commit are deployed; later ones ship with the next manual release.
 
 - Study Director: desk layout with status bar and scoped design tokens, study
   health radar, phase timeline, team portraits and site cards (#1510, #1541).
@@ -136,6 +137,45 @@ Not yet in production; these ship with the next manual release.
   drag-reorder e2e aims at the middle of its drop window (#1506, #1562,
   #1573).
 
+- Proof, Quasi-Puzzler and CRF Studio: a reactive client-side AST rule matcher
+  with an auto-step solver, a Pratt formula compiler with Lean 4 live server
+  sync, bulk assign and clear toggles for the CRF visit matrix, and an in-modal
+  export toolbar (#1757, #1758, #1759, #1764, #1776).
+- Study Director: a decoupled export engine and schema-driven scenario
+  manager, then the walkable office with team, events, site visits and office
+  decay, and an opening in the walkable office with first-run help (#1760,
+  #1790, #1850).
+- Trial & Error and terminal: an arcade deck builder with a URL-compressed
+  scenario payload, and an event-bus macro engine with a dynamic command
+  registry (#1761, #1762).
+- Working with Duck: shared result cards, office daylight and screen effects,
+  and Duck drawn as an English Cream (#1766, #1774).
+- Backlog phases 1 to 5: small bug fixes (arcade snapshot, accessible names,
+  CRF storage, Labyrinth focus, Form 483 panel), parallel sharded CI with one
+  build per PR, dev tooling (safe storage, shared hooks, ESM Vitest config,
+  mutation threshold 80, overrides audit), the peer engineering narrative with
+  a fact-checked Equipose case study, and CRF Studio workflows with a review
+  package (#1777, #1778, #1780, #1782, #1787). The legacy
+  `/case-studies/equipose` URL redirects (#1794).
+- Arcade: a gameplay trailer on the hub, shared kit finish and art passes for
+  six games, and the Protocol Drift data-pipeline simulation (#1789, #1791,
+  #1795).
+- Setup and open source: a fresh-clone setup framework with profiles and a
+  safe database stage, an open source acknowledgments page with license
+  compliance gates, and credits built from the lockfile and registry with
+  full license texts (#1793, #1805, #1806).
+- Merch: a Laser Loon merch page that stays "coming soon" until the shop
+  opens, with a link to the Minnesota flag at Flags for Good (#1807, #1810).
+- Security: a 30-day exception for the `braces` advisory (GHSA-vfj7-8cjw-p6xm,
+  tracked in #1783; it expires 2026-11-01) and package overrides for patched
+  `source-map-js`, `katex`, `smol-toml`, `sharp` and `shell-quote`, each
+  documented in `SECURITY.md` (#1786, #1852).
+- Navigation: one data file (`lib/navigation.ts`) feeds the top bar, mobile
+  drawer and footer. The top bar is Work, Blog, Arcade, Simulators, About and
+  Contact, and Protocol Drift moved to `/protocol-drift` with a permanent
+  redirect from `/arcade/protocol-drift` ([ADR 0058](adr/0058-site-navigation-information-architecture.md),
+  #1852).
+
 ### Added
 
 - Trial & Error campaign: three acts linked into one run, the timed FDA
@@ -205,7 +245,7 @@ The first release since the repository became public and adopted the Apache-2.0
 license. It ships the technical blog, the Patrol shift simulator, the first
 playable Trial & Error slices, the CRF testing workflow, and the build and
 release-integrity fixes found during the 2026-09-18/19 release-readiness work
-([#863](https://github.com/fderuiter/portfolio/issues/863)).
+([#863](https://github.com/fderuiter/deruiter.dev/issues/863)).
 
 ### Database
 
@@ -410,5 +450,5 @@ application.
 - Added owner and follow-up requirements for any future time-bounded audit
   exception.
 
-[0.4.0]: https://github.com/fderuiter/portfolio/compare/v0.3.0...v0.4.0
-[0.3.0]: https://github.com/fderuiter/portfolio/compare/v0.1.0...v0.3.0
+[0.4.0]: https://github.com/fderuiter/deruiter.dev/compare/v0.3.0...v0.4.0
+[0.3.0]: https://github.com/fderuiter/deruiter.dev/compare/v0.1.0...v0.3.0

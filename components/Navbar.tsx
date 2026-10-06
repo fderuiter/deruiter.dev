@@ -725,7 +725,7 @@ export const Navbar: React.FC = () => {
                     </div>
 
                     <a
-                      href="https://github.com/fderuiter/portfolio"
+                      href="https://github.com/fderuiter/deruiter.dev"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="min-h-9 rounded-lg border border-zinc-800 px-3 py-2 text-center text-[10px] font-mono text-zinc-400 hover:border-brand-cyan/40 hover:text-brand-cyan"
@@ -999,7 +999,7 @@ export const Navbar: React.FC = () => {
             <div className="relative z-10 pt-4 border-t border-zinc-900 flex items-center justify-between text-xs font-mono text-zinc-500">
               <span>© 2026 FREDERICK DE RUITER</span>
               <a
-                href="https://github.com/fderuiter/portfolio"
+                href="https://github.com/fderuiter/deruiter.dev"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-zinc-400 hover:text-brand-cyan flex items-center gap-1 min-h-11 px-2 py-2"

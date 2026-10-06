@@ -33,10 +33,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 - Any new first-class route or interactive tool must be synchronized across the 5-Point Discovery Matrix:
   - `components/CommandPalette.tsx` under `staticNavs` with Tabler/Lucide icon, status badge, tech stack tags, and preview highlights.
-  - `components/Navbar.tsx` under the appropriate desktop dropdown (`SYSTEMS_ITEMS` / `ARCADE_ITEMS`) and mobile slide-out drawer.
-  - `components/Footer.tsx` under the corresponding navigation category and status link.
+  - `lib/navigation.ts`, the single data source for the top bar, desktop menus, mobile drawer and footer columns (one entry under the right group, per [ADR 0058](adr/0058-site-navigation-information-architecture.md)).
   - `app/sitemap.ts` and `lib/seo-metadata.ts` under `ROUTE_METADATA_CONFIGS` with canonical path and change frequency.
   - `app/<route>/opengraph-image.tsx` providing a 1200x630 dynamic social preview card matching the systems architecture design system (`lib/og-image.tsx`).
+  - `CANONICAL_ROUTES` in `lib/dx/page-bench.ts` (see invariant 14).
 
 ### 4. Hydration & React Best Practices
 

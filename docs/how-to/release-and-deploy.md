@@ -3,7 +3,7 @@
 Last reconciled: 2026-09-28. Manual Production releases remain required under
 [ADR 0051](../../adr/0051-manual-production-releases.md) until a replacement
 release policy is approved and verified. The nightly-train proposal in
-[issue #1168](https://github.com/fderuiter/portfolio/issues/1168) is scheduled
+[issue #1168](https://github.com/fderuiter/deruiter.dev/issues/1168) is scheduled
 for implementation on 2026-10-05; that date does not activate a release workflow.
 
 **During the manual hold:** open a PR, let CI go green, squash-merge
@@ -90,7 +90,7 @@ Compare the configured check name and app ID with a recent successful PR's
 check runs. Do not use `gh pr merge --admin` to bypass pending CI. When using
 `gh pr merge --auto --squash`, verify that the PR remains open with auto merge
 enabled while Merge Gate is pending, then confirm it merges after success.
-Issue [#1247](https://github.com/fderuiter/portfolio/issues/1247) tracks the
+Issue [#1247](https://github.com/fderuiter/deruiter.dev/issues/1247) tracks the
 pending-CI verification.
 
 ### Owner Merge Override

@@ -167,7 +167,7 @@ export async function triageSecurityIssues(options?: {
   const token =
     options?.token || process.env.GH_TOKEN || process.env.GITHUB_TOKEN;
   const repo =
-    options?.repo || process.env.GITHUB_REPOSITORY || "fderuiter/portfolio";
+    options?.repo || process.env.GITHUB_REPOSITORY || "fderuiter/deruiter.dev";
 
   if (!token) {
     console.warn("GH_TOKEN not set, skipping GitHub issue triage creation.");

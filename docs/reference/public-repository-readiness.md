@@ -8,8 +8,8 @@ Last verified: 2026-09-22 against GitHub documentation; status amended 2026-09-2
 > free, and GitHub Free supports branch protection and repository rulesets for
 > public repositories. The actual branch rules, historical log review, and
 > production configuration still need verification; track those operator
-> checks in [#732](https://github.com/fderuiter/portfolio/issues/732) and
-> release readiness in [#863](https://github.com/fderuiter/portfolio/issues/863).
+> checks in [#732](https://github.com/fderuiter/deruiter.dev/issues/732) and
+> release readiness in [#863](https://github.com/fderuiter/deruiter.dev/issues/863).
 > See the [2026-09-24 ADR 0039 amendment](../../adr/0039-github-pro-plan-capabilities-and-actions-minutes-governance.md#amendment-2026-09-24--public-repository-state).
 
 Scope: the operational consequences assessed before changing
@@ -27,12 +27,12 @@ storage retain separate allowances and billing behavior.
 
 At the time of the 2026-09-22 snapshot, the visibility decision was gated on
 the credential concern tracked in
-[#865](https://github.com/fderuiter/portfolio/issues/865) and review of the
+[#865](https://github.com/fderuiter/deruiter.dev/issues/865) and review of the
 repository, Git history, GitHub discussion surfaces, and historical Actions
 logs and artifacts. The repository became public on 2026-09-23. Current
 post-publication controls and any remaining operator checks are tracked in
-[#732](https://github.com/fderuiter/portfolio/issues/732) and
-[#863](https://github.com/fderuiter/portfolio/issues/863); public secret
+[#732](https://github.com/fderuiter/deruiter.dev/issues/732) and
+[#863](https://github.com/fderuiter/deruiter.dev/issues/863); public secret
 scanning remains a useful backstop, not proof that every application-specific
 secret pattern is covered.
 
@@ -166,7 +166,7 @@ quality evidence is recorded in the
 
 ## Completed Since Last Verification
 
-- **Application source licensing.** [PR #886](https://github.com/fderuiter/portfolio/pull/886)
+- **Application source licensing.** [PR #886](https://github.com/fderuiter/deruiter.dev/pull/886)
   (merged to `main` as `7fb7e666`) added the Apache License 2.0 grant
   (`LICENSE`) and the three-layer `NOTICE` scope statement (application
   source under Apache-2.0, `public/files/` artwork under CC BY 4.0 at the time
@@ -207,7 +207,7 @@ the production release still has separate operator and deployment checks.
 
 ### Public Conversion
 
-1. Complete [#865](https://github.com/fderuiter/portfolio/issues/865): rotate
+1. Complete [#865](https://github.com/fderuiter/deruiter.dev/issues/865): rotate
    the production database credential, update every dependent environment,
    redeploy, and prove the old credential fails.
 2. Resolve the mutation-quality gate. The first functioning local Stryker run
@@ -233,26 +233,26 @@ Application source licensing (item 3 in prior verifications) is complete; see
 ### Production Release (Snapshot: 2026-09-22)
 
 The authoritative release checklist remains
-[#863](https://github.com/fderuiter/portfolio/issues/863). In addition to the
+[#863](https://github.com/fderuiter/deruiter.dev/issues/863). In addition to the
 credential and mutation gates above, release remains blocked on the unresolved
 operator work tracked by:
 
-- [#840](https://github.com/fderuiter/portfolio/issues/840), the historical
+- [#840](https://github.com/fderuiter/deruiter.dev/issues/840), the historical
   private-repository Actions allowance outage. The repository became public
   on 2026-09-23; check current PR run results instead of treating that closed
   outage as active;
-- [#848](https://github.com/fderuiter/portfolio/issues/848), production cron
+- [#848](https://github.com/fderuiter/deruiter.dev/issues/848), production cron
   secret configuration and a verified scheduled run;
-- [#851](https://github.com/fderuiter/portfolio/issues/851), the open
+- [#851](https://github.com/fderuiter/deruiter.dev/issues/851), the open
   production credential-path follow-up, whose scope should be reviewed against
   ADR 0049's Vercel-only deployment path;
-- [#720](https://github.com/fderuiter/portfolio/issues/720), final production
+- [#720](https://github.com/fderuiter/deruiter.dev/issues/720), final production
   canonical and routing verification;
-- [#853](https://github.com/fderuiter/portfolio/issues/853), the production
+- [#853](https://github.com/fderuiter/deruiter.dev/issues/853), the production
   chunk-cycle warning and regression gate;
-- [#817](https://github.com/fderuiter/portfolio/issues/817), production
+- [#817](https://github.com/fderuiter/deruiter.dev/issues/817), production
   performance measurement and remaining global CSS work; and
-- [#871](https://github.com/fderuiter/portfolio/issues/871), the operator-owned
+- [#871](https://github.com/fderuiter/deruiter.dev/issues/871), the operator-owned
   decision on database-backed versus fallback blog content.
 
 The historical Actions-log and public-surface reviews block publication, but

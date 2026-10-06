@@ -4,9 +4,9 @@ Documentation last reconciled: 2026-09-29. Meter data last verified:
 2026-09-12 23:31 UTC against Vercel Hobby.
 
 Governing policy: [ADR 0036](../../adr/0036-free-tier-offloading-and-provider-quota-governance.md),
-[Issue #691](https://github.com/fderuiter/portfolio/issues/691), closed
-[Issue #692](https://github.com/fderuiter/portfolio/issues/692), and
-[Issue #698](https://github.com/fderuiter/portfolio/issues/698).
+[Issue #691](https://github.com/fderuiter/deruiter.dev/issues/691), closed
+[Issue #692](https://github.com/fderuiter/deruiter.dev/issues/692), and
+[Issue #698](https://github.com/fderuiter/deruiter.dev/issues/698).
 
 ## Inspect Headroom
 

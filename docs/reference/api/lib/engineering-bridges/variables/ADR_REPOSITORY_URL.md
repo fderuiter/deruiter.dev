@@ -6,4 +6,4 @@
 
 # Variable: ADR\_REPOSITORY\_URL
 
-> `const` **ADR\_REPOSITORY\_URL**: `"https://github.com/fderuiter/portfolio/blob/main/adr"` = `"https://github.com/fderuiter/portfolio/blob/main/adr"`
+> `const` **ADR\_REPOSITORY\_URL**: `"https://github.com/fderuiter/deruiter.dev/blob/main/adr"` = `"https://github.com/fderuiter/deruiter.dev/blob/main/adr"`

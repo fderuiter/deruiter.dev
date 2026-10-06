@@ -118,7 +118,7 @@ The approach: Office.js reads the workbook, a dependency graph checks formula re
 
 URL: https://deruiter.dev/case-studies/designing-for-my-brother
 Primary language: TypeScript
-Source: https://github.com/fderuiter/portfolio
+Source: https://github.com/fderuiter/deruiter.dev
 
 Abstract:
 

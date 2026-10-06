@@ -6,10 +6,10 @@
   "homepage": "https://deruiter.dev",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/fderuiter/portfolio.git"
+    "url": "git+https://github.com/fderuiter/deruiter.dev.git"
   },
   "bugs": {
-    "url": "https://github.com/fderuiter/portfolio/issues"
+    "url": "https://github.com/fderuiter/deruiter.dev/issues"
   },
   "license": "Apache-2.0",
   "scripts": {

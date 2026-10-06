@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "source": "package-lock.json",
   "counts": {
-    "total": 1218,
+    "total": 1217,
     "runtime": 557,
-    "tooling": 661,
+    "tooling": 660,
     "direct": 69
   },
   "packages": [
@@ -4893,15 +4893,6 @@
       "name": "commander",
       "version": "15.0.0",
       "license": "MIT",
-      "scope": "tooling",
-      "direct": false,
-      "homepage": "https://github.com/tj/commander.js",
-      "repository": "https://github.com/tj/commander.js"
-    },
-    {
-      "name": "commander",
-      "version": "7.2.0",
-      "license": "MIT",
       "scope": "runtime",
       "direct": false,
       "homepage": "https://github.com/tj/commander.js",
@@ -4909,7 +4900,7 @@
     },
     {
       "name": "commander",
-      "version": "8.3.0",
+      "version": "7.2.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -7668,7 +7659,7 @@
     },
     {
       "name": "katex",
-      "version": "0.16.47",
+      "version": "0.18.11",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -9945,7 +9936,7 @@
     },
     {
       "name": "smol-toml",
-      "version": "1.7.2",
+      "version": "1.9.0",
       "license": "BSD-3-Clause",
       "scope": "tooling",
       "direct": false,

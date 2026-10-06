@@ -479,7 +479,7 @@ LICENSE TEXT 2 of 85, applies to 51 package(s):
     Copyright (c) 2014, 2015, 2016, 2017, 2018 Simon Lydell
 - jspdf-autotable@5.0.8 (MIT)
     Copyright (c) 2014 Simon Bengtsson, https://github.com/simonbengtsson/jspdf-autotable
-- katex@0.16.47 (MIT)
+- katex@0.18.11 (MIT)
     Copyright (c) 2013-2020 Khan Academy and other contributors
 - khroma@2.1.0 (UNKNOWN)
     Copyright (c) 2019-present Fabio Spampinato, Andrew Maney
@@ -2604,9 +2604,9 @@ LICENSE TEXT 12 of 85, applies to 7 package(s):
 
 - agent-base@7.1.4 (MIT)
     Copyright (c) 2013 Nathan Rajlich <nathan@tootallnate.net>
-- commander@7.2.0 (MIT)
+- commander@15.0.0 (MIT)
     Copyright (c) 2011 TJ Holowaychuk <tj@vision-media.ca>
-- commander@8.3.0 (MIT)
+- commander@7.2.0 (MIT)
     Copyright (c) 2011 TJ Holowaychuk <tj@vision-media.ca>
 - debug@4.4.3 (MIT)
     Copyright (c) 2014-2017 TJ Holowaychuk <tj@vision-media.ca>

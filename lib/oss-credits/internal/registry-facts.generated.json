@@ -5976,14 +5976,6 @@
       "homepage": "https://github.com/tj/commander.js#readme",
       "repository": "git+https://github.com/tj/commander.js.git",
       "author": "TJ Holowaychuk",
-      "licenses": [],
-      "notices": []
-    },
-    "commander@7.2.0": {
-      "integrity": "sha512-QrWXB+ZQSVPmIWIhtEO9H+gwHaMGYiF5ChvoJ+K9ZGHG/sVsa6yiesAD1GC/x46sET00Xlwo1u49RVVVzvcSkw==",
-      "homepage": "https://github.com/tj/commander.js#readme",
-      "repository": "git+https://github.com/tj/commander.js.git",
-      "author": "TJ Holowaychuk",
       "licenses": [
         {
           "kind": "file",
@@ -5993,8 +5985,8 @@
       ],
       "notices": []
     },
-    "commander@8.3.0": {
-      "integrity": "sha512-OkTL9umf+He2DZkUq8f8J9of7yL6RJKI24dVITBmNfZBmri9zYZQrKkuXiKhyfPSu8tUhnVBB1iKXevvnlR4Ww==",
+    "commander@7.2.0": {
+      "integrity": "sha512-QrWXB+ZQSVPmIWIhtEO9H+gwHaMGYiF5ChvoJ+K9ZGHG/sVsa6yiesAD1GC/x46sET00Xlwo1u49RVVVzvcSkw==",
       "homepage": "https://github.com/tj/commander.js#readme",
       "repository": "git+https://github.com/tj/commander.js.git",
       "author": "TJ Holowaychuk",
@@ -9243,8 +9235,8 @@
       ],
       "notices": []
     },
-    "katex@0.16.47": {
-      "integrity": "sha512-Eeo8Ys1doU1z+x8AZsPpQu+p/QcZBI5PeOo7QGQdy2x2m0MU/hYagBbGOmXwr5KVbEfVuWv9LpnQWeehogurjg==",
+    "katex@0.18.11": {
+      "integrity": "sha512-yvyz/2VMKqoho/35Hat5w37wIEdWJ5ElVMidTAlWrxr5uW4aBGsEpveTmKh18/zw08v/7lGswCPon4OhqmqrTA==",
       "homepage": "https://katex.org",
       "repository": "git+https://github.com/KaTeX/KaTeX.git",
       "author": null,
@@ -11828,8 +11820,8 @@
       "licenses": [],
       "notices": []
     },
-    "smol-toml@1.7.2": {
-      "integrity": "sha512-pXFZ9B2WinEPzxWkMmlYE/oYx2BP+qLrE95wP8tCuK901uLSMGdCb6QSr82z+wnhXkG4+cO+OMLbZB2Cn+97zw==",
+    "smol-toml@1.9.0": {
+      "integrity": "sha512-hpd+HLON7HdZXqYchMM/+LaTTbdK0AU3NngIJ4KVyWbY9bfQqdL9cD+4yf6dUoU2Ap4VsU0JkQi6FxAI1B2mXQ==",
       "homepage": null,
       "repository": "github:squirrelchat/smol-toml",
       "author": "Cynthia Rey",

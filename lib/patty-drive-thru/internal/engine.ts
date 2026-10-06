@@ -124,7 +124,10 @@ export function getKdsBand(ageSec: number): KdsBand {
 }
 
 /** Seconds since the order arrived, never negative. */
-export function getOrderAge(state: ShiftState, order: Order): number {
+export function getOrderAge(
+  state: Pick<ShiftState, "time">,
+  order: Order
+): number {
   return Math.max(0, state.time - order.arrivedAt);
 }
 
@@ -144,7 +147,7 @@ export function isAgeLocked(itemId: OrderItem["itemId"]): boolean {
  * The POS screen the player is looking at. A path that no longer matches the
  * menu falls back to the home screen.
  */
-export function getPosScreen(state: ShiftState): PosNode {
+export function getPosScreen(state: Pick<ShiftState, "pos">): PosNode {
   let node: PosNode = POS_MENU;
   for (const id of state.pos.path) {
     const next = node.children?.find((child) => child.id === id);

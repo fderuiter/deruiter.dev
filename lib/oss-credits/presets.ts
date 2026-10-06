@@ -30,7 +30,8 @@ export const RUNTIME_ANNOTATIONS: Record<string, DirectAnnotation> = {
   },
   zustand: {
     group: "Framework and runtime",
-    reason: "Small state store behind the Protocol Drift workbench.",
+    reason:
+      "Small state store behind the Protocol Drift workbench and the Patty's Drive-Thru booth.",
   },
   clsx: {
     group: "Framework and runtime",
@@ -70,6 +71,10 @@ export const RUNTIME_ANNOTATIONS: Record<string, DirectAnnotation> = {
   "@types/three": {
     group: "Visualization and 3D",
     reason: "Type definitions for three.",
+  },
+  "@react-three/fiber": {
+    group: "Visualization and 3D",
+    reason: "Declarative React renderer for the Patty's Drive-Thru booth.",
   },
   mermaid: {
     group: "Visualization and 3D",
@@ -183,6 +188,11 @@ export const TOOLING_ANNOTATIONS: Record<string, DirectAnnotation> = {
   "fast-check": {
     group: "Testing",
     reason: "Property-based fuzz testing of the engines.",
+  },
+  "@react-three/test-renderer": {
+    group: "Testing",
+    reason:
+      "Renders the Patty's Drive-Thru booth scene in tests without WebGL.",
   },
   "@stryker-mutator/core": {
     group: "Testing",

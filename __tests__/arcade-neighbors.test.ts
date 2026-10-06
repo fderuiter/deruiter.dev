@@ -37,11 +37,17 @@ describe("arcade previous/next ring (#1330)", () => {
   it("leaves Protocol Drift out of the ring, since it is a simulator (#1841)", () => {
     expect(ARCADE_GAME_ROUTES).not.toContain("/protocol-drift");
     expect(getArcadeNeighbors("/arcade/study-director").next.href).toBe(
-      "/arcade/retro-labyrinth"
+      "/arcade/patty-drive-thru"
     );
     expect(getArcadeNeighbors("/arcade/retro-labyrinth").prev.href).toBe(
-      "/arcade/study-director"
+      "/arcade/patty-drive-thru"
     );
+  });
+
+  it("puts Patty's Drive-Thru between Study Director and Retro Labyrinth (#1813)", () => {
+    const patty = getArcadeNeighbors("/arcade/patty-drive-thru");
+    expect(patty.prev.href).toBe("/arcade/study-director");
+    expect(patty.next.href).toBe("/arcade/retro-labyrinth");
   });
 
   it("takes titles and tags from the shared game metadata", () => {

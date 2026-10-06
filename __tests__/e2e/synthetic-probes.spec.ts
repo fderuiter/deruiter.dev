@@ -327,4 +327,36 @@ test.describe("Headless Synthetic User Probes & Journey Monitoring", () => {
     await expect(page.getByTestId("shop")).toBeVisible();
     await expect(page.getByTestId("shop-items")).toBeVisible();
   });
+
+  // Patty's Drive-Thru (#1813): launch the cabinet, clock in and see the
+  // shift running, in the 3D booth where WebGL exists and the flat register
+  // where it does not.
+  test("Probe 10: Patty's Drive-Thru from launch to a running shift", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto("/arcade/patty-drive-thru?seed=e2e-4", {
+      waitUntil: "domcontentloaded",
+    });
+    await expect(async () => {
+      const launchBtn = page.getByRole("button", { name: /Launch Cabinet/i });
+      if (await launchBtn.isVisible()) await launchBtn.click();
+      await expect(page.getByTestId("pdt-intro")).toBeVisible({
+        timeout: 3000,
+      });
+    }).toPass({ timeout: 30000 });
+
+    await page.getByRole("button", { name: "Clock in" }).click();
+    const game = page.getByTestId("pdt-game");
+    await expect(game).toBeVisible();
+    await expect(page.getByTestId("pdt-clock")).toBeVisible();
+    const view = await game.getAttribute("data-pdt-view");
+    await expect(
+      page.getByTestId(view === "3d" ? "pdt-booth-canvas" : "pdt-register")
+    ).toBeVisible();
+    // The shift clock counts down, so the game loop is running.
+    const clock = page.getByTestId("pdt-clock");
+    const start = (await clock.textContent()) ?? "";
+    await expect(clock).not.toHaveText(start, { timeout: 10000 });
+  });
 });

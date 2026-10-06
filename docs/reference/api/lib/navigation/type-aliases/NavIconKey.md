@@ -6,6 +6,6 @@
 
 # Type Alias: NavIconKey
 
-> **NavIconKey** = `"arcade"` \| `"laser-loon"` \| `"merch"` \| `"puzzle"` \| `"watch"` \| `"shield"` \| `"cards"` \| `"clipboard"` \| `"terminal"` \| `"duck"` \| `"vault"` \| `"spreadsheet"` \| `"brain"` \| `"cpu"` \| `"heart"` \| `"activity"` \| `"user"` \| `"calendar"` \| `"github"` \| `"article"`
+> **NavIconKey** = `"arcade"` \| `"laser-loon"` \| `"merch"` \| `"puzzle"` \| `"watch"` \| `"shield"` \| `"cards"` \| `"clipboard"` \| `"headset"` \| `"terminal"` \| `"duck"` \| `"vault"` \| `"spreadsheet"` \| `"brain"` \| `"cpu"` \| `"heart"` \| `"activity"` \| `"user"` \| `"calendar"` \| `"github"` \| `"article"`
 
 Names an icon the components know how to draw.

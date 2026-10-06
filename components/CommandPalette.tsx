@@ -36,6 +36,7 @@ import {
   IconShieldCheck,
   IconCamera,
   IconClipboardCheck,
+  IconHeadset,
   IconPlayerPlay,
   IconCircleDot,
 } from "@tabler/icons-react";
@@ -815,6 +816,26 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           "Site visits and a day that costs minutes and energy",
           "Documentation debt comes due at inspection",
           "Discover which kind of Study Director you are",
+        ],
+      },
+      {
+        id: "nav-patty-drive-thru",
+        title: "Patty's Drive-Thru",
+        subtitle:
+          "One shift at the drive-thru window of my first job, as a first-person 3D diary entry.",
+        category: "navigation",
+        url: "/arcade/patty-drive-thru",
+        icon: <IconHeadset className="w-4 h-4 text-brand-cyan" />,
+        badge: "Diary",
+        status: "Playable",
+        description:
+          "Stand in the booth for one compressed shift: take orders through the headset, fight a register that hides the easy things, re-enter the drinks the machine loses and keep moving so the manager does not notice. The chain is fictional and the people are renamed.",
+        techStack: ["React Three Fiber", "Seeded Engine", "Web Audio"],
+        highlights: [
+          "A fluorescent first-person booth",
+          "A register built to be fought",
+          "Fully playable from the keyboard",
+          "A pay stub and a closing note",
         ],
       },
       {

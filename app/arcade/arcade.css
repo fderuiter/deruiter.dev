@@ -1336,3 +1336,100 @@
 [data-te-cabinet][data-te-loud="on"] .te-loud-target-slam {
   animation: te-target-slam 300ms cubic-bezier(0.2, 0.9, 0.3, 1.2) 1 both;
 }
+
+[data-game="patty-drive-thru"] {
+  --game-accent: #d9f99d;
+}
+
+/* Patty's Drive-Thru (ADR 0059, decision 7): a warm, desaturated
+ * fluorescent booth palette, scoped to the launched cabinet so nothing
+ * leaks into the portfolio frame. The yell vignette is the one loud moment:
+ * event-driven, opacity only, and off for reduced motion and below 768px. */
+[data-pdt-cabinet] {
+  --pdt-stage: #11130f;
+  --pdt-focus: #f2d16b;
+  --pdt-hud-bg: rgba(14, 16, 12, 0.84);
+  --pdt-hud-rule: rgba(238, 246, 216, 0.18);
+  --pdt-hud-text: #eef3e2;
+  --pdt-hud-dim: #b8bfa9;
+  --pdt-hud-track: rgba(238, 246, 216, 0.14);
+  --pdt-hud-fill: #c9d98f;
+  --pdt-hud-alert: #e2794f;
+  --pdt-hud-button: #262a20;
+  --pdt-caption: #f4f1d2;
+  --pdt-bezel: #cfc7ae;
+  --pdt-screen: #1c2a33;
+  --pdt-screen-text: #dcefe6;
+  --pdt-screen-dim: #9fb8b0;
+  --pdt-screen-ok: #9fe3a8;
+  --pdt-screen-alert: #ffb199;
+  --pdt-screen-rule: rgba(220, 239, 230, 0.2);
+  --pdt-key: #e7e1cc;
+  --pdt-key-edge: #b9b096;
+  --pdt-key-active: #f2d16b;
+  --pdt-bump: #e2b84c;
+  --pdt-bump-edge: #a8822a;
+  --pdt-ink: #1f1d17;
+  --pdt-kds-bg: #0b100e;
+  --pdt-kds-frame: #2b2e2b;
+  --pdt-kds-rule: rgba(230, 239, 228, 0.18);
+  --pdt-kds-text: #f2f6ef;
+  --pdt-kds-dim: #a6b4a9;
+  --pdt-kds-alert: #ffa98a;
+  --pdt-kds-active: #f4f1d2;
+  --pdt-band-green: #2f6a3c;
+  --pdt-band-yellow: #7f6514;
+  --pdt-band-red: #8f3324;
+  --pdt-paper: #f1ecdc;
+  --pdt-paper-ink: #24211a;
+  --pdt-paper-dim: #5f5848;
+  --pdt-paper-rule: #cfc6ad;
+}
+
+[data-pdt-cabinet] .pdt-yell-vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 25;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 55%,
+    rgba(120, 24, 12, 0.55) 100%
+  );
+  animation: pdt-yell 700ms ease-out 1;
+}
+
+@keyframes pdt-yell {
+  0% {
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+[data-pdt-cabinet] .pdt-caption-in {
+  animation: pdt-caption-in 180ms ease-out 1;
+}
+
+@keyframes pdt-caption-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce), (max-width: 767px) {
+  [data-pdt-cabinet] .pdt-yell-vignette {
+    display: none;
+  }
+  [data-pdt-cabinet] .pdt-caption-in {
+    animation: none;
+  }
+}

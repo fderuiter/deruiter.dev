@@ -14,7 +14,7 @@ Seconds since the order arrived, never negative.
 
 ### state
 
-[`ShiftState`](../../../types/interfaces/ShiftState.md)
+`Pick`\<[`ShiftState`](../../../types/interfaces/ShiftState.md), `"time"`\>
 
 ### order
 

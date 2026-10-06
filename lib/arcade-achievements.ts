@@ -26,6 +26,7 @@ export const ARCADE_STORAGE_KEYS: Record<string, string> = {
   "clinical-chaos": "clinical_chaos_highscore",
   "trial-and-error": "trial_and_error_high_score",
   "study-director": "study_director_high_score",
+  "patty-drive-thru": "patty_drive_thru_high_score",
   "protocol-drift": "protocol_drift_high_score",
   "retro-labyrinth": "retro_labyrinth_highscore",
   "meme-vault": "unlocked_meme_vault",
@@ -222,6 +223,31 @@ export const ARCADE_TROPHIES: ArcadeTrophy[] = [
     category: "mastery",
     targetScore: 500,
     conditionDescription: "Reach 500+ points in Study Director",
+  },
+
+  // Patty's Drive-Thru
+  {
+    id: "patty_drive_thru_first_rush",
+    gameId: "patty-drive-thru",
+    title: "First Rush",
+    subtitle: "Patty's Drive-Thru",
+    description: "Get six cars through the drive-thru in one shift.",
+    icon: "Headset",
+    category: "gameplay",
+    targetScore: 60,
+    conditionDescription: "Reach 60+ points in Patty's Drive-Thru",
+  },
+  {
+    id: "patty_drive_thru_close",
+    gameId: "patty-drive-thru",
+    title: "Made It to Close",
+    subtitle: "Patty's Drive-Thru",
+    description:
+      "Work a full shift with most of the board still green when you clock out.",
+    icon: "Trophy",
+    category: "mastery",
+    targetScore: 160,
+    conditionDescription: "Reach 160+ points in Patty's Drive-Thru",
   },
 
   // Protocol Drift

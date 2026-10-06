@@ -15,7 +15,7 @@ menu falls back to the home screen.
 
 ### state
 
-[`ShiftState`](../../../types/interfaces/ShiftState.md)
+`Pick`\<[`ShiftState`](../../../types/interfaces/ShiftState.md), `"pos"`\>
 
 ## Returns
 

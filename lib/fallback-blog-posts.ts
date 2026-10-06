@@ -552,6 +552,34 @@ pub fn newton_step(x: Finite, fx: Finite, dfx: NonZeroFinite) -&gt; Finite { /* 
 <p>That is not an argument against controls. It is an argument for periodically asking of each one: what would it look like if this were broken, and would I be able to tell? For four controls here, the answer was that it would look precisely like it looked every day.</p>
 `.trim(),
   },
+  {
+    id: "fallback-blog-10",
+    slug: "notes-from-my-first-job",
+    title: "Patty's Drive-Thru: Notes From My First Job",
+    dek: "My first job was a drive-thru window, on and off from 2014 to 2017. I turned one shift of it into a small first-person game. These are the notes behind it.",
+    pillar: "field-notes",
+    tags: "personal, first-job, game-design, arcade, patty-drive-thru",
+    published: true,
+    reading_time_minutes: 3,
+    hero_image_url: null,
+    created_at: new Date("2026-10-06T00:00:00.000Z"),
+    updated_at: new Date("2026-10-06T00:00:00.000Z"),
+    body: `
+<p>Most of this site is about systems: clinical data, proofs, pipelines. This entry is about the person who builds them. My first job was the drive-thru window at a fast-food place. I don't remember it fondly, but it shaped me, so I wrote one shift of it down the way I most like to make things: as a game. You can <a href="/arcade/patty-drive-thru">clock in at Patty's Drive-Thru</a> in the arcade.</p>
+
+<h2>What made it into the booth</h2>
+<p>The order screen over the counter, where tickets turn yellow, then red, while you watch. A register that hid simple requests several menus deep. The automatic drink machine, which lost drinks often enough that re-entering them was part of the work. The coffee button I was not allowed to press, because I was not eighteen yet. A shift manager who could not stand to see anyone idle. Customers who talked into the speaker as if nobody was on the other end.</p>
+
+<h2>What stayed out</h2>
+<p>The chain in the game is made up and the people in it are renamed. Some of that job does not belong in a game, and it is not in this one.</p>
+
+<h2>What it taught me</h2>
+<p>The best manager I had there was the general manager, who was kind without having to be. Most of what I learned came from the rest of it: how quickly people stop seeing the person in the uniform, and how little it costs to be decent anyway.</p>
+
+<h2>Next shifts</h2>
+<p>Later slices may add the fry station on Fridays, the plastic trays I used to sing about, and the dish pit. For now there is one booth and one shift: <a href="/arcade/patty-drive-thru">clock in at Patty's Drive-Thru</a>.</p>
+`.trim(),
+  },
 ];
 
 /**

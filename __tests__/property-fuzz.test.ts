@@ -2,6 +2,14 @@ import { describe, it, expect } from "vitest";
 import { createCustomTheorem } from "@/lib/proof-custom";
 import * as fc from "fast-check";
 import {
+  applyAction as applyShiftAction,
+  createShift,
+  stepShift,
+  MAX_OPEN_ORDERS as MAX_OPEN_SHIFT_ORDERS,
+  type ShiftAction,
+  type ShiftState,
+} from "@/lib/patty-drive-thru";
+import {
   exportStudyToCdiscOdmXml,
   exportStudyToUsdm,
   importStudyFromUsdm,
@@ -1668,6 +1676,108 @@ describe("Trial & Error Codex document (#1529)", () => {
         expect(parseCodex(serializeCodex(codex)).codex).toEqual(codex);
       }),
       { numRuns: 200 }
+    );
+  });
+});
+
+describe("Patty's Drive-Thru shift engine (#1812)", () => {
+  const posNodes = [
+    "burgers",
+    "burger",
+    "cheeseburger",
+    "sides",
+    "fries",
+    "nuggets",
+    "drinks",
+    "soda",
+    "shake",
+    "coffee",
+    "modifiers",
+    "toppings",
+    "pickles",
+    "no-pickles",
+    "nonsense",
+  ];
+  const orderId = fc.integer({ min: -1, max: 30 });
+  const actionArb: fc.Arbitrary<ShiftAction> = fc.oneof(
+    orderId.map((id) => ({ type: "selectOrder" as const, orderId: id })),
+    fc
+      .constantFrom(...posNodes)
+      .map((nodeId) => ({ type: "posTap" as const, nodeId })),
+    fc.constant({ type: "posBack" as const }),
+    fc.constant({ type: "posHome" as const }),
+    orderId.map((id) => ({ type: "reenterDrink" as const, orderId: id })),
+    orderId.map((id) => ({ type: "flagCoworker" as const, orderId: id })),
+    orderId.map((id) => ({ type: "bump" as const, orderId: id })),
+    fc.constant({ type: "wipe" as const })
+  );
+  const stepArb = fc.oneof(
+    actionArb.map((action) => ({ kind: "act" as const, action })),
+    fc
+      .oneof(
+        fc.double({ min: -5, max: 5, noNaN: false }),
+        fc.constantFrom(0.016, 0.5, Number.POSITIVE_INFINITY)
+      )
+      .map((dt) => ({ kind: "step" as const, dt }))
+  );
+
+  function play(
+    seed: string,
+    steps: { kind: string; dt?: number; action?: ShiftAction }[]
+  ) {
+    let state: ShiftState = createShift({ seed, durationSec: 60 });
+    const seen: ShiftState[] = [state];
+    for (const s of steps) {
+      state =
+        s.kind === "act"
+          ? applyShiftAction(state, s.action as ShiftAction).state
+          : stepShift(state, s.dt as number).state;
+      seen.push(state);
+    }
+    return seen;
+  }
+
+  it("keeps meters, clock and open orders in bounds for any play", () => {
+    fc.assert(
+      fc.property(
+        fc.string(),
+        fc.array(stepArb, { maxLength: 300 }),
+        (seed, steps) => {
+          let lastTime = 0;
+          for (const state of play(seed, steps)) {
+            for (const value of Object.values(state.meters)) {
+              expect(Number.isFinite(value)).toBe(true);
+              expect(value).toBeGreaterThanOrEqual(0);
+              expect(value).toBeLessThanOrEqual(100);
+            }
+            expect(state.time).toBeGreaterThanOrEqual(lastTime);
+            expect(state.time).toBeLessThanOrEqual(state.config.durationSec);
+            expect(state.orders.length).toBeLessThanOrEqual(
+              MAX_OPEN_SHIFT_ORDERS
+            );
+            expect(new Set(state.orders.map((o) => o.id)).size).toBe(
+              state.orders.length
+            );
+            lastTime = state.time;
+          }
+        }
+      ),
+      { numRuns: 200 }
+    );
+  });
+
+  it("replays to the same shift from the same seed and inputs", () => {
+    fc.assert(
+      fc.property(
+        fc.string(),
+        fc.array(stepArb, { maxLength: 200 }),
+        (seed, steps) => {
+          const a = play(seed, steps);
+          const b = play(seed, steps);
+          expect(a[a.length - 1]).toEqual(b[b.length - 1]);
+        }
+      ),
+      { numRuns: 100 }
     );
   });
 });

@@ -220,6 +220,7 @@
 - [lib/meme-data](lib/meme-data/README.md)
 - [lib/merch-data](lib/merch-data/README.md)
 - [lib/moderation](lib/moderation/README.md)
+- [lib/navigation](lib/navigation/README.md)
 - [lib/neuro](lib/neuro/README.md)
 - [lib/neuro/asset-loader](lib/neuro/asset-loader/README.md)
 - [lib/neuro/drafts](lib/neuro/drafts/README.md)

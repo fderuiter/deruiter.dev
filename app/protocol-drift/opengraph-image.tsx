@@ -14,7 +14,7 @@ export const contentType = OG_IMAGE_CONTENT_TYPE;
 export default function Image() {
   const config = ROUTE_METADATA_CONFIGS.protocolDrift;
   return createSocialImageResponse({
-    category: "ENGINEERING ARCADE // CDISC REGULATORY SIMULATOR",
+    category: "SYSTEMS // CDISC REGULATORY SIMULATOR",
     title: "Protocol Drift",
     description: `Design the trial. Debug reality. ${config.description}`,
     badge: "SDTM // ADaM LANES",

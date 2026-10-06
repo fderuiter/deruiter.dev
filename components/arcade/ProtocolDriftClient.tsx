@@ -2,13 +2,10 @@
 
 import React from "react";
 import dynamic from "next/dynamic";
-import Link from "next/link";
-import { IconArrowLeft, IconShieldCheck } from "@tabler/icons-react";
+import { IconShieldCheck } from "@tabler/icons-react";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { PlayCabinet } from "@/components/arcade/PlayCabinet";
 import { DesktopOnlyGate } from "@/components/arcade/DesktopOnlyGate";
-import { NextPrevNav } from "@/components/ui/NextPrevNav";
-import { getArcadeNeighbors } from "@/lib/arcade";
 
 // React Flow and the engine adapter load only when the cabinet launches, so
 // the arcade hub and the shared bundle never pay for them.
@@ -30,19 +27,7 @@ export const ProtocolDriftClient: React.FC = () => (
   <div className="min-h-dvh overflow-x-hidden bg-[#0d0e11] px-4 pb-24 text-zinc-100 sm:px-6 lg:px-8">
     <div className="mx-auto max-w-[1600px]">
       <div className="mb-6 flex flex-wrap items-center gap-3 border-b border-zinc-800 pb-4 sm:gap-4">
-        <Link
-          href="/arcade"
-          className="inline-flex min-h-[48px] items-center gap-1.5 font-mono text-xs text-zinc-300 hover:text-amber-400"
-        >
-          <IconArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
-          <span>Back to Arcade Hub</span>
-        </Link>
-        <Breadcrumbs
-          items={[
-            { label: "Arcade Hub", href: "/arcade" },
-            { label: "Protocol Drift" },
-          ]}
-        />
+        <Breadcrumbs items={[{ label: "Protocol Drift" }]} />
       </div>
 
       <div className="mb-8 min-w-0">
@@ -87,10 +72,6 @@ export const ProtocolDriftClient: React.FC = () => (
           </PlayCabinet>
         </DesktopOnlyGate>
       </div>
-      <NextPrevNav
-        {...getArcadeNeighbors("/arcade/protocol-drift")}
-        backToHub={{ title: "All Arcade Games", href: "/arcade" }}
-      />
     </div>
   </div>
 );

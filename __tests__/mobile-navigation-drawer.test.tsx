@@ -115,7 +115,7 @@ describe("Mobile Navigation Drawer & Touch Interaction Suite", () => {
     expect(document.body.style.overflow).toBe("");
   });
 
-  it("uses the canonical Work, Systems, Arcade, About, and Contact destinations", async () => {
+  it("uses the canonical Work, Blog, Arcade, Simulators, About, and Contact destinations", async () => {
     await act(async () => {
       root.render(<Navbar />);
     });
@@ -124,7 +124,7 @@ describe("Mobile Navigation Drawer & Touch Interaction Suite", () => {
       'nav[aria-label="Main Navigation"]'
     );
     expect(mainNavigation?.textContent).toContain("Work");
-    expect(mainNavigation?.textContent).toContain("Systems");
+    expect(mainNavigation?.textContent).toContain("Simulators");
     expect(mainNavigation?.textContent).toContain("Arcade");
     expect(mainNavigation?.textContent).toContain("About");
     expect(mainNavigation?.textContent).toContain("Contact");

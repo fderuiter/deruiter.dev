@@ -180,6 +180,9 @@ export const ARCADE_GAMES_METADATA: ArcadeGameMetadata[] = [
     storageKey: "study_director_high_score",
     route: "/arcade/study-director",
   },
+  // Protocol Drift lives with the simulators at /protocol-drift (#1841). It
+  // keeps its entry here so its achievements and trophies stay in the cabinet;
+  // the hub, previous/next ring and game count use ARCADE_GAME_ROUTES instead.
   {
     id: "protocol-drift",
     slug: "protocol-drift",
@@ -203,7 +206,7 @@ export const ARCADE_GAMES_METADATA: ArcadeGameMetadata[] = [
     borderHover: "hover:border-amber-500/50",
     badgeBg: "bg-amber-500/10 text-amber-300 border-amber-500/30",
     storageKey: "protocol_drift_high_score",
-    route: "/arcade/protocol-drift",
+    route: "/protocol-drift",
   },
   {
     id: "retro-labyrinth",

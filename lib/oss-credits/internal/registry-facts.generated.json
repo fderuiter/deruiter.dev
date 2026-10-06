@@ -11836,8 +11836,8 @@
       "licenses": [],
       "notices": []
     },
-    "source-map-js@1.2.1": {
-      "integrity": "sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==",
+    "source-map-js@1.2.2": {
+      "integrity": "sha512-KGj/8Y43x35aZVDtt+J4mK1hoLGHULMYfSkODJNQjNDC3oW1PqPoxMwo0pLUsWM/UEGzON/NxeHywEfNXNP3Vw==",
       "homepage": "https://github.com/7rulnik/source-map-js",
       "repository": "git+https://github.com/7rulnik/source-map-js.git",
       "author": "Valentin 7rulnik Semirulnik",

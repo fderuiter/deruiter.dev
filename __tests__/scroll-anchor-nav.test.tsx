@@ -144,13 +144,24 @@ describe("in-page anchor navigation in the site chrome", () => {
   });
 
   describe("Navbar", () => {
+    // About is a menu in the top bar (#1842); its first entry is the in-page link.
+    const openAboutMenu = async (): Promise<Element> => {
+      const trigger = Array.from(container.querySelectorAll("button")).find(
+        (b) => b.textContent?.trim() === "About"
+      ) as HTMLButtonElement;
+      await act(async () => {
+        trigger.click();
+      });
+      return container.querySelector('a[href="/#about"]') as Element;
+    };
+
     it("scrolls to the section and focuses it on the homepage", async () => {
       const about = addSection("about");
       await act(async () => {
         root.render(<Navbar />);
       });
 
-      const link = container.querySelector('a[href="/#about"]') as Element;
+      const link = await openAboutMenu();
       let prevented = false;
       await act(async () => {
         prevented = click(link);
@@ -170,9 +181,10 @@ describe("in-page anchor navigation in the site chrome", () => {
       await act(async () => {
         root.render(<Navbar />);
       });
+      const link = await openAboutMenu();
 
       await act(async () => {
-        click(container.querySelector('a[href="/#about"]') as Element);
+        click(link);
       });
 
       expect(about.scrollIntoView).toHaveBeenCalledWith({
@@ -187,7 +199,7 @@ describe("in-page anchor navigation in the site chrome", () => {
         root.render(<Navbar />);
       });
 
-      const link = container.querySelector('a[href="/#about"]') as Element;
+      const link = await openAboutMenu();
       let prevented = true;
       await act(async () => {
         prevented = click(link, { ctrlKey: true });
@@ -204,7 +216,7 @@ describe("in-page anchor navigation in the site chrome", () => {
         root.render(<Navbar />);
       });
 
-      const link = container.querySelector('a[href="/#about"]') as Element;
+      const link = await openAboutMenu();
       let prevented = true;
       await act(async () => {
         prevented = click(link);

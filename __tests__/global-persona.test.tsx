@@ -222,7 +222,7 @@ describe("Global Persona Perspective Toggle Suite", () => {
     });
 
     expect(container.textContent).toContain("Arcade");
-    expect(container.textContent).toContain("Arcade ↗");
+    expect(container.textContent).toContain("Arcade Hub");
     expect(container.textContent).toContain("Incident Simulator");
 
     // 2. Behind the Scenes mode: the Arcade column stays; only the
@@ -236,7 +236,7 @@ describe("Global Persona Perspective Toggle Suite", () => {
     });
 
     expect(container.textContent).toContain("Arcade");
-    expect(container.textContent).toContain("Arcade ↗");
+    expect(container.textContent).toContain("Arcade Hub");
     expect(container.textContent).toContain("Meme Vault");
     expect(container.textContent).not.toContain("Incident Simulator");
     expect(container.textContent).toContain("Proof Workspace");

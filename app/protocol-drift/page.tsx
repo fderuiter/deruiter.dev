@@ -18,7 +18,7 @@ export default function ProtocolDriftPage() {
             name: ROUTE_METADATA_CONFIGS.protocolDrift.title,
             description: ROUTE_METADATA_CONFIGS.protocolDrift.description,
             url: ROUTE_METADATA_CONFIGS.protocolDrift.path,
-            applicationCategory: "GameApplication",
+            applicationCategory: "SimulationApplication",
             genre: "Systems Simulation",
           }),
         }}
@@ -28,8 +28,7 @@ export default function ProtocolDriftPage() {
         dangerouslySetInnerHTML={{
           __html: getBreadcrumbSchema([
             { name: "Home", url: "/" },
-            { name: "Arcade Hub", url: "/arcade" },
-            { name: "Protocol Drift", url: "/arcade/protocol-drift" },
+            { name: "Protocol Drift", url: "/protocol-drift" },
           ]),
         }}
       />

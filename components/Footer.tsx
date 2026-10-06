@@ -9,25 +9,12 @@ import { resolveScrollBehavior } from "@/lib/scroll";
 import { emitAppEvent } from "@/lib/event-bus";
 import {
   IconArrowUp,
-  IconCards,
-  IconClipboardCheck,
   IconBrandGithub,
   IconBrandLinkedin,
   IconCalendar,
   IconTerminal,
-  IconActivity,
-  IconShieldCheck,
-  IconCrosshair,
-  IconBrain,
-  IconCpu,
-  IconHeartHandshake,
-  IconShoppingBag,
-  IconBone,
   IconSparkles,
-  IconFileSpreadsheet,
-  IconDeviceGamepad2,
   IconMessageCode,
-  IconDirections,
   IconArticle,
   IconCamera,
 } from "@tabler/icons-react";
@@ -37,6 +24,32 @@ import { useFontPreference } from "@/hooks/useFontPreference";
 import { useAnnouncer } from "@/hooks/useAnnouncer";
 import { FooterStatusTicker } from "@/components/FooterStatusTicker";
 import { NewsletterForm } from "@/components/NewsletterForm";
+import {
+  FOOTER_EXTRA_ITEMS,
+  filterNavItems,
+  getNavGroup,
+  type NavItem,
+} from "@/lib/navigation";
+import { NavIcon } from "@/components/nav/NavIcon";
+
+/** One footer link, drawn from a navigation item. */
+const FooterNavLink: React.FC<{
+  item: NavItem;
+  onHover: (e: React.MouseEvent<HTMLElement>) => void;
+  onClick?: (e: React.MouseEvent<HTMLAnchorElement>) => void;
+}> = ({ item, onHover, onClick }) => (
+  <li>
+    <Link
+      href={item.href}
+      onClick={onClick}
+      onMouseEnter={onHover}
+      className="text-zinc-400 hover:text-brand-cyan transition-colors flex items-center gap-1.5"
+    >
+      <NavIcon name={item.icon} tone={item.tone} className="h-3 w-3" />
+      {item.title}
+    </Link>
+  </li>
+);
 
 export const Footer: React.FC = () => {
   const pathname = usePathname();
@@ -95,7 +108,7 @@ export const Footer: React.FC = () => {
 
       <div className="max-w-6xl mx-auto px-6 md:px-12 pt-12 pb-[max(4rem,env(safe-area-inset-bottom)+2rem)]">
         {/* Main Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-8 mb-16">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-10 lg:gap-8 mb-16">
           {/* Col 1: Brand & Bio */}
           <div className="lg:col-span-2 flex flex-col justify-between space-y-6">
             <div className="space-y-3">
@@ -133,140 +146,50 @@ export const Footer: React.FC = () => {
             </Link>
           </div>
 
-          {/* Col 2: Interactive Arcade */}
+          {/* Col 2: Arcade, from the shared navigation data */}
           <div className="space-y-4">
             <span className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
               <IconSparkles className="w-3.5 h-3.5 text-brand-cyan" />
               Arcade
             </span>
             <ul className="space-y-2 text-xs font-mono">
-              <li>
-                <Link
-                  href="/arcade"
-                  onMouseEnter={handleHover}
-                  className="text-zinc-400 hover:text-brand-cyan transition-colors"
-                >
-                  Arcade ↗
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/arcade/laser-loon"
-                  onMouseEnter={handleHover}
-                  className="text-zinc-400 hover:text-brand-cyan transition-colors flex items-center gap-1.5"
-                >
-                  <IconCrosshair className="w-3 h-3 text-cyan-400" />
-                  Laser Loon
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/merch"
-                  onMouseEnter={handleHover}
-                  className="text-zinc-400 hover:text-brand-cyan transition-colors flex items-center gap-1.5"
-                >
-                  <IconShoppingBag className="w-3 h-3 text-amber-400" />
-                  Laser Loon Merch (soon)
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/arcade/quasi-puzzler"
-                  onMouseEnter={handleHover}
-                  className="text-zinc-400 hover:text-brand-cyan transition-colors flex items-center gap-1.5"
-                >
-                  <IconBrain className="w-3 h-3 text-cyan-400" />
-                  Quasi-Puzzler
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/arcade/garmin-watch"
-                  onMouseEnter={handleHover}
-                  className="text-zinc-400 hover:text-brand-cyan transition-colors flex items-center gap-1.5"
-                >
-                  <IconCpu className="w-3 h-3 text-cyan-400" />
-                  Monkey C Mayhem: Garmin Schvitz App
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/arcade/clinical-chaos"
-                  onMouseEnter={handleHover}
-                  className="text-zinc-400 hover:text-brand-cyan transition-colors flex items-center gap-1.5"
-                >
-                  <IconShieldCheck className="w-3 h-3 text-cyan-400" />
-                  Clinical Trial Chaos
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/arcade/trial-and-error"
-                  onMouseEnter={handleHover}
-                  className="text-zinc-400 hover:text-brand-cyan transition-colors flex items-center gap-1.5"
-                >
-                  <IconCards className="w-3 h-3 text-cyan-400" />
-                  Trial &amp; Error
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/arcade/study-director"
-                  onMouseEnter={handleHover}
-                  className="text-zinc-400 hover:text-brand-cyan transition-colors flex items-center gap-1.5"
-                >
-                  <IconClipboardCheck className="w-3 h-3 text-cyan-400" />
-                  Study Director
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/arcade/protocol-drift"
-                  onMouseEnter={handleHover}
-                  className="text-zinc-400 hover:text-brand-cyan transition-colors flex items-center gap-1.5"
-                >
-                  <IconShieldCheck className="w-3 h-3 text-amber-400" />
-                  Protocol Drift
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/arcade/retro-labyrinth"
-                  onMouseEnter={handleHover}
-                  className="text-zinc-400 hover:text-brand-cyan transition-colors flex items-center gap-1.5"
-                >
-                  <IconTerminal className="w-3 h-3 text-cyan-400" />
-                  Retro Labyrinth
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/arcade/working-with-duck"
-                  onMouseEnter={handleHover}
-                  className="text-zinc-400 hover:text-brand-cyan transition-colors flex items-center gap-1.5"
-                >
-                  <IconBone className="w-3 h-3 text-amber-400" />
-                  Working With Duck
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/arcade/meme-vault"
-                  onMouseEnter={handleHover}
-                  className="text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1.5"
-                >
-                  <IconDeviceGamepad2 className="w-3 h-3 text-emerald-400" />
-                  Meme Vault 🔓
-                </Link>
-              </li>
+              {[
+                ...getNavGroup("arcade").sections[0].items,
+                ...FOOTER_EXTRA_ITEMS.filter((i) => i.id === "merch"),
+              ].map((item) => (
+                <FooterNavLink
+                  key={item.id}
+                  item={item}
+                  onHover={handleHover}
+                />
+              ))}
             </ul>
           </div>
 
-          {/* Col 3: Systems & Verification */}
+          {/* Col 3: Simulators and studios */}
           <div className="space-y-4">
             <span className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
               <IconTerminal className="w-3.5 h-3.5 text-brand-cyan" />
-              Systems
+              Simulators
+            </span>
+            <ul className="space-y-2 text-xs font-mono">
+              {getNavGroup("simulators").sections.map((section) =>
+                filterNavItems(section.items, persona).map((item) => (
+                  <FooterNavLink
+                    key={item.id}
+                    item={item}
+                    onHover={handleHover}
+                  />
+                ))
+              )}
+            </ul>
+          </div>
+
+          {/* Col 4: Site pages */}
+          <div className="space-y-4">
+            <span className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
+              <IconArticle className="w-3.5 h-3.5 text-brand-cyan" />
+              Site
             </span>
             <ul className="space-y-2 text-xs font-mono">
               <li>
@@ -278,6 +201,12 @@ export const Footer: React.FC = () => {
                   Work
                 </Link>
               </li>
+              <FooterNavLink
+                item={FOOTER_EXTRA_ITEMS.find(
+                  (i) => i.id === "brother-case-study"
+                )!}
+                onHover={handleHover}
+              />
               <li>
                 <Link
                   href="/blog"
@@ -288,102 +217,26 @@ export const Footer: React.FC = () => {
                   Blog
                 </Link>
               </li>
-              <li>
-                <Link
-                  href="/case-studies/designing-for-my-brother"
-                  onMouseEnter={handleHover}
-                  className="text-zinc-400 hover:text-brand-cyan transition-colors flex items-center gap-1.5"
-                >
-                  <IconDirections className="w-3 h-3 text-amber-400" />
-                  Designing for My Brother
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/stack"
-                  onMouseEnter={handleHover}
-                  className="text-zinc-400 hover:text-brand-cyan transition-colors flex items-center gap-1.5"
-                >
-                  <IconCpu className="w-3 h-3 text-brand-cyan" />
-                  Under the Hood (Stack)
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/acknowledgments"
-                  onMouseEnter={handleHover}
-                  className="text-zinc-400 hover:text-brand-cyan transition-colors flex items-center gap-1.5"
-                >
-                  <IconHeartHandshake className="w-3 h-3 text-emerald-400" />
-                  Open Source Credits
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/crf"
-                  onMouseEnter={handleHover}
-                  className="text-zinc-400 hover:text-brand-cyan transition-colors flex items-center gap-1.5"
-                >
-                  <IconFileSpreadsheet className="w-3 h-3 text-brand-cyan" />
-                  CRF Studio
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/patrol"
-                  onMouseEnter={handleHover}
-                  className="text-zinc-400 hover:text-brand-cyan transition-colors flex items-center gap-1.5"
-                >
-                  <IconShieldCheck className="w-3 h-3 text-brand-cyan" />
-                  Patrol Shift Studio
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/proof"
-                  onMouseEnter={handleHover}
-                  className="text-zinc-400 hover:text-brand-cyan transition-colors flex items-center gap-1.5"
-                >
-                  <IconBrain className="w-3 h-3 text-brand-cyan" />
-                  Proof Workspace
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/neuro"
-                  onMouseEnter={handleHover}
-                  className="text-zinc-400 hover:text-brand-cyan transition-colors flex items-center gap-1.5"
-                >
-                  <IconBrain className="w-3 h-3 text-emerald-400" />
-                  NeuroRecon Studio
-                </Link>
-              </li>
-              {persona !== "behind-the-scenes" && (
-                <li>
-                  <Link
-                    href="/simulator"
-                    onMouseEnter={handleHover}
-                    className="text-zinc-400 hover:text-brand-cyan transition-colors flex items-center gap-1.5"
-                  >
-                    <IconActivity className="w-3 h-3 text-brand-cyan" />
-                    Incident Simulator
-                  </Link>
-                </li>
-              )}
-              <li>
-                <Link
-                  href="/#about"
-                  onClick={(e) => handleHashClick(e, "about")}
-                  onMouseEnter={handleHover}
-                  className="text-zinc-400 hover:text-brand-cyan transition-colors"
-                >
-                  About
-                </Link>
-              </li>
+              {getNavGroup("about")
+                .sections[0].items.filter(
+                  (i) => !i.external && i.id !== "schedule"
+                )
+                .map((item) => (
+                  <FooterNavLink
+                    key={item.id}
+                    item={item}
+                    onHover={handleHover}
+                    onClick={
+                      item.href === "/#about"
+                        ? (e) => handleHashClick(e, "about")
+                        : undefined
+                    }
+                  />
+                ))}
             </ul>
           </div>
 
-          {/* Col 4: Connect & Schedule */}
+          {/* Col 5: Connect & Schedule */}
           <div className="space-y-4">
             <span className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
               <IconCalendar className="w-3.5 h-3.5 text-brand-cyan" />

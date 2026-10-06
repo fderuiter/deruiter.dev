@@ -13,6 +13,7 @@ import {
   IconSnowflake,
   IconFlame,
   IconArrowLeft,
+  IconShoppingBag,
 } from "@tabler/icons-react";
 
 const LaserLoonLoader = () =>
@@ -50,7 +51,14 @@ export const LaserLoonClient: React.FC = () => {
               ]}
             />
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Link
+              href="/merch"
+              className="inline-flex min-h-[48px] items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-amber-500/10 text-amber-300 border border-amber-500/30 hover:border-amber-400/60 transition-colors"
+            >
+              <IconShoppingBag className="w-3 h-3" aria-hidden="true" />
+              <span>Laser Loon Merch (soon)</span>
+            </Link>
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-red-500/10 text-red-400 border border-red-500/30">
               Civic Arcade / 4-Act Campaign
             </span>

@@ -42,10 +42,13 @@ describe("/merch discovery", () => {
   });
 
   it("is reachable from the navbar, mobile drawer, footer and command palette", () => {
-    const navbar = read("components/Navbar.tsx");
-    expect(navbar).toMatch(/href: "\/merch"/);
-    expect(navbar).toMatch(/href="\/merch"/);
-    expect(read("components/Footer.tsx")).toMatch(/href="\/merch"/);
+    // Merch is reached from Laser Loon and the footer (#1845); the footer reads
+    // the shared navigation data, and the drawer and Arcade menu do not list it.
+    expect(read("lib/navigation.ts")).toMatch(/href: "\/merch"/);
+    expect(read("components/Footer.tsx")).toMatch(/FOOTER_EXTRA_ITEMS/);
+    expect(read("components/arcade/LaserLoonClient.tsx")).toMatch(
+      /href="\/merch"/
+    );
     expect(read("components/CommandPalette.tsx")).toMatch(/url: "\/merch"/);
   });
 

@@ -131,9 +131,9 @@ describe("Navigation Flow Components Suite", () => {
       expect(container.textContent).toContain("Explore the projects");
 
       // Arcade links
-      expect(container.textContent).toContain("Arcade ↗");
+      expect(container.textContent).toContain("Arcade Hub");
       expect(container.textContent).toContain("Laser Loon");
-      expect(container.textContent).toContain("Quasi-Puzzler");
+      expect(container.textContent).toContain("Quasi-Perfect Puzzler");
       expect(container.textContent).toContain("Monkey C Mayhem");
 
       // Systems links

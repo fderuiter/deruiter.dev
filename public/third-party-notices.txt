@@ -3546,7 +3546,7 @@ LICENSE TEXT 22 of 85, applies to 2 package(s):
 
 - source-map@0.8.0 (BSD-3-Clause)
     Copyright (c) 2009-2011, Mozilla Foundation and contributors
-- source-map-js@1.2.1 (BSD-3-Clause)
+- source-map-js@1.2.2 (BSD-3-Clause)
     Copyright (c) 2009-2011, Mozilla Foundation and contributors
 
 All rights reserved.

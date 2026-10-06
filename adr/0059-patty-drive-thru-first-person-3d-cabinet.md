@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed on 2026-10-06, under the epic
+Accepted on 2026-10-06, under the epic
 [#836](https://github.com/fderuiter/deruiter.dev/issues/836) and its child
 [#1811](https://github.com/fderuiter/deruiter.dev/issues/1811). Builds on
 [ADR 0026](0026-headless-arcade-engine-lifecycle-and-html-hud-standard.md) and
@@ -28,9 +28,10 @@ Three constraints from existing rules shape the design:
   pointer-lock-only game is not allowed.
 - Bundle budgets cap one lazy chunk at 350 kB gzip (`lib/dx/bundle-guard.ts`).
 
-The repository already depends on `three` (the neuro viewer uses it directly,
-without React Three Fiber). React Three Fiber, drei and Rapier are not
-dependencies.
+The repository already depends on `three` (used directly by the neuro
+viewer) and `zustand`. React Three Fiber (R3F), drei and Rapier are not
+dependencies. R3F 9 supports React 19 and `three` 0.156 or later, and all
+three libraries are MIT, which ADR 0057 allows.
 
 ## Decision
 
@@ -38,22 +39,23 @@ dependencies.
    `lib/patty-drive-thru/` (#1812), per ADR 0026. The 3D scene only renders
    engine state and forwards input. The engine is tested in Node; the scene is
    stubbed in JSDOM like the neuro viewer.
-2. **Plain Three.js, not React Three Fiber.** The scene uses `three`
-   directly, loaded with `next/dynamic` only after the cabinet launches. This
-   reuses the dependency and the pattern the neuro viewer already proves, adds
-   no reconciler or drei/Rapier packages to the lockfile and license audit
-   (ADR 0057), and keeps the render loop out of React. If R3F turns out to be
-   needed for the later walking slices, it is reconsidered in a new ADR.
-   _This departs from the R3F stack sketched in the #836 comments and needs the
-   owner's confirmation._
+2. **React Three Fiber, drei and Zustand now; Rapier with the walking slice.**
+   The scene is declarative R3F with drei helpers, loaded with `next/dynamic`
+   only after the cabinet launches. High-frequency values (shift clock, meters,
+   camera yaw) live in a Zustand store read with `getState()` inside
+   `useFrame`, so ticking state never re-renders React. Rapier is added by
+   the ADR or issue that introduces walking, collisions or slippery floors,
+   because the booth slice needs no physics and an unused dependency is dead
+   weight. The neuro viewer stays on plain `three`.
 3. **Chunk budget.** The scene chunk must stay under the default 350 kB gzip
-   single-chunk ceiling with tree-shaken imports (named `three` imports only,
-   no `three/examples` loaders in the first slice). A dedicated entry in
+   single-chunk ceiling with tree-shaken imports (named `three` and drei
+   imports only, no loaders in the first slice). A dedicated entry in
    `LAZY_VENDOR_CHUNK_BUDGETS` is added only if measurement in #1813 shows the
    default cannot hold, with the measured size recorded in that PR.
 4. **Diegetic screens.** The KDS is a canvas texture on an emissive material.
-   The POS is real DOM (buttons, nested menus) positioned over the canvas
-   during focus-zoom, so it is keyboard- and screen-reader-operable.
+   The POS is real DOM (buttons, nested menus), shown through drei `Html` on
+   the screen mesh and promoted to a plain overlay during focus-zoom, so it is
+   keyboard- and screen-reader-operable.
 5. **Controls.** Mouse look with a small rotational drag, A/D and arrow keys
    to turn, Enter and Tab for the POS, Escape to release pointer lock. Every
    action is reachable by keyboard alone.
@@ -79,19 +81,26 @@ dependencies.
 
 ## Consequences
 
-- One heavier lazy chunk, loaded only on the cabinet route; the hub and other
-  cabinets are unaffected.
-- The first slice stays small: no walking, physics or coworker AI. Those are
-  later slices and may justify R3F and Rapier in a follow-up ADR.
+- Two new runtime dependencies (`@react-three/fiber`, `@react-three/drei`) and
+  one heavier lazy chunk, loaded only on the cabinet route; the hub and other
+  cabinets are unaffected. Both go through the license audit and the
+  acknowledgments page (ADR 0057).
+- The first slice stays small: no walking, physics or coworker AI. Rapier
+  arrives with those slices.
 - The engine/scene split keeps nearly all behaviour testable without WebGL.
+  R3F scenes are tested through their store and engine, with the `Canvas`
+  stubbed in JSDOM.
 - The visual exception adds one scoped token set to maintain and one more
   place the editorial rules do not apply.
 
 ## Alternatives considered
 
-- **React Three Fiber, drei and Rapier now.** Matches the #836 comments, but
-  adds three dependencies and a reconciler before the first slice needs
-  physics or a scene graph that large.
+- **Plain Three.js, as the neuro viewer does.** Lighter, with no new
+  dependencies, but an imperative scene graph and hand-built DOM-on-mesh
+  plumbing for the POS. Rejected in favour of the declarative stack the owner
+  chose, which also suits the later walking slices.
+- **R3F with Rapier from the start.** Matches the #836 comments exactly but
+  ships an unused physics engine in the first slice.
 - **2D pixel-art booth.** Cheaper, but looks like the other cabinets, which the
   owner ruled out.
 - **Pointer-lock only.** Fails the keyboard-playable requirement.

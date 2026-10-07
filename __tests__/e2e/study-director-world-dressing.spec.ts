@@ -60,15 +60,6 @@ const FLOORS: Record<string, (world: Json) => Json> = {
   },
 };
 
-/** Opens the collapsed directory, if it is not open already. */
-async function openDirectory(page: Page) {
-  const toggle = page.getByRole("button", {
-    name: /^(Office|Site) directory$/,
-  });
-  if ((await toggle.getAttribute("aria-expanded")) === "false")
-    await toggle.click();
-}
-
 async function launchWorld(page: Page) {
   await page.addInitScript(() => {
     window.localStorage.setItem("study_director_world_intro_seen", "1");

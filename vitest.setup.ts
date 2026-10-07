@@ -242,6 +242,12 @@ if (typeof globalThis.HTMLCanvasElement !== "undefined") {
   installCanvasContextMocks();
 }
 
+// jsdom defines window.scrollTo but reports "Not implemented" for every call;
+// a no-op keeps layout effects such as PlayCabinet's from flooding the output.
+if (typeof window !== "undefined") {
+  window.scrollTo = (() => {}) as typeof window.scrollTo;
+}
+
 // Mock Clerk Next.js client and server modules for offline testing
 vi.mock("@clerk/nextjs", () => {
   return {

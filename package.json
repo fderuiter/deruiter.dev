@@ -53,7 +53,7 @@
     "prebuild": "tsx scripts/generate-theme.ts && tsx scripts/generate-llms-txt.ts",
     "build": "node scripts/build.js",
     "start": "next start",
-    "lint": "eslint --no-warn-ignored",
+    "lint": "eslint --no-warn-ignored --max-warnings=0",
     "lint:boundaries": "depcruise lib app components __tests__ hooks scripts",
     "typecheck": "tsc --noEmit",
     "check": "tsc --noEmit && npm run lint && npm run lint:boundaries",

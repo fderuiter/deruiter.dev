@@ -8,6 +8,7 @@
 
 ## Interfaces
 
+- [InstantiatedFormLibraryEntry](interfaces/InstantiatedFormLibraryEntry.md)
 - [InstantiatedLibraryEntry](interfaces/InstantiatedLibraryEntry.md)
 - [InstantiateLibraryEntryOptions](interfaces/InstantiateLibraryEntryOptions.md)
 - [LibraryEntryProvenance](interfaces/LibraryEntryProvenance.md)
@@ -17,6 +18,7 @@
 - [PersonalLibraryEntry](interfaces/PersonalLibraryEntry.md)
 - [PersonalLibraryEntryRevision](interfaces/PersonalLibraryEntryRevision.md)
 - [PersonalLibraryEnvelope](interfaces/PersonalLibraryEnvelope.md)
+- [TemplatePackage](interfaces/TemplatePackage.md)
 
 ## Type Aliases
 
@@ -31,10 +33,15 @@
 
 ## Functions
 
+- [captureFormLibraryEntry](functions/captureFormLibraryEntry.md)
 - [captureLibraryEntry](functions/captureLibraryEntry.md)
 - [deleteLibraryEntry](functions/deleteLibraryEntry.md)
+- [exportTemplatePackage](functions/exportTemplatePackage.md)
 - [getLibraryEntryRevision](functions/getLibraryEntryRevision.md)
+- [importTemplatePackage](functions/importTemplatePackage.md)
+- [insertFormLibraryEntryIntoStudy](functions/insertFormLibraryEntryIntoStudy.md)
 - [insertLibraryEntryIntoStudy](functions/insertLibraryEntryIntoStudy.md)
+- [instantiateFormLibraryEntry](functions/instantiateFormLibraryEntry.md)
 - [instantiateLibraryEntry](functions/instantiateLibraryEntry.md)
 - [listLibraryEntries](functions/listLibraryEntries.md)
 - [loadPersonalLibrary](functions/loadPersonalLibrary.md)

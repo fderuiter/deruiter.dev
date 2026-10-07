@@ -12,6 +12,7 @@ import {
   IconSparkles,
   IconCopy,
   IconFileSpreadsheet,
+  IconBookmark,
 } from "@tabler/icons-react";
 import {
   CRFForm,
@@ -19,13 +20,19 @@ import {
   CodelistDefinition,
   DeviceViewport,
   StudioMode,
+  StudyProtocol,
 } from "@/lib/crf/types";
+import {
+  captureFormLibraryEntry,
+  upsertLibraryEntry,
+} from "@/lib/crf/personal-library";
 import { FieldRenderer } from "./FieldRenderer";
 import { ViewportSwitcher } from "./ViewportSwitcher";
 import { generateId } from "@/lib/utils";
 
 interface FormCanvasProps {
   form: CRFForm;
+  study?: StudyProtocol;
   selectedFieldId: string | null;
   viewport: DeviceViewport;
   codelists: CodelistDefinition[];
@@ -52,6 +59,7 @@ interface FormCanvasProps {
 
 export const FormCanvas: React.FC<FormCanvasProps> = ({
   form,
+  study,
   selectedFieldId,
   viewport,
   codelists,
@@ -70,6 +78,7 @@ export const FormCanvas: React.FC<FormCanvasProps> = ({
   onOpenSlashPalette,
   onSwitchMode,
 }) => {
+  const [templateSavedToast, setTemplateSavedToast] = useState(false);
   // Bring the selected field into view, so a field added from the Palette
   // doesn't land below the fold unnoticed (#1205). Only the visible canvas
   // (desktop or mobile) scrolls, and "nearest" leaves on-screen fields alone.
@@ -117,6 +126,31 @@ export const FormCanvas: React.FC<FormCanvasProps> = ({
       domain: domainInput.toUpperCase(),
     });
     setIsEditingTitle(false);
+  };
+
+  const handleSaveAsTemplate = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      const targetStudy: StudyProtocol = study || {
+        id: "STUDY-LOCAL",
+        studyName: "Local Study",
+        protocolNumber: "LOCAL-01",
+        sponsor: "Local Sponsor",
+        version: "1.0",
+        lastModified: new Date().toISOString(),
+        phase: "Phase I",
+        therapeuticArea: "General",
+        forms: [form],
+        visits: [],
+        codelists: codelists || [],
+      };
+      const entry = captureFormLibraryEntry({ study: targetStudy, form });
+      upsertLibraryEntry(entry);
+      setTemplateSavedToast(true);
+      setTimeout(() => setTemplateSavedToast(false), 3000);
+    } catch {
+      // Ignore save template error
+    }
   };
 
   // Section reordering
@@ -456,7 +490,21 @@ export const FormCanvas: React.FC<FormCanvasProps> = ({
                   </p>
                 </div>
 
-                <div className="flex items-center gap-1 shrink-0">
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {templateSavedToast && (
+                    <span className="text-[11px] font-mono font-semibold text-emerald-400 bg-emerald-950/80 border border-emerald-800/80 px-2.5 py-1 rounded-lg animate-in fade-in">
+                      Saved as template!
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleSaveAsTemplate}
+                    className="p-1.5 rounded-lg bg-zinc-800/80 hover:bg-zinc-700 text-zinc-400 hover:text-white border border-zinc-700/60 transition-all opacity-80 sm:opacity-0 sm:group-hover:opacity-100 shrink-0"
+                    title="Save as Form Template"
+                    aria-label={`Save form ${form.name} as template`}
+                  >
+                    <IconBookmark className="w-4 h-4 text-amber-400" />
+                  </button>
                   {onDuplicateForm && (
                     <button
                       type="button"

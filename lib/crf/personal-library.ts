@@ -58,12 +58,12 @@ export interface LibraryEntryProvenance {
   sourceStudyName: string;
   sourceFormId: string;
   sourceFormName: string;
-  sourceSectionId: string;
+  sourceSectionId?: string;
   capturedAt: string;
 }
 
 /**
- * One saved block. `version` increments on every edit, and an insertion
+ * One saved block or multi-section form. `version` increments on every edit, and an insertion
  * records the version it was taken from.
  */
 export interface PersonalLibraryEntry {
@@ -72,13 +72,16 @@ export interface PersonalLibraryEntry {
   description?: string;
   /** Monotonic version, incremented by each successful update. */
   version: number;
+  /** "section" or "form". Defaults to "section" if omitted. */
+  kind?: "section" | "form";
   /**
    * Free-text notes the author wants carried with the block - protocol
    * assumptions, units, populations it is valid for.
    */
   assumptions?: string;
   provenance: LibraryEntryProvenance;
-  section: CRFSection;
+  section?: CRFSection;
+  form?: CRFForm;
   rules: EditCheckRule[];
   codelists: CodelistDefinition[];
   createdAt: string;
@@ -100,11 +103,20 @@ export interface PersonalLibraryEntryRevision {
   version: number;
   name: string;
   description?: string;
+  kind?: "section" | "form";
   assumptions?: string;
-  section: CRFSection;
+  section?: CRFSection;
+  form?: CRFForm;
   rules: EditCheckRule[];
   codelists: CodelistDefinition[];
   updatedAt: string;
+}
+
+export interface TemplatePackage {
+  $schema?: string;
+  packageVersion: number;
+  exportedAt: string;
+  entries: PersonalLibraryEntry[];
 }
 
 export interface PersonalLibraryEnvelope {
@@ -181,12 +193,14 @@ function deepClone<T>(value: T): T {
 function isLibraryEntryShape(value: unknown): value is PersonalLibraryEntry {
   if (!value || typeof value !== "object") return false;
   const candidate = value as Record<string, unknown>;
+  const hasSectionOrForm =
+    (typeof candidate.section === "object" && candidate.section !== null) ||
+    (typeof candidate.form === "object" && candidate.form !== null);
   return (
     typeof candidate.id === "string" &&
     typeof candidate.name === "string" &&
     typeof candidate.version === "number" &&
-    typeof candidate.section === "object" &&
-    candidate.section !== null &&
+    hasSectionOrForm &&
     Array.isArray(candidate.rules) &&
     Array.isArray(candidate.codelists)
   );
@@ -299,6 +313,7 @@ export function captureLibraryEntry(options: {
     id: generateEngineId("libentry"),
     name: options.name?.trim() || section.title,
     description: options.description,
+    kind: "section",
     version: 1,
     assumptions: options.assumptions,
     provenance: {
@@ -314,6 +329,57 @@ export function captureLibraryEntry(options: {
     codelists: deepClone(
       collectDependentCodelists(section, study.codelists || [])
     ),
+    createdAt: timestamp,
+    updatedAt: timestamp,
+  };
+}
+
+/**
+ * Captures a full multi-section form into a new library entry, pulling in all its
+ * rules and dependent codelists and recording where it came from.
+ */
+export function captureFormLibraryEntry(options: {
+  study: StudyProtocol;
+  form: CRFForm;
+  name?: string;
+  description?: string;
+  assumptions?: string;
+  now?: Date;
+}): PersonalLibraryEntry {
+  const { study, form } = options;
+  const timestamp = (options.now || new Date()).toISOString();
+
+  const referencedCodelistIds = new Set<string>();
+  const walkFields = (fields: CRFField[]) => {
+    for (const field of fields) {
+      if (field.codelistId) referencedCodelistIds.add(field.codelistId);
+      if (field.repeatingColumns) walkFields(field.repeatingColumns);
+    }
+  };
+  for (const section of form.sections || []) {
+    walkFields(section.fields || []);
+  }
+  const codelists = (study.codelists || []).filter((cl) =>
+    referencedCodelistIds.has(cl.id)
+  );
+
+  return {
+    id: generateEngineId("libentry"),
+    name: options.name?.trim() || form.name,
+    description: options.description || form.description,
+    kind: "form",
+    version: 1,
+    assumptions: options.assumptions,
+    provenance: {
+      sourceStudyId: study.id,
+      sourceStudyName: study.studyName,
+      sourceFormId: form.id,
+      sourceFormName: form.name,
+      capturedAt: timestamp,
+    },
+    form: deepClone(form),
+    rules: deepClone(form.rules || []),
+    codelists: deepClone(codelists),
     createdAt: timestamp,
     updatedAt: timestamp,
   };
@@ -546,7 +612,10 @@ export function previewLibraryInsertion(
   const projected = new Set(existingVars);
   const variableNames: string[] = [];
 
-  for (const field of entry.section.fields) {
+  const sections = entry.section ? [entry.section] : entry.form?.sections || [];
+  const allFields = sections.flatMap((s) => s.fields || []);
+
+  for (const field of allFields) {
     const original = field.variableName.toUpperCase();
     if (projected.has(original)) {
       const resolution = generateCdashVariableName(original, projected);
@@ -575,19 +644,21 @@ export function previewLibraryInsertion(
     }
   }
 
-  if (existingTitles.has(entry.section.title)) {
-    conflicts.push({
-      kind: "section_title",
-      existing: entry.section.title,
-      resolution: entry.section.title,
-      detail: `A section titled "${entry.section.title}" already exists. Titles are not required to be unique, so both will be present.`,
-    });
+  for (const section of sections) {
+    if (existingTitles.has(section.title)) {
+      conflicts.push({
+        kind: "section_title",
+        existing: section.title,
+        resolution: section.title,
+        detail: `A section titled "${section.title}" already exists. Titles are not required to be unique, so both will be present.`,
+      });
+    }
   }
 
   return {
     entryId: entry.id,
     entryVersion: entry.version,
-    fieldCount: entry.section.fields.length,
+    fieldCount: allFields.length,
     ruleCount: entry.rules.length,
     codelistCount: entry.codelists.length,
     variableNames,
@@ -609,7 +680,13 @@ export function instantiateLibraryEntry(
   options?: InstantiateLibraryEntryOptions,
   now?: Date
 ): InstantiatedLibraryEntry {
-  const section: CRFSection = deepClone(entry.section);
+  const targetSection = entry.section || entry.form?.sections?.[0];
+  if (!targetSection) {
+    throw new Error(
+      `Cannot instantiate library entry "${entry.id}": section content missing.`
+    );
+  }
+  const section: CRFSection = deepClone(targetSection);
   const rules: EditCheckRule[] = deepClone(entry.rules);
   const codelists: CodelistDefinition[] = deepClone(entry.codelists);
 
@@ -769,4 +846,280 @@ export function insertLibraryEntryIntoStudy(
   };
 
   return { study: nextStudy, instantiated };
+}
+
+export interface InstantiatedFormLibraryEntry {
+  form: CRFForm;
+  rules: EditCheckRule[];
+  codelists: CodelistDefinition[];
+  variableMap: Record<string, string>;
+  idMap: Record<string, string>;
+  source: LibrarySourceRef;
+}
+
+/**
+ * Produces an independent copy of a form library entry, ready to insert into a study.
+ *
+ * Allocates fresh engine IDs for form, sections, fields, and rules, and remaps
+ * CDASH variable names when duplicates exist in the target study.
+ */
+export function instantiateFormLibraryEntry(
+  entry: PersonalLibraryEntry,
+  options?: InstantiateLibraryEntryOptions,
+  now?: Date
+): InstantiatedFormLibraryEntry {
+  const targetForm =
+    entry.form ||
+    (entry.section
+      ? ({
+          id: generateEngineId("form"),
+          name: entry.name,
+          domain: "CRF",
+          description: entry.description || "",
+          version: "1.0",
+          sections: [entry.section],
+          rules: entry.rules,
+        } as CRFForm)
+      : null);
+
+  if (!targetForm) {
+    throw new Error(
+      `Cannot instantiate form template: entry "${entry.id}" carries no form content.`
+    );
+  }
+
+  const form: CRFForm = deepClone(targetForm);
+  const rules: EditCheckRule[] = deepClone(entry.rules || form.rules || []);
+  const codelists: CodelistDefinition[] = deepClone(entry.codelists || []);
+
+  const variableMap: Record<string, string> = {};
+  const idMap: Record<string, string> = {};
+
+  const existingVars = new Set(
+    Array.from(options?.existingVariableNames || []).map((name) =>
+      name.toUpperCase()
+    )
+  );
+  const existingCodelistIds = new Set(options?.existingCodelistIds || []);
+
+  const newFormId = generateEngineId("form");
+  idMap[form.id] = newFormId;
+  form.id = newFormId;
+
+  for (const section of form.sections || []) {
+    const newSectionId = generateEngineId("sec");
+    idMap[section.id] = newSectionId;
+    section.id = newSectionId;
+
+    const remapFields = (fields: CRFField[]) => {
+      for (const field of fields) {
+        const previousId = field.id;
+        const nextId = generateEngineId("fld");
+        idMap[previousId] = nextId;
+        field.id = nextId;
+
+        const original = field.variableName.toUpperCase();
+        if (existingVars.has(original)) {
+          const next = generateCdashVariableName(original, existingVars);
+          variableMap[original] = next;
+          field.variableName = next;
+          existingVars.add(next);
+        } else {
+          variableMap[original] = original;
+          existingVars.add(original);
+        }
+
+        if (field.repeatingColumns) remapFields(field.repeatingColumns);
+      }
+    };
+    remapFields(section.fields || []);
+  }
+
+  // Remap formulas
+  const remapFormulas = (fields: CRFField[]) => {
+    for (const field of fields) {
+      if (field.calculationFormula) {
+        let formula = field.calculationFormula;
+        for (const [previous, next] of Object.entries(variableMap)) {
+          if (previous !== next) {
+            formula = formula.replace(
+              new RegExp(`\\b${previous}\\b`, "g"),
+              next
+            );
+          }
+        }
+        field.calculationFormula = formula;
+      }
+      if (field.repeatingColumns) remapFormulas(field.repeatingColumns);
+    }
+  };
+  for (const section of form.sections || []) {
+    remapFormulas(section.fields || []);
+  }
+
+  // Carried codelists
+  const carriedCodelists: CodelistDefinition[] = [];
+  for (const codelist of codelists) {
+    if (!existingCodelistIds.has(codelist.id)) {
+      carriedCodelists.push(codelist);
+    }
+  }
+
+  // Remap rules
+  for (const rule of rules) {
+    const nextRuleId = generateEngineId("rule");
+    idMap[rule.id] = nextRuleId;
+    rule.id = nextRuleId;
+
+    if (idMap[rule.targetFieldId]) {
+      rule.targetFieldId = idMap[rule.targetFieldId];
+    }
+    rule.triggerFieldIds = (rule.triggerFieldIds || []).map(
+      (id) => idMap[id] || id
+    );
+
+    const allConditions = [
+      ...(rule.conditions || []),
+      ...(rule.conditionGroups || []).flatMap(
+        (group) => group.conditions || []
+      ),
+    ];
+    for (const condition of allConditions) {
+      if (idMap[condition.fieldId]) {
+        condition.fieldId = idMap[condition.fieldId];
+      }
+      if (condition.compareFieldId && idMap[condition.compareFieldId]) {
+        condition.compareFieldId = idMap[condition.compareFieldId];
+      }
+    }
+  }
+
+  form.rules = rules;
+
+  return {
+    form,
+    rules,
+    codelists: carriedCodelists,
+    variableMap,
+    idMap,
+    source: {
+      entryId: entry.id,
+      entryName: entry.name,
+      entryVersion: entry.version,
+      insertedAt: (now || new Date()).toISOString(),
+    },
+  };
+}
+
+/**
+ * Inserts a custom form template into a study, adding its instantiated form,
+ * rules, and codelists, and optionally assigning it to a study visit.
+ */
+export function insertFormLibraryEntryIntoStudy(
+  entry: PersonalLibraryEntry,
+  study: StudyProtocol,
+  targetVisitId?: string,
+  now?: Date
+): { study: StudyProtocol; instantiated: InstantiatedFormLibraryEntry } {
+  const instantiated = instantiateFormLibraryEntry(
+    entry,
+    {
+      existingVariableNames: collectStudyVariableNames(study),
+      existingCodelistIds: (study.codelists || []).map(
+        (codelist) => codelist.id
+      ),
+    },
+    now
+  );
+
+  let updatedVisits = study.visits || [];
+  if (targetVisitId) {
+    updatedVisits = updatedVisits.map((visit) => {
+      if (visit.id === targetVisitId) {
+        const currentAssigned = visit.assignedFormIds || [];
+        return {
+          ...visit,
+          assignedFormIds: currentAssigned.includes(instantiated.form.id)
+            ? currentAssigned
+            : [...currentAssigned, instantiated.form.id],
+        };
+      }
+      return visit;
+    });
+  }
+
+  const nextStudy: StudyProtocol = {
+    ...study,
+    codelists: [...(study.codelists || []), ...instantiated.codelists],
+    forms: [...(study.forms || []), instantiated.form],
+    visits: updatedVisits,
+  };
+
+  return { study: nextStudy, instantiated };
+}
+
+/**
+ * Exports personal library entry/entries as a formatted JSON template package string.
+ */
+export function exportTemplatePackage(
+  entries: PersonalLibraryEntry[] | PersonalLibraryEntry
+): string {
+  const list = Array.isArray(entries) ? entries : [entries];
+  const pkg: TemplatePackage = {
+    $schema: "https://deruiter.dev/schemas/crf/v1/crftemplate.schema.json",
+    packageVersion: 1,
+    exportedAt: new Date().toISOString(),
+    entries: list,
+  };
+  return JSON.stringify(pkg, null, 2);
+}
+
+/**
+ * Imports a JSON template package, validating schema and saving entries into the library.
+ */
+export function importTemplatePackage(
+  jsonContent: string,
+  storage?: RawStorage
+): { importedCount: number; entries: PersonalLibraryEntry[] } {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(jsonContent);
+  } catch {
+    throw new Error("Invalid JSON template package.");
+  }
+
+  let rawEntries: unknown[] = [];
+  if (Array.isArray(parsed)) {
+    rawEntries = parsed;
+  } else if (
+    parsed &&
+    typeof parsed === "object" &&
+    Array.isArray((parsed as Record<string, unknown>).entries)
+  ) {
+    rawEntries = (parsed as Record<string, unknown>).entries as unknown[];
+  } else if (isLibraryEntryShape(parsed)) {
+    rawEntries = [parsed];
+  } else {
+    throw new Error("JSON package does not contain valid template entries.");
+  }
+
+  const validEntries: PersonalLibraryEntry[] = [];
+  for (const item of rawEntries) {
+    if (isLibraryEntryShape(item)) {
+      validEntries.push(item as PersonalLibraryEntry);
+    }
+  }
+
+  if (validEntries.length === 0) {
+    throw new Error("No valid CRF template entries found in package.");
+  }
+
+  for (const entry of validEntries) {
+    upsertLibraryEntry(entry, storage);
+  }
+
+  return {
+    importedCount: validEntries.length,
+    entries: validEntries,
+  };
 }

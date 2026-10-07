@@ -16,6 +16,9 @@ import {
   IconLayersSubtract,
   IconX,
   IconGitFork,
+  IconDownload,
+  IconUpload,
+  IconBookmark,
 } from "@tabler/icons-react";
 import { StudyProtocol, CRFForm } from "@/lib/crf/types";
 import { formatVisitWindow } from "@/lib/crf/visit-window";
@@ -24,6 +27,14 @@ import {
   StudyProtocolEngine,
 } from "@/lib/crf/study-engine";
 import { scaffoldCdashDomain } from "@/lib/crf/cdash-domain-templates";
+import {
+  listLibraryEntries,
+  insertFormLibraryEntryIntoStudy,
+  instantiateLibraryEntry,
+  exportTemplatePackage,
+  importTemplatePackage,
+  type PersonalLibraryEntry,
+} from "@/lib/crf/personal-library";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { WidgetPalette } from "./WidgetPalette";
 import { FormVariantModal } from "./FormVariantModal";
@@ -93,6 +104,82 @@ export const StudySpine: React.FC<StudySpineProps> = ({
   );
 
   const [variantFormId, setVariantFormId] = useState<string | null>(null);
+  const [customLibraryEntries, setCustomLibraryEntries] = useState<
+    PersonalLibraryEntry[]
+  >(() => listLibraryEntries());
+
+  const refreshCustomLibrary = () => {
+    setCustomLibraryEntries(listLibraryEntries());
+  };
+
+  const handleExportPackage = () => {
+    const entries = listLibraryEntries();
+    if (entries.length === 0) return;
+    const jsonStr = exportTemplatePackage(entries);
+    const blob = new Blob([jsonStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "custom-form-templates.crftemplate.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportPackage = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const content = (event.target?.result as string) || "";
+        importTemplatePackage(content);
+        refreshCustomLibrary();
+      } catch (err: unknown) {
+        alert(
+          err instanceof Error
+            ? err.message
+            : "Failed to import template package."
+        );
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const handleInsertCustomEntry = (entry: PersonalLibraryEntry) => {
+    if (entry.kind === "form" || entry.form) {
+      const { instantiated } = insertFormLibraryEntryIntoStudy(
+        entry,
+        study,
+        activeVisitId
+      );
+      onInjectCdashForm(instantiated.form, activeVisitId);
+    } else if (entry.section) {
+      const instantiated = instantiateLibraryEntry(entry);
+      const targetForm =
+        study.forms.find((f) => f.id === activeFormId) || study.forms[0];
+      if (targetForm) {
+        const updatedForm: CRFForm = {
+          ...targetForm,
+          sections: [...targetForm.sections, instantiated.section],
+        };
+        onInjectCdashForm(updatedForm, activeVisitId);
+      }
+    }
+  };
+
+  const handleDragStartCustomEntry = (
+    e: React.DragEvent,
+    entry: PersonalLibraryEntry
+  ) => {
+    if (entry.kind === "form" || entry.form) {
+      const { instantiated } = insertFormLibraryEntryIntoStudy(entry, study);
+      e.dataTransfer.setData(
+        "application/json",
+        JSON.stringify(instantiated.form)
+      );
+      e.dataTransfer.setData("text/plain", JSON.stringify(instantiated.form));
+    }
+  };
   const formUseCounts = useMemo(
     () =>
       new Map(study.forms.map((f) => [f.id, getFormUses(study, f.id).length])),
@@ -746,6 +833,104 @@ export const StudySpine: React.FC<StudySpineProps> = ({
                   </>
                 )}
               </p>
+            )}
+          </div>
+
+          {/* Custom Form & Section Templates Section */}
+          <div className="space-y-2 pt-2 border-t border-zinc-850">
+            <div className="flex items-center justify-between px-1">
+              <span className="text-[11px] font-mono uppercase tracking-wider text-amber-400 font-semibold flex items-center gap-1">
+                <IconBookmark className="w-3.5 h-3.5" />
+                Custom Templates ({customLibraryEntries.length})
+              </span>
+              <div className="flex items-center gap-1.5">
+                <label
+                  title="Import Template Package (.json)"
+                  className="p-1 rounded bg-zinc-850 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-750 text-[10px] font-mono cursor-pointer flex items-center gap-1"
+                >
+                  <IconUpload className="w-3 h-3 text-brand-cyan" />
+                  <span>Import</span>
+                  <input
+                    type="file"
+                    accept=".json"
+                    onChange={handleImportPackage}
+                    className="hidden"
+                  />
+                </label>
+                {customLibraryEntries.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleExportPackage}
+                    title="Export Template Package (.json)"
+                    className="p-1 rounded bg-zinc-850 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-750 text-[10px] font-mono flex items-center gap-1"
+                  >
+                    <IconDownload className="w-3 h-3 text-emerald-400" />
+                    <span>Export</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {customLibraryEntries.length === 0 ? (
+              <p className="text-[11px] text-zinc-500 font-mono italic px-1 py-1">
+                No custom templates saved yet. Click &quot;Save as Form
+                Template&quot; in the form canvas header.
+              </p>
+            ) : (
+              <div className="space-y-1.5 max-h-48 overflow-y-auto pr-0.5">
+                {customLibraryEntries
+                  .filter((entry) =>
+                    libraryFilter
+                      ? entry.name
+                          .toLowerCase()
+                          .includes(libraryFilter.toLowerCase()) ||
+                        (entry.description || "")
+                          .toLowerCase()
+                          .includes(libraryFilter.toLowerCase())
+                      : true
+                  )
+                  .map((entry) => {
+                    const isForm = entry.kind === "form" || Boolean(entry.form);
+                    const domain = isForm ? entry.form?.domain || "CRF" : "SEC";
+                    return (
+                      <div
+                        key={entry.id}
+                        draggable
+                        onDragStart={(e) =>
+                          handleDragStartCustomEntry(e, entry)
+                        }
+                        className="p-2 rounded-xl border border-zinc-850 bg-zinc-900/60 hover:border-amber-400/40 hover:bg-zinc-900/90 transition-all cursor-grab active:cursor-grabbing group"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <IconGripVertical className="w-3.5 h-3.5 text-zinc-600 shrink-0" />
+                            <span className="text-[10px] font-bold font-mono px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                              {domain}
+                            </span>
+                            <div className="min-w-0">
+                              <h4 className="text-xs font-bold text-zinc-200 truncate group-hover:text-white">
+                                {entry.name}
+                              </h4>
+                              <p className="text-[10px] text-zinc-400 truncate">
+                                {isForm ? "Multi-section form" : "Form section"}{" "}
+                                · v{entry.version}
+                              </p>
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => handleInsertCustomEntry(entry)}
+                            className="px-2 py-1 rounded bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[10px] font-mono font-bold transition-colors shrink-0"
+                            title="Insert template into study"
+                          >
+                            + Add
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
             )}
           </div>
 

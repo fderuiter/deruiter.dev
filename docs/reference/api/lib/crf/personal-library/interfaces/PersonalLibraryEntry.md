@@ -6,7 +6,7 @@
 
 # Interface: PersonalLibraryEntry
 
-One saved block. `version` increments on every edit, and an insertion
+One saved block or multi-section form. `version` increments on every edit, and an insertion
 records the version it was taken from.
 
 ## Properties
@@ -38,9 +38,23 @@ assumptions, units, populations it is valid for.
 
 ***
 
+### form?
+
+> `optional` **form?**: [`CRFForm`](../../types/interfaces/CRFForm.md)
+
+***
+
 ### id
 
 > **id**: `string`
+
+***
+
+### kind?
+
+> `optional` **kind?**: `"form"` \| `"section"`
+
+"section" or "form". Defaults to "section" if omitted.
 
 ***
 
@@ -73,9 +87,9 @@ field existed simply have no history; their earlier versions are unknown.
 
 ***
 
-### section
+### section?
 
-> **section**: [`CRFSection`](../../types/interfaces/CRFSection.md)
+> `optional` **section?**: [`CRFSection`](../../types/interfaces/CRFSection.md)
 
 ***
 

@@ -29,9 +29,9 @@ later tell which study and form a block was lifted out of.
 
 ***
 
-### sourceSectionId
+### sourceSectionId?
 
-> **sourceSectionId**: `string`
+> `optional` **sourceSectionId?**: `string`
 
 ***
 

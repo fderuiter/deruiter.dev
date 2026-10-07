@@ -332,6 +332,12 @@ Re-exports [CalculationStatus](types/type-aliases/CalculationStatus.md)
 
 ***
 
+### captureFormLibraryEntry
+
+Re-exports [captureFormLibraryEntry](personal-library/functions/captureFormLibraryEntry.md)
+
+***
+
 ### captureLibraryEntry
 
 Re-exports [captureLibraryEntry](personal-library/functions/captureLibraryEntry.md)
@@ -1046,6 +1052,12 @@ Re-exports [exportStudyToUsdmObject](usdm-adapter/functions/exportStudyToUsdmObj
 
 ***
 
+### exportTemplatePackage
+
+Re-exports [exportTemplatePackage](personal-library/functions/exportTemplatePackage.md)
+
+***
+
 ### exportUniversalCrfJson
 
 Re-exports [exportUniversalCrfJson](universal-schema/functions/exportUniversalCrfJson.md)
@@ -1514,9 +1526,21 @@ Re-exports [importStudyFromUsdm](usdm-adapter/functions/importStudyFromUsdm.md)
 
 ***
 
+### importTemplatePackage
+
+Re-exports [importTemplatePackage](personal-library/functions/importTemplatePackage.md)
+
+***
+
 ### incrementStudyVersion
 
 Re-exports [incrementStudyVersion](study-baselines/functions/incrementStudyVersion.md)
+
+***
+
+### insertFormLibraryEntryIntoStudy
+
+Re-exports [insertFormLibraryEntryIntoStudy](personal-library/functions/insertFormLibraryEntryIntoStudy.md)
 
 ***
 
@@ -1538,6 +1562,12 @@ Re-exports [InstantiateAtomicFieldOptions](smart-blocks-engine/interfaces/Instan
 
 ***
 
+### InstantiatedFormLibraryEntry
+
+Re-exports [InstantiatedFormLibraryEntry](personal-library/interfaces/InstantiatedFormLibraryEntry.md)
+
+***
+
 ### InstantiatedLibraryEntry
 
 Re-exports [InstantiatedLibraryEntry](personal-library/interfaces/InstantiatedLibraryEntry.md)
@@ -1547,6 +1577,12 @@ Re-exports [InstantiatedLibraryEntry](personal-library/interfaces/InstantiatedLi
 ### InstantiatedSmartBlock
 
 Re-exports [InstantiatedSmartBlock](smart-blocks-engine/interfaces/InstantiatedSmartBlock.md)
+
+***
+
+### instantiateFormLibraryEntry
+
+Re-exports [instantiateFormLibraryEntry](personal-library/functions/instantiateFormLibraryEntry.md)
 
 ***
 
@@ -2747,6 +2783,12 @@ Re-exports [SubjectFormStatus](types/interfaces/SubjectFormStatus.md)
 ### TABLE\_WIDTH\_DXA
 
 Re-exports [TABLE_WIDTH_DXA](export-docx/variables/TABLE_WIDTH_DXA.md)
+
+***
+
+### TemplatePackage
+
+Re-exports [TemplatePackage](personal-library/interfaces/TemplatePackage.md)
 
 ***
 

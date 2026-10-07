@@ -166,7 +166,7 @@ describe("[#681] Library upgrade dialog", () => {
       "form_vs"
     );
     customize?.(study, use.sectionId);
-    const section = structuredClone(entry.section);
+    const section = structuredClone(entry.section!);
     section.fields[0].label = "Body weight (kg)";
     updateLibraryEntry(entry.id, { section }, storage);
     render(<Harness initialStudy={study} storage={storage} />);

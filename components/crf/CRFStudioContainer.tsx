@@ -1736,6 +1736,7 @@ export const CRFStudioContainer: React.FC = () => {
                 <div className="flex-1 flex flex-col min-w-0">
                   <FormCanvas
                     form={activeForm}
+                    study={study}
                     selectedFieldId={selectedFieldId}
                     viewport={viewport}
                     codelists={study.codelists}
@@ -1804,6 +1805,7 @@ export const CRFStudioContainer: React.FC = () => {
             >
               <FormCanvas
                 form={activeForm}
+                study={study}
                 selectedFieldId={selectedFieldId}
                 viewport={viewport}
                 codelists={study.codelists}

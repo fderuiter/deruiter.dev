@@ -192,7 +192,7 @@ describe("[#678] Versioned personal clinical block library", () => {
   describe("Capturing fields, dependent rules, codelists, assumptions and provenance", () => {
     it("captures the section's fields", () => {
       const entry = capture();
-      expect(entry.section.fields.map((f) => f.variableName)).toEqual([
+      expect(entry.section!.fields.map((f) => f.variableName)).toEqual([
         "HEIGHT",
         "WEIGHT",
         "BMI",
@@ -233,7 +233,7 @@ describe("[#678] Versioned personal clinical block library", () => {
       });
 
       study.forms[0].sections[0].fields[0].label = "MUTATED";
-      expect(entry.section.fields[0].label).not.toBe("MUTATED");
+      expect(entry.section!.fields[0].label).not.toBe("MUTATED");
     });
 
     it("refuses to capture a section that is not part of the form", () => {
@@ -384,9 +384,9 @@ describe("[#678] Versioned personal clinical block library", () => {
       const entry = capture();
       const result = instantiateLibraryEntry(entry);
 
-      expect(result.section.id).not.toBe(entry.section.id);
+      expect(result.section.id).not.toBe(entry.section!.id);
       for (const [index, f] of result.section.fields.entries()) {
-        expect(f.id).not.toBe(entry.section.fields[index].id);
+        expect(f.id).not.toBe(entry.section!.fields[index].id);
       }
       expect(result.rules[0].id).not.toBe(entry.rules[0].id);
     });
@@ -493,7 +493,7 @@ describe("[#678] Versioned personal clinical block library", () => {
       copyA.fields[0].label = "Customized height";
 
       expect(copyB.fields[0].label).not.toBe("Customized height");
-      expect(reopened.section.fields[0].label).not.toBe("Customized height");
+      expect(reopened.section!.fields[0].label).not.toBe("Customized height");
     });
 
     it("leaves already-inserted content untouched when the library entry is later edited", () => {
@@ -513,7 +513,7 @@ describe("[#678] Versioned personal clinical block library", () => {
         {
           name: "Renamed block",
           section: {
-            ...entry.section,
+            ...entry.section!,
             title: "Renamed section",
             fields: [field({ id: "fld_new", variableName: "NEWVAR" })],
           },

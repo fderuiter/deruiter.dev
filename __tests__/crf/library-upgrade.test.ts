@@ -8,6 +8,7 @@ import {
   getLibraryEntryRevision,
   validateUniversalCrf,
   type CRFField,
+  type CRFSection,
   type CRFForm,
   type CodelistDefinition,
   type EditCheckRule,
@@ -216,10 +217,10 @@ describe("[#681] Personal-library three-way upgrade", () => {
   }
 
   function publish(
-    edit: (section: PersonalLibraryEntry["section"]) => void,
+    edit: (section: CRFSection) => void,
     changes: Partial<Pick<PersonalLibraryEntry, "rules" | "codelists">> = {}
   ) {
-    const section = structuredClone(entry.section);
+    const section = structuredClone(entry.section!);
     edit(section);
     const result = updateLibraryEntry(
       entry.id,
@@ -248,10 +249,10 @@ describe("[#681] Personal-library three-way upgrade", () => {
       });
       const stored = entries[0];
       expect(stored.version).toBe(2);
-      expect(getLibraryEntryRevision(stored, 1)?.section.title).toBe(
+      expect(getLibraryEntryRevision(stored, 1)?.section?.title).toBe(
         "Anthropometrics"
       );
-      expect(getLibraryEntryRevision(stored, 2)?.section.title).toBe(
+      expect(getLibraryEntryRevision(stored, 2)?.section?.title).toBe(
         "Body measurements"
       );
       expect(getLibraryEntryRevision(stored, 7)).toBeUndefined();
@@ -690,7 +691,7 @@ describe("[#681] Personal-library three-way upgrade", () => {
               if (currentEdit !== undefined)
                 section.fields[index].label = `c:${currentEdit}`;
             });
-            const nextSection = structuredClone(entry.section);
+            const nextSection = structuredClone(entry.section!);
             edits.forEach(([, incomingEdit], index) => {
               if (incomingEdit !== undefined)
                 nextSection.fields[index].label = `i:${incomingEdit}`;
@@ -723,7 +724,7 @@ describe("[#681] Personal-library three-way upgrade", () => {
               inserted.use.sectionId
             ).fields;
             return edits.every(([c, i], index) => {
-              const original = entry.section.fields[index].label;
+              const original = entry.section!.fields[index].label;
               const cur = c === undefined ? original : `c:${c}`;
               const inc = i === undefined ? original : `i:${i}`;
               let expected: string;

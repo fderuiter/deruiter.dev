@@ -252,11 +252,14 @@ function walkFields(fields: CRFField[], visit: (field: CRFField) => void) {
 
 /** Builds the library-namespace model of a stored library version. */
 function modelFromRevision(revision: PersonalLibraryEntryRevision): BlockModel {
+  const section = revision.section || revision.form?.sections?.[0];
   const fields = new Map<string, BlockElement>();
-  for (const field of revision.section.fields) {
-    const value: Json = { ...cloneDeep(field) };
-    delete value.id;
-    fields.set(field.id, { id: field.id, label: fieldLabel(field), value });
+  if (section) {
+    for (const field of section.fields) {
+      const value: Json = { ...cloneDeep(field) };
+      delete value.id;
+      fields.set(field.id, { id: field.id, label: fieldLabel(field), value });
+    }
   }
   const rules = new Map<string, BlockElement>();
   for (const rule of revision.rules) {
@@ -273,9 +276,9 @@ function modelFromRevision(revision: PersonalLibraryEntryRevision): BlockModel {
     });
   }
   return {
-    section: cloneDeep(sectionProps(revision.section)),
+    section: section ? cloneDeep(sectionProps(section)) : {},
     fields,
-    fieldOrder: revision.section.fields.map((field) => field.id),
+    fieldOrder: section ? section.fields.map((field) => field.id) : [],
     rules,
     codelists,
   };

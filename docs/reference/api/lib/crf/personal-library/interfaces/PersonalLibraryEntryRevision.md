@@ -29,6 +29,18 @@ can compare what a study used with what the library holds now.
 
 ***
 
+### form?
+
+> `optional` **form?**: [`CRFForm`](../../types/interfaces/CRFForm.md)
+
+***
+
+### kind?
+
+> `optional` **kind?**: `"form"` \| `"section"`
+
+***
+
 ### name
 
 > **name**: `string`
@@ -41,9 +53,9 @@ can compare what a study used with what the library holds now.
 
 ***
 
-### section
+### section?
 
-> **section**: [`CRFSection`](../../types/interfaces/CRFSection.md)
+> `optional` **section?**: [`CRFSection`](../../types/interfaces/CRFSection.md)
 
 ***
 

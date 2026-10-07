@@ -76,6 +76,10 @@ export interface WorldState {
   assignments?: Assignment[];
   /** A meeting in progress in the conference room, if any (#1689). */
   meeting?: Meeting | null;
+  /** Completed meeting reports preserved across the run. */
+  meetingHistory?: MeetingReport[];
+  /** Completed site visit reports preserved across the run. */
+  siteVisitHistory?: SiteVisitReport[];
 }
 
 export type WorldRefusal =
@@ -779,6 +783,7 @@ export interface Meeting {
 /** What a meeting cost against what it changed. */
 export interface MeetingReport {
   kind: Meeting["kind"];
+  day?: number;
   minutes: number;
   /** Minutes of everyone's time, the player's included. */
   personMinutes: number;

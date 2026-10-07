@@ -53,6 +53,8 @@ export function createWorld(study: StudyState): WorldState {
     known: [],
     map: CRO_FLOOR.id,
     visit: null,
+    meetingHistory: [],
+    siteVisitHistory: [],
   };
 }
 

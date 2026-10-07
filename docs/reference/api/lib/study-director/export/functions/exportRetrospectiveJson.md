@@ -6,7 +6,7 @@
 
 # Function: exportRetrospectiveJson()
 
-> **exportRetrospectiveJson**(`report`): `string`
+> **exportRetrospectiveJson**(`report`, `worldCtx?`): `string`
 
 Formats the retrospective export as a JSON string.
 
@@ -15,6 +15,10 @@ Formats the retrospective export as a JSON string.
 ### report
 
 [`FinalReport`](../../types/interfaces/FinalReport.md)
+
+### worldCtx?
+
+[`WorldState`](../../../study-director-world/types/interfaces/WorldState.md) \| `null`
 
 ## Returns
 

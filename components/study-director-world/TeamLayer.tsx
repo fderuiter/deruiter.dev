@@ -40,6 +40,7 @@ import {
   OverlayButton,
   RelationshipCardView,
 } from "./TeamPieces";
+import { MeetingReplayPanel } from "./MeetingReplayPanel";
 
 const VERB_LABEL: Record<DelegationVerb, string> = {
   askStatus: "Ask status · 10 min",
@@ -69,7 +70,8 @@ type Conversation =
     }
   | { kind: "desk"; lines: DialogueLine[] }
   | { kind: "edc" }
-  | { kind: "report"; report: MeetingReport };
+  | { kind: "report"; report: MeetingReport }
+  | { kind: "meetingReplay" };
 
 const DESK_VIAS: readonly EventVia[] = ["mail", "voicemail", "callback"];
 
@@ -309,6 +311,10 @@ export function useTeamLayer({
     [announce, refuse, setWorld, world]
   );
 
+  const openMeetingReplay = useCallback(() => {
+    setConversation({ kind: "meetingReplay" });
+  }, []);
+
   return {
     conversation,
     ringing,
@@ -326,6 +332,7 @@ export function useTeamLayer({
     adjourn,
     meetingDecide,
     openEvent,
+    openMeetingReplay,
   };
 }
 
@@ -584,10 +591,32 @@ export const TeamOverlay: React.FC<{
             </ul>
           )}
         </section>
+        <section>
+          <h4 className="text-[10px] font-semibold tracking-[0.14em] text-[var(--sd-muted)] uppercase">
+            Meeting Archive
+          </h4>
+          <OverlayButton
+            className="w-full"
+            onClick={team.openMeetingReplay}
+            data-testid="open-meeting-archive"
+          >
+            Replay past meetings ({world.meetingHistory?.length ?? 0} archived)
+          </OverlayButton>
+        </section>
         <OverlayButton ref={closeRef} onClick={team.close}>
           Leave the desk
         </OverlayButton>
       </Overlay>
+    );
+  }
+
+  if (c.kind === "meetingReplay") {
+    return (
+      <MeetingReplayPanel
+        meetings={world.meetingHistory ?? []}
+        onClose={team.close}
+        returnFocusTo={returnFocusTo}
+      />
     );
   }
 

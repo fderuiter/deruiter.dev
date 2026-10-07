@@ -35,3 +35,9 @@
 ### state
 
 > **state**: [`StudyState`](StudyState.md)
+
+***
+
+### world?
+
+> `optional` **world?**: [`WorldState`](../../../study-director-world/types/interfaces/WorldState.md)

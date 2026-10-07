@@ -11,8 +11,10 @@ import {
   type Bond,
   type CallRecord,
   type Meeting,
+  type MeetingReport,
   type Observation,
   type PlayerState,
+  type SiteVisitReport,
   type WorldMap,
   type WorldState,
 } from "../types";
@@ -137,6 +139,38 @@ function readMeeting(value: unknown): Meeting | null {
   return null;
 }
 
+function readMeetingHistory(value: unknown): MeetingReport[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(
+    (m): m is MeetingReport =>
+      isRecord(m) &&
+      (m.kind === "team" || m.kind === "sponsor") &&
+      typeof m.minutes === "number" &&
+      typeof m.personMinutes === "number" &&
+      Array.isArray(m.attendees) &&
+      Array.isArray(m.changes) &&
+      Array.isArray(m.raised) &&
+      typeof m.verdict === "string"
+  );
+}
+
+function readSiteVisitHistory(value: unknown): SiteVisitReport[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(
+    (s): s is SiteVisitReport =>
+      isRecord(s) &&
+      str(s.siteId) &&
+      str(s.siteName) &&
+      typeof s.day === "number" &&
+      Array.isArray(s.checks) &&
+      typeof s.audited === "boolean" &&
+      Array.isArray(s.findings) &&
+      Array.isArray(s.unchecked) &&
+      Array.isArray(s.learned) &&
+      str(s.verdict)
+  );
+}
+
 /**
  * Reads a saved world run. Anything unreadable, from another version, or
  * missing its study is dropped (returns null) rather than trusted; numbers
@@ -176,6 +210,8 @@ export function parseWorld(text: string | null): WorldState | null {
       : [],
     map: map.id,
     visit,
+    meetingHistory: readMeetingHistory(raw.meetingHistory),
+    siteVisitHistory: readSiteVisitHistory(raw.siteVisitHistory),
   };
   // The team layer's fields are optional: keep only those the save has.
   const observations = readObservations(raw.observations);

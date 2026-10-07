@@ -22,6 +22,12 @@ What a meeting cost against what it changed.
 
 ***
 
+### day?
+
+> `optional` **day?**: `number`
+
+***
+
 ### kind
 
 > **kind**: `"sponsor"` \| `"team"`

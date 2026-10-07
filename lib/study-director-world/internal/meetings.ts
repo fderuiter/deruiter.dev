@@ -131,17 +131,20 @@ export function endMeeting(
       : changes.length >= 3
         ? "Worth the hour."
         : "Some of it was useful.";
+  const report: MeetingReport = {
+    kind: meeting.kind,
+    day: world.study.day,
+    minutes: MEETING_MINUTES,
+    personMinutes: MEETING_MINUTES * people,
+    attendees: names,
+    changes,
+    raised,
+    verdict,
+  };
+  const meetingHistory = [...(next.meetingHistory ?? []), report];
   return {
     ok: true,
-    world: next,
-    report: {
-      kind: meeting.kind,
-      minutes: MEETING_MINUTES,
-      personMinutes: MEETING_MINUTES * people,
-      attendees: names,
-      changes,
-      raised,
-      verdict,
-    },
+    world: { ...next, meetingHistory },
+    report,
   };
 }

@@ -324,10 +324,13 @@ export interface InspectionReport {
   grade: Evaluations["regulatory"]["grade"];
 }
 
+import type { WorldState } from "@/lib/study-director-world";
+
 export interface FinalReport {
   state: StudyState;
   lock: LockSummary;
   evaluations: Evaluations;
   profile: ProfileResult;
   inspection: InspectionReport;
+  world?: WorldState;
 }

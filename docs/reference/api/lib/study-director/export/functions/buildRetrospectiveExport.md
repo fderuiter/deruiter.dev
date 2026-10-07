@@ -6,7 +6,7 @@
 
 # Function: buildRetrospectiveExport()
 
-> **buildRetrospectiveExport**(`report`): [`RetrospectiveJson`](../interfaces/RetrospectiveJson.md)
+> **buildRetrospectiveExport**(`report`, `worldCtx?`): [`RetrospectiveJson`](../interfaces/RetrospectiveJson.md)
 
 Builds the structured retrospective export object.
 
@@ -15,6 +15,10 @@ Builds the structured retrospective export object.
 ### report
 
 [`FinalReport`](../../types/interfaces/FinalReport.md)
+
+### worldCtx?
+
+[`WorldState`](../../../study-director-world/types/interfaces/WorldState.md) \| `null`
 
 ## Returns
 

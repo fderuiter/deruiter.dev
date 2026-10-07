@@ -27,6 +27,7 @@ import {
   type StudyScenario,
   type StudyState,
 } from "@/lib/study-director";
+import type { WorldState } from "@/lib/study-director-world";
 import { DashboardPanel, MetersPanel, SitesPanel, TeamPanel } from "./Panels";
 import { BriefingView } from "./BriefingView";
 import { DecisionPanel } from "./DecisionPanel";
@@ -301,9 +302,10 @@ export const StudyDirectorGame: React.FC<{ officeFirst?: boolean }> = ({
 
   /** Files a finished study in the career, once per seed. */
   const closeOut = useCallback(
-    (done: StudyState) => {
+    (done: StudyState, worldState?: WorldState) => {
       if (done.status !== "complete") return;
       const finished = finalizeStudy(done);
+      if (worldState) finished.world = worldState;
       const result = recordRun(career, finished, verdictFor(finished).headline);
       updateCareer(result.career);
       setNews(result.news);
@@ -316,7 +318,7 @@ export const StudyDirectorGame: React.FC<{ officeFirst?: boolean }> = ({
    * the share card, filed in the career like any other study.
    */
   const closeWorldRun = useCallback(
-    (done: StudyState) => {
+    (done: StudyState, worldState?: WorldState) => {
       showCloseout();
       setFromWorld(true);
       setState(done);
@@ -324,7 +326,7 @@ export const StudyDirectorGame: React.FC<{ officeFirst?: boolean }> = ({
       setOutcome(null);
       setSelectedId(null);
       setConfirmAbandon(false);
-      closeOut(done);
+      closeOut(done, worldState);
       setNotice("The study is complete.");
     },
     [closeOut]

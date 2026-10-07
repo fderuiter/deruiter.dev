@@ -11,6 +11,12 @@ import type {
   StudySetup,
   TeamMember,
 } from "./types";
+import type {
+  MeetingReport,
+  Observation,
+  SiteVisitReport,
+  WorldState,
+} from "@/lib/study-director-world";
 
 export interface RetrospectiveMeterPoint {
   day: number;
@@ -34,6 +40,9 @@ export interface RetrospectiveJson {
   profile: ProfileResult;
   sites: SiteState[];
   team: TeamMember[];
+  meetings: MeetingReport[];
+  siteVisits: SiteVisitReport[];
+  observations: Observation[];
 }
 
 /**
@@ -108,8 +117,10 @@ export function generateMeterHistory(
  * Builds the structured retrospective export object.
  */
 export function buildRetrospectiveExport(
-  report: FinalReport
+  report: FinalReport,
+  worldCtx?: WorldState | null
 ): RetrospectiveJson {
+  const world = worldCtx ?? report.world;
   return {
     version: 1,
     exportedAt: new Date().toISOString(),
@@ -122,14 +133,20 @@ export function buildRetrospectiveExport(
     profile: report.profile,
     sites: report.state.sites,
     team: report.state.team,
+    meetings: world?.meetingHistory ?? [],
+    siteVisits: world?.siteVisitHistory ?? [],
+    observations: world?.observations ?? [],
   };
 }
 
 /**
  * Formats the retrospective export as a JSON string.
  */
-export function exportRetrospectiveJson(report: FinalReport): string {
-  return JSON.stringify(buildRetrospectiveExport(report), null, 2);
+export function exportRetrospectiveJson(
+  report: FinalReport,
+  worldCtx?: WorldState | null
+): string {
+  return JSON.stringify(buildRetrospectiveExport(report, worldCtx), null, 2);
 }
 
 /**
@@ -208,6 +225,103 @@ export function exportAuditFindingsCsv(report: FinalReport): string {
     item.documented ? "true" : "false",
     item.answer,
     item.outcome,
+  ]);
+
+  return [
+    headers.map(escapeCsv).join(","),
+    ...rows.map((row) => row.map(escapeCsv).join(",")),
+  ].join("\n");
+}
+
+/**
+ * Generates a normalized CSV view for meetings.
+ */
+export function exportMeetingsCsv(
+  report: FinalReport,
+  worldCtx?: WorldState | null
+): string {
+  const world = worldCtx ?? report.world;
+  const meetings = world?.meetingHistory ?? [];
+  const headers = [
+    "Kind",
+    "Day",
+    "Minutes",
+    "Person Minutes",
+    "Attendees",
+    "Changes",
+    "Raised",
+    "Verdict",
+  ];
+  const rows = meetings.map((m) => [
+    m.kind,
+    m.day ?? "",
+    m.minutes,
+    m.personMinutes,
+    m.attendees.join("; "),
+    m.changes.join("; "),
+    m.raised.join("; "),
+    m.verdict,
+  ]);
+
+  return [
+    headers.map(escapeCsv).join(","),
+    ...rows.map((row) => row.map(escapeCsv).join(",")),
+  ].join("\n");
+}
+
+/**
+ * Generates a normalized CSV view for site visits.
+ */
+export function exportSiteVisitsCsv(
+  report: FinalReport,
+  worldCtx?: WorldState | null
+): string {
+  const world = worldCtx ?? report.world;
+  const siteVisits = world?.siteVisitHistory ?? [];
+  const headers = [
+    "Site ID",
+    "Site Name",
+    "Day",
+    "Checks",
+    "Audited",
+    "Findings",
+    "Unchecked",
+    "Verdict",
+  ];
+  const rows = siteVisits.map((sv) => [
+    sv.siteId,
+    sv.siteName,
+    sv.day,
+    sv.checks.join("; "),
+    sv.audited ? "true" : "false",
+    sv.findings.map((f) => `${f.label}: ${f.text}`).join("; "),
+    sv.unchecked.join("; "),
+    sv.verdict,
+  ]);
+
+  return [
+    headers.map(escapeCsv).join(","),
+    ...rows.map((row) => row.map(escapeCsv).join(",")),
+  ].join("\n");
+}
+
+/**
+ * Generates a normalized CSV view for dialogue history / observations.
+ */
+export function exportDialogueCsv(
+  report: FinalReport,
+  worldCtx?: WorldState | null
+): string {
+  const world = worldCtx ?? report.world;
+  const observations = world?.observations ?? [];
+  const headers = ["ID", "Day", "Source", "Text", "Area", "Site ID"];
+  const rows = observations.map((o) => [
+    o.id,
+    o.day,
+    o.source,
+    o.text,
+    o.area ?? "",
+    o.siteId ?? "",
   ]);
 
   return [

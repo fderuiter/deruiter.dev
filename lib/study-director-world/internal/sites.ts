@@ -505,7 +505,8 @@ export function closeVisit(world: WorldState): {
     }
   }
   const report = siteVisitReport(world, site, audited);
-  return { world: { ...world, study, visit: null }, report };
+  const siteVisitHistory = [...(world.siteVisitHistory ?? []), report];
+  return { world: { ...world, study, visit: null, siteVisitHistory }, report };
 }
 
 function arrive(world: WorldState, map: WorldMap, spawn: PlayerState) {

@@ -38,9 +38,21 @@
 
 ***
 
+### meetings
+
+> **meetings**: [`MeetingReport`](../../../study-director-world/types/interfaces/MeetingReport.md)[]
+
+***
+
 ### meterHistory
 
 > **meterHistory**: [`RetrospectiveMeterPoint`](RetrospectiveMeterPoint.md)[]
+
+***
+
+### observations
+
+> **observations**: [`Observation`](../../../study-director-world/types/interfaces/Observation.md)[]
 
 ***
 
@@ -59,6 +71,12 @@
 ### sites
 
 > **sites**: [`SiteState`](../../types/interfaces/SiteState.md)[]
+
+***
+
+### siteVisits
+
+> **siteVisits**: [`SiteVisitReport`](../../../study-director-world/types/interfaces/SiteVisitReport.md)[]
 
 ***
 

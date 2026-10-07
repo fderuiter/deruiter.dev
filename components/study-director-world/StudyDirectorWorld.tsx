@@ -164,7 +164,7 @@ const TONE_CLASS = {
 export const StudyDirectorWorld: React.FC<{
   onExit: () => void;
   /** Hands a finished study to the classic closeout: report, verdict, share card. */
-  onCloseout?: (study: StudyState) => void;
+  onCloseout?: (study: StudyState, world: WorldState) => void;
 }> = ({ onExit, onCloseout }) => {
   const [opened] = useState(openWorld);
   const [world, setWorld] = useState<WorldState>(opened.world);
@@ -490,7 +490,7 @@ export const StudyDirectorWorld: React.FC<{
         {report.complete ? (
           <button
             type="button"
-            onClick={() => (onCloseout ? onCloseout(study) : onExit())}
+            onClick={() => (onCloseout ? onCloseout(study, world) : onExit())}
             className="min-h-[40px] border border-[var(--sd-amber)] px-3 text-xs font-bold text-amber-300"
           >
             {onCloseout ? "See the closeout" : "Switch to the classic desk"}

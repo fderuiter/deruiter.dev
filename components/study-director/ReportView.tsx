@@ -5,10 +5,15 @@ import {
   computeMeters,
   exportAuditFindingsCsv,
   exportDecisionLogCsv,
+  exportDialogueCsv,
+  exportMeetingsCsv,
   exportMeterTrajectoryCsv,
   exportRetrospectiveJson,
+  exportSiteVisitsCsv,
   type FinalReport,
 } from "@/lib/study-director";
+import type { WorldState } from "@/lib/study-director-world";
+import { MeetingReplayPanel } from "../study-director-world/MeetingReplayPanel";
 import { Card } from "./Panels";
 import { HealthRadar } from "./HealthRadar";
 import { DecisionTimeline } from "./DecisionTimeline";
@@ -62,15 +67,26 @@ const Figure: React.FC<{
 /** The closeout: verdict, grade, the study's shape, and the inspection. */
 export const ReportView: React.FC<{
   report: FinalReport;
+  world?: WorldState;
   onRestart: () => void;
   /** Shown under the verdict: sharing and career news. */
   share?: React.ReactNode;
-}> = ({ report, onRestart, share }) => {
+}> = ({ report, world, onRestart, share }) => {
   const { evaluations: ev, profile, lock, inspection, state } = report;
   const verdict = verdictFor(report);
   const open = inspection.items.filter((i) => i.outcome !== "closed").length;
+  const worldCtx = world ?? report.world;
+  const meetings = worldCtx?.meetingHistory ?? [];
+  const [showMeetingReplay, setShowMeetingReplay] = React.useState(false);
+
   return (
     <div className="space-y-3" data-testid="study-report">
+      {showMeetingReplay ? (
+        <MeetingReplayPanel
+          meetings={meetings}
+          onClose={() => setShowMeetingReplay(false)}
+        />
+      ) : null}
       <section
         aria-label="Verdict"
         className="sd-enter flex flex-wrap items-center justify-between gap-4 border border-[var(--sd-hairline-strong)] bg-[var(--sd-surface)] p-5"
@@ -120,12 +136,10 @@ export const ReportView: React.FC<{
           <button
             type="button"
             onClick={() => {
-              const json = exportRetrospectiveJson(report);
-              downloadFile(
-                json,
-                `study-${state.setup.id}-retrospective.json`,
-                { mimeType: "application/json" }
-              );
+              const json = exportRetrospectiveJson(report, worldCtx);
+              downloadFile(json, `study-${state.setup.id}-retrospective.json`, {
+                mimeType: "application/json",
+              });
             }}
             className="border border-amber-500/80 bg-amber-500/10 px-3 py-1.5 text-xs font-bold text-amber-300 hover:bg-amber-500/20"
           >
@@ -135,11 +149,9 @@ export const ReportView: React.FC<{
             type="button"
             onClick={() => {
               const csv = exportDecisionLogCsv(report);
-              downloadFile(
-                csv,
-                `study-${state.setup.id}-decisions.csv`,
-                { mimeType: "text/csv" }
-              );
+              downloadFile(csv, `study-${state.setup.id}-decisions.csv`, {
+                mimeType: "text/csv",
+              });
             }}
             className="border border-zinc-700 bg-zinc-800/80 px-3 py-1.5 text-xs font-bold text-zinc-200 hover:border-amber-400 hover:text-amber-300"
           >
@@ -149,11 +161,9 @@ export const ReportView: React.FC<{
             type="button"
             onClick={() => {
               const csv = exportMeterTrajectoryCsv(report);
-              downloadFile(
-                csv,
-                `study-${state.setup.id}-meters.csv`,
-                { mimeType: "text/csv" }
-              );
+              downloadFile(csv, `study-${state.setup.id}-meters.csv`, {
+                mimeType: "text/csv",
+              });
             }}
             className="border border-zinc-700 bg-zinc-800/80 px-3 py-1.5 text-xs font-bold text-zinc-200 hover:border-amber-400 hover:text-amber-300"
           >
@@ -163,16 +173,60 @@ export const ReportView: React.FC<{
             type="button"
             onClick={() => {
               const csv = exportAuditFindingsCsv(report);
-              downloadFile(
-                csv,
-                `study-${state.setup.id}-findings.csv`,
-                { mimeType: "text/csv" }
-              );
+              downloadFile(csv, `study-${state.setup.id}-findings.csv`, {
+                mimeType: "text/csv",
+              });
             }}
             className="border border-zinc-700 bg-zinc-800/80 px-3 py-1.5 text-xs font-bold text-zinc-200 hover:border-amber-400 hover:text-amber-300"
           >
             Export Findings CSV
           </button>
+          <button
+            type="button"
+            onClick={() => {
+              const csv = exportMeetingsCsv(report, worldCtx);
+              downloadFile(csv, `study-${state.setup.id}-meetings.csv`, {
+                mimeType: "text/csv",
+              });
+            }}
+            className="border border-zinc-700 bg-zinc-800/80 px-3 py-1.5 text-xs font-bold text-zinc-200 hover:border-amber-400 hover:text-amber-300"
+          >
+            Export Meetings CSV
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const csv = exportSiteVisitsCsv(report, worldCtx);
+              downloadFile(csv, `study-${state.setup.id}-site-visits.csv`, {
+                mimeType: "text/csv",
+              });
+            }}
+            className="border border-zinc-700 bg-zinc-800/80 px-3 py-1.5 text-xs font-bold text-zinc-200 hover:border-amber-400 hover:text-amber-300"
+          >
+            Export Site Visits CSV
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const csv = exportDialogueCsv(report, worldCtx);
+              downloadFile(csv, `study-${state.setup.id}-dialogue.csv`, {
+                mimeType: "text/csv",
+              });
+            }}
+            className="border border-zinc-700 bg-zinc-800/80 px-3 py-1.5 text-xs font-bold text-zinc-200 hover:border-amber-400 hover:text-amber-300"
+          >
+            Export Dialogue CSV
+          </button>
+          {meetings.length > 0 ? (
+            <button
+              type="button"
+              onClick={() => setShowMeetingReplay(true)}
+              className="border border-amber-500/80 bg-amber-500/10 px-3 py-1.5 text-xs font-bold text-amber-300 hover:bg-amber-500/20"
+              data-testid="report-meeting-replay-button"
+            >
+              Replay Meetings ({meetings.length})
+            </button>
+          ) : null}
         </div>
       </Card>
 

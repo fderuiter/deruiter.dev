@@ -16,7 +16,7 @@ diary log.
 
 ### config
 
-`Partial`\<[`ShiftConfig`](../../../types/interfaces/ShiftConfig.md)\>
+`Partial`\<[`ShiftConfig`](../../../types/type-aliases/ShiftConfig.md)\>
 
 ### timeline
 

@@ -10,7 +10,7 @@
 
 ### config
 
-> `readonly` **config**: [`ShiftConfig`](ShiftConfig.md)
+> `readonly` **config**: [`ShiftScenarioConfig`](ShiftScenarioConfig.md)
 
 ***
 
@@ -19,6 +19,14 @@
 > `readonly` **draws**: `number`
 
 How many random draws this shift has consumed.
+
+***
+
+### history?
+
+> `readonly` `optional` **history?**: readonly [`ShiftActionEntry`](ShiftActionEntry.md)[]
+
+Recorded action history for replay and telemetry export.
 
 ***
 

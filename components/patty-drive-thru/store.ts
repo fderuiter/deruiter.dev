@@ -19,8 +19,8 @@ import {
   type LookPreset,
   type LookState,
   type ShiftAction,
-  type ShiftConfig,
   type ShiftEvent,
+  type ShiftScenarioConfig,
   type ShiftState,
 } from "@/lib/patty-drive-thru";
 
@@ -55,7 +55,7 @@ export interface BoothState {
 
 export interface BoothActions {
   /** Starts a fresh shift from the diary intro or the end screen. */
-  clockIn: (config?: Partial<ShiftConfig>) => void;
+  clockIn: (config?: Partial<ShiftScenarioConfig>) => void;
   /** Goes back to the diary intro. */
   backToIntro: () => void;
   /** Advances the shift clock. */
@@ -181,7 +181,7 @@ function lateOrders(shift: ShiftState): number[] {
  * own store, so tests and remounts never share a shift.
  */
 export function createBoothStore(
-  config: Partial<ShiftConfig> = DEFAULT_SHIFT_CONFIG
+  config: Partial<ShiftScenarioConfig> = DEFAULT_SHIFT_CONFIG
 ): BoothStore {
   const listeners = new Set<(events: readonly ShiftEvent[]) => void>();
   let captionId = 0;

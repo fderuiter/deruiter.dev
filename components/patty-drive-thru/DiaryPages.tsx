@@ -1,16 +1,20 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { FieldManualButton } from "@/components/FieldManualButton";
+import { ScenarioCustomizerModal } from "./ScenarioCustomizerModal";
 import {
   CLOSING_NOTE,
   COMPANION_POST_PATH,
   DIARY_INTRO,
   computePayStub,
+  downloadShiftTelemetryCsv,
+  downloadShiftTelemetryJson,
   formatCents,
   getShiftEnding,
   scoreShift,
+  type ShiftScenarioConfig,
   type ShiftState,
 } from "@/lib/patty-drive-thru";
 
@@ -49,8 +53,14 @@ function useFocusOnMount<T extends HTMLElement>() {
 }
 
 /** The diary page shown before the player clocks in (#1814). */
-export function DiaryIntroPage({ onClockIn }: { onClockIn: () => void }) {
+export function DiaryIntroPage({
+  onClockIn,
+}: {
+  onClockIn: (config?: ShiftScenarioConfig) => void;
+}) {
   const buttonRef = useFocusOnMount<HTMLButtonElement>();
+  const [isCustomizerOpen, setIsCustomizerOpen] = useState(false);
+
   return (
     <article
       className={PAGE_CLASS}
@@ -74,18 +84,32 @@ export function DiaryIntroPage({ onClockIn }: { onClockIn: () => void }) {
         </p>
       ))}
       <div className="flex flex-wrap items-center gap-3">
-        <ShiftButton ref={buttonRef} onClick={onClockIn}>
+        <ShiftButton ref={buttonRef} onClick={() => onClockIn()}>
           Clock in
         </ShiftButton>
+        <button
+          type="button"
+          onClick={() => setIsCustomizerOpen(true)}
+          className="min-h-12 rounded border-2 border-[var(--pdt-paper-rule)] bg-black/5 px-4 font-mono text-xs font-bold uppercase tracking-wide hover:bg-black/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--pdt-focus)]"
+          data-testid="pdt-open-customizer"
+        >
+          Customize Shift
+        </button>
         <FieldManualButton manualId="patty-drive-thru" label="Manual" />
       </div>
+
+      <ScenarioCustomizerModal
+        isOpen={isCustomizerOpen}
+        onClose={() => setIsCustomizerOpen(false)}
+        onClockIn={onClockIn}
+      />
     </article>
   );
 }
 
 interface ShiftEndPageProps {
   shift: ShiftState;
-  onClockIn: () => void;
+  onClockIn: (config?: ShiftScenarioConfig) => void;
 }
 
 /** The pay stub and the closing note, shown when the shift ends. */
@@ -162,6 +186,39 @@ export function ShiftEndPage({ shift, onClockIn }: ShiftEndPageProps) {
         </p>
       </section>
 
+      {/* Telemetry Export Section */}
+      <section
+        aria-label="Shift telemetry export"
+        className="rounded border border-[var(--pdt-paper-rule)] bg-black/5 p-3 font-mono text-xs"
+        data-testid="pdt-telemetry-export-section"
+      >
+        <h3 className="font-bold uppercase tracking-wider text-[var(--pdt-paper-dim)]">
+          Telemetry & Replay Logs
+        </h3>
+        <p className="mt-1 text-[11px] text-[var(--pdt-paper-dim)]">
+          Export full shift telemetry data including operational parameters and
+          time-series events.
+        </p>
+        <div className="mt-2.5 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => downloadShiftTelemetryJson(shift)}
+            className="rounded border border-[var(--pdt-paper-rule)] bg-[var(--pdt-paper)] px-3 py-1.5 font-bold hover:bg-black/10"
+            data-testid="pdt-export-json"
+          >
+            Export Telemetry (JSON)
+          </button>
+          <button
+            type="button"
+            onClick={() => downloadShiftTelemetryCsv(shift)}
+            className="rounded border border-[var(--pdt-paper-rule)] bg-[var(--pdt-paper)] px-3 py-1.5 font-bold hover:bg-black/10"
+            data-testid="pdt-export-csv"
+          >
+            Export Telemetry (CSV)
+          </button>
+        </div>
+      </section>
+
       <section aria-label="Closing note" className="space-y-3">
         {CLOSING_NOTE.map((paragraph) => (
           <p key={paragraph} className="text-sm leading-relaxed">
@@ -171,7 +228,9 @@ export function ShiftEndPage({ shift, onClockIn }: ShiftEndPageProps) {
       </section>
 
       <div className="flex flex-wrap items-center gap-3">
-        <ShiftButton onClick={onClockIn}>Work another shift</ShiftButton>
+        <ShiftButton onClick={() => onClockIn()}>
+          Work another shift
+        </ShiftButton>
         <Link
           href={COMPANION_POST_PATH}
           className="inline-flex min-h-12 items-center font-mono text-xs font-bold underline underline-offset-4 hover:text-[var(--pdt-paper-dim)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--pdt-focus)]"

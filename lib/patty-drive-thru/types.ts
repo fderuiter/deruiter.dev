@@ -58,11 +58,40 @@ export interface PosCursor {
   readonly taps: number;
 }
 
-export interface ShiftConfig {
+export interface ShiftScenarioConfig {
   /** Any string; the same seed and actions replay to the same shift. */
   readonly seed: string;
   /** Real seconds the shift lasts. */
   readonly durationSec: number;
+  /** Minimum gap between car arrivals in seconds. */
+  readonly arrivalGapMinSec?: number;
+  /** Maximum gap between car arrivals in seconds. */
+  readonly arrivalGapMaxSec?: number;
+  /** Shift time of first order arrival. */
+  readonly firstArrivalSec?: number;
+  /** Meter loss on expired order. */
+  readonly sosLossExpired?: number;
+  /** Meter loss on late order bump. */
+  readonly sosLossLate?: number;
+  /** Meter gain on on-time order bump. */
+  readonly sosGainOnTime?: number;
+  /** Meter gain on fast order bump. */
+  readonly sosGainFast?: number;
+  /** Seconds of idle before manager notices. */
+  readonly idleGraceSec?: number;
+  /** Points gained per second when idle after grace period. */
+  readonly idleRatePerSec?: number;
+  /** Chance automatic drink dispenser drops drink (0-1). */
+  readonly dispenserFailChance?: number;
+  /** Custom root node of the POS menu tree. */
+  readonly posMenu?: PosNode;
+}
+
+export type ShiftConfig = ShiftScenarioConfig;
+
+export interface ShiftActionEntry {
+  readonly at: number;
+  readonly action: ShiftAction;
 }
 
 export interface ShiftTallies {
@@ -76,7 +105,7 @@ export interface ShiftTallies {
 }
 
 export interface ShiftState {
-  readonly config: ShiftConfig;
+  readonly config: ShiftScenarioConfig;
   /** Shift time in seconds, always between 0 and durationSec. */
   readonly time: number;
   readonly outcome: ShiftOutcome;
@@ -93,6 +122,8 @@ export interface ShiftState {
   readonly nextArrivalAt: number;
   /** How many random draws this shift has consumed. */
   readonly draws: number;
+  /** Recorded action history for replay and telemetry export. */
+  readonly history?: readonly ShiftActionEntry[];
 }
 
 /** Everything the player can do. */

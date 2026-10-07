@@ -5,6 +5,7 @@ import type {
   ModifierId,
   PosNode,
   ShiftConfig,
+  ShiftScenarioConfig,
 } from "./types";
 
 /**
@@ -193,3 +194,52 @@ export const LOOK_PRESETS: Readonly<
 export const SCORE_PER_SERVED = 10;
 export const SCORE_LATE_PENALTY = 5;
 export const SCORE_COMPLETED_BONUS = 50;
+
+/** Built-in scenario presets for stress tests and ergonomic analysis. */
+export const SCENARIO_PRESETS: Readonly<Record<string, ShiftScenarioConfig>> = {
+  standard: {
+    seed: "first-job",
+    durationSec: 180,
+    arrivalGapMinSec: 7,
+    arrivalGapMaxSec: 15,
+    firstArrivalSec: 2,
+    sosLossExpired: 15,
+    sosLossLate: 5,
+    sosGainOnTime: 2,
+    sosGainFast: 3,
+    idleGraceSec: 6,
+    idleRatePerSec: 12,
+    dispenserFailChance: 0.4,
+    posMenu: POS_MENU,
+  },
+  lunchRush: {
+    seed: "lunch-rush",
+    durationSec: 120,
+    arrivalGapMinSec: 3,
+    arrivalGapMaxSec: 8,
+    firstArrivalSec: 1,
+    sosLossExpired: 20,
+    sosLossLate: 8,
+    sosGainOnTime: 3,
+    sosGainFast: 5,
+    idleGraceSec: 4,
+    idleRatePerSec: 15,
+    dispenserFailChance: 0.3,
+    posMenu: POS_MENU,
+  },
+  failingDispenser: {
+    seed: "failing-dispenser",
+    durationSec: 180,
+    arrivalGapMinSec: 6,
+    arrivalGapMaxSec: 12,
+    dispenserFailChance: 0.85,
+    posMenu: POS_MENU,
+  },
+  strictManagement: {
+    seed: "strict-boss",
+    durationSec: 180,
+    idleGraceSec: 2,
+    idleRatePerSec: 25,
+    posMenu: POS_MENU,
+  },
+};

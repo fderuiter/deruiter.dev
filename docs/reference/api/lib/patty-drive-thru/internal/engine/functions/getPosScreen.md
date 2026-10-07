@@ -15,7 +15,7 @@ menu falls back to the home screen.
 
 ### state
 
-`Pick`\<[`ShiftState`](../../../types/interfaces/ShiftState.md), `"pos"`\>
+`Pick`\<[`ShiftState`](../../../types/interfaces/ShiftState.md), `"pos"`\> & `object`
 
 ## Returns
 

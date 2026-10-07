@@ -152,6 +152,18 @@ Re-exports [DISPENSER_ITEMS](presets/variables/DISPENSER_ITEMS.md)
 
 ***
 
+### downloadShiftTelemetryCsv
+
+Re-exports [downloadShiftTelemetryCsv](internal/telemetry/functions/downloadShiftTelemetryCsv.md)
+
+***
+
+### downloadShiftTelemetryJson
+
+Re-exports [downloadShiftTelemetryJson](internal/telemetry/functions/downloadShiftTelemetryJson.md)
+
+***
+
 ### EVENT\_CAPTIONS
 
 Re-exports [EVENT_CAPTIONS](internal/diary/variables/EVENT_CAPTIONS.md)
@@ -161,6 +173,18 @@ Re-exports [EVENT_CAPTIONS](internal/diary/variables/EVENT_CAPTIONS.md)
 ### EXPIRE\_AFTER\_SEC
 
 Re-exports [EXPIRE_AFTER_SEC](presets/variables/EXPIRE_AFTER_SEC.md)
+
+***
+
+### exportShiftTelemetryCsv
+
+Re-exports [exportShiftTelemetryCsv](internal/telemetry/functions/exportShiftTelemetryCsv.md)
+
+***
+
+### exportShiftTelemetryJson
+
+Re-exports [exportShiftTelemetryJson](internal/telemetry/functions/exportShiftTelemetryJson.md)
 
 ***
 
@@ -179,6 +203,12 @@ Re-exports [formatCents](internal/view/functions/formatCents.md)
 ### formatClock
 
 Re-exports [formatClock](internal/view/functions/formatClock.md)
+
+***
+
+### generateShiftTelemetry
+
+Re-exports [generateShiftTelemetry](internal/telemetry/functions/generateShiftTelemetry.md)
 
 ***
 
@@ -500,6 +530,12 @@ Re-exports [replayShift](internal/engine/functions/replayShift.md)
 
 ***
 
+### SCENARIO\_PRESETS
+
+Re-exports [SCENARIO_PRESETS](presets/variables/SCENARIO_PRESETS.md)
+
+***
+
 ### SCORE\_COMPLETED\_BONUS
 
 Re-exports [SCORE_COMPLETED_BONUS](presets/variables/SCORE_COMPLETED_BONUS.md)
@@ -536,9 +572,15 @@ Re-exports [ShiftAction](types/type-aliases/ShiftAction.md)
 
 ***
 
+### ShiftActionEntry
+
+Re-exports [ShiftActionEntry](types/interfaces/ShiftActionEntry.md)
+
+***
+
 ### ShiftConfig
 
-Re-exports [ShiftConfig](types/interfaces/ShiftConfig.md)
+Re-exports [ShiftConfig](types/type-aliases/ShiftConfig.md)
 
 ***
 
@@ -551,6 +593,12 @@ Re-exports [ShiftEvent](types/type-aliases/ShiftEvent.md)
 ### ShiftOutcome
 
 Re-exports [ShiftOutcome](types/type-aliases/ShiftOutcome.md)
+
+***
+
+### ShiftScenarioConfig
+
+Re-exports [ShiftScenarioConfig](types/interfaces/ShiftScenarioConfig.md)
 
 ***
 
@@ -635,6 +683,12 @@ Re-exports [TILL_SHORT_PER_EXPIRED_CENTS](presets/variables/TILL_SHORT_PER_EXPIR
 ### UNIFORM\_DEDUCTION\_CENTS
 
 Re-exports [UNIFORM_DEDUCTION_CENTS](presets/variables/UNIFORM_DEDUCTION_CENTS.md)
+
+***
+
+### validatePosTree
+
+Re-exports [validatePosTree](internal/engine/functions/validatePosTree.md)
 
 ***
 

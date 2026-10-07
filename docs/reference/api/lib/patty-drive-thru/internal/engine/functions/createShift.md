@@ -16,7 +16,7 @@ default and then held between 10 seconds and one hour.
 
 ### config?
 
-`Partial`\<[`ShiftConfig`](../../../types/interfaces/ShiftConfig.md)\> = `{}`
+`Partial`\<[`ShiftScenarioConfig`](../../../types/interfaces/ShiftScenarioConfig.md)\> = `{}`
 
 ## Returns
 

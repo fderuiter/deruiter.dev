@@ -19,3 +19,4 @@
 - [isShiftOver](functions/isShiftOver.md)
 - [replayShift](functions/replayShift.md)
 - [stepShift](functions/stepShift.md)
+- [validatePosTree](functions/validatePosTree.md)

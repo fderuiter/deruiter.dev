@@ -22,6 +22,7 @@ import {
   scoreShift,
   type ShiftAction,
   type ShiftConfig,
+  type ShiftScenarioConfig,
 } from "@/lib/patty-drive-thru";
 import { recordArcadeScore } from "@/lib/arcade-achievements";
 import { getSoundEngine } from "@/lib/audio/sound-engine";
@@ -140,14 +141,18 @@ export function PattyDriveThruGame({
     dragging: boolean;
   } | null>(null);
 
-  const clockIn = useCallback(() => {
-    store
-      .getState()
-      .clockIn(
-        config?.seed ? undefined : { seed: seedFromUrl() ?? freshSeed() }
-      );
-    boundaryRef.current?.focus({ preventScroll: true });
-  }, [store, config?.seed]);
+  const clockIn = useCallback(
+    (customConfig?: Partial<ShiftScenarioConfig>) => {
+      const mergedConfig = customConfig
+        ? { ...customConfig }
+        : config?.seed
+          ? { ...config }
+          : { ...config, seed: seedFromUrl() ?? freshSeed() };
+      store.getState().clockIn(mergedConfig);
+      boundaryRef.current?.focus({ preventScroll: true });
+    },
+    [store, config]
+  );
 
   const openRegister = useCallback(() => {
     if (store.getState().phase !== "shift") return;

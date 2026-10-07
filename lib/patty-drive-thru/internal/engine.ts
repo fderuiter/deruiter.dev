@@ -51,18 +51,72 @@ import {
 } from "../presets";
 import type {
   KdsBand,
+  MenuItemId,
   Meters,
+  ModifierId,
   Order,
   OrderItem,
   PayStub,
   PosNode,
   ShiftAction,
+  ShiftActionEntry,
   ShiftConfig,
   ShiftEvent,
   ShiftOutcome,
+  ShiftScenarioConfig,
   ShiftState,
   StepResult,
 } from "../types";
+
+/**
+ * Validates that a POS menu tree contains all mandatory menu items and modifiers.
+ */
+export function validatePosTree(root: PosNode): {
+  valid: boolean;
+  missingItems: MenuItemId[];
+  missingModifiers: ModifierId[];
+  errors: string[];
+} {
+  const foundItems = new Set<MenuItemId>();
+  const foundModifiers = new Set<ModifierId>();
+
+  function traverse(node: PosNode) {
+    if (node.itemId) foundItems.add(node.itemId);
+    if (node.modifierId) foundModifiers.add(node.modifierId);
+    if (node.children) {
+      for (const child of node.children) {
+        traverse(child);
+      }
+    }
+  }
+
+  if (root) {
+    traverse(root);
+  }
+
+  const requiredItems: MenuItemId[] = [...ORDERABLE_ITEMS];
+  const requiredModifiers: ModifierId[] = ["no-pickles"];
+
+  const missingItems = requiredItems.filter((item) => !foundItems.has(item));
+  const missingModifiers = requiredModifiers.filter(
+    (mod) => !foundModifiers.has(mod)
+  );
+
+  const errors: string[] = [];
+  if (missingItems.length > 0) {
+    errors.push(`Missing mandatory menu items: ${missingItems.join(", ")}`);
+  }
+  if (missingModifiers.length > 0) {
+    errors.push(`Missing mandatory modifiers: ${missingModifiers.join(", ")}`);
+  }
+
+  return {
+    valid: missingItems.length === 0 && missingModifiers.length === 0,
+    missingItems,
+    missingModifiers,
+    errors,
+  };
+}
 
 const MIN_DURATION_SEC = 10;
 const MAX_DURATION_SEC = 3600;
@@ -80,7 +134,9 @@ function unchanged(state: ShiftState): StepResult {
  * default, and a duration that is not a finite number is replaced by the
  * default and then held between 10 seconds and one hour.
  */
-export function createShift(config: Partial<ShiftConfig> = {}): ShiftState {
+export function createShift(
+  config: Partial<ShiftScenarioConfig> = {}
+): ShiftState {
   const seed =
     typeof config.seed === "string" && config.seed.length > 0
       ? config.seed
@@ -92,8 +148,18 @@ export function createShift(config: Partial<ShiftConfig> = {}): ShiftState {
       : DEFAULT_SHIFT_CONFIG.durationSec;
   const durationSec = clamp(rawDuration, MIN_DURATION_SEC, MAX_DURATION_SEC);
 
+  const firstArrivalSec =
+    typeof config.firstArrivalSec === "number" &&
+    Number.isFinite(config.firstArrivalSec)
+      ? Math.max(0, config.firstArrivalSec)
+      : FIRST_ARRIVAL_SEC;
+
   return {
-    config: { seed, durationSec },
+    config: {
+      ...config,
+      seed,
+      durationSec,
+    },
     time: 0,
     outcome: "playing",
     meters: { ...METER_START },
@@ -111,8 +177,9 @@ export function createShift(config: Partial<ShiftConfig> = {}): ShiftState {
     lastActionAt: 0,
     wipeReadyAt: 0,
     nextOrderId: 1,
-    nextArrivalAt: FIRST_ARRIVAL_SEC,
+    nextArrivalAt: firstArrivalSec,
     draws: 0,
+    history: [],
   };
 }
 
@@ -147,11 +214,14 @@ export function isAgeLocked(itemId: OrderItem["itemId"]): boolean {
  * The POS screen the player is looking at. A path that no longer matches the
  * menu falls back to the home screen.
  */
-export function getPosScreen(state: Pick<ShiftState, "pos">): PosNode {
-  let node: PosNode = POS_MENU;
+export function getPosScreen(
+  state: Pick<ShiftState, "pos"> & { config?: Partial<ShiftScenarioConfig> }
+): PosNode {
+  const rootMenu = state.config?.posMenu ?? POS_MENU;
+  let node: PosNode = rootMenu;
   for (const id of state.pos.path) {
     const next = node.children?.find((child) => child.id === id);
-    if (!next || !next.children) return POS_MENU;
+    if (!next || !next.children) return rootMenu;
     node = next;
   }
   return node;
@@ -245,6 +315,12 @@ export function stepShift(state: ShiftState, dtSec: number): StepResult {
     return unchanged(state);
   }
   const { seed, durationSec } = state.config;
+  const gapMin = state.config.arrivalGapMinSec ?? ARRIVAL_GAP_MIN_SEC;
+  const gapMax = state.config.arrivalGapMaxSec ?? ARRIVAL_GAP_MAX_SEC;
+  const sosLossExpired = state.config.sosLossExpired ?? SOS_LOSS_EXPIRED;
+  const idleGraceSec = state.config.idleGraceSec ?? IDLE_GRACE_SEC;
+  const idleRatePerSec = state.config.idleRatePerSec ?? IDLE_RATE_PER_SEC;
+
   const start = state.time;
   const time = Math.min(durationSec, start + clamp(dtSec, 0, MAX_STEP_SEC));
   const events: ShiftEvent[] = [];
@@ -263,9 +339,7 @@ export function stepShift(state: ShiftState, dtSec: number): StepResult {
       events.push({ type: "order-arrived", orderId: nextOrderId });
       nextOrderId += 1;
     }
-    const gap =
-      ARRIVAL_GAP_MIN_SEC +
-      uniformAt(seed, draws++) * (ARRIVAL_GAP_MAX_SEC - ARRIVAL_GAP_MIN_SEC);
+    const gap = gapMin + uniformAt(seed, draws++) * (gapMax - gapMin);
     nextArrivalAt += gap;
   }
 
@@ -281,7 +355,7 @@ export function stepShift(state: ShiftState, dtSec: number): StepResult {
     orders = orders.filter((o) => time - o.arrivedAt < EXPIRE_AFTER_SEC);
     meters = {
       ...meters,
-      sos: clampMeter(meters.sos - SOS_LOSS_EXPIRED * expired.length),
+      sos: clampMeter(meters.sos - sosLossExpired * expired.length),
     };
     tallies = { ...tallies, expired: tallies.expired + expired.length };
     for (const order of expired) {
@@ -290,12 +364,12 @@ export function stepShift(state: ShiftState, dtSec: number): StepResult {
     }
   }
 
-  const idleFrom = Math.max(start, state.lastActionAt + IDLE_GRACE_SEC);
+  const idleFrom = Math.max(start, state.lastActionAt + idleGraceSec);
   const idleSeconds = Math.max(0, time - idleFrom);
   if (idleSeconds > 0) {
     meters = {
       ...meters,
-      idle: clampMeter(meters.idle + idleSeconds * IDLE_RATE_PER_SEC),
+      idle: clampMeter(meters.idle + idleSeconds * idleRatePerSec),
     };
     if (meters.idle >= 100) {
       meters = {
@@ -417,8 +491,9 @@ function ringLeaf(
 
   let draws = state.draws;
   let dropped = false;
+  const failChance = state.config.dispenserFailChance ?? DISPENSER_FAIL_CHANCE;
   if (DISPENSER_ITEMS.includes(item.itemId)) {
-    dropped = uniformAt(state.config.seed, draws++) < DISPENSER_FAIL_CHANCE;
+    dropped = uniformAt(state.config.seed, draws++) < failChance;
   }
   events.push({ type: "item-rung", orderId: order.id, itemId: item.itemId });
   let next = replaceOrder(
@@ -444,6 +519,7 @@ function applyPosTap(
   events: ShiftEvent[]
 ): ShiftState {
   if (typeof nodeId !== "string") return state;
+  const rootMenu = state.config.posMenu ?? POS_MENU;
   const screen = getPosScreen(state);
   const node = screen.children?.find((child) => child.id === nodeId);
   if (!node) return state;
@@ -452,7 +528,7 @@ function applyPosTap(
     pos: { ...state.pos, taps: state.pos.taps + 1 },
   });
   if (node.children) {
-    const path = screen === POS_MENU ? [node.id] : [...state.pos.path, node.id];
+    const path = screen === rootMenu ? [node.id] : [...state.pos.path, node.id];
     return { ...tapped, pos: { ...tapped.pos, path } };
   }
   return ringLeaf(tapped, node, events);
@@ -467,12 +543,15 @@ function applyBump(
     return wrongEntry(acted(state), "bump", events);
   }
   const band = getKdsBand(getOrderAge(state, order));
+  const sosGainFast = state.config.sosGainFast ?? SOS_GAIN_FAST;
+  const sosGainOnTime = state.config.sosGainOnTime ?? SOS_GAIN_ON_TIME;
+  const sosLossLate = state.config.sosLossLate ?? SOS_LOSS_LATE;
   const delta =
     band === "green"
-      ? SOS_GAIN_FAST
+      ? sosGainFast
       : band === "yellow"
-        ? SOS_GAIN_ON_TIME
-        : -SOS_LOSS_LATE;
+        ? sosGainOnTime
+        : -sosLossLate;
   events.push({ type: "bumped", orderId: order.id, band });
   const base = acted(state);
   return {
@@ -584,7 +663,11 @@ export function applyAction(
   }
 
   if (next === state) return unchanged(state);
-  return { state: endIfOver(next, events), events };
+  const history: readonly ShiftActionEntry[] = [
+    ...(state.history ?? []),
+    { at: state.time, action },
+  ];
+  return { state: endIfOver({ ...next, history }, events), events };
 }
 
 /**

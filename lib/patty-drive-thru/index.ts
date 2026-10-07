@@ -19,7 +19,15 @@ export {
   isShiftOver,
   replayShift,
   stepShift,
+  validatePosTree,
 } from "./internal/engine";
+export {
+  downloadShiftTelemetryCsv,
+  downloadShiftTelemetryJson,
+  exportShiftTelemetryCsv,
+  exportShiftTelemetryJson,
+  generateShiftTelemetry,
+} from "./internal/telemetry";
 export {
   describeOrder,
   formatCents,

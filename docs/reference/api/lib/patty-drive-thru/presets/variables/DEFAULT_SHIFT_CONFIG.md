@@ -6,4 +6,4 @@
 
 # Variable: DEFAULT\_SHIFT\_CONFIG
 
-> `const` **DEFAULT\_SHIFT\_CONFIG**: [`ShiftConfig`](../../types/interfaces/ShiftConfig.md)
+> `const` **DEFAULT\_SHIFT\_CONFIG**: [`ShiftConfig`](../../types/type-aliases/ShiftConfig.md)

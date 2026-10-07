@@ -62,6 +62,21 @@ import {
   allocateFlashVariable,
   clearFlashStorage,
 } from "@/lib/garmin-engine";
+import {
+  TelemetryBuffer,
+  exportTelemetryToCsv,
+  exportTelemetryToFit,
+  downloadClientFile,
+  type TelemetrySample,
+} from "@/lib/garmin-telemetry-buffer";
+import {
+  loadWidgetLayout,
+  saveWidgetLayout,
+  DEFAULT_WIDGET_LAYOUT,
+  type WidgetLayoutConfig,
+  type WidgetSlot,
+  type MetricKey,
+} from "@/lib/garmin-widget-layout";
 
 /** Flash written by the Write NV Flash button; matches its label. */
 const NV_WRITE_KB = 8;
@@ -187,6 +202,54 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
   // (#1648).
   const isWipeGestureRef = useRef(false);
 
+  // Telemetry buffer & Widget layout
+  const telemetryBufferRef = useRef<TelemetryBuffer>(new TelemetryBuffer());
+  const [telemetrySamples, setTelemetrySamples] = useState<TelemetrySample[]>(
+    []
+  );
+  const [widgetLayout, setWidgetLayout] = useState<WidgetLayoutConfig>(() =>
+    loadWidgetLayout()
+  );
+  const widgetLayoutRef = useRef<WidgetLayoutConfig>(widgetLayout);
+  useEffect(() => {
+    widgetLayoutRef.current = widgetLayout;
+  }, [widgetLayout]);
+
+  const handleUpdateLayoutSlot = useCallback(
+    (slot: WidgetSlot, metric: MetricKey) => {
+      setWidgetLayout((prev) => {
+        const next = { ...prev, [slot]: metric };
+        saveWidgetLayout(next);
+        return next;
+      });
+    },
+    []
+  );
+
+  const handleResetLayout = useCallback(() => {
+    setWidgetLayout(DEFAULT_WIDGET_LAYOUT);
+    saveWidgetLayout(DEFAULT_WIDGET_LAYOUT);
+  }, []);
+
+  const handleExportCsv = useCallback(() => {
+    const samples = telemetryBufferRef.current.getSamples();
+    if (samples.length === 0) return;
+    const csv = exportTelemetryToCsv(samples);
+    downloadClientFile(csv, "garmin_telemetry.csv", "text/csv");
+  }, []);
+
+  const handleExportFit = useCallback(() => {
+    const samples = telemetryBufferRef.current.getSamples();
+    if (samples.length === 0) return;
+    const fit = exportTelemetryToFit(samples);
+    downloadClientFile(fit, "garmin_telemetry.fit", "application/octet-stream");
+  }, []);
+
+  const handleClearTelemetry = useCallback(() => {
+    telemetryBufferRef.current.clear();
+    setTelemetrySamples([]);
+  }, []);
+
   // References for Canvas and Animation Loop
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const { toGameCoordinates } = useResponsiveCanvas({
@@ -205,7 +268,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       const ctx = canvasRef.current?.getContext("2d");
       if (!ctx) return;
       applyCanvasScale(ctx, scale);
-      renderWatchFace(ctx, stateRef.current);
+      renderWatchFace(ctx, stateRef.current, widgetLayoutRef.current);
     },
   });
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -798,6 +861,12 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
           }
         );
 
+        // Record telemetry sample
+        telemetryBufferRef.current.recordSample(nextState);
+        if (frameCountRef.current % 10 === 0) {
+          setTelemetrySamples(telemetryBufferRef.current.getSamples());
+        }
+
         // Save a new high score when the run ends, and about once a second
         // while it's still going. The engine raises highScore to the score
         // every tick, so compare against the stored best instead.
@@ -820,7 +889,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
         if (ctx) {
           const scale = canvasScaleRef.current;
           applyCanvasScale(ctx, scale);
-          renderWatchFace(ctx, stateRef.current);
+          renderWatchFace(ctx, stateRef.current, widgetLayoutRef.current);
         }
       }
     },
@@ -1200,6 +1269,13 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
             handleDrainBattery();
             returnFocusAfterPointerClick(e);
           }}
+          telemetrySamples={telemetrySamples}
+          onExportCsv={handleExportCsv}
+          onExportFit={handleExportFit}
+          onClearTelemetry={handleClearTelemetry}
+          widgetLayout={widgetLayout}
+          onUpdateLayoutSlot={handleUpdateLayoutSlot}
+          onResetLayout={handleResetLayout}
         >
           {runEnded && !resultDismissed && (
             <ResultCard

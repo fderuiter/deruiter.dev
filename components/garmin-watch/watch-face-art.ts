@@ -19,7 +19,6 @@
 import { clamp, gameFont } from "@/lib/game-utils";
 import {
   CANVAS_SIZE,
-  DEVICE_PROFILES,
   GROUND_Y,
   PLAYER_X,
   type CrashReport,
@@ -28,6 +27,11 @@ import {
   type ObstacleType,
   type VariableType,
 } from "@/lib/garmin-engine";
+import {
+  DEFAULT_WIDGET_LAYOUT,
+  METRIC_DEFINITIONS,
+  type WidgetLayoutConfig,
+} from "@/lib/garmin-widget-layout";
 
 type Ctx = CanvasRenderingContext2D;
 
@@ -681,7 +685,12 @@ function drawObstacle(ctx: Ctx, obs: Obstacle) {
 
 // ------------------------------------------------------- data-field ring
 
-function drawRingArc(ctx: Ctx, side: "ram" | "flash", fraction: number) {
+function drawRingArc(
+  ctx: Ctx,
+  side: "ram" | "flash",
+  fraction: number,
+  tone: MeterTone = meterTone(fraction)
+) {
   const track = ringFillSpan(side, 1);
   ctx.lineCap = "round";
   ctx.lineWidth = RING_WIDTH;
@@ -698,7 +707,7 @@ function drawRingArc(ctx: Ctx, side: "ram" | "flash", fraction: number) {
   ctx.stroke();
   if (fraction <= 0) return;
   const fill = ringFillSpan(side, fraction);
-  ctx.strokeStyle = TONE_COLOR[meterTone(fraction)];
+  ctx.strokeStyle = TONE_COLOR[tone];
   ctx.beginPath();
   ctx.arc(
     FACE_CENTER,
@@ -732,77 +741,106 @@ function drawBatteryGlyph(ctx: Ctx, x: number, y: number, percent: number) {
 }
 
 /**
- * The data fields: heart rate, score and battery across the top, RAM and NV
- * flash as arcs with readouts down the sides, and steps, distance and heap
- * variables in the ground strip below the lane.
+ * The data fields: rendered according to the configurable WidgetLayoutConfig.
  */
-function drawDataRing(ctx: Ctx, state: GameEngineState) {
-  const profile = DEVICE_PROFILES[state.device] ?? DEVICE_PROFILES.fenix;
-  const ramFraction = state.allocatedRamKb / profile.ramLimitKb;
-  const flashFraction = state.allocatedFlashKb / profile.flashLimitKb;
-  drawRingArc(ctx, "ram", ramFraction);
-  drawRingArc(ctx, "flash", flashFraction);
+function drawDataRing(
+  ctx: Ctx,
+  state: GameEngineState,
+  layout: WidgetLayoutConfig = DEFAULT_WIDGET_LAYOUT
+) {
+  const leftMetric =
+    METRIC_DEFINITIONS[layout.leftArc] ?? METRIC_DEFINITIONS.ram;
+  const rightMetric =
+    METRIC_DEFINITIONS[layout.rightArc] ?? METRIC_DEFINITIONS.flash;
+  const topLeftMetric =
+    METRIC_DEFINITIONS[layout.topLeft] ?? METRIC_DEFINITIONS.heartRate;
+  const topRightMetric =
+    METRIC_DEFINITIONS[layout.topRight] ?? METRIC_DEFINITIONS.battery;
+
+  const leftFraction = leftMetric.resolveFraction(state);
+  const rightFraction = rightMetric.resolveFraction(state);
+
+  drawRingArc(ctx, "ram", leftFraction, leftMetric.resolveTone(state));
+  drawRingArc(ctx, "flash", rightFraction, rightMetric.resolveTone(state));
 
   // Top row.
   text(ctx, `${state.score}`, FACE_CENTER, 44, 20, FACE_COLORS.text);
   text(ctx, "PTS", FACE_CENTER, 55, 7, FACE_COLORS.dim);
+
+  // Top Left Slot
   drawHeart(ctx, 71, 40);
   text(
     ctx,
-    `${Math.round(state.heartRate)}`,
+    `${topLeftMetric.resolveValue(state)}`,
     78,
     43,
     9,
     FACE_COLORS.text,
     "left"
   );
-  const battery = Math.round(state.battery);
-  drawBatteryGlyph(ctx, 171, 40, battery);
+
+  // Top Right Slot
+  const batteryVal = Math.round(state.battery);
+  drawBatteryGlyph(ctx, 171, 40, batteryVal);
+  const topRightTone = topRightMetric.resolveTone(state);
   text(
     ctx,
-    `${battery}%`,
+    topRightMetric.formatReadout(state),
     212,
     43,
     9,
-    batteryTone(battery) === "ok"
-      ? FACE_COLORS.text
-      : TONE_COLOR[batteryTone(battery)],
+    topRightTone === "ok" ? FACE_COLORS.text : TONE_COLOR[topRightTone],
     "right"
   );
 
-  // Side readouts for the arcs, above the runner's jump.
-  text(ctx, "RAM", 24, 93, 6.5, FACE_COLORS.dim, "left");
+  // Side readouts for the arcs
+  text(ctx, leftMetric.shortLabel, 24, 93, 6.5, FACE_COLORS.dim, "left");
+  const leftTone = leftMetric.resolveTone(state);
   text(
     ctx,
-    `${state.allocatedRamKb.toFixed(1)}K`,
+    leftMetric.key === "ram" || leftMetric.key === "flash"
+      ? `${leftMetric.resolveValue(state).toFixed(1)}K`
+      : `${leftMetric.resolveValue(state)}`,
     24,
     104,
     9,
-    TONE_COLOR[meterTone(ramFraction)],
+    TONE_COLOR[leftTone],
     "left"
   );
-  text(ctx, "NV", 256, 93, 6.5, FACE_COLORS.dim, "right");
+
+  text(ctx, rightMetric.shortLabel, 256, 93, 6.5, FACE_COLORS.dim, "right");
+  const rightTone = rightMetric.resolveTone(state);
   text(
     ctx,
-    `${state.allocatedFlashKb.toFixed(1)}K`,
+    rightMetric.key === "ram" || rightMetric.key === "flash"
+      ? `${rightMetric.resolveValue(state).toFixed(1)}K`
+      : `${rightMetric.resolveValue(state)}`,
     256,
     104,
     9,
-    TONE_COLOR[meterTone(flashFraction)],
+    TONE_COLOR[rightTone],
     "right"
   );
 
   // Ground strip, below the lane.
+  const bLeft =
+    METRIC_DEFINITIONS[layout.bottomLeft] ?? METRIC_DEFINITIONS.steps;
+  const bCenter =
+    METRIC_DEFINITIONS[layout.bottomCenter] ?? METRIC_DEFINITIONS.distance;
+  const bRight =
+    METRIC_DEFINITIONS[layout.bottomRight] ?? METRIC_DEFINITIONS.variables;
+
   const fields: Array<[string, string, number]> = [
-    [`${stepsFor(state.distanceMeters)}`, "STEPS", 90],
-    [(Math.max(0, state.distanceMeters) / 1000).toFixed(2), "KM", 140],
-    [`${state.variables.length}`, "VARS", 190],
+    [`${bLeft.resolveValue(state)}`, bLeft.shortLabel, 90],
+    [`${bCenter.resolveValue(state)}`, bCenter.shortLabel, 140],
+    [`${bRight.resolveValue(state)}`, bRight.shortLabel, 190],
   ];
   for (const [value, label, x] of fields) {
     text(ctx, value, x, 231, 9, FACE_COLORS.text);
     text(ctx, label, x, 240, 5.5, FACE_COLORS.dim);
   }
-  if (battery < 15 && battery > 0) {
+
+  if (batteryVal < 15 && batteryVal > 0) {
     ctx.fillStyle = FACE_COLORS.danger;
     ctx.beginPath();
     ctx.roundRect(116, 248, 48, 10, 3);
@@ -979,7 +1017,11 @@ function drawEndFace(ctx: Ctx, state: GameEngineState, face: EndFace) {
  * Draws one frame of the watch face for `state` into a context already
  * scaled to the 280 x 280 logical space.
  */
-export function renderWatchFace(ctx: Ctx, state: GameEngineState): void {
+export function renderWatchFace(
+  ctx: Ctx,
+  state: GameEngineState,
+  layout: WidgetLayoutConfig = DEFAULT_WIDGET_LAYOUT
+): void {
   ctx.save();
   ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
   ctx.beginPath();
@@ -1009,7 +1051,7 @@ export function renderWatchFace(ctx: Ctx, state: GameEngineState): void {
     ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
   }
   // Idle keeps the ring empty: the start card sits over the face then.
-  if (state.gameState !== "idle") drawDataRing(ctx, state);
+  if (state.gameState !== "idle") drawDataRing(ctx, state, layout);
   if (state.fogLevel > 0.05) drawFog(ctx, state);
   if (state.gameState === "paused") drawPaused(ctx);
 

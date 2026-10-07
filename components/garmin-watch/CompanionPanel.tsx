@@ -10,7 +10,7 @@ import {
   type DeviceTarget,
   type GameEngineState,
 } from "@/lib/garmin-engine";
-import { batteryTone, meterTone, type MeterTone } from "./watch-face-art";
+import type { MeterTone } from "./watch-face-art";
 import type { WatchBezelTheme } from "./WatchHardware";
 import {
   GROUND_STRIP_FIELDS,
@@ -19,6 +19,15 @@ import {
   type GroundStripField,
   type GroundStripLayout,
 } from "@/lib/garmin-ground-strip";
+import type { TelemetrySample } from "@/lib/garmin-telemetry-buffer";
+import {
+  DEFAULT_WIDGET_LAYOUT,
+  METRIC_DEFINITIONS,
+  SLOT_LABELS,
+  type MetricKey,
+  type WidgetLayoutConfig,
+  type WidgetSlot,
+} from "@/lib/garmin-widget-layout";
 
 /** Gauge fill colours: the shared arcade signals, never the world's cyan. */
 const TONE_STROKE: Record<MeterTone, string> = {
@@ -203,20 +212,26 @@ interface CompanionPanelProps {
   onClearFlash: (e: React.MouseEvent) => void;
   onDrainBattery: (e: React.MouseEvent) => void;
   /** Samples recorded for the current run. */
-  telemetryCount: number;
-  onExportCsv: () => void;
-  onExportFit: () => void;
-  groundStrip: GroundStripLayout;
-  onGroundStripSlot: (slot: number, field: GroundStripField) => void;
-  onGroundStripReset: () => void;
+  telemetryCount?: number;
+  onExportCsv?: (e?: React.MouseEvent) => void;
+  onExportFit?: (e?: React.MouseEvent) => void;
+  groundStrip?: GroundStripLayout;
+  onGroundStripSlot?: (slot: number, field: GroundStripField) => void;
+  onGroundStripReset?: () => void;
+  /** Telemetry buffer samples */
+  telemetrySamples?: TelemetrySample[];
+  onClearTelemetry?: (e: React.MouseEvent) => void;
+  /** Custom widget layout configuration */
+  widgetLayout?: WidgetLayoutConfig;
+  onUpdateLayoutSlot?: (slot: WidgetSlot, metric: MetricKey) => void;
+  onResetLayout?: (e?: React.MouseEvent) => void;
   /** Laid over the panel, e.g. the end-of-run result card. */
   children?: ReactNode;
 }
 
 /**
- * The phone-side "Connect IQ" companion: three glance gauges (RAM, NV flash
- * and battery), two sensor bars, the best score, and the device, bezel and
- * developer controls, grouped in one graphite panel beside the watch.
+ * The phone-side "Connect IQ" companion: three glance gauges, telemetry exporter,
+ * visual widget slot builder, sensor bars, best score, and controls.
  */
 export function CompanionPanel({
   state,
@@ -231,18 +246,29 @@ export function CompanionPanel({
   onWriteFlash,
   onClearFlash,
   onDrainBattery,
-  telemetryCount,
+  telemetryCount = 0,
   onExportCsv,
   onExportFit,
-  groundStrip,
-  onGroundStripSlot,
-  onGroundStripReset,
+  groundStrip = ["steps", "distance", "vars"],
+  onGroundStripSlot = () => {},
+  onGroundStripReset = () => {},
+  telemetrySamples = [],
+  onClearTelemetry,
+  widgetLayout,
+  onUpdateLayoutSlot,
+  onResetLayout,
   children,
 }: CompanionPanelProps) {
   const profile = DEVICE_PROFILES[deviceTarget];
-  const ramFraction = state.allocatedRamKb / profile.ramLimitKb;
-  const flashFraction = state.allocatedFlashKb / profile.flashLimitKb;
-  const battery = Math.round(state.battery);
+  const layout = widgetLayout ?? DEFAULT_WIDGET_LAYOUT;
+
+  const leftMetric =
+    METRIC_DEFINITIONS[layout.leftArc] ?? METRIC_DEFINITIONS.ram;
+  const rightMetric =
+    METRIC_DEFINITIONS[layout.rightArc] ?? METRIC_DEFINITIONS.flash;
+  const topRightMetric =
+    METRIC_DEFINITIONS[layout.topRight] ?? METRIC_DEFINITIONS.battery;
+
   const thermal = Math.round((state.thermalStress ?? 0) * 100);
   const fog = Math.round(state.fogLevel * 100);
   const status = RUN_STATUS[state.gameState];
@@ -276,37 +302,31 @@ export function CompanionPanel({
 
         <div className="grid grid-cols-3 gap-2 rounded-xl border border-white/[0.08] bg-[#0d0e11] px-2 py-3">
           <RingGauge
-            label="RAM"
-            fraction={ramFraction}
-            tone={meterTone(ramFraction)}
-            readout={`${state.allocatedRamKb.toFixed(1)} / ${profile.ramLimitKb} KB`}
-            valueNow={state.allocatedRamKb}
-            valueMax={profile.ramLimitKb}
-            valueText={`${state.allocatedRamKb.toFixed(1)} of ${profile.ramLimitKb} KB`}
-          />
-          <RingGauge
-            label="FLASH"
-            fraction={flashFraction}
-            tone={meterTone(flashFraction)}
-            readout={`${state.allocatedFlashKb.toFixed(1)} / ${profile.flashLimitKb} KB`}
-            valueNow={state.allocatedFlashKb}
-            valueMax={profile.flashLimitKb}
-            valueText={`${state.allocatedFlashKb.toFixed(1)} of ${profile.flashLimitKb} KB`}
-          />
-          <RingGauge
-            label="BATTERY"
-            fraction={battery / 100}
-            tone={batteryTone(battery)}
-            readout={
-              battery < 15 && battery > 0
-                ? "Low power"
-                : state.isLightOn
-                  ? "Light on"
-                  : "Light off"
-            }
-            valueNow={battery}
+            label={leftMetric.shortLabel}
+            fraction={leftMetric.resolveFraction(state)}
+            tone={leftMetric.resolveTone(state)}
+            readout={leftMetric.formatReadout(state)}
+            valueNow={leftMetric.resolveValue(state)}
             valueMax={100}
-            valueText={`${battery}%`}
+            valueText={leftMetric.formatReadout(state)}
+          />
+          <RingGauge
+            label={rightMetric.shortLabel}
+            fraction={rightMetric.resolveFraction(state)}
+            tone={rightMetric.resolveTone(state)}
+            readout={rightMetric.formatReadout(state)}
+            valueNow={rightMetric.resolveValue(state)}
+            valueMax={100}
+            valueText={rightMetric.formatReadout(state)}
+          />
+          <RingGauge
+            label={topRightMetric.shortLabel}
+            fraction={topRightMetric.resolveFraction(state)}
+            tone={topRightMetric.resolveTone(state)}
+            readout={topRightMetric.formatReadout(state)}
+            valueNow={topRightMetric.resolveValue(state)}
+            valueMax={100}
+            valueText={topRightMetric.formatReadout(state)}
           />
         </div>
 
@@ -343,6 +363,97 @@ export function CompanionPanel({
               : "Click the watch to use the keys"}
           </span>
         </p>
+
+        <fieldset className="min-w-0 border-t border-white/[0.08] pt-3">
+          <legend className="mb-1.5 flex items-center justify-between text-[10px] uppercase tracking-wider text-zinc-400">
+            <span>Widget Slot Builder</span>
+            {onResetLayout && (
+              <button
+                type="button"
+                onClick={onResetLayout}
+                className="text-[9px] text-amber-400 hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber-400"
+              >
+                Reset Defaults
+              </button>
+            )}
+          </legend>
+          <div className="grid gap-2 rounded-xl border border-white/[0.08] bg-[#0d0e11] p-2.5">
+            {(
+              [
+                "leftArc",
+                "rightArc",
+                "topRight",
+                "topLeft",
+                "bottomLeft",
+                "bottomCenter",
+                "bottomRight",
+              ] as WidgetSlot[]
+            ).map((slot) => (
+              <div
+                key={slot}
+                className="flex items-center justify-between gap-2 text-[10px]"
+              >
+                <label
+                  htmlFor={`slot-select-${slot}`}
+                  className="truncate text-zinc-400"
+                >
+                  {SLOT_LABELS[slot]}:
+                </label>
+                <select
+                  id={`slot-select-${slot}`}
+                  value={layout[slot]}
+                  onChange={(e) =>
+                    onUpdateLayoutSlot?.(slot, e.target.value as MetricKey)
+                  }
+                  className="rounded border border-white/[0.1] bg-[#13151a] px-1.5 py-0.5 font-mono text-[10px] text-zinc-200 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber-400"
+                >
+                  {Object.values(METRIC_DEFINITIONS).map((m) => (
+                    <option key={m.key} value={m.key}>
+                      {m.label} ({m.shortLabel})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ))}
+          </div>
+        </fieldset>
+
+        <fieldset className="min-w-0 border-t border-white/[0.08] pt-3">
+          <legend className="mb-1.5 flex items-center justify-between text-[10px] uppercase tracking-wider text-zinc-400">
+            <span>Telemetry Export</span>
+            <span className="rounded bg-white/[0.06] px-1.5 py-0.5 text-[9px] tabular-nums text-zinc-300">
+              {telemetrySamples.length} samples
+            </span>
+          </legend>
+          <div className="grid grid-cols-2 gap-1.5">
+            <button
+              type="button"
+              onClick={onExportCsv}
+              disabled={telemetrySamples.length === 0}
+              className={`${toolClass} border-emerald-500/30 bg-emerald-500/[0.06] text-emerald-200 hover:bg-emerald-500/[0.12]`}
+            >
+              Export CSV (.csv)
+            </button>
+            <button
+              type="button"
+              onClick={onExportFit}
+              disabled={telemetrySamples.length === 0}
+              className={`${toolClass} border-cyan-500/30 bg-cyan-500/[0.06] text-cyan-200 hover:bg-cyan-500/[0.12]`}
+            >
+              Export FIT (.fit)
+            </button>
+          </div>
+          {onClearTelemetry && (
+            <button
+              type="button"
+              onClick={onClearTelemetry}
+              disabled={telemetrySamples.length === 0}
+              className={`${toolClass} mt-1.5 border-white/[0.08] bg-[#0d0e11] text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-200`}
+            >
+              Clear Telemetry Buffer
+            </button>
+          )}
+        </fieldset>
 
         <fieldset className="min-w-0">
           <legend className="mb-1.5 text-[10px] uppercase tracking-wider text-zinc-400">

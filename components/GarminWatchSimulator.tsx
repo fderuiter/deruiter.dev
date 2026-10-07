@@ -75,6 +75,21 @@ import {
   allocateFlashVariable,
   clearFlashStorage,
 } from "@/lib/garmin-engine";
+import {
+  TelemetryBuffer,
+  exportTelemetryToCsv,
+  exportTelemetryToFit,
+  downloadClientFile,
+  type TelemetrySample,
+} from "@/lib/garmin-telemetry-buffer";
+import {
+  loadWidgetLayout,
+  saveWidgetLayout,
+  DEFAULT_WIDGET_LAYOUT,
+  type WidgetLayoutConfig,
+  type WidgetSlot,
+  type MetricKey,
+} from "@/lib/garmin-widget-layout";
 
 /** Compact UTC stamp for export file names, e.g. 20261010-120000. */
 function exportStamp(startedAtMs: number): string {
@@ -209,6 +224,74 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
   // (#1648).
   const isWipeGestureRef = useRef(false);
 
+  // Telemetry buffer & Widget layout
+  const telemetryRef = useRef(new TelemetryRecorder());
+  const runStartedAtRef = useRef(0);
+  const telemetryBufferRef = useRef<TelemetryBuffer>(new TelemetryBuffer());
+  const [telemetrySamples, setTelemetrySamples] = useState<TelemetrySample[]>(
+    []
+  );
+  const [widgetLayout, setWidgetLayout] = useState<WidgetLayoutConfig>(() =>
+    loadWidgetLayout()
+  );
+  const widgetLayoutRef = useRef<WidgetLayoutConfig>(widgetLayout);
+  useEffect(() => {
+    widgetLayoutRef.current = widgetLayout;
+  }, [widgetLayout]);
+
+  const handleUpdateLayoutSlot = useCallback(
+    (slot: WidgetSlot, metric: MetricKey) => {
+      setWidgetLayout((prev) => {
+        const next = { ...prev, [slot]: metric };
+        saveWidgetLayout(next);
+        return next;
+      });
+    },
+    []
+  );
+
+  const handleResetLayout = useCallback(() => {
+    setWidgetLayout(DEFAULT_WIDGET_LAYOUT);
+    saveWidgetLayout(DEFAULT_WIDGET_LAYOUT);
+  }, []);
+
+  const handleExportCsv = useCallback(() => {
+    const mainSamples = telemetryRef.current.samples();
+    if (mainSamples.length > 0) {
+      downloadFile(
+        exportTelemetryCsv(mainSamples),
+        `garmin-run-${exportStamp(runStartedAtRef.current)}.csv`,
+        { mimeType: "text/csv;charset=utf-8" }
+      );
+      return;
+    }
+    const samples = telemetryBufferRef.current.getSamples();
+    if (samples.length === 0) return;
+    const csv = exportTelemetryToCsv(samples);
+    downloadClientFile(csv, "garmin_telemetry.csv", "text/csv");
+  }, []);
+
+  const handleExportFit = useCallback(() => {
+    const mainSamples = telemetryRef.current.samples();
+    if (mainSamples.length > 0) {
+      downloadFile(
+        exportTelemetryFit(mainSamples, runStartedAtRef.current || Date.now()),
+        `garmin-run-${exportStamp(runStartedAtRef.current)}.fit`,
+        { mimeType: "application/octet-stream" }
+      );
+      return;
+    }
+    const samples = telemetryBufferRef.current.getSamples();
+    if (samples.length === 0) return;
+    const fit = exportTelemetryToFit(samples);
+    downloadClientFile(fit, "garmin_telemetry.fit", "application/octet-stream");
+  }, []);
+
+  const handleClearTelemetry = useCallback(() => {
+    telemetryBufferRef.current.clear();
+    setTelemetrySamples([]);
+  }, []);
+
   // References for Canvas and Animation Loop
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const { toGameCoordinates } = useResponsiveCanvas({
@@ -237,8 +320,6 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
 
   // Run telemetry: sampled beside the animation loop, never through React
   // state except the sample count shown in the panel.
-  const telemetryRef = useRef(new TelemetryRecorder());
-  const runStartedAtRef = useRef(0);
   const [telemetryCount, setTelemetryCount] = useState(0);
 
   const [groundStrip, setGroundStrip] =
@@ -269,26 +350,6 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
   const handleGroundStripReset = useCallback(() => {
     setGroundStrip(DEFAULT_GROUND_STRIP);
     saveGroundStrip(DEFAULT_GROUND_STRIP);
-  }, []);
-
-  const handleExportCsv = useCallback(() => {
-    const samples = telemetryRef.current.samples();
-    if (samples.length === 0) return;
-    downloadFile(
-      exportTelemetryCsv(samples),
-      `garmin-run-${exportStamp(runStartedAtRef.current)}.csv`,
-      { mimeType: "text/csv;charset=utf-8" }
-    );
-  }, []);
-
-  const handleExportFit = useCallback(() => {
-    const samples = telemetryRef.current.samples();
-    if (samples.length === 0) return;
-    downloadFile(
-      exportTelemetryFit(samples, runStartedAtRef.current || Date.now()),
-      `garmin-run-${exportStamp(runStartedAtRef.current)}.fit`,
-      { mimeType: "application/octet-stream" }
-    );
   }, []);
 
   // Single gateway for every stateRef mutation: stateRef.current and
@@ -887,6 +948,11 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
           nextState.gameState !== "playing" && recorder.finish(nextState);
         if (sampled || closed) setTelemetryCount(recorder.count);
 
+        telemetryBufferRef.current.recordSample(nextState);
+        if (frameCountRef.current % 10 === 0) {
+          setTelemetrySamples(telemetryBufferRef.current.getSamples());
+        }
+
         // Save a new high score when the run ends, and about once a second
         // while it's still going. The engine raises highScore to the score
         // every tick, so compare against the stored best instead.
@@ -1295,6 +1361,11 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
             handleDrainBattery();
             returnFocusAfterPointerClick(e);
           }}
+          telemetrySamples={telemetrySamples}
+          onClearTelemetry={handleClearTelemetry}
+          widgetLayout={widgetLayout}
+          onUpdateLayoutSlot={handleUpdateLayoutSlot}
+          onResetLayout={handleResetLayout}
         >
           {runEnded && !resultDismissed && (
             <ResultCard

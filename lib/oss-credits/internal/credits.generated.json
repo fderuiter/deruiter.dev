@@ -3,8 +3,8 @@
   "source": "package-lock.json",
   "counts": {
     "total": 1227,
-    "runtime": 566,
-    "tooling": 661,
+    "runtime": 567,
+    "tooling": 660,
     "direct": 71
   },
   "packages": [
@@ -8207,7 +8207,7 @@
       "name": "magicast",
       "version": "0.5.4",
       "license": "MIT",
-      "scope": "tooling",
+      "scope": "runtime",
       "direct": false,
       "homepage": "https://github.com/unjs/magicast",
       "repository": "https://github.com/unjs/magicast"

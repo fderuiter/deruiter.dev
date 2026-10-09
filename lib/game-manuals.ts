@@ -736,7 +736,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         action: "Walk the office",
         description:
-          "Moves one tile. Walking costs clock time, about four tiles a minute.",
+          "Moves one tile; hold the key to keep walking. Walking costs clock time, about four tiles a minute. Pressing into the wall beside a doorway slides you into line with the door (one step, paid for). In the office directory, each place shows what the walk would cost before you go.",
         key: "W A S D / Arrows",
       },
       {
@@ -792,6 +792,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         detail:
           "In the office, minutes and energy are the resource: the day starts at 8:00 and a late finish costs energy and morale. On the classic desk you get 5 attention points a day and unspent points do not carry over. Answering, delegating and auditing all spend them, so some messages will go unanswered.",
         badge: "Attention",
+      },
+      {
+        title: "Sounds and small signals",
+        detail:
+          "Sound is off until you turn it on with the site's sound toggle, and it follows the site's reduced-motion and high-contrast settings. Six short cues exist, each played once per event and never in a loop: footsteps (every second tile, not on touch screens), a door when you enter a room, the phone ringing, an email chime, the coffee machine, and a stamp when an item leaves your task list. Small toasts show energy or focus moving, a heart gained or lost, and a stamped task. They are decoration: everything that matters is also written in the HUD and read out by screen readers.",
+        badge: "Feedback",
       },
       {
         title: "Everything is fine, until you look",

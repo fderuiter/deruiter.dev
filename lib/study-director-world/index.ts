@@ -34,6 +34,7 @@ export {
   WALK_MINUTES_PER_TILE,
   facingToward,
   followRoute,
+  forgivingStep,
   isBlocked,
   planRoute,
   step,

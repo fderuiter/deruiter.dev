@@ -1,5 +1,5 @@
 import { ACTION_COSTS, OVERTIME_ENERGY_FACTOR, lateMinutes } from "./clock";
-import { CRO_FLOOR, isWalkable, roomAt, stepFrom } from "./floor";
+import { CRO_FLOOR, isWalkable, roomAt, stepFrom, tileAt } from "./floor";
 import {
   HARD_STOP,
   type DirectoryTarget,
@@ -86,6 +86,48 @@ export function step(
       walked: world.walked + 1,
       location: roomAt(map, next.x, next.y)?.id ?? world.location,
     },
+  };
+}
+
+/** The two ways to slip sideways when walking in a direction. */
+const SIDEWAYS: Record<Facing, readonly [Facing, Facing]> = {
+  up: ["left", "right"],
+  down: ["left", "right"],
+  left: ["up", "down"],
+  right: ["up", "down"],
+};
+
+/**
+ * An arrow key with corner forgiveness. It is `step`, except that a key
+ * pressed into a wall one tile off a doorway slides the player into line
+ * with the door instead of stopping dead: the step sideways is taken (and
+ * paid for) and the player keeps facing the way they pressed. It only
+ * slides when exactly one side opens onto a free tile ahead, so it never
+ * guesses between two doors, never slides into furniture or stations, and
+ * never moves the player when a person is the thing in the way.
+ */
+export function forgivingStep(
+  world: WorldState,
+  facing: Facing,
+  map: WorldMap = CRO_FLOOR,
+  people: readonly TilePoint[] = []
+): WorldResult<{ moved: boolean }> {
+  const direct = step(world, facing, map, people);
+  if (!direct.ok || direct.moved) return direct;
+  const ahead = stepFrom(world.player, facing);
+  if (tileAt(map, ahead.x, ahead.y) !== "wall") return direct;
+  const slides = SIDEWAYS[facing].filter((side) => {
+    const beside = stepFrom(world.player, side);
+    if (isBlocked(map, beside.x, beside.y, people)) return false;
+    const beyond = stepFrom(beside, facing);
+    return !isBlocked(map, beyond.x, beyond.y, people);
+  });
+  if (slides.length !== 1) return direct;
+  const slid = step(world, slides[0], map, people);
+  if (!slid.ok || !slid.moved) return direct;
+  return {
+    ...slid,
+    world: { ...slid.world, player: { ...slid.world.player, facing } },
   };
 }
 

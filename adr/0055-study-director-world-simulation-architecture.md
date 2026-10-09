@@ -180,3 +180,28 @@ face to face are a dialogue box with a typed reveal (instant under reduced
 motion); the phone, desk, EDC and meeting report are shown as devices. The
 domain is unchanged: every number on the HUD, in the tasks panel and on the
 cards comes from existing `lib/study-director-world` calls.
+
+## Amendment 2026-10-09: movement feel, sound and feedback
+
+Movement stays a pure function of the world. `forgivingStep` wraps `step`: a
+key pressed into a wall one tile off a doorway slides the player into line
+with the door, but only when exactly one side opens onto a free tile ahead,
+the slide is a real step with its clock and energy cost, and a person in the
+way is never slid around (the directory route already detours around people).
+Held keys step at most every 110 ms, the same interval as a directory walk,
+and the renderer glides each step in 110 ms, so a held key reads as continuous
+motion. Reasoning, not a human playtest: at 60 fps a step spans about six or
+seven frames and at 30 fps about three, so the glide never lags the next
+step and the camera, which follows the interpolated position, pans in whole
+device pixels at both rates. Under reduced motion there is no glide and the
+view snaps. A human playtest is on the checklist for Fred. The directory
+shows the clock cost of each walk before the player commits.
+
+Sound goes through the shared sound engine in `world-sound.ts`: six single,
+short cues (footstep, door, phone ring, email chime, coffee, stamp), no loops
+and no ambience. The engine owns the mute switch, which starts muted, and its
+reduced-motion and forced-colors bypass; the footstep is dropped when
+`(hover: none)` matches. Which change makes which cue, and which changes show
+a toast (energy or focus moving five points, a heart gained or lost, a task
+stamped done), are pure functions in `feedback-model.ts`; toasts are
+`aria-hidden` because the HUD live region already says what matters.

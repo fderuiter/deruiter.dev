@@ -198,25 +198,31 @@ describe("Wave 2: Cognitive Accessibility & Dyslexia Typography (#738, #739, #74
   });
 
   describe("Navbar Dyslexia Mode Toggle Controls ARIA Parity", () => {
-    it("exports valid aria-pressed attributes across desktop, dropdown, and mobile toggles", () => {
+    it("exports valid aria-pressed attributes in the Preferences menu and the mobile drawer", () => {
       render(<Navbar />);
 
-      const desktopToggle = screen.getByRole("button", {
+      // The single Preferences menu holds the dyslexia toggle (Text section).
+      fireEvent.click(
+        screen.getByRole("button", { name: /Open navigation preferences/i })
+      );
+      const menuToggle = screen.getByRole("button", {
         name: /Enable OpenDyslexic font mode/i,
       });
-      expect(desktopToggle.getAttribute("aria-pressed")).toBe("false");
+      expect(menuToggle.getAttribute("aria-pressed")).toBe("false");
 
-      // Preferences dropdown toggle
-      const prefToggles = screen.getAllByRole("button", {
+      // The mobile drawer renders the same panel.
+      fireEvent.click(
+        screen.getByRole("button", { name: /Open navigation menu/i })
+      );
+      const toggles = screen.getAllByRole("button", {
         name: /Enable OpenDyslexic font mode/i,
       });
-      expect(prefToggles.length).toBeGreaterThanOrEqual(1);
-      prefToggles.forEach((btn) => {
+      expect(toggles).toHaveLength(2);
+      toggles.forEach((btn) => {
         expect(btn.getAttribute("aria-pressed")).toBe("false");
       });
 
-      // Toggle dyslexia mode via desktop button
-      fireEvent.click(desktopToggle);
+      fireEvent.click(toggles[0]);
 
       expect(document.documentElement.getAttribute("data-font-mode")).toBe(
         "opendyslexic"
@@ -229,7 +235,7 @@ describe("Wave 2: Cognitive Accessibility & Dyslexia Typography (#738, #739, #74
       const activeToggles = screen.getAllByRole("button", {
         name: /Disable OpenDyslexic font mode/i,
       });
-      expect(activeToggles.length).toBeGreaterThanOrEqual(1);
+      expect(activeToggles).toHaveLength(2);
       activeToggles.forEach((btn) => {
         expect(btn.getAttribute("aria-pressed")).toBe("true");
       });

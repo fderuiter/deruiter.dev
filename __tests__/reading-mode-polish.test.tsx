@@ -102,6 +102,15 @@ describe("Reading Mode Polish (#634) Visitor Journey Suite", () => {
     mockStorage.clear();
   });
 
+  const openPreferences = async () => {
+    const trigger = container.querySelector(
+      'button[aria-controls="navigation-preferences"]'
+    ) as HTMLButtonElement;
+    await act(async () => {
+      trigger.click();
+    });
+  };
+
   it("provides clear visible labels and accessible help for reading mode controls in Navbar", async () => {
     await act(async () => {
       root.render(
@@ -113,7 +122,8 @@ describe("Reading Mode Polish (#634) Visitor Journey Suite", () => {
       );
     });
 
-    // Check desktop header buttons
+    // The Preferences menu holds the reading mode controls
+    await openPreferences();
     const storyBtn = container.querySelector(
       'button[aria-label*="Switch to Behind the Scenes Mode"]'
     ) as HTMLButtonElement;
@@ -154,7 +164,12 @@ describe("Reading Mode Polish (#634) Visitor Journey Suite", () => {
       hamburgerBtn.click();
     });
 
-    const mobileDesc = document.getElementById("mobile-reading-mode-desc");
+    const mobileGroup = document.querySelector(
+      '#mobile-navigation [role="group"][aria-label="Reading Mode Selection"]'
+    );
+    const mobileDesc = document.getElementById(
+      mobileGroup?.getAttribute("aria-describedby") ?? ""
+    );
     expect(mobileDesc).toBeTruthy();
     expect(mobileDesc?.textContent).toContain("Professional Mode");
 
@@ -182,6 +197,7 @@ describe("Reading Mode Polish (#634) Visitor Journey Suite", () => {
       );
     });
 
+    await openPreferences();
     const storyBtn = container.querySelector(
       'button[aria-label*="Switch to Behind the Scenes Mode"]'
     ) as HTMLButtonElement;

@@ -411,8 +411,18 @@ describe("Global Persona Perspective Toggle Suite", () => {
       });
     };
 
+    const openPreferences = async () => {
+      const trigger = container.querySelector(
+        'button[aria-controls="navigation-preferences"]'
+      ) as HTMLButtonElement;
+      await act(async () => {
+        trigger.click();
+      });
+    };
+
     it("renders Professional and Behind the Scenes controls with Professional pressed by default", async () => {
       await renderNavbar();
+      await openPreferences();
 
       const professional = container.querySelectorAll(
         'button[aria-label^="Switch to Professional Mode"]'
@@ -420,7 +430,7 @@ describe("Global Persona Perspective Toggle Suite", () => {
       const story = container.querySelectorAll(
         'button[aria-label^="Switch to Behind the Scenes Mode"]'
       );
-      // Desktop bar and tablet preferences render up front; the drawer mounts on open.
+      // The Preferences menu renders its panel on open; the drawer mounts on open.
       expect(professional.length).toBeGreaterThan(0);
       expect(story.length).toBe(professional.length);
       professional.forEach((b) =>
@@ -442,6 +452,7 @@ describe("Global Persona Perspective Toggle Suite", () => {
 
     it("announces each mode with its screen-reader description", async () => {
       await renderNavbar();
+      await openPreferences();
       const story = container.querySelector(
         'button[aria-label^="Switch to Behind the Scenes Mode"]'
       ) as HTMLButtonElement;
@@ -482,9 +493,13 @@ describe("Global Persona Perspective Toggle Suite", () => {
       const drawer = document.getElementById("mobile-navigation");
       expect(drawer?.textContent).toContain("PROFESSIONAL");
       expect(drawer?.textContent).toContain("BEHIND THE SCENES");
-      expect(
-        document.getElementById("mobile-reading-mode-desc")?.textContent
-      ).toContain("Professional Mode");
+      const group = drawer?.querySelector(
+        '[role="group"][aria-label="Reading Mode Selection"]'
+      );
+      const describedBy = group?.getAttribute("aria-describedby") ?? "";
+      expect(document.getElementById(describedBy)?.textContent).toContain(
+        "Professional Mode"
+      );
     });
   });
 });

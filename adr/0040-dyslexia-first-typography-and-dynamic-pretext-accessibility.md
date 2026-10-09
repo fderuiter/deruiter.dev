@@ -39,7 +39,7 @@ We adopt a **Dyslexia-First Typography Architecture** structured into a dual-mod
 The OpenDyslexic mode switch is accessible across 4 distinct surfaces:
 
 1. **`<SkipToContent />`**: Mounted as the first keyboard tab-stop, enabling immediate font switching before navigating page content.
-2. **Navbar**: High-contrast action pill in both desktop navigation bar and mobile drawer.
+2. **Navbar**: The Text section of the Preferences menu in the desktop navigation bar and in the mobile drawer ([ADR 0058](0058-site-navigation-information-architecture.md), amended).
 3. **Command Palette (`⌘K`)**: Searchable command `"Toggle Dyslexia Mode (OpenDyslexic)"`.
 4. **Footer**: Persistent toggle switch in the site footer.
 

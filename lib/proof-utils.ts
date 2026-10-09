@@ -3596,6 +3596,61 @@ export function solveNextDeductionStep(
   };
 }
 
+export type ProofExportFormat = "lean" | "latex" | "markdown" | "mermaid";
+
+export const PROOF_EXPORT_MIME_TYPES: Record<ProofExportFormat, string> = {
+  lean: "text/x-lean;charset=utf-8",
+  latex: "application/x-latex;charset=utf-8",
+  markdown: "text/markdown;charset=utf-8",
+  mermaid: "text/vnd.mermaid;charset=utf-8",
+};
+
+/**
+ * Maps proof export formats to standard MIME types for browser file saving.
+ */
+export function getExportMimeType(format: ProofExportFormat): string {
+  return PROOF_EXPORT_MIME_TYPES[format] || "text/plain;charset=utf-8";
+}
+
+/**
+ * Generates standard filenames with extensions (.lean, .tex, .md, .mmd) based on theorem identifiers or titles.
+ */
+export function getExportFilename(
+  format: ProofExportFormat,
+  theoremId: TheoremId | TheoremDefinition = "modus-ponens"
+): string {
+  const extMap: Record<ProofExportFormat, string> = {
+    lean: "lean",
+    latex: "tex",
+    markdown: "md",
+    mermaid: "mmd",
+  };
+
+  const th =
+    typeof theoremId === "object"
+      ? theoremId
+      : THEOREMS[theoremId as TheoremId];
+
+  const rawName =
+    th?.id ||
+    (typeof theoremId === "string" ? theoremId : th?.title) ||
+    "proof";
+
+  const sanitized = rawName
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  const baseName = sanitized.startsWith("proof")
+    ? sanitized
+    : `proof-${sanitized || "workspace"}`;
+
+  const ext = extMap[format] || "txt";
+
+  return `${baseName}.${ext}`;
+}
+
 /**
  * Exports the active theorem proof into Lean 4 verification syntax.
  */
@@ -3627,7 +3682,7 @@ export function exportProofToLatex(
  * workspace as a completed proof certificate.
  */
 export function exportWorkspaceProof(
-  format: "lean" | "latex" | "markdown" | "mermaid",
+  format: ProofExportFormat,
   edges: Edge[],
   theoremId: TheoremId | TheoremDefinition = "modus-ponens"
 ): string {

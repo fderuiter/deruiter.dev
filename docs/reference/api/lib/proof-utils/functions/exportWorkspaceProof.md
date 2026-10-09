@@ -15,7 +15,7 @@ workspace as a completed proof certificate.
 
 ### format
 
-`"lean"` \| `"latex"` \| `"markdown"` \| `"mermaid"`
+[`ProofExportFormat`](../type-aliases/ProofExportFormat.md)
 
 ### edges
 

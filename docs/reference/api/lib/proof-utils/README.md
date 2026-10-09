@@ -27,6 +27,7 @@
 
 ## Type Aliases
 
+- [ProofExportFormat](type-aliases/ProofExportFormat.md)
 - [PropAst](type-aliases/PropAst.md)
 - [TheoremCategory](type-aliases/TheoremCategory.md)
 - [TheoremId](type-aliases/TheoremId.md)
@@ -34,6 +35,7 @@
 ## Variables
 
 - [INFERENCE\_RULES](variables/INFERENCE_RULES.md)
+- [PROOF\_EXPORT\_MIME\_TYPES](variables/PROOF_EXPORT_MIME_TYPES.md)
 - [THEOREMS](variables/THEOREMS.md)
 - [VALID\_COMMANDS](variables/VALID_COMMANDS.md)
 - [VALID\_NODE\_IDS](variables/VALID_NODE_IDS.md)
@@ -57,6 +59,8 @@
 - [generateTruthTable](functions/generateTruthTable.md)
 - [getCompatibleTargets](functions/getCompatibleTargets.md)
 - [getDeductionLedger](functions/getDeductionLedger.md)
+- [getExportFilename](functions/getExportFilename.md)
+- [getExportMimeType](functions/getExportMimeType.md)
 - [getFallacyDiagnosis](functions/getFallacyDiagnosis.md)
 - [getNextTacticHint](functions/getNextTacticHint.md)
 - [getStepStatusLabel](functions/getStepStatusLabel.md)

@@ -4,9 +4,13 @@ import React, { useId, useState } from "react";
 import { ModalContainer } from "@/components/ui/ModalContainer";
 import { IconDownload, IconX } from "@tabler/icons-react";
 import { CopyButton } from "@/components/ui/CopyButton";
+import { downloadFile } from "@/lib/download";
 import {
   evaluateProofStatus,
   exportWorkspaceProof,
+  getExportFilename,
+  getExportMimeType,
+  ProofExportFormat,
   TheoremId,
   TheoremDefinition,
   Edge,
@@ -28,9 +32,7 @@ export const ProofExportModal: React.FC<ProofExportModalProps> = ({
   theorem,
 }) => {
   const titleId = useId();
-  const [exportFormat, setExportFormat] = useState<
-    "lean" | "latex" | "markdown" | "mermaid"
-  >("lean");
+  const [exportFormat, setExportFormat] = useState<ProofExportFormat>("lean");
 
   const getExportText = () =>
     exportWorkspaceProof(exportFormat, edges, theorem ?? activeTheoremId);
@@ -43,6 +45,16 @@ export const ProofExportModal: React.FC<ProofExportModalProps> = ({
     (graphComplete ||
       exportFormat === "markdown" ||
       exportFormat === "mermaid");
+
+  const handleDownload = () => {
+    const text = getExportText();
+    const filename = getExportFilename(
+      exportFormat,
+      theorem ?? activeTheoremId
+    );
+    const mimeType = getExportMimeType(exportFormat);
+    downloadFile(text, filename, { mimeType });
+  };
 
   return (
     <ModalContainer
@@ -94,13 +106,23 @@ export const ProofExportModal: React.FC<ProofExportModalProps> = ({
       </div>
       <div className="flex justify-end gap-3 pt-2">
         {canCopy && (
-          <CopyButton
-            text={getExportText}
-            label="Copy to Clipboard"
-            copiedLabel="Copied!"
-            successMessage="Workspace export copied to clipboard"
-            className="px-4 py-2 rounded-xl bg-brand-cyan hover:bg-cyan-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer active:scale-[0.98]"
-          />
+          <>
+            <button
+              type="button"
+              onClick={handleDownload}
+              className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs flex items-center gap-1.5 transition cursor-pointer active:scale-[0.98]"
+            >
+              <IconDownload className="w-4 h-4 text-brand-cyan" />
+              <span>Download File</span>
+            </button>
+            <CopyButton
+              text={getExportText}
+              label="Copy to Clipboard"
+              copiedLabel="Copied!"
+              successMessage="Workspace export copied to clipboard"
+              className="px-4 py-2 rounded-xl bg-brand-cyan hover:bg-cyan-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer active:scale-[0.98]"
+            />
+          </>
         )}
       </div>
     </ModalContainer>

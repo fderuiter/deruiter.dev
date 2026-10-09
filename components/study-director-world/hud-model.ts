@@ -1,7 +1,7 @@
 import type { HudReadout } from "@/lib/study-director-world";
 
 /** The part of the working day a clock reading falls in. */
-export type DayPhase = "morning" | "midday" | "afternoon" | "evening" | "night";
+type DayPhase = "morning" | "midday" | "afternoon" | "evening" | "night";
 
 /** Where each phase starts, in minutes after midnight. After 18:00 the office dims. */
 const PHASE_STARTS: ReadonlyArray<readonly [DayPhase, number]> = [

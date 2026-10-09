@@ -46,10 +46,12 @@ import {
 } from "@/lib/study-director-world";
 import type { StudyState } from "@/lib/study-director";
 import { safeIsAvailable, safeRawStorage } from "@/lib/safe-storage";
+import { followCamera } from "./camera";
 import { DigestCard, OvernightCard } from "./DayCards";
 import { FloorView } from "./FloorView";
 import { hudChanges } from "./hud-model";
 import { highlightedTile, type FloorScene } from "./floor-renderer";
+import { Minimap } from "./Minimap";
 import { OfficeDirectory } from "./OfficeDirectory";
 import { StageLabels, TasksPanel } from "./StageLabels";
 import {
@@ -219,6 +221,12 @@ export const StudyDirectorWorld: React.FC<{
     [map, world.player, people, prompt]
   );
   const tasks = useMemo(() => todaysTasks(world), [world]);
+  // Where the camera rests: the same view the canvas settles on.
+  const view = useMemo(
+    () => followCamera(world.player, map),
+    [world.player, map]
+  );
+  const [showMap, setShowMap] = useState(true);
   // Key changes to the HUD are spoken once, in their own live region so they
   // never talk over what an action just said.
   const [hudNotice, setHudNotice] = useState("");
@@ -566,6 +574,14 @@ export const StudyDirectorWorld: React.FC<{
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
+            aria-pressed={showMap}
+            onClick={() => setShowMap((on) => !on)}
+            className="min-h-12 border border-zinc-700 px-3 text-xs text-zinc-300 hover:border-[var(--sd-amber)] hover:text-[var(--sd-amber)]"
+          >
+            Minimap
+          </button>
+          <button
+            type="button"
             onClick={() => setShowIntro(true)}
             className="min-h-12 border border-zinc-700 px-3 text-xs text-zinc-300 hover:border-[var(--sd-amber)] hover:text-[var(--sd-amber)]"
           >
@@ -603,11 +619,21 @@ export const StudyDirectorWorld: React.FC<{
             description={description}
             reducedMotion={reducedMotion}
             overlay={
-              <StageLabels
-                view={{ x: 0, y: 0, w: map.width, h: map.height }}
-                plates={plates}
-                prompt={away || team.blocking ? null : prompt}
-              />
+              <>
+                <StageLabels
+                  view={view}
+                  plates={plates}
+                  prompt={away || team.blocking ? null : prompt}
+                />
+                {showMap ? (
+                  <Minimap
+                    map={map}
+                    player={world.player}
+                    people={people}
+                    view={view}
+                  />
+                ) : null}
+              </>
             }
           />
         </div>

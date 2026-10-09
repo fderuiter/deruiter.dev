@@ -1,20 +1,13 @@
 "use client";
 
 import React from "react";
+import type { View } from "./camera";
 import type { InteractionPrompt, Nameplate, WorldTask } from "./stage-model";
-
-/** The part of the map on screen, in tiles. */
-export interface ViewRect {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-}
 
 const pct = (n: number) => `${Math.round(n * 1000) / 10}%`;
 
 /** Where a tile's top centre falls on the canvas, or null when it is off screen. */
-function anchor(view: ViewRect, tile: { x: number; y: number }) {
+function anchor(view: View, tile: { x: number; y: number }) {
   const cx = tile.x + 0.5 - view.x;
   const cy = tile.y - view.y;
   if (cx < 0 || cx > view.w || cy < -0.01 || cy > view.h) return null;
@@ -27,7 +20,7 @@ function anchor(view: ViewRect, tile: { x: number; y: number }) {
  * carries a text description of what is in front of you.
  */
 export const StageLabels: React.FC<{
-  view: ViewRect;
+  view: View;
   plates: readonly Nameplate[];
   prompt: InteractionPrompt | null;
 }> = ({ view, plates, prompt }) => (

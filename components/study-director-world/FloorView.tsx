@@ -7,7 +7,8 @@ import { FloorRenderer, TILE, type FloorScene } from "./floor-renderer";
 /**
  * The canvas half of the world: draws the floor when the scene changes and
  * runs the arcade loop only while the player is gliding between tiles or,
- * when motion is allowed, while the bin is on fire. The
+ * when motion is allowed, while the bin is on fire. The art is drawn at a
+ * whole-number scale so it stays crisp. The
  * canvas carries the text description of the current room as its name.
  */
 export const FloorView: React.FC<{
@@ -52,11 +53,16 @@ export const FloorView: React.FC<{
         cssWidth,
         window.devicePixelRatio || 1
       );
-      if (canvas.width !== res.width || canvas.height !== res.height) {
-        canvas.width = res.width;
-        canvas.height = res.height;
+      // Whole-number scale only, so every art pixel lands on whole device
+      // pixels and the tiles stay crisp.
+      const scale = Math.max(1, Math.round(res.scale));
+      const backingWidth = width * scale;
+      const backingHeight = height * scale;
+      if (canvas.width !== backingWidth || canvas.height !== backingHeight) {
+        canvas.width = backingWidth;
+        canvas.height = backingHeight;
       }
-      engine.setScale(res.scale);
+      engine.setScale(scale);
       draw();
     };
     resize();

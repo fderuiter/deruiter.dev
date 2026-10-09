@@ -73,6 +73,13 @@ type Conversation =
 
 const DESK_VIAS: readonly EventVia[] = ["mail", "voicemail", "callback"];
 
+/** The device a conversation is held on: the phone, a screen, or none (face to face). */
+function deviceForEvent(via: EventVia): "phone" | "monitor" | undefined {
+  if (via === "phone") return "phone";
+  if (DESK_VIAS.includes(via) || via === "meeting") return "monitor";
+  return undefined;
+}
+
 /**
  * The team, the phone and the stations on top of the floor (#1688, #1689):
  * conversations, delegation, calls, the desk, the EDC and meetings. World
@@ -346,6 +353,7 @@ const PhoneOverlay: React.FC<{
       subtitle={`${call.from}, about "${call.subject}". Calls take ten minutes.`}
       testId="world-phone"
       role="alertdialog"
+      device="phone"
       onClose={() => team.phone("ignore")}
       initialFocusRef={answerRef}
       returnFocusTo={returnFocusTo}
@@ -474,6 +482,10 @@ export const TeamOverlay: React.FC<{
             : "Choose an answer: 1 to " + dialogue.choices.length
         }
         testId="world-dialogue"
+        device={deviceForEvent(dialogue.via)}
+        back={
+          c.atDesk ? { label: "Back to desk", run: team.leaveEvent } : undefined
+        }
         onClose={team.leaveEvent}
         onKeyDown={(e) =>
           after
@@ -553,6 +565,7 @@ export const TeamOverlay: React.FC<{
         title="Your desk"
         subtitle={`${formatClock(world.minute)} · reading takes ten minutes, writing up twenty`}
         testId="world-desk"
+        device="monitor"
         onClose={team.close}
         initialFocusRef={closeRef}
         returnFocusTo={returnFocusTo}
@@ -600,6 +613,7 @@ export const TeamOverlay: React.FC<{
         title="EDC workstation"
         subtitle="What the sites report, beside what you have seen and been told."
         testId="world-edc"
+        device="monitor"
         onClose={team.close}
         initialFocusRef={closeRef}
         returnFocusTo={returnFocusTo}
@@ -674,6 +688,7 @@ export const TeamOverlay: React.FC<{
       title={report.kind === "team" ? "Meeting over" : "Sponsor call over"}
       subtitle={`${report.minutes} minutes, ${report.personMinutes} person-minutes${report.attendees.length > 0 ? ` with ${report.attendees.join(", ")}` : ""}.`}
       testId="world-meeting-report"
+      device="monitor"
       onClose={team.close}
       initialFocusRef={closeRef}
       returnFocusTo={returnFocusTo}

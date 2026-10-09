@@ -140,9 +140,20 @@ export const OverlayButton: React.FC<
   />
 );
 
+/** Which in-world device an overlay is shown on. */
+export type DeviceKind = "monitor" | "phone";
+
+const DEVICE_LABEL: Record<DeviceKind, string> = {
+  monitor: "Workstation",
+  phone: "Desk phone",
+};
+
 /**
- * A modal overlay over the floor: focus is trapped inside, Escape closes
- * it and focus returns to where it came from.
+ * A modal over the floor: focus is trapped inside, Escape closes it and focus
+ * returns to where it came from. With a `device` it is drawn as that device,
+ * a monitor bezel or a phone frame, with a title bar that always carries a
+ * visible close button and, when there is somewhere to go back to, a back one.
+ * The content is ordinary React DOM either way.
  */
 export const Overlay: React.FC<{
   titleId: string;
@@ -150,6 +161,9 @@ export const Overlay: React.FC<{
   subtitle?: string;
   testId: string;
   role?: "dialog" | "alertdialog";
+  device?: DeviceKind;
+  /** A way back to the screen this one was opened from. */
+  back?: { label: string; run: () => void };
   onClose: () => void;
   onKeyDown?: (e: React.KeyboardEvent<HTMLDivElement>) => void;
   initialFocusRef?: React.RefObject<HTMLElement | null>;
@@ -161,6 +175,8 @@ export const Overlay: React.FC<{
   subtitle,
   testId,
   role = "dialog",
+  device,
+  back,
   onClose,
   onKeyDown,
   initialFocusRef,
@@ -172,6 +188,11 @@ export const Overlay: React.FC<{
     onEscape: onClose,
     returnFocusTo,
   });
+  const frame = device
+    ? device === "phone"
+      ? "max-w-sm rounded-[28px] border-[10px] border-[#1a1c22] bg-[var(--sd-surface)]"
+      : "max-w-3xl rounded-md border-[10px] border-[#1a1c22] bg-[var(--sd-surface)]"
+    : "max-w-xl border border-[var(--sd-hairline-strong)] bg-[var(--sd-surface)]";
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
       <div
@@ -180,18 +201,46 @@ export const Overlay: React.FC<{
         aria-modal="true"
         aria-labelledby={titleId}
         data-testid={testId}
+        data-device={device}
         onKeyDown={onKeyDown}
-        className="sd-enter max-h-[85dvh] w-full max-w-xl min-w-0 overflow-y-auto border border-[var(--sd-hairline-strong)] bg-[var(--sd-surface)] p-4 font-mono text-[var(--sd-text)]"
+        className={`sd-enter max-h-[85dvh] w-full min-w-0 overflow-y-auto font-mono text-[var(--sd-text)] ${frame}`}
       >
-        <h3 id={titleId} className="text-sm font-bold break-words">
-          {title}
-        </h3>
-        {subtitle ? (
-          <p className="mt-0.5 text-[11px] break-words text-[var(--sd-muted)]">
-            {subtitle}
-          </p>
+        {device ? (
+          <div className="flex items-center justify-between gap-2 border-b border-[var(--sd-hairline)] bg-[var(--sd-surface-2)] px-3 py-1.5">
+            <span className="flex min-w-0 items-center gap-2 text-[10px] font-semibold tracking-[0.14em] text-[var(--sd-muted)] uppercase">
+              <span
+                aria-hidden="true"
+                className="inline-block size-1.5 bg-[var(--sd-emerald)]"
+              />
+              {DEVICE_LABEL[device]}
+            </span>
+            <span className="flex gap-1">
+              {back ? (
+                <OverlayButton className="min-h-8" onClick={back.run}>
+                  {back.label}
+                </OverlayButton>
+              ) : null}
+              <OverlayButton
+                className="min-h-8"
+                aria-label="Close window"
+                onClick={onClose}
+              >
+                <span aria-hidden="true">Esc</span>
+              </OverlayButton>
+            </span>
+          </div>
         ) : null}
-        <div className="mt-3 space-y-3">{children}</div>
+        <div className="p-4">
+          <h3 id={titleId} className="text-sm font-bold break-words">
+            {title}
+          </h3>
+          {subtitle ? (
+            <p className="mt-0.5 text-[11px] break-words text-[var(--sd-muted)]">
+              {subtitle}
+            </p>
+          ) : null}
+          <div className="mt-3 space-y-3">{children}</div>
+        </div>
       </div>
     </div>
   );

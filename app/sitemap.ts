@@ -4,6 +4,7 @@ import { getAllPublishedBlogPosts } from "@/lib/blog";
 import { resolveBaseUrl } from "@/lib/domain";
 import { ROUTE_METADATA_CONFIGS } from "@/lib/seo-metadata";
 import { getRouteLastModified } from "@/lib/fs-stat-mapping";
+import { getNavGroupForHref } from "@/lib/navigation";
 
 export const revalidate = 86400;
 
@@ -49,9 +50,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     let changeFrequency: MetadataRoute.Sitemap[number]["changeFrequency"] =
       "weekly";
 
+    // Pages the Simulators menu lists are the site's flagship tools (#1848);
+    // the phone-sized variants of them stay at the default.
+    const isSimulatorPage =
+      !config.path.startsWith("/m/") &&
+      getNavGroupForHref(config.path)?.id === "simulators";
+
     if (
-      config.path === "/crf" ||
-      config.path === "/patrol" ||
+      isSimulatorPage ||
       config.path === "/stack" ||
       config.path === "/work/laser-loon"
     ) {

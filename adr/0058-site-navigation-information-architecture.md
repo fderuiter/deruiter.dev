@@ -61,8 +61,8 @@ The top bar has six items.
   matrix in `AGENTS.md`), and the test above catches a missing palette entry.
 - The Simulators label has no overview page of its own. Its trigger opens the
   menu, and a Simulators index is a possible later addition.
-- Breadcrumbs on the existing studios still say "Systems"; phase N3 changes them
-  with the other parity work.
+- Breadcrumbs on the existing studios said "Systems"; phase N3 (amendment below)
+  replaced that with the menu group's name.
 
 ## Amendment 2026-10-09: one Preferences menu
 
@@ -82,3 +82,19 @@ Preferences panel are replaced by one Preferences menu in the top bar,
 - The skip-link toggle, the footer toggle and the command palette command from
   [ADR 0040](0040-dyslexia-first-typography-and-dynamic-pretext-accessibility.md)
   are unchanged.
+
+## Amendment 2026-10-09: parity across the other surfaces
+
+Phase N3 ([#1848](https://github.com/fderuiter/deruiter.dev/issues/1848),
+[#1849](https://github.com/fderuiter/deruiter.dev/issues/1849)).
+
+- Breadcrumbs: the parent crumb is the page's menu group (`getNavBreadcrumbParents`
+  and `getNavBreadcrumbSchemaParents` in `lib/navigation.ts`), so "Systems" is
+  gone. A group's own overview page and plain top-bar links get no parent.
+- `llms.txt` has one section per top-bar item in bar order, then mobile and
+  utility routes. Protocol Drift is listed with the Simulators.
+- The command palette shows each entry's group before its badge.
+- The sitemap rates the Simulators pages, `/stack` and `/work/laser-loon` at 0.9.
+- `__tests__/e2e/navigation-matrix.spec.ts` covers the bar, the three menus, the
+  drawer and Preferences at 320, 375, 768, 1024 and 1440 px, with a header
+  overflow check at each width and at 200% text.

@@ -10,6 +10,7 @@ import React, {
   useCallback,
 } from "react";
 import { createPortal } from "react-dom";
+import { getNavGroupForHref } from "@/lib/navigation";
 import { hexToRgba } from "@/lib/utils";
 import { designManifest } from "@/lib/design-manifest";
 import { logger } from "@/lib/logger";
@@ -1094,7 +1095,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         category: "navigation",
         url: "/simulator",
         icon: <IconDirections className="w-4 h-4 text-brand-cyan" />,
-        badge: "Systems Simulator",
+        badge: "Simulator",
         status: "Incident Triage",
         description:
           "Pick an architecture bias, triage an outage and review a pipeline, then see which architectural archetype your trade-offs map to.",
@@ -1719,6 +1720,12 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
                               isActive ? "text-brand-cyan" : "text-zinc-400"
                             }`}
                           >
+                            {getNavGroupForHref(item.url) && (
+                              <span data-testid="palette-group">
+                                {getNavGroupForHref(item.url)?.label}
+                                {" · "}
+                              </span>
+                            )}
                             {item.badge ||
                               (item.category === "case-study"
                                 ? "Case Study"
@@ -1785,6 +1792,12 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
                 <div>
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-brand-cyan/10 text-brand-cyan border border-brand-cyan/20">
+                      {getNavGroupForHref(activeItem.url) && (
+                        <span data-testid="palette-preview-group">
+                          {getNavGroupForHref(activeItem.url)?.label}
+                          {" · "}
+                        </span>
+                      )}
                       {activeItem.badge ||
                         (activeItem.category === "case-study"
                           ? "Case Study"

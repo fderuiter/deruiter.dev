@@ -10,6 +10,7 @@ import { GROUP_ORDER } from "@/lib/oss-credits/presets";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { ExternalLink } from "./ExternalLink";
 import { PackageSearch, type PackageTuple } from "./PackageSearch";
+import { getNavBreadcrumbParents } from "@/lib/navigation";
 
 const REPO_URL = "https://github.com/fderuiter/deruiter.dev";
 
@@ -162,7 +163,7 @@ export function AcknowledgmentsView() {
         <header className="space-y-5">
           <Breadcrumbs
             items={[
-              { label: "Systems", href: "/#case-studies" },
+              ...getNavBreadcrumbParents("/acknowledgments"),
               { label: "Open Source Credits" },
             ]}
           />

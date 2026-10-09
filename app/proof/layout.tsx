@@ -1,10 +1,17 @@
 import type { Metadata } from "next";
 import { buildRouteMetadata, ROUTE_METADATA_CONFIGS } from "@/lib/seo-metadata";
 import { getWebApplicationSchema, getBreadcrumbSchema } from "@/lib/seo";
+import { getNavBreadcrumbSchemaParents } from "@/lib/navigation";
 
-export const metadata: Metadata = buildRouteMetadata(ROUTE_METADATA_CONFIGS.proof);
+export const metadata: Metadata = buildRouteMetadata(
+  ROUTE_METADATA_CONFIGS.proof
+);
 
-export default function ProofLayout({ children }: { children: React.ReactNode }) {
+export default function ProofLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <>
       <script
@@ -12,7 +19,8 @@ export default function ProofLayout({ children }: { children: React.ReactNode })
         dangerouslySetInnerHTML={{
           __html: getWebApplicationSchema({
             name: "Logical Proof Workspace | Interactive Formal Verification",
-            description: "Interactive deductive logic workspace with live graph visualization, dual-mode CLI terminal, proof branch verification, and theorem validation.",
+            description:
+              "Interactive deductive logic workspace with live graph visualization, dual-mode CLI terminal, proof branch verification, and theorem validation.",
             url: "/proof",
             applicationCategory: "EducationalApplication",
             genre: "Formal Verification Logic Workspace",
@@ -24,6 +32,7 @@ export default function ProofLayout({ children }: { children: React.ReactNode })
         dangerouslySetInnerHTML={{
           __html: getBreadcrumbSchema([
             { name: "Home", url: "/" },
+            ...getNavBreadcrumbSchemaParents("/proof"),
             { name: "Logical Proof Workspace", url: "/proof" },
           ]),
         }}

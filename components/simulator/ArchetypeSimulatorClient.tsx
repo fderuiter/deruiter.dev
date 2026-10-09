@@ -26,6 +26,7 @@ import {
   type SimulatorOption,
   type SimulatorQuestion,
 } from "@/lib/simulator";
+import { getNavBreadcrumbParents } from "@/lib/navigation";
 
 const GAUGE_RADIUS = 60;
 const GAUGE_CIRCUMFERENCE = 2 * Math.PI * GAUGE_RADIUS;
@@ -177,7 +178,7 @@ export default function ArchetypeSimulatorClient() {
         <div className="w-full flex items-center justify-between gap-4 mb-6 border-b border-zinc-800 pb-4 flex-wrap">
           <Breadcrumbs
             items={[
-              { label: "Systems", href: "/#case-studies" },
+              ...getNavBreadcrumbParents("/simulator"),
               { label: "Incident Simulator" },
             ]}
           />

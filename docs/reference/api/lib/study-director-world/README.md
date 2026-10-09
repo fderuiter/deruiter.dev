@@ -410,6 +410,12 @@ Re-exports [followRoute](internal/movement/functions/followRoute.md)
 
 ***
 
+### forgivingStep
+
+Re-exports [forgivingStep](internal/movement/functions/forgivingStep.md)
+
+***
+
 ### formatClock
 
 Re-exports [formatClock](internal/clock/functions/formatClock.md)

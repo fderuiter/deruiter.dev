@@ -14,6 +14,7 @@
 
 - [facingToward](functions/facingToward.md)
 - [followRoute](functions/followRoute.md)
+- [forgivingStep](functions/forgivingStep.md)
 - [isBlocked](functions/isBlocked.md)
 - [planRoute](functions/planRoute.md)
 - [step](functions/step.md)

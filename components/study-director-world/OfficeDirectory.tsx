@@ -10,6 +10,13 @@ const GROUPS: Array<{ kind: DirectoryEntry["target"]["kind"]; title: string }> =
     { kind: "room", title: "Rooms" },
   ];
 
+/** The clock cost of a walk, in words: shown before the player commits. */
+function walkCostText(minutes: number): string {
+  if (minutes < 1) return "under a minute";
+  const whole = Math.round(minutes);
+  return `about ${whole} ${whole === 1 ? "minute" : "minutes"}`;
+}
+
 /**
  * The office directory: every station, person and room as an ordinary
  * button. Choosing one walks the player there, so the floor can be played
@@ -23,7 +30,16 @@ export const OfficeDirectory: React.FC<{
   walkingTo: string | null;
   disabled: boolean;
   onWalk: (entry: DirectoryEntry) => void;
-}> = ({ title = "Office directory", entries, walkingTo, disabled, onWalk }) => {
+  /** Clock minutes the walk to an entry would take, or null when it cannot be reached. */
+  minutesTo?: (entry: DirectoryEntry) => number | null;
+}> = ({
+  title = "Office directory",
+  entries,
+  walkingTo,
+  disabled,
+  onWalk,
+  minutesTo,
+}) => {
   const [open, setOpen] = useState(false);
   const panelId = useId();
   return (
@@ -61,27 +77,43 @@ export const OfficeDirectory: React.FC<{
                   <ul
                     className={`mt-1 grid gap-1 ${group.kind === "room" ? "grid-cols-2" : ""}`}
                   >
-                    {items.map((entry) => (
-                      <li key={entry.id} className="min-w-0">
-                        <button
-                          type="button"
-                          disabled={disabled}
-                          aria-label={`Walk to ${entry.label}, ${entry.detail}`}
-                          aria-pressed={walkingTo === entry.id}
-                          onClick={() => onWalk(entry)}
-                          className="flex min-h-12 w-full min-w-0 flex-col items-start justify-center gap-0.5 border border-[var(--sd-hairline)] px-2 py-1 text-left text-xs text-zinc-200 hover:border-[var(--sd-amber)] focus-visible:border-[var(--sd-amber)] active:scale-[0.98] disabled:opacity-50 aria-pressed:border-[var(--sd-amber)]"
-                        >
-                          <span className="max-w-full min-w-0 break-words">
-                            {entry.label}
-                          </span>
-                          {entry.target.kind === "room" ? null : (
-                            <span className="max-w-full min-w-0 text-[10px] break-words text-[var(--sd-muted)]">
-                              {entry.detail}
+                    {items.map((entry) => {
+                      const minutes = minutesTo?.(entry) ?? null;
+                      const costId = `${panelId}-cost-${entry.id}`;
+                      return (
+                        <li key={entry.id} className="min-w-0">
+                          <button
+                            type="button"
+                            disabled={disabled}
+                            aria-label={`Walk to ${entry.label}, ${entry.detail}`}
+                            aria-describedby={
+                              minutes === null ? undefined : costId
+                            }
+                            aria-pressed={walkingTo === entry.id}
+                            onClick={() => onWalk(entry)}
+                            className="flex min-h-12 w-full min-w-0 flex-col items-start justify-center gap-0.5 border border-[var(--sd-hairline)] px-2 py-1 text-left text-xs text-zinc-200 hover:border-[var(--sd-amber)] focus-visible:border-[var(--sd-amber)] active:scale-[0.98] disabled:opacity-50 aria-pressed:border-[var(--sd-amber)]"
+                          >
+                            <span className="max-w-full min-w-0 break-words">
+                              {entry.label}
                             </span>
-                          )}
-                        </button>
-                      </li>
-                    ))}
+                            {entry.target.kind === "room" ? null : (
+                              <span className="max-w-full min-w-0 text-[10px] break-words text-[var(--sd-muted)]">
+                                {entry.detail}
+                              </span>
+                            )}
+                            {minutes === null ? null : (
+                              <span
+                                id={costId}
+                                data-testid="walk-cost"
+                                className="text-[10px] text-[var(--sd-steel)] tabular-nums"
+                              >
+                                {walkCostText(minutes)}
+                              </span>
+                            )}
+                          </button>
+                        </li>
+                      );
+                    })}
                   </ul>
                 </section>
               );

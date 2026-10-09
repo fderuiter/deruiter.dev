@@ -17,6 +17,7 @@ import {
   describeSurroundings,
   examineSelf,
   formatClock,
+  forgivingStep,
   goHome,
   hudReadout,
   interact,
@@ -48,6 +49,8 @@ import type { StudyState } from "@/lib/study-director";
 import { safeIsAvailable, safeRawStorage } from "@/lib/safe-storage";
 import { followCamera } from "./camera";
 import { DigestCard, OvernightCard } from "./DayCards";
+import { FeedbackToasts } from "./FeedbackToasts";
+import { cuesBetween, feedbackBetween, type Feedback } from "./feedback-model";
 import { FloorView } from "./FloorView";
 import { hudChanges } from "./hud-model";
 import { highlightedTile, type FloorScene } from "./floor-renderer";
@@ -65,6 +68,7 @@ import { MeetingSection, TeamOverlay, useTeamLayer } from "./TeamLayer";
 import { WorldHud } from "./WorldHud";
 import { useReducedMotion } from "./use-reduced-motion";
 import { WorldIntro } from "./WorldIntro";
+import { playWorldCue } from "./world-sound";
 
 /** Milliseconds between steps when walking by directory or holding a key. */
 const STEP_MS = 110;
@@ -237,6 +241,25 @@ export const StudyDirectorWorld: React.FC<{
     const said = hudChanges(prev.hud, hud, prev.minute, world.minute);
     if (said.length > 0) setHudNotice(said.join(" "));
   }, [hud, world.minute]);
+  // Sounds and small toasts follow what changed, once per change; both are
+  // decoration on top of the live regions (#1836).
+  const [toasts, setToasts] = useState<Feedback[]>([]);
+  const lastWorld = useRef(world);
+  useEffect(() => {
+    const prev = lastWorld.current;
+    lastWorld.current = world;
+    if (prev === world) return;
+    for (const cue of cuesBetween(prev, world)) playWorldCue(cue);
+    const fresh = feedbackBetween(prev, world);
+    if (fresh.length === 0) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setToasts((now) => [...now, ...fresh].slice(-4));
+    const ids = new Set(fresh.map((f) => f.id));
+    window.setTimeout(
+      () => setToasts((now) => now.filter((f) => !ids.has(f.id))),
+      3200
+    );
+  }, [world]);
   const away = report !== null;
   const here = useMemo(() => {
     const room = roomAt(map, world.player.x, world.player.y);
@@ -247,7 +270,7 @@ export const StudyDirectorWorld: React.FC<{
 
   const move = useCallback(
     (dir: Facing) => {
-      const result = step(world, dir, map, people);
+      const result = forgivingStep(world, dir, map, people);
       if (!result.ok) {
         setNotice(REFUSALS[result.reason]);
         return;
@@ -355,6 +378,13 @@ export const StudyDirectorWorld: React.FC<{
         facing: route.facing,
       });
     },
+    [world.player, map, people]
+  );
+
+  /** What a directory walk would cost, worked out only for the entries shown. */
+  const minutesTo = useCallback(
+    (entry: DirectoryEntry) =>
+      planRoute(world.player, entry.target, map, people)?.minutes ?? null,
     [world.player, map, people]
   );
 
@@ -625,6 +655,7 @@ export const StudyDirectorWorld: React.FC<{
                   plates={plates}
                   prompt={away || team.blocking ? null : prompt}
                 />
+                <FeedbackToasts items={toasts} />
                 {showMap ? (
                   <Minimap
                     map={map}
@@ -705,6 +736,7 @@ export const StudyDirectorWorld: React.FC<{
         walkingTo={walk?.entryId ?? null}
         disabled={away || team.blocking || Boolean(world.meeting)}
         onWalk={walkTo}
+        minutesTo={minutesTo}
       />
       {showIntro ? (
         <WorldIntro

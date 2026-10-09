@@ -6,7 +6,6 @@ import React, {
   useMemo,
   useRef,
   useState,
-  useSyncExternalStore,
 } from "react";
 import {
   SITE_CHECKS,
@@ -55,6 +54,7 @@ import { OfficeDirectory } from "./OfficeDirectory";
 import { SiteVisitPanel, SiteVisitReportPanel } from "./SiteVisitPanel";
 import { MeetingSection, TeamOverlay, useTeamLayer } from "./TeamLayer";
 import { WorldHud } from "./WorldHud";
+import { useReducedMotion } from "./use-reduced-motion";
 import { WorldIntro } from "./WorldIntro";
 
 /** Milliseconds between steps when walking by directory or holding a key. */
@@ -78,23 +78,6 @@ const REFUSALS: Record<WorldRefusal, string> = {
   "study-complete": "The study is over.",
   unreachable: "There is no way through to there right now.",
 };
-
-const MOTION_QUERY = "(prefers-reduced-motion: reduce)";
-
-function subscribeMotion(onChange: () => void): () => void {
-  const mq =
-    typeof window.matchMedia === "function"
-      ? window.matchMedia(MOTION_QUERY)
-      : null;
-  mq?.addEventListener?.("change", onChange);
-  return () => mq?.removeEventListener?.("change", onChange);
-}
-
-function prefersReducedMotion(): boolean {
-  return typeof window.matchMedia === "function"
-    ? window.matchMedia(MOTION_QUERY).matches
-    : false;
-}
 
 function loadWorld(): WorldState | null {
   try {
@@ -179,11 +162,7 @@ export const StudyDirectorWorld: React.FC<{
   // First-run help (#1819); the Controls button reopens it.
   const [showIntro, setShowIntro] = useState(() => !introSeen());
   const [acted, setActed] = useState(false);
-  const reducedMotion = useSyncExternalStore(
-    subscribeMotion,
-    prefersReducedMotion,
-    () => false
-  );
+  const reducedMotion = useReducedMotion();
   const playfieldRef = useRef<HTMLDivElement>(null);
   const lastStep = useRef(0);
 
@@ -691,7 +670,12 @@ export const StudyDirectorWorld: React.FC<{
         />
       ) : null}
       {away ? null : (
-        <TeamOverlay team={team} world={world} returnFocusTo={playfieldRef} />
+        <TeamOverlay
+          team={team}
+          world={world}
+          returnFocusTo={playfieldRef}
+          reducedMotion={reducedMotion}
+        />
       )}
     </div>
   );

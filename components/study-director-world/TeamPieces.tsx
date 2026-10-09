@@ -2,6 +2,7 @@
 
 import React from "react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { clamp } from "@/lib/game-utils";
 import type {
   DialogueLine,
   LineKind,
@@ -24,32 +25,57 @@ const KIND_CLASS: Record<LineKind, string> = {
   joke: "border-zinc-700 text-zinc-400",
 };
 
-/** Lines of dialogue, each tagged with what it carries. */
-export const DialogueLines: React.FC<{ lines: readonly DialogueLine[] }> = ({
-  lines,
-}) => (
-  <ul className="space-y-2 text-xs leading-relaxed">
-    {lines.map((l, i) => (
-      <li key={i} className="flex min-w-0 items-start gap-2">
-        <span
-          className={`mt-px shrink-0 border px-1 text-[9px] font-semibold tracking-wide uppercase ${KIND_CLASS[l.kind]}`}
-        >
-          {KIND_LABEL[l.kind]}
-        </span>
-        <span className="min-w-0 break-words text-zinc-100">
-          {l.text}
-          {l.trustDelta ? (
+/**
+ * Lines of dialogue, each tagged with what it carries. With `reveal`, only
+ * that many characters (counted across all the lines) are visible; the rest
+ * are in the page but transparent, so the full text is always there for a
+ * screen reader and the box never reflows while it types.
+ */
+export const DialogueLines: React.FC<{
+  lines: readonly DialogueLine[];
+  reveal?: number;
+}> = ({ lines, reveal }) => {
+  // Where each line starts in the running count of characters.
+  const starts: number[] = [];
+  let at = 0;
+  for (const l of lines) {
+    starts.push(at);
+    at += l.text.length;
+  }
+  return (
+    <ul className="space-y-2 text-xs leading-relaxed">
+      {lines.map((l, i) => {
+        const shown = clamp((reveal ?? Infinity) - starts[i], 0, l.text.length);
+        return (
+          <li key={i} className="flex min-w-0 items-start gap-2">
             <span
-              className={`ml-1 ${l.trustDelta > 0 ? "text-emerald-300" : "text-[var(--sd-red)]"}`}
+              className={`mt-px shrink-0 border px-1 text-[9px] font-semibold tracking-wide uppercase ${KIND_CLASS[l.kind]}`}
             >
-              {l.trustDelta > 0 ? "(trust up)" : "(trust down)"}
+              {KIND_LABEL[l.kind]}
             </span>
-          ) : null}
-        </span>
-      </li>
-    ))}
-  </ul>
-);
+            <span className="min-w-0 break-words text-zinc-100">
+              {shown >= l.text.length ? (
+                l.text
+              ) : (
+                <>
+                  {l.text.slice(0, shown)}
+                  <span className="opacity-0">{l.text.slice(shown)}</span>
+                </>
+              )}
+              {l.trustDelta ? (
+                <span
+                  className={`ml-1 ${l.trustDelta > 0 ? "text-emerald-300" : "text-[var(--sd-red)]"}`}
+                >
+                  {l.trustDelta > 0 ? "(trust up)" : "(trust down)"}
+                </span>
+              ) : null}
+            </span>
+          </li>
+        );
+      })}
+    </ul>
+  );
+};
 
 const Segments: React.FC<{ value: 1 | 2 | 3 | 4; tone: string }> = ({
   value,

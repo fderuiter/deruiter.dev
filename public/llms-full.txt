@@ -404,15 +404,25 @@ The approach: Next.js Server Actions handle submissions, Zod checks the inputs, 
 
 ## Routes
 
-## Systems and studios
+## Work
 
-- [Open Source Credits and Licenses](https://deruiter.dev/acknowledgments): The open source projects this site is built on, each linked to its home, with versions, licenses and why it is used. Full license texts are included.
-- [CRF Studio: Clinical Form Designer](https://deruiter.dev/crf): Build clinical research forms, add validation rules, and try them with sample data. Explore a browser-based study designer by Fred de Ruiter.
-- [NeuroRecon Studio: Brain Viewer](https://deruiter.dev/neuro): Explore brain surfaces and MRI slices, place control points, and work through simulated reconstruction problems in a FreeSurfer-style pipeline simulator.
-- [Ski Patrol Shift Studio Simulation](https://deruiter.dev/patrol): An interactive Midwest ski-patrol judgment simulation foundation powered by deterministic FSM transitions and operational dispatch routines.
-- [Logical Proof Workspace: Step by Step](https://deruiter.dev/proof): Build a proof one step at a time. Connect premises, try inference rules, and inspect where an argument goes wrong. Export finished proofs to Lean 4 or LaTeX.
-- [Architectural Archetype Simulator](https://deruiter.dev/simulator): Pick an architecture bias, triage a production latency spike and review an async pipeline, then see which architectural archetype your trade-offs map to.
-- [Under the Hood: How This Site Works](https://deruiter.dev/stack): See how this site works: text layout, browser audio, the application stack, and the checks I use while building it. Demos and source included.
+- [Project Writeups and Case Studies](https://deruiter.dev/case-studies): Read about the problems, implementation choices, and lessons behind Fred de Ruiter’s clinical data tools, web apps, and side projects, with code on GitHub.
+- [4Glory: Does Fred Know Ball?](https://deruiter.dev/case-studies/4glory): Does Fred know ball? Compare basketball opinions with Python and XGBoost predictions on NBA data, using rolling features, walk-forward validation, and SHAP.
+- [Inspectable Cardiac Risk Models](https://deruiter.dev/case-studies/cardiac-risk-modeling): Read a cardiac risk modeling project using Python, XGBoost, and SHAP. Explore data leakage, cross-validation, calibration, and model explanations.
+- [clintrials: Trial Designs in Browser](https://deruiter.dev/case-studies/clintrials): Compare adaptive clinical trial designs in a browser workspace. See how Pyodide workers run statistical models without a separate Python setup.
+- [CRF.xl: Spreadsheet to Clinical Forms](https://deruiter.dev/case-studies/crf-xl): Turn Excel protocol grids into clinical form definitions and ODM-XML exports. Read how CRF.xl handles rules, dependencies, and background work.
+- [Designing for My Brother: Typography](https://deruiter.dev/case-studies/designing-for-my-brother): A personal case study on cognitive typography: replacing generic fonts with Lexend, Atkinson Hyperlegible, and OpenDyslexic with zero-CLS Pretext reflow.
+- [DuckDeploy: Config to Deployed Forms](https://deruiter.dev/case-studies/duckdeploy): Turn JSON Schema into configuration forms, then compile the values into deployment manifests. See how DuckDeploy uses TypeScript and workers.
+- [Equipose: Trial Randomization](https://deruiter.dev/case-studies/equipose-randomization): Explore reproducible clinical trial randomization in the browser, with generated Python, R, SAS, and Stata code for inspecting the allocation.
+- [Lambda-Wave: Respiratory Motion Radar](https://deruiter.dev/case-studies/lambda-wave): Explore respiratory motion tracking for surface guided radiation therapy using FMCW radar, Haskell signal processing, and C++ sample transport.
+- [OxidizeMath: Rust Scientific Computing](https://deruiter.dev/case-studies/oxidizemath): Explore scientific computing in Rust with numerical solvers, compile-time checks, and interactive simulations. Read the OxidizeMath writeup.
+- [PromptOps: Test Prompts Like Code](https://deruiter.dev/case-studies/promptops): Version prompts, validate response shapes, and run regression evaluations in CI. Read how PromptOps makes changes easier to inspect and compare.
+- [Sonos Network Controller in Python](https://deruiter.dev/case-studies/sonos-network-controller): Control Sonos speakers on your own network with a Python API and a small web interface. Read about the protocols and implementation choices.
+- [Laser Loon: Artwork & Downloads](https://deruiter.dev/work/laser-loon): Meet Laser Loon, my Minnesota flag submission, and download the artwork in print and web formats. The eye lasers are included in the download.
+
+## Blog
+
+- [Engineering Dispatches: Blog](https://deruiter.dev/blog): Cross-project retrospectives and technique write-ups on clinical data engineering, formal verification, accessibility, and browser graphics by Fred de Ruiter.
 
 ## Arcade
 
@@ -429,27 +439,24 @@ The approach: Next.js Server Actions handle submissions, Zod checks the inputs, 
 - [Working With Duck: Pet Sim Arcade](https://deruiter.dev/arcade/working-with-duck): You have a deadline. Duck the puppy has a ball. Keep the project and the puppy happy with toys, treats, and park breaks in this browser game.
 - [Laser Loon Merch, Coming Soon](https://deruiter.dev/merch): Laser Loon stickers, shirts, desk mats, mugs and prints, planned at base production cost through Redbubble with no artist markup. The artwork is CC0.
 
-## Case studies
+## Simulators
 
-- [Project Writeups and Case Studies](https://deruiter.dev/case-studies): Read about the problems, implementation choices, and lessons behind Fred de Ruiter’s clinical data tools, web apps, and side projects, with code on GitHub.
-- [4Glory: Does Fred Know Ball?](https://deruiter.dev/case-studies/4glory): Does Fred know ball? Compare basketball opinions with Python and XGBoost predictions on NBA data, using rolling features, walk-forward validation, and SHAP.
-- [Inspectable Cardiac Risk Models](https://deruiter.dev/case-studies/cardiac-risk-modeling): Read a cardiac risk modeling project using Python, XGBoost, and SHAP. Explore data leakage, cross-validation, calibration, and model explanations.
-- [clintrials: Trial Designs in Browser](https://deruiter.dev/case-studies/clintrials): Compare adaptive clinical trial designs in a browser workspace. See how Pyodide workers run statistical models without a separate Python setup.
-- [CRF.xl: Spreadsheet to Clinical Forms](https://deruiter.dev/case-studies/crf-xl): Turn Excel protocol grids into clinical form definitions and ODM-XML exports. Read how CRF.xl handles rules, dependencies, and background work.
-- [Designing for My Brother: Typography](https://deruiter.dev/case-studies/designing-for-my-brother): A personal case study on cognitive typography: replacing generic fonts with Lexend, Atkinson Hyperlegible, and OpenDyslexic with zero-CLS Pretext reflow.
-- [DuckDeploy: Config to Deployed Forms](https://deruiter.dev/case-studies/duckdeploy): Turn JSON Schema into configuration forms, then compile the values into deployment manifests. See how DuckDeploy uses TypeScript and workers.
-- [Equipose: Trial Randomization](https://deruiter.dev/case-studies/equipose-randomization): Explore reproducible clinical trial randomization in the browser, with generated Python, R, SAS, and Stata code for inspecting the allocation.
-- [Lambda-Wave: Respiratory Motion Radar](https://deruiter.dev/case-studies/lambda-wave): Explore respiratory motion tracking for surface guided radiation therapy using FMCW radar, Haskell signal processing, and C++ sample transport.
-- [OxidizeMath: Rust Scientific Computing](https://deruiter.dev/case-studies/oxidizemath): Explore scientific computing in Rust with numerical solvers, compile-time checks, and interactive simulations. Read the OxidizeMath writeup.
-- [PromptOps: Test Prompts Like Code](https://deruiter.dev/case-studies/promptops): Version prompts, validate response shapes, and run regression evaluations in CI. Read how PromptOps makes changes easier to inspect and compare.
-- [Sonos Network Controller in Python](https://deruiter.dev/case-studies/sonos-network-controller): Control Sonos speakers on your own network with a Python API and a small web interface. Read about the protocols and implementation choices.
-- [Laser Loon: Artwork & Downloads](https://deruiter.dev/work/laser-loon): Meet Laser Loon, my Minnesota flag submission, and download the artwork in print and web formats. The eye lasers are included in the download.
+- [CRF Studio: Clinical Form Designer](https://deruiter.dev/crf): Build clinical research forms, add validation rules, and try them with sample data. Explore a browser-based study designer by Fred de Ruiter.
+- [NeuroRecon Studio: Brain Viewer](https://deruiter.dev/neuro): Explore brain surfaces and MRI slices, place control points, and work through simulated reconstruction problems in a FreeSurfer-style pipeline simulator.
+- [Ski Patrol Shift Studio Simulation](https://deruiter.dev/patrol): An interactive Midwest ski-patrol judgment simulation foundation powered by deterministic FSM transitions and operational dispatch routines.
+- [Logical Proof Workspace: Step by Step](https://deruiter.dev/proof): Build a proof one step at a time. Connect premises, try inference rules, and inspect where an argument goes wrong. Export finished proofs to Lean 4 or LaTeX.
+- [Protocol Drift: Data Pipeline Sim](https://deruiter.dev/protocol-drift): A browser-first systems-engineering puzzle simulation exploring the friction between ideal regulatory specifications and messy human clinical data collection.
+- [Architectural Archetype Simulator](https://deruiter.dev/simulator): Pick an architecture bias, triage a production latency spike and review an async pipeline, then see which architectural archetype your trade-offs map to.
 
-## Writing and contact
+## About
 
-- [Engineering Dispatches: Blog](https://deruiter.dev/blog): Cross-project retrospectives and technique write-ups on clinical data engineering, formal verification, accessibility, and browser graphics by Fred de Ruiter.
-- [Contact Fred: Builds, Bugs, Questions](https://deruiter.dev/contact): Working on something interesting, found an open-source bug, or have a clinical data question? Send Fred de Ruiter a note, or book a video chat to talk it over.
+- [Open Source Credits and Licenses](https://deruiter.dev/acknowledgments): The open source projects this site is built on, each linked to its home, with versions, licenses and why it is used. Full license texts are included.
 - [Book a 30-Minute Chat With Fred](https://deruiter.dev/schedule): Pick a time on Google Calendar to talk about a project, ask a question, or say hello. Each booking is a 30-minute Google Meet chat with Fred de Ruiter.
+- [Under the Hood: How This Site Works](https://deruiter.dev/stack): See how this site works: text layout, browser audio, the application stack, and the checks I use while building it. Demos and source included.
+
+## Contact
+
+- [Contact Fred: Builds, Bugs, Questions](https://deruiter.dev/contact): Working on something interesting, found an open-source bug, or have a clinical data question? Send Fred de Ruiter a note, or book a video chat to talk it over.
 
 ## Mobile and utility routes
 
@@ -458,4 +465,3 @@ The approach: Next.js Server Actions handle submissions, Zod checks the inputs, 
 - [Mobile Ski Patrol Shift Studio](https://deruiter.dev/m/patrol): Touch-optimized ski patrol operational judgment simulator built for mobile screens, allowing real-time triage and emergency intervention decisions.
 - [Mobile Logical Proof Workspace](https://deruiter.dev/m/proof): Touch-optimized formal logic proof workspace tailored for handheld devices, offering interactive deduction step ledgers and fallacy diagnostics.
 - [You’re Offline: Page Not Saved](https://deruiter.dev/offline): This page has not been saved for offline use. Check your connection, retry the page, or open one of the pages already cached in your browser.
-- [Protocol Drift: Data Pipeline Sim](https://deruiter.dev/protocol-drift): A browser-first systems-engineering puzzle simulation exploring the friction between ideal regulatory specifications and messy human clinical data collection.

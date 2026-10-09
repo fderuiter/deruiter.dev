@@ -2,8 +2,11 @@ import type { Metadata } from "next";
 import { ROUTE_METADATA_CONFIGS, buildRouteMetadata } from "@/lib/seo-metadata";
 import { getWebApplicationSchema, getBreadcrumbSchema } from "@/lib/seo";
 import { StackOverviewView } from "@/components/stack/StackOverviewView";
+import { getNavBreadcrumbSchemaParents } from "@/lib/navigation";
 
-export const metadata: Metadata = buildRouteMetadata(ROUTE_METADATA_CONFIGS.stack);
+export const metadata: Metadata = buildRouteMetadata(
+  ROUTE_METADATA_CONFIGS.stack
+);
 
 export default function StackPage() {
   return (
@@ -25,7 +28,7 @@ export default function StackPage() {
         dangerouslySetInnerHTML={{
           __html: getBreadcrumbSchema([
             { name: "Home", url: "/" },
-            { name: "Systems", url: "/#case-studies" },
+            ...getNavBreadcrumbSchemaParents("/stack"),
             { name: "Under the Hood (Stack)", url: "/stack" },
           ]),
         }}

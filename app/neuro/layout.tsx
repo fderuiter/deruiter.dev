@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { buildRouteMetadata, ROUTE_METADATA_CONFIGS } from "@/lib/seo-metadata";
 import { getWebApplicationSchema, getBreadcrumbSchema } from "@/lib/seo";
+import { getNavBreadcrumbSchemaParents } from "@/lib/navigation";
 
 export const metadata: Metadata = buildRouteMetadata(
   ROUTE_METADATA_CONFIGS.neuro
@@ -31,7 +32,7 @@ export default function NeuroLayout({
         dangerouslySetInnerHTML={{
           __html: getBreadcrumbSchema([
             { name: "Home", url: "/" },
-            { name: "Systems", url: "/#about" },
+            ...getNavBreadcrumbSchemaParents("/neuro"),
             { name: "NeuroRecon Studio", url: "/neuro" },
           ]),
         }}

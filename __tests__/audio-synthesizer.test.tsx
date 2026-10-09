@@ -16,6 +16,10 @@ describe("Audio Synthesizer & Sound Settings Engine", () => {
 
   const providerContent = fs.readFileSync(providerPath, "utf-8");
   const navbarContent = fs.readFileSync(navbarPath, "utf-8");
+  const preferencesPath = path.join(
+    process.cwd(),
+    "components/nav/PreferencesMenu.tsx"
+  );
   const terminalContent = fs.readFileSync(terminalPath, "utf-8");
   const skillsContent = fs.readFileSync(skillsPath, "utf-8");
 
@@ -65,8 +69,9 @@ describe("Audio Synthesizer & Sound Settings Engine", () => {
     expect(navbarContent).toContain(
       'import { useAudio } from "@/components/providers/AudioProvider";'
     );
-    expect(navbarContent).toContain(
-      'SOUND: {muted ? "OFF" : profile.toUpperCase()}'
+    // The sound controls live in the single Preferences panel (#1847).
+    expect(fs.readFileSync(preferencesPath, "utf-8")).toContain(
+      'Sound · {muted ? "off" : profile}'
     );
     expect(navbarContent).toContain("onMouseEnter={handleLinkHover}");
     expect(navbarContent).toMatch(

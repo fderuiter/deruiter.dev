@@ -46,6 +46,7 @@ describe("Proof Export Generators (Lean 4, LaTeX, Markdown, Mermaid)", () => {
     expect(getExportMimeType("markdown")).toBe("text/markdown;charset=utf-8");
     expect(getExportMimeType("mermaid")).toBe("text/vnd.mermaid;charset=utf-8");
   });
+
   it("withholds a Lean proof template until the current graph is complete", () => {
     const solvedEdges = [
       { source: "A", target: "C" },

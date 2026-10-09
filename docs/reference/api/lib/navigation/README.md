@@ -8,6 +8,7 @@
 
 ## Interfaces
 
+- [NavBreadcrumbParent](interfaces/NavBreadcrumbParent.md)
 - [NavGroup](interfaces/NavGroup.md)
 - [NavItem](interfaces/NavItem.md)
 - [NavSection](interfaces/NavSection.md)
@@ -28,7 +29,10 @@
 - [filterNavItems](functions/filterNavItems.md)
 - [getAllNavHrefs](functions/getAllNavHrefs.md)
 - [getAllNavItems](functions/getAllNavItems.md)
+- [getNavBreadcrumbParents](functions/getNavBreadcrumbParents.md)
+- [getNavBreadcrumbSchemaParents](functions/getNavBreadcrumbSchemaParents.md)
 - [getNavGroup](functions/getNavGroup.md)
+- [getNavGroupForHref](functions/getNavGroupForHref.md)
 - [getNavGroupItems](functions/getNavGroupItems.md)
 - [getNavHref](functions/getNavHref.md)
 - [isNavGroupActive](functions/isNavGroupActive.md)

@@ -7,6 +7,7 @@ import { NextPrevNav } from "@/components/ui/NextPrevNav";
 import { PageLayout } from "@/components/PageLayout";
 import { EngineeringBridge } from "@/components/EngineeringBridge";
 import { PatrolShiftSkeleton } from "@/components/patrol/Skeletons";
+import { getNavBreadcrumbParents } from "@/lib/navigation";
 
 const PatrolShiftContainer = dynamic(
   () =>
@@ -31,7 +32,7 @@ export default function PatrolShiftPage() {
         <h1 className="sr-only">Patrol Shift Studio</h1>
         <Breadcrumbs
           items={[
-            { label: "Systems", href: "/#about" },
+            ...getNavBreadcrumbParents("/patrol"),
             { label: "Patrol Shift", href: "/patrol" },
           ]}
         />

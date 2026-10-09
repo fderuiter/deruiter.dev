@@ -63,3 +63,22 @@ The top bar has six items.
   menu, and a Simulators index is a possible later addition.
 - Breadcrumbs on the existing studios still say "Systems"; phase N3 changes them
   with the other parity work.
+
+## Amendment 2026-10-09: one Preferences menu
+
+Phase N2 ([#1847](https://github.com/fderuiter/deruiter.dev/issues/1847)). The
+STORY/PRO toggle, the "Aa" dyslexia pill, the sound panel and the tablet
+Preferences panel are replaced by one Preferences menu in the top bar,
+`components/nav/PreferencesMenu.tsx`.
+
+- The panel has three labelled sections: Reading mode, Sound and Text. The
+  mobile drawer renders the same `PreferencesPanel`, so a preference behaves the
+  same on both surfaces.
+- Nothing about storage changed. Reading mode still persists under the persona
+  key, the font under `portfolio-font-mode`, and sound under `sound_muted`,
+  `sound_volume` and `sound_profile`.
+- Every change is announced to screen readers. Reading mode is assertive; sound
+  and font changes are polite.
+- The skip-link toggle, the footer toggle and the command palette command from
+  [ADR 0040](0040-dyslexia-first-typography-and-dynamic-pretext-accessibility.md)
+  are unchanged.

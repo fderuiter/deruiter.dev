@@ -470,7 +470,7 @@ export const TeamOverlay: React.FC<{
           <h4 className="text-[10px] font-semibold tracking-[0.14em] text-[var(--sd-muted)] uppercase">
             Delegate
           </h4>
-          <div className="mt-1 grid gap-1 sm:grid-cols-2">
+          <div className="mt-1 grid gap-1 sm:grid-cols-3">
             {DELEGATION_VERBS.map((v) => (
               <OverlayButton key={v} onClick={() => team.verb(c.memberId, v)}>
                 {VERB_LABEL[v]}

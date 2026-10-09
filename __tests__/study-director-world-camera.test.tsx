@@ -107,15 +107,13 @@ function sceneAt(player: PlayerState): FloorScene {
 
 describe("FloorRenderer camera", () => {
   const blits = (ctx: CanvasRenderingContext2D) =>
-    (ctx.drawImage as unknown as ReturnType<typeof vi.fn>).mock.calls.filter(
-      (c) => c.length === 9
-    );
+    vi.mocked(ctx.drawImage).mock.calls.filter((c) => c.length === 9);
 
   it("copies only the window around the player, in whole device pixels", () => {
     const ctx = document
       .createElement("canvas")
       .getContext("2d") as CanvasRenderingContext2D;
-    (ctx.drawImage as unknown as ReturnType<typeof vi.fn>).mockClear();
+    vi.mocked(ctx.drawImage).mockClear();
     const engine = new FloorRenderer(sceneAt({ x: 35, y: 12, facing: "up" }));
     engine.setScale(2);
     engine.render(ctx);
@@ -137,7 +135,7 @@ describe("FloorRenderer camera", () => {
     const ctx = document
       .createElement("canvas")
       .getContext("2d") as CanvasRenderingContext2D;
-    (ctx.drawImage as unknown as ReturnType<typeof vi.fn>).mockClear();
+    vi.mocked(ctx.drawImage).mockClear();
     const engine = new FloorRenderer(sceneAt({ x: 1, y: 1, facing: "down" }));
     engine.setScale(2);
     engine.render(ctx);
@@ -153,12 +151,12 @@ describe("FloorRenderer camera", () => {
     const engine = new FloorRenderer(start);
     engine.setScale(2);
     engine.setScene({ ...start, player: { x: 21, y: 11, facing: "right" } });
-    (ctx.drawImage as unknown as ReturnType<typeof vi.fn>).mockClear();
+    vi.mocked(ctx.drawImage).mockClear();
     engine.update(0.055);
     engine.render(ctx);
     const mid = blits(ctx)[0][1] as number;
     engine.update(1);
-    (ctx.drawImage as unknown as ReturnType<typeof vi.fn>).mockClear();
+    vi.mocked(ctx.drawImage).mockClear();
     engine.render(ctx);
     const end = blits(ctx)[0][1] as number;
     const first = Math.round(

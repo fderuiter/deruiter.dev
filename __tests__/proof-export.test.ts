@@ -6,10 +6,47 @@ import {
   exportProofToMarkdown,
   exportProofToMermaid,
   exportWorkspaceProof,
+  getExportFilename,
+  getExportMimeType,
 } from "../lib/proof-utils";
 import { createCustomTheorem } from "../lib/proof-custom";
 
 describe("Proof Export Generators (Lean 4, LaTeX, Markdown, Mermaid)", () => {
+  it("generates correct filenames and extensions for all export formats", () => {
+    expect(getExportFilename("lean", "modus-ponens")).toBe(
+      "proof-modus-ponens.lean"
+    );
+    expect(getExportFilename("latex", "modus-tollens")).toBe(
+      "proof-modus-tollens.tex"
+    );
+    expect(getExportFilename("markdown", "paxos-synod")).toBe(
+      "proof-paxos-synod.md"
+    );
+    expect(getExportFilename("mermaid", "disjunctive-syllogism")).toBe(
+      "proof-disjunctive-syllogism.mmd"
+    );
+
+    // Default theorem
+    expect(getExportFilename("lean")).toBe("proof-modus-ponens.lean");
+
+    // Custom theorem as string ID
+    expect(getExportFilename("markdown", "custom")).toBe("proof-custom.md");
+
+    // Custom theorem object
+    const customTheorem = createCustomTheorem(["P", "P -> Q", "Q -> R"], "R");
+    expect(getExportFilename("lean", customTheorem)).toBe("proof-custom.lean");
+    expect(getExportFilename("latex", customTheorem)).toBe("proof-custom.tex");
+  });
+
+  it("maps export formats to standard MIME types", () => {
+    expect(getExportMimeType("lean")).toBe("text/x-lean;charset=utf-8");
+    expect(getExportMimeType("latex")).toBe(
+      "application/x-latex;charset=utf-8"
+    );
+    expect(getExportMimeType("markdown")).toBe("text/markdown;charset=utf-8");
+    expect(getExportMimeType("mermaid")).toBe("text/vnd.mermaid;charset=utf-8");
+  });
+
   it("withholds a Lean proof template until the current graph is complete", () => {
     const solvedEdges = [
       { source: "A", target: "C" },

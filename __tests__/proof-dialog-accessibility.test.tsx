@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   cleanup,
   fireEvent,
@@ -9,6 +9,7 @@ import {
 } from "@testing-library/react";
 import { ProofCustomModal } from "@/components/proof/ProofCustomModal";
 import { ProofExportModal } from "@/components/proof/ProofExportModal";
+import * as downloadModule from "@/lib/download";
 
 afterEach(cleanup);
 
@@ -73,6 +74,32 @@ describe("Proof dialogs", () => {
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     await waitFor(() => expect(document.activeElement).toBe(trigger));
   });
+
+  it("triggers file download when Download File is clicked in export modal", async () => {
+    const downloadSpy = vi
+      .spyOn(downloadModule, "downloadFile")
+      .mockReturnValue(true);
+    render(<ExportHarness />);
+    const trigger = screen.getByRole("button", { name: "Open export" });
+    fireEvent.click(trigger);
+
+    // Switch to Markdown format where download is available even when incomplete
+    const mdButton = screen.getByRole("button", { name: /markdown/i });
+    fireEvent.click(mdButton);
+
+    const downloadButton = screen.getByRole("button", {
+      name: /Download File/i,
+    });
+    expect(downloadButton).toBeTruthy();
+    fireEvent.click(downloadButton);
+
+    expect(downloadSpy).toHaveBeenCalledWith(
+      expect.stringContaining("# Proof Workspace Export: Modus Ponens"),
+      "proof-modus-ponens.md",
+      { mimeType: "text/markdown;charset=utf-8" }
+    );
+  });
+
   it("labels the custom formula fields and restores focus after closing", async () => {
     render(<CustomHarness />);
     const trigger = screen.getByRole("button", { name: "Open custom studio" });

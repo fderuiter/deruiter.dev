@@ -47,6 +47,7 @@ import {
 } from "@/lib/study-director-world";
 import type { StudyState } from "@/lib/study-director";
 import { safeIsAvailable, safeRawStorage } from "@/lib/safe-storage";
+import { DigestCard, OvernightCard } from "./DayCards";
 import { FloorView } from "./FloorView";
 import { hudChanges } from "./hud-model";
 import { highlightedTile, type FloorScene } from "./floor-renderer";
@@ -474,50 +475,15 @@ export const StudyDirectorWorld: React.FC<{
   }, [walk, world, map, people, team, directory]);
 
   const panel = report ? (
-    <section
-      aria-labelledby="sd-world-report"
-      className={`border p-3 ${TONE_CLASS.neutral}`}
-    >
-      <h3 id="sd-world-report" className="text-sm font-bold">
-        Overnight, day {report.day}
-      </h3>
-      <ul className="mt-2 space-y-1 text-xs">
-        {report.lines.length === 0 ? <li>A quiet night.</li> : null}
-        {report.lines.map((l, i) => (
-          <li
-            key={i}
-            className={
-              l.tone === "bad"
-                ? "text-[var(--sd-red)]"
-                : l.tone === "good"
-                  ? "text-[var(--sd-emerald)]"
-                  : "text-zinc-200"
-            }
-          >
-            {l.text}
-          </li>
-        ))}
-      </ul>
-      <div className="mt-3 flex flex-wrap gap-2">
-        {report.complete ? (
-          <button
-            type="button"
-            onClick={() => (onCloseout ? onCloseout(study) : onExit())}
-            className="min-h-[40px] border border-[var(--sd-amber)] px-3 text-xs font-bold text-amber-300"
-          >
-            {onCloseout ? "See the closeout" : "Switch to the classic desk"}
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={nextMorning}
-            className="min-h-[40px] border border-[var(--sd-amber)] bg-[var(--sd-amber)]/10 px-3 text-xs font-bold text-amber-300 hover:bg-[var(--sd-amber)]/20 active:scale-[0.98]"
-          >
-            Drive in for day {world.study.day}
-          </button>
-        )}
-      </div>
-    </section>
+    <OvernightCard
+      report={report}
+      nextDay={world.study.day}
+      onNextDay={nextMorning}
+      onCloseout={() => (onCloseout ? onCloseout(study) : onExit())}
+      closeoutLabel={
+        onCloseout ? "See the closeout" : "Switch to the classic desk"
+      }
+    />
   ) : outcome ? (
     <section
       aria-labelledby="sd-world-outcome"
@@ -579,26 +545,7 @@ export const StudyDirectorWorld: React.FC<{
       </div>
     </section>
   ) : digest ? (
-    <section
-      aria-labelledby="sd-world-digest"
-      className={`border p-3 ${TONE_CLASS.neutral}`}
-    >
-      <h3 id="sd-world-digest" className="text-sm font-bold">
-        {digest.weekday} morning
-      </h3>
-      <ul className="mt-1 space-y-1 text-xs">
-        {digest.lines.map((l, i) => (
-          <li
-            key={i}
-            className={
-              l.tone === "bad" ? "text-[var(--sd-red)]" : "text-zinc-200"
-            }
-          >
-            {l.text}
-          </li>
-        ))}
-      </ul>
-    </section>
+    <DigestCard digest={digest} />
   ) : null;
 
   return (

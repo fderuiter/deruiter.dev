@@ -24,7 +24,7 @@ export function ProofWorkspaceSkeleton() {
                 <li className="inline-flex items-center gap-1.5 sm:gap-2">
                   <span className="text-zinc-600">/</span>
                   <span className="hover:text-brand-cyan transition-colors duration-150 inline-flex items-center gap-1">
-                    Interactive Suite
+                    Simulators
                   </span>
                 </li>
                 <li className="inline-flex items-center gap-1.5 sm:gap-2">

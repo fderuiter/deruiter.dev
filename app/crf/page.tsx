@@ -10,6 +10,7 @@ import { FieldManualButton } from "@/components/FieldManualButton";
 import { CRFStudioSkeleton } from "@/components/crf/Skeletons";
 import { FAQAccordion } from "@/components/ui/FAQAccordion";
 import { CRF_FAQ } from "@/lib/faq-content";
+import { getNavBreadcrumbParents } from "@/lib/navigation";
 
 const CRFStudioContainer = dynamic(
   () =>
@@ -37,7 +38,7 @@ export default function CRFStudioPage() {
         <div className="min-w-0">
           <Breadcrumbs
             items={[
-              { label: "Systems", href: "/#about" },
+              ...getNavBreadcrumbParents("/crf"),
               { label: "CRF Studio", href: "/crf" },
             ]}
           />

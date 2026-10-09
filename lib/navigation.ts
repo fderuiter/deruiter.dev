@@ -409,6 +409,48 @@ export function isNavGroupActive(group: NavGroup, pathname: string): boolean {
   );
 }
 
+/**
+ * The top-bar group a page belongs to, or undefined for pages outside the
+ * navigation. Accepts a path or an href with a hash, so the command palette and
+ * the sitemap can name a page's group without keeping their own lists.
+ */
+export function getNavGroupForHref(href: string): NavGroup | undefined {
+  const exact = PRIMARY_NAV.find((group) => group.href === href);
+  if (exact) return exact;
+  const path = href.split("#")[0] || "/";
+  return PRIMARY_NAV.find((group) => isNavGroupActive(group, path));
+}
+
+/** One parent crumb for a page's breadcrumb trail. */
+export interface NavBreadcrumbParent {
+  label: string;
+  href: string;
+}
+
+/**
+ * The parent crumb a page shows between Home and its own name: the label and
+ * overview href of the menu group that lists it (Simulators, About). Empty for
+ * pages outside a menu group, and for the group's own overview page, so a trail
+ * never links to the page it is on.
+ */
+export function getNavBreadcrumbParents(
+  pathname: string
+): NavBreadcrumbParent[] {
+  const group = getNavGroupForHref(pathname);
+  if (!group || !isNavMenu(group) || pathname === group.href) return [];
+  return [{ label: group.label, href: group.href }];
+}
+
+/** The same parent crumb in the `{ name, url }` shape the JSON-LD helper takes. */
+export function getNavBreadcrumbSchemaParents(
+  pathname: string
+): { name: string; url: string }[] {
+  return getNavBreadcrumbParents(pathname).map(({ label, href }) => ({
+    name: label,
+    url: href,
+  }));
+}
+
 /** The href to use on a phone-sized surface. */
 export function getNavHref(item: NavItem, surface: "desktop" | "mobile") {
   return surface === "mobile" && item.mobileHref ? item.mobileHref : item.href;

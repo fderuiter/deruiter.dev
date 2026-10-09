@@ -1,14 +1,13 @@
 import type { Metadata } from "next";
 import { buildRouteMetadata, ROUTE_METADATA_CONFIGS } from "@/lib/seo-metadata";
 import { getWebApplicationSchema, getBreadcrumbSchema } from "@/lib/seo";
+import { getNavBreadcrumbSchemaParents } from "@/lib/navigation";
 
-export const metadata: Metadata = buildRouteMetadata(ROUTE_METADATA_CONFIGS.crf);
+export const metadata: Metadata = buildRouteMetadata(
+  ROUTE_METADATA_CONFIGS.crf
+);
 
-export default function CRFLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function CRFLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
       <script
@@ -16,7 +15,8 @@ export default function CRFLayout({
         dangerouslySetInnerHTML={{
           __html: getWebApplicationSchema({
             name: "CRF Studio: Next-Gen Clinical Form & Protocol Designer",
-            description: "Zero-latency clinical trial form designer and EDC simulator with 12-column responsive layout, AST-powered edit checks, CDISC CDASH 2.2 / ODM-XML v1.3.2 compliance, and live publication aCRF overlays.",
+            description:
+              "Zero-latency clinical trial form designer and EDC simulator with 12-column responsive layout, AST-powered edit checks, CDISC CDASH 2.2 / ODM-XML v1.3.2 compliance, and live publication aCRF overlays.",
             url: "/crf",
             applicationCategory: "DeveloperApplication",
             genre: "Clinical Data Management Engine",
@@ -28,7 +28,7 @@ export default function CRFLayout({
         dangerouslySetInnerHTML={{
           __html: getBreadcrumbSchema([
             { name: "Home", url: "/" },
-            { name: "Systems", url: "/#about" },
+            ...getNavBreadcrumbSchemaParents("/crf"),
             { name: "CRF Studio", url: "/crf" },
           ]),
         }}

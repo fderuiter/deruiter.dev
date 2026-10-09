@@ -6,6 +6,7 @@ import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { NextPrevNav } from "@/components/ui/NextPrevNav";
 import { PageLayout } from "@/components/PageLayout";
 import { NeuroReconSkeleton } from "@/components/neuro/NeuroReconSkeleton";
+import { getNavBreadcrumbParents } from "@/lib/navigation";
 
 const NeuroReconClient = dynamic(
   () =>
@@ -32,7 +33,7 @@ export default function NeuroReconPage() {
         <h1 className="sr-only">NeuroRecon Studio</h1>
         <Breadcrumbs
           items={[
-            { label: "Systems", href: "/#about" },
+            ...getNavBreadcrumbParents("/neuro"),
             { label: "NeuroRecon Studio", href: "/neuro" },
           ]}
         />

@@ -4,6 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { ROUTE_METADATA_CONFIGS } from "../lib/seo-metadata";
 import { FALLBACK_CASE_STUDIES } from "../lib/case-studies-data";
+import { isNavGroupActive, PRIMARY_NAV } from "../lib/navigation";
 
 /**
  * Static generator for the machine-readable manifests `/llms.txt` and
@@ -62,35 +63,19 @@ interface Section {
   match: (routePath: string) => boolean;
 }
 
+/**
+ * One section per top-bar item, in top-bar order, so the manifest groups pages
+ * the way the site's navigation does (#1848). Phone-sized variants stay in the
+ * utility section, and the Laser Loon artwork page sits under Work.
+ */
 const SECTIONS: Section[] = [
-  {
-    heading: "Systems and studios",
-    match: (p) =>
-      [
-        "/crf",
-        "/proof",
-        "/simulator",
-        "/neuro",
-        "/patrol",
-        "/stack",
-        "/acknowledgments",
-      ].includes(p),
-  },
-  {
-    heading: "Arcade",
-    match: (p) => p === "/arcade" || p.startsWith("/arcade/") || p === "/merch",
-  },
-  {
-    heading: "Case studies",
-    match: (p) =>
-      p === "/case-studies" ||
-      p.startsWith("/case-studies/") ||
-      p === "/work/laser-loon",
-  },
-  {
-    heading: "Writing and contact",
-    match: (p) => ["/blog", "/schedule", "/contact"].includes(p),
-  },
+  ...PRIMARY_NAV.map((group) => ({
+    heading: group.label,
+    match: (p: string) =>
+      !p.startsWith("/m/") &&
+      (isNavGroupActive(group, p) ||
+        (group.id === "work" && p === "/work/laser-loon")),
+  })),
   {
     heading: "Mobile and utility routes",
     match: () => true,

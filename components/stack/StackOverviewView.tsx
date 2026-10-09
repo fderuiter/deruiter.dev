@@ -19,6 +19,7 @@ import { PretextBenchmarkLab } from "./PretextBenchmarkLab";
 import { AudioSynthLab } from "./AudioSynthLab";
 import { StackLayerCards } from "./StackLayerCards";
 import { InvariantsMatrix } from "./InvariantsMatrix";
+import { getNavBreadcrumbParents } from "@/lib/navigation";
 
 const CLI_SNIPPETS = [
   {
@@ -62,7 +63,7 @@ export const StackOverviewView: React.FC = () => {
         <div className="w-full flex items-center justify-between mb-8 gap-4 flex-wrap">
           <Breadcrumbs
             items={[
-              { label: "Systems", href: "/#case-studies" },
+              ...getNavBreadcrumbParents("/stack"),
               { label: "Under the Hood (Stack)" },
             ]}
           />

@@ -429,23 +429,23 @@ LICENSE TEXT 2 of 86, applies to 53 package(s):
 
 - @mermaid-js/parser@2.0.0 (MIT)
     Copyright (c) 2023 Yokozuna59
-- @next/env@16.3.6 (MIT)
+- @next/env@16.3.8 (MIT)
     Copyright (c) 2025 Vercel, Inc.
-- @next/swc-darwin-arm64@16.3.6 (MIT)
+- @next/swc-darwin-arm64@16.3.8 (MIT)
     Copyright (c) 2025 Vercel, Inc.
-- @next/swc-darwin-x64@16.3.6 (MIT)
+- @next/swc-darwin-x64@16.3.8 (MIT)
     Copyright (c) 2025 Vercel, Inc.
-- @next/swc-linux-arm64-gnu@16.3.6 (MIT)
+- @next/swc-linux-arm64-gnu@16.3.8 (MIT)
     Copyright (c) 2025 Vercel, Inc.
-- @next/swc-linux-arm64-musl@16.3.6 (MIT)
+- @next/swc-linux-arm64-musl@16.3.8 (MIT)
     Copyright (c) 2025 Vercel, Inc.
-- @next/swc-linux-x64-gnu@16.3.6 (MIT)
+- @next/swc-linux-x64-gnu@16.3.8 (MIT)
     Copyright (c) 2025 Vercel, Inc.
-- @next/swc-linux-x64-musl@16.3.6 (MIT)
+- @next/swc-linux-x64-musl@16.3.8 (MIT)
     Copyright (c) 2025 Vercel, Inc.
-- @next/swc-win32-arm64-msvc@16.3.6 (MIT)
+- @next/swc-win32-arm64-msvc@16.3.8 (MIT)
     Copyright (c) 2025 Vercel, Inc.
-- @next/swc-win32-x64-msvc@16.3.6 (MIT)
+- @next/swc-win32-x64-msvc@16.3.8 (MIT)
     Copyright (c) 2025 Vercel, Inc.
 - @rollup/plugin-commonjs@28.0.1 (MIT)
     Copyright (c) 2019 RollupJS Plugin Contributors (https://github.com/rollup/plugins/graphs/contributors)
@@ -509,7 +509,7 @@ LICENSE TEXT 2 of 86, applies to 53 package(s):
     Copyright (c) 2020 Vercel, Inc.
 - named-placeholders@1.1.6 (MIT)
     Copyright (c) 2014 Andrey Sidorov
-- next@16.3.6 (MIT)
+- next@16.3.8 (MIT)
     Copyright (c) 2025 Vercel, Inc.
 - picomatch@4.0.4 (MIT)
     Copyright (c) 2017-present, Jon Schlinkert.

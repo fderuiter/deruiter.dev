@@ -6,7 +6,6 @@ import React, {
   useMemo,
   useRef,
   useState,
-  useSyncExternalStore,
 } from "react";
 import {
   SITE_CHECKS,
@@ -47,12 +46,24 @@ import {
 } from "@/lib/study-director-world";
 import type { StudyState } from "@/lib/study-director";
 import { safeIsAvailable, safeRawStorage } from "@/lib/safe-storage";
+import { followCamera } from "./camera";
+import { DigestCard, OvernightCard } from "./DayCards";
 import { FloorView } from "./FloorView";
+import { hudChanges } from "./hud-model";
 import { highlightedTile, type FloorScene } from "./floor-renderer";
+import { Minimap } from "./Minimap";
 import { OfficeDirectory } from "./OfficeDirectory";
+import { StageLabels, TasksPanel } from "./StageLabels";
+import {
+  currentGoal,
+  interactionPrompt,
+  nameplates,
+  todaysTasks,
+} from "./stage-model";
 import { SiteVisitPanel, SiteVisitReportPanel } from "./SiteVisitPanel";
 import { MeetingSection, TeamOverlay, useTeamLayer } from "./TeamLayer";
 import { WorldHud } from "./WorldHud";
+import { useReducedMotion } from "./use-reduced-motion";
 import { WorldIntro } from "./WorldIntro";
 
 /** Milliseconds between steps when walking by directory or holding a key. */
@@ -76,23 +87,6 @@ const REFUSALS: Record<WorldRefusal, string> = {
   "study-complete": "The study is over.",
   unreachable: "There is no way through to there right now.",
 };
-
-const MOTION_QUERY = "(prefers-reduced-motion: reduce)";
-
-function subscribeMotion(onChange: () => void): () => void {
-  const mq =
-    typeof window.matchMedia === "function"
-      ? window.matchMedia(MOTION_QUERY)
-      : null;
-  mq?.addEventListener?.("change", onChange);
-  return () => mq?.removeEventListener?.("change", onChange);
-}
-
-function prefersReducedMotion(): boolean {
-  return typeof window.matchMedia === "function"
-    ? window.matchMedia(MOTION_QUERY).matches
-    : false;
-}
 
 function loadWorld(): WorldState | null {
   try {
@@ -177,11 +171,7 @@ export const StudyDirectorWorld: React.FC<{
   // First-run help (#1819); the Controls button reopens it.
   const [showIntro, setShowIntro] = useState(() => !introSeen());
   const [acted, setActed] = useState(false);
-  const reducedMotion = useSyncExternalStore(
-    subscribeMotion,
-    prefersReducedMotion,
-    () => false
-  );
+  const reducedMotion = useReducedMotion();
   const playfieldRef = useRef<HTMLDivElement>(null);
   const lastStep = useRef(0);
 
@@ -222,6 +212,31 @@ export const StudyDirectorWorld: React.FC<{
     [map, world.player, people, conditions, world.minute]
   );
   const hud = useMemo(() => hudReadout(world), [world]);
+  const prompt = useMemo(
+    () => interactionPrompt(map, world.player, people),
+    [map, world.player, people]
+  );
+  const plates = useMemo(
+    () => nameplates(map, world.player, people, prompt),
+    [map, world.player, people, prompt]
+  );
+  const tasks = useMemo(() => todaysTasks(world), [world]);
+  // Where the camera rests: the same view the canvas settles on.
+  const view = useMemo(
+    () => followCamera(world.player, map),
+    [world.player, map]
+  );
+  const [showMap, setShowMap] = useState(true);
+  // Key changes to the HUD are spoken once, in their own live region so they
+  // never talk over what an action just said.
+  const [hudNotice, setHudNotice] = useState("");
+  const lastHud = useRef({ hud, minute: world.minute });
+  useEffect(() => {
+    const prev = lastHud.current;
+    lastHud.current = { hud, minute: world.minute };
+    const said = hudChanges(prev.hud, hud, prev.minute, world.minute);
+    if (said.length > 0) setHudNotice(said.join(" "));
+  }, [hud, world.minute]);
   const away = report !== null;
   const here = useMemo(() => {
     const room = roomAt(map, world.player.x, world.player.y);
@@ -463,50 +478,15 @@ export const StudyDirectorWorld: React.FC<{
   }, [walk, world, map, people, team, directory]);
 
   const panel = report ? (
-    <section
-      aria-labelledby="sd-world-report"
-      className={`border p-3 ${TONE_CLASS.neutral}`}
-    >
-      <h3 id="sd-world-report" className="text-sm font-bold">
-        Overnight, day {report.day}
-      </h3>
-      <ul className="mt-2 space-y-1 text-xs">
-        {report.lines.length === 0 ? <li>A quiet night.</li> : null}
-        {report.lines.map((l, i) => (
-          <li
-            key={i}
-            className={
-              l.tone === "bad"
-                ? "text-[var(--sd-red)]"
-                : l.tone === "good"
-                  ? "text-[var(--sd-emerald)]"
-                  : "text-zinc-200"
-            }
-          >
-            {l.text}
-          </li>
-        ))}
-      </ul>
-      <div className="mt-3 flex flex-wrap gap-2">
-        {report.complete ? (
-          <button
-            type="button"
-            onClick={() => (onCloseout ? onCloseout(study) : onExit())}
-            className="min-h-[40px] border border-[var(--sd-amber)] px-3 text-xs font-bold text-amber-300"
-          >
-            {onCloseout ? "See the closeout" : "Switch to the classic desk"}
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={nextMorning}
-            className="min-h-[40px] border border-[var(--sd-amber)] bg-[var(--sd-amber)]/10 px-3 text-xs font-bold text-amber-300 hover:bg-[var(--sd-amber)]/20 active:scale-[0.98]"
-          >
-            Drive in for day {world.study.day}
-          </button>
-        )}
-      </div>
-    </section>
+    <OvernightCard
+      report={report}
+      nextDay={world.study.day}
+      onNextDay={nextMorning}
+      onCloseout={() => (onCloseout ? onCloseout(study) : onExit())}
+      closeoutLabel={
+        onCloseout ? "See the closeout" : "Switch to the classic desk"
+      }
+    />
   ) : outcome ? (
     <section
       aria-labelledby="sd-world-outcome"
@@ -568,26 +548,7 @@ export const StudyDirectorWorld: React.FC<{
       </div>
     </section>
   ) : digest ? (
-    <section
-      aria-labelledby="sd-world-digest"
-      className={`border p-3 ${TONE_CLASS.neutral}`}
-    >
-      <h3 id="sd-world-digest" className="text-sm font-bold">
-        {digest.weekday} morning
-      </h3>
-      <ul className="mt-1 space-y-1 text-xs">
-        {digest.lines.map((l, i) => (
-          <li
-            key={i}
-            className={
-              l.tone === "bad" ? "text-[var(--sd-red)]" : "text-zinc-200"
-            }
-          >
-            {l.text}
-          </li>
-        ))}
-      </ul>
-    </section>
+    <DigestCard digest={digest} />
   ) : null;
 
   return (
@@ -598,11 +559,27 @@ export const StudyDirectorWorld: React.FC<{
       <div role="status" aria-live="polite" className="sr-only">
         {notice}
       </div>
+      <div
+        role="status"
+        aria-live="polite"
+        data-testid="world-hud-notice"
+        className="sr-only"
+      >
+        {hudNotice}
+      </div>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-sm font-bold tracking-[-0.01em]">
           {map.name ? `${map.name} visit` : "The CRO floor"}
         </h2>
         <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            aria-pressed={showMap}
+            onClick={() => setShowMap((on) => !on)}
+            className="min-h-12 border border-zinc-700 px-3 text-xs text-zinc-300 hover:border-[var(--sd-amber)] hover:text-[var(--sd-amber)]"
+          >
+            Minimap
+          </button>
           <button
             type="button"
             onClick={() => setShowIntro(true)}
@@ -619,17 +596,11 @@ export const StudyDirectorWorld: React.FC<{
           </button>
         </div>
       </div>
-      {!acted && world.study.day === 1 && !onSite && !away ? (
-        <p
-          data-testid="world-goal"
-          className="border border-[var(--sd-hairline)] bg-[var(--sd-surface)] px-3 py-2 text-xs text-zinc-200"
-        >
-          <span className="font-bold text-[var(--sd-amber)]">Today: </span>
-          walk to the EDC workstation in your office and press E.
-        </p>
-      ) : null}
-
-      <WorldHud hud={hud} />
+      <WorldHud
+        hud={hud}
+        minute={world.minute}
+        goal={report ? null : currentGoal(world, tasks, acted)}
+      />
 
       <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,260px)] xl:grid-cols-[minmax(0,1fr)_minmax(0,300px)]">
         <div
@@ -647,6 +618,23 @@ export const StudyDirectorWorld: React.FC<{
             scene={scene}
             description={description}
             reducedMotion={reducedMotion}
+            overlay={
+              <>
+                <StageLabels
+                  view={view}
+                  plates={plates}
+                  prompt={away || team.blocking ? null : prompt}
+                />
+                {showMap ? (
+                  <Minimap
+                    map={map}
+                    player={world.player}
+                    people={people}
+                    view={view}
+                  />
+                ) : null}
+              </>
+            }
           />
         </div>
         <div className="min-w-0 space-y-3">
@@ -693,6 +681,7 @@ export const StudyDirectorWorld: React.FC<{
               How are you?
             </button>
           </section>
+          {away ? null : <TasksPanel tasks={tasks} />}
           {inConference && !away ? (
             <MeetingSection team={team} world={world} people={people} />
           ) : null}
@@ -727,7 +716,12 @@ export const StudyDirectorWorld: React.FC<{
         />
       ) : null}
       {away ? null : (
-        <TeamOverlay team={team} world={world} returnFocusTo={playfieldRef} />
+        <TeamOverlay
+          team={team}
+          world={world}
+          returnFocusTo={playfieldRef}
+          reducedMotion={reducedMotion}
+        />
       )}
     </div>
   );

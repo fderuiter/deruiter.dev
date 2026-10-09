@@ -2,6 +2,7 @@
 
 import React from "react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { clamp } from "@/lib/game-utils";
 import type {
   DialogueLine,
   LineKind,
@@ -24,32 +25,57 @@ const KIND_CLASS: Record<LineKind, string> = {
   joke: "border-zinc-700 text-zinc-400",
 };
 
-/** Lines of dialogue, each tagged with what it carries. */
-export const DialogueLines: React.FC<{ lines: readonly DialogueLine[] }> = ({
-  lines,
-}) => (
-  <ul className="space-y-2 text-xs leading-relaxed">
-    {lines.map((l, i) => (
-      <li key={i} className="flex min-w-0 items-start gap-2">
-        <span
-          className={`mt-px shrink-0 border px-1 text-[9px] font-semibold tracking-wide uppercase ${KIND_CLASS[l.kind]}`}
-        >
-          {KIND_LABEL[l.kind]}
-        </span>
-        <span className="min-w-0 break-words text-zinc-100">
-          {l.text}
-          {l.trustDelta ? (
+/**
+ * Lines of dialogue, each tagged with what it carries. With `reveal`, only
+ * that many characters (counted across all the lines) are visible; the rest
+ * are in the page but transparent, so the full text is always there for a
+ * screen reader and the box never reflows while it types.
+ */
+export const DialogueLines: React.FC<{
+  lines: readonly DialogueLine[];
+  reveal?: number;
+}> = ({ lines, reveal }) => {
+  // Where each line starts in the running count of characters.
+  const starts: number[] = [];
+  let at = 0;
+  for (const l of lines) {
+    starts.push(at);
+    at += l.text.length;
+  }
+  return (
+    <ul className="space-y-2 text-xs leading-relaxed">
+      {lines.map((l, i) => {
+        const shown = clamp((reveal ?? Infinity) - starts[i], 0, l.text.length);
+        return (
+          <li key={i} className="flex min-w-0 items-start gap-2">
             <span
-              className={`ml-1 ${l.trustDelta > 0 ? "text-emerald-300" : "text-[var(--sd-red)]"}`}
+              className={`mt-px shrink-0 border px-1 text-[9px] font-semibold tracking-wide uppercase ${KIND_CLASS[l.kind]}`}
             >
-              {l.trustDelta > 0 ? "(trust up)" : "(trust down)"}
+              {KIND_LABEL[l.kind]}
             </span>
-          ) : null}
-        </span>
-      </li>
-    ))}
-  </ul>
-);
+            <span className="min-w-0 break-words text-zinc-100">
+              {shown >= l.text.length ? (
+                l.text
+              ) : (
+                <>
+                  {l.text.slice(0, shown)}
+                  <span className="opacity-0">{l.text.slice(shown)}</span>
+                </>
+              )}
+              {l.trustDelta ? (
+                <span
+                  className={`ml-1 ${l.trustDelta > 0 ? "text-emerald-300" : "text-[var(--sd-red)]"}`}
+                >
+                  {l.trustDelta > 0 ? "(trust up)" : "(trust down)"}
+                </span>
+              ) : null}
+            </span>
+          </li>
+        );
+      })}
+    </ul>
+  );
+};
 
 const Segments: React.FC<{ value: 1 | 2 | 3 | 4; tone: string }> = ({
   value,
@@ -140,9 +166,20 @@ export const OverlayButton: React.FC<
   />
 );
 
+/** Which in-world device an overlay is shown on. */
+export type DeviceKind = "monitor" | "phone";
+
+const DEVICE_LABEL: Record<DeviceKind, string> = {
+  monitor: "Workstation",
+  phone: "Desk phone",
+};
+
 /**
- * A modal overlay over the floor: focus is trapped inside, Escape closes
- * it and focus returns to where it came from.
+ * A modal over the floor: focus is trapped inside, Escape closes it and focus
+ * returns to where it came from. With a `device` it is drawn as that device,
+ * a monitor bezel or a phone frame, with a title bar that always carries a
+ * visible close button and, when there is somewhere to go back to, a back one.
+ * The content is ordinary React DOM either way.
  */
 export const Overlay: React.FC<{
   titleId: string;
@@ -150,6 +187,9 @@ export const Overlay: React.FC<{
   subtitle?: string;
   testId: string;
   role?: "dialog" | "alertdialog";
+  device?: DeviceKind;
+  /** A way back to the screen this one was opened from. */
+  back?: { label: string; run: () => void };
   onClose: () => void;
   onKeyDown?: (e: React.KeyboardEvent<HTMLDivElement>) => void;
   initialFocusRef?: React.RefObject<HTMLElement | null>;
@@ -161,6 +201,8 @@ export const Overlay: React.FC<{
   subtitle,
   testId,
   role = "dialog",
+  device,
+  back,
   onClose,
   onKeyDown,
   initialFocusRef,
@@ -172,6 +214,11 @@ export const Overlay: React.FC<{
     onEscape: onClose,
     returnFocusTo,
   });
+  const frame = device
+    ? device === "phone"
+      ? "max-w-sm rounded-[28px] border-[10px] border-[#1a1c22] bg-[var(--sd-surface)]"
+      : "max-w-3xl rounded-md border-[10px] border-[#1a1c22] bg-[var(--sd-surface)]"
+    : "max-w-xl border border-[var(--sd-hairline-strong)] bg-[var(--sd-surface)]";
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
       <div
@@ -180,18 +227,46 @@ export const Overlay: React.FC<{
         aria-modal="true"
         aria-labelledby={titleId}
         data-testid={testId}
+        data-device={device}
         onKeyDown={onKeyDown}
-        className="sd-enter max-h-[85dvh] w-full max-w-xl min-w-0 overflow-y-auto border border-[var(--sd-hairline-strong)] bg-[var(--sd-surface)] p-4 font-mono text-[var(--sd-text)]"
+        className={`sd-enter max-h-[85dvh] w-full min-w-0 overflow-y-auto font-mono text-[var(--sd-text)] ${frame}`}
       >
-        <h3 id={titleId} className="text-sm font-bold break-words">
-          {title}
-        </h3>
-        {subtitle ? (
-          <p className="mt-0.5 text-[11px] break-words text-[var(--sd-muted)]">
-            {subtitle}
-          </p>
+        {device ? (
+          <div className="flex items-center justify-between gap-2 border-b border-[var(--sd-hairline)] bg-[var(--sd-surface-2)] px-3 py-1.5">
+            <span className="flex min-w-0 items-center gap-2 text-[10px] font-semibold tracking-[0.14em] text-[var(--sd-muted)] uppercase">
+              <span
+                aria-hidden="true"
+                className="inline-block size-1.5 bg-[var(--sd-emerald)]"
+              />
+              {DEVICE_LABEL[device]}
+            </span>
+            <span className="flex gap-1">
+              {back ? (
+                <OverlayButton className="min-h-8" onClick={back.run}>
+                  {back.label}
+                </OverlayButton>
+              ) : null}
+              <OverlayButton
+                className="min-h-8"
+                aria-label="Close window"
+                onClick={onClose}
+              >
+                <span aria-hidden="true">Esc</span>
+              </OverlayButton>
+            </span>
+          </div>
         ) : null}
-        <div className="mt-3 space-y-3">{children}</div>
+        <div className="p-4">
+          <h3 id={titleId} className="text-sm font-bold break-words">
+            {title}
+          </h3>
+          {subtitle ? (
+            <p className="mt-0.5 text-[11px] break-words text-[var(--sd-muted)]">
+              {subtitle}
+            </p>
+          ) : null}
+          <div className="mt-3 space-y-3">{children}</div>
+        </div>
       </div>
     </div>
   );

@@ -165,3 +165,18 @@ layer once to an offscreen canvas per map, scale and room condition, and
 copies it each frame. Light follows the clock and is static under reduced
 motion. All of the art is original work and CC0, so it adds nothing to the
 credits pipeline.
+
+## Amendment 2026-10-09: stage UI
+
+The stage is a window onto the map that follows the player. `camera.ts` holds
+the pure maths (a 22 by 13 tile view, centred on the player and held inside
+the map; a map smaller than the view is shown whole). The renderer copies that
+window from the cached layer in whole device pixels, so the art stays crisp
+while it pans, and under reduced motion the camera snaps with the player.
+Names, the "Press E" prompt and the minimap are DOM or a small canvas over the
+stage and are hidden from assistive technology, which keeps the canvas's text
+description and the office directory as the accessible route. Conversations
+face to face are a dialogue box with a typed reveal (instant under reduced
+motion); the phone, desk, EDC and meeting report are shown as devices. The
+domain is unchanged: every number on the HUD, in the tasks panel and on the
+cards comes from existing `lib/study-director-world` calls.

@@ -2,9 +2,12 @@
 
 import React, { useEffect, useRef } from "react";
 import {
+  PRIORITIES,
   formatClock,
+  type Interruption,
   type MorningDigest,
   type OvernightReport,
+  type PriorityId,
 } from "@/lib/study-director-world";
 import { OverlayButton } from "./TeamPieces";
 
@@ -116,6 +119,79 @@ export const DigestCard: React.FC<{ digest: MorningDigest }> = ({ digest }) => {
   );
 };
 
+const PRIORITY_ORDER: readonly PriorityId[] = ["people", "sites", "desk"];
+
+/**
+ * The morning's one choice: what the day is about. It is a promise, picked
+ * once; the card then shrinks to a line the Today panel keeps.
+ */
+export const PriorityCard: React.FC<{
+  onChoose: (id: PriorityId) => void;
+}> = ({ onChoose }) => (
+  <section
+    aria-labelledby="sd-world-priority"
+    data-testid="world-priority"
+    className={CARD}
+  >
+    <Heading
+      id="sd-world-priority"
+      kicker="Before you start"
+      title="What is today about?"
+    />
+    <ul className="grid gap-2 sm:grid-cols-3">
+      {PRIORITY_ORDER.map((id) => (
+        <li key={id} className="min-w-0">
+          <OverlayButton
+            className="h-full w-full"
+            data-priority={id}
+            onClick={() => onChoose(id)}
+          >
+            <span className="block font-bold">{PRIORITIES[id].label}</span>
+            <span className="mt-1 block text-[11px] font-normal break-words text-[var(--sd-muted)]">
+              {PRIORITIES[id].promise}
+            </span>
+          </OverlayButton>
+        </li>
+      ))}
+    </ul>
+    <p className="text-[11px] text-[var(--sd-muted)]">
+      You can also just start walking. A day with no priority has no promise to
+      keep.
+    </p>
+  </section>
+);
+
+/** Something that landed on the day, with its ways to answer and what each costs. */
+export const InterruptionCard: React.FC<{
+  interruption: Interruption;
+  onAnswer: (optionId: string) => void;
+}> = ({ interruption, onAnswer }) => (
+  <section
+    aria-labelledby="sd-world-interruption"
+    data-testid="world-interruption"
+    className={`${CARD} border-[var(--sd-amber)]/60`}
+  >
+    <Heading
+      id="sd-world-interruption"
+      kicker="Just now"
+      title={interruption.title}
+    />
+    <p className="text-xs leading-relaxed text-zinc-200">{interruption.body}</p>
+    <ul className="flex flex-wrap gap-2">
+      {interruption.options.map((o) => (
+        <li key={o.id} className="min-w-0">
+          <OverlayButton onClick={() => onAnswer(o.id)}>
+            {o.label}
+            <span className="ml-1 text-[var(--sd-muted)]">
+              {o.cost.minutes === 0 ? "· no time" : `· ${o.cost.minutes} min`}
+            </span>
+          </OverlayButton>
+        </li>
+      ))}
+    </ul>
+  </section>
+);
+
 /**
  * The overnight report. The primary button takes focus when the card opens,
  * so Enter starts the next day; N does the same from anywhere on the card.
@@ -158,6 +234,7 @@ export const OvernightCard: React.FC<{
       {report.lines.length === 0 ? (
         <p className="text-xs text-zinc-300">A quiet night.</p>
       ) : null}
+      <LineList title="How today went" lines={report.wrapUp ?? []} />
       <LineList title="What changed" lines={changes} tagged />
       <LineList title="As it was" lines={steady} />
       <div className="flex flex-wrap items-center gap-2">

@@ -14,6 +14,7 @@ export {
   drinkCoffee,
   fatigueFrom,
   formatClock,
+  passTime,
   spend,
   weekdayFor,
 } from "./internal/clock";
@@ -86,15 +87,18 @@ export {
 } from "./internal/sites";
 export {
   OPEN_TRUST,
+  PEOPLE_PRIORITY_BONUS,
   ROLE_LABEL,
   STREAM_FOR_ROLE,
   STREAM_LABEL,
+  TRUSTED_TRUST,
   TRUST_EFFECTS,
   WARY_TRUST,
   adjustTrust,
   bondFor,
   daySchedule,
   describePerson,
+  heartsFor,
   initialBond,
   observe,
   pendingFrom,
@@ -147,3 +151,26 @@ export {
   startMeeting,
 } from "./internal/meetings";
 export { TEAM_INTERACTIONS } from "./internal/handlers";
+export {
+  COFFEE_RUNS_PER_DAY,
+  COVER_COOLDOWN_DAYS,
+  COVER_MIN_HEARTS,
+  RELATIONSHIP_LABEL,
+  earlyWarning,
+  knowsQuirk,
+  relate,
+  relationshipOptions,
+} from "./internal/favours";
+export {
+  INTERRUPTION_TIMES,
+  PEOPLE_DAY_TARGET,
+  PRIORITIES,
+  answerInterruption,
+  choosePriority,
+  eveningWrapUp,
+  pendingInterruption,
+  peopleSeenToday,
+  planFor,
+  scheduleFor,
+  settlePriority,
+} from "./internal/rhythm";

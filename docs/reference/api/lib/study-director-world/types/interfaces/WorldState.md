@@ -124,6 +124,14 @@ Minutes worked past the end of the office day, today.
 
 ***
 
+### plan?
+
+> `optional` **plan?**: [`DayPlan`](DayPlan.md)
+
+Today's chosen priority and the interruptions already dealt with (#1837).
+
+***
+
 ### player
 
 > **player**: [`PlayerState`](PlayerState.md)

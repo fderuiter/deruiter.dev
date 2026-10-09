@@ -86,12 +86,25 @@ export const TRUST_EFFECTS: Record<TrustCause, number> = {
   ignore: -6,
   dump: -8,
   override: -10,
+  coffee: 3,
+  favour: 4,
+  cover: -4,
 };
+
+/** Extra trust every kind act earns on a day the player chose people (#1837). */
+export const PEOPLE_PRIORITY_BONUS = 2;
+
+/** Trust as hearts, 0 to 5: the only way the player sees it. */
+export function heartsFor(trust: number): number {
+  return Math.round(clamp(trust, 0, 100) / 20);
+}
 
 /** Trust at which a member discloses early warnings. */
 export const OPEN_TRUST = 65;
 /** Trust below which a member deflects. */
 export const WARY_TRUST = 40;
+/** Trust at which a member goes the extra mile: four hearts (#1838). */
+export const TRUSTED_TRUST = 70;
 
 /** A member's bond with the player before anything has happened. */
 export function initialBond(study: StudyState, member: TeamMember): Bond {
@@ -153,7 +166,12 @@ export function adjustTrust(
   const bond = bondFor(world, memberId);
   const day = world.study.day;
   if (cause === "talk" && bond.talkedDay === day) return { world, delta: 0 };
-  const trust = clamp(bond.trust + TRUST_EFFECTS[cause], 0, 100);
+  const effect = TRUST_EFFECTS[cause];
+  const kind =
+    effect > 0 && world.plan?.day === day && world.plan.priority === "people"
+      ? PEOPLE_PRIORITY_BONUS
+      : 0;
+  const trust = clamp(bond.trust + effect + kind, 0, 100);
   const patch: Partial<Bond> = { trust };
   if (cause === "talk") patch.talkedDay = day;
   return {
@@ -322,7 +340,7 @@ export function relationshipCard(
     memberId,
     name: p.name,
     role: ROLE_LABEL[p.role],
-    hearts: Math.round(clamp(p.trust, 0, 100) / 20),
+    hearts: heartsFor(p.trust),
     stressBars,
     workloadBars,
     stressLabel: STRESS_WORDS[stressBars],

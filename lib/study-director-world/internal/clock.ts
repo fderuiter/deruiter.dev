@@ -65,7 +65,20 @@ export function spend(
   if (world.study.status !== "running")
     return { ok: false, reason: "study-complete" };
   if (kind === "coffee") return drinkCoffee(world);
-  const cost = actionCost(kind, tiles);
+  return spendCost(world, actionCost(kind, tiles));
+}
+
+/**
+ * Spends an arbitrary cost of time, energy and focus, with the same overtime
+ * and refusal rules as `spend`. Used by actions that are not one of the
+ * standard kinds, such as answering an interruption.
+ */
+export function spendCost(
+  world: WorldState,
+  cost: ActionCost
+): WorldResult<{ cost: ActionCost }> {
+  if (world.study.status !== "running")
+    return { ok: false, reason: "study-complete" };
   const end = world.minute + cost.minutes;
   if (end > HARD_STOP) return { ok: false, reason: "too-late" };
   const late = lateMinutes(world.minute, end);
@@ -85,6 +98,22 @@ export function spend(
       overtime: world.overtime + late,
     },
   };
+}
+
+/**
+ * Lets some minutes pass doing nothing, such as waiting for someone to move
+ * out of a doorway. It costs the minutes and nothing else; time past the end
+ * of the day is overtime as for any other action.
+ */
+export function passTime(
+  world: WorldState,
+  minutes: number
+): WorldResult<{ cost: ActionCost }> {
+  return spendCost(world, {
+    minutes: clamp(Math.floor(minutes), 1, 60),
+    energy: 0,
+    focus: 0,
+  });
 }
 
 /**

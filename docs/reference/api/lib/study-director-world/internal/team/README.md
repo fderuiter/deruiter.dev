@@ -9,10 +9,12 @@
 ## Variables
 
 - [OPEN\_TRUST](variables/OPEN_TRUST.md)
+- [PEOPLE\_PRIORITY\_BONUS](variables/PEOPLE_PRIORITY_BONUS.md)
 - [ROLE\_LABEL](variables/ROLE_LABEL.md)
 - [STREAM\_FOR\_ROLE](variables/STREAM_FOR_ROLE.md)
 - [STREAM\_LABEL](variables/STREAM_LABEL.md)
 - [TRUST\_EFFECTS](variables/TRUST_EFFECTS.md)
+- [TRUSTED\_TRUST](variables/TRUSTED_TRUST.md)
 - [WARY\_TRUST](variables/WARY_TRUST.md)
 
 ## Functions
@@ -21,6 +23,7 @@
 - [bondFor](functions/bondFor.md)
 - [daySchedule](functions/daySchedule.md)
 - [describePerson](functions/describePerson.md)
+- [heartsFor](functions/heartsFor.md)
 - [initialBond](functions/initialBond.md)
 - [observe](functions/observe.md)
 - [pendingFrom](functions/pendingFrom.md)

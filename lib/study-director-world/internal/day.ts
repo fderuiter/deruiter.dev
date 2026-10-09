@@ -18,7 +18,9 @@ import {
 import { fatigueFrom, weekdayFor } from "./clock";
 import { undocumentedDecisions } from "./dialogue";
 import { workTheNight } from "./delegation";
+import { earlyWarning } from "./favours";
 import { CRO_FLOOR } from "./floor";
+import { eveningWrapUp, settlePriority } from "./rhythm";
 import { adjustTrust, senderOf } from "./team";
 import {
   DAY_START,
@@ -116,9 +118,13 @@ export function startDay(world: WorldState): {
       tone: "bad",
     });
   lines.push(...teamDigest(study));
+  // Someone who trusts the player tells them where to look (#1838).
+  const warning = earlyWarning(world);
+  if (warning) lines.push(warning);
   return {
     world: {
       ...world,
+      plan: { day: study.day, priority: null, handled: [] },
       minute: startsAt,
       energy,
       focus: 100,
@@ -249,7 +255,13 @@ export function goHome(world: WorldState): {
   world: WorldState;
   report: OvernightReport;
 } {
-  const night = workTheNight({ ...world, meeting: null });
+  const wrapUp = eveningWrapUp(world);
+  const worked = workTheNight({ ...world, meeting: null });
+  const settled = settlePriority(worked.world);
+  const night = {
+    world: settled.world,
+    lines: [...worked.lines, ...settled.lines],
+  };
   const before = night.world.study;
   const after = endDay(before);
   const fromPhase = phaseForDay(before.day, before.setup.durationDays);
@@ -274,6 +286,7 @@ export function goHome(world: WorldState): {
       lines: [...night.lines, ...overnightLines(before, after)],
       newPhase: toPhase !== fromPhase ? toPhase : null,
       complete: after.status === "complete",
+      wrapUp,
     },
   };
 }

@@ -76,6 +76,20 @@ export interface WorldState {
   assignments?: Assignment[];
   /** A meeting in progress in the conference room, if any (#1689). */
   meeting?: Meeting | null;
+  /** Today's chosen priority and the interruptions already dealt with (#1837). */
+  plan?: DayPlan;
+}
+
+/** What a day can be about: the team, the sites, or the desk (#1837). */
+export const PRIORITY_IDS = ["people", "sites", "desk"] as const;
+export type PriorityId = (typeof PRIORITY_IDS)[number];
+
+/** The player's plan for one day. */
+export interface DayPlan {
+  day: number;
+  priority: PriorityId | null;
+  /** Ids of today's interruptions the player has dealt with. */
+  handled: string[];
 }
 
 export type WorldRefusal =
@@ -120,6 +134,8 @@ export interface OvernightReport {
   newPhase: Phase | null;
   /** True when the study finished overnight. */
   complete: boolean;
+  /** How the day just ended went, from the evening wrap-up (#1837). */
+  wrapUp?: OvernightLine[];
 }
 
 /** Which way the player or a person is looking. */
@@ -574,6 +590,12 @@ export interface Bond {
   askedDay: number;
   /** The stream they run without being asked, once invested in. */
   owns: WorkStream | null;
+  /** Day the player last brought them a coffee (#1838). */
+  coffeeDay?: number;
+  /** Day the player last took a small job off them (#1838). */
+  favourDay?: number;
+  /** Day they last covered for the player (#1838). */
+  coverDay?: number;
 }
 
 /** The world layer of one team member, derived from the study and their bond. */
@@ -648,7 +670,10 @@ export type TrustCause =
   | "override"
   | "dump"
   | "brushOff"
-  | "heard";
+  | "heard"
+  | "coffee"
+  | "favour"
+  | "cover";
 
 /** Something the player saw or was told. */
 export interface Observation {
@@ -792,3 +817,48 @@ export interface MeetingReport {
 /** A screen an interaction opens in the overlay. */
 export type WorldPanel =
   { kind: "dialogue"; memberId: string } | { kind: "desk" } | { kind: "edc" };
+
+// ---------------------------------------------------------------------------
+// The daily rhythm (#1837) and relationship actions (#1838).
+
+/** One way to answer an interruption. */
+export interface InterruptionOption {
+  id: string;
+  label: string;
+  /** What it costs the player's day. */
+  cost: ActionCost;
+  /** What the player is told happened. */
+  result: string;
+}
+
+/** Something that lands on the player's day and wants an answer. */
+export interface Interruption {
+  id: string;
+  title: string;
+  body: string;
+  options: InterruptionOption[];
+}
+
+/** An interruption due today and when it arrives, in minutes after midnight. */
+export interface ScheduledInterruption {
+  at: number;
+  interruption: Interruption;
+}
+
+/** What the player can do for a team member beyond work (#1838). */
+export const RELATIONSHIP_ACTIONS = [
+  "coffee",
+  "favour",
+  "askAbout",
+  "cover",
+] as const;
+export type RelationshipAction = (typeof RELATIONSHIP_ACTIONS)[number];
+
+/** Whether a relationship action can be taken now, and why not if it cannot. */
+export interface RelationshipOption {
+  action: RelationshipAction;
+  label: string;
+  available: boolean;
+  /** In the player's words, never a number: why it is not available. */
+  reason?: string;
+}

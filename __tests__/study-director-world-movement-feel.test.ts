@@ -6,6 +6,7 @@ import {
   forgivingStep,
   isBlocked,
   newWorld,
+  passTime,
   startDay,
   step,
   stepFrom,
@@ -120,5 +121,33 @@ describe("forgivingStep", () => {
         }
       }
     expect(checked).toBeGreaterThan(10);
+  });
+});
+
+describe("passTime", () => {
+  it("costs the minutes and nothing else", () => {
+    const world = fresh();
+    const result = passTime(world, 1);
+    if (!result.ok) throw new Error("refused");
+    expect(result.world.minute).toBe(world.minute + 1);
+    expect(result.world.energy).toBe(world.energy);
+    expect(result.world.focus).toBe(world.focus);
+  });
+
+  it("turns waiting past the end of the day into overtime", () => {
+    const late = { ...fresh(), minute: 18 * 60 };
+    const result = passTime(late, 5);
+    if (!result.ok) throw new Error("refused");
+    expect(result.world.overtime).toBe(late.overtime + 5);
+  });
+
+  it("is refused past the hard stop, and clamps silly lengths", () => {
+    expect(passTime({ ...fresh(), minute: 21 * 60 + 59 }, 5)).toMatchObject({
+      ok: false,
+      reason: "too-late",
+    });
+    const long = passTime(fresh(), 10_000);
+    if (!long.ok) throw new Error("refused");
+    expect(long.world.minute - fresh().minute).toBe(60);
   });
 });

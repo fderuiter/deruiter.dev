@@ -48,6 +48,7 @@ import {
 import type { StudyState } from "@/lib/study-director";
 import { safeIsAvailable, safeRawStorage } from "@/lib/safe-storage";
 import { FloorView } from "./FloorView";
+import { hudChanges } from "./hud-model";
 import { highlightedTile, type FloorScene } from "./floor-renderer";
 import { OfficeDirectory } from "./OfficeDirectory";
 import { SiteVisitPanel, SiteVisitReportPanel } from "./SiteVisitPanel";
@@ -222,6 +223,16 @@ export const StudyDirectorWorld: React.FC<{
     [map, world.player, people, conditions, world.minute]
   );
   const hud = useMemo(() => hudReadout(world), [world]);
+  // Key changes to the HUD are spoken once, in their own live region so they
+  // never talk over what an action just said.
+  const [hudNotice, setHudNotice] = useState("");
+  const lastHud = useRef({ hud, minute: world.minute });
+  useEffect(() => {
+    const prev = lastHud.current;
+    lastHud.current = { hud, minute: world.minute };
+    const said = hudChanges(prev.hud, hud, prev.minute, world.minute);
+    if (said.length > 0) setHudNotice(said.join(" "));
+  }, [hud, world.minute]);
   const away = report !== null;
   const here = useMemo(() => {
     const room = roomAt(map, world.player.x, world.player.y);
@@ -598,6 +609,14 @@ export const StudyDirectorWorld: React.FC<{
       <div role="status" aria-live="polite" className="sr-only">
         {notice}
       </div>
+      <div
+        role="status"
+        aria-live="polite"
+        data-testid="world-hud-notice"
+        className="sr-only"
+      >
+        {hudNotice}
+      </div>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-sm font-bold tracking-[-0.01em]">
           {map.name ? `${map.name} visit` : "The CRO floor"}
@@ -619,17 +638,15 @@ export const StudyDirectorWorld: React.FC<{
           </button>
         </div>
       </div>
-      {!acted && world.study.day === 1 && !onSite && !away ? (
-        <p
-          data-testid="world-goal"
-          className="border border-[var(--sd-hairline)] bg-[var(--sd-surface)] px-3 py-2 text-xs text-zinc-200"
-        >
-          <span className="font-bold text-[var(--sd-amber)]">Today: </span>
-          walk to the EDC workstation in your office and press E.
-        </p>
-      ) : null}
-
-      <WorldHud hud={hud} />
+      <WorldHud
+        hud={hud}
+        minute={world.minute}
+        goal={
+          !acted && world.study.day === 1 && !onSite && !away
+            ? "walk to the EDC workstation in your office and press E."
+            : null
+        }
+      />
 
       <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,260px)] xl:grid-cols-[minmax(0,1fr)_minmax(0,300px)]">
         <div

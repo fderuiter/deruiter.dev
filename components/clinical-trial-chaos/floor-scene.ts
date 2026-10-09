@@ -227,7 +227,7 @@ export interface FolderTab {
 }
 
 /** Neutral tab colour for a domain no open station takes. */
-export const STEEL = "#94a3b8";
+const STEEL = "#94a3b8";
 
 /**
  * Domain tabs for a folder: each distinct observation domain once, in the

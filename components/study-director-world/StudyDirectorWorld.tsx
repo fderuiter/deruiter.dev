@@ -217,8 +217,9 @@ export const StudyDirectorWorld: React.FC<{
       people,
       conditions,
       target: highlightedTile(map, world.player, people),
+      minute: world.minute,
     }),
-    [map, world.player, people, conditions]
+    [map, world.player, people, conditions, world.minute]
   );
   const hud = useMemo(() => hudReadout(world), [world]);
   const away = report !== null;

@@ -154,3 +154,14 @@ office directory starts collapsed so the stage gets the room.
   only on the Study Director route, inside the play cabinet.
 - Everything in the game is fictional; no real sponsor, person or study is
   represented, and nothing here is regulatory advice.
+
+## Amendment 2026-10-09: pixel art pipeline
+
+The floor art is drawn in code, not loaded as image files. `world-art.ts`
+holds the pure data (palette, floor styles, per-site looks, sprite looks,
+the minute-to-tint function and the stress-to-posture mapping) and
+`floor-art.ts` paints it on a 16px grid. The renderer paints the unchanging
+layer once to an offscreen canvas per map, scale and room condition, and
+copies it each frame. Light follows the clock and is static under reduced
+motion. All of the art is original work and CC0, so it adds nothing to the
+credits pipeline.

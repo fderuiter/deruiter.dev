@@ -10,6 +10,7 @@ import {
   type TilePoint,
   type WorldMap,
 } from "@/lib/study-director-world";
+import { followCamera, viewSize } from "./camera";
 import {
   drawActivity,
   drawDressing,
@@ -192,9 +193,19 @@ export class FloorRenderer extends ArcadeEngine<FloorScene, null> {
    * The copy is rebuilt only when the map, the scale or the room conditions
    * change; without a DOM the layer is painted straight onto the context.
    */
-  private paintStatic(ctx: CanvasRenderingContext2D): void {
+  private paintStatic(
+    ctx: CanvasRenderingContext2D,
+    offX: number,
+    offY: number
+  ): void {
     const { map, conditions } = this.state;
+    // Everything after this is drawn in map pixels, shifted by the camera.
+    const shift = () => {
+      applyCanvasScale(ctx, this.scale);
+      ctx.translate(-offX / this.scale, -offY / this.scale);
+    };
     if (typeof document === "undefined") {
+      shift();
       this.paintBase(ctx);
       return;
     }
@@ -206,6 +217,7 @@ export class FloorRenderer extends ArcadeEngine<FloorScene, null> {
       const layerCtx = layer.getContext("2d");
       if (!layerCtx) {
         this.layer = null;
+        shift();
         this.paintBase(ctx);
         return;
       }
@@ -216,15 +228,28 @@ export class FloorRenderer extends ArcadeEngine<FloorScene, null> {
     }
     if (typeof ctx.setTransform === "function")
       ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.drawImage(this.layer, 0, 0);
-    applyCanvasScale(ctx, this.scale);
+    const size = viewSize(map);
+    const w = Math.round(size.w * TILE * this.scale);
+    const h = Math.round(size.h * TILE * this.scale);
+    ctx.drawImage(this.layer, offX, offY, w, h, 0, 0, w, h);
+    shift();
   }
 
   public render(ctx: CanvasRenderingContext2D): void {
     const { map, player, people, conditions, target, minute } = this.state;
-    applyCanvasScale(ctx, this.scale);
     if ("imageSmoothingEnabled" in ctx) ctx.imageSmoothingEnabled = false;
-    this.paintStatic(ctx);
+
+    // The camera follows the player, glide included, in whole device pixels
+    // so the art stays crisp while it pans.
+    const t = this.glide ? Math.min(1, this.glide.progress) : 1;
+    const moving = this.glide !== null;
+    const from = this.glide?.from ?? player;
+    const px = (from.x + (player.x - from.x) * t) * TILE;
+    const py = (from.y + (player.y - from.y) * t) * TILE;
+    const camera = followCamera({ x: px / TILE, y: py / TILE }, map);
+    const offX = Math.round(camera.x * TILE * this.scale);
+    const offY = Math.round(camera.y * TILE * this.scale);
+    this.paintStatic(ctx, offX, offY);
 
     // Stations within reach glow at low opacity; the one you face, fully.
     for (const s of map.stations) {
@@ -235,8 +260,6 @@ export class FloorRenderer extends ArcadeEngine<FloorScene, null> {
     }
     drawFire(ctx, map, conditions, this.flame);
 
-    const t = this.glide ? Math.min(1, this.glide.progress) : 1;
-    const moving = this.glide !== null;
     const stepFrame = (walking: boolean) => walkFrame(this.steps, walking);
 
     // Everyone is drawn back to front so a person in front hides one behind.
@@ -268,9 +291,6 @@ export class FloorRenderer extends ArcadeEngine<FloorScene, null> {
         },
       });
     }
-    const from = this.glide?.from ?? player;
-    const px = (from.x + (player.x - from.x) * t) * TILE;
-    const py = (from.y + (player.y - from.y) * t) * TILE;
     const playerWalking =
       moving && (from.x !== player.x || from.y !== player.y);
     figures.push({

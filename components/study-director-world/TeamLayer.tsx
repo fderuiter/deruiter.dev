@@ -34,6 +34,7 @@ import {
   type WorldRefusal,
   type WorldState,
 } from "@/lib/study-director-world";
+import { DialogueBox, type Speaker } from "./DialogueBox";
 import {
   DialogueLines,
   Overlay,
@@ -72,6 +73,26 @@ type Conversation =
   | { kind: "report"; report: MeetingReport };
 
 const DESK_VIAS: readonly EventVia[] = ["mail", "voicemail", "callback"];
+
+/** A speaker for the dialogue box: a team member with a portrait, or anyone else by name. */
+function speakerFor(world: WorldState, name: string): Speaker {
+  const member = world.study.team.find((m) => m.name === name);
+  if (!member) return { name, role: "Outside the team" };
+  const card = relationshipCard(world, member.id);
+  return {
+    name,
+    role: card?.role ?? member.role,
+    member: { role: member.role, workload: member.workload },
+    hearts: card?.hearts,
+  };
+}
+
+/** The device a conversation is held on: the phone, a screen, or none (face to face). */
+function deviceForEvent(via: EventVia): "phone" | "monitor" | undefined {
+  if (via === "phone") return "phone";
+  if (DESK_VIAS.includes(via) || via === "meeting") return "monitor";
+  return undefined;
+}
 
 /**
  * The team, the phone and the stations on top of the floor (#1688, #1689):
@@ -346,6 +367,7 @@ const PhoneOverlay: React.FC<{
       subtitle={`${call.from}, about "${call.subject}". Calls take ten minutes.`}
       testId="world-phone"
       role="alertdialog"
+      device="phone"
       onClose={() => team.phone("ignore")}
       initialFocusRef={answerRef}
       returnFocusTo={returnFocusTo}
@@ -407,7 +429,8 @@ export const TeamOverlay: React.FC<{
   team: TeamLayer;
   world: WorldState;
   returnFocusTo: React.RefObject<HTMLElement | null>;
-}> = ({ team, world, returnFocusTo }) => {
+  reducedMotion: boolean;
+}> = ({ team, world, returnFocusTo, reducedMotion }) => {
   const firstRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   if (team.ringing)
@@ -420,17 +443,18 @@ export const TeamOverlay: React.FC<{
     const member = world.study.team.find((m) => m.id === c.memberId);
     const waiting = messagesFrom(world, c.memberId);
     return (
-      <Overlay
+      <DialogueBox
         key="person"
         titleId="sd-talk-title"
-        title={member?.name ?? "Conversation"}
+        speaker={speakerFor(world, member?.name ?? "Conversation")}
         subtitle={`${formatClock(world.minute)} · talking takes ten minutes`}
+        lines={c.lines}
+        reducedMotion={reducedMotion}
         testId="world-dialogue"
         onClose={team.close}
         initialFocusRef={closeRef}
         returnFocusTo={returnFocusTo}
       >
-        <DialogueLines lines={c.lines} />
         {waiting.map((e) => (
           <OverlayButton
             key={e.id}
@@ -446,7 +470,7 @@ export const TeamOverlay: React.FC<{
           <h4 className="text-[10px] font-semibold tracking-[0.14em] text-[var(--sd-muted)] uppercase">
             Delegate
           </h4>
-          <div className="mt-1 grid gap-1 sm:grid-cols-2">
+          <div className="mt-1 grid gap-1 sm:grid-cols-3">
             {DELEGATION_VERBS.map((v) => (
               <OverlayButton key={v} onClick={() => team.verb(c.memberId, v)}>
                 {VERB_LABEL[v]}
@@ -457,64 +481,85 @@ export const TeamOverlay: React.FC<{
         <OverlayButton ref={closeRef} onClick={team.close}>
           Leave
         </OverlayButton>
-      </Overlay>
+      </DialogueBox>
     );
   }
 
   if (c.kind === "event") {
     const { dialogue, after } = c;
+    const subtitle = after
+      ? "Decided."
+      : "Choose an answer: 1 to " + dialogue.choices.length;
+    const title = `${dialogue.speaker}: ${dialogue.subject}`;
+    const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) =>
+      after
+        ? undefined
+        : numberKey(e, dialogue.choices.length, (i) =>
+            team.choose(dialogue.choices[i].id)
+          );
+    const actions = after ? (
+      <div className="flex flex-wrap gap-2">
+        {c.atDesk ? (
+          <OverlayButton primary onClick={() => team.writeUp(dialogue.eventId)}>
+            Write it up now · 20 min
+          </OverlayButton>
+        ) : null}
+        <OverlayButton ref={closeRef} onClick={team.leaveEvent}>
+          {c.atDesk ? "Leave it for later" : "Done"}
+        </OverlayButton>
+      </div>
+    ) : (
+      <>
+        <ChoiceList
+          choices={dialogue.choices}
+          onChoose={team.choose}
+          firstRef={firstRef}
+        />
+        <OverlayButton ref={closeRef} onClick={team.leaveEvent}>
+          {dialogue.via === "hallway" ? "Not now" : "Decide later"}
+        </OverlayButton>
+      </>
+    );
+    // Face to face, the conversation is a dialogue box; on the phone, the
+    // desk or in a meeting it is shown on that device.
+    if (deviceForEvent(dialogue.via) === undefined)
+      return (
+        <DialogueBox
+          key="event"
+          titleId="sd-event-title"
+          title={title}
+          speaker={speakerFor(world, dialogue.speaker)}
+          subtitle={`${dialogue.subject}. ${subtitle}`}
+          lines={after ? [...dialogue.lines, ...after] : dialogue.lines}
+          reducedMotion={reducedMotion}
+          testId="world-dialogue"
+          onClose={team.leaveEvent}
+          onKeyDown={onKeyDown}
+          initialFocusRef={after ? closeRef : firstRef}
+          returnFocusTo={returnFocusTo}
+        >
+          {actions}
+        </DialogueBox>
+      );
     return (
       <Overlay
         key="event"
         titleId="sd-event-title"
-        title={`${dialogue.speaker}: ${dialogue.subject}`}
-        subtitle={
-          after
-            ? "Decided."
-            : "Choose an answer: 1 to " + dialogue.choices.length
-        }
+        title={title}
+        subtitle={subtitle}
         testId="world-dialogue"
-        onClose={team.leaveEvent}
-        onKeyDown={(e) =>
-          after
-            ? undefined
-            : numberKey(e, dialogue.choices.length, (i) =>
-                team.choose(dialogue.choices[i].id)
-              )
+        device={deviceForEvent(dialogue.via)}
+        back={
+          c.atDesk ? { label: "Back to desk", run: team.leaveEvent } : undefined
         }
+        onClose={team.leaveEvent}
+        onKeyDown={onKeyDown}
         initialFocusRef={after ? closeRef : firstRef}
         returnFocusTo={returnFocusTo}
       >
         <DialogueLines lines={dialogue.lines} />
-        {after ? (
-          <>
-            <DialogueLines lines={after} />
-            <div className="flex flex-wrap gap-2">
-              {c.atDesk ? (
-                <OverlayButton
-                  primary
-                  onClick={() => team.writeUp(dialogue.eventId)}
-                >
-                  Write it up now · 20 min
-                </OverlayButton>
-              ) : null}
-              <OverlayButton ref={closeRef} onClick={team.leaveEvent}>
-                {c.atDesk ? "Leave it for later" : "Done"}
-              </OverlayButton>
-            </div>
-          </>
-        ) : (
-          <>
-            <ChoiceList
-              choices={dialogue.choices}
-              onChoose={team.choose}
-              firstRef={firstRef}
-            />
-            <OverlayButton ref={closeRef} onClick={team.leaveEvent}>
-              {dialogue.via === "hallway" ? "Not now" : "Decide later"}
-            </OverlayButton>
-          </>
-        )}
+        {after ? <DialogueLines lines={after} /> : null}
+        {actions}
       </Overlay>
     );
   }
@@ -553,6 +598,7 @@ export const TeamOverlay: React.FC<{
         title="Your desk"
         subtitle={`${formatClock(world.minute)} · reading takes ten minutes, writing up twenty`}
         testId="world-desk"
+        device="monitor"
         onClose={team.close}
         initialFocusRef={closeRef}
         returnFocusTo={returnFocusTo}
@@ -600,6 +646,7 @@ export const TeamOverlay: React.FC<{
         title="EDC workstation"
         subtitle="What the sites report, beside what you have seen and been told."
         testId="world-edc"
+        device="monitor"
         onClose={team.close}
         initialFocusRef={closeRef}
         returnFocusTo={returnFocusTo}
@@ -674,6 +721,7 @@ export const TeamOverlay: React.FC<{
       title={report.kind === "team" ? "Meeting over" : "Sponsor call over"}
       subtitle={`${report.minutes} minutes, ${report.personMinutes} person-minutes${report.attendees.length > 0 ? ` with ${report.attendees.join(", ")}` : ""}.`}
       testId="world-meeting-report"
+      device="monitor"
       onClose={team.close}
       initialFocusRef={closeRef}
       returnFocusTo={returnFocusTo}

@@ -2,10 +2,12 @@
 
 import React, { useEffect, useRef } from "react";
 import { ArcadeGameLoop, computeCanvasResolution } from "@/lib/arcade";
+import { viewSize } from "./camera";
 import { FloorRenderer, TILE, type FloorScene } from "./floor-renderer";
 
 /**
- * The canvas half of the world: draws the floor when the scene changes and
+ * The canvas half of the world: draws the part of the floor around the
+ * player (the camera follows, held inside the map) when the scene changes and
  * runs the arcade loop only while the player is gliding between tiles or,
  * when motion is allowed, while the bin is on fire. The art is drawn at a
  * whole-number scale so it stays crisp. The
@@ -15,15 +17,19 @@ export const FloorView: React.FC<{
   scene: FloorScene;
   description: string;
   reducedMotion: boolean;
-}> = ({ scene, description, reducedMotion }) => {
+  /** Drawn over the canvas, such as names and the interaction prompt. */
+  overlay?: React.ReactNode;
+}> = ({ scene, description, reducedMotion, overlay }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<FloorRenderer | null>(null);
   const loopRef = useRef<ArcadeGameLoop | null>(null);
   const sceneRef = useRef(scene);
   const reducedRef = useRef(reducedMotion);
-  const width = scene.map.width * TILE;
-  const height = scene.map.height * TILE;
+  // The canvas shows a window onto the map that follows the player.
+  const view = viewSize(scene.map);
+  const width = view.w * TILE;
+  const height = view.h * TILE;
 
   // One engine and loop for the life of the view.
   useEffect(() => {
@@ -112,7 +118,7 @@ export const FloorView: React.FC<{
   }, [scene]);
 
   return (
-    <div ref={wrapRef} className="w-full min-w-0">
+    <div ref={wrapRef} className="@container relative w-full min-w-0">
       <canvas
         ref={canvasRef}
         role="img"
@@ -123,6 +129,7 @@ export const FloorView: React.FC<{
         className="block h-auto w-full border border-[var(--sd-hairline)] bg-[#0d0e11]"
         style={{ aspectRatio: `${width} / ${height}` }}
       />
+      {overlay}
     </div>
   );
 };

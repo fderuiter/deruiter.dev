@@ -60,6 +60,17 @@ const FLOORS: Record<string, (world: Json) => Json> = {
   },
 };
 
+/**
+ * The stage is a window that follows the player, so what is on screen
+ * depends on where they stand: this one puts them in their own office, beside
+ * the waste bin.
+ */
+FLOORS.crisisOffice = (world) => ({
+  ...FLOORS.crisis(world),
+  player: { x: 4, y: 3, facing: "up" },
+  location: "office",
+});
+
 async function launchWorld(page: Page) {
   await page.addInitScript(() => {
     window.localStorage.setItem("study_director_world_intro_seen", "1");
@@ -156,7 +167,7 @@ test.describe("Study Director world: the office tells the story", () => {
 
   test("the bin fire flickers only under motion-safe", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
-    await stageFloor(page, "crisis");
+    await stageFloor(page, "crisisOffice");
     const still = await settledPixels(page);
     await page.waitForTimeout(400);
     expect(await canvasPixels(page)).toBe(still);

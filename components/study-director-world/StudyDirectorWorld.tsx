@@ -51,6 +51,13 @@ import { FloorView } from "./FloorView";
 import { hudChanges } from "./hud-model";
 import { highlightedTile, type FloorScene } from "./floor-renderer";
 import { OfficeDirectory } from "./OfficeDirectory";
+import { StageLabels, TasksPanel } from "./StageLabels";
+import {
+  currentGoal,
+  interactionPrompt,
+  nameplates,
+  todaysTasks,
+} from "./stage-model";
 import { SiteVisitPanel, SiteVisitReportPanel } from "./SiteVisitPanel";
 import { MeetingSection, TeamOverlay, useTeamLayer } from "./TeamLayer";
 import { WorldHud } from "./WorldHud";
@@ -203,6 +210,15 @@ export const StudyDirectorWorld: React.FC<{
     [map, world.player, people, conditions, world.minute]
   );
   const hud = useMemo(() => hudReadout(world), [world]);
+  const prompt = useMemo(
+    () => interactionPrompt(map, world.player, people),
+    [map, world.player, people]
+  );
+  const plates = useMemo(
+    () => nameplates(map, world.player, people, prompt),
+    [map, world.player, people, prompt]
+  );
+  const tasks = useMemo(() => todaysTasks(world), [world]);
   // Key changes to the HUD are spoken once, in their own live region so they
   // never talk over what an action just said.
   const [hudNotice, setHudNotice] = useState("");
@@ -567,11 +583,7 @@ export const StudyDirectorWorld: React.FC<{
       <WorldHud
         hud={hud}
         minute={world.minute}
-        goal={
-          !acted && world.study.day === 1 && !onSite && !away
-            ? "walk to the EDC workstation in your office and press E."
-            : null
-        }
+        goal={report ? null : currentGoal(world, tasks, acted)}
       />
 
       <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,260px)] xl:grid-cols-[minmax(0,1fr)_minmax(0,300px)]">
@@ -590,6 +602,13 @@ export const StudyDirectorWorld: React.FC<{
             scene={scene}
             description={description}
             reducedMotion={reducedMotion}
+            overlay={
+              <StageLabels
+                view={{ x: 0, y: 0, w: map.width, h: map.height }}
+                plates={plates}
+                prompt={away || team.blocking ? null : prompt}
+              />
+            }
           />
         </div>
         <div className="min-w-0 space-y-3">
@@ -636,6 +655,7 @@ export const StudyDirectorWorld: React.FC<{
               How are you?
             </button>
           </section>
+          {away ? null : <TasksPanel tasks={tasks} />}
           {inConference && !away ? (
             <MeetingSection team={team} world={world} people={people} />
           ) : null}

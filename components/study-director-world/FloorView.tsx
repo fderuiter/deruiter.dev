@@ -15,7 +15,9 @@ export const FloorView: React.FC<{
   scene: FloorScene;
   description: string;
   reducedMotion: boolean;
-}> = ({ scene, description, reducedMotion }) => {
+  /** Drawn over the canvas, such as names and the interaction prompt. */
+  overlay?: React.ReactNode;
+}> = ({ scene, description, reducedMotion, overlay }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<FloorRenderer | null>(null);
@@ -112,7 +114,7 @@ export const FloorView: React.FC<{
   }, [scene]);
 
   return (
-    <div ref={wrapRef} className="w-full min-w-0">
+    <div ref={wrapRef} className="@container relative w-full min-w-0">
       <canvas
         ref={canvasRef}
         role="img"
@@ -123,6 +125,7 @@ export const FloorView: React.FC<{
         className="block h-auto w-full border border-[var(--sd-hairline)] bg-[#0d0e11]"
         style={{ aspectRatio: `${width} / ${height}` }}
       />
+      {overlay}
     </div>
   );
 };

@@ -202,6 +202,8 @@
 - [lib/game-manuals](lib/game-manuals/README.md)
 - [lib/game-utils](lib/game-utils/README.md)
 - [lib/garmin-engine](lib/garmin-engine/README.md)
+- [lib/garmin-ground-strip](lib/garmin-ground-strip/README.md)
+- [lib/garmin-telemetry](lib/garmin-telemetry/README.md)
 - [lib/github](lib/github/README.md)
 - [lib/graphics-engine](lib/graphics-engine/README.md)
 - [lib/graphics-math](lib/graphics-math/README.md)

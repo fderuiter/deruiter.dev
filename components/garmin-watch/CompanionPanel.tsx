@@ -12,6 +12,13 @@ import {
 } from "@/lib/garmin-engine";
 import { batteryTone, meterTone, type MeterTone } from "./watch-face-art";
 import type { WatchBezelTheme } from "./WatchHardware";
+import {
+  GROUND_STRIP_FIELDS,
+  GROUND_STRIP_FIELD_LABELS,
+  GROUND_STRIP_SLOT_LABELS,
+  type GroundStripField,
+  type GroundStripLayout,
+} from "@/lib/garmin-ground-strip";
 
 /** Gauge fill colours: the shared arcade signals, never the world's cyan. */
 const TONE_STROKE: Record<MeterTone, string> = {
@@ -195,6 +202,13 @@ interface CompanionPanelProps {
   onWriteFlash: (e: React.MouseEvent) => void;
   onClearFlash: (e: React.MouseEvent) => void;
   onDrainBattery: (e: React.MouseEvent) => void;
+  /** Samples recorded for the current run. */
+  telemetryCount: number;
+  onExportCsv: () => void;
+  onExportFit: () => void;
+  groundStrip: GroundStripLayout;
+  onGroundStripSlot: (slot: number, field: GroundStripField) => void;
+  onGroundStripReset: () => void;
   /** Laid over the panel, e.g. the end-of-run result card. */
   children?: ReactNode;
 }
@@ -217,6 +231,12 @@ export function CompanionPanel({
   onWriteFlash,
   onClearFlash,
   onDrainBattery,
+  telemetryCount,
+  onExportCsv,
+  onExportFit,
+  groundStrip,
+  onGroundStripSlot,
+  onGroundStripReset,
   children,
 }: CompanionPanelProps) {
   const profile = DEVICE_PROFILES[deviceTarget];
@@ -359,6 +379,71 @@ export function CompanionPanel({
                 {t.label}
               </button>
             ))}
+          </div>
+        </fieldset>
+
+        <fieldset className="min-w-0">
+          <legend className="mb-1.5 text-[10px] uppercase tracking-wider text-zinc-400">
+            Ground strip
+          </legend>
+          <div className="grid gap-1.5">
+            {GROUND_STRIP_SLOT_LABELS.map((slotLabel, slot) => (
+              <label
+                key={slotLabel}
+                className="flex min-w-0 items-center justify-between gap-2 text-[10px] text-zinc-400"
+              >
+                <span>{slotLabel}</span>
+                <select
+                  value={groundStrip[slot]}
+                  onChange={(e) =>
+                    onGroundStripSlot(slot, e.target.value as GroundStripField)
+                  }
+                  className="min-h-[32px] min-w-0 flex-1 rounded-md border border-white/[0.08] bg-[#0d0e11] px-2 text-[10px] text-zinc-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+                >
+                  {GROUND_STRIP_FIELDS.map((field) => (
+                    <option key={field} value={field}>
+                      {GROUND_STRIP_FIELD_LABELS[field]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ))}
+            <button
+              type="button"
+              onClick={onGroundStripReset}
+              className={`${toolClass} border-white/[0.08] bg-[#0d0e11] text-zinc-300 hover:bg-white/[0.04]`}
+            >
+              Reset strip
+            </button>
+          </div>
+        </fieldset>
+
+        <fieldset className="min-w-0">
+          <legend className="mb-1.5 text-[10px] uppercase tracking-wider text-zinc-400">
+            Run telemetry
+          </legend>
+          <p className="mb-1.5 text-[10px] tabular-nums text-zinc-400">
+            {telemetryCount} {telemetryCount === 1 ? "sample" : "samples"}, one
+            per second of play. The FIT file carries heart rate and distance
+            only; the CSV has every metric.
+          </p>
+          <div className="grid grid-cols-2 gap-1.5">
+            <button
+              type="button"
+              onClick={onExportCsv}
+              disabled={telemetryCount === 0}
+              className={`${toolClass} border-white/[0.08] bg-[#0d0e11] text-zinc-300 hover:bg-white/[0.04]`}
+            >
+              Download CSV
+            </button>
+            <button
+              type="button"
+              onClick={onExportFit}
+              disabled={telemetryCount === 0}
+              className={`${toolClass} border-white/[0.08] bg-[#0d0e11] text-zinc-300 hover:bg-white/[0.04]`}
+            >
+              Download FIT
+            </button>
           </div>
         </fieldset>
 

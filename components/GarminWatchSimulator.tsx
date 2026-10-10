@@ -27,6 +27,19 @@ import {
   screenBoxPercent,
   type PusherId,
 } from "@/components/garmin-watch/watch-geometry";
+import { downloadFile } from "@/lib/download";
+import {
+  TelemetryRecorder,
+  exportTelemetryCsv,
+  exportTelemetryFit,
+} from "@/lib/garmin-telemetry";
+import {
+  DEFAULT_GROUND_STRIP,
+  loadGroundStrip,
+  saveGroundStrip,
+  type GroundStripField,
+  type GroundStripLayout,
+} from "@/lib/garmin-ground-strip";
 import { FullscreenButton } from "@/components/arcade/FullscreenButton";
 import { DynamicTabletOrientationHint as TabletOrientationHint } from "@/components/arcade/DynamicTabletOrientationHint";
 import { useGameFullscreen as useFullscreen } from "@/components/arcade/CabinetFullscreen";
@@ -62,6 +75,15 @@ import {
   allocateFlashVariable,
   clearFlashStorage,
 } from "@/lib/garmin-engine";
+
+/** Compact UTC stamp for export file names, e.g. 20261010-120000. */
+function exportStamp(startedAtMs: number): string {
+  return new Date(startedAtMs || Date.now())
+    .toISOString()
+    .replace(/\.\d+Z$/, "")
+    .replace(/[-:]/g, "")
+    .replace("T", "-");
+}
 
 /** Flash written by the Write NV Flash button; matches its label. */
 const NV_WRITE_KB = 8;
@@ -205,13 +227,69 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       const ctx = canvasRef.current?.getContext("2d");
       if (!ctx) return;
       applyCanvasScale(ctx, scale);
-      renderWatchFace(ctx, stateRef.current);
+      renderWatchFace(ctx, stateRef.current, groundStripRef.current);
     },
   });
   const containerRef = useRef<HTMLDivElement | null>(null);
   const outerContainerRef = useRef<HTMLDivElement | null>(null);
   const { isFullscreen, toggleFullscreen } = useFullscreen(outerContainerRef);
   const frameCountRef = useRef<number>(0);
+
+  // Run telemetry: sampled beside the animation loop, never through React
+  // state except the sample count shown in the panel.
+  const telemetryRef = useRef(new TelemetryRecorder());
+  const runStartedAtRef = useRef(0);
+  const [telemetryCount, setTelemetryCount] = useState(0);
+
+  const [groundStrip, setGroundStrip] =
+    useState<GroundStripLayout>(DEFAULT_GROUND_STRIP);
+  // The animation loop reads the layout from a ref so a change never
+  // rebuilds the loop callback.
+  const groundStripRef = useRef<GroundStripLayout>(DEFAULT_GROUND_STRIP);
+  useEffect(() => {
+    groundStripRef.current = groundStrip;
+  }, [groundStrip]);
+  useEffect(() => {
+    // Storage is read after mount so server and client markup match.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setGroundStrip(loadGroundStrip());
+  }, []);
+
+  const handleGroundStripSlot = useCallback(
+    (slot: number, field: GroundStripField) => {
+      const next = groundStrip.map((current, i) =>
+        i === slot ? field : current
+      ) as unknown as GroundStripLayout;
+      setGroundStrip(next);
+      saveGroundStrip(next);
+    },
+    [groundStrip]
+  );
+
+  const handleGroundStripReset = useCallback(() => {
+    setGroundStrip(DEFAULT_GROUND_STRIP);
+    saveGroundStrip(DEFAULT_GROUND_STRIP);
+  }, []);
+
+  const handleExportCsv = useCallback(() => {
+    const samples = telemetryRef.current.samples();
+    if (samples.length === 0) return;
+    downloadFile(
+      exportTelemetryCsv(samples),
+      `garmin-run-${exportStamp(runStartedAtRef.current)}.csv`,
+      { mimeType: "text/csv;charset=utf-8" }
+    );
+  }, []);
+
+  const handleExportFit = useCallback(() => {
+    const samples = telemetryRef.current.samples();
+    if (samples.length === 0) return;
+    downloadFile(
+      exportTelemetryFit(samples, runStartedAtRef.current || Date.now()),
+      `garmin-run-${exportStamp(runStartedAtRef.current)}.fit`,
+      { mimeType: "application/octet-stream" }
+    );
+  }, []);
 
   // Single gateway for every stateRef mutation: stateRef.current and
   // gameState are always written together from the same computed value, so
@@ -357,6 +435,9 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
         Math.max(current.highScore, parseInt(getHighScoreSnapshot(), 10) || 0)
       );
       setResultDismissed(false);
+      telemetryRef.current.reset();
+      setTelemetryCount(0);
+      runStartedAtRef.current = Date.now();
       applyTransition((state) => startGame(state, deviceTarget, runTuning));
       recordEvent("garmin_simulator_start", "project_click").catch(() => {});
       playSuccess();
@@ -460,6 +541,8 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     triggerHaptic(15);
     playButtonTone();
     setDeviceTarget(target);
+    telemetryRef.current.reset();
+    setTelemetryCount(0);
     applyTransition((state) => createInitialState(target, state.highScore));
   };
 
@@ -798,6 +881,12 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
           }
         );
 
+        const recorder = telemetryRef.current;
+        const sampled = recorder.advance(nextState, deltaMs);
+        const closed =
+          nextState.gameState !== "playing" && recorder.finish(nextState);
+        if (sampled || closed) setTelemetryCount(recorder.count);
+
         // Save a new high score when the run ends, and about once a second
         // while it's still going. The engine raises highScore to the score
         // every tick, so compare against the stored best instead.
@@ -820,7 +909,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
         if (ctx) {
           const scale = canvasScaleRef.current;
           applyCanvasScale(ctx, scale);
-          renderWatchFace(ctx, stateRef.current);
+          renderWatchFace(ctx, stateRef.current, groundStripRef.current);
         }
       }
     },
@@ -1196,6 +1285,12 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
             handleClearFlash();
             returnFocusAfterPointerClick(e);
           }}
+          telemetryCount={telemetryCount}
+          onExportCsv={handleExportCsv}
+          onExportFit={handleExportFit}
+          groundStrip={groundStrip}
+          onGroundStripSlot={handleGroundStripSlot}
+          onGroundStripReset={handleGroundStripReset}
           onDrainBattery={(e) => {
             handleDrainBattery();
             returnFocusAfterPointerClick(e);

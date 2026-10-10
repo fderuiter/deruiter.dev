@@ -113,7 +113,7 @@ let storage: MemoryStorage;
 beforeEach(() => {
   storage = new MemoryStorage();
 });
-const store = () => storage as unknown as Storage;
+const store = () => fromPartial<Storage>(storage);
 
 describe("captureFormTemplate", () => {
   it("copies the form, keeps only referenced codelists and drops the lock", () => {

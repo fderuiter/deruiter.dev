@@ -150,7 +150,12 @@ export function FormTemplatesPanel({
             />
           </label>
           {templates.length > 0 && (
-            <button type="button" onClick={handleExport} className={BUTTON}>
+            <button
+              type="button"
+              onClick={handleExport}
+              aria-label="Export all form templates as a package"
+              className={BUTTON}
+            >
               <IconDownload className="h-3 w-3" aria-hidden="true" />
               <span>Export</span>
             </button>

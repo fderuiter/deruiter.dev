@@ -189,6 +189,8 @@ describe("study director world: fast travel", () => {
       CRO_FLOOR.id,
       "site-02",
       "site-03",
+      "site-04",
+      "site-05",
     ]);
     const back = expectOk(travel(there, CRO_FLOOR.id));
     expect(currentMap(back.world)).toBe(CRO_FLOOR);

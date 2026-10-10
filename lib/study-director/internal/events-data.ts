@@ -20,7 +20,10 @@ function opt(
 }
 
 const allSites = (patch: { burden?: number; trainingCurrent?: boolean }) =>
-  ["site-01", "site-02", "site-03"].map((siteId) => ({ siteId, ...patch }));
+  ["site-01", "site-02", "site-03", "site-04", "site-05"].map((siteId) => ({
+    siteId,
+    ...patch,
+  }));
 
 const meanLoad = (s: StudyState): number =>
   s.team.reduce((n, m) => n + m.workload, 0) / Math.max(1, s.team.length);

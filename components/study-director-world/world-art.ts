@@ -234,6 +234,10 @@ const SITE_LOOKS: Record<string, SiteLook> = {
   "site-02": { tint: [146, 96, 10], tintAlpha: 0.08, accent: "#f59e0b" },
   // Understaffed: clinical and bare.
   "site-03": { tint: [16, 120, 90], tintAlpha: 0.08, accent: "#10b981" },
+  // Sure of itself: framed certificates and a freshly painted wall.
+  "site-04": { tint: [120, 80, 60], tintAlpha: 0.08, accent: "#f59e0b" },
+  // New and keen: paper signs taped to everything.
+  "site-05": { tint: [90, 110, 140], tintAlpha: 0.08, accent: "#94a3b8" },
 };
 
 const NEUTRAL_SITE_LOOK: SiteLook = {

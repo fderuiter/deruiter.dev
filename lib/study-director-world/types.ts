@@ -76,6 +76,8 @@ export interface WorldState {
   assignments?: Assignment[];
   /** A meeting in progress in the conference room, if any (#1689). */
   meeting?: Meeting | null;
+  /** Visitors the player has met or missed, oldest first (#1839). */
+  guests?: GuestRecord[];
   /** Today's chosen priority and the interruptions already dealt with (#1837). */
   plan?: DayPlan;
 }
@@ -861,4 +863,46 @@ export interface RelationshipOption {
   available: boolean;
   /** In the player's words, never a number: why it is not available. */
   reason?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Visitors to the conference room (#1839).
+
+/** The scheduled visitors: the sponsor comes to see the study, a vendor to sell to it. */
+export const GUEST_IDS = ["sponsorVisit", "vendorMeeting"] as const;
+export type GuestId = (typeof GUEST_IDS)[number];
+
+/** A visitor the player met, or who waited and left. */
+export interface GuestRecord {
+  id: GuestId;
+  day: number;
+  outcome: "met" | "missed";
+  /** The option chosen, when met. */
+  choice?: string;
+}
+
+/** One way to spend the visit. */
+export interface GuestOption {
+  id: string;
+  label: string;
+  cost: ActionCost;
+  available: boolean;
+  /** In the player's words: why it is not available now. */
+  reason?: string;
+}
+
+/** A visitor waiting in the conference room, and what the player can do about it. */
+export interface GuestScene {
+  id: GuestId;
+  kicker: string;
+  title: string;
+  visitor: { name: string; role: string; organisation: string };
+  /** Minutes after midnight at which they arrive and at which they leave. */
+  arrivesAt: number;
+  leavesAt: number;
+  /** What the player sees and hears, a line at a time. */
+  body: string[];
+  /** Whether the player is in the conference room with them. */
+  here: boolean;
+  options: GuestOption[];
 }

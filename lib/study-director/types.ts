@@ -53,7 +53,8 @@ export type MemberArchetype =
   | "steadyProfessional"
   | "overloadedStar";
 
-export type CoordinatorArchetype = "terrified" | "invisible" | "steady";
+export type CoordinatorArchetype =
+  "terrified" | "invisible" | "steady" | "overconfident" | "newcomer";
 
 export type SponsorArchetype = "firstTimeBiotech" | "bigPharma";
 

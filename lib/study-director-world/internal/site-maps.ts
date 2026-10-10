@@ -87,6 +87,20 @@ const SITE_PROFILES: Record<string, SiteProfile> = {
     travelMinutes: 55,
     reception: "Nobody is at the desk. A bell says ring for service.",
   },
+  "site-04": {
+    coordinator: "Marcus Webb",
+    pi: "Dr. Adeyemi",
+    travelMinutes: 70,
+    reception:
+      "A framed certificate for forty completed studies hangs behind the desk. The frame is newer than the wall.",
+  },
+  "site-05": {
+    coordinator: "Jun Park",
+    pi: "Dr. Brandt",
+    travelMinutes: 35,
+    reception:
+      "A hand-lettered sign says Study 24-081 patients, please sit here. Someone has taped the protocol summary to the desk.",
+  },
 };
 
 const FALLBACK_PROFILE: SiteProfile = {
@@ -178,6 +192,70 @@ export const COORDINATOR_TRAITS: Record<
         detail:
           "Source pages wait in a tray for the investigator's signature, for weeks.",
         revealedBy: ["sourceReview", "meetPi"],
+        fromVisit: 2,
+      },
+    ],
+  },
+  overconfident: {
+    visible: [
+      {
+        id: "confident",
+        label: "Confident",
+        detail: "Has run forty of these. Says so, early and often.",
+      },
+      {
+        id: "quickReplies",
+        label: "Replies in minutes",
+        detail: "One line, never an attachment.",
+      },
+    ],
+    hidden: [
+      {
+        id: "worksFromMemory",
+        label: "Works from memory",
+        detail:
+          "Fills in the source pages on Friday for the whole week. The dates are close, not right.",
+        revealedBy: ["sourceReview", "consent"],
+        fromVisit: 1,
+      },
+      {
+        id: "skipsSteps",
+        label: "Skips steps he thinks are pointless",
+        detail:
+          "Has not read the amendment. The investigator stopped arguing about it a year ago.",
+        revealedBy: ["meetPi", "delegationLog"],
+        fromVisit: 2,
+      },
+    ],
+  },
+  newcomer: {
+    visible: [
+      {
+        id: "eager",
+        label: "Eager",
+        detail: "Asks questions in full sentences and writes the answers down.",
+      },
+      {
+        id: "newHere",
+        label: "New to the job",
+        detail: "Started in the spring. Says so before you ask.",
+      },
+    ],
+    hidden: [
+      {
+        id: "noOneToAsk",
+        label: "Has no one to ask",
+        detail:
+          "Trained by a video and a binder. The last coordinator left before the handover.",
+        revealedBy: ["interviewCoordinator"],
+        fromVisit: 1,
+      },
+      {
+        id: "honestMistakes",
+        label: "Reports every mistake, and makes a few",
+        detail:
+          "Every deviation is reported. A handful come from reading the protocol too literally.",
+        revealedBy: ["sourceReview", "consent"],
         fromVisit: 2,
       },
     ],
@@ -375,8 +453,14 @@ function siteStations(site: string, profile: SiteProfile): Station[] {
   return stations;
 }
 
-/** The three clinical sites of Study 24-081 reached by fast travel. */
-export const SITE_IDS = ["site-01", "site-02", "site-03"] as const;
+/** The five clinical sites of Study 24-081 reached by fast travel. */
+export const SITE_IDS = [
+  "site-01",
+  "site-02",
+  "site-03",
+  "site-04",
+  "site-05",
+] as const;
 
 function siteName(siteId: string): string {
   return `Site ${siteId.replace(/^site-/, "")}`;

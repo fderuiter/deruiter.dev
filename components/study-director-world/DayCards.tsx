@@ -4,6 +4,7 @@ import React, { useEffect, useRef } from "react";
 import {
   PRIORITIES,
   formatClock,
+  type GuestScene,
   type Interruption,
   type MorningDigest,
   type OvernightReport,
@@ -186,6 +187,62 @@ export const InterruptionCard: React.FC<{
               {o.cost.minutes === 0 ? "· no time" : `· ${o.cost.minutes} min`}
             </span>
           </OverlayButton>
+        </li>
+      ))}
+    </ul>
+  </section>
+);
+
+/** A visitor in the conference room, and what each way of spending the visit costs. */
+export const GuestCard: React.FC<{
+  scene: GuestScene;
+  onMeet: (optionId: string) => void;
+}> = ({ scene, onMeet }) => (
+  <section
+    aria-labelledby="sd-world-guest"
+    data-testid="world-guest"
+    data-guest={scene.id}
+    className={`${CARD} border-[var(--sd-amber)]/60`}
+  >
+    <Heading id="sd-world-guest" kicker={scene.kicker} title={scene.title} />
+    <p className="text-[11px] text-[var(--sd-muted)]">
+      {scene.visitor.name}, {scene.visitor.role}, {scene.visitor.organisation}.
+      Waiting until {formatClock(scene.leavesAt)}.
+    </p>
+    {scene.body.map((line) => (
+      <p key={line} className="text-xs leading-relaxed text-zinc-200">
+        {line}
+      </p>
+    ))}
+    {scene.here ? null : (
+      <p data-testid="world-guest-where" className="text-xs text-zinc-300">
+        Walk to the conference room to meet them.
+      </p>
+    )}
+    <ul className="flex flex-wrap gap-2">
+      {scene.options.map((o) => (
+        <li key={o.id} className="min-w-0">
+          <OverlayButton
+            aria-disabled={!o.available}
+            className={o.available ? "" : "opacity-50"}
+            onClick={() => {
+              if (o.available) onMeet(o.id);
+            }}
+            aria-describedby={o.reason ? `sd-guest-why-${o.id}` : undefined}
+          >
+            {o.label}
+            <span className="ml-1 text-[var(--sd-muted)]">
+              · {o.cost.minutes} min
+            </span>
+          </OverlayButton>
+          {o.reason && scene.here ? (
+            <p
+              id={`sd-guest-why-${o.id}`}
+              className="mt-0.5 text-[11px] text-[var(--sd-muted)]"
+            >
+              {o.reason}
+            </p>
+          ) : null}
         </li>
       ))}
     </ul>

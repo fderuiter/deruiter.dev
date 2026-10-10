@@ -13,6 +13,8 @@ import {
   TEAM_INTERACTIONS,
   WORLD_SAVE_KEY,
   answerInterruption,
+  guestScene,
+  meetGuest,
   choosePriority,
   closeVisit,
   currentMap,
@@ -57,6 +59,7 @@ import { safeIsAvailable, safeRawStorage } from "@/lib/safe-storage";
 import { followCamera } from "./camera";
 import {
   DigestCard,
+  GuestCard,
   InterruptionCard,
   OvernightCard,
   PriorityCard,
@@ -436,6 +439,32 @@ export const StudyDirectorWorld: React.FC<{
     announcedInterruption.current = id;
   }, [interruption]);
 
+  const guest = useMemo(() => guestScene(world), [world]);
+
+  // A visitor is announced once when they arrive.
+  const announcedGuest = useRef<string | null>(null);
+  useEffect(() => {
+    const id = guest?.id ?? null;
+    if (id && id !== announcedGuest.current && guest)
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setNotice(`${guest.title}. ${guest.body[0]}`);
+    announcedGuest.current = id;
+  }, [guest]);
+
+  const meet = useCallback(
+    (optionId: string) => {
+      const result = meetGuest(world, optionId);
+      if (!result.ok) {
+        setNotice(REFUSALS[result.reason]);
+        return;
+      }
+      setWorld(result.world);
+      setNotice(result.result);
+      refocus();
+    },
+    [world, refocus]
+  );
+
   const pickPriority = useCallback(
     (id: PriorityId) => {
       const result = choosePriority(world, id);
@@ -675,9 +704,10 @@ export const StudyDirectorWorld: React.FC<{
         </button>
       </div>
     </section>
-  ) : digest || interruption || (!plan.priority && morning) ? (
+  ) : digest || interruption || guest || (!plan.priority && morning) ? (
     <div className="space-y-3">
       {digest ? <DigestCard digest={digest} /> : null}
+      {guest ? <GuestCard scene={guest} onMeet={meet} /> : null}
       {interruption ? (
         <InterruptionCard interruption={interruption} onAnswer={answer} />
       ) : null}

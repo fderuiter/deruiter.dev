@@ -95,7 +95,7 @@ describe("Study Director desk graphics", () => {
       screen.getByTestId("study-phase-timeline").getAttribute("aria-label")
     ).toMatch(/Protocol phase, day 1 of 77/);
     expect(screen.getByTestId("study-health-radar")).toBeTruthy();
-    expect(screen.getAllByText("Unverified")).toHaveLength(3);
+    expect(screen.getAllByText("Unverified")).toHaveLength(5);
   });
 
   it("shows how a decision moved the meters against the start of the day", () => {
@@ -114,7 +114,7 @@ describe("Study Director desk graphics", () => {
     fireEvent.click(screen.getByRole("button", { name: /start the study/i }));
     fireEvent.click(screen.getByRole("button", { name: "Audit Site 01" }));
     expect(screen.getByText(/Audited day 1/)).toBeTruthy();
-    expect(screen.getAllByText("Unverified")).toHaveLength(2);
+    expect(screen.getAllByText("Unverified")).toHaveLength(4);
     expect(
       screen.getByRole("button", { name: "Audit Site 01" }).textContent
     ).toBe("Re-audit");

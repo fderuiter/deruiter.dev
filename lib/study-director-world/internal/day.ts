@@ -19,6 +19,7 @@ import { fatigueFrom, weekdayFor } from "./clock";
 import { undocumentedDecisions } from "./dialogue";
 import { workTheNight } from "./delegation";
 import { earlyWarning } from "./favours";
+import { settleGuests } from "./guests";
 import { CRO_FLOOR } from "./floor";
 import { eveningWrapUp, settlePriority } from "./rhythm";
 import { adjustTrust, senderOf } from "./team";
@@ -258,9 +259,10 @@ export function goHome(world: WorldState): {
   const wrapUp = eveningWrapUp(world);
   const worked = workTheNight({ ...world, meeting: null });
   const settled = settlePriority(worked.world);
+  const callers = settleGuests(settled.world);
   const night = {
-    world: settled.world,
-    lines: [...worked.lines, ...settled.lines],
+    world: callers.world,
+    lines: [...worked.lines, ...settled.lines, ...callers.lines],
   };
   const before = night.world.study;
   const after = endDay(before);

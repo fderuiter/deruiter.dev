@@ -6,4 +6,4 @@
 
 # Type Alias: CoordinatorArchetype
 
-> **CoordinatorArchetype** = `"terrified"` \| `"invisible"` \| `"steady"`
+> **CoordinatorArchetype** = `"terrified"` \| `"invisible"` \| `"steady"` \| `"overconfident"` \| `"newcomer"`

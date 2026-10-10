@@ -69,6 +69,14 @@ export {
 } from "./internal/interact";
 export { SITE_IDS, SITE_MAPS } from "./internal/site-maps";
 export {
+  guestDay,
+  guestScene,
+  guestWaiting,
+  guestWrapUp,
+  meetGuest,
+  settleGuests,
+} from "./internal/guests";
+export {
   PI_LEAVES,
   SITE_CHECKS,
   SITE_CLOSES,

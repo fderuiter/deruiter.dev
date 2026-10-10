@@ -309,6 +309,14 @@ export const FOOTER_EXTRA_ITEMS: readonly NavItem[] = [
     icon: "article",
     tone: "amber",
   },
+  {
+    id: "wedding",
+    title: "Our Wedding",
+    subtitle: "An archive of Abbi and Fred's wedding website and photos",
+    href: "/wedding",
+    icon: "heart",
+    tone: "amber",
+  },
 ];
 
 /** The top bar, left to right. */
@@ -354,7 +362,9 @@ export const PRIMARY_NAV: readonly NavGroup[] = [
     label: "About",
     href: "/#about",
     sections: [{ id: "about", items: ABOUT_ITEMS }],
-    activeWhen: { exact: ["/stack", "/acknowledgments", "/schedule"] },
+    activeWhen: {
+      exact: ["/stack", "/acknowledgments", "/schedule", "/wedding"],
+    },
   },
   {
     id: "contact",

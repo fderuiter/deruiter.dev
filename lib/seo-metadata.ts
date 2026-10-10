@@ -437,6 +437,22 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     locale: "en-US",
     isAccessibleForFree: true,
   },
+  wedding: {
+    title: "Abbi & Fred: Our Wedding Archive",
+    description:
+      "An archive of Abbi and Fred's wedding website: the story, the wedding party and photos from the Plummer House in Rochester, Minnesota, on October 10, 2025.",
+    path: "/wedding",
+    keywords: [
+      "Abbi and Fred Wedding",
+      "Plummer House Wedding",
+      "Rochester Minnesota Wedding",
+      "Wedding Photos",
+      "Wedding Website Archive",
+    ],
+    inLanguage: "en-US",
+    locale: "en-US",
+    isAccessibleForFree: true,
+  },
   memeVault: {
     title: "Meme Vault: Soundboard and Trophies",
     description:

@@ -29,6 +29,7 @@ import {
   IconFileSpreadsheet,
   IconCpu,
   IconHeartHandshake,
+  IconHeart,
   IconShoppingBag,
   IconDeviceGamepad2,
   IconSparkles,
@@ -1085,6 +1086,25 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           "Direct dependencies grouped by purpose",
           "Searchable list of every shipped package",
           "Full license texts in third-party notices",
+        ],
+      },
+      {
+        id: "nav-wedding",
+        title: "Abbi & Fred: Our Wedding Archive",
+        subtitle:
+          "The story, wedding party and photos from Abbi and Fred's wedding at the Plummer House, October 10, 2025.",
+        category: "navigation",
+        url: "/wedding",
+        icon: <IconHeart className="w-4 h-4 text-amber-400" />,
+        badge: "Archive",
+        status: "One Year On",
+        description:
+          "A static archive of the wedding website, put back up for the first anniversary.",
+        techStack: ["Next.js 16", "next/image", "Static Rendering"],
+        highlights: [
+          "Sixteen photos from the day, with the full album linked",
+          "The story and wedding party from the original site",
+          "No database: guest data stayed with the original app",
         ],
       },
       {

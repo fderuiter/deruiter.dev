@@ -54,6 +54,11 @@ export const PUBLIC_ROUTE_REGISTRY = [
     category: "top-level",
   },
   {
+    path: "/wedding",
+    name: "Wedding Archive",
+    category: "top-level",
+  },
+  {
     path: "/offline",
     name: "Offline Fallback View",
     category: "top-level",

@@ -65,6 +65,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     } else if (config.path === "/merch") {
       priority = 0.4;
       changeFrequency = "monthly";
+    } else if (config.path === "/wedding") {
+      priority = 0.3;
+      changeFrequency = "yearly";
     } else if (config.path === "/acknowledgments") {
       priority = 0.5;
       changeFrequency = "monthly";

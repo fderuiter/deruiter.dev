@@ -646,6 +646,14 @@ test.describe("Continuous Accessibility (a11y) & WCAG 2.1 AA Audit Suite", () =>
     await auditAndAssert(page, testInfo, "Schedule Page Default State");
   });
 
+  test("Audit: Wedding Archive", async ({ page }, testInfo) => {
+    await page.goto("/wedding");
+    await page.waitForLoadState("networkidle");
+    await page.waitForTimeout(300);
+
+    await auditAndAssert(page, testInfo, "Wedding Archive Default State");
+  });
+
   test("Audit: Case Study Deep-Dive Reader", async ({ page }, testInfo) => {
     await page.goto("/case-studies/clinical-data-mapper");
     await page.waitForLoadState("networkidle");

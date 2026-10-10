@@ -436,6 +436,7 @@
 - [lib/utils/number-format](lib/utils/number-format/README.md)
 - [lib/utils/prng](lib/utils/prng/README.md)
 - [lib/webgl/context-manager](lib/webgl/context-manager/README.md)
+- [lib/wedding-archive](lib/wedding-archive/README.md)
 - [lib/working-with-duck-engine](lib/working-with-duck-engine/README.md)
 - [lib/workspace-command-registry](lib/workspace-command-registry/README.md)
 - [lib/zod-to-openapi](lib/zod-to-openapi/README.md)

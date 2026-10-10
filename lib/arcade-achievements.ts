@@ -206,7 +206,8 @@ export const ARCADE_TROPHIES: ArcadeTrophy[] = [
     gameId: "study-director",
     title: "Study Kickoff",
     subtitle: "Study Director",
-    description: "Allocate daily attention points to keep sites operational.",
+    description:
+      "Get through your first weeks: answer the inbox, walk the floor and keep the sites running.",
     icon: "ClipboardCheck",
     category: "gameplay",
     targetScore: 100,

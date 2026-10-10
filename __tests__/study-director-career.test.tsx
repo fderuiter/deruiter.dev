@@ -28,7 +28,7 @@ import {
   recordRun,
   recordStart,
 } from "@/components/study-director/career";
-import { seedLink } from "@/components/study-director/ShareCard";
+import { SharePanel, seedLink } from "@/components/study-director/ShareCard";
 import { StudyDirectorGame } from "@/components/study-director/StudyDirectorGame";
 
 function finished(seed: string): FinalReport {
@@ -207,5 +207,31 @@ describe("saving on the desk", () => {
     expect(career.started).toBe(1);
     expect(career.finished).toBe(1);
     expect(career.history[0].seed).toBe("shared-seed-1");
+  });
+});
+
+describe("Study Director share card: office runs", () => {
+  afterEach(cleanup);
+
+  it("names an office run on the card and says where the link goes", async () => {
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: vi.fn().mockResolvedValue(undefined) },
+    });
+    const { container } = render(
+      <SharePanel report={finished("office-1")} news={null} office />
+    );
+    expect(container.textContent).toMatch(/office run · seed office-1/);
+    fireEvent.click(screen.getByRole("button", { name: /copy link/i }));
+    expect(
+      await screen.findByText(/same seed at the classic desk/)
+    ).toBeTruthy();
+  });
+
+  it("leaves desk runs without the office tag", () => {
+    const { container } = render(
+      <SharePanel report={finished("desk-1")} news={null} />
+    );
+    expect(container.textContent).not.toMatch(/office run/);
   });
 });

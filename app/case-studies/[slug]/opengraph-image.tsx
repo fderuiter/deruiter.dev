@@ -12,6 +12,14 @@ export const alt = "Case Study Technical Deep-Dive | Frederick de Ruiter";
 export const size = OG_IMAGE_SIZE;
 export const contentType = OG_IMAGE_CONTENT_TYPE;
 
+/**
+ * Prerenders a card for every bundled case study. The card reads only bundled
+ * text, so it can be built once instead of running Satori on every fetch.
+ */
+export function generateStaticParams() {
+  return FALLBACK_CASE_STUDIES.map((study) => ({ slug: study.slug }));
+}
+
 interface ImageProps {
   params: Promise<{ slug: string }>;
 }

@@ -17,7 +17,7 @@ import {
   IconX,
   IconGitFork,
 } from "@tabler/icons-react";
-import { StudyProtocol, CRFForm } from "@/lib/crf/types";
+import { StudyProtocol, CRFForm, CodelistDefinition } from "@/lib/crf/types";
 import { formatVisitWindow } from "@/lib/crf/visit-window";
 import {
   CDASH_DOMAIN_CATALOG,
@@ -27,6 +27,7 @@ import { scaffoldCdashDomain } from "@/lib/crf/cdash-domain-templates";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { WidgetPalette } from "./WidgetPalette";
 import { FormVariantModal } from "./FormVariantModal";
+import { FormTemplatesPanel } from "./FormTemplatesPanel";
 import { getFormUses } from "@/lib/crf/form-variants";
 
 export type LeftSidebarTab = "spine" | "forms" | "palette";
@@ -50,7 +51,12 @@ interface StudySpineProps {
   onAddField: (field: import("@/lib/crf/types").CRFField) => void;
   onAssignFormToVisit: (visitId: string, formId: string) => void;
   onUnassignFormFromVisit: (visitId: string, formId: string) => void;
-  onInjectCdashForm: (form: CRFForm, targetVisitId?: string) => void;
+  onInjectCdashForm: (
+    form: CRFForm,
+    targetVisitId?: string,
+    /** Codelists the form needs that the study does not have yet. */
+    codelists?: CodelistDefinition[]
+  ) => void;
   /** Commits a form variant transaction (#675) as one undoable change. */
   onCommitFormVariant?: (study: StudyProtocol, variantFormId: string) => void;
 }
@@ -748,6 +754,14 @@ export const StudySpine: React.FC<StudySpineProps> = ({
               </p>
             )}
           </div>
+
+          <FormTemplatesPanel
+            study={study}
+            activeVisitId={activeVisitId}
+            onInsert={(form, visitId, codelists) =>
+              onInjectCdashForm(form, visitId, codelists)
+            }
+          />
 
           {/* Global CDASH Library Section */}
           <div className="space-y-2 pt-2 border-t border-zinc-850">

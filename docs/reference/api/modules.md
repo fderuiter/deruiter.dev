@@ -111,6 +111,7 @@
 - [lib/crf/file-ingestion](lib/crf/file-ingestion/README.md)
 - [lib/crf/form-health](lib/crf/form-health/README.md)
 - [lib/crf/form-linter](lib/crf/form-linter/README.md)
+- [lib/crf/form-templates](lib/crf/form-templates/README.md)
 - [lib/crf/form-test-harness](lib/crf/form-test-harness/README.md)
 - [lib/crf/form-variants](lib/crf/form-variants/README.md)
 - [lib/crf/formula-linter](lib/crf/formula-linter/README.md)

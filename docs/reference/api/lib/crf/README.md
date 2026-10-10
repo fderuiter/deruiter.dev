@@ -332,6 +332,12 @@ Re-exports [CalculationStatus](types/type-aliases/CalculationStatus.md)
 
 ***
 
+### captureFormTemplate
+
+Re-exports [captureFormTemplate](form-templates/functions/captureFormTemplate.md)
+
+***
+
 ### captureLibraryEntry
 
 Re-exports [captureLibraryEntry](personal-library/functions/captureLibraryEntry.md)
@@ -617,6 +623,12 @@ Re-exports [DEFAULT_STUDY_BRANDING](branding-defaults/variables/DEFAULT_STUDY_BR
 ### DEFAULT\_TEST\_SCOPE
 
 Re-exports [DEFAULT_TEST_SCOPE](form-test-harness/variables/DEFAULT_TEST_SCOPE.md)
+
+***
+
+### deleteFormTemplate
+
+Re-exports [deleteFormTemplate](form-templates/functions/deleteFormTemplate.md)
 
 ***
 
@@ -974,6 +986,12 @@ Re-exports [ExportDocxOptions](types/interfaces/ExportDocxOptions.md)
 
 ***
 
+### exportFormTemplates
+
+Re-exports [exportFormTemplates](form-templates/functions/exportFormTemplates.md)
+
+***
+
 ### exportFormToFhirQuestionnaire
 
 Re-exports [exportFormToFhirQuestionnaire](fhir-questionnaire/functions/exportFormToFhirQuestionnaire.md)
@@ -1142,6 +1160,24 @@ Re-exports [flattenFormFields](form-test-harness/functions/flattenFormFields.md)
 
 ***
 
+### FORM\_TEMPLATE\_FORMAT\_VERSION
+
+Re-exports [FORM_TEMPLATE_FORMAT_VERSION](form-templates/variables/FORM_TEMPLATE_FORMAT_VERSION.md)
+
+***
+
+### FORM\_TEMPLATES\_CORRUPT\_BACKUP\_KEY
+
+Re-exports [FORM_TEMPLATES_CORRUPT_BACKUP_KEY](form-templates/variables/FORM_TEMPLATES_CORRUPT_BACKUP_KEY.md)
+
+***
+
+### FORM\_TEMPLATES\_STORAGE\_KEY
+
+Re-exports [FORM_TEMPLATES_STORAGE_KEY](form-templates/variables/FORM_TEMPLATES_STORAGE_KEY.md)
+
+***
+
 ### formatPrecisionDate
 
 Re-exports [formatPrecisionDate](precision-date/functions/formatPrecisionDate.md)
@@ -1181,6 +1217,12 @@ Re-exports [FormReferenceIssue](form-variants/interfaces/FormReferenceIssue.md)
 ### FormReferenceLocation
 
 Re-exports [FormReferenceLocation](form-variants/type-aliases/FormReferenceLocation.md)
+
+***
+
+### FormTemplate
+
+Re-exports [FormTemplate](form-templates/interfaces/FormTemplate.md)
 
 ***
 
@@ -1496,6 +1538,12 @@ Re-exports [importBaselinesBundle](study-baselines/functions/importBaselinesBund
 
 ***
 
+### importFormTemplates
+
+Re-exports [importFormTemplates](form-templates/functions/importFormTemplates.md)
+
+***
+
 ### importStudyFromCdiscOdmXml
 
 Re-exports [importStudyFromCdiscOdmXml](odm-xml-parser/functions/importStudyFromCdiscOdmXml.md)
@@ -1538,6 +1586,18 @@ Re-exports [InstantiateAtomicFieldOptions](smart-blocks-engine/interfaces/Instan
 
 ***
 
+### instantiateContent
+
+Re-exports [instantiateContent](personal-library/functions/instantiateContent.md)
+
+***
+
+### InstantiatedContent
+
+Re-exports [InstantiatedContent](personal-library/interfaces/InstantiatedContent.md)
+
+***
+
 ### InstantiatedLibraryEntry
 
 Re-exports [InstantiatedLibraryEntry](personal-library/interfaces/InstantiatedLibraryEntry.md)
@@ -1547,6 +1607,12 @@ Re-exports [InstantiatedLibraryEntry](personal-library/interfaces/InstantiatedLi
 ### InstantiatedSmartBlock
 
 Re-exports [InstantiatedSmartBlock](smart-blocks-engine/interfaces/InstantiatedSmartBlock.md)
+
+***
+
+### instantiateFormTemplate
+
+Re-exports [instantiateFormTemplate](form-templates/functions/instantiateFormTemplate.md)
 
 ***
 
@@ -1589,6 +1655,12 @@ Re-exports [isDraftDirty](study-draft-storage/functions/isDraftDirty.md)
 ### isEvidenceStale
 
 Re-exports [isEvidenceStale](test-scenarios/functions/isEvidenceStale.md)
+
+***
+
+### isFormTemplateShape
+
+Re-exports [isFormTemplateShape](form-templates/functions/isFormTemplateShape.md)
 
 ***
 
@@ -1655,6 +1727,12 @@ Re-exports [lintForm](form-linter/functions/lintForm.md)
 ### lintFormula
 
 Re-exports [lintFormula](formula-linter/functions/lintFormula.md)
+
+***
+
+### listFormTemplates
+
+Re-exports [listFormTemplates](form-templates/functions/listFormTemplates.md)
 
 ***
 
@@ -1730,6 +1808,18 @@ Re-exports [MAX_FILE_SIZE_BYTES](file-ingestion/variables/MAX_FILE_SIZE_BYTES.md
 
 ***
 
+### MAX\_FORM\_TEMPLATES
+
+Re-exports [MAX_FORM_TEMPLATES](form-templates/variables/MAX_FORM_TEMPLATES.md)
+
+***
+
+### MAX\_TEMPLATE\_PACKAGE\_CHARS
+
+Re-exports [MAX_TEMPLATE_PACKAGE_CHARS](form-templates/variables/MAX_TEMPLATE_PACKAGE_CHARS.md)
+
+***
+
 ### NCI\_CODE\_REGEX
 
 Re-exports [NCI_CODE_REGEX](cdisc-controlled-terminology/variables/NCI_CODE_REGEX.md)
@@ -1778,6 +1868,12 @@ Re-exports [ParsedStudyFileResult](file-ingestion/interfaces/ParsedStudyFileResu
 
 ***
 
+### parseFormTemplatePackage
+
+Re-exports [parseFormTemplatePackage](form-templates/functions/parseFormTemplatePackage.md)
+
+***
+
 ### parseMultiSelectValue
 
 Re-exports [parseMultiSelectValue](export-r/functions/parseMultiSelectValue.md)
@@ -1787,6 +1883,12 @@ Re-exports [parseMultiSelectValue](export-r/functions/parseMultiSelectValue.md)
 ### parsePrecisionDate
 
 Re-exports [parsePrecisionDate](precision-date/functions/parsePrecisionDate.md)
+
+***
+
+### parseStoredFormTemplates
+
+Re-exports [parseStoredFormTemplates](form-templates/functions/parseStoredFormTemplates.md)
 
 ***
 
@@ -2195,6 +2297,18 @@ Re-exports [sanitizeRName](export-r/functions/sanitizeRName.md)
 ### sanitizeSasName
 
 Re-exports [sanitizeSasName](export-sas/functions/sanitizeSasName.md)
+
+***
+
+### saveFormTemplate
+
+Re-exports [saveFormTemplate](form-templates/functions/saveFormTemplate.md)
+
+***
+
+### SaveFormTemplatesResult
+
+Re-exports [SaveFormTemplatesResult](form-templates/type-aliases/SaveFormTemplatesResult.md)
 
 ***
 

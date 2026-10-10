@@ -233,6 +233,10 @@ export const Footer: React.FC = () => {
                     }
                   />
                 ))}
+              <FooterNavLink
+                item={FOOTER_EXTRA_ITEMS.find((i) => i.id === "wedding")!}
+                onHover={handleHover}
+              />
             </ul>
           </div>
 

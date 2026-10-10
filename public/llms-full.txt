@@ -453,6 +453,7 @@ The approach: Next.js Server Actions handle submissions, Zod checks the inputs, 
 - [Open Source Credits and Licenses](https://deruiter.dev/acknowledgments): The open source projects this site is built on, each linked to its home, with versions, licenses and why it is used. Full license texts are included.
 - [Book a 30-Minute Chat With Fred](https://deruiter.dev/schedule): Pick a time on Google Calendar to talk about a project, ask a question, or say hello. Each booking is a 30-minute Google Meet chat with Fred de Ruiter.
 - [Under the Hood: How This Site Works](https://deruiter.dev/stack): See how this site works: text layout, browser audio, the application stack, and the checks I use while building it. Demos and source included.
+- [Abbi & Fred: Our Wedding Archive](https://deruiter.dev/wedding): An archive of Abbi and Fred's wedding website: the story, the wedding party and photos from the Plummer House in Rochester, Minnesota, on October 10, 2025.
 
 ## Contact
 

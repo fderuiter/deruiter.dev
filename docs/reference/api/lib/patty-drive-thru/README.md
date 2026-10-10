@@ -62,6 +62,12 @@ Re-exports [BREAK_ADJUSTMENT_CENTS](presets/variables/BREAK_ADJUSTMENT_CENTS.md)
 
 ***
 
+### buildShiftTelemetry
+
+Re-exports [buildShiftTelemetry](internal/telemetry/functions/buildShiftTelemetry.md)
+
+***
+
 ### CLOSING\_NOTE
 
 Re-exports [CLOSING_NOTE](internal/diary/variables/CLOSING_NOTE.md)
@@ -161,6 +167,18 @@ Re-exports [EVENT_CAPTIONS](internal/diary/variables/EVENT_CAPTIONS.md)
 ### EXPIRE\_AFTER\_SEC
 
 Re-exports [EXPIRE_AFTER_SEC](presets/variables/EXPIRE_AFTER_SEC.md)
+
+***
+
+### exportShiftTelemetryCsv
+
+Re-exports [exportShiftTelemetryCsv](internal/telemetry/functions/exportShiftTelemetryCsv.md)
+
+***
+
+### exportShiftTelemetryJson
+
+Re-exports [exportShiftTelemetryJson](internal/telemetry/functions/exportShiftTelemetryJson.md)
 
 ***
 
@@ -305,6 +323,12 @@ Re-exports [isOrderReady](internal/engine/functions/isOrderReady.md)
 ### isShiftOver
 
 Re-exports [isShiftOver](internal/engine/functions/isShiftOver.md)
+
+***
+
+### isStandardScenario
+
+Re-exports [isStandardScenario](presets/functions/isStandardScenario.md)
 
 ***
 
@@ -500,6 +524,36 @@ Re-exports [replayShift](internal/engine/functions/replayShift.md)
 
 ***
 
+### SCENARIO\_LIMITS
+
+Re-exports [SCENARIO_LIMITS](presets/variables/SCENARIO_LIMITS.md)
+
+***
+
+### SCENARIO\_PRESETS
+
+Re-exports [SCENARIO_PRESETS](presets/variables/SCENARIO_PRESETS.md)
+
+***
+
+### scenarioDialsFor
+
+Re-exports [scenarioDialsFor](presets/functions/scenarioDialsFor.md)
+
+***
+
+### ScenarioId
+
+Re-exports [ScenarioId](presets/type-aliases/ScenarioId.md)
+
+***
+
+### ScenarioPreset
+
+Re-exports [ScenarioPreset](presets/interfaces/ScenarioPreset.md)
+
+***
+
 ### SCORE\_COMPLETED\_BONUS
 
 Re-exports [SCORE_COMPLETED_BONUS](presets/variables/SCORE_COMPLETED_BONUS.md)
@@ -548,9 +602,21 @@ Re-exports [ShiftEvent](types/type-aliases/ShiftEvent.md)
 
 ***
 
+### ShiftLogEntry
+
+Re-exports [ShiftLogEntry](types/interfaces/ShiftLogEntry.md)
+
+***
+
 ### ShiftOutcome
 
 Re-exports [ShiftOutcome](types/type-aliases/ShiftOutcome.md)
+
+***
+
+### ShiftScenario
+
+Re-exports [ShiftScenario](types/interfaces/ShiftScenario.md)
 
 ***
 
@@ -563,6 +629,12 @@ Re-exports [ShiftState](types/interfaces/ShiftState.md)
 ### ShiftTallies
 
 Re-exports [ShiftTallies](types/interfaces/ShiftTallies.md)
+
+***
+
+### ShiftTelemetry
+
+Re-exports [ShiftTelemetry](internal/telemetry/interfaces/ShiftTelemetry.md)
 
 ***
 

@@ -6,6 +6,14 @@
 
 # lib/patty-drive-thru/presets
 
+## Interfaces
+
+- [ScenarioPreset](interfaces/ScenarioPreset.md)
+
+## Type Aliases
+
+- [ScenarioId](type-aliases/ScenarioId.md)
+
 ## Variables
 
 - [AGE\_LOCKED\_ITEMS](variables/AGE_LOCKED_ITEMS.md)
@@ -43,6 +51,8 @@
 - [ORDERABLE\_ITEMS](variables/ORDERABLE_ITEMS.md)
 - [POS\_MENU](variables/POS_MENU.md)
 - [RED\_AFTER\_SEC](variables/RED_AFTER_SEC.md)
+- [SCENARIO\_LIMITS](variables/SCENARIO_LIMITS.md)
+- [SCENARIO\_PRESETS](variables/SCENARIO_PRESETS.md)
 - [SCORE\_COMPLETED\_BONUS](variables/SCORE_COMPLETED_BONUS.md)
 - [SCORE\_LATE\_PENALTY](variables/SCORE_LATE_PENALTY.md)
 - [SCORE\_PER\_SERVED](variables/SCORE_PER_SERVED.md)
@@ -56,3 +66,8 @@
 - [WAGE\_CENTS\_PER\_HOUR](variables/WAGE_CENTS_PER_HOUR.md)
 - [WIPE\_COOLDOWN\_SEC](variables/WIPE_COOLDOWN_SEC.md)
 - [YELLOW\_AFTER\_SEC](variables/YELLOW_AFTER_SEC.md)
+
+## Functions
+
+- [isStandardScenario](functions/isStandardScenario.md)
+- [scenarioDialsFor](functions/scenarioDialsFor.md)

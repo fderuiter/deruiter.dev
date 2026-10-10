@@ -3,6 +3,7 @@ import {
   DEFAULT_SHIFT_CONFIG,
   EVENT_CAPTIONS,
   LOOK_PRESETS,
+  SCENARIO_LIMITS,
   aimLook,
   applyAction,
   createLook,
@@ -21,6 +22,7 @@ import {
   type ShiftAction,
   type ShiftConfig,
   type ShiftEvent,
+  type ShiftLogEntry,
   type ShiftState,
 } from "@/lib/patty-drive-thru";
 
@@ -51,7 +53,12 @@ export interface BoothState {
   readonly yells: number;
   /** Order ids already announced as late, so each is announced once. */
   readonly lateAnnounced: readonly number[];
+  /** Every event of this shift with its time, newest last, for the export. */
+  readonly log: readonly ShiftLogEntry[];
 }
+
+/** The most events one shift keeps; a shift makes a few hundred at most. */
+const LOG_LIMIT = 2000;
 
 export interface BoothActions {
   /** Starts a fresh shift from the diary intro or the end screen. */
@@ -174,6 +181,16 @@ function lateOrders(shift: ShiftState): number[] {
     .map((order) => order.id);
 }
 
+/** A config with every scenario dial removed, keeping the seed and length. */
+function withoutDials(config: Partial<ShiftConfig>): Partial<ShiftConfig> {
+  const kept: Partial<ShiftConfig> = { ...config };
+  for (const key of Object.keys(SCENARIO_LIMITS) as Array<
+    keyof typeof SCENARIO_LIMITS
+  >)
+    delete (kept as Record<string, unknown>)[key];
+  return kept;
+}
+
 /**
  * Creates the booth's store. The engine owns the rules; the store holds the
  * current shift, the player's head and the captions, and turns engine events
@@ -205,6 +222,13 @@ export function createBoothStore(
       }
       const yelled = events.some((e) => e.type === "manager-yell");
       set({
+        log:
+          events.length > 0
+            ? [
+                ...state.log,
+                ...events.map((event) => ({ time: shift.time, event })),
+              ].slice(-LOG_LIMIT)
+            : state.log,
         shift,
         phase: isShiftOver(shift) ? "ended" : state.phase,
         registerOpen: isShiftOver(shift) ? false : state.registerOpen,
@@ -232,9 +256,11 @@ export function createBoothStore(
       announcement: "",
       yells: 0,
       lateAnnounced: [],
+      log: [],
 
       clockIn: (next) => {
-        if (next) baseConfig = { ...baseConfig, ...next };
+        // A new scenario replaces the last one's dials rather than adding to them.
+        if (next) baseConfig = { ...withoutDials(baseConfig), ...next };
         set({
           phase: "shift",
           shift: createShift(baseConfig),
@@ -244,6 +270,7 @@ export function createBoothStore(
           announcement: "Clocked in. The headset is on.",
           yells: 0,
           lateAnnounced: [],
+          log: [],
         });
       },
 

@@ -880,7 +880,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
     objective:
       "Get through one drive-thru shift, squeezed from four hours into three minutes, without the drive-thru times or your dignity reaching zero. Every car you serve before its ticket turns red helps; every car that gives up and drives off costs speed and comes out of your pay.",
     quickSummary:
-      "Orders arrive through the headset and go up on the kitchen display, where they turn yellow, then red. Ring each one up on the register, re-enter any drink the dispenser drops, flag Dale for coffee you are too young to brew, and bump the order when it is done. If you stand still too long, Bo notices. The shift ends with a pay stub and a closing note.",
+      "Orders arrive through the headset and go up on the kitchen display, where they turn yellow, then red. Ring each one up on the register, re-enter any drink the dispenser drops, flag Dale for coffee you are too young to brew, and bump the order when it is done. If you stand still too long, Bo notices. The shift ends with a pay stub and a closing note. Before clocking in you can pick a practice shift (lunch rush, failing dispenser, strict management); those do not count toward your score, and any shift's data downloads as JSON or CSV from the pay stub page.",
     controls: [
       {
         action: "Turn",

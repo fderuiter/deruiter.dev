@@ -21,6 +21,8 @@
 - [PosCursor](interfaces/PosCursor.md)
 - [PosNode](interfaces/PosNode.md)
 - [ShiftConfig](interfaces/ShiftConfig.md)
+- [ShiftLogEntry](interfaces/ShiftLogEntry.md)
+- [ShiftScenario](interfaces/ShiftScenario.md)
 - [ShiftState](interfaces/ShiftState.md)
 - [ShiftTallies](interfaces/ShiftTallies.md)
 - [StepResult](interfaces/StepResult.md)

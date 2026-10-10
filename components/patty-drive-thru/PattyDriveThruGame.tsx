@@ -19,7 +19,10 @@ import {
   BOOTH_CREW,
   DEFAULT_SHIFT_CONFIG,
   getKdsTickets,
+  isStandardScenario,
+  scenarioDialsFor,
   scoreShift,
+  type ScenarioId,
   type ShiftAction,
   type ShiftConfig,
 } from "@/lib/patty-drive-thru";
@@ -117,6 +120,7 @@ export function PattyDriveThruGame({
   const endedShift = useBooth(store, (s) =>
     s.phase === "ended" ? s.shift : null
   );
+  const endedLog = useBooth(store, (s) => (s.phase === "ended" ? s.log : null));
 
   const webgl = useWebglSupport();
   const reducedMotion = usePrefersReducedMotion();
@@ -140,14 +144,20 @@ export function PattyDriveThruGame({
     dragging: boolean;
   } | null>(null);
 
-  const clockIn = useCallback(() => {
-    store
-      .getState()
-      .clockIn(
-        config?.seed ? undefined : { seed: seedFromUrl() ?? freshSeed() }
-      );
-    boundaryRef.current?.focus({ preventScroll: true });
-  }, [store, config?.seed]);
+  // The scenario last picked, so "Work another shift" plays the same one.
+  const scenario = useRef<ScenarioId>("standard");
+
+  const clockIn = useCallback(
+    (picked?: ScenarioId) => {
+      if (picked) scenario.current = picked;
+      store.getState().clockIn({
+        ...(config?.seed ? {} : { seed: seedFromUrl() ?? freshSeed() }),
+        ...scenarioDialsFor(scenario.current),
+      });
+      boundaryRef.current?.focus({ preventScroll: true });
+    },
+    [store, config?.seed]
+  );
 
   const openRegister = useCallback(() => {
     if (store.getState().phase !== "shift") return;
@@ -212,7 +222,12 @@ export function PattyDriveThruGame({
   useEffect(
     () =>
       store.subscribe((state, previous) => {
-        if (state.phase === "ended" && previous.phase === "shift") {
+        // Practice scenarios are for looking at the numbers, not for the board.
+        if (
+          state.phase === "ended" &&
+          previous.phase === "shift" &&
+          isStandardScenario(state.shift.config)
+        ) {
           recordArcadeScore(PATTY_GAME_ID, scoreShift(state.shift), {
             outcome: state.shift.outcome,
             served: state.shift.tallies.served,
@@ -344,7 +359,11 @@ export function PattyDriveThruGame({
   } else if (phase === "ended" && endedShift) {
     body = (
       <div className="w-full p-3 sm:p-6">
-        <ShiftEndPage shift={endedShift} onClockIn={clockIn} />
+        <ShiftEndPage
+          shift={endedShift}
+          log={endedLog ?? []}
+          onClockIn={() => clockIn()}
+        />
       </div>
     );
   } else if (view === "3d") {

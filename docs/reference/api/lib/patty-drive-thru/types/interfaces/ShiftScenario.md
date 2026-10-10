@@ -2,16 +2,16 @@
 
 ***
 
-[fderuiter-portfolio](../../../../modules.md) / [lib/patty-drive-thru/types](../README.md) / ShiftConfig
+[fderuiter-portfolio](../../../../modules.md) / [lib/patty-drive-thru/types](../README.md) / ShiftScenario
 
-# Interface: ShiftConfig
+# Interface: ShiftScenario
 
 The dials a named scenario turns. Every one is optional and falls back to
 the standard shift's value; the engine clamps whatever it is given.
 
-## Extends
+## Extended by
 
-- [`ShiftScenario`](ShiftScenario.md)
+- [`ShiftConfig`](ShiftConfig.md)
 
 ## Properties
 
@@ -21,10 +21,6 @@ the standard shift's value; the engine clamps whatever it is given.
 
 Longest gap between car arrivals, in seconds.
 
-#### Inherited from
-
-[`ShiftScenario`](ShiftScenario.md).[`arrivalGapMaxSec`](ShiftScenario.md#arrivalgapmaxsec)
-
 ***
 
 ### arrivalGapMinSec?
@@ -32,10 +28,6 @@ Longest gap between car arrivals, in seconds.
 > `readonly` `optional` **arrivalGapMinSec?**: `number`
 
 Shortest gap between car arrivals, in seconds.
-
-#### Inherited from
-
-[`ShiftScenario`](ShiftScenario.md).[`arrivalGapMinSec`](ShiftScenario.md#arrivalgapminsec)
 
 ***
 
@@ -45,18 +37,6 @@ Shortest gap between car arrivals, in seconds.
 
 Chance the drink dispenser drops a drink, from 0 to 1.
 
-#### Inherited from
-
-[`ShiftScenario`](ShiftScenario.md).[`dispenserFailChance`](ShiftScenario.md#dispenserfailchance)
-
-***
-
-### durationSec
-
-> `readonly` **durationSec**: `number`
-
-Real seconds the shift lasts.
-
 ***
 
 ### firstArrivalSec?
@@ -64,10 +44,6 @@ Real seconds the shift lasts.
 > `readonly` `optional` **firstArrivalSec?**: `number`
 
 Shift time of the first order, in seconds.
-
-#### Inherited from
-
-[`ShiftScenario`](ShiftScenario.md).[`firstArrivalSec`](ShiftScenario.md#firstarrivalsec)
 
 ***
 
@@ -77,10 +53,6 @@ Shift time of the first order, in seconds.
 
 Seconds of standing still before the manager starts to notice.
 
-#### Inherited from
-
-[`ShiftScenario`](ShiftScenario.md).[`idleGraceSec`](ShiftScenario.md#idlegracesec)
-
 ***
 
 ### idleRatePerSec?
@@ -88,18 +60,6 @@ Seconds of standing still before the manager starts to notice.
 > `readonly` `optional` **idleRatePerSec?**: `number`
 
 Idle meter points gained per second once the grace period is over.
-
-#### Inherited from
-
-[`ShiftScenario`](ShiftScenario.md).[`idleRatePerSec`](ShiftScenario.md#idleratepersec)
-
-***
-
-### seed
-
-> `readonly` **seed**: `string`
-
-Any string; the same seed and actions replay to the same shift.
 
 ***
 
@@ -109,10 +69,6 @@ Any string; the same seed and actions replay to the same shift.
 
 Standing gained when a fast order is bumped.
 
-#### Inherited from
-
-[`ShiftScenario`](ShiftScenario.md).[`sosGainFast`](ShiftScenario.md#sosgainfast)
-
 ***
 
 ### sosGainOnTime?
@@ -120,10 +76,6 @@ Standing gained when a fast order is bumped.
 > `readonly` `optional` **sosGainOnTime?**: `number`
 
 Standing gained when an on-time order is bumped.
-
-#### Inherited from
-
-[`ShiftScenario`](ShiftScenario.md).[`sosGainOnTime`](ShiftScenario.md#sosgainontime)
 
 ***
 
@@ -133,10 +85,6 @@ Standing gained when an on-time order is bumped.
 
 Standing lost when an order expires.
 
-#### Inherited from
-
-[`ShiftScenario`](ShiftScenario.md).[`sosLossExpired`](ShiftScenario.md#soslossexpired)
-
 ***
 
 ### sosLossLate?
@@ -144,7 +92,3 @@ Standing lost when an order expires.
 > `readonly` `optional` **sosLossLate?**: `number`
 
 Standing lost when a late order is bumped.
-
-#### Inherited from
-
-[`ShiftScenario`](ShiftScenario.md).[`sosLossLate`](ShiftScenario.md#soslosslate)

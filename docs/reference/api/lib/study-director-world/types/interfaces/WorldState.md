@@ -108,6 +108,14 @@ A meeting in progress in the conference room, if any (#1689).
 
 ***
 
+### meetingHistory?
+
+> `optional` **meetingHistory?**: [`MeetingReport`](MeetingReport.md)[]
+
+Meetings held so far this run, oldest first, kept for the archive (#1877).
+
+***
+
 ### minute
 
 > **minute**: `number`
@@ -153,6 +161,14 @@ Where the player stands on the floor and which way they face.
 > `optional` **raised?**: `string`[]
 
 Events a team member has already raised with the player in person (#1689).
+
+***
+
+### siteVisitHistory?
+
+> `optional` **siteVisitHistory?**: [`SiteVisitReport`](SiteVisitReport.md)[]
+
+Site visits made so far this run, oldest first (#1877).
 
 ***
 

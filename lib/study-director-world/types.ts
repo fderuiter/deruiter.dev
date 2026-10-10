@@ -76,6 +76,10 @@ export interface WorldState {
   assignments?: Assignment[];
   /** A meeting in progress in the conference room, if any (#1689). */
   meeting?: Meeting | null;
+  /** Meetings held so far this run, oldest first, kept for the archive (#1877). */
+  meetingHistory?: MeetingReport[];
+  /** Site visits made so far this run, oldest first (#1877). */
+  siteVisitHistory?: SiteVisitReport[];
   /** Visitors the player has met or missed, oldest first (#1839). */
   guests?: GuestRecord[];
   /** Today's chosen priority and the interruptions already dealt with (#1837). */
@@ -93,6 +97,9 @@ export interface DayPlan {
   /** Ids of today's interruptions the player has dealt with. */
   handled: string[];
 }
+
+/** The most meetings or site visits a run keeps; the oldest drop first. */
+export const HISTORY_LIMIT = 60;
 
 export type WorldRefusal =
   | "too-late"
@@ -806,6 +813,8 @@ export interface Meeting {
 /** What a meeting cost against what it changed. */
 export interface MeetingReport {
   kind: Meeting["kind"];
+  /** The study day the meeting was held. */
+  day: number;
   minutes: number;
   /** Minutes of everyone's time, the player's included. */
   personMinutes: number;

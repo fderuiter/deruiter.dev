@@ -54,6 +54,20 @@ function escapeCsv(value: unknown): string {
 }
 
 /**
+ * Builds CSV text from a header row and data rows, one line per row, with
+ * the same cell escaping as the other exports.
+ */
+export function toCsv(
+  headers: readonly string[],
+  rows: ReadonlyArray<ReadonlyArray<unknown>>
+): string {
+  return [
+    headers.map(escapeCsv).join(","),
+    ...rows.map((row) => row.map(escapeCsv).join(",")),
+  ].join("\n");
+}
+
+/**
  * Generates the day-by-day meter trajectory across the study lifecycle.
  */
 export function generateMeterHistory(

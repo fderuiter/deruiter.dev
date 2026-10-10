@@ -37,6 +37,7 @@ import {
   type WorldRefusal,
   type WorldState,
 } from "@/lib/study-director-world";
+import { MeetingArchive } from "@/components/study-director/MeetingArchive";
 import { DialogueBox, type Speaker } from "./DialogueBox";
 import {
   DialogueLines,
@@ -73,7 +74,8 @@ type Conversation =
     }
   | { kind: "desk"; lines: DialogueLine[] }
   | { kind: "edc" }
-  | { kind: "report"; report: MeetingReport };
+  | { kind: "report"; report: MeetingReport }
+  | { kind: "archive" };
 
 const DESK_VIAS: readonly EventVia[] = ["mail", "voicemail", "callback"];
 
@@ -347,6 +349,14 @@ export function useTeamLayer({
     [announce, refuse, setWorld, world]
   );
 
+  const openDesk = useCallback(() => {
+    setConversation({ kind: "desk", lines: [] });
+  }, []);
+
+  const openArchive = useCallback(() => {
+    setConversation({ kind: "archive" });
+  }, []);
+
   return {
     conversation,
     ringing,
@@ -365,6 +375,8 @@ export function useTeamLayer({
     adjourn,
     meetingDecide,
     openEvent,
+    openArchive,
+    openDesk,
   };
 }
 
@@ -677,6 +689,12 @@ export const TeamOverlay: React.FC<{
             </ul>
           )}
         </section>
+        <OverlayButton
+          onClick={team.openArchive}
+          data-testid="open-meeting-archive"
+        >
+          Meeting archive ({world.meetingHistory?.length ?? 0})
+        </OverlayButton>
         <OverlayButton ref={closeRef} onClick={team.close}>
           Leave the desk
         </OverlayButton>
@@ -753,6 +771,28 @@ export const TeamOverlay: React.FC<{
             ))}
           </tbody>
         </table>
+        <OverlayButton ref={closeRef} onClick={team.close}>
+          Close
+        </OverlayButton>
+      </Overlay>
+    );
+  }
+
+  if (c.kind === "archive") {
+    return (
+      <Overlay
+        key="archive"
+        titleId="sd-meeting-archive"
+        title="Meeting archive"
+        subtitle="Every meeting this run: who came, what changed, how it went."
+        testId="world-meeting-archive"
+        device="monitor"
+        back={{ label: "Back to desk", run: team.openDesk }}
+        onClose={team.close}
+        initialFocusRef={closeRef}
+        returnFocusTo={returnFocusTo}
+      >
+        <MeetingArchive meetings={world.meetingHistory ?? []} />
         <OverlayButton ref={closeRef} onClick={team.close}>
           Close
         </OverlayButton>

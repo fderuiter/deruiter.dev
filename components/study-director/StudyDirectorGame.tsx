@@ -700,7 +700,7 @@ export const StudyDirectorGame: React.FC<{ officeFirst?: boolean }> = ({
         <ReportView
           report={report}
           onRestart={restart}
-          share={<SharePanel report={report} news={news} />}
+          share={<SharePanel report={report} news={news} office={fromWorld} />}
         />
       ) : (
         <>

@@ -40,158 +40,160 @@ export function seedLink(
  * the final study-health shape and the seed that replays it. Drawn as SVG
  * so the same markup previews on the page and rasterises for download.
  */
-const CardArt = React.forwardRef<SVGSVGElement, { report: FinalReport }>(
-  ({ report }, ref) => {
-    const verdict = verdictFor(report);
-    const { grade } = report.evaluations.regulatory;
-    const stars = report.evaluations.sponsor.stars;
-    const meters = computeMeters(report.state);
-    const shape = radarPoints(
-      METER_IDS.map((id) => meters[id]),
-      0,
-      120
-    )
-      .map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`)
-      .join(" ");
-    const frame = radarPoints(
-      METER_IDS.map(() => 100),
-      0,
-      120
-    )
-      .map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`)
-      .join(" ");
-    return (
-      <svg
-        ref={ref}
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox={`0 0 ${W} ${H}`}
-        width={W}
-        height={H}
-        role="img"
-        aria-label={`Share card: ${verdict.headline} Grade ${grade}. ${report.profile.title}.`}
-        className="block h-auto w-full"
+const CardArt = React.forwardRef<
+  SVGSVGElement,
+  { report: FinalReport; office: boolean }
+>(({ report, office }, ref) => {
+  const verdict = verdictFor(report);
+  const { grade } = report.evaluations.regulatory;
+  const stars = report.evaluations.sponsor.stars;
+  const meters = computeMeters(report.state);
+  const shape = radarPoints(
+    METER_IDS.map((id) => meters[id]),
+    0,
+    120
+  )
+    .map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`)
+    .join(" ");
+  const frame = radarPoints(
+    METER_IDS.map(() => 100),
+    0,
+    120
+  )
+    .map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`)
+    .join(" ");
+  return (
+    <svg
+      ref={ref}
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox={`0 0 ${W} ${H}`}
+      width={W}
+      height={H}
+      role="img"
+      aria-label={`Share card: ${verdict.headline} Grade ${grade}. ${report.profile.title}.`}
+      className="block h-auto w-full"
+    >
+      <rect width={W} height={H} fill="#0d0e11" />
+      <rect
+        x={24}
+        y={24}
+        width={W - 48}
+        height={H - 48}
+        fill="none"
+        stroke="rgba(255,255,255,0.14)"
+      />
+      <text
+        x={64}
+        y={88}
+        fill="#f59e0b"
+        fontFamily={MONO}
+        fontSize={22}
+        fontWeight={700}
+        letterSpacing={4}
       >
-        <rect width={W} height={H} fill="#0d0e11" />
-        <rect
-          x={24}
-          y={24}
-          width={W - 48}
-          height={H - 48}
+        STUDY DIRECTOR · EVERYTHING IS FINE
+      </text>
+      <text
+        x={64}
+        y={196}
+        fill="#f4f4f6"
+        fontFamily={MONO}
+        fontSize={50}
+        fontWeight={800}
+        letterSpacing={-1.5}
+      >
+        {verdict.headline}
+      </text>
+      <text x={64} y={246} fill="#a1a1aa" fontFamily={MONO} fontSize={22}>
+        {verdict.line}
+      </text>
+      <text
+        x={64}
+        y={330}
+        fill="#a1a1aa"
+        fontFamily={MONO}
+        fontSize={20}
+        letterSpacing={3}
+      >
+        PROFILE
+      </text>
+      <text
+        x={64}
+        y={372}
+        fill="#f59e0b"
+        fontFamily={MONO}
+        fontSize={36}
+        fontWeight={800}
+      >
+        {report.profile.title}
+      </text>
+      <text x={64} y={430} fill="#f59e0b" fontFamily={MONO} fontSize={34}>
+        {"★".repeat(stars)}
+        <tspan fill="#3f3f46">{"★".repeat(5 - stars)}</tspan>
+      </text>
+      <text x={64} y={466} fill="#a1a1aa" fontFamily={MONO} fontSize={18}>
+        Sponsor rating
+      </text>
+
+      <g transform="translate(800 400)">
+        <polygon
+          points={frame}
           fill="none"
           stroke="rgba(255,255,255,0.14)"
+          strokeWidth={1.5}
+        />
+        <polygon
+          points={shape}
+          fill="rgba(245,158,11,0.18)"
+          stroke="#f59e0b"
+          strokeWidth={3}
+          strokeLinejoin="round"
+        />
+      </g>
+
+      <g transform="translate(1040 190) rotate(-8)">
+        <rect
+          x={-78}
+          y={-78}
+          width={156}
+          height={156}
+          fill="none"
+          stroke={GRADE_FILL[grade]}
+          strokeWidth={6}
         />
         <text
-          x={64}
-          y={88}
-          fill="#f59e0b"
-          fontFamily={MONO}
-          fontSize={22}
-          fontWeight={700}
-          letterSpacing={4}
-        >
-          STUDY DIRECTOR · EVERYTHING IS FINE
-        </text>
-        <text
-          x={64}
-          y={196}
-          fill="#f4f4f6"
-          fontFamily={MONO}
-          fontSize={50}
-          fontWeight={800}
-          letterSpacing={-1.5}
-        >
-          {verdict.headline}
-        </text>
-        <text x={64} y={246} fill="#a1a1aa" fontFamily={MONO} fontSize={22}>
-          {verdict.line}
-        </text>
-        <text
-          x={64}
-          y={330}
-          fill="#a1a1aa"
-          fontFamily={MONO}
-          fontSize={20}
-          letterSpacing={3}
-        >
-          PROFILE
-        </text>
-        <text
-          x={64}
-          y={372}
-          fill="#f59e0b"
-          fontFamily={MONO}
-          fontSize={36}
-          fontWeight={800}
-        >
-          {report.profile.title}
-        </text>
-        <text x={64} y={430} fill="#f59e0b" fontFamily={MONO} fontSize={34}>
-          {"★".repeat(stars)}
-          <tspan fill="#3f3f46">{"★".repeat(5 - stars)}</tspan>
-        </text>
-        <text x={64} y={466} fill="#a1a1aa" fontFamily={MONO} fontSize={18}>
-          Sponsor rating
-        </text>
-
-        <g transform="translate(800 400)">
-          <polygon
-            points={frame}
-            fill="none"
-            stroke="rgba(255,255,255,0.14)"
-            strokeWidth={1.5}
-          />
-          <polygon
-            points={shape}
-            fill="rgba(245,158,11,0.18)"
-            stroke="#f59e0b"
-            strokeWidth={3}
-            strokeLinejoin="round"
-          />
-        </g>
-
-        <g transform="translate(1040 190) rotate(-8)">
-          <rect
-            x={-78}
-            y={-78}
-            width={156}
-            height={156}
-            fill="none"
-            stroke={GRADE_FILL[grade]}
-            strokeWidth={6}
-          />
-          <text
-            x={0}
-            y={44}
-            textAnchor="middle"
-            fill={GRADE_FILL[grade]}
-            fontFamily={MONO}
-            fontSize={128}
-            fontWeight={800}
-          >
-            {grade}
-          </text>
-        </g>
-        <text
-          x={1040}
-          y={306}
+          x={0}
+          y={44}
           textAnchor="middle"
-          fill="#a1a1aa"
+          fill={GRADE_FILL[grade]}
           fontFamily={MONO}
-          fontSize={16}
-          letterSpacing={3}
+          fontSize={128}
+          fontWeight={800}
         >
-          INSPECTION READINESS
+          {grade}
         </text>
+      </g>
+      <text
+        x={1040}
+        y={306}
+        textAnchor="middle"
+        fill="#a1a1aa"
+        fontFamily={MONO}
+        fontSize={16}
+        letterSpacing={3}
+      >
+        INSPECTION READINESS
+      </text>
 
-        <text x={64} y={572} fill="#71717a" fontFamily={MONO} fontSize={18}>
-          Study {report.state.setup.id} ·{" "}
-          {DIFFICULTY_TEXT[report.state.difficulty ?? "standard"].label} · seed{" "}
-          {report.state.seed} · deruiter.dev/arcade/study-director
-        </text>
-      </svg>
-    );
-  }
-);
+      <text x={64} y={572} fill="#71717a" fontFamily={MONO} fontSize={18}>
+        Study {report.state.setup.id} ·{" "}
+        {DIFFICULTY_TEXT[report.state.difficulty ?? "standard"].label}
+        {office ? " · office run" : ""} · seed {report.state.seed} ·
+        deruiter.dev/arcade/study-director
+      </text>
+    </svg>
+  );
+});
 CardArt.displayName = "CardArt";
 
 async function rasterise(svg: SVGSVGElement): Promise<Blob> {
@@ -232,7 +234,9 @@ const NEWS_LABELS: Array<[keyof CareerNews, string]> = [
 export const SharePanel: React.FC<{
   report: FinalReport;
   news: CareerNews | null;
-}> = ({ report, news }) => {
+  /** The run was played in the walkable office, not at the classic desk. */
+  office?: boolean;
+}> = ({ report, news, office = false }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const [message, setMessage] = useState("");
 
@@ -241,7 +245,11 @@ export const SharePanel: React.FC<{
       await copyToClipboard(
         seedLink(report.state.seed, undefined, report.state.difficulty)
       );
-      setMessage("Link copied. It opens this same study.");
+      setMessage(
+        office
+          ? "Link copied. It opens the same seed at the classic desk."
+          : "Link copied. It opens this same study."
+      );
     } catch {
       setMessage("Copy failed. The seed is on the card.");
     }
@@ -289,7 +297,7 @@ export const SharePanel: React.FC<{
         ) : null}
       </div>
       <div className="mt-3 max-w-xl border border-[var(--sd-hairline)]">
-        <CardArt ref={svgRef} report={report} />
+        <CardArt ref={svgRef} report={report} office={office} />
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <button

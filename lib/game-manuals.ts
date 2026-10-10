@@ -844,7 +844,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         title: "Four verdicts and a profile",
         detail:
-          "Locking the database turns open queries into delay. The sponsor rates you in stars, the company reports margin and timeline variance, the science reports evaluable and missing data, and the regulator grades inspection readiness. The game then names which kind of Study Director you were, from what you actually did.",
+          "Locking the database turns open queries into delay. The sponsor rates you in stars, the company reports margin and timeline variance, the science reports evaluable and missing data, and the regulator grades inspection readiness. The game then names which kind of Study Director you were, from what you actually did. A run played in the office closes out at the same report, and its share card says so; the link replays the same seed at the classic desk.",
         badge: "Closeout",
       },
     ],

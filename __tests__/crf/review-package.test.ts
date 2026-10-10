@@ -177,8 +177,16 @@ describe("[#680] review package builder", () => {
       result.manifest.nativeSource.reopenedChecksum
     );
 
-    // Zipping the same package twice yields the same bytes.
-    expect(await zipReviewPackage(result)).toEqual(archive);
+    // Folder entry timestamps must not depend on when the archive is created.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    try {
+      vi.setSystemTime(new Date("2026-10-09T20:27:02.000Z"));
+      const first = await zipReviewPackage(result);
+      vi.setSystemTime(new Date("2026-10-09T20:27:04.000Z"));
+      expect(await zipReviewPackage(result)).toEqual(first);
+    } finally {
+      vi.useRealTimers();
+    }
     expect(reviewPackageFilename(result.manifest.revision)).toBe(
       "SYN-RP-001-v1.0-review-package.zip"
     );

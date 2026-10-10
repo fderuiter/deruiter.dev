@@ -1691,7 +1691,10 @@ export async function zipReviewPackage(
   const date = new Date(result.manifest.generatedAt);
   const stamp = Number.isNaN(date.getTime()) ? new Date(0) : date;
   for (const artifact of result.artifacts) {
-    zip.file(artifact.path, artifact.content, { date: stamp });
+    zip.file(artifact.path, artifact.content, {
+      date: stamp,
+      createFolders: false,
+    });
   }
   return zip.generateAsync({
     type: "uint8array",

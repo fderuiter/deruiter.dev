@@ -595,23 +595,35 @@ export function previewLibraryInsertion(
   };
 }
 
+/** Independent, re-identified copy of sections with the rules and codelists they need. */
+export interface InstantiatedContent {
+  sections: CRFSection[];
+  rules: EditCheckRule[];
+  /** Codelists that must be merged into the target study. */
+  codelists: CodelistDefinition[];
+  variableMap: Record<string, string>;
+  idMap: Record<string, string>;
+}
+
 /**
- * Produces an independent copy of a library entry, ready to insert.
+ * Deep-copies sections, rules and codelists for insertion into a study.
  *
  * Every identity is freshly allocated and every internal reference remapped -
  * rule targets, trigger lists, condition operands including grouped and
  * field-to-field comparisons, calculation formulas and codelist references -
- * so the copy shares nothing with the library entry or with any previous
- * insertion of it.
+ * so the copy shares nothing with its source or with any previous copy.
+ * Variable names that collide with `options.existingVariableNames`, or with
+ * an earlier section of the same copy, get a fresh CDASH name.
  */
-export function instantiateLibraryEntry(
-  entry: PersonalLibraryEntry,
-  options?: InstantiateLibraryEntryOptions,
-  now?: Date
-): InstantiatedLibraryEntry {
-  const section: CRFSection = deepClone(entry.section);
-  const rules: EditCheckRule[] = deepClone(entry.rules);
-  const codelists: CodelistDefinition[] = deepClone(entry.codelists);
+export function instantiateContent(
+  sourceSections: readonly CRFSection[],
+  sourceRules: readonly EditCheckRule[],
+  sourceCodelists: readonly CodelistDefinition[],
+  options?: InstantiateLibraryEntryOptions
+): InstantiatedContent {
+  const sections: CRFSection[] = deepClone([...sourceSections]);
+  const rules: EditCheckRule[] = deepClone([...sourceRules]);
+  const codelists: CodelistDefinition[] = deepClone([...sourceCodelists]);
 
   const variableMap: Record<string, string> = {};
   const idMap: Record<string, string> = {};
@@ -622,10 +634,6 @@ export function instantiateLibraryEntry(
     )
   );
   const existingCodelistIds = new Set(options?.existingCodelistIds || []);
-
-  const newSectionId = generateEngineId("sec");
-  idMap[section.id] = newSectionId;
-  section.id = newSectionId;
 
   const remapFields = (fields: CRFField[]) => {
     for (const field of fields) {
@@ -648,7 +656,12 @@ export function instantiateLibraryEntry(
       if (field.repeatingColumns) remapFields(field.repeatingColumns);
     }
   };
-  remapFields(section.fields);
+  for (const section of sections) {
+    const newSectionId = generateEngineId("sec");
+    idMap[section.id] = newSectionId;
+    section.id = newSectionId;
+    remapFields(section.fields);
+  }
 
   // Calculation formulas reference variable names, so they follow the rename.
   const remapFormulas = (fields: CRFField[]) => {
@@ -668,7 +681,7 @@ export function instantiateLibraryEntry(
       if (field.repeatingColumns) remapFormulas(field.repeatingColumns);
     }
   };
-  remapFormulas(section.fields);
+  for (const section of sections) remapFormulas(section.fields);
 
   // Codelists keep their identity when the study already has them, so an
   // insertion reuses the study's existing vocabulary rather than duplicating
@@ -709,11 +722,37 @@ export function instantiateLibraryEntry(
   }
 
   return {
-    section,
+    sections,
     rules,
     codelists: carriedCodelists,
     variableMap,
     idMap,
+  };
+}
+
+/**
+ * Produces an independent copy of a library entry, ready to insert.
+ *
+ * See {@link instantiateContent} for how identities and references are
+ * remapped.
+ */
+export function instantiateLibraryEntry(
+  entry: PersonalLibraryEntry,
+  options?: InstantiateLibraryEntryOptions,
+  now?: Date
+): InstantiatedLibraryEntry {
+  const content = instantiateContent(
+    [entry.section],
+    entry.rules,
+    entry.codelists,
+    options
+  );
+  return {
+    section: content.sections[0],
+    rules: content.rules,
+    codelists: content.codelists,
+    variableMap: content.variableMap,
+    idMap: content.idMap,
     source: {
       entryId: entry.id,
       entryName: entry.name,

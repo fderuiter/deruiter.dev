@@ -8,6 +8,10 @@ import { clamp } from "@/lib/game-utils";
 import { useClipboard } from "@/hooks/useClipboard";
 import { useToast } from "@/hooks/useToast";
 import {
+  captureFormTemplate,
+  saveFormTemplate,
+} from "@/lib/crf/form-templates";
+import {
   StudyProtocol,
   StudioMode,
   StudioTheme,
@@ -958,6 +962,22 @@ export const CRFStudioContainer: React.FC = () => {
     setMobileActiveView("canvas");
   };
 
+  const handleSaveFormAsTemplate = (formId: string) => {
+    const form = study.forms.find((f) => f.id === formId);
+    if (!form) return;
+    const template = captureFormTemplate({ form, codelists: study.codelists });
+    const result = saveFormTemplate(template);
+    if (result.status === "saved") {
+      toast.success(`Saved "${template.name}" as a form template`);
+    } else if (result.status === "limit") {
+      toast.error(
+        `You can keep ${result.max} form templates. Delete one to save another.`
+      );
+    } else {
+      toast.error("This browser could not save the template.");
+    }
+  };
+
   const handleDuplicateForm = (formId: string) => {
     const { study: updatedStudy, duplicatedForm } =
       StudyProtocolEngine.duplicateForm(study, formId);
@@ -1058,7 +1078,11 @@ export const CRFStudioContainer: React.FC = () => {
   );
 
   const handleInjectCdashForm = useCallback(
-    (newForm: CRFForm, targetVisitId?: string) => {
+    (
+      newForm: CRFForm,
+      targetVisitId?: string,
+      newCodelists: CodelistDefinition[] = []
+    ) => {
       const nextVisits = targetVisitId
         ? study.visits.map((v) =>
             v.id === targetVisitId
@@ -1076,6 +1100,9 @@ export const CRFStudioContainer: React.FC = () => {
         ...study,
         forms: [...study.forms, newForm],
         visits: nextVisits,
+        codelists: newCodelists.length
+          ? [...study.codelists, ...newCodelists]
+          : study.codelists,
       });
       setActiveFormId(newForm.id);
       setSelectedFieldId(null);
@@ -1753,6 +1780,7 @@ export const CRFStudioContainer: React.FC = () => {
                       setAddFieldTargetSectionId(sectionId ?? null);
                       setIsMobileWidgetDrawerOpen(true);
                     }}
+                    onSaveAsTemplate={handleSaveFormAsTemplate}
                     onDuplicateForm={handleDuplicateForm}
                     onOpenSlashPalette={handleOpenSlashPalette}
                   />
@@ -1822,6 +1850,7 @@ export const CRFStudioContainer: React.FC = () => {
                   setIsLeftSidebarOpen(true);
                   setLeftTab("palette");
                 }}
+                onSaveAsTemplate={handleSaveFormAsTemplate}
                 onDuplicateForm={handleDuplicateForm}
                 onOpenSlashPalette={handleOpenSlashPalette}
                 onSwitchMode={setActiveMode}

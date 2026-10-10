@@ -8,6 +8,7 @@
 
 ## Interfaces
 
+- [InstantiatedContent](interfaces/InstantiatedContent.md)
 - [InstantiatedLibraryEntry](interfaces/InstantiatedLibraryEntry.md)
 - [InstantiateLibraryEntryOptions](interfaces/InstantiateLibraryEntryOptions.md)
 - [LibraryEntryProvenance](interfaces/LibraryEntryProvenance.md)
@@ -35,6 +36,7 @@
 - [deleteLibraryEntry](functions/deleteLibraryEntry.md)
 - [getLibraryEntryRevision](functions/getLibraryEntryRevision.md)
 - [insertLibraryEntryIntoStudy](functions/insertLibraryEntryIntoStudy.md)
+- [instantiateContent](functions/instantiateContent.md)
 - [instantiateLibraryEntry](functions/instantiateLibraryEntry.md)
 - [listLibraryEntries](functions/listLibraryEntries.md)
 - [loadPersonalLibrary](functions/loadPersonalLibrary.md)

@@ -12,6 +12,7 @@ import {
   IconSparkles,
   IconCopy,
   IconFileSpreadsheet,
+  IconBookmark,
 } from "@tabler/icons-react";
 import {
   CRFForm,
@@ -46,6 +47,8 @@ interface FormCanvasProps {
    * picks next is inserted into that section rather than a default one. */
   onOpenPalette: (sectionId?: string) => void;
   onDuplicateForm?: (formId: string) => void;
+  /** Saves the form to the personal form-template list. */
+  onSaveAsTemplate?: (formId: string) => void;
   onOpenSlashPalette?: (targetSectionId?: string, targetIndex?: number) => void;
   onSwitchMode?: (mode: StudioMode) => void;
 }
@@ -67,6 +70,7 @@ export const FormCanvas: React.FC<FormCanvasProps> = ({
   onCommitReviewTargetChange,
   onOpenPalette,
   onDuplicateForm,
+  onSaveAsTemplate,
   onOpenSlashPalette,
   onSwitchMode,
 }) => {
@@ -457,6 +461,20 @@ export const FormCanvas: React.FC<FormCanvasProps> = ({
                 </div>
 
                 <div className="flex items-center gap-1 shrink-0">
+                  {onSaveAsTemplate && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSaveAsTemplate(form.id);
+                      }}
+                      className="p-1.5 rounded-lg bg-zinc-800/80 hover:bg-zinc-700 text-zinc-400 hover:text-white border border-zinc-700/60 transition-all opacity-80 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100 shrink-0"
+                      title="Save as Form Template"
+                      aria-label={`Save form ${form.name} as a template`}
+                    >
+                      <IconBookmark className="w-4 h-4 text-amber-400" />
+                    </button>
+                  )}
                   {onDuplicateForm && (
                     <button
                       type="button"

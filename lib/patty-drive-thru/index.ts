@@ -21,6 +21,12 @@ export {
   stepShift,
 } from "./internal/engine";
 export {
+  buildShiftTelemetry,
+  exportShiftTelemetryCsv,
+  exportShiftTelemetryJson,
+  type ShiftTelemetry,
+} from "./internal/telemetry";
+export {
   describeOrder,
   formatCents,
   formatClock,

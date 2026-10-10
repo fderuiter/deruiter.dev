@@ -58,7 +58,34 @@ export interface PosCursor {
   readonly taps: number;
 }
 
-export interface ShiftConfig {
+/**
+ * The dials a named scenario turns. Every one is optional and falls back to
+ * the standard shift's value; the engine clamps whatever it is given.
+ */
+export interface ShiftScenario {
+  /** Shortest gap between car arrivals, in seconds. */
+  readonly arrivalGapMinSec?: number;
+  /** Longest gap between car arrivals, in seconds. */
+  readonly arrivalGapMaxSec?: number;
+  /** Shift time of the first order, in seconds. */
+  readonly firstArrivalSec?: number;
+  /** Standing lost when an order expires. */
+  readonly sosLossExpired?: number;
+  /** Standing lost when a late order is bumped. */
+  readonly sosLossLate?: number;
+  /** Standing gained when an on-time order is bumped. */
+  readonly sosGainOnTime?: number;
+  /** Standing gained when a fast order is bumped. */
+  readonly sosGainFast?: number;
+  /** Seconds of standing still before the manager starts to notice. */
+  readonly idleGraceSec?: number;
+  /** Idle meter points gained per second once the grace period is over. */
+  readonly idleRatePerSec?: number;
+  /** Chance the drink dispenser drops a drink, from 0 to 1. */
+  readonly dispenserFailChance?: number;
+}
+
+export interface ShiftConfig extends ShiftScenario {
   /** Any string; the same seed and actions replay to the same shift. */
   readonly seed: string;
   /** Real seconds the shift lasts. */
@@ -128,6 +155,12 @@ export type ShiftEvent =
   | { readonly type: "manager-yell" }
   | { readonly type: "wiped" }
   | { readonly type: "shift-ended"; readonly outcome: ShiftOutcome };
+
+/** One event with the shift time it happened, as the booth keeps them. */
+export interface ShiftLogEntry {
+  readonly time: number;
+  readonly event: ShiftEvent;
+}
 
 export interface StepResult {
   readonly state: ShiftState;

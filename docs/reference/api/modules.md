@@ -269,6 +269,7 @@
 - [lib/patty-drive-thru/internal/diary](lib/patty-drive-thru/internal/diary/README.md)
 - [lib/patty-drive-thru/internal/engine](lib/patty-drive-thru/internal/engine/README.md)
 - [lib/patty-drive-thru/internal/look](lib/patty-drive-thru/internal/look/README.md)
+- [lib/patty-drive-thru/internal/telemetry](lib/patty-drive-thru/internal/telemetry/README.md)
 - [lib/patty-drive-thru/internal/view](lib/patty-drive-thru/internal/view/README.md)
 - [lib/patty-drive-thru/presets](lib/patty-drive-thru/presets/README.md)
 - [lib/patty-drive-thru/types](lib/patty-drive-thru/types/README.md)

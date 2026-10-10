@@ -158,3 +158,15 @@ dedicated budget entry. The flat view loads none of the 3D chunks.
 - **2D pixel-art booth.** Cheaper, but looks like the other cabinets, which the
   owner ruled out.
 - **Pointer-lock only.** Fails the keyboard-playable requirement.
+
+## Amendment (2026-10-10): practice scenarios and shift data
+
+Issue [#1887](https://github.com/fderuiter/deruiter.dev/issues/1887) adds four
+named shifts (standard, lunch rush, failing dispenser, strict management) and
+a download of a shift's data. A scenario is a set of clamped dials on
+`ShiftConfig` (`SCENARIO_LIMITS`); it never sets a seed, so every shift stays
+fresh. Only the standard shift records an arcade score, because an easier
+scenario would otherwise inflate the board and the trophies. The POS menu is
+not configurable: the clunky register is the diary's point. The booth store
+keeps a capped log of the events that happened, and the JSON and CSV exports
+read that log rather than re-simulating the shift.

@@ -1,4 +1,5 @@
 import React from "react";
+import { fromPartial } from "@total-typescript/shoehorn";
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import {
   render,
@@ -82,13 +83,11 @@ function renderModal() {
       study={makeStudy("mine", "Systolic")}
       onSelectBaseline={vi.fn()}
       onNavigate={vi.fn()}
-      storage={
-        {
-          getItem: (k: string) => storage.get(k) ?? null,
-          setItem: (k: string, v: string) => void storage.set(k, v),
-          removeItem: (k: string) => void storage.delete(k),
-        } as unknown as Storage
-      }
+      storage={fromPartial<Storage>({
+        getItem: (k: string) => storage.get(k) ?? null,
+        setItem: (k: string, v: string) => void storage.set(k, v),
+        removeItem: (k: string) => void storage.delete(k),
+      })}
     />
   );
 }

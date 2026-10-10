@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
+import { fromPartial } from "@total-typescript/shoehorn";
 import { compareStudyToBaseline } from "@/lib/crf/study-baseline-diff";
 import type {
   StudyProtocol,
@@ -8,6 +9,7 @@ import type {
   CodelistDefinition,
   EditCheckRule,
   StudyVisit,
+  StudyArm,
 } from "@/lib/crf/types";
 
 // Cross-study comparison: two studies share no ids, so objects are paired by
@@ -201,9 +203,9 @@ describe("cross-study comparison", () => {
   });
 
   it("relabels arm form assignments", () => {
-    const withArms = (s: StudyProtocol) => ({
+    const withArms = (s: StudyProtocol): StudyProtocol => ({
       ...s,
-      arms: [{ id: "arm-1", name: "Active" }],
+      arms: [fromPartial<StudyArm>({ id: "arm-1", name: "Active" })],
       visits: [
         visit({
           armFormAssignments: { "arm-1": ["form-vs"] },
@@ -211,7 +213,7 @@ describe("cross-study comparison", () => {
         }),
       ],
     });
-    const base = withArms(study()) as unknown as StudyProtocol;
+    const base = withArms(study());
     const result = compareStudyToBaseline(base, reId(base), meta);
     expect(result.entries).toEqual([]);
   });

@@ -267,6 +267,8 @@ const COORDINATOR_DEVIATION_FACTOR = {
   terrified: 0.8,
   invisible: 1.3,
   steady: 1,
+  overconfident: 1.15,
+  newcomer: 1.25,
 } as const;
 
 /**
@@ -540,7 +542,13 @@ export function siteVisibility(state: StudyState, site: SiteState): number {
     state.day - site.lastAuditedDay <= AUDIT_WINDOW_DAYS
   )
     return 1;
-  return { terrified: 0.9, steady: 0.5, invisible: 0.1 }[site.coordinator];
+  return {
+    terrified: 0.9,
+    steady: 0.5,
+    invisible: 0.1,
+    overconfident: 0.3,
+    newcomer: 0.75,
+  }[site.coordinator];
 }
 
 const grade = (value: number, amberAt: number, redAt: number): Health =>

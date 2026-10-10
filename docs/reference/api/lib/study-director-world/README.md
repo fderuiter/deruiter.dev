@@ -488,6 +488,60 @@ Re-exports [goHome](internal/day/functions/goHome.md)
 
 ***
 
+### GUEST\_IDS
+
+Re-exports [GUEST_IDS](types/variables/GUEST_IDS.md)
+
+***
+
+### guestDay
+
+Re-exports [guestDay](internal/guests/functions/guestDay.md)
+
+***
+
+### GuestId
+
+Re-exports [GuestId](types/type-aliases/GuestId.md)
+
+***
+
+### GuestOption
+
+Re-exports [GuestOption](types/interfaces/GuestOption.md)
+
+***
+
+### GuestRecord
+
+Re-exports [GuestRecord](types/interfaces/GuestRecord.md)
+
+***
+
+### guestScene
+
+Re-exports [guestScene](internal/guests/functions/guestScene.md)
+
+***
+
+### GuestScene
+
+Re-exports [GuestScene](types/interfaces/GuestScene.md)
+
+***
+
+### guestWaiting
+
+Re-exports [guestWaiting](internal/guests/functions/guestWaiting.md)
+
+***
+
+### guestWrapUp
+
+Re-exports [guestWrapUp](internal/guests/functions/guestWrapUp.md)
+
+***
+
 ### hallwayCatch
 
 Re-exports [hallwayCatch](internal/channels/functions/hallwayCatch.md)
@@ -605,6 +659,12 @@ Re-exports [lowestMeter](internal/dressing/functions/lowestMeter.md)
 ### markRaised
 
 Re-exports [markRaised](internal/channels/functions/markRaised.md)
+
+***
+
+### meetGuest
+
+Re-exports [meetGuest](internal/guests/functions/meetGuest.md)
 
 ***
 
@@ -1043,6 +1103,12 @@ Re-exports [SET_DRESSING_MARKS](types/variables/SET_DRESSING_MARKS.md)
 ### SetDressingMark
 
 Re-exports [SetDressingMark](types/type-aliases/SetDressingMark.md)
+
+***
+
+### settleGuests
+
+Re-exports [settleGuests](internal/guests/functions/settleGuests.md)
 
 ***
 

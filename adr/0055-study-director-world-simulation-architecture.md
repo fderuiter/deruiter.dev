@@ -227,3 +227,27 @@ Four relationship actions (coffee, favour, ask about, cover) cost minutes,
 are limited per day or by cooldown, and each explains why it is unavailable.
 Trust at `TRUSTED_TRUST` earns an early warning in the morning digest and one
 extra unit of nightly capacity. No action has a hidden number; no loop runs.
+
+## Amendment 2026-10-10: five sites and two visitors
+
+The study has five sites, not three. Two coordinator archetypes join the
+domain, `overconfident` and `newcomer`, and each changes the domain model, not
+just the text: `siteVisibility` (the share of a site's trouble its dashboard
+shows) and the per-coordinator deviation factor. An overconfident coordinator
+shows 0.3 of their trouble and makes 1.15 times the deviations; a newcomer
+shows 0.75 and makes 1.25 times, because they report nearly everything and
+make honest mistakes. Site 04 and Site 05 have their own coordinators,
+investigators, reception, drive times, hidden traits and look. The pure
+layer still owns what a check reveals and when (`COORDINATOR_TRAITS`); the
+site maps share one template and differ in dressing.
+
+Visitors are scheduled scenes in `internal/guests.ts`. The sponsor visit and
+the vendor meeting each fall on a day fixed by the seed (days 16 to 21 and 31
+to 36), arrive at a fixed time and wait ninety minutes; the scene can only be
+played from inside the conference room. Choices cost time, energy and focus
+through `spendCost`, and what they do depends on what the player knows: the
+sponsor rewards the honest account of a site the player has audited, and an
+unrelated clean summary costs integrity when the dashboard is hiding
+something. Visitors who are not met are settled as the player goes home. An
+interruption never lands on top of a waiting visitor. Which visitors were met
+or missed is saved in the world (`guests`) and read back with bounds.

@@ -55,6 +55,32 @@ export const STUDY_24_081_SITES: SiteState[] = [
     trainingCurrent: false,
     lastAuditedDay: null,
   },
+  {
+    id: "site-04",
+    name: "Site 04",
+    coordinator: "overconfident",
+    burden: 45,
+    enrolled: 0,
+    openQueries: 0,
+    deviations: 0,
+    unsignedSource: 0,
+    eligibilityConcerns: 0,
+    trainingCurrent: true,
+    lastAuditedDay: null,
+  },
+  {
+    id: "site-05",
+    name: "Site 05",
+    coordinator: "newcomer",
+    burden: 50,
+    enrolled: 0,
+    openQueries: 0,
+    deviations: 0,
+    unsignedSource: 0,
+    eligibilityConcerns: 0,
+    trainingCurrent: true,
+    lastAuditedDay: null,
+  },
 ];
 
 export const STUDY_24_081_TEAM: TeamMember[] = [

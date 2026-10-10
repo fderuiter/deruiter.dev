@@ -59,6 +59,8 @@ export const COORDINATOR_LABELS = {
   terrified: "Emails about everything",
   invisible: "Says nothing, always fine",
   steady: "Steady and responsive",
+  overconfident: "Sure of themselves, replies in a line",
+  newcomer: "New, eager, asks to be checked",
 } as const;
 
 /** One line on what a phase asks of the Study Director. */

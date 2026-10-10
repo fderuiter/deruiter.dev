@@ -1,5 +1,6 @@
 import {
   deskView,
+  guestScene,
   messagesFrom,
   pendingInterruption,
   ringingCall,
@@ -135,6 +136,14 @@ export function todaysTasks(world: WorldState): WorldTask[] {
       id: "interruption",
       text: interruption.title,
       where: "Answer it in the panel below the stage",
+      urgent: true,
+    });
+  const guest = guestScene(world);
+  if (guest)
+    tasks.push({
+      id: "guest",
+      text: `${guest.visitor.name} of ${guest.visitor.organisation} is waiting`,
+      where: "Conference room",
       urgent: true,
     });
   if (world.meeting)

@@ -802,7 +802,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         title: "The shape of a day",
         detail:
-          "Each morning you can choose one priority for the day: your people, the sites or your desk. It colours the evening, when a short wrap-up says what you decided, what is still unwritten, what was left waiting and whether you kept your priority. Choosing people makes every kind gesture land a little harder; sites and desk are judged by what the sites sent overnight and whether your decisions are written up. Around ten, a quarter to one and half past three, something small interrupts the day (lunch, a sponsor ping, a jammed printer, a pile of queries, a fire drill, a vendor). Each has options with a time cost, and an interruption you let go is never free. You are never interrupted at a site or in a meeting.",
+          "Each morning you can choose one priority for the day: your people, the sites or your desk. It colours the evening, when a short wrap-up says what you decided, what is still unwritten, what was left waiting and whether you kept your priority. Choosing people makes every kind gesture land a little harder; sites and desk are judged by what the sites sent overnight and whether your decisions are written up. Around ten, a quarter to one and half past three, something small interrupts the day (lunch, a sponsor ping, a jammed printer, a pile of queries, a fire drill, a new starter stuck at the door). Each has options with a time cost, and an interruption you let go is never free. You are never interrupted at a site or in a meeting.",
         badge: "Rhythm",
       },
       {
@@ -810,6 +810,18 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         detail:
           "Open a teammate's conversation for four small actions. Bring a coffee (10 minutes, better if you know their order), ask a favour of them (20 minutes, only if they have room in their workload), ask about them (15 minutes, learns what they care about) or cover for them (5 minutes, needs four hearts, trades some trust for relief). Each can be used only so often. Teammates you trust a lot give you an early warning about the site that worries them most, and take one more unit of work a night.",
         badge: "People",
+      },
+      {
+        title: "Five sites, five kinds of coordinator",
+        detail:
+          "Drive out to any of five sites. Each has its own coordinator and investigator, its own drive time, and a type you work out from visits: the anxious one whose records hold up, the friendly one who says all is well, the organised one who holds the whole study in their head, the confident one who writes the source from memory, and the new one who reports everything and has nobody to ask. What they show on the first visit is not the whole of them. The right checks reveal the rest, some only from the second visit.",
+        badge: "Sites",
+      },
+      {
+        title: "Visitors in the conference room",
+        detail:
+          "Twice in a study someone waits for you in the conference room for an hour and a half: the sponsor's VP of Clinical Operations, some time in the third week, and the EDC vendor, some time in the sixth. Walk in to meet them. With the sponsor you can tell what you have actually seen (best if you audited the site she is worried about), give the clean summary (pleasant, and a cost to integrity if something is being hidden), hand her to your data manager, or ask for another day. With the vendor you can ask for the audit-trail walkthrough, negotiate the renewal, send the data manager with questions, or take the brochure. A sponsor nobody meets takes it as a snub. Interruptions wait while a visitor does.",
+        badge: "Visits",
       },
       {
         title: "Everything is fine, until you look",

@@ -15,6 +15,8 @@ export const CoordinatorArchetypeSchema = z.enum([
   "terrified",
   "invisible",
   "steady",
+  "overconfident",
+  "newcomer",
 ]);
 export const TeamRoleSchema = z.enum([
   "biostatistician",

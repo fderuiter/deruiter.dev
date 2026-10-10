@@ -6,4 +6,4 @@
 
 # Variable: CoordinatorArchetypeSchema
 
-> `const` **CoordinatorArchetypeSchema**: `ZodEnum`\<\{ `invisible`: `"invisible"`; `steady`: `"steady"`; `terrified`: `"terrified"`; \}\>
+> `const` **CoordinatorArchetypeSchema**: `ZodEnum`\<\{ `invisible`: `"invisible"`; `newcomer`: `"newcomer"`; `overconfident`: `"overconfident"`; `steady`: `"steady"`; `terrified`: `"terrified"`; \}\>

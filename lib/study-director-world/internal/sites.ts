@@ -279,7 +279,11 @@ function consentIssues(site: SiteState): number {
 function temperatureGaps(site: SiteState): number {
   if (site.coordinator === "terrified") return 0;
   const gaps = Math.max(0, Math.ceil((site.burden - 50) / 10));
-  return site.coordinator === "invisible" ? gaps + 1 : gaps;
+  if (site.coordinator === "newcomer") return gaps;
+  return site.coordinator === "invisible" ||
+    site.coordinator === "overconfident"
+    ? gaps + 1
+    : gaps;
 }
 
 const COORDINATOR_LINES: Record<SiteState["coordinator"], string> = {
@@ -287,6 +291,10 @@ const COORDINATOR_LINES: Record<SiteState["coordinator"], string> = {
     '"I wrote down every deviation, even the tiny ones. Was that wrong? Please tell me if that was wrong."',
   invisible: '"Everything is fine. Honestly. Everything is fine."',
   steady: '"We are on track. I will send you the tracker tonight."',
+  overconfident:
+    '"I have done forty of these. You do not need to look at the binder. Fine, look at the binder."',
+  newcomer:
+    '"Is this right? I did it the way the protocol says, but I might have read it wrong. Could you check?"',
 };
 
 /** What a check shows, from the site's true state. */

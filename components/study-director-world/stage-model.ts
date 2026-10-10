@@ -1,6 +1,7 @@
 import {
   deskView,
   messagesFrom,
+  pendingInterruption,
   ringingCall,
   sponsorAgenda,
   stepFrom,
@@ -128,6 +129,14 @@ export function todaysTasks(world: WorldState): WorldTask[] {
       where: "Your office",
       urgent: true,
     });
+  const interruption = pendingInterruption(world);
+  if (interruption)
+    tasks.push({
+      id: "interruption",
+      text: interruption.title,
+      where: "Answer it in the panel below the stage",
+      urgent: true,
+    });
   if (world.meeting)
     tasks.push({
       id: "meeting",
@@ -218,5 +227,8 @@ export function currentGoal(
   if (!acted && world.study.day === 1 && !world.visit)
     return "walk to the EDC workstation in your office and press E.";
   const first = tasks[0];
-  return first ? `${first.text}. ${first.where}.` : null;
+  if (first) return `${first.text}. ${first.where}.`;
+  return world.minute >= 17 * 60
+    ? "wrap up the day: go to your car and drive home."
+    : null;
 }

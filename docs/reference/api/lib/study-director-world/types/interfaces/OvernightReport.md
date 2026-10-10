@@ -35,3 +35,11 @@ True when the study finished overnight.
 > **newPhase**: `"protocol"` \| `"startup"` \| `"conduct"` \| `"cleaning"` \| `"analysis"` \| `"reporting"` \| `"closeout"` \| `null`
 
 Set when the study moved into a new phase overnight.
+
+***
+
+### wrapUp?
+
+> `optional` **wrapUp?**: [`OvernightLine`](OvernightLine.md)[]
+
+How the day just ended went, from the evening wrap-up (#1837).

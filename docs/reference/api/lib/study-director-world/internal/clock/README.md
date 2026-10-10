@@ -18,5 +18,7 @@
 - [fatigueFrom](functions/fatigueFrom.md)
 - [formatClock](functions/formatClock.md)
 - [lateMinutes](functions/lateMinutes.md)
+- [passTime](functions/passTime.md)
 - [spend](functions/spend.md)
+- [spendCost](functions/spendCost.md)
 - [weekdayFor](functions/weekdayFor.md)

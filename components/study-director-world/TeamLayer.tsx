@@ -3,6 +3,8 @@
 import React, { useCallback, useMemo, useRef, useState } from "react";
 import {
   DELEGATION_VERBS,
+  relate,
+  relationshipOptions,
   answerCall,
   brushOff,
   decide,
@@ -25,6 +27,7 @@ import {
   startMeeting,
   talk,
   type DelegationVerb,
+  type RelationshipAction,
   type DialogueLine,
   type EventDialogue,
   type EventVia,
@@ -234,6 +237,20 @@ export function useTeamLayer({
     [announce, refuse, setWorld, world]
   );
 
+  const relateTo = useCallback(
+    (memberId: string, action: RelationshipAction) => {
+      const result = relate(world, memberId, action);
+      if (!result.ok) {
+        refuse(result.reason);
+        return;
+      }
+      setWorld(result.world);
+      setConversation({ kind: "person", memberId, lines: result.lines });
+      announce(result.lines.map((l) => l.text).join(" "));
+    },
+    [announce, refuse, setWorld, world]
+  );
+
   const writeUp = useCallback(
     (eventId: string) => {
       const result = documentAtDesk(world, eventId);
@@ -340,6 +357,7 @@ export function useTeamLayer({
     choose,
     leaveEvent,
     verb,
+    relateTo,
     writeUp,
     deskOpen,
     phone,
@@ -477,6 +495,35 @@ export const TeamOverlay: React.FC<{
               </OverlayButton>
             ))}
           </div>
+        </div>
+        <div>
+          <h4 className="text-[10px] font-semibold tracking-[0.14em] text-[var(--sd-muted)] uppercase">
+            Get to know them
+          </h4>
+          <ul className="mt-1 grid gap-1 sm:grid-cols-2">
+            {relationshipOptions(world, c.memberId).map((o) => (
+              <li key={o.action} className="min-w-0">
+                <OverlayButton
+                  className="w-full"
+                  aria-disabled={!o.available}
+                  aria-describedby={
+                    o.available ? undefined : `sd-rel-why-${o.action}`
+                  }
+                  onClick={() => team.relateTo(c.memberId, o.action)}
+                >
+                  {o.label}
+                </OverlayButton>
+                {o.available ? null : (
+                  <p
+                    id={`sd-rel-why-${o.action}`}
+                    className="mt-0.5 text-[10px] break-words text-[var(--sd-muted)]"
+                  >
+                    {o.reason}
+                  </p>
+                )}
+              </li>
+            ))}
+          </ul>
         </div>
         <OverlayButton ref={closeRef} onClick={team.close}>
           Leave

@@ -18,6 +18,11 @@
  */
 import { clamp, gameFont } from "@/lib/game-utils";
 import {
+  DEFAULT_GROUND_STRIP,
+  type GroundStripField,
+  type GroundStripLayout,
+} from "@/lib/garmin-ground-strip";
+import {
   CANVAS_SIZE,
   DEVICE_PROFILES,
   GROUND_Y,
@@ -198,6 +203,35 @@ const CHIP_MARKS: Record<VariableType, string> = {
 export function stepsFor(distanceMeters: number): number {
   if (!Number.isFinite(distanceMeters)) return 0;
   return Math.round(Math.max(0, distanceMeters) * 1.35);
+}
+
+const GROUND_STRIP_X = [90, 140, 190];
+
+/** The value and unit label a ground-strip field shows for `state`. */
+function groundStripReadout(
+  field: GroundStripField,
+  state: GameEngineState
+): [value: string, label: string] {
+  const pct = (n: number | undefined) =>
+    `${Math.round(clamp(Number.isFinite(n) ? (n as number) : 0, 0, 1) * 100)}`;
+  switch (field) {
+    case "steps":
+      return [`${stepsFor(state.distanceMeters)}`, "STEPS"];
+    case "distance":
+      return [(Math.max(0, state.distanceMeters) / 1000).toFixed(2), "KM"];
+    case "vars":
+      return [`${state.variables.length}`, "VARS"];
+    case "heartRate":
+      return [`${Math.round(state.heartRate)}`, "BPM"];
+    case "thermal":
+      return [pct(state.thermalStress), "TEMP %"];
+    case "fog":
+      return [pct(state.fogLevel), "FOG %"];
+    case "ram":
+      return [`${state.allocatedRamKb.toFixed(1)}K`, "RAM"];
+    case "flash":
+      return [`${state.allocatedFlashKb.toFixed(1)}K`, "NV"];
+  }
 }
 
 /** What a full-screen end face says. */
@@ -736,7 +770,11 @@ function drawBatteryGlyph(ctx: Ctx, x: number, y: number, percent: number) {
  * flash as arcs with readouts down the sides, and steps, distance and heap
  * variables in the ground strip below the lane.
  */
-function drawDataRing(ctx: Ctx, state: GameEngineState) {
+function drawDataRing(
+  ctx: Ctx,
+  state: GameEngineState,
+  strip: GroundStripLayout
+) {
   const profile = DEVICE_PROFILES[state.device] ?? DEVICE_PROFILES.fenix;
   const ramFraction = state.allocatedRamKb / profile.ramLimitKb;
   const flashFraction = state.allocatedFlashKb / profile.flashLimitKb;
@@ -793,15 +831,12 @@ function drawDataRing(ctx: Ctx, state: GameEngineState) {
   );
 
   // Ground strip, below the lane.
-  const fields: Array<[string, string, number]> = [
-    [`${stepsFor(state.distanceMeters)}`, "STEPS", 90],
-    [(Math.max(0, state.distanceMeters) / 1000).toFixed(2), "KM", 140],
-    [`${state.variables.length}`, "VARS", 190],
-  ];
-  for (const [value, label, x] of fields) {
+  strip.forEach((field, i) => {
+    const [value, label] = groundStripReadout(field, state);
+    const x = GROUND_STRIP_X[i];
     text(ctx, value, x, 231, 9, FACE_COLORS.text);
     text(ctx, label, x, 240, 5.5, FACE_COLORS.dim);
-  }
+  });
   if (battery < 15 && battery > 0) {
     ctx.fillStyle = FACE_COLORS.danger;
     ctx.beginPath();
@@ -979,7 +1014,11 @@ function drawEndFace(ctx: Ctx, state: GameEngineState, face: EndFace) {
  * Draws one frame of the watch face for `state` into a context already
  * scaled to the 280 x 280 logical space.
  */
-export function renderWatchFace(ctx: Ctx, state: GameEngineState): void {
+export function renderWatchFace(
+  ctx: Ctx,
+  state: GameEngineState,
+  strip: GroundStripLayout = DEFAULT_GROUND_STRIP
+): void {
   ctx.save();
   ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
   ctx.beginPath();
@@ -1009,7 +1048,7 @@ export function renderWatchFace(ctx: Ctx, state: GameEngineState): void {
     ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
   }
   // Idle keeps the ring empty: the start card sits over the face then.
-  if (state.gameState !== "idle") drawDataRing(ctx, state);
+  if (state.gameState !== "idle") drawDataRing(ctx, state, strip);
   if (state.fogLevel > 0.05) drawFog(ctx, state);
   if (state.gameState === "paused") drawPaused(ctx);
 

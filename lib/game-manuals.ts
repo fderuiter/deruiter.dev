@@ -595,6 +595,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
           "Fēnix 5 has 32 KB of RAM and 64 KB of flash and allocates every 3.2 s (hard). Forerunner 245 has 64 KB and 256 KB every 4 s (medium). Edge 1030 has 128 KB and 512 KB every 5 s (casual).",
         badge: "Difficulty",
       },
+      {
+        title: "Telemetry & Ground Strip",
+        detail:
+          "The companion panel samples each run once per second of play. Download it as a CSV with every metric, or a FIT file with heart rate and distance only (a simulator file, not a Garmin Connect upload). The ground strip's three readouts can show steps, distance, heap variables, heart rate, thermal stress, fog, RAM or NV flash.",
+        badge: "Data",
+      },
     ],
     proTips: [
       "Pop with Down when RAM passes about 70%: it's instant, while GC freezes you for half a second.",

@@ -1,6 +1,7 @@
 import { clamp } from "@/lib/game-utils";
 import type { StudyState } from "@/lib/study-director";
 import { CRO_FLOOR, WORLD_MAPS, isWalkable } from "./floor";
+import { keepRecent } from "./history";
 import { readVisit } from "./sites";
 import {
   DAY_START,
@@ -15,8 +16,10 @@ import {
   type Bond,
   type CallRecord,
   type Meeting,
+  type MeetingReport,
   type Observation,
   type PlayerState,
+  type SiteVisitReport,
   type WorldMap,
   type WorldState,
 } from "../types";
@@ -173,6 +176,47 @@ function readMeeting(value: unknown): Meeting | null {
   return null;
 }
 
+function readMeetingHistory(value: unknown): MeetingReport[] {
+  if (!Array.isArray(value)) return [];
+  return keepRecent(
+    value.filter(
+      (m): m is MeetingReport =>
+        isRecord(m) &&
+        (m.kind === "team" || m.kind === "sponsor") &&
+        typeof m.day === "number" &&
+        typeof m.minutes === "number" &&
+        typeof m.personMinutes === "number" &&
+        Array.isArray(m.attendees) &&
+        m.attendees.every((a) => typeof a === "string") &&
+        Array.isArray(m.changes) &&
+        m.changes.every((c) => typeof c === "string") &&
+        Array.isArray(m.raised) &&
+        m.raised.every((r) => typeof r === "string") &&
+        typeof m.verdict === "string"
+    )
+  );
+}
+
+function readSiteVisitHistory(value: unknown): SiteVisitReport[] {
+  if (!Array.isArray(value)) return [];
+  return keepRecent(
+    value.filter(
+      (v): v is SiteVisitReport =>
+        isRecord(v) &&
+        str(v.siteId) &&
+        str(v.siteName) &&
+        typeof v.day === "number" &&
+        typeof v.audited === "boolean" &&
+        Array.isArray(v.checks) &&
+        Array.isArray(v.findings) &&
+        v.findings.every((f) => isRecord(f) && typeof f.text === "string") &&
+        Array.isArray(v.unchecked) &&
+        Array.isArray(v.learned) &&
+        str(v.verdict)
+    )
+  );
+}
+
 /**
  * Reads a saved world run. Anything unreadable, from another version, or
  * missing its study is dropped (returns null) rather than trusted; numbers
@@ -214,6 +258,10 @@ export function parseWorld(text: string | null): WorldState | null {
     visit,
   };
   // The team layer's fields are optional: keep only those the save has.
+  const meetingHistory = readMeetingHistory(raw.meetingHistory);
+  if (meetingHistory.length > 0) world.meetingHistory = meetingHistory;
+  const siteVisitHistory = readSiteVisitHistory(raw.siteVisitHistory);
+  if (siteVisitHistory.length > 0) world.siteVisitHistory = siteVisitHistory;
   const observations = readObservations(raw.observations);
   if (observations) world.observations = observations;
   const bonds = readBonds(raw.bonds);

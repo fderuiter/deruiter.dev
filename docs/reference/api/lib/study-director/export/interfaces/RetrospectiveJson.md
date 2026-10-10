@@ -6,6 +6,10 @@
 
 # Interface: RetrospectiveJson
 
+## Extended by
+
+- [`WorldRetrospectiveJson`](../../../study-director-world/internal/history/interfaces/WorldRetrospectiveJson.md)
+
 ## Properties
 
 ### decisions

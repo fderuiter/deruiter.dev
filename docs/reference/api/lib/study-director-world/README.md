@@ -104,6 +104,12 @@ Re-exports [brushOff](internal/channels/functions/brushOff.md)
 
 ***
 
+### buildWorldRetrospective
+
+Re-exports [buildWorldRetrospective](internal/history/functions/buildWorldRetrospective.md)
+
+***
+
 ### CallRecord
 
 Re-exports [CallRecord](types/interfaces/CallRecord.md)
@@ -416,6 +422,30 @@ Re-exports [examineSelf](internal/dressing/functions/examineSelf.md)
 
 ***
 
+### exportDialogueCsv
+
+Re-exports [exportDialogueCsv](internal/history/functions/exportDialogueCsv.md)
+
+***
+
+### exportMeetingsCsv
+
+Re-exports [exportMeetingsCsv](internal/history/functions/exportMeetingsCsv.md)
+
+***
+
+### exportSiteVisitsCsv
+
+Re-exports [exportSiteVisitsCsv](internal/history/functions/exportSiteVisitsCsv.md)
+
+***
+
+### exportWorldRetrospectiveJson
+
+Re-exports [exportWorldRetrospectiveJson](internal/history/functions/exportWorldRetrospectiveJson.md)
+
+***
+
 ### Facing
 
 Re-exports [Facing](types/type-aliases/Facing.md)
@@ -557,6 +587,12 @@ Re-exports [HARD_STOP](types/variables/HARD_STOP.md)
 ### heartsFor
 
 Re-exports [heartsFor](internal/team/functions/heartsFor.md)
+
+***
+
+### HISTORY\_LIMIT
+
+Re-exports [HISTORY_LIMIT](types/variables/HISTORY_LIMIT.md)
 
 ***
 
@@ -1505,6 +1541,12 @@ Re-exports [WorldRefusal](types/type-aliases/WorldRefusal.md)
 ### WorldResult
 
 Re-exports [WorldResult](types/type-aliases/WorldResult.md)
+
+***
+
+### WorldRetrospectiveJson
+
+Re-exports [WorldRetrospectiveJson](internal/history/interfaces/WorldRetrospectiveJson.md)
 
 ***
 

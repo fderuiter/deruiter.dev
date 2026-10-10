@@ -9,6 +9,14 @@ import {
   exportRetrospectiveJson,
   type FinalReport,
 } from "@/lib/study-director";
+import {
+  exportDialogueCsv,
+  exportMeetingsCsv,
+  exportSiteVisitsCsv,
+  exportWorldRetrospectiveJson,
+  type WorldState,
+} from "@/lib/study-director-world";
+import { MeetingArchive } from "./MeetingArchive";
 import { Card } from "./Panels";
 import { HealthRadar } from "./HealthRadar";
 import { DecisionTimeline } from "./DecisionTimeline";
@@ -62,10 +70,12 @@ const Figure: React.FC<{
 /** The closeout: verdict, grade, the study's shape, and the inspection. */
 export const ReportView: React.FC<{
   report: FinalReport;
+  /** The office run behind this report, when it was played in the office. */
+  world?: WorldState | null;
   onRestart: () => void;
   /** Shown under the verdict: sharing and career news. */
   share?: React.ReactNode;
-}> = ({ report, onRestart, share }) => {
+}> = ({ report, world, onRestart, share }) => {
   const { evaluations: ev, profile, lock, inspection, state } = report;
   const verdict = verdictFor(report);
   const open = inspection.items.filter((i) => i.outcome !== "closed").length;
@@ -120,12 +130,12 @@ export const ReportView: React.FC<{
           <button
             type="button"
             onClick={() => {
-              const json = exportRetrospectiveJson(report);
-              downloadFile(
-                json,
-                `study-${state.setup.id}-retrospective.json`,
-                { mimeType: "application/json" }
-              );
+              const json = world
+                ? exportWorldRetrospectiveJson(report, world)
+                : exportRetrospectiveJson(report);
+              downloadFile(json, `study-${state.setup.id}-retrospective.json`, {
+                mimeType: "application/json",
+              });
             }}
             className="border border-amber-500/80 bg-amber-500/10 px-3 py-1.5 text-xs font-bold text-amber-300 hover:bg-amber-500/20"
           >
@@ -135,11 +145,9 @@ export const ReportView: React.FC<{
             type="button"
             onClick={() => {
               const csv = exportDecisionLogCsv(report);
-              downloadFile(
-                csv,
-                `study-${state.setup.id}-decisions.csv`,
-                { mimeType: "text/csv" }
-              );
+              downloadFile(csv, `study-${state.setup.id}-decisions.csv`, {
+                mimeType: "text/csv",
+              });
             }}
             className="border border-zinc-700 bg-zinc-800/80 px-3 py-1.5 text-xs font-bold text-zinc-200 hover:border-amber-400 hover:text-amber-300"
           >
@@ -149,11 +157,9 @@ export const ReportView: React.FC<{
             type="button"
             onClick={() => {
               const csv = exportMeterTrajectoryCsv(report);
-              downloadFile(
-                csv,
-                `study-${state.setup.id}-meters.csv`,
-                { mimeType: "text/csv" }
-              );
+              downloadFile(csv, `study-${state.setup.id}-meters.csv`, {
+                mimeType: "text/csv",
+              });
             }}
             className="border border-zinc-700 bg-zinc-800/80 px-3 py-1.5 text-xs font-bold text-zinc-200 hover:border-amber-400 hover:text-amber-300"
           >
@@ -163,11 +169,9 @@ export const ReportView: React.FC<{
             type="button"
             onClick={() => {
               const csv = exportAuditFindingsCsv(report);
-              downloadFile(
-                csv,
-                `study-${state.setup.id}-findings.csv`,
-                { mimeType: "text/csv" }
-              );
+              downloadFile(csv, `study-${state.setup.id}-findings.csv`, {
+                mimeType: "text/csv",
+              });
             }}
             className="border border-zinc-700 bg-zinc-800/80 px-3 py-1.5 text-xs font-bold text-zinc-200 hover:border-amber-400 hover:text-amber-300"
           >
@@ -175,6 +179,44 @@ export const ReportView: React.FC<{
           </button>
         </div>
       </Card>
+
+      {world ? (
+        <Card
+          title="Office run"
+          hint={`${world.meetingHistory?.length ?? 0} meetings, ${world.siteVisitHistory?.length ?? 0} site visits`}
+        >
+          <div
+            className="flex flex-wrap items-center gap-2 pb-3"
+            data-testid="office-export-actions"
+          >
+            {(
+              [
+                ["Meetings CSV", "meetings", exportMeetingsCsv],
+                ["Site Visits CSV", "site-visits", exportSiteVisitsCsv],
+                ["Dialogue CSV", "dialogue", exportDialogueCsv],
+              ] as const
+            ).map(([label, slug, build]) => (
+              <button
+                key={slug}
+                type="button"
+                onClick={() =>
+                  downloadFile(
+                    build(world),
+                    `study-${state.setup.id}-${slug}.csv`,
+                    {
+                      mimeType: "text/csv",
+                    }
+                  )
+                }
+                className="min-h-[36px] border border-zinc-700 bg-zinc-800/80 px-3 py-1.5 text-xs font-bold text-zinc-200 hover:border-amber-400 hover:text-amber-300"
+              >
+                Export {label}
+              </button>
+            ))}
+          </div>
+          <MeetingArchive meetings={world.meetingHistory ?? []} />
+        </Card>
+      ) : null}
 
       <div className="grid gap-3 lg:grid-cols-[minmax(0,280px)_minmax(0,1fr)]">
         <Card title="Final study health">

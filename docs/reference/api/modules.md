@@ -367,6 +367,7 @@
 - [lib/study-director-world/internal/floor](lib/study-director-world/internal/floor/README.md)
 - [lib/study-director-world/internal/guests](lib/study-director-world/internal/guests/README.md)
 - [lib/study-director-world/internal/handlers](lib/study-director-world/internal/handlers/README.md)
+- [lib/study-director-world/internal/history](lib/study-director-world/internal/history/README.md)
 - [lib/study-director-world/internal/interact](lib/study-director-world/internal/interact/README.md)
 - [lib/study-director-world/internal/meetings](lib/study-director-world/internal/meetings/README.md)
 - [lib/study-director-world/internal/movement](lib/study-director-world/internal/movement/README.md)

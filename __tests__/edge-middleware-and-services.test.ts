@@ -114,7 +114,7 @@ describe("Next.js 16 Proxy & Modular Domain Services Suite", () => {
 
       expect(res).toBeDefined();
       Object.entries(SECURITY_HEADERS).forEach(([header, value]) => {
-        if (header === "Content-Security-Policy" || header === "x-nonce") {
+        if (header === "Content-Security-Policy") {
           expect(res?.headers.get(header)).toBeTruthy();
         } else {
           expect(res?.headers.get(header)).toBe(value);
@@ -124,8 +124,8 @@ describe("Next.js 16 Proxy & Modular Domain Services Suite", () => {
       const scriptDirective = csp
         ?.split(";")
         .find((d) => d.trim().startsWith("script-src"));
-      expect(scriptDirective).toContain("'strict-dynamic'");
-      expect(scriptDirective).not.toContain("'unsafe-inline'");
+      expect(scriptDirective).toContain("'self'");
+      expect(scriptDirective).not.toContain("*");
       expect(scriptDirective).not.toContain("'unsafe-eval'");
     });
 

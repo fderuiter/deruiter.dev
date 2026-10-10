@@ -2,6 +2,7 @@ import withSerwistInit from "@serwist/next";
 import { withSentryConfig } from "@sentry/nextjs/config";
 import type { NextConfig } from "next";
 import { ChunkCycleGuardPlugin } from "./lib/dx/chunk-cycle-guard";
+import { securityHeaderRules } from "./lib/security-headers";
 
 const withSerwist = withSerwistInit({
   swSrc: "app/sw.ts",
@@ -72,6 +73,9 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     return [
+      // Served here rather than from the proxy so static and ISR pages carry
+      // them without a function invocation (#1900).
+      ...securityHeaderRules(),
       {
         source:
           "/:all*(svg|jpg|png|webp|avif|glb|obj|ico|txt|woff|woff2|ttf|eot|otf)",

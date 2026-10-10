@@ -6,7 +6,7 @@
 
 # Function: applySecurityHeaders()
 
-> **applySecurityHeaders**(`res`, `req?`, `explicitNonce?`): `NextResponse`
+> **applySecurityHeaders**(`res`, `req?`): `NextResponse`
 
 Applies standard HTTP security headers to a NextResponse. When `req` resolves to the admin
 surface (`/admin`, `/api/admin`), the Content-Security-Policy additionally allows the
@@ -22,10 +22,6 @@ without a request context — receives the narrower public-surface policy.
 ### req?
 
 `NextRequest`
-
-### explicitNonce?
-
-`string`
 
 ## Returns
 

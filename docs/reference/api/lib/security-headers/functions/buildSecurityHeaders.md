@@ -6,17 +6,15 @@
 
 # Function: buildSecurityHeaders()
 
-> **buildSecurityHeaders**(`admin`, `nonce?`): `Record`\<`string`, `string`\>
+> **buildSecurityHeaders**(`admin`): `Record`\<`string`, `string`\>
+
+Builds the standard security header set for the public or admin surface.
 
 ## Parameters
 
 ### admin
 
 `boolean`
-
-### nonce?
-
-`string`
 
 ## Returns
 

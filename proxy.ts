@@ -1,6 +1,6 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextFetchEvent, NextRequest, NextResponse } from "next/server";
-import { applySecurityHeaders, generateNonce } from "@/lib/security-headers";
+import { applySecurityHeaders } from "@/lib/security-headers";
 import {
   generateClientConnectionHash,
   extractClientIp,
@@ -39,17 +39,11 @@ export function isClerkRoute(req: NextRequest): boolean {
 
 /**
  * Privacy-preserving client connection token for API telemetry/rate limiting,
- * plus the standard HTTP security headers. Applies to every request, whether
- * or not Clerk is in the chain.
+ * plus the standard HTTP security headers. Applies to every request the proxy
+ * matches, whether or not Clerk is in the chain.
  */
 async function decorateRequest(req: NextRequest): Promise<NextResponse> {
   const requestHeaders = new Headers(req.headers);
-
-  let nonce = req.headers.get("x-nonce");
-  if (!nonce) {
-    nonce = generateNonce();
-    requestHeaders.set("x-nonce", nonce);
-  }
 
   if (req.nextUrl.pathname.startsWith("/api")) {
     const ip = extractClientIp(req);
@@ -66,7 +60,7 @@ async function decorateRequest(req: NextRequest): Promise<NextResponse> {
     },
   });
 
-  return applySecurityHeaders(response, req, nonce);
+  return applySecurityHeaders(response, req);
 }
 
 const authMiddleware = clerkMiddleware(async (auth, req: NextRequest) => {
@@ -118,11 +112,20 @@ export function proxy(req: NextRequest, event: NextFetchEvent) {
   return decorateRequest(req);
 }
 
+/**
+ * The proxy runs as a Vercel function, so it matches only the routes that need
+ * it: the Clerk-protected admin area, API routes (connection hash), and the
+ * desktop studios that redirect phones to `/m/*`. Security headers for every
+ * other route come from `next.config.ts`, which lets those pages stay static
+ * instead of paying a function invocation per view (#1900).
+ */
 export const config = {
   matcher: [
-    // Skip Next.js internals and all static files, unless found in search params
-    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
-    // Always run for API routes
-    "/(api|trpc)(.*)",
+    "/admin/:path*",
+    "/api/:path*",
+    "/proof/:path*",
+    "/crf/:path*",
+    "/neuro/:path*",
+    "/patrol/:path*",
   ],
 };

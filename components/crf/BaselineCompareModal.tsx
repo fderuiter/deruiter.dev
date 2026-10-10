@@ -20,6 +20,10 @@ import { CopyButton } from "@/components/ui/CopyButton";
 import { StudyProtocol, StudyBaseline } from "@/lib/crf/types";
 import { listStudyBaselines } from "@/lib/crf/study-baselines";
 import {
+  MAX_FILE_SIZE_BYTES,
+  detectAndParseStudyFile,
+} from "@/lib/crf/file-ingestion";
+import {
   compareStudyToBaseline,
   describeBaselineDiffCategory,
   describeBaselineDiffChangeType,
@@ -175,6 +179,14 @@ function DiffEntryRow({
   );
 }
 
+interface CompareTarget {
+  study: StudyProtocol;
+  meta: { id: string; versionTag: string; label: string };
+}
+
+const SOURCE_BUTTON =
+  "min-h-[32px] rounded-md px-2.5 py-1 text-xs font-mono transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-brand-cyan";
+
 export const BaselineCompareModal: React.FC<BaselineCompareModalProps> = ({
   isOpen,
   onClose,
@@ -187,6 +199,13 @@ export const BaselineCompareModal: React.FC<BaselineCompareModalProps> = ({
   const [baselines] = useState<StudyBaseline[]>(() =>
     listStudyBaselines(storage)
   );
+  const [source, setSource] = useState<"baseline" | "file">("baseline");
+  const [fileTarget, setFileTarget] = useState<{
+    study: StudyProtocol;
+    fileName: string;
+    formatLabel: string;
+  } | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
   const [selectedBaselineId, setSelectedBaselineId] = useState<string | null>(
     initialBaselineId ?? baselines[0]?.id ?? null
   );
@@ -203,14 +222,64 @@ export const BaselineCompareModal: React.FC<BaselineCompareModalProps> = ({
     [baselines, selectedBaselineId]
   );
 
-  const comparison: BaselineComparisonResult | null = useMemo(() => {
-    if (!selectedBaseline) return null;
-    return compareStudyToBaseline(study, selectedBaseline.study, {
-      id: selectedBaseline.id,
-      versionTag: selectedBaseline.versionTag,
-      label: selectedBaseline.label,
-    });
-  }, [study, selectedBaseline]);
+  const target: CompareTarget | null = useMemo(() => {
+    if (source === "file") {
+      return fileTarget
+        ? {
+            study: fileTarget.study,
+            meta: {
+              id: "study-file",
+              versionTag: fileTarget.formatLabel,
+              label: fileTarget.fileName,
+            },
+          }
+        : null;
+    }
+    return selectedBaseline
+      ? {
+          study: selectedBaseline.study,
+          meta: {
+            id: selectedBaseline.id,
+            versionTag: selectedBaseline.versionTag,
+            label: selectedBaseline.label,
+          },
+        }
+      : null;
+  }, [source, fileTarget, selectedBaseline]);
+
+  const comparison: BaselineComparisonResult | null = useMemo(
+    () =>
+      target ? compareStudyToBaseline(study, target.study, target.meta) : null,
+    [study, target]
+  );
+
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      setFileTarget(null);
+      setFileError("That file is larger than the 50MB limit.");
+      return;
+    }
+    file
+      .text()
+      .then((text) => {
+        const parsed = detectAndParseStudyFile(text, file.name, file.size);
+        setFileTarget({
+          study: parsed.study,
+          fileName: parsed.fileName,
+          formatLabel: parsed.formatLabel,
+        });
+        setFileError(null);
+      })
+      .catch((err: unknown) => {
+        setFileTarget(null);
+        setFileError(
+          err instanceof Error ? err.message : "Could not read that file."
+        );
+      });
+  };
 
   const handleSelectBaseline = (id: string) => {
     setSelectedBaselineId(id || null);
@@ -297,31 +366,77 @@ export const BaselineCompareModal: React.FC<BaselineCompareModalProps> = ({
 
         {/* Baseline picker & Export Toolbar */}
         <div className="px-4 sm:px-5 py-3 border-b border-zinc-850 bg-zinc-950 flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-3 flex-wrap">
-            <label
-              htmlFor="baseline-compare-select"
-              className="text-xs font-mono font-semibold text-zinc-300 shrink-0"
+          <div className="flex min-w-0 items-center gap-3 flex-wrap">
+            <div
+              role="group"
+              aria-label="Compare against"
+              className="flex gap-1 rounded-lg border border-zinc-800 bg-zinc-900 p-0.5"
             >
-              Compare current draft against:
-            </label>
-            {baselines.length === 0 ? (
-              <span className="text-xs text-zinc-500">
-                No saved baselines yet: create one from &quot;Baselines&quot;
-                first.
-              </span>
+              {(
+                [
+                  ["baseline", "Saved baseline"],
+                  ["file", "Study file"],
+                ] as const
+              ).map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  aria-pressed={source === id}
+                  onClick={() => setSource(id)}
+                  className={`${SOURCE_BUTTON} ${
+                    source === id
+                      ? "bg-white/[0.1] font-bold text-white"
+                      : "text-zinc-400 hover:text-zinc-200"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {source === "file" ? (
+              <div className="flex min-w-0 items-center gap-2 flex-wrap">
+                <label
+                  htmlFor="baseline-compare-file"
+                  className="text-xs font-mono font-semibold text-zinc-300 shrink-0"
+                >
+                  Study file (JSON, XML or CSV):
+                </label>
+                <input
+                  id="baseline-compare-file"
+                  type="file"
+                  accept=".json,.xml,.csv"
+                  onChange={handleFile}
+                  className="min-w-0 max-w-full text-xs font-mono text-zinc-300 file:mr-2 file:rounded-md file:border file:border-zinc-700 file:bg-zinc-900 file:px-2 file:py-1 file:text-xs file:text-zinc-200"
+                />
+              </div>
             ) : (
-              <select
-                id="baseline-compare-select"
-                value={selectedBaselineId || ""}
-                onChange={(e) => handleSelectBaseline(e.target.value)}
-                className="px-2.5 py-1.5 bg-zinc-900 border border-zinc-700/80 rounded-lg text-xs font-mono text-white focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
-              >
-                {baselines.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.versionTag}: {b.label}
-                  </option>
-                ))}
-              </select>
+              <>
+                <label
+                  htmlFor="baseline-compare-select"
+                  className="text-xs font-mono font-semibold text-zinc-300 shrink-0"
+                >
+                  Compare current draft against:
+                </label>
+                {baselines.length === 0 ? (
+                  <span className="text-xs text-zinc-500">
+                    No saved baselines yet: create one from
+                    &quot;Baselines&quot; first.
+                  </span>
+                ) : (
+                  <select
+                    id="baseline-compare-select"
+                    value={selectedBaselineId || ""}
+                    onChange={(e) => handleSelectBaseline(e.target.value)}
+                    className="px-2.5 py-1.5 bg-zinc-900 border border-zinc-700/80 rounded-lg text-xs font-mono text-white focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan"
+                  >
+                    {baselines.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.versionTag}: {b.label}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </>
             )}
           </div>
 
@@ -334,7 +449,7 @@ export const BaselineCompareModal: React.FC<BaselineCompareModalProps> = ({
             <button
               type="button"
               onClick={handleExportCsv}
-              disabled={!selectedBaseline || !hasChanges}
+              disabled={!target || !hasChanges}
               aria-label="Export CSV"
               className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-zinc-900 hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed border border-zinc-750 rounded-lg text-xs font-mono font-semibold text-zinc-200 hover:text-white transition-all focus:outline-none focus:ring-1 focus:ring-brand-cyan"
             >
@@ -348,7 +463,7 @@ export const BaselineCompareModal: React.FC<BaselineCompareModalProps> = ({
             <button
               type="button"
               onClick={handleExportJson}
-              disabled={!selectedBaseline || !hasChanges}
+              disabled={!target || !hasChanges}
               aria-label="Export JSON"
               className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-zinc-900 hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed border border-zinc-750 rounded-lg text-xs font-mono font-semibold text-zinc-200 hover:text-white transition-all focus:outline-none focus:ring-1 focus:ring-brand-cyan"
             >
@@ -362,7 +477,7 @@ export const BaselineCompareModal: React.FC<BaselineCompareModalProps> = ({
             <button
               type="button"
               onClick={handleExportText}
-              disabled={!selectedBaseline || !hasChanges}
+              disabled={!target || !hasChanges}
               aria-label="Export Text"
               className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-zinc-900 hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed border border-zinc-750 rounded-lg text-xs font-mono font-semibold text-zinc-200 hover:text-white transition-all focus:outline-none focus:ring-1 focus:ring-brand-cyan"
             >
@@ -377,7 +492,7 @@ export const BaselineCompareModal: React.FC<BaselineCompareModalProps> = ({
               text={() =>
                 comparison ? serializeBaselineDiffToText(comparison) : ""
               }
-              disabled={!selectedBaseline || !hasChanges}
+              disabled={!target || !hasChanges}
               aria-label="Copy Summary"
               className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-zinc-900 hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed border border-zinc-750 rounded-lg text-xs font-mono font-semibold text-zinc-200 hover:text-white transition-all focus:outline-none focus:ring-1 focus:ring-brand-cyan"
               label="Copy Summary"
@@ -436,9 +551,16 @@ export const BaselineCompareModal: React.FC<BaselineCompareModalProps> = ({
 
         {/* Content Body */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-5">
-          {!selectedBaseline ? (
+          {fileError && source === "file" && (
+            <p role="alert" className="mb-3 text-xs font-mono text-rose-300">
+              {fileError}
+            </p>
+          )}
+          {!target ? (
             <div className="py-12 text-center text-zinc-500 text-xs font-mono">
-              Select a baseline above to see what has changed.
+              {source === "file"
+                ? "Choose a study file above to compare it with the current draft."
+                : "Select a baseline above to see what has changed."}
             </div>
           ) : !comparison?.summary.hasChanges ? (
             <div
@@ -450,8 +572,14 @@ export const BaselineCompareModal: React.FC<BaselineCompareModalProps> = ({
                 No differences detected
               </h3>
               <p className="text-xs text-zinc-500 max-w-sm">
-                The current draft matches baseline{" "}
-                <strong>{selectedBaseline.versionTag}</strong> exactly.
+                The current draft matches{" "}
+                {source === "file" ? "file" : "baseline"}{" "}
+                <strong>
+                  {source === "file"
+                    ? target.meta.label
+                    : target.meta.versionTag}
+                </strong>{" "}
+                exactly.
               </p>
             </div>
           ) : (

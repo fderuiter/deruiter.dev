@@ -6,12 +6,17 @@
 
 # Function: compareStudyToBaseline()
 
-> **compareStudyToBaseline**(`current`, `baselineStudy`, `baselineMeta`): [`BaselineComparisonResult`](../interfaces/BaselineComparisonResult.md)
+> **compareStudyToBaseline**(`current`, `baselineStudy`, `baselineMeta`, `options?`): [`BaselineComparisonResult`](../interfaces/BaselineComparisonResult.md)
 
-Compares the current working draft against a named baseline snapshot,
-matching every object by its stable id (never by array position) so
-reorders never masquerade as adds/removes, and a same-id rename or move
-is reported as a single "modified" entry rather than a delete + add pair.
+Compares the current working draft against another study snapshot.
+
+Within one study every object is matched by its stable id (never by array
+position), so reorders never masquerade as adds/removes, and a same-id
+rename or move is a single "modified" entry. When the two studies have
+different ids (or `options.crossStudy` is set), ids mean nothing across
+them, so objects that do not share an id are paired by name instead
+(form OID, domain and name, variable name, section title, NCI code) when
+the name is unambiguous, and id references compare by what they point at.
 
 ## Parameters
 
@@ -36,6 +41,12 @@ is reported as a single "modified" entry rather than a delete + add pair.
 #### versionTag
 
 `string`
+
+### options?
+
+#### crossStudy?
+
+`boolean`
 
 ## Returns
 

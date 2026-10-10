@@ -1724,6 +1724,12 @@ Re-exports [matchTermByLabel](cdisc-controlled-terminology/functions/matchTermBy
 
 ***
 
+### MAX\_FILE\_SIZE\_BYTES
+
+Re-exports [MAX_FILE_SIZE_BYTES](file-ingestion/variables/MAX_FILE_SIZE_BYTES.md)
+
+***
+
 ### NCI\_CODE\_REGEX
 
 Re-exports [NCI_CODE_REGEX](cdisc-controlled-terminology/variables/NCI_CODE_REGEX.md)

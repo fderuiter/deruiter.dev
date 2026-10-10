@@ -10,6 +10,14 @@ export const runtime = "nodejs";
 export const alt = "Engineering Dispatch | Frederick de Ruiter";
 export const size = OG_IMAGE_SIZE;
 export const contentType = OG_IMAGE_CONTENT_TYPE;
+// Cache each card like the article page. Without static params the route ran
+// Satori on every crawler fetch, which is the costliest render on the site.
+export const revalidate = 3600;
+
+/** No cards are built ahead of time; each is rendered once and then cached. */
+export async function generateStaticParams() {
+  return [];
+}
 
 interface ImageProps {
   params: Promise<{ slug: string }>;

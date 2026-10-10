@@ -6,6 +6,10 @@
 
 # lib/security-headers
 
+## Interfaces
+
+- [SecurityHeaderRule](interfaces/SecurityHeaderRule.md)
+
 ## Variables
 
 - [ADMIN\_SECURITY\_HEADERS](variables/ADMIN_SECURITY_HEADERS.md)
@@ -16,4 +20,4 @@
 - [applySecurityHeaders](functions/applySecurityHeaders.md)
 - [buildContentSecurityPolicy](functions/buildContentSecurityPolicy.md)
 - [buildSecurityHeaders](functions/buildSecurityHeaders.md)
-- [generateNonce](functions/generateNonce.md)
+- [securityHeaderRules](functions/securityHeaderRules.md)

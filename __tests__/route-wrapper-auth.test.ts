@@ -42,7 +42,7 @@ describe("createApiHandler Inline Authentication Enforcement", () => {
 
       // Check security headers
       Object.entries(SECURITY_HEADERS).forEach(([header, value]) => {
-        if (header === "Content-Security-Policy" || header === "x-nonce") {
+        if (header === "Content-Security-Policy") {
           expect(res.headers.get(header)).toBeTruthy();
         } else {
           expect(res.headers.get(header)).toBe(value);
@@ -52,8 +52,8 @@ describe("createApiHandler Inline Authentication Enforcement", () => {
       const scriptDirective1 = csp1
         ?.split(";")
         .find((d) => d.trim().startsWith("script-src"));
-      expect(scriptDirective1).toContain("'strict-dynamic'");
-      expect(scriptDirective1).not.toContain("'unsafe-inline'");
+      expect(scriptDirective1).toContain("'self'");
+      expect(scriptDirective1).not.toContain("*");
       expect(scriptDirective1).not.toContain("'unsafe-eval'");
     });
 
@@ -126,7 +126,7 @@ describe("createApiHandler Inline Authentication Enforcement", () => {
 
       // Check security headers
       Object.entries(SECURITY_HEADERS).forEach(([header, value]) => {
-        if (header === "Content-Security-Policy" || header === "x-nonce") {
+        if (header === "Content-Security-Policy") {
           expect(res.headers.get(header)).toBeTruthy();
         } else {
           expect(res.headers.get(header)).toBe(value);
@@ -136,8 +136,8 @@ describe("createApiHandler Inline Authentication Enforcement", () => {
       const scriptDirective2 = csp2
         ?.split(";")
         .find((d) => d.trim().startsWith("script-src"));
-      expect(scriptDirective2).toContain("'strict-dynamic'");
-      expect(scriptDirective2).not.toContain("'unsafe-inline'");
+      expect(scriptDirective2).toContain("'self'");
+      expect(scriptDirective2).not.toContain("*");
       expect(scriptDirective2).not.toContain("'unsafe-eval'");
     });
 

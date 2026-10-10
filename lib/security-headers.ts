@@ -1,12 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createHash } from "crypto";
-import { getEnv } from "@/lib/env";
-
-/** Generates a cryptographically random SHA-256 base64-encoded nonce string. */
-export function generateNonce(): string {
-  const bytes = crypto.getRandomValues(new Uint8Array(32));
-  return createHash("sha256").update(bytes).digest("base64");
-}
+import type { NextRequest, NextResponse } from "next/server";
+// Relative so next.config.ts can load this module without path aliases.
+import { getEnv } from "./env";
 
 // A publishable key contains the instance hostname; never allow every Clerk tenant.
 function clerkOrigin(): string {
@@ -34,15 +28,20 @@ function isAdminSurface(pathname: string): boolean {
   return ADMIN_SURFACE_PATTERN.test(pathname);
 }
 
-export function buildContentSecurityPolicy(
-  admin: boolean,
-  nonce?: string
-): string {
-  const currentNonce = nonce || generateNonce();
+/**
+ * Builds the Content-Security-Policy for the public or admin surface.
+ *
+ * The policy is identical for every request, so `next.config.ts` serves it in
+ * front of static and ISR pages. A per-request nonce made the root layout read
+ * request headers, which rendered every page on demand and spent Vercel
+ * function CPU on each view (#1900). Without a nonce, the inline bootstrap
+ * scripts Next.js emits need `'unsafe-inline'`; script sources stay limited to
+ * this origin and the named hosts.
+ */
+export function buildContentSecurityPolicy(admin: boolean): string {
   const scriptSrc = [
     "'self'",
-    `'nonce-${currentNonce}'`,
-    "'strict-dynamic'",
+    "'unsafe-inline'",
     "https://va.vercel-scripts.com",
   ];
   const connectSrc = ["'self'", "https://vitals.vercel-insights.com"];
@@ -81,11 +80,8 @@ export function buildContentSecurityPolicy(
   );
 }
 
-export function buildSecurityHeaders(
-  admin: boolean,
-  nonce?: string
-): Record<string, string> {
-  const currentNonce = nonce || generateNonce();
+/** Builds the standard security header set for the public or admin surface. */
+export function buildSecurityHeaders(admin: boolean): Record<string, string> {
   return {
     "X-Content-Type-Options": "nosniff",
     "X-Frame-Options": "DENY",
@@ -93,8 +89,7 @@ export function buildSecurityHeaders(
     "Referrer-Policy": "strict-origin-when-cross-origin",
     "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
     "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
-    "Content-Security-Policy": buildContentSecurityPolicy(admin, currentNonce),
-    "x-nonce": currentNonce,
+    "Content-Security-Policy": buildContentSecurityPolicy(admin),
   };
 }
 
@@ -106,6 +101,32 @@ export const SECURITY_HEADERS: Record<string, string> =
 export const ADMIN_SECURITY_HEADERS: Record<string, string> =
   buildSecurityHeaders(true);
 
+/** One `next.config.ts` header rule: a route source and the headers it receives. */
+export interface SecurityHeaderRule {
+  source: string;
+  headers: { key: string; value: string }[];
+}
+
+function toHeaderList(
+  headers: Record<string, string>
+): SecurityHeaderRule["headers"] {
+  return Object.entries(headers).map(([key, value]) => ({ key, value }));
+}
+
+/**
+ * Header rules for `next.config.ts`, so every route, including static and ISR
+ * pages the proxy never runs on, receives the security headers. The admin rules
+ * come last because Next.js lets a later rule override the same header key.
+ */
+export function securityHeaderRules(): SecurityHeaderRule[] {
+  const admin = toHeaderList(ADMIN_SECURITY_HEADERS);
+  return [
+    { source: "/:path*", headers: toHeaderList(SECURITY_HEADERS) },
+    { source: "/admin/:path*", headers: admin },
+    { source: "/api/admin/:path*", headers: admin },
+  ];
+}
+
 /**
  * Applies standard HTTP security headers to a NextResponse. When `req` resolves to the admin
  * surface (`/admin`, `/api/admin`), the Content-Security-Policy additionally allows the
@@ -114,17 +135,10 @@ export const ADMIN_SECURITY_HEADERS: Record<string, string> =
  */
 export function applySecurityHeaders(
   res: NextResponse,
-  req?: NextRequest,
-  explicitNonce?: string
+  req?: NextRequest
 ): NextResponse {
-  const nonce =
-    explicitNonce ||
-    req?.headers.get("x-nonce") ||
-    res.headers.get("x-nonce") ||
-    generateNonce();
-
   const admin = isAdminSurface(req?.nextUrl.pathname ?? "");
-  const headers = buildSecurityHeaders(admin, nonce);
+  const headers = admin ? ADMIN_SECURITY_HEADERS : SECURITY_HEADERS;
   Object.entries(headers).forEach(([key, value]) => {
     res.headers.set(key, value);
   });

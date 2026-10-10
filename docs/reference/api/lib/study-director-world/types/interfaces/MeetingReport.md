@@ -22,6 +22,14 @@ What a meeting cost against what it changed.
 
 ***
 
+### day
+
+> **day**: `number`
+
+The study day the meeting was held.
+
+***
+
 ### kind
 
 > **kind**: `"sponsor"` \| `"team"`

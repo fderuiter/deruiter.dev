@@ -158,6 +158,14 @@ export {
   sponsorAgenda,
   startMeeting,
 } from "./internal/meetings";
+export {
+  buildWorldRetrospective,
+  exportDialogueCsv,
+  exportMeetingsCsv,
+  exportSiteVisitsCsv,
+  exportWorldRetrospectiveJson,
+  type WorldRetrospectiveJson,
+} from "./internal/history";
 export { TEAM_INTERACTIONS } from "./internal/handlers";
 export {
   COFFEE_RUNS_PER_DAY,

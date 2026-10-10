@@ -4,6 +4,7 @@ import { channelFor, markRaised, messagesFrom } from "./channels";
 import { dialogueLines } from "./dialogue";
 import { adjustTrust, observe, personState, placePeople } from "./team";
 import { CRO_FLOOR, roomAt } from "./floor";
+import { keepRecent } from "./history";
 import type {
   Meeting,
   MeetingReport,
@@ -131,17 +132,22 @@ export function endMeeting(
       : changes.length >= 3
         ? "Worth the hour."
         : "Some of it was useful.";
+  const report: MeetingReport = {
+    kind: meeting.kind,
+    day: world.study.day,
+    minutes: MEETING_MINUTES,
+    personMinutes: MEETING_MINUTES * people,
+    attendees: names,
+    changes,
+    raised,
+    verdict,
+  };
   return {
     ok: true,
-    world: next,
-    report: {
-      kind: meeting.kind,
-      minutes: MEETING_MINUTES,
-      personMinutes: MEETING_MINUTES * people,
-      attendees: names,
-      changes,
-      raised,
-      verdict,
+    world: {
+      ...next,
+      meetingHistory: keepRecent([...(next.meetingHistory ?? []), report]),
     },
+    report,
   };
 }

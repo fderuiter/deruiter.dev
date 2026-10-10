@@ -101,6 +101,7 @@
 - [FACINGS](variables/FACINGS.md)
 - [GUEST\_IDS](variables/GUEST_IDS.md)
 - [HARD\_STOP](variables/HARD_STOP.md)
+- [HISTORY\_LIMIT](variables/HISTORY_LIMIT.md)
 - [PRIORITY\_IDS](variables/PRIORITY_IDS.md)
 - [RELATIONSHIP\_ACTIONS](variables/RELATIONSHIP_ACTIONS.md)
 - [ROOM\_IDS](variables/ROOM_IDS.md)

@@ -1,16 +1,23 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { FieldManualButton } from "@/components/FieldManualButton";
+import { downloadFile } from "@/lib/download";
 import {
   CLOSING_NOTE,
   COMPANION_POST_PATH,
   DIARY_INTRO,
+  SCENARIO_PRESETS,
   computePayStub,
+  exportShiftTelemetryCsv,
+  exportShiftTelemetryJson,
   formatCents,
   getShiftEnding,
+  isStandardScenario,
   scoreShift,
+  type ScenarioId,
+  type ShiftLogEntry,
   type ShiftState,
 } from "@/lib/patty-drive-thru";
 
@@ -49,8 +56,13 @@ function useFocusOnMount<T extends HTMLElement>() {
 }
 
 /** The diary page shown before the player clocks in (#1814). */
-export function DiaryIntroPage({ onClockIn }: { onClockIn: () => void }) {
+export function DiaryIntroPage({
+  onClockIn,
+}: {
+  onClockIn: (scenario: ScenarioId) => void;
+}) {
   const buttonRef = useFocusOnMount<HTMLButtonElement>();
+  const [scenario, setScenario] = useState<ScenarioId>("standard");
   return (
     <article
       className={PAGE_CLASS}
@@ -73,8 +85,31 @@ export function DiaryIntroPage({ onClockIn }: { onClockIn: () => void }) {
           {paragraph}
         </p>
       ))}
+      <fieldset className="min-w-0 space-y-1" data-testid="pdt-scenarios">
+        <legend className="font-mono text-xs font-bold uppercase tracking-wider text-[var(--pdt-paper-dim)]">
+          Which shift?
+        </legend>
+        {SCENARIO_PRESETS.map((preset) => (
+          <label
+            key={preset.id}
+            className="flex min-h-11 cursor-pointer items-start gap-2 py-1 text-sm"
+          >
+            <input
+              type="radio"
+              name="pdt-scenario"
+              value={preset.id}
+              checked={scenario === preset.id}
+              onChange={() => setScenario(preset.id)}
+              className="mt-1 size-4 shrink-0"
+            />
+            <span className="min-w-0 break-words">
+              <span className="font-bold">{preset.label}.</span> {preset.blurb}
+            </span>
+          </label>
+        ))}
+      </fieldset>
       <div className="flex flex-wrap items-center gap-3">
-        <ShiftButton ref={buttonRef} onClick={onClockIn}>
+        <ShiftButton ref={buttonRef} onClick={() => onClockIn(scenario)}>
           Clock in
         </ShiftButton>
         <FieldManualButton manualId="patty-drive-thru" label="Manual" />
@@ -85,11 +120,13 @@ export function DiaryIntroPage({ onClockIn }: { onClockIn: () => void }) {
 
 interface ShiftEndPageProps {
   shift: ShiftState;
+  /** Every event of the shift, for the export. */
+  log: readonly ShiftLogEntry[];
   onClockIn: () => void;
 }
 
 /** The pay stub and the closing note, shown when the shift ends. */
-export function ShiftEndPage({ shift, onClockIn }: ShiftEndPageProps) {
+export function ShiftEndPage({ shift, log, onClockIn }: ShiftEndPageProps) {
   const headingRef = useFocusOnMount<HTMLHeadingElement>();
   const ending = getShiftEnding(shift);
   const stub = computePayStub(shift);
@@ -159,7 +196,46 @@ export function ShiftEndPage({ shift, onClockIn }: ShiftEndPageProps) {
         </table>
         <p className="mt-2 text-xs text-[var(--pdt-paper-dim)]">
           Score {scoreShift(shift)}
+          {isStandardScenario(shift.config)
+            ? ""
+            : ". Practice shift, so the score is not recorded."}
         </p>
+      </section>
+
+      <section aria-label="Shift data" className="font-mono text-xs">
+        <h3 className="font-bold uppercase tracking-wider text-[var(--pdt-paper-dim)]">
+          Shift data
+        </h3>
+        <div className="mt-1 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() =>
+              downloadFile(
+                exportShiftTelemetryJson(shift, log),
+                `patty-shift-${shift.config.seed}.json`,
+                { mimeType: "application/json" }
+              )
+            }
+            className="min-h-11 rounded border border-[var(--pdt-paper-rule)] px-3 font-bold hover:bg-black/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--pdt-focus)]"
+            data-testid="pdt-export-json"
+          >
+            Download shift JSON
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              downloadFile(
+                exportShiftTelemetryCsv(log),
+                `patty-shift-${shift.config.seed}.csv`,
+                { mimeType: "text/csv" }
+              )
+            }
+            className="min-h-11 rounded border border-[var(--pdt-paper-rule)] px-3 font-bold hover:bg-black/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--pdt-focus)]"
+            data-testid="pdt-export-csv"
+          >
+            Download event log CSV
+          </button>
+        </div>
       </section>
 
       <section aria-label="Closing note" className="space-y-3">

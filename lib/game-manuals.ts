@@ -595,6 +595,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
           "Fēnix 5 has 32 KB of RAM and 64 KB of flash and allocates every 3.2 s (hard). Forerunner 245 has 64 KB and 256 KB every 4 s (medium). Edge 1030 has 128 KB and 512 KB every 5 s (casual).",
         badge: "Difficulty",
       },
+      {
+        title: "Telemetry & Ground Strip",
+        detail:
+          "The companion panel samples each run once per second of play. Download it as a CSV with every metric, or a FIT file with heart rate and distance only (a simulator file, not a Garmin Connect upload). The ground strip's three readouts can show steps, distance, heap variables, heart rate, thermal stress, fog, RAM or NV flash.",
+        badge: "Data",
+      },
     ],
     proTips: [
       "Pop with Down when RAM passes about 70%: it's instant, while GC freezes you for half a second.",
@@ -844,7 +850,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         title: "Four verdicts and a profile",
         detail:
-          "Locking the database turns open queries into delay. The sponsor rates you in stars, the company reports margin and timeline variance, the science reports evaluable and missing data, and the regulator grades inspection readiness. The game then names which kind of Study Director you were, from what you actually did. A run played in the office closes out at the same report, and its share card says so; the link replays the same seed at the classic desk.",
+          "Locking the database turns open queries into delay. The sponsor rates you in stars, the company reports margin and timeline variance, the science reports evaluable and missing data, and the regulator grades inspection readiness. The game then names which kind of Study Director you were, from what you actually did. A run played in the office closes out at the same report, and its share card says so; the link replays the same seed at the classic desk. Office runs also keep a meeting archive, reachable from your desk and from the closeout, and add meetings, site visits and what you were told to the exports.",
         badge: "Closeout",
       },
     ],
@@ -880,7 +886,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
     objective:
       "Get through one drive-thru shift, squeezed from four hours into three minutes, without the drive-thru times or your dignity reaching zero. Every car you serve before its ticket turns red helps; every car that gives up and drives off costs speed and comes out of your pay.",
     quickSummary:
-      "Orders arrive through the headset and go up on the kitchen display, where they turn yellow, then red. Ring each one up on the register, re-enter any drink the dispenser drops, flag Dale for coffee you are too young to brew, and bump the order when it is done. If you stand still too long, Bo notices. The shift ends with a pay stub and a closing note.",
+      "Orders arrive through the headset and go up on the kitchen display, where they turn yellow, then red. Ring each one up on the register, re-enter any drink the dispenser drops, flag Dale for coffee you are too young to brew, and bump the order when it is done. If you stand still too long, Bo notices. The shift ends with a pay stub and a closing note. Before clocking in you can pick a practice shift (lunch rush, failing dispenser, strict management); those do not count toward your score, and any shift's data downloads as JSON or CSV from the pay stub page.",
     controls: [
       {
         action: "Turn",

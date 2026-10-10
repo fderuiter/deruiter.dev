@@ -38,6 +38,7 @@ import {
   ORDERABLE_ITEMS,
   POS_MENU,
   RED_AFTER_SEC,
+  SCENARIO_LIMITS,
   SHIFT_PAID_MINUTES,
   SOS_GAIN_FAST,
   SOS_GAIN_ON_TIME,
@@ -59,6 +60,7 @@ import type {
   ShiftAction,
   ShiftConfig,
   ShiftEvent,
+  ShiftScenario,
   ShiftOutcome,
   ShiftState,
   StepResult,
@@ -76,9 +78,32 @@ function unchanged(state: ShiftState): StepResult {
 }
 
 /**
+ * The scenario dials a config sets, each held to its range in
+ * `SCENARIO_LIMITS`. A dial that is missing or not a finite number is left
+ * out, so the standard value applies, and an arrival range that ends before
+ * it starts is shortened to a single gap.
+ */
+function scenarioDials(config: Partial<ShiftConfig>): ShiftScenario {
+  const dials: { -readonly [K in keyof ShiftScenario]: number } = {};
+  for (const key of Object.keys(SCENARIO_LIMITS) as Array<
+    keyof ShiftScenario
+  >) {
+    const value = config[key];
+    if (typeof value !== "number" || !Number.isFinite(value)) continue;
+    const [min, max] = SCENARIO_LIMITS[key];
+    dials[key] = clamp(value, min, max);
+  }
+  const lowest = dials.arrivalGapMinSec ?? ARRIVAL_GAP_MIN_SEC;
+  if ((dials.arrivalGapMaxSec ?? ARRIVAL_GAP_MAX_SEC) < lowest)
+    dials.arrivalGapMaxSec = lowest;
+  return dials;
+}
+
+/**
  * Starts a shift. A missing, empty or non-string seed falls back to the
  * default, and a duration that is not a finite number is replaced by the
- * default and then held between 10 seconds and one hour.
+ * default and then held between 10 seconds and one hour. Scenario dials are
+ * clamped to their ranges.
  */
 export function createShift(config: Partial<ShiftConfig> = {}): ShiftState {
   const seed =
@@ -93,7 +118,7 @@ export function createShift(config: Partial<ShiftConfig> = {}): ShiftState {
   const durationSec = clamp(rawDuration, MIN_DURATION_SEC, MAX_DURATION_SEC);
 
   return {
-    config: { seed, durationSec },
+    config: { seed, durationSec, ...scenarioDials(config) },
     time: 0,
     outcome: "playing",
     meters: { ...METER_START },
@@ -111,7 +136,7 @@ export function createShift(config: Partial<ShiftConfig> = {}): ShiftState {
     lastActionAt: 0,
     wipeReadyAt: 0,
     nextOrderId: 1,
-    nextArrivalAt: FIRST_ARRIVAL_SEC,
+    nextArrivalAt: scenarioDials(config).firstArrivalSec ?? FIRST_ARRIVAL_SEC,
     draws: 0,
   };
 }
@@ -244,7 +269,15 @@ export function stepShift(state: ShiftState, dtSec: number): StepResult {
   if (isShiftOver(state) || !Number.isFinite(dtSec) || dtSec <= 0) {
     return unchanged(state);
   }
-  const { seed, durationSec } = state.config;
+  const {
+    seed,
+    durationSec,
+    arrivalGapMinSec: gapMin = ARRIVAL_GAP_MIN_SEC,
+    arrivalGapMaxSec: gapMax = ARRIVAL_GAP_MAX_SEC,
+    sosLossExpired = SOS_LOSS_EXPIRED,
+    idleGraceSec = IDLE_GRACE_SEC,
+    idleRatePerSec = IDLE_RATE_PER_SEC,
+  } = state.config;
   const start = state.time;
   const time = Math.min(durationSec, start + clamp(dtSec, 0, MAX_STEP_SEC));
   const events: ShiftEvent[] = [];
@@ -263,9 +296,7 @@ export function stepShift(state: ShiftState, dtSec: number): StepResult {
       events.push({ type: "order-arrived", orderId: nextOrderId });
       nextOrderId += 1;
     }
-    const gap =
-      ARRIVAL_GAP_MIN_SEC +
-      uniformAt(seed, draws++) * (ARRIVAL_GAP_MAX_SEC - ARRIVAL_GAP_MIN_SEC);
+    const gap = gapMin + uniformAt(seed, draws++) * (gapMax - gapMin);
     nextArrivalAt += gap;
   }
 
@@ -281,7 +312,7 @@ export function stepShift(state: ShiftState, dtSec: number): StepResult {
     orders = orders.filter((o) => time - o.arrivedAt < EXPIRE_AFTER_SEC);
     meters = {
       ...meters,
-      sos: clampMeter(meters.sos - SOS_LOSS_EXPIRED * expired.length),
+      sos: clampMeter(meters.sos - sosLossExpired * expired.length),
     };
     tallies = { ...tallies, expired: tallies.expired + expired.length };
     for (const order of expired) {
@@ -290,12 +321,12 @@ export function stepShift(state: ShiftState, dtSec: number): StepResult {
     }
   }
 
-  const idleFrom = Math.max(start, state.lastActionAt + IDLE_GRACE_SEC);
+  const idleFrom = Math.max(start, state.lastActionAt + idleGraceSec);
   const idleSeconds = Math.max(0, time - idleFrom);
   if (idleSeconds > 0) {
     meters = {
       ...meters,
-      idle: clampMeter(meters.idle + idleSeconds * IDLE_RATE_PER_SEC),
+      idle: clampMeter(meters.idle + idleSeconds * idleRatePerSec),
     };
     if (meters.idle >= 100) {
       meters = {
@@ -418,7 +449,9 @@ function ringLeaf(
   let draws = state.draws;
   let dropped = false;
   if (DISPENSER_ITEMS.includes(item.itemId)) {
-    dropped = uniformAt(state.config.seed, draws++) < DISPENSER_FAIL_CHANCE;
+    dropped =
+      uniformAt(state.config.seed, draws++) <
+      (state.config.dispenserFailChance ?? DISPENSER_FAIL_CHANCE);
   }
   events.push({ type: "item-rung", orderId: order.id, itemId: item.itemId });
   let next = replaceOrder(
@@ -469,10 +502,10 @@ function applyBump(
   const band = getKdsBand(getOrderAge(state, order));
   const delta =
     band === "green"
-      ? SOS_GAIN_FAST
+      ? (state.config.sosGainFast ?? SOS_GAIN_FAST)
       : band === "yellow"
-        ? SOS_GAIN_ON_TIME
-        : -SOS_LOSS_LATE;
+        ? (state.config.sosGainOnTime ?? SOS_GAIN_ON_TIME)
+        : -(state.config.sosLossLate ?? SOS_LOSS_LATE);
   events.push({ type: "bumped", orderId: order.id, band });
   const base = acted(state);
   return {

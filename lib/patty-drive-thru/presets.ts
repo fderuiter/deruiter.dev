@@ -5,6 +5,7 @@ import type {
   ModifierId,
   PosNode,
   ShiftConfig,
+  ShiftScenario,
 } from "./types";
 
 /**
@@ -193,3 +194,82 @@ export const LOOK_PRESETS: Readonly<
 export const SCORE_PER_SERVED = 10;
 export const SCORE_LATE_PENALTY = 5;
 export const SCORE_COMPLETED_BONUS = 50;
+
+/** The range each scenario dial is held to, so no input can break the shift. */
+export const SCENARIO_LIMITS: Readonly<
+  Record<keyof ShiftScenario, readonly [min: number, max: number]>
+> = {
+  arrivalGapMinSec: [1, 30],
+  arrivalGapMaxSec: [1, 60],
+  firstArrivalSec: [0, 30],
+  sosLossExpired: [0, 50],
+  sosLossLate: [0, 30],
+  sosGainOnTime: [0, 20],
+  sosGainFast: [0, 20],
+  idleGraceSec: [0, 30],
+  idleRatePerSec: [0, 60],
+  dispenserFailChance: [0, 1],
+};
+
+export type ScenarioId =
+  "standard" | "lunchRush" | "failingDispenser" | "strictManagement";
+
+export interface ScenarioPreset {
+  readonly id: ScenarioId;
+  readonly label: string;
+  /** One line, in the diary's voice, for the picker. */
+  readonly blurb: string;
+  readonly dials: ShiftScenario;
+}
+
+/**
+ * The shifts a player can pick before clocking in. Only the standard shift
+ * counts toward the arcade score; the others are for practice and for
+ * looking at the numbers. None sets a seed, so every shift stays fresh.
+ */
+export const SCENARIO_PRESETS: readonly ScenarioPreset[] = [
+  {
+    id: "standard",
+    label: "Standard shift",
+    blurb: "The shift as it was. Counts toward your score.",
+    dials: {},
+  },
+  {
+    id: "lunchRush",
+    label: "Lunch rush",
+    blurb: "Cars come two or three at a time and nobody waits kindly.",
+    dials: {
+      arrivalGapMinSec: 3,
+      arrivalGapMaxSec: 8,
+      firstArrivalSec: 1,
+      sosLossExpired: 20,
+      sosLossLate: 8,
+      sosGainOnTime: 3,
+      sosGainFast: 5,
+    },
+  },
+  {
+    id: "failingDispenser",
+    label: "Failing dispenser",
+    blurb: "The drink machine drops almost every cup it pours.",
+    dials: { dispenserFailChance: 0.85 },
+  },
+  {
+    id: "strictManagement",
+    label: "Strict management",
+    blurb: "The manager is watching. Standing still gets noticed fast.",
+    dials: { idleGraceSec: 2, idleRatePerSec: 25 },
+  },
+];
+
+/** True when a shift has no scenario dial set, so its score counts. */
+export function isStandardScenario(config: Partial<ShiftConfig>): boolean {
+  return (Object.keys(SCENARIO_LIMITS) as Array<keyof ShiftScenario>).every(
+    (key) => config[key] === undefined
+  );
+}
+
+/** The dials a preset sets, ready to hand to `clockIn`. */
+export function scenarioDialsFor(id: ScenarioId): ShiftScenario {
+  return { ...SCENARIO_PRESETS.find((p) => p.id === id)?.dials };
+}

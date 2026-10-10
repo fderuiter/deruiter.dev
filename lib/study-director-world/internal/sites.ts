@@ -7,6 +7,7 @@ import {
 } from "@/lib/study-director";
 import { OVERTIME_ENERGY_FACTOR, formatClock, lateMinutes } from "./clock";
 import { CRO_FLOOR, WORLD_MAPS, roomAt } from "./floor";
+import { keepRecent } from "./history";
 import {
   COORDINATOR_TRAITS,
   SITE_MAPS,
@@ -513,7 +514,11 @@ export function closeVisit(world: WorldState): {
     }
   }
   const report = siteVisitReport(world, site, audited);
-  return { world: { ...world, study, visit: null }, report };
+  const siteVisitHistory = keepRecent([
+    ...(world.siteVisitHistory ?? []),
+    report,
+  ]);
+  return { world: { ...world, study, visit: null, siteVisitHistory }, report };
 }
 
 function arrive(world: WorldState, map: WorldMap, spawn: PlayerState) {

@@ -45,6 +45,7 @@ import { PhaseTimeline } from "./PhaseTimeline";
 import { PHASE_LABELS } from "./labels";
 import { ShortcutSheet } from "./ShortcutSheet";
 import { StatusBar } from "./StatusBar";
+import type { WorldState } from "@/lib/study-director-world";
 import { ReportView } from "./ReportView";
 import { clearStudySave, loadStudySave, saveStudy } from "./useStudySave";
 import {
@@ -207,6 +208,8 @@ export const StudyDirectorGame: React.FC<{ officeFirst?: boolean }> = ({
   // A study finished in the world, shown in the classic closeout. It is not
   // saved over the desk's own run (saves are separate per mode, ADR 0055).
   const [fromWorld, setFromWorld] = useState(false);
+  // The office run behind that closeout, for its meeting archive and exports.
+  const [worldRun, setWorldRun] = useState<WorldState | null>(null);
   const sharedSeed = useSyncExternalStore(subscribeHash, hashSeed, () => null);
   const worldMode =
     useSyncExternalStore(
@@ -316,9 +319,10 @@ export const StudyDirectorGame: React.FC<{ officeFirst?: boolean }> = ({
    * the share card, filed in the career like any other study.
    */
   const closeWorldRun = useCallback(
-    (done: StudyState) => {
+    (done: StudyState, run: WorldState) => {
       showCloseout();
       setFromWorld(true);
+      setWorldRun(run);
       setState(done);
       setBaseline(computeMeters(done));
       setOutcome(null);
@@ -466,6 +470,7 @@ export const StudyDirectorGame: React.FC<{ officeFirst?: boolean }> = ({
     if (fromWorld) {
       // The desk's own run, if any, is still there to resume.
       setFromWorld(false);
+      setWorldRun(null);
       setSaved(loadStudySave());
     } else {
       clearStudySave();
@@ -699,6 +704,7 @@ export const StudyDirectorGame: React.FC<{ officeFirst?: boolean }> = ({
       {report ? (
         <ReportView
           report={report}
+          world={fromWorld ? worldRun : null}
           onRestart={restart}
           share={<SharePanel report={report} news={news} office={fromWorld} />}
         />

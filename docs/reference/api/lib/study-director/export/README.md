@@ -19,3 +19,4 @@
 - [exportMeterTrajectoryCsv](functions/exportMeterTrajectoryCsv.md)
 - [exportRetrospectiveJson](functions/exportRetrospectiveJson.md)
 - [generateMeterHistory](functions/generateMeterHistory.md)
+- [toCsv](functions/toCsv.md)

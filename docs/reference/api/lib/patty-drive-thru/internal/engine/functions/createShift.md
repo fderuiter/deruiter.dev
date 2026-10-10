@@ -10,7 +10,8 @@
 
 Starts a shift. A missing, empty or non-string seed falls back to the
 default, and a duration that is not a finite number is replaced by the
-default and then held between 10 seconds and one hour.
+default and then held between 10 seconds and one hour. Scenario dials are
+clamped to their ranges.
 
 ## Parameters
 

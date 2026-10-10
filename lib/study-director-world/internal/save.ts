@@ -6,8 +6,10 @@ import {
   DAY_START,
   FACINGS,
   HARD_STOP,
+  PRIORITY_IDS,
   WORK_STREAMS,
   type Assignment,
+  type DayPlan,
   type Bond,
   type CallRecord,
   type Meeting,
@@ -80,6 +82,9 @@ function readBonds(value: unknown): Record<string, Bond> | undefined {
       askedDay: Math.floor(num(raw.askedDay, 0, 0, 10_000)),
       owns: WORK_STREAMS.find((w) => w === raw.owns) ?? null,
     };
+    for (const key of ["coffeeDay", "favourDay", "coverDay"] as const)
+      if (typeof raw[key] === "number")
+        bonds[id][key] = Math.floor(num(raw[key], 0, 0, 10_000));
   }
   return bonds;
 }
@@ -120,6 +125,15 @@ function readAssignments(value: unknown): Assignment[] | undefined {
       typeof a.remaining === "number" &&
       typeof a.amount === "number"
   );
+}
+
+function readPlan(value: unknown): DayPlan | undefined {
+  if (!isRecord(value) || typeof value.day !== "number") return undefined;
+  return {
+    day: Math.floor(num(value.day, 1, 1, 10_000)),
+    priority: PRIORITY_IDS.find((p) => p === value.priority) ?? null,
+    handled: strings(value.handled),
+  };
 }
 
 function readMeeting(value: unknown): Meeting | null {
@@ -188,5 +202,7 @@ export function parseWorld(text: string | null): WorldState | null {
   const assignments = readAssignments(raw.assignments);
   if (assignments) world.assignments = assignments;
   if ("meeting" in raw) world.meeting = readMeeting(raw.meeting);
+  const plan = readPlan(raw.plan);
+  if (plan) world.plan = plan;
   return world;
 }

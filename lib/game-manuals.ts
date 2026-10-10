@@ -800,6 +800,18 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         badge: "Feedback",
       },
       {
+        title: "The shape of a day",
+        detail:
+          "Each morning you can choose one priority for the day: your people, the sites or your desk. It colours the evening, when a short wrap-up says what you decided, what is still unwritten, what was left waiting and whether you kept your priority. Choosing people makes every kind gesture land a little harder; sites and desk are judged by what the sites sent overnight and whether your decisions are written up. Around ten, a quarter to one and half past three, something small interrupts the day (lunch, a sponsor ping, a jammed printer, a pile of queries, a fire drill, a vendor). Each has options with a time cost, and an interruption you let go is never free. You are never interrupted at a site or in a meeting.",
+        badge: "Rhythm",
+      },
+      {
+        title: "Getting to know your team",
+        detail:
+          "Open a teammate's conversation for four small actions. Bring a coffee (10 minutes, better if you know their order), ask a favour of them (20 minutes, only if they have room in their workload), ask about them (15 minutes, learns what they care about) or cover for them (5 minutes, needs four hearts, trades some trust for relief). Each can be used only so often. Teammates you trust a lot give you an early warning about the site that worries them most, and take one more unit of work a night.",
+        badge: "People",
+      },
+      {
         title: "Everything is fine, until you look",
         detail:
           "Enrollment, budget and timeline on the dashboard are honest. Safety, data and regulatory only show what each site has reported: a coordinator who emails about everything surfaces most problems, one who says nothing surfaces almost none. An audit shows the real numbers.",

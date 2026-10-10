@@ -78,9 +78,11 @@ export const StageLabels: React.FC<{
 );
 
 /** Today's open items, most urgent first. */
-export const TasksPanel: React.FC<{ tasks: readonly WorldTask[] }> = ({
-  tasks,
-}) => (
+export const TasksPanel: React.FC<{
+  tasks: readonly WorldTask[];
+  /** The promise made this morning, if one was. */
+  priority?: string | null;
+}> = ({ tasks, priority }) => (
   <section
     aria-labelledby="sd-world-tasks"
     data-testid="world-tasks"
@@ -92,6 +94,14 @@ export const TasksPanel: React.FC<{ tasks: readonly WorldTask[] }> = ({
     >
       Today
     </h3>
+    {priority ? (
+      <p
+        data-testid="world-priority-line"
+        className="mt-1 text-xs text-zinc-300"
+      >
+        <span className="text-[var(--sd-muted)]">Priority:</span> {priority}
+      </p>
+    ) : null}
     {tasks.length === 0 ? (
       <p className="mt-1 text-xs text-zinc-300">
         Nothing is waiting on you. Walk the floor.

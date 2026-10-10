@@ -205,3 +205,25 @@ reduced-motion and forced-colors bypass; the footstep is dropped when
 a toast (energy or focus moving five points, a heart gained or lost, a task
 stamped done), are pure functions in `feedback-model.ts`; toasts are
 `aria-hidden` because the HUD live region already says what matters.
+
+## Amendment 2026-10-09: daily rhythm and relationships
+
+The day gets a shape without becoming a schedule. All of it is pure and
+seeded in `internal/rhythm.ts` and `internal/favours.ts`, saved in the world
+(`plan`, and `coffeeDay`, `favourDay`, `coverDay` on a bond), and read by the
+presentation layer through the public index.
+
+A morning priority (people, sites or desk) is chosen once a day and is only a
+promise: `settlePriority` judges it in the evening, and choosing people adds
+`PEOPLE_PRIORITY_BONUS` to positive trust effects. Three interruptions a day
+are drawn from a catalogue of six by `fnv1a` of the seed, day and id, at fixed
+times, and never while the player is at a site, in a meeting or at home.
+Answering pays its cost through `spendCost`; `passTime` lets the clock move
+without an energy or focus charge, which the stage uses when a walk must wait
+for a person to clear a doorway. The evening wrap-up is composed from what the
+world already knows, so it cannot disagree with the overnight report.
+
+Four relationship actions (coffee, favour, ask about, cover) cost minutes,
+are limited per day or by cooldown, and each explains why it is unavailable.
+Trust at `TRUSTED_TRUST` earns an early warning in the morning digest and one
+extra unit of nightly capacity. No action has a hidden number; no loop runs.

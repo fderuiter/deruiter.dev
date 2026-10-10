@@ -8,9 +8,12 @@ import React, {
   useState,
 } from "react";
 import {
+  PRIORITIES,
   SITE_CHECKS,
   TEAM_INTERACTIONS,
   WORLD_SAVE_KEY,
+  answerInterruption,
+  choosePriority,
   closeVisit,
   currentMap,
   describePerson,
@@ -24,8 +27,11 @@ import {
   newWorld,
   officeDirectory,
   parseWorld,
+  passTime,
+  pendingInterruption,
   performCheck,
   placePeople,
+  planFor,
   planRoute,
   roomAt,
   roomConditions,
@@ -39,6 +45,7 @@ import {
   type InteractionOutcome,
   type MorningDigest,
   type OvernightReport,
+  type PriorityId,
   type SiteCheckId,
   type SiteVisitReport,
   type TravelOption,
@@ -48,7 +55,12 @@ import {
 import type { StudyState } from "@/lib/study-director";
 import { safeIsAvailable, safeRawStorage } from "@/lib/safe-storage";
 import { followCamera } from "./camera";
-import { DigestCard, OvernightCard } from "./DayCards";
+import {
+  DigestCard,
+  InterruptionCard,
+  OvernightCard,
+  PriorityCard,
+} from "./DayCards";
 import { FeedbackToasts } from "./FeedbackToasts";
 import { cuesBetween, feedbackBetween, type Feedback } from "./feedback-model";
 import { FloorView } from "./FloorView";
@@ -145,6 +157,27 @@ interface Walk {
   label: string;
   steps: Facing[];
   facing: Facing;
+  /** Minutes spent waiting for someone to move out of the way. */
+  waits?: number;
+}
+
+/** Minutes a walk waits for someone to get out of the way before giving up. */
+const MAX_WAITS = 8;
+
+/**
+ * The way to a place. People in a doorway block it, so when there is no way
+ * round them the route goes through them and the walk waits for them to move
+ * on instead of refusing (#1835).
+ */
+function routeAround(
+  from: Parameters<typeof planRoute>[0],
+  target: Parameters<typeof planRoute>[1],
+  map: Parameters<typeof planRoute>[2],
+  people: Parameters<typeof planRoute>[3]
+) {
+  return (
+    planRoute(from, target, map, people) ?? planRoute(from, target, map, [])
+  );
 }
 
 const TONE_CLASS = {
@@ -362,7 +395,7 @@ export const StudyDirectorWorld: React.FC<{
 
   const walkTo = useCallback(
     (entry: DirectoryEntry) => {
-      const route = planRoute(world.player, entry.target, map, people);
+      const route = routeAround(world.player, entry.target, map, people);
       if (!route) {
         setNotice(REFUSALS.unreachable);
         return;
@@ -384,8 +417,53 @@ export const StudyDirectorWorld: React.FC<{
   /** What a directory walk would cost, worked out only for the entries shown. */
   const minutesTo = useCallback(
     (entry: DirectoryEntry) =>
-      planRoute(world.player, entry.target, map, people)?.minutes ?? null,
+      routeAround(world.player, entry.target, map, people)?.minutes ?? null,
     [world.player, map, people]
+  );
+
+  const plan = planFor(world);
+  // Today's priority can be picked until midday; after that the day has told you.
+  const morning = world.minute < 12 * 60 && world.location !== "home";
+  const interruption = useMemo(() => pendingInterruption(world), [world]);
+
+  // An interruption is announced once when it lands.
+  const announcedInterruption = useRef<string | null>(null);
+  useEffect(() => {
+    const id = interruption?.id ?? null;
+    if (id && id !== announcedInterruption.current && interruption)
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setNotice(`Just now: ${interruption.title}. ${interruption.body}`);
+    announcedInterruption.current = id;
+  }, [interruption]);
+
+  const pickPriority = useCallback(
+    (id: PriorityId) => {
+      const result = choosePriority(world, id);
+      if (!result.ok) {
+        setNotice(REFUSALS[result.reason]);
+        return;
+      }
+      setWorld(result.world);
+      setNotice(
+        `Today is about: ${PRIORITIES[id].label}. ${PRIORITIES[id].promise}`
+      );
+      refocus();
+    },
+    [world, refocus]
+  );
+
+  const answer = useCallback(
+    (optionId: string) => {
+      const result = answerInterruption(world, optionId);
+      if (!result.ok) {
+        setNotice(REFUSALS[result.reason]);
+        return;
+      }
+      setWorld(result.world);
+      setNotice(result.result);
+      refocus();
+    },
+    [world, refocus]
   );
 
   const leave = useCallback(() => {
@@ -463,26 +541,46 @@ export const StudyDirectorWorld: React.FC<{
         setWalk(null);
         return;
       }
-      if (walk.steps.length === 0) {
+      // Someone walking their schedule moves while you walk to them, so the
+      // way to a person is worked out again at every step.
+      const entry = directory.find((d) => d.id === walk.entryId);
+      const live =
+        entry && entry.target.kind === "person"
+          ? routeAround(world.player, entry.target, map, people)
+          : null;
+      const steps = live ? live.steps : walk.steps;
+      const facing = live ? live.facing : walk.facing;
+      if (steps.length === 0) {
         setWorld((w) => ({
           ...w,
-          player: { ...w.player, facing: walk.facing },
+          player: { ...w.player, facing },
         }));
         setWalk(null);
         setNotice(`Arrived at ${walk.label}.`);
         playfieldRef.current?.focus({ preventScroll: true });
         return;
       }
-      const [dir, ...rest] = walk.steps;
+      const [dir, ...rest] = steps;
       const result = step(world, dir, map, people);
       if (result.ok && !result.moved) {
-        const entry = directory.find((d) => d.id === walk.entryId);
         const detour = entry
           ? planRoute(world.player, entry.target, map, people)
           : null;
         if (detour && detour.steps.length > 0 && detour.steps[0] !== dir) {
           setWalk({ ...walk, steps: detour.steps, facing: detour.facing });
           return;
+        }
+        // Nobody to walk round: excuse yourself and wait a minute for them
+        // to move on, up to a point.
+        const waits = walk.waits ?? 0;
+        if (waits < MAX_WAITS) {
+          const waited = passTime(world, 1);
+          if (waited.ok) {
+            setWorld(waited.world);
+            setNotice("Someone is in the way. Waiting a minute.");
+            setWalk({ ...walk, steps, facing, waits: waits + 1 });
+            return;
+          }
         }
       }
       if (!result.ok || !result.moved) {
@@ -502,7 +600,7 @@ export const StudyDirectorWorld: React.FC<{
         setWalk(null);
         return;
       }
-      setWalk({ ...walk, steps: rest });
+      setWalk({ ...walk, steps: rest, facing });
     }, STEP_MS);
     return () => window.clearTimeout(id);
   }, [walk, world, map, people, team, directory]);
@@ -577,8 +675,16 @@ export const StudyDirectorWorld: React.FC<{
         </button>
       </div>
     </section>
-  ) : digest ? (
-    <DigestCard digest={digest} />
+  ) : digest || interruption || (!plan.priority && morning) ? (
+    <div className="space-y-3">
+      {digest ? <DigestCard digest={digest} /> : null}
+      {interruption ? (
+        <InterruptionCard interruption={interruption} onAnswer={answer} />
+      ) : null}
+      {!plan.priority && morning ? (
+        <PriorityCard onChoose={pickPriority} />
+      ) : null}
+    </div>
   ) : null;
 
   return (
@@ -712,7 +818,12 @@ export const StudyDirectorWorld: React.FC<{
               How are you?
             </button>
           </section>
-          {away ? null : <TasksPanel tasks={tasks} />}
+          {away ? null : (
+            <TasksPanel
+              tasks={tasks}
+              priority={plan.priority ? PRIORITIES[plan.priority].label : null}
+            />
+          )}
           {inConference && !away ? (
             <MeetingSection team={team} world={world} people={people} />
           ) : null}

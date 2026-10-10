@@ -11,6 +11,7 @@ import { spend } from "./clock";
 import {
   STREAM_FOR_ROLE,
   STREAM_LABEL,
+  TRUSTED_TRUST,
   adjustTrust,
   bondFor,
   personState,
@@ -38,10 +39,18 @@ export const OWNERSHIP_COACHING = 2;
 /** Trust a member needs to take ownership of their stream. */
 export const OWNERSHIP_TRUST = 70;
 
-/** Units of work a member gets through in a night, from skill, speed and load. */
-export function nightlyCapacity(member: TeamMember): number {
+/**
+ * Units of work a member gets through in a night, from skill, speed and load.
+ * A member who trusts the player (`trust`, 0 to 100) gets through one more:
+ * the faster clean-up that comes of being given room (#1838).
+ */
+export function nightlyCapacity(member: TeamMember, trust = 0): number {
   const load = member.workload > 85 ? 0.5 : member.workload > 70 ? 0.75 : 1;
-  return Math.max(1, Math.round(((member.skill * member.speed) / 3) * load));
+  const base = Math.max(
+    1,
+    Math.round(((member.skill * member.speed) / 3) * load)
+  );
+  return trust >= TRUSTED_TRUST ? base + 1 : base;
 }
 
 function worstSite(study: StudyState, stream: WorkStream): SiteState | null {
@@ -234,7 +243,10 @@ export function delegate(
         },
       ],
     };
-    const nights = Math.max(1, Math.ceil(amount / nightlyCapacity(member)));
+    const nights = Math.max(
+      1,
+      Math.ceil(amount / nightlyCapacity(member, bond.trust))
+    );
     const cause = person.mood === "overloaded" ? "dump" : "heard";
     const trusted = adjustTrust(next, memberId, cause);
     next = trusted.world;
@@ -442,7 +454,10 @@ export function workTheNight(world: WorldState): {
     if (a.remaining <= 0) return a;
     const member = study.team.find((m) => m.id === a.memberId);
     if (!member) return a;
-    const units = Math.min(a.remaining, nightlyCapacity(member));
+    const units = Math.min(
+      a.remaining,
+      nightlyCapacity(member, bondFor(world, member.id).trust)
+    );
     const remaining = a.remaining - units;
     const finished = remaining === 0;
     const effects = streamEffects(a.stream, units, a.siteId, finished);
@@ -480,7 +495,10 @@ export function workTheNight(world: WorldState): {
       });
       continue;
     }
-    const units = Math.max(1, Math.round(nightlyCapacity(member) / 2));
+    const units = Math.max(
+      1,
+      Math.round(nightlyCapacity(member, bond.trust) / 2)
+    );
     const effects = streamEffects(bond.owns, units, site?.id ?? null, true);
     if (Object.keys(effects).length === 0) continue;
     study = applyEffects(study, effects);

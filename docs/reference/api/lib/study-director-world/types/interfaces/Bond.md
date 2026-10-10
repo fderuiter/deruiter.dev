@@ -35,6 +35,14 @@ Day the player last coached them, or 0.
 
 ***
 
+### coffeeDay?
+
+> `optional` **coffeeDay?**: `number`
+
+Day the player last brought them a coffee (#1838).
+
+***
+
 ### confidence
 
 > **confidence**: `number`
@@ -43,9 +51,25 @@ Confidence in their own work, 0 to 100. Coaching builds it.
 
 ***
 
+### coverDay?
+
+> `optional` **coverDay?**: `number`
+
+Day they last covered for the player (#1838).
+
+***
+
+### favourDay?
+
+> `optional` **favourDay?**: `number`
+
+Day the player last took a small job off them (#1838).
+
+***
+
 ### owns
 
-> **owns**: `"queries"` \| `"analysis"` \| `"programming"` \| `"monitoring"` \| `"training"` \| `"writing"` \| `null`
+> **owns**: `"queries"` \| `"monitoring"` \| `"analysis"` \| `"programming"` \| `"training"` \| `"writing"` \| `null`
 
 The stream they run without being asked, once invested in.
 

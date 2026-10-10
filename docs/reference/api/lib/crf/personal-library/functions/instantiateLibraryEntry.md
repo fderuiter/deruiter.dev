@@ -10,11 +10,8 @@
 
 Produces an independent copy of a library entry, ready to insert.
 
-Every identity is freshly allocated and every internal reference remapped -
-rule targets, trigger lists, condition operands including grouped and
-field-to-field comparisons, calculation formulas and codelist references -
-so the copy shares nothing with the library entry or with any previous
-insertion of it.
+See [instantiateContent](instantiateContent.md) for how identities and references are
+remapped.
 
 ## Parameters
 

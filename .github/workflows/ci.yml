@@ -273,7 +273,7 @@ jobs:
 
       - name: Upload Vitest Blob Report
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: vitest-blob-${{ matrix.shard }}
           path: .vitest-reports/
@@ -476,7 +476,7 @@ jobs:
       # cache) and the public/ files the build generates. No .env file is
       # ever part of it.
       - name: Upload Production Build Artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: production-build
           path: |
@@ -546,7 +546,7 @@ jobs:
 
       - name: Upload Playwright Blob Report
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: playwright-blob-${{ matrix.shard }}
           path: blob-report/
@@ -555,7 +555,7 @@ jobs:
 
       - name: Upload Accessibility Scan Results
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: playwright-a11y-${{ matrix.shard }}
           path: playwright-report/accessibility-results/
@@ -620,7 +620,7 @@ jobs:
 
       - name: Upload Benchmark Evidence
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: bench-evidence
           path: .benchmark-results/
@@ -731,7 +731,7 @@ jobs:
 
       - name: Upload Merged Playwright Report
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: playwright-merged-report
           path: |

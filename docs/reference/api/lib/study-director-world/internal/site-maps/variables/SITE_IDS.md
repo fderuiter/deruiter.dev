@@ -6,6 +6,6 @@
 
 # Variable: SITE\_IDS
 
-> `const` **SITE\_IDS**: readonly \[`"site-01"`, `"site-02"`, `"site-03"`\]
+> `const` **SITE\_IDS**: readonly \[`"site-01"`, `"site-02"`, `"site-03"`, `"site-04"`, `"site-05"`\]
 
-The three clinical sites of Study 24-081 reached by fast travel.
+The five clinical sites of Study 24-081 reached by fast travel.

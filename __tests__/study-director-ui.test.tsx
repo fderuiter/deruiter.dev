@@ -99,9 +99,9 @@ describe("StudyDirectorGame", () => {
 
   it("audits a site and shows its real numbers", () => {
     start();
-    expect(screen.getAllByText(/Audit to see the real numbers/).length).toBe(3);
+    expect(screen.getAllByText(/Audit to see the real numbers/).length).toBe(5);
     fireEvent.click(screen.getByRole("button", { name: "Audit Site 03" }));
-    expect(screen.getAllByText(/Audit to see the real numbers/).length).toBe(2);
+    expect(screen.getAllByText(/Audit to see the real numbers/).length).toBe(4);
     expect(screen.getByText("Open queries")).toBeTruthy();
     expect(
       screen

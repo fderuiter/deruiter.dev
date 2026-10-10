@@ -57,7 +57,7 @@ function stressed(world = fresh()): WorldState {
       ...s,
       day: 20,
       team: workload(s, { maya: 88, walt: 80, dana: 70, priya: 70 }),
-      sites: s.sites.map((site) => ({ ...site, openQueries: 12 })),
+      sites: s.sites.map((site) => ({ ...site, openQueries: 7 })),
       documentationDebt: 45,
       adjust: { ...s.adjust, client: -15, team: -35 },
     }),
@@ -73,7 +73,7 @@ function crisis(world = fresh()): WorldState {
       ...s,
       day: 90,
       team: s.team.map((m) => ({ ...m, workload: 98 })),
-      sites: s.sites.map((site) => ({ ...site, openQueries: 40 })),
+      sites: s.sites.map((site) => ({ ...site, openQueries: 24 })),
       documentationDebt: 90,
       slipDays: 30,
       adjust: {

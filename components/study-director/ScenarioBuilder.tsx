@@ -314,6 +314,8 @@ export const ScenarioBuilder: React.FC<ScenarioBuilderProps> = ({
                   <option value="steady">Steady</option>
                   <option value="terrified">Terrified</option>
                   <option value="invisible">Invisible</option>
+                  <option value="overconfident">Overconfident</option>
+                  <option value="newcomer">Newcomer</option>
                 </select>
               </div>
 

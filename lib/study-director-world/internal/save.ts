@@ -6,10 +6,12 @@ import {
   DAY_START,
   FACINGS,
   HARD_STOP,
+  GUEST_IDS,
   PRIORITY_IDS,
   WORK_STREAMS,
   type Assignment,
   type DayPlan,
+  type GuestRecord,
   type Bond,
   type CallRecord,
   type Meeting,
@@ -136,6 +138,26 @@ function readPlan(value: unknown): DayPlan | undefined {
   };
 }
 
+function readGuests(value: unknown): GuestRecord[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const records: GuestRecord[] = [];
+  for (const entry of value.slice(-12)) {
+    if (!isRecord(entry)) continue;
+    const id = GUEST_IDS.find((g) => g === entry.id);
+    if (!id || typeof entry.day !== "number") continue;
+    if (entry.outcome !== "met" && entry.outcome !== "missed") continue;
+    records.push({
+      id,
+      day: Math.floor(num(entry.day, 1, 1, 10_000)),
+      outcome: entry.outcome,
+      ...(typeof entry.choice === "string" && entry.choice.length <= 40
+        ? { choice: entry.choice }
+        : {}),
+    });
+  }
+  return records;
+}
+
 function readMeeting(value: unknown): Meeting | null {
   if (
     isRecord(value) &&
@@ -204,5 +226,7 @@ export function parseWorld(text: string | null): WorldState | null {
   if ("meeting" in raw) world.meeting = readMeeting(raw.meeting);
   const plan = readPlan(raw.plan);
   if (plan) world.plan = plan;
+  const guests = readGuests(raw.guests);
+  if (guests) world.guests = guests;
   return world;
 }

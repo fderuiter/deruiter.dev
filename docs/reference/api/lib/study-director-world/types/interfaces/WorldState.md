@@ -68,6 +68,14 @@ Energy the player could not recover overnight after working late.
 
 ***
 
+### guests?
+
+> `optional` **guests?**: [`GuestRecord`](GuestRecord.md)[]
+
+Visitors the player has met or missed, oldest first (#1839).
+
+***
+
 ### known
 
 > **known**: `string`[]

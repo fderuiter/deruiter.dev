@@ -3,6 +3,7 @@ import { clamp } from "@/lib/game-utils";
 import { fnv1a } from "@/lib/utils/prng";
 import { spendCost } from "./clock";
 import { undocumentedDecisions } from "./dialogue";
+import { guestWaiting, guestWrapUp } from "./guests";
 import { adjustTrust, bondFor, personState } from "./team";
 import type {
   ActionCost,
@@ -276,26 +277,26 @@ const CATALOG: readonly Catalogued[] = [
     ],
   },
   {
-    id: "vendor",
-    title: "A vendor wants twenty minutes",
-    body: "A sales rep from the EDC vendor is in the lobby with a laptop and a tote bag. They say it will not take long.",
+    id: "badge",
+    title: "A new starter is stuck at the door",
+    body: "Someone in a lanyard that is not yet theirs is holding a box and waving at the badge reader. Reception has gone to lunch.",
     options: [
       {
-        id: "demo",
-        label: "Take the demo",
-        cost: cost(25, 1, 5),
+        id: "show",
+        label: "Let them in and show them round",
+        cost: cost(15),
         result:
-          "They offer a discount on an add-on you would have bought anyway.",
+          "Kitchen, printer, the good chair. They will remember which of those you pointed out first.",
         apply: (w) => ({
           ...w,
-          study: applyEffects(w.study, { meters: { budget: 1 } }),
+          study: applyEffects(w.study, { meters: { team: 1 } }),
         }),
       },
       {
-        id: "decline",
-        label: "Decline politely",
+        id: "point",
+        label: "Point them at reception",
         cost: cost(1),
-        result: "They leave a pen. It is a good pen.",
+        result: "Reception is at lunch. They wait by the box.",
       },
     ],
   },
@@ -342,7 +343,7 @@ export function scheduleFor(world: WorldState): ScheduledInterruption[] {
 export function pendingInterruption(world: WorldState): Interruption | null {
   if (world.study.status !== "running" || world.location === "home")
     return null;
-  if (world.visit || world.meeting) return null;
+  if (world.visit || world.meeting || guestWaiting(world)) return null;
   const handled = planFor(world).handled;
   const due = scheduleFor(world).find(
     (s) => s.at <= world.minute && !handled.includes(s.interruption.id)
@@ -444,6 +445,7 @@ export function eveningWrapUp(world: WorldState): OvernightLine[] {
       text: `You dealt with ${plural(answered, "interruption")}.`,
       tone: "neutral",
     });
+  lines.push(...guestWrapUp(world));
   lines.push(...priorityOutcome(world, unwritten));
   return lines;
 }

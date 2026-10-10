@@ -106,7 +106,10 @@ describe("study director world art: every tile, station and room has art", () =>
 
   it("gives each clinical site its own look and the CRO none", () => {
     const looks = Object.keys(SITE_MAPS).map((id) => siteLookFor(`site:${id}`));
-    expect(new Set(looks.map((l) => l.accent)).size).toBe(looks.length);
+    // The palette has three semantic accents, so a look is its tint and accent.
+    expect(new Set(looks.map((l) => `${l.tint}|${l.accent}`)).size).toBe(
+      looks.length
+    );
     expect(siteLookFor(CRO_FLOOR.id).tintAlpha).toBe(0);
   });
 });

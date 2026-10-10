@@ -17,7 +17,8 @@ export interface ParsedStudyFileResult {
   fileName: string;
 }
 
-const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024; // 50MB limit
+/** Largest study file the ingestion layer will parse, in bytes (50MB). */
+export const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024;
 
 /**
  * Inspects file extensions and content signatures to parse .json, .xml, and .csv files.

@@ -98,14 +98,163 @@ function humanizeKey(key: string): string {
   return spaced;
 }
 
-function byId<T extends { id: string }>(
-  items: readonly T[] | undefined
-): Map<string, T> {
-  const map = new Map<string, T>();
-  for (const item of items || []) {
-    if (item && typeof item.id === "string") map.set(item.id, item);
+function norm(value: string | undefined): string {
+  return typeof value === "string" ? value.trim().toLowerCase() : "";
+}
+
+interface MatchResult<T> {
+  matched: Array<{ oldItem: T; newItem: T }>;
+  removed: T[];
+  added: T[];
+}
+
+/**
+ * Pairs baseline and current items. Items with the same id always pair. In a
+ * cross-study comparison, whatever is left over is then paired by the keys
+ * `getKeys` returns, strongest key first. A key pairs two items only when it
+ * is unique among the leftovers on both sides, so duplicate names never pair
+ * by guesswork and the result does not depend on array order.
+ */
+function matchEntities<T extends { id: string }>(
+  baselineItems: readonly T[] | undefined,
+  currentItems: readonly T[] | undefined,
+  getKeys: (item: T) => string[],
+  crossStudy: boolean
+): MatchResult<T> {
+  const baseline = (baselineItems || []).filter(
+    (item) => item && typeof item.id === "string"
+  );
+  const current = (currentItems || []).filter(
+    (item) => item && typeof item.id === "string"
+  );
+
+  const currentById = new Map(current.map((item) => [item.id, item]));
+  const matched: Array<{ oldItem: T; newItem: T }> = [];
+  let unmatchedBaseline: T[] = [];
+  for (const oldItem of baseline) {
+    const newItem = currentById.get(oldItem.id);
+    if (newItem) matched.push({ oldItem, newItem });
+    else unmatchedBaseline.push(oldItem);
   }
-  return map;
+  const pairedIds = new Set(matched.map((pair) => pair.newItem.id));
+  let unmatchedCurrent = current.filter((item) => !pairedIds.has(item.id));
+
+  if (crossStudy) {
+    const tiers = Math.max(
+      0,
+      ...[...unmatchedBaseline, ...unmatchedCurrent].map(
+        (item) => getKeys(item).length
+      )
+    );
+    for (let tier = 0; tier < tiers; tier++) {
+      const keyOf = (item: T) => getKeys(item)[tier] || "";
+      const count = (items: T[]) => {
+        const counts = new Map<string, number>();
+        for (const item of items) {
+          const key = keyOf(item);
+          if (key) counts.set(key, (counts.get(key) || 0) + 1);
+        }
+        return counts;
+      };
+      const baselineCounts = count(unmatchedBaseline);
+      const currentCounts = count(unmatchedCurrent);
+      const currentByKey = new Map(
+        unmatchedCurrent.map((item) => [keyOf(item), item])
+      );
+      const usedBaseline = new Set<T>();
+      const usedCurrent = new Set<T>();
+      for (const oldItem of unmatchedBaseline) {
+        const key = keyOf(oldItem);
+        if (!key || baselineCounts.get(key) !== 1) continue;
+        if (currentCounts.get(key) !== 1) continue;
+        const newItem = currentByKey.get(key)!;
+        matched.push({ oldItem, newItem });
+        usedBaseline.add(oldItem);
+        usedCurrent.add(newItem);
+      }
+      unmatchedBaseline = unmatchedBaseline.filter(
+        (item) => !usedBaseline.has(item)
+      );
+      unmatchedCurrent = unmatchedCurrent.filter(
+        (item) => !usedCurrent.has(item)
+      );
+    }
+  }
+
+  return { matched, removed: unmatchedBaseline, added: unmatchedCurrent };
+}
+
+/** Properties whose string values are ids of other objects in the same study. */
+const REFERENCE_KEYS = new Set([
+  "codelistId",
+  "targetFieldId",
+  "triggerFieldIds",
+  "fieldId",
+  "compareFieldId",
+  "assignedFormIds",
+  "formIds",
+  "epochId",
+  "epochIds",
+  "armIds",
+]);
+
+/**
+ * A copy of the study in which every id reference is replaced by the name of
+ * what it points at, so two studies whose ids differ compare by meaning. The
+ * `id` properties themselves are left alone: they still identify objects.
+ */
+function relabelReferences(study: StudyProtocol): StudyProtocol {
+  const labels = new Map<string, string>();
+  const note = (id: string | undefined, label: string) => {
+    if (typeof id === "string" && id) labels.set(id, label);
+  };
+  for (const codelist of study.codelists || [])
+    note(codelist.id, `codelist:${codelist.name}`);
+  for (const form of study.forms || []) {
+    note(form.id, `form:${form.name}`);
+    for (const section of form.sections || []) {
+      const walk = (fields: CRFField[]) => {
+        for (const field of fields || []) {
+          note(field.id, `field:${field.variableName}`);
+          walk(field.repeatingColumns || []);
+        }
+      };
+      walk(section.fields || []);
+    }
+  }
+  for (const epoch of study.epochs || []) note(epoch.id, `epoch:${epoch.name}`);
+  for (const arm of study.arms || []) note(arm.id, `arm:${arm.name}`);
+
+  const walk = (value: unknown, referenceContext: boolean): unknown => {
+    if (typeof value === "string") {
+      return referenceContext ? (labels.get(value) ?? value) : value;
+    }
+    if (Array.isArray(value))
+      return value.map((v) => walk(v, referenceContext));
+    if (value && typeof value === "object") {
+      const out: Record<string, unknown> = {};
+      for (const [key, inner] of Object.entries(value)) {
+        if (
+          key === "armFormAssignments" &&
+          inner &&
+          typeof inner === "object"
+        ) {
+          // Keyed by arm id, valued by form ids.
+          out[key] = Object.fromEntries(
+            Object.entries(inner).map(([armId, formIds]) => [
+              labels.get(armId) ?? armId,
+              walk(formIds, true),
+            ])
+          );
+        } else {
+          out[key] = walk(inner, key !== "id" && REFERENCE_KEYS.has(key));
+        }
+      }
+      return out;
+    }
+    return value;
+  };
+  return walk(study, false) as StudyProtocol;
 }
 
 function diffKeys<T extends Record<string, unknown>>(
@@ -332,76 +481,77 @@ function diffRuleList(
   currentRules: EditCheckRule[] | undefined,
   breadcrumbPrefix: string[],
   form: CRFForm | undefined,
-  depIndex: DependencyIndex
+  depIndex: DependencyIndex,
+  crossStudy: boolean = false
 ): BaselineDiffEntry[] {
   const entries: BaselineDiffEntry[] = [];
-  const baselineMap = byId(baselineRules);
-  const currentMap = byId(currentRules);
+  const { matched, removed, added } = matchEntities(
+    baselineRules,
+    currentRules,
+    (rule) => [rule.name ? `name:${norm(rule.name)}` : ""],
+    crossStudy
+  );
 
-  for (const [id, rule] of baselineMap) {
-    if (!currentMap.has(id)) {
-      const affectedUses = Array.from(depIndex.fieldToRules.entries())
-        .filter(([, labels]) => labels.has(`rule "${rule.name || rule.id}"`))
-        .map(([fieldId]) => fieldId);
+  for (const rule of removed) {
+    const id = rule.id;
+    const affectedUses = Array.from(depIndex.fieldToRules.entries())
+      .filter(([, labels]) => labels.has(`rule "${rule.name || rule.id}"`))
+      .map(([fieldId]) => fieldId);
+    entries.push({
+      id,
+      category: "rule",
+      changeType: "removed",
+      label: rule.name || rule.id,
+      breadcrumb: [...breadcrumbPrefix, rule.name || rule.id],
+      oldValue: rule,
+      affectedUses: affectedUses.length
+        ? [`Referenced field id(s): ${affectedUses.join(", ")}`]
+        : undefined,
+      formId: form?.id,
+      navigationMode: "rules",
+    });
+    if (rule.formulaExpression) {
       entries.push({
-        id,
-        category: "rule",
+        id: `formula:rule:${id}`,
+        category: "formula",
         changeType: "removed",
-        label: rule.name || rule.id,
-        breadcrumb: [...breadcrumbPrefix, rule.name || rule.id],
-        oldValue: rule,
-        affectedUses: affectedUses.length
-          ? [`Referenced field id(s): ${affectedUses.join(", ")}`]
-          : undefined,
+        label: `${rule.name || rule.id}: Formula`,
+        breadcrumb: [...breadcrumbPrefix, rule.name || rule.id, "Formula"],
+        oldValue: rule.formulaExpression,
         formId: form?.id,
         navigationMode: "rules",
       });
-      if (rule.formulaExpression) {
-        entries.push({
-          id: `formula:rule:${id}`,
-          category: "formula",
-          changeType: "removed",
-          label: `${rule.name || rule.id}: Formula`,
-          breadcrumb: [...breadcrumbPrefix, rule.name || rule.id, "Formula"],
-          oldValue: rule.formulaExpression,
-          formId: form?.id,
-          navigationMode: "rules",
-        });
-      }
     }
   }
 
-  for (const [id, rule] of currentMap) {
-    if (!baselineMap.has(id)) {
+  for (const rule of added) {
+    const id = rule.id;
+    entries.push({
+      id,
+      category: "rule",
+      changeType: "added",
+      label: rule.name || rule.id,
+      breadcrumb: [...breadcrumbPrefix, rule.name || rule.id],
+      newValue: rule,
+      formId: form?.id,
+      navigationMode: "rules",
+    });
+    if (rule.formulaExpression) {
       entries.push({
-        id,
-        category: "rule",
+        id: `formula:rule:${id}`,
+        category: "formula",
         changeType: "added",
-        label: rule.name || rule.id,
-        breadcrumb: [...breadcrumbPrefix, rule.name || rule.id],
-        newValue: rule,
+        label: `${rule.name || rule.id}: Formula`,
+        breadcrumb: [...breadcrumbPrefix, rule.name || rule.id, "Formula"],
+        newValue: rule.formulaExpression,
         formId: form?.id,
         navigationMode: "rules",
       });
-      if (rule.formulaExpression) {
-        entries.push({
-          id: `formula:rule:${id}`,
-          category: "formula",
-          changeType: "added",
-          label: `${rule.name || rule.id}: Formula`,
-          breadcrumb: [...breadcrumbPrefix, rule.name || rule.id, "Formula"],
-          newValue: rule.formulaExpression,
-          formId: form?.id,
-          navigationMode: "rules",
-        });
-      }
     }
   }
 
-  for (const [id, oldRule] of baselineMap) {
-    const newRule = currentMap.get(id);
-    if (!newRule) continue;
-
+  for (const { oldItem: oldRule, newItem: newRule } of matched) {
+    const id = newRule.id;
     const changed = diffKeys(
       oldRule as unknown as Record<string, unknown>,
       newRule as unknown as Record<string, unknown>,
@@ -447,121 +597,127 @@ function diffRuleList(
 }
 
 interface FieldOccurrence {
+  id: string;
   field: CRFField;
   sectionId: string;
   sectionTitle: string;
 }
 
-function collectFieldOccurrences(form: CRFForm): Map<string, FieldOccurrence> {
-  const map = new Map<string, FieldOccurrence>();
+function collectFieldOccurrences(form: CRFForm): FieldOccurrence[] {
+  const list: FieldOccurrence[] = [];
   for (const section of form.sections || []) {
     for (const field of section.fields || []) {
-      map.set(field.id, {
+      list.push({
+        id: field.id,
         field,
         sectionId: section.id,
         sectionTitle: section.title,
       });
     }
   }
-  return map;
+  return list;
 }
 
 function diffFieldsWithinForm(
   form: CRFForm,
-  baselineFields: Map<string, FieldOccurrence>,
-  currentFields: Map<string, FieldOccurrence>,
-  depIndex: DependencyIndex
+  baselineFieldsList: FieldOccurrence[],
+  currentFieldsList: FieldOccurrence[],
+  depIndex: DependencyIndex,
+  crossStudy: boolean = false
 ): BaselineDiffEntry[] {
   const entries: BaselineDiffEntry[] = [];
 
-  for (const [id, occurrence] of baselineFields) {
-    if (!currentFields.has(id)) {
-      const uses = depIndex.fieldToRules.get(id);
+  const { matched, removed, added } = matchEntities(
+    baselineFieldsList,
+    currentFieldsList,
+    (occ) => [
+      occ.field.variableName
+        ? `var:${occ.field.variableName.toUpperCase()}`
+        : "",
+      occ.field.cdashMetadata?.sdtmVariable
+        ? `sdtm:${occ.field.cdashMetadata.sdtmVariable.toUpperCase()}`
+        : "",
+    ],
+    crossStudy
+  );
+
+  for (const occurrence of removed) {
+    const uses = depIndex.fieldToRules.get(occurrence.id);
+    entries.push({
+      id: occurrence.id,
+      category: "field",
+      changeType: "removed",
+      label: occurrence.field.label || occurrence.field.variableName,
+      breadcrumb: [form.name, occurrence.sectionTitle, occurrence.field.label],
+      oldValue: occurrence.field,
+      affectedUses: uses ? Array.from(uses) : undefined,
+      formId: form.id,
+      sectionId: occurrence.sectionId,
+      navigationMode: "designer",
+    });
+    if (occurrence.field.calculationFormula) {
       entries.push({
-        id,
-        category: "field",
+        id: `formula:field:${occurrence.id}`,
+        category: "formula",
         changeType: "removed",
-        label: occurrence.field.label || occurrence.field.variableName,
+        label: `${occurrence.field.label}: Formula`,
         breadcrumb: [
           form.name,
           occurrence.sectionTitle,
           occurrence.field.label,
+          "Formula",
         ],
-        oldValue: occurrence.field,
-        affectedUses: uses ? Array.from(uses) : undefined,
+        oldValue: occurrence.field.calculationFormula,
         formId: form.id,
         sectionId: occurrence.sectionId,
         navigationMode: "designer",
       });
-      if (occurrence.field.calculationFormula) {
-        entries.push({
-          id: `formula:field:${id}`,
-          category: "formula",
-          changeType: "removed",
-          label: `${occurrence.field.label}: Formula`,
-          breadcrumb: [
-            form.name,
-            occurrence.sectionTitle,
-            occurrence.field.label,
-            "Formula",
-          ],
-          oldValue: occurrence.field.calculationFormula,
-          formId: form.id,
-          sectionId: occurrence.sectionId,
-          navigationMode: "designer",
-        });
-      }
     }
   }
 
-  for (const [id, occurrence] of currentFields) {
-    if (!baselineFields.has(id)) {
+  for (const occurrence of added) {
+    entries.push({
+      id: occurrence.id,
+      category: "field",
+      changeType: "added",
+      label: occurrence.field.label || occurrence.field.variableName,
+      breadcrumb: [form.name, occurrence.sectionTitle, occurrence.field.label],
+      newValue: occurrence.field,
+      formId: form.id,
+      sectionId: occurrence.sectionId,
+      navigationMode: "designer",
+    });
+    if (occurrence.field.calculationFormula) {
       entries.push({
-        id,
-        category: "field",
+        id: `formula:field:${occurrence.id}`,
+        category: "formula",
         changeType: "added",
-        label: occurrence.field.label || occurrence.field.variableName,
+        label: `${occurrence.field.label}: Formula`,
         breadcrumb: [
           form.name,
           occurrence.sectionTitle,
           occurrence.field.label,
+          "Formula",
         ],
-        newValue: occurrence.field,
+        newValue: occurrence.field.calculationFormula,
         formId: form.id,
         sectionId: occurrence.sectionId,
         navigationMode: "designer",
       });
-      if (occurrence.field.calculationFormula) {
-        entries.push({
-          id: `formula:field:${id}`,
-          category: "formula",
-          changeType: "added",
-          label: `${occurrence.field.label}: Formula`,
-          breadcrumb: [
-            form.name,
-            occurrence.sectionTitle,
-            occurrence.field.label,
-            "Formula",
-          ],
-          newValue: occurrence.field.calculationFormula,
-          formId: form.id,
-          sectionId: occurrence.sectionId,
-          navigationMode: "designer",
-        });
-      }
     }
   }
 
-  for (const [id, oldOcc] of baselineFields) {
-    const newOcc = currentFields.get(id);
-    if (!newOcc) continue;
-
+  for (const { oldItem: oldOcc, newItem: newOcc } of matched) {
+    const id = newOcc.id;
     const changed = diffKeys(
       oldOcc.field as unknown as Record<string, unknown>,
       newOcc.field as unknown as Record<string, unknown>,
       FIELD_STRUCTURAL_KEYS
     );
-    const moved = oldOcc.sectionId !== newOcc.sectionId;
+    // Section ids mean nothing across studies, so compare titles there.
+    const moved = crossStudy
+      ? norm(oldOcc.sectionTitle) !== norm(newOcc.sectionTitle)
+      : oldOcc.sectionId !== newOcc.sectionId;
     if (moved) changed.push("section");
 
     if (changed.length) {
@@ -624,45 +780,47 @@ function diffFieldsWithinForm(
 
 function diffSectionsWithinForm(
   form: CRFForm,
-  baselineForm: CRFForm
+  baselineForm: CRFForm,
+  crossStudy: boolean = false
 ): BaselineDiffEntry[] {
   const entries: BaselineDiffEntry[] = [];
-  const baselineSections = byId(baselineForm.sections);
-  const currentSections = byId(form.sections);
+  const { matched, removed, added } = matchEntities(
+    baselineForm.sections,
+    form.sections,
+    (sec) => [norm(sec.title) ? `title:${norm(sec.title)}` : ""],
+    crossStudy
+  );
 
-  for (const [id, section] of baselineSections) {
-    if (!currentSections.has(id)) {
-      entries.push({
-        id,
-        category: "section",
-        changeType: "removed",
-        label: section.title,
-        breadcrumb: [baselineForm.name, section.title],
-        oldValue: section,
-        formId: baselineForm.id,
-        sectionId: id,
-        navigationMode: "designer",
-      });
-    }
+  for (const section of removed) {
+    entries.push({
+      id: section.id,
+      category: "section",
+      changeType: "removed",
+      label: section.title,
+      breadcrumb: [baselineForm.name, section.title],
+      oldValue: section,
+      formId: baselineForm.id,
+      sectionId: section.id,
+      navigationMode: "designer",
+    });
   }
-  for (const [id, section] of currentSections) {
-    if (!baselineSections.has(id)) {
-      entries.push({
-        id,
-        category: "section",
-        changeType: "added",
-        label: section.title,
-        breadcrumb: [form.name, section.title],
-        newValue: section,
-        formId: form.id,
-        sectionId: id,
-        navigationMode: "designer",
-      });
-    }
+
+  for (const section of added) {
+    entries.push({
+      id: section.id,
+      category: "section",
+      changeType: "added",
+      label: section.title,
+      breadcrumb: [form.name, section.title],
+      newValue: section,
+      formId: form.id,
+      sectionId: section.id,
+      navigationMode: "designer",
+    });
   }
-  for (const [id, oldSection] of baselineSections) {
-    const newSection = currentSections.get(id);
-    if (!newSection) continue;
+
+  for (const { oldItem: oldSection, newItem: newSection } of matched) {
+    const id = newSection.id;
     const changed = diffKeys(
       oldSection as unknown as Record<string, unknown>,
       newSection as unknown as Record<string, unknown>,
@@ -690,57 +848,69 @@ function diffSectionsWithinForm(
       });
     }
   }
+
   return entries;
 }
 
 function diffForms(
   baseline: StudyProtocol,
   current: StudyProtocol,
-  depIndex: DependencyIndex
+  depIndex: DependencyIndex,
+  crossStudy: boolean = false
 ): BaselineDiffEntry[] {
   const entries: BaselineDiffEntry[] = [];
-  const baselineForms = byId(baseline.forms);
-  const currentForms = byId(current.forms);
+  const { matched, removed, added } = matchEntities(
+    baseline.forms,
+    current.forms,
+    (form) => {
+      const oid = (form as unknown as { oid?: string }).oid;
+      return [
+        oid ? `oid:${oid.toUpperCase()}` : "",
+        form.domain && form.name
+          ? `domain_name:${form.domain.toUpperCase()}:${norm(form.name)}`
+          : "",
+        form.name ? `name:${norm(form.name)}` : "",
+      ];
+    },
+    crossStudy
+  );
 
-  for (const [id, form] of baselineForms) {
-    if (!currentForms.has(id)) {
-      const uses = depIndex.formToVisits.get(id);
-      entries.push({
-        id,
-        category: "form",
-        changeType: "removed",
-        label: form.name,
-        breadcrumb: [form.name],
-        oldValue: pickChanged(form as unknown as Record<string, unknown>, [
-          ...FORM_SCALAR_KEYS,
-        ]),
-        affectedUses: uses ? Array.from(uses) : undefined,
-        formId: id,
-        navigationMode: "designer",
-      });
-    }
-  }
-  for (const [id, form] of currentForms) {
-    if (!baselineForms.has(id)) {
-      entries.push({
-        id,
-        category: "form",
-        changeType: "added",
-        label: form.name,
-        breadcrumb: [form.name],
-        newValue: pickChanged(form as unknown as Record<string, unknown>, [
-          ...FORM_SCALAR_KEYS,
-        ]),
-        formId: id,
-        navigationMode: "designer",
-      });
-    }
+  for (const form of removed) {
+    const id = form.id;
+    const uses = depIndex.formToVisits.get(id);
+    entries.push({
+      id,
+      category: "form",
+      changeType: "removed",
+      label: form.name,
+      breadcrumb: [form.name],
+      oldValue: pickChanged(form as unknown as Record<string, unknown>, [
+        ...FORM_SCALAR_KEYS,
+      ]),
+      affectedUses: uses ? Array.from(uses) : undefined,
+      formId: id,
+      navigationMode: "designer",
+    });
   }
 
-  for (const [id, oldForm] of baselineForms) {
-    const newForm = currentForms.get(id);
-    if (!newForm) continue;
+  for (const form of added) {
+    const id = form.id;
+    entries.push({
+      id,
+      category: "form",
+      changeType: "added",
+      label: form.name,
+      breadcrumb: [form.name],
+      newValue: pickChanged(form as unknown as Record<string, unknown>, [
+        ...FORM_SCALAR_KEYS,
+      ]),
+      formId: id,
+      navigationMode: "designer",
+    });
+  }
 
+  for (const { oldItem: oldForm, newItem: newForm } of matched) {
+    const id = newForm.id;
     const changed = diffKeys(
       oldForm as unknown as Record<string, unknown>,
       newForm as unknown as Record<string, unknown>,
@@ -767,7 +937,7 @@ function diffForms(
       });
     }
 
-    entries.push(...diffSectionsWithinForm(newForm, oldForm));
+    entries.push(...diffSectionsWithinForm(newForm, oldForm, crossStudy));
 
     const baselineFieldOccurrences = collectFieldOccurrences(oldForm);
     const currentFieldOccurrences = collectFieldOccurrences(newForm);
@@ -776,7 +946,8 @@ function diffForms(
         newForm,
         baselineFieldOccurrences,
         currentFieldOccurrences,
-        depIndex
+        depIndex,
+        crossStudy
       )
     );
 
@@ -786,7 +957,8 @@ function diffForms(
         newForm.rules,
         [newForm.name, "Rules"],
         newForm,
-        depIndex
+        depIndex,
+        crossStudy
       )
     );
   }
@@ -797,42 +969,48 @@ function diffForms(
 function diffCodelists(
   baseline: StudyProtocol,
   current: StudyProtocol,
-  depIndex: DependencyIndex
+  depIndex: DependencyIndex,
+  crossStudy: boolean = false
 ): BaselineDiffEntry[] {
   const entries: BaselineDiffEntry[] = [];
-  const baselineCodelists = byId(baseline.codelists);
-  const currentCodelists = byId(current.codelists);
+  const { matched, removed, added } = matchEntities(
+    baseline.codelists,
+    current.codelists,
+    (cl) => [
+      cl.nciCodelistCode ? `nci:${cl.nciCodelistCode.toUpperCase()}` : "",
+      norm(cl.name) ? `name:${norm(cl.name)}` : "",
+    ],
+    crossStudy
+  );
 
-  for (const [id, codelist] of baselineCodelists) {
-    if (!currentCodelists.has(id)) {
-      const uses = depIndex.codelistToFields.get(id);
-      entries.push({
-        id,
-        category: "codelist",
-        changeType: "removed",
-        label: codelist.name,
-        breadcrumb: ["Codelists", codelist.name],
-        oldValue: codelist,
-        affectedUses: uses ? Array.from(uses) : undefined,
-      });
-    }
+  for (const codelist of removed) {
+    const id = codelist.id;
+    const uses = depIndex.codelistToFields.get(id);
+    entries.push({
+      id,
+      category: "codelist",
+      changeType: "removed",
+      label: codelist.name,
+      breadcrumb: ["Codelists", codelist.name],
+      oldValue: codelist,
+      affectedUses: uses ? Array.from(uses) : undefined,
+    });
   }
-  for (const [id, codelist] of currentCodelists) {
-    if (!baselineCodelists.has(id)) {
-      entries.push({
-        id,
-        category: "codelist",
-        changeType: "added",
-        label: codelist.name,
-        breadcrumb: ["Codelists", codelist.name],
-        newValue: codelist,
-      });
-    }
-  }
-  for (const [id, oldCodelist] of baselineCodelists) {
-    const newCodelist = currentCodelists.get(id);
-    if (!newCodelist) continue;
 
+  for (const codelist of added) {
+    const id = codelist.id;
+    entries.push({
+      id,
+      category: "codelist",
+      changeType: "added",
+      label: codelist.name,
+      breadcrumb: ["Codelists", codelist.name],
+      newValue: codelist,
+    });
+  }
+
+  for (const { oldItem: oldCodelist, newItem: newCodelist } of matched) {
+    const id = newCodelist.id;
     const changed = diffKeys(
       oldCodelist as unknown as Record<string, unknown>,
       newCodelist as unknown as Record<string, unknown>,
@@ -860,6 +1038,7 @@ function diffCodelists(
       });
     }
   }
+
   return entries;
 }
 
@@ -867,43 +1046,52 @@ function diffScheduleEntity<T extends { id: string; name: string }>(
   baselineItems: readonly T[] | undefined,
   currentItems: readonly T[] | undefined,
   scalarKeys: readonly (keyof T & string)[],
-  breadcrumbLabel: string
+  breadcrumbLabel: string,
+  crossStudy: boolean = false
 ): BaselineDiffEntry[] {
   const entries: BaselineDiffEntry[] = [];
-  const baselineMap = byId(baselineItems);
-  const currentMap = byId(currentItems);
+  const { matched, removed, added } = matchEntities(
+    baselineItems,
+    currentItems,
+    (item) => [
+      (item as { oid?: string }).oid
+        ? `oid:${(item as { oid?: string }).oid!.toUpperCase()}`
+        : "",
+      norm(item.name) ? `name:${norm(item.name)}` : "",
+    ],
+    crossStudy
+  );
 
-  for (const [id, item] of baselineMap) {
-    if (!currentMap.has(id)) {
-      entries.push({
-        id,
-        category: "schedule",
-        changeType: "removed",
-        label: item.name,
-        breadcrumb: ["Schedule", breadcrumbLabel, item.name],
-        oldValue: item,
-        visitId: breadcrumbLabel === "Visits" ? id : undefined,
-        navigationMode: "matrix",
-      });
-    }
+  for (const item of removed) {
+    const id = item.id;
+    entries.push({
+      id,
+      category: "schedule",
+      changeType: "removed",
+      label: item.name,
+      breadcrumb: ["Schedule", breadcrumbLabel, item.name],
+      oldValue: item,
+      visitId: breadcrumbLabel === "Visits" ? id : undefined,
+      navigationMode: "matrix",
+    });
   }
-  for (const [id, item] of currentMap) {
-    if (!baselineMap.has(id)) {
-      entries.push({
-        id,
-        category: "schedule",
-        changeType: "added",
-        label: item.name,
-        breadcrumb: ["Schedule", breadcrumbLabel, item.name],
-        newValue: item,
-        visitId: breadcrumbLabel === "Visits" ? id : undefined,
-        navigationMode: "matrix",
-      });
-    }
+
+  for (const item of added) {
+    const id = item.id;
+    entries.push({
+      id,
+      category: "schedule",
+      changeType: "added",
+      label: item.name,
+      breadcrumb: ["Schedule", breadcrumbLabel, item.name],
+      newValue: item,
+      visitId: breadcrumbLabel === "Visits" ? id : undefined,
+      navigationMode: "matrix",
+    });
   }
-  for (const [id, oldItem] of baselineMap) {
-    const newItem = currentMap.get(id);
-    if (!newItem) continue;
+
+  for (const { oldItem, newItem } of matched) {
+    const id = newItem.id;
     const changed = diffKeys(
       oldItem as unknown as Record<string, unknown>,
       newItem as unknown as Record<string, unknown>,
@@ -930,37 +1118,43 @@ function diffScheduleEntity<T extends { id: string; name: string }>(
       });
     }
   }
+
   return entries;
 }
 
 function diffSchedule(
   baseline: StudyProtocol,
-  current: StudyProtocol
+  current: StudyProtocol,
+  crossStudy: boolean = false
 ): BaselineDiffEntry[] {
   return [
     ...diffScheduleEntity<StudyVisit>(
       baseline.visits,
       current.visits,
       VISIT_SCALAR_KEYS,
-      "Visits"
+      "Visits",
+      crossStudy
     ),
     ...diffScheduleEntity<StudyArm>(
       baseline.arms,
       current.arms,
       ARM_SCALAR_KEYS,
-      "Arms"
+      "Arms",
+      crossStudy
     ),
     ...diffScheduleEntity<StudyEpoch>(
       baseline.epochs,
       current.epochs,
       EPOCH_SCALAR_KEYS,
-      "Epochs"
+      "Epochs",
+      crossStudy
     ),
     ...diffScheduleEntity<StudyCohort>(
       baseline.cohorts,
       current.cohorts,
       COHORT_SCALAR_KEYS,
-      "Cohorts"
+      "Cohorts",
+      crossStudy
     ),
   ];
 }
@@ -995,23 +1189,35 @@ function summarize(entries: BaselineDiffEntry[]): BaselineComparisonSummary {
 }
 
 /**
- * Compares the current working draft against a named baseline snapshot,
- * matching every object by its stable id (never by array position) so
- * reorders never masquerade as adds/removes, and a same-id rename or move
- * is reported as a single "modified" entry rather than a delete + add pair.
+ * Compares the current working draft against another study snapshot.
+ *
+ * Within one study every object is matched by its stable id (never by array
+ * position), so reorders never masquerade as adds/removes, and a same-id
+ * rename or move is a single "modified" entry. When the two studies have
+ * different ids (or `options.crossStudy` is set), ids mean nothing across
+ * them, so objects that do not share an id are paired by name instead
+ * (form OID, domain and name, variable name, section title, NCI code) when
+ * the name is unambiguous, and id references compare by what they point at.
  */
 export function compareStudyToBaseline(
   current: StudyProtocol,
   baselineStudy: StudyProtocol,
-  baselineMeta: { id: string; versionTag: string; label: string }
+  baselineMeta: { id: string; versionTag: string; label: string },
+  options?: { crossStudy?: boolean }
 ): BaselineComparisonResult {
+  const crossStudy = options?.crossStudy ?? current.id !== baselineStudy.id;
+  // Affected-use lookups are by the baseline's own ids.
   const depIndex = buildDependencyIndex(baselineStudy);
+  const baselineView = crossStudy
+    ? relabelReferences(baselineStudy)
+    : baselineStudy;
+  const currentView = crossStudy ? relabelReferences(current) : current;
 
   const entries: BaselineDiffEntry[] = [
-    ...diffStudyMetadata(baselineStudy, current),
-    ...diffForms(baselineStudy, current, depIndex),
-    ...diffCodelists(baselineStudy, current, depIndex),
-    ...diffSchedule(baselineStudy, current),
+    ...diffStudyMetadata(baselineView, currentView),
+    ...diffForms(baselineView, currentView, depIndex, crossStudy),
+    ...diffCodelists(baselineView, currentView, depIndex, crossStudy),
+    ...diffSchedule(baselineView, currentView, crossStudy),
   ];
 
   return {

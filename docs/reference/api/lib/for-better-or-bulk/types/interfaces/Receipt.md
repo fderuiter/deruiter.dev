@@ -44,6 +44,14 @@ The honest line about the solo helper, present only when it was on.
 
 ***
 
+### gameWeather
+
+> `readonly` **gameWeather**: `string` \| `null`
+
+Game weather, labelled as game weather; null on a standard day.
+
+***
+
 ### kitchen
 
 > `readonly` **kitchen**: `string` \| `null`
@@ -101,6 +109,8 @@ The honest line about the solo helper, present only when it was on.
 ### weather
 
 > `readonly` **weather**: `string`
+
+The real weather line, kept as Fred and Abbi told it.
 
 ***
 

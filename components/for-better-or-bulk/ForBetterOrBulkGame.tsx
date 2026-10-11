@@ -24,6 +24,7 @@ import {
   createLevel,
   getHint,
   getPrompt,
+  parseSeed,
   stepGame,
   type Category,
   type Frame,
@@ -111,6 +112,15 @@ function holdLine(work: string, mode: ControlMode, id: PlayerId): string {
   return `Hold ${keys}: ${work}`;
 }
 
+/**
+ * The day's seed from the page's `?seed=` parameter. Junk, a missing value
+ * or an out-of-range number gives the standard day, seed 0.
+ */
+function seedFromUrl(): number {
+  if (typeof window === "undefined") return 0;
+  return parseSeed(new URLSearchParams(window.location.search).get("seed"));
+}
+
 /** Fastest clock the `?speed=` parameter allows. */
 const MAX_SPEED = 8;
 
@@ -172,7 +182,10 @@ export function ForBetterOrBulkGame({
   initialMode = "solo",
 }: ForBetterOrBulkGameProps) {
   const [phase, setPhase] = useState<Phase>("setup");
-  const [setup, setSetup] = useState<Setup>(initialSetup);
+  const [setup, setSetup] = useState<Setup>(() => {
+    const seed = seedFromUrl();
+    return seed === 0 ? initialSetup : { ...initialSetup, seed };
+  });
   const [mode, setMode] = useState<ControlMode>(initialMode);
   const [active, setActive] = useState<PlayerId>("abbi");
   const [view, setView] = useState<GameState | null>(null);

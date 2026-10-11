@@ -91,6 +91,14 @@ When Fred is due back, in level seconds, while he is away.
 
 ***
 
+### seeded
+
+> `readonly` **seeded**: readonly [`SeededEvent`](SeededEvent.md)[]
+
+The seeded events this level will have, from the setup's seed.
+
+***
+
 ### setup
 
 > `readonly` **setup**: [`Setup`](Setup.md)

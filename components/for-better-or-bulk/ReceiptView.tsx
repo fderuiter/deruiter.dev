@@ -122,6 +122,9 @@ export function ReceiptView({
         <li>
           <span className="font-bold">Weather:</span> {receipt.weather}
         </li>
+        {receipt.gameWeather ? (
+          <li className="text-[var(--fbb-dim)]">{receipt.gameWeather}</li>
+        ) : null}
         <li>
           <span className="font-bold">Leftovers:</span> {receipt.leftovers}
         </li>

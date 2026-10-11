@@ -10,9 +10,12 @@ export * from "./presets";
 export {
   cartTotal,
   createLevel,
+  seededEvents,
   stockFor,
   validateSetup,
 } from "./internal/level";
+export { createPrng, dailySeed, MAX_SEED, parseSeed } from "./internal/prng";
+export type { Prng } from "./internal/prng";
 export {
   IDLE_FRAME,
   IDLE_INPUT,

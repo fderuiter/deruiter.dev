@@ -6,6 +6,14 @@
 
 # lib/for-better-or-bulk/presets
 
+## Interfaces
+
+- [BankLine](interfaces/BankLine.md)
+
+## Type Aliases
+
+- [RealFactId](type-aliases/RealFactId.md)
+
 ## Variables
 
 - [ARRANGE\_SECONDS](variables/ARRANGE_SECONDS.md)
@@ -27,6 +35,7 @@
 - [COOK\_SECONDS](variables/COOK_SECONDS.md)
 - [CRATE\_NAMES](variables/CRATE_NAMES.md)
 - [DEFAULT\_SETUP](variables/DEFAULT_SETUP.md)
+- [DESIGN\_REAL\_FACTS](variables/DESIGN_REAL_FACTS.md)
 - [FICTION\_DEFAULTS](variables/FICTION_DEFAULTS.md)
 - [FIXED\_COSTS](variables/FIXED_COSTS.md)
 - [FLOOR\_CAP](variables/FLOOR_CAP.md)
@@ -40,7 +49,9 @@
 - [LEAVE\_SECONDS](variables/LEAVE_SECONDS.md)
 - [LEFT\_LINE](variables/LEFT_LINE.md)
 - [LEVEL\_SECONDS](variables/LEVEL_SECONDS.md)
+- [LINE\_BANK](variables/LINE_BANK.md)
 - [MOVE\_SPEED](variables/MOVE_SPEED.md)
+- [OUTDOOR\_FROM](variables/OUTDOOR_FROM.md)
 - [PETAL\_SECONDS](variables/PETAL_SECONDS.md)
 - [PHONE\_SECONDS](variables/PHONE_SECONDS.md)
 - [PLAYER\_RADIUS](variables/PLAYER_RADIUS.md)
@@ -49,8 +60,14 @@
 - [RELAXED\_LEVEL\_SECONDS](variables/RELAXED_LEVEL_SECONDS.md)
 - [ROSE\_BUNCHES](variables/ROSE_BUNCHES.md)
 - [ROSE\_PRICES](variables/ROSE_PRICES.md)
+- [RUSH\_BURN\_FACTOR](variables/RUSH_BURN_FACTOR.md)
+- [RUSH\_SECONDS](variables/RUSH_SECONDS.md)
+- [RUSH\_STARTS](variables/RUSH_STARTS.md)
 - [SHOE\_INTERVAL\_SECONDS](variables/SHOE_INTERVAL_SECONDS.md)
 - [SHOE\_SECONDS](variables/SHOE_SECONDS.md)
+- [SHOWER\_SECONDS](variables/SHOWER_SECONDS.md)
+- [SHOWER\_STARTS](variables/SHOWER_STARTS.md)
+- [SHOWER\_WALK\_FACTOR](variables/SHOWER_WALK_FACTOR.md)
 - [SIMPLIFY\_SECONDS](variables/SIMPLIFY_SECONDS.md)
 - [SUPPLY\_TILES](variables/SUPPLY_TILES.md)
 - [THROW\_OUT\_PROMPT](variables/THROW_OUT_PROMPT.md)
@@ -60,4 +77,5 @@
 
 ## Functions
 
+- [bankText](functions/bankText.md)
 - [onLevelClock](functions/onLevelClock.md)

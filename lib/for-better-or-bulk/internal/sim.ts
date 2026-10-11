@@ -22,12 +22,15 @@ import {
   INTERRUPTIONS,
   LEAVE_SECONDS,
   MOVE_SPEED,
+  OUTDOOR_FROM,
   onLevelClock,
   PETAL_SECONDS,
   PHONE_SECONDS,
   PLAYER_RADIUS,
+  RUSH_BURN_FACTOR,
   SHOE_INTERVAL_SECONDS,
   SHOE_SECONDS,
+  SHOWER_WALK_FACTOR,
   SIMPLIFY_SECONDS,
   TICK_SECONDS,
   VENUE_MAP,
@@ -44,6 +47,7 @@ import type {
   PlayerId,
   PlayerInput,
   PresenceDecision,
+  SeededEventId,
   Setup,
   Station,
   StepResult,
@@ -148,12 +152,31 @@ function sign(value: number): number {
   return value > 0 ? 1 : value < 0 ? -1 : 0;
 }
 
-function move(player: Player, input: PlayerInput, dt: number): Player {
+/** Whether a tile is on the lawn side of the venue, out in the weather. */
+function isOutdoor(x: number, y: number): boolean {
+  return x >= OUTDOOR_FROM.x && y >= OUTDOOR_FROM.y;
+}
+
+/** Whether a seeded event is on at the level's current time. */
+function seededActive(state: GameState, id: SeededEventId): boolean {
+  return state.seeded.some(
+    (event) =>
+      event.id === id && state.time >= event.at && state.time < event.until
+  );
+}
+
+function move(
+  player: Player,
+  input: PlayerInput,
+  dt: number,
+  pace: number
+): Player {
   const mx = sign(input.moveX);
   const my = sign(input.moveY);
   if (mx === 0 && my === 0) return player;
   const length = Math.hypot(mx, my);
-  const speed = MOVE_SPEED * (player.calm ? CALM_SPEED_MULTIPLIER : 1) * dt;
+  const speed =
+    MOVE_SPEED * (player.calm ? CALM_SPEED_MULTIPLIER : 1) * pace * dt;
   let { x, y } = player;
   const nextX = x + (mx / length) * speed;
   if (!collides(nextX, y)) x = nextX;
@@ -380,6 +403,10 @@ function work(w: Working, id: PlayerId, dt: number): void {
 }
 
 function cookGrills(w: Working, dt: number): void {
+  // A guest rush makes the buffet's food go off sooner.
+  const burnAfter = seededActive(w.state, "guest-rush")
+    ? BURN_SECONDS * RUSH_BURN_FACTOR
+    : BURN_SECONDS;
   for (const station of w.state.stations) {
     if (station.kind !== "grill" || !station.item) continue;
     const item = station.item;
@@ -389,7 +416,7 @@ function cookGrills(w: Working, dt: number): void {
     if (cooked && progress + 1e-9 >= COOK_SECONDS) {
       setStation(w, { ...station, item: { ...item, kind: cooked }, progress });
       w.events.push({ type: "cooked", station: station.id, item: cooked });
-    } else if (!cooked && progress + 1e-9 >= BURN_SECONDS) {
+    } else if (!cooked && progress + 1e-9 >= burnAfter) {
       setStation(w, {
         ...station,
         item: { kind: "burnt", madeBy: item.madeBy },
@@ -403,8 +430,13 @@ function cookGrills(w: Working, dt: number): void {
   }
 }
 
+/**
+ * True on the one tick whose step crosses `at`. Time is a sum of fixed steps,
+ * so a boundary can land a hair under its exact value; the tolerance on both
+ * ends counts it on that tick and not again on the next.
+ */
 function crossed(before: number, after: number, at: number): boolean {
-  return before < at && at <= after + 1e-9;
+  return before + 1e-9 < at && at <= after + 1e-9;
 }
 
 /** The level time the brothers' text lands; see BROTHERS_EARLIEST_AT. */
@@ -530,6 +562,15 @@ export function stepGame(state: GameState, frame: Frame): StepResult {
     events: [],
   };
 
+  for (const event of w.state.seeded) {
+    if (crossed(before, after, event.at)) {
+      w.events.push({ type: "seeded-start", id: event.id });
+    }
+    if (crossed(before, after, event.until)) {
+      w.events.push({ type: "seeded-end", id: event.id });
+    }
+  }
+
   if (w.state.brothersAt === null && after + 1e-9 >= brothersDue(w.state)) {
     w.state = { ...w.state, phase: "brothers", brothersAt: after };
     w.events.push({ type: "brothers-text" });
@@ -619,7 +660,10 @@ export function stepGame(state: GameState, frame: Frame): StepResult {
     // On the assist's resting ticks its held work keeps its hold but makes no
     // progress, which is how the assist works at about 60% pace.
     const resting = helped && assistRests(w.state.tick);
-    setPlayer(w, move(player, input, dt));
+    const wet =
+      seededActive(w.state, "shower") &&
+      isOutdoor(Math.floor(player.x), Math.floor(player.y));
+    setPlayer(w, move(player, input, dt, wet ? SHOWER_WALK_FACTOR : 1));
     if (input.interact) interact(w, id);
     if (input.work) work(w, id, resting ? 0 : dt);
     else releaseBinHold(w, id);

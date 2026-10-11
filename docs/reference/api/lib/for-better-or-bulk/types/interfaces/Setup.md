@@ -37,3 +37,13 @@ Off when absent, so setups saved before the helper existed still load.
 > `readonly` **relaxed**: `boolean`
 
 Stretches the clock for players who want more time.
+
+***
+
+### seed?
+
+> `readonly` `optional` **seed?**: `number`
+
+The day's seed: 0 (the default, also when absent, so older shared runs
+replay unchanged) schedules no events; any other seed schedules a shower
+and a guest rush, the same for everyone who has that seed.

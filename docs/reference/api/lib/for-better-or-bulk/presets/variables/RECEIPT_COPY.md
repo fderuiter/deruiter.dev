@@ -26,4 +26,4 @@ Fixed receipt lines.
 
 ### weather
 
-> `readonly` **weather**: `"Perfect. Fred has accepted responsibility."` = `"Perfect. Fred has accepted responsibility."`
+> `readonly` **weather**: `"Perfect weather. Fred maintains this was his doing."` = `"Perfect weather. Fred maintains this was his doing."`

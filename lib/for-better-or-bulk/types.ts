@@ -35,6 +35,22 @@ export interface Setup {
    * Off when absent, so setups saved before the helper existed still load.
    */
   readonly assist?: boolean;
+  /**
+   * The day's seed: 0 (the default, also when absent, so older shared runs
+   * replay unchanged) schedules no events; any other seed schedules a shower
+   * and a guest rush, the same for everyone who has that seed.
+   */
+  readonly seed?: number;
+}
+
+/** The seeded events a level can schedule. */
+export type SeededEventId = "shower" | "guest-rush";
+
+/** A seeded event, in level seconds: it is on from `at` up to `until`. */
+export interface SeededEvent {
+  readonly id: SeededEventId;
+  readonly at: number;
+  readonly until: number;
 }
 
 /** Things a person can carry. Burnt food cannot be served. */
@@ -193,6 +209,8 @@ export interface GameState {
   readonly targets: readonly Target[];
   readonly floor: readonly FloorItem[];
   readonly interruptions: readonly InterruptionRecord[];
+  /** The seeded events this level will have, from the setup's seed. */
+  readonly seeded: readonly SeededEvent[];
   readonly presence: PresenceDecision | null;
   /** When Fred is due back, in level seconds, while he is away. */
   readonly returnsAt: number | null;
@@ -273,6 +291,8 @@ export type GameEvent =
   | { readonly type: "fred-returned" }
   | { readonly type: "shoes-retied" }
   | { readonly type: "supply-empty"; readonly supply: SupplyKind }
+  | { readonly type: "seeded-start"; readonly id: SeededEventId }
+  | { readonly type: "seeded-end"; readonly id: SeededEventId }
   | { readonly type: "level-finished"; readonly early: boolean };
 
 export interface StepResult {
@@ -341,7 +361,10 @@ export interface Receipt {
   readonly kitchen: string | null;
   readonly signatureMoment: string;
   readonly title: RunTitle;
+  /** The real weather line, kept as Fred and Abbi told it. */
   readonly weather: string;
+  /** Game weather, labelled as game weather; null on a standard day. */
+  readonly gameWeather: string | null;
   readonly leftovers: string;
   readonly suit: string;
   /** The honest line about the solo helper, present only when it was on. */

@@ -6,6 +6,7 @@
 
 import {
   BLOCKED_TOASTS,
+  bankText,
   CATEGORY_LABELS,
   FLOOR_FULL_REPEAT_SECONDS,
   INTERRUPTIONS,
@@ -13,9 +14,16 @@ import {
   type GameEvent,
   type PlayerId,
   type GameState,
+  type SeededEventId,
 } from "@/lib/for-better-or-bulk";
 
 const NAMES = { fred: "Fred", abbi: "Abbi" } as const;
+
+/** The toast that opens each seeded event, from the line bank. */
+const SEEDED_LINES: Readonly<Record<SeededEventId, string>> = {
+  shower: bankText("shower-start"),
+  "guest-rush": bankText("rush-start"),
+};
 
 /** The checklist rows the side panel lists, in order. */
 export const CHECKLIST: readonly Category[] = [
@@ -119,6 +127,8 @@ export function describeEvent(event: GameEvent): string | null {
       return "Fred is back, and noticeably calmer.";
     case "shoes-retied":
       return "Fred is re-tying his shoes. Again.";
+    case "seeded-start":
+      return SEEDED_LINES[event.id];
     case "level-finished":
       return event.early
         ? "Everything is set. Early, even."

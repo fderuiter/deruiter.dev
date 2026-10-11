@@ -202,6 +202,7 @@
 - [lib/for-better-or-bulk/internal/assist](lib/for-better-or-bulk/internal/assist/README.md)
 - [lib/for-better-or-bulk/internal/gates](lib/for-better-or-bulk/internal/gates/README.md)
 - [lib/for-better-or-bulk/internal/level](lib/for-better-or-bulk/internal/level/README.md)
+- [lib/for-better-or-bulk/internal/prng](lib/for-better-or-bulk/internal/prng/README.md)
 - [lib/for-better-or-bulk/internal/receipt](lib/for-better-or-bulk/internal/receipt/README.md)
 - [lib/for-better-or-bulk/internal/sim](lib/for-better-or-bulk/internal/sim/README.md)
 - [lib/for-better-or-bulk/internal/views](lib/for-better-or-bulk/internal/views/README.md)

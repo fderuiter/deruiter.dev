@@ -74,6 +74,7 @@ export const DEFAULT_SETUP: Setup = {
   cart: { roses: "full", food: "enough", lanterns: true },
   relaxed: false,
   assist: false,
+  seed: 0,
 };
 
 /** How many website features the prologue allows. */
@@ -318,9 +319,24 @@ export const THROW_OUT_PROMPT = "Throw it out";
 export const LEFT_LINE =
   "The website was operational. My presence was requested separately.";
 
+/**
+ * Seeded events, in standard-clock seconds (scaled for a relaxed clock with
+ * `onLevelClock`). A nonzero seed draws each start from its range.
+ */
+export const SHOWER_STARTS = { earliest: 40, latest: 100 } as const;
+export const SHOWER_SECONDS = 24;
+/** Walking speed on outdoor tiles while the shower is on: wet grass. */
+export const SHOWER_WALK_FACTOR = 0.6;
+export const RUSH_STARTS = { earliest: 70, latest: 150 } as const;
+export const RUSH_SECONDS = 15;
+/** While guests are early, the grill burns in this share of its usual time. */
+export const RUSH_BURN_FACTOR = 0.5;
+/** Outdoor tiles start at this column and row: the aisle, chairs and lawn. */
+export const OUTDOOR_FROM = { x: 11, y: 5 } as const;
+
 /** Fixed receipt lines. */
 export const RECEIPT_COPY = {
-  weather: "Perfect. Fred has accepted responsibility.",
+  weather: "Perfect weather. Fred maintains this was his doing.",
   leftovers: "Some. They went to the Rochester warming shelter.",
   suit: "Fred wore the rented tux. The free suit from The Suit Wherehouse: acquired, yes. Worn, no.",
   disclaimer:
@@ -341,6 +357,90 @@ export const REAL_WEDDING_FACTS: readonly string[] = [
   "The weather was perfect. Fred maintains this was his doing.",
   "Leftovers went to the Rochester warming shelter.",
 ];
+
+/**
+ * The [Real] facts from section 1 of the design doc
+ * (plans/2026-10-11-for-better-or-bulk-design.md, "Historical anchors"),
+ * copied word for word. The engine never reads them; the line bank checks
+ * its real lines against them.
+ */
+export const DESIGN_REAL_FACTS = {
+  date: "Friday, 10/10/25, at the Plummer House in Rochester, a publicly owned venue.",
+  prep: "Abbi did the vast majority of the work on Wednesday and Thursday, with friends helping. Friday was setup.",
+  tables: "They set up all the tables and chairs themselves.",
+  suit: "The suit shop lost Fred's suit. He guilted them into a free one and wore the rented tux anyway.",
+  morning:
+    "Fred was anxious and went out with his brothers. Abbi was upset that he wasn't helping.",
+  weather: "The weather was perfect. Fred maintains this was his doing.",
+  dinner:
+    "Hot dogs, wings, mac and cheese and quinoa salad from Costco, plus a Kirkland sheet cake for the guests. Abbi's sister made the cake they cut.",
+  leftovers: "Leftovers went to the Rochester warming shelter.",
+} as const;
+
+/** The ids of the real facts. */
+export type RealFactId = keyof typeof DESIGN_REAL_FACTS;
+
+/** One line the game can say. Real lines quote a fact; fiction lines quote none. */
+export interface BankLine {
+  readonly id: string;
+  readonly tag: "Real" | "Fiction";
+  readonly fact: RealFactId | null;
+  readonly text: string;
+}
+
+/**
+ * Every line the game may show, each tagged [Real] or [Fiction] as in the
+ * design doc. A real line must quote its fact exactly; a fiction line claims
+ * nothing about the real wedding.
+ */
+export const LINE_BANK: readonly BankLine[] = [
+  { id: "date", tag: "Real", fact: "date", text: DESIGN_REAL_FACTS.date },
+  { id: "prep", tag: "Real", fact: "prep", text: DESIGN_REAL_FACTS.prep },
+  { id: "tables", tag: "Real", fact: "tables", text: DESIGN_REAL_FACTS.tables },
+  { id: "suit", tag: "Real", fact: "suit", text: DESIGN_REAL_FACTS.suit },
+  {
+    id: "morning",
+    tag: "Real",
+    fact: "morning",
+    text: DESIGN_REAL_FACTS.morning,
+  },
+  {
+    id: "weather",
+    tag: "Real",
+    fact: "weather",
+    text: DESIGN_REAL_FACTS.weather,
+  },
+  { id: "dinner", tag: "Real", fact: "dinner", text: DESIGN_REAL_FACTS.dinner },
+  {
+    id: "leftovers",
+    tag: "Real",
+    fact: "leftovers",
+    text: DESIGN_REAL_FACTS.leftovers,
+  },
+  {
+    id: "game-weather",
+    tag: "Fiction",
+    fact: null,
+    text: "Game weather, not the real day",
+  },
+  {
+    id: "shower-start",
+    tag: "Fiction",
+    fact: null,
+    text: "A shower rolls across the lawn. Wet grass slows everyone down until it passes.",
+  },
+  {
+    id: "rush-start",
+    tag: "Fiction",
+    fact: null,
+    text: "Guests are early and the buffet is calling. The grill has to keep up.",
+  },
+];
+
+/** The text of one line in the bank, by its id. */
+export function bankText(id: string): string {
+  return LINE_BANK.find((line) => line.id === id)?.text ?? "";
+}
 
 /** Details the real story did not supply, filled in for play. */
 export const FICTION_DEFAULTS: readonly string[] = [

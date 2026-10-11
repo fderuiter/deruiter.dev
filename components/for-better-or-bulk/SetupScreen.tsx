@@ -14,6 +14,7 @@ import {
   LANTERN_PRICE,
   ROSE_PRICES,
   cartTotal,
+  dailySeed,
   validateSetup,
   type CapabilityId,
   type FoodTier,
@@ -96,6 +97,8 @@ export function SetupScreen({
   const [lanterns, setLanterns] = useState(initial.cart.lanterns);
   const [relaxed, setRelaxed] = useState(initial.relaxed);
   const [assist, setAssist] = useState(initial.assist ?? false);
+  const [seed, setSeed] = useState(initial.seed ?? 0);
+  const [todayPicked, setTodayPicked] = useState(false);
   const [mode, setMode] = useState<ControlMode>(initialMode);
 
   // The helper only exists in one-player play, so co-op never carries it.
@@ -104,6 +107,7 @@ export function SetupScreen({
     cart: { roses, food, lanterns },
     relaxed,
     assist: mode === "solo" && assist,
+    seed,
   };
   const total = cartTotal(setup.cart);
   const check = validateSetup(setup);
@@ -227,6 +231,54 @@ export function SetupScreen({
           <span className="mt-0.5">More time between 9:00 and 4:00.</span>
         </OptionButton>
       </div>
+
+      <fieldset className="min-w-0">
+        <legend className="mb-2 text-xs font-bold uppercase tracking-wide">
+          Day seed
+        </legend>
+        <div
+          role="radiogroup"
+          aria-label="Day seed"
+          className="grid min-w-0 gap-2 @2xl:grid-cols-2"
+        >
+          <OptionButton
+            selected={seed === 0}
+            onClick={() => {
+              setSeed(0);
+              setTodayPicked(false);
+            }}
+          >
+            <span className="font-bold text-[var(--fbb-text)]">
+              Standard day
+            </span>
+            <span className="mt-0.5">Seed 0. No shower, no guest rush.</span>
+          </OptionButton>
+          <OptionButton
+            selected={todayPicked}
+            onClick={() => {
+              // Computed on the click, never during render, so the server
+              // and the client markup always match.
+              setSeed(dailySeed(new Date()));
+              setTodayPicked(true);
+            }}
+          >
+            <span className="font-bold text-[var(--fbb-text)]">
+              Today&apos;s seed
+            </span>
+            <span className="mt-0.5">
+              The same events for everyone who plays today.
+            </span>
+          </OptionButton>
+        </div>
+        {seed !== 0 ? (
+          <p
+            className="mt-2 text-xs text-[var(--fbb-dim)]"
+            data-testid="fbb-seed"
+          >
+            Seed {seed}: a shower and a guest rush are on the schedule.
+          </p>
+        ) : null}
+      </fieldset>
 
       <fieldset className="min-w-0">
         <legend className="mb-2 text-xs font-bold uppercase tracking-wide">

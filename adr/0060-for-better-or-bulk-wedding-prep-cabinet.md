@@ -281,3 +281,28 @@ zero-trope invariant allows. Nothing is drawn outside the cabinet.
 over, so focus never drops to the page. It ends with "What actually happened":
 fixture facts only (the date and ceremony times, the weather and Abbi's goal),
 with a link to `/wedding`. The note never describes the couple's mindset.
+
+## Amendment (2026-10-11): playtest round 5
+
+Round 5 of the playtest (#1948) changed the rules below. Each change is in the
+engine, so a run recorded before these changes replays differently.
+
+- **Run codes recorded before these changes no longer verify.** A shared run
+  code replays its frames on the current engine. Any code made before round 5
+  fails verification and must be played again to share.
+- **Burnt batch recovery.** A burnt batch remembers the crate it was cooked
+  from. Binning it (holding work at the bin until it is thrown out) restocks
+  one batch of that crate, recorded as a `restocked` event and in the receipt's
+  kitchen line. The setup note for the food tiers says so.
+- **Chairs come in stacks of two.** One take from the chair crate picks up two
+  chairs (one when only one is left). A chair spot takes one chair and the
+  second stays in hand. The crate holds the venue's eight chairs.
+- **One outline per person.** The canvas outlines the tile the interact press
+  acts on, solid when the press can act and dashed when that tile is busy or
+  waiting. An unused faced tile is not outlined.
+- **Simplify says what it does.** The work prompt on an empty centerpiece or
+  petal spot reads "leave this table bare (drops it from the plan)", and the
+  manual says so.
+- **Prompts name the tile.** A take prompt names the item and its crate or
+  station, for example "Take the roses from the ROSE crate" and "Take the
+  cooked wings off the GRILL (G)".

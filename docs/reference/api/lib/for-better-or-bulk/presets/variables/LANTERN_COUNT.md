@@ -8,4 +8,4 @@
 
 > `const` **LANTERN\_COUNT**: `4` = `4`
 
-Lanterns in the bulk pack, and chair stacks the venue provides.
+Lanterns in the bulk pack, and the chairs the venue provides (one per chair spot).

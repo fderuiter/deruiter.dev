@@ -15,6 +15,7 @@ import type {
   Player,
   PlayerId,
   Station,
+  SupplyKind,
   Tile,
 } from "../types";
 
@@ -22,6 +23,12 @@ import type {
 export const GRILL_COOKS: Readonly<Partial<Record<ItemKind, ItemKind>>> = {
   "hotdogs-raw": "hotdogs",
   "wings-raw": "wings",
+};
+
+/** The raw crate each cooked food came from, so a burnt batch can restock it. */
+export const RAW_FOR_COOKED: Readonly<Partial<Record<ItemKind, SupplyKind>>> = {
+  hotdogs: "hotdogs-raw",
+  wings: "wings-raw",
 };
 
 export function tileAt(x: number, y: number): string {

@@ -13,6 +13,7 @@ import {
   bankText,
   CAPABILITIES,
   CATEGORY_LABELS,
+  CHAIR_COUNT,
   COMMITMENT_CATEGORIES,
   FIXED_COSTS,
   FOOD_PRICES,
@@ -179,7 +180,11 @@ function sourceCondition(state: GameState, category: Category): Condition {
         detail: `${FOOD_TIER_LABELS[cart.food]}, drinks and sheet cake included`,
       };
     case "chairs":
-      return { label: "Chairs from the shed", met: true, detail: "8 stacks" };
+      return {
+        label: "Chairs from the shed",
+        met: true,
+        detail: `${CHAIR_COUNT} chairs`,
+      };
   }
 }
 
@@ -434,6 +439,24 @@ function actualNote(): ActualNote {
   };
 }
 
+/**
+ * The kitchen line: burnt batches on the grill, and the batches binned and
+ * restocked from their crates. Null when neither happened.
+ */
+function kitchenLine(state: GameState): string | null {
+  const plural = (n: number) => `batch${n === 1 ? "" : "es"}`;
+  const parts: string[] = [];
+  if (state.burntBatches > 0)
+    parts.push(
+      `Extra smoky: ${state.burntBatches} ${plural(state.burntBatches)} burnt on the grill.`
+    );
+  if (state.burntRestocks > 0)
+    parts.push(
+      `Restocked ${state.burntRestocks} burnt ${plural(state.burntRestocks)} from the crate.`
+    );
+  return parts.length > 0 ? parts.join(" ") : null;
+}
+
 /** The ending receipt, derived purely from the level state. */
 export function computeReceipt(state: GameState): Receipt {
   const readiness = readinessLines(state);
@@ -448,10 +471,7 @@ export function computeReceipt(state: GameState): Receipt {
       state.finishedAt !== null
         ? `Everything was ready at ${clockLabel(state.finishedAt, state.duration)}.`
         : null,
-    kitchen:
-      state.burntBatches > 0
-        ? `Extra smoky: ${state.burntBatches} batch${state.burntBatches === 1 ? "" : "es"} burnt on the grill.`
-        : null,
+    kitchen: kitchenLine(state),
     signatureMoment: signatureMoment(readiness),
     assist: state.assistTicks > 0 ? ASSIST_LINE : null,
     actual: actualNote(),

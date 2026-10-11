@@ -10,7 +10,7 @@ import {
   BUFFET_ORDER,
   CAPABILITIES,
   CAPABILITY_PICKS,
-  CHAIR_STACKS,
+  CHAIR_COUNT,
   FIXED_COSTS,
   FOOD_BATCHES,
   FOOD_PRICES,
@@ -208,7 +208,7 @@ export function stockFor(cart: Cart): Record<SupplyKind, number> {
     mac: batches,
     quinoa: batches,
     lantern: cart.lanterns ? LANTERN_COUNT : 0,
-    chairs: CHAIR_STACKS,
+    chairs: CHAIR_COUNT,
   };
 }
 
@@ -280,6 +280,7 @@ export function createLevel(setup: Setup): GameState {
     brothersAt: null,
     firstFilledAt: null,
     burntBatches: 0,
+    burntRestocks: 0,
     finishedAt: null,
     assistTicks: 0,
   };

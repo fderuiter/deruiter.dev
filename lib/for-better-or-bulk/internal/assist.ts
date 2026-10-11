@@ -46,6 +46,8 @@ import {
   ITEM_NAMES,
   STATION_NAMES,
   TARGET_NAMES,
+  crateGrabName,
+  heldName,
 } from "./words";
 
 /** The assist acts on this many ticks out of every PACE_PERIOD: 2 of 5, about 40%. */
@@ -149,21 +151,22 @@ function openTargets(state: GameState, wants: ItemKind): Target[] {
   return state.targets.filter((t) => t.status === "open" && t.wants === wants);
 }
 
-function grabText(kind: SupplyKind): string {
-  return `fetching ${CRATE_ITEM_NAMES[kind]} from the ${CRATE_NAMES[kind]} crate`;
+function grabText(kind: SupplyKind, stock: number): string {
+  return `fetching ${crateGrabName(kind, stock)} from the ${CRATE_NAMES[kind]} crate`;
 }
 
 function cratesOf(state: GameState, kind: SupplyKind): Goal[] {
+  const text = grabText(kind, state.stock[kind]);
   return state.supplies
     .filter((s) => s.kind === kind)
-    .map((s) => at(s, "interact", grabText(kind)));
+    .map((s) => at(s, "interact", text));
 }
 
 /**
  * Every empty floor tile a dropped item may rest on, found by scanning the
  * venue. A tile holding a station, crate, target or floor item is taken.
  */
-function freeFloorGoals(state: GameState, item: ItemKind): Goal[] {
+function freeFloorGoals(state: GameState, item: Item): Goal[] {
   const taken = new Set<string>();
   for (const tile of [
     ...state.stations,
@@ -182,7 +185,7 @@ function freeFloorGoals(state: GameState, item: ItemKind): Goal[] {
         x,
         y,
         act: "interact",
-        text: `putting ${ITEM_NAMES[item]} down`,
+        text: `putting ${heldName(item)} down`,
       });
     }
   }
@@ -201,14 +204,13 @@ function isSupplyKind(kind: ItemKind): kind is SupplyKind {
  */
 function dropTiers(state: GameState, held: Item): Goal[][] {
   const tiers: Goal[][] = [];
-  if (state.floor.length < FLOOR_CAP)
-    tiers.push(freeFloorGoals(state, held.kind));
+  if (state.floor.length < FLOOR_CAP) tiers.push(freeFloorGoals(state, held));
   if (isSupplyKind(held.kind)) {
     const kind = held.kind;
     tiers.push(
       cratesOf(state, kind).map((g) => ({
         ...g,
-        text: `putting ${ITEM_NAMES[held.kind]} back in its crate`,
+        text: `putting ${heldName(held)} back in its crate`,
       }))
     );
   }
@@ -243,7 +245,7 @@ function carryTiers(state: GameState, held: Item): Goal[][] {
           at(
             t,
             "interact",
-            `carrying ${ITEM_NAMES[held.kind]} to ${TARGET_NAMES[t.kind]}`
+            `carrying ${heldName(held)} to ${TARGET_NAMES[t.kind]}`
           )
         ),
       ];

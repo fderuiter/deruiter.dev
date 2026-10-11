@@ -61,7 +61,7 @@ async function playToPlayback(page: Page) {
   await game.focus();
   const prompt = page.getByTestId("fbb-prompt-abbi");
   await page.keyboard.down("ArrowLeft");
-  await expect(prompt).toContainText("Take a paper lantern", {
+  await expect(prompt).toContainText("Take the lantern from the LAMP crate", {
     timeout: 10000,
   });
   await page.keyboard.up("ArrowLeft");

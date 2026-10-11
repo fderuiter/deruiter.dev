@@ -1013,9 +1013,12 @@ describe("the solo balance, scripted", () => {
         const solo = scriptedSolo(setup, false);
         const helped = scriptedSolo({ ...setup, assist: true }, true);
         const label = `seed ${seed}, relaxed ${relaxed}`;
+        // Chairs come two to a carry (#1948), so the relaxed clock's solo
+        // walk to the chairs is shorter and the helper saves less time there.
+        const margin = relaxed ? 5 : 15;
         expect(helped.abbi, label).toBeGreaterThan(0);
         expect(helped.abbi, label).toBeLessThanOrEqual(helped.fred);
-        expect(helped.finish + 15, label).toBeLessThan(solo.finish);
+        expect(helped.finish + margin, label).toBeLessThan(solo.finish);
       }
     }
   }, 120000);

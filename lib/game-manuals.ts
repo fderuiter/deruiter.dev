@@ -1049,7 +1049,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         title: "The grill does not wait",
         detail:
-          "Raw hot dogs and wings cook in a few seconds and burn a few seconds after that. Burnt food goes in the bin. Extra food in the cart is insurance against the grill, not extra credit.",
+          "Raw hot dogs and wings cook in a few seconds and burn a few seconds after that. Burnt food goes in the bin, and binning a batch restocks one batch from its crate. Extra food in the cart is insurance against the grill, not extra credit.",
         badge: "Grill",
       },
       {
@@ -1067,7 +1067,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         title: "Bare on purpose",
         detail:
-          "An empty centerpiece or petal spot can be simplified. It counts as a choice on the receipt, not as unfinished.",
+          "Hold F or Shift on an empty centerpiece or petal spot to leave it bare. Simplifying drops that spot from the plan, and the receipt counts it as a choice, not as unfinished.",
         badge: "Simplify",
       },
     ],
@@ -1075,7 +1075,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       "Put the meat on the grill first, then go do something else nearby.",
       "In one-player mode, park one person at the rose table and swap.",
       "The FAQ and the admin page stop the most calls.",
-      "Chairs are heavy but never burn.",
+      "Chairs are heavy but never burn. Two come off the crate at a time.",
     ],
     lore: {
       title: "The real wedding",

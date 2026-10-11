@@ -64,9 +64,11 @@ export const FOOD_BATCHES: Readonly<Record<FoodTier, number>> = {
   "feed-rochester": 3,
 };
 
-/** Lanterns in the bulk pack, and chair stacks the venue provides. */
+/** Lanterns in the bulk pack, and the chairs the venue provides (one per chair spot). */
 export const LANTERN_COUNT = 4;
-export const CHAIR_STACKS = 8;
+export const CHAIR_COUNT = 8;
+/** Chairs one carry takes off the crate: a stack of two, or one when only one is left. */
+export const CHAIRS_PER_CARRY = 2;
 
 /** A sensible starting setup: the one the tutorial text describes. */
 export const DEFAULT_SETUP: Setup = {
@@ -309,7 +311,7 @@ export const ITEM_LABELS: Readonly<Record<ItemKind, string>> = {
   quinoa: "a bowl of quinoa salad",
   burnt: "something that used to be food",
   lantern: "a paper lantern",
-  chairs: "a stack of chairs",
+  chairs: "a chair",
 };
 
 /** The prompt that marks a bin hold; the cabinet words it as a hold. */

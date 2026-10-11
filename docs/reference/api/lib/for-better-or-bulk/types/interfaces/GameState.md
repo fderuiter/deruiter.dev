@@ -31,6 +31,14 @@ Level time the brothers' text landed, once it has.
 
 ***
 
+### burntRestocks
+
+> `readonly` **burntRestocks**: `number`
+
+Burnt batches binned so far, each one restocked from its crate.
+
+***
+
 ### duration
 
 > `readonly` **duration**: `number`

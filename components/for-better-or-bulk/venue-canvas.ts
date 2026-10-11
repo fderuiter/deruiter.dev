@@ -554,12 +554,12 @@ function drawTileOutline(
 }
 
 /**
- * The outlines for one person. The tile their interact would act on is
- * outlined as the engine resolves it: a station beside them can beat the floor
- * in front of them. When a press would do nothing, the faced tile is outlined
- * instead, solid when that interact is available now and faint and dashed when
- * it is not. The coach's tile is outlined solid, or dashed for a wait step. A
- * tile that is both is outlined once.
+ * The one outline for one person. When their interact press lands on a tile
+ * (as the engine resolves it: a station beside them can beat the floor in
+ * front of them), that tile is outlined: solid when the press can act now,
+ * dashed when the coach is waiting on that tile. When no press lands, the
+ * faced tile is outlined dashed only if the coach is waiting on it, so a
+ * busy station still reads as "wait here". Any other faced tile stays bare.
  */
 function drawPersonOutlines(
   ctx: CanvasRenderingContext2D,
@@ -568,22 +568,18 @@ function drawPersonOutlines(
   coop: boolean
 ): void {
   const player = state.players[id];
+  if (player.presence === "away") return;
   const coach = getCoachStep(state, id, { coop });
-  const coachTile = coach?.tile ?? null;
-  const waiting = coach?.waiting === true;
-  const interact =
-    player.presence === "away"
-      ? null
-      : {
-          tile: interactTile(state, id) ?? frontTile(player),
-          ready: getPrompt(state, id).interact !== null,
-        };
-  if (interact && coachTile && sameTile(interact.tile, coachTile)) {
-    drawTileOutline(ctx, interact.tile, interact.ready && !waiting);
+  const waitTile = coach?.waiting === true ? coach.tile : null;
+  const press = interactTile(state, id);
+  if (press) {
+    const waiting = waitTile !== null && sameTile(waitTile, press);
+    const ready = getPrompt(state, id).interact !== null;
+    drawTileOutline(ctx, press, ready && !waiting);
     return;
   }
-  if (coachTile) drawTileOutline(ctx, coachTile, !waiting);
-  if (interact) drawTileOutline(ctx, interact.tile, interact.ready);
+  const faced = frontTile(player);
+  if (waitTile && sameTile(waitTile, faced)) drawTileOutline(ctx, faced, false);
 }
 
 function sameTile(a: Tile, b: Tile): boolean {

@@ -80,6 +80,17 @@ describe("useFocusTrap Hook & Accessibility Keyboard Boundary", () => {
     }
   });
 
+  it("does not read a torn-down document in the deferred initial-focus timer", () => {
+    render(<ModalDialog isOpen={true} />);
+
+    vi.stubGlobal("document", undefined);
+    try {
+      expect(() => vi.advanceTimersByTime(60)).not.toThrow();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("triggers onEscape callback when Escape key is pressed", async () => {
     const handleEscape = vi.fn();
     render(<ModalDialog isOpen={true} onEscape={handleEscape} />);

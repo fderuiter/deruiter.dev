@@ -82,7 +82,7 @@ function takePrompt(state: GameState, tile: Tile): string | null {
     return `Take ${crateTakeName(supply.kind, state.stock[supply.kind])} from the ${CRATE_NAMES[supply.kind]} crate`;
   if (station?.item)
     return `Take ${stationItemName(station.item)} off ${STATION_NAMES[station.kind]}`;
-  if (floorItem) return `Pick up ${heldLabel(floorItem.item)}`;
+  if (floorItem) return `Pick up ${heldLabel(floorItem.item)} off the floor`;
   return null;
 }
 
@@ -155,7 +155,10 @@ export function getPrompt(state: GameState, id: PlayerId): Prompt {
       work = `leave this ${spot} bare (drops it from the plan)`;
     }
   } else if (station?.kind === "bin") {
-    work = THROW_OUT_PROMPT;
+    work =
+      held.kind === "chairs"
+        ? `Put ${heldName(held)} back in the ${CRATE_NAMES.chairs} crate`
+        : THROW_OUT_PROMPT;
   }
   return { interact, work, status };
 }

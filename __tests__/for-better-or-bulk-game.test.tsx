@@ -432,7 +432,7 @@ describe("For Better or Bulk cabinet (#1906)", () => {
     expect(
       screen.getByText(new RegExp(`Abbi is carrying ${ITEM_LABELS.roses}`))
     ).toBeTruthy();
-    expect(screen.getByText(/Fred is still at the setup/)).toBeTruthy();
+    expect(screen.getByText(/Fred has not calmed down yet/)).toBeTruthy();
     unmount();
 
     const free = {

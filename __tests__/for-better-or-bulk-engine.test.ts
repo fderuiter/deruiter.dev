@@ -2053,6 +2053,34 @@ describe("chair stacks (#1948)", () => {
       "Take a chair from the CHAIR crate"
     );
   });
+
+  it("binning a stack returns both chairs to the crate instead of throwing them out", () => {
+    const level = createLevel(DEFAULT_SETUP);
+    const start = {
+      ...place(level, "fred", 6, 4, [0, -1], {
+        kind: "chairs",
+        madeBy: null,
+        count: 2,
+      }),
+      stock: { ...level.stock, chairs: CHAIR_COUNT - 2 },
+    };
+    expect(getPrompt(start, "fred").work).toBe(
+      "Put a stack of 2 chairs back in the CHAIR crate"
+    );
+    const binned = run(
+      start,
+      frameFor("fred", { work: true }),
+      ticks(BIN_HOLD_SECONDS)
+    );
+    expect(binned.state.stock.chairs).toBe(CHAIR_COUNT);
+    expect(binned.state.players.fred.holding).toBeNull();
+    expect(binned.events).toContainEqual({
+      type: "restocked",
+      player: "fred",
+      supply: "chairs",
+    });
+    expect(binned.events.some((e) => e.type === "thrown-out")).toBe(false);
+  });
 });
 
 describe("take prompts name the tile (#1948)", () => {

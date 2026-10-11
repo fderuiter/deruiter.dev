@@ -1013,9 +1013,11 @@ describe("the solo balance, scripted", () => {
         const solo = scriptedSolo(setup, false);
         const helped = scriptedSolo({ ...setup, assist: true }, true);
         const label = `seed ${seed}, relaxed ${relaxed}`;
-        // Chairs come two to a carry (#1948), so the relaxed clock's solo
-        // walk to the chairs is shorter and the helper saves less time there.
-        const margin = relaxed ? 5 : 15;
+        // Measured after #1948 (chairs two to a carry), for seeds 0, 4242 and
+        // 12345: the helper saves 33.9 to 41.6 s on the standard clock and
+        // 7.6 s on the relaxed clock. Each margin is about half the smallest
+        // saving, rounded down: 16 s standard, 3 s relaxed.
+        const margin = relaxed ? 3 : 16;
         expect(helped.abbi, label).toBeGreaterThan(0);
         expect(helped.abbi, label).toBeLessThanOrEqual(helped.fred);
         expect(helped.finish + margin, label).toBeLessThan(solo.finish);

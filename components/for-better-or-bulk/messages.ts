@@ -17,6 +17,7 @@ import {
   type PlayerId,
   type GameState,
   type SeededEventId,
+  type SupplyKind,
 } from "@/lib/for-better-or-bulk";
 
 const NAMES = { fred: "Fred", abbi: "Abbi" } as const;
@@ -139,8 +140,15 @@ const SUPPLY_LABELS = {
   mac: "mac and cheese",
   quinoa: "quinoa salad",
   lantern: "lanterns",
-  chairs: "chair stacks",
+  chairs: "chairs",
 } as const;
+
+/** The line for a crate that got stock back, by what went back in. */
+const RESTOCK_LINES: Readonly<Partial<Record<SupplyKind, string>>> = {
+  "hotdogs-raw": "The crate had one more batch of hot dogs.",
+  "wings-raw": "The crate had one more batch of wings.",
+  chairs: "The chairs went back in the crate.",
+};
 
 /**
  * Keeps the events to show, dropping a floor-full line the same person was
@@ -177,6 +185,8 @@ export function describeEvent(event: GameEvent): string | null {
         : "The wings are done.";
     case "burnt":
       return "Something on the grill is now charcoal.";
+    case "restocked":
+      return RESTOCK_LINES[event.supply] ?? null;
     case "supply-empty":
       return `That was the last of the ${SUPPLY_LABELS[event.supply]}.`;
     case "simplified":

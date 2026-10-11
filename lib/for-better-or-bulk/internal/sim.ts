@@ -354,6 +354,10 @@ function holdAtBin(w: Working, id: PlayerId, dt: number): void {
   const binHold = player.binHold + dt;
   if (binHold + 1e-9 >= BIN_HOLD_SECONDS) {
     setPlayer(w, { ...player, holding: null, binHold: 0 });
+    if (item.kind === "chairs") {
+      returnChairs(w, id, item.count ?? 1);
+      return;
+    }
     w.events.push({ type: "thrown-out", player: id, item: item.kind });
     if (item.kind === "burnt" && item.source) restockBatch(w, id, item.source);
   } else {
@@ -373,6 +377,19 @@ function restockBatch(w: Working, id: PlayerId, supply: SupplyKind): void {
     burntRestocks: w.state.burntRestocks + 1,
   };
   w.events.push({ type: "restocked", player: id, supply });
+}
+
+/**
+ * Binned chairs are not thrown out: the whole stack goes back to the chair
+ * crate, so the venue's chairs can always still be placed.
+ */
+function returnChairs(w: Working, id: PlayerId, count: number): void {
+  const stock = w.state.stock;
+  w.state = {
+    ...w.state,
+    stock: { ...stock, chairs: stock.chairs + count },
+  };
+  w.events.push({ type: "restocked", player: id, supply: "chairs" });
 }
 
 /** Letting go of work, or facing something else, starts a bin hold over. */

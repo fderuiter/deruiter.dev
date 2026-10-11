@@ -197,6 +197,18 @@ describe("For Better or Bulk event lines (#1906)", () => {
       })
     ).toContain("Restraint");
   });
+
+  it("says when a crate got stock back, and names the chair stacks as chairs", () => {
+    expect(
+      describeEvent({ type: "restocked", player: "fred", supply: "wings-raw" })
+    ).toBe("The crate had one more batch of wings.");
+    expect(
+      describeEvent({ type: "restocked", player: "abbi", supply: "chairs" })
+    ).toBe("The chairs went back in the crate.");
+    expect(describeEvent({ type: "supply-empty", supply: "chairs" })).toBe(
+      "That was the last of the chairs."
+    );
+  });
 });
 
 describe("For Better or Bulk venue canvas (#1906)", () => {

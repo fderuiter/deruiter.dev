@@ -44,7 +44,7 @@ function abbiLine(state: GameState): string {
 function fredLine(state: GameState): string {
   return state.players.fred.calm
     ? "Fred has calmed down."
-    : "Fred is still at the setup.";
+    : "Fred has not calmed down yet.";
 }
 
 /** Promises worth making: ones whose work is actually in this plan. */

@@ -284,19 +284,24 @@ with a link to `/wedding`. The note never describes the couple's mindset.
 
 ## Amendment (2026-10-11): playtest round 5
 
-Round 5 of the playtest (#1948) changed the rules below. Each change is in the
-engine, so a run recorded before these changes replays differently.
+Round 5 of the playtest (#1948) changed the rules below. Some changes are in
+the engine, so a run recorded before them can replay differently. The first
+bullet says which runs are affected.
 
-- **Run codes recorded before these changes no longer verify.** A shared run
-  code replays its frames on the current engine. Any code made before round 5
-  fails verification and must be played again to share.
+- **Run codes recorded before these changes may no longer verify.** A shared
+  run code replays its frames on the current engine and must reproduce its own
+  result. A code made before round 5 still verifies unless its run took chairs
+  from the chair crate or binned a burnt batch. Those runs replay differently,
+  so their codes can fail verification and must be played again to share.
 - **Burnt batch recovery.** A burnt batch remembers the crate it was cooked
   from. Binning it (holding work at the bin until it is thrown out) restocks
   one batch of that crate, recorded as a `restocked` event and in the receipt's
   kitchen line. The setup note for the food tiers says so.
 - **Chairs come in stacks of two.** One take from the chair crate picks up two
   chairs (one when only one is left). A chair spot takes one chair and the
-  second stays in hand. The crate holds the venue's eight chairs.
+  second stays in hand. Holding a stack at the bin returns it to the crate,
+  count by count, so the venue's eight chairs are never lost. The crate holds
+  the venue's eight chairs.
 - **One outline per person.** The canvas outlines the tile the interact press
   acts on, solid when the press can act and dashed when that tile is busy or
   waiting. An unused faced tile is not outlined.

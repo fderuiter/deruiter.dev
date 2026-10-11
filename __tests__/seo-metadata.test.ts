@@ -570,7 +570,7 @@ describe("SEO Architecture & JSON-LD Schemas", () => {
     expect(viewport.colorScheme).toBe("dark");
   });
 
-  it("buildRouteMetadata declares 1200x630 image/png OpenGraph images on every route (#1251)", () => {
+  it("buildRouteMetadata declares 1200x630 OpenGraph images of the route's card type on every route (#1251, #1903)", () => {
     for (const [key, config] of Object.entries(ROUTE_METADATA_CONFIGS)) {
       const images = buildRouteMetadata(config).openGraph?.images as Array<{
         width?: number;
@@ -580,7 +580,7 @@ describe("SEO Architecture & JSON-LD Schemas", () => {
       expect(images[0], key).toMatchObject({
         width: 1200,
         height: 630,
-        type: "image/png",
+        type: config.ogImageType ?? "image/png",
       });
     }
   });
@@ -730,26 +730,19 @@ describe("SEO Architecture & JSON-LD Schemas", () => {
     expect(cacheControl).toContain("stale-while-revalidate=");
   });
 
-  it("root opengraph-image and twitter-image generators return valid responses", async () => {
-    const { default: rootOgImage, size: ogSize } =
-      await import("@/app/opengraph-image");
-    const { default: rootTwitterImage, size: twitterSize } =
-      await import("@/app/twitter-image");
+  it("root opengraph-image and twitter-image routes declare the arcade showcase card", async () => {
+    const og = await import("@/app/opengraph-image");
+    const twitter = await import("@/app/twitter-image");
 
-    expect(ogSize).toEqual({ width: 1200, height: 630 });
-    expect(twitterSize).toEqual({ width: 1200, height: 630 });
-
-    const ogRes = rootOgImage();
-    const twRes = rootTwitterImage();
-
-    expect(ogRes).toBeDefined();
-    expect(twRes).toBeDefined();
-    expect(ogRes.headers.get("content-type")).toContain("image/png");
-    expect(twRes.headers.get("content-type")).toContain("image/png");
+    for (const route of [og, twitter]) {
+      expect(route.size).toEqual({ width: 1200, height: 630 });
+      expect(route.contentType).toBe("image/jpeg");
+      expect(route.alt).toMatch(/games you can play in your browser/);
+      expect(typeof route.default).toBe("function");
+    }
   });
 
   it("interactive hub opengraph-image generators return valid responses", async () => {
-    const { default: arcadeOg } = await import("@/app/arcade/opengraph-image");
     const { default: proofOg } = await import("@/app/proof/opengraph-image");
     const { default: simulatorOg } =
       await import("@/app/simulator/opengraph-image");
@@ -762,7 +755,6 @@ describe("SEO Architecture & JSON-LD Schemas", () => {
       await import("@/app/case-studies/opengraph-image");
 
     for (const generator of [
-      arcadeOg,
       proofOg,
       simulatorOg,
       stackOg,
@@ -777,72 +769,21 @@ describe("SEO Architecture & JSON-LD Schemas", () => {
     }
   });
 
-  it("all 10 targeted showcase, asset hub, and arcade route social preview cards exist and return edge-cached image responses", async () => {
+  it("showcase and asset hub social preview cards exist and return edge-cached image responses", async () => {
     const { default: crfOg } = await import("@/app/crf/opengraph-image");
     const { default: neuroOg } = await import("@/app/neuro/opengraph-image");
-    const { default: clinicalChaosOg } =
-      await import("@/app/arcade/clinical-chaos/opengraph-image");
-    const { default: garminWatchOg } =
-      await import("@/app/arcade/garmin-watch/opengraph-image");
-    const { default: laserLoonOg } =
-      await import("@/app/arcade/laser-loon/opengraph-image");
     const { default: laserLoonWorkOg } =
       await import("@/app/work/laser-loon/opengraph-image");
-    const { default: protocolDriftOg } =
-      await import("@/app/protocol-drift/opengraph-image");
-    const { default: quasiPuzzlerOg } =
-      await import("@/app/arcade/quasi-puzzler/opengraph-image");
-    const { default: retroLabyrinthOg } =
-      await import("@/app/arcade/retro-labyrinth/opengraph-image");
-    const { default: workingWithDuckOg } =
-      await import("@/app/arcade/working-with-duck/opengraph-image");
 
     const targetedGenerators = [
       { name: "/crf", generator: crfOg, routeKey: "crf" },
       { name: "/neuro", generator: neuroOg, routeKey: "neuro" },
       {
-        name: "/arcade/clinical-chaos",
-        generator: clinicalChaosOg,
-        routeKey: "clinicalChaos",
-      },
-      {
-        name: "/arcade/garmin-watch",
-        generator: garminWatchOg,
-        routeKey: "garminWatch",
-      },
-      {
-        name: "/arcade/laser-loon",
-        generator: laserLoonOg,
-        routeKey: "laserLoon",
-      },
-      {
         name: "/work/laser-loon",
         generator: laserLoonWorkOg,
         routeKey: "laserLoonCaseStudy",
       },
-      {
-        name: "/protocol-drift",
-        generator: protocolDriftOg,
-        routeKey: "protocolDrift",
-      },
-      {
-        name: "/arcade/quasi-puzzler",
-        generator: quasiPuzzlerOg,
-        routeKey: "quasiPuzzler",
-      },
-      {
-        name: "/arcade/retro-labyrinth",
-        generator: retroLabyrinthOg,
-        routeKey: "retroLabyrinth",
-      },
-      {
-        name: "/arcade/working-with-duck",
-        generator: workingWithDuckOg,
-        routeKey: "workingWithDuck",
-      },
     ];
-
-    expect(targetedGenerators).toHaveLength(10);
 
     for (const item of targetedGenerators) {
       const res = item.generator();
@@ -857,6 +798,59 @@ describe("SEO Architecture & JSON-LD Schemas", () => {
 
       const routeConfig = ROUTE_METADATA_CONFIGS[item.routeKey];
       expect(routeConfig).toBeDefined();
+    }
+  });
+
+  it("arcade hub and every game declare a JPEG screenshot card that metadata advertises as JPEG (#1903)", async () => {
+    const routes = [
+      ["arcade", () => import("@/app/arcade/opengraph-image")],
+      [
+        "clinicalChaos",
+        () => import("@/app/arcade/clinical-chaos/opengraph-image"),
+      ],
+      [
+        "garminWatch",
+        () => import("@/app/arcade/garmin-watch/opengraph-image"),
+      ],
+      ["laserLoon", () => import("@/app/arcade/laser-loon/opengraph-image")],
+      ["memeVault", () => import("@/app/arcade/meme-vault/opengraph-image")],
+      [
+        "pattyDriveThru",
+        () => import("@/app/arcade/patty-drive-thru/opengraph-image"),
+      ],
+      ["protocolDrift", () => import("@/app/protocol-drift/opengraph-image")],
+      [
+        "quasiPuzzler",
+        () => import("@/app/arcade/quasi-puzzler/opengraph-image"),
+      ],
+      [
+        "retroLabyrinth",
+        () => import("@/app/arcade/retro-labyrinth/opengraph-image"),
+      ],
+      [
+        "studyDirector",
+        () => import("@/app/arcade/study-director/opengraph-image"),
+      ],
+      [
+        "trialAndError",
+        () => import("@/app/arcade/trial-and-error/opengraph-image"),
+      ],
+      [
+        "workingWithDuck",
+        () => import("@/app/arcade/working-with-duck/opengraph-image"),
+      ],
+    ] as const;
+
+    for (const [routeKey, load] of routes) {
+      const route = await load();
+      expect(route.contentType, routeKey).toBe("image/jpeg");
+      expect(route.size, routeKey).toEqual({ width: 1200, height: 630 });
+      expect(route.alt.length, routeKey).toBeGreaterThan(40);
+
+      const config = ROUTE_METADATA_CONFIGS[routeKey]!;
+      expect(config.ogImageType, routeKey).toBe("image/jpeg");
+      const images = buildRouteMetadata(config).openGraph?.images;
+      expect(JSON.stringify(images), routeKey).toContain("image/jpeg");
     }
   });
 

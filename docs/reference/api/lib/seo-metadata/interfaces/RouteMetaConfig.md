@@ -44,6 +44,14 @@
 
 ***
 
+### ogImageType?
+
+> `optional` **ogImageType?**: `"image/jpeg"` \| `"image/png"`
+
+Media type of the route's opengraph-image; screenshot cards are JPEG. Defaults to PNG.
+
+***
+
 ### ogType?
 
 > `optional` **ogType?**: `"article"` \| `"website"`

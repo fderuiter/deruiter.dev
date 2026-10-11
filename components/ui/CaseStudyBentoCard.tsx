@@ -38,7 +38,7 @@ const REALITY_CONTENT: Record<string, string> = {
   "cadence-clinical":
     "Building a unified eCRF orchestrator sounds elegant until clinical trial coordinators attempt to create dynamic conditional logic trees with 40 circular dependencies. We had to write a custom DAG resolution engine and aggressive client-side form debouncing to keep the UI from lagging during 50-field visits.",
   "wedding-website":
-    "Building a bespoke event portal for your own wedding is the ultimate high-stakes deployment. Zero downtime tolerance when 150 relatives try to RSVP at once, and debugging custom Framer Motion spring physics on aunties' 7-year-old iPads at midnight before the rehearsal dinner was a character-building experience.",
+    "The registry scraper, the admin page and the 3D heart all shipped before the wedding. Renewing the domain afterwards did not happen, so a year later the site was simply gone and came back as a static archive.",
   "hono-kiln":
     "Building an edge-native multi-tenant runtime requires intense discipline around dynamic imports and driver abstractions. We initially experienced subtle connection pool exhaustion during peak serverless burst traffic, which we resolved by implementing HTTP-based Neon database connection pooling and contextual tenant repository proxies.",
   "inbody-qr-decoder":

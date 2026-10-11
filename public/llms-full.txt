@@ -384,7 +384,7 @@ Quasiperfect numbers make for a deceptively short question and a very large sear
 
 The approach: Rust branch-and-bound routines narrow the search space. Lean 4 provides a separate place to express and verify the mathematical arguments.
 
-### A Wedding Website: RSVPs, Dinner Choices, and One Database
+### Our Wedding Website: A Registry, a Heart, and a Lapsed Domain
 
 URL: https://deruiter.dev/case-studies/wedding-website
 Primary language: TypeScript
@@ -392,15 +392,15 @@ Source: https://github.com/fderuiter/wedding_website
 
 Abstract:
 
-A wedding website with invitation codes, RSVPs for multiple events, dietary requirements, and an admin dashboard. Built with **Next.js**, **Prisma**, and **PostgreSQL**. Apparently wedding planning was going to involve a schema.
+The website for our 10/10/25 wedding: a **Next.js** and **Prisma** site with a custom registry that fills itself in from a pasted product link, group gifts, and a 3D heart. RSVPs went through an iCloud invite on purpose. A year later the domain had lapsed, so the site lives on as a static archive.
 
 Architecture and trade-offs:
 
 The problem
 
-A wedding RSVP becomes a data-modeling problem surprisingly quickly. One household can have several guests, different event invitations, and multiple dietary requirements. This site gives those details a home without making guests think about the database underneath.
+Abbi and I got married on 10 October 2025 at the Plummer House in Rochester, Minnesota, for under $4,000. The free wedding platforms are free because they sell to you: vendor ads, upsells, and a registry that takes a cut. I wanted a site that looked like us, pushed nothing at our guests, and kept their names off a marketing list. I'm also an engineer, so "how hard can it be?" was always going to win.
 
-The approach: Next.js Server Actions handle submissions, Zod checks the inputs, and Prisma writes guest and RSVP records to PostgreSQL. Confirmation emails close the loop.
+The approach: A Next.js site with a home page (our story, the schedule, the venue, travel notes and an FAQ), a custom registry, a wedding party page, things to do in Rochester, a forecast for the day, a photo gallery, and an admin page so Abbi could edit the registry without me. The first commit was 11 April 2025. By the last release before the wedding the repository had 171 commits.
 
 ## Routes
 

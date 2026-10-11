@@ -187,7 +187,7 @@ export const PORTFOLIO_PHOTOS: PortfolioPhoto[] = [
     alt: "Frederick in a blue rain poncho and his partner in a pink poncho smiling together with the Statue of Liberty and American flag in the rainy background.",
     title: "Rainy Day at Lady Liberty",
     caption:
-      "The real couple behind the 250+ guest wedding RSVP database project, braving New York weather.",
+      "Abbi and Fred, the couple behind the wedding website, braving New York weather.",
     category: "personal",
     tags: ["couple", "wedding-website", "travel", "new-york"],
     aspectRatio: "3:4",
@@ -199,8 +199,7 @@ export const PORTFOLIO_PHOTOS: PortfolioPhoto[] = [
     height: 1024,
     alt: "A close-up selfie of Frederick wearing aviator sunglasses and cap smiling brightly beside his partner in a pink shirt in front of a brick building.",
     title: "Sunny Summer Walk",
-    caption:
-      "Celebrating a milestone weekend after building out full-stack wedding systems.",
+    caption: "A sunny walk in the summer before the wedding.",
     category: "personal",
     tags: ["couple", "wedding-website", "summer", "smile"],
     aspectRatio: "3:4",

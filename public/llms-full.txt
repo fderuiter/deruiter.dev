@@ -428,6 +428,7 @@ The approach: Next.js Server Actions handle submissions, Zod checks the inputs, 
 
 - [Arcade: Browser Games and Puzzles](https://deruiter.dev/arcade): Try browser games by Fred de Ruiter: a laser loon, a demanding puppy, logic puzzles, clinical trial games, and a smartwatch with little memory to spare.
 - [Clinical Trial Chaos: SDTM Game](https://deruiter.dev/arcade/clinical-chaos): Sort clinical data into SDTM domains, sign the submissions, and keep up with the conveyor belt while the auditor watches. At least there is a restart button.
+- [For Better or Bulk: Costco Wedding](https://deruiter.dev/arcade/for-better-or-bulk): Set up our real Costco wedding before the 4:00 ceremony: grill hot dogs, arrange Kirkland roses and stack chairs, solo or as two players on one keyboard.
 - [Monkey C Mayhem: Garmin Schvitz App](https://deruiter.dev/arcade/garmin-watch): Keep a simulated smartwatch running within a 32KB memory budget. Dodge obstacles, clear memory, and wipe the screen when it fogs up in Monkey C Mayhem.
 - [Laser Loon: Quest for the State Flag](https://deruiter.dev/arcade/laser-loon): Fly F277 Laser Loon through four campaign acts from Lake Minnetonka to the State Capitol dome, blasting rival flags and red tape in this browser game.
 - [Meme Vault: Soundboard and Trophies](https://deruiter.dev/arcade/meme-vault): Make some noise with a synthesized browser soundboard, discover hidden trophies, and enjoy a few jokes about code, clinical data, and the working day.

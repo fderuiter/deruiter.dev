@@ -195,6 +195,7 @@ function installCanvasContextMocks(): void {
             height: 16,
           })),
           transform: vi.fn(),
+          setTransform: vi.fn(),
           resetTransform: vi.fn(),
         } as unknown as RenderingContext;
       }

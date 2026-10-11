@@ -73,6 +73,11 @@ export const GAME_CARD_COPY = {
     tagline:
       "One shift at the drive-thru window of a first job, in first person. Keep moving so the manager does not notice.",
   },
+  "for-better-or-bulk": {
+    title: "For Better or Bulk",
+    tagline:
+      "Set up our Costco wedding before 4:00. Grill the hot dogs, arrange the Kirkland roses, and don't leave with your brothers.",
+  },
   "protocol-drift": {
     title: "Protocol Drift",
     tagline:

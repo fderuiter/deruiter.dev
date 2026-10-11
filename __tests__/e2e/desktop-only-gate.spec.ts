@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-// ADR 0048: nine games show a desktop-only notice on phones and portrait
+// ADR 0048: ten games show a desktop-only notice on phones and portrait
 // tablets. Each case sets its own viewport and touch emulation so the spec
 // means the same thing under every Playwright project.
 const GATED = [
@@ -12,6 +12,7 @@ const GATED = [
   "retro-labyrinth",
   "study-director",
   "patty-drive-thru",
+  "for-better-or-bulk",
 ];
 
 // Protocol Drift is a simulator now (#1841) and keeps the same desktop-only gate.

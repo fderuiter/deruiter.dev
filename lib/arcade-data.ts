@@ -207,6 +207,33 @@ export const ARCADE_GAMES_METADATA: ArcadeGameMetadata[] = [
     storageKey: "patty_drive_thru_high_score",
     route: "/arcade/patty-drive-thru",
   },
+  {
+    id: "for-better-or-bulk",
+    slug: "for-better-or-bulk",
+    title: "For Better or Bulk",
+    subtitle: "Our Costco Wedding, Set Up in Real Time",
+    genre: "Co-op Kitchen Chaos",
+    description:
+      "Friday setup for a real wedding that came in under $4,000, mostly from Costco. Fred and Abbi race the clock to 4:00: arrange Kirkland roses, grill hot dogs before they burn, stack chairs and hang lanterns, while phone calls about the website and a text from Fred's brothers get in the way.",
+    mechanics: [
+      "Real-Time Couch Co-op",
+      "Grill Timers That Burn",
+      "Website Features Block Calls",
+      "The Brothers' Text",
+      "A Receipt That Explains Itself",
+    ],
+    techStack: [
+      "Fixed-Step Deterministic Engine",
+      "Canvas 2D Venue",
+      "Replayable Input Frames",
+      "Condition-Based Receipt",
+    ],
+    accentColor: "text-rose-300",
+    borderHover: "hover:border-rose-300/50",
+    badgeBg: "bg-rose-300/10 text-rose-300 border-rose-300/30",
+    storageKey: "for_better_or_bulk_high_score",
+    route: "/arcade/for-better-or-bulk",
+  },
   // Protocol Drift lives with the simulators at /protocol-drift (#1841). It
   // keeps its entry here so its achievements and trophies stay in the cabinet;
   // the hub, previous/next ring and game count use ARCADE_GAME_ROUTES instead.

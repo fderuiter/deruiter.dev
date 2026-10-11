@@ -209,6 +209,11 @@ export const PUBLIC_ROUTE_REGISTRY = [
     category: "arcade",
   },
   {
+    path: "/arcade/for-better-or-bulk",
+    name: "Game: For Better or Bulk",
+    category: "arcade",
+  },
+  {
     path: "/protocol-drift",
     name: "Protocol Drift Simulator",
     category: "tool",

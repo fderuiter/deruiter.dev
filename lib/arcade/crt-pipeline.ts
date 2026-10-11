@@ -491,6 +491,8 @@ export const CABINET_CRT_PROFILES: Readonly<Record<string, CabinetCrtProfile>> =
     // A WebGL booth with its own fluorescent look (ADR 0059), so it starts
     // with no CRT, as a DOM game does.
     "patty-drive-thru": { surface: "dom", gameDrawsCrt: false },
+    // A flat top-down canvas venue in daylight (ADR 0060), so no CRT.
+    "for-better-or-bulk": { surface: "dom", gameDrawsCrt: false },
     "protocol-drift": { surface: "dom", gameDrawsCrt: false },
     "meme-vault": { surface: "dom", gameDrawsCrt: false },
   };

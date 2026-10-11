@@ -1433,3 +1433,24 @@
     animation: none;
   }
 }
+
+[data-game="for-better-or-bulk"] {
+  --game-accent: #fda4af;
+}
+
+/* For Better or Bulk (ADR 0060): a daylight garden venue on graphite
+ * panels, scoped to the launched cabinet so nothing leaks into the
+ * portfolio frame. No continuous effects; toasts are plain text. */
+[data-fbb-cabinet] {
+  --fbb-stage: #13151a;
+  --fbb-panel: #1b1e24;
+  --fbb-selected: #2a2522;
+  --fbb-rule: rgba(255, 255, 255, 0.12);
+  --fbb-text: #f4f4f6;
+  --fbb-dim: #b4b8c0;
+  --fbb-accent: #f59e0b;
+  --fbb-focus: #fbbf24;
+  --fbb-ok: #10b981;
+  --fbb-alert: #fca5a5;
+  --fbb-toast: rgba(13, 14, 17, 0.86);
+}

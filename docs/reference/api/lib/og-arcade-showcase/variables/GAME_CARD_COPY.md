@@ -24,6 +24,18 @@ Link preview copy for every game with a shipped arcade screenshot, keyed by slug
 
 > `readonly` **title**: `"Clinical Trial Chaos"` = `"Clinical Trial Chaos"`
 
+### for-better-or-bulk
+
+> `readonly` **for-better-or-bulk**: `object`
+
+#### for-better-or-bulk.tagline
+
+> `readonly` **tagline**: `"Set up our Costco wedding before 4:00. Grill the hot dogs, arrange the Kirkland roses, and don't leave with your brothers."` = `"Set up our Costco wedding before 4:00. Grill the hot dogs, arrange the Kirkland roses, and don't leave with your brothers."`
+
+#### for-better-or-bulk.title
+
+> `readonly` **title**: `"For Better or Bulk"` = `"For Better or Bulk"`
+
 ### garmin-watch
 
 > `readonly` **garmin-watch**: `object`

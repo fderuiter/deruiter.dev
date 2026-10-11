@@ -39,6 +39,7 @@ import {
   IconCamera,
   IconClipboardCheck,
   IconHeadset,
+  IconRings,
   IconPlayerPlay,
   IconCircleDot,
 } from "@tabler/icons-react";
@@ -838,6 +839,26 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           "A register built to be fought",
           "Fully playable from the keyboard",
           "A pay stub and a closing note",
+        ],
+      },
+      {
+        id: "nav-for-better-or-bulk",
+        title: "For Better or Bulk",
+        subtitle:
+          "Set up our Costco wedding before the 4:00 ceremony, solo or as two players on one keyboard.",
+        category: "navigation",
+        url: "/arcade/for-better-or-bulk",
+        icon: <IconRings className="w-4 h-4 text-brand-cyan" />,
+        badge: "Co-op",
+        status: "Playable",
+        description:
+          "A real-time setup rush based on our wedding, which came in under $4,000, mostly from Costco. Arrange Kirkland roses, grill hot dogs before they burn, stack chairs and hang lanterns while phone calls about the website and a text from Fred's brothers get in the way. The receipt at the end explains what happened.",
+        techStack: ["Fixed-Step Engine", "Canvas 2D", "Couch Co-op"],
+        highlights: [
+          "Two players on one keyboard",
+          "Website features that block phone calls",
+          "A brothers' text that pauses the clock",
+          "A receipt, not a grade",
         ],
       },
       {

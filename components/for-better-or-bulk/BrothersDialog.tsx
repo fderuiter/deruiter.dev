@@ -114,7 +114,7 @@ export function BrothersDialog({ state, onDecide }: BrothersDialogProps) {
                 state.time + onLevelClock(LEAVE_SECONDS, state.duration),
                 state.duration
               )}
-              . Abbi works alone until he&apos;s back. The website is up.)
+              . Abbi works alone until Fred is back. The website is up.)
             </button>
           </div>
         ) : (

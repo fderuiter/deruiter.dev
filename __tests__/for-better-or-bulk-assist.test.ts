@@ -889,6 +889,16 @@ describe("the solo balance, scripted", () => {
     expect(placed).toBeGreaterThan(planned / 2);
   }, 30000);
 
+  it("on the relaxed clock an idle player with the helper leaves work open (seeds 0 and 4242)", () => {
+    for (const seed of [0, 4242]) {
+      for (const helped of ["abbi", "fred"] as const) {
+        const state = playOut({ ...ASSIST_SETUP, relaxed: true, seed }, helped);
+        const open = state.targets.filter((t) => t.status === "open").length;
+        expect(open, `seed ${seed}, helper for ${helped}`).toBeGreaterThan(0);
+      }
+    }
+  }, 120000);
+
   it("an assisted solo run finishes well before an unassisted one", () => {
     const off = scriptedSolo(DEFAULT_SETUP, false);
     const on = scriptedSolo(ASSIST_SETUP, true);

@@ -493,10 +493,12 @@ describe("For Better or Bulk coach strip and counts", () => {
     runUntil(() => screen.queryByTestId("fbb-brothers") !== null);
     fireEvent.click(screen.getByRole("button", { name: /Go with them/ }));
     const coach = screen.getByTestId("fbb-coach");
-    expect(within(coach).getByRole("list").textContent).toContain(
+    // His absence is said once, in his prompt, not repeated in the coach list.
+    expect(coach.textContent).not.toContain("Fred is out with his brothers.");
+    expect(coach.textContent).not.toContain("Fred: ");
+    expect(screen.getByTestId("fbb-prompt-fred").textContent).toContain(
       "Fred is out with his brothers."
     );
-    expect(coach.textContent).not.toContain("Fred: ");
   });
 
   it("hides the strip when a stale saved choice is overridden and the save fails", () => {
@@ -653,7 +655,20 @@ describe("For Better or Bulk side panel: helper, partner and day (fbb round)", (
     expect(screen.getByTestId("fbb-active").textContent).toContain("Abbi");
     const fred = screen.getByTestId("fbb-prompt-fred").textContent ?? "";
     expect(fred).toContain("Fred is out with his brothers.");
-    expect(fred).toContain("Back around 3:17.");
+    expect(fred).toContain("Back around 3:18.");
+  });
+
+  it("does not let Tab hand the keys to a partner who is out", () => {
+    render(<ForBetterOrBulkGame />);
+    start();
+    runUntil(() => screen.queryByTestId("fbb-brothers") !== null);
+    fireEvent.click(screen.getByRole("button", { name: /Go with them/ }));
+    expect(screen.getByTestId("fbb-active").textContent).toContain("Abbi");
+    fireEvent.keyDown(game(), { key: "Tab", code: "Tab" });
+    expect(screen.getByTestId("fbb-active").textContent).toContain("Abbi");
+    expect(screen.getByRole("status").textContent).toBe(
+      "Fred is out with his brothers."
+    );
   });
 
   it("offers the leave option with the promise that Abbi works alone", () => {
@@ -665,7 +680,7 @@ describe("For Better or Bulk side panel: helper, partner and day (fbb round)", (
     render(<BrothersDialog state={atText} onDecide={vi.fn()} />);
     expect(
       screen.getByRole("button", { name: /Go with them/ }).textContent
-    ).toContain("Abbi works alone until he's back.");
+    ).toContain("Abbi works alone until Fred is back.");
   });
 
   it("shows the shower's start toast on the cabinet", () => {

@@ -23,6 +23,7 @@ import {
   VENUE_MAP,
   WALKABLE_TILES,
   ReplayError,
+  bankText,
   cartTotal,
   clockLabel,
   computeReceipt,
@@ -1484,9 +1485,10 @@ describe("the receipt's copy", () => {
     expect(LEFT_LINE).not.toContain("requested separately");
   });
 
-  it("names the fictional tux shop on the receipt", () => {
+  it("names the tux shop on the receipt without calling it made up", () => {
     const receipt = computeReceipt(finishIdle(DEFAULT_SETUP, STAY_DECISION));
-    expect(receipt.suit).toContain("The Suit Wherehouse (a made-up name)");
+    expect(receipt.suit).toContain("The Suit Wherehouse");
+    expect(receipt.suit).not.toContain("made-up");
   });
 
   it("says 'Fred stayed for the setup.' on one line of the receipt only", () => {
@@ -1498,9 +1500,36 @@ describe("the receipt's copy", () => {
   it("takes its subtitle from the fiction bank, never from an unsourced venue claim", () => {
     const bare = computeReceipt(createLevel(DEFAULT_SETUP));
     expect(bare.signatureMoment).not.toMatch(/Tudor|mansion/);
-    const banked = LINE_BANK.find((line) => line.id === "signature-fallback");
+    const banked = LINE_BANK.find((line) => line.id === "signature-neutral");
     expect(banked?.tag).toBe("Fiction");
     expect(banked?.fact).toBeNull();
     expect(bare.signatureMoment).toBe(banked?.text);
+  });
+
+  it("never claims tables set or food on time for an idle run", () => {
+    const idle = computeReceipt(finishIdle(DEFAULT_SETUP, STAY_DECISION));
+    const chairs = idle.readiness.find((l) => l.category === "chairs");
+    const buffet = idle.readiness.find((l) => l.category === "buffet");
+    expect(chairs?.status).toBe("unfinished");
+    expect(buffet?.status).toBe("unfinished");
+    expect(idle.signatureMoment).not.toContain("Every table set");
+    expect(idle.signatureMoment).toBe(bankText("signature-neutral"));
+  });
+
+  it("claims tables set and food on time only when both are finished", () => {
+    const base = finishIdle(DEFAULT_SETUP, STAY_DECISION);
+    const onlyTablesAndFood = {
+      ...base,
+      targets: base.targets.map((t) =>
+        t.category === "chairs" || t.category === "buffet"
+          ? { ...t, status: "filled" as const, filled: [], filledBy: [] }
+          : t
+      ),
+    };
+    const receipt = computeReceipt(onlyTablesAndFood);
+    expect(receipt.readiness.find((l) => l.category === "buffet")?.status).toBe(
+      "ready"
+    );
+    expect(receipt.signatureMoment).toBe(bankText("signature-tables-food"));
   });
 });

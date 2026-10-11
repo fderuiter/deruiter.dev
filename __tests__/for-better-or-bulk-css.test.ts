@@ -184,16 +184,16 @@ describe("the cabinet clears the sticky navbar and sits on opaque surfaces", () 
   const readSource = (file: string) =>
     fs.readFileSync(path.resolve(process.cwd(), file), "utf-8");
 
-  it("gives the cabinet and its controls a scroll margin of at least 6rem", () => {
+  it("gives the cabinet element a scroll margin of at least 6rem", () => {
     const from = css.indexOf("[data-fbb-cabinet] {");
     const margin = /scroll-margin-top:\s*([\d.]+)rem/.exec(
       blockAfter(css, from)
     );
     expect(margin, "the cabinet sets a scroll margin").not.toBeNull();
     expect(Number(margin?.[1])).toBeGreaterThanOrEqual(6);
-    expect(css).toMatch(
-      /\[data-fbb-cabinet\] \*\s*\{\s*scroll-margin-top:\s*[\d.]+rem;/
-    );
+    // Scroll margin is not inherited, so it must not be sprayed onto every
+    // descendant; the replay controls carry their own margin in the component.
+    expect(css).not.toMatch(/\[data-fbb-cabinet\] \*/);
   });
 
   it("uses graphite, not a see-through zinc, for the scrolled navbar", () => {

@@ -3,6 +3,8 @@ import { describe, it, expect } from "vitest";
 import {
   DEFAULT_SETUP,
   IDLE_FRAME,
+  LEVEL_SECONDS,
+  RELAXED_LEVEL_SECONDS,
   clockLabel,
   createLevel,
   stepGame,
@@ -45,10 +47,26 @@ function playToEnd(
   return { state, fredReturnedAt, events };
 }
 
+describe("the clock label on an exact minute", () => {
+  it("reads every minute of both clocks as that minute, never one before", () => {
+    for (const duration of [LEVEL_SECONDS, RELAXED_LEVEL_SECONDS]) {
+      for (let minute = 0; minute <= 420; minute++) {
+        const time = (duration * minute) / 420;
+        const wall = 9 * 60 + minute;
+        const hour12 = ((Math.floor(wall / 60) + 11) % 12) + 1;
+        const expected = `${hour12}:${String(wall % 60).padStart(2, "0")}`;
+        expect(clockLabel(time, duration), `${duration}s at ${minute}`).toBe(
+          expected
+        );
+      }
+    }
+  });
+});
+
 describe("Fred's return after leaving with his brothers", () => {
-  it("returns him at the time the leave option promises (3:17 on seed 12345)", () => {
+  it("returns him at the time the leave option promises (3:18 on seed 12345)", () => {
     const text = untilBrothers(createLevel(SEED_12345));
-    expect(clockLabel(text.time + 70, text.duration)).toBe("3:17");
+    expect(clockLabel(text.time + 70, text.duration)).toBe("3:18");
     const left = stepGame(text, {
       ...IDLE_FRAME,
       decision: { choice: "leave", commitment: null },

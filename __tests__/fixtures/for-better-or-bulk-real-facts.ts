@@ -5,6 +5,10 @@
  * tag. This copy is the reference: the tests check the game's real lines
  * against it, so editing the doc means editing this list too. It is kept
  * out of lib/ on purpose, so the engine never reads it.
+ *
+ * The "morning" text is the playtest rewrite (S10). It drops the doc's line
+ * that Abbi was upset, because that attributes a feeling to a real person. The
+ * design doc needs the same edit before this copy matches it again.
  */
 export const REAL_FACTS_FROM_DESIGN_DOC: readonly {
   readonly id: string;
@@ -28,7 +32,7 @@ export const REAL_FACTS_FROM_DESIGN_DOC: readonly {
   },
   {
     id: "morning",
-    text: "Fred was anxious and went out with his brothers. Abbi was upset that he wasn't helping.",
+    text: "Fred was anxious and went out with his brothers. Abbi kept things moving without him.",
   },
   {
     id: "weather",

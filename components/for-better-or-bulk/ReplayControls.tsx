@@ -44,8 +44,22 @@ export function ReplayControls({
   onExit,
 }: ReplayControlsProps) {
   const playRef = useRef<HTMLButtonElement>(null);
+  const sectionRef = useRef<HTMLElement>(null);
 
+  // When a replay opens, bring its controls into view below the sticky navbar
+  // (the section's scroll-mt-28 is the margin), then focus play without a
+  // second scroll.
   useEffect(() => {
+    const section = sectionRef.current;
+    if (section && typeof section.scrollIntoView === "function") {
+      const reduce = window.matchMedia?.(
+        "(prefers-reduced-motion: reduce)"
+      )?.matches;
+      section.scrollIntoView({
+        block: "nearest",
+        behavior: reduce ? "auto" : "smooth",
+      });
+    }
     playRef.current?.focus({ preventScroll: true });
   }, []);
 
@@ -55,9 +69,10 @@ export function ReplayControls({
 
   return (
     <section
+      ref={sectionRef}
       aria-labelledby="fbb-replay-title"
       data-testid="fbb-replay"
-      className="flex min-w-0 flex-wrap items-center gap-2 font-mono text-xs"
+      className="scroll-mt-28 flex min-w-0 flex-wrap items-center gap-2 font-mono text-xs"
     >
       <h2
         id="fbb-replay-title"

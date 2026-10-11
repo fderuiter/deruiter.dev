@@ -28,10 +28,18 @@ import { frontTile } from "./sim";
 const START_HOUR = 9;
 const LEVEL_HOURS = 7;
 
+/**
+ * The same tolerance the engine uses when it brings a person back (sim.ts), so
+ * a time that is exactly on a minute reads as that minute, not one before it.
+ */
+const CLOCK_TOLERANCE = 1e-9;
+
 /** The wall-clock time for a level time, as "h:mm". */
 export function clockLabel(time: number, duration: number): string {
   const clamped = clamp(time, 0, duration);
-  const minutes = Math.floor((clamped / duration) * LEVEL_HOURS * 60);
+  const minutes = Math.floor(
+    (clamped / duration) * LEVEL_HOURS * 60 + CLOCK_TOLERANCE
+  );
   const hour24 = START_HOUR + Math.floor(minutes / 60);
   const hour12 = ((hour24 + 11) % 12) + 1;
   return `${hour12}:${String(minutes % 60).padStart(2, "0")}`;

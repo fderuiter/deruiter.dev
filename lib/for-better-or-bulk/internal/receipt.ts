@@ -277,13 +277,22 @@ function websiteLines(state: GameState): readonly WebsiteLine[] {
 function signatureMoment(lines: readonly ReadinessLine[]): string {
   const ready = (category: Category) =>
     lines.find((l) => l.category === category)?.status === "ready";
+  // Chairs are the tables and buffet is the food. Only a finished category
+  // (ready, or simplified by choice) may back the tables-and-food line.
+  const finished = (category: Category) => {
+    const status = lines.find((l) => l.category === category)?.status;
+    return status === "ready" || status === "simplified";
+  };
   if (ready("petals")) return "Rose petals down the aisle";
   if (ready("centerpieces") && ready("lanterns"))
     return "Lanterns at dusk over the centerpieces";
   if (ready("lanterns")) return "Lanterns at dusk over the patio";
   if (ready("centerpieces")) return "Centerpieces on every table";
   if (ready("bouquets")) return "The gardens did the decorating";
-  return bankText("signature-fallback");
+  if (finished("chairs") && finished("buffet")) {
+    return bankText("signature-tables-food");
+  }
+  return bankText("signature-neutral");
 }
 
 function title(

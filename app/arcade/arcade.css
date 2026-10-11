@@ -1443,8 +1443,8 @@
  * portfolio frame. No continuous effects; toasts are plain text. */
 [data-fbb-cabinet] {
   /* The sticky navbar is about 5rem tall at rest and up to 7rem when its
-   * links wrap, so anything scrolled into view (focus, replay, status line)
-   * lands below it. Applies to every control inside the cabinet too. */
+   * links wrap. Scroll margin applies only to the element that is scrolled
+   * into view, so the replay controls carry their own scroll-mt-28. */
   scroll-margin-top: 7rem;
   --fbb-stage: #13151a;
   --fbb-panel: #1b1e24;
@@ -1460,10 +1460,6 @@
   --fbb-ok: #10b981;
   --fbb-alert: #f59e0b;
   --fbb-toast: rgba(13, 14, 17, 0.86);
-}
-
-[data-fbb-cabinet] * {
-  scroll-margin-top: 7rem;
 }
 
 /* For Better or Bulk loud moments (AGENTS.md section 20, ADR 0046 amendment).

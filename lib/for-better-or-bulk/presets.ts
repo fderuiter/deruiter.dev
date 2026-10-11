@@ -343,7 +343,7 @@ export const PATIO_ROWS = 4;
 /** Fixed receipt lines. The real weather line comes from the line bank. */
 export const RECEIPT_COPY = {
   leftovers: "Some. They went to the Rochester warming shelter.",
-  suit: "Fred wore the rented tux. The free suit from The Suit Wherehouse (a made-up name): acquired, yes. Worn, no.",
+  suit: "Fred wore the rented tux. The free suit from The Suit Wherehouse: acquired, yes. Worn, no.",
   disclaimer:
     "Game prices, not the real wedding's costs. Explanations describe this game's rules, not what would have happened at the real wedding.",
 } as const;
@@ -405,7 +405,7 @@ export const LINE_BANK: readonly BankLine[] = [
     id: "morning",
     tag: "Real",
     fact: "morning",
-    text: "Fred was anxious and went out with his brothers. Abbi was upset that he wasn't helping.",
+    text: "Fred was anxious and went out with his brothers. Abbi kept things moving without him.",
   },
   {
     id: "weather",
@@ -456,10 +456,16 @@ export const LINE_BANK: readonly BankLine[] = [
     text: "Guests are early and the buffet is calling. Food on the grill burns faster until it passes.",
   },
   {
-    id: "signature-fallback",
+    id: "signature-tables-food",
     tag: "Fiction",
     fact: null,
     text: "Every table set, and the food on time.",
+  },
+  {
+    id: "signature-neutral",
+    tag: "Fiction",
+    fact: null,
+    text: "The day, as far as it got.",
   },
   {
     id: "joke-roses",

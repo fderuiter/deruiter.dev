@@ -6,7 +6,7 @@
  * the assist also takes it, and it can put down an item nothing wants.
  *
  * The assist rests on most ticks (see `assistRests`), so its walks and presses
- * run at about 40% of a skilled player's pace. Its held work keeps its bin or
+ * run at about 40% of a skilled player's pace (about 29% on the relaxed clock). Its held work keeps its bin or
  * table hold on those ticks but pauses, so the simulation advances work only
  * on its active ticks. It keeps out of the player's way: it never goes for a
  * tile the person it helps is facing, or a place that person is carrying an
@@ -47,14 +47,22 @@ import {
 /** The assist acts on this many ticks out of every PACE_PERIOD: 2 of 5, about 40%. */
 const PACE_PERIOD = 5;
 const PACE_ACTIVE = 2;
+/**
+ * The relaxed clock runs longer in ticks, so the same 40% would let an idle
+ * player finish the whole day. Its assist acts 2 ticks in 7, about 29%.
+ */
+const RELAXED_PACE_PERIOD = 7;
+const RELAXED_PACE_ACTIVE = 2;
 
 /**
  * Whether the assist rests on this tick. Its walks and presses wait, and its
  * held work pauses without letting go. Pure: the same tick always gives the
  * same answer.
  */
-export function assistRests(tick: number): boolean {
-  return tick % PACE_PERIOD >= PACE_ACTIVE;
+export function assistRests(tick: number, relaxed: boolean): boolean {
+  return relaxed
+    ? tick % RELAXED_PACE_PERIOD >= RELAXED_PACE_ACTIVE
+    : tick % PACE_PERIOD >= PACE_ACTIVE;
 }
 
 /** How far off a tile's centre a person may be before they line up again. */
@@ -180,12 +188,17 @@ function freeFloorGoals(state: GameState, item: ItemKind): Goal[] {
  * a free floor tile while the floor has room, or else back in its own crate.
  * Burnt food never lands here, because the bin always wants it.
  */
+/** Whether an item kind comes out of a crate, so it can go back in one. */
+function isSupplyKind(kind: ItemKind): kind is SupplyKind {
+  return Object.hasOwn(CRATE_ITEM_NAMES, kind);
+}
+
 function dropTiers(state: GameState, held: Item): Goal[][] {
   const tiers: Goal[][] = [];
   if (state.floor.length < FLOOR_CAP)
     tiers.push(freeFloorGoals(state, held.kind));
-  if (held.kind in CRATE_ITEM_NAMES) {
-    const kind = held.kind as SupplyKind;
+  if (isSupplyKind(held.kind)) {
+    const kind = held.kind;
     tiers.push(
       cratesOf(state, kind).map((g) => ({
         ...g,
@@ -456,7 +469,11 @@ export function assistInput(state: GameState, id: PlayerId): PlayerInput {
   if (player.presence === "away" || player.busyFor > 0) return NO_INPUT;
   const plan = planFor(state, id);
   if (!plan) return NO_INPUT;
-  return actionFor(player, plan.route, !assistRests(state.tick));
+  return actionFor(
+    player,
+    plan.route,
+    !assistRests(state.tick, state.setup.relaxed)
+  );
 }
 
 /**

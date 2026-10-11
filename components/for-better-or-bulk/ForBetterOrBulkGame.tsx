@@ -19,6 +19,7 @@ import {
   IDLE_FRAME,
   THROW_OUT_PROMPT,
   TICK_SECONDS,
+  assistStatus,
   clockLabel,
   computeReceipt,
   createLevel,
@@ -26,7 +27,6 @@ import {
   decodeRunCode,
   encodeRunCode,
   getHint,
-  assistStatus,
   getPrompt,
   parseSeed,
   recordedFrame,
@@ -59,12 +59,12 @@ import { buildFrame, GAME_CODES, type ControlMode } from "./input";
 import { BurstLayer, RowFlash, useFbbLoud, type DomBurst } from "./bursts";
 import {
   activeEventLines,
-  seedName,
   CHECKLIST,
   checklistLine,
   completedCategories,
-  throttleFloorFull,
   playStepSounds,
+  seedName,
+  throttleFloorFull,
   type FeedbackEvent,
 } from "./messages";
 import { CeremonyPlayback } from "./CeremonyPlayback";
@@ -292,6 +292,8 @@ export function ForBetterOrBulkGame({
   const [replayPlaying, setReplayPlaying] = useState(false);
   const [replaySpeed, setReplaySpeed] = useState<ReplaySpeed>(1);
   const [replayAnnouncement, setReplayAnnouncement] = useState("");
+  // Read once, on mount, so the header does not change across midnight mid-run.
+  const [todaysSeed] = useState(() => dailySeed(new Date()));
   const [replayEnded, setReplayEnded] = useState(false);
   const hideTips = useSyncExternalStore(
     subscribeHideTips,
@@ -792,6 +794,13 @@ export function ForBetterOrBulkGame({
     if (event.key === "Tab" && mode === "solo") {
       event.preventDefault();
       if (event.repeat) return;
+      // Someone who is out with his brothers cannot take the keys; the
+      // person at the keys stays where they are.
+      const other: PlayerId = activeRef.current === "fred" ? "abbi" : "fred";
+      if (stateRef.current?.players[other].presence === "away") {
+        setAnnouncement(`${NAMES[other]} is out with his brothers.`);
+        return;
+      }
       // A press that has not reached the engine yet belongs to the person
       // who was active when it was made, so apply it before swapping.
       if (pressed.current.size > 0 && stateRef.current?.phase === "playing") {
@@ -967,7 +976,7 @@ export function ForBetterOrBulkGame({
             data-testid="fbb-seed-name"
             className="min-w-0 break-words text-[var(--fbb-dim)]"
           >
-            {seedName(view.setup.seed ?? 0, dailySeed(new Date()))}
+            {seedName(view.setup.seed ?? 0, todaysSeed)}
           </span>
           {eventLines.map((line) => (
             <span
@@ -1051,14 +1060,13 @@ export function ForBetterOrBulkGame({
               >
                 <ul className="flex flex-col gap-1">
                   {shown.map((id) => {
-                    const away = view.players[id].presence === "away";
-                    const hint = away
-                      ? `${NAMES[id]} is out with his brothers.`
-                      : getHint(view, id);
+                    // An away person is already said in their prompt.
+                    if (view.players[id].presence === "away") return null;
+                    const hint = getHint(view, id);
                     if (!hint) return null;
                     return (
                       <li key={id} className="break-words">
-                        {mode === "coop" && !away ? `${NAMES[id]}: ` : null}
+                        {mode === "coop" ? `${NAMES[id]}: ` : null}
                         {hint}
                       </li>
                     );

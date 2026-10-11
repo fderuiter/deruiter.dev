@@ -242,6 +242,8 @@ export function ForBetterOrBulkGame({
   }, []);
 
   const decide = (decision: PresenceDecision) => {
+    if (userPaused) return;
+    tapped.current.clear();
     step({ ...IDLE_FRAME, decision });
     boundaryRef.current?.focus({ preventScroll: true });
   };
@@ -251,10 +253,9 @@ export function ForBetterOrBulkGame({
     // Keys held when the clock stops would otherwise still be "down" on resume.
     held.current.clear();
     tapped.current.clear();
+    pressed.current.clear();
     setUserPaused(next);
-    setAnnouncement(
-      next ? "Paused. Press Escape or choose Resume." : "Resumed."
-    );
+    setAnnouncement(next ? "Paused. Choose Resume to continue." : "Resumed.");
   };
 
   useAnimationFrame(
@@ -291,13 +292,16 @@ export function ForBetterOrBulkGame({
   }, [phase, view, active, draw, scaleRef]);
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (phase !== "playing" || event.target !== boundaryRef.current) return;
+    if (phase !== "playing") return;
     if (event.ctrlKey || event.metaKey || event.altKey) return;
+    // Escape pauses or resumes from anywhere in the cabinet, including the
+    // Pause and Resume buttons; every other key belongs to the game surface.
     if (event.key === "Escape") {
       event.preventDefault();
       if (!event.repeat) setPaused(!userPaused);
       return;
     }
+    if (event.target !== boundaryRef.current) return;
     if (paused) return;
     if (event.key === "Tab" && mode === "solo" && event.shiftKey) {
       // Tab swaps people in solo play, so Shift+Tab moves to Pause instead.
@@ -480,7 +484,7 @@ export function ForBetterOrBulkGame({
           <div
             role="region"
             aria-labelledby="fbb-paused-title"
-            className="absolute inset-0 z-30 flex items-center justify-center bg-[rgba(13,14,17,0.72)]"
+            className="absolute inset-0 z-50 flex items-center justify-center bg-[rgba(13,14,17,0.72)]"
           >
             <div className="flex flex-col gap-2 rounded border border-[var(--fbb-control)] bg-[var(--fbb-panel)] p-4 font-mono text-xs">
               <p id="fbb-paused-title" className="font-bold">
@@ -528,10 +532,11 @@ export function ForBetterOrBulkGame({
         if (next && event.currentTarget.contains(next)) return;
         held.current.clear();
         tapped.current.clear();
-        // A focused control removed from the page also blurs with no target;
-        // only a move to another control or a window switch pauses the clock.
-        if (phase === "playing" && (next !== null || !document.hasFocus()))
-          setPaused(true);
+        // A focused child removed from the page (the Start button) blurs
+        // with no target; anything else that takes focus away pauses.
+        const removedChild =
+          next === null && event.target !== event.currentTarget;
+        if (phase === "playing" && !removedChild) setPaused(true);
       }}
       className="@container relative flex min-h-[460px] w-full min-w-0 flex-col items-stretch bg-[var(--fbb-stage)] text-[var(--fbb-text)] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--fbb-focus)]"
     >

@@ -26,7 +26,10 @@ const frame = vi.hoisted(() => ({
 const scores = vi.hoisted(() => ({ record: vi.fn() }));
 
 /** Lets a test end the level on the next engine step, whatever the plan. */
-const engine = vi.hoisted(() => ({ finishNext: false }));
+const engine = vi.hoisted(() => ({
+  finishNext: false,
+  inputs: [] as Frame[],
+}));
 
 vi.mock("@/lib/for-better-or-bulk", async (importOriginal) => {
   const actual =
@@ -34,6 +37,7 @@ vi.mock("@/lib/for-better-or-bulk", async (importOriginal) => {
   return {
     ...actual,
     stepGame: (state: GameState, input: Frame) => {
+      engine.inputs.push(input);
       const result = actual.stepGame(state, input);
       if (!engine.finishNext) return result;
       engine.finishNext = false;
@@ -84,6 +88,7 @@ describe("For Better or Bulk cabinet (#1906)", () => {
     frame.callback = null;
     frame.active = false;
     engine.finishNext = false;
+    engine.inputs = [];
     scores.record.mockClear();
     window.history.replaceState(null, "", "/arcade/for-better-or-bulk?speed=8");
   });
@@ -220,9 +225,42 @@ describe("For Better or Bulk cabinet (#1906)", () => {
     expect(screen.queryByText(/^Paused at/)).toBeNull();
   });
 
+  it("still moves on a tap shorter than one tick (#1914)", () => {
+    render(<ForBetterOrBulkGame />);
+    start();
+    fireEvent.keyDown(game(), { key: "ArrowLeft", code: "ArrowLeft" });
+    fireEvent.keyUp(game(), { key: "ArrowLeft", code: "ArrowLeft" });
+    engine.inputs = [];
+    act(() => frame.callback?.(40));
+    expect(engine.inputs[0]?.inputs.abbi.moveX).toBe(-1);
+    expect(engine.inputs.slice(1).every((f) => f.inputs.abbi.moveX === 0)).toBe(
+      true
+    );
+  });
+
+  it("pauses with Escape from the Pause button (#1914)", () => {
+    render(<ForBetterOrBulkGame />);
+    start();
+    const pause = screen.getByRole("button", { name: "Pause" });
+    pause.focus();
+    fireEvent.keyDown(pause, { key: "Escape", code: "Escape" });
+    expect(frame.active).toBe(false);
+  });
+
+  it("pauses on a click outside, not when a focused control is removed (#1914)", () => {
+    render(<ForBetterOrBulkGame />);
+    start();
+    const pause = screen.getByRole("button", { name: "Pause" });
+    fireEvent.blur(pause, { relatedTarget: null });
+    expect(frame.active).toBe(true);
+    fireEvent.blur(game(), { relatedTarget: null });
+    expect(frame.active).toBe(false);
+  });
+
   it("keeps focus on the boundary after a mouse pause and resume (#1914)", () => {
     render(<ForBetterOrBulkGame />);
     start();
+    screen.getByRole("button", { name: "Pause" }).focus();
     fireEvent.click(screen.getByRole("button", { name: "Pause" }));
     expect(document.activeElement).toBe(game());
     expect(screen.getByRole("region", { name: /^Paused at/ })).toBeTruthy();

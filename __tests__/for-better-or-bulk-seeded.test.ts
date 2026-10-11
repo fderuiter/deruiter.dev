@@ -561,7 +561,64 @@ describe("the line bank", () => {
     );
     expect(bankText("shower-start")).toContain("slows walking on the lawn");
     expect(bankText("rush-start")).toContain("Food on the grill burns faster");
-    expect(describeEvent({ type: "seeded-end", id: "shower" })).toBeNull();
+    expect(describeEvent({ type: "seeded-end", id: "shower" })).toBe(
+      bankText("shower-end")
+    );
+    expect(describeEvent({ type: "seeded-end", id: "guest-rush" })).toBe(
+      bankText("rush-end")
+    );
+    expect(bankText("shower-end")).toContain("moves off across the lawn");
+  });
+});
+
+describe("the seeded toasts over a whole day", () => {
+  it("announces each seeded event once at its start and once at its end", () => {
+    const { events } = runToEnd(seeded(12345));
+    const lines = events
+      .map((event) => describeEvent(event))
+      .filter((line): line is string => line !== null);
+    for (const id of ["shower", "rush"] as const) {
+      const start = id === "shower" ? "shower-start" : "rush-start";
+      const end = id === "shower" ? "shower-end" : "rush-end";
+      expect(
+        lines.filter((line) => line === bankText(start)),
+        start
+      ).toHaveLength(1);
+      expect(
+        lines.filter((line) => line === bankText(end)),
+        end
+      ).toHaveLength(1);
+    }
+  });
+});
+
+describe("the seeded toasts when a level ends early", () => {
+  it("announces the shower's end once when every target is filled while the shower is on (seed 12345)", () => {
+    const start = createLevel(seeded(12345));
+    const shower = start.seeded.find((event) => event.id === "shower");
+    expect(shower).toBeDefined();
+    const mid: GameState = {
+      ...start,
+      brothersAt: 0,
+      time: (shower?.at ?? 0) + 2,
+      targets: start.targets.map((t) =>
+        t.status === "open" ? { ...t, status: "filled" as const } : t
+      ),
+    };
+    const { events, state } = runFrom(mid);
+    expect(state.phase).toBe("done");
+    expect(
+      events.filter((e) => e.type === "level-finished" && e.early)
+    ).toHaveLength(1);
+    expect(
+      events.filter((e) => e.type === "seeded-end" && e.id === "shower")
+    ).toHaveLength(1);
+    const lines = events
+      .map((event) => describeEvent(event))
+      .filter((line): line is string => line !== null);
+    expect(
+      lines.filter((line) => line === bankText("shower-end"))
+    ).toHaveLength(1);
   });
 });
 

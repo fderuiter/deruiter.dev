@@ -85,6 +85,63 @@ async function playToPlayback(page: Page) {
   });
 }
 
+/**
+ * Skips the ceremony playback to the receipt. The click is retried until the
+ * playback is gone.
+ */
+async function skipPlaybackToReceipt(page: Page) {
+  await expect(async () => {
+    const skip = page.getByRole("button", { name: "Skip" });
+    if (await skip.isVisible()) await skip.click();
+    await expect(page.getByTestId("fbb-playback")).toBeHidden({
+      timeout: 2000,
+    });
+  }).toPass({ timeout: 15000 });
+  await expect(page.getByTestId("fbb-receipt")).toBeVisible({
+    timeout: 10000,
+  });
+}
+
+/** The receipt's scroll margin (scroll-mt-28, 7rem), which the scroll leaves above it. */
+const RECEIPT_MARGIN_PX = 112;
+
+/**
+ * Waits until the receipt's scroll has landed: either the receipt sits at its
+ * scroll margin, or the page has stopped moving (two samples 200 ms apart are
+ * equal and it is scrolled). Until then a title can already be clear of the
+ * navbar for the wrong reason, before the scroll has run at all.
+ */
+async function waitForReceiptScroll(page: Page) {
+  await expect
+    .poll(
+      async () => {
+        const first = await page.evaluate(() => window.scrollY);
+        await page.waitForTimeout(200);
+        const second = await page.evaluate(() => window.scrollY);
+        const receipt = await page.getByTestId("fbb-receipt").boundingBox();
+        const atMargin =
+          receipt !== null && Math.abs(receipt.y - RECEIPT_MARGIN_PX) <= 2;
+        return atMargin || (first === second && first !== 0);
+      },
+      { timeout: 10000 }
+    )
+    .toBe(true);
+}
+
+/**
+ * The receipt title must sit below the fixed navbar, not under it. The scroll
+ * is awaited first, so the title is measured where the receipt put it.
+ */
+async function expectTitleBelowBanner(page: Page) {
+  await waitForReceiptScroll(page);
+  const title = await page.getByTestId("fbb-title").boundingBox();
+  const banner = await page.getByRole("banner").first().boundingBox();
+  if (!title || !banner) {
+    throw new Error("the receipt title or the navbar has no box to measure");
+  }
+  expect(title.y).toBeGreaterThanOrEqual(banner.y + banner.height);
+}
+
 test.describe("For Better or Bulk (/arcade/for-better-or-bulk)", () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
@@ -95,37 +152,26 @@ test.describe("For Better or Bulk (/arcade/for-better-or-bulk)", () => {
     await playToPlayback(page);
     await expectNoBlockingViolations(page, "ceremony playback");
 
-    // Skip hands over to the receipt. The click is retried until the playback is gone.
-    await expect(async () => {
-      const skip = page.getByRole("button", { name: "Skip" });
-      if (await skip.isVisible()) await skip.click();
-      await expect(page.getByTestId("fbb-playback")).toBeHidden({
-        timeout: 2000,
-      });
-    }).toPass({ timeout: 15000 });
-
-    await expect(page.getByTestId("fbb-receipt")).toBeVisible({
-      timeout: 10000,
-    });
+    await skipPlaybackToReceipt(page);
     await expect(page.getByTestId("fbb-title")).toBeFocused();
     await expect(page.getByTestId("fbb-follow-through")).toContainText(
       "Kept. Fred stayed"
     );
-    // The title must sit below the fixed navbar, not under it. The navbar's
-    // padding changes as the page scrolls, so both boxes are polled until the
-    // scroll has settled.
-    await expect
-      .poll(
-        async () => {
-          const title = await page.getByTestId("fbb-title").boundingBox();
-          const banner = await page.getByRole("banner").first().boundingBox();
-          if (!title || !banner) return -1;
-          return title.y - (banner.y + banner.height);
-        },
-        { timeout: 10000 }
-      )
-      .toBeGreaterThanOrEqual(0);
+    await expectTitleBelowBanner(page);
     await expectNoBlockingViolations(page, "receipt");
+  });
+
+  test.describe("a taller desktop window", () => {
+    test.use({ viewport: { width: 1440, height: 1000 } });
+
+    test("the receipt title clears the navbar once the receipt is reached", async ({
+      page,
+    }) => {
+      test.setTimeout(120000);
+      await playToPlayback(page);
+      await skipPlaybackToReceipt(page);
+      await expectTitleBelowBanner(page);
+    });
   });
 
   test("Escape skips the playback to the receipt once", async ({ page }) => {

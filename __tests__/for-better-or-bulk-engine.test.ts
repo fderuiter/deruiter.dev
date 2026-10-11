@@ -31,8 +31,10 @@ import {
   createLevel,
   dollars,
   frontTile,
+  getCoachStep,
   getHint,
   getPrompt,
+  interactTile,
   onLevelClock,
   readinessLines,
   replayLevel,
@@ -1328,7 +1330,7 @@ describe("the coach hints", () => {
           madeBy: "fred",
         }),
       id: "fred",
-      hint: "Carry the arrangement to a centerpiece table (T).",
+      hint: "Place the arrangement at a centerpiece table (T).",
     },
     {
       name: "roses with the table busy, petals planned: carry to the PETALS bucket",
@@ -1367,7 +1369,7 @@ describe("the coach hints", () => {
       hint: "Carry the roses to the PETALS bucket (P).",
     },
     {
-      name: "roses, every arrangement filled, aisle unplanned: no roses to carry",
+      name: "roses, every arrangement filled, aisle unplanned: no roses to carry: put them down out of the way",
       state: () =>
         place(
           filledFor(createLevel(DEFAULT_SETUP), "arrangement"),
@@ -1378,7 +1380,7 @@ describe("the coach hints", () => {
           { kind: "roses", madeBy: null }
         ),
       id: "abbi",
-      hint: null,
+      hint: "Put the roses down somewhere out of the way.",
     },
     {
       name: "aisle open and roses in stock: grab roses for the PETALS bucket",
@@ -1452,7 +1454,7 @@ describe("the coach hints", () => {
           madeBy: "fred",
         }),
       id: "fred",
-      hint: "Carry the bucket of petals to an aisle spot (S).",
+      hint: "Place the bucket of petals at an aisle spot (S).",
     },
     {
       name: "raw hot dogs and a free grill: carry them to the grill",
@@ -1482,7 +1484,7 @@ describe("the coach hints", () => {
           madeBy: "fred",
         }),
       id: "abbi",
-      hint: "Carry the hot dogs to the buffet (B).",
+      hint: "Place the hot dogs at the buffet (B).",
     },
     {
       name: "holding mac and cheese: carry it to the buffet",
@@ -1492,7 +1494,7 @@ describe("the coach hints", () => {
           madeBy: null,
         }),
       id: "fred",
-      hint: "Carry the mac and cheese to the buffet (B).",
+      hint: "Place the mac and cheese at the buffet (B).",
     },
     {
       name: "only the mac slot left: grab mac and cheese",
@@ -1516,7 +1518,7 @@ describe("the coach hints", () => {
           madeBy: null,
         }),
       id: "fred",
-      hint: "Carry the lantern to a lantern hook (N).",
+      hint: "Place the lantern at a lantern hook (N).",
     },
     {
       name: "only the chair spots left: grab a stack of chairs",
@@ -1533,7 +1535,7 @@ describe("the coach hints", () => {
           madeBy: null,
         }),
       id: "abbi",
-      hint: "Carry the stack of chairs to a chair spot (O).",
+      hint: "Place the stack of chairs at a chair spot (O).",
     },
     {
       name: "holding something burnt: take it to the bin",
@@ -1593,7 +1595,9 @@ describe("the new prompts", () => {
       kind: "roses",
       madeBy: null,
     });
-    expect(getPrompt(at, "fred").interact).toBe("Put it back in the crate");
+    expect(getPrompt(at, "fred").interact).toBe(
+      "Put the roses back in the ROSE crate"
+    );
   });
 
   it("stops offering to put things down once the floor is full", () => {
@@ -1689,5 +1693,196 @@ describe("the coach's co-op starts (#1931)", () => {
     const state = createLevel(DEFAULT_SETUP);
     expect(getHint(state, "abbi")).toBe(getHint(state, "abbi", {}));
     expect(getHint(state, "abbi")).toMatch(/^Grab roses from the ROSE crate/);
+  });
+});
+
+describe("interaction targets", () => {
+  const roses: Item = { kind: "roses", madeBy: null };
+  const arrangement: Item = { kind: "arrangement", madeBy: "fred" };
+
+  it("puts roses on the arrange table beside a person, not on the floor they face", () => {
+    const at = place(createLevel(DEFAULT_SETUP), "fred", 7, 3, [0, -1], roses);
+    expect(interactTile(at, "fred")).toEqual({ x: 8, y: 3 });
+    expect(getPrompt(at, "fred").interact).toBe(
+      "Put the roses on the ARRANGE table (A)"
+    );
+    const after = stepGame(at, frameFor("fred", { interact: true })).state;
+    expect(after.stations.find((s) => s.x === 8 && s.y === 3)?.item?.kind).toBe(
+      "roses"
+    );
+    expect(after.players.fred.holding).toBeNull();
+    expect(after.floor).toEqual([]);
+  });
+
+  it("puts raw food on the grill beside a person, ahead of a crate they face", () => {
+    const raw: Item = { kind: "hotdogs-raw", madeBy: null };
+    const at = place(createLevel(DEFAULT_SETUP), "abbi", 4, 2, [0, -1], raw);
+    expect(interactTile(at, "abbi")).toEqual({ x: 4, y: 3 });
+    expect(getPrompt(at, "abbi").interact).toBe(
+      "Put the raw hot dogs on the GRILL (G)"
+    );
+    const after = stepGame(at, frameFor("abbi", { interact: true })).state;
+    expect(after.stations.find((s) => s.x === 4 && s.y === 3)?.item?.kind).toBe(
+      "hotdogs-raw"
+    );
+  });
+
+  it("gives the bouquet basket the arrangement a person faces", () => {
+    const base = onlyOpen(
+      createLevel(DEFAULT_SETUP),
+      (t) => t.kind === "basket"
+    );
+    const at = place(base, "fred", 16, 10, [1, 0], arrangement);
+    expect(interactTile(at, "fred")).toEqual({ x: 17, y: 10 });
+    expect(getPrompt(at, "fred").interact).toBe(
+      "Place a rose arrangement at the bouquet basket (K)"
+    );
+    const after = stepGame(at, frameFor("fred", { interact: true })).state;
+    expect(after.targets.find((t) => t.kind === "basket")?.filled).toHaveLength(
+      1
+    );
+  });
+
+  it("gives a centerpiece table the arrangement a person faces", () => {
+    const base = onlyOpen(
+      createLevel(DEFAULT_SETUP),
+      (t) => t.kind === "table"
+    );
+    const at = place(base, "abbi", 4, 6, [0, 1], arrangement);
+    expect(interactTile(at, "abbi")).toEqual({ x: 4, y: 7 });
+    expect(getPrompt(at, "abbi").interact).toBe(
+      "Place a rose arrangement at a centerpiece table (T)"
+    );
+  });
+
+  it("drops on the floor only when no station is in reach", () => {
+    const at = place(createLevel(DEFAULT_SETUP), "fred", 10, 4, [0, -1], roses);
+    expect(interactTile(at, "fred")).toEqual({ x: 10, y: 3 });
+    expect(getPrompt(at, "fred").interact).toBe("Put the roses on the floor");
+    const after = stepGame(at, frameFor("fred", { interact: true })).state;
+    expect(after.floor).toEqual([{ x: 10, y: 3, item: roses }]);
+  });
+
+  it("uses a station behind the person that takes the item, ahead of the floor they face", () => {
+    const at = place(createLevel(DEFAULT_SETUP), "fred", 8, 4, [0, 1], roses);
+    expect(interactTile(at, "fred")).toEqual({ x: 8, y: 3 });
+  });
+
+  it("skips a station behind the person that does not take the item, so the press lands on the floor they face", () => {
+    const at = place(createLevel(DEFAULT_SETUP), "fred", 6, 2, [0, -1], roses);
+    expect(interactTile(at, "fred")).toEqual({ x: 6, y: 1 });
+    const after = stepGame(at, frameFor("fred", { interact: true })).state;
+    expect(after.floor).toEqual([{ x: 6, y: 1, item: roses }]);
+  });
+});
+
+describe("the coach names one stage at a time", () => {
+  const charAt = (tile: { x: number; y: number } | null) =>
+    tile ? VENUE_MAP[tile.y]?.[tile.x] : undefined;
+
+  it("holding nothing: grabs from the crate and points at it", () => {
+    const step = getCoachStep(createLevel(DEFAULT_SETUP), "fred");
+    expect(step?.text).toBe("Grab roses from the ROSE crate on the left.");
+    expect(charAt(step?.tile ?? null)).toBe("R");
+  });
+
+  it("holding a raw item: takes it to its station, at a free one", () => {
+    const roses: Item = { kind: "roses", madeBy: null };
+    const state = place(
+      createLevel(DEFAULT_SETUP),
+      "abbi",
+      2,
+      2,
+      [0, 1],
+      roses
+    );
+    const step = getCoachStep(state, "abbi");
+    expect(step?.text).toBe("Carry the roses to the ARRANGE table (A).");
+    expect(
+      state.stations.some(
+        (s) =>
+          s.kind === "arrange" &&
+          s.item === null &&
+          s.x === step?.tile?.x &&
+          s.y === step?.tile?.y
+      )
+    ).toBe(true);
+  });
+
+  it("holding a made item: places it at the target that wants it", () => {
+    const arrangement: Item = { kind: "arrangement", madeBy: "fred" };
+    const state = place(
+      createLevel(DEFAULT_SETUP),
+      "fred",
+      2,
+      2,
+      [0, 1],
+      arrangement
+    );
+    const step = getCoachStep(state, "fred");
+    expect(step?.text).toBe(
+      "Place the arrangement at a centerpiece table (T)."
+    );
+    expect(
+      state.targets.some(
+        (t) =>
+          t.kind === "table" && t.x === step?.tile?.x && t.y === step?.tile?.y
+      )
+    ).toBe(true);
+  });
+
+  it("a batch cooking on the grill: collects it when ready", () => {
+    const base = onlyOpen(
+      createLevel(DEFAULT_SETUP),
+      (t) => t.wants === "hotdogs"
+    );
+    const state = withStock(
+      withStation(base, 4, 3, { kind: "hotdogs-raw", madeBy: null }),
+      "hotdogs-raw",
+      0
+    );
+    const step = getCoachStep(state, "fred");
+    expect(step?.text).toBe(
+      "Collect the hot dogs from the GRILL (G) when they are ready."
+    );
+    expect(step?.tile).toEqual({ x: 4, y: 3 });
+    expect(step?.waiting).toBe(true);
+  });
+
+  it("holding an item no open place wants: says to put it down out of the way, with no tile", () => {
+    const base = onlyOpen(
+      createLevel(DEFAULT_SETUP),
+      (t) => t.wants !== "petals"
+    );
+    const state = place(base, "fred", 2, 2, [0, 1], {
+      kind: "petals",
+      madeBy: null,
+    });
+    const step = getCoachStep(state, "fred");
+    expect(step?.text).toBe(
+      "Put the bucket of petals down somewhere out of the way."
+    );
+    expect(step?.tile).toBeNull();
+  });
+
+  it("a busy station is a wait step, while a free one is not", () => {
+    const roses: Item = { kind: "roses", madeBy: null };
+    const base = onlyOpen(
+      createLevel(DEFAULT_SETUP),
+      (t) => t.wants === "arrangement"
+    );
+    const busy = {
+      ...base,
+      stations: base.stations.map((s) =>
+        s.kind === "arrange" ? { ...s, item: roses } : s
+      ),
+    };
+    const carrying = place(busy, "fred", 2, 2, [0, 1], roses);
+    expect(getCoachStep(carrying, "fred")).toMatchObject({
+      text: "Wait for the ARRANGE table (A) to clear.",
+      waiting: true,
+    });
+    const free = place(base, "fred", 2, 2, [0, 1], roses);
+    expect(getCoachStep(free, "fred")?.waiting).toBeFalsy();
   });
 });

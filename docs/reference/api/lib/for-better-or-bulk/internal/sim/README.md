@@ -17,8 +17,19 @@
 
 ## Functions
 
-- [frontTile](functions/frontTile.md)
 - [recordedFrame](functions/recordedFrame.md)
 - [replayLevel](functions/replayLevel.md)
 - [stepGame](functions/stepGame.md)
 - [validateDecision](functions/validateDecision.md)
+
+## References
+
+### frontTile
+
+Re-exports [frontTile](../press/functions/frontTile.md)
+
+***
+
+### interactTile
+
+Re-exports [interactTile](../press/functions/interactTile.md)

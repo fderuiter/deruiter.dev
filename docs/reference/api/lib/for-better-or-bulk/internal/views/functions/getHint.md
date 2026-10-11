@@ -9,8 +9,7 @@
 > **getHint**(`state`, `id`, `options?`): `string` \| `null`
 
 The coach's next step for one person, in plain words, or null when there is
-nothing useful for them to do (the level is over, or they are away). Co-op
-options give each person their own starting job.
+nothing useful for them to do (see getCoachStep).
 
 ## Parameters
 

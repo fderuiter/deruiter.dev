@@ -15,7 +15,9 @@ import {
   assistStatus,
   computeReceipt,
   createLevel,
+  frontTile,
   getHint,
+  interactTile,
   replayLevel,
   stepGame,
   type CapabilityId,
@@ -650,7 +652,9 @@ describe("the rose gate, shared with getHint", () => {
   it("with no rose target open, the helper does not put held roses on a free ARRANGE table", () => {
     const base = setOpen(createLevel(ASSIST_SETUP), ["lantern"]);
     const state = facingTile(base, "abbi", stationOf(base, "arrange"), ROSES);
-    expect(getHint(state, "abbi")).toBeNull();
+    expect(getHint(state, "abbi")).toBe(
+      "Put the roses down somewhere out of the way."
+    );
     expect(assistInput(state, "abbi").interact).toBe(false);
   });
 
@@ -1127,5 +1131,82 @@ describe("the helper keeps out of its partner's way", () => {
     expect(assistStatus(away, "abbi")).toBe(
       "Helper: waiting for Abbi to be back."
     );
+  });
+});
+
+describe("the helper's presses land where the engine resolves them", () => {
+  const FACINGS: readonly (readonly [number, number])[] = [
+    [1, 0],
+    [-1, 0],
+    [0, 1],
+    [0, -1],
+  ];
+  const HELD: (Item | null)[] = [
+    null,
+    { kind: "roses", madeBy: null },
+    { kind: "hotdogs-raw", madeBy: null },
+    { kind: "wings-raw", madeBy: null },
+    { kind: "arrangement", madeBy: "fred" },
+    { kind: "burnt", madeBy: null },
+    { kind: "mac", madeBy: null },
+    { kind: "petals", madeBy: null },
+  ];
+  const base = createLevel(ASSIST_SETUP);
+  const worlds: [string, GameState][] = [
+    ["the base venue", base],
+    [
+      "every hot-dog buffet target filled",
+      {
+        ...base,
+        targets: base.targets.map((t) =>
+          t.wants === "hotdogs" ? { ...t, status: "filled" as const } : t
+        ),
+      },
+    ],
+    [
+      "every rose target filled",
+      {
+        ...base,
+        targets: base.targets.map((t) =>
+          t.wants === "arrangement" || t.wants === "petals"
+            ? { ...t, status: "filled" as const }
+            : t
+        ),
+      },
+    ],
+    [
+      "the grill busy with someone else's batch",
+      {
+        ...base,
+        stations: base.stations.map((s) =>
+          s.kind === "grill"
+            ? { ...s, item: { kind: "hotdogs-raw", madeBy: "abbi" } }
+            : s
+        ),
+      },
+    ],
+  ];
+
+  it("over a grid of positions, facings and held items, the tile a planned press acts on is the tile the engine resolves", () => {
+    let presses = 0;
+    for (const [name, world] of worlds) {
+      for (let y = 0; y < VENUE_MAP.length; y++) {
+        for (let x = 0; x < VENUE_MAP[y].length; x++) {
+          if (!WALKABLE_TILES.includes(VENUE_MAP[y][x])) continue;
+          for (const facing of FACINGS) {
+            for (const item of HELD) {
+              const state = place(world, "fred", x, y, facing, item);
+              if (!assistInput(state, "fred").interact) continue;
+              presses++;
+              const label = `${name}: at ${x},${y} facing ${facing.join(",")} holding ${item?.kind ?? "nothing"}`;
+              expect(interactTile(state, "fred"), label).toEqual(
+                frontTile(state.players.fred)
+              );
+            }
+          }
+        }
+      }
+    }
+    expect(presses).toBeGreaterThan(100);
   });
 });

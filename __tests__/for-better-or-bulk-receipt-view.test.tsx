@@ -24,16 +24,40 @@ function renderReceipt(seed: number) {
   );
 }
 
-/** Replaces scrollIntoView, recording the element and the options of each call. */
-function recordScrolls(): { element: Element; options: unknown }[] {
-  const calls: { element: Element; options: unknown }[] = [];
-  Element.prototype.scrollIntoView = function (
-    this: Element,
-    options?: ScrollIntoViewOptions
-  ) {
-    calls.push({ element: this, options });
-  };
+/** Replaces window.scrollTo, recording the options of each call. */
+function recordScrolls(): ScrollToOptions[] {
+  const calls: ScrollToOptions[] = [];
+  window.scrollTo = ((options: ScrollToOptions) => {
+    calls.push(options);
+  }) as typeof window.scrollTo;
   return calls;
+}
+
+/**
+ * Stubs the geometry the scroll reads: the receipt's top in the viewport, the
+ * page's scroll, and the scroll margin of the receipt's scroll-mt-28 class.
+ */
+function stubGeometry(geometry: {
+  top: number;
+  scrollY: number;
+  scrollMarginTop: string;
+}): void {
+  vi.spyOn(Element.prototype, "getBoundingClientRect").mockReturnValue(
+    fromPartial<DOMRect>({ top: geometry.top })
+  );
+  Object.defineProperty(window, "scrollY", {
+    value: geometry.scrollY,
+    configurable: true,
+    writable: true,
+  });
+  const computed = window.getComputedStyle.bind(window);
+  vi.stubGlobal("getComputedStyle", (element: Element) =>
+    element.classList.contains("scroll-mt-28")
+      ? fromPartial<CSSStyleDeclaration>({
+          scrollMarginTop: geometry.scrollMarginTop,
+        })
+      : computed(element)
+  );
 }
 
 function stubMotion(reduced: boolean): void {
@@ -47,29 +71,57 @@ function stubMotion(reduced: boolean): void {
   );
 }
 
+const originalScrollTo = window.scrollTo;
+
 afterEach(() => {
   cleanup();
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+  Object.defineProperty(window, "scrollY", {
+    value: 0,
+    configurable: true,
+    writable: true,
+  });
   delete (window as Partial<Window>).matchMedia;
-  delete (Element.prototype as Partial<Element>).scrollIntoView;
+  window.scrollTo = originalScrollTo;
 });
 
 describe("the receipt lands clean when it opens (#1931)", () => {
-  it("scrolls itself to the top of the page, below the navbar, smoothly", () => {
+  it("scrolls the page so the receipt sits its scroll margin below the top, smoothly", () => {
     stubMotion(false);
+    stubGeometry({ top: 900, scrollY: 500, scrollMarginTop: "112px" });
     const calls = recordScrolls();
     renderReceipt(0);
     const receipt = screen.getByTestId("fbb-receipt");
-    expect(calls).toEqual([
-      { element: receipt, options: { block: "start", behavior: "smooth" } },
-    ]);
     expect(receipt.className).toContain("scroll-mt-28");
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.behavior).toBe("smooth");
+    // The page's scroll, plus the receipt's offset in the viewport, less its margin.
+    expect(calls[0]?.top).toBe(500 + 900 - 112);
+  });
+
+  it("clamps the scroll at the top of the page when the receipt is already near it", () => {
+    stubMotion(false);
+    stubGeometry({ top: 50, scrollY: 0, scrollMarginTop: "112px" });
+    const calls = recordScrolls();
+    renderReceipt(0);
+    expect(calls[0]?.top).toBe(0);
+  });
+
+  it("scrolls back up to the receipt when the page has moved past it", () => {
+    stubMotion(false);
+    stubGeometry({ top: -1500, scrollY: 2000, scrollMarginTop: "112px" });
+    const calls = recordScrolls();
+    renderReceipt(0);
+    expect(calls[0]?.top).toBe(2000 - 1500 - 112);
   });
 
   it("jumps without animation when the viewer prefers reduced motion", () => {
     stubMotion(true);
+    stubGeometry({ top: 900, scrollY: 500, scrollMarginTop: "112px" });
     const calls = recordScrolls();
     renderReceipt(0);
-    expect(calls[0]?.options).toEqual({ block: "start", behavior: "auto" });
+    expect(calls[0]?.behavior).toBe("auto");
   });
 });
 

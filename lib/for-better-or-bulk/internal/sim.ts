@@ -33,15 +33,12 @@ import {
   SHOWER_WALK_FACTOR,
   SIMPLIFY_SECONDS,
   TICK_SECONDS,
-  VENUE_MAP,
-  WALKABLE_TILES,
 } from "../presets";
 import type {
   Commitment,
   Frame,
   GameEvent,
   GameState,
-  Item,
   ItemKind,
   Player,
   PlayerId,
@@ -58,6 +55,16 @@ import { clamp } from "@/lib/game-utils";
 import { createLevel } from "./level";
 import { assistInput, assistRests, helperMayAct } from "./assist";
 import { FLOOR_TILES } from "./gates";
+import {
+  GRILL_COOKS,
+  frontTile,
+  interactTile,
+  isWalkable,
+  stationAccepts,
+  tileAt,
+} from "./press";
+
+export { frontTile, interactTile };
 
 const PLAYER_IDS: readonly PlayerId[] = ["fred", "abbi"];
 const COMMITMENTS: readonly Commitment[] = [
@@ -67,10 +74,6 @@ const COMMITMENTS: readonly Commitment[] = [
   "flowers",
 ];
 const SIMPLIFIABLE = new Set(["centerpieces", "petals"]);
-const GRILL_COOKS: Readonly<Partial<Record<ItemKind, ItemKind>>> = {
-  "hotdogs-raw": "hotdogs",
-  "wings-raw": "wings",
-};
 const CRAFTS: Readonly<
   Record<"arrange" | "petals", { output: ItemKind; seconds: number }>
 > = {
@@ -123,14 +126,6 @@ function inputFor(state: GameState, frame: Frame, id: PlayerId): Chosen {
 export const IDLE_FRAME: Frame = {
   inputs: { fred: IDLE_INPUT, abbi: IDLE_INPUT },
 };
-
-function tileAt(x: number, y: number): string {
-  return VENUE_MAP[y]?.[x] ?? "#";
-}
-
-function isWalkable(x: number, y: number): boolean {
-  return WALKABLE_TILES.includes(tileAt(x, y));
-}
 
 function collides(x: number, y: number): boolean {
   for (
@@ -197,14 +192,6 @@ function move(
   return { ...player, x, y, facingX, facingY };
 }
 
-/** The tile a person is facing, one step from the tile they stand on. */
-export function frontTile(player: Player): { x: number; y: number } {
-  return {
-    x: Math.floor(player.x) + player.facingX,
-    y: Math.floor(player.y) + player.facingY,
-  };
-}
-
 interface Working {
   state: GameState;
   events: GameEvent[];
@@ -231,14 +218,6 @@ function setTarget(w: Working, target: Target): void {
   };
 }
 
-function stationAccepts(station: Station, item: Item): boolean {
-  if (station.item) return false;
-  // The bin is emptied by holding work at it, never by a press.
-  if (station.kind === "bin") return false;
-  if (station.kind === "grill") return item.kind in GRILL_COOKS;
-  return item.kind === "roses";
-}
-
 /**
  * Applies one press of the interact key for `id`. `helped` is true when the
  * solo helper pressed it on the partner's behalf, so the placement is recorded
@@ -246,7 +225,9 @@ function stationAccepts(station: Station, item: Item): boolean {
  */
 function interact(w: Working, id: PlayerId, helped: boolean): void {
   const player = w.state.players[id];
-  const { x, y } = frontTile(player);
+  const tile = interactTile(w.state, id);
+  if (!tile) return;
+  const { x, y } = tile;
   const supply = w.state.supplies.find((s) => s.x === x && s.y === y);
   const station = w.state.stations.find((s) => s.x === x && s.y === y);
   const target = w.state.targets.find((t) => t.x === x && t.y === y);
@@ -582,6 +563,20 @@ function decide(state: GameState, decision: PresenceDecision): StepResult {
   };
 }
 
+/**
+ * A level that finishes inside a seeded event (the shower, the rush) never
+ * reaches that event's own end tick, so the end line for each event it has
+ * started is emitted here, once, as the level finishes. An event that has not
+ * started yet, or has already ended, gets no line.
+ */
+function endOpenSeeded(w: Working, now: number): void {
+  for (const event of w.state.seeded) {
+    if (event.at <= now + 1e-9 && now + 1e-9 < event.until) {
+      w.events.push({ type: "seeded-end", id: event.id });
+    }
+  }
+}
+
 function allDone(state: GameState): boolean {
   return !state.targets.some((t) => t.status === "open");
 }
@@ -719,9 +714,11 @@ export function stepGame(state: GameState, frame: Frame): StepResult {
 
   if (allDone(w.state)) {
     w.state = { ...w.state, phase: "done", finishedAt: after };
+    endOpenSeeded(w, after);
     w.events.push({ type: "level-finished", early: true });
   } else if (after + 1e-9 >= w.state.duration) {
     w.state = { ...w.state, phase: "done" };
+    endOpenSeeded(w, after);
     w.events.push({ type: "level-finished", early: false });
   }
   return w;

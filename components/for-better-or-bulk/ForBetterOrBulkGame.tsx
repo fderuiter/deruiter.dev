@@ -238,6 +238,13 @@ interface Toast {
   text: string;
 }
 
+/** Whether the viewer asked for less motion. Read when called, not in render. */
+function prefersReducedMotion(): boolean {
+  return (
+    window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false
+  );
+}
+
 /** A checklist row whose category just completed; one flash per entry. */
 interface RowFlashEntry {
   id: number;
@@ -574,9 +581,18 @@ export function ForBetterOrBulkGame({
       setToasts([]);
       setAnnouncement("Setup has started. It is 9:00.");
       setPhase("playing");
-      focusAfterPaint(() =>
-        boundaryRef.current?.focus({ preventScroll: true })
-      );
+      focusAfterPaint(() => {
+        const cabinetEl = boundaryRef.current;
+        cabinetEl?.focus({ preventScroll: true });
+        // The header and status line sit under the sticky navbar unless the
+        // page scrolls them in; the cabinet's scroll-margin-top clears the bar.
+        if (cabinetEl && typeof cabinetEl.scrollIntoView === "function") {
+          cabinetEl.scrollIntoView({
+            block: "start",
+            behavior: prefersReducedMotion() ? "auto" : "smooth",
+          });
+        }
+      });
     },
     [focusAfterPaint]
   );

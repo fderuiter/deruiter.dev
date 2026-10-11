@@ -354,6 +354,55 @@ describe("For Better or Bulk cabinet (#1906)", () => {
     expect(frame.active).toBe(true);
   });
 
+  /** Runs focus moves at once, and records each scrollIntoView call. */
+  function stubScroll(): ReturnType<typeof vi.fn> {
+    const scroll = vi.fn();
+    Element.prototype.scrollIntoView = scroll;
+    vi.stubGlobal("requestAnimationFrame", (task: FrameRequestCallback) => {
+      task(0);
+      return 1;
+    });
+    return scroll;
+  }
+
+  it("brings the cabinet into view below the navbar when a level starts (#1927)", () => {
+    const original = Element.prototype.scrollIntoView;
+    try {
+      const scroll = stubScroll();
+      render(<ForBetterOrBulkGame />);
+      start();
+      expect(document.activeElement).toBe(game());
+      expect(scroll).toHaveBeenCalledTimes(1);
+      expect(scroll.mock.contexts[0]).toBe(game());
+      expect(scroll).toHaveBeenCalledWith({
+        block: "start",
+        behavior: "smooth",
+      });
+    } finally {
+      Element.prototype.scrollIntoView = original;
+    }
+  });
+
+  it("scrolls without animation when the viewer prefers reduced motion (#1927)", () => {
+    const original = Element.prototype.scrollIntoView;
+    window.matchMedia = vi.fn((query: string) =>
+      fromPartial<MediaQueryList>({
+        matches: query === "(prefers-reduced-motion: reduce)",
+        media: query,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })
+    );
+    try {
+      const scroll = stubScroll();
+      render(<ForBetterOrBulkGame />);
+      start();
+      expect(scroll).toHaveBeenCalledWith({ block: "start", behavior: "auto" });
+    } finally {
+      Element.prototype.scrollIntoView = original;
+    }
+  });
+
   it("pauses when focus leaves the cabinet (#1914)", () => {
     render(<ForBetterOrBulkGame />);
     start();
@@ -699,6 +748,24 @@ describe("For Better or Bulk side panel: helper, partner and day (fbb round)", (
       .getAllByText(shower)
       .filter((node) => node.tagName === "LI");
     expect(toasts).toHaveLength(1);
+  });
+
+  it("shows the guest rush's start toast and announces it (#1927)", () => {
+    render(
+      <ForBetterOrBulkGame initialSetup={{ ...DEFAULT_SETUP, seed: 12345 }} />
+    );
+    start();
+    const rush = bankText("rush-start");
+    runUntil(
+      () =>
+        screen.queryAllByText(rush).length > 0 ||
+        screen.queryByTestId("fbb-brothers") !== null
+    );
+    const toasts = screen
+      .getAllByText(rush)
+      .filter((node) => node.tagName === "LI");
+    expect(toasts).toHaveLength(1);
+    expect(screen.getByRole("status").textContent).toContain(rush);
   });
 });
 

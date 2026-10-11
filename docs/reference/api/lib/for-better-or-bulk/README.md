@@ -272,12 +272,6 @@ Re-exports [evaluateChallenges](internal/challenges/functions/evaluateChallenges
 
 ***
 
-### FICTION\_DEFAULTS
-
-Re-exports [FICTION_DEFAULTS](presets/variables/FICTION_DEFAULTS.md)
-
-***
-
 ### FIXED\_COSTS
 
 Re-exports [FIXED_COSTS](presets/variables/FIXED_COSTS.md)

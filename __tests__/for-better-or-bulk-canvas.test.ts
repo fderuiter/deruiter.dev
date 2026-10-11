@@ -80,6 +80,29 @@ describe("the venue's canvas labels", () => {
     }
   });
 
+  it("fits every label inside its tile run at the measured width (#1927)", () => {
+    const yesRoses: Setup = {
+      ...DEFAULT_SETUP,
+      cart: { ...DEFAULT_SETUP.cart, roses: "yes" },
+    };
+    for (const setup of [DEFAULT_SETUP, SEED_12345, yesRoses]) {
+      const { ctx, drawn } = recorder();
+      drawVenue(ctx, createLevel(setup), null);
+      // Only labels given a span are fitted; the player letters are not.
+      const labels = drawn.filter(
+        (d) => d.name === "fillText" && typeof d.args[3] === "number"
+      );
+      expect(labels.length).toBeGreaterThan(0);
+      for (const label of labels) {
+        const text = String(label.args[0]);
+        const span = Number(label.args[3]);
+        // The stub measures six pixels a character; the canvas squeezes any
+        // text wider than its span, so it must never need squeezing.
+        expect(text.length * 6, text).toBeLessThanOrEqual(span);
+      }
+    }
+  });
+
   it("draws the Yes-roses car with its outline redrawn over the roses", () => {
     const base = createLevel({
       ...DEFAULT_SETUP,

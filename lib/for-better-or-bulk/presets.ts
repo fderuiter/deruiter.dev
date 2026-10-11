@@ -343,7 +343,7 @@ export const PATIO_ROWS = 4;
 /** Fixed receipt lines. The real weather line comes from the line bank. */
 export const RECEIPT_COPY = {
   leftovers: "Some. They went to the Rochester warming shelter.",
-  suit: "Fred wore the rented tux. The free suit from The Suit Wherehouse: acquired, yes. Worn, no.",
+  suit: "Fred wore the rented tux. The free suit from The Suit Wherehouse (not the real shop's name): acquired, yes. Worn, no.",
   disclaimer:
     "Game prices, not the real wedding's costs. Explanations describe this game's rules, not what would have happened at the real wedding.",
 } as const;
@@ -581,15 +581,6 @@ export const LINE_BANK: readonly BankLine[] = [
 export function bankText(id: string): string {
   return LINE_BANK.find((line) => line.id === id)?.text ?? "";
 }
-
-/** Details the real story did not supply, filled in for play. */
-export const FICTION_DEFAULTS: readonly string[] = [
-  "The level squeezes Friday setup, 9:00 to 4:00, into a few minutes.",
-  "The venue's layout, crates and stations are invented for play.",
-  "Phone calls about the website land at made-up times.",
-  "The brothers text at a made-up time, and the break and leave options are gameplay alternatives.",
-  "The Suit Wherehouse is a made-up name.",
-];
 
 /** The receipt's line when the solo helper was on (ADR 0060, F6). */
 export const ASSIST_LINE =

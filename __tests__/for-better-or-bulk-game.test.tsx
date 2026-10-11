@@ -326,3 +326,69 @@ describe("For Better or Bulk cabinet (#1906)", () => {
     expect(frame.active).toBe(true);
   });
 });
+
+describe("For Better or Bulk coach strip and counts", () => {
+  beforeEach(() => {
+    frame.callback = null;
+    frame.active = false;
+    window.localStorage.clear();
+    window.history.replaceState(null, "", "/arcade/for-better-or-bulk?speed=8");
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
+    window.localStorage.clear();
+    window.history.replaceState(null, "", "/");
+  });
+
+  it("shows the active person's next step and counts what is left in each crate", () => {
+    render(<ForBetterOrBulkGame />);
+    start();
+    expect(screen.getByTestId("fbb-coach").textContent).toContain(
+      "Grab roses from the ROSE crate on the left."
+    );
+    expect(screen.getByTestId("fbb-stock").textContent).toBe(
+      "Roses 6 · Hot dogs 1 · Wings 1 · Mac 1 · Quinoa 1 · Lanterns 4 · Chairs 8"
+    );
+  });
+
+  it("gives both people a hint in co-op", () => {
+    render(<ForBetterOrBulkGame initialMode="coop" />);
+    start();
+    const coach = screen.getByTestId("fbb-coach").textContent ?? "";
+    expect(coach).toContain("Fred: Grab roses");
+    expect(coach).toContain("Abbi: Grab roses");
+  });
+
+  it("hides the strip, remembers the choice, and shows it again on request", () => {
+    const { unmount } = render(<ForBetterOrBulkGame />);
+    start();
+    fireEvent.click(screen.getByRole("button", { name: "Hide tips" }));
+    expect(screen.queryByTestId("fbb-coach")).toBeNull();
+    expect(window.localStorage.getItem("fbb_hide_tips")).toBe("1");
+    unmount();
+
+    render(<ForBetterOrBulkGame />);
+    start();
+    expect(screen.queryByTestId("fbb-coach")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Show tips" }));
+    expect(screen.getByTestId("fbb-coach")).toBeTruthy();
+    expect(window.localStorage.getItem("fbb_hide_tips")).toBe("0");
+  });
+
+  it("still renders the cabinet when storage throws", () => {
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+      throw new Error("blocked");
+    });
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new Error("blocked");
+    });
+    render(<ForBetterOrBulkGame />);
+    start();
+    expect(screen.getByTestId("fbb-game")).toBeTruthy();
+    expect(screen.getByTestId("fbb-coach")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Hide tips" }));
+    expect(screen.queryByTestId("fbb-coach")).toBeNull();
+  });
+});

@@ -2,9 +2,15 @@
 import { describe, it, expect } from "vitest";
 import fc from "fast-check";
 import {
+  BIN_HOLD_SECONDS,
   BREAK_SECONDS,
-  BROTHERS_AT,
+  BROTHERS_EARLIEST_AT,
+  BROTHERS_LATEST_AT,
+  BURN_SECONDS,
+  COOK_SECONDS,
   DEFAULT_SETUP,
+  FLOOR_CAP,
+  THROW_OUT_PROMPT,
   IDLE_FRAME,
   IDLE_INPUT,
   LEFT_LINE,
@@ -20,6 +26,7 @@ import {
   computeReceipt,
   createLevel,
   frontTile,
+  getHint,
   getPrompt,
   readinessLines,
   replayLevel,
@@ -35,6 +42,7 @@ import {
   type PlayerInput,
   type PresenceDecision,
   type Setup,
+  type Target,
 } from "@/lib/for-better-or-bulk";
 
 const ticks = (seconds: number) => Math.round(seconds / TICK_SECONDS);
@@ -123,6 +131,31 @@ function allFilled(state: GameState, by: PlayerId): GameState {
             filledBy: Array.from({ length: t.capacity }, () => by),
           }
         : t
+    ),
+  };
+}
+
+/** Marks every target except the ones `keep` accepts as unplanned. */
+function onlyOpen(state: GameState, keep: (t: Target) => boolean): GameState {
+  return {
+    ...state,
+    targets: state.targets.map((t) =>
+      keep(t) ? t : { ...t, status: "unplanned" as const }
+    ),
+  };
+}
+
+/** Puts an item on a station tile, bypassing the hands. */
+function withStation(
+  state: GameState,
+  x: number,
+  y: number,
+  item: Item | null
+): GameState {
+  return {
+    ...state,
+    stations: state.stations.map((s) =>
+      s.x === x && s.y === y ? { ...s, item } : s
     ),
   };
 }
@@ -396,7 +429,11 @@ describe("the grill", () => {
     const grill = cooked.state.stations.find((s) => s.x === 4 && s.y === 3);
     expect(grill?.item).toEqual({ kind: "hotdogs", madeBy: "fred" });
 
-    const burnt = run(cooked.state, IDLE_FRAME, ticks(7));
+    const burnt = run(
+      cooked.state,
+      IDLE_FRAME,
+      ticks(BURN_SECONDS - COOK_SECONDS + 1)
+    );
     expect(burnt.events.some((e) => e.type === "burnt")).toBe(true);
     expect(burnt.state.burntBatches).toBe(1);
 
@@ -404,6 +441,12 @@ describe("the grill", () => {
     expect(state.players.fred.holding?.kind).toBe("burnt");
     state = place(state, "fred", 6, 4, [0, -1], state.players.fred.holding);
     state = press(state, "fred").state;
+    expect(state.players.fred.holding?.kind).toBe("burnt");
+    state = run(
+      state,
+      frameFor("fred", { work: true }),
+      ticks(BIN_HOLD_SECONDS)
+    ).state;
     expect(state.players.fred.holding).toBeNull();
     expect(state.stations.find((s) => s.kind === "bin")?.item).toBeNull();
   });
@@ -464,7 +507,7 @@ describe("the brothers' text", () => {
   it("pauses the clock until Fred answers", () => {
     const paused = untilBrothers(createLevel(DEFAULT_SETUP));
     expect(paused.phase).toBe("brothers");
-    expect(paused.time).toBeCloseTo(BROTHERS_AT, 5);
+    expect(paused.time).toBeCloseTo(BROTHERS_LATEST_AT, 5);
     const still = run(paused, frameFor("abbi", { moveX: 1 }), 30).state;
     expect(still.time).toBe(paused.time);
     expect(still.players.abbi.x).toBe(paused.players.abbi.x);
@@ -498,7 +541,7 @@ describe("the brothers' text", () => {
       commitment: "chairs",
     });
     expect(away.players.fred.presence).toBe("away");
-    expect(away.returnsAt).toBeCloseTo(BROTHERS_AT + BREAK_SECONDS, 5);
+    expect(away.returnsAt).toBeCloseTo(BROTHERS_LATEST_AT + BREAK_SECONDS, 5);
     const back = run(away, IDLE_FRAME, ticks(BREAK_SECONDS) + 1);
     expect(back.events).toContainEqual({ type: "fred-returned" });
     expect(back.state.players.fred).toMatchObject({
@@ -512,7 +555,7 @@ describe("the brothers' text", () => {
       choice: "leave",
       commitment: null,
     });
-    expect(away.returnsAt).toBeCloseTo(BROTHERS_AT + LEAVE_SECONDS, 5);
+    expect(away.returnsAt).toBeCloseTo(BROTHERS_LATEST_AT + LEAVE_SECONDS, 5);
     const later = run(away, frameFor("fred", { moveX: 1 }), ticks(30)).state;
     expect(later.players.fred.presence).toBe("away");
     expect(later.players.fred.x).toBe(away.players.fred.x);
@@ -802,5 +845,426 @@ describe("replay", () => {
       { frame: 0, reason: "Nobody is texting Fred right now." },
     ]);
     expect(lenient.state.tick).toBe(1);
+  });
+});
+
+describe("the bin, returns and the floor", () => {
+  const burntAtBin = (id: PlayerId = "fred") =>
+    place(createLevel(DEFAULT_SETUP), id, 6, 4, [0, -1], {
+      kind: "burnt",
+      madeBy: null,
+    });
+
+  it("ignores a single press at the bin", () => {
+    const { state, events } = press(burntAtBin(), "fred");
+    expect(state.players.fred.holding?.kind).toBe("burnt");
+    expect(events.some((e) => e.type === "thrown-out")).toBe(false);
+  });
+
+  it("throws the item out only after a half-second hold", () => {
+    const held = run(
+      burntAtBin(),
+      frameFor("fred", { work: true }),
+      ticks(BIN_HOLD_SECONDS - 0.1)
+    );
+    expect(held.state.players.fred.holding?.kind).toBe("burnt");
+    const thrown = run(
+      held.state,
+      frameFor("fred", { work: true }),
+      ticks(0.2)
+    );
+    expect(thrown.state.players.fred.holding).toBeNull();
+    expect(thrown.events).toContainEqual({
+      type: "thrown-out",
+      player: "fred",
+      item: "burnt",
+    });
+  });
+
+  it("starts a bin hold over when the work key is let go", () => {
+    const first = run(
+      burntAtBin(),
+      frameFor("fred", { work: true }),
+      ticks(BIN_HOLD_SECONDS - 0.1)
+    );
+    const released = run(first.state, IDLE_FRAME, 1).state;
+    const second = run(
+      released,
+      frameFor("fred", { work: true }),
+      ticks(BIN_HOLD_SECONDS - 0.1)
+    ).state;
+    expect(second.players.fred.holding?.kind).toBe("burnt");
+  });
+
+  it("returns an item to the crate it came from", () => {
+    const start = place(createLevel(DEFAULT_SETUP), "fred", 2, 3, [-1, 0]);
+    const taken = press(start, "fred").state;
+    expect(taken.stock.roses).toBe(ROSE_BUNCHES.full - 1);
+    const back = press(taken, "fred");
+    expect(back.state.players.fred.holding).toBeNull();
+    expect(back.state.stock.roses).toBe(ROSE_BUNCHES.full);
+  });
+
+  it("refuses to put an item back in a crate for another kind", () => {
+    const start = place(createLevel(DEFAULT_SETUP), "fred", 2, 3, [-1, 0], {
+      kind: "chairs",
+      madeBy: null,
+    });
+    const { state } = press(start, "fred");
+    expect(state.players.fred.holding?.kind).toBe("chairs");
+    expect(state.stock.roses).toBe(ROSE_BUNCHES.full);
+  });
+
+  it("refuses a fourth item on the floor, with a reason", () => {
+    const level = createLevel(DEFAULT_SETUP);
+    const full: GameState = {
+      ...place(level, "fred", 5, 7, [0, 1], {
+        kind: "chairs",
+        madeBy: null,
+      }),
+      floor: [
+        { x: 10, y: 8, item: { kind: "mac", madeBy: null } },
+        { x: 11, y: 8, item: { kind: "mac", madeBy: null } },
+        { x: 12, y: 8, item: { kind: "mac", madeBy: null } },
+      ],
+    };
+    expect(full.floor.length).toBe(FLOOR_CAP);
+    const { state, events } = press(full, "fred");
+    expect(state.players.fred.holding?.kind).toBe("chairs");
+    expect(state.floor.length).toBe(FLOOR_CAP);
+    expect(events).toContainEqual({ type: "floor-full", player: "fred" });
+  });
+
+  it("drops what Fred carries on his tile when he leaves, past the floor cap", () => {
+    const full = Array.from({ length: FLOOR_CAP }, (_, i) => ({
+      x: 10 + i,
+      y: 8,
+      item: { kind: "mac" as const, madeBy: null },
+    }));
+    const carrying = place(
+      { ...createLevel(DEFAULT_SETUP), floor: full },
+      "fred",
+      5,
+      7,
+      [0, 1],
+      { kind: "chairs", madeBy: null }
+    );
+    const away = decide(untilBrothers(carrying), {
+      choice: "leave",
+      commitment: null,
+    });
+    expect(away.players.fred.holding).toBeNull();
+    expect(away.floor).toHaveLength(FLOOR_CAP + 1);
+    expect(away.floor).toContainEqual({
+      x: 5,
+      y: 7,
+      item: { kind: "chairs", madeBy: null },
+    });
+  });
+
+  it("drops Fred's carried item on the nearest free tile when his own is taken", () => {
+    const blocked = place(
+      {
+        ...createLevel(DEFAULT_SETUP),
+        floor: [{ x: 5, y: 7, item: { kind: "mac", madeBy: null } }],
+      },
+      "fred",
+      5,
+      7,
+      [0, 1],
+      { kind: "chairs", madeBy: null }
+    );
+    const away = decide(untilBrothers(blocked), {
+      choice: "break",
+      commitment: "chairs",
+    });
+    expect(away.floor).toContainEqual({
+      x: 4,
+      y: 6,
+      item: { kind: "chairs", madeBy: null },
+    });
+  });
+
+  it("keeps a carried item when Fred stays", () => {
+    const carrying = place(createLevel(DEFAULT_SETUP), "fred", 5, 7, [0, 1], {
+      kind: "chairs",
+      madeBy: null,
+    });
+    const staying = decide(untilBrothers(carrying), {
+      choice: "stay",
+      commitment: null,
+    });
+    expect(staying.players.fred.holding?.kind).toBe("chairs");
+    expect(staying.floor).toEqual([]);
+  });
+});
+
+describe("the brothers' timing", () => {
+  it("lands at 90 seconds when a target fills early", () => {
+    let state = place(createLevel(DEFAULT_SETUP), "abbi", 4, 8, [0, -1], {
+      kind: "arrangement",
+      madeBy: "abbi",
+    });
+    state = press(state, "abbi").state;
+    expect(state.firstFilledAt).toBeCloseTo(TICK_SECONDS, 5);
+    const paused = untilBrothers(state);
+    expect(paused.brothersAt).toBeCloseTo(BROTHERS_EARLIEST_AT, 5);
+  });
+
+  it("waits for a late first fill, up to the cap", () => {
+    const late = { ...createLevel(DEFAULT_SETUP), firstFilledAt: 100 };
+    expect(untilBrothers(late).brothersAt).toBeCloseTo(100, 5);
+  });
+
+  it("never waits past 110 seconds", () => {
+    const later = { ...createLevel(DEFAULT_SETUP), firstFilledAt: 150 };
+    expect(untilBrothers(later).brothersAt).toBeCloseTo(BROTHERS_LATEST_AT, 5);
+    expect(untilBrothers(createLevel(DEFAULT_SETUP)).brothersAt).toBeCloseTo(
+      BROTHERS_LATEST_AT,
+      5
+    );
+  });
+});
+
+describe("the coach hints", () => {
+  const cases: readonly {
+    name: string;
+    state: () => GameState;
+    id: PlayerId;
+    hint: string | null;
+  }[] = [
+    {
+      name: "free hands, roses wanted: grab roses from the crate",
+      state: () => createLevel(DEFAULT_SETUP),
+      id: "fred",
+      hint: "Grab roses from the ROSE crate on the left.",
+    },
+    {
+      name: "holding roses: carry them to the ARRANGE table",
+      state: () =>
+        place(createLevel(DEFAULT_SETUP), "abbi", 2, 2, [0, 1], {
+          kind: "roses",
+          madeBy: null,
+        }),
+      id: "abbi",
+      hint: "Carry the roses to the ARRANGE table (A).",
+    },
+    {
+      name: "roses on the table: hold work to arrange them",
+      state: () =>
+        withStation(createLevel(DEFAULT_SETUP), 8, 3, {
+          kind: "roses",
+          madeBy: null,
+        }),
+      id: "fred",
+      hint: "Stand at the ARRANGE table (A) and hold work to arrange the roses.",
+    },
+    {
+      name: "arrangement ready: take it from the table",
+      state: () =>
+        withStation(createLevel(DEFAULT_SETUP), 8, 3, {
+          kind: "arrangement",
+          madeBy: "abbi",
+        }),
+      id: "fred",
+      hint: "Take the arrangement from the ARRANGE table (A).",
+    },
+    {
+      name: "holding an arrangement: carry it to a centerpiece",
+      state: () =>
+        place(createLevel(DEFAULT_SETUP), "fred", 2, 2, [0, 1], {
+          kind: "arrangement",
+          madeBy: "fred",
+        }),
+      id: "fred",
+      hint: "Carry the arrangement to a centerpiece table (T).",
+    },
+    {
+      name: "roses with the table busy, petals planned: carry to the PETALS bucket",
+      state: () =>
+        place(
+          withStation(
+            withStation(createLevel(YES_SETUP), 8, 3, {
+              kind: "roses",
+              madeBy: null,
+            }),
+            9,
+            3,
+            { kind: "roses", madeBy: null }
+          ),
+          "abbi",
+          2,
+          2,
+          [0, 1],
+          { kind: "roses", madeBy: null }
+        ),
+      id: "abbi",
+      hint: "Carry the roses to the PETALS bucket (P).",
+    },
+    {
+      name: "holding petals: carry them to an aisle spot",
+      state: () =>
+        place(createLevel(YES_SETUP), "fred", 2, 2, [0, 1], {
+          kind: "petals",
+          madeBy: "fred",
+        }),
+      id: "fred",
+      hint: "Carry the bucket of petals to an aisle spot (S).",
+    },
+    {
+      name: "raw hot dogs and a free grill: carry them to the grill",
+      state: () =>
+        place(createLevel(DEFAULT_SETUP), "fred", 2, 2, [0, 1], {
+          kind: "hotdogs-raw",
+          madeBy: null,
+        }),
+      id: "fred",
+      hint: "Carry the raw hot dogs to the GRILL (G).",
+    },
+    {
+      name: "hot dogs cooked on the grill: take them off",
+      state: () =>
+        withStation(createLevel(DEFAULT_SETUP), 4, 3, {
+          kind: "hotdogs",
+          madeBy: "fred",
+        }),
+      id: "abbi",
+      hint: "Take the hot dogs off the GRILL (G).",
+    },
+    {
+      name: "holding cooked hot dogs: carry them to the buffet",
+      state: () =>
+        place(createLevel(DEFAULT_SETUP), "abbi", 2, 2, [0, 1], {
+          kind: "hotdogs",
+          madeBy: "fred",
+        }),
+      id: "abbi",
+      hint: "Carry the hot dogs to the buffet (B).",
+    },
+    {
+      name: "holding mac and cheese: carry it to the buffet",
+      state: () =>
+        place(createLevel(DEFAULT_SETUP), "fred", 2, 2, [0, 1], {
+          kind: "mac",
+          madeBy: null,
+        }),
+      id: "fred",
+      hint: "Carry the mac and cheese to the buffet (B).",
+    },
+    {
+      name: "only the mac slot left: grab mac and cheese",
+      state: () =>
+        onlyOpen(createLevel(DEFAULT_SETUP), (t) => t.wants === "mac"),
+      id: "fred",
+      hint: "Grab mac and cheese from the MAC crate on the left.",
+    },
+    {
+      name: "only the lantern hook left: grab a lantern",
+      state: () =>
+        onlyOpen(createLevel(DEFAULT_SETUP), (t) => t.kind === "hook"),
+      id: "fred",
+      hint: "Grab a lantern from the LAMP crate on the left.",
+    },
+    {
+      name: "holding a lantern: carry it to a hook",
+      state: () =>
+        place(createLevel(DEFAULT_SETUP), "fred", 2, 2, [0, 1], {
+          kind: "lantern",
+          madeBy: null,
+        }),
+      id: "fred",
+      hint: "Carry the lantern to a lantern hook (N).",
+    },
+    {
+      name: "only the chair spots left: grab a stack of chairs",
+      state: () =>
+        onlyOpen(createLevel(DEFAULT_SETUP), (t) => t.kind === "chair-spot"),
+      id: "fred",
+      hint: "Grab a stack of chairs from the CHAIR crate on the left.",
+    },
+    {
+      name: "holding a stack of chairs: carry it to a chair spot",
+      state: () =>
+        place(createLevel(DEFAULT_SETUP), "abbi", 2, 2, [0, 1], {
+          kind: "chairs",
+          madeBy: null,
+        }),
+      id: "abbi",
+      hint: "Carry the stack of chairs to a chair spot (O).",
+    },
+    {
+      name: "holding something burnt: take it to the bin",
+      state: () =>
+        place(createLevel(DEFAULT_SETUP), "fred", 2, 2, [0, 1], {
+          kind: "burnt",
+          madeBy: null,
+        }),
+      id: "fred",
+      hint: "Carry the burnt food to the BIN (X) and hold work there to throw it out.",
+    },
+    {
+      name: "nothing useful left: no hint",
+      state: () => onlyOpen(createLevel(DEFAULT_SETUP), () => false),
+      id: "fred",
+      hint: null,
+    },
+    {
+      name: "the level is over: no hint",
+      state: () => ({ ...createLevel(DEFAULT_SETUP), phase: "done" as const }),
+      id: "fred",
+      hint: null,
+    },
+    {
+      name: "away with his brothers: no hint",
+      state: () =>
+        decide(untilBrothers(createLevel(DEFAULT_SETUP)), {
+          choice: "leave",
+          commitment: null,
+        }),
+      id: "fred",
+      hint: null,
+    },
+  ];
+
+  for (const testCase of cases) {
+    it(testCase.name, () => {
+      expect(getHint(testCase.state(), testCase.id)).toBe(testCase.hint);
+    });
+  }
+});
+
+describe("the new prompts", () => {
+  it("prompts a hold, not a press, at the bin", () => {
+    const at = place(createLevel(DEFAULT_SETUP), "fred", 6, 4, [0, -1], {
+      kind: "burnt",
+      madeBy: null,
+    });
+    expect(getPrompt(at, "fred")).toMatchObject({
+      interact: null,
+      work: THROW_OUT_PROMPT,
+    });
+  });
+
+  it("offers to put an item back in its crate", () => {
+    const at = place(createLevel(DEFAULT_SETUP), "fred", 2, 3, [-1, 0], {
+      kind: "roses",
+      madeBy: null,
+    });
+    expect(getPrompt(at, "fred").interact).toBe("Put it back in the crate");
+  });
+
+  it("stops offering to put things down once the floor is full", () => {
+    const full = {
+      ...place(createLevel(DEFAULT_SETUP), "fred", 5, 7, [0, 1], {
+        kind: "chairs",
+        madeBy: null,
+      }),
+      floor: Array.from({ length: FLOOR_CAP }, (_, i) => ({
+        x: 10 + i,
+        y: 8,
+        item: { kind: "mac" as const, madeBy: null },
+      })),
+    };
+    expect(getPrompt(full, "fred").interact).toBeNull();
   });
 });

@@ -41,6 +41,8 @@ export function describeEvent(event: GameEvent): string | null {
       return `That was the last of the ${SUPPLY_LABELS[event.supply]}.`;
     case "simplified":
       return `Left one ${CATEGORY_LABELS[event.category].toLowerCase()} spot bare. Restraint. Very adult.`;
+    case "floor-full":
+      return "No room on the floor. Find a counter or a target.";
     case "brothers-text":
       return "Fred's brothers are texting.";
     case "fred-returned":

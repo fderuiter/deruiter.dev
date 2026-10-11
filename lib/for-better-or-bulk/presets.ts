@@ -127,6 +127,17 @@ export const VENUE_MAP: readonly string[] = [
   "####################",
 ];
 
+/** The short name painted on each crate, used on the venue and in hints. */
+export const CRATE_NAMES: Readonly<Record<SupplyKind, string>> = {
+  roses: "ROSE",
+  "hotdogs-raw": "DOGS",
+  "wings-raw": "WING",
+  mac: "MAC",
+  quinoa: "QUIN",
+  lantern: "LAMP",
+  chairs: "CHAIR",
+};
+
 /** Crate letters and what they hand out. */
 export const SUPPLY_TILES: Readonly<Record<string, SupplyKind>> = {
   H: "hotdogs-raw",
@@ -149,8 +160,11 @@ export const BUFFET_ORDER: readonly ItemKind[] = [
 /** Tiles people can walk over. Aisle and chair spots are on the ground. */
 export const WALKABLE_TILES = ".12SO";
 
-/** Level length in game seconds: 9:00 to 4:00. Relaxed mode stretches it. */
-export const LEVEL_SECONDS = 240;
+/**
+ * Level length in game seconds: 9:00 to 4:00. Relaxed mode stretches it.
+ * 240 was too loose: an efficient pair finished at about 70 s (balance.md).
+ */
+export const LEVEL_SECONDS = 200;
 export const RELAXED_LEVEL_SECONDS = 330;
 
 /** The engine's fixed step, in seconds. */
@@ -165,11 +179,25 @@ export const CALM_SPEED_MULTIPLIER = 1.1;
 export const ARRANGE_SECONDS = 1.5;
 export const PETAL_SECONDS = 1.2;
 export const COOK_SECONDS = 6;
-export const BURN_SECONDS = 13;
+/** Was 13: a 7 s pickup window after cooking was the only cliff in the sweep. */
+export const BURN_SECONDS = 16;
 export const SIMPLIFY_SECONDS = 1;
 
-/** The brothers text at this level time; how long each answer keeps Fred away. */
-export const BROTHERS_AT = 50;
+/** Holding work at the bin this long throws out the item in hand. */
+export const BIN_HOLD_SECONDS = 0.5;
+
+/** At most this many items on the floor at once; Fred's drop on leaving is exempt. */
+export const FLOOR_CAP = 3;
+
+/**
+ * The brothers' text lands at the later of the earliest time and the first
+ * full target, and never after the latest time, which keeps it ahead of the
+ * calls at 130 s and later. Level seconds. These replace the old fixed 50 s.
+ */
+export const BROTHERS_EARLIEST_AT = 90;
+export const BROTHERS_LATEST_AT = 110;
+
+/** How long each answer keeps Fred away, in level seconds. */
 export const BREAK_SECONDS = 40;
 export const LEAVE_SECONDS = 110;
 
@@ -261,6 +289,9 @@ export const ITEM_LABELS: Readonly<Record<ItemKind, string>> = {
   lantern: "a paper lantern",
   chairs: "a stack of chairs",
 };
+
+/** The prompt that marks a bin hold; the cabinet words it as a hold. */
+export const THROW_OUT_PROMPT = "Throw it out";
 
 /** The line a run prints when Fred leaves while the plan depends on him. */
 export const LEFT_LINE =

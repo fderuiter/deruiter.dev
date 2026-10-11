@@ -7,3 +7,5 @@
 # Variable: BREAK\_SECONDS
 
 > `const` **BREAK\_SECONDS**: `40` = `40`
+
+How long each answer keeps Fred away, in level seconds.

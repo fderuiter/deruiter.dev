@@ -13,4 +13,5 @@
 ## Functions
 
 - [clockLabel](functions/clockLabel.md)
+- [getHint](functions/getHint.md)
 - [getPrompt](functions/getPrompt.md)

@@ -127,6 +127,8 @@ export interface Player {
   readonly busyReason: string | null;
   /** True once a break or the brothers have calmed Fred down. */
   readonly calm: boolean;
+  /** Seconds the work key has been held facing the bin with an item in hand. */
+  readonly binHold: number;
 }
 
 /** One person's controls for one tick. */
@@ -188,6 +190,10 @@ export interface GameState {
   readonly presence: PresenceDecision | null;
   /** When Fred is due back, in level seconds, while he is away. */
   readonly returnsAt: number | null;
+  /** Level time the brothers' text landed, once it has. */
+  readonly brothersAt: number | null;
+  /** Level time the first target became full, if one has. */
+  readonly firstFilledAt: number | null;
   readonly burntBatches: number;
   /** Level time at which everything planned was done, if before the end. */
   readonly finishedAt: number | null;
@@ -239,6 +245,12 @@ export type GameEvent =
       readonly player: PlayerId;
       readonly blockedBy: CapabilityId | null;
     }
+  | {
+      readonly type: "thrown-out";
+      readonly player: PlayerId;
+      readonly item: ItemKind;
+    }
+  | { readonly type: "floor-full"; readonly player: PlayerId }
   | { readonly type: "brothers-text" }
   | { readonly type: "presence-decided"; readonly decision: PresenceDecision }
   | { readonly type: "fred-returned" }

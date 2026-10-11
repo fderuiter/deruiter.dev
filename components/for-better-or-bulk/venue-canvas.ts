@@ -7,8 +7,10 @@
 
 import {
   ARRANGE_SECONDS,
+  BIN_HOLD_SECONDS,
   BURN_SECONDS,
   COOK_SECONDS,
+  CRATE_NAMES,
   PETAL_SECONDS,
   SIMPLIFY_SECONDS,
   VENUE_MAP,
@@ -19,7 +21,6 @@ import {
   type Player,
   type PlayerId,
   type Station,
-  type SupplyKind,
   type Target,
 } from "@/lib/for-better-or-bulk";
 import { clamp, GAME_FONT_FALLBACK_STACK } from "@/lib/game-utils";
@@ -74,16 +75,6 @@ const ITEM_COLORS: Readonly<Record<ItemKind, string>> = {
   burnt: "#1b1b1b",
   lantern: "#f7d774",
   chairs: "#b9bec6",
-};
-
-const CRATE_LABELS: Readonly<Record<SupplyKind, string>> = {
-  roses: "ROSE",
-  "hotdogs-raw": "DOGS",
-  "wings-raw": "WING",
-  mac: "MAC",
-  quinoa: "QUIN",
-  lantern: "LAMP",
-  chairs: "CHAIR",
 };
 
 function font(size: number): string {
@@ -416,6 +407,19 @@ function drawFacingTile(
   ctx.restore();
 }
 
+/** A bar on the bin while someone holds work there to throw an item out. */
+function drawBinHold(ctx: CanvasRenderingContext2D, player: Player): void {
+  if (player.binHold <= 0 || player.presence === "away") return;
+  const { x, y } = frontTile(player);
+  drawProgress(
+    ctx,
+    x * TILE,
+    y * TILE,
+    player.binHold / BIN_HOLD_SECONDS,
+    COLORS.progress
+  );
+}
+
 /**
  * Draws the whole venue for one frame. `active` is the person playing in
  * solo; null means co-op, where both people's facing tiles are outlined.
@@ -439,7 +443,7 @@ export function drawVenue(
     ctx.globalAlpha = left > 0 ? 1 : 0.3;
     drawItem(ctx, supply.kind, px + TILE / 2, py + TILE / 2 + 2, TILE * 0.38);
     ctx.globalAlpha = 1;
-    drawLabel(ctx, CRATE_LABELS[supply.kind], px + TILE / 2, py + 4);
+    drawLabel(ctx, CRATE_NAMES[supply.kind], px + TILE / 2, py + 4);
     drawLabel(ctx, String(left), px + TILE / 2, py + TILE - 13);
   }
   for (const target of state.targets) drawTarget(ctx, target);
@@ -458,4 +462,6 @@ export function drawVenue(
   }
   drawPlayer(ctx, state.players.fred, active === "fred");
   drawPlayer(ctx, state.players.abbi, active === "abbi");
+  drawBinHold(ctx, state.players.fred);
+  drawBinHold(ctx, state.players.abbi);
 }

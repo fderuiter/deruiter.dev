@@ -294,3 +294,17 @@ function contrast(a: string, b: string): number {
   const [light, dark] = [luminance(a), luminance(b)].sort((x, y) => y - x);
   return (light + 0.05) / (dark + 0.05);
 }
+
+describe("For Better or Bulk floor and bin lines", () => {
+  it("says there is no room when the floor is full", () => {
+    expect(describeEvent({ type: "floor-full", player: "fred" })).toBe(
+      "No room on the floor. Find a counter or a target."
+    );
+  });
+
+  it("stays quiet when something is thrown out", () => {
+    expect(
+      describeEvent({ type: "thrown-out", player: "abbi", item: "burnt" })
+    ).toBeNull();
+  });
+});

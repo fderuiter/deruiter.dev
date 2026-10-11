@@ -1,0 +1,52 @@
+[**fderuiter-portfolio**](../../../README.md)
+
+***
+
+[fderuiter-portfolio](../../../modules.md) / lib/for-better-or-bulk/presets
+
+# lib/for-better-or-bulk/presets
+
+## Variables
+
+- [ARRANGE\_SECONDS](variables/ARRANGE_SECONDS.md)
+- [BLOCKED\_TOASTS](variables/BLOCKED_TOASTS.md)
+- [BREAK\_SECONDS](variables/BREAK_SECONDS.md)
+- [BROTHERS\_AT](variables/BROTHERS_AT.md)
+- [BUDGET](variables/BUDGET.md)
+- [BUFFET\_ORDER](variables/BUFFET_ORDER.md)
+- [BURN\_SECONDS](variables/BURN_SECONDS.md)
+- [CALM\_SPEED\_MULTIPLIER](variables/CALM_SPEED_MULTIPLIER.md)
+- [CAPABILITIES](variables/CAPABILITIES.md)
+- [CAPABILITY\_PICKS](variables/CAPABILITY_PICKS.md)
+- [CATEGORY\_LABELS](variables/CATEGORY_LABELS.md)
+- [CHAIR\_STACKS](variables/CHAIR_STACKS.md)
+- [COMMITMENT\_CATEGORIES](variables/COMMITMENT_CATEGORIES.md)
+- [COOK\_SECONDS](variables/COOK_SECONDS.md)
+- [DEFAULT\_SETUP](variables/DEFAULT_SETUP.md)
+- [FICTION\_DEFAULTS](variables/FICTION_DEFAULTS.md)
+- [FIXED\_COSTS](variables/FIXED_COSTS.md)
+- [FOOD\_BATCHES](variables/FOOD_BATCHES.md)
+- [FOOD\_PRICES](variables/FOOD_PRICES.md)
+- [INTERRUPTIONS](variables/INTERRUPTIONS.md)
+- [ITEM\_LABELS](variables/ITEM_LABELS.md)
+- [LANTERN\_COUNT](variables/LANTERN_COUNT.md)
+- [LANTERN\_PRICE](variables/LANTERN_PRICE.md)
+- [LEAVE\_SECONDS](variables/LEAVE_SECONDS.md)
+- [LEFT\_LINE](variables/LEFT_LINE.md)
+- [LEVEL\_SECONDS](variables/LEVEL_SECONDS.md)
+- [MOVE\_SPEED](variables/MOVE_SPEED.md)
+- [PETAL\_SECONDS](variables/PETAL_SECONDS.md)
+- [PHONE\_SECONDS](variables/PHONE_SECONDS.md)
+- [PLAYER\_RADIUS](variables/PLAYER_RADIUS.md)
+- [REAL\_WEDDING\_FACTS](variables/REAL_WEDDING_FACTS.md)
+- [RECEIPT\_COPY](variables/RECEIPT_COPY.md)
+- [RELAXED\_LEVEL\_SECONDS](variables/RELAXED_LEVEL_SECONDS.md)
+- [ROSE\_BUNCHES](variables/ROSE_BUNCHES.md)
+- [ROSE\_PRICES](variables/ROSE_PRICES.md)
+- [SHOE\_INTERVAL\_SECONDS](variables/SHOE_INTERVAL_SECONDS.md)
+- [SHOE\_SECONDS](variables/SHOE_SECONDS.md)
+- [SIMPLIFY\_SECONDS](variables/SIMPLIFY_SECONDS.md)
+- [SUPPLY\_TILES](variables/SUPPLY_TILES.md)
+- [TICK\_SECONDS](variables/TICK_SECONDS.md)
+- [VENUE\_MAP](variables/VENUE_MAP.md)
+- [WALKABLE\_TILES](variables/WALKABLE_TILES.md)

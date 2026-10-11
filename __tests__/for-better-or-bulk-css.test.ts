@@ -207,4 +207,17 @@ describe("the cabinet clears the sticky navbar and sits on opaque surfaces", () 
     expect(menu).toContain("bg-[#0d0e11] p-4");
     expect(menu).not.toContain("bg-zinc-950/95");
   });
+
+  it("isolates the cabinet, so its pause overlay stacks inside it, below the navbar (#1931)", () => {
+    const source = readSource(
+      "components/for-better-or-bulk/ForBetterOrBulkGame.tsx"
+    );
+    const root =
+      /className="([^"]*min-h-\[460px\][^"]*)"/.exec(source)?.[1] ?? "";
+    expect(root.split(/\s+/)).toContain("isolate");
+    const overlay = /className="absolute inset-0 z-(\d+)[^"]*"/.exec(source);
+    expect(overlay, "the pause overlay exists").not.toBeNull();
+    expect(Number(overlay?.[1])).toBeLessThanOrEqual(50);
+    expect(source).not.toMatch(/z-\[\d{3,}\]/);
+  });
 });

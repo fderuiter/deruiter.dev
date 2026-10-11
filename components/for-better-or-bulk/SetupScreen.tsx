@@ -23,6 +23,7 @@ import {
 } from "@/lib/for-better-or-bulk";
 import type { ControlMode } from "./input";
 import { SEEDED_EVENT_NOTES } from "./messages";
+import { NO_REWARD_LINE } from "./rewards";
 
 /**
  * Keeps the page's `?seed=` in step with the seed on screen, so a reload or a
@@ -351,8 +352,10 @@ export function SetupScreen({
                 Helper for the other person
               </span>
               <span className="mt-0.5">
-                While you play one person, a helper moves the other when they
-                are idle. Fred is never moved while he is out.
+                While you play one person, a helper works on the other
+                person&apos;s jobs, but only after you have placed something,
+                and never more than you do. Fred is never moved while he is out.
+                Helper days don&apos;t earn trophies or a board score.
               </span>
             </OptionButton>
           </div>
@@ -360,6 +363,14 @@ export function SetupScreen({
       </fieldset>
 
       <div className="flex min-w-0 flex-wrap items-center gap-3 border-t border-[var(--fbb-rule)] pt-4">
+        {setup.assist ? (
+          <p
+            className="basis-full text-xs text-[var(--fbb-dim)]"
+            data-testid="fbb-no-rewards"
+          >
+            {NO_REWARD_LINE}
+          </p>
+        ) : null}
         <p className="text-sm tabular-nums" data-testid="fbb-total">
           Total ${total} of ${BUDGET}
           <span className="ml-2 text-xs text-[var(--fbb-dim)]">

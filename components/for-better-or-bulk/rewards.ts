@@ -7,6 +7,13 @@
 import type { GameState } from "@/lib/for-better-or-bulk";
 
 /**
+ * The line the setup screen and the side panel show before and during a day:
+ * a helper day or a sped-up day earns no trophy and no board score.
+ */
+export const NO_REWARD_LINE =
+  "Helper days and sped-up days don't earn trophies or a board score.";
+
+/**
  * The trophy ids a finished run earns. A perfect run is three stars on the
  * standard day, or on a seeded day, which has its own trophy.
  */

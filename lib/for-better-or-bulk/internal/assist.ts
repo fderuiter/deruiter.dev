@@ -88,12 +88,14 @@ const FRESH_CRATES = ["mac", "quinoa", "chairs", "lantern"] as const;
 
 /**
  * A tile to face, the button to press on it, and the phrase the status line
- * uses for it (such as "carrying the roses to the ARRANGE table").
+ * uses for it (such as "carrying the roses to the ARRANGE table"). A "wait"
+ * goal is faced and then left alone: the helper stands by a batch that is
+ * still cooking, and presses nothing.
  */
 interface Goal {
   readonly x: number;
   readonly y: number;
-  readonly act: "interact" | "work";
+  readonly act: "interact" | "work" | "wait";
   readonly text: string;
 }
 
@@ -242,6 +244,42 @@ function carryTiers(state: GameState, held: Item): Goal[][] {
         ),
       ];
   }
+}
+
+/**
+ * The grill batches this helper put on and must collect: a raw batch still
+ * cooking is waited for, and a cooked batch is taken off once it can be used.
+ * Burnt food is left to the general tiers. Pure.
+ */
+function ownBatches(state: GameState, id: PlayerId): Goal[] {
+  const goals: Goal[] = [];
+  for (const grill of stationsOf(state, "grill")) {
+    const item = grill.item;
+    if (!item || item.madeBy !== id) continue;
+    if (item.kind === "hotdogs-raw" || item.kind === "wings-raw") {
+      goals.push(
+        at(grill, "wait", `waiting for ${ITEM_NAMES[item.kind]} to cook`)
+      );
+    } else if (item.kind === "hotdogs" || item.kind === "wings") {
+      // A cooked batch nobody wants is still taken off, and dropped on the floor
+      // if there is room, so it cannot burn on the grill.
+      if (usable(state, item.kind) || state.floor.length < FLOOR_CAP) {
+        goals.push(
+          at(grill, "interact", `taking ${ITEM_NAMES[item.kind]} off the grill`)
+        );
+      }
+    }
+  }
+  return goals;
+}
+
+/**
+ * Whether the helper has a batch of its own on a grill, cooking or cooked. The
+ * simulation lets it act on such a tick even when the placement gate is shut,
+ * so the batch is collected rather than left to burn.
+ */
+function hasOwnBatch(state: GameState, id: PlayerId): boolean {
+  return ownBatches(state, id).length > 0;
 }
 
 /**
@@ -417,6 +455,7 @@ function actionFor(player: Player, found: Route, active: boolean): PlayerInput {
     // Work at a station keeps going on every tick, so a held bin or table
     // hold is not reset by the rest. The simulation paces the progress.
     if (goal.act === "work") return { ...NO_INPUT, work: true };
+    if (goal.act === "wait") return NO_INPUT;
     return active ? { ...NO_INPUT, interact: true } : NO_INPUT;
   }
   if (!active) return NO_INPUT;
@@ -445,6 +484,13 @@ function actionFor(player: Player, found: Route, active: boolean): PlayerInput {
 function planFor(state: GameState, id: PlayerId): Plan | null {
   const player = state.players[id];
   const other = id === "fred" ? "abbi" : "fred";
+  // Its own grill batch comes before any other work, so a batch is never left
+  // to burn while the helper walks off. A helper with hands full does not
+  // reach for it, since it cannot take a batch while holding something.
+  if (!player.holding) {
+    const found = route(player, ownBatches(state, id), new Set());
+    if (found) return { route: found, text: found.goal.text };
+  }
   const claimed = claimedTiles(state, state.players[other]);
   const tiers = player.holding
     ? carryTiers(state, player.holding)
@@ -459,10 +505,36 @@ function planFor(state: GameState, id: PlayerId): Plan | null {
   return null;
 }
 
+/** Items a person has placed on targets so far, read from who filled each. */
+function placedCount(state: GameState, id: PlayerId): number {
+  let count = 0;
+  for (const target of state.targets) {
+    for (const who of target.filledBy) if (who === id) count++;
+  }
+  return count;
+}
+
+/**
+ * Whether the helper may act for `id` on this state. The helper supports the
+ * person it is not controlling, so it places fewer items than that person
+ * does: it starts only once they have placed more, and it stops when it
+ * catches up. An idle player therefore gets no help, and a working player gets
+ * about as many placements from the helper as they make. The simulation
+ * checks this before it uses `assistInput`, and so does `assistStatus`. A
+ * helper with a batch of its own on a grill may always act, so it can collect
+ * that batch. Pure.
+ */
+export function helperMayAct(state: GameState, id: PlayerId): boolean {
+  if (hasOwnBatch(state, id)) return true;
+  const other: PlayerId = id === "fred" ? "abbi" : "fred";
+  return placedCount(state, id) < placedCount(state, other);
+}
+
 /**
  * The input the solo assist gives `id` on this tick. Pure: the same state
  * always gives the same input. It returns nothing for someone who is out,
- * busy on a call or re-tying shoes, or who has no useful step.
+ * busy on a call or re-tying shoes, or who has no useful step. Callers also
+ * check `helperMayAct`, which this function does not.
  */
 export function assistInput(state: GameState, id: PlayerId): PlayerInput {
   const player = state.players[id];
@@ -486,6 +558,10 @@ export function assistStatus(state: GameState, id: PlayerId): string {
   if (player.presence === "away")
     return `Helper: waiting for ${name} to be back.`;
   if (player.busyFor > 0) return `Helper: waiting for ${name} to be free.`;
+  if (!helperMayAct(state, id)) {
+    const other = id === "fred" ? "Abbi" : "Fred";
+    return `Helper: waiting for ${other} to place something first.`;
+  }
   const plan = planFor(state, id);
   return plan
     ? `Helper: ${plan.text}.`

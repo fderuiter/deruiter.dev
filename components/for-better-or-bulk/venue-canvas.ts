@@ -315,11 +315,34 @@ function stationLabel(
   return { cx: station.x * TILE + span / 2, span: span - 2 };
 }
 
-function drawStation(
+/**
+ * The word on a station, drawn in its own pass after every prop on the venue,
+ * so a table, bucket, grill or bowl never covers the word that names it.
+ */
+function drawStationLabel(
   ctx: CanvasRenderingContext2D,
   station: Station,
   stations: readonly Station[]
 ): void {
+  const px = station.x * TILE;
+  const py = station.y * TILE;
+  switch (station.kind) {
+    case "arrange":
+      drawRunLabel(ctx, "ARRANGE", station, stations, py + 1);
+      break;
+    case "petals":
+      drawRunLabel(ctx, "PETALS", station, stations, py + 1);
+      break;
+    case "grill":
+      drawRunLabel(ctx, "GRILL", station, stations, py + 1);
+      break;
+    case "bin":
+      drawLabel(ctx, "BIN", px + TILE / 2, py + 1);
+      break;
+  }
+}
+
+function drawStation(ctx: CanvasRenderingContext2D, station: Station): void {
   const px = station.x * TILE;
   const py = station.y * TILE;
   const cx = px + TILE / 2;
@@ -328,14 +351,12 @@ function drawStation(
     case "arrange":
       ctx.fillStyle = COLORS.table;
       ctx.fillRect(px + 2, py + 4, TILE - 4, TILE - 8);
-      drawRunLabel(ctx, "ARRANGE", station, stations, py + 1);
       break;
     case "petals":
       ctx.fillStyle = COLORS.bucket;
       ctx.beginPath();
       ctx.arc(cx, cy, TILE * 0.36, 0, Math.PI * 2);
       ctx.fill();
-      drawRunLabel(ctx, "PETALS", station, stations, py + 1);
       break;
     case "grill": {
       const hot = station.item !== null && station.item.kind !== "burnt";
@@ -349,13 +370,11 @@ function drawStation(
         ctx.lineTo(px + TILE - 6, py + (i * TILE) / 4);
         ctx.stroke();
       }
-      drawRunLabel(ctx, "GRILL", station, stations, py + 1);
       break;
     }
     case "bin":
       ctx.fillStyle = COLORS.bin;
       ctx.fillRect(px + 9, py + 7, TILE - 18, TILE - 12);
-      drawLabel(ctx, "BIN", cx, py + 1);
       break;
   }
   if (station.item) drawItem(ctx, station.item.kind, cx, cy + 3, TILE * 0.45);
@@ -817,9 +836,7 @@ export function drawVenue(
     drawLabel(ctx, String(left), px + TILE / 2, py + TILE - 13);
   }
   for (const target of state.targets) drawTarget(ctx, target);
-  for (const station of state.stations) {
-    drawStation(ctx, station, state.stations);
-  }
+  for (const station of state.stations) drawStation(ctx, station);
   for (const spot of state.floor) {
     drawItem(
       ctx,
@@ -828,6 +845,9 @@ export function drawVenue(
       spot.y * TILE + TILE / 2,
       TILE * 0.45
     );
+  }
+  for (const station of state.stations) {
+    drawStationLabel(ctx, station, state.stations);
   }
   for (const burst of bursts) drawBurst(ctx, burst, state.time);
   for (const id of active ? [active] : (["fred", "abbi"] as const)) {

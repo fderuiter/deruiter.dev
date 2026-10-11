@@ -9,7 +9,7 @@ import {
   type GameState,
   type Setup,
 } from "@/lib/for-better-or-bulk";
-import { drawVenue } from "@/components/for-better-or-bulk/venue-canvas";
+import { TILE, drawVenue } from "@/components/for-better-or-bulk/venue-canvas";
 
 /** One recorded canvas call, with the font and fill in force when it ran. */
 interface Drawn {
@@ -99,6 +99,54 @@ describe("the venue's canvas labels", () => {
         // The stub measures six pixels a character; the canvas squeezes any
         // text wider than its span, so it must never need squeezing.
         expect(text.length * 6, text).toBeLessThanOrEqual(span);
+      }
+    }
+  });
+
+  it("draws each station word after every prop on that station's tile (#1931)", () => {
+    const base = createLevel(DEFAULT_SETUP);
+    const roses = { kind: "roses" as const, madeBy: null };
+    const state: GameState = {
+      ...base,
+      stations: base.stations.map((s) => {
+        if (s.kind === "arrange" || s.kind === "petals")
+          return { ...s, item: roses };
+        if (s.kind === "grill")
+          return { ...s, item: { kind: "hotdogs" as const, madeBy: null } };
+        return s;
+      }),
+    };
+    const { ctx, drawn } = recorder();
+    drawVenue(ctx, state, null);
+    const word: Record<string, string> = {
+      arrange: "ARRANGE",
+      petals: "PETALS",
+      grill: "GRILL",
+      bin: "BIN",
+    };
+    for (const station of state.stations) {
+      const [label] = texts(drawn, word[station.kind]);
+      expect(label, station.kind).toBeDefined();
+      const labelAt = drawn.indexOf(label);
+      const left = station.x * TILE;
+      const top = station.y * TILE;
+      // Every call that places a shape by its first two numbers, on this tile.
+      const onTile = drawn.filter(
+        (d) =>
+          d.name !== "fillText" &&
+          typeof d.args[0] === "number" &&
+          typeof d.args[1] === "number" &&
+          d.args[0] >= left &&
+          d.args[0] <= left + TILE &&
+          d.args[1] >= top &&
+          d.args[1] <= top + TILE
+      );
+      expect(onTile.length, station.kind).toBeGreaterThan(0);
+      for (const call of onTile) {
+        expect(
+          drawn.indexOf(call),
+          `${station.kind} ${call.name}`
+        ).toBeLessThan(labelAt);
       }
     }
   });

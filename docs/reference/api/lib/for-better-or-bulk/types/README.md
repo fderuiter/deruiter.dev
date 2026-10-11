@@ -15,6 +15,7 @@
 - [FloorItem](interfaces/FloorItem.md)
 - [Frame](interfaces/Frame.md)
 - [GameState](interfaces/GameState.md)
+- [HintOptions](interfaces/HintOptions.md)
 - [InterruptionRecord](interfaces/InterruptionRecord.md)
 - [Item](interfaces/Item.md)
 - [Player](interfaces/Player.md)

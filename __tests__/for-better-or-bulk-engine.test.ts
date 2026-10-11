@@ -683,7 +683,7 @@ describe("ending and receipt", () => {
     );
     expect(
       receipt.readiness.find((l) => l.category === "chairs")?.explanation
-    ).toContain("Unfinished at 4:00");
+    ).toMatch(/^Only \d+ of \d+ done at 4:00\.$/);
   });
 
   it("titles a 3D-intro run Is It Loading?", () => {
@@ -702,7 +702,7 @@ describe("ending and receipt", () => {
     const receipt = computeReceipt(allFilled(left, "abbi"));
     expect(receipt.followThrough).toEqual({
       status: "missed",
-      explanation: `Missed: ${LEFT_LINE}`,
+      explanation: `Missed. ${LEFT_LINE}`,
     });
     expect(receipt.title).toBe("Operational, Not Present");
   });
@@ -781,9 +781,40 @@ describe("ending and receipt", () => {
     const line = readinessLines(
       allFilled(createLevel(DEFAULT_SETUP), "abbi")
     ).find((l) => l.category === "centerpieces");
-    expect(line?.conditions.map((c) => c.detail)).toContain("Abbi 4");
-    expect(tally(["abbi", "fred", "abbi"])).toBe("Abbi 2, Fred 1");
+    expect(line?.conditions.map((c) => c.detail)).toContain(
+      "Abbi carried 4 items"
+    );
+    expect(tally(["abbi", "fred", "abbi"])).toBe("Abbi: 2, Fred: 1");
     expect(tally([])).toBe("nobody");
+  });
+
+  it("counts the items a person carried, apart from the targets they filled (#1931)", () => {
+    const line = readinessLines(
+      allFilled(createLevel(DEFAULT_SETUP), "fred")
+    ).find((l) => l.category === "bouquets");
+    const placed = line?.conditions.find((c) => c.label.startsWith("Placed"));
+    expect(placed?.label).toBe(`Placed ${line?.placed} of ${line?.planned}`);
+    expect(placed?.detail).toMatch(/^Fred carried \d+ items?$/);
+    expect(line?.explanation).toMatch(
+      /Placed \d+ of \d+: Fred carried \d+ items?/
+    );
+  });
+
+  it("writes source and made clauses with a colon and no stacked parentheses (#1931)", () => {
+    const readiness = readinessLines(
+      allFilled(createLevel(DEFAULT_SETUP), "abbi")
+    );
+    const bouquets = readiness.find((l) => l.category === "bouquets");
+    const buffet = readiness.find((l) => l.category === "buffet");
+    expect(bouquets?.explanation).toMatch(
+      /Roses bought: (Modest|Full|"Yes"), \d+ bunches/
+    );
+    expect(buffet?.explanation).toMatch(
+      /Food bought: (Enough|Lots|Feed Rochester), drinks and sheet cake included/
+    );
+    for (const line of readiness) {
+      expect(line.explanation).not.toMatch(/\) \(/);
+    }
   });
 
   it("prices the receipt the same as the cart and keeps the fixed lines", () => {
@@ -1481,7 +1512,7 @@ describe("the receipt's copy", () => {
       commitment: null,
     });
     const receipt = computeReceipt(left);
-    expect(receipt.followThrough.explanation).toBe(`Missed: ${LEFT_LINE}`);
+    expect(receipt.followThrough.explanation).toBe(`Missed. ${LEFT_LINE}`);
     expect(LEFT_LINE).not.toContain("requested separately");
   });
 
@@ -1532,5 +1563,22 @@ describe("the receipt's copy", () => {
       "ready"
     );
     expect(receipt.signatureMoment).toBe(bankText("signature-tables-food"));
+  });
+});
+
+describe("the coach's co-op starts (#1931)", () => {
+  it("gives Fred the roses first and Abbi the raw food first in co-op", () => {
+    const state = createLevel(DEFAULT_SETUP);
+    const fred = getHint(state, "fred", { coop: true });
+    const abbi = getHint(state, "abbi", { coop: true });
+    expect(fred).toMatch(/^Grab roses from the ROSE crate/);
+    expect(abbi).toMatch(/^Grab raw (hot dogs|wings) from the /);
+    expect(fred).not.toBe(abbi);
+  });
+
+  it("leaves solo hints unchanged, so the helper and the single player agree with the same plan", () => {
+    const state = createLevel(DEFAULT_SETUP);
+    expect(getHint(state, "abbi")).toBe(getHint(state, "abbi", {}));
+    expect(getHint(state, "abbi")).toMatch(/^Grab roses from the ROSE crate/);
   });
 });

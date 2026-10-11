@@ -8,5 +8,5 @@ import type { GameState } from "@/lib/for-better-or-bulk";
 
 /** Whether a finished level counts toward the standard high score. */
 export function countsForBoard(state: GameState, speed: number): boolean {
-  return speed === 1 && (state.setup.seed ?? 0) === 0;
+  return speed === 1 && (state.setup.seed ?? 0) === 0 && !state.setup.assist;
 }

@@ -512,12 +512,51 @@ describe("For Better or Bulk coach strip and counts", () => {
     );
   });
 
-  it("gives both people a hint in co-op", () => {
+  it("gives both people a hint in co-op, and each starts on a different job (#1931)", () => {
     render(<ForBetterOrBulkGame initialMode="coop" />);
     start();
-    const coach = screen.getByTestId("fbb-coach").textContent ?? "";
-    expect(coach).toContain("Fred: Grab roses");
-    expect(coach).toContain("Abbi: Grab roses");
+    const lines = within(screen.getByTestId("fbb-coach"))
+      .getAllByRole("listitem")
+      .map((item) => item.textContent ?? "");
+    expect(lines).toHaveLength(2);
+    expect(lines[0]).toMatch(/^Fred: Grab roses from the ROSE crate/);
+    expect(lines[1]).toMatch(/^Abbi: Grab raw (hot dogs|wings) from the /);
+    expect(lines[1]).not.toContain("roses");
+  });
+
+  it("leaves co-op Tab to the browser, and Pause is the first control after the cabinet (#1931)", () => {
+    render(<ForBetterOrBulkGame initialMode="coop" />);
+    start();
+    expect(fireEvent.keyDown(game(), { key: "Tab", code: "Tab" })).toBe(true);
+    const controls = [...game().querySelectorAll<HTMLElement>("button")];
+    expect(controls[0].textContent).toBe("Pause");
+    const tips = screen.getByRole("button", { name: "Hide tips" });
+    expect(
+      controls[0].compareDocumentPosition(tips) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
+
+  it.each(["solo", "coop"] as const)(
+    "never intercepts Shift+Tab in %s play, so it can leave the cabinet (#1931)",
+    (mode) => {
+      render(<ForBetterOrBulkGame initialMode={mode} />);
+      start();
+      expect(
+        fireEvent.keyDown(game(), { key: "Tab", code: "Tab", shiftKey: true })
+      ).toBe(true);
+      const pause = screen.getByRole("button", { name: "Pause" });
+      pause.focus();
+      expect(
+        fireEvent.keyDown(pause, { key: "Tab", code: "Tab", shiftKey: true })
+      ).toBe(true);
+    }
+  );
+
+  it("keeps solo Tab as the swap while both people are present (#1931)", () => {
+    render(<ForBetterOrBulkGame />);
+    start();
+    expect(fireEvent.keyDown(game(), { key: "Tab", code: "Tab" })).toBe(false);
   });
 
   it("hides the strip, remembers the choice, and shows it again on request", () => {
@@ -678,12 +717,47 @@ describe("For Better or Bulk side panel: helper, partner and day (fbb round)", (
       />
     );
     start();
-    expect(screen.getByTestId("fbb-seed-name").textContent).toBe("Seed 12345");
+    expect(screen.getByTestId("fbb-seed-name").textContent).toMatch(
+      /^Seed 12345 · rush at \d{1,2}:\d{2}, shower at \d{1,2}:\d{2}$/
+    );
     expect(screen.getByTestId("fbb-active").textContent).toContain(
-      "Shift+Tab to reach Pause"
+      "Escape to pause"
     );
     expect(screen.getByTestId("fbb-helper").textContent).toMatch(
       /^Helper: .+\.$/
+    );
+    // The idle line is readable text, not the dim token, and is announced once at the start.
+    expect(screen.getByTestId("fbb-helper").className).toContain(
+      "text-[var(--fbb-text)]"
+    );
+    expect(screen.getByRole("status").textContent).toContain(
+      "Helper is waiting for Abbi to place something first."
+    );
+  });
+
+  it("says before starting that helper days earn no trophies or board score, only once the helper is on", () => {
+    render(<ForBetterOrBulkGame />);
+    expect(screen.queryByTestId("fbb-no-rewards")).toBeNull();
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: /Helper for the other person/ })
+    );
+    expect(screen.getByTestId("fbb-no-rewards").textContent).toBe(
+      "Helper days and sped-up days don't earn trophies or a board score."
+    );
+    expect(screen.getByTestId("fbb-setup").textContent).toContain(
+      "Helper days don't earn trophies or a board score."
+    );
+  });
+
+  it("keeps the no-trophy line on the side panel during a helper day", () => {
+    render(
+      <ForBetterOrBulkGame
+        initialSetup={{ ...DEFAULT_SETUP, assist: true, seed: 12345 }}
+      />
+    );
+    start();
+    expect(screen.getByTestId("fbb-no-rewards").textContent).toContain(
+      "earn trophies or a board score"
     );
   });
 
@@ -713,7 +787,8 @@ describe("For Better or Bulk side panel: helper, partner and day (fbb round)", (
     runUntil(() => screen.queryByTestId("fbb-brothers") !== null);
     fireEvent.click(screen.getByRole("button", { name: /Go with them/ }));
     expect(screen.getByTestId("fbb-active").textContent).toContain("Abbi");
-    fireEvent.keyDown(game(), { key: "Tab", code: "Tab" });
+    // With one person out there is no swap, so Tab is left to the browser.
+    expect(fireEvent.keyDown(game(), { key: "Tab", code: "Tab" })).toBe(true);
     expect(screen.getByTestId("fbb-active").textContent).toContain("Abbi");
     expect(screen.getByRole("status").textContent).toBe(
       "Fred is out with his brothers."

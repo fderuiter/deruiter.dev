@@ -153,7 +153,9 @@ presses, and its held work keeps its hold but progresses only on those ticks.
 The player stays the main actor. The helper skips any tile the person it helps
 is facing and any place that person is carrying an item to, and takes one of
 those only when nothing else is open, so it can never stall with an item it
-cannot place. Its status line, `Helper: <action>.`, names the goal it is
+cannot place. A batch the helper put on a grill is its own to collect: it waits
+by the grill until the batch cooks, takes it off before any other work, and may
+act on that tick even when the placement gate is shut, so its batch cannot burn. Its status line, `Helper: <action>.`, names the goal it is
 following. The brothers' leave option says that Abbi works alone until Fred is
 back, and a person who is out shows a "Back around" time in the side panel.
 It never decides for Fred: it never answers the brothers' text, never changes
@@ -225,7 +227,8 @@ covers the body, and the decoder accepts only canonical base64url, minimal
 varints and no two identical frame runs in a row, so one run has one code. Decoding
 never throws. A damaged, truncated, over-long or other-version code is refused
 with one message. A code that decodes must also replay strictly to its own
-result before it can be shown.
+result before it can be shown. Helper-day run codes recorded before this change
+no longer verify.
 
 **Replays.** "Watch replay" plays a verified run back through the same
 engine, at 1x, 2x or 4x, with play, pause, restart and exit controls (Escape also exits). Once a replay

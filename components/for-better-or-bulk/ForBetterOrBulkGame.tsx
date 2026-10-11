@@ -63,7 +63,7 @@ import {
   checklistLine,
   completedCategories,
   playStepSounds,
-  seedName,
+  seedHeader,
   throttleFloorFull,
   type FeedbackEvent,
 } from "./messages";
@@ -80,7 +80,7 @@ import { playSfx } from "./sfx";
 import { readHideTips, subscribeHideTips, writeHideTips } from "./hint-storage";
 import { ReceiptView } from "./ReceiptView";
 import { ReplayControls, type ReplaySpeed } from "./ReplayControls";
-import { runTrophyIds } from "./rewards";
+import { NO_REWARD_LINE, runTrophyIds } from "./rewards";
 import { SetupScreen } from "./SetupScreen";
 import {
   burstLifetime,
@@ -579,7 +579,13 @@ export function ForBetterOrBulkGame({
       setReceipt(null);
       setUserPaused(false);
       setToasts([]);
-      setAnnouncement("Setup has started. It is 9:00.");
+      // A helper day opens by waiting for the person at the keys, so the live
+      // region says so once here, rather than on every tick.
+      setAnnouncement(
+        nextMode === "solo" && next.assist
+          ? `Setup has started. It is 9:00. Helper is waiting for ${NAMES.abbi} to place something first.`
+          : "Setup has started. It is 9:00."
+      );
       setPhase("playing");
       focusAfterPaint(() => {
         const cabinetEl = boundaryRef.current;
@@ -801,22 +807,18 @@ export function ForBetterOrBulkGame({
     }
     if (event.target !== boundaryRef.current) return;
     if (paused) return;
-    if (event.key === "Tab" && mode === "solo" && event.shiftKey) {
-      // Tab swaps people in solo play, so Shift+Tab moves to Pause instead.
-      event.preventDefault();
-      pauseRef.current?.focus({ preventScroll: true });
-      return;
-    }
-    if (event.key === "Tab" && mode === "solo") {
-      event.preventDefault();
-      if (event.repeat) return;
-      // Someone who is out with his brothers cannot take the keys; the
-      // person at the keys stays where they are.
+    // Shift+Tab, and Tab in co-op, are never intercepted: the browser moves
+    // focus in DOM order, from the cabinet root to Pause and back out.
+    if (event.key === "Tab" && mode === "solo" && !event.shiftKey) {
+      // Someone who is out with his brothers cannot take the keys, so there
+      // is no one to swap with: Tab is left to the browser, which reaches Pause.
       const other: PlayerId = activeRef.current === "fred" ? "abbi" : "fred";
       if (stateRef.current?.players[other].presence === "away") {
         setAnnouncement(`${NAMES[other]} is out with his brothers.`);
         return;
       }
+      event.preventDefault();
+      if (event.repeat) return;
       // A press that has not reached the engine yet belongs to the person
       // who was active when it was made, so apply it before swapping.
       if (pressed.current.size > 0 && stateRef.current?.phase === "playing") {
@@ -992,7 +994,7 @@ export function ForBetterOrBulkGame({
             data-testid="fbb-seed-name"
             className="min-w-0 break-words text-[var(--fbb-dim)]"
           >
-            {seedName(view.setup.seed ?? 0, todaysSeed)}
+            {seedHeader(view, todaysSeed)}
           </span>
           {eventLines.map((line) => (
             <span
@@ -1006,7 +1008,9 @@ export function ForBetterOrBulkGame({
           {mode === "solo" ? (
             <span data-testid="fbb-active">
               Playing as <span className="font-bold">{NAMES[active]}</span> ·
-              Tab to swap · Shift+Tab to reach Pause
+              {view.players[partner].presence === "away"
+                ? " Tab to reach Pause · Escape to pause"
+                : " Tab to swap · Escape to pause"}
             </span>
           ) : (
             <span>Fred: WASD, E, F · Abbi: arrows, Enter, Shift</span>
@@ -1078,7 +1082,7 @@ export function ForBetterOrBulkGame({
                   {shown.map((id) => {
                     // An away person is already said in their prompt.
                     if (view.players[id].presence === "away") return null;
-                    const hint = getHint(view, id);
+                    const hint = getHint(view, id, { coop: mode === "coop" });
                     if (!hint) return null;
                     return (
                       <li key={id} className="break-words">
@@ -1166,9 +1170,17 @@ export function ForBetterOrBulkGame({
             {mode === "solo" && view.setup.assist ? (
               <p
                 data-testid="fbb-helper"
-                className="min-w-0 break-words border-t border-[var(--fbb-rule)] pt-2 text-[var(--fbb-dim)]"
+                className="min-w-0 break-words border-t border-[var(--fbb-rule)] pt-2 text-[var(--fbb-text)]"
               >
                 {assistStatus(view, partner)}
+              </p>
+            ) : null}
+            {(mode === "solo" && view.setup.assist) || speed !== 1 ? (
+              <p
+                data-testid="fbb-no-rewards"
+                className="min-w-0 break-words pt-2 text-[var(--fbb-dim)]"
+              >
+                {NO_REWARD_LINE}
               </p>
             ) : null}
           </div>
@@ -1233,7 +1245,7 @@ export function ForBetterOrBulkGame({
           next === null && event.target !== event.currentTarget;
         if (phase === "playing" && !removedChild) setPaused(true);
       }}
-      className="@container relative flex min-h-[460px] w-full min-w-0 flex-col items-stretch bg-[var(--fbb-stage)] text-[var(--fbb-text)] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--fbb-focus)]"
+      className="@container relative isolate flex min-h-[460px] w-full min-w-0 flex-col items-stretch bg-[var(--fbb-stage)] text-[var(--fbb-text)] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--fbb-focus)]"
     >
       <div
         role="status"

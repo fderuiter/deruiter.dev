@@ -43,6 +43,15 @@ export interface Setup {
   readonly seed?: number;
 }
 
+/** Options for the coach's line. */
+export interface HintOptions {
+  /**
+   * True in two-player play. Each person then gets a different starting job,
+   * so the two coach lines never repeat each other.
+   */
+  readonly coop?: boolean;
+}
+
 /** The seeded events a level can schedule. */
 export type SeededEventId = "shower" | "guest-rush";
 

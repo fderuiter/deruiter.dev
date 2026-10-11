@@ -109,7 +109,7 @@ test.describe("For Better or Bulk (/arcade/for-better-or-bulk)", () => {
     });
     await expect(page.getByTestId("fbb-title")).toBeFocused();
     await expect(page.getByTestId("fbb-follow-through")).toContainText(
-      "Kept: Fred stayed"
+      "Kept. Fred stayed"
     );
     await expectNoBlockingViolations(page, "receipt");
   });

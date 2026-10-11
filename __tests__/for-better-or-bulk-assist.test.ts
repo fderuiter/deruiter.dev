@@ -908,6 +908,39 @@ describe("the assisted receipt and replay, in full", () => {
     expect(replay.state).toEqual(state);
   });
 
+  it("credits the helper's placements as helper work and the player's as theirs (#1933)", () => {
+    let state = createLevel(ASSIST_SETUP);
+    const frames: Frame[] = [];
+    let guard = 0;
+    while (state.phase !== "done" && guard++ < 40000) {
+      const frame: Frame = {
+        inputs: { fred: assistInput(state, "fred"), abbi: NO_INPUT },
+        assisted: "abbi",
+        ...(state.phase === "brothers" ? { decision: STAY } : {}),
+      };
+      frames.push(frame);
+      state = stepGame(state, frame).state;
+    }
+    const placements = state.targets.flatMap((t) =>
+      t.filledBy.map((by, i) => ({ by, helper: t.filledByHelper[i] === true }))
+    );
+    const helped = placements.filter((p) => p.helper);
+    expect(helped.length).toBeGreaterThan(0);
+    expect(helped.every((p) => p.by === "abbi")).toBe(true);
+    expect(placements.some((p) => !p.helper && p.by === "fred")).toBe(true);
+    const detail = computeReceipt(state)
+      .readiness.flatMap((l) => l.conditions.map((c) => c.detail))
+      .join(" | ");
+    expect(detail).toContain("Abbi (helper) carried");
+    expect(detail).toContain("Fred carried");
+    expect(detail).not.toContain("Fred (helper)");
+    // The provenance is part of the state, so a strict replay reproduces it.
+    const replay = replayLevel(ASSIST_SETUP, frames, { mode: "strict" });
+    expect(replay.state.targets.map((t) => t.filledByHelper)).toEqual(
+      state.targets.map((t) => t.filledByHelper)
+    );
+  });
+
   it("a lenient replay keeps the assisted partner on the frame with a stray decision", () => {
     let state = createLevel(ASSIST_SETUP);
     const frames: Frame[] = [];

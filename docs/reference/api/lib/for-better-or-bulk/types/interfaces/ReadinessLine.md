@@ -36,11 +36,15 @@
 
 > `readonly` **placed**: `number`
 
+Items placed so far: a basket that takes two counts each arrangement.
+
 ***
 
 ### planned
 
 > `readonly` **planned**: `number`
+
+Items the plan needs, counting every slot of every planned target.
 
 ***
 

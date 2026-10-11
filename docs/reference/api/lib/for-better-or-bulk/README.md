@@ -152,6 +152,18 @@ Re-exports [CATEGORY_LABELS](presets/variables/CATEGORY_LABELS.md)
 
 ***
 
+### categoryProgress
+
+Re-exports [categoryProgress](internal/receipt/functions/categoryProgress.md)
+
+***
+
+### CategoryProgress
+
+Re-exports [CategoryProgress](types/interfaces/CategoryProgress.md)
+
+***
+
 ### CHAIR\_STACKS
 
 Re-exports [CHAIR_STACKS](presets/variables/CHAIR_STACKS.md)
@@ -257,6 +269,12 @@ Re-exports [decodeRunCode](internal/run-code/functions/decodeRunCode.md)
 ### DEFAULT\_SETUP
 
 Re-exports [DEFAULT_SETUP](presets/variables/DEFAULT_SETUP.md)
+
+***
+
+### dollars
+
+Re-exports [dollars](internal/level/functions/dollars.md)
 
 ***
 

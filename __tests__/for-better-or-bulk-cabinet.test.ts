@@ -391,7 +391,14 @@ describe("For Better or Bulk sound map (F4)", () => {
       ...before,
       targets: before.targets.map((t) =>
         t.category === category && t.status !== "unplanned"
-          ? { ...t, status: "filled" as const }
+          ? {
+              ...t,
+              status: "filled" as const,
+              filled: Array.from({ length: t.capacity }, () => ({
+                kind: t.wants,
+                madeBy: null,
+              })),
+            }
           : t
       ),
     };

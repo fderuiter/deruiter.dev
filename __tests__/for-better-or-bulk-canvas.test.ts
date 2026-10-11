@@ -195,6 +195,49 @@ describe("the shower's rain", () => {
   });
 });
 
+describe("the venue's shared crates and part-filled targets (#1933)", () => {
+  it("writes a shared crate's stock once, on its first crate, and says the rest share it", () => {
+    const base = createLevel(DEFAULT_SETUP);
+    const level: GameState = { ...base, stock: { ...base.stock, roses: 37 } };
+    const { ctx, drawn } = recorder();
+    drawVenue(ctx, level, null);
+    expect(texts(drawn, "37")).toHaveLength(1);
+    const kinds = [...new Set(level.supplies.map((s) => s.kind))];
+    const sharing = kinds.reduce(
+      (n, kind) => n + level.supplies.filter((s) => s.kind === kind).length - 1,
+      0
+    );
+    expect(texts(drawn, "shared")).toHaveLength(sharing);
+  });
+
+  it("marks a basket with the items placed out of its two, starting from zero", () => {
+    const base = createLevel(DEFAULT_SETUP);
+    const empty = recorder();
+    drawVenue(empty.ctx, base, null);
+    expect(texts(empty.drawn, "0/2")).toHaveLength(1);
+
+    const basket = base.targets.find((t) => t.kind === "basket");
+    if (!basket) throw new Error("the venue has a basket");
+    const half: GameState = {
+      ...base,
+      targets: base.targets.map((t) =>
+        t === basket
+          ? {
+              ...t,
+              filled: [{ kind: "arrangement", madeBy: "fred" }],
+              filledBy: ["fred"],
+              filledByHelper: [false],
+            }
+          : t
+      ),
+    };
+    const part = recorder();
+    drawVenue(part.ctx, half, null);
+    expect(texts(part.drawn, "1/2")).toHaveLength(1);
+    expect(texts(part.drawn, "0/2")).toHaveLength(0);
+  });
+});
+
 describe("the seeded day's start toast", () => {
   it("is announced at the step the shower starts", () => {
     let state = createLevel(SEED_12345);

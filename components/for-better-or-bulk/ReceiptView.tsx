@@ -39,6 +39,30 @@ function prefersReducedMotion(): boolean {
   );
 }
 
+/** Clear space kept between the navbar's bottom edge and the receipt title. */
+const TITLE_GAP_PX = 16;
+
+/** Long enough for a smooth glide down a whole receipt to finish, as a fallback to scrollend. */
+const SETTLE_MS = 1200;
+
+/** The bottom edge of the page's navbar in the viewport, or 0 when no bar is laid out. */
+function navbarBottom(): number {
+  const header = document.querySelector<HTMLElement>("body header");
+  return header?.getBoundingClientRect().bottom ?? 0;
+}
+
+/**
+ * Scrolls the page up just far enough that the title clears the navbar. The
+ * navbar's padding changes as the page scrolls, and the receipt sits inside
+ * the cabinet, so a fixed scroll margin cannot be relied on. Measuring does not.
+ */
+function clearNavbar(title: HTMLElement): void {
+  const bottom = navbarBottom();
+  if (bottom <= 0) return;
+  const overlap = bottom + TITLE_GAP_PX - title.getBoundingClientRect().top;
+  if (overlap > 0) window.scrollBy({ top: -overlap, behavior: "auto" });
+}
+
 const BUTTON_CLASS =
   "min-h-11 rounded border px-4 text-xs font-bold uppercase tracking-wide active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--fbb-focus)]";
 
@@ -53,18 +77,28 @@ export function ReceiptView({
   const titleRef = useRef<HTMLHeadingElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
 
-  // The playback hands over here. The receipt scrolls to the top of the page
-  // below the sticky navbar (its scroll margin clears the bar), then takes focus
-  // without a second scroll.
+  // The playback hands over here. The receipt scrolls to the top of the page,
+  // then takes focus without a second scroll. Once that scroll has settled, the
+  // title is measured against the navbar and the page nudged if it still sits
+  // under the bar.
   useEffect(() => {
     const root = rootRef.current;
+    const title = titleRef.current;
     if (root && typeof root.scrollIntoView === "function") {
       root.scrollIntoView({
         block: "start",
         behavior: prefersReducedMotion() ? "auto" : "smooth",
       });
     }
-    titleRef.current?.focus({ preventScroll: true });
+    title?.focus({ preventScroll: true });
+    if (!title) return;
+    const settle = () => clearNavbar(title);
+    window.addEventListener("scrollend", settle, { once: true });
+    const timer = window.setTimeout(settle, SETTLE_MS);
+    return () => {
+      window.removeEventListener("scrollend", settle);
+      window.clearTimeout(timer);
+    };
   }, []);
 
   /** Copies the link that opens this run. The code never leaves the page otherwise. */

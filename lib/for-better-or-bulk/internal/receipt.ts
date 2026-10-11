@@ -27,6 +27,7 @@ import {
 import type {
   CapabilityId,
   Category,
+  CategoryProgress,
   Condition,
   FoodTier,
   GameState,
@@ -99,13 +100,59 @@ function madeBy(people: readonly (PlayerId | null)[]): string {
   return `made by ${counts.map(([name, n]) => `${name} ${n}`).join(", ")}`;
 }
 
-/** "Fred carried 2 items", or "Abbi carried 1 item, Fred carried 1 item". */
-function carried(people: readonly (PlayerId | null)[]): string {
-  const counts = countsByName(people);
-  if (counts.length === 0) return "nobody carried anything";
-  return counts
+/** One item placed on a target: who placed it, and whether the solo helper did. */
+interface Placement {
+  readonly by: PlayerId;
+  readonly helper: boolean;
+}
+
+/**
+ * "Fred carried 2 items", or "Abbi carried 1 item, Fred (helper) carried 1
+ * item". Helper placements are named apart, so helper work is never read as
+ * the player's own.
+ */
+function carried(placements: readonly Placement[]): string {
+  const counts = new Map<string, number>();
+  for (const { by, helper } of placements) {
+    const name = helper ? `${NAMES[by]} (helper)` : NAMES[by];
+    counts.set(name, (counts.get(name) ?? 0) + 1);
+  }
+  if (counts.size === 0) return "nobody carried anything";
+  return [...counts.entries()]
     .map(([name, n]) => `${name} carried ${n} ${n === 1 ? "item" : "items"}`)
     .join(", ");
+}
+
+function placementsOf(target: Target): Placement[] {
+  return target.filledBy.map((by, i) => ({
+    by,
+    helper: target.filledByHelper[i] === true,
+  }));
+}
+
+/**
+ * How far a category is, counted in items. A target takes as many items as its
+ * capacity, so the basket is two items rather than one target, and a half-filled
+ * target shows its items placed. Simplified targets leave the plan. Null when
+ * the cart plans nothing in the category.
+ */
+export function categoryProgress(
+  state: GameState,
+  category: Category
+): CategoryProgress | null {
+  const planned = state.targets.filter(
+    (t) => t.category === category && t.status !== "unplanned"
+  );
+  if (planned.length === 0) return null;
+  const counted = planned.filter((t) => t.status !== "simplified");
+  return {
+    placed: counted.reduce(
+      (n, t) => n + Math.min(t.filled.length, t.capacity),
+      0
+    ),
+    planned: counted.reduce((n, t) => n + t.capacity, 0),
+    multi: counted.some((t) => t.capacity > 1),
+  };
 }
 
 function sourceCondition(state: GameState, category: Category): Condition {
@@ -138,9 +185,9 @@ function sourceCondition(state: GameState, category: Category): Condition {
 
 function madeCondition(
   category: Category,
-  filled: readonly Target[]
+  targets: readonly Target[]
 ): Condition | null {
-  const items = filled.flatMap((t) => t.filled);
+  const items = targets.flatMap((t) => t.filled);
   if (category === "bouquets" || category === "centerpieces") {
     return {
       label: "Arranged at the rose table",
@@ -173,12 +220,8 @@ function madeCondition(
 
 function readinessLine(state: GameState, category: Category): ReadinessLine {
   const label = CATEGORY_LABELS[category];
-  const targets = state.targets.filter((t) => t.category === category);
-  const planned = targets.filter((t) => t.status !== "unplanned");
-  const filled = planned.filter((t) => t.status === "filled");
-  const simplified = planned.filter((t) => t.status === "simplified").length;
-  const open = planned.filter((t) => t.status === "open").length;
-  if (planned.length === 0) {
+  const progress = categoryProgress(state, category);
+  if (!progress) {
     return {
       category,
       label,
@@ -189,20 +232,25 @@ function readinessLine(state: GameState, category: Category): ReadinessLine {
       explanation: "Not in this plan.",
     };
   }
-  const placedBy = filled.flatMap((t) => t.filledBy);
+  const planned = state.targets.filter(
+    (t) => t.category === category && t.status !== "unplanned"
+  );
+  const simplified = planned.filter((t) => t.status === "simplified").length;
+  const open = planned.filter((t) => t.status === "open").length;
   const conditions: Condition[] = [sourceCondition(state, category)];
-  const made = madeCondition(category, filled);
+  const made = madeCondition(category, planned);
   if (made) conditions.push(made);
   conditions.push({
-    label: `Placed ${filled.length} of ${planned.length - simplified}`,
+    label: `Placed ${progress.placed} of ${progress.planned}${progress.multi ? " items" : ""}`,
     met: open === 0,
-    detail: carried(placedBy),
+    detail: carried(planned.flatMap(placementsOf)),
   });
   const status =
     open > 0 ? "unfinished" : simplified > 0 ? "simplified" : "ready";
   let explanation: string;
   if (status === "unfinished") {
-    explanation = `Only ${filled.length} of ${planned.length - simplified} done at 4:00.`;
+    const unit = progress.multi ? "items placed" : "done";
+    explanation = `Only ${progress.placed} of ${progress.planned} ${unit} at 4:00.`;
   } else {
     explanation = conditions.map((c) => `${c.label}: ${c.detail}`).join("; ");
     if (simplified > 0) explanation += `; ${simplified} simplified by choice`;
@@ -211,8 +259,8 @@ function readinessLine(state: GameState, category: Category): ReadinessLine {
     category,
     label,
     status,
-    placed: filled.length,
-    planned: planned.length,
+    placed: progress.placed,
+    planned: progress.planned,
     conditions,
     explanation,
   };

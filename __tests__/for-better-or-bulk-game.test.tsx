@@ -185,7 +185,7 @@ describe("For Better or Bulk cabinet (#1906)", () => {
     render(<ForBetterOrBulkGame />);
     expect(screen.getByTestId("fbb-setup")).toBeTruthy();
     expect(screen.getByTestId("fbb-total").textContent).toContain(
-      "$2960 of $3400"
+      "$2,960 of $3,400 (venue"
     );
     expect(screen.getByRole("button", { name: "Start setup" })).toHaveProperty(
       "disabled",
@@ -198,7 +198,7 @@ describe("For Better or Bulk cabinet (#1906)", () => {
     fireEvent.click(screen.getByRole("radio", { name: /^Yes/ }));
     fireEvent.click(screen.getByRole("radio", { name: /^Lots/ }));
     expect(screen.getByRole("alert").textContent).toContain(
-      "over the $3400 budget"
+      "over the $3,400 budget"
     );
     expect(screen.getByRole("button", { name: "Start setup" })).toHaveProperty(
       "disabled",
@@ -742,7 +742,7 @@ describe("For Better or Bulk side panel: helper, partner and day (fbb round)", (
       screen.getByRole("checkbox", { name: /Helper for the other person/ })
     );
     expect(screen.getByTestId("fbb-no-rewards").textContent).toBe(
-      "Helper days and sped-up days don't earn trophies or a board score."
+      "Helper days and sped-up days don't earn trophies or a board score. The relaxed clock counts the same as the standard one."
     );
     expect(screen.getByTestId("fbb-setup").textContent).toContain(
       "Helper days don't earn trophies or a board score."
@@ -759,6 +759,26 @@ describe("For Better or Bulk side panel: helper, partner and day (fbb round)", (
     expect(screen.getByTestId("fbb-no-rewards").textContent).toContain(
       "earn trophies or a board score"
     );
+  });
+
+  it("lists the header's times in clock order, with the ceremony last", () => {
+    render(
+      <ForBetterOrBulkGame initialSetup={{ ...DEFAULT_SETUP, seed: 12345 }} />
+    );
+    start();
+    const seedText = screen.getByTestId("fbb-seed-name").textContent ?? "";
+    const minutes = [...seedText.matchAll(/(\d{1,2}):(\d{2})/g)].map(
+      (m) => Number(m[1]) * 60 + Number(m[2])
+    );
+    expect(minutes.length).toBe(2);
+    expect(minutes).toEqual([...minutes].sort((a, b) => a - b));
+    const header = screen.getByTestId("fbb-clock").parentElement;
+    const spans = [...(header?.querySelectorAll("span") ?? [])].map(
+      (s) => s.textContent ?? ""
+    );
+    const timed = spans.filter((s) => /\d{1,2}:\d{2}/.test(s));
+    expect(timed.at(-1)).toBe("Ceremony at 4:00");
+    expect(timed).toContain(seedText);
   });
 
   it("names the standard day and hides the helper line when the helper is off", () => {

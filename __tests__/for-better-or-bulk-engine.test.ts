@@ -25,9 +25,11 @@ import {
   ReplayError,
   bankText,
   cartTotal,
+  categoryProgress,
   clockLabel,
   computeReceipt,
   createLevel,
+  dollars,
   frontTile,
   getHint,
   getPrompt,
@@ -212,7 +214,7 @@ describe("setup and budget", () => {
       cart: { roses: "yes", food: "lots", lanterns: true },
     });
     expect(check.ok).toBe(false);
-    if (!check.ok) expect(check.reason).toContain("$3460");
+    if (!check.ok) expect(check.reason).toContain("$3,460");
     expect(validateSetup(YES_SETUP).ok).toBe(true);
   });
 
@@ -793,11 +795,118 @@ describe("ending and receipt", () => {
       allFilled(createLevel(DEFAULT_SETUP), "fred")
     ).find((l) => l.category === "bouquets");
     const placed = line?.conditions.find((c) => c.label.startsWith("Placed"));
-    expect(placed?.label).toBe(`Placed ${line?.placed} of ${line?.planned}`);
+    expect(placed?.label).toBe(
+      `Placed ${line?.placed} of ${line?.planned} items`
+    );
     expect(placed?.detail).toMatch(/^Fred carried \d+ items?$/);
     expect(line?.explanation).toMatch(
-      /Placed \d+ of \d+: Fred carried \d+ items?/
+      /Placed \d+ of \d+ items: Fred carried \d+ items?/
     );
+  });
+
+  it("counts a half-filled basket as one of its two items, never as none", () => {
+    const level = onlyOpen(
+      createLevel(DEFAULT_SETUP),
+      (t) => t.kind === "basket"
+    );
+    const basket = level.targets.find((t) => t.kind === "basket");
+    const state: GameState = {
+      ...level,
+      targets: level.targets.map((t) =>
+        t === basket
+          ? {
+              ...t,
+              filled: [{ kind: "arrangement", madeBy: "fred" }],
+              filledBy: ["fred"],
+              filledByHelper: [false],
+            }
+          : t
+      ),
+    };
+    expect(categoryProgress(state, "bouquets")).toEqual({
+      placed: 1,
+      planned: 2,
+      multi: true,
+    });
+    const line = readinessLines(state).find((l) => l.category === "bouquets");
+    expect(line?.status).toBe("unfinished");
+    expect(line?.placed).toBe(1);
+    expect(line?.planned).toBe(2);
+    expect(line?.explanation).toBe("Only 1 of 2 items placed at 4:00.");
+    expect(line?.conditions.map((c) => c.label)).toContain(
+      "Placed 1 of 2 items"
+    );
+  });
+
+  it("finishes the basket only when its second arrangement is in", () => {
+    const level = onlyOpen(
+      createLevel(DEFAULT_SETUP),
+      (t) => t.kind === "basket"
+    );
+    const both = allFilled(level, "abbi");
+    expect(categoryProgress(both, "bouquets")).toEqual({
+      placed: 2,
+      planned: 2,
+      multi: true,
+    });
+    expect(
+      readinessLines(both).find((l) => l.category === "bouquets")?.status
+    ).toBe("ready");
+  });
+
+  it("counts every slot of every category with capacity above one", () => {
+    const level = createLevel(DEFAULT_SETUP);
+    for (const category of [
+      "bouquets",
+      "centerpieces",
+      "petals",
+      "chairs",
+      "lanterns",
+      "buffet",
+    ] as const) {
+      const slots = level.targets
+        .filter((t) => t.category === category && t.status !== "unplanned")
+        .reduce((n, t) => n + t.capacity, 0);
+      expect(categoryProgress(level, category)?.planned ?? 0, category).toBe(
+        slots
+      );
+    }
+  });
+
+  it("credits a placement the helper made as helper work, apart from the player's own", () => {
+    const level = createLevel(DEFAULT_SETUP);
+    const table = level.targets.find((t) => t.kind === "table");
+    if (!table) throw new Error("the plan has a table");
+    const state: GameState = {
+      ...level,
+      targets: level.targets.map((t) =>
+        t === table
+          ? {
+              ...t,
+              status: "filled",
+              filled: [{ kind: t.wants, madeBy: null }],
+              filledBy: ["abbi"],
+              filledByHelper: [true],
+            }
+          : t
+      ),
+    };
+    const details = readinessLines(state).flatMap((l) =>
+      l.conditions.map((c) => c.detail)
+    );
+    expect(details).toContain("Abbi (helper) carried 1 item");
+    expect(details.some((d) => /(^|, )Abbi carried/.test(d))).toBe(false);
+  });
+
+  it("formats money with a thousands comma, in the setup total and the budget refusal", () => {
+    expect(dollars(3400)).toBe("$3,400");
+    expect(dollars(2960)).toBe("$2,960");
+    const over = validateSetup({
+      ...DEFAULT_SETUP,
+      cart: { roses: "yes", food: "lots", lanterns: true },
+    });
+    expect(over.ok).toBe(false);
+    if (!over.ok) expect(over.reason).toMatch(/\$\d{1,3}(,\d{3})+ budget\.$/);
   });
 
   it("writes source and made clauses with a colon and no stacked parentheses (#1931)", () => {

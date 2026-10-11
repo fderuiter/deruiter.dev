@@ -10,6 +10,7 @@
 
 - [cartTotal](functions/cartTotal.md)
 - [createLevel](functions/createLevel.md)
+- [dollars](functions/dollars.md)
 - [seededEvents](functions/seededEvents.md)
 - [stockFor](functions/stockFor.md)
 - [validateSetup](functions/validateSetup.md)

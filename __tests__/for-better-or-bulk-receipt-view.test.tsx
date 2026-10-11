@@ -128,3 +128,66 @@ describe("the receipt's copy (#1931)", () => {
     expect(follow).not.toMatch(/Follow-through:\s*\S+:/);
   });
 });
+
+describe("the receipt counts items and clears the navbar (#1933)", () => {
+  it("says how many items of a two-item basket are placed, not that it is zero", () => {
+    const level = createLevel(DEFAULT_SETUP);
+    const state = {
+      ...level,
+      targets: level.targets.map((t) =>
+        t.kind === "basket"
+          ? {
+              ...t,
+              filled: [
+                { kind: "arrangement" as const, madeBy: "fred" as const },
+              ],
+              filledBy: ["fred" as const],
+              filledByHelper: [false],
+            }
+          : t
+      ),
+    };
+    render(
+      <ReceiptView
+        receipt={computeReceipt(state)}
+        runCode={null}
+        onPlayAgain={vi.fn()}
+        onChangePlan={vi.fn()}
+        onWatchReplay={vi.fn()}
+      />
+    );
+    expect(screen.getByText("Only 1 of 2 items placed at 4:00.")).toBeTruthy();
+  });
+
+  /** Places a header at the top of the page and the title at `top`, then fires scrollend. */
+  function settleWithTitleAt(top: number): ReturnType<typeof vi.fn> {
+    const header = document.createElement("header");
+    header.getBoundingClientRect = () =>
+      fromPartial<DOMRect>({ top: 0, bottom: 61, height: 61 });
+    document.body.prepend(header);
+    const originalScrollBy = window.scrollBy;
+    const scrollBy = vi.fn();
+    window.scrollBy = scrollBy;
+    try {
+      renderReceipt(0);
+      const title = screen.getByTestId("fbb-title");
+      title.getBoundingClientRect = () =>
+        fromPartial<DOMRect>({ top, bottom: top + 40 });
+      window.dispatchEvent(new Event("scrollend"));
+    } finally {
+      window.scrollBy = originalScrollBy;
+      header.remove();
+    }
+    return scrollBy;
+  }
+
+  it("moves the page up when the title is still under the navbar once the scroll settles", () => {
+    const scrollBy = settleWithTitleAt(40);
+    expect(scrollBy).toHaveBeenCalledWith({ top: -37, behavior: "auto" });
+  });
+
+  it("leaves the page alone when the title already clears the navbar", () => {
+    const scrollBy = settleWithTitleAt(90);
+    expect(scrollBy).not.toHaveBeenCalled();
+  });
+});

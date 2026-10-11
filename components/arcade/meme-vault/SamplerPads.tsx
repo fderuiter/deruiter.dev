@@ -74,7 +74,7 @@ export function SamplerPads({ pads, activeId, onPress }: SamplerPadsProps) {
                 <kbd className="inline-flex h-6 min-w-6 items-center justify-center rounded border border-white/[0.12] bg-[#0d0e11] px-1.5 font-mono text-[11px] font-semibold tabular-nums text-zinc-300 shadow-[0_1px_0_rgba(255,255,255,0.06)] group-data-[lit=true]:border-emerald-500/60 group-data-[lit=true]:text-emerald-300">
                   {key}
                 </kbd>
-                <span className="font-mono text-[10px] uppercase tracking-wider text-zinc-500">
+                <span className="font-mono text-[10px] uppercase tracking-wider text-zinc-400">
                   {pad.category}
                 </span>
               </span>
@@ -89,7 +89,7 @@ export function SamplerPads({ pads, activeId, onPress }: SamplerPadsProps) {
                 </span>
                 <span
                   id={`meme-pad-desc-${pad.id}`}
-                  className="mt-1 hidden font-sans text-[11px] leading-snug text-zinc-500 @3xl:line-clamp-2"
+                  className="mt-1 hidden font-sans text-[11px] leading-snug text-zinc-400 @3xl:line-clamp-2"
                 >
                   {pad.description}
                 </span>

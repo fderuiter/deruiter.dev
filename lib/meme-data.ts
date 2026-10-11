@@ -227,7 +227,7 @@ export const EASTER_EGG_ACHIEVEMENTS: EasterEggAchievement[] = [
     id: "terminal-cowboy",
     title: "Terminal Cowboy",
     description:
-      "Executed UNIX easter eggs (cowsay, loon, sl, or matrix) in the Sandbox Terminal.",
+      "Executed UNIX easter eggs (cowsay, sl or matrix) in the Sandbox Terminal, or ran sudo from the Command Palette.",
     icon: "💻",
     hint: "Type cowsay, sl or matrix in the Try the Sample Commands terminal on the iMednet SDK case study. Searching sudo in the Command Palette (Cmd+K) works too.",
     hintLink: SANDBOX_TERMINAL_LINK,
@@ -236,24 +236,23 @@ export const EASTER_EGG_ACHIEVEMENTS: EasterEggAchievement[] = [
     id: "duck-whisperer",
     title: "Duck Whisperer",
     description:
-      "Clicked Duck the Golden Retriever in the footer and tossed a treat.",
+      "Clicked Duck the Golden Retriever puppy in the footer and tossed a treat.",
     icon: "🐾",
     hint: "Find and click Duck resting at the bottom of the page.",
   },
   {
     id: "rfc-barista",
     title: "RFC 2324 Barista",
-    description: "Queried 418 or coffee in the Command Palette (Cmd+K).",
+    description: "Ran coffee or 418 from the Command Palette (Cmd+K).",
     icon: "🫖",
-    hint: "Order coffee from the Command Palette.",
+    hint: "Order coffee from the Command Palette, and press Enter.",
   },
   {
     id: "soundboard-maestro",
     title: "Soundboard Maestro",
-    description:
-      "Sampled synthesized retro audio effects in the Secret Meme Vault.",
+    description: "Heard a synthesized retro sample in the Secret Meme Vault.",
     icon: "🎧",
-    hint: "Play sounds in the Meme Vault room.",
+    hint: "Turn sound on and play a pad in the Meme Vault room.",
   },
   {
     id: "friday-survivor",

@@ -43,6 +43,7 @@ import {
   type SharedRun,
   type SupplyKind,
   CATEGORY_LABELS,
+  bankText,
 } from "@/lib/for-better-or-bulk";
 import {
   recordArcadeScore,
@@ -59,11 +60,18 @@ import {
   CHECKLIST,
   checklistLine,
   completedCategories,
-  describeEvent,
   throttleFloorFull,
   playStepSounds,
   type FeedbackEvent,
 } from "./messages";
+import { CeremonyPlayback } from "./CeremonyPlayback";
+import {
+  claimJokes,
+  jokesFor,
+  laptopBadgeShown,
+  lineFor,
+  type JokeId,
+} from "./jokes";
 import { countsForBoard } from "./board";
 import { playSfx } from "./sfx";
 import { readHideTips, subscribeHideTips, writeHideTips } from "./hint-storage";
@@ -72,7 +80,7 @@ import { ReplayControls, type ReplaySpeed } from "./ReplayControls";
 import { runTrophyIds } from "./rewards";
 import { SetupScreen } from "./SetupScreen";
 import {
-  BURST_SECONDS,
+  burstLifetime,
   canvasBurstsFor,
   drawVenue,
   VENUE_HEIGHT,
@@ -138,7 +146,7 @@ function seedFromUrl(): number {
 /** Fastest clock the `?speed=` parameter allows. */
 const MAX_SPEED = 8;
 
-type Phase = "setup" | "playing" | "receipt" | "replay";
+type Phase = "setup" | "playing" | "playback" | "receipt" | "replay";
 
 /** A finished run that can be shared: the run and its code. */
 interface Share {
@@ -242,7 +250,9 @@ function withBurst(
   burst: CanvasBurst
 ): CanvasBurst[] {
   return [
-    ...bursts.filter((b) => burst.startedAt - b.startedAt < BURST_SECONDS),
+    ...bursts.filter(
+      (b) => burst.startedAt - b.startedAt < burstLifetime(b.kind)
+    ),
     burst,
   ];
 }
@@ -303,6 +313,8 @@ export function ForBetterOrBulkGame({
   const activeRef = useRef<PlayerId>("abbi");
   const floorFullShown = useRef<Partial<Record<PlayerId, number>>>({});
   const canvasBursts = useRef<CanvasBurst[]>([]);
+  /** The once-per-level jokes already played in this run. */
+  const jokesPlayed = useRef(new Set<JokeId>());
   const burstId = useRef(0);
   /** Every frame the engine applied this run, so the run can be shared. */
   const recorded = useRef<Frame[]>([]);
@@ -335,22 +347,28 @@ export function ForBetterOrBulkGame({
     onResize: draw,
   });
 
-  const pushMessages = useCallback((events: readonly GameEvent[]) => {
-    const lines = events
-      .map(describeEvent)
-      .filter((line): line is string => line !== null);
-    if (lines.length === 0) return;
-    setAnnouncement(lines[lines.length - 1]);
-    const added = lines.map((text) => ({ id: ++toastId.current, text }));
-    setToasts((current) => [...current, ...added].slice(-3));
-    const timer = setTimeout(() => {
-      toastTimers.current.delete(timer);
-      setToasts((current) =>
-        current.filter((t) => !added.some((a) => a.id === t.id))
-      );
-    }, TOAST_MS);
-    toastTimers.current.add(timer);
-  }, []);
+  const pushMessages = useCallback(
+    (
+      events: readonly GameEvent[],
+      jokesOf: ReadonlyMap<FeedbackEvent, readonly JokeId[]>
+    ) => {
+      const lines = events
+        .map((event) => lineFor(event, jokesOf.get(event) ?? []))
+        .filter((line): line is string => line !== null);
+      if (lines.length === 0) return;
+      setAnnouncement(lines[lines.length - 1]);
+      const added = lines.map((text) => ({ id: ++toastId.current, text }));
+      setToasts((current) => [...current, ...added].slice(-3));
+      const timer = setTimeout(() => {
+        toastTimers.current.delete(timer);
+        setToasts((current) =>
+          current.filter((t) => !added.some((a) => a.id === t.id))
+        );
+      }, TOAST_MS);
+      toastTimers.current.add(timer);
+    },
+    []
+  );
 
   useEffect(() => {
     const timers = toastTimers.current;
@@ -364,7 +382,7 @@ export function ForBetterOrBulkGame({
     (state: GameState) => {
       const result = computeReceipt(state);
       setReceipt(result);
-      setPhase("receipt");
+      setPhase("playback");
       const outcome = runResultOf(state);
       setShare(
         shareFor({
@@ -398,7 +416,11 @@ export function ForBetterOrBulkGame({
    * engine's mute decides the rest. Bursts show only in the loud cabinet.
    */
   const feedback = useCallback(
-    (events: readonly FeedbackEvent[], state: GameState) => {
+    (
+      events: readonly FeedbackEvent[],
+      state: GameState,
+      jokesOf: ReadonlyMap<FeedbackEvent, readonly JokeId[]>
+    ) => {
       if (speed === 1) playStepSounds(events, playSfx);
       for (const event of events) {
         if (!loud) continue;
@@ -422,6 +444,23 @@ export function ForBetterOrBulkGame({
               startedAt: state.time,
             });
           }
+        } else if (event.type === "simplified") {
+          const target = state.targets.find((t) => t.id === event.target);
+          if (target) {
+            canvasBursts.current = withBurst(canvasBursts.current, {
+              kind: "crumple",
+              x: target.x,
+              y: target.y,
+              startedAt: state.time,
+            });
+          }
+        } else if (jokesOf.get(event)?.includes("roses-yes")) {
+          canvasBursts.current = withBurst(canvasBursts.current, {
+            kind: "roses",
+            x: 0,
+            y: 0,
+            startedAt: state.time,
+          });
         } else if (event.type === "brothers-text") {
           burstId.current += 1;
           const id = burstId.current;
@@ -460,7 +499,15 @@ export function ForBetterOrBulkGame({
         result.state.time,
         floorFullShown.current
       );
-      pushMessages(shown);
+      // Claimed in event order, so a once-per-level joke lands on its first trigger only.
+      const jokesOf = new Map<FeedbackEvent, readonly JokeId[]>();
+      for (const event of shown) {
+        jokesOf.set(
+          event,
+          claimJokes(jokesFor(event, result.state), jokesPlayed.current)
+        );
+      }
+      pushMessages(shown, jokesOf);
       const events: FeedbackEvent[] = [
         ...shown,
         ...completedCategories(state, result.state).map((category) => ({
@@ -468,7 +515,7 @@ export function ForBetterOrBulkGame({
           category,
         })),
       ];
-      feedback(events, result.state);
+      feedback(events, result.state, jokesOf);
       setView(result.state);
       if (result.state.phase === "done") finish(result.state);
       return result.state;
@@ -498,6 +545,7 @@ export function ForBetterOrBulkGame({
   const start = useCallback(
     (next: Setup, nextMode: ControlMode) => {
       canvasBursts.current = [];
+      jokesPlayed.current = new Set();
       recorded.current = [];
       replayRef.current = null;
       setShare(null);
@@ -550,6 +598,7 @@ export function ForBetterOrBulkGame({
     const state = createLevel(run.setup);
     stateRef.current = state;
     canvasBursts.current = [];
+    jokesPlayed.current = new Set();
     setTextBursts([]);
     setRowFlashes([]);
     replayRef.current = { run, origin, index: 0, accumulator: 0, speed: 1 };
@@ -609,6 +658,7 @@ export function ForBetterOrBulkGame({
     rep.index = 0;
     rep.accumulator = 0;
     canvasBursts.current = [];
+    jokesPlayed.current = new Set();
     setView(state);
     setReplayEnded(false);
     setReplayPlaying(true);
@@ -881,6 +931,14 @@ export function ForBetterOrBulkGame({
         </ul>
       </div>
     );
+  } else if (phase === "playback" && view) {
+    body = (
+      <CeremonyPlayback
+        state={view}
+        speed={speed}
+        onDone={() => setPhase("receipt")}
+      />
+    );
   } else if (view) {
     const shown: PlayerId[] = mode === "coop" ? ["fred", "abbi"] : [active];
     const eventLines = activeEventLines(view);
@@ -953,6 +1011,14 @@ export function ForBetterOrBulkGame({
             <BurstLayer bursts={textBursts} onDone={removeTextBurst} />
           </div>
           <div className="flex min-w-0 flex-col gap-2 font-mono text-xs">
+            {laptopBadgeShown(view) ? (
+              <p
+                data-testid="fbb-laptop"
+                className="break-words rounded border border-[var(--fbb-ok)] bg-[var(--fbb-toast)] px-2 py-1 font-bold text-[var(--fbb-ok)]"
+              >
+                {bankText("joke-leaving")}
+              </p>
+            ) : null}
             {hideTips ? (
               <button
                 type="button"

@@ -5,10 +5,12 @@
  * explains what happened and why; it is not a grade.
  */
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { copyToClipboard, getActiveHostUrl } from "@/lib/clipboard";
 import {
   CHALLENGE_COPY,
+  bankText,
   runLinkFor,
   type Receipt,
   type Readiness,
@@ -41,6 +43,12 @@ export function ReceiptView({
   onWatchReplay,
 }: ReceiptViewProps) {
   const [copyNote, setCopyNote] = useState("");
+  const titleRef = useRef<HTMLHeadingElement>(null);
+
+  // The playback hands over here, so focus moves to the receipt rather than dropping to the page.
+  useEffect(() => {
+    titleRef.current?.focus({ preventScroll: true });
+  }, []);
 
   /** Copies the link that opens this run. The code never leaves the page otherwise. */
   async function copyRunCode(): Promise<void> {
@@ -63,15 +71,17 @@ export function ReceiptView({
 
   return (
     <div
-      className="flex w-full min-w-0 flex-col gap-4 p-3 font-mono text-[var(--fbb-text)] sm:p-6"
+      className="flex w-full min-w-0 flex-col gap-4 border-x-2 border-dashed border-[var(--fbb-rule)] bg-[var(--fbb-panel)] p-3 font-mono tabular-nums text-[var(--fbb-text)] sm:p-6"
       data-testid="fbb-receipt"
     >
-      <div className="min-w-0">
+      <div className="min-w-0 border-b border-dashed border-[var(--fbb-rule)] pb-3">
         <p className="text-xs uppercase tracking-wide text-[var(--fbb-dim)]">
           Receipt
         </p>
         <h2
-          className="text-2xl font-extrabold tracking-[-0.035em] break-words"
+          ref={titleRef}
+          tabIndex={-1}
+          className="text-2xl font-extrabold tracking-[-0.035em] break-words focus:outline-none"
           data-testid="fbb-title"
         >
           {receipt.title}
@@ -145,7 +155,7 @@ export function ReceiptView({
       </section>
 
       <section
-        className="min-w-0 rounded border border-[var(--fbb-rule)] p-3"
+        className="min-w-0 rounded border border-dashed border-[var(--fbb-rule)] p-3"
         aria-labelledby="fbb-receipt-challenges"
         data-testid="fbb-challenges"
       >
@@ -190,7 +200,7 @@ export function ReceiptView({
         </ul>
       </section>
 
-      <ul className="flex min-w-0 flex-col gap-1 border-t border-[var(--fbb-rule)] pt-3 text-xs">
+      <ul className="flex min-w-0 flex-col gap-1 border-t border-dashed border-[var(--fbb-rule)] pt-3 text-xs">
         <li data-testid="fbb-follow-through">
           <span className="font-bold">Follow-through:</span>{" "}
           {receipt.followThrough.explanation}
@@ -214,6 +224,30 @@ export function ReceiptView({
         </li>
       </ul>
       <p className="text-[11px] text-[var(--fbb-dim)]">{receipt.disclaimer}</p>
+
+      <section
+        className="flex min-w-0 flex-col gap-2 border-t border-dashed border-[var(--fbb-rule)] pt-3 text-xs"
+        aria-labelledby="fbb-receipt-actual"
+        data-testid="fbb-actual"
+      >
+        <h3
+          id="fbb-receipt-actual"
+          className="break-words font-bold uppercase tracking-wide"
+        >
+          {receipt.actual.heading}
+        </h3>
+        {receipt.actual.lines.map((line) => (
+          <p key={line} className="break-words">
+            {line}
+          </p>
+        ))}
+        <Link
+          href={receipt.actual.href}
+          className="min-h-11 self-start break-words py-3 font-bold text-[var(--fbb-accent)] underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--fbb-focus)]"
+        >
+          {bankText("actual-link")}
+        </Link>
+      </section>
 
       <div className="flex flex-wrap gap-2">
         {runCode ? (

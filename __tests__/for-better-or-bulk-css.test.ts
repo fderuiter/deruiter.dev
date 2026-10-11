@@ -99,3 +99,35 @@ describe("For Better or Bulk burst styles", () => {
     }
   });
 });
+
+describe("For Better or Bulk ceremony playback styles", () => {
+  const scene = rules.find((r) => r.selector.includes(".fbb-scene-in"));
+
+  it("gates the scene fade behind the loud selector", () => {
+    expect(scene, "a scene fade rule exists").toBeDefined();
+    expect(scene?.selector).toContain(LOUD_GATE);
+    expect(values(scene?.body ?? "", "animation").length).toBeGreaterThan(0);
+  });
+
+  it("switches the scene fade off under prefers-reduced-motion", () => {
+    const start = section.indexOf("@media (prefers-reduced-motion: reduce)");
+    expect(start, "a reduced-motion block exists").toBeGreaterThanOrEqual(0);
+    const body = blockAfter(section, start);
+    expect(body).toContain(".fbb-scene-in");
+    expect(body).toMatch(/animation\s*:\s*none/);
+  });
+
+  it("animates only transform and opacity in the scene keyframes", () => {
+    const frame = section.indexOf("@keyframes fbb-scene-in");
+    expect(frame, "the scene keyframes exist").toBeGreaterThanOrEqual(0);
+    const props = [
+      ...blockAfter(section, frame).matchAll(/([a-z-]+)\s*:/g),
+    ].map((m) => m[1]);
+    expect(props.length).toBeGreaterThan(0);
+    for (const prop of props) {
+      expect(["transform", "opacity"], `scene fade animates ${prop}`).toContain(
+        prop
+      );
+    }
+  });
+});

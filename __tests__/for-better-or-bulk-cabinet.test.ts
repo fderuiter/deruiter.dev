@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { fromPartial } from "@total-typescript/shoehorn";
 import {
   DEFAULT_SETUP,
+  bankText,
   createLevel,
   frontTile,
   getPrompt,
@@ -18,6 +19,7 @@ import {
 } from "@/components/for-better-or-bulk/messages";
 import {
   BURST_SECONDS,
+  burstLifetime,
   canvasBurstsFor,
   TILE,
   drawItem,
@@ -248,7 +250,7 @@ describe("For Better or Bulk venue canvas (#1906)", () => {
     drawVenue(ctx, state, null);
     const labels = vi.mocked(ctx.fillText).mock.calls.map((call) => call[0]);
     expect(labels).not.toContain("F");
-    expect(labels).toContain("…");
+    expect(labels).toContain("On the phone");
   });
 
   it("outlines the tile each active person faces, solid when interact is ready (#1914)", () => {
@@ -556,5 +558,77 @@ describe("For Better or Bulk loud canvas (F4)", () => {
     expect(plate).toBe(BADGE_FILL);
     expect(label).toBe("#f4f4f6");
     expect(contrast(label, overPlate(ground))).toBeGreaterThanOrEqual(4.5);
+  });
+});
+
+describe("For Better or Bulk jokes on the canvas", () => {
+  const makeCtx = () =>
+    document
+      .createElement("canvas")
+      .getContext("2d") as CanvasRenderingContext2D;
+
+  /** Records every fill colour the venue sets, in order. */
+  const fillsOf = (
+    draw: (ctx: CanvasRenderingContext2D) => void
+  ): unknown[] => {
+    const ctx = makeCtx();
+    const fills: unknown[] = [];
+    Object.defineProperty(ctx, "fillStyle", {
+      configurable: true,
+      get: () => "",
+      set: (value: unknown) => {
+        fills.push(value);
+      },
+    });
+    draw(ctx);
+    return fills;
+  };
+
+  it("keeps a crumple on screen long enough to read, and smoke in steel", () => {
+    expect(burstLifetime("crumple")).toBeCloseTo(1.2);
+    expect(burstLifetime("crumple")).toBeGreaterThan(BURST_SECONDS);
+    const state = createLevel(DEFAULT_SETUP);
+    const smoke = fillsOf((ctx) =>
+      drawVenue(ctx, state, null, [
+        { kind: "charcoal", x: 3, y: 3, startedAt: state.time },
+      ])
+    );
+    expect(smoke).toContain("#94a3b8");
+    expect(smoke).not.toContain("#1b1b1b");
+  });
+
+  it("draws the car only when the cart is Yes", () => {
+    const yes = createLevel({
+      ...DEFAULT_SETUP,
+      cart: { ...DEFAULT_SETUP.cart, roses: "yes" },
+    });
+    expect(fillsOf((ctx) => drawVenue(ctx, yes, null))).toContain("#13151a");
+    const full = createLevel(DEFAULT_SETUP);
+    expect(fillsOf((ctx) => drawVenue(ctx, full, null))).not.toContain(
+      "#13151a"
+    );
+  });
+
+  it("shows the suit tip only to someone standing beside the coat hanger", () => {
+    const state = createLevel(DEFAULT_SETUP);
+    const tipAt = (x: number, y: number) => {
+      const near = {
+        ...state,
+        players: {
+          ...state.players,
+          abbi: { ...state.players.abbi, x, y },
+        },
+      };
+      const ctx = makeCtx();
+      const texts: string[] = [];
+      vi.mocked(ctx.fillText).mockImplementation((text: string) => {
+        texts.push(text);
+      });
+      drawVenue(ctx, near, null);
+      vi.mocked(ctx.fillText).mockReset();
+      return texts.includes(bankText("joke-suit-tip"));
+    };
+    expect(tipAt(18.5, 1.5)).toBe(true);
+    expect(tipAt(4.5, 6.5)).toBe(false);
   });
 });

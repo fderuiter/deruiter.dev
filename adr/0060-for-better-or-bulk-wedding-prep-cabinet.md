@@ -237,3 +237,35 @@ For Better or Bulk trophies are unchanged.
 
 **Seeds.** Only the standard day (seed 0) records a high score. A seeded day
 can still earn its own trophy.
+
+## Amendment (2026-10-11): reactive jokes, ceremony playback and the receipt card
+
+**Reactive jokes.** Each joke is named by the engine event that triggers it
+(`components/for-better-or-bulk/jokes.ts`). The "Yes" roses joke plays once per
+level, on the first rose pickup in a "Yes" cart. The rest play on their event:
+a blocked or open phone call, the burnt batch, the re-tied shoes, the leave
+choice, the simplified use and the no-FAQ guest. Canvas jokes (the car behind
+roses, the smoke, the crumpled note and the suit on its hanger) are drawn from
+the same state and only in the loud cabinet. New copy is tagged [Fiction] in
+the line bank, except the receipt's real facts.
+
+**Ceremony playback.** The playback is skippable at every point: Skip and
+Escape both hand over to the receipt once, and the last scene does the same.
+Its scene holds shorten with the game's `?speed=` (each holds at least 1.5
+seconds), so an end-to-end run at 8x stays quick. The scenes are one live
+region whose text changes, so a screen reader hears each scene.
+
+**Reduced motion.** With `prefers-reduced-motion: reduce`, the playback is a
+static summary card with every scene as text. Canvas bursts and the scene
+fade are off in that mode and everywhere outside the loud cabinet, and they
+animate only `opacity` and `transform` (`app/arcade/arcade.css`).
+
+**Effects scoped to the cabinet.** The loud moments (smoke, crumple, roses,
+the ring on a filled target) are drawn only inside `[data-fbb-cabinet]` with
+`data-fbb-loud="on"`, as the scoped arcade-cabinet exception in the
+zero-trope invariant allows. Nothing is drawn outside the cabinet.
+
+**Receipt card.** The receipt takes focus on its title when the playback hands
+over, so focus never drops to the page. It ends with "What actually happened":
+fixture facts only (the date and ceremony times, the weather and Abbi's goal),
+with a link to `/wedding`. The note never describes the couple's mindset.

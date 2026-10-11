@@ -25,9 +25,12 @@ import {
   onLevelClock,
   PETAL_SECONDS,
   PHONE_SECONDS,
+  PATIO_ROWS,
   PLAYER_RADIUS,
+  RUSH_BURN_FACTOR,
   SHOE_INTERVAL_SECONDS,
   SHOE_SECONDS,
+  SHOWER_WALK_FACTOR,
   SIMPLIFY_SECONDS,
   TICK_SECONDS,
   VENUE_MAP,
@@ -44,6 +47,7 @@ import type {
   PlayerId,
   PlayerInput,
   PresenceDecision,
+  SeededEventId,
   Setup,
   Station,
   StepResult,
@@ -148,12 +152,31 @@ function sign(value: number): number {
   return value > 0 ? 1 : value < 0 ? -1 : 0;
 }
 
-function move(player: Player, input: PlayerInput, dt: number): Player {
+/** Whether a tile is lawn, out in the weather: every row below the paving. */
+function isOutdoor(y: number): boolean {
+  return y > PATIO_ROWS;
+}
+
+/** Whether a seeded event is on at the level's current time. */
+function seededActive(state: GameState, id: SeededEventId): boolean {
+  return state.seeded.some(
+    (event) =>
+      event.id === id && state.time >= event.at && state.time < event.until
+  );
+}
+
+function move(
+  player: Player,
+  input: PlayerInput,
+  dt: number,
+  pace: number
+): Player {
   const mx = sign(input.moveX);
   const my = sign(input.moveY);
   if (mx === 0 && my === 0) return player;
   const length = Math.hypot(mx, my);
-  const speed = MOVE_SPEED * (player.calm ? CALM_SPEED_MULTIPLIER : 1) * dt;
+  const speed =
+    MOVE_SPEED * (player.calm ? CALM_SPEED_MULTIPLIER : 1) * pace * dt;
   let { x, y } = player;
   const nextX = x + (mx / length) * speed;
   if (!collides(nextX, y)) x = nextX;
@@ -379,17 +402,41 @@ function work(w: Working, id: PlayerId, dt: number): void {
   }
 }
 
+/**
+ * Cooks and burns the grill. Raw food counts its cook time from placement.
+ * Cooked food counts its pickup window from the moment it finished cooking,
+ * in ordinary seconds, so `progress` is the time since it was cooked. A guest
+ * rush makes that time run at double speed from when it is on, so food cooked
+ * before the rush keeps the rest of its window, halved, and never burns on the
+ * rush's first tick.
+ */
 function cookGrills(w: Working, dt: number): void {
+  const rushing = seededActive(w.state, "guest-rush");
+  const pickupSeconds = BURN_SECONDS - COOK_SECONDS;
+  const ageRate = rushing ? 1 / RUSH_BURN_FACTOR : 1;
   for (const station of w.state.stations) {
     if (station.kind !== "grill" || !station.item) continue;
     const item = station.item;
     if (item.kind === "burnt") continue;
-    const progress = station.progress + dt;
     const cooked = GRILL_COOKS[item.kind];
-    if (cooked && progress + 1e-9 >= COOK_SECONDS) {
-      setStation(w, { ...station, item: { ...item, kind: cooked }, progress });
-      w.events.push({ type: "cooked", station: station.id, item: cooked });
-    } else if (!cooked && progress + 1e-9 >= BURN_SECONDS) {
+    if (cooked) {
+      const progress = station.progress + dt;
+      if (progress + 1e-9 >= COOK_SECONDS) {
+        // The overshoot past the cook time is the first of the pickup window.
+        const overshoot = progress - COOK_SECONDS;
+        setStation(w, {
+          ...station,
+          item: { ...item, kind: cooked },
+          progress: overshoot,
+        });
+        w.events.push({ type: "cooked", station: station.id, item: cooked });
+      } else {
+        setStation(w, { ...station, progress });
+      }
+      continue;
+    }
+    const progress = station.progress + dt * ageRate;
+    if (progress + 1e-9 >= pickupSeconds) {
       setStation(w, {
         ...station,
         item: { kind: "burnt", madeBy: item.madeBy },
@@ -403,8 +450,13 @@ function cookGrills(w: Working, dt: number): void {
   }
 }
 
+/**
+ * True on the one tick whose step crosses `at`. Time is a sum of fixed steps,
+ * so a boundary can land a hair under its exact value; the tolerance on both
+ * ends counts it on that tick and not again on the next.
+ */
 function crossed(before: number, after: number, at: number): boolean {
-  return before < at && at <= after + 1e-9;
+  return before + 1e-9 < at && at <= after + 1e-9;
 }
 
 /** The level time the brothers' text lands; see BROTHERS_EARLIEST_AT. */
@@ -530,10 +582,13 @@ export function stepGame(state: GameState, frame: Frame): StepResult {
     events: [],
   };
 
-  if (w.state.brothersAt === null && after + 1e-9 >= brothersDue(w.state)) {
-    w.state = { ...w.state, phase: "brothers", brothersAt: after };
-    w.events.push({ type: "brothers-text" });
-    return w;
+  for (const event of w.state.seeded) {
+    if (crossed(before, after, event.at)) {
+      w.events.push({ type: "seeded-start", id: event.id });
+    }
+    if (crossed(before, after, event.until)) {
+      w.events.push({ type: "seeded-end", id: event.id });
+    }
   }
 
   const fred = w.state.players.fred;
@@ -581,6 +636,14 @@ export function stepGame(state: GameState, frame: Frame): StepResult {
     }
   }
 
+  // The brothers' text ends the tick here, but the boundaries it crossed
+  // (interruptions above) are already handled, so none is lost to the stop.
+  if (w.state.brothersAt === null && after + 1e-9 >= brothersDue(w.state)) {
+    w.state = { ...w.state, phase: "brothers", brothersAt: after };
+    w.events.push({ type: "brothers-text" });
+    return w;
+  }
+
   const nervous = w.state.players.fred;
   // Set whenever a decision exists, so the fallback is never read.
   const brothersAt = w.state.brothersAt ?? 0;
@@ -619,7 +682,9 @@ export function stepGame(state: GameState, frame: Frame): StepResult {
     // On the assist's resting ticks its held work keeps its hold but makes no
     // progress, which is how the assist works at about 60% pace.
     const resting = helped && assistRests(w.state.tick);
-    setPlayer(w, move(player, input, dt));
+    const wet =
+      seededActive(w.state, "shower") && isOutdoor(Math.floor(player.y));
+    setPlayer(w, move(player, input, dt, wet ? SHOWER_WALK_FACTOR : 1));
     if (input.interact) interact(w, id);
     if (input.work) work(w, id, resting ? 0 : dt);
     else releaseBinHold(w, id);

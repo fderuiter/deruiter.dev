@@ -14,6 +14,7 @@ import {
   LANTERN_PRICE,
   ROSE_PRICES,
   cartTotal,
+  dailySeed,
   validateSetup,
   type CapabilityId,
   type FoodTier,
@@ -21,6 +22,22 @@ import {
   type Setup,
 } from "@/lib/for-better-or-bulk";
 import type { ControlMode } from "./input";
+import { SEEDED_EVENT_NOTES } from "./messages";
+
+/**
+ * Keeps the page's `?seed=` in step with the seed on screen, so a reload or a
+ * shared link shows the same day. The standard day removes the parameter.
+ */
+function writeSeedParam(seed: number): void {
+  try {
+    const url = new URL(window.location.href);
+    if (seed === 0) url.searchParams.delete("seed");
+    else url.searchParams.set("seed", String(seed));
+    window.history.replaceState(window.history.state, "", url.toString());
+  } catch {
+    // The URL is a convenience: the seed applies on screen either way.
+  }
+}
 
 const ROSE_OPTIONS: readonly { id: RoseTier; label: string; note: string }[] = [
   {
@@ -96,6 +113,9 @@ export function SetupScreen({
   const [lanterns, setLanterns] = useState(initial.cart.lanterns);
   const [relaxed, setRelaxed] = useState(initial.relaxed);
   const [assist, setAssist] = useState(initial.assist ?? false);
+  const [seed, setSeed] = useState(initial.seed ?? 0);
+  // Read once, on mount: this screen only renders in the browser.
+  const [todaysSeed] = useState(() => dailySeed(new Date()));
   const [mode, setMode] = useState<ControlMode>(initialMode);
 
   // The helper only exists in one-player play, so co-op never carries it.
@@ -104,6 +124,7 @@ export function SetupScreen({
     cart: { roses, food, lanterns },
     relaxed,
     assist: mode === "solo" && assist,
+    seed,
   };
   const total = cartTotal(setup.cart);
   const check = validateSetup(setup);
@@ -227,6 +248,67 @@ export function SetupScreen({
           <span className="mt-0.5">More time between 9:00 and 4:00.</span>
         </OptionButton>
       </div>
+
+      <fieldset className="min-w-0">
+        <legend className="mb-2 text-xs font-bold uppercase tracking-wide">
+          Day seed
+        </legend>
+        <div
+          role="radiogroup"
+          aria-label="Day seed"
+          className="grid min-w-0 gap-2 @2xl:grid-cols-2"
+        >
+          <OptionButton
+            selected={seed === 0}
+            onClick={() => {
+              setSeed(0);
+              writeSeedParam(0);
+            }}
+          >
+            <span className="font-bold text-[var(--fbb-text)]">
+              Standard day
+            </span>
+            <span className="mt-0.5">Seed 0. No shower, no guest rush.</span>
+          </OptionButton>
+          <OptionButton
+            selected={seed === todaysSeed}
+            onClick={() => {
+              setSeed(todaysSeed);
+              writeSeedParam(todaysSeed);
+            }}
+          >
+            <span className="font-bold text-[var(--fbb-text)]">
+              Today&apos;s seed
+            </span>
+            <span className="mt-0.5">
+              The same events for everyone who plays today.
+            </span>
+          </OptionButton>
+          {seed !== 0 && seed !== todaysSeed ? (
+            <OptionButton selected onClick={() => setSeed(seed)}>
+              <span className="font-bold text-[var(--fbb-text)]">
+                Seed {seed}
+              </span>
+              <span className="mt-0.5">From the link you opened.</span>
+            </OptionButton>
+          ) : null}
+        </div>
+        <ul
+          className="mt-2 flex flex-col gap-1 text-xs text-[var(--fbb-dim)]"
+          data-testid="fbb-seed-events"
+        >
+          <li>{SEEDED_EVENT_NOTES.shower.note}</li>
+          <li>{SEEDED_EVENT_NOTES["guest-rush"].note}</li>
+        </ul>
+        {seed !== 0 ? (
+          <p
+            className="mt-2 text-xs text-[var(--fbb-dim)]"
+            data-testid="fbb-seed"
+          >
+            Seed {seed}: a shower and a guest rush are on the schedule.
+          </p>
+        ) : null}
+      </fieldset>
 
       <fieldset className="min-w-0">
         <legend className="mb-2 text-xs font-bold uppercase tracking-wide">

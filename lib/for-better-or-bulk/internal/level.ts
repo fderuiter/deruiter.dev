@@ -20,9 +20,15 @@ import {
   RELAXED_LEVEL_SECONDS,
   ROSE_BUNCHES,
   ROSE_PRICES,
+  RUSH_SECONDS,
+  RUSH_STARTS,
+  SHOWER_SECONDS,
+  SHOWER_STARTS,
   SUPPLY_TILES,
   VENUE_MAP,
+  onLevelClock,
 } from "../presets";
+import { createPrng, MAX_SEED } from "./prng";
 import type {
   Cart,
   CapabilityId,
@@ -31,6 +37,7 @@ import type {
   ItemKind,
   Player,
   PlayerId,
+  SeededEvent,
   Setup,
   Station,
   StationKind,
@@ -56,6 +63,13 @@ export function cartTotal(cart: Cart): number {
 export function validateSetup(setup: Setup): Validation {
   const ids = Object.keys(CAPABILITIES) as CapabilityId[];
   const picks = new Set(setup.capabilities);
+  const seed = setup.seed ?? 0;
+  if (!Number.isInteger(seed) || seed < 0 || seed > MAX_SEED) {
+    return {
+      ok: false,
+      reason: `The seed must be a whole number from 0 to ${MAX_SEED}.`,
+    };
+  }
   if (
     setup.capabilities.length !== CAPABILITY_PICKS ||
     picks.size !== CAPABILITY_PICKS
@@ -152,6 +166,33 @@ function spawn(id: PlayerId, x: number, y: number): Player {
   };
 }
 
+/**
+ * The seeded events a level schedules. Seed 0 schedules none, so the standard
+ * day is unchanged; any other seed draws one shower and one guest rush from
+ * its own generator, so the same seed always gives the same times.
+ */
+export function seededEvents(
+  seed: number,
+  duration: number
+): readonly SeededEvent[] {
+  if (seed === 0) return [];
+  const draw = createPrng(seed);
+  const showerAt = draw.int(SHOWER_STARTS.earliest, SHOWER_STARTS.latest);
+  const rushAt = draw.int(RUSH_STARTS.earliest, RUSH_STARTS.latest);
+  return [
+    {
+      id: "shower",
+      at: onLevelClock(showerAt, duration),
+      until: onLevelClock(showerAt + SHOWER_SECONDS, duration),
+    },
+    {
+      id: "guest-rush",
+      at: onLevelClock(rushAt, duration),
+      until: onLevelClock(rushAt + RUSH_SECONDS, duration),
+    },
+  ];
+}
+
 /** The starting stock for a cart. */
 export function stockFor(cart: Cart): Record<SupplyKind, number> {
   const batches = FOOD_BATCHES[cart.food];
@@ -213,11 +254,12 @@ export function createLevel(setup: Setup): GameState {
   });
   if (!players.fred || !players.abbi)
     throw new RangeError("The venue map has no spawn points.");
+  const duration = setup.relaxed ? RELAXED_LEVEL_SECONDS : LEVEL_SECONDS;
   return {
     setup,
     phase: "playing",
     time: 0,
-    duration: setup.relaxed ? RELAXED_LEVEL_SECONDS : LEVEL_SECONDS,
+    duration,
     tick: 0,
     players: { fred: players.fred, abbi: players.abbi },
     supplies,
@@ -226,6 +268,7 @@ export function createLevel(setup: Setup): GameState {
     targets,
     floor: [],
     interruptions: [],
+    seeded: seededEvents(setup.seed ?? 0, duration),
     presence: null,
     returnsAt: null,
     brothersAt: null,

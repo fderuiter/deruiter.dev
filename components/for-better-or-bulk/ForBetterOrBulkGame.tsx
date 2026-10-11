@@ -24,6 +24,7 @@ import {
   createLevel,
   getHint,
   getPrompt,
+  parseSeed,
   stepGame,
   type Category,
   type Frame,
@@ -44,6 +45,7 @@ import { BrothersDialog } from "./BrothersDialog";
 import { buildFrame, GAME_CODES, type ControlMode } from "./input";
 import { BurstLayer, RowFlash, useFbbLoud, type DomBurst } from "./bursts";
 import {
+  activeEventLines,
   CHECKLIST,
   checklistLine,
   completedCategories,
@@ -52,6 +54,7 @@ import {
   playStepSounds,
   type FeedbackEvent,
 } from "./messages";
+import { countsForBoard } from "./board";
 import { playSfx } from "./sfx";
 import { readHideTips, subscribeHideTips, writeHideTips } from "./hint-storage";
 import { ReceiptView } from "./ReceiptView";
@@ -109,6 +112,15 @@ function holdLine(work: string, mode: ControlMode, id: PlayerId): string {
   }
   const keys = mode === "coop" ? (id === "fred" ? "F" : "Shift") : "F or Shift";
   return `Hold ${keys}: ${work}`;
+}
+
+/**
+ * The day's seed from the page's `?seed=` parameter. Junk, a missing value
+ * or an out-of-range number gives the standard day, seed 0.
+ */
+function seedFromUrl(): number {
+  if (typeof window === "undefined") return 0;
+  return parseSeed(new URLSearchParams(window.location.search).get("seed"));
 }
 
 /** Fastest clock the `?speed=` parameter allows. */
@@ -172,7 +184,10 @@ export function ForBetterOrBulkGame({
   initialMode = "solo",
 }: ForBetterOrBulkGameProps) {
   const [phase, setPhase] = useState<Phase>("setup");
-  const [setup, setSetup] = useState<Setup>(initialSetup);
+  const [setup, setSetup] = useState<Setup>(() => {
+    const seed = seedFromUrl();
+    return seed === 0 ? initialSetup : { ...initialSetup, seed };
+  });
   const [mode, setMode] = useState<ControlMode>(initialMode);
   const [active, setActive] = useState<PlayerId>("abbi");
   const [view, setView] = useState<GameState | null>(null);
@@ -263,8 +278,8 @@ export function ForBetterOrBulkGame({
       const result = computeReceipt(state);
       setReceipt(result);
       setPhase("receipt");
-      // A sped-up run is for watching or testing, so it stays off the board.
-      if (speed === 1) {
+      // Only a standard day at normal speed may replace the board score.
+      if (countsForBoard(state, speed)) {
         recordArcadeScore(FBB_GAME_ID, placements(state), {
           title: result.title,
         });
@@ -506,6 +521,7 @@ export function ForBetterOrBulkGame({
     );
   } else if (view) {
     const shown: PlayerId[] = mode === "coop" ? ["fred", "abbi"] : [active];
+    const eventLines = activeEventLines(view);
     body = (
       <div className="relative flex w-full min-w-0 flex-col gap-2 p-2 sm:p-3">
         <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1 font-mono text-xs">
@@ -517,6 +533,15 @@ export function ForBetterOrBulkGame({
             {clockLabel(view.time, view.duration)}
           </span>
           <span className="text-[var(--fbb-dim)]">Ceremony at 4:00</span>
+          {eventLines.map((line) => (
+            <span
+              key={line}
+              data-testid="fbb-event"
+              className="font-bold text-[var(--fbb-accent)]"
+            >
+              {line}
+            </span>
+          ))}
           {mode === "solo" ? (
             <span data-testid="fbb-active">
               Playing as <span className="font-bold">{NAMES[active]}</span> ·

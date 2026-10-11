@@ -8,6 +8,7 @@
 
 import {
   BUDGET,
+  bankText,
   CAPABILITIES,
   CATEGORY_LABELS,
   COMMITMENT_CATEGORIES,
@@ -306,6 +307,22 @@ function title(
   return "Married Anyway";
 }
 
+/**
+ * The game's own weather, labelled as game weather. Null on a standard day.
+ * A shower the work finished before says so, rather than pretending it came.
+ */
+function gameWeather(state: GameState): string | null {
+  const shower = state.seeded.find((event) => event.id === "shower");
+  if (!shower) return null;
+  const label = bankText("game-weather");
+  if (state.time < shower.at) {
+    return `${label}: the shower was due at ${clockLabel(shower.at, state.duration)}, after the work was done.`;
+  }
+  const from = clockLabel(shower.at, state.duration);
+  const to = clockLabel(Math.min(shower.until, state.time), state.duration);
+  return `${label}: a shower from ${from} to ${to} slowed walking on the lawn.`;
+}
+
 /** The ending receipt, derived purely from the level state. */
 export function computeReceipt(state: GameState): Receipt {
   const readiness = readinessLines(state);
@@ -326,7 +343,8 @@ export function computeReceipt(state: GameState): Receipt {
     signatureMoment: signatureMoment(readiness),
     assist: state.assistTicks > 0 ? ASSIST_LINE : null,
     title: title(state, readiness, follow.status === "kept"),
-    weather: RECEIPT_COPY.weather,
+    weather: bankText("weather"),
+    gameWeather: gameWeather(state),
     leftovers: RECEIPT_COPY.leftovers,
     suit: RECEIPT_COPY.suit,
     disclaimer: RECEIPT_COPY.disclaimer,

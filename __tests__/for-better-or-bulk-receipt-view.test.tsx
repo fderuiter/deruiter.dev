@@ -24,15 +24,12 @@ function renderReceipt(seed: number) {
   );
 }
 
-/** Replaces scrollIntoView, recording the element and the options of each call. */
-function recordScrolls(): { element: Element; options: unknown }[] {
-  const calls: { element: Element; options: unknown }[] = [];
-  Element.prototype.scrollIntoView = function (
-    this: Element,
-    options?: ScrollIntoViewOptions
-  ) {
-    calls.push({ element: this, options });
-  };
+/** Replaces window.scrollTo, recording the options of each call. */
+function recordScrolls(): ScrollToOptions[] {
+  const calls: ScrollToOptions[] = [];
+  window.scrollTo = ((options: ScrollToOptions) => {
+    calls.push(options);
+  }) as typeof window.scrollTo;
   return calls;
 }
 
@@ -47,29 +44,32 @@ function stubMotion(reduced: boolean): void {
   );
 }
 
+const originalScrollTo = window.scrollTo;
+
 afterEach(() => {
   cleanup();
   delete (window as Partial<Window>).matchMedia;
-  delete (Element.prototype as Partial<Element>).scrollIntoView;
+  window.scrollTo = originalScrollTo;
 });
 
 describe("the receipt lands clean when it opens (#1931)", () => {
-  it("scrolls itself to the top of the page, below the navbar, smoothly", () => {
+  it("scrolls the page so the receipt sits its scroll margin below the top, smoothly", () => {
     stubMotion(false);
     const calls = recordScrolls();
     renderReceipt(0);
     const receipt = screen.getByTestId("fbb-receipt");
-    expect(calls).toEqual([
-      { element: receipt, options: { block: "start", behavior: "smooth" } },
-    ]);
     expect(receipt.className).toContain("scroll-mt-28");
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.behavior).toBe("smooth");
+    // jsdom lays nothing out, so the receipt is at 0 and the scroll clamps there.
+    expect(calls[0]?.top).toBe(0);
   });
 
   it("jumps without animation when the viewer prefers reduced motion", () => {
     stubMotion(true);
     const calls = recordScrolls();
     renderReceipt(0);
-    expect(calls[0]?.options).toEqual({ block: "start", behavior: "auto" });
+    expect(calls[0]?.behavior).toBe("auto");
   });
 });
 

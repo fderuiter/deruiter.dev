@@ -54,15 +54,20 @@ export function ReceiptView({
   const titleRef = useRef<HTMLHeadingElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
 
-  // The playback hands over here. The receipt scrolls in below the navbar
-  // (its scroll margin clears the bar), then the title takes focus without a
-  // second scroll: a plain focus() would re-scroll it flush to the top of the
-  // viewport, under the fixed navbar.
+  // The playback hands over here. The receipt scrolls the page so its top sits
+  // its scroll margin below the viewport top, clear of the fixed navbar, then
+  // the title takes focus without a second scroll. The page is scrolled by
+  // hand: scrollIntoView ignores the margin here, because the cabinet's
+  // clipped ancestors are scroll containers of their own.
   useEffect(() => {
     const root = rootRef.current;
-    if (root && typeof root.scrollIntoView === "function") {
-      root.scrollIntoView({
-        block: "start",
+    if (root && typeof window.scrollTo === "function") {
+      const margin = parseFloat(getComputedStyle(root).scrollMarginTop) || 0;
+      window.scrollTo({
+        top: Math.max(
+          0,
+          window.scrollY + root.getBoundingClientRect().top - margin
+        ),
         behavior: prefersReducedMotion() ? "auto" : "smooth",
       });
     }

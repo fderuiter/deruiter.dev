@@ -12,6 +12,8 @@ import {
   PETAL_SECONDS,
   SIMPLIFY_SECONDS,
   VENUE_MAP,
+  frontTile,
+  getPrompt,
   type GameState,
   type ItemKind,
   type Player,
@@ -390,7 +392,34 @@ function drawPlayer(
   }
 }
 
-/** Draws the whole venue for one frame. */
+/**
+ * The tile a person's interact would act on: solid amber when that interact
+ * is available now, faint and dashed when it is not.
+ */
+function drawFacingTile(
+  ctx: CanvasRenderingContext2D,
+  state: GameState,
+  id: PlayerId
+): void {
+  const player = state.players[id];
+  if (player.presence === "away") return;
+  const { x, y } = frontTile(player);
+  const columns = VENUE_MAP[0]?.length ?? 0;
+  if (x < 0 || y < 0 || x >= columns || y >= VENUE_MAP.length) return;
+  const ready = getPrompt(state, id).interact !== null;
+  ctx.save();
+  ctx.strokeStyle = COLORS.active;
+  ctx.lineWidth = 2;
+  ctx.globalAlpha = ready ? 1 : 0.4;
+  ctx.setLineDash(ready ? [] : [3, 3]);
+  ctx.strokeRect(x * TILE + 2, y * TILE + 2, TILE - 4, TILE - 4);
+  ctx.restore();
+}
+
+/**
+ * Draws the whole venue for one frame. `active` is the person playing in
+ * solo; null means co-op, where both people's facing tiles are outlined.
+ */
 export function drawVenue(
   ctx: CanvasRenderingContext2D,
   state: GameState,
@@ -411,13 +440,7 @@ export function drawVenue(
     drawItem(ctx, supply.kind, px + TILE / 2, py + TILE / 2 + 2, TILE * 0.38);
     ctx.globalAlpha = 1;
     drawLabel(ctx, CRATE_LABELS[supply.kind], px + TILE / 2, py + 4);
-    drawLabel(
-      ctx,
-      String(left),
-      px + TILE / 2,
-      py + TILE - 13,
-      left > 0 ? COLORS.label : COLORS.dim
-    );
+    drawLabel(ctx, String(left), px + TILE / 2, py + TILE - 13);
   }
   for (const target of state.targets) drawTarget(ctx, target);
   for (const station of state.stations) drawStation(ctx, station);
@@ -429,6 +452,9 @@ export function drawVenue(
       spot.y * TILE + TILE / 2,
       TILE * 0.45
     );
+  }
+  for (const id of active ? [active] : (["fred", "abbi"] as const)) {
+    drawFacingTile(ctx, state, id);
   }
   drawPlayer(ctx, state.players.fred, active === "fred");
   drawPlayer(ctx, state.players.abbi, active === "abbi");

@@ -139,7 +139,7 @@ export function ReceiptView({
         <button
           type="button"
           onClick={onChangePlan}
-          className="min-h-11 rounded border border-[var(--fbb-rule)] px-4 text-xs font-bold uppercase tracking-wide active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--fbb-focus)]"
+          className="min-h-11 rounded border border-[var(--fbb-control)] px-4 text-xs font-bold uppercase tracking-wide active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--fbb-focus)]"
         >
           Change the plan
         </button>

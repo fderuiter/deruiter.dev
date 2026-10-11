@@ -6,6 +6,6 @@
 
 # Type Alias: RealFactId
 
-> **RealFactId** = keyof *typeof* [`DESIGN_REAL_FACTS`](../variables/DESIGN_REAL_FACTS.md)
+> **RealFactId** = `"date"` \| `"prep"` \| `"tables"` \| `"suit"` \| `"morning"` \| `"weather"` \| `"dinner"` \| `"leftovers"` \| `"goal"` \| `"website"`
 
-The ids of the real facts.
+The ids of the [Real] lines in the bank, one per fact in the design doc.

@@ -45,6 +45,7 @@ import { BrothersDialog } from "./BrothersDialog";
 import { buildFrame, GAME_CODES, type ControlMode } from "./input";
 import { BurstLayer, RowFlash, useFbbLoud, type DomBurst } from "./bursts";
 import {
+  activeEventLines,
   CHECKLIST,
   checklistLine,
   completedCategories,
@@ -53,6 +54,7 @@ import {
   playStepSounds,
   type FeedbackEvent,
 } from "./messages";
+import { countsForBoard } from "./board";
 import { playSfx } from "./sfx";
 import { readHideTips, subscribeHideTips, writeHideTips } from "./hint-storage";
 import { ReceiptView } from "./ReceiptView";
@@ -276,8 +278,8 @@ export function ForBetterOrBulkGame({
       const result = computeReceipt(state);
       setReceipt(result);
       setPhase("receipt");
-      // A sped-up run is for watching or testing, so it stays off the board.
-      if (speed === 1) {
+      // Only a standard day at normal speed may replace the board score.
+      if (countsForBoard(state, speed)) {
         recordArcadeScore(FBB_GAME_ID, placements(state), {
           title: result.title,
         });
@@ -519,6 +521,7 @@ export function ForBetterOrBulkGame({
     );
   } else if (view) {
     const shown: PlayerId[] = mode === "coop" ? ["fred", "abbi"] : [active];
+    const eventLines = activeEventLines(view);
     body = (
       <div className="relative flex w-full min-w-0 flex-col gap-2 p-2 sm:p-3">
         <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1 font-mono text-xs">
@@ -530,6 +533,15 @@ export function ForBetterOrBulkGame({
             {clockLabel(view.time, view.duration)}
           </span>
           <span className="text-[var(--fbb-dim)]">Ceremony at 4:00</span>
+          {eventLines.map((line) => (
+            <span
+              key={line}
+              data-testid="fbb-event"
+              className="font-bold text-[var(--fbb-accent)]"
+            >
+              {line}
+            </span>
+          ))}
           {mode === "solo" ? (
             <span data-testid="fbb-active">
               Playing as <span className="font-bold">{NAMES[active]}</span> ·

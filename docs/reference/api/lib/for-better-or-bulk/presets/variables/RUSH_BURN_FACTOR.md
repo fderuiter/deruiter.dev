@@ -8,4 +8,5 @@
 
 > `const` **RUSH\_BURN\_FACTOR**: `0.5` = `0.5`
 
-While guests are early, the grill burns in this share of its usual time.
+While guests are early, food on the grill has half of its remaining pickup
+window: time already spent cooked counts at double speed during the rush.

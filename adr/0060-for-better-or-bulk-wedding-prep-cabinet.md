@@ -167,11 +167,12 @@ starting between 40 and 100 standard seconds, and a guest rush starting
 between 70 and 150. The same seed always gives the same times, so seeded runs
 still replay exactly from setup and frames.
 
-- **The shower** lasts 24 seconds. People walk at 0.6 speed on the outdoor
-  tiles (the aisle, chair spots and lawn) while it is on, and a toast opens it.
+- **The shower** lasts 24 seconds. People walk at 0.6 speed on the lawn
+  rows below the patio (`PATIO_ROWS`) while it is on, and a toast opens it.
   Walking is the only effect, so nothing is lost or re-done.
-- **The guest rush** lasts 15 seconds. The grill burns in half its usual time
-  while it is on, so the buffet's food has to be collected sooner.
+- **The guest rush** lasts 15 seconds. Cooked food's pickup window runs at double
+  speed while it is on, so the buffet's food has to be collected sooner, but
+  nothing burns on the rush's first tick.
 - **The receipt** keeps the real weather line. Any shower is printed as game
   weather, on its own line, and a shower the work finished before says so.
 
@@ -179,10 +180,10 @@ still replay exactly from setup and frames.
 day gets the same events. It is always from 1 to 2^31 - 1. `?seed=` reads an
 integer from the link, and anything that is not a whole number in that range
 falls back to the standard day. The setup screen offers "Standard day" and
-"Today's seed", and computes the daily seed on the click, never during render.
+"Today's seed", and computes the daily seed in the browser only, after the cabinet mounts.
 
 Every line the game can say sits in `LINE_BANK`, each tagged [Real] or
-[Fiction]. A [Real] line must quote its fact from `DESIGN_REAL_FACTS` word for
-word, and the test suite checks that. The hard rules still hold: no makeup
+[Fiction]. A [Real] line must quote its fact from section 1 of the design doc word for
+word, and the test suite checks it against a verbatim fixture of those facts. The hard rules still hold: no makeup
 story, no speech story, the tux shop is "The Suit Wherehouse", and Kirkland
 appears only in product text.

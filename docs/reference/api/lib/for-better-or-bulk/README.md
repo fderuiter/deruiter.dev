@@ -206,12 +206,6 @@ Re-exports [DEFAULT_SETUP](presets/variables/DEFAULT_SETUP.md)
 
 ***
 
-### DESIGN\_REAL\_FACTS
-
-Re-exports [DESIGN_REAL_FACTS](presets/variables/DESIGN_REAL_FACTS.md)
-
-***
-
 ### FICTION\_DEFAULTS
 
 Re-exports [FICTION_DEFAULTS](presets/variables/FICTION_DEFAULTS.md)
@@ -398,15 +392,15 @@ Re-exports [onLevelClock](presets/functions/onLevelClock.md)
 
 ***
 
-### OUTDOOR\_FROM
-
-Re-exports [OUTDOOR_FROM](presets/variables/OUTDOOR_FROM.md)
-
-***
-
 ### parseSeed
 
 Re-exports [parseSeed](internal/prng/functions/parseSeed.md)
+
+***
+
+### PATIO\_ROWS
+
+Re-exports [PATIO_ROWS](presets/variables/PATIO_ROWS.md)
 
 ***
 
@@ -497,12 +491,6 @@ Re-exports [ReadinessLine](types/interfaces/ReadinessLine.md)
 ### readinessLines
 
 Re-exports [readinessLines](internal/receipt/functions/readinessLines.md)
-
-***
-
-### REAL\_WEDDING\_FACTS
-
-Re-exports [REAL_WEDDING_FACTS](presets/variables/REAL_WEDDING_FACTS.md)
 
 ***
 

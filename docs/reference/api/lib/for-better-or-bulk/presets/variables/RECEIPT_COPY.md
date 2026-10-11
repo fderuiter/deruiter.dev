@@ -8,7 +8,7 @@
 
 > `const` **RECEIPT\_COPY**: `object`
 
-Fixed receipt lines.
+Fixed receipt lines. The real weather line comes from the line bank.
 
 ## Type Declaration
 
@@ -23,7 +23,3 @@ Fixed receipt lines.
 ### suit
 
 > `readonly` **suit**: `"Fred wore the rented tux. The free suit from The Suit Wherehouse: acquired, yes. Worn, no."` = `"Fred wore the rented tux. The free suit from The Suit Wherehouse: acquired, yes. Worn, no."`
-
-### weather
-
-> `readonly` **weather**: `"Perfect weather. Fred maintains this was his doing."` = `"Perfect weather. Fred maintains this was his doing."`

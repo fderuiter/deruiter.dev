@@ -1,0 +1,53 @@
+/**
+ * The [Real] facts from section 1 ("Historical anchors") of the design doc,
+ * plans/2026-10-11-for-better-or-bulk-design.md. Each text is copied word for
+ * word from the doc, without the bold bullet label and without the [Real]
+ * tag. This copy is the reference: the tests check the game's real lines
+ * against it, so editing the doc means editing this list too. It is kept
+ * out of lib/ on purpose, so the engine never reads it.
+ */
+export const REAL_FACTS_FROM_DESIGN_DOC: readonly {
+  readonly id: string;
+  readonly text: string;
+}[] = [
+  {
+    id: "date",
+    text: "Friday, 10/10/25, at the Plummer House in Rochester, a publicly owned venue. The ceremony is at 4:00 and the buffet at 5:30.",
+  },
+  {
+    id: "prep",
+    text: 'Two weeks out she "wasn\'t really thinking about it that much". She arrived and did the vast majority of the work on Wednesday and Thursday, with all of Thursday spent getting things ready. Friday was setup. Friends helped.',
+  },
+  {
+    id: "tables",
+    text: "They set up all the tables and chairs themselves.",
+  },
+  {
+    id: "suit",
+    text: "The Suit Wherehouse (a fictional homage name) lost Fred's suit. He guilted them into a free one, then wore the rented tux anyway.",
+  },
+  {
+    id: "morning",
+    text: "Fred was anxious and went out with his brothers. Abbi was upset that he wasn't helping.",
+  },
+  {
+    id: "weather",
+    text: "The weather was perfect. Fred jokes he caused it.",
+  },
+  {
+    id: "dinner",
+    text: "Hot dogs, wings, mac and cheese and quinoa salad from Costco, plus a Kirkland sheet cake for the guests. Abbi's sister made the cake they cut.",
+  },
+  {
+    id: "leftovers",
+    text: "Leftovers went to the Rochester warming shelter.",
+  },
+  {
+    id: "goal",
+    text: 'Abbi\'s goal was for the wedding to be "successful and fun".',
+  },
+  {
+    id: "website",
+    text: 'The website was built months earlier: FAQ, registry scraper, admin page for Abbi, 3D heart (the rings-into-heart intro "looked awful"). RSVPs went through iCloud, never the site. Registry gifts were never part of the wedding budget.',
+  },
+];

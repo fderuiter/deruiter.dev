@@ -12,7 +12,7 @@ One line the game can say. Real lines quote a fact; fiction lines quote none.
 
 ### fact
 
-> `readonly` **fact**: `"date"` \| `"prep"` \| `"tables"` \| `"suit"` \| `"morning"` \| `"weather"` \| `"dinner"` \| `"leftovers"` \| `null`
+> `readonly` **fact**: [`RealFactId`](../type-aliases/RealFactId.md) \| `null`
 
 ***
 

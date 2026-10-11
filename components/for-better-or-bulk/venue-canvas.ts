@@ -11,6 +11,7 @@ import {
   BURN_SECONDS,
   COOK_SECONDS,
   CRATE_NAMES,
+  PATIO_ROWS,
   PETAL_SECONDS,
   SIMPLIFY_SECONDS,
   VENUE_MAP,
@@ -29,9 +30,6 @@ import { clamp, GAME_FONT_FALLBACK_STACK } from "@/lib/game-utils";
 export const TILE = 40;
 export const VENUE_WIDTH = (VENUE_MAP[0]?.length ?? 20) * TILE;
 export const VENUE_HEIGHT = VENUE_MAP.length * TILE;
-
-/** The rows of paving at the top of the map; everything below is lawn. */
-const PATIO_ROWS = 4;
 
 /**
  * Label size. It never drops below 10px: a label too wide for its tile is
@@ -63,6 +61,8 @@ const COLORS = {
   progressTrack: "rgba(13, 14, 17, 0.7)",
   progress: "#10b981",
   burning: "#ef4444",
+  /** Steel at low alpha: static hairline rain on the wet lawn. */
+  rain: "rgba(148, 163, 184, 0.28)",
   fred: "#1f2a44",
   fredEdge: "#94a3b8",
   abbi: "#f4f0e6",
@@ -102,7 +102,23 @@ function font(size: number): string {
   return `700 ${size}px ${GAME_FONT_FALLBACK_STACK}`;
 }
 
-function drawGround(ctx: CanvasRenderingContext2D): void {
+/** Where each rain streak starts across a lawn tile, as a share of its width. */
+const RAIN_STARTS = [0.12, 0.4, 0.68, 0.9] as const;
+
+/** Diagonal hairlines across one lawn tile: the shower, drawn static. */
+function drawRain(ctx: CanvasRenderingContext2D, px: number, py: number): void {
+  ctx.strokeStyle = COLORS.rain;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (const start of RAIN_STARTS) {
+    const x = px + start * TILE;
+    ctx.moveTo(x, py);
+    ctx.lineTo(x + TILE * 0.22, py + TILE);
+  }
+  ctx.stroke();
+}
+
+function drawGround(ctx: CanvasRenderingContext2D, raining: boolean): void {
   VENUE_MAP.forEach((row, y) => {
     [...row].forEach((char, x) => {
       const px = x * TILE;
@@ -125,6 +141,7 @@ function drawGround(ctx: CanvasRenderingContext2D): void {
       } else {
         ctx.fillStyle = (x + y) % 2 === 0 ? COLORS.lawn : COLORS.lawnAlt;
         ctx.fillRect(px, py, TILE, TILE);
+        if (raining) drawRain(ctx, px, py);
       }
     });
   });
@@ -307,7 +324,7 @@ function drawStation(ctx: CanvasRenderingContext2D, station: Station): void {
         ctx,
         px,
         py,
-        (station.progress - COOK_SECONDS) / (BURN_SECONDS - COOK_SECONDS),
+        station.progress / (BURN_SECONDS - COOK_SECONDS),
         COLORS.burning
       );
   }
@@ -517,7 +534,13 @@ export function drawVenue(
   bursts: readonly CanvasBurst[] = []
 ): void {
   ctx.clearRect(0, 0, VENUE_WIDTH, VENUE_HEIGHT);
-  drawGround(ctx);
+  const raining = state.seeded.some(
+    (event) =>
+      event.id === "shower" &&
+      state.time >= event.at &&
+      state.time < event.until
+  );
+  drawGround(ctx, raining);
   for (const supply of state.supplies) {
     const px = supply.x * TILE;
     const py = supply.y * TILE;

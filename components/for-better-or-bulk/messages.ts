@@ -25,6 +25,30 @@ const SEEDED_LINES: Readonly<Record<SeededEventId, string>> = {
   "guest-rush": bankText("rush-start"),
 };
 
+/**
+ * Each seeded event as the setup screen and the status line describe it. The
+ * status line is what is on right now; the note says what it does.
+ */
+export const SEEDED_EVENT_NOTES: Readonly<
+  Record<SeededEventId, { readonly note: string; readonly status: string }>
+> = {
+  shower: {
+    note: "Shower: wet grass slows walking on the lawn for a while.",
+    status: "Shower: the lawn is slow",
+  },
+  "guest-rush": {
+    note: "Guest rush: guests come early, and food on the grill burns faster for a while.",
+    status: "Guest rush: food burns faster",
+  },
+};
+
+/** The status lines for the seeded events on at the level's current time. */
+export function activeEventLines(state: GameState): string[] {
+  return state.seeded
+    .filter((event) => state.time >= event.at && state.time < event.until)
+    .map((event) => SEEDED_EVENT_NOTES[event.id].status);
+}
+
 /** The checklist rows the side panel lists, in order. */
 export const CHECKLIST: readonly Category[] = [
   "bouquets",

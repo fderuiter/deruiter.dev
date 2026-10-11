@@ -541,3 +541,56 @@ describe("For Better or Bulk floor-full toasts", () => {
     expect(throttleFloorFull(events, 0, {})).toEqual(events);
   });
 });
+
+describe("For Better or Bulk day seed on the page (#1918)", () => {
+  afterEach(() => {
+    cleanup();
+    window.history.replaceState(null, "", "/");
+  });
+
+  it("selects the seed from the link, and clears the link for the standard day", () => {
+    window.history.replaceState(
+      null,
+      "",
+      "/arcade/for-better-or-bulk?speed=1&seed=17"
+    );
+    render(<ForBetterOrBulkGame />);
+    const radios = screen.getAllByRole("radio");
+    const checked = (name: RegExp) =>
+      radios
+        .find((r) => name.test(r.textContent ?? ""))
+        ?.getAttribute("aria-checked");
+    expect(checked(/^Seed 17/)).toBe("true");
+    expect(checked(/^Standard day/)).toBe("false");
+    expect(checked(/^Today/)).toBe("false");
+
+    fireEvent.click(screen.getByRole("radio", { name: /Standard day/ }));
+    expect(new URLSearchParams(window.location.search).has("seed")).toBe(false);
+    expect(window.location.search).toContain("speed=1");
+    expect(
+      screen
+        .getByRole("radio", { name: /Standard day/ })
+        .getAttribute("aria-checked")
+    ).toBe("true");
+  });
+
+  it("does not put a seeded run on the standard board", () => {
+    scores.record.mockClear();
+    window.history.replaceState(
+      null,
+      "",
+      "/arcade/for-better-or-bulk?speed=1&seed=7"
+    );
+    render(<ForBetterOrBulkGame />);
+    fireEvent.click(screen.getByRole("button", { name: "Start setup" }));
+    runUntil(() => screen.queryByTestId("fbb-brothers") !== null);
+    fireEvent.click(
+      within(screen.getByRole("dialog")).getByRole("button", {
+        name: /Go with them/,
+      })
+    );
+    runUntil(() => screen.queryByTestId("fbb-receipt") !== null);
+    expect(screen.getByTestId("fbb-receipt")).toBeTruthy();
+    expect(scores.record).not.toHaveBeenCalled();
+  });
+});

@@ -8,4 +8,4 @@
 
 > `const` **SHOWER\_WALK\_FACTOR**: `0.6` = `0.6`
 
-Walking speed on outdoor tiles while the shower is on: wet grass.
+Walking speed on lawn tiles while the shower is on: wet grass.

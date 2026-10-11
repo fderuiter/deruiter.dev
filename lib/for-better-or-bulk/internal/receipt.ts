@@ -320,7 +320,7 @@ function gameWeather(state: GameState): string | null {
   }
   const from = clockLabel(shower.at, state.duration);
   const to = clockLabel(Math.min(shower.until, state.time), state.duration);
-  return `${label}: a shower from ${from} to ${to} slowed everyone on the lawn.`;
+  return `${label}: a shower from ${from} to ${to} slowed walking on the lawn.`;
 }
 
 /** The ending receipt, derived purely from the level state. */
@@ -343,7 +343,7 @@ export function computeReceipt(state: GameState): Receipt {
     signatureMoment: signatureMoment(readiness),
     assist: state.assistTicks > 0 ? ASSIST_LINE : null,
     title: title(state, readiness, follow.status === "kept"),
-    weather: RECEIPT_COPY.weather,
+    weather: bankText("weather"),
     gameWeather: gameWeather(state),
     leftovers: RECEIPT_COPY.leftovers,
     suit: RECEIPT_COPY.suit,

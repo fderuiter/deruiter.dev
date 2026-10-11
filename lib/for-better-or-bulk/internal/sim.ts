@@ -22,10 +22,10 @@ import {
   INTERRUPTIONS,
   LEAVE_SECONDS,
   MOVE_SPEED,
-  OUTDOOR_FROM,
   onLevelClock,
   PETAL_SECONDS,
   PHONE_SECONDS,
+  PATIO_ROWS,
   PLAYER_RADIUS,
   RUSH_BURN_FACTOR,
   SHOE_INTERVAL_SECONDS,
@@ -152,9 +152,9 @@ function sign(value: number): number {
   return value > 0 ? 1 : value < 0 ? -1 : 0;
 }
 
-/** Whether a tile is on the lawn side of the venue, out in the weather. */
-function isOutdoor(x: number, y: number): boolean {
-  return x >= OUTDOOR_FROM.x && y >= OUTDOOR_FROM.y;
+/** Whether a tile is lawn, out in the weather: every row below the paving. */
+function isOutdoor(y: number): boolean {
+  return y > PATIO_ROWS;
 }
 
 /** Whether a seeded event is on at the level's current time. */
@@ -402,21 +402,41 @@ function work(w: Working, id: PlayerId, dt: number): void {
   }
 }
 
+/**
+ * Cooks and burns the grill. Raw food counts its cook time from placement.
+ * Cooked food counts its pickup window from the moment it finished cooking,
+ * in ordinary seconds, so `progress` is the time since it was cooked. A guest
+ * rush makes that time run at double speed from when it is on, so food cooked
+ * before the rush keeps the rest of its window, halved, and never burns on the
+ * rush's first tick.
+ */
 function cookGrills(w: Working, dt: number): void {
-  // A guest rush makes the buffet's food go off sooner.
-  const burnAfter = seededActive(w.state, "guest-rush")
-    ? BURN_SECONDS * RUSH_BURN_FACTOR
-    : BURN_SECONDS;
+  const rushing = seededActive(w.state, "guest-rush");
+  const pickupSeconds = BURN_SECONDS - COOK_SECONDS;
+  const ageRate = rushing ? 1 / RUSH_BURN_FACTOR : 1;
   for (const station of w.state.stations) {
     if (station.kind !== "grill" || !station.item) continue;
     const item = station.item;
     if (item.kind === "burnt") continue;
-    const progress = station.progress + dt;
     const cooked = GRILL_COOKS[item.kind];
-    if (cooked && progress + 1e-9 >= COOK_SECONDS) {
-      setStation(w, { ...station, item: { ...item, kind: cooked }, progress });
-      w.events.push({ type: "cooked", station: station.id, item: cooked });
-    } else if (!cooked && progress + 1e-9 >= burnAfter) {
+    if (cooked) {
+      const progress = station.progress + dt;
+      if (progress + 1e-9 >= COOK_SECONDS) {
+        // The overshoot past the cook time is the first of the pickup window.
+        const overshoot = progress - COOK_SECONDS;
+        setStation(w, {
+          ...station,
+          item: { ...item, kind: cooked },
+          progress: overshoot,
+        });
+        w.events.push({ type: "cooked", station: station.id, item: cooked });
+      } else {
+        setStation(w, { ...station, progress });
+      }
+      continue;
+    }
+    const progress = station.progress + dt * ageRate;
+    if (progress + 1e-9 >= pickupSeconds) {
       setStation(w, {
         ...station,
         item: { kind: "burnt", madeBy: item.madeBy },
@@ -571,12 +591,6 @@ export function stepGame(state: GameState, frame: Frame): StepResult {
     }
   }
 
-  if (w.state.brothersAt === null && after + 1e-9 >= brothersDue(w.state)) {
-    w.state = { ...w.state, phase: "brothers", brothersAt: after };
-    w.events.push({ type: "brothers-text" });
-    return w;
-  }
-
   const fred = w.state.players.fred;
   if (
     fred.presence === "away" &&
@@ -622,6 +636,14 @@ export function stepGame(state: GameState, frame: Frame): StepResult {
     }
   }
 
+  // The brothers' text ends the tick here, but the boundaries it crossed
+  // (interruptions above) are already handled, so none is lost to the stop.
+  if (w.state.brothersAt === null && after + 1e-9 >= brothersDue(w.state)) {
+    w.state = { ...w.state, phase: "brothers", brothersAt: after };
+    w.events.push({ type: "brothers-text" });
+    return w;
+  }
+
   const nervous = w.state.players.fred;
   // Set whenever a decision exists, so the fallback is never read.
   const brothersAt = w.state.brothersAt ?? 0;
@@ -661,8 +683,7 @@ export function stepGame(state: GameState, frame: Frame): StepResult {
     // progress, which is how the assist works at about 60% pace.
     const resting = helped && assistRests(w.state.tick);
     const wet =
-      seededActive(w.state, "shower") &&
-      isOutdoor(Math.floor(player.x), Math.floor(player.y));
+      seededActive(w.state, "shower") && isOutdoor(Math.floor(player.y));
     setPlayer(w, move(player, input, dt, wet ? SHOWER_WALK_FACTOR : 1));
     if (input.interact) interact(w, id);
     if (input.work) work(w, id, resting ? 0 : dt);

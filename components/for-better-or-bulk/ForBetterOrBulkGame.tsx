@@ -22,10 +22,15 @@ import {
   clockLabel,
   computeReceipt,
   createLevel,
+  decodeRunCode,
+  encodeRunCode,
   getHint,
   getPrompt,
   parseSeed,
+  runCodeFromHash,
+  runResultOf,
   stepGame,
+  verifyRun,
   type Category,
   type Frame,
   type GameEvent,
@@ -34,10 +39,14 @@ import {
   type PresenceDecision,
   type Receipt,
   type Setup,
+  type SharedRun,
   type SupplyKind,
   CATEGORY_LABELS,
 } from "@/lib/for-better-or-bulk";
-import { recordArcadeScore } from "@/lib/arcade-achievements";
+import {
+  recordArcadeScore,
+  unlockArcadeTrophies,
+} from "@/lib/arcade-achievements";
 import { useAnimationFrame } from "@/hooks/useAnimationFrame";
 import { useCanvasResolution } from "@/hooks/useCanvasResolution";
 import { useCabinetSetup } from "@/components/arcade/CabinetSetupContext";
@@ -58,6 +67,8 @@ import { countsForBoard } from "./board";
 import { playSfx } from "./sfx";
 import { readHideTips, subscribeHideTips, writeHideTips } from "./hint-storage";
 import { ReceiptView } from "./ReceiptView";
+import { ReplayControls, type ReplaySpeed } from "./ReplayControls";
+import { runTrophyIds } from "./rewards";
 import { SetupScreen } from "./SetupScreen";
 import {
   BURST_SECONDS,
@@ -126,7 +137,57 @@ function seedFromUrl(): number {
 /** Fastest clock the `?speed=` parameter allows. */
 const MAX_SPEED = 8;
 
-type Phase = "setup" | "playing" | "receipt";
+type Phase = "setup" | "playing" | "receipt" | "replay";
+
+/** A finished run that can be shared: the run and its code. */
+interface Share {
+  readonly run: SharedRun;
+  readonly code: string;
+}
+
+/** A shared link's run, once read: offered to watch, or refused with why. */
+type SharedOffer =
+  | { readonly status: "none" }
+  | { readonly status: "offer"; readonly run: SharedRun }
+  | { readonly status: "refused"; readonly message: string };
+
+/** Where a replay was opened from, so exiting returns there. */
+type ReplayOrigin = "setup" | "receipt";
+
+/** The replay in progress: its run, how far it has played, and its speed. */
+interface ReplayRun {
+  readonly run: SharedRun;
+  readonly origin: ReplayOrigin;
+  index: number;
+  accumulator: number;
+  speed: ReplaySpeed;
+}
+
+/**
+ * Reads a shared link's run code once: decoded, then checked by a strict
+ * replay. A damaged or unreplayable code is refused with its message.
+ */
+function offerFor(code: string): SharedOffer {
+  const decoded = decodeRunCode(code);
+  if (!decoded.ok) return { status: "refused", message: decoded.message };
+  const verified = verifyRun(decoded.run);
+  return verified.ok
+    ? { status: "offer", run: decoded.run }
+    : { status: "refused", message: verified.message };
+}
+
+/**
+ * The run code for a finished run, only when a strict replay reproduces its
+ * result. A run that cannot be encoded or replayed is simply not shared.
+ */
+function shareFor(run: SharedRun): Share | null {
+  try {
+    if (!verifyRun(run).ok) return null;
+    return { run, code: encodeRunCode(run) };
+  } catch {
+    return null;
+  }
+}
 
 /**
  * A clock multiplier from the page's `?speed=` parameter, 1 to 8, so a long
@@ -168,11 +229,6 @@ function withBurst(
   ];
 }
 
-/** Items placed in the venue: the number the arcade board keeps. */
-function placements(state: GameState): number {
-  return state.targets.reduce((sum, t) => sum + t.filled.length, 0);
-}
-
 interface ForBetterOrBulkGameProps {
   /** The plan the setup screen starts from; tests pass their own. */
   initialSetup?: Setup;
@@ -198,6 +254,13 @@ export function ForBetterOrBulkGame({
   const [textBursts, setTextBursts] = useState<readonly DomBurst[]>([]);
   const [rowFlashes, setRowFlashes] = useState<readonly RowFlashEntry[]>([]);
   const [speed] = useState(speedFromUrl);
+  const [share, setShare] = useState<Share | null>(null);
+  const [sharedOffer, setSharedOffer] = useState<SharedOffer>({
+    status: "none",
+  });
+  const [replayPlaying, setReplayPlaying] = useState(false);
+  const [replaySpeed, setReplaySpeed] = useState<ReplaySpeed>(1);
+  const [replayAnnouncement, setReplayAnnouncement] = useState("");
   const hideTips = useSyncExternalStore(
     subscribeHideTips,
     readHideTips,
@@ -222,6 +285,9 @@ export function ForBetterOrBulkGame({
   const floorFullShown = useRef<Partial<Record<PlayerId, number>>>({});
   const canvasBursts = useRef<CanvasBurst[]>([]);
   const burstId = useRef(0);
+  /** Every frame the engine applied this run, so the run can be shared. */
+  const recorded = useRef<Frame[]>([]);
+  const replayRef = useRef<ReplayRun | null>(null);
 
   const draw = useCallback(
     (scale: number) => {
@@ -244,7 +310,7 @@ export function ForBetterOrBulkGame({
     canvasRef,
     logicalWidth: VENUE_WIDTH,
     logicalHeight: VENUE_HEIGHT,
-    active: phase === "playing",
+    active: phase === "playing" || phase === "replay",
     onResize: draw,
   });
 
@@ -278,12 +344,22 @@ export function ForBetterOrBulkGame({
       const result = computeReceipt(state);
       setReceipt(result);
       setPhase("receipt");
+      const outcome = runResultOf(state);
+      setShare(
+        shareFor({
+          setup: state.setup,
+          frames: [...recorded.current],
+          result: outcome,
+        })
+      );
       // Only a standard day at normal speed may replace the board score.
       if (countsForBoard(state, speed)) {
-        recordArcadeScore(FBB_GAME_ID, placements(state), {
+        recordArcadeScore(FBB_GAME_ID, outcome.placements, {
           title: result.title,
         });
       }
+      const trophies = runTrophyIds(state, result.stars, speed);
+      if (trophies.length > 0) unlockArcadeTrophies(trophies);
     },
     [speed]
   );
@@ -354,6 +430,7 @@ export function ForBetterOrBulkGame({
       const state = stateRef.current;
       if (!state) return null;
       const result = stepGame(state, frame);
+      if (state.phase !== "done") recorded.current.push(frame);
       stateRef.current = result.state;
       const shown = throttleFloorFull(
         result.events,
@@ -378,6 +455,10 @@ export function ForBetterOrBulkGame({
 
   const start = useCallback((next: Setup, nextMode: ControlMode) => {
     canvasBursts.current = [];
+    recorded.current = [];
+    replayRef.current = null;
+    setShare(null);
+    setReplayPlaying(false);
     setTextBursts([]);
     setRowFlashes([]);
     setSetup(next);
@@ -419,8 +500,123 @@ export function ForBetterOrBulkGame({
     setAnnouncement(next ? "Paused. Choose Resume to continue." : "Resumed.");
   };
 
+  /** Opens a replay of a verified run: from the receipt or a shared link. */
+  const beginReplay = (run: SharedRun, origin: ReplayOrigin) => {
+    const state = createLevel(run.setup);
+    stateRef.current = state;
+    canvasBursts.current = [];
+    setTextBursts([]);
+    setRowFlashes([]);
+    replayRef.current = { run, origin, index: 0, accumulator: 0, speed: 1 };
+    setView(state);
+    setReplaySpeed(1);
+    setReplayPlaying(true);
+    setReplayAnnouncement(
+      `Replay started at ${clockLabel(0, state.duration)}.`
+    );
+    setPhase("replay");
+  };
+
+  /** Plays the replay's frames through the engine. Replays never score. */
+  const advanceReplay = (deltaMs: number) => {
+    const rep = replayRef.current;
+    const current = stateRef.current;
+    if (!rep || !current) return;
+    rep.accumulator += (deltaMs / 1000) * rep.speed;
+    const maxSteps = MAX_STEPS_PER_FRAME * rep.speed;
+    const frames = rep.run.frames;
+    let next = current;
+    let steps = 0;
+    while (
+      rep.accumulator >= TICK_SECONDS &&
+      steps < maxSteps &&
+      rep.index < frames.length &&
+      next.phase !== "done"
+    ) {
+      const frame = frames[rep.index];
+      if (!frame) break;
+      next = stepGame(next, frame).state;
+      rep.index += 1;
+      rep.accumulator -= TICK_SECONDS;
+      steps += 1;
+    }
+    if (steps === maxSteps) rep.accumulator = 0;
+    if (steps === 0) return;
+    stateRef.current = next;
+    setView(next);
+    draw(scaleRef.current);
+    if (next.phase === "done" || rep.index >= frames.length) {
+      setReplayPlaying(false);
+      setReplayAnnouncement(
+        `Replay finished at ${clockLabel(next.time, next.duration)}.`
+      );
+    }
+  };
+
+  const restartReplay = () => {
+    const rep = replayRef.current;
+    if (!rep) return;
+    const state = createLevel(rep.run.setup);
+    stateRef.current = state;
+    rep.index = 0;
+    rep.accumulator = 0;
+    canvasBursts.current = [];
+    setView(state);
+    setReplayPlaying(true);
+    setReplayAnnouncement(
+      `Replay restarted at ${clockLabel(0, state.duration)}.`
+    );
+  };
+
+  const toggleReplay = () => {
+    const rep = replayRef.current;
+    const current = stateRef.current;
+    if (!rep || !current) return;
+    if (replayPlaying) {
+      setReplayPlaying(false);
+      setReplayAnnouncement(
+        `Replay paused at ${clockLabel(current.time, current.duration)}.`
+      );
+      return;
+    }
+    if (current.phase === "done" || rep.index >= rep.run.frames.length) {
+      restartReplay();
+      return;
+    }
+    setReplayPlaying(true);
+    setReplayAnnouncement(`Replay playing at ${rep.speed}x.`);
+  };
+
+  const changeReplaySpeed = (next: ReplaySpeed) => {
+    const rep = replayRef.current;
+    if (!rep) return;
+    rep.speed = next;
+    setReplaySpeed(next);
+    setReplayAnnouncement(`Replay speed ${next}x.`);
+  };
+
+  /** Leaves the replay and puts focus back on the control that opened it. */
+  const exitReplay = () => {
+    const origin = replayRef.current?.origin ?? "setup";
+    replayRef.current = null;
+    stateRef.current = null;
+    setReplayPlaying(false);
+    setReplayAnnouncement("Replay closed.");
+    setPhase(origin === "receipt" ? "receipt" : "setup");
+    const trigger =
+      origin === "receipt" ? "fbb-watch-replay" : "fbb-shared-watch";
+    requestAnimationFrame(() => {
+      const target = document.getElementById(trigger);
+      (target ?? boundaryRef.current)?.focus({ preventScroll: true });
+    });
+  };
+
   useAnimationFrame(
     (deltaMs) => {
+      if (phase === "replay") {
+        advanceReplay(deltaMs);
+        return;
+      }
       const current = stateRef.current;
       if (!current || current.phase !== "playing") return;
       accumulator.current += (deltaMs / 1000) * speed;
@@ -444,13 +640,25 @@ export function ForBetterOrBulkGame({
       if (steps === maxSteps) accumulator.current = 0;
       draw(scaleRef.current);
     },
-    { isActive: phase === "playing" && !paused && view?.phase === "playing" }
+    {
+      isActive:
+        (phase === "playing" && !paused && view?.phase === "playing") ||
+        (phase === "replay" && replayPlaying),
+    }
   );
 
   // Redraw when the loop is stopped (paused, or on the brothers' text).
   useEffect(() => {
-    if (phase === "playing") draw(scaleRef.current);
+    if (phase === "playing" || phase === "replay") draw(scaleRef.current);
   }, [phase, view, active, draw, scaleRef]);
+
+  // A shared link's run is read once, on mount, and never plays by itself.
+  useEffect(() => {
+    const code = runCodeFromHash(window.location.hash);
+    if (code === null) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- read once from the URL on mount
+    setSharedOffer(offerFor(code));
+  }, []);
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (phase !== "playing") return;
@@ -510,14 +718,107 @@ export function ForBetterOrBulkGame({
 
   let body: React.ReactNode;
   if (phase === "setup") {
-    body = <SetupScreen initial={setup} initialMode={mode} onStart={start} />;
+    body = (
+      <>
+        {sharedOffer.status !== "none" ? (
+          <section
+            aria-labelledby="fbb-shared-title"
+            data-testid="fbb-shared"
+            className="mx-auto mt-3 flex w-full max-w-xl min-w-0 flex-col gap-2 rounded border border-[var(--fbb-rule)] bg-[var(--fbb-panel)] p-3 font-mono text-xs"
+          >
+            <h2
+              id="fbb-shared-title"
+              className="font-bold uppercase tracking-wide"
+            >
+              A shared run
+            </h2>
+            {sharedOffer.status === "offer" ? (
+              <>
+                <p className="break-words">
+                  Watch replay plays this run back frame by frame, the same plan
+                  and the same choices. A replay records no score.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    id="fbb-shared-watch"
+                    type="button"
+                    onClick={() => beginReplay(sharedOffer.run, "setup")}
+                    className="min-h-11 rounded border border-[var(--fbb-accent)] px-4 font-bold uppercase tracking-wide text-[var(--fbb-accent)] active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--fbb-focus)]"
+                  >
+                    Watch replay
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSharedOffer({ status: "none" })}
+                    className="min-h-11 rounded border border-[var(--fbb-control)] px-4 font-bold uppercase tracking-wide active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--fbb-focus)]"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              </>
+            ) : sharedOffer.status === "refused" ? (
+              <p role="alert" className="break-words text-[var(--fbb-alert)]">
+                {sharedOffer.message}
+              </p>
+            ) : null}
+          </section>
+        ) : null}
+        <SetupScreen initial={setup} initialMode={mode} onStart={start} />
+      </>
+    );
   } else if (phase === "receipt" && receipt) {
     body = (
       <ReceiptView
         receipt={receipt}
+        runCode={share?.code ?? null}
         onPlayAgain={() => start(setup, mode)}
         onChangePlan={() => setPhase("setup")}
+        onWatchReplay={() => {
+          if (share) beginReplay(share.run, "receipt");
+        }}
       />
+    );
+  } else if (phase === "replay" && view) {
+    body = (
+      <div
+        className="relative flex w-full min-w-0 flex-col gap-2 p-2 sm:p-3"
+        data-testid="fbb-replay-view"
+      >
+        <ReplayControls
+          clock={clockLabel(view.time, view.duration)}
+          playing={replayPlaying}
+          finished={view.phase === "done"}
+          speed={replaySpeed}
+          announcement={replayAnnouncement}
+          onTogglePlay={toggleReplay}
+          onRestart={restartReplay}
+          onSpeedChange={changeReplaySpeed}
+          onExit={exitReplay}
+        />
+        <canvas
+          ref={canvasRef}
+          width={VENUE_WIDTH}
+          height={VENUE_HEIGHT}
+          role="img"
+          aria-label="Replay of the setup on the Plummer House patio and lawn, showing where everyone stood and what was placed."
+          data-testid="fbb-replay-canvas"
+          className="block aspect-[5/3] h-auto w-full rounded border border-[var(--fbb-rule)]"
+        />
+        <ul
+          aria-label="Still to do"
+          className="flex min-w-0 flex-wrap gap-x-4 gap-y-1 font-mono text-xs"
+        >
+          {CHECKLIST.map((category) => {
+            const line = checklistLine(view, category);
+            if (!line) return null;
+            return (
+              <li key={category} className="min-w-0 break-words">
+                {CATEGORY_LABELS[category]}: {line.done}/{line.planned}
+              </li>
+            );
+          })}
+        </ul>
+      </div>
     );
   } else if (view) {
     const shown: PlayerId[] = mode === "coop" ? ["fred", "abbi"] : [active];

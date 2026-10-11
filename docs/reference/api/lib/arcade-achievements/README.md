@@ -27,3 +27,4 @@
 - [parseScoreValue](functions/parseScoreValue.md)
 - [recordArcadeScore](functions/recordArcadeScore.md)
 - [saveArcadeProgress](functions/saveArcadeProgress.md)
+- [unlockArcadeTrophies](functions/unlockArcadeTrophies.md)

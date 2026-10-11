@@ -26,6 +26,32 @@ export {
   validateDecision,
 } from "./internal/sim";
 export { computeReceipt, readinessLines, tally } from "./internal/receipt";
+export {
+  CHALLENGE_COPY,
+  CHALLENGE_IDS,
+  countStars,
+  evaluateChallenges,
+} from "./internal/challenges";
+export {
+  MAX_RUN_CODE_LENGTH,
+  MAX_RUN_TICKS,
+  RUN_CODE_PREFIX,
+  RUN_CODE_REFUSAL,
+  RUN_REPLAY_REFUSAL,
+  decodeRunCode,
+  encodeRunCode,
+  runCodeFromHash,
+  runLinkFor,
+  runResultOf,
+  verifyRun,
+} from "./internal/run-code";
+export type {
+  RunCodeError,
+  RunCodeResult,
+  RunResult,
+  RunVerification,
+  SharedRun,
+} from "./internal/run-code";
 export { assistInput } from "./internal/assist";
 export { clockLabel, getHint, getPrompt } from "./internal/views";
 export type { Prompt } from "./internal/views";

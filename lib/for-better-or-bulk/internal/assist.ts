@@ -40,7 +40,7 @@ import {
   usable,
   wantsItem,
 } from "./gates";
-import { pressTileFor } from "./press";
+import { pressTileFor, workTileFor } from "./press";
 import {
   CRATE_ITEM_NAMES,
   ITEM_NAMES,
@@ -367,19 +367,19 @@ function fetchTiers(state: GameState): Goal[][] {
 }
 
 /**
- * The tiles the other person is working on right now: the tile they face, and
- * where their held item is going. The helper keeps out of these so the person
- * it helps stays the main actor. Empty when the other person is out.
+ * The tiles the other person is working on right now: the tile their work key
+ * acts on, the tile their interact press lands on (both from the same rules
+ * the simulation uses, so a body straddling two tiles claims the one it really
+ * uses), and where their held item is going. The helper keeps out of these so
+ * the person it helps stays the main actor. Empty when the other person is out.
  */
 function claimedTiles(state: GameState, other: Player): Set<string> {
   const claimed = new Set<string>();
   if (other.presence !== "here") return claimed;
-  claimed.add(
-    keyOf(
-      Math.floor(other.x) + other.facingX,
-      Math.floor(other.y) + other.facingY
-    )
-  );
+  const work = workTileFor(state, other);
+  claimed.add(keyOf(work.x, work.y));
+  const press = pressTileFor(state, other);
+  if (press) claimed.add(keyOf(press.x, press.y));
   if (other.holding) {
     for (const goal of carryTiers(state, other.holding)[0] ?? []) {
       claimed.add(keyOf(goal.x, goal.y));
@@ -482,15 +482,40 @@ function sign(value: number): number {
   return value > 0 ? 1 : value < 0 ? -1 : 0;
 }
 
+/**
+ * The move that lines a person up on the centre of their tile across the axis
+ * they face, or null when they already are. A press reads its tile from where
+ * the body stands, and a body near a tile edge can straddle a neighbour
+ * (press.ts). The route plans every press from a tile centre, so the helper
+ * centres first and the planned tile is the tile the press lands on.
+ */
+function lineUpAcrossFacing(player: Player): PlayerInput | null {
+  if (player.facingX !== 0) {
+    const offset = player.y - (Math.floor(player.y) + 0.5);
+    if (Math.abs(offset) > ALIGN_EPSILON)
+      return { ...NO_INPUT, moveY: -sign(offset) };
+  } else if (player.facingY !== 0) {
+    const offset = player.x - (Math.floor(player.x) + 0.5);
+    if (Math.abs(offset) > ALIGN_EPSILON)
+      return { ...NO_INPUT, moveX: -sign(offset) };
+  }
+  return null;
+}
+
 /** The input for one tick, given the route and whether this tick is active. */
 function actionFor(player: Player, found: Route, active: boolean): PlayerInput {
   const { goal, step } = found;
   if (!step) {
-    // Work at a station keeps going on every tick, so a held bin or table
-    // hold is not reset by the rest. The simulation paces the progress.
-    if (goal.act === "work") return { ...NO_INPUT, work: true };
     if (goal.act === "wait") return NO_INPUT;
-    return active ? { ...NO_INPUT, interact: true } : NO_INPUT;
+    // Work at a station keeps going on every tick, so a held bin or table
+    // hold is not reset by the rest. The simulation paces the progress. A
+    // line-up move on the way keeps the work key down.
+    if (goal.act === "work") {
+      const lineUp = active ? lineUpAcrossFacing(player) : null;
+      return { ...(lineUp ?? NO_INPUT), work: true };
+    }
+    if (!active) return NO_INPUT;
+    return lineUpAcrossFacing(player) ?? { ...NO_INPUT, interact: true };
   }
   if (!active) return NO_INPUT;
   if (!step.moves) return { ...NO_INPUT, moveX: step.dx, moveY: step.dy };

@@ -1647,7 +1647,7 @@ describe("the new prompts", () => {
     );
   });
 
-  it("stops offering to put things down once the floor is full", () => {
+  it("says why, not a blank prompt, once the floor is full", () => {
     const full = {
       ...place(createLevel(DEFAULT_SETUP), "fred", 5, 7, [0, 1], {
         kind: "chairs",
@@ -1659,7 +1659,9 @@ describe("the new prompts", () => {
         item: { kind: "mac" as const, madeBy: null },
       })),
     };
-    expect(getPrompt(full, "fred").interact).toBeNull();
+    expect(getPrompt(full, "fred").interact).toBe(
+      "The floor here is full. Find a station or the bin."
+    );
   });
 });
 
@@ -1676,11 +1678,10 @@ describe("the receipt's copy", () => {
     expect(LEFT_LINE).not.toContain("requested separately");
   });
 
-  it("names the tux shop on the receipt and says the name is not the real shop's", () => {
+  it("names the tux shop on the receipt as The Suit Wherehouse", () => {
     const receipt = computeReceipt(finishIdle(DEFAULT_SETUP, STAY_DECISION));
-    expect(receipt.suit).toContain(
-      "The Suit Wherehouse (not the real shop's name)"
-    );
+    expect(receipt.suit).toContain("The Suit Wherehouse");
+    expect(receipt.suit).not.toContain("not the real shop");
   });
 
   it("says 'Fred stayed for the setup.' on one line of the receipt only", () => {
@@ -2141,5 +2142,311 @@ describe("take prompts name the tile (#1948)", () => {
     expect(getPrompt(cooked, "fred").interact).toBe(
       "Take the cooked wings off the GRILL (G)"
     );
+  });
+});
+
+/** Like `place`, but at an exact position in tiles, so a body can straddle a boundary. */
+function placeExact(
+  state: GameState,
+  id: PlayerId,
+  x: number,
+  y: number,
+  facing: [number, number],
+  holding: Item | null = null
+): GameState {
+  return {
+    ...state,
+    players: {
+      ...state.players,
+      [id]: {
+        ...state.players[id],
+        x,
+        y,
+        facingX: facing[0],
+        facingY: facing[1],
+        holding,
+      },
+    },
+  };
+}
+
+/** Puts one station's item on the venue for a test, by tile. */
+function withStationItem(
+  state: GameState,
+  x: number,
+  y: number,
+  item: Item | null
+): GameState {
+  return {
+    ...state,
+    stations: state.stations.map((s) =>
+      s.x === x && s.y === y ? { ...s, item } : s
+    ),
+  };
+}
+
+describe("a press on a spot that takes something else (round 8, S2)", () => {
+  it("names the dish the buffet spot takes when a cooked food is carried to the wrong slot", () => {
+    const base = createLevel(DEFAULT_SETUP);
+    const slot = base.targets.find((t) => t.kind === "buffet" && t.x === 8);
+    expect(slot?.wants).toBe("wings");
+    const hotdogs: Item = { kind: "hotdogs", madeBy: null };
+    const at = place(base, "fred", 8, 2, [0, -1], hotdogs);
+    expect(interactTile(at, "fred")).toBeNull();
+    expect(getPrompt(at, "fred").interact).toBe(
+      "This spot is for wings. The hot dogs go on their own spot."
+    );
+    const after = stepGame(at, frameFor("fred", { interact: true })).state;
+    expect(after.players.fred.holding).toEqual(hotdogs);
+    expect(after.floor).toEqual([]);
+  });
+
+  it("keeps the normal place prompt on the slot that takes the carried food", () => {
+    const base = createLevel(DEFAULT_SETUP);
+    const hotdogs: Item = { kind: "hotdogs", madeBy: null };
+    const at = place(base, "fred", 7, 2, [0, -1], hotdogs);
+    expect(getPrompt(at, "fred").interact).toBe(
+      "Place a tray of hot dogs at the buffet (B)"
+    );
+  });
+});
+
+describe("a press that would drop an item because a station is blocked (round 8, S7)", () => {
+  it("names the full grill when the press would put raw wings on the floor", () => {
+    const raw: Item = { kind: "wings-raw", madeBy: null };
+    const base = withStationItem(createLevel(DEFAULT_SETUP), 4, 3, {
+      kind: "hotdogs-raw",
+      madeBy: null,
+    });
+    const at = placeExact(base, "fred", 3.5, 3.5, [-1, 0], raw);
+    expect(interactTile(at, "fred")).toEqual({ x: 2, y: 3 });
+    expect(getPrompt(at, "fred").interact).toBe(
+      "The GRILL (G) is full. Put the raw wings on the floor"
+    );
+  });
+
+  it("names no blocker when the grill in reach is empty", () => {
+    const raw: Item = { kind: "wings-raw", madeBy: null };
+    const at = place(createLevel(DEFAULT_SETUP), "fred", 4, 2, [0, -1], raw);
+    expect(getPrompt(at, "fred").interact).toBe(
+      "Put the raw wings on the GRILL (G)"
+    );
+  });
+});
+
+describe("a body that straddles two tiles (round 8, S3)", () => {
+  const raw: Item = { kind: "wings-raw", madeBy: null };
+
+  it("uses the tile in front of the other overlapped tile when the nearest one takes nothing", () => {
+    // Standing at x 5.0 facing down: the centre sits on the boundary with
+    // column 4, so the body straddles into (4,3). The tile in front of its
+    // own tile (5,2) is the occupied grill at (5,3), which takes nothing.
+    const base = withStationItem(createLevel(DEFAULT_SETUP), 5, 3, {
+      kind: "hotdogs-raw",
+      madeBy: null,
+    });
+    const at = placeExact(base, "fred", 5.0, 2.5, [0, 1], raw);
+    expect(interactTile(at, "fred")).toEqual({ x: 4, y: 3 });
+    expect(getPrompt(at, "fred").interact).toBe(
+      "Put the raw wings on the GRILL (G)"
+    );
+    const after = stepGame(at, frameFor("fred", { interact: true })).state;
+    expect(after.stations.find((s) => s.x === 4 && s.y === 3)?.item?.kind).toBe(
+      "wings-raw"
+    );
+    expect(after.players.fred.holding).toBeNull();
+  });
+
+  it("keeps the nearest tile when it takes the item", () => {
+    const at = placeExact(
+      createLevel(DEFAULT_SETUP),
+      "fred",
+      4.9,
+      2.5,
+      [0, 1],
+      raw
+    );
+    expect(interactTile(at, "fred")).toEqual({ x: 4, y: 3 });
+  });
+
+  it("falls back to the tile in front of the overlapped tile with empty hands", () => {
+    const base = withStationItem(createLevel(DEFAULT_SETUP), 4, 3, {
+      kind: "hotdogs",
+      madeBy: null,
+    });
+    const at = placeExact(base, "abbi", 5.0, 2.5, [0, 1]);
+    expect(interactTile(at, "abbi")).toEqual({ x: 4, y: 3 });
+    expect(getPrompt(at, "abbi").interact).toBe(
+      "Take the cooked hot dogs off the GRILL (G)"
+    );
+  });
+
+  it("does not reach a neighbour that the body overlaps only by a sliver", () => {
+    // The centre at x 5.29 is 0.29 from the boundary, more than PLAYER_RADIUS / 2
+    // away, so the grill at (4,3) is not in reach even though the body overlaps it.
+    const base = withStationItem(createLevel(DEFAULT_SETUP), 4, 3, {
+      kind: "hotdogs",
+      madeBy: null,
+    });
+    const sliver = placeExact(base, "abbi", 5.29, 2.5, [0, 1]);
+    expect(interactTile(sliver, "abbi")).toBeNull();
+    const inBand = placeExact(base, "abbi", 5.12, 2.5, [0, 1]);
+    expect(interactTile(inBand, "abbi")).toEqual({ x: 4, y: 3 });
+  });
+
+  it("leaves a body that does not straddle on the tile it faces", () => {
+    const grillBusy = withStationItem(createLevel(DEFAULT_SETUP), 5, 3, {
+      kind: "hotdogs-raw",
+      madeBy: null,
+    });
+    const off = placeExact(grillBusy, "abbi", 5.5, 2.5, [0, 1], raw);
+    expect(interactTile(off, "abbi")).toBeNull();
+    const at = placeExact(grillBusy, "abbi", 4.5, 2.5, [0, 1], raw);
+    expect(interactTile(at, "abbi")).toEqual({ x: 4, y: 3 });
+  });
+});
+
+describe("a promise for work that is already done (round 8, S6)", () => {
+  /** The lanterns are all placed, so a promise about them would be kept for free. */
+  function lanternsDone(state: GameState): GameState {
+    return {
+      ...state,
+      targets: state.targets.map((t) =>
+        t.category === "lanterns"
+          ? {
+              ...t,
+              status: "filled" as const,
+              filled: Array.from({ length: t.capacity }, () => ({
+                kind: "lantern" as const,
+                madeBy: null,
+              })),
+            }
+          : t
+      ),
+    };
+  }
+
+  it("refuses a break that promises a complete category, and applies no break", () => {
+    const paused = lanternsDone(untilBrothers(createLevel(DEFAULT_SETUP)));
+    expect(
+      validateDecision(paused, { choice: "break", commitment: "lanterns" })
+    ).toEqual({
+      ok: false,
+      reason: "That work is already done or not in this plan.",
+    });
+    const after = decide(paused, { choice: "break", commitment: "lanterns" });
+    expect(after.phase).toBe("brothers");
+    expect(after.players.fred.presence).toBe("here");
+    expect(after.returnsAt).toBeNull();
+  });
+
+  it("still accepts a break that promises a category with work left", () => {
+    const paused = lanternsDone(untilBrothers(createLevel(DEFAULT_SETUP)));
+    expect(
+      validateDecision(paused, { choice: "break", commitment: "chairs" }).ok
+    ).toBe(true);
+    const away = decide(paused, { choice: "break", commitment: "chairs" });
+    expect(away.players.fred.presence).toBe("away");
+  });
+});
+
+describe("a full floor says why a press does nothing (round 8, S8)", () => {
+  const raw: Item = { kind: "wings-raw", madeBy: null };
+  const mac: Item = { kind: "mac", madeBy: null };
+  const fullFloor = (state: GameState): GameState => ({
+    ...state,
+    floor: Array.from({ length: FLOOR_CAP }, (_, i) => ({
+      x: 10 + i,
+      y: 8,
+      item: mac,
+    })),
+  });
+
+  it("names the full floor, and does nothing, when open ground is faced", () => {
+    // (2,4) has no station beside it, so the only tile in reach is the floor.
+    const at = fullFloor(
+      place(createLevel(DEFAULT_SETUP), "fred", 2, 4, [0, 1], raw)
+    );
+    expect(interactTile(at, "fred")).toBeNull();
+    expect(getPrompt(at, "fred").interact).toBe(
+      "The floor here is full. Find a station or the bin."
+    );
+    const after = stepGame(at, frameFor("fred", { interact: true })).state;
+    expect(after.players.fred.holding).toEqual(raw);
+    expect(after.floor.length).toBe(FLOOR_CAP);
+  });
+
+  it("keeps the blocked-station line in front of the full-floor reason", () => {
+    const base = withStationItem(createLevel(DEFAULT_SETUP), 4, 3, {
+      kind: "hotdogs-raw",
+      madeBy: null,
+    });
+    const at = fullFloor(place(base, "fred", 4, 4, [0, 1], raw));
+    expect(getPrompt(at, "fred").interact).toBe(
+      "The GRILL (G) is full. The floor here is full. Find a station or the bin."
+    );
+  });
+
+  it("still offers the floor while there is room on it", () => {
+    const at = place(createLevel(DEFAULT_SETUP), "fred", 2, 4, [0, 1], raw);
+    expect(getPrompt(at, "fred").interact).toBe(
+      "Put the raw wings on the floor"
+    );
+  });
+});
+
+describe("the prompt during a phone call (round 8, S4)", () => {
+  it("says who is on the phone and about how long is left, in wall-clock minutes", () => {
+    const base = createLevel(DEFAULT_SETUP);
+    const called = {
+      ...base,
+      players: {
+        ...base.players,
+        abbi: {
+          ...base.players.abbi,
+          busyFor: PHONE_SECONDS,
+          busyReason: "What should we get you?",
+        },
+      },
+    };
+    expect(getPrompt(called, "abbi").status).toBe(
+      "Abbi is on the phone (about 6 min left): What should we get you?"
+    );
+    const later = {
+      ...called,
+      players: {
+        ...called.players,
+        abbi: { ...called.players.abbi, busyFor: 1.5 },
+      },
+    };
+    expect(getPrompt(later, "abbi").status).toBe(
+      "Abbi is on the phone (about 3 min left): What should we get you?"
+    );
+  });
+
+  it("keeps the shoe retie line as it is", () => {
+    const base = createLevel(DEFAULT_SETUP);
+    const retying = {
+      ...base,
+      players: {
+        ...base.players,
+        fred: {
+          ...base.players.fred,
+          busyFor: 0.6,
+          busyReason: "Retying a shoelace.",
+        },
+      },
+    };
+    expect(getPrompt(retying, "fred").status).toBe("Fred: Retying a shoelace.");
+  });
+});
+
+describe("the receipt's website lines (round 8, copy)", () => {
+  it("says a blocked feature got calls through in plain words, not as a negation", () => {
+    const receipt = computeReceipt(finishIdle(DEFAULT_SETUP, STAY_DECISION));
+    const copy = JSON.stringify(receipt);
+    expect(copy).toContain("Registry scraper: 1 call got through without it.");
+    expect(copy).not.toContain("No Registry");
+    expect(copy).not.toContain("no promise to break");
   });
 });

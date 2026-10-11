@@ -27,8 +27,10 @@ export {
   replayLevel,
   stepGame,
   validateDecision,
+  workTileFor,
 } from "./internal/sim";
 export {
+  availableCommitments,
   categoryProgress,
   computeReceipt,
   readinessLines,

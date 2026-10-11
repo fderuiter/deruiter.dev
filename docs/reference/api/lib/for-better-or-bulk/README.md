@@ -44,6 +44,12 @@ Re-exports [assistStatus](internal/assist/functions/assistStatus.md)
 
 ***
 
+### availableCommitments
+
+Re-exports [availableCommitments](internal/receipt/functions/availableCommitments.md)
+
+***
+
 ### BankLine
 
 Re-exports [BankLine](presets/interfaces/BankLine.md)
@@ -983,3 +989,9 @@ Re-exports [WebsiteLine](types/interfaces/WebsiteLine.md)
 ### WEDDING\_PATH
 
 Re-exports [WEDDING_PATH](presets/variables/WEDDING_PATH.md)
+
+***
+
+### workTileFor
+
+Re-exports [workTileFor](internal/press/functions/workTileFor.md)

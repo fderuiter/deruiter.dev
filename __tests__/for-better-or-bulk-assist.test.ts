@@ -69,6 +69,31 @@ function place(
   };
 }
 
+/** Puts a person at an exact position in tiles, so a body can stand off a tile centre. */
+function placeAt(
+  state: GameState,
+  id: PlayerId,
+  x: number,
+  y: number,
+  facing: readonly [number, number],
+  holding: Item | null = null
+): GameState {
+  return {
+    ...state,
+    players: {
+      ...state.players,
+      [id]: {
+        ...state.players[id],
+        x,
+        y,
+        facingX: facing[0],
+        facingY: facing[1],
+        holding,
+      },
+    },
+  };
+}
+
 /** A level where the only stock left is lanterns, so the fetch order is clear. */
 function onlyLanterns(setup: Setup): GameState {
   const state = createLevel(setup);
@@ -180,6 +205,12 @@ function stationOf(state: GameState, kind: StationKind) {
 }
 
 const ROSES: Item = { kind: "roses", madeBy: null };
+const FACINGS: readonly (readonly [number, number])[] = [
+  [1, 0],
+  [-1, 0],
+  [0, 1],
+  [0, -1],
+];
 
 describe("assistInput on fixed states", () => {
   it("takes the roses from the crate it faces", () => {
@@ -1139,13 +1170,35 @@ describe("the helper keeps out of its partner's way", () => {
   });
 });
 
+describe("the helper's claimed tiles follow the rules the sim uses (round 8, S3)", () => {
+  it("does not plan a press on a grill that a straddling partner presses on", () => {
+    // Abbi stands at x 3.9 facing down with empty hands: her own tile (3,3) is
+    // empty floor, but the body reaches the cooked batch on the grill at (4,3),
+    // so her press takes from there. Fred stands in front of that same grill
+    // with empty hands and would take the batch too, unless he keeps out of it.
+    const base = createLevel(ASSIST_SETUP);
+    const withBatch = {
+      ...base,
+      stations: base.stations.map((s) =>
+        s.x === 4 && s.y === 3
+          ? { ...s, item: { kind: "hotdogs" as const, madeBy: null } }
+          : s
+      ),
+    };
+    const state = placeAt(
+      place(withBatch, "fred", 4, 2, [0, 1]),
+      "abbi",
+      3.9,
+      2.5,
+      [0, 1]
+    );
+    expect(interactTile(state, "abbi")).toEqual({ x: 4, y: 3 });
+    expect(interactTile(state, "fred")).toEqual({ x: 4, y: 3 });
+    expect(assistInput(state, "fred").interact).toBe(false);
+  });
+});
+
 describe("the helper's presses land where the engine resolves them", () => {
-  const FACINGS: readonly (readonly [number, number])[] = [
-    [1, 0],
-    [-1, 0],
-    [0, 1],
-    [0, -1],
-  ];
   const HELD: (Item | null)[] = [
     null,
     { kind: "roses", madeBy: null },
@@ -1213,5 +1266,76 @@ describe("the helper's presses land where the engine resolves them", () => {
       }
     }
     expect(presses).toBeGreaterThan(100);
+  });
+
+  it("lines up on the tile centre before it presses, from a spot 0.3 off centre", () => {
+    // Standing 0.3 off the centre across the facing, the body is not where the
+    // planner assumed. The helper walks to the centre first, and then presses.
+    const state = placeAt(
+      createLevel(ASSIST_SETUP),
+      "fred",
+      5.8,
+      4.5,
+      [0, -1],
+      { kind: "wings-raw", madeBy: null }
+    );
+    const input = assistInput(state, "fred");
+    expect(input.interact).toBe(false);
+    expect(input.moveX).toBe(-1);
+  });
+
+  it("presses only from a tile centre, so the press lands where the planner says from any spot in the tile", () => {
+    const OFFSETS = [0.1, 0.25, 0.3, 0.4, 0.6, 0.75, 0.9];
+    const base = createLevel(ASSIST_SETUP);
+    const worlds: GameState[] = [
+      base,
+      {
+        ...base,
+        stations: base.stations.map((s) =>
+          s.kind === "grill"
+            ? { ...s, item: { kind: "hotdogs-raw", madeBy: "abbi" } }
+            : s
+        ),
+      },
+    ];
+    let presses = 0;
+    for (const world of worlds) {
+      for (let y = 0; y < VENUE_MAP.length; y++) {
+        for (let x = 0; x < VENUE_MAP[y].length; x++) {
+          if (!WALKABLE_TILES.includes(VENUE_MAP[y][x])) continue;
+          for (const facing of FACINGS) {
+            for (const item of [
+              null,
+              ROSES,
+              { kind: "wings-raw" as const, madeBy: null },
+            ]) {
+              const centred = place(world, "fred", x, y, facing, item);
+              if (!assistInput(centred, "fred").interact) continue;
+              presses++;
+              const predicted = frontTile(centred.players.fred);
+              for (const offset of OFFSETS) {
+                const moved = placeAt(
+                  world,
+                  "fred",
+                  facing[0] === 0 ? x + offset : x + 0.5,
+                  facing[0] === 0 ? y + 0.5 : y + offset,
+                  facing,
+                  item
+                );
+                const input = assistInput(moved, "fred");
+                const label = `at ${x},${y} +${offset} facing ${facing.join(",")} holding ${item?.kind ?? "nothing"}`;
+                if (input.interact) {
+                  expect(interactTile(moved, "fred"), label).toEqual(predicted);
+                }
+                if (Math.abs(offset - 0.5) > 0.08) {
+                  expect(input.interact, label).toBe(false);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    expect(presses).toBeGreaterThan(10);
   });
 });

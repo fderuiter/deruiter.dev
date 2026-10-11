@@ -16,10 +16,10 @@ import {
   SIMPLIFY_SECONDS,
   VENUE_MAP,
   bankText,
-  frontTile,
   getCoachStep,
   getPrompt,
   interactTile,
+  workTileFor,
   type GameState,
   type ItemKind,
   type Player,
@@ -578,7 +578,7 @@ function drawPersonOutlines(
     drawTileOutline(ctx, press, ready && !waiting);
     return;
   }
-  const faced = frontTile(player);
+  const faced = workTileFor(state, player);
   if (waitTile && sameTile(waitTile, faced)) drawTileOutline(ctx, faced, false);
 }
 
@@ -602,9 +602,13 @@ function drawTargetCount(ctx: CanvasRenderingContext2D, target: Target): void {
 }
 
 /** A bar on the bin while someone holds work there to throw an item out. */
-function drawBinHold(ctx: CanvasRenderingContext2D, player: Player): void {
+function drawBinHold(
+  ctx: CanvasRenderingContext2D,
+  state: GameState,
+  player: Player
+): void {
   if (player.binHold <= 0 || player.presence === "away") return;
-  const { x, y } = frontTile(player);
+  const { x, y } = workTileFor(state, player);
   drawProgress(
     ctx,
     x * TILE,
@@ -919,8 +923,8 @@ export function drawVenue(
   for (const burst of bursts) drawBurst(ctx, burst, state.time);
   drawPlayer(ctx, state.players.fred, active === "fred");
   drawPlayer(ctx, state.players.abbi, active === "abbi");
-  drawBinHold(ctx, state.players.fred);
-  drawBinHold(ctx, state.players.abbi);
+  drawBinHold(ctx, state, state.players.fred);
+  drawBinHold(ctx, state, state.players.abbi);
   if (nextToCoatRack(state)) {
     drawBubble(
       ctx,

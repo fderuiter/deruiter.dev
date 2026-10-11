@@ -201,6 +201,9 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>(
           }, 0);
         }
         setTimeout(() => {
+          // A test environment may tear down its document before this
+          // deferred focus restoration runs.
+          if (typeof document === "undefined") return;
           // Focus was put somewhere on purpose while the trap closed, by the
           // close handler or by the user, so leave it there. Restoring only
           // rescues focus that was lost with the dialog or left inside it.

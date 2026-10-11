@@ -724,7 +724,7 @@ describe("For Better or Bulk side panel: helper, partner and day (fbb round)", (
       /^Seed 12345 · rush at \d{1,2}:\d{2}, shower at \d{1,2}:\d{2}$/
     );
     expect(screen.getByTestId("fbb-active").textContent).toContain(
-      "Escape to pause"
+      "Tab to swap · Shift+Tab to leave · Escape to pause"
     );
     expect(screen.getByTestId("fbb-helper").textContent).toMatch(
       /^Helper: .+\.$/

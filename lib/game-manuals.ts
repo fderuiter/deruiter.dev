@@ -1030,8 +1030,9 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       },
       {
         action: "Swap",
-        description: "In one-player mode, switches between Fred and Abbi.",
-        key: "Tab",
+        description:
+          "In one-player mode, switches between Fred and Abbi. Shift+Tab leaves the cabinet, so keyboard focus can go back to the page.",
+        key: "Tab / Shift+Tab",
       },
       {
         action: "Pause",

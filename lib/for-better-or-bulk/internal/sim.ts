@@ -169,6 +169,34 @@ function seededActive(state: GameState, id: SeededEventId): boolean {
   );
 }
 
+/**
+ * The corner assist for one blocked press. A body pressed `direction` along
+ * `press` (x or y) is nudged along the other axis toward the centre of its own
+ * row or column, by at most `step`, when the tile it is pressing into on that
+ * row or column is walkable (an open lane, not a solid wall) and the nudged
+ * position is clear. Returns the new coordinate on the other axis, or null when
+ * there is nothing to nudge. Pure and deterministic.
+ */
+function cornerNudge(
+  x: number,
+  y: number,
+  press: "x" | "y",
+  direction: number,
+  step: number
+): number | null {
+  const ahead =
+    press === "x"
+      ? isWalkable(Math.floor(x) + direction, Math.floor(y))
+      : isWalkable(Math.floor(x), Math.floor(y) + direction);
+  if (!ahead) return null;
+  const along = press === "x" ? y : x;
+  const offset = Math.floor(along) + 0.5 - along;
+  if (offset === 0) return null;
+  const nudged = along + sign(offset) * Math.min(Math.abs(offset), step);
+  const clear = press === "x" ? !collides(x, nudged) : !collides(nudged, y);
+  return clear ? nudged : null;
+}
+
 function move(
   player: Player,
   input: PlayerInput,
@@ -183,9 +211,20 @@ function move(
     MOVE_SPEED * (player.calm ? CALM_SPEED_MULTIPLIER : 1) * pace * dt;
   let { x, y } = player;
   const nextX = x + (mx / length) * speed;
-  if (!collides(nextX, y)) x = nextX;
+  const blockedX = mx !== 0 && collides(nextX, y);
+  if (!blockedX) x = nextX;
   const nextY = y + (my / length) * speed;
-  if (!collides(x, nextY)) y = nextY;
+  const blockedY = my !== 0 && collides(x, nextY);
+  if (!blockedY) y = nextY;
+  // A press into a blocked edge with no input on the other axis may slide the
+  // body toward the centre of its lane (the corner assist, one step at most).
+  if (blockedX && my === 0) {
+    const nudged = cornerNudge(x, y, "x", mx, speed);
+    if (nudged !== null) y = nudged;
+  } else if (blockedY && mx === 0) {
+    const nudged = cornerNudge(x, y, "y", my, speed);
+    if (nudged !== null) x = nudged;
+  }
   let facingX = mx;
   let facingY = my;
   if (mx !== 0 && my !== 0) {

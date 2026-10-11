@@ -314,8 +314,8 @@ export const ITEM_LABELS: Readonly<Record<ItemKind, string>> = {
   chairs: "a chair",
 };
 
-/** The prompt that marks a bin hold; the cabinet words it as a hold. */
-export const THROW_OUT_PROMPT = "Throw it out";
+/** The prompt that marks a bin hold; it names the hold, and the cabinet adds the key. */
+export const THROW_OUT_PROMPT = "Hold to throw it out";
 
 /** The line a run prints when Fred leaves while the plan depends on him. */
 export const LEFT_LINE =

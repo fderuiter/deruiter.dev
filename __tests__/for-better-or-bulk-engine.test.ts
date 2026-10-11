@@ -308,6 +308,46 @@ describe("movement", () => {
     );
     expect(moved).toBeCloseTo(4.2 * 10 * TICK_SECONDS, 5);
   });
+
+  /** Puts Abbi at an exact position, not the middle of a tile. */
+  function standAt(state: GameState, x: number, y: number): GameState {
+    return {
+      ...state,
+      players: {
+        ...state.players,
+        abbi: { ...state.players.abbi, x, y },
+      },
+    };
+  }
+
+  it("slides a body off a table corner into a one-tile lane (corner assist)", () => {
+    // Abbi grazes the corner of the table at (5, 8) while the lane runs west.
+    const start = standAt(createLevel(DEFAULT_SETUP), 5.28, 8.07);
+    const { state } = run(start, frameFor("abbi", { moveX: -1 }), ticks(0.5));
+    expect(state.players.abbi.x).toBeLessThan(4.5);
+    expect(state.players.abbi.y).toBeGreaterThan(8.07);
+  });
+
+  it("slides the mirrored corner the other way as well", () => {
+    const start = standAt(createLevel(DEFAULT_SETUP), 6.72, 8.07);
+    const { state } = run(start, frameFor("abbi", { moveX: 1 }), ticks(0.5));
+    expect(state.players.abbi.x).toBeGreaterThan(7.5);
+  });
+
+  it("slides across a corner when pressing down a lane", () => {
+    const start = standAt(createLevel(DEFAULT_SETUP), 5.28, 8.5);
+    const { state } = run(start, frameFor("abbi", { moveY: 1 }), ticks(1));
+    expect(state.players.abbi.y).toBeGreaterThan(10);
+  });
+
+  it("does not slide a body pressed into a solid wall with no lane", () => {
+    // Row 2 is open, but the tile ahead on the west side is the venue wall.
+    const start = standAt(createLevel(DEFAULT_SETUP), 1.5, 2.5);
+    const { state } = run(start, frameFor("abbi", { moveX: -1 }), ticks(1));
+    expect(state.players.abbi.y).toBe(2.5);
+    expect(state.players.abbi.x).toBeGreaterThan(1.2);
+    expect(state.players.abbi.x).toBeLessThan(1.4);
+  });
 });
 
 describe("crates, stations and targets", () => {
@@ -1591,6 +1631,10 @@ describe("the new prompts", () => {
       interact: null,
       work: THROW_OUT_PROMPT,
     });
+  });
+
+  it("names the hold in the bin prompt, not a bare action", () => {
+    expect(THROW_OUT_PROMPT).toBe("Hold to throw it out");
   });
 
   it("offers to put an item back in its crate", () => {

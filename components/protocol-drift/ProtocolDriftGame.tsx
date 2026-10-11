@@ -15,12 +15,16 @@ import { PipelineCanvas } from "./PipelineCanvas";
 import { PipelineTextView } from "./PipelineTextView";
 import { SiteRail } from "./SiteRail";
 import { Toolbox } from "./Toolbox";
-import { useProtocolDriftStore } from "./store";
+import { isTracerComplete, useProtocolDriftStore } from "./store";
 import { useWorkbenchKeys } from "./useWorkbenchKeys";
 
-/** Container width from which the toolbox and site rail stay fully open. */
+/** Container width from which the toolbox shows chip names (1280 viewport). */
+const TOOLBOX_OPEN_PX = 1000;
+/** Container width from which the site rail also stays fully open. */
 const WIDE_CONTAINER_PX = 1400;
 const TICK_MS = 250;
+/** How long a notice stays on screen before it clears itself. */
+const NOTICE_MS = 6000;
 
 /**
  * Protocol Drift workbench: pipeline canvas, toolbox, site rail, tri-pane
@@ -30,6 +34,7 @@ const TICK_MS = 250;
 export function ProtocolDriftGame() {
   const root = useRef<HTMLDivElement | null>(null);
   const [wide, setWide] = useState(false);
+  const [roomy, setRoomy] = useState(false);
   const [toolboxOpen, setToolboxOpen] = useState<boolean | null>(null);
   const [railOpen, setRailOpen] = useState<boolean | null>(null);
   const [debriefOpen, setDebriefOpen] = useState(true);
@@ -47,6 +52,8 @@ export function ProtocolDriftGame() {
   const init = useProtocolDriftStore((s) => s.init);
   const dispose = useProtocolDriftStore((s) => s.dispose);
   const tick = useProtocolDriftStore((s) => s.tick);
+  const clearNotice = useProtocolDriftStore((s) => s.clearNotice);
+  const tracerDone = isTracerComplete(view);
 
   useEffect(() => {
     void init();
@@ -56,12 +63,21 @@ export function ProtocolDriftGame() {
   useEffect(() => {
     const el = root.current;
     if (!el) return;
-    const measure = () => setWide(el.clientWidth >= WIDE_CONTAINER_PX);
+    const measure = () => {
+      setWide(el.clientWidth >= WIDE_CONTAINER_PX);
+      setRoomy(el.clientWidth >= TOOLBOX_OPEN_PX);
+    };
     measure();
     const observer = new ResizeObserver(() => measure());
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
+
+  useEffect(() => {
+    if (!notice) return;
+    const handle = window.setTimeout(() => clearNotice(notice.id), NOTICE_MS);
+    return () => window.clearTimeout(handle);
+  }, [notice, clearNotice]);
 
   useEffect(() => {
     if (fsm !== "RUNNING") return;
@@ -75,7 +91,7 @@ export function ProtocolDriftGame() {
     return () => window.clearInterval(handle);
   }, [fsm, tick]);
 
-  const compactToolbox = !(toolboxOpen ?? wide);
+  const compactToolbox = !(toolboxOpen ?? roomy);
   const compactRail = !(railOpen ?? wide);
   const showDebrief = fsm === "LOCKED" && scorecard && view && debriefOpen;
 
@@ -87,7 +103,7 @@ export function ProtocolDriftGame() {
       data-game="protocol-drift"
       data-fsm={fsm ?? "BRIEF"}
       onKeyDown={onKeyDown}
-      className="@container relative flex h-[max(960px,calc(100dvh-6rem))] w-full min-w-0 flex-col overflow-hidden bg-[#0d0e11] text-zinc-100 outline-none focus-visible:ring-1 focus-visible:ring-amber-500"
+      className="@container relative flex h-[max(760px,calc(100dvh-8rem))] scroll-mt-24 w-full min-w-0 flex-col overflow-hidden bg-[#0d0e11] text-zinc-100 outline-none focus-visible:ring-1 focus-visible:ring-amber-500"
     >
       <HeaderBar />
       <ObjectiveStrip />
@@ -96,9 +112,18 @@ export function ProtocolDriftGame() {
           compact={compactToolbox}
           onToggle={() => setToolboxOpen(compactToolbox)}
         />
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto">
           <div className="relative min-h-[200px] flex-1">
             <PipelineCanvas />
+            {tracerDone && !waveSummary ? (
+              <button
+                type="button"
+                onClick={() => void init("full")}
+                className="absolute right-3 top-3 z-10 min-h-9 border border-amber-500 bg-[#0d0e11] px-3 font-mono text-xs text-amber-400"
+              >
+                Start the full study
+              </button>
+            ) : null}
             {fsm === "LOCKED" && !showDebrief ? (
               <button
                 type="button"
@@ -133,7 +158,7 @@ export function ProtocolDriftGame() {
         <p
           key={notice.id}
           data-tone={notice.tone}
-          className={`pointer-events-none absolute bottom-10 left-1/2 z-30 max-w-[90%] -translate-x-1/2 border bg-[#13151a] px-3 py-1.5 font-mono text-xs ${
+          className={`pointer-events-none absolute top-48 left-1/2 z-30 max-w-[90%] -translate-x-1/2 border bg-[#13151a] px-3 py-1.5 font-mono text-xs ${
             notice.tone === "error"
               ? "border-amber-500 text-amber-300"
               : notice.tone === "warn"

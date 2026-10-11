@@ -94,8 +94,9 @@ the worker adopts it, so a tampered file changes nothing.
   are replaced by stationary per-wire counters under
   `prefers-reduced-motion`.
 - The inspector docks at `min(328px, 35vh)`; `I` expands it and `Esc` docks it.
-- At container widths below 1400px the toolbox and site rail collapse to icon
-  strips, and both can be reopened.
+- Below a 1000px container the toolbox collapses to an icon strip, and below
+  1400px the site rail does too; both can be reopened. (The toolbox threshold
+  was 1400px until #1946, which left chip names hidden at every desktop width.)
 - The canvas has a text alternative (`Pipeline as text`) that lists every chip
   and wire and lets keyboard users add or remove wires.
 - Six procedural cues go through `getSoundEngine().playTone`, respect the

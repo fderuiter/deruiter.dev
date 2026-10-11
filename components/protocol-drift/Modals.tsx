@@ -41,13 +41,13 @@ function ModalShell({
     onEscape,
   });
   return (
-    <div className="absolute inset-0 z-40 flex items-center justify-center overflow-y-auto bg-black/70 p-3">
+    <div className="absolute inset-0 z-40 flex items-start justify-center overflow-y-auto bg-black/70 p-3 pt-6">
       <div
         ref={trapRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={labelledBy}
-        className={`max-h-full w-full overflow-y-auto border border-zinc-700 bg-[#13151a] p-4 font-mono text-xs text-zinc-200 ${
+        className={`max-h-[min(100%,calc(100dvh-8rem))] w-full overflow-y-auto border border-zinc-700 bg-[#13151a] p-4 font-mono text-xs text-zinc-200 ${
           wide ? "max-w-3xl" : "max-w-xl"
         }`}
       >
@@ -165,13 +165,19 @@ export function WaveReviewModal({ summary }: { summary: WaveSummary }) {
   const togglePause = useProtocolDriftStore((s) => s.togglePause);
   const command = useProtocolDriftStore((s) => s.command);
   const scenario = useProtocolDriftStore((s) => s.scenario);
+  const init = useProtocolDriftStore((s) => s.init);
   const id = useId();
-  const last = scenario === "tracer" || summary.waveIndex === 3;
+  const tracer = scenario === "tracer";
+  const last = tracer || summary.waveIndex === 3;
+  const pauseAndInspect = () => {
+    dismiss();
+    void command({ type: "SET_PAUSED", isPaused: true });
+  };
   return (
     <ModalShell
-      title={`Wave ${summary.waveIndex} Review`}
+      title={tracer ? "Tracer Complete" : `Wave ${summary.waveIndex} Review`}
       labelledBy={`${id}-title`}
-      onEscape={dismiss}
+      onEscape={tracer ? pauseAndInspect : dismiss}
     >
       <dl className="mb-3 grid grid-cols-2 gap-x-4 gap-y-1">
         <dt>Confirmed records</dt>
@@ -210,12 +216,23 @@ export function WaveReviewModal({ summary }: { summary: WaveSummary }) {
           {summary.debt.semanticLossCount} / {summary.debt.uncertainCount}
         </dd>
       </dl>
-      {scenario === "tracer" ? (
+      {tracer ? (
         <p className="mb-3 text-zinc-300">
-          Tracer cohort ingested. The full study unlocks the next phase.
+          Site A&apos;s tracer cohort made it through your pipeline end to end.
+          The full study adds two more sites, a protocol amendment and database
+          lock, and ends with a scored debrief.
         </p>
       ) : null}
       <div className="flex flex-wrap gap-2">
+        {tracer ? (
+          <button
+            type="button"
+            className={`${PRIMARY} min-h-12`}
+            onClick={() => void init("full")}
+          >
+            Start the full study
+          </button>
+        ) : null}
         {!last ? (
           <button
             type="button"
@@ -230,21 +247,20 @@ export function WaveReviewModal({ summary }: { summary: WaveSummary }) {
         ) : null}
         <button
           type="button"
-          className={SECONDARY}
-          onClick={() => {
-            dismiss();
-            void command({ type: "SET_PAUSED", isPaused: true });
-          }}
+          className={`${SECONDARY} min-h-12 min-w-12`}
+          onClick={pauseAndInspect}
         >
           Pause and inspect
         </button>
-        <button
-          type="button"
-          className={`${SECONDARY} min-h-12 min-w-12`}
-          onClick={dismiss}
-        >
-          Close
-        </button>
+        {tracer ? null : (
+          <button
+            type="button"
+            className={`${SECONDARY} min-h-12 min-w-12`}
+            onClick={dismiss}
+          >
+            Close
+          </button>
+        )}
       </div>
     </ModalShell>
   );
@@ -526,6 +542,7 @@ export function DebriefModal({
 }) {
   const datasets = useProtocolDriftStore((s) => s.datasets);
   const exportSave = useProtocolDriftStore((s) => s.exportSave);
+  const init = useProtocolDriftStore((s) => s.init);
   const id = useId();
   const fab = view.debt.fabricatedBits;
   const partial = view.mhLedger.find(
@@ -682,13 +699,22 @@ export function DebriefModal({
           </button>
         </div>
       </section>
-      <button
-        type="button"
-        className={`${PRIMARY} min-h-12 min-w-12`}
-        onClick={onClose}
-      >
-        View locked workbench
-      </button>
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          className={`${PRIMARY} min-h-12 min-w-12`}
+          onClick={() => void init("full")}
+        >
+          Start a new study
+        </button>
+        <button
+          type="button"
+          className={`${SECONDARY} min-h-12 min-w-12`}
+          onClick={onClose}
+        >
+          View locked workbench
+        </button>
+      </div>
       <p className="mt-2 text-zinc-300">
         Locked at Day {trialDayOf(view.minute)}. The ledgers and pipeline are
         read-only.

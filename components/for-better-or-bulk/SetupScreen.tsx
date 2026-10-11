@@ -219,7 +219,7 @@ export function SetupScreen({
                 onClick={() => setFood(option.id)}
               >
                 <span className="font-bold text-[var(--fbb-text)]">
-                  {option.label} · ${FOOD_PRICES[option.id]}
+                  {option.label} · {dollars(FOOD_PRICES[option.id])}
                 </span>
                 <span className="mt-0.5">{option.note}</span>
               </OptionButton>

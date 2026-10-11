@@ -159,35 +159,20 @@ describe("the receipt counts items and clears the navbar (#1933)", () => {
     expect(screen.getByText("Only 1 of 2 items placed at 4:00.")).toBeTruthy();
   });
 
-  /** Places a header at the top of the page and the title at `top`, then fires scrollend. */
-  function settleWithTitleAt(top: number): ReturnType<typeof vi.fn> {
-    const header = document.createElement("header");
-    header.getBoundingClientRect = () =>
-      fromPartial<DOMRect>({ top: 0, bottom: 61, height: 61 });
-    document.body.prepend(header);
-    const originalScrollBy = window.scrollBy;
-    const scrollBy = vi.fn();
-    window.scrollBy = scrollBy;
-    try {
-      renderReceipt(0);
-      const title = screen.getByTestId("fbb-title");
-      title.getBoundingClientRect = () =>
-        fromPartial<DOMRect>({ top, bottom: top + 40 });
-      window.dispatchEvent(new Event("scrollend"));
-    } finally {
-      window.scrollBy = originalScrollBy;
-      header.remove();
-    }
-    return scrollBy;
-  }
-
-  it("moves the page up when the title is still under the navbar once the scroll settles", () => {
-    const scrollBy = settleWithTitleAt(40);
-    expect(scrollBy).toHaveBeenCalledWith({ top: -37, behavior: "auto" });
+  it("writes money with thousands separators", () => {
+    renderReceipt(0);
+    expect(screen.getByText(/Total \(budget \$3,400\)/)).toBeTruthy();
+    expect(screen.queryByText(/\$\d{4}/)).toBeNull();
   });
 
-  it("leaves the page alone when the title already clears the navbar", () => {
-    const scrollBy = settleWithTitleAt(90);
-    expect(scrollBy).not.toHaveBeenCalled();
+  it("focuses the title without a second scroll, so the navbar never covers it", () => {
+    const focus = vi.spyOn(HTMLElement.prototype, "focus");
+    try {
+      renderReceipt(0);
+      expect(focus).toHaveBeenCalledWith({ preventScroll: true });
+      expect(document.activeElement).toBe(screen.getByTestId("fbb-title"));
+    } finally {
+      focus.mockRestore();
+    }
   });
 });

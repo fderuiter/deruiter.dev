@@ -235,7 +235,7 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>(
     if (!active) return;
     const timer = setTimeout(() => {
       const container = containerRef.current;
-      if (!container) return;
+      if (!container || typeof document === "undefined") return;
       const current = document.activeElement;
       if (current && current !== container && container.contains(current)) {
         return;

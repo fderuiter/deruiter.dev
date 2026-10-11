@@ -236,7 +236,10 @@ exits or finishes, and when a shared offer is dismissed, the page clears the
 `#run=` fragment so a reload does not offer it again. Replays
 record no score and no trophy, and they play no sound. A link with `#run=`
 offers the replay on load and never starts it, so audio stays off until a
-person chooses.
+person chooses. Interaction targeting (the faced tile, then a station beside
+the person that takes the item, then the floor) changes which tile a press
+uses, so runs recorded before it can replay differently; run codes are not in
+production yet, so no shipped run is affected.
 
 **Trophies.** Three trophies are awarded from a finished run, not from a
 score: Three for Three (three stars on the standard day), A Perfect Day (three

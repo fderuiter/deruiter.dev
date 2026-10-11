@@ -25,7 +25,7 @@ export const TARGET_NAMES: Readonly<Record<TargetKind, string>> = {
   buffet: "the buffet (B)",
 };
 
-/** Items in the middle of a sentence, such as "Carry the roses to...". */
+/** Items in the middle of a sentence, such as "Take the roses to...". */
 export const ITEM_NAMES: Readonly<Record<ItemKind, string>> = {
   roses: "the roses",
   arrangement: "the arrangement",

@@ -52,6 +52,7 @@ import type {
   Station,
   StepResult,
   Target,
+  Tile,
   Validation,
 } from "../types";
 import { clamp } from "@/lib/game-utils";
@@ -239,6 +240,81 @@ function stationAccepts(station: Station, item: Item): boolean {
   return item.kind === "roses";
 }
 
+/** The four neighbours of a tile, in a fixed order so a tie always breaks the same way. */
+const NEIGHBOURS: readonly Tile[] = [
+  { x: 0, y: -1 },
+  { x: 1, y: 0 },
+  { x: 0, y: 1 },
+  { x: -1, y: 0 },
+];
+
+function sameTile(a: Tile, b: Tile): boolean {
+  return a.x === b.x && a.y === b.y;
+}
+
+/**
+ * Whether a crate, station or open target on this tile takes the held item
+ * now. The floor is not counted here: it is the fallback after reach.
+ */
+function tileTakes(state: GameState, tile: Tile, held: Item): boolean {
+  const supply = state.supplies.find((s) => sameTile(s, tile));
+  if (supply) return supply.kind === held.kind;
+  const station = state.stations.find((s) => sameTile(s, tile));
+  if (station) return stationAccepts(station, held);
+  const target = state.targets.find((t) => sameTile(t, tile));
+  if (target) return target.status === "open" && target.wants === held.kind;
+  return false;
+}
+
+/** Whether an item may rest on this tile: walkable ground with nothing on it. */
+function floorDropAt(state: GameState, tile: Tile): boolean {
+  if (!isWalkable(tile.x, tile.y)) return false;
+  const occupied = [
+    state.supplies,
+    state.stations,
+    state.targets,
+    state.floor,
+  ].some((list) => list.some((entry) => sameTile(entry, tile)));
+  return !occupied;
+}
+
+/**
+ * The tile a press of the interact key acts on for one person right now, or
+ * null when a press does nothing. Pure and deterministic: the engine, the
+ * prompts and the canvas all read this one rule.
+ *
+ * With nothing in hand, the faced tile is used when it has stock, an item on a
+ * station, or a loose item on the floor. With something in hand, the faced
+ * tile is used when it takes the item. Failing that, a station next to the
+ * person that takes the item is used, so standing beside the arrange table
+ * puts roses on it and not on the floor. The floor is the last choice, and
+ * only the faced tile counts as the floor.
+ */
+export function interactTile(state: GameState, id: PlayerId): Tile | null {
+  const player = state.players[id];
+  const front = frontTile(player);
+  const held = player.holding;
+  if (!held) {
+    const supply = state.supplies.find((s) => sameTile(s, front));
+    const station = state.stations.find((s) => sameTile(s, front));
+    const floorItem = state.floor.find((f) => sameTile(f, front));
+    const pickable =
+      (supply !== undefined && state.stock[supply.kind] > 0) ||
+      station?.item != null ||
+      floorItem !== undefined;
+    return pickable ? front : null;
+  }
+  if (tileTakes(state, front, held)) return front;
+  const cx = Math.floor(player.x);
+  const cy = Math.floor(player.y);
+  for (const offset of NEIGHBOURS) {
+    const tile = { x: cx + offset.x, y: cy + offset.y };
+    const station = state.stations.find((s) => sameTile(s, tile));
+    if (station && stationAccepts(station, held)) return tile;
+  }
+  return floorDropAt(state, front) ? front : null;
+}
+
 /**
  * Applies one press of the interact key for `id`. `helped` is true when the
  * solo helper pressed it on the partner's behalf, so the placement is recorded
@@ -246,7 +322,9 @@ function stationAccepts(station: Station, item: Item): boolean {
  */
 function interact(w: Working, id: PlayerId, helped: boolean): void {
   const player = w.state.players[id];
-  const { x, y } = frontTile(player);
+  const tile = interactTile(w.state, id);
+  if (!tile) return;
+  const { x, y } = tile;
   const supply = w.state.supplies.find((s) => s.x === x && s.y === y);
   const station = w.state.stations.find((s) => s.x === x && s.y === y);
   const target = w.state.targets.find((t) => t.x === x && t.y === y);

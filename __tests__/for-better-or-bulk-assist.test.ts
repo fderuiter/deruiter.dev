@@ -634,7 +634,7 @@ describe("the rose gate, shared with getHint", () => {
     const base = setOpen(createLevel(ASSIST_SETUP), ["petals"]);
     const state = facingTile(base, "abbi", stationOf(base, "arrange"), ROSES);
     expect(getHint(state, "abbi")).toBe(
-      "Carry the roses to the PETALS bucket (P)."
+      "Take the roses to the PETALS bucket (P)."
     );
     const input = assistInput(state, "abbi");
     expect(input.interact).toBe(false);

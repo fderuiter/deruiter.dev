@@ -22,6 +22,7 @@ export {
   IDLE_INPUT,
   ReplayError,
   frontTile,
+  interactTile,
   recordedFrame,
   replayLevel,
   stepGame,
@@ -60,5 +61,11 @@ export type {
   SharedRun,
 } from "./internal/run-code";
 export { assistInput, assistStatus } from "./internal/assist";
-export { clockLabel, getHint, getPrompt } from "./internal/views";
-export type { Prompt } from "./internal/views";
+export {
+  clockLabel,
+  getCoachStep,
+  getCoachTile,
+  getHint,
+  getPrompt,
+} from "./internal/views";
+export type { CoachStep, Prompt } from "./internal/views";

@@ -5,6 +5,7 @@ import {
   bankText,
   createLevel,
   frontTile,
+  getCoachTile,
   getPrompt,
   type GameEvent,
   type TargetKind,
@@ -269,6 +270,50 @@ describe("For Better or Bulk venue canvas (#1906)", () => {
     const ready = getPrompt(state, "abbi").interact !== null;
     expect(vi.mocked(ctx.setLineDash)).toHaveBeenLastCalledWith(
       ready ? [] : [3, 3]
+    );
+  });
+
+  it("outlines the station a person beside them will use, not the floor they face", () => {
+    const ctx = document
+      .createElement("canvas")
+      .getContext("2d") as CanvasRenderingContext2D;
+    const level = createLevel(DEFAULT_SETUP);
+    // Fred stands beside the arrange table, faces the floor and holds roses.
+    const state = {
+      ...level,
+      players: {
+        ...level.players,
+        fred: {
+          ...level.players.fred,
+          x: 7.5,
+          y: 3.5,
+          facingX: 0,
+          facingY: -1,
+          holding: { kind: "roses" as const, madeBy: null },
+        },
+      },
+    };
+    drawVenue(ctx, state, "fred");
+    const outlined = vi
+      .mocked(ctx.strokeRect)
+      .mock.calls.map(([x, y]) => `${x},${y}`);
+    expect(outlined).toContain(`${8 * TILE + 2},${3 * TILE + 2}`);
+    expect(outlined).not.toContain(`${7 * TILE + 2},${2 * TILE + 2}`);
+  });
+
+  it("outlines the tile the coach's line points at, in the same style", () => {
+    const ctx = document
+      .createElement("canvas")
+      .getContext("2d") as CanvasRenderingContext2D;
+    const state = createLevel(DEFAULT_SETUP);
+    const coach = getCoachTile(state, "fred");
+    expect(coach).not.toBeNull();
+    drawVenue(ctx, state, "fred");
+    expect(vi.mocked(ctx.strokeRect)).toHaveBeenCalledWith(
+      (coach?.x ?? 0) * TILE + 2,
+      (coach?.y ?? 0) * TILE + 2,
+      TILE - 4,
+      TILE - 4
     );
   });
 

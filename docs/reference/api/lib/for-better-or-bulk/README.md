@@ -200,6 +200,12 @@ Re-exports [clockLabel](internal/views/functions/clockLabel.md)
 
 ***
 
+### CoachStep
+
+Re-exports [CoachStep](internal/views/interfaces/CoachStep.md)
+
+***
+
 ### Commitment
 
 Re-exports [Commitment](types/type-aliases/Commitment.md)
@@ -356,6 +362,18 @@ Re-exports [GameState](types/interfaces/GameState.md)
 
 ***
 
+### getCoachStep
+
+Re-exports [getCoachStep](internal/views/functions/getCoachStep.md)
+
+***
+
+### getCoachTile
+
+Re-exports [getCoachTile](internal/views/functions/getCoachTile.md)
+
+***
+
 ### getHint
 
 Re-exports [getHint](internal/views/functions/getHint.md)
@@ -383,6 +401,12 @@ Re-exports [IDLE_FRAME](internal/sim/variables/IDLE_FRAME.md)
 ### IDLE\_INPUT
 
 Re-exports [IDLE_INPUT](internal/sim/variables/IDLE_INPUT.md)
+
+***
+
+### interactTile
+
+Re-exports [interactTile](internal/sim/functions/interactTile.md)
 
 ***
 

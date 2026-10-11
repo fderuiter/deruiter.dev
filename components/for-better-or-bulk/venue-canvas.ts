@@ -17,7 +17,9 @@ import {
   VENUE_MAP,
   bankText,
   frontTile,
+  getCoachTile,
   getPrompt,
+  interactTile,
   type GameState,
   type ItemKind,
   type Player,
@@ -25,6 +27,7 @@ import {
   type Station,
   type SupplyKind,
   type Target,
+  type Tile,
 } from "@/lib/for-better-or-bulk";
 import { clamp, GAME_FONT_FALLBACK_STACK } from "@/lib/game-utils";
 
@@ -532,27 +535,59 @@ function drawPlayer(
 }
 
 /**
- * The tile a person's interact would act on: solid amber when that interact
- * is available now, faint and dashed when it is not.
+ * One tile outlined in the venue's active colour. Every highlight uses this,
+ * so the tile an interact would use and the tile the coach points at look the
+ * same. Solid when the action is available, faint and dashed when it is not.
+ * There is no animation.
  */
-function drawFacingTile(
+function drawTileOutline(
+  ctx: CanvasRenderingContext2D,
+  tile: Tile,
+  ready: boolean
+): void {
+  const columns = VENUE_MAP[0]?.length ?? 0;
+  if (
+    tile.x < 0 ||
+    tile.y < 0 ||
+    tile.x >= columns ||
+    tile.y >= VENUE_MAP.length
+  )
+    return;
+  ctx.save();
+  ctx.strokeStyle = COLORS.active;
+  ctx.lineWidth = 2;
+  ctx.globalAlpha = ready ? 1 : 0.4;
+  ctx.setLineDash(ready ? [] : [3, 3]);
+  ctx.strokeRect(tile.x * TILE + 2, tile.y * TILE + 2, TILE - 4, TILE - 4);
+  ctx.restore();
+}
+
+/**
+ * The tile a person's interact would act on, as the engine resolves it: a
+ * station beside them can beat the floor in front of them. When a press would
+ * do nothing, the faced tile is outlined instead. Solid when that interact is
+ * available now, faint and dashed when it is not.
+ */
+function drawInteractTile(
   ctx: CanvasRenderingContext2D,
   state: GameState,
   id: PlayerId
 ): void {
   const player = state.players[id];
   if (player.presence === "away") return;
-  const { x, y } = frontTile(player);
-  const columns = VENUE_MAP[0]?.length ?? 0;
-  if (x < 0 || y < 0 || x >= columns || y >= VENUE_MAP.length) return;
-  const ready = getPrompt(state, id).interact !== null;
-  ctx.save();
-  ctx.strokeStyle = COLORS.active;
-  ctx.lineWidth = 2;
-  ctx.globalAlpha = ready ? 1 : 0.4;
-  ctx.setLineDash(ready ? [] : [3, 3]);
-  ctx.strokeRect(x * TILE + 2, y * TILE + 2, TILE - 4, TILE - 4);
-  ctx.restore();
+  const tile = interactTile(state, id) ?? frontTile(player);
+  drawTileOutline(ctx, tile, getPrompt(state, id).interact !== null);
+}
+
+/** The tile the coach's line points this person at, outlined the same way. */
+function drawCoachTile(
+  ctx: CanvasRenderingContext2D,
+  state: GameState,
+  id: PlayerId,
+  coop: boolean
+): void {
+  const tile = getCoachTile(state, id, { coop });
+  if (tile) drawTileOutline(ctx, tile, true);
 }
 
 /** A bar on the bin while someone holds work there to throw an item out. */
@@ -863,13 +898,16 @@ export function drawVenue(
       TILE * 0.45
     );
   }
+  // The outlines sit above the props and below the station words.
+  const people = active ? [active] : (["fred", "abbi"] as const);
+  for (const id of people) {
+    drawCoachTile(ctx, state, id, active === null);
+    drawInteractTile(ctx, state, id);
+  }
   for (const station of state.stations) {
     drawStationLabel(ctx, station, state.stations);
   }
   for (const burst of bursts) drawBurst(ctx, burst, state.time);
-  for (const id of active ? [active] : (["fred", "abbi"] as const)) {
-    drawFacingTile(ctx, state, id);
-  }
   drawPlayer(ctx, state.players.fred, active === "fred");
   drawPlayer(ctx, state.players.abbi, active === "abbi");
   drawBinHold(ctx, state.players.fred);

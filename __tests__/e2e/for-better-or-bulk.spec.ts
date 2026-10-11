@@ -85,6 +85,42 @@ async function playToPlayback(page: Page) {
   });
 }
 
+/**
+ * Skips the ceremony playback to the receipt. The click is retried until the
+ * playback is gone.
+ */
+async function skipPlaybackToReceipt(page: Page) {
+  await expect(async () => {
+    const skip = page.getByRole("button", { name: "Skip" });
+    if (await skip.isVisible()) await skip.click();
+    await expect(page.getByTestId("fbb-playback")).toBeHidden({
+      timeout: 2000,
+    });
+  }).toPass({ timeout: 15000 });
+  await expect(page.getByTestId("fbb-receipt")).toBeVisible({
+    timeout: 10000,
+  });
+}
+
+/**
+ * The receipt title must sit below the fixed navbar, not under it. The
+ * navbar's padding changes as the page scrolls, so both boxes are polled until
+ * the scroll has settled.
+ */
+async function expectTitleBelowBanner(page: Page) {
+  await expect
+    .poll(
+      async () => {
+        const title = await page.getByTestId("fbb-title").boundingBox();
+        const banner = await page.getByRole("banner").first().boundingBox();
+        if (!title || !banner) return -1;
+        return title.y - (banner.y + banner.height);
+      },
+      { timeout: 10000 }
+    )
+    .toBeGreaterThanOrEqual(0);
+}
+
 test.describe("For Better or Bulk (/arcade/for-better-or-bulk)", () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
@@ -95,37 +131,26 @@ test.describe("For Better or Bulk (/arcade/for-better-or-bulk)", () => {
     await playToPlayback(page);
     await expectNoBlockingViolations(page, "ceremony playback");
 
-    // Skip hands over to the receipt. The click is retried until the playback is gone.
-    await expect(async () => {
-      const skip = page.getByRole("button", { name: "Skip" });
-      if (await skip.isVisible()) await skip.click();
-      await expect(page.getByTestId("fbb-playback")).toBeHidden({
-        timeout: 2000,
-      });
-    }).toPass({ timeout: 15000 });
-
-    await expect(page.getByTestId("fbb-receipt")).toBeVisible({
-      timeout: 10000,
-    });
+    await skipPlaybackToReceipt(page);
     await expect(page.getByTestId("fbb-title")).toBeFocused();
     await expect(page.getByTestId("fbb-follow-through")).toContainText(
       "Kept. Fred stayed"
     );
-    // The title must sit below the fixed navbar, not under it. The navbar's
-    // padding changes as the page scrolls, so both boxes are polled until the
-    // scroll has settled.
-    await expect
-      .poll(
-        async () => {
-          const title = await page.getByTestId("fbb-title").boundingBox();
-          const banner = await page.getByRole("banner").first().boundingBox();
-          if (!title || !banner) return -1;
-          return title.y - (banner.y + banner.height);
-        },
-        { timeout: 10000 }
-      )
-      .toBeGreaterThanOrEqual(0);
+    await expectTitleBelowBanner(page);
     await expectNoBlockingViolations(page, "receipt");
+  });
+
+  test.describe("a taller desktop window", () => {
+    test.use({ viewport: { width: 1440, height: 1000 } });
+
+    test("the receipt title clears the navbar once the receipt is reached", async ({
+      page,
+    }) => {
+      test.setTimeout(120000);
+      await playToPlayback(page);
+      await skipPlaybackToReceipt(page);
+      await expectTitleBelowBanner(page);
+    });
   });
 
   test("Escape skips the playback to the receipt once", async ({ page }) => {

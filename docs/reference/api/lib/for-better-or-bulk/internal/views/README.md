@@ -8,10 +8,13 @@
 
 ## Interfaces
 
+- [CoachStep](interfaces/CoachStep.md)
 - [Prompt](interfaces/Prompt.md)
 
 ## Functions
 
 - [clockLabel](functions/clockLabel.md)
+- [getCoachStep](functions/getCoachStep.md)
+- [getCoachTile](functions/getCoachTile.md)
 - [getHint](functions/getHint.md)
 - [getPrompt](functions/getPrompt.md)

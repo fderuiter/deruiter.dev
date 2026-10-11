@@ -27,6 +27,12 @@ const SEEDED_LINES: Readonly<Record<SeededEventId, string>> = {
   "guest-rush": bankText("rush-start"),
 };
 
+/** The toast that closes each seeded event, from the line bank. */
+const SEEDED_END_LINES: Readonly<Record<SeededEventId, string>> = {
+  shower: bankText("shower-end"),
+  "guest-rush": bankText("rush-end"),
+};
+
 /**
  * Each seeded event as the setup screen and the status line describe it. The
  * status line is what is on right now; the note says what it does.
@@ -185,6 +191,8 @@ export function describeEvent(event: GameEvent): string | null {
       return "Fred is double-checking his shoes. Again.";
     case "seeded-start":
       return SEEDED_LINES[event.id];
+    case "seeded-end":
+      return SEEDED_END_LINES[event.id];
     case "level-finished":
       return event.early
         ? "Everything is set. Early, even."

@@ -456,6 +456,18 @@ export const LINE_BANK: readonly BankLine[] = [
     text: "Guests are early and the buffet is calling. Food on the grill burns faster until it passes.",
   },
   {
+    id: "shower-end",
+    tag: "Fiction",
+    fact: null,
+    text: "The shower moves off across the lawn. The grass dries enough to walk on.",
+  },
+  {
+    id: "rush-end",
+    tag: "Fiction",
+    fact: null,
+    text: "The early guests have eaten. The grill is back to its usual pace.",
+  },
+  {
     id: "signature-tables-food",
     tag: "Fiction",
     fact: null,

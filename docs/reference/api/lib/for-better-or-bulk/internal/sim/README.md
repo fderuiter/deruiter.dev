@@ -18,6 +18,7 @@
 ## Functions
 
 - [frontTile](functions/frontTile.md)
+- [interactTile](functions/interactTile.md)
 - [recordedFrame](functions/recordedFrame.md)
 - [replayLevel](functions/replayLevel.md)
 - [stepGame](functions/stepGame.md)

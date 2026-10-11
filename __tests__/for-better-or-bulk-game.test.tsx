@@ -8,7 +8,15 @@ import {
   screen,
   within,
 } from "@testing-library/react";
-import { LEFT_LINE } from "@/lib/for-better-or-bulk";
+import {
+  DEFAULT_SETUP,
+  ITEM_LABELS,
+  LEFT_LINE,
+  createLevel,
+  type Frame,
+  type GameState,
+} from "@/lib/for-better-or-bulk";
+import { BrothersDialog } from "@/components/for-better-or-bulk/BrothersDialog";
 
 const frame = vi.hoisted(() => ({
   callback: null as null | ((deltaMs: number) => void),
@@ -16,6 +24,30 @@ const frame = vi.hoisted(() => ({
 }));
 
 const scores = vi.hoisted(() => ({ record: vi.fn() }));
+
+/** Lets a test end the level on the next engine step, whatever the plan. */
+const engine = vi.hoisted(() => ({
+  finishNext: false,
+  inputs: [] as Frame[],
+}));
+
+vi.mock("@/lib/for-better-or-bulk", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@/lib/for-better-or-bulk")>();
+  return {
+    ...actual,
+    stepGame: (state: GameState, input: Frame) => {
+      engine.inputs.push(input);
+      const result = actual.stepGame(state, input);
+      if (!engine.finishNext) return result;
+      engine.finishNext = false;
+      return {
+        ...result,
+        state: { ...result.state, phase: "done" as const },
+      };
+    },
+  };
+});
 
 vi.mock("@/hooks/useAnimationFrame", () => ({
   useAnimationFrame: (
@@ -55,6 +87,8 @@ describe("For Better or Bulk cabinet (#1906)", () => {
   beforeEach(() => {
     frame.callback = null;
     frame.active = false;
+    engine.finishNext = false;
+    engine.inputs = [];
     scores.record.mockClear();
     window.history.replaceState(null, "", "/arcade/for-better-or-bulk?speed=8");
   });
@@ -130,6 +164,8 @@ describe("For Better or Bulk cabinet (#1906)", () => {
   });
 
   it("stops for the brothers' text, records the choice and ends on the receipt", () => {
+    // Normal speed: only an unsped run reaches the leaderboard.
+    window.history.replaceState(null, "", "/arcade/for-better-or-bulk?speed=1");
     render(<ForBetterOrBulkGame />);
     start();
     runUntil(() => screen.queryByTestId("fbb-brothers") !== null);
@@ -153,6 +189,126 @@ describe("For Better or Bulk cabinet (#1906)", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Change the plan" }));
     expect(screen.getByTestId("fbb-setup")).toBeTruthy();
+  });
+
+  it("keeps a sped-up run off the leaderboard (#1914)", () => {
+    render(<ForBetterOrBulkGame />);
+    start();
+    runUntil(() => screen.queryByTestId("fbb-brothers") !== null);
+    fireEvent.click(
+      within(screen.getByRole("dialog")).getByRole("button", {
+        name: /Go with them/,
+      })
+    );
+    runUntil(() => screen.queryByTestId("fbb-receipt") !== null);
+    expect(screen.getByTestId("fbb-receipt")).toBeTruthy();
+    expect(scores.record).not.toHaveBeenCalled();
+  });
+
+  it("ends the level when a swap lands on the step that finishes it (#1914)", () => {
+    render(<ForBetterOrBulkGame />);
+    start();
+    // An E press has not reached the engine yet when Tab is pressed.
+    fireEvent.keyDown(game(), { key: "Enter", code: "Enter" });
+    engine.finishNext = true;
+    fireEvent.keyDown(game(), { key: "Tab", code: "Tab" });
+    expect(screen.getByTestId("fbb-receipt")).toBeTruthy();
+  });
+
+  it("ignores held Tab and Escape repeats (#1914)", () => {
+    render(<ForBetterOrBulkGame />);
+    start();
+    fireEvent.keyDown(game(), { key: "Tab", code: "Tab", repeat: true });
+    expect(screen.getByTestId("fbb-active").textContent).toContain("Abbi");
+    fireEvent.keyDown(game(), { key: "Escape", code: "Escape", repeat: true });
+    expect(frame.active).toBe(true);
+    expect(screen.queryByText(/^Paused at/)).toBeNull();
+  });
+
+  it("still moves on a tap shorter than one tick (#1914)", () => {
+    render(<ForBetterOrBulkGame />);
+    start();
+    fireEvent.keyDown(game(), { key: "ArrowLeft", code: "ArrowLeft" });
+    fireEvent.keyUp(game(), { key: "ArrowLeft", code: "ArrowLeft" });
+    engine.inputs = [];
+    act(() => frame.callback?.(40));
+    expect(engine.inputs[0]?.inputs.abbi.moveX).toBe(-1);
+    expect(engine.inputs.slice(1).every((f) => f.inputs.abbi.moveX === 0)).toBe(
+      true
+    );
+  });
+
+  it("pauses with Escape from the Pause button (#1914)", () => {
+    render(<ForBetterOrBulkGame />);
+    start();
+    const pause = screen.getByRole("button", { name: "Pause" });
+    pause.focus();
+    fireEvent.keyDown(pause, { key: "Escape", code: "Escape" });
+    expect(frame.active).toBe(false);
+  });
+
+  it("pauses on a click outside, not when a focused control is removed (#1914)", () => {
+    render(<ForBetterOrBulkGame />);
+    start();
+    const pause = screen.getByRole("button", { name: "Pause" });
+    fireEvent.blur(pause, { relatedTarget: null });
+    expect(frame.active).toBe(true);
+    fireEvent.blur(game(), { relatedTarget: null });
+    expect(frame.active).toBe(false);
+  });
+
+  it("keeps focus on the boundary after a mouse pause and resume (#1914)", () => {
+    render(<ForBetterOrBulkGame />);
+    start();
+    screen.getByRole("button", { name: "Pause" }).focus();
+    fireEvent.click(screen.getByRole("button", { name: "Pause" }));
+    expect(document.activeElement).toBe(game());
+    expect(screen.getByRole("region", { name: /^Paused at/ })).toBeTruthy();
+    fireEvent.click(screen.getAllByRole("button", { name: "Resume" })[0]);
+    expect(document.activeElement).toBe(game());
+    expect(frame.active).toBe(true);
+  });
+
+  it("pauses when focus leaves the cabinet (#1914)", () => {
+    render(<ForBetterOrBulkGame />);
+    start();
+    fireEvent.blur(game(), { relatedTarget: document.body });
+    expect(frame.active).toBe(false);
+    expect(screen.getByText(/^Paused at/)).toBeTruthy();
+  });
+
+  it("says what Abbi carries and how Fred is, from the level (#1914)", () => {
+    const level = createLevel(DEFAULT_SETUP);
+    const holding = {
+      ...level,
+      players: {
+        ...level.players,
+        abbi: {
+          ...level.players.abbi,
+          holding: { kind: "roses" as const, madeBy: null },
+        },
+      },
+    };
+    const { unmount } = render(
+      <BrothersDialog state={holding} onDecide={vi.fn()} />
+    );
+    expect(
+      screen.getByText(new RegExp(`Abbi is carrying ${ITEM_LABELS.roses}`))
+    ).toBeTruthy();
+    expect(screen.getByText(/Fred is nervous/)).toBeTruthy();
+    unmount();
+
+    const free = {
+      ...level,
+      players: {
+        ...level.players,
+        fred: { ...level.players.fred, calm: true },
+      },
+    };
+    render(<BrothersDialog state={free} onDecide={vi.fn()} />);
+    expect(screen.getByText(/Abbi has her hands free/)).toBeTruthy();
+    expect(screen.queryByText(/carrying|chairs/)).toBeNull();
+    expect(screen.getByText(/Fred has calmed down/)).toBeTruthy();
   });
 
   it("offers a break only with a promise about work that is in the plan", () => {

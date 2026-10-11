@@ -1445,7 +1445,10 @@
   --fbb-stage: #13151a;
   --fbb-panel: #1b1e24;
   --fbb-selected: #2a2522;
+  /* Borders and dividers: 3.7:1 on --fbb-stage (WCAG 1.4.11). */
   --fbb-rule: rgba(255, 255, 255, 0.12);
+  /* Control and dialog borders: 3.7:1 on the stage (WCAG 1.4.11). */
+  --fbb-control: #6b7079;
   --fbb-text: #f4f4f6;
   --fbb-dim: #b4b8c0;
   --fbb-accent: #f59e0b;

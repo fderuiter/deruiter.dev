@@ -132,9 +132,10 @@ export function ForBetterOrBulkGame({
 
   const boundaryRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const pauseRef = useRef<HTMLButtonElement>(null);
   const stateRef = useRef<GameState | null>(null);
-  const framesRef = useRef<Frame[]>([]);
   const held = useRef(new Set<string>());
+  const tapped = useRef(new Set<string>());
   const pressed = useRef(new Set<string>());
   const accumulator = useRef(0);
   const toastId = useRef(0);
@@ -185,25 +186,37 @@ export function ForBetterOrBulkGame({
     };
   }, []);
 
-  const finish = useCallback((state: GameState) => {
-    const result = computeReceipt(state);
-    setReceipt(result);
-    setPhase("receipt");
-    recordArcadeScore(FBB_GAME_ID, placements(state), { title: result.title });
-  }, []);
+  const finish = useCallback(
+    (state: GameState) => {
+      const result = computeReceipt(state);
+      setReceipt(result);
+      setPhase("receipt");
+      // A sped-up run is for watching or testing, so it stays off the board.
+      if (speed === 1) {
+        recordArcadeScore(FBB_GAME_ID, placements(state), {
+          title: result.title,
+        });
+      }
+    },
+    [speed]
+  );
 
-  /** Applies one engine step and everything that follows from it. */
-  const advance = useCallback(
-    (frame: Frame) => {
+  /**
+   * The one path for every engine step (the loop, a swap and a decision):
+   * applies the frame, shows the new state and finishes the level if it ended.
+   */
+  const step = useCallback(
+    (frame: Frame): GameState | null => {
       const state = stateRef.current;
       if (!state) return null;
       const result = stepGame(state, frame);
       stateRef.current = result.state;
-      framesRef.current.push(frame);
       pushMessages(result.events);
+      setView(result.state);
+      if (result.state.phase === "done") finish(result.state);
       return result.state;
     },
-    [pushMessages]
+    [pushMessages, finish]
   );
 
   const start = useCallback((next: Setup, nextMode: ControlMode) => {
@@ -211,9 +224,9 @@ export function ForBetterOrBulkGame({
     setMode(nextMode);
     const state = createLevel(next);
     stateRef.current = state;
-    framesRef.current = [];
     accumulator.current = 0;
     held.current.clear();
+    tapped.current.clear();
     pressed.current.clear();
     activeRef.current = "abbi";
     setActive("abbi");
@@ -229,35 +242,46 @@ export function ForBetterOrBulkGame({
   }, []);
 
   const decide = (decision: PresenceDecision) => {
-    const state = advance({ ...IDLE_FRAME, decision });
-    if (state) setView(state);
+    if (userPaused) return;
+    tapped.current.clear();
+    step({ ...IDLE_FRAME, decision });
     boundaryRef.current?.focus({ preventScroll: true });
+  };
+
+  /** Pauses or resumes the clock and says so to screen readers. */
+  const setPaused = (next: boolean) => {
+    // Keys held when the clock stops would otherwise still be "down" on resume.
+    held.current.clear();
+    tapped.current.clear();
+    pressed.current.clear();
+    setUserPaused(next);
+    setAnnouncement(next ? "Paused. Choose Resume to continue." : "Resumed.");
   };
 
   useAnimationFrame(
     (deltaMs) => {
-      let state = stateRef.current;
-      if (!state || state.phase !== "playing") return;
+      const current = stateRef.current;
+      if (!current || current.phase !== "playing") return;
       accumulator.current += (deltaMs / 1000) * speed;
       const maxSteps = MAX_STEPS_PER_FRAME * speed;
       let steps = 0;
       while (accumulator.current >= TICK_SECONDS && steps < maxSteps) {
         const frame = buildFrame(
           held.current,
+          tapped.current,
           pressed.current,
           mode,
           activeRef.current
         );
         pressed.current.clear();
-        state = advance(frame) ?? state;
+        tapped.current.clear();
+        const next = step(frame);
         accumulator.current -= TICK_SECONDS;
         steps++;
-        if (state.phase !== "playing") break;
+        if (!next || next.phase !== "playing") break;
       }
       if (steps === maxSteps) accumulator.current = 0;
       draw(scaleRef.current);
-      setView((previous) => (previous === state ? previous : state));
-      if (state.phase === "done") finish(state);
     },
     { isActive: phase === "playing" && !paused && view?.phase === "playing" }
   );
@@ -268,24 +292,40 @@ export function ForBetterOrBulkGame({
   }, [phase, view, active, draw, scaleRef]);
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (phase !== "playing" || event.target !== boundaryRef.current) return;
+    if (phase !== "playing") return;
     if (event.ctrlKey || event.metaKey || event.altKey) return;
+    // Escape pauses or resumes from anywhere in the cabinet, including the
+    // Pause and Resume buttons; every other key belongs to the game surface.
     if (event.key === "Escape") {
       event.preventDefault();
-      held.current.clear();
-      setUserPaused((p) => !p);
+      if (!event.repeat) setPaused(!userPaused);
       return;
     }
+    if (event.target !== boundaryRef.current) return;
     if (paused) return;
-    if (event.key === "Tab" && mode === "solo" && !event.shiftKey) {
+    if (event.key === "Tab" && mode === "solo" && event.shiftKey) {
+      // Tab swaps people in solo play, so Shift+Tab moves to Pause instead.
       event.preventDefault();
+      pauseRef.current?.focus({ preventScroll: true });
+      return;
+    }
+    if (event.key === "Tab" && mode === "solo") {
+      event.preventDefault();
+      if (event.repeat) return;
       // A press that has not reached the engine yet belongs to the person
       // who was active when it was made, so apply it before swapping.
       if (pressed.current.size > 0 && stateRef.current?.phase === "playing") {
-        advance(
-          buildFrame(held.current, pressed.current, mode, activeRef.current)
+        step(
+          buildFrame(
+            held.current,
+            tapped.current,
+            pressed.current,
+            mode,
+            activeRef.current
+          )
         );
         pressed.current.clear();
+        tapped.current.clear();
       }
       const next = activeRef.current === "fred" ? "abbi" : "fred";
       activeRef.current = next;
@@ -296,7 +336,10 @@ export function ForBetterOrBulkGame({
     if (GAME_CODES.has(event.code)) {
       event.preventDefault();
       held.current.add(event.code);
-      if (!event.repeat) pressed.current.add(event.code);
+      if (!event.repeat) {
+        pressed.current.add(event.code);
+        tapped.current.add(event.code);
+      }
     }
   };
 
@@ -331,18 +374,19 @@ export function ForBetterOrBulkGame({
           {mode === "solo" ? (
             <span data-testid="fbb-active">
               Playing as <span className="font-bold">{NAMES[active]}</span> ·
-              Tab to swap
+              Tab to swap · Shift+Tab for Pause
             </span>
           ) : (
             <span>Fred: WASD, E, F · Abbi: arrows, Enter, Shift</span>
           )}
           <button
+            ref={pauseRef}
             type="button"
             onClick={() => {
-              held.current.clear();
-              setUserPaused((p) => !p);
+              setPaused(!userPaused);
+              boundaryRef.current?.focus({ preventScroll: true });
             }}
-            className="ml-auto min-h-11 rounded border border-[var(--fbb-rule)] px-3 font-bold uppercase tracking-wide active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--fbb-focus)]"
+            className="ml-auto min-h-11 rounded border border-[var(--fbb-control)] px-3 font-bold uppercase tracking-wide active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--fbb-focus)]"
           >
             {userPaused ? "Resume" : "Pause"}
           </button>
@@ -437,15 +481,19 @@ export function ForBetterOrBulkGame({
         </div>
 
         {userPaused ? (
-          <div className="absolute inset-0 z-30 flex items-center justify-center bg-[rgba(13,14,17,0.72)]">
-            <div className="flex flex-col gap-2 rounded border border-[var(--fbb-rule)] bg-[var(--fbb-panel)] p-4 font-mono text-xs">
-              <p className="font-bold">
+          <div
+            role="region"
+            aria-labelledby="fbb-paused-title"
+            className="absolute inset-0 z-50 flex items-center justify-center bg-[rgba(13,14,17,0.72)]"
+          >
+            <div className="flex flex-col gap-2 rounded border border-[var(--fbb-control)] bg-[var(--fbb-panel)] p-4 font-mono text-xs">
+              <p id="fbb-paused-title" className="font-bold">
                 Paused at {clockLabel(view.time, view.duration)}
               </p>
               <button
                 type="button"
                 onClick={() => {
-                  setUserPaused(false);
+                  setPaused(false);
                   boundaryRef.current?.focus({ preventScroll: true });
                 }}
                 className="min-h-11 rounded border border-[var(--fbb-accent)] px-3 font-bold uppercase active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--fbb-focus)]"
@@ -455,7 +503,7 @@ export function ForBetterOrBulkGame({
               <button
                 type="button"
                 onClick={() => setPhase("setup")}
-                className="min-h-11 rounded border border-[var(--fbb-rule)] px-3 font-bold uppercase active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--fbb-focus)]"
+                className="min-h-11 rounded border border-[var(--fbb-control)] px-3 font-bold uppercase active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--fbb-focus)]"
               >
                 Back to the plan
               </button>
@@ -480,8 +528,15 @@ export function ForBetterOrBulkGame({
       onKeyDown={handleKeyDown}
       onKeyUp={handleKeyUp}
       onBlur={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget as Node | null))
-          held.current.clear();
+        const next = event.relatedTarget as Node | null;
+        if (next && event.currentTarget.contains(next)) return;
+        held.current.clear();
+        tapped.current.clear();
+        // A focused child removed from the page (the Start button) blurs
+        // with no target; anything else that takes focus away pauses.
+        const removedChild =
+          next === null && event.target !== event.currentTarget;
+        if (phase === "playing" && !removedChild) setPaused(true);
       }}
       className="@container relative flex min-h-[460px] w-full min-w-0 flex-col items-stretch bg-[var(--fbb-stage)] text-[var(--fbb-text)] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--fbb-focus)]"
     >

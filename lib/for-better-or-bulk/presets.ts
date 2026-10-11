@@ -167,6 +167,15 @@ export const WALKABLE_TILES = ".12SO";
 export const LEVEL_SECONDS = 200;
 export const RELAXED_LEVEL_SECONDS = 330;
 
+/**
+ * Scales a time written for the standard 200 second clock to a level of
+ * `duration` seconds, so the brothers' window and Fred's time away keep their
+ * place on the relaxed clock. Exact for the relaxed clock's 330 seconds.
+ */
+export function onLevelClock(seconds: number, duration: number): number {
+  return (seconds * duration) / LEVEL_SECONDS;
+}
+
 /** The engine's fixed step, in seconds. */
 export const TICK_SECONDS = 1 / 30;
 
@@ -186,20 +195,31 @@ export const SIMPLIFY_SECONDS = 1;
 /** Holding work at the bin this long throws out the item in hand. */
 export const BIN_HOLD_SECONDS = 0.5;
 
-/** At most this many items on the floor at once; Fred's drop on leaving is exempt. */
+/**
+ * How many items the floor takes before a put-down is refused. Fred's drop
+ * when he leaves ignores the cap, so the floor can briefly hold one more.
+ */
 export const FLOOR_CAP = 3;
+
+/** Game seconds between two floor-full toasts for the same person. */
+export const FLOOR_FULL_REPEAT_SECONDS = 3;
 
 /**
  * The brothers' text lands at the later of the earliest time and the first
  * full target, and never after the latest time, which keeps it ahead of the
- * calls at 130 s and later. Level seconds. These replace the old fixed 50 s.
+ * standard clock's calls at 130 s and later. Seconds on the standard clock;
+ * scale with `onLevelClock` for a relaxed level, where the 130 s call lands
+ * first. These replace the old fixed 50 s.
  */
 export const BROTHERS_EARLIEST_AT = 90;
 export const BROTHERS_LATEST_AT = 110;
 
-/** How long each answer keeps Fred away, in level seconds. */
+/**
+ * How long each answer keeps Fred away, in seconds on the standard clock. A
+ * leave at the latest text returns him at 180 s, with time left to help.
+ */
 export const BREAK_SECONDS = 40;
-export const LEAVE_SECONDS = 110;
+export const LEAVE_SECONDS = 70;
 
 /** A nervous Fred who stays re-ties his shoes this often, for this long. */
 export const SHOE_INTERVAL_SECONDS = 20;

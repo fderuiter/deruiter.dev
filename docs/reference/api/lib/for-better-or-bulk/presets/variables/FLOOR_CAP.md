@@ -8,4 +8,5 @@
 
 > `const` **FLOOR\_CAP**: `3` = `3`
 
-At most this many items on the floor at once; Fred's drop on leaving is exempt.
+How many items the floor takes before a put-down is refused. Fred's drop
+when he leaves ignores the cap, so the floor can briefly hold one more.

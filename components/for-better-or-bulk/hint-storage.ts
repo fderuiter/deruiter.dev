@@ -13,21 +13,28 @@ const listeners = new Set<() => void>();
 /** The choice made while storage could not keep it; null until one is made. */
 let sessionChoice: boolean | null = null;
 
-/** The saved choice, or the session's choice when nothing was saved. */
+/**
+ * The choice to show: the session's choice while storage could not keep one,
+ * otherwise the saved choice. A stale saved value never overrides a choice
+ * the reader just made.
+ */
 export function readHideTips(): boolean {
+  if (sessionChoice !== null) return sessionChoice;
   try {
     const stored = safeRawStorage.getItem(KEY);
     if (stored !== null) return stored === "1";
   } catch {
-    // Unreadable storage falls through to the session's choice.
+    // Unreadable storage falls through to the default.
   }
-  return sessionChoice ?? false;
+  return false;
 }
 
 /** Saves the choice and tells every mounted strip to re-read it. */
 export function writeHideTips(hidden: boolean): void {
   try {
     safeRawStorage.setItem(KEY, hidden ? "1" : "0");
+    // Saved, so the stored value is the truth again.
+    sessionChoice = null;
   } catch {
     sessionChoice = hidden;
   }

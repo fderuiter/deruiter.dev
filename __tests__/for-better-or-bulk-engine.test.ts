@@ -16,6 +16,7 @@ import {
   LEFT_LINE,
   LEAVE_SECONDS,
   PHONE_SECONDS,
+  RELAXED_LEVEL_SECONDS,
   ROSE_BUNCHES,
   TICK_SECONDS,
   VENUE_MAP,
@@ -28,6 +29,7 @@ import {
   frontTile,
   getHint,
   getPrompt,
+  onLevelClock,
   readinessLines,
   replayLevel,
   stepGame,
@@ -143,6 +145,35 @@ function onlyOpen(state: GameState, keep: (t: Target) => boolean): GameState {
       keep(t) ? t : { ...t, status: "unplanned" as const }
     ),
   };
+}
+
+/** Marks the open targets that want `kind` as filled, as if already served. */
+function filledFor(state: GameState, kind: Item["kind"]): GameState {
+  return {
+    ...state,
+    targets: state.targets.map((t) =>
+      t.status === "open" && t.wants === kind
+        ? {
+            ...t,
+            status: "filled" as const,
+            filled: Array.from({ length: t.capacity }, () => ({
+              kind,
+              madeBy: "abbi" as const,
+            })),
+            filledBy: Array.from({ length: t.capacity }, () => "abbi" as const),
+          }
+        : t
+    ),
+  };
+}
+
+/** Sets how many of one crate kind are left in stock. */
+function withStock(
+  state: GameState,
+  kind: Item["kind"],
+  count: number
+): GameState {
+  return { ...state, stock: { ...state.stock, [kind]: count } };
 }
 
 /** Puts an item on a station tile, bypassing the hands. */
@@ -561,6 +592,35 @@ describe("the brothers' text", () => {
     expect(later.players.fred.x).toBe(away.players.fred.x);
   });
 
+  it("returns a leaving Fred between 160 and 180 seconds, with time to help", () => {
+    const early = decide(
+      untilBrothers({ ...createLevel(DEFAULT_SETUP), firstFilledAt: 0 }),
+      { choice: "leave", commitment: null }
+    );
+    const late = decide(untilBrothers(createLevel(DEFAULT_SETUP)), {
+      choice: "leave",
+      commitment: null,
+    });
+    expect(early.brothersAt).toBeCloseTo(BROTHERS_EARLIEST_AT, 5);
+    expect(early.returnsAt).toBeCloseTo(160, 5);
+    expect(late.returnsAt).toBeCloseTo(180, 5);
+    expect(late.returnsAt).toBeLessThan(late.duration);
+  });
+
+  it("scales the brothers' window and Fred's time away on the relaxed clock", () => {
+    const relaxed: Setup = { ...DEFAULT_SETUP, relaxed: true };
+    const paused = untilBrothers(createLevel(relaxed));
+    const window = onLevelClock(BROTHERS_LATEST_AT, RELAXED_LEVEL_SECONDS);
+    expect(paused.duration).toBe(RELAXED_LEVEL_SECONDS);
+    expect(paused.brothersAt).toBeCloseTo(181.5, 5);
+    expect(window).toBeCloseTo(181.5, 5);
+    const left = decide(paused, { choice: "leave", commitment: null });
+    expect(left.returnsAt).toBeCloseTo(181.5 + 115.5, 5);
+    expect(left.returnsAt).toBeLessThan(RELAXED_LEVEL_SECONDS);
+    const broke = decide(paused, { choice: "break", commitment: "chairs" });
+    expect(broke.returnsAt).toBeCloseTo(181.5 + 66, 5);
+  });
+
   it("has a nervous Fred who stays re-tie his shoes", () => {
     const staying = decide(untilBrothers(createLevel(DEFAULT_SETUP)), {
       choice: "stay",
@@ -896,6 +956,54 @@ describe("the bin, returns and the floor", () => {
     expect(second.players.fred.holding?.kind).toBe("burnt");
   });
 
+  it("breaks a bin hold when a phone call lands, so the item is not thrown out after it", () => {
+    // Registry and 3D intro leave the 30 second call unblocked, so Fred is busy.
+    const setup: Setup = {
+      ...DEFAULT_SETUP,
+      capabilities: ["registry", "intro3d"],
+    };
+    const start = place(createLevel(setup), "fred", 6, 4, [0, -1], {
+      kind: "burnt",
+      madeBy: null,
+    });
+    const beforeCall = run(start, IDLE_FRAME, ticks(29.6)).state;
+    // A hold of about a third of a second, ending just before the call.
+    const partial = run(
+      beforeCall,
+      frameFor("fred", { work: true }),
+      ticks(0.35)
+    ).state;
+    expect(partial.players.fred.binHold).toBeGreaterThan(0.3);
+    const call = run(
+      partial,
+      frameFor("fred", { work: true }),
+      ticks(PHONE_SECONDS + 0.2)
+    );
+    expect(call.events).toContainEqual({
+      type: "interruption",
+      id: "garden-formal",
+      player: "fred",
+      blockedBy: null,
+    });
+    expect(call.events.some((e) => e.type === "thrown-out")).toBe(false);
+    expect(call.state.players.fred.holding?.kind).toBe("burnt");
+    expect(call.state.players.fred.binHold).toBeLessThan(BIN_HOLD_SECONDS);
+  });
+
+  it("starts a bin hold over when Fred leaves on a break", () => {
+    const paused = untilBrothers(createLevel(DEFAULT_SETUP));
+    const holding: GameState = {
+      ...paused,
+      players: {
+        ...paused.players,
+        fred: { ...paused.players.fred, binHold: 0.4 },
+      },
+    };
+    const away = decide(holding, { choice: "break", commitment: "chairs" });
+    expect(away.players.fred.presence).toBe("away");
+    expect(away.players.fred.binHold).toBe(0);
+  });
+
   it("returns an item to the crate it came from", () => {
     const start = place(createLevel(DEFAULT_SETUP), "fred", 2, 3, [-1, 0]);
     const taken = press(start, "fred").state;
@@ -1102,6 +1210,98 @@ describe("the coach hints", () => {
       hint: "Carry the roses to the PETALS bucket (P).",
     },
     {
+      name: "roses, arrangements filled, aisle open: carry the roses to the PETALS bucket",
+      state: () =>
+        place(
+          filledFor(createLevel(YES_SETUP), "arrangement"),
+          "abbi",
+          2,
+          2,
+          [0, 1],
+          { kind: "roses", madeBy: null }
+        ),
+      id: "abbi",
+      hint: "Carry the roses to the PETALS bucket (P).",
+    },
+    {
+      name: "roses, every arrangement filled, aisle unplanned: no roses to carry",
+      state: () =>
+        place(
+          filledFor(createLevel(DEFAULT_SETUP), "arrangement"),
+          "abbi",
+          2,
+          2,
+          [0, 1],
+          { kind: "roses", madeBy: null }
+        ),
+      id: "abbi",
+      hint: null,
+    },
+    {
+      name: "aisle open and roses in stock: grab roses for the PETALS bucket",
+      state: () => onlyOpen(createLevel(YES_SETUP), (t) => t.kind === "aisle"),
+      id: "fred",
+      hint: "Grab roses from the ROSE crate on the left.",
+    },
+    {
+      name: "nothing open, roses on the ARRANGE table: no hint to arrange",
+      state: () =>
+        withStation(
+          onlyOpen(createLevel(DEFAULT_SETUP), () => false),
+          8,
+          3,
+          { kind: "roses", madeBy: null }
+        ),
+      id: "fred",
+      hint: null,
+    },
+    {
+      name: "roses on the PETALS bucket with the aisle unplanned: grab roses instead of plucking",
+      state: () =>
+        withStation(createLevel(DEFAULT_SETUP), 12, 3, {
+          kind: "roses",
+          madeBy: null,
+        }),
+      id: "fred",
+      hint: "Grab roses from the ROSE crate on the left.",
+    },
+    {
+      name: "no roses left in stock: no grab hint",
+      state: () =>
+        withStock(
+          onlyOpen(
+            createLevel(DEFAULT_SETUP),
+            (t) => t.wants === "arrangement"
+          ),
+          "roses",
+          0
+        ),
+      id: "fred",
+      hint: null,
+    },
+    {
+      name: "no raw hot dogs left: no grab hint",
+      state: () =>
+        withStock(
+          onlyOpen(createLevel(DEFAULT_SETUP), (t) => t.wants === "hotdogs"),
+          "hotdogs-raw",
+          0
+        ),
+      id: "fred",
+      hint: null,
+    },
+    {
+      name: "no lanterns left: no grab hint",
+      state: () =>
+        withStock(
+          onlyOpen(createLevel(DEFAULT_SETUP), (t) => t.kind === "hook"),
+          "lantern",
+          0
+        ),
+      id: "fred",
+      hint: null,
+    },
+    {
       name: "holding petals: carry them to an aisle spot",
       state: () =>
         place(createLevel(YES_SETUP), "fred", 2, 2, [0, 1], {
@@ -1156,7 +1356,7 @@ describe("the coach hints", () => {
       state: () =>
         onlyOpen(createLevel(DEFAULT_SETUP), (t) => t.wants === "mac"),
       id: "fred",
-      hint: "Grab mac and cheese from the MAC crate on the left.",
+      hint: "Grab mac and cheese from the MAC crate on the top row.",
     },
     {
       name: "only the lantern hook left: grab a lantern",

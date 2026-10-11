@@ -12,11 +12,14 @@ import {
   DEFAULT_SETUP,
   ITEM_LABELS,
   LEFT_LINE,
+  RELAXED_LEVEL_SECONDS,
   createLevel,
   type Frame,
+  type GameEvent,
   type GameState,
 } from "@/lib/for-better-or-bulk";
 import { BrothersDialog } from "@/components/for-better-or-bulk/BrothersDialog";
+import { throttleFloorFull } from "@/components/for-better-or-bulk/messages";
 
 const frame = vi.hoisted(() => ({
   callback: null as null | ((deltaMs: number) => void),
@@ -325,6 +328,31 @@ describe("For Better or Bulk cabinet (#1906)", () => {
     expect(screen.queryByTestId("fbb-brothers")).toBeNull();
     expect(frame.active).toBe(true);
   });
+
+  it("gives the return time for a leave and a break on either clock", () => {
+    const standard = createLevel(DEFAULT_SETUP);
+    const atText = { ...standard, phase: "brothers" as const, time: 110 };
+    const { unmount } = render(
+      <BrothersDialog state={atText} onDecide={vi.fn()} />
+    );
+    expect(
+      screen.getByRole("button", { name: /Go with them/ }).textContent
+    ).toContain("Back around 3:18.");
+    unmount();
+
+    const relaxedText = {
+      ...createLevel({ ...DEFAULT_SETUP, relaxed: true }),
+      phase: "brothers" as const,
+      time: 181.5,
+    };
+    expect(relaxedText.duration).toBe(RELAXED_LEVEL_SECONDS);
+    render(<BrothersDialog state={relaxedText} onDecide={vi.fn()} />);
+    expect(
+      screen.getByRole("button", { name: /Go with them/ }).textContent
+    ).toContain("Back around 3:18.");
+    fireEvent.click(screen.getByRole("button", { name: /Take a short break/ }));
+    expect(screen.getByText(/Back around 2:15, calmer/)).toBeTruthy();
+  });
 });
 
 describe("For Better or Bulk coach strip and counts", () => {
@@ -377,6 +405,38 @@ describe("For Better or Bulk coach strip and counts", () => {
     expect(window.localStorage.getItem("fbb_hide_tips")).toBe("0");
   });
 
+  it("shows Fred as out with his brothers while he is away", () => {
+    render(<ForBetterOrBulkGame initialMode="coop" />);
+    start();
+    runUntil(() => screen.queryByTestId("fbb-brothers") !== null);
+    fireEvent.click(screen.getByRole("button", { name: /Go with them/ }));
+    const coach = screen.getByTestId("fbb-coach");
+    expect(within(coach).getByRole("list").textContent).toContain(
+      "Fred is out with his brothers."
+    );
+    expect(coach.textContent).not.toContain("Fred: ");
+  });
+
+  it("hides the strip when a stale saved choice is overridden and the save fails", () => {
+    window.localStorage.setItem("fbb_hide_tips", "0");
+    const setItem = vi
+      .spyOn(Storage.prototype, "setItem")
+      .mockImplementation(() => {
+        throw new Error("quota");
+      });
+    render(<ForBetterOrBulkGame />);
+    start();
+    expect(screen.getByTestId("fbb-coach")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Hide tips" }));
+    expect(screen.queryByTestId("fbb-coach")).toBeNull();
+    expect(setItem).toHaveBeenCalled();
+    setItem.mockRestore();
+    // A save that works again clears the session choice, so Show tips persists.
+    fireEvent.click(screen.getByRole("button", { name: "Show tips" }));
+    expect(screen.getByTestId("fbb-coach")).toBeTruthy();
+    expect(window.localStorage.getItem("fbb_hide_tips")).toBe("0");
+  });
+
   it("still renders the cabinet when storage throws", () => {
     vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
       throw new Error("blocked");
@@ -390,5 +450,28 @@ describe("For Better or Bulk coach strip and counts", () => {
     expect(screen.getByTestId("fbb-coach")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Hide tips" }));
     expect(screen.queryByTestId("fbb-coach")).toBeNull();
+  });
+});
+
+describe("For Better or Bulk floor-full toasts", () => {
+  it("shows one floor-full line per person every 3 seconds of game time", () => {
+    const shown: Partial<Record<"fred" | "abbi", number>> = {};
+    const full = (player: "fred" | "abbi"): GameEvent => ({
+      type: "floor-full",
+      player,
+    });
+    expect(throttleFloorFull([full("fred")], 10, shown)).toHaveLength(1);
+    expect(throttleFloorFull([full("fred")], 11, shown)).toHaveLength(0);
+    expect(throttleFloorFull([full("abbi")], 11, shown)).toHaveLength(1);
+    expect(throttleFloorFull([full("fred")], 12.9, shown)).toHaveLength(0);
+    expect(throttleFloorFull([full("fred")], 13, shown)).toHaveLength(1);
+  });
+
+  it("passes every other event through", () => {
+    const events: GameEvent[] = [
+      { type: "brothers-text" },
+      { type: "floor-full", player: "fred" },
+    ];
+    expect(throttleFloorFull(events, 0, {})).toEqual(events);
   });
 });

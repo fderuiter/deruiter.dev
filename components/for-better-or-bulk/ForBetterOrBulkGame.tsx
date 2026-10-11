@@ -42,7 +42,7 @@ import { useCanvasResolution } from "@/hooks/useCanvasResolution";
 import { useCabinetSetup } from "@/components/arcade/CabinetSetupContext";
 import { BrothersDialog } from "./BrothersDialog";
 import { buildFrame, GAME_CODES, type ControlMode } from "./input";
-import { describeEvent } from "./messages";
+import { describeEvent, throttleFloorFull } from "./messages";
 import { readHideTips, subscribeHideTips, writeHideTips } from "./hint-storage";
 import { ReceiptView } from "./ReceiptView";
 import { SetupScreen } from "./SetupScreen";
@@ -188,6 +188,7 @@ export function ForBetterOrBulkGame({
   const toastId = useRef(0);
   const toastTimers = useRef(new Set<ReturnType<typeof setTimeout>>());
   const activeRef = useRef<PlayerId>("abbi");
+  const floorFullShown = useRef<Partial<Record<PlayerId, number>>>({});
 
   const draw = useCallback(
     (scale: number) => {
@@ -258,7 +259,13 @@ export function ForBetterOrBulkGame({
       if (!state) return null;
       const result = stepGame(state, frame);
       stateRef.current = result.state;
-      pushMessages(result.events);
+      pushMessages(
+        throttleFloorFull(
+          result.events,
+          result.state.time,
+          floorFullShown.current
+        )
+      );
       setView(result.state);
       if (result.state.phase === "done") finish(result.state);
       return result.state;
@@ -275,6 +282,7 @@ export function ForBetterOrBulkGame({
     held.current.clear();
     tapped.current.clear();
     pressed.current.clear();
+    floorFullShown.current = {};
     activeRef.current = "abbi";
     setActive("abbi");
     setView(state);
@@ -482,11 +490,14 @@ export function ForBetterOrBulkGame({
               >
                 <ul className="flex flex-col gap-1">
                   {shown.map((id) => {
-                    const hint = getHint(view, id);
+                    const away = view.players[id].presence === "away";
+                    const hint = away
+                      ? `${NAMES[id]} is out with his brothers.`
+                      : getHint(view, id);
                     if (!hint) return null;
                     return (
                       <li key={id} className="break-words">
-                        {mode === "coop" ? `${NAMES[id]}: ` : null}
+                        {mode === "coop" && !away ? `${NAMES[id]}: ` : null}
                         {hint}
                       </li>
                     );

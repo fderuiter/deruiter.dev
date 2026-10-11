@@ -22,6 +22,7 @@ import {
   INTERRUPTIONS,
   LEAVE_SECONDS,
   MOVE_SPEED,
+  onLevelClock,
   PETAL_SECONDS,
   PHONE_SECONDS,
   PLAYER_RADIUS,
@@ -386,8 +387,8 @@ function crossed(before: number, after: number, at: number): boolean {
 function brothersDue(state: GameState): number {
   return clamp(
     state.firstFilledAt ?? Infinity,
-    BROTHERS_EARLIEST_AT,
-    BROTHERS_LATEST_AT
+    onLevelClock(BROTHERS_EARLIEST_AT, state.duration),
+    onLevelClock(BROTHERS_LATEST_AT, state.duration)
   );
 }
 
@@ -439,11 +440,20 @@ export function validateDecision(
 function decide(state: GameState, decision: PresenceDecision): StepResult {
   const fred = state.players.fred;
   const away = decision.choice !== "stay";
-  const seconds = decision.choice === "break" ? BREAK_SECONDS : LEAVE_SECONDS;
+  const seconds = onLevelClock(
+    decision.choice === "break" ? BREAK_SECONDS : LEAVE_SECONDS,
+    state.duration
+  );
   const events: GameEvent[] = [];
   let floor = state.floor;
   let leaving: Player = away
-    ? { ...fred, presence: "away", busyFor: 0, busyReason: null }
+    ? {
+        ...fred,
+        presence: "away",
+        busyFor: 0,
+        busyReason: null,
+        binHold: 0,
+      }
     : fred;
   const carried = fred.holding;
   if (away && carried) {
@@ -570,11 +580,13 @@ export function stepGame(state: GameState, frame: Frame): StepResult {
     const player = w.state.players[id];
     if (player.presence === "away") continue;
     if (player.busyFor > 0) {
+      // A call or a shoe retie breaks a bin hold: it has to be continuous.
       const busyFor = Math.max(0, player.busyFor - dt);
       setPlayer(w, {
         ...player,
         busyFor,
         busyReason: busyFor > 0 ? player.busyReason : null,
+        binHold: 0,
       });
       continue;
     }

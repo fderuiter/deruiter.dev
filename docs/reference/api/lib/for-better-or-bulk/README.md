@@ -188,6 +188,12 @@ Re-exports [FLOOR_CAP](presets/variables/FLOOR_CAP.md)
 
 ***
 
+### FLOOR\_FULL\_REPEAT\_SECONDS
+
+Re-exports [FLOOR_FULL_REPEAT_SECONDS](presets/variables/FLOOR_FULL_REPEAT_SECONDS.md)
+
+***
+
 ### FloorItem
 
 Re-exports [FloorItem](types/interfaces/FloorItem.md)
@@ -329,6 +335,12 @@ Re-exports [LEVEL_SECONDS](presets/variables/LEVEL_SECONDS.md)
 ### MOVE\_SPEED
 
 Re-exports [MOVE_SPEED](presets/variables/MOVE_SPEED.md)
+
+***
+
+### onLevelClock
+
+Re-exports [onLevelClock](presets/functions/onLevelClock.md)
 
 ***
 

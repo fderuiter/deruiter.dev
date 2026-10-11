@@ -186,21 +186,41 @@ function openTarget(state: GameState, wants: ItemKind): Target | undefined {
   return state.targets.find((t) => t.status === "open" && t.wants === wants);
 }
 
-function grabHint(kind: SupplyKind): string {
-  return `Grab ${CRATE_ITEM_NAMES[kind]} from the ${CRATE_NAMES[kind]} crate on the left.`;
+/** Where a crate sits in the venue: the top row, or the left-hand column. */
+function grabHint(state: GameState, kind: SupplyKind): string {
+  const crate = state.supplies.find((s) => s.kind === kind);
+  const where = crate && crate.y <= 1 ? "on the top row" : "on the left";
+  return `Grab ${CRATE_ITEM_NAMES[kind]} from the ${CRATE_NAMES[kind]} crate ${where}.`;
+}
+
+/**
+ * Where roses should go now: ARRANGE when an arrangement is still wanted, or
+ * PETALS when the aisle is planned and open, whichever has a free station.
+ * Null when neither wants roses or both are busy.
+ */
+function roseStation(state: GameState): StationKind | null {
+  if (openTarget(state, "arrangement") && freeStation(state, "arrange"))
+    return "arrange";
+  if (openTarget(state, "petals") && freeStation(state, "petals"))
+    return "petals";
+  return null;
 }
 
 /** The next step for someone carrying an item. */
 function carryHint(state: GameState, held: ItemKind): string | null {
   switch (held) {
     case "roses": {
-      if (!openTarget(state, "arrangement") && !openTarget(state, "petals"))
-        return null;
-      if (freeStation(state, "arrange"))
+      const wantsArrange = openTarget(state, "arrangement") !== undefined;
+      const wantsPetals = openTarget(state, "petals") !== undefined;
+      if (!wantsArrange && !wantsPetals) return null;
+      const station = roseStation(state);
+      if (station === "arrange")
         return `Carry the roses to ${STATION_NAMES.arrange}.`;
-      if (openTarget(state, "petals") && freeStation(state, "petals"))
+      if (station === "petals")
         return `Carry the roses to ${STATION_NAMES.petals}.`;
-      return `Wait for ${STATION_NAMES.arrange} to clear.`;
+      return wantsArrange
+        ? `Wait for ${STATION_NAMES.arrange} to clear.`
+        : `Wait for ${STATION_NAMES.petals} to clear.`;
     }
     case "arrangement": {
       const target = openTarget(state, "arrangement");
@@ -270,23 +290,20 @@ function fetchHint(state: GameState): string | null {
   }
   const loose = state.floor[0];
   if (loose) return `Pick up ${ITEM_NAMES[loose.item.kind]} from the floor.`;
-  if (stationsOf(state, "arrange").some((s) => s.item?.kind === "roses")) {
+  if (
+    openTarget(state, "arrangement") &&
+    stationsOf(state, "arrange").some((s) => s.item?.kind === "roses")
+  ) {
     return `Stand at ${STATION_NAMES.arrange} and hold work to arrange the roses.`;
   }
-  if (stationsOf(state, "petals").some((s) => s.item?.kind === "roses")) {
+  if (
+    openTarget(state, "petals") &&
+    stationsOf(state, "petals").some((s) => s.item?.kind === "roses")
+  ) {
     return `Stand at ${STATION_NAMES.petals} and hold work to pluck petals.`;
   }
-  const rosesWanted =
-    openTarget(state, "arrangement") !== undefined ||
-    openTarget(state, "petals") !== undefined;
-  if (
-    rosesWanted &&
-    state.stock.roses > 0 &&
-    (freeStation(state, "arrange") ||
-      (openTarget(state, "petals") !== undefined &&
-        freeStation(state, "petals")))
-  ) {
-    return grabHint("roses");
+  if (state.stock.roses > 0 && roseStation(state) !== null) {
+    return grabHint(state, "roses");
   }
   for (const raw of ["hotdogs-raw", "wings-raw"] as const) {
     const cooked = COOKED[raw];
@@ -296,11 +313,12 @@ function fetchHint(state: GameState): string | null {
       openTarget(state, cooked) &&
       freeStation(state, "grill")
     ) {
-      return grabHint(raw);
+      return grabHint(state, raw);
     }
   }
   for (const kind of ["mac", "quinoa", "chairs", "lantern"] as const) {
-    if (state.stock[kind] > 0 && openTarget(state, kind)) return grabHint(kind);
+    if (state.stock[kind] > 0 && openTarget(state, kind))
+      return grabHint(state, kind);
   }
   return null;
 }

@@ -14,6 +14,7 @@ import {
   ITEM_LABELS,
   LEAVE_SECONDS,
   clockLabel,
+  onLevelClock,
   type Commitment,
   type GameState,
   type PresenceDecision,
@@ -109,16 +110,22 @@ export function BrothersDialog({ state, onDecide }: BrothersDialogProps) {
               className="min-h-11 rounded border border-[var(--fbb-control)] px-3 text-left text-xs font-bold active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--fbb-focus)]"
             >
               Go with them. (Back around{" "}
-              {clockLabel(state.time + LEAVE_SECONDS, state.duration)}. The
-              website is up.)
+              {clockLabel(
+                state.time + onLevelClock(LEAVE_SECONDS, state.duration),
+                state.duration
+              )}
+              . The website is up.)
             </button>
           </div>
         ) : (
           <div className="mt-4 flex flex-col gap-2">
             <p className="text-xs">
               Back around{" "}
-              {clockLabel(state.time + BREAK_SECONDS, state.duration)}, calmer.
-              What does Fred promise to come back for?
+              {clockLabel(
+                state.time + onLevelClock(BREAK_SECONDS, state.duration),
+                state.duration
+              )}
+              , calmer. What does Fred promise to come back for?
             </p>
             {commitments.map((commitment) => (
               <button

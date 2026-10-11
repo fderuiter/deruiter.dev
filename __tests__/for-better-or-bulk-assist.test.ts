@@ -12,6 +12,7 @@ import {
   MOVE_SPEED,
   TICK_SECONDS,
   assistInput,
+  assistStatus,
   computeReceipt,
   createLevel,
   getHint,
@@ -789,7 +790,7 @@ describe("the assist's pace", () => {
     expect(assistInput(tickOf(state, 3), "abbi")).toEqual(NO_INPUT);
   });
 
-  it("crafts arrangements at about 60% of the full pace", () => {
+  it("crafts arrangements at about 40% of the full pace", () => {
     const ticksToCraft = (assisted: boolean): number => {
       const base = createLevel(ASSIST_SETUP);
       const table = stationOf(base, "arrange");
@@ -818,8 +819,9 @@ describe("the assist's pace", () => {
     };
     const full = ticksToCraft(false);
     const paced = ticksToCraft(true);
-    expect(paced / full).toBeGreaterThan(1.5);
-    expect(paced / full).toBeLessThan(1.8);
+    // Two active ticks in every five: the same work takes 5 / 2 = 2.5 times as long.
+    expect(paced / full).toBeGreaterThan(2.3);
+    expect(paced / full).toBeLessThan(2.7);
   });
 });
 
@@ -875,11 +877,16 @@ describe("the solo balance, scripted", () => {
   }
 
   it("the helper alone places most of the planned items", () => {
+    const planned = createLevel(ASSIST_SETUP).targets.filter(
+      (t) => t.status === "open"
+    ).length;
     const placed = playOut(ASSIST_SETUP, "abbi").targets.reduce(
       (n, t) => n + t.filled.length,
       0
     );
-    expect(placed).toBeGreaterThanOrEqual(18);
+    // 21 items are planned. At two active ticks in five the helper places
+    // 13 (about 60%), so the bar is more than half of the plan.
+    expect(placed).toBeGreaterThan(planned / 2);
   }, 30000);
 
   it("an assisted solo run finishes well before an unassisted one", () => {
@@ -888,4 +895,60 @@ describe("the solo balance, scripted", () => {
     expect(on.placed).toBeGreaterThanOrEqual(off.placed);
     expect(on.finish + 20).toBeLessThan(off.finish);
   }, 60000);
+});
+
+describe("the helper keeps out of its partner's way", () => {
+  const ARRANGEMENT: Item = { kind: "arrangement", madeBy: "abbi" };
+
+  it("skips a place its partner faces when another place is open", () => {
+    const base = setOpen(createLevel(ASSIST_SETUP), ["arrangement"]);
+    const open = base.targets.filter((t) => t.status === "open");
+    const [first] = open;
+    expect(open.length).toBeGreaterThanOrEqual(2);
+    const solo = facingTile(base, "abbi", first, ARRANGEMENT);
+    expect(assistInput(solo, "abbi").interact).toBe(true);
+    const shared = facingTile(solo, "fred", first, null);
+    expect(
+      assistInput(
+        { ...shared, players: { ...shared.players, abbi: solo.players.abbi } },
+        "abbi"
+      ).interact
+    ).toBe(false);
+  });
+
+  it("still places into a shared place when nothing else is open, so it never stalls", () => {
+    const base = setOpen(createLevel(ASSIST_SETUP), ["arrangement"]);
+    const [only] = base.targets.filter((t) => t.status === "open");
+    const others = base.targets.map((t) =>
+      t.id === only.id || t.status !== "open"
+        ? t
+        : { ...t, status: "filled" as const }
+    );
+    const alone = { ...base, targets: others };
+    const solo = facingTile(alone, "abbi", only, ARRANGEMENT);
+    const shared = facingTile(solo, "fred", only, null);
+    expect(
+      assistInput(
+        { ...shared, players: { ...shared.players, abbi: solo.players.abbi } },
+        "abbi"
+      ).interact
+    ).toBe(true);
+  });
+
+  it("names its goal in the status line", () => {
+    const base = setOpen(createLevel(ASSIST_SETUP), ["arrangement"]);
+    const state = facingTile(base, "abbi", base.targets[0], ARRANGEMENT);
+    expect(assistStatus(state, "abbi")).toMatch(/^Helper: carrying /);
+    expect(assistStatus(state, "abbi")).toMatch(/\.$/);
+    const away = {
+      ...state,
+      players: {
+        ...state.players,
+        abbi: { ...state.players.abbi, presence: "away" as const },
+      },
+    };
+    expect(assistStatus(away, "abbi")).toBe(
+      "Helper: waiting for Abbi to be back."
+    );
+  });
 });

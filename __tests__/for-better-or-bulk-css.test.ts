@@ -131,3 +131,80 @@ describe("For Better or Bulk ceremony playback styles", () => {
     }
   });
 });
+
+/** WCAG 2.1 relative luminance of a six-digit hex colour. */
+function relativeLuminance(hex: string): number {
+  const channels = [1, 3, 5].map((i) => {
+    const value = parseInt(hex.slice(i, i + 2), 16) / 255;
+    return value <= 0.03928
+      ? value / 12.92
+      : Math.pow((value + 0.055) / 1.055, 2.4);
+  });
+  const [r, g, b] = channels;
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+/** WCAG contrast ratio between two six-digit hex colours. */
+function contrastRatio(a: string, b: string): number {
+  const [light, dark] = [relativeLuminance(a), relativeLuminance(b)].sort(
+    (x, y) => y - x
+  );
+  return (light + 0.05) / (dark + 0.05);
+}
+
+/** The value of one custom property in the cabinet's token block. */
+function cabinetToken(name: string): string {
+  const from = css.indexOf("[data-fbb-cabinet] {");
+  expect(from, "the cabinet token block exists").toBeGreaterThanOrEqual(0);
+  const body = blockAfter(css, from);
+  const match = new RegExp(`--${name}:\\s*(#[0-9a-fA-F]{6})`).exec(body);
+  expect(match, `--${name} is a hex colour`).not.toBeNull();
+  return (match?.[1] ?? "#000000").toLowerCase();
+}
+
+describe("the receipt's dim text (WCAG 2.1 AA, 1.4.3)", () => {
+  it("meets 4.5:1 for --fbb-dim on the receipt panel and on the stage", () => {
+    const dim = cabinetToken("fbb-dim");
+    expect(
+      contrastRatio(dim, cabinetToken("fbb-panel"))
+    ).toBeGreaterThanOrEqual(4.5);
+    expect(
+      contrastRatio(dim, cabinetToken("fbb-stage"))
+    ).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("keeps the rain steel readable on the lawn's panel at 3:1 or better", () => {
+    expect(
+      contrastRatio("#94a3b8", cabinetToken("fbb-panel"))
+    ).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe("the cabinet clears the sticky navbar and sits on opaque surfaces", () => {
+  const readSource = (file: string) =>
+    fs.readFileSync(path.resolve(process.cwd(), file), "utf-8");
+
+  it("gives the cabinet and its controls a scroll margin of at least 6rem", () => {
+    const from = css.indexOf("[data-fbb-cabinet] {");
+    const margin = /scroll-margin-top:\s*([\d.]+)rem/.exec(
+      blockAfter(css, from)
+    );
+    expect(margin, "the cabinet sets a scroll margin").not.toBeNull();
+    expect(Number(margin?.[1])).toBeGreaterThanOrEqual(6);
+    expect(css).toMatch(
+      /\[data-fbb-cabinet\] \*\s*\{\s*scroll-margin-top:\s*[\d.]+rem;/
+    );
+  });
+
+  it("uses graphite, not a see-through zinc, for the scrolled navbar", () => {
+    const navbar = readSource("components/Navbar.tsx");
+    expect(navbar).toContain("bg-[#0d0e11]/95");
+    expect(navbar).not.toContain("bg-zinc-950/85");
+  });
+
+  it("gives the Preferences dropdown an opaque graphite background", () => {
+    const menu = readSource("components/nav/PreferencesMenu.tsx");
+    expect(menu).toContain("bg-[#0d0e11] p-4");
+    expect(menu).not.toContain("bg-zinc-950/95");
+  });
+});

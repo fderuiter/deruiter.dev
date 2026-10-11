@@ -283,7 +283,7 @@ function signatureMoment(lines: readonly ReadinessLine[]): string {
   if (ready("lanterns")) return "Lanterns at dusk over the patio";
   if (ready("centerpieces")) return "Centerpieces on every table";
   if (ready("bouquets")) return "The gardens did the decorating";
-  return "Hot dogs at a Tudor mansion";
+  return bankText("signature-fallback");
 }
 
 function title(

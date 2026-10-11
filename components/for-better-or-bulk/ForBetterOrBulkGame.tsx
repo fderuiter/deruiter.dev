@@ -22,9 +22,11 @@ import {
   clockLabel,
   computeReceipt,
   createLevel,
+  dailySeed,
   decodeRunCode,
   encodeRunCode,
   getHint,
+  assistStatus,
   getPrompt,
   parseSeed,
   recordedFrame,
@@ -57,6 +59,7 @@ import { buildFrame, GAME_CODES, type ControlMode } from "./input";
 import { BurstLayer, RowFlash, useFbbLoud, type DomBurst } from "./bursts";
 import {
   activeEventLines,
+  seedName,
   CHECKLIST,
   checklistLine,
   completedCategories,
@@ -940,7 +943,14 @@ export function ForBetterOrBulkGame({
       />
     );
   } else if (view) {
-    const shown: PlayerId[] = mode === "coop" ? ["fred", "abbi"] : [active];
+    // Solo shows the person at the keys, and the partner too while he is out.
+    const partner: PlayerId = active === "fred" ? "abbi" : "fred";
+    const shown: PlayerId[] =
+      mode === "coop"
+        ? ["fred", "abbi"]
+        : view.players[partner].presence === "away"
+          ? [active, partner]
+          : [active];
     const eventLines = activeEventLines(view);
     body = (
       <div className="relative flex w-full min-w-0 flex-col gap-2 p-2 sm:p-3">
@@ -953,6 +963,12 @@ export function ForBetterOrBulkGame({
             {clockLabel(view.time, view.duration)}
           </span>
           <span className="text-[var(--fbb-dim)]">Ceremony at 4:00</span>
+          <span
+            data-testid="fbb-seed-name"
+            className="min-w-0 break-words text-[var(--fbb-dim)]"
+          >
+            {seedName(view.setup.seed ?? 0, dailySeed(new Date()))}
+          </span>
           {eventLines.map((line) => (
             <span
               key={line}
@@ -965,7 +981,7 @@ export function ForBetterOrBulkGame({
           {mode === "solo" ? (
             <span data-testid="fbb-active">
               Playing as <span className="font-bold">{NAMES[active]}</span> ·
-              Tab to swap · Shift+Tab for Pause
+              Tab to swap · Shift+Tab to reach Pause
             </span>
           ) : (
             <span>Fred: WASD, E, F · Abbi: arrows, Enter, Shift</span>
@@ -1123,6 +1139,14 @@ export function ForBetterOrBulkGame({
                 </div>
               );
             })}
+            {mode === "solo" && view.setup.assist ? (
+              <p
+                data-testid="fbb-helper"
+                className="min-w-0 break-words border-t border-[var(--fbb-rule)] pt-2 text-[var(--fbb-dim)]"
+              >
+                {assistStatus(view, partner)}
+              </p>
+            ) : null}
           </div>
         </div>
 

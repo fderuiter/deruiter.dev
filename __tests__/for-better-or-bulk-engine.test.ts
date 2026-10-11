@@ -15,6 +15,7 @@ import {
   IDLE_INPUT,
   LEFT_LINE,
   LEAVE_SECONDS,
+  LINE_BANK,
   PHONE_SECONDS,
   RELAXED_LEVEL_SECONDS,
   ROSE_BUNCHES,
@@ -1467,5 +1468,39 @@ describe("the new prompts", () => {
       })),
     };
     expect(getPrompt(full, "fred").interact).toBeNull();
+  });
+});
+
+const STAY_DECISION: PresenceDecision = { choice: "stay", commitment: null };
+
+describe("the receipt's copy", () => {
+  it("says what a missed leave cost in one clear sentence, with no stray duplicate", () => {
+    const left = finishIdle(DEFAULT_SETUP, {
+      choice: "leave",
+      commitment: null,
+    });
+    const receipt = computeReceipt(left);
+    expect(receipt.followThrough.explanation).toBe(`Missed: ${LEFT_LINE}`);
+    expect(LEFT_LINE).not.toContain("requested separately");
+  });
+
+  it("names the fictional tux shop on the receipt", () => {
+    const receipt = computeReceipt(finishIdle(DEFAULT_SETUP, STAY_DECISION));
+    expect(receipt.suit).toContain("The Suit Wherehouse (a made-up name)");
+  });
+
+  it("says 'Fred stayed for the setup.' on one line of the receipt only", () => {
+    const receipt = computeReceipt(finishIdle(DEFAULT_SETUP, STAY_DECISION));
+    const copy = JSON.stringify(receipt);
+    expect(copy.split("Fred stayed for the setup.").length - 1).toBe(1);
+  });
+
+  it("takes its subtitle from the fiction bank, never from an unsourced venue claim", () => {
+    const bare = computeReceipt(createLevel(DEFAULT_SETUP));
+    expect(bare.signatureMoment).not.toMatch(/Tudor|mansion/);
+    const banked = LINE_BANK.find((line) => line.id === "signature-fallback");
+    expect(banked?.tag).toBe("Fiction");
+    expect(banked?.fact).toBeNull();
+    expect(bare.signatureMoment).toBe(banked?.text);
   });
 });

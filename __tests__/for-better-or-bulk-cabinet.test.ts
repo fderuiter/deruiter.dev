@@ -510,8 +510,10 @@ describe("For Better or Bulk loud canvas (F4)", () => {
     expect(fits.fonts.every((f) => f.includes("10px"))).toBe(true);
     const tooWide = draws(60);
     expect(tooWide.fonts.every((f) => f.includes("10px"))).toBe(true);
-    expect(tooWide.maxWidths.length).toBeGreaterThan(0);
-    expect(tooWide.maxWidths.every((w) => w === TILE - 2)).toBe(true);
+    // The two grill tiles share one label, centred over both, so it may
+    // span the pair: one drawn label, clamped to two tiles less 2px.
+    expect(tooWide.maxWidths).toHaveLength(1);
+    expect(tooWide.maxWidths.every((w) => w === 2 * TILE - 2)).toBe(true);
   });
 
   it.each<TargetKind>([

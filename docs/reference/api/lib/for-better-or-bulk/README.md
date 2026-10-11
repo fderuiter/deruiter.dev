@@ -38,6 +38,12 @@ Re-exports [assistInput](internal/assist/functions/assistInput.md)
 
 ***
 
+### assistStatus
+
+Re-exports [assistStatus](internal/assist/functions/assistStatus.md)
+
+***
+
 ### BankLine
 
 Re-exports [BankLine](presets/interfaces/BankLine.md)

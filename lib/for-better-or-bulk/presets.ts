@@ -317,7 +317,7 @@ export const THROW_OUT_PROMPT = "Throw it out";
 
 /** The line a run prints when Fred leaves while the plan depends on him. */
 export const LEFT_LINE =
-  "The website was operational. My presence was requested separately.";
+  "The website was up, but Fred was out with his brothers when the setup needed him.";
 
 /**
  * Seeded events, in standard-clock seconds (scaled for a relaxed clock with
@@ -343,7 +343,7 @@ export const PATIO_ROWS = 4;
 /** Fixed receipt lines. The real weather line comes from the line bank. */
 export const RECEIPT_COPY = {
   leftovers: "Some. They went to the Rochester warming shelter.",
-  suit: "Fred wore the rented tux. The free suit from The Suit Wherehouse: acquired, yes. Worn, no.",
+  suit: "Fred wore the rented tux. The free suit from The Suit Wherehouse (a made-up name): acquired, yes. Worn, no.",
   disclaimer:
     "Game prices, not the real wedding's costs. Explanations describe this game's rules, not what would have happened at the real wedding.",
 } as const;
@@ -454,6 +454,12 @@ export const LINE_BANK: readonly BankLine[] = [
     tag: "Fiction",
     fact: null,
     text: "Guests are early and the buffet is calling. Food on the grill burns faster until it passes.",
+  },
+  {
+    id: "signature-fallback",
+    tag: "Fiction",
+    fact: null,
+    text: "Every table set, and the food on time.",
   },
   {
     id: "joke-roses",

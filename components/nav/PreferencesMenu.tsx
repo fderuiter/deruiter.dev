@@ -320,7 +320,7 @@ export function PreferencesMenu({
           />
           <div
             id="navigation-preferences"
-            className="absolute right-0 z-50 mt-2 w-72 rounded-2xl border border-zinc-800/80 bg-zinc-950/95 p-4 shadow-[0_20px_50px_rgba(0,0,0,0.8)] backdrop-blur-2xl"
+            className="absolute right-0 z-50 mt-2 w-72 rounded-2xl border border-zinc-800/80 bg-[#0d0e11] p-4 shadow-[0_20px_50px_rgba(0,0,0,0.8)]"
           >
             <PreferencesPanel variant="popover" />
           </div>

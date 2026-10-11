@@ -42,6 +42,16 @@ export const SEEDED_EVENT_NOTES: Readonly<
   },
 };
 
+/**
+ * The day's name for the cabinet header: the standard day, today's seed, or
+ * the seed number a shared link or the setup chose. Pure.
+ */
+export function seedName(seed: number, todaysSeed: number): string {
+  if (seed === 0) return "Standard day";
+  if (seed === todaysSeed) return "Today's seed";
+  return `Seed ${seed}`;
+}
+
 /** The status lines for the seeded events on at the level's current time. */
 export function activeEventLines(state: GameState): string[] {
   return state.seeded

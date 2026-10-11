@@ -925,8 +925,11 @@ export const QuasiPerfectPuzzler: React.FC = () => {
                   className={quietButtonClass}
                 >
                   <IconSparkles className="w-3.5 h-3.5 qp-text-accent" />
+                  {/* Icon-only below xl keeps the header on one row at
+                      1024px, so the tactic hand stays on screen (#1939). */}
                   <span>
-                    <span className="sr-only">Theory </span>Briefing
+                    <span className="sr-only">Theory </span>
+                    <span className="sr-only xl:not-sr-only">Briefing</span>
                   </span>
                 </button>
                 <button

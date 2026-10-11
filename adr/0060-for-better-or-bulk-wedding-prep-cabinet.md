@@ -148,8 +148,14 @@ deterministic policy moves the partner the player is not controlling, Abbi
 when Fred is at the keys, and Fred when Abbi is. It walks to the places the
 hints name, using the same gates as the hints (`internal/gates.ts`), so the
 two cannot disagree about where roses go or what is wanted. It works at about
-60% of a skilled player's pace: on three ticks of every five it walks and
+40% of a skilled player's pace: on two ticks of every five it walks and
 presses, and its held work keeps its hold but progresses only on those ticks.
+The player stays the main actor. The helper skips any tile the person it helps
+is facing and any place that person is carrying an item to, and takes one of
+those only when nothing else is open, so it can never stall with an item it
+cannot place. Its status line, `Helper: <action>.`, names the goal it is
+following. The brothers' leave option says that Abbi works alone until Fred is
+back, and a person who is out shows a "Back around" time in the side panel.
 It never decides for Fred: it never answers the brothers' text, never changes
 presence, and never acts for someone who is out, on a call or re-tying shoes.
 The receipt names the helper only when it acted on at least one tick, so a

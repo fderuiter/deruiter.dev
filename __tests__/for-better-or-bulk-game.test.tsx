@@ -11,6 +11,7 @@ import {
 import {
   DEFAULT_SETUP,
   ITEM_LABELS,
+  bankText,
   LEFT_LINE,
   RELAXED_LEVEL_SECONDS,
   createLevel,
@@ -19,7 +20,10 @@ import {
   type GameState,
 } from "@/lib/for-better-or-bulk";
 import { BrothersDialog } from "@/components/for-better-or-bulk/BrothersDialog";
-import { throttleFloorFull } from "@/components/for-better-or-bulk/messages";
+import {
+  seedName,
+  throttleFloorFull,
+} from "@/components/for-better-or-bulk/messages";
 import { FBB_LOUD_QUERY } from "@/components/for-better-or-bulk/bursts";
 import { fromPartial } from "@total-typescript/shoehorn";
 
@@ -350,6 +354,55 @@ describe("For Better or Bulk cabinet (#1906)", () => {
     expect(frame.active).toBe(true);
   });
 
+  /** Runs focus moves at once, and records each scrollIntoView call. */
+  function stubScroll(): ReturnType<typeof vi.fn> {
+    const scroll = vi.fn();
+    Element.prototype.scrollIntoView = scroll;
+    vi.stubGlobal("requestAnimationFrame", (task: FrameRequestCallback) => {
+      task(0);
+      return 1;
+    });
+    return scroll;
+  }
+
+  it("brings the cabinet into view below the navbar when a level starts (#1927)", () => {
+    const original = Element.prototype.scrollIntoView;
+    try {
+      const scroll = stubScroll();
+      render(<ForBetterOrBulkGame />);
+      start();
+      expect(document.activeElement).toBe(game());
+      expect(scroll).toHaveBeenCalledTimes(1);
+      expect(scroll.mock.contexts[0]).toBe(game());
+      expect(scroll).toHaveBeenCalledWith({
+        block: "start",
+        behavior: "smooth",
+      });
+    } finally {
+      Element.prototype.scrollIntoView = original;
+    }
+  });
+
+  it("scrolls without animation when the viewer prefers reduced motion (#1927)", () => {
+    const original = Element.prototype.scrollIntoView;
+    window.matchMedia = vi.fn((query: string) =>
+      fromPartial<MediaQueryList>({
+        matches: query === "(prefers-reduced-motion: reduce)",
+        media: query,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })
+    );
+    try {
+      const scroll = stubScroll();
+      render(<ForBetterOrBulkGame />);
+      start();
+      expect(scroll).toHaveBeenCalledWith({ block: "start", behavior: "auto" });
+    } finally {
+      Element.prototype.scrollIntoView = original;
+    }
+  });
+
   it("pauses when focus leaves the cabinet (#1914)", () => {
     render(<ForBetterOrBulkGame />);
     start();
@@ -489,10 +542,12 @@ describe("For Better or Bulk coach strip and counts", () => {
     runUntil(() => screen.queryByTestId("fbb-brothers") !== null);
     fireEvent.click(screen.getByRole("button", { name: /Go with them/ }));
     const coach = screen.getByTestId("fbb-coach");
-    expect(within(coach).getByRole("list").textContent).toContain(
+    // His absence is said once, in his prompt, not repeated in the coach list.
+    expect(coach.textContent).not.toContain("Fred is out with his brothers.");
+    expect(coach.textContent).not.toContain("Fred: ");
+    expect(screen.getByTestId("fbb-prompt-fred").textContent).toContain(
       "Fred is out with his brothers."
     );
-    expect(coach.textContent).not.toContain("Fred: ");
   });
 
   it("hides the strip when a stale saved choice is overridden and the save fails", () => {
@@ -604,5 +659,120 @@ describe("For Better or Bulk day seed on the page (#1918)", () => {
     runUntil(() => screen.queryByTestId("fbb-receipt") !== null);
     expect(screen.getByTestId("fbb-receipt")).toBeTruthy();
     expect(scores.record).not.toHaveBeenCalled();
+  });
+});
+
+describe("For Better or Bulk side panel: helper, partner and day (fbb round)", () => {
+  beforeEach(() => {
+    stubLoud(false);
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  it("names the day in the header and shows the helper's status with the helper on", () => {
+    render(
+      <ForBetterOrBulkGame
+        initialSetup={{ ...DEFAULT_SETUP, assist: true, seed: 12345 }}
+      />
+    );
+    start();
+    expect(screen.getByTestId("fbb-seed-name").textContent).toBe("Seed 12345");
+    expect(screen.getByTestId("fbb-active").textContent).toContain(
+      "Shift+Tab to reach Pause"
+    );
+    expect(screen.getByTestId("fbb-helper").textContent).toMatch(
+      /^Helper: .+\.$/
+    );
+  });
+
+  it("names the standard day and hides the helper line when the helper is off", () => {
+    render(<ForBetterOrBulkGame />);
+    start();
+    expect(screen.getByTestId("fbb-seed-name").textContent).toBe(
+      "Standard day"
+    );
+    expect(screen.queryByTestId("fbb-helper")).toBeNull();
+  });
+
+  it("keeps Fred visible with his return time while Abbi plays alone", () => {
+    render(<ForBetterOrBulkGame />);
+    start();
+    runUntil(() => screen.queryByTestId("fbb-brothers") !== null);
+    fireEvent.click(screen.getByRole("button", { name: /Go with them/ }));
+    expect(screen.getByTestId("fbb-active").textContent).toContain("Abbi");
+    const fred = screen.getByTestId("fbb-prompt-fred").textContent ?? "";
+    expect(fred).toContain("Fred is out with his brothers.");
+    expect(fred).toContain("Back around 3:18.");
+  });
+
+  it("does not let Tab hand the keys to a partner who is out", () => {
+    render(<ForBetterOrBulkGame />);
+    start();
+    runUntil(() => screen.queryByTestId("fbb-brothers") !== null);
+    fireEvent.click(screen.getByRole("button", { name: /Go with them/ }));
+    expect(screen.getByTestId("fbb-active").textContent).toContain("Abbi");
+    fireEvent.keyDown(game(), { key: "Tab", code: "Tab" });
+    expect(screen.getByTestId("fbb-active").textContent).toContain("Abbi");
+    expect(screen.getByRole("status").textContent).toBe(
+      "Fred is out with his brothers."
+    );
+  });
+
+  it("offers the leave option with the promise that Abbi works alone", () => {
+    const atText = {
+      ...createLevel(DEFAULT_SETUP),
+      phase: "brothers" as const,
+      time: 110,
+    };
+    render(<BrothersDialog state={atText} onDecide={vi.fn()} />);
+    expect(
+      screen.getByRole("button", { name: /Go with them/ }).textContent
+    ).toContain("Abbi works alone until Fred is back.");
+  });
+
+  it("shows the shower's start toast on the cabinet", () => {
+    render(
+      <ForBetterOrBulkGame initialSetup={{ ...DEFAULT_SETUP, seed: 12345 }} />
+    );
+    start();
+    const shower = bankText("shower-start");
+    runUntil(
+      () =>
+        screen.queryAllByText(shower).length > 0 ||
+        screen.queryByTestId("fbb-brothers") !== null
+    );
+    // The visible toast is a list item; the live region repeats the same words.
+    const toasts = screen
+      .getAllByText(shower)
+      .filter((node) => node.tagName === "LI");
+    expect(toasts).toHaveLength(1);
+  });
+
+  it("shows the guest rush's start toast and announces it (#1927)", () => {
+    render(
+      <ForBetterOrBulkGame initialSetup={{ ...DEFAULT_SETUP, seed: 12345 }} />
+    );
+    start();
+    const rush = bankText("rush-start");
+    runUntil(
+      () =>
+        screen.queryAllByText(rush).length > 0 ||
+        screen.queryByTestId("fbb-brothers") !== null
+    );
+    const toasts = screen
+      .getAllByText(rush)
+      .filter((node) => node.tagName === "LI");
+    expect(toasts).toHaveLength(1);
+    expect(screen.getByRole("status").textContent).toContain(rush);
+  });
+});
+
+describe("For Better or Bulk day names", () => {
+  it("names the standard day, today's seed, or the seed number", () => {
+    expect(seedName(0, 99)).toBe("Standard day");
+    expect(seedName(99, 99)).toBe("Today's seed");
+    expect(seedName(12345, 99)).toBe("Seed 12345");
   });
 });

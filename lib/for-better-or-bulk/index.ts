@@ -53,6 +53,6 @@ export type {
   RunVerification,
   SharedRun,
 } from "./internal/run-code";
-export { assistInput } from "./internal/assist";
+export { assistInput, assistStatus } from "./internal/assist";
 export { clockLabel, getHint, getPrompt } from "./internal/views";
 export type { Prompt } from "./internal/views";

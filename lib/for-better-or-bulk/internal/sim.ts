@@ -694,8 +694,9 @@ export function stepGame(state: GameState, frame: Frame): StepResult {
     const { input, helped } = inputFor(w.state, frame, id);
     if (helped) w.state = { ...w.state, assistTicks: w.state.assistTicks + 1 };
     // On the assist's resting ticks its held work keeps its hold but makes no
-    // progress, which is how the assist works at about 60% pace.
-    const resting = helped && assistRests(w.state.tick);
+    // progress, which is how the assist works at about 40% pace.
+    const resting =
+      helped && assistRests(w.state.tick, w.state.setup.relaxed);
     const wet =
       seededActive(w.state, "shower") && isOutdoor(Math.floor(player.y));
     setPlayer(w, move(player, input, dt, wet ? SHOWER_WALK_FACTOR : 1));

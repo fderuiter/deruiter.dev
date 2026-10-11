@@ -14,25 +14,32 @@ import {
   VENUE_MAP,
   WALKABLE_TILES,
 } from "../presets";
-import type {
-  GameState,
-  ItemKind,
-  PlayerId,
-  StationKind,
-  SupplyKind,
-  TargetKind,
-} from "../types";
+import type { GameState, ItemKind, PlayerId, SupplyKind } from "../types";
 import { freeStation, openTarget, roseStation, stationsOf } from "./gates";
+import {
+  CRATE_ITEM_NAMES,
+  ITEM_NAMES,
+  STATION_NAMES,
+  TARGET_NAMES,
+} from "./words";
 import { frontTile } from "./sim";
 
 /** The level runs from 9:00 to 4:00 on the wall clock. */
 const START_HOUR = 9;
 const LEVEL_HOURS = 7;
 
+/**
+ * The same tolerance the engine uses when it brings a person back (sim.ts), so
+ * a time that is exactly on a minute reads as that minute, not one before it.
+ */
+const CLOCK_TOLERANCE = 1e-9;
+
 /** The wall-clock time for a level time, as "h:mm". */
 export function clockLabel(time: number, duration: number): string {
   const clamped = clamp(time, 0, duration);
-  const minutes = Math.floor((clamped / duration) * LEVEL_HOURS * 60);
+  const minutes = Math.floor(
+    (clamped / duration) * LEVEL_HOURS * 60 + CLOCK_TOLERANCE
+  );
   const hour24 = START_HOUR + Math.floor(minutes / 60);
   const hour12 = ((hour24 + 11) % 12) + 1;
   return `${hour12}:${String(minutes % 60).padStart(2, "0")}`;
@@ -50,10 +57,14 @@ export function getPrompt(state: GameState, id: PlayerId): Prompt {
   const player = state.players[id];
   const name = id === "fred" ? "Fred" : "Abbi";
   if (player.presence === "away") {
+    const back =
+      state.returnsAt === null
+        ? ""
+        : ` Back around ${clockLabel(state.returnsAt, state.duration)}.`;
     return {
       interact: null,
       work: null,
-      status: `${name} is out with his brothers.`,
+      status: `${name} is out with his brothers.${back}`,
     };
   }
   if (player.busyFor > 0) {
@@ -123,50 +134,6 @@ export function getPrompt(state: GameState, id: PlayerId): Prompt {
   }
   return { interact, work, status };
 }
-
-/** Words for the places and things a hint names, with their venue letters. */
-const STATION_NAMES: Readonly<Record<StationKind, string>> = {
-  arrange: "the ARRANGE table (A)",
-  petals: "the PETALS bucket (P)",
-  grill: "the GRILL (G)",
-  bin: "the BIN (X)",
-};
-
-const TARGET_NAMES: Readonly<Record<TargetKind, string>> = {
-  basket: "the bouquet basket (K)",
-  table: "a centerpiece table (T)",
-  aisle: "an aisle spot (S)",
-  "chair-spot": "a chair spot (O)",
-  hook: "a lantern hook (N)",
-  buffet: "the buffet (B)",
-};
-
-/** Items in the middle of a sentence, such as "Carry the roses to...". */
-const ITEM_NAMES: Readonly<Record<ItemKind, string>> = {
-  roses: "the roses",
-  arrangement: "the arrangement",
-  petals: "the bucket of petals",
-  "hotdogs-raw": "the raw hot dogs",
-  hotdogs: "the hot dogs",
-  "wings-raw": "the raw wings",
-  wings: "the wings",
-  mac: "the mac and cheese",
-  quinoa: "the quinoa salad",
-  burnt: "the burnt food",
-  lantern: "the lantern",
-  chairs: "the stack of chairs",
-};
-
-/** What a crate hands out, as the object of "Grab ...". */
-const CRATE_ITEM_NAMES: Readonly<Record<SupplyKind, string>> = {
-  roses: "roses",
-  "hotdogs-raw": "raw hot dogs",
-  "wings-raw": "raw wings",
-  mac: "mac and cheese",
-  quinoa: "quinoa salad",
-  lantern: "a lantern",
-  chairs: "a stack of chairs",
-};
 
 const COOKED: Partial<Record<ItemKind, ItemKind>> = {
   "hotdogs-raw": "hotdogs",

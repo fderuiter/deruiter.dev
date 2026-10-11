@@ -10,3 +10,4 @@
 
 - [assistInput](functions/assistInput.md)
 - [assistRests](functions/assistRests.md)
+- [assistStatus](functions/assistStatus.md)

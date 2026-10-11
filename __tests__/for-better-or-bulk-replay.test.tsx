@@ -101,6 +101,22 @@ describe("ReplayControls", () => {
     expect(screen.getByRole("group", { name: "Replay speed" })).toBeTruthy();
   });
 
+  it("scrolls the replay controls into view, nearest edge, when a replay opens", () => {
+    const scroll = vi.fn();
+    const original = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = scroll;
+    try {
+      renderControls({ playing: false });
+      expect(scroll).toHaveBeenCalledTimes(1);
+      expect(scroll.mock.contexts[0]).toBe(screen.getByTestId("fbb-replay"));
+      expect(scroll).toHaveBeenCalledWith(
+        expect.objectContaining({ block: "nearest" })
+      );
+    } finally {
+      Element.prototype.scrollIntoView = original;
+    }
+  });
+
   it("shows the current speed as pressed", () => {
     renderControls({ speed: 2 });
     expect(

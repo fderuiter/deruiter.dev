@@ -38,6 +38,12 @@ Re-exports [assistInput](internal/assist/functions/assistInput.md)
 
 ***
 
+### assistStatus
+
+Re-exports [assistStatus](internal/assist/functions/assistStatus.md)
+
+***
+
 ### BankLine
 
 Re-exports [BankLine](presets/interfaces/BankLine.md)
@@ -263,12 +269,6 @@ Re-exports [encodeRunCode](internal/run-code/functions/encodeRunCode.md)
 ### evaluateChallenges
 
 Re-exports [evaluateChallenges](internal/challenges/functions/evaluateChallenges.md)
-
-***
-
-### FICTION\_DEFAULTS
-
-Re-exports [FICTION_DEFAULTS](presets/variables/FICTION_DEFAULTS.md)
 
 ***
 

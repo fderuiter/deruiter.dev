@@ -19,9 +19,11 @@ import {
   IDLE_FRAME,
   THROW_OUT_PROMPT,
   TICK_SECONDS,
+  assistStatus,
   clockLabel,
   computeReceipt,
   createLevel,
+  dailySeed,
   decodeRunCode,
   encodeRunCode,
   getHint,
@@ -60,8 +62,9 @@ import {
   CHECKLIST,
   checklistLine,
   completedCategories,
-  throttleFloorFull,
   playStepSounds,
+  seedName,
+  throttleFloorFull,
   type FeedbackEvent,
 } from "./messages";
 import { CeremonyPlayback } from "./CeremonyPlayback";
@@ -235,6 +238,13 @@ interface Toast {
   text: string;
 }
 
+/** Whether the viewer asked for less motion. Read when called, not in render. */
+function prefersReducedMotion(): boolean {
+  return (
+    window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false
+  );
+}
+
 /** A checklist row whose category just completed; one flash per entry. */
 interface RowFlashEntry {
   id: number;
@@ -289,6 +299,8 @@ export function ForBetterOrBulkGame({
   const [replayPlaying, setReplayPlaying] = useState(false);
   const [replaySpeed, setReplaySpeed] = useState<ReplaySpeed>(1);
   const [replayAnnouncement, setReplayAnnouncement] = useState("");
+  // Read once, on mount, so the header does not change across midnight mid-run.
+  const [todaysSeed] = useState(() => dailySeed(new Date()));
   const [replayEnded, setReplayEnded] = useState(false);
   const hideTips = useSyncExternalStore(
     subscribeHideTips,
@@ -569,9 +581,18 @@ export function ForBetterOrBulkGame({
       setToasts([]);
       setAnnouncement("Setup has started. It is 9:00.");
       setPhase("playing");
-      focusAfterPaint(() =>
-        boundaryRef.current?.focus({ preventScroll: true })
-      );
+      focusAfterPaint(() => {
+        const cabinetEl = boundaryRef.current;
+        cabinetEl?.focus({ preventScroll: true });
+        // The header and status line sit under the sticky navbar unless the
+        // page scrolls them in; the cabinet's scroll-margin-top clears the bar.
+        if (cabinetEl && typeof cabinetEl.scrollIntoView === "function") {
+          cabinetEl.scrollIntoView({
+            block: "start",
+            behavior: prefersReducedMotion() ? "auto" : "smooth",
+          });
+        }
+      });
     },
     [focusAfterPaint]
   );
@@ -789,6 +810,13 @@ export function ForBetterOrBulkGame({
     if (event.key === "Tab" && mode === "solo") {
       event.preventDefault();
       if (event.repeat) return;
+      // Someone who is out with his brothers cannot take the keys; the
+      // person at the keys stays where they are.
+      const other: PlayerId = activeRef.current === "fred" ? "abbi" : "fred";
+      if (stateRef.current?.players[other].presence === "away") {
+        setAnnouncement(`${NAMES[other]} is out with his brothers.`);
+        return;
+      }
       // A press that has not reached the engine yet belongs to the person
       // who was active when it was made, so apply it before swapping.
       if (pressed.current.size > 0 && stateRef.current?.phase === "playing") {
@@ -940,7 +968,14 @@ export function ForBetterOrBulkGame({
       />
     );
   } else if (view) {
-    const shown: PlayerId[] = mode === "coop" ? ["fred", "abbi"] : [active];
+    // Solo shows the person at the keys, and the partner too while he is out.
+    const partner: PlayerId = active === "fred" ? "abbi" : "fred";
+    const shown: PlayerId[] =
+      mode === "coop"
+        ? ["fred", "abbi"]
+        : view.players[partner].presence === "away"
+          ? [active, partner]
+          : [active];
     const eventLines = activeEventLines(view);
     body = (
       <div className="relative flex w-full min-w-0 flex-col gap-2 p-2 sm:p-3">
@@ -953,6 +988,12 @@ export function ForBetterOrBulkGame({
             {clockLabel(view.time, view.duration)}
           </span>
           <span className="text-[var(--fbb-dim)]">Ceremony at 4:00</span>
+          <span
+            data-testid="fbb-seed-name"
+            className="min-w-0 break-words text-[var(--fbb-dim)]"
+          >
+            {seedName(view.setup.seed ?? 0, todaysSeed)}
+          </span>
           {eventLines.map((line) => (
             <span
               key={line}
@@ -965,7 +1006,7 @@ export function ForBetterOrBulkGame({
           {mode === "solo" ? (
             <span data-testid="fbb-active">
               Playing as <span className="font-bold">{NAMES[active]}</span> ·
-              Tab to swap · Shift+Tab for Pause
+              Tab to swap · Shift+Tab to reach Pause
             </span>
           ) : (
             <span>Fred: WASD, E, F · Abbi: arrows, Enter, Shift</span>
@@ -1035,14 +1076,13 @@ export function ForBetterOrBulkGame({
               >
                 <ul className="flex flex-col gap-1">
                   {shown.map((id) => {
-                    const away = view.players[id].presence === "away";
-                    const hint = away
-                      ? `${NAMES[id]} is out with his brothers.`
-                      : getHint(view, id);
+                    // An away person is already said in their prompt.
+                    if (view.players[id].presence === "away") return null;
+                    const hint = getHint(view, id);
                     if (!hint) return null;
                     return (
                       <li key={id} className="break-words">
-                        {mode === "coop" && !away ? `${NAMES[id]}: ` : null}
+                        {mode === "coop" ? `${NAMES[id]}: ` : null}
                         {hint}
                       </li>
                     );
@@ -1123,6 +1163,14 @@ export function ForBetterOrBulkGame({
                 </div>
               );
             })}
+            {mode === "solo" && view.setup.assist ? (
+              <p
+                data-testid="fbb-helper"
+                className="min-w-0 break-words border-t border-[var(--fbb-rule)] pt-2 text-[var(--fbb-dim)]"
+              >
+                {assistStatus(view, partner)}
+              </p>
+            ) : null}
           </div>
         </div>
 

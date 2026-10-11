@@ -208,6 +208,7 @@
 - [lib/for-better-or-bulk/internal/run-code](lib/for-better-or-bulk/internal/run-code/README.md)
 - [lib/for-better-or-bulk/internal/sim](lib/for-better-or-bulk/internal/sim/README.md)
 - [lib/for-better-or-bulk/internal/views](lib/for-better-or-bulk/internal/views/README.md)
+- [lib/for-better-or-bulk/internal/words](lib/for-better-or-bulk/internal/words/README.md)
 - [lib/for-better-or-bulk/presets](lib/for-better-or-bulk/presets/README.md)
 - [lib/for-better-or-bulk/types](lib/for-better-or-bulk/types/README.md)
 - [lib/fs-stat-mapping](lib/fs-stat-mapping/README.md)

@@ -63,7 +63,8 @@ function promiseDetail(
 ): string {
   const presence = state.presence;
   if (!presence) return "The brothers never called him away.";
-  if (presence.choice === "stay") return "Fred stayed for the setup.";
+  if (presence.choice === "stay")
+    return "Fred stayed, so there was no promise to break.";
   if (presence.choice === "leave") {
     return "Fred went out with his brothers instead of staying for the setup.";
   }

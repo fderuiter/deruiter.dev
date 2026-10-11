@@ -6,7 +6,7 @@
 
 # Function: assistRests()
 
-> **assistRests**(`tick`): `boolean`
+> **assistRests**(`tick`, `relaxed`): `boolean`
 
 Whether the assist rests on this tick. Its walks and presses wait, and its
 held work pauses without letting go. Pure: the same tick always gives the
@@ -17,6 +17,10 @@ same answer.
 ### tick
 
 `number`
+
+### relaxed
+
+`boolean`
 
 ## Returns
 

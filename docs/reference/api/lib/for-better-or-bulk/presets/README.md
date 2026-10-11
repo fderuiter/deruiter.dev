@@ -36,7 +36,6 @@
 - [COOK\_SECONDS](variables/COOK_SECONDS.md)
 - [CRATE\_NAMES](variables/CRATE_NAMES.md)
 - [DEFAULT\_SETUP](variables/DEFAULT_SETUP.md)
-- [FICTION\_DEFAULTS](variables/FICTION_DEFAULTS.md)
 - [FIXED\_COSTS](variables/FIXED_COSTS.md)
 - [FLOOR\_CAP](variables/FLOOR_CAP.md)
 - [FLOOR\_FULL\_REPEAT\_SECONDS](variables/FLOOR_FULL_REPEAT_SECONDS.md)

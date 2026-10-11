@@ -76,7 +76,7 @@ const COLORS = {
   progress: "#10b981",
   burning: "#ef4444",
   /** Steel at low alpha: static hairline rain on the wet lawn. */
-  rain: "rgba(148, 163, 184, 0.28)",
+  rain: "rgba(148, 163, 184, 0.6)",
   fred: "#1f2a44",
   fredEdge: "#94a3b8",
   abbi: "#f4f0e6",
@@ -133,7 +133,7 @@ const RAIN_STARTS = [0.12, 0.4, 0.68, 0.9] as const;
 /** Diagonal hairlines across one lawn tile: the shower, drawn static. */
 function drawRain(ctx: CanvasRenderingContext2D, px: number, py: number): void {
   ctx.strokeStyle = COLORS.rain;
-  ctx.lineWidth = 1;
+  ctx.lineWidth = 1.5;
   ctx.beginPath();
   for (const start of RAIN_STARTS) {
     const x = px + start * TILE;
@@ -266,12 +266,13 @@ function drawLabel(
   text: string,
   cx: number,
   y: number,
-  plate = false
+  plate = false,
+  span = TILE - 2
 ): void {
   ctx.font = font(LABEL_PX);
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
-  const width = Math.min(ctx.measureText(text).width, TILE - 2);
+  const width = Math.min(ctx.measureText(text).width, span);
   if (plate) {
     ctx.fillStyle = COLORS.badge;
     ctx.beginPath();
@@ -279,10 +280,46 @@ function drawLabel(
     ctx.fill();
   }
   ctx.fillStyle = COLORS.label;
-  ctx.fillText(text, cx, y, TILE - 2);
+  ctx.fillText(text, cx, y, span);
 }
 
-function drawStation(ctx: CanvasRenderingContext2D, station: Station): void {
+/** Draws a station's word once for its run, or nothing if a neighbour draws it. */
+function drawRunLabel(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  station: Station,
+  stations: readonly Station[],
+  y: number
+): void {
+  const label = stationLabel(station, stations);
+  if (label) drawLabel(ctx, text, label.cx, y, false, label.span);
+}
+
+/**
+ * The label for a station that may sit in a run of identical neighbours (two
+ * ARRANGE tables side by side). Only the left-most tile of a run draws the
+ * label, centred over the whole run, so the words never repeat or spill.
+ */
+function stationLabel(
+  station: Station,
+  stations: readonly Station[]
+): { readonly cx: number; readonly span: number } | null {
+  const sameRun = (x: number) =>
+    stations.some(
+      (s) => s.kind === station.kind && s.y === station.y && s.x === x
+    );
+  if (sameRun(station.x - 1)) return null;
+  let end = station.x;
+  while (sameRun(end + 1)) end += 1;
+  const span = (end - station.x + 1) * TILE;
+  return { cx: station.x * TILE + span / 2, span: span - 2 };
+}
+
+function drawStation(
+  ctx: CanvasRenderingContext2D,
+  station: Station,
+  stations: readonly Station[]
+): void {
   const px = station.x * TILE;
   const py = station.y * TILE;
   const cx = px + TILE / 2;
@@ -291,14 +328,14 @@ function drawStation(ctx: CanvasRenderingContext2D, station: Station): void {
     case "arrange":
       ctx.fillStyle = COLORS.table;
       ctx.fillRect(px + 2, py + 4, TILE - 4, TILE - 8);
-      drawLabel(ctx, "ARRANGE", cx, py + 1);
+      drawRunLabel(ctx, "ARRANGE", station, stations, py + 1);
       break;
     case "petals":
       ctx.fillStyle = COLORS.bucket;
       ctx.beginPath();
       ctx.arc(cx, cy, TILE * 0.36, 0, Math.PI * 2);
       ctx.fill();
-      drawLabel(ctx, "PETALS", cx, py + 1);
+      drawRunLabel(ctx, "PETALS", station, stations, py + 1);
       break;
     case "grill": {
       const hot = station.item !== null && station.item.kind !== "burnt";
@@ -312,7 +349,7 @@ function drawStation(ctx: CanvasRenderingContext2D, station: Station): void {
         ctx.lineTo(px + TILE - 6, py + (i * TILE) / 4);
         ctx.stroke();
       }
-      drawLabel(ctx, "GRILL", cx, py + 1);
+      drawRunLabel(ctx, "GRILL", station, stations, py + 1);
       break;
     }
     case "bin":
@@ -532,14 +569,28 @@ const SMOKE_PUFFS = [
   [0, 0.5],
 ] as const;
 
-/** The rose bunches that cover the car, as tile centres. */
+/**
+ * The rose bunches across the car's roof line, as tile centres. They sit on
+ * the top edge, so the body, glass and wheels stay in view under them.
+ */
 const CAR_ROSES = [
-  [0.5, 2.5],
-  [1.0, 2.5],
-  [1.5, 2.5],
+  [0.3, 2.2],
   [0.75, 2.2],
-  [1.25, 2.2],
+  [1.2, 2.2],
+  [1.65, 2.2],
 ] as const;
+
+/** The car's outline: a rounded body from the roof line down to the wheels. */
+function carOutline(ctx: CanvasRenderingContext2D): void {
+  ctx.beginPath();
+  ctx.roundRect(
+    CAR.x * TILE,
+    CAR.y * TILE,
+    CAR.width * TILE,
+    CAR.height * TILE,
+    6
+  );
+}
 
 /** Draws the car on the patio row: a graphite body with steel windows. */
 function drawCar(ctx: CanvasRenderingContext2D): void {
@@ -551,8 +602,7 @@ function drawCar(ctx: CanvasRenderingContext2D): void {
   ctx.fillStyle = COLORS.carBody;
   ctx.strokeStyle = COLORS.outline;
   ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.roundRect(px, py, w, h, 6);
+  carOutline(ctx);
   ctx.fill();
   ctx.stroke();
   ctx.fillStyle = COLORS.carGlass;
@@ -692,8 +742,13 @@ function drawBurst(
   } else {
     ctx.globalAlpha = t < 0.7 ? 1 : (1 - t) / 0.3;
     for (const [x, y] of CAR_ROSES) {
-      drawItem(ctx, "roses", x * TILE, y * TILE, TILE * 0.9);
+      drawItem(ctx, "roses", x * TILE, y * TILE, TILE * 0.5);
     }
+    // The outline goes back over the roses so the car still reads as a car.
+    ctx.strokeStyle = COLORS.outline;
+    ctx.lineWidth = 1.5;
+    carOutline(ctx);
+    ctx.stroke();
   }
   ctx.restore();
 }
@@ -762,7 +817,9 @@ export function drawVenue(
     drawLabel(ctx, String(left), px + TILE / 2, py + TILE - 13);
   }
   for (const target of state.targets) drawTarget(ctx, target);
-  for (const station of state.stations) drawStation(ctx, station);
+  for (const station of state.stations) {
+    drawStation(ctx, station, state.stations);
+  }
   for (const spot of state.floor) {
     drawItem(
       ctx,

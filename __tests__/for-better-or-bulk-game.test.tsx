@@ -8,7 +8,20 @@ import {
   screen,
   within,
 } from "@testing-library/react";
-import { LEFT_LINE } from "@/lib/for-better-or-bulk";
+import {
+  DEFAULT_SETUP,
+  ITEM_LABELS,
+  LEFT_LINE,
+  RELAXED_LEVEL_SECONDS,
+  createLevel,
+  type Frame,
+  type GameEvent,
+  type GameState,
+} from "@/lib/for-better-or-bulk";
+import { BrothersDialog } from "@/components/for-better-or-bulk/BrothersDialog";
+import { throttleFloorFull } from "@/components/for-better-or-bulk/messages";
+import { FBB_LOUD_QUERY } from "@/components/for-better-or-bulk/bursts";
+import { fromPartial } from "@total-typescript/shoehorn";
 
 const frame = vi.hoisted(() => ({
   callback: null as null | ((deltaMs: number) => void),
@@ -16,6 +29,36 @@ const frame = vi.hoisted(() => ({
 }));
 
 const scores = vi.hoisted(() => ({ record: vi.fn() }));
+
+const sfx = vi.hoisted(() => ({ play: vi.fn() }));
+
+vi.mock("@/components/for-better-or-bulk/sfx", () => ({
+  playSfx: sfx.play,
+}));
+
+/** Lets a test end the level on the next engine step, whatever the plan. */
+const engine = vi.hoisted(() => ({
+  finishNext: false,
+  inputs: [] as Frame[],
+}));
+
+vi.mock("@/lib/for-better-or-bulk", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@/lib/for-better-or-bulk")>();
+  return {
+    ...actual,
+    stepGame: (state: GameState, input: Frame) => {
+      engine.inputs.push(input);
+      const result = actual.stepGame(state, input);
+      if (!engine.finishNext) return result;
+      engine.finishNext = false;
+      return {
+        ...result,
+        state: { ...result.state, phase: "done" as const },
+      };
+    },
+  };
+});
 
 vi.mock("@/hooks/useAnimationFrame", () => ({
   useAnimationFrame: (
@@ -51,17 +94,77 @@ function start() {
   fireEvent.click(screen.getByRole("button", { name: "Start setup" }));
 }
 
+/** Answers the loud query with `loud`, and every other query with no match. */
+function stubLoud(loud: boolean) {
+  window.matchMedia = vi.fn((query: string) =>
+    fromPartial<MediaQueryList>({
+      matches: loud && query === FBB_LOUD_QUERY,
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    })
+  );
+}
+
 describe("For Better or Bulk cabinet (#1906)", () => {
   beforeEach(() => {
     frame.callback = null;
     frame.active = false;
+    engine.finishNext = false;
+    engine.inputs = [];
     scores.record.mockClear();
+    sfx.play.mockClear();
     window.history.replaceState(null, "", "/arcade/for-better-or-bulk?speed=8");
   });
 
   afterEach(() => {
     cleanup();
     window.history.replaceState(null, "", "/");
+    vi.unstubAllGlobals();
+    delete (window as Partial<Window>).matchMedia;
+  });
+
+  it("marks the cabinet loud only when the viewer allows motion and the screen is wide", () => {
+    stubLoud(true);
+    render(<ForBetterOrBulkGame />);
+    expect(game().getAttribute("data-fbb-loud")).toBe("on");
+  });
+
+  it("is not loud without the media match, so no bursts render", () => {
+    stubLoud(false);
+    render(<ForBetterOrBulkGame />);
+    expect(game().getAttribute("data-fbb-loud")).toBe("off");
+  });
+
+  it("shows the brothers' burst only in the loud cabinet", () => {
+    window.history.replaceState(null, "", "/arcade/for-better-or-bulk?speed=1");
+    stubLoud(true);
+    const { unmount } = render(<ForBetterOrBulkGame />);
+    start();
+    runUntil(() => screen.queryByTestId("fbb-brothers") !== null);
+    expect(screen.getByText("The brothers are texting")).toBeTruthy();
+    unmount();
+
+    stubLoud(false);
+    render(<ForBetterOrBulkGame />);
+    start();
+    runUntil(() => screen.queryByTestId("fbb-brothers") !== null);
+    expect(screen.queryByText("The brothers are texting")).toBeNull();
+  });
+
+  it("plays the brothers' sound at 1x", () => {
+    window.history.replaceState(null, "", "/arcade/for-better-or-bulk?speed=1");
+    render(<ForBetterOrBulkGame />);
+    start();
+    runUntil(() => screen.queryByTestId("fbb-brothers") !== null);
+    expect(sfx.play).toHaveBeenCalledWith("brothers");
+  });
+
+  it("plays no sound above 1x", () => {
+    render(<ForBetterOrBulkGame />);
+    start();
+    runUntil(() => screen.queryByTestId("fbb-brothers") !== null);
+    expect(sfx.play).not.toHaveBeenCalled();
   });
 
   it("starts on the plan screen within budget", () => {
@@ -130,6 +233,8 @@ describe("For Better or Bulk cabinet (#1906)", () => {
   });
 
   it("stops for the brothers' text, records the choice and ends on the receipt", () => {
+    // Normal speed: only an unsped run reaches the leaderboard.
+    window.history.replaceState(null, "", "/arcade/for-better-or-bulk?speed=1");
     render(<ForBetterOrBulkGame />);
     start();
     runUntil(() => screen.queryByTestId("fbb-brothers") !== null);
@@ -155,6 +260,126 @@ describe("For Better or Bulk cabinet (#1906)", () => {
     expect(screen.getByTestId("fbb-setup")).toBeTruthy();
   });
 
+  it("keeps a sped-up run off the leaderboard (#1914)", () => {
+    render(<ForBetterOrBulkGame />);
+    start();
+    runUntil(() => screen.queryByTestId("fbb-brothers") !== null);
+    fireEvent.click(
+      within(screen.getByRole("dialog")).getByRole("button", {
+        name: /Go with them/,
+      })
+    );
+    runUntil(() => screen.queryByTestId("fbb-receipt") !== null);
+    expect(screen.getByTestId("fbb-receipt")).toBeTruthy();
+    expect(scores.record).not.toHaveBeenCalled();
+  });
+
+  it("ends the level when a swap lands on the step that finishes it (#1914)", () => {
+    render(<ForBetterOrBulkGame />);
+    start();
+    // An E press has not reached the engine yet when Tab is pressed.
+    fireEvent.keyDown(game(), { key: "Enter", code: "Enter" });
+    engine.finishNext = true;
+    fireEvent.keyDown(game(), { key: "Tab", code: "Tab" });
+    expect(screen.getByTestId("fbb-receipt")).toBeTruthy();
+  });
+
+  it("ignores held Tab and Escape repeats (#1914)", () => {
+    render(<ForBetterOrBulkGame />);
+    start();
+    fireEvent.keyDown(game(), { key: "Tab", code: "Tab", repeat: true });
+    expect(screen.getByTestId("fbb-active").textContent).toContain("Abbi");
+    fireEvent.keyDown(game(), { key: "Escape", code: "Escape", repeat: true });
+    expect(frame.active).toBe(true);
+    expect(screen.queryByText(/^Paused at/)).toBeNull();
+  });
+
+  it("still moves on a tap shorter than one tick (#1914)", () => {
+    render(<ForBetterOrBulkGame />);
+    start();
+    fireEvent.keyDown(game(), { key: "ArrowLeft", code: "ArrowLeft" });
+    fireEvent.keyUp(game(), { key: "ArrowLeft", code: "ArrowLeft" });
+    engine.inputs = [];
+    act(() => frame.callback?.(40));
+    expect(engine.inputs[0]?.inputs.abbi.moveX).toBe(-1);
+    expect(engine.inputs.slice(1).every((f) => f.inputs.abbi.moveX === 0)).toBe(
+      true
+    );
+  });
+
+  it("pauses with Escape from the Pause button (#1914)", () => {
+    render(<ForBetterOrBulkGame />);
+    start();
+    const pause = screen.getByRole("button", { name: "Pause" });
+    pause.focus();
+    fireEvent.keyDown(pause, { key: "Escape", code: "Escape" });
+    expect(frame.active).toBe(false);
+  });
+
+  it("pauses on a click outside, not when a focused control is removed (#1914)", () => {
+    render(<ForBetterOrBulkGame />);
+    start();
+    const pause = screen.getByRole("button", { name: "Pause" });
+    fireEvent.blur(pause, { relatedTarget: null });
+    expect(frame.active).toBe(true);
+    fireEvent.blur(game(), { relatedTarget: null });
+    expect(frame.active).toBe(false);
+  });
+
+  it("keeps focus on the boundary after a mouse pause and resume (#1914)", () => {
+    render(<ForBetterOrBulkGame />);
+    start();
+    screen.getByRole("button", { name: "Pause" }).focus();
+    fireEvent.click(screen.getByRole("button", { name: "Pause" }));
+    expect(document.activeElement).toBe(game());
+    expect(screen.getByRole("region", { name: /^Paused at/ })).toBeTruthy();
+    fireEvent.click(screen.getAllByRole("button", { name: "Resume" })[0]);
+    expect(document.activeElement).toBe(game());
+    expect(frame.active).toBe(true);
+  });
+
+  it("pauses when focus leaves the cabinet (#1914)", () => {
+    render(<ForBetterOrBulkGame />);
+    start();
+    fireEvent.blur(game(), { relatedTarget: document.body });
+    expect(frame.active).toBe(false);
+    expect(screen.getByText(/^Paused at/)).toBeTruthy();
+  });
+
+  it("says what Abbi carries and how Fred is, from the level (#1914)", () => {
+    const level = createLevel(DEFAULT_SETUP);
+    const holding = {
+      ...level,
+      players: {
+        ...level.players,
+        abbi: {
+          ...level.players.abbi,
+          holding: { kind: "roses" as const, madeBy: null },
+        },
+      },
+    };
+    const { unmount } = render(
+      <BrothersDialog state={holding} onDecide={vi.fn()} />
+    );
+    expect(
+      screen.getByText(new RegExp(`Abbi is carrying ${ITEM_LABELS.roses}`))
+    ).toBeTruthy();
+    expect(screen.getByText(/Fred is nervous/)).toBeTruthy();
+    unmount();
+
+    const free = {
+      ...level,
+      players: {
+        ...level.players,
+        fred: { ...level.players.fred, calm: true },
+      },
+    };
+    render(<BrothersDialog state={free} onDecide={vi.fn()} />);
+    expect(screen.getByText(/Abbi has her hands free/)).toBeTruthy();
+    expect(screen.queryByText(/carrying|chairs/)).toBeNull();
+    expect(screen.getByText(/Fred has calmed down/)).toBeTruthy();
+  });
+
   it("offers a break only with a promise about work that is in the plan", () => {
     render(<ForBetterOrBulkGame />);
     fireEvent.click(screen.getByRole("checkbox", { name: /^Paper lanterns/ }));
@@ -168,5 +393,151 @@ describe("For Better or Bulk cabinet (#1906)", () => {
     fireEvent.click(within(dialog).getByRole("button", { name: "The chairs" }));
     expect(screen.queryByTestId("fbb-brothers")).toBeNull();
     expect(frame.active).toBe(true);
+  });
+
+  it("gives the return time for a leave and a break on either clock", () => {
+    const standard = createLevel(DEFAULT_SETUP);
+    const atText = { ...standard, phase: "brothers" as const, time: 110 };
+    const { unmount } = render(
+      <BrothersDialog state={atText} onDecide={vi.fn()} />
+    );
+    expect(
+      screen.getByRole("button", { name: /Go with them/ }).textContent
+    ).toContain("Back around 3:18.");
+    unmount();
+
+    const relaxedText = {
+      ...createLevel({ ...DEFAULT_SETUP, relaxed: true }),
+      phase: "brothers" as const,
+      time: 181.5,
+    };
+    expect(relaxedText.duration).toBe(RELAXED_LEVEL_SECONDS);
+    render(<BrothersDialog state={relaxedText} onDecide={vi.fn()} />);
+    expect(
+      screen.getByRole("button", { name: /Go with them/ }).textContent
+    ).toContain("Back around 3:18.");
+    fireEvent.click(screen.getByRole("button", { name: /Take a short break/ }));
+    expect(screen.getByText(/Back around 2:15, calmer/)).toBeTruthy();
+  });
+});
+
+describe("For Better or Bulk coach strip and counts", () => {
+  beforeEach(() => {
+    frame.callback = null;
+    frame.active = false;
+    window.localStorage.clear();
+    window.history.replaceState(null, "", "/arcade/for-better-or-bulk?speed=8");
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
+    window.localStorage.clear();
+    window.history.replaceState(null, "", "/");
+  });
+
+  it("shows the active person's next step and counts what is left in each crate", () => {
+    render(<ForBetterOrBulkGame />);
+    start();
+    expect(screen.getByTestId("fbb-coach").textContent).toContain(
+      "Grab roses from the ROSE crate on the left."
+    );
+    expect(screen.getByTestId("fbb-stock").textContent).toBe(
+      "Roses 6 · Hot dogs 1 · Wings 1 · Mac 1 · Quinoa 1 · Lanterns 4 · Chairs 8"
+    );
+  });
+
+  it("gives both people a hint in co-op", () => {
+    render(<ForBetterOrBulkGame initialMode="coop" />);
+    start();
+    const coach = screen.getByTestId("fbb-coach").textContent ?? "";
+    expect(coach).toContain("Fred: Grab roses");
+    expect(coach).toContain("Abbi: Grab roses");
+  });
+
+  it("hides the strip, remembers the choice, and shows it again on request", () => {
+    const { unmount } = render(<ForBetterOrBulkGame />);
+    start();
+    fireEvent.click(screen.getByRole("button", { name: "Hide tips" }));
+    expect(screen.queryByTestId("fbb-coach")).toBeNull();
+    expect(window.localStorage.getItem("fbb_hide_tips")).toBe("1");
+    unmount();
+
+    render(<ForBetterOrBulkGame />);
+    start();
+    expect(screen.queryByTestId("fbb-coach")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Show tips" }));
+    expect(screen.getByTestId("fbb-coach")).toBeTruthy();
+    expect(window.localStorage.getItem("fbb_hide_tips")).toBe("0");
+  });
+
+  it("shows Fred as out with his brothers while he is away", () => {
+    render(<ForBetterOrBulkGame initialMode="coop" />);
+    start();
+    runUntil(() => screen.queryByTestId("fbb-brothers") !== null);
+    fireEvent.click(screen.getByRole("button", { name: /Go with them/ }));
+    const coach = screen.getByTestId("fbb-coach");
+    expect(within(coach).getByRole("list").textContent).toContain(
+      "Fred is out with his brothers."
+    );
+    expect(coach.textContent).not.toContain("Fred: ");
+  });
+
+  it("hides the strip when a stale saved choice is overridden and the save fails", () => {
+    window.localStorage.setItem("fbb_hide_tips", "0");
+    const setItem = vi
+      .spyOn(Storage.prototype, "setItem")
+      .mockImplementation(() => {
+        throw new Error("quota");
+      });
+    render(<ForBetterOrBulkGame />);
+    start();
+    expect(screen.getByTestId("fbb-coach")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Hide tips" }));
+    expect(screen.queryByTestId("fbb-coach")).toBeNull();
+    expect(setItem).toHaveBeenCalled();
+    setItem.mockRestore();
+    // A save that works again clears the session choice, so Show tips persists.
+    fireEvent.click(screen.getByRole("button", { name: "Show tips" }));
+    expect(screen.getByTestId("fbb-coach")).toBeTruthy();
+    expect(window.localStorage.getItem("fbb_hide_tips")).toBe("0");
+  });
+
+  it("still renders the cabinet when storage throws", () => {
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+      throw new Error("blocked");
+    });
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new Error("blocked");
+    });
+    render(<ForBetterOrBulkGame />);
+    start();
+    expect(screen.getByTestId("fbb-game")).toBeTruthy();
+    expect(screen.getByTestId("fbb-coach")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Hide tips" }));
+    expect(screen.queryByTestId("fbb-coach")).toBeNull();
+  });
+});
+
+describe("For Better or Bulk floor-full toasts", () => {
+  it("shows one floor-full line per person every 3 seconds of game time", () => {
+    const shown: Partial<Record<"fred" | "abbi", number>> = {};
+    const full = (player: "fred" | "abbi"): GameEvent => ({
+      type: "floor-full",
+      player,
+    });
+    expect(throttleFloorFull([full("fred")], 10, shown)).toHaveLength(1);
+    expect(throttleFloorFull([full("fred")], 11, shown)).toHaveLength(0);
+    expect(throttleFloorFull([full("abbi")], 11, shown)).toHaveLength(1);
+    expect(throttleFloorFull([full("fred")], 12.9, shown)).toHaveLength(0);
+    expect(throttleFloorFull([full("fred")], 13, shown)).toHaveLength(1);
+  });
+
+  it("passes every other event through", () => {
+    const events: GameEvent[] = [
+      { type: "brothers-text" },
+      { type: "floor-full", player: "fred" },
+    ];
+    expect(throttleFloorFull(events, 0, {})).toEqual(events);
   });
 });

@@ -7,17 +7,20 @@
 
 import {
   ARRANGE_SECONDS,
+  BIN_HOLD_SECONDS,
   BURN_SECONDS,
   COOK_SECONDS,
+  CRATE_NAMES,
   PETAL_SECONDS,
   SIMPLIFY_SECONDS,
   VENUE_MAP,
+  frontTile,
+  getPrompt,
   type GameState,
   type ItemKind,
   type Player,
   type PlayerId,
   type Station,
-  type SupplyKind,
   type Target,
 } from "@/lib/for-better-or-bulk";
 import { clamp, GAME_FONT_FALLBACK_STACK } from "@/lib/game-utils";
@@ -29,6 +32,15 @@ export const VENUE_HEIGHT = VENUE_MAP.length * TILE;
 
 /** The rows of paving at the top of the map; everything below is lawn. */
 const PATIO_ROWS = 4;
+
+/**
+ * Label size. It never drops below 10px: a label too wide for its tile is
+ * squeezed to the tile width by the canvas instead of shrinking the type.
+ */
+const LABEL_PX = 10;
+
+/** A game-time burst's lifetime, in game seconds: a few frames at any speed. */
+export const BURST_SECONDS = 0.5;
 
 const COLORS = {
   hedge: "#1c2a1b",
@@ -57,7 +69,19 @@ const COLORS = {
   abbiEdge: "#d6c7a8",
   active: "#f59e0b",
   busy: "#f4f4f6",
+  charcoal: "#1b1b1b",
+  badge: "rgba(13, 14, 17, 0.88)",
 } as const;
+
+/** A one-shot canvas burst, timed on the game clock (state.time). */
+export interface CanvasBurst {
+  /** A ring on a target that was filled, or a puff of charcoal at the grill. */
+  readonly kind: "ring" | "charcoal";
+  readonly x: number;
+  readonly y: number;
+  /** The game time the burst started, in seconds. */
+  readonly startedAt: number;
+}
 
 const ITEM_COLORS: Readonly<Record<ItemKind, string>> = {
   roses: "#e0607e",
@@ -72,16 +96,6 @@ const ITEM_COLORS: Readonly<Record<ItemKind, string>> = {
   burnt: "#1b1b1b",
   lantern: "#f7d774",
   chairs: "#b9bec6",
-};
-
-const CRATE_LABELS: Readonly<Record<SupplyKind, string>> = {
-  roses: "ROSE",
-  "hotdogs-raw": "DOGS",
-  "wings-raw": "WING",
-  mac: "MAC",
-  quinoa: "QUIN",
-  lantern: "LAMP",
-  chairs: "CHAIR",
 };
 
 function font(size: number): string {
@@ -200,18 +214,30 @@ function drawProgress(
   ctx.fillRect(x + 4, y + TILE - 7, width * clamp(fraction, 0, 1), 4);
 }
 
+/**
+ * Draws a label centred on cx. Every label is light text at 10px, squeezed to
+ * the tile width if it is wider. A plate puts a dark badge behind the text so
+ * it keeps at least 4.5:1 contrast on any ground, including lawn and patio.
+ */
 function drawLabel(
   ctx: CanvasRenderingContext2D,
   text: string,
   cx: number,
   y: number,
-  color: string = COLORS.label
+  plate = false
 ): void {
-  ctx.font = font(8);
+  ctx.font = font(LABEL_PX);
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
-  ctx.fillStyle = color;
-  ctx.fillText(text, cx, y);
+  const width = Math.min(ctx.measureText(text).width, TILE - 2);
+  if (plate) {
+    ctx.fillStyle = COLORS.badge;
+    ctx.beginPath();
+    ctx.roundRect(cx - width / 2 - 3, y - 2, width + 6, LABEL_PX + 4, 3);
+    ctx.fill();
+  }
+  ctx.fillStyle = COLORS.label;
+  ctx.fillText(text, cx, y, TILE - 2);
 }
 
 function drawStation(ctx: CanvasRenderingContext2D, station: Station): void {
@@ -287,6 +313,21 @@ function drawStation(ctx: CanvasRenderingContext2D, station: Station): void {
   }
 }
 
+/**
+ * A small badge in the corner of an open target, showing the item it wants,
+ * so the outline says what goes there without reading the side panel.
+ */
+function drawWantBadge(ctx: CanvasRenderingContext2D, target: Target): void {
+  const size = TILE * 0.36;
+  const x = target.x * TILE + TILE - size - 4;
+  const y = target.y * TILE + 4;
+  ctx.fillStyle = COLORS.badge;
+  ctx.beginPath();
+  ctx.roundRect(x, y, size, size, 4);
+  ctx.fill();
+  drawItem(ctx, target.wants, x + size / 2, y + size / 2, size * 0.8);
+}
+
 function drawTarget(ctx: CanvasRenderingContext2D, target: Target): void {
   if (target.status === "unplanned") return;
   const px = target.x * TILE;
@@ -303,7 +344,7 @@ function drawTarget(ctx: CanvasRenderingContext2D, target: Target): void {
     ctx.fillRect(px + 1, py + 6, TILE - 2, TILE - 12);
   }
   if (target.status === "simplified") {
-    drawLabel(ctx, "BARE", cx, cy - 4, "rgba(13, 14, 17, 0.55)");
+    drawLabel(ctx, "BARE", cx, cy - 4, true);
     return;
   }
   const filled = target.filled;
@@ -320,11 +361,7 @@ function drawTarget(ctx: CanvasRenderingContext2D, target: Target): void {
     ctx.lineWidth = 1.5;
     ctx.strokeRect(px + 3.5, py + 3.5, TILE - 7, TILE - 7);
     ctx.restore();
-    if (filled.length === 0) {
-      ctx.globalAlpha = 0.35;
-      drawItem(ctx, target.wants, cx, cy, TILE * 0.42);
-      ctx.globalAlpha = 1;
-    }
+    drawWantBadge(ctx, target);
     if (target.simplifyProgress > 0) {
       drawProgress(
         ctx,
@@ -390,11 +427,94 @@ function drawPlayer(
   }
 }
 
-/** Draws the whole venue for one frame. */
+/**
+ * The tile a person's interact would act on: solid amber when that interact
+ * is available now, faint and dashed when it is not.
+ */
+function drawFacingTile(
+  ctx: CanvasRenderingContext2D,
+  state: GameState,
+  id: PlayerId
+): void {
+  const player = state.players[id];
+  if (player.presence === "away") return;
+  const { x, y } = frontTile(player);
+  const columns = VENUE_MAP[0]?.length ?? 0;
+  if (x < 0 || y < 0 || x >= columns || y >= VENUE_MAP.length) return;
+  const ready = getPrompt(state, id).interact !== null;
+  ctx.save();
+  ctx.strokeStyle = COLORS.active;
+  ctx.lineWidth = 2;
+  ctx.globalAlpha = ready ? 1 : 0.4;
+  ctx.setLineDash(ready ? [] : [3, 3]);
+  ctx.strokeRect(x * TILE + 2, y * TILE + 2, TILE - 4, TILE - 4);
+  ctx.restore();
+}
+
+/** A bar on the bin while someone holds work there to throw an item out. */
+function drawBinHold(ctx: CanvasRenderingContext2D, player: Player): void {
+  if (player.binHold <= 0 || player.presence === "away") return;
+  const { x, y } = frontTile(player);
+  drawProgress(
+    ctx,
+    x * TILE,
+    y * TILE,
+    player.binHold / BIN_HOLD_SECONDS,
+    COLORS.progress
+  );
+}
+
+/**
+ * The bursts the venue may draw this frame: all of them in the loud cabinet,
+ * none otherwise. The one gate the game uses, so the rule is tested directly.
+ */
+export function canvasBurstsFor(
+  loud: boolean,
+  bursts: readonly CanvasBurst[]
+): readonly CanvasBurst[] {
+  return loud ? bursts : [];
+}
+
+/** One burst at its age on the game clock; expired or future bursts draw nothing. */
+function drawBurst(
+  ctx: CanvasRenderingContext2D,
+  burst: CanvasBurst,
+  now: number
+): void {
+  const age = now - burst.startedAt;
+  if (age < 0 || age >= BURST_SECONDS) return;
+  const t = age / BURST_SECONDS;
+  const cx = burst.x * TILE + TILE / 2;
+  const cy = burst.y * TILE + TILE / 2;
+  ctx.save();
+  if (burst.kind === "ring") {
+    ctx.globalAlpha = 1 - t;
+    ctx.strokeStyle = COLORS.active;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(cx, cy, TILE * (0.35 + 0.45 * t), 0, Math.PI * 2);
+    ctx.stroke();
+  } else {
+    ctx.globalAlpha = 0.8 * (1 - t);
+    ctx.fillStyle = COLORS.charcoal;
+    ctx.beginPath();
+    ctx.arc(cx, cy - TILE * 0.3 * t, TILE * (0.2 + 0.3 * t), 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+/**
+ * Draws the whole venue for one frame. `active` is the person playing in
+ * solo; null means co-op, where both people's facing tiles are outlined.
+ * `bursts` are drawn only when the caller passes them (the cabinet passes
+ * none unless it is loud), timed on `state.time`.
+ */
 export function drawVenue(
   ctx: CanvasRenderingContext2D,
   state: GameState,
-  active: PlayerId | null
+  active: PlayerId | null,
+  bursts: readonly CanvasBurst[] = []
 ): void {
   ctx.clearRect(0, 0, VENUE_WIDTH, VENUE_HEIGHT);
   drawGround(ctx);
@@ -410,14 +530,8 @@ export function drawVenue(
     ctx.globalAlpha = left > 0 ? 1 : 0.3;
     drawItem(ctx, supply.kind, px + TILE / 2, py + TILE / 2 + 2, TILE * 0.38);
     ctx.globalAlpha = 1;
-    drawLabel(ctx, CRATE_LABELS[supply.kind], px + TILE / 2, py + 4);
-    drawLabel(
-      ctx,
-      String(left),
-      px + TILE / 2,
-      py + TILE - 13,
-      left > 0 ? COLORS.label : COLORS.dim
-    );
+    drawLabel(ctx, CRATE_NAMES[supply.kind], px + TILE / 2, py + 4);
+    drawLabel(ctx, String(left), px + TILE / 2, py + TILE - 13);
   }
   for (const target of state.targets) drawTarget(ctx, target);
   for (const station of state.stations) drawStation(ctx, station);
@@ -430,6 +544,12 @@ export function drawVenue(
       TILE * 0.45
     );
   }
+  for (const burst of bursts) drawBurst(ctx, burst, state.time);
+  for (const id of active ? [active] : (["fred", "abbi"] as const)) {
+    drawFacingTile(ctx, state, id);
+  }
   drawPlayer(ctx, state.players.fred, active === "fred");
   drawPlayer(ctx, state.players.abbi, active === "abbi");
+  drawBinHold(ctx, state.players.fred);
+  drawBinHold(ctx, state.players.abbi);
 }

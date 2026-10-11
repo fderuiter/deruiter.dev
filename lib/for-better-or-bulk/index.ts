@@ -23,5 +23,5 @@ export {
   validateDecision,
 } from "./internal/sim";
 export { computeReceipt, readinessLines, tally } from "./internal/receipt";
-export { clockLabel, getPrompt } from "./internal/views";
+export { clockLabel, getHint, getPrompt } from "./internal/views";
 export type { Prompt } from "./internal/views";

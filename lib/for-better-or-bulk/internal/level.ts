@@ -146,6 +146,7 @@ function spawn(id: PlayerId, x: number, y: number): Player {
     busyFor: 0,
     busyReason: null,
     calm: false,
+    binHold: 0,
   };
 }
 
@@ -225,6 +226,8 @@ export function createLevel(setup: Setup): GameState {
     interruptions: [],
     presence: null,
     returnsAt: null,
+    brothersAt: null,
+    firstFilledAt: null,
     burntBatches: 0,
     finishedAt: null,
   };

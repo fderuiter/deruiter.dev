@@ -80,7 +80,8 @@ Fred's brothers text, and the clock stops until he answers:
 - **Break.** Fred leaves for 40 game seconds and promises to come back for one
   thing: chairs, lanterns, the buffet or the flowers. He returns calm and a
   little faster.
-- **Leave.** Fred is gone for 110 game seconds.
+- **Leave.** Fred is gone for 70 game seconds on the 200 second clock (scaled
+  for the relaxed clock), so a leave at the latest text returns him at 180 s.
 
 Follow-through is kept on staying, or on a break whose promised work is not
 unfinished at the end. Leaving always misses it, even when Abbi finishes every

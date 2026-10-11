@@ -8,6 +8,14 @@
 
 ## Properties
 
+### binHold
+
+> `readonly` **binHold**: `number`
+
+Seconds the work key has been held facing the bin with an item in hand.
+
+***
+
 ### busyFor
 
 > `readonly` **busyFor**: `number`

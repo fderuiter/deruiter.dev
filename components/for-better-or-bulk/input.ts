@@ -75,24 +75,28 @@ function inputFor(
 }
 
 /**
- * The engine frame for the keys held now and the keys that went down since
- * the last step. Interact fires once per press; work is held.
+ * The engine frame for the keys held now, the keys tapped since the last
+ * step (down and up again before it ran), and the keys that went down since
+ * the last step. Interact fires once per press; movement and work count a
+ * tapped key as held for that step.
  */
 export function buildFrame(
   held: ReadonlySet<string>,
+  tapped: ReadonlySet<string>,
   pressed: ReadonlySet<string>,
   mode: ControlMode,
   active: PlayerId,
   decision?: PresenceDecision
 ): Frame {
+  const down = new Set([...held, ...tapped]);
   let inputs: Record<PlayerId, PlayerInput>;
   if (mode === "coop") {
     inputs = {
-      fred: inputFor([FRED_KEYS], held, pressed),
-      abbi: inputFor([ABBI_KEYS], held, pressed),
+      fred: inputFor([FRED_KEYS], down, pressed),
+      abbi: inputFor([ABBI_KEYS], down, pressed),
     };
   } else {
-    const input = inputFor([FRED_KEYS, ABBI_KEYS], held, pressed);
+    const input = inputFor([FRED_KEYS, ABBI_KEYS], down, pressed);
     inputs =
       active === "fred"
         ? { fred: input, abbi: IDLE_INPUT }

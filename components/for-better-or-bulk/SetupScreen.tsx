@@ -75,7 +75,7 @@ function OptionButton({
       className={`flex min-h-11 min-w-0 flex-col items-start rounded border px-3 py-2 text-left font-mono text-xs active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--fbb-focus)] disabled:opacity-40 ${
         selected
           ? "border-[var(--fbb-accent)] bg-[var(--fbb-selected)] text-[var(--fbb-text)]"
-          : "border-[var(--fbb-rule)] bg-[var(--fbb-panel)] text-[var(--fbb-dim)]"
+          : "border-[var(--fbb-control)] bg-[var(--fbb-panel)] text-[var(--fbb-dim)]"
       }`}
     >
       {children}

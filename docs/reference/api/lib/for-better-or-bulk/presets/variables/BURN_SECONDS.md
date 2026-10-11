@@ -6,4 +6,6 @@
 
 # Variable: BURN\_SECONDS
 
-> `const` **BURN\_SECONDS**: `13` = `13`
+> `const` **BURN\_SECONDS**: `16` = `16`
+
+Was 13: a 7 s pickup window after cooking was the only cliff in the sweep.

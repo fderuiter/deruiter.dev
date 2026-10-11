@@ -143,6 +143,24 @@ describe("Patty's Drive-Thru game, flat view (#1813, #1814)", () => {
     );
   });
 
+  it("keeps the shortcuts working after the focused menu key unmounts", () => {
+    render(
+      <PattyDriveThruGame config={{ seed: "e2e-4" }} initialView="flat" />
+    );
+    clockIn();
+    advance(2.5);
+    press("1");
+
+    fireEvent.click(screen.getByRole("button", { name: "Sides ›" }));
+    const fries = screen.getByRole("button", { name: "Fries" });
+    act(() => fries.focus());
+    expect(document.activeElement).toBe(fries);
+    // Ringing returns the menu to Home, so the focused key leaves the page.
+    fireEvent.click(fries);
+    expect(fries.isConnected).toBe(false);
+    expect(document.activeElement).toBe(game());
+  });
+
   it("wipes the counter, and ignores modified keys and keys with nothing to act on", () => {
     render(
       <PattyDriveThruGame config={{ seed: "e2e-4" }} initialView="flat" />

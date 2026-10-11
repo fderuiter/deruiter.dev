@@ -1421,6 +1421,7 @@ class Engine implements ProtocolDriftEngine {
   ): void {
     issue.status = issueTransition(issue.status, next);
     if (resolution) issue.resolution = resolution;
+    if (!isIssueOpen(next)) this.closeSettledQueries(issue.issueId);
     if (next === "Resolved") {
       this.appendAudit({
         type: "ISSUE_RESOLVED",
@@ -1634,6 +1635,33 @@ class Engine implements ProtocolDriftEngine {
       queryThreadId: q.queryId,
     });
     this.events.push({ type: "QUERY_UPDATED", query: clone(q) });
+    if (!isIssueOpen(issue.status)) this.closeSettledQueries(issue.issueId);
+  }
+
+  /**
+   * Closes answered threads on an issue that is no longer open. Once the
+   * architect accepts a correction or an uncertainty the thread has nothing
+   * left to say, and leaving it Answered would block database lock on a query
+   * the player has no reason to revisit.
+   */
+  private closeSettledQueries(issueId: string): void {
+    for (const q of this.queries) {
+      if (q.issueId !== issueId || q.communicationState !== "Answered")
+        continue;
+      q.communicationState = queryTransition(q.communicationState, "Closed");
+      this.appendAudit({
+        type: "QUERY_CLOSED",
+        subjectId: q.subjectId,
+        visit: `Day ${q.visitDay}`,
+        variable: q.targetField,
+        oldValue: "Answered",
+        newValue: "Closed",
+        actor: "DATA_ARCHITECT",
+        reason: "Thread closed when its issue was dispositioned",
+        queryThreadId: q.queryId,
+      });
+      this.events.push({ type: "QUERY_UPDATED", query: clone(q) });
+    }
   }
 
   private closeQuery(queryId: string): void {

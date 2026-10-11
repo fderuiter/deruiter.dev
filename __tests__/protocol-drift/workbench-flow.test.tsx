@@ -5,6 +5,7 @@ import {
   fireEvent,
   render,
   screen,
+  waitFor,
   within,
 } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
@@ -145,6 +146,40 @@ describe("Protocol Drift workbench flow", () => {
     expect(useProtocolDriftStore.getState().snapshot?.fsmState).toBe("PAUSED");
     await click(/Speed 5x/);
     expect(useProtocolDriftStore.getState().snapshot?.speed).toBe(5);
+
+    // #1946: Space still runs the clock while a clock button has focus, and
+    // N steps over any focused button, but text fields keep their keys.
+    await act(async () => {
+      fireEvent.keyDown(screen.getByRole("button", { name: /Speed 5x/ }), {
+        key: " ",
+      });
+    });
+    expect(useProtocolDriftStore.getState().snapshot?.fsmState).toBe("RUNNING");
+    await act(async () => {
+      fireEvent.keyDown(screen.getByRole("button", { name: /Speed 5x/ }), {
+        key: " ",
+      });
+    });
+    expect(useProtocolDriftStore.getState().snapshot?.fsmState).toBe("PAUSED");
+    const before = screen.getByTestId("sim-clock").textContent;
+    await act(async () => {
+      fireEvent.keyDown(
+        screen.getByRole("button", { name: "Run Local Test" }),
+        {
+          key: "n",
+        }
+      );
+    });
+    expect(screen.getByTestId("sim-clock").textContent).not.toBe(before);
+    await act(async () => {
+      fireEvent.keyDown(
+        screen.getByRole("button", { name: "Run Local Test" }),
+        {
+          key: " ",
+        }
+      );
+    });
+    expect(useProtocolDriftStore.getState().snapshot?.fsmState).toBe("PAUSED");
   });
 
   it("refuses to unpause before a revision is published", async () => {
@@ -171,7 +206,9 @@ describe("Protocol Drift workbench flow", () => {
         .getState()
         .command({ type: "ADVANCE_TO", minute: minuteAt(14, 23, 59) });
     });
-    const dialog = await screen.findByRole("dialog", { name: /Wave 1 Review/ });
+    const dialog = await screen.findByRole("dialog", {
+      name: /Tracer Complete/,
+    });
     expect(within(dialog).getByTestId("wave-confirmed").textContent).toBe("18");
     expect(within(dialog).getByTestId("wave-issues").textContent).toBe("0");
     expect(useProtocolDriftStore.getState().snapshot?.fsmState).toBe(
@@ -179,6 +216,25 @@ describe("Protocol Drift workbench flow", () => {
     );
     expect(screen.getByTestId("debt-fab").textContent).toContain("0.00");
     expect(screen.getByTestId("debt-loss").textContent).toContain("0");
+
+    // #1946: the tracer has one wave, so the clock must not run on into an
+    // empty study, and the review must lead on to the full study.
+    await act(async () => {
+      await useProtocolDriftStore.getState().togglePause();
+    });
+    expect(useProtocolDriftStore.getState().snapshot?.fsmState).toBe(
+      "WAVE_REVIEW"
+    );
+    expect(useProtocolDriftStore.getState().notice?.text).toMatch(
+      /tracer is complete/i
+    );
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: "Start the full study" })
+    );
+    await waitFor(() =>
+      expect(useProtocolDriftStore.getState().snapshot?.fsmState).toBe("BRIEF")
+    );
+    expect(useProtocolDriftStore.getState().scenario).toBe("full");
   });
 
   it("plays the wire-snap cue for a valid wire and the reject cue for an invalid one", async () => {

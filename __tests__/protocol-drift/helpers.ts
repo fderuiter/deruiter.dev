@@ -69,13 +69,20 @@ export function runUntil(
   throw new Error("runUntil did not converge");
 }
 
-/** Resolves every open issue the way a careful architect would. */
-export function resolveAll(engine: ProtocolDriftEngine): void {
+/**
+ * Resolves every open issue the way a careful architect would. With
+ * `closeAnswered: false` it never sends CLOSE_QUERY, which is how a player who
+ * only uses the issue buttons in the inspector plays (#1946).
+ */
+export function resolveAll(
+  engine: ProtocolDriftEngine,
+  { closeAnswered = true }: { closeAnswered?: boolean } = {}
+): void {
   for (let guard = 0; guard < 50; guard += 1) {
     if (engine.view().fsmState === "WAVE_REVIEW")
       ok(engine, { type: "SET_PAUSED", isPaused: true });
     const v = engine.view();
-    for (const q of v.queries) {
+    for (const q of closeAnswered ? v.queries : []) {
       if (q.communicationState === "Answered")
         ok(engine, { type: "CLOSE_QUERY", queryId: q.queryId });
     }
@@ -148,16 +155,19 @@ export const WAVE_END_MINUTES = {
  * dispositioned with evidence, Amendment 01 pipeline with the analysis lane,
  * all three waves, ready for lock in PAUSED.
  */
-export function playFullLevel(engine: ProtocolDriftEngine): void {
+export function playFullLevel(
+  engine: ProtocolDriftEngine,
+  options: { closeAnswered?: boolean } = {}
+): void {
   publish(engine, WAVE1_GRAPH, "p1");
   runUntil(engine, WAVE_END_MINUTES[1]);
-  resolveAll(engine);
+  resolveAll(engine, options);
   runUntil(engine, minuteAt(20, 8, 0));
   publish(engine, FULL_GRAPH, "p2");
   runUntil(engine, WAVE_END_MINUTES[2]);
-  resolveAll(engine);
+  resolveAll(engine, options);
   runUntil(engine, WAVE_END_MINUTES[3]);
-  resolveAll(engine);
+  resolveAll(engine, options);
   if (engine.view().fsmState === "WAVE_REVIEW")
     ok(engine, { type: "SET_PAUSED", isPaused: true });
 }

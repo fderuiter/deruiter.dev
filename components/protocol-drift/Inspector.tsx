@@ -435,6 +435,7 @@ function Composer({ issue, view }: { issue: Issue; view: ProtocolDriftView }) {
 }
 
 function QueryThread({ query }: { query: ClinicalQuery }) {
+  const command = useProtocolDriftStore((s) => s.command);
   return (
     <li className="border border-zinc-800 bg-[#0d0e11] p-1.5 text-[11px]">
       <p className="flex flex-wrap items-center justify-between gap-1">
@@ -459,6 +460,17 @@ function QueryThread({ query }: { query: ClinicalQuery }) {
         <p className="text-amber-400">
           Duplicate query: goodwill penalty applied.
         </p>
+      ) : null}
+      {query.communicationState === "Answered" ? (
+        <button
+          type="button"
+          onClick={() =>
+            void command({ type: "CLOSE_QUERY", queryId: query.queryId })
+          }
+          className="mt-1 min-h-8 border border-zinc-700 px-2 text-[11px] text-zinc-200 hover:border-amber-500"
+        >
+          Close query
+        </button>
       ) : null}
     </li>
   );

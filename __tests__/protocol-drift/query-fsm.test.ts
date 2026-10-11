@@ -134,7 +134,6 @@ describe("Site B rubber stamp and evidence-linked correction", () => {
         r.VSTESTCD === "SYSBP"
     );
     expect(sbp?.VSSTRESN).toBe(120);
-    ok(engine, { type: "CLOSE_QUERY", queryId: id });
     expect(
       engine.view().queries.find((q) => q.queryId === id)?.communicationState
     ).toBe("Closed");

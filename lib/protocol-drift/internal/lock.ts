@@ -43,7 +43,10 @@ export function evaluateLockGate(input: LockGateInput): LockAuditResult {
   for (const q of openQueries) {
     discrepancies.push({
       code: "OPEN_QUERIES_REMAINING",
-      message: `Query ${q.queryId} is ${q.communicationState}`,
+      message:
+        q.communicationState === "Answered"
+          ? `Query ${q.queryId} is Answered: close it in the inspector`
+          : `Query ${q.queryId} is ${q.communicationState}`,
       entityId: q.queryId,
     });
   }

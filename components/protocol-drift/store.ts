@@ -138,6 +138,7 @@ interface ProtocolDriftState {
   select: (selection: Partial<InspectorSelection>) => void;
   setInspectorExpanded: (expanded: boolean) => void;
   dismissWave: () => void;
+  clearNotice: (id: number) => void;
   dismissMemo: () => void;
   sendQuery: (
     issueId: string,
@@ -155,6 +156,14 @@ interface ProtocolDriftState {
 
 let adapter: EngineAdapter | null = null;
 let noticeId = 0;
+
+/**
+ * The tracer scenario has a single wave. Once it is reviewed nothing else is
+ * scheduled, so the clock must not run on into an empty study (#1946).
+ */
+export function isTracerComplete(view: ProtocolDriftView | null): boolean {
+  return view?.scenario === "tracer" && view.completedWaves.length > 0;
+}
 let busy = false;
 /** True while a save is replaying: no cues, no autosaves. */
 let replaying = false;
@@ -329,7 +338,12 @@ export const useProtocolDriftStore = create<ProtocolDriftState>()((
   const canEdit = (): boolean => {
     const fsm = get().snapshot?.fsmState;
     if (!fsm || !EDITABLE.has(fsm)) {
-      say("warn", "Pause the clock to edit the pipeline.");
+      say(
+        "warn",
+        fsm === "LOCKED" || fsm === "LOCK_REVIEW"
+          ? "The database is locked, so the pipeline is read-only."
+          : "Pause the clock to edit the pipeline."
+      );
       return false;
     }
     return true;
@@ -367,6 +381,8 @@ export const useProtocolDriftStore = create<ProtocolDriftState>()((
       const fsm = get().snapshot?.fsmState;
       if (fsm === "RUNNING") {
         await send({ type: "SET_PAUSED", isPaused: true });
+      } else if (isTracerComplete(get().view)) {
+        say("info", "The tracer is complete. Start the full study to go on.");
       } else if (fsm === "PAUSED" || fsm === "WAVE_REVIEW") {
         set({ waveSummary: null });
         await send({ type: "SET_PAUSED", isPaused: false });
@@ -381,6 +397,17 @@ export const useProtocolDriftStore = create<ProtocolDriftState>()((
     },
 
     step: async () => {
+      const fsm = get().snapshot?.fsmState;
+      if (isTracerComplete(get().view)) {
+        say("info", "The tracer is complete. Start the full study to go on.");
+        return;
+      }
+      if (fsm === "DRAFT" || fsm === "VALIDATE" || fsm === "DEPLOY_READY") {
+        say("warn", "Run Local Test and Publish Revision before stepping.");
+        playProtocolCue("rejectCollision");
+        return;
+      }
+      if (fsm !== "PAUSED") return;
       const res = await send({ type: "STEP_TICK" });
       if (res && !res.events.some((e) => e.type === "COMMAND_REJECTED")) {
         playProtocolCue("eventStep");
@@ -407,15 +434,21 @@ export const useProtocolDriftStore = create<ProtocolDriftState>()((
       if (clamped) {
         set({ nodes: toFlowNodes(clamped.nodes) });
       }
+      if (res?.events.some((e) => e.type === "VALIDATION_RESULT" && e.valid)) {
+        say("info", "Local test passed. Publish the revision to run it.");
+      }
     },
 
     publish: async () => {
       const { nodes, edges, revisionCount } = get();
-      await send({
+      const res = await send({
         type: "PUBLISH_REVISION",
         revisionId: `p${revisionCount + 1}`,
         ...toPipelineGraph(nodes, edges),
       });
+      if (res?.events.some((e) => e.type === "REVISION_PUBLISHED")) {
+        say("info", "Revision published. Press Space to run the clock.");
+      }
     },
 
     loadTemplate: async ({ nodes, edges }) => {
@@ -519,6 +552,9 @@ export const useProtocolDriftStore = create<ProtocolDriftState>()((
 
     setInspectorExpanded: (expanded) => set({ inspectorExpanded: expanded }),
     dismissWave: () => set({ waveSummary: null }),
+    clearNotice: (id) => {
+      if (get().notice?.id === id) set({ notice: null });
+    },
     dismissMemo: () => set({ memoOpen: false }),
 
     sendQuery: async (issueId, evidenceLinked, message) => {

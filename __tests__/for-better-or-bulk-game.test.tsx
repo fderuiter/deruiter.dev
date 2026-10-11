@@ -20,6 +20,8 @@ import {
 } from "@/lib/for-better-or-bulk";
 import { BrothersDialog } from "@/components/for-better-or-bulk/BrothersDialog";
 import { throttleFloorFull } from "@/components/for-better-or-bulk/messages";
+import { FBB_LOUD_QUERY } from "@/components/for-better-or-bulk/bursts";
+import { fromPartial } from "@total-typescript/shoehorn";
 
 const frame = vi.hoisted(() => ({
   callback: null as null | ((deltaMs: number) => void),
@@ -27,6 +29,12 @@ const frame = vi.hoisted(() => ({
 }));
 
 const scores = vi.hoisted(() => ({ record: vi.fn() }));
+
+const sfx = vi.hoisted(() => ({ play: vi.fn() }));
+
+vi.mock("@/components/for-better-or-bulk/sfx", () => ({
+  playSfx: sfx.play,
+}));
 
 /** Lets a test end the level on the next engine step, whatever the plan. */
 const engine = vi.hoisted(() => ({
@@ -86,6 +94,18 @@ function start() {
   fireEvent.click(screen.getByRole("button", { name: "Start setup" }));
 }
 
+/** Answers the loud query with `loud`, and every other query with no match. */
+function stubLoud(loud: boolean) {
+  window.matchMedia = vi.fn((query: string) =>
+    fromPartial<MediaQueryList>({
+      matches: loud && query === FBB_LOUD_QUERY,
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    })
+  );
+}
+
 describe("For Better or Bulk cabinet (#1906)", () => {
   beforeEach(() => {
     frame.callback = null;
@@ -93,12 +113,58 @@ describe("For Better or Bulk cabinet (#1906)", () => {
     engine.finishNext = false;
     engine.inputs = [];
     scores.record.mockClear();
+    sfx.play.mockClear();
     window.history.replaceState(null, "", "/arcade/for-better-or-bulk?speed=8");
   });
 
   afterEach(() => {
     cleanup();
     window.history.replaceState(null, "", "/");
+    vi.unstubAllGlobals();
+    delete (window as Partial<Window>).matchMedia;
+  });
+
+  it("marks the cabinet loud only when the viewer allows motion and the screen is wide", () => {
+    stubLoud(true);
+    render(<ForBetterOrBulkGame />);
+    expect(game().getAttribute("data-fbb-loud")).toBe("on");
+  });
+
+  it("is not loud without the media match, so no bursts render", () => {
+    stubLoud(false);
+    render(<ForBetterOrBulkGame />);
+    expect(game().getAttribute("data-fbb-loud")).toBe("off");
+  });
+
+  it("shows the brothers' burst only in the loud cabinet", () => {
+    window.history.replaceState(null, "", "/arcade/for-better-or-bulk?speed=1");
+    stubLoud(true);
+    const { unmount } = render(<ForBetterOrBulkGame />);
+    start();
+    runUntil(() => screen.queryByTestId("fbb-brothers") !== null);
+    expect(screen.getByText("The brothers are texting")).toBeTruthy();
+    unmount();
+
+    stubLoud(false);
+    render(<ForBetterOrBulkGame />);
+    start();
+    runUntil(() => screen.queryByTestId("fbb-brothers") !== null);
+    expect(screen.queryByText("The brothers are texting")).toBeNull();
+  });
+
+  it("plays the brothers' sound at 1x", () => {
+    window.history.replaceState(null, "", "/arcade/for-better-or-bulk?speed=1");
+    render(<ForBetterOrBulkGame />);
+    start();
+    runUntil(() => screen.queryByTestId("fbb-brothers") !== null);
+    expect(sfx.play).toHaveBeenCalledWith("brothers");
+  });
+
+  it("plays no sound above 1x", () => {
+    render(<ForBetterOrBulkGame />);
+    start();
+    runUntil(() => screen.queryByTestId("fbb-brothers") !== null);
+    expect(sfx.play).not.toHaveBeenCalled();
   });
 
   it("starts on the plan screen within budget", () => {

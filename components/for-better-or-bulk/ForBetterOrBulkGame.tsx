@@ -42,11 +42,28 @@ import { useCanvasResolution } from "@/hooks/useCanvasResolution";
 import { useCabinetSetup } from "@/components/arcade/CabinetSetupContext";
 import { BrothersDialog } from "./BrothersDialog";
 import { buildFrame, GAME_CODES, type ControlMode } from "./input";
-import { describeEvent, throttleFloorFull } from "./messages";
+import { BurstLayer, RowFlash, useFbbLoud, type DomBurst } from "./bursts";
+import {
+  CHECKLIST,
+  checklistLine,
+  completedCategories,
+  describeEvent,
+  throttleFloorFull,
+  playStepSounds,
+  type FeedbackEvent,
+} from "./messages";
+import { playSfx } from "./sfx";
 import { readHideTips, subscribeHideTips, writeHideTips } from "./hint-storage";
 import { ReceiptView } from "./ReceiptView";
 import { SetupScreen } from "./SetupScreen";
-import { drawVenue, VENUE_HEIGHT, VENUE_WIDTH } from "./venue-canvas";
+import {
+  BURST_SECONDS,
+  canvasBurstsFor,
+  drawVenue,
+  VENUE_HEIGHT,
+  VENUE_WIDTH,
+  type CanvasBurst,
+} from "./venue-canvas";
 
 /** The arcade id used for scores, trophies and the cabinet. */
 const FBB_GAME_ID = "for-better-or-bulk";
@@ -56,15 +73,6 @@ const MAX_STEPS_PER_FRAME = 8;
 
 /** How long a toast stays up, in milliseconds. */
 const TOAST_MS = 3500;
-
-const CHECKLIST: readonly Category[] = [
-  "bouquets",
-  "centerpieces",
-  "petals",
-  "chairs",
-  "lanterns",
-  "buffet",
-];
 
 const NAMES: Readonly<Record<PlayerId, string>> = {
   fred: "Fred",
@@ -128,24 +136,29 @@ interface Toast {
   text: string;
 }
 
+/** A checklist row whose category just completed; one flash per entry. */
+interface RowFlashEntry {
+  id: number;
+  category: Category;
+}
+
+/**
+ * Adds one canvas burst and drops the ones that have already run out, timed
+ * on the game clock so a paused level keeps its bursts still.
+ */
+function withBurst(
+  bursts: readonly CanvasBurst[],
+  burst: CanvasBurst
+): CanvasBurst[] {
+  return [
+    ...bursts.filter((b) => burst.startedAt - b.startedAt < BURST_SECONDS),
+    burst,
+  ];
+}
+
 /** Items placed in the venue: the number the arcade board keeps. */
 function placements(state: GameState): number {
   return state.targets.reduce((sum, t) => sum + t.filled.length, 0);
-}
-
-function checklistLine(
-  state: GameState,
-  category: Category
-): { done: number; planned: number } | null {
-  const planned = state.targets.filter(
-    (t) => t.category === category && t.status !== "unplanned"
-  );
-  if (planned.length === 0) return null;
-  const counted = planned.filter((t) => t.status !== "simplified");
-  return {
-    done: counted.filter((t) => t.status === "filled").length,
-    planned: counted.length,
-  };
 }
 
 interface ForBetterOrBulkGameProps {
@@ -167,6 +180,8 @@ export function ForBetterOrBulkGame({
   const [userPaused, setUserPaused] = useState(false);
   const [toasts, setToasts] = useState<readonly Toast[]>([]);
   const [announcement, setAnnouncement] = useState("");
+  const [textBursts, setTextBursts] = useState<readonly DomBurst[]>([]);
+  const [rowFlashes, setRowFlashes] = useState<readonly RowFlashEntry[]>([]);
   const [speed] = useState(speedFromUrl);
   const hideTips = useSyncExternalStore(
     subscribeHideTips,
@@ -174,6 +189,7 @@ export function ForBetterOrBulkGame({
     () => false
   );
 
+  const loud = useFbbLoud();
   const cabinet = useCabinetSetup();
   const paused = userPaused || (cabinet?.isSetupOpen ?? false);
 
@@ -189,6 +205,8 @@ export function ForBetterOrBulkGame({
   const toastTimers = useRef(new Set<ReturnType<typeof setTimeout>>());
   const activeRef = useRef<PlayerId>("abbi");
   const floorFullShown = useRef<Partial<Record<PlayerId, number>>>({});
+  const canvasBursts = useRef<CanvasBurst[]>([]);
+  const burstId = useRef(0);
 
   const draw = useCallback(
     (scale: number) => {
@@ -196,9 +214,15 @@ export function ForBetterOrBulkGame({
       const state = stateRef.current;
       if (!ctx || !state) return;
       ctx.setTransform(scale, 0, 0, scale, 0, 0);
-      drawVenue(ctx, state, mode === "solo" ? activeRef.current : null);
+      // Bursts are drawn only in the loud cabinet; the game clock times them.
+      drawVenue(
+        ctx,
+        state,
+        mode === "solo" ? activeRef.current : null,
+        canvasBurstsFor(loud, canvasBursts.current)
+      );
     },
-    [mode]
+    [mode, loud]
   );
 
   const scaleRef = useCanvasResolution({
@@ -249,6 +273,63 @@ export function ForBetterOrBulkGame({
     [speed]
   );
 
+  const removeTextBurst = useCallback((id: number) => {
+    setTextBursts((current) => current.filter((b) => b.id !== id));
+  }, []);
+
+  const removeRowFlash = useCallback((id: number) => {
+    setRowFlashes((current) => current.filter((f) => f.id !== id));
+  }, []);
+
+  /**
+   * Sound and bursts for one step's events. Sound plays only at 1x, and the
+   * engine's mute decides the rest. Bursts show only in the loud cabinet.
+   */
+  const feedback = useCallback(
+    (events: readonly FeedbackEvent[], state: GameState) => {
+      if (speed === 1) playStepSounds(events, playSfx);
+      for (const event of events) {
+        if (!loud) continue;
+        if (event.type === "target-filled") {
+          const target = state.targets.find((t) => t.id === event.target);
+          if (target) {
+            canvasBursts.current = withBurst(canvasBursts.current, {
+              kind: "ring",
+              x: target.x,
+              y: target.y,
+              startedAt: state.time,
+            });
+          }
+        } else if (event.type === "burnt") {
+          const station = state.stations.find((s) => s.id === event.station);
+          if (station) {
+            canvasBursts.current = withBurst(canvasBursts.current, {
+              kind: "charcoal",
+              x: station.x,
+              y: station.y,
+              startedAt: state.time,
+            });
+          }
+        } else if (event.type === "brothers-text") {
+          burstId.current += 1;
+          const id = burstId.current;
+          setTextBursts((current) => [
+            ...current,
+            { id, text: "The brothers are texting" },
+          ]);
+        } else if (event.type === "category-complete") {
+          burstId.current += 1;
+          const id = burstId.current;
+          setRowFlashes((current) => [
+            ...current,
+            { id, category: event.category },
+          ]);
+        }
+      }
+    },
+    [speed, loud]
+  );
+
   /**
    * The one path for every engine step (the loop, a swap and a decision):
    * applies the frame, shows the new state and finishes the level if it ended.
@@ -259,21 +340,31 @@ export function ForBetterOrBulkGame({
       if (!state) return null;
       const result = stepGame(state, frame);
       stateRef.current = result.state;
-      pushMessages(
-        throttleFloorFull(
-          result.events,
-          result.state.time,
-          floorFullShown.current
-        )
+      const shown = throttleFloorFull(
+        result.events,
+        result.state.time,
+        floorFullShown.current
       );
+      pushMessages(shown);
+      const events: FeedbackEvent[] = [
+        ...shown,
+        ...completedCategories(state, result.state).map((category) => ({
+          type: "category-complete" as const,
+          category,
+        })),
+      ];
+      feedback(events, result.state);
       setView(result.state);
       if (result.state.phase === "done") finish(result.state);
       return result.state;
     },
-    [pushMessages, finish]
+    [pushMessages, finish, feedback]
   );
 
   const start = useCallback((next: Setup, nextMode: ControlMode) => {
+    canvasBursts.current = [];
+    setTextBursts([]);
+    setRowFlashes([]);
     setSetup(next);
     setMode(nextMode);
     const state = createLevel(next);
@@ -472,6 +563,7 @@ export function ForBetterOrBulkGame({
                 </li>
               ))}
             </ul>
+            <BurstLayer bursts={textBursts} onDone={removeTextBurst} />
           </div>
           <div className="flex min-w-0 flex-col gap-2 font-mono text-xs">
             {hideTips ? (
@@ -531,8 +623,16 @@ export function ForBetterOrBulkGame({
                 return (
                   <li
                     key={category}
-                    className={`flex justify-between gap-2 ${done ? "text-[var(--fbb-ok)]" : ""}`}
+                    className={`relative flex justify-between gap-2 ${done ? "text-[var(--fbb-ok)]" : ""}`}
                   >
+                    {rowFlashes
+                      .filter((f) => f.category === category)
+                      .map((f) => (
+                        <RowFlash
+                          key={f.id}
+                          onDone={() => removeRowFlash(f.id)}
+                        />
+                      ))}
                     <span className="min-w-0 truncate">
                       {CATEGORY_LABELS[category]}
                     </span>
@@ -616,6 +716,7 @@ export function ForBetterOrBulkGame({
       tabIndex={0}
       data-keyboard-boundary="true"
       data-fbb-cabinet=""
+      data-fbb-loud={loud ? "on" : "off"}
       data-testid="fbb-game"
       aria-label="For Better or Bulk"
       onKeyDown={handleKeyDown}

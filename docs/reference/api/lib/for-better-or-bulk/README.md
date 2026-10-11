@@ -662,12 +662,6 @@ Re-exports [recordedFrame](internal/sim/functions/recordedFrame.md)
 
 ***
 
-### refusalFor
-
-Re-exports [refusalFor](internal/views/functions/refusalFor.md)
-
-***
-
 ### RELAXED\_LEVEL\_SECONDS
 
 Re-exports [RELAXED_LEVEL_SECONDS](presets/variables/RELAXED_LEVEL_SECONDS.md)

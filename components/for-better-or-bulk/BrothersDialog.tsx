@@ -34,10 +34,12 @@ const SETTLE_KEYS: ReadonlySet<string> = new Set(["Enter", " ", "e", "E"]);
  * The resting look of every option in the text. The three answers share it, so
  * no option is highlighted before the player moves to it: only focus and hover
  * change the look (round 9, brothers dialog). The disabled state is a variant,
- * so it applies only when the break has nothing to promise.
+ * so it applies only when the break has nothing to promise, and the hover
+ * highlight is limited to enabled options (`enabled:hover:`), so a disabled
+ * option never lights up.
  */
 const OPTION_CLASS =
-  "min-h-11 rounded border border-[var(--fbb-control)] px-3 text-left text-xs font-bold active:scale-[0.98] hover:border-[var(--fbb-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--fbb-focus)] disabled:opacity-40";
+  "min-h-11 rounded border border-[var(--fbb-control)] px-3 text-left text-xs font-bold active:scale-[0.98] enabled:hover:border-[var(--fbb-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--fbb-focus)] disabled:opacity-40";
 
 const COMMITMENT_LABELS: Readonly<Record<Commitment, string>> = {
   chairs: "The chairs",

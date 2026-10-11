@@ -20,6 +20,7 @@ import {
   LINE_BANK,
   PHONE_SECONDS,
   RELAXED_LEVEL_SECONDS,
+  PLAYER_RADIUS,
   ROSE_BUNCHES,
   TICK_SECONDS,
   VENUE_MAP,
@@ -39,7 +40,6 @@ import {
   interactTile,
   onLevelClock,
   readinessLines,
-  refusalFor,
   replayLevel,
   shownPrompts,
   stepGame,
@@ -2492,15 +2492,45 @@ describe("a refused press says why (round 9, task 1)", () => {
     expect(getPrompt(at, "fred").interact).toBe(
       "This chair spot is already set."
     );
-    expect(refusalFor(at, at.players.fred)).toBe(
-      "This chair spot is already set."
-    );
   });
 
   it("names a finished centerpiece table", () => {
     const done = withTargetAt(base, 4, 9, { status: "filled" });
     const at = place(done, "abbi", 4, 8, [0, 1], ARRANGEMENT);
     expect(getPrompt(at, "abbi").interact).toBe("This table is finished.");
+  });
+
+  it("says a simplified table was left bare on purpose, not that it is finished", () => {
+    const bare = withTargetAt(base, 4, 9, { status: "simplified" });
+    const at = place(bare, "abbi", 4, 8, [0, 1], ARRANGEMENT);
+    expect(getPrompt(at, "abbi").interact).toBe(
+      "This table was left bare on purpose."
+    );
+  });
+
+  it("gives the bin's neighbour a turn when the bin has no line, so a faced grill speaks", () => {
+    // Fred's body straddles the bin at (6,3) and the grill at (5,3).
+    const at = placeExact(base, "fred", 6.1, 4.5, [0, -1], ROSES);
+    expect(interactTile(at, "fred")).toBeNull();
+    expect(getPrompt(at, "fred").interact).toBe(
+      "The GRILL (G) takes raw hot dogs or wings."
+    );
+  });
+
+  it("names the held item when it faces a wall with room on the floor", () => {
+    // (5,0) is the outer wall, so a press at (5,1) facing up lands nowhere.
+    const at = place(base, "fred", 5, 1, [0, -1], ROSES);
+    expect(interactTile(at, "fred")).toBeNull();
+    expect(getPrompt(at, "fred").interact).toBe(
+      "Nothing here takes the roses."
+    );
+  });
+
+  it("gives no interact line for a held item at the bin, since the hold prompt names it", () => {
+    const at = place(base, "fred", 6, 2, [0, 1], ROSES);
+    expect(interactTile(at, "fred")).toBeNull();
+    expect(getPrompt(at, "fred").interact).toBeNull();
+    expect(getPrompt(at, "fred").work).toBe(THROW_OUT_PROMPT);
   });
 
   it("names the arrangement an open table needs when roses are in hand", () => {
@@ -2595,10 +2625,9 @@ describe("a refused press says why (round 9, task 1)", () => {
   it("says nothing for a plain tile with free hands, since nothing is refused", () => {
     const at = place(base, "fred", 2, 4, [0, 1]);
     expect(getPrompt(at, "fred").interact).toBeNull();
-    expect(refusalFor(at, at.players.fred)).toBeNull();
   });
 
-  it("gives a reason for every press that does nothing on a faced object, and none for a press that lands", () => {
+  it("gives a reason for every press that does nothing across all faced tiles, and a prompt for every press that lands", () => {
     const cells: { x: number; y: number }[] = [];
     VENUE_MAP.forEach((row, y) =>
       [...row].forEach((char, x) => {
@@ -2621,28 +2650,64 @@ describe("a refused press says why (round 9, task 1)", () => {
       [0, 1],
       [-1, 0],
     ];
+    // The tiles a body faces, mirroring the engine's rule: the tile in front,
+    // plus a side tile when the body's centre is within half a radius of a
+    // boundary across its facing (a straddle).
+    const facedTiles = (p: {
+      x: number;
+      y: number;
+      facingX: number;
+      facingY: number;
+    }) => {
+      const cx = Math.floor(p.x);
+      const cy = Math.floor(p.y);
+      const reach = PLAYER_RADIUS / 2;
+      const tiles = [frontTile(p)];
+      if (p.facingY !== 0) {
+        if (p.x - cx < reach) tiles.push({ x: cx - 1, y: cy + p.facingY });
+        if (cx + 1 - p.x < reach) tiles.push({ x: cx + 1, y: cy + p.facingY });
+      } else {
+        if (p.y - cy < reach) tiles.push({ x: cx + p.facingX, y: cy - 1 });
+        if (cy + 1 - p.y < reach) tiles.push({ x: cx + p.facingX, y: cy + 1 });
+      }
+      return tiles;
+    };
     fc.assert(
       fc.property(
         fc.constantFrom(...cells),
         fc.constantFrom(...facings),
         fc.constantFrom(...held),
-        (cell, facing, item) => {
-          const at = place(base, "fred", cell.x, cell.y, facing, item);
-          const person = at.players.fred;
-          const reason = refusalFor(at, person);
-          if (interactTile(at, "fred") !== null) return reason === null;
-          const front = frontTile(person);
-          // A held item at the bin is left to its hold prompt (see refusalFor).
-          const bin = at.stations.some(
-            (s) => s.kind === "bin" && s.x === front.x && s.y === front.y
+        fc.double({ min: 0, max: 0.999, noNaN: true }),
+        fc.double({ min: 0, max: 0.999, noNaN: true }),
+        (cell, facing, item, dx, dy) => {
+          // A body at the centre of its cell, or pushed toward a neighbour so
+          // it straddles a boundary (dx and dy stay inside the cell).
+          const at = placeExact(
+            base,
+            "fred",
+            cell.x + dx,
+            cell.y + dy,
+            facing,
+            item
           );
-          const faced = [
-            ...at.supplies,
-            ...at.stations,
-            ...at.targets,
-            ...at.floor,
-          ].some((entry) => entry.x === front.x && entry.y === front.y);
-          return bin || !faced || (reason !== null && reason.length > 0);
+          const person = at.players.fred;
+          const prompt = getPrompt(at, "fred").interact;
+          const onTile = (tile: { x: number; y: number }) =>
+            [...at.supplies, ...at.stations, ...at.targets, ...at.floor].some(
+              (entry) => entry.x === tile.x && entry.y === tile.y
+            );
+          const isBin = (tile: { x: number; y: number }) =>
+            at.stations.some(
+              (s) => s.kind === "bin" && s.x === tile.x && s.y === tile.y
+            );
+          if (interactTile(at, "fred") !== null) return prompt !== null;
+          const faced = facedTiles(person);
+          const held = person.holding;
+          // A held item at the bin is the one exception: the hold prompt names it.
+          const mustSpeak =
+            faced.some((tile) => onTile(tile) && !(held && isBin(tile))) ||
+            (held !== null && !faced.some(isBin));
+          return mustSpeak ? prompt !== null : prompt === null;
         }
       ),
       { numRuns: 400 }

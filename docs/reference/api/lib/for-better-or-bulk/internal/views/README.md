@@ -18,5 +18,4 @@
 - [getCoachTile](functions/getCoachTile.md)
 - [getHint](functions/getHint.md)
 - [getPrompt](functions/getPrompt.md)
-- [refusalFor](functions/refusalFor.md)
 - [shownPrompts](functions/shownPrompts.md)

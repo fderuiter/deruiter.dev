@@ -38,14 +38,7 @@ import {
   heldLabel,
   heldName,
 } from "./words";
-import {
-  GRILL_COOKS,
-  faceTiles,
-  frontTile,
-  interactTile,
-  pressTileFor,
-  workTileFor,
-} from "./press";
+import { GRILL_COOKS, faceTiles, interactTile, workTileFor } from "./press";
 
 /** The level runs from 9:00 to 4:00 on the wall clock. */
 const START_HOUR = 9;
@@ -154,7 +147,7 @@ function fullFloorPrompt(
   return blocked ? `${blocked} ${line}` : line;
 }
 
-/** What a spot that has been filled or dropped from the plan says, by its kind. */
+/** What a spot that has been filled says, by its kind. */
 const SPOT_DONE: Readonly<Record<TargetKind, string>> = {
   basket: "This bouquet basket is full.",
   table: "This table is finished.",
@@ -164,32 +157,31 @@ const SPOT_DONE: Readonly<Record<TargetKind, string>> = {
   buffet: "This spot is already set.",
 };
 
-/** Whether anything sits on this tile: a crate, a station, a target or a loose item. */
-function hasObject(state: GameState, tile: Tile): boolean {
-  return (
-    at(state.supplies, tile) !== undefined ||
-    at(state.stations, tile) !== undefined ||
-    at(state.targets, tile) !== undefined ||
-    at(state.floor, tile) !== undefined
-  );
+/** What a spot that was left bare on purpose (simplified by hold work) says, by its kind. */
+const SPOT_BARE: Readonly<Record<TargetKind, string>> = {
+  basket: "This bouquet basket was left bare on purpose.",
+  table: "This table was left bare on purpose.",
+  aisle: "This aisle spot was left bare on purpose.",
+  "chair-spot": "This chair spot was left bare on purpose.",
+  hook: "This lantern hook was left bare on purpose.",
+  buffet: "This spot was left bare on purpose.",
+};
+
+/** Whether the bin is on this tile. */
+function isBinAt(state: GameState, tile: Tile): boolean {
+  return at(state.stations, tile)?.kind === "bin";
 }
 
 /**
- * The one line that says why an interact press does nothing for this person
- * (round 9, task 1), or null when the press lands. It reads the same rule as
- * the engine and the assist: `pressTileFor` decides whether a press lands, and
- * this names the faced tile when it does not. A press that lands always has no
- * refusal, and a refusal always means the press does nothing.
- *
- * The reason is chosen from the first faced tile that holds something (a crate,
- * station, target or loose item), else from the tile in front. A plain tile
- * with free hands says nothing, since there is nothing to refuse.
+ * The reason a faced tile gives for a press that does nothing, or null when
+ * that tile has nothing to say: a plain tile with nothing in hand, or the bin
+ * with something in hand (see `unpressedReason`).
  */
-export function refusalFor(state: GameState, person: Player): string | null {
-  if (pressTileFor(state, person)) return null;
-  const held = person.holding;
-  const tile =
-    faceTiles(person).find((t) => hasObject(state, t)) ?? frontTile(person);
+function reasonOnTile(
+  state: GameState,
+  tile: Tile,
+  held: Item | null
+): string | null {
   const supply = at(state.supplies, tile);
   const station = at(state.stations, tile);
   const target = at(state.targets, tile);
@@ -202,7 +194,7 @@ export function refusalFor(state: GameState, person: Player): string | null {
   }
   if (station) {
     // The bin is emptied by holding work, and the work prompt names that hold,
-    // so a held item gets no second line here.
+    // so a held item at the bin gets no interact line.
     if (station.kind === "bin")
       return held ? null : `Nothing on ${STATION_NAMES.bin} to take.`;
     if (station.item)
@@ -214,13 +206,47 @@ export function refusalFor(state: GameState, person: Player): string | null {
   }
   if (target) {
     if (target.status === "unplanned") return "This spot is not in this plan.";
+    if (target.status === "simplified") return SPOT_BARE[target.kind];
     if (target.status !== "open") return SPOT_DONE[target.kind];
     if (target.kind === "buffet") return buffetRefusal(target, held);
     return `This ${SPOT_NAMES[target.kind]} needs ${ITEM_LABELS[target.wants]}.`;
   }
   if (floorItem) return "Something is already on the floor here.";
-  // Only a full floor refuses a drop onto open ground.
-  return held ? fullFloorPrompt(state, person, held) : null;
+  return null;
+}
+
+/**
+ * Why an interact press does nothing for this person, as one line. Only
+ * `getPrompt` calls it, and only when `interactTile` has already found that no
+ * press lands, so `pressTileFor` is not run a second time. The contract is
+ * one-way: a press that lands never gets a line here, and a press that does
+ * nothing gets one, with these exceptions:
+ *
+ * - The bin with something in hand gets no line, because the work prompt
+ *   names the hold that empties it. This holds even when the bin is one of
+ *   two faced tiles, so a bin that straddles with a wall gets no line either.
+ * - A press with nothing in hand that faces only plain ground gets no line,
+ *   since there is nothing to refuse.
+ *
+ * Each faced tile is checked in turn (see `faceTiles`), and the first reason
+ * wins. So a bin with no line lets the grill beside it speak. When no faced
+ * tile has a reason and something is held, the tile in front is named: a full
+ * floor, a station in reach that is full, or a plain "Nothing here takes ..."
+ * when the front is a wall or otherwise unusable.
+ */
+function unpressedReason(state: GameState, person: Player): string | null {
+  const held = person.holding;
+  const faced = faceTiles(person);
+  for (const tile of faced) {
+    const reason = reasonOnTile(state, tile, held);
+    if (reason) return reason;
+  }
+  if (!held) return null;
+  if (faced.some((tile) => isBinAt(state, tile))) return null;
+  return (
+    fullFloorPrompt(state, person, held) ??
+    `Nothing here takes ${heldName(held)}.`
+  );
 }
 
 /**
@@ -361,7 +387,7 @@ export function getPrompt(state: GameState, id: PlayerId): Prompt {
         : null;
     if (blocked && interact) interact = `${blocked} ${interact}`;
   } else {
-    interact = refusalFor(state, player);
+    interact = unpressedReason(state, player);
   }
   if (!held) {
     if (

@@ -6,6 +6,6 @@
 
 # Variable: THROW\_OUT\_PROMPT
 
-> `const` **THROW\_OUT\_PROMPT**: `"Throw it out"` = `"Throw it out"`
+> `const` **THROW\_OUT\_PROMPT**: `"Hold to throw it out"` = `"Hold to throw it out"`
 
-The prompt that marks a bin hold; the cabinet words it as a hold.
+The prompt that marks a bin hold; it names the hold, and the cabinet adds the key.

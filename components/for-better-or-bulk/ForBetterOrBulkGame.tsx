@@ -368,7 +368,8 @@ export function ForBetterOrBulkGame({
         .map((event) => lineFor(event, jokesOf.get(event) ?? []))
         .filter((line): line is string => line !== null);
       if (lines.length === 0) return;
-      setAnnouncement(lines[lines.length - 1]);
+      // Toasts are aria-hidden, so the live region carries every line of the batch.
+      setAnnouncement(lines.join(" "));
       const added = lines.map((text) => ({ id: ++toastId.current, text }));
       setToasts((current) => [...current, ...added].slice(-3));
       const timer = setTimeout(() => {
@@ -1010,8 +1011,8 @@ export function ForBetterOrBulkGame({
             <span data-testid="fbb-active">
               Playing as <span className="font-bold">{NAMES[active]}</span> ·
               {view.players[partner].presence === "away"
-                ? " Tab to reach Pause · Escape to pause"
-                : " Tab to swap · Escape to pause"}
+                ? " Tab to reach Pause · Shift+Tab to leave · Escape to pause"
+                : " Tab to swap · Shift+Tab to leave · Escape to pause"}
             </span>
           ) : (
             <span>Fred: WASD, E, F · Abbi: arrows, Enter, Shift</span>

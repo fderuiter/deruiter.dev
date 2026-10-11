@@ -11,9 +11,9 @@ import { useFocusTrap } from "@/hooks/useFocusTrap";
 import {
   BREAK_SECONDS,
   COMMITMENT_CATEGORIES,
-  ITEM_LABELS,
   LEAVE_SECONDS,
   clockLabel,
+  heldLabel,
   onLevelClock,
   type Commitment,
   type GameState,
@@ -36,13 +36,15 @@ interface BrothersDialogProps {
 function abbiLine(state: GameState): string {
   const held = state.players.abbi.holding;
   return held
-    ? `Abbi is carrying ${ITEM_LABELS[held.kind]} and looking at him.`
+    ? `Abbi is carrying ${heldLabel(held)} and looking at him.`
     : "Abbi has her hands free and is looking at him.";
 }
 
 /** Fred's mood, read from the level as it stands. */
 function fredLine(state: GameState): string {
-  return state.players.fred.calm ? "Fred has calmed down." : "Fred is nervous.";
+  return state.players.fred.calm
+    ? "Fred has calmed down."
+    : "Fred has not calmed down yet.";
 }
 
 /** Promises worth making: ones whose work is actually in this plan. */
@@ -114,7 +116,8 @@ export function BrothersDialog({ state, onDecide }: BrothersDialogProps) {
                 state.time + onLevelClock(LEAVE_SECONDS, state.duration),
                 state.duration
               )}
-              . Abbi works alone until Fred is back. The website is up.)
+              . Whatever he carries is set down on the floor near him. Abbi
+              works alone until Fred is back. The website is up.)
             </button>
           </div>
         ) : (

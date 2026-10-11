@@ -61,6 +61,7 @@ export type {
   SharedRun,
 } from "./internal/run-code";
 export { assistInput, assistStatus } from "./internal/assist";
+export { heldLabel, heldName } from "./internal/words";
 export {
   clockLabel,
   getCoachStep,

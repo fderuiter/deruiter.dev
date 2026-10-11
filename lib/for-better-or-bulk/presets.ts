@@ -64,9 +64,11 @@ export const FOOD_BATCHES: Readonly<Record<FoodTier, number>> = {
   "feed-rochester": 3,
 };
 
-/** Lanterns in the bulk pack, and chair stacks the venue provides. */
+/** Lanterns in the bulk pack, and the chairs the venue provides (one per chair spot). */
 export const LANTERN_COUNT = 4;
-export const CHAIR_STACKS = 8;
+export const CHAIR_COUNT = 8;
+/** Chairs one carry takes off the crate: a stack of two, or one when only one is left. */
+export const CHAIRS_PER_CARRY = 2;
 
 /** A sensible starting setup: the one the tutorial text describes. */
 export const DEFAULT_SETUP: Setup = {
@@ -109,7 +111,7 @@ export const CAPABILITIES: Readonly<
  * patio across the top, the lawn and ceremony on the right.
  *
  * Legend: `#` hedge, `.` ground, `H` `W` `M` `Q` hot dogs, wings, mac and
- * cheese and quinoa salad crates, `R` roses, `L` lanterns, `C` chair stacks,
+ * cheese and quinoa salad crates, `R` roses, `L` lanterns, `C` chairs,
  * `G` grill, `X` bin, `A` rose table, `P` petal bucket, `B` buffet, `T`
  * reception table, `S` aisle spot, `O` chair spot, `N` lantern hook, `K`
  * bouquet basket, `1` and `2` Fred's and Abbi's starting spots.
@@ -309,11 +311,11 @@ export const ITEM_LABELS: Readonly<Record<ItemKind, string>> = {
   quinoa: "a bowl of quinoa salad",
   burnt: "something that used to be food",
   lantern: "a paper lantern",
-  chairs: "a stack of chairs",
+  chairs: "a chair",
 };
 
-/** The prompt that marks a bin hold; the cabinet words it as a hold. */
-export const THROW_OUT_PROMPT = "Throw it out";
+/** The prompt that marks a bin hold; it names the hold, and the cabinet adds the key. */
+export const THROW_OUT_PROMPT = "Hold to throw it out";
 
 /** The line a run prints when Fred leaves while the plan depends on him. */
 export const LEFT_LINE =

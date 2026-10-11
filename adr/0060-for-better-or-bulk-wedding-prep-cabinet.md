@@ -281,3 +281,63 @@ zero-trope invariant allows. Nothing is drawn outside the cabinet.
 over, so focus never drops to the page. It ends with "What actually happened":
 fixture facts only (the date and ceremony times, the weather and Abbi's goal),
 with a link to `/wedding`. The note never describes the couple's mindset.
+
+## Amendment (2026-10-11): playtest round 5
+
+Round 5 of the playtest (#1948) changed the rules below. Some changes are in
+the engine, so a run recorded before them can replay differently. The first
+bullet says which runs are affected.
+
+- **Run codes recorded before these changes may no longer verify.** A shared
+  run code replays its frames on the current engine and must reproduce its own
+  result. A code made before round 5 still verifies unless its run took chairs
+  from the chair crate or binned a burnt batch. Those runs replay differently,
+  so their codes can fail verification and must be played again to share.
+- **Burnt batch recovery.** A burnt batch remembers the crate it was cooked
+  from. Binning it (holding work at the bin until it is thrown out) restocks
+  one batch of that crate, recorded as a `restocked` event and in the receipt's
+  kitchen line. The setup note for the food tiers says so.
+- **Chairs come in stacks of two.** One take from the chair crate picks up two
+  chairs (one when only one is left). A chair spot takes one chair and the
+  second stays in hand. Holding a stack at the bin returns it to the crate,
+  count by count, so the venue's eight chairs are never lost. The crate holds
+  the venue's eight chairs.
+- **One outline per person.** The canvas outlines the tile the interact press
+  acts on, solid when the press can act and dashed when that tile is busy or
+  waiting. An unused faced tile is not outlined.
+- **Simplify says what it does.** The work prompt on an empty centerpiece or
+  petal spot reads "leave this table bare (drops it from the plan)", and the
+  manual says so.
+- **Prompts name the tile.** A take prompt names the item and its crate or
+  station, for example "Take the roses from the ROSE crate" and "Take the
+  cooked wings off the GRILL (G)".
+
+## Amendment (2026-10-11): playtest round 6
+
+Round 6 of the playtest (#1951, on the #1949 build) changed the rules below.
+The first bullet is an engine change, so a run recorded before it can replay
+differently. Only runs that touched a corner are affected.
+
+- **Runs recorded before the corner assist may not verify.** A shared run code
+  replays its frames on the current engine. A code made before round 6 still
+  verifies unless its run pressed into a table corner with no input on the
+  other axis. Such a press now nudges the body toward the centre of its lane,
+  so those runs replay differently and their codes can fail verification.
+  They must be played again to share.
+- **Corner assist.** When a press into a blocked edge has no input on the other
+  axis, the body moves toward the centre of its own row or column by at most one
+  step (the distance it walks in a tick). It only does so when the tile it is
+  pressing into is walkable, so a solid wall with no lane does not slide, and
+  only when the nudged position is clear. It is deterministic and needs no
+  randomness.
+- **Keyboard exit is stated in solo.** The solo hint and the manual say that
+  Shift+Tab leaves the cabinet, next to Tab, which swaps players.
+- **Every toast in a batch is announced.** The live region reads each line that
+  arrived in the same frame, joined with a space. Toasts themselves stay
+  `aria-hidden`.
+- **The bin prompt names the hold.** The engine's prompt is "Hold to throw it
+  out", and the cabinet shows it with the key, for example "Hold F to throw it
+  out".
+- **Fred's carried item is set down when he leaves.** The leave option says
+  that whatever he carries is set down on the floor near him, where Abbi can
+  pick it up while he is away.

@@ -17,6 +17,7 @@ import {
   BROTHERS_LATEST_AT,
   BURN_SECONDS,
   CALM_SPEED_MULTIPLIER,
+  CHAIRS_PER_CARRY,
   COOK_SECONDS,
   FLOOR_CAP,
   INTERRUPTIONS,
@@ -39,6 +40,7 @@ import type {
   Frame,
   GameEvent,
   GameState,
+  Item,
   ItemKind,
   Player,
   PlayerId,
@@ -48,6 +50,7 @@ import type {
   Setup,
   Station,
   StepResult,
+  SupplyKind,
   Target,
   Validation,
 } from "../types";
@@ -57,6 +60,7 @@ import { assistInput, assistRests, helperMayAct } from "./assist";
 import { FLOOR_TILES } from "./gates";
 import {
   GRILL_COOKS,
+  RAW_FOR_COOKED,
   frontTile,
   interactTile,
   isWalkable,
@@ -165,6 +169,34 @@ function seededActive(state: GameState, id: SeededEventId): boolean {
   );
 }
 
+/**
+ * The corner assist for one blocked press. A body pressed `direction` along
+ * `press` (x or y) is nudged along the other axis toward the centre of its own
+ * row or column, by at most `step`, when the tile it is pressing into on that
+ * row or column is walkable (an open lane, not a solid wall) and the nudged
+ * position is clear. Returns the new coordinate on the other axis, or null when
+ * there is nothing to nudge. Pure and deterministic.
+ */
+function cornerNudge(
+  x: number,
+  y: number,
+  press: "x" | "y",
+  direction: number,
+  step: number
+): number | null {
+  const ahead =
+    press === "x"
+      ? isWalkable(Math.floor(x) + direction, Math.floor(y))
+      : isWalkable(Math.floor(x), Math.floor(y) + direction);
+  if (!ahead) return null;
+  const along = press === "x" ? y : x;
+  const offset = Math.floor(along) + 0.5 - along;
+  if (offset === 0) return null;
+  const nudged = along + sign(offset) * Math.min(Math.abs(offset), step);
+  const clear = press === "x" ? !collides(x, nudged) : !collides(nudged, y);
+  return clear ? nudged : null;
+}
+
 function move(
   player: Player,
   input: PlayerInput,
@@ -179,9 +211,20 @@ function move(
     MOVE_SPEED * (player.calm ? CALM_SPEED_MULTIPLIER : 1) * pace * dt;
   let { x, y } = player;
   const nextX = x + (mx / length) * speed;
-  if (!collides(nextX, y)) x = nextX;
+  const blockedX = mx !== 0 && collides(nextX, y);
+  if (!blockedX) x = nextX;
   const nextY = y + (my / length) * speed;
-  if (!collides(x, nextY)) y = nextY;
+  const blockedY = my !== 0 && collides(x, nextY);
+  if (!blockedY) y = nextY;
+  // A press into a blocked edge with no input on the other axis may slide the
+  // body toward the centre of its lane (the corner assist, one step at most).
+  if (blockedX && my === 0) {
+    const nudged = cornerNudge(x, y, "x", mx, speed);
+    if (nudged !== null) y = nudged;
+  } else if (blockedY && mx === 0) {
+    const nudged = cornerNudge(x, y, "y", my, speed);
+    if (nudged !== null) x = nudged;
+  }
   let facingX = mx;
   let facingY = my;
   if (mx !== 0 && my !== 0) {
@@ -238,13 +281,21 @@ function interact(w: Working, id: PlayerId, helped: boolean): void {
     if (supply) {
       const left = w.state.stock[supply.kind];
       if (left <= 0) return;
+      // A chair crate gives a stack of chairs per take; the other crates one item.
+      const taken =
+        supply.kind === "chairs" ? Math.min(CHAIRS_PER_CARRY, left) : 1;
+      const remaining = left - taken;
       w.state = {
         ...w.state,
-        stock: { ...w.state.stock, [supply.kind]: left - 1 },
+        stock: { ...w.state.stock, [supply.kind]: remaining },
       };
-      setPlayer(w, { ...player, holding: { kind: supply.kind, madeBy: null } });
+      const carry: Item =
+        supply.kind === "chairs"
+          ? { kind: "chairs", madeBy: null, count: taken }
+          : { kind: supply.kind, madeBy: null };
+      setPlayer(w, { ...player, holding: carry });
       w.events.push({ type: "picked-up", player: id, item: supply.kind });
-      if (left - 1 === 0)
+      if (remaining === 0)
         w.events.push({ type: "supply-empty", supply: supply.kind });
       return;
     }
@@ -270,13 +321,14 @@ function interact(w: Working, id: PlayerId, helped: boolean): void {
   }
 
   if (supply) {
-    // Facing the crate the item came from puts it back in stock.
+    // Facing the crate the item came from puts it back in stock, chairs by count.
     if (supply.kind !== held.kind) return;
+    const returned = held.kind === "chairs" ? (held.count ?? 1) : 1;
     w.state = {
       ...w.state,
       stock: {
         ...w.state.stock,
-        [supply.kind]: w.state.stock[supply.kind] + 1,
+        [supply.kind]: w.state.stock[supply.kind] + returned,
       },
     };
     setPlayer(w, { ...player, holding: null });
@@ -293,7 +345,10 @@ function interact(w: Working, id: PlayerId, helped: boolean): void {
   }
   if (target) {
     if (target.status !== "open" || target.wants !== held.kind) return;
-    const filled = [...target.filled, held];
+    // A chair spot takes one chair: the rest of a stack stays in hand.
+    const placed: Item = held.kind === "chairs" ? { ...held, count: 1 } : held;
+    const spare = held.kind === "chairs" ? (held.count ?? 1) - 1 : 0;
+    const filled = [...target.filled, placed];
     setTarget(w, {
       ...target,
       filled,
@@ -304,7 +359,10 @@ function interact(w: Working, id: PlayerId, helped: boolean): void {
     if (filled.length >= target.capacity && w.state.firstFilledAt === null) {
       w.state = { ...w.state, firstFilledAt: w.state.time };
     }
-    setPlayer(w, { ...player, holding: null });
+    setPlayer(w, {
+      ...player,
+      holding: spare > 0 ? { ...held, count: spare } : null,
+    });
     w.events.push({
       type: "target-filled",
       player: id,
@@ -335,10 +393,42 @@ function holdAtBin(w: Working, id: PlayerId, dt: number): void {
   const binHold = player.binHold + dt;
   if (binHold + 1e-9 >= BIN_HOLD_SECONDS) {
     setPlayer(w, { ...player, holding: null, binHold: 0 });
+    if (item.kind === "chairs") {
+      returnChairs(w, id, item.count ?? 1);
+      return;
+    }
     w.events.push({ type: "thrown-out", player: id, item: item.kind });
+    if (item.kind === "burnt" && item.source) restockBatch(w, id, item.source);
   } else {
     setPlayer(w, { ...player, binHold });
   }
+}
+
+/**
+ * A binned burnt batch is replaced from the crate it was cooked from: one
+ * batch comes back into stock, so the buffet can still be filled.
+ */
+function restockBatch(w: Working, id: PlayerId, supply: SupplyKind): void {
+  const stock = w.state.stock;
+  w.state = {
+    ...w.state,
+    stock: { ...stock, [supply]: stock[supply] + 1 },
+    burntRestocks: w.state.burntRestocks + 1,
+  };
+  w.events.push({ type: "restocked", player: id, supply });
+}
+
+/**
+ * Binned chairs are not thrown out: the whole stack goes back to the chair
+ * crate, so the venue's chairs can always still be placed.
+ */
+function returnChairs(w: Working, id: PlayerId, count: number): void {
+  const stock = w.state.stock;
+  w.state = {
+    ...w.state,
+    stock: { ...stock, chairs: stock.chairs + count },
+  };
+  w.events.push({ type: "restocked", player: id, supply: "chairs" });
 }
 
 /** Letting go of work, or facing something else, starts a bin hold over. */
@@ -429,9 +519,15 @@ function cookGrills(w: Working, dt: number): void {
     }
     const progress = station.progress + dt * ageRate;
     if (progress + 1e-9 >= pickupSeconds) {
+      // The burnt batch remembers its crate, so binning it restocks one batch.
+      const source = RAW_FOR_COOKED[item.kind];
       setStation(w, {
         ...station,
-        item: { kind: "burnt", madeBy: item.madeBy },
+        item: {
+          kind: "burnt",
+          madeBy: item.madeBy,
+          ...(source ? { source } : {}),
+        },
         progress,
       });
       w.state = { ...w.state, burntBatches: w.state.burntBatches + 1 };

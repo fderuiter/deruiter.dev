@@ -238,9 +238,12 @@ describe("For Better or Bulk cabinet (#1906)", () => {
     const prompt = () =>
       screen.getByTestId("fbb-prompt-abbi").textContent ?? "";
     fireEvent.keyDown(game(), { key: "ArrowLeft", code: "ArrowLeft" });
-    runUntil(() => prompt().includes("Take a paper lantern"), 20);
+    runUntil(
+      () => prompt().includes("Take the lantern from the LAMP crate"),
+      20
+    );
     fireEvent.keyUp(game(), { key: "ArrowLeft", code: "ArrowLeft" });
-    expect(prompt()).toContain("Take a paper lantern");
+    expect(prompt()).toContain("Take the lantern from the LAMP crate");
     fireEvent.keyDown(game(), { key: "Enter", code: "Enter" });
     runUntil(() => prompt().includes("carrying"), 2);
     expect(prompt()).toContain("Abbi is carrying a paper lantern.");
@@ -429,7 +432,7 @@ describe("For Better or Bulk cabinet (#1906)", () => {
     expect(
       screen.getByText(new RegExp(`Abbi is carrying ${ITEM_LABELS.roses}`))
     ).toBeTruthy();
-    expect(screen.getByText(/Fred is nervous/)).toBeTruthy();
+    expect(screen.getByText(/Fred has not calmed down yet/)).toBeTruthy();
     unmount();
 
     const free = {
@@ -721,7 +724,7 @@ describe("For Better or Bulk side panel: helper, partner and day (fbb round)", (
       /^Seed 12345 · rush at \d{1,2}:\d{2}, shower at \d{1,2}:\d{2}$/
     );
     expect(screen.getByTestId("fbb-active").textContent).toContain(
-      "Escape to pause"
+      "Tab to swap · Shift+Tab to leave · Escape to pause"
     );
     expect(screen.getByTestId("fbb-helper").textContent).toMatch(
       /^Helper: .+\.$/

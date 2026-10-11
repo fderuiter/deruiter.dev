@@ -164,9 +164,15 @@ Re-exports [CategoryProgress](types/interfaces/CategoryProgress.md)
 
 ***
 
-### CHAIR\_STACKS
+### CHAIR\_COUNT
 
-Re-exports [CHAIR_STACKS](presets/variables/CHAIR_STACKS.md)
+Re-exports [CHAIR_COUNT](presets/variables/CHAIR_COUNT.md)
+
+***
+
+### CHAIRS\_PER\_CARRY
+
+Re-exports [CHAIRS_PER_CARRY](presets/variables/CHAIRS_PER_CARRY.md)
 
 ***
 
@@ -383,6 +389,18 @@ Re-exports [getHint](internal/views/functions/getHint.md)
 ### getPrompt
 
 Re-exports [getPrompt](internal/views/functions/getPrompt.md)
+
+***
+
+### heldLabel
+
+Re-exports [heldLabel](internal/words/functions/heldLabel.md)
+
+***
+
+### heldName
+
+Re-exports [heldName](internal/words/functions/heldName.md)
 
 ***
 

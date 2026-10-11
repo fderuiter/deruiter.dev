@@ -9,6 +9,7 @@
 ## Variables
 
 - [GRILL\_COOKS](variables/GRILL_COOKS.md)
+- [RAW\_FOR\_COOKED](variables/RAW_FOR_COOKED.md)
 
 ## Functions
 

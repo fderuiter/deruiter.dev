@@ -81,6 +81,16 @@ export interface Item {
   readonly kind: ItemKind;
   /** Who did the work that made this item, if anyone. */
   readonly madeBy: PlayerId | null;
+  /**
+   * Chairs only: how many chairs this carry holds (a stack of two, or one).
+   * Absent means one.
+   */
+  readonly count?: number;
+  /**
+   * Burnt food only: the crate the batch was cooked from. Binning it restocks
+   * one batch of that crate.
+   */
+  readonly source?: SupplyKind;
 }
 
 /** What a crate in the car or shed hands out, from a shared stock. */
@@ -235,6 +245,8 @@ export interface GameState {
   /** Level time the first target became full, if one has. */
   readonly firstFilledAt: number | null;
   readonly burntBatches: number;
+  /** Burnt batches binned so far, each one restocked from its crate. */
+  readonly burntRestocks: number;
   /** Level time at which everything planned was done, if before the end. */
   readonly finishedAt: number | null;
   /**
@@ -279,6 +291,11 @@ export type GameEvent =
       readonly item: ItemKind;
     }
   | { readonly type: "burnt"; readonly station: string }
+  | {
+      readonly type: "restocked";
+      readonly player: PlayerId;
+      readonly supply: SupplyKind;
+    }
   | {
       readonly type: "target-filled";
       readonly player: PlayerId;

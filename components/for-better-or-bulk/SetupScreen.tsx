@@ -55,7 +55,7 @@ const FOOD_OPTIONS: readonly { id: FoodTier; label: string; note: string }[] = [
   {
     id: "enough",
     label: "Enough",
-    note: "One batch of everything. Don't burn it.",
+    note: "One batch of everything. A burnt batch can be replaced from the crate.",
   },
   { id: "lots", label: "Lots", note: "A spare batch, in case of grill." },
   {

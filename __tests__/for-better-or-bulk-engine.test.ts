@@ -4,6 +4,8 @@ import fc from "fast-check";
 import {
   BIN_HOLD_SECONDS,
   BREAK_SECONDS,
+  CHAIRS_PER_CARRY,
+  CHAIR_COUNT,
   BROTHERS_EARLIEST_AT,
   BROTHERS_LATEST_AT,
   BURN_SECONDS,
@@ -305,6 +307,46 @@ describe("movement", () => {
       state.players.fred.y - 7.5
     );
     expect(moved).toBeCloseTo(4.2 * 10 * TICK_SECONDS, 5);
+  });
+
+  /** Puts Abbi at an exact position, not the middle of a tile. */
+  function standAt(state: GameState, x: number, y: number): GameState {
+    return {
+      ...state,
+      players: {
+        ...state.players,
+        abbi: { ...state.players.abbi, x, y },
+      },
+    };
+  }
+
+  it("slides a body off a table corner into a one-tile lane (corner assist)", () => {
+    // Abbi grazes the corner of the table at (5, 8) while the lane runs west.
+    const start = standAt(createLevel(DEFAULT_SETUP), 5.28, 8.07);
+    const { state } = run(start, frameFor("abbi", { moveX: -1 }), ticks(0.5));
+    expect(state.players.abbi.x).toBeLessThan(4.5);
+    expect(state.players.abbi.y).toBeGreaterThan(8.07);
+  });
+
+  it("slides the mirrored corner the other way as well", () => {
+    const start = standAt(createLevel(DEFAULT_SETUP), 6.72, 8.07);
+    const { state } = run(start, frameFor("abbi", { moveX: 1 }), ticks(0.5));
+    expect(state.players.abbi.x).toBeGreaterThan(7.5);
+  });
+
+  it("slides across a corner when pressing down a lane", () => {
+    const start = standAt(createLevel(DEFAULT_SETUP), 5.28, 8.5);
+    const { state } = run(start, frameFor("abbi", { moveY: 1 }), ticks(1));
+    expect(state.players.abbi.y).toBeGreaterThan(10);
+  });
+
+  it("does not slide a body pressed into a solid wall with no lane", () => {
+    // Row 2 is open, but the tile ahead on the west side is the venue wall.
+    const start = standAt(createLevel(DEFAULT_SETUP), 1.5, 2.5);
+    const { state } = run(start, frameFor("abbi", { moveX: -1 }), ticks(1));
+    expect(state.players.abbi.y).toBe(2.5);
+    expect(state.players.abbi.x).toBeGreaterThan(1.2);
+    expect(state.players.abbi.x).toBeLessThan(1.4);
   });
 });
 
@@ -963,11 +1005,11 @@ describe("views", () => {
   it("prompts for what the buttons would do", () => {
     const atRoses = place(createLevel(DEFAULT_SETUP), "fred", 2, 3, [-1, 0]);
     expect(getPrompt(atRoses, "fred").interact).toBe(
-      "Take a bunch of Kirkland roses"
+      "Take the roses from the ROSE crate"
     );
     const atTable = place(createLevel(DEFAULT_SETUP), "abbi", 7, 8, [0, -1]);
     expect(getPrompt(atTable, "abbi").work).toBe(
-      "Simplify: leave this one bare"
+      "leave this table bare (drops it from the plan)"
     );
     const away = decide(untilBrothers(createLevel(DEFAULT_SETUP)), {
       choice: "leave",
@@ -1521,21 +1563,22 @@ describe("the coach hints", () => {
       hint: "Place the lantern at a lantern hook (N).",
     },
     {
-      name: "only the chair spots left: grab a stack of chairs",
+      name: "only the chair spots left: grab a stack of 2 chairs",
       state: () =>
         onlyOpen(createLevel(DEFAULT_SETUP), (t) => t.kind === "chair-spot"),
       id: "fred",
-      hint: "Grab a stack of chairs from the CHAIR crate on the left.",
+      hint: "Grab a stack of 2 chairs from the CHAIR crate on the left.",
     },
     {
-      name: "holding a stack of chairs: carry it to a chair spot",
+      name: "holding a stack of 2 chairs: carry it to a chair spot",
       state: () =>
         place(createLevel(DEFAULT_SETUP), "abbi", 2, 2, [0, 1], {
           kind: "chairs",
           madeBy: null,
+          count: 2,
         }),
       id: "abbi",
-      hint: "Place the stack of chairs at a chair spot (O).",
+      hint: "Place a stack of 2 chairs at a chair spot (O).",
     },
     {
       name: "holding something burnt: take it to the bin",
@@ -1588,6 +1631,10 @@ describe("the new prompts", () => {
       interact: null,
       work: THROW_OUT_PROMPT,
     });
+  });
+
+  it("names the hold in the bin prompt, not a bare action", () => {
+    expect(THROW_OUT_PROMPT).toBe("Hold to throw it out");
   });
 
   it("offers to put an item back in its crate", () => {
@@ -1884,5 +1931,215 @@ describe("the coach names one stage at a time", () => {
     });
     const free = place(base, "fred", 2, 2, [0, 1], roses);
     expect(getCoachStep(free, "fred")?.waiting).toBeFalsy();
+  });
+});
+
+describe("burnt batch recovery (#1948)", () => {
+  /** Cooks one raw hot dog batch on the grill until it burns, with the crate empty. */
+  function burntHotdogs(): GameState {
+    const start = {
+      ...place(createLevel(DEFAULT_SETUP), "fred", 4, 4, [0, -1], {
+        kind: "hotdogs-raw",
+        madeBy: null,
+      }),
+      stock: { ...createLevel(DEFAULT_SETUP).stock, "hotdogs-raw": 0 },
+    };
+    let state = press(start, "fred").state;
+    // Cooking takes COOK_SECONDS and the pickup window the rest of BURN_SECONDS.
+    state = run(state, IDLE_FRAME, ticks(BURN_SECONDS + 1)).state;
+    return state;
+  }
+
+  it("binning a burnt batch restocks one batch of its crate", () => {
+    let state = burntHotdogs();
+    const grill = state.stations.find((s) => s.x === 4 && s.y === 3);
+    expect(grill?.item).toEqual({
+      kind: "burnt",
+      madeBy: "fred",
+      source: "hotdogs-raw",
+    });
+    expect(state.stock["hotdogs-raw"]).toBe(0);
+
+    state = press(state, "fred").state;
+    state = place(state, "fred", 6, 4, [0, -1], state.players.fred.holding);
+    const binned = run(
+      state,
+      frameFor("fred", { work: true }),
+      ticks(BIN_HOLD_SECONDS)
+    );
+    expect(binned.events).toContainEqual({
+      type: "restocked",
+      player: "fred",
+      supply: "hotdogs-raw",
+    });
+    expect(binned.state.stock["hotdogs-raw"]).toBe(1);
+    expect(binned.state.burntRestocks).toBe(1);
+  });
+
+  it("a restocked batch lets the buffet be filled after the burnt one", () => {
+    let state = burntHotdogs();
+    state = press(state, "fred").state;
+    state = place(state, "fred", 6, 4, [0, -1], state.players.fred.holding);
+    state = run(
+      state,
+      frameFor("fred", { work: true }),
+      ticks(BIN_HOLD_SECONDS)
+    ).state;
+    expect(state.stock["hotdogs-raw"]).toBe(1);
+
+    // Fred takes the restocked batch from the crate, cooks it, and serves it.
+    state = place(state, "fred", 4, 4, [0, -1], {
+      kind: "hotdogs-raw",
+      madeBy: null,
+    });
+    state = press(state, "fred").state;
+    state = run(state, IDLE_FRAME, ticks(COOK_SECONDS + 1)).state;
+    state = place(state, "fred", 4, 4, [0, -1], null);
+    state = press(state, "fred").state;
+    expect(state.players.fred.holding).toMatchObject({ kind: "hotdogs" });
+    state = place(state, "fred", 7, 2, [0, -1], state.players.fred.holding);
+    state = press(state, "fred").state;
+    expect(state.targets.find((t) => t.x === 7 && t.y === 1)?.status).toBe(
+      "filled"
+    );
+  });
+
+  it("the receipt's kitchen line says what was restocked", () => {
+    const level = createLevel(DEFAULT_SETUP);
+    expect(
+      computeReceipt({ ...level, burntBatches: 1, burntRestocks: 1 }).kitchen
+    ).toBe(
+      "Extra smoky: 1 batch burnt on the grill. Restocked 1 burnt batch from the crate."
+    );
+  });
+});
+
+describe("chair stacks (#1948)", () => {
+  /** Fred stands on the chair crate's right, facing it. */
+  const atChairCrate = (holding: Item | null = null) =>
+    place(createLevel(DEFAULT_SETUP), "fred", 2, 7, [-1, 0], holding);
+
+  it("one take picks up a stack of two and takes two off the crate", () => {
+    const { state, events } = press(atChairCrate(), "fred");
+    expect(state.players.fred.holding).toEqual({
+      kind: "chairs",
+      madeBy: null,
+      count: CHAIRS_PER_CARRY,
+    });
+    expect(state.stock.chairs).toBe(CHAIR_COUNT - CHAIRS_PER_CARRY);
+    expect(events).toContainEqual({
+      type: "picked-up",
+      player: "fred",
+      item: "chairs",
+    });
+  });
+
+  it("takes the last chair alone when only one is left", () => {
+    const start = {
+      ...atChairCrate(),
+      stock: { ...createLevel(DEFAULT_SETUP).stock, chairs: 1 },
+    };
+    const { state, events } = press(start, "fred");
+    expect(state.players.fred.holding).toEqual({
+      kind: "chairs",
+      madeBy: null,
+      count: 1,
+    });
+    expect(state.stock.chairs).toBe(0);
+    expect(events).toContainEqual({ type: "supply-empty", supply: "chairs" });
+  });
+
+  it("a chair spot takes one chair and the second stays in hand", () => {
+    const start = place(createLevel(DEFAULT_SETUP), "fred", 14, 6, [0, -1], {
+      kind: "chairs",
+      madeBy: null,
+      count: 2,
+    });
+    const once = press(start, "fred").state;
+    const spot = once.targets.find((t) => t.x === 14 && t.y === 5);
+    expect(spot?.filled).toHaveLength(1);
+    expect(spot?.status).toBe("filled");
+    expect(once.players.fred.holding).toEqual({
+      kind: "chairs",
+      madeBy: null,
+      count: 1,
+    });
+
+    const placed = press(
+      place(once, "fred", 15, 6, [0, -1], once.players.fred.holding),
+      "fred"
+    ).state;
+    expect(placed.targets.find((t) => t.x === 15 && t.y === 5)?.status).toBe(
+      "filled"
+    );
+    expect(placed.players.fred.holding).toBeNull();
+  });
+
+  it("putting a stack back in its crate returns both chairs", () => {
+    const start = {
+      ...atChairCrate({ kind: "chairs", madeBy: null, count: 2 }),
+      stock: { ...createLevel(DEFAULT_SETUP).stock, chairs: 6 },
+    };
+    const { state } = press(start, "fred");
+    expect(state.stock.chairs).toBe(8);
+    expect(state.players.fred.holding).toBeNull();
+  });
+
+  it("names a stack of 2 chairs and a single chair in the prompts", () => {
+    expect(getPrompt(atChairCrate(), "fred").interact).toBe(
+      "Take a stack of 2 chairs from the CHAIR crate"
+    );
+    const last = {
+      ...atChairCrate(),
+      stock: { ...createLevel(DEFAULT_SETUP).stock, chairs: 1 },
+    };
+    expect(getPrompt(last, "fred").interact).toBe(
+      "Take a chair from the CHAIR crate"
+    );
+  });
+
+  it("binning a stack returns both chairs to the crate instead of throwing them out", () => {
+    const level = createLevel(DEFAULT_SETUP);
+    const start = {
+      ...place(level, "fred", 6, 4, [0, -1], {
+        kind: "chairs",
+        madeBy: null,
+        count: 2,
+      }),
+      stock: { ...level.stock, chairs: CHAIR_COUNT - 2 },
+    };
+    expect(getPrompt(start, "fred").work).toBe(
+      "Put a stack of 2 chairs back in the CHAIR crate"
+    );
+    const binned = run(
+      start,
+      frameFor("fred", { work: true }),
+      ticks(BIN_HOLD_SECONDS)
+    );
+    expect(binned.state.stock.chairs).toBe(CHAIR_COUNT);
+    expect(binned.state.players.fred.holding).toBeNull();
+    expect(binned.events).toContainEqual({
+      type: "restocked",
+      player: "fred",
+      supply: "chairs",
+    });
+    expect(binned.events.some((e) => e.type === "thrown-out")).toBe(false);
+  });
+});
+
+describe("take prompts name the tile (#1948)", () => {
+  it("names the cooked food on the grill", () => {
+    const start = place(createLevel(DEFAULT_SETUP), "fred", 4, 4, [0, -1]);
+    const cooked = {
+      ...start,
+      stations: start.stations.map((s) =>
+        s.kind === "grill"
+          ? { ...s, item: { kind: "wings" as const, madeBy: null } }
+          : s
+      ),
+    };
+    expect(getPrompt(cooked, "fred").interact).toBe(
+      "Take the cooked wings off the GRILL (G)"
+    );
   });
 });

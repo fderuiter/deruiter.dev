@@ -6,12 +6,7 @@
  */
 
 import { clamp } from "@/lib/game-utils";
-import {
-  CRATE_NAMES,
-  FLOOR_CAP,
-  ITEM_LABELS,
-  THROW_OUT_PROMPT,
-} from "../presets";
+import { CRATE_NAMES, FLOOR_CAP, THROW_OUT_PROMPT } from "../presets";
 import type {
   GameState,
   HintOptions,
@@ -24,10 +19,14 @@ import type {
 } from "../types";
 import { freeStation, openTarget, roseStation, stationsOf } from "./gates";
 import {
-  CRATE_ITEM_NAMES,
+  COOKED_NAMES,
   ITEM_NAMES,
   STATION_NAMES,
   TARGET_NAMES,
+  crateGrabName,
+  crateTakeName,
+  heldLabel,
+  heldName,
 } from "./words";
 import { frontTile, interactTile } from "./sim";
 
@@ -64,15 +63,26 @@ function at<T extends Tile>(list: readonly T[], tile: Tile): T | undefined {
   return list.find((entry) => entry.x === tile.x && entry.y === tile.y);
 }
 
-/** The prompt for an interact press that picks something up. */
+/** What a station hands back, with the cooked food named as cooked. */
+function stationItemName(item: Item): string {
+  if (item.kind === "hotdogs" || item.kind === "wings")
+    return COOKED_NAMES[item.kind];
+  return heldName(item);
+}
+
+/**
+ * The prompt for an interact press that picks something up. It names the item
+ * and the tile it comes from, so the player can see where it is taken.
+ */
 function takePrompt(state: GameState, tile: Tile): string | null {
   const supply = at(state.supplies, tile);
   const station = at(state.stations, tile);
   const floorItem = at(state.floor, tile);
   if (supply && state.stock[supply.kind] > 0)
-    return `Take ${ITEM_LABELS[supply.kind]}`;
-  if (station?.item) return `Take ${ITEM_LABELS[station.item.kind]}`;
-  if (floorItem) return `Pick up ${ITEM_LABELS[floorItem.item.kind]}`;
+    return `Take ${crateTakeName(supply.kind, state.stock[supply.kind])} from the ${CRATE_NAMES[supply.kind]} crate`;
+  if (station?.item)
+    return `Take ${stationItemName(station.item)} off ${STATION_NAMES[station.kind]}`;
+  if (floorItem) return `Pick up ${heldLabel(floorItem.item)} off the floor`;
   return null;
 }
 
@@ -82,16 +92,14 @@ function takePrompt(state: GameState, tile: Tile): string | null {
  */
 function placePrompt(state: GameState, tile: Tile, held: Item): string | null {
   const station = at(state.stations, tile);
-  if (station)
-    return `Put ${ITEM_NAMES[held.kind]} on ${STATION_NAMES[station.kind]}`;
+  if (station) return `Put ${heldName(held)} on ${STATION_NAMES[station.kind]}`;
   const supply = at(state.supplies, tile);
   if (supply)
-    return `Put ${ITEM_NAMES[held.kind]} back in the ${CRATE_NAMES[supply.kind]} crate`;
+    return `Put ${heldName(held)} back in the ${CRATE_NAMES[supply.kind]} crate`;
   const target = at(state.targets, tile);
-  if (target)
-    return `Place ${ITEM_LABELS[held.kind]} at ${TARGET_NAMES[target.kind]}`;
+  if (target) return `Place ${heldLabel(held)} at ${TARGET_NAMES[target.kind]}`;
   return state.floor.length < FLOOR_CAP
-    ? `Put ${ITEM_NAMES[held.kind]} on the floor`
+    ? `Put ${heldName(held)} on the floor`
     : null;
 }
 
@@ -119,7 +127,7 @@ export function getPrompt(state: GameState, id: PlayerId): Prompt {
   }
   const held = player.holding;
   const status = held
-    ? `${name} is carrying ${ITEM_LABELS[held.kind]}.`
+    ? `${name} is carrying ${heldLabel(held)}.`
     : `${name} has free hands.`;
   const front = frontTile(player);
   const station = at(state.stations, front);
@@ -142,10 +150,15 @@ export function getPrompt(state: GameState, id: PlayerId): Prompt {
       target.filled.length === 0 &&
       (target.category === "centerpieces" || target.category === "petals")
     ) {
-      work = "Simplify: leave this one bare";
+      // Held work here drops the spot from the plan, so the prompt says so.
+      const spot = target.kind === "aisle" ? "aisle spot" : "table";
+      work = `leave this ${spot} bare (drops it from the plan)`;
     }
   } else if (station?.kind === "bin") {
-    work = THROW_OUT_PROMPT;
+    work =
+      held.kind === "chairs"
+        ? `Put ${heldName(held)} back in the ${CRATE_NAMES.chairs} crate`
+        : THROW_OUT_PROMPT;
   }
   return { interact, work, status };
 }
@@ -183,17 +196,17 @@ function grabStep(state: GameState, kind: SupplyKind): CoachStep {
   const crate = state.supplies.find((s) => s.kind === kind);
   const where = crate && crate.y <= 1 ? "on the top row" : "on the left";
   return {
-    text: `Grab ${CRATE_ITEM_NAMES[kind]} from the ${CRATE_NAMES[kind]} crate ${where}.`,
+    text: `Grab ${crateGrabName(kind, state.stock[kind])} from the ${CRATE_NAMES[kind]} crate ${where}.`,
     tile: crate ? { x: crate.x, y: crate.y } : null,
   };
 }
 
 /** The step for someone carrying an item bound for a target. */
-function placeStep(state: GameState, held: ItemKind): CoachStep | null {
-  const target = openTarget(state, held);
+function placeStep(state: GameState, held: Item): CoachStep | null {
+  const target = openTarget(state, held.kind);
   return target
     ? {
-        text: `Place ${ITEM_NAMES[held]} at ${TARGET_NAMES[target.kind]}.`,
+        text: `Place ${heldName(held)} at ${TARGET_NAMES[target.kind]}.`,
         tile: { x: target.x, y: target.y },
       }
     : putDownStep(state, held);
@@ -204,17 +217,17 @@ function placeStep(state: GameState, held: ItemKind): CoachStep | null {
  * the floor while the floor has room, or else back in its own crate. The
  * helper drops it in the same order (dropTiers in assist.ts).
  */
-function putDownStep(state: GameState, held: ItemKind): CoachStep | null {
+function putDownStep(state: GameState, held: Item): CoachStep | null {
   if (state.floor.length < FLOOR_CAP) {
     return {
-      text: `Put ${ITEM_NAMES[held]} down somewhere out of the way.`,
+      text: `Put ${heldName(held)} down somewhere out of the way.`,
       tile: null,
     };
   }
-  const crate = state.supplies.find((s) => s.kind === held);
+  const crate = state.supplies.find((s) => s.kind === held.kind);
   return crate
     ? {
-        text: `Put ${ITEM_NAMES[held]} back in its crate.`,
+        text: `Put ${heldName(held)} back in its crate.`,
         tile: { x: crate.x, y: crate.y },
       }
     : null;
@@ -225,12 +238,12 @@ function putDownStep(state: GameState, held: ItemKind): CoachStep | null {
  * made or cooked item goes to the target that wants it, and burnt food goes
  * to the bin. Null when nothing open wants the item.
  */
-function carryStep(state: GameState, held: ItemKind): CoachStep | null {
-  switch (held) {
+function carryStep(state: GameState, item: Item): CoachStep | null {
+  switch (item.kind) {
     case "roses": {
       const wantsArrange = openTarget(state, "arrangement") !== undefined;
       const wantsPetals = openTarget(state, "petals") !== undefined;
-      if (!wantsArrange && !wantsPetals) return putDownStep(state, held);
+      if (!wantsArrange && !wantsPetals) return putDownStep(state, item);
       const kind = roseStation(state);
       if (kind)
         return {
@@ -246,13 +259,13 @@ function carryStep(state: GameState, held: ItemKind): CoachStep | null {
     }
     case "hotdogs-raw":
     case "wings-raw": {
-      const cooked = COOKED[held];
+      const cooked = COOKED[item.kind];
       if (!cooked || !openTarget(state, cooked))
-        return putDownStep(state, held);
+        return putDownStep(state, item);
       const tile = freeTile(state, "grill");
       return tile
         ? {
-            text: `Carry ${ITEM_NAMES[held]} to ${STATION_NAMES.grill}.`,
+            text: `Carry ${ITEM_NAMES[item.kind]} to ${STATION_NAMES.grill}.`,
             tile,
           }
         : {
@@ -269,10 +282,10 @@ function carryStep(state: GameState, held: ItemKind): CoachStep | null {
     case "quinoa":
     case "lantern":
     case "chairs":
-      return placeStep(state, held);
+      return placeStep(state, item);
     case "burnt":
       return {
-        text: `Carry ${ITEM_NAMES[held]} to ${STATION_NAMES.bin} and hold work there to throw it out.`,
+        text: `Carry ${ITEM_NAMES.burnt} to ${STATION_NAMES.bin} and hold work there to throw it out.`,
         tile: firstTile(state, "bin"),
       };
     default:
@@ -409,7 +422,7 @@ export function getCoachStep(
   if (state.phase === "done") return null;
   const player = state.players[id];
   if (player.presence === "away") return null;
-  if (player.holding) return carryStep(state, player.holding.kind);
+  if (player.holding) return carryStep(state, player.holding);
   // In co-op the second person starts on the food, so the two lines differ.
   const lead = options.coop && id === "abbi" ? "food" : "roses";
   return fetchStep(state, lead);

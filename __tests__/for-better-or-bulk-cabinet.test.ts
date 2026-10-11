@@ -7,7 +7,9 @@ import {
   frontTile,
   getCoachTile,
   getPrompt,
+  interactTile,
   type GameEvent,
+  type GameState,
   type TargetKind,
 } from "@/lib/for-better-or-bulk";
 import { buildFrame, GAME_CODES } from "@/components/for-better-or-bulk/input";
@@ -195,6 +197,18 @@ describe("For Better or Bulk event lines (#1906)", () => {
       })
     ).toContain("Restraint");
   });
+
+  it("says when a crate got stock back, and names the chair stacks as chairs", () => {
+    expect(
+      describeEvent({ type: "restocked", player: "fred", supply: "wings-raw" })
+    ).toBe("The crate had one more batch of wings.");
+    expect(
+      describeEvent({ type: "restocked", player: "abbi", supply: "chairs" })
+    ).toBe("The chairs went back in the crate.");
+    expect(describeEvent({ type: "supply-empty", supply: "chairs" })).toBe(
+      "That was the last of the chairs."
+    );
+  });
 });
 
 describe("For Better or Bulk venue canvas (#1906)", () => {
@@ -254,29 +268,64 @@ describe("For Better or Bulk venue canvas (#1906)", () => {
     expect(labels).toContain("On the phone");
   });
 
-  it("outlines the tile each active person faces, solid when interact is ready (#1914)", () => {
+  /** The dash each outlined tile was drawn with, keyed by its stroke origin. */
+  function outlineDashes(
+    state: GameState,
+    active: "fred" | "abbi" | null
+  ): Map<string, number[]> {
     const ctx = document
       .createElement("canvas")
       .getContext("2d") as CanvasRenderingContext2D;
+    const dashes = new Map<string, number[]>();
+    let dash: number[] = [];
+    vi.mocked(ctx.setLineDash).mockImplementation(
+      (segments: Iterable<number>) => {
+        dash = [...segments];
+      }
+    );
+    vi.mocked(ctx.strokeRect).mockImplementation((x: number, y: number) => {
+      dashes.set(`${x},${y}`, [...dash]);
+    });
+    drawVenue(ctx, state, active);
+    return dashes;
+  }
+
+  /** The stroke origin of an outline drawn on a venue tile. */
+  function outlineKey(tile: { x: number; y: number }): string {
+    return `${tile.x * TILE + 2},${tile.y * TILE + 2}`;
+  }
+
+  it("outlines nothing on a faced floor tile that no press would use", () => {
     const state = createLevel(DEFAULT_SETUP);
-    drawVenue(ctx, state, "abbi");
-    const tile = frontTile(state.players.abbi);
-    expect(vi.mocked(ctx.strokeRect)).toHaveBeenCalledWith(
-      tile.x * TILE + 2,
-      tile.y * TILE + 2,
-      TILE - 4,
-      TILE - 4
-    );
-    const ready = getPrompt(state, "abbi").interact !== null;
-    expect(vi.mocked(ctx.setLineDash)).toHaveBeenLastCalledWith(
-      ready ? [] : [3, 3]
-    );
+    const front = frontTile(state.players.abbi);
+    expect(getPrompt(state, "abbi").interact).toBeNull();
+    expect(outlineDashes(state, "abbi").has(outlineKey(front))).toBe(false);
+  });
+
+  it("outlines the tile a press acts on, solid while the press can act (#1914)", () => {
+    const level = createLevel(DEFAULT_SETUP);
+    // Fred faces the free ARRANGE table from its side and holds roses.
+    const state = {
+      ...level,
+      players: {
+        ...level.players,
+        fred: {
+          ...level.players.fred,
+          x: 7.5,
+          y: 3.5,
+          facingX: 1,
+          facingY: 0,
+          holding: { kind: "roses" as const, madeBy: null },
+        },
+      },
+    };
+    expect(interactTile(state, "fred")).toEqual({ x: 8, y: 3 });
+    const dashes = outlineDashes(state, "fred");
+    expect(dashes.get(outlineKey({ x: 8, y: 3 }))).toEqual([]);
+    expect(dashes.has(outlineKey({ x: 8, y: 2 }))).toBe(false);
   });
 
   it("outlines the station a person beside them will use, not the floor they face", () => {
-    const ctx = document
-      .createElement("canvas")
-      .getContext("2d") as CanvasRenderingContext2D;
     const level = createLevel(DEFAULT_SETUP);
     // Fred stands beside the arrange table, faces the floor and holds roses.
     const state = {
@@ -293,51 +342,44 @@ describe("For Better or Bulk venue canvas (#1906)", () => {
         },
       },
     };
-    drawVenue(ctx, state, "fred");
-    const outlined = vi
-      .mocked(ctx.strokeRect)
-      .mock.calls.map(([x, y]) => `${x},${y}`);
-    expect(outlined).toContain(`${8 * TILE + 2},${3 * TILE + 2}`);
-    expect(outlined).not.toContain(`${7 * TILE + 2},${2 * TILE + 2}`);
+    const outlined = [...outlineDashes(state, "fred").keys()];
+    expect(outlined).toContain(outlineKey({ x: 8, y: 3 }));
+    expect(outlined).not.toContain(outlineKey({ x: 7, y: 2 }));
   });
 
-  it("outlines the tile the coach's line points at, in the same style", () => {
-    const ctx = document
-      .createElement("canvas")
-      .getContext("2d") as CanvasRenderingContext2D;
-    const state = createLevel(DEFAULT_SETUP);
-    const coach = getCoachTile(state, "fred");
-    expect(coach).not.toBeNull();
-    drawVenue(ctx, state, "fred");
-    expect(vi.mocked(ctx.strokeRect)).toHaveBeenCalledWith(
-      (coach?.x ?? 0) * TILE + 2,
-      (coach?.y ?? 0) * TILE + 2,
-      TILE - 4,
-      TILE - 4
-    );
-  });
-
-  it("outlines both facing tiles in co-op", () => {
-    const ctx = document
-      .createElement("canvas")
-      .getContext("2d") as CanvasRenderingContext2D;
-    const state = createLevel(DEFAULT_SETUP);
-    drawVenue(ctx, state, null);
-    const outlined = vi
-      .mocked(ctx.strokeRect)
-      .mock.calls.map(([x, y]) => `${x},${y}`);
-    for (const id of ["fred", "abbi"] as const) {
-      const tile = frontTile(state.players[id]);
-      expect(outlined).toContain(`${tile.x * TILE + 2},${tile.y * TILE + 2}`);
-    }
-  });
-
-  it("outlines a wait step's tile dashed, not solid, while its station is busy", () => {
-    const ctx = document
-      .createElement("canvas")
-      .getContext("2d") as CanvasRenderingContext2D;
+  it("outlines each person's press tile in co-op, one outline apiece", () => {
     const level = createLevel(DEFAULT_SETUP);
-    // Fred carries roses and both ARRANGE tables hold roses, so he must wait.
+    const state = {
+      ...level,
+      players: {
+        fred: {
+          ...level.players.fred,
+          x: 7.5,
+          y: 3.5,
+          facingX: 1,
+          facingY: 0,
+          holding: { kind: "roses" as const, madeBy: null },
+        },
+        // Abbi stands below the first chair spot, holding a stack of two.
+        abbi: {
+          ...level.players.abbi,
+          x: 16.5,
+          y: 6.5,
+          facingX: 0,
+          facingY: -1,
+          holding: { kind: "chairs" as const, madeBy: null, count: 2 },
+        },
+      },
+    };
+    expect(interactTile(state, "abbi")).toEqual({ x: 16, y: 5 });
+    const dashes = outlineDashes(state, null);
+    expect(dashes.get(outlineKey({ x: 8, y: 3 }))).toEqual([]);
+    expect(dashes.get(outlineKey({ x: 16, y: 5 }))).toEqual([]);
+  });
+
+  it("dashes the faced station a person waits on, while it is busy", () => {
+    const level = createLevel(DEFAULT_SETUP);
+    // Both ARRANGE tables hold roses, so Fred holding roses must wait at the first.
     const state = {
       ...level,
       stations: level.stations.map((s) =>
@@ -345,40 +387,6 @@ describe("For Better or Bulk venue canvas (#1906)", () => {
           ? { ...s, item: { kind: "roses" as const, madeBy: null } }
           : s
       ),
-      players: {
-        ...level.players,
-        fred: {
-          ...level.players.fred,
-          holding: { kind: "roses" as const, madeBy: null },
-        },
-      },
-    };
-    const coach = getCoachTile(state, "fred");
-    expect(coach).not.toBeNull();
-    let dash: number[] = [];
-    const dashes = new Map<string, number[]>();
-    vi.mocked(ctx.setLineDash).mockImplementation(
-      (segments: Iterable<number>) => {
-        dash = [...segments];
-      }
-    );
-    vi.mocked(ctx.strokeRect).mockImplementation((x: number, y: number) => {
-      dashes.set(`${x},${y}`, [...dash]);
-    });
-    drawVenue(ctx, state, "fred");
-    const key = `${(coach?.x ?? 0) * TILE + 2},${(coach?.y ?? 0) * TILE + 2}`;
-    expect(dashes.get(key)).toEqual([3, 3]);
-  });
-
-  it("outlines a tile that is both the coach's and the interact tile once", () => {
-    const ctx = document
-      .createElement("canvas")
-      .getContext("2d") as CanvasRenderingContext2D;
-    const level = createLevel(DEFAULT_SETUP);
-    // Fred faces a free ARRANGE table from the side of it and holds roses: the
-    // coach points at that table and so does the press.
-    const state = {
-      ...level,
       players: {
         ...level.players,
         fred: {
@@ -392,13 +400,10 @@ describe("For Better or Bulk venue canvas (#1906)", () => {
       },
     };
     expect(getCoachTile(state, "fred")).toEqual({ x: 8, y: 3 });
-    drawVenue(ctx, state, "fred");
-    const key = `${8 * TILE + 2},${3 * TILE + 2}`;
-    const strokes = vi
-      .mocked(ctx.strokeRect)
-      .mock.calls.map(([x, y]) => `${x},${y}`)
-      .filter((k) => k === key);
-    expect(strokes).toHaveLength(1);
+    expect(interactTile(state, "fred")).toBeNull();
+    expect(
+      outlineDashes(state, "fred").get(outlineKey({ x: 8, y: 3 }))
+    ).toEqual([3, 3]);
   });
 
   it("draws a target's n/2 count after the outlines, so no outline covers its plate", () => {

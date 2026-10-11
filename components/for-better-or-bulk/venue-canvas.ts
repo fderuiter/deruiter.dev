@@ -33,9 +33,11 @@ export const VENUE_HEIGHT = VENUE_MAP.length * TILE;
 /** The rows of paving at the top of the map; everything below is lawn. */
 const PATIO_ROWS = 4;
 
-/** Label size when it fits its tile, and the smaller size when it does not. */
+/**
+ * Label size. It never drops below 10px: a label too wide for its tile is
+ * squeezed to the tile width by the canvas instead of shrinking the type.
+ */
 const LABEL_PX = 10;
-const LABEL_FALLBACK_PX = 8;
 
 /** A game-time burst's lifetime, in game seconds: a few frames at any speed. */
 export const BURST_SECONDS = 0.5;
@@ -49,7 +51,6 @@ const COLORS = {
   lawnAlt: "#3a5734",
   outline: "rgba(244, 244, 246, 0.55)",
   label: "#f4f4f6",
-  bareLabel: "#1b1e24",
   dim: "rgba(244, 244, 246, 0.6)",
   crate: "#7a5a3a",
   crateEdge: "#5b4229",
@@ -214,27 +215,29 @@ function drawProgress(
 }
 
 /**
- * Sets the label font: 10 logical px when the text fits its tile, otherwise
- * the 8 px fallback so a long name never spills into the next tile.
+ * Draws a label centred on cx. Every label is light text at 10px, squeezed to
+ * the tile width if it is wider. A plate puts a dark badge behind the text so
+ * it keeps at least 4.5:1 contrast on any ground, including lawn and patio.
  */
-function labelFont(ctx: CanvasRenderingContext2D, text: string): void {
-  ctx.font = font(LABEL_PX);
-  if (ctx.measureText(text).width > TILE - 2)
-    ctx.font = font(LABEL_FALLBACK_PX);
-}
-
 function drawLabel(
   ctx: CanvasRenderingContext2D,
   text: string,
   cx: number,
   y: number,
-  color: string = COLORS.label
+  plate = false
 ): void {
-  labelFont(ctx, text);
+  ctx.font = font(LABEL_PX);
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
-  ctx.fillStyle = color;
-  ctx.fillText(text, cx, y);
+  const width = Math.min(ctx.measureText(text).width, TILE - 2);
+  if (plate) {
+    ctx.fillStyle = COLORS.badge;
+    ctx.beginPath();
+    ctx.roundRect(cx - width / 2 - 3, y - 2, width + 6, LABEL_PX + 4, 3);
+    ctx.fill();
+  }
+  ctx.fillStyle = COLORS.label;
+  ctx.fillText(text, cx, y, TILE - 2);
 }
 
 function drawStation(ctx: CanvasRenderingContext2D, station: Station): void {
@@ -341,7 +344,7 @@ function drawTarget(ctx: CanvasRenderingContext2D, target: Target): void {
     ctx.fillRect(px + 1, py + 6, TILE - 2, TILE - 12);
   }
   if (target.status === "simplified") {
-    drawLabel(ctx, "BARE", cx, cy - 4, COLORS.bareLabel);
+    drawLabel(ctx, "BARE", cx, cy - 4, true);
     return;
   }
   const filled = target.filled;

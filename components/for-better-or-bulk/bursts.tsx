@@ -7,7 +7,7 @@
  * `animationend`, so a burst cannot linger if the animation never runs.
  */
 
-import React, { useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 
 /** Loud moments need a desktop-sized viewport and motion the viewer allows. */
@@ -20,7 +20,7 @@ export function useFbbLoud(): boolean {
 }
 
 /** How long a DOM burst stays up if its animation never reports an end. */
-export const BURST_FALLBACK_MS = 900;
+const BURST_FALLBACK_MS = 900;
 
 /** A burst kept in a list until its animation ends. */
 export interface DomBurst {
@@ -41,17 +41,26 @@ interface BurstLayerProps {
 export function BurstLayer({ bursts, onDone }: BurstLayerProps) {
   const timers = useRef(new Map<number, ReturnType<typeof setTimeout>>());
 
+  /** Ends one burst, clearing its fallback timer so it cannot fire later. */
+  const finish = useCallback(
+    (id: number) => {
+      const live = timers.current;
+      const timer = live.get(id);
+      if (timer !== undefined) clearTimeout(timer);
+      live.delete(id);
+      onDone(id);
+    },
+    [onDone]
+  );
+
   useEffect(() => {
     const live = timers.current;
     for (const burst of bursts) {
       if (live.has(burst.id)) continue;
-      const timer = setTimeout(() => {
-        live.delete(burst.id);
-        onDone(burst.id);
-      }, BURST_FALLBACK_MS);
+      const timer = setTimeout(() => finish(burst.id), BURST_FALLBACK_MS);
       live.set(burst.id, timer);
     }
-  }, [bursts, onDone]);
+  }, [bursts, finish]);
 
   useEffect(() => {
     const live = timers.current;
@@ -71,7 +80,7 @@ export function BurstLayer({ bursts, onDone }: BurstLayerProps) {
         <span
           key={burst.id}
           className="fbb-burst fbb-burst-text"
-          onAnimationEnd={() => onDone(burst.id)}
+          onAnimationEnd={() => finish(burst.id)}
         >
           {burst.text}
         </span>

@@ -169,3 +169,25 @@ export function soundFor(event: FeedbackEvent): SoundKey | null {
       return null;
   }
 }
+
+/**
+ * Plays one step's sounds through the play callback: at most one per sound
+ * key, and no "place" tick when a category completes in the same step, since
+ * the category chime stands for that moment. A step can carry several events
+ * (a background-tab catch-up runs up to eight), so this keeps them from
+ * stacking into noise.
+ */
+export function playStepSounds(
+  events: readonly FeedbackEvent[],
+  play: (key: SoundKey) => void
+): void {
+  const hasCategory = events.some(
+    (event) => event.type === "category-complete"
+  );
+  const keys = new Set<SoundKey>();
+  for (const event of events) {
+    const key = soundFor(event);
+    if (key && !(key === "place" && hasCategory)) keys.add(key);
+  }
+  for (const key of keys) play(key);
+}

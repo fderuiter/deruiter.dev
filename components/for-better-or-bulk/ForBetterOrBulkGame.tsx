@@ -49,7 +49,7 @@ import {
   completedCategories,
   describeEvent,
   throttleFloorFull,
-  soundFor,
+  playStepSounds,
   type FeedbackEvent,
 } from "./messages";
 import { playSfx } from "./sfx";
@@ -287,9 +287,8 @@ export function ForBetterOrBulkGame({
    */
   const feedback = useCallback(
     (events: readonly FeedbackEvent[], state: GameState) => {
+      if (speed === 1) playStepSounds(events, playSfx);
       for (const event of events) {
-        const key = soundFor(event);
-        if (key && speed === 1) playSfx(key);
         if (!loud) continue;
         if (event.type === "target-filled") {
           const target = state.targets.find((t) => t.id === event.target);

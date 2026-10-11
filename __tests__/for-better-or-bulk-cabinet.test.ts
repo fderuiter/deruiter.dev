@@ -6,12 +6,15 @@ import {
   frontTile,
   getPrompt,
   type GameEvent,
+  type TargetKind,
 } from "@/lib/for-better-or-bulk";
 import { buildFrame, GAME_CODES } from "@/components/for-better-or-bulk/input";
 import {
   completedCategories,
   describeEvent,
+  playStepSounds,
   soundFor,
+  type FeedbackEvent,
 } from "@/components/for-better-or-bulk/messages";
 import {
   BURST_SECONDS,
@@ -26,6 +29,19 @@ import {
 
 /** The crate fill the stock counts are drawn on. */
 const CRATE_FILL = "#7a5a3a";
+
+/** The label plate fill, as venue-canvas draws it. */
+const BADGE_FILL = "rgba(13, 14, 17, 0.88)";
+
+/** The colour a hex ground shows once the plate is laid over it. */
+function overPlate(ground: string): string {
+  const plate = [13, 14, 17];
+  const mixed = [1, 3, 5].map((i, channel) => {
+    const bg = parseInt(ground.slice(i, i + 2), 16);
+    return Math.round(0.88 * plate[channel] + 0.12 * bg);
+  });
+  return `#${mixed.map((c) => c.toString(16).padStart(2, "0")).join("")}`;
+}
 
 describe("For Better or Bulk keyboard mapping (#1906)", () => {
   it("gives Fred WASD and Abbi the arrows in co-op", () => {
@@ -380,6 +396,55 @@ describe("For Better or Bulk sound map (F4)", () => {
     expect(completedCategories(before, after)).toEqual([category]);
     expect(completedCategories(after, after)).toEqual([]);
   });
+
+  it("plays each sound key at most once in a step", () => {
+    const events: FeedbackEvent[] = [
+      { type: "brothers-text" },
+      { type: "brothers-text" },
+      { type: "burnt", station: "G4-3" },
+      { type: "burnt", station: "G4-1" },
+      { type: "level-finished", early: false },
+      { type: "level-finished", early: true },
+    ];
+    const play = vi.fn();
+    playStepSounds(events, play);
+    expect(play.mock.calls).toEqual([["brothers"], ["burnt"], ["finish"]]);
+  });
+
+  it("drops the place tick when a category completes in the same step", () => {
+    const events: FeedbackEvent[] = [
+      {
+        type: "target-filled",
+        player: "abbi",
+        target: "T1-1",
+        category: "chairs",
+      },
+      { type: "category-complete", category: "chairs" },
+    ];
+    const play = vi.fn();
+    playStepSounds(events, play);
+    expect(play.mock.calls).toEqual([["category"]]);
+  });
+
+  it("keeps the place tick when no category completes", () => {
+    const events: FeedbackEvent[] = [
+      {
+        type: "target-filled",
+        player: "abbi",
+        target: "T1-1",
+        category: "chairs",
+      },
+      {
+        type: "target-filled",
+        player: "fred",
+        target: "T1-2",
+        category: "chairs",
+      },
+    ];
+    const play = vi.fn();
+    playStepSounds(events, play);
+    expect(play.mock.calls).toEqual([["place"]]);
+  });
 });
 
 describe("For Better or Bulk loud canvas (F4)", () => {
@@ -417,45 +482,79 @@ describe("For Better or Bulk loud canvas (F4)", () => {
     expect(ringAt(state.time + 1)).toBe(false);
   });
 
-  it("sizes labels at 10px where they fit and falls back to 8px where they do not", () => {
-    const fontAt = (width: number) => {
+  it("keeps every label at 10px and squeezes a long one to the tile width", () => {
+    const draws = (width: number) => {
       const ctx = makeCtx();
       const fonts: string[] = [];
+      const maxWidths: (number | undefined)[] = [];
       vi.mocked(ctx.measureText).mockImplementation(() =>
         fromPartial<TextMetrics>({ width })
       );
-      vi.mocked(ctx.fillText).mockImplementation((text: string) => {
-        if (text === "GRILL") fonts.push(String(ctx.font));
-      });
+      vi.mocked(ctx.fillText).mockImplementation(
+        (text: string, _x: number, _y: number, maxWidth?: number) => {
+          if (text === "GRILL") {
+            fonts.push(String(ctx.font));
+            maxWidths.push(maxWidth);
+          }
+        }
+      );
       drawVenue(ctx, createLevel(DEFAULT_SETUP), null);
       vi.mocked(ctx.fillText).mockReset();
       vi.mocked(ctx.measureText).mockReset();
-      return fonts;
+      return { fonts, maxWidths };
     };
-    const fits = fontAt(20);
-    expect(fits.length).toBeGreaterThan(0);
-    expect(fits.every((f) => f.includes("10px"))).toBe(true);
-    const tooWide = fontAt(60);
-    expect(tooWide.every((f) => f.includes("8px"))).toBe(true);
+    const fits = draws(20);
+    expect(fits.fonts.length).toBeGreaterThan(0);
+    expect(fits.fonts.every((f) => f.includes("10px"))).toBe(true);
+    const tooWide = draws(60);
+    expect(tooWide.fonts.every((f) => f.includes("10px"))).toBe(true);
+    expect(tooWide.maxWidths.length).toBeGreaterThan(0);
+    expect(tooWide.maxWidths.every((w) => w === TILE - 2)).toBe(true);
   });
 
-  it("keeps the bare-spot label at 4.5:1 or better on the table cloth", () => {
+  it.each<TargetKind>([
+    "basket",
+    "table",
+    "aisle",
+    "chair-spot",
+    "hook",
+    "buffet",
+  ])("keeps the bare-spot label at 4.5:1 or better on a %s", (kind) => {
     const state = createLevel(DEFAULT_SETUP);
-    const index = state.targets.findIndex(
-      (t) => t.kind === "table" || t.kind === "buffet"
-    );
-    expect(index).toBeGreaterThanOrEqual(0);
+    const index = state.targets.findIndex((t) => t.kind === kind);
+    expect(index, `the plan has a ${kind} target`).toBeGreaterThanOrEqual(0);
+    const target = state.targets[index];
     const targets = state.targets.map((t, i) =>
       i === index ? { ...t, status: "simplified" as const } : t
     );
+    const px = target.x * TILE;
+    const py = target.y * TILE;
     const ctx = makeCtx();
-    const seen: string[] = [];
+    let ground = "";
+    let plate = "";
+    let label = "";
+    vi.mocked(ctx.fillRect).mockImplementation(
+      (x: number, y: number, w: number, h: number) => {
+        if (x === px && y === py && w === TILE && h === TILE)
+          ground = String(ctx.fillStyle);
+      }
+    );
+    let lastPlate = "";
+    vi.mocked(ctx.roundRect).mockImplementation(() => {
+      lastPlate = String(ctx.fillStyle);
+    });
     vi.mocked(ctx.fillText).mockImplementation((text: string) => {
-      if (text === "BARE") seen.push(String(ctx.fillStyle));
+      if (text !== "BARE") return;
+      plate = lastPlate;
+      label = String(ctx.fillStyle);
     });
     drawVenue(ctx, { ...state, targets }, null);
+    vi.mocked(ctx.fillRect).mockReset();
+    vi.mocked(ctx.roundRect).mockReset();
     vi.mocked(ctx.fillText).mockReset();
-    expect(seen.length).toBeGreaterThan(0);
-    expect(contrast(seen[0], "#e9e4d8")).toBeGreaterThanOrEqual(4.5);
+    expect(ground).toMatch(/^#[0-9a-f]{6}$/);
+    expect(plate).toBe(BADGE_FILL);
+    expect(label).toBe("#f4f4f6");
+    expect(contrast(label, overPlate(ground))).toBeGreaterThanOrEqual(4.5);
   });
 });

@@ -8,6 +8,18 @@
 
 ## References
 
+### ACTUAL\_NOTE\_IDS
+
+Re-exports [ACTUAL_NOTE_IDS](presets/variables/ACTUAL_NOTE_IDS.md)
+
+***
+
+### ActualNote
+
+Re-exports [ActualNote](types/interfaces/ActualNote.md)
+
+***
+
 ### ARRANGE\_SECONDS
 
 Re-exports [ARRANGE_SECONDS](presets/variables/ARRANGE_SECONDS.md)
@@ -899,3 +911,9 @@ Re-exports [WALKABLE_TILES](presets/variables/WALKABLE_TILES.md)
 ### WebsiteLine
 
 Re-exports [WebsiteLine](types/interfaces/WebsiteLine.md)
+
+***
+
+### WEDDING\_PATH
+
+Re-exports [WEDDING_PATH](presets/variables/WEDDING_PATH.md)

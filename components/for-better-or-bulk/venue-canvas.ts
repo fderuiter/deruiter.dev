@@ -39,6 +39,10 @@ const LABEL_PX = 10;
 
 /** A game-time burst's lifetime, in game seconds: a few frames at any speed. */
 export const BURST_SECONDS = 0.5;
+/** Smoke from the grill hangs a little longer than a flash. */
+export const SMOKE_SECONDS = 1.5;
+/** The roses over the car stay long enough to read at a glance. */
+export const ROSES_SECONDS = 2.5;
 
 const COLORS = {
   hedge: "#1c2a1b",
@@ -75,8 +79,11 @@ const COLORS = {
 
 /** A one-shot canvas burst, timed on the game clock (state.time). */
 export interface CanvasBurst {
-  /** A ring on a target that was filled, or a puff of charcoal at the grill. */
-  readonly kind: "ring" | "charcoal";
+  /**
+   * A ring on a filled target, smoke at the grill, a crumpled note on a
+   * simplified target, or roses across the car.
+   */
+  readonly kind: "ring" | "charcoal" | "crumple" | "roses";
   readonly x: number;
   readonly y: number;
   /** The game time the burst started, in seconds. */
@@ -434,13 +441,7 @@ function drawPlayer(
     );
   }
   if (player.busyFor > 0) {
-    ctx.fillStyle = COLORS.busy;
-    ctx.beginPath();
-    ctx.roundRect(cx + r * 0.4, cy - r * 2.3, 22, 13, 4);
-    ctx.fill();
-    ctx.fillStyle = COLORS.fred;
-    ctx.font = font(9);
-    ctx.fillText("…", cx + r * 0.4 + 11, cy - r * 2.3 + 6);
+    drawBubble(ctx, player.busyReason ?? "…", cx, cy - r * 2.3 - 14);
   }
 }
 
@@ -492,15 +493,71 @@ export function canvasBurstsFor(
   return loud ? bursts : [];
 }
 
+/** How long one burst of each kind stays up, in game seconds. */
+export function burstLifetime(kind: CanvasBurst["kind"]): number {
+  switch (kind) {
+    case "charcoal":
+      return SMOKE_SECONDS;
+    case "roses":
+      return ROSES_SECONDS;
+    default:
+      return BURST_SECONDS;
+  }
+}
+
+/** Smoke puffs: a sideways offset in tiles, and when each one starts (0 to 1). */
+const SMOKE_PUFFS = [
+  [-0.2, 0],
+  [0.18, 0.25],
+  [0, 0.5],
+] as const;
+
+/** The rose clusters that cover the car's crate column, as tile positions. */
+const CAR_ROSES = [
+  [0.5, 1.5],
+  [1.4, 2.5],
+  [0.5, 4.5],
+  [1.4, 6.5],
+  [0.5, 8.5],
+  [1.4, 9.5],
+] as const;
+
+/** One crumpled note: a jagged sheet shrinking to a ball. */
+function drawCrumple(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  t: number
+): void {
+  const radius = TILE * (0.36 - 0.14 * t);
+  ctx.globalAlpha = 1 - t * 0.6;
+  ctx.fillStyle = COLORS.label;
+  ctx.strokeStyle = COLORS.dim;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2;
+    const r = i % 2 === 0 ? radius : radius * 0.6;
+    const x = cx + Math.cos(a) * r;
+    const y = cy + Math.sin(a) * r;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+}
+
 /** One burst at its age on the game clock; expired or future bursts draw nothing. */
 function drawBurst(
   ctx: CanvasRenderingContext2D,
   burst: CanvasBurst,
   now: number
 ): void {
+  const life = burstLifetime(burst.kind);
   const age = now - burst.startedAt;
-  if (age < 0 || age >= BURST_SECONDS) return;
-  const t = age / BURST_SECONDS;
+  if (age < 0 || age >= life) return;
+  const t = age / life;
   const cx = burst.x * TILE + TILE / 2;
   const cy = burst.y * TILE + TILE / 2;
   ctx.save();
@@ -511,14 +568,55 @@ function drawBurst(
     ctx.beginPath();
     ctx.arc(cx, cy, TILE * (0.35 + 0.45 * t), 0, Math.PI * 2);
     ctx.stroke();
-  } else {
-    ctx.globalAlpha = 0.8 * (1 - t);
+  } else if (burst.kind === "charcoal") {
     ctx.fillStyle = COLORS.charcoal;
-    ctx.beginPath();
-    ctx.arc(cx, cy - TILE * 0.3 * t, TILE * (0.2 + 0.3 * t), 0, Math.PI * 2);
-    ctx.fill();
+    for (const [offset, start] of SMOKE_PUFFS) {
+      if (t < start) continue;
+      const local = (t - start) / (1 - start);
+      ctx.globalAlpha = 0.75 * (1 - local);
+      ctx.beginPath();
+      ctx.arc(
+        cx + offset * TILE,
+        cy - TILE * (0.2 + 0.7 * local),
+        TILE * (0.18 + 0.22 * local),
+        0,
+        Math.PI * 2
+      );
+      ctx.fill();
+    }
+  } else if (burst.kind === "crumple") {
+    drawCrumple(ctx, cx, cy, t);
+  } else {
+    ctx.globalAlpha = t < 0.7 ? 1 : (1 - t) / 0.3;
+    for (const [x, y] of CAR_ROSES) {
+      drawItem(ctx, "roses", x * TILE, y * TILE, TILE * 0.9);
+    }
   }
   ctx.restore();
+}
+
+/**
+ * A bubble over a person on the phone or re-tying shoes: the line they
+ * are frozen by, sized to its text and kept inside the canvas.
+ */
+function drawBubble(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  cx: number,
+  top: number
+): void {
+  const height = LABEL_PX + 6;
+  ctx.font = font(LABEL_PX);
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  const width = Math.min(ctx.measureText(text).width + 10, VENUE_WIDTH - 8);
+  const left = clamp(cx - width / 2, 4, VENUE_WIDTH - width - 4);
+  ctx.fillStyle = COLORS.busy;
+  ctx.beginPath();
+  ctx.roundRect(left, top, width, height, 4);
+  ctx.fill();
+  ctx.fillStyle = COLORS.fred;
+  ctx.fillText(text, left + width / 2, top + height / 2, width - 6);
 }
 
 /**

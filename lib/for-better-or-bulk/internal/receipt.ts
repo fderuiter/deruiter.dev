@@ -7,6 +7,8 @@
  */
 
 import {
+  ACTUAL_NOTE_IDS,
+  WEDDING_PATH,
   BUDGET,
   bankText,
   CAPABILITIES,
@@ -29,6 +31,7 @@ import type {
   FoodTier,
   GameState,
   PlayerId,
+  ActualNote,
   ReadinessLine,
   Receipt,
   RoseTier,
@@ -324,6 +327,15 @@ function gameWeather(state: GameState): string | null {
   return `${label}: a shower from ${from} to ${to} slowed walking on the lawn.`;
 }
 
+/** The closing note: the real facts as the line bank words them, and the wedding link. */
+function actualNote(): ActualNote {
+  return {
+    heading: bankText("actual-heading"),
+    lines: ACTUAL_NOTE_IDS.map((id) => bankText(id)),
+    href: WEDDING_PATH,
+  };
+}
+
 /** The ending receipt, derived purely from the level state. */
 export function computeReceipt(state: GameState): Receipt {
   const readiness = readinessLines(state);
@@ -344,6 +356,7 @@ export function computeReceipt(state: GameState): Receipt {
         : null,
     signatureMoment: signatureMoment(readiness),
     assist: state.assistTicks > 0 ? ASSIST_LINE : null,
+    actual: actualNote(),
     title: title(state, readiness, follow.status === "kept"),
     weather: bankText("weather"),
     gameWeather: gameWeather(state),

@@ -10,6 +10,14 @@ The ending: a story artifact that explains itself. It is not a grade.
 
 ## Properties
 
+### actual
+
+> `readonly` **actual**: [`ActualNote`](ActualNote.md)
+
+The real facts behind the run, quoted from the line bank's [Real] lines.
+
+***
+
 ### assist
 
 > `readonly` **assist**: `string` \| `null`

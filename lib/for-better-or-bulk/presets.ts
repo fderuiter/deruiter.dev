@@ -455,6 +455,102 @@ export const LINE_BANK: readonly BankLine[] = [
     fact: null,
     text: "Guests are early and the buffet is calling. Food on the grill burns faster until it passes.",
   },
+  {
+    id: "joke-roses",
+    tag: "Fiction",
+    fact: null,
+    text: 'Quantity: "Yes". The car is behind the roses.',
+  },
+  {
+    id: "joke-leaving",
+    tag: "Fiction",
+    fact: null,
+    text: "Production: healthy. All systems operational.",
+  },
+  {
+    id: "joke-suit",
+    tag: "Fiction",
+    fact: null,
+    text: "The free suit hangs in the coat room. Acquired: yes. Worn: no.",
+  },
+  {
+    id: "joke-sink",
+    tag: "Fiction",
+    fact: null,
+    text: "One guest in stilettos sinks gently into the lawn.",
+  },
+  {
+    id: "joke-faq",
+    tag: "Fiction",
+    fact: null,
+    text: "The FAQ answered the garden question before anyone had to call.",
+  },
+  {
+    id: "joke-lanterns",
+    tag: "Fiction",
+    fact: null,
+    text: "Paper lanterns glow over the patio at dusk.",
+  },
+  {
+    id: "scene-ceremony",
+    tag: "Fiction",
+    fact: null,
+    text: "4:00. The ceremony.",
+  },
+  {
+    id: "scene-tux",
+    tag: "Fiction",
+    fact: null,
+    text: "The rented tux.",
+  },
+  {
+    id: "scene-coat",
+    tag: "Fiction",
+    fact: null,
+    text: "The coat room.",
+  },
+  {
+    id: "scene-guests",
+    tag: "Fiction",
+    fact: null,
+    text: "The guests.",
+  },
+  {
+    id: "scene-buffet",
+    tag: "Fiction",
+    fact: null,
+    text: "5:30. The buffet.",
+  },
+  {
+    id: "scene-dusk",
+    tag: "Fiction",
+    fact: null,
+    text: "Dusk.",
+  },
+  {
+    id: "scene-after",
+    tag: "Fiction",
+    fact: null,
+    text: "After.",
+  },
+  {
+    id: "scene-summary",
+    tag: "Fiction",
+    fact: null,
+    text: "The ceremony and the buffet, in brief.",
+  },
+  {
+    id: "actual-heading",
+    tag: "Fiction",
+    fact: null,
+    text: "What actually happened",
+  },
+  {
+    id: "actual-link",
+    tag: "Fiction",
+    fact: null,
+    text: "Read the real wedding page",
+  },
 ];
 
 /** The text of one line in the bank, by its id. */
@@ -474,3 +570,9 @@ export const FICTION_DEFAULTS: readonly string[] = [
 /** The receipt's line when the solo helper was on (ADR 0060, F6). */
 export const ASSIST_LINE =
   "A helper kept the other lane going. Very efficient. Slightly eerie.";
+
+/** The [Real] lines the receipt's "What actually happened" note quotes, in order. */
+export const ACTUAL_NOTE_IDS: readonly string[] = ["prep", "weather", "goal"];
+
+/** Where the "What actually happened" note links: the real wedding page. */
+export const WEDDING_PATH = "/wedding";

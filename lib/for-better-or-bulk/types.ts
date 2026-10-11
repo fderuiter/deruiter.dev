@@ -355,6 +355,13 @@ export interface ChallengeResult {
   readonly detail: string;
 }
 
+/** The receipt's closing note: real [Real] lines, and where they link. */
+export interface ActualNote {
+  readonly heading: string;
+  readonly lines: readonly string[];
+  readonly href: string;
+}
+
 /** The ending: a story artifact that explains itself. It is not a grade. */
 export interface Receipt {
   readonly spending: {
@@ -380,6 +387,8 @@ export interface Receipt {
   readonly suit: string;
   /** The honest line about the solo helper, present only when it was on. */
   readonly assist: string | null;
+  /** The real facts behind the run, quoted from the line bank's [Real] lines. */
+  readonly actual: ActualNote;
   /** Game challenges: game play only, never a judgment of the wedding. */
   readonly challenges: readonly ChallengeResult[];
   /** How many of the challenges the run met, from 0 to 3. */

@@ -16,6 +16,7 @@
 
 ## Variables
 
+- [ACTUAL\_NOTE\_IDS](variables/ACTUAL_NOTE_IDS.md)
 - [ARRANGE\_SECONDS](variables/ARRANGE_SECONDS.md)
 - [ASSIST\_LINE](variables/ASSIST_LINE.md)
 - [BIN\_HOLD\_SECONDS](variables/BIN_HOLD_SECONDS.md)
@@ -72,6 +73,7 @@
 - [TICK\_SECONDS](variables/TICK_SECONDS.md)
 - [VENUE\_MAP](variables/VENUE_MAP.md)
 - [WALKABLE\_TILES](variables/WALKABLE_TILES.md)
+- [WEDDING\_PATH](variables/WEDDING_PATH.md)
 
 ## Functions
 

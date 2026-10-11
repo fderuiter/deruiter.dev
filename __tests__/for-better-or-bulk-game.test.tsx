@@ -80,6 +80,16 @@ import { ForBetterOrBulkGame } from "@/components/for-better-or-bulk/ForBetterOr
 /** Runs the loop in quarter-second frames until a condition holds. */
 function runUntil(done: () => boolean, maxFrames = 4000) {
   for (let i = 0; i < maxFrames && !done(); i++) {
+    // The ceremony playback is not a frame: a viewer skips it.
+    const playback = screen.queryByTestId("fbb-playback");
+    if (playback) {
+      fireEvent.click(
+        within(playback).getByRole("button", {
+          name: /Skip|Continue to the receipt/,
+        })
+      );
+      continue;
+    }
     act(() => {
       if (frame.active) frame.callback?.(250);
     });
@@ -281,6 +291,8 @@ describe("For Better or Bulk cabinet (#1906)", () => {
     fireEvent.keyDown(game(), { key: "Enter", code: "Enter" });
     engine.finishNext = true;
     fireEvent.keyDown(game(), { key: "Tab", code: "Tab" });
+    expect(screen.getByTestId("fbb-playback")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Skip" }));
     expect(screen.getByTestId("fbb-receipt")).toBeTruthy();
   });
 

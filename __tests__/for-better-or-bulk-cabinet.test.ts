@@ -248,7 +248,7 @@ describe("For Better or Bulk venue canvas (#1906)", () => {
     drawVenue(ctx, state, null);
     const labels = vi.mocked(ctx.fillText).mock.calls.map((call) => call[0]);
     expect(labels).not.toContain("F");
-    expect(labels).toContain("…");
+    expect(labels).toContain("On the phone");
   });
 
   it("outlines the tile each active person faces, solid when interact is ready (#1914)", () => {

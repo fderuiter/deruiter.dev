@@ -8,6 +8,7 @@
 
 ## Interfaces
 
+- [ActualNote](interfaces/ActualNote.md)
 - [Cart](interfaces/Cart.md)
 - [ChallengeResult](interfaces/ChallengeResult.md)
 - [Condition](interfaces/Condition.md)

@@ -89,7 +89,7 @@ function getTrophyIcon(iconName: string) {
     case "Heart":
       return <IconHeart className="w-5 h-5 text-amber-400" />;
     case "Sparkles":
-      return <IconSparkles className="w-5 h-5 text-cyan-400" />;
+      return <IconSparkles className="w-5 h-5 text-[#94a3b8]" />;
     default:
       return <IconTrophy className="w-5 h-5 text-amber-400" />;
   }

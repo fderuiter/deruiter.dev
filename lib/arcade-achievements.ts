@@ -276,6 +276,41 @@ export const ARCADE_TROPHIES: ArcadeTrophy[] = [
     targetScore: 27,
     conditionDescription: "Place 27 things in For Better or Bulk",
   },
+  {
+    id: "for_better_or_bulk_three_stars",
+    gameId: "for-better-or-bulk",
+    title: "Three for Three",
+    subtitle: "For Better or Bulk",
+    description:
+      "Meet all three game challenges on a finished run of the standard day.",
+    icon: "Sparkles",
+    category: "mastery",
+    conditionDescription:
+      "Meet all three game challenges on a standard-day run in For Better or Bulk",
+  },
+  {
+    id: "for_better_or_bulk_perfect_day",
+    gameId: "for-better-or-bulk",
+    title: "A Perfect Day",
+    subtitle: "For Better or Bulk",
+    description:
+      "Meet all three game challenges on a seeded day, the one the whole day shares.",
+    icon: "Trophy",
+    category: "mastery",
+    conditionDescription:
+      "Meet all three game challenges on a seeded day in For Better or Bulk",
+  },
+  {
+    id: "for_better_or_bulk_nothing_burnt",
+    gameId: "for-better-or-bulk",
+    title: "Nothing Burnt",
+    subtitle: "For Better or Bulk",
+    description: "Finish every setup task with no batch burnt on the grill.",
+    icon: "Heart",
+    category: "gameplay",
+    conditionDescription:
+      "Finish every setup task with no burnt batches in For Better or Bulk",
+  },
 
   // Protocol Drift
   {
@@ -585,6 +620,40 @@ export function evaluateTrophies(progress: ArcadeProgress): ArcadeTrophy[] {
     }
   }
 
+  return newlyUnlocked;
+}
+
+/**
+ * Unlocks named trophies a game awards from a finished run rather than from a
+ * score. A trophy already unlocked keeps its first timestamp, and only the
+ * newly unlocked ones are returned and announced.
+ */
+export function unlockArcadeTrophies(
+  trophyIds: readonly string[]
+): ArcadeTrophy[] {
+  const progress = getArcadeProgress();
+  const now = Date.now();
+  const newlyUnlocked: ArcadeTrophy[] = [];
+  for (const trophy of ARCADE_TROPHIES) {
+    if (
+      !trophyIds.includes(trophy.id) ||
+      progress.unlockedTrophies[trophy.id]
+    ) {
+      continue;
+    }
+    progress.unlockedTrophies[trophy.id] = now;
+    newlyUnlocked.push(trophy);
+  }
+  if (newlyUnlocked.length === 0) return newlyUnlocked;
+  saveArcadeProgress(progress);
+  for (const trophy of newlyUnlocked) {
+    emitAppEvent("arcade_trophy_unlocked", {
+      trophyId: trophy.id,
+      gameId: trophy.gameId,
+      title: trophy.title,
+      unlockedAt: now,
+    });
+  }
   return newlyUnlocked;
 }
 

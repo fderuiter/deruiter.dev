@@ -9,6 +9,7 @@
 ## Interfaces
 
 - [Cart](interfaces/Cart.md)
+- [ChallengeResult](interfaces/ChallengeResult.md)
 - [Condition](interfaces/Condition.md)
 - [FloorItem](interfaces/FloorItem.md)
 - [Frame](interfaces/Frame.md)
@@ -34,6 +35,7 @@
 
 - [CapabilityId](type-aliases/CapabilityId.md)
 - [Category](type-aliases/Category.md)
+- [ChallengeId](type-aliases/ChallengeId.md)
 - [Commitment](type-aliases/Commitment.md)
 - [FoodTier](type-aliases/FoodTier.md)
 - [GameEvent](type-aliases/GameEvent.md)

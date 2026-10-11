@@ -5,8 +5,14 @@
  * explains what happened and why; it is not a grade.
  */
 
-import React from "react";
-import type { Receipt, Readiness } from "@/lib/for-better-or-bulk";
+import React, { useState } from "react";
+import { copyToClipboard, getActiveHostUrl } from "@/lib/clipboard";
+import {
+  CHALLENGE_COPY,
+  runLinkFor,
+  type Receipt,
+  type Readiness,
+} from "@/lib/for-better-or-bulk";
 
 const STATUS_LABELS: Readonly<Record<Readiness, string>> = {
   ready: "Ready",
@@ -17,15 +23,44 @@ const STATUS_LABELS: Readonly<Record<Readiness, string>> = {
 
 interface ReceiptViewProps {
   receipt: Receipt;
+  /** The run code, or null when this run cannot be shared. */
+  runCode: string | null;
   onPlayAgain: () => void;
   onChangePlan: () => void;
+  onWatchReplay: () => void;
 }
+
+const BUTTON_CLASS =
+  "min-h-11 rounded border px-4 text-xs font-bold uppercase tracking-wide active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--fbb-focus)]";
 
 export function ReceiptView({
   receipt,
+  runCode,
   onPlayAgain,
   onChangePlan,
+  onWatchReplay,
 }: ReceiptViewProps) {
+  const [copyNote, setCopyNote] = useState("");
+
+  /** Copies the link that opens this run. The code never leaves the page otherwise. */
+  async function copyRunCode(): Promise<void> {
+    if (!runCode) return;
+    const link = runLinkFor(
+      `${getActiveHostUrl()}${window.location.pathname}`,
+      runCode
+    );
+    try {
+      await copyToClipboard(link);
+      setCopyNote("Run link copied. Anyone who opens it can watch this run.");
+    } catch {
+      setCopyNote(`Could not copy. The run link is ${link}`);
+    }
+  }
+
+  const stars =
+    "★".repeat(receipt.stars) +
+    "☆".repeat(receipt.challenges.length - receipt.stars);
+
   return (
     <div
       className="flex w-full min-w-0 flex-col gap-4 p-3 font-mono text-[var(--fbb-text)] sm:p-6"
@@ -109,6 +144,52 @@ export function ReceiptView({
         </ul>
       </section>
 
+      <section
+        className="min-w-0 rounded border border-[var(--fbb-rule)] p-3"
+        aria-labelledby="fbb-receipt-challenges"
+        data-testid="fbb-challenges"
+      >
+        <h3
+          id="fbb-receipt-challenges"
+          className="break-words text-xs font-bold uppercase tracking-wide"
+        >
+          {CHALLENGE_COPY}
+        </h3>
+        <p className="mt-1 text-xs tabular-nums" data-testid="fbb-stars">
+          <span
+            aria-hidden="true"
+            className="tracking-widest text-[var(--fbb-accent)]"
+          >
+            {stars}
+          </span>{" "}
+          {receipt.stars} of {receipt.challenges.length} met
+        </p>
+        <ul className="mt-2 flex min-w-0 flex-col gap-2 text-xs">
+          {receipt.challenges.map((challenge) => (
+            <li
+              key={challenge.id}
+              className="flex min-w-0 flex-col"
+              data-testid={`fbb-challenge-${challenge.id}`}
+            >
+              <span className="break-words font-bold">
+                <span
+                  className={
+                    challenge.met ? "text-[var(--fbb-ok)]" : "text-[#94a3b8]"
+                  }
+                >
+                  {challenge.met ? "Met" : "Not met"}
+                </span>
+                {": "}
+                {challenge.label}
+              </span>
+              <span className="break-words text-[var(--fbb-dim)]">
+                {challenge.detail}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </section>
+
       <ul className="flex min-w-0 flex-col gap-1 border-t border-[var(--fbb-rule)] pt-3 text-xs">
         <li data-testid="fbb-follow-through">
           <span className="font-bold">Follow-through:</span>{" "}
@@ -135,21 +216,45 @@ export function ReceiptView({
       <p className="text-[11px] text-[var(--fbb-dim)]">{receipt.disclaimer}</p>
 
       <div className="flex flex-wrap gap-2">
+        {runCode ? (
+          <button
+            id="fbb-watch-replay"
+            type="button"
+            onClick={onWatchReplay}
+            className={`${BUTTON_CLASS} border-[var(--fbb-accent)] text-[var(--fbb-accent)]`}
+          >
+            Watch replay
+          </button>
+        ) : null}
+        {runCode ? (
+          <button
+            type="button"
+            onClick={() => void copyRunCode()}
+            className={`${BUTTON_CLASS} border-[var(--fbb-control)]`}
+          >
+            Copy replay link
+          </button>
+        ) : null}
         <button
           type="button"
           onClick={onPlayAgain}
-          className="min-h-11 rounded border border-[var(--fbb-accent)] bg-[var(--fbb-accent)] px-4 text-xs font-bold uppercase tracking-wide text-[#0d0e11] active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--fbb-focus)]"
+          className={`${BUTTON_CLASS} border-[var(--fbb-accent)] bg-[var(--fbb-accent)] text-[#0d0e11]`}
         >
           Same plan, again
         </button>
         <button
           type="button"
           onClick={onChangePlan}
-          className="min-h-11 rounded border border-[var(--fbb-control)] px-4 text-xs font-bold uppercase tracking-wide active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--fbb-focus)]"
+          className={`${BUTTON_CLASS} border-[var(--fbb-control)]`}
         >
           Change the plan
         </button>
       </div>
+      {copyNote ? (
+        <p role="status" className="break-all text-xs text-[var(--fbb-dim)]">
+          {copyNote}
+        </p>
+      ) : null}
     </div>
   );
 }

@@ -187,3 +187,53 @@ Every line the game can say sits in `LINE_BANK`, each tagged [Real] or
 word, and the test suite checks it against a verbatim fixture of those facts. The hard rules still hold: no makeup
 story, no speech story, the tux shop is "The Suit Wherehouse", and Kirkland
 appears only in product text.
+
+## Amendment (2026-10-11): game challenges, run codes and replays
+
+**Status: accepted on 2026-10-11.** The owner, Fred, approved challenge stars
+with the copy below. This amendment records that decision.
+
+Every finished run is checked against three game challenges, and the number
+met (0 to 3) is shown as stars. The receipt prints the copy "Game challenges.
+Not a grade on the wedding." above them. The challenges are about game play
+only and read facts the engine already keeps:
+
+- **No burnt batches:** `burntBatches` is zero.
+- **Everything set by 3:00:** every planned target was filled by six sevenths
+  of the level clock, which is 3:00 on the wall clock.
+- **Every promise kept:** the brothers never called him away, or he chose to
+  stay, or he took a break and the category he promised to come back for was
+  finished by the end. A leave does not meet it. The label names no person
+  and judges no one. The challenge was called "Fred stayed" when it was
+  approved and was renamed in review; the rule is otherwise as approved, and
+  the owner should confirm the new name.
+
+Stars are a game score, not a grade. They never judge the real wedding, and
+they never change the receipt's title, follow-through or spending.
+
+**Run codes.** A finished run becomes a code `f1.<base64url>` that the page
+puts in a `#run=` link. The body holds the setup (seed and assist included),
+the frames run-length encoded, and the result a replay must reproduce:
+placements, the finish time and the end time. A four-byte FNV-1a checksum
+covers the body, and the decoder accepts only canonical base64url, minimal
+varints and no two identical frame runs in a row, so one run has one code. Decoding
+never throws. A damaged, truncated, over-long or other-version code is refused
+with one message. A code that decodes must also replay strictly to its own
+result before it can be shown.
+
+**Replays.** "Watch replay" plays a verified run back through the same
+engine, at 1x, 2x or 4x, with play, pause, restart and exit controls (Escape also exits). Once a replay
+exits or finishes, and when a shared offer is dismissed, the page clears the
+`#run=` fragment so a reload does not offer it again. Replays
+record no score and no trophy, and they play no sound. A link with `#run=`
+offers the replay on load and never starts it, so audio stays off until a
+person chooses.
+
+**Trophies.** Three trophies are awarded from a finished run, not from a
+score: Three for Three (three stars on the standard day), A Perfect Day (three
+stars on a seeded day) and Nothing Burnt (every task set, no burnt batches).
+They award only at normal speed and never to an assisted run. The existing
+For Better or Bulk trophies are unchanged.
+
+**Seeds.** Only the standard day (seed 0) records a high score. A seeded day
+can still earn its own trophy.

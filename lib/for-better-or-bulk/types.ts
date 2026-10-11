@@ -344,6 +344,17 @@ export type RunTitle =
   | "Operational, Not Present"
   | "Married Anyway";
 
+/** The three game challenges a finished run is checked against. */
+export type ChallengeId = "no-burnt" | "set-by-three" | "every-promise-kept";
+
+/** One game challenge: whether the run met it, and the fact behind that. */
+export interface ChallengeResult {
+  readonly id: ChallengeId;
+  readonly label: string;
+  readonly met: boolean;
+  readonly detail: string;
+}
+
 /** The ending: a story artifact that explains itself. It is not a grade. */
 export interface Receipt {
   readonly spending: {
@@ -369,5 +380,9 @@ export interface Receipt {
   readonly suit: string;
   /** The honest line about the solo helper, present only when it was on. */
   readonly assist: string | null;
+  /** Game challenges: game play only, never a judgment of the wedding. */
+  readonly challenges: readonly ChallengeResult[];
+  /** How many of the challenges the run met, from 0 to 3. */
+  readonly stars: number;
   readonly disclaimer: string;
 }

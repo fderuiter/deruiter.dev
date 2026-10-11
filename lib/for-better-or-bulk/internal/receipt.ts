@@ -38,6 +38,7 @@ import type {
   WebsiteLine,
 } from "../types";
 import { clockLabel } from "./views";
+import { countStars, evaluateChallenges } from "./challenges";
 
 const ROSE_TIER_LABELS: Readonly<Record<RoseTier, string>> = {
   modest: "Modest",
@@ -327,6 +328,7 @@ function gameWeather(state: GameState): string | null {
 export function computeReceipt(state: GameState): Receipt {
   const readiness = readinessLines(state);
   const follow = followThrough(state, readiness);
+  const challenges = evaluateChallenges(state, readiness);
   return {
     spending: spending(state),
     readiness,
@@ -347,6 +349,8 @@ export function computeReceipt(state: GameState): Receipt {
     gameWeather: gameWeather(state),
     leftovers: RECEIPT_COPY.leftovers,
     suit: RECEIPT_COPY.suit,
+    challenges,
+    stars: countStars(challenges),
     disclaimer: RECEIPT_COPY.disclaimer,
   };
 }

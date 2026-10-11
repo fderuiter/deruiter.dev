@@ -140,6 +140,30 @@ Re-exports [CHAIR_STACKS](presets/variables/CHAIR_STACKS.md)
 
 ***
 
+### CHALLENGE\_COPY
+
+Re-exports [CHALLENGE_COPY](internal/challenges/variables/CHALLENGE_COPY.md)
+
+***
+
+### CHALLENGE\_IDS
+
+Re-exports [CHALLENGE_IDS](internal/challenges/variables/CHALLENGE_IDS.md)
+
+***
+
+### ChallengeId
+
+Re-exports [ChallengeId](types/type-aliases/ChallengeId.md)
+
+***
+
+### ChallengeResult
+
+Re-exports [ChallengeResult](types/interfaces/ChallengeResult.md)
+
+***
+
 ### clockLabel
 
 Re-exports [clockLabel](internal/views/functions/clockLabel.md)
@@ -176,6 +200,12 @@ Re-exports [COOK_SECONDS](presets/variables/COOK_SECONDS.md)
 
 ***
 
+### countStars
+
+Re-exports [countStars](internal/challenges/functions/countStars.md)
+
+***
+
 ### CRATE\_NAMES
 
 Re-exports [CRATE_NAMES](presets/variables/CRATE_NAMES.md)
@@ -200,9 +230,27 @@ Re-exports [dailySeed](internal/prng/functions/dailySeed.md)
 
 ***
 
+### decodeRunCode
+
+Re-exports [decodeRunCode](internal/run-code/functions/decodeRunCode.md)
+
+***
+
 ### DEFAULT\_SETUP
 
 Re-exports [DEFAULT_SETUP](presets/variables/DEFAULT_SETUP.md)
+
+***
+
+### encodeRunCode
+
+Re-exports [encodeRunCode](internal/run-code/functions/encodeRunCode.md)
+
+***
+
+### evaluateChallenges
+
+Re-exports [evaluateChallenges](internal/challenges/functions/evaluateChallenges.md)
 
 ***
 
@@ -374,6 +422,18 @@ Re-exports [LINE_BANK](presets/variables/LINE_BANK.md)
 
 ***
 
+### MAX\_RUN\_CODE\_LENGTH
+
+Re-exports [MAX_RUN_CODE_LENGTH](internal/run-code/variables/MAX_RUN_CODE_LENGTH.md)
+
+***
+
+### MAX\_RUN\_TICKS
+
+Re-exports [MAX_RUN_TICKS](internal/run-code/variables/MAX_RUN_TICKS.md)
+
+***
+
 ### MAX\_SEED
 
 Re-exports [MAX_SEED](internal/prng/variables/MAX_SEED.md)
@@ -512,6 +572,12 @@ Re-exports [RECEIPT_COPY](presets/variables/RECEIPT_COPY.md)
 
 ***
 
+### recordedFrame
+
+Re-exports [recordedFrame](internal/sim/functions/recordedFrame.md)
+
+***
+
 ### RELAXED\_LEVEL\_SECONDS
 
 Re-exports [RELAXED_LEVEL_SECONDS](presets/variables/RELAXED_LEVEL_SECONDS.md)
@@ -548,9 +614,69 @@ Re-exports [RoseTier](types/type-aliases/RoseTier.md)
 
 ***
 
+### RUN\_CODE\_PREFIX
+
+Re-exports [RUN_CODE_PREFIX](internal/run-code/variables/RUN_CODE_PREFIX.md)
+
+***
+
+### RUN\_CODE\_REFUSAL
+
+Re-exports [RUN_CODE_REFUSAL](internal/run-code/variables/RUN_CODE_REFUSAL.md)
+
+***
+
+### RUN\_REPLAY\_REFUSAL
+
+Re-exports [RUN_REPLAY_REFUSAL](internal/run-code/variables/RUN_REPLAY_REFUSAL.md)
+
+***
+
+### RunCodeError
+
+Re-exports [RunCodeError](internal/run-code/type-aliases/RunCodeError.md)
+
+***
+
+### runCodeFromHash
+
+Re-exports [runCodeFromHash](internal/run-code/functions/runCodeFromHash.md)
+
+***
+
+### RunCodeResult
+
+Re-exports [RunCodeResult](internal/run-code/type-aliases/RunCodeResult.md)
+
+***
+
+### runLinkFor
+
+Re-exports [runLinkFor](internal/run-code/functions/runLinkFor.md)
+
+***
+
+### RunResult
+
+Re-exports [RunResult](internal/run-code/interfaces/RunResult.md)
+
+***
+
+### runResultOf
+
+Re-exports [runResultOf](internal/run-code/functions/runResultOf.md)
+
+***
+
 ### RunTitle
 
 Re-exports [RunTitle](types/type-aliases/RunTitle.md)
+
+***
+
+### RunVerification
+
+Re-exports [RunVerification](internal/run-code/type-aliases/RunVerification.md)
 
 ***
 
@@ -593,6 +719,12 @@ Re-exports [seededEvents](internal/level/functions/seededEvents.md)
 ### Setup
 
 Re-exports [Setup](types/interfaces/Setup.md)
+
+***
+
+### SharedRun
+
+Re-exports [SharedRun](internal/run-code/interfaces/SharedRun.md)
 
 ***
 
@@ -749,6 +881,12 @@ Re-exports [Validation](types/type-aliases/Validation.md)
 ### VENUE\_MAP
 
 Re-exports [VENUE_MAP](presets/variables/VENUE_MAP.md)
+
+***
+
+### verifyRun
+
+Re-exports [verifyRun](internal/run-code/functions/verifyRun.md)
 
 ***
 

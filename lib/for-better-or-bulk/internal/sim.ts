@@ -513,6 +513,20 @@ export function validateDecision(
   return { ok: true };
 }
 
+/**
+ * The frame to record for a tick the engine has just applied. A brothers
+ * decision the engine ignores (wrong phase, or one that does not validate) is
+ * dropped, so a strict replay of the recording reproduces the live run.
+ */
+export function recordedFrame(state: GameState, frame: Frame): Frame {
+  if (!frame.decision || validateDecision(state, frame.decision).ok) {
+    return frame;
+  }
+  return frame.assisted === undefined
+    ? { inputs: frame.inputs }
+    : { inputs: frame.inputs, assisted: frame.assisted };
+}
+
 function decide(state: GameState, decision: PresenceDecision): StepResult {
   const fred = state.players.fred;
   const away = decision.choice !== "stay";

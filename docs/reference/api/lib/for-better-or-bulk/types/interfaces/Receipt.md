@@ -18,6 +18,14 @@ The honest line about the solo helper, present only when it was on.
 
 ***
 
+### challenges
+
+> `readonly` **challenges**: readonly [`ChallengeResult`](ChallengeResult.md)[]
+
+Game challenges: game play only, never a judgment of the wedding.
+
+***
+
 ### disclaimer
 
 > `readonly` **disclaimer**: `string`
@@ -91,6 +99,14 @@ Game weather, labelled as game weather; null on a standard day.
 #### total
 
 > `readonly` **total**: `number`
+
+***
+
+### stars
+
+> `readonly` **stars**: `number`
+
+How many of the challenges the run met, from 0 to 3.
 
 ***
 

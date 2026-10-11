@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
+import { fromAny } from "@total-typescript/shoehorn";
 import {
   DEFAULT_SETUP,
   IDLE_FRAME,
@@ -41,7 +42,7 @@ function recorder(): { ctx: CanvasRenderingContext2D; drawn: Drawn[] } {
       },
     }
   );
-  return { ctx: ctx as unknown as CanvasRenderingContext2D, drawn };
+  return { ctx: fromAny<CanvasRenderingContext2D, typeof ctx>(ctx), drawn };
 }
 
 const SEED_12345: Setup = { ...DEFAULT_SETUP, seed: 12345 };

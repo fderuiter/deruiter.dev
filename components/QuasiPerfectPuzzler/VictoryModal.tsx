@@ -15,8 +15,16 @@ interface VictoryModalProps {
   totalLevels: number;
   currentLevelIndex: number;
   leanCode?: string;
+  /** Simulated RAM this run spent, in GB; mode-independent, like the star targets. */
+  ramUsed?: number;
+  /** Best stars saved across every level, for the campaign-complete card. */
+  campaignStars?: { earned: number; possible: number; proven: number };
   onNextLevel: () => void;
   onRestartLevel: () => void;
+  /** Starts the campaign again from the first level. */
+  onRestartCampaign?: () => void;
+  /** Hides the modal so the finished proof board can be read (Escape). */
+  onDismiss?: () => void;
 }
 
 export const VictoryModal: React.FC<VictoryModalProps> = ({
@@ -26,20 +34,36 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
   totalLevels,
   currentLevelIndex,
   leanCode,
+  ramUsed,
+  campaignStars,
   onNextLevel,
   onRestartLevel,
+  onRestartCampaign,
+  onDismiss,
 }) => {
   const isLastLevel = currentLevelIndex >= totalLevels - 1;
   const isSorry = score.usedSorry;
   const modalRef = useFocusTrap<HTMLDivElement>(true, {
     returnFocus: true,
   });
+  // RAM budgets per star, stated as RAM spent so they read the same in Story
+  // and Hacker modes (computeLevelStars compares the hacker equivalent).
+  const goldBudget = Math.max(0, level.initialRam - level.goldRamTarget);
+  const silverBudget = Math.max(0, level.initialRam - level.silverRamTarget);
+  const shownStars = isSorry ? 0 : score.stars;
 
   return (
     <motion.div
       ref={modalRef}
       role="dialog"
       aria-modal="true"
+      aria-label={isSorry ? "Goal admitted via sorry" : `${level.title} solved`}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") {
+          e.stopPropagation();
+          onDismiss?.();
+        }
+      }}
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
@@ -79,10 +103,16 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
         </p>
 
         {/* Stars Display */}
-        <div className="my-4 flex justify-center items-center gap-3">
+        <div
+          role="img"
+          aria-label={`${shownStars} of 3 stars`}
+          data-testid="victory-stars"
+          className="my-4 flex justify-center items-center gap-3"
+        >
           {[1, 2, 3].map((starIdx) => (
             <span
               key={starIdx}
+              aria-hidden="true"
               className={`text-3xl ${
                 !isSorry && starIdx <= score.stars
                   ? "text-amber-400 drop-shadow-[0_0_10px_rgba(251,191,36,0.6)]"
@@ -93,6 +123,31 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
             </span>
           ))}
         </div>
+
+        {!isSorry && (
+          <p
+            data-testid="victory-star-targets"
+            className="-mt-2 mb-4 text-[11px] text-zinc-400"
+          >
+            {ramUsed !== undefined && `You used ${ramUsed.toFixed(1)} GB. `}
+            Gold: use {goldBudget} GB or less. Silver: {silverBudget} GB or
+            less.
+          </p>
+        )}
+
+        {isLastLevel && !isSorry && campaignStars && (
+          <div
+            data-testid="victory-campaign-complete"
+            className="mb-4 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-left text-xs text-zinc-200"
+          >
+            <p className="font-bold text-amber-300">Campaign complete</p>
+            <p className="mt-1 text-zinc-300">
+              {campaignStars.proven} of {totalLevels} levels proven honestly,{" "}
+              {campaignStars.earned} of {campaignStars.possible} stars. Replay
+              any level from the map to chase gold.
+            </p>
+          </div>
+        )}
 
         {/* Score & Memory Breakdown */}
         <div className="grid grid-cols-2 gap-3 rounded-xl border border-zinc-800 bg-zinc-900/60 p-3 text-xs mb-4">
@@ -157,7 +212,17 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
             {isSorry ? "Try Honest Proof" : "Replay Level"}
           </button>
 
-          {!isLastLevel && (
+          {isLastLevel ? (
+            onRestartCampaign && (
+              <button
+                type="button"
+                onClick={onRestartCampaign}
+                className="qp-btn-primary qp-focus flex-1 rounded-xl px-4 py-2.5 text-xs font-bold transition-colors"
+              >
+                Back to Level 1
+              </button>
+            )
+          ) : (
             <button
               type="button"
               onClick={onNextLevel}

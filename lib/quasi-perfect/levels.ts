@@ -758,7 +758,7 @@ export const puzzleLevels: PuzzlerLevelDef[] = [
     description:
       "Prove that logical OR is commutative (P ∨ Q → Q ∨ P) by splitting on cases.",
     initialRam: 18,
-    goldRamTarget: 11,
+    goldRamTarget: 10,
     silverRamTarget: 5,
     hypotheses: [
       {
@@ -1167,7 +1167,7 @@ export const puzzleLevels: PuzzlerLevelDef[] = [
     description:
       "Prove σ(n) > 2n using the quasiperfect definition hypothesis h_def: σ(n) = 2n + 1 and positivity.",
     initialRam: 14,
-    goldRamTarget: 9,
+    goldRamTarget: 6,
     silverRamTarget: 4,
     hypotheses: [
       {
@@ -1340,7 +1340,7 @@ export const puzzleLevels: PuzzlerLevelDef[] = [
     ],
     leanTheoremName: "quasiperfect_aliquot_sum",
     leanTypeSignature:
-      "(n : Nat) (h_def : σ(n) = 2 * n + 1) : σ(n) - n = n + 1",
+      "(n : Int) (h_def : σ(n) = 2 * n + 1) : σ(n) - n = n + 1",
     educationalConcept: {
       title: "The Aliquot Sum s(n) = σ(n) - n",
       summary:
@@ -1349,7 +1349,7 @@ export const puzzleLevels: PuzzlerLevelDef[] = [
       mathIntuition:
         "While a perfect number's proper divisors sum to itself, a quasiperfect number's proper divisors sum to the very next consecutive integer. This tight boundary makes their existence deeply constrained.",
       leanAnalogy:
-        "Combining domain rewrites (`rw [h_def]`) with polynomial normalization (`ring`) bridges arithmetic definitions and algebraic canonical forms.",
+        "Combining domain rewrites (`rw [h_def]`) with polynomial normalization (`ring`) bridges arithmetic definitions and algebraic canonical forms. The statement is over the integers (`n : Int`) because on `Nat` subtraction truncates at zero, which `ring` cannot see through; there Lean would need `omega` or a cast to `Int`.",
       tacticalObjective:
         "Rewrite σ(n) with hypothesis 'h_def', then normalize with 'ring'.",
       leanDocUrl: "https://en.wikipedia.org/wiki/Aliquot_sum",
@@ -1479,7 +1479,7 @@ export const puzzleLevels: PuzzlerLevelDef[] = [
     ],
     leanTheoremName: "quasiperfect_quadratic_form",
     leanTypeSignature:
-      "(n : Nat) (h_sig : σ(n) = 2 * n + 1) : (σ(n) - 1) + n^2 = (n + 1)^2 - 1",
+      "(n : Int) (h_sig : σ(n) = 2 * n + 1) : (σ(n) - 1) + n^2 = (n + 1)^2 - 1",
     educationalConcept: {
       title: "Interactive Verification Grand Capstone",
       summary:

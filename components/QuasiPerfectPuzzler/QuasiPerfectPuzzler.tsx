@@ -107,8 +107,12 @@ function writeStoredProgress(progress: GameProgressState): void {
   safeSetRawItem(STORAGE_KEY, JSON.stringify(progress), {
     retainInMemory: false,
   });
-  const completedCount = Object.keys(progress.completedLevels || {}).length;
-  recordArcadeScore("quasi-puzzler", completedCount * 100);
+  // A proof admitted with sorry is not a proof, so it earns neither arcade
+  // score nor the first-proof trophy that the score unlocks (#1939).
+  const provenCount = Object.values(progress.completedLevels || {}).filter(
+    (score) => score && !score.usedSorry && score.stars > 0
+  ).length;
+  recordArcadeScore("quasi-puzzler", provenCount * 100);
 }
 
 function isGameMode(value: string | null): value is GameMode {
@@ -208,6 +212,23 @@ export const QuasiPerfectPuzzler: React.FC = () => {
     () => parseGameProgress(rawProgress),
     [rawProgress]
   );
+
+  // Totals for the campaign-complete card: only honest proofs count (#1939).
+  const campaignStars = useMemo(() => {
+    let earned = 0;
+    let proven = 0;
+    for (const lvl of puzzleLevels) {
+      const best = parsedProgress.completedLevels?.[lvl.id];
+      if (best && best.completed && !best.usedSorry && best.stars > 0) {
+        earned += best.stars;
+        proven += 1;
+      }
+    }
+    return { earned, proven, possible: puzzleLevels.length * 3 };
+  }, [parsedProgress]);
+
+  // Escape hides the result card for this run so the solved board can be read.
+  const [dismissedScoreAt, setDismissedScoreAt] = useState<number | null>(null);
 
   const saveProgress = useCallback(
     (score: LevelScore) => {
@@ -690,12 +711,24 @@ export const QuasiPerfectPuzzler: React.FC = () => {
   }, [loadLevel, currentLevelIndex, playNote]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLElement>) => {
+    // Typing in the Sandbox fields must reach the field, not the shortcuts.
+    const target = e.target as HTMLElement | null;
+    if (
+      target?.closest(
+        "input, textarea, select, [contenteditable='true'], [role='dialog']"
+      )
+    ) {
+      return;
+    }
+    if (e.altKey) return;
     if (e.key === "z" && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       handleUndo();
     } else if (e.key === "y" && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       handleRedo();
+    } else if (e.ctrlKey || e.metaKey) {
+      return;
     } else if (e.key === "r" || e.key === "R") {
       e.preventDefault();
       handleResetLevel();
@@ -1000,10 +1033,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
                 >
                   {currentLevel.title}
                 </h3>
-                <p
-                  title={currentLevel.description}
-                  className="text-xs text-zinc-400 break-words line-clamp-2 xl:line-clamp-1"
-                >
+                <p className="text-xs text-zinc-400 break-words">
                   {currentLevel.description}
                 </p>
               </div>
@@ -1217,9 +1247,11 @@ export const QuasiPerfectPuzzler: React.FC = () => {
               className="pointer-events-none absolute inset-0 rounded-2xl opacity-0"
             />
           </div>
-          {/* Off-screen Accessible DOM Fallback Subtree */}
+          {/* Accessible DOM fallback: off-screen until keyboard focus enters it,
+              then shown so sighted keyboard users can see the focused control (#1939). */}
           <div
-            className="sr-only"
+            data-testid="quasi-accessible-controls"
+            className="sr-only focus-within:not-sr-only focus-within:mt-3 focus-within:block focus-within:rounded-xl focus-within:border focus-within:border-zinc-800 focus-within:bg-[#13151a] focus-within:p-3 focus-within:text-sm focus-within:text-zinc-200 [&_button]:m-1 [&_button]:min-h-11 [&_button]:rounded-md [&_button]:border [&_button]:border-zinc-700 [&_button]:px-3 [&_button]:py-2 [&_button:disabled]:opacity-50 [&_output]:mr-3 [&_output]:text-zinc-400"
             aria-label="Quasi-Puzzler Accessible Subtree"
           >
             <fieldset>
@@ -1361,22 +1393,44 @@ export const QuasiPerfectPuzzler: React.FC = () => {
           />
 
           {/* Victory Modal */}
-          {levelSolved && currentScore && (
-            <VictoryModal
-              score={currentScore}
-              savedBest={parsedProgress.completedLevels?.[currentLevel.id]}
-              level={currentLevel}
-              totalLevels={puzzleLevels.length}
-              currentLevelIndex={currentLevelIndex}
-              leanCode={generatedLeanScript}
-              onNextLevel={() => {
-                if (currentLevelIndex < puzzleLevels.length - 1) {
-                  loadLevel(currentLevelIndex + 1);
+          {levelSolved &&
+            currentScore &&
+            dismissedScoreAt === currentScore.timestamp && (
+              <div className="mt-2 flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => setDismissedScoreAt(null)}
+                  className="qp-btn-primary qp-focus min-h-11 rounded-xl px-4 py-2 text-xs font-bold"
+                >
+                  Show result
+                </button>
+              </div>
+            )}
+          {levelSolved &&
+            currentScore &&
+            dismissedScoreAt !== currentScore.timestamp && (
+              <VictoryModal
+                score={currentScore}
+                savedBest={parsedProgress.completedLevels?.[currentLevel.id]}
+                level={currentLevel}
+                totalLevels={puzzleLevels.length}
+                currentLevelIndex={currentLevelIndex}
+                leanCode={generatedLeanScript}
+                ramUsed={
+                  getStartingRam(currentLevel, gameMode) -
+                  currentScore.remainingRam
                 }
-              }}
-              onRestartLevel={handleResetLevel}
-            />
-          )}
+                campaignStars={campaignStars}
+                onRestartCampaign={() => loadLevel(0)}
+                onDismiss={() => setDismissedScoreAt(currentScore.timestamp)}
+                onNextLevel={() => {
+                  if (currentLevelIndex < puzzleLevels.length - 1) {
+                    loadLevel(currentLevelIndex + 1);
+                  }
+                }}
+                onRestartLevel={handleResetLevel}
+              />
+            )}
         </>
       )}
     </section>

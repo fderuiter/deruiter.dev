@@ -989,7 +989,6 @@ export function ForBetterOrBulkGame({
           >
             {clockLabel(view.time, view.duration)}
           </span>
-          <span className="text-[var(--fbb-dim)]">Ceremony at 4:00</span>
           <span
             data-testid="fbb-seed-name"
             className="min-w-0 break-words text-[var(--fbb-dim)]"
@@ -1005,6 +1004,8 @@ export function ForBetterOrBulkGame({
               {line}
             </span>
           ))}
+          {/* The ceremony is the last time in the header, after the rush and shower. */}
+          <span className="text-[var(--fbb-dim)]">Ceremony at 4:00</span>
           {mode === "solo" ? (
             <span data-testid="fbb-active">
               Playing as <span className="font-bold">{NAMES[active]}</span> ·

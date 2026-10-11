@@ -11,6 +11,7 @@ import { copyToClipboard, getActiveHostUrl } from "@/lib/clipboard";
 import {
   CHALLENGE_COPY,
   bankText,
+  dollars,
   runLinkFor,
   type Receipt,
   type Readiness,
@@ -53,9 +54,10 @@ export function ReceiptView({
   const titleRef = useRef<HTMLHeadingElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
 
-  // The playback hands over here. The receipt scrolls to the top of the page
-  // below the sticky navbar (its scroll margin clears the bar), then takes focus
-  // without a second scroll.
+  // The playback hands over here. The receipt scrolls in below the navbar
+  // (its scroll margin clears the bar), then the title takes focus without a
+  // second scroll: a plain focus() would re-scroll it flush to the top of the
+  // viewport, under the fixed navbar.
   useEffect(() => {
     const root = rootRef.current;
     if (root && typeof root.scrollIntoView === "function") {
@@ -121,12 +123,12 @@ export function ReceiptView({
             {receipt.spending.lines.map((line) => (
               <li key={line.id} className="flex min-w-0 justify-between gap-3">
                 <span className="min-w-0 break-words">{line.label}</span>
-                <span>${line.dollars}</span>
+                <span>{dollars(line.dollars)}</span>
               </li>
             ))}
             <li className="flex justify-between gap-3 border-t border-[var(--fbb-rule)] pt-1 font-bold">
-              <span>Total (budget ${receipt.spending.budget})</span>
-              <span>${receipt.spending.total}</span>
+              <span>Total (budget {dollars(receipt.spending.budget)})</span>
+              <span>{dollars(receipt.spending.total)}</span>
             </li>
           </ul>
         </section>

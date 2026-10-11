@@ -135,7 +135,14 @@ export interface Target extends Tile {
   /** How many items it takes to fill; the basket takes two. */
   readonly capacity: number;
   readonly filled: readonly Item[];
+  /** Who placed each item in `filled`, in the same order. */
   readonly filledBy: readonly PlayerId[];
+  /**
+   * Whether the solo helper made each placement in `filled`, in the same
+   * order. The helper acts for the partner, so this lets the receipt credit
+   * that work as helper work rather than to the partner alone.
+   */
+  readonly filledByHelper: readonly boolean[];
   readonly status: TargetStatus;
   /** Seconds of held work toward simplifying it. */
   readonly simplifyProgress: number;
@@ -321,11 +328,23 @@ export interface Condition {
 
 export type Readiness = "ready" | "simplified" | "unfinished" | "unplanned";
 
+/** A category's progress in items, for the checklist and the receipt. */
+export interface CategoryProgress {
+  /** Items placed so far, counting each slot of a target that is filled. */
+  readonly placed: number;
+  /** Items the plan needs. */
+  readonly planned: number;
+  /** True when some planned target takes more than one item. */
+  readonly multi: boolean;
+}
+
 export interface ReadinessLine {
   readonly category: Category;
   readonly label: string;
   readonly status: Readiness;
+  /** Items placed so far: a basket that takes two counts each arrangement. */
   readonly placed: number;
+  /** Items the plan needs, counting every slot of every planned target. */
   readonly planned: number;
   readonly conditions: readonly Condition[];
   readonly explanation: string;

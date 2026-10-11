@@ -94,7 +94,7 @@ export function BrothersDialog({ state, onDecide }: BrothersDialogProps) {
               onClick={() => onDecide({ choice: "stay", commitment: null })}
               className="min-h-11 rounded border border-[var(--fbb-accent)] px-3 text-left text-xs font-bold active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--fbb-focus)]"
             >
-              Stay and help. (He will keep re-tying his shoes.)
+              Stay and help. (He will keep double-checking his shoes.)
             </button>
             <button
               type="button"

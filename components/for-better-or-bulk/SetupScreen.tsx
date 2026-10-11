@@ -15,6 +15,7 @@ import {
   ROSE_PRICES,
   cartTotal,
   dailySeed,
+  dollars,
   validateSetup,
   type CapabilityId,
   type FoodTier,
@@ -218,7 +219,7 @@ export function SetupScreen({
                 onClick={() => setFood(option.id)}
               >
                 <span className="font-bold text-[var(--fbb-text)]">
-                  {option.label} · ${FOOD_PRICES[option.id]}
+                  {option.label} · {dollars(FOOD_PRICES[option.id])}
                 </span>
                 <span className="mt-0.5">{option.note}</span>
               </OptionButton>
@@ -246,7 +247,10 @@ export function SetupScreen({
           <span className="font-bold text-[var(--fbb-text)]">
             Relaxed clock
           </span>
-          <span className="mt-0.5">More time between 9:00 and 4:00.</span>
+          <span className="mt-0.5">
+            More time between 9:00 and 4:00. Trophies and board scores count, as
+            on the standard clock.
+          </span>
         </OptionButton>
       </div>
 
@@ -372,8 +376,8 @@ export function SetupScreen({
           </p>
         ) : null}
         <p className="text-sm tabular-nums" data-testid="fbb-total">
-          Total ${total} of ${BUDGET}
-          <span className="ml-2 text-xs text-[var(--fbb-dim)]">
+          Total {dollars(total)} of {dollars(BUDGET)}{" "}
+          <span className="text-xs text-[var(--fbb-dim)]">
             (venue, tux and dress included)
           </span>
         </p>

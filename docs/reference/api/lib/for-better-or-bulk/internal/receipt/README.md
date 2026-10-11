@@ -8,6 +8,7 @@
 
 ## Functions
 
+- [categoryProgress](functions/categoryProgress.md)
 - [computeReceipt](functions/computeReceipt.md)
 - [readinessLines](functions/readinessLines.md)
 - [tally](functions/tally.md)

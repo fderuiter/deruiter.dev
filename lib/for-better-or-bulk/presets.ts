@@ -271,7 +271,7 @@ export const INTERRUPTIONS: readonly {
 /** Toast shown when a website feature blocks an interruption. */
 export const BLOCKED_TOASTS: Readonly<Record<CapabilityId, string>> = {
   faq: "Someone read the FAQ.",
-  admin: "Abbi fixed it herself. Fred was not consulted.",
+  admin: "Abbi fixed it herself. The admin page made it quick.",
   registry: "The registry answered it.",
   intro3d: "Is it loading?",
 };

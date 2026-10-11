@@ -10,6 +10,7 @@
 
 - [ActualNote](interfaces/ActualNote.md)
 - [Cart](interfaces/Cart.md)
+- [CategoryProgress](interfaces/CategoryProgress.md)
 - [ChallengeResult](interfaces/ChallengeResult.md)
 - [Condition](interfaces/Condition.md)
 - [FloorItem](interfaces/FloorItem.md)

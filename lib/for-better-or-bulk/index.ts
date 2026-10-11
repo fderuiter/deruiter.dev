@@ -10,6 +10,7 @@ export * from "./presets";
 export {
   cartTotal,
   createLevel,
+  dollars,
   seededEvents,
   stockFor,
   validateSetup,
@@ -26,7 +27,12 @@ export {
   stepGame,
   validateDecision,
 } from "./internal/sim";
-export { computeReceipt, readinessLines, tally } from "./internal/receipt";
+export {
+  categoryProgress,
+  computeReceipt,
+  readinessLines,
+  tally,
+} from "./internal/receipt";
 export {
   CHALLENGE_COPY,
   CHALLENGE_IDS,

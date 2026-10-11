@@ -239,7 +239,12 @@ function stationAccepts(station: Station, item: Item): boolean {
   return item.kind === "roses";
 }
 
-function interact(w: Working, id: PlayerId): void {
+/**
+ * Applies one press of the interact key for `id`. `helped` is true when the
+ * solo helper pressed it on the partner's behalf, so the placement is recorded
+ * as helper work.
+ */
+function interact(w: Working, id: PlayerId, helped: boolean): void {
   const player = w.state.players[id];
   const { x, y } = frontTile(player);
   const supply = w.state.supplies.find((s) => s.x === x && s.y === y);
@@ -312,6 +317,7 @@ function interact(w: Working, id: PlayerId): void {
       ...target,
       filled,
       filledBy: [...target.filledBy, id],
+      filledByHelper: [...target.filledByHelper, helped],
       status: filled.length >= target.capacity ? "filled" : "open",
     });
     if (filled.length >= target.capacity && w.state.firstFilledAt === null) {
@@ -677,7 +683,7 @@ export function stepGame(state: GameState, frame: Frame): StepResult {
     setPlayer(w, {
       ...nervous,
       busyFor: SHOE_SECONDS,
-      busyReason: "Re-tying his shoes. Again.",
+      busyReason: "Double-checking his shoes. Again.",
     });
     w.events.push({ type: "shoes-retied" });
   }
@@ -704,7 +710,7 @@ export function stepGame(state: GameState, frame: Frame): StepResult {
     const wet =
       seededActive(w.state, "shower") && isOutdoor(Math.floor(player.y));
     setPlayer(w, move(player, input, dt, wet ? SHOWER_WALK_FACTOR : 1));
-    if (input.interact) interact(w, id);
+    if (input.interact) interact(w, id, helped);
     if (input.work) work(w, id, resting ? 0 : dt);
     else releaseBinHold(w, id);
   }

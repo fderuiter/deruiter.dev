@@ -111,6 +111,20 @@ test.describe("For Better or Bulk (/arcade/for-better-or-bulk)", () => {
     await expect(page.getByTestId("fbb-follow-through")).toContainText(
       "Kept. Fred stayed"
     );
+    // The title must sit below the fixed navbar, not under it. The navbar's
+    // padding changes as the page scrolls, so both boxes are polled until the
+    // scroll has settled.
+    await expect
+      .poll(
+        async () => {
+          const title = await page.getByTestId("fbb-title").boundingBox();
+          const banner = await page.getByRole("banner").first().boundingBox();
+          if (!title || !banner) return -1;
+          return title.y - (banner.y + banner.height);
+        },
+        { timeout: 10000 }
+      )
+      .toBeGreaterThanOrEqual(0);
     await expectNoBlockingViolations(page, "receipt");
   });
 

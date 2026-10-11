@@ -128,3 +128,51 @@ describe("the receipt's copy (#1931)", () => {
     expect(follow).not.toMatch(/Follow-through:\s*\S+:/);
   });
 });
+
+describe("the receipt counts items and clears the navbar (#1933)", () => {
+  it("says how many items of a two-item basket are placed, not that it is zero", () => {
+    const level = createLevel(DEFAULT_SETUP);
+    const state = {
+      ...level,
+      targets: level.targets.map((t) =>
+        t.kind === "basket"
+          ? {
+              ...t,
+              filled: [
+                { kind: "arrangement" as const, madeBy: "fred" as const },
+              ],
+              filledBy: ["fred" as const],
+              filledByHelper: [false],
+            }
+          : t
+      ),
+    };
+    render(
+      <ReceiptView
+        receipt={computeReceipt(state)}
+        runCode={null}
+        onPlayAgain={vi.fn()}
+        onChangePlan={vi.fn()}
+        onWatchReplay={vi.fn()}
+      />
+    );
+    expect(screen.getByText("Only 1 of 2 items placed at 4:00.")).toBeTruthy();
+  });
+
+  it("writes money with thousands separators", () => {
+    renderReceipt(0);
+    expect(screen.getByText(/Total \(budget \$3,400\)/)).toBeTruthy();
+    expect(screen.queryByText(/\$\d{4}/)).toBeNull();
+  });
+
+  it("focuses the title without a second scroll, so the navbar never covers it", () => {
+    const focus = vi.spyOn(HTMLElement.prototype, "focus");
+    try {
+      renderReceipt(0);
+      expect(focus).toHaveBeenCalledWith({ preventScroll: true });
+      expect(document.activeElement).toBe(screen.getByTestId("fbb-title"));
+    } finally {
+      focus.mockRestore();
+    }
+  });
+});

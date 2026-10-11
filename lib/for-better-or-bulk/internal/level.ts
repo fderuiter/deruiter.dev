@@ -48,6 +48,11 @@ import type {
   Validation,
 } from "../types";
 
+/** A whole-dollar amount with a thousands comma, such as $3,400. */
+export function dollars(amount: number): string {
+  return `$${amount.toLocaleString("en-US")}`;
+}
+
 /** The game price of a cart, fixed costs included. */
 export function cartTotal(cart: Cart): number {
   const fixed = FIXED_COSTS.reduce((sum, line) => sum + line.dollars, 0);
@@ -92,7 +97,7 @@ export function validateSetup(setup: Setup): Validation {
   if (total > BUDGET) {
     return {
       ok: false,
-      reason: `That comes to $${total}, over the $${BUDGET} budget.`,
+      reason: `That comes to ${dollars(total)}, over the ${dollars(BUDGET)} budget.`,
     };
   }
   return { ok: true };
@@ -244,6 +249,7 @@ export function createLevel(setup: Setup): GameState {
           capacity: spec.capacity,
           filled: [],
           filledBy: [],
+          filledByHelper: [],
           status: spec.planned(setup.cart) ? "open" : "unplanned",
           simplifyProgress: 0,
           x,

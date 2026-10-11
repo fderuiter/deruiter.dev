@@ -36,6 +36,18 @@ How many items it takes to fill; the basket takes two.
 
 > `readonly` **filledBy**: readonly [`PlayerId`](../type-aliases/PlayerId.md)[]
 
+Who placed each item in `filled`, in the same order.
+
+***
+
+### filledByHelper
+
+> `readonly` **filledByHelper**: readonly `boolean`[]
+
+Whether the solo helper made each placement in `filled`, in the same
+order. The helper acts for the partner, so this lets the receipt credit
+that work as helper work rather than to the partner alone.
+
 ***
 
 ### id

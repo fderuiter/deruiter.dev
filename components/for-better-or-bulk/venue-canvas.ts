@@ -23,6 +23,7 @@ import {
   type Player,
   type PlayerId,
   type Station,
+  type SupplyKind,
   type Target,
 } from "@/lib/for-better-or-bulk";
 import { clamp, GAME_FONT_FALLBACK_STACK } from "@/lib/game-utils";
@@ -460,6 +461,17 @@ function drawTarget(ctx: CanvasRenderingContext2D, target: Target): void {
     ctx.strokeRect(px + 3.5, py + 3.5, TILE - 7, TILE - 7);
     ctx.restore();
     drawWantBadge(ctx, target);
+    // A target that takes several items shows items placed out of its slots,
+    // so a half-filled basket reads as part done, never as none.
+    if (target.capacity > 1) {
+      drawLabel(
+        ctx,
+        `${filled.length}/${target.capacity}`,
+        cx,
+        py + TILE - 13,
+        true
+      );
+    }
     if (target.simplifyProgress > 0) {
       drawProgress(
         ctx,
@@ -820,10 +832,15 @@ export function drawVenue(
   drawGround(ctx, raining);
   drawCoatHanger(ctx);
   if (state.setup.cart.roses === "yes") drawCar(ctx);
+  // Crates of one kind share a stock, so its count is written once, on the
+  // first crate (the top-left one); the others say the stock is shared.
+  const countedKinds = new Set<SupplyKind>();
   for (const supply of state.supplies) {
     const px = supply.x * TILE;
     const py = supply.y * TILE;
     const left = state.stock[supply.kind];
+    const countText = countedKinds.has(supply.kind) ? "shared" : String(left);
+    countedKinds.add(supply.kind);
     ctx.fillStyle = COLORS.crate;
     ctx.strokeStyle = COLORS.crateEdge;
     ctx.lineWidth = 2;
@@ -833,7 +850,7 @@ export function drawVenue(
     drawItem(ctx, supply.kind, px + TILE / 2, py + TILE / 2 + 2, TILE * 0.38);
     ctx.globalAlpha = 1;
     drawLabel(ctx, CRATE_NAMES[supply.kind], px + TILE / 2, py + 4);
-    drawLabel(ctx, String(left), px + TILE / 2, py + TILE - 13);
+    drawLabel(ctx, countText, px + TILE / 2, py + TILE - 13);
   }
   for (const target of state.targets) drawTarget(ctx, target);
   for (const station of state.stations) drawStation(ctx, station);

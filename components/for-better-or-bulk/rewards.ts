@@ -8,10 +8,11 @@ import type { GameState } from "@/lib/for-better-or-bulk";
 
 /**
  * The line the setup screen and the side panel show before and during a day:
- * a helper day or a sped-up day earns no trophy and no board score.
+ * a helper day or a sped-up day earns no trophy and no board score, while a
+ * relaxed-clock day, at normal speed, counts like a standard day.
  */
 export const NO_REWARD_LINE =
-  "Helper days and sped-up days don't earn trophies or a board score.";
+  "Helper days and sped-up days don't earn trophies or a board score. The relaxed clock counts the same as the standard one.";
 
 /**
  * The trophy ids a finished run earns. A perfect run is three stars on the

@@ -8,6 +8,7 @@ import {
   BLOCKED_TOASTS,
   bankText,
   CATEGORY_LABELS,
+  categoryProgress,
   clockLabel,
   FLOOR_FULL_REPEAT_SECONDS,
   INTERRUPTIONS,
@@ -93,20 +94,17 @@ export const CHECKLIST: readonly Category[] = [
   "buffet",
 ];
 
-/** Planned targets in one category, and how many of them are filled. */
+/**
+ * Items placed and items planned in one category, counted per item so a
+ * half-filled basket shows its progress (1 of 2) rather than none.
+ */
 export function checklistLine(
   state: GameState,
   category: Category
 ): { done: number; planned: number } | null {
-  const planned = state.targets.filter(
-    (t) => t.category === category && t.status !== "unplanned"
-  );
-  if (planned.length === 0) return null;
-  const counted = planned.filter((t) => t.status !== "simplified");
-  return {
-    done: counted.filter((t) => t.status === "filled").length,
-    planned: counted.length,
-  };
+  const progress = categoryProgress(state, category);
+  if (!progress) return null;
+  return { done: progress.placed, planned: progress.planned };
 }
 
 /** A category whose planned targets are all filled or simplified this step. */
@@ -184,7 +182,7 @@ export function describeEvent(event: GameEvent): string | null {
     case "fred-returned":
       return "Fred is back, and noticeably calmer.";
     case "shoes-retied":
-      return "Fred is re-tying his shoes. Again.";
+      return "Fred is double-checking his shoes. Again.";
     case "seeded-start":
       return SEEDED_LINES[event.id];
     case "level-finished":

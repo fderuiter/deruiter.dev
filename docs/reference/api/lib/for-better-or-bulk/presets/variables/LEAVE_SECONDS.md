@@ -6,4 +6,4 @@
 
 # Variable: LEAVE\_SECONDS
 
-> `const` **LEAVE\_SECONDS**: `110` = `110`
+> `const` **LEAVE\_SECONDS**: `70` = `70`

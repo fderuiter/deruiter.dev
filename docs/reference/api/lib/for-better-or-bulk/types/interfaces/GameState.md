@@ -8,6 +8,14 @@
 
 ## Properties
 
+### brothersAt
+
+> `readonly` **brothersAt**: `number` \| `null`
+
+Level time the brothers' text landed, once it has.
+
+***
+
 ### burntBatches
 
 > `readonly` **burntBatches**: `number`
@@ -25,6 +33,14 @@
 > `readonly` **finishedAt**: `number` \| `null`
 
 Level time at which everything planned was done, if before the end.
+
+***
+
+### firstFilledAt
+
+> `readonly` **firstFilledAt**: `number` \| `null`
+
+Level time the first target became full, if one has.
 
 ***
 

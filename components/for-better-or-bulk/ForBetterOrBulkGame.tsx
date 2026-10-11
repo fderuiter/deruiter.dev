@@ -7,14 +7,22 @@
  * and the canvas only draws.
  */
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import {
   DEFAULT_SETUP,
   IDLE_FRAME,
+  THROW_OUT_PROMPT,
   TICK_SECONDS,
   clockLabel,
   computeReceipt,
   createLevel,
+  getHint,
   getPrompt,
   stepGame,
   type Category,
@@ -25,6 +33,7 @@ import {
   type PresenceDecision,
   type Receipt,
   type Setup,
+  type SupplyKind,
   CATEGORY_LABELS,
 } from "@/lib/for-better-or-bulk";
 import { recordArcadeScore } from "@/lib/arcade-achievements";
@@ -33,7 +42,8 @@ import { useCanvasResolution } from "@/hooks/useCanvasResolution";
 import { useCabinetSetup } from "@/components/arcade/CabinetSetupContext";
 import { BrothersDialog } from "./BrothersDialog";
 import { buildFrame, GAME_CODES, type ControlMode } from "./input";
-import { describeEvent } from "./messages";
+import { describeEvent, throttleFloorFull } from "./messages";
+import { readHideTips, subscribeHideTips, writeHideTips } from "./hint-storage";
 import { ReceiptView } from "./ReceiptView";
 import { SetupScreen } from "./SetupScreen";
 import { drawVenue, VENUE_HEIGHT, VENUE_WIDTH } from "./venue-canvas";
@@ -60,6 +70,38 @@ const NAMES: Readonly<Record<PlayerId, string>> = {
   fred: "Fred",
   abbi: "Abbi",
 };
+
+/** The crate kinds the side panel counts, in the order it lists them. */
+const STOCK_LABELS: readonly { kind: SupplyKind; label: string }[] = [
+  { kind: "roses", label: "Roses" },
+  { kind: "hotdogs-raw", label: "Hot dogs" },
+  { kind: "wings-raw", label: "Wings" },
+  { kind: "mac", label: "Mac" },
+  { kind: "quinoa", label: "Quinoa" },
+  { kind: "lantern", label: "Lanterns" },
+  { kind: "chairs", label: "Chairs" },
+];
+
+/** Stock left in each crate in play, as one compact line. */
+function stockLine(state: GameState): string {
+  return STOCK_LABELS.filter(
+    ({ kind }) =>
+      state.supplies.some((s) => s.kind === kind) &&
+      (kind !== "lantern" || state.setup.cart.lanterns)
+  )
+    .map(({ kind, label }) => `${label} ${state.stock[kind]}`)
+    .join(" · ");
+}
+
+/** The line that names the key to hold for a work prompt. */
+function holdLine(work: string, mode: ControlMode, id: PlayerId): string {
+  if (work === THROW_OUT_PROMPT) {
+    const keys = mode === "coop" ? (id === "fred" ? "F" : "Shift") : "F/Shift";
+    return `Hold ${keys} to throw it out`;
+  }
+  const keys = mode === "coop" ? (id === "fred" ? "F" : "Shift") : "F or Shift";
+  return `Hold ${keys}: ${work}`;
+}
 
 /** Fastest clock the `?speed=` parameter allows. */
 const MAX_SPEED = 8;
@@ -126,6 +168,11 @@ export function ForBetterOrBulkGame({
   const [toasts, setToasts] = useState<readonly Toast[]>([]);
   const [announcement, setAnnouncement] = useState("");
   const [speed] = useState(speedFromUrl);
+  const hideTips = useSyncExternalStore(
+    subscribeHideTips,
+    readHideTips,
+    () => false
+  );
 
   const cabinet = useCabinetSetup();
   const paused = userPaused || (cabinet?.isSetupOpen ?? false);
@@ -141,6 +188,7 @@ export function ForBetterOrBulkGame({
   const toastId = useRef(0);
   const toastTimers = useRef(new Set<ReturnType<typeof setTimeout>>());
   const activeRef = useRef<PlayerId>("abbi");
+  const floorFullShown = useRef<Partial<Record<PlayerId, number>>>({});
 
   const draw = useCallback(
     (scale: number) => {
@@ -211,7 +259,13 @@ export function ForBetterOrBulkGame({
       if (!state) return null;
       const result = stepGame(state, frame);
       stateRef.current = result.state;
-      pushMessages(result.events);
+      pushMessages(
+        throttleFloorFull(
+          result.events,
+          result.state.time,
+          floorFullShown.current
+        )
+      );
       setView(result.state);
       if (result.state.phase === "done") finish(result.state);
       return result.state;
@@ -228,6 +282,7 @@ export function ForBetterOrBulkGame({
     held.current.clear();
     tapped.current.clear();
     pressed.current.clear();
+    floorFullShown.current = {};
     activeRef.current = "abbi";
     setActive("abbi");
     setView(state);
@@ -419,6 +474,50 @@ export function ForBetterOrBulkGame({
             </ul>
           </div>
           <div className="flex min-w-0 flex-col gap-2 font-mono text-xs">
+            {hideTips ? (
+              <button
+                type="button"
+                onClick={() => writeHideTips(false)}
+                className="min-h-11 self-start rounded border border-[var(--fbb-control)] px-3 font-bold uppercase active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--fbb-focus)]"
+              >
+                Show tips
+              </button>
+            ) : (
+              <section
+                aria-label="Coach tips"
+                data-testid="fbb-coach"
+                className="flex min-w-0 flex-col gap-1 rounded border border-[var(--fbb-rule)] p-2"
+              >
+                <ul className="flex flex-col gap-1">
+                  {shown.map((id) => {
+                    const away = view.players[id].presence === "away";
+                    const hint = away
+                      ? `${NAMES[id]} is out with his brothers.`
+                      : getHint(view, id);
+                    if (!hint) return null;
+                    return (
+                      <li key={id} className="break-words">
+                        {mode === "coop" && !away ? `${NAMES[id]}: ` : null}
+                        {hint}
+                      </li>
+                    );
+                  })}
+                </ul>
+                <button
+                  type="button"
+                  onClick={() => writeHideTips(true)}
+                  className="min-h-11 self-start px-1 font-bold uppercase underline active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--fbb-focus)]"
+                >
+                  Hide tips
+                </button>
+              </section>
+            )}
+            <p
+              className="tabular-nums text-[var(--fbb-dim)]"
+              data-testid="fbb-stock"
+            >
+              {stockLine(view)}
+            </p>
             <ul
               id="fbb-checklist"
               aria-label="Still to do"
@@ -465,13 +564,7 @@ export function ForBetterOrBulkGame({
                   ) : null}
                   {prompt.work ? (
                     <p className="text-[var(--fbb-accent)]">
-                      Hold{" "}
-                      {mode === "coop"
-                        ? id === "fred"
-                          ? "F"
-                          : "Shift"
-                        : "F or Shift"}
-                      : {prompt.work}
+                      {holdLine(prompt.work, mode, id)}
                     </p>
                   ) : null}
                 </div>

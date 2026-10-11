@@ -12,13 +12,17 @@
 import {
   ARRANGE_SECONDS,
   BREAK_SECONDS,
-  BROTHERS_AT,
+  BIN_HOLD_SECONDS,
+  BROTHERS_EARLIEST_AT,
+  BROTHERS_LATEST_AT,
   BURN_SECONDS,
   CALM_SPEED_MULTIPLIER,
   COOK_SECONDS,
+  FLOOR_CAP,
   INTERRUPTIONS,
   LEAVE_SECONDS,
   MOVE_SPEED,
+  onLevelClock,
   PETAL_SECONDS,
   PHONE_SECONDS,
   PLAYER_RADIUS,
@@ -70,6 +74,9 @@ const CRAFTS: Readonly<
 
 /** Where Fred reappears after time away: by the car. */
 const RETURN_TILE = { x: 2, y: 5 };
+
+/** Tiles a dropped item can rest on: walkable ground, not a target spot. */
+const FLOOR_TILES = ".12";
 
 /** Inputs for someone standing still. */
 export const IDLE_INPUT: PlayerInput = {
@@ -174,7 +181,8 @@ function setTarget(w: Working, target: Target): void {
 
 function stationAccepts(station: Station, item: Item): boolean {
   if (station.item) return false;
-  if (station.kind === "bin") return true;
+  // The bin is emptied by holding work at it, never by a press.
+  if (station.kind === "bin") return false;
   if (station.kind === "grill") return item.kind in GRILL_COOKS;
   return item.kind === "roses";
 }
@@ -223,13 +231,25 @@ function interact(w: Working, id: PlayerId): void {
     return;
   }
 
+  if (supply) {
+    // Facing the crate the item came from puts it back in stock.
+    if (supply.kind !== held.kind) return;
+    w.state = {
+      ...w.state,
+      stock: {
+        ...w.state.stock,
+        [supply.kind]: w.state.stock[supply.kind] + 1,
+      },
+    };
+    setPlayer(w, { ...player, holding: null });
+    w.events.push({ type: "put-down", player: id, item: held.kind });
+    return;
+  }
   if (station) {
     if (!stationAccepts(station, held)) return;
     setPlayer(w, { ...player, holding: null });
-    if (station.kind !== "bin") {
-      const placed = station.kind === "grill" ? { ...held, madeBy: id } : held;
-      setStation(w, { ...station, item: placed, progress: 0 });
-    }
+    const placed = station.kind === "grill" ? { ...held, madeBy: id } : held;
+    setStation(w, { ...station, item: placed, progress: 0 });
     w.events.push({ type: "put-down", player: id, item: held.kind });
     return;
   }
@@ -242,6 +262,9 @@ function interact(w: Working, id: PlayerId): void {
       filledBy: [...target.filledBy, id],
       status: filled.length >= target.capacity ? "filled" : "open",
     });
+    if (filled.length >= target.capacity && w.state.firstFilledAt === null) {
+      w.state = { ...w.state, firstFilledAt: w.state.time };
+    }
     setPlayer(w, { ...player, holding: null });
     w.events.push({
       type: "target-filled",
@@ -252,16 +275,48 @@ function interact(w: Working, id: PlayerId): void {
     return;
   }
   if (!supply && !floorItem && isWalkable(x, y)) {
+    if (w.state.floor.length >= FLOOR_CAP) {
+      w.events.push({ type: "floor-full", player: id });
+      return;
+    }
     w.state = { ...w.state, floor: [...w.state.floor, { x, y, item: held }] };
     setPlayer(w, { ...player, holding: null });
     w.events.push({ type: "put-down", player: id, item: held.kind });
   }
 }
 
+/** Holding work at the bin: after BIN_HOLD_SECONDS the item in hand is thrown out. */
+function holdAtBin(w: Working, id: PlayerId, dt: number): void {
+  const player = w.state.players[id];
+  const item = player.holding;
+  if (!item) {
+    releaseBinHold(w, id);
+    return;
+  }
+  const binHold = player.binHold + dt;
+  if (binHold + 1e-9 >= BIN_HOLD_SECONDS) {
+    setPlayer(w, { ...player, holding: null, binHold: 0 });
+    w.events.push({ type: "thrown-out", player: id, item: item.kind });
+  } else {
+    setPlayer(w, { ...player, binHold });
+  }
+}
+
+/** Letting go of work, or facing something else, starts a bin hold over. */
+function releaseBinHold(w: Working, id: PlayerId): void {
+  const player = w.state.players[id];
+  if (player.binHold > 0) setPlayer(w, { ...player, binHold: 0 });
+}
+
 function work(w: Working, id: PlayerId, dt: number): void {
   const player = w.state.players[id];
   const { x, y } = frontTile(player);
   const station = w.state.stations.find((s) => s.x === x && s.y === y);
+  if (station?.kind === "bin") {
+    holdAtBin(w, id, dt);
+    return;
+  }
+  releaseBinHold(w, id);
   if (station && (station.kind === "arrange" || station.kind === "petals")) {
     if (station.item?.kind !== "roses") return;
     const craft = CRAFTS[station.kind];
@@ -328,6 +383,37 @@ function crossed(before: number, after: number, at: number): boolean {
   return before < at && at <= after + 1e-9;
 }
 
+/** The level time the brothers' text lands; see BROTHERS_EARLIEST_AT. */
+function brothersDue(state: GameState): number {
+  return clamp(
+    state.firstFilledAt ?? Infinity,
+    onLevelClock(BROTHERS_EARLIEST_AT, state.duration),
+    onLevelClock(BROTHERS_LATEST_AT, state.duration)
+  );
+}
+
+/** The nearest spot Fred can drop on: his own tile first, then outward. */
+function freeFloorSpot(
+  state: GameState,
+  player: Player
+): { x: number; y: number } {
+  const cx = Math.floor(player.x);
+  const cy = Math.floor(player.y);
+  for (let r = 0; r <= 20; r++) {
+    for (let dy = -r; dy <= r; dy++) {
+      for (let dx = -r; dx <= r; dx++) {
+        if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+        const x = cx + dx;
+        const y = cy + dy;
+        if (!FLOOR_TILES.includes(tileAt(x, y))) continue;
+        if (state.floor.some((f) => f.x === x && f.y === y)) continue;
+        return { x, y };
+      }
+    }
+  }
+  return { x: cx, y: cy };
+}
+
 /** Whether a brothers decision can be applied right now, and why not. */
 export function validateDecision(
   state: GameState,
@@ -354,7 +440,31 @@ export function validateDecision(
 function decide(state: GameState, decision: PresenceDecision): StepResult {
   const fred = state.players.fred;
   const away = decision.choice !== "stay";
-  const seconds = decision.choice === "break" ? BREAK_SECONDS : LEAVE_SECONDS;
+  const seconds = onLevelClock(
+    decision.choice === "break" ? BREAK_SECONDS : LEAVE_SECONDS,
+    state.duration
+  );
+  const events: GameEvent[] = [];
+  let floor = state.floor;
+  let leaving: Player = away
+    ? {
+        ...fred,
+        presence: "away",
+        busyFor: 0,
+        busyReason: null,
+        binHold: 0,
+      }
+    : fred;
+  const carried = fred.holding;
+  if (away && carried) {
+    // Whatever Fred carries goes down where he stands, so nothing stays frozen
+    // in his hands while he is out. This drop ignores FLOOR_CAP.
+    const spot = freeFloorSpot(state, fred);
+    floor = [...floor, { x: spot.x, y: spot.y, item: carried }];
+    leaving = { ...leaving, holding: null };
+    events.push({ type: "put-down", player: "fred", item: carried.kind });
+  }
+  events.push({ type: "presence-decided", decision });
   return {
     state: {
       ...state,
@@ -364,14 +474,10 @@ function decide(state: GameState, decision: PresenceDecision): StepResult {
         commitment: decision.commitment ?? null,
       },
       returnsAt: away ? state.time + seconds : null,
-      players: {
-        ...state.players,
-        fred: away
-          ? { ...fred, presence: "away", busyFor: 0, busyReason: null }
-          : fred,
-      },
+      floor,
+      players: { ...state.players, fred: leaving },
     },
-    events: [{ type: "presence-decided", decision }],
+    events,
   };
 }
 
@@ -400,8 +506,8 @@ export function stepGame(state: GameState, frame: Frame): StepResult {
     events: [],
   };
 
-  if (!w.state.presence && crossed(before, after, BROTHERS_AT)) {
-    w.state = { ...w.state, phase: "brothers" };
+  if (w.state.brothersAt === null && after + 1e-9 >= brothersDue(w.state)) {
+    w.state = { ...w.state, phase: "brothers", brothersAt: after };
     w.events.push({ type: "brothers-text" });
     return w;
   }
@@ -452,13 +558,15 @@ export function stepGame(state: GameState, frame: Frame): StepResult {
   }
 
   const nervous = w.state.players.fred;
+  // Set whenever a decision exists, so the fallback is never read.
+  const brothersAt = w.state.brothersAt ?? 0;
   if (
     w.state.presence?.choice === "stay" &&
     !nervous.calm &&
     nervous.busyFor <= 0 &&
-    Math.floor((after - BROTHERS_AT) / SHOE_INTERVAL_SECONDS) >
-      Math.floor((before - BROTHERS_AT) / SHOE_INTERVAL_SECONDS) &&
-    after > BROTHERS_AT
+    Math.floor((after - brothersAt) / SHOE_INTERVAL_SECONDS) >
+      Math.floor((before - brothersAt) / SHOE_INTERVAL_SECONDS) &&
+    after > brothersAt
   ) {
     setPlayer(w, {
       ...nervous,
@@ -472,11 +580,13 @@ export function stepGame(state: GameState, frame: Frame): StepResult {
     const player = w.state.players[id];
     if (player.presence === "away") continue;
     if (player.busyFor > 0) {
+      // A call or a shoe retie breaks a bin hold: it has to be continuous.
       const busyFor = Math.max(0, player.busyFor - dt);
       setPlayer(w, {
         ...player,
         busyFor,
         busyReason: busyFor > 0 ? player.busyReason : null,
+        binHold: 0,
       });
       continue;
     }
@@ -484,6 +594,7 @@ export function stepGame(state: GameState, frame: Frame): StepResult {
     setPlayer(w, move(player, input, dt));
     if (input.interact) interact(w, id);
     if (input.work) work(w, id, dt);
+    else releaseBinHold(w, id);
   }
 
   cookGrills(w, dt);

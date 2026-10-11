@@ -7,8 +7,10 @@
 import {
   BLOCKED_TOASTS,
   CATEGORY_LABELS,
+  FLOOR_FULL_REPEAT_SECONDS,
   INTERRUPTIONS,
   type GameEvent,
+  type PlayerId,
 } from "@/lib/for-better-or-bulk";
 
 const NAMES = { fred: "Fred", abbi: "Abbi" } as const;
@@ -22,6 +24,27 @@ const SUPPLY_LABELS = {
   lantern: "lanterns",
   chairs: "chair stacks",
 } as const;
+
+/**
+ * Keeps the events to show, dropping a floor-full line the same person was
+ * already shown less than FLOOR_FULL_REPEAT_SECONDS of game time ago. `shown`
+ * records when each person last saw one and is updated in place.
+ */
+export function throttleFloorFull(
+  events: readonly GameEvent[],
+  time: number,
+  shown: Partial<Record<PlayerId, number>>
+): GameEvent[] {
+  return events.filter((event) => {
+    if (event.type !== "floor-full") return true;
+    const last = shown[event.player];
+    if (last !== undefined && time - last < FLOOR_FULL_REPEAT_SECONDS) {
+      return false;
+    }
+    shown[event.player] = time;
+    return true;
+  });
+}
 
 /** The line for one event, or null when it needs none. */
 export function describeEvent(event: GameEvent): string | null {
@@ -41,6 +64,8 @@ export function describeEvent(event: GameEvent): string | null {
       return `That was the last of the ${SUPPLY_LABELS[event.supply]}.`;
     case "simplified":
       return `Left one ${CATEGORY_LABELS[event.category].toLowerCase()} spot bare. Restraint. Very adult.`;
+    case "floor-full":
+      return "No room on the floor. Find a counter or a target.";
     case "brothers-text":
       return "Fred's brothers are texting.";
     case "fred-returned":

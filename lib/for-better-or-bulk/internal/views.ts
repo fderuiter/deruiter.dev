@@ -1,12 +1,29 @@
 /**
- * Read-only views over a For Better or Bulk level: the wall clock, and what
- * the interact and work buttons would do for one person right now. Front ends
- * use them for button prompts and the screen-reader status line.
+ * Read-only views over a For Better or Bulk level: the wall clock, what the
+ * interact and work buttons would do for one person right now, and the next
+ * useful step for each person. Front ends use them for button prompts, the
+ * coach strip and the screen-reader status line.
  */
 
 import { clamp } from "@/lib/game-utils";
-import { ITEM_LABELS } from "../presets";
-import type { GameState, PlayerId } from "../types";
+import {
+  CRATE_NAMES,
+  FLOOR_CAP,
+  ITEM_LABELS,
+  THROW_OUT_PROMPT,
+  VENUE_MAP,
+  WALKABLE_TILES,
+} from "../presets";
+import type {
+  GameState,
+  ItemKind,
+  PlayerId,
+  Station,
+  StationKind,
+  SupplyKind,
+  Target,
+  TargetKind,
+} from "../types";
 import { frontTile } from "./sim";
 
 /** The level runs from 9:00 to 4:00 on the wall clock. */
@@ -79,7 +96,7 @@ export function getPrompt(state: GameState, id: PlayerId): Prompt {
       work = "Simplify: leave this one bare";
     }
   } else if (station) {
-    if (station.kind === "bin") interact = "Throw it out";
+    if (station.kind === "bin") work = THROW_OUT_PROMPT;
     else if (
       !station.item &&
       station.kind === "grill" &&
@@ -93,10 +110,228 @@ export function getPrompt(state: GameState, id: PlayerId): Prompt {
     ) {
       interact = "Put the roses down";
     }
+  } else if (supply) {
+    if (supply.kind === held.kind) interact = "Put it back in the crate";
   } else if (target?.status === "open" && target.wants === held.kind) {
     interact = `Place ${ITEM_LABELS[held.kind]}`;
-  } else if (!target && !supply && !floorItem) {
+  } else if (
+    !target &&
+    !floorItem &&
+    state.floor.length < FLOOR_CAP &&
+    WALKABLE_TILES.includes(VENUE_MAP[y]?.[x] ?? "#")
+  ) {
     interact = "Put it down";
   }
   return { interact, work, status };
+}
+
+/** Words for the places and things a hint names, with their venue letters. */
+const STATION_NAMES: Readonly<Record<StationKind, string>> = {
+  arrange: "the ARRANGE table (A)",
+  petals: "the PETALS bucket (P)",
+  grill: "the GRILL (G)",
+  bin: "the BIN (X)",
+};
+
+const TARGET_NAMES: Readonly<Record<TargetKind, string>> = {
+  basket: "the bouquet basket (K)",
+  table: "a centerpiece table (T)",
+  aisle: "an aisle spot (S)",
+  "chair-spot": "a chair spot (O)",
+  hook: "a lantern hook (N)",
+  buffet: "the buffet (B)",
+};
+
+/** Items in the middle of a sentence, such as "Carry the roses to...". */
+const ITEM_NAMES: Readonly<Record<ItemKind, string>> = {
+  roses: "the roses",
+  arrangement: "the arrangement",
+  petals: "the bucket of petals",
+  "hotdogs-raw": "the raw hot dogs",
+  hotdogs: "the hot dogs",
+  "wings-raw": "the raw wings",
+  wings: "the wings",
+  mac: "the mac and cheese",
+  quinoa: "the quinoa salad",
+  burnt: "the burnt food",
+  lantern: "the lantern",
+  chairs: "the stack of chairs",
+};
+
+/** What a crate hands out, as the object of "Grab ...". */
+const CRATE_ITEM_NAMES: Readonly<Record<SupplyKind, string>> = {
+  roses: "roses",
+  "hotdogs-raw": "raw hot dogs",
+  "wings-raw": "raw wings",
+  mac: "mac and cheese",
+  quinoa: "quinoa salad",
+  lantern: "a lantern",
+  chairs: "a stack of chairs",
+};
+
+const COOKED: Partial<Record<ItemKind, ItemKind>> = {
+  "hotdogs-raw": "hotdogs",
+  "wings-raw": "wings",
+};
+
+function stationsOf(state: GameState, kind: StationKind): Station[] {
+  return state.stations.filter((s) => s.kind === kind);
+}
+
+function freeStation(state: GameState, kind: StationKind): boolean {
+  return stationsOf(state, kind).some((s) => s.item === null);
+}
+
+function openTarget(state: GameState, wants: ItemKind): Target | undefined {
+  return state.targets.find((t) => t.status === "open" && t.wants === wants);
+}
+
+/** Where a crate sits in the venue: the top row, or the left-hand column. */
+function grabHint(state: GameState, kind: SupplyKind): string {
+  const crate = state.supplies.find((s) => s.kind === kind);
+  const where = crate && crate.y <= 1 ? "on the top row" : "on the left";
+  return `Grab ${CRATE_ITEM_NAMES[kind]} from the ${CRATE_NAMES[kind]} crate ${where}.`;
+}
+
+/**
+ * Where roses should go now: ARRANGE when an arrangement is still wanted, or
+ * PETALS when the aisle is planned and open, whichever has a free station.
+ * Null when neither wants roses or both are busy.
+ */
+function roseStation(state: GameState): StationKind | null {
+  if (openTarget(state, "arrangement") && freeStation(state, "arrange"))
+    return "arrange";
+  if (openTarget(state, "petals") && freeStation(state, "petals"))
+    return "petals";
+  return null;
+}
+
+/** The next step for someone carrying an item. */
+function carryHint(state: GameState, held: ItemKind): string | null {
+  switch (held) {
+    case "roses": {
+      const wantsArrange = openTarget(state, "arrangement") !== undefined;
+      const wantsPetals = openTarget(state, "petals") !== undefined;
+      if (!wantsArrange && !wantsPetals) return null;
+      const station = roseStation(state);
+      if (station === "arrange")
+        return `Carry the roses to ${STATION_NAMES.arrange}.`;
+      if (station === "petals")
+        return `Carry the roses to ${STATION_NAMES.petals}.`;
+      return wantsArrange
+        ? `Wait for ${STATION_NAMES.arrange} to clear.`
+        : `Wait for ${STATION_NAMES.petals} to clear.`;
+    }
+    case "arrangement": {
+      const target = openTarget(state, "arrangement");
+      return target
+        ? `Carry ${ITEM_NAMES[held]} to ${TARGET_NAMES[target.kind]}.`
+        : null;
+    }
+    case "petals": {
+      const target = openTarget(state, "petals");
+      return target
+        ? `Carry ${ITEM_NAMES[held]} to ${TARGET_NAMES[target.kind]}.`
+        : null;
+    }
+    case "hotdogs-raw":
+    case "wings-raw": {
+      const cooked = COOKED[held];
+      if (!cooked || !openTarget(state, cooked)) return null;
+      return freeStation(state, "grill")
+        ? `Carry ${ITEM_NAMES[held]} to ${STATION_NAMES.grill}.`
+        : `Wait for ${STATION_NAMES.grill} to clear.`;
+    }
+    case "hotdogs":
+    case "wings":
+    case "mac":
+    case "quinoa": {
+      const target = openTarget(state, held);
+      return target
+        ? `Carry ${ITEM_NAMES[held]} to ${TARGET_NAMES[target.kind]}.`
+        : null;
+    }
+    case "burnt":
+      return `Carry ${ITEM_NAMES[held]} to ${STATION_NAMES.bin} and hold work there to throw it out.`;
+    case "lantern":
+    case "chairs": {
+      const target = openTarget(state, held);
+      return target
+        ? `Carry ${ITEM_NAMES[held]} to ${TARGET_NAMES[target.kind]}.`
+        : null;
+    }
+    default:
+      return null;
+  }
+}
+
+/** The next step for someone with free hands: what finished work needs first. */
+function fetchHint(state: GameState): string | null {
+  for (const grill of stationsOf(state, "grill")) {
+    const item = grill.item;
+    if (item?.kind === "hotdogs" || item?.kind === "wings")
+      return `Take ${ITEM_NAMES[item.kind]} off ${STATION_NAMES.grill}.`;
+  }
+  for (const grill of stationsOf(state, "grill")) {
+    if (grill.item?.kind === "burnt")
+      return `Take ${ITEM_NAMES.burnt} off ${STATION_NAMES.grill}.`;
+  }
+  if (
+    openTarget(state, "arrangement") &&
+    stationsOf(state, "arrange").some((s) => s.item?.kind === "arrangement")
+  ) {
+    return `Take the arrangement from ${STATION_NAMES.arrange}.`;
+  }
+  if (
+    openTarget(state, "petals") &&
+    stationsOf(state, "petals").some((s) => s.item?.kind === "petals")
+  ) {
+    return `Take ${ITEM_NAMES.petals} from ${STATION_NAMES.petals}.`;
+  }
+  const loose = state.floor[0];
+  if (loose) return `Pick up ${ITEM_NAMES[loose.item.kind]} from the floor.`;
+  if (
+    openTarget(state, "arrangement") &&
+    stationsOf(state, "arrange").some((s) => s.item?.kind === "roses")
+  ) {
+    return `Stand at ${STATION_NAMES.arrange} and hold work to arrange the roses.`;
+  }
+  if (
+    openTarget(state, "petals") &&
+    stationsOf(state, "petals").some((s) => s.item?.kind === "roses")
+  ) {
+    return `Stand at ${STATION_NAMES.petals} and hold work to pluck petals.`;
+  }
+  if (state.stock.roses > 0 && roseStation(state) !== null) {
+    return grabHint(state, "roses");
+  }
+  for (const raw of ["hotdogs-raw", "wings-raw"] as const) {
+    const cooked = COOKED[raw];
+    if (
+      cooked &&
+      state.stock[raw] > 0 &&
+      openTarget(state, cooked) &&
+      freeStation(state, "grill")
+    ) {
+      return grabHint(state, raw);
+    }
+  }
+  for (const kind of ["mac", "quinoa", "chairs", "lantern"] as const) {
+    if (state.stock[kind] > 0 && openTarget(state, kind))
+      return grabHint(state, kind);
+  }
+  return null;
+}
+
+/**
+ * The next useful step for one person, in plain words, or null when there is
+ * nothing useful for them to do (the level is over, or they are away).
+ */
+export function getHint(state: GameState, id: PlayerId): string | null {
+  if (state.phase === "done") return null;
+  const player = state.players[id];
+  if (player.presence === "away") return null;
+  return player.holding
+    ? carryHint(state, player.holding.kind)
+    : fetchHint(state);
 }

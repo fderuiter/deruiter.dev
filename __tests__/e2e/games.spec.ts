@@ -171,9 +171,11 @@ test.describe("Arcade Games & Simulators Suite", () => {
     const edgeBtn = page.getByRole("button", { name: /Edge \(128KB\)/i });
     await expect(async () => {
       await edgeBtn.click({ force: true });
-      await expect(page.getByText("LIMIT: 128 KB RAM").first()).toBeVisible({
-        timeout: 2000,
-      });
+      await expect(page.getByText("5 STAGES · 128 KB RAM").first()).toBeVisible(
+        {
+          timeout: 2000,
+        }
+      );
     }).toPass({ timeout: 15000 });
 
     // 4. Start simulation with hydration retry: verify the idle overlay

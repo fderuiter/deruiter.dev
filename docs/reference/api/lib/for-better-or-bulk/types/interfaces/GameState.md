@@ -8,6 +8,15 @@
 
 ## Properties
 
+### assistTicks
+
+> `readonly` **assistTicks**: `number`
+
+Ticks on which the solo assist acted for the partner. Zero means the
+helper never mattered, so the receipt does not mention it.
+
+***
+
 ### brothersAt
 
 > `readonly` **brothersAt**: `number` \| `null`

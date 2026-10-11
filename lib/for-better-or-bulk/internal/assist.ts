@@ -1,15 +1,21 @@
 /**
  * The solo assist (ADR 0060, F6): a deterministic policy for the partner the
- * player is not controlling. It chooses the same kind of next step that
- * `getHint` names, walks there over the venue grid, and acts on only some
- * ticks, so it works at about 60% of a skilled player's pace. It has no
- * randomness, no clock and no say in presence: it never answers the brothers,
- * never acts for someone who is out or busy, and never changes presence.
+ * player is not controlling. It walks the venue grid to the same places that
+ * `getHint` names, using the rules in `gates.ts` that `getHint` also uses, so
+ * roses and fetches agree with the hints. Where the hints only name a step,
+ * the assist also takes it, and it can put down an item nothing wants.
+ *
+ * The assist rests on some ticks (see `assistRests`), so its walks and presses
+ * run at about 60% of a skilled player's pace. Its held work keeps its bin or
+ * table hold on those ticks but pauses, so the simulation advances work only
+ * on its active ticks. It has no randomness, no clock and no say in presence:
+ * it never answers the brothers, never acts for someone who is out or busy,
+ * and never changes presence.
  *
  * This module does not import the simulation, which imports it.
  */
 
-import { VENUE_MAP, WALKABLE_TILES } from "../presets";
+import { FLOOR_CAP, VENUE_MAP, WALKABLE_TILES } from "../presets";
 import type {
   GameState,
   Item,
@@ -18,14 +24,29 @@ import type {
   PlayerId,
   PlayerInput,
   Station,
-  SupplyKind,
   Target,
   Tile,
 } from "../types";
+import {
+  FLOOR_TILES,
+  roseStation,
+  stationsOf,
+  usable,
+  wantsItem,
+} from "./gates";
 
 /** The assist acts on this many ticks out of every PACE_PERIOD. */
-export const ASSIST_PACE_PERIOD = 5;
-export const ASSIST_PACE_ACTIVE = 3;
+const PACE_PERIOD = 5;
+const PACE_ACTIVE = 3;
+
+/**
+ * Whether the assist rests on this tick. Its walks and presses wait, and its
+ * held work pauses without letting go. Pure: the same tick always gives the
+ * same answer.
+ */
+export function assistRests(tick: number): boolean {
+  return tick % PACE_PERIOD >= PACE_ACTIVE;
+}
 
 /** How far off a tile's centre a person may be before they line up again. */
 const ALIGN_EPSILON = 0.08;
@@ -44,11 +65,6 @@ const DIRECTIONS: readonly { readonly dx: number; readonly dy: number }[] = [
   { dx: 0, dy: 1 },
   { dx: 0, dy: -1 },
 ];
-
-const COOKED: Readonly<Partial<Record<ItemKind, ItemKind>>> = {
-  "hotdogs-raw": "hotdogs",
-  "wings-raw": "wings",
-};
 
 const RAW_CRATES = ["hotdogs-raw", "wings-raw"] as const;
 const FRESH_CRATES = ["mac", "quinoa", "chairs", "lantern"] as const;
@@ -88,10 +104,6 @@ function at(tile: Tile, act: Goal["act"]): Goal {
   return { x: tile.x, y: tile.y, act };
 }
 
-function stationsOf(state: GameState, kind: Station["kind"]): Station[] {
-  return state.stations.filter((s) => s.kind === kind);
-}
-
 function freeStations(state: GameState, kind: Station["kind"]): Station[] {
   return stationsOf(state, kind).filter((s) => s.item === null);
 }
@@ -100,10 +112,47 @@ function openTargets(state: GameState, wants: ItemKind): Target[] {
   return state.targets.filter((t) => t.status === "open" && t.wants === wants);
 }
 
-function cratesOf(state: GameState, kind: SupplyKind): Goal[] {
+function cratesOf(state: GameState, kind: ItemKind): Goal[] {
   return state.supplies
     .filter((s) => s.kind === kind)
     .map((s) => at(s, "interact"));
+}
+
+/**
+ * Every empty floor tile a dropped item may rest on, found by scanning the
+ * venue. A tile holding a station, crate, target or floor item is taken.
+ */
+function freeFloorGoals(state: GameState): Goal[] {
+  const taken = new Set<string>();
+  for (const tile of [
+    ...state.stations,
+    ...state.targets,
+    ...state.supplies,
+    ...state.floor,
+  ]) {
+    taken.add(`${tile.x},${tile.y}`);
+  }
+  const goals: Goal[] = [];
+  for (let y = 0; y < HEIGHT; y++) {
+    for (let x = 0; x < WIDTH; x++) {
+      if (!FLOOR_TILES.includes(tileAt(x, y))) continue;
+      if (taken.has(`${x},${y}`)) continue;
+      goals.push({ x, y, act: "interact" });
+    }
+  }
+  return goals;
+}
+
+/**
+ * The goals for someone holding an item that no open place wants: put it on
+ * a free floor tile while the floor has room, or else back in its own crate.
+ * Burnt food never lands here, because the bin always wants it.
+ */
+function dropTiers(state: GameState, held: Item): Goal[][] {
+  const tiers: Goal[][] = [];
+  if (state.floor.length < FLOOR_CAP) tiers.push(freeFloorGoals(state));
+  tiers.push(cratesOf(state, held.kind));
+  return tiers;
 }
 
 /**
@@ -111,24 +160,16 @@ function cratesOf(state: GameState, kind: SupplyKind): Goal[] {
  * Each inner list is one tier: the first tier with a reachable goal wins.
  */
 function carryTiers(state: GameState, held: Item): Goal[][] {
+  if (!wantsItem(state, held.kind)) return dropTiers(state, held);
   switch (held.kind) {
     case "roses": {
-      const arrangement = openTargets(state, "arrangement").length > 0;
-      const petals = openTargets(state, "petals").length > 0;
-      if (!arrangement && !petals) return [];
-      const tiers = [
-        freeStations(state, "arrange").map((s) => at(s, "interact")),
-      ];
-      if (petals)
-        tiers.push(freeStations(state, "petals").map((s) => at(s, "interact")));
-      return tiers;
+      const station = roseStation(state);
+      if (station === null) return [];
+      return [freeStations(state, station).map((s) => at(s, "interact"))];
     }
     case "hotdogs-raw":
-    case "wings-raw": {
-      const cooked = COOKED[held.kind];
-      if (!cooked || openTargets(state, cooked).length === 0) return [];
+    case "wings-raw":
       return [freeStations(state, "grill").map((s) => at(s, "interact"))];
-    }
     case "burnt":
       return [stationsOf(state, "bin").map((s) => at(s, "work"))];
     default:
@@ -136,58 +177,57 @@ function carryTiers(state: GameState, held: Item): Goal[][] {
   }
 }
 
-/** The goals for someone with free hands, in the order getHint tries them. */
+/**
+ * The goals for someone with free hands, in the order getHint tries them.
+ * Each item is fetched only when `usable` says an open place can take it now,
+ * so the assist never lifts an item that nothing wants.
+ */
 function fetchTiers(state: GameState): Goal[][] {
   const grills = stationsOf(state, "grill");
-  const arrangeOpen = openTargets(state, "arrangement").length > 0;
-  const petalsOpen = openTargets(state, "petals").length > 0;
   const tiers: Goal[][] = [
     grills
-      .filter((g) => g.item?.kind === "hotdogs" || g.item?.kind === "wings")
+      .filter(
+        (g) =>
+          (g.item?.kind === "hotdogs" || g.item?.kind === "wings") &&
+          usable(state, g.item.kind)
+      )
       .map((g) => at(g, "interact")),
     grills
       .filter((g) => g.item?.kind === "burnt")
       .map((g) => at(g, "interact")),
-    arrangeOpen
-      ? stationsOf(state, "arrange")
-          .filter((s) => s.item?.kind === "arrangement")
-          .map((s) => at(s, "interact"))
-      : [],
-    petalsOpen
-      ? stationsOf(state, "petals")
-          .filter((s) => s.item?.kind === "petals")
-          .map((s) => at(s, "interact"))
-      : [],
-    state.floor.map((f) => at(f, "interact")),
     stationsOf(state, "arrange")
-      .filter((s) => s.item?.kind === "roses")
-      .map((s) => at(s, "work")),
+      .filter(
+        (s) => s.item?.kind === "arrangement" && usable(state, "arrangement")
+      )
+      .map((s) => at(s, "interact")),
     stationsOf(state, "petals")
-      .filter((s) => s.item?.kind === "roses")
-      .map((s) => at(s, "work")),
-  ];
-  const rosesWanted = arrangeOpen || petalsOpen;
-  const rosesFit =
-    freeStations(state, "arrange").length > 0 ||
-    (petalsOpen && freeStations(state, "petals").length > 0);
-  tiers.push(
-    rosesWanted && state.stock.roses > 0 && rosesFit
+      .filter((s) => s.item?.kind === "petals" && usable(state, "petals"))
+      .map((s) => at(s, "interact")),
+    state.floor
+      .filter((f) => usable(state, f.item.kind))
+      .map((f) => at(f, "interact")),
+    wantsItem(state, "arrangement")
+      ? stationsOf(state, "arrange")
+          .filter((s) => s.item?.kind === "roses")
+          .map((s) => at(s, "work"))
+      : [],
+    wantsItem(state, "petals")
+      ? stationsOf(state, "petals")
+          .filter((s) => s.item?.kind === "roses")
+          .map((s) => at(s, "work"))
+      : [],
+    state.stock.roses > 0 && usable(state, "roses")
       ? cratesOf(state, "roses")
-      : []
-  );
+      : [],
+  ];
   for (const raw of RAW_CRATES) {
-    const cooked = COOKED[raw];
-    const fits =
-      cooked !== undefined &&
-      openTargets(state, cooked).length > 0 &&
-      freeStations(state, "grill").length > 0;
-    tiers.push(state.stock[raw] > 0 && fits ? cratesOf(state, raw) : []);
+    tiers.push(
+      state.stock[raw] > 0 && usable(state, raw) ? cratesOf(state, raw) : []
+    );
   }
   for (const kind of FRESH_CRATES) {
     tiers.push(
-      state.stock[kind] > 0 && openTargets(state, kind).length > 0
-        ? cratesOf(state, kind)
-        : []
+      state.stock[kind] > 0 && usable(state, kind) ? cratesOf(state, kind) : []
     );
   }
   return tiers;
@@ -250,20 +290,16 @@ function sign(value: number): number {
   return value > 0 ? 1 : value < 0 ? -1 : 0;
 }
 
-/** The input for one tick, given the route and whether this tick acts. */
-function actionFor(
-  player: Player,
-  found: Route,
-  onShift: boolean
-): PlayerInput {
+/** The input for one tick, given the route and whether this tick is active. */
+function actionFor(player: Player, found: Route, active: boolean): PlayerInput {
   const { goal, step } = found;
   if (!step) {
-    // Work at a station keeps going on every tick, so a held bin or grill
-    // timer is not reset by the pace.
+    // Work at a station keeps going on every tick, so a held bin or table
+    // hold is not reset by the rest. The simulation paces the progress.
     if (goal.act === "work") return { ...NO_INPUT, work: true };
-    return onShift ? { ...NO_INPUT, interact: true } : NO_INPUT;
+    return active ? { ...NO_INPUT, interact: true } : NO_INPUT;
   }
-  if (!onShift) return NO_INPUT;
+  if (!active) return NO_INPUT;
   if (!step.moves) return { ...NO_INPUT, moveX: step.dx, moveY: step.dy };
   // Walk on tile centres: line up across the tile first, so the body never
   // grazes a wall on the way to the next tile.
@@ -287,14 +323,14 @@ function actionFor(
 export function assistInput(state: GameState, id: PlayerId): PlayerInput {
   const player = state.players[id];
   if (player.presence === "away" || player.busyFor > 0) return NO_INPUT;
-  const onShift = state.tick % ASSIST_PACE_PERIOD < ASSIST_PACE_ACTIVE;
+  const active = !assistRests(state.tick);
   const tiers = player.holding
     ? carryTiers(state, player.holding)
     : fetchTiers(state);
   for (const goals of tiers) {
     if (goals.length === 0) continue;
     const found = route(player, goals);
-    if (found) return actionFor(player, found, onShift);
+    if (found) return actionFor(player, found, active);
   }
   return NO_INPUT;
 }

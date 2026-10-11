@@ -18,12 +18,11 @@ import type {
   GameState,
   ItemKind,
   PlayerId,
-  Station,
   StationKind,
   SupplyKind,
-  Target,
   TargetKind,
 } from "../types";
+import { freeStation, openTarget, roseStation, stationsOf } from "./gates";
 import { frontTile } from "./sim";
 
 /** The level runs from 9:00 to 4:00 on the wall clock. */
@@ -174,36 +173,11 @@ const COOKED: Partial<Record<ItemKind, ItemKind>> = {
   "wings-raw": "wings",
 };
 
-function stationsOf(state: GameState, kind: StationKind): Station[] {
-  return state.stations.filter((s) => s.kind === kind);
-}
-
-function freeStation(state: GameState, kind: StationKind): boolean {
-  return stationsOf(state, kind).some((s) => s.item === null);
-}
-
-function openTarget(state: GameState, wants: ItemKind): Target | undefined {
-  return state.targets.find((t) => t.status === "open" && t.wants === wants);
-}
-
 /** Where a crate sits in the venue: the top row, or the left-hand column. */
 function grabHint(state: GameState, kind: SupplyKind): string {
   const crate = state.supplies.find((s) => s.kind === kind);
   const where = crate && crate.y <= 1 ? "on the top row" : "on the left";
   return `Grab ${CRATE_ITEM_NAMES[kind]} from the ${CRATE_NAMES[kind]} crate ${where}.`;
-}
-
-/**
- * Where roses should go now: ARRANGE when an arrangement is still wanted, or
- * PETALS when the aisle is planned and open, whichever has a free station.
- * Null when neither wants roses or both are busy.
- */
-function roseStation(state: GameState): StationKind | null {
-  if (openTarget(state, "arrangement") && freeStation(state, "arrange"))
-    return "arrange";
-  if (openTarget(state, "petals") && freeStation(state, "petals"))
-    return "petals";
-  return null;
 }
 
 /** The next step for someone carrying an item. */

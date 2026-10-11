@@ -203,6 +203,11 @@ export interface GameState {
   readonly burntBatches: number;
   /** Level time at which everything planned was done, if before the end. */
   readonly finishedAt: number | null;
+  /**
+   * Ticks on which the solo assist acted for the partner. Zero means the
+   * helper never mattered, so the receipt does not mention it.
+   */
+  readonly assistTicks: number;
 }
 
 /** The inputs for one tick, plus the brothers decision when one is made. */

@@ -232,5 +232,6 @@ export function createLevel(setup: Setup): GameState {
     firstFilledAt: null,
     burntBatches: 0,
     finishedAt: null,
+    assistTicks: 0,
   };
 }

@@ -324,7 +324,7 @@ export function computeReceipt(state: GameState): Receipt {
         ? `Extra smoky: ${state.burntBatches} batch${state.burntBatches === 1 ? "" : "es"} burnt on the grill.`
         : null,
     signatureMoment: signatureMoment(readiness),
-    assist: state.setup.assist ? ASSIST_LINE : null,
+    assist: state.assistTicks > 0 ? ASSIST_LINE : null,
     title: title(state, readiness, follow.status === "kept"),
     weather: RECEIPT_COPY.weather,
     leftovers: RECEIPT_COPY.leftovers,

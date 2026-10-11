@@ -68,6 +68,18 @@ describe("useFocusTrap Hook & Accessibility Keyboard Boundary", () => {
     expect(document.activeElement).toBe(firstBtn);
   });
 
+  it("does not read a torn-down document when restoring focus after cleanup", () => {
+    render(<ModalDialog isOpen={true} />);
+    cleanup();
+
+    vi.stubGlobal("document", undefined);
+    try {
+      expect(() => vi.runOnlyPendingTimers()).not.toThrow();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("triggers onEscape callback when Escape key is pressed", async () => {
     const handleEscape = vi.fn();
     render(<ModalDialog isOpen={true} onEscape={handleEscape} />);

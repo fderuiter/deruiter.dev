@@ -401,7 +401,7 @@ export const LINE_BANK: readonly BankLine[] = [
     id: "suit",
     tag: "Real",
     fact: "suit",
-    text: "The Suit Wherehouse (a fictional homage name) lost Fred's suit. He guilted them into a free one, then wore the rented tux anyway.",
+    text: "The Suit Wherehouse lost Fred's suit and gave him a free one. He wore the rented tux anyway.",
   },
   {
     id: "morning",

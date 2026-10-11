@@ -662,6 +662,12 @@ Re-exports [recordedFrame](internal/sim/functions/recordedFrame.md)
 
 ***
 
+### refusalFor
+
+Re-exports [refusalFor](internal/views/functions/refusalFor.md)
+
+***
+
 ### RELAXED\_LEVEL\_SECONDS
 
 Re-exports [RELAXED_LEVEL_SECONDS](presets/variables/RELAXED_LEVEL_SECONDS.md)
@@ -839,6 +845,12 @@ Re-exports [SHOWER_STARTS](presets/variables/SHOWER_STARTS.md)
 ### SHOWER\_WALK\_FACTOR
 
 Re-exports [SHOWER_WALK_FACTOR](presets/variables/SHOWER_WALK_FACTOR.md)
+
+***
+
+### shownPrompts
+
+Re-exports [shownPrompts](internal/views/functions/shownPrompts.md)
 
 ***
 

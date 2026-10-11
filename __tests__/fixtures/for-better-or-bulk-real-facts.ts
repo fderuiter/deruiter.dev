@@ -9,6 +9,10 @@
  * The "morning" text is the playtest rewrite (S10). It drops the doc's line
  * that Abbi was upset, because that attributes a feeling to a real person. The
  * design doc needs the same edit before this copy matches it again.
+ *
+ * The "suit" text is the round 9 playtest rewrite. It drops the doc's "(a
+ * fictional homage name)" aside and the word "guilted", which read as a
+ * character claim about Fred. The design doc needs the same edit.
  */
 export const REAL_FACTS_FROM_DESIGN_DOC: readonly {
   readonly id: string;
@@ -28,7 +32,7 @@ export const REAL_FACTS_FROM_DESIGN_DOC: readonly {
   },
   {
     id: "suit",
-    text: "The Suit Wherehouse (a fictional homage name) lost Fred's suit. He guilted them into a free one, then wore the rented tux anyway.",
+    text: "The Suit Wherehouse lost Fred's suit and gave him a free one. He wore the rented tux anyway.",
   },
   {
     id: "morning",

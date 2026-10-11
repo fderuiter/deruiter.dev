@@ -29,6 +29,7 @@ import {
   getHint,
   getPrompt,
   parseSeed,
+  shownPrompts,
   recordedFrame,
   runCodeFromHash,
   runResultOf,
@@ -974,14 +975,10 @@ export function ForBetterOrBulkGame({
       />
     );
   } else if (view) {
-    // Solo shows the person at the keys, and the partner too while he is out.
     const partner: PlayerId = active === "fred" ? "abbi" : "fred";
+    // Solo shows the person at the keys, and the partner too while he is out or frozen.
     const shown: PlayerId[] =
-      mode === "coop"
-        ? ["fred", "abbi"]
-        : view.players[partner].presence === "away"
-          ? [active, partner]
-          : [active];
+      mode === "coop" ? ["fred", "abbi"] : [...shownPrompts(view, active)];
     const eventLines = activeEventLines(view);
     body = (
       <div className="relative flex w-full min-w-0 flex-col gap-2 p-2 sm:p-3">

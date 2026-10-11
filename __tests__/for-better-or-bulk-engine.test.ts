@@ -39,7 +39,9 @@ import {
   interactTile,
   onLevelClock,
   readinessLines,
+  refusalFor,
   replayLevel,
+  shownPrompts,
   stepGame,
   tally,
   validateDecision,
@@ -2194,7 +2196,7 @@ describe("a press on a spot that takes something else (round 8, S2)", () => {
     const at = place(base, "fred", 8, 2, [0, -1], hotdogs);
     expect(interactTile(at, "fred")).toBeNull();
     expect(getPrompt(at, "fred").interact).toBe(
-      "This spot is for wings. The hot dogs go on their own spot."
+      "This is the wings spot. The hot dogs go on their own spot."
     );
     const after = stepGame(at, frameFor("fred", { interact: true })).state;
     expect(after.players.fred.holding).toEqual(hotdogs);
@@ -2448,5 +2450,245 @@ describe("the receipt's website lines (round 8, copy)", () => {
     expect(copy).toContain("Registry scraper: 1 call got through without it.");
     expect(copy).not.toContain("No Registry");
     expect(copy).not.toContain("no promise to break");
+  });
+});
+
+/** The open or filled state of one target, set by its tile for a test. */
+function withTargetAt(
+  state: GameState,
+  x: number,
+  y: number,
+  patch: Partial<Target>
+): GameState {
+  return {
+    ...state,
+    targets: state.targets.map((t) =>
+      t.x === x && t.y === y ? { ...t, ...patch } : t
+    ),
+  };
+}
+
+const ARRANGEMENT: Item = { kind: "arrangement", madeBy: null };
+const ROSES: Item = { kind: "roses", madeBy: null };
+const MAC: Item = { kind: "mac", madeBy: null };
+const WINGS_RAW: Item = { kind: "wings-raw", madeBy: null };
+
+describe("a refused press says why (round 9, task 1)", () => {
+  const base = createLevel(DEFAULT_SETUP);
+
+  it("names a filled chair spot when a stack is faced", () => {
+    const filled = withTargetAt(base, 14, 5, {
+      status: "filled",
+      filled: [{ kind: "chairs", madeBy: null, count: 1 }],
+    });
+    const at = place(filled, "fred", 14, 4, [0, 1], {
+      kind: "chairs",
+      madeBy: null,
+      count: 2,
+    });
+    expect(interactTile(at, "fred")).toBeNull();
+    expect(getPrompt(at, "fred").interact).toBe(
+      "This chair spot is already set."
+    );
+    expect(refusalFor(at, at.players.fred)).toBe(
+      "This chair spot is already set."
+    );
+  });
+
+  it("names a finished centerpiece table", () => {
+    const done = withTargetAt(base, 4, 9, { status: "filled" });
+    const at = place(done, "abbi", 4, 8, [0, 1], ARRANGEMENT);
+    expect(getPrompt(at, "abbi").interact).toBe("This table is finished.");
+  });
+
+  it("names the arrangement an open table needs when roses are in hand", () => {
+    const open = withTargetAt(base, 4, 7, { status: "open" });
+    const at = place(open, "abbi", 4, 8, [0, -1], ROSES);
+    expect(getPrompt(at, "abbi").interact).toBe(
+      "This table needs a rose arrangement."
+    );
+  });
+
+  it("names the same need with free hands, so the player knows what to bring", () => {
+    const open = withTargetAt(base, 4, 7, { status: "open" });
+    const at = place(open, "abbi", 4, 8, [0, -1]);
+    expect(getPrompt(at, "abbi").interact).toBe(
+      "This table needs a rose arrangement."
+    );
+  });
+
+  it("names a spot the plan leaves out", () => {
+    const left = withTargetAt(base, 7, 7, { status: "unplanned" });
+    const at = place(left, "abbi", 7, 8, [0, -1], ARRANGEMENT);
+    expect(getPrompt(at, "abbi").interact).toBe(
+      "This spot is not in this plan."
+    );
+  });
+
+  it("names a full station that is faced", () => {
+    const busy = withStationItem(base, 4, 3, {
+      kind: "hotdogs-raw",
+      madeBy: null,
+    });
+    const at = place(busy, "fred", 4, 2, [0, 1], WINGS_RAW);
+    expect(getPrompt(at, "fred").interact).toBe("The GRILL (G) is full.");
+  });
+
+  it("names the item a station takes when another item is faced", () => {
+    const at = place(base, "fred", 8, 2, [0, 1], MAC);
+    expect(getPrompt(at, "fred").interact).toBe(
+      "The ARRANGE table (A) takes roses."
+    );
+  });
+
+  it("names an empty station when free hands face it", () => {
+    const at = place(base, "fred", 8, 2, [0, 1]);
+    expect(getPrompt(at, "fred").interact).toBe(
+      "Nothing on the ARRANGE table (A) to take."
+    );
+  });
+
+  it("names an empty bin when free hands face it, and leaves a held item to the hold prompt", () => {
+    const empty = place(base, "fred", 6, 2, [0, 1]);
+    expect(getPrompt(empty, "fred").interact).toBe(
+      "Nothing on the BIN (X) to take."
+    );
+    const held = place(base, "fred", 6, 2, [0, 1], ROSES);
+    expect(getPrompt(held, "fred").interact).toBeNull();
+    expect(getPrompt(held, "fred").work).toBe(THROW_OUT_PROMPT);
+  });
+
+  it("names an empty crate when free hands face it", () => {
+    const none = { ...base, stock: { ...base.stock, quinoa: 0 } };
+    const at = place(none, "fred", 4, 2, [0, -1]);
+    expect(getPrompt(at, "fred").interact).toBe("The QUIN crate is empty.");
+  });
+
+  it("names the item a crate hands out when another item is faced", () => {
+    const at = place(base, "fred", 4, 2, [0, -1], ROSES);
+    expect(getPrompt(at, "fred").interact).toBe(
+      "The QUIN crate only takes the quinoa salad."
+    );
+  });
+
+  it("names a loose item on the floor that blocks a drop", () => {
+    const loose = {
+      ...base,
+      floor: [{ x: 2, y: 4, item: MAC }],
+    };
+    const at = place(loose, "fred", 2, 3, [0, 1], ROSES);
+    expect(getPrompt(at, "fred").interact).toBe(
+      "Something is already on the floor here."
+    );
+  });
+
+  it("names the spot a buffet slot takes when roses are faced", () => {
+    // (10,2) has no station beside it, so the press lands on the slot at (10,1).
+    const at = place(base, "fred", 10, 2, [0, -1], ROSES);
+    expect(getPrompt(at, "fred").interact).toBe(
+      "This is the quinoa salad spot."
+    );
+  });
+
+  it("says nothing for a plain tile with free hands, since nothing is refused", () => {
+    const at = place(base, "fred", 2, 4, [0, 1]);
+    expect(getPrompt(at, "fred").interact).toBeNull();
+    expect(refusalFor(at, at.players.fred)).toBeNull();
+  });
+
+  it("gives a reason for every press that does nothing on a faced object, and none for a press that lands", () => {
+    const cells: { x: number; y: number }[] = [];
+    VENUE_MAP.forEach((row, y) =>
+      [...row].forEach((char, x) => {
+        if (WALKABLE_TILES.includes(char)) cells.push({ x, y });
+      })
+    );
+    const held: (Item | null)[] = [
+      null,
+      ROSES,
+      ARRANGEMENT,
+      MAC,
+      WINGS_RAW,
+      { kind: "lantern", madeBy: null },
+      { kind: "chairs", madeBy: null, count: 2 },
+      { kind: "burnt", madeBy: null },
+    ];
+    const facings: [number, number][] = [
+      [0, -1],
+      [1, 0],
+      [0, 1],
+      [-1, 0],
+    ];
+    fc.assert(
+      fc.property(
+        fc.constantFrom(...cells),
+        fc.constantFrom(...facings),
+        fc.constantFrom(...held),
+        (cell, facing, item) => {
+          const at = place(base, "fred", cell.x, cell.y, facing, item);
+          const person = at.players.fred;
+          const reason = refusalFor(at, person);
+          if (interactTile(at, "fred") !== null) return reason === null;
+          const front = frontTile(person);
+          // A held item at the bin is left to its hold prompt (see refusalFor).
+          const bin = at.stations.some(
+            (s) => s.kind === "bin" && s.x === front.x && s.y === front.y
+          );
+          const faced = [
+            ...at.supplies,
+            ...at.stations,
+            ...at.targets,
+            ...at.floor,
+          ].some((entry) => entry.x === front.x && entry.y === front.y);
+          return bin || !faced || (reason !== null && reason.length > 0);
+        }
+      ),
+      { numRuns: 400 }
+    );
+  });
+});
+
+describe("the prompt panel's people in solo (round 9, task 4)", () => {
+  const base = createLevel(DEFAULT_SETUP);
+  const called = {
+    ...base,
+    players: {
+      ...base.players,
+      abbi: {
+        ...base.players.abbi,
+        busyFor: PHONE_SECONDS,
+        busyReason: "What should we get you?",
+      },
+    },
+  };
+
+  it("shows Abbi's frozen line to Fred when he is at the keys", () => {
+    expect(shownPrompts(called, "fred")).toEqual(["fred", "abbi"]);
+    expect(getPrompt(called, "abbi").status).toBe(
+      "Abbi is on the phone (about 6 min left): What should we get you?"
+    );
+  });
+
+  it("shows Abbi's frozen line to Abbi when she is at the keys", () => {
+    expect(shownPrompts(called, "abbi")).toEqual(["abbi"]);
+    expect(getPrompt(called, "abbi").status).toBe(
+      "Abbi is on the phone (about 6 min left): What should we get you?"
+    );
+  });
+
+  it("shows only the person at the keys when nobody is frozen or out", () => {
+    expect(shownPrompts(base, "fred")).toEqual(["fred"]);
+    expect(shownPrompts(base, "abbi")).toEqual(["abbi"]);
+  });
+
+  it("shows Fred as out to Abbi while he is away", () => {
+    const away = {
+      ...base,
+      players: {
+        ...base.players,
+        fred: { ...base.players.fred, presence: "away" as const },
+      },
+    };
+    expect(shownPrompts(away, "abbi")).toEqual(["abbi", "fred"]);
   });
 });

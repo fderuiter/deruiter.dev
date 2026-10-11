@@ -980,3 +980,82 @@ describe("the brothers' text (round 8, B1)", () => {
     }
   });
 });
+
+/** Runs the solo level until Abbi's phone line shows, clicking Stay if the brothers' text stops it. */
+function runUntilPhoneLine() {
+  runUntil(() => {
+    const dialog = screen.queryByTestId("fbb-brothers");
+    if (dialog) {
+      fireEvent.click(
+        within(dialog).getByRole("button", { name: /Stay and help/ })
+      );
+    }
+    return screen.queryAllByText(/is on the phone/).length > 0;
+  });
+}
+
+describe("solo keys and prompts (round 9)", () => {
+  beforeEach(() => {
+    frame.callback = null;
+    frame.active = false;
+    engine.finishNext = false;
+    engine.inputs = [];
+    stubLoud(false);
+    window.history.replaceState(null, "", "/arcade/for-better-or-bulk?speed=8");
+  });
+
+  afterEach(() => {
+    cleanup();
+    window.history.replaceState(null, "", "/");
+    delete (window as Partial<Window>).matchMedia;
+  });
+
+  it("records F as Abbi's work key in solo, and does not give it to Fred", () => {
+    render(<ForBetterOrBulkGame />);
+    start();
+    expect(screen.getByTestId("fbb-active").textContent).toContain("Abbi");
+    fireEvent.keyDown(game(), { key: "f", code: "KeyF" });
+    act(() => {
+      frame.callback?.(250);
+    });
+    fireEvent.keyUp(game(), { key: "f", code: "KeyF" });
+    const held = engine.inputs.filter((f) => f.inputs.abbi.work);
+    expect(held.length).toBeGreaterThan(0);
+    expect(held.every((f) => !f.inputs.fred.work)).toBe(true);
+  });
+
+  it("shows Abbi's phone line while she is at the keys, and still while she is idle", () => {
+    render(<ForBetterOrBulkGame />);
+    start();
+    runUntilPhoneLine();
+    expect(screen.getByTestId("fbb-prompt-abbi").textContent).toMatch(
+      /Abbi is on the phone \(about \d+ min left\): What should we get you\?/
+    );
+    fireEvent.keyDown(game(), { key: "Tab", code: "Tab" });
+    expect(screen.getByTestId("fbb-active").textContent).toContain("Fred");
+    expect(screen.getByTestId("fbb-prompt-abbi").textContent).toMatch(
+      /Abbi is on the phone \(about \d+ min left\)/
+    );
+  });
+});
+
+describe("the brothers' options share one resting look (round 9)", () => {
+  const atText = { ...createLevel(DEFAULT_SETUP), phase: "brothers" as const };
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  it("gives Stay and help no highlight of its own before focus", () => {
+    render(<BrothersDialog state={atText} onDecide={vi.fn()} />);
+    const stay = screen.getByRole("button", { name: /Stay and help/ });
+    const leave = screen.getByRole("button", { name: /Go with them/ });
+    const breakButton = screen.getByRole("button", {
+      name: /Take a short break/,
+    });
+    expect(stay.className).toBe(leave.className);
+    expect(stay.className).toBe(breakButton.className);
+    expect(stay.className).not.toMatch(/(^|\s)border-\[var\(--fbb-accent\)\]/);
+    expect(document.activeElement).not.toBe(stay);
+  });
+});

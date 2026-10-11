@@ -6,6 +6,6 @@
 
 # Type Alias: ChallengeId
 
-> **ChallengeId** = `"no-burnt"` \| `"set-by-three"` \| `"fred-stayed"`
+> **ChallengeId** = `"no-burnt"` \| `"set-by-three"` \| `"every-promise-kept"`
 
 The three game challenges a finished run is checked against.

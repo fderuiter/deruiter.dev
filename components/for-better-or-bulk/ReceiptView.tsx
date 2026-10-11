@@ -232,7 +232,7 @@ export function ReceiptView({
             onClick={() => void copyRunCode()}
             className={`${BUTTON_CLASS} border-[var(--fbb-control)]`}
           >
-            Copy run code
+            Copy replay link
           </button>
         ) : null}
         <button

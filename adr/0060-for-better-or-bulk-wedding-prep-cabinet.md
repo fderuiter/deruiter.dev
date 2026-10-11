@@ -201,7 +201,12 @@ only and read facts the engine already keeps:
 - **No burnt batches:** `burntBatches` is zero.
 - **Everything set by 3:00:** every planned target was filled by six sevenths
   of the level clock, which is 3:00 on the wall clock.
-- **Fred stayed:** the brothers never called him away, or he chose to stay.
+- **Every promise kept:** the brothers never called him away, or he chose to
+  stay, or he took a break and the category he promised to come back for was
+  finished by the end. A leave does not meet it. The label names no person
+  and judges no one. The challenge was called "Fred stayed" when it was
+  approved and was renamed in review; the rule is otherwise as approved, and
+  the owner should confirm the new name.
 
 Stars are a game score, not a grade. They never judge the real wedding, and
 they never change the receipt's title, follow-through or spending.
@@ -210,13 +215,16 @@ they never change the receipt's title, follow-through or spending.
 puts in a `#run=` link. The body holds the setup (seed and assist included),
 the frames run-length encoded, and the result a replay must reproduce:
 placements, the finish time and the end time. A four-byte FNV-1a checksum
-covers the body, and the decoder accepts only canonical base64url. Decoding
+covers the body, and the decoder accepts only canonical base64url, minimal
+varints and no two identical frame runs in a row, so one run has one code. Decoding
 never throws. A damaged, truncated, over-long or other-version code is refused
 with one message. A code that decodes must also replay strictly to its own
 result before it can be shown.
 
 **Replays.** "Watch replay" plays a verified run back through the same
-engine, at 1x, 2x or 4x, with play, pause, restart and exit controls. Replays
+engine, at 1x, 2x or 4x, with play, pause, restart and exit controls (Escape also exits). Once a replay
+exits or finishes, and when a shared offer is dismissed, the page clears the
+`#run=` fragment so a reload does not offer it again. Replays
 record no score and no trophy, and they play no sound. A link with `#run=`
 offers the replay on load and never starts it, so audio stays off until a
 person chooses.

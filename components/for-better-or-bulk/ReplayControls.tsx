@@ -4,13 +4,14 @@
  * The controls for a replay of a finished run: play or pause, restart, a
  * speed of 1x, 2x or 4x, and exit. Every control is a labelled button and
  * takes focus when a replay opens. The status line is a live region that the
- * parent fills when a control is used, never on every tick.
+ * parent fills only when the state changes (play, pause, speed, finished or
+ * closed), never on every tick. Escape exits, handled by the parent.
  */
 
 import React, { useEffect, useRef } from "react";
 
 /** The speeds a replay can run at. */
-export const REPLAY_SPEEDS = [1, 2, 4] as const;
+const REPLAY_SPEEDS = [1, 2, 4] as const;
 
 export type ReplaySpeed = (typeof REPLAY_SPEEDS)[number];
 
@@ -50,7 +51,7 @@ export function ReplayControls({
 
   let playLabel = "Play replay";
   if (playing) playLabel = "Pause replay";
-  else if (finished) playLabel = "Watch again";
+  else if (finished) playLabel = "Replay from start";
 
   return (
     <section
@@ -78,7 +79,12 @@ export function ReplayControls({
       >
         {playLabel}
       </button>
-      <button type="button" onClick={onRestart} className={BUTTON_CLASS}>
+      <button
+        type="button"
+        data-testid="fbb-replay-restart"
+        onClick={onRestart}
+        className={BUTTON_CLASS}
+      >
         Restart replay
       </button>
       <div role="group" aria-label="Replay speed" className="flex gap-1">
@@ -95,7 +101,12 @@ export function ReplayControls({
           </button>
         ))}
       </div>
-      <button type="button" onClick={onExit} className={BUTTON_CLASS}>
+      <button
+        type="button"
+        data-testid="fbb-replay-exit"
+        onClick={onExit}
+        className={BUTTON_CLASS}
+      >
         Exit replay
       </button>
       <p role="status" aria-live="polite" className="sr-only">

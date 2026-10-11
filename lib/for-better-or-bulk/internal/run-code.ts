@@ -156,13 +156,18 @@ class Reader {
     return value;
   }
 
+  /** Reads a varint. Only the minimal encoding is accepted, so one value has one byte form. */
   varint(): number {
     let result = 0;
     let scale = 1;
     for (let i = 0; i < 6; i++) {
       const value = this.byte();
       result += (value & 0x7f) * scale;
-      if ((value & 0x80) === 0) return result;
+      if ((value & 0x80) === 0) {
+        // A last byte of zero after a continuation pads the number.
+        if (i > 0 && value === 0) throw new RunCodeFailure("damaged");
+        return result;
+      }
       scale *= 0x80;
     }
     throw new RunCodeFailure("damaged");
@@ -365,10 +370,14 @@ function readFrames(r: Reader): Frame[] {
   const runCount = r.varint();
   if (runCount > MAX_RUN_TICKS) throw new RunCodeFailure("too-long");
   const frames: Frame[] = [];
+  let previous: number | null = null;
   for (let i = 0; i < runCount; i++) {
     const symbol = r.varint();
     const length = r.varint();
     if (length < 1) throw new RunCodeFailure("damaged");
+    // The encoder merges identical neighbours, so two in a row are not canonical.
+    if (symbol === previous) throw new RunCodeFailure("damaged");
+    previous = symbol;
     if (frames.length + length > MAX_RUN_TICKS) {
       throw new RunCodeFailure("too-long");
     }

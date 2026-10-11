@@ -27,6 +27,7 @@ import {
   getHint,
   getPrompt,
   parseSeed,
+  recordedFrame,
   runCodeFromHash,
   runResultOf,
   stepGame,
@@ -190,6 +191,23 @@ function shareFor(run: SharedRun): Share | null {
 }
 
 /**
+ * Clears the `#run=` fragment and keeps the path and query, so a reload no
+ * longer offers the shared run. A browser that refuses the change keeps the
+ * offer until the next load, which is harmless.
+ */
+function clearRunHash(): void {
+  try {
+    window.history.replaceState(
+      window.history.state,
+      "",
+      `${window.location.pathname}${window.location.search}`
+    );
+  } catch {
+    // The address bar keeps its fragment; nothing else depends on it.
+  }
+}
+
+/**
  * A clock multiplier from the page's `?speed=` parameter, 1 to 8, so a long
  * level can be watched or tested quickly. The rules are the same at any
  * speed; only more engine steps run per animation frame.
@@ -261,6 +279,7 @@ export function ForBetterOrBulkGame({
   const [replayPlaying, setReplayPlaying] = useState(false);
   const [replaySpeed, setReplaySpeed] = useState<ReplaySpeed>(1);
   const [replayAnnouncement, setReplayAnnouncement] = useState("");
+  const [replayEnded, setReplayEnded] = useState(false);
   const hideTips = useSyncExternalStore(
     subscribeHideTips,
     readHideTips,
@@ -288,6 +307,8 @@ export function ForBetterOrBulkGame({
   /** Every frame the engine applied this run, so the run can be shared. */
   const recorded = useRef<Frame[]>([]);
   const replayRef = useRef<ReplayRun | null>(null);
+  /** The one focus move still waiting for a paint, cancelled on unmount. */
+  const pendingFocus = useRef<number | null>(null);
 
   const draw = useCallback(
     (scale: number) => {
@@ -430,7 +451,9 @@ export function ForBetterOrBulkGame({
       const state = stateRef.current;
       if (!state) return null;
       const result = stepGame(state, frame);
-      if (state.phase !== "done") recorded.current.push(frame);
+      if (state.phase !== "done") {
+        recorded.current.push(recordedFrame(state, frame));
+      }
       stateRef.current = result.state;
       const shown = throttleFloorFull(
         result.events,
@@ -453,35 +476,57 @@ export function ForBetterOrBulkGame({
     [pushMessages, finish, feedback]
   );
 
-  const start = useCallback((next: Setup, nextMode: ControlMode) => {
-    canvasBursts.current = [];
-    recorded.current = [];
-    replayRef.current = null;
-    setShare(null);
-    setReplayPlaying(false);
-    setTextBursts([]);
-    setRowFlashes([]);
-    setSetup(next);
-    setMode(nextMode);
-    const state = createLevel(next);
-    stateRef.current = state;
-    accumulator.current = 0;
-    held.current.clear();
-    tapped.current.clear();
-    pressed.current.clear();
-    floorFullShown.current = {};
-    activeRef.current = "abbi";
-    setActive("abbi");
-    setView(state);
-    setReceipt(null);
-    setUserPaused(false);
-    setToasts([]);
-    setAnnouncement("Setup has started. It is 9:00.");
-    setPhase("playing");
-    requestAnimationFrame(() =>
-      boundaryRef.current?.focus({ preventScroll: true })
-    );
+  /** Moves focus after the next paint, replacing any move still waiting. */
+  const focusAfterPaint = useCallback((task: () => void) => {
+    if (pendingFocus.current !== null)
+      cancelAnimationFrame(pendingFocus.current);
+    pendingFocus.current = requestAnimationFrame(() => {
+      pendingFocus.current = null;
+      task();
+    });
   }, []);
+
+  useEffect(() => {
+    return () => {
+      if (pendingFocus.current !== null) {
+        cancelAnimationFrame(pendingFocus.current);
+        pendingFocus.current = null;
+      }
+    };
+  }, []);
+
+  const start = useCallback(
+    (next: Setup, nextMode: ControlMode) => {
+      canvasBursts.current = [];
+      recorded.current = [];
+      replayRef.current = null;
+      setShare(null);
+      setReplayPlaying(false);
+      setTextBursts([]);
+      setRowFlashes([]);
+      setSetup(next);
+      setMode(nextMode);
+      const state = createLevel(next);
+      stateRef.current = state;
+      accumulator.current = 0;
+      held.current.clear();
+      tapped.current.clear();
+      pressed.current.clear();
+      floorFullShown.current = {};
+      activeRef.current = "abbi";
+      setActive("abbi");
+      setView(state);
+      setReceipt(null);
+      setUserPaused(false);
+      setToasts([]);
+      setAnnouncement("Setup has started. It is 9:00.");
+      setPhase("playing");
+      focusAfterPaint(() =>
+        boundaryRef.current?.focus({ preventScroll: true })
+      );
+    },
+    [focusAfterPaint]
+  );
 
   const decide = (decision: PresenceDecision) => {
     if (userPaused) return;
@@ -510,6 +555,7 @@ export function ForBetterOrBulkGame({
     replayRef.current = { run, origin, index: 0, accumulator: 0, speed: 1 };
     setView(state);
     setReplaySpeed(1);
+    setReplayEnded(false);
     setReplayPlaying(true);
     setReplayAnnouncement(
       `Replay started at ${clockLabel(0, state.duration)}.`
@@ -547,6 +593,8 @@ export function ForBetterOrBulkGame({
     draw(scaleRef.current);
     if (next.phase === "done" || rep.index >= frames.length) {
       setReplayPlaying(false);
+      setReplayEnded(true);
+      clearRunHash();
       setReplayAnnouncement(
         `Replay finished at ${clockLabel(next.time, next.duration)}.`
       );
@@ -562,6 +610,7 @@ export function ForBetterOrBulkGame({
     rep.accumulator = 0;
     canvasBursts.current = [];
     setView(state);
+    setReplayEnded(false);
     setReplayPlaying(true);
     setReplayAnnouncement(
       `Replay restarted at ${clockLabel(0, state.duration)}.`
@@ -601,11 +650,13 @@ export function ForBetterOrBulkGame({
     replayRef.current = null;
     stateRef.current = null;
     setReplayPlaying(false);
+    setReplayEnded(false);
     setReplayAnnouncement("Replay closed.");
+    clearRunHash();
     setPhase(origin === "receipt" ? "receipt" : "setup");
     const trigger =
       origin === "receipt" ? "fbb-watch-replay" : "fbb-shared-watch";
-    requestAnimationFrame(() => {
+    focusAfterPaint(() => {
       const target = document.getElementById(trigger);
       (target ?? boundaryRef.current)?.focus({ preventScroll: true });
     });
@@ -661,6 +712,13 @@ export function ForBetterOrBulkGame({
   }, []);
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (phase === "replay") {
+      if (event.key === "Escape" && !event.repeat) {
+        event.preventDefault();
+        exitReplay();
+      }
+      return;
+    }
     if (phase !== "playing") return;
     if (event.ctrlKey || event.metaKey || event.altKey) return;
     // Escape pauses or resumes from anywhere in the cabinet, including the
@@ -749,7 +807,10 @@ export function ForBetterOrBulkGame({
                   </button>
                   <button
                     type="button"
-                    onClick={() => setSharedOffer({ status: "none" })}
+                    onClick={() => {
+                      clearRunHash();
+                      setSharedOffer({ status: "none" });
+                    }}
                     className="min-h-11 rounded border border-[var(--fbb-control)] px-4 font-bold uppercase tracking-wide active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--fbb-focus)]"
                   >
                     Dismiss
@@ -787,7 +848,7 @@ export function ForBetterOrBulkGame({
         <ReplayControls
           clock={clockLabel(view.time, view.duration)}
           playing={replayPlaying}
-          finished={view.phase === "done"}
+          finished={replayEnded || view.phase === "done"}
           speed={replaySpeed}
           announcement={replayAnnouncement}
           onTogglePlay={toggleReplay}

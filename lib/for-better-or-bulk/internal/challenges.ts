@@ -5,7 +5,13 @@
  * stars they add up to are a game score, not a grade.
  */
 
-import type { ChallengeId, ChallengeResult, GameState } from "../types";
+import { COMMITMENT_CATEGORIES } from "../presets";
+import type {
+  ChallengeId,
+  ChallengeResult,
+  GameState,
+  ReadinessLine,
+} from "../types";
 import { clockLabel } from "./views";
 
 /** The line every receipt prints above the challenges. */
@@ -15,13 +21,13 @@ export const CHALLENGE_COPY = "Game challenges. Not a grade on the wedding.";
 export const CHALLENGE_IDS: readonly ChallengeId[] = [
   "no-burnt",
   "set-by-three",
-  "fred-stayed",
+  "every-promise-kept",
 ];
 
 const CHALLENGE_LABELS: Readonly<Record<ChallengeId, string>> = {
   "no-burnt": "No burnt batches",
   "set-by-three": "Everything set by 3:00",
-  "fred-stayed": "Fred stayed",
+  "every-promise-kept": "Every promise kept",
 };
 
 /**
@@ -32,29 +38,50 @@ function threeOClock(duration: number): number {
   return (duration * 6) / 7;
 }
 
-/** Whether Fred went out with his brothers, by the decision he made. */
-function fredLeft(state: GameState): boolean {
+/**
+ * Whether the run kept its promise. Staying keeps it. A break keeps it when
+ * the category promised for the return was finished by the end. Leaving does
+ * not. A run where the brothers never called has nothing to break, so it is kept.
+ */
+function promiseKept(
+  state: GameState,
+  readiness: readonly ReadinessLine[]
+): boolean {
   const presence = state.presence;
-  return Boolean(presence && presence.choice !== "stay");
+  if (!presence || presence.choice === "stay") return true;
+  if (presence.choice === "leave") return false;
+  const covered = COMMITMENT_CATEGORIES[presence.commitment ?? "chairs"];
+  return readiness
+    .filter((line) => covered.includes(line.category))
+    .every((line) => line.status !== "unfinished");
 }
 
-/** What Fred did when the brothers texted, in plain words. */
-function fredDetail(state: GameState): string {
+/** What Fred did when the brothers texted, and whether the promise held, in plain words. */
+function promiseDetail(
+  state: GameState,
+  readiness: readonly ReadinessLine[]
+): string {
   const presence = state.presence;
   if (!presence) return "The brothers never called him away.";
   if (presence.choice === "stay") return "Fred stayed for the setup.";
-  if (presence.choice === "break") {
-    return "Fred took a break, so he did not stay on the lawn.";
+  if (presence.choice === "leave") {
+    return "Fred went out with his brothers instead of staying for the setup.";
   }
-  return "Fred went out with his brothers.";
+  const promise = presence.commitment ?? "chairs";
+  const outcome = promiseKept(state, readiness)
+    ? "That work was done by 4:00."
+    : "That work was not done by 4:00.";
+  return `Fred took a break and promised to come back for the ${promise}. ${outcome}`;
 }
 
 /**
  * The three challenges for a run, each met or not with the evidence. The
- * result is derived from the level state alone, so a replay reproduces it.
+ * result is derived from the level state and its readiness lines alone, so a
+ * replay reproduces it.
  */
 export function evaluateChallenges(
-  state: GameState
+  state: GameState,
+  readiness: readonly ReadinessLine[]
 ): readonly ChallengeResult[] {
   const burnt = state.burntBatches;
   const finished = state.finishedAt;
@@ -79,10 +106,10 @@ export function evaluateChallenges(
           : `Everything was ready at ${clockLabel(finished, state.duration)}.`,
     },
     {
-      id: "fred-stayed",
-      label: CHALLENGE_LABELS["fred-stayed"],
-      met: !fredLeft(state),
-      detail: fredDetail(state),
+      id: "every-promise-kept",
+      label: CHALLENGE_LABELS["every-promise-kept"],
+      met: promiseKept(state, readiness),
+      detail: promiseDetail(state, readiness),
     },
   ];
 }

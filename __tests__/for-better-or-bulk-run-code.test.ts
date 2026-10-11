@@ -13,6 +13,7 @@ import {
   encodeRunCode,
   runCodeFromHash,
   runLinkFor,
+  recordedFrame,
   runResultOf,
   stepGame,
   validateSetup,
@@ -269,5 +270,196 @@ describe("For Better or Bulk run codes", () => {
     expect(
       runLinkFor("https://deruiter.dev/arcade/for-better-or-bulk", code)
     ).toBe(`https://deruiter.dev/arcade/for-better-or-bulk#run=${code}`);
+  });
+});
+
+/** FNV-1a over a body, the same checksum the codec seals a code with. */
+function fnv(bytes: readonly number[]): number {
+  let hash = 0x811c9dc5;
+  for (const byte of bytes) {
+    hash ^= byte;
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return hash >>> 0;
+}
+
+/** Seals a body with its checksum into a run code, for hand-built bodies. */
+function sealed(body: readonly number[]): string {
+  const sum = fnv(body);
+  const bytes = [
+    ...body,
+    (sum >>> 24) & 0xff,
+    (sum >>> 16) & 0xff,
+    (sum >>> 8) & 0xff,
+    sum & 0xff,
+  ];
+  return RUN_CODE_PREFIX + Buffer.from(bytes).toString("base64url");
+}
+
+/** The minimal varint bytes for a non-negative whole number. */
+function varintBytes(value: number): number[] {
+  const out: number[] = [];
+  let rest = value;
+  while (rest >= 0x80) {
+    out.push((rest % 0x80) | 0x80);
+    rest = Math.floor(rest / 0x80);
+  }
+  out.push(rest);
+  return out;
+}
+
+/** Reads one varint at an offset, returning its value and byte length. */
+function readVarintAt(
+  bytes: readonly number[],
+  at: number
+): { value: number; length: number } {
+  let value = 0;
+  let scale = 1;
+  for (let i = 0; ; i++) {
+    const byte = bytes[at + i] ?? 0;
+    value += (byte & 0x7f) * scale;
+    if ((byte & 0x80) === 0) return { value, length: i + 1 };
+    scale *= 0x80;
+  }
+}
+
+/** The same number in a longer, non-minimal form: a zero byte appended. */
+function padVarint(bytes: readonly number[]): number[] {
+  const last = bytes.length - 1;
+  return [...bytes.slice(0, last), (bytes[last] ?? 0) | 0x80, 0x00];
+}
+
+/** The body of a code, without its four checksum bytes. */
+function bodyOf(code: string): number[] {
+  const all = [...Buffer.from(code.slice(RUN_CODE_PREFIX.length), "base64url")];
+  return all.slice(0, all.length - 4);
+}
+
+/** A decision for a tick: an invalid break while the text is up, a stay otherwise. */
+function ignoredDecisionAt(
+  state: GameState,
+  tick: number
+): PresenceDecision | undefined {
+  if (state.phase === "brothers") {
+    return tick % 2 === 0
+      ? { choice: "break", commitment: null }
+      : { choice: "stay", commitment: null };
+  }
+  return tick % 50 === 0 ? { choice: "stay", commitment: null } : undefined;
+}
+
+/**
+ * A live run in which the engine is handed decisions it ignores: a stay while
+ * nobody is texting, and a break with no promise while the text is on screen.
+ * Each tick is recorded the way the page records it, so the recording is what
+ * a share code carries.
+ */
+function liveRunWithIgnoredDecisions(): {
+  recording: SharedRun;
+  raw: Frame[];
+} {
+  let state: GameState = createLevel(DEFAULT_SETUP);
+  const frames: Frame[] = [];
+  const raw: Frame[] = [];
+  for (let tick = 0; tick < 8000 && state.phase !== "done"; tick++) {
+    const inputs: Frame["inputs"] = {
+      fred: { ...IDLE_INPUT, work: tick % 7 < 3 },
+      abbi: { ...IDLE_INPUT, moveX: tick % 30 < 15 ? -1 : 1 },
+    };
+    const decision = ignoredDecisionAt(state, tick);
+    const frame: Frame = decision ? { inputs, decision } : { inputs };
+    raw.push(frame);
+    frames.push(recordedFrame(state, frame));
+    state = stepGame(state, frame).state;
+  }
+  return {
+    recording: { setup: DEFAULT_SETUP, frames, result: runResultOf(state) },
+    raw,
+  };
+}
+
+describe("For Better or Bulk run code canonical form", () => {
+  it("gives a live run with ignored decisions a share code that verifies", () => {
+    const { recording, raw } = liveRunWithIgnoredDecisions();
+    // The raw frames carry decisions the engine ignored, so a strict replay of
+    // them fails: that is why the page must not record them.
+    expect(verifyRun({ ...recording, frames: raw }).ok).toBe(false);
+    const decoded = decodeRunCode(encodeRunCode(recording));
+    expect(decoded.ok).toBe(true);
+    if (!decoded.ok) return;
+    expect(verifyRun(decoded.run).ok).toBe(true);
+  });
+
+  it("records a frame's decision only when the engine applies it", () => {
+    const state = createLevel(DEFAULT_SETUP);
+    const stay: PresenceDecision = { choice: "stay", commitment: null };
+    const idle = { inputs: { fred: IDLE_INPUT, abbi: IDLE_INPUT } };
+    expect(recordedFrame(state, { ...idle, decision: stay })).toEqual(idle);
+    expect(recordedFrame(state, idle)).toBe(idle);
+  });
+
+  it("decodes a code and re-encodes it to the same string, for any run", () => {
+    fc.assert(
+      fc.property(setup, frameStream, result, (s, frames, outcome) => {
+        const code = encodeRunCode({ setup: s, frames, result: outcome });
+        const decoded = decodeRunCode(code);
+        expect(decoded.ok).toBe(true);
+        if (!decoded.ok) return;
+        expect(encodeRunCode(decoded.run)).toBe(code);
+      }),
+      { numRuns: 150 }
+    );
+  });
+
+  it("refuses a run count padded to a longer varint, for any run", () => {
+    fc.assert(
+      fc.property(setup, frameStream, result, (s, frames, outcome) => {
+        const code = encodeRunCode({ setup: s, frames, result: outcome });
+        const body = bodyOf(code);
+        // Setup: flags, roses, food, the seed, the capability count, then the ids.
+        const countAt =
+          3 + varintBytes(s.seed ?? 0).length + 1 + s.capabilities.length;
+        const count = readVarintAt(body, countAt);
+        const padded = [
+          ...body.slice(0, countAt),
+          ...padVarint(body.slice(countAt, countAt + count.length)),
+          ...body.slice(countAt + count.length),
+        ];
+        expect(decodeRunCode(sealed(body)).ok).toBe(true);
+        expect(decodeRunCode(sealed(padded))).toMatchObject({
+          ok: false,
+          reason: "damaged",
+        });
+      }),
+      { numRuns: 100 }
+    );
+  });
+
+  it("refuses two identical frame runs in a row", () => {
+    const run = scriptedRun();
+    const code = encodeRunCode(run);
+    const body = bodyOf(code);
+    const countAt =
+      3 +
+      varintBytes(run.setup.seed ?? 0).length +
+      1 +
+      run.setup.capabilities.length;
+    const count = readVarintAt(body, countAt);
+    const firstPair = countAt + count.length;
+    const symbol = readVarintAt(body, firstPair);
+    const length = readVarintAt(body, firstPair + symbol.length);
+    const pairEnd = firstPair + symbol.length + length.length;
+    const duplicated = [
+      ...body.slice(0, countAt),
+      ...varintBytes(count.value + 1),
+      ...body.slice(countAt + count.length, pairEnd),
+      ...body.slice(firstPair, pairEnd),
+      ...body.slice(pairEnd),
+    ];
+    expect(decodeRunCode(code).ok).toBe(true);
+    expect(decodeRunCode(sealed(duplicated))).toMatchObject({
+      ok: false,
+      reason: "damaged",
+    });
   });
 });

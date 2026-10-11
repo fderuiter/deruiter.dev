@@ -345,7 +345,7 @@ export type RunTitle =
   | "Married Anyway";
 
 /** The three game challenges a finished run is checked against. */
-export type ChallengeId = "no-burnt" | "set-by-three" | "fred-stayed";
+export type ChallengeId = "no-burnt" | "set-by-three" | "every-promise-kept";
 
 /** One game challenge: whether the run met it, and the fact behind that. */
 export interface ChallengeResult {

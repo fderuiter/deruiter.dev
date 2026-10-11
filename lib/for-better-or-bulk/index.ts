@@ -21,6 +21,7 @@ export {
   IDLE_INPUT,
   ReplayError,
   frontTile,
+  recordedFrame,
   replayLevel,
   stepGame,
   validateDecision,

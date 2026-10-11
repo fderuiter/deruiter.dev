@@ -328,7 +328,7 @@ function gameWeather(state: GameState): string | null {
 export function computeReceipt(state: GameState): Receipt {
   const readiness = readinessLines(state);
   const follow = followThrough(state, readiness);
-  const challenges = evaluateChallenges(state);
+  const challenges = evaluateChallenges(state, readiness);
   return {
     spending: spending(state),
     readiness,

@@ -93,7 +93,9 @@ describe("ReplayControls", () => {
 
   it("labels every control and focuses play when a replay opens", () => {
     renderControls({ playing: false });
-    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Play replay" }));
+    expect(document.activeElement).toBe(
+      screen.getByRole("button", { name: "Play replay" })
+    );
     expect(screen.getByRole("button", { name: "Restart replay" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Exit replay" })).toBeTruthy();
     expect(screen.getByRole("group", { name: "Replay speed" })).toBeTruthy();
@@ -129,9 +131,12 @@ describe("ReplayControls", () => {
     expect(onExit).toHaveBeenCalledTimes(1);
   });
 
-  it("offers to watch again once the replay has finished", () => {
+  it("offers to replay from the start once the frames have run out", () => {
     renderControls({ playing: false, finished: true });
-    expect(screen.getByRole("button", { name: "Watch again" })).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "Replay from start" })
+    ).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Play replay" })).toBeNull();
   });
 
   it("announces the replay state in a live region", () => {
@@ -181,19 +186,21 @@ describe("ReceiptView game challenges", () => {
       "Met"
     );
     expect(
-      screen.getByTestId("fbb-challenge-fred-stayed").textContent
-    ).toContain("Fred stayed");
+      screen.getByTestId("fbb-challenge-every-promise-kept").textContent
+    ).toContain("Every promise kept");
   });
 
   it("offers replay and a copyable run link only when the run can be shared", () => {
     renderReceipt(null);
     expect(screen.queryByRole("button", { name: "Watch replay" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Copy run code" })).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Copy replay link" })
+    ).toBeNull();
   });
 
   it("copies the #run= link on the page's own origin", async () => {
     renderReceipt("f1.abc");
-    fireEvent.click(screen.getByRole("button", { name: "Copy run code" }));
+    fireEvent.click(screen.getByRole("button", { name: "Copy replay link" }));
     await waitFor(() =>
       expect(clipboard.copy).toHaveBeenCalledWith(
         "https://deruiter.dev" + window.location.pathname + "#run=f1.abc"
@@ -263,5 +270,64 @@ describe("For Better or Bulk shared links", () => {
       fireEvent.click(screen.getByRole("button", { name: "Dismiss" }));
     });
     expect(screen.queryByTestId("fbb-shared")).toBeNull();
+  });
+
+  it("clears the #run= fragment on dismiss but keeps the path and query", () => {
+    const code = encodeRunCode(idleRun());
+    window.history.replaceState(
+      null,
+      "",
+      `/arcade/for-better-or-bulk?seed=7#run=${code}`
+    );
+    render(<ForBetterOrBulkGame />);
+    fireEvent.click(screen.getByRole("button", { name: "Dismiss" }));
+    expect(window.location.hash).toBe("");
+    expect(window.location.pathname).toBe("/arcade/for-better-or-bulk");
+    expect(window.location.search).toBe("?seed=7");
+  });
+
+  it("clears the #run= fragment when the replay exits", () => {
+    const code = encodeRunCode(idleRun());
+    window.history.replaceState(
+      null,
+      "",
+      `/arcade/for-better-or-bulk#run=${code}`
+    );
+    render(<ForBetterOrBulkGame />);
+    fireEvent.click(screen.getByRole("button", { name: "Watch replay" }));
+    expect(window.location.hash).toBe(`#run=${code}`);
+    fireEvent.click(screen.getByRole("button", { name: "Exit replay" }));
+    expect(window.location.hash).toBe("");
+  });
+
+  it("exits a replay with Escape", () => {
+    const code = encodeRunCode(idleRun());
+    window.history.replaceState(
+      null,
+      "",
+      `/arcade/for-better-or-bulk#run=${code}`
+    );
+    render(<ForBetterOrBulkGame />);
+    fireEvent.click(screen.getByRole("button", { name: "Watch replay" }));
+    fireEvent.keyDown(screen.getByTestId("fbb-game"), { key: "Escape" });
+    expect(screen.queryByTestId("fbb-replay")).toBeNull();
+    expect(screen.getByTestId("fbb-setup")).toBeTruthy();
+    expect(window.location.hash).toBe("");
+  });
+
+  it("cancels a pending focus move when unmounted", () => {
+    const code = encodeRunCode(idleRun());
+    window.history.replaceState(
+      null,
+      "",
+      `/arcade/for-better-or-bulk#run=${code}`
+    );
+    const cancel = vi.spyOn(globalThis, "cancelAnimationFrame");
+    const { unmount } = render(<ForBetterOrBulkGame />);
+    fireEvent.click(screen.getByRole("button", { name: "Watch replay" }));
+    fireEvent.click(screen.getByRole("button", { name: "Exit replay" }));
+    unmount();
+    expect(cancel).toHaveBeenCalled();
+    cancel.mockRestore();
   });
 });

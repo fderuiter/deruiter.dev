@@ -6,16 +6,21 @@
 
 # Function: evaluateChallenges()
 
-> **evaluateChallenges**(`state`): readonly [`ChallengeResult`](../../../types/interfaces/ChallengeResult.md)[]
+> **evaluateChallenges**(`state`, `readiness`): readonly [`ChallengeResult`](../../../types/interfaces/ChallengeResult.md)[]
 
 The three challenges for a run, each met or not with the evidence. The
-result is derived from the level state alone, so a replay reproduces it.
+result is derived from the level state and its readiness lines alone, so a
+replay reproduces it.
 
 ## Parameters
 
 ### state
 
 [`GameState`](../../../types/interfaces/GameState.md)
+
+### readiness
+
+readonly [`ReadinessLine`](../../../types/interfaces/ReadinessLine.md)[]
 
 ## Returns
 

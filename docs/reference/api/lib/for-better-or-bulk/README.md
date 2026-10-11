@@ -572,6 +572,12 @@ Re-exports [RECEIPT_COPY](presets/variables/RECEIPT_COPY.md)
 
 ***
 
+### recordedFrame
+
+Re-exports [recordedFrame](internal/sim/functions/recordedFrame.md)
+
+***
+
 ### RELAXED\_LEVEL\_SECONDS
 
 Re-exports [RELAXED_LEVEL_SECONDS](presets/variables/RELAXED_LEVEL_SECONDS.md)

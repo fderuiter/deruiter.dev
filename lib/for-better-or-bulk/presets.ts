@@ -345,7 +345,7 @@ export const PATIO_ROWS = 4;
 /** Fixed receipt lines. The real weather line comes from the line bank. */
 export const RECEIPT_COPY = {
   leftovers: "Some. They went to the Rochester warming shelter.",
-  suit: "Fred wore the rented tux. The free suit from The Suit Wherehouse: acquired, yes. Worn, no.",
+  suit: "Fred wore the rented tux. The free suit from The Suit Wherehouse (not the real shop's name): acquired, yes. Worn, no.",
   disclaimer:
     "Game prices, not the real wedding's costs. Explanations describe this game's rules, not what would have happened at the real wedding.",
 } as const;
@@ -401,7 +401,7 @@ export const LINE_BANK: readonly BankLine[] = [
     id: "suit",
     tag: "Real",
     fact: "suit",
-    text: "The Suit Wherehouse lost Fred's suit and gave him a free one. He wore the rented tux anyway.",
+    text: "The Suit Wherehouse (a fictional homage name) lost Fred's suit and gave him a free one. He wore the rented tux anyway.",
   },
   {
     id: "morning",

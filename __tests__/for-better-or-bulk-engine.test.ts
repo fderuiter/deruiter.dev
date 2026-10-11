@@ -1680,10 +1680,12 @@ describe("the receipt's copy", () => {
     expect(LEFT_LINE).not.toContain("requested separately");
   });
 
-  it("names the tux shop on the receipt as The Suit Wherehouse", () => {
+  it("names the tux shop on the receipt and says the name is not the real shop's", () => {
     const receipt = computeReceipt(finishIdle(DEFAULT_SETUP, STAY_DECISION));
     expect(receipt.suit).toContain("The Suit Wherehouse");
-    expect(receipt.suit).not.toContain("not the real shop");
+    expect(receipt.suit).toContain(
+      "The Suit Wherehouse (not the real shop's name)"
+    );
   });
 
   it("says 'Fred stayed for the setup.' on one line of the receipt only", () => {

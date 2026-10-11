@@ -17,6 +17,7 @@ import type {
   HintOptions,
   Item,
   ItemKind,
+  Player,
   PlayerId,
   StationKind,
   SupplyKind,
@@ -120,6 +121,27 @@ function blockedStationFor(
     if (takes) return `${capitalise(STATION_NAMES[station.kind])} is full.`;
   }
   return null;
+}
+
+/**
+ * The prompt for a press with something in hand that has no tile to land on
+ * while the floor is full (round 8, S8): the press does nothing, so the prompt
+ * says why. The blocked-station line is kept in front when a station in reach
+ * is the reason as well. Null while the floor has room.
+ */
+function fullFloorPrompt(
+  state: GameState,
+  person: Player,
+  held: Item
+): string | null {
+  if (state.floor.length < FLOOR_CAP) return null;
+  const line = "The floor here is full. Find a station or the bin.";
+  const blocked = blockedStationFor(
+    state,
+    { x: Math.floor(person.x), y: Math.floor(person.y) },
+    held
+  );
+  return blocked ? `${blocked} ${line}` : line;
 }
 
 function capitalise(text: string): string {
@@ -243,7 +265,9 @@ export function getPrompt(state: GameState, id: PlayerId): Prompt {
         : null;
     if (blocked && interact) interact = `${blocked} ${interact}`;
   } else if (held) {
-    interact = wrongSlotPrompt(state, faced, held);
+    interact =
+      wrongSlotPrompt(state, faced, held) ??
+      fullFloorPrompt(state, player, held);
   }
   if (!held) {
     if (

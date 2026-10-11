@@ -56,6 +56,7 @@ import type {
 } from "../types";
 import { clamp } from "@/lib/game-utils";
 import { createLevel } from "./level";
+import { availableCommitments } from "./receipt";
 import { assistInput, assistRests, helperMayAct } from "./assist";
 import { FLOOR_TILES } from "./gates";
 import {
@@ -270,7 +271,19 @@ function setTarget(w: Working, target: Target): void {
 function interact(w: Working, id: PlayerId, helped: boolean): void {
   const player = w.state.players[id];
   const tile = interactTile(w.state, id);
-  if (!tile) return;
+  if (!tile) {
+    // A full floor takes nothing, so the press does nothing. It says so when
+    // the person faces open ground, and the prompt names the reason too.
+    const front = frontTile(player);
+    if (
+      player.holding &&
+      w.state.floor.length >= FLOOR_CAP &&
+      isWalkable(front.x, front.y)
+    ) {
+      w.events.push({ type: "floor-full", player: id });
+    }
+    return;
+  }
   const { x, y } = tile;
   const supply = w.state.supplies.find((s) => s.x === x && s.y === y);
   const station = w.state.stations.find((s) => s.x === x && s.y === y);
@@ -373,10 +386,6 @@ function interact(w: Working, id: PlayerId, helped: boolean): void {
     return;
   }
   if (!supply && !floorItem && isWalkable(x, y)) {
-    if (w.state.floor.length >= FLOOR_CAP) {
-      w.events.push({ type: "floor-full", player: id });
-      return;
-    }
     w.state = { ...w.state, floor: [...w.state.floor, { x, y, item: held }] };
     setPlayer(w, { ...player, holding: null });
     w.events.push({ type: "put-down", player: id, item: held.kind });
@@ -594,6 +603,12 @@ export function validateDecision(
       return {
         ok: false,
         reason: "A break needs a promise about what Fred comes back for.",
+      };
+    }
+    if (!availableCommitments(state).includes(decision.commitment)) {
+      return {
+        ok: false,
+        reason: "That work is already done or not in this plan.",
       };
     }
   } else if (decision.commitment) {

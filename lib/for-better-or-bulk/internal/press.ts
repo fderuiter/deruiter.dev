@@ -7,7 +7,12 @@
  * This module imports only types and presets.
  */
 
-import { PLAYER_RADIUS, VENUE_MAP, WALKABLE_TILES } from "../presets";
+import {
+  FLOOR_CAP,
+  PLAYER_RADIUS,
+  VENUE_MAP,
+  WALKABLE_TILES,
+} from "../presets";
 import type {
   GameState,
   Item,
@@ -84,9 +89,14 @@ function tileTakes(state: GameState, tile: Tile, held: Item): boolean {
   return false;
 }
 
-/** Whether an item may rest on this tile: walkable ground with nothing on it. */
+/**
+ * Whether an item may rest on this tile: walkable ground with nothing on it,
+ * and room left on the floor. A full floor takes nothing, so a press there
+ * does nothing, and the prompt says why.
+ */
 function floorDropAt(state: GameState, tile: Tile): boolean {
   if (!isWalkable(tile.x, tile.y)) return false;
+  if (state.floor.length >= FLOOR_CAP) return false;
   const occupied = [
     state.supplies,
     state.stations,
@@ -98,9 +108,12 @@ function floorDropAt(state: GameState, tile: Tile): boolean {
 
 /**
  * The tiles a body can act on, the one in front of its nearest tile first.
- * A body is a circle of PLAYER_RADIUS, so when it straddles a boundary across
- * its facing, the tile in front of each tile it overlaps counts too (round 8,
- * ADR 0060). The list is never empty and its first entry is `frontTile`.
+ * A body is a circle of PLAYER_RADIUS, and it only counts as straddling a
+ * boundary across its facing when its centre is within PLAYER_RADIUS / 2 of
+ * that boundary (round 8, ADR 0060). A body that merely overlaps a neighbour
+ * by a sliver faces only its own tile. The tile in front of a straddled
+ * neighbour then counts too. The list is never empty and its first entry is
+ * `frontTile`.
  */
 export function faceTiles(
   person: Pick<Player, "x" | "y" | "facingX" | "facingY">
@@ -108,16 +121,17 @@ export function faceTiles(
   const primary = frontTile(person);
   const cx = Math.floor(person.x);
   const cy = Math.floor(person.y);
+  const reach = PLAYER_RADIUS / 2;
   const tiles: Tile[] = [primary];
   if (person.facingY !== 0) {
-    if (person.x - PLAYER_RADIUS < cx)
+    if (person.x - cx < reach)
       tiles.push({ x: cx - 1, y: cy + person.facingY });
-    if (person.x + PLAYER_RADIUS > cx + 1)
+    if (cx + 1 - person.x < reach)
       tiles.push({ x: cx + 1, y: cy + person.facingY });
   } else if (person.facingX !== 0) {
-    if (person.y - PLAYER_RADIUS < cy)
+    if (person.y - cy < reach)
       tiles.push({ x: cx + person.facingX, y: cy - 1 });
-    if (person.y + PLAYER_RADIUS > cy + 1)
+    if (cy + 1 - person.y < reach)
       tiles.push({ x: cx + person.facingX, y: cy + 1 });
   }
   return tiles;

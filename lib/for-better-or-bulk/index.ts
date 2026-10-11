@@ -30,6 +30,7 @@ export {
   workTileFor,
 } from "./internal/sim";
 export {
+  availableCommitments,
   categoryProgress,
   computeReceipt,
   readinessLines,

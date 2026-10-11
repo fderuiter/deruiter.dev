@@ -15,16 +15,13 @@ import {
   bankText,
   LEFT_LINE,
   RELAXED_LEVEL_SECONDS,
+  availableCommitments,
   createLevel,
   type Frame,
   type GameEvent,
   type GameState,
 } from "@/lib/for-better-or-bulk";
-import {
-  BrothersDialog,
-  SETTLE_MS,
-  availableCommitments,
-} from "@/components/for-better-or-bulk/BrothersDialog";
+import { BrothersDialog } from "@/components/for-better-or-bulk/BrothersDialog";
 import {
   seedName,
   throttleFloorFull,
@@ -901,6 +898,7 @@ describe("the brothers' text (round 8, B1)", () => {
   });
 
   it("ignores an interact key in the first half second, and then lets it choose", () => {
+    const SETTLE_MS = 500;
     const opened = 1_000_000;
     const now = vi.spyOn(Date, "now").mockReturnValue(opened);
     const onDecide = vi.fn();

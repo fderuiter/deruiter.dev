@@ -10,9 +10,8 @@ import React, { useEffect, useRef, useState } from "react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import {
   BREAK_SECONDS,
-  COMMITMENT_CATEGORIES,
   LEAVE_SECONDS,
-  categoryProgress,
+  availableCommitments,
   clockLabel,
   heldLabel,
   onLevelClock,
@@ -26,7 +25,7 @@ import {
  * the interact key that was already on its way (round 8, B1) must not answer
  * a text the player has not read yet. Mouse clicks are not delayed.
  */
-export const SETTLE_MS = 500;
+const SETTLE_MS = 500;
 
 /** The keys that would activate an option by accident during the settle time. */
 const SETTLE_KEYS: ReadonlySet<string> = new Set(["Enter", " ", "e", "E"]);
@@ -56,21 +55,6 @@ function fredLine(state: GameState): string {
   return state.players.fred.calm
     ? "Fred has calmed down."
     : "Fred has not calmed down yet.";
-}
-
-/**
- * Promises worth making: ones whose work is in this plan and not yet all done.
- * A category that is already complete is left out, so a promise cannot be kept
- * for free (round 8, S6).
- */
-export function availableCommitments(state: GameState): Commitment[] {
-  return (Object.keys(COMMITMENT_CATEGORIES) as Commitment[]).filter(
-    (commitment) =>
-      COMMITMENT_CATEGORIES[commitment].some((category) => {
-        const progress = categoryProgress(state, category);
-        return progress !== null && progress.placed < progress.planned;
-      })
-  );
 }
 
 export function BrothersDialog({ state, onDecide }: BrothersDialogProps) {

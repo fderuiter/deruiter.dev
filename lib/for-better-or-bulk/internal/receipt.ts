@@ -29,6 +29,7 @@ import type {
   CapabilityId,
   Category,
   CategoryProgress,
+  Commitment,
   Condition,
   FoodTier,
   GameState,
@@ -154,6 +155,22 @@ export function categoryProgress(
     planned: counted.reduce((n, t) => n + t.capacity, 0),
     multi: counted.some((t) => t.capacity > 1),
   };
+}
+
+/**
+ * The promises a break can carry in this plan: a commitment with at least one
+ * category in the plan that is not yet all placed. A category already complete
+ * is left out, so a promise cannot be kept for free (round 8, S6). The brothers'
+ * dialog offers exactly these, and `validateDecision` refuses any other.
+ */
+export function availableCommitments(state: GameState): Commitment[] {
+  return (Object.keys(COMMITMENT_CATEGORIES) as Commitment[]).filter(
+    (commitment) =>
+      COMMITMENT_CATEGORIES[commitment].some((category) => {
+        const progress = categoryProgress(state, category);
+        return progress !== null && progress.placed < progress.planned;
+      })
+  );
 }
 
 function sourceCondition(state: GameState, category: Category): Condition {

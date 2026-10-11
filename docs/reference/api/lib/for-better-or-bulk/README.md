@@ -44,6 +44,12 @@ Re-exports [assistStatus](internal/assist/functions/assistStatus.md)
 
 ***
 
+### availableCommitments
+
+Re-exports [availableCommitments](internal/receipt/functions/availableCommitments.md)
+
+***
+
 ### BankLine
 
 Re-exports [BankLine](presets/interfaces/BankLine.md)

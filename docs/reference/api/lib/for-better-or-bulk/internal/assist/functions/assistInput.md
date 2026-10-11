@@ -10,7 +10,8 @@
 
 The input the solo assist gives `id` on this tick. Pure: the same state
 always gives the same input. It returns nothing for someone who is out,
-busy on a call or re-tying shoes, or who has no useful step.
+busy on a call or re-tying shoes, or who has no useful step. Callers also
+check `helperMayAct`, which this function does not.
 
 ## Parameters
 

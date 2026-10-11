@@ -88,6 +88,19 @@ function tickOf(state: GameState, tick: number): GameState {
   return { ...state, tick };
 }
 
+/**
+ * Records one placement by `id` on the first target. The helper reads who
+ * placed what from `filledBy` alone, so this opens its gate for the other
+ * person without changing what the target holds.
+ */
+function withPlacedBy(state: GameState, id: PlayerId): GameState {
+  const [first, ...rest] = state.targets;
+  return {
+    ...state,
+    targets: [{ ...first, filledBy: [...first.filledBy, id] }, ...rest],
+  };
+}
+
 /** Marks the targets wanting each listed item open, and every other target filled. */
 function setOpen(state: GameState, open: readonly ItemKind[]): GameState {
   return {
@@ -295,10 +308,12 @@ describe("assistInput on fixed states", () => {
 
 /** Runs a frame list through stepGame, starting from a fresh level. */
 function playFrames(setup: Setup, frames: readonly Frame[]): GameState {
-  return frames.reduce(
-    (state, frame) => stepGame(state, frame).state,
-    createLevel(setup)
-  );
+  return playFramesFrom(createLevel(setup), frames);
+}
+
+/** Runs a frame list through stepGame from the given state. */
+function playFramesFrom(start: GameState, frames: readonly Frame[]): GameState {
+  return frames.reduce((state, frame) => stepGame(state, frame).state, start);
 }
 
 const idleFrame = (assisted?: PlayerId): Frame => ({
@@ -314,13 +329,21 @@ describe("the assist in stepGame", () => {
     expect(end.players.abbi.y).toBe(start.players.abbi.y);
   });
 
-  it("moves the idle partner when the setup and the frame both ask for it", () => {
-    const start = createLevel(ASSIST_SETUP);
-    const end = playFrames(ASSIST_SETUP, Array(60).fill(idleFrame("abbi")));
+  it("moves the idle partner once the player has placed something", () => {
+    const start = withPlacedBy(createLevel(ASSIST_SETUP), "fred");
+    const end = playFramesFrom(start, Array(60).fill(idleFrame("abbi")));
     const moved =
       end.players.abbi.x !== start.players.abbi.x ||
       end.players.abbi.y !== start.players.abbi.y;
     expect(moved).toBe(true);
+  });
+
+  it("keeps the helper still while the player has placed nothing", () => {
+    const start = createLevel(ASSIST_SETUP);
+    const end = playFramesFrom(start, Array(300).fill(idleFrame("abbi")));
+    expect(end.players.abbi.x).toBe(start.players.abbi.x);
+    expect(end.players.abbi.y).toBe(start.players.abbi.y);
+    expect(end.assistTicks).toBe(0);
   });
 
   it("does not act when the frame does not name the partner", () => {
@@ -404,7 +427,13 @@ describe("the assist in stepGame", () => {
   it("shows the receipt line only when the helper actually acted", () => {
     expect(computeReceipt(createLevel(ASSIST_SETUP)).assist).toBeNull();
     expect(computeReceipt(playOut(ASSIST_SETUP)).assist).toBeNull();
-    const helped = playOut(ASSIST_SETUP, "abbi");
+    expect(computeReceipt(playOut(ASSIST_SETUP, "abbi")).assist).toBeNull();
+    const helped = playOut(
+      ASSIST_SETUP,
+      "abbi",
+      NO_INPUT,
+      withPlacedBy(createLevel(ASSIST_SETUP), "fred")
+    );
     expect(helped.assistTicks).toBeGreaterThan(0);
     expect(computeReceipt(helped).assist).toBe(ASSIST_LINE);
   });
@@ -417,9 +446,10 @@ describe("the assist in stepGame", () => {
 function playOut(
   setup: Setup,
   assisted?: PlayerId,
-  fred: PlayerInput = NO_INPUT
+  fred: PlayerInput = NO_INPUT,
+  start: GameState = createLevel(setup)
 ): GameState {
-  let state = createLevel(setup);
+  let state = start;
   let guard = 0;
   while (state.phase !== "done" && guard++ < 40000) {
     const frame: Frame = {
@@ -447,11 +477,9 @@ function idleSoloPlaced(assist: boolean): number {
 }
 
 describe("the balance of an idle solo run", () => {
-  it("places more items with the assist on than with it off", () => {
-    const off = idleSoloPlaced(false);
-    const on = idleSoloPlaced(true);
-    expect(off).toBe(0);
-    expect(on).toBeGreaterThan(off);
+  it("places nothing with the helper on, because an idle player has placed nothing", () => {
+    expect(idleSoloPlaced(false)).toBe(0);
+    expect(idleSoloPlaced(true)).toBe(0);
   });
 });
 
@@ -633,7 +661,10 @@ describe("the rose gate, shared with getHint", () => {
   });
 
   it("a solo run with only PETALS open never puts roses on ARRANGE", () => {
-    let state = setOpen(createLevel(ASSIST_SETUP), ["petals"]);
+    let state = withPlacedBy(
+      setOpen(createLevel(ASSIST_SETUP), ["petals"]),
+      "fred"
+    );
     state = {
       ...state,
       players: {
@@ -684,7 +715,10 @@ describe("what the helper fetches and what it puts down", () => {
   });
 
   it("puts down an unwanted item on the floor instead of holding it for good", () => {
-    const base = setOpen(createLevel(ASSIST_SETUP), ["lantern"]);
+    const base = withPlacedBy(
+      setOpen(createLevel(ASSIST_SETUP), ["lantern"]),
+      "fred"
+    );
     let state: GameState = {
       ...base,
       players: {
@@ -732,7 +766,10 @@ describe("what the helper fetches and what it puts down", () => {
   });
 
   it("with the floor full, an unwanted item goes back in its own crate", () => {
-    const base = setOpen(createLevel(ASSIST_SETUP), ["lantern"]);
+    const base = withPlacedBy(
+      setOpen(createLevel(ASSIST_SETUP), ["lantern"]),
+      "fred"
+    );
     const spots = freeFloorTiles(base, FLOOR_CAP);
     const full: GameState = {
       ...base,
@@ -792,7 +829,7 @@ describe("the assist's pace", () => {
 
   it("crafts arrangements at about 40% of the full pace", () => {
     const ticksToCraft = (assisted: boolean): number => {
-      const base = createLevel(ASSIST_SETUP);
+      const base = withPlacedBy(createLevel(ASSIST_SETUP), "fred");
       const table = stationOf(base, "arrange");
       const loaded: GameState = {
         ...base,
@@ -842,7 +879,7 @@ describe("the assisted receipt and replay, in full", () => {
     }
     const replay = replayLevel(ASSIST_SETUP, frames, { mode: "lenient" });
     expect(replay.dropped.map((d) => d.frame)).toEqual([0]);
-    expect(state.assistTicks).toBeGreaterThan(0);
+    expect(state.assistTicks).toBe(0);
     expect(replay.state).toEqual(state);
   });
 });
@@ -872,29 +909,49 @@ describe("the solo balance, scripted", () => {
       };
       state = stepGame(state, frame).state;
     }
-    const placed = state.targets.reduce((n, t) => n + t.filled.length, 0);
-    return { placed, finish: state.finishedAt ?? state.time };
+    const placedBy = (who: PlayerId) =>
+      state.targets.reduce(
+        (n, t) => n + t.filledBy.filter((w) => w === who).length,
+        0
+      );
+    const fred = placedBy("fred");
+    const abbi = placedBy("abbi");
+    return {
+      placed: fred + abbi,
+      fred,
+      abbi,
+      finish: state.finishedAt ?? state.time,
+    };
   }
 
-  it("the helper alone places most of the planned items", () => {
-    const planned = createLevel(ASSIST_SETUP).targets.filter(
-      (t) => t.status === "open"
-    ).length;
-    const placed = playOut(ASSIST_SETUP, "abbi").targets.reduce(
-      (n, t) => n + t.filled.length,
-      0
-    );
-    // 21 items are planned. At two active ticks in five the helper places
-    // 13 (about 60%), so the bar is more than half of the plan.
-    expect(placed).toBeGreaterThan(planned / 2);
-  }, 30000);
+  it("with a working player the helper places fewer items than they do, and finishes the day sooner", () => {
+    for (const seed of [0, 4242, 12345]) {
+      for (const relaxed of [false, true]) {
+        const setup: Setup = { ...DEFAULT_SETUP, seed, relaxed };
+        const solo = scriptedSolo(setup, false);
+        const helped = scriptedSolo({ ...setup, assist: true }, true);
+        const label = `seed ${seed}, relaxed ${relaxed}`;
+        expect(helped.abbi, label).toBeGreaterThan(0);
+        expect(helped.abbi, label).toBeLessThanOrEqual(helped.fred);
+        expect(helped.finish + 15, label).toBeLessThan(solo.finish);
+      }
+    }
+  }, 120000);
 
-  it("on the relaxed clock an idle player with the helper leaves work open (seeds 0 and 4242)", () => {
-    for (const seed of [0, 4242]) {
-      for (const helped of ["abbi", "fred"] as const) {
-        const state = playOut({ ...ASSIST_SETUP, relaxed: true, seed }, helped);
-        const open = state.targets.filter((t) => t.status === "open").length;
-        expect(open, `seed ${seed}, helper for ${helped}`).toBeGreaterThan(0);
+  it("an idle player with the helper on leaves most targets open, on both difficulties", () => {
+    for (const seed of [0, 4242, 12345]) {
+      for (const relaxed of [false, true]) {
+        for (const helped of ["abbi", "fred"] as const) {
+          const label = `seed ${seed}, relaxed ${relaxed}, helper for ${helped}`;
+          const state = playOut({ ...ASSIST_SETUP, relaxed, seed }, helped);
+          const helperPlaced = state.targets.reduce(
+            (n, t) => n + t.filledBy.filter((w) => w === helped).length,
+            0
+          );
+          const open = state.targets.filter((t) => t.status === "open").length;
+          expect(helperPlaced, label).toBe(0);
+          expect(open, label).toBeGreaterThan(state.targets.length / 2);
+        }
       }
     }
   }, 120000);
@@ -946,7 +1003,10 @@ describe("the helper keeps out of its partner's way", () => {
   });
 
   it("names its goal in the status line", () => {
-    const base = setOpen(createLevel(ASSIST_SETUP), ["arrangement"]);
+    const base = withPlacedBy(
+      setOpen(createLevel(ASSIST_SETUP), ["arrangement"]),
+      "fred"
+    );
     const state = facingTile(base, "abbi", base.targets[0], ARRANGEMENT);
     expect(assistStatus(state, "abbi")).toMatch(/^Helper: carrying /);
     expect(assistStatus(state, "abbi")).toMatch(/\.$/);

@@ -32,6 +32,41 @@ function contrastRatio(a: string, b: string): number {
   return (hi + 0.05) / (lo + 0.05);
 }
 
+/** The CSS with comments and @keyframes blocks removed: the static rules only. */
+function staticRules(css: string): string {
+  const withoutComments = css.replace(/\/\*[\s\S]*?\*\//g, "");
+  let out = "";
+  let index = 0;
+  for (;;) {
+    const start = withoutComments.indexOf("@keyframes", index);
+    if (start === -1) return out + withoutComments.slice(index);
+    out += withoutComments.slice(index, start);
+    const open = withoutComments.indexOf("{", start);
+    let depth = 0;
+    let end = open;
+    for (; end < withoutComments.length; end++) {
+      const ch = withoutComments[end];
+      if (ch === "{") depth++;
+      if (ch === "}" && --depth === 0) break;
+    }
+    index = end + 1;
+  }
+}
+
+/** Opacity values below 1 on rules that style the cabinet, receipt included. */
+function dimmingCabinetRules(css: string): string[] {
+  const dimmed: string[] = [];
+  for (const rule of staticRules(css).matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    const selector = rule[1].trim();
+    if (!selector.includes("data-fbb-cabinet")) continue;
+    for (const decl of rule[2].matchAll(/(?<![\w-])opacity:\s*([\d.]+)/g)) {
+      if (Number(decl[1]) < 1)
+        dimmed.push(`${selector} { opacity: ${decl[1]} }`);
+    }
+  }
+  return dimmed;
+}
+
 /** The custom properties declared in the cabinet's own block, as hex values. */
 function cabinetTokens(css: string): Map<string, string> {
   const block = /\[data-fbb-cabinet\] \{([\s\S]*?)\n\}/.exec(css)?.[1] ?? "";
@@ -127,7 +162,8 @@ describe("receipt text contrast (#1927)", () => {
     }
   });
 
-  it("uses no opacity to fade receipt text", () => {
+  it("uses no opacity to fade receipt text, in the component or the cabinet's rules", () => {
     expect(source).not.toMatch(/text-[^\s"`]*\/\d+|\bopacity-\d+/);
+    expect(dimmingCabinetRules(css)).toEqual([]);
   });
 });

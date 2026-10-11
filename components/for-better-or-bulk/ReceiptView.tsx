@@ -32,6 +32,13 @@ interface ReceiptViewProps {
   onWatchReplay: () => void;
 }
 
+/** Whether the viewer asked for less motion; the scroll then jumps instead of gliding. */
+function prefersReducedMotion(): boolean {
+  return (
+    window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false
+  );
+}
+
 const BUTTON_CLASS =
   "min-h-11 rounded border px-4 text-xs font-bold uppercase tracking-wide active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--fbb-focus)]";
 
@@ -44,9 +51,19 @@ export function ReceiptView({
 }: ReceiptViewProps) {
   const [copyNote, setCopyNote] = useState("");
   const titleRef = useRef<HTMLHeadingElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
 
-  // The playback hands over here, so focus moves to the receipt rather than dropping to the page.
+  // The playback hands over here. The receipt scrolls to the top of the page
+  // below the sticky navbar (its scroll margin clears the bar), then takes focus
+  // without a second scroll.
   useEffect(() => {
+    const root = rootRef.current;
+    if (root && typeof root.scrollIntoView === "function") {
+      root.scrollIntoView({
+        block: "start",
+        behavior: prefersReducedMotion() ? "auto" : "smooth",
+      });
+    }
     titleRef.current?.focus({ preventScroll: true });
   }, []);
 
@@ -71,7 +88,8 @@ export function ReceiptView({
 
   return (
     <div
-      className="flex w-full min-w-0 flex-col gap-4 border-x-2 border-dashed border-[var(--fbb-rule)] bg-[var(--fbb-panel)] p-3 font-mono tabular-nums text-[var(--fbb-text)] sm:p-6"
+      ref={rootRef}
+      className="scroll-mt-28 flex w-full min-w-0 flex-col gap-4 border-x-2 border-dashed border-[var(--fbb-rule)] bg-[var(--fbb-panel)] p-3 font-mono tabular-nums text-[var(--fbb-text)] sm:p-6"
       data-testid="fbb-receipt"
     >
       <div className="min-w-0 border-b border-dashed border-[var(--fbb-rule)] pb-3">

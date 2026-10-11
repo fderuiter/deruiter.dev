@@ -464,8 +464,10 @@ describe("the receipt's weather", () => {
 
   it("labels a shower as game weather, apart from the real line", () => {
     const receipt = computeReceipt(runToEnd(seeded(7)).state);
-    expect(receipt.weather).toBe(bankText("weather"));
-    expect(receipt.weather).not.toMatch(/shower|game/i);
+    expect(receipt.weather).toBe(
+      "The game had a shower. The real weather is in the notes at the bottom."
+    );
+    expect(receipt.weather).not.toMatch(/perfect/i);
     expect(receipt.gameWeather).toMatch(
       /^Game weather, not the real day: a shower from .* slowed walking on the lawn\.$/
     );

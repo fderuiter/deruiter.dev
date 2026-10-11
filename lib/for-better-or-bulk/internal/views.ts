@@ -14,7 +14,13 @@ import {
   VENUE_MAP,
   WALKABLE_TILES,
 } from "../presets";
-import type { GameState, ItemKind, PlayerId, SupplyKind } from "../types";
+import type {
+  GameState,
+  HintOptions,
+  ItemKind,
+  PlayerId,
+  SupplyKind,
+} from "../types";
 import { freeStation, openTarget, roseStation, stationsOf } from "./gates";
 import {
   CRATE_ITEM_NAMES,
@@ -206,8 +212,35 @@ function carryHint(state: GameState, held: ItemKind): string | null {
   }
 }
 
-/** The next step for someone with free hands: what finished work needs first. */
-function fetchHint(state: GameState): string | null {
+/** The hint to grab roses, when the rose station can take them. */
+function roseGrab(state: GameState): string | null {
+  return state.stock.roses > 0 && roseStation(state) !== null
+    ? grabHint(state, "roses")
+    : null;
+}
+
+/** The hint to grab raw food for the grill, when an open buffet item wants it. */
+function foodGrab(state: GameState): string | null {
+  for (const raw of ["hotdogs-raw", "wings-raw"] as const) {
+    const cooked = COOKED[raw];
+    if (
+      cooked &&
+      state.stock[raw] > 0 &&
+      openTarget(state, cooked) &&
+      freeStation(state, "grill")
+    ) {
+      return grabHint(state, raw);
+    }
+  }
+  return null;
+}
+
+/**
+ * The next step for someone with free hands: what finished work needs first.
+ * The grab hints come in the order `lead` gives: roses first, or raw food
+ * first for the co-op second person.
+ */
+function fetchHint(state: GameState, lead: "roses" | "food"): string | null {
   for (const grill of stationsOf(state, "grill")) {
     const item = grill.item;
     if (item?.kind === "hotdogs" || item?.kind === "wings")
@@ -243,19 +276,10 @@ function fetchHint(state: GameState): string | null {
   ) {
     return `Stand at ${STATION_NAMES.petals} and hold work to pluck petals.`;
   }
-  if (state.stock.roses > 0 && roseStation(state) !== null) {
-    return grabHint(state, "roses");
-  }
-  for (const raw of ["hotdogs-raw", "wings-raw"] as const) {
-    const cooked = COOKED[raw];
-    if (
-      cooked &&
-      state.stock[raw] > 0 &&
-      openTarget(state, cooked) &&
-      freeStation(state, "grill")
-    ) {
-      return grabHint(state, raw);
-    }
+  const grabs = lead === "food" ? [foodGrab, roseGrab] : [roseGrab, foodGrab];
+  for (const grab of grabs) {
+    const hint = grab(state);
+    if (hint) return hint;
   }
   for (const kind of ["mac", "quinoa", "chairs", "lantern"] as const) {
     if (state.stock[kind] > 0 && openTarget(state, kind))
@@ -265,14 +289,20 @@ function fetchHint(state: GameState): string | null {
 }
 
 /**
- * The next useful step for one person, in plain words, or null when there is
- * nothing useful for them to do (the level is over, or they are away).
+ * The coach's next step for one person, in plain words, or null when there is
+ * nothing useful for them to do (the level is over, or they are away). Co-op
+ * options give each person their own starting job.
  */
-export function getHint(state: GameState, id: PlayerId): string | null {
+export function getHint(
+  state: GameState,
+  id: PlayerId,
+  options: HintOptions = {}
+): string | null {
   if (state.phase === "done") return null;
   const player = state.players[id];
   if (player.presence === "away") return null;
-  return player.holding
-    ? carryHint(state, player.holding.kind)
-    : fetchHint(state);
+  if (player.holding) return carryHint(state, player.holding.kind);
+  // In co-op the second person starts on the food, so the two lines differ.
+  const lead = options.coop && id === "abbi" ? "food" : "roses";
+  return fetchHint(state, lead);
 }

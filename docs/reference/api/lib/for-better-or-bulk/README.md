@@ -350,6 +350,12 @@ Re-exports [getPrompt](internal/views/functions/getPrompt.md)
 
 ***
 
+### HintOptions
+
+Re-exports [HintOptions](types/interfaces/HintOptions.md)
+
+***
+
 ### IDLE\_FRAME
 
 Re-exports [IDLE_FRAME](internal/sim/variables/IDLE_FRAME.md)

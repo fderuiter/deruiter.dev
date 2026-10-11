@@ -6,10 +6,11 @@
 
 # Function: getHint()
 
-> **getHint**(`state`, `id`): `string` \| `null`
+> **getHint**(`state`, `id`, `options?`): `string` \| `null`
 
-The next useful step for one person, in plain words, or null when there is
-nothing useful for them to do (the level is over, or they are away).
+The coach's next step for one person, in plain words, or null when there is
+nothing useful for them to do (the level is over, or they are away). Co-op
+options give each person their own starting job.
 
 ## Parameters
 
@@ -20,6 +21,10 @@ nothing useful for them to do (the level is over, or they are away).
 ### id
 
 [`PlayerId`](../../../types/type-aliases/PlayerId.md)
+
+### options?
+
+[`HintOptions`](../../../types/interfaces/HintOptions.md) = `{}`
 
 ## Returns
 

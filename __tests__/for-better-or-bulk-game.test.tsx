@@ -512,12 +512,28 @@ describe("For Better or Bulk coach strip and counts", () => {
     );
   });
 
-  it("gives both people a hint in co-op", () => {
+  it("gives both people a hint in co-op, and each starts on a different job (#1931)", () => {
     render(<ForBetterOrBulkGame initialMode="coop" />);
     start();
-    const coach = screen.getByTestId("fbb-coach").textContent ?? "";
-    expect(coach).toContain("Fred: Grab roses");
-    expect(coach).toContain("Abbi: Grab roses");
+    const lines = within(screen.getByTestId("fbb-coach"))
+      .getAllByRole("listitem")
+      .map((item) => item.textContent ?? "");
+    expect(lines).toHaveLength(2);
+    expect(lines[0]).toMatch(/^Fred: Grab roses from the ROSE crate/);
+    expect(lines[1]).toMatch(/^Abbi: Grab raw (hot dogs|wings) from the /);
+    expect(lines[1]).not.toContain("roses");
+  });
+
+  it("moves co-op Tab to Pause rather than out of the cabinet to Hide tips (#1931)", () => {
+    render(<ForBetterOrBulkGame initialMode="coop" />);
+    start();
+    fireEvent.keyDown(game(), { key: "Tab", code: "Tab" });
+    expect(document.activeElement).toBe(
+      screen.getByRole("button", { name: "Pause" })
+    );
+    expect(document.activeElement).not.toBe(
+      screen.queryByRole("button", { name: "Hide tips" })
+    );
   });
 
   it("hides the strip, remembers the choice, and shows it again on request", () => {
@@ -678,12 +694,36 @@ describe("For Better or Bulk side panel: helper, partner and day (fbb round)", (
       />
     );
     start();
-    expect(screen.getByTestId("fbb-seed-name").textContent).toBe("Seed 12345");
+    expect(screen.getByTestId("fbb-seed-name").textContent).toMatch(
+      /^Seed 12345 · shower at \d{1,2}:\d{2}, rush at \d{1,2}:\d{2}$/
+    );
     expect(screen.getByTestId("fbb-active").textContent).toContain(
       "Shift+Tab to reach Pause"
     );
     expect(screen.getByTestId("fbb-helper").textContent).toMatch(
       /^Helper: .+\.$/
+    );
+  });
+
+  it("says before starting that helper and sped-up days earn no trophies or board score", () => {
+    render(<ForBetterOrBulkGame />);
+    const line =
+      "Helper days and sped-up days don't earn trophies or a board score.";
+    expect(screen.getByTestId("fbb-no-rewards").textContent).toBe(line);
+    expect(screen.getByTestId("fbb-setup").textContent).toContain(
+      "Helper days don't earn trophies or a board score."
+    );
+  });
+
+  it("keeps the no-trophy line on the side panel during a helper day", () => {
+    render(
+      <ForBetterOrBulkGame
+        initialSetup={{ ...DEFAULT_SETUP, assist: true, seed: 12345 }}
+      />
+    );
+    start();
+    expect(screen.getByTestId("fbb-no-rewards").textContent).toContain(
+      "earn trophies or a board score"
     );
   });
 

@@ -63,7 +63,7 @@ import {
   checklistLine,
   completedCategories,
   playStepSounds,
-  seedName,
+  seedHeader,
   throttleFloorFull,
   type FeedbackEvent,
 } from "./messages";
@@ -80,7 +80,7 @@ import { playSfx } from "./sfx";
 import { readHideTips, subscribeHideTips, writeHideTips } from "./hint-storage";
 import { ReceiptView } from "./ReceiptView";
 import { ReplayControls, type ReplaySpeed } from "./ReplayControls";
-import { runTrophyIds } from "./rewards";
+import { NO_REWARD_LINE, runTrophyIds } from "./rewards";
 import { SetupScreen } from "./SetupScreen";
 import {
   burstLifetime,
@@ -801,6 +801,13 @@ export function ForBetterOrBulkGame({
     }
     if (event.target !== boundaryRef.current) return;
     if (paused) return;
+    if (event.key === "Tab" && mode === "coop") {
+      // Co-op has no swap, so Tab does not walk out of the cabinet into the
+      // coach tips. It lands on Pause, where Shift+Tab goes in solo play.
+      event.preventDefault();
+      pauseRef.current?.focus({ preventScroll: true });
+      return;
+    }
     if (event.key === "Tab" && mode === "solo" && event.shiftKey) {
       // Tab swaps people in solo play, so Shift+Tab moves to Pause instead.
       event.preventDefault();
@@ -992,7 +999,7 @@ export function ForBetterOrBulkGame({
             data-testid="fbb-seed-name"
             className="min-w-0 break-words text-[var(--fbb-dim)]"
           >
-            {seedName(view.setup.seed ?? 0, todaysSeed)}
+            {seedHeader(view, todaysSeed)}
           </span>
           {eventLines.map((line) => (
             <span
@@ -1078,7 +1085,7 @@ export function ForBetterOrBulkGame({
                   {shown.map((id) => {
                     // An away person is already said in their prompt.
                     if (view.players[id].presence === "away") return null;
-                    const hint = getHint(view, id);
+                    const hint = getHint(view, id, { coop: mode === "coop" });
                     if (!hint) return null;
                     return (
                       <li key={id} className="break-words">
@@ -1171,6 +1178,14 @@ export function ForBetterOrBulkGame({
                 {assistStatus(view, partner)}
               </p>
             ) : null}
+            {(mode === "solo" && view.setup.assist) || speed !== 1 ? (
+              <p
+                data-testid="fbb-no-rewards"
+                className="min-w-0 break-words pt-2 text-[var(--fbb-dim)]"
+              >
+                {NO_REWARD_LINE}
+              </p>
+            ) : null}
           </div>
         </div>
 
@@ -1233,7 +1248,7 @@ export function ForBetterOrBulkGame({
           next === null && event.target !== event.currentTarget;
         if (phase === "playing" && !removedChild) setPaused(true);
       }}
-      className="@container relative flex min-h-[460px] w-full min-w-0 flex-col items-stretch bg-[var(--fbb-stage)] text-[var(--fbb-text)] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--fbb-focus)]"
+      className="@container relative isolate flex min-h-[460px] w-full min-w-0 flex-col items-stretch bg-[var(--fbb-stage)] text-[var(--fbb-text)] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--fbb-focus)]"
     >
       <div
         role="status"

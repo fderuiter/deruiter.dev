@@ -459,10 +459,33 @@ function planFor(state: GameState, id: PlayerId): Plan | null {
   return null;
 }
 
+/** Items a person has placed on targets so far, read from who filled each. */
+function placedCount(state: GameState, id: PlayerId): number {
+  let count = 0;
+  for (const target of state.targets) {
+    for (const who of target.filledBy) if (who === id) count++;
+  }
+  return count;
+}
+
+/**
+ * Whether the helper may act for `id` on this state. The helper supports the
+ * person it is not controlling, so it places fewer items than that person
+ * does: it starts only once they have placed more, and it stops when it
+ * catches up. An idle player therefore gets no help, and a working player gets
+ * about as many placements from the helper as they make. The simulation
+ * checks this before it uses `assistInput`, and so does `assistStatus`. Pure.
+ */
+export function helperMayAct(state: GameState, id: PlayerId): boolean {
+  const other: PlayerId = id === "fred" ? "abbi" : "fred";
+  return placedCount(state, id) < placedCount(state, other);
+}
+
 /**
  * The input the solo assist gives `id` on this tick. Pure: the same state
  * always gives the same input. It returns nothing for someone who is out,
- * busy on a call or re-tying shoes, or who has no useful step.
+ * busy on a call or re-tying shoes, or who has no useful step. Callers also
+ * check `helperMayAct`, which this function does not.
  */
 export function assistInput(state: GameState, id: PlayerId): PlayerInput {
   const player = state.players[id];
@@ -486,6 +509,10 @@ export function assistStatus(state: GameState, id: PlayerId): string {
   if (player.presence === "away")
     return `Helper: waiting for ${name} to be back.`;
   if (player.busyFor > 0) return `Helper: waiting for ${name} to be free.`;
+  if (!helperMayAct(state, id)) {
+    const other = id === "fred" ? "Abbi" : "Fred";
+    return `Helper: waiting for ${other} to place something first.`;
+  }
   const plan = planFor(state, id);
   return plan
     ? `Helper: ${plan.text}.`

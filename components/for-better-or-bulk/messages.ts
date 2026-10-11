@@ -8,6 +8,7 @@ import {
   BLOCKED_TOASTS,
   bankText,
   CATEGORY_LABELS,
+  clockLabel,
   FLOOR_FULL_REPEAT_SECONDS,
   INTERRUPTIONS,
   type Category,
@@ -50,6 +51,28 @@ export function seedName(seed: number, todaysSeed: number): string {
   if (seed === 0) return "Standard day";
   if (seed === todaysSeed) return "Today's seed";
   return `Seed ${seed}`;
+}
+
+/** The short header name for each seeded event. */
+const SEEDED_EVENT_HEADER: Readonly<Record<SeededEventId, string>> = {
+  shower: "shower",
+  "guest-rush": "rush",
+};
+
+/**
+ * The header's seed line: the day's name, then its seeded events by clock time,
+ * such as "Seed 12345 · shower at 1:10, rush at 2:30". A standard day has none.
+ */
+export function seedHeader(state: GameState, todaysSeed: number): string {
+  const name = seedName(state.setup.seed ?? 0, todaysSeed);
+  if (state.seeded.length === 0) return name;
+  const events = state.seeded
+    .map(
+      (event) =>
+        `${SEEDED_EVENT_HEADER[event.id]} at ${clockLabel(event.at, state.duration)}`
+    )
+    .join(", ");
+  return `${name} · ${events}`;
 }
 
 /** The status lines for the seeded events on at the level's current time. */

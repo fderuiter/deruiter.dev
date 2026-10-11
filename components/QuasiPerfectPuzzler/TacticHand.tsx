@@ -75,8 +75,8 @@ export const TacticHand: React.FC<TacticHandProps> = ({
         aria-label="Tactic hand"
         className={
           fanned
-            ? "flex items-end justify-center px-2 pt-4 pb-2"
-            : "flex flex-wrap items-end justify-center gap-2 pt-4 pb-2"
+            ? "flex items-end justify-center px-2 pt-4 pb-2 [@media(max-height:820px)]:pt-1"
+            : "flex flex-wrap items-end justify-center gap-2 pt-4 pb-2 [@media(max-height:820px)]:pt-1"
         }
       >
         {cards.map(({ item, tacticId, tactic, isDisabled }, idx) => {

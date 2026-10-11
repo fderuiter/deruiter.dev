@@ -3,6 +3,7 @@
 import React, {
   useState,
   useCallback,
+  useEffect,
   useSyncExternalStore,
   useMemo,
   useRef,
@@ -107,8 +108,12 @@ function writeStoredProgress(progress: GameProgressState): void {
   safeSetRawItem(STORAGE_KEY, JSON.stringify(progress), {
     retainInMemory: false,
   });
-  const completedCount = Object.keys(progress.completedLevels || {}).length;
-  recordArcadeScore("quasi-puzzler", completedCount * 100);
+  // A proof admitted with sorry is not a proof, so it earns neither arcade
+  // score nor the first-proof trophy that the score unlocks (#1939).
+  const provenCount = Object.values(progress.completedLevels || {}).filter(
+    (score) => score && !score.usedSorry && score.stars > 0
+  ).length;
+  recordArcadeScore("quasi-puzzler", provenCount * 100);
 }
 
 function isGameMode(value: string | null): value is GameMode {
@@ -208,6 +213,36 @@ export const QuasiPerfectPuzzler: React.FC = () => {
     () => parseGameProgress(rawProgress),
     [rawProgress]
   );
+
+  // Totals for the campaign-complete card: only honest proofs count (#1939).
+  const campaignStars = useMemo(() => {
+    let earned = 0;
+    let proven = 0;
+    for (const lvl of puzzleLevels) {
+      const best = parsedProgress.completedLevels?.[lvl.id];
+      if (best && best.completed && !best.usedSorry && best.stars > 0) {
+        earned += best.stars;
+        proven += 1;
+      }
+    }
+    return { earned, proven, possible: puzzleLevels.length * 3 };
+  }, [parsedProgress]);
+
+  // Escape hides the result card for this run so the solved board can be read.
+  const [dismissedScoreAt, setDismissedScoreAt] = useState<number | null>(null);
+  const showResultRef = useRef<HTMLButtonElement | null>(null);
+  const dismissResult = useCallback((timestamp: number) => {
+    setDismissedScoreAt(timestamp);
+    // Hand focus to the button that reopens the card, so keyboard players
+    // are not dropped at the top of the cabinet.
+    requestAnimationFrame(() => {
+      const button = showResultRef.current;
+      button?.focus({ preventScroll: true });
+      if (typeof button?.scrollIntoView === "function") {
+        button.scrollIntoView({ block: "nearest" });
+      }
+    });
+  }, []);
 
   const saveProgress = useCallback(
     (score: LevelScore) => {
@@ -690,12 +725,24 @@ export const QuasiPerfectPuzzler: React.FC = () => {
   }, [loadLevel, currentLevelIndex, playNote]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLElement>) => {
+    // Typing in the Sandbox fields must reach the field, not the shortcuts.
+    const target = e.target as HTMLElement | null;
+    if (
+      target?.closest(
+        "input, textarea, select, [contenteditable='true'], [role='dialog']"
+      )
+    ) {
+      return;
+    }
+    if (e.altKey) return;
     if (e.key === "z" && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       handleUndo();
     } else if (e.key === "y" && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       handleRedo();
+    } else if (e.ctrlKey || e.metaKey) {
+      return;
     } else if (e.key === "r" || e.key === "R") {
       e.preventDefault();
       handleResetLevel();
@@ -707,6 +754,9 @@ export const QuasiPerfectPuzzler: React.FC = () => {
       setShowLeanInspector((prev) => !prev);
     } else if (e.key === "b" || e.key === "B") {
       e.preventDefault();
+      // Stop this press reaching the window, where the briefing's own
+      // B-to-close listener is already attached by the time it bubbles (#1939).
+      e.stopPropagation();
       setShowBriefingModal((prev) => !prev);
     } else if (e.key === "m" || e.key === "M") {
       e.preventDefault();
@@ -772,6 +822,73 @@ export const QuasiPerfectPuzzler: React.FC = () => {
     [loadLevel]
   );
   const { isFullscreen, toggleFullscreen } = useFullscreen(containerRef);
+
+  // Deep proof trees push the tactic hand below the fold on desktop screens.
+  // While the game fills the view but the hand's slot is cut off at the
+  // bottom, the hand docks to the bottom of the viewport; its slot keeps the
+  // height so nothing jumps (#1939).
+  const handSlotRef = useRef<HTMLDivElement | null>(null);
+  const handRef = useRef<HTMLDivElement | null>(null);
+  const [handDock, setHandDock] = useState<{
+    left: number;
+    width: number;
+    height: number;
+  } | null>(null);
+
+  const updateHandDock = useCallback(() => {
+    const slot = handSlotRef.current;
+    const hand = handRef.current;
+    const section = containerRef.current;
+    if (!slot || !hand || !section) return;
+    const viewportBottom = window.innerHeight;
+    const slotRect = slot.getBoundingClientRect();
+    const sectionRect = section.getBoundingClientRect();
+    const shouldDock =
+      slotRect.height > 0 &&
+      slotRect.bottom > viewportBottom + 1 &&
+      sectionRect.top < viewportBottom / 2;
+    setHandDock((prev) => {
+      if (!shouldDock) return prev === null ? prev : null;
+      const height = hand.offsetHeight;
+      const next = { left: slotRect.left, width: slotRect.width, height };
+      return prev &&
+        prev.left === next.left &&
+        prev.width === next.width &&
+        prev.height === next.height
+        ? prev
+        : next;
+    });
+  }, []);
+
+  useEffect(() => {
+    if (activeTab !== "campaign" || typeof window === "undefined") return;
+    let frame = 0;
+    const schedule = () => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = 0;
+        updateHandDock();
+      });
+    };
+    schedule();
+    window.addEventListener("scroll", schedule, {
+      passive: true,
+      capture: true,
+    });
+    window.addEventListener("resize", schedule);
+    const observer =
+      typeof ResizeObserver === "undefined"
+        ? null
+        : new ResizeObserver(schedule);
+    if (observer && containerRef.current)
+      observer.observe(containerRef.current);
+    return () => {
+      if (frame) window.cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", schedule, { capture: true });
+      window.removeEventListener("resize", schedule);
+      observer?.disconnect();
+    };
+  }, [activeTab, updateHandDock]);
 
   const latestLog = logs.length > 1 ? logs[logs.length - 1] : undefined;
   const modeButtonClass = (isOn: boolean) =>
@@ -889,11 +1006,15 @@ export const QuasiPerfectPuzzler: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowBriefingModal(true)}
+                  title="Theory Briefing (B)"
                   className={quietButtonClass}
                 >
                   <IconSparkles className="w-3.5 h-3.5 qp-text-accent" />
+                  {/* Icon-only below xl keeps the header on one row at
+                      1024px, so the tactic hand stays on screen (#1939). */}
                   <span>
-                    <span className="sr-only">Theory </span>Briefing
+                    <span className="sr-only">Theory </span>
+                    <span className="sr-only xl:not-sr-only">Briefing</span>
                   </span>
                 </button>
                 <button
@@ -1000,10 +1121,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
                 >
                   {currentLevel.title}
                 </h3>
-                <p
-                  title={currentLevel.description}
-                  className="text-xs text-zinc-400 break-words line-clamp-2 xl:line-clamp-1"
-                >
+                <p className="text-xs text-zinc-400 break-words">
                   {currentLevel.description}
                 </p>
               </div>
@@ -1217,9 +1335,11 @@ export const QuasiPerfectPuzzler: React.FC = () => {
               className="pointer-events-none absolute inset-0 rounded-2xl opacity-0"
             />
           </div>
-          {/* Off-screen Accessible DOM Fallback Subtree */}
+          {/* Accessible DOM fallback: off-screen until keyboard focus enters it,
+              then shown so sighted keyboard users can see the focused control (#1939). */}
           <div
-            className="sr-only"
+            data-testid="quasi-accessible-controls"
+            className="sr-only focus-within:not-sr-only focus-within:mt-3 focus-within:block focus-within:rounded-xl focus-within:border focus-within:border-zinc-800 focus-within:bg-[#13151a] focus-within:p-3 focus-within:text-sm focus-within:text-zinc-200 [&_button]:m-1 [&_button]:min-h-11 [&_button]:rounded-md [&_button]:border [&_button]:border-zinc-700 [&_button]:px-3 [&_button]:py-2 [&_button:disabled]:opacity-50 [&_output]:mr-3 [&_output]:text-zinc-400"
             aria-label="Quasi-Puzzler Accessible Subtree"
           >
             <fieldset>
@@ -1312,27 +1432,49 @@ export const QuasiPerfectPuzzler: React.FC = () => {
             </fieldset>
           </div>
 
-          {/* Tactic Hand, fanned under the board */}
-          <div className="mt-1">
-            <TacticHand
-              availableTactics={currentLevel.availableTactics}
-              currentRam={currentRam}
-              selectedTacticIndex={selectedTacticIndex}
-              onSelectTactic={(idx) => {
-                playNote(523.25, 0.05);
-                if (selectedTargetId !== null) {
-                  executeTacticOnNode(idx, selectedTargetId);
-                } else {
-                  setSelectedTacticIndex((prev) => (prev === idx ? null : idx));
-                }
-              }}
-              onCardDragStart={(idx) => {
-                setSelectedTacticIndex(idx);
-                playNote(523.25, 0.03);
-              }}
-              onCardDragEnd={handleCardDragEnd}
-              isProofComplete={levelSolved}
-            />
+          {/* Tactic Hand, fanned under the board; docks when cut off */}
+          <div
+            ref={handSlotRef}
+            className="mt-1"
+            style={handDock ? { height: handDock.height } : undefined}
+          >
+            <div
+              ref={handRef}
+              data-testid="quasi-tactic-hand-dock"
+              data-docked={handDock ? "true" : "false"}
+              className={
+                handDock
+                  ? "fixed bottom-0 z-40 rounded-t-xl border border-b-0 border-[color:var(--qp-hairline)] bg-[color:var(--qp-stage)] px-3 pt-1 pb-3 shadow-[0_-12px_32px_-12px_rgba(0,0,0,0.9)]"
+                  : undefined
+              }
+              style={
+                handDock
+                  ? { left: handDock.left, width: handDock.width }
+                  : undefined
+              }
+            >
+              <TacticHand
+                availableTactics={currentLevel.availableTactics}
+                currentRam={currentRam}
+                selectedTacticIndex={selectedTacticIndex}
+                onSelectTactic={(idx) => {
+                  playNote(523.25, 0.05);
+                  if (selectedTargetId !== null) {
+                    executeTacticOnNode(idx, selectedTargetId);
+                  } else {
+                    setSelectedTacticIndex((prev) =>
+                      prev === idx ? null : idx
+                    );
+                  }
+                }}
+                onCardDragStart={(idx) => {
+                  setSelectedTacticIndex(idx);
+                  playNote(523.25, 0.03);
+                }}
+                onCardDragEnd={handleCardDragEnd}
+                isProofComplete={levelSolved}
+              />
+            </div>
           </div>
 
           {/* Accordion Drawers for Secondary IDE Panels & Diagnostic Terminal Log */}
@@ -1361,22 +1503,45 @@ export const QuasiPerfectPuzzler: React.FC = () => {
           />
 
           {/* Victory Modal */}
-          {levelSolved && currentScore && (
-            <VictoryModal
-              score={currentScore}
-              savedBest={parsedProgress.completedLevels?.[currentLevel.id]}
-              level={currentLevel}
-              totalLevels={puzzleLevels.length}
-              currentLevelIndex={currentLevelIndex}
-              leanCode={generatedLeanScript}
-              onNextLevel={() => {
-                if (currentLevelIndex < puzzleLevels.length - 1) {
-                  loadLevel(currentLevelIndex + 1);
+          {levelSolved &&
+            currentScore &&
+            dismissedScoreAt === currentScore.timestamp && (
+              <div className="mt-2 flex justify-center">
+                <button
+                  ref={showResultRef}
+                  type="button"
+                  onClick={() => setDismissedScoreAt(null)}
+                  className="qp-btn-primary qp-focus min-h-11 rounded-xl px-4 py-2 text-xs font-bold"
+                >
+                  Show result
+                </button>
+              </div>
+            )}
+          {levelSolved &&
+            currentScore &&
+            dismissedScoreAt !== currentScore.timestamp && (
+              <VictoryModal
+                score={currentScore}
+                savedBest={parsedProgress.completedLevels?.[currentLevel.id]}
+                level={currentLevel}
+                totalLevels={puzzleLevels.length}
+                currentLevelIndex={currentLevelIndex}
+                leanCode={generatedLeanScript}
+                ramUsed={
+                  getStartingRam(currentLevel, gameMode) -
+                  currentScore.remainingRam
                 }
-              }}
-              onRestartLevel={handleResetLevel}
-            />
-          )}
+                campaignStars={campaignStars}
+                onRestartCampaign={() => loadLevel(0)}
+                onDismiss={() => dismissResult(currentScore.timestamp)}
+                onNextLevel={() => {
+                  if (currentLevelIndex < puzzleLevels.length - 1) {
+                    loadLevel(currentLevelIndex + 1);
+                  }
+                }}
+                onRestartLevel={handleResetLevel}
+              />
+            )}
         </>
       )}
     </section>

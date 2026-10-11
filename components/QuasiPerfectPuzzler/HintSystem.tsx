@@ -70,7 +70,7 @@ export const HintSystem: React.FC<HintSystemProps> = ({
               className={`rounded-xl border p-3 transition-all ${
                 isUnlocked
                   ? "border-zinc-800 bg-zinc-900/80"
-                  : "border-zinc-850 bg-zinc-950/40 opacity-60"
+                  : "border-dashed border-zinc-800 bg-zinc-950/40"
               }`}
             >
               <div className="flex items-center justify-between">

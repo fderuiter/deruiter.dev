@@ -451,8 +451,16 @@ export function parseScoreValue(
     if (parsed && typeof parsed.value === "number") return parsed.value;
     if (parsed && typeof parsed.score === "number") return parsed.score;
     if (parsed && parsed.completedLevels) {
-      // Quasi-puzzler format
-      return Object.keys(parsed.completedLevels).length * 100;
+      // Quasi-puzzler format: only honest proofs score. A level closed with
+      // `sorry` is saved with usedSorry and zero stars (#1939).
+      const levels: unknown[] = Object.values(parsed.completedLevels);
+      const proven = levels.filter((lvl) => {
+        if (!lvl) return false;
+        if (typeof lvl !== "object") return true;
+        const score = lvl as { usedSorry?: unknown; stars?: unknown };
+        return score.usedSorry !== true && score.stars !== 0;
+      });
+      return proven.length * 100;
     }
     if (Array.isArray(parsed)) {
       // Meme Vault unlocked array format

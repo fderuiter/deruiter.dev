@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useSyncExternalStore } from "react";
 import { ASTNode } from "@/lib/quasi-perfect/types";
 import { findNodeById, renderASTString } from "@/lib/quasi-perfect/engine";
 import { useResizeObserver } from "@/hooks/useResizeObserver";
@@ -14,6 +14,26 @@ import {
 } from "./boardArt";
 import { useCalmMotion } from "./useCalmMotion";
 import { IconFocus2, IconSparkles } from "@tabler/icons-react";
+
+// Short desktop screens (1024x768) pull the tree rows closer together so the
+// tactic hand under the board stays on screen (#1939).
+const SHORT_VIEWPORT_QUERY = "(max-height: 820px)";
+const SHORT_LEVEL_GAP = 64;
+
+function subscribeShortViewport(onChange: () => void): () => void {
+  if (typeof window === "undefined" || !window.matchMedia) return () => {};
+  const mql = window.matchMedia(SHORT_VIEWPORT_QUERY);
+  mql.addEventListener?.("change", onChange);
+  return () => mql.removeEventListener?.("change", onChange);
+}
+
+function isShortViewport(): boolean {
+  return (
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia(SHORT_VIEWPORT_QUERY).matches
+  );
+}
 
 interface ExpressionTreeProps {
   goalAST: ASTNode;
@@ -67,10 +87,19 @@ export const ExpressionTree: React.FC<ExpressionTreeProps> = ({
     setBoardWidth(Math.floor(entry.contentRect.width));
   });
 
+  const shortViewport = useSyncExternalStore(
+    subscribeShortViewport,
+    isShortViewport,
+    () => false
+  );
   const layout = useMemo(() => {
     const slotWidth = fitSlotWidth(boardWidth, countLeaves(goalAST));
-    return layoutProofTree(goalAST, { ...DEFAULT_PROOF_LAYOUT, slotWidth });
-  }, [goalAST, boardWidth]);
+    return layoutProofTree(goalAST, {
+      ...DEFAULT_PROOF_LAYOUT,
+      slotWidth,
+      ...(shortViewport ? { levelGap: SHORT_LEVEL_GAP, padding: 8 } : {}),
+    });
+  }, [goalAST, boardWidth, shortViewport]);
 
   const positions = useMemo(() => {
     const map = new Map<string, { x: number; y: number }>();
@@ -241,7 +270,7 @@ export const ExpressionTree: React.FC<ExpressionTreeProps> = ({
       </div>
 
       {/* Board footer: what to do next, the rule before a tap, last result */}
-      <div className="border-t border-[color:var(--qp-hairline)] px-5 py-2.5 text-center">
+      <div className="border-t border-[color:var(--qp-hairline)] px-5 py-2.5 text-center [@media(max-height:820px)]:py-1.5">
         {!isProofComplete && (
           <p className="text-[11px] text-zinc-400 font-mono">
             {selectedTargetId ? (

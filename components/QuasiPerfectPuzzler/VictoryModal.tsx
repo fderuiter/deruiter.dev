@@ -43,9 +43,13 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
 }) => {
   const isLastLevel = currentLevelIndex >= totalLevels - 1;
   const isSorry = score.usedSorry;
+  // First focus lands on the main action, not the Copy button (#1939).
+  const primaryRef = React.useRef<HTMLButtonElement | null>(null);
   const modalRef = useFocusTrap<HTMLDivElement>(true, {
     returnFocus: true,
+    initialFocusRef: primaryRef,
   });
+  const campaignDone = !!campaignStars && campaignStars.proven >= totalLevels;
   // RAM budgets per star, stated as RAM spent so they read the same in Story
   // and Hacker modes (computeLevelStars compares the hacker equivalent).
   const goldBudget = Math.max(0, level.initialRam - level.goldRamTarget);
@@ -140,11 +144,15 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
             data-testid="victory-campaign-complete"
             className="mb-4 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-left text-xs text-zinc-200"
           >
-            <p className="font-bold text-amber-300">Campaign complete</p>
+            <p className="font-bold text-amber-300">
+              {campaignDone ? "Campaign complete" : "Final level cleared"}
+            </p>
             <p className="mt-1 text-zinc-300">
               {campaignStars.proven} of {totalLevels} levels proven honestly,{" "}
-              {campaignStars.earned} of {campaignStars.possible} stars. Replay
-              any level from the map to chase gold.
+              {campaignStars.earned} of {campaignStars.possible} stars.{" "}
+              {campaignDone
+                ? "Replay any level from the map to chase gold."
+                : "Open the level map to prove the levels still unsolved."}
             </p>
           </div>
         )}
@@ -205,6 +213,7 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
         {/* Action Buttons */}
         <div className="flex items-center justify-center gap-3">
           <button
+            ref={isSorry ? primaryRef : undefined}
             type="button"
             onClick={onRestartLevel}
             className="flex-1 rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-xs font-bold text-zinc-200 hover:bg-zinc-800 hover:border-zinc-500 transition-colors"
@@ -215,6 +224,7 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
           {isLastLevel ? (
             onRestartCampaign && (
               <button
+                ref={isSorry ? undefined : primaryRef}
                 type="button"
                 onClick={onRestartCampaign}
                 className="qp-btn-primary qp-focus flex-1 rounded-xl px-4 py-2.5 text-xs font-bold transition-colors"
@@ -224,6 +234,7 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
             )
           ) : (
             <button
+              ref={isSorry ? undefined : primaryRef}
               type="button"
               onClick={onNextLevel}
               className="qp-btn-primary qp-focus flex-1 rounded-xl px-4 py-2.5 text-xs font-bold transition-colors"

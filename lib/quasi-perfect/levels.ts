@@ -1167,8 +1167,8 @@ export const puzzleLevels: PuzzlerLevelDef[] = [
     description:
       "Prove σ(n) > 2n using the quasiperfect definition hypothesis h_def: σ(n) = 2n + 1 and positivity.",
     initialRam: 14,
-    goldRamTarget: 6,
-    silverRamTarget: 4,
+    goldRamTarget: 4,
+    silverRamTarget: 2,
     hypotheses: [
       {
         id: "hyp-quasi-def-lvl16",
@@ -1233,7 +1233,7 @@ export const puzzleLevels: PuzzlerLevelDef[] = [
     hints: [
       "A number n is quasiperfect if the sum of all its positive divisors σ(n) equals 2n + 1.",
       "Rewrite σ(n) in the goal using hypothesis 'h_def'.",
-      "After rewriting to '2n + 1 > 2n', apply 'linarith' or 'simp' to complete the proof.",
+      "After rewriting to '2n + 1 > 2n', apply 'linarith' to close the linear inequality.",
     ],
     leanTheoremName: "quasiperfect_strict_abundancy",
     leanTypeSignature: "(n : Nat) (h_def : σ(n) = 2 * n + 1) : σ(n) > 2 * n",

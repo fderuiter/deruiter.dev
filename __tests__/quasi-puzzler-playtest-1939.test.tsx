@@ -86,6 +86,12 @@ describe("Quasi Puzzler playtest fixes (#1939)", () => {
     expect(screen.queryAllByRole("dialog").length).toBeGreaterThan(before);
   });
 
+  it("focuses the main action when the result card opens", () => {
+    render(<QuasiPerfectPuzzler />);
+    applyTactic(/rfl/);
+    expect(document.activeElement?.textContent).toMatch(/Next Level/);
+  });
+
   it("labels the stars and states the RAM each star needs", () => {
     const level = puzzleLevels[0];
     render(
@@ -105,6 +111,24 @@ describe("Quasi Puzzler playtest fixes (#1939)", () => {
     expect(targets).toContain(
       `Gold: use ${level.initialRam - level.goldRamTarget} GB or less.`
     );
+  });
+
+  it("only calls the campaign complete when every level is proven", () => {
+    render(
+      <VictoryModal
+        score={goldScore}
+        level={lastLevel}
+        totalLevels={puzzleLevels.length}
+        currentLevelIndex={puzzleLevels.length - 1}
+        campaignStars={{ earned: 3, possible: 54, proven: 1 }}
+        onNextLevel={vi.fn()}
+        onRestartLevel={vi.fn()}
+        onRestartCampaign={vi.fn()}
+      />
+    );
+    const card = screen.getByTestId("victory-campaign-complete");
+    expect(card.textContent).toContain("Final level cleared");
+    expect(card.textContent).not.toContain("Campaign complete");
   });
 
   it("ends the campaign after the last level", () => {

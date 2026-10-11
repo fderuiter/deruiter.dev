@@ -243,6 +243,7 @@
 - [lib/neuro/terminal](lib/neuro/terminal/README.md)
 - [lib/neuro/types](lib/neuro/types/README.md)
 - [lib/neuro/volume-generator](lib/neuro/volume-generator/README.md)
+- [lib/og-arcade-showcase](lib/og-arcade-showcase/README.md)
 - [lib/og-dossier](lib/og-dossier/README.md)
 - [lib/og-image](lib/og-image/README.md)
 - [lib/oss-credits](lib/oss-credits/README.md)

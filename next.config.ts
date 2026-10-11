@@ -24,6 +24,8 @@ const OG_ROUTE_GLOBS = [
 const OG_TRACED_ASSETS = [
   "./assets/og-fonts/**/*",
   "./public/og/**/*",
+  // Screenshot cards (lib/og-arcade-showcase.tsx) read the arcade previews.
+  "./public/images/arcade/previews/**/*",
 ] as const;
 const OG_TRACING_INCLUDES: Record<string, string[]> = Object.fromEntries(
   OG_ROUTE_GLOBS.map((route) => [route, [...OG_TRACED_ASSETS]])

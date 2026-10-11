@@ -8,6 +8,8 @@ export interface RouteMetaConfig {
   canonicalPath?: string;
   keywords?: string[];
   ogType?: "website" | "article";
+  /** Media type of the route's opengraph-image; screenshot cards are JPEG. Defaults to PNG. */
+  ogImageType?: "image/png" | "image/jpeg";
   inLanguage?: string;
   locale?: string;
   isAccessibleForFree?: boolean;
@@ -136,6 +138,7 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     description:
       "Try browser games by Fred de Ruiter: a laser loon, a demanding puppy, logic puzzles, clinical trial games, and a smartwatch with little memory to spare.",
     path: "/arcade",
+    ogImageType: "image/jpeg",
     keywords: [
       "Engineering Arcade",
       "Canvas Physics Games",
@@ -153,6 +156,7 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     description:
       "Fly F277 Laser Loon through four campaign acts from Lake Minnetonka to the State Capitol dome, blasting rival flags and red tape in this browser game.",
     path: "/arcade/laser-loon",
+    ogImageType: "image/jpeg",
     keywords: [
       "Laser Loon Game",
       "Minnesota State Flag F277",
@@ -169,6 +173,7 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     description:
       "Apply deductive proof tactics to a tree in this Lean-inspired puzzle game and reach a complete proof. Skipping a goal with “sorry” costs you score.",
     path: "/arcade/quasi-puzzler",
+    ogImageType: "image/jpeg",
     keywords: [
       "Formal Verification Game",
       "Lean Proof Tactics",
@@ -185,6 +190,7 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     description:
       "Keep a simulated smartwatch running within a 32KB memory budget. Dodge obstacles, clear memory, and wipe the screen when it fogs up in Monkey C Mayhem.",
     path: "/arcade/garmin-watch",
+    ogImageType: "image/jpeg",
     keywords: [
       "Monkey C Mayhem",
       "Garmin Schvitz App",
@@ -203,6 +209,7 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     description:
       "Sort clinical data into SDTM domains, sign the submissions, and keep up with the conveyor belt while the auditor watches. At least there is a restart button.",
     path: "/arcade/clinical-chaos",
+    ogImageType: "image/jpeg",
     keywords: [
       "CDISC Compliance Game",
       "SDTM Clinical Mapping",
@@ -219,6 +226,7 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     description:
       "Clinical outputs are the cards. Review tables against the SAP, correct redlines for +Mult, and play Chips × Mult hands to beat the Blinds in this deckbuilder.",
     path: "/arcade/trial-and-error",
+    ogImageType: "image/jpeg",
     keywords: [
       "Biostatistics Deckbuilder",
       "Statistical Analysis Plan QC",
@@ -235,6 +243,7 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     description:
       "Walk the floor of a CRO and run a clinical study from kickoff to closeout. Talk to your team, visit the sites, and defend your decisions to the FDA.",
     path: "/arcade/study-director",
+    ogImageType: "image/jpeg",
     keywords: [
       "Clinical Study Management Simulator",
       "Study Director Game",
@@ -251,6 +260,7 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     description:
       "One drive-thru shift from my first job, as a first-person 3D diary game. Fight the register, re-enter the drinks the machine loses, and never stand still.",
     path: "/arcade/patty-drive-thru",
+    ogImageType: "image/jpeg",
     keywords: [
       "First-Person 3D Game",
       "Autobiographical Game",
@@ -267,6 +277,7 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     description:
       "A browser-first systems-engineering puzzle simulation exploring the friction between ideal regulatory specifications and messy human clinical data collection.",
     path: "/protocol-drift",
+    ogImageType: "image/jpeg",
     keywords: [
       "Protocol Drift",
       "Clinical Data Architecture",
@@ -285,6 +296,7 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     description:
       "An abandoned codebase, now with corridors. Navigate moving walls, wield developer-themed weapons, and find the FaceForge boss in this browser roguelike.",
     path: "/arcade/retro-labyrinth",
+    ogImageType: "image/jpeg",
     keywords: [
       "Legacy Code Roguelike",
       "Procedural Dungeon Generation",
@@ -301,6 +313,7 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     description:
       "You have a deadline. Duck the puppy has a ball. Keep the project and the puppy happy with toys, treats, and park breaks in this browser game.",
     path: "/arcade/working-with-duck",
+    ogImageType: "image/jpeg",
     keywords: [
       "Developer Pet Simulator",
       "Multitasking Coding Game",
@@ -458,6 +471,7 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     description:
       "Make some noise with a synthesized browser soundboard, discover hidden trophies, and enjoy a few jokes about code, clinical data, and the working day.",
     path: "/arcade/meme-vault",
+    ogImageType: "image/jpeg",
     keywords: [
       "Developer Meme Vault",
       "Web Audio Soundboard",
@@ -756,7 +770,7 @@ export function buildRouteMetadata(config: RouteMetaConfig): Metadata {
           url: ogImageUrl,
           width: 1200,
           height: 630,
-          type: "image/png",
+          type: config.ogImageType ?? "image/png",
           alt: fullTitle,
         },
       ],

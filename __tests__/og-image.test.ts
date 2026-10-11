@@ -13,6 +13,11 @@ import {
   formatDossierDate,
   formatReadingTime,
 } from "@/lib/og-dossier";
+import { ARCADE_GAMES_METADATA } from "@/lib/arcade-data";
+import {
+  ARCADE_SHOWCASE_GAMES,
+  GAME_CARD_COPY,
+} from "@/lib/og-arcade-showcase";
 
 const PRESETS = Object.keys(PRESET_CONFIGS) as SocialPreset[];
 const LONG_DESCRIPTION =
@@ -147,13 +152,106 @@ describe("dossier chips (#1252)", () => {
 describe("OG routes pick the artifact preset (#1252)", () => {
   it.each([
     ["app/crf/opengraph-image.tsx", "CLINICAL_SYSTEMS"],
-    ["app/arcade/laser-loon/opengraph-image.tsx", "VECTOR_ARTWORK"],
     ["app/work/laser-loon/opengraph-image.tsx", "VECTOR_ARTWORK"],
-    ["app/arcade/garmin-watch/opengraph-image.tsx", "EMBEDDED_SIMULATOR"],
     ["app/case-studies/[slug]/opengraph-image.tsx", "SYSTEMS_ARCHITECTURE"],
     ["app/blog/[slug]/opengraph-image.tsx", "SYSTEMS_ARCHITECTURE"],
   ])("%s uses %s", (file, preset) => {
     const source = fs.readFileSync(path.join(process.cwd(), file), "utf8");
     expect(source).toContain(`preset: "${preset}"`);
+  });
+});
+
+describe("screenshot link previews (#1903)", () => {
+  interface CardMeasurement {
+    status: number;
+    contentType: string | null;
+    bytes: number;
+    width: number;
+    height: number;
+  }
+
+  /** Renders every screenshot card in a plain Node child process (see renderCardMeasurements). */
+  function renderScreenshotCards(): Record<string, CardMeasurement> {
+    const script = `
+      import sharp from "sharp";
+      import {
+        createArcadeShowcaseImageResponse,
+        createGameImageResponse,
+        GAME_CARD_COPY,
+      } from "@/lib/og-arcade-showcase";
+      async function measure(response) {
+        const body = Buffer.from(await response.arrayBuffer());
+        const meta = await sharp(body).metadata();
+        return {
+          status: response.status,
+          contentType: response.headers.get("content-type"),
+          bytes: body.byteLength,
+          width: meta.width,
+          height: meta.height,
+        };
+      }
+      (async () => {
+        const out = { showcase: await measure(await createArcadeShowcaseImageResponse()) };
+        for (const slug of Object.keys(GAME_CARD_COPY)) {
+          out[slug] = await measure(await createGameImageResponse(slug));
+        }
+        process.stdout.write("RESULT" + JSON.stringify(out));
+      })();
+    `;
+    const stdout = execFileSync("npx", ["tsx", "-e", script], {
+      cwd: process.cwd(),
+      encoding: "utf8",
+      maxBuffer: 16 * 1024 * 1024,
+    });
+    return JSON.parse(stdout.slice(stdout.indexOf("RESULT") + "RESULT".length));
+  }
+
+  const cards = renderScreenshotCards();
+
+  it.each(["showcase", ...Object.keys(GAME_CARD_COPY)])(
+    "%s renders a 1200x630 JPEG within the budget",
+    (key) => {
+      const card = cards[key]!;
+      expect(card.status).toBe(200);
+      expect(card.contentType).toBe("image/jpeg");
+      expect(card.width).toBe(1200);
+      expect(card.height).toBe(630);
+      expect(card.bytes).toBeGreaterThan(20_000);
+      expect(card.bytes).toBeLessThanOrEqual(OG_IMAGE_MAX_BYTES);
+    },
+    120_000
+  );
+
+  it("only uses games that have a shipped arcade screenshot", () => {
+    const slugs = [
+      ...ARCADE_SHOWCASE_GAMES.map((game) => game.slug),
+      ...Object.keys(GAME_CARD_COPY),
+    ];
+    for (const slug of slugs) {
+      const file = path.join(
+        process.cwd(),
+        "public/images/arcade/previews",
+        `${slug}.webp`
+      );
+      expect(fs.existsSync(file), file).toBe(true);
+    }
+  });
+
+  it("gives every arcade game route a screenshot card", () => {
+    const routes = ARCADE_GAMES_METADATA.map((game) => game.route);
+    for (const route of routes) {
+      const file = path.join(
+        process.cwd(),
+        "app",
+        route,
+        "opengraph-image.tsx"
+      );
+      expect(fs.readFileSync(file, "utf8"), route).toContain(
+        "createGameImageResponse"
+      );
+    }
+    expect(Object.keys(GAME_CARD_COPY).sort()).toEqual(
+      ARCADE_GAMES_METADATA.map((game) => game.slug).sort()
+    );
   });
 });

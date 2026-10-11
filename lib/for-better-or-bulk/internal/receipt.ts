@@ -349,7 +349,7 @@ function websiteLines(state: GameState): readonly WebsiteLine[] {
     } else if (chosen) {
       text = `${label}: blocked ${calls.length} call${calls.length === 1 ? "" : "s"}.`;
     } else {
-      text = `No ${label}: ${calls.length} call${calls.length === 1 ? "" : "s"} got through.`;
+      text = `${label}: ${calls.length} call${calls.length === 1 ? "" : "s"} got through without it.`;
     }
     return { capability, chosen, text };
   });

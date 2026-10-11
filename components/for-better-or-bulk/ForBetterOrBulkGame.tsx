@@ -803,6 +803,9 @@ export function ForBetterOrBulkGame({
     // Pause and Resume buttons; every other key belongs to the game surface.
     if (event.key === "Escape") {
       event.preventDefault();
+      // The brothers' text is already a stop: a pause sheet would cover it, and
+      // Escape never answers it either (round 8, B1).
+      if (stateRef.current?.phase === "brothers") return;
       if (!event.repeat) setPaused(!userPaused);
       return;
     }

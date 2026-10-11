@@ -6,7 +6,12 @@
  */
 
 import { clamp } from "@/lib/game-utils";
-import { CRATE_NAMES, FLOOR_CAP, THROW_OUT_PROMPT } from "../presets";
+import {
+  CRATE_NAMES,
+  FLOOR_CAP,
+  INTERRUPTIONS,
+  THROW_OUT_PROMPT,
+} from "../presets";
 import type {
   GameState,
   HintOptions,
@@ -28,7 +33,7 @@ import {
   heldLabel,
   heldName,
 } from "./words";
-import { frontTile, interactTile } from "./sim";
+import { GRILL_COOKS, interactTile, workTileFor } from "./press";
 
 /** The level runs from 9:00 to 4:00 on the wall clock. */
 const START_HOUR = 9;
@@ -49,6 +54,76 @@ export function clockLabel(time: number, duration: number): string {
   const hour24 = START_HOUR + Math.floor(minutes / 60);
   const hour12 = ((hour24 + 11) % 12) + 1;
   return `${hour12}:${String(minutes % 60).padStart(2, "0")}`;
+}
+
+/**
+ * The foods a buffet slot takes, with how each reads in "This spot is for ...
+ * The ... go on their own spot." (a plural takes "go", a mass noun "goes").
+ */
+const BUFFET_FOOD: Partial<
+  Record<
+    ItemKind,
+    {
+      readonly want: string;
+      readonly item: string;
+      readonly verb: "go" | "goes";
+    }
+  >
+> = {
+  hotdogs: { want: "hot dogs", item: "The hot dogs", verb: "go" },
+  wings: { want: "wings", item: "The wings", verb: "go" },
+  mac: { want: "mac and cheese", item: "The mac and cheese", verb: "goes" },
+  quinoa: { want: "quinoa salad", item: "The quinoa salad", verb: "goes" },
+};
+
+/**
+ * The prompt for a cooked food faced at a buffet slot that wants another dish,
+ * so the refusal says which dish the slot takes (round 8, S2). Null otherwise.
+ */
+function wrongSlotPrompt(
+  state: GameState,
+  tile: Tile,
+  held: Item
+): string | null {
+  const target = at(state.targets, tile);
+  if (target?.kind !== "buffet" || target.status !== "open") return null;
+  if (target.wants === held.kind) return null;
+  const wanted = BUFFET_FOOD[target.wants];
+  const carried = BUFFET_FOOD[held.kind];
+  if (!wanted || !carried) return null;
+  return `This spot is for ${wanted.want}. ${carried.item} ${carried.verb} on their own spot.`;
+}
+
+/**
+ * The grill or station beside the person that would take this item but is
+ * occupied, so a press drops the item on the floor instead. Null when no
+ * station in reach is blocked (round 8, S7).
+ */
+function blockedStationFor(
+  state: GameState,
+  person: Tile,
+  held: Item
+): string | null {
+  for (const offset of [
+    { x: 0, y: -1 },
+    { x: 1, y: 0 },
+    { x: 0, y: 1 },
+    { x: -1, y: 0 },
+  ]) {
+    const tile = { x: person.x + offset.x, y: person.y + offset.y };
+    const station = at(state.stations, tile);
+    if (!station?.item || station.kind === "bin") continue;
+    const takes =
+      station.kind === "grill"
+        ? held.kind in GRILL_COOKS
+        : held.kind === "roses";
+    if (takes) return `${capitalise(STATION_NAMES[station.kind])} is full.`;
+  }
+  return null;
+}
+
+function capitalise(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 /** What one person's buttons would do right now. */
@@ -119,6 +194,22 @@ export function getPrompt(state: GameState, id: PlayerId): Prompt {
     };
   }
   if (player.busyFor > 0) {
+    const call = INTERRUPTIONS.find(
+      (c) => c.player === id && c.text === player.busyReason
+    );
+    if (call) {
+      // A phone call freezes the person; the prompt says how long is left,
+      // in wall-clock minutes like the rest of the prompts.
+      const minutes = Math.max(
+        1,
+        Math.round((player.busyFor * LEVEL_HOURS * 60) / state.duration)
+      );
+      return {
+        interact: null,
+        work: null,
+        status: `${name} is on the phone (about ${minutes} min left): ${call.text}`,
+      };
+    }
     return {
       interact: null,
       work: null,
@@ -129,15 +220,31 @@ export function getPrompt(state: GameState, id: PlayerId): Prompt {
   const status = held
     ? `${name} is carrying ${heldLabel(held)}.`
     : `${name} has free hands.`;
-  const front = frontTile(player);
-  const station = at(state.stations, front);
-  const target = at(state.targets, front);
+  const faced = workTileFor(state, player);
+  const station = at(state.stations, faced);
+  const target = at(state.targets, faced);
   const tile = interactTile(state, id);
 
   let interact: string | null = null;
   let work: string | null = null;
-  if (tile)
+  if (tile) {
     interact = held ? placePrompt(state, tile, held) : takePrompt(state, tile);
+    const onFloor =
+      !at(state.stations, tile) &&
+      !at(state.supplies, tile) &&
+      !at(state.targets, tile);
+    const blocked =
+      held && onFloor
+        ? blockedStationFor(
+            state,
+            { x: Math.floor(player.x), y: Math.floor(player.y) },
+            held
+          )
+        : null;
+    if (blocked && interact) interact = `${blocked} ${interact}`;
+  } else if (held) {
+    interact = wrongSlotPrompt(state, faced, held);
+  }
   if (!held) {
     if (
       station &&

@@ -33,3 +33,9 @@ Re-exports [frontTile](../press/functions/frontTile.md)
 ### interactTile
 
 Re-exports [interactTile](../press/functions/interactTile.md)
+
+***
+
+### workTileFor
+
+Re-exports [workTileFor](../press/functions/workTileFor.md)

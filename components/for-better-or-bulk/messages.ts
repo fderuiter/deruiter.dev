@@ -198,7 +198,7 @@ export function describeEvent(event: GameEvent): string | null {
     case "fred-returned":
       return "Fred is back, and noticeably calmer.";
     case "shoes-retied":
-      return "Fred is double-checking his shoes. Again.";
+      return "Fred stops to retie a shoelace.";
     case "seeded-start":
       return SEEDED_LINES[event.id];
     case "seeded-end":

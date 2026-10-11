@@ -341,3 +341,40 @@ differently. Only runs that touched a corner are affected.
 - **Fred's carried item is set down when he leaves.** The leave option says
   that whatever he carries is set down on the floor near him, where Abbi can
   pick it up while he is away.
+
+## Amendment (2026-10-11): playtest round 8
+
+Issue #1955. Round 8 fixed what the playtest found in the brothers' text, the
+prompts and the receipt copy. The rules below are the current ones.
+
+- **The brothers' text is seen and chosen on purpose.** Focus opens on the
+  dialog heading, not on "Stay and help". For 500 ms after the text opens, the
+  keyboard's Enter, Space and E cannot choose an option (mouse clicks can, at
+  once). Escape never chooses, and it does not open the pause sheet over the
+  text. The clock stops in the same step that shows the text and its toast.
+- **A promise cannot be kept for free.** The break menu offers only categories
+  that still have planned work to do. A category that is already complete is not
+  offered.
+- **A spot that takes something else says which dish it takes.** A cooked food
+  faced at a buffet slot that wants another dish reads "This spot is for wings.
+  The hot dogs go on their own spot." and the press does nothing.
+- **A blocked station is named before a floor drop.** When the press would put
+  an item on the floor and a station in reach that takes it is occupied, the
+  prompt reads "The GRILL (G) is full. Put the raw wings on the floor".
+- **A body that straddles two tiles can reach either one.** The body is a circle
+  of `PLAYER_RADIUS`. When it overlaps a neighbouring tile across its facing, the
+  tile in front of that neighbour is a candidate too. The nearest tile's front
+  is tried first, then the other, and a press uses the first that takes the held
+  item (or, with empty hands, has something to pick up). Work at a station uses
+  the same tile (`workTileFor`). The engine, the prompts, the coach outline and
+  the solo assist all read this one rule in `internal/press.ts`.
+  **Older runs may not verify.** A run recorded before round 8 can press a
+  different tile at a straddle, so its replay and share code can fail
+  verification. Such runs must be played again to share.
+- **A phone call says who is on it and how long is left.** The prompt reads
+  "Abbi is on the phone (about 6 min left): What should we get you?", with the
+  time in wall-clock minutes like "Back around" in the other prompts.
+- **Receipt and toast copy is plain.** The shop is "The Suit Wherehouse" with no
+  aside. A blocked website feature reads "Registry scraper: 1 call got through
+  without it." Fred's shoe retie reads "Retying a shoelace." and "Fred stops to
+  retie a shoelace.", and a stay reads "Fred stayed for the whole setup."

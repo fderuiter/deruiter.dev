@@ -6,12 +6,13 @@
  * promise about what he comes back for, and leaving is leaving.
  */
 
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import {
   BREAK_SECONDS,
   COMMITMENT_CATEGORIES,
   LEAVE_SECONDS,
+  categoryProgress,
   clockLabel,
   heldLabel,
   onLevelClock,
@@ -19,6 +20,16 @@ import {
   type GameState,
   type PresenceDecision,
 } from "@/lib/for-better-or-bulk";
+
+/**
+ * How long after the text opens that the keyboard cannot choose. A press of
+ * the interact key that was already on its way (round 8, B1) must not answer
+ * a text the player has not read yet. Mouse clicks are not delayed.
+ */
+export const SETTLE_MS = 500;
+
+/** The keys that would activate an option by accident during the settle time. */
+const SETTLE_KEYS: ReadonlySet<string> = new Set(["Enter", " ", "e", "E"]);
 
 const COMMITMENT_LABELS: Readonly<Record<Commitment, string>> = {
   chairs: "The chairs",
@@ -47,25 +58,42 @@ function fredLine(state: GameState): string {
     : "Fred has not calmed down yet.";
 }
 
-/** Promises worth making: ones whose work is actually in this plan. */
-function availableCommitments(state: GameState): Commitment[] {
+/**
+ * Promises worth making: ones whose work is in this plan and not yet all done.
+ * A category that is already complete is left out, so a promise cannot be kept
+ * for free (round 8, S6).
+ */
+export function availableCommitments(state: GameState): Commitment[] {
   return (Object.keys(COMMITMENT_CATEGORIES) as Commitment[]).filter(
     (commitment) =>
-      state.targets.some(
-        (t) =>
-          COMMITMENT_CATEGORIES[commitment].includes(t.category) &&
-          t.status !== "unplanned"
-      )
+      COMMITMENT_CATEGORIES[commitment].some((category) => {
+        const progress = categoryProgress(state, category);
+        return progress !== null && progress.placed < progress.planned;
+      })
   );
 }
 
 export function BrothersDialog({ state, onDecide }: BrothersDialogProps) {
-  const stayRef = useRef<HTMLButtonElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const openedAt = useRef<number | null>(null);
   const [promising, setPromising] = useState(false);
   const dialogRef = useFocusTrap<HTMLDivElement>(true, {
-    initialFocusRef: stayRef,
+    initialFocusRef: headingRef,
   });
   const commitments = availableCommitments(state);
+
+  useEffect(() => {
+    openedAt.current = Date.now();
+  }, []);
+
+  /** Swallows a settle-time key so it cannot activate the focused option. */
+  const settling = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!SETTLE_KEYS.has(event.key)) return;
+    const opened = openedAt.current;
+    if (opened !== null && Date.now() - opened < SETTLE_MS) {
+      event.preventDefault();
+    }
+  };
 
   return (
     <div className="absolute inset-0 z-40 flex items-center justify-center bg-[rgba(13,14,17,0.72)] p-3">
@@ -76,9 +104,16 @@ export function BrothersDialog({ state, onDecide }: BrothersDialogProps) {
         aria-labelledby="fbb-brothers-title"
         aria-describedby="fbb-brothers-body"
         data-testid="fbb-brothers"
+        onKeyDown={settling}
+        onKeyUp={settling}
         className="w-full max-w-md rounded border border-[var(--fbb-control)] bg-[var(--fbb-panel)] p-4 font-mono text-[var(--fbb-text)] shadow-2xl"
       >
-        <h2 id="fbb-brothers-title" className="text-base font-extrabold">
+        <h2
+          ref={headingRef}
+          tabIndex={-1}
+          id="fbb-brothers-title"
+          className="text-base font-extrabold focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--fbb-focus)]"
+        >
           Text from Fred&apos;s brothers
         </h2>
         <p
@@ -91,12 +126,11 @@ export function BrothersDialog({ state, onDecide }: BrothersDialogProps) {
         {!promising ? (
           <div className="mt-4 flex flex-col gap-2">
             <button
-              ref={stayRef}
               type="button"
               onClick={() => onDecide({ choice: "stay", commitment: null })}
               className="min-h-11 rounded border border-[var(--fbb-accent)] px-3 text-left text-xs font-bold active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--fbb-focus)]"
             >
-              Stay and help. (He will keep double-checking his shoes.)
+              Stay and help. (He will keep stopping to retie a shoelace.)
             </button>
             <button
               type="button"

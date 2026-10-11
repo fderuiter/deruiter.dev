@@ -6,6 +6,7 @@ import {
   fireEvent,
   render,
   screen,
+  waitFor,
   within,
 } from "@testing-library/react";
 import {
@@ -19,7 +20,11 @@ import {
   type GameEvent,
   type GameState,
 } from "@/lib/for-better-or-bulk";
-import { BrothersDialog } from "@/components/for-better-or-bulk/BrothersDialog";
+import {
+  BrothersDialog,
+  SETTLE_MS,
+  availableCommitments,
+} from "@/components/for-better-or-bulk/BrothersDialog";
 import {
   seedName,
   throttleFloorFull,
@@ -872,5 +877,108 @@ describe("For Better or Bulk day names", () => {
     expect(seedName(0, 99)).toBe("Standard day");
     expect(seedName(99, 99)).toBe("Today's seed");
     expect(seedName(12345, 99)).toBe("Seed 12345");
+  });
+});
+
+describe("the brothers' text (round 8, B1)", () => {
+  /** The level at the brothers' text, with every category still open. */
+  const atText = { ...createLevel(DEFAULT_SETUP), phase: "brothers" as const };
+
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
+  });
+
+  it("puts focus on the dialog heading, not on Stay and help", async () => {
+    render(<BrothersDialog state={atText} onDecide={vi.fn()} />);
+    const heading = screen.getByRole("heading", {
+      name: "Text from Fred's brothers",
+    });
+    await waitFor(() => expect(document.activeElement).toBe(heading));
+    expect(document.activeElement).not.toBe(
+      screen.getByRole("button", { name: /Stay and help/ })
+    );
+  });
+
+  it("ignores an interact key in the first half second, and then lets it choose", () => {
+    const opened = 1_000_000;
+    const now = vi.spyOn(Date, "now").mockReturnValue(opened);
+    const onDecide = vi.fn();
+    render(<BrothersDialog state={atText} onDecide={onDecide} />);
+    const stay = screen.getByRole("button", { name: /Stay and help/ });
+
+    now.mockReturnValue(opened + SETTLE_MS - 1);
+    expect(fireEvent.keyDown(stay, { key: "Enter" })).toBe(false);
+    expect(fireEvent.keyDown(stay, { key: " " })).toBe(false);
+    expect(fireEvent.keyUp(stay, { key: "e" })).toBe(false);
+    expect(onDecide).not.toHaveBeenCalled();
+
+    now.mockReturnValue(opened + SETTLE_MS);
+    expect(fireEvent.keyDown(stay, { key: "Enter" })).toBe(true);
+    expect(onDecide).not.toHaveBeenCalled();
+  });
+
+  it("lets a mouse click choose at once, inside the settle time", () => {
+    vi.spyOn(Date, "now").mockReturnValue(1_000_000);
+    const onDecide = vi.fn();
+    render(<BrothersDialog state={atText} onDecide={onDecide} />);
+    fireEvent.click(screen.getByRole("button", { name: /Stay and help/ }));
+    expect(onDecide).toHaveBeenCalledWith({ choice: "stay", commitment: null });
+  });
+
+  it("does not choose on Escape", () => {
+    const onDecide = vi.fn();
+    render(<BrothersDialog state={atText} onDecide={onDecide} />);
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
+    fireEvent.keyDown(screen.getByRole("heading"), { key: "Escape" });
+    expect(onDecide).not.toHaveBeenCalled();
+  });
+
+  it("leaves out a promise whose categories are already complete (S6)", () => {
+    const level = createLevel(DEFAULT_SETUP);
+    const lanternsDone = {
+      ...level,
+      targets: level.targets.map((t) =>
+        t.category === "lanterns"
+          ? {
+              ...t,
+              status: "filled" as const,
+              filled: Array.from({ length: t.capacity }, () => ({
+                kind: "lantern" as const,
+                madeBy: null,
+              })),
+            }
+          : t
+      ),
+    };
+    expect(availableCommitments(level)).toContain("lanterns");
+    expect(availableCommitments(lanternsDone)).not.toContain("lanterns");
+    expect(availableCommitments(lanternsDone)).toContain("chairs");
+  });
+
+  it("does not put the pause sheet over the text when Escape is pressed (round 8, B1)", () => {
+    window.history.replaceState(null, "", "/arcade/for-better-or-bulk?speed=1");
+    render(<ForBetterOrBulkGame />);
+    start();
+    runUntil(() => screen.queryByTestId("fbb-brothers") !== null);
+    fireEvent.keyDown(game(), { key: "Escape" });
+    expect(screen.queryByText(/^Paused at/)).toBeNull();
+    expect(screen.getByTestId("fbb-brothers")).toBeTruthy();
+  });
+
+  it("shows the text and its toast together, and the level stops while it is up", () => {
+    window.history.replaceState(null, "", "/arcade/for-better-or-bulk?speed=1");
+    for (const mode of ["solo", "coop"] as const) {
+      const { unmount } = render(<ForBetterOrBulkGame initialMode={mode} />);
+      start();
+      runUntil(() => screen.queryByTestId("fbb-brothers") !== null);
+      expect(screen.getByTestId("fbb-brothers")).toBeTruthy();
+      const toast = Array.from(document.querySelectorAll("li")).some(
+        (li) => li.textContent === "Fred's brothers are texting."
+      );
+      expect(toast).toBe(true);
+      expect(frame.active).toBe(false);
+      unmount();
+    }
   });
 });

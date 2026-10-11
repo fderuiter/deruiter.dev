@@ -15,8 +15,18 @@ async function openPlan(page: Page) {
   }).toPass({ timeout: 30000 });
 }
 
-/** axe on the game only, so the checks cover what this game renders. */
+/**
+ * axe on the game only, so the checks cover what this game renders. Running
+ * CSS animations are finished first: a scene fading in is measured at its
+ * final colours, not part-way through the fade.
+ */
 async function expectNoBlockingViolations(page: Page, state: string) {
+  await page.evaluate(() => {
+    for (const animation of document.getAnimations()) {
+      const { iterations } = animation.effect?.getTiming() ?? {};
+      if (iterations !== Infinity) animation.finish();
+    }
+  });
   const results = await new AxeBuilder({ page })
     .include("[data-fbb-cabinet]")
     .withTags(WCAG_TAGS)

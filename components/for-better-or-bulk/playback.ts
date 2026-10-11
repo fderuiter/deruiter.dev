@@ -10,7 +10,7 @@ import { clamp } from "@/lib/game-utils";
 import { noFaq } from "./jokes";
 
 /** One scene: a heading, one line of copy from the bank, and how long it holds. */
-export interface PlaybackScene {
+interface PlaybackScene {
   readonly id: string;
   readonly heading: string;
   readonly line: string;

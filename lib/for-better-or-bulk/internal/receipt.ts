@@ -17,6 +17,7 @@ import {
   LANTERN_PRICE,
   LEFT_LINE,
   RECEIPT_COPY,
+  ASSIST_LINE,
   ROSE_BUNCHES,
   ROSE_PRICES,
 } from "../presets";
@@ -323,6 +324,7 @@ export function computeReceipt(state: GameState): Receipt {
         ? `Extra smoky: ${state.burntBatches} batch${state.burntBatches === 1 ? "" : "es"} burnt on the grill.`
         : null,
     signatureMoment: signatureMoment(readiness),
+    assist: state.assistTicks > 0 ? ASSIST_LINE : null,
     title: title(state, readiness, follow.status === "kept"),
     weather: RECEIPT_COPY.weather,
     leftovers: RECEIPT_COPY.leftovers,

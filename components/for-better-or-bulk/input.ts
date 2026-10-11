@@ -90,6 +90,8 @@ export function buildFrame(
 ): Frame {
   const down = new Set([...held, ...tapped]);
   let inputs: Record<PlayerId, PlayerInput>;
+  // In solo play the person not at the keyboard is the one the assist may act for.
+  let assisted: PlayerId | undefined;
   if (mode === "coop") {
     inputs = {
       fred: inputFor([FRED_KEYS], down, pressed),
@@ -101,6 +103,11 @@ export function buildFrame(
       active === "fred"
         ? { fred: input, abbi: IDLE_INPUT }
         : { fred: IDLE_INPUT, abbi: input };
+    assisted = active === "fred" ? "abbi" : "fred";
   }
-  return decision ? { inputs, decision } : { inputs };
+  return {
+    inputs,
+    ...(assisted ? { assisted } : {}),
+    ...(decision ? { decision } : {}),
+  };
 }

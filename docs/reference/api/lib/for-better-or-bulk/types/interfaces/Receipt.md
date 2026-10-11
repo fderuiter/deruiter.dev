@@ -10,6 +10,14 @@ The ending: a story artifact that explains itself. It is not a grade.
 
 ## Properties
 
+### assist
+
+> `readonly` **assist**: `string` \| `null`
+
+The honest line about the solo helper, present only when it was on.
+
+***
+
 ### disclaimer
 
 > `readonly` **disclaimer**: `string`

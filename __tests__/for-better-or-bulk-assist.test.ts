@@ -1,0 +1,891 @@
+// @vitest-environment node
+import { describe, it, expect } from "vitest";
+import fc from "fast-check";
+import {
+  ASSIST_LINE,
+  DEFAULT_SETUP,
+  FLOOR_CAP,
+  VENUE_MAP,
+  WALKABLE_TILES,
+  validateSetup,
+  LEAVE_SECONDS,
+  MOVE_SPEED,
+  TICK_SECONDS,
+  assistInput,
+  computeReceipt,
+  createLevel,
+  getHint,
+  replayLevel,
+  stepGame,
+  type CapabilityId,
+  type Frame,
+  type GameState,
+  type ItemKind,
+  type PlayerId,
+  type PlayerInput,
+  type Item,
+  type PresenceDecision,
+  type Setup,
+  type StationKind,
+} from "@/lib/for-better-or-bulk";
+import { buildFrame } from "@/components/for-better-or-bulk/input";
+
+const NO_INPUT: PlayerInput = {
+  moveX: 0,
+  moveY: 0,
+  interact: false,
+  work: false,
+};
+
+const ASSIST_SETUP: Setup = { ...DEFAULT_SETUP, assist: true };
+const STAY: PresenceDecision = { choice: "stay", commitment: null };
+
+/** Puts a person on the centre of a tile, facing a way, with the given hands. */
+function place(
+  state: GameState,
+  id: PlayerId,
+  x: number,
+  y: number,
+  facing: readonly [number, number],
+  holding: Item | null = null
+): GameState {
+  const player = state.players[id];
+  return {
+    ...state,
+    players: {
+      ...state.players,
+      [id]: {
+        ...player,
+        x: x + 0.5,
+        y: y + 0.5,
+        facingX: facing[0],
+        facingY: facing[1],
+        holding,
+      },
+    },
+  };
+}
+
+/** A level where the only stock left is lanterns, so the fetch order is clear. */
+function onlyLanterns(setup: Setup): GameState {
+  const state = createLevel(setup);
+  return {
+    ...state,
+    stock: {
+      roses: 0,
+      "hotdogs-raw": 0,
+      "wings-raw": 0,
+      mac: 0,
+      quinoa: 0,
+      lantern: 4,
+      chairs: 0,
+    },
+  };
+}
+
+function tickOf(state: GameState, tick: number): GameState {
+  return { ...state, tick };
+}
+
+/** Marks the targets wanting each listed item open, and every other target filled. */
+function setOpen(state: GameState, open: readonly ItemKind[]): GameState {
+  return {
+    ...state,
+    targets: state.targets.map((t) =>
+      open.includes(t.wants)
+        ? { ...t, status: "open" as const, filled: [], filledBy: [] }
+        : { ...t, status: "filled" as const }
+    ),
+  };
+}
+
+/** Every tile that already holds a station, crate, target or dropped item. */
+function occupiedTiles(state: GameState): Set<string> {
+  const taken = new Set<string>();
+  for (const tile of [
+    ...state.stations,
+    ...state.targets,
+    ...state.supplies,
+    ...state.floor,
+  ]) {
+    taken.add(`${tile.x},${tile.y}`);
+  }
+  return taken;
+}
+
+/** Stands a person on a free walkable tile beside a tile, facing it. */
+function facingTile(
+  state: GameState,
+  id: PlayerId,
+  target: { readonly x: number; readonly y: number },
+  holding: Item | null
+): GameState {
+  const taken = occupiedTiles(state);
+  for (const [dx, dy] of [
+    [1, 0],
+    [-1, 0],
+    [0, 1],
+    [0, -1],
+  ] as const) {
+    const x = target.x - dx;
+    const y = target.y - dy;
+    const ground = VENUE_MAP[y]?.[x] ?? "#";
+    if (!WALKABLE_TILES.includes(ground) || taken.has(`${x},${y}`)) continue;
+    return place(state, id, x, y, [dx, dy], holding);
+  }
+  throw new Error(`no free tile beside ${target.x},${target.y}`);
+}
+
+/** The first plain floor tile with nothing on it, and one free tile beside it. */
+function freeFloorTiles(
+  state: GameState,
+  count: number
+): { x: number; y: number }[] {
+  const taken = occupiedTiles(state);
+  const found: { x: number; y: number }[] = [];
+  for (let y = 0; y < VENUE_MAP.length && found.length < count; y++) {
+    for (
+      let x = 0;
+      x < (VENUE_MAP[y]?.length ?? 0) && found.length < count;
+      x++
+    ) {
+      if (VENUE_MAP[y][x] !== "." || taken.has(`${x},${y}`)) continue;
+      if (found.some((f) => f.x === x && f.y === y)) continue;
+      found.push({ x, y });
+    }
+  }
+  return found;
+}
+
+function stationOf(state: GameState, kind: StationKind) {
+  const station = state.stations.find((s) => s.kind === kind);
+  if (!station) throw new Error(`no ${kind} station`);
+  return station;
+}
+
+const ROSES: Item = { kind: "roses", madeBy: null };
+
+describe("assistInput on fixed states", () => {
+  it("takes the roses from the crate it faces", () => {
+    const state = place(createLevel(ASSIST_SETUP), "abbi", 2, 4, [-1, 0]);
+    expect(assistInput(state, "abbi")).toEqual({
+      moveX: 0,
+      moveY: 0,
+      interact: true,
+      work: false,
+    });
+  });
+
+  it("turns toward a crate it is not facing, without walking into it", () => {
+    const state = place(createLevel(ASSIST_SETUP), "abbi", 2, 4, [0, -1]);
+    expect(assistInput(state, "abbi")).toEqual({
+      ...NO_INPUT,
+      moveX: -1,
+    });
+  });
+
+  it("lines up on the tile centre before walking across it", () => {
+    // Abbi stands 0.2 above the centre of tile (4, 6), with a lantern crate
+    // two tiles to the left, so the first step is left and she centres first.
+    const base = onlyLanterns(ASSIST_SETUP);
+    const state = {
+      ...place(base, "abbi", 4, 6, [0, -1]),
+      players: {
+        ...base.players,
+        abbi: { ...base.players.abbi, x: 4.5, y: 6.3, facingX: 0, facingY: -1 },
+      },
+    };
+    expect(assistInput(state, "abbi")).toEqual({
+      ...NO_INPUT,
+      moveY: 1,
+    });
+  });
+
+  it("puts the roses down on a free ARRANGE table it faces", () => {
+    const state = place(createLevel(ASSIST_SETUP), "abbi", 9, 4, [0, -1], {
+      kind: "roses",
+      madeBy: null,
+    });
+    expect(assistInput(state, "abbi")).toEqual({
+      ...NO_INPUT,
+      interact: true,
+    });
+  });
+
+  it("holds work at a table that has roses on it", () => {
+    const base = createLevel(ASSIST_SETUP);
+    const state = {
+      ...place(base, "abbi", 9, 4, [0, -1]),
+      stations: base.stations.map((s) =>
+        s.kind === "arrange"
+          ? { ...s, item: { kind: "roses" as ItemKind, madeBy: null } }
+          : s
+      ),
+    };
+    expect(assistInput(state, "abbi")).toEqual({ ...NO_INPUT, work: true });
+  });
+
+  it("keeps holding work on its off ticks, so a bin or table is not reset", () => {
+    const base = createLevel(ASSIST_SETUP);
+    const state = tickOf(
+      {
+        ...place(base, "abbi", 9, 4, [0, -1]),
+        stations: base.stations.map((s) =>
+          s.kind === "arrange"
+            ? { ...s, item: { kind: "roses" as ItemKind, madeBy: null } }
+            : s
+        ),
+      },
+      3
+    );
+    expect(assistInput(state, "abbi")).toEqual({ ...NO_INPUT, work: true });
+  });
+
+  it("waits on the off ticks of its pace before it moves or presses", () => {
+    const state = tickOf(
+      place(createLevel(ASSIST_SETUP), "abbi", 2, 4, [-1, 0]),
+      3
+    );
+    expect(assistInput(state, "abbi")).toEqual(NO_INPUT);
+  });
+
+  it("is deterministic: the same state gives the same input", () => {
+    const state = place(createLevel(ASSIST_SETUP), "abbi", 10, 5, [0, -1]);
+    expect(assistInput(state, "abbi")).toEqual(assistInput(state, "abbi"));
+  });
+
+  it("never answers the brothers or returns anything but four controls", () => {
+    const state = place(createLevel(ASSIST_SETUP), "abbi", 10, 5, [0, -1]);
+    expect(Object.keys(assistInput(state, "abbi")).sort()).toEqual([
+      "interact",
+      "moveX",
+      "moveY",
+      "work",
+    ]);
+  });
+
+  it("does nothing for Fred while he is out", () => {
+    const base = createLevel(ASSIST_SETUP);
+    const state = {
+      ...place(base, "fred", 2, 4, [-1, 0]),
+      players: {
+        ...base.players,
+        fred: {
+          ...place(base, "fred", 2, 4, [-1, 0]).players.fred,
+          presence: "away" as const,
+        },
+      },
+    };
+    expect(assistInput(state, "fred")).toEqual(NO_INPUT);
+  });
+
+  it("does nothing for someone on a phone call or re-tying shoes", () => {
+    const base = place(createLevel(ASSIST_SETUP), "abbi", 2, 4, [-1, 0]);
+    const busy = {
+      ...base,
+      players: {
+        ...base.players,
+        abbi: { ...base.players.abbi, busyFor: 2, busyReason: "On a call." },
+      },
+    };
+    expect(assistInput(busy, "abbi")).toEqual(NO_INPUT);
+  });
+});
+
+/** Runs a frame list through stepGame, starting from a fresh level. */
+function playFrames(setup: Setup, frames: readonly Frame[]): GameState {
+  return frames.reduce(
+    (state, frame) => stepGame(state, frame).state,
+    createLevel(setup)
+  );
+}
+
+const idleFrame = (assisted?: PlayerId): Frame => ({
+  inputs: { fred: NO_INPUT, abbi: NO_INPUT },
+  ...(assisted ? { assisted } : {}),
+});
+
+describe("the assist in stepGame", () => {
+  it("does nothing when the setup leaves the assist off, even if the frame names a partner", () => {
+    const start = createLevel(DEFAULT_SETUP);
+    const end = playFrames(DEFAULT_SETUP, Array(60).fill(idleFrame("abbi")));
+    expect(end.players.abbi.x).toBe(start.players.abbi.x);
+    expect(end.players.abbi.y).toBe(start.players.abbi.y);
+  });
+
+  it("moves the idle partner when the setup and the frame both ask for it", () => {
+    const start = createLevel(ASSIST_SETUP);
+    const end = playFrames(ASSIST_SETUP, Array(60).fill(idleFrame("abbi")));
+    const moved =
+      end.players.abbi.x !== start.players.abbi.x ||
+      end.players.abbi.y !== start.players.abbi.y;
+    expect(moved).toBe(true);
+  });
+
+  it("does not act when the frame does not name the partner", () => {
+    const start = createLevel(ASSIST_SETUP);
+    const end = playFrames(ASSIST_SETUP, Array(60).fill(idleFrame()));
+    expect(end.players.abbi.x).toBe(start.players.abbi.x);
+    expect(end.players.abbi.y).toBe(start.players.abbi.y);
+  });
+
+  it("lets a person's own keys win over the assist", () => {
+    const frame: Frame = {
+      inputs: { fred: NO_INPUT, abbi: { ...NO_INPUT, moveX: 1 } },
+      assisted: "abbi",
+    };
+    const start = createLevel(ASSIST_SETUP);
+    const next = stepGame(start, frame).state;
+    expect(next.players.abbi.x - start.players.abbi.x).toBeCloseTo(
+      MOVE_SPEED * TICK_SECONDS,
+      10
+    );
+  });
+
+  it("never answers the brothers' text: the clock stands still until a decision", () => {
+    let state = createLevel(ASSIST_SETUP);
+    let guard = 0;
+    while (state.phase === "playing" && guard++ < 10000)
+      state = stepGame(state, idleFrame("abbi")).state;
+    expect(state.phase).toBe("brothers");
+    const time = state.time;
+    for (let i = 0; i < 90; i++)
+      state = stepGame(state, idleFrame("abbi")).state;
+    expect(state.phase).toBe("brothers");
+    expect(state.time).toBe(time);
+    expect(state.presence).toBeNull();
+  });
+
+  it("never moves Fred while he is away, whatever the frames name", () => {
+    let state = createLevel(ASSIST_SETUP);
+    let guard = 0;
+    while (state.phase === "playing" && guard++ < 10000)
+      state = stepGame(state, idleFrame("fred")).state;
+    state = stepGame(state, {
+      ...idleFrame("fred"),
+      decision: { choice: "leave", commitment: null },
+    }).state;
+    expect(state.players.fred.presence).toBe("away");
+    const { x, y, holding } = state.players.fred;
+    let observed = 0;
+    for (let i = 0; i < Math.round(LEAVE_SECONDS / TICK_SECONDS); i++) {
+      if (state.players.fred.presence !== "away") break;
+      state = stepGame(state, idleFrame("fred")).state;
+      const fred = state.players.fred;
+      if (fred.presence !== "away") break;
+      observed++;
+      expect(fred.x).toBe(x);
+      expect(fred.y).toBe(y);
+      expect(fred.holding).toEqual(holding);
+    }
+    expect(observed).toBeGreaterThan(0);
+  });
+
+  it("never moves Fred on a break either", () => {
+    let state = createLevel(ASSIST_SETUP);
+    let guard = 0;
+    while (state.phase === "playing" && guard++ < 10000)
+      state = stepGame(state, idleFrame("fred")).state;
+    state = stepGame(state, {
+      ...idleFrame("fred"),
+      decision: { choice: "break", commitment: "chairs" },
+    }).state;
+    const { x, y } = state.players.fred;
+    for (let i = 0; i < 300 && state.players.fred.presence === "away"; i++) {
+      state = stepGame(state, idleFrame("fred")).state;
+      if (state.players.fred.presence === "away") {
+        expect(state.players.fred.x).toBe(x);
+        expect(state.players.fred.y).toBe(y);
+      }
+    }
+  });
+
+  it("shows the receipt line only when the helper actually acted", () => {
+    expect(computeReceipt(createLevel(ASSIST_SETUP)).assist).toBeNull();
+    expect(computeReceipt(playOut(ASSIST_SETUP)).assist).toBeNull();
+    const helped = playOut(ASSIST_SETUP, "abbi");
+    expect(helped.assistTicks).toBeGreaterThan(0);
+    expect(computeReceipt(helped).assist).toBe(ASSIST_LINE);
+  });
+});
+
+/**
+ * Plays a level to its end with Fred idle or on the given input, Abbi idle
+ * unless the assist is named, and the brothers answered with a stay.
+ */
+function playOut(
+  setup: Setup,
+  assisted?: PlayerId,
+  fred: PlayerInput = NO_INPUT
+): GameState {
+  let state = createLevel(setup);
+  let guard = 0;
+  while (state.phase !== "done" && guard++ < 40000) {
+    const frame: Frame = {
+      inputs: { fred, abbi: NO_INPUT },
+      ...(assisted ? { assisted } : {}),
+      ...(state.phase === "brothers" ? { decision: STAY } : {}),
+    };
+    state = stepGame(state, frame).state;
+  }
+  return state;
+}
+
+/** Items placed on targets by the end of a run where Fred stays idle. */
+function idleSoloPlaced(assist: boolean): number {
+  let state = createLevel({ ...DEFAULT_SETUP, assist });
+  let guard = 0;
+  while (state.phase !== "done" && guard++ < 20000) {
+    const frame: Frame = {
+      ...idleFrame("abbi"),
+      ...(state.phase === "brothers" ? { decision: STAY } : {}),
+    };
+    state = stepGame(state, frame).state;
+  }
+  return state.targets.reduce((sum, t) => sum + t.filled.length, 0);
+}
+
+describe("the balance of an idle solo run", () => {
+  it("places more items with the assist on than with it off", () => {
+    const off = idleSoloPlaced(false);
+    const on = idleSoloPlaced(true);
+    expect(off).toBe(0);
+    expect(on).toBeGreaterThan(off);
+  });
+});
+
+const CAPABILITY_PAIRS: readonly (readonly [CapabilityId, CapabilityId])[] = [
+  ["faq", "admin"],
+  ["faq", "registry"],
+  ["admin", "intro3d"],
+  ["registry", "intro3d"],
+];
+
+const setupArb: fc.Arbitrary<Setup> = fc
+  .record({
+    pair: fc.constantFrom(...CAPABILITY_PAIRS),
+    roses: fc.constantFrom("modest" as const, "full" as const, "yes" as const),
+    lanterns: fc.boolean(),
+  })
+  .map(({ pair, roses, lanterns }) => ({
+    capabilities: [...pair],
+    cart: { roses, food: "enough" as const, lanterns },
+    relaxed: false,
+    assist: true,
+  }));
+
+const decisionArb: fc.Arbitrary<PresenceDecision | undefined> = fc.option(
+  fc.record({
+    choice: fc.constantFrom("stay", "break", "leave"),
+    commitment: fc.constantFrom(
+      null,
+      "chairs" as const,
+      "lanterns" as const,
+      "buffet" as const,
+      "flowers" as const
+    ),
+  }) as fc.Arbitrary<PresenceDecision>,
+  { nil: undefined }
+);
+
+const inputArb: fc.Arbitrary<PlayerInput> = fc.record({
+  moveX: fc.constantFrom(-1, 0, 1),
+  moveY: fc.constantFrom(-1, 0, 1),
+  interact: fc.boolean(),
+  work: fc.boolean(),
+});
+
+/** One step per record: the active person presses, the partner is assisted. */
+const frameArb: fc.Arbitrary<Frame> = fc
+  .record({
+    active: fc.constantFrom("fred" as const, "abbi" as const),
+    input: inputArb,
+    decision: decisionArb,
+  })
+  .map(({ active, input, decision }) => {
+    const other: PlayerId = active === "fred" ? "abbi" : "fred";
+    return {
+      inputs: { [active]: input, [other]: NO_INPUT } as Record<
+        PlayerId,
+        PlayerInput
+      >,
+      assisted: other,
+      ...(decision ? { decision } : {}),
+    };
+  });
+
+describe("assisted runs replay exactly (property)", () => {
+  it("two replays of the same assisted run give the same receipt", () => {
+    fc.assert(
+      fc.property(
+        setupArb,
+        fc.array(frameArb, { maxLength: 900 }),
+        (setup, frames) => {
+          const first = replayLevel(setup, frames, { mode: "lenient" });
+          const second = replayLevel(setup, frames, { mode: "lenient" });
+          const receipt = computeReceipt(first.state);
+          expect(computeReceipt(second.state)).toEqual(receipt);
+          expect(receipt.assist).toBe(
+            first.state.assistTicks > 0 ? ASSIST_LINE : null
+          );
+        }
+      ),
+      { numRuns: 30 }
+    );
+  });
+
+  it("a lenient run with the dropped decisions removed replays strictly to the same receipt", () => {
+    fc.assert(
+      fc.property(
+        setupArb,
+        fc.array(frameArb, { maxLength: 900 }),
+        (setup, frames) => {
+          const lenient = replayLevel(setup, frames, { mode: "lenient" });
+          const dropped = new Set(lenient.dropped.map((d) => d.frame));
+          const cleaned: Frame[] = frames.map((frame, index) =>
+            dropped.has(index)
+              ? { inputs: frame.inputs, assisted: frame.assisted }
+              : frame
+          );
+          const strict = replayLevel(setup, cleaned);
+          expect(computeReceipt(strict.state)).toEqual(
+            computeReceipt(lenient.state)
+          );
+        }
+      ),
+      { numRuns: 20 }
+    );
+  });
+});
+
+describe("the cabinet marks the assisted person", () => {
+  it("names the person not at the keyboard in solo play", () => {
+    const none = new Set<string>();
+    expect(buildFrame(none, none, none, "solo", "fred").assisted).toBe("abbi");
+    expect(buildFrame(none, none, none, "solo", "abbi").assisted).toBe("fred");
+  });
+
+  it("never names an assisted person in co-op play", () => {
+    const none = new Set<string>();
+    expect(buildFrame(none, none, none, "coop", "fred")).not.toHaveProperty(
+      "assisted"
+    );
+  });
+});
+
+describe("assist setting validation", () => {
+  it("accepts a setup saved before the helper existed", () => {
+    const { assist: _assist, ...legacy } = DEFAULT_SETUP;
+    void _assist;
+    expect(validateSetup(legacy).ok).toBe(true);
+  });
+});
+
+describe("the rose gate, shared with getHint", () => {
+  it("with only PETALS open and ARRANGE free, the helper does not put roses on ARRANGE", () => {
+    const base = setOpen(createLevel(ASSIST_SETUP), ["petals"]);
+    const state = facingTile(base, "abbi", stationOf(base, "arrange"), ROSES);
+    expect(getHint(state, "abbi")).toBe(
+      "Carry the roses to the PETALS bucket (P)."
+    );
+    const input = assistInput(state, "abbi");
+    expect(input.interact).toBe(false);
+    expect(input.moveX !== 0 || input.moveY !== 0).toBe(true);
+  });
+
+  it("with only PETALS open and a free bucket in front, the helper puts the roses down there", () => {
+    const base = setOpen(createLevel(ASSIST_SETUP), ["petals"]);
+    const state = facingTile(base, "abbi", stationOf(base, "petals"), ROSES);
+    expect(assistInput(state, "abbi")).toEqual({ ...NO_INPUT, interact: true });
+  });
+
+  it("with no rose target open, the helper does not put held roses on a free ARRANGE table", () => {
+    const base = setOpen(createLevel(ASSIST_SETUP), ["lantern"]);
+    const state = facingTile(base, "abbi", stationOf(base, "arrange"), ROSES);
+    expect(getHint(state, "abbi")).toBeNull();
+    expect(assistInput(state, "abbi").interact).toBe(false);
+  });
+
+  it("with PETALS open but both rose stations busy, the helper holds its roses", () => {
+    const base = setOpen(createLevel(ASSIST_SETUP), ["petals"]);
+    const busy = {
+      ...base,
+      stations: base.stations.map((s) =>
+        s.kind === "arrange" || s.kind === "petals"
+          ? { ...s, item: { kind: "roses" as const, madeBy: null } }
+          : s
+      ),
+    };
+    const state = facingTile(busy, "abbi", stationOf(busy, "arrange"), ROSES);
+    expect(getHint(state, "abbi")).toBe(
+      "Wait for the PETALS bucket (P) to clear."
+    );
+    expect(assistInput(state, "abbi")).toEqual(NO_INPUT);
+  });
+
+  it("with no rose target open, the helper leaves the rose crate alone", () => {
+    const base = setOpen(createLevel(ASSIST_SETUP), ["lantern"]);
+    const crate = base.supplies.find((s) => s.kind === "roses");
+    if (!crate) throw new Error("no rose crate");
+    const facing = facingTile(base, "abbi", crate, null);
+    expect(assistInput(facing, "abbi").interact).toBe(false);
+  });
+
+  it("a solo run with only PETALS open never puts roses on ARRANGE", () => {
+    let state = setOpen(createLevel(ASSIST_SETUP), ["petals"]);
+    state = {
+      ...state,
+      players: {
+        ...state.players,
+        abbi: { ...state.players.abbi, holding: ROSES },
+      },
+    };
+    const arrangeEverHeld = new Set<string>();
+    const petalsEverHeld = new Set<string>();
+    for (let i = 0; i < 400 && state.phase !== "done"; i++) {
+      state = stepGame(state, {
+        inputs: { fred: NO_INPUT, abbi: NO_INPUT },
+        assisted: "abbi",
+      }).state;
+      for (const s of state.stations) {
+        if (s.item === null) continue;
+        if (s.kind === "arrange") arrangeEverHeld.add(s.id);
+        if (s.kind === "petals") petalsEverHeld.add(s.id);
+      }
+    }
+    expect(arrangeEverHeld.size).toBe(0);
+    expect(petalsEverHeld.size).toBeGreaterThan(0);
+  });
+});
+
+describe("what the helper fetches and what it puts down", () => {
+  it("leaves cooked food on the grill when no open target wants it", () => {
+    const base = setOpen(createLevel(ASSIST_SETUP), ["lantern"]);
+    const grill = base.stations.find((s) => s.kind === "grill");
+    if (!grill) throw new Error("no grill");
+    let state: GameState = {
+      ...base,
+      stations: base.stations.map((s) =>
+        s.id === grill.id
+          ? { ...s, item: { kind: "hotdogs" as const, madeBy: null } }
+          : s
+      ),
+    };
+    const held = new Set<string>();
+    for (let i = 0; i < 300; i++) {
+      state = stepGame(state, {
+        inputs: { fred: NO_INPUT, abbi: NO_INPUT },
+        assisted: "abbi",
+      }).state;
+      if (state.players.abbi.holding) held.add(state.players.abbi.holding.kind);
+    }
+    expect(held.has("hotdogs")).toBe(false);
+  });
+
+  it("puts down an unwanted item on the floor instead of holding it for good", () => {
+    const base = setOpen(createLevel(ASSIST_SETUP), ["lantern"]);
+    let state: GameState = {
+      ...base,
+      players: {
+        ...base.players,
+        abbi: {
+          ...base.players.abbi,
+          holding: { kind: "hotdogs", madeBy: null },
+        },
+      },
+    };
+    let maxFloor = 0;
+    for (let i = 0; i < 600; i++) {
+      state = stepGame(state, {
+        inputs: { fred: NO_INPUT, abbi: NO_INPUT },
+        assisted: "abbi",
+      }).state;
+      maxFloor = Math.max(maxFloor, state.floor.length);
+    }
+    // The hot dogs are down on the floor; the free hands go on to a lantern
+    // that an open target does want.
+    expect(state.players.abbi.holding?.kind).not.toBe("hotdogs");
+    expect(state.floor.map((f) => f.item.kind)).toEqual(["hotdogs"]);
+    expect(maxFloor).toBeLessThanOrEqual(FLOOR_CAP);
+  });
+
+  it("does not pick up floor roses that no open place can take", () => {
+    const base = setOpen(createLevel(ASSIST_SETUP), ["lantern"]);
+    const [spot] = freeFloorTiles(base, 1);
+    const state0: GameState = {
+      ...base,
+      floor: [{ x: spot.x, y: spot.y, item: ROSES }],
+    };
+    let state = state0;
+    const everHeld = new Set<string>();
+    for (let i = 0; i < 600; i++) {
+      state = stepGame(state, {
+        inputs: { fred: NO_INPUT, abbi: NO_INPUT },
+        assisted: "abbi",
+      }).state;
+      if (state.players.abbi.holding)
+        everHeld.add(state.players.abbi.holding.kind);
+    }
+    expect(everHeld.has("roses")).toBe(false);
+    expect(state.floor.length).toBeLessThanOrEqual(FLOOR_CAP);
+  });
+
+  it("with the floor full, an unwanted item goes back in its own crate", () => {
+    const base = setOpen(createLevel(ASSIST_SETUP), ["lantern"]);
+    const spots = freeFloorTiles(base, FLOOR_CAP);
+    const full: GameState = {
+      ...base,
+      floor: spots.map((s) => ({
+        x: s.x,
+        y: s.y,
+        item: { kind: "mac" as const, madeBy: null },
+      })),
+      players: {
+        ...base.players,
+        abbi: { ...base.players.abbi, holding: ROSES },
+      },
+    };
+    const stockBefore = full.stock.roses;
+    let state = full;
+    for (let i = 0; i < 600 && state.players.abbi.holding; i++) {
+      state = stepGame(state, {
+        inputs: { fred: NO_INPUT, abbi: NO_INPUT },
+        assisted: "abbi",
+      }).state;
+    }
+    expect(state.players.abbi.holding).toBeNull();
+    expect(state.stock.roses).toBe(stockBefore + 1);
+    expect(state.floor.length).toBe(FLOOR_CAP);
+  });
+
+  it("picks up a floor item that an open target wants when it faces it", () => {
+    const base = setOpen(createLevel(ASSIST_SETUP), ["lantern"]);
+    const [spot] = freeFloorTiles(base, 1);
+    const withItem: GameState = {
+      ...base,
+      floor: [
+        { x: spot.x, y: spot.y, item: { kind: "lantern", madeBy: null } },
+      ],
+    };
+    const state = facingTile(withItem, "abbi", spot, null);
+    expect(assistInput(state, "abbi")).toEqual({ ...NO_INPUT, interact: true });
+  });
+});
+
+describe("the assist's pace", () => {
+  it("walks only on its active ticks, so a walk toward a crate waits on the rest", () => {
+    const base = onlyLanterns(ASSIST_SETUP);
+    const state = {
+      ...place(base, "abbi", 4, 6, [0, -1]),
+      players: {
+        ...base.players,
+        abbi: { ...base.players.abbi, x: 4.5, y: 6.5, facingX: 0, facingY: -1 },
+      },
+    };
+    expect(assistInput(tickOf(state, 0), "abbi")).toEqual({
+      ...NO_INPUT,
+      moveX: -1,
+    });
+    expect(assistInput(tickOf(state, 3), "abbi")).toEqual(NO_INPUT);
+  });
+
+  it("crafts arrangements at about 60% of the full pace", () => {
+    const ticksToCraft = (assisted: boolean): number => {
+      const base = createLevel(ASSIST_SETUP);
+      const table = stationOf(base, "arrange");
+      const loaded: GameState = {
+        ...base,
+        stations: base.stations.map((s) =>
+          s.id === table.id ? { ...s, item: ROSES } : s
+        ),
+      };
+      let state = facingTile(loaded, "abbi", table, null);
+      let ticks = 0;
+      while (
+        stationOf(state, "arrange").item?.kind !== "arrangement" &&
+        ticks++ < 2000
+      ) {
+        const frame: Frame = {
+          inputs: {
+            fred: NO_INPUT,
+            abbi: assisted ? NO_INPUT : { ...NO_INPUT, work: true },
+          },
+          ...(assisted ? { assisted: "abbi" as const } : {}),
+        };
+        state = stepGame(state, frame).state;
+      }
+      return ticks;
+    };
+    const full = ticksToCraft(false);
+    const paced = ticksToCraft(true);
+    expect(paced / full).toBeGreaterThan(1.5);
+    expect(paced / full).toBeLessThan(1.8);
+  });
+});
+
+describe("the assisted receipt and replay, in full", () => {
+  it("a lenient replay keeps the assisted partner on the frame with a stray decision", () => {
+    let state = createLevel(ASSIST_SETUP);
+    const frames: Frame[] = [];
+    let guard = 0;
+    while (state.phase !== "done" && guard++ < 40000) {
+      const stray = frames.length === 0;
+      const frame: Frame = {
+        inputs: { fred: NO_INPUT, abbi: NO_INPUT },
+        assisted: "abbi",
+        ...(stray || state.phase === "brothers" ? { decision: STAY } : {}),
+      };
+      frames.push(frame);
+      state = stepGame(state, frame).state;
+    }
+    const replay = replayLevel(ASSIST_SETUP, frames, { mode: "lenient" });
+    expect(replay.dropped.map((d) => d.frame)).toEqual([0]);
+    expect(state.assistTicks).toBeGreaterThan(0);
+    expect(replay.state).toEqual(state);
+  });
+});
+
+describe("the solo balance, scripted", () => {
+  /** Fred as a steady full-pace player: the helper's goal policy with the pace removed, pressing interact on each new press. */
+  function scriptedFred(
+    state: GameState,
+    last: { value: boolean }
+  ): PlayerInput {
+    const input = assistInput({ ...state, tick: 0 }, "fred");
+    const interact = input.interact && !last.value;
+    last.value = input.interact;
+    return { ...input, interact };
+  }
+
+  /** Plays a solo level with the scripted Fred, and Abbi either idle or assisted. */
+  function scriptedSolo(setup: Setup, assisted: boolean) {
+    let state = createLevel(setup);
+    const last = { value: false };
+    let guard = 0;
+    while (state.phase !== "done" && guard++ < 40000) {
+      const frame: Frame = {
+        inputs: { fred: scriptedFred(state, last), abbi: NO_INPUT },
+        ...(assisted ? { assisted: "abbi" as const } : {}),
+        ...(state.phase === "brothers" ? { decision: STAY } : {}),
+      };
+      state = stepGame(state, frame).state;
+    }
+    const placed = state.targets.reduce((n, t) => n + t.filled.length, 0);
+    return { placed, finish: state.finishedAt ?? state.time };
+  }
+
+  it("the helper alone places most of the planned items", () => {
+    const placed = playOut(ASSIST_SETUP, "abbi").targets.reduce(
+      (n, t) => n + t.filled.length,
+      0
+    );
+    expect(placed).toBeGreaterThanOrEqual(18);
+  }, 30000);
+
+  it("an assisted solo run finishes well before an unassisted one", () => {
+    const off = scriptedSolo(DEFAULT_SETUP, false);
+    const on = scriptedSolo(ASSIST_SETUP, true);
+    expect(on.placed).toBeGreaterThanOrEqual(off.placed);
+    expect(on.finish + 20).toBeLessThan(off.finish);
+  }, 60000);
+});

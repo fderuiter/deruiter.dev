@@ -138,3 +138,21 @@ in a personal story, with no logos.
   and makes leaving free.
 - **Variable-step simulation.** Rejected: frame-rate dependent results would
   break replay and tests.
+
+## Amendment (2026-10-11): the solo helper
+
+Issue [#1917](https://github.com/fderuiter/deruiter.dev/issues/1917) adds an
+optional helper for solo play. It is off by default and never runs in co-op.
+When the setup turns it on and the player is alone at the keyboard, a
+deterministic policy moves the partner the player is not controlling, Abbi
+when Fred is at the keys, and Fred when Abbi is. It walks to the places the
+hints name, using the same gates as the hints (`internal/gates.ts`), so the
+two cannot disagree about where roses go or what is wanted. It works at about
+60% of a skilled player's pace: on three ticks of every five it walks and
+presses, and its held work keeps its hold but progresses only on those ticks.
+It never decides for Fred: it never answers the brothers' text, never changes
+presence, and never acts for someone who is out, on a call or re-tying shoes.
+The receipt names the helper only when it acted on at least one tick, so a
+co-op run or a solo run where the helper never mattered shows no such line.
+Replays keep the partner on every frame, so a recorded assisted run replays to
+the same full state.

@@ -52,6 +52,8 @@ import type {
 } from "../types";
 import { clamp } from "@/lib/game-utils";
 import { createLevel } from "./level";
+import { assistInput, assistRests } from "./assist";
+import { FLOOR_TILES } from "./gates";
 
 const PLAYER_IDS: readonly PlayerId[] = ["fred", "abbi"];
 const COMMITMENTS: readonly Commitment[] = [
@@ -75,9 +77,6 @@ const CRAFTS: Readonly<
 /** Where Fred reappears after time away: by the car. */
 const RETURN_TILE = { x: 2, y: 5 };
 
-/** Tiles a dropped item can rest on: walkable ground, not a target spot. */
-const FLOOR_TILES = ".12";
-
 /** Inputs for someone standing still. */
 export const IDLE_INPUT: PlayerInput = {
   moveX: 0,
@@ -85,6 +84,31 @@ export const IDLE_INPUT: PlayerInput = {
   interact: false,
   work: false,
 };
+
+/** The input a person acts on this tick, and whether the assist supplied it. */
+interface Chosen {
+  readonly input: PlayerInput;
+  /** True when the assist acted: its input was not idle. */
+  readonly helped: boolean;
+}
+
+/**
+ * The input a person acts on this tick: their own keys, or the solo assist
+ * when the setup turns it on, the frame names them as the assisted person,
+ * and their keys are idle.
+ */
+function inputFor(state: GameState, frame: Frame, id: PlayerId): Chosen {
+  const given = frame.inputs[id] ?? IDLE_INPUT;
+  const idle =
+    given.moveX === 0 && given.moveY === 0 && !given.interact && !given.work;
+  if (state.setup.assist && frame.assisted === id && idle) {
+    const input = assistInput(state, id);
+    const acted =
+      input.moveX !== 0 || input.moveY !== 0 || input.interact || input.work;
+    return { input, helped: acted };
+  }
+  return { input: given, helped: false };
+}
 
 /** A frame in which nobody touches anything. */
 export const IDLE_FRAME: Frame = {
@@ -590,10 +614,14 @@ export function stepGame(state: GameState, frame: Frame): StepResult {
       });
       continue;
     }
-    const input = frame.inputs[id] ?? IDLE_INPUT;
+    const { input, helped } = inputFor(w.state, frame, id);
+    if (helped) w.state = { ...w.state, assistTicks: w.state.assistTicks + 1 };
+    // On the assist's resting ticks its held work keeps its hold but makes no
+    // progress, which is how the assist works at about 60% pace.
+    const resting = helped && assistRests(w.state.tick);
     setPlayer(w, move(player, input, dt));
     if (input.interact) interact(w, id);
-    if (input.work) work(w, id, dt);
+    if (input.work) work(w, id, resting ? 0 : dt);
     else releaseBinHold(w, id);
   }
 
@@ -645,7 +673,9 @@ export function replayLevel(
         if (options.mode !== "lenient")
           throw new ReplayError(index, check.reason);
         dropped.push({ frame: index, reason: check.reason });
-        next = { inputs: frame.inputs };
+        next = frame.assisted
+          ? { inputs: frame.inputs, assisted: frame.assisted }
+          : { inputs: frame.inputs };
       }
     }
     state = stepGame(state, next).state;

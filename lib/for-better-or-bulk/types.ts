@@ -29,6 +29,12 @@ export interface Setup {
   readonly cart: Cart;
   /** Stretches the clock for players who want more time. */
   readonly relaxed: boolean;
+  /**
+   * Solo play only: a deterministic helper moves the partner the player is
+   * not controlling. Co-op ignores it, and it never acts for Fred while away.
+   * Off when absent, so setups saved before the helper existed still load.
+   */
+  readonly assist?: boolean;
 }
 
 /** Things a person can carry. Burnt food cannot be served. */
@@ -197,12 +203,23 @@ export interface GameState {
   readonly burntBatches: number;
   /** Level time at which everything planned was done, if before the end. */
   readonly finishedAt: number | null;
+  /**
+   * Ticks on which the solo assist acted for the partner. Zero means the
+   * helper never mattered, so the receipt does not mention it.
+   */
+  readonly assistTicks: number;
 }
 
 /** The inputs for one tick, plus the brothers decision when one is made. */
 export interface Frame {
   readonly inputs: Readonly<Record<PlayerId, PlayerInput>>;
   readonly decision?: PresenceDecision;
+  /**
+   * In solo play, the person the player is not controlling this tick. The
+   * solo assist acts for them only when the setup turns it on and their input
+   * here is idle.
+   */
+  readonly assisted?: PlayerId;
 }
 
 /** One-shot things that happened, for sounds, toasts and jokes. */
@@ -327,5 +344,7 @@ export interface Receipt {
   readonly weather: string;
   readonly leftovers: string;
   readonly suit: string;
+  /** The honest line about the solo helper, present only when it was on. */
+  readonly assist: string | null;
   readonly disclaimer: string;
 }

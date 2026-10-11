@@ -10,6 +10,16 @@ Everything decided before the clock starts.
 
 ## Properties
 
+### assist?
+
+> `readonly` `optional` **assist?**: `boolean`
+
+Solo play only: a deterministic helper moves the partner the player is
+not controlling. Co-op ignores it, and it never acts for Fred while away.
+Off when absent, so setups saved before the helper existed still load.
+
+***
+
 ### capabilities
 
 > `readonly` **capabilities**: readonly [`CapabilityId`](../type-aliases/CapabilityId.md)[]

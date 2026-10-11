@@ -23,5 +23,6 @@ export {
   validateDecision,
 } from "./internal/sim";
 export { computeReceipt, readinessLines, tally } from "./internal/receipt";
+export { assistInput } from "./internal/assist";
 export { clockLabel, getHint, getPrompt } from "./internal/views";
 export type { Prompt } from "./internal/views";

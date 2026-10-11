@@ -592,6 +592,36 @@ describe("the seeded toasts over a whole day", () => {
   });
 });
 
+describe("the seeded toasts when a level ends early", () => {
+  it("announces the shower's end once when every target is filled while the shower is on (seed 12345)", () => {
+    const start = createLevel(seeded(12345));
+    const shower = start.seeded.find((event) => event.id === "shower");
+    expect(shower).toBeDefined();
+    const mid: GameState = {
+      ...start,
+      brothersAt: 0,
+      time: (shower?.at ?? 0) + 2,
+      targets: start.targets.map((t) =>
+        t.status === "open" ? { ...t, status: "filled" as const } : t
+      ),
+    };
+    const { events, state } = runFrom(mid);
+    expect(state.phase).toBe("done");
+    expect(
+      events.filter((e) => e.type === "level-finished" && e.early)
+    ).toHaveLength(1);
+    expect(
+      events.filter((e) => e.type === "seeded-end" && e.id === "shower")
+    ).toHaveLength(1);
+    const lines = events
+      .map((event) => describeEvent(event))
+      .filter((line): line is string => line !== null);
+    expect(
+      lines.filter((line) => line === bankText("shower-end"))
+    ).toHaveLength(1);
+  });
+});
+
 describe("the standard board", () => {
   it("counts only a standard day at normal speed", () => {
     const standard = createLevel(DEFAULT_SETUP);

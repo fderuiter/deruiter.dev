@@ -56,9 +56,11 @@ export function ReceiptView({
 
   // The playback hands over here. The receipt scrolls the page so its top sits
   // its scroll margin below the viewport top, clear of the fixed navbar, then
-  // the title takes focus without a second scroll. The page is scrolled by
-  // hand: scrollIntoView ignores the margin here, because the cabinet's
-  // clipped ancestors are scroll containers of their own.
+  // the title takes focus without a second scroll. The margin is the
+  // scroll-mt-28 class on the root (7rem, 112px), read back through
+  // getComputedStyle, so that class and this read must change together. The
+  // page is scrolled by hand: scrollIntoView ignores the margin here, because
+  // the cabinet's clipped ancestors are scroll containers of their own.
   useEffect(() => {
     const root = rootRef.current;
     if (root && typeof window.scrollTo === "function") {

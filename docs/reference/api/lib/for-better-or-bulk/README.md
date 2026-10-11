@@ -346,7 +346,7 @@ Re-exports [Frame](types/interfaces/Frame.md)
 
 ### frontTile
 
-Re-exports [frontTile](internal/sim/functions/frontTile.md)
+Re-exports [frontTile](internal/press/functions/frontTile.md)
 
 ***
 
@@ -406,7 +406,7 @@ Re-exports [IDLE_INPUT](internal/sim/variables/IDLE_INPUT.md)
 
 ### interactTile
 
-Re-exports [interactTile](internal/sim/functions/interactTile.md)
+Re-exports [interactTile](internal/press/functions/interactTile.md)
 
 ***
 

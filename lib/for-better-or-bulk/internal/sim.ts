@@ -33,15 +33,12 @@ import {
   SHOWER_WALK_FACTOR,
   SIMPLIFY_SECONDS,
   TICK_SECONDS,
-  VENUE_MAP,
-  WALKABLE_TILES,
 } from "../presets";
 import type {
   Commitment,
   Frame,
   GameEvent,
   GameState,
-  Item,
   ItemKind,
   Player,
   PlayerId,
@@ -52,13 +49,22 @@ import type {
   Station,
   StepResult,
   Target,
-  Tile,
   Validation,
 } from "../types";
 import { clamp } from "@/lib/game-utils";
 import { createLevel } from "./level";
 import { assistInput, assistRests, helperMayAct } from "./assist";
 import { FLOOR_TILES } from "./gates";
+import {
+  GRILL_COOKS,
+  frontTile,
+  interactTile,
+  isWalkable,
+  stationAccepts,
+  tileAt,
+} from "./press";
+
+export { frontTile, interactTile };
 
 const PLAYER_IDS: readonly PlayerId[] = ["fred", "abbi"];
 const COMMITMENTS: readonly Commitment[] = [
@@ -68,10 +74,6 @@ const COMMITMENTS: readonly Commitment[] = [
   "flowers",
 ];
 const SIMPLIFIABLE = new Set(["centerpieces", "petals"]);
-const GRILL_COOKS: Readonly<Partial<Record<ItemKind, ItemKind>>> = {
-  "hotdogs-raw": "hotdogs",
-  "wings-raw": "wings",
-};
 const CRAFTS: Readonly<
   Record<"arrange" | "petals", { output: ItemKind; seconds: number }>
 > = {
@@ -124,14 +126,6 @@ function inputFor(state: GameState, frame: Frame, id: PlayerId): Chosen {
 export const IDLE_FRAME: Frame = {
   inputs: { fred: IDLE_INPUT, abbi: IDLE_INPUT },
 };
-
-function tileAt(x: number, y: number): string {
-  return VENUE_MAP[y]?.[x] ?? "#";
-}
-
-function isWalkable(x: number, y: number): boolean {
-  return WALKABLE_TILES.includes(tileAt(x, y));
-}
 
 function collides(x: number, y: number): boolean {
   for (
@@ -198,14 +192,6 @@ function move(
   return { ...player, x, y, facingX, facingY };
 }
 
-/** The tile a person is facing, one step from the tile they stand on. */
-export function frontTile(player: Player): { x: number; y: number } {
-  return {
-    x: Math.floor(player.x) + player.facingX,
-    y: Math.floor(player.y) + player.facingY,
-  };
-}
-
 interface Working {
   state: GameState;
   events: GameEvent[];
@@ -230,89 +216,6 @@ function setTarget(w: Working, target: Target): void {
     ...w.state,
     targets: w.state.targets.map((t) => (t.id === target.id ? target : t)),
   };
-}
-
-function stationAccepts(station: Station, item: Item): boolean {
-  if (station.item) return false;
-  // The bin is emptied by holding work at it, never by a press.
-  if (station.kind === "bin") return false;
-  if (station.kind === "grill") return item.kind in GRILL_COOKS;
-  return item.kind === "roses";
-}
-
-/** The four neighbours of a tile, in a fixed order so a tie always breaks the same way. */
-const NEIGHBOURS: readonly Tile[] = [
-  { x: 0, y: -1 },
-  { x: 1, y: 0 },
-  { x: 0, y: 1 },
-  { x: -1, y: 0 },
-];
-
-function sameTile(a: Tile, b: Tile): boolean {
-  return a.x === b.x && a.y === b.y;
-}
-
-/**
- * Whether a crate, station or open target on this tile takes the held item
- * now. The floor is not counted here: it is the fallback after reach.
- */
-function tileTakes(state: GameState, tile: Tile, held: Item): boolean {
-  const supply = state.supplies.find((s) => sameTile(s, tile));
-  if (supply) return supply.kind === held.kind;
-  const station = state.stations.find((s) => sameTile(s, tile));
-  if (station) return stationAccepts(station, held);
-  const target = state.targets.find((t) => sameTile(t, tile));
-  if (target) return target.status === "open" && target.wants === held.kind;
-  return false;
-}
-
-/** Whether an item may rest on this tile: walkable ground with nothing on it. */
-function floorDropAt(state: GameState, tile: Tile): boolean {
-  if (!isWalkable(tile.x, tile.y)) return false;
-  const occupied = [
-    state.supplies,
-    state.stations,
-    state.targets,
-    state.floor,
-  ].some((list) => list.some((entry) => sameTile(entry, tile)));
-  return !occupied;
-}
-
-/**
- * The tile a press of the interact key acts on for one person right now, or
- * null when a press does nothing. Pure and deterministic: the engine, the
- * prompts and the canvas all read this one rule.
- *
- * With nothing in hand, the faced tile is used when it has stock, an item on a
- * station, or a loose item on the floor. With something in hand, the faced
- * tile is used when it takes the item. Failing that, a station next to the
- * person that takes the item is used, so standing beside the arrange table
- * puts roses on it and not on the floor. The floor is the last choice, and
- * only the faced tile counts as the floor.
- */
-export function interactTile(state: GameState, id: PlayerId): Tile | null {
-  const player = state.players[id];
-  const front = frontTile(player);
-  const held = player.holding;
-  if (!held) {
-    const supply = state.supplies.find((s) => sameTile(s, front));
-    const station = state.stations.find((s) => sameTile(s, front));
-    const floorItem = state.floor.find((f) => sameTile(f, front));
-    const pickable =
-      (supply !== undefined && state.stock[supply.kind] > 0) ||
-      station?.item != null ||
-      floorItem !== undefined;
-    return pickable ? front : null;
-  }
-  if (tileTakes(state, front, held)) return front;
-  const cx = Math.floor(player.x);
-  const cy = Math.floor(player.y);
-  for (const offset of NEIGHBOURS) {
-    const tile = { x: cx + offset.x, y: cy + offset.y };
-    const station = state.stations.find((s) => sameTile(s, tile));
-    if (station && stationAccepts(station, held)) return tile;
-  }
-  return floorDropAt(state, front) ? front : null;
 }
 
 /**
@@ -660,6 +563,20 @@ function decide(state: GameState, decision: PresenceDecision): StepResult {
   };
 }
 
+/**
+ * A level that finishes inside a seeded event (the shower, the rush) never
+ * reaches that event's own end tick, so the end line for each event it has
+ * started is emitted here, once, as the level finishes. An event that has not
+ * started yet, or has already ended, gets no line.
+ */
+function endOpenSeeded(w: Working, now: number): void {
+  for (const event of w.state.seeded) {
+    if (event.at <= now + 1e-9 && now + 1e-9 < event.until) {
+      w.events.push({ type: "seeded-end", id: event.id });
+    }
+  }
+}
+
 function allDone(state: GameState): boolean {
   return !state.targets.some((t) => t.status === "open");
 }
@@ -797,9 +714,11 @@ export function stepGame(state: GameState, frame: Frame): StepResult {
 
   if (allDone(w.state)) {
     w.state = { ...w.state, phase: "done", finishedAt: after };
+    endOpenSeeded(w, after);
     w.events.push({ type: "level-finished", early: true });
   } else if (after + 1e-9 >= w.state.duration) {
     w.state = { ...w.state, phase: "done" };
+    endOpenSeeded(w, after);
     w.events.push({ type: "level-finished", early: false });
   }
   return w;

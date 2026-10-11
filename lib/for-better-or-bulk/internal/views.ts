@@ -155,10 +155,15 @@ const COOKED: Partial<Record<ItemKind, ItemKind>> = {
   "wings-raw": "wings",
 };
 
-/** One coach line, and the tile it points at when it points at one. */
+/**
+ * One coach line, and the tile it points at when it points at one. A wait
+ * step (`waiting`) points at a station that is still busy, so the outline is
+ * drawn dashed.
+ */
 export interface CoachStep {
   readonly text: string;
   readonly tile: Tile | null;
+  readonly waiting?: boolean;
 }
 
 /** The tile of the first station of a kind, or null when there is none. */
@@ -191,6 +196,27 @@ function placeStep(state: GameState, held: ItemKind): CoachStep | null {
         text: `Place ${ITEM_NAMES[held]} at ${TARGET_NAMES[target.kind]}.`,
         tile: { x: target.x, y: target.y },
       }
+    : putDownStep(state, held);
+}
+
+/**
+ * The step for someone carrying an item that no open place wants: put it on
+ * the floor while the floor has room, or else back in its own crate. The
+ * helper drops it in the same order (dropTiers in assist.ts).
+ */
+function putDownStep(state: GameState, held: ItemKind): CoachStep | null {
+  if (state.floor.length < FLOOR_CAP) {
+    return {
+      text: `Put ${ITEM_NAMES[held]} down somewhere out of the way.`,
+      tile: null,
+    };
+  }
+  const crate = state.supplies.find((s) => s.kind === held);
+  return crate
+    ? {
+        text: `Put ${ITEM_NAMES[held]} back in its crate.`,
+        tile: { x: crate.x, y: crate.y },
+      }
     : null;
 }
 
@@ -204,32 +230,35 @@ function carryStep(state: GameState, held: ItemKind): CoachStep | null {
     case "roses": {
       const wantsArrange = openTarget(state, "arrangement") !== undefined;
       const wantsPetals = openTarget(state, "petals") !== undefined;
-      if (!wantsArrange && !wantsPetals) return null;
+      if (!wantsArrange && !wantsPetals) return putDownStep(state, held);
       const kind = roseStation(state);
       if (kind)
         return {
-          text: `Take the roses to ${STATION_NAMES[kind]}.`,
+          text: `Carry the roses to ${STATION_NAMES[kind]}.`,
           tile: freeTile(state, kind),
         };
       const busy: StationKind = wantsArrange ? "arrange" : "petals";
       return {
         text: `Wait for ${STATION_NAMES[busy]} to clear.`,
         tile: firstTile(state, busy),
+        waiting: true,
       };
     }
     case "hotdogs-raw":
     case "wings-raw": {
       const cooked = COOKED[held];
-      if (!cooked || !openTarget(state, cooked)) return null;
+      if (!cooked || !openTarget(state, cooked))
+        return putDownStep(state, held);
       const tile = freeTile(state, "grill");
       return tile
         ? {
-            text: `Take ${ITEM_NAMES[held]} to ${STATION_NAMES.grill}.`,
+            text: `Carry ${ITEM_NAMES[held]} to ${STATION_NAMES.grill}.`,
             tile,
           }
         : {
             text: `Wait for ${STATION_NAMES.grill} to clear.`,
             tile: firstTile(state, "grill"),
+            waiting: true,
           };
     }
     case "arrangement":
@@ -282,6 +311,7 @@ function cookingStep(state: GameState): CoachStep | null {
       return {
         text: `Collect ${ITEM_NAMES[cooked]} from ${STATION_NAMES.grill} when they are ready.`,
         tile: { x: grill.x, y: grill.y },
+        waiting: true,
       };
     }
   }

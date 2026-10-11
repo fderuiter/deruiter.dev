@@ -332,6 +332,114 @@ describe("For Better or Bulk venue canvas (#1906)", () => {
     }
   });
 
+  it("outlines a wait step's tile dashed, not solid, while its station is busy", () => {
+    const ctx = document
+      .createElement("canvas")
+      .getContext("2d") as CanvasRenderingContext2D;
+    const level = createLevel(DEFAULT_SETUP);
+    // Fred carries roses and both ARRANGE tables hold roses, so he must wait.
+    const state = {
+      ...level,
+      stations: level.stations.map((s) =>
+        s.kind === "arrange"
+          ? { ...s, item: { kind: "roses" as const, madeBy: null } }
+          : s
+      ),
+      players: {
+        ...level.players,
+        fred: {
+          ...level.players.fred,
+          holding: { kind: "roses" as const, madeBy: null },
+        },
+      },
+    };
+    const coach = getCoachTile(state, "fred");
+    expect(coach).not.toBeNull();
+    let dash: number[] = [];
+    const dashes = new Map<string, number[]>();
+    vi.mocked(ctx.setLineDash).mockImplementation(
+      (segments: Iterable<number>) => {
+        dash = [...segments];
+      }
+    );
+    vi.mocked(ctx.strokeRect).mockImplementation((x: number, y: number) => {
+      dashes.set(`${x},${y}`, [...dash]);
+    });
+    drawVenue(ctx, state, "fred");
+    const key = `${(coach?.x ?? 0) * TILE + 2},${(coach?.y ?? 0) * TILE + 2}`;
+    expect(dashes.get(key)).toEqual([3, 3]);
+  });
+
+  it("outlines a tile that is both the coach's and the interact tile once", () => {
+    const ctx = document
+      .createElement("canvas")
+      .getContext("2d") as CanvasRenderingContext2D;
+    const level = createLevel(DEFAULT_SETUP);
+    // Fred faces a free ARRANGE table from the side of it and holds roses: the
+    // coach points at that table and so does the press.
+    const state = {
+      ...level,
+      players: {
+        ...level.players,
+        fred: {
+          ...level.players.fred,
+          x: 7.5,
+          y: 3.5,
+          facingX: 1,
+          facingY: 0,
+          holding: { kind: "roses" as const, madeBy: null },
+        },
+      },
+    };
+    expect(getCoachTile(state, "fred")).toEqual({ x: 8, y: 3 });
+    drawVenue(ctx, state, "fred");
+    const key = `${8 * TILE + 2},${3 * TILE + 2}`;
+    const strokes = vi
+      .mocked(ctx.strokeRect)
+      .mock.calls.map(([x, y]) => `${x},${y}`)
+      .filter((k) => k === key);
+    expect(strokes).toHaveLength(1);
+  });
+
+  it("draws a target's n/2 count after the outlines, so no outline covers its plate", () => {
+    const ctx = document
+      .createElement("canvas")
+      .getContext("2d") as CanvasRenderingContext2D;
+    const level = createLevel(DEFAULT_SETUP);
+    // Fred faces the two-item bouquet basket and holds the arrangement.
+    const state = {
+      ...level,
+      players: {
+        ...level.players,
+        fred: {
+          ...level.players.fred,
+          x: 16.5,
+          y: 10.5,
+          facingX: 1,
+          facingY: 0,
+          holding: { kind: "arrangement" as const, madeBy: "fred" as const },
+        },
+      },
+    };
+    drawVenue(ctx, state, "fred");
+    const basket = state.targets.find((t) => t.kind === "basket");
+    expect(basket?.capacity).toBe(2);
+    const outline = `${(basket?.x ?? 0) * TILE + 2},${(basket?.y ?? 0) * TILE + 2}`;
+    const strokeIndex = vi
+      .mocked(ctx.strokeRect)
+      .mock.calls.findIndex(([x, y]) => `${x},${y}` === outline);
+    const countIndex = vi
+      .mocked(ctx.fillText)
+      .mock.calls.findIndex(([text]) => text === "0/2");
+    expect(strokeIndex).toBeGreaterThanOrEqual(0);
+    expect(countIndex).toBeGreaterThanOrEqual(0);
+    expect(
+      vi.mocked(ctx.fillText).mock.invocationCallOrder[countIndex] ?? 0
+    ).toBeGreaterThan(
+      vi.mocked(ctx.strokeRect).mock.invocationCallOrder[strokeIndex] ?? 0
+    );
+  });
+
   it("draws the empty-crate count with at least 4.5:1 contrast on the crate (#1914)", () => {
     const ctx = document
       .createElement("canvas")

@@ -17,7 +17,7 @@ import {
   VENUE_MAP,
   bankText,
   frontTile,
-  getCoachTile,
+  getCoachStep,
   getPrompt,
   interactTile,
   type GameState,
@@ -466,15 +466,6 @@ function drawTarget(ctx: CanvasRenderingContext2D, target: Target): void {
     drawWantBadge(ctx, target);
     // A target that takes several items shows items placed out of its slots,
     // so a half-filled basket reads as part done, never as none.
-    if (target.capacity > 1) {
-      drawLabel(
-        ctx,
-        `${filled.length}/${target.capacity}`,
-        cx,
-        py + TILE - 13,
-        true
-      );
-    }
     if (target.simplifyProgress > 0) {
       drawProgress(
         ctx,
@@ -563,31 +554,55 @@ function drawTileOutline(
 }
 
 /**
- * The tile a person's interact would act on, as the engine resolves it: a
- * station beside them can beat the floor in front of them. When a press would
- * do nothing, the faced tile is outlined instead. Solid when that interact is
- * available now, faint and dashed when it is not.
+ * The outlines for one person. The tile their interact would act on is
+ * outlined as the engine resolves it: a station beside them can beat the floor
+ * in front of them. When a press would do nothing, the faced tile is outlined
+ * instead, solid when that interact is available now and faint and dashed when
+ * it is not. The coach's tile is outlined solid, or dashed for a wait step. A
+ * tile that is both is outlined once.
  */
-function drawInteractTile(
-  ctx: CanvasRenderingContext2D,
-  state: GameState,
-  id: PlayerId
-): void {
-  const player = state.players[id];
-  if (player.presence === "away") return;
-  const tile = interactTile(state, id) ?? frontTile(player);
-  drawTileOutline(ctx, tile, getPrompt(state, id).interact !== null);
-}
-
-/** The tile the coach's line points this person at, outlined the same way. */
-function drawCoachTile(
+function drawPersonOutlines(
   ctx: CanvasRenderingContext2D,
   state: GameState,
   id: PlayerId,
   coop: boolean
 ): void {
-  const tile = getCoachTile(state, id, { coop });
-  if (tile) drawTileOutline(ctx, tile, true);
+  const player = state.players[id];
+  const coach = getCoachStep(state, id, { coop });
+  const coachTile = coach?.tile ?? null;
+  const waiting = coach?.waiting === true;
+  const interact =
+    player.presence === "away"
+      ? null
+      : {
+          tile: interactTile(state, id) ?? frontTile(player),
+          ready: getPrompt(state, id).interact !== null,
+        };
+  if (interact && coachTile && sameTile(interact.tile, coachTile)) {
+    drawTileOutline(ctx, interact.tile, interact.ready && !waiting);
+    return;
+  }
+  if (coachTile) drawTileOutline(ctx, coachTile, !waiting);
+  if (interact) drawTileOutline(ctx, interact.tile, interact.ready);
+}
+
+function sameTile(a: Tile, b: Tile): boolean {
+  return a.x === b.x && a.y === b.y;
+}
+
+/**
+ * The count of an open target that takes several items, drawn on a plate. It is
+ * drawn after the outlines, so the outline never covers the plate.
+ */
+function drawTargetCount(ctx: CanvasRenderingContext2D, target: Target): void {
+  if (target.status !== "open" || target.capacity <= 1) return;
+  drawLabel(
+    ctx,
+    `${target.filled.length}/${target.capacity}`,
+    target.x * TILE + TILE / 2,
+    target.y * TILE + TILE - 13,
+    true
+  );
 }
 
 /** A bar on the bin while someone holds work there to throw an item out. */
@@ -898,12 +913,10 @@ export function drawVenue(
       TILE * 0.45
     );
   }
-  // The outlines sit above the props and below the station words.
+  // The outlines sit above the props and below the station words and counts.
   const people = active ? [active] : (["fred", "abbi"] as const);
-  for (const id of people) {
-    drawCoachTile(ctx, state, id, active === null);
-    drawInteractTile(ctx, state, id);
-  }
+  for (const id of people) drawPersonOutlines(ctx, state, id, active === null);
+  for (const target of state.targets) drawTargetCount(ctx, target);
   for (const station of state.stations) {
     drawStationLabel(ctx, station, state.stations);
   }

@@ -3,7 +3,10 @@
  * player is not controlling. It walks the venue grid to the same places that
  * `getHint` names, using the rules in `gates.ts` that `getHint` also uses, so
  * roses and fetches agree with the hints. Where the hints only name a step,
- * the assist also takes it, and it can put down an item nothing wants.
+ * the assist also takes it, and it can put down an item nothing wants. A press
+ * is planned only where `pressTileFor` (press.ts) says it lands on the tile
+ * the assist faces, so a station beside the assist can take an item first, as
+ * it does for the player.
  *
  * The assist rests on most ticks (see `assistRests`), so its walks and presses
  * run at about 40% of a skilled player's pace (about 29% on the relaxed clock). Its held work keeps its bin or
@@ -37,6 +40,7 @@ import {
   usable,
   wantsItem,
 } from "./gates";
+import { pressTileFor } from "./press";
 import {
   CRATE_ITEM_NAMES,
   ITEM_NAMES,
@@ -185,16 +189,16 @@ function freeFloorGoals(state: GameState, item: ItemKind): Goal[] {
   return goals;
 }
 
-/**
- * The goals for someone holding an item that no open place wants: put it on
- * a free floor tile while the floor has room, or else back in its own crate.
- * Burnt food never lands here, because the bin always wants it.
- */
 /** Whether an item kind comes out of a crate, so it can go back in one. */
 function isSupplyKind(kind: ItemKind): kind is SupplyKind {
   return Object.hasOwn(CRATE_ITEM_NAMES, kind);
 }
 
+/**
+ * The goals for someone holding an item that no open place wants: put it on
+ * a free floor tile while the floor has room, or else back in its own crate.
+ * Burnt food never lands here, because the bin always wants it.
+ */
 function dropTiers(state: GameState, held: Item): Goal[][] {
   const tiers: Goal[][] = [];
   if (state.floor.length < FLOOR_CAP)
@@ -389,6 +393,7 @@ function claimedTiles(state: GameState, other: Player): Set<string> {
  * `avoid` tiles are not considered, though the route may walk past them.
  */
 function route(
+  state: GameState,
   player: Player,
   goals: readonly Goal[],
   avoid: ReadonlySet<string>
@@ -425,7 +430,9 @@ function route(
     const y = Math.floor(tile / WIDTH);
     const ahead = DIRECTIONS[dir];
     const goal = goalAt.get(keyOf(x + ahead.dx, y + ahead.dy));
-    if (goal) return { goal, step: firstStep[current] ?? null };
+    if (goal && pressLands(state, player, x, y, ahead, goal)) {
+      return { goal, step: firstStep[current] ?? null };
+    }
     DIRECTIONS.forEach((next, k) => {
       const nx = x + next.dx;
       const ny = y + next.dy;
@@ -442,6 +449,31 @@ function route(
     });
   }
   return null;
+}
+
+/**
+ * Whether a press from this cell, facing this way, acts on the goal tile. An
+ * interact goal is only reached when `pressTileFor` says the press lands there:
+ * a station beside the person can take the held item first, and then the
+ * press acts on that station instead. Goals that are not presses always count.
+ */
+function pressLands(
+  state: GameState,
+  player: Player,
+  x: number,
+  y: number,
+  ahead: { readonly dx: number; readonly dy: number },
+  goal: Goal
+): boolean {
+  if (goal.act !== "interact") return true;
+  const landed = pressTileFor(state, {
+    x: x + 0.5,
+    y: y + 0.5,
+    facingX: ahead.dx,
+    facingY: ahead.dy,
+    holding: player.holding,
+  });
+  return landed !== null && landed.x === goal.x && landed.y === goal.y;
 }
 
 function sign(value: number): number {
@@ -488,7 +520,7 @@ function planFor(state: GameState, id: PlayerId): Plan | null {
   // to burn while the helper walks off. A helper with hands full does not
   // reach for it, since it cannot take a batch while holding something.
   if (!player.holding) {
-    const found = route(player, ownBatches(state, id), new Set());
+    const found = route(state, player, ownBatches(state, id), new Set());
     if (found) return { route: found, text: found.goal.text };
   }
   const claimed = claimedTiles(state, state.players[other]);
@@ -498,7 +530,7 @@ function planFor(state: GameState, id: PlayerId): Plan | null {
   for (const avoid of [claimed, new Set<string>()]) {
     for (const goals of tiers) {
       if (goals.length === 0) continue;
-      const found = route(player, goals, avoid);
+      const found = route(state, player, goals, avoid);
       if (found) return { route: found, text: found.goal.text };
     }
   }

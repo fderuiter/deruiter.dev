@@ -6,7 +6,9 @@
 
 # Interface: CoachStep
 
-One coach line, and the tile it points at when it points at one.
+One coach line, and the tile it points at when it points at one. A wait
+step (`waiting`) points at a station that is still busy, so the outline is
+drawn dashed.
 
 ## Properties
 
@@ -19,3 +21,9 @@ One coach line, and the tile it points at when it points at one.
 ### tile
 
 > `readonly` **tile**: [`Tile`](../../../types/interfaces/Tile.md) \| `null`
+
+***
+
+### waiting?
+
+> `readonly` `optional` **waiting?**: `boolean`

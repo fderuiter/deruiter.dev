@@ -1300,7 +1300,7 @@ describe("the coach hints", () => {
           madeBy: null,
         }),
       id: "abbi",
-      hint: "Take the roses to the ARRANGE table (A).",
+      hint: "Carry the roses to the ARRANGE table (A).",
     },
     {
       name: "roses on the table: hold work to arrange them",
@@ -1352,7 +1352,7 @@ describe("the coach hints", () => {
           { kind: "roses", madeBy: null }
         ),
       id: "abbi",
-      hint: "Take the roses to the PETALS bucket (P).",
+      hint: "Carry the roses to the PETALS bucket (P).",
     },
     {
       name: "roses, arrangements filled, aisle open: carry the roses to the PETALS bucket",
@@ -1366,10 +1366,10 @@ describe("the coach hints", () => {
           { kind: "roses", madeBy: null }
         ),
       id: "abbi",
-      hint: "Take the roses to the PETALS bucket (P).",
+      hint: "Carry the roses to the PETALS bucket (P).",
     },
     {
-      name: "roses, every arrangement filled, aisle unplanned: no roses to carry",
+      name: "roses, every arrangement filled, aisle unplanned: no roses to carry: put them down out of the way",
       state: () =>
         place(
           filledFor(createLevel(DEFAULT_SETUP), "arrangement"),
@@ -1380,7 +1380,7 @@ describe("the coach hints", () => {
           { kind: "roses", madeBy: null }
         ),
       id: "abbi",
-      hint: null,
+      hint: "Put the roses down somewhere out of the way.",
     },
     {
       name: "aisle open and roses in stock: grab roses for the PETALS bucket",
@@ -1464,7 +1464,7 @@ describe("the coach hints", () => {
           madeBy: null,
         }),
       id: "fred",
-      hint: "Take the raw hot dogs to the GRILL (G).",
+      hint: "Carry the raw hot dogs to the GRILL (G).",
     },
     {
       name: "hot dogs cooked on the grill: take them off",
@@ -1762,6 +1762,18 @@ describe("interaction targets", () => {
     const after = stepGame(at, frameFor("fred", { interact: true })).state;
     expect(after.floor).toEqual([{ x: 10, y: 3, item: roses }]);
   });
+
+  it("uses a station behind the person that takes the item, ahead of the floor they face", () => {
+    const at = place(createLevel(DEFAULT_SETUP), "fred", 8, 4, [0, 1], roses);
+    expect(interactTile(at, "fred")).toEqual({ x: 8, y: 3 });
+  });
+
+  it("skips a station behind the person that does not take the item, so the press lands on the floor they face", () => {
+    const at = place(createLevel(DEFAULT_SETUP), "fred", 6, 2, [0, -1], roses);
+    expect(interactTile(at, "fred")).toEqual({ x: 6, y: 1 });
+    const after = stepGame(at, frameFor("fred", { interact: true })).state;
+    expect(after.floor).toEqual([{ x: 6, y: 1, item: roses }]);
+  });
 });
 
 describe("the coach names one stage at a time", () => {
@@ -1785,7 +1797,7 @@ describe("the coach names one stage at a time", () => {
       roses
     );
     const step = getCoachStep(state, "abbi");
-    expect(step?.text).toBe("Take the roses to the ARRANGE table (A).");
+    expect(step?.text).toBe("Carry the roses to the ARRANGE table (A).");
     expect(
       state.stations.some(
         (s) =>
@@ -1834,5 +1846,43 @@ describe("the coach names one stage at a time", () => {
       "Collect the hot dogs from the GRILL (G) when they are ready."
     );
     expect(step?.tile).toEqual({ x: 4, y: 3 });
+    expect(step?.waiting).toBe(true);
+  });
+
+  it("holding an item no open place wants: says to put it down out of the way, with no tile", () => {
+    const base = onlyOpen(
+      createLevel(DEFAULT_SETUP),
+      (t) => t.wants !== "petals"
+    );
+    const state = place(base, "fred", 2, 2, [0, 1], {
+      kind: "petals",
+      madeBy: null,
+    });
+    const step = getCoachStep(state, "fred");
+    expect(step?.text).toBe(
+      "Put the bucket of petals down somewhere out of the way."
+    );
+    expect(step?.tile).toBeNull();
+  });
+
+  it("a busy station is a wait step, while a free one is not", () => {
+    const roses: Item = { kind: "roses", madeBy: null };
+    const base = onlyOpen(
+      createLevel(DEFAULT_SETUP),
+      (t) => t.wants === "arrangement"
+    );
+    const busy = {
+      ...base,
+      stations: base.stations.map((s) =>
+        s.kind === "arrange" ? { ...s, item: roses } : s
+      ),
+    };
+    const carrying = place(busy, "fred", 2, 2, [0, 1], roses);
+    expect(getCoachStep(carrying, "fred")).toMatchObject({
+      text: "Wait for the ARRANGE table (A) to clear.",
+      waiting: true,
+    });
+    const free = place(base, "fred", 2, 2, [0, 1], roses);
+    expect(getCoachStep(free, "fred")?.waiting).toBeFalsy();
   });
 });

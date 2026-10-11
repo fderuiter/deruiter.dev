@@ -102,23 +102,44 @@ async function skipPlaybackToReceipt(page: Page) {
   });
 }
 
+/** The receipt's scroll margin (scroll-mt-28, 7rem), which the scroll leaves above it. */
+const RECEIPT_MARGIN_PX = 112;
+
 /**
- * The receipt title must sit below the fixed navbar, not under it. The
- * navbar's padding changes as the page scrolls, so both boxes are polled until
- * the scroll has settled.
+ * Waits until the receipt's scroll has landed: either the receipt sits at its
+ * scroll margin, or the page has stopped moving (two samples 200 ms apart are
+ * equal and it is scrolled). Until then a title can already be clear of the
+ * navbar for the wrong reason, before the scroll has run at all.
  */
-async function expectTitleBelowBanner(page: Page) {
+async function waitForReceiptScroll(page: Page) {
   await expect
     .poll(
       async () => {
-        const title = await page.getByTestId("fbb-title").boundingBox();
-        const banner = await page.getByRole("banner").first().boundingBox();
-        if (!title || !banner) return -1;
-        return title.y - (banner.y + banner.height);
+        const first = await page.evaluate(() => window.scrollY);
+        await page.waitForTimeout(200);
+        const second = await page.evaluate(() => window.scrollY);
+        const receipt = await page.getByTestId("fbb-receipt").boundingBox();
+        const atMargin =
+          receipt !== null && Math.abs(receipt.y - RECEIPT_MARGIN_PX) <= 2;
+        return atMargin || (first === second && first !== 0);
       },
       { timeout: 10000 }
     )
-    .toBeGreaterThanOrEqual(0);
+    .toBe(true);
+}
+
+/**
+ * The receipt title must sit below the fixed navbar, not under it. The scroll
+ * is awaited first, so the title is measured where the receipt put it.
+ */
+async function expectTitleBelowBanner(page: Page) {
+  await waitForReceiptScroll(page);
+  const title = await page.getByTestId("fbb-title").boundingBox();
+  const banner = await page.getByRole("banner").first().boundingBox();
+  if (!title || !banner) {
+    throw new Error("the receipt title or the navbar has no box to measure");
+  }
+  expect(title.y).toBeGreaterThanOrEqual(banner.y + banner.height);
 }
 
 test.describe("For Better or Bulk (/arcade/for-better-or-bulk)", () => {

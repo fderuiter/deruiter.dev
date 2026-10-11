@@ -9,11 +9,58 @@ import {
   CATEGORY_LABELS,
   FLOOR_FULL_REPEAT_SECONDS,
   INTERRUPTIONS,
+  type Category,
   type GameEvent,
   type PlayerId,
+  type GameState,
 } from "@/lib/for-better-or-bulk";
 
 const NAMES = { fred: "Fred", abbi: "Abbi" } as const;
+
+/** The checklist rows the side panel lists, in order. */
+export const CHECKLIST: readonly Category[] = [
+  "bouquets",
+  "centerpieces",
+  "petals",
+  "chairs",
+  "lanterns",
+  "buffet",
+];
+
+/** Planned targets in one category, and how many of them are filled. */
+export function checklistLine(
+  state: GameState,
+  category: Category
+): { done: number; planned: number } | null {
+  const planned = state.targets.filter(
+    (t) => t.category === category && t.status !== "unplanned"
+  );
+  if (planned.length === 0) return null;
+  const counted = planned.filter((t) => t.status !== "simplified");
+  return {
+    done: counted.filter((t) => t.status === "filled").length,
+    planned: counted.length,
+  };
+}
+
+/** A category whose planned targets are all filled or simplified this step. */
+function isComplete(state: GameState, category: Category): boolean {
+  const line = checklistLine(state, category);
+  return line !== null && line.done === line.planned;
+}
+
+/**
+ * The categories that became complete between two states. The engine has no
+ * event for this, so the cabinet derives it from the step's before and after.
+ */
+export function completedCategories(
+  before: GameState,
+  after: GameState
+): Category[] {
+  return CHECKLIST.filter(
+    (category) => !isComplete(before, category) && isComplete(after, category)
+  );
+}
 
 const SUPPLY_LABELS = {
   roses: "roses",
@@ -76,6 +123,48 @@ export function describeEvent(event: GameEvent): string | null {
       return event.early
         ? "Everything is set. Early, even."
         : "It's 4:00. Time to get married.";
+    default:
+      return null;
+  }
+}
+
+/** What the cabinet can give feedback for: engine events plus one derived here. */
+export type FeedbackEvent =
+  | GameEvent
+  | { readonly type: "category-complete"; readonly category: Category };
+
+/** The named sounds the cabinet can play; see sfx.ts for the recipes. */
+export type SoundKey =
+  | "place"
+  | "category"
+  | "cooked"
+  | "burnt"
+  | "brothers"
+  | "fred"
+  | "finish"
+  | "refused";
+
+/** The sound for one event, or null when it plays none. */
+export function soundFor(event: FeedbackEvent): SoundKey | null {
+  switch (event.type) {
+    case "target-filled":
+      return "place";
+    case "category-complete":
+      return "category";
+    case "cooked":
+      return "cooked";
+    case "burnt":
+      return "burnt";
+    case "brothers-text":
+      return "brothers";
+    case "fred-returned":
+      return "fred";
+    case "level-finished":
+      return "finish";
+    case "floor-full":
+      return "refused";
+    case "interruption":
+      return event.blockedBy ? "refused" : null;
     default:
       return null;
   }

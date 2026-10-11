@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
+import { fromPartial } from "@total-typescript/shoehorn";
 import {
   DEFAULT_SETUP,
   createLevel,
@@ -7,13 +8,20 @@ import {
   type GameEvent,
 } from "@/lib/for-better-or-bulk";
 import { buildFrame, GAME_CODES } from "@/components/for-better-or-bulk/input";
-import { describeEvent } from "@/components/for-better-or-bulk/messages";
 import {
+  completedCategories,
+  describeEvent,
+  soundFor,
+} from "@/components/for-better-or-bulk/messages";
+import {
+  BURST_SECONDS,
+  canvasBurstsFor,
   TILE,
   drawItem,
   drawVenue,
   VENUE_HEIGHT,
   VENUE_WIDTH,
+  type CanvasBurst,
 } from "@/components/for-better-or-bulk/venue-canvas";
 
 /** The crate fill the stock counts are drawn on. */
@@ -306,5 +314,148 @@ describe("For Better or Bulk floor and bin lines", () => {
     expect(
       describeEvent({ type: "thrown-out", player: "abbi", item: "burnt" })
     ).toBeNull();
+  });
+});
+
+describe("For Better or Bulk sound map (F4)", () => {
+  it.each([
+    [
+      {
+        type: "target-filled",
+        player: "abbi",
+        target: "T1-1",
+        category: "bouquets",
+      },
+      "place",
+    ],
+    [{ type: "category-complete", category: "chairs" }, "category"],
+    [{ type: "cooked", station: "G4-3", item: "wings" }, "cooked"],
+    [{ type: "burnt", station: "G4-3" }, "burnt"],
+    [{ type: "brothers-text" }, "brothers"],
+    [{ type: "fred-returned" }, "fred"],
+    [{ type: "level-finished", early: true }, "finish"],
+    [{ type: "floor-full", player: "fred" }, "refused"],
+    [
+      {
+        type: "interruption",
+        id: "garden-formal",
+        player: "abbi",
+        blockedBy: "faq",
+      },
+      "refused",
+    ],
+  ] as const)("maps %j to %s", (event, key) => {
+    expect(soundFor(event)).toBe(key);
+  });
+
+  it("plays nothing for routine pick-ups or a phone call that is not blocked", () => {
+    expect(
+      soundFor({ type: "picked-up", player: "fred", item: "roses" })
+    ).toBeNull();
+    expect(soundFor({ type: "supply-empty", supply: "roses" })).toBeNull();
+    expect(
+      soundFor({
+        type: "interruption",
+        id: "garden-formal",
+        player: "abbi",
+        blockedBy: null,
+      })
+    ).toBeNull();
+  });
+
+  it("finds the categories that became complete between two steps", () => {
+    const before = createLevel(DEFAULT_SETUP);
+    const category = before.targets.find(
+      (t) => t.status !== "unplanned"
+    )?.category;
+    expect(category).toBeDefined();
+    const after = {
+      ...before,
+      targets: before.targets.map((t) =>
+        t.category === category && t.status !== "unplanned"
+          ? { ...t, status: "filled" as const }
+          : t
+      ),
+    };
+    expect(completedCategories(before, after)).toEqual([category]);
+    expect(completedCategories(after, after)).toEqual([]);
+  });
+});
+
+describe("For Better or Bulk loud canvas (F4)", () => {
+  const makeCtx = () =>
+    document
+      .createElement("canvas")
+      .getContext("2d") as CanvasRenderingContext2D;
+
+  it("passes canvas bursts through only when the cabinet is loud", () => {
+    const burst: CanvasBurst = { kind: "ring", x: 1, y: 1, startedAt: 0 };
+    expect(canvasBurstsFor(true, [burst])).toEqual([burst]);
+    expect(canvasBurstsFor(false, [burst])).toEqual([]);
+  });
+
+  it("draws a ring on a target for a short game-time window only", () => {
+    const state = createLevel(DEFAULT_SETUP);
+    const target = state.targets.find((t) => t.status === "open");
+    if (!target) throw new Error("the plan has an open target");
+    const cx = target.x * TILE + TILE / 2;
+    const cy = target.y * TILE + TILE / 2;
+    const ringAt = (startedAt: number) => {
+      const ctx = makeCtx();
+      vi.mocked(ctx.arc).mockClear();
+      drawVenue(ctx, state, null, [
+        { kind: "ring", x: target.x, y: target.y, startedAt },
+      ]);
+      return vi
+        .mocked(ctx.arc)
+        .mock.calls.some(
+          ([x, y, r]) => x === cx && y === cy && r === TILE * 0.35
+        );
+    };
+    expect(ringAt(state.time)).toBe(true);
+    expect(ringAt(state.time - BURST_SECONDS)).toBe(false);
+    expect(ringAt(state.time + 1)).toBe(false);
+  });
+
+  it("sizes labels at 10px where they fit and falls back to 8px where they do not", () => {
+    const fontAt = (width: number) => {
+      const ctx = makeCtx();
+      const fonts: string[] = [];
+      vi.mocked(ctx.measureText).mockImplementation(() =>
+        fromPartial<TextMetrics>({ width })
+      );
+      vi.mocked(ctx.fillText).mockImplementation((text: string) => {
+        if (text === "GRILL") fonts.push(String(ctx.font));
+      });
+      drawVenue(ctx, createLevel(DEFAULT_SETUP), null);
+      vi.mocked(ctx.fillText).mockReset();
+      vi.mocked(ctx.measureText).mockReset();
+      return fonts;
+    };
+    const fits = fontAt(20);
+    expect(fits.length).toBeGreaterThan(0);
+    expect(fits.every((f) => f.includes("10px"))).toBe(true);
+    const tooWide = fontAt(60);
+    expect(tooWide.every((f) => f.includes("8px"))).toBe(true);
+  });
+
+  it("keeps the bare-spot label at 4.5:1 or better on the table cloth", () => {
+    const state = createLevel(DEFAULT_SETUP);
+    const index = state.targets.findIndex(
+      (t) => t.kind === "table" || t.kind === "buffet"
+    );
+    expect(index).toBeGreaterThanOrEqual(0);
+    const targets = state.targets.map((t, i) =>
+      i === index ? { ...t, status: "simplified" as const } : t
+    );
+    const ctx = makeCtx();
+    const seen: string[] = [];
+    vi.mocked(ctx.fillText).mockImplementation((text: string) => {
+      if (text === "BARE") seen.push(String(ctx.fillStyle));
+    });
+    drawVenue(ctx, { ...state, targets }, null);
+    vi.mocked(ctx.fillText).mockReset();
+    expect(seen.length).toBeGreaterThan(0);
+    expect(contrast(seen[0], "#e9e4d8")).toBeGreaterThanOrEqual(4.5);
   });
 });

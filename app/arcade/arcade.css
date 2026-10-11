@@ -1457,3 +1457,70 @@
   --fbb-alert: #fca5a5;
   --fbb-toast: rgba(13, 14, 17, 0.86);
 }
+
+/* For Better or Bulk loud moments (AGENTS.md section 20, ADR 0046 amendment).
+ * One-shot DOM bursts exist only while the cabinet sets data-fbb-loud="on"
+ * (motion allowed and 768px or wider). They animate transform and opacity
+ * only, last under 0.6s, and are removed on animationend by the component. */
+[data-fbb-cabinet] .fbb-burst {
+  display: none;
+}
+
+@keyframes fbb-burst-text {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.92);
+  }
+  20% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-14px) scale(1);
+  }
+}
+
+@keyframes fbb-burst-row {
+  0% {
+    opacity: 0.3;
+    transform: scaleX(0);
+  }
+  100% {
+    opacity: 0;
+    transform: scaleX(1);
+  }
+}
+
+[data-fbb-cabinet][data-fbb-loud="on"] .fbb-burst-text {
+  display: inline-block;
+  padding: 4px 10px;
+  border: 1px solid var(--fbb-accent);
+  border-radius: 4px;
+  background: var(--fbb-toast);
+  color: var(--fbb-text);
+  font:
+    700 12px/1.2 var(--font-geist-mono),
+    ui-monospace,
+    monospace;
+  animation: fbb-burst-text 0.5s ease-out both;
+  will-change: transform, opacity;
+}
+
+[data-fbb-cabinet][data-fbb-loud="on"] .fbb-burst-row {
+  display: block;
+  position: absolute;
+  inset: 0;
+  transform-origin: left center;
+  background: var(--fbb-accent);
+  pointer-events: none;
+  animation: fbb-burst-row 0.45s ease-out both;
+  will-change: transform, opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-fbb-cabinet] .fbb-burst {
+    display: none;
+    animation: none;
+  }
+}

@@ -116,6 +116,9 @@ export function ReceiptView({
         </li>
         {receipt.finishedAt ? <li>{receipt.finishedAt}</li> : null}
         {receipt.kitchen ? <li>{receipt.kitchen}</li> : null}
+        {receipt.assist ? (
+          <li data-testid="fbb-assist">{receipt.assist}</li>
+        ) : null}
         <li>
           <span className="font-bold">Weather:</span> {receipt.weather}
         </li>

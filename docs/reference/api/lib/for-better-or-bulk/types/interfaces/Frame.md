@@ -10,6 +10,16 @@ The inputs for one tick, plus the brothers decision when one is made.
 
 ## Properties
 
+### assisted?
+
+> `readonly` `optional` **assisted?**: [`PlayerId`](../type-aliases/PlayerId.md)
+
+In solo play, the person the player is not controlling this tick. The
+solo assist acts for them only when the setup turns it on and their input
+here is idle.
+
+***
+
 ### decision?
 
 > `readonly` `optional` **decision?**: [`PresenceDecision`](PresenceDecision.md)

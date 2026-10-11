@@ -195,6 +195,7 @@ const YES_SETUP: Setup = {
   capabilities: ["faq", "admin"],
   cart: { roses: "yes", food: "enough", lanterns: true },
   relaxed: false,
+  assist: false,
 };
 
 describe("setup and budget", () => {

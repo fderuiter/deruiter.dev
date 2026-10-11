@@ -52,6 +52,7 @@ import type {
 } from "../types";
 import { clamp } from "@/lib/game-utils";
 import { createLevel } from "./level";
+import { assistInput } from "./assist";
 
 const PLAYER_IDS: readonly PlayerId[] = ["fred", "abbi"];
 const COMMITMENTS: readonly Commitment[] = [
@@ -85,6 +86,20 @@ export const IDLE_INPUT: PlayerInput = {
   interact: false,
   work: false,
 };
+
+/**
+ * The input a person acts on this tick: their own keys, or the solo assist
+ * when the setup turns it on, the frame names them as the assisted person,
+ * and their keys are idle.
+ */
+function inputFor(state: GameState, frame: Frame, id: PlayerId): PlayerInput {
+  const given = frame.inputs[id] ?? IDLE_INPUT;
+  const idle =
+    given.moveX === 0 && given.moveY === 0 && !given.interact && !given.work;
+  if (state.setup.assist && frame.assisted === id && idle)
+    return assistInput(state, id);
+  return given;
+}
 
 /** A frame in which nobody touches anything. */
 export const IDLE_FRAME: Frame = {
@@ -590,7 +605,7 @@ export function stepGame(state: GameState, frame: Frame): StepResult {
       });
       continue;
     }
-    const input = frame.inputs[id] ?? IDLE_INPUT;
+    const input = inputFor(w.state, frame, id);
     setPlayer(w, move(player, input, dt));
     if (input.interact) interact(w, id);
     if (input.work) work(w, id, dt);

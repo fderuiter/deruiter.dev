@@ -9,6 +9,7 @@
 ## Variables
 
 - [ARRANGE\_SECONDS](variables/ARRANGE_SECONDS.md)
+- [ASSIST\_LINE](variables/ASSIST_LINE.md)
 - [BIN\_HOLD\_SECONDS](variables/BIN_HOLD_SECONDS.md)
 - [BLOCKED\_TOASTS](variables/BLOCKED_TOASTS.md)
 - [BREAK\_SECONDS](variables/BREAK_SECONDS.md)

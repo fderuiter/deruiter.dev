@@ -73,6 +73,8 @@ export function validateSetup(setup: Setup): Validation {
   if (!(setup.cart.food in FOOD_PRICES))
     return { ok: false, reason: "There is no such food tier." };
   const total = cartTotal(setup.cart);
+  if (setup.assist !== undefined && typeof setup.assist !== "boolean")
+    return { ok: false, reason: "The helper setting must be on or off." };
   if (total > BUDGET) {
     return {
       ok: false,

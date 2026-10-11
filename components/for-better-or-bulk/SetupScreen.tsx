@@ -95,12 +95,15 @@ export function SetupScreen({
   const [food, setFood] = useState<FoodTier>(initial.cart.food);
   const [lanterns, setLanterns] = useState(initial.cart.lanterns);
   const [relaxed, setRelaxed] = useState(initial.relaxed);
+  const [assist, setAssist] = useState(initial.assist ?? false);
   const [mode, setMode] = useState<ControlMode>(initialMode);
 
+  // The helper only exists in one-player play, so co-op never carries it.
   const setup: Setup = {
     capabilities,
     cart: { roses, food, lanterns },
     relaxed,
+    assist: mode === "solo" && assist,
   };
   const total = cartTotal(setup.cart);
   const check = validateSetup(setup);
@@ -255,6 +258,23 @@ export function SetupScreen({
             </span>
           </OptionButton>
         </div>
+        {mode === "solo" ? (
+          <div className="mt-2 flex min-w-0 flex-wrap gap-2">
+            <OptionButton
+              role="checkbox"
+              selected={assist}
+              onClick={() => setAssist(!assist)}
+            >
+              <span className="font-bold text-[var(--fbb-text)]">
+                Helper for the other person
+              </span>
+              <span className="mt-0.5">
+                While you play one person, a helper moves the other when they
+                are idle. Fred is never moved while he is out.
+              </span>
+            </OptionButton>
+          </div>
+        ) : null}
       </fieldset>
 
       <div className="flex min-w-0 flex-wrap items-center gap-3 border-t border-[var(--fbb-rule)] pt-4">

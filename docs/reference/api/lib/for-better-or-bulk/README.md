@@ -14,6 +14,18 @@ Re-exports [ARRANGE_SECONDS](presets/variables/ARRANGE_SECONDS.md)
 
 ***
 
+### ASSIST\_LINE
+
+Re-exports [ASSIST_LINE](presets/variables/ASSIST_LINE.md)
+
+***
+
+### assistInput
+
+Re-exports [assistInput](internal/assist/functions/assistInput.md)
+
+***
+
 ### BIN\_HOLD\_SECONDS
 
 Re-exports [BIN_HOLD_SECONDS](presets/variables/BIN_HOLD_SECONDS.md)

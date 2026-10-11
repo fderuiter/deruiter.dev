@@ -73,6 +73,7 @@ export const DEFAULT_SETUP: Setup = {
   capabilities: ["faq", "admin"],
   cart: { roses: "full", food: "enough", lanterns: true },
   relaxed: false,
+  assist: false,
 };
 
 /** How many website features the prologue allows. */
@@ -349,3 +350,7 @@ export const FICTION_DEFAULTS: readonly string[] = [
   "The brothers text at a made-up time, and the break and leave options are gameplay alternatives.",
   "The Suit Wherehouse is a made-up name.",
 ];
+
+/** The receipt's line when the solo helper was on (ADR 0060, F6). */
+export const ASSIST_LINE =
+  "A helper kept the other lane going. Very efficient. Slightly eerie.";

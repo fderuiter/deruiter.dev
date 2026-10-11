@@ -14,7 +14,7 @@ Alt text for one game's link preview.
 
 ### slug
 
-`"laser-loon"` \| `"working-with-duck"` \| `"quasi-puzzler"` \| `"garmin-watch"` \| `"clinical-chaos"` \| `"trial-and-error"` \| `"study-director"` \| `"patty-drive-thru"` \| `"protocol-drift"` \| `"retro-labyrinth"` \| `"meme-vault"`
+`"laser-loon"` \| `"working-with-duck"` \| `"quasi-puzzler"` \| `"garmin-watch"` \| `"clinical-chaos"` \| `"trial-and-error"` \| `"study-director"` \| `"patty-drive-thru"` \| `"for-better-or-bulk"` \| `"protocol-drift"` \| `"retro-labyrinth"` \| `"meme-vault"`
 
 ## Returns
 

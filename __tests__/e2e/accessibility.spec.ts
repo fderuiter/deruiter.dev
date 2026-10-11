@@ -731,4 +731,14 @@ test.describe("Continuous Accessibility (a11y) & WCAG 2.1 AA Audit Suite", () =>
 
     await auditAndAssert(page, testInfo, "Arcade Game: Patty's Drive-Thru");
   });
+
+  test("Audit: Arcade Game - For Better or Bulk", async ({
+    page,
+  }, testInfo) => {
+    await page.goto("/arcade/for-better-or-bulk");
+    await page.waitForLoadState("networkidle");
+    await page.waitForTimeout(400);
+
+    await auditAndAssert(page, testInfo, "Arcade Game: For Better or Bulk");
+  });
 });

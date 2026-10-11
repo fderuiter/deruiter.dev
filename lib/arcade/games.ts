@@ -13,6 +13,7 @@ export const ARCADE_GAME_ROUTES = [
   "/arcade/trial-and-error",
   "/arcade/study-director",
   "/arcade/patty-drive-thru",
+  "/arcade/for-better-or-bulk",
   "/arcade/retro-labyrinth",
 ] as const;
 

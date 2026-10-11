@@ -22,6 +22,7 @@ export type NavIconKey =
   | "cards"
   | "clipboard"
   | "headset"
+  | "rings"
   | "terminal"
   | "duck"
   | "vault"
@@ -116,6 +117,14 @@ const ARCADE_ITEMS: NavItem[] = [
     subtitle: "One shift at my first job, in first person",
     href: "/arcade/patty-drive-thru",
     icon: "headset",
+    tone: "cyan",
+  },
+  {
+    id: "for-better-or-bulk",
+    title: "For Better or Bulk",
+    subtitle: "Set up our Costco wedding before 4:00",
+    href: "/arcade/for-better-or-bulk",
+    icon: "rings",
     tone: "cyan",
   },
   {

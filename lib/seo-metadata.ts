@@ -272,6 +272,22 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     locale: "en-US",
     isAccessibleForFree: true,
   },
+  forBetterOrBulk: {
+    title: "For Better or Bulk: Costco Wedding",
+    description:
+      "Set up our real Costco wedding before the 4:00 ceremony: grill hot dogs, arrange Kirkland roses and stack chairs, solo or as two players on one keyboard.",
+    path: "/arcade/for-better-or-bulk",
+    keywords: [
+      "Co-op Browser Game",
+      "Couch Co-op",
+      "Wedding Game",
+      "Autobiographical Game",
+      "Canvas 2D",
+    ],
+    inLanguage: "en-US",
+    locale: "en-US",
+    isAccessibleForFree: true,
+  },
   protocolDrift: {
     title: "Protocol Drift: Data Pipeline Sim",
     description:

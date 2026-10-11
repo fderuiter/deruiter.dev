@@ -15,6 +15,7 @@ describe("Game Manuals Registry", () => {
     "retro-labyrinth",
     "study-director",
     "patty-drive-thru",
+    "for-better-or-bulk",
     "protocol-drift",
     "simulator",
     "crf",

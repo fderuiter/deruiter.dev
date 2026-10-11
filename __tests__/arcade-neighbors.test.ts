@@ -40,14 +40,20 @@ describe("arcade previous/next ring (#1330)", () => {
       "/arcade/patty-drive-thru"
     );
     expect(getArcadeNeighbors("/arcade/retro-labyrinth").prev.href).toBe(
-      "/arcade/patty-drive-thru"
+      "/arcade/for-better-or-bulk"
     );
   });
 
-  it("puts Patty's Drive-Thru between Study Director and Retro Labyrinth (#1813)", () => {
+  it("puts Patty's Drive-Thru between Study Director and For Better or Bulk (#1813)", () => {
     const patty = getArcadeNeighbors("/arcade/patty-drive-thru");
     expect(patty.prev.href).toBe("/arcade/study-director");
-    expect(patty.next.href).toBe("/arcade/retro-labyrinth");
+    expect(patty.next.href).toBe("/arcade/for-better-or-bulk");
+  });
+
+  it("puts For Better or Bulk between Patty's Drive-Thru and Retro Labyrinth (#1906)", () => {
+    const wedding = getArcadeNeighbors("/arcade/for-better-or-bulk");
+    expect(wedding.prev.href).toBe("/arcade/patty-drive-thru");
+    expect(wedding.next.href).toBe("/arcade/retro-labyrinth");
   });
 
   it("takes titles and tags from the shared game metadata", () => {

@@ -16,6 +16,7 @@ import {
   IconCards,
   IconClipboardCheck,
   IconHeadset,
+  IconRings,
   IconDeviceGamepad2,
   IconHeart,
   IconFilter,
@@ -81,6 +82,8 @@ function getTrophyIcon(iconName: string) {
       return <IconClipboardCheck className="w-5 h-5 text-amber-400" />;
     case "Headset":
       return <IconHeadset className="w-5 h-5 text-lime-200" />;
+    case "Rings":
+      return <IconRings className="w-5 h-5 text-rose-300" />;
     case "DeviceGamepad2":
       return <IconDeviceGamepad2 className="w-5 h-5 text-rose-400" />;
     case "Heart":

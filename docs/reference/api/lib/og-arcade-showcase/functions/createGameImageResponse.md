@@ -14,7 +14,7 @@ Renders one game's link preview: its arcade screenshot beside its title and a on
 
 ### slug
 
-`"laser-loon"` \| `"working-with-duck"` \| `"quasi-puzzler"` \| `"garmin-watch"` \| `"clinical-chaos"` \| `"trial-and-error"` \| `"study-director"` \| `"patty-drive-thru"` \| `"protocol-drift"` \| `"retro-labyrinth"` \| `"meme-vault"`
+`"laser-loon"` \| `"working-with-duck"` \| `"quasi-puzzler"` \| `"garmin-watch"` \| `"clinical-chaos"` \| `"trial-and-error"` \| `"study-director"` \| `"patty-drive-thru"` \| `"for-better-or-bulk"` \| `"protocol-drift"` \| `"retro-labyrinth"` \| `"meme-vault"`
 
 ## Returns
 

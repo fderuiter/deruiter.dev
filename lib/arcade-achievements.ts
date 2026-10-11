@@ -27,6 +27,7 @@ export const ARCADE_STORAGE_KEYS: Record<string, string> = {
   "trial-and-error": "trial_and_error_high_score",
   "study-director": "study_director_high_score",
   "patty-drive-thru": "patty_drive_thru_high_score",
+  "for-better-or-bulk": "for_better_or_bulk_high_score",
   "protocol-drift": "protocol_drift_high_score",
   "retro-labyrinth": "retro_labyrinth_highscore",
   "meme-vault": "unlocked_meme_vault",
@@ -249,6 +250,31 @@ export const ARCADE_TROPHIES: ArcadeTrophy[] = [
     category: "mastery",
     targetScore: 160,
     conditionDescription: "Reach 160+ points in Patty's Drive-Thru",
+  },
+
+  // For Better or Bulk
+  {
+    id: "for_better_or_bulk_setup_crew",
+    gameId: "for-better-or-bulk",
+    title: "Setup Crew",
+    subtitle: "For Better or Bulk",
+    description: "Place a dozen things around the venue before 4:00.",
+    icon: "Rings",
+    category: "gameplay",
+    targetScore: 12,
+    conditionDescription: "Place 12+ things in For Better or Bulk",
+  },
+  {
+    id: "for_better_or_bulk_everything",
+    gameId: "for-better-or-bulk",
+    title: "Bought Out the Roses",
+    subtitle: "For Better or Bulk",
+    description:
+      "Buy every rose and place all 27 things the biggest plan asks for: bouquets, centerpieces, petals, chairs, lanterns and the buffet.",
+    icon: "Trophy",
+    category: "mastery",
+    targetScore: 27,
+    conditionDescription: "Place 27 things in For Better or Bulk",
   },
 
   // Protocol Drift

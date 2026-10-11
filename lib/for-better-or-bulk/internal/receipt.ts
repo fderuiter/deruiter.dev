@@ -80,6 +80,34 @@ export function tally(people: readonly (PlayerId | null)[]): string {
   return [...counts.entries()].map(([name, n]) => `${name}: ${n}`).join(", ");
 }
 
+/** Each name with its count, in the order names first appear. */
+function countsByName(
+  people: readonly (PlayerId | null)[]
+): [string, number][] {
+  const counts = new Map<string, number>();
+  for (const person of people) {
+    const name = person ? NAMES[person] : "the car";
+    counts.set(name, (counts.get(name) ?? 0) + 1);
+  }
+  return [...counts.entries()];
+}
+
+/** "made by Abbi 3, Fred 1" wording, with no colon so it can follow a label's colon. */
+function madeBy(people: readonly (PlayerId | null)[]): string {
+  const counts = countsByName(people);
+  if (counts.length === 0) return "nobody";
+  return `made by ${counts.map(([name, n]) => `${name} ${n}`).join(", ")}`;
+}
+
+/** "Fred carried 2 items", or "Abbi carried 1 item, Fred carried 1 item". */
+function carried(people: readonly (PlayerId | null)[]): string {
+  const counts = countsByName(people);
+  if (counts.length === 0) return "nobody carried anything";
+  return counts
+    .map(([name, n]) => `${name} carried ${n} ${n === 1 ? "item" : "items"}`)
+    .join(", ");
+}
+
 function sourceCondition(state: GameState, category: Category): Condition {
   const cart = state.setup.cart;
   switch (category) {
@@ -87,9 +115,9 @@ function sourceCondition(state: GameState, category: Category): Condition {
     case "centerpieces":
     case "petals":
       return {
-        label: `Roses bought (${ROSE_TIER_LABELS[cart.roses]})`,
+        label: "Roses bought",
         met: true,
-        detail: `${ROSE_BUNCHES[cart.roses]} bunches`,
+        detail: `${ROSE_TIER_LABELS[cart.roses]}, ${ROSE_BUNCHES[cart.roses]} bunches`,
       };
     case "lanterns":
       return {
@@ -99,9 +127,9 @@ function sourceCondition(state: GameState, category: Category): Condition {
       };
     case "buffet":
       return {
-        label: `Food bought (${FOOD_TIER_LABELS[cart.food]})`,
+        label: "Food bought",
         met: true,
-        detail: "drinks and sheet cake included",
+        detail: `${FOOD_TIER_LABELS[cart.food]}, drinks and sheet cake included`,
       };
     case "chairs":
       return { label: "Chairs from the shed", met: true, detail: "8 stacks" };
@@ -117,14 +145,14 @@ function madeCondition(
     return {
       label: "Arranged at the rose table",
       met: true,
-      detail: `made by ${tally(items.map((i) => i.madeBy))}`,
+      detail: madeBy(items.map((i) => i.madeBy)),
     };
   }
   if (category === "petals") {
     return {
       label: "Plucked at the petal bucket",
       met: true,
-      detail: `made by ${tally(items.map((i) => i.madeBy))}`,
+      detail: madeBy(items.map((i) => i.madeBy)),
     };
   }
   if (category === "buffet") {
@@ -136,7 +164,7 @@ function madeCondition(
       met: true,
       detail:
         grilled.length > 0
-          ? `made by ${tally(grilled.map((i) => i.madeBy))}`
+          ? madeBy(grilled.map((i) => i.madeBy))
           : "nothing yet",
     };
   }
@@ -168,7 +196,7 @@ function readinessLine(state: GameState, category: Category): ReadinessLine {
   conditions.push({
     label: `Placed ${filled.length} of ${planned.length - simplified}`,
     met: open === 0,
-    detail: `placed by ${tally(placedBy)}`,
+    detail: carried(placedBy),
   });
   const status =
     open > 0 ? "unfinished" : simplified > 0 ? "simplified" : "ready";
@@ -176,7 +204,7 @@ function readinessLine(state: GameState, category: Category): ReadinessLine {
   if (status === "unfinished") {
     explanation = `Only ${filled.length} of ${planned.length - simplified} done at 4:00.`;
   } else {
-    explanation = conditions.map((c) => `${c.label} (${c.detail})`).join("; ");
+    explanation = conditions.map((c) => `${c.label}: ${c.detail}`).join("; ");
     if (simplified > 0) explanation += `; ${simplified} simplified by choice`;
   }
   return {
@@ -325,10 +353,12 @@ function title(
  * real weather stays in the notes at the bottom, and the shower is game weather.
  */
 function weatherLine(state: GameState): string {
-  const hasShower = state.seeded.some((event) => event.id === "shower");
-  return hasShower
-    ? "The game had a shower. The real weather is in the notes at the bottom."
-    : bankText("weather");
+  const shower = state.seeded.find((event) => event.id === "shower");
+  if (!shower) return bankText("weather");
+  if (state.time < shower.at) {
+    return "The game's shower was due after the work was done. The real weather is in the notes at the bottom.";
+  }
+  return "The game had a shower. The real weather is in the notes at the bottom.";
 }
 
 /**

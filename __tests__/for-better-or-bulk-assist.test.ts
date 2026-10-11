@@ -462,6 +462,25 @@ function playOut(
   return state;
 }
 
+/**
+ * Plays a solo level with Fred on the assist's own pace, 40% of ticks (2 in 7
+ * on relaxed), and Abbi as the helper. Fred places items at that pace, so the
+ * helper acts on the ticks Fred leaves open.
+ */
+function pacedSolo(setup: Setup): GameState {
+  let state = createLevel(setup);
+  let guard = 0;
+  while (state.phase !== "done" && guard++ < 40000) {
+    const frame: Frame = {
+      inputs: { fred: assistInput(state, "fred"), abbi: NO_INPUT },
+      assisted: "abbi",
+      ...(state.phase === "brothers" ? { decision: STAY } : {}),
+    };
+    state = stepGame(state, frame).state;
+  }
+  return state;
+}
+
 /** Items placed on targets by the end of a run where Fred stays idle. */
 function idleSoloPlaced(assist: boolean): number {
   let state = createLevel({ ...DEFAULT_SETUP, assist });
@@ -863,6 +882,32 @@ describe("the assist's pace", () => {
 });
 
 describe("the assisted receipt and replay, in full", () => {
+  it("a strict replay of a helper day, with the player placing items, reproduces the final state (#1931)", () => {
+    let state = createLevel(ASSIST_SETUP);
+    const frames: Frame[] = [];
+    let guard = 0;
+    while (state.phase !== "done" && guard++ < 40000) {
+      const frame: Frame = {
+        inputs: { fred: assistInput(state, "fred"), abbi: NO_INPUT },
+        assisted: "abbi",
+        ...(state.phase === "brothers" ? { decision: STAY } : {}),
+      };
+      frames.push(frame);
+      state = stepGame(state, frame).state;
+    }
+    const placedBy = (who: PlayerId) =>
+      state.targets.reduce(
+        (n, t) => n + t.filledBy.filter((w) => w === who).length,
+        0
+      );
+    expect(placedBy("fred")).toBeGreaterThan(0);
+    expect(placedBy("abbi")).toBeGreaterThan(0);
+    expect(state.assistTicks).toBeGreaterThan(0);
+    const replay = replayLevel(ASSIST_SETUP, frames, { mode: "strict" });
+    expect(replay.dropped).toEqual([]);
+    expect(replay.state).toEqual(state);
+  });
+
   it("a lenient replay keeps the assisted partner on the frame with a stray decision", () => {
     let state = createLevel(ASSIST_SETUP);
     const frames: Frame[] = [];
@@ -962,6 +1007,35 @@ describe("the solo balance, scripted", () => {
     expect(on.placed).toBeGreaterThanOrEqual(off.placed);
     expect(on.finish + 20).toBeLessThan(off.finish);
   }, 60000);
+});
+
+describe("the helper's own grill batch", () => {
+  it("never leaves its batch to burn on relaxed at 40% pace (#1931)", () => {
+    for (const seed of [0, 12345, 4242]) {
+      const state = pacedSolo({ ...ASSIST_SETUP, relaxed: true, seed });
+      const label = `seed ${seed}`;
+      expect(state.burntBatches, label).toBe(0);
+      expect(state.finishedAt, label).not.toBeNull();
+    }
+  }, 60000);
+
+  it("says it is waiting for its own raw batch to cook, and does not wander off", () => {
+    const base = createLevel(ASSIST_SETUP);
+    const grill = base.stations.find((s) => s.kind === "grill");
+    expect(grill).toBeDefined();
+    const state: GameState = {
+      ...base,
+      stations: base.stations.map((s) =>
+        s.id === grill?.id
+          ? { ...s, item: { kind: "hotdogs-raw", madeBy: "abbi" }, progress: 0 }
+          : s
+      ),
+    };
+    expect(assistStatus(state, "abbi")).toMatch(
+      /^Helper: waiting for .+ to cook\.$/
+    );
+    expect(assistInput(state, "abbi").interact).toBe(false);
+  });
 });
 
 describe("the helper keeps out of its partner's way", () => {

@@ -579,7 +579,13 @@ export function ForBetterOrBulkGame({
       setReceipt(null);
       setUserPaused(false);
       setToasts([]);
-      setAnnouncement("Setup has started. It is 9:00.");
+      // A helper day opens by waiting for the person at the keys, so the live
+      // region says so once here, rather than on every tick.
+      setAnnouncement(
+        nextMode === "solo" && next.assist
+          ? `Setup has started. It is 9:00. Helper is waiting for ${NAMES.abbi} to place something first.`
+          : "Setup has started. It is 9:00."
+      );
       setPhase("playing");
       focusAfterPaint(() => {
         const cabinetEl = boundaryRef.current;
@@ -801,29 +807,18 @@ export function ForBetterOrBulkGame({
     }
     if (event.target !== boundaryRef.current) return;
     if (paused) return;
-    if (event.key === "Tab" && mode === "coop") {
-      // Co-op has no swap, so Tab does not walk out of the cabinet into the
-      // coach tips. It lands on Pause, where Shift+Tab goes in solo play.
-      event.preventDefault();
-      pauseRef.current?.focus({ preventScroll: true });
-      return;
-    }
-    if (event.key === "Tab" && mode === "solo" && event.shiftKey) {
-      // Tab swaps people in solo play, so Shift+Tab moves to Pause instead.
-      event.preventDefault();
-      pauseRef.current?.focus({ preventScroll: true });
-      return;
-    }
-    if (event.key === "Tab" && mode === "solo") {
-      event.preventDefault();
-      if (event.repeat) return;
-      // Someone who is out with his brothers cannot take the keys; the
-      // person at the keys stays where they are.
+    // Shift+Tab, and Tab in co-op, are never intercepted: the browser moves
+    // focus in DOM order, from the cabinet root to Pause and back out.
+    if (event.key === "Tab" && mode === "solo" && !event.shiftKey) {
+      // Someone who is out with his brothers cannot take the keys, so there
+      // is no one to swap with: Tab is left to the browser, which reaches Pause.
       const other: PlayerId = activeRef.current === "fred" ? "abbi" : "fred";
       if (stateRef.current?.players[other].presence === "away") {
         setAnnouncement(`${NAMES[other]} is out with his brothers.`);
         return;
       }
+      event.preventDefault();
+      if (event.repeat) return;
       // A press that has not reached the engine yet belongs to the person
       // who was active when it was made, so apply it before swapping.
       if (pressed.current.size > 0 && stateRef.current?.phase === "playing") {
@@ -1013,7 +1008,9 @@ export function ForBetterOrBulkGame({
           {mode === "solo" ? (
             <span data-testid="fbb-active">
               Playing as <span className="font-bold">{NAMES[active]}</span> ·
-              Tab to swap · Shift+Tab to reach Pause
+              {view.players[partner].presence === "away"
+                ? " Tab to reach Pause · Escape to pause"
+                : " Tab to swap · Escape to pause"}
             </span>
           ) : (
             <span>Fred: WASD, E, F · Abbi: arrows, Enter, Shift</span>
@@ -1173,7 +1170,7 @@ export function ForBetterOrBulkGame({
             {mode === "solo" && view.setup.assist ? (
               <p
                 data-testid="fbb-helper"
-                className="min-w-0 break-words border-t border-[var(--fbb-rule)] pt-2 text-[var(--fbb-dim)]"
+                className="min-w-0 break-words border-t border-[var(--fbb-rule)] pt-2 text-[var(--fbb-text)]"
               >
                 {assistStatus(view, partner)}
               </p>

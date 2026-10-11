@@ -43,6 +43,7 @@ import { REAL_FACTS_FROM_DESIGN_DOC } from "./fixtures/for-better-or-bulk-real-f
 import {
   describeEvent,
   activeEventLines,
+  seedHeader,
 } from "@/components/for-better-or-bulk/messages";
 import { countsForBoard } from "@/components/for-better-or-bulk/board";
 import { drawVenue } from "@/components/for-better-or-bulk/venue-canvas";
@@ -452,6 +453,17 @@ describe("seeded events", () => {
   }, 60000);
 });
 
+describe("the seed header's order (#1931)", () => {
+  it("lists a seeded day's events in clock order, whatever order the engine seeded them in", () => {
+    const state = createLevel(seeded(12345));
+    // The engine seeds the shower first, but the rush comes first on the clock.
+    expect(state.seeded[0]?.id).toBe("shower");
+    const header = seedHeader(state, 0);
+    expect(header.indexOf("rush at")).toBeGreaterThanOrEqual(0);
+    expect(header.indexOf("rush at")).toBeLessThan(header.indexOf("shower at"));
+  });
+});
+
 describe("the receipt's weather", () => {
   it("shows the real weather line from the bank and no game weather on a standard day", () => {
     const receipt = computeReceipt(runToEnd(DEFAULT_SETUP).state);
@@ -471,6 +483,22 @@ describe("the receipt's weather", () => {
     expect(receipt.gameWeather).toMatch(
       /^Game weather, not the real day: a shower from .* slowed walking on the lawn\.$/
     );
+  });
+
+  it("keeps the weather line in step with the game weather on seed 12345 when the work ends before the shower (#1931)", () => {
+    const base = createLevel(seeded(12345));
+    const shower = eventOf(base, "shower");
+    const early: GameState = {
+      ...base,
+      phase: "done",
+      time: shower.at - 5,
+      finishedAt: shower.at - 5,
+    };
+    const receipt = computeReceipt(early);
+    expect(receipt.weather).not.toContain("had a shower");
+    expect(receipt.weather).toContain("shower was due after the work was done");
+    expect(receipt.gameWeather).toContain("was due at 12:27");
+    expect(receipt.weather).not.toMatch(/perfect/i);
   });
 
   it("says a shower the work finished before was never due", () => {
@@ -549,6 +577,11 @@ describe("the standard board", () => {
       relaxed: false,
     };
     expect(countsForBoard(createLevel(legacy), 1)).toBe(true);
+  });
+
+  it("never counts a helper day, even a standard one at normal speed", () => {
+    const helperDay = createLevel({ ...DEFAULT_SETUP, assist: true });
+    expect(countsForBoard(helperDay, 1)).toBe(false);
   });
 });
 

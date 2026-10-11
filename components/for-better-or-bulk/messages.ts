@@ -66,7 +66,8 @@ const SEEDED_EVENT_HEADER: Readonly<Record<SeededEventId, string>> = {
 export function seedHeader(state: GameState, todaysSeed: number): string {
   const name = seedName(state.setup.seed ?? 0, todaysSeed);
   if (state.seeded.length === 0) return name;
-  const events = state.seeded
+  const events = [...state.seeded]
+    .sort((a, b) => a.at - b.at)
     .map(
       (event) =>
         `${SEEDED_EVENT_HEADER[event.id]} at ${clockLabel(event.at, state.duration)}`

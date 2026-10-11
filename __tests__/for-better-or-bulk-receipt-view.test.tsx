@@ -77,7 +77,23 @@ describe("the receipt's copy (#1931)", () => {
   it("never says the weather was perfect on a shower day", () => {
     stubMotion(false);
     recordScrolls();
-    renderReceipt(7);
+    // A day played to 4:00, so the shower has come and gone before the receipt.
+    const base = createLevel({ ...DEFAULT_SETUP, seed: 7 });
+    const done = {
+      ...base,
+      phase: "done" as const,
+      time: base.duration,
+      finishedAt: base.duration,
+    };
+    render(
+      <ReceiptView
+        receipt={computeReceipt(done)}
+        runCode={null}
+        onPlayAgain={vi.fn()}
+        onChangePlan={vi.fn()}
+        onWatchReplay={vi.fn()}
+      />
+    );
     const weather = screen.getByText("Weather:").closest("li");
     expect(weather?.textContent).toContain("The game had a shower");
     expect(weather?.textContent).not.toMatch(/perfect/i);

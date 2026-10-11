@@ -782,10 +782,39 @@ describe("ending and receipt", () => {
       allFilled(createLevel(DEFAULT_SETUP), "abbi")
     ).find((l) => l.category === "centerpieces");
     expect(line?.conditions.map((c) => c.detail)).toContain(
-      "placed by Abbi: 4"
+      "Abbi carried 4 items"
     );
     expect(tally(["abbi", "fred", "abbi"])).toBe("Abbi: 2, Fred: 1");
     expect(tally([])).toBe("nobody");
+  });
+
+  it("counts the items a person carried, apart from the targets they filled (#1931)", () => {
+    const line = readinessLines(
+      allFilled(createLevel(DEFAULT_SETUP), "fred")
+    ).find((l) => l.category === "bouquets");
+    const placed = line?.conditions.find((c) => c.label.startsWith("Placed"));
+    expect(placed?.label).toBe(`Placed ${line?.placed} of ${line?.planned}`);
+    expect(placed?.detail).toMatch(/^Fred carried \d+ items?$/);
+    expect(line?.explanation).toMatch(
+      /Placed \d+ of \d+: Fred carried \d+ items?/
+    );
+  });
+
+  it("writes source and made clauses with a colon and no stacked parentheses (#1931)", () => {
+    const readiness = readinessLines(
+      allFilled(createLevel(DEFAULT_SETUP), "abbi")
+    );
+    const bouquets = readiness.find((l) => l.category === "bouquets");
+    const buffet = readiness.find((l) => l.category === "buffet");
+    expect(bouquets?.explanation).toMatch(
+      /Roses bought: (Modest|Full|"Yes"), \d+ bunches/
+    );
+    expect(buffet?.explanation).toMatch(
+      /Food bought: (Enough|Lots|Feed Rochester), drinks and sheet cake included/
+    );
+    for (const line of readiness) {
+      expect(line.explanation).not.toMatch(/\) \(/);
+    }
   });
 
   it("prices the receipt the same as the cart and keeps the fixed lines", () => {

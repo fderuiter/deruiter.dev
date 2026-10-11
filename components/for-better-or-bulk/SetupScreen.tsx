@@ -363,12 +363,14 @@ export function SetupScreen({
       </fieldset>
 
       <div className="flex min-w-0 flex-wrap items-center gap-3 border-t border-[var(--fbb-rule)] pt-4">
-        <p
-          className="basis-full text-xs text-[var(--fbb-dim)]"
-          data-testid="fbb-no-rewards"
-        >
-          {NO_REWARD_LINE}
-        </p>
+        {setup.assist ? (
+          <p
+            className="basis-full text-xs text-[var(--fbb-dim)]"
+            data-testid="fbb-no-rewards"
+          >
+            {NO_REWARD_LINE}
+          </p>
+        ) : null}
         <p className="text-sm tabular-nums" data-testid="fbb-total">
           Total ${total} of ${BUDGET}
           <span className="ml-2 text-xs text-[var(--fbb-dim)]">

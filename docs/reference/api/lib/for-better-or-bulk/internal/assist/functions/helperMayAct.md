@@ -13,7 +13,9 @@ person it is not controlling, so it places fewer items than that person
 does: it starts only once they have placed more, and it stops when it
 catches up. An idle player therefore gets no help, and a working player gets
 about as many placements from the helper as they make. The simulation
-checks this before it uses `assistInput`, and so does `assistStatus`. Pure.
+checks this before it uses `assistInput`, and so does `assistStatus`. A
+helper with a batch of its own on a grill may always act, so it can collect
+that batch. Pure.
 
 ## Parameters
 

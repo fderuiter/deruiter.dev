@@ -2,9 +2,9 @@
 
 /**
  * The ceremony playback shown between the last step and the receipt. Motion
- * plays the scripted scenes in about thirty seconds; reduced motion shows the
- * same scenes as a static summary card. Skip, Escape and the last scene all
- * hand over to the receipt once.
+ * plays the scripted scenes in about thirty seconds at 1x, faster at the
+ * game's `?speed=`; reduced motion shows the same scenes as a static summary
+ * card. Skip, Escape and the last scene all hand over to the receipt once.
  */
 
 import React, {
@@ -16,18 +16,24 @@ import React, {
 } from "react";
 import { bankText, type GameState } from "@/lib/for-better-or-bulk";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
-import { ceremonyScenes } from "./playback";
+import { ceremonyScenes, sceneMillis } from "./playback";
 
 const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 
 interface CeremonyPlaybackProps {
   /** The final state of the level; the scenes are read from it alone. */
   state: GameState;
+  /** The game's clock multiplier; scene holds shrink by it. Defaults to 1. */
+  speed?: number;
   /** Hands over to the receipt. Called once, however the playback ends. */
   onDone: () => void;
 }
 
-export function CeremonyPlayback({ state, onDone }: CeremonyPlaybackProps) {
+export function CeremonyPlayback({
+  state,
+  speed = 1,
+  onDone,
+}: CeremonyPlaybackProps) {
   const reduced = useMediaQuery(REDUCED_MOTION_QUERY);
   const scenes = useMemo(() => ceremonyScenes(state), [state]);
   const [index, setIndex] = useState(0);
@@ -56,10 +62,10 @@ export function CeremonyPlayback({ state, onDone }: CeremonyPlaybackProps) {
     }
     const timer = setTimeout(
       () => setIndex((i) => i + 1),
-      scene.seconds * 1000
+      sceneMillis(scene, speed)
     );
     return () => clearTimeout(timer);
-  }, [index, reduced, scenes, finish]);
+  }, [index, reduced, scenes, finish, speed]);
 
   // Escape skips from anywhere on the page while the playback is up.
   useEffect(() => {
@@ -143,22 +149,29 @@ export function CeremonyPlayback({ state, onDone }: CeremonyPlaybackProps) {
           Skip
         </button>
       </div>
-      {scene ? (
-        <div
-          key={scene.id}
-          aria-live="polite"
-          data-testid="fbb-scene"
-          data-scene={scene.id}
-          className="fbb-scene-in flex min-w-0 flex-col gap-2"
-        >
-          <p className="text-xs font-bold uppercase tracking-wide text-[var(--fbb-accent)]">
-            {scene.heading}
-          </p>
-          <p className="break-words text-lg font-bold tracking-[-0.02em]">
-            {scene.line}
-          </p>
-        </div>
-      ) : null}
+      {/* One live region for the whole playback: it stays mounted and only its text changes. */}
+      <div
+        aria-live="polite"
+        aria-atomic="true"
+        data-testid="fbb-scene-live"
+        className="flex min-w-0 flex-col"
+      >
+        {scene ? (
+          <div
+            key={scene.id}
+            data-testid="fbb-scene"
+            data-scene={scene.id}
+            className="fbb-scene-in flex min-w-0 flex-col gap-2"
+          >
+            <p className="text-xs font-bold uppercase tracking-wide text-[var(--fbb-accent)]">
+              {scene.heading}
+            </p>
+            <p className="break-words text-lg font-bold tracking-[-0.02em]">
+              {scene.line}
+            </p>
+          </div>
+        ) : null}
+      </div>
       <div className="flex min-w-0 items-center justify-between gap-3 text-xs text-[var(--fbb-dim)]">
         <ol aria-hidden="true" className="flex gap-1">
           {scenes.map((item, i) => (

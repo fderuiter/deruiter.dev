@@ -15,6 +15,7 @@ import {
   PETAL_SECONDS,
   SIMPLIFY_SECONDS,
   VENUE_MAP,
+  bankText,
   frontTile,
   getPrompt,
   type GameState,
@@ -37,12 +38,21 @@ export const VENUE_HEIGHT = VENUE_MAP.length * TILE;
  */
 const LABEL_PX = 10;
 
-/** A game-time burst's lifetime, in game seconds: a few frames at any speed. */
+/**
+ * A game-time burst's lifetime, in game seconds: a few frames at any speed.
+ * Bursts are timed on the game clock, so at 8x each lasts an eighth as long
+ * in real time.
+ */
 export const BURST_SECONDS = 0.5;
 /** Smoke from the grill hangs a little longer than a flash. */
-export const SMOKE_SECONDS = 1.5;
-/** The roses over the car stay long enough to read at a glance. */
-export const ROSES_SECONDS = 2.5;
+const SMOKE_SECONDS = 1.5;
+/** A crumpled note stays up long enough to see it crumple. */
+const CRUMPLE_SECONDS = 1.2;
+/** The roses cover the car for the length of the "Yes" joke. */
+const ROSES_SECONDS = 8;
+/** The car in the top row, and the coat-room hanger in the corner (map edge). */
+const CAR = { x: 0.12, y: 2.2, width: 1.76, height: 0.66 } as const;
+const COAT_TILE = { x: 19, y: 0 } as const;
 
 const COLORS = {
   hedge: "#1c2a1b",
@@ -73,7 +83,14 @@ const COLORS = {
   abbiEdge: "#d6c7a8",
   active: "#f59e0b",
   busy: "#f4f4f6",
-  charcoal: "#1b1b1b",
+  /** Steel smoke: light enough to read against the dark grill and stage. */
+  smoke: "#94a3b8",
+  carBody: "#13151a",
+  carWheel: "#0d0e11",
+  carGlass: "#94a3b8",
+  hanger: "#94a3b8",
+  suit: "#f4f4f6",
+  suitLapel: "#13151a",
   badge: "rgba(13, 14, 17, 0.88)",
 } as const;
 
@@ -81,7 +98,8 @@ const COLORS = {
 export interface CanvasBurst {
   /**
    * A ring on a filled target, smoke at the grill, a crumpled note on a
-   * simplified target, or roses across the car.
+   * simplified target, or roses across the car. Roses are drawn over the car
+   * wherever `x` and `y` put them, so their position is not used.
    */
   readonly kind: "ring" | "charcoal" | "crumple" | "roses";
   readonly x: number;
@@ -498,6 +516,8 @@ export function burstLifetime(kind: CanvasBurst["kind"]): number {
   switch (kind) {
     case "charcoal":
       return SMOKE_SECONDS;
+    case "crumple":
+      return CRUMPLE_SECONDS;
     case "roses":
       return ROSES_SECONDS;
     default:
@@ -512,25 +532,108 @@ const SMOKE_PUFFS = [
   [0, 0.5],
 ] as const;
 
-/** The rose clusters that cover the car's crate column, as tile positions. */
+/** The rose bunches that cover the car, as tile centres. */
 const CAR_ROSES = [
-  [0.5, 1.5],
-  [1.4, 2.5],
-  [0.5, 4.5],
-  [1.4, 6.5],
-  [0.5, 8.5],
-  [1.4, 9.5],
+  [0.5, 2.5],
+  [1.0, 2.5],
+  [1.5, 2.5],
+  [0.75, 2.2],
+  [1.25, 2.2],
 ] as const;
 
-/** One crumpled note: a jagged sheet shrinking to a ball. */
+/** Draws the car on the patio row: a graphite body with steel windows. */
+function drawCar(ctx: CanvasRenderingContext2D): void {
+  const px = CAR.x * TILE;
+  const py = CAR.y * TILE;
+  const w = CAR.width * TILE;
+  const h = CAR.height * TILE;
+  ctx.save();
+  ctx.fillStyle = COLORS.carBody;
+  ctx.strokeStyle = COLORS.outline;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.roundRect(px, py, w, h, 6);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = COLORS.carGlass;
+  ctx.beginPath();
+  ctx.roundRect(px + w * 0.22, py + h * 0.12, w * 0.56, h * 0.38, 3);
+  ctx.fill();
+  ctx.fillStyle = COLORS.carWheel;
+  for (const share of [0.25, 0.75]) {
+    ctx.beginPath();
+    ctx.arc(px + w * share, py + h, 4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+/** Draws the suit on a hanger in the coat-room corner, on the hedge tile. */
+function drawCoatHanger(ctx: CanvasRenderingContext2D): void {
+  const cx = COAT_TILE.x * TILE + TILE / 2;
+  ctx.save();
+  ctx.strokeStyle = COLORS.hanger;
+  ctx.lineWidth = 1.5;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.arc(cx, 6, 3, 0, Math.PI * 2);
+  ctx.moveTo(cx, 9);
+  ctx.lineTo(cx, 13);
+  ctx.moveTo(cx, 13);
+  ctx.lineTo(cx - 12, 20);
+  ctx.lineTo(cx + 12, 20);
+  ctx.lineTo(cx, 13);
+  ctx.stroke();
+  ctx.fillStyle = COLORS.suit;
+  ctx.beginPath();
+  ctx.moveTo(cx - 6, 20);
+  ctx.lineTo(cx + 6, 20);
+  ctx.lineTo(cx + 9, 37);
+  ctx.lineTo(cx - 9, 37);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = COLORS.suitLapel;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(cx, 21);
+  ctx.lineTo(cx - 3, 30);
+  ctx.moveTo(cx, 21);
+  ctx.lineTo(cx + 3, 30);
+  ctx.stroke();
+  ctx.restore();
+}
+
+/**
+ * True when someone stands on the one walkable tile beside the coat hanger.
+ * Players are read by their tile, so the tip shows only for a person next to it.
+ */
+function nextToCoatRack(state: GameState): boolean {
+  return (["fred", "abbi"] as const).some((id) => {
+    const player = state.players[id];
+    return (
+      player.presence !== "away" &&
+      Math.abs(Math.floor(player.x) - COAT_TILE.x) <= 1 &&
+      Math.abs(Math.floor(player.y) - COAT_TILE.y) <= 1
+    );
+  });
+}
+
+/**
+ * One crumpled note: a jagged sheet that turns, then shrinks and fades into a
+ * ball over its lifetime. Drawn around its own centre, so the caller's
+ * save and restore keep the transform to this one note.
+ */
 function drawCrumple(
   ctx: CanvasRenderingContext2D,
   cx: number,
   cy: number,
   t: number
 ): void {
-  const radius = TILE * (0.36 - 0.14 * t);
-  ctx.globalAlpha = 1 - t * 0.6;
+  const radius = TILE * 0.36;
+  ctx.globalAlpha = 1 - t * 0.4;
+  ctx.translate(cx, cy);
+  ctx.rotate(t * Math.PI * 0.75);
+  ctx.scale(1 - 0.55 * t, 1 - 0.55 * t);
   ctx.fillStyle = COLORS.label;
   ctx.strokeStyle = COLORS.dim;
   ctx.lineWidth = 1;
@@ -538,8 +641,8 @@ function drawCrumple(
   for (let i = 0; i < 8; i++) {
     const a = (i / 8) * Math.PI * 2;
     const r = i % 2 === 0 ? radius : radius * 0.6;
-    const x = cx + Math.cos(a) * r;
-    const y = cy + Math.sin(a) * r;
+    const x = Math.cos(a) * r;
+    const y = Math.sin(a) * r;
     if (i === 0) ctx.moveTo(x, y);
     else ctx.lineTo(x, y);
   }
@@ -569,7 +672,7 @@ function drawBurst(
     ctx.arc(cx, cy, TILE * (0.35 + 0.45 * t), 0, Math.PI * 2);
     ctx.stroke();
   } else if (burst.kind === "charcoal") {
-    ctx.fillStyle = COLORS.charcoal;
+    ctx.fillStyle = COLORS.smoke;
     for (const [offset, start] of SMOKE_PUFFS) {
       if (t < start) continue;
       const local = (t - start) / (1 - start);
@@ -606,6 +709,7 @@ function drawBubble(
   top: number
 ): void {
   const height = LABEL_PX + 6;
+  ctx.save();
   ctx.font = font(LABEL_PX);
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
@@ -617,6 +721,7 @@ function drawBubble(
   ctx.fill();
   ctx.fillStyle = COLORS.fred;
   ctx.fillText(text, left + width / 2, top + height / 2, width - 6);
+  ctx.restore();
 }
 
 /**
@@ -639,6 +744,8 @@ export function drawVenue(
       state.time < event.until
   );
   drawGround(ctx, raining);
+  drawCoatHanger(ctx);
+  if (state.setup.cart.roses === "yes") drawCar(ctx);
   for (const supply of state.supplies) {
     const px = supply.x * TILE;
     const py = supply.y * TILE;
@@ -673,4 +780,12 @@ export function drawVenue(
   drawPlayer(ctx, state.players.abbi, active === "abbi");
   drawBinHold(ctx, state.players.fred);
   drawBinHold(ctx, state.players.abbi);
+  if (nextToCoatRack(state)) {
+    drawBubble(
+      ctx,
+      bankText("joke-suit-tip"),
+      COAT_TILE.x * TILE + TILE / 2,
+      TILE + 4
+    );
+  }
 }

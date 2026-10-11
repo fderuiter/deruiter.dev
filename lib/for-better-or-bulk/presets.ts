@@ -471,7 +471,13 @@ export const LINE_BANK: readonly BankLine[] = [
     id: "joke-suit",
     tag: "Fiction",
     fact: null,
-    text: "The free suit hangs in the coat room. Acquired: yes. Worn: no.",
+    text: "The free suit hangs in the coat room.",
+  },
+  {
+    id: "joke-suit-tip",
+    tag: "Fiction",
+    fact: null,
+    text: "Acquired: yes. Worn: no.",
   },
   {
     id: "joke-sink",
@@ -484,6 +490,12 @@ export const LINE_BANK: readonly BankLine[] = [
     tag: "Fiction",
     fact: null,
     text: "The FAQ answered the garden question before anyone had to call.",
+  },
+  {
+    id: "guests-seated",
+    tag: "Fiction",
+    fact: null,
+    text: "The guests find their seats.",
   },
   {
     id: "joke-lanterns",
@@ -571,8 +583,12 @@ export const FICTION_DEFAULTS: readonly string[] = [
 export const ASSIST_LINE =
   "A helper kept the other lane going. Very efficient. Slightly eerie.";
 
-/** The [Real] lines the receipt's "What actually happened" note quotes, in order. */
-export const ACTUAL_NOTE_IDS: readonly string[] = ["prep", "weather", "goal"];
+/**
+ * The [Real] lines the receipt's "What actually happened" note quotes, in
+ * order. Only fixture facts that describe the day itself: the date and times,
+ * the weather and the goal. Nothing here characterizes the couple.
+ */
+export const ACTUAL_NOTE_IDS: readonly string[] = ["date", "weather", "goal"];
 
 /** Where the "What actually happened" note links: the real wedding page. */
 export const WEDDING_PATH = "/wedding";

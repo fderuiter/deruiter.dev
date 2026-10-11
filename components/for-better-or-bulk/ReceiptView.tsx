@@ -5,7 +5,7 @@
  * explains what happened and why; it is not a grade.
  */
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { copyToClipboard, getActiveHostUrl } from "@/lib/clipboard";
 import {
@@ -43,6 +43,12 @@ export function ReceiptView({
   onWatchReplay,
 }: ReceiptViewProps) {
   const [copyNote, setCopyNote] = useState("");
+  const titleRef = useRef<HTMLHeadingElement>(null);
+
+  // The playback hands over here, so focus moves to the receipt rather than dropping to the page.
+  useEffect(() => {
+    titleRef.current?.focus({ preventScroll: true });
+  }, []);
 
   /** Copies the link that opens this run. The code never leaves the page otherwise. */
   async function copyRunCode(): Promise<void> {
@@ -73,7 +79,9 @@ export function ReceiptView({
           Receipt
         </p>
         <h2
-          className="text-2xl font-extrabold tracking-[-0.035em] break-words"
+          ref={titleRef}
+          tabIndex={-1}
+          className="text-2xl font-extrabold tracking-[-0.035em] break-words focus:outline-none"
           data-testid="fbb-title"
         >
           {receipt.title}

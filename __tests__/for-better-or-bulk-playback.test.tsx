@@ -23,7 +23,10 @@ import {
 } from "@/lib/for-better-or-bulk";
 import { CeremonyPlayback } from "@/components/for-better-or-bulk/CeremonyPlayback";
 import { ReceiptView } from "@/components/for-better-or-bulk/ReceiptView";
-import { ceremonyScenes } from "@/components/for-better-or-bulk/playback";
+import {
+  ceremonyScenes,
+  sceneMillis,
+} from "@/components/for-better-or-bulk/playback";
 
 const STAY: PresenceDecision = { choice: "stay", commitment: null };
 const REDUCE = "(prefers-reduced-motion: reduce)";
@@ -178,7 +181,7 @@ describe("the receipt card", () => {
     );
     const note = screen.getByTestId("fbb-actual");
     expect(note.textContent).toContain("What actually happened");
-    expect(note.textContent).toContain(bankText("prep"));
+    expect(note.textContent).toContain(bankText("date"));
     expect(note.textContent).toContain(bankText("weather"));
     const link = screen.getByRole("link", { name: bankText("actual-link") });
     expect(link.getAttribute("href")).toBe("/wedding");
@@ -197,5 +200,94 @@ describe("the receipt card", () => {
     );
     expect(screen.getByText(/Extra smoky/)).toBeTruthy();
     expect(screen.getByTestId("fbb-stars")).toBeTruthy();
+  });
+});
+
+describe("ceremony playback hand-over and live region", () => {
+  it("keeps one live region mounted through every scene", () => {
+    vi.useFakeTimers();
+    stubReduced(false);
+    const state = endedState();
+    const scenes = ceremonyScenes(state);
+    render(<CeremonyPlayback state={state} onDone={vi.fn()} />);
+    const live = screen.getByTestId("fbb-scene-live");
+    expect(live.getAttribute("aria-live")).toBe("polite");
+    expect(live.getAttribute("aria-atomic")).toBe("true");
+    for (const scene of scenes.slice(0, -1)) {
+      expect(within(live).getByText(scene.line)).toBeTruthy();
+      act(() => {
+        vi.advanceTimersByTime(scene.seconds * 1000);
+      });
+      expect(screen.getByTestId("fbb-scene-live")).toBe(live);
+    }
+  });
+
+  it("holds scenes for less time at a faster game speed", () => {
+    vi.useFakeTimers();
+    stubReduced(false);
+    const state = endedState();
+    const scenes = ceremonyScenes(state);
+    const onDone = vi.fn();
+    render(<CeremonyPlayback state={state} speed={8} onDone={onDone} />);
+    for (const scene of scenes) {
+      expect(onDone).not.toHaveBeenCalled();
+      act(() => {
+        vi.advanceTimersByTime(sceneMillis(scene, 8) - 1);
+      });
+      expect(onDone).not.toHaveBeenCalled();
+      act(() => {
+        vi.advanceTimersByTime(1);
+      });
+    }
+    expect(onDone).toHaveBeenCalledTimes(1);
+  });
+
+  it("hands over once when Skip is followed by Escape", () => {
+    stubReduced(false);
+    const onDone = vi.fn();
+    render(<CeremonyPlayback state={endedState()} onDone={onDone} />);
+    fireEvent.click(screen.getByRole("button", { name: "Skip" }));
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(onDone).toHaveBeenCalledTimes(1);
+  });
+
+  it("skips on Escape with reduced motion too", () => {
+    stubReduced(true);
+    const onDone = vi.fn();
+    render(<CeremonyPlayback state={endedState()} onDone={onDone} />);
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(onDone).toHaveBeenCalledTimes(1);
+  });
+
+  it("stops the scene timers when unmounted, so nothing hands over later", () => {
+    vi.useFakeTimers();
+    stubReduced(false);
+    const onDone = vi.fn();
+    const { unmount } = render(
+      <CeremonyPlayback state={endedState()} onDone={onDone} />
+    );
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    unmount();
+    act(() => {
+      vi.advanceTimersByTime(120000);
+    });
+    expect(onDone).not.toHaveBeenCalled();
+  });
+});
+
+describe("the receipt takes focus when the playback hands over", () => {
+  it("moves focus to the receipt title on open", () => {
+    render(
+      <ReceiptView
+        receipt={computeReceipt(endedState())}
+        runCode={null}
+        onPlayAgain={vi.fn()}
+        onChangePlan={vi.fn()}
+        onWatchReplay={vi.fn()}
+      />
+    );
+    expect(document.activeElement).toBe(screen.getByTestId("fbb-title"));
   });
 });

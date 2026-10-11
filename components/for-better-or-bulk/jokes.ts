@@ -28,6 +28,9 @@ export const JOKE_IDS = [
 /** One joke, named by the event that triggers it. */
 export type JokeId = (typeof JOKE_IDS)[number];
 
+/** The jokes that land once per level, however many events trigger them. */
+const ONCE_PER_LEVEL: readonly JokeId[] = ["roses-yes"];
+
 /**
  * True when the garden-formal call got through with no FAQ on the site. The
  * ceremony shows the guest in stilettos only then.
@@ -71,6 +74,24 @@ export function jokesFor(
 }
 
 /**
+ * The jokes to play for one event, given the once-per-level jokes already
+ * played this level. A once-per-level joke that played before is dropped; the
+ * ones kept are recorded in `played`, which the cabinet clears on each start.
+ */
+export function claimJokes(
+  jokes: readonly JokeId[],
+  played: Set<JokeId>
+): readonly JokeId[] {
+  const fresh = jokes.filter(
+    (id) => !(ONCE_PER_LEVEL.includes(id) && played.has(id))
+  );
+  for (const id of fresh) {
+    if (ONCE_PER_LEVEL.includes(id)) played.add(id);
+  }
+  return fresh;
+}
+
+/**
  * The line a joke puts in the toast, from the line bank, or null when the
  * joke shows through the canvas or the ending instead.
  */
@@ -86,11 +107,15 @@ export function jokeLine(id: JokeId): string | null {
 }
 
 /**
- * The toast for one event: the joke's line when a joke has one, otherwise the
- * usual line from the messages module, or null when the event needs none.
+ * The toast for one event: the line of its first joke that has one, otherwise
+ * the usual line from the messages module, or null when the event needs none.
+ * `jokes` are the jokes claimed for this event (see claimJokes).
  */
-export function lineFor(event: GameEvent, state: GameState): string | null {
-  for (const id of jokesFor(event, state)) {
+export function lineFor(
+  event: GameEvent,
+  jokes: readonly JokeId[]
+): string | null {
+  for (const id of jokes) {
     const line = jokeLine(id);
     if (line !== null) return line;
   }

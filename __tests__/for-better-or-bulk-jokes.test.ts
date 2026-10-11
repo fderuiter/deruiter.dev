@@ -18,6 +18,7 @@ import {
 import { REAL_FACTS_FROM_DESIGN_DOC } from "./fixtures/for-better-or-bulk-real-facts";
 import {
   JOKE_IDS,
+  claimJokes,
   jokeLine,
   jokesFor,
   laptopBadgeShown,
@@ -27,8 +28,8 @@ import {
 } from "@/components/for-better-or-bulk/jokes";
 import {
   ceremonyScenes,
-  lanternsHung,
   playbackSeconds,
+  sceneMillis,
 } from "@/components/for-better-or-bulk/playback";
 
 const STAY: PresenceDecision = { choice: "stay", commitment: null };
@@ -182,6 +183,23 @@ describe("the reactive jokes, one trigger each", () => {
     expect([...seen].sort()).toEqual([...JOKE_IDS].sort());
     expect(JOKE_IDS).toHaveLength(9);
   });
+
+  it("plays the roses joke once per level, on the first rose pickup", () => {
+    const pickup: GameEvent = {
+      type: "picked-up",
+      player: "abbi",
+      item: "roses",
+    };
+    const played = new Set<JokeId>();
+    expect(claimJokes(jokesFor(pickup, yesLevel), played)).toEqual([
+      "roses-yes",
+    ]);
+    expect(claimJokes(jokesFor(pickup, yesLevel), played)).toEqual([]);
+    expect(
+      lineFor(pickup, claimJokes(jokesFor(pickup, yesLevel), played))
+    ).toBe(null);
+    expect(claimJokes(["phone-open"], played)).toEqual(["phone-open"]);
+  });
 });
 
 describe("the joke lines", () => {
@@ -198,18 +216,40 @@ describe("the joke lines", () => {
 
   it("puts the joke line in the toast instead of the plain line", () => {
     const yesLevel = createLevel(withSetup(["faq", "admin"], "yes"));
-    expect(
-      lineFor({ type: "picked-up", player: "abbi", item: "roses" }, yesLevel)
-    ).toBe(bankText("joke-roses"));
-    expect(
-      lineFor({ type: "presence-decided", decision: LEAVE }, yesLevel)
-    ).toBe("Production: healthy. All systems operational.");
-    expect(
-      lineFor(
-        { type: "picked-up", player: "abbi", item: "roses" },
-        createLevel(FULL_FAQ)
-      )
-    ).toBeNull();
+    const roses: GameEvent = {
+      type: "picked-up",
+      player: "abbi",
+      item: "roses",
+    };
+    expect(lineFor(roses, jokesFor(roses, yesLevel))).toBe(
+      bankText("joke-roses")
+    );
+    const leave: GameEvent = { type: "presence-decided", decision: LEAVE };
+    expect(lineFor(leave, jokesFor(leave, yesLevel))).toBe(
+      "Production: healthy. All systems operational."
+    );
+    expect(lineFor(roses, jokesFor(roses, createLevel(FULL_FAQ)))).toBeNull();
+  });
+
+  it("keeps every line a joke or scene uses in the line bank", () => {
+    const ids = [
+      "joke-roses",
+      "joke-leaving",
+      "joke-suit",
+      "joke-suit-tip",
+      "joke-sink",
+      "guests-seated",
+      "joke-faq",
+      "joke-lanterns",
+      ...ACTUAL_NOTE_IDS,
+    ];
+    for (const id of ids) {
+      expect(
+        LINE_BANK.some((line) => line.id === id),
+        id
+      ).toBe(true);
+      expect(bankText(id).length, id).toBeGreaterThan(0);
+    }
   });
 
   it("shows the laptop badge only once Fred has been sent off to leave", () => {
@@ -219,6 +259,14 @@ describe("the joke lines", () => {
 });
 
 describe("the playback scenes", () => {
+  it("holds each scene for its game seconds, shortened by the speed with a floor", () => {
+    const scene = ceremonyScenes(runWith(FULL_FAQ).state)[0];
+    if (!scene) throw new Error("the playback has scenes");
+    expect(sceneMillis(scene, 1)).toBe(scene.seconds * 1000);
+    expect(sceneMillis(scene, 2)).toBe((scene.seconds * 1000) / 2);
+    expect(sceneMillis(scene, 8)).toBe(1500);
+  });
+
   it("plays the ceremony, tux, coat room, guests, buffet and closing scenes", () => {
     const { state } = runWith(FULL_FAQ);
     const ids = ceremonyScenes(state).map((scene) => scene.id);
@@ -234,7 +282,6 @@ describe("the playback scenes", () => {
 
   it("adds the lanterns at dusk only when lantern targets were hung", () => {
     const { state } = runWith(FULL_FAQ);
-    expect(lanternsHung(state)).toBe(false);
     expect(ceremonyScenes(state).map((s) => s.id)).not.toContain("dusk");
     const hung: GameState = {
       ...state,
@@ -244,7 +291,6 @@ describe("the playback scenes", () => {
           : target
       ),
     };
-    expect(lanternsHung(hung)).toBe(true);
     const scenes = ceremonyScenes(hung);
     expect(scenes.map((s) => s.id)).toContain("dusk");
     expect(scenes.find((s) => s.id === "dusk")?.line).toBe(
@@ -252,11 +298,17 @@ describe("the playback scenes", () => {
     );
   });
 
-  it("shows the sinking guest only when the FAQ was missing", () => {
-    const guests = (state: GameState) =>
-      ceremonyScenes(state).find((scene) => scene.id === "guests")?.line;
-    expect(guests(runWith(NO_FAQ).state)).toBe(bankText("joke-sink"));
-    expect(guests(runWith(FULL_FAQ).state)).toBe(bankText("joke-faq"));
+  it("sinks the guest during the ceremony only when the FAQ was missing", () => {
+    const line = (state: GameState, id: string) =>
+      ceremonyScenes(state).find((scene) => scene.id === id)?.line;
+    const noFaqEnd = runWith(NO_FAQ).state;
+    const faqEnd = runWith(FULL_FAQ).state;
+    expect(line(noFaqEnd, "ceremony")).toBe(
+      `${bankText("weather")} ${bankText("joke-sink")}`
+    );
+    expect(line(faqEnd, "ceremony")).toBe(bankText("weather"));
+    expect(line(noFaqEnd, "guests")).toBe(bankText("guests-seated"));
+    expect(line(faqEnd, "guests")).toBe(bankText("joke-faq"));
   });
 
   it("runs about thirty seconds and is the same for the same ending", () => {
@@ -275,6 +327,8 @@ describe("the receipt's real note and smoke line", () => {
     expect(receipt.actual.heading).toBe("What actually happened");
     expect(receipt.actual.href).toBe("/wedding");
     expect(receipt.actual.lines).toEqual(ACTUAL_NOTE_IDS.map(bankText));
+    expect(ACTUAL_NOTE_IDS).not.toContain("prep");
+    expect(receipt.actual.lines.join(" ")).not.toContain("really thinking");
     for (const id of ACTUAL_NOTE_IDS) {
       const line = LINE_BANK.find((entry) => entry.id === id);
       expect(line?.tag).toBe("Real");

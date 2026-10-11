@@ -20,6 +20,10 @@ describe("Garmin field manual matches the playable runner", () => {
     for (const key of [
       "Enter",
       "Space",
+      "P",
+      "Esc",
+      "→",
+      "←",
       "↑",
       "↓",
       "G",
@@ -31,14 +35,15 @@ describe("Garmin field manual matches the playable runner", () => {
     }
   });
 
-  it("states the endless objective, the scoring and every crash cause", () => {
-    expect(manual.objective).toMatch(/endless/i);
+  it("states the 5K objective, the scoring and every crash cause", () => {
+    expect(manual.objective).toMatch(/5K/);
     expect(text).toMatch(/high score/i);
     for (const cause of [
       "Null Pointer",
       "Watchdog Tripped",
       "Out Of Memory",
       "Out Of Storage",
+      "Segmentation Fault",
     ]) {
       expect(text).toContain(cause);
     }

@@ -511,21 +511,27 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
     accentColor: "from-amber-500/20 via-amber-500/5 to-transparent",
     badgeBg: "bg-amber-500/10 text-amber-300 border-amber-500/30",
     objective:
-      "An endless run: keep a Connect IQ app alive as long as you can and beat your high score. Jump the bugs that crash it, keep the heap under the device's RAM limit, and don't let the battery die.",
+      "Run a 5K: five 1 km stages of side-scrolling platforming, each ending at a finish pole. Stomp the bugs, clear the gaps, collect Kudos, and keep the Connect IQ app under the device's RAM limit with the battery alive. Clear stage 5 to finish; your high score is saved.",
     quickSummary:
-      "Press Enter to boot. Jump NULL, DOG and STK bugs with the Up arrow. The app allocates memory on its own, so pop variables with Down or run GC with Backspace before the heap fills. Wipe fog with W or a drag.",
+      "Press Enter to boot. Up or Space jumps (hold for height), Right sprints, Left brakes. Land on bugs and watchdogs to stomp them, jump the spiked stacks and the gaps, bump Sync Blocks from below. Pop variables with Down or run GC with Backspace before the heap fills. Wipe fog with W or a drag.",
     controls: [
       {
         action: "Start, Pause & Resume",
         description:
-          "Boots the app, pauses and resumes a run, or reboots after a crash. Same as the START bezel button.",
-        key: "Enter / Space",
+          "Boots the app, pauses and resumes a run, or reboots after a crash. Same as the START bezel button. P and Esc also pause and resume; Space boots the app when no run is going.",
+        key: "Enter / P / Esc",
       },
       {
         action: "Jump",
         description:
-          "Jump over bugs (NULL, DOG, STK). Floating memory and NV tokens are also collected by touching them, so jump or duck under them on purpose. Same as the UP bezel button, or swipe up on the screen.",
-        key: "↑",
+          "Tap for a hop, hold for a full jump. A jump still works a moment after running off an edge, and a press just before landing fires on touchdown. Floating memory and NV tokens are collected by touching them, so jump or run under them on purpose. Same as the UP bezel button, or swipe up on the screen.",
+        key: "↑ / Space",
+      },
+      {
+        action: "Sprint & Brake",
+        description:
+          "Hold Right to run faster (longer jumps across wide gaps) or Left to slow down and time a jump.",
+        key: "→ / ←",
       },
       {
         action: "Pop Heap Variable (Jettison)",
@@ -556,14 +562,20 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         title: "Scoring",
         detail:
-          "You earn about 60 points for every second the app stays up, plus 5 for each popped variable and 10 for each GC that frees memory. A power loss costs 50. There is no finish line; your best score is saved on this device.",
+          "You earn about 60 points for every second the app stays up. A stomp pays 100 (200 for a watchdog) and doubles for each further stomp before you land. A Kudos pays 50, a stage clear 1,000, and the finish pole 100 to 2,000 depending on how high you grab it. Pops pay 5 and a GC that frees memory 10. A power loss costs 50. Your best score is saved on this device.",
         badge: "High Score",
       },
       {
         title: "Bugs Crash the App",
         detail:
-          "Running into NULL crashes with a Null Pointer, DOG with Watchdog Tripped, and STK with Stack Overflow. The crash screen names the cause and how to avoid it next run.",
+          "Running into NULL crashes with a Null Pointer, DOG with Watchdog Tripped, and STK with Stack Overflow; landing on NULL or DOG from above stomps them instead, but STK is spiked. Falling through a gap in the track is a Segmentation Fault. The crash screen names the cause and how to avoid it next run.",
         badge: "Crash Types",
+      },
+      {
+        title: "The Course",
+        detail:
+          "Each 1 km stage has gaps in the track, one-way ledges you can jump up through, and rows of blocks. Bumping the lit Sync Block from below pops a Kudos or a Firmware Update shield, which absorbs one hit; every 25 Kudos also adds a shield. Grab the finish pole to clear the stage; stage 5's pole completes the 5K.",
+        badge: "5K",
       },
       {
         title: "Heap Ceiling (Out of Memory)",
@@ -606,6 +618,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       "Pop with Down when RAM passes about 70%: it's instant, while GC freezes you for half a second.",
       "Keep the backlight off unless fog is heavy; it drains the battery four times faster.",
       "Only GC when nothing is about to reach you, since you can't jump during the freeze.",
+      "Jump at the finish pole so you grab it at the top of your arc: the top pays 2,000.",
     ],
     lore: {
       title: "Engineering for Wearable Hardware Constraints",

@@ -75,9 +75,9 @@ export const GarminWatchClient: React.FC = () => {
                 <span className="text-amber-400">Garmin Schvitz App</span>
               </h1>
               <p className="text-xs sm:text-sm text-zinc-400 font-mono mt-1">
-                An endless smartwatch runner with a 32 to 128 KB memory budget
-                and an inconvenient tendency to fog up. Manage the memory and
-                keep the run alive for a high score.
+                A 5K platformer on a smartwatch with a 32 to 128 KB memory
+                budget and an inconvenient tendency to fog up. Stomp the bugs,
+                clear the gaps and keep the app alive to the finish pole.
               </p>
             </div>
           </div>
@@ -94,10 +94,12 @@ export const GarminWatchClient: React.FC = () => {
               title="Monkey C Mayhem: Garmin Schvitz App"
               subtitle="A Small Watch With a Lot Going On"
               icon={<IconDeviceWatch className="w-8 h-8" />}
-              instructions="An endless run for a high score. Keep a simulated Garmin Schvitz App running inside its memory budget (32 KB on Fēnix, up to 128 KB on Edge): jump the bugs, free memory before the heap fills, and wipe the fog off the screen before the watch has a very bad day."
+              instructions="Run a 5K in five 1 km stages on a simulated Garmin Schvitz App. Hold jump for height, stomp bugs and watchdogs, bump Sync Blocks for Kudos and shields, clear the gaps and grab the finish pole as high as you can. All the while keep the app inside its memory budget (32 KB on Fēnix, up to 128 KB on Edge) and wipe the fog off the screen before the watch has a very bad day."
               controls={[
                 { key: "Enter", action: "Start / Pause" },
-                { key: "UP", action: "Jump" },
+                { key: "P / Esc", action: "Pause" },
+                { key: "UP / Space", action: "Jump (hold = higher)" },
+                { key: "← / →", action: "Brake / Sprint" },
                 { key: "DOWN", action: "Jettison RAM" },
                 { key: "Backspace", action: "Force GC" },
                 { key: "Drag", action: "Wipe Fog" },

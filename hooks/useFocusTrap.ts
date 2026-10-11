@@ -27,6 +27,11 @@ export interface UseFocusTrapOptions {
    * while the trap is active before or along with standard trap behavior.
    */
   onKeyDown?: (event: KeyboardEvent) => void;
+  /**
+   * Move initial focus without scrolling the page, for a dialog that opens
+   * beside the thing the player is watching (defaults to false).
+   */
+  preventScroll?: boolean;
 }
 
 // Module-level count of currently-active focus traps across the whole page
@@ -85,6 +90,7 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>(
     returnFocus = true,
     returnFocusTo,
     onKeyDown,
+    preventScroll = false,
   } = options;
 
   const onEscapeRef = useRef(onEscape);
@@ -240,20 +246,21 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>(
       if (current && current !== container && container.contains(current)) {
         return;
       }
+      const focusOptions = preventScroll ? { preventScroll: true } : undefined;
       if (initialFocusRef?.current) {
-        initialFocusRef.current.focus();
+        initialFocusRef.current.focus(focusOptions);
       } else {
         const firstFocusable =
           container.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
         if (firstFocusable) {
-          firstFocusable.focus();
+          firstFocusable.focus(focusOptions);
         } else {
-          container.focus();
+          container.focus(focusOptions);
         }
       }
     }, 50);
     return () => clearTimeout(timer);
-  }, [active, initialFocusRef]);
+  }, [active, initialFocusRef, preventScroll]);
 
   return containerRef;
 }

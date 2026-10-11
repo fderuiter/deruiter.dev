@@ -256,8 +256,31 @@ describe("PlayCabinet - Viewport Budgeting & Responsive Container Suite", () => 
       // jsdom, like Chromium, leaves focus on <body> when the focused node is removed.
       await act(async () => {
         await Promise.resolve();
+        vi.advanceTimersByTime(1);
       });
       expect(document.activeElement).toBe(screen.getByTestId("game"));
+    });
+
+    it("lets Tab leave a game that re-renders on blur (#1945)", async () => {
+      await launch();
+      const game = screen.getByTestId("game");
+      const start = screen.getByRole("button", { name: "Start" });
+      expect(document.activeElement).toBe(game);
+      // Mid-Tab in Chromium: the game has blurred (focus is on <body> for a
+      // moment) and its blur handler mutates the DOM before focus lands on
+      // the next control. The cabinet must not grab focus back then.
+      await act(async () => {
+        game.blur();
+        game.setAttribute("data-focused", "false");
+        game.appendChild(document.createElement("span"));
+        await Promise.resolve();
+      });
+      expect(document.activeElement).not.toBe(game);
+      await act(async () => {
+        start.focus();
+        vi.advanceTimersByTime(1);
+      });
+      expect(document.activeElement).toBe(start);
     });
 
     it("puts focus on the game, not the toolbar, when entering and leaving fullscreen", async () => {

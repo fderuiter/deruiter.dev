@@ -20,6 +20,12 @@
 
 ***
 
+### banner?
+
+> `optional` **banner?**: [`FaceBanner`](FaceBanner.md) \| `null`
+
+***
+
 ### battery
 
 > **battery**: `number`
@@ -29,6 +35,30 @@
 ### consecutiveDodges
 
 > **consecutiveDodges**: `number`
+
+***
+
+### course?
+
+> `optional` **course?**: [`CourseLayout`](../../garmin-course/interfaces/CourseLayout.md)
+
+Live course features: gaps, ledges, blocks, Kudos and finish poles.
+
+***
+
+### courseSeed?
+
+> `optional` **courseSeed?**: `number`
+
+Seed the run's stages are laid out from.
+
+***
+
+### coyoteMs?
+
+> `optional` **coyoteMs?**: `number`
+
+Milliseconds since the runner last had footing, for coyote time.
 
 ***
 
@@ -88,6 +118,14 @@ Unrounded distance; round only when displaying.
 
 ***
 
+### hasShield?
+
+> `optional` **hasShield?**: `boolean`
+
+A Firmware Update shield absorbs the next hit.
+
+***
+
 ### heartRate
 
 > **heartRate**: `number`
@@ -97,6 +135,14 @@ Unrounded distance; round only when displaying.
 ### highScore
 
 > **highScore**: `number`
+
+***
+
+### invulnerableMs?
+
+> `optional` **invulnerableMs?**: `number`
+
+Milliseconds of hit immunity left after the shield breaks.
 
 ***
 
@@ -115,6 +161,30 @@ Unrounded distance; round only when displaying.
 ### isLightOn
 
 > **isLightOn**: `boolean`
+
+***
+
+### jumpBufferMs?
+
+> `optional` **jumpBufferMs?**: `number`
+
+Milliseconds a jump pressed in the air is still remembered.
+
+***
+
+### jumpHeld?
+
+> `optional` **jumpHeld?**: `boolean`
+
+The jump key is held: the rise uses the lighter gravity.
+
+***
+
+### kudos?
+
+> `optional` **kudos?**: `number`
+
+Kudos collected this run.
 
 ***
 
@@ -178,6 +248,20 @@ Wall-clock time the run was paused, so resuming can shift the spawn timers.
 
 ***
 
+### popups?
+
+> `optional` **popups?**: [`FacePopup`](FacePopup.md)[]
+
+***
+
+### runInput?
+
+> `optional` **runInput?**: `0` \| `1` \| `-1`
+
+Held pace input: 1 sprints, -1 brakes, 0 runs.
+
+***
+
 ### score
 
 > **score**: `number`
@@ -189,6 +273,22 @@ Wall-clock time the run was paused, so resuming can shift the spawn timers.
 > `optional` **scoreRemainder?**: `number`
 
 Fractional score (0 to under 1) carried between ticks.
+
+***
+
+### stage?
+
+> `optional` **stage?**: `number`
+
+Current stage, 1 to [STAGE\_COUNT](../../garmin-course/variables/STAGE_COUNT.md).
+
+***
+
+### stompChain?
+
+> `optional` **stompChain?**: `number`
+
+Stomps since the runner last touched footing; each doubles the points.
 
 ***
 

@@ -4,6 +4,21 @@
  * thermal overheating, crash reports, and 16-color pixel canvas rendering.
  */
 import { clamp } from "./game-utils";
+import {
+  BLOCK_SIZE,
+  EMPTY_COURSE,
+  KUDOS_RADIUS,
+  POLE_HEIGHT,
+  PX_PER_METER,
+  STAGE_COUNT,
+  appendCourse,
+  generateStage,
+  isFootingOverGap,
+  isOverGap,
+  poleBonus,
+  pruneCourse,
+  type CourseLayout,
+} from "./garmin-course";
 
 export type DeviceTarget = "fenix" | "forerunner" | "edge";
 export type VariableType = "int" | "float" | "string" | "array";
@@ -142,6 +157,23 @@ export interface Obstacle {
   label: string;
   speed: number;
   variablePayload?: VariableType;
+  /** Falling speed once a walker has stepped off the track into a gap. */
+  vy?: number;
+}
+
+/** A floating score or event label drawn where it happened (world x). */
+export interface FacePopup {
+  x: number;
+  y: number;
+  text: string;
+  ttlMs: number;
+}
+
+/** A short line across the face for a stage start or a warning. */
+export interface FaceBanner {
+  text: string;
+  ttlMs: number;
+  tone: "info" | "good" | "warn";
 }
 
 export interface CrashReport {
@@ -152,6 +184,7 @@ export interface CrashReport {
     | "Null Pointer"
     | "Stack Overflow"
     | "Out Of Storage"
+    | "Segmentation Fault"
     | "Power Loss";
   file: string;
   line: number;
@@ -287,6 +320,31 @@ export interface GameEngineState {
   consecutiveDodges: number;
   /** Setup-derived parameters for this run; absent means defaults. */
   tuning?: GarminRunTuning;
+  // ---- Platformer state (#1950). Optional so older snapshots still load.
+  /** Live course features: gaps, ledges, blocks, Kudos and finish poles. */
+  course?: CourseLayout;
+  /** Seed the run's stages are laid out from. */
+  courseSeed?: number;
+  /** Current stage, 1 to {@link STAGE_COUNT}. */
+  stage?: number;
+  /** Kudos collected this run. */
+  kudos?: number;
+  /** A Firmware Update shield absorbs the next hit. */
+  hasShield?: boolean;
+  /** Milliseconds of hit immunity left after the shield breaks. */
+  invulnerableMs?: number;
+  /** The jump key is held: the rise uses the lighter gravity. */
+  jumpHeld?: boolean;
+  /** Milliseconds since the runner last had footing, for coyote time. */
+  coyoteMs?: number;
+  /** Milliseconds a jump pressed in the air is still remembered. */
+  jumpBufferMs?: number;
+  /** Held pace input: 1 sprints, -1 brakes, 0 runs. */
+  runInput?: -1 | 0 | 1;
+  /** Stomps since the runner last touched footing; each doubles the points. */
+  stompChain?: number;
+  popups?: FacePopup[];
+  banner?: FaceBanner | null;
 }
 
 export const CANVAS_SIZE = 280;
@@ -294,8 +352,32 @@ export const GROUND_Y = 205;
 export const PLAYER_X = 52;
 export const PLAYER_WIDTH = 20;
 export const PLAYER_HEIGHT = 24;
-export const GRAVITY = 0.65;
-export const JUMP_FORCE = -10.5;
+/** Gravity while rising with the jump key held. */
+export const GRAVITY = 0.55;
+/** Gravity while falling, or rising after the jump key is let go. */
+export const FALL_GRAVITY = 0.9;
+export const JUMP_FORCE = -10;
+/** Letting go of jump early clips the rise to this speed: a short hop. */
+export const JUMP_CUT_VY = -4;
+/** Fastest the runner falls, in px per 60 Hz frame. */
+export const MAX_FALL_VY = 11;
+/** A jump still works this long after running off an edge. */
+export const COYOTE_MS = 100;
+/** A jump pressed this long before landing fires on landing. */
+export const JUMP_BUFFER_MS = 120;
+/** Upward speed after stomping an enemy. */
+export const STOMP_BOUNCE_VY = -7;
+/** Pace multipliers for braking, running and sprinting. */
+export const PACE = { brake: 0.6, run: 1, sprint: 1.5 } as const;
+/** Base points for a stomp; each further stomp before landing doubles it. */
+export const STOMP_SCORE = 100;
+export const KUDOS_SCORE = 50;
+export const SYNC_BLOCK_SCORE = 20;
+export const STAGE_CLEAR_SCORE = 1000;
+/** Kudos that add a shield (or 500 points when already shielded). */
+export const KUDOS_PER_SHIELD = 25;
+/** Hit immunity after the shield breaks. */
+export const SHIELD_GRACE_MS = 1500;
 
 /**
  * Initializes a new fresh game state
@@ -347,6 +429,18 @@ export function createInitialState(
     lastAllocTime: 0,
     lastObstacleTime: 0,
     consecutiveDodges: 0,
+    course: EMPTY_COURSE,
+    stage: 1,
+    kudos: 0,
+    hasShield: false,
+    invulnerableMs: 0,
+    jumpHeld: false,
+    coyoteMs: 0,
+    jumpBufferMs: 0,
+    runInput: 0,
+    stompChain: 0,
+    popups: [],
+    banner: null,
   };
 }
 
@@ -361,10 +455,19 @@ export function startGame(
   const targetDevice = device || state.device;
   const initial = createInitialState(targetDevice, state.highScore);
   const runTuning = tuning ?? state.tuning;
+  const now = Date.now();
+  const courseSeed = Math.floor(Math.random() * 1e9);
   return {
     ...initial,
     ...(runTuning ? { tuning: runTuning } : {}),
     gameState: "playing",
+    // The spawn and allocation clocks start now, with a grace before the
+    // first bug, so nothing is on the lane at frame one (#1945).
+    lastAllocTime: now,
+    lastObstacleTime: now,
+    courseSeed,
+    course: generateStage(1, courseSeed, GROUND_Y),
+    banner: { text: "STAGE 1 · GO!", ttlMs: 1800, tone: "info" },
   };
 }
 
@@ -397,6 +500,61 @@ export function resumeGame(
     lastAllocTime: state.lastAllocTime + pausedFor,
     lastObstacleTime: state.lastObstacleTime + pausedFor,
   };
+}
+
+/**
+ * Presses jump. On footing, or within {@link COYOTE_MS} of leaving it, the
+ * runner jumps at once; in the air the press is remembered for
+ * {@link JUMP_BUFFER_MS} and fires on landing. Holding the key (until
+ * {@link releaseJump}) keeps the rise floaty for a higher jump.
+ */
+export function pressJump(state: GameEngineState): GameEngineState {
+  if (state.gameState !== "playing") return state;
+  const canJump = state.isGrounded || (state.coyoteMs ?? 0) < COYOTE_MS;
+  if (canJump && state.playerVy >= 0) {
+    return {
+      ...state,
+      playerVy: JUMP_FORCE,
+      isGrounded: false,
+      jumpHeld: true,
+      // Spent: no second coyote jump from the same edge.
+      coyoteMs: COYOTE_MS,
+      jumpBufferMs: 0,
+    };
+  }
+  return { ...state, jumpHeld: true, jumpBufferMs: JUMP_BUFFER_MS };
+}
+
+/**
+ * Lets go of jump. A runner still rising fast has the rise clipped, so a tap
+ * is a short hop and a hold is a full jump.
+ */
+export function releaseJump(state: GameEngineState): GameEngineState {
+  if (!state.jumpHeld && state.playerVy >= JUMP_CUT_VY) return state;
+  return {
+    ...state,
+    jumpHeld: false,
+    playerVy:
+      state.gameState === "playing" && state.playerVy < JUMP_CUT_VY
+        ? JUMP_CUT_VY
+        : state.playerVy,
+  };
+}
+
+/** Sets the held pace input: 1 sprints, -1 brakes, 0 runs. */
+export function setRunInput(
+  state: GameEngineState,
+  input: -1 | 0 | 1
+): GameEngineState {
+  if ((state.runInput ?? 0) === input) return state;
+  return { ...state, runInput: input };
+}
+
+/** The pace multiplier for a held run input. */
+export function paceFor(input: number | undefined): number {
+  if (input === 1) return PACE.sprint;
+  if (input === -1) return PACE.brake;
+  return PACE.run;
 }
 
 /**
@@ -992,25 +1150,242 @@ export function updateGameSimulation(
     );
   }
 
-  // 2. Player Jump & Gravity Physics
+  // 2. Pace, camera and platformer physics (#1950). The camera sits at ten
+  // world pixels per metre; the runner stays at PLAYER_X on screen.
+  const pace = paceFor(state.runInput);
+  const nextDistance = state.distanceMeters + 0.25 * pace * dtRatio;
+  const cameraX = nextDistance * PX_PER_METER;
+  const footLeft = cameraX + PLAYER_X + 5;
+  const footRight = cameraX + PLAYER_X + PLAYER_WIDTH - 5;
+  const bodyLeft = cameraX + PLAYER_X + 3;
+  const bodyRight = cameraX + PLAYER_X + PLAYER_WIDTH - 3;
+  let course = state.course ?? EMPTY_COURSE;
+  let score = state.score;
+  let kudos = state.kudos ?? 0;
+  let hasShield = state.hasShield ?? false;
+  let stage = state.stage ?? 1;
+  let banner = state.banner ?? null;
+  const popups: FacePopup[] = [];
+  for (const p of state.popups ?? []) {
+    const ttlMs = p.ttlMs - safeDelta;
+    if (ttlMs > 0) popups.push({ ...p, y: p.y - 0.4 * dtRatio, ttlMs });
+  }
+  if (banner) {
+    const ttlMs = banner.ttlMs - safeDelta;
+    banner = ttlMs > 0 ? { ...banner, ttlMs } : null;
+  }
+  const jumpHeld = state.jumpHeld ?? false;
+  const gravity = state.playerVy < 0 && jumpHeld ? GRAVITY : FALL_GRAVITY;
   let nextPlayerY = state.playerY + state.playerVy * dtRatio;
-  let nextPlayerVy = state.playerVy + GRAVITY * dtRatio;
+  let nextPlayerVy = Math.min(MAX_FALL_VY, state.playerVy + gravity * dtRatio);
   let isGrounded = false;
 
-  const groundLevel = GROUND_Y - PLAYER_HEIGHT;
-  if (nextPlayerY >= groundLevel) {
-    nextPlayerY = groundLevel;
-    nextPlayerVy = 0;
-    isGrounded = true;
+  const prevBottom = state.playerY + PLAYER_HEIGHT;
+  const nextBottom = nextPlayerY + PLAYER_HEIGHT;
+  if (nextBottom >= prevBottom) {
+    // Footing: the lane where it isn't a gap, and the tops of ledges and
+    // blocks the runner was above a moment ago. The highest one crossed wins.
+    let landingTop = Infinity;
+    const consider = (top: number) => {
+      if (prevBottom <= top + 1 && nextBottom >= top && top < landingTop) {
+        landingTop = top;
+      }
+    };
+    if (
+      !isFootingOverGap(course, footLeft, footRight) &&
+      prevBottom <= GROUND_Y + 2
+    ) {
+      consider(GROUND_Y);
+    }
+    for (const l of course.ledges) {
+      if (footRight > l.x && footLeft < l.x + l.width) consider(l.y);
+    }
+    for (const b of course.blocks) {
+      if (footRight > b.x && footLeft < b.x + BLOCK_SIZE) consider(b.y);
+    }
+    if (landingTop !== Infinity) {
+      nextPlayerY = landingTop - PLAYER_HEIGHT;
+      nextPlayerVy = 0;
+      isGrounded = true;
+    }
+  } else {
+    // Rising: a head-first hit on a block's underside stops the rise and
+    // bumps the block.
+    let bumped: number | null = null;
+    let bestOverlap = 0;
+    course.blocks.forEach((b, i) => {
+      const bottom = b.y + BLOCK_SIZE;
+      const overlap =
+        Math.min(bodyRight, b.x + BLOCK_SIZE) - Math.max(bodyLeft, b.x);
+      if (
+        overlap > bestOverlap &&
+        state.playerY >= bottom - 1 &&
+        nextPlayerY < bottom
+      ) {
+        bestOverlap = overlap;
+        bumped = i;
+      }
+    });
+    if (bumped !== null) {
+      const block = course.blocks[bumped];
+      nextPlayerY = block.y + BLOCK_SIZE;
+      nextPlayerVy = 1;
+      if (block.kind === "sync" && !block.used) {
+        const blocks = course.blocks.slice();
+        blocks[bumped] = { ...block, used: true };
+        course = { ...course, blocks };
+        if (block.contents === "firmware") {
+          if (hasShield) {
+            score += 1000;
+            popups.push({
+              x: block.x,
+              y: block.y - 6,
+              text: "+1000",
+              ttlMs: 900,
+            });
+          } else {
+            hasShield = true;
+            popups.push({
+              x: block.x,
+              y: block.y - 6,
+              text: "SHIELD",
+              ttlMs: 900,
+            });
+          }
+          banner = {
+            text: "FIRMWARE UPDATE · SHIELD ON",
+            ttlMs: 1800,
+            tone: "good",
+          };
+        } else {
+          kudos += 1;
+          score += KUDOS_SCORE + SYNC_BLOCK_SCORE;
+          popups.push({
+            x: block.x,
+            y: block.y - 6,
+            text: `+${KUDOS_SCORE + SYNC_BLOCK_SCORE}`,
+            ttlMs: 800,
+          });
+        }
+      }
+    }
   }
+
+  // Coyote time and the jump buffer.
+  let coyoteMs = isGrounded ? 0 : (state.coyoteMs ?? 0) + safeDelta;
+  let jumpBufferMs = Math.max(0, (state.jumpBufferMs ?? 0) - safeDelta);
+  if (isGrounded && (state.jumpBufferMs ?? 0) > 0) {
+    nextPlayerVy = JUMP_FORCE;
+    isGrounded = false;
+    coyoteMs = COYOTE_MS;
+    jumpBufferMs = 0;
+  }
+  const stompChain = isGrounded ? 0 : (state.stompChain ?? 0);
+
+  // Falling below the face through a gap ends the run.
+  if (nextPlayerY > CANVAS_SIZE) {
+    return {
+      ...state,
+      playerY: nextPlayerY,
+      playerVy: 0,
+      distanceMeters: nextDistance,
+      score,
+      gameState: "crashed",
+      crashReport: {
+        errorType: "Segmentation Fault",
+        file: "Garmin_Schvitz_App.mc",
+        line: 256,
+        stackTrace: [
+          "Segmentation Fault: read past the end of the track",
+          "Runner fell through a gap in the lane",
+          "at Garmin_Schvitz_App.onStep() [App.mc:256]",
+        ],
+        heapUsedKb: state.allocatedRamKb,
+        heapLimitKb: DEVICE_PROFILES[state.device].ramLimitKb,
+      },
+    };
+  }
+
+  // Kudos: touching one collects it; every KUDOS_PER_SHIELD adds a shield.
+  const playerTop = nextPlayerY;
+  const playerBottom = nextPlayerY + PLAYER_HEIGHT;
+  if (course.kudos.length > 0) {
+    const kept = course.kudos.filter((k) => {
+      const hit =
+        k.x + KUDOS_RADIUS > bodyLeft &&
+        k.x - KUDOS_RADIUS < bodyRight &&
+        k.y + KUDOS_RADIUS > playerTop &&
+        k.y - KUDOS_RADIUS < playerBottom;
+      if (!hit) return true;
+      kudos += 1;
+      score += KUDOS_SCORE;
+      popups.push({ x: k.x, y: k.y - 6, text: `+${KUDOS_SCORE}`, ttlMs: 600 });
+      if (kudos % KUDOS_PER_SHIELD === 0) {
+        if (hasShield) {
+          score += 500;
+        } else {
+          hasShield = true;
+          banner = {
+            text: `${kudos} KUDOS · SHIELD ON`,
+            ttlMs: 1800,
+            tone: "good",
+          };
+        }
+      }
+      return false;
+    });
+    if (kept.length !== course.kudos.length)
+      course = { ...course, kudos: kept };
+  }
+
+  // The finish pole: grabbing it ends the stage, higher pays more.
+  let stageCleared = false;
+  let runComplete = false;
+  const poleIdx = course.poles.findIndex(
+    (p) => p.grabbed === undefined && bodyRight >= p.x
+  );
+  if (poleIdx !== -1) {
+    const pole = course.poles[poleIdx];
+    const height = clamp(
+      (GROUND_Y - (playerTop + PLAYER_HEIGHT / 2)) / POLE_HEIGHT,
+      0,
+      1
+    );
+    const bonus = poleBonus(height);
+    score += bonus + STAGE_CLEAR_SCORE;
+    const poles = course.poles.slice();
+    poles[poleIdx] = { ...pole, grabbed: height };
+    course = { ...course, poles };
+    popups.push({
+      x: pole.x,
+      y: GROUND_Y - height * POLE_HEIGHT - 8,
+      text: `+${bonus}`,
+      ttlMs: 1200,
+    });
+    stageCleared = true;
+    if (pole.stage >= STAGE_COUNT) {
+      runComplete = true;
+    } else {
+      stage = pole.stage + 1;
+      course = appendCourse(
+        course,
+        generateStage(stage, state.courseSeed ?? 0, GROUND_Y)
+      );
+      banner = {
+        text: `STAGE ${pole.stage} CLEAR · ${stage}K NEXT`,
+        ttlMs: 2200,
+        tone: "good",
+      };
+    }
+  }
+  course = pruneCourse(course, cameraX);
 
   // 3. Distance & Score Tracking
   // Score, distance and the stress meters accumulate fractionally so equal
   // elapsed time gives equal progress at any refresh rate; only the score is
   // an integer to callers, with its remainder carried in scoreRemainder
   // (#1212). Round for display, never in the tick.
-  const nextDistance = state.distanceMeters + 0.25 * dtRatio;
-  const exactScore = state.score + (state.scoreRemainder ?? 0) + dtRatio;
+  const exactScore = score + (state.scoreRemainder ?? 0) + dtRatio;
   const nextScore = Math.floor(exactScore + 1e-9);
   const nextScoreRemainder = Math.max(0, exactScore - nextScore);
   const nextHighScore = Math.max(state.highScore, nextScore);
@@ -1032,7 +1407,31 @@ export function updateGameSimulation(
     scoreRemainder: nextScoreRemainder,
     highScore: nextHighScore,
     heartRate: nextHeartRate,
+    course,
+    stage,
+    kudos,
+    hasShield,
+    invulnerableMs: Math.max(0, (state.invulnerableMs ?? 0) - safeDelta),
+    coyoteMs,
+    jumpBufferMs,
+    stompChain,
+    popups,
+    banner,
   };
+
+  if (runComplete) {
+    return {
+      ...updatedState,
+      gameState: "summary",
+      crashReport: null,
+      obstacles: [],
+      banner: null,
+    };
+  }
+  if (stageCleared) {
+    // Bugs on screen at the pole are cleared with the stage.
+    updatedState = { ...updatedState, obstacles: [] };
+  }
 
   const now = Date.now();
   // The app allocates faster, bugs arrive sooner and move quicker as the run
@@ -1064,8 +1463,32 @@ export function updateGameSimulation(
   const nextObstacles: Obstacle[] = [];
   let crashTriggered: CrashReport | null = null;
 
+  // Enemies and tokens move with their own speed plus the change in track
+  // scroll from sprinting or braking.
+  const paceShift = 2.5 * (pace - 1);
+  const invulnerable = (updatedState.invulnerableMs ?? 0) > 0;
+  const prevPlayerBottom = state.playerY + PLAYER_HEIGHT;
   for (const obs of currentObstacles) {
-    const nextX = obs.x - obs.speed * dtRatio;
+    const nextX = obs.x - (obs.speed + paceShift) * dtRatio;
+    const isWalker =
+      obs.type === "null_pointer" ||
+      obs.type === "watchdog" ||
+      obs.type === "stack_overflow";
+    // A walker that steps over a gap drops into it.
+    let obsY = obs.y;
+    let obsVy = obs.vy;
+    if (
+      isWalker &&
+      (obsVy !== undefined ||
+        isOverGap(
+          updatedState.course ?? EMPTY_COURSE,
+          cameraX + nextX + obs.width / 2
+        ))
+    ) {
+      obsVy = Math.min(MAX_FALL_VY, (obsVy ?? 0) + FALL_GRAVITY * dtRatio);
+      obsY += obsVy * dtRatio;
+      if (obsY > CANVAS_SIZE) continue;
+    }
 
     // Check collision with Player
     const playerBox = {
@@ -1078,8 +1501,8 @@ export function updateGameSimulation(
     const obsBox = {
       left: nextX + 2,
       right: nextX + obs.width - 2,
-      top: obs.y + 2,
-      bottom: obs.y + obs.height - 2,
+      top: obsY + 2,
+      bottom: obsY + obs.height - 2,
     };
 
     const isColliding =
@@ -1087,6 +1510,57 @@ export function updateGameSimulation(
       playerBox.left < obsBox.right &&
       playerBox.bottom > obsBox.top &&
       playerBox.top < obsBox.bottom;
+
+    if (isColliding && isWalker) {
+      // Landing on a bug or a watchdog from above squashes it; a stack
+      // overflow is spiked and can only be jumped.
+      const stompable = obs.type !== "stack_overflow";
+      if (
+        stompable &&
+        updatedState.playerVy > 0 &&
+        prevPlayerBottom <= obsY + 8
+      ) {
+        const chain = (updatedState.stompChain ?? 0) + 1;
+        const base = obs.type === "watchdog" ? STOMP_SCORE * 2 : STOMP_SCORE;
+        const points = Math.min(3200, base * 2 ** (chain - 1));
+        const buffered = (updatedState.jumpBufferMs ?? 0) > 0;
+        updatedState = {
+          ...updatedState,
+          score: updatedState.score + points,
+          highScore: Math.max(
+            updatedState.highScore,
+            updatedState.score + points
+          ),
+          playerY: obsY - PLAYER_HEIGHT,
+          playerVy: buffered ? JUMP_FORCE : STOMP_BOUNCE_VY,
+          jumpBufferMs: 0,
+          stompChain: chain,
+          popups: [
+            ...(updatedState.popups ?? []),
+            {
+              x: cameraX + nextX,
+              y: obsY - 6,
+              text: chain > 1 ? `+${points} x${chain}` : `+${points}`,
+              ttlMs: 800,
+            },
+          ],
+        };
+        continue;
+      }
+      if (invulnerable) {
+        nextObstacles.push({ ...obs, x: nextX, y: obsY, vy: obsVy });
+        continue;
+      }
+      if (updatedState.hasShield) {
+        updatedState = {
+          ...updatedState,
+          hasShield: false,
+          invulnerableMs: SHIELD_GRACE_MS,
+          banner: { text: "SHIELD BROKEN", ttlMs: 1400, tone: "warn" },
+        };
+        continue;
+      }
+    }
 
     if (isColliding) {
       if (obs.type === "mem_token" && obs.variablePayload) {
@@ -1158,7 +1632,11 @@ export function updateGameSimulation(
 
     // Keep active if on screen
     if (nextX + obs.width > 0) {
-      nextObstacles.push({ ...obs, x: nextX });
+      nextObstacles.push(
+        obsVy === undefined
+          ? { ...obs, x: nextX }
+          : { ...obs, x: nextX, y: obsY, vy: obsVy }
+      );
     }
   }
 
@@ -1172,16 +1650,28 @@ export function updateGameSimulation(
   }
 
   // 6. Spawn new Obstacles
+  // Early stages leave room to learn the course before the bugs crowd in.
+  const stageCalm = 1 + 0.12 * (STAGE_COUNT - (updatedState.stage ?? 1));
   const obstacleInterval =
     (1800 + Math.random() * 1200) *
     tuning.obstacleIntervalScale *
+    stageCalm *
     (1 - 0.4 * ramp);
   if (
     now - updatedState.lastObstacleTime > obstacleInterval &&
     nextObstacles.length < 3
   ) {
     const maxX = nextObstacles.reduce((max, o) => Math.max(max, o.x), 0);
-    if (maxX < 190) {
+    // Nothing spawns over a gap or within reach of a finish pole.
+    const spawnWorldX = cameraX + CANVAS_SIZE + 10;
+    const liveCourse = updatedState.course ?? EMPTY_COURSE;
+    const blockedSpawn =
+      isOverGap(liveCourse, spawnWorldX - 12) ||
+      isOverGap(liveCourse, spawnWorldX + 32) ||
+      liveCourse.poles.some(
+        (p) => p.grabbed === undefined && Math.abs(p.x - spawnWorldX) < 160
+      );
+    if (maxX < 190 && !blockedSpawn) {
       const obstacleTypes: ObstacleType[] = [
         "null_pointer",
         "watchdog",
@@ -1824,11 +2314,14 @@ export class GarminWatchEngine extends ArcadeEngine<
   }
 
   public jump(): void {
-    if (this.state.isGrounded && this.state.gameState === "playing") {
-      this.state.playerVy = JUMP_FORCE;
-      this.state.isGrounded = false;
-      this.notifySubscribers();
-    }
+    if (this.state.gameState !== "playing") return;
+    this.state = pressJump(this.state);
+    this.notifySubscribers();
+  }
+
+  public releaseJump(): void {
+    this.state = releaseJump(this.state);
+    this.notifySubscribers();
   }
 
   public pressButton(btn: "up" | "down" | "start" | "back" | "light"): void {

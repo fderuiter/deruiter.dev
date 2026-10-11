@@ -44,6 +44,14 @@
 
 ***
 
+### vy?
+
+> `optional` **vy?**: `number`
+
+Falling speed once a walker has stepped off the track into a gap.
+
+***
+
 ### width
 
 > **width**: `number`

@@ -19,6 +19,7 @@ import {
   updateGameSimulation,
   type GameEngineState,
 } from "@/lib/garmin-engine";
+import { EMPTY_COURSE } from "@/lib/garmin-course";
 
 global.ResizeObserver = class {
   observe = vi.fn();
@@ -98,12 +99,15 @@ async function advanceFrames(ms: number) {
   });
 }
 
-// A running Fenix session with obstacles cleared, so a random spawn can't
-// crash it during the few simulated seconds.
-function runningSession(overrides: Partial<GameEngineState> = {}) {
+// A running Fenix session with obstacles and course gaps cleared, so a
+// random spawn or a gap can't end it during the simulated seconds.
+function runningSession(
+  overrides: Partial<GameEngineState> = {}
+): GameEngineState {
   return {
     ...startGame(createInitialState("fenix", 0), "fenix"),
     obstacles: [],
+    course: EMPTY_COURSE,
     lastObstacleTime: Date.now() + 60_000,
     ...overrides,
   };

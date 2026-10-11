@@ -37,6 +37,11 @@ interface ResultCardProps {
   headingId?: string;
   /** Escape is left to the cabinet unless the game handles it here. */
   onEscape?: () => void;
+  /**
+   * Take focus without scrolling the page, for a card that opens beside the
+   * game rather than over it, so the game's own end screen stays in view.
+   */
+  preventScroll?: boolean;
 }
 
 const ROLL_UP_MS = 700;
@@ -132,6 +137,7 @@ export function ResultCard({
   children,
   headingId,
   onEscape,
+  preventScroll = false,
 }: ResultCardProps) {
   const generatedId = useId();
   const titleId = headingId ?? generatedId;
@@ -143,6 +149,7 @@ export function ResultCard({
   const trapRef = useFocusTrap<HTMLDivElement>(true, {
     initialFocusRef: primaryRef,
     onEscape,
+    preventScroll,
   });
 
   return (

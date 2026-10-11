@@ -5,7 +5,9 @@ import { getWebApplicationSchema, getBreadcrumbSchema } from "@/lib/seo";
 
 import { PageLayout } from "@/components/PageLayout";
 
-export const metadata: Metadata = buildRouteMetadata(ROUTE_METADATA_CONFIGS.garminWatch);
+export const metadata: Metadata = buildRouteMetadata(
+  ROUTE_METADATA_CONFIGS.garminWatch
+);
 
 export default function GarminWatchPage() {
   return (
@@ -28,7 +30,7 @@ export default function GarminWatchPage() {
           __html: getBreadcrumbSchema([
             { name: "Home", url: "/" },
             { name: "Arcade Hub", url: "/arcade" },
-            { name: "Garmin 32KB Memory Runner", url: "/arcade/garmin-watch" },
+            { name: "Monkey C Mayhem", url: "/arcade/garmin-watch" },
           ]),
         }}
       />

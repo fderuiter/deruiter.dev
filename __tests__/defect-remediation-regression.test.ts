@@ -55,6 +55,7 @@ import {
   startGame,
   type GameEngineState,
 } from "@/lib/garmin-engine";
+import { EMPTY_COURSE } from "@/lib/garmin-course";
 import {
   clampBounds,
   createInitialDuckGameState,
@@ -1822,6 +1823,8 @@ describe("Garmin progression is refresh-rate independent (#1212)", () => {
     let state: GameEngineState = {
       ...startGame(createInitialState("fenix", 0), "fenix"),
       isLightOn,
+      // No course gaps for a runner that never jumps (#1950).
+      course: EMPTY_COURSE,
     };
     for (let i = 0; i < Math.round(seconds * hz); i++) {
       // Keep the run alive: no spawns, no random allocation crashes.
@@ -1885,6 +1888,7 @@ describe("Garmin progression is refresh-rate independent (#1212)", () => {
       ...startGame(createInitialState("fenix", 0), "fenix"),
       thermalStress: 0.5,
       fogLevel: 0.5,
+      course: EMPTY_COURSE,
     };
     for (let i = 0; i < 120 * 4; i++) {
       state = updateGameSimulation(
@@ -2360,5 +2364,21 @@ describe("Clinical Trial Chaos pass-4 fixes (#1670, #1671, #1672, #1673)", () =>
         "json_usdm"
       );
     });
+  });
+});
+
+describe("Garmin first obstacle waits for the player (#1945)", () => {
+  it("spawns nothing on the first frames of a new run", () => {
+    const now = 7_000_000;
+    const spy = vi.spyOn(Date, "now").mockReturnValue(now);
+    try {
+      const started = startGame(createInitialState("fenix", 0, []), "fenix");
+      expect(started.lastObstacleTime).toBe(now);
+      expect(started.lastAllocTime).toBe(now);
+      const next = updateGameSimulation(started, 1000 / 60);
+      expect(next.obstacles).toHaveLength(0);
+    } finally {
+      spy.mockRestore();
+    }
   });
 });

@@ -6,4 +6,6 @@
 
 # Variable: GRAVITY
 
-> `const` **GRAVITY**: `0.65` = `0.65`
+> `const` **GRAVITY**: `0.55` = `0.55`
+
+Gravity while rising with the jump key held.

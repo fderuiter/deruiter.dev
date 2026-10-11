@@ -90,7 +90,7 @@ export const ARCADE_GAMES_METADATA: ArcadeGameMetadata[] = [
     subtitle: "A Small Watch With a Lot Going On",
     genre: "Embedded Simulation",
     description:
-      "Keep a simulated smartwatch running within a 32KB memory budget. Dodge obstacles, clear memory, and wipe the screen when it fogs up.",
+      "Run a 5K platformer on a simulated smartwatch with a 32KB memory budget. Stomp bugs, clear the gaps, keep the heap in budget, and wipe the screen when it fogs up.",
     mechanics: [
       "32KB RAM Allocation Tracker",
       "GC Sweep Pressure",

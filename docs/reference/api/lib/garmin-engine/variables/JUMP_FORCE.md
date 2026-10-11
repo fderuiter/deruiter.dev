@@ -6,4 +6,4 @@
 
 # Variable: JUMP\_FORCE
 
-> `const` **JUMP\_FORCE**: `-10.5` = `-10.5`
+> `const` **JUMP\_FORCE**: `-10` = `-10`

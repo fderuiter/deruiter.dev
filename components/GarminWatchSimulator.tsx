@@ -68,7 +68,9 @@ import {
   resumeGame,
   wipeScreenFog,
   updateGameSimulation,
-  JUMP_FORCE,
+  pressJump,
+  releaseJump,
+  setRunInput,
   CANVAS_SIZE,
   GameEngineState,
   CrashReport,
@@ -103,11 +105,11 @@ const CRASH_LABELS: Record<
   },
   "Watchdog Tripped": {
     title: "WATCHDOG TRIPPED",
-    hint: "A watchdog timer caught you. Jump (Up) over it.",
+    hint: "A watchdog timer caught you. Jump (Up) and land on it to reset it, or clear it.",
   },
   "Null Pointer": {
     title: "NULL POINTER",
-    hint: "You ran into a null reference. Jump (Up) over bugs.",
+    hint: "You ran into a null reference. Jump (Up) and land on bugs to squash them.",
   },
   "Symbol Not Found": {
     title: "SYMBOL NOT FOUND",
@@ -115,7 +117,11 @@ const CRASH_LABELS: Record<
   },
   "Stack Overflow": {
     title: "STACK OVERFLOW",
-    hint: "You ran into runaway recursion. Jump (Up) over bugs.",
+    hint: "You ran into runaway recursion. Stacks are spiked: Jump (Up) over them, never onto them.",
+  },
+  "Segmentation Fault": {
+    title: "SEGFAULT",
+    hint: "You fell through a gap in the track. Hold Up longer to clear wide gaps, and sprint (Right) into them.",
   },
   "Power Loss": {
     title: "POWER LOSS",
@@ -162,7 +168,16 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
   const { recordEvent } = useTelemetry();
   const { announce } = useAnnouncer();
   const { garbageCollect } = useGarminService();
-  const [alertMessage, setAlertMessage] = useState<string>("");
+  // Each alert carries a count so a repeat of the same text still re-shows
+  // the visible toast (#1945: warnings were screen-reader only).
+  const [alertState, setAlert] = useState<{ text: string; n: number }>({
+    text: "",
+    n: 0,
+  });
+  const alertMessage = alertState.text;
+  const setAlertMessage = useCallback((text: string) => {
+    setAlert((prev) => ({ text, n: prev.n + 1 }));
+  }, []);
 
   // Pre-Game Setup Wizard choices from the hosting cabinet (null standalone).
   const cabinetSetup = useCabinetSetup();
@@ -328,18 +343,32 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     playBeep(1400, 0.025);
   }, [playBeep]);
 
-  // Jump (UP)
+  // Jump (UP / Space). Holding jumps higher; a press just before landing or
+  // just after running off an edge still counts (#1950).
   const handleJump = useCallback(() => {
     const current = stateRef.current;
-    if (current.gameState !== "playing" || !current.isGrounded) return;
-    triggerHaptic(20);
-    playBeep(900, 0.03);
-    applyTransition((state) => ({
-      ...state,
-      playerVy: JUMP_FORCE,
-      isGrounded: false,
-    }));
+    if (current.gameState !== "playing") return;
+    const next = applyTransition((state) => pressJump(state));
+    if (
+      current.isGrounded !== next.isGrounded ||
+      next.playerVy < current.playerVy
+    ) {
+      triggerHaptic(20);
+      playBeep(900, 0.03);
+    }
   }, [playBeep, applyTransition]);
+
+  const handleJumpRelease = useCallback(() => {
+    applyTransition((state) => releaseJump(state));
+  }, [applyTransition]);
+
+  // Sprint (Right) and brake (Left), held.
+  const handleRunInput = useCallback(
+    (input: -1 | 0 | 1) => {
+      applyTransition((state) => setRunInput(state, input));
+    },
+    [applyTransition]
+  );
 
   // Jettison Oldest Variable (DOWN)
   const handleJettison = useCallback(() => {
@@ -353,7 +382,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       return;
     }
     applyTransition((state) => jettisonOldestVariable(state).state);
-  }, [playBeep, applyTransition]);
+  }, [playBeep, applyTransition, setAlertMessage]);
 
   // Trigger Backlight / Flashlight (LIGHT)
   const handleToggleLight = useCallback(() => {
@@ -382,7 +411,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     } else if (result.error?.message) {
       setAlertMessage(result.error.message);
     }
-  }, [playBeep, applyTransition, garbageCollect]);
+  }, [playBeep, applyTransition, garbageCollect, setAlertMessage]);
 
   // Save Persistent Variable to Flash NVRAM (+8KB flash, RAM untouched)
   const handleSaveFlash = useCallback(() => {
@@ -403,7 +432,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       return;
     }
     applyTransition(() => result.state);
-  }, [playBeep, applyTransition]);
+  }, [playBeep, applyTransition, setAlertMessage]);
 
   // Clear NVRAM Flash Storage (flashVariables, flashFiles, meter, persisted)
   const handleClearFlash = useCallback(() => {
@@ -588,6 +617,8 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       "Enter",
       "g",
       "G",
+      "p",
+      "P",
       "Backspace",
     ];
 
@@ -595,8 +626,20 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       e.preventDefault();
     }
 
-    if (e.key === "ArrowUp") {
-      handleJump();
+    const status = stateRef.current.gameState;
+    if (e.key === "ArrowUp" || (e.key === " " && status === "playing")) {
+      // Held keys repeat; only the first press jumps.
+      if (!e.repeat) handleJump();
+    } else if (e.key === "ArrowRight") {
+      handleRunInput(1);
+    } else if (e.key === "ArrowLeft") {
+      handleRunInput(-1);
+    } else if (e.key === "Escape" || e.key.toLowerCase() === "p") {
+      // Pause and resume only; Escape never starts a run (#1945).
+      if (status === "playing" || status === "paused") {
+        e.preventDefault();
+        handleStartStop();
+      }
     } else if (e.key === "ArrowDown") {
       handleJettison();
     } else if (e.key.toLowerCase() === "l") {
@@ -606,7 +649,15 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     } else if (e.key === "Backspace" || e.key.toLowerCase() === "g") {
       handleForceGc();
     } else if (e.key === "Enter" || e.key === " ") {
-      handleStartStop();
+      if (!e.repeat) handleStartStop();
+    }
+  };
+
+  const handleKeyUp = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "ArrowUp" || e.key === " ") {
+      handleJumpRelease();
+    } else if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+      handleRunInput(0);
     }
   };
 
@@ -828,7 +879,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     } else if (gameState.gameState !== "shutdown") {
       hasAlertedShutdownRef.current = false;
     }
-  }, [gameState, deviceTarget, announce]);
+  }, [gameState, deviceTarget, announce, setAlertMessage]);
 
   // Main 60FPS Game Physics and Rendering Loop
   //
@@ -989,7 +1040,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       id: "up",
       label: "UP",
       hint: "[▲]",
-      title: "Jump (ArrowUp / UP)",
+      title: "Jump (ArrowUp / Space), hold for higher",
     },
     {
       id: "down",
@@ -1001,8 +1052,8 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       id: "start",
       label: startAction.toUpperCase(),
       hint: "[ENTER]",
-      title: `${startAction} (Enter / Space)`,
-      ariaLabel: `${startAction} (Enter / Space)`,
+      title: `${startAction} (Enter / P)`,
+      ariaLabel: `${startAction} (Enter / P)`,
     },
     {
       id: "back",
@@ -1024,13 +1075,13 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       ? "BROWNOUT SHUTDOWN"
       : gameState.gameState === "crashed"
         ? (CRASH_LABELS[crashType]?.title ?? "APP CRASHED")
-        : "RUN COMPLETE";
+        : "5K COMPLETE";
   const endMessage =
     gameState.gameState === "shutdown"
       ? `${CRASH_LABELS["Power Loss"].hint} Power loss score penalty applied (-50 PTS).`
       : gameState.gameState === "crashed"
         ? (CRASH_LABELS[crashType]?.hint ?? "Reboot and try again.")
-        : "The activity is saved to the watch.";
+        : "All five stages cleared. The activity is saved to the watch.";
   const report = gameState.crashReport;
   const endStats: Array<{ label: string; value: number; suffix?: string }> = [
     { label: "Score", value: gameState.score },
@@ -1038,6 +1089,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       label: "Metres",
       value: Math.round(gameState.distanceMeters),
     },
+    { label: "Kudos", value: gameState.kudos ?? 0 },
   ];
   if (gameState.gameState === "shutdown") {
     endStats.push({
@@ -1095,11 +1147,33 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
             ref={containerRef}
             tabIndex={0}
             onFocus={() => setIsFocused(true)}
-            onBlur={() => setIsFocused(false)}
+            onBlur={() => {
+              setIsFocused(false);
+              // Held keys can't report their release once focus is gone.
+              handleJumpRelease();
+              handleRunInput(0);
+            }}
             onKeyDown={handleKeyDown}
+            onKeyUp={handleKeyUp}
             data-keyboard-boundary="true"
             className="garmin-chassis relative w-full px-12 outline-none select-none"
           >
+            {/* Visible copy of the latest in-run alert; screen readers get
+                the role="alert" region below instead. The end of a run has
+                its own face and result card. */}
+            {alertState.text &&
+              alertState.n > 0 &&
+              (gameState.gameState === "playing" ||
+                gameState.gameState === "paused") && (
+                <div
+                  key={alertState.n}
+                  aria-hidden="true"
+                  data-testid="garmin-alert-toast"
+                  className="garmin-alert-toast pointer-events-none absolute left-1/2 top-0 z-40 max-w-[18rem] -translate-x-1/2 rounded-md border border-amber-500/40 bg-zinc-950/95 px-3 py-1.5 text-center font-mono text-[11px] leading-snug text-amber-300"
+                >
+                  {alertState.text}
+                </div>
+              )}
             <div
               ref={fxStageRef}
               className="garmin-watch-frame relative mx-auto aspect-[520/580]"
@@ -1162,14 +1236,14 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
                 {gameState.gameState === "idle" && (
                   <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/65 px-[14%] text-center font-mono">
                     <span className="text-[13px] font-bold uppercase tracking-[0.16em] text-cyan-300">
-                      Monkey C Runner
+                      Monkey C Mayhem
                     </span>
                     <span className="mt-1 text-[11px] font-bold text-amber-300">
-                      LIMIT: {currentProfile.ramLimitKb} KB RAM
+                      5K · 5 STAGES · {currentProfile.ramLimitKb} KB RAM
                     </span>
                     <p className="mt-2 max-w-[15rem] text-[11px] leading-snug text-zinc-300">
-                      Survive memory allocations, jump over bugs, pop variables
-                      &amp; trigger GC!
+                      ▲ / Space jump (hold for higher) · ◀ ▶ pace. Stomp bugs,
+                      bump Sync Blocks, mind the gaps, keep the heap in budget.
                     </p>
                     <button
                       type="button"
@@ -1305,9 +1379,10 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
                   ? "Power loss"
                   : gameState.gameState === "crashed"
                     ? "Crashed"
-                    : "Saved"
+                    : "Finished"
               }
               verdict={gameState.gameState === "summary" ? "win" : "loss"}
+              preventScroll
               message={endMessage}
               stats={endStats}
               score={gameState.score}

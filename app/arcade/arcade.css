@@ -728,6 +728,25 @@
 .garmin-chassis:focus-visible {
   outline: none;
 }
+/* The visible alert toast holds for a moment, then hides. Opacity only;
+ * under reduced motion it simply disappears at the end. */
+.garmin-alert-toast {
+  animation: garmin-alert-toast 3.6s linear forwards;
+}
+@keyframes garmin-alert-toast {
+  0%,
+  85% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .garmin-alert-toast {
+    animation-timing-function: steps(1, end);
+  }
+}
 /* ---- end garmin-watch (phase 7) ---- */
 
 /* Study Director desk tokens (ADR 0054, #1496).

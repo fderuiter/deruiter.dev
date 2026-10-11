@@ -47,6 +47,15 @@ while the trap is active before or along with standard trap behavior.
 
 ***
 
+### preventScroll?
+
+> `optional` **preventScroll?**: `boolean`
+
+Move initial focus without scrolling the page, for a dialog that opens
+beside the thing the player is watching (defaults to false).
+
+***
+
 ### returnFocus?
 
 > `optional` **returnFocus?**: `boolean`

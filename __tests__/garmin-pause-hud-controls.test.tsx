@@ -243,7 +243,7 @@ describe("Garmin controls (#1318)", () => {
     });
   }
 
-  it("G runs GC and Escape does not", async () => {
+  it("G runs GC and Escape only pauses (#1945)", async () => {
     const withGarbage = running({
       variables: [
         ...running().variables,
@@ -256,6 +256,10 @@ describe("Garmin controls (#1318)", () => {
     expect(container.textContent).not.toMatch(
       /Garbage collection (ran|freed)/i
     );
+    // Escape paused the run; a second press resumes it.
+    expect(container.textContent).toMatch(/Status: paused/);
+    await press("Escape");
+    expect(container.textContent).toMatch(/Status: playing/);
     const ramBefore = container.querySelector(
       'output[for="garmin-ram"]'
     )?.textContent;
@@ -337,7 +341,7 @@ describe("Garmin controls (#1318)", () => {
     await render(createInitialState("fenix", 0));
     const startButton = () =>
       container.querySelector<HTMLButtonElement>(
-        'button[title$="(Enter / Space)"]'
+        'button[title$="(Enter / P)"]'
       )!;
     expect(startButton().textContent).toContain("START");
 
@@ -349,9 +353,7 @@ describe("Garmin controls (#1318)", () => {
       startButton().click();
     });
     expect(startButton().textContent).toContain("RESUME");
-    expect(startButton().getAttribute("aria-label")).toBe(
-      "Resume (Enter / Space)"
-    );
+    expect(startButton().getAttribute("aria-label")).toBe("Resume (Enter / P)");
     await act(async () => {
       startButton().click();
     });

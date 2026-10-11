@@ -23,6 +23,16 @@ import {
   type GroundStripLayout,
 } from "@/lib/garmin-ground-strip";
 import {
+  BLOCK_SIZE,
+  EMPTY_COURSE,
+  KUDOS_RADIUS,
+  LEDGE_THICKNESS,
+  POLE_HEIGHT,
+  PX_PER_METER,
+  STAGE_COUNT,
+  type CourseLayout,
+} from "@/lib/garmin-course";
+import {
   CANVAS_SIZE,
   DEVICE_PROFILES,
   GROUND_Y,
@@ -266,7 +276,7 @@ export function endFaceFor(
   if (state.gameState === "summary") {
     return {
       kind: "complete",
-      headline: "RUN COMPLETE",
+      headline: "5K COMPLETE",
       detail: "Activity saved",
     };
   }
@@ -380,7 +390,7 @@ function drawPines(ctx: Ctx, distance: number) {
   }
 }
 
-function drawGround(ctx: Ctx, distance: number) {
+function drawGround(ctx: Ctx, distance: number, course: CourseLayout) {
   ctx.fillStyle = "#101215";
   ctx.fillRect(0, GROUND_Y, CANVAS_SIZE, CANVAS_SIZE - GROUND_Y);
   // Lane edge in the identity hue, and lane dashes at track speed.
@@ -391,6 +401,197 @@ function drawGround(ctx: Ctx, distance: number) {
   for (let x = -dash; x < CANVAS_SIZE; x += 24) {
     ctx.fillRect(x, GROUND_Y + 5, 12, 1.5);
   }
+  // Gaps: the lane breaks off into a dark drop with amber hazard edges.
+  const camera = distance * PX_PER_METER;
+  for (const gap of course.gaps) {
+    const left = gap.x - camera;
+    if (left > CANVAS_SIZE || left + gap.width < 0) continue;
+    const drop = ctx.createLinearGradient(0, GROUND_Y, 0, CANVAS_SIZE);
+    drop.addColorStop(0, "#020304");
+    drop.addColorStop(1, "#000000");
+    ctx.fillStyle = drop;
+    ctx.fillRect(left, GROUND_Y - 0.5, gap.width, CANVAS_SIZE - GROUND_Y + 1);
+    ctx.fillStyle = FACE_COLORS.warn;
+    ctx.fillRect(left - 1.5, GROUND_Y, 1.5, 9);
+    ctx.fillRect(left + gap.width, GROUND_Y, 1.5, 9);
+  }
+}
+
+// --------------------------------------------------------------- course
+
+/** One-way ledges: a slim data rail with a lit top edge. */
+function drawLedges(ctx: Ctx, course: CourseLayout, camera: number) {
+  for (const l of course.ledges) {
+    const left = l.x - camera;
+    if (left > CANVAS_SIZE || left + l.width < 0) continue;
+    ctx.fillStyle = "#1e293b";
+    ctx.beginPath();
+    ctx.roundRect(left, l.y, l.width, LEDGE_THICKNESS, 1.5);
+    ctx.fill();
+    ctx.fillStyle = FACE_COLORS.identity;
+    ctx.fillRect(left + 1, l.y, l.width - 2, 1.2);
+    ctx.fillStyle = "rgba(34, 211, 238, 0.35)";
+    for (let x = left + 4; x < left + l.width - 3; x += 6) {
+      ctx.fillRect(x, l.y + 2.6, 2, 1);
+    }
+  }
+}
+
+/** The two-arrow sync glyph on a Sync Block. */
+function drawSyncGlyph(ctx: Ctx, cx: number, cy: number, color: string) {
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = 1.3;
+  ctx.beginPath();
+  ctx.arc(cx, cy, 3.6, Math.PI * 1.1, Math.PI * 1.9);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(cx, cy, 3.6, Math.PI * 0.1, Math.PI * 0.9);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(cx + 3.4, cy - 3.6);
+  ctx.lineTo(cx + 4.8, cy - 0.8);
+  ctx.lineTo(cx + 1.8, cy - 1.4);
+  ctx.closePath();
+  ctx.moveTo(cx - 3.4, cy + 3.6);
+  ctx.lineTo(cx - 4.8, cy + 0.8);
+  ctx.lineTo(cx - 1.8, cy + 1.4);
+  ctx.closePath();
+  ctx.fill();
+}
+
+/** Sync Blocks (lit until bumped) and plain circuit bricks. */
+function drawBlocks(ctx: Ctx, course: CourseLayout, camera: number) {
+  for (const b of course.blocks) {
+    const left = b.x - camera;
+    if (left > CANVAS_SIZE || left + BLOCK_SIZE < 0) continue;
+    if (b.kind === "brick") {
+      ctx.fillStyle = "#273244";
+      ctx.fillRect(left, b.y, BLOCK_SIZE, BLOCK_SIZE);
+      ctx.strokeStyle = "#475569";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(left + 0.5, b.y + 0.5, BLOCK_SIZE - 1, BLOCK_SIZE - 1);
+      ctx.beginPath();
+      ctx.moveTo(left + 3, b.y + 5);
+      ctx.lineTo(left + 8, b.y + 5);
+      ctx.lineTo(left + 8, b.y + 10);
+      ctx.lineTo(left + 11, b.y + 10);
+      ctx.stroke();
+      continue;
+    }
+    const lit = !b.used;
+    ctx.fillStyle = lit ? "#0e7490" : "#27272a";
+    ctx.beginPath();
+    ctx.roundRect(left, b.y, BLOCK_SIZE, BLOCK_SIZE, 2);
+    ctx.fill();
+    ctx.strokeStyle = lit ? FACE_COLORS.identity : "#52525b";
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+    drawSyncGlyph(
+      ctx,
+      left + BLOCK_SIZE / 2,
+      b.y + BLOCK_SIZE / 2,
+      lit ? "#f4f4f6" : "#71717a"
+    );
+  }
+}
+
+/** Kudos: an amber medal with a raised-hand notch. */
+function drawKudos(ctx: Ctx, course: CourseLayout, camera: number) {
+  for (const k of course.kudos) {
+    const x = k.x - camera;
+    if (x - KUDOS_RADIUS > CANVAS_SIZE || x + KUDOS_RADIUS < 0) continue;
+    ctx.fillStyle = "#b45309";
+    ctx.beginPath();
+    ctx.arc(x, k.y, KUDOS_RADIUS, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = FACE_COLORS.warn;
+    ctx.beginPath();
+    ctx.arc(x, k.y, KUDOS_RADIUS - 1.3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#78350f";
+    ctx.fillRect(x - 0.9, k.y - 2.4, 1.8, 4.8);
+    ctx.fillRect(x - 2.4, k.y - 0.9, 4.8, 1.8);
+  }
+}
+
+/** Finish poles: a mast with a chequered banner that drops once grabbed. */
+function drawPoles(ctx: Ctx, course: CourseLayout, camera: number) {
+  for (const p of course.poles) {
+    const x = p.x - camera;
+    if (x - 30 > CANVAS_SIZE || x + 30 < 0) continue;
+    const top = GROUND_Y - POLE_HEIGHT;
+    ctx.fillStyle = "#cbd5e1";
+    ctx.fillRect(x - 1, top, 2, POLE_HEIGHT);
+    ctx.fillStyle = FACE_COLORS.good;
+    ctx.beginPath();
+    ctx.arc(x, top - 2, 3, 0, Math.PI * 2);
+    ctx.fill();
+    // Base plinth.
+    ctx.fillStyle = "#334155";
+    ctx.fillRect(x - 6, GROUND_Y - 6, 12, 6);
+    // Banner: rides down the pole to where it was grabbed.
+    const flagY =
+      p.grabbed === undefined
+        ? top + 2
+        : Math.min(GROUND_Y - 22, GROUND_Y - p.grabbed * POLE_HEIGHT);
+    const w = 22;
+    const h = 14;
+    for (let r = 0; r < 2; r++) {
+      for (let c = 0; c < 4; c++) {
+        ctx.fillStyle = (r + c) % 2 === 0 ? "#f4f4f6" : "#0d0e11";
+        ctx.fillRect(
+          x - 1 - w + c * (w / 4),
+          flagY + r * (h / 2),
+          w / 4,
+          h / 2
+        );
+      }
+    }
+    text(ctx, `${p.stage}K`, x - 12, flagY + h + 8, 7, FACE_COLORS.good);
+  }
+}
+
+/** Score and event labels that float up from where they happened. */
+function drawPopups(ctx: Ctx, state: GameEngineState, camera: number) {
+  for (const p of state.popups ?? []) {
+    const alpha = clamp(p.ttlMs / 400, 0, 1);
+    ctx.globalAlpha = alpha;
+    text(ctx, p.text, p.x - camera + 7, p.y, 7.5, FACE_COLORS.text);
+  }
+  ctx.globalAlpha = 1;
+}
+
+const BANNER_TONE = {
+  info: FACE_COLORS.identity,
+  good: FACE_COLORS.good,
+  warn: FACE_COLORS.warn,
+} as const;
+
+/** A short line across the upper face for stage starts and pickups. */
+function drawBanner(ctx: Ctx, state: GameEngineState) {
+  const banner = state.banner;
+  if (!banner) return;
+  ctx.font = faceFont(7.5);
+  const w = Math.min(196, ctx.measureText(banner.text).width + 16);
+  ctx.fillStyle = "rgba(0, 0, 0, 0.72)";
+  ctx.beginPath();
+  ctx.roundRect(FACE_CENTER - w / 2, 70, w, 13, 3);
+  ctx.fill();
+  text(ctx, banner.text, FACE_CENTER, 79.5, 7.5, BANNER_TONE[banner.tone]);
+}
+
+/** Stage and Kudos count, small, under the score. */
+function drawCourseHud(ctx: Ctx, state: GameEngineState) {
+  const stage = state.stage ?? 1;
+  text(
+    ctx,
+    `STAGE ${stage}/${STAGE_COUNT} · KUDOS ${state.kudos ?? 0}`,
+    FACE_CENTER,
+    64,
+    6,
+    FACE_COLORS.dim
+  );
 }
 
 // --------------------------------------------------------------- runner
@@ -427,8 +628,19 @@ function limb(
 function drawRunner(ctx: Ctx, state: GameEngineState) {
   const pose = runnerPose(state.distanceMeters, state.isGrounded);
   const fur = state.isGcActive ? FUR_FROZEN : FUR;
+  // After the shield breaks the runner blinks while hits pass through.
+  const graceMs = state.invulnerableMs ?? 0;
+  if (graceMs > 0 && Math.floor(graceMs / 100) % 2 === 0) return;
   ctx.save();
   ctx.translate(PLAYER_X, state.playerY - pose.bob);
+  if (state.hasShield) {
+    // Firmware Update shield: a thin bright ring around the runner.
+    ctx.strokeStyle = "rgba(16, 185, 129, 0.9)";
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.ellipse(10, 12 + pose.bob, 14, 16, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
 
   // Contact shadow on the lane, smaller the higher the jump.
   const lift = clamp(GROUND_Y - (state.playerY + 24), 0, 90);
@@ -643,11 +855,15 @@ function drawStack(ctx: Ctx, w: number, h: number) {
     ctx.fill();
     ctx.stroke();
   }
-  ctx.fillStyle = FACE_COLORS.danger;
+  // Spikes along the top frame: this one can't be stomped.
+  ctx.fillStyle = "#fca5a5";
   ctx.beginPath();
-  ctx.moveTo(w - 3, h - 24);
-  ctx.lineTo(w, h - 19.5);
-  ctx.lineTo(w - 6, h - 19.5);
+  const topY = h - 18;
+  for (let x = 3.6; x < w - 2; x += 3.6) {
+    ctx.moveTo(x - 1.8, topY);
+    ctx.lineTo(x, topY - 4.5);
+    ctx.lineTo(x + 1.8, topY);
+  }
   ctx.closePath();
   ctx.fill();
 }
@@ -1032,15 +1248,22 @@ export function renderWatchFace(
     return;
   }
 
+  const course = state.course ?? EMPTY_COURSE;
+  const camera = state.distanceMeters * PX_PER_METER;
   drawSky(ctx, state.isLightOn);
   drawSkyline(ctx, state.distanceMeters);
   drawPines(ctx, state.distanceMeters);
-  drawGround(ctx, state.distanceMeters);
+  drawGround(ctx, state.distanceMeters, course);
+  drawPoles(ctx, course, camera);
+  drawLedges(ctx, course, camera);
+  drawBlocks(ctx, course, camera);
+  drawKudos(ctx, course, camera);
 
   for (const obs of state.obstacles) {
     drawObstacle(ctx, obs);
   }
   drawRunner(ctx, state);
+  drawPopups(ctx, state, camera);
 
   if (state.isGcActive) drawGcFreeze(ctx, state);
   if (state.battery < 15) {
@@ -1048,7 +1271,11 @@ export function renderWatchFace(
     ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
   }
   // Idle keeps the ring empty: the start card sits over the face then.
-  if (state.gameState !== "idle") drawDataRing(ctx, state, strip);
+  if (state.gameState !== "idle") {
+    drawDataRing(ctx, state, strip);
+    drawCourseHud(ctx, state);
+    drawBanner(ctx, state);
+  }
   if (state.fogLevel > 0.05) drawFog(ctx, state);
   if (state.gameState === "paused") drawPaused(ctx);
 

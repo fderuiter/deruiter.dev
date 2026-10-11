@@ -244,7 +244,17 @@ Subscribes to a typed one-shot action event (e.g. sfx, haptic, screen shake).
 
 ##### btn
 
-`"up"` \| `"down"` \| `"start"` \| `"back"` \| `"light"`
+`"start"` \| `"up"` \| `"down"` \| `"back"` \| `"light"`
+
+#### Returns
+
+`void`
+
+***
+
+### releaseJump()
+
+> **releaseJump**(): `void`
 
 #### Returns
 

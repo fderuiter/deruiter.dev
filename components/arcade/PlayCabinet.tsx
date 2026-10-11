@@ -331,15 +331,25 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
     };
     // Only games that mark a keyboard boundary opt in; others, such as
     // Trial & Error, manage focus themselves.
+    //
+    // The check waits a task: a game that re-renders on blur mutates the DOM
+    // while Tab is still moving focus, when activeElement is momentarily
+    // <body>. Checking then pulled focus back and trapped Tab (#1945).
+    let pending: ReturnType<typeof setTimeout> | null = null;
     const observer = new MutationObserver(() => {
-      const active = document.activeElement;
-      if (!ownsFocus || (active && active !== document.body)) return;
-      getKeyboardBoundary(cabinet)?.focus({ preventScroll: true });
+      if (pending !== null) return;
+      pending = setTimeout(() => {
+        pending = null;
+        const active = document.activeElement;
+        if (!ownsFocus || (active && active !== document.body)) return;
+        getKeyboardBoundary(cabinet)?.focus({ preventScroll: true });
+      }, 0);
     });
     observer.observe(cabinet, { childList: true, subtree: true });
     document.addEventListener("focusin", handleFocusIn);
     document.addEventListener("pointerdown", handlePointerDown, true);
     return () => {
+      if (pending !== null) clearTimeout(pending);
       observer.disconnect();
       document.removeEventListener("focusin", handleFocusIn);
       document.removeEventListener("pointerdown", handlePointerDown, true);

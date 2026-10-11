@@ -20,6 +20,7 @@ import {
   type DeviceTarget,
   type GameEngineState,
 } from "@/lib/garmin-engine";
+import { EMPTY_COURSE } from "@/lib/garmin-course";
 
 // #1320: obstacle speed capped 7 seconds in, the allocation pace never
 // changed, pops and GCs were free points, and tokens only cost memory, so a
@@ -68,6 +69,8 @@ function survive(
   const stepMs = 50;
   let state: GameEngineState = {
     ...startGame(createInitialState(device, 0, []), device),
+    // A memory test: no gaps for a bot that never jumps (#1950).
+    course: EMPTY_COURSE,
     lastAllocTime: clock,
     lastObstacleTime: clock,
   };

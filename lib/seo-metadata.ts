@@ -188,7 +188,7 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
   garminWatch: {
     title: "Monkey C Mayhem: Garmin Schvitz App",
     description:
-      "Keep a simulated smartwatch running within a 32KB memory budget. Dodge obstacles, clear memory, and wipe the screen when it fogs up in Monkey C Mayhem.",
+      "Run a 5K platformer on a smartwatch with a 32KB memory budget in Monkey C Mayhem: stomp bugs, clear the gaps and wipe the screen when it fogs up.",
     path: "/arcade/garmin-watch",
     ogImageType: "image/jpeg",
     keywords: [

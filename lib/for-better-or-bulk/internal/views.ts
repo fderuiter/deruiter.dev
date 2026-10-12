@@ -245,9 +245,9 @@ function reasonOnTile(
  * - A press with nothing in hand that faces only plain ground gets no line,
  *   since there is nothing to refuse.
  *
- * Burnt food in hand gets one line everywhere but the bin, which names the
- * bin (round 11), so it is never a bare "Nothing here takes" for the one item
- * only the bin wants.
+ * Burnt food in hand gets one line wherever the bin is not faced, which names
+ * the bin (round 11), so it is never a bare "Nothing here takes" for the one
+ * item only the bin wants. Facing the bin, the usual rules apply.
  *
  * Each faced tile is checked in turn (see `faceTiles`), and the first reason
  * wins. So a bin with no line lets the grill beside it speak. When no faced
@@ -258,10 +258,10 @@ function reasonOnTile(
 function unpressedReason(state: GameState, person: Player): string | null {
   const held = person.holding;
   const faced = faceTiles(person);
-  if (held?.kind === "burnt") {
-    if (faced.some((tile) => isBinAt(state, tile))) return null;
+  // Away from the bin, burnt food names the bin. Facing it, the bin stays
+  // silent but a station straddled beside it still gives its own reason.
+  if (held?.kind === "burnt" && !faced.some((tile) => isBinAt(state, tile)))
     return `Burnt food goes in ${STATION_NAMES.bin}.`;
-  }
   for (const tile of faced) {
     const reason = reasonOnTile(state, tile, held);
     if (reason) return reason;

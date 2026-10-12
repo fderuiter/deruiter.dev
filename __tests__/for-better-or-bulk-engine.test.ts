@@ -2859,6 +2859,16 @@ describe("a refused press says why (round 9, task 1)", () => {
       { numRuns: 400 }
     );
   });
+
+  it("lets the grill speak when burnt food straddles the grill and the bin", () => {
+    // The property's shrunk counterexample: a body exactly on the boundary at
+    // (6, 4) facing north faces the bin (6, 3) and the grill (5, 3).
+    const at = placeExact(base, "fred", 6, 4, [0, -1], {
+      kind: "burnt",
+      madeBy: null,
+    });
+    expect(getPrompt(at, "fred").interact).not.toBeNull();
+  });
 });
 
 describe("the prompt panel's people in solo (round 9, task 4)", () => {

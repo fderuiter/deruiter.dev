@@ -1049,7 +1049,7 @@ export function ForBetterOrBulkGame({
                 : " Tab to swap · Shift+Tab to leave · Escape to pause"}
             </span>
           ) : (
-            <span>Fred: WASD, E, F · Abbi: arrows, Enter, Shift</span>
+            <span>Fred: WASD, E or Space, F · Abbi: arrows, Enter, Shift</span>
           )}
           <button
             ref={pauseRef}

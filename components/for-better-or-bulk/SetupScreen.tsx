@@ -341,7 +341,7 @@ export function SetupScreen({
               Two players, one keyboard
             </span>
             <span className="mt-0.5">
-              Fred: WASD, E, F. Abbi: arrows, Enter, Shift.
+              Fred: WASD, E or Space, F. Abbi: arrows, Enter, Shift.
             </span>
           </OptionButton>
         </div>

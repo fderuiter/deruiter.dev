@@ -682,7 +682,7 @@ function jobOf(state: GameState, id: PlayerId): Job {
 
 /**
  * The job line for the helper working for `id`, as one sentence: "Fred is
- * carrying the roses to the ARRANGE table (A).", "Fred is waiting for a free
+ * carrying the roses to the ARRANGE table.", "Fred is waiting for a free
  * spot." or "Fred is out with his brothers.". Pure.
  */
 export function assistJob(state: GameState, id: PlayerId): string {

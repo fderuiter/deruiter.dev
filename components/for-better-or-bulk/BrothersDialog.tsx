@@ -6,7 +6,7 @@
  * promise about what he comes back for, and leaving is leaving.
  */
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useId, useRef, useState } from "react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import {
   BREAK_SECONDS,
@@ -69,6 +69,11 @@ export function BrothersDialog({ state, onDecide }: BrothersDialogProps) {
     initialFocusRef: headingRef,
   });
   const commitments = availableCommitments(state);
+  // Each choice's short label is its accessible name. Its parenthetical detail
+  // sits in its own element, which the button describes (aria-describedby), so
+  // a screen reader hears the label first and the detail as the description.
+  const stayId = useId();
+  const leaveId = useId();
 
   useEffect(() => {
     openedAt.current = Date.now();
@@ -135,8 +140,13 @@ export function BrothersDialog({ state, onDecide }: BrothersDialogProps) {
               type="button"
               onClick={() => onDecide({ choice: "stay", commitment: null })}
               className={OPTION_CLASS}
+              aria-labelledby={`${stayId}-label`}
+              aria-describedby={`${stayId}-detail`}
             >
-              Stay and help. (He will keep stopping to retie a shoelace.)
+              <span id={`${stayId}-label`}>Stay and help.</span>{" "}
+              <span id={`${stayId}-detail`}>
+                (He will keep stopping to retie a shoelace.)
+              </span>
             </button>
             <button
               type="button"
@@ -150,14 +160,19 @@ export function BrothersDialog({ state, onDecide }: BrothersDialogProps) {
               type="button"
               onClick={() => onDecide({ choice: "leave", commitment: null })}
               className={OPTION_CLASS}
+              aria-labelledby={`${leaveId}-label`}
+              aria-describedby={`${leaveId}-detail`}
             >
-              Go with them. (Back around{" "}
-              {clockLabel(
-                state.time + onLevelClock(LEAVE_SECONDS, state.duration),
-                state.duration
-              )}
-              . Whatever he carries is set down on the floor near him. Abbi
-              works alone until Fred is back. The website is up.)
+              <span id={`${leaveId}-label`}>Go with them.</span>{" "}
+              <span id={`${leaveId}-detail`}>
+                (Back around{" "}
+                {clockLabel(
+                  state.time + onLevelClock(LEAVE_SECONDS, state.duration),
+                  state.duration
+                )}
+                . Whatever he carries is set down on the floor near him. Abbi
+                works alone until Fred is back. The website is up.)
+              </span>
             </button>
           </div>
         ) : (

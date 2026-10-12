@@ -198,7 +198,7 @@ function sourceCondition(state: GameState, category: Category): Condition {
       };
     case "chairs":
       return {
-        label: "Chairs from the shed",
+        label: "Chairs from the chair crate",
         met: true,
         detail: `${CHAIR_COUNT} chairs`,
       };

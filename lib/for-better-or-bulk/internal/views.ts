@@ -221,13 +221,13 @@ function reasonOnTile(
     // The bin is emptied by holding work, and the work prompt names that hold,
     // so a held item at the bin gets no interact line.
     if (station.kind === "bin")
-      return held ? null : `Nothing on ${STATION_NAMES.bin} to take.`;
+      return held ? null : "The BIN takes burnt food.";
     if (station.item)
       return `${capitalise(STATION_NAMES[station.kind])} is full.`;
     if (!held) return `Nothing on ${STATION_NAMES[station.kind]} to take.`;
     if (station.kind === "grill") {
       if (held.kind !== "hotdogs" && held.kind !== "wings")
-        return "The GRILL (G) takes raw hot dogs or wings.";
+        return "The GRILL takes raw hot dogs or wings.";
       // Only say where cooked food goes when an open buffet spot wants it.
       const buffetWants = state.targets.some(
         (t) =>

@@ -16,21 +16,24 @@ import type {
   TargetKind,
 } from "../types";
 
-/** Words for the places and things a hint names, with their venue letters. */
+/**
+ * Words for the places and things a hint names. They use the labels the canvas
+ * draws, not the map letters in VENUE_MAP, which the canvas never shows.
+ */
 export const STATION_NAMES: Readonly<Record<StationKind, string>> = {
-  arrange: "the ARRANGE table (A)",
-  petals: "the PETALS bucket (P)",
-  grill: "the GRILL (G)",
-  bin: "the BIN (X)",
+  arrange: "the ARRANGE table",
+  petals: "the PETALS bucket",
+  grill: "the GRILL",
+  bin: "the BIN",
 };
 
 export const TARGET_NAMES: Readonly<Record<TargetKind, string>> = {
-  basket: "the bouquet basket (K)",
-  table: "a centerpiece table (T)",
-  aisle: "an aisle spot (S)",
-  "chair-spot": "a chair spot (O)",
-  hook: "a lantern hook (N)",
-  buffet: "the buffet (B)",
+  basket: "the bouquet basket",
+  table: "a centerpiece table",
+  aisle: "an aisle spot",
+  "chair-spot": "a chair spot",
+  hook: "a lantern hook",
+  buffet: "the buffet",
 };
 
 /**

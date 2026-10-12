@@ -1365,7 +1365,7 @@ describe("the coach hints", () => {
           madeBy: null,
         }),
       id: "abbi",
-      hint: "Carry the roses to the ARRANGE table (A).",
+      hint: "Carry the roses to the ARRANGE table.",
     },
     {
       name: "roses on the table: hold F to arrange them",
@@ -1375,7 +1375,7 @@ describe("the coach hints", () => {
           madeBy: null,
         }),
       id: "fred",
-      hint: "Stand at the ARRANGE table (A) and hold F or Shift to arrange the roses.",
+      hint: "Stand at the ARRANGE table and hold F or Shift to arrange the roses.",
     },
     {
       name: "arrangement ready: take it from the table",
@@ -1385,7 +1385,7 @@ describe("the coach hints", () => {
           madeBy: "abbi",
         }),
       id: "fred",
-      hint: "Take the arrangement from the ARRANGE table (A).",
+      hint: "Take the arrangement from the ARRANGE table.",
     },
     {
       name: "holding an arrangement: carry it to a centerpiece",
@@ -1395,7 +1395,7 @@ describe("the coach hints", () => {
           madeBy: "fred",
         }),
       id: "fred",
-      hint: "Place the arrangement at a centerpiece table (T).",
+      hint: "Place the arrangement at a centerpiece table.",
     },
     {
       name: "roses with the table busy, petals planned: carry to the PETALS bucket",
@@ -1417,7 +1417,7 @@ describe("the coach hints", () => {
           { kind: "roses", madeBy: null }
         ),
       id: "abbi",
-      hint: "Carry the roses to the PETALS bucket (P).",
+      hint: "Carry the roses to the PETALS bucket.",
     },
     {
       name: "roses, arrangements filled, aisle open: carry the roses to the PETALS bucket",
@@ -1431,7 +1431,7 @@ describe("the coach hints", () => {
           { kind: "roses", madeBy: null }
         ),
       id: "abbi",
-      hint: "Carry the roses to the PETALS bucket (P).",
+      hint: "Carry the roses to the PETALS bucket.",
     },
     {
       name: "roses, every arrangement filled, aisle unplanned: no roses to carry: put them down out of the way",
@@ -1519,7 +1519,7 @@ describe("the coach hints", () => {
           madeBy: "fred",
         }),
       id: "fred",
-      hint: "Place the bucket of petals at an aisle spot (S).",
+      hint: "Place the bucket of petals at an aisle spot.",
     },
     {
       name: "raw hot dogs and a free grill: carry them to the grill",
@@ -1529,7 +1529,7 @@ describe("the coach hints", () => {
           madeBy: null,
         }),
       id: "fred",
-      hint: "Carry the raw hot dogs to the GRILL (G).",
+      hint: "Carry the raw hot dogs to the GRILL.",
     },
     {
       name: "hot dogs cooked on the grill: take them off",
@@ -1539,7 +1539,7 @@ describe("the coach hints", () => {
           madeBy: "fred",
         }),
       id: "abbi",
-      hint: "Take the hot dogs off the GRILL (G).",
+      hint: "Take the hot dogs off the GRILL.",
     },
     {
       name: "holding cooked hot dogs: carry them to the buffet",
@@ -1549,7 +1549,7 @@ describe("the coach hints", () => {
           madeBy: "fred",
         }),
       id: "abbi",
-      hint: "Place the hot dogs at the buffet (B).",
+      hint: "Place the hot dogs at the buffet.",
     },
     {
       name: "holding mac and cheese: carry it to the buffet",
@@ -1559,7 +1559,7 @@ describe("the coach hints", () => {
           madeBy: null,
         }),
       id: "fred",
-      hint: "Place the mac and cheese at the buffet (B).",
+      hint: "Place the mac and cheese at the buffet.",
     },
     {
       name: "only the mac slot left: grab mac and cheese",
@@ -1583,7 +1583,7 @@ describe("the coach hints", () => {
           madeBy: null,
         }),
       id: "fred",
-      hint: "Place the lantern at a lantern hook (N).",
+      hint: "Place the lantern at a lantern hook.",
     },
     {
       name: "only the chair spots left: grab a stack of 2 chairs",
@@ -1601,7 +1601,7 @@ describe("the coach hints", () => {
           count: 2,
         }),
       id: "abbi",
-      hint: "Place a stack of 2 chairs at a chair spot (O).",
+      hint: "Place a stack of 2 chairs at a chair spot.",
     },
     {
       name: "holding something burnt: take it to the bin, with the key named",
@@ -1611,7 +1611,7 @@ describe("the coach hints", () => {
           madeBy: null,
         }),
       id: "fred",
-      hint: "Carry the burnt food to the BIN (X) and hold F or Shift there to throw it out.",
+      hint: "Carry the burnt food to the BIN and hold F or Shift there to throw it out.",
     },
     {
       name: "nothing useful left: no hint",
@@ -1777,7 +1777,7 @@ describe("interaction targets", () => {
     const at = place(createLevel(DEFAULT_SETUP), "fred", 7, 3, [0, -1], roses);
     expect(interactTile(at, "fred")).toEqual({ x: 8, y: 3 });
     expect(getPrompt(at, "fred").interact).toBe(
-      "Put the roses on the ARRANGE table (A)"
+      "Put the roses on the ARRANGE table"
     );
     const after = stepGame(at, frameFor("fred", { interact: true })).state;
     expect(after.stations.find((s) => s.x === 8 && s.y === 3)?.item?.kind).toBe(
@@ -1792,7 +1792,7 @@ describe("interaction targets", () => {
     const at = place(createLevel(DEFAULT_SETUP), "abbi", 4, 2, [0, -1], raw);
     expect(interactTile(at, "abbi")).toEqual({ x: 4, y: 3 });
     expect(getPrompt(at, "abbi").interact).toBe(
-      "Put the raw hot dogs on the GRILL (G)"
+      "Put the raw hot dogs on the GRILL"
     );
     const after = stepGame(at, frameFor("abbi", { interact: true })).state;
     expect(after.stations.find((s) => s.x === 4 && s.y === 3)?.item?.kind).toBe(
@@ -1808,7 +1808,7 @@ describe("interaction targets", () => {
     const at = place(base, "fred", 16, 10, [1, 0], arrangement);
     expect(interactTile(at, "fred")).toEqual({ x: 17, y: 10 });
     expect(getPrompt(at, "fred").interact).toBe(
-      "Place a rose arrangement at the bouquet basket (K)"
+      "Place a rose arrangement at the bouquet basket"
     );
     const after = stepGame(at, frameFor("fred", { interact: true })).state;
     expect(after.targets.find((t) => t.kind === "basket")?.filled).toHaveLength(
@@ -1824,7 +1824,7 @@ describe("interaction targets", () => {
     const at = place(base, "abbi", 4, 6, [0, 1], arrangement);
     expect(interactTile(at, "abbi")).toEqual({ x: 4, y: 7 });
     expect(getPrompt(at, "abbi").interact).toBe(
-      "Place a rose arrangement at a centerpiece table (T)"
+      "Place a rose arrangement at a centerpiece table"
     );
   });
 
@@ -1988,7 +1988,7 @@ describe("the coach names one stage at a time", () => {
       roses
     );
     const step = getCoachStep(state, "abbi");
-    expect(step?.text).toBe("Carry the roses to the ARRANGE table (A).");
+    expect(step?.text).toBe("Carry the roses to the ARRANGE table.");
     expect(
       state.stations.some(
         (s) =>
@@ -2011,9 +2011,7 @@ describe("the coach names one stage at a time", () => {
       arrangement
     );
     const step = getCoachStep(state, "fred");
-    expect(step?.text).toBe(
-      "Place the arrangement at a centerpiece table (T)."
-    );
+    expect(step?.text).toBe("Place the arrangement at a centerpiece table.");
     expect(
       state.targets.some(
         (t) =>
@@ -2034,7 +2032,7 @@ describe("the coach names one stage at a time", () => {
     );
     const step = getCoachStep(state, "fred");
     expect(step?.text).toBe(
-      "Collect the hot dogs from the GRILL (G) when they are ready."
+      "Collect the hot dogs from the GRILL when they are ready."
     );
     expect(step?.tile).toEqual({ x: 4, y: 3 });
     expect(step?.waiting).toBe(true);
@@ -2070,7 +2068,7 @@ describe("the coach names one stage at a time", () => {
     };
     const carrying = place(busy, "fred", 2, 2, [0, 1], roses);
     expect(getCoachStep(carrying, "fred")).toMatchObject({
-      text: "Wait for the ARRANGE table (A) to clear.",
+      text: "Wait for the ARRANGE table to clear.",
       waiting: true,
     });
     const free = place(base, "fred", 2, 2, [0, 1], roses);
@@ -2283,7 +2281,7 @@ describe("take prompts name the tile (#1948)", () => {
       ),
     };
     expect(getPrompt(cooked, "fred").interact).toBe(
-      "Take the cooked wings off the GRILL (G)"
+      "Take the cooked wings off the GRILL"
     );
   });
 });
@@ -2349,7 +2347,7 @@ describe("a press on a spot that takes something else (round 8, S2)", () => {
     const hotdogs: Item = { kind: "hotdogs", madeBy: null };
     const at = place(base, "fred", 7, 2, [0, -1], hotdogs);
     expect(getPrompt(at, "fred").interact).toBe(
-      "Place a tray of hot dogs at the buffet (B)"
+      "Place a tray of hot dogs at the buffet"
     );
   });
 });
@@ -2364,7 +2362,7 @@ describe("a press that would drop an item because a station is blocked (round 8,
     const at = placeExact(base, "fred", 3.5, 3.5, [-1, 0], raw);
     expect(interactTile(at, "fred")).toEqual({ x: 2, y: 3 });
     expect(getPrompt(at, "fred").floorDrop).toEqual({
-      note: "The GRILL (G) is full.",
+      note: "The GRILL is full.",
       action: "set the raw wings down on the floor here",
     });
   });
@@ -2373,7 +2371,7 @@ describe("a press that would drop an item because a station is blocked (round 8,
     const raw: Item = { kind: "wings-raw", madeBy: null };
     const at = place(createLevel(DEFAULT_SETUP), "fred", 4, 2, [0, -1], raw);
     expect(getPrompt(at, "fred").interact).toBe(
-      "Put the raw wings on the GRILL (G)"
+      "Put the raw wings on the GRILL"
     );
   });
 });
@@ -2392,7 +2390,7 @@ describe("a body that straddles two tiles (round 8, S3)", () => {
     const at = placeExact(base, "fred", 5.0, 2.5, [0, 1], raw);
     expect(interactTile(at, "fred")).toEqual({ x: 4, y: 3 });
     expect(getPrompt(at, "fred").interact).toBe(
-      "Put the raw wings on the GRILL (G)"
+      "Put the raw wings on the GRILL"
     );
     const after = stepGame(at, frameFor("fred", { interact: true })).state;
     expect(after.stations.find((s) => s.x === 4 && s.y === 3)?.item?.kind).toBe(
@@ -2421,7 +2419,7 @@ describe("a body that straddles two tiles (round 8, S3)", () => {
     const at = placeExact(base, "abbi", 5.0, 2.5, [0, 1]);
     expect(interactTile(at, "abbi")).toEqual({ x: 4, y: 3 });
     expect(getPrompt(at, "abbi").interact).toBe(
-      "Take the cooked hot dogs off the GRILL (G)"
+      "Take the cooked hot dogs off the GRILL"
     );
   });
 
@@ -2527,7 +2525,7 @@ describe("a full floor says why a press does nothing (round 8, S8)", () => {
     });
     const at = fullFloor(place(base, "fred", 4, 4, [0, 1], raw));
     expect(getPrompt(at, "fred").interact).toBe(
-      "The GRILL (G) is full. The floor here is full. Find a station or the bin."
+      "The GRILL is full. The floor here is full. Find a station or the bin."
     );
   });
 
@@ -2732,7 +2730,7 @@ describe("a refused press says why (round 9, task 1)", () => {
     const at = placeExact(base, "fred", 6.1, 4.5, [0, -1], ROSES);
     expect(interactTile(at, "fred")).toBeNull();
     expect(getPrompt(at, "fred").interact).toBe(
-      "The GRILL (G) takes raw hot dogs or wings."
+      "The GRILL takes raw hot dogs or wings."
     );
   });
 
@@ -2782,7 +2780,7 @@ describe("a refused press says why (round 9, task 1)", () => {
       madeBy: null,
     });
     const at = place(busy, "fred", 4, 2, [0, 1], WINGS_RAW);
-    expect(getPrompt(at, "fred").interact).toBe("The GRILL (G) is full.");
+    expect(getPrompt(at, "fred").interact).toBe("The GRILL is full.");
   });
 
   it("says nothing here takes a carried item the station does not use", () => {
@@ -2811,7 +2809,7 @@ describe("a refused press says why (round 9, task 1)", () => {
     const at = place(open, "fred", petals.x, petals.y - 1, [0, 1], ARRANGEMENT);
     expect(interactTile(at, "fred")).toBeNull();
     expect(getPrompt(at, "fred").interact).toBe(
-      "Arrangements go on a centerpiece table (T) or in the bouquet basket (K)."
+      "Arrangements go on a centerpiece table or in the bouquet basket."
     );
   });
 
@@ -2820,7 +2818,7 @@ describe("a refused press says why (round 9, task 1)", () => {
     const at = place(both, "fred", 8, 2, [0, 1], ARRANGEMENT);
     expect(interactTile(at, "fred")).toBeNull();
     expect(getPrompt(at, "fred").interact).toBe(
-      "Arrangements go on a centerpiece table (T) or in the bouquet basket (K)."
+      "Arrangements go on a centerpiece table or in the bouquet basket."
     );
   });
 
@@ -2828,7 +2826,7 @@ describe("a refused press says why (round 9, task 1)", () => {
     const table = withStatuses(base, { table: "open", basket: "filled" });
     const at = place(table, "fred", 8, 2, [0, 1], ARRANGEMENT);
     expect(getPrompt(at, "fred").interact).toBe(
-      "Arrangements go on a centerpiece table (T)."
+      "Arrangements go on a centerpiece table."
     );
   });
 
@@ -2836,7 +2834,7 @@ describe("a refused press says why (round 9, task 1)", () => {
     const basket = withStatuses(base, { table: "filled", basket: "open" });
     const at = place(basket, "fred", 8, 2, [0, 1], ARRANGEMENT);
     expect(getPrompt(at, "fred").interact).toBe(
-      "Arrangements go in the bouquet basket (K)."
+      "Arrangements go in the bouquet basket."
     );
   });
 
@@ -2851,15 +2849,13 @@ describe("a refused press says why (round 9, task 1)", () => {
   it("names an empty station when free hands face it", () => {
     const at = place(base, "fred", 8, 2, [0, 1]);
     expect(getPrompt(at, "fred").interact).toBe(
-      "Nothing on the ARRANGE table (A) to take."
+      "Nothing on the ARRANGE table to take."
     );
   });
 
-  it("names an empty bin when free hands face it, and leaves a held item to the hold prompt", () => {
+  it("says what the bin takes when free hands face it, and leaves a held item to the hold prompt", () => {
     const empty = place(base, "fred", 6, 2, [0, 1]);
-    expect(getPrompt(empty, "fred").interact).toBe(
-      "Nothing on the BIN (X) to take."
-    );
+    expect(getPrompt(empty, "fred").interact).toBe("The BIN takes burnt food.");
     const held = place(base, "fred", 6, 2, [0, 1], ROSES);
     expect(getPrompt(held, "fred").interact).toBeNull();
     expect(getPrompt(held, "fred").work).toBe(THROW_OUT_PROMPT);
@@ -3135,7 +3131,7 @@ describe("the venue's copy and the next-spot and floor-drop views (#1963)", () =
     const grill = stationOf(base, "grill");
     const at = place(base, "fred", grill.x, grill.y + 1, [0, -1], roses);
     expect(getPrompt(at, "fred").interact).toBe(
-      "The GRILL (G) takes raw hot dogs or wings."
+      "The GRILL takes raw hot dogs or wings."
     );
   });
 
@@ -3351,7 +3347,7 @@ describe("prompts and refusals for the round 11 playtest (ADR 0060 amendment)", 
       floor: [{ x: 10, y: 3, item: ROSES }],
     };
     expect(getPrompt(blocked, "fred").interact).toBe(
-      "Burnt food goes in the BIN (X)."
+      "Burnt food goes in the BIN."
     );
   });
 
@@ -3420,17 +3416,56 @@ describe("prompts and refusals for the round 11 playtest (ADR 0060 amendment)", 
       madeBy: null,
     });
     expect(getHint(withTable, "fred", { coop: true })).toBe(
-      "Stand at the ARRANGE table (A) and hold F to arrange the roses."
+      "Stand at the ARRANGE table and hold F to arrange the roses."
     );
     expect(getHint(withTable, "fred")).toBe(
-      "Stand at the ARRANGE table (A) and hold F or Shift to arrange the roses."
+      "Stand at the ARRANGE table and hold F or Shift to arrange the roses."
     );
     const burnt = place(createLevel(DEFAULT_SETUP), "abbi", 2, 2, [0, 1], {
       kind: "burnt",
       madeBy: null,
     });
     expect(getHint(burnt, "abbi", { coop: true })).toBe(
-      "Carry the burnt food to the BIN (X) and hold Shift there to throw it out."
+      "Carry the burnt food to the BIN and hold Shift there to throw it out."
     );
+  });
+});
+
+describe("solid chair spots (ADR 0060 amendment, 2026-10-12)", () => {
+  /**
+   * Fred stands on the floor just right of the chair spot at (17, 5), facing
+   * left. A second of walking left would carry him well past the tile edge.
+   */
+  const beside = (holding: Item | null = null) =>
+    place(createLevel(DEFAULT_SETUP), "fred", 18, 5, [-1, 0], holding);
+  const spotAt = (state: GameState) =>
+    state.targets.find((t) => t.x === 17 && t.y === 5);
+
+  it("a person walking left into an empty chair spot stays on the floor and faces it", () => {
+    const { state } = run(beside(), frameFor("fred", { moveX: -1 }), ticks(30));
+    expect(state.players.fred.x).toBeGreaterThanOrEqual(
+      18 + PLAYER_RADIUS - 1e-6
+    );
+    expect(state.players.fred.y).toBeCloseTo(5.5, 5);
+    expect(state.players.fred.facingX).toBe(-1);
+    expect(frontTile(state.players.fred)).toEqual({ x: 17, y: 5 });
+    expect(spotAt(state)?.kind).toBe("chair-spot");
+    expect(spotAt(state)?.status).toBe("open");
+  });
+
+  it("a chair can then be placed on the spot the person faces", () => {
+    const held: Item = { kind: "chairs", madeBy: null, count: 2 };
+    const walked = run(
+      beside(held),
+      frameFor("fred", { moveX: -1 }),
+      ticks(30)
+    ).state;
+    const placed = press(walked, "fred").state;
+    expect(spotAt(placed)?.status).toBe("filled");
+    expect(placed.players.fred.holding).toEqual({
+      kind: "chairs",
+      madeBy: null,
+      count: 1,
+    });
   });
 });

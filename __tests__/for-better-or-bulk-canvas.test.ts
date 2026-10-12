@@ -210,6 +210,22 @@ describe("the venue's shared crates and part-filled targets (#1933)", () => {
     expect(texts(drawn, "shared")).toHaveLength(sharing);
   });
 
+  it("marks the lantern crates off when the plan has no lanterns (round 18, N-2)", () => {
+    const off = createLevel({
+      ...DEFAULT_SETUP,
+      cart: { ...DEFAULT_SETUP.cart, lanterns: false },
+    });
+    const lamps = off.supplies.filter((s) => s.kind === "lantern").length;
+    expect(lamps).toBeGreaterThan(0);
+    const { ctx, drawn } = recorder();
+    drawVenue(ctx, off, null);
+    expect(texts(drawn, "off")).toHaveLength(lamps);
+
+    const on = recorder();
+    drawVenue(on.ctx, createLevel(DEFAULT_SETUP), null);
+    expect(texts(on.drawn, "off")).toHaveLength(0);
+  });
+
   it("marks a basket with the items placed out of its two, starting from zero", () => {
     const base = createLevel(DEFAULT_SETUP);
     const empty = recorder();

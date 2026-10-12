@@ -73,7 +73,7 @@ function promiseDetail(
   if (!presence) return "The brothers never called him away.";
   if (presence.choice === "stay") return "Fred stayed for the whole setup.";
   if (presence.choice === "leave") {
-    return "Fred went out with his brothers instead of staying for the setup.";
+    return "Fred went with his brothers, and the setup carried on without him.";
   }
   const promise = presence.commitment ?? "chairs";
   const outcome = promiseKept(state, readiness)

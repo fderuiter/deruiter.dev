@@ -436,11 +436,28 @@ function drawWantBadge(ctx: CanvasRenderingContext2D, target: Target): void {
 }
 
 function drawTarget(ctx: CanvasRenderingContext2D, target: Target): void {
-  if (target.status === "unplanned") return;
   const px = target.x * TILE;
   const py = target.y * TILE;
   const cx = px + TILE / 2;
   const cy = py + TILE / 2;
+  if (target.status === "unplanned") {
+    // An unplanned table or hook still blocks the way, so it is drawn faintly
+    // rather than left as an invisible wall (round 20, S-1). The aisle is
+    // walked over, so an unplanned aisle tile stays plain floor.
+    if (target.kind === "aisle") return;
+    ctx.save();
+    ctx.globalAlpha = 0.35;
+    ctx.fillStyle = COLORS.tableCloth;
+    if (target.kind === "table") {
+      ctx.beginPath();
+      ctx.arc(cx, cy, TILE * 0.42, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      ctx.fillRect(px + 6, py + 6, TILE - 12, TILE - 12);
+    }
+    ctx.restore();
+    return;
+  }
   if (target.kind === "table") {
     ctx.fillStyle = COLORS.tableCloth;
     ctx.beginPath();

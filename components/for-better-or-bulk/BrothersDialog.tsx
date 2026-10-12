@@ -146,7 +146,7 @@ export function BrothersDialog({ state, onDecide }: BrothersDialogProps) {
             >
               <span id={`${stayId}-label`}>Stay and help.</span>{" "}
               <span id={`${stayId}-detail`}>
-                (He will keep stopping to retie a shoelace.)
+                (He will stop now and then to retie a shoelace.)
               </span>
             </button>
             <button

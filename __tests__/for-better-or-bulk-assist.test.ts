@@ -1060,11 +1060,12 @@ describe("the solo balance, scripted", () => {
         const solo = scriptedSolo(setup, false);
         const helped = scriptedSolo({ ...setup, assist: true }, true);
         const label = `seed ${seed}, relaxed ${relaxed}`;
-        // Measured after #1948 (chairs two to a carry), for seeds 0, 4242 and
-        // 12345: the helper saves 33.9 to 41.6 s on the standard clock and
-        // 7.6 s on the relaxed clock. Each margin is about half the smallest
-        // saving, rounded down: 16 s standard, 3 s relaxed.
-        const margin = relaxed ? 3 : 16;
+        // Measured after the north LAMP crate (round 20), for seeds 0, 4242
+        // and 12345: the helper saves 23.1 to 31.0 s on the standard clock and
+        // 2.4 s on the relaxed clock, where the scripted player now reaches
+        // the lanterns sooner too. Each margin is about half the smallest
+        // saving, rounded down: 11 s standard, 1 s relaxed.
+        const margin = relaxed ? 1 : 11;
         expect(helped.abbi, label).toBeGreaterThan(0);
         expect(helped.abbi, label).toBeLessThanOrEqual(helped.fred);
         expect(helped.finish + margin, label).toBeLessThan(solo.finish);

@@ -1673,6 +1673,19 @@ describe("the coach hints", () => {
       hint: "Grab a lantern from the LAMP crate on the left.",
     },
     {
+      name: "only the lantern hook left, standing in the north: the near LAMP crate (round 20)",
+      state: () =>
+        place(
+          onlyOpen(createLevel(DEFAULT_SETUP), (t) => t.kind === "hook"),
+          "fred",
+          16,
+          2,
+          [0, 1]
+        ),
+      id: "fred",
+      hint: "Grab a lantern from the LAMP crate in the top-right corner.",
+    },
+    {
       name: "holding a lantern: carry it to a hook",
       state: () =>
         place(createLevel(DEFAULT_SETUP), "fred", 2, 2, [0, 1], {

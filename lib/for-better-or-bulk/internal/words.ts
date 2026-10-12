@@ -97,8 +97,8 @@ export function workKeyName(id: PlayerId, coop: boolean): string {
 }
 
 /**
- * The key that swaps the person at the keys in solo play (components/
- * for-better-or-bulk/input.ts reads it as the Tab key).
+ * The key that swaps the person at the keys in solo play. The Tab check is in
+ * components/for-better-or-bulk/ForBetterOrBulkGame.tsx (the key handler).
  */
 export const SWAP_KEY_NAME = "Tab";
 

@@ -8,7 +8,10 @@
 
 > **getPrompt**(`state`, `id`, `options?`): [`Prompt`](../interfaces/Prompt.md)
 
-Button prompts and a status line for one person.
+Button prompts and a status line for one person. `options.waiting` marks the
+idle partner in solo play: their prompt then has no buttons and names the
+swap key. It is ignored on a helper day, and it never changes an away or
+frozen person's line.
 
 ## Parameters
 

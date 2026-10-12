@@ -32,11 +32,11 @@ import {
   ITEM_NAMES,
   SPOT_NAMES,
   STATION_NAMES,
+  SWAP_KEY_NAME,
   TARGET_NAMES,
   crateGrabName,
   crateTakeName,
   heldLabel,
-  SWAP_KEY_NAME,
   heldName,
   workKeyName,
 } from "./words";
@@ -238,6 +238,8 @@ function reasonOnTile(
         : "These are cooked already.";
     }
     if (held.kind === "arrangement") return arrangementRefusal(state);
+    // Roses are the one item a rose station takes, so anything else is refused by name.
+    if (held.kind !== "roses") return `Nothing here takes ${heldName(held)}.`;
     return `${capitalise(STATION_NAMES[station.kind])} takes roses.`;
   }
   if (target) {
@@ -344,11 +346,16 @@ export interface PromptOptions {
   readonly waiting?: boolean;
 }
 
-/** The status line for an idle partner in solo play, naming the swap key. */
-function swapStatus(id: PlayerId): string {
+/**
+ * The status line for an idle partner in solo play, naming the swap key. A
+ * partner who holds something says what, so the person at the keys knows
+ * before they swap.
+ */
+function swapStatus(id: PlayerId, held: Item | null): string {
   const name = id === "fred" ? "Fred" : "Abbi";
   const pronoun = id === "fred" ? "him" : "her";
-  return `${name} is waiting. ${SWAP_KEY_NAME} to switch to ${pronoun}.`;
+  const carrying = held ? ` with ${heldName(held)}` : "";
+  return `${name} is waiting${carrying}. ${SWAP_KEY_NAME} to switch to ${pronoun}.`;
 }
 
 /** The first thing in a list that sits on a tile. */
@@ -401,7 +408,12 @@ function placePrompt(state: GameState, tile: Tile, held: Item): string | null {
   return null;
 }
 
-/** Button prompts and a status line for one person. */
+/**
+ * Button prompts and a status line for one person. `options.waiting` marks the
+ * idle partner in solo play: their prompt then has no buttons and names the
+ * swap key. It is ignored on a helper day, and it never changes an away or
+ * frozen person's line.
+ */
 export function getPrompt(
   state: GameState,
   id: PlayerId,
@@ -449,15 +461,15 @@ export function getPrompt(
       status: `${name}: ${player.busyReason ?? "busy"}`,
     };
   }
+  const held = player.holding;
   if (options.waiting && !state.setup.assist) {
     return {
       interact: null,
       floorDrop: null,
       work: null,
-      status: swapStatus(id),
+      status: swapStatus(id, held),
     };
   }
-  const held = player.holding;
   const status = held
     ? `${name} is carrying ${heldLabel(held)}.`
     : `${name} has free hands.`;

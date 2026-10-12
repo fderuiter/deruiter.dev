@@ -2593,13 +2593,32 @@ describe("the prompt during a phone call (round 8, S4)", () => {
         );
         expect(match).not.toBeNull();
         const shown = Number(match?.[1]);
-        expect(shown).toBe(Math.max(1, Math.ceil(left - 1e-9)));
+        // The contract: never less than is left, and never a whole minute over.
         expect(shown).toBeGreaterThanOrEqual(left - 1e-9);
+        expect(shown - left).toBeLessThan(1);
         state = stepGame(state, IDLE_FRAME).state;
         ticks++;
       }
       expect(ticks).toBeGreaterThan(0);
     }
+  });
+
+  it("says about one minute while under a minute is left on the phone", () => {
+    const base = createLevel(DEFAULT_SETUP);
+    const almostDone = {
+      ...base,
+      players: {
+        ...base.players,
+        abbi: {
+          ...base.players.abbi,
+          busyFor: 0.1,
+          busyReason: "What should we get you?",
+        },
+      },
+    };
+    expect(getPrompt(almostDone, "abbi").status).toBe(
+      "Abbi is on the phone (about 1 min left): What should we get you?"
+    );
   });
 
   it("keeps the shoe retie line as it is", () => {
@@ -2629,7 +2648,6 @@ describe("the receipt's website lines (round 8, copy)", () => {
   });
 });
 
-/** The open or filled state of one target, set by its tile for a test. */
 /** Sets the status of every target of each named kind, leaving the rest as they are. */
 function withStatuses(
   state: GameState,
@@ -2644,6 +2662,17 @@ function withStatuses(
   };
 }
 
+/** The first station of a kind, with its tile. */
+function stationOfKind(
+  state: GameState,
+  kind: GameState["stations"][number]["kind"]
+): { x: number; y: number } {
+  const station = state.stations.find((s) => s.kind === kind);
+  if (!station) throw new Error(`no ${kind} in the venue`);
+  return { x: station.x, y: station.y };
+}
+
+/** The open or filled state of one target, set by its tile for a test. */
 function withTargetAt(
   state: GameState,
   x: number,
@@ -2756,10 +2785,33 @@ describe("a refused press says why (round 9, task 1)", () => {
     expect(getPrompt(at, "fred").interact).toBe("The GRILL (G) is full.");
   });
 
-  it("names the item a station takes when another item is faced", () => {
+  it("says nothing here takes a carried item the station does not use", () => {
     const at = place(base, "fred", 8, 2, [0, 1], MAC);
     expect(getPrompt(at, "fred").interact).toBe(
-      "The ARRANGE table (A) takes roses."
+      "Nothing here takes the mac and cheese."
+    );
+  });
+
+  it("says nothing here takes a chair stack at the PETALS bucket too", () => {
+    const petals = stationOfKind(base, "petals");
+    const at = place(base, "fred", petals.x, petals.y - 1, [0, 1], {
+      kind: "chairs",
+      madeBy: null,
+      count: 2,
+    });
+    expect(interactTile(at, "fred")).toBeNull();
+    expect(getPrompt(at, "fred").interact).toBe(
+      "Nothing here takes a stack of 2 chairs."
+    );
+  });
+
+  it("gives a finished arrangement at the PETALS bucket the same table-or-basket line", () => {
+    const petals = stationOfKind(base, "petals");
+    const open = withStatuses(base, { table: "open", basket: "open" });
+    const at = place(open, "fred", petals.x, petals.y - 1, [0, 1], ARRANGEMENT);
+    expect(interactTile(at, "fred")).toBeNull();
+    expect(getPrompt(at, "fred").interact).toBe(
+      "Arrangements go on a centerpiece table (T) or in the bouquet basket (K)."
     );
   });
 
@@ -2992,6 +3044,24 @@ describe("the prompt panel's people in solo (round 9, task 4)", () => {
     expect(fredWaiting.work).toBeNull();
     expect(getPrompt(base, "abbi", { waiting: true }).status).toBe(
       "Abbi is waiting. Tab to switch to her."
+    );
+  });
+
+  it("says what an idle partner is carrying, so the swap is informed", () => {
+    const withRoses = place(base, "fred", 2, 4, [0, 1], {
+      kind: "roses",
+      madeBy: null,
+    });
+    expect(getPrompt(withRoses, "fred", { waiting: true }).status).toBe(
+      "Fred is waiting with the roses. Tab to switch to him."
+    );
+    const withChairs = place(base, "abbi", 2, 4, [0, 1], {
+      kind: "chairs",
+      madeBy: null,
+      count: 2,
+    });
+    expect(getPrompt(withChairs, "abbi", { waiting: true }).status).toBe(
+      "Abbi is waiting with a stack of 2 chairs. Tab to switch to her."
     );
   });
 

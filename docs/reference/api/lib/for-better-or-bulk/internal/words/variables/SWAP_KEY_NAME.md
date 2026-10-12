@@ -8,5 +8,5 @@
 
 > `const` **SWAP\_KEY\_NAME**: `"Tab"` = `"Tab"`
 
-The key that swaps the person at the keys in solo play (components/
-for-better-or-bulk/input.ts reads it as the Tab key).
+The key that swaps the person at the keys in solo play. The Tab check is in
+components/for-better-or-bulk/ForBetterOrBulkGame.tsx (the key handler).

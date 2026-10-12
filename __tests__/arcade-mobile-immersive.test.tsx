@@ -172,14 +172,25 @@ describe("PlayCabinet immersive touch mode (ADR 0061)", () => {
     expect(screen.getByTestId("game-content")).toBeDefined();
   });
 
-  it("gives the immersive stage overflow hidden instead of a scroll area", async () => {
+  it("gives a fit-layout immersive stage overflow hidden instead of a scroll area", async () => {
+    installMatchMedia([TOUCH_NARROW_QUERY]);
+    renderCabinet({ mobileLayout: "fit" });
+    await launch();
+
+    expect(cabinetEl().getAttribute("data-mobile-layout")).toBe("fit");
+    const stage = document.querySelector<HTMLElement>(".arcade-cabinet-stage");
+    expect(stage?.className).toContain("overflow-hidden");
+    expect(stage?.className).not.toContain("overflow-y-auto");
+  });
+
+  it("keeps the immersive stage scrollable for a game without a mobile pass", async () => {
     installMatchMedia([TOUCH_NARROW_QUERY]);
     renderCabinet();
     await launch();
 
+    expect(cabinetEl().getAttribute("data-mobile-layout")).toBe("scroll");
     const stage = document.querySelector<HTMLElement>(".arcade-cabinet-stage");
-    expect(stage?.className).toContain("overflow-hidden");
-    expect(stage?.className).not.toContain("overflow-y-auto");
+    expect(stage?.className).toContain("overflow-y-auto overflow-x-hidden");
   });
 
   it("restores page scroll and overscroll when the cabinet is powered off", async () => {

@@ -82,6 +82,14 @@ interface PlayCabinetProps {
    */
   mobileOrientation?: MobileOrientation;
   /**
+   * How the immersive touch cabinet treats the stage (ADR 0061). `scroll`
+   * (the default) keeps the stage a vertical scroll area, so a game that has
+   * not had its mobile pass still reaches all of its content. `fit` is for a
+   * game built to fit the viewport: the stage clips and takes every gesture.
+   * Desktop is unaffected.
+   */
+  mobileLayout?: "fit" | "scroll";
+  /**
    * Called when the game should pause itself: the tab is hidden, the page is
    * closing, the window blurs or the device rotates. Listens only while a
    * touch cabinet is immersive (ADR 0061). Resuming is the game's own choice.
@@ -132,6 +140,7 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
   fullscreenKey = true,
   singleTitleScreen = true,
   mobileOrientation = "either",
+  mobileLayout = "scroll",
   onAutoPause,
   children,
 }) => {
@@ -520,7 +529,9 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
         data-arcade-cabinet={gameId}
         data-game={gameId}
         data-fullscreen={immersive}
-        {...(touchImmersive ? { "data-immersive": true } : {})}
+        {...(touchImmersive
+          ? { "data-immersive": true, "data-mobile-layout": mobileLayout }
+          : {})}
         className={`arcade-cabinet w-full flex flex-col items-center max-w-full min-w-0 @container ${
           immersive
             ? "fixed inset-0 z-50 h-dvh max-w-none bg-black overflow-hidden select-none"
@@ -644,7 +655,7 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
                 ? "flex-1 rounded-2xl border-2"
                 : "border-2 border-t-0 rounded-b-2xl"
             } ${
-              touchImmersive
+              touchImmersive && mobileLayout === "fit"
                 ? "overflow-hidden"
                 : "overflow-y-auto overflow-x-hidden"
             } flex flex-col items-center justify-start bg-black ${bezelClasses}`}

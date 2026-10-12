@@ -473,13 +473,17 @@
    panning and pinch-zoom over the play area; the toolbar and the control dock
    sit outside the stage and keep their own taps. */
 .arcade-cabinet[data-immersive="true"] {
-  touch-action: manipulation;
+  /* pan-y keeps a scroll-layout stage scrollable and still rules out pinch
+     zoom and double-tap zoom; a fit-layout cabinet takes every gesture. */
+  touch-action: pan-y;
   overscroll-behavior: none;
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
 }
-.arcade-cabinet[data-immersive="true"] .arcade-cabinet-stage {
+.arcade-cabinet[data-immersive="true"][data-mobile-layout="fit"],
+.arcade-cabinet[data-immersive="true"][data-mobile-layout="fit"]
+  .arcade-cabinet-stage {
   touch-action: none;
 }
 .arcade-cabinet-stage > * {

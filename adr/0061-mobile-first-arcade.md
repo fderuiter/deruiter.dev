@@ -75,9 +75,13 @@ without a new kit change.
   viewport at `h-dvh`, padded by the safe-area insets, with page scroll locked
   and overscroll disabled. It reuses the fullscreen layout and its CSS
   (`.arcade-cabinet[data-fullscreen="true"]`), and adds `data-immersive="true"`
-  for the touch rules. The root takes `touch-action: none`, and the stage keeps
-  `touch-action: none` and `overflow: hidden` instead of a scroll area. The
-  toolbar and the control dock keep their own taps. On leaving immersive, the
+  for the touch rules. A game picks its stage with `mobileLayout`. `scroll`,
+  the default, keeps the stage a vertical scroll area under `touch-action:
+pan-y`, so a game that has not had its mobile pass can still reach all of
+  its content, and pinch and double-tap zoom are still ruled out. `fit` is
+  what a game sets in its mobile pull request once it fits the viewport: the
+  root and stage take `touch-action: none` and the stage clips with
+  `overflow: hidden`. The toolbar and the control dock keep their own taps. On leaving immersive, the
   preview scrolls back into view. Desktop never sets the attribute, so its
   markup does not change. The exit is the cabinet's Power button in the
   immersive toolbar, which is 48px.
@@ -87,7 +91,7 @@ without a new kit change.
   desktop every inset is 0, so the layout does not change. Pinch-zoom is not
   blocked: no `maximumScale` or `userScalable` is set.
 - **Orientation.** A game declares `mobileOrientation="portrait" | "landscape" |
-  "either"`. PlayCabinet reads the device's orientation and, when it is held
+"either"`. PlayCabinet reads the device's orientation and, when it is held
   against the declared one, blocks the cabinet. The stage and the control dock
   are made `inert`, and `RotateDevicePrompt` covers the cabinet as an
   `alertdialog` with `aria-modal="true"`. Focus moves to its "Leave cabinet"
@@ -128,14 +132,15 @@ cabinet's existing `useFullscreen` and `CabinetFullscreen` are reused.
 - ADR 0048's ten gated games keep the notice until their mobile pull requests
   land. Its "Try it anyway" escape hatch stays for those games.
 - The Trial & Error cabinet is the first to run immersive on phones, since it is
-  ungated. The Playwright spec checks the cabinet's stage fit at 320x568 and
-  runs an axe scan over it. Its Playwright coverage is the first real check on the kit.
+  ungated. It keeps the `scroll` layout until its own mobile pass. The
+  Playwright spec checks that its stage reaches all of its content at
+  320x568 and runs an axe scan over it. Its Playwright coverage is the first real check on the kit.
 - Each game's mobile pull request carries its own gate removal, screenshots and
   axe result. Reviewers judge the game against the bar, not the kit alone.
 - Immersive mode locks body scroll with `overflow: hidden` and disables
   overscroll. That is not a complete scroll lock on iOS Safari. The fixed,
-  full-viewport cabinet, with `touch-action: none` on its root and stage, is
-  what keeps the player's touches on the game.
+  full-viewport cabinet, with restricted `touch-action` on its root and stage,
+  is what keeps the player's touches on the game.
 - Auto-pause only reports the moment to stop. Each game owns its pause screen
   and resume rule.
 - The Playwright suite gains two phone projects, "Small Phone" (320x568) and

@@ -58,11 +58,13 @@ test.describe("Mobile arcade kit: immersive touch cabinet", () => {
 
     await assertNoHorizontalOverflow(page);
 
-    // The stage is the one place that takes touch-action none.
+    // Trial & Error has not had its mobile pass, so it keeps the scroll
+    // layout: the stage pans vertically and nothing in the cabinet zooms.
+    expect(await cabinet.getAttribute("data-mobile-layout")).toBe("scroll");
     const stageTouch = await cabinet
       .locator(".arcade-cabinet-stage")
       .evaluate((el) => getComputedStyle(el).touchAction);
-    expect(stageTouch).toBe("none");
+    expect(stageTouch).toBe("pan-y");
 
     // Captures are named by state. The cabinet latches immersive at launch, so
     // it stays immersive when the viewport grows past 1023px (ADR 0061).
@@ -103,7 +105,7 @@ test.describe("Mobile arcade kit: immersive touch cabinet", () => {
     await expect(page.locator(IMMERSIVE)).toBeVisible();
   });
 
-  test("the stage fits its viewport at 320x568 with no scrollable overflow", async ({
+  test("a scroll-layout stage reaches all of its content at 320x568", async ({
     page,
   }) => {
     const viewport = page.viewportSize();
@@ -111,13 +113,16 @@ test.describe("Mobile arcade kit: immersive touch cabinet", () => {
 
     await launchCabinet(page);
 
-    const fit = await page
+    const reach = await page
       .locator(`${IMMERSIVE} .arcade-cabinet-stage`)
-      .evaluate((el) => ({
-        scrollHeight: el.scrollHeight,
-        clientHeight: el.clientHeight,
-      }));
-    expect(fit.scrollHeight).toBeLessThanOrEqual(fit.clientHeight);
+      .evaluate((el) => {
+        el.scrollTop = el.scrollHeight;
+        return {
+          bottom: el.scrollTop + el.clientHeight,
+          scrollHeight: el.scrollHeight,
+        };
+      });
+    expect(reach.bottom).toBeGreaterThanOrEqual(reach.scrollHeight - 1);
   });
 
   test("the immersive cabinet has no blocking axe violations", async ({

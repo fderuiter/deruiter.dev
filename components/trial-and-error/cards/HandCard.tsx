@@ -122,9 +122,15 @@ export function HandCard({
         aria-label={label}
         data-card-id={view.card.id}
         onClick={interaction.onClick}
-        onFocus={() => {
+        onFocus={(e) => {
           setRaised(true);
           interaction.onFocus();
+          // The hand scrolls sideways when it outgrows the table, so bring
+          // the card keyboard focus lands on into view (#1944).
+          e.currentTarget.scrollIntoView?.({
+            inline: "nearest",
+            block: "nearest",
+          });
         }}
         onBlur={() => setRaised(false)}
         onKeyDown={interaction.onKeyDown}

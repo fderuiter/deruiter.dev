@@ -802,6 +802,72 @@ describe("For Better or Bulk day seed on the page (#1918)", () => {
   });
 });
 
+describe("For Better or Bulk solo swap line and the helper's line in the panel", () => {
+  beforeEach(() => {
+    stubLoud(false);
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  it("shows the idle partner's swap line in the solo panel, with no buttons under it", () => {
+    render(<ForBetterOrBulkGame />);
+    start();
+    const fred = screen.getByTestId("fbb-prompt-fred");
+    expect(fred.textContent).toBe("Fred is waiting. Tab to switch to him.");
+    expect(within(fred).queryByRole("button")).toBeNull();
+  });
+
+  it("keeps the idle partner out of the panel on a helper day", () => {
+    render(
+      <ForBetterOrBulkGame
+        initialSetup={{ ...DEFAULT_SETUP, assist: true, seed: 12345 }}
+      />
+    );
+    start();
+    expect(screen.queryByTestId("fbb-prompt-fred")).toBeNull();
+    expect(screen.getByTestId("fbb-prompt-abbi")).toBeTruthy();
+  });
+
+  it("shows the helper's job line in the side panel, after the prompts, after the start and after several steps", () => {
+    render(
+      <ForBetterOrBulkGame
+        initialSetup={{ ...DEFAULT_SETUP, assist: true, seed: 12345 }}
+      />
+    );
+    start();
+    // The line must be on screen in the prompt column, below the prompt it
+    // follows, and not hidden by any ancestor (jsdom does not lay out, so this
+    // checks the rendered tree and the computed display and visibility).
+    const expectOnPanel = () => {
+      const line = screen.getByTestId("fbb-helper");
+      const prompt = screen.getByTestId("fbb-prompt-abbi");
+      expect(line.textContent).toMatch(/^(Fred|Abbi) .+\.$/);
+      expect(line.parentElement).toBe(prompt.parentElement);
+      expect(
+        prompt.compareDocumentPosition(line) & Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy();
+      for (let el: HTMLElement | null = line; el; el = el.parentElement) {
+        expect(el.hidden).toBe(false);
+        expect(el.getAttribute("aria-hidden")).not.toBe("true");
+        const style = window.getComputedStyle(el);
+        expect(style.display).not.toBe("none");
+        expect(style.visibility).not.toBe("hidden");
+      }
+    };
+    expectOnPanel();
+    const stepsBefore = engine.inputs.length;
+    for (let i = 0; i < 12; i++) {
+      act(() => {
+        if (frame.active) frame.callback?.(250);
+      });
+    }
+    expect(engine.inputs.length).toBeGreaterThan(stepsBefore);
+    expectOnPanel();
+  });
+});
+
 describe("For Better or Bulk side panel: helper, partner and day (fbb round)", () => {
   beforeEach(() => {
     stubLoud(false);

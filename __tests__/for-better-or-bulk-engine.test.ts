@@ -2555,7 +2555,7 @@ describe("the prompt during a phone call (round 8, S4)", () => {
       },
     };
     expect(getPrompt(called, "abbi").status).toBe(
-      "Abbi is on the phone (about 6 min left): What should we get you?"
+      "Abbi is on the phone (about 7 min left): What should we get you?"
     );
     const later = {
       ...called,
@@ -2565,7 +2565,59 @@ describe("the prompt during a phone call (round 8, S4)", () => {
       },
     };
     expect(getPrompt(later, "abbi").status).toBe(
-      "Abbi is on the phone (about 3 min left): What should we get you?"
+      "Abbi is on the phone (about 4 min left): What should we get you?"
+    );
+  });
+
+  it("counts the phone minutes on every tick at the clock's rate, never showing less than is left (round 12, task 3)", () => {
+    for (const setup of [DEFAULT_SETUP, { ...DEFAULT_SETUP, relaxed: true }]) {
+      const base = createLevel(setup);
+      // The clock shows 7 wall-clock hours over the level's duration.
+      const minutesPerSecond = (7 * 60) / base.duration;
+      let state: GameState = {
+        ...base,
+        players: {
+          ...base.players,
+          abbi: {
+            ...base.players.abbi,
+            busyFor: PHONE_SECONDS,
+            busyReason: "What should we get you?",
+          },
+        },
+      };
+      let ticks = 0;
+      while (state.players.abbi.busyFor > 0) {
+        const left = state.players.abbi.busyFor * minutesPerSecond;
+        const match = /about (\d+) min left/.exec(
+          getPrompt(state, "abbi").status
+        );
+        expect(match).not.toBeNull();
+        const shown = Number(match?.[1]);
+        // The contract: never less than is left, and never a whole minute over.
+        expect(shown).toBeGreaterThanOrEqual(left - 1e-9);
+        expect(shown - left).toBeLessThan(1);
+        state = stepGame(state, IDLE_FRAME).state;
+        ticks++;
+      }
+      expect(ticks).toBeGreaterThan(0);
+    }
+  });
+
+  it("says about one minute while under a minute is left on the phone", () => {
+    const base = createLevel(DEFAULT_SETUP);
+    const almostDone = {
+      ...base,
+      players: {
+        ...base.players,
+        abbi: {
+          ...base.players.abbi,
+          busyFor: 0.1,
+          busyReason: "What should we get you?",
+        },
+      },
+    };
+    expect(getPrompt(almostDone, "abbi").status).toBe(
+      "Abbi is on the phone (about 1 min left): What should we get you?"
     );
   });
 
@@ -2595,6 +2647,30 @@ describe("the receipt's website lines (round 8, copy)", () => {
     expect(copy).not.toContain("no promise to break");
   });
 });
+
+/** Sets the status of every target of each named kind, leaving the rest as they are. */
+function withStatuses(
+  state: GameState,
+  statuses: Partial<Record<Target["kind"], Target["status"]>>
+): GameState {
+  return {
+    ...state,
+    targets: state.targets.map((t) => {
+      const status = statuses[t.kind];
+      return status ? { ...t, status } : t;
+    }),
+  };
+}
+
+/** The first station of a kind, with its tile. */
+function stationOfKind(
+  state: GameState,
+  kind: GameState["stations"][number]["kind"]
+): { x: number; y: number } {
+  const station = state.stations.find((s) => s.kind === kind);
+  if (!station) throw new Error(`no ${kind} in the venue`);
+  return { x: station.x, y: station.y };
+}
 
 /** The open or filled state of one target, set by its tile for a test. */
 function withTargetAt(
@@ -2709,10 +2785,66 @@ describe("a refused press says why (round 9, task 1)", () => {
     expect(getPrompt(at, "fred").interact).toBe("The GRILL (G) is full.");
   });
 
-  it("names the item a station takes when another item is faced", () => {
+  it("says nothing here takes a carried item the station does not use", () => {
     const at = place(base, "fred", 8, 2, [0, 1], MAC);
     expect(getPrompt(at, "fred").interact).toBe(
-      "The ARRANGE table (A) takes roses."
+      "Nothing here takes the mac and cheese."
+    );
+  });
+
+  it("says nothing here takes a chair stack at the PETALS bucket too", () => {
+    const petals = stationOfKind(base, "petals");
+    const at = place(base, "fred", petals.x, petals.y - 1, [0, 1], {
+      kind: "chairs",
+      madeBy: null,
+      count: 2,
+    });
+    expect(interactTile(at, "fred")).toBeNull();
+    expect(getPrompt(at, "fred").interact).toBe(
+      "Nothing here takes a stack of 2 chairs."
+    );
+  });
+
+  it("gives a finished arrangement at the PETALS bucket the same table-or-basket line", () => {
+    const petals = stationOfKind(base, "petals");
+    const open = withStatuses(base, { table: "open", basket: "open" });
+    const at = place(open, "fred", petals.x, petals.y - 1, [0, 1], ARRANGEMENT);
+    expect(interactTile(at, "fred")).toBeNull();
+    expect(getPrompt(at, "fred").interact).toBe(
+      "Arrangements go on a centerpiece table (T) or in the bouquet basket (K)."
+    );
+  });
+
+  it("says where an arrangement goes when both the table and the basket are open (round 12, task 2)", () => {
+    const both = withStatuses(base, { table: "open", basket: "open" });
+    const at = place(both, "fred", 8, 2, [0, 1], ARRANGEMENT);
+    expect(interactTile(at, "fred")).toBeNull();
+    expect(getPrompt(at, "fred").interact).toBe(
+      "Arrangements go on a centerpiece table (T) or in the bouquet basket (K)."
+    );
+  });
+
+  it("names only the table when just a centerpiece table is open", () => {
+    const table = withStatuses(base, { table: "open", basket: "filled" });
+    const at = place(table, "fred", 8, 2, [0, 1], ARRANGEMENT);
+    expect(getPrompt(at, "fred").interact).toBe(
+      "Arrangements go on a centerpiece table (T)."
+    );
+  });
+
+  it("names only the basket when just the bouquet basket is open", () => {
+    const basket = withStatuses(base, { table: "filled", basket: "open" });
+    const at = place(basket, "fred", 8, 2, [0, 1], ARRANGEMENT);
+    expect(getPrompt(at, "fred").interact).toBe(
+      "Arrangements go in the bouquet basket (K)."
+    );
+  });
+
+  it("gives a true line, with no target named, when neither is open", () => {
+    const none = withStatuses(base, { table: "filled", basket: "filled" });
+    const at = place(none, "fred", 8, 2, [0, 1], ARRANGEMENT);
+    expect(getPrompt(at, "fred").interact).toBe(
+      "No centerpiece table or bouquet basket needs an arrangement now."
     );
   });
 
@@ -2888,20 +3020,77 @@ describe("the prompt panel's people in solo (round 9, task 4)", () => {
   it("shows Abbi's frozen line to Fred when he is at the keys", () => {
     expect(shownPrompts(called, "fred")).toEqual(["fred", "abbi"]);
     expect(getPrompt(called, "abbi").status).toBe(
-      "Abbi is on the phone (about 6 min left): What should we get you?"
+      "Abbi is on the phone (about 7 min left): What should we get you?"
     );
   });
 
   it("shows Abbi's frozen line to Abbi when she is at the keys", () => {
-    expect(shownPrompts(called, "abbi")).toEqual(["abbi"]);
+    expect(shownPrompts(called, "abbi")).toEqual(["abbi", "fred"]);
     expect(getPrompt(called, "abbi").status).toBe(
-      "Abbi is on the phone (about 6 min left): What should we get you?"
+      "Abbi is on the phone (about 7 min left): What should we get you?"
     );
   });
 
-  it("shows only the person at the keys when nobody is frozen or out", () => {
-    expect(shownPrompts(base, "fred")).toEqual(["fred"]);
-    expect(shownPrompts(base, "abbi")).toEqual(["abbi"]);
+  it("lists the idle partner too in solo, so the swap key is named (round 12, task 1)", () => {
+    expect(shownPrompts(base, "fred")).toEqual(["fred", "abbi"]);
+    expect(shownPrompts(base, "abbi")).toEqual(["abbi", "fred"]);
+  });
+
+  it("gives the idle partner a swap line with no buttons, named for him or her", () => {
+    const fredWaiting = getPrompt(base, "fred", { waiting: true });
+    expect(fredWaiting.status).toBe("Fred is waiting. Tab to switch to him.");
+    expect(fredWaiting.interact).toBeNull();
+    expect(fredWaiting.floorDrop).toBeNull();
+    expect(fredWaiting.work).toBeNull();
+    expect(getPrompt(base, "abbi", { waiting: true }).status).toBe(
+      "Abbi is waiting. Tab to switch to her."
+    );
+  });
+
+  it("says what an idle partner is carrying, so the swap is informed", () => {
+    const withRoses = place(base, "fred", 2, 4, [0, 1], {
+      kind: "roses",
+      madeBy: null,
+    });
+    expect(getPrompt(withRoses, "fred", { waiting: true }).status).toBe(
+      "Fred is waiting with the roses. Tab to switch to him."
+    );
+    const withChairs = place(base, "abbi", 2, 4, [0, 1], {
+      kind: "chairs",
+      madeBy: null,
+      count: 2,
+    });
+    expect(getPrompt(withChairs, "abbi", { waiting: true }).status).toBe(
+      "Abbi is waiting with a stack of 2 chairs. Tab to switch to her."
+    );
+  });
+
+  it("keeps the active person's line and the away and phone lines for the partner", () => {
+    expect(getPrompt(base, "abbi").status).toBe("Abbi has free hands.");
+    expect(getPrompt(called, "abbi", { waiting: true }).status).toBe(
+      "Abbi is on the phone (about 7 min left): What should we get you?"
+    );
+  });
+
+  it("leaves a helper day's partner unlisted while idle, as before", () => {
+    const helped = { ...base, setup: { ...base.setup, assist: true } };
+    expect(shownPrompts(helped, "fred")).toEqual(["fred"]);
+    expect(shownPrompts(helped, "abbi")).toEqual(["abbi"]);
+    expect(getPrompt(helped, "abbi", { waiting: true }).status).toBe(
+      "Abbi has free hands."
+    );
+  });
+
+  it("keeps the helper's partner listed while he is out, on a helper day", () => {
+    const away = {
+      ...base,
+      setup: { ...base.setup, assist: true },
+      players: {
+        ...base.players,
+        fred: { ...base.players.fred, presence: "away" as const },
+      },
+    };
+    expect(shownPrompts(away, "abbi")).toEqual(["abbi", "fred"]);
   });
 
   it("shows Fred as out to Abbi while he is away", () => {

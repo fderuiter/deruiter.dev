@@ -668,6 +668,12 @@ Re-exports [Prompt](internal/views/interfaces/Prompt.md)
 
 ***
 
+### PromptOptions
+
+Re-exports [PromptOptions](internal/views/interfaces/PromptOptions.md)
+
+***
+
 ### Readiness
 
 Re-exports [Readiness](types/type-aliases/Readiness.md)

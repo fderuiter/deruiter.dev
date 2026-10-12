@@ -3083,9 +3083,12 @@ describe("a refused press says why (round 9, task 1)", () => {
             return prompt !== null || floorDrop !== null;
           const faced = facedTiles(person);
           const held = person.holding;
-          // A held item at the bin is the one exception: the hold prompt names it.
+          // Burnt food or chairs at the bin is the one exception: the hold
+          // prompt names it. The bin refuses anything else with a line.
+          const binHolds =
+            held !== null && (held.kind === "burnt" || held.kind === "chairs");
           const mustSpeak =
-            faced.some((tile) => onTile(tile) && !(held && isBin(tile))) ||
+            faced.some((tile) => onTile(tile) && !(binHolds && isBin(tile))) ||
             (held !== null && !faced.some(isBin));
           return mustSpeak ? prompt !== null : prompt === null;
         }

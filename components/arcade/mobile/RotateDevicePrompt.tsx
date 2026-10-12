@@ -1,11 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useId, useRef } from "react";
 import { IconDeviceMobileRotated } from "@tabler/icons-react";
-import {
-  useOrientationMismatch,
-  type LockedOrientation,
-} from "@/components/arcade/mobile/orientation";
+import type { LockedOrientation } from "@/components/arcade/mobile/orientation";
 
 export interface RotateDevicePromptProps {
   /** The orientation the game is designed for. */
@@ -15,23 +12,42 @@ export interface RotateDevicePromptProps {
 }
 
 /**
- * Covers the immersive cabinet while the phone is held against the game's
- * declared orientation. Renders nothing once the device matches. The cabinet
- * renders it only on touch devices, and it never appears for `either` games.
- * It reuses the rotate icon from `TabletOrientationHint`, which is a dismissible
- * banner for the hub and not a blocking overlay.
+ * The blocking prompt shown while a phone is held against the game's declared
+ * orientation. PlayCabinet decides when to render it and makes the rest of the
+ * cabinet inert. Here it is an alertdialog that takes focus on show, on its
+ * "Leave cabinet" button, and gives focus back to the element that had it when
+ * it is removed. It only renders when the device is mismatched, so it does not
+ * check the orientation itself. It reuses the rotate icon from
+ * `TabletOrientationHint`, a dismissible hub banner rather than a blocking one.
  */
 export const RotateDevicePrompt: React.FC<RotateDevicePromptProps> = ({
   target,
   onExit,
 }) => {
-  const mismatch = useOrientationMismatch(target);
-  if (!mismatch) return null;
+  const titleId = useId();
+  const exitRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const previous = document.activeElement as HTMLElement | null;
+    exitRef.current?.focus({ preventScroll: true });
+    return () => {
+      if (
+        previous &&
+        previous.isConnected &&
+        typeof previous.focus === "function"
+      ) {
+        previous.focus({ preventScroll: true });
+      }
+    };
+  }, []);
 
   return (
     <div
-      role="status"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby={titleId}
       data-testid="rotate-device-prompt"
+      data-rotate-prompt=""
       className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-black/95 p-6 text-center font-mono text-zinc-200"
       style={{
         paddingTop: "max(1.5rem, env(safe-area-inset-top, 0px))",
@@ -42,14 +58,15 @@ export const RotateDevicePrompt: React.FC<RotateDevicePromptProps> = ({
         className="h-12 w-12 text-amber-400 motion-safe:animate-pulse"
         aria-hidden="true"
       />
-      <p className="max-w-xs text-sm leading-relaxed">
+      <p id={titleId} className="max-w-xs text-sm leading-relaxed">
         Turn your phone to {target} to play this cabinet.
       </p>
       {onExit && (
         <button
+          ref={exitRef}
           type="button"
           onClick={onExit}
-          className="min-h-[44px] min-w-[44px] rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-2 text-xs font-bold uppercase tracking-wider text-zinc-300 touch-manipulation active:scale-[0.98]"
+          className="min-h-[44px] min-w-[44px] rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-2 text-xs font-bold uppercase tracking-wider text-zinc-300 touch-manipulation motion-safe:active:scale-[0.98]"
         >
           Leave cabinet
         </button>

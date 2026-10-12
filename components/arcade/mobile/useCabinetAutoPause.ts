@@ -26,20 +26,29 @@ export function useCabinetAutoPause(onPause?: () => void): void {
     const handleVisibility = () => {
       if (document.visibilityState === "hidden") fire();
     };
-    const orientation =
-      typeof screen !== "undefined" ? screen.orientation : undefined;
-
     document.addEventListener("visibilitychange", handleVisibility);
     window.addEventListener("pagehide", fire);
     window.addEventListener("blur", fire);
-    window.addEventListener("orientationchange", fire);
-    orientation?.addEventListener?.("change", fire);
+    // One rotation, one pause: the Screen Orientation API when it exists,
+    // otherwise the legacy event. Never both.
+    const useScreenOrientation =
+      typeof screen !== "undefined" &&
+      !!screen.orientation &&
+      typeof screen.orientation.addEventListener === "function";
+    if (useScreenOrientation) {
+      screen.orientation.addEventListener("change", fire);
+    } else {
+      window.addEventListener("orientationchange", fire);
+    }
     return () => {
       document.removeEventListener("visibilitychange", handleVisibility);
       window.removeEventListener("pagehide", fire);
       window.removeEventListener("blur", fire);
-      window.removeEventListener("orientationchange", fire);
-      orientation?.removeEventListener?.("change", fire);
+      if (useScreenOrientation) {
+        screen.orientation.removeEventListener("change", fire);
+      } else {
+        window.removeEventListener("orientationchange", fire);
+      }
     };
   }, [active]);
 }

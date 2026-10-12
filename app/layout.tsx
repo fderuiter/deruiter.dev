@@ -68,6 +68,9 @@ const openDyslexic = localFont({
 export const viewport: Viewport = {
   themeColor: "#090D16",
   colorScheme: "dark",
+  // Lets env(safe-area-inset-*) report real values on notched phones. Without
+  // it every inset is 0 and the navbar, body and immersive cabinet pad nothing.
+  viewportFit: "cover",
 };
 
 export const metadata: Metadata = {
@@ -176,7 +179,7 @@ export default function RootLayout({
           crossOrigin="anonymous"
         />
       </head>
-      <body className="min-h-full flex flex-col bg-zinc-950 text-foreground antialiased">
+      <body className="min-h-full flex flex-col bg-zinc-950 text-foreground antialiased pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
         <SkipToContent />
         <PersonaProvider>
           <TerminologyProvider>

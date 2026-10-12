@@ -62,39 +62,60 @@ devices in the Playwright matrix and on a real iOS Safari and Android device:
 
 ### The kit
 
-The kit lives in `components/arcade/mobile/` with a barrel `index.ts`. It builds
-on the existing controls rather than replacing them.
+The kit lives in `components/arcade/mobile/` with a barrel `index.ts`. PlayCabinet
+and the tests import through the barrel. It builds on the existing controls
+rather than replacing them. TouchButton, DockFrame and the control-hint helpers
+await their first game consumer; they are here so that consumer can adopt them
+without a new kit change.
 
-- **Immersive touch cabinet.** On a coarse pointer under 1024px, a launched
-  cabinet is fixed to the viewport at `h-dvh`, padded by the safe-area insets,
-  with page scroll locked and overscroll disabled. It reuses the fullscreen
-  layout and its CSS (`.arcade-cabinet[data-fullscreen="true"]`), and adds
-  `data-immersive="true"` for the touch rules. The stage takes
-  `touch-action: none`. The toolbar and the control dock stay outside the stage
-  and keep their taps. Desktop never sets the attribute, so its markup does not
-  change. The exit control is the cabinet's Power button, at least 48px, and it
-  is always on screen.
+- **Immersive touch cabinet.** On a coarse pointer under 1024px, the cabinet
+  goes immersive when it launches and stays immersive until the player exits.
+  The device class is latched at Launch, so an iPad that turns across 1024px
+  mid-game keeps the layout it started with. The cabinet is fixed to the
+  viewport at `h-dvh`, padded by the safe-area insets, with page scroll locked
+  and overscroll disabled. It reuses the fullscreen layout and its CSS
+  (`.arcade-cabinet[data-fullscreen="true"]`), and adds `data-immersive="true"`
+  for the touch rules. The root takes `touch-action: none`, and the stage keeps
+  `touch-action: none` and `overflow: hidden` instead of a scroll area. The
+  toolbar and the control dock keep their own taps. On leaving immersive, the
+  preview scrolls back into view. Desktop never sets the attribute, so its
+  markup does not change. The exit is the cabinet's Power button in the
+  immersive toolbar, which is 48px.
+- **Safe areas.** The site's viewport export sets `viewportFit: "cover"`, so
+  `env(safe-area-inset-*)` reports real values on notched phones. The body pads
+  its left and right insets, and the fixed navbar pads its top and sides. On
+  desktop every inset is 0, so the layout does not change. Pinch-zoom is not
+  blocked: no `maximumScale` or `userScalable` is set.
 - **Orientation.** A game declares `mobileOrientation="portrait" | "landscape" |
-  "either"`. When the phone is held against a declared orientation, the cabinet
-  covers with `RotateDevicePrompt`, which offers "Leave cabinet". `either` never
-  prompts. In real Fullscreen the cabinet asks `screen.orientation.lock()` for
-  the declared orientation and ignores rejections. iOS Safari, which has no
+  "either"`. PlayCabinet reads the device's orientation and, when it is held
+  against the declared one, blocks the cabinet. The stage and the control dock
+  are made `inert`, and `RotateDevicePrompt` covers the cabinet as an
+  `alertdialog` with `aria-modal="true"`. Focus moves to its "Leave cabinet"
+  button on show and returns to the element that had it when the prompt goes
+  away. `either` never blocks. In real Fullscreen on a touch cabinet, the
+  cabinet asks `screen.orientation.lock()` for the declared orientation and
+  ignores rejections. Desktop fullscreen never asks. iOS Safari, which has no
   Fullscreen API for elements, keeps the prompt as its only tool.
 - **Touch primitives.** `TouchButton` is a press-and-hold control built on
-  pointer events with pointer capture, so two fingers on two buttons both count
-  and a finger that slides off still releases. It is at least 44px, has a
-  required accessible name, vibrates through `lib/haptics.ts`, and also answers
-  Enter and Space. `DockFrame` mirrors a pair of docks for left-handed play
+  pointer events with pointer capture. It counts each pointer that holds it, so
+  two fingers on one button press it once and the release comes when the last
+  finger lifts. It releases everything on blur. It is at least 44px, has a
+  required accessible name, takes `touch-action: none`, vibrates through
+  `lib/haptics.ts`, and also answers Enter and Space. Its press motion is gated
+  with `motion-safe:`. `DockFrame` mirrors a pair of docks for left-handed play
   without changing the docks themselves. `DpadActionDock`, `TwinStickAimDock`,
   `BezelClusterDock`, `ActionStripDock` and `VirtualGamepad` remain the
-  controls; the kit adds handedness and the pieces they lacked.
+  controls.
 - **Control hints.** `controlHint({ key, touch })` names a control both ways, and
   `useControlHint` picks the phrase for the device. A phone reads "Tap" where a
   keyboard reads "Press Space", so game copy need not branch on input.
-- **Lifecycle.** `useCabinetAutoPause(onPause)` calls the game's handler on
-  `visibilitychange` (hidden), `pagehide`, window `blur` and orientation change.
-  PlayCabinet passes it the game's `onAutoPause` only while the cabinet is
-  immersive, so a desktop cabinet attaches no listeners.
+- **Lifecycle.** `useCabinetAutoPause(onPause)` calls its handler on
+  `visibilitychange` (hidden), `pagehide`, window `blur`, and a rotation. A
+  rotation listens to `screen.orientation` `change` where it exists and falls
+  back to window `orientationchange` otherwise, never both. PlayCabinet passes
+  the game's `onAutoPause` only while the cabinet is immersive, so a desktop
+  cabinet attaches no listeners. Each game wires its own pause and resume: the
+  cabinet reports the moment to stop, and the game decides when to resume.
 
 ### What this decision does not do
 
@@ -107,13 +128,14 @@ cabinet's existing `useFullscreen` and `CabinetFullscreen` are reused.
 - ADR 0048's ten gated games keep the notice until their mobile pull requests
   land. Its "Try it anyway" escape hatch stays for those games.
 - The Trial & Error cabinet is the first to run immersive on phones, since it is
-  ungated. Its Playwright coverage is the first real check on the kit.
+  ungated. The Playwright spec checks the cabinet's stage fit at 320x568 and
+  runs an axe scan over it. Its Playwright coverage is the first real check on the kit.
 - Each game's mobile pull request carries its own gate removal, screenshots and
   axe result. Reviewers judge the game against the bar, not the kit alone.
 - Immersive mode locks body scroll with `overflow: hidden` and disables
   overscroll. That is not a complete scroll lock on iOS Safari. The fixed,
-  full-viewport cabinet, with `touch-action: none` on its stage, is what keeps
-  the player's touches on the game.
+  full-viewport cabinet, with `touch-action: none` on its root and stage, is
+  what keeps the player's touches on the game.
 - Auto-pause only reports the moment to stop. Each game owns its pause screen
   and resume rule.
 - The Playwright suite gains two phone projects, "Small Phone" (320x568) and

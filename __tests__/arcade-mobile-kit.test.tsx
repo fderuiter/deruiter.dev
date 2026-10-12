@@ -26,7 +26,6 @@ import {
 } from "../components/arcade/mobile";
 
 const COARSE = "(pointer: coarse)";
-const PORTRAIT = "(orientation: portrait)";
 
 function installMatchMedia(matching: string[]) {
   window.matchMedia = vi.fn((query: string) => ({
@@ -53,6 +52,8 @@ describe("arcade mobile kit", () => {
     window.matchMedia = originalMatchMedia;
     vi.restoreAllMocks();
     Reflect.deleteProperty(window.screen, "orientation");
+    Reflect.deleteProperty(navigator, "vibrate");
+    Reflect.deleteProperty(HTMLElement.prototype, "setPointerCapture");
   });
 
   describe("control hints", () => {
@@ -78,7 +79,7 @@ describe("arcade mobile kit", () => {
       );
     });
 
-    it("reads touch from a coarse pointer in the hook", () => {
+    it("reads touch from a coarse pointer in the hooks", () => {
       installMatchMedia([COARSE]);
       const { result: touch } = renderHook(() => useTouchHint());
       expect(touch.current).toBe(true);
@@ -98,7 +99,7 @@ describe("arcade mobile kit", () => {
   });
 
   describe("TouchButton", () => {
-    it("is named and at least 44px square", () => {
+    it("is named, at least 44px square, and takes no touch gestures", () => {
       render(
         <TouchButton label="Fire">
           <span aria-hidden="true">F</span>
@@ -107,10 +108,12 @@ describe("arcade mobile kit", () => {
       const button = screen.getByRole("button", { name: "Fire" });
       expect(button.className).toContain("min-h-[44px]");
       expect(button.className).toContain("min-w-[44px]");
+      expect(button.className).toContain("touch-none");
+      expect(button.className).toContain("motion-safe:active:scale-[0.98]");
       expect(button.getAttribute("type")).toBe("button");
     });
 
-    it("presses once per pointer-down and releases on pointer-up", () => {
+    it("counts one press per button, however many pointers land", () => {
       const onPress = vi.fn();
       const onRelease = vi.fn();
       render(
@@ -120,10 +123,36 @@ describe("arcade mobile kit", () => {
       fireEvent.pointerDown(button, { pointerId: 1, pointerType: "touch" });
       fireEvent.pointerDown(button, { pointerId: 2, pointerType: "touch" });
       expect(onPress).toHaveBeenCalledTimes(1);
+    });
+
+    it("releases only when the last of two fingers lifts", () => {
+      const onPress = vi.fn();
+      const onRelease = vi.fn();
+      render(
+        <TouchButton label="Fire" onPress={onPress} onRelease={onRelease} />
+      );
+      const button = screen.getByRole("button", { name: "Fire" });
+      fireEvent.pointerDown(button, { pointerId: 1, pointerType: "touch" });
+      fireEvent.pointerDown(button, { pointerId: 2, pointerType: "touch" });
       fireEvent.pointerUp(button, { pointerId: 1, pointerType: "touch" });
-      expect(onRelease).toHaveBeenCalledTimes(1);
+      expect(onRelease).not.toHaveBeenCalled();
       fireEvent.pointerUp(button, { pointerId: 2, pointerType: "touch" });
       expect(onRelease).toHaveBeenCalledTimes(1);
+      // A second, stray up for a pointer that already lifted changes nothing.
+      fireEvent.pointerUp(button, { pointerId: 2, pointerType: "touch" });
+      expect(onRelease).toHaveBeenCalledTimes(1);
+    });
+
+    it("presses again only after every pointer has lifted", () => {
+      const onPress = vi.fn();
+      render(
+        <TouchButton label="Fire" onPress={onPress} onRelease={vi.fn()} />
+      );
+      const button = screen.getByRole("button", { name: "Fire" });
+      fireEvent.pointerDown(button, { pointerId: 1, pointerType: "touch" });
+      fireEvent.pointerUp(button, { pointerId: 1, pointerType: "touch" });
+      fireEvent.pointerDown(button, { pointerId: 3, pointerType: "touch" });
+      expect(onPress).toHaveBeenCalledTimes(2);
     });
 
     it("releases on pointer cancel and on lost capture", () => {
@@ -136,23 +165,35 @@ describe("arcade mobile kit", () => {
       fireEvent.pointerCancel(button, { pointerId: 1, pointerType: "touch" });
       expect(onRelease).toHaveBeenCalledTimes(1);
       fireEvent.pointerDown(button, { pointerId: 1, pointerType: "touch" });
-      fireEvent.lostPointerCapture(button);
+      fireEvent.lostPointerCapture(button, { pointerId: 1 });
       expect(onRelease).toHaveBeenCalledTimes(2);
+    });
+
+    it("releases every hold when the button loses focus", () => {
+      const onPress = vi.fn();
+      const onRelease = vi.fn();
+      render(
+        <TouchButton label="Fire" onPress={onPress} onRelease={onRelease} />
+      );
+      const button = screen.getByRole("button", { name: "Fire" });
+      fireEvent.pointerDown(button, { pointerId: 1, pointerType: "touch" });
+      fireEvent.pointerDown(button, { pointerId: 2, pointerType: "touch" });
+      fireEvent.blur(button);
+      expect(onRelease).toHaveBeenCalledTimes(1);
+      // Blur with nothing held is quiet.
+      fireEvent.blur(button);
+      expect(onRelease).toHaveBeenCalledTimes(1);
     });
 
     it("captures the pointer on press when the engine supports it", () => {
       const setPointerCapture = vi.fn();
       HTMLElement.prototype.setPointerCapture = setPointerCapture;
-      try {
-        render(<TouchButton label="Fire" onPress={vi.fn()} />);
-        fireEvent.pointerDown(screen.getByRole("button", { name: "Fire" }), {
-          pointerId: 7,
-          pointerType: "touch",
-        });
-        expect(setPointerCapture).toHaveBeenCalledWith(7);
-      } finally {
-        Reflect.deleteProperty(HTMLElement.prototype, "setPointerCapture");
-      }
+      render(<TouchButton label="Fire" onPress={vi.fn()} />);
+      fireEvent.pointerDown(screen.getByRole("button", { name: "Fire" }), {
+        pointerId: 7,
+        pointerType: "touch",
+      });
+      expect(setPointerCapture).toHaveBeenCalledWith(7);
     });
 
     it("still presses when pointer capture is unavailable", () => {
@@ -189,48 +230,58 @@ describe("arcade mobile kit", () => {
         configurable: true,
         value: vibrate,
       });
-      try {
-        render(
-          <>
-            <TouchButton label="Buzz" onPress={vi.fn()} />
-            <TouchButton label="Quiet" haptic={false} onPress={vi.fn()} />
-          </>
-        );
-        fireEvent.pointerDown(screen.getByRole("button", { name: "Quiet" }), {
-          pointerId: 1,
-          pointerType: "touch",
-        });
-        expect(vibrate).not.toHaveBeenCalled();
-        fireEvent.pointerDown(screen.getByRole("button", { name: "Buzz" }), {
-          pointerId: 2,
-          pointerType: "touch",
-        });
-        expect(vibrate).toHaveBeenCalledWith(10);
-      } finally {
-        Reflect.deleteProperty(navigator, "vibrate");
-      }
+      render(
+        <>
+          <TouchButton label="Buzz" onPress={vi.fn()} />
+          <TouchButton label="Quiet" haptic={false} onPress={vi.fn()} />
+        </>
+      );
+      fireEvent.pointerDown(screen.getByRole("button", { name: "Quiet" }), {
+        pointerId: 1,
+        pointerType: "touch",
+      });
+      expect(vibrate).not.toHaveBeenCalled();
+      fireEvent.pointerDown(screen.getByRole("button", { name: "Buzz" }), {
+        pointerId: 2,
+        pointerType: "touch",
+      });
+      expect(vibrate).toHaveBeenCalledWith(10);
     });
   });
 
   describe("RotateDevicePrompt", () => {
-    it("renders nothing when the device already matches", () => {
-      installMatchMedia([PORTRAIT]);
-      const { container } = render(<RotateDevicePrompt target="portrait" />);
-      expect(container.innerHTML).toBe("");
-    });
-
-    it("asks for landscape when a landscape game is held in portrait", () => {
-      installMatchMedia([PORTRAIT]);
+    it("is an alertdialog named by its message", () => {
       render(<RotateDevicePrompt target="landscape" />);
-      expect(screen.getByRole("status").textContent).toContain("landscape");
+      const dialog = screen.getByRole("alertdialog");
+      expect(dialog.getAttribute("aria-modal")).toBe("true");
+      const labelId = dialog.getAttribute("aria-labelledby");
+      expect(labelId).toBeTruthy();
+      expect(document.getElementById(labelId as string)?.textContent).toContain(
+        "landscape"
+      );
     });
 
-    it("offers an exit that is at least 44px", () => {
-      installMatchMedia([PORTRAIT]);
+    it("moves focus to Leave cabinet on show and returns it on removal", () => {
+      const trigger = document.createElement("button");
+      document.body.appendChild(trigger);
+      trigger.focus();
+      const onExit = vi.fn();
+      const { unmount } = render(
+        <RotateDevicePrompt target="landscape" onExit={onExit} />
+      );
+      const exit = screen.getByRole("button", { name: "Leave cabinet" });
+      expect(document.activeElement).toBe(exit);
+      unmount();
+      expect(document.activeElement).toBe(trigger);
+      trigger.remove();
+    });
+
+    it("offers an exit that is at least 44px and gates its press motion", () => {
       const onExit = vi.fn();
       render(<RotateDevicePrompt target="landscape" onExit={onExit} />);
       const exit = screen.getByRole("button", { name: "Leave cabinet" });
       expect(exit.className).toContain("min-h-[44px]");
+      expect(exit.className).toContain("motion-safe:active:scale-[0.98]");
       fireEvent.click(exit);
       expect(onExit).toHaveBeenCalledTimes(1);
     });
@@ -264,7 +315,7 @@ describe("arcade mobile kit", () => {
   });
 
   describe("useCabinetAutoPause", () => {
-    it("fires on blur, page hide and orientation change", () => {
+    it("fires on blur, page hide and an orientation change without a screen API", () => {
       const onPause = vi.fn();
       renderHook(() => useCabinetAutoPause(onPause));
       fireEvent(window, new Event("blur"));
@@ -273,7 +324,7 @@ describe("arcade mobile kit", () => {
       expect(onPause).toHaveBeenCalledTimes(3);
     });
 
-    it("fires when the screen orientation changes", () => {
+    it("fires once per rotation via screen.orientation and never also via orientationchange", () => {
       const listeners: Array<() => void> = [];
       Object.defineProperty(window.screen, "orientation", {
         configurable: true,
@@ -282,9 +333,16 @@ describe("arcade mobile kit", () => {
           removeEventListener: vi.fn(),
         },
       });
+      const addWindow = vi.spyOn(window, "addEventListener");
       const onPause = vi.fn();
       renderHook(() => useCabinetAutoPause(onPause));
+
+      const rotatedTypes = addWindow.mock.calls.map(([type]) => type);
+      expect(rotatedTypes).not.toContain("orientationchange");
+
+      // One rotation: the screen change fires; a legacy event does not add one.
       listeners.forEach((fn) => fn());
+      fireEvent(window, new Event("orientationchange"));
       expect(onPause).toHaveBeenCalledTimes(1);
     });
 
@@ -319,6 +377,7 @@ describe("arcade mobile kit", () => {
       const names = add.mock.calls.map(([name]) => name);
       expect(names).not.toContain("blur");
       expect(names).not.toContain("pagehide");
+      expect(names).not.toContain("orientationchange");
     });
   });
 
@@ -336,7 +395,7 @@ describe("arcade mobile kit", () => {
       expect(unlock).toHaveBeenCalledTimes(1);
     });
 
-    it("ignores a rejected lock", async () => {
+    it("ignores a rejected lock once the rejection has settled", async () => {
       Object.defineProperty(window.screen, "orientation", {
         configurable: true,
         value: {
@@ -344,8 +403,11 @@ describe("arcade mobile kit", () => {
           unlock: vi.fn(),
         },
       });
-      expect(() => lockScreenOrientation("portrait")).not.toThrow();
-      await Promise.resolve();
+      const release = lockScreenOrientation("portrait");
+      // Flush a macrotask so the rejection is handled before the assertion;
+      // an unhandled rejection would fail the run.
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(() => release()).not.toThrow();
     });
 
     it("is a no-op where the Screen Orientation API is missing", () => {

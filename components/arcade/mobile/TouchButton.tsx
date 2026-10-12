@@ -5,7 +5,12 @@ import { triggerHaptic } from "@/lib/haptics";
 
 export interface TouchButtonProps extends Omit<
   React.ButtonHTMLAttributes<HTMLButtonElement>,
-  "onPointerDown" | "onPointerUp" | "onPointerCancel" | "onKeyDown" | "onKeyUp"
+  | "onPointerDown"
+  | "onPointerUp"
+  | "onPointerCancel"
+  | "onKeyDown"
+  | "onKeyUp"
+  | "onBlur"
 > {
   /** Accessible name. Required: an icon-only control must still be named. */
   label: string;
@@ -15,11 +20,17 @@ export interface TouchButtonProps extends Omit<
   haptic?: boolean;
 }
 
+/** The id the keyboard holds the button under, next to pointer ids. */
+const KEYBOARD_HOLD = "keyboard";
+
 /**
- * A press-and-hold control for a touch cabinet. It uses pointer events and
- * captures the pointer on press, so a finger that slides off the button still
- * releases it, and two fingers on two buttons press both. It is at least
- * 44px square. Enter and Space work from a keyboard too.
+ * A press-and-hold control for a touch cabinet. It keeps the set of pointers
+ * holding it: the press starts when the first one lands and the release when
+ * the last one lifts, so two fingers on one button count once. It captures the
+ * pointer on press, so a finger that slides off still releases it, and it
+ * releases everything on blur. It is at least 44px square and uses
+ * `touch-action: none` so a hold never turns into a pan or a zoom. Enter and
+ * Space work from a keyboard too.
  */
 export const TouchButton: React.FC<TouchButtonProps> = ({
   label,
@@ -27,21 +38,33 @@ export const TouchButton: React.FC<TouchButtonProps> = ({
   onRelease,
   haptic = true,
   className = "",
+  style,
   children,
   ...rest
 }) => {
-  const pressedRef = useRef(false);
+  const heldRef = useRef<Set<number | string>>(new Set());
 
-  const press = () => {
-    if (pressedRef.current) return;
-    pressedRef.current = true;
-    if (haptic) triggerHaptic(10);
-    onPress?.();
+  const hold = (id: number | string) => {
+    const held = heldRef.current;
+    if (held.has(id)) return;
+    const first = held.size === 0;
+    held.add(id);
+    if (first) {
+      if (haptic) triggerHaptic(10);
+      onPress?.();
+    }
   };
 
-  const release = () => {
-    if (!pressedRef.current) return;
-    pressedRef.current = false;
+  const letGo = (id: number | string) => {
+    const held = heldRef.current;
+    if (!held.delete(id)) return;
+    if (held.size === 0) onRelease?.();
+  };
+
+  const letGoAll = () => {
+    const held = heldRef.current;
+    if (held.size === 0) return;
+    held.clear();
     onRelease?.();
   };
 
@@ -58,25 +81,26 @@ export const TouchButton: React.FC<TouchButtonProps> = ({
         } catch {
           // Synthetic events and old engines have no capture; the press still counts.
         }
-        press();
+        hold(event.pointerId);
       }}
-      onPointerUp={release}
-      onPointerCancel={release}
-      onLostPointerCapture={release}
+      onPointerUp={(event) => letGo(event.pointerId)}
+      onPointerCancel={(event) => letGo(event.pointerId)}
+      onLostPointerCapture={(event) => letGo(event.pointerId)}
+      onBlur={letGoAll}
       onContextMenu={(event) => event.preventDefault()}
       onKeyDown={(event) => {
         if ((event.key === " " || event.key === "Enter") && !event.repeat) {
           event.preventDefault();
-          press();
+          hold(KEYBOARD_HOLD);
         }
       }}
       onKeyUp={(event) => {
-        if (event.key === " " || event.key === "Enter") release();
+        if (event.key === " " || event.key === "Enter") letGo(KEYBOARD_HOLD);
       }}
-      className={`min-h-[44px] min-w-[44px] touch-manipulation select-none active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none ${className}`}
+      className={`min-h-[44px] min-w-[44px] touch-none select-none motion-safe:active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none ${className}`}
       style={{
         WebkitTouchCallout: "none",
-        ...rest.style,
+        ...style,
       }}
     >
       {children}

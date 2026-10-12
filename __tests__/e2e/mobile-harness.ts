@@ -1,9 +1,9 @@
-import { expect, type Locator, type Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
 
 /** The widths of the mobile matrix (ADR 0061): floor, phone, tablet, desktop. */
-export const MATRIX_WIDTHS = [320, 375, 768, 1440] as const;
+const MATRIX_WIDTHS = [320, 375, 768, 1440] as const;
 
 /** Viewport height used for matrix captures. */
 const MATRIX_HEIGHT = 800;
@@ -52,63 +52,44 @@ export async function assertNoHorizontalOverflow(page: Page): Promise<void> {
   expect(report.offenders, "elements wider than the viewport").toEqual([]);
 }
 
+/** One matrix capture: the width, the file, and whether the cabinet was immersive. */
+export interface MatrixShot {
+  width: number;
+  file: string;
+  immersive: boolean;
+}
+
 /**
- * Captures the page at each matrix width into `dir`, as
- * `<slug>-<width>.png`. The viewport the page started at is restored afterwards.
+ * Captures the page at each matrix width into `dir`, named by the state the
+ * page is in at that width: `<slug>-<width>-immersive.png` or
+ * `<slug>-<width>-windowed.png`. The viewport the page started at is restored.
  *
  * @param page - The page to capture, already navigated and settled.
  * @param slug - A short name for the page, e.g. `trial-and-error`.
  * @param dir - The directory to write into. Created if missing.
- * @returns The written file paths, in matrix order.
+ * @returns One entry per width, in matrix order.
  */
 export async function captureMatrix(
   page: Page,
   slug: string,
   dir: string
-): Promise<string[]> {
+): Promise<MatrixShot[]> {
   fs.mkdirSync(dir, { recursive: true });
   const original = page.viewportSize();
-  const written: string[] = [];
+  const shots: MatrixShot[] = [];
   for (const width of MATRIX_WIDTHS) {
     await page.setViewportSize({ width, height: MATRIX_HEIGHT });
     await page.waitForTimeout(250);
-    const file = path.join(dir, `${slug}-${width}.png`);
+    const immersive = await page.evaluate(
+      () => document.querySelector('[data-immersive="true"]') !== null
+    );
+    const file = path.join(
+      dir,
+      `${slug}-${width}-${immersive ? "immersive" : "windowed"}.png`
+    );
     await page.screenshot({ path: file });
-    written.push(file);
+    shots.push({ width, file, immersive });
   }
   if (original) await page.setViewportSize(original);
-  return written;
-}
-
-/** One tap in a game's first-score route. */
-export interface TapStep {
-  /** The control to tap. Must be visible on a touch project. */
-  target: Locator;
-}
-
-/**
- * Taps through a game's opening steps and waits until the score readout
- * changes, so a spec can reach a first point without knowing the game's timing.
- * Uses `Locator.tap()`, so it needs a project with `hasTouch`.
- *
- * @param page - The page under test.
- * @param steps - Taps in order.
- * @param score - The element whose text is the score.
- * @param timeout - How long the score may take to change.
- */
-export async function tapToFirstScore(
-  page: Page,
-  steps: TapStep[],
-  score: Locator,
-  timeout = 15000
-): Promise<void> {
-  const before = (await score.textContent()) ?? "";
-  for (const step of steps) {
-    await step.target.tap();
-    await page.waitForTimeout(50);
-  }
-  await expect(async () => {
-    const now = (await score.textContent()) ?? "";
-    expect(now).not.toBe(before);
-  }).toPass({ timeout });
+  return shots;
 }

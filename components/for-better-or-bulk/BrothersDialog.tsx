@@ -61,13 +61,6 @@ function abbiLine(state: GameState): string {
     : "Abbi has her hands free and is looking at him.";
 }
 
-/** Fred's mood, read from the level as it stands. */
-function fredLine(state: GameState): string {
-  return state.players.fred.calm
-    ? "Fred has calmed down."
-    : "Fred has not calmed down yet.";
-}
-
 export function BrothersDialog({ state, onDecide }: BrothersDialogProps) {
   const headingRef = useRef<HTMLHeadingElement>(null);
   const openedAt = useRef<number | null>(null);
@@ -134,7 +127,7 @@ export function BrothersDialog({ state, onDecide }: BrothersDialogProps) {
           className="mt-2 text-xs text-[var(--fbb-dim)]"
         >
           &quot;Breakfast? You look like you need to get out of there for a
-          bit.&quot; {fredLine(state)} {abbiLine(state)}
+          bit.&quot; The wedding is still on. {abbiLine(state)}
         </p>
         {!promising ? (
           <div className="mt-4 flex flex-col gap-2">

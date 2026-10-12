@@ -94,6 +94,7 @@ describe("Fred's return after leaving with his brothers", () => {
           moveX: Math.floor(tick / 30) % 2 === 0 ? 1 : -1,
           moveY: 0,
           interact: tick % 9 === 0,
+          interactHeld: tick % 9 === 0,
           work: tick % 4 === 0,
         },
       },

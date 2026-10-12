@@ -186,6 +186,21 @@ export function pressTileFor(
 }
 
 /**
+ * Whether a press of the interact key would set the held item down on open
+ * floor, the tile in front (see `pressTileFor`). Such a press does not act at
+ * once: it starts a hold (ADR 0060 amendment). Pure.
+ */
+export function floorDropPress(
+  state: GameState,
+  person: Pick<Player, "x" | "y" | "facingX" | "facingY" | "holding">
+): boolean {
+  if (!person.holding) return false;
+  const tile = pressTileFor(state, person);
+  const front = frontTile(person);
+  return tile !== null && sameTile(tile, front) && floorDropAt(state, front);
+}
+
+/**
  * The tile that work (holding the arrange, petals or bin work key) acts on: the
  * first faced tile that has a station or target, else the tile in front of the
  * nearest tile. Shares `faceTiles` with `pressTileFor`, so work and presses

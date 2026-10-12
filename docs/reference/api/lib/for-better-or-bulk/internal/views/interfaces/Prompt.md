@@ -10,6 +10,14 @@ What one person's buttons would do right now.
 
 ## Properties
 
+### floorDrop
+
+> `readonly` **floorDrop**: [`FloorDropPrompt`](FloorDropPrompt.md) \| `null`
+
+Set when the interact press would set the held item on open floor: it needs a hold.
+
+***
+
 ### interact
 
 > `readonly` **interact**: `string` \| `null`

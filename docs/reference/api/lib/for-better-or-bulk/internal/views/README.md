@@ -9,6 +9,7 @@
 ## Interfaces
 
 - [CoachStep](interfaces/CoachStep.md)
+- [FloorDropPrompt](interfaces/FloorDropPrompt.md)
 - [Prompt](interfaces/Prompt.md)
 
 ## Functions

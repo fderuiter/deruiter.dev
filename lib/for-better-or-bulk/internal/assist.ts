@@ -78,6 +78,7 @@ const NO_INPUT: PlayerInput = {
   moveX: 0,
   moveY: 0,
   interact: false,
+  interactHeld: false,
   work: false,
 };
 
@@ -103,6 +104,8 @@ interface Goal {
   readonly y: number;
   readonly act: "interact" | "work" | "wait";
   readonly text: string;
+  /** True for an empty floor tile: the press there is a hold (see floorDropInput). */
+  readonly floor?: boolean;
 }
 
 /** The first move toward a goal; null when the person already faces it. */
@@ -186,6 +189,7 @@ function freeFloorGoals(state: GameState, item: Item): Goal[] {
         y,
         act: "interact",
         text: `putting ${heldName(item)} down`,
+        floor: true,
       });
     }
   }
@@ -502,6 +506,20 @@ function lineUpAcrossFacing(player: Player): PlayerInput | null {
   return null;
 }
 
+/**
+ * The input for a floor drop the helper faces. The first active tick presses
+ * interact, which starts the hold (ADR 0060 amendment). Every later tick keeps
+ * interact held, resting ticks too, so the simulation pauses the hold instead
+ * of ending it. Pure.
+ */
+function floorDropInput(player: Player, active: boolean): PlayerInput {
+  const holding = player.floorHold !== null;
+  if (!active) return holding ? { ...NO_INPUT, interactHeld: true } : NO_INPUT;
+  const lineUp = lineUpAcrossFacing(player);
+  if (lineUp) return { ...lineUp, interactHeld: holding };
+  return { ...NO_INPUT, interact: !holding, interactHeld: true };
+}
+
 /** The input for one tick, given the route and whether this tick is active. */
 function actionFor(player: Player, found: Route, active: boolean): PlayerInput {
   const { goal, step } = found;
@@ -514,8 +532,15 @@ function actionFor(player: Player, found: Route, active: boolean): PlayerInput {
       const lineUp = active ? lineUpAcrossFacing(player) : null;
       return { ...(lineUp ?? NO_INPUT), work: true };
     }
+    if (goal.floor) return floorDropInput(player, active);
     if (!active) return NO_INPUT;
-    return lineUpAcrossFacing(player) ?? { ...NO_INPUT, interact: true };
+    return (
+      lineUpAcrossFacing(player) ?? {
+        ...NO_INPUT,
+        interact: true,
+        interactHeld: true,
+      }
+    );
   }
   if (!active) return NO_INPUT;
   if (!step.moves) return { ...NO_INPUT, moveX: step.dx, moveY: step.dy };

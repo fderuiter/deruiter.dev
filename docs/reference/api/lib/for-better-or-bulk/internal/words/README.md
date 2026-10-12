@@ -22,3 +22,5 @@
 - [crateTakeName](functions/crateTakeName.md)
 - [heldLabel](functions/heldLabel.md)
 - [heldName](functions/heldName.md)
+- [interactKeyName](functions/interactKeyName.md)
+- [workKeyName](functions/workKeyName.md)

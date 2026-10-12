@@ -200,6 +200,13 @@ export const SIMPLIFY_SECONDS = 1;
 export const BIN_HOLD_SECONDS = 0.5;
 
 /**
+ * Ticks E must stay held facing open floor with something in hand before the
+ * item is set down there (ADR 0060 amendment, 2026-10-12). 12 ticks is 0.4 s
+ * of game time, so a tap does nothing.
+ */
+export const FLOOR_HOLD_TICKS = 12;
+
+/**
  * How many items the floor takes before a put-down is refused. Fred's drop
  * when he leaves ignores the cap, so the floor can briefly hold one more.
  */
@@ -413,7 +420,7 @@ export const LINE_BANK: readonly BankLine[] = [
     id: "weather",
     tag: "Real",
     fact: "weather",
-    text: "The weather was perfect. Fred jokes he caused it.",
+    text: "The weather was perfect.",
   },
   {
     id: "dinner",

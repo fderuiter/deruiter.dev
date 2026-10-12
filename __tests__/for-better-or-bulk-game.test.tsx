@@ -529,7 +529,7 @@ describe("For Better or Bulk cabinet (#1906)", () => {
     expect(
       screen.getByText(new RegExp(`Abbi is carrying ${ITEM_LABELS.roses}`))
     ).toBeTruthy();
-    expect(screen.getByText(/Fred has not calmed down yet/)).toBeTruthy();
+    expect(screen.getByText(/The wedding is still on\./)).toBeTruthy();
     unmount();
 
     const free = {
@@ -542,7 +542,8 @@ describe("For Better or Bulk cabinet (#1906)", () => {
     render(<BrothersDialog state={free} onDecide={vi.fn()} />);
     expect(screen.getByText(/Abbi has her hands free/)).toBeTruthy();
     expect(screen.queryByText(/carrying|chairs/)).toBeNull();
-    expect(screen.getByText(/Fred has calmed down/)).toBeTruthy();
+    // The line is about the wedding whatever the mood, so it does not change.
+    expect(screen.getByText(/The wedding is still on\./)).toBeTruthy();
   });
 
   it("offers a break only with a promise about work that is in the plan", () => {

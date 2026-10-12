@@ -10,6 +10,7 @@ import { CHAIRS_PER_CARRY, ITEM_LABELS } from "../presets";
 import type {
   Item,
   ItemKind,
+  PlayerId,
   StationKind,
   SupplyKind,
   TargetKind,
@@ -78,6 +79,22 @@ export const CRATE_ITEM_NAMES: Readonly<Record<SupplyKind, string>> = {
   lantern: "a lantern",
   chairs: "a stack of 2 chairs",
 };
+
+/**
+ * The key names a person's interact button carries in a prompt. Co-op gives
+ * each person their own key (Fred E, Abbi Enter); solo takes either set.
+ */
+export function interactKeyName(id: PlayerId, coop: boolean): string {
+  return coop ? (id === "fred" ? "E" : "Enter") : "E or Enter";
+}
+
+/**
+ * The key names a person's work button carries in a prompt or coach line.
+ * Co-op gives each person their own key (Fred F, Abbi Shift); solo takes either.
+ */
+export function workKeyName(id: PlayerId, coop: boolean): string {
+  return coop ? (id === "fred" ? "F" : "Shift") : "F or Shift";
+}
 
 /** "a stack of 2 chairs" for a carry of two, "a chair" for one. */
 export function chairPhrase(count: number): string {

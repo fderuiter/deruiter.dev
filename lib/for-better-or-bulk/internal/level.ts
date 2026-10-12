@@ -168,6 +168,7 @@ function spawn(id: PlayerId, x: number, y: number): Player {
     busyReason: null,
     calm: false,
     binHold: 0,
+    floorHold: null,
   };
 }
 

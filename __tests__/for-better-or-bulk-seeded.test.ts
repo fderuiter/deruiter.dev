@@ -416,6 +416,7 @@ describe("seeded events", () => {
       moveX: fc.constantFrom(-1, 0, 1),
       moveY: fc.constantFrom(-1, 0, 1),
       interact: fc.boolean(),
+      interactHeld: fc.boolean(),
       work: fc.boolean(),
     });
     const frameArb: fc.Arbitrary<Frame> = fc
@@ -468,9 +469,7 @@ describe("the receipt's weather", () => {
   it("shows the real weather line from the bank and no game weather on a standard day", () => {
     const receipt = computeReceipt(runToEnd(DEFAULT_SETUP).state);
     expect(receipt.weather).toBe(bankText("weather"));
-    expect(receipt.weather).toBe(
-      "The weather was perfect. Fred jokes he caused it."
-    );
+    expect(receipt.weather).toBe("The weather was perfect.");
     expect(receipt.gameWeather).toBeNull();
   });
 

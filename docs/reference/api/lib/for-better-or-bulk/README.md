@@ -50,6 +50,12 @@ Re-exports [assistJobKind](internal/assist/functions/assistJobKind.md)
 
 ***
 
+### assistRests
+
+Re-exports [assistRests](internal/assist/functions/assistRests.md)
+
+***
+
 ### availableCommitments
 
 Re-exports [availableCommitments](internal/receipt/functions/availableCommitments.md)
@@ -332,9 +338,27 @@ Re-exports [FLOOR_FULL_REPEAT_SECONDS](presets/variables/FLOOR_FULL_REPEAT_SECON
 
 ***
 
+### FLOOR\_HOLD\_TICKS
+
+Re-exports [FLOOR_HOLD_TICKS](presets/variables/FLOOR_HOLD_TICKS.md)
+
+***
+
+### FloorDropPrompt
+
+Re-exports [FloorDropPrompt](internal/views/interfaces/FloorDropPrompt.md)
+
+***
+
 ### floorDropTile
 
 Re-exports [floorDropTile](internal/views/functions/floorDropTile.md)
+
+***
+
+### FloorHold
+
+Re-exports [FloorHold](types/interfaces/FloorHold.md)
 
 ***
 
@@ -437,6 +461,12 @@ Re-exports [IDLE_FRAME](internal/sim/variables/IDLE_FRAME.md)
 ### IDLE\_INPUT
 
 Re-exports [IDLE_INPUT](internal/sim/variables/IDLE_INPUT.md)
+
+***
+
+### interactKeyName
+
+Re-exports [interactKeyName](internal/words/functions/interactKeyName.md)
 
 ***
 
@@ -1013,6 +1043,12 @@ Re-exports [WebsiteLine](types/interfaces/WebsiteLine.md)
 ### WEDDING\_PATH
 
 Re-exports [WEDDING_PATH](presets/variables/WEDDING_PATH.md)
+
+***
+
+### workKeyName
+
+Re-exports [workKeyName](internal/words/functions/workKeyName.md)
 
 ***
 

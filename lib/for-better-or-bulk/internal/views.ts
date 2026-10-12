@@ -37,8 +37,15 @@ import {
   crateTakeName,
   heldLabel,
   heldName,
+  workKeyName,
 } from "./words";
-import { GRILL_COOKS, faceTiles, interactTile, workTileFor } from "./press";
+import {
+  GRILL_COOKS,
+  faceTiles,
+  floorDropPress,
+  interactTile,
+  workTileFor,
+} from "./press";
 
 /** The level runs from 9:00 to 4:00 on the wall clock. */
 const START_HOUR = 9;
@@ -157,7 +164,7 @@ const SPOT_DONE: Readonly<Record<TargetKind, string>> = {
   buffet: "This spot is already set.",
 };
 
-/** What a spot that was left bare on purpose (simplified by hold work) says, by its kind. */
+/** What a spot that was left bare on purpose (simplified by holding the work key) says, by its kind. */
 const SPOT_BARE: Readonly<Record<TargetKind, string>> = {
   basket: "This bouquet basket was left bare on purpose.",
   table: "This table was left bare on purpose.",
@@ -238,6 +245,10 @@ function reasonOnTile(
  * - A press with nothing in hand that faces only plain ground gets no line,
  *   since there is nothing to refuse.
  *
+ * Burnt food in hand gets one line wherever the bin is not faced, which names
+ * the bin (round 11), so it is never a bare "Nothing here takes" for the one
+ * item only the bin wants. Facing the bin, the usual rules apply.
+ *
  * Each faced tile is checked in turn (see `faceTiles`), and the first reason
  * wins. So a bin with no line lets the grill beside it speak. When no faced
  * tile has a reason and something is held, the tile in front is named: a full
@@ -247,6 +258,10 @@ function reasonOnTile(
 function unpressedReason(state: GameState, person: Player): string | null {
   const held = person.holding;
   const faced = faceTiles(person);
+  // Away from the bin, burnt food names the bin. Facing it, the bin stays
+  // silent but a station straddled beside it still gives its own reason.
+  if (held?.kind === "burnt" && !faced.some((tile) => isBinAt(state, tile)))
+    return `Burnt food goes in ${STATION_NAMES.bin}.`;
   for (const tile of faced) {
     const reason = reasonOnTile(state, tile, held);
     if (reason) return reason;
@@ -280,9 +295,21 @@ function capitalise(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
+/**
+ * A floor drop the person holds E for (ADR 0060 amendment). `note` is the line
+ * for a station in reach that is full, or null. `action` is what the hold
+ * does, without the key: the prompt reads "Hold E to " followed by `action`.
+ */
+export interface FloorDropPrompt {
+  readonly note: string | null;
+  readonly action: string;
+}
+
 /** What one person's buttons would do right now. */
 export interface Prompt {
   readonly interact: string | null;
+  /** Set when the interact press would set the held item on open floor: it needs a hold. */
+  readonly floorDrop: FloorDropPrompt | null;
   readonly work: string | null;
   readonly status: string;
 }
@@ -326,10 +353,15 @@ function placePrompt(state: GameState, tile: Tile, held: Item): string | null {
   if (supply)
     return `Put ${heldName(held)} back in the ${CRATE_NAMES[supply.kind]} crate`;
   const target = at(state.targets, tile);
-  if (target) return `Place ${heldLabel(held)} at ${TARGET_NAMES[target.kind]}`;
-  return state.floor.length < FLOOR_CAP
-    ? `Set ${heldName(held)} down on the floor here`
-    : null;
+  if (target) {
+    // A chair spot takes one chair per press, so the prompt counts the rest.
+    const count = held.count ?? 1;
+    if (held.kind === "chairs" && target.kind === "chair-spot" && count > 1)
+      return `Place a chair (${count - 1} more in the stack)`;
+    return `Place ${heldLabel(held)} at ${TARGET_NAMES[target.kind]}`;
+  }
+  // A floor drop is a hold, so its line comes from getPrompt, not here.
+  return null;
 }
 
 /** Button prompts and a status line for one person. */
@@ -343,6 +375,7 @@ export function getPrompt(state: GameState, id: PlayerId): Prompt {
         : ` Back around ${clockLabel(state.returnsAt, state.duration)}.`;
     return {
       interact: null,
+      floorDrop: null,
       work: null,
       status: `${name} is out with his brothers.${back}`,
     };
@@ -360,12 +393,14 @@ export function getPrompt(state: GameState, id: PlayerId): Prompt {
       );
       return {
         interact: null,
+        floorDrop: null,
         work: null,
         status: `${name} is on the phone (about ${minutes} min left): ${call.text}`,
       };
     }
     return {
       interact: null,
+      floorDrop: null,
       work: null,
       status: `${name}: ${player.busyReason ?? "busy"}`,
     };
@@ -380,22 +415,19 @@ export function getPrompt(state: GameState, id: PlayerId): Prompt {
   const tile = interactTile(state, id);
 
   let interact: string | null = null;
+  let floorDrop: FloorDropPrompt | null = null;
   let work: string | null = null;
-  if (tile) {
+  if (tile && held && floorDropPress(state, player)) {
+    floorDrop = {
+      note: blockedStationFor(
+        state,
+        { x: Math.floor(player.x), y: Math.floor(player.y) },
+        held
+      ),
+      action: `set ${heldName(held)} down on the floor here`,
+    };
+  } else if (tile) {
     interact = held ? placePrompt(state, tile, held) : takePrompt(state, tile);
-    const onFloor =
-      !at(state.stations, tile) &&
-      !at(state.supplies, tile) &&
-      !at(state.targets, tile);
-    const blocked =
-      held && onFloor
-        ? blockedStationFor(
-            state,
-            { x: Math.floor(player.x), y: Math.floor(player.y) },
-            held
-          )
-        : null;
-    if (blocked && interact) interact = `${blocked} ${interact}`;
   } else {
     interact = unpressedReason(state, player);
   }
@@ -421,7 +453,7 @@ export function getPrompt(state: GameState, id: PlayerId): Prompt {
         ? `Put ${heldName(held)} back in the ${CRATE_NAMES.chairs} crate`
         : THROW_OUT_PROMPT;
   }
-  return { interact, work, status };
+  return { interact, floorDrop, work, status };
 }
 
 /** Whether two tiles are the same tile. */
@@ -558,7 +590,11 @@ function putDownStep(state: GameState, held: Item): CoachStep | null {
  * made or cooked item goes to the target that wants it, and burnt food goes
  * to the bin. Null when nothing open wants the item.
  */
-function carryStep(state: GameState, item: Item): CoachStep | null {
+function carryStep(
+  state: GameState,
+  item: Item,
+  key: string
+): CoachStep | null {
   switch (item.kind) {
     case "roses": {
       const wantsArrange = openTarget(state, "arrangement") !== undefined;
@@ -605,7 +641,7 @@ function carryStep(state: GameState, item: Item): CoachStep | null {
       return placeStep(state, item);
     case "burnt":
       return {
-        text: `Carry ${ITEM_NAMES.burnt} to ${STATION_NAMES.bin} and hold work there to throw it out.`,
+        text: `Carry ${ITEM_NAMES.burnt} to ${STATION_NAMES.bin} and hold ${key} there to throw it out.`,
         tile: firstTile(state, "bin"),
       };
     default:
@@ -656,7 +692,11 @@ function cookingStep(state: GameState): CoachStep | null {
  * The grab steps come in the order `lead` gives: roses first, or raw food
  * first for the co-op second person.
  */
-function fetchStep(state: GameState, lead: "roses" | "food"): CoachStep | null {
+function fetchStep(
+  state: GameState,
+  lead: "roses" | "food",
+  key: string
+): CoachStep | null {
   for (const grill of stationsOf(state, "grill")) {
     const item = grill.item;
     if (item?.kind === "hotdogs" || item?.kind === "wings")
@@ -701,7 +741,7 @@ function fetchStep(state: GameState, lead: "roses" | "food"): CoachStep | null {
   );
   if (openTarget(state, "arrangement") && roseArrange) {
     return {
-      text: `Stand at ${STATION_NAMES.arrange} and hold work to arrange the roses.`,
+      text: `Stand at ${STATION_NAMES.arrange} and hold ${key} to arrange the roses.`,
       tile: { x: roseArrange.x, y: roseArrange.y },
     };
   }
@@ -710,7 +750,7 @@ function fetchStep(state: GameState, lead: "roses" | "food"): CoachStep | null {
   );
   if (openTarget(state, "petals") && rosePetals) {
     return {
-      text: `Stand at ${STATION_NAMES.petals} and hold work to pluck petals.`,
+      text: `Stand at ${STATION_NAMES.petals} and hold ${key} to pluck petals.`,
       tile: { x: rosePetals.x, y: rosePetals.y },
     };
   }
@@ -742,10 +782,12 @@ export function getCoachStep(
   if (state.phase === "done") return null;
   const player = state.players[id];
   if (player.presence === "away") return null;
-  if (player.holding) return carryStep(state, player.holding);
+  // The key the line names: co-op gives each person one, solo either set.
+  const key = workKeyName(id, options.coop === true);
+  if (player.holding) return carryStep(state, player.holding, key);
   // In co-op the second person starts on the food, so the two lines differ.
   const lead = options.coop && id === "abbi" ? "food" : "roses";
-  return fetchStep(state, lead);
+  return fetchStep(state, lead, key);
 }
 
 /**

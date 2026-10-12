@@ -39,6 +39,14 @@ function threeOClock(duration: number): number {
 }
 
 /**
+ * Whether a finish at this level time meets "Everything set by 3:00". The sim
+ * uses the same rule for the "Early, even." toast, so the two always agree.
+ */
+export function setByThree(finished: number, duration: number): boolean {
+  return finished <= threeOClock(duration);
+}
+
+/**
  * Whether the run kept its promise. Staying keeps it. A break keeps it when
  * the category promised for the return was finished by the end. Leaving does
  * not. A run where the brothers never called has nothing to break, so it is kept.
@@ -85,7 +93,6 @@ export function evaluateChallenges(
 ): readonly ChallengeResult[] {
   const burnt = state.burntBatches;
   const finished = state.finishedAt;
-  const setBy = threeOClock(state.duration);
   return [
     {
       id: "no-burnt",
@@ -99,7 +106,7 @@ export function evaluateChallenges(
     {
       id: "set-by-three",
       label: CHALLENGE_LABELS["set-by-three"],
-      met: finished !== null && finished <= setBy,
+      met: finished !== null && setByThree(finished, state.duration),
       detail:
         finished === null
           ? "Something was still open at 4:00."

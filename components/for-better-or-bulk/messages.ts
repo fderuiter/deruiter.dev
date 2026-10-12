@@ -206,9 +206,10 @@ export function describeEvent(event: GameEvent): string | null {
     case "seeded-end":
       return SEEDED_END_LINES[event.id];
     case "level-finished":
+      if (!event.allSet) return "It's 4:00. Time to get married.";
       return event.early
         ? "Everything is set. Early, even."
-        : "It's 4:00. Time to get married.";
+        : "Everything is set.";
     default:
       return null;
   }

@@ -1224,4 +1224,15 @@ describe("the brothers' options share one resting look (round 9)", () => {
     expect(stay.className).not.toMatch(/(^|\s)border-\[var\(--fbb-accent\)\]/);
     expect(document.activeElement).not.toBe(stay);
   });
+
+  it("names the break button with a short label and the promise as its description (round 15)", () => {
+    render(<BrothersDialog state={atText} onDecide={vi.fn()} />);
+    const breakButton = screen.getByRole("button", {
+      name: "Take a short break.",
+    });
+    const detail = document.getElementById(
+      breakButton.getAttribute("aria-describedby") ?? ""
+    );
+    expect(detail?.textContent).toBe("(Promise to come back for something.)");
+  });
 });

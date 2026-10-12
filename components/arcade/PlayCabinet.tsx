@@ -51,6 +51,13 @@ interface PlayCabinetProps {
   onLaunch?: () => void;
   onExit?: () => void;
   /**
+   * Lowercase `event.key` values the game owns while it plays. A bare F
+   * toggles fullscreen unless the game lists "f" here, so its own work key
+   * reaches the game untouched. Fullscreen stays on the cabinet's button.
+   * Every other key, and every game that omits this, behaves as before.
+   */
+  gameKeys?: readonly string[];
+  /**
    * One title screen per game (#1516). When true (the default), the attract
    * screen is the game's title screen and the cabinet tells the game, through
    * `useSkipTitleScreen()`, to start straight into play after Launch. Pass
@@ -100,6 +107,7 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
   controlDock,
   onLaunch,
   onExit,
+  gameKeys,
   singleTitleScreen = true,
   children,
 }) => {
@@ -403,8 +411,11 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
               return;
             }
           }
+          const key = event.key.toLowerCase();
+          // A key the game owns passes through to the game untouched.
+          const gameOwnsKey = gameKeys?.some((k) => k.toLowerCase() === key);
           if (
-            event.key.toLowerCase() === "f" ||
+            (key === "f" && !gameOwnsKey) ||
             (event.key === "Escape" && isFullscreen)
           ) {
             event.preventDefault();

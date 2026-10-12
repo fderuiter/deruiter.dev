@@ -387,3 +387,79 @@ describe("PlayCabinet - Viewport Budgeting & Responsive Container Suite", () => 
     });
   });
 });
+
+describe("PlayCabinet game keys (#1963)", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.useRealTimers();
+  });
+
+  async function launch(
+    gameKeys: readonly string[] | undefined,
+    onKey: (key: string) => void
+  ) {
+    render(
+      <PlayCabinet
+        gameId="key-test"
+        title="Key test"
+        icon={<span />}
+        instructions="Play"
+        controls={[]}
+        importComponent={() => Promise.resolve({})}
+        gameKeys={gameKeys}
+      >
+        <div
+          tabIndex={0}
+          data-testid="work-key"
+          onKeyDown={(event) => onKey(event.key)}
+        >
+          Work
+        </div>
+      </PlayCabinet>
+    );
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /Launch Cabinet/i }));
+    });
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+  }
+
+  function fullscreenState(): string | null {
+    return (
+      document
+        .querySelector('[data-arcade-cabinet="key-test"]')
+        ?.getAttribute("data-fullscreen") ?? null
+    );
+  }
+
+  it("lets a game-owned F reach the game and leaves fullscreen alone", async () => {
+    const onKey = vi.fn();
+    await launch(["f"], onKey);
+    await act(async () => {
+      fireEvent.keyDown(screen.getByTestId("work-key"), {
+        key: "f",
+        code: "KeyF",
+      });
+    });
+    expect(onKey).toHaveBeenCalledWith("f");
+    expect(fullscreenState()).toBe("false");
+  });
+
+  it("still toggles fullscreen on a bare F when the game does not claim it", async () => {
+    const onKey = vi.fn();
+    await launch(undefined, onKey);
+    await act(async () => {
+      fireEvent.keyDown(screen.getByTestId("work-key"), {
+        key: "f",
+        code: "KeyF",
+      });
+    });
+    expect(onKey).not.toHaveBeenCalled();
+    expect(fullscreenState()).toBe("true");
+  });
+});

@@ -87,6 +87,7 @@ export const ForBetterOrBulkClient: React.FC = () => (
               { key: "Esc", action: "Pause" },
             ]}
             importComponent={ForBetterOrBulkLoader}
+            gameKeys={["f"]}
             singleTitleScreen={false}
           >
             <DynamicForBetterOrBulk />

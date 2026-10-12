@@ -180,6 +180,7 @@ describe("Garmin stomps and hits (#1950)", () => {
   it("a spiked stack overflow can't be stomped", () => {
     const next = step(
       run(EMPTY_COURSE, {
+        lives: 1,
         isGrounded: false,
         playerY: GROUND_Y - 24 - PLAYER_HEIGHT,
         playerVy: 6,
@@ -197,16 +198,12 @@ describe("Garmin stomps and hits (#1950)", () => {
     expect(next.crashReport?.errorType).toBe("Stack Overflow");
   });
 
-  it("running into a bug still crashes, unless a shield takes the hit", () => {
-    const bare = step(run(EMPTY_COURSE, { obstacles: [bug(PLAYER_X + 4)] }));
-    expect(bare.crashReport?.errorType).toBe("Null Pointer");
-
-    const shielded = step(
-      run(EMPTY_COURSE, { hasShield: true, obstacles: [bug(PLAYER_X + 4)] })
+  it("running into a bug on the last life crashes the run", () => {
+    const bare = step(
+      run(EMPTY_COURSE, { lives: 1, obstacles: [bug(PLAYER_X + 4)] })
     );
-    expect(shielded.gameState).toBe("playing");
-    expect(shielded.hasShield).toBe(false);
-    expect(shielded.invulnerableMs).toBeGreaterThan(0);
+    expect(bare.gameState).toBe("crashed");
+    expect(bare.crashReport?.errorType).toBe("Null Pointer");
   });
 });
 
@@ -217,7 +214,7 @@ describe("Garmin course (#1950)", () => {
       ...EMPTY_COURSE,
       gaps: [{ x: cameraAtStart + PLAYER_X - 30, width: 200 }],
     };
-    let s = run(course);
+    let s = run(course, { lives: 1 });
     for (let i = 0; i < 120 && s.gameState === "playing"; i++) s = step(s);
     expect(s.gameState).toBe("crashed");
     expect(s.crashReport?.errorType).toBe("Segmentation Fault");
@@ -259,7 +256,7 @@ describe("Garmin course (#1950)", () => {
     expect(again.kudos).toBe(1);
   });
 
-  it("a Firmware Update block grants a shield", () => {
+  it("a power block pops a Protein Shake for a Base runner", () => {
     const blockY = GROUND_Y - 72;
     const course: CourseLayout = {
       ...EMPTY_COURSE,
@@ -269,7 +266,7 @@ describe("Garmin course (#1950)", () => {
           x: PLAYER_X,
           y: blockY,
           kind: "sync",
-          contents: "firmware",
+          contents: "power",
           used: false,
         },
       ],
@@ -277,7 +274,8 @@ describe("Garmin course (#1950)", () => {
     const bumped = step(
       run(course, { isGrounded: false, playerY: blockY + 15, playerVy: -6 })
     );
-    expect(bumped.hasShield).toBe(true);
+    expect(bumped.pickups).toHaveLength(1);
+    expect(bumped.pickups?.[0].kind).toBe("shake");
   });
 
   it("lands on a ledge from above", () => {

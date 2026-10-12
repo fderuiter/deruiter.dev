@@ -14,6 +14,8 @@ import {
   FLOOR_CAP,
   FLOOR_HOLD_TICKS,
   THROW_OUT_PROMPT,
+  interactKeyName,
+  workKeyName,
   IDLE_FRAME,
   IDLE_INPUT,
   LEFT_LINE,
@@ -1885,6 +1887,35 @@ describe("interaction targets", () => {
     expect(released.players.fred.floorHold).toBeNull();
   });
 
+  it("a hold started facing floor does not carry into a station press after a turn", () => {
+    const arrange = createLevel(DEFAULT_SETUP).stations.find(
+      (s) => s.kind === "arrange"
+    );
+    if (!arrange) throw new Error("the venue has an ARRANGE table");
+    const at = place(createLevel(DEFAULT_SETUP), "fred", 10, 4, [0, -1], ROSES);
+    const held = run(
+      at,
+      frameFor("fred", { interact: true, interactHeld: true }),
+      4
+    ).state;
+    expect(held.players.fred.floorHold).not.toBeNull();
+    // The body turns to the ARRANGE table, which is a new tile and facing.
+    const turned = place(
+      held,
+      "fred",
+      arrange.x,
+      arrange.y + 1,
+      [0, -1],
+      ROSES
+    );
+    const pressed = press(turned, "fred").state;
+    expect(pressed.players.fred.holding).toBeNull();
+    expect(pressed.stations.find((s) => s.kind === "arrange")?.item).toEqual(
+      ROSES
+    );
+    expect(pressed.floor).toEqual([]);
+  });
+
   it("moving to another tile mid-hold resets it, and E must be pressed again", () => {
     const at = place(createLevel(DEFAULT_SETUP), "fred", 10, 4, [0, -1], roses);
     const held = run(
@@ -3145,6 +3176,43 @@ describe("prompts and refusals for the round 11 playtest (ADR 0060 amendment)", 
     const prompt = getPrompt(at, "fred");
     expect(prompt.interact).toBeNull();
     expect(prompt.work).toBe(THROW_OUT_PROMPT);
+  });
+
+  it("names the keys: E or Enter by person in co-op, either set solo", () => {
+    expect(interactKeyName("fred", true)).toBe("E");
+    expect(interactKeyName("abbi", true)).toBe("Enter");
+    expect(interactKeyName("fred", false)).toBe("E or Enter");
+    expect(interactKeyName("abbi", false)).toBe("E or Enter");
+    expect(workKeyName("fred", true)).toBe("F");
+    expect(workKeyName("abbi", true)).toBe("Shift");
+    expect(workKeyName("fred", false)).toBe("F or Shift");
+    expect(workKeyName("abbi", false)).toBe("F or Shift");
+  });
+
+  it("a hold in progress when the brothers text opens does not drop after the dialog closes", () => {
+    const brothersAt = untilBrothers(createLevel(DEFAULT_SETUP)).brothersAt;
+    if (brothersAt === null) throw new Error("the brothers text comes");
+    let state = createLevel(DEFAULT_SETUP);
+    // Start the hold six ticks before the text, so it is still running when it opens.
+    while (state.time + 6 * TICK_SECONDS < brothersAt)
+      state = stepGame(state, IDLE_FRAME).state;
+    state = place(state, "abbi", 10, 4, [0, -1], ROSES);
+    let sawHold = false;
+    for (let i = 0; i < 20 && state.phase === "playing"; i++) {
+      const frame = frameFor("abbi", {
+        interact: i === 0,
+        interactHeld: true,
+      });
+      state = stepGame(state, frame).state;
+      if (state.players.abbi.floorHold !== null) sawHold = true;
+    }
+    expect(sawHold).toBe(true);
+    expect(state.phase).toBe("brothers");
+    expect(state.players.abbi.floorHold).toBeNull();
+    state = decide(state, { choice: "stay", commitment: null });
+    state = run(state, IDLE_FRAME, FLOOR_HOLD_TICKS).state;
+    expect(state.floor).toEqual([]);
+    expect(state.players.abbi.holding).toEqual(ROSES);
   });
 
   it("the coach names the work key for each person and mode", () => {

@@ -14,6 +14,7 @@ import {
   TICK_SECONDS,
   assistInput,
   assistJob,
+  assistRests,
   computeReceipt,
   createLevel,
   frontTile,
@@ -1354,7 +1355,7 @@ describe("the helper's presses land where the engine resolves them", () => {
 });
 
 describe("the helper's floor drop is a hold (ADR 0060 amendment)", () => {
-  it("presses E, keeps it down through the hold, and drops the item only after it", () => {
+  it("presses E, keeps it down through the hold, and drops after exactly FLOOR_HOLD_TICKS active ticks", () => {
     const base = createLevel(ASSIST_SETUP);
     // Every target is out of the plan, so the only place for the roses is the
     // floor. One filled spot makes it Fred's turn ahead, so the helper may act.
@@ -1371,18 +1372,25 @@ describe("the helper's floor drop is a hold (ADR 0060 amendment)", () => {
       kind: "roses",
       madeBy: null,
     });
-    let firstHeld = -1;
-    let dropped = -1;
-    for (let tick = 0; tick < 900 && state.players.abbi.holding; tick++) {
-      state = stepGame(state, {
+    // The hold's ticks are the press and every later tick until the drop. The
+    // helper paces them: a resting tick keeps E down but does not count.
+    let activeHoldTicks = 0;
+    let dropped = false;
+    for (let tick = 0; tick < 900 && !dropped; tick++) {
+      const active = !assistRests(state.tick + 1, state.setup.relaxed);
+      const next = stepGame(state, {
         inputs: { fred: IDLE_INPUT, abbi: IDLE_INPUT },
         assisted: "abbi",
       }).state;
-      if (firstHeld < 0 && state.players.abbi.floorHold) firstHeld = tick;
-      if (state.players.abbi.holding === null) dropped = tick;
+      const inHold =
+        state.players.abbi.floorHold !== null ||
+        next.players.abbi.floorHold !== null;
+      if (inHold && active) activeHoldTicks++;
+      dropped = next.players.abbi.holding === null;
+      state = next;
     }
+    expect(dropped).toBe(true);
     expect(state.floor.some((f) => f.item.kind === "roses")).toBe(true);
-    expect(firstHeld).toBeGreaterThanOrEqual(0);
-    expect(dropped - firstHeld).toBeGreaterThanOrEqual(FLOOR_HOLD_TICKS - 1);
+    expect(activeHoldTicks).toBe(FLOOR_HOLD_TICKS);
   });
 });

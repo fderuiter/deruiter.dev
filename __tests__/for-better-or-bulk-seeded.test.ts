@@ -469,9 +469,7 @@ describe("the receipt's weather", () => {
   it("shows the real weather line from the bank and no game weather on a standard day", () => {
     const receipt = computeReceipt(runToEnd(DEFAULT_SETUP).state);
     expect(receipt.weather).toBe(bankText("weather"));
-    expect(receipt.weather).toBe(
-      "The weather was perfect. Fred took the credit."
-    );
+    expect(receipt.weather).toBe("The weather was perfect.");
     expect(receipt.gameWeather).toBeNull();
   });
 

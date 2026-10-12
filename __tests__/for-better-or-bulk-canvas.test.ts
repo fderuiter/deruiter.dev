@@ -279,6 +279,27 @@ describe("the venue's floor-drop and next-spot outlines (#1963)", () => {
     expect(dashes(drawn)).toContain("[6,4]");
   });
 
+  it("fills the floor drop from its bottom in proportion to the hold", () => {
+    const base = createLevel(DEFAULT_SETUP);
+    const fred = {
+      ...base.players.fred,
+      x: 10.5,
+      y: 4.5,
+      facingX: 0,
+      facingY: -1,
+      holding: { kind: "roses" as const, madeBy: null },
+      floorHold: { cellX: 10, cellY: 4, facingX: 0, facingY: -1, ticks: 6 },
+    };
+    const level: GameState = { ...base, players: { ...base.players, fred } };
+    const { ctx, drawn } = recorder();
+    drawVenue(ctx, level, "fred");
+    // Tile (10, 3) is x 400, y 120. Half of FLOOR_HOLD_TICKS is half the tile.
+    const fills = drawn
+      .filter((d) => d.name === "fillRect")
+      .map((d) => JSON.stringify(d.args));
+    expect(fills).toContain("[400,140,40,20]");
+  });
+
   it("marks the nearest open chair spot while carrying chairs", () => {
     const base = createLevel(DEFAULT_SETUP);
     const spot = base.targets.find(

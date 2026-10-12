@@ -692,6 +692,20 @@ export function recordedFrame(state: GameState, frame: Frame): Frame {
     : { inputs: frame.inputs, assisted: frame.assisted };
 }
 
+/**
+ * The players with no floor hold in progress. A hold ends when the brothers
+ * text opens and when a decision is made, so E must be pressed again after the
+ * dialog closes (ADR 0060 amendment, round 11).
+ */
+function withoutFloorHolds(
+  players: GameState["players"]
+): GameState["players"] {
+  return {
+    fred: { ...players.fred, floorHold: null },
+    abbi: { ...players.abbi, floorHold: null },
+  };
+}
+
 function decide(state: GameState, decision: PresenceDecision): StepResult {
   const fred = state.players.fred;
   const away = decision.choice !== "stay";
@@ -731,7 +745,7 @@ function decide(state: GameState, decision: PresenceDecision): StepResult {
       },
       returnsAt: away ? state.time + seconds : null,
       floor,
-      players: { ...state.players, fred: leaving },
+      players: withoutFloorHolds({ ...state.players, fred: leaving }),
     },
     events,
   };
@@ -833,7 +847,12 @@ export function stepGame(state: GameState, frame: Frame): StepResult {
   // The brothers' text ends the tick here, but the boundaries it crossed
   // (interruptions above) are already handled, so none is lost to the stop.
   if (w.state.brothersAt === null && after + 1e-9 >= brothersDue(w.state)) {
-    w.state = { ...w.state, phase: "brothers", brothersAt: after };
+    w.state = {
+      ...w.state,
+      phase: "brothers",
+      brothersAt: after,
+      players: withoutFloorHolds(w.state.players),
+    };
     w.events.push({ type: "brothers-text" });
     return w;
   }

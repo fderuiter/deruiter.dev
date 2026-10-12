@@ -114,6 +114,23 @@ describe("For Better or Bulk keyboard mapping (#1906)", () => {
     });
   });
 
+  it("sets interactHeld for Abbi's Enter in co-op as for Fred's E", () => {
+    const frame = buildFrame(
+      new Set(["Enter"]),
+      new Set(),
+      new Set(["Enter"]),
+      "coop",
+      "abbi"
+    );
+    expect(frame.inputs.abbi).toEqual({
+      moveX: 0,
+      moveY: 0,
+      interact: true,
+      interactHeld: true,
+      work: false,
+    });
+  });
+
   it("fires interact only on the press, not while it is held", () => {
     const frame = buildFrame(
       new Set(["KeyE"]),

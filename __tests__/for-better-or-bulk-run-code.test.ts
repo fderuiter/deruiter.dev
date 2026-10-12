@@ -222,6 +222,40 @@ describe("For Better or Bulk run codes", () => {
     });
   });
 
+  it("refuses an f1 code written with the old input alphabet, without throwing", () => {
+    // One idle tick for both people in the old 36-code alphabet: 16 each, so
+    // the symbol is (16 * 36 + 16) * 21 = 12432. The set-up bytes are copied
+    // from the scripted run's own shape.
+    const { setup } = scriptedRun();
+    const flags =
+      (setup.relaxed ? 1 : 0) |
+      (setup.assist ? 2 : 0) |
+      (setup.cart.lanterns ? 4 : 0);
+    const body = [
+      flags,
+      ["modest", "full", "yes"].indexOf(setup.cart.roses),
+      ["enough", "lots", "feed-rochester"].indexOf(setup.cart.food),
+      ...varintBytes(setup.seed ?? 0),
+      setup.capabilities.length,
+      ...setup.capabilities.map((id) =>
+        ["faq", "admin", "registry", "intro3d"].indexOf(id)
+      ),
+      ...varintBytes(1),
+      ...varintBytes(12432),
+      ...varintBytes(1),
+      0,
+      0,
+      0,
+    ];
+    const code = sealed(body);
+    expect(() => {
+      const decoded = decodeRunCode(code);
+      if (decoded.ok) verifyRun(decoded.run);
+    }).not.toThrow();
+    const decoded = decodeRunCode(code);
+    expect(decoded.ok ? verifyRun(decoded.run).ok : false).toBe(false);
+  });
+
   it("refuses an over-long code before reading it", () => {
     const long = `${RUN_CODE_PREFIX}${"A".repeat(MAX_RUN_CODE_LENGTH)}`;
     expect(decodeRunCode(long)).toMatchObject({

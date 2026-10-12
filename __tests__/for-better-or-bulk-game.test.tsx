@@ -542,7 +542,8 @@ describe("For Better or Bulk cabinet (#1906)", () => {
     render(<BrothersDialog state={free} onDecide={vi.fn()} />);
     expect(screen.getByText(/Abbi has her hands free/)).toBeTruthy();
     expect(screen.queryByText(/carrying|chairs/)).toBeNull();
-    expect(screen.getByText(/Fred is back from his time away\./)).toBeTruthy();
+    // The line is about the wedding whatever the mood, so it does not change.
+    expect(screen.getByText(/The wedding is still on\./)).toBeTruthy();
   });
 
   it("offers a break only with a promise about work that is in the plan", () => {

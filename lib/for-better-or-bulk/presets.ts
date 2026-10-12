@@ -420,7 +420,7 @@ export const LINE_BANK: readonly BankLine[] = [
     id: "weather",
     tag: "Real",
     fact: "weather",
-    text: "The weather was perfect. Fred took the credit.",
+    text: "The weather was perfect.",
   },
   {
     id: "dinner",

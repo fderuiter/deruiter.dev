@@ -62,7 +62,12 @@ export type {
   RunVerification,
   SharedRun,
 } from "./internal/run-code";
-export { assistInput, assistJob, assistJobKind } from "./internal/assist";
+export {
+  assistInput,
+  assistJob,
+  assistJobKind,
+  assistRests,
+} from "./internal/assist";
 export {
   heldLabel,
   heldName,

@@ -407,10 +407,17 @@ food and coach copy say what a press does. The rules below are the current ones.
   for each tick E is down, and `floorDropPress` in `internal/press.ts` says when
   a press would drop on the floor. The solo helper holds E the same way and
   pauses the hold on its resting ticks.
-  **Older runs may not verify.** Frames now carry `interactHeld`, and a run
-  recorded before this rule may tap a floor drop that no longer lands, so its
-  replay and share code can fail verification. Such runs must be played again to
-  share. `RUN_CODE_PREFIX` is unchanged.
+  **Older run codes will not verify.** Frames now carry `interactHeld`, so the
+  symbols in a run code mean something different. An `f1.` code recorded before
+  this rule decodes to a different day and is refused as not replaying to the
+  same result. The decoder never throws on such a code. Play the day again to
+  share. `RUN_CODE_PREFIX` stays `f1.`, as the standing decision for this cabinet.
+- **A floor hold ends with the brothers' text.** The hold is cleared for both
+  people when the text opens and when a decision is made, and the component
+  clears the held keys on a decision. E must be pressed again after the dialog.
+  A hold also ends on a pause, since a paused clock sees no E.
+- **The floor hold shows its progress.** The floor-drop tile fills from its
+  bottom in the active amber as E is held, so the count is visible.
 - **The floor drop prompt names the hold.** It reads "Hold E to set the roses
   down on the floor here" (Enter for Abbi in co-op, "E or Enter" solo), with a
   station in reach that is full in front when one applies.
@@ -424,8 +431,8 @@ food and coach copy say what a press does. The rules below are the current ones.
   do: "hold F" for Fred in co-op, "hold Shift" for Abbi in co-op, and "hold F or
   Shift" solo. The key names come from `workKeyName` and `interactKeyName` in
   `internal/words.ts`, which the game component also uses.
-- **The brothers' copy is about the situation.** Fred's line reads "The wedding
-  is still on." until he has come back from a break or a leave, and then "Fred is
-  back from his time away." It says nothing about his mood.
-- **The weather line is gentler.** The real weather line reads "The weather was
-  perfect. Fred took the credit."
+- **The brothers' copy is about the situation.** The text opens before any break
+  or leave, so Fred's line reads "The wedding is still on." It says nothing about
+  his mood.
+- **The weather line has no joke.** The real weather line reads "The weather was
+  perfect."

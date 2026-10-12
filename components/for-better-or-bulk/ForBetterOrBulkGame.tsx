@@ -629,7 +629,12 @@ export function ForBetterOrBulkGame({
 
   const decide = (decision: PresenceDecision) => {
     if (userPaused) return;
+    // Keys down while the text was up are not carried into the game, so a
+    // floor hold started before the dialog cannot finish after it. The engine
+    // also clears every floor hold when the text opens and on a decision.
+    held.current.clear();
     tapped.current.clear();
+    pressed.current.clear();
     step({ ...IDLE_FRAME, decision });
     boundaryRef.current?.focus({ preventScroll: true });
   };
@@ -637,6 +642,8 @@ export function ForBetterOrBulkGame({
   /** Pauses or resumes the clock and says so to screen readers. */
   const setPaused = (next: boolean) => {
     // Keys held when the clock stops would otherwise still be "down" on resume.
+    // A floor hold needs E down on every tick, so clearing the keys here also
+    // ends any floor hold in progress: a pause resets it.
     held.current.clear();
     tapped.current.clear();
     pressed.current.clear();

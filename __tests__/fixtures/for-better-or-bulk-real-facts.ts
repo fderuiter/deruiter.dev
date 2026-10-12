@@ -10,8 +10,9 @@
  * that Abbi was upset, because that attributes a feeling to a real person. The
  * design doc needs the same edit before this copy matches it again.
  *
- * The "weather" text is the round 11 rewrite (task 6): "Fred took the credit."
- * replaces the joke at Fred's expense. The design doc needs the same edit too.
+ * The "weather" text is the round 11 rewrite (task 6): the joke at Fred's
+ * expense is gone, and the line says only "The weather was perfect." The design
+ * doc needs the same edit too.
  *
  * The "suit" text is the round 9 playtest rewrite. It keeps the doc's "(a
  * fictional homage name)" aside, so no real shop is named, and drops the word
@@ -43,7 +44,7 @@ export const REAL_FACTS_FROM_DESIGN_DOC: readonly {
   },
   {
     id: "weather",
-    text: "The weather was perfect. Fred took the credit.",
+    text: "The weather was perfect.",
   },
   {
     id: "dinner",

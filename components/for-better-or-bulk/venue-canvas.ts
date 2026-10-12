@@ -11,6 +11,7 @@ import {
   BURN_SECONDS,
   COOK_SECONDS,
   CRATE_NAMES,
+  FLOOR_HOLD_TICKS,
   PATIO_ROWS,
   PETAL_SECONDS,
   SIMPLIFY_SECONDS,
@@ -576,6 +577,26 @@ function drawTileOutline(
 }
 
 /**
+ * The floor drop being held (ADR 0060 amendment): the tile fills from its
+ * bottom in the active amber as E is held, so a player can see the hold count.
+ * `fraction` is the share of FLOOR_HOLD_TICKS held so far, from 0 to 1.
+ */
+function drawFloorHoldFill(
+  ctx: CanvasRenderingContext2D,
+  tile: Tile,
+  fraction: number
+): void {
+  const share = clamp(fraction, 0, 1);
+  if (share <= 0) return;
+  ctx.save();
+  ctx.globalAlpha = 0.35;
+  ctx.fillStyle = COLORS.active;
+  const height = TILE * share;
+  ctx.fillRect(tile.x * TILE, tile.y * TILE + TILE - height, TILE, height);
+  ctx.restore();
+}
+
+/**
  * The one outline for one person. When their interact press lands on a tile
  * (as the engine resolves it: a station beside them can beat the floor in
  * front of them), that tile is outlined: solid when the press can act now,
@@ -603,6 +624,8 @@ function drawPersonOutlines(
     let style: OutlineStyle = "waiting";
     if (drop && sameTile(drop, press)) style = "floor";
     else if (ready && !waiting) style = "ready";
+    if (style === "floor" && player.floorHold)
+      drawFloorHoldFill(ctx, press, player.floorHold.ticks / FLOOR_HOLD_TICKS);
     drawTileOutline(ctx, press, style);
     return;
   }

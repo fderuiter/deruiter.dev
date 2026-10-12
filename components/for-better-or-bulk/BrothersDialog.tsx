@@ -61,17 +61,6 @@ function abbiLine(state: GameState): string {
     : "Abbi has her hands free and is looking at him.";
 }
 
-/**
- * Where Fred stands, read from the level as it stands. `calm` is set when he
- * comes back from a break or a leave (sim.ts), so it says he is back. Until
- * then the line is about the wedding, not about how he feels.
- */
-function fredLine(state: GameState): string {
-  return state.players.fred.calm
-    ? "Fred is back from his time away."
-    : "The wedding is still on.";
-}
-
 export function BrothersDialog({ state, onDecide }: BrothersDialogProps) {
   const headingRef = useRef<HTMLHeadingElement>(null);
   const openedAt = useRef<number | null>(null);
@@ -138,7 +127,7 @@ export function BrothersDialog({ state, onDecide }: BrothersDialogProps) {
           className="mt-2 text-xs text-[var(--fbb-dim)]"
         >
           &quot;Breakfast? You look like you need to get out of there for a
-          bit.&quot; {fredLine(state)} {abbiLine(state)}
+          bit.&quot; The wedding is still on. {abbiLine(state)}
         </p>
         {!promising ? (
           <div className="mt-4 flex flex-col gap-2">

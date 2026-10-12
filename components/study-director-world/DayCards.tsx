@@ -88,7 +88,20 @@ const LineList: React.FC<{
   );
 
 const CARD =
-  "sd-enter border border-[var(--sd-hairline-strong)] bg-[var(--sd-surface)] p-3 space-y-3";
+  "sd-enter scroll-mt-24 border border-[var(--sd-hairline-strong)] bg-[var(--sd-surface)] p-3 space-y-3";
+
+/**
+ * Brings a card that opened above the viewport down into view. After a walk
+ * from the office directory, which sits below the floor, the side column's
+ * cards render off the top of the page and the player saw nothing happen
+ * (#1936). A card already on screen is left where it is.
+ */
+export function revealIfAbove(el: HTMLElement | null): void {
+  if (!el || typeof el.getBoundingClientRect !== "function") return;
+  if (el.getBoundingClientRect().top < 96) {
+    el.scrollIntoView?.({ block: "start" });
+  }
+}
 
 /** The morning digest: the start time, then what changed, then what held. */
 export const DigestCard: React.FC<{ digest: MorningDigest }> = ({ digest }) => {
@@ -261,12 +274,15 @@ export const OvernightCard: React.FC<{
   closeoutLabel: string;
 }> = ({ report, nextDay, onNextDay, onCloseout, closeoutLabel }) => {
   const primary = useRef<HTMLButtonElement>(null);
+  const card = useRef<HTMLElement>(null);
   useEffect(() => {
     primary.current?.focus({ preventScroll: true });
+    revealIfAbove(card.current);
   }, []);
   const { changes, steady } = changesFirst(report.lines);
   return (
     <section
+      ref={card}
       aria-labelledby="sd-world-report"
       data-testid="world-overnight"
       onKeyDown={(e) => {

@@ -17,6 +17,7 @@ export const PROFILES = [
   "operator",
   "delegator",
   "controlFreak",
+  "absentee",
 ] as const satisfies readonly StudyDirectorProfile[];
 
 /** One finished study, as the career file remembers it. */

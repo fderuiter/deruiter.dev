@@ -730,7 +730,7 @@ const reception: InteractionHandler = (world, target) => {
         ? "Nothing checked yet."
         : `${plural(visit.observations.length, "check")} done.`,
       left.length > 0
-        ? `Still to look at: ${left.map((c) => c.label.toLowerCase()).join(", ")}.`
+        ? `Still to look at: ${left.map((c) => c.label.charAt(0).toLowerCase() + c.label.slice(1)).join(", ")}.`
         : "You have looked at everything.",
     ],
     tone: "neutral",

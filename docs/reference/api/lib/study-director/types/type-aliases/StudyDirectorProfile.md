@@ -6,4 +6,4 @@
 
 # Type Alias: StudyDirectorProfile
 
-> **StudyDirectorProfile** = `"firefighter"` \| `"bureaucrat"` \| `"peoplePleaser"` \| `"scientist"` \| `"operator"` \| `"delegator"` \| `"controlFreak"`
+> **StudyDirectorProfile** = `"firefighter"` \| `"bureaucrat"` \| `"peoplePleaser"` \| `"scientist"` \| `"operator"` \| `"delegator"` \| `"controlFreak"` \| `"absentee"`

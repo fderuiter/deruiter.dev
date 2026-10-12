@@ -87,6 +87,46 @@ export function computeIntegerCanvasSize(
   };
 }
 
+/**
+ * Fits the logical canvas into a box at its own aspect ratio, as large as the
+ * box allows, for the touch cabinet. The CSS size is a whole number of px
+ * (a multiple of 5, so the 5:3 shape stays exact) and the backing store is
+ * the same size in device pixels, so pixel art stays sharp at any
+ * devicePixelRatio. Sampling is nearest-neighbour (`image-rendering:
+ * pixelated`), and the draw code scales to whatever backing size it is given.
+ */
+export function computeFillCanvasSize(
+  availableCssWidth: number,
+  availableCssHeight: number,
+  devicePixelRatio: number,
+  logicalWidth: number = LOGICAL_WIDTH,
+  logicalHeight: number = LOGICAL_HEIGHT
+): IntegerCanvasSize {
+  const dpr =
+    Number.isFinite(devicePixelRatio) && devicePixelRatio > 0
+      ? devicePixelRatio
+      : 1;
+  const w = Number.isFinite(availableCssWidth)
+    ? Math.max(0, availableCssWidth)
+    : 0;
+  const h = Number.isFinite(availableCssHeight)
+    ? Math.max(0, availableCssHeight)
+    : 0;
+  const fitWidth = Math.min(w, (h * logicalWidth) / logicalHeight);
+  // Multiples of 5 keep the 240:144 (5:3) shape exact in whole pixels.
+  const cssWidth = Math.max(0, Math.floor(fitWidth / 5) * 5);
+  const cssHeight = (cssWidth * logicalHeight) / logicalWidth;
+  const backingWidth = Math.round(cssWidth * dpr);
+  const backingHeight = Math.round(cssHeight * dpr);
+  return {
+    scale: backingWidth / logicalWidth,
+    backingWidth,
+    backingHeight,
+    cssWidth,
+    cssHeight,
+  };
+}
+
 /** Bits of {@link wallEdgeMask}: which sides of a wall face open floor. */
 export const EDGE_N = 1;
 export const EDGE_E = 2;

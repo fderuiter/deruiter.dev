@@ -57,6 +57,7 @@ import {
   TILE,
   boardSafeColor,
   clampLabelCenter,
+  computeFillCanvasSize,
   computeIntegerCanvasSize,
   fitFontSize,
   enemySprite,
@@ -432,11 +433,19 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     const measure = () => {
       const rect = frame.getBoundingClientRect();
       if (rect.width <= 0 || rect.height <= 0) return;
-      const next = computeIntegerCanvasSize(
-        rect.width,
-        rect.height,
-        window.devicePixelRatio || 1
-      );
+      // The phone fills its dock with the largest 5:3 box. The desktop keeps
+      // whole-pixel art scaling (#1522).
+      const next = phoneCabinet
+        ? computeFillCanvasSize(
+            rect.width,
+            rect.height,
+            window.devicePixelRatio || 1
+          )
+        : computeIntegerCanvasSize(
+            rect.width,
+            rect.height,
+            window.devicePixelRatio || 1
+          );
       setCanvasSize((prev) =>
         prev &&
         prev.backingWidth === next.backingWidth &&
@@ -451,7 +460,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     const observer = new ResizeObserver(measure);
     observer.observe(frame);
     return () => observer.disconnect();
-  }, [isMounted]);
+  }, [isMounted, phoneCabinet]);
   // The fog texture and the maps it was painted from, rebuilt only when the
   // field of view changes.
   const fogRef = useRef<{
@@ -2342,7 +2351,12 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       : `SUBNET 0${stage}`;
 
   const phoneHud = (
-    <div className="flex w-full min-w-0 shrink-0 items-center gap-2 border-b border-neutral-900/60 px-1 pb-1 text-xs font-bold">
+    <div
+      className="flex h-11 w-full min-w-0 shrink-0 items-center gap-2 border-b border-neutral-900/60 pl-1 text-xs font-bold"
+      // The touch toolbar sits over this row's right end. The playfield already
+      // pads 4px, so the row pads the toolbar's width less that.
+      style={{ paddingRight: "calc(var(--cabinet-toolbar-inset, 0px) - 4px)" }}
+    >
       <span
         className="shrink-0 text-neutral-300"
         data-testid="labyrinth-phone-floor"
@@ -2375,14 +2389,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
           BOSS {boss.defeated ? "DOWN" : boss.hp}
         </span>
       )}
-      <span
-        className={`min-w-0 flex-1 truncate ${
-          roomExitLock.locked ? "text-rose-300" : "text-emerald-300"
-        }`}
-        data-testid="labyrinth-phone-keys"
-      >
-        {roomExitLock.locked ? roomExitLock.objective : "EXIT OPEN"}
-      </span>
+      <span className="min-w-0 flex-1" aria-hidden="true" />
       <span
         className="shrink-0 text-zinc-100"
         data-testid="labyrinth-phone-score"
@@ -2393,7 +2400,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         type="button"
         onClick={openOptionsSheet}
         aria-expanded={optionsOpen}
-        className="min-h-11 shrink-0 rounded-lg border border-zinc-700 bg-zinc-900 px-2.5 text-xs font-bold text-zinc-200 touch-manipulation active:scale-[0.98]"
+        className="h-11 shrink-0 rounded-lg border border-zinc-700 bg-zinc-900 px-2.5 text-xs font-bold text-zinc-200 touch-manipulation active:scale-[0.98]"
       >
         Options
       </button>
@@ -2404,7 +2411,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     <div
       role="group"
       aria-label="Tools and actions"
-      className="grid grid-cols-3 gap-1"
+      className="grid grid-cols-2 gap-1"
     >
       {[0, 1, 2].map((slotIdx) => {
         const weaponId = selectedClass.starterWeapons[slotIdx];
@@ -2421,7 +2428,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
             }
             disabled={!hasAmmo}
             onPress={() => fireStarterSlot(slotIdx)}
-            className="flex h-12 w-12 flex-col items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900 px-0.5 text-amber-300 disabled:opacity-40"
+            className="flex h-11 w-11 flex-col items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900 px-0.5 text-amber-300 disabled:opacity-40"
           >
             <span className="text-[10px] leading-none">{slotIdx + 1}</span>
             <span className="max-w-full truncate text-[9px] leading-tight">
@@ -2433,21 +2440,21 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       <TouchButton
         label="Fire EMP burst"
         onPress={() => handleFireWeapon("emp_blast")}
-        className="flex h-12 w-12 items-center justify-center rounded-lg border border-slate-700 bg-slate-900 text-[10px] font-bold text-slate-200"
+        className="flex h-11 w-11 items-center justify-center rounded-lg border border-slate-700 bg-slate-900 text-[10px] font-bold text-slate-200"
       >
         EMP
       </TouchButton>
       <TouchButton
         label="Cycle to the next tool and fire it"
         onPress={cycleWeapon}
-        className="flex h-12 w-12 items-center justify-center rounded-lg border border-cyan-700/60 bg-cyan-950/50 text-[10px] font-bold text-cyan-200"
+        className="flex h-11 w-11 items-center justify-center rounded-lg border border-cyan-700/60 bg-cyan-950/50 text-[10px] font-bold text-cyan-200"
       >
         EXPLOIT
       </TouchButton>
       <TouchButton
         label="Open the darknet market"
         onPress={() => openOverlay("darknet_shop")}
-        className="flex h-12 w-12 items-center justify-center rounded-lg border border-amber-700/50 bg-amber-950/40 text-[10px] font-bold text-amber-300"
+        className="flex h-11 w-11 items-center justify-center rounded-lg border border-amber-700/50 bg-amber-950/40 text-[10px] font-bold text-amber-300"
       >
         Market
       </TouchButton>
@@ -3342,7 +3349,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   const phoneRow = (
     <DockFrame handedness={handedness} className="min-h-0 flex-1">
       <div className="flex min-h-0 shrink-0 flex-col justify-center">
-        <HoldDpad onMove={handleDirectionalMove} />
+        <HoldDpad onMove={handleDirectionalMove} compact />
       </div>
       {canvasFrameNode}
       <div className="flex min-h-0 shrink-0 flex-col justify-center">
@@ -3390,6 +3397,15 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
             ? "border-amber-500/60 ring-2 ring-amber-500/10"
             : "border-neutral-900"
         }`}
+        style={
+          phoneCabinet
+            ? {
+                // Notches and rounded corners sit outside the docks.
+                paddingLeft: "calc(4px + env(safe-area-inset-left, 0px))",
+                paddingRight: "calc(4px + env(safe-area-inset-right, 0px))",
+              }
+            : undefined
+        }
       >
         {!phoneCabinet && (
           <FullscreenButton

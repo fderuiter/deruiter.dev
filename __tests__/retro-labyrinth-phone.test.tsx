@@ -156,3 +156,32 @@ describe("RetroLabyrinth on a phone cabinet (ADR 0061)", () => {
     expect(screen.queryByText("PAUSED")).toBeNull();
   });
 });
+
+describe("computeFillCanvasSize (touch maze fill)", () => {
+  it("fills a box that is short of width at its own 5:3 shape", async () => {
+    const { computeFillCanvasSize } =
+      await import("@/components/retro-labyrinth/labyrinth-art");
+    const size = computeFillCanvasSize(500, 320, 2);
+    expect(size.cssWidth).toBe(500);
+    expect(size.cssHeight).toBe(300);
+    expect(size.backingWidth).toBe(1000);
+    expect(size.backingHeight).toBe(600);
+  });
+
+  it("is width-bound in a wide, short box and never overflows", async () => {
+    const { computeFillCanvasSize } =
+      await import("@/components/retro-labyrinth/labyrinth-art");
+    const size = computeFillCanvasSize(316, 264, 2);
+    expect(size.cssWidth).toBe(315);
+    expect(size.cssHeight).toBeCloseTo(189, 6);
+    expect(size.cssWidth).toBeLessThanOrEqual(316);
+    expect(size.cssHeight).toBeLessThanOrEqual(264);
+  });
+
+  it("returns an empty canvas for a zero box and tolerates bad input", async () => {
+    const { computeFillCanvasSize } =
+      await import("@/components/retro-labyrinth/labyrinth-art");
+    expect(computeFillCanvasSize(0, 100, 2).cssWidth).toBe(0);
+    expect(computeFillCanvasSize(Number.NaN, 100, Number.NaN).cssWidth).toBe(0);
+  });
+});

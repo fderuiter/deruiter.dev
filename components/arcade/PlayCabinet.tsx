@@ -129,6 +129,14 @@ function findOpenGameDialog(cabinet: HTMLElement): Element | null {
   );
 }
 
+/**
+ * Width in CSS px of the touch toolbar: `count` 44px buttons, 4px gaps, the
+ * toolbar's 2px padding and 1px borders each side.
+ */
+export function cabinetToolbarWidth(count: number): number {
+  return count * 44 + Math.max(0, count - 1) * 4 + 6;
+}
+
 export const PlayCabinet: React.FC<PlayCabinetProps> = ({
   gameId: rawGameId,
   title,
@@ -208,12 +216,16 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
   const {
     isFullscreen,
     isPseudoFullscreen,
+    isSupported: fullscreenSupported,
     toggleFullscreen: toggleCabinetFullscreen,
     exitFullscreen,
   } = useFullscreen(cabinetRef, { enableKeyShortcut: false });
   // Real Fullscreen, pseudo-fullscreen (iOS) or the immersive touch cabinet:
   // all of them lay the cabinet out as the fullscreen layout does.
   const immersive = isFullscreen || touchImmersive;
+  // The touch toolbar's buttons: Fullscreen only where the API exists (iOS has
+  // none), plus Setup and Power.
+  const toolbarButtonCount = (fullscreenSupported ? 1 : 0) + 2;
   const { setSafeTimeout } = useSafeTimeout();
   // Entering fullscreen swaps the header, so focus would otherwise land on the
   // first toolbar button ("Exit Fullscreen"), where the game's Space key
@@ -574,6 +586,15 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
         style={
           {
             "--layout-dock-height": controlDock ? "120px" : "0px",
+            // The touch toolbar floats top-right over the game. A game HUD
+            // pads its right side by this, so its top row never runs under
+            // the buttons. Width: the buttons, their gaps and padding, plus
+            // the toolbar's 8px inset from the edge.
+            ...(touchImmersive
+              ? {
+                  "--cabinet-toolbar-inset": `${cabinetToolbarWidth(toolbarButtonCount) + 8}px`,
+                }
+              : {}),
             // Windowed, the cabinet scrolls to sit under the site header on
             // Launch, so the stage gets the viewport minus header, marquee
             // and dock. Games already size their playfield against
@@ -601,7 +622,45 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
         </div>
 
         {/* Fullscreen Mode: Floating Glassmorphic Pill Header */}
-        {immersive ? (
+        {touchImmersive ? (
+          <div
+            inert={rotateBlocked}
+            data-testid="cabinet-touch-toolbar"
+            data-touch-toolbar=""
+            className="arcade-cabinet-toolbar absolute z-50 flex items-center gap-1 p-0.5 bg-black/85 backdrop-blur-md rounded-2xl border border-zinc-700/80 shadow-2xl select-none"
+            style={{
+              top: "calc(env(safe-area-inset-top, 0px) + 4px)",
+              right: "calc(env(safe-area-inset-right, 0px) + 8px)",
+            }}
+          >
+            {fullscreenSupported && (
+              <FullscreenButton
+                isFullscreen={isFullscreen}
+                isPseudoFullscreen={isPseudoFullscreen}
+                onToggle={toggleCabinetFullscreen}
+                variant="icon"
+              />
+            )}
+            <button
+              type="button"
+              onClick={() => setShowWizard(true)}
+              aria-label="Pre-Game Setup Wizard"
+              title="Pre-Game Setup Wizard"
+              className="h-11 w-11 inline-flex items-center justify-center rounded-xl bg-neutral-900/90 hover:bg-neutral-800 text-amber-400 border border-amber-500/30 transition-all cursor-pointer touch-manipulation select-none active:scale-95 focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none"
+            >
+              <IconAdjustments className="w-4 h-4" aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              onClick={handleExit}
+              aria-label="Reset / Power Off Cabinet"
+              title="Reset / Power Off Cabinet"
+              className="h-11 w-11 inline-flex items-center justify-center rounded-xl bg-neutral-900/90 hover:bg-neutral-800 text-zinc-400 border border-neutral-800 transition-all cursor-pointer touch-manipulation select-none active:scale-95 focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:outline-none"
+            >
+              <IconPower className="w-4 h-4 text-red-500" aria-hidden="true" />
+            </button>
+          </div>
+        ) : immersive ? (
           <div
             inert={rotateBlocked}
             className="arcade-cabinet-toolbar self-end shrink-0 z-50 flex items-center gap-1.5 p-1 bg-black/85 backdrop-blur-md rounded-2xl border border-zinc-700/80 shadow-2xl select-none"

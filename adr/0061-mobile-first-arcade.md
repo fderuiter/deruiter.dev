@@ -86,7 +86,10 @@ without a new kit change.
   The toolbar and the control dock keep their own taps. On leaving immersive, the
   preview scrolls back into view. Desktop never sets the attribute, so its
   markup does not change. The exit is the cabinet's Power button in the
-  immersive toolbar, which is 48px.
+  immersive toolbar. That toolbar is one row of icon-only 44px keys (Fullscreen
+  where the API exists, Setup, Power), floats top-right inside the safe area,
+  and publishes its width as `--cabinet-toolbar-inset`, so a game HUD can pad
+  for it. Fullscreen is hidden on iOS, which has no Fullscreen API.
 - **Safe areas.** The site's viewport export sets `viewportFit: "cover"`, so
   `env(safe-area-inset-*)` reports real values on notched phones. The body pads
   its left and right insets, and the fixed navbar pads its top and sides. On
@@ -165,13 +168,21 @@ running room pauses on hide, blur or rotation and waits for a tap on Resume.
   pixels, with the d-pad on the left and the actions on the right. Upright,
   the same maze is width-bound at 343 pixels with the rest of the screen
   empty. A phone held upright gets the rotate prompt, as the kit prescribes.
-- **Controls.** A three-by-three d-pad that repeats while held, and tool,
-  EMP, Exploit and Market buttons on a three-column grid, all built on the
-  kit's `TouchButton`. A swipe across the maze moves one step, and a tap
+- **Controls.** A three-by-three d-pad that repeats while held, at 44px keys
+  on the phone dock, and tool, EMP, Exploit and Market buttons at 44px on a
+  two-column grid, all built on the kit's `TouchButton`. The side columns are
+  only as wide as their keys, plus the safe-area insets.
+- **Maze size.** On the touch cabinet the maze fills the largest 5:3 box its
+  dock leaves, at a CSS size that is a multiple of 5 px, with a backing store
+  at the device pixel ratio and nearest-neighbour sampling. Measured on the
+  Playwright phone at 2x: 520x312 px at 812x375, and 300x180 px at 568x320,
+  where the width of the two side docks is the limit. A swipe across the maze moves one step, and a tap
   does nothing.
-- **HUD.** One slim row: floor, HP, the exit lock, score, and an Options
-  button. Options open a sheet over the maze that pauses a running room.
-  The objective line and the hotbar are desktop only.
+- **HUD.** One slim 44px row on the same top line as the toolbar: floor, HP,
+  score, and an Options button, padded on the right by
+  `--cabinet-toolbar-inset`. The objective is not repeated in the HUD; the
+  maze's own in-world line carries it. Options open a sheet over the maze that
+  pauses a running room. The hotbar is desktop only.
 - **Kit additions.** `createHoldRepeater` and `useHoldRepeat`, `HoldDpad`,
   `swipeDirection`, and `CabinetTouchContext`, which tells a game it is in
   the immersive touch cabinet.

@@ -7,7 +7,7 @@ import { IconMaximize, IconMinimize } from "@tabler/icons-react";
 interface FullscreenButtonProps {
   isFullscreen: boolean;
   onToggle: () => void;
-  variant?: "header" | "floating";
+  variant?: "header" | "floating" | "icon";
   className?: string;
   /**
    * True when `isFullscreen` reflects the CSS-overlay fallback rather than
@@ -43,6 +43,31 @@ export const FullscreenButton: React.FC<FullscreenButtonProps> = ({
         className={`absolute top-3 right-3 z-50 min-h-[44px] min-w-[44px] flex items-center justify-center p-2.5 rounded-xl bg-black/85 hover:bg-black text-zinc-300 hover:text-white border border-zinc-700/80 shadow-2xl backdrop-blur-md transition-all touch-manipulation select-none active:scale-[0.98] cursor-pointer focus-visible:ring-2 focus-visible:ring-amber-500/50 focus-visible:outline-none ${className}`}
       >
         <IconMinimize className="w-5 h-5 text-amber-400" />
+      </button>
+    );
+  }
+
+  if (variant === "icon") {
+    const label = isFullscreen
+      ? `Exit Fullscreen${compatibilitySuffix}`
+      : "Enter Fullscreen";
+    return (
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-label={label}
+        title={label}
+        className={`h-11 w-11 inline-flex items-center justify-center rounded-xl border transition-all cursor-pointer touch-manipulation select-none active:scale-95 focus-visible:ring-2 focus-visible:ring-amber-500/50 focus-visible:outline-none ${
+          isFullscreen
+            ? "bg-amber-500/20 text-amber-300 border-amber-500/40"
+            : "bg-neutral-900/90 hover:bg-neutral-800 text-zinc-300 border-neutral-800"
+        } ${className}`}
+      >
+        {isFullscreen ? (
+          <IconMinimize className="w-4 h-4" aria-hidden="true" />
+        ) : (
+          <IconMaximize className="w-4 h-4" aria-hidden="true" />
+        )}
       </button>
     );
   }

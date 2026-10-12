@@ -628,3 +628,86 @@ describe("PlayCabinet immersive touch mode (ADR 0061)", () => {
     }
   });
 });
+
+describe("PlayCabinet touch toolbar (ADR 0061)", () => {
+  const originalMatchMedia = window.matchMedia;
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.useRealTimers();
+    window.matchMedia = originalMatchMedia;
+    delete (document.documentElement as { requestFullscreen?: unknown })
+      .requestFullscreen;
+    delete (document as { fullscreenEnabled?: unknown }).fullscreenEnabled;
+  });
+
+  it("is one icon-only row of 44px keys with names, floating top-right", async () => {
+    installMatchMedia([TOUCH_NARROW_QUERY]);
+    renderCabinet({ mobileOrientation: "landscape" });
+    await launch();
+
+    const toolbar = screen.getByTestId("cabinet-touch-toolbar");
+    expect(toolbar.className).toContain("absolute");
+    expect(toolbar.style.right).toContain("8px");
+    expect(
+      screen.getByRole("button", { name: "Pre-Game Setup Wizard" }).textContent
+    ).toBe("");
+    expect(
+      screen.getByRole("button", { name: "Reset / Power Off Cabinet" })
+        .textContent
+    ).toBe("");
+    expect(
+      screen.getByRole("button", { name: "Pre-Game Setup Wizard" }).className
+    ).toContain("h-11 w-11");
+  });
+
+  it("hides Fullscreen when the Fullscreen API is missing (iOS)", async () => {
+    installMatchMedia([TOUCH_NARROW_QUERY]);
+    renderCabinet({ mobileOrientation: "landscape" });
+    await launch();
+
+    expect(
+      screen.queryByRole("button", { name: /Enter Fullscreen/ })
+    ).toBeNull();
+    // Only Setup and Power are left, so the inset is the two-key width.
+    expect(cabinetEl().style.getPropertyValue("--cabinet-toolbar-inset")).toBe(
+      "106px"
+    );
+  });
+
+  it("shows an icon Fullscreen key and a three-key inset where the API exists", async () => {
+    installMatchMedia([TOUCH_NARROW_QUERY]);
+    Object.defineProperty(document.documentElement, "requestFullscreen", {
+      configurable: true,
+      value: vi.fn(),
+    });
+    Object.defineProperty(document, "fullscreenEnabled", {
+      configurable: true,
+      value: true,
+    });
+    renderCabinet({ mobileOrientation: "landscape" });
+    await launch();
+
+    expect(
+      screen.getByRole("button", { name: "Enter Fullscreen" }).className
+    ).toContain("h-11 w-11");
+    expect(cabinetEl().style.getPropertyValue("--cabinet-toolbar-inset")).toBe(
+      "154px"
+    );
+  });
+
+  it("keeps the desktop header and sets no inset off the touch cabinet", async () => {
+    installMatchMedia([]);
+    renderCabinet();
+    await launch();
+
+    expect(screen.queryByTestId("cabinet-touch-toolbar")).toBeNull();
+    expect(cabinetEl().style.getPropertyValue("--cabinet-toolbar-inset")).toBe(
+      ""
+    );
+  });
+});

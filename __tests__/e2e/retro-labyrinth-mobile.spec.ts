@@ -105,10 +105,10 @@ test.describe("Retro Labyrinth on a phone", () => {
       .first()
       .boundingBox();
     expect(canvas).not.toBeNull();
-    // Judged by its sides, not its area: the maze keeps its 5:3 shape and a
-    // 320px-tall stage gives it about 45% of the height.
-    expect(canvas!.height).toBeGreaterThanOrEqual(viewport.height * 0.4);
-    expect(canvas!.width).toBeGreaterThanOrEqual(viewport.width * 0.4);
+    // Judged by its sides: the maze fills the largest 5:3 box its dock leaves,
+    // so at 568x320 it is width-bound (about 300x180 CSS px).
+    expect(canvas!.height).toBeGreaterThanOrEqual(viewport.height * 0.5);
+    expect(canvas!.width).toBeGreaterThanOrEqual(viewport.width * 0.5);
   });
 
   test("every phone control is at least 44px square", async ({ page }) => {
@@ -212,6 +212,42 @@ test.describe("Retro Labyrinth on a phone", () => {
     await expect(
       page.locator("output", { hasText: "Player Location" }).first()
     ).not.toHaveText(before);
+  });
+
+  test("holding a d-pad arrow walks, and releasing it stops", async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(browserName !== "chromium", "touch holds use the CDP touch API");
+    await turnSideways(page);
+    await launchCabinet(page);
+
+    const arrow = page.getByRole("button", { name: "Move Right" });
+    const box = await arrow.boundingBox();
+    expect(box).not.toBeNull();
+    const cx = box!.x + box!.width / 2;
+    const cy = box!.y + box!.height / 2;
+    const before = await readPlayerGrid(page);
+
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send("Input.dispatchTouchEvent", {
+      type: "touchStart",
+      touchPoints: [{ x: cx, y: cy }],
+    });
+    // Press long enough for the hold repeat to start and run a few steps.
+    await page.waitForTimeout(900);
+    await cdp.send("Input.dispatchTouchEvent", {
+      type: "touchEnd",
+      touchPoints: [],
+    });
+    const held = await readPlayerGrid(page);
+    expect(held, "a held arrow should walk more than one cell").not.toBe(
+      before
+    );
+
+    // After release the walk stops.
+    await page.waitForTimeout(600);
+    expect(await readPlayerGrid(page)).toBe(held);
   });
 
   test("the phone pauses when the tab hides and resumes on a tap", async ({

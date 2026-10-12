@@ -90,6 +90,41 @@ test.describe("Mobile arcade kit: immersive touch cabinet", () => {
     await assertNoHorizontalOverflow(page);
   });
 
+  test("the touch toolbar is one row of icon keys, top-right, inside the safe area", async ({
+    page,
+  }) => {
+    await launchCabinet(page);
+    const viewport = page.viewportSize()!;
+    const toolbar = page.getByTestId("cabinet-touch-toolbar");
+    await expect(toolbar).toBeVisible();
+
+    const box = await toolbar.boundingBox();
+    expect(box).not.toBeNull();
+    expect(box!.x + box!.width).toBeLessThanOrEqual(viewport.width);
+    expect(box!.y).toBeLessThan(viewport.height / 3);
+
+    // Icon-only keys at the touch floor, each with an accessible name.
+    const keys = toolbar.locator("button");
+    const count = await keys.count();
+    expect(count).toBeGreaterThanOrEqual(2);
+    for (let i = 0; i < count; i++) {
+      const key = keys.nth(i);
+      await expect(key).toHaveAttribute("aria-label", /.+/);
+      expect((await key.textContent())?.trim()).toBe("");
+      const keyBox = await key.boundingBox();
+      expect(keyBox!.width).toBeGreaterThanOrEqual(43.5);
+      expect(keyBox!.height).toBeGreaterThanOrEqual(43.5);
+    }
+
+    // The cabinet publishes the toolbar's width, so a game HUD can pad for it.
+    const inset = await page
+      .locator(IMMERSIVE)
+      .evaluate((el) =>
+        getComputedStyle(el).getPropertyValue("--cabinet-toolbar-inset").trim()
+      );
+    expect(inset).toMatch(/px$/);
+  });
+
   test("a press inside the immersive cabinet reaches its control", async ({
     page,
   }) => {

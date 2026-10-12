@@ -9,6 +9,7 @@
 ## Functions
 
 - [describeOrder](functions/describeOrder.md)
+- [describeShiftScore](functions/describeShiftScore.md)
 - [formatCents](functions/formatCents.md)
 - [formatClock](functions/formatClock.md)
 - [getKdsTicket](functions/getKdsTicket.md)

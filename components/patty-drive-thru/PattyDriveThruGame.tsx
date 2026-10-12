@@ -26,7 +26,10 @@ import {
   type ShiftAction,
   type ShiftConfig,
 } from "@/lib/patty-drive-thru";
-import { recordArcadeScore } from "@/lib/arcade-achievements";
+import {
+  getArcadeProgress,
+  recordArcadeScore,
+} from "@/lib/arcade-achievements";
 import { getSoundEngine } from "@/lib/audio/sound-engine";
 import {
   getMatchMediaMatches,
@@ -131,7 +134,11 @@ export function PattyDriveThruGame({
   const view = wanted === "3d" && webgl && !contextLost ? "3d" : "flat";
 
   const setup = useCabinetSetup();
-  const paused = setup?.isSetupOpen ?? false;
+  // P, or Escape with the register closed, pauses the shift (#1938); the
+  // Setup Wizard pauses it too.
+  const [userPaused, setUserPaused] = useState(false);
+  const [previousBest, setPreviousBest] = useState<number | null>(null);
+  const paused = (setup?.isSetupOpen ?? false) || userPaused;
 
   const boundaryRef = useRef<HTMLDivElement>(null);
   const registerRef = useRef<HTMLDivElement>(null);
@@ -150,6 +157,7 @@ export function PattyDriveThruGame({
   const clockIn = useCallback(
     (picked?: ScenarioId) => {
       if (picked) scenario.current = picked;
+      setUserPaused(false);
       store.getState().clockIn({
         ...(config?.seed ? {} : { seed: seedFromUrl() ?? freshSeed() }),
         ...scenarioDialsFor(scenario.current),
@@ -169,6 +177,26 @@ export function PattyDriveThruGame({
     store.getState().setRegisterOpen(false);
     boundaryRef.current?.focus({ preventScroll: true });
   }, [store]);
+
+  // Switching views swaps the whole layout and drops focus from the toggle,
+  // which let the browser scroll the cabinet under the navbar. Keep focus on
+  // the booth and the cabinet top just below the header (#1938).
+  const changeView = useCallback((next: ViewChoice) => {
+    setViewChoice(next);
+    requestAnimationFrame(() => {
+      const boundary = boundaryRef.current;
+      boundary?.focus({ preventScroll: true });
+      const cabinet = boundary?.closest<HTMLElement>("[data-arcade-cabinet]");
+      const header = document.querySelector("header");
+      if (!cabinet || !header || typeof window.scrollBy !== "function") return;
+      const gap = 8;
+      const offset =
+        cabinet.getBoundingClientRect().top -
+        header.getBoundingClientRect().bottom -
+        gap;
+      if (offset < 0) window.scrollBy({ top: offset, behavior: "auto" });
+    });
+  }, []);
 
   const handleContextLost = useCallback(() => {
     setContextLost(true);
@@ -251,6 +279,9 @@ export function PattyDriveThruGame({
           previous.phase === "shift" &&
           isStandardScenario(state.shift.config)
         ) {
+          // Read the old best first, so the end card can compare (#1938).
+          const best = getArcadeProgress().highScores[PATTY_GAME_ID];
+          setPreviousBest(typeof best === "number" ? best : null);
           recordArcadeScore(PATTY_GAME_ID, scoreShift(state.shift), {
             outcome: state.shift.outcome,
             served: state.shift.tallies.served,
@@ -272,6 +303,19 @@ export function PattyDriveThruGame({
     const onBoundary = event.target === boundaryRef.current;
     const key = event.key;
     const state = store.getState();
+
+    // In the 3D booth Escape first leaves the register, whose own handler
+    // may already have closed it by the time the key reaches the booth.
+    const closesRegister =
+      key === "Escape" && view === "3d" && (state.registerOpen || !onBoundary);
+    if ((key === "p" || key === "P" || key === "Escape") && !closesRegister) {
+      event.preventDefault();
+      heldKeys.current.clear();
+      setUserPaused((was) => !was);
+      return;
+    }
+    // While paused the booth hears nothing but the pause keys.
+    if (userPaused) return;
 
     if (
       view === "3d" &&
@@ -386,6 +430,7 @@ export function PattyDriveThruGame({
           shift={endedShift}
           log={endedLog ?? []}
           onClockIn={() => clockIn()}
+          previousBest={previousBest}
         />
       </div>
     );
@@ -415,7 +460,7 @@ export function PattyDriveThruGame({
         <div className="pointer-events-none absolute inset-x-0 top-0 z-20 p-2 sm:p-3">
           <ShiftHud
             store={store}
-            viewToggle={<ViewToggle view="3d" onChange={setViewChoice} />}
+            viewToggle={<ViewToggle view="3d" onChange={changeView} />}
           />
         </div>
         <div
@@ -433,7 +478,8 @@ export function PattyDriveThruGame({
             />
           ) : (
             <p className="px-3 text-center font-mono text-[11px] text-[var(--pdt-hud-text)] [text-shadow:0_1px_3px_rgba(0,0,0,0.9)]">
-              Enter or Tab: use the register · A / D or drag: turn · W: wipe
+              Enter or Tab: use the register · A / D or drag: turn · W: wipe · P
+              or Esc: pause
             </p>
           )}
         </div>
@@ -448,7 +494,7 @@ export function PattyDriveThruGame({
         <ShiftHud
           store={store}
           viewToggle={
-            webgl ? <ViewToggle view="flat" onChange={setViewChoice} /> : null
+            webgl ? <ViewToggle view="flat" onChange={changeView} /> : null
           }
         />
         <ShiftCaption store={store} />
@@ -457,6 +503,13 @@ export function PattyDriveThruGame({
             ? "The 3D booth stopped responding, so this is the flat view. "
             : ""}
           {BOOTH_DESCRIPTION}
+        </p>
+        <p
+          data-testid="pdt-key-legend"
+          className="font-mono text-[11px] text-[var(--pdt-hud-text)]"
+        >
+          Keys: 1-6 pick a car · B bump · R re-enter drink · C flag{" "}
+          {BOOTH_CREW.coworker} · W wipe · P or Esc pause
         </p>
         <div className="grid min-w-0 gap-3 @3xl:grid-cols-2">
           <KdsBoard store={store} />
@@ -493,6 +546,31 @@ export function PattyDriveThruGame({
         {announcement}
       </div>
       {body}
+      {phase === "shift" && userPaused ? (
+        <div
+          data-testid="pdt-paused"
+          className="absolute inset-0 z-40 flex items-center justify-center bg-black/70 p-4"
+        >
+          <div className="flex flex-col items-center gap-3 rounded border border-[var(--pdt-hud-rule)] bg-[var(--pdt-stage)] p-5 text-center">
+            <p className="font-mono text-sm font-bold uppercase tracking-wide">
+              Shift paused
+            </p>
+            <p className="font-mono text-[11px] text-[var(--pdt-hud-text)]">
+              The clock is stopped. P or Esc to resume.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setUserPaused(false);
+                boundaryRef.current?.focus({ preventScroll: true });
+              }}
+              className="min-h-11 rounded border border-[var(--pdt-hud-rule)] bg-[var(--pdt-hud-button)] px-4 text-xs font-bold uppercase tracking-wide text-[var(--pdt-hud-text)] active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--pdt-focus)]"
+            >
+              Resume shift
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

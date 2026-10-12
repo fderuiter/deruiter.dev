@@ -84,6 +84,7 @@ export type BoothStore = StoreApi<BoothState & BoothActions>;
 const CAPTION_PRIORITY: Partial<Record<ShiftEvent["type"], number>> = {
   "manager-yell": 6,
   "order-expired": 5,
+  "rush-started": 5,
   locked: 4,
   "drink-dropped": 4,
   "wrong-entry": 3,
@@ -118,7 +119,9 @@ function captionFor(
     case "drink-reentered":
       return { speaker: "booth", text: EVENT_CAPTIONS.drinkReentered };
     case "coworker-ready":
-      return { speaker: "coworker", text: EVENT_CAPTIONS.coworkerReady };
+      // The line already names the speaker, so it shows without a label
+      // (#1938).
+      return { speaker: "booth", text: EVENT_CAPTIONS.coworkerReady };
     case "wrong-entry":
       return {
         speaker: "booth",
@@ -137,6 +140,8 @@ function captionFor(
       };
     case "wiped":
       return { speaker: "booth", text: EVENT_CAPTIONS.wiped };
+    case "rush-started":
+      return { speaker: "manager", text: EVENT_CAPTIONS.rushStarted };
     default:
       return null;
   }
@@ -293,7 +298,8 @@ export function createBoothStore(
           set({
             caption: {
               id: (captionId += 1),
-              speaker: "coworker",
+              // Narration that names the coworker itself (#1938).
+              speaker: "booth",
               text: EVENT_CAPTIONS.coworkerFlagged,
               at: state.shift.time,
             },

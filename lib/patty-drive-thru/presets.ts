@@ -57,6 +57,13 @@ export const MAX_STEP_SEC = 0.5;
 /** Orders arrive between these two gaps, in seconds. */
 export const ARRIVAL_GAP_MIN_SEC = 7;
 export const ARRIVAL_GAP_MAX_SEC = 15;
+/**
+ * The lunch rush (#1938): between these fractions of a standard shift, the
+ * arrival gaps shrink by `RUSH_GAP_SCALE`, so a quick player has work.
+ */
+export const RUSH_START_FRACTION = 0.35;
+export const RUSH_END_FRACTION = 0.7;
+export const RUSH_GAP_SCALE = 0.5;
 /** The orders open at once never exceed this many. */
 export const MAX_OPEN_ORDERS = 6;
 export const MAX_ITEMS_PER_ORDER = 4;

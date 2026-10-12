@@ -16,6 +16,7 @@ import {
   getShiftEnding,
   isStandardScenario,
   scoreShift,
+  describeShiftScore,
   type ScenarioId,
   type ShiftLogEntry,
   type ShiftState,
@@ -65,7 +66,7 @@ export function DiaryIntroPage({
   const [scenario, setScenario] = useState<ScenarioId>("standard");
   return (
     <article
-      className={PAGE_CLASS}
+      className={`${PAGE_CLASS} @3xl:max-w-4xl`}
       aria-labelledby="pdt-intro-title"
       data-testid="pdt-intro"
     >
@@ -80,39 +81,48 @@ export function DiaryIntroPage({
           {DIARY_INTRO.dateline}
         </p>
       </header>
-      {DIARY_INTRO.paragraphs.map((paragraph) => (
-        <p key={paragraph} className="text-sm leading-relaxed">
-          {paragraph}
-        </p>
-      ))}
-      <fieldset className="min-w-0 space-y-1" data-testid="pdt-scenarios">
-        <legend className="font-mono text-xs font-bold uppercase tracking-wider text-[var(--pdt-paper-dim)]">
-          Which shift?
-        </legend>
-        {SCENARIO_PRESETS.map((preset) => (
-          <label
-            key={preset.id}
-            className="flex min-h-11 cursor-pointer items-start gap-2 py-1 text-sm"
-          >
-            <input
-              type="radio"
-              name="pdt-scenario"
-              value={preset.id}
-              checked={scenario === preset.id}
-              onChange={() => setScenario(preset.id)}
-              className="mt-1 size-4 shrink-0"
-            />
-            <span className="min-w-0 break-words">
-              <span className="font-bold">{preset.label}.</span> {preset.blurb}
-            </span>
-          </label>
-        ))}
-      </fieldset>
-      <div className="flex flex-wrap items-center gap-3">
-        <ShiftButton ref={buttonRef} onClick={() => onClockIn(scenario)}>
-          Clock in
-        </ShiftButton>
-        <FieldManualButton manualId="patty-drive-thru" label="Manual" />
+      {/* Two columns on a wide cabinet, so Clock in sits above the fold
+          at 1024 and 1280 (#1938). */}
+      <div className="grid min-w-0 gap-4 @3xl:grid-cols-2">
+        <div className="min-w-0 space-y-3">
+          {DIARY_INTRO.paragraphs.map((paragraph) => (
+            <p key={paragraph} className="text-sm leading-relaxed">
+              {paragraph}
+            </p>
+          ))}
+        </div>
+        <div className="min-w-0 space-y-3">
+          <fieldset className="min-w-0 space-y-1" data-testid="pdt-scenarios">
+            <legend className="font-mono text-xs font-bold uppercase tracking-wider text-[var(--pdt-paper-dim)]">
+              Which shift?
+            </legend>
+            {SCENARIO_PRESETS.map((preset) => (
+              <label
+                key={preset.id}
+                className="flex min-h-11 cursor-pointer items-start gap-2 py-1 text-sm"
+              >
+                <input
+                  type="radio"
+                  name="pdt-scenario"
+                  value={preset.id}
+                  checked={scenario === preset.id}
+                  onChange={() => setScenario(preset.id)}
+                  className="mt-1 size-4 shrink-0"
+                />
+                <span className="min-w-0 break-words">
+                  <span className="font-bold">{preset.label}.</span>{" "}
+                  {preset.blurb}
+                </span>
+              </label>
+            ))}
+          </fieldset>
+          <div className="flex flex-wrap items-center gap-3">
+            <ShiftButton ref={buttonRef} onClick={() => onClockIn(scenario)}>
+              Clock in
+            </ShiftButton>
+            <FieldManualButton manualId="patty-drive-thru" label="Manual" />
+          </div>
+        </div>
       </div>
     </article>
   );
@@ -123,10 +133,29 @@ interface ShiftEndPageProps {
   /** Every event of the shift, for the export. */
   log: readonly ShiftLogEntry[];
   onClockIn: () => void;
+  /** The best recorded score before this shift, or null if none yet. */
+  previousBest?: number | null;
+}
+
+/** The best-score line under the end card's score (#1938). */
+function bestLine(score: number, previousBest: number | null): string {
+  if (previousBest === null || previousBest <= 0) {
+    return score > 0 ? "First score on the board." : "No best yet.";
+  }
+  if (score > previousBest) {
+    return `New best, ${score - previousBest} over your old ${previousBest}.`;
+  }
+  if (score === previousBest) return `Tied your best of ${previousBest}.`;
+  return `Best: ${previousBest}.`;
 }
 
 /** The pay stub and the closing note, shown when the shift ends. */
-export function ShiftEndPage({ shift, log, onClockIn }: ShiftEndPageProps) {
+export function ShiftEndPage({
+  shift,
+  log,
+  onClockIn,
+  previousBest = null,
+}: ShiftEndPageProps) {
   const headingRef = useFocusOnMount<HTMLHeadingElement>();
   const ending = getShiftEnding(shift);
   const stub = computePayStub(shift);
@@ -194,12 +223,23 @@ export function ShiftEndPage({ shift, log, onClockIn }: ShiftEndPageProps) {
             </tr>
           </tbody>
         </table>
-        <p className="mt-2 text-xs text-[var(--pdt-paper-dim)]">
-          Score {scoreShift(shift)}
+        <p
+          className="mt-2 text-xs text-[var(--pdt-paper-dim)]"
+          data-testid="pdt-score"
+        >
+          Score {scoreShift(shift)} ({describeShiftScore(shift)})
           {isStandardScenario(shift.config)
-            ? ""
+            ? "."
             : ". Practice shift, so the score is not recorded."}
         </p>
+        {isStandardScenario(shift.config) ? (
+          <p
+            className="text-xs text-[var(--pdt-paper-dim)]"
+            data-testid="pdt-best"
+          >
+            {bestLine(scoreShift(shift), previousBest)}
+          </p>
+        ) : null}
       </section>
 
       <section aria-label="Shift data" className="font-mono text-xs">

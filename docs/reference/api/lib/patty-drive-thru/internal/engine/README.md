@@ -11,6 +11,7 @@
 - [applyAction](functions/applyAction.md)
 - [computePayStub](functions/computePayStub.md)
 - [createShift](functions/createShift.md)
+- [getArrivalGapScale](functions/getArrivalGapScale.md)
 - [getKdsBand](functions/getKdsBand.md)
 - [getOrderAge](functions/getOrderAge.md)
 - [getPosScreen](functions/getPosScreen.md)

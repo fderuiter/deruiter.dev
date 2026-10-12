@@ -258,6 +258,16 @@ function ActionKey({
           : "border-[var(--pdt-key-edge)] bg-[var(--pdt-key)] text-[var(--pdt-ink)]"
       }`}
     >
+      {/* A visible key cap, so keyboard players can find B, R and C (#1938). */}
+      {shortcut.length === 1 || shortcut === "Backspace" ? (
+        <kbd
+          aria-hidden="true"
+          data-testid="pdt-key-cap"
+          className="mr-1.5 rounded border border-[var(--pdt-key-edge)] px-1 font-mono text-[10px] normal-case"
+        >
+          {shortcut === "Backspace" ? "⌫" : shortcut}
+        </kbd>
+      ) : null}
       {children}
     </button>
   );

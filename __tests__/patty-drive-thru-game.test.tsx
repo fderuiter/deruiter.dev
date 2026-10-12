@@ -174,7 +174,6 @@ describe("Patty's Drive-Thru game, flat view (#1813, #1814)", () => {
     press("Home");
     press("Enter");
     press("Tab");
-    press("Escape");
     press("x");
     expect(screen.queryByTestId("pdt-booth-canvas")).toBeNull();
     press("W");

@@ -412,9 +412,8 @@ describe("Working With Duck - UI & Component Suite", () => {
       await act(async () => {
         startBtn.click();
       });
-      expect(container.textContent).toContain(
-        "Tip: Work advances automatically"
-      );
+      // Sprint 1 opens with its goal, then the standing tip (#1942).
+      expect(container.textContent).toContain("Goal: ship the work");
     }
   });
 

@@ -222,6 +222,11 @@ const PROFILE_TEXT: Record<
     title: "The Control Freak",
     summary: "You caught nearly everything. You also became the bottleneck.",
   },
+  absentee: {
+    title: "The Absentee",
+    summary:
+      "Everything is fine. Nobody was around to say otherwise, least of all you.",
+  },
 };
 
 /**
@@ -247,7 +252,7 @@ export function classifyProfile(state: StudyState): ProfileResult {
   ).length;
   const meters = computeMeters(state);
   const lateShare = clamp(state.slipDays / 10, 0, 1);
-  const scores: Record<StudyDirectorProfile, number> = {
+  const scores: Record<Exclude<StudyDirectorProfile, "absentee">, number> = {
     firefighter:
       ignoredShare * 1.5 +
       (criticalAnswered / Math.max(1, answered.length)) * 0.8,
@@ -269,7 +274,7 @@ export function classifyProfile(state: StudyState): ProfileResult {
         Math.max(1, answered.length)) *
         0.1,
   };
-  const order: StudyDirectorProfile[] = [
+  const order: Exclude<StudyDirectorProfile, "absentee">[] = [
     "firefighter",
     "bureaucrat",
     "peoplePleaser",
@@ -278,10 +283,16 @@ export function classifyProfile(state: StudyState): ProfileResult {
     "delegator",
     "controlFreak",
   ];
-  const profile = order.reduce(
-    (best, key) => (scores[key] > scores[best] ? key : best),
-    order[0]
-  );
+  // A director who answered almost nothing was not fighting fires: the
+  // ignore-heavy Firefighter score used to praise a run that did nothing
+  // (#1936).
+  const absent = answered.length + audits === 0 || ignoredShare > 0.8;
+  const profile = absent
+    ? "absentee"
+    : order.reduce(
+        (best, key) => (scores[key] > scores[best] ? key : best),
+        order[0]
+      );
   return {
     profile,
     ...PROFILE_TEXT[profile],

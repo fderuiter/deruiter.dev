@@ -48,6 +48,10 @@ async function expectNoBlockingViolations(page: Page, state: string) {
 async function playToPlayback(page: Page) {
   await openPlan(page);
   await expectNoBlockingViolations(page, "plan screen");
+  // The page opens a one-player day with the helper on (round 20).
+  await expect(
+    page.getByRole("checkbox", { name: /Helper for the other person/ })
+  ).toHaveAttribute("aria-checked", "true");
 
   await page.getByRole("button", { name: "Start setup" }).click();
   const game = page.getByTestId("fbb-game");
@@ -159,9 +163,7 @@ test.describe("For Better or Bulk (/arcade/for-better-or-bulk)", () => {
 
     await skipPlaybackToReceipt(page);
     await expect(page.getByTestId("fbb-title")).toBeFocused();
-    await expect(page.getByTestId("fbb-follow-through")).toContainText(
-      "Kept. Fred stayed"
-    );
+    await expect(page.getByTestId("fbb-follow-through")).toContainText("Kept.");
     await expectTitleBelowBanner(page);
     await expectNoBlockingViolations(page, "receipt");
   });

@@ -165,7 +165,9 @@ export function ReceiptView({
           id="fbb-receipt-readiness"
           className="mb-2 text-xs font-bold uppercase tracking-wide"
         >
-          At 4:00
+          {/* A day set early is not read at 4:00 (round 20, N-2); the finish
+              time itself stays under the 3:00 challenge only (round 17). */}
+          {receipt.finishedAt ? "When everything was set" : "At 4:00"}
         </h3>
         <ul className="flex flex-col gap-2 text-xs">
           {receipt.readiness.map((line) => (
@@ -173,9 +175,12 @@ export function ReceiptView({
               <span className="font-bold">
                 {line.label}: {STATUS_LABELS[line.status]}
               </span>
-              <span className="block break-words text-[var(--fbb-dim)]">
-                {line.explanation}
-              </span>
+              {/* "Not planned" already says it all (round 19, N-4). */}
+              {line.status === "unplanned" ? null : (
+                <span className="block break-words text-[var(--fbb-dim)]">
+                  {line.explanation}
+                </span>
+              )}
             </li>
           ))}
         </ul>
@@ -201,6 +206,13 @@ export function ReceiptView({
           </span>{" "}
           {receipt.stars} of {receipt.challenges.length} met
         </p>
+        {receipt.assist ? (
+          // The setup says helper days earn no trophies or board score, so the
+          // stars say so too (round 17).
+          <p className="mt-1 text-xs text-[var(--fbb-dim)]">
+            A helper day, so these stars earn no trophies or board score.
+          </p>
+        ) : null}
         <ul className="mt-2 flex min-w-0 flex-col gap-2 text-xs">
           {receipt.challenges.map((challenge) => (
             <li
@@ -232,7 +244,7 @@ export function ReceiptView({
           <span className="font-bold">Follow-through:</span>{" "}
           {receipt.followThrough.explanation}
         </li>
-        {receipt.finishedAt ? <li>{receipt.finishedAt}</li> : null}
+        {/* The finish time is under the 3:00 challenge row (round 17). */}
         {receipt.kitchen ? <li>{receipt.kitchen}</li> : null}
         {receipt.assist ? (
           <li data-testid="fbb-assist">{receipt.assist}</li>

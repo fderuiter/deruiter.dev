@@ -100,7 +100,9 @@ export const ReportView: React.FC<{
           </p>
           <p className="mt-2 text-xs text-[var(--sd-muted)]">
             {lock.openQueriesAtLock === 0
-              ? "The database locked clean."
+              ? profile.profile === "absentee"
+                ? "The database locked clean, because nobody touched it."
+                : "The database locked clean."
               : `${lock.openQueriesAtLock} queries were still open at lock, which cost ${lock.lockDelayDays} days.`}{" "}
             Data cleanliness {lock.dataCleanPct}%. The study ran{" "}
             {state.setup.durationDays + state.slipDays} days against{" "}

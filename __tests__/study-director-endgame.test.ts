@@ -176,8 +176,10 @@ describe("study director endgame", () => {
   it("discovers different Study Directors from different play", () => {
     const documenter = classifyProfile(play("p", documentEverything));
     const ignorer = classifyProfile(play("p", () => null));
-    expect(ignorer.profile).toBe("firefighter");
-    expect(documenter.profile).not.toBe("firefighter");
+    // Ignoring everything is not firefighting (#1936).
+    expect(ignorer.profile).toBe("absentee");
+    expect(ignorer.title).toBe("The Absentee");
+    expect(documenter.profile).not.toBe("absentee");
     expect(documenter.evidence).toHaveLength(3);
     expect(documenter.title).toMatch(/^The /);
   });

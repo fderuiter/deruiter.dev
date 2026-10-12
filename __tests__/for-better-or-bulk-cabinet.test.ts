@@ -219,15 +219,25 @@ describe("For Better or Bulk event lines (#1906)", () => {
     expect(
       describeEvent({ type: "cooked", station: "G4-3", item: "wings" })
     ).toBe("The wings are done.");
-    expect(describeEvent({ type: "burnt", station: "G4-3" })).toContain(
-      "charcoal"
-    );
+    expect(
+      describeEvent({ type: "burnt", station: "G4-3", item: "hotdogs" })
+    ).toBe("The hot dogs on the grill are charcoal.");
+    expect(
+      describeEvent({ type: "burnt", station: "G4-3", item: "wings" })
+    ).toBe("The wings on the grill are charcoal.");
     expect(describeEvent({ type: "supply-empty", supply: "lantern" })).toBe(
       "That was the last of the lanterns."
     );
-    expect(describeEvent({ type: "level-finished", early: false })).toContain(
-      "4:00"
-    );
+    expect(
+      describeEvent({ type: "level-finished", allSet: false, early: false })
+    ).toContain("4:00");
+    // A finish after 3:00 is set but not early, so it gets no "Early" (round 15).
+    expect(
+      describeEvent({ type: "level-finished", allSet: true, early: false })
+    ).toBe("Everything is set.");
+    expect(
+      describeEvent({ type: "level-finished", allSet: true, early: true })
+    ).toBe("Everything is set. Early, even.");
     expect(
       describeEvent({
         type: "simplified",
@@ -545,10 +555,10 @@ describe("For Better or Bulk sound map (F4)", () => {
     ],
     [{ type: "category-complete", category: "chairs" }, "category"],
     [{ type: "cooked", station: "G4-3", item: "wings" }, "cooked"],
-    [{ type: "burnt", station: "G4-3" }, "burnt"],
+    [{ type: "burnt", station: "G4-3", item: "hotdogs" }, "burnt"],
     [{ type: "brothers-text" }, "brothers"],
     [{ type: "fred-returned" }, "fred"],
-    [{ type: "level-finished", early: true }, "finish"],
+    [{ type: "level-finished", allSet: true, early: true }, "finish"],
     [{ type: "floor-full", player: "fred" }, "refused"],
     [
       {
@@ -607,10 +617,10 @@ describe("For Better or Bulk sound map (F4)", () => {
     const events: FeedbackEvent[] = [
       { type: "brothers-text" },
       { type: "brothers-text" },
-      { type: "burnt", station: "G4-3" },
-      { type: "burnt", station: "G4-1" },
-      { type: "level-finished", early: false },
-      { type: "level-finished", early: true },
+      { type: "burnt", station: "G4-3", item: "hotdogs" },
+      { type: "burnt", station: "G4-1", item: "hotdogs" },
+      { type: "level-finished", allSet: false, early: false },
+      { type: "level-finished", allSet: true, early: true },
     ];
     const play = vi.fn();
     playStepSounds(events, play);

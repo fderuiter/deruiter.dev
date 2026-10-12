@@ -28,6 +28,14 @@ import {
 } from "@/components/arcade/PreGameSetupWizard";
 import { logger } from "@/lib/logger";
 import {
+  lockScreenOrientation,
+  RotateDevicePrompt,
+  useCabinetAutoPause,
+  useOrientationMismatch,
+  useTouchNarrow,
+  type MobileOrientation,
+} from "@/components/arcade/mobile";
+import {
   buildCrtOverlayBackground,
   crtCalibrationForFilter,
   shouldCabinetDrawCrt,
@@ -66,6 +74,27 @@ interface PlayCabinetProps {
    * screen cannot (a mode or character select).
    */
   singleTitleScreen?: boolean;
+  /**
+   * The orientation this game plays in (ADR 0061). On a touch phone the
+   * launched cabinet covers the viewport, and a device held the other way gets
+   * a prompt to turn it. `either` (the default) never prompts. Desktop is
+   * unaffected.
+   */
+  mobileOrientation?: MobileOrientation;
+  /**
+   * How the immersive touch cabinet treats the stage (ADR 0061). `scroll`
+   * (the default) keeps the stage a vertical scroll area, so a game that has
+   * not had its mobile pass still reaches all of its content. `fit` is for a
+   * game built to fit the viewport: the stage clips and takes every gesture.
+   * Desktop is unaffected.
+   */
+  mobileLayout?: "fit" | "scroll";
+  /**
+   * Called when the game should pause itself: the tab is hidden, the page is
+   * closing, the window blurs or the device rotates. Listens only while a
+   * touch cabinet is immersive (ADR 0061). Resuming is the game's own choice.
+   */
+  onAutoPause?: () => void;
   children: React.ReactNode;
 }
 
@@ -110,6 +139,9 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
   onExit,
   fullscreenKey = true,
   singleTitleScreen = true,
+  mobileOrientation = "either",
+  mobileLayout = "scroll",
+  onAutoPause,
   children,
 }) => {
   const gameId = rawGameId || title.toLowerCase().replace(/[^a-z0-9]/g, "-");
@@ -118,6 +150,17 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
   const [isLoaded, setIsLoaded] = useState(false);
   const [isWarmingUp, setIsWarmingUp] = useState(false);
   const [bootProgress, setBootProgress] = useState(0);
+  // Touch phones and portrait tablets get the immersive cabinet once it is
+  // launched (ADR 0061). Desktop never sets it, so its markup stays as it was.
+  // The device class is latched at Launch and held until exit, so an iPad that
+  // turns across 1024px mid-game stays immersive instead of jumping layouts.
+  const isTouchNarrow = useTouchNarrow();
+  const [launchedOnTouch, setLaunchedOnTouch] = useState(false);
+  const touchImmersive = isLaunched && launchedOnTouch;
+  // The phone is held against the game's orientation: the cabinet is blocked
+  // behind the rotate prompt (inert siblings, focus in the prompt).
+  const orientationMismatch = useOrientationMismatch(mobileOrientation);
+  const rotateBlocked = touchImmersive && orientationMismatch;
 
   const [showWizard, setShowWizard] = useState(false);
   const cabinetRef = useRef<HTMLDivElement>(null);
@@ -162,6 +205,9 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
     toggleFullscreen: toggleCabinetFullscreen,
     exitFullscreen,
   } = useFullscreen(cabinetRef, { enableKeyShortcut: false });
+  // Real Fullscreen, pseudo-fullscreen (iOS) or the immersive touch cabinet:
+  // all of them lay the cabinet out as the fullscreen layout does.
+  const immersive = isFullscreen || touchImmersive;
   const { setSafeTimeout } = useSafeTimeout();
   // Entering fullscreen swaps the header, so focus would otherwise land on the
   // first toolbar button ("Exit Fullscreen"), where the game's Space key
@@ -198,6 +244,49 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
     };
   }, [isFullscreen]);
 
+  // The immersive touch cabinet locks page scroll while it is open and gives
+  // the back of the page no overscroll bounce. Both are restored on exit.
+  useEffect(() => {
+    if (!touchImmersive || isFullscreen) return;
+    const previousOverflow = document.body.style.overflow;
+    const previousOverscroll =
+      document.documentElement.style.overscrollBehavior;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overscrollBehavior = "none";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.documentElement.style.overscrollBehavior = previousOverscroll;
+    };
+  }, [touchImmersive, isFullscreen]);
+
+  // A game that wants a fixed orientation holds it while in real fullscreen.
+  // The browser refuses outside fullscreen, and the lock is best effort.
+  // Only the touch cabinet asks for a lock; desktop fullscreen never does.
+  useEffect(() => {
+    if (
+      !touchImmersive ||
+      !isFullscreen ||
+      isPseudoFullscreen ||
+      mobileOrientation === "either"
+    ) {
+      return;
+    }
+    return lockScreenOrientation(mobileOrientation);
+  }, [touchImmersive, isFullscreen, isPseudoFullscreen, mobileOrientation]);
+
+  // Leaving the immersive cabinet puts the preview back in view.
+  const previewRef = useRef<HTMLDivElement>(null);
+  const wasTouchImmersiveRef = useRef(false);
+  useEffect(() => {
+    const was = wasTouchImmersiveRef.current;
+    wasTouchImmersiveRef.current = touchImmersive;
+    if (was && !touchImmersive) {
+      previewRef.current?.scrollIntoView?.({ block: "start" });
+    }
+  }, [touchImmersive]);
+
+  useCabinetAutoPause(touchImmersive ? onAutoPause : undefined);
+
   useLayoutEffect(() => {
     const marquee = marqueeRef.current;
     if (!isLaunched || !marquee) return;
@@ -216,7 +305,7 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
     observer.observe(marquee);
     if (footer) observer.observe(footer);
     return () => observer.disconnect();
-  }, [isLaunched, isFullscreen]);
+  }, [isLaunched, immersive]);
 
   const handlePrefetch = () => {
     if (!isPrefetched) {
@@ -233,6 +322,7 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
   };
 
   const handleLaunch = () => {
+    setLaunchedOnTouch(isTouchNarrow);
     handlePrefetch();
     setIsWarmingUp(true);
     setBootProgress(0);
@@ -293,8 +383,12 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
         cabinet.scrollIntoView?.({ block: "start" });
       }
     };
-    alignUnderHeader(prefersReducedMotion ? "auto" : "smooth");
-    const settleTimer = setTimeout(() => alignUnderHeader("auto", 48), 700);
+    // The immersive cabinet is fixed to the viewport; there is nothing to align.
+    if (!touchImmersive)
+      alignUnderHeader(prefersReducedMotion ? "auto" : "smooth");
+    const settleTimer = setTimeout(() => {
+      if (!touchImmersive) alignUnderHeader("auto", 48);
+    }, 700);
     // Focus the cabinet so keys reach the game, then, since the game can
     // render a loading shell first, retry briefly until its keyboard boundary
     // exists. Stop as soon as the game has moved focus somewhere itself, such
@@ -306,6 +400,11 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
       const gameOwnsFocus =
         !!active && active !== cabinet && cabinet.contains(active);
       if (gameOwnsFocus && attempts > 1) {
+        clearInterval(timer);
+        return;
+      }
+      // The rotate prompt owns focus while it is up.
+      if (cabinet.querySelector("[data-rotate-prompt]")) {
         clearInterval(timer);
         return;
       }
@@ -322,7 +421,7 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
       clearInterval(timer);
       clearTimeout(settleTimer);
     };
-  }, [isLaunched]);
+  }, [isLaunched, touchImmersive]);
 
   // Start buttons and game-over overlays unmount while focused, which drops
   // focus to <body> where the game no longer hears its keys. While the player
@@ -370,6 +469,7 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
 
   const handleExit = () => {
     setIsLaunched(false);
+    setLaunchedOnTouch(false);
     setIsWarmingUp(false);
     void exitFullscreen();
     setBootProgress(0);
@@ -428,9 +528,12 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
         tabIndex={-1}
         data-arcade-cabinet={gameId}
         data-game={gameId}
-        data-fullscreen={isFullscreen}
+        data-fullscreen={immersive}
+        {...(touchImmersive
+          ? { "data-immersive": true, "data-mobile-layout": mobileLayout }
+          : {})}
         className={`arcade-cabinet w-full flex flex-col items-center max-w-full min-w-0 @container ${
-          isFullscreen
+          immersive
             ? "fixed inset-0 z-50 h-dvh max-w-none bg-black overflow-hidden select-none"
             : "relative scroll-mt-24"
         }`}
@@ -441,7 +544,7 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
             // Launch, so the stage gets the viewport minus header, marquee
             // and dock. Games already size their playfield against
             // --layout-viewport-budget; overriding it here makes them fit.
-            ...(isFullscreen
+            ...(immersive
               ? {}
               : {
                   "--arcade-stage-budget": `calc(100dvh - ${headerOffset + 4}px - ${chromeHeight}px - var(--layout-dock-height, 0px) - 4px)`,
@@ -462,8 +565,11 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
         </div>
 
         {/* Fullscreen Mode: Floating Glassmorphic Pill Header */}
-        {isFullscreen ? (
-          <div className="arcade-cabinet-toolbar self-end shrink-0 z-50 flex items-center gap-1.5 p-1 bg-black/85 backdrop-blur-md rounded-2xl border border-zinc-700/80 shadow-2xl select-none">
+        {immersive ? (
+          <div
+            inert={rotateBlocked}
+            className="arcade-cabinet-toolbar self-end shrink-0 z-50 flex items-center gap-1.5 p-1 bg-black/85 backdrop-blur-md rounded-2xl border border-zinc-700/80 shadow-2xl select-none"
+          >
             <FullscreenButton
               isFullscreen={isFullscreen}
               isPseudoFullscreen={isPseudoFullscreen}
@@ -539,15 +645,20 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
         {/* Game Area Container with Dynamic Viewport Height Budgeting */}
         <div
           className={`relative w-full min-w-0 flex flex-col ${
-            isFullscreen ? "flex-1 min-h-0" : ""
+            immersive ? "flex-1 min-h-0" : ""
           }`}
         >
           <div
+            inert={rotateBlocked}
             className={`arcade-cabinet-stage w-full relative min-h-0 min-w-0 ${
-              isFullscreen
+              immersive
                 ? "flex-1 rounded-2xl border-2"
                 : "border-2 border-t-0 rounded-b-2xl"
-            } overflow-y-auto overflow-x-hidden flex flex-col items-center justify-start bg-black ${bezelClasses}`}
+            } ${
+              touchImmersive && mobileLayout === "fit"
+                ? "overflow-hidden"
+                : "overflow-y-auto overflow-x-hidden"
+            } flex flex-col items-center justify-start bg-black ${bezelClasses}`}
           >
             <CabinetFullscreenContext.Provider value={toggleCabinetFullscreen}>
               <CabinetSetupContext.Provider value={setupValue}>
@@ -577,7 +688,7 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
               data-testid="cabinet-crt-layer"
               data-crt-filter={setupConfig.crtFilter}
               className={`pointer-events-none absolute inset-0 z-40 ${
-                isFullscreen ? "rounded-2xl" : "rounded-b-2xl"
+                immersive ? "rounded-2xl" : "rounded-b-2xl"
               }`}
               style={{ backgroundImage: crtBackground }}
             />
@@ -586,13 +697,16 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
 
         {/* Optional Control Dock Slot (e.g. Virtual Gamepad, Bezel cluster) */}
         {controlDock && (
-          <div className="w-full mt-3 flex justify-center shrink-0">
+          <div
+            inert={rotateBlocked}
+            className="w-full mt-3 flex justify-center shrink-0"
+          >
             {controlDock}
           </div>
         )}
 
         {/* Discrete Retro Controller Menu (visible when not in full-screen) */}
-        {!isFullscreen && (
+        {!immersive && (
           <div
             ref={footerRef}
             className="mt-3 flex items-center justify-between w-full border border-zinc-800 bg-zinc-900/60 rounded-2xl px-4 py-2 font-mono text-xs text-zinc-400 flex-wrap gap-2 shrink-0"
@@ -626,12 +740,16 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
             </div>
           </div>
         )}
+
+        {rotateBlocked && mobileOrientation !== "either" && (
+          <RotateDevicePrompt target={mobileOrientation} onExit={handleExit} />
+        )}
       </div>
     );
   }
 
   return (
-    <div data-game={gameId} className="w-full">
+    <div ref={previewRef} data-game={gameId} className="w-full">
       {/* Static Retro Cabinet Preview Screen with scanlines */}
       <div
         className="w-full aspect-[16/10] min-h-[min(380px,65dvh)] rounded-2xl border border-zinc-800 bg-zinc-950 flex flex-col justify-between p-6 sm:p-8 relative overflow-hidden select-none"

@@ -54,6 +54,15 @@ export function frontTile(
   };
 }
 
+/**
+ * Whether holding work at the bin acts on this item: burnt food is thrown out
+ * and chairs go back to their crate. Everything else is stocked to the plan,
+ * so the bin refuses it (round 15).
+ */
+export function binTakes(item: Item): boolean {
+  return item.kind === "burnt" || item.kind === "chairs";
+}
+
 /** Whether a station takes this item now: it is empty and the item suits it. */
 export function stationAccepts(station: Station, item: Item): boolean {
   if (station.item) return false;

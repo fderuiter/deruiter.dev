@@ -802,6 +802,72 @@ describe("For Better or Bulk day seed on the page (#1918)", () => {
   });
 });
 
+describe("For Better or Bulk solo swap line and the helper's line in the panel", () => {
+  beforeEach(() => {
+    stubLoud(false);
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  it("shows the idle partner's swap line in the solo panel, with no buttons under it", () => {
+    render(<ForBetterOrBulkGame />);
+    start();
+    const fred = screen.getByTestId("fbb-prompt-fred");
+    expect(fred.textContent).toBe("Fred is waiting. Tab to switch to him.");
+    expect(within(fred).queryByRole("button")).toBeNull();
+  });
+
+  it("keeps the idle partner out of the panel on a helper day", () => {
+    render(
+      <ForBetterOrBulkGame
+        initialSetup={{ ...DEFAULT_SETUP, assist: true, seed: 12345 }}
+      />
+    );
+    start();
+    expect(screen.queryByTestId("fbb-prompt-fred")).toBeNull();
+    expect(screen.getByTestId("fbb-prompt-abbi")).toBeTruthy();
+  });
+
+  it("shows the helper's job line in the side panel, after the prompts, after the start and after several steps", () => {
+    render(
+      <ForBetterOrBulkGame
+        initialSetup={{ ...DEFAULT_SETUP, assist: true, seed: 12345 }}
+      />
+    );
+    start();
+    // The line must be on screen in the prompt column, below the prompt it
+    // follows, and not hidden by any ancestor (jsdom does not lay out, so this
+    // checks the rendered tree and the computed display and visibility).
+    const expectOnPanel = () => {
+      const line = screen.getByTestId("fbb-helper");
+      const prompt = screen.getByTestId("fbb-prompt-abbi");
+      expect(line.textContent).toMatch(/^(Fred|Abbi) .+\.$/);
+      expect(line.parentElement).toBe(prompt.parentElement);
+      expect(
+        prompt.compareDocumentPosition(line) & Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy();
+      for (let el: HTMLElement | null = line; el; el = el.parentElement) {
+        expect(el.hidden).toBe(false);
+        expect(el.getAttribute("aria-hidden")).not.toBe("true");
+        const style = window.getComputedStyle(el);
+        expect(style.display).not.toBe("none");
+        expect(style.visibility).not.toBe("hidden");
+      }
+    };
+    expectOnPanel();
+    const stepsBefore = engine.inputs.length;
+    for (let i = 0; i < 12; i++) {
+      act(() => {
+        if (frame.active) frame.callback?.(250);
+      });
+    }
+    expect(engine.inputs.length).toBeGreaterThan(stepsBefore);
+    expectOnPanel();
+  });
+});
+
 describe("For Better or Bulk side panel: helper, partner and day (fbb round)", () => {
   beforeEach(() => {
     stubLoud(false);
@@ -836,7 +902,7 @@ describe("For Better or Bulk side panel: helper, partner and day (fbb round)", (
       "text-[var(--fbb-text)]"
     );
     expect(screen.getByRole("status").textContent).toContain(
-      "Fred is waiting for Abbi to place something first."
+      "Fred starts helping after Abbi places the first item."
     );
   });
 
@@ -847,7 +913,8 @@ describe("For Better or Bulk side panel: helper, partner and day (fbb round)", (
       screen.getByRole("checkbox", { name: /Helper for the other person/ })
     );
     expect(screen.getByTestId("fbb-no-rewards").textContent).toBe(
-      "Helper days and sped-up days don't earn trophies or a board score. The relaxed clock counts the same as the standard one."
+      // The sped-up clock is not named unless it is on (round 19, N-3).
+      "Helper days don't earn trophies or a board score. The relaxed clock counts the same as the standard one."
     );
     expect(screen.getByTestId("fbb-setup").textContent).toContain(
       "Helper days don't earn trophies or a board score."
@@ -912,8 +979,13 @@ describe("For Better or Bulk side panel: helper, partner and day (fbb round)", (
     runUntil(() => screen.queryByTestId("fbb-brothers") !== null);
     fireEvent.click(screen.getByRole("button", { name: /Go with them/ }));
     expect(screen.getByTestId("fbb-active").textContent).toContain("Abbi");
-    // With one person out there is no swap, so Tab is left to the browser.
-    expect(fireEvent.keyDown(game(), { key: "Tab", code: "Tab" })).toBe(true);
+    // The hint says why Tab does not swap (round 16, round 18 S-1).
+    expect(screen.getByTestId("fbb-active").textContent).toContain(
+      "Fred is out, so Tab does nothing"
+    );
+    // With one person out there is no swap, and Tab keeps focus on the game
+    // so the arrows still move Abbi.
+    expect(fireEvent.keyDown(game(), { key: "Tab", code: "Tab" })).toBe(false);
     expect(screen.getByTestId("fbb-active").textContent).toContain("Abbi");
     expect(screen.getByRole("status").textContent).toBe(
       "Fred is out with his brothers."
@@ -1157,5 +1229,16 @@ describe("the brothers' options share one resting look (round 9)", () => {
     expect(stay.className).toBe(breakButton.className);
     expect(stay.className).not.toMatch(/(^|\s)border-\[var\(--fbb-accent\)\]/);
     expect(document.activeElement).not.toBe(stay);
+  });
+
+  it("names the break button with a short label and the promise as its description (round 15)", () => {
+    render(<BrothersDialog state={atText} onDecide={vi.fn()} />);
+    const breakButton = screen.getByRole("button", {
+      name: "Take a short break.",
+    });
+    const detail = document.getElementById(
+      breakButton.getAttribute("aria-describedby") ?? ""
+    );
+    expect(detail?.textContent).toBe("(Promise to come back for something.)");
   });
 });

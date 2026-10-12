@@ -61,9 +61,11 @@ import { createLevel } from "./level";
 import { availableCommitments } from "./receipt";
 import { assistInput, assistRests, helperMayAct } from "./assist";
 import { FLOOR_TILES } from "./gates";
+import { setByThree } from "./challenges";
 import {
   GRILL_COOKS,
   RAW_FOR_COOKED,
+  binTakes,
   floorDropPress,
   frontTile,
   interactTile,
@@ -404,11 +406,16 @@ function interact(w: Working, id: PlayerId, helped: boolean): void {
   }
 }
 
-/** Holding work at the bin: after BIN_HOLD_SECONDS the item in hand is thrown out. */
+/**
+ * Holding work at the bin: after BIN_HOLD_SECONDS burnt food in hand is thrown
+ * out and a stack of chairs goes back to its crate. Anything else is refused,
+ * so the hold never starts: roses, arrangements and cooked food are stocked to
+ * the plan, and binning one would leave the day short (round 15).
+ */
 function holdAtBin(w: Working, id: PlayerId, dt: number): void {
   const player = w.state.players[id];
   const item = player.holding;
-  if (!item) {
+  if (!item || !binTakes(item)) {
     releaseBinHold(w, id);
     return;
   }
@@ -602,7 +609,11 @@ function cookGrills(w: Working, dt: number): void {
         progress,
       });
       w.state = { ...w.state, burntBatches: w.state.burntBatches + 1 };
-      w.events.push({ type: "burnt", station: station.id });
+      w.events.push({
+        type: "burnt",
+        station: station.id,
+        item: item.kind,
+      });
     } else {
       setStation(w, { ...station, progress });
     }
@@ -909,11 +920,17 @@ export function stepGame(state: GameState, frame: Frame): StepResult {
   if (allDone(w.state)) {
     w.state = { ...w.state, phase: "done", finishedAt: after };
     endOpenSeeded(w, after);
-    w.events.push({ type: "level-finished", early: true });
+    // "Early" uses the 3:00 challenge's own rule, so the toast never praises a
+    // finish the receipt then marks as missed (round 15).
+    w.events.push({
+      type: "level-finished",
+      allSet: true,
+      early: setByThree(after, w.state.duration),
+    });
   } else if (after + 1e-9 >= w.state.duration) {
     w.state = { ...w.state, phase: "done" };
     endOpenSeeded(w, after);
-    w.events.push({ type: "level-finished", early: false });
+    w.events.push({ type: "level-finished", allSet: false, early: false });
   }
   return w;
 }

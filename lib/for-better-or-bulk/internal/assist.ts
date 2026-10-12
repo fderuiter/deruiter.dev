@@ -642,7 +642,7 @@ interface Job {
  * The helper's job for `id` as one sentence, derived from the same plan
  * `assistInput` follows. The kind is the planner's verb ("carrying",
  * "fetching", "waiting") or one of the states "away", "busy", "turn" (waiting
- * for the other person to place something first), "spot" (holding something
+ * until the other person places their next item), "spot" (holding something
  * with no spot free) and "idle". The sentence for "turn" names the other
  * person in the same words the start announcement uses. Pure.
  */
@@ -662,10 +662,18 @@ function jobOf(state: GameState, id: PlayerId): Job {
     return { kind: "busy", text: `${name} is busy, so the helper waits.` };
   }
   if (!helperMayAct(state, id)) {
-    const other = id === "fred" ? "Abbi" : "Fred";
+    // The helper places no more than the player, so this line also shows
+    // when it has caught up, not only at the start (round 16).
+    const other: PlayerId = id === "fred" ? "abbi" : "fred";
+    const otherName = other === "fred" ? "Fred" : "Abbi";
+    // At the start nobody has placed anything, so "as many" would read as
+    // an achievement at zero (round 17).
     return {
       kind: "turn",
-      text: `${name} is waiting for ${other} to place something first.`,
+      text:
+        placedCount(state, other) === 0
+          ? `${name} starts helping after ${otherName} places the first item.`
+          : `${name} has placed as many items as ${otherName}, and helps again after ${otherName}'s next one.`,
     };
   }
   const plan = planFor(state, id);
@@ -675,14 +683,24 @@ function jobOf(state: GameState, id: PlayerId): Job {
       text: `${name} is ${plan.text}.`,
     };
   }
-  return player.holding
-    ? { kind: "spot", text: `${name} is waiting for a free spot.` }
-    : { kind: "idle", text: `${name} has nothing useful to do right now.` };
+  if (player.holding)
+    return { kind: "spot", text: `${name} is waiting for a free spot.` };
+  // With nothing left to fetch while the other person still carries
+  // something, the helper is waiting on them, not idle (round 19, D-3).
+  const other: PlayerId = id === "fred" ? "abbi" : "fred";
+  if (state.players[other].holding) {
+    const otherName = other === "fred" ? "Fred" : "Abbi";
+    return {
+      kind: "idle",
+      text: `${name} is waiting for ${otherName} to set down what's in hand.`,
+    };
+  }
+  return { kind: "idle", text: `${name} has nothing useful to do right now.` };
 }
 
 /**
  * The job line for the helper working for `id`, as one sentence: "Fred is
- * carrying the roses to the ARRANGE table (A).", "Fred is waiting for a free
+ * carrying the roses to the ARRANGE table.", "Fred is waiting for a free
  * spot." or "Fred is out with his brothers.". Pure.
  */
 export function assistJob(state: GameState, id: PlayerId): string {

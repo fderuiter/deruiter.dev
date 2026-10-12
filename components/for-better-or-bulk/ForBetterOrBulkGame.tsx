@@ -84,7 +84,7 @@ import { playSfx } from "./sfx";
 import { readHideTips, subscribeHideTips, writeHideTips } from "./hint-storage";
 import { ReceiptView } from "./ReceiptView";
 import { ReplayControls, type ReplaySpeed } from "./ReplayControls";
-import { NO_REWARD_LINE, runTrophyIds } from "./rewards";
+import { noRewardLine, runTrophyIds } from "./rewards";
 import { SetupScreen } from "./SetupScreen";
 import {
   burstLifetime,
@@ -845,13 +845,14 @@ export function ForBetterOrBulkGame({
     // focus in DOM order, from the cabinet root to Pause and back out.
     if (event.key === "Tab" && mode === "solo" && !event.shiftKey) {
       // Someone who is out with his brothers cannot take the keys, so there
-      // is no one to swap with: Tab is left to the browser, which reaches Pause.
+      // is no one to swap with. Tab does nothing rather than moving focus to
+      // Pause, where the arrows would stop moving anyone (round 18, S-1).
       const other: PlayerId = activeRef.current === "fred" ? "abbi" : "fred";
+      event.preventDefault();
       if (stateRef.current?.players[other].presence === "away") {
         setAnnouncement(`${NAMES[other]} is out with his brothers.`);
         return;
       }
-      event.preventDefault();
       if (event.repeat) return;
       // A press that has not reached the engine yet belongs to the person
       // who was active when it was made, so apply it before swapping.
@@ -1005,9 +1006,14 @@ export function ForBetterOrBulkGame({
     );
   } else if (view) {
     const partner: PlayerId = active === "fred" ? "abbi" : "fred";
-    // Solo shows the person at the keys, and the partner too while he is out or frozen.
+    // Solo shows the person at the keys, and the partner too: while he is out or
+    // frozen, or idle with no helper (then his line names the swap key).
     const shown: PlayerId[] =
       mode === "coop" ? ["fred", "abbi"] : [...shownPrompts(view, active)];
+    // The coach speaks for the person at the keys, and for a frozen partner as before.
+    const coached = shown.filter(
+      (id) => mode === "coop" || id === active || view.players[id].busyFor > 0
+    );
     const eventLines = activeEventLines(view);
     body = (
       <div className="relative flex w-full min-w-0 flex-col gap-2 p-2 sm:p-3">
@@ -1040,11 +1046,11 @@ export function ForBetterOrBulkGame({
             <span data-testid="fbb-active">
               Playing as <span className="font-bold">{NAMES[active]}</span> ·
               {view.players[partner].presence === "away"
-                ? " Tab to reach Pause · Shift+Tab to leave · Escape to pause"
+                ? ` ${NAMES[partner]} is out, so Tab does nothing · Shift+Tab to leave · Escape to pause`
                 : " Tab to swap · Shift+Tab to leave · Escape to pause"}
             </span>
           ) : (
-            <span>Fred: WASD, E, F · Abbi: arrows, Enter, Shift</span>
+            <span>Fred: WASD, E or Space, F · Abbi: arrows, Enter, Shift</span>
           )}
           <button
             ref={pauseRef}
@@ -1110,7 +1116,7 @@ export function ForBetterOrBulkGame({
                 className="flex min-w-0 flex-col gap-1 rounded border border-[var(--fbb-rule)] p-2"
               >
                 <ul className="flex flex-col gap-1">
-                  {shown.map((id) => {
+                  {coached.map((id) => {
                     // An away person is already said in their prompt.
                     if (view.players[id].presence === "away") return null;
                     const hint = getHint(view, id, { coop: mode === "coop" });
@@ -1172,7 +1178,9 @@ export function ForBetterOrBulkGame({
               })}
             </ul>
             {shown.map((id) => {
-              const prompt = getPrompt(view, id);
+              const prompt = getPrompt(view, id, {
+                waiting: mode === "solo" && id !== active,
+              });
               return (
                 <div
                   key={id}
@@ -1181,8 +1189,17 @@ export function ForBetterOrBulkGame({
                 >
                   <p className="break-words">{prompt.status}</p>
                   {prompt.interact ? (
-                    <p className="text-[var(--fbb-accent)]">
-                      {`${interactKeyName(id, mode === "coop")}: ${prompt.interact}`}
+                    // A refusal gets no key, so it never reads as an action (round 17).
+                    <p
+                      className={
+                        prompt.interactLands
+                          ? "text-[var(--fbb-accent)]"
+                          : "text-[var(--fbb-text)]"
+                      }
+                    >
+                      {prompt.interactLands
+                        ? `${interactKeyName(id, mode === "coop")}: ${prompt.interact}`
+                        : prompt.interact}
                     </p>
                   ) : null}
                   {prompt.floorDrop ? (
@@ -1214,7 +1231,7 @@ export function ForBetterOrBulkGame({
                 data-testid="fbb-no-rewards"
                 className="min-w-0 break-words pt-2 text-[var(--fbb-dim)]"
               >
-                {NO_REWARD_LINE}
+                {noRewardLine(speed !== 1)}
               </p>
             ) : null}
           </div>

@@ -80,12 +80,14 @@ export const WorldHud: React.FC<{
         </Cell>
         <Cell label="Clock">
           <span data-testid="world-clock">{hud.clock}</span>
-          <span
-            data-testid="world-phase"
-            className="ml-2 text-[10px] font-semibold tracking-[0.1em] text-[var(--sd-muted)] uppercase"
-          >
-            {PHASE_LABEL[phase]}
-          </span>
+          {hud.overnight ? null : (
+            <span
+              data-testid="world-phase"
+              className="ml-2 text-[10px] font-semibold tracking-[0.1em] text-[var(--sd-muted)] uppercase"
+            >
+              {PHASE_LABEL[phase]}
+            </span>
+          )}
         </Cell>
         <Cell label="Energy">
           <Bar label="Energy" value={hud.energy} />

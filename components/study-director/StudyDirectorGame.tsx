@@ -63,6 +63,11 @@ import { SharePanel } from "./ShareCard";
 import { DifficultyPicker } from "./DifficultyPicker";
 
 /** The walkable world (ADR 0055), loaded only when `#mode=world` asks for it. */
+/** "1 new message", "3 new messages" (#1936). */
+function messageCount(n: number, noun: string): string {
+  return `${n} ${noun}${n === 1 ? "" : "s"}`;
+}
+
 const StudyDirectorWorld = dynamic(
   () =>
     import("@/components/study-director-world/StudyDirectorWorld").then(
@@ -286,7 +291,9 @@ export const StudyDirectorGame: React.FC<{ officeFirst?: boolean }> = ({
     setDocumented(false);
     setNews(null);
     setConfirmAbandon(false);
-    setNotice(`Day ${next.day}. ${inbox(next).length} new messages.`);
+    setNotice(
+      `Day ${next.day}. ${messageCount(inbox(next).length, "new message")}.`
+    );
   }, []);
 
   const startNew = useCallback(() => {
@@ -436,7 +443,7 @@ export const StudyDirectorGame: React.FC<{ officeFirst?: boolean }> = ({
     setNotice(
       next.status === "complete"
         ? "The study is complete."
-        : `Day ${next.day}. ${night} ${inbox(next).length} messages in the inbox.`
+        : `Day ${next.day}. ${night} ${messageCount(inbox(next).length, "message")} in the inbox.`
     );
   }, [state, reportNight, closeOut]);
 
@@ -462,7 +469,7 @@ export const StudyDirectorGame: React.FC<{ officeFirst?: boolean }> = ({
     setNotice(
       next.status === "complete"
         ? "The study is complete."
-        : `Skipped ${skipped} days to day ${next.day}. ${night} ${inbox(next).length} messages in the inbox.`
+        : `Skipped ${skipped} days to day ${next.day}. ${night} ${messageCount(inbox(next).length, "message")} in the inbox.`
     );
   }, [state, reportNight, closeOut]);
 

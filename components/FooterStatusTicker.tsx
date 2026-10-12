@@ -206,7 +206,7 @@ export const FooterStatusTicker: React.FC = () => {
               onClick={handleDuckClick}
               type="button"
               className="group flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[11px] transition-transform active:scale-95 focus:outline-none focus:ring-1 focus:ring-amber-400"
-              title="Click to pet Duck the Golden Retriever!"
+              title="Click to pet Duck the Golden Retriever puppy!"
               aria-label="Pet Duck the puppy"
             >
               <span className="text-sm transition-transform group-hover:scale-125">

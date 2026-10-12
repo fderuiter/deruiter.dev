@@ -84,4 +84,9 @@ export {
   nextSpotTile,
   shownPrompts,
 } from "./internal/views";
-export type { CoachStep, FloorDropPrompt, Prompt } from "./internal/views";
+export type {
+  CoachStep,
+  FloorDropPrompt,
+  Prompt,
+  PromptOptions,
+} from "./internal/views";

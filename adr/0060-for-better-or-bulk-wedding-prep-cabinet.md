@@ -60,7 +60,7 @@ against tile collision and interact with the tile in front of them:
 - **Stations** transform what is put on them: held work at the rose table and
   petal bucket turns roses into arrangements or petals, the grill cooks raw
   hot dogs and wings and then burns them if nobody comes back, and the bin
-  takes anything.
+  takes burnt food (and returns chairs to their crate).
 - **Targets** in the venue take one item each: tables, the aisle, chair spots,
   lantern hooks, the buffet and the bouquet basket. A target the cart did not
   pay for is unplanned, and an empty centerpiece or petal spot can be
@@ -249,6 +249,64 @@ For Better or Bulk trophies are unchanged.
 
 **Seeds.** Only the standard day (seed 0) records a high score. A seeded day
 can still earn its own trophy.
+
+## Amendment (2026-10-12): playtest round 15
+
+Issue #1974. The rules below are the current ones.
+
+- **The bin only takes burnt food.** Holding work at the bin throws out burnt
+  food and returns a stack of chairs to its crate, as before. Anything else in
+  hand is refused: the hold never starts, the work prompt is empty, and the
+  prompt reads "The BIN only takes burnt food." Roses, arrangements and cooked
+  food are stocked to the plan, so binning one left the day short with no way
+  back. The full-floor line names the bin only for burnt food and chairs.
+  **Run codes recorded before this change may not verify.** A run that binned
+  anything other than burnt food or chairs now keeps the item, so the same
+  frames reach a different state. `RUN_CODE_PREFIX` stays `f1.`, as the
+  standing decision for this cabinet.
+- **"Early, even." follows the 3:00 challenge.** The `level-finished` event is
+  early only when the finish meets "Everything set by 3:00", by the same rule
+  the challenge uses (`setByThree`). A finish after 3:00 and before 4:00 gets
+  "Everything is set." on its own, so the toast and the receipt agree.
+- **The break option has a short name.** Its accessible name is "Take a short
+  break." and "(Promise to come back for something.)" is its description, like
+  the stay and leave options.
+
+## Amendment (2026-10-12): playtest round 13 chair spots
+
+Issue #1969. Chair spots are solid. A chair spot (O) is a target, not ground,
+so a person walking into an empty one stays on the floor and faces it, and a
+chair is placed from the tile beside it. The solo assist routes to a floor tile
+beside the spot and faces it. Aisle spots (S) stay walkable, and the venue
+letters are no longer printed in player copy.
+
+**Run codes recorded before this change may not verify.** A walk into an empty
+chair spot now stops on the floor, so the same frames can reach a different
+state. An `f1.` code recorded before this rule is refused as not replaying to
+the same result. `RUN_CODE_PREFIX` stays `f1.`, as the standing decision for
+this cabinet.
+
+## Amendment (2026-10-12): playtest round 20, north lantern crate and helper default
+
+Issue #1999. Fred accepted the recommended options on two open decisions.
+
+- **A second LAMP crate in the top-right corner (18,1).** The two north lantern
+  hooks were about 15 tiles from the only lantern crate, the longest walk in
+  the day. Crates of a kind share one stock, so the pack is still four
+  lanterns. The coach names the nearest crate of a kind, so from the north it
+  points at "the LAMP crate in the top-right corner".
+- **The page opens a one-player day with the helper on.** Playtests finished
+  and enjoyed the helper day most. The harder solo day is one untick away, and
+  helper days still earn no trophy or board score. `DEFAULT_SETUP` keeps the
+  helper off, so tests and replays are unchanged.
+
+Unplanned tables and lantern hooks stay solid, so they are now drawn faintly
+instead of not at all.
+
+**Run codes recorded before this change may not verify.** The new crate
+changes routes, so the same frames can reach a different state. An `f1.` code
+recorded before this map is refused as not replaying to the same result.
+`RUN_CODE_PREFIX` stays `f1.`, as the standing decision for this cabinet.
 
 ## Amendment (2026-10-11): reactive jokes, ceremony playback and the receipt card
 

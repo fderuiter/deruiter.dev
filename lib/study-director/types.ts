@@ -286,7 +286,8 @@ export type StudyDirectorProfile =
   | "scientist"
   | "operator"
   | "delegator"
-  | "controlFreak";
+  | "controlFreak"
+  | "absentee";
 
 export interface ProfileResult {
   profile: StudyDirectorProfile;

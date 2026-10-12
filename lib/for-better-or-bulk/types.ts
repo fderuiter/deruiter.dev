@@ -307,7 +307,11 @@ export type GameEvent =
       readonly station: string;
       readonly item: ItemKind;
     }
-  | { readonly type: "burnt"; readonly station: string }
+  | {
+      readonly type: "burnt";
+      readonly station: string;
+      readonly item: ItemKind;
+    }
   | {
       readonly type: "restocked";
       readonly player: PlayerId;
@@ -343,7 +347,13 @@ export type GameEvent =
   | { readonly type: "supply-empty"; readonly supply: SupplyKind }
   | { readonly type: "seeded-start"; readonly id: SeededEventId }
   | { readonly type: "seeded-end"; readonly id: SeededEventId }
-  | { readonly type: "level-finished"; readonly early: boolean };
+  | {
+      readonly type: "level-finished";
+      /** Every planned target was done before 4:00. */
+      readonly allSet: boolean;
+      /** Done in time for the "Everything set by 3:00" challenge. */
+      readonly early: boolean;
+    };
 
 export interface StepResult {
   readonly state: GameState;

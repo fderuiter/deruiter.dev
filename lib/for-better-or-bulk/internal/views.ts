@@ -12,6 +12,7 @@ import {
   INTERRUPTIONS,
   ITEM_LABELS,
   THROW_OUT_PROMPT,
+  VENUE_MAP,
 } from "../presets";
 import type {
   GameState,
@@ -20,6 +21,7 @@ import type {
   ItemKind,
   Player,
   PlayerId,
+  Station,
   StationKind,
   SupplyKind,
   Target,
@@ -32,6 +34,7 @@ import {
   ITEM_NAMES,
   SPOT_NAMES,
   STATION_NAMES,
+  SWAP_KEY_NAME,
   TARGET_NAMES,
   crateGrabName,
   crateTakeName,
@@ -41,6 +44,7 @@ import {
 } from "./words";
 import {
   GRILL_COOKS,
+  binTakes,
   faceTiles,
   floorDropPress,
   interactTile,
@@ -128,7 +132,7 @@ function blockedStationFor(
       station.kind === "grill"
         ? held.kind in GRILL_COOKS
         : held.kind === "roses";
-    if (takes) return `${capitalise(STATION_NAMES[station.kind])} is full.`;
+    if (takes) return fullStationLine(station);
   }
   return null;
 }
@@ -145,7 +149,10 @@ function fullFloorPrompt(
   held: Item
 ): string | null {
   if (state.floor.length < FLOOR_CAP) return null;
-  const line = "The floor here is full. Find a station or the bin.";
+  // The bin only takes burnt food and chairs, so it is named only for those.
+  const line = binTakes(held)
+    ? "The floor here is full. Find a station or the bin."
+    : "The floor here is full. Find a station or a spot for it.";
   const blocked = blockedStationFor(
     state,
     { x: Math.floor(person.x), y: Math.floor(person.y) },
@@ -174,6 +181,23 @@ const SPOT_BARE: Readonly<Record<TargetKind, string>> = {
   buffet: "This spot was left bare on purpose.",
 };
 
+/**
+ * The line for a finished arrangement faced at a station (round 12, task 2):
+ * where an arrangement goes, naming only the target kinds that still have an
+ * open spot. With none open, a true line says the arrangement has no place.
+ */
+function arrangementRefusal(state: GameState): string {
+  const open = (kind: TargetKind): boolean =>
+    state.targets.some((t) => t.kind === kind && t.status === "open");
+  const table = open("table");
+  const basket = open("basket");
+  if (table && basket)
+    return `Arrangements go on ${TARGET_NAMES.table} or in ${TARGET_NAMES.basket}.`;
+  if (table) return `Arrangements go on ${TARGET_NAMES.table}.`;
+  if (basket) return `Arrangements go in ${TARGET_NAMES.basket}.`;
+  return "No centerpiece table or bouquet basket needs an arrangement now.";
+}
+
 /** Whether the bin is on this tile. */
 function isBinAt(state: GameState, tile: Tile): boolean {
   return at(state.stations, tile)?.kind === "bin";
@@ -197,19 +221,36 @@ function reasonOnTile(
   if (supply) {
     if (held)
       return `The ${CRATE_NAMES[supply.kind]} crate only takes ${ITEM_NAMES[supply.kind]}.`;
+    // Lantern crates stand on every map; without lanterns in the plan the
+    // crate is not empty, it is unused (round 19, N-2).
+    if (supply.kind === "lantern" && !state.setup.cart.lanterns)
+      return "Lanterns are not in this plan.";
     return `The ${CRATE_NAMES[supply.kind]} crate is empty.`;
   }
   if (station) {
     // The bin is emptied by holding work, and the work prompt names that hold,
-    // so a held item at the bin gets no interact line.
-    if (station.kind === "bin")
-      return held ? null : `Nothing on ${STATION_NAMES.bin} to take.`;
-    if (station.item)
-      return `${capitalise(STATION_NAMES[station.kind])} is full.`;
-    if (!held) return `Nothing on ${STATION_NAMES[station.kind]} to take.`;
+    // so burnt food or chairs at the bin get no interact line. Anything else
+    // is refused, and the line says what the bin does take (round 15).
+    if (station.kind === "bin") {
+      if (!held) return "The BIN takes burnt food.";
+      return binTakes(held) ? null : "The BIN only takes burnt food.";
+    }
+    if (station.item) return fullStationLine(station);
+    if (!held) {
+      // A cart without petals never uses the bucket, so say that instead of
+      // calling it empty (round 16).
+      if (
+        station.kind === "petals" &&
+        !state.targets.some(
+          (t) => t.category === "petals" && t.status !== "unplanned"
+        )
+      )
+        return "There are no petals in this plan.";
+      return `Nothing on ${STATION_NAMES[station.kind]} to take.`;
+    }
     if (station.kind === "grill") {
       if (held.kind !== "hotdogs" && held.kind !== "wings")
-        return "The GRILL (G) takes raw hot dogs or wings.";
+        return "The GRILL takes raw hot dogs or wings.";
       // Only say where cooked food goes when an open buffet spot wants it.
       const buffetWants = state.targets.some(
         (t) =>
@@ -219,6 +260,9 @@ function reasonOnTile(
         ? "Cooked food goes on the buffet, not back on the grill."
         : "These are cooked already.";
     }
+    if (held.kind === "arrangement") return arrangementRefusal(state);
+    // Roses are the one item a rose station takes, so anything else is refused by name.
+    if (held.kind !== "roses") return `Nothing here takes ${heldName(held)}.`;
     return `${capitalise(STATION_NAMES[station.kind])} takes roses.`;
   }
   if (target) {
@@ -239,9 +283,10 @@ function reasonOnTile(
  * one-way: a press that lands never gets a line here, and a press that does
  * nothing gets one, with these exceptions:
  *
- * - The bin with something in hand gets no line, because the work prompt
- *   names the hold that empties it. This holds even when the bin is one of
- *   two faced tiles, so a bin that straddles with a wall gets no line either.
+ * - The bin with burnt food or chairs in hand gets no line, because the work
+ *   prompt names the hold that empties it. This holds even when the bin is one
+ *   of two faced tiles, so a bin that straddles with a wall gets no line
+ *   either. Anything else in hand is refused with a line (round 15).
  * - A press with nothing in hand that faces only plain ground gets no line,
  *   since there is nothing to refuse.
  *
@@ -278,7 +323,9 @@ function unpressedReason(state: GameState, person: Player): string | null {
  * The people whose status line the prompt panel shows. Solo shows the person at
  * the keyboard, and the partner as well while the partner is out or frozen (on
  * the phone, or retying a shoelace), so a call never goes unexplained (round 9,
- * task 4). Co-op shows both people and is not handled here.
+ * task 4). Without a helper the idle partner is listed too, with a line that
+ * names the swap key (round 12, task 1). A helper day lists the partner only
+ * when away or frozen, as before. Co-op shows both people and is not handled here.
  */
 export function shownPrompts(
   state: GameState,
@@ -286,9 +333,18 @@ export function shownPrompts(
 ): readonly PlayerId[] {
   const partner: PlayerId = active === "fred" ? "abbi" : "fred";
   const other = state.players[partner];
-  return other.presence === "away" || other.busyFor > 0
-    ? [active, partner]
-    : [active];
+  if (other.presence === "away" || other.busyFor > 0) return [active, partner];
+  return state.setup.assist ? [active] : [active, partner];
+}
+
+/**
+ * The line for a station that already holds something. A full grill names
+ * what is on it, so the way out is plain: lift that off first (round 19, N-1).
+ */
+function fullStationLine(station: Station): string {
+  const full = `${capitalise(STATION_NAMES[station.kind])} is full.`;
+  if (station.kind !== "grill" || !station.item) return full;
+  return `${full} Take ${heldName(station.item)} off first.`;
 }
 
 function capitalise(text: string): string {
@@ -307,11 +363,40 @@ export interface FloorDropPrompt {
 
 /** What one person's buttons would do right now. */
 export interface Prompt {
+  /**
+   * What an interact press does, or why it does nothing; `interactLands`
+   * says which. The cabinet puts the key in front of a press that lands only,
+   * so a refusal never reads as an action (round 17).
+   */
   readonly interact: string | null;
+  /** Whether an interact press lands, so `interact` names an action. */
+  readonly interactLands: boolean;
   /** Set when the interact press would set the held item on open floor: it needs a hold. */
   readonly floorDrop: FloorDropPrompt | null;
   readonly work: string | null;
   readonly status: string;
+}
+
+/** Options for one person's prompt. */
+export interface PromptOptions {
+  /**
+   * True for the idle partner in solo play, who is not at the keys. Their
+   * prompt then has no buttons and a status that names the swap key. Ignored
+   * on a helper day, where the partner is the helper's charge.
+   */
+  readonly waiting?: boolean;
+}
+
+/**
+ * The status line for an idle partner in solo play, naming the swap key. A
+ * partner who holds something says what, so the person at the keys knows
+ * before they swap.
+ */
+function swapStatus(id: PlayerId, held: Item | null): string {
+  const name = id === "fred" ? "Fred" : "Abbi";
+  const pronoun = id === "fred" ? "him" : "her";
+  const carrying = held ? ` with ${heldName(held)}` : "";
+  return `${name} is waiting${carrying}. ${SWAP_KEY_NAME} to switch to ${pronoun}.`;
 }
 
 /** The first thing in a list that sits on a tile. */
@@ -336,8 +421,15 @@ function takePrompt(state: GameState, tile: Tile): string | null {
   const floorItem = at(state.floor, tile);
   if (supply && state.stock[supply.kind] > 0)
     return `Take ${crateTakeName(supply.kind, state.stock[supply.kind])} from the ${CRATE_NAMES[supply.kind]} crate`;
-  if (station?.item)
-    return `Take ${stationItemName(station.item)} off ${STATION_NAMES[station.kind]}`;
+  if (station?.item) {
+    const take = `Take ${stationItemName(station.item)} off ${STATION_NAMES[station.kind]}`;
+    // Raw food on the grill is still cooking, so the prompt says so (round 16).
+    const cooking =
+      station.kind === "grill" &&
+      (station.item.kind === "hotdogs-raw" ||
+        station.item.kind === "wings-raw");
+    return cooking ? `${take} (not cooked yet)` : take;
+  }
   if (floorItem) return `Pick up ${heldLabel(floorItem.item)} off the floor`;
   return null;
 }
@@ -364,8 +456,17 @@ function placePrompt(state: GameState, tile: Tile, held: Item): string | null {
   return null;
 }
 
-/** Button prompts and a status line for one person. */
-export function getPrompt(state: GameState, id: PlayerId): Prompt {
+/**
+ * Button prompts and a status line for one person. `options.waiting` marks the
+ * idle partner in solo play: their prompt then has no buttons and names the
+ * swap key. It is ignored on a helper day, and it never changes an away or
+ * frozen person's line.
+ */
+export function getPrompt(
+  state: GameState,
+  id: PlayerId,
+  options: PromptOptions = {}
+): Prompt {
   const player = state.players[id];
   const name = id === "fred" ? "Fred" : "Abbi";
   if (player.presence === "away") {
@@ -375,6 +476,7 @@ export function getPrompt(state: GameState, id: PlayerId): Prompt {
         : ` Back around ${clockLabel(state.returnsAt, state.duration)}.`;
     return {
       interact: null,
+      interactLands: false,
       floorDrop: null,
       work: null,
       status: `${name} is out with his brothers.${back}`,
@@ -386,13 +488,17 @@ export function getPrompt(state: GameState, id: PlayerId): Prompt {
     );
     if (call) {
       // A phone call freezes the person; the prompt says how long is left,
-      // in wall-clock minutes like the rest of the prompts.
+      // in wall-clock minutes like the rest of the prompts. It rounds up, so
+      // the minutes shown are never less than the time really left (round 12, task 3).
       const minutes = Math.max(
         1,
-        Math.round((player.busyFor * LEVEL_HOURS * 60) / state.duration)
+        Math.ceil(
+          (player.busyFor * LEVEL_HOURS * 60) / state.duration - CLOCK_TOLERANCE
+        )
       );
       return {
         interact: null,
+        interactLands: false,
         floorDrop: null,
         work: null,
         status: `${name} is on the phone (about ${minutes} min left): ${call.text}`,
@@ -400,12 +506,22 @@ export function getPrompt(state: GameState, id: PlayerId): Prompt {
     }
     return {
       interact: null,
+      interactLands: false,
       floorDrop: null,
       work: null,
       status: `${name}: ${player.busyReason ?? "busy"}`,
     };
   }
   const held = player.holding;
+  if (options.waiting && !state.setup.assist) {
+    return {
+      interact: null,
+      interactLands: false,
+      floorDrop: null,
+      work: null,
+      status: swapStatus(id, held),
+    };
+  }
   const status = held
     ? `${name} is carrying ${heldLabel(held)}.`
     : `${name} has free hands.`;
@@ -447,13 +563,19 @@ export function getPrompt(state: GameState, id: PlayerId): Prompt {
       const spot = target.kind === "aisle" ? "aisle spot" : "table";
       work = `leave this ${spot} bare (it stays out of the plan)`;
     }
-  } else if (station?.kind === "bin") {
+  } else if (station?.kind === "bin" && binTakes(held)) {
     work =
       held.kind === "chairs"
         ? `Put ${heldName(held)} back in the ${CRATE_NAMES.chairs} crate`
         : THROW_OUT_PROMPT;
   }
-  return { interact, floorDrop, work, status };
+  return {
+    interact,
+    interactLands: tile !== null && floorDrop === null,
+    floorDrop,
+    work,
+    status,
+  };
 }
 
 /** Whether two tiles are the same tile. */
@@ -543,10 +665,35 @@ function freeTile(state: GameState, kind: StationKind): Tile | null {
   return station ? { x: station.x, y: station.y } : null;
 }
 
-/** Where a crate sits in the venue: the top row, or the left-hand column. */
-function grabStep(state: GameState, kind: SupplyKind): CoachStep {
-  const crate = state.supplies.find((s) => s.kind === kind);
-  const where = crate && crate.y <= 1 ? "on the top row" : "on the left";
+/**
+ * Where a crate sits in the venue: the top row, the top-right corner, or the
+ * left-hand column. With `from`, the nearest crate of the kind is named, so a
+ * second LAMP crate in the north is pointed at from the north (round 20).
+ */
+function grabStep(
+  state: GameState,
+  kind: SupplyKind,
+  from: Tile | null = null
+): CoachStep {
+  const crates = state.supplies.filter((s) => s.kind === kind);
+  const crate =
+    from === null
+      ? crates[0]
+      : crates.reduce<(typeof crates)[number] | undefined>(
+          (best, c) =>
+            best === undefined ||
+            Math.abs(c.x - from.x) + Math.abs(c.y - from.y) <
+              Math.abs(best.x - from.x) + Math.abs(best.y - from.y)
+              ? c
+              : best,
+          undefined
+        );
+  const where =
+    crate && crate.y <= 1
+      ? crate.x >= VENUE_MAP[0].length - 5
+        ? "in the top-right corner"
+        : "on the top row"
+      : "on the left";
   return {
     text: `Grab ${crateGrabName(kind, state.stock[kind])} from the ${CRATE_NAMES[kind]} crate ${where}.`,
     tile: crate ? { x: crate.x, y: crate.y } : null,
@@ -695,7 +842,8 @@ function cookingStep(state: GameState): CoachStep | null {
 function fetchStep(
   state: GameState,
   lead: "roses" | "food",
-  key: string
+  key: string,
+  from: Tile | null = null
 ): CoachStep | null {
   for (const grill of stationsOf(state, "grill")) {
     const item = grill.item;
@@ -763,7 +911,7 @@ function fetchStep(
   if (cooking) return cooking;
   for (const kind of ["mac", "quinoa", "chairs", "lantern"] as const) {
     if (state.stock[kind] > 0 && openTarget(state, kind))
-      return grabStep(state, kind);
+      return grabStep(state, kind, from);
   }
   return null;
 }
@@ -787,7 +935,10 @@ export function getCoachStep(
   if (player.holding) return carryStep(state, player.holding, key);
   // In co-op the second person starts on the food, so the two lines differ.
   const lead = options.coop && id === "abbi" ? "food" : "roses";
-  return fetchStep(state, lead, key);
+  return fetchStep(state, lead, key, {
+    x: Math.floor(player.x),
+    y: Math.floor(player.y),
+  });
 }
 
 /**

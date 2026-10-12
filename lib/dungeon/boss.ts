@@ -315,6 +315,29 @@ export function createNeuralWardenBoss(
 }
 
 /**
+ * How long a boss holds fire after its room loads, so the player can see the
+ * arena and move before the first volley.
+ */
+export const BOSS_OPENING_GRACE_MS = 2000;
+
+/**
+ * Readies a boss for a room that has just loaded: no salvo until
+ * `BOSS_OPENING_GRACE_MS` after `nowMs`.
+ *
+ * @param boss - The boss as generated for the room.
+ * @param nowMs - The current animation-frame clock (`performance.now()`).
+ * @returns The boss with its opening hold set.
+ */
+export function armBossForRoomEntry(boss: BossState, nowMs: number): BossState {
+  return {
+    ...boss,
+    holdFireUntilMs: nowMs + BOSS_OPENING_GRACE_MS,
+    projectiles: [],
+    salvoCount: 0,
+  };
+}
+
+/**
  * Most tiles a boss shot leads a moving player by.
  */
 export const BOSS_MAX_LEAD_TILES = 3;
@@ -360,6 +383,8 @@ export const BOSS_REFERENCE_FRAME_MS = 1000 / 60;
  * @param frameDeltaMs - Real time since the previous update. Projectiles and
  * mesh spin advance in proportion to it, so volleys travel at the same speed
  * on a 60 Hz and a 144 Hz display (#1665). Defaults to one 60 Hz frame.
+ * @param blocksShot - Whether the tile at a column and row stops a
+ * projectile. Walls give the player cover; without it shots cross the room.
  */
 export function updateFaceForgeBoss(
   boss: BossState,
@@ -369,7 +394,8 @@ export function updateFaceForgeBoss(
   gridWidth: number,
   gridHeight: number,
   playerHeading?: { dx: number; dy: number },
-  frameDeltaMs: number = BOSS_REFERENCE_FRAME_MS
+  frameDeltaMs: number = BOSS_REFERENCE_FRAME_MS,
+  blocksShot?: (col: number, row: number) => boolean
 ): {
   updatedBoss: BossState;
   spawnedDamage: number;
@@ -413,9 +439,31 @@ export function updateFaceForgeBoss(
   }
 
   const newProjectiles = [...boss.projectiles];
+  const holding =
+    boss.holdFireUntilMs !== undefined && nowMs < boss.holdFireUntilMs;
+  if (holding) phaseTitle = "BOOTING :: FIND COVER";
+  const fires = !holding && nowMs - boss.lastSalvoTime >= attackIntervalMs;
+  const salvoCount = boss.salvoCount ?? 0;
 
-  if (nowMs - boss.lastSalvoTime >= attackIntervalMs) {
-    if (phase === 1) {
+  if (fires) {
+    if (phase === 1 && salvoCount % 3 === 2) {
+      // Every third phase-1 salvo is a slow ring, so no single row or
+      // column of the arena is safe to stand in.
+      const speed = 0.06;
+      for (let i = 0; i < 8; i++) {
+        const ang = (i * Math.PI) / 4 + Math.PI / 8;
+        newProjectiles.push({
+          id: `mesh-ring-${nowMs}-${i}`,
+          x: boss.x,
+          y: boss.y,
+          vx: Math.cos(ang) * speed,
+          vy: Math.sin(ang) * speed,
+          mesh: createCubeMesh("#f43f5e", 6),
+          damage: 15,
+          alive: true,
+        });
+      }
+    } else if (phase === 1) {
       // A narrow fan of three covers a step to either side of the aim point.
       const baseAngle = Math.atan2(aim.y - boss.y, aim.x - boss.x);
       const speed = 0.08;
@@ -485,6 +533,7 @@ export function updateFaceForgeBoss(
     if (nextX < 0 || nextX >= gridWidth || nextY < 0 || nextY >= gridHeight) {
       return;
     }
+    if (blocksShot?.(Math.round(nextX), Math.round(nextY))) return;
 
     const distToPlayer = Math.hypot(nextX - playerX, nextY - playerY);
     if (distToPlayer < 0.75) {
@@ -515,10 +564,8 @@ export function updateFaceForgeBoss(
     mesh: nextMesh,
     attackIntervalMs,
     projectiles: liveProjectiles,
-    lastSalvoTime:
-      nowMs - boss.lastSalvoTime >= attackIntervalMs
-        ? nowMs
-        : boss.lastSalvoTime,
+    lastSalvoTime: fires ? nowMs : boss.lastSalvoTime,
+    salvoCount: fires ? salvoCount + 1 : salvoCount,
     phaseTitle,
   };
 

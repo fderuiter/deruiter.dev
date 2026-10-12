@@ -352,7 +352,10 @@ export interface InteractionHandlers {
 export interface HudReadout {
   day: number;
   weekday: string;
+  /** The clock, or "Overnight" while the player is at home between days. */
   clock: string;
+  /** True between going home and the next morning (#1936). */
+  overnight?: boolean;
   energy: number;
   focus: number;
   budget: { spent: number; total: number };

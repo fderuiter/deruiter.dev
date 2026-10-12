@@ -56,6 +56,14 @@
 
 ***
 
+### parSeconds
+
+> **parSeconds**: `number`
+
+Seconds of play to clear the act for its par star.
+
+***
+
 ### requiredMinionKills
 
 > **requiredMinionKills**: `number`

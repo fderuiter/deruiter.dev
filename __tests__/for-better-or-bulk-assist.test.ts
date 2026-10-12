@@ -476,6 +476,8 @@ describe("the assist in stepGame", () => {
     );
     expect(helped.assistTicks).toBeGreaterThan(0);
     expect(computeReceipt(helped).assist).toBe(ASSIST_LINE);
+    // A fact, not a verdict, since a helper day can end unfinished (round 16).
+    expect(ASSIST_LINE).toBe("A helper kept the other lane going.");
   });
 });
 
@@ -675,7 +677,7 @@ describe("the rose gate, shared with getHint", () => {
     const base = setOpen(createLevel(ASSIST_SETUP), ["petals"]);
     const state = facingTile(base, "abbi", stationOf(base, "arrange"), ROSES);
     expect(getHint(state, "abbi")).toBe(
-      "Carry the roses to the PETALS bucket (P)."
+      "Carry the roses to the PETALS bucket."
     );
     const input = assistInput(state, "abbi");
     expect(input.interact).toBe(false);
@@ -712,9 +714,7 @@ describe("the rose gate, shared with getHint", () => {
       ),
     };
     const state = facingTile(busy, "abbi", stationOf(busy, "arrange"), ROSES);
-    expect(getHint(state, "abbi")).toBe(
-      "Wait for the PETALS bucket (P) to clear."
-    );
+    expect(getHint(state, "abbi")).toBe("Wait for the PETALS bucket to clear.");
     expect(assistInput(state, "abbi")).toEqual(NO_INPUT);
   });
 
@@ -1060,11 +1060,12 @@ describe("the solo balance, scripted", () => {
         const solo = scriptedSolo(setup, false);
         const helped = scriptedSolo({ ...setup, assist: true }, true);
         const label = `seed ${seed}, relaxed ${relaxed}`;
-        // Measured after #1948 (chairs two to a carry), for seeds 0, 4242 and
-        // 12345: the helper saves 33.9 to 41.6 s on the standard clock and
-        // 7.6 s on the relaxed clock. Each margin is about half the smallest
-        // saving, rounded down: 16 s standard, 3 s relaxed.
-        const margin = relaxed ? 3 : 16;
+        // Measured after the north LAMP crate (round 20), for seeds 0, 4242
+        // and 12345: the helper saves 23.1 to 31.0 s on the standard clock and
+        // 2.4 s on the relaxed clock, where the scripted player now reaches
+        // the lanterns sooner too. Each margin is about half the smallest
+        // saving, rounded down: 11 s standard, 1 s relaxed.
+        const margin = relaxed ? 1 : 11;
         expect(helped.abbi, label).toBeGreaterThan(0);
         expect(helped.abbi, label).toBeLessThanOrEqual(helped.fred);
         expect(helped.finish + margin, label).toBeLessThan(solo.finish);
@@ -1107,6 +1108,59 @@ describe("the helper's own grill batch", () => {
       expect(state.finishedAt, label).not.toBeNull();
     }
   }, 60000);
+
+  it("says when it starts at zero, and that it has caught up later (rounds 16 and 17)", () => {
+    const base = createLevel(ASSIST_SETUP);
+    expect(assistJob(base, "abbi")).toBe(
+      "Abbi starts helping after Fred places the first item."
+    );
+    const [first, second] = base.targets;
+    const even: GameState = {
+      ...base,
+      targets: base.targets.map((t) =>
+        t.id === first.id
+          ? { ...t, filledBy: ["fred"] }
+          : t.id === second.id
+            ? { ...t, filledBy: ["abbi"] }
+            : t
+      ),
+    };
+    expect(assistJob(even, "abbi")).toBe(
+      "Abbi has placed as many items as Fred, and helps again after Fred's next one."
+    );
+  });
+
+  it("waits on the other person, not idly, while they still carry something (round 19, D-3)", () => {
+    const base = createLevel(ASSIST_SETUP);
+    const stock = Object.fromEntries(
+      Object.keys(base.stock).map((kind) => [kind, 0])
+    ) as GameState["stock"];
+    const done: GameState = {
+      ...base,
+      stock,
+      targets: base.targets.map((t) => ({
+        ...t,
+        status: "filled" as const,
+        filledBy: ["fred"],
+      })),
+    };
+    expect(assistJob(done, "abbi")).toBe(
+      "Abbi has nothing useful to do right now."
+    );
+    const carrying: GameState = {
+      ...done,
+      players: {
+        ...done.players,
+        fred: {
+          ...done.players.fred,
+          holding: { kind: "chairs", madeBy: null, count: 1 },
+        },
+      },
+    };
+    expect(assistJob(carrying, "abbi")).toBe(
+      "Abbi is waiting for Fred to set down what's in hand."
+    );
+  });
 
   it("says it is waiting for its own raw batch to cook, and does not wander off", () => {
     const base = createLevel(ASSIST_SETUP);

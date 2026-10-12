@@ -231,9 +231,9 @@ describe("CI Execution Policy", () => {
       ).toBe(true);
     });
 
-    it("keeps typecheck and lint incremental only through content-keyed caches", () => {
+    it("keeps lint incremental only through a content-keyed cache", () => {
       const block = jobBlock("static-gate");
-      expect(block).toContain("npm run typecheck -- --incremental");
+      expect(block).not.toContain("tsconfig.tsbuildinfo");
       expect(block).toContain(
         "npm run lint -- --cache --cache-strategy content --cache-location .eslintcache"
       );

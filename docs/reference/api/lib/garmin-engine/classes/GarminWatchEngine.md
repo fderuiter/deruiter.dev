@@ -350,6 +350,16 @@ Subscribes a listener to snapshot state updates (React useSyncExternalStore).
 
 ***
 
+### throwBolt()
+
+> **throwBolt**(): `void`
+
+#### Returns
+
+`void`
+
+***
+
 ### triggerGc()
 
 > **triggerGc**(): `void`

@@ -88,6 +88,7 @@
 - [savePersistedFlashStorage](functions/savePersistedFlashStorage.md)
 - [setRunInput](functions/setRunInput.md)
 - [startGame](functions/startGame.md)
+- [throwBolt](functions/throwBolt.md)
 - [triggerGarbageCollection](functions/triggerGarbageCollection.md)
 - [updateGameSimulation](functions/updateGameSimulation.md)
 - [wipeScreenFog](functions/wipeScreenFog.md)

@@ -32,6 +32,30 @@
 
 ***
 
+### boltCooldownMs?
+
+> `optional` **boltCooldownMs?**: `number`
+
+Milliseconds until the next bolt can be thrown.
+
+***
+
+### bolts?
+
+> `optional` **bolts?**: [`Bolt`](../../garmin-powerups/interfaces/Bolt.md)[]
+
+Heat bolts on the face.
+
+***
+
+### boltsThrown?
+
+> `optional` **boltsThrown?**: `number`
+
+Bolts thrown this run, for their ids.
+
+***
+
 ### consecutiveDodges
 
 > **consecutiveDodges**: `number`

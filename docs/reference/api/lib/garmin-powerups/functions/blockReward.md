@@ -9,7 +9,7 @@
 > **blockReward**(`contents`, `power`): `"kudos"` \| [`PickupKind`](../type-aliases/PickupKind.md)
 
 What a Sync Block gives when bumped. A power block gives a Protein Shake
-to a Base runner, and Kudos once the runner is already Buff; a Runner's
+to a Base runner and a Heat Map to a Buff or Heat Map runner; a Runner's
 High block always gives a Runner's High.
 
 ## Parameters

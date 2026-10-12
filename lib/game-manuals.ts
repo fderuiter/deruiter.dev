@@ -513,7 +513,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
     objective:
       "Run a 5K: five 1 km stages of side-scrolling platforming, each ending at a finish pole. Stomp the bugs, clear the gaps, collect Kudos, and keep the Connect IQ app under the device's RAM limit with the battery alive. You have three lives; clear stage 5 to finish. Your high score is saved.",
     quickSummary:
-      "Press Enter to boot. Up or Space jumps (hold for height), Right sprints, Left brakes. Land on bugs and watchdogs to stomp them, jump the spiked stacks and the gaps, bump Sync Blocks from below for power-ups. Pop variables with Down or run GC with Backspace before the heap fills. Wipe fog with W or a drag.",
+      "Press Enter to boot. Up or Space jumps (hold for height), Right sprints, Left brakes. Land on bugs and watchdogs to stomp them, jump the spiked stacks and the gaps, bump Sync Blocks from below for power-ups, and throw heat bolts with X once you hold a Heat Map. Pop variables with Down or run GC with Backspace before the heap fills. Wipe fog with W or a drag.",
     controls: [
       {
         action: "Start, Pause & Resume",
@@ -546,6 +546,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         key: "G / Backspace",
       },
       {
+        action: "Throw Heat Bolt",
+        description:
+          "With a Heat Map, throws a heat bolt that bounces along the track and ledges. It flattens NULL and DOG for 200 points, fizzles on spiked STK, and goes out in gaps, against blocks or off the face. Two can be on screen at once. While you hold a Heat Map the BACK bezel button throws too; G still collects garbage.",
+        key: "X",
+      },
+      {
         action: "Backlight",
         description:
           "Lights the display but quadruples battery drain and, after a few seconds, raises thermal stress and fog. Same as the LIGHT bezel button.",
@@ -562,7 +568,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         title: "Scoring",
         detail:
-          "You earn about 60 points for every second the app stays up. A stomp pays 100 (200 for a watchdog) and doubles for each further stomp before you land. A Kudos pays 50, a power-up 1,000, an enemy flattened during a Runner's High 200, a stage clear 1,000, and the finish pole 100 to 2,000 depending on how high you grab it. Pops pay 5 and a GC that frees memory 10. A power loss costs 50. Your best score is saved on this device.",
+          "You earn about 60 points for every second the app stays up. A stomp pays 100 (200 for a watchdog) and doubles for each further stomp before you land. A Kudos pays 50, a power-up 1,000, an enemy flattened during a Runner's High or by a heat bolt 200, a stage clear 1,000, and the finish pole 100 to 2,000 depending on how high you grab it. Pops pay 5 and a GC that frees memory 10. A power loss costs 50. Your best score is saved on this device.",
         badge: "High Score",
       },
       {
@@ -580,7 +586,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         title: "Power-ups & Lives",
         detail:
-          "A Protein Shake makes the monkey Buff: taller, and able to take one hit, which drops it back to Base for a moment of blinking safety. A power block gives Kudos instead once you are Buff. A rare Runner's High makes you invincible for 8 seconds and flattens anything you run into, spikes included. You start with three lives and earn one for every 100 Kudos. Memory, storage and battery failures still end the run outright: those are the watch crashing, not the runner.",
+          "A Protein Shake makes the monkey Buff: taller, and able to take one hit, which drops it back to Base for a moment of blinking safety. Bump a power block while Buff and it gives a Heat Map, which lets you throw heat bolts with X; any hit drops a Heat Map runner straight back to Base. A rare Runner's High makes you invincible for 8 seconds and flattens anything you run into, spikes included. You start with three lives and earn one for every 100 Kudos. Memory, storage and battery failures still end the run outright: those are the watch crashing, not the runner.",
         badge: "Lives",
       },
       {
@@ -626,6 +632,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       "Only GC when nothing is about to reach you, since you can't jump during the freeze.",
       "Jump at the finish pole so you grab it at the top of your arc: the top pays 2,000.",
       "Stay Buff: a Protein Shake turns your next hit into a near miss instead of a lost life.",
+      "With a Heat Map, throw early: bolts bounce low along the track and clear a walker before it reaches you.",
     ],
     lore: {
       title: "Engineering for Wearable Hardware Constraints",

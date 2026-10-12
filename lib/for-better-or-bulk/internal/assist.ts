@@ -642,7 +642,7 @@ interface Job {
  * The helper's job for `id` as one sentence, derived from the same plan
  * `assistInput` follows. The kind is the planner's verb ("carrying",
  * "fetching", "waiting") or one of the states "away", "busy", "turn" (waiting
- * for the other person to place something first), "spot" (holding something
+ * until the other person places their next item), "spot" (holding something
  * with no spot free) and "idle". The sentence for "turn" names the other
  * person in the same words the start announcement uses. Pure.
  */
@@ -662,10 +662,12 @@ function jobOf(state: GameState, id: PlayerId): Job {
     return { kind: "busy", text: `${name} is busy, so the helper waits.` };
   }
   if (!helperMayAct(state, id)) {
+    // The helper places no more than the player, so this line also shows
+    // when it has caught up, not only at the start (round 16).
     const other = id === "fred" ? "Abbi" : "Fred";
     return {
       kind: "turn",
-      text: `${name} is waiting for ${other} to place something first.`,
+      text: `${name} has placed as many items as ${other}, and helps again after ${other}'s next one.`,
     };
   }
   const plan = planFor(state, id);

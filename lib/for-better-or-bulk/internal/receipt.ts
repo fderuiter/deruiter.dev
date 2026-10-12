@@ -335,7 +335,9 @@ function followThrough(
       explanation: "Kept. The brothers never got the chance to text.",
     };
   if (presence.choice === "stay")
-    return { status: "kept", explanation: "Kept. Fred stayed for the setup." };
+    // The challenge row already says he stayed, so this row does not repeat it
+    // (round 16).
+    return { status: "kept", explanation: "Kept." };
   if (presence.choice === "leave")
     return { status: "missed", explanation: `Missed. ${LEFT_LINE}` };
   const promise = presence.commitment ?? "chairs";

@@ -6,6 +6,6 @@
 
 # Variable: ASSIST\_LINE
 
-> `const` **ASSIST\_LINE**: `"A helper kept the other lane going. Quiet and efficient."` = `"A helper kept the other lane going. Quiet and efficient."`
+> `const` **ASSIST\_LINE**: `"A helper kept the other lane going."` = `"A helper kept the other lane going."`
 
 The receipt's line when the solo helper was on (ADR 0060, F6).

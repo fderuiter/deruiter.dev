@@ -1804,10 +1804,11 @@ describe("the receipt's copy", () => {
     );
   });
 
-  it("says 'Fred stayed for the setup.' on one line of the receipt only", () => {
+  it("says Fred stayed on one line of the receipt only (round 16)", () => {
     const receipt = computeReceipt(finishIdle(DEFAULT_SETUP, STAY_DECISION));
     const copy = JSON.stringify(receipt);
-    expect(copy.split("Fred stayed for the setup.").length - 1).toBe(1);
+    expect(copy.split("Fred stayed").length - 1).toBe(1);
+    expect(receipt.followThrough.explanation).toBe("Kept.");
   });
 
   it("takes its subtitle from the fiction bank, never from an unsourced venue claim", () => {
@@ -2941,6 +2942,45 @@ describe("a refused press says why (round 9, task 1)", () => {
     const at = place(none, "fred", 8, 2, [0, 1], ARRANGEMENT);
     expect(getPrompt(at, "fred").interact).toBe(
       "No centerpiece table or bouquet basket needs an arrangement now."
+    );
+  });
+
+  it("says raw food on the grill is not cooked yet (round 16)", () => {
+    const raw = withStationItem(base, 4, 3, {
+      kind: "wings-raw",
+      madeBy: null,
+    });
+    const at = place(raw, "fred", 4, 2, [0, 1]);
+    expect(getPrompt(at, "fred").interact).toBe(
+      "Take the raw wings off the GRILL (not cooked yet)"
+    );
+  });
+
+  it("says a cart without petals has none, rather than calling the bucket empty (round 16)", () => {
+    const noPetals = {
+      ...base,
+      targets: base.targets.map((t) =>
+        t.category === "petals" ? { ...t, status: "unplanned" as const } : t
+      ),
+    };
+    const at = place(noPetals, "fred", 12, 2, [0, 1]);
+    expect(getPrompt(at, "fred").interact).toBe(
+      "There are no petals in this plan."
+    );
+    const planned = place(
+      {
+        ...base,
+        targets: base.targets.map((t) =>
+          t.category === "petals" ? { ...t, status: "open" as const } : t
+        ),
+      },
+      "fred",
+      12,
+      2,
+      [0, 1]
+    );
+    expect(getPrompt(planned, "fred").interact).toBe(
+      "Nothing on the PETALS bucket to take."
     );
   });
 

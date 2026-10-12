@@ -20,6 +20,7 @@ import {
   THROW_OUT_PROMPT,
   TICK_SECONDS,
   assistJob,
+  assistJobKind,
   clockLabel,
   computeReceipt,
   createLevel,
@@ -332,6 +333,9 @@ export function ForBetterOrBulkGame({
   /** Every frame the engine applied this run, so the run can be shared. */
   const recorded = useRef<Frame[]>([]);
   const replayRef = useRef<ReplayRun | null>(null);
+  /** Whether a helper is on for this day, and the last job kind the live region announced. */
+  const helperOnRef = useRef(false);
+  const helperKindRef = useRef<string | null>(null);
   /** The one focus move still waiting for a paint, cancelled on unmount. */
   const pendingFocus = useRef<number | null>(null);
 
@@ -508,6 +512,22 @@ export function ForBetterOrBulkGame({
         recorded.current.push(recordedFrame(state, frame));
       }
       stateRef.current = result.state;
+      // The helper's job line is announced when its kind changes (carrying,
+      // waiting, away), not when its target changes. It goes first, so an event
+      // line in the same step still speaks.
+      if (
+        helperOnRef.current &&
+        replayRef.current === null &&
+        result.state.phase === "playing"
+      ) {
+        const helperId: PlayerId =
+          activeRef.current === "fred" ? "abbi" : "fred";
+        const kind = assistJobKind(result.state, helperId);
+        if (kind !== helperKindRef.current) {
+          helperKindRef.current = kind;
+          setAnnouncement(assistJob(result.state, helperId));
+        }
+      }
       const shown = throttleFloorFull(
         result.events,
         result.state.time,
@@ -581,11 +601,14 @@ export function ForBetterOrBulkGame({
       setReceipt(null);
       setUserPaused(false);
       setToasts([]);
-      // A helper day opens by waiting for the person at the keys, so the live
-      // region says so once here, rather than on every tick.
+      // A helper day opens with the helper's job line (Fred helps Abbi here),
+      // so the live region says it once, and later only when the job's kind changes.
+      const helperOn = nextMode === "solo" && next.assist === true;
+      helperOnRef.current = helperOn;
+      helperKindRef.current = helperOn ? assistJobKind(state, "fred") : null;
       setAnnouncement(
-        nextMode === "solo" && next.assist
-          ? `Setup has started. It is 9:00. Helper is waiting for ${NAMES.abbi} to place something first.`
+        helperOn
+          ? `Setup has started. It is 9:00. ${assistJob(state, "fred")}`
           : "Setup has started. It is 9:00."
       );
       setPhase("playing");
@@ -1170,12 +1193,10 @@ export function ForBetterOrBulkGame({
               );
             })}
             {mode === "solo" && view.setup.assist ? (
-              // The job line is a polite live region: its text changes when
-              // the helper's goal changes, not on every tick.
+              // The text follows the helper's job; the live region announces
+              // a change of kind only (see step), so this line is not one.
               <p
                 data-testid="fbb-helper"
-                aria-live="polite"
-                aria-atomic="true"
                 className="min-w-0 break-words border-t border-[var(--fbb-rule)] pt-2 text-[var(--fbb-text)]"
               >
                 {assistJob(view, partner)}

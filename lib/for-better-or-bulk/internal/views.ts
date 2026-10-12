@@ -200,11 +200,18 @@ function reasonOnTile(
     if (station.item)
       return `${capitalise(STATION_NAMES[station.kind])} is full.`;
     if (!held) return `Nothing on ${STATION_NAMES[station.kind]} to take.`;
-    if (station.kind === "grill")
-      // Cooked food in hand is not a rule about the grill: it belongs on the buffet.
-      return held.kind === "hotdogs" || held.kind === "wings"
+    if (station.kind === "grill") {
+      if (held.kind !== "hotdogs" && held.kind !== "wings")
+        return "The GRILL (G) takes raw hot dogs or wings.";
+      // Only say where cooked food goes when an open buffet spot wants it.
+      const buffetWants = state.targets.some(
+        (t) =>
+          t.kind === "buffet" && t.status === "open" && t.wants === held.kind
+      );
+      return buffetWants
         ? "Cooked food goes on the buffet, not back on the grill."
-        : "The GRILL (G) takes raw hot dogs or wings.";
+        : "These are cooked already.";
+    }
     return `${capitalise(STATION_NAMES[station.kind])} takes roses.`;
   }
   if (target) {
@@ -426,8 +433,10 @@ function sameTileAs(a: Tile, b: Tile): boolean {
  * The open spot a carried item goes on, nearest to the person: an open chair
  * spot for chairs and an open lantern hook for a lantern. Distance is measured
  * in tiles from the tile the person stands on, and a tie goes to the spot
- * listed first in the venue. Null when the person carries neither, or no such
- * spot is open. Pure; the canvas highlights the tile it returns.
+ * listed first in the venue. Distance is straight-line (as the crow flies), not
+ * the walk around the venue, so a spot behind a hedge can be nearest here. Null
+ * when the person carries neither, or no such spot is open. Pure; the canvas
+ * highlights the tile it returns.
  */
 export function nextSpotTile(state: GameState, id: PlayerId): Tile | null {
   const player = state.players[id];

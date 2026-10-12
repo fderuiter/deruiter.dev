@@ -6,7 +6,7 @@
  * promise about what he comes back for, and leaving is leaving.
  */
 
-import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import {
   BREAK_SECONDS,
@@ -81,14 +81,23 @@ export function BrothersDialog({ state, onDecide }: BrothersDialogProps) {
     openedAt.current = Date.now();
   }, []);
 
-  // Focus the heading before the browser paints, and again whenever the
-  // options change (a break swaps them out, and the focused button leaves the
-  // page). The focus trap's own initial focus waits 50 ms, and until then the
-  // game's container keeps focus (#1963), so this moves it at once.
-  // The trap's timer then sees focus already inside the dialog and leaves it.
-  useLayoutEffect(() => {
-    headingRef.current?.focus({ preventScroll: true });
-  }, [promising]);
+  // Focus the heading as the text opens. This effect is declared after
+  // useFocusTrap, so the trap records the element focused before the dialog
+  // (the game boundary) as its restore target, not the heading. The trap's own
+  // initial focus waits 50 ms, and this moves focus at once (#1963).
+  // When the options change (a break swaps them out), focus moves back to the
+  // heading only if it was lost to the page or sits inside the dialog.
+  const openedOnce = useRef(false);
+  useEffect(() => {
+    const opening = !openedOnce.current;
+    openedOnce.current = true;
+    const dialog = dialogRef.current;
+    const active = document.activeElement;
+    const lost = !active || active === document.body;
+    const inside = !!dialog && !!active && dialog.contains(active);
+    if (opening || lost || inside)
+      headingRef.current?.focus({ preventScroll: true });
+  }, [promising, dialogRef]);
 
   /** Swallows a settle-time key so it cannot activate the focused option. */
   const settling = (event: React.KeyboardEvent<HTMLDivElement>) => {

@@ -8,10 +8,9 @@
 
 > **assistJob**(`state`, `id`): `string`
 
-The job line for the helper working for `id`, as one sentence, derived from
-the same plan `assistInput` follows: "Fred is carrying the roses to the
-ARRANGE table (A).", "Fred is waiting for a free spot." or "Fred is out with
-his brothers.". Pure.
+The job line for the helper working for `id`, as one sentence: "Fred is
+carrying the roses to the ARRANGE table (A).", "Fred is waiting for a free
+spot." or "Fred is out with his brothers.". Pure.
 
 ## Parameters
 

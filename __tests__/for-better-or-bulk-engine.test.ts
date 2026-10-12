@@ -987,7 +987,7 @@ describe("ending and receipt", () => {
     ]);
     expect(receipt.suit).toContain("The Suit Wherehouse");
     expect(receipt.website.find((w) => w.capability === "faq")?.text).toBe(
-      "FAQ: blocked 0 calls."
+      "FAQ: no calls came in."
     );
   });
 
@@ -2863,5 +2863,115 @@ describe("the venue's copy and the next-spot and floor-drop views (#1963)", () =
       y: arrange.y,
     });
     expect(floorDropTile(atArrange, "fred")).toBeNull();
+  });
+});
+
+describe("review fixes for the round 10 views and receipt (#1963)", () => {
+  const chairs: Item = { kind: "chairs", madeBy: null, count: 2 };
+  const hotdogs: Item = { kind: "hotdogs", madeBy: "abbi" };
+
+  it("says cooked food goes on the buffet only while an open buffet spot wants it", () => {
+    const base = createLevel(DEFAULT_SETUP);
+    const grill = base.stations.find((s) => s.kind === "grill");
+    if (!grill) throw new Error("no grill in the venue");
+    const open = place(base, "abbi", grill.x, grill.y + 1, [0, -1], hotdogs);
+    expect(getPrompt(open, "abbi").interact).toBe(
+      "Cooked food goes on the buffet, not back on the grill."
+    );
+    const full = {
+      ...base,
+      targets: base.targets.map((t) =>
+        t.kind === "buffet" && t.wants === "hotdogs"
+          ? { ...t, status: "filled" as const }
+          : t
+      ),
+    };
+    const shut = place(full, "abbi", grill.x, grill.y + 1, [0, -1], hotdogs);
+    expect(getPrompt(shut, "abbi").interact).toBe("These are cooked already.");
+  });
+
+  it("words the website calls: plural, singular and none, without a zero count", () => {
+    const setup: Setup = {
+      ...DEFAULT_SETUP,
+      capabilities: ["faq", "registry"],
+    };
+    const done = finishIdle(setup, STAY_DECISION);
+    const admin = (id: "parking-note" | "ceremony-time") => ({
+      id,
+      at: 10,
+      player: "fred" as const,
+      blockedBy: "admin" as const,
+    });
+    const two = computeReceipt({
+      ...done,
+      interruptions: [admin("parking-note"), admin("ceremony-time")],
+    });
+    expect(JSON.stringify(two)).toContain(
+      "Admin page for Abbi: 2 calls went through on their own."
+    );
+    const none = computeReceipt({ ...done, interruptions: [] });
+    expect(JSON.stringify(none)).toContain(
+      "Admin page for Abbi: no calls came in."
+    );
+    expect(JSON.stringify(none)).not.toContain("0 call");
+  });
+
+  describe("nextSpotTile", () => {
+    /** Manhattan distance, the rule nextSpotTile uses. */
+    const distance = (
+      a: { x: number; y: number },
+      b: { x: number; y: number }
+    ) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+
+    it("skips a filled chair spot and a spot left bare, and takes the nearest open one", () => {
+      const base = createLevel(DEFAULT_SETUP);
+      const spots = base.targets.filter(
+        (t) => t.kind === "chair-spot" && t.status === "open"
+      );
+      expect(spots.length).toBeGreaterThan(3);
+      // The person stands on the nearest spot, which is then filled; the spot
+      // beside it is left bare. The nearest open spot is among the rest.
+      const [here, bare, ...rest] = spots;
+      const state = {
+        ...base,
+        targets: base.targets.map((t) => {
+          if (t === here) return { ...t, status: "filled" as const };
+          if (t === bare) return { ...t, status: "simplified" as const };
+          return t;
+        }),
+      };
+      const at = place(state, "fred", here.x, here.y, [0, 1], chairs);
+      const expected = rest.reduce((best, t) =>
+        distance(t, here) < distance(best, here) ? t : best
+      );
+      expect(nextSpotTile(at, "fred")).toEqual({
+        x: expected.x,
+        y: expected.y,
+      });
+    });
+
+    it("breaks a tie in favour of the spot listed first", () => {
+      const base = createLevel(DEFAULT_SETUP);
+      const spots = base.targets.filter(
+        (t) => t.kind === "chair-spot" && t.status === "open"
+      );
+      const [first, second] = spots;
+      const tied = {
+        ...base,
+        targets: base.targets.map((t) => {
+          if (t === first) return { ...t, x: 5, y: 5 };
+          if (t === second) return { ...t, x: 7, y: 5 };
+          return t;
+        }),
+      };
+      const at = {
+        ...tied,
+        players: {
+          ...tied.players,
+          fred: { ...tied.players.fred, x: 6.5, y: 5.5, holding: chairs },
+        },
+      };
+      expect(nextSpotTile(at, "fred")).toEqual({ x: 5, y: 5 });
+    });
   });
 });

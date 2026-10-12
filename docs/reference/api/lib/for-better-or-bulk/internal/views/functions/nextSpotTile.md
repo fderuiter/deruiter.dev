@@ -11,8 +11,10 @@
 The open spot a carried item goes on, nearest to the person: an open chair
 spot for chairs and an open lantern hook for a lantern. Distance is measured
 in tiles from the tile the person stands on, and a tie goes to the spot
-listed first in the venue. Null when the person carries neither, or no such
-spot is open. Pure; the canvas highlights the tile it returns.
+listed first in the venue. Distance is straight-line (as the crow flies), not
+the walk around the venue, so a spot behind a hedge can be nearest here. Null
+when the person carries neither, or no such spot is open. Pure; the canvas
+highlights the tile it returns.
 
 ## Parameters
 

@@ -44,6 +44,12 @@ Re-exports [assistJob](internal/assist/functions/assistJob.md)
 
 ***
 
+### assistJobKind
+
+Re-exports [assistJobKind](internal/assist/functions/assistJobKind.md)
+
+***
+
 ### availableCommitments
 
 Re-exports [availableCommitments](internal/receipt/functions/availableCommitments.md)

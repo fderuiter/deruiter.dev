@@ -1164,7 +1164,7 @@ describe("the helper keeps out of its partner's way", () => {
         abbi: { ...state.players.abbi, presence: "away" as const },
       },
     };
-    expect(assistJob(away, "abbi")).toBe("Abbi is out with his brothers.");
+    expect(assistJob(away, "abbi")).toBe("Abbi is away for now.");
   });
 });
 

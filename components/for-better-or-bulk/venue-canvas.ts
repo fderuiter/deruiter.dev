@@ -88,6 +88,8 @@ const COLORS = {
   abbi: "#f4f0e6",
   abbiEdge: "#d6c7a8",
   active: "#f59e0b",
+  /** Steel (AGENTS.md section 20): neutral status marks, such as the next spot. */
+  steel: "#94a3b8",
   busy: "#f4f4f6",
   /** Steel smoke: light enough to read against the dark grill and stage. */
   smoke: "#94a3b8",
@@ -530,8 +532,9 @@ function drawPlayer(
 /**
  * The looks an outlined tile can have. `ready` is a press that acts now;
  * `waiting` is the coach waiting on a busy station; `floor` is a drop on plain
- * ground, drawn in the warning colour with a heavy dash so it never reads as a
- * station; `next` marks the nearest open chair spot or lantern hook.
+ * ground, drawn in the active amber with a heavy dash so it never reads as a
+ * station's solid outline; `next` marks the nearest open chair spot or lantern
+ * hook in steel.
  */
 type OutlineStyle = "ready" | "waiting" | "floor" | "next";
 
@@ -554,11 +557,11 @@ function drawTileOutline(
     return;
   ctx.save();
   if (style === "floor") {
-    ctx.strokeStyle = COLORS.burning;
+    ctx.strokeStyle = COLORS.active;
     ctx.lineWidth = 3;
     ctx.setLineDash([6, 4]);
   } else if (style === "next") {
-    ctx.strokeStyle = COLORS.fredEdge;
+    ctx.strokeStyle = COLORS.steel;
     ctx.lineWidth = 2;
     ctx.globalAlpha = 0.9;
     ctx.setLineDash([2, 4]);

@@ -349,6 +349,20 @@ function followThrough(
       };
 }
 
+/**
+ * The line for the calls one website feature met. With the feature built the
+ * calls are blocked; without it they went through on their own. No calls at
+ * all reads as "no calls came in", never as a count of zero.
+ */
+function callsLine(label: string, count: number, chosen: boolean): string {
+  if (count === 0) return `${label}: no calls came in.`;
+  if (chosen)
+    return `${label}: blocked ${count} call${count === 1 ? "" : "s"}.`;
+  return count === 1
+    ? `${label}: 1 call went through on its own.`
+    : `${label}: ${count} calls went through on their own.`;
+}
+
 function websiteLines(state: GameState): readonly WebsiteLine[] {
   return (Object.keys(CAPABILITIES) as CapabilityId[]).map((capability) => {
     const label = CAPABILITIES[capability].label;
@@ -363,13 +377,8 @@ function websiteLines(state: GameState): readonly WebsiteLine[] {
       text = chosen
         ? `${label}: blocked nothing. Is it loading?`
         : `${label}: not built.`;
-    } else if (chosen) {
-      text = `${label}: blocked ${calls.length} call${calls.length === 1 ? "" : "s"}.`;
     } else {
-      text =
-        calls.length === 1
-          ? `${label}: 1 call went through on its own.`
-          : `${label}: ${calls.length} calls went through on their own.`;
+      text = callsLine(label, calls.length, chosen);
     }
     return { capability, chosen, text };
   });

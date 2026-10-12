@@ -607,24 +607,67 @@ export function assistInput(state: GameState, id: PlayerId): PlayerInput {
   );
 }
 
+/** What the helper for `id` is doing, as a kind (the word a change is announced by) and a sentence. */
+interface Job {
+  readonly kind: string;
+  readonly text: string;
+}
+
 /**
- * The job line for the helper working for `id`, as one sentence, derived from
- * the same plan `assistInput` follows: "Fred is carrying the roses to the
- * ARRANGE table (A).", "Fred is waiting for a free spot." or "Fred is out with
- * his brothers.". Pure.
+ * The helper's job for `id` as one sentence, derived from the same plan
+ * `assistInput` follows. The kind is the planner's verb ("carrying",
+ * "fetching", "waiting") or one of the states "away", "busy", "turn" (waiting
+ * for the other person to place something first), "spot" (holding something
+ * with no spot free) and "idle". The sentence for "turn" names the other
+ * person in the same words the start announcement uses. Pure.
  */
-export function assistJob(state: GameState, id: PlayerId): string {
+function jobOf(state: GameState, id: PlayerId): Job {
   const name = id === "fred" ? "Fred" : "Abbi";
   const player = state.players[id];
-  if (player.presence === "away") return `${name} is out with his brothers.`;
-  if (player.busyFor > 0) return `${name} is busy, so the helper waits.`;
+  if (player.presence === "away") {
+    return {
+      kind: "away",
+      text:
+        id === "fred"
+          ? "Fred is out with his brothers."
+          : `${name} is away for now.`,
+    };
+  }
+  if (player.busyFor > 0) {
+    return { kind: "busy", text: `${name} is busy, so the helper waits.` };
+  }
   if (!helperMayAct(state, id)) {
     const other = id === "fred" ? "Abbi" : "Fred";
-    return `${name} is waiting for ${other} to place something first.`;
+    return {
+      kind: "turn",
+      text: `${name} is waiting for ${other} to place something first.`,
+    };
   }
   const plan = planFor(state, id);
-  if (plan) return `${name} is ${plan.text}.`;
+  if (plan) {
+    return {
+      kind: plan.text.split(" ")[0],
+      text: `${name} is ${plan.text}.`,
+    };
+  }
   return player.holding
-    ? `${name} is waiting for a free spot.`
-    : `${name} has nothing useful to do right now.`;
+    ? { kind: "spot", text: `${name} is waiting for a free spot.` }
+    : { kind: "idle", text: `${name} has nothing useful to do right now.` };
+}
+
+/**
+ * The job line for the helper working for `id`, as one sentence: "Fred is
+ * carrying the roses to the ARRANGE table (A).", "Fred is waiting for a free
+ * spot." or "Fred is out with his brothers.". Pure.
+ */
+export function assistJob(state: GameState, id: PlayerId): string {
+  return jobOf(state, id).text;
+}
+
+/**
+ * The kind of the helper's job for `id` (see `jobOf`). The game announces the
+ * job line when this changes, not when its target changes. Pure.
+ */
+export function assistJobKind(state: GameState, id: PlayerId): string {
+  return jobOf(state, id).kind;
 }

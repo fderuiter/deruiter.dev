@@ -1946,6 +1946,8 @@ describe("Garmin obstacles crash with their own type (#1318)", () => {
       updateGameSimulation(
         {
           ...startGame(createInitialState("fenix", 0), "fenix"),
+          // On the last life a hit ends the run with its own report (#1988).
+          lives: 1,
           lastObstacleTime: Date.now() + 60_000,
           obstacles: [
             {

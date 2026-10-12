@@ -91,6 +91,7 @@ import {
   chargePowerUps,
   scrambleStations,
   verify21CFRSubmission,
+  getSignatureReasonError,
   triggerRandomAmendment,
   generateSDTMDataset,
   exportToCDISCODMXML,
@@ -166,7 +167,7 @@ import {
   getPhaseProgress,
   getPhaseLockTarget,
   getViolationBreakdown,
-  isShiftClockHalted,
+  getShiftClockRate,
   getShiftTickSeconds,
   spendPowerUp,
   startCoffeeBreak,
@@ -198,6 +199,7 @@ import {
   getFolderIndexAt,
   getSlotX,
   getVerdictStamp,
+  getReportTone,
 } from "@/components/clinical-trial-chaos/floor-scene";
 import { useArcadeFx } from "@/hooks/useArcadeFx";
 import {
@@ -765,8 +767,8 @@ export const ClinicalTrialChaos: React.FC = () => {
 
       recordEvent("clinical_trial_chaos", "project_click").catch(() => {});
 
-      // Bring the whole board into view (clear of the fixed site navbar) and
-      // focus it so hotkeys work: the Start button unmounts on click.
+      // Focus the board so hotkeys work (the Start button unmounts on click)
+      // and, outside a cabinet, bring it into view clear of the navbar.
       const board = containerRef.current;
       if (board) {
         const reduceMotion = getMatchMediaMatches(
@@ -775,6 +777,10 @@ export const ClinicalTrialChaos: React.FC = () => {
         requestAnimationFrame(() => {
           board.focus({ preventScroll: true });
           if (isFullscreen || typeof window.scrollTo !== "function") return;
+          // Inside a cabinet, PlayCabinet already holds its marquee just
+          // under the header; scrolling the board would tuck the Setup and
+          // Power bar under the navbar (#1937).
+          if (board.closest("[data-arcade-cabinet]")) return;
           const NAVBAR_CLEARANCE_PX = 80;
           window.scrollTo({
             top: Math.max(
@@ -1160,7 +1166,9 @@ export const ClinicalTrialChaos: React.FC = () => {
           const domain = getFastTrackDomain(cleanedSubject, stations);
           const result = verify21CFRSubmission(
             cleanedSubject,
-            "Intent to Submit",
+            cleanedSubject.isSAE
+              ? "Urgent Safety Expedited"
+              : "Intent to Submit",
             domain
           );
 
@@ -1306,11 +1314,16 @@ export const ClinicalTrialChaos: React.FC = () => {
         addAuditLog(result.logMessage, result.level, result.suspicionDelta);
         // Say why on the board itself, not only in the audit log tab (#1326).
         const { matchingDomains } = getRoutingReadiness(subj, stations);
-        const rejection = `Rejected: ${subj.subjectLabel} does not belong at ${domain}.${
-          matchingDomains.length > 0
-            ? ` Route it to ${matchingDomains.join(" or ")}.`
-            : ""
-        }`;
+        const reasonError = result.reasonMismatch
+          ? getSignatureReasonError(subj, reason)
+          : null;
+        const rejection = reasonError
+          ? `Rejected: wrong signature reason for ${subj.subjectLabel}: ${reasonError}`
+          : `Rejected: ${subj.subjectLabel} does not belong at ${domain}.${
+              matchingDomains.length > 0
+                ? ` Route it to ${matchingDomains.join(" or ")}.`
+                : ""
+            }`;
         setRoutingNotice({
           subjectId: subj.id,
           unresolvedCount: 0,
@@ -1389,9 +1402,9 @@ export const ClinicalTrialChaos: React.FC = () => {
       setSignatureModal({
         isOpen: true,
         subject: activeSubject,
-        selectedReason: activeSubject.isSAE
-          ? "Urgent Safety Expedited"
-          : "Intent to Submit",
+        // Always starts on the routine reason: signing an SAE is a decision
+        // the player makes, not a default (#1937).
+        selectedReason: "Intent to Submit",
         passwordInput: "••••••••",
         requiresReason: true,
       });
@@ -1662,18 +1675,21 @@ export const ClinicalTrialChaos: React.FC = () => {
       };
 
       const now = Date.now();
-      // A pause, the Field Manual, a fix or signature dialog and calibration
-      // all hold every clock still through the shared rule (#1672).
-      const halted = isShiftClockHalted({
+      // A pause, the Field Manual and calibration hold every clock still
+      // (#1672); a fix or signature dialog only slows them, so thinking
+      // inside a decision still costs time (#1937).
+      const clockRate = getShiftClockRate({
         userPaused: isPausedRef.current,
         manualOpen: isManualOpenRef.current,
         dialogOpen:
           !!validatingObsRef.current || !!signatureModalRef.current?.isOpen,
         calibrating: calibrationActiveRef.current,
       });
+      const halted = clockRate === 0;
       const deltaSeconds = getShiftTickSeconds(
         now - lastTickTimeRef.current,
-        halted
+        halted,
+        clockRate
       );
       lastTickTimeRef.current = now;
 
@@ -2572,7 +2588,7 @@ export const ClinicalTrialChaos: React.FC = () => {
           >
             {AUDITOR_BEHAVIOR_LABELS[auditor.behavior]}
           </span>
-          <span className="hidden truncate text-[9px] text-zinc-500 sm:inline">
+          <span className="hidden truncate text-[9px] text-zinc-400 sm:inline">
             100% = Form 483
           </span>
         </div>
@@ -3220,7 +3236,7 @@ export const ClinicalTrialChaos: React.FC = () => {
                   >
                     <span
                       aria-hidden="true"
-                      className="absolute left-0 top-1/2 w-[10%] -translate-y-1/2 pr-1 text-center text-[9px] font-bold uppercase leading-tight tracking-wider text-zinc-500"
+                      className="absolute left-0 top-1/2 w-[10%] -translate-y-1/2 pr-1 text-center text-[9px] font-bold uppercase leading-tight tracking-wider text-zinc-400"
                     >
                       Route
                       <br />
@@ -3279,7 +3295,7 @@ export const ClinicalTrialChaos: React.FC = () => {
                                 ? "font-bold text-emerald-300"
                                 : matches
                                   ? "font-bold text-amber-300"
-                                  : "text-zinc-500"
+                                  : "text-zinc-400"
                             }`}
                           >
                             {accepts
@@ -3946,10 +3962,10 @@ export const ClinicalTrialChaos: React.FC = () => {
                         : "DATABASE LOCKED… AND A 483 IS IN THE MAIL"
                       : phase < 3
                         ? `PHASE ${phase} COMPLIANCE AUDIT PASSED!`
-                        : "STUDY PROTOCOL APPROVED FOR NDA SUBMISSION!"
+                        : "DATABASE LOCKED: READY FOR NDA SUBMISSION!"
                     : gameOverReason === "sponsor"
                       ? "CONTRACT TERMINATED · STUDY MOVED TO ANOTHER CRO"
-                      : "FDA FORM 483 ISSUED · TRIAL TERMINATED"}
+                      : "FORM 483 ISSUED · STUDY ON CLINICAL HOLD"}
                 </h3>
                 <p className="mx-auto mt-1 max-w-md text-xs text-zinc-400">
                   {playState === "phase_cleared"
@@ -3958,7 +3974,7 @@ export const ClinicalTrialChaos: React.FC = () => {
                       : "Database locked. All trial data validated and archived."
                     : gameOverReason === "sponsor"
                       ? "Sponsor satisfaction hit 0%. They 'decided to go in a different direction' and awarded the study to a vendor whose bid was 40% cheaper and entirely hypothetical."
-                      : "Auditor suspicion reached 100%. Major source data validation discrepancies triggered clinical hold under 21 CFR § 312.44."}
+                      : "Auditor suspicion reached 100%. The inspector wrote up a Form 483, and the source data discrepancies put the study on clinical hold under 21 CFR § 312.42."}
                 </p>
                 {phaseClearForm483 && (
                   <div
@@ -4097,7 +4113,7 @@ export const ClinicalTrialChaos: React.FC = () => {
                     <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
                       Queue · {conveyorSubjects.length}/{MAX_CONVEYOR_SUBJECTS}
                     </span>
-                    <span className="text-[10px] text-zinc-500">← → cycle</span>
+                    <span className="text-[10px] text-zinc-400">← → cycle</span>
                   </div>
                   <ul className="mt-2 grid grid-cols-2 gap-1.5 @3xl:grid-cols-2">
                     {conveyorSubjects.length === 0 && (
@@ -4174,7 +4190,7 @@ export const ClinicalTrialChaos: React.FC = () => {
                 >
                   <div className="flex flex-wrap items-center justify-between gap-x-2 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
                     <span>Lifelines</span>
-                    <span className="font-normal normal-case text-zinc-500">
+                    <span className="font-normal normal-case text-zinc-400">
                       Charge by dispatching
                     </span>
                   </div>
@@ -4720,6 +4736,18 @@ export const ClinicalTrialChaos: React.FC = () => {
                   >
                     Select Legal Signature Reason [21 CFR § 11.50]
                   </p>
+                  <p
+                    data-testid="cc-sign-reason-rule"
+                    className="mb-2 text-[11px] text-zinc-300"
+                  >
+                    {signatureModal.subject?.isSAE ? (
+                      <span className="font-bold text-rose-300">
+                        SAE: sign it Urgent Safety Expedited.
+                      </span>
+                    ) : (
+                      "Routine CRF: Urgent Safety Expedited is only for SAEs."
+                    )}
+                  </p>
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                     {(
                       [
@@ -4775,7 +4803,7 @@ export const ClinicalTrialChaos: React.FC = () => {
                 <p className="text-[10px] italic leading-relaxed text-zinc-400">
                   By executing this signature, I legally attest that all
                   clinical data points conform to CDISC Controlled Terminology
-                  and ICH GCP E6(R2) standards.
+                  and ICH GCP E6(R3) standards.
                 </p>
               </div>
 
@@ -4814,11 +4842,14 @@ export const ClinicalTrialChaos: React.FC = () => {
             role="dialog"
             aria-modal="true"
             aria-labelledby="cc-report-dialog-title"
-            className="max-w-2xl w-full rounded-2xl border border-emerald-500/50 bg-zinc-950 p-6 shadow-2xl"
+            data-testid="cc-bimo-report"
+            className={`max-w-2xl w-full rounded-2xl border bg-zinc-950 p-6 shadow-2xl ${getReportTone(bimoReport.verdict).frame}`}
           >
             <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
               <div className="flex items-center gap-2">
-                <IconShieldCheck className="h-6 w-6 text-emerald-400" />
+                <IconShieldCheck
+                  className={`h-6 w-6 ${getReportTone(bimoReport.verdict).icon}`}
+                />
                 <div>
                   <h3
                     id="cc-report-dialog-title"
@@ -4845,7 +4876,10 @@ export const ClinicalTrialChaos: React.FC = () => {
                   <span className="text-[10px] text-zinc-400 uppercase block">
                     Compliance Score
                   </span>
-                  <span className="text-lg font-bold text-emerald-400">
+                  <span
+                    data-testid="cc-bimo-score"
+                    className={`text-lg font-bold ${getReportTone(bimoReport.verdict).score}`}
+                  >
                     {bimoReport.overallScore}/100
                   </span>
                 </div>
@@ -5102,7 +5136,7 @@ export const ClinicalTrialChaos: React.FC = () => {
                     aria-label="Subject Arrival Rate Slider"
                     className="w-full accent-amber-500 h-1.5 bg-zinc-800 rounded-lg cursor-pointer"
                   />
-                  <div className="flex justify-between text-[10px] text-zinc-500 mt-0.5">
+                  <div className="flex justify-between text-[10px] text-zinc-400 mt-0.5">
                     <span>0.5x (Slow)</span>
                     <span>1.0x (Normal)</span>
                     <span>3.0x (Surge)</span>
@@ -5134,7 +5168,7 @@ export const ClinicalTrialChaos: React.FC = () => {
                     aria-label="Observation Error Chance Slider"
                     className="w-full accent-amber-500 h-1.5 bg-zinc-800 rounded-lg cursor-pointer"
                   />
-                  <div className="flex justify-between text-[10px] text-zinc-500 mt-0.5">
+                  <div className="flex justify-between text-[10px] text-zinc-400 mt-0.5">
                     <span>0% (Clean)</span>
                     <span>50% (Standard)</span>
                     <span>100% (High Error)</span>
@@ -5166,7 +5200,7 @@ export const ClinicalTrialChaos: React.FC = () => {
                     aria-label="Auditor Inspection Pacing Slider"
                     className="w-full accent-amber-500 h-1.5 bg-zinc-800 rounded-lg cursor-pointer"
                   />
-                  <div className="flex justify-between text-[10px] text-zinc-500 mt-0.5">
+                  <div className="flex justify-between text-[10px] text-zinc-400 mt-0.5">
                     <span>0.5x (Relaxed)</span>
                     <span>1.0x (Standard)</span>
                     <span>3.0x (Intense Patrol)</span>
@@ -5246,8 +5280,8 @@ export const ClinicalTrialChaos: React.FC = () => {
                       REGULATORY THRESHOLD VIOLATION
                     </div>
                     <div className="text-[11px] text-rose-200/80 mt-0.5">
-                      Immediate corrective action required under 21 CFR § 312.44
-                      &amp; 21 CFR § 812. Form 483 risk elevated.
+                      Corrective action needed now. Form 483 and clinical hold
+                      (21 CFR § 312.42) risk elevated.
                     </div>
                   </div>
                 </div>
@@ -5259,7 +5293,7 @@ export const ClinicalTrialChaos: React.FC = () => {
                   <span>
                     Regulatory Findings ({liveBimoReport.findings.length}):
                   </span>
-                  <span className="text-[10px] text-zinc-500">Live Feed</span>
+                  <span className="text-[10px] text-zinc-400">Live Feed</span>
                 </div>
 
                 {liveBimoReport.findings.length === 0 ? (

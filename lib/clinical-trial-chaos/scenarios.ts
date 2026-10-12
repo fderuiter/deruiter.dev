@@ -30,10 +30,11 @@ export interface MockObservationTemplate {
 }
 
 export const MOCK_OBSERVATION_TEMPLATES: MockObservationTemplate[] = [
-  // ==================== DM (Demographics) ====================
+  // ==================== VS (Vital Signs: height and weight) ====================
+  // SDTM records height and weight in VS (VSTESTCD HEIGHT, WEIGHT), not DM.
   {
     field: "Height",
-    destination: "DM",
+    destination: "VS",
     testCode: "HEIGHT",
     validValues: ["175 cm", "168 cm", "182 cm", "159 cm", "190 cm"],
     corruptions: [
@@ -43,9 +44,9 @@ export const MOCK_OBSERVATION_TEMPLATES: MockObservationTemplate[] = [
         errorType: "unit-error",
         hint: "Meters unit anomaly (expected cm)",
         explanation:
-          "CDISC SDTM DM domain specifies metric height standard (cm). 180 m would represent a skyscraper.",
+          "SDTM records height in VS (VSTESTCD HEIGHT) with the standard unit cm. 180 m would be a skyscraper; the subject is 180 cm.",
         ctCode: "C25473",
-        options: ["180 cm", "1.80 m", "1800 mm", "70.8 in"],
+        options: ["180 cm", "18 cm", "1800 cm", "180 mm"],
       },
       {
         rawValue: "1750 cm",
@@ -55,7 +56,7 @@ export const MOCK_OBSERVATION_TEMPLATES: MockObservationTemplate[] = [
         explanation:
           "1750 cm exceeds physiological human limits. Stripping the typographical trailing zero normalizes to 175 cm.",
         ctCode: "C25473",
-        options: ["175 cm", "17.5 cm", "1750 mm", "175 in"],
+        options: ["175 cm", "17.5 cm", "1.75 cm", "175 in"],
       },
       {
         rawValue: "-168 cm",
@@ -81,7 +82,7 @@ export const MOCK_OBSERVATION_TEMPLATES: MockObservationTemplate[] = [
   },
   {
     field: "Weight",
-    destination: "DM",
+    destination: "VS",
     testCode: "WEIGHT",
     validValues: ["72.5 kg", "68.0 kg", "84.2 kg", "55.9 kg"],
     corruptions: [
@@ -103,7 +104,7 @@ export const MOCK_OBSERVATION_TEMPLATES: MockObservationTemplate[] = [
         explanation:
           "700 kg is outside standard study inclusion criteria [40-150 kg]. Correct missing decimal to 70 kg.",
         ctCode: "C25208",
-        options: ["70 kg", "7000 g", "7.0 kg", "154 lbs"],
+        options: ["70 kg", "7000 g", "7.0 kg", "154 kg"],
       },
       {
         rawValue: "150 lbs",
@@ -117,6 +118,7 @@ export const MOCK_OBSERVATION_TEMPLATES: MockObservationTemplate[] = [
       },
     ],
   },
+  // ==================== DM (Demographics) ====================
   {
     field: "Date of Birth",
     destination: "DM",
@@ -1167,13 +1169,13 @@ export const SEEDED_SCENARIOS: readonly ClinicalSubject[] = [
         rawValue: "180 m",
         correctedValue: "180 cm",
         currentValue: "180 m",
-        destination: "DM",
+        destination: "VS",
         errorType: "unit-error",
         hint: "Meters unit anomaly (expected cm)",
         explanation:
-          "CDISC SDTM DM domain specifies metric height standard (cm).",
+          "SDTM records height in VS (VSTESTCD HEIGHT) with the standard unit cm.",
         ctCode: "C25473",
-        options: ["180 cm", "1.80 m", "1800 mm", "70.8 in"],
+        options: ["180 cm", "18 cm", "1800 cm", "180 mm"],
         isResolved: false,
       },
       {
@@ -1216,7 +1218,7 @@ export const SEEDED_SCENARIOS: readonly ClinicalSubject[] = [
         rawValue: "-75 kg",
         correctedValue: "75 kg",
         currentValue: "-75 kg",
-        destination: "DM",
+        destination: "VS",
         errorType: "negative-value",
         hint: "Negative weight recorded",
         explanation: "Remove leading negative polarity sign.",

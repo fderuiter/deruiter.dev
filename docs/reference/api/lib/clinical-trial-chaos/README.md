@@ -314,6 +314,12 @@ Re-exports [describeSponsorEvent](shift/functions/describeSponsorEvent.md)
 
 ***
 
+### DIALOG\_CLOCK\_RATE
+
+Re-exports [DIALOG_CLOCK_RATE](shift/variables/DIALOG_CLOCK_RATE.md)
+
+***
+
 ### drawOutfitAvatar
 
 Re-exports [drawOutfitAvatar](outfits/functions/drawOutfitAvatar.md)
@@ -518,9 +524,21 @@ Re-exports [getSAEChance](shift/functions/getSAEChance.md)
 
 ***
 
+### getShiftClockRate
+
+Re-exports [getShiftClockRate](shift/functions/getShiftClockRate.md)
+
+***
+
 ### getShiftTickSeconds
 
 Re-exports [getShiftTickSeconds](shift/functions/getShiftTickSeconds.md)
+
+***
+
+### getSignatureReasonError
+
+Re-exports [getSignatureReasonError](engine/functions/getSignatureReasonError.md)
 
 ***
 

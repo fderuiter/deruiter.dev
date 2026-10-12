@@ -571,6 +571,27 @@ export function scrambleStations(stations: StationConfig[]): StationConfig[] {
 }
 
 /**
+ * Why a signature reason does not fit a subject, or null when it does. An
+ * SAE subject must be signed "Urgent Safety Expedited", and that reason is
+ * only for SAE subjects, so Sign is a real choice (#1937).
+ *
+ * @param subject - The subject being signed.
+ * @param reason - The chosen signature reason.
+ */
+export function getSignatureReasonError(
+  subject: Pick<ClinicalSubject, "isSAE">,
+  reason: SignatureReason
+): string | null {
+  if (subject.isSAE && reason !== "Urgent Safety Expedited") {
+    return "a serious adverse event is signed Urgent Safety Expedited.";
+  }
+  if (!subject.isSAE && reason === "Urgent Safety Expedited") {
+    return "Urgent Safety Expedited is only for serious adverse events.";
+  }
+  return null;
+}
+
+/**
  * Evaluates 21 CFR Part 11 Electronic Signature submission.
  */
 export function verify21CFRSubmission(
@@ -582,6 +603,8 @@ export function verify21CFRSubmission(
   suspicionDelta: number;
   logMessage: string;
   level: "COMPLIANT" | "WARN" | "CRITICAL";
+  /** Set when the signature reason, not the data or routing, was wrong. */
+  reasonMismatch?: boolean;
 } {
   const validReasons: SignatureReason[] = [
     "Intent to Submit",
@@ -596,6 +619,22 @@ export function verify21CFRSubmission(
       suspicionDelta: 20,
       logMessage: `[AUDIT REJECT] 21 CFR Part 11 Lock violated for ${subject.subjectLabel}: Invalid signature reason '${reason}'`,
       level: "CRITICAL",
+    };
+  }
+
+  // The reason has to fit the subject (#1937): a serious adverse event is
+  // signed for expedited safety reporting, and nothing else is.
+  const reasonError = getSignatureReasonError(
+    subject,
+    reason as SignatureReason
+  );
+  if (reasonError) {
+    return {
+      success: false,
+      suspicionDelta: 10,
+      logMessage: `[AUDIT WARN] 21 CFR Part 11 signature reason mismatch for ${subject.subjectLabel}: ${reasonError}`,
+      level: "WARN",
+      reasonMismatch: true,
     };
   }
 
@@ -989,7 +1028,7 @@ export function generateBIMOReport(
           severity: "Major",
           description: `CDISC Conformance Error on ${v.subjectLabel} (${v.field}): '${v.selectedChoice}' violates ${v.domain || "SDTM"} standard. ${v.message}`,
           regulation:
-            "ICH GCP E6(R2) § 5.5 - Electronic data handling & CDISC STRESN standardization",
+            "ICH GCP E6(R3) Annex 1 § 4 - Data governance & CDISC STRESN standardization",
         });
       }
     });
@@ -1038,7 +1077,7 @@ export function generateBIMOReport(
           ? "1 subject expired on the conveyor before source data verification."
           : `${expired} subjects expired on the conveyor before source data verification.`,
       regulation:
-        "ICH GCP E6(R2) § 5.18.4 - Timely source data verification by the monitor",
+        "ICH GCP E6(R3) § 3.11.4 - Timely source data verification by the monitor",
     });
   }
 
@@ -1066,12 +1105,11 @@ export function generateBIMOReport(
       category: "Protocol Compliance",
       severity: "Minor",
       description: `Controlled Terminology non-conformances identified in ${Math.round(100 - cleanRate)}% of submissions prior to manual correction.`,
-      regulation: "ICH GCP E6(R2) § 5.5 - Data handling and record keeping",
+      regulation: "ICH GCP E6(R3) § 3.16 - Data handling and record keeping",
     });
   }
 
-  let verdict: BIMOInspectionReport["verdict"] =
-    "NAI (No Action Indicated - Approved)";
+  let verdict: BIMOInspectionReport["verdict"] = "NAI (No Action Indicated)";
   let summary =
     "The Bioresearch Monitoring inspection found no objectionable conditions. The sponsor and clinical site data systems operate in full compliance with 21 CFR Part 11 and CDISC standards.";
 
@@ -1082,7 +1120,7 @@ export function generateBIMOReport(
   ) {
     verdict = "OAI (Official Action Indicated - Form 483 Issued)";
     summary =
-      "FDA Form 483 issued. Significant objectionable conditions were observed during the inspection, including critical data integrity discrepancies. Trial operations suspended under 21 CFR § 312.44.";
+      "FDA Form 483 issued. Significant objectionable conditions were observed during the inspection, including critical data integrity discrepancies. Clinical hold risk under 21 CFR § 312.42.";
   } else if (findings.length > 0 || auditorState.suspicion > 30) {
     verdict = "VAI (Voluntary Action Indicated)";
     summary =

@@ -229,7 +229,7 @@ export interface BIMOInspectionReport {
   overallScore: number;
   scoreTrend?: BIMOComplianceTrend;
   verdict:
-    | "NAI (No Action Indicated - Approved)"
+    | "NAI (No Action Indicated)"
     | "VAI (Voluntary Action Indicated)"
     | "OAI (Official Action Indicated - Form 483 Issued)";
   /** Percentage of submitted CRFs that were clean, or `null` when none were submitted. */

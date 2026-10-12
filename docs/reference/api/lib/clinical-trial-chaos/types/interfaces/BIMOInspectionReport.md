@@ -76,4 +76,4 @@ Subjects that expired on the conveyor and were never submitted (#1670).
 
 ### verdict
 
-> **verdict**: `"NAI (No Action Indicated - Approved)"` \| `"VAI (Voluntary Action Indicated)"` \| `"OAI (Official Action Indicated - Form 483 Issued)"`
+> **verdict**: `"NAI (No Action Indicated)"` \| `"VAI (Voluntary Action Indicated)"` \| `"OAI (Official Action Indicated - Form 483 Issued)"`

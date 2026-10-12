@@ -1855,8 +1855,10 @@ describe("Garmin progression is refresh-rate independent (#1212)", () => {
     let state: GameEngineState = {
       ...startGame(createInitialState("fenix", 0), "fenix"),
       isLightOn,
-      // No course gaps for a runner that never jumps (#1950).
+      // No course gaps or course foes for a runner that never jumps
+      // (#1950, #1991).
       course: EMPTY_COURSE,
+      foes: [],
     };
     for (let i = 0; i < Math.round(seconds * hz); i++) {
       // Keep the run alive: no spawns, no random allocation crashes.

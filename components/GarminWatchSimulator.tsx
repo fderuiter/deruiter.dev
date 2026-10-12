@@ -130,6 +130,14 @@ const CRASH_LABELS: Record<
     title: "STACK OVERFLOW",
     hint: "You ran into runaway recursion. Stacks are spiked: Jump (Up) over them, never onto them.",
   },
+  "Dropped Kettlebell": {
+    title: "DROPPED KETTLEBELL",
+    hint: "A Kettlebell got you. Stomp it to tip it over, then kick it to clear the way, and stay clear when it slides back.",
+  },
+  "Gym Injury": {
+    title: "GYM INJURY",
+    hint: "A Move Alert, Box Jumper, Auto Lap, lap ping or the Rep Max got you. Stomp them, watch their timers, and jump the lap pings and dumbbells.",
+  },
   "Segmentation Fault": {
     title: "SEGFAULT",
     hint: "You fell through a gap in the track. Hold Up longer to clear wide gaps, and sprint (Right) into them.",

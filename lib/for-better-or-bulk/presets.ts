@@ -598,7 +598,7 @@ export function bankText(id: string): string {
 
 /** The receipt's line when the solo helper was on (ADR 0060, F6). */
 export const ASSIST_LINE =
-  "A helper kept the other lane going. Very efficient. Slightly eerie.";
+  "A helper kept the other lane going. Quiet and efficient.";
 
 /**
  * The [Real] lines the receipt's "What actually happened" note quotes, in

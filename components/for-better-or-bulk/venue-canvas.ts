@@ -16,9 +16,11 @@ import {
   SIMPLIFY_SECONDS,
   VENUE_MAP,
   bankText,
+  floorDropTile,
   getCoachStep,
   getPrompt,
   interactTile,
+  nextSpotTile,
   workTileFor,
   type GameState,
   type ItemKind,
@@ -86,6 +88,8 @@ const COLORS = {
   abbi: "#f4f0e6",
   abbiEdge: "#d6c7a8",
   active: "#f59e0b",
+  /** Steel (AGENTS.md section 20): neutral status marks, such as the next spot. */
+  steel: "#94a3b8",
   busy: "#f4f4f6",
   /** Steel smoke: light enough to read against the dark grill and stage. */
   smoke: "#94a3b8",
@@ -526,15 +530,22 @@ function drawPlayer(
 }
 
 /**
- * One tile outlined in the venue's active colour. Every highlight uses this,
- * so the tile an interact would use and the tile the coach points at look the
- * same. Solid when the action is available, faint and dashed when it is not.
- * There is no animation.
+ * The looks an outlined tile can have. `ready` is a press that acts now;
+ * `waiting` is the coach waiting on a busy station; `floor` is a drop on plain
+ * ground, drawn in the active amber with a heavy dash so it never reads as a
+ * station's solid outline; `next` marks the nearest open chair spot or lantern
+ * hook in steel.
+ */
+type OutlineStyle = "ready" | "waiting" | "floor" | "next";
+
+/**
+ * One tile outlined. Every highlight uses this, so the tile an interact would
+ * use and the tile the coach points at look the same. There is no animation.
  */
 function drawTileOutline(
   ctx: CanvasRenderingContext2D,
   tile: Tile,
-  ready: boolean
+  style: OutlineStyle
 ): void {
   const columns = VENUE_MAP[0]?.length ?? 0;
   if (
@@ -545,10 +556,21 @@ function drawTileOutline(
   )
     return;
   ctx.save();
-  ctx.strokeStyle = COLORS.active;
-  ctx.lineWidth = 2;
-  ctx.globalAlpha = ready ? 1 : 0.4;
-  ctx.setLineDash(ready ? [] : [3, 3]);
+  if (style === "floor") {
+    ctx.strokeStyle = COLORS.active;
+    ctx.lineWidth = 3;
+    ctx.setLineDash([6, 4]);
+  } else if (style === "next") {
+    ctx.strokeStyle = COLORS.steel;
+    ctx.lineWidth = 2;
+    ctx.globalAlpha = 0.9;
+    ctx.setLineDash([2, 4]);
+  } else {
+    ctx.strokeStyle = COLORS.active;
+    ctx.lineWidth = 2;
+    ctx.globalAlpha = style === "ready" ? 1 : 0.4;
+    ctx.setLineDash(style === "ready" ? [] : [3, 3]);
+  }
   ctx.strokeRect(tile.x * TILE + 2, tile.y * TILE + 2, TILE - 4, TILE - 4);
   ctx.restore();
 }
@@ -569,17 +591,24 @@ function drawPersonOutlines(
 ): void {
   const player = state.players[id];
   if (player.presence === "away") return;
+  const next = nextSpotTile(state, id);
+  if (next) drawTileOutline(ctx, next, "next");
   const coach = getCoachStep(state, id, { coop });
   const waitTile = coach?.waiting === true ? coach.tile : null;
   const press = interactTile(state, id);
   if (press) {
     const waiting = waitTile !== null && sameTile(waitTile, press);
     const ready = getPrompt(state, id).interact !== null;
-    drawTileOutline(ctx, press, ready && !waiting);
+    const drop = floorDropTile(state, id);
+    let style: OutlineStyle = "waiting";
+    if (drop && sameTile(drop, press)) style = "floor";
+    else if (ready && !waiting) style = "ready";
+    drawTileOutline(ctx, press, style);
     return;
   }
   const faced = workTileFor(state, player);
-  if (waitTile && sameTile(waitTile, faced)) drawTileOutline(ctx, faced, false);
+  if (waitTile && sameTile(waitTile, faced))
+    drawTileOutline(ctx, faced, "waiting");
 }
 
 function sameTile(a: Tile, b: Tile): boolean {

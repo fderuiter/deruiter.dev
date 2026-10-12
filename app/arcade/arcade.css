@@ -466,6 +466,22 @@
   padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px)
     env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
 }
+
+/* Immersive touch cabinet (ADR 0061): a launched cabinet on a phone or a
+   portrait tablet. It reuses the fullscreen layout above and adds touch rules.
+   Touch-action is intersected up the tree, so `none` on the stage stops
+   panning and pinch-zoom over the play area; the toolbar and the control dock
+   sit outside the stage and keep their own taps. */
+.arcade-cabinet[data-immersive="true"] {
+  touch-action: manipulation;
+  overscroll-behavior: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.arcade-cabinet[data-immersive="true"] .arcade-cabinet-stage {
+  touch-action: none;
+}
 .arcade-cabinet-stage > * {
   flex-shrink: 0;
   min-width: 0;

@@ -1,0 +1,114 @@
+import { expect, type Locator, type Page } from "@playwright/test";
+import fs from "node:fs";
+import path from "node:path";
+
+/** The widths of the mobile matrix (ADR 0061): floor, phone, tablet, desktop. */
+export const MATRIX_WIDTHS = [320, 375, 768, 1440] as const;
+
+/** Viewport height used for matrix captures. */
+const MATRIX_HEIGHT = 800;
+
+/**
+ * Fails when any rendered element, or the document itself, is wider than the
+ * viewport. Elements inside a clipped ancestor are reported too, so a clipped
+ * overflow still shows up here.
+ *
+ * @param page - The page under test, already at the size to check.
+ */
+export async function assertNoHorizontalOverflow(page: Page): Promise<void> {
+  const report = await page.evaluate(() => {
+    const viewport = document.documentElement.clientWidth;
+    const offenders: string[] = [];
+    for (const element of Array.from(
+      document.querySelectorAll<HTMLElement>("body *")
+    )) {
+      const style = window.getComputedStyle(element);
+      if (style.display === "none" || style.visibility === "hidden") continue;
+      const box = element.getBoundingClientRect();
+      if (box.width === 0 && box.height === 0) continue;
+      if (box.right > viewport + 0.5) {
+        const id = element.id ? `#${element.id}` : "";
+        const cls =
+          typeof element.className === "string"
+            ? element.className.split(" ").slice(0, 2).join(".")
+            : "";
+        offenders.push(
+          `${element.tagName.toLowerCase()}${id}${cls ? `.${cls}` : ""} right=${Math.round(box.right)}`
+        );
+      }
+      if (offenders.length >= 10) break;
+    }
+    return {
+      viewport,
+      scrollWidth: document.documentElement.scrollWidth,
+      offenders,
+    };
+  });
+
+  expect(
+    report.scrollWidth,
+    `document scrollWidth should not exceed the ${report.viewport}px viewport`
+  ).toBeLessThanOrEqual(report.viewport);
+  expect(report.offenders, "elements wider than the viewport").toEqual([]);
+}
+
+/**
+ * Captures the page at each matrix width into `dir`, as
+ * `<slug>-<width>.png`. The viewport the page started at is restored afterwards.
+ *
+ * @param page - The page to capture, already navigated and settled.
+ * @param slug - A short name for the page, e.g. `trial-and-error`.
+ * @param dir - The directory to write into. Created if missing.
+ * @returns The written file paths, in matrix order.
+ */
+export async function captureMatrix(
+  page: Page,
+  slug: string,
+  dir: string
+): Promise<string[]> {
+  fs.mkdirSync(dir, { recursive: true });
+  const original = page.viewportSize();
+  const written: string[] = [];
+  for (const width of MATRIX_WIDTHS) {
+    await page.setViewportSize({ width, height: MATRIX_HEIGHT });
+    await page.waitForTimeout(250);
+    const file = path.join(dir, `${slug}-${width}.png`);
+    await page.screenshot({ path: file });
+    written.push(file);
+  }
+  if (original) await page.setViewportSize(original);
+  return written;
+}
+
+/** One tap in a game's first-score route. */
+export interface TapStep {
+  /** The control to tap. Must be visible on a touch project. */
+  target: Locator;
+}
+
+/**
+ * Taps through a game's opening steps and waits until the score readout
+ * changes, so a spec can reach a first point without knowing the game's timing.
+ * Uses `Locator.tap()`, so it needs a project with `hasTouch`.
+ *
+ * @param page - The page under test.
+ * @param steps - Taps in order.
+ * @param score - The element whose text is the score.
+ * @param timeout - How long the score may take to change.
+ */
+export async function tapToFirstScore(
+  page: Page,
+  steps: TapStep[],
+  score: Locator,
+  timeout = 15000
+): Promise<void> {
+  const before = (await score.textContent()) ?? "";
+  for (const step of steps) {
+    await step.target.tap();
+    await page.waitForTimeout(50);
+  }
+  await expect(async () => {
+    const now = (await score.textContent()) ?? "";
+    expect(now).not.toBe(before);
+  }).toPass({ timeout });
+}

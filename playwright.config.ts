@@ -58,6 +58,23 @@ export default defineConfig({
       name: "Mobile Chrome",
       use: { ...devices["Pixel 5"] },
     },
+    // ADR 0061: the 320px floor and a landscape phone for the immersive
+    // cabinet. Only mobile-kit.spec.ts runs here, so the rest of the suite does
+    // not multiply by two.
+    {
+      name: "Small Phone",
+      testMatch: /mobile-kit\.spec\.ts$/,
+      use: {
+        ...devices["Pixel 5"],
+        viewport: { width: 320, height: 568 },
+        deviceScaleFactor: 2,
+      },
+    },
+    {
+      name: "Phone Landscape",
+      testMatch: /mobile-kit\.spec\.ts$/,
+      use: { ...devices["iPhone 12 landscape"] },
+    },
   ],
   // Only manage a local server when there is no external target to probe.
   webServer: externalBaseUrl

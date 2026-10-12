@@ -731,10 +731,63 @@ describe("ending and receipt", () => {
     const { state, events } = press(ready, "fred");
     expect(state.phase).toBe("done");
     expect(state.finishedAt).toBeCloseTo(TICK_SECONDS, 5);
-    expect(events).toContainEqual({ type: "level-finished", early: true });
+    expect(events).toContainEqual({
+      type: "level-finished",
+      allSet: true,
+      early: true,
+    });
     expect(computeReceipt(state).finishedAt).toBe(
       "Everything was ready at 9:00."
     );
+  });
+
+  it("says early only when the finish meets the 3:00 challenge (round 15)", () => {
+    const level = createLevel(DEFAULT_SETUP);
+    const lastTable = level.targets.find((t) => t.x === 4 && t.y === 7);
+    const nearlyDone = allFilled(
+      {
+        ...level,
+        targets: level.targets.map((t) =>
+          t === lastTable ? { ...t, status: "unplanned" as const } : t
+        ),
+      },
+      "abbi"
+    );
+    const readyAt = (time: number) =>
+      place(
+        {
+          ...nearlyDone,
+          time,
+          // The brothers have already called, so the press finishes the level.
+          brothersAt: 1,
+          targets: nearlyDone.targets.map((t) =>
+            t.id === lastTable?.id ? { ...t, status: "open" as const } : t
+          ),
+        },
+        "fred",
+        4,
+        8,
+        [0, -1],
+        { kind: "arrangement", madeBy: "fred" }
+      );
+    const threeOClock = (level.duration * 6) / 7;
+    const late = press(readyAt(threeOClock + 10), "fred");
+    expect(late.state.phase).toBe("done");
+    expect(late.events).toContainEqual({
+      type: "level-finished",
+      allSet: true,
+      early: false,
+    });
+    const challenge = computeReceipt(late.state).challenges.find(
+      (c) => c.id === "set-by-three"
+    );
+    expect(challenge?.met).toBe(false);
+    const onTime = press(readyAt(threeOClock - 10), "fred");
+    expect(onTime.events).toContainEqual({
+      type: "level-finished",
+      allSet: true,
+      early: true,
+    });
   });
 
   it("ends at 4:00 with unfinished work as Married Anyway", () => {
@@ -1176,6 +1229,21 @@ describe("the bin, returns and the floor", () => {
       player: "fred",
       item: "burnt",
     });
+  });
+
+  it("refuses roses at the bin, so planned stock is never thrown out (round 15)", () => {
+    const roses = place(createLevel(DEFAULT_SETUP), "fred", 6, 4, [0, -1], {
+      kind: "roses",
+      madeBy: null,
+    });
+    const held = run(roses, frameFor("fred", { work: true }), ticks(2));
+    expect(held.state.players.fred.holding?.kind).toBe("roses");
+    expect(held.state.players.fred.binHold).toBe(0);
+    expect(held.events.some((e) => e.type === "thrown-out")).toBe(false);
+    expect(getPrompt(held.state, "fred").work).toBeNull();
+    expect(getPrompt(held.state, "fred").interact).toBe(
+      "The BIN only takes burnt food."
+    );
   });
 
   it("starts a bin hold over when the work key is let go", () => {
@@ -2538,7 +2606,7 @@ describe("a full floor says why a press does nothing (round 8, S8)", () => {
     );
     expect(interactTile(at, "fred")).toBeNull();
     expect(getPrompt(at, "fred").interact).toBe(
-      "The floor here is full. Find a station or the bin."
+      "The floor here is full. Find a station or a spot for it."
     );
     const after = stepGame(at, frameFor("fred", { interact: true })).state;
     expect(after.players.fred.holding).toEqual(raw);
@@ -2552,7 +2620,7 @@ describe("a full floor says why a press does nothing (round 8, S8)", () => {
     });
     const at = fullFloor(place(base, "fred", 4, 4, [0, 1], raw));
     expect(getPrompt(at, "fred").interact).toBe(
-      "The GRILL is full. The floor here is full. Find a station or the bin."
+      "The GRILL is full. The floor here is full. Find a station or a spot for it."
     );
   });
 
@@ -2716,6 +2784,7 @@ function withTargetAt(
 
 const ARRANGEMENT: Item = { kind: "arrangement", madeBy: null };
 const ROSES: Item = { kind: "roses", madeBy: null };
+const BURNT: Item = { kind: "burnt", madeBy: null };
 const MAC: Item = { kind: "mac", madeBy: null };
 const WINGS_RAW: Item = { kind: "wings-raw", madeBy: null };
 
@@ -2756,7 +2825,7 @@ describe("a refused press says why (round 9, task 1)", () => {
 
   it("gives the bin's neighbour a turn when the bin has no line, so a faced grill speaks", () => {
     // Fred's body straddles the bin at (6,3) and the grill at (5,3).
-    const at = placeExact(base, "fred", 6.1, 4.5, [0, -1], ROSES);
+    const at = placeExact(base, "fred", 6.1, 4.5, [0, -1], BURNT);
     expect(interactTile(at, "fred")).toBeNull();
     expect(getPrompt(at, "fred").interact).toBe(
       "The GRILL takes raw hot dogs or wings."
@@ -2772,8 +2841,8 @@ describe("a refused press says why (round 9, task 1)", () => {
     );
   });
 
-  it("gives no interact line for a held item at the bin, since the hold prompt names it", () => {
-    const at = place(base, "fred", 6, 2, [0, 1], ROSES);
+  it("gives no interact line for burnt food at the bin, since the hold prompt names it", () => {
+    const at = place(base, "fred", 6, 2, [0, 1], BURNT);
     expect(interactTile(at, "fred")).toBeNull();
     expect(getPrompt(at, "fred").interact).toBeNull();
     expect(getPrompt(at, "fred").work).toBe(THROW_OUT_PROMPT);
@@ -2882,12 +2951,20 @@ describe("a refused press says why (round 9, task 1)", () => {
     );
   });
 
-  it("says what the bin takes when free hands face it, and leaves a held item to the hold prompt", () => {
+  it("says what the bin takes when free hands face it, and leaves burnt food to the hold prompt", () => {
     const empty = place(base, "fred", 6, 2, [0, 1]);
     expect(getPrompt(empty, "fred").interact).toBe("The BIN takes burnt food.");
-    const held = place(base, "fred", 6, 2, [0, 1], ROSES);
+    const held = place(base, "fred", 6, 2, [0, 1], {
+      kind: "burnt",
+      madeBy: null,
+    });
     expect(getPrompt(held, "fred").interact).toBeNull();
     expect(getPrompt(held, "fred").work).toBe(THROW_OUT_PROMPT);
+    const roses = place(base, "fred", 6, 2, [0, 1], ROSES);
+    expect(getPrompt(roses, "fred").interact).toBe(
+      "The BIN only takes burnt food."
+    );
+    expect(getPrompt(roses, "fred").work).toBeNull();
   });
 
   it("names an empty crate when free hands face it", () => {

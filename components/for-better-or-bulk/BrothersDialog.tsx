@@ -74,6 +74,7 @@ export function BrothersDialog({ state, onDecide }: BrothersDialogProps) {
   // a screen reader hears the label first and the detail as the description.
   const stayId = useId();
   const leaveId = useId();
+  const breakId = useId();
 
   useEffect(() => {
     openedAt.current = Date.now();
@@ -153,8 +154,13 @@ export function BrothersDialog({ state, onDecide }: BrothersDialogProps) {
               disabled={commitments.length === 0}
               onClick={() => setPromising(true)}
               className={OPTION_CLASS}
+              aria-labelledby={`${breakId}-label`}
+              aria-describedby={`${breakId}-detail`}
             >
-              Take a short break and promise to come back for something.
+              <span id={`${breakId}-label`}>Take a short break.</span>{" "}
+              <span id={`${breakId}-detail`}>
+                (Promise to come back for something.)
+              </span>
             </button>
             <button
               type="button"

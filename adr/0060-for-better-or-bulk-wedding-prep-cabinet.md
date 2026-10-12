@@ -60,7 +60,7 @@ against tile collision and interact with the tile in front of them:
 - **Stations** transform what is put on them: held work at the rose table and
   petal bucket turns roses into arrangements or petals, the grill cooks raw
   hot dogs and wings and then burns them if nobody comes back, and the bin
-  takes anything.
+  takes burnt food (and returns chairs to their crate).
 - **Targets** in the venue take one item each: tables, the aisle, chair spots,
   lantern hooks, the buffet and the bouquet basket. A target the cart did not
   pay for is unplanned, and an empty centerpiece or petal spot can be
@@ -249,6 +249,28 @@ For Better or Bulk trophies are unchanged.
 
 **Seeds.** Only the standard day (seed 0) records a high score. A seeded day
 can still earn its own trophy.
+
+## Amendment (2026-10-12): playtest round 15
+
+Issue #1974. The rules below are the current ones.
+
+- **The bin only takes burnt food.** Holding work at the bin throws out burnt
+  food and returns a stack of chairs to its crate, as before. Anything else in
+  hand is refused: the hold never starts, the work prompt is empty, and the
+  prompt reads "The BIN only takes burnt food." Roses, arrangements and cooked
+  food are stocked to the plan, so binning one left the day short with no way
+  back. The full-floor line names the bin only for burnt food and chairs.
+  **Run codes recorded before this change may not verify.** A run that binned
+  anything other than burnt food or chairs now keeps the item, so the same
+  frames reach a different state. `RUN_CODE_PREFIX` stays `f1.`, as the
+  standing decision for this cabinet.
+- **"Early, even." follows the 3:00 challenge.** The `level-finished` event is
+  early only when the finish meets "Everything set by 3:00", by the same rule
+  the challenge uses (`setByThree`). A finish after 3:00 and before 4:00 gets
+  "Everything is set." on its own, so the toast and the receipt agree.
+- **The break option has a short name.** Its accessible name is "Take a short
+  break." and "(Promise to come back for something.)" is its description, like
+  the stay and leave options.
 
 ## Amendment (2026-10-12): playtest round 13 chair spots
 

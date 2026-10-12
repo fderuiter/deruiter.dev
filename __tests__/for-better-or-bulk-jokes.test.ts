@@ -138,18 +138,17 @@ describe("the reactive jokes, one trigger each", () => {
   });
 
   it("suit: the coat room joke lands at the end", () => {
-    expect(jokesFor({ type: "level-finished", early: false }, level)).toEqual([
-      "suit",
-    ]);
+    expect(
+      jokesFor({ type: "level-finished", allSet: false, early: false }, level)
+    ).toEqual(["suit"]);
   });
 
   it("no-faq: a missing FAQ is shown at the end, with the suit joke", () => {
     const { state } = runWith(NO_FAQ);
     expect(noFaq(state)).toBe(true);
-    expect(jokesFor({ type: "level-finished", early: false }, state)).toEqual([
-      "suit",
-      "no-faq",
-    ]);
+    expect(
+      jokesFor({ type: "level-finished", allSet: false, early: false }, state)
+    ).toEqual(["suit", "no-faq"]);
     expect(noFaq(runWith(FULL_FAQ).state)).toBe(false);
   });
 
@@ -173,7 +172,7 @@ describe("the reactive jokes, one trigger each", () => {
       { type: "shoes-retied" },
       { type: "presence-decided", decision: LEAVE },
       { type: "simplified", target: "petal-1", category: "petals" },
-      { type: "level-finished", early: false },
+      { type: "level-finished", allSet: false, early: false },
     ];
     for (const event of events) {
       for (const state of [level, yesLevel, runWith(NO_FAQ).state]) {

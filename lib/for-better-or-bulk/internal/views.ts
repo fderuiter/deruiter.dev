@@ -42,6 +42,7 @@ import {
 } from "./words";
 import {
   GRILL_COOKS,
+  binTakes,
   faceTiles,
   floorDropPress,
   interactTile,
@@ -146,7 +147,10 @@ function fullFloorPrompt(
   held: Item
 ): string | null {
   if (state.floor.length < FLOOR_CAP) return null;
-  const line = "The floor here is full. Find a station or the bin.";
+  // The bin only takes burnt food and chairs, so it is named only for those.
+  const line = binTakes(held)
+    ? "The floor here is full. Find a station or the bin."
+    : "The floor here is full. Find a station or a spot for it.";
   const blocked = blockedStationFor(
     state,
     { x: Math.floor(person.x), y: Math.floor(person.y) },
@@ -219,9 +223,12 @@ function reasonOnTile(
   }
   if (station) {
     // The bin is emptied by holding work, and the work prompt names that hold,
-    // so a held item at the bin gets no interact line.
-    if (station.kind === "bin")
-      return held ? null : "The BIN takes burnt food.";
+    // so burnt food or chairs at the bin get no interact line. Anything else
+    // is refused, and the line says what the bin does take (round 15).
+    if (station.kind === "bin") {
+      if (!held) return "The BIN takes burnt food.";
+      return binTakes(held) ? null : "The BIN only takes burnt food.";
+    }
     if (station.item)
       return `${capitalise(STATION_NAMES[station.kind])} is full.`;
     if (!held) return `Nothing on ${STATION_NAMES[station.kind]} to take.`;
@@ -260,9 +267,10 @@ function reasonOnTile(
  * one-way: a press that lands never gets a line here, and a press that does
  * nothing gets one, with these exceptions:
  *
- * - The bin with something in hand gets no line, because the work prompt
- *   names the hold that empties it. This holds even when the bin is one of
- *   two faced tiles, so a bin that straddles with a wall gets no line either.
+ * - The bin with burnt food or chairs in hand gets no line, because the work
+ *   prompt names the hold that empties it. This holds even when the bin is one
+ *   of two faced tiles, so a bin that straddles with a wall gets no line
+ *   either. Anything else in hand is refused with a line (round 15).
  * - A press with nothing in hand that faces only plain ground gets no line,
  *   since there is nothing to refuse.
  *
@@ -511,7 +519,7 @@ export function getPrompt(
       const spot = target.kind === "aisle" ? "aisle spot" : "table";
       work = `leave this ${spot} bare (it stays out of the plan)`;
     }
-  } else if (station?.kind === "bin") {
+  } else if (station?.kind === "bin" && binTakes(held)) {
     work =
       held.kind === "chairs"
         ? `Put ${heldName(held)} back in the ${CRATE_NAMES.chairs} crate`

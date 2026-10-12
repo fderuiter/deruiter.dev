@@ -208,7 +208,9 @@ describe("the receipt counts items and clears the navbar (#1933)", () => {
         onWatchReplay={vi.fn()}
       />
     );
-    expect(screen.getByText("Only 1 of 2 items placed at 4:00.")).toBeTruthy();
+    expect(
+      screen.getByText("Only 1 of 2 items placed at 4:00. Fred carried 1 item.")
+    ).toBeTruthy();
   });
 
   it("writes money with thousands separators", () => {

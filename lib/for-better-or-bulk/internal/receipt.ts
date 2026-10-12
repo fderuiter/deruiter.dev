@@ -273,6 +273,11 @@ function readinessLine(state: GameState, category: Category): ReadinessLine {
   if (status === "unfinished") {
     const unit = progress.multi ? "items placed" : "done";
     explanation = `Only ${progress.placed} of ${progress.planned} ${unit} at 4:00.`;
+    // Credit whoever did place something, so a short line still names the work.
+    if (progress.placed > 0) {
+      const who = carried(planned.flatMap(placementsOf));
+      explanation += ` ${who.charAt(0).toUpperCase()}${who.slice(1)}.`;
+    }
   } else {
     explanation = conditions.map((c) => `${c.label}: ${c.detail}`).join("; ");
     if (simplified > 0) explanation += `; ${simplified} simplified by choice`;
@@ -351,7 +356,7 @@ function followThrough(
 
 /**
  * The line for the calls one website feature met. With the feature built the
- * calls are blocked; without it they went through on their own. No calls at
+ * calls are blocked; without it they got through. No calls at
  * all reads as "no calls came in", never as a count of zero.
  */
 function callsLine(label: string, count: number, chosen: boolean): string {
@@ -359,8 +364,8 @@ function callsLine(label: string, count: number, chosen: boolean): string {
   if (chosen)
     return `${label}: blocked ${count} call${count === 1 ? "" : "s"}.`;
   return count === 1
-    ? `${label}: 1 call went through on its own.`
-    : `${label}: ${count} calls went through on their own.`;
+    ? `${label}: not built, so 1 call got through.`
+    : `${label}: not built, so ${count} calls got through.`;
 }
 
 function websiteLines(state: GameState): readonly WebsiteLine[] {

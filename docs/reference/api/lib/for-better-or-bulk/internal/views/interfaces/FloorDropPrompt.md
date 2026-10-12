@@ -8,7 +8,7 @@
 
 A floor drop the person holds E for (ADR 0060 amendment). `note` is the line
 for a station in reach that is full, or null. `action` is what the hold
-does, without the key: the prompt reads "Hold E to <action>".
+does, without the key: the prompt reads "Hold E to " followed by `action`.
 
 ## Properties
 

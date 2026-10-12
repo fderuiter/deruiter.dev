@@ -262,13 +262,16 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
     };
   }, [isFullscreen]);
 
-  // The immersive touch cabinet pins the page while it is open. Overflow
-  // hidden alone does not stop a programmatic or chained scroll, so the body
-  // is also fixed at the scroll position it had, and that position is restored
-  // on exit. The overscroll bounce is off too. Phones and tablets both pin.
-  useEffect(() => {
+  // The immersive touch cabinet locks page scroll while it is open and gives
+  // the back of the page no overscroll bounce. Both are restored on exit.
+  useLayoutEffect(() => {
     if (!touchImmersive || isFullscreen) return;
     const body = document.body;
+    // Scroll anchoring would move the page as the cabinet replaces the preview,
+    // before the offset below is read. Switch it off for the run, and read the
+    // offset only after that, so exit returns to where the player was.
+    const previousAnchor = document.documentElement.style.overflowAnchor;
+    document.documentElement.style.overflowAnchor = "none";
     const previousOverflow = body.style.overflow;
     const previousOverscroll =
       document.documentElement.style.overscrollBehavior;
@@ -290,6 +293,7 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
       body.style.top = previousTop;
       body.style.width = previousWidth;
       document.documentElement.style.overscrollBehavior = previousOverscroll;
+      document.documentElement.style.overflowAnchor = previousAnchor;
       // The preview lays out again after this commit, and a scroll made before
       // that can clamp to a shorter page. Restore now and again after a frame.
       const restore = () => window.scrollTo(0, offset);
@@ -320,17 +324,9 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
     mobileOrientation,
   ]);
 
-  // Leaving the immersive cabinet puts the preview back in view.
-  const previewRef = useRef<HTMLDivElement>(null);
-  const wasTouchImmersiveRef = useRef(false);
-  useEffect(() => {
-    const was = wasTouchImmersiveRef.current;
-    wasTouchImmersiveRef.current = touchImmersive;
-    if (was && !touchImmersive) {
-      previewRef.current?.scrollIntoView?.({ block: "start" });
-    }
-  }, [touchImmersive]);
-
+  // Leaving the immersive cabinet restores the page offset the body pin
+  // recorded on entry (see the pin effect above), so the preview is exactly
+  // where the player left it. No scrollIntoView: that moved the page on exit.
   useCabinetAutoPause(touchImmersive ? onAutoPause : undefined);
 
   useLayoutEffect(() => {
@@ -367,7 +363,24 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
     }
   };
 
+  // Scroll anchoring moves the page when the preview becomes the warming-up
+  // cabinet, which is before the body pin can record an offset. A touch launch
+  // turns it off until the cabinet closes (see the effect below).
+  const anchorBeforeLaunchRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (isLaunched) return;
+    const saved = anchorBeforeLaunchRef.current;
+    if (saved === null) return;
+    anchorBeforeLaunchRef.current = null;
+    document.documentElement.style.overflowAnchor = saved;
+  }, [isLaunched]);
+
   const handleLaunch = () => {
+    if (isTouchDevice && anchorBeforeLaunchRef.current === null) {
+      anchorBeforeLaunchRef.current =
+        document.documentElement.style.overflowAnchor;
+      document.documentElement.style.overflowAnchor = "none";
+    }
     setLaunchedOnTouch(isTouchDevice);
     handlePrefetch();
     setIsWarmingUp(true);
@@ -855,7 +868,7 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
   }
 
   return (
-    <div ref={previewRef} data-game={gameId} className="w-full">
+    <div data-game={gameId} className="w-full">
       {/* Static Retro Cabinet Preview Screen with scanlines */}
       <div
         className="w-full aspect-[16/10] min-h-[min(380px,65dvh)] rounded-2xl border border-zinc-800 bg-zinc-950 flex flex-col justify-between p-6 sm:p-8 relative overflow-hidden select-none"

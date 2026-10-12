@@ -293,17 +293,28 @@ describe("PlayCabinet immersive touch mode (ADR 0061)", () => {
     expect(document.body.style.overflow).toBe("hidden");
   });
 
-  it("scrolls the preview back into view when leaving immersive", async () => {
+  it("pins the page at its offset on entry and restores that offset on exit", async () => {
     installMatchMedia([TOUCH_DEVICE_QUERY]);
+    Object.defineProperty(window, "scrollY", {
+      configurable: true,
+      value: 300,
+    });
+    const scrollTo = vi.fn();
+    window.scrollTo = scrollTo as unknown as typeof window.scrollTo;
     const scrollIntoView = vi.fn();
     HTMLElement.prototype.scrollIntoView = scrollIntoView;
     renderCabinet();
     await launch();
+    expect(document.body.style.top).toBe("-300px");
     expect(scrollIntoView).not.toHaveBeenCalled();
 
     powerOff();
 
-    expect(scrollIntoView).toHaveBeenCalledTimes(1);
+    // Exit goes back to the offset the player left, and never scrolls the
+    // preview into view, which would move the page.
+    expect(scrollTo).toHaveBeenCalledWith(0, 300);
+    expect(scrollIntoView).not.toHaveBeenCalled();
+    Reflect.deleteProperty(window, "scrollY");
   });
 
   it("does not scroll the preview on desktop", async () => {
@@ -644,7 +655,7 @@ describe("PlayCabinet touch toolbar (ADR 0061)", () => {
   });
 
   it("is one icon-only row of 44px keys with names, floating top-right", async () => {
-    installMatchMedia([TOUCH_NARROW_QUERY]);
+    installMatchMedia([TOUCH_DEVICE_QUERY]);
     renderCabinet({ mobileOrientation: "landscape" });
     await launch();
 
@@ -664,7 +675,7 @@ describe("PlayCabinet touch toolbar (ADR 0061)", () => {
   });
 
   it("hides Fullscreen when the Fullscreen API is missing (iOS)", async () => {
-    installMatchMedia([TOUCH_NARROW_QUERY]);
+    installMatchMedia([TOUCH_DEVICE_QUERY]);
     renderCabinet({ mobileOrientation: "landscape" });
     await launch();
 
@@ -678,7 +689,7 @@ describe("PlayCabinet touch toolbar (ADR 0061)", () => {
   });
 
   it("shows an icon Fullscreen key and a three-key inset where the API exists", async () => {
-    installMatchMedia([TOUCH_NARROW_QUERY]);
+    installMatchMedia([TOUCH_DEVICE_QUERY]);
     Object.defineProperty(document.documentElement, "requestFullscreen", {
       configurable: true,
       value: vi.fn(),

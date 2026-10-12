@@ -18,13 +18,9 @@ import { useAudio } from "@/components/providers/AudioProvider";
 import { DynamicTabletOrientationHint as TabletOrientationHint } from "@/components/arcade/DynamicTabletOrientationHint";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import {
-  IconTrophy,
-  IconRefresh,
-  IconArrowRight,
   IconCheck,
   IconFileText,
   IconTerminal2,
-  IconShoppingCart,
   IconDeviceTv,
 } from "@tabler/icons-react";
 import { DpadActionDock } from "@/components/arcade/ControlDocks";
@@ -88,6 +84,10 @@ import {
   isCrtIdle,
   resolveLabyrinthCrt,
 } from "@/components/retro-labyrinth/labyrinth-crt";
+import { triggerHaptic } from "@/lib/haptics";
+import { DarknetMarket } from "@/components/retro-labyrinth/DarknetMarket";
+import { RoomClearedCard } from "@/components/retro-labyrinth/RoomClearedCard";
+import { isPatrolThreat } from "@/components/retro-labyrinth/threat";
 import {
   FINAL_ROOM_HINT,
   RETRY_HINT,
@@ -201,7 +201,7 @@ const PHONE_TOOL_LABELS: Partial<Record<WeaponId, string>> = {
   npm_install: "npm i",
   git_force_push: "push -f",
   stack_overflow: "Stack",
-  port_scan: "Port",
+  port_scan: "Scan",
   buffer_overflow: "Buffer",
   mitm_spoof: "MitM",
   ransomware_lock: "Ransom",
@@ -427,6 +427,18 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
 
   // Room Entities
   const [enemies, setEnemies] = useState<Enemy[]>([]);
+  // A live patrol one step from the player can trace them on its next move. On
+  // touch the danger is shown and buzzed, not only drawn (ADR 0061).
+  const patrolThreat =
+    phoneCabinet &&
+    gameStatus === "playing" &&
+    isPatrolThreat(playerPosition, enemies);
+  const wasPatrolThreatRef = useRef(false);
+  useEffect(() => {
+    const was = wasPatrolThreatRef.current;
+    wasPatrolThreatRef.current = patrolThreat;
+    if (patrolThreat && !was) triggerHaptic([40, 60, 40]);
+  }, [patrolThreat]);
   const [items, setItems] = useState<ItemPickup[]>([]);
   const [boss, setBoss] = useState<BossState | undefined>(undefined);
   // The player's last step and when it was taken; boss salvos lead it (#1321).
@@ -2435,6 +2447,14 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         className="flex shrink-0 items-center gap-1"
         data-testid="labyrinth-phone-ram"
       >
+        {patrolThreat && (
+          <span
+            role="status"
+            className="font-bold uppercase text-rose-400 text-[10px]"
+          >
+            Patrol adjacent
+          </span>
+        )}
         <span className="text-slate-400">RAM</span>
         <span className="text-neutral-300">
           {currentRam}/{maxRam}
@@ -2674,7 +2694,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
             : isFullscreen
               ? "w-full flex-1 max-h-[var(--layout-viewport-budget,calc(100vh-var(--header-height,80px)-var(--footer-height,48px)))] max-h-[var(--layout-viewport-budget,calc(100dvh-var(--header-height,80px)-var(--footer-height,48px)))] max-h-[calc(100vh-var(--header-height,80px)-var(--footer-height,48px))] max-h-[calc(100dvh-var(--header-height,80px)-var(--footer-height,48px))] aspect-[240/144] min-h-0"
               : "w-[min(100%,calc((100dvh-21rem)*5/3))] min-w-[240px] aspect-[240/144] h-auto"
-        } flex items-center justify-center transition-all duration-300 ${phoneCabinet ? "" : "my-auto"}`}
+        } flex items-center justify-center transition-all duration-300 ${phoneCabinet ? "" : "my-auto"} ${patrolThreat ? "rounded-lg ring-2 ring-rose-500 motion-safe:animate-pulse" : ""}`}
         style={
           crtCalibration.curvature > 0.05
             ? {
@@ -2732,6 +2752,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
               role="group"
               aria-label="Dungeon Telemetry and Status"
               data-player-cell={`${playerPosition.x},${playerPosition.y}`}
+              data-exit-cell={`${EXIT_X},${EXIT_Y}`}
               data-patrol-cells={enemies
                 .filter((e) => e.state !== "stunned" && e.state !== "frozen")
                 .map((e) => `${e.x},${e.y}`)
@@ -2880,96 +2901,30 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         {/* Victory Overlay. Clearing the last campaign room ends the run
               with its own card and a new run from Room 01 (#1668). */}
         {gameStatus === "victory" && (
-          <div className="absolute inset-0 bg-neutral-950/95 backdrop-blur-sm flex flex-col items-center justify-center text-center p-3 rounded-lg border border-zinc-700 z-30">
-            <div className="w-7 h-7 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center mb-1 text-emerald-400">
-              <IconTrophy className="w-4 h-4" />
-            </div>
-            <h3 className="text-emerald-400 font-bold text-xs uppercase tracking-widest">
-              {isFinalRoom ? "RUN COMPLETE" : "MAINFRAME TIER BREACHED"}
-            </h3>
-            {isFinalRoom && (
-              <p className="text-xs text-neutral-400 mt-0.5">
-                All {campaignRooms.length} rooms cleared.
-              </p>
-            )}
-            {isFinalRoom ? (
-              <>
-                <p className="text-xs text-neutral-400 mt-0.5 leading-relaxed">
-                  Run total:{" "}
-                  <span className="font-bold text-zinc-100">
-                    {runMoves.reduce((a, b) => a + b, 0)}
-                  </span>{" "}
-                  moves. Crypto Harvested:{" "}
-                  <span className="font-bold text-amber-400">+{runCrypto}</span>
-                </p>
-                <p
-                  className="text-xs text-neutral-400 font-mono tabular-nums"
-                  data-testid="labyrinth-run-rooms"
-                >
-                  {runMoves
-                    .map(
-                      (moves, i) =>
-                        `R${String(i + 1).padStart(2, "0")} ${moves}`
-                    )
-                    .join(" · ")}
-                </p>
-              </>
-            ) : (
-              <p className="text-xs text-neutral-400 mt-0.5 leading-relaxed">
-                This room:{" "}
-                <span className="font-bold text-zinc-100">{movesCount}</span>{" "}
-                moves. Crypto Harvested:{" "}
-                <span className="font-bold text-amber-400">+{roomCrypto}</span>
-              </p>
-            )}
-            <p className="text-xs text-neutral-400">
-              Final Score:{" "}
-              <span className="font-bold text-zinc-100">{score}</span>
-              {isFinalRoom && (
-                <>
-                  {" "}
-                  · High Score:{" "}
-                  <span className="font-bold text-amber-400">
-                    {effectiveHighScore}
-                  </span>
-                </>
-              )}
-            </p>
-            <div className="flex gap-2 mt-2">
-              {gameMode === "roguelike" && !isFinalRoom ? (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleNextRoom();
-                    containerRef.current?.focus({ preventScroll: true });
-                  }}
-                  className="inline-flex items-center gap-1 px-3 py-1 bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold rounded-lg transition-all cursor-pointer shadow-md"
-                >
-                  <span>Next Room</span>
-                  <IconArrowRight className="w-3 h-3" />
-                </button>
-              ) : (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (isFinalRoom) {
-                      startRoguelikeCampaign();
-                    } else {
-                      handleRestart();
-                    }
-                    containerRef.current?.focus({ preventScroll: true });
-                  }}
-                  className="inline-flex items-center gap-1 px-3 py-1 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 hover:border-amber-500/40 text-neutral-200 hover:text-amber-300 text-xs font-bold rounded-lg transition-all cursor-pointer"
-                >
-                  <IconRefresh className="w-3 h-3" />
-                  {isFinalRoom ? "New Run" : "Play Again"}
-                </button>
-              )}
-            </div>
-            <p className="text-xs text-neutral-500 mt-1">
-              {isFinalRoom ? finalRoomHint : roomClearHint}
-            </p>
-          </div>
+          <RoomClearedCard
+            isFinalRoom={isFinalRoom}
+            campaignRoomCount={campaignRooms.length}
+            runMoves={runMoves}
+            runCrypto={runCrypto}
+            movesCount={movesCount}
+            roomCrypto={roomCrypto}
+            score={score}
+            highScore={effectiveHighScore}
+            showNextRoom={gameMode === "roguelike" && !isFinalRoom}
+            hint={isFinalRoom ? finalRoomHint : roomClearHint}
+            onNextRoom={() => {
+              handleNextRoom();
+              containerRef.current?.focus({ preventScroll: true });
+            }}
+            onRestart={() => {
+              if (isFinalRoom) {
+                startRoguelikeCampaign();
+              } else {
+                handleRestart();
+              }
+              containerRef.current?.focus({ preventScroll: true });
+            }}
+          />
         )}
 
         {/* Pause Overlay */}
@@ -2977,9 +2932,9 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
           <div
             className={`absolute inset-0 ${phoneCabinet ? "bg-black/90" : "bg-neutral-950/90 backdrop-blur-sm"} flex flex-col items-center justify-center text-center p-3 rounded-lg border border-zinc-700 z-30`}
           >
-            <h3 className="text-zinc-100 font-bold text-xs uppercase tracking-widest">
+            <h2 className="text-zinc-100 font-bold text-xs uppercase tracking-widest">
               PAUSED
-            </h3>
+            </h2>
             <button
               type="button"
               onClick={(e) => {
@@ -2998,9 +2953,9 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         {/* Caught / Game Over Overlay */}
         {gameStatus === "caught" && (
           <div className="absolute inset-0 bg-neutral-950/95 backdrop-blur-sm flex flex-col items-center justify-center text-center p-3 rounded-lg border border-rose-500/30 z-30">
-            <h3 className="text-rose-400 font-bold text-xs uppercase tracking-widest">
+            <h2 className="text-rose-400 font-bold text-xs uppercase tracking-widest">
               IP TRACE INTERCEPTED
-            </h3>
+            </h2>
             <p
               className="text-xs text-neutral-400 mt-1"
               data-testid="labyrinth-trace-cause"
@@ -3114,61 +3069,30 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
           </div>
         )}
 
-        {/* Darknet Vendor Shop Modal */}
+        {/* Darknet Vendor Shop Modal: a dialog with a focus trap (ADR 0061). */}
         {gameStatus === "darknet_shop" && (
-          <div className="absolute inset-0 bg-neutral-950/98 backdrop-blur-md flex flex-col items-center justify-between p-2.5 rounded-lg border border-zinc-700 z-40">
-            <div className="w-full flex justify-between items-center text-xs font-bold text-amber-300 border-b border-zinc-800 pb-1">
-              <div className="flex items-center gap-1">
-                <IconShoppingCart className="w-3.5 h-3.5" />
-                <span>DARKNET EXPLOIT BLACK-MARKET</span>
-              </div>
-              <span className="text-amber-300">
-                🪙 {cryptoBounty} Crypto Available
-              </span>
-            </div>
-
-            <div className="w-full flex flex-col gap-1 my-1 overflow-y-auto flex-1 min-h-0 pr-1">
-              {DARKNET_VENDOR_CATALOG.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-center justify-between p-1 bg-neutral-900/80 border border-neutral-800 rounded text-xs"
-                >
-                  <div className="flex items-center gap-1 min-w-0">
-                    <span>{item.icon}</span>
-                    <div className="min-w-0">
-                      <div className="text-neutral-200 font-bold">
-                        {item.name}
-                      </div>
-                      <div className="text-neutral-400 text-xs">
-                        {item.description}
-                        {marketAmmoNote(item.category)}
-                      </div>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => buyDarknetItem(item.id)}
-                    disabled={
-                      cryptoBounty < item.cost ||
-                      (item.category === "firmware" && cveFeedActive)
-                    }
-                    className="shrink-0 px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 disabled:opacity-40 font-bold cursor-pointer whitespace-nowrap"
-                  >
-                    {item.category === "firmware" && cveFeedActive
-                      ? "Active"
-                      : `🪙 ${item.cost}`}
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            <button
-              onClick={closeOverlay}
-              className="w-full py-0.5 bg-neutral-800 text-neutral-300 hover:bg-neutral-700 rounded text-xs font-bold cursor-pointer"
-            >
-              Close Darknet Market
-            </button>
-          </div>
+          <DarknetMarket
+            crypto={cryptoBounty}
+            rows={DARKNET_VENDOR_CATALOG.map((item) => {
+              const unavailable =
+                cryptoBounty < item.cost ||
+                (item.category === "firmware" && cveFeedActive);
+              return {
+                id: item.id,
+                name: item.name,
+                icon: item.icon,
+                description: item.description,
+                note: marketAmmoNote(item.category),
+                disabled: unavailable,
+                label:
+                  item.category === "firmware" && cveFeedActive
+                    ? "Active"
+                    : `🪙 ${item.cost}`,
+              };
+            })}
+            onBuy={buyDarknetItem}
+            onClose={closeOverlay}
+          />
         )}
 
         {/* Cyberdeck Class Select Modal */}
@@ -3219,9 +3143,9 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
             <div className="w-7 h-7 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mb-1 text-amber-400">
               <IconFileText className="w-4 h-4" />
             </div>
-            <h3 className="text-amber-400 font-bold text-xs uppercase tracking-wider">
+            <h2 className="text-amber-400 font-bold text-xs uppercase tracking-wider">
               BILLABLE HOURS INTERRUPT
-            </h3>
+            </h2>
             <p className="text-xs text-neutral-400 mt-0.5 leading-tight">
               Opening this abandoned repo chest requires logging 0.25h of admin
               work.

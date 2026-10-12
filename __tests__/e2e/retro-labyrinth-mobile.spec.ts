@@ -381,35 +381,46 @@ test.describe("Retro Labyrinth on a phone", () => {
     await expect(prompt).toHaveCount(0);
   });
 
-  test("launching the cabinet does not scroll the page, and leaving restores the preview", async ({
+  test("launch keeps the preview still, and leaving restores the same offset with no shift", async ({
     page,
   }) => {
     await turnSideways(page);
+    const preview = page.locator('[data-game="retro-labyrinth"]').first();
     const launch = page.getByRole("button", { name: /Launch Cabinet/i });
-    await launch.scrollIntoViewIfNeeded();
+    // Scroll Launch fully into the middle of the viewport. A partly visible
+    // button makes the tap itself scroll the page, which is not a launch jump.
+    await launch.evaluate((el) => el.scrollIntoView({ block: "center" }));
     await expect(launch).toBeVisible();
-    // The page must be scrolled, or the test proves nothing about the jump.
-    const before = await page.evaluate(() => window.scrollY);
-    expect(before).toBeGreaterThan(0);
+    const viewport = page.viewportSize()!;
+    const launchBox = await launch.boundingBox();
+    expect(launchBox!.y).toBeGreaterThanOrEqual(0);
+    expect(launchBox!.y + launchBox!.height).toBeLessThanOrEqual(
+      viewport.height
+    );
+    const offsetBefore = await page.evaluate(() => window.scrollY);
+    const previewBefore = await preview.boundingBox();
+    expect(offsetBefore).toBeGreaterThan(0);
+    expect(previewBefore).not.toBeNull();
 
     await launch.tap();
     await expect(page.locator(IMMERSIVE)).toBeVisible({ timeout: 90000 });
-    // The cabinet pins the body while it runs, which reads as scrollY 0, and
-    // the cabinet itself starts at the top of the viewport.
+    expect(await page.evaluate(() => window.scrollY)).toBe(0);
+    // The body is pinned while the cabinet runs, so the page reads as scrollY
+    // 0 and the cabinet fills the viewport from its top edge.
     expect((await page.locator(IMMERSIVE).boundingBox())?.y).toBeCloseTo(0, 0);
 
     await page.getByRole("button", { name: "Reset / Power Off Cabinet" }).tap();
     await expect(launch).toBeVisible();
-    // Leaving brings the preview back to the top of the viewport, as the
-    // cabinet intends, so the player is not left at the stale pinned offset.
+    // Exit restores the exact offset the player left, so the preview sits where
+    // it was before launch: no jump and no layout shift.
     await expect
-      .poll(() =>
-        page
-          .locator('[data-game="retro-labyrinth"]')
-          .first()
-          .evaluate((el) => Math.round(el.getBoundingClientRect().top))
-      )
-      .toBeLessThanOrEqual(1);
+      .poll(() => page.evaluate(() => window.scrollY))
+      .toBe(offsetBefore);
+    const previewAfter = await preview.boundingBox();
+    expect(Math.round(previewAfter!.y)).toBe(Math.round(previewBefore!.y));
+    expect(Math.round(previewAfter!.height)).toBe(
+      Math.round(previewBefore!.height)
+    );
   });
 
   test("no phone label is cut off with an ellipsis at the landscape sizes", async ({
@@ -476,7 +487,12 @@ test.describe("Retro Labyrinth on a phone", () => {
     // time, until one of them traces the player and HP reaches zero.
     const retry = page.getByRole("button", { name: /RETRY BREACH/i });
     const moves = ["Move Up", "Move Right", "Move Down", "Move Left"];
+    let sawWarning = false;
     for (let step = 0; step < 900 && !(await retry.isVisible()); step++) {
+      sawWarning ||= await page
+        .getByRole("status")
+        .filter({ hasText: "Patrol adjacent" })
+        .isVisible();
       const from = await playerCell(page);
       const patrols = await patrolCells(page);
       const target = from && patrols[0];
@@ -514,6 +530,9 @@ test.describe("Retro Labyrinth on a phone", () => {
       if (await next.isVisible()) await next.tap({ timeout: 5000 });
     }
     await expect(retry).toBeVisible({ timeout: 15000 });
+    expect(sawWarning, "a patrol one step away should warn on touch").toBe(
+      true
+    );
 
     for (const [width, height] of RESULT_SIZES) {
       await page.setViewportSize({ width, height });
@@ -546,6 +565,67 @@ test.describe("Retro Labyrinth on a phone", () => {
     }
     expect(moved, "the restarted run should take a move").toBe(true);
   });
+
+  for (const [width, height] of [
+    [568, 320],
+    [844, 390],
+  ] as const) {
+    test(`the darknet market is a dialog with 44px controls at ${width}x${height}`, async ({
+      page,
+    }, testInfo) => {
+      await page.setViewportSize({ width, height });
+      await launchCabinet(page);
+
+      await page
+        .getByRole("button", { name: "Market: open the darknet market" })
+        .tap();
+      const dialog = page.getByRole("dialog", {
+        name: /DARKNET EXPLOIT BLACK-MARKET/,
+      });
+      await expect(dialog).toBeVisible();
+      await expect(
+        page.getByRole("heading", { level: 2, name: /DARKNET/ })
+      ).toBeVisible();
+
+      const results = await new AxeBuilder({ page })
+        .include('[role="dialog"]')
+        .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+        .analyze();
+      const blocking = results.violations
+        .filter((v) => BLOCKING.has(v.impact ?? ""))
+        .map((v) => `${v.id} (${v.impact}): ${v.nodes.length} node(s)`);
+      expect(blocking).toEqual([]);
+
+      // Every control is a 44px target: the price buttons and the close key.
+      const controls = dialog.locator("button");
+      const count = await controls.count();
+      expect(count).toBeGreaterThanOrEqual(2);
+      for (let i = 0; i < count; i++) {
+        const box = await controls.nth(i).boundingBox();
+        expect(box, `market control ${i}`).not.toBeNull();
+        expect(
+          box!.height,
+          `market control ${i} height`
+        ).toBeGreaterThanOrEqual(MIN_TARGET_PX - 0.5);
+        expect(box!.width, `market control ${i} width`).toBeGreaterThanOrEqual(
+          MIN_TARGET_PX - 0.5
+        );
+      }
+
+      // The list scrolls to its last item, so no item is out of reach.
+      const list = dialog.getByRole("region", { name: "Market items" });
+      await list.evaluate((el) => {
+        el.scrollTop = el.scrollHeight;
+      });
+      await expect(
+        dialog.getByRole("button", { name: "🪙 " }).last()
+      ).toBeVisible();
+      await shoot(page, testInfo, `market-${width}x${height}`);
+
+      await page.getByRole("button", { name: "Close Darknet Market" }).tap();
+      await expect(dialog).toHaveCount(0);
+    });
+  }
 
   test("has no blocking axe violations over the phone cabinet", async ({
     page,

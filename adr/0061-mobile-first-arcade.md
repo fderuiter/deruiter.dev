@@ -199,6 +199,24 @@ running room pauses on hide, blur or rotation and waits for a tap on Resume.
 - **Kit additions.** `createHoldRepeater` and `useHoldRepeat`, `HoldDpad`,
   `swipeDirection`, and `CabinetTouchContext`, which tells a game it is in
   the immersive touch cabinet.
+- **Market.** The darknet Market is a modal dialog on every device, with a
+  focus trap, Escape to close, and focus back on the key that opened it. Its
+  list is a labelled, keyboard-focusable region; a "More below" cue shows
+  while items sit under the fold. Price buttons and Close are at least 44px on
+  a coarse pointer. Purchases go through the same handler on both devices.
+- **Patrol warning.** A live patrol one orthogonal step from the player turns
+  the maze frame red and pulses it (motion-safe), shows "Patrol adjacent" in
+  the HUD, and buzzes once through `triggerHaptic` when the warning begins.
+  The warning is drawn on the frame, not per cell. Desktop has no warning, so
+  nothing changes there.
+- **Launch and exit.** Launch pins the page at its offset. Exit restores that
+  exact offset, so the preview returns where the player left it with no jump;
+  the earlier scroll-into-view on exit was removed.
+- **Overlay headings.** Overlay titles are level-two headings, so the page's
+  heading order stays valid under axe.
+- **Room cleared.** The room-cleared card, the Market and the phone tool
+  labels are shared components or labels with their own unit tests. The
+  phone label for the port scan reads "Scan".
 - **Hub.** The "Desktop only" badge now follows an explicit `desktopOnly`
   flag per card. Eight games carry it (the hub lists ten cards). Retro
   Labyrinth and Trial & Error do not, so Trial & Error no longer shows a badge

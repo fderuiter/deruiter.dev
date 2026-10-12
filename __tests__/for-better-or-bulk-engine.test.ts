@@ -898,9 +898,36 @@ describe("ending and receipt", () => {
     expect(line?.status).toBe("unfinished");
     expect(line?.placed).toBe(1);
     expect(line?.planned).toBe(2);
-    expect(line?.explanation).toBe("Only 1 of 2 items placed at 4:00.");
+    expect(line?.explanation).toBe(
+      "Only 1 of 2 items placed at 4:00. Fred carried 1 item."
+    );
     expect(line?.conditions.map((c) => c.label)).toContain(
       "Placed 1 of 2 items"
+    );
+  });
+
+  it("credits each person's placements on an unfinished line (round 14, S2)", () => {
+    const level = createLevel(DEFAULT_SETUP);
+    const slots = level.targets.filter((t) => t.kind === "buffet");
+    const [first, second] = slots;
+    const state: GameState = {
+      ...level,
+      targets: level.targets.map((t) =>
+        t === first || t === second
+          ? {
+              ...t,
+              status: "filled",
+              filled: [{ kind: t.wants, madeBy: null }],
+              filledBy: [t === first ? "abbi" : "fred"],
+              filledByHelper: [false],
+            }
+          : t
+      ),
+    };
+    const line = readinessLines(state).find((l) => l.category === "buffet");
+    expect(line?.status).toBe("unfinished");
+    expect(line?.explanation).toBe(
+      `Only 2 of ${slots.length} done at 4:00. Abbi carried 1 item, Fred carried 1 item.`
     );
   });
 
@@ -2640,7 +2667,9 @@ describe("the receipt's website lines (round 8, copy)", () => {
   it("says a blocked feature got calls through in plain words, not as a negation", () => {
     const receipt = computeReceipt(finishIdle(DEFAULT_SETUP, STAY_DECISION));
     const copy = JSON.stringify(receipt);
-    expect(copy).toContain("Registry scraper: 1 call went through on its own.");
+    expect(copy).toContain(
+      "Registry scraper: not built, so 1 call got through."
+    );
     expect(copy).not.toContain("No Registry");
     expect(copy).not.toContain("no promise to break");
   });
@@ -3242,7 +3271,7 @@ describe("review fixes for the round 10 views and receipt (#1963)", () => {
       interruptions: [admin("parking-note"), admin("ceremony-time")],
     });
     expect(JSON.stringify(two)).toContain(
-      "Admin page for Abbi: 2 calls went through on their own."
+      "Admin page for Abbi: not built, so 2 calls got through."
     );
     const none = computeReceipt({ ...done, interruptions: [] });
     expect(JSON.stringify(none)).toContain(

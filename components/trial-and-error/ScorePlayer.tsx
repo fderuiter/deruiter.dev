@@ -236,8 +236,11 @@ function PlayedCard({
                   : "border-[color:var(--te-chips)] bg-[#0f1624]"
               }`}
             >
-              <span className="text-base font-bold leading-none tabular-nums text-[color:var(--te-chips)]">
-                +{chips ?? 0}
+              {/* A fixed-size slot, and a new node per value: when "+0" became
+                  "+20" in one text node the browser counted its re-centring
+                  as a layout shift (#1973). An inserted node never is. */}
+              <span className="flex h-4 w-full items-center justify-center text-base font-bold leading-none tabular-nums text-[color:var(--te-chips)]">
+                <span key={chips ?? 0}>+{chips ?? 0}</span>
               </span>
               <span className="text-[8px] uppercase tracking-wider text-zinc-400">
                 Chips

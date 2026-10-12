@@ -118,6 +118,11 @@ describe("Garmin Drain Battery button (#1317)", () => {
     root = createRoot(container);
   });
 
+  // These cover the firmware rules, which only run in Dev Mode.
+  beforeEach(() => {
+    window.localStorage.setItem("garmin_dev_mode", "1");
+  });
+
   afterEach(() => {
     act(() => {
       root.unmount();

@@ -70,6 +70,11 @@ describe("Garmin NV flash write and clear (#1210)", () => {
     root = createRoot(container);
   });
 
+  // These cover the firmware rules, which only run in Dev Mode.
+  beforeEach(() => {
+    window.localStorage.setItem("garmin_dev_mode", "1");
+  });
+
   afterEach(() => {
     act(() => {
       root.unmount();

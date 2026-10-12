@@ -283,7 +283,7 @@ describe("Garmin controls (#1318)", () => {
         gameState: "crashed",
         crashReport: {
           errorType: "Null Pointer",
-          file: "Garmin_Schvitz_App.mc",
+          file: "MonkeyC_Mayhem_App.mc",
           line: 77,
           stackTrace: [],
           heapUsedKb: 2,

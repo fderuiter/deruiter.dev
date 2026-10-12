@@ -453,8 +453,8 @@ describe("Heat Map in a run", () => {
 describe("manual", () => {
   it("lists the throw control on X", () => {
     const throwControl = GAME_MANUALS["garmin-watch"].controls.find(
-      (c) => c.action === "Throw Heat Bolt"
+      (c) => c.action === "Action (Heat Map & Cape)"
     );
-    expect(throwControl?.key).toBe("X");
+    expect(throwControl?.key).toBe("X / Backspace / G");
   });
 });

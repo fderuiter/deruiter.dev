@@ -170,7 +170,7 @@ const ARCADE_ITEMS: NavItem[] = [
   {
     id: "garmin-watch",
     title: "Monkey C Mayhem",
-    subtitle: "Garmin Schvitz App smartwatch simulator",
+    subtitle: "A Garmin 5K Platformer",
     href: "/arcade/garmin-watch",
     icon: "watch",
     tone: "cyan",

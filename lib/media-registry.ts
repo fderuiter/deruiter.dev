@@ -134,7 +134,7 @@ export const PORTFOLIO_PHOTOS: PortfolioPhoto[] = [
     alt: "Frederick de Ruiter competing in the Theodore Wirth Mud Run (Run Minnesota 10K, bib 1534) in an orange race tee, Kirkland running cap, and red Garmin watch on his wrist.",
     title: "Theodore Wirth Mud Run (10K)",
     caption:
-      "The real-world inspiration behind the Garmin Schvitz app: 10 kilometers of Minnesota mud, humidity, and watch telemetry.",
+      "The real-world inspiration behind Monkey C Mayhem: 10 kilometers of Minnesota mud and a Garmin watch searching for GPS lock.",
     category: "sports",
     tags: ["running", "garmin", "mud-run", "theodore-wirth", "minnesota"],
     aspectRatio: "3:2",

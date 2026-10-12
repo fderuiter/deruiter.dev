@@ -20,16 +20,17 @@ describe("Garmin field manual matches the playable runner", () => {
     for (const key of [
       "Enter",
       "Space",
-      "P",
-      "Esc",
       "→",
       "←",
       "↑",
       "↓",
-      "G",
       "Backspace",
-      "L",
+      "X",
       "W",
+      "P",
+      "Esc",
+      "G",
+      "L",
     ]) {
       expect(keys).toContain(key);
     }
@@ -47,7 +48,8 @@ describe("Garmin field manual matches the playable runner", () => {
     ]) {
       expect(text).toContain(cause);
     }
-    expect(text).toMatch(/power loss/i);
+    expect(text).toMatch(/Body Battery/);
+    expect(text).toMatch(/bonk/i);
   });
 
   it("describes each device tier with its real limits", () => {

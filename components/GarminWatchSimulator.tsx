@@ -77,7 +77,12 @@ import {
   CrashReport,
   allocateFlashVariable,
   clearFlashStorage,
+  setRules,
+  causeLabel,
+  isFitnessRun,
+  type GameRules,
 } from "@/lib/garmin-engine";
+import { trainingStatus } from "@/lib/garmin-culture";
 import { STAGE_COUNT } from "@/lib/garmin-course";
 import { PACE_SEGMENTS, isPaceFull, paceSegments } from "@/lib/garmin-cape";
 import type { PowerTier } from "@/lib/garmin-powerups";
@@ -148,6 +153,23 @@ const CRASH_LABELS: Record<
   },
 };
 
+/**
+ * The crash overlay under fitness rules: the same causes, told as a run that
+ * ended early. Causes missing here fall back to a generic hint.
+ */
+const FITNESS_CRASH_HINTS: Partial<Record<CrashReport["errorType"], string>> = {
+  "Null Pointer":
+    "A Couch Potato got you. Jump (Up) and land on it to stomp it.",
+  "Watchdog Tripped":
+    "A Snooze Button caught you. Jump (Up) and land on it to stomp it, or jump clear.",
+  "Stack Overflow": "Hurdles are spiked. Jump (Up) over them, never onto them.",
+  "Segmentation Fault":
+    "You missed the curb and fell through a gap. Hold Up longer, and sprint (Right) into wide gaps.",
+  "Dropped Kettlebell": CRASH_LABELS["Dropped Kettlebell"].hint,
+  "Gym Injury": CRASH_LABELS["Gym Injury"].hint,
+};
+const FITNESS_CRASH_FALLBACK = "Lace up and run it again.";
+
 /** Where the canvas sits over the watch's round screen. */
 const SCREEN_BOX = screenBoxPercent();
 
@@ -162,6 +184,26 @@ const HIGH_SCORE_KEY = "garmin_simulator_high_score";
 // storage, and a failed write is dropped rather than kept in memory.
 const getHighScoreSnapshot = () => safeGetRawItem(HIGH_SCORE_KEY) || "0";
 const getHighScoreServerSnapshot = () => "0";
+
+// Dev Mode brings back the firmware rules (heap, GC, flash, battery, fog).
+// It is off by default and remembered on this device.
+const DEV_MODE_KEY = "garmin_dev_mode";
+const devModeListeners = new Set<() => void>();
+const subscribeDevMode = (callback: () => void) => {
+  if (typeof window === "undefined") return () => {};
+  devModeListeners.add(callback);
+  window.addEventListener("storage", callback);
+  return () => {
+    devModeListeners.delete(callback);
+    window.removeEventListener("storage", callback);
+  };
+};
+const getDevModeSnapshot = () => safeGetRawItem(DEV_MODE_KEY) === "1";
+const getDevModeServerSnapshot = () => false;
+const writeDevMode = (on: boolean) => {
+  safeSetRawItem(DEV_MODE_KEY, on ? "1" : "0");
+  devModeListeners.forEach((listener) => listener());
+};
 
 interface GarminWatchSimulatorProps {
   /**
@@ -183,6 +225,12 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     getHighScoreServerSnapshot
   );
   const loadedHighScore = parseInt(rawHighScore, 10) || 0;
+  const devMode = useSyncExternalStore(
+    subscribeDevMode,
+    getDevModeSnapshot,
+    getDevModeServerSnapshot
+  );
+  const runRules: GameRules = devMode ? "dev" : "fitness";
   const { playNote, playSuccess } = useAudio();
   const { recordEvent } = useTelemetry();
   const { announce } = useAnnouncer();
@@ -408,7 +456,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
   // Jettison Oldest Variable (DOWN)
   const handleJettison = useCallback(() => {
     const current = stateRef.current;
-    if (current.gameState !== "playing") return;
+    if (current.gameState !== "playing" || isFitnessRun(current)) return;
     triggerHaptic(20);
     playBeep(650, 0.035);
     const result = jettisonOldestVariable(current);
@@ -434,9 +482,14 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     }));
   }, [playButtonTone, playBeep, applyTransition]);
 
-  // Force Garbage Collection (BACK)
+  // Force Garbage Collection (BACK). A fitness run has no heap, so BACK and
+  // G are the action key there.
   const handleForceGc = useCallback(() => {
     const current = stateRef.current;
+    if (isFitnessRun(current)) {
+      handleAction();
+      return;
+    }
     if (current.gameState !== "playing" || current.isGcActive) return;
     triggerHaptic(20);
     playBeep(450, 0.08);
@@ -446,7 +499,13 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     } else if (result.error?.message) {
       setAlertMessage(result.error.message);
     }
-  }, [playBeep, applyTransition, garbageCollect, setAlertMessage]);
+  }, [
+    playBeep,
+    applyTransition,
+    garbageCollect,
+    setAlertMessage,
+    handleAction,
+  ]);
 
   // BACK is the action key at the Heat Map and Cape tiers and collects
   // garbage otherwise; X and G always do one each.
@@ -510,7 +569,9 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       telemetryRef.current.reset();
       setTelemetryCount(0);
       runStartedAtRef.current = Date.now();
-      applyTransition((state) => startGame(state, deviceTarget, runTuning));
+      applyTransition((state) =>
+        startGame(setRules(state, runRules), deviceTarget, runTuning)
+      );
       recordEvent("garmin_simulator_start", "project_click").catch(() => {});
       playSuccess();
     } else if (current.gameState === "playing") {
@@ -521,6 +582,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
   }, [
     deviceTarget,
     runTuning,
+    runRules,
     playButtonTone,
     playSuccess,
     recordEvent,
@@ -530,11 +592,26 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
   // Quick Fog Wipe (W / Touch / Mouse)
   const handleWipeFog = useCallback(
     (canvasX = CANVAS_SIZE / 2, canvasY = CANVAS_SIZE / 2) => {
+      // A fitness run has no fog to wipe.
+      if (isFitnessRun(stateRef.current)) return;
       playBeep(1100, 0.015);
       applyTransition((state) => wipeScreenFog(state, canvasX, canvasY, 35));
     },
     [playBeep, applyTransition]
   );
+
+  // Dev Mode applies from the next run; a run in progress keeps its rules.
+  const handleToggleDevMode = useCallback(() => {
+    const next = !getDevModeSnapshot();
+    writeDevMode(next);
+    applyTransition((state) => setRules(state, next ? "dev" : "fitness"));
+    announce(
+      next
+        ? "Dev Mode on. The next run uses the firmware rules."
+        : "Dev Mode off. The next run is a fitness run.",
+      "polite"
+    );
+  }, [applyTransition, announce]);
 
   // Setup confirmed in the cabinet wizard (START GAME): begin a fresh run with
   // the chosen options right away and hand keyboard focus to the watch, so
@@ -551,7 +628,9 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       )
     );
     setResultDismissed(false);
-    applyTransition((state) => startGame(state, deviceTarget, runTuning));
+    applyTransition((state) =>
+      startGame(setRules(state, runRules), deviceTarget, runTuning)
+    );
     recordEvent("garmin_simulator_start", "project_click").catch(() => {});
     playSuccess();
     announce("New run started with your setup options.", "polite");
@@ -564,6 +643,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     setupRunRevision,
     deviceTarget,
     runTuning,
+    runRules,
     applyTransition,
     recordEvent,
     playSuccess,
@@ -863,6 +943,16 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
   };
   const a11yReadTelemetry = () => {
     const s = stateRef.current;
+    const fitnessReadout =
+      s.gameState === "idle" ? !getDevModeSnapshot() : isFitnessRun(s);
+    if (fitnessReadout) {
+      const bb = s.bodyBattery;
+      announce(
+        `Status: ${s.gameState}. Stage ${s.stage ?? 1} of ${STAGE_COUNT}. Body Battery: ${Math.round(bb?.value ?? 100)}${bb?.bonked ? ", bonked" : ""}. Lives: ${s.lives ?? 1}. Power: ${POWER_NAMES[s.power ?? "base"]}. Pace meter: ${paceSegments(s.paceMeter)} of ${PACE_SEGMENTS}${(s.starMs ?? 0) > 0 ? ", Runner's High" : ""}. Kudos: ${s.kudos ?? 0}. Score: ${s.score}. High score: ${Math.max(s.highScore, loadedHighScore)}.`,
+        "polite"
+      );
+      return;
+    }
     announce(
       `Status: ${s.gameState}. Memory: ${s.allocatedRamKb.toFixed(1)} of ${currentProfile.ramLimitKb} KB. Flash: ${s.allocatedFlashKb.toFixed(1)} KB. Battery: ${Math.round(s.battery)}%. Thermal stress: ${Math.round((s.thermalStress ?? 0) * 100)}%. Condensation: ${Math.round(s.fogLevel * 100)}%. Lives: ${s.lives ?? 1}. Power: ${POWER_NAMES[s.power ?? "base"]}. Pace meter: ${paceSegments(s.paceMeter)} of ${PACE_SEGMENTS}${(s.starMs ?? 0) > 0 ? ", Runner's High" : ""}. Score: ${s.score}. High score: ${Math.max(s.highScore, loadedHighScore)}.`,
       "polite"
@@ -873,7 +963,8 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
   useEffect(() => {
     const ramLimit = DEVICE_PROFILES[deviceTarget].ramLimitKb;
     const ramUsage = gameState.allocatedRamKb;
-    const isHighMemory = ramUsage / ramLimit > 0.85;
+    const fitnessRun = isFitnessRun(gameState);
+    const isHighMemory = !fitnessRun && ramUsage / ramLimit > 0.85;
 
     // 1. High Memory Pressure (>85%)
     if (
@@ -904,7 +995,9 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     if (gameState.gameState === "crashed" && !hasAlertedCrashRef.current) {
       hasAlertedCrashRef.current = true;
       const errorType = gameState.crashReport?.errorType || "Out Of Memory";
-      const msg = `System crash: ${errorType}. ${gameState.crashReport?.file ? "File: " + gameState.crashReport.file : ""}`;
+      const msg = fitnessRun
+        ? `Run over: ${causeLabel(gameState, errorType)}. Training Status: ${trainingStatus(gameState.stage ?? 1, false)}.`
+        : `System crash: ${errorType}. ${gameState.crashReport?.file ? "File: " + gameState.crashReport.file : ""}`;
       setAlertMessage(msg);
       announce(msg, "assertive");
       triggerHaptic([50, 50, 50]);
@@ -914,6 +1007,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
 
     // 4. Low battery (<15%), once per crossing
     if (
+      !fitnessRun &&
       gameState.gameState === "playing" &&
       gameState.battery > 0 &&
       gameState.battery < 15 &&
@@ -1088,6 +1182,11 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     }
   }, [gameState.isGcActive, setupShake, fxShake]);
 
+  // Fitness or Dev Mode as the player sees it: the next run's rules while
+  // idle, otherwise the rules the current or last run used.
+  const fitnessView =
+    gameState.gameState === "idle" ? !devMode : isFitnessRun(gameState);
+
   // What the START button does right now, shown on the bezel (#1216).
   const startAction =
     gameState.gameState === "playing"
@@ -1128,12 +1227,19 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       hint: "[▲]",
       title: "Jump (ArrowUp / Space), hold for higher",
     },
-    {
-      id: "down",
-      label: "DOWN",
-      hint: "[▼] POP",
-      title: "Jettison Variable (ArrowDown / DOWN)",
-    },
+    fitnessView
+      ? {
+          id: "down",
+          label: "DOWN",
+          hint: "[▼]",
+          title: "Down (pops a heap variable in Dev Mode)",
+        }
+      : {
+          id: "down",
+          label: "DOWN",
+          hint: "[▼] POP",
+          title: "Jettison Variable (ArrowDown / DOWN)",
+        },
     {
       id: "start",
       label: startAction.toUpperCase(),
@@ -1146,7 +1252,9 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
           id: "back",
           label: "THROW",
           hint: "[X]",
-          title: "Throw Heat Bolt (X / BACK); G still collects garbage",
+          title: fitnessView
+            ? "Throw Heat Bolt (X / BACK)"
+            : "Throw Heat Bolt (X / BACK); G still collects garbage",
           ariaLabel: "Throw Heat Bolt (X / BACK)",
         }
       : gameState.power === "cape"
@@ -1154,15 +1262,25 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
             id: "back",
             label: "SPIN",
             hint: "[X]",
-            title: "Cape Spin (X / BACK); G still collects garbage",
+            title: fitnessView
+              ? "Cape Spin (X / BACK)"
+              : "Cape Spin (X / BACK); G still collects garbage",
             ariaLabel: "Cape Spin (X / BACK)",
           }
-        : {
-            id: "back",
-            label: "BACK",
-            hint: "[G]",
-            title: `Force Garbage Collection (G / Backspace): ${gcFreezeMs}ms Freeze`,
-          },
+        : fitnessView
+          ? {
+              id: "back",
+              label: "ACTION",
+              hint: "[X]",
+              title:
+                "Action (X / BACK): throws a heat bolt with a Heat Map, spins with the Compression Cape",
+            }
+          : {
+              id: "back",
+              label: "BACK",
+              hint: "[G]",
+              title: `Force Garbage Collection (G / Backspace): ${gcFreezeMs}ms Freeze`,
+            },
   ];
 
   // The end of a run: the watch draws its own one-layer error face, and the
@@ -1176,14 +1294,20 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     gameState.gameState === "shutdown"
       ? "BROWNOUT SHUTDOWN"
       : gameState.gameState === "crashed"
-        ? (CRASH_LABELS[crashType]?.title ?? "APP CRASHED")
+        ? fitnessView
+          ? causeLabel(gameState, crashType)
+          : (CRASH_LABELS[crashType]?.title ?? "APP CRASHED")
         : "5K COMPLETE";
   const endMessage =
     gameState.gameState === "shutdown"
       ? `${CRASH_LABELS["Power Loss"].hint} Power loss score penalty applied (-50 PTS).`
       : gameState.gameState === "crashed"
-        ? (CRASH_LABELS[crashType]?.hint ?? "Reboot and try again.")
-        : "All five stages cleared. The activity is saved to the watch.";
+        ? fitnessView
+          ? `${FITNESS_CRASH_HINTS[crashType] ?? FITNESS_CRASH_FALLBACK} Training Status: ${trainingStatus(gameState.stage ?? 1, false)}.`
+          : (CRASH_LABELS[crashType]?.hint ?? "Reboot and try again.")
+        : fitnessView
+          ? `All five stages cleared. Training Status: ${trainingStatus(gameState.stage ?? 1, true)}. The activity is saved to the watch.`
+          : "All five stages cleared. The activity is saved to the watch.";
   const report = gameState.crashReport;
   const endStats: Array<{ label: string; value: number; suffix?: string }> = [
     { label: "Score", value: gameState.score },
@@ -1193,7 +1317,12 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     },
     { label: "Kudos", value: gameState.kudos ?? 0 },
   ];
-  if (gameState.gameState === "shutdown") {
+  if (fitnessView) {
+    endStats.push({
+      label: "Body Battery",
+      value: Math.round(gameState.bodyBattery?.value ?? 0),
+    });
+  } else if (gameState.gameState === "shutdown") {
     endStats.push({
       label: "Steps",
       value: stepsFor(gameState.distanceMeters),
@@ -1304,11 +1433,15 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
                   role="img"
                   aria-label={`Smartwatch display simulator. Status: ${gameState.gameState}. Stage ${gameState.stage ?? 1} of ${STAGE_COUNT}, lives ${gameState.lives ?? 1}${(gameState.power ?? "base") === "base" ? "" : `, ${POWER_NAMES[gameState.power ?? "base"]}`}. Score: ${
                     gameState.score
-                  }, High Score: ${effectiveHighScore}. Memory: ${gameState.allocatedRamKb.toFixed(
-                    1
-                  )} of ${currentProfile.ramLimitKb} KB. Battery: ${Math.round(
-                    gameState.battery
-                  )}%. Condensation: ${Math.round(gameState.fogLevel * 100)}%.`}
+                  }, High Score: ${effectiveHighScore}. ${
+                    fitnessView
+                      ? `Body Battery: ${Math.round(gameState.bodyBattery?.value ?? 100)}.`
+                      : `Memory: ${gameState.allocatedRamKb.toFixed(
+                          1
+                        )} of ${currentProfile.ramLimitKb} KB. Battery: ${Math.round(
+                          gameState.battery
+                        )}%. Condensation: ${Math.round(gameState.fogLevel * 100)}%.`
+                  }`}
                   onPointerDown={handleCanvasPointerDown}
                   onPointerUp={handleCanvasPointerUp}
                   onPointerMove={handleCanvasPointerMove}
@@ -1341,12 +1474,14 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
                       Monkey C Mayhem
                     </span>
                     <span className="mt-1 text-[11px] font-bold text-amber-300">
-                      5K · 5 STAGES · {currentProfile.ramLimitKb} KB RAM
+                      {fitnessView
+                        ? "5K · 5 STAGES · BODY BATTERY"
+                        : `5K · 5 STAGES · ${currentProfile.ramLimitKb} KB RAM`}
                     </span>
                     <p className="mt-2 max-w-[15rem] text-[11px] leading-snug text-zinc-300">
-                      ▲ / Space jump (hold for higher) · ◀ ▶ pace. Stomp bugs,
-                      bump Sync Blocks for power-ups, mind the gaps, keep the
-                      heap in budget. Three lives.
+                      {fitnessView
+                        ? "▲ / Space jump (hold for higher) · ◀ ▶ pace. Stomp Couch Potatoes, bump Sync Blocks for power-ups, mind the gaps, keep your Body Battery up. Three lives."
+                        : "▲ / Space jump (hold for higher) · ◀ ▶ pace. Stomp bugs, bump Sync Blocks for power-ups, mind the gaps, keep the heap in budget. Three lives."}
                     </p>
                     <button
                       type="button"
@@ -1472,6 +1607,12 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
             handleDrainBattery();
             returnFocusAfterPointerClick(e);
           }}
+          devMode={devMode}
+          fitnessView={fitnessView}
+          onToggleDevMode={(e) => {
+            handleToggleDevMode();
+            returnFocusAfterPointerClick(e);
+          }}
         >
           {runEnded && !resultDismissed && (
             <ResultCard
@@ -1481,7 +1622,9 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
                 gameState.gameState === "shutdown"
                   ? "Power loss"
                   : gameState.gameState === "crashed"
-                    ? "Crashed"
+                    ? fitnessView
+                      ? "DNF"
+                      : "Crashed"
                     : "Finished"
               }
               verdict={gameState.gameState === "summary" ? "win" : "loss"}
@@ -1491,7 +1634,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
               score={gameState.score}
               previousBest={runStartBest}
               primary={{
-                label: "Reboot & Restart",
+                label: fitnessView ? "Run Again" : "Reboot & Restart",
                 icon: <IconPlayerPlay className="h-4 w-4" aria-hidden="true" />,
                 onClick: rebootFromCard,
               }}
@@ -1541,6 +1684,11 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
             <output aria-live="off" htmlFor="garmin-device">
               Device Target: {currentProfile.name}
             </output>
+            {fitnessView && (
+              <output aria-live="off" htmlFor="garmin-body-battery">
+                Body Battery: {Math.round(gameState.bodyBattery?.value ?? 100)}
+              </output>
+            )}
             <output aria-live="off" htmlFor="garmin-ram">
               RAM Memory: {gameState.allocatedRamKb.toFixed(1)} /{" "}
               {currentProfile.ramLimitKb} KB
@@ -1570,27 +1718,31 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
               UP / Jump Button
             </button>
 
-            <button
-              type="button"
-              onClick={a11yJettison}
-              disabled={gameState.gameState !== "playing"}
-            >
-              DOWN / Jettison Variable Button
-            </button>
+            {!fitnessView && (
+              <button
+                type="button"
+                onClick={a11yJettison}
+                disabled={gameState.gameState !== "playing"}
+              >
+                DOWN / Jettison Variable Button
+              </button>
+            )}
 
             <button type="button" onClick={a11yStartStop}>
               START / STOP Button
             </button>
 
-            <button
-              type="button"
-              onClick={a11yBack}
-              disabled={
-                gameState.gameState !== "playing" || gameState.isGcActive
-              }
-            >
-              BACK / Force GC Button
-            </button>
+            {!fitnessView && (
+              <button
+                type="button"
+                onClick={a11yBack}
+                disabled={
+                  gameState.gameState !== "playing" || gameState.isGcActive
+                }
+              >
+                BACK / Force GC Button
+              </button>
+            )}
 
             <button
               type="button"
@@ -1607,34 +1759,49 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
               Read Telemetry
             </button>
 
-            <button
-              type="button"
-              onClick={() => {
-                handleWipeFog();
-                announce("Wiped screen condensation fog.", "polite");
-              }}
-            >
-              Wipe Screen Fog
-            </button>
+            {!fitnessView && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleWipeFog();
+                    announce("Wiped screen condensation fog.", "polite");
+                  }}
+                >
+                  Wipe Screen Fog
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleSaveFlash();
+                    announce(
+                      "Saved variable to NVRAM flash storage.",
+                      "polite"
+                    );
+                  }}
+                >
+                  Save NVRAM Flash
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleClearFlash();
+                    announce("Cleared NVRAM flash storage.", "polite");
+                  }}
+                >
+                  Clear NVRAM Flash
+                </button>
+              </>
+            )}
 
             <button
               type="button"
-              onClick={() => {
-                handleSaveFlash();
-                announce("Saved variable to NVRAM flash storage.", "polite");
-              }}
+              aria-pressed={devMode}
+              onClick={handleToggleDevMode}
             >
-              Save NVRAM Flash
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                handleClearFlash();
-                announce("Cleared NVRAM flash storage.", "polite");
-              }}
-            >
-              Clear NVRAM Flash
+              Dev Mode (firmware rules)
             </button>
 
             <button

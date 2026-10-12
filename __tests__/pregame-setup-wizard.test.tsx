@@ -217,7 +217,7 @@ describe("Standardized Pre-Game Setup Wizard", () => {
       { id: "working-with-duck", title: "Working With Duck" },
       { id: "laser-loon", title: "Laser Loon: Quest for the State Flag" },
       { id: "quasi-puzzler", title: "Quasi-Perfect Puzzler" },
-      { id: "garmin-watch", title: "Monkey C Mayhem: Garmin Schvitz App" },
+      { id: "garmin-watch", title: "Monkey C Mayhem: A Garmin 5K Platformer" },
       { id: "clinical-chaos", title: "Clinical Trial Chaos: CDISC Compliance" },
       { id: "retro-labyrinth", title: "Retro Labyrinth: Graveyard Roguelike" },
     ];

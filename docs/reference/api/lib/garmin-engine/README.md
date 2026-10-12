@@ -27,6 +27,7 @@
 ## Type Aliases
 
 - [DeviceTarget](type-aliases/DeviceTarget.md)
+- [GameRules](type-aliases/GameRules.md)
 - [GarminDifficulty](type-aliases/GarminDifficulty.md)
 - [GarminLoadout](type-aliases/GarminLoadout.md)
 - [ObstacleType](type-aliases/ObstacleType.md)
@@ -71,11 +72,13 @@
 
 - [allocateFlashVariable](functions/allocateFlashVariable.md)
 - [allocateVariable](functions/allocateVariable.md)
+- [causeLabel](functions/causeLabel.md)
 - [clearFlashStorage](functions/clearFlashStorage.md)
 - [createInitialState](functions/createInitialState.md)
 - [getCooldownRemainingMs](functions/getCooldownRemainingMs.md)
 - [getDifficultyRamp](functions/getDifficultyRamp.md)
 - [isCollectibleVariable](functions/isCollectibleVariable.md)
+- [isFitnessRun](functions/isFitnessRun.md)
 - [jettisonOldestVariable](functions/jettisonOldestVariable.md)
 - [loadPersistedFlashStorage](functions/loadPersistedFlashStorage.md)
 - [paceFor](functions/paceFor.md)
@@ -87,6 +90,7 @@
 - [resolveRunTuning](functions/resolveRunTuning.md)
 - [resumeGame](functions/resumeGame.md)
 - [savePersistedFlashStorage](functions/savePersistedFlashStorage.md)
+- [setRules](functions/setRules.md)
 - [setRunInput](functions/setRunInput.md)
 - [spinCape](functions/spinCape.md)
 - [startGame](functions/startGame.md)

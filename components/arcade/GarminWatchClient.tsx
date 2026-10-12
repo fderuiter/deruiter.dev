@@ -58,7 +58,7 @@ export const GarminWatchClient: React.FC = () => {
           </div>
           <div className="flex items-center gap-2">
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-amber-500/10 text-amber-300 border border-amber-500/30">
-              Monkey C Mayhem / Garmin Schvitz App
+              Monkey C Mayhem / A Garmin 5K Platformer
             </span>
           </div>
         </div>
@@ -72,12 +72,13 @@ export const GarminWatchClient: React.FC = () => {
             <div>
               <h1 className="text-3xl sm:text-4xl font-extrabold font-mono text-white tracking-tight">
                 Monkey C Mayhem:{" "}
-                <span className="text-amber-400">Garmin Schvitz App</span>
+                <span className="text-amber-400">A Garmin 5K Platformer</span>
               </h1>
               <p className="text-xs sm:text-sm text-zinc-400 font-mono mt-1">
-                A 5K platformer on a smartwatch with a 32 to 128 KB memory
-                budget and an inconvenient tendency to fog up. Stomp the bugs,
-                clear the gaps and keep the app alive to the finish pole.
+                Five 1 km stages on three lives. Stomp Couch Potatoes, jump the
+                Hurdles, keep your Body Battery above zero and grab the finish
+                pole before the watch gives you a Training Status you did not
+                ask for.
               </p>
             </div>
           </div>
@@ -91,19 +92,16 @@ export const GarminWatchClient: React.FC = () => {
             <PlayCabinet
               gameId="garmin-watch"
               singleTitleScreen={false}
-              title="Monkey C Mayhem: Garmin Schvitz App"
-              subtitle="A Small Watch With a Lot Going On"
+              title="Monkey C Mayhem: A Garmin 5K Platformer"
+              subtitle="Five Stages, Three Lives, One Body Battery"
               icon={<IconDeviceWatch className="w-8 h-8" />}
-              instructions="Run a 5K in five 1 km stages on a simulated Garmin Schvitz App. Hold jump for height, stomp bugs, watchdogs and Kettlebells (then kick them sliding), dodge Move Alerts, Box Jumpers, Auto Laps and the Rep Max, bump Sync Blocks for Protein Shakes, Heat Maps, Compression Capes and a Runner's High, throw heat bolts, glide and fly, clear the gaps on three lives and grab the finish pole as high as you can. All the while keep the app inside its memory budget (32 KB on Fēnix, up to 128 KB on Edge) and wipe the fog off the screen before the watch has a very bad day."
+              instructions="Run a 5K in five 1 km stages on three lives. Waiting for GPS, then GO. Hold jump for height, stomp Couch Potatoes and Snooze Buttons, jump the Hurdles, and dodge the course foes: Kettlebells, Move Alerts, Box Jumpers, Auto Laps and the Rep Max on stages 3 and 5. Bump Sync Blocks for Protein Shakes, Heat Maps, Compression Capes and a Runner's High. Keep your Body Battery above zero, earn a Training Effect on each stage, and grab the finish pole. Dev Mode, off by default in the simulator controls, adds the original RAM heap and firmware crash challenge."
               controls={[
                 { key: "Enter", action: "Start / Pause" },
-                { key: "P / Esc", action: "Pause" },
                 { key: "UP / Space", action: "Jump (hold = higher)" },
-                { key: "← / →", action: "Brake / Sprint" },
-                { key: "DOWN", action: "Jettison RAM" },
-                { key: "Backspace", action: "Force GC" },
-                { key: "X", action: "Heat Bolt / Cape Spin" },
-                { key: "Drag", action: "Wipe Fog" },
+                { key: "→ / ←", action: "Sprint / Jog" },
+                { key: "X / Backspace", action: "Heat Bolt / Cape Spin" },
+                { key: "W (Dev Mode)", action: "Wipe Fog" },
               ]}
               importComponent={GarminWatchSimulatorLoader}
             >
@@ -119,37 +117,39 @@ export const GarminWatchClient: React.FC = () => {
           <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
             <div className="flex items-center gap-2 text-amber-400 font-bold mb-2">
               <IconCpu className="w-4 h-4" />
-              <span>RAM Ceiling &amp; Jettison</span>
+              <span>Body Battery</span>
             </div>
             <p className="text-zinc-400 text-[11px] leading-relaxed">
-              The app allocates a variable every few seconds, and floating
-              memory tokens add more. Press <strong>DOWN</strong> or the bezel
-              button to jettison variables before the heap hits the device limit
-              (32 KB on Fēnix).
+              Body Battery drains while you run, and faster while you sprint. A
+              hit costs 15. Ease to a <strong>jog</strong> with Left to recharge
+              it. At 0 you bonk: no sprinting until it recovers to 25. It never
+              ends the run.
             </p>
           </div>
 
           <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
             <div className="flex items-center gap-2 text-slate-300 font-bold mb-2">
               <IconBolt className="w-4 h-4" />
-              <span>Garbage Collector [GC] Freeze</span>
+              <span>Training Effect &amp; Status</span>
             </div>
             <p className="text-zinc-400 text-[11px] leading-relaxed">
-              Press <strong>BACK</strong> (or <strong>G</strong>) to trigger the
-              garbage collector. GC clears unused memory but pauses the game for
-              a simulated 500ms. Time it carefully.
+              Each stage clear scores a Training Effect from 0.0 to 5.0, such as{" "}
+              <strong>TE 3.4 · Improving</strong>. Game over shows your Training
+              Status, from Unproductive to Peaking, and a recovery time in
+              hours.
             </p>
           </div>
 
           <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
             <div className="flex items-center gap-2 text-rose-400 font-bold mb-2">
               <IconFlame className="w-4 h-4" />
-              <span>Thermal Fogging &amp; Screen Wiping</span>
+              <span>Dev Mode (Optional)</span>
             </div>
             <p className="text-zinc-400 text-[11px] leading-relaxed">
-              High CPU usage causes condensation fog on the circular display.
-              Drag your finger or cursor over the watch lens or press{" "}
-              <strong>W</strong> to wipe the fog clear.
+              Off by default. Turn it on in the simulator controls to bring back
+              the original firmware challenge: the RAM heap, GC freezes, NV
+              flash, thermal fog you wipe with <strong>W</strong>, and crash
+              reports.
             </p>
           </div>
         </div>
@@ -187,14 +187,14 @@ export const GarminWatchClient: React.FC = () => {
                   </h3>
                   <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed mb-3">
                     The inspiration behind <em>Monkey C Mayhem</em>: 10
-                    kilometers of Minnesota trail mud, humidity, and an actual
-                    Garmin watch strapped to Fred&apos;s wrist struggling to
-                    maintain GPS lock while fogging up under intense effort.
+                    kilometers of Minnesota trail mud and an actual Garmin watch
+                    strapped to Fred&apos;s wrist, searching for GPS lock the
+                    whole way.
                   </p>
                   <p className="text-xs text-zinc-400 font-mono leading-relaxed">
-                    Developing ConnectIQ apps on Garmin devices means living
-                    inside strict 32KB RAM budgets: one extra object allocation
-                    during a muddy sprint and the runtime panics.
+                    Developing Connect IQ apps on Garmin devices means living
+                    inside strict RAM budgets. Dev Mode brings that limit back
+                    to the runner, if you want the full challenge.
                   </p>
                 </div>
               </div>

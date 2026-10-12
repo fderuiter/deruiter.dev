@@ -39,6 +39,11 @@ describe("Garmin accessible controls match the visible watch (#1215)", () => {
   beforeEach(() => {
     mockAnnounce.mockClear();
   });
+
+  // These cover the firmware rules, which only run in Dev Mode.
+  beforeEach(() => {
+    window.localStorage.setItem("garmin_dev_mode", "1");
+  });
   afterEach(() => cleanup());
 
   it("exposes Jump on UP, Jettison on DOWN and GC on BACK, in bezel order", () => {

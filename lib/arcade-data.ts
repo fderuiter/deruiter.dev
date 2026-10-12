@@ -86,15 +86,16 @@ export const ARCADE_GAMES_METADATA: ArcadeGameMetadata[] = [
   {
     id: "garmin-watch",
     slug: "garmin-watch",
-    title: "Monkey C Mayhem: Garmin Schvitz App",
-    subtitle: "A Small Watch With a Lot Going On",
+    title: "Monkey C Mayhem: A Garmin 5K Platformer",
+    subtitle: "Five Stages, Three Lives, One Body Battery",
     genre: "Embedded Simulation",
     description:
-      "Run a 5K platformer on a simulated smartwatch with a 32KB memory budget. Stomp bugs, clear the gaps, keep the heap in budget, and wipe the screen when it fogs up.",
+      "Run a 5K platformer on a simulated Garmin watch. Stomp Couch Potatoes, jump Hurdles, grab power-ups, and keep your Body Battery above zero. Optional Dev Mode brings back the RAM heap challenge.",
     mechanics: [
-      "32KB RAM Allocation Tracker",
-      "GC Sweep Pressure",
-      "Display Condensation Wipe",
+      "Body Battery Meter",
+      "Compression Cape Glide",
+      "Rep Max Boss Fight",
+      "Optional Dev Mode RAM Heap",
     ],
     techStack: [
       "Monkey C Runtime Simulation",

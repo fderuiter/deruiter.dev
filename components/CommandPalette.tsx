@@ -889,16 +889,16 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
       },
       {
         id: "nav-garmin-watch",
-        title: "Monkey C Mayhem: Garmin Schvitz App",
+        title: "Monkey C Mayhem: A Garmin 5K Platformer",
         subtitle:
-          "Dodge obstacles, clear memory, and wipe the fog from a simulated smartwatch with a 32KB budget.",
+          "Stomp Couch Potatoes, jump Hurdles, and keep your Body Battery above zero on a simulated Garmin watch.",
         category: "navigation",
         url: "/arcade/garmin-watch",
         icon: <IconTerminal className="w-4 h-4 text-brand-cyan" />,
         badge: "Monkey C Mayhem",
-        status: "Garmin Schvitz App",
+        status: "A Garmin 5K Platformer",
         description:
-          "Dodge obstacles, clear memory, and wipe the fog from a simulated smartwatch with a 32KB budget.",
+          "Stomp Couch Potatoes, jump Hurdles, and keep your Body Battery above zero on a simulated Garmin watch.",
         techStack: [
           "Connect IQ Specs",
           "Memory Profiler",

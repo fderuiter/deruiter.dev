@@ -84,7 +84,7 @@ import { playSfx } from "./sfx";
 import { readHideTips, subscribeHideTips, writeHideTips } from "./hint-storage";
 import { ReceiptView } from "./ReceiptView";
 import { ReplayControls, type ReplaySpeed } from "./ReplayControls";
-import { NO_REWARD_LINE, runTrophyIds } from "./rewards";
+import { noRewardLine, runTrophyIds } from "./rewards";
 import { SetupScreen } from "./SetupScreen";
 import {
   burstLifetime,
@@ -1231,7 +1231,7 @@ export function ForBetterOrBulkGame({
                 data-testid="fbb-no-rewards"
                 className="min-w-0 break-words pt-2 text-[var(--fbb-dim)]"
               >
-                {NO_REWARD_LINE}
+                {noRewardLine(speed !== 1)}
               </p>
             ) : null}
           </div>

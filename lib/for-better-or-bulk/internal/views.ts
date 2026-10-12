@@ -20,6 +20,7 @@ import type {
   ItemKind,
   Player,
   PlayerId,
+  Station,
   StationKind,
   SupplyKind,
   Target,
@@ -130,7 +131,7 @@ function blockedStationFor(
       station.kind === "grill"
         ? held.kind in GRILL_COOKS
         : held.kind === "roses";
-    if (takes) return `${capitalise(STATION_NAMES[station.kind])} is full.`;
+    if (takes) return fullStationLine(station);
   }
   return null;
 }
@@ -219,6 +220,10 @@ function reasonOnTile(
   if (supply) {
     if (held)
       return `The ${CRATE_NAMES[supply.kind]} crate only takes ${ITEM_NAMES[supply.kind]}.`;
+    // Lantern crates stand on every map; without lanterns in the plan the
+    // crate is not empty, it is unused (round 19, N-2).
+    if (supply.kind === "lantern" && !state.setup.cart.lanterns)
+      return "Lanterns are not in this plan.";
     return `The ${CRATE_NAMES[supply.kind]} crate is empty.`;
   }
   if (station) {
@@ -229,8 +234,7 @@ function reasonOnTile(
       if (!held) return "The BIN takes burnt food.";
       return binTakes(held) ? null : "The BIN only takes burnt food.";
     }
-    if (station.item)
-      return `${capitalise(STATION_NAMES[station.kind])} is full.`;
+    if (station.item) return fullStationLine(station);
     if (!held) {
       // A cart without petals never uses the bucket, so say that instead of
       // calling it empty (round 16).
@@ -330,6 +334,16 @@ export function shownPrompts(
   const other = state.players[partner];
   if (other.presence === "away" || other.busyFor > 0) return [active, partner];
   return state.setup.assist ? [active] : [active, partner];
+}
+
+/**
+ * The line for a station that already holds something. A full grill names
+ * what is on it, so the way out is plain: lift that off first (round 19, N-1).
+ */
+function fullStationLine(station: Station): string {
+  const full = `${capitalise(STATION_NAMES[station.kind])} is full.`;
+  if (station.kind !== "grill" || !station.item) return full;
+  return `${full} Take ${heldName(station.item)} off first.`;
 }
 
 function capitalise(text: string): string {

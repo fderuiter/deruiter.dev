@@ -683,9 +683,19 @@ function jobOf(state: GameState, id: PlayerId): Job {
       text: `${name} is ${plan.text}.`,
     };
   }
-  return player.holding
-    ? { kind: "spot", text: `${name} is waiting for a free spot.` }
-    : { kind: "idle", text: `${name} has nothing useful to do right now.` };
+  if (player.holding)
+    return { kind: "spot", text: `${name} is waiting for a free spot.` };
+  // With nothing left to fetch while the other person still carries
+  // something, the helper is waiting on them, not idle (round 19, D-3).
+  const other: PlayerId = id === "fred" ? "abbi" : "fred";
+  if (state.players[other].holding) {
+    const otherName = other === "fred" ? "Fred" : "Abbi";
+    return {
+      kind: "idle",
+      text: `${name} is waiting for ${otherName} to set down what's in hand.`,
+    };
+  }
+  return { kind: "idle", text: `${name} has nothing useful to do right now.` };
 }
 
 /**

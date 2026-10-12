@@ -913,7 +913,8 @@ describe("For Better or Bulk side panel: helper, partner and day (fbb round)", (
       screen.getByRole("checkbox", { name: /Helper for the other person/ })
     );
     expect(screen.getByTestId("fbb-no-rewards").textContent).toBe(
-      "Helper days and sped-up days don't earn trophies or a board score. The relaxed clock counts the same as the standard one."
+      // The sped-up clock is not named unless it is on (round 19, N-3).
+      "Helper days don't earn trophies or a board score. The relaxed clock counts the same as the standard one."
     );
     expect(screen.getByTestId("fbb-setup").textContent).toContain(
       "Helper days don't earn trophies or a board score."

@@ -2460,7 +2460,7 @@ describe("a press that would drop an item because a station is blocked (round 8,
     const at = placeExact(base, "fred", 3.5, 3.5, [-1, 0], raw);
     expect(interactTile(at, "fred")).toEqual({ x: 2, y: 3 });
     expect(getPrompt(at, "fred").floorDrop).toEqual({
-      note: "The GRILL is full.",
+      note: "The GRILL is full. Take the raw hot dogs off first.",
       action: "set the raw wings down on the floor here",
     });
   });
@@ -2623,7 +2623,7 @@ describe("a full floor says why a press does nothing (round 8, S8)", () => {
     });
     const at = fullFloor(place(base, "fred", 4, 4, [0, 1], raw));
     expect(getPrompt(at, "fred").interact).toBe(
-      "The GRILL is full. The floor here is full. Find a station or a spot for it."
+      "The GRILL is full. Take the raw hot dogs off first. The floor here is full. Find a station or a spot for it."
     );
   });
 
@@ -2881,7 +2881,10 @@ describe("a refused press says why (round 9, task 1)", () => {
       madeBy: null,
     });
     const at = place(busy, "fred", 4, 2, [0, 1], WINGS_RAW);
-    expect(getPrompt(at, "fred").interact).toBe("The GRILL is full.");
+    // A full grill names what to lift off first (round 19, N-1).
+    expect(getPrompt(at, "fred").interact).toBe(
+      "The GRILL is full. Take the raw hot dogs off first."
+    );
   });
 
   it("says nothing here takes a carried item the station does not use", () => {
@@ -3027,6 +3030,19 @@ describe("a refused press says why (round 9, task 1)", () => {
     const none = { ...base, stock: { ...base.stock, quinoa: 0 } };
     const at = place(none, "fred", 4, 2, [0, -1]);
     expect(getPrompt(at, "fred").interact).toBe("The QUIN crate is empty.");
+  });
+
+  it("calls a lantern crate unused, not empty, when the plan has no lanterns (round 19, N-2)", () => {
+    const off = createLevel({
+      ...DEFAULT_SETUP,
+      cart: { ...DEFAULT_SETUP.cart, lanterns: false },
+    });
+    const crate = off.supplies.find((s) => s.kind === "lantern");
+    if (!crate) throw new Error("the venue has a lantern crate");
+    const at = place(off, "abbi", crate.x + 1, crate.y, [-1, 0], null);
+    expect(getPrompt(at, "abbi").interact).toBe(
+      "Lanterns are not in this plan."
+    );
   });
 
   it("names the item a crate hands out when another item is faced", () => {

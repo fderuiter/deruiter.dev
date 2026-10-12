@@ -845,13 +845,14 @@ export function ForBetterOrBulkGame({
     // focus in DOM order, from the cabinet root to Pause and back out.
     if (event.key === "Tab" && mode === "solo" && !event.shiftKey) {
       // Someone who is out with his brothers cannot take the keys, so there
-      // is no one to swap with: Tab is left to the browser, which reaches Pause.
+      // is no one to swap with. Tab does nothing rather than moving focus to
+      // Pause, where the arrows would stop moving anyone (round 18, S-1).
       const other: PlayerId = activeRef.current === "fred" ? "abbi" : "fred";
+      event.preventDefault();
       if (stateRef.current?.players[other].presence === "away") {
         setAnnouncement(`${NAMES[other]} is out with his brothers.`);
         return;
       }
-      event.preventDefault();
       if (event.repeat) return;
       // A press that has not reached the engine yet belongs to the person
       // who was active when it was made, so apply it before swapping.
@@ -1045,7 +1046,7 @@ export function ForBetterOrBulkGame({
             <span data-testid="fbb-active">
               Playing as <span className="font-bold">{NAMES[active]}</span> ·
               {view.players[partner].presence === "away"
-                ? ` ${NAMES[partner]} is out, so Tab reaches Pause · Shift+Tab to leave · Escape to pause`
+                ? ` ${NAMES[partner]} is out, so Tab does nothing · Shift+Tab to leave · Escape to pause`
                 : " Tab to swap · Shift+Tab to leave · Escape to pause"}
             </span>
           ) : (

@@ -941,7 +941,14 @@ export function drawVenue(
     const px = supply.x * TILE;
     const py = supply.y * TILE;
     const left = state.stock[supply.kind];
-    const countText = countedKinds.has(supply.kind) ? "shared" : String(left);
+    // Lantern crates stand on every map; a plan without lanterns marks them
+    // off rather than counting an empty stock (round 18, N-2).
+    const unplanned = supply.kind === "lantern" && !state.setup.cart.lanterns;
+    const countText = unplanned
+      ? "off"
+      : countedKinds.has(supply.kind)
+        ? "shared"
+        : String(left);
     countedKinds.add(supply.kind);
     ctx.fillStyle = COLORS.crate;
     ctx.strokeStyle = COLORS.crateEdge;

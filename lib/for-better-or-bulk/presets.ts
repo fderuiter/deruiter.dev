@@ -330,7 +330,7 @@ export const THROW_OUT_PROMPT = "Hold to throw it out";
 
 /** The line a run prints when Fred leaves while the plan depends on him. */
 export const LEFT_LINE =
-  "The website was up, but Fred was out with his brothers when the setup needed him.";
+  "The website was up, and the setup carried on while Fred was with his brothers.";
 
 /**
  * Seeded events, in standard-clock seconds (scaled for a relaxed clock with
@@ -586,7 +586,7 @@ export const LINE_BANK: readonly BankLine[] = [
     id: "scene-summary",
     tag: "Fiction",
     fact: null,
-    text: "The ceremony and the buffet, in brief.",
+    text: "The rest of the real day, in brief.",
   },
   {
     id: "actual-heading",

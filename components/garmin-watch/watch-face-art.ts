@@ -33,6 +33,12 @@ import {
   type CourseLayout,
 } from "@/lib/garmin-course";
 import {
+  BASE_HEIGHT,
+  PICKUP_SIZE,
+  playerHeightFor,
+  type Pickup,
+} from "@/lib/garmin-powerups";
+import {
   CANVAS_SIZE,
   DEVICE_PROFILES,
   GROUND_Y,
@@ -552,6 +558,50 @@ function drawPoles(ctx: Ctx, course: CourseLayout, camera: number) {
   }
 }
 
+/** A Protein Shake: a white shaker bottle with a cyan cap and a P band. */
+function drawShake(ctx: Ctx, x: number, y: number) {
+  const s = PICKUP_SIZE;
+  ctx.fillStyle = FACE_COLORS.identity;
+  ctx.beginPath();
+  ctx.roundRect(x + 3, y, s - 6, 3, 1);
+  ctx.fill();
+  ctx.fillStyle = "#f4f4f6";
+  ctx.beginPath();
+  ctx.roundRect(x + 2, y + 3, s - 4, s - 3, 2);
+  ctx.fill();
+  ctx.fillStyle = FACE_COLORS.good;
+  ctx.fillRect(x + 2, y + 6, s - 4, 3);
+}
+
+/** A Runner's High: an amber disc with a lightning bolt. */
+function drawHigh(ctx: Ctx, x: number, y: number) {
+  const r = PICKUP_SIZE / 2;
+  ctx.fillStyle = FACE_COLORS.warn;
+  ctx.beginPath();
+  ctx.arc(x + r, y + r, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#0d0e11";
+  ctx.beginPath();
+  ctx.moveTo(x + r + 1, y + 2);
+  ctx.lineTo(x + r - 3, y + r + 1);
+  ctx.lineTo(x + r, y + r + 1);
+  ctx.lineTo(x + r - 1, y + PICKUP_SIZE - 2);
+  ctx.lineTo(x + r + 3, y + r - 1);
+  ctx.lineTo(x + r, y + r - 1);
+  ctx.closePath();
+  ctx.fill();
+}
+
+/** Power-ups travelling the course, behind the blocks they rise out of. */
+function drawPickups(ctx: Ctx, pickups: readonly Pickup[], camera: number) {
+  for (const p of pickups) {
+    const x = p.x - camera;
+    if (x > CANVAS_SIZE || x + PICKUP_SIZE < 0) continue;
+    if (p.kind === "high") drawHigh(ctx, x, p.y);
+    else drawShake(ctx, x, p.y);
+  }
+}
+
 /** Score and event labels that float up from where they happened. */
 function drawPopups(ctx: Ctx, state: GameEngineState, camera: number) {
   for (const p of state.popups ?? []) {
@@ -574,19 +624,19 @@ function drawBanner(ctx: Ctx, state: GameEngineState) {
   if (!banner) return;
   ctx.font = faceFont(7.5);
   const w = Math.min(196, ctx.measureText(banner.text).width + 16);
-  ctx.fillStyle = "rgba(0, 0, 0, 0.72)";
+  ctx.fillStyle = "rgba(0, 0, 0, 0.88)";
   ctx.beginPath();
   ctx.roundRect(FACE_CENTER - w / 2, 70, w, 13, 3);
   ctx.fill();
   text(ctx, banner.text, FACE_CENTER, 79.5, 7.5, BANNER_TONE[banner.tone]);
 }
 
-/** Stage and Kudos count, small, under the score. */
+/** Stage, lives and Kudos count, small, under the score. */
 function drawCourseHud(ctx: Ctx, state: GameEngineState) {
   const stage = state.stage ?? 1;
   text(
     ctx,
-    `STAGE ${stage}/${STAGE_COUNT} · KUDOS ${state.kudos ?? 0}`,
+    `STAGE ${stage}/${STAGE_COUNT} · LIVES ${state.lives ?? 1} · KUDOS ${state.kudos ?? 0}`,
     FACE_CENTER,
     64,
     6,
@@ -622,28 +672,35 @@ function limb(
 }
 
 /**
- * The monkey runner, facing right, inside the engine's 20 x 24 player box:
- * a headband, a cyan race singlet with bib, and a watch on the wrist.
+ * The monkey runner, facing right, drawn in a 20 x 24 box and scaled up
+ * from the feet to fill the engine's player box when Buff: a headband, a
+ * cyan race singlet with bib, and a watch on the wrist.
  */
 function drawRunner(ctx: Ctx, state: GameEngineState) {
   const pose = runnerPose(state.distanceMeters, state.isGrounded);
   const fur = state.isGcActive ? FUR_FROZEN : FUR;
-  // After the shield breaks the runner blinks while hits pass through.
+  // After a hit the runner blinks while hits pass through.
   const graceMs = state.invulnerableMs ?? 0;
   if (graceMs > 0 && Math.floor(graceMs / 100) % 2 === 0) return;
+  const boxH = playerHeightFor(state.power);
+  const scale = boxH / BASE_HEIGHT;
   ctx.save();
-  ctx.translate(PLAYER_X, state.playerY - pose.bob);
-  if (state.hasShield) {
-    // Firmware Update shield: a thin bright ring around the runner.
-    ctx.strokeStyle = "rgba(16, 185, 129, 0.9)";
-    ctx.lineWidth = 1.4;
+  ctx.translate(PLAYER_X + 10, state.playerY + boxH - pose.bob);
+  ctx.scale(scale, scale);
+  ctx.translate(-10, -BASE_HEIGHT);
+  const highMs = state.starMs ?? 0;
+  if (highMs > 0 && (highMs > 1500 || Math.floor(highMs / 120) % 2 === 0)) {
+    // Runner's High: a pulsing amber and emerald aura.
+    ctx.strokeStyle =
+      Math.floor(highMs / 150) % 2 === 0 ? FACE_COLORS.warn : FACE_COLORS.good;
+    ctx.lineWidth = 1.6;
     ctx.beginPath();
-    ctx.ellipse(10, 12 + pose.bob, 14, 16, 0, 0, Math.PI * 2);
+    ctx.ellipse(10, 12 + pose.bob, 13, 15, 0, 0, Math.PI * 2);
     ctx.stroke();
   }
 
   // Contact shadow on the lane, smaller the higher the jump.
-  const lift = clamp(GROUND_Y - (state.playerY + 24), 0, 90);
+  const lift = clamp(GROUND_Y - (state.playerY + boxH), 0, 90) / scale;
   ctx.save();
   ctx.translate(0, pose.bob);
   ctx.fillStyle = `rgba(0, 0, 0, ${0.45 - lift / 300})`;
@@ -1256,6 +1313,7 @@ export function renderWatchFace(
   drawGround(ctx, state.distanceMeters, course);
   drawPoles(ctx, course, camera);
   drawLedges(ctx, course, camera);
+  drawPickups(ctx, state.pickups ?? [], camera);
   drawBlocks(ctx, course, camera);
   drawKudos(ctx, course, camera);
 

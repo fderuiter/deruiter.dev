@@ -77,6 +77,7 @@ import {
   allocateFlashVariable,
   clearFlashStorage,
 } from "@/lib/garmin-engine";
+import { STAGE_COUNT } from "@/lib/garmin-course";
 
 /** Compact UTC stamp for export file names, e.g. 20261010-120000. */
 function exportStamp(startedAtMs: number): string {
@@ -204,6 +205,8 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
   const hasAlertedCrashRef = useRef<boolean>(false);
   const hasAlertedBatteryRef = useRef<boolean>(false);
   const hasAlertedShutdownRef = useRef<boolean>(false);
+  const lastBannerRef = useRef<string | null>(null);
+  const lastRunStateRef = useRef<GameEngineState["gameState"]>("idle");
 
   // Hardware & Simulation State
   const [bezelTheme, setBezelTheme] = useState<WatchBezelTheme>("slate");
@@ -807,7 +810,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
   const a11yReadTelemetry = () => {
     const s = stateRef.current;
     announce(
-      `Status: ${s.gameState}. Memory: ${s.allocatedRamKb.toFixed(1)} of ${currentProfile.ramLimitKb} KB. Flash: ${s.allocatedFlashKb.toFixed(1)} KB. Battery: ${Math.round(s.battery)}%. Thermal stress: ${Math.round((s.thermalStress ?? 0) * 100)}%. Condensation: ${Math.round(s.fogLevel * 100)}%. Score: ${s.score}. High score: ${Math.max(s.highScore, loadedHighScore)}.`,
+      `Status: ${s.gameState}. Memory: ${s.allocatedRamKb.toFixed(1)} of ${currentProfile.ramLimitKb} KB. Flash: ${s.allocatedFlashKb.toFixed(1)} KB. Battery: ${Math.round(s.battery)}%. Thermal stress: ${Math.round((s.thermalStress ?? 0) * 100)}%. Condensation: ${Math.round(s.fogLevel * 100)}%. Lives: ${s.lives ?? 1}. Power: ${s.power === "buff" ? "Buff" : "Base"}${(s.starMs ?? 0) > 0 ? ", Runner's High" : ""}. Score: ${s.score}. High score: ${Math.max(s.highScore, loadedHighScore)}.`,
       "polite"
     );
   };
@@ -878,6 +881,27 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       announce(msg, "assertive");
     } else if (gameState.gameState !== "shutdown") {
       hasAlertedShutdownRef.current = false;
+    }
+
+    // 6. Course banners (power-ups, lives, stage clears) are drawn on the
+    // face; screen readers hear them too. The opening banner is skipped:
+    // starting a run is already announced.
+    const bannerText = gameState.banner?.text ?? null;
+    const justStarted =
+      gameState.gameState === "playing" &&
+      lastRunStateRef.current !== "playing";
+    lastRunStateRef.current = gameState.gameState;
+    if (justStarted) {
+      lastBannerRef.current = bannerText;
+    } else if (
+      bannerText &&
+      bannerText !== lastBannerRef.current &&
+      gameState.gameState === "playing"
+    ) {
+      lastBannerRef.current = bannerText;
+      announce(bannerText, "polite");
+    } else if (!bannerText) {
+      lastBannerRef.current = null;
     }
   }, [gameState, deviceTarget, announce, setAlertMessage]);
 
@@ -1200,7 +1224,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
                   width={CANVAS_SIZE}
                   height={CANVAS_SIZE}
                   role="img"
-                  aria-label={`Smartwatch display simulator. Status: ${gameState.gameState}. Score: ${
+                  aria-label={`Smartwatch display simulator. Status: ${gameState.gameState}. Stage ${gameState.stage ?? 1} of ${STAGE_COUNT}, lives ${gameState.lives ?? 1}${gameState.power === "buff" ? ", Buff" : ""}. Score: ${
                     gameState.score
                   }, High Score: ${effectiveHighScore}. Memory: ${gameState.allocatedRamKb.toFixed(
                     1
@@ -1243,7 +1267,8 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
                     </span>
                     <p className="mt-2 max-w-[15rem] text-[11px] leading-snug text-zinc-300">
                       ▲ / Space jump (hold for higher) · ◀ ▶ pace. Stomp bugs,
-                      bump Sync Blocks, mind the gaps, keep the heap in budget.
+                      bump Sync Blocks for power-ups, mind the gaps, keep the
+                      heap in budget. Three lives.
                     </p>
                     <button
                       type="button"

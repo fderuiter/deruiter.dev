@@ -7,13 +7,14 @@
 # Interface: CourseBlock
 
 A block floating over the lane. Bumping a Sync Block from below pops its
-contents once; a brick is plain solid footing.
+contents once: Kudos, a power-up (a Protein Shake for a Base runner), or a
+Runner's High. A brick is plain solid footing.
 
 ## Properties
 
 ### contents
 
-> **contents**: `"firmware"` \| `"kudos"`
+> **contents**: `"kudos"` \| `"power"` \| `"high"`
 
 ***
 

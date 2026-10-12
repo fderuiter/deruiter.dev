@@ -3,11 +3,9 @@ import {
   createHoldRepeater,
   HOLD_REPEAT_DELAY_MS,
   HOLD_REPEAT_INTERVAL_MS,
-} from "@/components/arcade/mobile/holdRepeat";
-import {
   swipeDirection,
   SWIPE_THRESHOLD_PX,
-} from "@/components/arcade/mobile/swipe";
+} from "@/components/arcade/mobile";
 
 /** A fake clock: `setTimer` queues callbacks that `advance` runs in time order. */
 function fakeClock() {
@@ -101,6 +99,49 @@ describe("createHoldRepeater", () => {
     expect(tick).toHaveBeenCalledTimes(1);
     expect(clock.pending()).toBe(1);
     repeater.stop();
+  });
+
+  it("a stop inside tick leaves no timer, and a later start runs one chain", () => {
+    const clock = fakeClock();
+    let repeater: ReturnType<typeof createHoldRepeater> | null = null;
+    let calls = 0;
+    const tick = vi.fn(() => {
+      calls += 1;
+      if (calls === 1) repeater?.stop();
+    });
+    repeater = createHoldRepeater(tick, clock);
+
+    repeater.start();
+    expect(tick).toHaveBeenCalledTimes(1);
+    expect(clock.pending()).toBe(0);
+
+    repeater.start();
+    expect(tick).toHaveBeenCalledTimes(2);
+    expect(clock.pending()).toBe(1);
+    clock.advance(HOLD_REPEAT_DELAY_MS);
+    expect(tick).toHaveBeenCalledTimes(3);
+    clock.advance(HOLD_REPEAT_INTERVAL_MS);
+    expect(tick).toHaveBeenCalledTimes(4);
+    expect(clock.pending()).toBe(1);
+    repeater.stop();
+    clock.advance(HOLD_REPEAT_INTERVAL_MS * 3);
+    expect(tick).toHaveBeenCalledTimes(4);
+  });
+
+  it("a stop from a repeat tick ends the chain at once", () => {
+    const clock = fakeClock();
+    let repeater: ReturnType<typeof createHoldRepeater> | null = null;
+    let calls = 0;
+    const tick = vi.fn(() => {
+      calls += 1;
+      if (calls === 2) repeater?.stop();
+    });
+    repeater = createHoldRepeater(tick, clock);
+
+    repeater.start();
+    clock.advance(HOLD_REPEAT_DELAY_MS + HOLD_REPEAT_INTERVAL_MS * 5);
+    expect(tick).toHaveBeenCalledTimes(2);
+    expect(clock.pending()).toBe(0);
   });
 
   it("stop with nothing held is harmless", () => {

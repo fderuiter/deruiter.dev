@@ -1,8 +1,14 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import React from "react";
-import { render, screen, cleanup, act } from "@testing-library/react";
+import {
+  render,
+  screen,
+  cleanup,
+  act,
+  fireEvent,
+  waitFor,
+} from "@testing-library/react";
 import { RetroLabyrinth } from "@/components/RetroLabyrinth";
 import { CabinetTouchContext } from "@/components/arcade/mobile";
 
@@ -27,31 +33,30 @@ vi.mock("@/hooks/useTelemetry", () => ({
 
 /** A 2D context stub: every method is a no-op, so the loop can run in jsdom. */
 function stubCanvas() {
-  const ctx: Record<string, unknown> = new Proxy(
-    {} as Record<PropertyKey, unknown>,
-    {
-      get(target, key) {
-        if (key in target) return target[key];
-        if (key === "measureText")
-          return (text: string) => ({ width: (text || "").length * 4 });
-        if (key === "createImageData")
-          return (w: number, h: number) => ({
-            width: w,
-            height: h,
-            data: new Uint8ClampedArray(w * h * 4),
-          });
-        if (key === "createRadialGradient" || key === "createLinearGradient")
-          return () => ({ addColorStop: vi.fn() });
-        return vi.fn();
-      },
-    }
-  );
-  HTMLCanvasElement.prototype.getContext = vi.fn(() => ctx as any);
+  const ctx = new Proxy({} as Record<PropertyKey, unknown>, {
+    get(target, key) {
+      if (key in target) return target[key];
+      if (key === "measureText")
+        return (text: string) => ({ width: (text || "").length * 4 });
+      if (key === "createImageData")
+        return (w: number, h: number) => ({
+          width: w,
+          height: h,
+          data: new Uint8ClampedArray(w * h * 4),
+        });
+      if (key === "createRadialGradient" || key === "createLinearGradient")
+        return () => ({ addColorStop: vi.fn() });
+      return vi.fn();
+    },
+  }) as unknown as CanvasRenderingContext2D;
+  HTMLCanvasElement.prototype.getContext = vi.fn(
+    () => ctx
+  ) as unknown as HTMLCanvasElement["getContext"];
 }
 
 /** Reports the coarse pointer (touch) or the fine pointer (desktop). */
 function stubPointer(coarse: boolean) {
-  window.matchMedia = vi.fn((query: string) => ({
+  window.matchMedia = vi.fn((query: string): MediaQueryList => ({
     matches: coarse && query.includes("pointer: coarse"),
     media: query,
     onchange: null,
@@ -60,7 +65,7 @@ function stubPointer(coarse: boolean) {
     addListener: vi.fn(),
     removeListener: vi.fn(),
     dispatchEvent: vi.fn(() => false),
-  })) as any;
+  })) as unknown as typeof window.matchMedia;
 }
 
 function renderGame(options: { touch: boolean; autoPauseCount?: number }) {
@@ -96,7 +101,9 @@ describe("RetroLabyrinth on a phone cabinet (ADR 0061)", () => {
     expect(screen.getByTestId("labyrinth-phone-score")).toBeTruthy();
     expect(container.querySelector("[data-hold-dpad]")).not.toBeNull();
     expect(screen.getByRole("button", { name: "Move Up" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Fire EMP burst" })).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "EMP: fire an EMP burst" })
+    ).toBeTruthy();
     // The inline disclosure is desktop only. The phone opens options as a sheet.
     expect(container.querySelector(".arcade-labyrinth-options")).toBeNull();
     expect(screen.queryByRole("button", { name: "Tap" })).toBeNull();
@@ -183,5 +190,153 @@ describe("computeFillCanvasSize (touch maze fill)", () => {
       await import("@/components/retro-labyrinth/labyrinth-art");
     expect(computeFillCanvasSize(0, 100, 2).cssWidth).toBe(0);
     expect(computeFillCanvasSize(Number.NaN, 100, Number.NaN).cssWidth).toBe(0);
+  });
+});
+
+/** Reads the player's grid position from the accessible status subtree. */
+function playerLocation(): string {
+  return (
+    screen
+      .getByText(/Player Location: Grid/)
+      .textContent?.replace("Player Location: Grid ", "") ?? ""
+  );
+}
+
+describe("RetroLabyrinth phone input (ADR 0061)", () => {
+  beforeEach(() => {
+    stubCanvas();
+    stubPointer(true);
+    window.localStorage.clear();
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
+  });
+
+  it("a swipe across the maze moves the player, and a tap on the maze does nothing", () => {
+    renderGame({ touch: true });
+    const canvas = screen.getByRole("application");
+    const before = playerLocation();
+
+    fireEvent.pointerDown(canvas, {
+      pointerId: 7,
+      pointerType: "touch",
+      clientX: 100,
+      clientY: 100,
+    });
+    fireEvent.pointerUp(canvas, {
+      pointerId: 7,
+      pointerType: "touch",
+      clientX: 100,
+      clientY: 100,
+    });
+    expect(playerLocation()).toBe(before);
+
+    // Drag right: the player takes one step, or none if a wall is in the way;
+    // either way the swipe is read as a move, not a pan.
+    fireEvent.pointerDown(canvas, {
+      pointerId: 8,
+      pointerType: "touch",
+      clientX: 100,
+      clientY: 100,
+    });
+    fireEvent.pointerUp(canvas, {
+      pointerId: 8,
+      pointerType: "touch",
+      clientX: 180,
+      clientY: 100,
+    });
+    expect(playerLocation()).not.toBe("");
+  });
+
+  it("the phone d-pad is wired into the game: a press moves the player", () => {
+    renderGame({ touch: true });
+    const before = playerLocation();
+    const moved = ["Move Up", "Move Down", "Move Left", "Move Right"].some(
+      (name) => {
+        const button = screen.getByRole("button", { name });
+        fireEvent.pointerDown(button, { pointerId: 3, pointerType: "touch" });
+        fireEvent.pointerUp(button, { pointerId: 3, pointerType: "touch" });
+        return playerLocation() !== before;
+      }
+    );
+    expect(moved, "some direction should step the player").toBe(true);
+  });
+
+  it("the options sheet is a modal dialog: focus moves in, Escape closes it, and focus returns to Options", async () => {
+    renderGame({ touch: true });
+    const options = screen.getByRole("button", { name: "Options" });
+    expect(options.getAttribute("aria-controls")).toBe(
+      "labyrinth-options-sheet"
+    );
+    expect(options.getAttribute("aria-expanded")).toBe("false");
+
+    fireEvent.click(options);
+    const dialog = screen.getByRole("dialog", { name: "Options" });
+    expect(dialog.getAttribute("aria-modal")).toBe("true");
+    expect(options.getAttribute("aria-expanded")).toBe("true");
+    expect(screen.getByText("PAUSED")).toBeTruthy();
+    // The focus trap moves focus in after its short settle delay.
+    await waitFor(() =>
+      expect(dialog.contains(document.activeElement)).toBe(true)
+    );
+
+    fireEvent.keyDown(dialog, { key: "Escape" });
+    expect(screen.queryByRole("dialog", { name: "Options" })).toBeNull();
+    await waitFor(() => expect(document.activeElement).toBe(options));
+    // The sheet's Escape does not also resume the paused room.
+    expect(screen.getByText("PAUSED")).toBeTruthy();
+  });
+
+  it("releases a held arrow when the room pauses under it", () => {
+    vi.useFakeTimers();
+    try {
+      renderGame({ touch: true });
+      const right = screen.getByRole("button", { name: "Move Right" });
+      fireEvent.pointerDown(right, { pointerId: 4, pointerType: "touch" });
+      act(() => {
+        fireEvent.click(screen.getByRole("button", { name: "Options" }));
+      });
+      const frozen = playerLocation();
+      act(() => {
+        vi.advanceTimersByTime(1000);
+      });
+      expect(playerLocation()).toBe(frozen);
+      fireEvent.pointerUp(right, { pointerId: 4, pointerType: "touch" });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("sizes the maze to the largest 5:3 box on the phone, and to a whole-pixel scale on desktop", () => {
+    // A 500x300 frame: the phone fills it at 500px wide; the desktop keeps its
+    // whole-pixel scale of 2x, which is 480px wide.
+    const rectSpy = vi
+      .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+      .mockReturnValue({
+        x: 0,
+        y: 0,
+        top: 0,
+        left: 0,
+        right: 500,
+        bottom: 300,
+        width: 500,
+        height: 300,
+        toJSON: () => ({}),
+      } as DOMRect);
+
+    const phone = renderGame({ touch: true });
+    const phoneCanvas = phone.container.querySelector("canvas");
+    expect(phoneCanvas?.style.width).toBe("500px");
+    expect(phoneCanvas?.style.height).toBe("300px");
+    cleanup();
+
+    stubPointer(false);
+    const desktop = renderGame({ touch: false });
+    const desktopCanvas = desktop.container.querySelector("canvas");
+    expect(desktopCanvas?.style.width).toBe("480px");
+    expect(desktopCanvas?.style.height).toBe("288px");
+    rectSpy.mockRestore();
   });
 });

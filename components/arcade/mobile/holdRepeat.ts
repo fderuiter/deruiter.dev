@@ -53,11 +53,16 @@ export function createHoldRepeater(
   let handle: unknown = null;
   let active = false;
 
+  // One pending timer at a time: scheduling clears any earlier one, so a tick
+  // that stops and restarts the hold cannot leave a second chain running.
   const schedule = (ms: number) => {
+    if (handle !== null) clearTimer(handle);
     handle = setTimer(() => {
+      handle = null;
       if (!active) return;
       tick();
-      schedule(intervalMs);
+      // The tick may have released the hold; only then does the chain go on.
+      if (active) schedule(intervalMs);
     }, ms);
   };
 
@@ -66,7 +71,7 @@ export function createHoldRepeater(
       if (active) return;
       active = true;
       tick();
-      schedule(delayMs);
+      if (active) schedule(delayMs);
     },
     stop() {
       if (!active) return;

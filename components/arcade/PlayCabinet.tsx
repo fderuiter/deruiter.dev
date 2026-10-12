@@ -133,7 +133,7 @@ function findOpenGameDialog(cabinet: HTMLElement): Element | null {
  * Width in CSS px of the touch toolbar: `count` 44px buttons, 4px gaps, the
  * toolbar's 2px padding and 1px borders each side.
  */
-export function cabinetToolbarWidth(count: number): number {
+function cabinetToolbarWidth(count: number): number {
   return count * 44 + Math.max(0, count - 1) * 4 + 6;
 }
 
@@ -269,29 +269,32 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
   useEffect(() => {
     if (!touchImmersive || isFullscreen) return;
     const body = document.body;
-    const root = document.documentElement;
-    const scrollY = window.scrollY;
-    const previous = {
-      overflow: body.style.overflow,
-      position: body.style.position,
-      top: body.style.top,
-      width: body.style.width,
-      overscroll: root.style.overscrollBehavior,
-    };
+    const previousOverflow = body.style.overflow;
+    const previousOverscroll =
+      document.documentElement.style.overscrollBehavior;
+    const previousPosition = body.style.position;
+    const previousTop = body.style.top;
+    const previousWidth = body.style.width;
+    // Pin the page where it is. Overflow hidden alone does not stop iOS from
+    // scrolling or from restoring a scroll offset when focus moves, so the
+    // body goes fixed at its current offset and comes back to it on exit.
+    const offset = window.scrollY;
     body.style.overflow = "hidden";
     body.style.position = "fixed";
-    body.style.top = `-${scrollY}px`;
+    body.style.top = `-${offset}px`;
     body.style.width = "100%";
-    root.style.overscrollBehavior = "none";
+    document.documentElement.style.overscrollBehavior = "none";
     return () => {
-      body.style.overflow = previous.overflow;
-      body.style.position = previous.position;
-      body.style.top = previous.top;
-      body.style.width = previous.width;
-      root.style.overscrollBehavior = previous.overscroll;
-      if (scrollY !== 0 && typeof window.scrollTo === "function") {
-        window.scrollTo(0, scrollY);
-      }
+      body.style.overflow = previousOverflow;
+      body.style.position = previousPosition;
+      body.style.top = previousTop;
+      body.style.width = previousWidth;
+      document.documentElement.style.overscrollBehavior = previousOverscroll;
+      // The preview lays out again after this commit, and a scroll made before
+      // that can clamp to a shorter page. Restore now and again after a frame.
+      const restore = () => window.scrollTo(0, offset);
+      restore();
+      window.requestAnimationFrame(restore);
     };
   }, [touchImmersive, isFullscreen]);
 
@@ -592,7 +595,7 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
             // the toolbar's 8px inset from the edge.
             ...(touchImmersive
               ? {
-                  "--cabinet-toolbar-inset": `${cabinetToolbarWidth(toolbarButtonCount) + 8}px`,
+                  "--cabinet-toolbar-inset": `calc(${cabinetToolbarWidth(toolbarButtonCount) + 8}px + env(safe-area-inset-right, 0px))`,
                 }
               : {}),
             // Windowed, the cabinet scrolls to sit under the site header on
@@ -627,7 +630,7 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
             inert={rotateBlocked}
             data-testid="cabinet-touch-toolbar"
             data-touch-toolbar=""
-            className="arcade-cabinet-toolbar absolute z-50 flex items-center gap-1 p-0.5 bg-black/85 backdrop-blur-md rounded-2xl border border-zinc-700/80 shadow-2xl select-none"
+            className="arcade-cabinet-toolbar absolute z-50 flex items-center gap-1 p-0.5 bg-black/90 rounded-2xl border border-zinc-700/80 shadow-2xl select-none"
             style={{
               top: "calc(env(safe-area-inset-top, 0px) + 4px)",
               right: "calc(env(safe-area-inset-right, 0px) + 8px)",

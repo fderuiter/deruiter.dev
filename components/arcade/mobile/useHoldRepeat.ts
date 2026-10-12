@@ -7,7 +7,7 @@ import {
 } from "@/components/arcade/mobile/holdRepeat";
 
 /** The press and release a hold-repeat control exposes to its button. */
-export interface HoldControl {
+interface HoldControl {
   start: () => void;
   stop: () => void;
 }

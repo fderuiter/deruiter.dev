@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import {
   IconArrowDown,
   IconArrowLeft,
@@ -20,6 +20,11 @@ export interface HoldDpadProps {
    * of width. The default is the comfortable 48px.
    */
   compact?: boolean;
+  /**
+   * True while the game is not taking moves (paused, or an options sheet is
+   * open). Any repeat in progress is released at once.
+   */
+  paused?: boolean;
 }
 
 const DIRECTION_LABEL: Record<SwipeDirection, string> = {
@@ -56,12 +61,17 @@ function DirectionButton({
   direction,
   onMove,
   compact,
+  paused,
 }: {
   direction: SwipeDirection;
   onMove: (direction: SwipeDirection) => void;
   compact: boolean;
+  paused: boolean;
 }) {
   const repeat = useHoldRepeat(() => onMove(direction));
+  useEffect(() => {
+    if (paused) repeat.stop();
+  }, [paused, repeat]);
   const Icon = DIRECTION_ICON[direction];
   return (
     <TouchButton
@@ -85,6 +95,7 @@ export const HoldDpad: React.FC<HoldDpadProps> = ({
   onMove,
   className = "",
   compact = false,
+  paused = false,
 }) => (
   <div
     role="group"
@@ -99,6 +110,7 @@ export const HoldDpad: React.FC<HoldDpadProps> = ({
           direction={cell.dir}
           onMove={onMove}
           compact={compact}
+          paused={paused}
         />
       ) : (
         <div

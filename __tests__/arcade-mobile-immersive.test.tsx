@@ -18,11 +18,9 @@ import { PHONE_QUERY, TOUCH_DEVICE_QUERY } from "../components/arcade/mobile";
 
 const lockMock = vi.hoisted(() => vi.fn(() => () => {}));
 
-vi.mock("@/components/arcade/mobile/orientation", async (importOriginal) => {
+vi.mock("@/components/arcade/mobile", async (importOriginal) => {
   const actual =
-    await importOriginal<
-      typeof import("@/components/arcade/mobile/orientation")
-    >();
+    await importOriginal<typeof import("@/components/arcade/mobile")>();
   return { ...actual, lockScreenOrientation: lockMock };
 });
 
@@ -675,7 +673,7 @@ describe("PlayCabinet touch toolbar (ADR 0061)", () => {
     ).toBeNull();
     // Only Setup and Power are left, so the inset is the two-key width.
     expect(cabinetEl().style.getPropertyValue("--cabinet-toolbar-inset")).toBe(
-      "106px"
+      "calc(106px + env(safe-area-inset-right, 0px))"
     );
   });
 
@@ -696,7 +694,7 @@ describe("PlayCabinet touch toolbar (ADR 0061)", () => {
       screen.getByRole("button", { name: "Enter Fullscreen" }).className
     ).toContain("h-11 w-11");
     expect(cabinetEl().style.getPropertyValue("--cabinet-toolbar-inset")).toBe(
-      "154px"
+      "calc(154px + env(safe-area-inset-right, 0px))"
     );
   });
 

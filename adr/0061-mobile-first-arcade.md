@@ -64,9 +64,9 @@ devices in the Playwright matrix and on a real iOS Safari and Android device:
 
 The kit lives in `components/arcade/mobile/` with a barrel `index.ts`. PlayCabinet
 and the tests import through the barrel. It builds on the existing controls
-rather than replacing them. TouchButton, DockFrame and the control-hint helpers
-await their first game consumer; they are here so that consumer can adopt them
-without a new kit change.
+rather than replacing them. Retro Labyrinth is the first consumer of TouchButton,
+DockFrame and HoldDpad. The remaining helpers, including the control-hint
+helpers, await their first game consumer.
 
 - **Immersive touch cabinet.** On any touch device (`TOUCH_DEVICE_QUERY`, see
   the amendment below), the cabinet goes immersive when it launches and stays
@@ -112,8 +112,9 @@ without a new kit change.
   finger lifts. It releases everything on blur. It is at least 44px, has a
   required accessible name, takes `touch-action: none`, vibrates through
   `lib/haptics.ts`, and also answers Enter and Space. Its press motion is gated
-  with `motion-safe:`. `DockFrame` mirrors a pair of docks for left-handed play
-  without changing the docks themselves. `DpadActionDock`, `TwinStickAimDock`,
+  with `motion-safe:`. `DockFrame` lays a dock row out for the player's hand
+  (`handedness`), reversing the order of its two sides; Retro Labyrinth reads
+  it from its Options sheet. `DpadActionDock`, `TwinStickAimDock`,
   `BezelClusterDock`, `ActionStripDock` and `VirtualGamepad` remain the
   controls.
 - **Control hints.** `controlHint({ key, touch })` names a control both ways, and
@@ -173,24 +174,37 @@ running room pauses on hide, blur or rotation and waits for a tap on Resume.
   two-column grid, all built on the kit's `TouchButton`. The side columns are
   only as wide as their keys, plus the safe-area insets.
 - **Maze size.** On the touch cabinet the maze fills the largest 5:3 box its
-  dock leaves, at a CSS size that is a multiple of 5 px, with a backing store
-  at the device pixel ratio and nearest-neighbour sampling. Measured on the
-  Playwright phone at 2x: 520x312 px at 812x375, and 300x180 px at 568x320,
-  where the width of the two side docks is the limit. A swipe across the maze moves one step, and a tap
-  does nothing.
+  dock leaves, with a CSS width that is a multiple of 5 px and a backing store
+  at the device pixel ratio, sampled nearest-neighbour. Measured on the
+  Playwright Small Phone at 2x: 520x312 CSS px (1040x624 device px) at
+  812x375, and 310x186 CSS px (620x372 device px) at 568x320. At 568x320 the
+  side docks take the width and the 5:3 box then limits the height to 186 px,
+  so the maze is 58% of the screen height, short of the 250 px that was
+  aimed for. Reaching 250 px would need a different aspect ratio or cropping
+  the maze, and both break the art, so the shortfall is accepted. A swipe
+  across the maze moves one step, and a tap does nothing.
+- **Fractional scale and #1522.** Desktop keeps the integer scale of the
+  visual overhaul (#1522, closed), so every art pixel is the same size. The
+  phone trades that for size: a fractional scale means some art pixels are one
+  device pixel wider than others. The trade is taken because an integer scale
+  leaves a quarter of a phone screen empty, and the nearest-neighbour sampling
+  keeps the edges crisp.
 - **HUD.** One slim 44px row on the same top line as the toolbar: floor, HP,
   score, and an Options button, padded on the right by
   `--cabinet-toolbar-inset`. The objective is not repeated in the HUD; the
   maze's own in-world line carries it. Options open a sheet over the maze that
-  pauses a running room. The hotbar is desktop only.
+  pauses a running room. The hotbar is desktop only. Entering real fullscreen
+  asks for the landscape lock, which can resize the page and so raise one
+  auto-pause; the room then waits for Resume like any other pause.
 - **Kit additions.** `createHoldRepeater` and `useHoldRepeat`, `HoldDpad`,
   `swipeDirection`, and `CabinetTouchContext`, which tells a game it is in
   the immersive touch cabinet.
 - **Hub.** The "Desktop only" badge now follows an explicit `desktopOnly`
-  flag per card. Nine games carry it. Retro Labyrinth and Trial & Error do
-  not, so Trial & Error no longer shows a badge it never needed.
+  flag per card. Eight games carry it (the hub lists ten cards). Retro
+  Labyrinth and Trial & Error do not, so Trial & Error no longer shows a badge
+  it never needed.
 
-The other nine gated games keep the notice until their own mobile pull
+The other eight gated games keep the notice until their own mobile pull
 requests land.
 
 ## Alternatives considered

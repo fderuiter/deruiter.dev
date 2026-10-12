@@ -1,4 +1,6 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page, type TestInfo } from "@playwright/test";
+import { writeFile } from "node:fs/promises";
+import path from "node:path";
 import AxeBuilder from "@axe-core/playwright";
 import { assertNoHorizontalOverflow } from "./mobile-harness";
 
@@ -26,8 +28,90 @@ async function launchCabinet(page: Page) {
   // The game loads as a separate chunk behind a "Building the dungeon" stub.
   // Wait for its controls, so the checks below run against the mounted game.
   await expect(
-    page.getByRole("button", { name: "Fire EMP burst" })
+    page.getByRole("button", { name: "EMP: fire an EMP burst" })
   ).toBeVisible({ timeout: 90000 });
+}
+
+// The landscape sizes the phone layout is checked at (ADR 0061).
+const LANDSCAPE_SIZES: ReadonlyArray<readonly [number, number]> = [
+  [568, 320],
+  [812, 375],
+  [844, 390],
+];
+const RESULT_SIZES: ReadonlyArray<readonly [number, number]> = [
+  [568, 320],
+  [844, 390],
+];
+
+/** Phone controls whose text is cut off, by their visible label. */
+async function clippedControls(page: Page): Promise<string[]> {
+  return page.evaluate((selector) => {
+    const root = document.querySelector(selector);
+    if (!root) return ["no immersive cabinet"];
+    const cut: string[] = [];
+    root.querySelectorAll<HTMLElement>("button, span, p, h3").forEach((el) => {
+      const rect = el.getBoundingClientRect();
+      if (rect.width < 2 || !el.textContent?.trim()) return;
+      const ellipsis = getComputedStyle(el).textOverflow === "ellipsis";
+      const overflowing = el.scrollWidth > el.clientWidth + 1;
+      if (overflowing && (el.tagName === "BUTTON" || ellipsis)) {
+        cut.push(el.textContent.trim());
+      }
+    });
+    return cut;
+  }, IMMERSIVE);
+}
+
+/** Saves a screenshot as an attachment, and to LABYRINTH_SCREENS_DIR when set. */
+async function shoot(page: Page, testInfo: TestInfo, name: string) {
+  const body = await page.screenshot();
+  await testInfo.attach(name, { body, contentType: "image/png" });
+  const dir = process.env.LABYRINTH_SCREENS_DIR;
+  if (dir) {
+    await writeFile(path.join(dir, `${name}.png`), body);
+  }
+}
+
+/**
+ * Cells of the patrols still able to catch the player, read from the game's
+ * React state. The maze is a canvas, so the state is the only place they are
+ * named. Test-only: it walks the fiber tree from the phone HUD.
+ */
+async function patrolCells(
+  page: Page
+): Promise<Array<{ x: number; y: number }>> {
+  return page.evaluate(() => {
+    const hud = document.querySelector('[data-testid="labyrinth-phone-score"]');
+    const key =
+      hud && Object.keys(hud).find((k) => k.startsWith("__reactFiber$"));
+    if (!hud || !key) return [];
+    type Hook = { memoizedState: unknown; next: Hook | null };
+    type Fiber = { memoizedState: Hook | null; return: Fiber | null };
+    let fiber: Fiber | null = (hud as unknown as Record<string, Fiber>)[key];
+    while (fiber) {
+      for (let hook = fiber.memoizedState; hook; hook = hook.next) {
+        const value = hook.memoizedState;
+        if (
+          Array.isArray(value) &&
+          value.some((v) => v && typeof v === "object" && "patrolDir" in v)
+        ) {
+          return (value as Array<{ x: number; y: number; state: string }>)
+            .filter((e) => e.state !== "stunned" && e.state !== "frozen")
+            .map(({ x, y }) => ({ x, y }));
+        }
+      }
+      fiber = fiber.return;
+    }
+    return [];
+  });
+}
+
+/** The player's grid cell, from the accessible status subtree. */
+async function playerCell(
+  page: Page
+): Promise<{ x: number; y: number } | null> {
+  const match = /\((\d+),\s*(\d+)\)/.exec(await readPlayerGrid(page));
+  return match ? { x: Number(match[1]), y: Number(match[2]) } : null;
 }
 
 /** Turns the emulated phone sideways, whatever the project's default. */
@@ -147,7 +231,9 @@ test.describe("Retro Labyrinth on a phone", () => {
     for (let step = 0; step < 240 && !changed; step++) {
       // Fire the EMP now and then: it is how a bug is cleared for score.
       if (step % 4 === 3) {
-        await page.getByRole("button", { name: "Fire EMP burst" }).tap();
+        await page
+          .getByRole("button", { name: "EMP: fire an EMP burst" })
+          .tap();
       } else {
         await page
           .getByRole("button", {
@@ -307,6 +393,172 @@ test.describe("Retro Labyrinth on a phone", () => {
 
     await turnSideways(page);
     await expect(prompt).toHaveCount(0);
+  });
+
+  test("launching the cabinet does not scroll the page, and leaving restores the preview", async ({
+    page,
+  }) => {
+    await turnSideways(page);
+    const launch = page.getByRole("button", { name: /Launch Cabinet/i });
+    await launch.scrollIntoViewIfNeeded();
+    await expect(launch).toBeVisible();
+    // The page must be scrolled, or the test proves nothing about the jump.
+    const before = await page.evaluate(() => window.scrollY);
+    expect(before).toBeGreaterThan(0);
+
+    await launch.tap();
+    await expect(page.locator(IMMERSIVE)).toBeVisible({ timeout: 90000 });
+    // The cabinet pins the body while it runs, which reads as scrollY 0, and
+    // the cabinet itself starts at the top of the viewport.
+    expect((await page.locator(IMMERSIVE).boundingBox())?.y).toBeCloseTo(0, 0);
+
+    await page.getByRole("button", { name: "Reset / Power Off Cabinet" }).tap();
+    await expect(launch).toBeVisible();
+    // Leaving brings the preview back to the top of the viewport, as the
+    // cabinet intends, so the player is not left at the stale pinned offset.
+    await expect
+      .poll(() =>
+        page
+          .locator('[data-game="retro-labyrinth"]')
+          .first()
+          .evaluate((el) => Math.round(el.getBoundingClientRect().top))
+      )
+      .toBeLessThanOrEqual(1);
+  });
+
+  test("no phone label is cut off with an ellipsis at the landscape sizes", async ({
+    page,
+  }) => {
+    await turnSideways(page);
+    await launchCabinet(page);
+    for (const [width, height] of LANDSCAPE_SIZES) {
+      await page.setViewportSize({ width, height });
+      await expect
+        .poll(
+          () => clippedControls(page),
+          `clipped labels at ${width}x${height}`
+        )
+        .toEqual([]);
+    }
+  });
+
+  test("a rotation mid-run pauses the room, and it resumes only on Resume", async ({
+    page,
+  }) => {
+    await turnSideways(page);
+    await launchCabinet(page);
+    const paused = page.getByText("PAUSED", { exact: true });
+    const prompt = page.getByTestId("rotate-device-prompt");
+    await expect(paused).toHaveCount(0);
+
+    const size = page.viewportSize()!;
+    await page.setViewportSize({
+      width: Math.min(size.width, size.height),
+      height: Math.max(size.width, size.height),
+    });
+    await expect(prompt).toBeVisible();
+    await expect(paused).toBeVisible();
+
+    await turnSideways(page);
+    await expect(prompt).toHaveCount(0);
+    await expect(paused).toBeVisible();
+
+    await page.getByRole("button", { name: "Resume", exact: true }).tap();
+    await expect(paused).toHaveCount(0);
+    const start = await readPlayerGrid(page);
+    const moves = ["Move Up", "Move Right", "Move Down", "Move Left"];
+    let moved = false;
+    for (let i = 0; i < moves.length && !moved; i++) {
+      await page.getByRole("button", { name: moves[i] }).tap();
+      moved = (await readPlayerGrid(page)) !== start;
+    }
+    expect(
+      moved,
+      "a move after Resume should change the player's grid cell"
+    ).toBe(true);
+  });
+
+  test("a lost run shows a result card that fits, and RETRY BREACH restarts it by touch", async ({
+    page,
+  }, testInfo) => {
+    test.setTimeout(480000);
+    await turnSideways(page);
+    await launchCabinet(page);
+
+    // Patrols only move when the player does, and a player who stands still
+    // is never reached. So the run walks at the nearest patrol, one tap at a
+    // time, until one of them traces the player and HP reaches zero.
+    const retry = page.getByRole("button", { name: /RETRY BREACH/i });
+    const moves = ["Move Up", "Move Right", "Move Down", "Move Left"];
+    for (let step = 0; step < 900 && !(await retry.isVisible()); step++) {
+      const from = await playerCell(page);
+      const patrols = await patrolCells(page);
+      const target = from && patrols[0];
+      if (from && target) {
+        const nearest = patrols.reduce((best, p) =>
+          Math.abs(p.x - from.x) + Math.abs(p.y - from.y) <
+          Math.abs(best.x - from.x) + Math.abs(best.y - from.y)
+            ? p
+            : best
+        );
+        const dx = nearest.x - from.x;
+        const dy = nearest.y - from.y;
+        const horizontal =
+          dx !== 0 ? (dx > 0 ? "Move Right" : "Move Left") : null;
+        const vertical = dy !== 0 ? (dy > 0 ? "Move Down" : "Move Up") : null;
+        const ordered =
+          Math.abs(dx) >= Math.abs(dy)
+            ? [horizontal, vertical]
+            : [vertical, horizontal];
+        for (const name of ordered.filter((n): n is string => n !== null)) {
+          await page
+            .getByRole("button", { name })
+            .tap({ timeout: 5000 })
+            .catch(() => undefined);
+          const now = await playerCell(page);
+          if (now && (now.x !== from.x || now.y !== from.y)) break;
+        }
+      } else {
+        await page
+          .getByRole("button", { name: moves[step % 4] })
+          .tap({ timeout: 5000 })
+          .catch(() => undefined);
+      }
+      const next = page.getByRole("button", { name: /^Next Room$/ });
+      if (await next.isVisible()) await next.tap({ timeout: 5000 });
+    }
+    await expect(retry).toBeVisible({ timeout: 15000 });
+
+    for (const [width, height] of RESULT_SIZES) {
+      await page.setViewportSize({ width, height });
+      await expect(retry).toBeVisible();
+      const box = await retry.boundingBox();
+      expect(
+        box!.height,
+        `restart height at ${width}x${height}`
+      ).toBeGreaterThanOrEqual(MIN_TARGET_PX);
+      expect(
+        box!.width,
+        `restart width at ${width}x${height}`
+      ).toBeGreaterThanOrEqual(MIN_TARGET_PX);
+      const field = await page.locator(PLAYFIELD).boundingBox();
+      expect(box!.y).toBeGreaterThanOrEqual(field!.y);
+      expect(box!.y + box!.height).toBeLessThanOrEqual(
+        field!.y + field!.height
+      );
+      await assertNoHorizontalOverflow(page);
+      await shoot(page, testInfo, `result-card-${width}x${height}`);
+    }
+
+    await retry.tap();
+    await expect(retry).toHaveCount(0);
+    const start = await readPlayerGrid(page);
+    let moved = false;
+    for (let i = 0; i < moves.length && !moved; i++) {
+      await page.getByRole("button", { name: moves[i] }).tap();
+      moved = (await readPlayerGrid(page)) !== start;
+    }
+    expect(moved, "the restarted run should take a move").toBe(true);
   });
 
   test("has no blocking axe violations over the phone cabinet", async ({

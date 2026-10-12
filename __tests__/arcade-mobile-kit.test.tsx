@@ -327,7 +327,7 @@ describe("arcade mobile kit", () => {
       expect(onRelease).toHaveBeenCalledTimes(2);
     });
 
-    it("releases every hold when the button loses focus", () => {
+    it("keeps a hold when focus moves, and releases on window blur", () => {
       const onPress = vi.fn();
       const onRelease = vi.fn();
       render(
@@ -336,10 +336,14 @@ describe("arcade mobile kit", () => {
       const button = screen.getByRole("button", { name: "Fire" });
       fireEvent.pointerDown(button, { pointerId: 1, pointerType: "touch" });
       fireEvent.pointerDown(button, { pointerId: 2, pointerType: "touch" });
+      // A tap on another key moves focus; the held button must not let go.
       fireEvent.blur(button);
+      expect(onRelease).not.toHaveBeenCalled();
+      // The page losing focus releases every hold, once.
+      fireEvent(window, new Event("blur"));
       expect(onRelease).toHaveBeenCalledTimes(1);
       // Blur with nothing held is quiet.
-      fireEvent.blur(button);
+      fireEvent(window, new Event("blur"));
       expect(onRelease).toHaveBeenCalledTimes(1);
     });
 

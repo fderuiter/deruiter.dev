@@ -8,11 +8,11 @@ import {
   cleanup,
   act,
 } from "@testing-library/react";
-import { HoldDpad } from "@/components/arcade/mobile/HoldDpad";
 import {
+  HoldDpad,
   HOLD_REPEAT_DELAY_MS,
   HOLD_REPEAT_INTERVAL_MS,
-} from "@/components/arcade/mobile/holdRepeat";
+} from "@/components/arcade/mobile";
 
 describe("HoldDpad", () => {
   beforeEach(() => {
@@ -99,5 +99,101 @@ describe("HoldDpad", () => {
       vi.advanceTimersByTime(2000);
     });
     expect(onMove).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("hold controls under multi-touch and page changes", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.useRealTimers();
+  });
+
+  it("keeps holding one arrow while a second finger taps another", () => {
+    const onMove = vi.fn();
+    render(<HoldDpad onMove={onMove} />);
+    const right = screen.getByRole("button", { name: "Move Right" });
+    const up = screen.getByRole("button", { name: "Move Up" });
+
+    fireEvent.pointerDown(right, { pointerId: 1, pointerType: "touch" });
+    fireEvent.pointerDown(up, { pointerId: 2, pointerType: "touch" });
+    fireEvent.pointerUp(up, { pointerId: 2, pointerType: "touch" });
+    act(() => {
+      vi.advanceTimersByTime(
+        HOLD_REPEAT_DELAY_MS + HOLD_REPEAT_INTERVAL_MS * 2
+      );
+    });
+
+    // Right is still held: it kept repeating after Up was tapped and lifted.
+    const rightSteps = onMove.mock.calls.filter(([d]) => d === "right").length;
+    expect(rightSteps).toBeGreaterThanOrEqual(3);
+    expect(onMove.mock.calls.filter(([d]) => d === "up")).toHaveLength(1);
+    fireEvent.pointerUp(right, { pointerId: 1, pointerType: "touch" });
+  });
+
+  it("a tap that would move focus does not release a held arrow", () => {
+    const onMove = vi.fn();
+    render(<HoldDpad onMove={onMove} />);
+    const right = screen.getByRole("button", { name: "Move Right" });
+    const up = screen.getByRole("button", { name: "Move Up" });
+
+    fireEvent.pointerDown(right, { pointerId: 1, pointerType: "touch" });
+    // A mousedown on another key is cancelled, so focus stays on Right.
+    expect(fireEvent.mouseDown(up)).toBe(false);
+    act(() => {
+      right.focus();
+      up.focus();
+    });
+    act(() => {
+      vi.advanceTimersByTime(HOLD_REPEAT_DELAY_MS + HOLD_REPEAT_INTERVAL_MS);
+    });
+    expect(
+      onMove.mock.calls.filter(([d]) => d === "right").length
+    ).toBeGreaterThanOrEqual(2);
+    fireEvent.pointerUp(right, { pointerId: 1, pointerType: "touch" });
+  });
+
+  it("releases every hold on window blur, a hidden page and pagehide", () => {
+    for (const release of [
+      () => fireEvent(window, new Event("blur")),
+      () => fireEvent(window, new Event("pagehide")),
+      () => {
+        Object.defineProperty(document, "visibilityState", {
+          configurable: true,
+          get: () => "hidden",
+        });
+        fireEvent(document, new Event("visibilitychange"));
+        delete (document as { visibilityState?: unknown }).visibilityState;
+      },
+    ]) {
+      const onMove = vi.fn();
+      const { unmount } = render(<HoldDpad onMove={onMove} />);
+      const left = screen.getByRole("button", { name: "Move Left" });
+      fireEvent.pointerDown(left, { pointerId: 5, pointerType: "touch" });
+      release();
+      const after = onMove.mock.calls.length;
+      act(() => {
+        vi.advanceTimersByTime(HOLD_REPEAT_DELAY_MS * 3);
+      });
+      expect(onMove.mock.calls.length).toBe(after);
+      unmount();
+    }
+  });
+
+  it("a paused game stops a repeat that is running", () => {
+    const onMove = vi.fn();
+    const { rerender } = render(<HoldDpad onMove={onMove} />);
+    const down = screen.getByRole("button", { name: "Move Down" });
+    fireEvent.pointerDown(down, { pointerId: 6, pointerType: "touch" });
+    rerender(<HoldDpad onMove={onMove} paused />);
+    const after = onMove.mock.calls.length;
+    act(() => {
+      vi.advanceTimersByTime(HOLD_REPEAT_DELAY_MS * 3);
+    });
+    expect(onMove.mock.calls.length).toBe(after);
+    fireEvent.pointerUp(down, { pointerId: 6, pointerType: "touch" });
   });
 });

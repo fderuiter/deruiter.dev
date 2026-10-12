@@ -11,6 +11,7 @@ export interface TouchButtonProps extends Omit<
   | "onKeyDown"
   | "onKeyUp"
   | "onBlur"
+  | "onMouseDown"
 > {
   /** Accessible name. Required: an icon-only control must still be named. */
   label: string;
@@ -27,8 +28,9 @@ const KEYBOARD_HOLD = "keyboard";
  * A press-and-hold control for a touch cabinet. It keeps the set of pointers
  * holding it: the press starts when the first one lands and the release when
  * the last one lifts, so two fingers on one button count once. It captures the
- * pointer on press, so a finger that slides off still releases it, and it
- * releases everything on blur. It is at least 44px square and uses
+ * pointer on press, so a finger that slides off still releases it. A tap does
+ * not take focus, so holding one key while tapping another keeps both. Every
+ * hold is released when the window blurs or the page hides. It is at least 44px square and uses
  * `touch-action: none` so a hold never turns into a pan or a zoom. Enter and
  * Space work from a keyboard too.
  */
@@ -78,12 +80,31 @@ export const TouchButton: React.FC<TouchButtonProps> = ({
     if (held.size === 0) onRelease?.();
   };
 
-  const letGoAll = () => {
-    const held = heldRef.current;
-    if (held.size === 0) return;
-    held.clear();
-    onRelease?.();
-  };
+  // Holds end when the page stops being the thing the player is using, not
+  // when focus moves. A tap on another key must not release a held arrow.
+  const onReleaseRef = useRef(onRelease);
+  useEffect(() => {
+    onReleaseRef.current = onRelease;
+  }, [onRelease]);
+  useEffect(() => {
+    const release = () => {
+      const held = heldRef.current;
+      if (held.size === 0) return;
+      held.clear();
+      onReleaseRef.current?.();
+    };
+    const hidden = () => {
+      if (document.visibilityState === "hidden") release();
+    };
+    window.addEventListener("blur", release);
+    window.addEventListener("pagehide", release);
+    document.addEventListener("visibilitychange", hidden);
+    return () => {
+      window.removeEventListener("blur", release);
+      window.removeEventListener("pagehide", release);
+      document.removeEventListener("visibilitychange", hidden);
+    };
+  }, []);
 
   return (
     <button
@@ -103,7 +124,9 @@ export const TouchButton: React.FC<TouchButtonProps> = ({
       onPointerUp={(event) => letGo(event.pointerId)}
       onPointerCancel={(event) => letGo(event.pointerId)}
       onLostPointerCapture={(event) => letGo(event.pointerId)}
-      onBlur={letGoAll}
+      // A tap must not move focus: a focus change from a mousedown would blur
+      // the button a finger is still holding (see the window release below).
+      onMouseDown={(event) => event.preventDefault()}
       onContextMenu={(event) => event.preventDefault()}
       onKeyDown={(event) => {
         if ((event.key === " " || event.key === "Enter") && !event.repeat) {

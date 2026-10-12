@@ -15,6 +15,8 @@ import { safeGetRawItem, safeSetRawItem } from "@/lib/safe-storage";
 import { recordArcadeScore } from "@/lib/arcade-achievements";
 import { clamp } from "@/lib/game-utils";
 import { useAudio } from "@/components/providers/AudioProvider";
+import { DynamicTabletOrientationHint as TabletOrientationHint } from "@/components/arcade/DynamicTabletOrientationHint";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 import {
   IconTrophy,
   IconRefresh,
@@ -187,6 +189,17 @@ const WEAPON_SHORT_LABELS: Record<WeaponId, string> = {
   zero_day: "0-Day",
   mitm_spoof: "MitM Spoof",
   ransomware_lock: "Ransomware",
+};
+
+/** Short tool names for the phone grid, so each fits a 44px key at 9px. */
+const PHONE_TOOL_LABELS: Partial<Record<WeaponId, string>> = {
+  npm_install: "npm i",
+  git_force_push: "push -f",
+  stack_overflow: "Stack",
+  port_scan: "Port",
+  buffer_overflow: "Buffer",
+  mitm_spoof: "MitM",
+  ransomware_lock: "Ransom",
 };
 
 interface Drone {
@@ -367,6 +380,19 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   const phoneCabinet = useCabinetTouch();
   const resumeHint = useControlHint(RESUME_HINT);
   const [optionsOpen, setOptionsOpen] = useState(false);
+  // The phone sheet's focus refs and trap are hooks, so they sit above the
+  // early return for the unmounted skeleton.
+  const optionsButtonRef = useRef<HTMLButtonElement>(null);
+  const closeOptionsRef = useRef<HTMLButtonElement>(null);
+  // The phone sheet is a modal dialog: focus stays inside it while it is open
+  // and returns to the Options key when it closes.
+  const optionsSheetRef = useFocusTrap<HTMLElement>(
+    phoneCabinet && optionsOpen,
+    {
+      initialFocusRef: closeOptionsRef,
+      returnFocusTo: optionsButtonRef,
+    }
+  );
   const [handedness, setHandedness] = useState<Handedness>("right");
   const swipeStartRef = useRef<{ id: number; x: number; y: number } | null>(
     null
@@ -2344,6 +2370,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     setOptionsOpen(true);
     setGameStatus((status) => (status === "playing" ? "paused" : status));
   };
+  const closeOptionsSheet = () => setOptionsOpen(false);
 
   const roomBadge =
     gameMode === "roguelike"
@@ -2367,7 +2394,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         <span className="text-neutral-400">HP</span>
         <span className="h-2 w-10 overflow-hidden rounded-full border border-neutral-800 bg-neutral-900">
           <span
-            className={`block h-full transition-all duration-200 ${
+            className={`block h-full motion-safe:transition-all motion-safe:duration-200 ${
               playerHp > 50
                 ? "bg-emerald-500"
                 : playerHp > 25
@@ -2396,10 +2423,21 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       >
         {score}
       </span>
+      <span
+        className="flex shrink-0 items-center gap-1"
+        data-testid="labyrinth-phone-ram"
+      >
+        <span className="text-slate-400">RAM</span>
+        <span className="text-neutral-300">
+          {currentRam}/{maxRam}
+        </span>
+      </span>
       <button
+        ref={optionsButtonRef}
         type="button"
         onClick={openOptionsSheet}
         aria-expanded={optionsOpen}
+        aria-controls="labyrinth-options-sheet"
         className="h-11 shrink-0 rounded-lg border border-zinc-700 bg-zinc-900 px-2.5 text-xs font-bold text-zinc-200 touch-manipulation active:scale-[0.98]"
       >
         Options
@@ -2418,13 +2456,18 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         const weapon = weaponId ? weapons[weaponId] : null;
         const hasAmmo = !!weapon && weapon.ammo > 0;
         const shortLabel = weaponId
-          ? WEAPON_SHORT_LABELS[weaponId] || weapon?.name || weaponId
+          ? PHONE_TOOL_LABELS[weaponId] ||
+            WEAPON_SHORT_LABELS[weaponId] ||
+            weapon?.name ||
+            weaponId
           : "---";
         return (
           <TouchButton
             key={`tool-${slotIdx}`}
             label={
-              hasAmmo ? `Fire ${shortLabel}` : `${shortLabel}, out of ammo`
+              hasAmmo
+                ? `${shortLabel}: fire tool ${slotIdx + 1}`
+                : `${shortLabel}: out of ammo`
             }
             disabled={!hasAmmo}
             onPress={() => fireStarterSlot(slotIdx)}
@@ -2438,21 +2481,21 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         );
       })}
       <TouchButton
-        label="Fire EMP burst"
+        label="EMP: fire an EMP burst"
         onPress={() => handleFireWeapon("emp_blast")}
         className="flex h-11 w-11 items-center justify-center rounded-lg border border-slate-700 bg-slate-900 text-[10px] font-bold text-slate-200"
       >
         EMP
       </TouchButton>
       <TouchButton
-        label="Cycle to the next tool and fire it"
+        label="Exploit: cycle to the next tool and fire it"
         onPress={cycleWeapon}
         className="flex h-11 w-11 items-center justify-center rounded-lg border border-cyan-700/60 bg-cyan-950/50 text-[10px] font-bold text-cyan-200"
       >
         EXPLOIT
       </TouchButton>
       <TouchButton
-        label="Open the darknet market"
+        label="Market: open the darknet market"
         onPress={() => openOverlay("darknet_shop")}
         className="flex h-11 w-11 items-center justify-center rounded-lg border border-amber-700/50 bg-amber-950/40 text-[10px] font-bold text-amber-300"
       >
@@ -2917,7 +2960,9 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
 
         {/* Pause Overlay */}
         {gameStatus === "paused" && (
-          <div className="absolute inset-0 bg-neutral-950/90 backdrop-blur-sm flex flex-col items-center justify-center text-center p-3 rounded-lg border border-zinc-700 z-30">
+          <div
+            className={`absolute inset-0 ${phoneCabinet ? "bg-black/90" : "bg-neutral-950/90 backdrop-blur-sm"} flex flex-col items-center justify-center text-center p-3 rounded-lg border border-zinc-700 z-30`}
+          >
             <h3 className="text-zinc-100 font-bold text-xs uppercase tracking-widest">
               PAUSED
             </h3>
@@ -2954,7 +2999,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                 handleRestart();
                 containerRef.current?.focus({ preventScroll: true });
               }}
-              className="mt-2 px-3 py-1 bg-neutral-900 text-rose-300 border border-rose-800 hover:bg-rose-950 text-xs font-bold rounded cursor-pointer transition-colors"
+              className="mt-2 px-3 py-1 bg-neutral-900 text-rose-300 border border-rose-800 hover:bg-rose-950 text-xs font-bold rounded cursor-pointer transition-colors [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-28"
             >
               RETRY BREACH
             </button>
@@ -3200,17 +3245,33 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         )}
         {phoneCabinet && optionsOpen && (
           <section
-            aria-label="Game options"
+            ref={optionsSheetRef}
+            id="labyrinth-options-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="labyrinth-options-title"
             data-testid="labyrinth-options-sheet"
-            className="absolute inset-0 z-40 flex flex-col gap-2 overflow-y-auto rounded-lg border border-zinc-700 bg-neutral-950/95 p-2 backdrop-blur-sm"
+            onKeyDown={(event) => {
+              // Escape closes the sheet here and stops there, so the game's own
+              // Escape does not also resume the paused room.
+              if (event.key === "Escape") {
+                event.stopPropagation();
+                closeOptionsSheet();
+              }
+            }}
+            className="absolute inset-0 z-40 flex flex-col gap-2 overflow-y-auto rounded-lg border border-zinc-700 bg-black/90 p-2"
           >
             <div className="flex items-center justify-between gap-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-amber-400">
+              <span
+                id="labyrinth-options-title"
+                className="text-xs font-bold uppercase tracking-wider text-amber-400"
+              >
                 Options
               </span>
               <button
+                ref={closeOptionsRef}
                 type="button"
-                onClick={() => setOptionsOpen(false)}
+                onClick={closeOptionsSheet}
                 className="min-h-11 min-w-11 rounded-lg border border-zinc-700 bg-zinc-900 px-3 text-xs font-bold text-zinc-200"
               >
                 Close options
@@ -3349,7 +3410,11 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   const phoneRow = (
     <DockFrame handedness={handedness} className="min-h-0 flex-1">
       <div className="flex min-h-0 shrink-0 flex-col justify-center">
-        <HoldDpad onMove={handleDirectionalMove} compact />
+        <HoldDpad
+          onMove={handleDirectionalMove}
+          compact
+          paused={gameStatus !== "playing" || optionsOpen}
+        />
       </div>
       {canvasFrameNode}
       <div className="flex min-h-0 shrink-0 flex-col justify-center">
@@ -3364,6 +3429,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         phoneCabinet ? "min-h-0 flex-1 items-stretch" : "items-center my-6"
       }`}
     >
+      {!phoneCabinet && <TabletOrientationHint className="w-full" />}
       {!phoneCabinet && (
         <details
           className="arcade-labyrinth-options w-full"

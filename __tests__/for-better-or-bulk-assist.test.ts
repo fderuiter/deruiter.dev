@@ -1129,6 +1129,38 @@ describe("the helper's own grill batch", () => {
     );
   });
 
+  it("waits on the other person, not idly, while they still carry something (round 19, D-3)", () => {
+    const base = createLevel(ASSIST_SETUP);
+    const stock = Object.fromEntries(
+      Object.keys(base.stock).map((kind) => [kind, 0])
+    ) as GameState["stock"];
+    const done: GameState = {
+      ...base,
+      stock,
+      targets: base.targets.map((t) => ({
+        ...t,
+        status: "filled" as const,
+        filledBy: ["fred"],
+      })),
+    };
+    expect(assistJob(done, "abbi")).toBe(
+      "Abbi has nothing useful to do right now."
+    );
+    const carrying: GameState = {
+      ...done,
+      players: {
+        ...done.players,
+        fred: {
+          ...done.players.fred,
+          holding: { kind: "chairs", madeBy: null, count: 1 },
+        },
+      },
+    };
+    expect(assistJob(carrying, "abbi")).toBe(
+      "Abbi is waiting for Fred to set down what's in hand."
+    );
+  });
+
   it("says it is waiting for its own raw batch to cook, and does not wander off", () => {
     const base = createLevel(ASSIST_SETUP);
     const grill = base.stations.find((s) => s.kind === "grill");

@@ -271,3 +271,28 @@ describe("the receipt counts items and clears the navbar (#1933)", () => {
     }
   });
 });
+
+describe("the receipt's unplanned rows (round 19, N-4)", () => {
+  afterEach(cleanup);
+
+  it("says Not planned once, without a second line saying the same", () => {
+    const receipt = computeReceipt(
+      createLevel({
+        ...DEFAULT_SETUP,
+        cart: { ...DEFAULT_SETUP.cart, lanterns: false },
+      })
+    );
+    render(
+      <ReceiptView
+        receipt={receipt}
+        runCode={null}
+        onPlayAgain={vi.fn()}
+        onChangePlan={vi.fn()}
+        onWatchReplay={vi.fn()}
+      />
+    );
+    const text = screen.getByTestId("fbb-receipt").textContent ?? "";
+    expect(text).toContain("Lanterns: Not planned");
+    expect(text).not.toContain("Not in this plan.");
+  });
+});

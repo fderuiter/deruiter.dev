@@ -173,9 +173,12 @@ export function ReceiptView({
               <span className="font-bold">
                 {line.label}: {STATUS_LABELS[line.status]}
               </span>
-              <span className="block break-words text-[var(--fbb-dim)]">
-                {line.explanation}
-              </span>
+              {/* "Not planned" already says it all (round 19, N-4). */}
+              {line.status === "unplanned" ? null : (
+                <span className="block break-words text-[var(--fbb-dim)]">
+                  {line.explanation}
+                </span>
+              )}
             </li>
           ))}
         </ul>

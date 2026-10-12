@@ -17,8 +17,34 @@ import {
   isOverGap,
   poleBonus,
   pruneCourse,
+  stageStartX,
   type CourseLayout,
 } from "./garmin-course";
+import {
+  BOLT_COOLDOWN_MS,
+  BOLT_DEFEAT_SCORE,
+  DAMAGE_GRACE_MS,
+  HIGH_DEFEAT_SCORE,
+  HIGH_MS,
+  POWERUP_SCORE,
+  PICKUP_SIZE,
+  START_LIVES,
+  addLives,
+  blockReward,
+  boltHits,
+  canThrowBolt,
+  collectTier,
+  damageTier,
+  emergePickup,
+  livesEarned,
+  playerHeightFor,
+  spawnBolt,
+  stepBolts,
+  stepPickups,
+  type Bolt,
+  type Pickup,
+  type PowerTier,
+} from "./garmin-powerups";
 
 export type DeviceTarget = "fenix" | "forerunner" | "edge";
 export type VariableType = "int" | "float" | "string" | "array";
@@ -329,10 +355,24 @@ export interface GameEngineState {
   stage?: number;
   /** Kudos collected this run. */
   kudos?: number;
-  /** A Firmware Update shield absorbs the next hit. */
-  hasShield?: boolean;
-  /** Milliseconds of hit immunity left after the shield breaks. */
+  /** Milliseconds of hit immunity left after a hit or a lost life. */
   invulnerableMs?: number;
+  // ---- Power-ups and lives (#1988).
+  /** Power tier; absent means Base. */
+  power?: PowerTier;
+  /** Milliseconds of Runner's High (invincibility) left. */
+  starMs?: number;
+  /** Lives left, counting the current one; absent means this is the last. */
+  lives?: number;
+  /** Power-ups travelling the course. */
+  pickups?: Pickup[];
+  // ---- Heat Map (#1989).
+  /** Heat bolts on the face. */
+  bolts?: Bolt[];
+  /** Milliseconds until the next bolt can be thrown. */
+  boltCooldownMs?: number;
+  /** Bolts thrown this run, for their ids. */
+  boltsThrown?: number;
   /** The jump key is held: the rise uses the lighter gravity. */
   jumpHeld?: boolean;
   /** Milliseconds since the runner last had footing, for coyote time. */
@@ -374,10 +414,6 @@ export const STOMP_SCORE = 100;
 export const KUDOS_SCORE = 50;
 export const SYNC_BLOCK_SCORE = 20;
 export const STAGE_CLEAR_SCORE = 1000;
-/** Kudos that add a shield (or 500 points when already shielded). */
-export const KUDOS_PER_SHIELD = 25;
-/** Hit immunity after the shield breaks. */
-export const SHIELD_GRACE_MS = 1500;
 
 /**
  * Initializes a new fresh game state
@@ -432,8 +468,13 @@ export function createInitialState(
     course: EMPTY_COURSE,
     stage: 1,
     kudos: 0,
-    hasShield: false,
     invulnerableMs: 0,
+    power: "base",
+    starMs: 0,
+    pickups: [],
+    bolts: [],
+    boltCooldownMs: 0,
+    boltsThrown: 0,
     jumpHeld: false,
     coyoteMs: 0,
     jumpBufferMs: 0,
@@ -466,6 +507,7 @@ export function startGame(
     lastAllocTime: now,
     lastObstacleTime: now,
     courseSeed,
+    lives: START_LIVES,
     course: generateStage(1, courseSeed, GROUND_Y),
     banner: { text: "STAGE 1 · GO!", ttlMs: 1800, tone: "info" },
   };
@@ -538,6 +580,30 @@ export function releaseJump(state: GameEngineState): GameEngineState {
       state.gameState === "playing" && state.playerVy < JUMP_CUT_VY
         ? JUMP_CUT_VY
         : state.playerVy,
+  };
+}
+
+/**
+ * Throws a heat bolt forward from the runner's hand. Only a Heat Map runner
+ * can throw, at most {@link BOLT_COOLDOWN_MS} apart and with no more than
+ * two bolts on the face; otherwise the state is returned unchanged.
+ */
+export function throwBolt(state: GameEngineState): GameEngineState {
+  if (state.gameState !== "playing") return state;
+  if (!canThrowBolt(state.power, state.bolts, state.boltCooldownMs)) {
+    return state;
+  }
+  const cameraX = state.distanceMeters * PX_PER_METER;
+  const h = playerHeightFor(state.power);
+  const id = (state.boltsThrown ?? 0) + 1;
+  return {
+    ...state,
+    bolts: [
+      ...(state.bolts ?? []),
+      spawnBolt(id, cameraX + PLAYER_X + PLAYER_WIDTH, state.playerY + h / 2),
+    ],
+    boltCooldownMs: BOLT_COOLDOWN_MS,
+    boltsThrown: id,
   };
 }
 
@@ -902,6 +968,49 @@ export function wipeScreenFog(
 }
 
 /**
+ * Spends a life after a fall or an enemy hit. With lives left the stage
+ * restarts from its start at Base, with a moment of hit immunity; on the
+ * last life the run ends with `report`.
+ */
+function loseLife(
+  state: GameEngineState,
+  report: CrashReport,
+  now: number = Date.now()
+): GameEngineState {
+  const lives = (state.lives ?? 1) - 1;
+  if (lives <= 0) {
+    return { ...state, lives: 0, gameState: "crashed", crashReport: report };
+  }
+  const stage = state.stage ?? 1;
+  return {
+    ...state,
+    lives,
+    power: "base",
+    starMs: 0,
+    invulnerableMs: DAMAGE_GRACE_MS,
+    distanceMeters: stageStartX(stage) / PX_PER_METER,
+    playerY: GROUND_Y - PLAYER_HEIGHT,
+    playerVy: 0,
+    isGrounded: true,
+    jumpHeld: false,
+    coyoteMs: 0,
+    jumpBufferMs: 0,
+    stompChain: 0,
+    obstacles: [],
+    pickups: [],
+    bolts: [],
+    boltCooldownMs: 0,
+    course: generateStage(stage, state.courseSeed ?? 0, GROUND_Y),
+    lastObstacleTime: now,
+    banner: {
+      text: `${report.errorType.toUpperCase()} · LIVES ${lives}`,
+      ttlMs: 2200,
+      tone: "warn",
+    },
+  };
+}
+
+/**
  * Primary Game Physics & Simulation Update Loop (Called by requestAnimationFrame)
  */
 export function updateGameSimulation(
@@ -1162,7 +1271,12 @@ export function updateGameSimulation(
   let course = state.course ?? EMPTY_COURSE;
   let score = state.score;
   let kudos = state.kudos ?? 0;
-  let hasShield = state.hasShield ?? false;
+  let power: PowerTier = state.power ?? "base";
+  let lives = state.lives;
+  let starMs = Math.max(0, (state.starMs ?? 0) - safeDelta);
+  let pickups = state.pickups ?? [];
+  // The runner's box grows when Buff; its top is playerY, its feet stay put.
+  const h = playerHeightFor(power);
   let stage = state.stage ?? 1;
   let banner = state.banner ?? null;
   const popups: FacePopup[] = [];
@@ -1180,8 +1294,8 @@ export function updateGameSimulation(
   let nextPlayerVy = Math.min(MAX_FALL_VY, state.playerVy + gravity * dtRatio);
   let isGrounded = false;
 
-  const prevBottom = state.playerY + PLAYER_HEIGHT;
-  const nextBottom = nextPlayerY + PLAYER_HEIGHT;
+  const prevBottom = state.playerY + h;
+  const nextBottom = nextPlayerY + h;
   if (nextBottom >= prevBottom) {
     // Footing: the lane where it isn't a gap, and the tops of ledges and
     // blocks the runner was above a moment ago. The highest one crossed wins.
@@ -1204,7 +1318,7 @@ export function updateGameSimulation(
       if (footRight > b.x && footLeft < b.x + BLOCK_SIZE) consider(b.y);
     }
     if (landingTop !== Infinity) {
-      nextPlayerY = landingTop - PLAYER_HEIGHT;
+      nextPlayerY = landingTop - h;
       nextPlayerVy = 0;
       isGrounded = true;
     }
@@ -1234,30 +1348,8 @@ export function updateGameSimulation(
         const blocks = course.blocks.slice();
         blocks[bumped] = { ...block, used: true };
         course = { ...course, blocks };
-        if (block.contents === "firmware") {
-          if (hasShield) {
-            score += 1000;
-            popups.push({
-              x: block.x,
-              y: block.y - 6,
-              text: "+1000",
-              ttlMs: 900,
-            });
-          } else {
-            hasShield = true;
-            popups.push({
-              x: block.x,
-              y: block.y - 6,
-              text: "SHIELD",
-              ttlMs: 900,
-            });
-          }
-          banner = {
-            text: "FIRMWARE UPDATE · SHIELD ON",
-            ttlMs: 1800,
-            tone: "good",
-          };
-        } else {
+        const reward = blockReward(block.contents, power);
+        if (reward === "kudos") {
           kudos += 1;
           score += KUDOS_SCORE + SYNC_BLOCK_SCORE;
           popups.push({
@@ -1266,6 +1358,9 @@ export function updateGameSimulation(
             text: `+${KUDOS_SCORE + SYNC_BLOCK_SCORE}`,
             ttlMs: 800,
           });
+        } else {
+          score += SYNC_BLOCK_SCORE;
+          pickups = [...pickups, emergePickup(reward, block, block.id)];
         }
       }
     }
@@ -1282,16 +1377,18 @@ export function updateGameSimulation(
   }
   const stompChain = isGrounded ? 0 : (state.stompChain ?? 0);
 
-  // Falling below the face through a gap ends the run.
+  // Falling below the face through a gap costs a life.
   if (nextPlayerY > CANVAS_SIZE) {
-    return {
-      ...state,
-      playerY: nextPlayerY,
-      playerVy: 0,
-      distanceMeters: nextDistance,
-      score,
-      gameState: "crashed",
-      crashReport: {
+    return loseLife(
+      {
+        ...state,
+        playerY: nextPlayerY,
+        playerVy: 0,
+        distanceMeters: nextDistance,
+        score,
+        kudos,
+      },
+      {
         errorType: "Segmentation Fault",
         file: "Garmin_Schvitz_App.mc",
         line: 256,
@@ -1302,13 +1399,14 @@ export function updateGameSimulation(
         ],
         heapUsedKb: state.allocatedRamKb,
         heapLimitKb: DEVICE_PROFILES[state.device].ramLimitKb,
-      },
-    };
+      }
+    );
   }
 
-  // Kudos: touching one collects it; every KUDOS_PER_SHIELD adds a shield.
+  // Kudos: touching one collects it; every KUDOS_PER_LIFE earns a life.
   const playerTop = nextPlayerY;
-  const playerBottom = nextPlayerY + PLAYER_HEIGHT;
+  const playerBottom = nextPlayerY + h;
+  const kudosBefore = kudos;
   if (course.kudos.length > 0) {
     const kept = course.kudos.filter((k) => {
       const hit =
@@ -1320,23 +1418,86 @@ export function updateGameSimulation(
       kudos += 1;
       score += KUDOS_SCORE;
       popups.push({ x: k.x, y: k.y - 6, text: `+${KUDOS_SCORE}`, ttlMs: 600 });
-      if (kudos % KUDOS_PER_SHIELD === 0) {
-        if (hasShield) {
-          score += 500;
-        } else {
-          hasShield = true;
-          banner = {
-            text: `${kudos} KUDOS · SHIELD ON`,
-            ttlMs: 1800,
-            tone: "good",
-          };
-        }
-      }
       return false;
     });
     if (kept.length !== course.kudos.length)
       course = { ...course, kudos: kept };
   }
+  const earned = livesEarned(kudosBefore, kudos);
+  if (earned > 0) {
+    lives = addLives(lives, earned);
+    popups.push({ x: bodyLeft, y: playerTop - 10, text: "1UP", ttlMs: 1000 });
+    banner = {
+      text: `${kudos} KUDOS · 1UP · LIVES ${lives}`,
+      ttlMs: 1800,
+      tone: "good",
+    };
+  }
+
+  // Power-ups travel the course; touching one collects it.
+  pickups = stepPickups(
+    pickups,
+    course,
+    GROUND_Y,
+    cameraX,
+    CANVAS_SIZE,
+    safeDelta
+  );
+  if (pickups.length > 0) {
+    const kept: Pickup[] = [];
+    for (const p of pickups) {
+      const hit =
+        p.emergeMs <= 0 &&
+        p.x + PICKUP_SIZE > bodyLeft &&
+        p.x < bodyRight &&
+        p.y + PICKUP_SIZE > playerTop &&
+        p.y < playerBottom;
+      if (!hit) {
+        kept.push(p);
+        continue;
+      }
+      score += POWERUP_SCORE;
+      popups.push({
+        x: p.x,
+        y: p.y - 6,
+        text: `+${POWERUP_SCORE}`,
+        ttlMs: 900,
+      });
+      const nextPower = collectTier(power, p.kind);
+      if (p.kind === "high") {
+        starMs = HIGH_MS;
+        banner = { text: "RUNNER'S HIGH!", ttlMs: 1800, tone: "good" };
+      } else if (nextPower !== power) {
+        banner = {
+          text:
+            nextPower === "heatmap"
+              ? "HEAT MAP · X THROWS"
+              : "PROTEIN SHAKE · BUFF",
+          ttlMs: 1800,
+          tone: "good",
+        };
+      }
+      power = nextPower;
+    }
+    pickups = kept;
+  }
+  // Heat bolts bounce along the course; the obstacle pass below checks hits.
+  let bolts = stepBolts(
+    state.bolts ?? [],
+    course,
+    GROUND_Y,
+    cameraX,
+    CANVAS_SIZE,
+    safeDelta
+  );
+  // Snap float residue so a cooldown of whole frames ends on the last one.
+  const cooldownLeft = (state.boltCooldownMs ?? 0) - safeDelta;
+  const boltCooldownMs = cooldownLeft > 1e-6 ? cooldownLeft : 0;
+
+  // Growing keeps the feet where they are.
+  const grownBy = playerHeightFor(power) - h;
+  if (grownBy !== 0) nextPlayerY -= grownBy;
+  const bodyH = playerHeightFor(power);
 
   // The finish pole: grabbing it ends the stage, higher pays more.
   let stageCleared = false;
@@ -1347,7 +1508,7 @@ export function updateGameSimulation(
   if (poleIdx !== -1) {
     const pole = course.poles[poleIdx];
     const height = clamp(
-      (GROUND_Y - (playerTop + PLAYER_HEIGHT / 2)) / POLE_HEIGHT,
+      (GROUND_Y - (nextPlayerY + bodyH / 2)) / POLE_HEIGHT,
       0,
       1
     );
@@ -1410,7 +1571,12 @@ export function updateGameSimulation(
     course,
     stage,
     kudos,
-    hasShield,
+    power,
+    lives,
+    starMs,
+    pickups: stageCleared ? [] : pickups,
+    bolts: stageCleared ? [] : bolts,
+    boltCooldownMs,
     invulnerableMs: Math.max(0, (state.invulnerableMs ?? 0) - safeDelta),
     coyoteMs,
     jumpBufferMs,
@@ -1467,7 +1633,7 @@ export function updateGameSimulation(
   // scroll from sprinting or braking.
   const paceShift = 2.5 * (pace - 1);
   const invulnerable = (updatedState.invulnerableMs ?? 0) > 0;
-  const prevPlayerBottom = state.playerY + PLAYER_HEIGHT;
+  const prevPlayerBottom = state.playerY + h;
   for (const obs of currentObstacles) {
     const nextX = obs.x - (obs.speed + paceShift) * dtRatio;
     const isWalker =
@@ -1490,12 +1656,46 @@ export function updateGameSimulation(
       if (obsY > CANVAS_SIZE) continue;
     }
 
+    // A heat bolt defeats a bug or a watchdog it touches and is spent; a
+    // stack overflow puts it out unharmed; tokens let it pass.
+    if (isWalker && bolts.length > 0) {
+      const wl = cameraX + nextX + 2;
+      const wr = cameraX + nextX + obs.width - 2;
+      const hitIdx = bolts.findIndex((b) =>
+        boltHits(b, wl, obsY + 2, wr, obsY + obs.height - 2)
+      );
+      if (hitIdx !== -1) {
+        bolts = bolts.filter((_, i) => i !== hitIdx);
+        updatedState = { ...updatedState, bolts };
+        if (obs.type !== "stack_overflow") {
+          updatedState = {
+            ...updatedState,
+            score: updatedState.score + BOLT_DEFEAT_SCORE,
+            highScore: Math.max(
+              updatedState.highScore,
+              updatedState.score + BOLT_DEFEAT_SCORE
+            ),
+            popups: [
+              ...(updatedState.popups ?? []),
+              {
+                x: cameraX + nextX,
+                y: obsY - 6,
+                text: `+${BOLT_DEFEAT_SCORE}`,
+                ttlMs: 700,
+              },
+            ],
+          };
+          continue;
+        }
+      }
+    }
+
     // Check collision with Player
     const playerBox = {
       left: PLAYER_X + 2,
       right: PLAYER_X + PLAYER_WIDTH - 2,
       top: updatedState.playerY + 2,
-      bottom: updatedState.playerY + PLAYER_HEIGHT - 2,
+      bottom: updatedState.playerY + bodyH - 2,
     };
 
     const obsBox = {
@@ -1531,7 +1731,7 @@ export function updateGameSimulation(
             updatedState.highScore,
             updatedState.score + points
           ),
-          playerY: obsY - PLAYER_HEIGHT,
+          playerY: obsY - bodyH,
           playerVy: buffered ? JUMP_FORCE : STOMP_BOUNCE_VY,
           jumpBufferMs: 0,
           stompChain: chain,
@@ -1547,17 +1747,42 @@ export function updateGameSimulation(
         };
         continue;
       }
+      if ((updatedState.starMs ?? 0) > 0) {
+        // A Runner's High flattens whatever it runs into, spikes included.
+        updatedState = {
+          ...updatedState,
+          score: updatedState.score + HIGH_DEFEAT_SCORE,
+          highScore: Math.max(
+            updatedState.highScore,
+            updatedState.score + HIGH_DEFEAT_SCORE
+          ),
+          popups: [
+            ...(updatedState.popups ?? []),
+            {
+              x: cameraX + nextX,
+              y: obsY - 6,
+              text: `+${HIGH_DEFEAT_SCORE}`,
+              ttlMs: 700,
+            },
+          ],
+        };
+        continue;
+      }
       if (invulnerable) {
         nextObstacles.push({ ...obs, x: nextX, y: obsY, vy: obsVy });
         continue;
       }
-      if (updatedState.hasShield) {
+      const hit = damageTier(updatedState.power);
+      if (hit.survived) {
+        // Dropping to Base shrinks the box from the top; the feet stay put.
         updatedState = {
           ...updatedState,
-          hasShield: false,
-          invulnerableMs: SHIELD_GRACE_MS,
-          banner: { text: "SHIELD BROKEN", ttlMs: 1400, tone: "warn" },
+          power: hit.power,
+          playerY: updatedState.playerY + bodyH - playerHeightFor(hit.power),
+          invulnerableMs: DAMAGE_GRACE_MS,
+          banner: { text: "OUCH · BACK TO BASE", ttlMs: 1400, tone: "warn" },
         };
+        nextObstacles.push({ ...obs, x: nextX, y: obsY, vy: obsVy });
         continue;
       }
     }
@@ -1641,12 +1866,10 @@ export function updateGameSimulation(
   }
 
   if (crashTriggered) {
-    return {
-      ...updatedState,
-      gameState: "crashed",
-      crashReport: crashTriggered,
-      obstacles: nextObstacles,
-    };
+    return loseLife(
+      { ...updatedState, obstacles: nextObstacles },
+      crashTriggered
+    );
   }
 
   // 6. Spawn new Obstacles
@@ -2321,6 +2544,11 @@ export class GarminWatchEngine extends ArcadeEngine<
 
   public releaseJump(): void {
     this.state = releaseJump(this.state);
+    this.notifySubscribers();
+  }
+
+  public throwBolt(): void {
+    this.state = throwBolt(this.state);
     this.notifySubscribers();
   }
 

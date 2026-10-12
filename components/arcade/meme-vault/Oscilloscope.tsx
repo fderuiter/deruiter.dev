@@ -153,7 +153,7 @@ export function Oscilloscope({
               : "Web Audio Synthesis Engine · idle"}
           </span>
         </span>
-        <span className="text-zinc-500">1 ch mono bus · {rate}</span>
+        <span className="text-zinc-400">1 ch mono bus · {rate}</span>
       </div>
       <div ref={wrapperRef} className="relative w-full">
         <canvas

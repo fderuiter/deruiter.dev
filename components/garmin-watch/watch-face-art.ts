@@ -33,6 +33,14 @@ import {
   type CourseLayout,
 } from "@/lib/garmin-course";
 import {
+  BASE_HEIGHT,
+  BOLT_SIZE,
+  PICKUP_SIZE,
+  playerHeightFor,
+  type Bolt,
+  type Pickup,
+} from "@/lib/garmin-powerups";
+import {
   CANVAS_SIZE,
   DEVICE_PROFILES,
   GROUND_Y,
@@ -552,6 +560,90 @@ function drawPoles(ctx: Ctx, course: CourseLayout, camera: number) {
   }
 }
 
+/** A Protein Shake: a white shaker bottle with a cyan cap and a P band. */
+function drawShake(ctx: Ctx, x: number, y: number) {
+  const s = PICKUP_SIZE;
+  ctx.fillStyle = FACE_COLORS.identity;
+  ctx.beginPath();
+  ctx.roundRect(x + 3, y, s - 6, 3, 1);
+  ctx.fill();
+  ctx.fillStyle = "#f4f4f6";
+  ctx.beginPath();
+  ctx.roundRect(x + 2, y + 3, s - 4, s - 3, 2);
+  ctx.fill();
+  ctx.fillStyle = FACE_COLORS.good;
+  ctx.fillRect(x + 2, y + 6, s - 4, 3);
+}
+
+/** A Runner's High: an amber disc with a lightning bolt. */
+function drawHigh(ctx: Ctx, x: number, y: number) {
+  const r = PICKUP_SIZE / 2;
+  ctx.fillStyle = FACE_COLORS.warn;
+  ctx.beginPath();
+  ctx.arc(x + r, y + r, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#0d0e11";
+  ctx.beginPath();
+  ctx.moveTo(x + r + 1, y + 2);
+  ctx.lineTo(x + r - 3, y + r + 1);
+  ctx.lineTo(x + r, y + r + 1);
+  ctx.lineTo(x + r - 1, y + PICKUP_SIZE - 2);
+  ctx.lineTo(x + r + 3, y + r - 1);
+  ctx.lineTo(x + r, y + r - 1);
+  ctx.closePath();
+  ctx.fill();
+}
+
+/** The Heat Map runner's singlet and bolt colours. */
+const HEAT = { hot: "#f97316", core: "#fde68a", cool: "#22d3ee" } as const;
+
+/** A Heat Map: a three-by-three tile of cells from cool to hot. */
+function drawHeatMap(ctx: Ctx, x: number, y: number) {
+  const cell = PICKUP_SIZE / 3;
+  const ramp = [HEAT.cool, FACE_COLORS.good, FACE_COLORS.warn, HEAT.hot];
+  ctx.fillStyle = "#0d0e11";
+  ctx.fillRect(x - 0.5, y - 0.5, PICKUP_SIZE + 1, PICKUP_SIZE + 1);
+  for (let row = 0; row < 3; row++) {
+    for (let col = 0; col < 3; col++) {
+      ctx.fillStyle = ramp[Math.min(3, row + col)];
+      ctx.fillRect(
+        x + col * cell + 0.4,
+        y + row * cell + 0.4,
+        cell - 0.8,
+        cell - 0.8
+      );
+    }
+  }
+}
+
+/** Power-ups travelling the course, behind the blocks they rise out of. */
+function drawPickups(ctx: Ctx, pickups: readonly Pickup[], camera: number) {
+  for (const p of pickups) {
+    const x = p.x - camera;
+    if (x > CANVAS_SIZE || x + PICKUP_SIZE < 0) continue;
+    if (p.kind === "high") drawHigh(ctx, x, p.y);
+    else if (p.kind === "heatmap") drawHeatMap(ctx, x, p.y);
+    else drawShake(ctx, x, p.y);
+  }
+}
+
+/** Heat bolts: an orange ball with a pale core. */
+function drawBolts(ctx: Ctx, bolts: readonly Bolt[], camera: number) {
+  const r = BOLT_SIZE / 2;
+  for (const b of bolts) {
+    const cx = b.x - camera + r;
+    if (cx - r > CANVAS_SIZE || cx + r < 0) continue;
+    ctx.fillStyle = HEAT.hot;
+    ctx.beginPath();
+    ctx.arc(cx, b.y + r, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = HEAT.core;
+    ctx.beginPath();
+    ctx.arc(cx - 0.6, b.y + r - 0.6, r / 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
 /** Score and event labels that float up from where they happened. */
 function drawPopups(ctx: Ctx, state: GameEngineState, camera: number) {
   for (const p of state.popups ?? []) {
@@ -574,19 +666,19 @@ function drawBanner(ctx: Ctx, state: GameEngineState) {
   if (!banner) return;
   ctx.font = faceFont(7.5);
   const w = Math.min(196, ctx.measureText(banner.text).width + 16);
-  ctx.fillStyle = "rgba(0, 0, 0, 0.72)";
+  ctx.fillStyle = "rgba(0, 0, 0, 0.88)";
   ctx.beginPath();
   ctx.roundRect(FACE_CENTER - w / 2, 70, w, 13, 3);
   ctx.fill();
   text(ctx, banner.text, FACE_CENTER, 79.5, 7.5, BANNER_TONE[banner.tone]);
 }
 
-/** Stage and Kudos count, small, under the score. */
+/** Stage, lives and Kudos count, small, under the score. */
 function drawCourseHud(ctx: Ctx, state: GameEngineState) {
   const stage = state.stage ?? 1;
   text(
     ctx,
-    `STAGE ${stage}/${STAGE_COUNT} · KUDOS ${state.kudos ?? 0}`,
+    `STAGE ${stage}/${STAGE_COUNT} · LIVES ${state.lives ?? 1} · KUDOS ${state.kudos ?? 0}`,
     FACE_CENTER,
     64,
     6,
@@ -622,28 +714,35 @@ function limb(
 }
 
 /**
- * The monkey runner, facing right, inside the engine's 20 x 24 player box:
- * a headband, a cyan race singlet with bib, and a watch on the wrist.
+ * The monkey runner, facing right, drawn in a 20 x 24 box and scaled up
+ * from the feet to fill the engine's player box when Buff: a headband, a
+ * cyan race singlet with bib, and a watch on the wrist.
  */
 function drawRunner(ctx: Ctx, state: GameEngineState) {
   const pose = runnerPose(state.distanceMeters, state.isGrounded);
   const fur = state.isGcActive ? FUR_FROZEN : FUR;
-  // After the shield breaks the runner blinks while hits pass through.
+  // After a hit the runner blinks while hits pass through.
   const graceMs = state.invulnerableMs ?? 0;
   if (graceMs > 0 && Math.floor(graceMs / 100) % 2 === 0) return;
+  const boxH = playerHeightFor(state.power);
+  const scale = boxH / BASE_HEIGHT;
   ctx.save();
-  ctx.translate(PLAYER_X, state.playerY - pose.bob);
-  if (state.hasShield) {
-    // Firmware Update shield: a thin bright ring around the runner.
-    ctx.strokeStyle = "rgba(16, 185, 129, 0.9)";
-    ctx.lineWidth = 1.4;
+  ctx.translate(PLAYER_X + 10, state.playerY + boxH - pose.bob);
+  ctx.scale(scale, scale);
+  ctx.translate(-10, -BASE_HEIGHT);
+  const highMs = state.starMs ?? 0;
+  if (highMs > 0 && (highMs > 1500 || Math.floor(highMs / 120) % 2 === 0)) {
+    // Runner's High: a pulsing amber and emerald aura.
+    ctx.strokeStyle =
+      Math.floor(highMs / 150) % 2 === 0 ? FACE_COLORS.warn : FACE_COLORS.good;
+    ctx.lineWidth = 1.6;
     ctx.beginPath();
-    ctx.ellipse(10, 12 + pose.bob, 14, 16, 0, 0, Math.PI * 2);
+    ctx.ellipse(10, 12 + pose.bob, 13, 15, 0, 0, Math.PI * 2);
     ctx.stroke();
   }
 
   // Contact shadow on the lane, smaller the higher the jump.
-  const lift = clamp(GROUND_Y - (state.playerY + 24), 0, 90);
+  const lift = clamp(GROUND_Y - (state.playerY + boxH), 0, 90) / scale;
   ctx.save();
   ctx.translate(0, pose.bob);
   ctx.fillStyle = `rgba(0, 0, 0, ${0.45 - lift / 300})`;
@@ -683,8 +782,13 @@ function drawRunner(ctx: Ctx, state: GameEngineState) {
   ctx.lineWidth = 2;
   limb(ctx, shoulder.x, shoulder.y, pose.backArm, 1.3, 3.8, 3.4);
 
-  // Torso: singlet in the identity hue with a white race bib.
-  ctx.fillStyle = state.isGcActive ? "#a5f3fc" : FACE_COLORS.identity;
+  // Torso: singlet in the identity hue with a white race bib; orange once
+  // the runner holds a Heat Map.
+  ctx.fillStyle = state.isGcActive
+    ? "#a5f3fc"
+    : state.power === "heatmap"
+      ? HEAT.hot
+      : FACE_COLORS.identity;
   ctx.beginPath();
   ctx.roundRect(7.2, 7.6, 7, 7.6, 2);
   ctx.fill();
@@ -1256,6 +1360,7 @@ export function renderWatchFace(
   drawGround(ctx, state.distanceMeters, course);
   drawPoles(ctx, course, camera);
   drawLedges(ctx, course, camera);
+  drawPickups(ctx, state.pickups ?? [], camera);
   drawBlocks(ctx, course, camera);
   drawKudos(ctx, course, camera);
 
@@ -1263,6 +1368,7 @@ export function renderWatchFace(
     drawObstacle(ctx, obs);
   }
   drawRunner(ctx, state);
+  drawBolts(ctx, state.bolts ?? [], camera);
   drawPopups(ctx, state, camera);
 
   if (state.isGcActive) drawGcFreeze(ctx, state);

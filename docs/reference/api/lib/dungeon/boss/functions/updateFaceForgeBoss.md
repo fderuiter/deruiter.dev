@@ -6,7 +6,7 @@
 
 # Function: updateFaceForgeBoss()
 
-> **updateFaceForgeBoss**(`boss`, `playerX`, `playerY`, `nowMs`, `gridWidth`, `gridHeight`, `playerHeading?`, `frameDeltaMs?`): `object`
+> **updateFaceForgeBoss**(`boss`, `playerX`, `playerY`, `nowMs`, `gridWidth`, `gridHeight`, `playerHeading?`, `frameDeltaMs?`, `blocksShot?`): `object`
 
 Updates boss animations, attack patterns, and projectile trajectories.
 
@@ -53,6 +53,13 @@ Updates boss animations, attack patterns, and projectile trajectories.
 Real time since the previous update. Projectiles and
 mesh spin advance in proportion to it, so volleys travel at the same speed
 on a 60 Hz and a 144 Hz display (#1665). Defaults to one 60 Hz frame.
+
+### blocksShot?
+
+(`col`, `row`) => `boolean`
+
+Whether the tile at a column and row stops a
+projectile. Walls give the player cover; without it shots cross the room.
 
 ## Returns
 

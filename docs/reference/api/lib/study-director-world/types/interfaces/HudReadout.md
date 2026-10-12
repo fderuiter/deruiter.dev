@@ -28,6 +28,8 @@ What the HUD shows. No Integrity, Compliance or Team: those are inferred.
 
 > **clock**: `string`
 
+The clock, or "Overnight" while the player is at home between days.
+
 ***
 
 ### day
@@ -59,6 +61,14 @@ What the HUD shows. No Integrity, Compliance or Team: those are inferred.
 ### focus
 
 > **focus**: `number`
+
+***
+
+### overnight?
+
+> `optional` **overnight?**: `boolean`
+
+True between going home and the next morning (#1936).
 
 ***
 

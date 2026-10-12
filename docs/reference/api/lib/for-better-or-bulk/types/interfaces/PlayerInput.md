@@ -18,6 +18,14 @@ True on the tick the interact button went down.
 
 ***
 
+### interactHeld
+
+> `readonly` **interactHeld**: `boolean`
+
+True on every tick the interact button is held down, the first included.
+
+***
+
 ### moveX
 
 > `readonly` **moveX**: `number`

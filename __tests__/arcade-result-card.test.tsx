@@ -99,3 +99,29 @@ describe("ResultCard (#1599)", () => {
     ).toBeNull();
   });
 });
+
+describe("ResultCard roll-up (#1940)", () => {
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
+  });
+
+  it("never shows a negative number when a frame predates the roll-up start", () => {
+    reduceMotion(false);
+    vi.spyOn(performance, "now").mockReturnValue(1000);
+    const frames: FrameRequestCallback[] = [];
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation((cb) => {
+      frames.push(cb);
+      return frames.length;
+    });
+    const { getByText, queryByText } = render(
+      <ResultCard
+        {...baseProps}
+        primary={{ label: "Next", onClick: vi.fn() }}
+      />
+    );
+    frames.shift()?.(990);
+    expect(queryByText(/^-/)).toBeNull();
+    expect(getByText("0")).toBeTruthy();
+  });
+});

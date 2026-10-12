@@ -96,6 +96,11 @@ import {
   updateBossAttack,
   isBossTelegraphing,
   BOSS_MINION_SPAWN_RATE,
+  ARCADE_GAME_DURATION_SECS,
+  getActProgressReadout,
+  getActStars,
+  pickKeyboardAim,
+  updateMinionFire,
 } from "@/lib/laser-loon";
 
 const emptySubscribe = () => () => {};
@@ -155,6 +160,11 @@ export const LaserLoon: React.FC = () => {
   const [maxCombo, setMaxCombo] = useState(0);
   // The best score before this run, for the result card's best-score line.
   const [runStartBest, setRunStartBest] = useState(0);
+  const [actResult, setActResult] = useState<{
+    actScore: number;
+    seconds: number;
+    stars: 1 | 2 | 3;
+  } | null>(null);
   const [multiplier, setMultiplier] = useState(1);
   const [timeLeft, setTimeLeft] = useState(45);
   const [ultimateMeter, setUltimateMeter] = useState(0);
@@ -176,6 +186,11 @@ export const LaserLoon: React.FC = () => {
   // The simulation also stops behind the Flag Museum and the Field Manual,
   // so reading them never costs a run.
   const isHalted = isPaused || showMuseum || isManualOpen;
+  // Arcade mode's clock reads its full length before the run starts (#1940).
+  const shownTimeLeft =
+    mode === "arcade" && gameState === "idle"
+      ? ARCADE_GAME_DURATION_SECS
+      : timeLeft;
 
   const { announce } = useAnnouncer();
   const isInitialPauseRef = useRef(true);
@@ -247,6 +262,11 @@ export const LaserLoon: React.FC = () => {
   const lastBossHpRef = useRef(0);
   const bossHitFlashUntilRef = useRef(0);
   const actKillsRef = useRef(0);
+  // Unpaused play this act, for its par star (#1940).
+  const actPlayMsRef = useRef(0);
+  const actStartScoreRef = useRef(0);
+  // Keyboard shots aim for the player until the pointer moves again (#1940).
+  const keyboardAimRef = useRef(false);
   const hitsLeftRef = useRef(LOON_MAX_HITS);
   const invulnerableUntilRef = useRef(0);
   const bossSpawnedRef = useRef(false);
@@ -576,6 +596,17 @@ export const LaserLoon: React.FC = () => {
       // Defeated act boss!
       setBossActive(false);
       setBossHp(0);
+      const act = CAMPAIGN_ACTS.find((a) => a.actNumber === currentActNum);
+      const seconds = Math.round(actPlayMsRef.current / 1000);
+      setActResult({
+        actScore: Math.max(0, scoreRef.current - actStartScoreRef.current),
+        seconds,
+        stars: getActStars(
+          seconds,
+          act?.parSeconds ?? Infinity,
+          LOON_MAX_HITS - hitsLeftRef.current
+        ),
+      });
       if (outcome === "campaign-victory") {
         setGameState("campaign-victory");
         playSuccess();
@@ -656,6 +687,9 @@ export const LaserLoon: React.FC = () => {
     setCurrentActNum(actNum);
     setActKills(0);
     actKillsRef.current = 0;
+    actPlayMsRef.current = 0;
+    actStartScoreRef.current = scoreRef.current;
+    setActResult(null);
     setHitsLeft(LOON_MAX_HITS);
     hitsLeftRef.current = LOON_MAX_HITS;
     invulnerableUntilRef.current = 0;
@@ -672,6 +706,14 @@ export const LaserLoon: React.FC = () => {
     shockwavesRef.current = [];
     floatingTextsRef.current = [];
     loonPosRef.current = { x: 120, y: 180, targetX: 120, targetY: 180 };
+  }, []);
+
+  // The next act's intro starts its counter at zero, not at last act's kills.
+  const advanceToNextAct = useCallback(() => {
+    setActKills(0);
+    actKillsRef.current = 0;
+    setCurrentActNum((prev) => prev + 1);
+    setGameState("act-intro");
   }, []);
 
   // Start game session
@@ -839,6 +881,9 @@ export const LaserLoon: React.FC = () => {
     const eyeY = loon.y - 12;
     const beakX = loon.x + 48;
     const beakY = loon.y - 8;
+    if (keyboardAimRef.current) {
+      aimPosRef.current = pickKeyboardAim(targetsRef.current, eyeX, eyeY);
+    }
     const aim = aimPosRef.current;
 
     if (laserType === "ice-cannon") {
@@ -940,6 +985,11 @@ export const LaserLoon: React.FC = () => {
       // The backdrop parallax and boss hit flash run on wall-clock time.
       const time = performance.now();
       const dt = deltaMs / 16.666;
+      // Acts are timed in game time, so a pause or a slow frame never
+      // counts against par (#1940).
+      if (gameState === "playing" && mode === "campaign") {
+        actPlayMsRef.current += deltaMs;
+      }
 
       const width = DEFAULT_CANVAS_WIDTH;
       const height = DEFAULT_CANVAS_HEIGHT;
@@ -1220,6 +1270,19 @@ export const LaserLoon: React.FC = () => {
           }
         }
         if (attack.fired) playLaserSound("ruby-laser");
+
+        // From Act 3 the minions shoot back (#1940).
+        const minionFire = updateMinionFire(
+          targetsRef.current,
+          dt,
+          loon.x,
+          loon.y,
+          currentActNum,
+          nextTargetIdRef.current
+        );
+        targetsRef.current = minionFire.targets;
+        nextTargetIdRef.current = minionFire.nextId;
+        if (minionFire.fired > 0) playLaserSound("cyan-pulse");
       }
 
       // 6. Update & Render Targets / Enemies / Bosses
@@ -1515,6 +1578,7 @@ export const LaserLoon: React.FC = () => {
   const updatePointerAim = (clientX: number, clientY: number) => {
     const { x: mouseX, y: mouseY } = toGameCoordinates(clientX, clientY);
 
+    keyboardAimRef.current = false;
     aimPosRef.current = { x: mouseX, y: mouseY };
 
     if (isDraggingLoonRef.current) {
@@ -1721,9 +1785,9 @@ export const LaserLoon: React.FC = () => {
       } else if (gameState === "act-intro" || gameState === "act-failed") {
         startAct(currentActNum);
       } else if (gameState === "act-victory") {
-        setCurrentActNum((prev) => prev + 1);
-        setGameState("act-intro");
+        advanceToNextAct();
       } else {
+        keyboardAimRef.current = true;
         isFiringRef.current = true;
         fireWeapon();
       }
@@ -1955,12 +2019,15 @@ export const LaserLoon: React.FC = () => {
             ...(mode === "campaign"
               ? [
                   { label: "Act", value: `${currentActNum}/4` },
-                  {
-                    label: bossActive ? "Boss" : "Kills",
-                    value: bossActive
-                      ? "Engaged"
-                      : `${actKills}/${currentAct.requiredMinionKills}`,
-                  },
+                  getActProgressReadout(
+                    actKills,
+                    currentAct.requiredMinionKills,
+                    {
+                      active: bossActive,
+                      hp: bossHp,
+                      maxHp: currentAct.bossHp,
+                    }
+                  ),
                   {
                     label: "Hits",
                     value: (
@@ -1993,7 +2060,7 @@ export const LaserLoon: React.FC = () => {
                       <span
                         className={timeLeft <= 10 ? "text-rose-400" : undefined}
                       >
-                        {timeLeft}s
+                        {shownTimeLeft}s
                       </span>
                     ),
                   },
@@ -2176,7 +2243,7 @@ export const LaserLoon: React.FC = () => {
                 Multiplier: {multiplier}x
               </output>
               <output htmlFor="laser-loon-timer">
-                Time Remaining: {timeLeft}s
+                Time Remaining: {shownTimeLeft}s
               </output>
               <output htmlFor="laser-loon-ultimate">
                 Ultimate Tremolo: {ultimateMeter}%
@@ -2463,20 +2530,44 @@ export const LaserLoon: React.FC = () => {
             verdict="win"
             message={`"${currentAct.victoryQuote}"`}
             stats={[
-              { label: "Score", value: score },
-              { label: "Max combo", value: maxCombo, suffix: "x" },
+              { label: "Act score", value: actResult?.actScore ?? 0 },
+              { label: "Run total", value: score },
+              {
+                label: `Time (par ${currentAct.parSeconds}s)`,
+                value: actResult?.seconds ?? 0,
+                suffix: "s",
+              },
             ]}
-            score={score}
-            previousBest={runStartBest}
             primary={{
               label: `Advance to Act ${currentActNum + 1} [Space]`,
               icon: <IconChevronRight className="w-4 h-4" />,
-              onClick: () => {
-                setCurrentActNum((prev) => prev + 1);
-                setGameState("act-intro");
-              },
+              onClick: advanceToNextAct,
             }}
-          />
+          >
+            {actResult && (
+              <p
+                data-testid="laser-loon-act-stars"
+                className="text-center font-mono text-xs text-neutral-300"
+              >
+                <span
+                  className="mr-2 text-amber-400"
+                  aria-label={`${actResult.stars} of 3 stars`}
+                >
+                  {"★".repeat(actResult.stars)}
+                  <span className="text-neutral-600">
+                    {"☆".repeat(3 - actResult.stars)}
+                  </span>
+                </span>
+                Cleared
+                {actResult.seconds <= currentAct.parSeconds
+                  ? " · Beat par"
+                  : " · Over par"}
+                {hitsLeft >= LOON_MAX_HITS
+                  ? " · No hits taken"
+                  : " · Took a hit"}
+              </p>
+            )}
+          </ResultCard>
         )}
 
         {gameState === "act-failed" && (
@@ -2489,13 +2580,11 @@ export const LaserLoon: React.FC = () => {
               { label: "Score", value: score },
               {
                 label: "Act kills",
-                value: actKills,
+                value: Math.min(actKills, currentAct.requiredMinionKills),
                 suffix: `/${currentAct.requiredMinionKills}`,
               },
               { label: "Max combo", value: maxCombo, suffix: "x" },
             ]}
-            score={score}
-            previousBest={runStartBest}
             primary={{
               label: `Try Act ${currentActNum} again [Space]`,
               icon: <IconRefresh className="w-4 h-4" />,
@@ -2513,7 +2602,7 @@ export const LaserLoon: React.FC = () => {
             title="History made! F277 prevails"
             stamp="State flag"
             verdict="win"
-            message="Laser Loon is hoisted high atop the Minnesota State Capitol Dome! Over $13,500 raised for the Saint Paul Public Library Foundation as the public domain legend lives on."
+            message={`"${currentAct.victoryQuote}" In this game the loon flies over the Capitol Dome. In real life, the F277 Laser Loon campaign raised over $13,500 for the Saint Paul Public Library Foundation.`}
             stats={[
               { label: "Total score", value: score },
               { label: "Max combo", value: maxCombo, suffix: "x" },
@@ -2673,8 +2762,9 @@ export const LaserLoon: React.FC = () => {
       {/* Footer Controls & Toggles */}
       <div className="arcade-shooter-footer w-full max-w-3xl flex flex-wrap gap-2 justify-between items-center px-4 mt-2 text-[10px] font-mono text-neutral-500">
         <span>
-          Controls: Aim &amp; Click / Space to fire · Keys 1-4 for Optics · U
-          for Tremolo
+          Controls: WASD or arrows to fly · Mouse to aim and fire, or Space to
+          fire at an enemy in line ahead · 1-4 Optics · U Tremolo · P or Esc to
+          pause
         </span>
         <div className="flex items-center gap-4">
           {(gameState === "playing" || isPaused) && (

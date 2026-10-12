@@ -323,7 +323,12 @@ describe("Meme UI Components Rendering", () => {
       (soundButtons[0] as HTMLButtonElement).click();
     });
 
-    expect(getUnlockedAchievements()).toContain("soundboard-maestro");
+    // Sound starts muted, so the press is silent: no trophy, and the vault
+    // says why next to the pads (#1941).
+    expect(getUnlockedAchievements()).not.toContain("soundboard-maestro");
+    expect(
+      container.querySelector('[data-testid="meme-silent-press"]')?.textContent
+    ).toContain("That pad played silently");
 
     // Launch chaos button
     const chaosBtn = Array.from(container.querySelectorAll("button")).find(

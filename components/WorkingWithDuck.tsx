@@ -58,6 +58,7 @@ import {
 import {
   WorkingWithDuckState,
   DuckAccessory,
+  type InventoryItem,
   createInitialDuckGameState,
   stepDuckGame,
   startDraggingDuck,
@@ -414,8 +415,14 @@ function drawDogParkScene(
     );
   } else if (park.status === "success") {
     ctx.fillStyle = "#4ade80";
+    // Praise matches what happened: a short lob that collects nothing gets
+    // a neutral line, not "Perfect Fetch" (#1942).
+    const playedOut = park.bonesCollected > 0 || park.hurdlesCleared > 0;
+    if (!playedOut) ctx.fillStyle = "#e4e4e7";
     ctx.fillText(
-      `🌟 Perfect Fetch! Duck retrieved ball & ${park.bonesCollected} bones!`,
+      playedOut
+        ? `🌟 Great Fetch! Duck brought the ball back with ${park.bonesCollected} ${park.bonesCollected === 1 ? "bone" : "bones"}!`
+        : "🎾 Ball's back. Throw it further to reach the bones and hurdles.",
       CANVAS_WIDTH / 2,
       34
     );
@@ -487,6 +494,91 @@ interface DuckSprintResultProps {
   onEndless: () => void;
 }
 
+/**
+ * Uses the selected hotbar item at a point on the office floor: the canvas
+ * click path, and the keyboard path when a toy's number is pressed twice.
+ */
+function applySelectedItemAt(
+  { dispatchCommand, interactHazard }: ReturnType<typeof useDuckService>,
+  state: WorkingWithDuckState,
+  x: number,
+  y: number
+): WorkingWithDuckState {
+  if (state.selectedItem === "squeaky-toy") {
+    const res = interactHazard({
+      state,
+      action: "distract_with_squeaky",
+      x,
+      y,
+    });
+    return res.success ? res.data.state : state;
+  } else if (state.selectedItem === "kong") {
+    const res = interactHazard({
+      state,
+      action: "distract_with_kong",
+      x,
+      y,
+    });
+    return res.success ? res.data.state : state;
+  } else if (state.selectedItem === "tennis-ball") {
+    const res = dispatchCommand({
+      type: "throw_ball",
+      state,
+      targetX: x,
+      targetY: y,
+    });
+    return res.success ? res.data.state : state;
+  } else if (state.selectedItem === "treat") {
+    const res = dispatchCommand({ type: "treat", state });
+    return res.success ? res.data.state : state;
+  }
+  return state;
+}
+
+const TOY_BY_KEY = {
+  "1": "tennis-ball",
+  "2": "kong",
+  "3": "squeaky-toy",
+} as const satisfies Record<string, InventoryItem>;
+
+const TOY_LABEL: Record<(typeof TOY_BY_KEY)[keyof typeof TOY_BY_KEY], string> =
+  {
+    "tennis-ball": "tennis ball",
+    kong: "Kong",
+    "squeaky-toy": "squeaky toy",
+  };
+
+/** Where a toy used from the keyboard lands: the ball goes across the room,
+ * other toys just past Duck, toward the middle of the floor. */
+function keyboardToyTarget(state: WorkingWithDuckState): {
+  x: number;
+  y: number;
+} {
+  const { x, y } = state.duck;
+  if (state.selectedItem === "tennis-ball") {
+    return {
+      x: CANVAS_WIDTH - x,
+      y: clamp(CANVAS_HEIGHT - y, 60, CANVAS_HEIGHT - 60),
+    };
+  }
+  const towardCenter = x < CANVAS_WIDTH / 2 ? 80 : -80;
+  return { x: clamp(x + towardCenter, 40, CANVAS_WIDTH - 40), y };
+}
+
+/** Ticks (60 = 1 s) the sprint 1 goal stays in the tip line. */
+const SPRINT_ONE_BRIEF_TICKS = 8 * 60;
+
+/** Win copy that agrees with the Props saved stat beside it (#1942). */
+function winVerdict(saved: number, total: number): string {
+  if (total === 0 || saved === total) {
+    return "Every cable survived, the puppy pads held, and the office budget spreadsheet is still unchewed.";
+  }
+  if (saved === 0) {
+    return "The work shipped, but nothing on the floor survived. Facilities would like a word.";
+  }
+  return `The work shipped with ${saved} of ${total} props intact. The rest have tooth marks.`;
+}
+
 const RESULT_LINK =
   "inline-flex min-h-[48px] items-center rounded-xl border border-white/[0.08] px-3 font-mono text-[11px] text-zinc-200 transition-colors hover:border-white/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300";
 
@@ -554,7 +646,7 @@ function DuckSprintResult({
       verdict="win"
       message={`${
         state.mode === "endless" ? "Endless Milestone" : sprintTitle
-      } Completed! Every cable survived, the puppy pads held, and the office budget spreadsheet is still unchewed.`}
+      } Completed! ${winVerdict(propsSaved, state.hazards.length)}`}
       stats={stats}
       score={state.totalScore}
       previousBest={previousBest}
@@ -633,8 +725,11 @@ const DOCK_KEY =
 const TRICK_KEY =
   "inline-flex h-5 min-w-5 items-center justify-center rounded border border-b-2 border-emerald-400/30 bg-[#0d0e11] px-1 font-mono text-[10px] font-bold text-emerald-300";
 const DOCK_GROUP = "flex min-w-0 flex-wrap items-center gap-1";
+// Below 1280px the captions, toy icons and the Space chip drop out so the
+// dock fits two rows and the canvas keeps its height at 1024 (#1942).
 const DOCK_CAPTION =
-  "pr-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400";
+  "hidden xl:inline pr-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400";
+const DOCK_ICON = "hidden xl:block w-3.5 h-3.5";
 
 export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
   initialState,
@@ -690,7 +785,8 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
   const [isMusicMuted, setIsMusicMuted] = useState(false);
 
   const { announce } = useAnnouncer();
-  const { dispatchCommand, interactHazard } = useDuckService();
+  const duckService = useDuckService();
+  const { dispatchCommand } = duckService;
 
   // Single gateway for every gameStateRef mutation: gameStateRef.current and
   // uiState are always written together from the same computed value, so the
@@ -1163,10 +1259,15 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
-      if (uiState.totalScore > 0) {
+      // Scores are saved when a sprint ends, not while it runs: the result
+      // card compares against the stored best, which must still be the best
+      // from earlier runs when the card opens (#1942).
+      const sprintOver =
+        uiState.status === "won" || uiState.status === "failed";
+      if (sprintOver && uiState.totalScore > 0) {
         recordArcadeScore("working-with-duck", uiState.totalScore);
       }
-      if (uiState.highScore > loadedHighScore) {
+      if (sprintOver && uiState.highScore > loadedHighScore) {
         safeSetRawItem(
           "working_with_duck_high_score",
           String(uiState.highScore)
@@ -1182,6 +1283,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
     } catch {}
   }, [
     uiState.highScore,
+    uiState.status,
     uiState.totalScore,
     uiState.unlockedFacts,
     loadedHighScore,
@@ -1312,6 +1414,26 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
     DUCK_HOTKEYS,
     (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
+      const textEntry =
+        target?.tagName === "INPUT" ||
+        target?.tagName === "TEXTAREA" ||
+        target?.isContentEditable;
+      const focusInGame =
+        !!containerRef.current &&
+        containerRef.current.contains(document.activeElement);
+
+      // P toggles pause both ways (#1942). Pausing moves focus to the
+      // overlay's Resume button, so P must get past the button filter below
+      // or the overlay's "Press P to resume" would be untrue.
+      if ((e.key === "p" || e.key === "P") && !textEntry && focusInGame) {
+        const status = gameStateRef.current.status;
+        if (status === "running" || status === "paused") {
+          e.preventDefault();
+          toggleManualPause();
+        }
+        return;
+      }
+
       const interactiveTag =
         target?.tagName === "BUTTON" ||
         target?.tagName === "SELECT" ||
@@ -1340,34 +1462,27 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
       }
 
       const state = gameStateRef.current;
-      if (e.key === "p" || e.key === "P") {
-        if (state.status === "running" || state.status === "paused") {
-          e.preventDefault();
-          toggleManualPause();
-        }
-      } else if (state.status === "paused") {
-        // A paused sprint is frozen (#1645): only P acts. Swallow Space and
+      if (state.status === "paused") {
+        // A paused sprint is frozen (#1645): only P (handled above) acts. Swallow Space and
         // the arrows so they don't scroll the page behind the pause overlay.
         if (e.code === "Space" || e.key.startsWith("Arrow")) {
           e.preventDefault();
         }
-      } else if (e.key === "1") {
+      } else if (e.key === "1" || e.key === "2" || e.key === "3") {
         if (!state.inDogPark && !state.inBathtub) {
-          applyTransition((state) => ({
-            ...state,
-            selectedItem: "tennis-ball",
-          }));
-        }
-      } else if (e.key === "2") {
-        if (!state.inDogPark && !state.inBathtub) {
-          applyTransition((state) => ({ ...state, selectedItem: "kong" }));
-        }
-      } else if (e.key === "3") {
-        if (!state.inDogPark && !state.inBathtub) {
-          applyTransition((state) => ({
-            ...state,
-            selectedItem: "squeaky-toy",
-          }));
+          const item = TOY_BY_KEY[e.key];
+          if (state.selectedItem === item) {
+            // A second press uses the toy without the mouse (#1942): the
+            // ball is thrown across the room, a Kong or squeaky toy lands
+            // just past Duck to pull him off whatever he is chewing.
+            applyTransition((state) => {
+              const { x, y } = keyboardToyTarget(state);
+              return applySelectedItemAt(duckService, state, x, y);
+            });
+            announce(`Used the ${TOY_LABEL[item]} near Duck.`, "polite");
+          } else {
+            applyTransition((state) => ({ ...state, selectedItem: item }));
+          }
         }
       } else if (e.key === "4") {
         handleGiveTreat();
@@ -1393,7 +1508,11 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
         }
       } else if (e.code === "Space") {
         e.preventDefault();
-        if (state.inDogPark) {
+        if (state.inDogPark && state.parkState.status === "aim") {
+          // Keyboard throw: a solid mid-field throw, so the park is playable
+          // without a mouse drag (#1942).
+          applyTransition((state) => throwParkBall(state, 11, 0));
+        } else if (state.inDogPark) {
           applyTransition((state) => jumpParkHurdle(state));
         } else if (!state.inBathtub) {
           applyTransition((state) => activeCodeBurst(state));
@@ -1808,37 +1927,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
     }
 
     // Use Selected Hotbar Item on Canvas click
-    applyTransition((state) => {
-      if (state.selectedItem === "squeaky-toy") {
-        const res = interactHazard({
-          state,
-          action: "distract_with_squeaky",
-          x,
-          y,
-        });
-        return res.success ? res.data.state : state;
-      } else if (state.selectedItem === "kong") {
-        const res = interactHazard({
-          state,
-          action: "distract_with_kong",
-          x,
-          y,
-        });
-        return res.success ? res.data.state : state;
-      } else if (state.selectedItem === "tennis-ball") {
-        const res = dispatchCommand({
-          type: "throw_ball",
-          state,
-          targetX: x,
-          targetY: y,
-        });
-        return res.success ? res.data.state : state;
-      } else if (state.selectedItem === "treat") {
-        const res = dispatchCommand({ type: "treat", state });
-        return res.success ? res.data.state : state;
-      }
-      return state;
-    });
+    applyTransition((state) => applySelectedItemAt(duckService, state, x, y));
   };
 
   const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -2047,12 +2136,17 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
   if (uiState.status === "running" && uiState.inDogPark) {
     // Scene tips show on every sprint: the controls change with the scene.
     tutorialHint =
-      "Dog Park: drag on the field and let go to throw, steer Duck with the mouse, W or the arrow keys, and press Space to jump. Work, Excitement and Bladder pause until you return to the office.";
+      "Dog Park: press Space (or drag on the field and let go) to throw, steer Duck with the mouse, W or the arrow keys, and press Space to jump. Work, Excitement and Bladder pause until you return to the office.";
   } else if (uiState.status === "running" && uiState.inBathtub) {
     tutorialHint =
       "Bath time: move your cursor over the tub to lather Duck, then Rinse until he's clean and Finish Bath. Work, Excitement and Bladder pause until you're back in the office.";
   } else if (uiState.currentLevel === 1 && uiState.status === "running") {
-    if (uiState.duck.state === "THE_FLOP") {
+    if (uiState.ticks < SPRINT_ONE_BRIEF_TICKS) {
+      // The cabinet launch is the title screen (#1516), so the goal goes
+      // here for the opening seconds of the first sprint (#1942).
+      tutorialHint =
+        "Goal: ship the work before Good Boy hits the red. Excitement and Bladder fill on their own: Sit (Q) calms Duck, and the Back Door handles Bladder.";
+    } else if (uiState.duck.state === "THE_FLOP") {
       tutorialHint =
         "Duck flopped on his back! Move your cursor back & forth over his belly!";
     } else if (
@@ -2072,7 +2166,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
         "Excitement is high! Call Sit (Q) or take a Dog Park trip!";
     } else {
       tutorialHint =
-        "Tip: Work advances automatically. Press Space for active coding bursts & try training tricks (Q-W-E-R)!";
+        "Tip: Work advances automatically. Press Space for coding bursts, Q-W-E-R for tricks, and drag Duck to the Back Door when Bladder fills.";
     }
   }
 
@@ -2854,7 +2948,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                 title="Throw ball to play fetch & drain Excitement"
               >
                 <kbd className={DOCK_KEY}>1</kbd>
-                <IconBallTennis aria-hidden="true" className="w-3.5 h-3.5" />
+                <IconBallTennis aria-hidden="true" className={DOCK_ICON} />
                 <span>Tennis Ball</span>
               </button>
 
@@ -2889,7 +2983,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                 title="Squeak to instantly get Duck's attention and recall"
               >
                 <kbd className={DOCK_KEY}>3</kbd>
-                <IconBone aria-hidden="true" className="w-3.5 h-3.5" />
+                <IconBone aria-hidden="true" className={DOCK_ICON} />
                 <span>Squeaky</span>
               </button>
 
@@ -2973,7 +3067,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                 >
                   <IconCode aria-hidden="true" className="w-4 h-4" />
                   <span>Focus Work Sprint</span>
-                  <kbd className="rounded border border-black/20 bg-black/10 px-1 font-mono text-[10px]">
+                  <kbd className="hidden xl:inline rounded border border-black/20 bg-black/10 px-1 font-mono text-[10px]">
                     Space
                   </kbd>
                 </button>

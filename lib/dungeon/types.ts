@@ -159,6 +159,10 @@ export interface BossState {
   name: string;
   shieldActive?: boolean;
   phaseTitle?: string;
+  /** No salvo is fired before this time, so a room never opens mid-volley. */
+  holdFireUntilMs?: number;
+  /** Salvos fired so far; phase 1 turns every third one into a ring. */
+  salvoCount?: number;
 }
 
 export interface MeshProjectile {

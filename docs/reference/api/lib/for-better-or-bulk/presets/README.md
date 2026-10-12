@@ -40,6 +40,7 @@
 - [FIXED\_COSTS](variables/FIXED_COSTS.md)
 - [FLOOR\_CAP](variables/FLOOR_CAP.md)
 - [FLOOR\_FULL\_REPEAT\_SECONDS](variables/FLOOR_FULL_REPEAT_SECONDS.md)
+- [FLOOR\_HOLD\_TICKS](variables/FLOOR_HOLD_TICKS.md)
 - [FOOD\_BATCHES](variables/FOOD_BATCHES.md)
 - [FOOD\_PRICES](variables/FOOD_PRICES.md)
 - [INTERRUPTIONS](variables/INTERRUPTIONS.md)

@@ -7,6 +7,11 @@ for six arcade games. Leaves [ADR 0046](0046-trial-and-error-biostat-ops-archite
 (Trial & Error, "desktop-first but playable on phones") unchanged. ADR 0047 is
 reserved for the narrative-design work in #927.
 
+Superseded by [ADR 0061](0061-mobile-first-arcade.md) (2026-10-12). The gate
+stays in the code, and each game leaves it in its own mobile pull request once
+it meets the phone bar in ADR 0061. The rule below describes the gate as it
+stands until then.
+
 ## Context
 
 ADR 0003 committed every arcade game to "full-fidelity usability" on phones:

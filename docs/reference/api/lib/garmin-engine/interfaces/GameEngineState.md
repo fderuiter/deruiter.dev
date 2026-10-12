@@ -32,6 +32,30 @@
 
 ***
 
+### boltCooldownMs?
+
+> `optional` **boltCooldownMs?**: `number`
+
+Milliseconds until the next bolt can be thrown.
+
+***
+
+### bolts?
+
+> `optional` **bolts?**: [`Bolt`](../../garmin-powerups/interfaces/Bolt.md)[]
+
+Heat bolts on the face.
+
+***
+
+### boltsThrown?
+
+> `optional` **boltsThrown?**: `number`
+
+Bolts thrown this run, for their ids.
+
+***
+
 ### consecutiveDodges
 
 > **consecutiveDodges**: `number`
@@ -118,14 +142,6 @@ Unrounded distance; round only when displaying.
 
 ***
 
-### hasShield?
-
-> `optional` **hasShield?**: `boolean`
-
-A Firmware Update shield absorbs the next hit.
-
-***
-
 ### heartRate
 
 > **heartRate**: `number`
@@ -142,7 +158,7 @@ A Firmware Update shield absorbs the next hit.
 
 > `optional` **invulnerableMs?**: `number`
 
-Milliseconds of hit immunity left after the shield breaks.
+Milliseconds of hit immunity left after a hit or a lost life.
 
 ***
 
@@ -222,6 +238,14 @@ Wall-clock time of the last pop, for its cooldown.
 
 ***
 
+### lives?
+
+> `optional` **lives?**: `number`
+
+Lives left, counting the current one; absent means this is the last.
+
+***
+
 ### obstacles
 
 > **obstacles**: [`Obstacle`](Obstacle.md)[]
@@ -233,6 +257,14 @@ Wall-clock time of the last pop, for its cooldown.
 > `optional` **pausedAt?**: `number`
 
 Wall-clock time the run was paused, so resuming can shift the spawn timers.
+
+***
+
+### pickups?
+
+> `optional` **pickups?**: [`Pickup`](../../garmin-powerups/interfaces/Pickup.md)[]
+
+Power-ups travelling the course.
 
 ***
 
@@ -251,6 +283,14 @@ Wall-clock time the run was paused, so resuming can shift the spawn timers.
 ### popups?
 
 > `optional` **popups?**: [`FacePopup`](FacePopup.md)[]
+
+***
+
+### power?
+
+> `optional` **power?**: [`PowerTier`](../../garmin-powerups/type-aliases/PowerTier.md)
+
+Power tier; absent means Base.
 
 ***
 
@@ -281,6 +321,14 @@ Fractional score (0 to under 1) carried between ticks.
 > `optional` **stage?**: `number`
 
 Current stage, 1 to [STAGE\_COUNT](../../garmin-course/variables/STAGE_COUNT.md).
+
+***
+
+### starMs?
+
+> `optional` **starMs?**: `number`
+
+Milliseconds of Runner's High (invincibility) left.
 
 ***
 

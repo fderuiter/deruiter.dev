@@ -22,12 +22,13 @@ export function VaultHero({ unlocked, total }: VaultHeroProps) {
     RING_RADIUS
   );
   const percent = Math.round(progress * 100);
+  const cleared = total > 0 && unlocked >= total;
 
   return (
     <header className="relative mb-10 overflow-hidden rounded-xl border border-white/[0.08] bg-[#13151a] p-5 sm:p-8">
       <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0 max-w-2xl">
-          <p className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[11px] uppercase tracking-wider text-zinc-500">
+          <p className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[11px] uppercase tracking-wider text-zinc-400">
             <span className="text-emerald-400">Arcade · Soundboard</span>
             <span aria-hidden="true">/</span>
             <span>
@@ -77,12 +78,21 @@ export function VaultHero({ unlocked, total }: VaultHeroProps) {
           <div className="font-mono tabular-nums">
             <div className="text-2xl font-semibold text-[#f4f4f6]">
               {unlocked}
-              <span className="text-zinc-500">/{total}</span>
+              <span className="text-zinc-400">/{total}</span>
             </div>
-            <div className="text-[11px] uppercase tracking-wider text-zinc-500">
+            <div className="text-[11px] uppercase tracking-wider text-zinc-400">
               Easter Egg Completion
             </div>
-            <div className="text-[11px] text-zinc-400">{percent}%</div>
+            {cleared ? (
+              <div
+                className="mt-0.5 inline-block rounded border border-emerald-500/40 bg-emerald-500/10 px-1.5 text-[11px] font-semibold uppercase tracking-wider text-emerald-300"
+                data-testid="meme-vault-cleared"
+              >
+                Vault cleared
+              </div>
+            ) : (
+              <div className="text-[11px] text-zinc-400">{percent}%</div>
+            )}
           </div>
         </div>
       </div>

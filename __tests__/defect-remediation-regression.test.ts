@@ -69,6 +69,9 @@ import {
   startDraggingDuck,
   releaseDuck,
   enterDogPark,
+  exitDogPark,
+  enterBathtub,
+  exitBathtub,
   BACK_DOOR_BOUNDS,
   type WorkingWithDuckState,
 } from "@/lib/working-with-duck-engine";
@@ -635,6 +638,35 @@ describe("Defect Remediation & Regression Verification Suite (Invariant #11)", (
           ticks: 1,
         })
       ).toBe(false);
+    });
+  });
+
+  describe("Working With Duck free resets (#1942)", () => {
+    it("an unplayed Dog Park trip does not zero excitement and bladder", () => {
+      const state = {
+        ...createInitialDuckGameState(1),
+        status: "running" as const,
+        excitement: 52,
+        bladder: 37,
+      };
+      const back = exitDogPark(enterDogPark(state), false);
+      expect(back.excitement).toBeGreaterThan(0);
+      expect(back.bladder).toBeGreaterThan(0);
+      expect(enterDogPark(back).inDogPark).toBe(false);
+    });
+
+    it("a bath without mud does not grant the +35 Good Boy wash bonus", () => {
+      const state = {
+        ...createInitialDuckGameState(1),
+        status: "running" as const,
+        naughtyVsGood: 15,
+      };
+      const tub = enterBathtub(state);
+      const done = exitBathtub({
+        ...tub,
+        bathtubState: { ...tub.bathtubState, status: "clean" as const },
+      });
+      expect(done.naughtyVsGood - state.naughtyVsGood).toBeLessThan(35);
     });
   });
 
@@ -1914,6 +1946,8 @@ describe("Garmin obstacles crash with their own type (#1318)", () => {
       updateGameSimulation(
         {
           ...startGame(createInitialState("fenix", 0), "fenix"),
+          // On the last life a hit ends the run with its own report (#1988).
+          lives: 1,
           lastObstacleTime: Date.now() + 60_000,
           obstacles: [
             {

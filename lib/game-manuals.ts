@@ -513,7 +513,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
     objective:
       "Run a 5K: five 1 km stages of side-scrolling platforming, each ending at a finish pole. Stomp the bugs, clear the gaps, collect Kudos, and keep the Connect IQ app under the device's RAM limit with the battery alive. You have three lives; clear stage 5 to finish. Your high score is saved.",
     quickSummary:
-      "Press Enter to boot. Up or Space jumps (hold for height), Right sprints, Left brakes. Land on bugs and watchdogs to stomp them, jump the spiked stacks and the gaps, bump Sync Blocks from below for power-ups, and throw heat bolts with X once you hold a Heat Map. Pop variables with Down or run GC with Backspace before the heap fills. Wipe fog with W or a drag.",
+      "Press Enter to boot. Up or Space jumps (hold for height), Right sprints, Left brakes. Land on bugs and watchdogs to stomp them, jump the spiked stacks and the gaps, bump Sync Blocks from below for power-ups, and throw heat bolts or spin the Compression Cape with X. Sprint to fill the pace meter for a higher jump, or a take-off with the Cape. Pop variables with Down or run GC with Backspace before the heap fills. Wipe fog with W or a drag.",
     controls: [
       {
         action: "Start, Pause & Resume",
@@ -530,7 +530,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         action: "Sprint & Brake",
         description:
-          "Hold Right to run faster (longer jumps across wide gaps) or Left to slow down and time a jump.",
+          "Hold Right to run faster (longer jumps across wide gaps) or Left to slow down and time a jump. Sprinting on the track fills the six-segment pace meter under the course line; a full meter gives a higher jump, and it drains when you stop sprinting.",
         key: "→ / ←",
       },
       {
@@ -544,6 +544,18 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         description:
           "Frees 2 to 4 KB of garbage for +10 points, but freezes the game for 500 ms (350 ms with the low-power loadout) and heats the watch. Does nothing on a clean heap. Same as the BACK bezel button, or swipe left.",
         key: "G / Backspace",
+      },
+      {
+        action: "Glide & Fly (Compression Cape)",
+        description:
+          "With the Compression Cape, hold jump while falling to glide down slowly. Jump with a full pace meter to take off: for about 4 seconds every further jump press climbs again.",
+        key: "Hold ↑ / Space",
+      },
+      {
+        action: "Cape Spin",
+        description:
+          "With the Compression Cape, spins to flatten NULL and DOG beside you for 200 points and bump Sync Blocks from the side. Spiked STK shrugs it off. While you hold the Cape the BACK bezel button spins too; G still collects garbage.",
+        key: "X",
       },
       {
         action: "Throw Heat Bolt",
@@ -568,7 +580,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         title: "Scoring",
         detail:
-          "You earn about 60 points for every second the app stays up. A stomp pays 100 (200 for a watchdog) and doubles for each further stomp before you land. A Kudos pays 50, a power-up 1,000, an enemy flattened during a Runner's High or by a heat bolt 200, a stage clear 1,000, and the finish pole 100 to 2,000 depending on how high you grab it. Pops pay 5 and a GC that frees memory 10. A power loss costs 50. Your best score is saved on this device.",
+          "You earn about 60 points for every second the app stays up. A stomp pays 100 (200 for a watchdog) and doubles for each further stomp before you land. A Kudos pays 50, a power-up 1,000, an enemy flattened during a Runner's High, by a heat bolt or by a cape spin 200, a stage clear 1,000, and the finish pole 100 to 2,000 depending on how high you grab it. Pops pay 5 and a GC that frees memory 10. A power loss costs 50. Your best score is saved on this device.",
         badge: "High Score",
       },
       {
@@ -586,7 +598,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         title: "Power-ups & Lives",
         detail:
-          "A Protein Shake makes the monkey Buff: taller, and able to take one hit, which drops it back to Base for a moment of blinking safety. Bump a power block while Buff and it gives a Heat Map, which lets you throw heat bolts with X; any hit drops a Heat Map runner straight back to Base. A rare Runner's High makes you invincible for 8 seconds and flattens anything you run into, spikes included. You start with three lives and earn one for every 100 Kudos. Memory, storage and battery failures still end the run outright: those are the watch crashing, not the runner.",
+          "A Protein Shake makes the monkey Buff: taller, and able to take one hit, which drops it back to Base for a moment of blinking safety. Bump a power block while Buff and it gives a Heat Map, which lets you throw heat bolts with X; the second power block of a stage gives a Compression Cape instead, for gliding, flight and spins. Any hit drops a Heat Map or Cape runner straight back to Base. A rare Runner's High makes you invincible for 8 seconds and flattens anything you run into, spikes included. You start with three lives and earn one for every 100 Kudos. Memory, storage and battery failures still end the run outright: those are the watch crashing, not the runner.",
         badge: "Lives",
       },
       {
@@ -633,6 +645,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       "Jump at the finish pole so you grab it at the top of your arc: the top pays 2,000.",
       "Stay Buff: a Protein Shake turns your next hit into a near miss instead of a lost life.",
       "With a Heat Map, throw early: bolts bounce low along the track and clear a walker before it reaches you.",
+      "With the Cape, sprint the flat stretch before a wide gap: a full pace meter turns the jump into a take-off.",
     ],
     lore: {
       title: "Engineering for Wearable Hardware Constraints",

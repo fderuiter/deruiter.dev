@@ -71,7 +71,7 @@ import {
   pressJump,
   releaseJump,
   setRunInput,
-  throwBolt,
+  pressAction,
   CANVAS_SIZE,
   GameEngineState,
   CrashReport,
@@ -79,6 +79,15 @@ import {
   clearFlashStorage,
 } from "@/lib/garmin-engine";
 import { STAGE_COUNT } from "@/lib/garmin-course";
+import { PACE_SEGMENTS, isPaceFull, paceSegments } from "@/lib/garmin-cape";
+import type { PowerTier } from "@/lib/garmin-powerups";
+
+const POWER_NAMES: Record<PowerTier, string> = {
+  base: "Base",
+  buff: "Buff",
+  heatmap: "Heat Map",
+  cape: "Compression Cape",
+};
 
 /** Compact UTC stamp for export file names, e.g. 20261010-120000. */
 function exportStamp(startedAtMs: number): string {
@@ -207,6 +216,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
   const hasAlertedBatteryRef = useRef<boolean>(false);
   const hasAlertedShutdownRef = useRef<boolean>(false);
   const lastBannerRef = useRef<string | null>(null);
+  const lastPaceFullRef = useRef(false);
   const lastRunStateRef = useRef<GameEngineState["gameState"]>("idle");
 
   // Hardware & Simulation State
@@ -366,13 +376,16 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     applyTransition((state) => releaseJump(state));
   }, [applyTransition]);
 
-  // Throw a heat bolt (X) while the runner holds a Heat Map (#1989).
-  const handleThrow = useCallback(() => {
+  // The action key (X): a Heat Map runner throws a heat bolt (#1989) and a
+  // Cape runner spins (#1990).
+  const handleAction = useCallback(() => {
     const current = stateRef.current;
     if (current.gameState !== "playing") return;
-    const next = applyTransition((state) => throwBolt(state));
+    const next = applyTransition((state) => pressAction(state));
     if ((next.boltsThrown ?? 0) !== (current.boltsThrown ?? 0)) {
       playBeep(1200, 0.03);
+    } else if ((next.spinMs ?? 0) > (current.spinMs ?? 0)) {
+      playBeep(700, 0.04);
     }
   }, [playBeep, applyTransition]);
 
@@ -427,12 +440,13 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     }
   }, [playBeep, applyTransition, garbageCollect, setAlertMessage]);
 
-  // BACK throws a heat bolt at the Heat Map tier and collects garbage
-  // otherwise; X and G always do one each.
+  // BACK is the action key at the Heat Map and Cape tiers and collects
+  // garbage otherwise; X and G always do one each.
   const handleBack = useCallback(() => {
-    if (stateRef.current.power === "heatmap") handleThrow();
+    const power = stateRef.current.power;
+    if (power === "heatmap" || power === "cape") handleAction();
     else handleForceGc();
-  }, [handleThrow, handleForceGc]);
+  }, [handleAction, handleForceGc]);
 
   // Save Persistent Variable to Flash NVRAM (+8KB flash, RAM untouched)
   const handleSaveFlash = useCallback(() => {
@@ -672,7 +686,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     } else if (e.key === "Backspace" || e.key.toLowerCase() === "g") {
       handleForceGc();
     } else if (e.key.toLowerCase() === "x") {
-      if (!e.repeat) handleThrow();
+      if (!e.repeat) handleAction();
     } else if (e.key === "Enter" || e.key === " ") {
       if (!e.repeat) handleStartStop();
     }
@@ -822,11 +836,14 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     // The GC freeze itself is announced by the critical-alert effect.
     handleForceGc();
   };
-  const a11yThrow = () => {
-    const before = stateRef.current.boltsThrown ?? 0;
-    handleThrow();
-    if ((stateRef.current.boltsThrown ?? 0) !== before) {
+  const a11yAction = () => {
+    const before = stateRef.current;
+    handleAction();
+    const after = stateRef.current;
+    if ((after.boltsThrown ?? 0) !== (before.boltsThrown ?? 0)) {
       announce("Threw a heat bolt.", "polite");
+    } else if ((after.spinMs ?? 0) > (before.spinMs ?? 0)) {
+      announce("Cape spin.", "polite");
     }
   };
   const a11yLight = () => {
@@ -839,7 +856,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
   const a11yReadTelemetry = () => {
     const s = stateRef.current;
     announce(
-      `Status: ${s.gameState}. Memory: ${s.allocatedRamKb.toFixed(1)} of ${currentProfile.ramLimitKb} KB. Flash: ${s.allocatedFlashKb.toFixed(1)} KB. Battery: ${Math.round(s.battery)}%. Thermal stress: ${Math.round((s.thermalStress ?? 0) * 100)}%. Condensation: ${Math.round(s.fogLevel * 100)}%. Lives: ${s.lives ?? 1}. Power: ${s.power === "heatmap" ? "Heat Map" : s.power === "buff" ? "Buff" : "Base"}${(s.starMs ?? 0) > 0 ? ", Runner's High" : ""}. Score: ${s.score}. High score: ${Math.max(s.highScore, loadedHighScore)}.`,
+      `Status: ${s.gameState}. Memory: ${s.allocatedRamKb.toFixed(1)} of ${currentProfile.ramLimitKb} KB. Flash: ${s.allocatedFlashKb.toFixed(1)} KB. Battery: ${Math.round(s.battery)}%. Thermal stress: ${Math.round((s.thermalStress ?? 0) * 100)}%. Condensation: ${Math.round(s.fogLevel * 100)}%. Lives: ${s.lives ?? 1}. Power: ${POWER_NAMES[s.power ?? "base"]}. Pace meter: ${paceSegments(s.paceMeter)} of ${PACE_SEGMENTS}${(s.starMs ?? 0) > 0 ? ", Runner's High" : ""}. Score: ${s.score}. High score: ${Math.max(s.highScore, loadedHighScore)}.`,
       "polite"
     );
   };
@@ -932,6 +949,14 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     } else if (!bannerText) {
       lastBannerRef.current = null;
     }
+
+    // 7. The pace meter filling is announced once each time it fills.
+    const paceFull =
+      gameState.gameState === "playing" && isPaceFull(gameState.paceMeter);
+    if (paceFull && !lastPaceFullRef.current) {
+      announce("Pace meter full.", "polite");
+    }
+    lastPaceFullRef.current = paceFull;
   }, [gameState, deviceTarget, announce, setAlertMessage]);
 
   // Main 60FPS Game Physics and Rendering Loop
@@ -1116,12 +1141,20 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
           title: "Throw Heat Bolt (X / BACK); G still collects garbage",
           ariaLabel: "Throw Heat Bolt (X / BACK)",
         }
-      : {
-          id: "back",
-          label: "BACK",
-          hint: "[G]",
-          title: `Force Garbage Collection (G / Backspace): ${gcFreezeMs}ms Freeze`,
-        },
+      : gameState.power === "cape"
+        ? {
+            id: "back",
+            label: "SPIN",
+            hint: "[X]",
+            title: "Cape Spin (X / BACK); G still collects garbage",
+            ariaLabel: "Cape Spin (X / BACK)",
+          }
+        : {
+            id: "back",
+            label: "BACK",
+            hint: "[G]",
+            title: `Force Garbage Collection (G / Backspace): ${gcFreezeMs}ms Freeze`,
+          },
   ];
 
   // The end of a run: the watch draws its own one-layer error face, and the
@@ -1261,7 +1294,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
                   width={CANVAS_SIZE}
                   height={CANVAS_SIZE}
                   role="img"
-                  aria-label={`Smartwatch display simulator. Status: ${gameState.gameState}. Stage ${gameState.stage ?? 1} of ${STAGE_COUNT}, lives ${gameState.lives ?? 1}${gameState.power === "buff" ? ", Buff" : gameState.power === "heatmap" ? ", Heat Map" : ""}. Score: ${
+                  aria-label={`Smartwatch display simulator. Status: ${gameState.gameState}. Stage ${gameState.stage ?? 1} of ${STAGE_COUNT}, lives ${gameState.lives ?? 1}${(gameState.power ?? "base") === "base" ? "" : `, ${POWER_NAMES[gameState.power ?? "base"]}`}. Score: ${
                     gameState.score
                   }, High Score: ${effectiveHighScore}. Memory: ${gameState.allocatedRamKb.toFixed(
                     1
@@ -1553,13 +1586,13 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
 
             <button
               type="button"
-              onClick={a11yThrow}
+              onClick={a11yAction}
               disabled={
                 gameState.gameState !== "playing" ||
-                gameState.power !== "heatmap"
+                (gameState.power !== "heatmap" && gameState.power !== "cape")
               }
             >
-              X / Throw Heat Bolt Button
+              X / Throw Heat Bolt or Cape Spin Button
             </button>
 
             <button type="button" onClick={a11yReadTelemetry}>

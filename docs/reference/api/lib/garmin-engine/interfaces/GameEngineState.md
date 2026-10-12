@@ -118,6 +118,14 @@ Unrounded distance; round only when displaying.
 
 ***
 
+### flightMs?
+
+> `optional` **flightMs?**: `number`
+
+Milliseconds left in which a Cape runner's jump presses climb.
+
+***
+
 ### fogLevel
 
 > **fogLevel**: `number`
@@ -252,6 +260,14 @@ Lives left, counting the current one; absent means this is the last.
 
 ***
 
+### paceMeter?
+
+> `optional` **paceMeter?**: `number`
+
+Pace meter, 0 (empty) to 1 (full).
+
+***
+
 ### pausedAt?
 
 > `optional` **pausedAt?**: `number`
@@ -313,6 +329,22 @@ Held pace input: 1 sprints, -1 brakes, 0 runs.
 > `optional` **scoreRemainder?**: `number`
 
 Fractional score (0 to under 1) carried between ticks.
+
+***
+
+### spinCooldownMs?
+
+> `optional` **spinCooldownMs?**: `number`
+
+Milliseconds until the next spin can start.
+
+***
+
+### spinMs?
+
+> `optional` **spinMs?**: `number`
+
+Milliseconds left in the current cape spin.
 
 ***
 

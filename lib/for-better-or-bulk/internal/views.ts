@@ -12,6 +12,7 @@ import {
   INTERRUPTIONS,
   ITEM_LABELS,
   THROW_OUT_PROMPT,
+  VENUE_MAP,
 } from "../presets";
 import type {
   GameState,
@@ -664,10 +665,35 @@ function freeTile(state: GameState, kind: StationKind): Tile | null {
   return station ? { x: station.x, y: station.y } : null;
 }
 
-/** Where a crate sits in the venue: the top row, or the left-hand column. */
-function grabStep(state: GameState, kind: SupplyKind): CoachStep {
-  const crate = state.supplies.find((s) => s.kind === kind);
-  const where = crate && crate.y <= 1 ? "on the top row" : "on the left";
+/**
+ * Where a crate sits in the venue: the top row, the top-right corner, or the
+ * left-hand column. With `from`, the nearest crate of the kind is named, so a
+ * second LAMP crate in the north is pointed at from the north (round 20).
+ */
+function grabStep(
+  state: GameState,
+  kind: SupplyKind,
+  from: Tile | null = null
+): CoachStep {
+  const crates = state.supplies.filter((s) => s.kind === kind);
+  const crate =
+    from === null
+      ? crates[0]
+      : crates.reduce<(typeof crates)[number] | undefined>(
+          (best, c) =>
+            best === undefined ||
+            Math.abs(c.x - from.x) + Math.abs(c.y - from.y) <
+              Math.abs(best.x - from.x) + Math.abs(best.y - from.y)
+              ? c
+              : best,
+          undefined
+        );
+  const where =
+    crate && crate.y <= 1
+      ? crate.x >= VENUE_MAP[0].length - 5
+        ? "in the top-right corner"
+        : "on the top row"
+      : "on the left";
   return {
     text: `Grab ${crateGrabName(kind, state.stock[kind])} from the ${CRATE_NAMES[kind]} crate ${where}.`,
     tile: crate ? { x: crate.x, y: crate.y } : null,
@@ -816,7 +842,8 @@ function cookingStep(state: GameState): CoachStep | null {
 function fetchStep(
   state: GameState,
   lead: "roses" | "food",
-  key: string
+  key: string,
+  from: Tile | null = null
 ): CoachStep | null {
   for (const grill of stationsOf(state, "grill")) {
     const item = grill.item;
@@ -884,7 +911,7 @@ function fetchStep(
   if (cooking) return cooking;
   for (const kind of ["mac", "quinoa", "chairs", "lantern"] as const) {
     if (state.stock[kind] > 0 && openTarget(state, kind))
-      return grabStep(state, kind);
+      return grabStep(state, kind, from);
   }
   return null;
 }
@@ -908,7 +935,10 @@ export function getCoachStep(
   if (player.holding) return carryStep(state, player.holding, key);
   // In co-op the second person starts on the food, so the two lines differ.
   const lead = options.coop && id === "abbi" ? "food" : "roses";
-  return fetchStep(state, lead, key);
+  return fetchStep(state, lead, key, {
+    x: Math.floor(player.x),
+    y: Math.floor(player.y),
+  });
 }
 
 /**

@@ -48,6 +48,10 @@ async function expectNoBlockingViolations(page: Page, state: string) {
 async function playToPlayback(page: Page) {
   await openPlan(page);
   await expectNoBlockingViolations(page, "plan screen");
+  // The page opens a one-player day with the helper on (round 20).
+  await expect(
+    page.getByRole("checkbox", { name: /Helper for the other person/ })
+  ).toHaveAttribute("aria-checked", "true");
 
   await page.getByRole("button", { name: "Start setup" }).click();
   const game = page.getByTestId("fbb-game");

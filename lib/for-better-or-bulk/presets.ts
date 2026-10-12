@@ -118,7 +118,7 @@ export const CAPABILITIES: Readonly<
  */
 export const VENUE_MAP: readonly string[] = [
   "####################",
-  "#HWMQ..BBBB...N..N.#",
+  "#HWMQ..BBBB...N..NL#",
   "#..................#",
   "#R..GGX.AA..PP.....#",
   "#R.................#",

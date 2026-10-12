@@ -171,6 +171,25 @@ describe("the receipt's copy (#1931)", () => {
     }
   });
 
+  it("heads the setup by the finish, not 4:00, when the day was set early (round 20, N-2)", () => {
+    stubMotion(false);
+    recordScrolls();
+    const receipt = computeReceipt(createLevel(DEFAULT_SETUP));
+    render(
+      <ReceiptView
+        receipt={{ ...receipt, finishedAt: "12:08" }}
+        runCode={null}
+        onPlayAgain={vi.fn()}
+        onChangePlan={vi.fn()}
+        onWatchReplay={vi.fn()}
+      />
+    );
+    expect(
+      screen.getByRole("region", { name: "When everything was set" })
+    ).toBeTruthy();
+    expect(screen.queryByRole("region", { name: "At 4:00" })).toBeNull();
+  });
+
   it("does not repeat the follow-through label before its status word", () => {
     stubMotion(false);
     recordScrolls();

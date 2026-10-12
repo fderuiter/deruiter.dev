@@ -286,6 +286,28 @@ state. An `f1.` code recorded before this rule is refused as not replaying to
 the same result. `RUN_CODE_PREFIX` stays `f1.`, as the standing decision for
 this cabinet.
 
+## Amendment (2026-10-12): playtest round 20, north lantern crate and helper default
+
+Issue #1999. Fred accepted the recommended options on two open decisions.
+
+- **A second LAMP crate in the top-right corner (18,1).** The two north lantern
+  hooks were about 15 tiles from the only lantern crate, the longest walk in
+  the day. Crates of a kind share one stock, so the pack is still four
+  lanterns. The coach names the nearest crate of a kind, so from the north it
+  points at "the LAMP crate in the top-right corner".
+- **The page opens a one-player day with the helper on.** Playtests finished
+  and enjoyed the helper day most. The harder solo day is one untick away, and
+  helper days still earn no trophy or board score. `DEFAULT_SETUP` keeps the
+  helper off, so tests and replays are unchanged.
+
+Unplanned tables and lantern hooks stay solid, so they are now drawn faintly
+instead of not at all.
+
+**Run codes recorded before this change may not verify.** The new crate
+changes routes, so the same frames can reach a different state. An `f1.` code
+recorded before this map is refused as not replaying to the same result.
+`RUN_CODE_PREFIX` stays `f1.`, as the standing decision for this cabinet.
+
 ## Amendment (2026-10-11): reactive jokes, ceremony playback and the receipt card
 
 **Reactive jokes.** Each joke is named by the engine event that triggers it

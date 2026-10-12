@@ -165,7 +165,9 @@ export function ReceiptView({
           id="fbb-receipt-readiness"
           className="mb-2 text-xs font-bold uppercase tracking-wide"
         >
-          At 4:00
+          {/* A day set early is not read at 4:00 (round 20, N-2); the finish
+              time itself stays under the 3:00 challenge only (round 17). */}
+          {receipt.finishedAt ? "When everything was set" : "At 4:00"}
         </h3>
         <ul className="flex flex-col gap-2 text-xs">
           {receipt.readiness.map((line) => (

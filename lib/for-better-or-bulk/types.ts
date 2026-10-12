@@ -177,6 +177,21 @@ export interface Player {
   readonly calm: boolean;
   /** Seconds the work key has been held facing the bin with an item in hand. */
   readonly binHold: number;
+  /** A floor drop being held with E (see FloorHold), or null. */
+  readonly floorHold: FloorHold | null;
+}
+
+/**
+ * An interact hold on open floor: the tile the person stood on, the way they
+ * faced, and the ticks E has been held there. It ends when the person moves to
+ * another tile, turns, lets go of E, or puts the item down.
+ */
+export interface FloorHold {
+  readonly cellX: number;
+  readonly cellY: number;
+  readonly facingX: number;
+  readonly facingY: number;
+  readonly ticks: number;
 }
 
 /** One person's controls for one tick. */
@@ -186,6 +201,8 @@ export interface PlayerInput {
   readonly moveY: number;
   /** True on the tick the interact button went down. */
   readonly interact: boolean;
+  /** True on every tick the interact button is held down, the first included. */
+  readonly interactHeld: boolean;
   /** True while the work button is held. */
   readonly work: boolean;
 }

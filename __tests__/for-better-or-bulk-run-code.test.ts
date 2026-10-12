@@ -37,6 +37,7 @@ const playerInput = fc.record({
   moveX: fc.constantFrom(...MOVES),
   moveY: fc.constantFrom(...MOVES),
   interact: fc.boolean(),
+  interactHeld: fc.boolean(),
   work: fc.boolean(),
 });
 
@@ -111,12 +112,14 @@ function scriptedRun(): SharedRun {
           moveX: tick % 40 < 20 ? 1 : -1,
           moveY: tick % 90 < 30 ? 1 : 0,
           interact: tick % 45 === 0,
+          interactHeld: tick % 45 === 0,
           work: tick % 7 < 3,
         },
         abbi: {
           moveX: tick % 30 < 15 ? -1 : 1,
           moveY: 0,
           interact: tick % 60 === 0,
+          interactHeld: tick % 60 === 0,
           work: false,
         },
       },

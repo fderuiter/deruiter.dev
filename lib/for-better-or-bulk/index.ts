@@ -63,7 +63,12 @@ export type {
   SharedRun,
 } from "./internal/run-code";
 export { assistInput, assistJob, assistJobKind } from "./internal/assist";
-export { heldLabel, heldName } from "./internal/words";
+export {
+  heldLabel,
+  heldName,
+  interactKeyName,
+  workKeyName,
+} from "./internal/words";
 export {
   clockLabel,
   floorDropTile,
@@ -74,4 +79,4 @@ export {
   nextSpotTile,
   shownPrompts,
 } from "./internal/views";
-export type { CoachStep, Prompt } from "./internal/views";
+export type { CoachStep, FloorDropPrompt, Prompt } from "./internal/views";

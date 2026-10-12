@@ -65,8 +65,8 @@ const COMMITMENT_ORDER: readonly Commitment[] = [
 ];
 const B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 
-/** One player's input has 36 combinations: 3 x 3 moves, 2 x 2 buttons. */
-const PLAYER_CODES = 36;
+/** One player's input has 72 combinations: 3 x 3 moves, 2 x 2 buttons, interact held or not. */
+const PLAYER_CODES = 72;
 /** The assisted person (3) times the brothers decision (7). */
 const EXTRA_CODES = 21;
 
@@ -229,7 +229,13 @@ function pick<T>(list: readonly T[], index: number): T {
   return value;
 }
 
-/** The 36 input combinations, one per number. */
+/**
+ * The 36 button combinations, one per number, and the same 36 again while
+ * interact is held down (a floor drop needs the hold, ADR 0060 amendment).
+ */
+const BUTTON_CODES = 36;
+
+/** The 72 input combinations one person can make in a tick. */
 function playerCode(input: PlayerInput): number {
   for (const move of [input.moveX, input.moveY]) {
     if (move !== -1 && move !== 0 && move !== 1) {
@@ -240,17 +246,21 @@ function playerCode(input: PlayerInput): number {
     (input.moveX + 1) * 12 +
     (input.moveY + 1) * 4 +
     (input.interact ? 2 : 0) +
-    (input.work ? 1 : 0)
+    (input.work ? 1 : 0) +
+    (input.interactHeld ? BUTTON_CODES : 0)
   );
 }
 
 function inputFromCode(code: number): PlayerInput {
-  const rest = code % 12;
+  const held = code >= BUTTON_CODES;
+  const buttons = code % BUTTON_CODES;
+  const rest = buttons % 12;
   const bits = rest % 4;
   return {
-    moveX: Math.floor(code / 12) - 1,
+    moveX: Math.floor(buttons / 12) - 1,
     moveY: Math.floor(rest / 4) - 1,
     interact: (bits & 2) !== 0,
+    interactHeld: held,
     work: (bits & 1) !== 0,
   };
 }

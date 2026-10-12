@@ -20,6 +20,7 @@ import {
   CHAIRS_PER_CARRY,
   COOK_SECONDS,
   FLOOR_CAP,
+  FLOOR_HOLD_TICKS,
   INTERRUPTIONS,
   LEAVE_SECONDS,
   MOVE_SPEED,
@@ -37,6 +38,7 @@ import {
 } from "../presets";
 import type {
   Commitment,
+  FloorHold,
   Frame,
   GameEvent,
   GameState,
@@ -62,6 +64,7 @@ import { FLOOR_TILES } from "./gates";
 import {
   GRILL_COOKS,
   RAW_FOR_COOKED,
+  floorDropPress,
   frontTile,
   interactTile,
   isWalkable,
@@ -95,6 +98,7 @@ export const IDLE_INPUT: PlayerInput = {
   moveX: 0,
   moveY: 0,
   interact: false,
+  interactHeld: false,
   work: false,
 };
 
@@ -113,7 +117,11 @@ interface Chosen {
 function inputFor(state: GameState, frame: Frame, id: PlayerId): Chosen {
   const given = frame.inputs[id] ?? IDLE_INPUT;
   const idle =
-    given.moveX === 0 && given.moveY === 0 && !given.interact && !given.work;
+    given.moveX === 0 &&
+    given.moveY === 0 &&
+    !given.interact &&
+    !given.interactHeld &&
+    !given.work;
   if (
     state.setup.assist &&
     frame.assisted === id &&
@@ -122,7 +130,11 @@ function inputFor(state: GameState, frame: Frame, id: PlayerId): Chosen {
   ) {
     const input = assistInput(state, id);
     const acted =
-      input.moveX !== 0 || input.moveY !== 0 || input.interact || input.work;
+      input.moveX !== 0 ||
+      input.moveY !== 0 ||
+      input.interact ||
+      input.interactHeld ||
+      input.work;
     return { input, helped: acted };
   }
   return { input: given, helped: false };
@@ -441,6 +453,55 @@ function returnChairs(w: Working, id: PlayerId, count: number): void {
   w.events.push({ type: "restocked", player: id, supply: "chairs" });
 }
 
+/**
+ * One tick of the interact key for `id` (ADR 0060 amendment). A press that
+ * would set the held item on open floor does not act at once: it starts a hold
+ * on that tile and facing. The hold counts each tick E stays down and pauses on
+ * the assist's resting ticks. The item is set down once the hold reaches
+ * FLOOR_HOLD_TICKS. Moving to another tile, turning, letting go of E or
+ * changing what the tile holds ends the hold. Every other press acts at once.
+ */
+function interactStep(
+  w: Working,
+  id: PlayerId,
+  input: PlayerInput,
+  helped: boolean,
+  resting: boolean
+): void {
+  const before = w.state.players[id];
+  const press = input.interact && floorDropPress(w.state, before);
+  if (input.interact && !press) interact(w, id, helped);
+  const current = w.state.players[id];
+  const cell = {
+    cellX: Math.floor(current.x),
+    cellY: Math.floor(current.y),
+    facingX: current.facingX,
+    facingY: current.facingY,
+  };
+  const prior = current.floorHold;
+  const sameCell =
+    prior !== null &&
+    prior.cellX === cell.cellX &&
+    prior.cellY === cell.cellY &&
+    prior.facingX === cell.facingX &&
+    prior.facingY === cell.facingY;
+  const holding =
+    press ||
+    (sameCell && input.interactHeld && floorDropPress(w.state, current));
+  if (!holding) {
+    if (prior) setPlayer(w, { ...current, floorHold: null });
+    return;
+  }
+  const ticks = (press ? 0 : (prior?.ticks ?? 0)) + (resting ? 0 : 1);
+  if (ticks >= FLOOR_HOLD_TICKS) {
+    setPlayer(w, { ...current, floorHold: null });
+    interact(w, id, helped);
+    return;
+  }
+  const floorHold: FloorHold = { ...cell, ticks };
+  setPlayer(w, { ...current, floorHold });
+}
+
 /** Letting go of work, or facing something else, starts a bin hold over. */
 function releaseBinHold(w: Working, id: PlayerId): void {
   const player = w.state.players[id];
@@ -647,6 +708,7 @@ function decide(state: GameState, decision: PresenceDecision): StepResult {
         busyFor: 0,
         busyReason: null,
         binHold: 0,
+        floorHold: null,
       }
     : fred;
   const carried = fred.holding;
@@ -806,6 +868,7 @@ export function stepGame(state: GameState, frame: Frame): StepResult {
         busyFor,
         busyReason: busyFor > 0 ? player.busyReason : null,
         binHold: 0,
+        floorHold: null,
       });
       continue;
     }
@@ -817,7 +880,7 @@ export function stepGame(state: GameState, frame: Frame): StepResult {
     const wet =
       seededActive(w.state, "shower") && isOutdoor(Math.floor(player.y));
     setPlayer(w, move(player, input, dt, wet ? SHOWER_WALK_FACTOR : 1));
-    if (input.interact) interact(w, id, helped);
+    interactStep(w, id, input, helped, resting);
     if (input.work) work(w, id, resting ? 0 : dt);
     else releaseBinHold(w, id);
   }

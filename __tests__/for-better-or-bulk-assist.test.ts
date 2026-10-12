@@ -5,6 +5,7 @@ import {
   ASSIST_LINE,
   DEFAULT_SETUP,
   FLOOR_CAP,
+  FLOOR_HOLD_TICKS,
   VENUE_MAP,
   WALKABLE_TILES,
   validateSetup,
@@ -17,6 +18,7 @@ import {
   createLevel,
   frontTile,
   getHint,
+  IDLE_INPUT,
   interactTile,
   replayLevel,
   stepGame,
@@ -37,6 +39,7 @@ const NO_INPUT: PlayerInput = {
   moveX: 0,
   moveY: 0,
   interact: false,
+  interactHeld: false,
   work: false,
 };
 
@@ -219,6 +222,7 @@ describe("assistInput on fixed states", () => {
       moveX: 0,
       moveY: 0,
       interact: true,
+      interactHeld: true,
       work: false,
     });
   });
@@ -256,6 +260,7 @@ describe("assistInput on fixed states", () => {
     expect(assistInput(state, "abbi")).toEqual({
       ...NO_INPUT,
       interact: true,
+      interactHeld: true,
     });
   });
 
@@ -305,6 +310,7 @@ describe("assistInput on fixed states", () => {
     const state = place(createLevel(ASSIST_SETUP), "abbi", 10, 5, [0, -1]);
     expect(Object.keys(assistInput(state, "abbi")).sort()).toEqual([
       "interact",
+      "interactHeld",
       "moveX",
       "moveY",
       "work",
@@ -573,6 +579,7 @@ const inputArb: fc.Arbitrary<PlayerInput> = fc.record({
   moveX: fc.constantFrom(-1, 0, 1),
   moveY: fc.constantFrom(-1, 0, 1),
   interact: fc.boolean(),
+  interactHeld: fc.boolean(),
   work: fc.boolean(),
 });
 
@@ -677,7 +684,11 @@ describe("the rose gate, shared with getHint", () => {
   it("with only PETALS open and a free bucket in front, the helper puts the roses down there", () => {
     const base = setOpen(createLevel(ASSIST_SETUP), ["petals"]);
     const state = facingTile(base, "abbi", stationOf(base, "petals"), ROSES);
-    expect(assistInput(state, "abbi")).toEqual({ ...NO_INPUT, interact: true });
+    expect(assistInput(state, "abbi")).toEqual({
+      ...NO_INPUT,
+      interact: true,
+      interactHeld: true,
+    });
   });
 
   it("with no rose target open, the helper does not put held roses on a free ARRANGE table", () => {
@@ -860,7 +871,11 @@ describe("what the helper fetches and what it puts down", () => {
       ],
     };
     const state = facingTile(withItem, "abbi", spot, null);
-    expect(assistInput(state, "abbi")).toEqual({ ...NO_INPUT, interact: true });
+    expect(assistInput(state, "abbi")).toEqual({
+      ...NO_INPUT,
+      interact: true,
+      interactHeld: true,
+    });
   });
 });
 
@@ -1335,5 +1350,39 @@ describe("the helper's presses land where the engine resolves them", () => {
       }
     }
     expect(presses).toBeGreaterThan(10);
+  });
+});
+
+describe("the helper's floor drop is a hold (ADR 0060 amendment)", () => {
+  it("presses E, keeps it down through the hold, and drops the item only after it", () => {
+    const base = createLevel(ASSIST_SETUP);
+    // Every target is out of the plan, so the only place for the roses is the
+    // floor. One filled spot makes it Fred's turn ahead, so the helper may act.
+    const [first, ...rest] = base.targets;
+    if (!first) throw new Error("the venue has targets");
+    const crowded: GameState = {
+      ...base,
+      targets: [
+        { ...first, filledBy: ["fred"] },
+        ...rest.map((t) => ({ ...t, status: "unplanned" as const })),
+      ],
+    };
+    let state = place(crowded, "abbi", 10, 4, [0, -1], {
+      kind: "roses",
+      madeBy: null,
+    });
+    let firstHeld = -1;
+    let dropped = -1;
+    for (let tick = 0; tick < 900 && state.players.abbi.holding; tick++) {
+      state = stepGame(state, {
+        inputs: { fred: IDLE_INPUT, abbi: IDLE_INPUT },
+        assisted: "abbi",
+      }).state;
+      if (firstHeld < 0 && state.players.abbi.floorHold) firstHeld = tick;
+      if (state.players.abbi.holding === null) dropped = tick;
+    }
+    expect(state.floor.some((f) => f.item.kind === "roses")).toBe(true);
+    expect(firstHeld).toBeGreaterThanOrEqual(0);
+    expect(dropped - firstHeld).toBeGreaterThanOrEqual(FLOOR_HOLD_TICKS - 1);
   });
 });

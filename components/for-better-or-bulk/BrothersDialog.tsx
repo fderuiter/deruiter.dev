@@ -61,11 +61,15 @@ function abbiLine(state: GameState): string {
     : "Abbi has her hands free and is looking at him.";
 }
 
-/** Fred's mood, read from the level as it stands. */
+/**
+ * Where Fred stands, read from the level as it stands. `calm` is set when he
+ * comes back from a break or a leave (sim.ts), so it says he is back. Until
+ * then the line is about the wedding, not about how he feels.
+ */
 function fredLine(state: GameState): string {
   return state.players.fred.calm
-    ? "Fred has calmed down."
-    : "Fred has not calmed down yet.";
+    ? "Fred is back from his time away."
+    : "The wedding is still on.";
 }
 
 export function BrothersDialog({ state, onDecide }: BrothersDialogProps) {

@@ -12,6 +12,7 @@ import {
   COOK_SECONDS,
   DEFAULT_SETUP,
   FLOOR_CAP,
+  FLOOR_HOLD_TICKS,
   THROW_OUT_PROMPT,
   IDLE_FRAME,
   IDLE_INPUT,
@@ -110,6 +111,21 @@ function place(
 
 function press(state: GameState, id: PlayerId) {
   return stepGame(state, frameFor(id, { interact: true }));
+}
+
+/**
+ * Holds E down for a floor drop: the press tick, then the rest of the hold
+ * (ADR 0060 amendment). Returns the state after the full hold.
+ */
+function holdFloor(state: GameState, id: PlayerId): GameState {
+  let current = stepGame(
+    state,
+    frameFor(id, { interact: true, interactHeld: true })
+  ).state;
+  for (let i = 1; i < FLOOR_HOLD_TICKS; i++) {
+    current = stepGame(current, frameFor(id, { interactHeld: true })).state;
+  }
+  return current;
 }
 
 function untilBrothers(state: GameState): GameState {
@@ -491,7 +507,7 @@ describe("crates, stations and targets", () => {
       kind: "chairs",
       madeBy: null,
     });
-    const dropped = press(start, "fred").state;
+    const dropped = holdFloor(start, "fred");
     expect(dropped.floor).toEqual([
       { x: 5, y: 8, item: { kind: "chairs", madeBy: null } },
     ]);
@@ -1031,6 +1047,7 @@ describe("replay", () => {
     moveX: fc.constantFrom(-1, 0, 1),
     moveY: fc.constantFrom(-1, 0, 1),
     interact: fc.boolean(),
+    interactHeld: fc.boolean(),
     work: fc.boolean(),
   });
   const decisionArb = fc.constantFrom<PresenceDecision>(
@@ -1349,14 +1366,14 @@ describe("the coach hints", () => {
       hint: "Carry the roses to the ARRANGE table (A).",
     },
     {
-      name: "roses on the table: hold work to arrange them",
+      name: "roses on the table: hold F to arrange them",
       state: () =>
         withStation(createLevel(DEFAULT_SETUP), 8, 3, {
           kind: "roses",
           madeBy: null,
         }),
       id: "fred",
-      hint: "Stand at the ARRANGE table (A) and hold work to arrange the roses.",
+      hint: "Stand at the ARRANGE table (A) and hold F or Shift to arrange the roses.",
     },
     {
       name: "arrangement ready: take it from the table",
@@ -1585,14 +1602,14 @@ describe("the coach hints", () => {
       hint: "Place a stack of 2 chairs at a chair spot (O).",
     },
     {
-      name: "holding something burnt: take it to the bin",
+      name: "holding something burnt: take it to the bin, with the key named",
       state: () =>
         place(createLevel(DEFAULT_SETUP), "fred", 2, 2, [0, 1], {
           kind: "burnt",
           madeBy: null,
         }),
       id: "fred",
-      hint: "Carry the burnt food to the BIN (X) and hold work there to throw it out.",
+      hint: "Carry the burnt food to the BIN (X) and hold F or Shift there to throw it out.",
     },
     {
       name: "nothing useful left: no hint",
@@ -1809,13 +1826,18 @@ describe("interaction targets", () => {
     );
   });
 
-  it("drops on the floor only when no station is in reach", () => {
+  it("drops on the floor only when no station is in reach, and only after a hold", () => {
     const at = place(createLevel(DEFAULT_SETUP), "fred", 10, 4, [0, -1], roses);
     expect(interactTile(at, "fred")).toEqual({ x: 10, y: 3 });
-    expect(getPrompt(at, "fred").interact).toBe(
-      "Set the roses down on the floor here"
-    );
-    const after = stepGame(at, frameFor("fred", { interact: true })).state;
+    expect(getPrompt(at, "fred").interact).toBeNull();
+    expect(getPrompt(at, "fred").floorDrop).toEqual({
+      note: null,
+      action: "set the roses down on the floor here",
+    });
+    const tapped = press(at, "fred").state;
+    expect(tapped.floor).toEqual([]);
+    expect(tapped.players.fred.holding).toEqual(roses);
+    const after = holdFloor(at, "fred");
     expect(after.floor).toEqual([{ x: 10, y: 3, item: roses }]);
   });
 
@@ -1824,11 +1846,93 @@ describe("interaction targets", () => {
     expect(interactTile(at, "fred")).toEqual({ x: 8, y: 3 });
   });
 
-  it("skips a station behind the person that does not take the item, so the press lands on the floor they face", () => {
+  it("skips a station behind the person that does not take the item, so the hold lands on the floor they face", () => {
     const at = place(createLevel(DEFAULT_SETUP), "fred", 6, 2, [0, -1], roses);
     expect(interactTile(at, "fred")).toEqual({ x: 6, y: 1 });
-    const after = stepGame(at, frameFor("fred", { interact: true })).state;
+    const after = holdFloor(at, "fred");
     expect(after.floor).toEqual([{ x: 6, y: 1, item: roses }]);
+  });
+
+  it("a tap facing floor does nothing, and a hold drops the item once FLOOR_HOLD_TICKS have passed", () => {
+    const at = place(createLevel(DEFAULT_SETUP), "fred", 10, 4, [0, -1], roses);
+    let current = stepGame(
+      at,
+      frameFor("fred", { interact: true, interactHeld: true })
+    ).state;
+    for (let i = 1; i < FLOOR_HOLD_TICKS - 1; i++) {
+      current = stepGame(
+        current,
+        frameFor("fred", { interactHeld: true })
+      ).state;
+    }
+    expect(current.floor).toEqual([]);
+    expect(current.players.fred.holding).toEqual(roses);
+    current = stepGame(current, frameFor("fred", { interactHeld: true })).state;
+    expect(current.floor).toEqual([{ x: 10, y: 3, item: roses }]);
+    expect(current.players.fred.holding).toBeNull();
+    expect(current.players.fred.floorHold).toBeNull();
+  });
+
+  it("letting go of E before the hold ends sets nothing down", () => {
+    const at = place(createLevel(DEFAULT_SETUP), "fred", 10, 4, [0, -1], roses);
+    const partial = run(
+      at,
+      frameFor("fred", { interact: true, interactHeld: true }),
+      5
+    ).state;
+    const released = run(partial, IDLE_FRAME, FLOOR_HOLD_TICKS).state;
+    expect(released.floor).toEqual([]);
+    expect(released.players.fred.floorHold).toBeNull();
+  });
+
+  it("moving to another tile mid-hold resets it, and E must be pressed again", () => {
+    const at = place(createLevel(DEFAULT_SETUP), "fred", 10, 4, [0, -1], roses);
+    const held = run(
+      at,
+      frameFor("fred", { interact: true, interactHeld: true }),
+      4
+    ).state;
+    expect(held.players.fred.floorHold).not.toBeNull();
+    // Walk left until the body leaves tile (10, 4).
+    let current = held;
+    for (let i = 0; i < 60 && Math.floor(current.players.fred.x) === 10; i++) {
+      current = stepGame(
+        current,
+        frameFor("fred", { moveX: -1, interactHeld: true })
+      ).state;
+    }
+    expect(Math.floor(current.players.fred.x)).toBe(9);
+    expect(current.players.fred.floorHold).toBeNull();
+    // Holding E on, without a new press, does not start a hold again.
+    current = run(
+      current,
+      frameFor("fred", { interactHeld: true }),
+      FLOOR_HOLD_TICKS * 2
+    ).state;
+    expect(current.floor.some((f) => f.item === roses)).toBe(false);
+    expect(current.players.fred.holding).toEqual(roses);
+  });
+
+  it("turning mid-hold resets it, even without leaving the tile", () => {
+    const at = place(createLevel(DEFAULT_SETUP), "fred", 10, 4, [0, -1], roses);
+    const held = run(
+      at,
+      frameFor("fred", { interact: true, interactHeld: true }),
+      4
+    ).state;
+    // A sideways press turns the body to face the tile on its right.
+    const turned = stepGame(
+      held,
+      frameFor("fred", { moveX: 1, interactHeld: true })
+    ).state;
+    expect(turned.players.fred.facingX).toBe(1);
+    expect(turned.players.fred.floorHold).toBeNull();
+    const after = run(
+      turned,
+      frameFor("fred", { interactHeld: true }),
+      FLOOR_HOLD_TICKS * 2
+    ).state;
+    expect(after.floor).toEqual([]);
   });
 });
 
@@ -2228,9 +2332,10 @@ describe("a press that would drop an item because a station is blocked (round 8,
     });
     const at = placeExact(base, "fred", 3.5, 3.5, [-1, 0], raw);
     expect(interactTile(at, "fred")).toEqual({ x: 2, y: 3 });
-    expect(getPrompt(at, "fred").interact).toBe(
-      "The GRILL (G) is full. Set the raw wings down on the floor here"
-    );
+    expect(getPrompt(at, "fred").floorDrop).toEqual({
+      note: "The GRILL (G) is full.",
+      action: "set the raw wings down on the floor here",
+    });
   });
 
   it("names no blocker when the grill in reach is empty", () => {
@@ -2397,9 +2502,10 @@ describe("a full floor says why a press does nothing (round 8, S8)", () => {
 
   it("still offers the floor while there is room on it", () => {
     const at = place(createLevel(DEFAULT_SETUP), "fred", 2, 4, [0, 1], raw);
-    expect(getPrompt(at, "fred").interact).toBe(
-      "Set the raw wings down on the floor here"
-    );
+    expect(getPrompt(at, "fred").floorDrop).toEqual({
+      note: null,
+      action: "set the raw wings down on the floor here",
+    });
   });
 });
 
@@ -2698,6 +2804,7 @@ describe("a refused press says why (round 9, task 1)", () => {
           );
           const person = at.players.fred;
           const prompt = getPrompt(at, "fred").interact;
+          const floorDrop = getPrompt(at, "fred").floorDrop;
           const onTile = (tile: { x: number; y: number }) =>
             [...at.supplies, ...at.stations, ...at.targets, ...at.floor].some(
               (entry) => entry.x === tile.x && entry.y === tile.y
@@ -2706,7 +2813,9 @@ describe("a refused press says why (round 9, task 1)", () => {
             at.stations.some(
               (s) => s.kind === "bin" && s.x === tile.x && s.y === tile.y
             );
-          if (interactTile(at, "fred") !== null) return prompt !== null;
+          // A floor drop is a hold, so its line is floorDrop, not interact.
+          if (interactTile(at, "fred") !== null)
+            return prompt !== null || floorDrop !== null;
           const faced = facedTiles(person);
           const held = person.holding;
           // A held item at the bin is the one exception: the hold prompt names it.
@@ -2973,5 +3082,88 @@ describe("review fixes for the round 10 views and receipt (#1963)", () => {
       };
       expect(nextSpotTile(at, "fred")).toEqual({ x: 5, y: 5 });
     });
+  });
+});
+
+describe("prompts and refusals for the round 11 playtest (ADR 0060 amendment)", () => {
+  it("a stack of two chairs says one press places one chair", () => {
+    const spot = createLevel(DEFAULT_SETUP).targets.find(
+      (t) => t.kind === "chair-spot" && t.status === "open"
+    );
+    expect(spot).toBeDefined();
+    if (!spot) return;
+    const stack: Item = { kind: "chairs", madeBy: null, count: 2 };
+    const at = place(
+      createLevel(DEFAULT_SETUP),
+      "abbi",
+      spot.x,
+      spot.y + 1,
+      [0, -1],
+      stack
+    );
+    expect(getPrompt(at, "abbi").interact).toBe(
+      "Place a chair (1 more in the stack)"
+    );
+    const placed = press(at, "abbi").state;
+    expect(placed.players.abbi.holding).toEqual({
+      kind: "chairs",
+      madeBy: null,
+      count: 1,
+    });
+  });
+
+  it("burnt food refused anywhere but the bin names the bin", () => {
+    const burnt: Item = { kind: "burnt", madeBy: null };
+    const base = createLevel(DEFAULT_SETUP);
+    const at = place(base, "fred", 10, 4, [0, -1], burnt);
+    const blocked = {
+      ...at,
+      floor: [{ x: 10, y: 3, item: ROSES }],
+    };
+    expect(getPrompt(blocked, "fred").interact).toBe(
+      "Burnt food goes in the BIN (X)."
+    );
+  });
+
+  it("burnt food facing the bin gets the hold line, not a refusal", () => {
+    const bin = createLevel(DEFAULT_SETUP).stations.find(
+      (s) => s.kind === "bin"
+    );
+    expect(bin).toBeDefined();
+    if (!bin) return;
+    const at = place(
+      createLevel(DEFAULT_SETUP),
+      "fred",
+      bin.x,
+      bin.y + 1,
+      [0, -1],
+      {
+        kind: "burnt",
+        madeBy: null,
+      }
+    );
+    const prompt = getPrompt(at, "fred");
+    expect(prompt.interact).toBeNull();
+    expect(prompt.work).toBe(THROW_OUT_PROMPT);
+  });
+
+  it("the coach names the work key for each person and mode", () => {
+    const withTable = withStation(createLevel(DEFAULT_SETUP), 8, 3, {
+      kind: "roses",
+      madeBy: null,
+    });
+    expect(getHint(withTable, "fred", { coop: true })).toBe(
+      "Stand at the ARRANGE table (A) and hold F to arrange the roses."
+    );
+    expect(getHint(withTable, "fred")).toBe(
+      "Stand at the ARRANGE table (A) and hold F or Shift to arrange the roses."
+    );
+    const burnt = place(createLevel(DEFAULT_SETUP), "abbi", 2, 2, [0, 1], {
+      kind: "burnt",
+      madeBy: null,
+    });
+    expect(getHint(burnt, "abbi", { coop: true })).toBe(
+      "Carry the burnt food to the BIN (X) and hold Shift there to throw it out."
+    );
   });
 });

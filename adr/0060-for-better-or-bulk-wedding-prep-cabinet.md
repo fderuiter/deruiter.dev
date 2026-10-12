@@ -391,3 +391,41 @@ prompts and the receipt copy. The rules below are the current ones.
   aside. A blocked website feature reads "Registry scraper: 1 call got through
   without it." Fred's shoe retie reads "Retying a shoelace." and "Fred stops to
   retie a shoelace.", and a stay reads "Fred stayed for the whole setup."
+
+## Amendment (2026-10-12): playtest round 11
+
+Issue #1965. A floor drop needs a deliberate hold, and the chair stack, burnt
+food and coach copy say what a press does. The rules below are the current ones.
+
+- **Setting an item down on open floor takes a hold.** A press of interact that
+  would put the held item on open floor starts a hold on that tile and facing,
+  and does nothing else. The item is set down after E has been held for
+  `FLOOR_HOLD_TICKS` (12 ticks, 0.4 s of game time). A tap does nothing. Moving
+  to another tile, turning, letting go of E, or anything else that changes the
+  tile ends the hold, and a new press starts it again. Presses on stations,
+  crates, bins, spots and the buffet stay taps. The input carries `interactHeld`
+  for each tick E is down, and `floorDropPress` in `internal/press.ts` says when
+  a press would drop on the floor. The solo helper holds E the same way and
+  pauses the hold on its resting ticks.
+  **Older runs may not verify.** Frames now carry `interactHeld`, and a run
+  recorded before this rule may tap a floor drop that no longer lands, so its
+  replay and share code can fail verification. Such runs must be played again to
+  share. `RUN_CODE_PREFIX` is unchanged.
+- **The floor drop prompt names the hold.** It reads "Hold E to set the roses
+  down on the floor here" (Enter for Abbi in co-op, "E or Enter" solo), with a
+  station in reach that is full in front when one applies.
+- **A chair stack says what one press does.** With a stack of two or more chairs
+  at an open chair spot, the prompt reads "Place a chair (1 more in the stack)".
+  One press places one chair, and the rest stay in hand.
+- **Burnt food is refused with the bin named.** Holding burnt food, a press that
+  does nothing anywhere but the bin reads "Burnt food goes in the BIN (X)." The
+  bin itself gets the hold line, as before.
+- **Coach lines name the key.** The coach names the work key the way the prompts
+  do: "hold F" for Fred in co-op, "hold Shift" for Abbi in co-op, and "hold F or
+  Shift" solo. The key names come from `workKeyName` and `interactKeyName` in
+  `internal/words.ts`, which the game component also uses.
+- **The brothers' copy is about the situation.** Fred's line reads "The wedding
+  is still on." until he has come back from a break or a leave, and then "Fred is
+  back from his time away." It says nothing about his mood.
+- **The weather line is gentler.** The real weather line reads "The weather was
+  perfect. Fred took the credit."

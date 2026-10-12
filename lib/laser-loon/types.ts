@@ -68,6 +68,8 @@ export interface Target {
   bossPhase?: number;
   shieldAngle?: number;
   specialAttackTimer?: number;
+  /** A minion's frames toward its next shot, from Act 3 on. */
+  fireTimer?: number;
   /** A boss volley shot: flies straight, costs a hit on contact, scores no act kill. */
   isProjectile?: boolean;
 }
@@ -151,6 +153,8 @@ export interface CampaignAct {
   bossType: CivicEnemyType;
   bossHp: number;
   requiredMinionKills: number;
+  /** Seconds of play to clear the act for its par star. */
+  parSeconds: number;
   victoryQuote: string;
   backgroundTheme: "lake" | "fair" | "hearing" | "capitol";
 }

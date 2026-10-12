@@ -8,6 +8,12 @@
 
 ## References
 
+### ActProgressReadout
+
+Re-exports [ActProgressReadout](engine/interfaces/ActProgressReadout.md)
+
+***
+
 ### ARCADE\_GAME\_DURATION\_SECS
 
 Re-exports [ARCADE_GAME_DURATION_SECS](constants/variables/ARCADE_GAME_DURATION_SECS.md)
@@ -194,6 +200,18 @@ Re-exports [getActAvailableEnemies](engine/functions/getActAvailableEnemies.md)
 
 ***
 
+### getActProgressReadout
+
+Re-exports [getActProgressReadout](engine/functions/getActProgressReadout.md)
+
+***
+
+### getActStars
+
+Re-exports [getActStars](engine/functions/getActStars.md)
+
+***
+
 ### getBossAttackInterval
 
 Re-exports [getBossAttackInterval](engine/functions/getBossAttackInterval.md)
@@ -326,9 +344,63 @@ Re-exports [MAX_MULTIPLIER](constants/variables/MAX_MULTIPLIER.md)
 
 ***
 
+### MINION\_FIRE\_BASE\_FRAMES
+
+Re-exports [MINION_FIRE_BASE_FRAMES](constants/variables/MINION_FIRE_BASE_FRAMES.md)
+
+***
+
+### MINION\_FIRE\_FIRST\_ACT
+
+Re-exports [MINION_FIRE_FIRST_ACT](constants/variables/MINION_FIRE_FIRST_ACT.md)
+
+***
+
+### MINION\_FIRE\_FRAMES\_PER\_ACT
+
+Re-exports [MINION_FIRE_FRAMES_PER_ACT](constants/variables/MINION_FIRE_FRAMES_PER_ACT.md)
+
+***
+
+### MINION\_FIRE\_MAX\_SHOTS
+
+Re-exports [MINION_FIRE_MAX_SHOTS](constants/variables/MINION_FIRE_MAX_SHOTS.md)
+
+***
+
+### MINION\_FIRE\_MIN\_LEAD
+
+Re-exports [MINION_FIRE_MIN_LEAD](constants/variables/MINION_FIRE_MIN_LEAD.md)
+
+***
+
+### MINION\_SHOT\_RADIUS
+
+Re-exports [MINION_SHOT_RADIUS](constants/variables/MINION_SHOT_RADIUS.md)
+
+***
+
+### MINION\_SHOT\_SPEED
+
+Re-exports [MINION_SHOT_SPEED](constants/variables/MINION_SHOT_SPEED.md)
+
+***
+
+### MinionFireResult
+
+Re-exports [MinionFireResult](engine/interfaces/MinionFireResult.md)
+
+***
+
 ### Particle
 
 Re-exports [Particle](types/interfaces/Particle.md)
+
+***
+
+### pickKeyboardAim
+
+Re-exports [pickKeyboardAim](engine/functions/pickKeyboardAim.md)
 
 ***
 
@@ -431,6 +503,12 @@ Re-exports [updateFloatingTexts](engine/functions/updateFloatingTexts.md)
 ### updateIceBlocksAndCollisions
 
 Re-exports [updateIceBlocksAndCollisions](engine/functions/updateIceBlocksAndCollisions.md)
+
+***
+
+### updateMinionFire
+
+Re-exports [updateMinionFire](engine/functions/updateMinionFire.md)
 
 ***
 

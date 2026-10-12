@@ -37,6 +37,13 @@ import {
   BOSS_TELEGRAPH_FRAMES,
   BOSS_PROJECTILE_RADIUS,
   BOSS_FIRST_VOLLEY_FRAMES,
+  MINION_FIRE_FIRST_ACT,
+  MINION_FIRE_BASE_FRAMES,
+  MINION_FIRE_FRAMES_PER_ACT,
+  MINION_FIRE_MAX_SHOTS,
+  MINION_SHOT_SPEED,
+  MINION_SHOT_RADIUS,
+  MINION_FIRE_MIN_LEAD,
 } from "./constants";
 
 export function createInitialState(
@@ -1171,4 +1178,160 @@ export function updateBossAttack(
   }
 
   return { targets: nextTargets, nextId: id, fired: true, enteredPhaseTwo };
+}
+
+/** What the campaign HUD shows beside the act number. */
+export interface ActProgressReadout {
+  label: "Kills" | "Boss";
+  value: string;
+}
+
+/**
+ * The act's progress for the HUD: kills against the quota, clamped so a
+ * minion shot during the boss fight never reads 12/8, then the boss's HP
+ * once it is up.
+ *
+ * @param actKills - Minion kills this act.
+ * @param requiredKills - The act's minion quota.
+ * @param boss - Whether the boss is up, and its HP.
+ */
+export function getActProgressReadout(
+  actKills: number,
+  requiredKills: number,
+  boss: { active: boolean; hp: number; maxHp: number }
+): ActProgressReadout {
+  if (boss.active) {
+    return {
+      label: "Boss",
+      value: `${Math.max(0, Math.ceil(boss.hp))}/${boss.maxHp} HP`,
+    };
+  }
+  const shown = clamp(actKills, 0, requiredKills);
+  return { label: "Kills", value: `${shown}/${requiredKills}` };
+}
+
+/**
+ * Where a keyboard shot aims: the nearest live enemy ahead of the loon,
+ * preferring real enemies over incoming shots, or straight ahead when the
+ * sky is clear. Keyboard players have no pointer to aim with.
+ *
+ * @param targets - All live targets.
+ * @param eyeX - The laser's origin x.
+ * @param eyeY - The laser's origin y.
+ * @param width - The canvas width.
+ */
+export function pickKeyboardAim(
+  targets: readonly Target[],
+  eyeX: number,
+  eyeY: number,
+  width = DEFAULT_CANVAS_WIDTH
+): { x: number; y: number } {
+  let best: Target | null = null;
+  let bestScore = Infinity;
+  for (const t of targets) {
+    if (t.hp <= 0 || t.x <= eyeX || t.x > width + t.radius) continue;
+    const distance = Math.hypot(t.x - eyeX, t.y - eyeY);
+    const score = t.isProjectile ? distance + 10_000 : distance;
+    if (score < bestScore) {
+      best = t;
+      bestScore = score;
+    }
+  }
+  return best ? { x: best.x, y: best.y } : { x: width - 20, y: eyeY };
+}
+
+/** Result of one frame of minion fire. */
+export interface MinionFireResult {
+  targets: Target[];
+  nextId: number;
+  fired: number;
+}
+
+/**
+ * From Act 3 on, minions ahead of the loon shoot back: each on its own
+ * timer, staggered by a random start, with a cap on shots in the air. Frozen
+ * minions and the boss (which has its own volleys) do not fire here.
+ *
+ * @param targets - All live targets.
+ * @param dt - Frame delta, in 60 fps frames.
+ * @param loonX - The loon's x position.
+ * @param loonY - The loon's y position.
+ * @param actNumber - The act being played.
+ * @param nextId - The next free target id.
+ * @param rng - Random source, injectable for tests.
+ */
+export function updateMinionFire(
+  targets: Target[],
+  dt: number,
+  loonX: number,
+  loonY: number,
+  actNumber: number,
+  nextId: number,
+  rng: () => number = Math.random
+): MinionFireResult {
+  if (actNumber < MINION_FIRE_FIRST_ACT) {
+    return { targets, nextId, fired: 0 };
+  }
+  const interval = Math.max(
+    60,
+    MINION_FIRE_BASE_FRAMES -
+      MINION_FIRE_FRAMES_PER_ACT * (actNumber - MINION_FIRE_FIRST_ACT)
+  );
+  let inAir = targets.filter((t) => t.isProjectile && !t.isBoss).length;
+  let id = nextId;
+  let fired = 0;
+  const shots: Target[] = [];
+  const next = targets.map((t) => {
+    if (t.isBoss || t.isProjectile || t.hp <= 0 || t.frozenTimer > 0) {
+      return t;
+    }
+    const m = { ...t };
+    m.fireTimer = (m.fireTimer ?? -rng() * interval) + dt;
+    if (m.fireTimer < interval) return m;
+    m.fireTimer = 0;
+    if (inAir >= MINION_FIRE_MAX_SHOTS || m.x < loonX + MINION_FIRE_MIN_LEAD) {
+      return m;
+    }
+    const aim = Math.atan2(loonY - m.y, loonX - m.x);
+    shots.push({
+      id: id++,
+      x: m.x - m.radius,
+      y: m.y,
+      vx: Math.cos(aim) * MINION_SHOT_SPEED,
+      vy: Math.sin(aim) * MINION_SHOT_SPEED,
+      radius: MINION_SHOT_RADIUS,
+      type: m.type,
+      label: "",
+      color: m.color,
+      hp: 1,
+      maxHp: 1,
+      points: 5,
+      pulsePhase: 0,
+      frozenTimer: 0,
+      isProjectile: true,
+    });
+    inAir += 1;
+    fired += 1;
+    return m;
+  });
+  return { targets: [...next, ...shots], nextId: id, fired };
+}
+
+/**
+ * Stars for a cleared act: one for clearing it, one for beating its par
+ * time, and one for losing no hits.
+ *
+ * @param clearSeconds - Seconds of unpaused play the act took.
+ * @param parSeconds - The act's par time.
+ * @param hitsLost - Hits the loon took during the act.
+ */
+export function getActStars(
+  clearSeconds: number,
+  parSeconds: number,
+  hitsLost: number
+): 1 | 2 | 3 {
+  let stars = 1;
+  if (clearSeconds <= parSeconds) stars += 1;
+  if (hitsLost <= 0) stars += 1;
+  return stars as 1 | 2 | 3;
 }

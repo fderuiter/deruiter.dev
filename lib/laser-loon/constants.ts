@@ -288,6 +288,7 @@ export const CAMPAIGN_ACTS: readonly CampaignAct[] = [
     bossType: "mega-mosquito",
     bossHp: 20,
     requiredMinionKills: 8,
+    parSeconds: 20,
     victoryQuote:
       "The lakeside district votes overwhelmingly in favor of Laser Loon! Next stop: The Great Minnesota Get-Together!",
     backgroundTheme: "lake",
@@ -307,6 +308,7 @@ export const CAMPAIGN_ACTS: readonly CampaignAct[] = [
     bossType: "butter-colossus",
     bossHp: 30,
     requiredMinionKills: 10,
+    parSeconds: 24,
     victoryQuote:
       "The Dairy Building is liberated! Deep-fried treats and butter sculpture tributes seal public acclaim!",
     backgroundTheme: "fair",
@@ -326,6 +328,7 @@ export const CAMPAIGN_ACTS: readonly CampaignAct[] = [
     bossType: "starflake-boss",
     bossHp: 45,
     requiredMinionKills: 12,
+    parSeconds: 32,
     victoryQuote:
       "The committee is awestruck! The public gallery erupts into deafening loon tremolo calls!",
     backgroundTheme: "hearing",
@@ -335,9 +338,9 @@ export const CAMPAIGN_ACTS: readonly CampaignAct[] = [
     title: "Act IV: The Capitol Dome Finale",
     location: "Minnesota State Capitol Rotunda & Dome",
     newspaperHeadline:
-      "HISTORY WRITTEN! LASER LOON F277 HOISTED ATOP CAPITOL DOME AS OFFICIAL STATE EMBLEM",
+      "FINAL VOTE TODAY: LASER LOON F277 FACES THE GRAND VETO GAVEL IN THE ROTUNDA",
     newspaperSubheader:
-      "The Saint Paul Pioneer Press • Commemorative Issue • 2024",
+      "The Saint Paul Pioneer Press • Final Vote Edition • 2024",
     storyIntro: [
       "The final vote rests in the Capitol rotunda. The Sovereign Gavel and the remnants of the 1893 Seal launch a desperate filibuster of amendments.",
       "Unleash the full power of the Haunting Loon Tremolo and hoist the F277 Laser Loon flag high above the North Star State!",
@@ -346,8 +349,9 @@ export const CAMPAIGN_ACTS: readonly CampaignAct[] = [
     bossType: "gavel-sovereign",
     bossHp: 60,
     requiredMinionKills: 15,
+    parSeconds: 38,
     victoryQuote:
-      "VICTORY! Laser Loon is ratified as the North Star State's official flag! $13.5k raised for public libraries!",
+      "HISTORY WRITTEN! Laser Loon F277 is hoisted atop the Capitol Dome as the North Star State's official flag!",
     backgroundTheme: "capitol",
   },
 ] as const;
@@ -465,3 +469,18 @@ export const LOON_MAX_X = DEFAULT_CANVAS_WIDTH - 40;
 export const LOON_MIN_Y = 40;
 /** Lowest point (largest y) the loon can fly to by keyboard, touch or mouse. */
 export const LOON_MAX_Y = DEFAULT_CANVAS_HEIGHT - 40;
+
+/** First act whose minions shoot back at the loon. */
+export const MINION_FIRE_FIRST_ACT = 3;
+/** Frames between one minion's shots in Act 3; Act 4 fires more often. */
+export const MINION_FIRE_BASE_FRAMES = 260;
+/** Frames each act after Act 3 takes off the minion fire interval. */
+export const MINION_FIRE_FRAMES_PER_ACT = 60;
+/** Most minion shots in the air at once, so a crowd cannot wall the loon in. */
+export const MINION_FIRE_MAX_SHOTS = 3;
+/** Speed of a minion shot, in canvas pixels per frame: slower than a boss's. */
+export const MINION_SHOT_SPEED = 3;
+/** Radius of a minion shot, in canvas pixels. */
+export const MINION_SHOT_RADIUS = 7;
+/** How far ahead of the loon a minion must be before it may fire. */
+export const MINION_FIRE_MIN_LEAD = 120;

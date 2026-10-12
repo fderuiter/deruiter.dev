@@ -98,7 +98,7 @@ describe("For Better or Bulk game challenges", () => {
     } as const;
     expect(met(left, "every-promise-kept")).toBe(false);
     expect(detailOf(left, "every-promise-kept")).toBe(
-      "Fred went out with his brothers instead of staying for the setup."
+      "Fred went with his brothers, and the setup carried on without him."
     );
   });
 

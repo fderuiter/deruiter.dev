@@ -52,6 +52,8 @@ describe("Working With Duck Extended: Engine State & Mini-Game Suite", () => {
   describe("Bathtub Grooming Mini-Game", () => {
     it("transitions into bathtub and manages soap lather progression", () => {
       let state = createInitialDuckGameState(1, "campaign");
+      // The full wash reward is for a muddy duck (#1942).
+      state = { ...state, isMuddy: true };
       state = enterBathtub(state);
       expect(state.inBathtub).toBe(true);
       expect(state.bathtubState.soapLather).toBe(0);

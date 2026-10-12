@@ -181,6 +181,47 @@ describe("the receipt's copy (#1931)", () => {
   });
 });
 
+describe("the receipt says each fact once (round 17)", () => {
+  const view = (receipt: ReturnType<typeof computeReceipt>) =>
+    render(
+      <ReceiptView
+        receipt={receipt}
+        runCode={null}
+        onPlayAgain={vi.fn()}
+        onChangePlan={vi.fn()}
+        onWatchReplay={vi.fn()}
+      />
+    );
+
+  it("prints the finish time once, under the 3:00 challenge", () => {
+    stubMotion(false);
+    recordScrolls();
+    const base = createLevel(DEFAULT_SETUP);
+    const done = { ...base, phase: "done" as const, finishedAt: 60 };
+    view(computeReceipt(done));
+    const text = screen.getByTestId("fbb-receipt").textContent ?? "";
+    expect(text.split("Everything was ready at").length - 1).toBe(1);
+  });
+
+  it("says a helper day's stars earn no trophies, and says nothing on a standard day", () => {
+    stubMotion(false);
+    recordScrolls();
+    const helped = {
+      ...createLevel({ ...DEFAULT_SETUP, assist: true }),
+      assistTicks: 10,
+    };
+    const { unmount } = view(computeReceipt(helped));
+    expect(screen.getByTestId("fbb-challenges").textContent).toContain(
+      "A helper day, so these stars earn no trophies or board score."
+    );
+    unmount();
+    view(computeReceipt(createLevel(DEFAULT_SETUP)));
+    expect(screen.getByTestId("fbb-challenges").textContent).not.toContain(
+      "helper day"
+    );
+  });
+});
+
 describe("the receipt counts items and clears the navbar (#1933)", () => {
   it("says how many items of a two-item basket are placed, not that it is zero", () => {
     const level = createLevel(DEFAULT_SETUP);
@@ -208,7 +249,9 @@ describe("the receipt counts items and clears the navbar (#1933)", () => {
         onWatchReplay={vi.fn()}
       />
     );
-    expect(screen.getByText("Only 1 of 2 items placed at 4:00.")).toBeTruthy();
+    expect(
+      screen.getByText("Only 1 of 2 items placed at 4:00. Fred carried 1 item.")
+    ).toBeTruthy();
   });
 
   it("writes money with thousands separators", () => {
@@ -226,5 +269,30 @@ describe("the receipt counts items and clears the navbar (#1933)", () => {
     } finally {
       focus.mockRestore();
     }
+  });
+});
+
+describe("the receipt's unplanned rows (round 19, N-4)", () => {
+  afterEach(cleanup);
+
+  it("says Not planned once, without a second line saying the same", () => {
+    const receipt = computeReceipt(
+      createLevel({
+        ...DEFAULT_SETUP,
+        cart: { ...DEFAULT_SETUP.cart, lanterns: false },
+      })
+    );
+    render(
+      <ReceiptView
+        receipt={receipt}
+        runCode={null}
+        onPlayAgain={vi.fn()}
+        onChangePlan={vi.fn()}
+        onWatchReplay={vi.fn()}
+      />
+    );
+    const text = screen.getByTestId("fbb-receipt").textContent ?? "";
+    expect(text).toContain("Lanterns: Not planned");
+    expect(text).not.toContain("Not in this plan.");
   });
 });

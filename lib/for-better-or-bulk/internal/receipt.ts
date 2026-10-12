@@ -29,6 +29,7 @@ import type {
   CapabilityId,
   Category,
   CategoryProgress,
+  Commitment,
   Condition,
   FoodTier,
   GameState,
@@ -156,6 +157,22 @@ export function categoryProgress(
   };
 }
 
+/**
+ * The promises a break can carry in this plan: a commitment with at least one
+ * category in the plan that is not yet all placed. A category already complete
+ * is left out, so a promise cannot be kept for free (round 8, S6). The brothers'
+ * dialog offers exactly these, and `validateDecision` refuses any other.
+ */
+export function availableCommitments(state: GameState): Commitment[] {
+  return (Object.keys(COMMITMENT_CATEGORIES) as Commitment[]).filter(
+    (commitment) =>
+      COMMITMENT_CATEGORIES[commitment].some((category) => {
+        const progress = categoryProgress(state, category);
+        return progress !== null && progress.placed < progress.planned;
+      })
+  );
+}
+
 function sourceCondition(state: GameState, category: Category): Condition {
   const cart = state.setup.cart;
   switch (category) {
@@ -181,7 +198,7 @@ function sourceCondition(state: GameState, category: Category): Condition {
       };
     case "chairs":
       return {
-        label: "Chairs from the shed",
+        label: "Chairs from the chair crate",
         met: true,
         detail: `${CHAIR_COUNT} chairs`,
       };
@@ -256,6 +273,11 @@ function readinessLine(state: GameState, category: Category): ReadinessLine {
   if (status === "unfinished") {
     const unit = progress.multi ? "items placed" : "done";
     explanation = `Only ${progress.placed} of ${progress.planned} ${unit} at 4:00.`;
+    // Credit whoever did place something, so a short line still names the work.
+    if (progress.placed > 0) {
+      const who = carried(planned.flatMap(placementsOf));
+      explanation += ` ${who.charAt(0).toUpperCase()}${who.slice(1)}.`;
+    }
   } else {
     explanation = conditions.map((c) => `${c.label}: ${c.detail}`).join("; ");
     if (simplified > 0) explanation += `; ${simplified} simplified by choice`;
@@ -313,7 +335,9 @@ function followThrough(
       explanation: "Kept. The brothers never got the chance to text.",
     };
   if (presence.choice === "stay")
-    return { status: "kept", explanation: "Kept. Fred stayed for the setup." };
+    // The challenge row already says he stayed, so this row does not repeat it
+    // (round 16).
+    return { status: "kept", explanation: "Kept." };
   if (presence.choice === "leave")
     return { status: "missed", explanation: `Missed. ${LEFT_LINE}` };
   const promise = presence.commitment ?? "chairs";
@@ -332,6 +356,20 @@ function followThrough(
       };
 }
 
+/**
+ * The line for the calls one website feature met. With the feature built the
+ * calls are blocked; without it they got through. No calls at
+ * all reads as "no calls came in", never as a count of zero.
+ */
+function callsLine(label: string, count: number, chosen: boolean): string {
+  if (count === 0) return `${label}: no calls came in.`;
+  if (chosen)
+    return `${label}: blocked ${count} call${count === 1 ? "" : "s"}.`;
+  return count === 1
+    ? `${label}: not built, so 1 call got through.`
+    : `${label}: not built, so ${count} calls got through.`;
+}
+
 function websiteLines(state: GameState): readonly WebsiteLine[] {
   return (Object.keys(CAPABILITIES) as CapabilityId[]).map((capability) => {
     const label = CAPABILITIES[capability].label;
@@ -346,10 +384,8 @@ function websiteLines(state: GameState): readonly WebsiteLine[] {
       text = chosen
         ? `${label}: blocked nothing. Is it loading?`
         : `${label}: not built.`;
-    } else if (chosen) {
-      text = `${label}: blocked ${calls.length} call${calls.length === 1 ? "" : "s"}.`;
     } else {
-      text = `No ${label}: ${calls.length} call${calls.length === 1 ? "" : "s"} got through.`;
+      text = callsLine(label, calls.length, chosen);
     }
     return { capability, chosen, text };
   });
@@ -369,7 +405,9 @@ function signatureMoment(lines: readonly ReadinessLine[]): string {
     return "Lanterns at dusk over the centerpieces";
   if (ready("lanterns")) return "Lanterns at dusk over the patio";
   if (ready("centerpieces")) return "Centerpieces on every table";
-  if (ready("bouquets")) return "The gardens did the decorating";
+  // The modest cart's title is "The Gardens Did the Decorating", so the
+  // subtitle names the bouquets rather than repeating it (round 17).
+  if (ready("bouquets")) return "Bouquets in the basket";
   if (finished("chairs") && finished("buffet")) {
     return bankText("signature-tables-food");
   }

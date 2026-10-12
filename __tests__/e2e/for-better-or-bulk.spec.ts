@@ -77,8 +77,13 @@ async function playToPlayback(page: Page) {
   });
   await expect(dialog).toBeVisible({ timeout: 30000 });
   await expectNoBlockingViolations(page, "brothers' text");
-  await page.keyboard.press("Enter");
-  await expect(dialog).toBeHidden();
+  // Focus starts on the heading. The keyboard choice waits out the settle
+  // time, so the press is retried until it lands on "Stay and help".
+  await expect(async () => {
+    await page.getByRole("button", { name: /Stay and help/ }).focus();
+    await page.keyboard.press("Enter");
+    await expect(dialog).toBeHidden({ timeout: 1000 });
+  }).toPass({ timeout: 15000 });
 
   await expect(page.getByTestId("fbb-playback")).toBeVisible({
     timeout: 60000,
@@ -154,9 +159,7 @@ test.describe("For Better or Bulk (/arcade/for-better-or-bulk)", () => {
 
     await skipPlaybackToReceipt(page);
     await expect(page.getByTestId("fbb-title")).toBeFocused();
-    await expect(page.getByTestId("fbb-follow-through")).toContainText(
-      "Kept. Fred stayed"
-    );
+    await expect(page.getByTestId("fbb-follow-through")).toContainText("Kept.");
     await expectTitleBelowBanner(page);
     await expectNoBlockingViolations(page, "receipt");
   });

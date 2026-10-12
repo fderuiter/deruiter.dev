@@ -177,6 +177,21 @@ export interface Player {
   readonly calm: boolean;
   /** Seconds the work key has been held facing the bin with an item in hand. */
   readonly binHold: number;
+  /** A floor drop being held with E (see FloorHold), or null. */
+  readonly floorHold: FloorHold | null;
+}
+
+/**
+ * An interact hold on open floor: the tile the person stood on, the way they
+ * faced, and the ticks E has been held there. It ends when the person moves to
+ * another tile, turns, lets go of E, or puts the item down.
+ */
+export interface FloorHold {
+  readonly cellX: number;
+  readonly cellY: number;
+  readonly facingX: number;
+  readonly facingY: number;
+  readonly ticks: number;
 }
 
 /** One person's controls for one tick. */
@@ -186,6 +201,8 @@ export interface PlayerInput {
   readonly moveY: number;
   /** True on the tick the interact button went down. */
   readonly interact: boolean;
+  /** True on every tick the interact button is held down, the first included. */
+  readonly interactHeld: boolean;
   /** True while the work button is held. */
   readonly work: boolean;
 }
@@ -290,7 +307,11 @@ export type GameEvent =
       readonly station: string;
       readonly item: ItemKind;
     }
-  | { readonly type: "burnt"; readonly station: string }
+  | {
+      readonly type: "burnt";
+      readonly station: string;
+      readonly item: ItemKind;
+    }
   | {
       readonly type: "restocked";
       readonly player: PlayerId;
@@ -326,7 +347,13 @@ export type GameEvent =
   | { readonly type: "supply-empty"; readonly supply: SupplyKind }
   | { readonly type: "seeded-start"; readonly id: SeededEventId }
   | { readonly type: "seeded-end"; readonly id: SeededEventId }
-  | { readonly type: "level-finished"; readonly early: boolean };
+  | {
+      readonly type: "level-finished";
+      /** Every planned target was done before 4:00. */
+      readonly allSet: boolean;
+      /** Done in time for the "Everything set by 3:00" challenge. */
+      readonly early: boolean;
+    };
 
 export interface StepResult {
   readonly state: GameState;

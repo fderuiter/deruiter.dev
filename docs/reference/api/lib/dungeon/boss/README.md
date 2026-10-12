@@ -9,10 +9,12 @@
 ## Variables
 
 - [BOSS\_MAX\_LEAD\_TILES](variables/BOSS_MAX_LEAD_TILES.md)
+- [BOSS\_OPENING\_GRACE\_MS](variables/BOSS_OPENING_GRACE_MS.md)
 - [BOSS\_REFERENCE\_FRAME\_MS](variables/BOSS_REFERENCE_FRAME_MS.md)
 
 ## Functions
 
+- [armBossForRoomEntry](functions/armBossForRoomEntry.md)
 - [createCubeMesh](functions/createCubeMesh.md)
 - [createFaceForgeBoss](functions/createFaceForgeBoss.md)
 - [createFaceMesh](functions/createFaceMesh.md)

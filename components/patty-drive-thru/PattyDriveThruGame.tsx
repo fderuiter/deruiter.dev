@@ -205,6 +205,29 @@ export function PattyDriveThruGame({
     first?.focus({ preventScroll: true });
   }, [registerOpen, view]);
 
+  // Ringing a leaf or backing out swaps the menu keys, so the focused key
+  // unmounts and the browser drops focus on the page body, where the shift
+  // shortcuts (B to bump) no longer reach the game. Take focus back.
+  const posKey = useBooth(
+    store,
+    (s) => `${s.shift.pos.path.join("/")}|${s.shift.pos.taps}`
+  );
+  const lastPosKey = useRef(posKey);
+  useEffect(() => {
+    if (lastPosKey.current === posKey) return;
+    lastPosKey.current = posKey;
+    if (phase !== "shift") return;
+    const active = document.activeElement;
+    if (active && active !== document.body) return;
+    const first =
+      registerOpen && view === "3d"
+        ? registerRef.current?.querySelector<HTMLButtonElement>(
+            "button:not([disabled])"
+          )
+        : null;
+    (first ?? boundaryRef.current)?.focus({ preventScroll: true });
+  }, [posKey, phase, registerOpen, view]);
+
   // Booth audio, panned headset-left and kitchen-right.
   useEffect(() => {
     const hoverNone = getMatchMediaMatches("(hover: none)");

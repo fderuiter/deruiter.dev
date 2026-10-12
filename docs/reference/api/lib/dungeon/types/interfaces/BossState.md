@@ -20,6 +20,14 @@
 
 ***
 
+### holdFireUntilMs?
+
+> `optional` **holdFireUntilMs?**: `number`
+
+No salvo is fired before this time, so a room never opens mid-volley.
+
+***
+
 ### hp
 
 > **hp**: `number`
@@ -65,6 +73,14 @@
 ### projectiles
 
 > **projectiles**: [`MeshProjectile`](MeshProjectile.md)[]
+
+***
+
+### salvoCount?
+
+> `optional` **salvoCount?**: `number`
+
+Salvos fired so far; phase 1 turns every third one into a ring.
 
 ***
 

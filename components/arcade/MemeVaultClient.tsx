@@ -22,6 +22,7 @@ import {
   type SoundboardButton,
 } from "@/lib/meme-data";
 import {
+  isSoundAllowed,
   playMemeSound,
   getMemeSoundDuration,
   connectMemeAnalyser,
@@ -74,7 +75,14 @@ function getAchievementsServerSnapshot(): string {
 export const MemeVaultClient: React.FC = () => {
   const { announce } = useAnnouncer();
   const toast = useToast();
-  const { muted, setMuted, bypassActive } = useAudio();
+  const { muted, setMuted, bypassActive, bypassReason, setReducedMotionOptIn } =
+    useAudio();
+  // The reduced-motion opt-in lasts only while the vault is open.
+  const setOptInRef = useRef(setReducedMotionOptIn);
+  useEffect(() => {
+    setOptInRef.current = setReducedMotionOptIn;
+  });
+  useEffect(() => () => setOptInRef.current?.(false), []);
 
   const rawAchievements = useSyncExternalStore(
     subscribeAchievements,
@@ -99,6 +107,8 @@ export const MemeVaultClient: React.FC = () => {
   const [reactions, setReactions] = useState<Record<string, number>>({});
   const [analyser, setAnalyser] = useState<AnalyserNode | null>(null);
   const [stampId, setStampId] = useState<string | null>(null);
+  // A pad pressed while sound is off says so next to the pads (#1941).
+  const [silentPress, setSilentPress] = useState(false);
   const soundTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stampTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -130,6 +140,13 @@ export const MemeVaultClient: React.FC = () => {
     toast.success(`Trophy unlocked: ${achievement.title}`, {
       description: achievement.description,
     });
+    const found = new Set(getUnlockedAchievements());
+    if (EASTER_EGG_ACHIEVEMENTS.every((a) => found.has(a.id))) {
+      toast.success("Vault cleared", {
+        description: `All ${EASTER_EGG_ACHIEVEMENTS.length} trophies found. The Easter Egg Trophy Case is stamped complete.`,
+      });
+      announce("Vault cleared. Every trophy found.", "polite");
+    }
   });
 
   // Trigger soundboard sound
@@ -144,8 +161,15 @@ export const MemeVaultClient: React.FC = () => {
       // The scope's tap goes in before the sound's nodes connect.
       setAnalyser(connectMemeAnalyser());
       playMemeSound(button.synthType);
-      unlockAchievement("soundboard-maestro");
-      announce(`Played sound: ${button.label}`, "polite");
+      // The trophy is for hearing a sample, so a muted press doesn't earn it.
+      if (isSoundAllowed()) {
+        unlockAchievement("soundboard-maestro");
+        setSilentPress(false);
+        announce(`Played sound: ${button.label}`, "polite");
+      } else {
+        setSilentPress(true);
+        announce(`${button.label} played silently: sound is off.`, "polite");
+      }
 
       const duration = getMemeSoundDuration(button.synthType);
       soundTimeoutRef.current = setTimeout(() => {
@@ -182,7 +206,23 @@ export const MemeVaultClient: React.FC = () => {
   const totalAchievements = EASTER_EGG_ACHIEVEMENTS.length;
 
   const silentReason: React.ReactNode = bypassActive ? (
-    "Sound is off while reduced motion or high contrast is on."
+    bypassReason === "reduced-motion" ? (
+      <>
+        Sound is off while reduced motion is on.{" "}
+        <button
+          type="button"
+          onClick={() => {
+            setReducedMotionOptIn(true);
+            setMuted(false);
+          }}
+          className="font-semibold text-emerald-400 underline underline-offset-2 hover:text-emerald-300"
+        >
+          Play sound anyway
+        </button>
+      </>
+    ) : (
+      "Sound is off while high contrast is on."
+    )
   ) : muted ? (
     <>
       Sound is off.{" "}
@@ -226,6 +266,7 @@ export const MemeVaultClient: React.FC = () => {
 
         <button
           onClick={triggerChaosMode}
+          title="A shortcut to the Konami show. It awards no trophy: type the code for that."
           className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-md bg-[#13151a] hover:bg-[#1a1d24] text-zinc-200 border border-white/[0.08] hover:border-white/[0.16] text-xs font-semibold transition-colors active:scale-[0.98]"
         >
           <IconSparkles className="w-4 h-4 text-amber-400" />
@@ -305,6 +346,14 @@ export const MemeVaultClient: React.FC = () => {
               </dl>
             </div>
             <div className="min-w-0 xl:order-1">
+              {silentPress && silentReason && (
+                <p
+                  className="mb-3 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 font-sans text-xs text-amber-200"
+                  data-testid="meme-silent-press"
+                >
+                  That pad played silently. {silentReason}
+                </p>
+              )}
               <SamplerPads
                 pads={SOUNDBOARD_BUTTONS}
                 activeId={activeSound}
@@ -418,6 +467,11 @@ export const MemeVaultClient: React.FC = () => {
                   </cite>
                   <button
                     onClick={() => handleReaction(q.id)}
+                    aria-label={
+                      rxCount > 0
+                        ? `React to quote (${rxCount})`
+                        : "React to quote"
+                    }
                     className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-white/[0.08] bg-[#1a1d24] hover:border-white/[0.16] text-zinc-300 text-[11px] transition-transform active:scale-95"
                   >
                     <IconRocket

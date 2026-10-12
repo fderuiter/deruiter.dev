@@ -40,7 +40,7 @@ import {
   usable,
   wantsItem,
 } from "./gates";
-import { pressTileFor } from "./press";
+import { pressTileFor, workTileFor } from "./press";
 import {
   CRATE_ITEM_NAMES,
   ITEM_NAMES,
@@ -78,6 +78,7 @@ const NO_INPUT: PlayerInput = {
   moveX: 0,
   moveY: 0,
   interact: false,
+  interactHeld: false,
   work: false,
 };
 
@@ -103,6 +104,8 @@ interface Goal {
   readonly y: number;
   readonly act: "interact" | "work" | "wait";
   readonly text: string;
+  /** True for an empty floor tile: the press there is a hold (see floorDropInput). */
+  readonly floor?: boolean;
 }
 
 /** The first move toward a goal; null when the person already faces it. */
@@ -186,6 +189,7 @@ function freeFloorGoals(state: GameState, item: Item): Goal[] {
         y,
         act: "interact",
         text: `putting ${heldName(item)} down`,
+        floor: true,
       });
     }
   }
@@ -367,19 +371,19 @@ function fetchTiers(state: GameState): Goal[][] {
 }
 
 /**
- * The tiles the other person is working on right now: the tile they face, and
- * where their held item is going. The helper keeps out of these so the person
- * it helps stays the main actor. Empty when the other person is out.
+ * The tiles the other person is working on right now: the tile their work key
+ * acts on, the tile their interact press lands on (both from the same rules
+ * the simulation uses, so a body straddling two tiles claims the one it really
+ * uses), and where their held item is going. The helper keeps out of these so
+ * the person it helps stays the main actor. Empty when the other person is out.
  */
 function claimedTiles(state: GameState, other: Player): Set<string> {
   const claimed = new Set<string>();
   if (other.presence !== "here") return claimed;
-  claimed.add(
-    keyOf(
-      Math.floor(other.x) + other.facingX,
-      Math.floor(other.y) + other.facingY
-    )
-  );
+  const work = workTileFor(state, other);
+  claimed.add(keyOf(work.x, work.y));
+  const press = pressTileFor(state, other);
+  if (press) claimed.add(keyOf(press.x, press.y));
   if (other.holding) {
     for (const goal of carryTiers(state, other.holding)[0] ?? []) {
       claimed.add(keyOf(goal.x, goal.y));
@@ -482,15 +486,61 @@ function sign(value: number): number {
   return value > 0 ? 1 : value < 0 ? -1 : 0;
 }
 
+/**
+ * The move that lines a person up on the centre of their tile across the axis
+ * they face, or null when they already are. A press reads its tile from where
+ * the body stands, and a body near a tile edge can straddle a neighbour
+ * (press.ts). The route plans every press from a tile centre, so the helper
+ * centres first and the planned tile is the tile the press lands on.
+ */
+function lineUpAcrossFacing(player: Player): PlayerInput | null {
+  if (player.facingX !== 0) {
+    const offset = player.y - (Math.floor(player.y) + 0.5);
+    if (Math.abs(offset) > ALIGN_EPSILON)
+      return { ...NO_INPUT, moveY: -sign(offset) };
+  } else if (player.facingY !== 0) {
+    const offset = player.x - (Math.floor(player.x) + 0.5);
+    if (Math.abs(offset) > ALIGN_EPSILON)
+      return { ...NO_INPUT, moveX: -sign(offset) };
+  }
+  return null;
+}
+
+/**
+ * The input for a floor drop the helper faces. The first active tick presses
+ * interact, which starts the hold (ADR 0060 amendment). Every later tick keeps
+ * interact held, resting ticks too, so the simulation pauses the hold instead
+ * of ending it. Pure.
+ */
+function floorDropInput(player: Player, active: boolean): PlayerInput {
+  const holding = player.floorHold !== null;
+  if (!active) return holding ? { ...NO_INPUT, interactHeld: true } : NO_INPUT;
+  const lineUp = lineUpAcrossFacing(player);
+  if (lineUp) return { ...lineUp, interactHeld: holding };
+  return { ...NO_INPUT, interact: !holding, interactHeld: true };
+}
+
 /** The input for one tick, given the route and whether this tick is active. */
 function actionFor(player: Player, found: Route, active: boolean): PlayerInput {
   const { goal, step } = found;
   if (!step) {
-    // Work at a station keeps going on every tick, so a held bin or table
-    // hold is not reset by the rest. The simulation paces the progress.
-    if (goal.act === "work") return { ...NO_INPUT, work: true };
     if (goal.act === "wait") return NO_INPUT;
-    return active ? { ...NO_INPUT, interact: true } : NO_INPUT;
+    // Work at a station keeps going on every tick, so a held bin or table
+    // hold is not reset by the rest. The simulation paces the progress. A
+    // line-up move on the way keeps the work key down.
+    if (goal.act === "work") {
+      const lineUp = active ? lineUpAcrossFacing(player) : null;
+      return { ...(lineUp ?? NO_INPUT), work: true };
+    }
+    if (goal.floor) return floorDropInput(player, active);
+    if (!active) return NO_INPUT;
+    return (
+      lineUpAcrossFacing(player) ?? {
+        ...NO_INPUT,
+        interact: true,
+        interactHeld: true,
+      }
+    );
   }
   if (!active) return NO_INPUT;
   if (!step.moves) return { ...NO_INPUT, moveX: step.dx, moveY: step.dy };
@@ -554,7 +604,7 @@ function placedCount(state: GameState, id: PlayerId): number {
  * does: it starts only once they have placed more, and it stops when it
  * catches up. An idle player therefore gets no help, and a working player gets
  * about as many placements from the helper as they make. The simulation
- * checks this before it uses `assistInput`, and so does `assistStatus`. A
+ * checks this before it uses `assistInput`, and so does `assistJob`. A
  * helper with a batch of its own on a grill may always act, so it can collect
  * that batch. Pure.
  */
@@ -582,22 +632,85 @@ export function assistInput(state: GameState, id: PlayerId): PlayerInput {
   );
 }
 
+/** What the helper for `id` is doing, as a kind (the word a change is announced by) and a sentence. */
+interface Job {
+  readonly kind: string;
+  readonly text: string;
+}
+
 /**
- * The status line for the helper working for `id`, in plain words, derived
- * from the same plan `assistInput` follows. Pure.
+ * The helper's job for `id` as one sentence, derived from the same plan
+ * `assistInput` follows. The kind is the planner's verb ("carrying",
+ * "fetching", "waiting") or one of the states "away", "busy", "turn" (waiting
+ * until the other person places their next item), "spot" (holding something
+ * with no spot free) and "idle". The sentence for "turn" names the other
+ * person in the same words the start announcement uses. Pure.
  */
-export function assistStatus(state: GameState, id: PlayerId): string {
+function jobOf(state: GameState, id: PlayerId): Job {
   const name = id === "fred" ? "Fred" : "Abbi";
   const player = state.players[id];
-  if (player.presence === "away")
-    return `Helper: waiting for ${name} to be back.`;
-  if (player.busyFor > 0) return `Helper: waiting for ${name} to be free.`;
+  if (player.presence === "away") {
+    return {
+      kind: "away",
+      text:
+        id === "fred"
+          ? "Fred is out with his brothers."
+          : `${name} is away for now.`,
+    };
+  }
+  if (player.busyFor > 0) {
+    return { kind: "busy", text: `${name} is busy, so the helper waits.` };
+  }
   if (!helperMayAct(state, id)) {
-    const other = id === "fred" ? "Abbi" : "Fred";
-    return `Helper: waiting for ${other} to place something first.`;
+    // The helper places no more than the player, so this line also shows
+    // when it has caught up, not only at the start (round 16).
+    const other: PlayerId = id === "fred" ? "abbi" : "fred";
+    const otherName = other === "fred" ? "Fred" : "Abbi";
+    // At the start nobody has placed anything, so "as many" would read as
+    // an achievement at zero (round 17).
+    return {
+      kind: "turn",
+      text:
+        placedCount(state, other) === 0
+          ? `${name} starts helping after ${otherName} places the first item.`
+          : `${name} has placed as many items as ${otherName}, and helps again after ${otherName}'s next one.`,
+    };
   }
   const plan = planFor(state, id);
-  return plan
-    ? `Helper: ${plan.text}.`
-    : "Helper: nothing useful to do right now.";
+  if (plan) {
+    return {
+      kind: plan.text.split(" ")[0],
+      text: `${name} is ${plan.text}.`,
+    };
+  }
+  if (player.holding)
+    return { kind: "spot", text: `${name} is waiting for a free spot.` };
+  // With nothing left to fetch while the other person still carries
+  // something, the helper is waiting on them, not idle (round 19, D-3).
+  const other: PlayerId = id === "fred" ? "abbi" : "fred";
+  if (state.players[other].holding) {
+    const otherName = other === "fred" ? "Fred" : "Abbi";
+    return {
+      kind: "idle",
+      text: `${name} is waiting for ${otherName} to set down what's in hand.`,
+    };
+  }
+  return { kind: "idle", text: `${name} has nothing useful to do right now.` };
+}
+
+/**
+ * The job line for the helper working for `id`, as one sentence: "Fred is
+ * carrying the roses to the ARRANGE table.", "Fred is waiting for a free
+ * spot." or "Fred is out with his brothers.". Pure.
+ */
+export function assistJob(state: GameState, id: PlayerId): string {
+  return jobOf(state, id).text;
+}
+
+/**
+ * The kind of the helper's job for `id` (see `jobOf`). The game announces the
+ * job line when this changes, not when its target changes. Pure.
+ */
+export function assistJobKind(state: GameState, id: PlayerId): string {
+  return jobOf(state, id).kind;
 }

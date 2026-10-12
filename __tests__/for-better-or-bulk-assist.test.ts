@@ -5,6 +5,7 @@ import {
   ASSIST_LINE,
   DEFAULT_SETUP,
   FLOOR_CAP,
+  FLOOR_HOLD_TICKS,
   VENUE_MAP,
   WALKABLE_TILES,
   validateSetup,
@@ -12,11 +13,13 @@ import {
   MOVE_SPEED,
   TICK_SECONDS,
   assistInput,
-  assistStatus,
+  assistJob,
+  assistRests,
   computeReceipt,
   createLevel,
   frontTile,
   getHint,
+  IDLE_INPUT,
   interactTile,
   replayLevel,
   stepGame,
@@ -37,6 +40,7 @@ const NO_INPUT: PlayerInput = {
   moveX: 0,
   moveY: 0,
   interact: false,
+  interactHeld: false,
   work: false,
 };
 
@@ -61,6 +65,31 @@ function place(
         ...player,
         x: x + 0.5,
         y: y + 0.5,
+        facingX: facing[0],
+        facingY: facing[1],
+        holding,
+      },
+    },
+  };
+}
+
+/** Puts a person at an exact position in tiles, so a body can stand off a tile centre. */
+function placeAt(
+  state: GameState,
+  id: PlayerId,
+  x: number,
+  y: number,
+  facing: readonly [number, number],
+  holding: Item | null = null
+): GameState {
+  return {
+    ...state,
+    players: {
+      ...state.players,
+      [id]: {
+        ...state.players[id],
+        x,
+        y,
         facingX: facing[0],
         facingY: facing[1],
         holding,
@@ -180,6 +209,12 @@ function stationOf(state: GameState, kind: StationKind) {
 }
 
 const ROSES: Item = { kind: "roses", madeBy: null };
+const FACINGS: readonly (readonly [number, number])[] = [
+  [1, 0],
+  [-1, 0],
+  [0, 1],
+  [0, -1],
+];
 
 describe("assistInput on fixed states", () => {
   it("takes the roses from the crate it faces", () => {
@@ -188,6 +223,7 @@ describe("assistInput on fixed states", () => {
       moveX: 0,
       moveY: 0,
       interact: true,
+      interactHeld: true,
       work: false,
     });
   });
@@ -225,6 +261,7 @@ describe("assistInput on fixed states", () => {
     expect(assistInput(state, "abbi")).toEqual({
       ...NO_INPUT,
       interact: true,
+      interactHeld: true,
     });
   });
 
@@ -274,6 +311,7 @@ describe("assistInput on fixed states", () => {
     const state = place(createLevel(ASSIST_SETUP), "abbi", 10, 5, [0, -1]);
     expect(Object.keys(assistInput(state, "abbi")).sort()).toEqual([
       "interact",
+      "interactHeld",
       "moveX",
       "moveY",
       "work",
@@ -438,6 +476,8 @@ describe("the assist in stepGame", () => {
     );
     expect(helped.assistTicks).toBeGreaterThan(0);
     expect(computeReceipt(helped).assist).toBe(ASSIST_LINE);
+    // A fact, not a verdict, since a helper day can end unfinished (round 16).
+    expect(ASSIST_LINE).toBe("A helper kept the other lane going.");
   });
 });
 
@@ -542,6 +582,7 @@ const inputArb: fc.Arbitrary<PlayerInput> = fc.record({
   moveX: fc.constantFrom(-1, 0, 1),
   moveY: fc.constantFrom(-1, 0, 1),
   interact: fc.boolean(),
+  interactHeld: fc.boolean(),
   work: fc.boolean(),
 });
 
@@ -636,7 +677,7 @@ describe("the rose gate, shared with getHint", () => {
     const base = setOpen(createLevel(ASSIST_SETUP), ["petals"]);
     const state = facingTile(base, "abbi", stationOf(base, "arrange"), ROSES);
     expect(getHint(state, "abbi")).toBe(
-      "Carry the roses to the PETALS bucket (P)."
+      "Carry the roses to the PETALS bucket."
     );
     const input = assistInput(state, "abbi");
     expect(input.interact).toBe(false);
@@ -646,7 +687,11 @@ describe("the rose gate, shared with getHint", () => {
   it("with only PETALS open and a free bucket in front, the helper puts the roses down there", () => {
     const base = setOpen(createLevel(ASSIST_SETUP), ["petals"]);
     const state = facingTile(base, "abbi", stationOf(base, "petals"), ROSES);
-    expect(assistInput(state, "abbi")).toEqual({ ...NO_INPUT, interact: true });
+    expect(assistInput(state, "abbi")).toEqual({
+      ...NO_INPUT,
+      interact: true,
+      interactHeld: true,
+    });
   });
 
   it("with no rose target open, the helper does not put held roses on a free ARRANGE table", () => {
@@ -669,9 +714,7 @@ describe("the rose gate, shared with getHint", () => {
       ),
     };
     const state = facingTile(busy, "abbi", stationOf(busy, "arrange"), ROSES);
-    expect(getHint(state, "abbi")).toBe(
-      "Wait for the PETALS bucket (P) to clear."
-    );
+    expect(getHint(state, "abbi")).toBe("Wait for the PETALS bucket to clear.");
     expect(assistInput(state, "abbi")).toEqual(NO_INPUT);
   });
 
@@ -829,7 +872,11 @@ describe("what the helper fetches and what it puts down", () => {
       ],
     };
     const state = facingTile(withItem, "abbi", spot, null);
-    expect(assistInput(state, "abbi")).toEqual({ ...NO_INPUT, interact: true });
+    expect(assistInput(state, "abbi")).toEqual({
+      ...NO_INPUT,
+      interact: true,
+      interactHeld: true,
+    });
   });
 });
 
@@ -1061,6 +1108,59 @@ describe("the helper's own grill batch", () => {
     }
   }, 60000);
 
+  it("says when it starts at zero, and that it has caught up later (rounds 16 and 17)", () => {
+    const base = createLevel(ASSIST_SETUP);
+    expect(assistJob(base, "abbi")).toBe(
+      "Abbi starts helping after Fred places the first item."
+    );
+    const [first, second] = base.targets;
+    const even: GameState = {
+      ...base,
+      targets: base.targets.map((t) =>
+        t.id === first.id
+          ? { ...t, filledBy: ["fred"] }
+          : t.id === second.id
+            ? { ...t, filledBy: ["abbi"] }
+            : t
+      ),
+    };
+    expect(assistJob(even, "abbi")).toBe(
+      "Abbi has placed as many items as Fred, and helps again after Fred's next one."
+    );
+  });
+
+  it("waits on the other person, not idly, while they still carry something (round 19, D-3)", () => {
+    const base = createLevel(ASSIST_SETUP);
+    const stock = Object.fromEntries(
+      Object.keys(base.stock).map((kind) => [kind, 0])
+    ) as GameState["stock"];
+    const done: GameState = {
+      ...base,
+      stock,
+      targets: base.targets.map((t) => ({
+        ...t,
+        status: "filled" as const,
+        filledBy: ["fred"],
+      })),
+    };
+    expect(assistJob(done, "abbi")).toBe(
+      "Abbi has nothing useful to do right now."
+    );
+    const carrying: GameState = {
+      ...done,
+      players: {
+        ...done.players,
+        fred: {
+          ...done.players.fred,
+          holding: { kind: "chairs", madeBy: null, count: 1 },
+        },
+      },
+    };
+    expect(assistJob(carrying, "abbi")).toBe(
+      "Abbi is waiting for Fred to set down what's in hand."
+    );
+  });
+
   it("says it is waiting for its own raw batch to cook, and does not wander off", () => {
     const base = createLevel(ASSIST_SETUP);
     const grill = base.stations.find((s) => s.kind === "grill");
@@ -1073,8 +1173,8 @@ describe("the helper's own grill batch", () => {
           : s
       ),
     };
-    expect(assistStatus(state, "abbi")).toMatch(
-      /^Helper: waiting for .+ to cook\.$/
+    expect(assistJob(state, "abbi")).toMatch(
+      /^Abbi is waiting for .+ to cook\.$/
     );
     expect(assistInput(state, "abbi").interact).toBe(false);
   });
@@ -1124,8 +1224,8 @@ describe("the helper keeps out of its partner's way", () => {
       "fred"
     );
     const state = facingTile(base, "abbi", base.targets[0], ARRANGEMENT);
-    expect(assistStatus(state, "abbi")).toMatch(/^Helper: carrying /);
-    expect(assistStatus(state, "abbi")).toMatch(/\.$/);
+    expect(assistJob(state, "abbi")).toMatch(/^Abbi is carrying /);
+    expect(assistJob(state, "abbi")).toMatch(/\.$/);
     const away = {
       ...state,
       players: {
@@ -1133,19 +1233,39 @@ describe("the helper keeps out of its partner's way", () => {
         abbi: { ...state.players.abbi, presence: "away" as const },
       },
     };
-    expect(assistStatus(away, "abbi")).toBe(
-      "Helper: waiting for Abbi to be back."
+    expect(assistJob(away, "abbi")).toBe("Abbi is away for now.");
+  });
+});
+
+describe("the helper's claimed tiles follow the rules the sim uses (round 8, S3)", () => {
+  it("does not plan a press on a grill that a straddling partner presses on", () => {
+    // Abbi stands at x 3.9 facing down with empty hands: her own tile (3,3) is
+    // empty floor, but the body reaches the cooked batch on the grill at (4,3),
+    // so her press takes from there. Fred stands in front of that same grill
+    // with empty hands and would take the batch too, unless he keeps out of it.
+    const base = createLevel(ASSIST_SETUP);
+    const withBatch = {
+      ...base,
+      stations: base.stations.map((s) =>
+        s.x === 4 && s.y === 3
+          ? { ...s, item: { kind: "hotdogs" as const, madeBy: null } }
+          : s
+      ),
+    };
+    const state = placeAt(
+      place(withBatch, "fred", 4, 2, [0, 1]),
+      "abbi",
+      3.9,
+      2.5,
+      [0, 1]
     );
+    expect(interactTile(state, "abbi")).toEqual({ x: 4, y: 3 });
+    expect(interactTile(state, "fred")).toEqual({ x: 4, y: 3 });
+    expect(assistInput(state, "fred").interact).toBe(false);
   });
 });
 
 describe("the helper's presses land where the engine resolves them", () => {
-  const FACINGS: readonly (readonly [number, number])[] = [
-    [1, 0],
-    [-1, 0],
-    [0, 1],
-    [0, -1],
-  ];
   const HELD: (Item | null)[] = [
     null,
     { kind: "roses", madeBy: null },
@@ -1213,5 +1333,117 @@ describe("the helper's presses land where the engine resolves them", () => {
       }
     }
     expect(presses).toBeGreaterThan(100);
+  });
+
+  it("lines up on the tile centre before it presses, from a spot 0.3 off centre", () => {
+    // Standing 0.3 off the centre across the facing, the body is not where the
+    // planner assumed. The helper walks to the centre first, and then presses.
+    const state = placeAt(
+      createLevel(ASSIST_SETUP),
+      "fred",
+      5.8,
+      4.5,
+      [0, -1],
+      { kind: "wings-raw", madeBy: null }
+    );
+    const input = assistInput(state, "fred");
+    expect(input.interact).toBe(false);
+    expect(input.moveX).toBe(-1);
+  });
+
+  it("presses only from a tile centre, so the press lands where the planner says from any spot in the tile", () => {
+    const OFFSETS = [0.1, 0.25, 0.3, 0.4, 0.6, 0.75, 0.9];
+    const base = createLevel(ASSIST_SETUP);
+    const worlds: GameState[] = [
+      base,
+      {
+        ...base,
+        stations: base.stations.map((s) =>
+          s.kind === "grill"
+            ? { ...s, item: { kind: "hotdogs-raw", madeBy: "abbi" } }
+            : s
+        ),
+      },
+    ];
+    let presses = 0;
+    for (const world of worlds) {
+      for (let y = 0; y < VENUE_MAP.length; y++) {
+        for (let x = 0; x < VENUE_MAP[y].length; x++) {
+          if (!WALKABLE_TILES.includes(VENUE_MAP[y][x])) continue;
+          for (const facing of FACINGS) {
+            for (const item of [
+              null,
+              ROSES,
+              { kind: "wings-raw" as const, madeBy: null },
+            ]) {
+              const centred = place(world, "fred", x, y, facing, item);
+              if (!assistInput(centred, "fred").interact) continue;
+              presses++;
+              const predicted = frontTile(centred.players.fred);
+              for (const offset of OFFSETS) {
+                const moved = placeAt(
+                  world,
+                  "fred",
+                  facing[0] === 0 ? x + offset : x + 0.5,
+                  facing[0] === 0 ? y + 0.5 : y + offset,
+                  facing,
+                  item
+                );
+                const input = assistInput(moved, "fred");
+                const label = `at ${x},${y} +${offset} facing ${facing.join(",")} holding ${item?.kind ?? "nothing"}`;
+                if (input.interact) {
+                  expect(interactTile(moved, "fred"), label).toEqual(predicted);
+                }
+                if (Math.abs(offset - 0.5) > 0.08) {
+                  expect(input.interact, label).toBe(false);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    expect(presses).toBeGreaterThan(10);
+  });
+});
+
+describe("the helper's floor drop is a hold (ADR 0060 amendment)", () => {
+  it("presses E, keeps it down through the hold, and drops after exactly FLOOR_HOLD_TICKS active ticks", () => {
+    const base = createLevel(ASSIST_SETUP);
+    // Every target is out of the plan, so the only place for the roses is the
+    // floor. One filled spot makes it Fred's turn ahead, so the helper may act.
+    const [first, ...rest] = base.targets;
+    if (!first) throw new Error("the venue has targets");
+    const crowded: GameState = {
+      ...base,
+      targets: [
+        { ...first, filledBy: ["fred"] },
+        ...rest.map((t) => ({ ...t, status: "unplanned" as const })),
+      ],
+    };
+    let state = place(crowded, "abbi", 10, 4, [0, -1], {
+      kind: "roses",
+      madeBy: null,
+    });
+    // The hold's ticks are the press and every later tick until the drop. The
+    // helper paces them: a resting tick keeps E down but does not count.
+    let activeHoldTicks = 0;
+    let dropped = false;
+    for (let tick = 0; tick < 900 && !dropped; tick++) {
+      const active = !assistRests(state.tick + 1, state.setup.relaxed);
+      const next = stepGame(state, {
+        inputs: { fred: IDLE_INPUT, abbi: IDLE_INPUT },
+        assisted: "abbi",
+      }).state;
+      const inHold =
+        state.players.abbi.floorHold !== null ||
+        next.players.abbi.floorHold !== null;
+      if (inHold && active) activeHoldTicks++;
+      dropped = next.players.abbi.holding === null;
+      state = next;
+    }
+    expect(dropped).toBe(true);
+    expect(state.floor.some((f) => f.item.kind === "roses")).toBe(true);
+    expect(activeHoldTicks).toBe(FLOOR_HOLD_TICKS);
   });
 });

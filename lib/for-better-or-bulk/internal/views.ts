@@ -36,6 +36,7 @@ import {
   crateGrabName,
   crateTakeName,
   heldLabel,
+  SWAP_KEY_NAME,
   heldName,
   workKeyName,
 } from "./words";
@@ -174,6 +175,23 @@ const SPOT_BARE: Readonly<Record<TargetKind, string>> = {
   buffet: "This spot was left bare on purpose.",
 };
 
+/**
+ * The line for a finished arrangement faced at a station (round 12, task 2):
+ * where an arrangement goes, naming only the target kinds that still have an
+ * open spot. With none open, a true line says the arrangement has no place.
+ */
+function arrangementRefusal(state: GameState): string {
+  const open = (kind: TargetKind): boolean =>
+    state.targets.some((t) => t.kind === kind && t.status === "open");
+  const table = open("table");
+  const basket = open("basket");
+  if (table && basket)
+    return `Arrangements go on ${TARGET_NAMES.table} or in ${TARGET_NAMES.basket}.`;
+  if (table) return `Arrangements go on ${TARGET_NAMES.table}.`;
+  if (basket) return `Arrangements go in ${TARGET_NAMES.basket}.`;
+  return "No centerpiece table or bouquet basket needs an arrangement now.";
+}
+
 /** Whether the bin is on this tile. */
 function isBinAt(state: GameState, tile: Tile): boolean {
   return at(state.stations, tile)?.kind === "bin";
@@ -219,6 +237,7 @@ function reasonOnTile(
         ? "Cooked food goes on the buffet, not back on the grill."
         : "These are cooked already.";
     }
+    if (held.kind === "arrangement") return arrangementRefusal(state);
     return `${capitalise(STATION_NAMES[station.kind])} takes roses.`;
   }
   if (target) {
@@ -278,7 +297,9 @@ function unpressedReason(state: GameState, person: Player): string | null {
  * The people whose status line the prompt panel shows. Solo shows the person at
  * the keyboard, and the partner as well while the partner is out or frozen (on
  * the phone, or retying a shoelace), so a call never goes unexplained (round 9,
- * task 4). Co-op shows both people and is not handled here.
+ * task 4). Without a helper the idle partner is listed too, with a line that
+ * names the swap key (round 12, task 1). A helper day lists the partner only
+ * when away or frozen, as before. Co-op shows both people and is not handled here.
  */
 export function shownPrompts(
   state: GameState,
@@ -286,9 +307,8 @@ export function shownPrompts(
 ): readonly PlayerId[] {
   const partner: PlayerId = active === "fred" ? "abbi" : "fred";
   const other = state.players[partner];
-  return other.presence === "away" || other.busyFor > 0
-    ? [active, partner]
-    : [active];
+  if (other.presence === "away" || other.busyFor > 0) return [active, partner];
+  return state.setup.assist ? [active] : [active, partner];
 }
 
 function capitalise(text: string): string {
@@ -312,6 +332,23 @@ export interface Prompt {
   readonly floorDrop: FloorDropPrompt | null;
   readonly work: string | null;
   readonly status: string;
+}
+
+/** Options for one person's prompt. */
+export interface PromptOptions {
+  /**
+   * True for the idle partner in solo play, who is not at the keys. Their
+   * prompt then has no buttons and a status that names the swap key. Ignored
+   * on a helper day, where the partner is the helper's charge.
+   */
+  readonly waiting?: boolean;
+}
+
+/** The status line for an idle partner in solo play, naming the swap key. */
+function swapStatus(id: PlayerId): string {
+  const name = id === "fred" ? "Fred" : "Abbi";
+  const pronoun = id === "fred" ? "him" : "her";
+  return `${name} is waiting. ${SWAP_KEY_NAME} to switch to ${pronoun}.`;
 }
 
 /** The first thing in a list that sits on a tile. */
@@ -365,7 +402,11 @@ function placePrompt(state: GameState, tile: Tile, held: Item): string | null {
 }
 
 /** Button prompts and a status line for one person. */
-export function getPrompt(state: GameState, id: PlayerId): Prompt {
+export function getPrompt(
+  state: GameState,
+  id: PlayerId,
+  options: PromptOptions = {}
+): Prompt {
   const player = state.players[id];
   const name = id === "fred" ? "Fred" : "Abbi";
   if (player.presence === "away") {
@@ -386,10 +427,13 @@ export function getPrompt(state: GameState, id: PlayerId): Prompt {
     );
     if (call) {
       // A phone call freezes the person; the prompt says how long is left,
-      // in wall-clock minutes like the rest of the prompts.
+      // in wall-clock minutes like the rest of the prompts. It rounds up, so
+      // the minutes shown are never less than the time really left (round 12, task 3).
       const minutes = Math.max(
         1,
-        Math.round((player.busyFor * LEVEL_HOURS * 60) / state.duration)
+        Math.ceil(
+          (player.busyFor * LEVEL_HOURS * 60) / state.duration - CLOCK_TOLERANCE
+        )
       );
       return {
         interact: null,
@@ -403,6 +447,14 @@ export function getPrompt(state: GameState, id: PlayerId): Prompt {
       floorDrop: null,
       work: null,
       status: `${name}: ${player.busyReason ?? "busy"}`,
+    };
+  }
+  if (options.waiting && !state.setup.assist) {
+    return {
+      interact: null,
+      floorDrop: null,
+      work: null,
+      status: swapStatus(id),
     };
   }
   const held = player.holding;

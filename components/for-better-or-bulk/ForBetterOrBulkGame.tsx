@@ -1005,9 +1005,14 @@ export function ForBetterOrBulkGame({
     );
   } else if (view) {
     const partner: PlayerId = active === "fred" ? "abbi" : "fred";
-    // Solo shows the person at the keys, and the partner too while he is out or frozen.
+    // Solo shows the person at the keys, and the partner too: while he is out or
+    // frozen, or idle with no helper (then his line names the swap key).
     const shown: PlayerId[] =
       mode === "coop" ? ["fred", "abbi"] : [...shownPrompts(view, active)];
+    // The coach speaks for the person at the keys, and for a frozen partner as before.
+    const coached = shown.filter(
+      (id) => mode === "coop" || id === active || view.players[id].busyFor > 0
+    );
     const eventLines = activeEventLines(view);
     body = (
       <div className="relative flex w-full min-w-0 flex-col gap-2 p-2 sm:p-3">
@@ -1110,7 +1115,7 @@ export function ForBetterOrBulkGame({
                 className="flex min-w-0 flex-col gap-1 rounded border border-[var(--fbb-rule)] p-2"
               >
                 <ul className="flex flex-col gap-1">
-                  {shown.map((id) => {
+                  {coached.map((id) => {
                     // An away person is already said in their prompt.
                     if (view.players[id].presence === "away") return null;
                     const hint = getHint(view, id, { coop: mode === "coop" });
@@ -1172,7 +1177,9 @@ export function ForBetterOrBulkGame({
               })}
             </ul>
             {shown.map((id) => {
-              const prompt = getPrompt(view, id);
+              const prompt = getPrompt(view, id, {
+                waiting: mode === "solo" && id !== active,
+              });
               return (
                 <div
                   key={id}

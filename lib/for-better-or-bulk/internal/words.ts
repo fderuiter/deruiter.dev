@@ -96,6 +96,12 @@ export function workKeyName(id: PlayerId, coop: boolean): string {
   return coop ? (id === "fred" ? "F" : "Shift") : "F or Shift";
 }
 
+/**
+ * The key that swaps the person at the keys in solo play (components/
+ * for-better-or-bulk/input.ts reads it as the Tab key).
+ */
+export const SWAP_KEY_NAME = "Tab";
+
 /** "a stack of 2 chairs" for a carry of two, "a chair" for one. */
 export function chairPhrase(count: number): string {
   return count >= 2 ? `a stack of ${count} chairs` : "a chair";

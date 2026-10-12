@@ -802,6 +802,56 @@ describe("For Better or Bulk day seed on the page (#1918)", () => {
   });
 });
 
+describe("For Better or Bulk solo swap line and helper line (round 12, tasks 1 and 4)", () => {
+  beforeEach(() => {
+    stubLoud(false);
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  it("shows the idle partner's swap line in the solo panel, with no buttons under it", () => {
+    render(<ForBetterOrBulkGame />);
+    start();
+    const fred = screen.getByTestId("fbb-prompt-fred");
+    expect(fred.textContent).toBe("Fred is waiting. Tab to switch to him.");
+    expect(within(fred).queryByRole("button")).toBeNull();
+  });
+
+  it("keeps the idle partner out of the panel on a helper day", () => {
+    render(
+      <ForBetterOrBulkGame
+        initialSetup={{ ...DEFAULT_SETUP, assist: true, seed: 12345 }}
+      />
+    );
+    start();
+    expect(screen.queryByTestId("fbb-prompt-fred")).toBeNull();
+    expect(screen.getByTestId("fbb-prompt-abbi")).toBeTruthy();
+  });
+
+  it("keeps the helper's job line in the panel after the start and after several steps", () => {
+    render(
+      <ForBetterOrBulkGame
+        initialSetup={{ ...DEFAULT_SETUP, assist: true, seed: 12345 }}
+      />
+    );
+    start();
+    const helperLine = () => screen.getByTestId("fbb-helper");
+    expect(helperLine().closest("[hidden],[aria-hidden='true']")).toBeNull();
+    expect(helperLine().textContent).toMatch(/^(Fred|Abbi) .+\.$/);
+    const stepsBefore = engine.inputs.length;
+    for (let i = 0; i < 12; i++) {
+      act(() => {
+        if (frame.active) frame.callback?.(250);
+      });
+    }
+    expect(engine.inputs.length).toBeGreaterThan(stepsBefore);
+    expect(helperLine().closest("[hidden],[aria-hidden='true']")).toBeNull();
+    expect(helperLine().textContent).toMatch(/^(Fred|Abbi) .+\.$/);
+  });
+});
+
 describe("For Better or Bulk side panel: helper, partner and day (fbb round)", () => {
   beforeEach(() => {
     stubLoud(false);

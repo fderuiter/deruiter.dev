@@ -6,7 +6,7 @@
 
 # Function: getPrompt()
 
-> **getPrompt**(`state`, `id`): [`Prompt`](../interfaces/Prompt.md)
+> **getPrompt**(`state`, `id`, `options?`): [`Prompt`](../interfaces/Prompt.md)
 
 Button prompts and a status line for one person.
 
@@ -19,6 +19,10 @@ Button prompts and a status line for one person.
 ### id
 
 [`PlayerId`](../../../types/type-aliases/PlayerId.md)
+
+### options?
+
+[`PromptOptions`](../interfaces/PromptOptions.md) = `{}`
 
 ## Returns
 

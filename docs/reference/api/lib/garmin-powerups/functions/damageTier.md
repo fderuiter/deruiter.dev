@@ -8,8 +8,8 @@
 
 > **damageTier**(`power`): `object`
 
-The tier left after a hit. A Buff runner drops to Base and survives; a
-Base runner does not.
+The tier left after a hit. A Buff or Heat Map runner drops to Base and
+survives; a Base runner does not.
 
 ## Parameters
 

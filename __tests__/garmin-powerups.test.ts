@@ -125,10 +125,10 @@ describe("power tier rules", () => {
     expect(BASE_HEIGHT).toBe(PLAYER_HEIGHT);
   });
 
-  it("a power block gives a Shake at Base and Kudos once Buff", () => {
+  it("a power block gives a Shake at Base and a Heat Map once Buff", () => {
     expect(blockReward("power", "base")).toBe("shake");
     expect(blockReward("power", undefined)).toBe("shake");
-    expect(blockReward("power", "buff")).toBe("kudos");
+    expect(blockReward("power", "buff")).toBe("heatmap");
     expect(blockReward("high", "buff")).toBe("high");
     expect(blockReward("kudos", "base")).toBe("kudos");
   });
@@ -278,7 +278,7 @@ describe("power-ups in a run", () => {
     expect(s.playerY).toBe(GROUND_Y - BUFF_HEIGHT);
   });
 
-  it("a power block pays Kudos to a runner already Buff", () => {
+  it("a power block pops a Heat Map, not Kudos, for a Buff runner", () => {
     const b = block({ x: PLAYER_X });
     const bumped = step(
       run(
@@ -291,8 +291,8 @@ describe("power-ups in a run", () => {
         }
       )
     );
-    expect(bumped.pickups).toHaveLength(0);
-    expect(bumped.kudos).toBe(1);
+    expect(bumped.pickups?.map((p) => p.kind)).toEqual(["heatmap"]);
+    expect(bumped.kudos).toBe(0);
   });
 
   it("a hit while Buff drops to Base with a grace period, not a lost life", () => {

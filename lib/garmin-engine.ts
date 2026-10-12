@@ -21,6 +21,8 @@ import {
   type CourseLayout,
 } from "./garmin-course";
 import {
+  BOLT_COOLDOWN_MS,
+  BOLT_DEFEAT_SCORE,
   DAMAGE_GRACE_MS,
   HIGH_DEFEAT_SCORE,
   HIGH_MS,
@@ -29,11 +31,17 @@ import {
   START_LIVES,
   addLives,
   blockReward,
+  boltHits,
+  canThrowBolt,
+  collectTier,
   damageTier,
   emergePickup,
   livesEarned,
   playerHeightFor,
+  spawnBolt,
+  stepBolts,
   stepPickups,
+  type Bolt,
   type Pickup,
   type PowerTier,
 } from "./garmin-powerups";
@@ -358,6 +366,13 @@ export interface GameEngineState {
   lives?: number;
   /** Power-ups travelling the course. */
   pickups?: Pickup[];
+  // ---- Heat Map (#1989).
+  /** Heat bolts on the face. */
+  bolts?: Bolt[];
+  /** Milliseconds until the next bolt can be thrown. */
+  boltCooldownMs?: number;
+  /** Bolts thrown this run, for their ids. */
+  boltsThrown?: number;
   /** The jump key is held: the rise uses the lighter gravity. */
   jumpHeld?: boolean;
   /** Milliseconds since the runner last had footing, for coyote time. */
@@ -457,6 +472,9 @@ export function createInitialState(
     power: "base",
     starMs: 0,
     pickups: [],
+    bolts: [],
+    boltCooldownMs: 0,
+    boltsThrown: 0,
     jumpHeld: false,
     coyoteMs: 0,
     jumpBufferMs: 0,
@@ -562,6 +580,30 @@ export function releaseJump(state: GameEngineState): GameEngineState {
       state.gameState === "playing" && state.playerVy < JUMP_CUT_VY
         ? JUMP_CUT_VY
         : state.playerVy,
+  };
+}
+
+/**
+ * Throws a heat bolt forward from the runner's hand. Only a Heat Map runner
+ * can throw, at most {@link BOLT_COOLDOWN_MS} apart and with no more than
+ * two bolts on the face; otherwise the state is returned unchanged.
+ */
+export function throwBolt(state: GameEngineState): GameEngineState {
+  if (state.gameState !== "playing") return state;
+  if (!canThrowBolt(state.power, state.bolts, state.boltCooldownMs)) {
+    return state;
+  }
+  const cameraX = state.distanceMeters * PX_PER_METER;
+  const h = playerHeightFor(state.power);
+  const id = (state.boltsThrown ?? 0) + 1;
+  return {
+    ...state,
+    bolts: [
+      ...(state.bolts ?? []),
+      spawnBolt(id, cameraX + PLAYER_X + PLAYER_WIDTH, state.playerY + h / 2),
+    ],
+    boltCooldownMs: BOLT_COOLDOWN_MS,
+    boltsThrown: id,
   };
 }
 
@@ -956,6 +998,8 @@ function loseLife(
     stompChain: 0,
     obstacles: [],
     pickups: [],
+    bolts: [],
+    boltCooldownMs: 0,
     course: generateStage(stage, state.courseSeed ?? 0, GROUND_Y),
     lastObstacleTime: now,
     banner: {
@@ -1419,16 +1463,37 @@ export function updateGameSimulation(
         text: `+${POWERUP_SCORE}`,
         ttlMs: 900,
       });
+      const nextPower = collectTier(power, p.kind);
       if (p.kind === "high") {
         starMs = HIGH_MS;
         banner = { text: "RUNNER'S HIGH!", ttlMs: 1800, tone: "good" };
-      } else if (power === "base") {
-        power = "buff";
-        banner = { text: "PROTEIN SHAKE · BUFF", ttlMs: 1800, tone: "good" };
+      } else if (nextPower !== power) {
+        banner = {
+          text:
+            nextPower === "heatmap"
+              ? "HEAT MAP · X THROWS"
+              : "PROTEIN SHAKE · BUFF",
+          ttlMs: 1800,
+          tone: "good",
+        };
       }
+      power = nextPower;
     }
     pickups = kept;
   }
+  // Heat bolts bounce along the course; the obstacle pass below checks hits.
+  let bolts = stepBolts(
+    state.bolts ?? [],
+    course,
+    GROUND_Y,
+    cameraX,
+    CANVAS_SIZE,
+    safeDelta
+  );
+  // Snap float residue so a cooldown of whole frames ends on the last one.
+  const cooldownLeft = (state.boltCooldownMs ?? 0) - safeDelta;
+  const boltCooldownMs = cooldownLeft > 1e-6 ? cooldownLeft : 0;
+
   // Growing keeps the feet where they are.
   const grownBy = playerHeightFor(power) - h;
   if (grownBy !== 0) nextPlayerY -= grownBy;
@@ -1510,6 +1575,8 @@ export function updateGameSimulation(
     lives,
     starMs,
     pickups: stageCleared ? [] : pickups,
+    bolts: stageCleared ? [] : bolts,
+    boltCooldownMs,
     invulnerableMs: Math.max(0, (state.invulnerableMs ?? 0) - safeDelta),
     coyoteMs,
     jumpBufferMs,
@@ -1587,6 +1654,40 @@ export function updateGameSimulation(
       obsVy = Math.min(MAX_FALL_VY, (obsVy ?? 0) + FALL_GRAVITY * dtRatio);
       obsY += obsVy * dtRatio;
       if (obsY > CANVAS_SIZE) continue;
+    }
+
+    // A heat bolt defeats a bug or a watchdog it touches and is spent; a
+    // stack overflow puts it out unharmed; tokens let it pass.
+    if (isWalker && bolts.length > 0) {
+      const wl = cameraX + nextX + 2;
+      const wr = cameraX + nextX + obs.width - 2;
+      const hitIdx = bolts.findIndex((b) =>
+        boltHits(b, wl, obsY + 2, wr, obsY + obs.height - 2)
+      );
+      if (hitIdx !== -1) {
+        bolts = bolts.filter((_, i) => i !== hitIdx);
+        updatedState = { ...updatedState, bolts };
+        if (obs.type !== "stack_overflow") {
+          updatedState = {
+            ...updatedState,
+            score: updatedState.score + BOLT_DEFEAT_SCORE,
+            highScore: Math.max(
+              updatedState.highScore,
+              updatedState.score + BOLT_DEFEAT_SCORE
+            ),
+            popups: [
+              ...(updatedState.popups ?? []),
+              {
+                x: cameraX + nextX,
+                y: obsY - 6,
+                text: `+${BOLT_DEFEAT_SCORE}`,
+                ttlMs: 700,
+              },
+            ],
+          };
+          continue;
+        }
+      }
     }
 
     // Check collision with Player
@@ -2443,6 +2544,11 @@ export class GarminWatchEngine extends ArcadeEngine<
 
   public releaseJump(): void {
     this.state = releaseJump(this.state);
+    this.notifySubscribers();
+  }
+
+  public throwBolt(): void {
+    this.state = throwBolt(this.state);
     this.notifySubscribers();
   }
 

@@ -71,6 +71,7 @@ import {
   pressJump,
   releaseJump,
   setRunInput,
+  throwBolt,
   CANVAS_SIZE,
   GameEngineState,
   CrashReport,
@@ -365,6 +366,16 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     applyTransition((state) => releaseJump(state));
   }, [applyTransition]);
 
+  // Throw a heat bolt (X) while the runner holds a Heat Map (#1989).
+  const handleThrow = useCallback(() => {
+    const current = stateRef.current;
+    if (current.gameState !== "playing") return;
+    const next = applyTransition((state) => throwBolt(state));
+    if ((next.boltsThrown ?? 0) !== (current.boltsThrown ?? 0)) {
+      playBeep(1200, 0.03);
+    }
+  }, [playBeep, applyTransition]);
+
   // Sprint (Right) and brake (Left), held.
   const handleRunInput = useCallback(
     (input: -1 | 0 | 1) => {
@@ -415,6 +426,13 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       setAlertMessage(result.error.message);
     }
   }, [playBeep, applyTransition, garbageCollect, setAlertMessage]);
+
+  // BACK throws a heat bolt at the Heat Map tier and collects garbage
+  // otherwise; X and G always do one each.
+  const handleBack = useCallback(() => {
+    if (stateRef.current.power === "heatmap") handleThrow();
+    else handleForceGc();
+  }, [handleThrow, handleForceGc]);
 
   // Save Persistent Variable to Flash NVRAM (+8KB flash, RAM untouched)
   const handleSaveFlash = useCallback(() => {
@@ -623,6 +641,8 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       "p",
       "P",
       "Backspace",
+      "x",
+      "X",
     ];
 
     if (interceptKeys.includes(e.key)) {
@@ -651,6 +671,8 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       handleWipeFog();
     } else if (e.key === "Backspace" || e.key.toLowerCase() === "g") {
       handleForceGc();
+    } else if (e.key.toLowerCase() === "x") {
+      if (!e.repeat) handleThrow();
     } else if (e.key === "Enter" || e.key === " ") {
       if (!e.repeat) handleStartStop();
     }
@@ -800,6 +822,13 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     // The GC freeze itself is announced by the critical-alert effect.
     handleForceGc();
   };
+  const a11yThrow = () => {
+    const before = stateRef.current.boltsThrown ?? 0;
+    handleThrow();
+    if ((stateRef.current.boltsThrown ?? 0) !== before) {
+      announce("Threw a heat bolt.", "polite");
+    }
+  };
   const a11yLight = () => {
     handleToggleLight();
     announce(
@@ -810,7 +839,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
   const a11yReadTelemetry = () => {
     const s = stateRef.current;
     announce(
-      `Status: ${s.gameState}. Memory: ${s.allocatedRamKb.toFixed(1)} of ${currentProfile.ramLimitKb} KB. Flash: ${s.allocatedFlashKb.toFixed(1)} KB. Battery: ${Math.round(s.battery)}%. Thermal stress: ${Math.round((s.thermalStress ?? 0) * 100)}%. Condensation: ${Math.round(s.fogLevel * 100)}%. Lives: ${s.lives ?? 1}. Power: ${s.power === "buff" ? "Buff" : "Base"}${(s.starMs ?? 0) > 0 ? ", Runner's High" : ""}. Score: ${s.score}. High score: ${Math.max(s.highScore, loadedHighScore)}.`,
+      `Status: ${s.gameState}. Memory: ${s.allocatedRamKb.toFixed(1)} of ${currentProfile.ramLimitKb} KB. Flash: ${s.allocatedFlashKb.toFixed(1)} KB. Battery: ${Math.round(s.battery)}%. Thermal stress: ${Math.round((s.thermalStress ?? 0) * 100)}%. Condensation: ${Math.round(s.fogLevel * 100)}%. Lives: ${s.lives ?? 1}. Power: ${s.power === "heatmap" ? "Heat Map" : s.power === "buff" ? "Buff" : "Base"}${(s.starMs ?? 0) > 0 ? ", Runner's High" : ""}. Score: ${s.score}. High score: ${Math.max(s.highScore, loadedHighScore)}.`,
       "polite"
     );
   };
@@ -1043,7 +1072,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     else if (id === "up") handleJump();
     else if (id === "down") handleJettison();
     else if (id === "start") handleStartStop();
-    else handleForceGc();
+    else handleBack();
     containerRef.current?.focus({ preventScroll: true });
   };
 
@@ -1079,12 +1108,20 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       title: `${startAction} (Enter / P)`,
       ariaLabel: `${startAction} (Enter / P)`,
     },
-    {
-      id: "back",
-      label: "BACK",
-      hint: "[G]",
-      title: `Force Garbage Collection (G / Backspace): ${gcFreezeMs}ms Freeze`,
-    },
+    gameState.power === "heatmap"
+      ? {
+          id: "back",
+          label: "THROW",
+          hint: "[X]",
+          title: "Throw Heat Bolt (X / BACK); G still collects garbage",
+          ariaLabel: "Throw Heat Bolt (X / BACK)",
+        }
+      : {
+          id: "back",
+          label: "BACK",
+          hint: "[G]",
+          title: `Force Garbage Collection (G / Backspace): ${gcFreezeMs}ms Freeze`,
+        },
   ];
 
   // The end of a run: the watch draws its own one-layer error face, and the
@@ -1224,7 +1261,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
                   width={CANVAS_SIZE}
                   height={CANVAS_SIZE}
                   role="img"
-                  aria-label={`Smartwatch display simulator. Status: ${gameState.gameState}. Stage ${gameState.stage ?? 1} of ${STAGE_COUNT}, lives ${gameState.lives ?? 1}${gameState.power === "buff" ? ", Buff" : ""}. Score: ${
+                  aria-label={`Smartwatch display simulator. Status: ${gameState.gameState}. Stage ${gameState.stage ?? 1} of ${STAGE_COUNT}, lives ${gameState.lives ?? 1}${gameState.power === "buff" ? ", Buff" : gameState.power === "heatmap" ? ", Heat Map" : ""}. Score: ${
                     gameState.score
                   }, High Score: ${effectiveHighScore}. Memory: ${gameState.allocatedRamKb.toFixed(
                     1
@@ -1354,7 +1391,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
                 else if (btn === "up") handleJump();
                 else if (btn === "down") handleJettison();
                 else if (btn === "start") handleStartStop();
-                else if (btn === "back") handleForceGc();
+                else if (btn === "back") handleBack();
               }}
             />
           </div>
@@ -1512,6 +1549,17 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
               }
             >
               BACK / Force GC Button
+            </button>
+
+            <button
+              type="button"
+              onClick={a11yThrow}
+              disabled={
+                gameState.gameState !== "playing" ||
+                gameState.power !== "heatmap"
+              }
+            >
+              X / Throw Heat Bolt Button
             </button>
 
             <button type="button" onClick={a11yReadTelemetry}>

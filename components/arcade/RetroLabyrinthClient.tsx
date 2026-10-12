@@ -1,12 +1,11 @@
 "use client";
 
-import React from "react";
+import React, { useCallback, useState } from "react";
 import dynamic from "next/dynamic";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { NextPrevNav } from "@/components/ui/NextPrevNav";
 import { getArcadeNeighbors } from "@/lib/arcade";
 import { PlayCabinet } from "@/components/arcade/PlayCabinet";
-import { DesktopOnlyGate } from "@/components/arcade/DesktopOnlyGate";
 import Link from "next/link";
 import {
   IconDeviceGamepad2,
@@ -30,6 +29,14 @@ const DynamicRetroLabyrinth = dynamic(RetroLabyrinthLoader, {
 });
 
 export const RetroLabyrinthClient: React.FC = () => {
+  // Counts the moments a phone cabinet should pause (ADR 0061). The game
+  // reacts to each change by pausing a running room; resuming is its choice.
+  const [autoPauseCount, setAutoPauseCount] = useState(0);
+  const handleAutoPause = useCallback(
+    () => setAutoPauseCount((count) => count + 1),
+    []
+  );
+
   return (
     <div className="min-h-screen text-white pb-24 px-4 sm:px-6 lg:px-8">
       <div className="max-w-5xl mx-auto">
@@ -80,28 +87,32 @@ export const RetroLabyrinthClient: React.FC = () => {
 
         {/* Game Container */}
         <div className="rounded-3xl border border-zinc-800 bg-zinc-950/90 p-4 sm:p-6 shadow-[0_0_50px_rgba(244,63,94,0.1)] flex flex-col items-center">
-          <DesktopOnlyGate gameId="retro-labyrinth" gameTitle="Retro Labyrinth">
-            <PlayCabinet
-              gameId="retro-labyrinth"
-              title="Retro Labyrinth: Graveyard Roguelike"
-              subtitle="There Are Bugs in the Dungeon"
-              icon={<IconDeviceGamepad2 className="w-8 h-8 text-rose-400" />}
-              instructions="Explore a shifting dungeon made from abandoned codebases. Fight bugs, find your way through the fog, and face a wireframe boss with an unreasonable number of angles."
-              controls={[
-                { key: "WASD / Arrows", action: "Move" },
-                { key: "1-3", action: "Fire Class Tools" },
-                { key: "Space", action: "EMP Burst" },
-                { key: "C", action: "CRT Scanlines" },
-                { key: "P", action: "Pause" },
-                { key: "Enter / R", action: "Continue / Retry" },
-              ]}
-              importComponent={RetroLabyrinthLoader}
-            >
-              <div className="flex flex-col items-center w-full">
-                <DynamicRetroLabyrinth isMounted={true} />
-              </div>
-            </PlayCabinet>
-          </DesktopOnlyGate>
+          <PlayCabinet
+            gameId="retro-labyrinth"
+            title="Retro Labyrinth: Graveyard Roguelike"
+            subtitle="There Are Bugs in the Dungeon"
+            icon={<IconDeviceGamepad2 className="w-8 h-8 text-rose-400" />}
+            instructions="Explore a shifting dungeon made from abandoned codebases. Fight bugs, find your way through the fog, and face a wireframe boss with an unreasonable number of angles."
+            controls={[
+              { key: "WASD / Arrows", action: "Move" },
+              { key: "1-3", action: "Fire Class Tools" },
+              { key: "Space", action: "EMP Burst" },
+              { key: "C", action: "CRT Scanlines" },
+              { key: "P", action: "Pause" },
+              { key: "Enter / R", action: "Continue / Retry" },
+            ]}
+            importComponent={RetroLabyrinthLoader}
+            mobileOrientation="landscape"
+            mobileLayout="fit"
+            onAutoPause={handleAutoPause}
+          >
+            <div className="flex flex-col items-center w-full min-h-0 flex-1">
+              <DynamicRetroLabyrinth
+                isMounted={true}
+                autoPauseCount={autoPauseCount}
+              />
+            </div>
+          </PlayCabinet>
         </div>
 
         {/* Instructions & Controls Reference */}

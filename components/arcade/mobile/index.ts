@@ -28,3 +28,20 @@ export type { TouchButtonProps } from "./TouchButton";
 export { DockFrame } from "./DockFrame";
 export type { Handedness, DockFrameProps } from "./DockFrame";
 export { useCabinetAutoPause } from "./useCabinetAutoPause";
+export {
+  createHoldRepeater,
+  HOLD_REPEAT_DELAY_MS,
+  HOLD_REPEAT_INTERVAL_MS,
+  type HoldRepeater,
+  type HoldRepeatOptions,
+  type HoldRepeatTimers,
+} from "./holdRepeat";
+export { useHoldRepeat } from "./useHoldRepeat";
+export { HoldDpad } from "./HoldDpad";
+export type { HoldDpadProps } from "./HoldDpad";
+export {
+  swipeDirection,
+  SWIPE_THRESHOLD_PX,
+  type SwipeDirection,
+} from "./swipe";
+export { CabinetTouchContext, useCabinetTouch } from "./CabinetTouchContext";

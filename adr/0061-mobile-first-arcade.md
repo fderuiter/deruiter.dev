@@ -154,6 +154,34 @@ cabinet's existing `useFullscreen` and `CabinetFullscreen` are reused.
   "Phone Landscape" (iPhone 12 landscape). They run only `mobile-kit.spec.ts`, so
   the rest of the suite does not multiply.
 
+## Amendment (2026-10-12): Retro Labyrinth leaves the gate
+
+Retro Labyrinth passed the phone bar in its own change (#2003) and left
+`DesktopOnlyGate`. Its cabinet declares `mobileOrientation="landscape"` and
+`mobileLayout="fit"`, and wires `onAutoPause` to the game's pause, so a
+running room pauses on hide, blur or rotation and waits for a tap on Resume.
+
+- **Orientation.** Landscape. At 812x375 the maze is about 455x273 CSS
+  pixels, with the d-pad on the left and the actions on the right. Upright,
+  the same maze is width-bound at 343 pixels with the rest of the screen
+  empty. A phone held upright gets the rotate prompt, as the kit prescribes.
+- **Controls.** A three-by-three d-pad that repeats while held, and tool,
+  EMP, Exploit and Market buttons on a three-column grid, all built on the
+  kit's `TouchButton`. A swipe across the maze moves one step, and a tap
+  does nothing.
+- **HUD.** One slim row: floor, HP, the exit lock, score, and an Options
+  button. Options open a sheet over the maze that pauses a running room.
+  The objective line and the hotbar are desktop only.
+- **Kit additions.** `createHoldRepeater` and `useHoldRepeat`, `HoldDpad`,
+  `swipeDirection`, and `CabinetTouchContext`, which tells a game it is in
+  the immersive touch cabinet.
+- **Hub.** The "Desktop only" badge now follows an explicit `desktopOnly`
+  flag per card. Nine games carry it. Retro Labyrinth and Trial & Error do
+  not, so Trial & Error no longer shows a badge it never needed.
+
+The other nine gated games keep the notice until their own mobile pull
+requests land.
+
 ## Alternatives considered
 
 - **Keep the gate on all ten games indefinitely.** Honest, but it leaves the

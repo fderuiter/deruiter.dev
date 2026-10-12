@@ -18,9 +18,10 @@ export interface DockFrameProps {
 }
 
 /**
- * Lays two control docks side by side and flips their order for left-handed
- * players. It only reorders; the docks keep their own markup and sizes, so it
- * wraps `DpadActionDock`, `TwinStickAimDock` and the rest without changes.
+ * Lays docks out in a row and flips their order for left-handed players. It
+ * only reorders; the docks keep their own markup and sizes. Docks stretch to
+ * the row's height, so a middle child (a playfield) can take the space between
+ * them, and each dock centres itself in its own column.
  */
 export const DockFrame: React.FC<DockFrameProps> = ({
   handedness = "right",
@@ -29,7 +30,7 @@ export const DockFrame: React.FC<DockFrameProps> = ({
 }) => (
   <div
     data-handedness={handedness}
-    className={`flex w-full items-end justify-between gap-3 ${
+    className={`flex w-full items-stretch justify-between gap-1 ${
       handedness === "left" ? "flex-row-reverse" : "flex-row"
     } ${className}`}
   >

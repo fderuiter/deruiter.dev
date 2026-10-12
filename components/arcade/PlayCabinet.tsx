@@ -28,6 +28,7 @@ import {
 } from "@/components/arcade/PreGameSetupWizard";
 import { logger } from "@/lib/logger";
 import {
+  CabinetTouchContext,
   lockScreenOrientation,
   RotateDevicePrompt,
   InputModalityAttribute,
@@ -695,11 +696,15 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
                 : "overflow-y-auto overflow-x-hidden"
             } flex flex-col items-center justify-start bg-black ${bezelClasses}`}
           >
-            <CabinetFullscreenContext.Provider value={toggleCabinetFullscreen}>
-              <CabinetSetupContext.Provider value={setupValue}>
-                {children}
-              </CabinetSetupContext.Provider>
-            </CabinetFullscreenContext.Provider>
+            <CabinetTouchContext.Provider value={touchImmersive}>
+              <CabinetFullscreenContext.Provider
+                value={toggleCabinetFullscreen}
+              >
+                <CabinetSetupContext.Provider value={setupValue}>
+                  {children}
+                </CabinetSetupContext.Provider>
+              </CabinetFullscreenContext.Provider>
+            </CabinetTouchContext.Provider>
 
             {/* 3-Step Setup Wizard Overlay prior to active gameplay / when reconfiguring */}
             <PreGameSetupWizard

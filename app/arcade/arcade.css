@@ -691,6 +691,18 @@
     padding: 0;
   }
 }
+/* The phone cabinet (ADR 0061) lays its playfield out as a row of docks, not
+   the desktop fullscreen grid above. Left as a grid, the docks shrink to their
+   content and the maze gets no width. */
+.arcade-cabinet[data-immersive="true"] .arcade-labyrinth-playfield {
+  display: flex;
+  grid-template-columns: none;
+  grid-template-rows: none;
+}
+.arcade-cabinet[data-immersive="true"] .arcade-labyrinth-canvas {
+  height: auto;
+  align-self: stretch;
+}
 @media (orientation: landscape) and (max-height: 600px) {
   .arcade-cabinet[data-fullscreen="true"]
     .arcade-labyrinth-controls

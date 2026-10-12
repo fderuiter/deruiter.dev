@@ -27,8 +27,10 @@ export {
   replayLevel,
   stepGame,
   validateDecision,
+  workTileFor,
 } from "./internal/sim";
 export {
+  availableCommitments,
   categoryProgress,
   computeReceipt,
   readinessLines,
@@ -60,13 +62,31 @@ export type {
   RunVerification,
   SharedRun,
 } from "./internal/run-code";
-export { assistInput, assistStatus } from "./internal/assist";
-export { heldLabel, heldName } from "./internal/words";
+export {
+  assistInput,
+  assistJob,
+  assistJobKind,
+  assistRests,
+} from "./internal/assist";
+export {
+  heldLabel,
+  heldName,
+  interactKeyName,
+  workKeyName,
+} from "./internal/words";
 export {
   clockLabel,
+  floorDropTile,
   getCoachStep,
   getCoachTile,
   getHint,
   getPrompt,
+  nextSpotTile,
+  shownPrompts,
 } from "./internal/views";
-export type { CoachStep, Prompt } from "./internal/views";
+export type {
+  CoachStep,
+  FloorDropPrompt,
+  Prompt,
+  PromptOptions,
+} from "./internal/views";

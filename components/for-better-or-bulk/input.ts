@@ -70,6 +70,7 @@ function inputFor(
     moveX,
     moveY,
     interact: on((s) => s.interact, pressed),
+    interactHeld: on((s) => s.interact, held),
     work: on((s) => s.work, held),
   };
 }
@@ -77,7 +78,8 @@ function inputFor(
 /**
  * The engine frame for the keys held now, the keys tapped since the last
  * step (down and up again before it ran), and the keys that went down since
- * the last step. Interact fires once per press; movement and work count a
+ * the last step. Interact fires once per press and is also flagged as held
+ * while it is down (a floor drop needs the hold); movement and work count a
  * tapped key as held for that step.
  */
 export function buildFrame(

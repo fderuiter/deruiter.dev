@@ -60,7 +60,7 @@ against tile collision and interact with the tile in front of them:
 - **Stations** transform what is put on them: held work at the rose table and
   petal bucket turns roses into arrangements or petals, the grill cooks raw
   hot dogs and wings and then burns them if nobody comes back, and the bin
-  takes anything.
+  takes burnt food (and returns chairs to their crate).
 - **Targets** in the venue take one item each: tables, the aisle, chair spots,
   lantern hooks, the buffet and the bouquet basket. A target the cart did not
   pay for is unplanned, and an empty centerpiece or petal spot can be
@@ -250,6 +250,42 @@ For Better or Bulk trophies are unchanged.
 **Seeds.** Only the standard day (seed 0) records a high score. A seeded day
 can still earn its own trophy.
 
+## Amendment (2026-10-12): playtest round 15
+
+Issue #1974. The rules below are the current ones.
+
+- **The bin only takes burnt food.** Holding work at the bin throws out burnt
+  food and returns a stack of chairs to its crate, as before. Anything else in
+  hand is refused: the hold never starts, the work prompt is empty, and the
+  prompt reads "The BIN only takes burnt food." Roses, arrangements and cooked
+  food are stocked to the plan, so binning one left the day short with no way
+  back. The full-floor line names the bin only for burnt food and chairs.
+  **Run codes recorded before this change may not verify.** A run that binned
+  anything other than burnt food or chairs now keeps the item, so the same
+  frames reach a different state. `RUN_CODE_PREFIX` stays `f1.`, as the
+  standing decision for this cabinet.
+- **"Early, even." follows the 3:00 challenge.** The `level-finished` event is
+  early only when the finish meets "Everything set by 3:00", by the same rule
+  the challenge uses (`setByThree`). A finish after 3:00 and before 4:00 gets
+  "Everything is set." on its own, so the toast and the receipt agree.
+- **The break option has a short name.** Its accessible name is "Take a short
+  break." and "(Promise to come back for something.)" is its description, like
+  the stay and leave options.
+
+## Amendment (2026-10-12): playtest round 13 chair spots
+
+Issue #1969. Chair spots are solid. A chair spot (O) is a target, not ground,
+so a person walking into an empty one stays on the floor and faces it, and a
+chair is placed from the tile beside it. The solo assist routes to a floor tile
+beside the spot and faces it. Aisle spots (S) stay walkable, and the venue
+letters are no longer printed in player copy.
+
+**Run codes recorded before this change may not verify.** A walk into an empty
+chair spot now stops on the floor, so the same frames can reach a different
+state. An `f1.` code recorded before this rule is refused as not replaying to
+the same result. `RUN_CODE_PREFIX` stays `f1.`, as the standing decision for
+this cabinet.
+
 ## Amendment (2026-10-11): reactive jokes, ceremony playback and the receipt card
 
 **Reactive jokes.** Each joke is named by the engine event that triggers it
@@ -341,3 +377,98 @@ differently. Only runs that touched a corner are affected.
 - **Fred's carried item is set down when he leaves.** The leave option says
   that whatever he carries is set down on the floor near him, where Abbi can
   pick it up while he is away.
+
+## Amendment (2026-10-11): playtest round 8
+
+Issue #1955. Round 8 fixed what the playtest found in the brothers' text, the
+prompts and the receipt copy. The rules below are the current ones.
+
+- **The brothers' text is seen and chosen on purpose.** Focus opens on the
+  dialog heading, not on "Stay and help". For 500 ms after the text opens, the
+  keyboard's Enter, Space and E cannot choose an option (mouse clicks can, at
+  once). Escape never chooses, and it does not open the pause sheet over the
+  text. The clock stops in the same step that shows the text and its toast.
+- **A promise cannot be kept for free.** The break menu offers only categories
+  that still have planned work to do. A category that is already complete is not
+  offered, and the engine enforces the same rule: `availableCommitments` in
+  `internal/receipt.ts` decides, and `validateDecision` refuses a break whose
+  promise is not in that list, so a crafted run cannot keep one.
+- **A spot that takes something else says which dish it takes.** A cooked food
+  faced at a buffet slot that wants another dish reads "This spot is for wings.
+  The hot dogs go on their own spot." and the press does nothing.
+- **A blocked station is named before a floor drop.** When the press would put
+  an item on the floor and a station in reach that takes it is occupied, the
+  prompt reads "The GRILL (G) is full. Put the raw wings on the floor".
+- **A body that straddles two tiles can reach either one.** The body is a circle
+  of `PLAYER_RADIUS`. It straddles a boundary across its facing only when its
+  centre is within `PLAYER_RADIUS / 2` of that boundary, so a sliver of overlap
+  does not count. When it straddles, the tile in front of the neighbour is a
+  candidate too. The nearest tile's front is tried first, then the other, and a
+  press uses the first that takes the held item (or, with empty hands, has
+  something to pick up). Work at a station uses the same tile (`workTileFor`).
+  The engine, the prompts, the coach outline and the solo assist all read this
+  one rule in `internal/press.ts`.
+  **Older runs may not verify.** A run recorded before round 8 can press a
+  different tile at a straddle, so its replay and share code can fail
+  verification. Such runs must be played again to share.
+- **A full floor says why.** A press that would drop an item on a full floor
+  (`FLOOR_CAP`) does nothing, and the prompt reads "The floor here is full. Find
+  a station or the bin.", with the blocked-station line in front when one applies.
+  The press also raises the floor-full toast.
+- **The solo helper plans presses from a tile centre and keeps to the same tiles
+  as the person it helps.** Before an interact or work press, the helper lines up
+  on the centre of its tile across its facing, so the press lands where its plan
+  says. The tiles claimed by the other person come from `workTileFor` and
+  `pressTileFor`, the same rules the simulation uses.
+- **A phone call says who is on it and how long is left.** The prompt reads
+  "Abbi is on the phone (about 6 min left): What should we get you?", with the
+  time in wall-clock minutes like "Back around" in the other prompts.
+- **Receipt and toast copy is plain.** The shop is "The Suit Wherehouse" with no
+  aside. A blocked website feature reads "Registry scraper: 1 call got through
+  without it." Fred's shoe retie reads "Retying a shoelace." and "Fred stops to
+  retie a shoelace.", and a stay reads "Fred stayed for the whole setup."
+
+## Amendment (2026-10-12): playtest round 11
+
+Issue #1965. A floor drop needs a deliberate hold, and the chair stack, burnt
+food and coach copy say what a press does. The rules below are the current ones.
+
+- **Setting an item down on open floor takes a hold.** A press of interact that
+  would put the held item on open floor starts a hold on that tile and facing,
+  and does nothing else. The item is set down after E has been held for
+  `FLOOR_HOLD_TICKS` (12 ticks, 0.4 s of game time). A tap does nothing. Moving
+  to another tile, turning, letting go of E, or anything else that changes the
+  tile ends the hold, and a new press starts it again. Presses on stations,
+  crates, bins, spots and the buffet stay taps. The input carries `interactHeld`
+  for each tick E is down, and `floorDropPress` in `internal/press.ts` says when
+  a press would drop on the floor. The solo helper holds E the same way and
+  pauses the hold on its resting ticks.
+  **Older run codes will not verify.** Frames now carry `interactHeld`, so the
+  symbols in a run code mean something different. An `f1.` code recorded before
+  this rule decodes to a different day and is refused as not replaying to the
+  same result. The decoder never throws on such a code. Play the day again to
+  share. `RUN_CODE_PREFIX` stays `f1.`, as the standing decision for this cabinet.
+- **A floor hold ends with the brothers' text.** The hold is cleared for both
+  people when the text opens and when a decision is made, and the component
+  clears the held keys on a decision. E must be pressed again after the dialog.
+  A hold also ends on a pause, since a paused clock sees no E.
+- **The floor hold shows its progress.** The floor-drop tile fills from its
+  bottom in the active amber as E is held, so the count is visible.
+- **The floor drop prompt names the hold.** It reads "Hold E to set the roses
+  down on the floor here" (Enter for Abbi in co-op, "E or Enter" solo), with a
+  station in reach that is full in front when one applies.
+- **A chair stack says what one press does.** With a stack of two or more chairs
+  at an open chair spot, the prompt reads "Place a chair (1 more in the stack)".
+  One press places one chair, and the rest stay in hand.
+- **Burnt food is refused with the bin named.** Holding burnt food, a press that
+  does nothing anywhere but the bin reads "Burnt food goes in the BIN (X)." The
+  bin itself gets the hold line, as before.
+- **Coach lines name the key.** The coach names the work key the way the prompts
+  do: "hold F" for Fred in co-op, "hold Shift" for Abbi in co-op, and "hold F or
+  Shift" solo. The key names come from `workKeyName` and `interactKeyName` in
+  `internal/words.ts`, which the game component also uses.
+- **The brothers' copy is about the situation.** The text opens before any break
+  or leave, so Fred's line reads "The wedding is still on." It says nothing about
+  his mood.
+- **The weather line has no joke.** The real weather line reads "The weather was
+  perfect."

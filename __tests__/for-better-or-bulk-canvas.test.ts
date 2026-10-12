@@ -210,6 +210,22 @@ describe("the venue's shared crates and part-filled targets (#1933)", () => {
     expect(texts(drawn, "shared")).toHaveLength(sharing);
   });
 
+  it("marks the lantern crates off when the plan has no lanterns (round 18, N-2)", () => {
+    const off = createLevel({
+      ...DEFAULT_SETUP,
+      cart: { ...DEFAULT_SETUP.cart, lanterns: false },
+    });
+    const lamps = off.supplies.filter((s) => s.kind === "lantern").length;
+    expect(lamps).toBeGreaterThan(0);
+    const { ctx, drawn } = recorder();
+    drawVenue(ctx, off, null);
+    expect(texts(drawn, "off")).toHaveLength(lamps);
+
+    const on = recorder();
+    drawVenue(on.ctx, createLevel(DEFAULT_SETUP), null);
+    expect(texts(on.drawn, "off")).toHaveLength(0);
+  });
+
   it("marks a basket with the items placed out of its two, starting from zero", () => {
     const base = createLevel(DEFAULT_SETUP);
     const empty = recorder();
@@ -253,5 +269,68 @@ describe("the seeded day's start toast", () => {
     }
     expect(fired).toBe(true);
     expect(state.time).toBeCloseTo(shower?.at ?? 0, 0);
+  });
+});
+
+describe("the venue's floor-drop and next-spot outlines (#1963)", () => {
+  function dashes(drawn: readonly Drawn[]): string[] {
+    return drawn
+      .filter((d) => d.name === "setLineDash")
+      .map((d) => JSON.stringify(d.args[0]));
+  }
+
+  it("draws a floor drop in the heavy warning dash, not the station's solid outline", () => {
+    const base = createLevel(DEFAULT_SETUP);
+    const fred = {
+      ...base.players.fred,
+      x: 10.5,
+      y: 4.5,
+      facingX: 0,
+      facingY: -1,
+      holding: { kind: "roses" as const, madeBy: null },
+    };
+    const level: GameState = { ...base, players: { ...base.players, fred } };
+    const { ctx, drawn } = recorder();
+    drawVenue(ctx, level, "fred");
+    expect(dashes(drawn)).toContain("[6,4]");
+  });
+
+  it("fills the floor drop from its bottom in proportion to the hold", () => {
+    const base = createLevel(DEFAULT_SETUP);
+    const fred = {
+      ...base.players.fred,
+      x: 10.5,
+      y: 4.5,
+      facingX: 0,
+      facingY: -1,
+      holding: { kind: "roses" as const, madeBy: null },
+      floorHold: { cellX: 10, cellY: 4, facingX: 0, facingY: -1, ticks: 6 },
+    };
+    const level: GameState = { ...base, players: { ...base.players, fred } };
+    const { ctx, drawn } = recorder();
+    drawVenue(ctx, level, "fred");
+    // Tile (10, 3) is x 400, y 120. Half of FLOOR_HOLD_TICKS is half the tile.
+    const fills = drawn
+      .filter((d) => d.name === "fillRect")
+      .map((d) => JSON.stringify(d.args));
+    expect(fills).toContain("[400,140,40,20]");
+  });
+
+  it("marks the nearest open chair spot while carrying chairs", () => {
+    const base = createLevel(DEFAULT_SETUP);
+    const spot = base.targets.find(
+      (t) => t.kind === "chair-spot" && t.status === "open"
+    );
+    if (!spot) throw new Error("the venue has an open chair spot");
+    const fred = {
+      ...base.players.fred,
+      x: spot.x + 0.5,
+      y: spot.y + 0.5,
+      holding: { kind: "chairs" as const, madeBy: null, count: 2 },
+    };
+    const level: GameState = { ...base, players: { ...base.players, fred } };
+    const { ctx, drawn } = recorder();
+    drawVenue(ctx, level, "fred");
+    expect(dashes(drawn)).toContain("[2,4]");
   });
 });

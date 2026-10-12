@@ -105,6 +105,7 @@ import {
   renderWireframeMesh,
   updateEnemyAI,
   updateFaceForgeBoss,
+  armBossForRoomEntry,
   getExitLockState,
   grantAmmoForLoadout,
   computeRoomExitScore,
@@ -328,6 +329,15 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   // Where the Market or class overlay returns to when it closes. A room that
   // was running comes back paused, so nothing hits the player unseen (#1669).
   const overlayReturnStatusRef = useRef<GameStatus>("paused");
+  // Moves and crypto of each room cleared so far this run, so the run's end
+  // card reports the run rather than its last room (#1943).
+  // What last hurt the player, named on the trace card (#1943).
+  const [lastHitBy, setLastHitBy] = useState(
+    "EDR Sentinel Daemons severed your cyberdeck proxy tunnel."
+  );
+  const [clearedRooms, setClearedRooms] = useState<
+    { moves: number; crypto: number }[]
+  >([]);
   const [isFocused, setIsFocused] = useState(false);
 
   // Hacking Minigame State
@@ -481,7 +491,11 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
             : currentRoom.enemies
         );
         setItems(currentRoom.items);
-        setBoss(currentRoom.boss);
+        setBoss(
+          currentRoom.boss
+            ? armBossForRoomEntry(currentRoom.boss, performance.now())
+            : undefined
+        );
         setTspNodes(currentRoom.tspNodes || []);
         // A boss or route-node room names its objective instead of the exit,
         // which stays locked until that is done (#1321).
@@ -590,6 +604,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     }
     setScore(0);
     setCryptoBounty(0);
+    setClearedRooms([]);
     cveFeedRef.current = false;
     setCveFeedActive(false);
     roomEntryVitalsRef.current = {
@@ -610,8 +625,17 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       startRoguelikeCampaign();
       return;
     }
+    // Rooms open with at least half health, so a boss fight that ended at
+    // 5 HP doesn't make every later room (and every retry of it) a one-hit
+    // death (#1943).
+    const entryHp = Math.max(playerHp, Math.ceil(maxPlayerHp / 2));
+    setPlayerHp(entryHp);
+    setClearedRooms((rooms) => [
+      ...rooms,
+      { moves: movesCount, crypto: roomCrypto },
+    ]);
     roomEntryVitalsRef.current = {
-      hp: playerHp,
+      hp: entryHp,
       ram: currentRam,
       score,
       cryptoBounty,
@@ -625,6 +649,9 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     loadRoom,
     startRoguelikeCampaign,
     playerHp,
+    maxPlayerHp,
+    movesCount,
+    roomCrypto,
     currentRam,
     score,
     cryptoBounty,
@@ -647,7 +674,9 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   const openHackingTerminal = useCallback((difficulty: number = 2) => {
     const puzzle = generateHexMatrixPuzzle(difficulty);
     setHexPuzzle(puzzle);
-    setHackingFeedback("INJECT HEX SEQUENCE ALONG HIGHLIGHTED AXIS");
+    setHackingFeedback(
+      "Pick from the highlighted row, then the column of that cell, then its row…"
+    );
     setGameStatus("hacking");
     retroAudio.playTone(600, 80, "sawtooth", 0.08);
   }, []);
@@ -675,6 +704,16 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     },
     [hexPuzzle, earnCrypto]
   );
+
+  // A finished puzzle disables the cell that was just clicked, which drops
+  // focus to the page and left Escape and the arrows dead (#1943). Hand it to
+  // the Complete Decryption button instead.
+  const hackCloseButtonRef = useRef<HTMLButtonElement>(null);
+  const hackFinished = !!(hexPuzzle?.solved || hexPuzzle?.failed);
+  useEffect(() => {
+    if (hackFinished)
+      hackCloseButtonRef.current?.focus({ preventScroll: true });
+  }, [hackFinished]);
 
   // Use Bypass Chip in Minigame
   const handleUseBypassChip = useCallback(() => {
@@ -793,6 +832,9 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                 e.state !== "frozen"
             ))
         ) {
+          setLastHitBy(
+            "You walked into a patrolling security process, and it traced you."
+          );
           setPlayerHp((hp) => {
             const nextHp = hp - DRONE_CONTACT_DAMAGE;
             if (nextHp <= 0) {
@@ -933,6 +975,11 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
             setScore((s) => s + 300);
           } else if (pickup.itemId === "bypass_chip") {
             setBypassChips((b) => b + 1);
+          } else if (pickup.itemId === "todo_shield") {
+            // It used to do nothing at all (#1943). A quick patch, then.
+            setPlayerHp((hp) => Math.min(maxPlayerHp, hp + 20));
+            setScore((s) => s + 50);
+            pickupText = "TODO: Fix Later · +20 HP patch";
           }
 
           floatingTextsRef.current.push({
@@ -1163,6 +1210,12 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     earnCrypto,
   ]);
 
+  // Closing the Market or class overlay returns to where it was opened.
+  const closeOverlay = useCallback(() => {
+    setGameStatus(overlayReturnStatusRef.current);
+    containerRef.current?.focus({ preventScroll: true });
+  }, []);
+
   // Keyboard controls
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -1171,9 +1224,16 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         if (gameStatus === "timesheet" && e.key === "Enter") {
           e.preventDefault();
           handleSubmitTimesheet();
-        } else if (gameStatus === "hacking" && e.key === "Escape") {
+        } else if (
+          gameStatus === "hacking" &&
+          (e.key === "Escape" ||
+            (e.key === "Enter" && (hexPuzzle?.solved || hexPuzzle?.failed)))
+        ) {
           e.preventDefault();
           closeHackingModal();
+        } else if (gameStatus === "darknet_shop" && e.key === "Escape") {
+          e.preventDefault();
+          closeOverlay();
         } else if (
           gameStatus === "paused" &&
           (lowerKey === "p" || e.key === "Enter" || e.key === "Escape")
@@ -1212,7 +1272,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         return;
       }
 
-      if (lowerKey === "p") {
+      if (lowerKey === "p" || e.key === "Escape") {
         e.preventDefault();
         setGameStatus("paused");
         return;
@@ -1296,6 +1356,8 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       handleFireWeapon,
       handleSubmitTimesheet,
       closeHackingModal,
+      closeOverlay,
+      hexPuzzle,
       handleRestart,
       handleNextRoom,
       tryMove,
@@ -1416,11 +1478,6 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     },
     [gameStatus]
   );
-
-  const closeOverlay = useCallback(() => {
-    setGameStatus(overlayReturnStatusRef.current);
-    containerRef.current?.focus({ preventScroll: true });
-  }, []);
 
   // Choosing a class gives its fresh loadout and restarts the room paused, so
   // nothing fires at the player before they look back at the board. On a
@@ -1640,6 +1697,9 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
           setEnemies(updatedEnemies);
 
           if (damageToPlayer > 0) {
+            setLastHitBy(
+              "EDR Sentinel Daemons severed your cyberdeck proxy tunnel."
+            );
             setPlayerHp((hp) => {
               const nextHp = hp - damageToPlayer;
               if (nextHp <= 0) {
@@ -1680,11 +1740,15 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
             Date.now() - lastHeadingRef.current.at < BOSS_LEAD_WINDOW_MS
             ? lastHeadingRef.current
             : undefined,
-          deltaMs
+          deltaMs,
+          (col, row) => currentMaze[row]?.[col] === "#"
         );
         setBoss(updatedBoss);
 
         if (spawnedDamage > 0) {
+          setLastHitBy(
+            `A ${boss.name.split(" :: ")[0]} mesh volley severed your cyberdeck proxy tunnel.`
+          );
           setPlayerHp((hp) => {
             const nextHp = hp - spawnedDamage;
             if (nextHp <= 0) {
@@ -1738,6 +1802,9 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
               }
 
               if (nextX === playerPosition.x && d.y === playerPosition.y) {
+                setLastHitBy(
+                  "An Airgap Sentinel drone severed your cyberdeck proxy tunnel."
+                );
                 setPlayerHp((hp) => {
                   const nextHp = hp - DRONE_CONTACT_DAMAGE;
                   if (nextHp <= 0) {
@@ -2174,6 +2241,9 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
 
   const isFinalRoom =
     gameMode === "roguelike" && roomIndex >= campaignRooms.length - 1;
+  const runMoves = [...clearedRooms.map((r) => r.moves), movesCount];
+  const runCrypto =
+    clearedRooms.reduce((sum, r) => sum + r.crypto, 0) + roomCrypto;
 
   const currentRoom =
     gameMode === "roguelike"
@@ -2361,7 +2431,10 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                 ? formatCampaignRoomBadge(currentRoom.badge, roomIndex)
                 : currentRoom.badge}
             </span>
-            <span className="text-zinc-400 text-xs hidden sm:inline truncate max-w-[150px]">
+            <span
+              className="text-zinc-400 text-xs hidden sm:inline truncate max-w-[150px]"
+              title={currentRoom.title}
+            >
               [{currentRoom.title}]
             </span>
           </div>
@@ -2374,6 +2447,14 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                 data-testid="labyrinth-boss-hp"
               >
                 <span className="text-rose-400">BOSS</span>
+                {!boss.defeated && boss.phaseTitle && (
+                  <span
+                    className="text-neutral-300 hidden xl:inline"
+                    data-testid="labyrinth-boss-phase"
+                  >
+                    {boss.phaseTitle}
+                  </span>
+                )}
                 <div className="w-14 h-2 bg-neutral-900 rounded-full overflow-hidden border border-neutral-800">
                   <div
                     className="h-full bg-rose-500 transition-all duration-200"
@@ -2390,7 +2471,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
 
             {/* Player HP */}
             <div className="flex items-center gap-1 text-xs">
-              <span className="text-neutral-500">HP</span>
+              <span className="text-neutral-400">HP</span>
               <div className="w-14 h-2 bg-neutral-900 rounded-full overflow-hidden border border-neutral-800">
                 <div
                   className={`h-full transition-all duration-200 ${
@@ -2438,8 +2519,8 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
             >
               <span>SCORE: {score}</span>
               {effectiveHighScore > 0 && (
-                <span className="text-neutral-500 font-normal">
-                  ({effectiveHighScore})
+                <span className="text-neutral-400 font-normal">
+                  (BEST {effectiveHighScore})
                 </span>
               )}
             </div>
@@ -2449,7 +2530,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         {/* Objective: always say what winning looks like. Short landscape
             screens need every row for the maze, and the in-maze
             "REACH THE EXIT" prompt already carries the goal there. */}
-        <p className="w-full px-2 py-0.5 text-xs font-bold text-neutral-400 truncate [@media(max-height:500px)]:hidden">
+        <p className="w-full px-2 py-0.5 text-xs font-bold text-neutral-400 line-clamp-2 [@media(max-height:500px)]:hidden">
           <span className="text-amber-400">OBJECTIVE</span> ·{" "}
           {roomExitLock.locked ? (
             <>
@@ -2566,12 +2647,16 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                 </output>
               </div>
 
+              {/* Out of the Tab order: every action has a key, and invisible
+                  tab stops between the board and the toolbar lost sighted
+                  keyboard players (#1943). Screen readers still reach them. */}
               <div
                 role="group"
                 aria-label="Interactive Navigation and Combat Actions"
               >
                 <button
                   type="button"
+                  tabIndex={-1}
                   onClick={() => {
                     handleDirectionalMove("up");
                     announce(
@@ -2584,6 +2669,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                 </button>
                 <button
                   type="button"
+                  tabIndex={-1}
                   onClick={() => {
                     handleDirectionalMove("down");
                     announce(
@@ -2596,6 +2682,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                 </button>
                 <button
                   type="button"
+                  tabIndex={-1}
                   onClick={() => {
                     handleDirectionalMove("left");
                     announce(
@@ -2608,6 +2695,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                 </button>
                 <button
                   type="button"
+                  tabIndex={-1}
                   onClick={() => {
                     handleDirectionalMove("right");
                     announce(
@@ -2621,6 +2709,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
 
                 <button
                   type="button"
+                  tabIndex={-1}
                   onClick={() => {
                     handleFireWeapon(activeWeaponId);
                     announce(
@@ -2634,6 +2723,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
 
                 <button
                   type="button"
+                  tabIndex={-1}
                   onClick={() => {
                     handleUseBypassChip();
                     announce("Used hardware bypass chip.", "polite");
@@ -2645,6 +2735,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
 
                 <button
                   type="button"
+                  tabIndex={-1}
                   onClick={() => {
                     handleRestart();
                     announce(
@@ -2659,6 +2750,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                 {gameStatus === "victory" && (
                   <button
                     type="button"
+                    tabIndex={-1}
                     onClick={() => {
                       handleNextRoom();
                       announce("Navigated to next cyberdeck room.", "polite");
@@ -2686,12 +2778,40 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                   All {campaignRooms.length} rooms cleared.
                 </p>
               )}
-              <p className="text-xs text-neutral-400 mt-0.5 leading-relaxed">
-                Infiltrated in{" "}
-                <span className="font-bold text-zinc-100">{movesCount}</span>{" "}
-                moves. Crypto Harvested:{" "}
-                <span className="font-bold text-amber-400">+{roomCrypto}</span>
-              </p>
+              {isFinalRoom ? (
+                <>
+                  <p className="text-xs text-neutral-400 mt-0.5 leading-relaxed">
+                    Run total:{" "}
+                    <span className="font-bold text-zinc-100">
+                      {runMoves.reduce((a, b) => a + b, 0)}
+                    </span>{" "}
+                    moves. Crypto Harvested:{" "}
+                    <span className="font-bold text-amber-400">
+                      +{runCrypto}
+                    </span>
+                  </p>
+                  <p
+                    className="text-xs text-neutral-400 font-mono tabular-nums"
+                    data-testid="labyrinth-run-rooms"
+                  >
+                    {runMoves
+                      .map(
+                        (moves, i) =>
+                          `R${String(i + 1).padStart(2, "0")} ${moves}`
+                      )
+                      .join(" · ")}
+                  </p>
+                </>
+              ) : (
+                <p className="text-xs text-neutral-400 mt-0.5 leading-relaxed">
+                  This room:{" "}
+                  <span className="font-bold text-zinc-100">{movesCount}</span>{" "}
+                  moves. Crypto Harvested:{" "}
+                  <span className="font-bold text-amber-400">
+                    +{roomCrypto}
+                  </span>
+                </p>
+              )}
               <p className="text-xs text-neutral-400">
                 Final Score:{" "}
                 <span className="font-bold text-zinc-100">{score}</span>
@@ -2761,8 +2881,8 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
               >
                 Resume
               </button>
-              <p className="text-xs text-neutral-500 mt-1">
-                P or Enter to resume
+              <p className="text-xs text-neutral-400 mt-1">
+                P, Esc or Enter to resume
               </p>
             </div>
           )}
@@ -2773,8 +2893,11 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
               <h3 className="text-rose-400 font-bold text-xs uppercase tracking-widest">
                 IP TRACE INTERCEPTED
               </h3>
-              <p className="text-xs text-neutral-400 mt-1">
-                EDR Sentinel Daemons severed your cyberdeck proxy tunnel.
+              <p
+                className="text-xs text-neutral-400 mt-1"
+                data-testid="labyrinth-trace-cause"
+              >
+                {lastHitBy}
               </p>
               <button
                 onClick={(e) => {
@@ -2860,7 +2983,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
               </div>
 
               {/* Feedback text */}
-              <div className="text-xs font-bold text-center text-zinc-100 px-2 truncate w-full">
+              <div className="text-xs font-bold text-center text-zinc-100 px-2 break-words w-full">
                 {hackingFeedback}
               </div>
 
@@ -2875,6 +2998,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                 </button>
 
                 <button
+                  ref={hackCloseButtonRef}
                   onClick={closeHackingModal}
                   className="px-3 py-0.5 rounded bg-neutral-800 text-neutral-300 hover:bg-neutral-700 cursor-pointer font-bold"
                 >
@@ -2903,9 +3027,9 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                     key={item.id}
                     className="flex items-center justify-between p-1 bg-neutral-900/80 border border-neutral-800 rounded text-xs"
                   >
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 min-w-0">
                       <span>{item.icon}</span>
-                      <div>
+                      <div className="min-w-0">
                         <div className="text-neutral-200 font-bold">
                           {item.name}
                         </div>
@@ -2922,7 +3046,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                         cryptoBounty < item.cost ||
                         (item.category === "firmware" && cveFeedActive)
                       }
-                      className="px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 disabled:opacity-40 font-bold cursor-pointer whitespace-nowrap"
+                      className="shrink-0 px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 disabled:opacity-40 font-bold cursor-pointer whitespace-nowrap"
                     >
                       {item.category === "firmware" && cveFeedActive
                         ? "Active"
@@ -3105,8 +3229,8 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
             </div>
 
             {/* Controls string */}
-            <div className="text-neutral-500 uppercase tracking-wider hidden md:block">
-              WASD / ARROWS · C: CRT SCANLINES
+            <div className="text-neutral-400 uppercase tracking-wider hidden md:block">
+              WASD / ARROWS · 1-3: TOOLS · SPACE: EMP · P / ESC: PAUSE · C: CRT
             </div>
           </div>
 

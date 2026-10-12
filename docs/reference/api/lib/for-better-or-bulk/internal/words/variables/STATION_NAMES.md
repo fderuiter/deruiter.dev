@@ -8,4 +8,5 @@
 
 > `const` **STATION\_NAMES**: `Readonly`\<`Record`\<[`StationKind`](../../../types/type-aliases/StationKind.md), `string`\>\>
 
-Words for the places and things a hint names, with their venue letters.
+Words for the places and things a hint names. They use the labels the canvas
+draws, not the map letters in VENUE_MAP, which the canvas never shows.

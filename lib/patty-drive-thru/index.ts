@@ -19,6 +19,7 @@ export {
   isShiftOver,
   replayShift,
   stepShift,
+  getArrivalGapScale,
 } from "./internal/engine";
 export {
   buildShiftTelemetry,
@@ -35,6 +36,7 @@ export {
   getPosBreadcrumb,
   getTimeLeft,
   scoreShift,
+  describeShiftScore,
 } from "./internal/view";
 export {
   aimLook,

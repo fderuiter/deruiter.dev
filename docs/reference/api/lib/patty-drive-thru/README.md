@@ -116,6 +116,12 @@ Re-exports [describeOrder](internal/view/functions/describeOrder.md)
 
 ***
 
+### describeShiftScore
+
+Re-exports [describeShiftScore](internal/view/functions/describeShiftScore.md)
+
+***
+
 ### DIARY\_INTRO
 
 Re-exports [DIARY_INTRO](internal/diary/variables/DIARY_INTRO.md)
@@ -197,6 +203,12 @@ Re-exports [formatCents](internal/view/functions/formatCents.md)
 ### formatClock
 
 Re-exports [formatClock](internal/view/functions/formatClock.md)
+
+***
+
+### getArrivalGapScale
+
+Re-exports [getArrivalGapScale](internal/engine/functions/getArrivalGapScale.md)
 
 ***
 
@@ -521,6 +533,24 @@ Re-exports [RED_AFTER_SEC](presets/variables/RED_AFTER_SEC.md)
 ### replayShift
 
 Re-exports [replayShift](internal/engine/functions/replayShift.md)
+
+***
+
+### RUSH\_END\_FRACTION
+
+Re-exports [RUSH_END_FRACTION](presets/variables/RUSH_END_FRACTION.md)
+
+***
+
+### RUSH\_GAP\_SCALE
+
+Re-exports [RUSH_GAP_SCALE](presets/variables/RUSH_GAP_SCALE.md)
+
+***
+
+### RUSH\_START\_FRACTION
+
+Re-exports [RUSH_START_FRACTION](presets/variables/RUSH_START_FRACTION.md)
 
 ***
 

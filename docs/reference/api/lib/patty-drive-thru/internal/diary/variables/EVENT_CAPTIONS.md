@@ -48,6 +48,10 @@ Short captions for the shift's one-shot events.
 
 > `readonly` **orderExpired**: `"A car gave up and drove off."` = `"A car gave up and drove off."`
 
+### rushStarted
+
+> `readonly` **rushStarted**: `"Lunch rush. Here they come."` = `"Lunch rush. Here they come."`
+
 ### wiped
 
 > `readonly` **wiped**: `"You wipe the counter. It was already clean."` = `"You wipe the counter. It was already clean."`

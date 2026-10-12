@@ -131,7 +131,7 @@ describe("Patty's Drive-Thru booth store (#1813)", () => {
     run(store, 2.5);
     store.getState().act({ type: "flagCoworker", orderId: 1 });
     expect(store.getState().caption).toMatchObject({
-      speaker: "coworker",
+      speaker: "booth",
       text: EVENT_CAPTIONS.coworkerFlagged,
     });
   });

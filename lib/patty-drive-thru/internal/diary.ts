@@ -59,6 +59,7 @@ export const EVENT_CAPTIONS = {
   bumpedLate: "Bumped. Late.",
   bumped: "Bumped. Next car.",
   wiped: "You wipe the counter. It was already clean.",
+  rushStarted: "Lunch rush. Here they come.",
 } as const;
 
 /** The closing note, the same for every ending. */

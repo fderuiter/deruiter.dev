@@ -154,6 +154,7 @@ export type ShiftEvent =
   | { readonly type: "wrong-entry"; readonly nodeId: string }
   | { readonly type: "manager-yell" }
   | { readonly type: "wiped" }
+  | { readonly type: "rush-started" }
   | { readonly type: "shift-ended"; readonly outcome: ShiftOutcome };
 
 /** One event with the shift time it happened, as the booth keeps them. */

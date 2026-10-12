@@ -14,6 +14,9 @@ import { drawInt, uniformAt } from "../../utils/prng";
 import {
   AGE_LOCKED_ITEMS,
   ARRIVAL_GAP_MAX_SEC,
+  RUSH_START_FRACTION,
+  RUSH_END_FRACTION,
+  RUSH_GAP_SCALE,
   ARRIVAL_GAP_MIN_SEC,
   BREAK_ADJUSTMENT_CENTS,
   COWORKER_DELAY_SEC,
@@ -260,6 +263,23 @@ function endIfOver(state: ShiftState, events: ShiftEvent[]): ShiftState {
 }
 
 /**
+ * How much the arrival gap shrinks at a point in a standard shift: halved
+ * during the lunch rush, unchanged otherwise (#1938).
+ *
+ * @param timeSec - Shift time of the arrival.
+ * @param durationSec - The shift's length.
+ */
+export function getArrivalGapScale(
+  timeSec: number,
+  durationSec: number
+): number {
+  const at = durationSec > 0 ? timeSec / durationSec : 0;
+  return at >= RUSH_START_FRACTION && at < RUSH_END_FRACTION
+    ? RUSH_GAP_SCALE
+    : 1;
+}
+
+/**
  * Advances the shift by `dtSec` seconds: new orders arrive, old ones expire,
  * a flagged coworker finishes the coffee, and an idle player gets yelled at.
  * Steps longer than half a second are shortened, so a stalled tab cannot skip
@@ -288,6 +308,16 @@ export function stepShift(state: ShiftState, dtSec: number): StepResult {
   let tallies = state.tallies;
   let activeOrderId = state.pos.activeOrderId;
 
+  // A standard shift has a lunch rush; a practice scenario that sets its
+  // own arrival gaps keeps them exactly (#1938).
+  const hasRush =
+    state.config.arrivalGapMinSec === undefined &&
+    state.config.arrivalGapMaxSec === undefined;
+  if (hasRush) {
+    const rushAt = durationSec * RUSH_START_FRACTION;
+    if (start < rushAt && rushAt <= time) events.push({ type: "rush-started" });
+  }
+
   while (nextArrivalAt <= time) {
     if (orders.length < MAX_OPEN_ORDERS) {
       const drawn = drawOrder(seed, draws, nextOrderId, nextArrivalAt);
@@ -296,7 +326,9 @@ export function stepShift(state: ShiftState, dtSec: number): StepResult {
       events.push({ type: "order-arrived", orderId: nextOrderId });
       nextOrderId += 1;
     }
-    const gap = gapMin + uniformAt(seed, draws++) * (gapMax - gapMin);
+    const gap =
+      (gapMin + uniformAt(seed, draws++) * (gapMax - gapMin)) *
+      (hasRush ? getArrivalGapScale(nextArrivalAt, durationSec) : 1);
     nextArrivalAt += gap;
   }
 

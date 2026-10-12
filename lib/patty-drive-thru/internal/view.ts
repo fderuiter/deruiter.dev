@@ -136,3 +136,19 @@ export function scoreShift(state: ShiftState): number {
     served * SCORE_PER_SERVED - late * SCORE_LATE_PENALTY + bonus
   );
 }
+
+/**
+ * How a shift's score adds up, in one line for the end card (#1938), for
+ * example "16 cars x 10 - 2 late x 5 + 50 for closing".
+ */
+export function describeShiftScore(state: ShiftState): string {
+  const { served, late } = state.tallies;
+  const parts = [
+    `${served} ${served === 1 ? "car" : "cars"} x ${SCORE_PER_SERVED}`,
+  ];
+  if (late > 0) parts.push(`- ${late} late x ${SCORE_LATE_PENALTY}`);
+  if (state.outcome === "completed") {
+    parts.push(`+ ${SCORE_COMPLETED_BONUS} for closing`);
+  }
+  return parts.join(" ");
+}

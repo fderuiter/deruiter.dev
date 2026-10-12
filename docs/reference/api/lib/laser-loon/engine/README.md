@@ -12,6 +12,7 @@
 
 ## Interfaces
 
+- [ActProgressReadout](interfaces/ActProgressReadout.md)
 - [BossAttackResult](interfaces/BossAttackResult.md)
 - [IceCollisionResult](interfaces/IceCollisionResult.md)
 - [LaserHitResult](interfaces/LaserHitResult.md)
@@ -19,6 +20,7 @@
 - [LaserLoonSnapshot](interfaces/LaserLoonSnapshot.md)
 - [LoonCollisionInput](interfaces/LoonCollisionInput.md)
 - [LoonCollisionResult](interfaces/LoonCollisionResult.md)
+- [MinionFireResult](interfaces/MinionFireResult.md)
 
 ## Type Aliases
 
@@ -33,8 +35,11 @@
 - [createIceBlock](functions/createIceBlock.md)
 - [createInitialState](functions/createInitialState.md)
 - [getActAvailableEnemies](functions/getActAvailableEnemies.md)
+- [getActProgressReadout](functions/getActProgressReadout.md)
+- [getActStars](functions/getActStars.md)
 - [getBossAttackInterval](functions/getBossAttackInterval.md)
 - [isBossTelegraphing](functions/isBossTelegraphing.md)
+- [pickKeyboardAim](functions/pickKeyboardAim.md)
 - [resolveLoonCollision](functions/resolveLoonCollision.md)
 - [spawnBossForAct](functions/spawnBossForAct.md)
 - [spawnPowerUp](functions/spawnPowerUp.md)
@@ -43,6 +48,7 @@
 - [updateBossAttack](functions/updateBossAttack.md)
 - [updateFloatingTexts](functions/updateFloatingTexts.md)
 - [updateIceBlocksAndCollisions](functions/updateIceBlocksAndCollisions.md)
+- [updateMinionFire](functions/updateMinionFire.md)
 - [updateParticles](functions/updateParticles.md)
 - [updatePowerUps](functions/updatePowerUps.md)
 - [updateShockwaves](functions/updateShockwaves.md)

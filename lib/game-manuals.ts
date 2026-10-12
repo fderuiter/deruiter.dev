@@ -336,7 +336,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         action: "Aim & Fire Laser Arsenal",
         description:
-          "Aim crosshair with cursor or touch; left-click, drag or hold Space to fire the active laser beam (Ruby Laser, Cyan Pulse, Aurora Wave, or Cryo-Mortar).",
+          "Aim crosshair with cursor or touch and left-click or drag to fire the active laser beam (Ruby Laser, Cyan Pulse, Aurora Wave, or Cryo-Mortar). Without a mouse, hold Space: the laser locks on to an enemy nearly in line ahead, so fly level with your target.",
         key: "Left Click / Drag / Space",
       },
       {

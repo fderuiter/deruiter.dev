@@ -20,6 +20,14 @@
 
 ***
 
+### fireTimer?
+
+> `optional` **fireTimer?**: `number`
+
+A minion's frames toward its next shot, from Act 3 on.
+
+***
+
 ### frozenTimer
 
 > **frozenTimer**: `number`

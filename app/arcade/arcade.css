@@ -473,9 +473,10 @@
    panning and pinch-zoom over the play area; the toolbar and the control dock
    sit outside the stage and keep their own taps. */
 .arcade-cabinet[data-immersive="true"] {
-  /* pan-y keeps a scroll-layout stage scrollable and still rules out pinch
-     zoom and double-tap zoom; a fit-layout cabinet takes every gesture. */
-  touch-action: pan-y;
+  /* Panning keeps a scroll-layout stage (and any horizontal strip inside it,
+     such as a card hand) scrollable while ruling out pinch and double-tap
+     zoom; a fit-layout cabinet takes every gesture. */
+  touch-action: pan-x pan-y;
   overscroll-behavior: none;
   -webkit-touch-callout: none;
   -webkit-user-select: none;

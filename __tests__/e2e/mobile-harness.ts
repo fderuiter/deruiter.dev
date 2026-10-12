@@ -11,7 +11,9 @@ const MATRIX_HEIGHT = 800;
 /**
  * Fails when any rendered element, or the document itself, is wider than the
  * viewport. Elements inside a clipped ancestor are reported too, so a clipped
- * overflow still shows up here.
+ * overflow still shows up here. Elements inside a horizontal scroller
+ * (`overflow-x: auto` or `scroll`, such as a card hand) are skipped: reaching
+ * them by swiping is the intended design.
  *
  * @param page - The page under test, already at the size to check.
  */
@@ -26,6 +28,13 @@ export async function assertNoHorizontalOverflow(page: Page): Promise<void> {
       if (style.display === "none" || style.visibility === "hidden") continue;
       const box = element.getBoundingClientRect();
       if (box.width === 0 && box.height === 0) continue;
+      let scroller = element.parentElement;
+      while (scroller) {
+        const overflowX = window.getComputedStyle(scroller).overflowX;
+        if (overflowX === "auto" || overflowX === "scroll") break;
+        scroller = scroller.parentElement;
+      }
+      if (scroller) continue;
       if (box.right > viewport + 0.5) {
         const id = element.id ? `#${element.id}` : "";
         const cls =

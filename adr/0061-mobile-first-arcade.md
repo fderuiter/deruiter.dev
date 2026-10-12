@@ -76,12 +76,14 @@ without a new kit change.
   and overscroll disabled. It reuses the fullscreen layout and its CSS
   (`.arcade-cabinet[data-fullscreen="true"]`), and adds `data-immersive="true"`
   for the touch rules. A game picks its stage with `mobileLayout`. `scroll`,
-  the default, keeps the stage a vertical scroll area under `touch-action:
-pan-y`, so a game that has not had its mobile pass can still reach all of
-  its content, and pinch and double-tap zoom are still ruled out. `fit` is
-  what a game sets in its mobile pull request once it fits the viewport: the
-  root and stage take `touch-action: none` and the stage clips with
-  `overflow: hidden`. The toolbar and the control dock keep their own taps. On leaving immersive, the
+  the default, keeps the stage a vertical scroll area and gives the cabinet
+  `touch-action: pan-x pan-y`, so a game that has not had its mobile pass
+  still reaches all of its content (horizontal strips such as a card hand
+  included) while pinch and double-tap zoom stay ruled out. `fit` is what a
+  game sets in its mobile pull request once it fits the viewport: the root
+  and stage take `touch-action: none` and the stage clips with
+  `overflow: hidden`.
+  The toolbar and the control dock keep their own taps. On leaving immersive, the
   preview scrolls back into view. Desktop never sets the attribute, so its
   markup does not change. The exit is the cabinet's Power button in the
   immersive toolbar, which is 48px.

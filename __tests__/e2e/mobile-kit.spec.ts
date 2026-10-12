@@ -59,12 +59,12 @@ test.describe("Mobile arcade kit: immersive touch cabinet", () => {
     await assertNoHorizontalOverflow(page);
 
     // Trial & Error has not had its mobile pass, so it keeps the scroll
-    // layout: the stage pans vertically and nothing in the cabinet zooms.
+    // layout: the cabinet pans but nothing in it zooms.
     expect(await cabinet.getAttribute("data-mobile-layout")).toBe("scroll");
-    const stageTouch = await cabinet
-      .locator(".arcade-cabinet-stage")
-      .evaluate((el) => getComputedStyle(el).touchAction);
-    expect(stageTouch).toBe("pan-y");
+    const rootTouch = await cabinet.evaluate(
+      (el) => getComputedStyle(el).touchAction
+    );
+    expect(rootTouch).toBe("pan-x pan-y");
 
     // Captures are named by state. The cabinet latches immersive at launch, so
     // it stays immersive when the viewport grows past 1023px (ADR 0061).

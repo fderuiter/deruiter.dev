@@ -72,46 +72,32 @@ async function shoot(page: Page, testInfo: TestInfo, name: string) {
   }
 }
 
-/**
- * Cells of the patrols still able to catch the player, read from the game's
- * React state. The maze is a canvas, so the state is the only place they are
- * named. Test-only: it walks the fiber tree from the phone HUD.
- */
+/** Cells of the patrols still able to catch the player, from the status group. */
 async function patrolCells(
   page: Page
 ): Promise<Array<{ x: number; y: number }>> {
-  return page.evaluate(() => {
-    const hud = document.querySelector('[data-testid="labyrinth-phone-score"]');
-    const key =
-      hud && Object.keys(hud).find((k) => k.startsWith("__reactFiber$"));
-    if (!hud || !key) return [];
-    type Hook = { memoizedState: unknown; next: Hook | null };
-    type Fiber = { memoizedState: Hook | null; return: Fiber | null };
-    let fiber: Fiber | null = (hud as unknown as Record<string, Fiber>)[key];
-    while (fiber) {
-      for (let hook = fiber.memoizedState; hook; hook = hook.next) {
-        const value = hook.memoizedState;
-        if (
-          Array.isArray(value) &&
-          value.some((v) => v && typeof v === "object" && "patrolDir" in v)
-        ) {
-          return (value as Array<{ x: number; y: number; state: string }>)
-            .filter((e) => e.state !== "stunned" && e.state !== "frozen")
-            .map(({ x, y }) => ({ x, y }));
-        }
-      }
-      fiber = fiber.return;
-    }
-    return [];
+  const raw = await page
+    .locator("[data-patrol-cells]")
+    .first()
+    .getAttribute("data-patrol-cells");
+  if (!raw) return [];
+  return raw.split(";").map((cell) => {
+    const [x, y] = cell.split(",").map(Number);
+    return { x, y };
   });
 }
 
-/** The player's grid cell, from the accessible status subtree. */
+/** The player's grid cell, from the status group. */
 async function playerCell(
   page: Page
 ): Promise<{ x: number; y: number } | null> {
-  const match = /\((\d+),\s*(\d+)\)/.exec(await readPlayerGrid(page));
-  return match ? { x: Number(match[1]), y: Number(match[2]) } : null;
+  const raw = await page
+    .locator("[data-player-cell]")
+    .first()
+    .getAttribute("data-player-cell");
+  if (!raw) return null;
+  const [x, y] = raw.split(",").map(Number);
+  return { x, y };
 }
 
 /** Turns the emulated phone sideways, whatever the project's default. */

@@ -88,6 +88,11 @@ import {
   isCrtIdle,
   resolveLabyrinthCrt,
 } from "@/components/retro-labyrinth/labyrinth-crt";
+import {
+  FINAL_ROOM_HINT,
+  RETRY_HINT,
+  ROOM_CLEAR_HINT,
+} from "@/components/retro-labyrinth/control-hints";
 import { useGameFullscreen as useFullscreen } from "@/components/arcade/CabinetFullscreen";
 import {
   ActiveSideEffect,
@@ -379,6 +384,9 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   // the maze. The options panel is a sheet there, not an inline disclosure.
   const phoneCabinet = useCabinetTouch();
   const resumeHint = useControlHint(RESUME_HINT);
+  const retryHint = useControlHint(RETRY_HINT);
+  const roomClearHint = useControlHint(ROOM_CLEAR_HINT);
+  const finalRoomHint = useControlHint(FINAL_ROOM_HINT);
   const [optionsOpen, setOptionsOpen] = useState(false);
   // The phone sheet's focus refs and trap are hooks, so they sit above the
   // early return for the unmounted skeleton.
@@ -2720,7 +2728,15 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
           <fieldset>
             <legend>Retro Labyrinth Dungeon Crawl State and Controls</legend>
 
-            <div role="group" aria-label="Dungeon Telemetry and Status">
+            <div
+              role="group"
+              aria-label="Dungeon Telemetry and Status"
+              data-player-cell={`${playerPosition.x},${playerPosition.y}`}
+              data-patrol-cells={enemies
+                .filter((e) => e.state !== "stunned" && e.state !== "frozen")
+                .map((e) => `${e.x},${e.y}`)
+                .join(";")}
+            >
               <output htmlFor="retro-score">Score: {score}</output>
               <output htmlFor="retro-highscore">
                 High Score: {effectiveHighScore}
@@ -2951,9 +2967,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
               )}
             </div>
             <p className="text-xs text-neutral-500 mt-1">
-              {isFinalRoom
-                ? "Enter for a new run from Room 01 · R to retry this room"
-                : "Enter to continue · R to retry this room"}
+              {isFinalRoom ? finalRoomHint : roomClearHint}
             </p>
           </div>
         )}
@@ -3003,7 +3017,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
             >
               RETRY BREACH
             </button>
-            <p className="text-xs text-neutral-500 mt-1">Enter or R to retry</p>
+            <p className="text-xs text-neutral-500 mt-1">{retryHint}</p>
           </div>
         )}
 

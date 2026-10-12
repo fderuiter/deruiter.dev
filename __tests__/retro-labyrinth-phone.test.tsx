@@ -109,6 +109,14 @@ describe("RetroLabyrinth on a phone cabinet (ADR 0061)", () => {
     expect(screen.queryByRole("button", { name: "Tap" })).toBeNull();
   });
 
+  it("exposes the player's cell and the patrol cells as data for the e2e specs", () => {
+    const { container } = renderGame({ touch: true });
+    const status = container.querySelector("[data-player-cell]");
+    expect(status?.getAttribute("data-player-cell")).toMatch(/^\d+,\d+$/);
+    // Patrols may be none in a fresh room, but the attribute is always there.
+    expect(status?.hasAttribute("data-patrol-cells")).toBe(true);
+  });
+
   it("keeps the desktop disclosure and HUD on a fine pointer", () => {
     stubPointer(false);
     const { container } = renderGame({ touch: false });

@@ -161,8 +161,12 @@ export const BUFFET_ORDER: readonly ItemKind[] = [
   "quinoa",
 ];
 
-/** Tiles people can walk over. Aisle and chair spots are on the ground. */
-export const WALKABLE_TILES = ".12SO";
+/**
+ * Tiles people can walk over: ground, the two aisle spots, and nothing else.
+ * Chair spots (O) are solid (ADR 0060 amendment, 2026-10-12): a person walking
+ * into an empty one stays on the floor and faces it.
+ */
+export const WALKABLE_TILES = ".12S";
 
 /**
  * Level length in game seconds: 9:00 to 4:00. Relaxed mode stretches it.

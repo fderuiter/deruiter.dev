@@ -110,9 +110,9 @@ describe("the reactive jokes, one trigger each", () => {
   });
 
   it("burning: the grill's burnt batch is the smoke", () => {
-    expect(jokesFor({ type: "burnt", station: "grill-1" }, level)).toEqual([
-      "burning",
-    ]);
+    expect(
+      jokesFor({ type: "burnt", station: "grill-1", item: "hotdogs" }, level)
+    ).toEqual(["burning"]);
   });
 
   it("shoes: Fred re-tying his shoes is the shoes joke", () => {
@@ -169,7 +169,7 @@ describe("the reactive jokes, one trigger each", () => {
         player: "fred",
         blockedBy: null,
       },
-      { type: "burnt", station: "grill-1" },
+      { type: "burnt", station: "grill-1", item: "hotdogs" },
       { type: "shoes-retied" },
       { type: "presence-decided", decision: LEAVE },
       { type: "simplified", target: "petal-1", category: "petals" },

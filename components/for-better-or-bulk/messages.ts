@@ -184,7 +184,9 @@ export function describeEvent(event: GameEvent): string | null {
         ? "The hot dogs are done."
         : "The wings are done.";
     case "burnt":
-      return "Something on the grill is now charcoal.";
+      return event.item === "hotdogs"
+        ? "The hot dogs on the grill are charcoal."
+        : "The wings on the grill are charcoal.";
     case "restocked":
       return RESTOCK_LINES[event.supply] ?? null;
     case "supply-empty":

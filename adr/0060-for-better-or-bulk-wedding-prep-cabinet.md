@@ -250,6 +250,20 @@ For Better or Bulk trophies are unchanged.
 **Seeds.** Only the standard day (seed 0) records a high score. A seeded day
 can still earn its own trophy.
 
+## Amendment (2026-10-12): playtest round 13 chair spots
+
+Issue #1969. Chair spots are solid. A chair spot (O) is a target, not ground,
+so a person walking into an empty one stays on the floor and faces it, and a
+chair is placed from the tile beside it. The solo assist routes to a floor tile
+beside the spot and faces it. Aisle spots (S) stay walkable, and the venue
+letters are no longer printed in player copy.
+
+**Run codes recorded before this change may not verify.** A walk into an empty
+chair spot now stops on the floor, so the same frames can reach a different
+state. An `f1.` code recorded before this rule is refused as not replaying to
+the same result. `RUN_CODE_PREFIX` stays `f1.`, as the standing decision for
+this cabinet.
+
 ## Amendment (2026-10-11): reactive jokes, ceremony playback and the receipt card
 
 **Reactive jokes.** Each joke is named by the engine event that triggers it

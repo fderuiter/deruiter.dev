@@ -307,7 +307,11 @@ export type GameEvent =
       readonly station: string;
       readonly item: ItemKind;
     }
-  | { readonly type: "burnt"; readonly station: string }
+  | {
+      readonly type: "burnt";
+      readonly station: string;
+      readonly item: ItemKind;
+    }
   | {
       readonly type: "restocked";
       readonly player: PlayerId;

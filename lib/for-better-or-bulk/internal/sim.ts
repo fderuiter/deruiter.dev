@@ -602,7 +602,11 @@ function cookGrills(w: Working, dt: number): void {
         progress,
       });
       w.state = { ...w.state, burntBatches: w.state.burntBatches + 1 };
-      w.events.push({ type: "burnt", station: station.id });
+      w.events.push({
+        type: "burnt",
+        station: station.id,
+        item: item.kind,
+      });
     } else {
       setStation(w, { ...station, progress });
     }

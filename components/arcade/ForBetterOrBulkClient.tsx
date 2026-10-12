@@ -9,6 +9,7 @@ import { PlayCabinet } from "@/components/arcade/PlayCabinet";
 import { DesktopOnlyGate } from "@/components/arcade/DesktopOnlyGate";
 import { NextPrevNav } from "@/components/ui/NextPrevNav";
 import { getArcadeNeighbors } from "@/lib/arcade";
+import { DEFAULT_SETUP, type Setup } from "@/lib/for-better-or-bulk";
 
 const ForBetterOrBulkLoader = () =>
   import("@/components/for-better-or-bulk/ForBetterOrBulkGame").then(
@@ -23,6 +24,13 @@ const DynamicForBetterOrBulk = dynamic(ForBetterOrBulkLoader, {
     </div>
   ),
 });
+
+/**
+ * The page's opening plan: the default cart with the helper on, so a
+ * one-player day starts with the other person working too. Playtests found
+ * that the day people finish and enjoy; the harder solo day is one untick away.
+ */
+const PAGE_SETUP: Setup = { ...DEFAULT_SETUP, assist: true };
 
 export const ForBetterOrBulkClient: React.FC = () => (
   <div className="min-h-dvh overflow-x-hidden bg-[#0d0e11] px-4 pb-24 text-zinc-100 sm:px-6 lg:px-8">
@@ -87,9 +95,10 @@ export const ForBetterOrBulkClient: React.FC = () => (
               { key: "Esc", action: "Pause" },
             ]}
             importComponent={ForBetterOrBulkLoader}
+            fullscreenKey={false}
             singleTitleScreen={false}
           >
-            <DynamicForBetterOrBulk />
+            <DynamicForBetterOrBulk initialSetup={PAGE_SETUP} />
           </PlayCabinet>
         </DesktopOnlyGate>
       </div>

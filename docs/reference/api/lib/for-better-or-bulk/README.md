@@ -38,9 +38,21 @@ Re-exports [assistInput](internal/assist/functions/assistInput.md)
 
 ***
 
-### assistStatus
+### assistJob
 
-Re-exports [assistStatus](internal/assist/functions/assistStatus.md)
+Re-exports [assistJob](internal/assist/functions/assistJob.md)
+
+***
+
+### assistJobKind
+
+Re-exports [assistJobKind](internal/assist/functions/assistJobKind.md)
+
+***
+
+### assistRests
+
+Re-exports [assistRests](internal/assist/functions/assistRests.md)
 
 ***
 
@@ -326,6 +338,30 @@ Re-exports [FLOOR_FULL_REPEAT_SECONDS](presets/variables/FLOOR_FULL_REPEAT_SECON
 
 ***
 
+### FLOOR\_HOLD\_TICKS
+
+Re-exports [FLOOR_HOLD_TICKS](presets/variables/FLOOR_HOLD_TICKS.md)
+
+***
+
+### FloorDropPrompt
+
+Re-exports [FloorDropPrompt](internal/views/interfaces/FloorDropPrompt.md)
+
+***
+
+### floorDropTile
+
+Re-exports [floorDropTile](internal/views/functions/floorDropTile.md)
+
+***
+
+### FloorHold
+
+Re-exports [FloorHold](types/interfaces/FloorHold.md)
+
+***
+
 ### FloorItem
 
 Re-exports [FloorItem](types/interfaces/FloorItem.md)
@@ -425,6 +461,12 @@ Re-exports [IDLE_FRAME](internal/sim/variables/IDLE_FRAME.md)
 ### IDLE\_INPUT
 
 Re-exports [IDLE_INPUT](internal/sim/variables/IDLE_INPUT.md)
+
+***
+
+### interactKeyName
+
+Re-exports [interactKeyName](internal/words/functions/interactKeyName.md)
 
 ***
 
@@ -530,6 +572,12 @@ Re-exports [MOVE_SPEED](presets/variables/MOVE_SPEED.md)
 
 ***
 
+### nextSpotTile
+
+Re-exports [nextSpotTile](internal/views/functions/nextSpotTile.md)
+
+***
+
 ### onLevelClock
 
 Re-exports [onLevelClock](presets/functions/onLevelClock.md)
@@ -617,6 +665,12 @@ Re-exports [Prng](internal/prng/interfaces/Prng.md)
 ### Prompt
 
 Re-exports [Prompt](internal/views/interfaces/Prompt.md)
+
+***
+
+### PromptOptions
+
+Re-exports [PromptOptions](internal/views/interfaces/PromptOptions.md)
 
 ***
 
@@ -995,6 +1049,12 @@ Re-exports [WebsiteLine](types/interfaces/WebsiteLine.md)
 ### WEDDING\_PATH
 
 Re-exports [WEDDING_PATH](presets/variables/WEDDING_PATH.md)
+
+***
+
+### workKeyName
+
+Re-exports [workKeyName](internal/words/functions/workKeyName.md)
 
 ***
 

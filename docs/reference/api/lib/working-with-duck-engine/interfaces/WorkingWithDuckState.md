@@ -278,6 +278,14 @@
 
 ***
 
+### parkReadyAtTick?
+
+> `optional` **parkReadyAtTick?**: `number`
+
+Sprint tick from which the Dog Park can be opened again (#1942).
+
+***
+
 ### parkState
 
 > **parkState**: `object`
@@ -388,7 +396,7 @@
 
 ### status
 
-> **status**: `"idle"` \| `"failed"` \| `"paused"` \| `"running"` \| `"won"`
+> **status**: `"idle"` \| `"running"` \| `"failed"` \| `"paused"` \| `"won"`
 
 ***
 

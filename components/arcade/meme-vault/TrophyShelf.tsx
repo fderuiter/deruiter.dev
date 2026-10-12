@@ -67,7 +67,7 @@ function Badge({
           })}
           <IconLock
             stroke={2}
-            className="absolute bottom-1 left-1/2 h-3.5 w-3.5 -translate-x-1/2 text-zinc-500"
+            className="absolute bottom-1 left-1/2 h-3.5 w-3.5 -translate-x-1/2 text-zinc-400"
           />
         </>
       )}
@@ -113,7 +113,7 @@ export function TrophyShelf({
                   className={`rounded-sm border px-1.5 py-px font-mono text-[10px] font-semibold uppercase tracking-wider ${
                     unlocked
                       ? "border-emerald-500/40 text-emerald-400"
-                      : "border-white/[0.08] text-zinc-500"
+                      : "border-white/[0.08] text-zinc-400"
                   } ${stamping ? "meme-trophy-stamp-label" : ""}`}
                 >
                   {unlocked ? "Unlocked" : "Locked"}

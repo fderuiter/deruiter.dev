@@ -13,7 +13,9 @@
 
 ## Functions
 
+- [binTakes](functions/binTakes.md)
 - [faceTiles](functions/faceTiles.md)
+- [floorDropPress](functions/floorDropPress.md)
 - [frontTile](functions/frontTile.md)
 - [interactTile](functions/interactTile.md)
 - [isWalkable](functions/isWalkable.md)

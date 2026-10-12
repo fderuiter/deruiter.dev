@@ -48,6 +48,20 @@ Lazily resolves or instantiates the active AudioContext.
 
 ***
 
+### getBypassReason()
+
+> **getBypassReason**(): `"reduced-motion"` \| `"contrast"` \| `null`
+
+Why sound is bypassed: `"reduced-motion"` when that preference is the
+only cause (a page may offer an opt-in), `"contrast"` for forced colours,
+high contrast or the stored setting, or `null` when sound is not bypassed.
+
+#### Returns
+
+`"reduced-motion"` \| `"contrast"` \| `null`
+
+***
+
 ### getOutputTap()
 
 > **getOutputTap**(): `AudioNode` \| `null`
@@ -77,7 +91,8 @@ Returns current master volume (0.0 to 1.0).
 > **isBypassActive**(): `boolean`
 
 Checks if user has enabled OS or browser-level accessibility bypasses
-(e.g. forced-colors, high-contrast, or prefers-reduced-motion).
+(e.g. forced-colors, high-contrast, or prefers-reduced-motion). Reduced
+motion does not count once a page has called `setReducedMotionOptIn`.
 
 #### Returns
 
@@ -237,6 +252,27 @@ ignored, so a stale node can never swallow sound.
 
 The node sounds connect to, such as an AnalyserNode, or
   null to remove the tap.
+
+#### Returns
+
+`void`
+
+***
+
+### setReducedMotionOptIn()
+
+> **setReducedMotionOptIn**(`optIn`): `void`
+
+Lets a page whose purpose is sound (the Meme Vault soundboard) play under
+`prefers-reduced-motion` once the visitor asks for it. Reduced motion is
+about motion; contrast and the stored bypass still silence everything.
+The page clears it when it unmounts.
+
+#### Parameters
+
+##### optIn
+
+`boolean`
 
 #### Returns
 

@@ -188,7 +188,8 @@ describe("Garmin Connect IQ Simulation Engine (lib/garmin-engine.ts)", () => {
   });
 
   it("should handle obstacle collision crashes (watchdog, null pointer, stack overflow)", () => {
-    const state = startGame(createInitialState("fenix"));
+    // On the last life a hit ends the run with its own report (#1988).
+    const state = { ...startGame(createInitialState("fenix")), lives: 1 };
     state.playerY = GROUND_Y - PLAYER_HEIGHT;
 
     // Test watchdog collision

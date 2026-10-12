@@ -11,7 +11,9 @@
 The people whose status line the prompt panel shows. Solo shows the person at
 the keyboard, and the partner as well while the partner is out or frozen (on
 the phone, or retying a shoelace), so a call never goes unexplained (round 9,
-task 4). Co-op shows both people and is not handled here.
+task 4). Without a helper the idle partner is listed too, with a line that
+names the swap key (round 12, task 1). A helper day lists the partner only
+when away or frozen, as before. Co-op shows both people and is not handled here.
 
 ## Parameters
 

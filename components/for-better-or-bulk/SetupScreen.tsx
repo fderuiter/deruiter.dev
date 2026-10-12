@@ -24,7 +24,7 @@ import {
 } from "@/lib/for-better-or-bulk";
 import type { ControlMode } from "./input";
 import { SEEDED_EVENT_NOTES } from "./messages";
-import { NO_REWARD_LINE } from "./rewards";
+import { noRewardLine } from "./rewards";
 
 /**
  * Keeps the page's `?seed=` in step with the seed on screen, so a reload or a
@@ -341,7 +341,7 @@ export function SetupScreen({
               Two players, one keyboard
             </span>
             <span className="mt-0.5">
-              Fred: WASD, E, F. Abbi: arrows, Enter, Shift.
+              Fred: WASD, E or Space, F. Abbi: arrows, Enter, Shift.
             </span>
           </OptionButton>
         </div>
@@ -372,7 +372,7 @@ export function SetupScreen({
             className="basis-full text-xs text-[var(--fbb-dim)]"
             data-testid="fbb-no-rewards"
           >
-            {NO_REWARD_LINE}
+            {noRewardLine(false)}
           </p>
         ) : null}
         <p className="text-sm tabular-nums" data-testid="fbb-total">

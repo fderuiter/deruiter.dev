@@ -11,14 +11,17 @@ import {
   BURN_SECONDS,
   COOK_SECONDS,
   CRATE_NAMES,
+  FLOOR_HOLD_TICKS,
   PATIO_ROWS,
   PETAL_SECONDS,
   SIMPLIFY_SECONDS,
   VENUE_MAP,
   bankText,
+  floorDropTile,
   getCoachStep,
   getPrompt,
   interactTile,
+  nextSpotTile,
   workTileFor,
   type GameState,
   type ItemKind,
@@ -86,6 +89,8 @@ const COLORS = {
   abbi: "#f4f0e6",
   abbiEdge: "#d6c7a8",
   active: "#f59e0b",
+  /** Steel (AGENTS.md section 20): neutral status marks, such as the next spot. */
+  steel: "#94a3b8",
   busy: "#f4f4f6",
   /** Steel smoke: light enough to read against the dark grill and stage. */
   smoke: "#94a3b8",
@@ -431,11 +436,28 @@ function drawWantBadge(ctx: CanvasRenderingContext2D, target: Target): void {
 }
 
 function drawTarget(ctx: CanvasRenderingContext2D, target: Target): void {
-  if (target.status === "unplanned") return;
   const px = target.x * TILE;
   const py = target.y * TILE;
   const cx = px + TILE / 2;
   const cy = py + TILE / 2;
+  if (target.status === "unplanned") {
+    // An unplanned table or hook still blocks the way, so it is drawn faintly
+    // rather than left as an invisible wall (round 20, S-1). The aisle is
+    // walked over, so an unplanned aisle tile stays plain floor.
+    if (target.kind === "aisle") return;
+    ctx.save();
+    ctx.globalAlpha = 0.35;
+    ctx.fillStyle = COLORS.tableCloth;
+    if (target.kind === "table") {
+      ctx.beginPath();
+      ctx.arc(cx, cy, TILE * 0.42, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      ctx.fillRect(px + 6, py + 6, TILE - 12, TILE - 12);
+    }
+    ctx.restore();
+    return;
+  }
   if (target.kind === "table") {
     ctx.fillStyle = COLORS.tableCloth;
     ctx.beginPath();
@@ -526,15 +548,22 @@ function drawPlayer(
 }
 
 /**
- * One tile outlined in the venue's active colour. Every highlight uses this,
- * so the tile an interact would use and the tile the coach points at look the
- * same. Solid when the action is available, faint and dashed when it is not.
- * There is no animation.
+ * The looks an outlined tile can have. `ready` is a press that acts now;
+ * `waiting` is the coach waiting on a busy station; `floor` is a drop on plain
+ * ground, drawn in the active amber with a heavy dash so it never reads as a
+ * station's solid outline; `next` marks the nearest open chair spot or lantern
+ * hook in steel.
+ */
+type OutlineStyle = "ready" | "waiting" | "floor" | "next";
+
+/**
+ * One tile outlined. Every highlight uses this, so the tile an interact would
+ * use and the tile the coach points at look the same. There is no animation.
  */
 function drawTileOutline(
   ctx: CanvasRenderingContext2D,
   tile: Tile,
-  ready: boolean
+  style: OutlineStyle
 ): void {
   const columns = VENUE_MAP[0]?.length ?? 0;
   if (
@@ -545,11 +574,42 @@ function drawTileOutline(
   )
     return;
   ctx.save();
-  ctx.strokeStyle = COLORS.active;
-  ctx.lineWidth = 2;
-  ctx.globalAlpha = ready ? 1 : 0.4;
-  ctx.setLineDash(ready ? [] : [3, 3]);
+  if (style === "floor") {
+    ctx.strokeStyle = COLORS.active;
+    ctx.lineWidth = 3;
+    ctx.setLineDash([6, 4]);
+  } else if (style === "next") {
+    ctx.strokeStyle = COLORS.steel;
+    ctx.lineWidth = 2;
+    ctx.globalAlpha = 0.9;
+    ctx.setLineDash([2, 4]);
+  } else {
+    ctx.strokeStyle = COLORS.active;
+    ctx.lineWidth = 2;
+    ctx.globalAlpha = style === "ready" ? 1 : 0.4;
+    ctx.setLineDash(style === "ready" ? [] : [3, 3]);
+  }
   ctx.strokeRect(tile.x * TILE + 2, tile.y * TILE + 2, TILE - 4, TILE - 4);
+  ctx.restore();
+}
+
+/**
+ * The floor drop being held (ADR 0060 amendment): the tile fills from its
+ * bottom in the active amber as E is held, so a player can see the hold count.
+ * `fraction` is the share of FLOOR_HOLD_TICKS held so far, from 0 to 1.
+ */
+function drawFloorHoldFill(
+  ctx: CanvasRenderingContext2D,
+  tile: Tile,
+  fraction: number
+): void {
+  const share = clamp(fraction, 0, 1);
+  if (share <= 0) return;
+  ctx.save();
+  ctx.globalAlpha = 0.35;
+  ctx.fillStyle = COLORS.active;
+  const height = TILE * share;
+  ctx.fillRect(tile.x * TILE, tile.y * TILE + TILE - height, TILE, height);
   ctx.restore();
 }
 
@@ -569,17 +629,26 @@ function drawPersonOutlines(
 ): void {
   const player = state.players[id];
   if (player.presence === "away") return;
+  const next = nextSpotTile(state, id);
+  if (next) drawTileOutline(ctx, next, "next");
   const coach = getCoachStep(state, id, { coop });
   const waitTile = coach?.waiting === true ? coach.tile : null;
   const press = interactTile(state, id);
   if (press) {
     const waiting = waitTile !== null && sameTile(waitTile, press);
     const ready = getPrompt(state, id).interact !== null;
-    drawTileOutline(ctx, press, ready && !waiting);
+    const drop = floorDropTile(state, id);
+    let style: OutlineStyle = "waiting";
+    if (drop && sameTile(drop, press)) style = "floor";
+    else if (ready && !waiting) style = "ready";
+    if (style === "floor" && player.floorHold)
+      drawFloorHoldFill(ctx, press, player.floorHold.ticks / FLOOR_HOLD_TICKS);
+    drawTileOutline(ctx, press, style);
     return;
   }
   const faced = workTileFor(state, player);
-  if (waitTile && sameTile(waitTile, faced)) drawTileOutline(ctx, faced, false);
+  if (waitTile && sameTile(waitTile, faced))
+    drawTileOutline(ctx, faced, "waiting");
 }
 
 function sameTile(a: Tile, b: Tile): boolean {
@@ -889,7 +958,14 @@ export function drawVenue(
     const px = supply.x * TILE;
     const py = supply.y * TILE;
     const left = state.stock[supply.kind];
-    const countText = countedKinds.has(supply.kind) ? "shared" : String(left);
+    // Lantern crates stand on every map; a plan without lanterns marks them
+    // off rather than counting an empty stock (round 18, N-2).
+    const unplanned = supply.kind === "lantern" && !state.setup.cart.lanterns;
+    const countText = unplanned
+      ? "off"
+      : countedKinds.has(supply.kind)
+        ? "shared"
+        : String(left);
     countedKinds.add(supply.kind);
     ctx.fillStyle = COLORS.crate;
     ctx.strokeStyle = COLORS.crateEdge;

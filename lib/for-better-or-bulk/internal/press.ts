@@ -54,6 +54,15 @@ export function frontTile(
   };
 }
 
+/**
+ * Whether holding work at the bin acts on this item: burnt food is thrown out
+ * and chairs go back to their crate. Everything else is stocked to the plan,
+ * so the bin refuses it (round 15).
+ */
+export function binTakes(item: Item): boolean {
+  return item.kind === "burnt" || item.kind === "chairs";
+}
+
 /** Whether a station takes this item now: it is empty and the item suits it. */
 export function stationAccepts(station: Station, item: Item): boolean {
   if (station.item) return false;
@@ -183,6 +192,21 @@ export function pressTileFor(
   }
   const front = frontTile(person);
   return floorDropAt(state, front) ? front : null;
+}
+
+/**
+ * Whether a press of the interact key would set the held item down on open
+ * floor, the tile in front (see `pressTileFor`). Such a press does not act at
+ * once: it starts a hold (ADR 0060 amendment). Pure.
+ */
+export function floorDropPress(
+  state: GameState,
+  person: Pick<Player, "x" | "y" | "facingX" | "facingY" | "holding">
+): boolean {
+  if (!person.holding) return false;
+  const tile = pressTileFor(state, person);
+  const front = frontTile(person);
+  return tile !== null && sameTile(tile, front) && floorDropAt(state, front);
 }
 
 /**

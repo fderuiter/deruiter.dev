@@ -6,7 +6,7 @@
  * promise about what he comes back for, and leaving is leaving.
  */
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useId, useRef, useState } from "react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import {
   BREAK_SECONDS,
@@ -61,13 +61,6 @@ function abbiLine(state: GameState): string {
     : "Abbi has her hands free and is looking at him.";
 }
 
-/** Fred's mood, read from the level as it stands. */
-function fredLine(state: GameState): string {
-  return state.players.fred.calm
-    ? "Fred has calmed down."
-    : "Fred has not calmed down yet.";
-}
-
 export function BrothersDialog({ state, onDecide }: BrothersDialogProps) {
   const headingRef = useRef<HTMLHeadingElement>(null);
   const openedAt = useRef<number | null>(null);
@@ -76,6 +69,12 @@ export function BrothersDialog({ state, onDecide }: BrothersDialogProps) {
     initialFocusRef: headingRef,
   });
   const commitments = availableCommitments(state);
+  // Each choice's short label is its accessible name. Its parenthetical detail
+  // sits in its own element, which the button describes (aria-describedby), so
+  // a screen reader hears the label first and the detail as the description.
+  const stayId = useId();
+  const leaveId = useId();
+  const breakId = useId();
 
   useEffect(() => {
     openedAt.current = Date.now();
@@ -134,7 +133,7 @@ export function BrothersDialog({ state, onDecide }: BrothersDialogProps) {
           className="mt-2 text-xs text-[var(--fbb-dim)]"
         >
           &quot;Breakfast? You look like you need to get out of there for a
-          bit.&quot; {fredLine(state)} {abbiLine(state)}
+          bit.&quot; The wedding is still on. {abbiLine(state)}
         </p>
         {!promising ? (
           <div className="mt-4 flex flex-col gap-2">
@@ -142,29 +141,44 @@ export function BrothersDialog({ state, onDecide }: BrothersDialogProps) {
               type="button"
               onClick={() => onDecide({ choice: "stay", commitment: null })}
               className={OPTION_CLASS}
+              aria-labelledby={`${stayId}-label`}
+              aria-describedby={`${stayId}-detail`}
             >
-              Stay and help. (He will keep stopping to retie a shoelace.)
+              <span id={`${stayId}-label`}>Stay and help.</span>{" "}
+              <span id={`${stayId}-detail`}>
+                (He will stop now and then to retie a shoelace.)
+              </span>
             </button>
             <button
               type="button"
               disabled={commitments.length === 0}
               onClick={() => setPromising(true)}
               className={OPTION_CLASS}
+              aria-labelledby={`${breakId}-label`}
+              aria-describedby={`${breakId}-detail`}
             >
-              Take a short break and promise to come back for something.
+              <span id={`${breakId}-label`}>Take a short break.</span>{" "}
+              <span id={`${breakId}-detail`}>
+                (Promise to come back for something.)
+              </span>
             </button>
             <button
               type="button"
               onClick={() => onDecide({ choice: "leave", commitment: null })}
               className={OPTION_CLASS}
+              aria-labelledby={`${leaveId}-label`}
+              aria-describedby={`${leaveId}-detail`}
             >
-              Go with them. (Back around{" "}
-              {clockLabel(
-                state.time + onLevelClock(LEAVE_SECONDS, state.duration),
-                state.duration
-              )}
-              . Whatever he carries is set down on the floor near him. Abbi
-              works alone until Fred is back. The website is up.)
+              <span id={`${leaveId}-label`}>Go with them.</span>{" "}
+              <span id={`${leaveId}-detail`}>
+                (Back around{" "}
+                {clockLabel(
+                  state.time + onLevelClock(LEAVE_SECONDS, state.duration),
+                  state.duration
+                )}
+                . Whatever he carries is set down on the floor near him. Abbi
+                works alone until Fred is back. The website is up.)
+              </span>
             </button>
           </div>
         ) : (

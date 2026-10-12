@@ -176,6 +176,8 @@ describe("Garmin crash types match their obstacle (#1318)", () => {
   function crashInto(type: ObstacleType, label: string) {
     return updateGameSimulation(
       running({
+        // On the last life a hit ends the run with its own report (#1988).
+        lives: 1,
         obstacles: [
           {
             id: 1,

@@ -343,7 +343,14 @@ export function documentAtDesk(
   return {
     ok: true,
     world: { ...spent.world, study: result.state },
-    lines: [{ kind: "information", text: `Written up and filed: ${subject}.` }],
+    lines: [
+      {
+        kind: "information",
+        // A subject that ends in its own punctuation ("…at 2?") gets no
+        // extra full stop (#1936).
+        text: `Written up and filed: ${subject}${/[.?!]$/.test(subject) ? "" : "."}`,
+      },
+    ],
   };
 }
 

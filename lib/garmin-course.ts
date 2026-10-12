@@ -41,7 +41,8 @@ export interface CourseLedge {
 
 /**
  * A block floating over the lane. Bumping a Sync Block from below pops its
- * contents once; a brick is plain solid footing.
+ * contents once: Kudos, a power-up (a Protein Shake for a Base runner), or a
+ * Runner's High. A brick is plain solid footing.
  */
 export interface CourseBlock {
   id: number;
@@ -49,7 +50,7 @@ export interface CourseBlock {
   /** Top surface. */
   y: number;
   kind: "sync" | "brick";
-  contents: "kudos" | "firmware";
+  contents: "kudos" | "power" | "high";
   used: boolean;
 }
 
@@ -145,7 +146,9 @@ export function generateStage(
   // The opening 450 px of every stage is flat track, so a stage never opens
   // under the runner's feet, and the last 360 px run clear to the pole.
   let x = start + 450;
-  let firmwareLeft = 1;
+  // Up to two power blocks a stage, and on some stages one Runner's High.
+  let powerLeft = 2;
+  let highLeft = rand() < 0.35 ? 1 : 0;
   const end = pole - 360;
   while (x < end) {
     const roll = rand();
@@ -169,14 +172,20 @@ export function generateStage(
       const count = 3;
       for (let i = 0; i < count; i++) {
         const isSync = i === 1;
-        const firmware = isSync && firmwareLeft > 0 && rand() < 0.45;
-        if (firmware) firmwareLeft--;
+        let contents: CourseBlock["contents"] = "kudos";
+        if (isSync && highLeft > 0 && rand() < 0.3) {
+          contents = "high";
+          highLeft--;
+        } else if (isSync && powerLeft > 0 && rand() < 0.55) {
+          contents = "power";
+          powerLeft--;
+        }
         layout.blocks.push({
           id: nextId++,
           x: x + i * BLOCK_SIZE,
           y: blockTop,
           kind: isSync ? "sync" : "brick",
-          contents: firmware ? "firmware" : "kudos",
+          contents,
           used: false,
         });
       }

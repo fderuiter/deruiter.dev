@@ -477,7 +477,7 @@ export function generateFaceForgeRoom(): DungeonRoom {
   return {
     id: "faceforge",
     index: 2,
-    title: "faceforge_3d :: Neural Warden Core",
+    title: "faceforge_3d :: FaceForge Wireframe",
     repo: "github.com/fderuiter/faceforge-wireframe-abandoned",
     mechanic:
       "Boss Fight: Wireframe 3D face firing untextured mesh projectiles.",

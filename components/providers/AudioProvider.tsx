@@ -55,6 +55,10 @@ interface AudioContextType {
   playHover: (pan?: number) => void;
   playSkillHover: () => void;
   bypassActive: boolean;
+  /** Why sound is bypassed, so a page can offer the reduced-motion opt-in. */
+  bypassReason: "reduced-motion" | "contrast" | null;
+  /** Lets this page play sound under reduced motion (see SoundEngine). */
+  setReducedMotionOptIn: (optIn: boolean) => void;
 }
 
 const defaultAudioContext: AudioContextType = {
@@ -73,6 +77,8 @@ const defaultAudioContext: AudioContextType = {
   playHover: () => {},
   playSkillHover: () => {},
   bypassActive: false,
+  bypassReason: null,
+  setReducedMotionOptIn: () => {},
 };
 
 const AudioProviderContext = createContext<AudioContextType | null>(null);
@@ -87,6 +93,9 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const [muted, setMutedState] = useState(true);
   const [profile, setProfileState] = useState<AudioProfile>("8-bit");
   const [bypassActive, setBypassActive] = useState(false);
+  const [bypassReason, setBypassReason] = useState<
+    "reduced-motion" | "contrast" | null
+  >(null);
 
   // Sync state with central SoundEngine instance on client mount
   useEffect(() => {
@@ -101,6 +110,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       setVolumeState(engine.getVolume());
       setMutedState(engine.isMuted());
       setBypassActive(engine.isBypassActive());
+      setBypassReason(engine.getBypassReason?.() ?? null);
       if (isAudioProfile(savedProfile)) {
         setProfileState(savedProfile);
       }
@@ -113,6 +123,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     const checkBypass = () => {
       const engine = getSoundEngine();
       setBypassActive(engine.isBypassActive());
+      setBypassReason(engine.getBypassReason?.() ?? null);
     };
 
     checkBypass();
@@ -262,6 +273,12 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const handleSetReducedMotionOptIn = (optIn: boolean) => {
+    const engine = getSoundEngine();
+    engine.setReducedMotionOptIn?.(optIn);
+    setBypassActive(engine.isBypassActive());
+  };
+
   const handleSetProfile = (p: AudioProfile) => {
     setProfileState(p);
     safeSetRawItem(SOUND_PROFILE_KEY, p);
@@ -295,9 +312,11 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       playHover,
       playSkillHover,
       bypassActive,
+      bypassReason,
+      setReducedMotionOptIn: handleSetReducedMotionOptIn,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [volume, muted, profile, bypassActive]
+    [volume, muted, profile, bypassActive, bypassReason]
   );
 
   return (

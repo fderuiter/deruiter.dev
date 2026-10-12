@@ -78,6 +78,7 @@ const NO_INPUT: PlayerInput = {
   moveX: 0,
   moveY: 0,
   interact: false,
+  interactHeld: false,
   work: false,
 };
 
@@ -103,6 +104,8 @@ interface Goal {
   readonly y: number;
   readonly act: "interact" | "work" | "wait";
   readonly text: string;
+  /** True for an empty floor tile: the press there is a hold (see floorDropInput). */
+  readonly floor?: boolean;
 }
 
 /** The first move toward a goal; null when the person already faces it. */
@@ -186,6 +189,7 @@ function freeFloorGoals(state: GameState, item: Item): Goal[] {
         y,
         act: "interact",
         text: `putting ${heldName(item)} down`,
+        floor: true,
       });
     }
   }
@@ -502,6 +506,20 @@ function lineUpAcrossFacing(player: Player): PlayerInput | null {
   return null;
 }
 
+/**
+ * The input for a floor drop the helper faces. The first active tick presses
+ * interact, which starts the hold (ADR 0060 amendment). Every later tick keeps
+ * interact held, resting ticks too, so the simulation pauses the hold instead
+ * of ending it. Pure.
+ */
+function floorDropInput(player: Player, active: boolean): PlayerInput {
+  const holding = player.floorHold !== null;
+  if (!active) return holding ? { ...NO_INPUT, interactHeld: true } : NO_INPUT;
+  const lineUp = lineUpAcrossFacing(player);
+  if (lineUp) return { ...lineUp, interactHeld: holding };
+  return { ...NO_INPUT, interact: !holding, interactHeld: true };
+}
+
 /** The input for one tick, given the route and whether this tick is active. */
 function actionFor(player: Player, found: Route, active: boolean): PlayerInput {
   const { goal, step } = found;
@@ -514,8 +532,15 @@ function actionFor(player: Player, found: Route, active: boolean): PlayerInput {
       const lineUp = active ? lineUpAcrossFacing(player) : null;
       return { ...(lineUp ?? NO_INPUT), work: true };
     }
+    if (goal.floor) return floorDropInput(player, active);
     if (!active) return NO_INPUT;
-    return lineUpAcrossFacing(player) ?? { ...NO_INPUT, interact: true };
+    return (
+      lineUpAcrossFacing(player) ?? {
+        ...NO_INPUT,
+        interact: true,
+        interactHeld: true,
+      }
+    );
   }
   if (!active) return NO_INPUT;
   if (!step.moves) return { ...NO_INPUT, moveX: step.dx, moveY: step.dy };
@@ -617,7 +642,7 @@ interface Job {
  * The helper's job for `id` as one sentence, derived from the same plan
  * `assistInput` follows. The kind is the planner's verb ("carrying",
  * "fetching", "waiting") or one of the states "away", "busy", "turn" (waiting
- * for the other person to place something first), "spot" (holding something
+ * until the other person places their next item), "spot" (holding something
  * with no spot free) and "idle". The sentence for "turn" names the other
  * person in the same words the start announcement uses. Pure.
  */
@@ -637,10 +662,18 @@ function jobOf(state: GameState, id: PlayerId): Job {
     return { kind: "busy", text: `${name} is busy, so the helper waits.` };
   }
   if (!helperMayAct(state, id)) {
-    const other = id === "fred" ? "Abbi" : "Fred";
+    // The helper places no more than the player, so this line also shows
+    // when it has caught up, not only at the start (round 16).
+    const other: PlayerId = id === "fred" ? "abbi" : "fred";
+    const otherName = other === "fred" ? "Fred" : "Abbi";
+    // At the start nobody has placed anything, so "as many" would read as
+    // an achievement at zero (round 17).
     return {
       kind: "turn",
-      text: `${name} is waiting for ${other} to place something first.`,
+      text:
+        placedCount(state, other) === 0
+          ? `${name} starts helping after ${otherName} places the first item.`
+          : `${name} has placed as many items as ${otherName}, and helps again after ${otherName}'s next one.`,
     };
   }
   const plan = planFor(state, id);
@@ -650,14 +683,24 @@ function jobOf(state: GameState, id: PlayerId): Job {
       text: `${name} is ${plan.text}.`,
     };
   }
-  return player.holding
-    ? { kind: "spot", text: `${name} is waiting for a free spot.` }
-    : { kind: "idle", text: `${name} has nothing useful to do right now.` };
+  if (player.holding)
+    return { kind: "spot", text: `${name} is waiting for a free spot.` };
+  // With nothing left to fetch while the other person still carries
+  // something, the helper is waiting on them, not idle (round 19, D-3).
+  const other: PlayerId = id === "fred" ? "abbi" : "fred";
+  if (state.players[other].holding) {
+    const otherName = other === "fred" ? "Fred" : "Abbi";
+    return {
+      kind: "idle",
+      text: `${name} is waiting for ${otherName} to set down what's in hand.`,
+    };
+  }
+  return { kind: "idle", text: `${name} has nothing useful to do right now.` };
 }
 
 /**
  * The job line for the helper working for `id`, as one sentence: "Fred is
- * carrying the roses to the ARRANGE table (A).", "Fred is waiting for a free
+ * carrying the roses to the ARRANGE table.", "Fred is waiting for a free
  * spot." or "Fred is out with his brothers.". Pure.
  */
 export function assistJob(state: GameState, id: PlayerId): string {

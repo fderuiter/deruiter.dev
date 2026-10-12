@@ -118,7 +118,7 @@ export const CAPABILITIES: Readonly<
  */
 export const VENUE_MAP: readonly string[] = [
   "####################",
-  "#HWMQ..BBBB...N..N.#",
+  "#HWMQ..BBBB...N..NL#",
   "#..................#",
   "#R..GGX.AA..PP.....#",
   "#R.................#",
@@ -161,8 +161,12 @@ export const BUFFET_ORDER: readonly ItemKind[] = [
   "quinoa",
 ];
 
-/** Tiles people can walk over. Aisle and chair spots are on the ground. */
-export const WALKABLE_TILES = ".12SO";
+/**
+ * Tiles people can walk over: ground, the two aisle spots, and nothing else.
+ * Chair spots (O) are solid (ADR 0060 amendment, 2026-10-12): a person walking
+ * into an empty one stays on the floor and faces it.
+ */
+export const WALKABLE_TILES = ".12S";
 
 /**
  * Level length in game seconds: 9:00 to 4:00. Relaxed mode stretches it.
@@ -198,6 +202,13 @@ export const SIMPLIFY_SECONDS = 1;
 
 /** Holding work at the bin this long throws out the item in hand. */
 export const BIN_HOLD_SECONDS = 0.5;
+
+/**
+ * Ticks E must stay held facing open floor with something in hand before the
+ * item is set down there (ADR 0060 amendment, 2026-10-12). 12 ticks is 0.4 s
+ * of game time, so a tap does nothing.
+ */
+export const FLOOR_HOLD_TICKS = 12;
 
 /**
  * How many items the floor takes before a put-down is refused. Fred's drop
@@ -319,7 +330,7 @@ export const THROW_OUT_PROMPT = "Hold to throw it out";
 
 /** The line a run prints when Fred leaves while the plan depends on him. */
 export const LEFT_LINE =
-  "The website was up, but Fred was out with his brothers when the setup needed him.";
+  "The website was up, and the setup carried on while Fred was with his brothers.";
 
 /**
  * Seeded events, in standard-clock seconds (scaled for a relaxed clock with
@@ -413,7 +424,7 @@ export const LINE_BANK: readonly BankLine[] = [
     id: "weather",
     tag: "Real",
     fact: "weather",
-    text: "The weather was perfect. Fred jokes he caused it.",
+    text: "The weather was perfect.",
   },
   {
     id: "dinner",
@@ -575,7 +586,7 @@ export const LINE_BANK: readonly BankLine[] = [
     id: "scene-summary",
     tag: "Fiction",
     fact: null,
-    text: "The ceremony and the buffet, in brief.",
+    text: "The rest of the real day, in brief.",
   },
   {
     id: "actual-heading",
@@ -597,8 +608,7 @@ export function bankText(id: string): string {
 }
 
 /** The receipt's line when the solo helper was on (ADR 0060, F6). */
-export const ASSIST_LINE =
-  "A helper kept the other lane going. Quiet and efficient.";
+export const ASSIST_LINE = "A helper kept the other lane going.";
 
 /**
  * The [Real] lines the receipt's "What actually happened" note quotes, in

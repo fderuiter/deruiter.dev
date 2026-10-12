@@ -13,6 +13,7 @@
 - [CategoryProgress](interfaces/CategoryProgress.md)
 - [ChallengeResult](interfaces/ChallengeResult.md)
 - [Condition](interfaces/Condition.md)
+- [FloorHold](interfaces/FloorHold.md)
 - [FloorItem](interfaces/FloorItem.md)
 - [Frame](interfaces/Frame.md)
 - [GameState](interfaces/GameState.md)

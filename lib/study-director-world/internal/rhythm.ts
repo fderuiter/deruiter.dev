@@ -475,9 +475,11 @@ function priorityOutcome(
   }
   if (priority === "sites") {
     const day = world.study.day;
-    const looked = (world.observations ?? []).some(
-      (o) => o.day === day && o.siteId
-    );
+    // Only a visit counts: hearing about a site from the team is not
+    // looking at it yourself (#1936).
+    const looked =
+      world.visit?.day === day ||
+      (world.siteVisitHistory ?? []).some((r) => r.day === day);
     return looked
       ? [
           {

@@ -52,6 +52,14 @@ Unit vector of the last movement, snapped to four directions.
 
 ***
 
+### floorHold
+
+> `readonly` **floorHold**: [`FloorHold`](FloorHold.md) \| `null`
+
+A floor drop being held with E (see FloorHold), or null.
+
+***
+
 ### holding
 
 > `readonly` **holding**: [`Item`](Item.md) \| `null`

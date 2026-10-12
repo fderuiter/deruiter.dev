@@ -26,6 +26,12 @@ Re-exports [AmmoGrantResult](weapons/interfaces/AmmoGrantResult.md)
 
 ***
 
+### armBossForRoomEntry
+
+Re-exports [armBossForRoomEntry](boss/functions/armBossForRoomEntry.md)
+
+***
+
 ### BOSS\_DAMAGE\_WEAPON\_IDS
 
 Re-exports [BOSS_DAMAGE_WEAPON_IDS](weapons/variables/BOSS_DAMAGE_WEAPON_IDS.md)
@@ -35,6 +41,12 @@ Re-exports [BOSS_DAMAGE_WEAPON_IDS](weapons/variables/BOSS_DAMAGE_WEAPON_IDS.md)
 ### BOSS\_MAX\_LEAD\_TILES
 
 Re-exports [BOSS_MAX_LEAD_TILES](boss/variables/BOSS_MAX_LEAD_TILES.md)
+
+***
+
+### BOSS\_OPENING\_GRACE\_MS
+
+Re-exports [BOSS_OPENING_GRACE_MS](boss/variables/BOSS_OPENING_GRACE_MS.md)
 
 ***
 

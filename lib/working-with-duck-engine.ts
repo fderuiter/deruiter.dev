@@ -269,6 +269,8 @@ export const DUCK_FACTS: DuckFact[] = [
 
 /** Good Boy points lost per tick while an emergency goes unhandled. */
 const NEGLECT_DRAIN_PER_TICK = 0.04;
+/** Ticks the Dog Park stays closed after a trip (60 ticks = 1 s). */
+const PARK_COOLDOWN_TICKS = 20 * 60;
 /** Minimum ticks between two code bursts (60 ticks = 1 s, so 6 per second). */
 const CODE_BURST_MIN_TICKS = 10;
 
@@ -422,6 +424,8 @@ export interface WorkingWithDuckState {
   ticks: number;
   totalScore: number;
   calmBuffTimer: number; // Ticks remaining for calm buff
+  /** Sprint tick from which the Dog Park can be opened again (#1942). */
+  parkReadyAtTick?: number;
   lastImpulseTick: number;
   bellyRubScrubCount: number;
   bellyRubProgress: number; // 0 to 100%
@@ -2002,24 +2006,39 @@ export function exitBathtub(state: WorkingWithDuckState): WorkingWithDuckState {
   const isClean =
     state.bathtubState.status === "clean" ||
     state.bathtubState.rinseLevel >= 100;
-  const scoreBonus = isClean ? 120 : 30;
+  // The full reward is for washing off park mud. A bath for a duck that was
+  // already clean is a nice moment, not a free +35 Good Boy (#1942).
+  const wasMuddy = state.isMuddy;
+  const reward = !wasMuddy
+    ? {
+        score: 20,
+        goodBoy: 5,
+        calm: 300,
+        text: "🛁 Already clean, but he enjoyed it (+20 pts)",
+      }
+    : isClean
+      ? {
+          score: 120,
+          goodBoy: 35,
+          calm: 1200,
+          text: "✨ Fresh & Clean Puppy! (+120 pts & Calm Buff)",
+        }
+      : { score: 30, goodBoy: 10, calm: 300, text: "🐾 Bathtime Finished" };
 
   return {
     ...state,
     inBathtub: false,
     isMuddy: false,
-    totalScore: state.totalScore + scoreBonus,
-    naughtyVsGood: Math.min(100, state.naughtyVsGood + (isClean ? 35 : 10)),
-    calmBuffTimer: isClean ? 1200 : 300,
+    totalScore: state.totalScore + reward.score,
+    naughtyVsGood: Math.min(100, state.naughtyVsGood + reward.goodBoy),
+    calmBuffTimer: reward.calm,
     floatingAlerts: [
       ...state.floatingAlerts,
       {
         id: state.nextAlertId,
         x: BATHTUB_BOUNDS.x,
         y: BATHTUB_BOUNDS.y - 15,
-        text: isClean
-          ? "✨ Fresh & Clean Puppy! (+120 pts & Calm Buff)"
-          : "🐾 Bathtime Finished",
+        text: reward.text,
         color: "#38bdf8",
         alpha: 1,
         vy: -1.2,
@@ -2519,6 +2538,26 @@ export function enterDogPark(
   mode: "ball" | "frisbee" = "ball"
 ): WorkingWithDuckState {
   if (isSprintPaused(state)) return state;
+  const readyAt = state.parkReadyAtTick ?? 0;
+  if (state.ticks < readyAt) {
+    const seconds = Math.ceil((readyAt - state.ticks) / 60);
+    return {
+      ...state,
+      nextAlertId: state.nextAlertId + 1,
+      floatingAlerts: [
+        ...state.floatingAlerts,
+        {
+          id: state.nextAlertId,
+          x: 400,
+          y: 200,
+          text: `🌲 Duck just got back. Park opens again in ${seconds}s`,
+          color: "#f59e0b",
+          alpha: 1,
+          vy: -1.2,
+        },
+      ],
+    };
+  }
   return {
     ...state,
     inDogPark: true,
@@ -2818,8 +2857,12 @@ export function exitDogPark(
   isSuccess: boolean
 ): WorkingWithDuckState {
   if (isSprintPaused(state)) return state;
-  const nextExcitement = 0;
-  const nextBladder = 0;
+  // A trip only settles the duck when a fetch was actually played out (the
+  // ball came back, or the duck came back muddy). Walking straight back in
+  // takes the edge off and no more, so the park is not a free reset (#1942).
+  const fetched = isSuccess || state.parkState.status === "muddy";
+  const nextExcitement = fetched ? 0 : Math.max(0, state.excitement - 15);
+  const nextBladder = fetched ? 0 : Math.max(0, state.bladder - 20);
   const bonusFromBones = state.parkState.bonesCollected * 10;
   const bonusFromHurdles = state.parkState.hurdlesCleared * 15;
   const nextNaughtyVsGood = isSuccess
@@ -2828,12 +2871,13 @@ export function exitDogPark(
         state.naughtyVsGood + 30 + bonusFromBones + bonusFromHurdles
       )
     : state.naughtyVsGood;
-  const calmTimer = isSuccess ? 1800 : 600;
+  const calmTimer = isSuccess ? 1800 : fetched ? 600 : 0;
   const isMuddy = state.parkState.status === "muddy";
 
   return {
     ...state,
     inDogPark: false,
+    parkReadyAtTick: state.ticks + PARK_COOLDOWN_TICKS,
     isMuddy,
     excitement: nextExcitement,
     bladder: nextBladder,
@@ -2857,7 +2901,9 @@ export function exitDogPark(
           ? "🧼 Duck got muddy! Take him to the Bathtub!"
           : isSuccess
             ? `🌲 Park Trip Success! (Tired Puppy Buff 30s +${state.parkState.bonesCollected} Bones)`
-            : "🐾 Returned from park",
+            : fetched
+              ? "🐾 Returned from park"
+              : "🐾 Back already? Duck is still wound up",
         color: isMuddy ? "#f59e0b" : isSuccess ? "#22c55e" : "#f59e0b",
         alpha: 1,
         vy: -1.2,

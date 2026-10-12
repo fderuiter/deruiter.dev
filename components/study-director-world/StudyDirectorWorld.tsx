@@ -63,6 +63,7 @@ import {
   InterruptionCard,
   OvernightCard,
   PriorityCard,
+  revealIfAbove,
 } from "./DayCards";
 import { FeedbackToasts } from "./FeedbackToasts";
 import { cuesBetween, feedbackBetween, type Feedback } from "./feedback-model";
@@ -143,9 +144,29 @@ function saveWorld(world: WorldState): void {
   }
 }
 
-/** A saved run to resume, or a new one on its first morning. */
-function openWorld(): { world: WorldState; digest: MorningDigest | null } {
+/** The save is cleared once its finished study has gone to the closeout. */
+function clearWorldSave(): void {
+  try {
+    if (safeIsAvailable()) safeRawStorage.removeItem(WORLD_SAVE_KEY);
+  } catch {
+    // Storage blocked: nothing was saved.
+  }
+}
+
+/**
+ * A saved run to resume, or a new one on its first morning. A run that
+ * finished but never reached the closeout (the page was reloaded on the last
+ * overnight report) comes back `finished`, so it can go there now (#1936).
+ */
+function openWorld(): {
+  world: WorldState;
+  digest: MorningDigest | null;
+  finished?: boolean;
+} {
   const saved = loadWorld();
+  if (saved && saved.study.status === "complete") {
+    return { world: saved, digest: null, finished: true };
+  }
   if (saved && saved.study.status === "running") {
     return saved.location === "home"
       ? startDay(saved)
@@ -331,6 +352,10 @@ export const StudyDirectorWorld: React.FC<{
       setNotice("Nothing in front of you to use.");
       return;
     }
+    // Anything used counts, including the EDC, desk and people that open
+    // through the team layer: the day-1 "go to the EDC" goal went stale
+    // after the player did exactly that (#1936).
+    setActed(true);
     if (team.open(result)) {
       setOutcome(null);
       setDigest(null);
@@ -339,7 +364,6 @@ export const StudyDirectorWorld: React.FC<{
     setWorld(result.world);
     setOutcome(result);
     setDigest(null);
-    setActed(true);
     setNotice(`${result.title}. ${result.lines.join(" ")}`);
   }, [world, map, people, team]);
 
@@ -511,6 +535,30 @@ export const StudyDirectorWorld: React.FC<{
     );
   }, [world]);
 
+  // An outcome card (the car's Drive / Go home, a desk result) opened off the
+  // top of the page after a directory walk is brought into view (#1936).
+  const outcomeRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (outcome) revealIfAbove(outcomeRef.current);
+  }, [outcome]);
+
+  // The finished study goes to the closeout, which files it in the career.
+  const closedOut = useRef(false);
+  const finishRun = useCallback(() => {
+    closedOut.current = true;
+    clearWorldSave();
+    if (onCloseout) onCloseout(world.study, world);
+    else onExit();
+  }, [onCloseout, onExit, world]);
+
+  // Reopening a finished run goes straight to its closeout.
+  const resumedFinished = useRef(opened.finished === true);
+  useEffect(() => {
+    if (!resumedFinished.current) return;
+    resumedFinished.current = false;
+    finishRun();
+  }, [finishRun]);
+
   const nextMorning = useCallback(() => {
     const morning = startDay(world);
     setWorld(morning.world);
@@ -557,6 +605,8 @@ export const StudyDirectorWorld: React.FC<{
   };
 
   useEffect(() => {
+    // A run handed to the closeout stays cleared.
+    if (closedOut.current) return;
     saveWorld(world);
   }, [world]);
 
@@ -639,16 +689,17 @@ export const StudyDirectorWorld: React.FC<{
       report={report}
       nextDay={world.study.day}
       onNextDay={nextMorning}
-      onCloseout={() => (onCloseout ? onCloseout(study, world) : onExit())}
+      onCloseout={finishRun}
       closeoutLabel={
         onCloseout ? "See the closeout" : "Switch to the classic desk"
       }
     />
   ) : outcome ? (
     <section
+      ref={outcomeRef}
       aria-labelledby="sd-world-outcome"
       data-testid="world-outcome"
-      className={`border p-3 ${TONE_CLASS[outcome.tone]}`}
+      className={`scroll-mt-24 border p-3 ${TONE_CLASS[outcome.tone]}`}
     >
       <h3 id="sd-world-outcome" className="text-sm font-bold">
         {outcome.title}

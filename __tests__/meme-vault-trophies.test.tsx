@@ -24,7 +24,8 @@ vi.mock("next/navigation", () => ({
 vi.mock("@/lib/meme-audio", () => ({
   playMemeSound: vi.fn(),
   getMemeSoundDuration: () => 500,
-  isSoundAllowed: () => false,
+  // Soundboard Maestro is for an audible sample (#1941).
+  isSoundAllowed: () => true,
   connectMemeAnalyser: () => null,
   releaseMemeAnalyser: vi.fn(),
 }));

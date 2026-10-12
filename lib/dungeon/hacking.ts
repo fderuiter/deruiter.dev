@@ -5,20 +5,34 @@
 import { clamp } from "../game-utils";
 import { HexCell, HexMatrixPuzzle } from "./types";
 
-const HEX_BYTE_POOL = ["1C", "E9", "7A", "BD", "55", "FF", "A3", "4D", "3B", "C2"];
+const HEX_BYTE_POOL = [
+  "1C",
+  "E9",
+  "7A",
+  "BD",
+  "55",
+  "FF",
+  "A3",
+  "4D",
+  "3B",
+  "C2",
+];
 
 /**
  * Generates a procedurally solvable Hex Matrix Buffer bypass puzzle.
  * Uses alternating row/column constraint rules inspired by cybernetic hacking matrices.
  */
-export function generateHexMatrixPuzzle(difficulty: number = 1): HexMatrixPuzzle {
+export function generateHexMatrixPuzzle(
+  difficulty: number = 1
+): HexMatrixPuzzle {
   const size = difficulty > 2 ? 5 : 4;
   const grid: HexCell[][] = [];
 
   for (let r = 0; r < size; r++) {
     const row: HexCell[] = [];
     for (let c = 0; c < size; c++) {
-      const randomByte = HEX_BYTE_POOL[Math.floor(Math.random() * HEX_BYTE_POOL.length)];
+      const randomByte =
+        HEX_BYTE_POOL[Math.floor(Math.random() * HEX_BYTE_POOL.length)];
       row.push({
         row: r,
         col: c,
@@ -33,20 +47,30 @@ export function generateHexMatrixPuzzle(difficulty: number = 1): HexMatrixPuzzle
   const sequenceLength = clamp(difficulty + 1, 2, 4);
   const targetSequence: string[] = [];
 
+  // Walk the same row/column alternation the player must follow, never
+  // revisiting a cell: selectHexCell rejects a reused cell, so a target that
+  // needed one twice could not be entered (#1943).
+  const used = new Set<string>();
   let curRow = 0;
-  let curCol = Math.floor(Math.random() * size);
+  let curCol = 0;
   let isRowMove = true;
 
+  const pickUnused = (
+    candidates: Array<[number, number]>
+  ): [number, number] => {
+    const open = candidates.filter(([r, c]) => !used.has(`${r},${c}`));
+    return open[Math.floor(Math.random() * open.length)];
+  };
+
   for (let i = 0; i < sequenceLength; i++) {
-    if (isRowMove) {
-      curCol = Math.floor(Math.random() * size);
-      targetSequence.push(grid[curRow][curCol].byte);
-      isRowMove = false;
-    } else {
-      curRow = Math.floor(Math.random() * size);
-      targetSequence.push(grid[curRow][curCol].byte);
-      isRowMove = true;
-    }
+    const line: Array<[number, number]> = Array.from(
+      { length: size },
+      (_, k) => (isRowMove ? [curRow, k] : [k, curCol])
+    );
+    [curRow, curCol] = pickUnused(line);
+    used.add(`${curRow},${curCol}`);
+    targetSequence.push(grid[curRow][curCol].byte);
+    isRowMove = !isRowMove;
   }
 
   const maxBufferSize = sequenceLength + 2;
@@ -94,14 +118,22 @@ export function selectHexCell(
   puzzle: HexMatrixPuzzle,
   row: number,
   col: number
-): { puzzle: HexMatrixPuzzle; message: string; soundType: "click" | "match" | "fail" } {
+): {
+  puzzle: HexMatrixPuzzle;
+  message: string;
+  soundType: "click" | "match" | "fail";
+} {
   if (puzzle.solved || puzzle.failed) {
     return { puzzle, message: "Puzzle already finished", soundType: "click" };
   }
 
   // Validate active row/col constraint
   if (puzzle.activeAxis === "row" && row !== puzzle.activeIndex) {
-    return { puzzle, message: `Must select from Row ${puzzle.activeIndex + 1}`, soundType: "fail" };
+    return {
+      puzzle,
+      message: `Must select from Row ${puzzle.activeIndex + 1}`,
+      soundType: "fail",
+    };
   }
   if (puzzle.activeAxis === "col" && col !== puzzle.activeIndex) {
     return {
@@ -118,7 +150,9 @@ export function selectHexCell(
 
   // Clone grid and mark cell selected
   const newGrid = puzzle.grid.map((r, rIdx) =>
-    r.map((c, cIdx) => (rIdx === row && cIdx === col ? { ...c, selected: true } : { ...c }))
+    r.map((c, cIdx) =>
+      rIdx === row && cIdx === col ? { ...c, selected: true } : { ...c }
+    )
   );
 
   const newInput = [...puzzle.currentInput, cell.byte];

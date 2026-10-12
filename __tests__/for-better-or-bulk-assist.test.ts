@@ -1108,9 +1108,23 @@ describe("the helper's own grill batch", () => {
     }
   }, 60000);
 
-  it("says it has caught up with the player, not that it is waiting to start (round 16)", () => {
+  it("says when it starts at zero, and that it has caught up later (rounds 16 and 17)", () => {
     const base = createLevel(ASSIST_SETUP);
     expect(assistJob(base, "abbi")).toBe(
+      "Abbi starts helping after Fred places the first item."
+    );
+    const [first, second] = base.targets;
+    const even: GameState = {
+      ...base,
+      targets: base.targets.map((t) =>
+        t.id === first.id
+          ? { ...t, filledBy: ["fred"] }
+          : t.id === second.id
+            ? { ...t, filledBy: ["abbi"] }
+            : t
+      ),
+    };
+    expect(assistJob(even, "abbi")).toBe(
       "Abbi has placed as many items as Fred, and helps again after Fred's next one."
     );
   });

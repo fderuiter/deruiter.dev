@@ -201,6 +201,13 @@ export function ReceiptView({
           </span>{" "}
           {receipt.stars} of {receipt.challenges.length} met
         </p>
+        {receipt.assist ? (
+          // The setup says helper days earn no trophies or board score, so the
+          // stars say so too (round 17).
+          <p className="mt-1 text-xs text-[var(--fbb-dim)]">
+            A helper day, so these stars earn no trophies or board score.
+          </p>
+        ) : null}
         <ul className="mt-2 flex min-w-0 flex-col gap-2 text-xs">
           {receipt.challenges.map((challenge) => (
             <li
@@ -232,7 +239,7 @@ export function ReceiptView({
           <span className="font-bold">Follow-through:</span>{" "}
           {receipt.followThrough.explanation}
         </li>
-        {receipt.finishedAt ? <li>{receipt.finishedAt}</li> : null}
+        {/* The finish time is under the 3:00 challenge row (round 17). */}
         {receipt.kitchen ? <li>{receipt.kitchen}</li> : null}
         {receipt.assist ? (
           <li data-testid="fbb-assist">{receipt.assist}</li>

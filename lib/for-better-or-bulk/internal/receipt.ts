@@ -405,7 +405,9 @@ function signatureMoment(lines: readonly ReadinessLine[]): string {
     return "Lanterns at dusk over the centerpieces";
   if (ready("lanterns")) return "Lanterns at dusk over the patio";
   if (ready("centerpieces")) return "Centerpieces on every table";
-  if (ready("bouquets")) return "The gardens did the decorating";
+  // The modest cart's title is "The Gardens Did the Decorating", so the
+  // subtitle names the bouquets rather than repeating it (round 17).
+  if (ready("bouquets")) return "Bouquets in the basket";
   if (finished("chairs") && finished("buffet")) {
     return bankText("signature-tables-food");
   }

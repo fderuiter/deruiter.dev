@@ -874,6 +874,8 @@ describe("ending and receipt", () => {
     });
     const receipt = computeReceipt(allFilled(stayed, "abbi"));
     expect(receipt.title).toBe("The Gardens Did the Decorating");
+    // The subtitle does not repeat the title (round 17).
+    expect(receipt.signatureMoment).toBe("Bouquets in the basket");
     expect(
       receipt.readiness.find((l) => l.category === "centerpieces")?.status
     ).toBe("unplanned");
@@ -2982,6 +2984,20 @@ describe("a refused press says why (round 9, task 1)", () => {
     expect(getPrompt(planned, "fred").interact).toBe(
       "Nothing on the PETALS bucket to take."
     );
+  });
+
+  it("marks a refusal as not landing, so the cabinet shows no key for it (round 17)", () => {
+    const refused = place(base, "fred", 8, 2, [0, 1]);
+    expect(getPrompt(refused, "fred").interact).toBe(
+      "Nothing on the ARRANGE table to take."
+    );
+    expect(getPrompt(refused, "fred").interactLands).toBe(false);
+    const roses = withStationItem(base, 8, 3, ROSES);
+    const take = place(roses, "fred", 8, 2, [0, 1]);
+    expect(getPrompt(take, "fred").interact).toBe(
+      "Take the roses off the ARRANGE table"
+    );
+    expect(getPrompt(take, "fred").interactLands).toBe(true);
   });
 
   it("names an empty station when free hands face it", () => {

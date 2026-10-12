@@ -664,10 +664,16 @@ function jobOf(state: GameState, id: PlayerId): Job {
   if (!helperMayAct(state, id)) {
     // The helper places no more than the player, so this line also shows
     // when it has caught up, not only at the start (round 16).
-    const other = id === "fred" ? "Abbi" : "Fred";
+    const other: PlayerId = id === "fred" ? "abbi" : "fred";
+    const otherName = other === "fred" ? "Fred" : "Abbi";
+    // At the start nobody has placed anything, so "as many" would read as
+    // an achievement at zero (round 17).
     return {
       kind: "turn",
-      text: `${name} has placed as many items as ${other}, and helps again after ${other}'s next one.`,
+      text:
+        placedCount(state, other) === 0
+          ? `${name} starts helping after ${otherName} places the first item.`
+          : `${name} has placed as many items as ${otherName}, and helps again after ${otherName}'s next one.`,
     };
   }
   const plan = planFor(state, id);

@@ -321,7 +321,8 @@ describe("Working With Duck: pause, score and per-scene tips (#1645, #1646, #164
     }
 
     it("office shows office tips and Office Workspace", async () => {
-      await render(runningState());
+      // Past the sprint 1 goal line that opens the run (#1942).
+      await render(runningState({ ticks: 600 }));
       await advanceFrames(2);
       expect(tipText()).toContain("Tip: Work advances automatically");
       expect(srOutput(container, "Location")).toBe(
